@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,14 +18,17 @@
 #include "fixel/fixel.h"
 #include "fixel/helpers.h"
 
+#include "dwi/tractography/mapping/mapping.h"
 #include "dwi/tractography/weights.h"
 #include "fixel/matrix.h"
 
-#define DEFAULT_ANGLE_THRESHOLD 45.0
-#define DEFAULT_CONNECTIVITY_THRESHOLD 0.01
-
 using namespace MR;
 using namespace App;
+
+using value_type = float;
+using Fixel::index_type;
+
+constexpr value_type default_connectivity_threshold = 0.01F;
 
 // clang-format off
 void usage() {
@@ -54,12 +57,12 @@ void usage() {
 
     + Option("threshold",
              "a threshold to define the required fraction of shared connections to be included in the neighbourhood"
-              " (default: " + str(DEFAULT_CONNECTIVITY_THRESHOLD, 2) + ")")
+              " (default: " + str(default_connectivity_threshold, 2) + ")")
       + Argument("value").type_float(0.0, 1.0)
 
     + Option("angle",
              "the max angle threshold for assigning streamline tangents to fixels"
-             " (Default: " + str(DEFAULT_ANGLE_THRESHOLD, 2) + " degrees)")
+             " (Default: " + str(DWI::Tractography::Mapping::default_streamline2fixel_angle, 2) + " degrees)")
       + Argument("value").type_float(0.0, 90.0)
 
     + Option("mask",
@@ -83,9 +86,6 @@ void usage() {
 }
 // clang-format on
 
-using value_type = float;
-using Fixel::index_type;
-
 template <class WriterType> void set_optional_outputs(WriterType &writer) {
   auto opt = get_options("count");
   if (!opt.empty())
@@ -96,9 +96,9 @@ template <class WriterType> void set_optional_outputs(WriterType &writer) {
 }
 
 void run() {
-  const value_type connectivity_threshold =
-      get_option_value("connectivity", value_type(DEFAULT_CONNECTIVITY_THRESHOLD));
-  const value_type angular_threshold = get_option_value("angle", value_type(DEFAULT_ANGLE_THRESHOLD));
+  const value_type connectivity_threshold = get_option_value("connectivity", default_connectivity_threshold);
+  const value_type angular_threshold =
+      get_option_value("angle", static_cast<value_type>(DWI::Tractography::Mapping::default_streamline2fixel_angle));
 
   const std::string input_fixel_directory = argument[0];
   Header index_header = Fixel::find_index_header(input_fixel_directory);

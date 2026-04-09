@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,7 +17,9 @@
 #include "header.h"
 
 #include <cctype>
+#include <iomanip>
 #include <set>
+#include <sstream>
 
 #include "app.h"
 #include "axes.h"
@@ -128,7 +130,7 @@ std::string short_description(const Header &H) {
 }
 } // namespace
 
-Header Header::open(const std::string &image_name) {
+Header Header::open(std::string_view image_name) {
   if (image_name.empty())
     throw Exception("no name supplied to open image!");
 
@@ -184,7 +186,7 @@ Header Header::open(const std::string &image_name) {
           std::vector<std::unique_ptr<ImageIO::Base>> ios;
           if (!this_data.empty())
             ios.push_back(std::move(this_data[0].io));
-          for (size_t i = this_data.size(); i != size_t(num[loop_index]); ++i) {
+          for (size_t i = this_data.size(); i != static_cast<size_t>(num[loop_index]); ++i) {
             Header header(template_header);
             std::unique_ptr<ImageIO::Base> io_handler;
             header.name() = list[++item_index].name();
@@ -212,7 +214,7 @@ Header Header::open(const std::string &image_name) {
           nested_data.push_back(std::move(this_data[0]));
           this_data.clear();
         }
-        for (size_t i = 0; i != size_t(num[loop_index]); ++i) {
+        for (size_t i = 0; i != static_cast<size_t>(num[loop_index]); ++i) {
           Header temp;
           import(temp, nested_data, loop_index + 1);
           this_data.push_back(std::move(temp));
@@ -220,7 +222,7 @@ Header Header::open(const std::string &image_name) {
         }
         result = concatenate(this_data, loopindex2axis[loop_index], false);
         result.io = std::move(this_data[0].io);
-        for (size_t i = 1; i != size_t(num[loop_index]); ++i)
+        for (size_t i = 1; i != static_cast<size_t>(num[loop_index]); ++i)
           result.io->merge(*this_data[i].io);
       };
 
@@ -260,7 +262,7 @@ inline bool check_strides_match(const std::vector<ssize_t> &a, const std::vector
 
 } // namespace
 
-Header Header::create(const std::string &image_name, const Header &template_header, bool add_to_command_history) {
+Header Header::create(std::string_view image_name, const Header &template_header, bool add_to_command_history) {
   if (image_name.empty())
     throw Exception("no name supplied to open image!");
 
@@ -277,7 +279,7 @@ Header Header::create(const std::string &image_name, const Header &template_head
     }
 
     H.keyval()["mrtrix_version"] = App::mrtrix_version;
-    if (App::project_version)
+    if (!App::project_version.empty())
       H.keyval()["project_version"] = App::project_version;
 
     H.sanitise();
@@ -316,9 +318,9 @@ Header Header::create(const std::string &image_name, const Header &template_head
     }
 
     H.datatype().set_byte_order_native();
-    int a = 0;
+    size_t a = 0;
     for (size_t n = 0; n < Pdim.size(); ++n) {
-      while (a < int(H.ndim()) && H.stride(a))
+      while (a < H.ndim() && H.stride(a))
         a++;
       Pdim[n] = Hdim[a++];
     }
@@ -398,7 +400,7 @@ Header Header::create(const std::string &image_name, const Header &template_head
       for (size_t i = 0; i < H.ndim(); ++i) {
         if (H.stride(i)) {
           ++n;
-          next_stride = std::max(next_stride, abs(H.stride(i)));
+          next_stride = std::max(next_stride, MR::abs(H.stride(i)));
         }
       }
 
@@ -440,7 +442,7 @@ Header Header::create(const std::string &image_name, const Header &template_head
   return H;
 }
 
-Header Header::scratch(const Header &template_header, const std::string &label) {
+Header Header::scratch(const Header &template_header, std::string_view label) {
   Header H(template_header);
   H.name() = label;
   H.reset_intensity_scaling();
@@ -495,9 +497,8 @@ std::string Header::description(bool print_all) const {
   desc += "]\n";
 
   if (io) {
-    desc += std::string("  Format:            ") + (format() ? format() : "undefined") + "\n";
-    desc +=
-        std::string("  Data type:         ") + (datatype().description() ? datatype().description() : "invalid") + "\n";
+    desc += std::string("  Format:            ") + (format().empty() ? "undefined" : format()) + "\n";
+    desc += std::string("  Data type:         ") + datatype().description() + "\n";
     desc +=
         "  Intensity scaling: offset = " + str(intensity_offset()) + ", multiplier = " + str(intensity_scale()) + "\n";
   }
@@ -507,10 +508,9 @@ std::string Header::description(bool print_all) const {
     if (i)
       desc += "                     ";
     for (size_t j = 0; j < 4; j++) {
-      char buf[14], buf2[14];
-      snprintf(buf, 14, "%.4g", transform()(i, j));
-      snprintf(buf2, 14, "%12.10s", buf);
-      desc += buf2;
+      std::ostringstream oss;
+      oss << std::setprecision(4) << std::setw(12) << transform()(i, j);
+      desc += oss.str();
     }
     desc += "\n";
   }
@@ -579,7 +579,7 @@ void Header::sanitise_transform() {
   bool rescale_cosine_vectors = false;
   for (size_t i = 0; i < 3; ++i) {
     auto length = transform().matrix().col(i).head<3>().norm();
-    if (abs(length - 1.0) > 1.0e-6)
+    if (std::fabs(length - 1.0) > 1.0e-6)
       rescale_cosine_vectors = true;
   }
 
@@ -695,7 +695,8 @@ concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, con
     for (this_max_nonunity_dim = H.ndim() - 1; this_max_nonunity_dim >= 0 && H.size(this_max_nonunity_dim) <= 1;
          --this_max_nonunity_dim)
       ;
-    global_max_nonunity_dim = std::max(global_max_nonunity_dim, size_t(std::max(ssize_t(0), this_max_nonunity_dim)));
+    global_max_nonunity_dim =
+        std::max(global_max_nonunity_dim, static_cast<size_t>(std::max(ssize_t(0), this_max_nonunity_dim)));
   }
 
   Header result(headers[0]);

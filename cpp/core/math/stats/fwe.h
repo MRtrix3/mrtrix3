@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,6 +20,7 @@
 
 namespace MR::Math::Stats {
 
-matrix_type fwe_pvalue(const matrix_type &null_dist, const matrix_type &stats);
+matrix_type
+fwe_pvalue(const matrix_type &null_distributions, const matrix_type &statistics, const element_mask_type &mask);
 
 }

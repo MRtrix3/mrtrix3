@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <array>
 #include <memory>
 
 #include "datatype.h"
@@ -54,7 +55,9 @@ public:
     bipolar_flag = readoutmode_flag = 0;
   }
 
-  size_t acq_dim[2], dim[2], series_num, instance, acq, sequence, echo_index, grad_number, samples_per_pixel;
+  std::array<size_t, 2> acq_dim;
+  std::array<size_t, 2> dim;
+  size_t series_num, instance, acq, sequence, echo_index, grad_number, samples_per_pixel;
   Eigen::Vector3d position_vector, orientation_x, orientation_y, orientation_z, G, G_prs;
   default_type distance, pixel_size[2], slice_thickness, slice_spacing, scale_slope, scale_intercept, bvalue;
   size_t data, bits_alloc, data_size, frame_offset;
@@ -146,7 +149,7 @@ public:
   std::vector<std::shared_ptr<Frame>> frames;
 
   void read();
-  void parse_item(Element &item, const std::string &dirname = "");
+  void parse_item(Element &item);
   void decode_csa(const uint8_t *start, const uint8_t *end);
   KeyValues read_csa_ascii(const std::vector<std::string> &data);
 

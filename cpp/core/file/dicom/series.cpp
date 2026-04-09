@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,8 +14,10 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "file/dicom/series.h"
+#include <array>
+
 #include "file/dicom/patient.h"
+#include "file/dicom/series.h"
 #include "file/dicom/study.h"
 
 namespace MR::File::Dicom {
@@ -29,7 +31,7 @@ std::vector<int> Series::count() const {
   if (!size())
     return dim;
 
-  const Image *first[] = {(*this)[0].get(), (*this)[0].get()};
+  std::array<Image *, 2> first = {(*this)[0].get(), (*this)[0].get()};
 
   for (size_t current_entry = 1; current_entry < size(); current_entry++) {
 

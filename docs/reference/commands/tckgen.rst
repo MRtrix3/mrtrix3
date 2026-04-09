@@ -46,7 +46,7 @@ Note that the behaviour of the -angle option varies slightly depending on the or
 Options
 -------
 
--  **-algorithm name** specify the tractography algorithm to use. Valid choices are: FACT, iFOD1, iFOD2, Nulldist1, Nulldist2, SD_Stream, Seedtest, Tensor_Det, Tensor_Prob (default: iFOD2).
+-  **-algorithm name** specify the tractography algorithm to use. Valid choices are: fact, ifod1, ifod2, nulldist1, nulldist2, sd_stream, seedtest, tensor_det, tensor_prob (default: ifod2).
 
 Streamlines tractography options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -208,7 +208,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** J-Donald Tournier (jdtournier@gmail.com) and Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2026 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

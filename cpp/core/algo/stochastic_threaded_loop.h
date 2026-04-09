@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -173,7 +173,7 @@ StochasticThreadedLoop(const HeaderType &source,
 
 template <class HeaderType>
 inline StochasticThreadedLoopRunOuter<decltype(Loop("", std::vector<size_t>()))>
-StochasticThreadedLoop(const std::string &progress_message,
+StochasticThreadedLoop(std::string_view progress_message,
                        const HeaderType &source,
                        const std::vector<size_t> &outer_axes,
                        const std::vector<size_t> &inner_axes) {
@@ -182,7 +182,7 @@ StochasticThreadedLoop(const std::string &progress_message,
 
 template <class HeaderType>
 inline StochasticThreadedLoopRunOuter<decltype(Loop("", std::vector<size_t>()))>
-StochasticThreadedLoop(const std::string &progress_message,
+StochasticThreadedLoop(std::string_view progress_message,
                        const HeaderType &source,
                        const std::vector<size_t> &axes,
                        size_t num_inner_axes = 1) {
@@ -191,7 +191,7 @@ StochasticThreadedLoop(const std::string &progress_message,
 
 template <class HeaderType>
 inline StochasticThreadedLoopRunOuter<decltype(Loop("", std::vector<size_t>()))>
-StochasticThreadedLoop(const std::string &progress_message,
+StochasticThreadedLoop(std::string_view progress_message,
                        const HeaderType &source,
                        size_t from_axis = 0,
                        size_t to_axis = std::numeric_limits<size_t>::max(),

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -28,11 +28,11 @@
 
 #include "dwi/directions/predefined.h"
 
-#define DEFAULT_MSMTCSD_LMAX 8
-#define DEFAULT_MSMTCSD_NORM_LAMBDA 1.0e-10
-#define DEFAULT_MSMTCSD_NEG_LAMBDA 1.0e-10
-
 namespace MR::DWI::SDeconv {
+
+constexpr uint32_t default_msmt_lmax = 8;
+constexpr default_type default_msmt_normlambda = 1e-10;
+constexpr default_type default_msmt_neglambda = 1e-10;
 
 extern const App::OptionGroup MSMT_CSD_options;
 
@@ -44,8 +44,8 @@ public:
         : grad(DWI::get_DW_scheme(dwi_header)),
           shells(grad),
           HR_dirs(DWI::Directions::electrostatic_repulsion_300()),
-          solution_min_norm_regularisation(DEFAULT_MSMTCSD_NORM_LAMBDA),
-          constraint_min_norm_regularisation(DEFAULT_MSMTCSD_NEG_LAMBDA) {
+          solution_min_norm_regularisation(default_msmt_normlambda),
+          constraint_min_norm_regularisation(default_msmt_neglambda) {
       shells.select_shells(false, false, false);
     }
 
@@ -89,7 +89,7 @@ public:
       if (lmax.empty()) {
         lmax = lmax_response;
         for (size_t t = 0; t != num_tissues(); ++t) {
-          lmax[t] = std::min(uint32_t(DEFAULT_MSMTCSD_LMAX), lmax[t]);
+          lmax[t] = std::min(default_msmt_lmax, lmax[t]);
         }
       } else {
         if (lmax.size() != num_tissues())
@@ -102,7 +102,7 @@ public:
       }
 
       for (size_t t = 0; t != num_tissues(); ++t) {
-        if (size_t(responses[t].rows()) != num_shells())
+        if (static_cast<size_t>(responses[t].rows()) != num_shells())
           throw Exception("number of rows in response functions must match number of b-value shells; "
                           "number of shells is " +
                           str(num_shells()) + ", but file \"" + response_files[t] + "\" contains " +
@@ -128,7 +128,7 @@ public:
       Eigen::MatrixXd C = Eigen::MatrixXd::Zero(grad.rows(), nparams);
 
       std::vector<size_t> dwilist;
-      for (size_t i = 0; i != size_t(grad.rows()); i++)
+      for (size_t i = 0; i != static_cast<size_t>(grad.rows()); i++)
         dwilist.push_back(i);
 
       Eigen::MatrixXd directions = DWI::gen_direction_matrix(grad, dwilist);
@@ -163,7 +163,7 @@ public:
           Eigen::VectorXd fconv(tissue_n);
           int li = 0;
           int mi = 0;
-          for (int l = 0; l <= int(tissue_lmax); l += 2) {
+          for (int l = 0; l <= static_cast<int>(tissue_lmax); l += 2) {
             for (int m = -l; m <= l; m++) {
               fconv[mi] = response_[li];
               mi++;
@@ -228,10 +228,10 @@ public:
       for (size_t t = 0; t != num_tissues(); ++t) {
         Eigen::MatrixXd &r(responses[t]);
         size_t n = 0;
-        for (size_t row = 0; row < size_t(r.rows()); row++) {
-          for (size_t col = 0; col < size_t(r.cols()); col++) {
+        for (Eigen::Index row = 0; row < r.rows(); row++) {
+          for (Eigen::Index col = 0; col < r.cols(); col++) {
             if (r(row, col))
-              n = std::max(n, col + 1);
+              n = std::max(n, static_cast<size_t>(col + 1));
           }
         }
         // Clip off any empty columns, i.e. degrees containing zero coefficients for all shells

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -56,6 +56,7 @@ void run() {
   // Get the template image
   Header template_header = Header::open(argument[1]);
   check_3D_nonunity(template_header);
+  template_header.ndim() = 3;
 
   // Ensure that a floating-point representation is used for the output image,
   //   as is required for representing partial volumes

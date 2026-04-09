@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,8 +19,9 @@
 #include <list>
 #include <set>
 
+#include <Eigen/Dense>
+
 #include "math/rng.h"
-#include "misc/bitset.h"
 
 namespace MR::DWI::Directions {
 
@@ -30,10 +31,9 @@ index_type Set::get_min_linkage(const index_type one, const index_type two) cons
   if (one == two)
     return 0;
 
-  std::vector<bool> processed(size(), 0);
-  std::vector<index_type> to_expand;
+  Eigen::Array<bool, Eigen::Dynamic, 1> processed(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(size()));
   processed[one] = true;
-  to_expand.push_back(one);
+  std::vector<index_type> to_expand(1, one);
   index_type min_linkage = 0;
   do {
     ++min_linkage;
@@ -134,17 +134,19 @@ void Set::initialise_adjacency() {
     vertices.push_back(Vertex(*this, i, true));
   }
 
-  index_type extremum_indices[3][2] = {{0, 0}, {0, 0}, {0, 0}};
-  default_type extremum_values[3][2] = {{1.0, -1.0}, {1.0, -1.0}, {1.0, -1.0}};
+  Eigen::Array<index_type, 3, 2> extremum_indices = Eigen::Array<index_type, 3, 2>::Zero();
+  Eigen::Array<default_type, 3, 2> extremum_values;
+  extremum_values.col(0).setConstant(1.0);
+  extremum_values.col(1).setConstant(-1.0);
   for (size_t i = 0; i != vertices.size(); ++i) {
     for (size_t axis = 0; axis != 3; ++axis) {
-      if (vertices[i].dir[axis] < extremum_values[axis][0]) {
-        extremum_values[axis][0] = vertices[i].dir[axis];
-        extremum_indices[axis][0] = i;
+      if (vertices[i].dir[axis] < extremum_values(axis, 0)) {
+        extremum_values(axis, 0) = vertices[i].dir[axis];
+        extremum_indices(axis, 0) = i;
       }
-      if (vertices[i].dir[axis] > extremum_values[axis][1]) {
-        extremum_values[axis][1] = vertices[i].dir[axis];
-        extremum_indices[axis][1] = i;
+      if (vertices[i].dir[axis] > extremum_values(axis, 1)) {
+        extremum_values(axis, 1) = vertices[i].dir[axis];
+        extremum_indices(axis, 1) = i;
       }
     }
   }
@@ -152,8 +154,8 @@ void Set::initialise_adjacency() {
   // Find the two most distant points out of these six
   std::vector<index_type> all_extrema;
   for (size_t axis = 0; axis != 3; ++axis) {
-    all_extrema.push_back(extremum_indices[axis][0]);
-    all_extrema.push_back(extremum_indices[axis][1]);
+    all_extrema.push_back(extremum_indices(axis, 0));
+    all_extrema.push_back(extremum_indices(axis, 1));
   }
   std::pair<index_type, index_type> distant_pair;
   default_type max_dist_sq = 0.0;
@@ -212,7 +214,7 @@ void Set::initialise_adjacency() {
   std::vector<Plane> hull;
 
   // Speedup: Only test those directions that have not yet been incorporated into any plane
-  BitSet assigned(vertices.size());
+  Eigen::Array<bool, Eigen::Dynamic, 1> assigned(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(vertices.size()));
   assigned[base_plane.indices[0]] = true;
   assigned[base_plane.indices[1]] = true;
   assigned[base_plane.indices[2]] = true;
@@ -358,10 +360,10 @@ index_type FastLookupSet::select_direction(const Eigen::Vector3d &p) const {
   const size_t grid_index = dir2gridindex(p);
 
   index_type best_dir = grid_lookup[grid_index].front();
-  default_type max_dp = abs(p.dot(get_dir(best_dir)));
+  default_type max_dp = std::fabs(p.dot(get_dir(best_dir)));
   for (size_t i = 1; i != grid_lookup[grid_index].size(); ++i) {
     const index_type this_dir = (grid_lookup[grid_index])[i];
-    const default_type this_dp = abs(p.dot(get_dir(this_dir)));
+    const default_type this_dp = std::fabs(p.dot(get_dir(this_dir)));
     if (this_dp > max_dp) {
       max_dp = this_dp;
       best_dir = this_dir;
@@ -374,9 +376,9 @@ index_type FastLookupSet::select_direction(const Eigen::Vector3d &p) const {
 index_type FastLookupSet::select_direction_slow(const Eigen::Vector3d &p) const {
 
   index_type dir = 0;
-  default_type max_dot_product = abs(p.dot(unit_vectors[0]));
+  default_type max_dot_product = std::fabs(p.dot(unit_vectors[0]));
   for (size_t i = 1; i != size(); ++i) {
-    const default_type this_dot_product = abs(p.dot(unit_vectors[i]));
+    const default_type this_dot_product = std::fabs(p.dot(unit_vectors[i]));
     if (this_dot_product > max_dot_product) {
       max_dot_product = this_dot_product;
       dir = i;
@@ -392,21 +394,21 @@ void FastLookupSet::initialise() {
   for (size_t i = 0; i != size(); ++i) {
     for (std::vector<index_type>::const_iterator j = adj_dirs[i].begin(); j != adj_dirs[i].end(); ++j) {
       if (*j > i) {
-        adj_dot_product_sum += abs(unit_vectors[i].dot(unit_vectors[*j]));
+        adj_dot_product_sum += std::fabs(unit_vectors[i].dot(unit_vectors[*j]));
         ++adj_dot_product_count;
       }
     }
   }
 
-  const default_type min_dp = adj_dot_product_sum / default_type(adj_dot_product_count);
+  const default_type min_dp = adj_dot_product_sum / static_cast<default_type>(adj_dot_product_count);
   const default_type max_angle_step = acos(min_dp);
 
   num_az_grids = ceil(2.0 * Math::pi / max_angle_step);
   num_el_grids = ceil(Math::pi / max_angle_step);
   total_num_angle_grids = num_az_grids * num_el_grids;
 
-  az_grid_step = 2.0 * Math::pi / default_type(num_az_grids - 1);
-  el_grid_step = Math::pi / default_type(num_el_grids - 1);
+  az_grid_step = 2.0 * Math::pi / static_cast<default_type>(num_az_grids - 1);
+  el_grid_step = Math::pi / static_cast<default_type>(num_el_grids - 1);
 
   az_begin = -Math::pi;
   el_begin = 0.0;
@@ -500,7 +502,7 @@ void FastLookupSet::test_lookup() const {
     if (select_direction(p) != select_direction_slow(p))
       ++error_count;
   }
-  const default_type error_rate = default_type(error_count) / default_type(checks);
+  const default_type error_rate = static_cast<default_type>(error_count) / static_cast<default_type>(checks);
   VAR(error_rate);
 }
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -25,13 +25,13 @@ const OptionGroup MSMT_CSD_options =
     + Option("norm_lambda",
              "the regularisation parameter lambda that controls the strength "
              "of the constraint on the norm of the solution"
-             " (default = " + str(DEFAULT_MSMTCSD_NORM_LAMBDA, 2) + ").")
+             " (default = " + str(default_msmt_normlambda, 2) + ").")
       + Argument("value").type_float(0.0)
 
     + Option("neg_lambda",
              "the regularisation parameter lambda that controls the strength "
              "of the non-negativity constraint"
-             " (default = " + str(DEFAULT_MSMTCSD_NEG_LAMBDA, 2) + ").")
+             " (default = " + str(default_msmt_neglambda, 2) + ").")
       + Argument("value").type_float(0.0)
 
     + Option("predicted_signal",

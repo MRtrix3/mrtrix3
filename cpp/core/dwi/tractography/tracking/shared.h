@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -38,7 +38,7 @@ namespace MR::DWI::Tractography::Tracking {
 class SharedBase {
 
 public:
-  SharedBase(const std::string &diff_path, Properties &property_set);
+  SharedBase(std::string_view diff_path, Properties &property_set);
 
   virtual ~SharedBase();
 
@@ -63,7 +63,7 @@ public:
   const ACT::ACT_Shared_additions &act() const { return *act_shared_additions; }
 
   float vox() const {
-    return std::pow(source_header.spacing(0) * source_header.spacing(1) * source_header.spacing(2), float(1.0 / 3.0));
+    return std::pow(source_header.spacing(0) * source_header.spacing(1) * source_header.spacing(2), 1.0F / 3.0F);
   }
 
   void set_step_and_angle(const float voxel_frac,
@@ -101,8 +101,8 @@ public:
   bool rejection_relevant(const reject_t i) const;
 
 private:
-  mutable std::array<std::atomic<size_t>, termination_type_count> terminations;
-  mutable std::array<std::atomic<size_t>, rejection_type_count> rejections;
+  mutable std::array<std::atomic<size_t>, termination_reason_count> terminations;
+  mutable std::array<std::atomic<size_t>, rejection_reason_count> rejections;
 
   std::unique_ptr<ACT::ACT_Shared_additions> act_shared_additions;
 

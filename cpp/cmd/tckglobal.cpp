@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -34,25 +34,25 @@
 using namespace MR;
 using namespace App;
 
-#define DEFAULT_LMAX 8
-#define DEFAULT_LENGTH 1.0
-#define DEFAULT_WEIGHT 0.1
-#define DEFAULT_PPOT 0.05
-#define DEFAULT_CPOT 0.5
-#define DEFAULT_T0 0.1
-#define DEFAULT_T1 0.001
-#define DEFAULT_NITER 10000000
-#define DEFAULT_BALANCE 0.0
-#define DEFAULT_DENSITY 1.0
+constexpr ssize_t default_lmax = 8;
+constexpr default_type default_length = 1.0;
+constexpr default_type default_weight = 0.1;
+constexpr default_type default_ppot = 0.05;
+constexpr default_type default_cpot = 0.5;
+constexpr default_type default_t0 = 0.1;
+constexpr default_type default_t1 = 0.001;
+constexpr ssize_t default_niter = 10000000;
+constexpr default_type default_balance = 0.0; // TODO Not accessed?
+constexpr default_type default_density = 1.0;
 
-#define DEFAULT_PROB_BIRTH 0.25
-#define DEFAULT_PROB_DEATH 0.05
-#define DEFAULT_PROB_RANDSHIFT 0.25
-#define DEFAULT_PROB_OPTSHIFT 0.10
-#define DEFAULT_PROB_CONNECT 0.35
+constexpr default_type default_prob_birth = 0.25;
+constexpr default_type default_prob_death = 0.05;
+constexpr default_type default_prob_randshift = 0.25;
+constexpr default_type default_prob_optshift = 0.10;
+constexpr default_type default_prob_connect = 0.35;
 
-#define DEFAULT_BETA 0.0
-#define DEFAULT_LAMBDA 1.0
+constexpr default_type default_beta = 0.0;
+constexpr default_type default_lambda = 1.0; // TODO Not accessed?
 
 // clang-format off
 void usage() {
@@ -116,38 +116,38 @@ void usage() {
   + OptionGroup("Parameters")
 
   + Option ("lmax", "set the maximum harmonic order for the output series."
-                    " (default = " + str(DEFAULT_LMAX) + ")")
+                    " (default = " + str(default_lmax) + ")")
     + Argument ("order").type_integer(2, 30)
 
   + Option ("length", "set the length of the particles (fibre segments)."
-                      " (default = " + str(DEFAULT_LENGTH, 2) + "mm)")
+                      " (default = " + str(default_length, 2) + "mm)")
     + Argument ("size").type_float(1e-6)
 
   + Option ("weight", "set the weight by which particles contribute to the model."
-                      " (default = " + str(DEFAULT_WEIGHT, 2) + ")")
+                      " (default = " + str(default_weight, 2) + ")")
     + Argument ("w").type_float(1e-6, 1.0)
 
   + Option ("ppot", "set the particle potential,"
                     " i.e., the cost of adding one segment,"
                     " relative to the particle weight."
-                    " (default = " + str(DEFAULT_PPOT, 2) + ")")
+                    " (default = " + str(default_ppot, 2) + ")")
     + Argument ("u").type_float(0.0, 1.0)
 
   + Option ("cpot", "set the connection potential,"
                     " i.e., the energy term that drives two segments together."
-                    " (default = " + str(DEFAULT_CPOT, 2) + ")")
+                    " (default = " + str(default_cpot, 2) + ")")
     + Argument ("v").type_float(0.0)
 
   + Option ("t0", "set the initial temperature of the metropolis hastings optimizer."
-                  " (default = " + str(DEFAULT_T0, 2) + ")")
+                  " (default = " + str(default_t0, 2) + ")")
     + Argument ("start").type_float(1e-6, 1e6)
 
   + Option ("t1", "set the final temperature of the metropolis hastings optimizer."
-                  " (default = " + str(DEFAULT_T1, 2) + ")")
+                  " (default = " + str(default_t1, 2) + ")")
     + Argument ("end").type_float(1e-6, 1e6)
 
   + Option ("niter", "set the number of iterations of the metropolis hastings optimizer."
-                     " (default = " + str(DEFAULT_NITER/1000000) + "M)")
+                     " (default = " + str(default_niter/1000000) + "M)")
     + Argument ("n").type_integer(0)
 
 
@@ -180,33 +180,33 @@ void usage() {
   + OptionGroup("Advanced parameters, if you really know what you're doing")
 
   + Option ("balance", "balance internal and external energy."
-                       " (default = " + str(DEFAULT_BALANCE, 2) + ")."
+                       " (default = " + str(default_balance, 2) + ")."
                        " Negative values give more weight to the internal energy;"
                        " positive to the external energy.")
     + Argument ("b").type_float(-100.0, 100.0)
 
   + Option ("density", "set the desired density of the free Poisson process."
-                       " (default = " + str(DEFAULT_DENSITY, 2) + ")")
+                       " (default = " + str(default_density, 2) + ")")
     + Argument ("lambda").type_float(0.0)
 
   + Option ("prob", "set the probabilities of generating"
                     " birth, death, randshift, optshift and connect proposals respectively."
                     " (default = "
-                    + str(DEFAULT_PROB_BIRTH, 2) + ","
-                    + str(DEFAULT_PROB_DEATH, 2) + ","
-                    + str(DEFAULT_PROB_RANDSHIFT, 2) + ","
-                    + str(DEFAULT_PROB_OPTSHIFT, 2) + ","
-                    + str(DEFAULT_PROB_CONNECT, 2) + ")")
+                    + str(default_prob_birth, 2) + ","
+                    + str(default_prob_death, 2) + ","
+                    + str(default_prob_randshift, 2) + ","
+                    + str(default_prob_optshift, 2) + ","
+                    + str(default_prob_connect, 2) + ")")
     + Argument ("prob").type_sequence_float()
 
   + Option ("beta", "set the width of the Hanning interpolation window."
-                    " (in [0, 1], default = " + str(DEFAULT_BETA, 2) + "). "
+                    " (in [0, 1], default = " + str(default_beta, 2) + "). "
                     " If used, a mask is required,"
                     " and this mask must keep at least one voxel distance to the image bounding box.")
     + Argument ("b").type_float(0.0, 1.0)
 
   + Option ("lambda", "set the weight of the internal energy directly."
-                      " (default = " + str(DEFAULT_LAMBDA, 2) + ")."
+                      " (default = " + str(default_lambda, 2) + ")."
                       " If provided, any value of -balance will be ignored.")
     + Argument ("lam").type_float(0.0);
 
@@ -257,20 +257,20 @@ void run() {
 
   // Parameters -------------------------------------------------------------------------
 
-  Particle::L = get_option_value("length", DEFAULT_LENGTH);
-  double cpot = get_option_value("cpot", DEFAULT_CPOT);
+  Particle::L = get_option_value("length", default_length);
+  const double cpot = get_option_value("cpot", default_cpot);
 
-  properties.Lmax = get_option_value("lmax", DEFAULT_LMAX);
-  properties.p_birth = DEFAULT_PROB_BIRTH;
-  properties.p_death = DEFAULT_PROB_DEATH;
-  properties.p_shift = DEFAULT_PROB_RANDSHIFT;
-  properties.p_optshift = DEFAULT_PROB_OPTSHIFT;
-  properties.p_connect = DEFAULT_PROB_CONNECT;
-  properties.density = get_option_value("density", DEFAULT_DENSITY);
-  properties.weight = get_option_value("weight", DEFAULT_WEIGHT);
+  properties.Lmax = get_option_value("lmax", default_lmax);
+  properties.p_birth = default_prob_birth;
+  properties.p_death = default_prob_death;
+  properties.p_shift = default_prob_randshift;
+  properties.p_optshift = default_prob_optshift;
+  properties.p_connect = default_prob_connect;
+  properties.density = get_option_value("density", default_density);
+  properties.weight = get_option_value("weight", default_weight);
   properties.lam_ext = 1.0;
   properties.lam_int = 1.0;
-  properties.beta = get_option_value("beta", DEFAULT_BETA);
+  properties.beta = get_option_value("beta", default_beta);
 
   opt = get_options("balance");
   if (!opt.empty()) {
@@ -294,11 +294,11 @@ void run() {
     }
   }
 
-  uint64_t niter = get_option_value<uint64_t>("niter", DEFAULT_NITER);
-  double t0 = get_option_value("t0", DEFAULT_T0);
-  double t1 = get_option_value("t1", DEFAULT_T1);
+  const uint64_t niter = get_option_value<uint64_t>("niter", default_niter);
+  const double t0 = get_option_value("t0", default_t0);
+  const double t1 = get_option_value("t1", default_t1);
 
-  double mu = get_option_value("ppot", DEFAULT_PPOT);
+  const double mu = get_option_value("ppot", default_ppot);
   properties.ppot = mu * wmscale2 * properties.weight;
 
   opt = get_options("lambda");
@@ -316,21 +316,16 @@ void run() {
   if (!opt.empty())
     stats.open_stream(opt[0][0]);
 
-  auto dwi = header_in.get_image<float>().with_direct_io(3);
-  ParticleGrid pgrid(dwi);
+  ParticleGrid pgrid(header_in);
+
   ExternalEnergyComputer *Eext = new ExternalEnergyComputer(stats, header_in, properties);
   InternalEnergyComputer *Eint = new InternalEnergyComputer(stats, pgrid);
   Eint->setConnPot(cpot);
   EnergySumComputer *Esum = new EnergySumComputer(
       stats, Eint, properties.lam_int, Eext, properties.lam_ext / (wmscale2 * properties.weight * properties.weight));
 
-  MHSampler mhs(
-      dwi,
-      properties,
-      stats,
-      pgrid,
-      Esum,
-      mask); // All EnergyComputers are recursively destroyed upon destruction of mhs, except for the shared data.
+  // All EnergyComputers are recursively destroyed upon destruction of mhs, except for the shared data.
+  MHSampler mhs(header_in, properties, stats, pgrid, Esum, mask);
 
   INFO("Start MH sampler");
 
@@ -361,7 +356,7 @@ void run() {
   pgrid.exportTracks(writer);
 
   // Save fiso, tod and eext
-  Header header_out(dwi);
+  Header header_out(header_in);
   header_out.datatype() = DataType::Float32;
 
   opt = get_options("fod");
@@ -381,7 +376,7 @@ void run() {
       auto Fiso = Image<float>::create(opt[0][0], header_out);
       threaded_copy(Eext->getFiso(), Fiso);
     } else {
-      WARN("Ignore saving file " + opt[0][0] + ", because no isotropic response functions were provided.");
+      WARN("Ignore saving file " + std::string(opt[0][0]) + ", because no isotropic response functions were provided.");
     }
   }
 

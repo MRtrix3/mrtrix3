@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -39,13 +39,15 @@ namespace MR::Filter {
  */
 class Base : public Header {
 public:
+  using axis_mask_type = Eigen::Array<bool, Eigen::Dynamic, 1>;
+
   template <class HeaderType> Base(const HeaderType &in) : Header(in) {}
 
-  template <class HeaderType> Base(const HeaderType &in, const std::string &message) : Header(in), message(message) {}
+  template <class HeaderType> Base(const HeaderType &in, std::string_view message) : Header(in), message(message) {}
 
   virtual ~Base() {}
 
-  void set_message(const std::string &s) { message = s; }
+  void set_message(std::string_view s) { message = s; }
 
   template <class InputImageType, class OutputImageType> void operator()(InputImageType &in, OutputImageType &out) {
     throw Exception("Running empty function Filter::Base::operator()");

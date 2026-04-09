@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -155,7 +155,7 @@ public:
 
     mean_xy /= count;
     double covariance = mean_xy - (sum / count) * input_image_mean;
-    double mask_stdev = sqrt((sum - double(sum * sum) / count) / count);
+    double mask_stdev = sqrt((sum - Math::pow2(sum) / static_cast<double>(count)) / static_cast<double>(count));
 
     return -covariance / (input_image_stdev * mask_stdev);
   }

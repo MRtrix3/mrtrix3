@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -35,23 +35,23 @@ public:
     const uint64_t i64(i);
     const uint64_t j64(j);
     if (i < j)
-      return j64 + (uint64_t(dim) * i64) - ((i64 * (i64 + 1)) / 2);
+      return j64 + (static_cast<uint64_t>(dim) * i64) - ((i64 * (i64 + 1)) / 2);
     else
-      return i64 + (uint64_t(dim) * j64) - ((j64 * (j64 + 1)) / 2);
+      return i64 + (static_cast<uint64_t>(dim) * j64) - ((j64 * (j64 + 1)) / 2);
   }
 
   std::pair<node_t, node_t> operator()(const uint64_t i) const {
     static const uint64_t temp = 2 * dim + 1;
     static const uint64_t temp_sq = temp * temp;
     const uint64_t row = std::floor((temp - std::sqrt(temp_sq - (8 * i))) / 2);
-    const uint64_t col = i - (uint64_t(dim) * row) + ((row * (row + 1)) / 2);
+    const uint64_t col = i - (static_cast<uint64_t>(dim) * row) + ((row * (row + 1)) / 2);
     assert(row < dim);
     assert(col < dim);
     return std::make_pair(node_t(row), node_t(col));
   }
 
   node_t mat_size() const { return dim; }
-  uint64_t vec_size() const { return (uint64_t(dim) * (uint64_t(dim) + 1) / 2); }
+  uint64_t vec_size() const { return (static_cast<uint64_t>(dim) * (static_cast<uint64_t>(dim) + 1) / 2); }
 
   // Complete Matrix->Vector and Vector->Matrix conversion
   template <class MatType, class VecType> VecType &M2V(const MatType &, VecType &) const;
@@ -77,7 +77,7 @@ template <class MatType, class VecType> VecType &Mat2Vec::M2V(const MatType &m, 
 }
 
 template <class VecType, class MatType> MatType &Mat2Vec::V2M(const VecType &v, MatType &m) const {
-  assert(size_t(v.size()) == vec_size());
+  assert(static_cast<uint64_t>(v.size()) == vec_size());
   m.resize(dim, dim);
   for (node_t row = 0; row != dim; ++row) {
     for (node_t col = 0; col != dim; ++col)

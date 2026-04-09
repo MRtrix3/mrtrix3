@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -23,7 +23,7 @@
 
 #include "mrtrix.h"
 
-#define BITMASK 0x01U << 7
+#define BITMASK 0x01U << 7 // check_syntax off
 
 #ifdef BYTE_ORDER_IS_BIG_ENDIAN
 #define MRTRIX_IS_BIG_ENDIAN true
@@ -35,12 +35,10 @@
 #define TO_BE(v) swap(v)
 #endif
 
-namespace MR {
-
 /** \addtogroup Binary
  * @{ */
 
-namespace ByteOrder {
+namespace MR::ByteOrder {
 
 template <typename ValueType>
 inline typename std::enable_if<std::is_fundamental<ValueType>::value && sizeof(ValueType) == 1, ValueType>::type
@@ -53,7 +51,7 @@ inline typename std::enable_if<std::is_fundamental<ValueType>::value && sizeof(V
 swap(ValueType v) {
   union {
     ValueType v;
-    uint8_t i[2];
+    uint8_t i[2]; // check_syntax off
   } val = {v};
   std::swap(val.i[0], val.i[1]);
   return val.v;
@@ -64,7 +62,7 @@ inline typename std::enable_if<std::is_fundamental<ValueType>::value && sizeof(V
 swap(ValueType v) {
   union {
     ValueType v;
-    uint8_t i[4];
+    uint8_t i[4]; // check_syntax off
   } val = {v};
   std::swap(val.i[0], val.i[3]);
   std::swap(val.i[1], val.i[2]);
@@ -76,7 +74,7 @@ inline typename std::enable_if<std::is_fundamental<ValueType>::value && sizeof(V
 swap(ValueType v) {
   union {
     ValueType v;
-    uint8_t i[8];
+    uint8_t i[8]; // check_syntax off
   } val = {v};
   std::swap(val.i[0], val.i[7]);
   std::swap(val.i[1], val.i[6]);
@@ -98,9 +96,9 @@ template <typename ValueType> inline ValueType swap(const ValueType value, bool 
   return is_big_endian ? BE(value) : LE(value);
 }
 
-} // namespace ByteOrder
+} // namespace MR::ByteOrder
 
-namespace Raw {
+namespace MR::Raw {
 
 namespace {
 template <typename ValueType> ValueType *as(void *p) { return reinterpret_cast<ValueType *>(p); }
@@ -209,8 +207,6 @@ template <> inline void store<bool>(const bool value, void *data, size_t i, bool
 }
 
 //! \endcond
-} // namespace Raw
-
 /** @} */
 
-} // namespace MR
+} // namespace MR::Raw

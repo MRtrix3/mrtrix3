@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,32 +22,17 @@
 #include "app.h"
 #include "dwi/gradient.h"
 #include "file/config.h"
-#include "misc/bitset.h"
 #include "types.h"
 
-// Don't expect these values to change depending on the particular command that is initialising the Shells class;
-//   method should be robust to all incoming data
-
-// Maximum absolute difference in b-value for two volumes to be considered to be in the same shell
-#define DWI_SHELLS_EPSILON 80
-// Minimum number of volumes within DWI_SHELL_EPSILON necessary to continue expansion of the cluster selection
-#define DWI_SHELLS_MIN_LINKAGE 3
-// Default number of volumes necessary for a shell to be retained
-//   (note: only applies if function reject_small_shells() is called explicitly)
-#define DWI_SHELLS_MIN_DIRECTIONS 6
-
-// CONF option: BValueEpsilon
-// CONF default: 80.0
-// CONF Specifies the difference between b-values necessary for image
-// CONF volumes to be classified as belonging to different shells.
-
-namespace MR {
-
-namespace App {
+namespace MR::App {
 class OptionGroup;
 }
 
-namespace DWI {
+namespace MR::DWI {
+
+constexpr default_type default_shellclustering_epsilon = 80.0;
+constexpr ssize_t default_shellclustering_mindirections = 6;
+constexpr ssize_t default_shellclustering_minlinkage = 3;
 
 extern const App::OptionGroup ShellsOption;
 
@@ -113,7 +98,7 @@ public:
 
   Shells &select_shells(const bool force_singleshell, const bool force_with_bzero, const bool force_without_bzero);
 
-  Shells &reject_small_shells(const size_t min_volumes = DWI_SHELLS_MIN_DIRECTIONS);
+  Shells &reject_small_shells(const size_t min_volumes = default_shellclustering_mindirections);
 
   bool is_single_shell() const {
     // only if exactly 1 non-bzero shell
@@ -140,5 +125,4 @@ private:
   void regionQuery(const BValueList &, const default_type, std::vector<size_t> &) const;
 };
 
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI

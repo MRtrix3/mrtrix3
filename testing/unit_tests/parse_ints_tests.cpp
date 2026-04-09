@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -23,6 +23,7 @@
 #include <cstdint>
 #include <ostream>
 #include <string>
+#include <string_view>
 #include <vector>
 
 using namespace MR;
@@ -65,8 +66,8 @@ const std::array<ParseIntsParam, 20> parse_ints_test_cases{{
 }};
 
 TEST_F(ParseIntsTest, HandlesVariousFormats) {
-  for (const auto &param : parse_ints_test_cases) {
-    const std::string &input = param.input_str;
+
+  auto test = [](std::string_view input, const ParseIntsParam &param) -> void {
     std::vector<int> actual_values;
     if (param.exception_policy == ParseIntsParam::ExceptionPolicy::Expected) {
       EXPECT_THROW(actual_values = MR::parse_ints<int>(input), MR::Exception)
@@ -78,5 +79,19 @@ TEST_F(ParseIntsTest, HandlesVariousFormats) {
     EXPECT_EQ(actual_values, param.expected_values)
         << "Input string: \"" << input << "\"\n  Expected: " << MR::str(param.expected_values)
         << "\n  Actual:   " << MR::str(actual_values);
+  };
+
+  for (const auto &param : parse_ints_test_cases) {
+    {
+      const std::string_view input(param.input_str);
+      test(input, param);
+    }
+    {
+      char *const array_not_null_terminated = new char[param.input_str.size()];
+      memcpy(array_not_null_terminated, param.input_str.c_str(), param.input_str.size());
+      const std::string_view input(array_not_null_terminated, param.input_str.size());
+      test(input, param);
+      delete[] array_not_null_terminated;
+    }
   }
 }

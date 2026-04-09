@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -33,30 +33,29 @@
 
 #include "dwi/tractography/seeding/dynamic.h"
 
-#define MAX_NUM_SEED_ATTEMPTS 100000
-
-#define TRACKING_BATCH_SIZE 10
-
 namespace MR::DWI::Tractography::Tracking {
+
+constexpr ssize_t failed_seed_attempts_to_abort = 100000;
+constexpr ssize_t streamline_generation_batch_size = 10;
 
 // TODO Try having ACT as a template boolean; allow compiler to optimise out branch statements
 
 template <class Method> class Exec {
 
 public:
-  static void
-  run(const std::string &diff_path, const std::string &destination, DWI::Tractography::Properties &properties) {
+  static void run(std::string_view diff_path, std::string_view destination, DWI::Tractography::Properties &properties) {
 
     if (properties.find("seed_dynamic") == properties.end()) {
 
       typename Method::Shared shared(diff_path, properties);
       WriteKernel writer(shared, destination, properties);
       Exec<Method> tracker(shared);
-      Thread::run_queue(Thread::multi(tracker), Thread::batch(GeneratedTrack(), TRACKING_BATCH_SIZE), writer);
+      Thread::run_queue(
+          Thread::multi(tracker), Thread::batch(GeneratedTrack(), streamline_generation_batch_size), writer);
 
     } else {
 
-      const std::string &fod_path(properties["seed_dynamic"]);
+      const std::string fod_path(properties["seed_dynamic"]);
       const std::string max_num_tracks = properties["max_num_tracks"];
       if (max_num_tracks.empty())
         throw Exception("Dynamic seeding requires setting the desired number of tracks using the -select option");
@@ -82,11 +81,11 @@ public:
       mapper.set_use_precise_mapping(true);
 
       Thread::run_queue(Thread::multi(tracker),
-                        Thread::batch(GeneratedTrack(), TRACKING_BATCH_SIZE),
+                        Thread::batch(GeneratedTrack(), streamline_generation_batch_size),
                         writer,
-                        Thread::batch(Streamline<>(), TRACKING_BATCH_SIZE),
+                        Thread::batch(Streamline<>(), streamline_generation_batch_size),
                         Thread::multi(mapper),
-                        Thread::batch(SetDixel(), TRACKING_BATCH_SIZE),
+                        Thread::batch(SetDixel(), streamline_generation_batch_size),
                         *seeder);
     }
   }
@@ -163,7 +162,7 @@ private:
     tck.clear();
     track_excluded = false;
     include_visitation.reset();
-    method.dir.setConstant(NaN);
+    method.dir.setConstant(NaNF);
 
     if (S.properties.seeds.is_finite()) {
 
@@ -177,7 +176,7 @@ private:
 
     } else {
 
-      for (size_t num_attempts = 0; num_attempts != MAX_NUM_SEED_ATTEMPTS; ++num_attempts) {
+      for (size_t num_attempts = 0; num_attempts != failed_seed_attempts_to_abort; ++num_attempts) {
         if (S.properties.seeds.get_seed(method.pos, method.dir)) {
           if (!(method.check_seed() && method.init())) {
             track_excluded = true;
@@ -186,7 +185,7 @@ private:
           return true;
         }
       }
-      FAIL("Failed to find suitable seed point after " + str(MAX_NUM_SEED_ATTEMPTS) + " attempts - aborting");
+      FAIL("Failed to find suitable seed point after " + str(failed_seed_attempts_to_abort) + " attempts - aborting");
       return false;
     }
   }
@@ -235,7 +234,7 @@ private:
               revert_step = 1;
               revert_count = 1;
             } else {
-              if (revert_count++ == ACT_BACKTRACK_ATTEMPTS) {
+              if (revert_count++ == ACT::backtrack_attempts) {
                 revert_count = 1;
                 ++revert_step;
               }
@@ -404,16 +403,18 @@ private:
     // If the seed was in SGM, need to confirm that one side of the track actually made it to WM
     if (method.act().seed_in_sgm && !method.act().sgm_seed_to_wm)
       return false;
-    // Used these in the ACT paper, but wasn't entirely happy with the method; can change these #defines to re-enable
+    // Used these in the ACT paper, but wasn't entirely happy with the method;
+    //   can change these constexprs to re-enable
     // ACT instead now defaults to a 2-voxel minimum length
-    if (!ACT_WM_INT_REQ && !ACT_WM_ABS_REQ)
+    if (ACT::wm_pathintegral_threshold == 0.0F && ACT::wm_maxabs_threshold == 0.0F)
       return true;
     float integral = 0.0, max_value = 0.0;
     for (const auto &i : tck) {
       if (method.act().fetch_tissue_data(i)) {
         const float wm = method.act().tissues().get_wm();
         max_value = std::max(max_value, wm);
-        if (((integral += (Math::pow2(wm) * S.internal_step_size())) > ACT_WM_INT_REQ) && (max_value > ACT_WM_ABS_REQ))
+        if (((integral += (Math::pow2(wm) * S.internal_step_size())) > ACT::wm_pathintegral_threshold) &&
+            (max_value > ACT::wm_maxabs_threshold))
           return true;
       }
     }

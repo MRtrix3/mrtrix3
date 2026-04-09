@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -33,22 +33,7 @@ class ZClean : public Base {
 
 public:
   template <class HeaderType>
-  ZClean(const HeaderType &in)
-      : Base(in),
-        zupper(2.5),
-        zlower(2.5),
-        fov_max(0.3),
-        fov_min(0.15),
-        bridge(0),
-        dont_maskupper(false),
-        keep_lower(false),
-        keep_upper(true) {
-    datatype_ = DataType::Float32;
-    ndim() = 3;
-  }
-
-  template <class HeaderType>
-  ZClean(const HeaderType &in, const std::string &message)
+  ZClean(const HeaderType &in, std::string_view message)
       : Base(in, message),
         zupper(2.5),
         zlower(2.5),
@@ -61,6 +46,8 @@ public:
     datatype_ = DataType::Float32;
     ndim() = 3;
   }
+
+  template <class HeaderType> ZClean(const HeaderType &in) : ZClean(in, "") {}
 
   template <class InputImageType, class MaskType, class OutputImageType>
   void operator()(InputImageType &input, MaskType &spatial_prior, OutputImageType &output) {
@@ -105,7 +92,8 @@ public:
       lower = median - zlower * mad;
       INFO("median: " + str(median) + ", changed: " + str((median - previous_median) / previous_median));
       INFO("mad: " + str(mad) + ", changed: " + str((mad - previous_mad) / previous_mad));
-      INFO("FOV: " + str(float(cnt) / (input.size(0) * input.size(1) * input.size(2))));
+      INFO("FOV: " + str(static_cast<default_type>(cnt) /
+                         static_cast<default_type>(input.size(0) * input.size(1) * input.size(2))));
       INFO("lower: " + str(lower) + " upper: " + str(upper));
       INFO("cnt_upper - cnt: " + str(cnt_upper - cnt));
       if (lower > 0.0 && ((median + 2.5 * mad) - (previous_median + 2.5 * previous_mad)) < 0.0 && (cnt < cnt_upper))
@@ -142,14 +130,14 @@ public:
             bool good = (z > -zlower) && (z < zupper);
             if (App::log_level >= 3) {
               assign_pos_of(input, 0, 3).to(eroded_zscore_image);
-              eroded_zscore_image.value() = (z > -zlower) && (dont_maskupper || z < zupper) ? z : NaN;
+              eroded_zscore_image.value() = (z > -zlower) && (dont_maskupper || z < zupper) ? z : NaNF;
             }
             if (good)
               cnt++;
             int_roi.value() = good;
           } else if (App::log_level >= 3) {
             assign_pos_of(input, 0, 3).to(eroded_zscore_image);
-            eroded_zscore_image.value() = NaN;
+            eroded_zscore_image.value() = NaNF;
           }
         }
         previous_mad = mad;

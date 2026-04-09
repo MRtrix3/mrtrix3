@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -36,11 +36,11 @@ namespace gl {
 #include <dlfcn.h>
 
 static void *AppleGLGetProcAddress(const char *name) {
-  static void *image = NULL;
-  if (NULL == image)
+  static void *image = nullptr;
+  if (image == nullptr)
     image = dlopen("/System/Library/Frameworks/OpenGL.framework/Versions/Current/OpenGL", RTLD_LAZY);
 
-  return (image ? dlsym(image, (const char *)name) : NULL);
+  return (image ? dlsym(image, (const char *)name) : nullptr);
 }
 #endif /* __APPLE__ */
 
@@ -49,16 +49,16 @@ static void *AppleGLGetProcAddress(const char *name) {
 #include <dlfcn.h>
 
 static void *SunGetProcAddress(const GLubyte *name) {
-  static void *h = NULL;
+  static void *h = nullptr;
   static void *gpa;
 
-  if (h == NULL) {
-    if ((h = dlopen(NULL, RTLD_LAZY | RTLD_LOCAL)) == NULL)
-      return NULL;
+  if (h == nullptr) {
+    if ((h = dlopen(nullptr, RTLD_LAZY | RTLD_LOCAL)) == nullptr)
+      return nullptr;
     gpa = dlsym(h, "glXGetProcAddress");
   }
 
-  if (gpa != NULL)
+  if (gpa != nullptr)
     return ((void *(*)(const GLubyte *))gpa)(name);
   else
     return dlsym(h, (const char *)name);
@@ -85,7 +85,7 @@ static int TestPointer(const PROC pTest) {
 }
 
 static PROC WinGetProcAddress(const char *name) {
-  HMODULE glMod = NULL;
+  HMODULE glMod = nullptr;
   PROC pFunc = wglGetProcAddress((LPCSTR)name);
   if (TestPointer(pFunc)) {
     return pFunc;

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -27,6 +27,7 @@
 #include "filter/warp.h"
 #include "image.h"
 #include "interp/cubic.h"
+#include "interp/interp.h"
 #include "interp/linear.h"
 #include "interp/nearest.h"
 #include "interp/sinc.h"
@@ -39,12 +40,13 @@
 #include "registration/warp/compose.h"
 #include "registration/warp/helpers.h"
 
+#include <optional>
+
 using namespace MR;
 using namespace App;
 
-#define DEFAULT_INTERP 2 // cubic
-const std::vector<std::string> interp_choices = {"nearest", "linear", "cubic", "sinc"};
-const std::vector<std::string> modulation_choices = {"fod", "jac"};
+constexpr MR::Interp::interp_type default_interp = MR::Interp::interp_type::CUBIC;
+enum class Modulation { FOD, JAC };
 
 // clang-format off
 void usage() {
@@ -149,10 +151,10 @@ void usage() {
         " (i.e. half way between image1 and image2)")
 
     + Option ("interp",
-        std::string("set the interpolation method to use when reslicing") +
-        " (choices: nearest, linear, cubic, sinc."
-        " Default: " + interp_choices[DEFAULT_INTERP] + ").")
-      + Argument ("method").type_choice(interp_choices)
+        std::string("set the interpolation method to use when reslicing")
+        + " (choices: " + join(MR::Interp::interp_choices, ", ") + ";"
+        + " default: " + MR::Interp::interp_choices[static_cast<ssize_t>(default_interp)] + ").")
+      + Argument ("method").type_choice(MR::Interp::interp_choices)
 
     + Option ("oversample",
         "set the amount of over-sampling (in the target space) to perform when regridding."
@@ -202,7 +204,7 @@ void usage() {
     + OptionGroup ("Fibre orientation distribution handling options")
 
     + Option ("modulate",
-        "Valid choices are:"
+        "Valid choices are: "
         " fod:"
         " modulate FODs during reorientation"
         " to preserve the apparent fibre density across fibre bundle widths"
@@ -211,7 +213,7 @@ void usage() {
         " modulate the image intensity with the determinant of the Jacobian"
         " of the warp of linear transformation "
         " to preserve the total intensity before and after the transformation.")
-      + Argument ("method").type_choice(modulation_choices)
+      + Argument ("method").type_choice<Modulation>()
 
     + Option ("directions",
         "directions defining the number and orientation of the apodised point spread functions"
@@ -247,21 +249,21 @@ void usage() {
 void apply_warp(Image<float> &input,
                 Image<float> &output,
                 Image<default_type> &warp,
-                const int interp,
+                const MR::Interp::interp_type interp,
                 const float out_of_bounds_value,
                 const std::vector<uint32_t> &oversample,
                 const bool jacobian_modulate = false) {
   switch (interp) {
-  case 0:
+  case MR::Interp::interp_type::NEAREST:
     Filter::warp<Interp::Nearest>(input, output, warp, out_of_bounds_value, oversample, jacobian_modulate);
     break;
-  case 1:
+  case MR::Interp::interp_type::LINEAR:
     Filter::warp<Interp::Linear>(input, output, warp, out_of_bounds_value, oversample, jacobian_modulate);
     break;
-  case 2:
+  case MR::Interp::interp_type::CUBIC:
     Filter::warp<Interp::Cubic>(input, output, warp, out_of_bounds_value, oversample, jacobian_modulate);
     break;
-  case 3:
+  case MR::Interp::interp_type::SINC:
     Filter::warp<Interp::Sinc>(input, output, warp, out_of_bounds_value, oversample, jacobian_modulate);
     break;
   default:
@@ -426,7 +428,7 @@ void run() {
   const bool is_possible_fod_image =
       input_header.ndim() == 4 &&  //
       input_header.size(3) >= 6 && //
-      input_header.size(3) == (int)Math::SH::NforL(Math::SH::LforN(input_header.size(3)));
+      input_header.size(3) == static_cast<ssize_t>(Math::SH::NforL(Math::SH::LforN(input_header.size(3))));
 
   // reorientation
   if (!get_options("no_reorientation").empty())
@@ -455,8 +457,11 @@ void run() {
 
   // Intensity / FOD modulation
   opt = get_options("modulate");
-  const bool modulate_fod = !opt.empty() && (int)opt[0][0] == 0;
-  const bool modulate_jac = !opt.empty() && (int)opt[0][0] == 1;
+  const std::optional<Modulation> modulation =
+      opt.empty() ? std::nullopt
+                  : std::optional<Modulation>(get_option_choice<Modulation>("modulate", Modulation::FOD));
+  const bool modulate_fod = modulation.has_value() && *modulation == Modulation::FOD;
+  const bool modulate_jac = modulation.has_value() && *modulation == Modulation::JAC;
 
   const std::string reorient_msg = str("reorienting") + str((modulate_fod ? " with FOD modulation" : ""));
   if (modulate_fod)
@@ -498,7 +503,7 @@ void run() {
     }
     if (grad.rows()) {
       try {
-        if (input_header.size(3) != (ssize_t)grad.rows()) {
+        if (input_header.size(3) != static_cast<ssize_t>(grad.rows())) {
           throw Exception("DW gradient table of different length (" + str(grad.rows()) + ")" +
                           " to number of image volumes (" + str(input_header.size(3)) + ")");
         }
@@ -528,7 +533,7 @@ void run() {
       }
       try {
         const auto lines = split_lines(hit->second);
-        if (lines.size() != size_t(input_header.size(3)))
+        if (lines.size() != static_cast<size_t>(input_header.size(3)))
           throw Exception("Number of lines in header entry \"directions\" (" + str(lines.size()) + ")" +
                           " does not match number of volumes in image (" + str(input_header.size(3)) + ")");
         Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> result;
@@ -540,7 +545,7 @@ void run() {
                               " (expected matrix with 2 or 3 columns;" +      //
                               " data has " + str(v.size()) + " columns)");
             result.resize(lines.size(), v.size());
-          } else if (v.size() != size_t(result.cols())) {
+          } else if (v.size() != static_cast<size_t>(result.cols())) {
             throw Exception("Inconsistent number of columns in \"directions\" field");
           }
           if (result.cols() == 2) {
@@ -567,10 +572,10 @@ void run() {
   }
 
   // Interpolator
-  int interp = DEFAULT_INTERP; // cubic
+  MR::Interp::interp_type interp = default_interp;
   opt = get_options("interp");
   if (!opt.empty()) {
-    interp = opt[0][0];
+    interp = MR::Interp::interp_type(static_cast<MR::App::ParsedArgument::IntType>(opt[0][0]));
     if (!warp && !template_header)
       WARN("interpolator choice ignored since the input image will not be regridded");
   }
@@ -591,7 +596,7 @@ void run() {
     for (const auto x : oversample)
       if (x < 1)
         throw Exception("-oversample factors must be positive integers");
-  } else if (interp == 0) {
+  } else if (interp == MR::Interp::interp_type::NEAREST) {
     // default for nearest-neighbour is no oversampling
     oversample = {1, 1, 1};
   }
@@ -628,21 +633,21 @@ void run() {
       output_header.transform() = midway_header.transform();
     }
 
-    if (interp == 0) // nearest
+    if (interp == MR::Interp::interp_type::NEAREST) // nearest
       output_header.datatype() = DataType::from_command_line(input_header.datatype());
     auto output = Image<float>::create(argument[1], output_header);
 
     switch (interp) {
-    case 0:
+    case MR::Interp::interp_type::NEAREST:
       Filter::reslice<Interp::Nearest>(input, output, linear_transform, oversample, out_of_bounds_value);
       break;
-    case 1:
+    case MR::Interp::interp_type::LINEAR:
       Filter::reslice<Interp::Linear>(input, output, linear_transform, oversample, out_of_bounds_value);
       break;
-    case 2:
+    case MR::Interp::interp_type::CUBIC:
       Filter::reslice<Interp::Cubic>(input, output, linear_transform, oversample, out_of_bounds_value);
       break;
-    case 3:
+    case MR::Interp::interp_type::SINC:
       Filter::reslice<Interp::Sinc>(input, output, linear_transform, oversample, out_of_bounds_value);
       break;
     default:

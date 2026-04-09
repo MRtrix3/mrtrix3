@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# Copyright (c) 2008-2025 the MRtrix3 contributors.
+# Copyright (c) 2008-2026 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -115,7 +115,7 @@ def parse_commands (commands_dir, completion_path, commands):
         else:
           arg_choices +=  " " + choice
     elif arg_type == 'IMAGEIN':
-      arg_choices ='`eval ls $1*.{mih,mif,nii,dcm,msf,hdr,mgh,nii.gz,mif.gz} 2> /dev/null | tr "\n" " "``eval ls -d $1*/ 2> /dev/null | tr "\n" " "`'
+      arg_choices ='`eval ls $1*.{mih,mif,nii,dcm,hdr,mgh,nii.gz,mif.gz} 2> /dev/null | tr "\n" " "``eval ls -d $1*/ 2> /dev/null | tr "\n" " "`'
     elif arg_type == 'FILEIN':
       arg_choices ='`eval ls "$1*" 2> /dev/null | grep -E "$1*\.[^[:space:]]+"``eval ls -d $1*/ 2> /dev/null | tr "\n" " "`'
     elif arg_type == 'TRACKSIN':

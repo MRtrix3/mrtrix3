@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -38,8 +38,8 @@ public:
         m2(0.0, 0.0),
         std(0.0, 0.0),
         std_rv(0.0, 0.0),
-        min(INFINITY, INFINITY),
-        max(-INFINITY, -INFINITY),
+        min(Inf, Inf),
+        max(-Inf, -Inf),
         count(0),
         is_complex(is_complex),
         ignore_zero(ignorezero) {}
@@ -49,8 +49,9 @@ public:
   template <class ImageType> void print(ImageType &ima, const std::vector<std::string> &fields) {
 
     if (count > 1) {
-      std = complex_type(sqrt(m2.real() / value_type(count - 1)), sqrt(m2.imag() / value_type(count - 1)));
-      std_rv = complex_type(sqrt((m2.real() + m2.imag()) / value_type(count - 1)));
+      std = complex_type(sqrt(m2.real() / static_cast<value_type>(count - 1)),
+                         sqrt(m2.imag() / static_cast<value_type>(count - 1)));
+      std_rv = complex_type(sqrt((m2.real() + m2.imag()) / static_cast<value_type>(count - 1)));
       std::sort(values.begin(), values.end());
     }
     if (!fields.empty()) {

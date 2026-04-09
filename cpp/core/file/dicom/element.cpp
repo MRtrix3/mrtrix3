@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -36,13 +36,20 @@ std::ostream &operator<<(std::ostream &stream, const Time &item) {
   return stream;
 }
 
-const char *Element::type_as_str[] = {
-    "invalid", "integer", "unsigned integer", "floating-point", "date", "time", "string", "sequence", "other", nullptr};
+const std::unordered_map<Element::Type, std::string> Element::type_as_str{{INVALID, "invalid"},
+                                                                          {INT, "integer"},
+                                                                          {UINT, "unsigned integer"},
+                                                                          {FLOAT, "floating-point"},
+                                                                          {DATE, "date"},
+                                                                          {TIME, "time"},
+                                                                          {STRING, "string"},
+                                                                          {SEQ, "sequence"},
+                                                                          {OTHER, "other"}};
 
-void Element::set(const std::string &filename, bool force_read, bool read_write) {
+void Element::set(std::string_view filename, bool force_read, bool read_write) {
   group = element = VR = 0;
   size = 0;
-  start = data = next = NULL;
+  start = data = next = nullptr;
   is_BE = is_transfer_syntax_BE = false;
   transfer_syntax_supported = true;
   parents.clear();
@@ -81,10 +88,11 @@ void Element::set_explicit_encoding() {
   next = start;
   VR = ByteOrder::BE(*reinterpret_cast<uint16_t *>(start + 4));
 
-  if ((VR == VR_OB) | (VR == VR_OW) | (VR == VR_OF) | (VR == VR_SQ) | (VR == VR_UN) | (VR == VR_AE) | (VR == VR_AS) |
-      (VR == VR_AT) | (VR == VR_CS) | (VR == VR_DA) | (VR == VR_DS) | (VR == VR_DT) | (VR == VR_FD) | (VR == VR_FL) |
-      (VR == VR_IS) | (VR == VR_LO) | (VR == VR_LT) | (VR == VR_PN) | (VR == VR_SH) | (VR == VR_SL) | (VR == VR_SS) |
-      (VR == VR_ST) | (VR == VR_TM) | (VR == VR_UI) | (VR == VR_UL) | (VR == VR_US) | (VR == VR_UT))
+  if ((VR == VR_OB) || (VR == VR_OW) || (VR == VR_OF) || (VR == VR_SQ) || (VR == VR_UN) || (VR == VR_AE) ||
+      (VR == VR_AS) || (VR == VR_AT) || (VR == VR_CS) || (VR == VR_DA) || (VR == VR_DS) || (VR == VR_DT) ||
+      (VR == VR_FD) || (VR == VR_FL) || (VR == VR_IS) || (VR == VR_LO) || (VR == VR_LT) || (VR == VR_PN) ||
+      (VR == VR_SH) || (VR == VR_SL) || (VR == VR_SS) || (VR == VR_ST) || (VR == VR_TM) || (VR == VR_UI) ||
+      (VR == VR_UL) || (VR == VR_US) || (VR == VR_UT))
     return;
 
   DEBUG("using implicit DICOM encoding");
@@ -95,7 +103,7 @@ bool Element::read_GR_EL() {
   group = element = VR = 0;
   size = 0;
   start = next;
-  data = next = NULL;
+  data = next = nullptr;
 
   if (start < fmap->address())
     throw Exception("invalid DICOM element");
@@ -107,12 +115,12 @@ bool Element::read_GR_EL() {
 
   group = Raw::fetch_<uint16_t>(start, is_BE);
 
-  if (group == GROUP_BYTE_ORDER_SWAPPED) {
+  if (group == group_byte_order_swapped) {
     if (!is_BE)
       throw Exception("invalid DICOM group ID " + str(group) + " in file \"" + fmap->name() + "\"");
 
     is_BE = false;
-    group = GROUP_BYTE_ORDER;
+    group = group_byte_order;
   }
   element = Raw::fetch_<uint16_t>(start + 2, is_BE);
 
@@ -124,7 +132,7 @@ bool Element::read() {
     return false;
 
   data = start + 8;
-  if ((is_explicit && group != GROUP_SEQUENCE) || group == GROUP_BYTE_ORDER) {
+  if ((is_explicit && group != group_sequence) || group == group_byte_order) {
 
     // explicit encoding:
     VR = ByteOrder::BE(*reinterpret_cast<uint16_t *>(start + 4));
@@ -159,8 +167,8 @@ bool Element::read() {
 
   next = data;
 
-  if (size == LENGTH_UNDEFINED) {
-    if (VR != VR_SQ && !(group == GROUP_SEQUENCE && element == ELEMENT_SEQUENCE_ITEM))
+  if (size == undefined_length) {
+    if (VR != VR_SQ && !(group == group_sequence && element == element_sequence_item))
       INFO("undefined length used for DICOM tag " +            //
            (!tag_name().empty() ? tag_name().substr(2) : "") + //
            MR::printf("(%04X, %04X)", group, element) +        //
@@ -175,8 +183,8 @@ bool Element::read() {
             " (" + str(group) + ", " + str(element) + ")" +     //
             " in file \"" + fmap->name() + "");
     if (VR != VR_SQ) {
-      if (group == GROUP_SEQUENCE && element == ELEMENT_SEQUENCE_ITEM) {
-        if (!parents.empty() && parents.back().group == GROUP_DATA && parents.back().element == ELEMENT_DATA)
+      if (group == group_sequence && element == element_sequence_item) {
+        if (!parents.empty() && parents.back().group == group_data && parents.back().element == element_data)
           next += size;
       } else
         next += size;
@@ -184,7 +192,7 @@ bool Element::read() {
   }
 
   if (!parents.empty()) {
-    if (group == GROUP_SEQUENCE && element == ELEMENT_SEQUENCE_DELIMITATION_ITEM) {
+    if (group == group_sequence && element == element_sequence_delimitation_item) {
       parents.pop_back();
     } else { // Undefined length encoding
       while (!parents.empty() && (parents.back().end != nullptr) && data > parents.back().end)
@@ -193,29 +201,29 @@ bool Element::read() {
   }
 
   if (is_new_sequence())
-    parents.push_back(Sequence(group, element, size == LENGTH_UNDEFINED ? nullptr : data + size));
+    parents.push_back(Sequence(group, element, size == undefined_length ? nullptr : data + size));
 
   switch (group) {
-  case GROUP_BYTE_ORDER:
+  case group_byte_order:
     switch (element) {
-    case ELEMENT_TRANSFER_SYNTAX_UID:
-      if (strncmp(reinterpret_cast<const char *>(data), "1.2.840.10008.1.2.1", size) == 0) {
+    case element_transfer_syntax_uid: {
+      const std::string data_as_string(reinterpret_cast<const char *>(data), size);
+      if (data_as_string == "1.2.840.10008.1.2.1") {
         is_BE = is_transfer_syntax_BE = false; // explicit VR Little Endian
         is_explicit = true;
-      } else if (strncmp(reinterpret_cast<const char *>(data), "1.2.840.10008.1.2.2", size) == 0) {
+      } else if (data_as_string == "1.2.840.10008.1.2.2") {
         is_BE = is_transfer_syntax_BE = true; // Explicit VR Big Endian
         is_explicit = true;
-      } else if (strncmp(reinterpret_cast<const char *>(data), "1.2.840.10008.1.2", size) == 0) {
+      } else if (data_as_string == "1.2.840.10008.1.2") {
         is_BE = is_transfer_syntax_BE = false; // Implicit VR Little Endian
         is_explicit = false;
-      } else if (strncmp(reinterpret_cast<const char *>(data), "1.2.840.10008.1.2.1.99", size) == 0) {
+      } else if (data_as_string == "1.2.840.10008.1.2.1.99") {
         throw Exception("DICOM deflated explicit VR little endian transfer syntax not supported");
       } else {
         transfer_syntax_supported = false;
-        INFO("unsupported DICOM transfer syntax: \"" + std::string(reinterpret_cast<const char *>(data), size) +
-             "\" in file \"" + fmap->name() + "\"");
+        INFO("unsupported DICOM transfer syntax: \"" + data_as_string + "\" in file \"" + fmap->name() + "\"");
       }
-      break;
+    } break;
     }
 
     break;
@@ -378,7 +386,7 @@ std::string Element::as_string() const {
     case Element::DATETIME:
       return str(get_datetime().first) + " " + str(get_datetime().second);
     case Element::STRING:
-      if (group == GROUP_DATA && element == ELEMENT_DATA) {
+      if (group == group_data && element == element_data) {
         return "(data)";
       } else {
         for (const auto &x : get_string())
@@ -388,11 +396,11 @@ std::string Element::as_string() const {
     case Element::SEQ:
       return "";
     default:
-      if (group != GROUP_SEQUENCE || element != ELEMENT_SEQUENCE_ITEM)
+      if (group != group_sequence || element != element_sequence_item)
         return "unknown data type";
     }
   } catch (Exception &e) {
-    DEBUG("Error converting data at offset " + str(offset(start)) + " to " + type_as_str[type()] + " type: ");
+    DEBUG("Error converting data at offset " + str(offset(start)) + " to " + type_as_str.at(type()) + " type: ");
     for (auto &s : e.description)
       DEBUG(s);
     return "invalid entry";
@@ -408,19 +416,19 @@ template <class T> inline void print_vec(const std::vector<T> &V) {
 } // namespace
 
 void Element::error_in_get(size_t idx) const {
-  const std::string &name(tag_name());
-  DEBUG("value not found for DICOM tag " +             //
-        printf("%04X %04X ", group, element) +         //
-        (!name.empty() ? name.substr(2) : "unknown") + //
-        " (at index " + str(idx) + ")");
+  const std::string name(tag_name());
+  DEBUG("value not found for DICOM tag " +            //
+        printf("%04X %04X ", group, element) +        //
+        (name.empty() ? "unknown" : name.substr(2)) + //
+        " (at index " + str(idx) + ")");              //
 }
 
 void Element::error_in_check_size(size_t min_size, size_t actual_size) const {
-  const std::string &name(tag_name());
-  throw Exception("not enough items in for DICOM tag " +         //
-                  printf("%04X %04X ", group, element) +         //
-                  (!name.empty() ? name.substr(2) : "unknown") + //
-                  " (expected " + str(min_size) + ", got " + str(actual_size) + ")");
+  const std::string name(tag_name());
+  throw Exception("not enough items in for DICOM tag " +                              //
+                  printf("%04X %04X ", group, element) +                              //
+                  (name.empty() ? "unknown" : name.substr(2)) +                       //
+                  " (expected " + str(min_size) + ", got " + str(actual_size) + ")"); //
 }
 
 void Element::report_unknown_tag_with_implicit_syntax() const {
@@ -433,13 +441,13 @@ void Element::report_unknown_tag_with_implicit_syntax() const {
 std::ostream &operator<<(std::ostream &stream, const Element &item) {
   // return "TYPE  GROUP ELEMENT VR  SIZE  OFFSET  NAME                               CONTENTS";
 
-  const std::string &name(item.tag_name());
+  const std::string name(item.tag_name());
   stream << printf("[DCM] %04X %04X %c%c % 8u % 8llu ",
                    item.group,
                    item.element,
                    reinterpret_cast<const char *>(&item.VR)[1],
                    reinterpret_cast<const char *>(&item.VR)[0],
-                   (item.size == LENGTH_UNDEFINED ? uint32_t(0) : item.size),
+                   (item.size == undefined_length ? uint32_t(0) : item.size),
                    item.offset(item.start));
 
   std::string tmp;
@@ -448,11 +456,11 @@ std::ostream &operator<<(std::ostream &stream, const Element &item) {
     tmp += "  ";
   if (item.is_new_sequence())
     tmp += "> ";
-  else if (item.group == GROUP_SEQUENCE && item.element == ELEMENT_SEQUENCE_ITEM)
+  else if (item.group == group_sequence && item.element == element_sequence_item)
     tmp += "- ";
   else
     tmp += "  ";
-  tmp += (!name.empty() ? name.substr(2) : "unknown");
+  tmp += (name.empty() ? "unknown" : name.substr(2));
   tmp.resize(40, ' ');
   stream << tmp << " " << item.as_string() << "\n";
 

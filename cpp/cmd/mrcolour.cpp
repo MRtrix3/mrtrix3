@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -34,11 +34,9 @@ std::vector<std::string> colourmap_choices;
 // clang-format off
 void usage() {
 
-  for(const auto& entry : ColourMap::maps) {
-    const bool is_complex = strcmp(entry.name, "Complex") == 0;
-    if(!is_complex) {
+  for (const auto& entry : ColourMap::maps) {
+    if (entry.name != "Complex")
       colourmap_choices.push_back(lowercase(entry.name));
-    }
   }
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
@@ -82,7 +80,7 @@ void usage() {
 void run() {
   Header H_in = Header::open(argument[0]);
   const ColourMap::Entry colourmap = ColourMap::maps[argument[1]];
-  Eigen::Vector3d fixed_colour(NaN, NaN, NaN);
+  Eigen::Vector3d fixed_colour(Eigen::Vector3d::Constant(NaN));
   if (colourmap.is_colour) {
     if (!(H_in.ndim() == 3 || (H_in.ndim() == 4 && H_in.size(3) == 1)))
       throw Exception("For applying a fixed colour, command expects a 3D image as input");
@@ -110,10 +108,10 @@ void run() {
   }
 
   auto in = H_in.get_image<float>();
-  float lower = colourmap.is_rgb ? 0.0 : get_option_value("lower", NaN);
-  float upper = get_option_value("upper", NaN);
+  float lower = colourmap.is_rgb ? 0.0 : get_option_value("lower", NaNF);
+  float upper = get_option_value("upper", NaNF);
   if (!std::isfinite(lower) || !std::isfinite(upper)) {
-    float image_min = NaN, image_max = NaN;
+    float image_min = NaNF, image_max = NaNF;
     min_max(in, image_min, image_max);
     if (colourmap.is_rgb) { // RGB
       image_max = std::max(MR::abs(image_min), MR::abs(image_max));

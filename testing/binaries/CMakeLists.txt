@@ -31,7 +31,8 @@ add_bash_binary_test(5tt2gmwmi/default)
 
 add_bash_binary_test(5tt2vis/default)
 
-add_bash_binary_test(5ttedit/default)
+add_bash_binary_test(5ttedit/onetissue)
+add_bash_binary_test(5ttedit/twotissues)
 
 add_bash_binary_test(amp2sh/default)
 
@@ -73,6 +74,7 @@ add_bash_binary_test(dirrotate/default)
 add_bash_binary_test(dirrotate/onerotation)
 
 add_bash_binary_test(dwi2adc/default)
+add_bash_binary_test(dwi2adc/ivim)
 
 add_bash_binary_test(dwi2fod/csd_default)
 add_bash_binary_test(dwi2fod/csd_lmax)
@@ -135,12 +137,10 @@ add_bash_binary_test(fixel2voxel/sum)
 add_bash_binary_test(fixelcfestats/default)
 add_bash_binary_test(fixelcfestats/legacy)
 add_bash_binary_test(fixelcfestats/masked)
+add_bash_binary_test(fixelcfestats/posthoc)
 
 add_bash_binary_test(fixelconnectivity/masked)
 add_bash_binary_test(fixelconnectivity/weighted)
-
-add_bash_binary_test(fixelconvert/new_to_old)
-add_bash_binary_test(fixelconvert/old_to_new)
 
 add_bash_binary_test(fixelcorrespondence/default)
 
@@ -199,6 +199,7 @@ add_bash_binary_test(maskfilter/erode)
 add_bash_binary_test(maskfilter/median)
 
 add_bash_binary_test(mesh2voxel/default)
+add_bash_binary_test(mesh2voxel/input_4D)
 
 add_bash_binary_test(meshconvert/big_endian)
 add_bash_binary_test(meshconvert/little_endian)
@@ -234,8 +235,8 @@ add_bash_binary_test(mrcat/singlevoxel)
 
 add_bash_binary_test(mrclusterstats/clustersize)
 add_bash_binary_test(mrclusterstats/default)
-add_bash_binary_test(mrclusterstats/legacy)
 add_bash_binary_test(mrclusterstats/masked)
+add_bash_binary_test(mrclusterstats/posthoc)
 
 add_bash_binary_test(mrcolour/bothlimits)
 add_bash_binary_test(mrcolour/map_cool)
@@ -403,6 +404,11 @@ add_bash_binary_test(shconv/msmt)
 add_bash_binary_test(tck2connectome/assignment_forward_search)
 add_bash_binary_test(tck2connectome/default)
 
+add_bash_binary_test(tck2fixel/default)
+add_bash_binary_test(tck2fixel/phantom_precise)
+add_bash_binary_test(tck2fixel/phantom_unweighted)
+add_bash_binary_test(tck2fixel/phantom_weighted)
+
 add_bash_binary_test(tckconvert/rib_write)
 add_bash_binary_test(tckconvert/scanner2voxel)
 add_bash_binary_test(tckconvert/text_read_range)
@@ -432,6 +438,10 @@ add_bash_binary_test(tckgen/seed_image)
 add_bash_binary_test(tckgen/seed_random_per_voxel)
 add_bash_binary_test(tckgen/seed_rejection)
 add_bash_binary_test(tckgen/seed_sphere)
+
+add_bash_binary_test(tckglobal/default)
+add_bash_binary_test(tckglobal/masked)
+add_bash_binary_test(tckglobal/multitissue)
 
 add_bash_binary_test(tckmap/dec)
 add_bash_binary_test(tckmap/default_template)
@@ -464,6 +474,7 @@ add_bash_binary_test(tensor2metric/dkt)
 add_bash_binary_test(tensor2metric/eigenvalues)
 add_bash_binary_test(tensor2metric/eigenvectors)
 add_bash_binary_test(tensor2metric/fa)
+add_bash_binary_test(tensor2metric/mo_na)
 
 add_bash_binary_test(transformcalc/average)
 add_bash_binary_test(transformcalc/header)

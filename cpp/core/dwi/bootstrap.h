@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,8 +18,7 @@
 
 #include "adapter/base.h"
 
-namespace MR {
-namespace DWI {
+namespace MR::DWI {
 
 template <class ImageType, class Functor, size_t NUM_VOX_PER_CHUNK = 256>
 class Bootstrap : public Adapter::Base<Bootstrap<ImageType, Functor, NUM_VOX_PER_CHUNK>, ImageType> {
@@ -108,5 +107,4 @@ protected:
   }
 };
 
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,12 +20,11 @@
 #include "mrview/mode/base.h"
 #include "opengl/transformation.h"
 
-namespace MR::GUI::MRView {
-namespace Tool {
+namespace MR::GUI::MRView::Tool {
 class View;
-}
+} // namespace MR::GUI::MRView::Tool
 
-namespace Mode {
+namespace MR::GUI::MRView::Mode {
 
 class Volume : public Base {
 public:
@@ -62,5 +61,4 @@ protected:
   bool get_clipintersectionmodestate() const;
 };
 
-} // namespace Mode
-} // namespace MR::GUI::MRView
+} // namespace MR::GUI::MRView::Mode

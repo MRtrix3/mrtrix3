@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -113,7 +113,7 @@ void transform_for_nifti_write(KeyValues &keyval, const Header &H) {
   }
 }
 
-std::string resolve_slice_timing(const std::string &one, const std::string &two) {
+std::string resolve_slice_timing(std::string_view one, std::string_view two) {
   if (one == "variable" || two == "variable")
     return "variable";
   std::vector<std::string> one_split = split(one, ",");
@@ -133,18 +133,18 @@ std::string resolve_slice_timing(const std::string &one, const std::string &two)
       DEBUG("Error converting slice timing vector to floating-point");
       return "invalid";
     }
-    const default_type diff = abs(f_two - f_one);
+    const default_type diff = std::fabs(f_two - f_one);
     if (diff > 0.00375) {
       DEBUG("Supra-threshold difference of " + str(diff) + "s in slice times");
       return "variable";
     }
   }
-  return one;
+  return std::string(one);
 }
 
 void clear(KeyValues &keyval) {
-  auto erase = [](KeyValues &keyval, const std::string &s) {
-    auto it = keyval.find(s);
+  auto erase = [](KeyValues &keyval, std::string_view s) {
+    auto it = keyval.find(std::string(s));
     if (it != keyval.end())
       keyval.erase(it);
   };

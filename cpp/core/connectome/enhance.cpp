@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,20 +19,18 @@
 
 #include "progressbar.h"
 
-#include "misc/bitset.h"
-
 namespace MR::Connectome::Enhance {
 
 void PassThrough::operator()(in_column_type in, out_column_type out) const { out = in; }
 
 void NBS::operator()(in_column_type in, const value_type T, out_column_type out) const {
   out.setZero();
-  BitSet visited(in.size());
+  Eigen::Array<bool, Eigen::Dynamic, 1> visited(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(in.size()));
 
   for (ssize_t seed = 0; seed != in.size(); ++seed) {
     if (std::isfinite(in[seed]) && in[seed] >= T && !out[seed]) {
 
-      visited.clear();
+      visited.setZero();
       visited[seed] = true;
       std::vector<size_t> to_expand(1, seed);
       size_t cluster_size = 0;

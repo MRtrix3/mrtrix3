@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,7 @@
  */
 
 #include "command.h"
+#include "enum.h"
 #include "header.h"
 #include "surface/filter/vertex_transform.h"
 #include "surface/mesh.h"
@@ -24,7 +25,7 @@ using namespace MR;
 using namespace App;
 using namespace MR::Surface;
 
-const std::vector<std::string> transform_choices = {"first2real", "real2first", "voxel2real", "real2voxel", "fs2real"};
+enum class TransformChoice { First2Real, Real2First, Voxel2Real, Real2Voxel, Fs2Real };
 
 // clang-format off
 void usage() {
@@ -42,8 +43,8 @@ void usage() {
 
   + Option ("transform", "transform vertices from one coordinate space to another,"
                          " based on a template image;"
-                         " options are: " + join(transform_choices, ", "))
-    + Argument ("mode").type_choice (transform_choices)
+                         " options are: " + MR::Enum::join<TransformChoice>() + ".")
+    + Argument ("mode").type_choice<TransformChoice>()
     + Argument ("image").type_image_in();
 
 }
@@ -68,20 +69,20 @@ void run() {
   if (!opt.empty()) {
     auto H = Header::open(opt[0][1]);
     auto transform = std::make_unique<Surface::Filter::VertexTransform>(H);
-    switch (int(opt[0][0])) {
-    case 0:
+    switch (MR::Enum::from_name<TransformChoice>(opt[0][0])) {
+    case TransformChoice::First2Real:
       transform->set_first2real();
       break;
-    case 1:
+    case TransformChoice::Real2First:
       transform->set_real2first();
       break;
-    case 2:
+    case TransformChoice::Voxel2Real:
       transform->set_voxel2real();
       break;
-    case 3:
+    case TransformChoice::Real2Voxel:
       transform->set_real2voxel();
       break;
-    case 4:
+    case TransformChoice::Fs2Real:
       transform->set_fs2real();
       break;
     default:

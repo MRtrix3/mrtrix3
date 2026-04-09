@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,8 @@
  */
 
 #pragma once
+
+#include <array>
 
 #include "opengl/shader.h"
 
@@ -49,16 +51,18 @@ public:
     gl::Disable(gl::BLEND);
   }
 
-  void render(const std::string &text, int x, int y) const;
+  void render(std::string_view text, int x, int y) const;
 
 protected:
   const QFont font;
   GL::Texture tex;
-  GL::VertexBuffer vertex_buffer[2];
+  std::array<GL::VertexBuffer, 2> vertex_buffer;
   GL::VertexArrayObject vertex_array_object;
   GL::Shader::Program program;
-  int font_width[256], font_height;
-  float font_tex_pos[256], font_tex_width[256];
+  std::array<int, 256> font_width;
+  int font_height;
+  std::array<float, 256> font_tex_pos;
+  std::array<float, 256> font_tex_width;
 };
 
 } // namespace MR::GUI::GL

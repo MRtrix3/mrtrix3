@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -30,9 +30,7 @@ using namespace App;
 // TODO Do we need to support both mathematics and physics conventions for spherical coordinates?
 // And if so, where do we do it?
 
-const std::vector<std::string> formats = {"unitspherical", "spherical", "unit3vector", "3vector"};
-enum class format_t { UNITSPHERICAL, SPHERICAL, UNITTHREEVECTOR, THREEVECTOR };
-const std::vector<std::string> references = {"xyz", "ijk", "fsl"};
+enum class format_t { UNITSPHERICAL, SPHERICAL, UNITCARTESIAN, CARTESIAN };
 enum class reference_t { XYZ, IJK, FSL };
 
 using transform_linear_type = Eigen::Matrix<default_type, 3, 3>;
@@ -61,15 +59,15 @@ void usage() {
       " is represented using 3 sequential volumes,"
       " with associated value (\"radius\") first,"
       " followed by aximuth and inclination angles in radians;"
-    " - \"unit3vector\": Each orientation is represented using 3 sequential volumes"
+    " - \"unitcartesian\": Each orientation is represented using 3 sequential volumes"
       " encoded as three dot products with respect to three orthogonal reference axes;"
-    " - \"3vector\": Each orientation and associated non-negative value"
+    " - \"cartesian\": Each orientation and associated non-negative value"
       " is represented using 3 sequential volumes,"
       " with the norm of that 3-vector encoding the associated value"
       " and the unit-normalised vector encoding the three dot products"
       " with respect to three orthogonal reference axes."
     " The default behaviour throughout MRtrix3"
-    " is to interpret data as either \"unit3vector\" or \"3vector\""
+    " is to interpret data as either \"unitcartesian\" or \"cartesian\""
     " depending upon the context and/or presence of non-unit norm vectors in the data."
 
   + "For -in_reference and -out_reference options,"
@@ -101,19 +99,19 @@ void usage() {
   + OptionGroup ("Options providing information about the input image")
   + Option ("in_format", "specify the format in which the input directions are specified"
                          " (see Description)")
-    + Argument("choice").type_choice(formats)
+    + Argument("choice").type_choice<format_t>()
   + Option ("in_reference", "specify the reference axes against which the input directions are specified"
                             " (see Description)")
-    + Argument("choice").type_choice(references)
+    + Argument("choice").type_choice<reference_t>()
   // TODO Add option to import amplitudes to fuse with unit orientations / overwrite existing values
 
   + OptionGroup ("Options providing information about the output image")
   + Option ("out_format", "specify the format in which the output directions will be specified"
                           " (see Description)")
-    + Argument("choice").type_choice(formats)
+    + Argument("choice").type_choice<format_t>()
   + Option ("out_reference", "specify the reference axes against which the output directions will be specified"
                              " (see Description)")
-    + Argument("choice").type_choice(references);
+    + Argument("choice").type_choice<reference_t>();
   // TODO Implement -fill
   //+ Option ("fill", "specify value to be inserted into output image in the absence of valid information")
   //  + Argument("value").type_float();
@@ -124,38 +122,6 @@ void usage() {
 }
 // clang-format on
 
-format_t format_from_option(const std::string &option_name) {
-  auto opt = get_options(option_name);
-  if (opt.empty())
-    return format_t::THREEVECTOR;
-  switch (int(opt[0][0])) {
-  case 0:
-    return format_t::UNITSPHERICAL;
-  case 1:
-    return format_t::SPHERICAL;
-  case 2:
-    return format_t::UNITTHREEVECTOR;
-  case 3:
-    return format_t::THREEVECTOR;
-  default:
-    throw Exception("Unsupported input to option -" + option_name);
-  }
-}
-reference_t reference_from_option(const std::string &option_name) {
-  auto opt = get_options(option_name);
-  if (opt.empty())
-    return reference_t::XYZ;
-  switch (int(opt[0][0])) {
-  case 0:
-    return reference_t::XYZ;
-  case 1:
-    return reference_t::IJK;
-  case 2:
-    return reference_t::FSL;
-  default:
-    throw Exception("Unsupported input to option -" + option_name);
-  }
-}
 size_t volumes_per_fixel(format_t format) { return format == format_t::UNITSPHERICAL ? 2 : 3; }
 
 template <size_t NumElements> class FormatBase {
@@ -516,12 +482,12 @@ void run(format_t in_format,
     run<Spherical, out_reference, OutFixelType>(in_reference, in_fixel_image, out_fixel_image);
     return;
   }
-  case format_t::UNITTHREEVECTOR: {
+  case format_t::UNITCARTESIAN: {
     FixelImage<UnitThreeVector> in_fixel_image(input_image);
     run<UnitThreeVector, out_reference, OutFixelType>(in_reference, in_fixel_image, out_fixel_image);
     return;
   }
-  case format_t::THREEVECTOR: {
+  case format_t::CARTESIAN: {
     FixelImage<ThreeVector> in_fixel_image(input_image);
     run<ThreeVector, out_reference, OutFixelType>(in_reference, in_fixel_image, out_fixel_image);
     return;
@@ -567,12 +533,12 @@ void run(format_t in_format,
     run(in_format, in_reference, input_image, out_reference, out_fixel_image);
     return;
   }
-  case format_t::UNITTHREEVECTOR: {
+  case format_t::UNITCARTESIAN: {
     FixelImage<UnitThreeVector> out_fixel_image(output_image);
     run(in_format, in_reference, input_image, out_reference, out_fixel_image);
     return;
   }
-  case format_t::THREEVECTOR: {
+  case format_t::CARTESIAN: {
     FixelImage<ThreeVector> out_fixel_image(output_image);
     run(in_format, in_reference, input_image, out_reference, out_fixel_image);
     return;
@@ -588,20 +554,20 @@ void run() {
   if (H_in.ndim() != 4)
     throw Exception("Input image must be 4D");
 
-  const format_t in_format(format_from_option("in_format"));
+  const format_t in_format(get_option_choice<format_t>("in_format", format_t::CARTESIAN));
   const size_t in_volumes_per_fixel(volumes_per_fixel(in_format));
   const size_t num_fixels = H_in.size(3) / in_volumes_per_fixel;
   if (num_fixels * in_volumes_per_fixel != H_in.size(3))
     throw Exception("Number of volumes in input image (" + str(H_in.size(3)) + ")" + " incompatible with " +
                     str(volumes_per_fixel) + " volumes per orientation");
-  const reference_t in_reference(reference_from_option("in_reference"));
+  const reference_t in_reference(get_option_choice<reference_t>("in_reference", reference_t::XYZ));
 
-  const format_t out_format(format_from_option("out_format"));
-  if ((in_format == format_t::SPHERICAL || in_format == format_t::THREEVECTOR) &&
-      (out_format == format_t::UNITSPHERICAL || out_format == format_t::UNITTHREEVECTOR)) {
+  const format_t out_format(get_option_choice<format_t>("out_format", format_t::CARTESIAN));
+  if ((in_format == format_t::SPHERICAL || in_format == format_t::CARTESIAN) &&
+      (out_format == format_t::UNITSPHERICAL || out_format == format_t::UNITCARTESIAN)) {
     WARN("Output image will not include amplitudes that may be present in input image due to chosen format");
   }
-  const reference_t out_reference(reference_from_option("out_reference"));
+  const reference_t out_reference(get_option_choice<reference_t>("out_reference", reference_t::XYZ));
 
   Header H_out(H_in);
   H_out.name() = std::string(argument[1]);
