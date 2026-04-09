@@ -137,6 +137,7 @@ add_bash_binary_test(fixel2voxel/sum)
 add_bash_binary_test(fixelcfestats/default)
 add_bash_binary_test(fixelcfestats/legacy)
 add_bash_binary_test(fixelcfestats/masked)
+add_bash_binary_test(fixelcfestats/posthoc)
 
 add_bash_binary_test(fixelconnectivity/masked)
 add_bash_binary_test(fixelconnectivity/weighted)
@@ -234,8 +235,8 @@ add_bash_binary_test(mrcat/singlevoxel)
 
 add_bash_binary_test(mrclusterstats/clustersize)
 add_bash_binary_test(mrclusterstats/default)
-add_bash_binary_test(mrclusterstats/legacy)
 add_bash_binary_test(mrclusterstats/masked)
+add_bash_binary_test(mrclusterstats/posthoc)
 
 add_bash_binary_test(mrcolour/bothlimits)
 add_bash_binary_test(mrcolour/map_cool)

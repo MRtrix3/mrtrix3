@@ -33,6 +33,7 @@ using namespace App;
 using namespace MR::Math::Stats;
 using namespace MR::Math::Stats::GLM;
 
+using MR::Math::Stats::element_mask_type;
 using MR::Math::Stats::index_type;
 
 // clang-format off
@@ -43,30 +44,41 @@ void usage() {
   SYNOPSIS = "Statistical testing of vector data using non-parametric permutation testing";
 
   DESCRIPTION
-  + "This command can be used to perform permutation testing of any form of data."
-    " The data for each input subject must be stored in a text file,"
-    " with one value per row."
-    " The data for each row across subjects will be tested independently,"
-    " i.e. there is no statistical enhancement that occurs between the data;"
-    " however family-wise error control will be used."
+  + "This command can be used to perform permutation testing of any form of data. "
+    "The data for each input subject must be stored in a text file, with one value per row. "
+    "The data for each row across subjects will be tested independently, i.e. there is no "
+    "statistical enhancement that occurs between the data; however family-wise error control "
+    "will be used."
+
+  + "Unlike other statistical inference commands, vectorstats does not provide separate "
+    "command-line options for masking those elements to contribute to processing versus "
+    "those elements that contribute to statistical inference (i.e. a post-hoc mask). This is "
+    "because the difference between these two constructs is whether or not any particular "
+    "element will or will not contribute to statistical enhancement, yet the defining feature "
+    "of vectorstats is that no statistical enhancement is performed."
 
   + Math::Stats::GLM::column_ones_description;
 
   ARGUMENTS
-  + Argument ("input", "a text file listing the file names of the input subject data").type_file_in()
-  + Argument ("design", "the design matrix").type_file_in()
-  + Argument ("contrast", "the contrast matrix").type_file_in()
-  + Argument ("output", "the filename prefix for all output").type_text();
+  + Argument("input", "a text file listing the file names of the input subject data").type_file_in()
+  + Argument("design", "the design matrix").type_file_in()
+  + Argument("output", "the filename prefix for all output").type_text();
 
   OPTIONS
-  + Math::Stats::shuffle_options(false)
-  + Math::Stats::GLM::glm_options("element");
+  + OptionGroup("Options for constraining analysis to specific elements")
+    + Option("mask", "provide a vector file specifying a mask of those elements to contribute to processing")
+      + Argument("file").type_file_in()
 
+  + Math::Stats::shuffle_options(false)
+
+  + Math::Stats::GLM::glm_options("element");
 }
 // clang-format on
 
 using Math::Stats::matrix_type;
-using Math::Stats::vector_type;
+using Math::Stats::measurements_matrix_type;
+using Math::Stats::measurements_value_type;
+using Math::Stats::measurements_vector_type;
 using Stats::PermTest::count_matrix_type;
 
 // Define data importer class that willl obtain data for a
@@ -79,14 +91,15 @@ using Stats::PermTest::count_matrix_type;
 
 class SubjectVectorImport : public SubjectDataImportBase {
 public:
-  SubjectVectorImport(std::string_view path) : SubjectDataImportBase(path), data(File::Matrix::load_vector(path)) {}
+  SubjectVectorImport(std::string_view path)
+      : SubjectDataImportBase(path), data(File::Matrix::load_vector<measurements_value_type>(path)) {}
 
-  void operator()(matrix_type::RowXpr row) const override {
+  void operator()(measurements_matrix_type::RowXpr row) const override {
     assert(static_cast<index_type>(row.size()) == size());
     row = data;
   }
 
-  default_type operator[](const index_type index) const override {
+  measurements_value_type operator[](const index_type index) const override {
     assert(index < size());
     return data[index];
   }
@@ -94,7 +107,7 @@ public:
   index_type size() const override { return data.size(); }
 
 private:
-  const vector_type data;
+  const measurements_vector_type data;
 };
 
 void run() {
@@ -104,7 +117,7 @@ void run() {
   //   a text file containing raw numerical matrix data, rather than
   //   a list of files
   CohortDataImport importer;
-  matrix_type data;
+  measurements_matrix_type data;
   index_type num_inputs = 0, num_elements = 0;
   try {
     importer.initialise<SubjectVectorImport>(argument[0]);
@@ -112,15 +125,15 @@ void run() {
     num_elements = importer[0]->size();
     for (index_type i = 0; i != importer.size(); ++i) {
       if (importer[i]->size() != num_elements)
-        throw Exception("Subject file \"" + importer[i]->name() + "\" contains incorrect number of elements (" +
-                        str(importer[i]) + "; expected " + str(num_elements) + ")");
+        throw Exception("Subject file \"" + importer[i]->name() + "\" contains incorrect number of elements" + //
+                        " (" + str(importer[i]) + "; expected " + str(num_elements) + ")");                    //
     }
     data.resize(num_inputs, num_elements);
     for (index_type subject = 0; subject != num_inputs; subject++)
       (*importer[subject])(data.row(subject));
   } catch (Exception &e_asfilelist) {
     try {
-      data = File::Matrix::load_matrix(argument[0]);
+      data = File::Matrix::load_matrix<measurements_matrix_type::Scalar>(argument[0]);
       num_inputs = data.rows();
       num_elements = data.cols();
     } catch (Exception &e_asmatrix) {
@@ -135,17 +148,28 @@ void run() {
   CONSOLE("Number of subjects: " + str(num_inputs));
   CONSOLE("Number of elements: " + str(num_elements));
 
+  // Load analysis mask
+  element_mask_type mask(element_mask_type::Ones(num_elements));
+  auto opt = get_options("mask");
+  if (!opt.empty()) {
+    mask = File::Matrix::load_vector<bool>(opt[0][0]);
+    if (index_type(mask.size()) != num_elements)
+      throw Exception("Length of mask (" + str(mask.size()) + ")" +
+                      " does not match number of elements in data matrix (" + str(num_elements) + ")");
+    CONSOLE("Number of elements included in mask: " + str(mask.count()));
+  }
+
   // Load design matrix
   const matrix_type design = File::Matrix::load_matrix(argument[1]);
   if (static_cast<index_type>(design.rows()) != num_inputs)
-    throw Exception("Number of subjects (" + str(num_inputs) + ") does not match number of rows in design matrix (" +
-                    str(design.rows()) + ")");
+    throw Exception("Number of subjects (" + str(num_inputs) + ")" +
+                    " does not match number of rows in design matrix (" + str(design.rows()) + ")");
 
   // Before validating the contrast matrix, we first need to see if there are any
   //   additional design matrix columns coming from element-wise subject data
   std::vector<CohortDataImport> extra_columns;
   bool nans_in_columns = false;
-  auto opt = get_options("column");
+  opt = get_options("column");
   for (size_t i = 0; i != opt.size(); ++i) {
     extra_columns.push_back(CohortDataImport());
     extra_columns[i].initialise<SubjectVectorImport>(opt[i][0]);
@@ -161,16 +185,16 @@ void run() {
       CONSOLE("Non-finite values detected in element-wise design matrix columns;"
               " individual rows will be removed from voxel-wise design matrices accordingly");
   }
-  check_design(design, have_extra_columns);
+  Math::Stats::GLM::check_design(design, have_extra_columns);
 
   // Load variance groups
   auto variance_groups = GLM::load_variance_groups(num_inputs);
-  const index_type num_vgs = variance_groups.size() ? variance_groups.maxCoeff() + 1 : 1;
+  const index_type num_vgs = variance_groups.size() == 0 ? 1 : (variance_groups.maxCoeff() + 1);
   if (num_vgs > 1)
     CONSOLE("Number of variance groups: " + str(num_vgs));
 
   // Load hypotheses
-  const std::vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses(argument[2]);
+  const std::vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses(num_factors);
   const index_type num_hypotheses = hypotheses.size();
   if (hypotheses[0].cols() != num_factors)
     throw Exception(
@@ -179,7 +203,7 @@ void run() {
         (have_extra_columns ? " (taking into account the " + str(extra_columns.size()) + " uses of -column)" : ""));
   CONSOLE("Number of hypotheses: " + str(num_hypotheses));
 
-  const std::string output_prefix = argument[3];
+  const std::string output_prefix = argument[2];
 
   const bool nans_in_data = !data.allFinite();
   if (nans_in_data) {
@@ -203,63 +227,71 @@ void run() {
     Math::Stats::GLM::all_stats(
         data, design, extra_columns, hypotheses, variance_groups, cond, betas, abs_effect_size, std_effect_size, stdev);
 
+    if (variable_design_matrix)
+      Math::Stats::GLM::check_design(cond);
+
     ProgressBar progress("Outputting beta coefficients, effect size and standard deviation",
                          2 + (2 * num_hypotheses) + (variable_design_matrix ? 1 : 0));
     File::Matrix::save_matrix(betas, output_prefix + "betas.csv");
     ++progress;
     for (index_type i = 0; i != num_hypotheses; ++i) {
       if (!hypotheses[i].is_F()) {
-        File::Matrix::save_vector(abs_effect_size.col(i), output_prefix + "abs_effect" + postfix(i) + ".csv");
+        File::Matrix::save_vector(abs_effect_size.array().col(i) * mask.cast<matrix_type::Scalar>(),
+                                  output_prefix + "abs_effect" + postfix(i) + ".csv");
         ++progress;
         if (num_vgs == 1)
-          File::Matrix::save_vector(std_effect_size.col(i), output_prefix + "std_effect" + postfix(i) + ".csv");
+          File::Matrix::save_vector(std_effect_size.array().col(i) * mask.cast<matrix_type::Scalar>(),
+                                    output_prefix + "std_effect" + postfix(i) + ".csv");
       } else {
         ++progress;
       }
       ++progress;
     }
     if (variable_design_matrix) {
-      File::Matrix::save_vector(cond, output_prefix + "cond.csv");
+      File::Matrix::save_vector(cond * mask.cast<matrix_type::Scalar>(), output_prefix + "cond.csv");
       ++progress;
     }
-    if (num_vgs == 1)
-      File::Matrix::save_vector(stdev.row(0), output_prefix + "std_dev.csv");
-    else
+    if (num_vgs == 1) {
+      File::Matrix::save_vector(stdev.array().row(0) * mask.transpose().cast<matrix_type::Scalar>(),
+                                output_prefix + "std_dev.csv");
+    } else {
+      stdev = stdev.array().colwise() * mask.cast<matrix_type::Scalar>();
       File::Matrix::save_matrix(stdev, output_prefix + "std_dev.csv");
+    }
   }
 
   // Construct the class for performing the initial statistical tests
-  std::shared_ptr<GLM::TestBase> glm_test;
+  std::unique_ptr<GLM::TestBase> glm_test;
   if (variable_design_matrix) {
-    if (variance_groups.size())
-      glm_test.reset(new GLM::TestVariableHeteroscedastic(
-          extra_columns, data, design, hypotheses, variance_groups, nans_in_data, nans_in_columns));
+    if (variance_groups.size() > 0)
+      glm_test = std::make_unique<GLM::TestVariableHeteroscedastic>(
+          data, design, hypotheses, variance_groups, extra_columns, nans_in_data, nans_in_columns);
     else
-      glm_test.reset(
-          new GLM::TestVariableHomoscedastic(extra_columns, data, design, hypotheses, nans_in_data, nans_in_columns));
+      glm_test = std::make_unique<GLM::TestVariableHomoscedastic>(
+          data, design, hypotheses, extra_columns, nans_in_data, nans_in_columns);
   } else {
-    if (variance_groups.size())
-      glm_test.reset(new GLM::TestFixedHeteroscedastic(data, design, hypotheses, variance_groups));
+    if (variance_groups.size() > 0)
+      glm_test = std::make_unique<GLM::TestFixedHeteroscedastic>(data, design, hypotheses, variance_groups);
     else
-      glm_test.reset(new GLM::TestFixedHomoscedastic(data, design, hypotheses));
+      glm_test = std::make_unique<GLM::TestFixedHomoscedastic>(data, design, hypotheses);
   }
 
   // Precompute default statistic
   // Don't use convenience function: No enhancer!
   // Manually construct default shuffling matrix
   // TODO Change to use convenience function; we make an empty enhancer later anyway
-  const matrix_type default_shuffle(matrix_type::Identity(num_inputs, num_inputs));
+  const shuffle_matrix_type default_shuffle(shuffle_matrix_type::Identity(num_inputs, num_inputs));
   matrix_type default_statistic, default_zstat;
   (*glm_test)(default_shuffle, default_statistic, default_zstat);
   for (index_type i = 0; i != num_hypotheses; ++i) {
-    File::Matrix::save_matrix(default_statistic.col(i),
+    File::Matrix::save_vector(default_statistic.array().col(i) * mask.cast<matrix_type::Scalar>(),
                               output_prefix + (hypotheses[i].is_F() ? "F" : "t") + "value" + postfix(i) + ".csv");
-    File::Matrix::save_matrix(default_zstat.col(i), output_prefix + "Zstat" + postfix(i) + ".csv");
+    File::Matrix::save_vector(default_zstat.array().col(i) * mask.cast<matrix_type::Scalar>(),
+                              output_prefix + "Zstat" + postfix(i) + ".csv");
   }
 
   // Perform permutation testing
   if (get_options("notest").empty()) {
-
     const bool fwe_strong = !get_options("strong").empty();
     if (fwe_strong && num_hypotheses == 1) {
       WARN("Option -strong has no effect when testing a single hypothesis only");
@@ -274,6 +306,7 @@ void run() {
                                       empirical_distribution,
                                       default_zstat,
                                       fwe_strong,
+                                      mask,
                                       null_distribution,
                                       null_contributions,
                                       uncorrected_pvalues);
@@ -283,7 +316,7 @@ void run() {
       for (index_type i = 0; i != num_hypotheses; ++i)
         File::Matrix::save_vector(null_distribution.col(i), output_prefix + "null_dist" + postfix(i) + ".csv");
     }
-    const matrix_type fwe_pvalues = MR::Math::Stats::fwe_pvalue(null_distribution, default_zstat);
+    const matrix_type fwe_pvalues = MR::Math::Stats::fwe_pvalue(null_distribution, default_zstat, mask);
     for (index_type i = 0; i != num_hypotheses; ++i) {
       File::Matrix::save_vector(fwe_pvalues.col(i), output_prefix + "fwe_1mpvalue" + postfix(i) + ".csv");
       File::Matrix::save_vector(uncorrected_pvalues.col(i),

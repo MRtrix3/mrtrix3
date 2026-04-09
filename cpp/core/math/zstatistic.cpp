@@ -16,6 +16,8 @@
 
 #include "math/zstatistic.h"
 
+#include <mutex>
+
 #include "math/betainc.h"
 #include "math/erfinv.h"
 #include "math/hermite.h"
@@ -26,9 +28,9 @@
 namespace MR::Math {
 
 namespace {
-default_type F2z_upper(const default_type F, const size_t rank, const default_type dof) {
-  assert(F >= 1.0);
-  const default_type x = (dof / F) / (dof / F + static_cast<default_type>(rank));
+default_type F2z_upper(const default_type G, const size_t rank, const default_type dof) {
+  assert(G >= 1.0);
+  const default_type x = (dof / G) / (dof / G + static_cast<default_type>(rank));
   return Math::sqrt2 *
          Math::erfcinv(2.0 *
 #ifdef MRTRIX_HAVE_EIGEN_UNSUPPORTED_SPECIAL_FUNCTIONS
@@ -42,10 +44,10 @@ default_type F2z_upper(const default_type F, const size_t rank, const default_ty
          );
 }
 
-default_type F2z_lower(const default_type oneoverF, const size_t rank, const default_type dof) {
-  assert(oneoverF >= 1.0);
+default_type F2z_lower(const default_type oneoverG, const size_t rank, const default_type dof) {
+  assert(oneoverG >= 1.0);
   const default_type x =
-      (static_cast<default_type>(rank) / oneoverF) / (static_cast<default_type>(rank) / oneoverF + dof);
+      (static_cast<default_type>(rank) / oneoverG) / (static_cast<default_type>(rank) / oneoverG + dof);
   return Math::sqrt2 *
          Math::erfinv(2.0 *
 #ifdef MRTRIX_HAVE_EIGEN_UNSUPPORTED_SPECIAL_FUNCTIONS
@@ -60,8 +62,14 @@ default_type F2z_lower(const default_type oneoverF, const size_t rank, const def
 }
 } // namespace
 
-default_type t2z(const default_type stat, const default_type dof) {
-  const default_type x = dof / (Math::pow2(stat) + dof);
+default_type t2z(const default_type t, const size_t dof) { return v2z(t, static_cast<default_type>(dof)); }
+
+default_type F2z(const default_type F, const size_t rank, const size_t dof) {
+  return G2z(F, rank, static_cast<default_type>(dof));
+}
+
+default_type v2z(const default_type v, const default_type dof) {
+  const default_type x = dof / (Math::pow2(v) + dof);
   return Math::sqrt2 *
          Math::erfcinv(
 #ifdef MRTRIX_HAVE_EIGEN_UNSUPPORTED_SPECIAL_FUNCTIONS
@@ -72,47 +80,52 @@ default_type t2z(const default_type stat, const default_type dof) {
              Math::betaincreg(0.5 * dof, 0.5, x)
 #endif
                  ) *
-         (stat < 0.0 ? -1.0 : 1.0);
+         (v < 0.0 ? -1.0 : 1.0);
 }
 
-default_type F2z(const default_type F, const size_t rank, const default_type dof) {
-  if (F >= 1.0)
-    return F2z_upper(F, rank, dof);
+default_type G2z(const default_type G, const size_t rank, const default_type dof) {
+  assert(G >= 0.0);
+  if (G == default_type(0))
+    return -std::numeric_limits<default_type>::infinity();
+  if (G >= 1.0)
+    return F2z_upper(G, rank, dof);
   else
-    return F2z_lower(1.0 / F, rank, dof);
+    return F2z_lower(1.0 / G, rank, dof);
 }
 
-default_type Zstatistic::t2z(const default_type t, const size_t dof) {
-  auto it = t2z_data.find(dof);
-  if (it == t2z_data.end()) {
-    std::lock_guard<std::mutex> lock(mutex);
-    // Need to check again for presence of lookup table
-    //   now that we have the lock
-    it = t2z_data.find(dof);
+default_type Zstatistic::t2z(const default_type t, const size_t dof) const {
+  {
+    std::shared_lock lock(mutex);
+    auto it = t2z_data.find(dof);
+    if (it != t2z_data.end())
+      return (it->second)(t);
+  }
+  {
+    std::unique_lock lock(mutex);
+    auto it = t2z_data.find(dof);
     if (it == t2z_data.end())
       it = t2z_data.emplace(dof, Lookup_t2z(dof)).first;
+    return (it->second)(t);
   }
-  return (it->second)(t);
 }
 
-default_type Zstatistic::F2z(const default_type F, const size_t rank, const size_t dof) {
+default_type Zstatistic::F2z(const default_type F, const size_t rank, const size_t dof) const {
   const auto pair = std::make_pair(rank, dof);
-  auto it = F2z_data.find(pair);
-  if (it == F2z_data.end()) {
-    std::lock_guard<std::mutex> lock(mutex);
+  {
+    std::shared_lock lock(mutex);
+    auto it = F2z_data.find(pair);
+    if (it != F2z_data.end())
+      return (it->second)(F);
+  }
+  {
+    std::unique_lock lock(mutex);
     // Need to check again for presence of lookup table
     //   now that we have the lock
-    it = F2z_data.find(pair);
+    auto it = F2z_data.find(pair);
     if (it == F2z_data.end())
       it = F2z_data.emplace(pair, Lookup_F2z(rank, dof)).first;
+    return (it->second)(F);
   }
-  return (it->second)(F);
-}
-
-default_type Zstatistic::v2z(const default_type v, const default_type dof) { return Math::t2z(v, dof); }
-
-default_type Zstatistic::G2z(const default_type G, const size_t rank, const default_type dof) {
-  return Math::F2z(G, rank, dof);
 }
 
 // Function that will determine an interpolated value using

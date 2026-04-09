@@ -25,74 +25,77 @@
 
 namespace MR::Math::Stats {
 
-std::vector<std::string> error_types = {"ee", "ise", "both"};
-
+// clang-format off
 App::OptionGroup shuffle_options(const bool include_nonstationarity, const default_type default_skew) {
   using namespace App;
 
-  // clang-format off
-  OptionGroup result =
-      OptionGroup("Options relating to shuffling of data for nonparametric statistical inference")
-      + Option("notest",
-               "don't perform statistical inference;"
-               " only output population statistics"
-               " (effect size, stdev etc)")
-      + Option("errors",
-               "specify nature of errors for shuffling;"
-               " options are: " + join(error_types, ",") +
-               " (default: ee)")
-        + Argument("spec").type_choice(error_types)
-      + Option("exchange_within",
-               "specify blocks of observations within each of which data may undergo restricted exchange")
-        + Argument("file").type_file_in()
-      + Option("exchange_whole",
-               "specify blocks of observations that may be exchanged with one another"
-               " (for independent and symmetric errors, sign-flipping will occur block-wise)")
-        + Argument("file").type_file_in()
-      + Option("strong",
-               "use strong familywise error control across multiple hypotheses")
-      + Option("nshuffles",
-               "the number of shuffles"
-               " (default: " + str(default_numshuffles_nulldist) + ")")
-        + Argument("number").type_integer(1)
-      + Option("permutations",
-               "manually define the permutations (relabelling)."
-               " The input should be a text file defining a m x n matrix,"
-               " where each relabelling is defined as a column vector of size m,"
-               " and the number of columns n defines the number of permutations."
-               " Can be generated with the palm_quickperms function in PALM"
-               " (http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/PALM)."
-               " Overrides the -nshuffles option.")
-        + Argument("file").type_file_in();
+  OptionGroup result = OptionGroup("Options relating to shuffling of data for nonparametric statistical inference")
+
+  + Option("notest",
+           "don't perform statistical inference;"
+           " only output population statistics (effect size, stdev etc)")
+
+  + Option("errors",
+           "specify nature of errors for shuffling;"
+           " options are: " + Enum::join<Shuffler::error_t>(",") + " (default: ee)")
+    + Argument("spec").type_choice<Shuffler::error_t>()
+
+  + Option("exchange_within",
+           "specify blocks of observations within each of which data may undergo restricted exchange")
+    + Argument("file").type_file_in()
+
+  + Option("exchange_whole",
+           "specify blocks of observations that may be exchanged with one another "
+           "(for independent and symmetric errors, sign-flipping will occur block-wise)")
+    + Argument("file").type_file_in()
+
+  + Option("strong", "use strong familywise error control across multiple hypotheses")
+
+  + Option("nshuffles",
+           "the number of shuffles"
+           " (default: " + str(default_numshuffles_nulldist) + ")")
+    + Argument("number").type_integer(1)
+
+  + Option("permutations",
+           "manually define the permutations (relabelling). The input should be a text file defining a m x n matrix, "
+           "where each relabelling is defined as a column vector of size m, and the number of columns, n, defines "
+           "the number of permutations. Can be generated with the palm_quickperms function in PALM "
+           "(http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/PALM). "
+           "Overrides the -nshuffles option.")
+    + Argument("file").type_file_in();
 
   if (include_nonstationarity) {
-    result + Option("nonstationarity",
-                    "perform empirical non-parametric non-stationarity correction")
-           + Option("skew_nonstationarity",
-                    "specify the skew parameter for empirical statistic calculation"
-                    " (default for this command is " + str(default_skew) + ")")
-             + Argument("value").type_float(0.0)
-           + Option("nshuffles_nonstationarity",
-                    "the number of shuffles to use when precomputing the empirical statistic image"
-                    " for non-stationarity correction"
-                    " (default: " + str(default_numshuffles_nonstationarity) + ")")
-             + Argument("number").type_integer(1)
-           + Option("permutations_nonstationarity",
-                    "manually define the permutations (relabelling)"
-                    " for computing the emprical statistics for non-stationarity correction."
-                    " The input should be a text file defining a m x n matrix,"
-                    " where each relabelling is defined as a column vector of size m,"
-                    " and the number of columns n defines the number of permutations."
-                    " Can be generated with the palm_quickperms function in PALM"
-                    " (http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/PALM)."
-                    " Overrides the -nshuffles_nonstationarity option.")
-             + Argument("file").type_file_in();
+
+    result
+    + Option("nonstationarity", "perform empirical non-stationarity correction")
+
+    + Option("skew_nonstationarity",
+             "specify the skew parameter for empirical statistic calculation"
+             " (default for this command is " + str(default_skew) + ")")
+      + Argument("value").type_float(0.0)
+
+    + Option("nshuffles_nonstationarity",
+             "the number of shuffles to use when precomputing the empirical statistic image for non-stationarity correction"
+             " (default: " + str(default_numshuffles_nonstationarity) + ")")
+      + Argument("number").type_integer(1)
+
+    + Option("permutations_nonstationarity",
+             "manually define the permutations (relabelling) for computing the emprical statistics for "
+             "non-stationarity correction. "
+             "The input should be a text file defining a m x n matrix, where each relabelling is defined as a "
+             "column vector of size m, "
+             "and the number of columns, n, defines the number of permutations. Can be generated with the "
+             "palm_quickperms function in PALM "
+             "(http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/PALM) "
+             "Overrides the -nshuffles_nonstationarity option.")
+      + Argument("file").type_file_in();
   }
-  // clang-format on
+
   return result;
 }
+// clang-format on
 
-Shuffler::Shuffler(const index_type num_rows, const bool is_nonstationarity, const std::string msg)
+Shuffler::Shuffler(const index_type num_rows, const bool is_nonstationarity, std::string_view msg)
     : rows(num_rows),
       nshuffles(is_nonstationarity ? default_numshuffles_nonstationarity : default_numshuffles_nulldist),
       counter(0) {
@@ -169,7 +172,7 @@ Shuffler::Shuffler(const index_type num_rows,
                    const index_type num_shuffles,
                    const error_t error_types,
                    const bool is_nonstationarity,
-                   const std::string msg)
+                   std::string_view msg)
     : Shuffler(num_rows, num_shuffles, error_types, is_nonstationarity, index_array_type(), index_array_type(), msg) {}
 
 Shuffler::Shuffler(const index_type num_rows,
@@ -178,7 +181,7 @@ Shuffler::Shuffler(const index_type num_rows,
                    const bool is_nonstationarity,
                    const index_array_type &eb_within,
                    const index_array_type &eb_whole,
-                   const std::string msg)
+                   std::string_view msg)
     : rows(num_rows), nshuffles(num_shuffles) {
   initialise(error_types, true, is_nonstationarity, eb_within, eb_whole);
   if (!msg.empty())
@@ -193,20 +196,19 @@ bool Shuffler::operator()(Shuffle &output) {
     output.data.resize(0, 0);
     return false;
   }
-  // TESTME Think I need to adjust the signflips application based on the permutations
   if (!permutations.empty()) {
-    output.data = matrix_type::Zero(rows, rows);
+    output.data = shuffle_matrix_type::Zero(rows, rows);
     for (index_type i = 0; i != rows; ++i)
       output.data(i, permutations[counter][i]) = 1.0;
   } else {
-    output.data = matrix_type::Identity(rows, rows);
+    output.data = shuffle_matrix_type::Identity(rows, rows);
   }
   if (!signflips.empty()) {
     for (index_type r = 0; r != rows; ++r) {
       if (signflips[counter][r]) {
         for (index_type c = 0; c != rows; ++c) {
           if (output.data(r, c))
-            output.data(r, c) *= -1.0;
+            output.data(r, c) *= -1;
         }
       }
     }

@@ -7,15 +7,15 @@ In some datasets, the DWI images do not provide coverage of the entire brain
 cerebrum and cerebellum, due to poor placement of the imaging field of view
 and/or subject movement leading to that area of the brain shifting outside the FoV
 for at least one DWI volume. In such cases, it would be erroneous to infer a
-change in any fixel-wise metric in that area if subjects for which no valid image
+change in any fixel- or voxel-wise metric in that area if subjects for which no valid image
 data are available were to contribute to the assessment. It is therefore necessary
 to properly track where each subject possesses valid image data and where they do
 not, and to modify the processing of and inference from such data accordingly.
 
-The way to achieve this at the point of statistical inference is for the fixel data
+The way to achieve this at the point of statistical inference is for the image data
 to contain the value NaN (Not A Number) in any location where a valid quantitative
 metric could not be obtained for that particular subject. Such data are removed
-from the GLM on a fixel-by-fixel basis. This technique is explained in greater
+from the GLM on a per-element basis. This technique is explained in greater
 detail and demonstrated in [Smith2019a]_.
 
 The following instructions describe a way to modify to a typical Fixel-Based Analysis
@@ -23,7 +23,8 @@ pipeline, in order to ensure that any location in the template image where image
 for a particular subject may have been affected by such cropping will contain the
 value NaN. It is however recommended that you manually inspect the results of these
 processing steps in order to ensure that the manipulations of the data are operating
-as intended.
+as intended. Also note that the instructions here should be equally valid for any
+Voxel-Based Analysis with appropriate modification.
 
 1. Replace zero-filled values in the DWI with NaN
 
@@ -37,7 +38,7 @@ as intended.
    Note that this command must be run *after* `dwifslpreproc`, but *before* any
    upsampling of the DWI data: the latter introduces an interpolation step, such that
    some voxels in the upsampled image will be decreased in intensity due to this effect,
-   but will not be precisely zero. 
+   but will not be precisely zero.
 
    If data upsampling is performed subsequent to this step, regions of the image
    containing these NaN values will become *larger*. This occurs because any
@@ -50,7 +51,7 @@ as intended.
    to providing a brain mask: voxels containing such values will not contribute to
    various calculations just as though they were to lie outside of a provided brain mask.
    As such, explicitly providing a brain mask that does not exclude any voxels not
-   already excluded by step 1 would not have any consequence. 
+   already excluded by step 1 would not have any consequence.
 
 3. Use NaN fill value in :ref:`mrtransform`
 
