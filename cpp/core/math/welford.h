@@ -39,11 +39,12 @@ template <class Cont> MeanAndVariance welford(const Cont &data) {
   for (size_t i = 0; i != data.size(); ++i) {
     ++count;
     delta = data[i] - result.mean;
-    result.mean += delta / count;
+    result.mean += delta / static_cast<default_type>(count);
     delta2 = data[i] - result.mean;
     m2 += delta * delta2;
   }
-  result.variance = count > 1 ? m2 / (count - 1) : std::numeric_limits<default_type>::quiet_NaN();
+  result.variance =
+      count > 1 ? m2 / static_cast<default_type>(count - 1) : std::numeric_limits<default_type>::quiet_NaN();
   return result;
 }
 

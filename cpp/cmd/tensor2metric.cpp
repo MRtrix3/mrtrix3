@@ -97,6 +97,12 @@ void usage() {
              " (one of the three Westin shape metrics)")
       + Argument("image").type_image_out()
 
+    + Option("na", "compute the norm of anistropy (NA) of the diffusion tensor.")
+      + Argument("image").type_image_out()
+
+    + Option("mo", "compute the mode of anisotropy (MO) of the diffusion tensor.")
+      + Argument("image").type_image_out()
+
   + OptionGroup("Diffusion Kurtosis Imaging")
 
     + Option("dkt", "input diffusion kurtosis tensor.")
@@ -135,7 +141,12 @@ void usage() {
   + "* If using -cl, -cp or -cs options: \n"
     "Westin, C. F.; Peled, S.; Gudbjartsson, H.; Kikinis, R. & Jolesz, F. A. "
     "Geometrical diffusion measures for MRI from tensor basis analysis. "
-    "Proc Intl Soc Mag Reson Med, 1997, 5, 1742";
+    "Proc Intl Soc Mag Reson Med, 1997, 5, 1742"
+  + "* If using -na or -mo options: \n"
+    "Ennis, D. B., & Kindlmann, G. (2006). "
+    "Orthogonal tensor invariants and the analysis "
+    "of diffusion tensor magnetic resonance images. "
+    "Magnetic resonance in medicine, 55(1), 136-146.";
 }
 // clang-format on
 
@@ -149,6 +160,8 @@ public:
             Image<value_type> &cl_img,
             Image<value_type> &cp_img,
             Image<value_type> &cs_img,
+            Image<value_type> &mo_img,
+            Image<value_type> &na_img,
             Image<value_type> &value_img,
             Image<value_type> &vector_img,
             Image<value_type> &dkt_img,
@@ -167,6 +180,8 @@ public:
         cl_img(cl_img),
         cp_img(cp_img),
         cs_img(cs_img),
+        mo_img(mo_img),
+        na_img(na_img),
         value_img(value_img),
         vector_img(vector_img),
         dkt_img(dkt_img),
@@ -178,7 +193,8 @@ public:
         mk_dirs(mk_dirs),
         rk_ndirs(rk_ndirs),
         need_eigenvalues(value_img.valid() || vector_img.valid() || ad_img.valid() || rd_img.valid() ||
-                         cl_img.valid() || cp_img.valid() || cs_img.valid() || ak_img.valid() || rk_img.valid()),
+                         cl_img.valid() || cp_img.valid() || cs_img.valid() || na_img.valid() || mo_img.valid() ||
+                         ak_img.valid() || rk_img.valid()),
         need_eigenvectors(vector_img.valid() || ak_img.valid() || rk_img.valid()),
         need_dkt(dkt_img.valid() || mk_img.valid() || ak_img.valid() || rk_img.valid()) {
     for (auto &n : this->vals)
@@ -288,6 +304,19 @@ public:
       }
     }
 
+    /* output mo */
+    if (mo_img.valid()) {
+      assign_pos_of(dt_img, 0, 3).to(mo_img);
+      mo_img.value() = DWI::eigen2MO(eigval);
+    }
+
+    /* output na */
+    if (na_img.valid()) {
+      assign_pos_of(dt_img, 0, 3).to(na_img);
+      na_img.value() = DWI::eigen2NA(eigval);
+      ;
+    }
+
     /* output vector */
     if (vector_img.valid()) {
       Eigen::Matrix3d eigvec = es.eigenvectors();
@@ -364,6 +393,8 @@ private:
   Image<value_type> cl_img;
   Image<value_type> cp_img;
   Image<value_type> cs_img;
+  Image<value_type> mo_img;
+  Image<value_type> na_img;
   Image<value_type> value_img;
   Image<value_type> vector_img;
   Image<value_type> dkt_img;
@@ -461,6 +492,22 @@ void run() {
     metric_count++;
   }
 
+  auto mo_img = Image<value_type>();
+  opt = get_options("mo");
+  if (opt.size()) {
+    header.ndim() = 3;
+    mo_img = Image<value_type>::create(opt[0][0], header);
+    metric_count++;
+  }
+
+  auto na_img = Image<value_type>();
+  opt = get_options("na");
+  if (opt.size()) {
+    header.ndim() = 3;
+    na_img = Image<value_type>::create(opt[0][0], header);
+    metric_count++;
+  }
+
   std::vector<uint32_t> vals = {1};
   opt = get_options("num");
   if (!opt.empty()) {
@@ -554,6 +601,8 @@ void run() {
                      cl_img,
                      cp_img,
                      cs_img,
+                     mo_img,
+                     na_img,
                      value_img,
                      vector_img,
                      dkt_img,
