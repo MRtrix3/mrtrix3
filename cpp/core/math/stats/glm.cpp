@@ -186,8 +186,9 @@ matrix_type solve_betas(const measurements_matrix_type &measurements, const matr
   return design.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(measurements.cast<default_type>());
 }
 
-vector_type abs_effect_size(
-    const measurements_matrix_type &measurements, const matrix_type &design, const Hypothesis &hypothesis) {
+vector_type abs_effect_size(const measurements_matrix_type &measurements,
+                            const matrix_type &design,
+                            const Hypothesis &hypothesis) {
   if (hypothesis.is_F())
     return vector_type::Constant(measurements.rows(), std::numeric_limits<vector_type::Scalar>::quiet_NaN());
   else
@@ -404,7 +405,7 @@ void all_stats(const measurements_matrix_type &measurements,
       default_type condition_number = 0.0;
       if (valid_rows == data.rows()) { // No NaNs present
         condition_number = Math::condition_number(element_design);
-        if (element_design.colPivHouseholderQr().rank() >= data.rows()) {
+        if (element_design.colPivHouseholderQr().rank() == element_design.cols()) {
           Math::Stats::GLM::all_stats(element_data,
                                       element_design,
                                       hypotheses,
@@ -435,7 +436,7 @@ void all_stats(const measurements_matrix_type &measurements,
         assert(element_data_finite.allFinite());
         assert(element_design_finite.allFinite());
         condition_number = Math::condition_number(element_design_finite);
-        if (element_design_finite.colPivHouseholderQr().rank() >= data.rows()) {
+        if (element_design_finite.colPivHouseholderQr().rank() == element_design_finite.cols()) {
           Math::Stats::GLM::all_stats(element_data_finite,
                                       element_design_finite,
                                       hypotheses,
