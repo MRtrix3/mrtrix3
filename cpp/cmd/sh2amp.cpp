@@ -138,7 +138,7 @@ void run() {
   Eigen::MatrixXd directions;
   try {
     directions = File::Matrix::load_matrix(argument[1]);
-    DWI::Directions::validate(directions, argument[1], false);
+    DWI::Directions::validate(directions, argument[1], true);
     if (directions.cols() == 3)
       directions = Math::Sphere::cartesian2spherical(directions);
   } catch (Exception &E) {
