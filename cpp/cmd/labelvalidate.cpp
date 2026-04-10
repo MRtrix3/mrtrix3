@@ -28,7 +28,7 @@ using MR::Connectome::node_t;
 // clang-format off
 void usage() {
 
-  AUTHOR = "Robert Smith (robert.smith@florey.edu.au)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Validate a hard segmentation (label) image";
 
@@ -60,11 +60,10 @@ void usage() {
 // clang-format on
 
 void run() {
-  const Header H = Header::open(argument[0]);
-
+  Header H = Header::open(argument[0]);
   // Validate basic format and analyse contiguity.
   // Throws Exception if the image does not meet hard segmentation requirements.
-  const Connectome::LabelValidation result = Connectome::validate_label_image(H);
+  Connectome::validate_label_header(H);
 
   // ---------------------------------------------------------------
   // Report datatype
@@ -75,18 +74,19 @@ void run() {
     CONSOLE("Datatype: " + H.datatype().description() + " - image values verified to be non-negative integers");
   }
 
+  // Deeper analysis of image contents
+  auto image = H.get_image<node_t>();
+  const Connectome::LabelValidation result = Connectome::validate_label_image(image);
+
   // ---------------------------------------------------------------
   // Report label count
   // ---------------------------------------------------------------
-  if (result.labels.empty()) {
-    CONSOLE("No non-background labels found (image contains only zeros)");
-    return;
-  }
+  if (result.labels.empty())
+    throw Exception("No non-background labels found (image contains only zeros)");
+
   const node_t max_label = *result.labels.rbegin();
-  CONSOLE(str(result.labels.size()) +
-          " unique non-background label(s) found;"
-          " index range: 1 to " +
-          str(max_label));
+  CONSOLE(str(result.labels.size()) + std::string(" unique non-background label(s) found;") + //
+          " index range: 1 to " + str(max_label));                                            //
 
   // ---------------------------------------------------------------
   // Report index contiguity
@@ -95,9 +95,8 @@ void run() {
     CONSOLE("Label indices: contiguous (all values 1 through " + str(max_label) + " are present)");
   } else {
     const size_t ngaps = result.missing_indices.size();
-    WARN("Label indices: non-contiguous"
-         " (" +
-         str(ngaps) + " value(s) missing from the range [1, " + str(max_label) + "])");
+    WARN(std::string("Label indices: non-contiguous") +                                        //
+         " (" + str(ngaps) + " value(s) missing from the range [1, " + str(max_label) + "])"); //
     // List the missing indices, abbreviated if there are many.
     constexpr size_t max_listed = 20;
     std::string missing_str;
@@ -112,22 +111,13 @@ void run() {
   }
 
   // ---------------------------------------------------------------
-  // Report spatial contiguity per label
+  // Count number of labels without spatial contiguity
   // ---------------------------------------------------------------
-  CONSOLE("Spatial contiguity per label (26-nearest-neighbour connectivity):");
   size_t n_disconnected = 0;
   for (const auto &[label, count] : result.component_counts) {
-    if (count == 1) {
-      CONSOLE("  Label " + str(label) + ": contiguous");
-    } else {
-      CONSOLE("  Label " + str(label) + ": disconnected (" + str(count) + " components)");
+    if (count > 1)
       ++n_disconnected;
-    }
   }
-
-  // ---------------------------------------------------------------
-  // Summary
-  // ---------------------------------------------------------------
   if (n_disconnected == 0) {
     CONSOLE("All " + str(result.labels.size()) + " label(s) are spatially contiguous");
   } else {

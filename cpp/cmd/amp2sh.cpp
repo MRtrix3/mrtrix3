@@ -16,11 +16,13 @@
 
 #include "algo/threaded_loop.h"
 #include "command.h"
+#include "dwi/directions/validate.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
 #include "file/matrix.h"
 #include "image.h"
 #include "math/SH.h"
+#include "math/sphere.h"
 #include "metadata/phase_encoding.h"
 #include "progressbar.h"
 
@@ -191,6 +193,13 @@ void run() {
   auto opt = get_options("directions");
   if (!opt.empty()) {
     dirs = File::Matrix::load_matrix(opt[0][0]);
+    auto dv = DWI::Directions::validate(dirs, opt[0][0], false);
+    if (dv.n_non_unit > 0) {
+      WARN("Input directions file \"" + opt[0][0] + "\"" +                          //
+           " contains " + str(dv.n_non_unit) + " direction" +                       //
+           (dv.n_non_unit > 1 ? "s that are" : " that is") + " not of unit norm;" + //
+           " all directions will be interpreted agnostically of norm");             //
+    }
     if (dirs.cols() == 3)
       dirs = Math::Sphere::cartesian2spherical(dirs);
   } else {

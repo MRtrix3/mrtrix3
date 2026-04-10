@@ -26,7 +26,7 @@ using namespace MR::DWI::Tractography;
 // clang-format off
 void usage() {
 
-  AUTHOR = "Robert Smith (robert.smith@florey.edu.au)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Validate a tractogram (.tck) file";
 
@@ -66,17 +66,18 @@ void run() {
   // validate_tck() throws on any hard format or metadata violation.
   const TckValidation result = validate_tck(argument[0]);
 
-  CONSOLE("Tractogram \"" + std::string(argument[0]) +
-          "\" is valid:"
-          " " +
-          str(result.n_streamlines) + " streamline(s)");
+  CONSOLE("Tractogram \"" + std::string(argument[0]) + "\" is valid: " + //
+          str(result.n_streamlines) + " streamline(s)");                 //
 
-  if (result.n_empty)
+  if (result.n_empty > 0) {
     WARN(str(result.n_empty) + " empty streamline(s) (0 vertices) found");
+  }
 
-  if (result.n_single_vertex)
+  if (result.n_single_vertex > 0) {
     WARN(str(result.n_single_vertex) + " single-vertex streamline(s) found");
+  }
 
-  if (!result.n_empty && !result.n_single_vertex)
+  if (result.n_empty == 0 && result.n_single_vertex == 0) {
     CONSOLE("All streamlines have two or more vertices");
+  }
 }

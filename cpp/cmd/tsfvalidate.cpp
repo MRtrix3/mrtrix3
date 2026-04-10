@@ -26,7 +26,7 @@ using namespace MR::DWI::Tractography;
 // clang-format off
 void usage() {
 
-  AUTHOR = "Robert Smith (robert.smith@florey.edu.au)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Validate a track scalar file against its corresponding tractogram";
 
@@ -37,20 +37,20 @@ void usage() {
 
   + "1. Both files must contain a \"timestamp\" field in their headers,"
     " and the two timestamps must be identical."
-    " The timestamp is copied from the tractogram into the scalar file when"
-    " the scalar file is created, so a mismatch indicates that the scalar file"
-    " was not produced from the supplied tractogram."
+    " The timestamp is copied from the tractogram into the scalar file"
+    " when the scalar file is created,"
+    " so a mismatch indicates that the scalar file was not produced from the supplied tractogram."
 
   + "2. The track scalar file header must contain a \"count\" field."
 
-  + "3. The value of the \"count\" field in the track scalar file header must"
-    " match the number of scalar sequences actually present in the file."
+  + "3. The value of the \"count\" field in the track scalar file header"
+    " must match the number of scalar sequences actually present in the file."
 
-  + "4. The number of scalar sequences in the track scalar file must equal"
-    " the number of streamlines in the tractogram."
+  + "4. The number of scalar sequences in the track scalar file"
+    " must equal the number of streamlines in the tractogram."
 
-  + "5. For every streamline, the number of scalar values in the corresponding"
-    " scalar sequence must equal the number of vertices in the streamline.";
+  + "5. For every streamline, the number of scalar values in the corresponding scalar sequence"
+    " must equal the number of vertices in the streamline.";
 
   ARGUMENTS
   + Argument ("tsf",    "the input track scalar file").type_file_in()
@@ -61,8 +61,6 @@ void usage() {
 void run() {
   // validate_tsf() throws an Exception with a descriptive message on any failure.
   validate_tsf(argument[0], argument[1]);
-  CONSOLE("Track scalar file \"" + std::string(argument[0]) +
-          "\""
-          " is valid with respect to tractogram \"" +
-          std::string(argument[1]) + "\"");
+  CONSOLE("Track scalar file \"" + std::string(argument[0]) + "\"" +                    //
+          " is valid with respect to tractogram \"" + std::string(argument[1]) + "\""); //
 }

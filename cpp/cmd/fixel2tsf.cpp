@@ -21,6 +21,7 @@
 
 #include "fixel/fixel.h"
 #include "fixel/helpers.h"
+#include "fixel/validate.h"
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/scalar_file.h"
@@ -71,9 +72,10 @@ void run() {
   if (in_data_image.size(2) != 1)
     throw Exception("Only a single scalar value for each fixel can be output as a track scalar file, "
                     "therefore the input fixel data file must have dimension Nx1x1");
-
   Header in_index_header = Fixel::find_index_header(Fixel::get_fixel_directory(argument[0]));
+  Fixel::check_fixel_size(in_index_header, in_data_image);
   auto in_index_image = in_index_header.get_image<index_type>();
+  Fixel::debug_validate_index_image(in_index_image);
   auto in_directions_image =
       Fixel::find_directions_header(Fixel::get_fixel_directory(argument[0])).get_image<float>().with_direct_io();
 

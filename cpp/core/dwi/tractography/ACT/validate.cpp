@@ -29,13 +29,28 @@
 
 namespace MR::DWI::Tractography::ACT {
 
-FiveTTValidation validate_5TT(const Header &H) {
+void validate_5TT_header(const Header &H) {
+  if (!H.datatype().is_floating_point() || H.ndim() != 4 || H.size(3) != 5)
+    throw Exception("Image " + std::string(H.name()) + " is not a valid ACT 5TT image" + //
+                    " (expecting 4D image with 5 volumes and floating-point datatype)"); //
+  try {
+    check_3D_nonunity(H);
+  } catch (Exception &e) {
+    throw Exception(e,
+                    "Image " + std::string(H.name()) + " is not a valid ACT 5TT image" + //
+                        " (needs to be non-unity in all three spatial dimensions)");     //
+  }
+}
+
+const FiveTTValidation validate_5TT_image(const Image<float> &in) {
   // ---------------------------------------------------------------
   // Check 1: structural validity.
-  // Delegates to the existing lightweight check: floating-point type,
+  // Delegates to the existing lightweight check:
   // 4-dimensional, exactly 5 volumes.  Throws on failure.
+  // Note that check for floating-point datatype will always be satisfied here
+  // as MR::Image<> class has already been constructed.
   // ---------------------------------------------------------------
-  verify_5TT_image(H);
+  validate_5TT_header(in);
 
   // ---------------------------------------------------------------
   // Checks 2 & 3: per-voxel content validation.
@@ -47,7 +62,7 @@ FiveTTValidation validate_5TT(const Header &H) {
   //
   // Background voxels (sum == 0) are silently skipped.
   // ---------------------------------------------------------------
-  auto img = Image<float>::open(H.name());
+  Image<float> img(in);
 
   FiveTTValidation result;
 
@@ -60,7 +75,7 @@ FiveTTValidation validate_5TT(const Header &H) {
       if (v < 0.0F || v > 1.0F)
         abs_error = true;
     }
-    if (!sum)
+    if (sum == 0.0)
       continue; // background voxel — skip
 
     if (std::fabs(sum - 1.0) > max_sum_deviation)
@@ -72,24 +87,25 @@ FiveTTValidation validate_5TT(const Header &H) {
   return result;
 }
 
-void debug_validate_5TT(const Header &H) {
+void debug_validate_5TT_image(const Image<float> &in) {
+  try {
+    validate_5TT_header(in);
+  } catch (const Exception &e) {
+    throw Exception(e, "5TT image \"" + in.name() + "\" validation failed");
+  }
   if (App::log_level < 3)
     return;
-  try {
-    const FiveTTValidation v = validate_5TT(H);
-    if (!v.n_voxels_abs_error && !v.n_voxels_sum_error) {
-      DEBUG("5TT image \"" + H.name() + "\": OK");
-    } else {
-      if (v.n_voxels_abs_error)
-        DEBUG("5TT image \"" + H.name() + "\": " + str(v.n_voxels_abs_error) +
-              " brain voxel(s) with a non-physical partial volume fraction");
-      if (v.n_voxels_sum_error)
-        DEBUG("5TT image \"" + H.name() + "\": " + str(v.n_voxels_sum_error) +
-              " brain voxel(s) with a non-unity partial volume sum");
-    }
-  } catch (const Exception &e) {
-    DEBUG("5TT image \"" + H.name() + "\": validation failed: " + e[0]);
+  const FiveTTValidation v = validate_5TT_image(in);
+  if (!v.n_voxels_abs_error && !v.n_voxels_sum_error) {
+    DEBUG("5TT image \"" + in.name() + "\": validation OK");
+    return;
   }
+  if (v.n_voxels_abs_error)
+    WARN("5TT image \"" + in.name() + "\": " + str(v.n_voxels_abs_error) +
+         " brain voxel(s) with a non-physical partial volume fraction");
+  if (v.n_voxels_sum_error)
+    WARN("5TT image \"" + in.name() + "\": " + str(v.n_voxels_sum_error) +
+         " brain voxel(s) with a non-unity partial volume sum");
 }
 
 } // namespace MR::DWI::Tractography::ACT

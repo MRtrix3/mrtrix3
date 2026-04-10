@@ -24,30 +24,14 @@
 #include "image_diff.h"
 #include "image_helpers.h"
 
-namespace MR {
-class InvalidFixelDirectoryException : public Exception {
+namespace MR::Fixel {
+class InvalidDirectoryException : public Exception {
 public:
-  InvalidFixelDirectoryException(std::string msg) : Exception(msg) {}
-  InvalidFixelDirectoryException(const Exception &previous_exception, std::string msg)
+  InvalidDirectoryException(std::string msg) : Exception(msg) {}
+  InvalidDirectoryException(const Exception &previous_exception, std::string msg)
       : Exception(previous_exception, msg) {}
 };
 
-namespace Peaks {
-FORCE_INLINE void check(const Header &in) {
-  if (!in.datatype().is_floating_point())
-    throw Exception("Image \"" + in.name() + "\" is not a valid peaks image: Does not contain floating-point data");
-  try {
-    check_effective_dimensionality(in, 4);
-  } catch (Exception &e) {
-    throw Exception(e, "Image \"" + in.name() + "\" is not a valid peaks image: Expect 4 dimensions");
-  }
-  if (in.size(3) % 3)
-    throw Exception("Image \"" + in.name() +
-                    "\" is not a valid peaks image: Number of volumes must be a multiple of 3");
-}
-} // namespace Peaks
-
-namespace Fixel {
 FORCE_INLINE bool is_index_filename(std::string_view path) {
   for (std::initializer_list<const std::string>::iterator it = supported_image_formats.begin();
        it != supported_image_formats.end();
@@ -192,12 +176,12 @@ FORCE_INLINE Header find_index_header(std::string_view fixel_directory_path) {
     std::string full_path = Path::join(fixel_directory_path, "index" + *it);
     if (Path::exists(full_path)) {
       if (header.valid())
-        throw InvalidFixelDirectoryException("Multiple index images found in directory " + fixel_directory_path);
+        throw InvalidDirectoryException("Multiple index images found in directory " + fixel_directory_path);
       header = Header::open(full_path);
     }
   }
   if (!header.valid())
-    throw InvalidFixelDirectoryException("Could not find index image in directory " + fixel_directory_path);
+    throw InvalidDirectoryException("Could not find index image in directory " + fixel_directory_path);
 
   check_index_image(header);
   return header;
@@ -226,8 +210,8 @@ FORCE_INLINE std::vector<Header> find_data_headers(std::string_view fixel_direct
             if (!is_directions_file(H) || include_directions)
               data_headers.emplace_back(std::move(H));
           } else {
-            WARN("fixel data file (" + fname +
-                 ") does not contain the same number of elements as fixels in the index file");
+            WARN("fixel data file (" + fname + ")" +                                           //
+                 " does not contain the same number of elements as fixels in the index file"); //
           }
         }
       } catch (...) {
@@ -266,8 +250,8 @@ FORCE_INLINE Header find_directions_header(std::string_view fixel_directory_path
   }
 
   if (!directions_found)
-    throw InvalidFixelDirectoryException("Could not find directions image in directory " +
-                                         std::string(fixel_directory_path));
+    throw InvalidDirectoryException("Could not find directions image in directory " +
+                                    std::string(fixel_directory_path));
 
   return header;
 }
@@ -403,5 +387,5 @@ template <class ValueType> Image<ValueType> open_fixel_data_file(std::string_vie
 
   return in_data_image;
 }
-} // namespace Fixel
-} // namespace MR
+
+} // namespace MR::Fixel

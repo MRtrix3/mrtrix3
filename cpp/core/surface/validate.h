@@ -16,9 +16,10 @@
 
 #pragma once
 
-#include "surface/mesh.h"
-
 namespace MR::Surface {
+
+class Mesh;
+class MeshMulti;
 
 //! Validate a mesh surface against a set of topological and geometric requirements.
 //!
@@ -30,13 +31,14 @@ namespace MR::Surface {
 //!      non-manifold edges).
 //!   5. Single connected component: all polygons belong to one connected surface.
 //!   6. Consistent normals: for every shared edge, the two adjacent polygons traverse it
-//!      in opposite directions (ensuring a consistent outward normal orientation).
+//!      in opposite directions (ensuring a consistent normal orientation).
 //!
 //! Throws Exception with a descriptive message on the first violated requirement.
-void validate_mesh(const Mesh &mesh);
+void validate(const Mesh &mesh);
 
 //! Call validate_mesh() only when running in debug mode (log_level >= 3).
 //! Intended for use in other mesh-processing commands to add validation in debug builds.
-void debug_validate_mesh(const Mesh &mesh);
+void debug_validate(const Mesh &mesh);
+void debug_validate(const MeshMulti &meshes);
 
 } // namespace MR::Surface

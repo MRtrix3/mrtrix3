@@ -25,6 +25,7 @@
 #include "types.h"
 
 #include "connectome/connectome.h"
+#include "connectome/validate.h"
 
 #include "dwi/tractography/connectome/extract.h"
 #include "dwi/tractography/connectome/streamline.h"
@@ -266,13 +267,38 @@ void run() {
     // Load the node image, get the centres of mass
     // Generate exemplars - these can _only_ be done per edge, and requires a mutex per edge to multi-thread
     auto image = Image<node_t>::open(opt[0][0]);
+    auto lv = MR::Connectome::validate_label_image(image);
+    if (lv.labels.back() != max_node_index) {
+      WARN("Highest-valued parcels in label image \"" + opt[0][0] + "\"" +        //
+           " (" + str(lv.labels.back()) + ")" +                                   //
+           " differs from highest-valued node in connectome assignments file (" + //
+           str(max_node_index) + ");" +                                           //
+           " this may lead to issues in exemplar generation");                    //
+    }
+    std::vector<node_t> missing_nodes;
+    for (const auto n : nodes) {
+      if (std::find(lv.missing_indices.begin(), lv.missing_indices.end(), n) != lv.missing_indices.end())
+        missing_nodes.push_back(n);
+    }
+    if (!missing_nodes.empty())
+      throw Exception(str(missing_nodes.size()) + " node" +                      //
+                      (missing_nodes.size() > 1 ? "s" : "") + " of interest" +   //
+                      " are absent from the parcellation image," +               //
+                      " precluding exemplar generation: " + str(missing_nodes)); //
+
+    if (lv.disconnected_components > 0) {
+      WARN(str(lv.disconnected_components) + " parcel" + //
+           (lv.disconnected_components > 0 ? "s are" : " is") +
+           " not spatially contiguous;"
+           " this may result in unusual exemplar trajectories");
+    }
     std::vector<Eigen::Vector3d> COMs(max_node_index + 1, Eigen::Vector3d::Constant(0.0));
     std::vector<size_t> volumes(max_node_index + 1, 0);
     for (auto i = Loop()(image); i; ++i) {
       const node_t index = image.value();
       if (index) {
         while (index >= COMs.size()) {
-          COMs.push_back(Eigen::Vector3d::Constant(0.0));
+          COMs.push_back(Eigen::Vector3d::Zero());
           volumes.push_back(0);
         }
         COMs[index] += Eigen::Vector3d(static_cast<default_type>(image.index(0)),
@@ -282,10 +308,10 @@ void run() {
       }
     }
     if (COMs.size() > max_node_index + 1) {
-      WARN("Parcellation image \"" + std::string(opt[0][0]) +
-           "\" provided via -exemplars option contains more nodes (" + str(COMs.size() - 1) +
-           ") than are present in input assignments file \"" + std::string(argument[1]) + "\" (" + str(max_node_index) +
-           ")");
+      WARN("Parcellation image \"" + std::string(opt[0][0]) + "\" provided via -exemplars option" + //
+           " contains more nodes (" + str(COMs.size() - 1) + ")" +                                  //
+           " than are present in input assignments file \"" + std::string(argument[1]) + "\"" +     //
+           " (" + str(max_node_index) + ")");                                                       //
       max_node_index = COMs.size() - 1;
     }
     Transform transform(image);

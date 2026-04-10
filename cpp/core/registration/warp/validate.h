@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cmath>
+#include <optional>
 
 #include "header.h"
 
@@ -36,15 +37,11 @@ struct WarpValidation {
   //! The warp format inferred from the image dimensions.
   WarpFormat format = WarpFormat::Simple;
 
-  //! True if at least one fill triplet was detected in the image.
-  bool fill_value_seen = false;
-
   //! The fill value convention in use (0.0 = zero fill, NaN = NaN fill).
-  //! Only meaningful when fill_value_seen is true.
-  float fill_value = 0.0F;
+  std::optional<float> fill_value = std::nullopt;
 };
 
-//! Validate a non-linear warp image and return a summary of findings.
+//! Validate that a header conforms to expectations of a non-linear warp image.
 //!
 //! Checks performed:
 //!
@@ -60,24 +57,35 @@ struct WarpValidation {
 //!
 //!   3. For full warp fields, the header must contain both a "linear1" and a
 //!      "linear2" key encoding the linear transforms for each image.
+
+// TODO Add std::optional to demand one of the two formats
+// Once implemented, can remove multiple redundant checks in individual commands
+
+WarpFormat validate_header(const Header &H);
+
+//! Validate a non-linear warp image and return a summary of findings.
+//!
+//! Checks performed in addition to those covered by validate_header():
 //!
 //!   4. At each spatial voxel, the warp is represented as a triplet of three
 //!      floating-point values (one per volume group for full warps).
 //!      A triplet may be a fill value, signalling that the voxel lies outside
 //!      the domain of the warp.  The fill convention must be consistent across
-//!      the entire image: either all fill triplets are all-zero, or all fill
-//!      triplets are all-NaN; both conventions must not be mixed.
+//!      the entire image: either all fill triplets are all-NaN, or all fill
+//!      triplets are some fixed value; both conventions must not be mixed.
 //!
-//!   5. Where the fill convention is NaN, every triplet must be either
-//!      entirely finite or entirely NaN.  Triplets that are partly NaN and
-//!      partly finite are not valid.
+//!   5. Every triplet must be either entirely finite or entirely NaN.
+//!      Triplets that are partly NaN and partly finite are not valid.
+//!
+//!   6. Infinity values are not permitted.
 //!
 //! Throws Exception on the first hard violation.
-WarpValidation validate_warp(const Header &H);
+template <typename ValueType> WarpValidation validate_image(Image<ValueType> image);
 
-//! Call validate_warp() only when running in debug mode (log_level >= 3).
+//! Call validate_header(),
+//! but only additionally execute validate_image() when running in debug mode (log_level >= 3).
 //! Hard errors are caught and re-emitted as DEBUG messages.
 //! Intended for use in commands that consume non-linear warp images.
-void debug_validate_warp(const Header &H);
+template <typename ValueType> void debug_validate_image(Image<ValueType> image);
 
 } // namespace MR::Registration::Warp

@@ -18,10 +18,12 @@
 
 #include <cstddef>
 
-#include "header.h"
+#include "image.h"
 #include "types.h"
 
 namespace MR::DWI::Tractography::ACT {
+
+void validate_5TT_header(const Header &H);
 
 //! Maximum permitted absolute deviation from a unity partial-volume sum.
 //! Brain voxels where |sum(PVF) - 1| exceeds this threshold are counted
@@ -47,9 +49,9 @@ struct FiveTTValidation {
 //!
 //! Checks performed:
 //!
-//!   1. Structural validity: the image must be of floating-point type,
+//!   1. Structural validity: the image must be
 //!      4-dimensional, and contain exactly 5 volumes.
-//!      Failure throws an Exception immediately (via verify_5TT_image()).
+//!      Failure throws an Exception immediately.
 //!
 //!   2. Per-voxel absolute range: for every brain voxel (non-zero PVF sum),
 //!      each of the five tissue partial volume fractions must lie within
@@ -62,12 +64,12 @@ struct FiveTTValidation {
 //! Only structural violations (check 1) cause an Exception to be thrown.
 //! Violations in checks 2 and 3 are returned as counts so that the caller
 //! can decide how to handle them (hard error vs. warning).
-FiveTTValidation validate_5TT(const Header &H);
+[[nodiscard]] const FiveTTValidation validate_5TT_image(const Image<float> &in);
 
-//! Call validate_5TT() only when running in debug mode (log_level >= 3).
+//! Call validate_5TT_image() only when running in debug mode (log_level >= 3).
 //! Structural exceptions are caught and re-emitted as DEBUG messages.
 //! Content violations (abs / sum errors) are also emitted as DEBUG messages.
 //! Intended for use in commands that consume 5TT images.
-void debug_validate_5TT(const Header &H);
+void debug_validate_5TT_image(const Image<float> &in);
 
 } // namespace MR::DWI::Tractography::ACT

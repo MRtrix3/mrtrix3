@@ -27,7 +27,7 @@ using namespace MR::Registration::Warp;
 // clang-format off
 void usage() {
 
-  AUTHOR = "Robert Smith (robert.smith@florey.edu.au)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Validate a non-linear warp image";
 
@@ -44,10 +44,10 @@ void usage() {
     " MRtrix3 uses displacement and deformation fields interchangeably;"
     " the structural requirements are identical for both."
 
-  + "5D image with 3 × 4 volumes:"
-    " a full warp field as produced by mrregister -nl_warp_full."
+  + "5D image with 3 volumes for each of 4 volume groups:"
+    " a full warp field as produced by eg. mrregister -nl_warp_full."
     " The image must be 5-dimensional,"
-    " with exactly 3 volumes in the 4th dimension (x/y/z components)"
+    " with exactly 3 volumes in the 4th dimension (x/y/z components of the warp)"
     " and exactly 4 volume groups in the 5th dimension"
     " (image1-to-midway, midway-to-image1, image2-to-midway, midway-to-image2)."
     " The header must also contain \"linear1\" and \"linear2\" fields"
@@ -80,21 +80,19 @@ void usage() {
 // clang-format on
 
 void run() {
-  const Header H = Header::open(argument[0]);
+  Header H = Header::open(argument[0]);
+  // validate_warp() throws on any structural violation.
+  // It is called here in addition to being re-invoked by validate_image() below
+  //   so that the datatype of the input image is properly checked
+  Registration::Warp::validate_header(H);
 
-  // validate_warp() throws on any structural or content violation.
-  const WarpValidation result = validate_warp(H);
+  // validate_warp() throws on any content violation.
+  auto image = H.get_image<float>();
+  const auto result = Registration::Warp::validate_image(image);
 
-  const std::string fmt =
-      result.format == WarpFormat::Simple ? "simple (displacement or deformation field)" : "full warp field";
+  CONSOLE("Warp image \"" + H.name() + "\": valid " + //
+          (result.format == WarpFormat::Simple ? "simple (displacement or deformation field)" : "full warp field"));
 
-  CONSOLE("Warp image \"" + H.name() + "\": valid " + fmt);
-
-  if (!result.fill_value_seen) {
-    CONSOLE("Fill value: none detected (all voxels contain warp data)");
-  } else if (std::isnan(result.fill_value)) {
-    CONSOLE("Fill value: NaN");
-  } else {
-    CONSOLE("Fill value: zero");
-  }
+  CONSOLE("Fill value: " +
+          (result.fill_value.has_value() ? str(*result.fill_value) : "not auto-detected from input data"));
 }

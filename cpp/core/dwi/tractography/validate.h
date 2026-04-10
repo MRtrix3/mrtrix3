@@ -17,19 +17,19 @@
 #pragma once
 
 #include <cstddef>
+#include <optional>
 #include <string>
 #include <string_view>
 
 namespace MR::DWI::Tractography {
 
+class Properties;
+
 //! Summary of a full tractogram validation.
 struct TckValidation {
 
-  //! True if the "count" field is present in the file header.
-  bool has_header_count = false;
-
-  //! Value of the "count" field as stored in the header (only valid when has_header_count is true).
-  size_t header_count = 0;
+  //! Value of the "count" field as stored in the header (if present).
+  std::optional<size_t> header_count = std::nullopt;
 
   //! Number of streamlines actually present in the file (i.e. number of NaN delimiters seen).
   size_t n_streamlines = 0;
@@ -56,17 +56,13 @@ struct TckValidation {
 //!   3. A streamline body is open (vertices accumulated with no terminating
 //!      delimiter) when the end-of-file barrier is reached.
 //!   4. The binary data section ends without an end-of-file barrier.
-//!   5. The "count" field is absent from the header.
-//!   6. The "count" field does not match the number of streamlines read.
+//!   5. The "count" field is present but does not match the number of streamlines read.
 //!
 //! The returned TckValidation struct reports n_empty and n_single_vertex for
 //! downstream reporting; these are not treated as hard errors.
 TckValidation validate_tck(std::string_view path);
 
-//! Call validate_tck() only when running in debug mode (log_level >= 3).
-//! Hard errors are re-thrown; soft findings are emitted as DEBUG messages.
-//! Intended for use in tractography-processing commands.
-void debug_validate_tck(std::string_view path);
+void validate_tsf_properties(const Properties &, const Properties &, std::string_view file_types);
 
 //! Validate a track scalar file (.tsf) against its corresponding tractogram (.tck).
 //!
@@ -81,10 +77,5 @@ void debug_validate_tck(std::string_view path);
 //!   5. One or more streamlines have a different number of vertices in the TSF
 //!      and in the tractogram.
 void validate_tsf(std::string_view tsf_path, std::string_view tck_path);
-
-//! Call validate_tsf() only when running in debug mode (log_level >= 3).
-//! Hard errors are re-thrown as DEBUG messages.
-//! Intended for use in track-scalar-processing commands.
-void debug_validate_tsf(std::string_view tsf_path, std::string_view tck_path);
 
 } // namespace MR::DWI::Tractography

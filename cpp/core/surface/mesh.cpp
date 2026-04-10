@@ -76,10 +76,12 @@ void Mesh::calculate_normals() {
 
 namespace {
 template <typename T>
-void load_vtk_points_binary(std::ifstream &in, const size_t num_vertices, std::vector<Eigen::Matrix<T, 3, 1>> &out) {
+void load_vtk_points_binary(std::ifstream &in,
+                            const vertex_index_type num_vertices,
+                            std::vector<Eigen::Matrix<T, 3, 1>> &out) {
   out.reserve(num_vertices);
   Eigen::Matrix<T, 3, 1> v;
-  for (size_t i = 0; i != num_vertices; ++i) {
+  for (vertex_index_type i = 0; i != num_vertices; ++i) {
     in.read(reinterpret_cast<char *>(v.data()), 3 * sizeof(T));
     out.push_back(v);
   }
@@ -150,7 +152,7 @@ void Mesh::load_vtk(std::string_view path) {
 
         line = line.substr(7);
         const size_t ws = line.find(' ');
-        const int num_vertices = to<int>(line.substr(0, ws));
+        const vertex_index_type num_vertices = to<vertex_index_type>(line.substr(0, ws));
         line = line.substr(ws + 1);
         bool is_double = false;
         if (line.substr(0, 6) == "double")
@@ -320,9 +322,9 @@ void Mesh::load_stl(std::string_view path) {
       if (attribute_byte_count)
         warn_attribute = true;
 
-      triangles.push_back(std::vector<uint32_t>{static_cast<uint32_t>(vertices.size() - 3),
-                                                static_cast<uint32_t>(vertices.size() - 2),
-                                                static_cast<uint32_t>(vertices.size() - 1)});
+      triangles.push_back(std::vector<vertex_index_type>{static_cast<vertex_index_type>(vertices.size() - 3),
+                                                         static_cast<vertex_index_type>(vertices.size() - 2),
+                                                         static_cast<vertex_index_type>(vertices.size() - 1)});
       const Eigen::Vector3d computed_normal = Surface::normal(*this, triangles.back());
       if (computed_normal.dot(normal.cast<default_type>()) < 0.0)
         warn_right_hand_rule = true;
@@ -344,7 +346,7 @@ void Mesh::load_stl(std::string_view path) {
     Vertex vertex, normal;
 
     std::string line;
-    size_t vertex_index = 0;
+    vertex_index_type vertex_index = 0;
     bool inside_solid = true, inside_facet = false, inside_loop = false;
     try {
       while (std::getline(in, line)) {
@@ -387,9 +389,9 @@ void Mesh::load_stl(std::string_view path) {
           inside_facet = false;
           if (vertex_index != 3)
             throw Exception("facet ended with " + str(vertex_index) + " vertices");
-          triangles.push_back(std::vector<uint32_t>{static_cast<uint32_t>(vertices.size() - 3),
-                                                    static_cast<uint32_t>(vertices.size() - 2),
-                                                    static_cast<uint32_t>(vertices.size() - 1)});
+          triangles.push_back(std::vector<vertex_index_type>{static_cast<vertex_index_type>(vertices.size() - 3),
+                                                             static_cast<vertex_index_type>(vertices.size() - 2),
+                                                             static_cast<vertex_index_type>(vertices.size() - 1)});
           vertex_index = 0;
           const Eigen::Vector3d computed_normal = Surface::normal(*this, triangles.back());
           if (computed_normal.dot(normal) < 0.0)
@@ -434,7 +436,8 @@ void Mesh::load_stl(std::string_view path) {
 void Mesh::load_obj(std::string_view path) {
 
   struct FaceData {
-    uint32_t vertex, texture, normal;
+    vertex_index_type vertex;
+    uint32_t texture, normal;
   };
 
   std::ifstream in(std::string(path).c_str(), std::ios_base::in);
@@ -517,10 +520,11 @@ void Mesh::load_obj(std::string_view path) {
         face_data.push_back(temp);
       }
       if (face_data.size() == 3) {
-        std::vector<uint32_t> temp{face_data[0].vertex, face_data[1].vertex, face_data[2].vertex};
+        std::vector<vertex_index_type> temp{face_data[0].vertex, face_data[1].vertex, face_data[2].vertex};
         triangles.push_back(Triangle(temp));
       } else {
-        std::vector<uint32_t> temp{face_data[0].vertex, face_data[1].vertex, face_data[2].vertex, face_data[3].vertex};
+        std::vector<vertex_index_type> temp{
+            face_data[0].vertex, face_data[1].vertex, face_data[2].vertex, face_data[3].vertex};
         quads.push_back(Quad(temp));
       }
       // The OBJ format allows defining different vertex-based normals for different faces that reference the same

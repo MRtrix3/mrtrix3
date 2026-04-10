@@ -15,6 +15,7 @@
  */
 
 #include "command.h"
+#include "dwi/directions/validate.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
 #include "file/matrix.h"
@@ -108,14 +109,13 @@ void run() {
   Eigen::MatrixXd directions;
 
   try {
-    directions = DWI::Directions::load_cartesian(argument[0]);
+    directions = File::Matrix::load_matrix<double>(argument[0]);
+    DWI::Directions::validate(directions, argument[0], true);
+    if (directions.cols() == 2)
+      directions = Math::Sphere::spherical2cartesian(directions);
   } catch (Exception &E) {
-    try {
-      directions = File::Matrix::load_matrix<double>(argument[0]);
-    } catch (Exception &E) {
-      auto header = Header::open(argument[0]);
-      directions = DWI::get_DW_scheme(header);
-    }
+    auto header = Header::open(argument[0]);
+    directions = DWI::get_DW_scheme(header);
   }
 
   if (directions.cols() >= 4) {

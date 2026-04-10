@@ -16,6 +16,7 @@
 
 #include "command.h"
 #include "dwi/directions/predefined.h"
+#include "dwi/directions/validate.h"
 #include "enum.h"
 #include "file/matrix.h"
 #include "file/nifti_utils.h"
@@ -35,6 +36,7 @@
 #include "registration/nonlinear.h"
 #include "registration/transform/affine.h"
 #include "registration/transform/rigid.h"
+#include "registration/warp/validate.h"
 #include "transform.h"
 
 using namespace MR;
@@ -222,8 +224,11 @@ void run() {
 
   Eigen::MatrixXd directions_cartesian;
   auto opt = get_options("directions");
-  if (!opt.empty())
-    directions_cartesian = Math::Sphere::spherical2cartesian(File::Matrix::load_matrix(opt[0][0])).transpose();
+  if (!opt.empty()) {
+    Eigen::MatrixXd directions = File::Matrix::load_matrix(opt[0][0]);
+    DWI::Directions::validate(directions, opt[0][0], false);
+    directions_cartesian = Math::Sphere::as_cartesian(directions).transpose();
+  }
 
   // check header transformations for equality
   Eigen::MatrixXd trafo = MR::Transform(input1[0]).scanner2voxel.linear();
@@ -681,7 +686,7 @@ void run() {
 
     if (!do_nonlinear)
       throw Exception(
-          "the non linear initialisation option -nl_init cannot be used when no non linear registration is requested");
+          "the non linear initialisation option -nl_init cannot be used when no non-linear registration is requested");
 
     if (!Path::is_mrtrix_image(opt[0][0]) &&                    //
         !(Path::has_suffix(opt[0][0], {".nii", ".nii.gz"}) &&   //
@@ -692,10 +697,14 @@ void run() {
            " Converting to other file formats may remove linear transformations stored in the image header.");
     }
 
-    Image<default_type> input_warps = Image<default_type>::open(opt[0][0]);
-    if (input_warps.ndim() != 5)
-      throw Exception("non-linear initialisation input is not 5D."
-                      " Input must be from previous non-linear output");
+    Header H_warps = Header::open(opt[0][0]);
+    auto warp_format = Registration::Warp::validate_header(H_warps);
+    if (warp_format != Registration::Warp::WarpFormat::Full)
+      throw Exception("Warp image for non-linear initialisation"
+                      " must be of the full warp format"
+                      " rather than a simple displacement / deformation field.");
+    Image<default_type> input_warps = H_warps.get_image<default_type>();
+    Registration::Warp::debug_validate_image(input_warps);
 
     nl_registration.initialise(input_warps);
 

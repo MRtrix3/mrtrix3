@@ -20,6 +20,7 @@
 #include "file/utils.h"
 #include "fixel/fixel.h"
 #include "fixel/helpers.h"
+#include "fixel/validate.h"
 #include "header.h"
 #include "image.h"
 #include "progressbar.h"
@@ -113,6 +114,7 @@ void run() {
     try {
       index_header = Fixel::find_index_header(argument[0]);
       multiple_files = Fixel::find_data_headers(argument[0], index_header);
+      Fixel::debug_validate_directory(argument[0]);
       if (multiple_files.empty())
         throw Exception("No fixel data files found in directory \"" + std::string(argument[0]) + "\"");
       output_header = Header(multiple_files[0]);
@@ -133,6 +135,8 @@ void run() {
                       " (does not match corresponding index image)");                              //
 
     Image<index_type> index_image = index_header.get_image<index_type>();
+    if (multiple_files.empty())
+      Fixel::debug_validate_index_image(index_image);
     const size_t nfixels = Fixel::get_number_of_fixels(index_image);
 
     auto opt = get_options("mask");

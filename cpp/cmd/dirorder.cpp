@@ -16,10 +16,12 @@
 
 #include "command.h"
 #include "dwi/directions/file.h"
+#include "dwi/directions/validate.h"
 #include "dwi/gradient.h"
 #include "file/matrix.h"
 #include "math/SH.h"
 #include "math/rng.h"
+#include "math/sphere.h"
 #include "progressbar.h"
 
 #include <functional>
@@ -120,7 +122,9 @@ value_type calc_cost(const Eigen::MatrixXd &directions, const std::vector<index_
 }
 
 void run() {
-  auto directions = DWI::Directions::load_cartesian(argument[0]);
+  auto directions = File::Matrix::load_matrix(argument[0]);
+  DWI::Directions::validate(directions, argument[0], false);
+  directions = Math::Sphere::as_cartesian(directions);
 
   const index_type preserve = get_option_value<index_type>("preserve", 0);
 

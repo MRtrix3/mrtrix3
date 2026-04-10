@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include "dwi/directions/predefined.h"
+#include "dwi/directions/validate.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
 #include "file/matrix.h"
@@ -24,9 +26,8 @@
 #include "math/ZSH.h"
 #include "math/constrained_least_squares.h"
 #include "math/math.h"
+#include "math/sphere.h"
 #include "types.h"
-
-#include "dwi/directions/predefined.h"
 
 namespace MR::DWI::SDeconv {
 
@@ -55,8 +56,11 @@ public:
       if (!opt.empty())
         lmax = parse_ints<uint32_t>(opt[0][0]);
       opt = get_options("directions");
-      if (!opt.empty())
-        HR_dirs = File::Matrix::load_matrix(opt[0][0]);
+      if (!opt.empty()) {
+        const Eigen::MatrixXd directions = File::Matrix::load_matrix(opt[0][0]);
+        DWI::Directions::validate(directions, opt[0][0], false);
+        HR_dirs = Math::Sphere::as_spherical(directions);
+      }
       opt = get_options("norm_lambda");
       if (!opt.empty())
         solution_min_norm_regularisation = opt[0][0];

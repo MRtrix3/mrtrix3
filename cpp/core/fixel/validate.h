@@ -16,104 +16,89 @@
 
 #pragma once
 
-#include <limits>
-#include <string>
+#include <optional>
 #include <string_view>
-#include <utility>
-#include <vector>
 
-#include "algo/loop.h"
-#include "app.h"
-#include "fixel/helpers.h"
+#include "fixel/fixel.h"
+
+namespace MR {
+class Header;
+template <typename ValueType> class Image;
+} // namespace MR
 
 namespace MR::Fixel {
 
 //! Perform thorough validation of a fixel directory.
 //! Checks that:
-//!   - a valid index image is present;
+//!   - a valid index image is present,
+//!     and every fixel index is covered by exactly one voxel in the index image
+//!     (via validate_index_image())
 //!   - a valid directions image is present;
-//!   - every fixel index is covered by exactly one voxel in the index image;
 //!   - all fixel data files contain the same number of fixels as the index image.
-//! Throws InvalidFixelDirectoryException on any failure.
-FORCE_INLINE void validate_fixel_directory(std::string_view fixel_directory_path) {
+//! Throws InvalidDirectoryException on any failure.
+void validate_directory(std::string_view fixel_directory_path);
 
-  // Verify that a valid index image and a valid directions image are present.
-  // Both functions throw InvalidFixelDirectoryException on failure.
-  Header index_header = find_index_header(fixel_directory_path);
-  find_directions_header(fixel_directory_path);
+//! Perform validation of a fixel index image.
+//! Checks that:
+//!   - a valid index image is present,
+//!     and every fixel index is covered by exactly one voxel in the index image
+//! Returns the total number of fixels in the index image
+index_type validate_index_image(Image<index_type> index_image);
 
-  // Collect all non-empty (offset, count) pairs from the index image.
-  std::vector<std::pair<index_type, index_type>> entries;
-  {
-    auto index_image = index_header.get_image<index_type>();
-    for (auto l = Loop(index_image, 0, 3)(index_image); l; ++l) {
-      index_image.index(3) = 0;
-      const index_type count = index_image.value();
-      if (!count)
-        continue;
-      index_image.index(3) = 1;
-      const index_type offset = index_image.value();
-      entries.emplace_back(offset, count);
-    }
-  }
-
-  // Determine the total number of fixels implied by the index image,
-  // and guard against offset + count overflow.
-  index_type total_nfixels = 0;
-  for (const auto &[offset, count] : entries) {
-    if (offset > std::numeric_limits<index_type>::max() - count)
-      throw InvalidFixelDirectoryException("fixel index image in directory \"" + std::string(fixel_directory_path) +
-                                           "\" contains an entry where offset (" + str(offset) + ") + count (" +
-                                           str(count) + ") overflows the index type");
-    total_nfixels = std::max(total_nfixels, offset + count);
-  }
-
-  // Verify that every fixel index in [0, total_nfixels) is covered
-  // by exactly one voxel in the index image.
-  std::vector<uint32_t> fixel_counts(total_nfixels, 0);
-  for (const auto &[offset, count] : entries) {
-    for (index_type j = 0; j < count; ++j)
-      fixel_counts[offset + j]++;
-  }
-  for (index_type i = 0; i < total_nfixels; ++i) {
-    if (fixel_counts[i] != 1)
-      throw InvalidFixelDirectoryException(
-          "fixel index " + str(i) + " in directory \"" + std::string(fixel_directory_path) + "\" is covered by " +
-          str(fixel_counts[i]) + " voxel(s) in the index image (expected exactly one)");
-  }
-
-  // Verify that every fixel data file in the directory contains
-  // the same number of fixels as implied by the index image.
-  auto dir_walker = Path::Dir(fixel_directory_path);
-  std::string fname;
-  while (!(fname = dir_walker.read_name()).empty()) {
-    if (!Path::has_suffix(fname, supported_image_formats))
-      continue;
-    if (is_index_filename(fname))
-      continue;
-    const std::string full_path = Path::join(fixel_directory_path, fname);
-    try {
-      const Header H = Header::open(full_path);
-      if (!is_data_file(H))
-        continue;
-      if (static_cast<index_type>(H.size(0)) != total_nfixels)
-        throw InvalidFixelDirectoryException("fixel data file \"" + fname + "\" in directory \"" +
-                                             std::string(fixel_directory_path) + "\" contains " + str(H.size(0)) +
-                                             " fixel(s),"
-                                             " but the index image implies " +
-                                             str(total_nfixels));
-    } catch (InvalidFixelDirectoryException &) {
-      throw;
-    } catch (...) {
-    }
-  }
-}
-
-//! Call validate_fixel_directory() only when running in debug mode (log_level >= 3).
+//! Call validate() only when running in debug mode (log_level >= 3).
 //! Intended for use in other fixel commands to add lightweight validation in debug builds.
-FORCE_INLINE void debug_validate_fixel_directory(std::string_view fixel_directory_path) {
-  if (App::log_level >= 3)
-    validate_fixel_directory(fixel_directory_path);
-}
+void debug_validate_directory(std::string_view fixel_directory_path);
+
+//! Call validate_debug_index_image() only when running in debug mode (log_level >= 3).
+//! Intended for use in other fixel commands to add lightweight validation in debug builds.
+void debug_validate_index_image(Image<index_type> index_image);
 
 } // namespace MR::Fixel
+
+namespace MR::Peaks {
+
+//! Outcome of a full peaks-image content validation.
+struct PeaksValidation {
+
+  //! Fill value used when a voxel has fewer peaks than the maximum.
+  //! Either 0.0 or NaN if present;
+  //! has no value when no fill triplets were encountered
+  //! (i.e. every voxel is fully populated).
+  std::optional<float> fill_value = std::nullopt;
+
+  //! Minimum norm across all non-fill (real) peaks.
+  float norm_min = std::numeric_limits<float>::quiet_NaN();
+
+  //! Maximum norm across all non-fill (real) peaks.
+  float norm_max = std::numeric_limits<float>::quiet_NaN();
+};
+
+//! Validate that a header can be interpreted as a peaks image.
+//!
+//! The following checks are performed in order:
+//!   1. Floating-point datatype.
+//!   2. Effective 4-dimensionality with number of volumes a multiple of 3.
+//!
+//! Throws Exception with a descriptive message on the first violation.
+void validate_header(const Header &H);
+
+//! Validate the content of a peaks image, returning a PeaksValidation summary.
+//!
+//! Additional checks over and above validate_header():
+//!   3. Fill value consistency: every fill triplet uses the same convention
+//!      (all-zero or all-NaN), and both conventions must not be mixed.
+//!   4. NaN-fill coherence: when the fill value is NaN, every triplet must
+//!      be either entirely finite or entirely NaN — partial NaN triplets are
+//!      forbidden.
+//!   5. Infinity values are not permitted.
+//!
+//! Throws Exception with a descriptive message on the first violation.
+//! The PeaksValidation summary is populated for all non-throwing paths.
+[[nodiscard]] const PeaksValidation validate_image(Image<float> image);
+
+//! Call validate_peaks_image() only when running in debug mode (log_level >= 3).
+//! Format errors are always re-thrown; content findings are emitted as DEBUG messages.
+//! Intended for use in peaks-processing commands.
+void debug_validate_image(Image<float> image);
+
+} // namespace MR::Peaks

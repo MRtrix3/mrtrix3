@@ -25,7 +25,7 @@ using namespace App;
 // clang-format off
 void usage() {
 
-  AUTHOR = "Robert Smith (robert.smith@florey.edu.au)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Validate the contents of a fixel directory";
 
@@ -45,6 +45,6 @@ void usage() {
 // clang-format on
 
 void run() {
-  Fixel::validate_fixel_directory(argument[0]);
+  Fixel::validate_directory(argument[0]);
   CONSOLE("fixel directory \"" + std::string(argument[0]) + "\" is valid");
 }

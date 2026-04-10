@@ -30,7 +30,7 @@ namespace MR::Connectome {
 struct LabelValidation {
 
   //! The set of unique non-background (non-zero) label values present in the image
-  std::set<node_t> labels;
+  std::vector<node_t> labels;
 
   //! True if the non-zero labels form the unbroken range {1, 2, ..., max_label}
   bool indices_contiguous = true;
@@ -41,19 +41,26 @@ struct LabelValidation {
   //! For each non-background label, the number of spatially connected components
   //! under 26-nearest-neighbour voxel connectivity
   std::map<node_t, uint32_t> component_counts;
+
+  //! The total number of non-background labels that have more than one component
+  node_t disconnected_components = 0;
 };
 
-//! Validate a hard segmentation (label) image and return a full analysis.
+//! Validate a hard segmentation (label) image header.
 //!
 //! Checks that the image is 3D (or 4D with a singleton 4th dimension) and
 //! contains only non-negative integer values, throwing Exception on failure.
-//! Then analyses index contiguity and, per label, spatial contiguity under
-//! 26-nearest-neighbour voxel connectivity.
-LabelValidation validate_label_image(const Header &H);
+void validate_label_header(const Header &H);
+
+//! Validate content of a hard segmentation (label) image.
+//! In addition to those checks performed by validate_label_header(),
+//! additionally analyses index contiguity and, per label,
+//! spatial contiguity under 26-nearest-neighbour voxel connectivity.
+[[nodiscard]] const LabelValidation validate_label_image(Image<node_t> image);
 
 //! Call validate_label_image() only when running in debug mode (log_level >= 3).
 //! Format errors are re-thrown; contiguity findings are reported as DEBUG messages.
 //! Intended for use in label-processing commands to add validation in debug builds.
-void debug_validate_label_image(const Header &H);
+void debug_validate_label_image(Image<node_t> image);
 
 } // namespace MR::Connectome

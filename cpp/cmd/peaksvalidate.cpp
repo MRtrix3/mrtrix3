@@ -18,7 +18,7 @@
 #include "header.h"
 #include "mrtrix.h"
 
-#include "fixel/peaks_validate.h"
+#include "fixel/validate.h"
 
 using namespace MR;
 using namespace App;
@@ -26,7 +26,7 @@ using namespace App;
 // clang-format off
 void usage() {
 
-  AUTHOR = "Robert Smith (robert.smith@florey.edu.au)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Validate a peaks (fixel directions) image";
 
@@ -54,7 +54,7 @@ void usage() {
     " or entirely NaN."
     " Triplets that are partly NaN and partly non-NaN are not valid."
 
-  + "5. Every non-fill peak must have a finite, strictly positive norm."
+  + "5. Every non-fill peak must contain finite values."
 
   + "The command also reports the range of norms across all non-fill peaks,"
     " indicating whether the image stores unit-norm directions only"
@@ -67,29 +67,27 @@ void usage() {
 // clang-format on
 
 void run() {
-  const Header H = Header::open(argument[0]);
+  Header H = Header::open(argument[0]);
+  // validate_header() throws on any structural violation.
+  Peaks::validate_header(H);
 
-  // validate_peaks_image() throws on any structural or content violation.
-  const Peaks::PeaksValidation result = Peaks::validate_peaks_image(H);
+  // validate_image() throws on any content violation.
+  auto image = H.get_image<float>();
+  const Peaks::PeaksValidation result = Peaks::validate_image(image);
 
   const ssize_t n_peaks = H.size(3) / 3;
-  CONSOLE("Image \"" + H.name() +
-          "\":"
-          " " +
-          str(n_peaks) + " peak slot(s) per voxel");
+  CONSOLE("Image \"" + H.name() + "\": " + str(n_peaks) + " peak slot(s) per voxel");
 
   // Report fill-value convention.
-  if (!result.fill_value_seen) {
+  if (!result.fill_value.has_value()) {
     CONSOLE("Fill value: none detected (all voxels fully populated)");
-  } else if (std::isnan(result.fill_value)) {
-    CONSOLE("Fill value: NaN");
   } else {
-    CONSOLE("Fill value: zero");
+    CONSOLE(std::string("Fill value: ") + (std::isnan(*result.fill_value) ? "NaN" : "zero"));
   }
 
   // Report norm range and interpretation.
-  if (!result.any_peaks_seen) {
-    CONSOLE("No non-fill peaks found in the image");
+  if (!std::isfinite(result.norm_min)) {
+    WARN("No non-fill peaks found in the image");
     return;
   }
 
@@ -97,11 +95,9 @@ void run() {
   const bool unit_norm = std::abs(result.norm_min - 1.0F) <= unit_tol && std::abs(result.norm_max - 1.0F) <= unit_tol;
 
   if (unit_norm) {
-    CONSOLE("Peak norms: all peaks are unit-norm"
-            " (directions image; no quantitative amplitude)");
+    CONSOLE("Peak norms: all peaks are unit-norm (directions image; no quantitative amplitude)");
   } else {
-    CONSOLE("Peak norms: range [" + str(result.norm_min) + ", " + str(result.norm_max) +
-            "]"
-            " (quantitative amplitude encoded in vector norm)");
+    CONSOLE("Peak norms: range [" + str(result.norm_min) + ", " + str(result.norm_max) + "]" + //
+            " (quantitative amplitudes encoded in vector norm)");                              //
   }
 }

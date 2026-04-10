@@ -20,6 +20,7 @@
 #include "surface/filter/vertex_transform.h"
 #include "surface/mesh.h"
 #include "surface/mesh_multi.h"
+#include "surface/validate.h"
 
 using namespace MR;
 using namespace App;
@@ -64,6 +65,7 @@ void run() {
       throw e;
     }
   }
+  MR::Surface::debug_validate(meshes);
 
   auto opt = get_options("transform");
   if (!opt.empty()) {

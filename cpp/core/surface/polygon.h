@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <array>
 #include <assert.h>
 #include <initializer_list>
 #include <stddef.h>
@@ -26,6 +27,10 @@
 namespace MR::Surface {
 
 template <uint32_t vertices = 3> class Polygon {
+
+  // Duplicate definition relative to core/surface/types.h
+  //   as that file itself includes this file (core/surface/polygon.h)
+  using vertex_index_type = uint32_t;
 
 public:
   template <typename T> Polygon(const T *const d) {
@@ -46,13 +51,13 @@ public:
       indices[counter] = *i;
   }
 
-  Polygon() { memset(indices, 0, vertices * sizeof(uint32_t)); }
+  Polygon() { indices = {0, 0, 0}; }
 
-  uint32_t &operator[](const size_t i) {
+  vertex_index_type &operator[](const size_t i) {
     assert(i < vertices);
     return indices[i];
   }
-  uint32_t operator[](const size_t i) const {
+  vertex_index_type operator[](const size_t i) const {
     assert(i < vertices);
     return indices[i];
   }
@@ -62,7 +67,7 @@ public:
   bool shares_edge(const Polygon &) const;
 
 private:
-  uint32_t indices[vertices];
+  std::array<vertex_index_type, vertices> indices;
 };
 
 template <> bool Polygon<3>::shares_edge(const Polygon<3> &) const;

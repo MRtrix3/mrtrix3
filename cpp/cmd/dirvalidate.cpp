@@ -15,9 +15,9 @@
  */
 
 #include "command.h"
-#include "mrtrix.h"
-
 #include "dwi/directions/validate.h"
+#include "file/matrix.h"
+#include "mrtrix.h"
 
 using namespace MR;
 using namespace App;
@@ -26,7 +26,7 @@ using namespace MR::DWI::Directions;
 // clang-format off
 void usage() {
 
-  AUTHOR = "Robert Smith (robert.smith@florey.edu.au)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Validate a direction set file";
 
@@ -40,9 +40,11 @@ void usage() {
 
   + "3 columns: Cartesian unit directions (x, y, z)."
     " All three components must lie within [-1, 1]."
-    " The Euclidean norm of each direction must not exceed 1.0."
-    " The command reports to the console if any directions are not of unit norm,"
-    " but this is not treated as a hard error."
+    " For most files, the Euclidean norm of each direction will be 1.0;"
+    " for others some quantitative value may be encoded"
+    " by having some directions with a norm less than unity."
+    " The command reports to the console which of these conventions"
+    " the input file appears to conform to."
 
   + "4 columns: diffusion gradient table (x, y, z, b-value)."
     " All direction components must lie within [-1, 1]."
@@ -56,23 +58,19 @@ void usage() {
 // clang-format on
 
 void run() {
-  const DirectionsValidation result = validate_directions(argument[0]);
+  Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> matrix = File::Matrix::load_matrix(argument[0]);
+  const DirectionsValidation result = MR::DWI::Directions::validate(matrix, argument[0], true);
 
   const std::string fmt = result.format == DirectionsFormat::Spherical   ? "spherical coordinates"
-                          : result.format == DirectionsFormat::Cartesian ? "Cartesian unit directions"
+                          : result.format == DirectionsFormat::Cartesian ? "Cartesian directions"
                                                                          : "diffusion gradient table";
 
-  CONSOLE("Direction file \"" + std::string(argument[0]) +
-          "\":"
-          " " +
-          str(result.n_directions) +
-          " direction(s)"
-          " in " +
-          fmt + " format");
+  CONSOLE("Direction file \"" + std::string(argument[0]) + "\": " +          //
+          str(result.n_directions) + " direction(s) in " + fmt + " format"); //
 
-  if (result.format == DirectionsFormat::Cartesian) {
+  if (result.format == DirectionsFormat::Cartesian || result.format == DirectionsFormat::GradientTable) {
     if (result.n_non_unit)
-      CONSOLE(str(result.n_non_unit) + " of " + str(result.n_directions) + " direction(s) are not of unit norm");
+      WARN(str(result.n_non_unit) + " of " + str(result.n_directions) + " direction(s) are not of unit norm");
     else
       CONSOLE("All directions are of unit norm");
   }

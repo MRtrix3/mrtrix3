@@ -22,6 +22,7 @@
 #include "fixel/helpers.h"
 #include "fixel/index_remapper.h"
 #include "fixel/loop.h"
+#include "fixel/validate.h"
 #include "image.h"
 #include "math/stats/fwe.h"
 #include "math/stats/glm.h"
@@ -188,6 +189,7 @@ void run() {
   const default_type empirical_skew = get_option_value("skew_nonstationarity", default_empirical_skew);
 
   const std::string input_fixel_directory = argument[0];
+  Fixel::debug_validate_directory(input_fixel_directory);
   Header index_header = Fixel::find_index_header(input_fixel_directory);
   auto index_image = index_header.get_image<Fixel::index_type>();
 

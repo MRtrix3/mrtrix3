@@ -27,7 +27,7 @@ using namespace MR::Surface;
 // clang-format off
 void usage() {
 
-  AUTHOR = "Robert Smith (robert.smith@florey.edu.au)";
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Validate a mesh surface file";
 
@@ -70,19 +70,11 @@ void run() {
 
   // validate_mesh() throws an Exception with a descriptive message
   // if any requirement is violated.
-  Surface::validate_mesh(mesh);
+  Surface::validate(mesh);
 
-  CONSOLE("Mesh \"" + std::string(argument[0]) +
-          "\" is valid:"
-          " " +
-          str(mesh.num_vertices()) +
-          " vertices,"
-          " " +
-          str(mesh.num_polygons()) +
-          " polygon(s)"
-          " (" +
-          str(mesh.num_triangles()) +
-          " triangle(s),"
-          " " +
-          str(mesh.num_quads()) + " quad(s))");
+  CONSOLE("Mesh \"" + std::string(argument[0]) + "\" is valid:" + //
+          " " + str(mesh.num_vertices()) + " vertices," +         //
+          " " + str(mesh.num_polygons()) + " polygon(s)" +        //
+          " (" + str(mesh.num_triangles()) + " triangle(s)," +    //
+          " " + str(mesh.num_quads()) + " quad(s))");             //
 }

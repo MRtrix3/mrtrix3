@@ -60,14 +60,15 @@ struct DirectionsValidation {
 //!     - all direction components must lie within [-1, 1]
 //!     - the b-value must be non-negative
 //!     - for non-zero b-value rows the direction must be of unit norm
+//!     - only permissible if permit_gradtable is true
 //!
 //! Any other column count is a hard error.
 //! Throws Exception on the first hard violation.
-DirectionsValidation validate_directions(std::string_view path);
+template <class MatrixType>
+const DirectionsValidation validate(const MatrixType &M, std::string_view path, const bool permit_gradtable);
 
-//! Call validate_directions() only when running in debug mode (log_level >= 3).
-//! Hard errors are caught and re-emitted as DEBUG messages.
-//! Intended for use in commands that consume direction files.
-void debug_validate_directions(std::string_view path);
+//! Unlike validation functions for other data formats,
+//! here validation is always run due to its cheap computational expense;
+//! as such there is no debug_validate() function
 
 } // namespace MR::DWI::Directions
