@@ -536,7 +536,7 @@ namespace MR
 
             value_type dSH_dt = daz*dSH_daz + del*dSH_del;
             value_type d2SH_dt2 = daz*daz*d2SH_daz2 + 2.0*daz*del*d2SH_deldaz + del*del*d2SH_del2;
-            value_type dt = d2SH_dt2 ? (-dSH_dt / d2SH_dt2) : value_type (MAX_DIR_CHANGE);
+            value_type dt = d2SH_dt2 ? (-dSH_dt / d2SH_dt2) : MAX_DIR_CHANGE;
 
             if (dt < 0.0) dt = -dt;
             if (dt > MAX_DIR_CHANGE) dt = MAX_DIR_CHANGE;
