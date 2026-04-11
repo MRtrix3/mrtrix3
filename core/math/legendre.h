@@ -122,6 +122,37 @@ namespace MR
           }
         }
 
+      //! overload accepting both cos(elevation) and sin(elevation) for improved numerical precision
+      /*! When the elevation angle is very small, computing sin²(el) as 1-cos²(el) suffers from
+       * catastrophic cancellation in single precision. This overload uses sin_x directly to
+       * avoid that issue when computing the m>0 starting values of the Legendre recursion. */
+      template <typename VectorType>
+        inline void Plm_sph (VectorType& array, const int lmax, const int m,
+                             const typename VectorType::Scalar x,
+                             const typename VectorType::Scalar sin_x)
+        {
+          using value_type = typename VectorType::Scalar;
+          value_type sin2 = pow2 (sin_x);
+          if (m && sin2 == 0.0) {
+            for (int n = m; n <= lmax; ++n)
+              array[n] = 0.0;
+            return;
+          }
+          array[m] = 0.282094791773878;
+          if (m) array[m] *= std::sqrt (value_type (2*m+1) * Plm_sph_helper (sin2, 2.0*m));
+          if (m & 1) array[m] = -array[m];
+          if (lmax == m) return;
+
+          value_type f = std::sqrt (value_type (2*m+3));
+          array[m+1] = x * f * array[m];
+
+          for (int n = m+2; n <= lmax; n++) {
+            array[n] = x*array[n-1] - array[n-2]/f;
+            f = std::sqrt (value_type (4*pow2 (n)-1) / value_type (pow2 (n)-pow2 (m)));
+            array[n] *= f;
+          }
+        }
+
 
 
       //* compute derivatives of normalised associated Legendre functions

@@ -582,7 +582,7 @@ namespace MR
           using value_type = typename VectorType::Scalar;
           value_type sel = std::sin (elevation);
           value_type cel = std::cos (elevation);
-          bool atpole = sel < 1e-3;
+          bool atpole = sel < 1e-4;
 
           dSH_del = dSH_daz = d2SH_del2 = d2SH_deldaz = d2SH_daz2 = 0.0;
           VLA_MAX (AL, value_type, NforL_mpos (lmax), 64);
@@ -595,7 +595,7 @@ namespace MR
           else {
             Eigen::Matrix<value_type,Eigen::Dynamic,1,0,64> buf (lmax+1);
             for (int m = 0; m <= lmax; m++) {
-              Legendre::Plm_sph (buf, lmax, m, cel);
+              Legendre::Plm_sph (buf, lmax, m, cel, sel);
               for (int l = ( (m&1) ?m+1:m); l <= lmax; l+=2)
                 AL[index_mpos (l,m)] = buf[l];
             }
