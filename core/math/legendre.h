@@ -139,7 +139,7 @@ namespace MR
             return;
           }
           array[m] = 0.282094791773878;
-          if (m) array[m] *= std::sqrt (value_type (2*m+1) * Plm_sph_helper (sin2, 2.0*m));
+          if (m) array[m] *= std::sqrt (value_type (2*m+1) * Plm_sph_helper (1.0*sin2, 2.0*m));
           if (m & 1) array[m] = -array[m];
           if (lmax == m) return;
 
