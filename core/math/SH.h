@@ -522,7 +522,7 @@ namespace MR
           assert (std::isfinite (unit_init_dir[0]));
           for (int i = 0; i < 50; i++) {
             value_type az = std::atan2 (unit_init_dir[1], unit_init_dir[0]);
-            value_type el = std::atan2 (std::sqrt (unit_init_dir[0]*unit_init_dir[0] + unit_init_dir[1]*unit_init_dir[1]), unit_init_dir[2]);
+            value_type el = std::atan2 (std::hypot (unit_init_dir[0], unit_init_dir[1]), unit_init_dir[2]);
             value_type amplitude, dSH_del, dSH_daz, d2SH_del2, d2SH_deldaz, d2SH_daz2;
             derivatives (sh, lmax, el, az, amplitude, dSH_del, dSH_daz, d2SH_del2, d2SH_deldaz, d2SH_daz2, precomputer);
 
