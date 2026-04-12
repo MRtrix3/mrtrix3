@@ -1,26 +1,43 @@
-.. _5ttcheck:
+.. _peaksvalidate:
 
-5ttcheck
+peaksvalidate
 ===================
 
 Synopsis
 --------
 
-Thoroughly check that one or more images conform to the expected ACT five-tissue-type (5TT) format
+Validate a "peaks" image (sets of 3-vectors encoding orientations per voxel)
 
 Usage
 --------
 
 ::
 
-    5ttcheck [ options ]  input [ input ... ]
+    peaksvalidate [ options ]  image
 
--  *input*: the 5TT image(s) to be tested
+-  *image*: the input peaks image
+
+Description
+-----------
+
+This command checks that an image conforms to the requirements of a peaks image, in which successive triplets of volumes encode the (x, y, z) Cartesian components of one peak direction per triplet.
+
+The following checks are performed:
+
+1. The image must be of floating-point type.
+
+2. The image must be 4-dimensional, with the number of volumes a multiple of three.
+
+3. Where a voxel contains fewer peaks than the maximum, the unfilled peak slots must use a single consistent fill convention across the entire image: either all three components of the fill triplet are zero, or all three components are NaN. Both conventions must not be mixed within the same image.
+
+4. When the fill convention is NaN, every individual triplet must be either entirely finite or entirely NaN. Triplets that are partly NaN and partly non-NaN are not valid.
+
+5. Every non-fill peak must contain finite values.
+
+The command also reports the range of norms across all non-fill peaks, indicating whether the image stores unit-norm directions only or whether a quantitative value is associated with each peak (encoded in the vector norm).
 
 Options
 -------
-
--  **-voxels prefix** output mask images highlighting voxels where the input does not conform to 5TT requirements
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -29,7 +46,7 @@ Standard options
 
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
--  **-debug** display debugging messages.
+-  **-debug** display debugging messages & debug input data.
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 

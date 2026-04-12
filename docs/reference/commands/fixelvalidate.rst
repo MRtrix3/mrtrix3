@@ -1,23 +1,29 @@
-.. _tsfdivide:
+.. _fixelvalidate:
 
-tsfdivide
+fixelvalidate
 ===================
 
 Synopsis
 --------
 
-Divide corresponding values in track scalar files
+Validate the contents of a fixel directory
 
 Usage
 --------
 
 ::
 
-    tsfdivide [ options ]  input1 input2 output
+    fixelvalidate [ options ]  fixel_directory
 
--  *input1*: the first input track scalar file.
--  *input2*: the second input track scalar file.
--  *output*: the output track scalar file
+-  *fixel_directory*: the fixel directory to be validated
+
+Description
+-----------
+
+This command checks that a fixel directory conforms to the fixel directory format. Specifically, it verifies: (1) a valid index image is present; (2) a valid directions image is present; (3) every fixel index is covered by exactly one voxel in the index image; (4) all fixel data files in the directory contain the same number of fixels as implied by the index image.
+
+Fixel data are stored utilising the fixel directory format described in the main documentation, which can be found at the following link:  |br|
+https://mrtrix.readthedocs.io/en/3.0.8/fixel_based_analysis/fixel_directory_format.html
 
 Options
 -------
@@ -50,7 +56,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 
 
-**Author:** David Raffelt (david.raffelt@florey.edu.au)
+**Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
 **Copyright:** Copyright (c) 2008-2026 the MRtrix3 contributors.
 

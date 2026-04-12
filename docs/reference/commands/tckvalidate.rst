@@ -1,23 +1,30 @@
-.. _tsfdivide:
+.. _tckvalidate:
 
-tsfdivide
+tckvalidate
 ===================
 
 Synopsis
 --------
 
-Divide corresponding values in track scalar files
+Validate a tractogram (.tck) file
 
 Usage
 --------
 
 ::
 
-    tsfdivide [ options ]  input1 input2 output
+    tckvalidate [ options ]  tracks_in
 
--  *input1*: the first input track scalar file.
--  *input2*: the second input track scalar file.
--  *output*: the output track scalar file
+-  *tracks_in*: the input tractogram file
+
+Description
+-----------
+
+This command checks that a tractogram file is well-formed. The binary data section of a .tck file consists of a sequence of 3-float triplets. Each triplet must be exactly one of: a regular vertex (all three components finite), an inter-streamline delimiter (all three components NaN), or the mandatory end-of-file barrier (all three components infinity). The end-of-file barrier must be the last triplet in the file.
+
+The following hard violations cause the command to fail: (1) a triplet that is partially non-finite (i.e. not all-finite, not all-NaN, and not all-infinity); (2) any data present after the end-of-file barrier; (3) the end of the binary data section is reached without an end-of-file barrier (truncated file); (4) the last streamline body is not terminated by a NaN delimiter before the end-of-file barrier; (5) the "count" field is absent from the file header; (6) the "count" field in the file header does not match the number of streamlines actually present in the file.
+
+The command also reports the presence of streamlines with zero vertices or exactly one vertex, which are degenerate cases that may indicate issues with the tractography algorithm that produced the file.
 
 Options
 -------
@@ -50,7 +57,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 
 
-**Author:** David Raffelt (david.raffelt@florey.edu.au)
+**Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
 **Copyright:** Copyright (c) 2008-2026 the MRtrix3 contributors.
 

@@ -1,23 +1,32 @@
-.. _tsfdivide:
+.. _dirvalidate:
 
-tsfdivide
+dirvalidate
 ===================
 
 Synopsis
 --------
 
-Divide corresponding values in track scalar files
+Validate a direction set file
 
 Usage
 --------
 
 ::
 
-    tsfdivide [ options ]  input1 input2 output
+    dirvalidate [ options ]  dirs
 
--  *input1*: the first input track scalar file.
--  *input2*: the second input track scalar file.
--  *output*: the output track scalar file
+-  *dirs*: the input direction set text file
+
+Description
+-----------
+
+This command checks that a direction set text file is well-formed. The format is inferred from the number of columns:
+
+2 columns: spherical coordinates (azimuth, inclination). The azimuth must lie strictly within [-2π, 2π], and the difference between maximal and minimal values must not exceed 2π. The inclination must lie within [-π, π], and the difference between maximal and minimal values must not exceed π.
+
+3 columns: Cartesian unit directions (x, y, z). All three components must lie within [-1, 1]. For most files, the Euclidean norm of each direction will be 1.0; for others some quantitative value may be encoded by having some directions with a norm less than unity. The command reports to the console which of these conventions the input file appears to conform to.
+
+4 columns: diffusion gradient table (x, y, z, b-value). All direction components must lie within [-1, 1]. The b-value must be non-negative. For non-zero b-value entries, the gradient direction must be of unit norm. b=0 entries may carry a zero direction vector.
 
 Options
 -------
@@ -50,7 +59,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 
 
-**Author:** David Raffelt (david.raffelt@florey.edu.au)
+**Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
 **Copyright:** Copyright (c) 2008-2026 the MRtrix3 contributors.
 

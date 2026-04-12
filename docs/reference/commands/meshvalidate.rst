@@ -1,23 +1,38 @@
-.. _tsfdivide:
+.. _meshvalidate:
 
-tsfdivide
+meshvalidate
 ===================
 
 Synopsis
 --------
 
-Divide corresponding values in track scalar files
+Validate a mesh surface file
 
 Usage
 --------
 
 ::
 
-    tsfdivide [ options ]  input1 input2 output
+    meshvalidate [ options ]  mesh
 
--  *input1*: the first input track scalar file.
--  *input2*: the second input track scalar file.
--  *output*: the output track scalar file
+-  *mesh*: the input mesh file
+
+Description
+-----------
+
+This command checks that a mesh surface file conforms to the requirements of a valid closed orientable surface. The following properties are verified:
+
+1. No disconnected vertices: every vertex in the file must be referenced by at least one polygon.
+
+2. No duplicate vertices: no two vertices may occupy the same 3D position.
+
+3. No duplicate polygons: no two polygons may reference the same set of vertex indices.
+
+4. Closed surface: every edge must be shared by exactly two polygons. An edge belonging to only one polygon indicates a boundary (open surface); an edge shared by three or more polygons indicates a non-manifold mesh.
+
+5. Single connected component: all polygons must belong to a single connected piece. A surface with multiple disconnected pieces is not valid.
+
+6. Consistent normal orientation: for every shared edge, the two adjacent polygons must traverse it in opposite directions. If both polygons traverse the edge in the same direction their winding orders — and therefore their surface normals — are inconsistent.
 
 Options
 -------
@@ -50,7 +65,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 
 
-**Author:** David Raffelt (david.raffelt@florey.edu.au)
+**Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
 **Copyright:** Copyright (c) 2008-2026 the MRtrix3 contributors.
 

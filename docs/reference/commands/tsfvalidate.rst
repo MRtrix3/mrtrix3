@@ -6,7 +6,7 @@ tsfvalidate
 Synopsis
 --------
 
-Validate a track scalar file against the corresponding track data
+Validate a track scalar file against its corresponding tractogram
 
 Usage
 --------
@@ -16,7 +16,22 @@ Usage
     tsfvalidate [ options ]  tsf tracks
 
 -  *tsf*: the input track scalar file
--  *tracks*: the track file on which the TSF is based
+-  *tracks*: the tractogram from which the track scalar file was derived
+
+Description
+-----------
+
+This command checks that a track scalar file (.tsf) is consistent with the tractogram (.tck) from which it was derived. The following conditions are verified:
+
+1. Both files must contain a "timestamp" field in their headers, and the two timestamps must be identical. The timestamp is copied from the tractogram into the scalar file when the scalar file is created, so a mismatch indicates that the scalar file was not produced from the supplied tractogram.
+
+2. The track scalar file header must contain a "count" field.
+
+3. The value of the "count" field in the track scalar file header must match the number of scalar sequences actually present in the file.
+
+4. The number of scalar sequences in the track scalar file must equal the number of streamlines in the tractogram.
+
+5. For every streamline, the number of scalar values in the corresponding scalar sequence must equal the number of vertices in the streamline.
 
 Options
 -------
@@ -28,7 +43,7 @@ Standard options
 
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
--  **-debug** display debugging messages.
+-  **-debug** display debugging messages & debug input data.
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 

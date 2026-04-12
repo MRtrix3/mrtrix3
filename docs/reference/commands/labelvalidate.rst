@@ -1,23 +1,30 @@
-.. _tsfdivide:
+.. _labelvalidate:
 
-tsfdivide
+labelvalidate
 ===================
 
 Synopsis
 --------
 
-Divide corresponding values in track scalar files
+Validate a hard segmentation (label) image
 
 Usage
 --------
 
 ::
 
-    tsfdivide [ options ]  input1 input2 output
+    labelvalidate [ options ]  image
 
--  *input1*: the first input track scalar file.
--  *input2*: the second input track scalar file.
--  *output*: the output track scalar file
+-  *image*: the input label image
+
+Description
+-----------
+
+This command checks that an image conforms to the requirements of a hard segmentation image. Specifically, it verifies that the image is 3-dimensional (or 4-dimensional with a singleton 4th axis), and contains only non-negative integer values (either stored as an unsigned integer datatype, or as a floating-point or signed integer datatype with values that satisfy these constraints).
+
+The command then reports two further properties of the image. First, whether the label indices are contiguous: i.e. whether all integer values in the range [1, max_label] are present in the image. Second, for each unique non-background label, whether the set of voxels carrying that label forms a single spatially connected region or comprises multiple disconnected components, assessed using 26-nearest-neighbour voxel connectivity.
+
+Label index 0 is treated as background and excluded from all reports.
 
 Options
 -------
@@ -50,7 +57,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 
 
-**Author:** David Raffelt (david.raffelt@florey.edu.au)
+**Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
 **Copyright:** Copyright (c) 2008-2026 the MRtrix3 contributors.
 

@@ -1,32 +1,47 @@
-.. _mrdump:
+.. _warpvalidate:
 
-mrdump
+warpvalidate
 ===================
 
 Synopsis
 --------
 
-Print out the values within an image
+Validate a non-linear warp image
 
 Usage
 --------
 
 ::
 
-    mrdump [ options ]  input[ output ]
+    warpvalidate [ options ]  image
 
--  *input*: the input image.
--  *output*: the (optional) output text file.
+-  *image*: the input warp image
 
 Description
 -----------
 
-If no destination file is specified, the voxel locations will be printed to stdout.
+This command checks that an image conforms to the requirements of a non-linear warp field.
+
+The format is inferred from the image dimensions:
+
+4D image with 3 volumes: a displacement or deformation field. The image must be 4-dimensional with exactly 3 volumes in the 4th dimension (the x, y, z warp components). MRtrix3 uses displacement and deformation fields interchangeably; the structural requirements are identical for both.
+
+5D image with 3 volumes for each of 4 volume groups: a full warp field as produced by eg. mrregister -nl_warp_full. The image must be 5-dimensional, with exactly 3 volumes in the 4th dimension (x/y/z components of the warp) and exactly 4 volume groups in the 5th dimension (image1-to-midway, midway-to-image1, image2-to-midway, midway-to-image2). The header must also contain "linear1" and "linear2" fields encoding the linear transform component for each image.
+
+The following checks are performed:
+
+1. The image must be of floating-point type.
+
+2. The dimensionality and volume counts must match one of the two supported formats described above.
+
+3. For full warp images, the header must contain both the "linear1" and "linear2" linear transform fields.
+
+4. Fill values, used to mark voxels that lie outside the domain of the warp (e.g. outside a brain mask), must use a single consistent convention across the entire image: either all fill triplets are all-zero, or all fill triplets are all-NaN. Both conventions must not be mixed within the same image.
+
+5. Where the fill convention is NaN, every individual warp triplet must be either entirely finite or entirely NaN. Triplets that are partly NaN and partly non-NaN are not valid.
 
 Options
 -------
-
--  **-mask image** only write the image values within voxels specified by a mask image
 
 Standard options
 ^^^^^^^^^^^^^^^^
