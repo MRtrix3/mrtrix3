@@ -92,7 +92,7 @@ Test operation of the Python command-line interface
 
 + **--quiet**<br>do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-+ **--debug**<br>display debugging messages.
++ **--debug**<br>display debugging messages & debug input data.
 
 + **--force**<br>force overwrite of output files.
 

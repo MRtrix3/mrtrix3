@@ -16,6 +16,7 @@
 
 #include "command.h"
 #include "header.h"
+#include "image.h"
 #include "mrtrix.h"
 
 #include "fixel/validate.h"
@@ -28,7 +29,7 @@ void usage() {
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  SYNOPSIS = "Validate a \"peaks\" image (sets of 3-vectors encoding orientations per voxel)";
+  SYNOPSIS = "Validate a so-called peaks image (a set of 3-vectors per voxel where each encodes an orientation)";
 
   DESCRIPTION
   + "This command checks that an image conforms to the requirements of a"

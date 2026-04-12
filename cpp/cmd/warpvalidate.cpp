@@ -16,6 +16,7 @@
 
 #include "command.h"
 #include "header.h"
+#include "image.h"
 #include "mrtrix.h"
 
 #include "registration/warp/validate.h"

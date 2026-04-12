@@ -114,6 +114,9 @@ def execute(): #pylint: disable=unused-variable
     run.command(f'mrconvert {app.ARGS.t1} T1.nii -strides -1,+2,+3',
                 preserve_pipes=True)
 
+  if app.VERBOSITY >= 3:
+    run.command('labelvalidate parc.mif')
+
   # Run FIRST
   first_input_is_brain_extracted = ''
   if app.ARGS.premasked:

@@ -4,7 +4,7 @@ Verify operation of the C++ command-line interface & parser
 
 ## Usage
 
-    testing_cpp_cli [ options ] 
+    testing_cpp_cli [ options ]
 
 
 ## Options
@@ -57,7 +57,7 @@ Verify operation of the C++ command-line interface & parser
 
 + **-quiet**<br>do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-+ **-debug**<br>display debugging messages.
++ **-debug**<br>display debugging messages & debug input data.
 
 + **-force**<br>force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 

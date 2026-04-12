@@ -246,7 +246,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`peaks2fixel`, "Convert peak directions image to a fixel directory"
     |python.png|, :ref:`peakscheck`, "Check the orientations of an image containing discrete fibre orientations"
     |cpp.png|, :ref:`peaksconvert`, "Convert peak directions images between formats and/or conventions"
-    |cpp.png|, :ref:`peaksvalidate`, "Validate a "peaks" image (sets of 3-vectors encoding orientations per voxel)"
+    |cpp.png|, :ref:`peaksvalidate`, "Validate a so-called peaks image (a set of 3-vectors per voxel where each encodes an orientation)"
     |python.png|, :ref:`population_template`, "Generates an unbiased group-average template from a series of images"
     |python.png|, :ref:`responsemean`, "Calculate the mean response function from a set of text files"
     |cpp.png|, :ref:`sh2amp`, "Evaluate the amplitude of an image of spherical harmonic functions along specified directions"

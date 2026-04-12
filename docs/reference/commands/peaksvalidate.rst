@@ -6,7 +6,7 @@ peaksvalidate
 Synopsis
 --------
 
-Validate a "peaks" image (sets of 3-vectors encoding orientations per voxel)
+Validate a so-called peaks image (a set of 3-vectors per voxel where each encodes an orientation)
 
 Usage
 --------
