@@ -276,20 +276,16 @@ void debug_validate_image(Image<float> image) {
     return;
   try {
     const PeaksValidation v = validate_image(image);
-    if (v.fill_value.has_value())
-      DEBUG("Peaks image \"" + image.name() + "\":" + //
-            " fill value is " + str(*v.fill_value));  //
-    else
-      DEBUG("Peaks image \"" + image.name() + "\":" +                    //
-            ": no fill triplets detected (all voxels fully populated)"); //
+    DEBUG("Peaks image \"" + image.name() + "\":" +
+          (v.fill_value.has_value() ? (" fill value is " + str(*v.fill_value))
+                                    : " no fill triplets detected (all voxels fully populated)"));
     if (std::isfinite(v.norm_min)) {
       constexpr float unit_tol = 1e-4F;
-      if (std::abs(v.norm_min - 1.0F) <= unit_tol && std::abs(v.norm_max - 1.0F) <= unit_tol)
-        DEBUG("Peaks image \"" + image.name() + "\": all peaks are unit-norm");
-      else
-        DEBUG("Peaks image \"" + image.name() + "\":" +                                //
-              " peak norms range from " + str(v.norm_min) + " to " + str(v.norm_max) + //
-              " (ie. image encodes a quantitative value per peak)");                   //
+      DEBUG("Peaks image \"" + image.name() + "\": " +
+            ((std::fabs(v.norm_min - 1.0F) <= unit_tol && std::fabs(v.norm_max - 1.0F) <= unit_tol)
+                 ? "all peaks are unit-norm"
+                 : ("peak norms range from " + str(v.norm_min) + " to " + str(v.norm_max) +
+                    " (ie. image encodes a quantitative value per peak)")));
     } else {
       WARN("Peaks image \"" + image.name() + "\": no peaks data present");
     }

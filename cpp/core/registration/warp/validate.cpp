@@ -232,10 +232,8 @@ template <typename ValueType> void debug_validate_image(Image<ValueType> image) 
     const WarpValidation v = validate_image(image);
     const std::string fmt = v.format == WarpFormat::Simple ? "simple (displacement or deformation field)" : "full warp";
     DEBUG("Warp image \"" + image.name() + "\": " + fmt + " format");
-    if (v.fill_value.has_value())
-      DEBUG("Warp image \"" + image.name() + "\": fill value is " + str(*v.fill_value));
-    else
-      DEBUG("Warp image \"" + image.name() + "\": no fill value determined");
+    DEBUG("Warp image \"" + image.name() + "\": " +                                                         //
+          (v.fill_value.has_value() ? "fill value is " + str(*v.fill_value) : "no fill value determined")); //
   } catch (const Exception &e) {
     throw Exception(e, "Warp image \"" + image.name() + "\" validation failed");
   }

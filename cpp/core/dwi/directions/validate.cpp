@@ -103,7 +103,7 @@ const DirectionsValidation validate(const MatrixType &M, std::string_view path, 
           throw Exception("Row " + str(r + 1) + ": " +                                              //
                           "z component " + str(z) + " is outside the permitted range [-1.0, 1.0]"); //
         const value_type norm = M.row(r).norm();
-        if (std::abs(norm - value_type(1)) > unit_tol)
+        if (std::fabs(norm - value_type(1)) > unit_tol)
           ++result.n_non_unit;
       }
 
@@ -146,7 +146,7 @@ const DirectionsValidation validate(const MatrixType &M, std::string_view path, 
         if (b > bthresh) {
           // const value_type norm = M.block<1,3>(r, 0).norm();
           const value_type norm = M.block(r, 0, 1, 3).norm();
-          if (std::abs(norm - value_type(1)) > unit_tol)
+          if (std::fabs(norm - value_type(1)) > unit_tol)
             ++result.n_non_unit;
         }
       }

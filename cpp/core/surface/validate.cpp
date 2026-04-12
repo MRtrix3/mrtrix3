@@ -20,6 +20,7 @@
 #include <map>
 #include <numeric>
 #include <set>
+#include <string_view>
 #include <tuple>
 #include <vector>
 
@@ -152,7 +153,7 @@ void validate(const Mesh &mesh) {
   {
     std::set<std::vector<vertex_index_type>> seen;
     size_t duplicate_count = 0;
-    auto check_poly = [&](const auto &poly, const size_t idx, const char *type) {
+    auto check_poly = [&](const auto &poly, const size_t idx, std::string_view type) {
       std::vector<vertex_index_type> key(poly.size());
       for (size_t j = 0; j != poly.size(); ++j)
         key[j] = poly[j];

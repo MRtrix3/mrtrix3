@@ -92,7 +92,8 @@ void run() {
   }
 
   constexpr float unit_tol = 1e-4F;
-  const bool unit_norm = std::abs(result.norm_min - 1.0F) <= unit_tol && std::abs(result.norm_max - 1.0F) <= unit_tol;
+  const bool unit_norm = std::fabs(result.norm_min - 1.0F) <= unit_tol && //
+                         std::fabs(result.norm_max - 1.0F) <= unit_tol;   //
 
   if (unit_norm) {
     CONSOLE("Peak norms: all peaks are unit-norm (directions image; no quantitative amplitude)");
