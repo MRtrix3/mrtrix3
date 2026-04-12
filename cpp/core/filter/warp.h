@@ -63,7 +63,7 @@ void warp(ImageTypeSource &source,
           WarpType &warp,
           const typename ImageTypeDestination::value_type value_when_out_of_bounds =
               Interpolator<ImageTypeSource>::default_out_of_bounds_value(),
-          const std::vector<uint32_t> oversample = Adapter::AutoOverSample,
+          const Adapter::OversampleFactors &oversample = Adapter::OversampleFactors::Auto,
           const bool jacobian_modulate = false) {
 
   // reslice warp onto destination grid
@@ -73,7 +73,7 @@ void warp(ImageTypeSource &source,
     Header header(destination);
     header.ndim() = 4;
     header.size(3) = 3;
-    Stride::set(header, Stride::contiguous_along_axis(3, header));
+    header.strides().reorder(Stride::Permutation::volume_contiguous);
     auto warp_resliced = Image<typename WarpType::value_type>::scratch(header);
     reslice<Interp::Cubic>(warp, warp_resliced, Adapter::NoTransform, oversample);
 

@@ -418,7 +418,7 @@ WriteInfo prepare_ND_write(std::string_view path, const DataType data_type, cons
   const size_t num_elements = shape[0] * (shape.size() == 2 ? shape[1] : 1);
   const size_t data_size = num_elements * info.data_type.bytes();
   File::resize(path, leadin_size + data_size);
-  info.mmap.reset(new File::MMap({path, leadin_size}, true, false));
+  info.mmap.reset(new File::MMap({path, static_cast<off_t>(leadin_size)}, true, false));
   return info;
 }
 

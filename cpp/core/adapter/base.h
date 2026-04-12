@@ -16,7 +16,10 @@
 
 #pragma once
 
+#include <vector>
+
 #include "image_helpers.h"
+#include "stride.h"
 #include "types.h"
 
 namespace MR {
@@ -39,29 +42,33 @@ public:
   template <class U> const Base &operator=(const U &V) { return parent_ = V; }
 
   FORCE_INLINE ImageType &parent() { return parent_; }
-  FORCE_INLINE bool valid() const { return parent_.valid(); }
   FORCE_INLINE bool operator!() const { return !valid(); }
   FORCE_INLINE const ImageType &parent() const { return parent_; }
-  FORCE_INLINE std::string_view name() const { return parent_.name(); }
-  FORCE_INLINE size_t ndim() const { return parent_.ndim(); }
-  FORCE_INLINE ssize_t size(size_t axis) const { return parent_.size(axis); }
-  FORCE_INLINE default_type spacing(size_t axis) const { return parent_.spacing(axis); }
-  FORCE_INLINE ssize_t stride(size_t axis) const { return parent_.stride(axis); }
-  FORCE_INLINE const transform_type &transform() const { return parent_.transform(); }
-  FORCE_INLINE const KeyValues &keyval() const { return parent_.keyval(); }
 
-  FORCE_INLINE ssize_t get_index(size_t axis) const { return parent_.index(axis); }
-  FORCE_INLINE void move_index(size_t axis, ssize_t increment) { parent_.index(axis) += increment; }
+  FORCE_INLINE virtual std::string_view name() const { return parent_.name(); }
+  FORCE_INLINE virtual bool valid() const { return parent_.valid(); }
 
-  FORCE_INLINE value_type get_value() const { return parent_.value(); }
-  FORCE_INLINE void set_value(value_type val) { parent_.value() = val; }
+  FORCE_INLINE virtual size_t ndim() const { return parent_.ndim(); }
+  FORCE_INLINE virtual VoxelIndex size(const ArrayIndex axis) const { return parent_.size(axis); }
+  FORCE_INLINE virtual default_type spacing(const ArrayIndex axis) const { return parent_.spacing(axis); }
+  FORCE_INLINE virtual Stride::Actual::value_type stride(const ArrayIndex axis) const { return parent_.stride(axis); }
+  FORCE_INLINE virtual const transform_type &transform() const { return parent_.transform(); }
+  FORCE_INLINE virtual const KeyValues &keyval() const { return parent_.keyval(); }
 
-  FORCE_INLINE void reset() { parent_.reset(); }
+  FORCE_INLINE virtual VoxelIndex get_index(const ArrayIndex axis) const { return parent_.index(axis); }
+  FORCE_INLINE virtual void move_index(const ArrayIndex axis, const VoxelIndex increment) {
+    parent_.index(axis) += increment;
+  }
+
+  FORCE_INLINE virtual value_type get_value() const { return parent_.value(); }
+  FORCE_INLINE virtual void set_value(value_type val) { parent_.value() = val; }
+
+  FORCE_INLINE virtual void reset() { parent_.reset(); }
 
   friend std::ostream &operator<<(std::ostream &stream, const Base &V) {
     stream << "image adapter \"" << V.name() << "\", datatype " << MR::DataType::from<value_type>().specifier()
            << ", position [ ";
-    for (size_t n = 0; n < V.ndim(); ++n)
+    for (StdIndex n = 0; n < V.ndim(); ++n)
       stream << V[n] << " ";
     stream << "], value = " << V.value();
     return stream;

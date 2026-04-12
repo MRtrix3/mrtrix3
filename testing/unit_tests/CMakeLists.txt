@@ -16,6 +16,7 @@ set(UNIT_TESTS_CPP_SRCS
     roi_tests.cpp
     sh_precomputer_tests.cpp
     shuffle_tests.cpp
+    strides.cpp
     to_tests.cpp
 )
 

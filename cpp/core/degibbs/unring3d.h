@@ -165,16 +165,17 @@ protected:
   }
 };
 
-inline std::vector<size_t> strides_for_axis(int axis) {
+Axes::Subset order_for_axis(int axis) {
   switch (axis) {
   case 0:
-    return {0, 1, 2};
+    return Axes::Subset({0, 1, 2});
   case 1:
-    return {1, 2, 0};
+    return Axes::Subset({1, 2, 0});
   case 2:
-    return {2, 0, 1};
+    return Axes::Subset({2, 0, 1});
   }
-  return {};
+  assert(false);
+  return Axes::Subset();
 }
 
 } // namespace
@@ -213,7 +214,7 @@ public:
 
       // apply unringing operation on desired axis:
       INFO("performing unringing along axis " + str(axis) + "...");
-      ThreadedLoop(vol_filtered, strides_for_axis(axis))
+      ThreadedLoop(vol_filtered, order_for_axis(axis))
           .run_outer(LineProcessor<VolumeOut>(axis, vol_filtered, output, minW, maxW, num_shifts));
 
       ++progress;

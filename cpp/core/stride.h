@@ -16,11 +16,20 @@
 
 #pragma once
 
+#include <initializer_list>
+#include <optional>
+#include <set>
+#include <vector>
+
 #include "app.h"
+#include "axes.h"
 #include "datatype.h"
 #include "debug.h"
+#include "image_helpers.h"
 #include "math/math.h"
 #include "types.h"
+
+// #define MRTRIX_DEBUG_STRIDES
 
 //! Functions to handle the memory layout of images
 /*! Strides are typically supplied as a symbolic list of increments,
@@ -43,7 +52,7 @@
  * dimensions 256x256. The dimensions of the image (as returned by size())
  * are therefore [ 128 256 256 ]. The actual strides needed to navigate
  * through the image, given the symbolic strides above, should therefore
- * be [ 65536 -256 -1 ] (since 256x256 = 65532).
+ * be [ 65536 -256 -1 ] (since 256x256 = 65536).
  *
  * Note that a stride of zero is treated as undefined or invalid. This can
  * be used in the symbolic representation to specify that the ordering of
@@ -53,11 +62,10 @@
  *
  * The functions defined in this namespace provide an interface to
  * manipulate the strides and convert symbolic into actual strides. */
-namespace MR::Stride {
+
+namespace MR::Stride::Legacy {
 
 using List = std::vector<ssize_t>;
-
-extern const App::OptionGroup Options;
 
 //! \cond skip
 namespace {
@@ -165,6 +173,8 @@ template <class HeaderType> void sanitise(HeaderType &header) {
         header.stride(j) = 0;
     }
   }
+  if (header.size(header.ndim() - 1) == 1)
+    header.stride(header.ndim() - 1) = 0;
 
   size_t max = 0;
   for (size_t i = 0; i < header.ndim(); ++i)
@@ -343,5 +353,331 @@ inline void set_from_command_line(HeaderType &header, const List &default_stride
   else if (!default_strides.empty())
     set(header, default_strides);
 }
+
+} // namespace MR::Stride::Legacy
+
+namespace MR {
+class Header;
+} // namespace MR
+
+namespace MR::Stride {
+
+extern const App::OptionGroup Options;
+
+template <typename ValueType> class Base {
+public:
+  using value_type = ValueType;
+  using vector_type = std::vector<ValueType>;
+  Base(const vector_type &data) : data_(data) { assert(size() <= 5); }
+  Base(const size_t num_axes, const ValueType invalid_value) : data_(num_axes, invalid_value) { assert(size() <= 5); }
+  Base(std::initializer_list<value_type> data) : data_(data) {}
+  Base(const Base &) = default;
+  Base() = default;
+
+  bool empty() const { return data_.empty(); }
+  size_t size() const { return data_.size(); }
+
+  explicit operator const vector_type &() const { return data_; }
+  ValueType operator[](const ArrayIndex index) const {
+    assert(index >= 0 && index < size());
+    return data_[index];
+  }
+  bool operator==(const Base &that) const { return that.data_ == data_; }
+  bool operator!=(const Base &that) const { return that.data_ != data_; }
+  Base &operator=(const Base &that) {
+    data_ = that.data_;
+    return *this;
+  }
+  Base &operator=(std::initializer_list<ValueType> data) {
+    data_ = data;
+    return *this;
+  }
+
+  virtual bool is_canonical() const = 0;
+  virtual bool is_degenerate() const = 0;
+  virtual bool is_sanitised() const = 0;
+  virtual bool valid() const = 0;
+
+protected:
+  vector_type data_;
+};
+
+namespace {
+template <class, typename Fallback, typename = void> struct type_or_default {
+  using type = Fallback;
+};
+template <class C, typename F> struct type_or_default<C, F, std::void_t<typename C::type>> {
+  using type = typename C::type;
+};
+} // namespace
+
+template <typename ValueType> std::ostream &operator<<(std::ostream &stream, const Base<ValueType> &base) {
+  if (base.empty()) {
+    stream << "<NULL>";
+    return stream;
+  }
+  // Explicitly cast Symbolic's int8_t to > 1 byte
+  //   so as to not attempt to print as a character
+  using IntType = typename type_or_default<ValueType, int>::type;
+  stream << static_cast<IntType>(base[0]);
+  for (ArrayIndex axis = 1; axis != static_cast<ArrayIndex>(base.size()); ++axis)
+    stream << "," << static_cast<IntType>(base[axis]);
+  return stream;
+}
+
+// Forward definition of classes and explanation:
+// Imagine a DICOM dataset (LPS) that has been converted to have volume contiguous in memory
+// "Order": Contains a sorted list of axis indices,
+//   where from head to tail contains the axis indices from smallest to largest absolute stride
+//   In the above example: [3 0 1 2]
+//   (ie. first value being "3" means that the axis for which data are contiguous is index 3, or the fourth axis)
+class Order;
+// "Permutation": Contains for each axis its relative position in that order
+//   In the above example: [1 2 3 0]
+class Permutation;
+// "Symbolic": The presentation of strides as many are accustomed to seeing them,
+//   encoding for each axis both its relative ordering and sign
+//   In the above example: [-2 -3 4 1]
+class Symbolic;
+// "Actual": The number of elements that must be traversed within the binary data
+//   in order to traverse the image by one index along a respective axis
+//   In the above example (assuming a 32x32x20x10 dataset): [-10 -320 10240 1]
+class Actual;
+
+class Order : public Base<ArrayIndex> {
+public:
+  using Base<ArrayIndex>::value_type;
+  using Base<ArrayIndex>::vector_type;
+  static constexpr value_type invalid = -1;
+
+  explicit Order() = default;
+  Order(const Order &) = default;
+  explicit Order(const Permutation &permutation);
+  explicit Order(const Symbolic &symbolic);
+  explicit Order(const vector_type &data);
+
+  using Base::operator=;
+  operator Axes::Subset() const;
+
+  bool is_canonical() const override;
+  bool is_degenerate() const override { return false; }
+  bool is_sanitised() const override;
+  bool valid() const override;
+
+  Axes::Subset head(const size_t num_axes) const;
+  Permutation permutation() const;
+  Axes::Subset subset(const Axes::Subset &axes) const;
+  Axes::Subset subset(const ArrayIndex from_axis, const ArrayIndex to_axis = -1) const;
+  Axes::Subset tail(const size_t num_axes) const;
+
+  static Order canonical(const size_t num_axes);
+};
+
+class Permutation : public Base<ArrayIndex> {
+public:
+  using Base<ArrayIndex>::value_type;
+  using Base<ArrayIndex>::vector_type;
+  static constexpr value_type invalid = -1;
+
+  explicit Permutation() = default;
+  Permutation(const Permutation &) = default;
+  explicit Permutation(const vector_type &data);
+  explicit Permutation(const Order &order);
+  explicit Permutation(const Symbolic &symbolic);
+  explicit Permutation(const Actual &actual);
+  template <class HeaderType> explicit Permutation(const HeaderType &header);
+
+  using Base::operator=;
+
+  bool is_canonical() const override;
+  bool is_degenerate() const override;
+  bool is_sanitised() const override;
+
+  bool valid() const override;
+
+  void conform(const Permutation &);
+  Permutation conformed(const Permutation &) const;
+  Permutation head(const size_t num_axes) const;
+  Order order() const;
+  void sanitise();
+  Permutation sanitised() const;
+  Symbolic symbolic() const;
+
+  static Permutation axis_range(const ArrayIndex from, const ArrayIndex to);
+  static Permutation canonical(const size_t num_axes);
+  static Permutation contiguous_along_axis(const size_t num_axes, const ArrayIndex axis);
+  static Permutation contiguous_along_spatial_axes(const size_t num_axes);
+  static const Permutation volume_contiguous;
+
+  friend class Actual;
+};
+
+class Symbolic : public Base<int8_t> {
+public:
+  using Base<int8_t>::value_type;
+  using Base<int8_t>::vector_type;
+  static constexpr value_type invalid = 0;
+
+  // TODO Consider alternative constructor from Actual::vector_type,
+  //   so that the terminal message better reflects source of input stride information
+  explicit Symbolic() = default;
+  Symbolic(const Symbolic &) = default;
+  explicit Symbolic(const vector_type &in);
+  explicit Symbolic(const Permutation &in);
+  explicit Symbolic(const Header &header);
+  explicit Symbolic(const Actual &actual); // TODO Consider removing?
+  template <class HeaderType> explicit Symbolic(const HeaderType &image);
+  explicit Symbolic(const std::vector<MemIndex> &actual,
+                    const std::vector<VoxelIndex> &sizes); // TODO Can this be reverted back to an Actual instance?
+
+  using Base::operator=;
+
+  bool is_canonical() const override;
+  bool is_degenerate() const override;
+  bool is_sanitised() const override;
+
+  bool valid() const override;
+
+  Symbolic block(const ArrayIndex from_axis, const ArrayIndex to_axis = -1) const;
+  void conform(const Symbolic &in);
+  Symbolic conformed(const Symbolic &in) const;
+  void demote_unity(const std::vector<VoxelIndex> &sizes);
+  void flip(const ArrayIndex axis);
+  Symbolic head(const ArrayIndex num_axes) const;
+  void invalidate(const ArrayIndex axis);
+  Order order() const;
+  Permutation permutation() const;
+  void resize(const size_t num_axes);
+  Symbolic resized(const size_t num_axes) const;
+  void reorder(const Permutation &order);
+  Symbolic reordered(const Permutation &order) const;
+  void sanitise();
+  // Legacy::sanitise() sets stride of axes of size 1 to 0,
+  //   so that they are placed at the end of the order;
+  //   this version does the same
+  void sanitise(const std::vector<VoxelIndex> &sizes);
+  template <class HeaderType> void sanitise(const HeaderType &header);
+  Symbolic sanitised() const;
+  Symbolic sanitised(const std::vector<VoxelIndex> &sizes) const;
+  template <class HeaderType> Symbolic sanitised(const HeaderType &header) const;
+  Symbolic unity_demoted(const std::vector<VoxelIndex> &sizes) const;
+
+  static Symbolic canonical(const size_t num_axes);
+};
+
+class Actual : public Base<MemIndex> {
+public:
+  using Base<MemIndex>::value_type;
+  using Base<MemIndex>::vector_type;
+  static constexpr value_type invalid = 0;
+
+  Actual(const Actual &) = default;
+  Actual();
+  explicit Actual(const vector_type &actual, const std::vector<ArrayIndex> &sizes);
+  template <class HeaderOrSizes> explicit Actual(const Symbolic &, const HeaderOrSizes &);
+  template <class HeaderType> explicit Actual(const HeaderType &header);
+
+  Actual &operator=(const Actual &that) {
+    data_ = that.data_;
+    offset_ = that.offset_;
+    return *this;
+  }
+
+  bool is_canonical() const override;
+  bool is_degenerate() const override;
+  bool is_sanitised() const override { return valid(); }
+  bool valid() const override;
+
+  template <class HeaderType>
+  typename std::enable_if<MR::is_header_type<HeaderType>::value, bool>::type match(const HeaderType &) const;
+  MemIndex offset() const { return offset_; }
+  Order order() const;
+  Permutation permutation() const;
+  Symbolic symbolic() const;
+
+private:
+  MemIndex offset_;
+};
+
+template <class HeaderType>
+typename std::enable_if<MR::is_header_type<HeaderType>::value, std::vector<VoxelIndex>>::type
+get_sizes(const HeaderType &image) {
+  std::vector<VoxelIndex> result(image.ndim());
+  for (ArrayIndex axis = 0; axis != static_cast<ArrayIndex>(image.ndim()); ++axis)
+    result[axis] = image.size(axis);
+  return result;
+}
+
+template <class HeaderType> Permutation::Permutation(const HeaderType &image) {
+  // Rather than going through the Actual / Symbolic / Permutation chain,
+  //   use the detection of unity-size axes to provide disambiguation
+  class Data {
+  public:
+    Data(const ArrayIndex axis, const MemIndex stride, const VoxelIndex size)
+        : axis(axis), stride(stride), size(size) {}
+    bool operator<(const Data &that) const {
+      if (MR::abs(stride) != MR::abs(that.stride))
+        return MR::abs(stride) < MR::abs(that.stride);
+      if (size == 1 && that.size > 1)
+        return false;
+      if (size > 1 && that.size == 1)
+        return true;
+      return axis < that.axis;
+    }
+    ArrayIndex axis;
+    MemIndex stride;
+    VoxelIndex size;
+  };
+  std::set<Data> sorter;
+  for (ArrayIndex axis = 0; axis != image.ndim(); ++axis)
+    sorter.insert({axis, image.stride(axis), image.size(axis)});
+  data_.reserve(image.ndim());
+  for (const auto &item : sorter)
+    data_.push_back(item.axis);
+  assert(is_sanitised());
+}
+
+// When the input is a template HeaderType (but not an MR::Header),
+//   have no way of knowing whether the input is actual or symbolic;
+//   best compatibility is achieved by assuming the former
+template <class HeaderType> Symbolic::Symbolic(const HeaderType &image) {
+  std::vector<MemIndex> actual(image.ndim());
+  for (ArrayIndex axis = 0; axis != image.ndim(); ++axis)
+    actual[axis] = image.stride(axis);
+  *this = Symbolic(actual, get_sizes(image));
+}
+
+template <class HeaderType> void Symbolic::sanitise(const HeaderType &header) { sanitise(get_sizes(header)); }
+
+template <class HeaderType> Symbolic Symbolic::sanitised(const HeaderType &header) const {
+  return sanitised(get_sizes(header));
+}
+
+template <class HeaderType>
+Actual::Actual(const Symbolic &symbolic, const HeaderType &image) : Actual(symbolic, get_sizes(image)) {
+  assert(symbolic.is_sanitised());
+}
+
+template <> Actual::Actual(const Symbolic &symbolic, const std::vector<VoxelIndex> &sizes);
+
+template <class HeaderType>
+Actual::Actual(const HeaderType &image)
+    : Actual(Stride::Symbolic(image).sanitised(get_sizes(image)), get_sizes(image)) {}
+
+template <class HeaderType>
+typename std::enable_if<MR::is_header_type<HeaderType>::value, bool>::type
+Actual::match(const HeaderType &image) const {
+  if (size() != image.ndim())
+    return false;
+  for (ArrayIndex axis = 0; axis != size(); ++axis) {
+    if (image.size(axis) != 1 && data_[axis] != image.stride(axis))
+      return false;
+  }
+  return true;
+}
+
+std::optional<Symbolic> __from_command_line(const Symbolic &current);
+std::optional<Symbolic> __from_command_line(const Symbolic &user_specification, const Symbolic &current);
+void set_from_command_line(Header &header, const Permutation &default_order = Permutation());
 
 } // namespace MR::Stride

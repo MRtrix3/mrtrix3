@@ -22,6 +22,7 @@
 #include "image.h"
 #include "metadata/phase_encoding.h"
 #include "progressbar.h"
+#include "types.h"
 
 using namespace MR;
 using namespace App;
@@ -80,13 +81,13 @@ void run() {
 
   // Want to support non-shell-like data if it's just a straight extraction
   //   of all dwis or all bzeros i.e. don't initialise the Shells class
-  std::vector<uint32_t> volumes;
+  std::vector<VoxelIndex> volumes;
   bool bzero_only = !get_options("bzero").empty();
   const bool singleshell = !get_options("singleshell").empty();
   if (!get_options("shells").empty() || singleshell) {
     DWI::Shells shells(grad);
     shells.select_shells(singleshell, bzero_only, !get_options("no_bzero").empty());
-    for (size_t s = 0; s != shells.count(); ++s) {
+    for (StdIndex s = 0; s != shells.count(); ++s) {
       DEBUG("Including data from shell b=" + str(shells[s].get_mean()) + " +- " + str(shells[s].get_stdev()));
       for (const auto v : shells[s].get_volumes())
         volumes.push_back(v);
@@ -97,14 +98,14 @@ void run() {
     //   shells have not been explicitly selected, do NOT filter by b-value here
   } else if (get_options("pe").empty()) {
     const float bzero_threshold = File::Config::get_float("BZeroThreshold", 10.0);
-    for (ssize_t row = 0; row != grad.rows(); ++row) {
+    for (ArrayIndex row = 0; row != grad.rows(); ++row) {
       if ((bzero_only && (grad(row, 3) < bzero_threshold)) || (!bzero_only && (grad(row, 3) > bzero_threshold)))
-        volumes.push_back(row);
+        volumes.push_back(static_cast<VoxelIndex>(row));
     }
   } else {
     // "pe" option has been provided - need to initialise list of volumes
     //   to include all voxels, as the PE selection filters from this
-    for (uint32_t i = 0; i != grad.rows(); ++i)
+    for (VoxelIndex i = 0; i != static_cast<VoxelIndex>(grad.rows()); ++i)
       volumes.push_back(i);
   }
 
@@ -116,10 +117,10 @@ void run() {
     const auto filter = parse_floats(opt[0][0]);
     if (!(filter.size() == 3 || filter.size() == 4))
       throw Exception("Phase encoding filter must be a comma-separated list of either 3 or 4 numbers");
-    std::vector<uint32_t> new_volumes;
+    std::vector<VoxelIndex> new_volumes;
     for (const auto i : volumes) {
       bool keep = true;
-      for (size_t axis = 0; axis != 3; ++axis) {
+      for (ArrayIndex axis = 0; axis != 3; ++axis) {
         if (pe_scheme(i, axis) != filter[axis]) {
           keep = false;
           break;
@@ -147,13 +148,13 @@ void run() {
   header_out.size(3) = volumes.size();
 
   Eigen::MatrixXd new_grad(volumes.size(), grad.cols());
-  for (size_t i = 0; i < volumes.size(); i++)
+  for (ArrayIndex i = 0; i < static_cast<ArrayIndex>(volumes.size()); i++)
     new_grad.row(i) = grad.row(volumes[i]);
   DWI::set_DW_scheme(header_out, new_grad);
 
   if (pe_scheme.rows()) {
     Eigen::MatrixXd new_scheme(volumes.size(), pe_scheme.cols());
-    for (size_t i = 0; i != volumes.size(); ++i)
+    for (ArrayIndex i = 0; i != static_cast<ArrayIndex>(volumes.size()); ++i)
       new_scheme.row(i) = pe_scheme.row(volumes[i]);
     Metadata::PhaseEncoding::set_scheme(header_out.keyval(), new_scheme);
   }

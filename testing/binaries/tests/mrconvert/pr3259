@@ -1,0 +1,20 @@
+#!/bin/bash
+# Verify fix in PR #3259
+# "Fix bug in detection of duplicates in user-specified strides"
+
+# No duplicate present, should parse OK
+mrconvert mrconvert/in.mif -strides +1,+2,+3 - | \
+    mrinfo -
+
+# Duplicate present, but trivial to detect
+mrconvert mrconvert/in.mif -strides +1,-1,+2 tmp.mif -force 2>&1 | \
+    grep "duplicate entries provided to \"-strides\" option:"
+
+# Duplicate present, zero present on an axis other than 1
+mrconvert mrconvert/in.mif -strides 0,+1,-1 tmp.mif -force 2>&1 | \
+    grep "duplicate entries provided to \"-strides\" option:"
+
+# Duplicate present, zero present on axis 1;
+#   the bug rectified in #3259 resulted in failure to detect such
+mrconvert mrconvert/in.mif -strides +1,0,-1 tmp.mif -force 2>&1 | \
+    grep "duplicate entries provided to \"-strides\" option:"

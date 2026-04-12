@@ -55,7 +55,7 @@ template <class Fixel> void ModelBase<Fixel>::output_target_sh(std::string_view 
   Header H_sh(Fixel_map<Fixel>::header());
   H_sh.ndim() = 4;
   H_sh.size(3) = N;
-  H_sh.stride(3) = 0;
+  H_sh.strides().reorder(Stride::Permutation::volume_contiguous);
   auto out = Image<float>::create(path, H_sh);
   VoxelAccessor v(accessor());
   for (auto l = Loop(0, 3)(out, v); l; ++l) {
@@ -127,7 +127,7 @@ template <class Fixel> void ModelBase<Fixel>::output_tdi_sh(std::string_view pat
   Header H_sh(Fixel_map<Fixel>::header());
   H_sh.ndim() = 4;
   H_sh.size(3) = N;
-  H_sh.stride(3) = 0;
+  H_sh.strides().reorder(Stride::Permutation::volume_contiguous);
   auto out = Image<float>::create(path, H_sh);
   VoxelAccessor v(accessor());
   for (auto l = Loop(v)(out, v); l; ++l) {

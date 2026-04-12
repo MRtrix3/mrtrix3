@@ -22,6 +22,8 @@
 #include "match_variant.h"
 #include "platform.h"
 #include "slangcodegen.h"
+#include "stride.h"
+#include "types.h"
 
 #include <tcb/span.hpp>
 
@@ -855,20 +857,16 @@ Image<float> ComputeContext::download_texture_as_image(const Texture &texture,
 
   // Force the strides to match the memory layout written by download_texture:
   // Channel (if present) is fastest, then X, then Y, then Z.
-  for (size_t i = 0; i < texture_dims; ++i) {
-    const ssize_t stride_offset = has_channel_axis ? 2 : 1;
-    source_header.stride(i) = static_cast<ssize_t>(i) + stride_offset;
-  }
-  if (has_channel_axis) {
-    source_header.stride(texture_dims) = 1;
-  }
+  source_header.strides() = Stride::Symbolic::canonical(header_dims);
+  if (has_channel_axis)
+    source_header.strides().reorder(Stride::Permutation::contiguous_along_axis(header_dims, texture_dims));
 
   Image<float> source_image = Image<float>::scratch(source_header);
 
   download_texture(texture, tcb::span<float>(source_image.address(), voxel_count * texture_channels));
 
   if (texture_channels == 4U && alpha_mode == DownloadTextureAlphaMode::IgnoreAlpha) {
-    const std::vector<uint32_t> rgb_channels = {0U, 1U, 2U};
+    const std::vector<VoxelIndex> rgb_channels = {0U, 1U, 2U};
     Adapter::Extract1D source_rgb(source_image, texture_dims, rgb_channels);
     threaded_copy(source_rgb, image);
   } else {

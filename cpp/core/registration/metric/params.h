@@ -20,6 +20,7 @@
 #include "image.h"
 #include "interp/linear.h"
 #include "interp/nearest.h"
+#include "misc/cuboid_extent.h"
 #include "registration/multi_contrast.h"
 
 namespace MR::Registration::Metric {
@@ -68,7 +69,8 @@ public:
         loop_density(1.0),
         control_point_exent(10.0, 10.0, 10.0),
         robust_estimate_subset(false),
-        robust_estimate_use_score(false) {
+        robust_estimate_use_score(false),
+        extent(1) {
     im1_image_interp.reset(new Im1ImageInterpType(im1_image));
     im2_image_interp.reset(new Im2ImageInterpType(im2_image));
     if (im1_mask.valid())
@@ -78,7 +80,7 @@ public:
     update_control_points();
   }
 
-  void set_extent(std::vector<size_t> extent_vector) { extent = std::move(extent_vector); }
+  void set_extent(const CuboidExtent &extent_vector) { extent = extent_vector; }
 
   void set_mc_settings(const std::vector<MultiContrastSetting> &mc_vector) {
     mc_settings = mc_vector;
@@ -104,8 +106,8 @@ public:
 
   Eigen::VectorXd get_weights() const { return mc_weights; }
 
-  template <class VectorType> void set_control_points_extent(const VectorType &extent) {
-    control_point_exent = extent;
+  template <class VectorType> void set_control_points_extent(const VectorType &extent_vector) {
+    control_point_exent = extent_vector;
     update_control_points();
   }
 
@@ -122,7 +124,7 @@ public:
     control_points.block<3, 4>(0, 0).colwise() += centre;
   }
 
-  const std::vector<size_t> &get_extent() const { return extent; }
+  const CuboidExtent &get_extent() const { return extent; }
 
   template <class OptimiserType> void optimiser_update(OptimiserType &optim, const ssize_t overlap_count) {
     DEBUG("gradient descent ran using " + str(optim.function_evaluations()) + " cost function evaluations.");
@@ -152,11 +154,16 @@ public:
     header.keyval()["trafo2"] = str(trafo2.matrix());
     auto check = Image<default_type>::create(image_path, header);
 
-    std::vector<uint32_t> no_oversampling(3, 1);
-    Adapter::Reslice<Interp::Linear, Im1ImageType> im1_reslicer(
-        im1_image, midway_image, trafo1, no_oversampling, std::numeric_limits<Im1ValueType>::quiet_NaN());
-    Adapter::Reslice<Interp::Linear, Im2ImageType> im2_reslicer(
-        im2_image, midway_image, trafo2, no_oversampling, std::numeric_limits<Im2ValueType>::quiet_NaN());
+    Adapter::Reslice<Interp::Linear, Im1ImageType> im1_reslicer(im1_image,
+                                                                midway_image,
+                                                                trafo1,
+                                                                Adapter::OversampleFactors::Unity,
+                                                                std::numeric_limits<Im1ValueType>::quiet_NaN());
+    Adapter::Reslice<Interp::Linear, Im2ImageType> im2_reslicer(im2_image,
+                                                                midway_image,
+                                                                trafo2,
+                                                                Adapter::OversampleFactors::Unity,
+                                                                std::numeric_limits<Im2ValueType>::quiet_NaN());
 
     auto T = MR::Transform(midway_image).voxel2scanner;
     Eigen::Vector3d midway_point, voxel_pos, im1_point, im2_point;
@@ -229,7 +236,7 @@ public:
   MR::copy_ptr<Interp::Linear<Image<float>>> robust_estimate_score2_interp;
 
   Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> control_points;
-  std::vector<size_t> extent;
+  CuboidExtent extent;
   std::vector<MultiContrastSetting> mc_settings;
 
   ProcImageType processed_image;

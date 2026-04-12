@@ -59,7 +59,7 @@ void run() {
   header.datatype() = DataType::Float32;
   header.ndim() = 4;
   header.size(3) = 3;
-  Stride::set(header, Stride::contiguous_along_axis(3, header));
+  header.strides().reorder(Stride::Permutation::volume_contiguous);
 
   auto warp = Image<float>::create(argument[1], header);
 

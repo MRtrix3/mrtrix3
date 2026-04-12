@@ -42,7 +42,7 @@
 
 namespace MR::File {
 
-MMap::MMap(const Entry &entry, bool readwrite, bool preload, int64_t mapped_size)
+MMap::MMap(const Entry &entry, bool readwrite, bool preload, off_t mapped_size)
     : Entry(entry), addr(nullptr), first(nullptr), msize(mapped_size), readwrite(readwrite) {
   DEBUG("memory-mapping file \"" + Entry::name + "\"...");
 
@@ -216,7 +216,7 @@ bool MMap::changed() const {
   struct stat sbuf;
   if (fstat(fd, &sbuf))
     return false;
-  if (static_cast<int64_t>(msize) != sbuf.st_size)
+  if (msize != sbuf.st_size)
     return true;
   if (mtime != sbuf.st_mtime)
     return true;

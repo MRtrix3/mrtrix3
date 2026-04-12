@@ -137,21 +137,23 @@ void run() {
 
   int dimensionality = get_option_value("dimensionality", 2);
 
-  std::vector<size_t> slice_axes = {0, 1};
+  Axes::Subset slice_axes = {0, 1};
   auto opt = get_options("axes");
   const bool axes_set_manually = !opt.empty();
   if (!opt.empty()) {
-    std::vector<uint32_t> axes = parse_ints<uint32_t>(opt[0][0]);
-    if (axes == std::vector<uint32_t>({0, 1, 2})) {
+    const Axes::Subset user_axes(parse_ints<ArrayIndex>(opt[0][0]));
+    if (user_axes == Axes::Subset({0, 1, 2})) {
       dimensionality = 3;
     } else {
-      if (axes.size() != 2)
+      if (user_axes.size() != 2)
         throw Exception("slice axes must be specified as a comma-separated 2-vector");
-      slice_axes = {static_cast<size_t>(axes[0]), static_cast<size_t>(axes[1])};
-      if (std::max(slice_axes[0], slice_axes[1]) >= static_cast<size_t>(header.ndim()))
+      if (std::min(user_axes[0], user_axes[1]) < 0)
+        throw Exception("slice axes must be non-negative");
+      if (std::max(user_axes[0], user_axes[1]) >= static_cast<ssize_t>(header.ndim()))
         throw Exception("slice axes must be within the dimensionality of the image");
-      if (axes[0] == axes[1])
+      if (user_axes[0] == user_axes[1])
         throw Exception("two independent slice axes must be specified");
+      slice_axes = user_axes;
     }
   }
 
@@ -166,7 +168,7 @@ void run() {
       try {
         const Metadata::BIDS::axis_vector_type slice_encoding_axis_onehot =
             Metadata::BIDS::axisid2vector(slice_encoding_it->second);
-        std::vector<size_t> auto_slice_axes = {0, 0};
+        Axes::Subset auto_slice_axes = {0, 0};
         if (slice_encoding_axis_onehot[0])
           auto_slice_axes = {1, 2};
         else if (slice_encoding_axis_onehot[1])
@@ -208,7 +210,7 @@ void run() {
   }
 
   // build vector of outer axes:
-  std::vector<size_t> outer_axes(header.ndim());
+  Axes::Subset outer_axes(header.ndim());
   std::iota(outer_axes.begin(), outer_axes.end(), 0);
   for (const auto axis : slice_axes) {
     auto it = std::find(outer_axes.begin(), outer_axes.end(), axis);

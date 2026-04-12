@@ -178,8 +178,8 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
     }
     if (!H.size(i))
       H.size(i) = 1;
-    H.stride(i) = i + 1;
   }
+  H.strides() = Stride::Symbolic::canonical(ndim);
 
   // voxel sizes:
   std::array<double, 8> pixdim{};
@@ -336,7 +336,7 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
     // CONF should be assumed to be in LAS orientation (default) or RAS
     // CONF (when this is option is turned on).
     if (!File::Config::get_bool("AnalyseLeftToRight", false))
-      H.stride(0) = -H.stride(0);
+      H.strides().flip(0);
     if (!File::NIfTI::right_left_warning_issued) {
       INFO("assuming Analyse images are encoded " + std::string(H.stride(0) > 0 ? "left to right" : "right to left"));
       File::NIfTI::right_left_warning_issued = true;
@@ -552,14 +552,13 @@ template <class NiftiHeader> void store(NiftiHeader &NH, const Header &H, const 
 }
 
 Axes::Shuffle axes_on_write(const Header &H) {
-  Stride::List strides = Stride::get(H);
-  strides.resize(3);
-  auto order = Stride::order(strides);
+  const Stride::Symbolic symbolic(Stride::Symbolic(H).resized(3));
+  const Stride::Permutation order(symbolic);
   Axes::Shuffle result;
   result.permutations[0] = order[0];
   result.permutations[1] = order[1];
   result.permutations[2] = order[2];
-  result.flips = {strides[order[0]] < 0, strides[order[1]] < 0, strides[order[2]] < 0};
+  result.flips = {symbolic[order[0]] < 0, symbolic[order[1]] < 0, symbolic[order[2]] < 0};
   return result;
 }
 
@@ -609,15 +608,15 @@ bool check(int VERSION, Header &H, const size_t num_axes, const std::vector<std:
     if (H.size(i) < 1)
       H.size(i) = 1;
 
-  // ensure first 3 axes correspond to spatial dimensions
-  // while preserving original strides as much as possible
-  ssize_t max_spatial_stride = 0;
-  for (size_t n = 0; n < 3; ++n)
-    if (MR::abs(H.stride(n)) > max_spatial_stride)
-      max_spatial_stride = MR::abs(H.stride(n));
-  for (size_t n = 3; n < H.ndim(); ++n)
-    H.stride(n) += H.stride(n) > 0 ? max_spatial_stride : -max_spatial_stride;
-  Stride::symbolise(H);
+  // Ensure first 3 axes correspond to spatial dimensions
+  //   while preserving original strides as much as possible
+  const Stride::Symbolic spatial_symbolic = Stride::Symbolic(H).resized(3).sanitised();
+  Stride::Permutation::vector_type nonspatial_permutation(Stride::Permutation::canonical(num_axes));
+  for (ssize_t spatial_axis = 0; spatial_axis != 3; ++spatial_axis)
+    nonspatial_permutation[spatial_axis] = 0;
+  const Stride::Symbolic output_symbolic =
+      spatial_symbolic.resized(H.ndim()).reordered(Stride::Permutation(nonspatial_permutation));
+  H.strides() = output_symbolic;
 
   // by default, prevent output of bitwise data in NIfTI, since most 3rd
   // party software package can't handle them

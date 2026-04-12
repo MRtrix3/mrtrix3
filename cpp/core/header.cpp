@@ -245,23 +245,6 @@ Header Header::open(std::string_view image_name) {
   return H;
 }
 
-namespace {
-inline bool check_strides_match(const std::vector<ssize_t> &a, const std::vector<ssize_t> &b) {
-  size_t n = 0;
-  for (; n < std::min(a.size(), b.size()); ++n)
-    if (a[n] != b[n])
-      return false;
-  for (size_t i = n; i < a.size(); ++i)
-    if (a[i] > 1)
-      return false;
-  for (size_t i = n; i < b.size(); ++i)
-    if (b[i] > 1)
-      return false;
-  return true;
-}
-
-} // namespace
-
 Header Header::create(std::string_view image_name, const Header &template_header, bool add_to_command_history) {
   if (image_name.empty())
     throw Exception("no name supplied to open image!");
@@ -294,7 +277,7 @@ Header Header::create(std::string_view image_name, const Header &template_header
 
     H.name() = image_name;
 
-    const std::vector<ssize_t> strides(Stride::get_symbolic(H));
+    const Stride::Symbolic strides(H);
     const Formats::Base **format_handler = Formats::handlers;
     for (; *format_handler; format_handler++)
       if ((*format_handler)->check(H, H.ndim() - Pdim.size()))
@@ -310,8 +293,9 @@ Header Header::create(std::string_view image_name, const Header &template_header
                         "\" (unsupported file extension: " + basename.substr(extension_index) + ")");
     }
 
-    const std::vector<ssize_t> strides_aftercheck(Stride::get_symbolic(H));
-    if (!check_strides_match(strides, strides_aftercheck)) {
+    const Stride::Symbolic strides_aftercheck(H);
+    if (strides.head(std::min(strides.size(), strides_aftercheck.size())).sanitised() !=
+        strides_aftercheck.head(std::min(strides.size(), strides_aftercheck.size())).sanitised()) {
       INFO("output strides for image " + image_name + " modified to " + str(strides_aftercheck) +
            " - requested strides " + str(strides) + " are not supported in " + (*format_handler)->description +
            " format");
@@ -395,23 +379,25 @@ Header Header::create(std::string_view image_name, const Header &template_header
     }
 
     if (!Pdim.empty()) {
-      int a = 0, n = 0;
-      ssize_t next_stride = 0;
-      for (size_t i = 0; i < H.ndim(); ++i) {
-        if (H.stride(i)) {
+      ArrayIndex n = 0;
+      Stride::Symbolic::value_type next_stride = 0;
+      for (ArrayIndex i = 0; i < H.ndim(); ++i) {
+        if (H.stride(i) != Stride::Symbolic::invalid) {
           ++n;
           next_stride = std::max(next_stride, MR::abs(H.stride(i)));
         }
       }
 
-      H.axes_.resize(n + Pdim.size());
+      H.ndim() = n + Pdim.size();
 
-      for (size_t i = 0; i < Pdim.size(); ++i) {
-        while (H.stride(a))
+      ArrayIndex a = 0;
+      for (size_t i = 0; i < Pdim.size(); ++i, ++a) {
+        while (H.stride(a) != Stride::Symbolic::invalid)
           ++a;
         H.size(a) = Pdim[i];
-        H.stride(a) = ++next_stride;
       }
+
+      H.strides().sanitise();
 
       H.name() = image_name;
     }
@@ -490,10 +476,8 @@ std::string Header::description(bool print_all) const {
   desc += "\n";
 
   desc += "  Data strides:      [ ";
-  auto strides(Stride::get(*this));
-  Stride::symbolise(strides);
   for (i = 0; i < ndim(); i++)
-    desc += stride(i) ? str(strides[i]) + " " : "? ";
+    desc += stride(i) ? str(static_cast<int>(stride(i))) + " " : "? ";
   desc += "]\n";
 
   if (io) {
@@ -597,7 +581,7 @@ void Header::sanitise_transform() {
 void Header::realign_transform() {
   realignment_.orig_transform_ = transform();
   realignment_.applied_transform_ = Realignment::applied_transform_type::Identity();
-  realignment_.orig_strides_ = Stride::get(*this);
+  realignment_.orig_strides_ = strides();
   realignment_.orig_keyval_ = keyval();
 
   if (!do_realign_transform)
@@ -639,7 +623,7 @@ void Header::realign_transform() {
                                      col_applied[realignment_.permutation(2)]);
 
     if (realignment_.flip(i))
-      stride(i) = -stride(i);
+      strides().flip(i);
   }
 
   // copy back transform:
@@ -659,8 +643,9 @@ void Header::realign_transform() {
   Metadata::SliceEncoding::transform_for_image_load(keyval(), *this);
 }
 
-Header
-concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, const bool permit_datatype_mismatch) {
+Header concatenate(const std::vector<Header> &headers,    //
+                   const ArrayIndex axis_to_concat,       //
+                   const bool permit_datatype_mismatch) { //
   Exception e("Unable to concatenate " + str(headers.size()) + " images along axis " + str(axis_to_concat) + ": ");
 
   auto datatype_test = [&](const bool condition) {
@@ -685,31 +670,39 @@ concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, con
   if (headers.empty())
     return Header();
 
-  size_t global_max_nonunity_dim = 0;
+  ArrayIndex global_max_nonunity_dim = 0;
   for (const auto &H : headers) {
     if (axis_to_concat > H.ndim() + 1) {
       e.push_back("Image \"" + H.name() + "\" is only " + str(H.ndim()) + "D");
       throw e;
     }
-    ssize_t this_max_nonunity_dim;
+    ArrayIndex this_max_nonunity_dim;
     for (this_max_nonunity_dim = H.ndim() - 1; this_max_nonunity_dim >= 0 && H.size(this_max_nonunity_dim) <= 1;
          --this_max_nonunity_dim)
       ;
-    global_max_nonunity_dim =
-        std::max(global_max_nonunity_dim, static_cast<size_t>(std::max(ssize_t(0), this_max_nonunity_dim)));
+    global_max_nonunity_dim = std::max(global_max_nonunity_dim, std::max(ArrayIndex(0), this_max_nonunity_dim));
   }
 
   Header result(headers[0]);
 
   if (axis_to_concat >= result.ndim()) {
-    Stride::symbolise(result);
+    // Generate symbolic strides for the output image:
+    //   For pre-existing axes, preserve their existing symbolic strides;
+    //   for new axes (possibly more than one),
+    //   order sequentially after the pre-existing axes
+    Stride::Symbolic symbolic(result);
+    symbolic.resize(axis_to_concat + 1);
+    Stride::Permutation::vector_type reorder(Stride::Permutation::canonical(axis_to_concat + 1));
+    for (ArrayIndex axis_to_preserve = 0; axis_to_preserve != result.ndim(); ++axis_to_preserve)
+      reorder[axis_to_preserve] = 0;
+    symbolic.reorder(Stride::Permutation(reorder));
     result.ndim() = axis_to_concat + 1;
-    result.size(axis_to_concat) = 1;
-    result.stride(axis_to_concat) = axis_to_concat + 1;
-    Stride::actualise(result);
+    for (ArrayIndex unary_axis = result.ndim(); unary_axis <= axis_to_concat; ++unary_axis)
+      result.size(unary_axis) = 1;
+    result.strides() = symbolic;
   }
 
-  for (size_t axis = 0; axis != result.ndim(); ++axis) {
+  for (ArrayIndex axis = 0; axis != result.ndim(); ++axis) {
     if (axis != axis_to_concat && result.size(axis) <= 1) {
       for (const auto &H : headers) {
         if (H.ndim() > axis) {
@@ -746,7 +739,7 @@ concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, con
     const Header &H(headers[i]);
 
     // Check that dimensions of image are compatible with concatenation
-    for (size_t axis = 0; axis <= global_max_nonunity_dim; ++axis) {
+    for (ArrayIndex axis = 0; axis <= global_max_nonunity_dim; ++axis) {
       if (axis != axis_to_concat && axis < H.ndim() && H.size(axis) != result.size(axis)) {
         e.push_back("Images \"" + result.name() + "\" and \"" + H.name() + "\" have inequal sizes along axis " +
                     str(axis_to_concat) + " (" + str(result.size(axis)) + " vs " + str(H.size(axis)) + ")");

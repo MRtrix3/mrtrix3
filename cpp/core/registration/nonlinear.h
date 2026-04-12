@@ -23,6 +23,7 @@
 #include "filter/warp.h"
 #include "interp/interp.h"
 #include "math/average_space.h"
+#include "misc/cuboid_extent.h"
 #include "registration/metric/cc_helper.h"
 #include "registration/metric/demons.h"
 #include "registration/metric/demons4D.h"
@@ -54,7 +55,8 @@ public:
         do_reorientation(false),
         fod_lmax(3),
         use_cc(false),
-        diagnostics_image_prefix("") {
+        diagnostics_image_prefix(""),
+        cc_extent(1) {
     scale_factor[0] = 0.25;
     scale_factor[1] = 0.5;
     scale_factor[2] = 1.0;
@@ -468,11 +470,7 @@ public:
     output_header.ndim() = 5;
     output_header.size(3) = 3;
     output_header.size(4) = 4;
-    output_header.stride(0) = 1;
-    output_header.stride(1) = 2;
-    output_header.stride(2) = 3;
-    output_header.stride(3) = 4;
-    output_header.stride(4) = 5;
+    output_header.strides().reorder(Stride::Permutation({1, 1, 1, 0, 2}));
     return output_header;
   }
 
@@ -511,7 +509,7 @@ public:
       throw Exception("CC radius needs to be larger than 1");
     use_cc = true;
     INFO("Cross correlation radius: " + str(radius));
-    cc_extent = std::vector<size_t>(3, radius * 2 + 1);
+    cc_extent = CuboidExtent(radius * 2 + 1);
   }
 
   void set_diagnostics_image(const std::basic_string<char> &path) { diagnostics_image_prefix = path; }
@@ -545,7 +543,7 @@ protected:
   bool use_cc;
   std::basic_string<char> diagnostics_image_prefix;
 
-  std::vector<size_t> cc_extent;
+  CuboidExtent cc_extent;
 
   transform_type im1_to_mid_linear;
   transform_type im2_to_mid_linear;

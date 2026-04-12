@@ -31,8 +31,8 @@ template <class ImageType, class RandomEngine> class Random_loop {
 public:
   Random_loop(ImageType &in,
               RandomEngine &random_engine,
-              const size_t &axis = 0,
-              const size_t &number_iterations = std::numeric_limits<ssize_t>::max())
+              const ArrayIndex axis = 0,
+              const size_t number_iterations = std::numeric_limits<size_t>::max())
       : image(in),
         engine(random_engine),
         ax(axis),
@@ -68,10 +68,10 @@ public:
 private:
   ImageType &image;
   RandomEngine &engine;
-  size_t ax;
-  std::vector<size_t> idx;
-  std::vector<size_t>::iterator it;
-  std::vector<size_t>::iterator stop;
+  ArrayIndex ax;
+  std::vector<VoxelIndex> idx;
+  std::vector<VoxelIndex>::iterator it;
+  std::vector<VoxelIndex>::iterator stop;
   size_t max_cnt;
   bool status;
   size_t cnt;
@@ -81,11 +81,11 @@ private:
 template <class ImageType> class Random_sparse_loop {
 public:
   Random_sparse_loop(ImageType &in,
-                     const size_t &axis = 0,
-                     const size_t &number_iterations = std::numeric_limits<ssize_t>::max(),
+                     const ArrayIndex axis = 0,
+                     const size_t number_iterations = std::numeric_limits<size_t>::max(),
                      const bool repeat = false,
-                     const ssize_t &min_index = 0,
-                     const ssize_t &max_index = std::numeric_limits<ssize_t>::max())
+                     const VoxelIndex min_index = 0,
+                     const VoxelIndex max_index = std::numeric_limits<VoxelIndex>::max())
       : image(in), repeat_(repeat), status(true), ax(axis), cnt(0), min_idx(min_index) {
     if (max_index < image.size(ax))
       range = max_index - min_idx + 1;
@@ -137,13 +137,13 @@ private:
   ImageType &image;
   bool repeat_;
   bool status;
-  size_t ax;
+  ArrayIndex ax;
   size_t cnt;
-  ssize_t min_idx;
+  VoxelIndex min_idx;
   size_t range;
   size_t max_cnt;
-  ssize_t index;
-  std::unordered_set<ssize_t> idx_done;
+  VoxelIndex index;
+  std::unordered_set<VoxelIndex> idx_done;
 };
 
 template <class ImageType, class IterType> class Iterator_loop {
@@ -151,8 +151,8 @@ public:
   Iterator_loop(ImageType &in,
                 IterType first,
                 IterType last,
-                const size_t &axis = 0,
-                const size_t &number_iterations = std::numeric_limits<ssize_t>::max())
+                const ArrayIndex axis = 0,
+                const size_t number_iterations = std::numeric_limits<size_t>::max())
       : image(in), ax(axis), start(first), stop(last), max_cnt(number_iterations), status(true), cnt(0) {
     set_next_index();
   }
@@ -173,7 +173,7 @@ public:
 
 private:
   ImageType &image;
-  size_t ax;
+  ArrayIndex ax;
   IterType &start;
   IterType &stop;
   size_t max_cnt;

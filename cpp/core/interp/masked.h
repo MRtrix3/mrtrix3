@@ -59,7 +59,8 @@ public:
     InterpType::image_type::index(1) = std::round(pos[1]);
     InterpType::image_type::index(2) = std::round(pos[2]);
     for (auto l_inner = Loop(*this, 3)(*this); l_inner; ++l_inner) {
-      if (InterpType::image_type::value())
+      const value_type value = InterpType::image_type::value();
+      if (value != value_type(0) && std::isfinite(value))
         return InterpType::voxel(pos);
     }
     InterpType::set_out_of_bounds(true);

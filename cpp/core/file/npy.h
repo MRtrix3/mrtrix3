@@ -55,7 +55,7 @@ Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> load_matrix(std::string
   const ReadInfo info = read_header(path);
 
   // Memory-map the data content of the file
-  File::MMap mmap({path, info.data_offset}, false);
+  File::MMap mmap({path, static_cast<off_t>(info.data_offset)}, false);
 
   // Actually load the data
   const ssize_t cols = info.shape.size() == 2 ? info.shape[1] : 1;

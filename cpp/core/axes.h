@@ -19,13 +19,23 @@
 #include <array>
 #include <limits>
 #include <set>
+#include <vector>
 
 #include "types.h"
 
-// TODO Rename to "SpatialAxes"?
 namespace MR::Axes {
 
-// TODO Change to 8-bit integer & define invalid value
+class Subset : public std::vector<ArrayIndex> {
+public:
+  using Base = std::vector<ArrayIndex>;
+  using Index = ArrayIndex;
+  using Base::Base;
+  explicit Subset(const Base &that) : Base(that) {}
+  Subset head(const ssize_t count) const;
+  Subset tail(const ssize_t count) const;
+  bool valid() const { return *std::min_element(begin(), end()) >= 0; }
+};
+
 class permutations_type : public std::array<uint8_t, 3> {
 public:
   using BaseType = std::array<uint8_t, 3>;

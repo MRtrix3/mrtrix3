@@ -22,6 +22,7 @@
 #include "file/gz.h"
 #include "file/key_value.h"
 #include "header.h"
+#include "stride.h"
 
 namespace MR::Formats {
 
@@ -43,6 +44,6 @@ void get_mrtrix_file_path(Header &, std::string_view, std::string &, size_t &);
 //   this could be an ofstream in the case of .mif, or a stringstream in the case of .mif.gz
 template <class StreamType> void write_mrtrix_header(const Header &, StreamType &);
 
-std::vector<ssize_t> parse_axes(size_t ndim, std::string_view specifier);
+Stride::Symbolic parse_layout(const size_t ndim, std::string_view specifier);
 
 } // namespace MR::Formats

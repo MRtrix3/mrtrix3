@@ -1753,8 +1753,8 @@ void Window::process_commandline_option() {
 
     if (opt.opt->is("volume")) {
       if (image()) {
-        auto pos = parse_ints<uint32_t>(opt[0]);
-        for (size_t n = 0; n < std::min(pos.size(), image()->image.ndim()); ++n) {
+        auto pos = parse_ints<VoxelIndex>(opt[0]);
+        for (StdIndex n = 0; n < std::min(pos.size(), static_cast<size_t>(image()->image.ndim())); ++n) {
           if (pos[n] >= image()->image.size(n + 3))
             throw Exception("volume index outside of image dimensions");
           set_image_volume(n + 3, pos[n]);

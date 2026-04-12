@@ -26,12 +26,12 @@ template <class ImageType> class Gradient3D : public Gradient1D<ImageType> {
 public:
   using value_type = Eigen::Matrix<typename ImageType::value_type, 3, 1>;
 
-  Gradient3D(const ImageType &parent, bool wrt_scanner = false)
+  Gradient3D(const ImageType &parent, const bool wrt_scanner = false)
       : Gradient1D<ImageType>(parent, wrt_scanner), wrt_scanner(wrt_scanner), transform(parent) {}
 
   value_type value() {
     value_type grad;
-    for (size_t i = 0; i < 3; ++i) {
+    for (ArrayIndex i = 0; i < 3; ++i) {
       Gradient1D<ImageType>::set_axis(i);
       grad[i] = Gradient1D<ImageType>::value();
     }

@@ -69,13 +69,11 @@ void generate_header(Header &header, std::string_view tck_file_path, const std::
 
   header.name() = "tckmap image header";
   header.ndim() = 3;
-
   for (size_t i = 0; i != 3; ++i) {
     header.size(i) = std::ceil((max_values[i] - min_values[i]) / voxel_size[i]);
     header.spacing(i) = voxel_size[i];
-    header.stride(i) = i + 1;
   }
-
+  header.strides() = Stride::Symbolic::canonical(3);
   header.transform().matrix().setIdentity();
   header.transform().translation() = min_values.cast<double>();
   file.close();

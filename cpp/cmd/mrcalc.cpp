@@ -446,17 +446,20 @@ public:
 
 class ThreadLocalStorage : public std::vector<ThreadLocalStorageItem> {
 public:
+  ThreadLocalStorage(const Axes::Subset &axes, const std::vector<VoxelIndex> &sizes)
+      : iter(nullptr), axes(axes), sizes(sizes), current(0) {}
+
   void load(Chunk &chunk, Image<complex_type> &image) {
     for (size_t n = 0; n < image.ndim(); ++n)
       if (image.size(n) > 1)
         image.index(n) = iter->index(n);
 
     size_t n = 0;
-    for (size_t y = 0; y < size[1]; ++y) {
+    for (size_t y = 0; y < sizes[1]; ++y) {
       if (axes[1] < image.ndim())
         if (image.size(axes[1]) > 1)
           image.index(axes[1]) = y;
-      for (size_t x = 0; x < size[0]; ++x) {
+      for (size_t x = 0; x < sizes[0]; ++x) {
         if (axes[0] < image.ndim())
           if (image.size(axes[0]) > 1)
             image.index(axes[0]) = x;
@@ -478,7 +481,8 @@ public:
   }
 
   const Iterator *iter;
-  std::vector<size_t> axes, size;
+  const Axes::Subset axes;
+  const std::vector<VoxelIndex> sizes;
 
 private:
   size_t current;
@@ -838,14 +842,12 @@ void get_header(const StackEntry &entry, Header &header) {
 
 class ThreadFunctor {
 public:
-  ThreadFunctor(const std::vector<size_t> &inner_axes,
-                const StackEntry &top_of_stack,
-                Image<complex_type> &output_image)
-      : top_entry(top_of_stack), image(output_image), loop(Loop(inner_axes)) {
-    storage.axes = loop.axes;
-    storage.size.push_back(image.size(storage.axes[0]));
-    storage.size.push_back(image.size(storage.axes[1]));
-    chunk_size = image.size(storage.axes[0]) * image.size(storage.axes[1]);
+  ThreadFunctor(const Axes::Subset &inner_axes, const StackEntry &top_of_stack, Image<complex_type> &output_image)
+      : top_entry(top_of_stack),
+        image(output_image),
+        loop(Loop(inner_axes)),
+        storage(loop.axes, {image.size(loop.axes[0]), image.size(loop.axes[1])}),
+        chunk_size(image.size(loop.axes[0]) * image.size(loop.axes[1])) {
     allocate_storage(top_entry);
   }
 
@@ -880,7 +882,7 @@ public:
 
   const StackEntry &top_entry;
   Image<complex_type> image;
-  decltype(Loop(std::vector<size_t>())) loop;
+  decltype(Loop(Axes::Subset())) loop;
   ThreadLocalStorage storage;
   size_t chunk_size;
 };

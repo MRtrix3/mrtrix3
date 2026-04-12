@@ -17,6 +17,7 @@
 #pragma once
 
 #include "adapter/base.h"
+#include "stride.h"
 
 namespace MR::Adapter {
 
@@ -28,10 +29,11 @@ public:
   using base_type::parent;
   using base_type::size;
 
-  PermuteAxes(const ImageType &original, const std::vector<int> &axes) : base_type(original), axes_(axes) {
-    for (int i = 0; i < static_cast<int>(parent().ndim()); ++i) {
-      for (size_t a = 0; a < axes_.size(); ++a) {
-        if (axes_[a] >= static_cast<int>(parent().ndim()))
+  PermuteAxes(const ImageType &original, const Stride::Order &axes)
+      : base_type(original), axes_(axes), ghost_indices(axes.size(), 0) {
+    for (ArrayIndex i = 0; i < parent().ndim(); ++i) {
+      for (StdIndex a = 0; a < axes_.size(); ++a) {
+        if (axes_[a] >= static_cast<Stride::Order::value_type>(parent().ndim()))
           throw Exception("axis " + str(axes_[a]) + " exceeds image dimensionality");
         if (axes_[a] == i)
           goto next_axis;
@@ -41,40 +43,32 @@ public:
     next_axis:
       continue;
     }
-
-    int non_existent_index = -1;
-    for (auto &a : axes_) {
-      if (a < 0) {
-        a = non_existent_index--;
-        non_existent_axes.push_back(0);
-      }
-    }
   }
 
-  size_t ndim() const { return axes_.size(); }
-  ssize_t size(size_t axis) const { return axes_[axis] < 0 ? 1 : parent().size(axes_[axis]); }
-  default_type spacing(size_t axis) const {
+  size_t ndim() const override { return axes_.size(); }
+  VoxelIndex size(const ArrayIndex axis) const override { return axes_[axis] < 0 ? 1 : parent().size(axes_[axis]); }
+  default_type spacing(const ArrayIndex axis) const override {
     return axes_[axis] < 0 ? std::numeric_limits<default_type>::quiet_NaN() : parent().spacing(axes_[axis]);
   }
-  ssize_t stride(size_t axis) const { return axes_[axis] < 0 ? 0 : parent().stride(axes_[axis]); }
-
-  void reset() { parent().reset(); }
-
-  ssize_t get_index(size_t axis) const {
-    const auto a = axes_[axis];
-    return a < 0 ? non_existent_axes[-1 - a] : parent().index(a);
+  Stride::Actual::value_type stride(const ArrayIndex axis) const override {
+    return axes_[axis] < 0 ? 0 : parent().stride(axes_[axis]);
   }
-  void move_index(size_t axis, ssize_t increment) {
+
+  VoxelIndex get_index(const ArrayIndex axis) const override {
+    const auto a = axes_[axis];
+    return a < 0 ? ghost_indices[axis] : parent().index(a);
+  }
+  void move_index(const ArrayIndex axis, const VoxelIndex increment) override {
     const auto a = axes_[axis];
     if (a < 0)
-      non_existent_axes[-1 - a] += increment;
+      ghost_indices[axis] += increment;
     else
       parent().index(a) += increment;
   }
 
 private:
-  std::vector<int> axes_;
-  std::vector<size_t> non_existent_axes;
+  Stride::Order axes_;
+  std::vector<VoxelIndex> ghost_indices;
 };
 
 } // namespace MR::Adapter

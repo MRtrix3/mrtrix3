@@ -176,14 +176,10 @@ bool is_tempfile(std::string_view name, std::string_view suffix) {
 std::string create_tempfile(int64_t size, std::string_view suffix) {
   DEBUG("creating temporary file of size " + str(size));
 
-  std::string filename(Path::join(tmpfile_dir(), tmpfile_prefix()) + "XXXXXX.");
-  const int rand_index = filename.size() - 7;
-  filename += suffix;
-
   int fid(0);
+  std::string filename;
   do {
-    for (int n = 0; n < 6; n++)
-      filename[rand_index + n] = random_char();
+    filename = name_tempfile(suffix);
     fid = open(filename.c_str(), O_CREAT | O_RDWR | O_EXCL, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
   } while (fid < 0 && errno == EEXIST);
 
@@ -195,6 +191,21 @@ std::string create_tempfile(int64_t size, std::string_view suffix) {
   close(fid);
   if (status)
     throw Exception("cannot resize file \"" + filename + "\": " + strerror(errno));
+
+  return filename;
+}
+
+std::string name_tempfile(std::string_view suffix) {
+  std::string filename(Path::join(tmpfile_dir(), tmpfile_prefix()) + "XXXXXX.");
+  const int rand_index = filename.size() - 7;
+  filename += suffix;
+
+  int fid(0);
+  do {
+    for (int n = 0; n < 6; n++)
+      filename[rand_index + n] = random_char();
+    fid = open(filename.c_str(), O_RDONLY, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+  } while (fid > 0);
 
   return filename;
 }

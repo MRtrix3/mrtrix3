@@ -154,7 +154,7 @@ void run() {
   Header amp_header(sh_data);
   amp_header.ndim() = 4;
   amp_header.size(3) = directions.rows();
-  Stride::set_from_command_line(amp_header, Stride::contiguous_along_axis(3, amp_header));
+  Stride::set_from_command_line(amp_header, Stride::Permutation::volume_contiguous);
   amp_header.datatype() = DataType::from_command_line(DataType::Float32);
 
   if (directions.cols() == 2) { // single-shell:

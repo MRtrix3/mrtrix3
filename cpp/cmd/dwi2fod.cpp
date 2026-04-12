@@ -256,7 +256,7 @@ void run() {
   header_out.ndim() = 4;
   header_out.datatype() = DataType::Float32;
   header_out.datatype().set_byte_order_native();
-  Stride::set_from_command_line(header_out, Stride::contiguous_along_axis(3, header_in));
+  Stride::set_from_command_line(header_out, Stride::Permutation::volume_contiguous);
 
   auto mask = Image<bool>();
   auto opt = get_options("mask");

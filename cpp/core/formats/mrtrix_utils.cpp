@@ -24,8 +24,8 @@
 
 namespace MR::Formats {
 
-std::vector<ssize_t> parse_axes(size_t ndim, std::string_view specifier) {
-  std::vector<ssize_t> parsed(ndim);
+Stride::Symbolic parse_layout(const size_t ndim, std::string_view specifier) {
+  Stride::Symbolic::vector_type parsed(ndim);
 
   size_t sub = 0;
   size_t lim = 0;
@@ -57,36 +57,42 @@ std::vector<ssize_t> parse_axes(size_t ndim, std::string_view specifier) {
         throw 0;
 
       if (current == ndim)
-        throw Exception("incorrect number of axes in axes specification \"" + specifier + "\"");
+        throw Exception("incorrect number of axes in layout specification \"" + specifier + "\"");
 
-      parsed[current] = to<ssize_t>(specifier.substr(sub, lim - sub)) + 1;
+      intmax_t stride = to<intmax_t>(specifier.substr(sub, lim - sub)) + 1;
       if (!pos)
-        parsed[current] = -parsed[current];
+        stride *= -1;
+      if (stride < std::numeric_limits<Stride::Symbolic::value_type>::min() ||
+          stride > std::numeric_limits<Stride::Symbolic::value_type>::max())
+        throw Exception("axis \"" + str(stride) + "\" in layout specification \"" + specifier +
+                        "\" out of numerical range");
+      parsed[current] = static_cast<Stride::Symbolic::value_type>(stride);
 
       // move to character after comma or end
       sub = (lim < end) ? (lim + 1) : lim;
       current++;
     }
   } catch (int) {
-    throw Exception("malformed axes specification \"" + specifier + "\"");
+    throw Exception("malformed layout specification \"" + specifier + "\"");
   }
 
   if (current != ndim)
-    throw Exception("incorrect number of axes in axes specification \"" + specifier + "\"");
+    throw Exception("incorrect number of axes in layout specification \"" + specifier + "\"");
 
   if (parsed.size() != ndim)
     throw Exception("incorrect number of dimensions for axes specifier");
 
-  for (size_t n = 0; n < parsed.size(); n++) {
-    if (!parsed[n] || static_cast<size_t>(MR::abs(parsed[n])) > ndim)
-      throw Exception("axis ordering " + str(parsed[n]) + " out of range");
+  const Stride::Symbolic result(parsed);
 
-    for (size_t i = 0; i < n; i++)
-      if (MR::abs(parsed[i]) == MR::abs(parsed[n]))
-        throw Exception("duplicate axis ordering (" + str(MR::abs(parsed[n])) + ")");
+  for (size_t n = 0; n < result.size(); n++) {
+    if (!result[n] || static_cast<size_t>(MR::abs(result[n])) > ndim)
+      throw Exception("axis layout " + str(result) + " out of range" + " (" + str(ndim) + " image dimensions)");
   }
 
-  return parsed;
+  if (result.is_degenerate())
+    throw Exception("duplicate axes in layout (" + str(result) + ")");
+
+  return result;
 }
 
 bool next_keyvalue(File::KeyValue::Reader &kv, std::string &key, std::string &value) {
@@ -206,9 +212,7 @@ template <class SourceType> void read_mrtrix_header(Header &H, SourceType &kv) {
 
   if (layout.empty())
     throw Exception("missing \"layout\" specification for MRtrix image \"" + H.name() + "\"");
-  auto ax = parse_axes(H.ndim(), layout);
-  for (size_t i = 0; i < ax.size(); ++i)
-    H.stride(i) = ax[i];
+  H.strides() = parse_layout(H.ndim(), layout);
 
   if (!transform.empty()) {
 
@@ -246,12 +250,10 @@ template <class StreamType> void write_mrtrix_header(const Header &H, StreamType
   for (size_t n = 1; n < H.ndim(); ++n)
     out << "," << H.spacing(n);
 
-  auto stride = Stride::get(H);
-  Stride::symbolise(stride);
-
-  out << "\nlayout: " << (stride[0] > 0 ? "+" : "-") << MR::abs(stride[0]) - 1;
+  assert(H.strides().is_sanitised());
+  out << "\nlayout: " << (H.stride(0) > 0 ? "+" : "-") << MR::abs(static_cast<int>(H.stride(0))) - 1;
   for (size_t n = 1; n < H.ndim(); ++n)
-    out << "," << (stride[n] > 0 ? "+" : "-") << MR::abs(stride[n]) - 1;
+    out << "," << (H.stride(n) > 0 ? "+" : "-") << MR::abs(static_cast<int>(H.stride(n))) - 1;
 
   DataType dt = H.datatype();
   dt.set_byte_order_native();

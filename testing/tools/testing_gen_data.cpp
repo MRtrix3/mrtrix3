@@ -18,6 +18,7 @@
 #include "datatype.h"
 #include "math/rng.h"
 #include "progressbar.h"
+#include "stride.h"
 
 #include "algo/threaded_loop.h"
 #include "image.h"
@@ -54,7 +55,7 @@ void run() {
     header.spacing(n) = 1.0f;
   }
   header.datatype() = DataType::from_command_line(DataType::Float32);
-  Stride::set_from_command_line(header, Stride::contiguous_along_spatial_axes(header));
+  Stride::set_from_command_line(header, Stride::Permutation::contiguous_along_spatial_axes(header.ndim()));
 
   auto image = Header::create(argument[1], header).get_image<float>();
 

@@ -65,7 +65,7 @@ ImageProperties::ImageProperties(QWidget *parent, const MR::Header &header)
 
   root->appendChild(new TreeItem("Data type", H.datatype().description(), root));
 
-  MR::Stride::List strides = MR::Stride::get_symbolic(H);
+  const MR::Stride::Symbolic strides(H);
   text = str(strides[0]);
   for (size_t n = 1; n != strides.size(); ++n)
     text += ", " + str(strides[n]);

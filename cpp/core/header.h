@@ -47,10 +47,9 @@ public:
   //! a class to hold attributes about each axis
   class Axis {
   public:
-    Axis() noexcept : size(1), spacing(std::numeric_limits<default_type>::quiet_NaN()), stride(0) {}
-    ssize_t size;
+    Axis() noexcept : size(1), spacing(std::numeric_limits<default_type>::quiet_NaN()) {}
+    VoxelIndex size;
     default_type spacing;
-    ssize_t stride;
   };
 
   Header()
@@ -60,6 +59,7 @@ public:
 
   explicit Header(Header &&H) noexcept
       : axes_(std::move(H.axes_)),
+        strides_(std::move(H.strides_)),
         transform_(std::move(H.transform_)),
         name_(std::move(H.name_)),
         keyval_(std::move(H.keyval_)),
@@ -72,6 +72,7 @@ public:
 
   Header &operator=(Header &&H) noexcept {
     axes_ = std::move(H.axes_);
+    strides_ = std::move(H.strides_);
     transform_ = std::move(H.transform_);
     name_ = std::move(H.name_);
     keyval_ = std::move(H.keyval_);
@@ -89,6 +90,7 @@ public:
    * intensity scaling if the datatype is floating-point. */
   Header(const Header &H)
       : axes_(H.axes_),
+        strides_(H.strides_),
         transform_(H.transform_),
         name_(H.name_),
         keyval_(H.keyval_),
@@ -111,16 +113,16 @@ public:
   template <class HeaderType,
             typename std::enable_if<!std::is_base_of<Header, HeaderType>::value, void *>::type = nullptr>
   Header(const HeaderType &original)
-      : transform_(original.transform()),
+      : strides_(Stride::Symbolic(original)),
+        transform_(original.transform()),
         name_(original.name()),
         keyval_(original.keyval()),
         datatype_(DataType::from<typename HeaderType::value_type>()),
         offset_(0.0),
         scale_(1.0) {
     axes_.resize(original.ndim());
-    for (size_t n = 0; n < original.ndim(); ++n) {
+    for (ArrayIndex n = 0; n < original.ndim(); ++n) {
       size(n) = original.size(n);
-      stride(n) = original.stride(n);
       spacing(n) = original.spacing(n);
     }
   }
@@ -130,6 +132,7 @@ public:
    * type is floating-point, and resets the IO handler. */
   Header &operator=(const Header &H) {
     axes_ = H.axes_;
+    strides_ = H.strides_;
     transform_ = H.transform_;
     name_ = H.name_;
     keyval_ = H.keyval_;
@@ -156,11 +159,11 @@ public:
             typename std::enable_if<!std::is_base_of<Header, HeaderType>::value, void *>::type = nullptr>
   Header &operator=(const HeaderType &original) {
     axes_.resize(original.ndim());
-    for (size_t n = 0; n < original.ndim(); ++n) {
+    for (ArrayIndex n = 0; n < original.ndim(); ++n) {
       size(n) = original.size(n);
-      stride(n) = original.stride(n);
       spacing(n) = original.spacing(n);
     }
+    strides_ = Stride::Symbolic(original);
     transform_ = original.transform();
     name_ = original.name();
     keyval_ = original.keyval();
@@ -212,12 +215,12 @@ public:
     bool is_identity() const { return shuffle_.is_identity(); }
     bool valid() const { return shuffle_.valid(); }
     const Axes::permutations_type &permutations() const { return shuffle_.permutations; }
-    size_t permutation(const size_t axis) const {
+    ArrayIndex permutation(const ArrayIndex axis) const {
       assert(axis < 3);
       return shuffle_.permutations[axis];
     }
     const Axes::flips_type &flips() const { return shuffle_.flips; }
-    bool flip(const size_t axis) const {
+    bool flip(const ArrayIndex axis) const {
       assert(axis < 3);
       return shuffle_.flips[axis];
     }
@@ -228,7 +231,7 @@ public:
   private:
     Axes::Shuffle shuffle_;
     transform_type orig_transform_;
-    Stride::List orig_strides_;
+    Stride::Symbolic orig_strides_;
     applied_transform_type applied_transform_;
     KeyValues orig_keyval_;
     friend class Header;
@@ -238,15 +241,16 @@ public:
 
   class NDimProxy {
   public:
-    NDimProxy(std::vector<Axis> &axes) : axes(axes) {}
+    NDimProxy(std::vector<Axis> &axes, Stride::Symbolic &strides) : axes(axes), strides(strides) {}
     NDimProxy(NDimProxy &&) = default;
     NDimProxy(const NDimProxy &) = delete;
     NDimProxy &operator=(NDimProxy &&) = delete;
     NDimProxy &operator=(const NDimProxy &) = delete;
 
-    operator size_t() const { return axes.size(); }
-    size_t operator=(size_t new_size) {
+    operator Eigen::size_t() const { return axes.size(); }
+    size_t operator=(const size_t new_size) {
       axes.resize(new_size);
+      strides.resize(new_size);
       return new_size;
     }
     friend std::ostream &operator<<(std::ostream &stream, const NDimProxy &proxy) {
@@ -256,27 +260,27 @@ public:
 
   private:
     std::vector<Axis> &axes;
+    Stride::Symbolic &strides;
   };
 
   //! return the number of dimensions (axes) of image
   size_t ndim() const { return axes_.size(); }
   //! set the number of dimensions (axes) of image
-  NDimProxy ndim() { return {axes_}; }
+  NDimProxy ndim() { return {axes_, strides_}; }
 
   //! get the number of voxels across axis
-  const ssize_t &size(size_t axis) const;
+  const VoxelIndex &size(const ArrayIndex axis) const;
   //! get/set the number of voxels across axis
-  ssize_t &size(size_t axis);
+  VoxelIndex &size(const ArrayIndex axis);
 
   //! get the voxel size along axis
-  const default_type &spacing(size_t axis) const;
+  const default_type &spacing(const ArrayIndex axis) const;
   //! get/set the voxel size along axis
-  default_type &spacing(size_t axis);
+  default_type &spacing(const ArrayIndex axis);
 
-  //! get the stride between adjacent voxels along axis
-  const ssize_t &stride(size_t axis) const;
-  //! get/set the stride between adjacent voxels along axis
-  ssize_t &stride(size_t axis);
+  const Stride::Symbolic &strides() const { return strides_; }
+  Stride::Symbolic &strides() { return strides_; };
+  Stride::Symbolic::value_type stride(const ArrayIndex axis) const;
 
   class DataTypeProxy : public DataType {
   public:
@@ -353,7 +357,7 @@ public:
     DEBUG("sanitising image information...");
     sanitise_voxel_sizes();
     sanitise_transform();
-    sanitise_strides();
+    strides().sanitise();
   }
 
   //! return an Image to access the data
@@ -400,6 +404,7 @@ public:
 
 protected:
   std::vector<Axis> axes_;
+  Stride::Symbolic strides_;
   transform_type transform_;
   std::string name_;
   KeyValues keyval_;
@@ -423,23 +428,18 @@ protected:
 
   void sanitise_voxel_sizes();
   void sanitise_transform();
-  void sanitise_strides() {
-    Stride::sanitise(*this);
-    Stride::actualise(*this);
-  }
 };
 
 // Can't be a static member function due to memory alignment requirements of std::vector<>
-Header concatenate(const std::vector<Header> &headers, const size_t axis, const bool permit_datatype_mismatch);
+Header concatenate(const std::vector<Header> &headers, const ArrayIndex axis, const bool permit_datatype_mismatch);
 
-inline const ssize_t &Header::size(size_t axis) const { return axes_[axis].size; }
-inline ssize_t &Header::size(size_t axis) { return axes_[axis].size; }
+inline const VoxelIndex &Header::size(const ArrayIndex axis) const { return axes_[axis].size; }
+inline VoxelIndex &Header::size(const ArrayIndex axis) { return axes_[axis].size; }
 
-inline const default_type &Header::spacing(size_t axis) const { return axes_[axis].spacing; }
-inline default_type &Header::spacing(size_t axis) { return axes_[axis].spacing; }
+inline const default_type &Header::spacing(const ArrayIndex axis) const { return axes_[axis].spacing; }
+inline default_type &Header::spacing(const ArrayIndex axis) { return axes_[axis].spacing; }
 
-inline const ssize_t &Header::stride(size_t axis) const { return axes_[axis].stride; }
-inline ssize_t &Header::stride(size_t axis) { return axes_[axis].stride; }
+inline Stride::Symbolic::value_type Header::stride(const ArrayIndex axis) const { return strides_[axis]; }
 
 //! @}
 } // namespace MR

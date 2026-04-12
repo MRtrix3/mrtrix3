@@ -16,7 +16,10 @@
 
 #pragma once
 
+#include "adapter/base.h"
 #include "algo/iterator.h"
+#include "axes.h"
+#include "misc/cuboid_extent.h"
 #include "types.h"
 
 namespace MR {
@@ -38,39 +41,40 @@ class NeighbourhoodIterator {
 public:
   NeighbourhoodIterator() = delete;
   template <class IteratorType>
-  NeighbourhoodIterator(const IteratorType &iter, const std::vector<size_t> &extent)
+  NeighbourhoodIterator(const IteratorType &iter, const CuboidExtent &extent)
       : dim(iter.ndim()),
         offset(iter.ndim()),
         // pos (iter.ndim()),
         pos_orig(iter.ndim()),
-        ext(container_cast<decltype(ext)>(extent)),
+        ext(extent),
+        halfextent({(ext[0] - 1) / 2, (ext[1] - 1) / 2, (ext[2] - 1) / 2}),
         has_next_(false) {
-    assert(iter.ndim() == extent.size());
+    // assert(iter.ndim() == extent.size());
+    assert(iter.ndim() == 3);
     pos.resize(iter.ndim());
     for (size_t i = 0; i < iter.ndim(); ++i) {
-      ext[i] = (ext[i] - 1) / 2;
       offset[i] = iter.index(i);
       // set pos to lower bound
-      pos[i] = (offset[i] - ext[i] < 0) ? 0 : offset[i] - ext[i];
+      pos[i] = (offset[i] - halfextent[i] < 0) ? 0 : offset[i] - halfextent[i];
       pos_orig[i] = pos[i];
       // upper bound:
-      auto high = (offset[i] + ext[i] >= iter.size(i)) ? iter.size(i) - 1 : offset[i] + ext[i];
+      auto high = (offset[i] + halfextent[i] >= iter.size(i)) ? iter.size(i) - 1 : offset[i] + halfextent[i];
       dim[i] = high - pos[i] + 1;
     }
   }
 
   size_t ndim() const { return dim.size(); }
-  ssize_t size(size_t axis) const { return dim[axis]; }
+  VoxelIndex size(const ArrayIndex axis) const { return dim[axis]; }
 
-  const ssize_t &index(size_t axis) const { return pos[axis]; }
-  ssize_t &index(size_t axis) { return pos[axis]; }
+  const VoxelIndex &index(const ArrayIndex axis) const { return pos[axis]; }
+  VoxelIndex &index(const ArrayIndex axis) { return pos[axis]; }
 
-  const Eigen::Matrix<ssize_t, 1, Eigen::Dynamic> get_pos() const { return pos; }
+  const Eigen::Matrix<VoxelIndex, 1, Eigen::Dynamic> get_pos() const { return pos; }
 
-  const ssize_t &extent(size_t axis) const { return dim[axis]; }
-  const ssize_t &centre(size_t axis) const { return offset[axis]; }
+  CuboidExtent::value_type extent(const ArrayIndex axis) const { return dim[axis]; }
+  const VoxelIndex &centre(const ArrayIndex axis) const { return offset[axis]; }
 
-  void reset(size_t axis) { pos[axis] = pos_orig[axis]; }
+  void reset(const ArrayIndex axis) { pos[axis] = pos_orig[axis]; }
 
   bool loop() {
     if (not this->has_next_) {
@@ -104,8 +108,12 @@ public:
   }
 
 private:
-  std::vector<ssize_t> dim, offset, pos_orig, ext;
-  Eigen::Matrix<ssize_t, 1, Eigen::Dynamic> pos;
+  std::vector<VoxelIndex> dim;
+  std::vector<VoxelIndex> offset;
+  std::vector<VoxelIndex> pos_orig;
+  CuboidExtent ext;
+  std::array<VoxelIndex, 3> halfextent;
+  Eigen::Matrix<VoxelIndex, 1, Eigen::Dynamic> pos;
   bool has_next_;
 
   void value() const { assert(0); }

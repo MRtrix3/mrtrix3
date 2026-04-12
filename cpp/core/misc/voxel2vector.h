@@ -42,7 +42,10 @@ public:
 
   Voxel2Vector(const Header &header)
       : forward(Image<index_t>::scratch(header, "Voxel to vector index conversion scratch image")) {
-    reverse.reserve(voxel_count(header));
+    const auto num_voxels = voxel_count(header);
+    if (static_cast<index_t>(num_voxels) > std::numeric_limits<index_t>::max())
+      throw Exception("Too many voxels in image to support serialisation");
+    reverse.reserve(num_voxels);
     index_t counter = 0;
     for (auto l = Loop(header)(forward); l; ++l) {
       forward.value() = counter++;
@@ -98,8 +101,13 @@ Voxel2Vector::Voxel2Vector(MaskType &mask, const Header &data)
       forward.value() = invalid;
     }
   }
-  DEBUG("Voxel2vector class for image \"" + data.name() + "\" of size " + join(pos(), "x") + " initialised with " +
-        str(reverse.size()) + " elements");
+  std::ostringstream oss;
+  oss << forward.size(0);
+  for (ArrayIndex axis = 0; axis != forward.ndim(); ++axis)
+    oss << "x" << forward.size(axis);
+  DEBUG("Voxel2vector class for image \"" + data.name() + "\"" +   //
+        " of size " + oss.str() +                                  //
+        " initialised with " + str(reverse.size()) + " elements"); //
 }
 
 } // namespace MR

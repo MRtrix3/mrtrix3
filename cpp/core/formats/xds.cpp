@@ -59,10 +59,7 @@ std::unique_ptr<ImageIO::Base> XDS::read(Header &H) const {
   H.spacing(2) = 10.0;
   H.spacing(3) = 1.0;
 
-  H.stride(0) = -1;
-  H.stride(1) = -2;
-  H.stride(2) = 0;
-  H.stride(3) = 3;
+  H.strides() = Stride::Symbolic({-1, -2, Stride::Symbolic::invalid, 3});
 
   std::unique_ptr<ImageIO::Default> io_handler(new ImageIO::Default(H));
   io_handler->files.push_back(File::Entry(H.name()));
@@ -95,10 +92,7 @@ bool XDS::check(Header &H, size_t num_axes) const {
   H.spacing(2) = 10.0;
   H.spacing(3) = 1.0;
 
-  H.stride(0) = -1;
-  H.stride(1) = -2;
-  H.stride(2) = 0;
-  H.stride(3) = 3;
+  H.strides() = Stride::Symbolic({-1, -2, Stride::Symbolic::invalid, 3});
 
   DataType dtype(Path::has_suffix(H.name(), ".bfloat") ? DataType::Float32 : DataType::UInt16);
   if (H.datatype().is_big_endian())

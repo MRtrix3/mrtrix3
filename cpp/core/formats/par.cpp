@@ -201,32 +201,29 @@ std::unique_ptr<ImageIO::Base> PAR::read(Header &H) const {
   if (nvols * nslices != slices.size())
     throw Exception("mismatch in dimensions when reading PAR/REC file \"" + H.name() + "\"");
 
-  if (nvols > 1) {
-    H.ndim() = 4;
-    H.size(3) = nvols;
-    H.stride(3) = 4;
-  } else {
-    H.ndim() = 3;
-  }
+  H.ndim() = 3;
   H.size(0) = slices[0].size[0];
   H.size(1) = slices[0].size[1];
   H.size(2) = nslices;
-
   H.spacing(0) = slices[0].vox[0];
   H.spacing(1) = slices[0].vox[1];
   H.spacing(2) = slices[0].thick + slices[0].gap;
+  H.strides() = Stride::Symbolic({-1, -2, 3});
+
+  if (nvols > 1) {
+    H.ndim() = 4;
+    H.size(3) = nvols;
+    if (slices[0].sl == slices[1].sl) {
+      H.strides().reorder(Stride::Permutation({0, 0, 2, 1}));
+      assert(H.strides() == Stride::Symbolic({-1, -2, 4, 3}));
+    } else {
+      H.strides().sanitise();
+      assert(H.strides() == Stride::Symbolic({-1, -2, 3, 4}));
+    }
+  }
 
   if (slices[0].gap > 0.0)
     WARN("slice gap detected in PAR/REC file \"" + H.name() + "\"");
-
-  H.stride(0) = -1;
-  H.stride(1) = -2;
-  H.stride(2) = 3;
-
-  if (nvols > 1 && slices[0].sl == slices[1].sl) {
-    H.stride(2) = 4;
-    H.stride(3) = 3;
-  }
 
   H.datatype() = slices[0].pix == 16 ? DataType::UInt16LE : DataType::UInt8;
 

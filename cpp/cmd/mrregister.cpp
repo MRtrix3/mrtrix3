@@ -26,6 +26,7 @@
 #include "math/SH.h"
 #include "math/average_space.h"
 #include "math/sphere.h"
+#include "misc/cuboid_extent.h"
 #include "registration/linear.h"
 #include "registration/metric/demons.h"
 #include "registration/metric/difference_robust.h"
@@ -285,7 +286,7 @@ void run() {
     mc_params[i].image_nvols = input1[i].ndim() < 4 ? 1 : input1[i].size(3);
   }
 
-  ssize_t max_mc_image_lmax =
+  const ssize_t max_mc_image_lmax =
       std::max_element(mc_params.begin(),
                        mc_params.end(),
                        [](const Registration::MultiContrastSetting &x, const Registration::MultiContrastSetting &y) {
@@ -889,8 +890,7 @@ void run() {
     } else { // 3D
       if (rigid_metric == Registration::NCC) {
         Registration::Metric::LocalCrossCorrelation metric;
-        std::vector<size_t> extent(3, 3);
-        rigid_registration.set_extent(extent);
+        rigid_registration.set_extent(CuboidExtent(3));
         rigid_registration.run_masked(metric, rigid, images1, images2, im1_mask, im2_mask);
       } else if (rigid_metric == Registration::Diff) {
         if (rigid_estimator == Registration::None) {
@@ -964,8 +964,7 @@ void run() {
     } else { // 3D
       if (affine_metric == Registration::NCC) {
         Registration::Metric::LocalCrossCorrelation metric;
-        std::vector<size_t> extent(3, 3);
-        affine_registration.set_extent(extent);
+        affine_registration.set_extent(CuboidExtent(3));
         affine_registration.run_masked(metric, affine, images1, images2, im1_mask, im2_mask);
       } else if (affine_metric == Registration::Diff) {
         if (affine_estimator == Registration::None) {
@@ -1090,8 +1089,11 @@ void run() {
                 deform_field,
                 Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300()).transpose());
         } else if (do_affine) {
-          Filter::reslice<Interp::Cubic>(
-              im1_image, im1_transformed, affine.get_transform(), Adapter::AutoOverSample, out_of_bounds_value);
+          Filter::reslice<Interp::Cubic>(im1_image,
+                                         im1_transformed,
+                                         affine.get_transform(),
+                                         Adapter::OversampleFactors::Auto,
+                                         out_of_bounds_value);
           if (reorient_output)
             Registration::Transform::reorient(
                 "reorienting FODs",
@@ -1101,7 +1103,7 @@ void run() {
                 Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300()).transpose());
         } else { // rigid
           Filter::reslice<Interp::Cubic>(
-              im1_image, im1_transformed, rigid.get_transform(), Adapter::AutoOverSample, out_of_bounds_value);
+              im1_image, im1_transformed, rigid.get_transform(), Adapter::OversampleFactors::Auto, out_of_bounds_value);
           if (reorient_output)
             Registration::Transform::reorient(
                 "reorienting FODs",
@@ -1159,8 +1161,11 @@ void run() {
                 Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300()).transpose());
         } else if (do_affine) {
           auto im1_midway = Image<default_type>::create(input1_midway_transformed_paths[idx], midway_header);
-          Filter::reslice<Interp::Cubic>(
-              im1_image, im1_midway, affine.get_transform_half(), Adapter::AutoOverSample, out_of_bounds_value);
+          Filter::reslice<Interp::Cubic>(im1_image,
+                                         im1_midway,
+                                         affine.get_transform_half(),
+                                         Adapter::OversampleFactors::Auto,
+                                         out_of_bounds_value);
           if (reorient_output)
             Registration::Transform::reorient(
                 "reorienting ODFs",
@@ -1171,7 +1176,7 @@ void run() {
         } else { // rigid
           auto im1_midway = Image<default_type>::create(input1_midway_transformed_paths[idx], midway_header);
           Filter::reslice<Interp::Cubic>(
-              im1_image, im1_midway, rigid.get_transform_half(), Adapter::AutoOverSample, out_of_bounds_value);
+              im1_image, im1_midway, rigid.get_transform_half(), Adapter::OversampleFactors::Auto, out_of_bounds_value);
           if (reorient_output)
             Registration::Transform::reorient(
                 "reorienting ODFs",
@@ -1213,8 +1218,11 @@ void run() {
                 Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300()).transpose());
         } else if (do_affine) {
           auto im2_midway = Image<default_type>::create(input2_midway_transformed_paths[idx], midway_header);
-          Filter::reslice<Interp::Cubic>(
-              im2_image, im2_midway, affine.get_transform_half_inverse(), Adapter::AutoOverSample, out_of_bounds_value);
+          Filter::reslice<Interp::Cubic>(im2_image,
+                                         im2_midway,
+                                         affine.get_transform_half_inverse(),
+                                         Adapter::OversampleFactors::Auto,
+                                         out_of_bounds_value);
           if (reorient_output)
             Registration::Transform::reorient(
                 "reorienting ODFs",
@@ -1224,8 +1232,11 @@ void run() {
                 Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300()).transpose());
         } else { // rigid
           auto im2_midway = Image<default_type>::create(input2_midway_transformed_paths[idx], midway_header);
-          Filter::reslice<Interp::Cubic>(
-              im2_image, im2_midway, rigid.get_transform_half_inverse(), Adapter::AutoOverSample, out_of_bounds_value);
+          Filter::reslice<Interp::Cubic>(im2_image,
+                                         im2_midway,
+                                         rigid.get_transform_half_inverse(),
+                                         Adapter::OversampleFactors::Auto,
+                                         out_of_bounds_value);
           if (reorient_output)
             Registration::Transform::reorient(
                 "reorienting ODFs",

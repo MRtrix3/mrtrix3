@@ -15,6 +15,7 @@
  */
 
 #include "adapter/regrid.h"
+#include "adapter/reslice.h"
 #include "algo/copy.h"
 #include "command.h"
 #include "enum.h"
@@ -27,6 +28,7 @@
 #include "interp/nearest.h"
 #include "interp/sinc.h"
 #include "progressbar.h"
+#include "types.h"
 #include <set>
 
 using namespace MR;
@@ -220,10 +222,10 @@ void run() {
         MR::Interp::interp_type(get_option_value("interp", static_cast<ssize_t>(default_interp)));
 
     // over-sampling
-    std::vector<uint32_t> oversample = Adapter::AutoOverSample;
+    Adapter::OversampleFactors oversample = Adapter::OversampleFactors::Auto;
     auto opt = get_options("oversample");
     if (!opt.empty())
-      oversample = parse_ints<uint32_t>(opt[0][0]);
+      oversample = Adapter::OversampleFactors(parse_ints<Adapter::OversampleFactors::value_type>(opt[0][0]));
 
     Header template_header;
     opt = get_options("template");
@@ -254,10 +256,10 @@ void run() {
       ++resize_option_count;
     }
 
-    std::vector<uint32_t> image_size;
+    std::vector<size_t> image_size;
     opt = get_options("size");
     if (!opt.empty()) {
-      image_size = parse_ints<uint32_t>(opt[0][0]);
+      image_size = parse_ints<size_t>(opt[0][0]);
       regrid_filter.set_size(image_size);
       ++resize_option_count;
     }
@@ -297,8 +299,8 @@ void run() {
 
     const size_t nd = !get_options("nd").empty() ? input_header.ndim() : size_t(3);
 
-    std::vector<std::vector<ssize_t>> bounds(input_header.ndim(), std::vector<ssize_t>(2));
-    for (size_t axis = 0; axis < input_header.ndim(); axis++) {
+    std::vector<std::vector<VoxelIndex>> bounds(input_header.ndim(), std::vector<VoxelIndex>(2));
+    for (ArrayIndex axis = 0; axis < input_header.ndim(); axis++) {
       bounds[axis][0] = 0;
       bounds[axis][1] = input_header.size(axis) - 1;
     }
@@ -314,25 +316,25 @@ void run() {
       auto mask = Image<bool>::open(opt[0][0]);
       check_dimensions(input_header, mask, 0, 3);
 
-      for (size_t axis = 0; axis != 3; ++axis) {
+      for (ArrayIndex axis = 0; axis != 3; ++axis) {
         bounds[axis][0] = input_header.size(axis);
         bounds[axis][1] = 0;
       }
 
       struct BoundsCheck {
-        std::vector<std::vector<ssize_t>> &overall_bounds;
-        std::vector<std::vector<ssize_t>> bounds;
-        BoundsCheck(std::vector<std::vector<ssize_t>> &overall_bounds)
+        std::vector<std::vector<VoxelIndex>> &overall_bounds;
+        std::vector<std::vector<VoxelIndex>> bounds;
+        BoundsCheck(std::vector<std::vector<VoxelIndex>> &overall_bounds)
             : overall_bounds(overall_bounds), bounds(overall_bounds) {}
         ~BoundsCheck() {
-          for (size_t axis = 0; axis != 3; ++axis) {
+          for (StdIndex axis = 0; axis != 3; ++axis) {
             overall_bounds[axis][0] = std::min(bounds[axis][0], overall_bounds[axis][0]);
             overall_bounds[axis][1] = std::max(bounds[axis][1], overall_bounds[axis][1]);
           }
         }
         void operator()(const decltype(mask) &m) {
           if (m.value()) {
-            for (size_t axis = 0; axis != 3; ++axis) {
+            for (ArrayIndex axis = 0; axis != 3; ++axis) {
               bounds[axis][0] = std::min(bounds[axis][0], m.index(axis));
               bounds[axis][1] = std::max(bounds[axis][1], m.index(axis));
             }
@@ -341,7 +343,7 @@ void run() {
       };
 
       ThreadedLoop(mask).run(BoundsCheck(bounds), mask);
-      for (size_t axis = 0; axis != 3; ++axis) {
+      for (ArrayIndex axis = 0; axis != 3; ++axis) {
         if ((input_header.size(axis) - 1) != bounds[axis][1] or bounds[axis][0] != 0)
           INFO("cropping to mask changes axis " + str(axis) + " extent from 0:" + str(input_header.size(axis) - 1) +
                " to " + str(bounds[axis][0]) + ":" + str(bounds[axis][1]));
@@ -364,15 +366,13 @@ void run() {
 
       Header template_header = Header::open(opt[0][0]);
 
-      for (size_t axis = 0; axis != nd; ++axis) {
+      for (ArrayIndex axis = 0; axis != nd; ++axis) {
         if (axis >= template_header.ndim()) {
           if (do_crop)
             bounds[axis][1] = 0;
         } else {
-          if (do_crop)
-            bounds[axis][1] = std::min(bounds[axis][1], template_header.size(axis) - 1);
-          else
-            bounds[axis][1] = std::max(bounds[axis][1], template_header.size(axis) - 1);
+          bounds[axis][1] = do_crop ? std::min(bounds[axis][1], template_header.size(axis) - 1)
+                                    : std::max(bounds[axis][1], template_header.size(axis) - 1);
         }
       }
     }
@@ -380,9 +380,9 @@ void run() {
     opt = get_options("uniform");
     if (!opt.empty()) {
       ++crop_pad_option_count;
-      ssize_t val = opt[0][0];
+      const VoxelIndex val = opt[0][0];
       INFO("uniformly " + str(do_crop ? "cropping" : "padding") + " by " + str(val) + " voxels");
-      for (size_t axis = 0; axis < nd; axis++) {
+      for (StdIndex axis = 0; axis < nd; axis++) {
         bounds[axis][0] += do_crop ? val : -val;
         bounds[axis][1] += do_crop ? -val : val;
       }
@@ -390,17 +390,17 @@ void run() {
 
     if (do_crop && !crop_unbound) {
       opt = get_options("axis");
-      std::set<size_t> ignore;
-      for (size_t i = 0; i != opt.size(); ++i)
+      std::set<ArrayIndex> ignore;
+      for (StdIndex i = 0; i != opt.size(); ++i)
         ignore.insert(opt[i][0]);
-      for (size_t axis = 0; axis != 3; ++axis) {
+      for (ArrayIndex axis = 0; axis != 3; ++axis) {
         if (bounds[axis][0] < 0 || bounds[axis][1] > input_header.size(axis) - 1) {
           if (ignore.find(axis) == ignore.end())
             INFO("operation: crop without -crop_unbound: restricting padding on axis " + str(axis) + " to valid FOV " +
-                 str(std::max<ssize_t>(0, bounds[axis][0])) + ":" +
-                 str(std::min<ssize_t>(bounds[axis][1], input_header.size(axis) - 1)));
-          bounds[axis][0] = std::max<ssize_t>(0, bounds[axis][0]);
-          bounds[axis][1] = std::min<ssize_t>(bounds[axis][1], input_header.size(axis) - 1);
+                 str(std::max(VoxelIndex(0), bounds[axis][0])) + ":" +
+                 str(std::min(bounds[axis][1], input_header.size(axis) - 1)));
+          bounds[axis][0] = std::max(VoxelIndex(0), bounds[axis][0]);
+          bounds[axis][1] = std::min(bounds[axis][1], input_header.size(axis) - 1);
         }
       }
     }
@@ -408,16 +408,16 @@ void run() {
     opt = get_options("axis"); // overrides image bounds set by other options
     for (size_t i = 0; i != opt.size(); ++i) {
       ++crop_pad_option_count;
-      const size_t axis = opt[i][0];
+      const ArrayIndex axis = opt[i][0];
       if (axis >= input_header.ndim())
         throw Exception("-axis " + str(axis) + " larger than image dimensions (" + str(input_header.ndim()) + ")");
       std::string spec = str(opt[i][1]);
       std::string::size_type start = 0, end;
       end = spec.find_first_of(":", start);
-      if (end == std::string::npos) { // spec = delta_lower,delta_upper
-        std::vector<int> delta;       // 0: not changed, > 0: pad, < 0: crop
+      if (end == std::string::npos) {  // spec = delta_lower,delta_upper
+        std::vector<VoxelIndex> delta; // 0: not changed, > 0: pad, < 0: crop
         try {
-          delta = parse_ints<int>(opt[i][1]);
+          delta = parse_ints<VoxelIndex>(opt[i][1]);
         } catch (Exception &E) {
           Exception(E, "-axis " + str(axis) + ": can't parse delta specifier \"" + spec + "\"");
         }
@@ -445,7 +445,7 @@ void run() {
       }
     }
 
-    for (size_t axis = 0; axis != 3; ++axis) {
+    for (ArrayIndex axis = 0; axis != 3; ++axis) {
       if (bounds[axis][1] < bounds[axis][0])
         throw Exception("axis " + str(axis) + " is empty: (" + str(bounds[axis][0]) + ":" + str(bounds[axis][1]) + ")");
     }
@@ -453,15 +453,15 @@ void run() {
     if (crop_pad_option_count == 0)
       throw Exception("no crop or pad option supplied");
 
-    std::vector<ssize_t> from(input_header.ndim());
-    std::vector<ssize_t> size(input_header.ndim());
-    for (size_t axis = 0; axis < input_header.ndim(); axis++) {
+    std::vector<VoxelIndex> from(input_header.ndim());
+    std::vector<VoxelIndex> size(input_header.ndim());
+    for (StdIndex axis = 0; axis < input_header.ndim(); axis++) {
       from[axis] = bounds[axis][0];
       size[axis] = bounds[axis][1] - from[axis] + 1;
     }
 
     size_t changed_axes = 0;
-    for (size_t axis = 0; axis < nd; axis++) {
+    for (ArrayIndex axis = 0; axis < nd; axis++) {
       if (bounds[axis][0] != 0 || input_header.size(axis) != size[axis]) {
         changed_axes++;
         CONSOLE("changing axis " + str(axis) + " extent from 0:" + str(input_header.size(axis) - 1) +

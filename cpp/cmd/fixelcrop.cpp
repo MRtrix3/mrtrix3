@@ -82,14 +82,13 @@ void run() {
   std::vector<Image<float>> in_data_images;
   std::vector<Image<float>> out_data_images;
   for (auto &in_data_header : in_headers) {
-    in_data_images.push_back(in_data_header.get_image<float>().with_direct_io());
+    in_data_images.push_back(in_data_header.get_image<float>());
     check_dimensions(in_data_images.back(), mask_image, {0, 2});
 
     Header out_data_header(in_data_header);
     out_data_header.size(0) = total_nfixels;
     out_data_images.push_back(
-        Image<float>::create(Path::join(out_fixel_directory, Path::basename(in_data_header.name())), out_data_header)
-            .with_direct_io());
+        Image<float>::create(Path::join(out_fixel_directory, Path::basename(in_data_header.name())), out_data_header));
   }
 
   mask_image.index(1) = 0;

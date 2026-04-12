@@ -17,6 +17,7 @@
 #pragma once
 
 #include "apply.h"
+#include "axes.h"
 #include "image_helpers.h"
 #include "progressbar.h"
 #include "stride.h"
@@ -27,16 +28,16 @@ namespace MR {
 namespace {
 
 struct set_pos {
-  FORCE_INLINE set_pos(size_t axis, ssize_t index) : axis(axis), index(index) {}
+  FORCE_INLINE set_pos(const ArrayIndex axis, const VoxelIndex index) : axis(axis), index(index) {}
   template <class ImageType> FORCE_INLINE void operator()(ImageType &vox) { vox.index(axis) = index; }
-  size_t axis;
-  ssize_t index;
+  ArrayIndex axis;
+  VoxelIndex index;
 };
 
 struct inc_pos {
-  FORCE_INLINE inc_pos(size_t axis) : axis(axis) {}
+  FORCE_INLINE inc_pos(const ArrayIndex axis) : axis(axis) {}
   template <class ImageType> FORCE_INLINE void operator()(ImageType &vox) { ++vox.index(axis); }
-  size_t axis;
+  ArrayIndex axis;
 };
 
 } // namespace
@@ -179,13 +180,13 @@ struct inc_pos {
  *@{ */
 
 struct LoopAlongSingleAxis {
-  const size_t axis;
+  const ArrayIndex axis;
 
   template <class... ImageType> struct Run {
-    const size_t axis;
+    const ArrayIndex axis;
     const std::tuple<ImageType &...> vox;
-    const ssize_t size0;
-    FORCE_INLINE Run(const size_t axis, const std::tuple<ImageType &...> &vox)
+    const VoxelIndex size0;
+    FORCE_INLINE Run(const ArrayIndex axis, const std::tuple<ImageType &...> &vox)
         : axis(axis), vox(vox), size0(std::get<0>(vox).size(axis)) {
       MR::apply_for_each(set_pos(axis, 0), vox);
     }
@@ -201,14 +202,14 @@ struct LoopAlongSingleAxis {
 
 struct LoopAlongSingleAxisProgress {
   const std::string text;
-  const size_t axis;
+  const ArrayIndex axis;
 
   template <class... ImageType> struct Run {
     MR::ProgressBar progress;
-    const size_t axis;
+    const ArrayIndex axis;
     const std::tuple<ImageType &...> vox;
-    const ssize_t size0;
-    FORCE_INLINE Run(std::string_view text, const size_t axis, const std::tuple<ImageType &...> &vox)
+    const VoxelIndex size0;
+    FORCE_INLINE Run(std::string_view text, const ArrayIndex axis, const std::tuple<ImageType &...> &vox)
         : progress(text, std::get<0>(vox).size(axis)), axis(axis), vox(vox), size0(std::get<0>(vox).size(axis)) {
       MR::apply_for_each(set_pos(axis, 0), vox);
     }
@@ -226,20 +227,21 @@ struct LoopAlongSingleAxisProgress {
 };
 
 struct LoopAlongAxisRange {
-  const size_t from, to;
+  const ArrayIndex from, to;
 
   template <class... ImageType> struct Run {
-    const size_t from, to;
+    const ArrayIndex from;
+    const ArrayIndex to;
     const std::tuple<ImageType &...> vox;
-    const ssize_t size0;
+    const VoxelIndex size0;
     bool ok;
-    FORCE_INLINE Run(const size_t axis_from, const size_t axis_to, const std::tuple<ImageType &...> &vox)
+    FORCE_INLINE Run(const ArrayIndex axis_from, const ArrayIndex axis_to, const std::tuple<ImageType &...> &vox)
         : from(axis_from),
           to(axis_to ? axis_to : std::get<0>(vox).ndim()),
           vox(vox),
           size0(std::get<0>(vox).size(from)),
           ok(true) {
-      for (size_t n = from; n < to; ++n)
+      for (ArrayIndex n = from; n < to; ++n)
         MR::apply_for_each(set_pos(n, 0), vox);
     }
     FORCE_INLINE operator bool() const { return ok; }
@@ -249,7 +251,7 @@ struct LoopAlongAxisRange {
         return;
 
       MR::apply_for_each(set_pos(from, 0), vox);
-      size_t axis = from + 1;
+      ArrayIndex axis = from + 1;
       while (axis < to) {
         MR::apply_for_each(inc_pos(axis), vox);
         if (std::get<0>(vox).index(axis) < std::get<0>(vox).size(axis))
@@ -269,12 +271,13 @@ struct LoopAlongAxisRange {
 
 struct LoopAlongAxisRangeProgress : public LoopAlongAxisRange {
   const std::string text;
-  LoopAlongAxisRangeProgress(std::string_view text, const size_t from, const size_t to)
+  LoopAlongAxisRangeProgress(std::string_view text, const ArrayIndex from, const ArrayIndex to)
       : LoopAlongAxisRange({from, to}), text(text) {}
 
   template <class... ImageType> struct Run : public LoopAlongAxisRange::Run<ImageType...> {
     MR::ProgressBar progress;
-    FORCE_INLINE Run(std::string_view text, const size_t from, const size_t to, const std::tuple<ImageType &...> &vox)
+    FORCE_INLINE
+    Run(std::string_view text, const ArrayIndex from, const ArrayIndex to, const std::tuple<ImageType &...> &vox)
         : LoopAlongAxisRange::Run<ImageType...>(from, to, vox),
           progress(text, MR::voxel_count(std::get<0>(vox), from, to)) {}
     FORCE_INLINE void operator++() {
@@ -292,7 +295,7 @@ struct LoopAlongAxisRangeProgress : public LoopAlongAxisRange {
 struct LoopAlongAxes {
   template <class... ImageType>
   FORCE_INLINE LoopAlongAxisRange::Run<ImageType...> operator()(ImageType &...images) const {
-    return {0, std::get<0>(std::tie(images...)).ndim(), std::tie(images...)};
+    return {0, static_cast<ArrayIndex>(std::get<0>(std::tie(images...)).ndim()), std::tie(images...)};
   }
 };
 
@@ -300,23 +303,23 @@ struct LoopAlongAxesProgress {
   const std::string text;
   template <class... ImageType>
   FORCE_INLINE LoopAlongAxisRangeProgress::Run<ImageType...> operator()(ImageType &...images) const {
-    return {text, 0, std::get<0>(std::tie(images...)).ndim(), std::tie(images...)};
+    return {text, 0, static_cast<ArrayIndex>(std::get<0>(std::tie(images...)).ndim()), std::tie(images...)};
   }
 };
 
 struct LoopAlongDynamicAxes {
-  const std::vector<size_t> axes;
+  const Axes::Subset axes;
 
   template <class... ImageType> struct Run {
-    const std::vector<size_t> axes;
+    const Axes::Subset axes;
     const std::tuple<ImageType &...> vox;
-    const size_t from;
-    const ssize_t size0;
+    const ArrayIndex from;
+    const VoxelIndex size0;
     bool ok;
-    FORCE_INLINE Run(const std::vector<size_t> &axes, const std::tuple<ImageType &...> &vox)
+    FORCE_INLINE Run(const Axes::Subset &axes, const std::tuple<ImageType &...> &vox)
         : axes(axes), vox(vox), from(axes[0]), size0(std::get<0>(vox).size(from)), ok(true) {
-      for (auto axis : axes)
-        MR::apply_for_each(set_pos(axis, 0), vox);
+      for (StdIndex i = 0; i != axes.size(); ++i)
+        MR::apply_for_each(set_pos(axes[i], 0), vox);
     }
     FORCE_INLINE operator bool() const { return ok; }
     FORCE_INLINE void operator++() {
@@ -344,12 +347,12 @@ struct LoopAlongDynamicAxes {
 
 struct LoopAlongDynamicAxesProgress : public LoopAlongDynamicAxes {
   const std::string text;
-  LoopAlongDynamicAxesProgress(std::string_view text, const std::vector<size_t> &axes)
+  LoopAlongDynamicAxesProgress(std::string_view text, const Axes::Subset &axes)
       : LoopAlongDynamicAxes({axes}), text(text) {}
 
   template <class... ImageType> struct Run : public LoopAlongDynamicAxes::Run<ImageType...> {
     MR::ProgressBar progress;
-    FORCE_INLINE Run(std::string_view text, const std::vector<size_t> &axes, const std::tuple<ImageType &...> &vox)
+    FORCE_INLINE Run(std::string_view text, const Axes::Subset &axes, const std::tuple<ImageType &...> &vox)
         : LoopAlongDynamicAxes::Run<ImageType...>(axes, vox), progress(text, MR::voxel_count(std::get<0>(vox), axes)) {}
     FORCE_INLINE void operator++() {
       LoopAlongDynamicAxes::Run<ImageType...>::operator++();
@@ -367,43 +370,48 @@ FORCE_INLINE LoopAlongAxes Loop() { return {}; }
 
 FORCE_INLINE LoopAlongAxesProgress Loop(std::string_view progress_message) { return {std::string(progress_message)}; }
 
-FORCE_INLINE LoopAlongSingleAxis Loop(size_t axis) { return {axis}; }
+FORCE_INLINE LoopAlongSingleAxis Loop(const ArrayIndex axis) { return {axis}; }
 
-FORCE_INLINE LoopAlongSingleAxisProgress Loop(std::string_view progress_message, size_t axis) {
+FORCE_INLINE LoopAlongSingleAxisProgress Loop(std::string_view progress_message, const ArrayIndex axis) {
   return {std::string(progress_message), axis};
 }
 
-FORCE_INLINE LoopAlongAxisRange Loop(size_t axis_from, size_t axis_to) { return {axis_from, axis_to}; }
+FORCE_INLINE LoopAlongAxisRange Loop(const ArrayIndex axis_from, const ArrayIndex axis_to) {
+  return {axis_from, axis_to};
+}
 
-FORCE_INLINE LoopAlongAxisRangeProgress Loop(std::string_view progress_message, size_t axis_from, size_t axis_to) {
+FORCE_INLINE LoopAlongAxisRangeProgress Loop(std::string_view progress_message,
+                                             const ArrayIndex axis_from,
+                                             const ArrayIndex axis_to) {
   return {std::string(progress_message), axis_from, axis_to};
 }
 
-FORCE_INLINE LoopAlongDynamicAxes Loop(const std::vector<size_t> &axes) { return {axes}; }
+FORCE_INLINE LoopAlongDynamicAxes Loop(const Axes::Subset &axes) { return {axes}; }
 
-FORCE_INLINE LoopAlongDynamicAxesProgress Loop(std::string_view progress_message, const std::vector<size_t> &axes) {
+FORCE_INLINE LoopAlongDynamicAxesProgress Loop(std::string_view progress_message, const Axes::Subset &axes) {
   return {std::string(progress_message), axes};
 }
 
 template <class ImageType>
 FORCE_INLINE LoopAlongDynamicAxes
 Loop(const ImageType &source,
-     size_t axis_from = 0,
-     size_t axis_to = std::numeric_limits<size_t>::max(),
+     const ArrayIndex axis_from = 0,
+     const ArrayIndex axis_to = -1,
      typename std::enable_if<std::is_class<ImageType>::value && !std::is_same<ImageType, std::string>::value,
                              int>::type = 0) {
-  return {Stride::order(source, axis_from, axis_to)};
+  return {static_cast<Axes::Subset>(Stride::Symbolic(source).order().subset(axis_from, axis_to))};
 }
 
 template <class ImageType>
 FORCE_INLINE LoopAlongDynamicAxesProgress
 Loop(std::string_view progress_message,
      const ImageType &source,
-     size_t axis_from = 0,
-     size_t axis_to = std::numeric_limits<size_t>::max(),
+     const ArrayIndex axis_from = 0,
+     const ArrayIndex axis_to = -1,
      typename std::enable_if<std::is_class<ImageType>::value && !std::is_same<ImageType, std::string>::value,
                              int>::type = 0) {
-  return {std::string(progress_message), Stride::order(source, axis_from, axis_to)};
+  return {std::string(progress_message),
+          static_cast<Axes::Subset>(Stride::Symbolic(source).order().subset(axis_from, axis_to))};
 }
 
 //! @}

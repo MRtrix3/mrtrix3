@@ -251,7 +251,7 @@ void apply_warp(Image<float> &input,
                 Image<default_type> &warp,
                 const MR::Interp::interp_type interp,
                 const float out_of_bounds_value,
-                const std::vector<uint32_t> &oversample,
+                const Adapter::OversampleFactors &oversample,
                 const bool jacobian_modulate = false) {
   switch (interp) {
   case MR::Interp::interp_type::NEAREST:
@@ -366,11 +366,12 @@ void run() {
   if (!opt.empty()) {
     if (warp.valid())
       throw Exception("only one warp field can be input with either -warp or -warp_mid");
-    warp = Image<default_type>::open(opt[0][0]).with_direct_io(Stride::contiguous_along_axis(3));
+    warp = Image<default_type>::open(opt[0][0]);
     if (warp.ndim() != 4)
       throw Exception("the input -warp file must be a 4D deformation field");
     if (warp.size(3) != 3)
       throw Exception("the input -warp file must have 3 volumes in the 4th dimension (x,y,z positions)");
+    warp = warp.with_direct_io(3);
   }
 
   // Inverse
@@ -422,7 +423,7 @@ void run() {
     linear_transform = linear_transform * flip;
   }
 
-  Stride::List stride = Stride::get(input_header);
+  std::optional<Stride::Symbolic> stride;
 
   // Detect FOD image
   const bool is_possible_fod_image =
@@ -452,7 +453,7 @@ void run() {
     Math::Sphere::spherical2cartesian(directions_az_in, directions_cartesian);
 
     // load with SH coeffients contiguous in RAM
-    stride = Stride::contiguous_along_axis(3, input_header);
+    stride = input_header.strides().reordered(Stride::Permutation::volume_contiguous);
   }
 
   // Intensity / FOD modulation
@@ -581,24 +582,14 @@ void run() {
   }
 
   // over-sampling
-  std::vector<uint32_t> oversample = Adapter::AutoOverSample;
+  Adapter::OversampleFactors oversample =
+      interp == MR::Interp::interp_type::NEAREST ? Adapter::OversampleFactors::Unity : Adapter::OversampleFactors::Auto;
   opt = get_options("oversample");
   if (!opt.empty()) {
     if (!template_header.valid() && !warp)
       throw Exception("-oversample option applies only to regridding using the template option"
                       " or to non-linear transformations");
-    oversample = parse_ints<uint32_t>(opt[0][0]);
-    if (oversample.size() == 1)
-      oversample.resize(3, oversample[0]);
-    else if (oversample.size() != 3)
-      throw Exception("-oversample option requires either a single integer,"
-                      " or a comma-separated list of 3 integers");
-    for (const auto x : oversample)
-      if (x < 1)
-        throw Exception("-oversample factors must be positive integers");
-  } else if (interp == MR::Interp::interp_type::NEAREST) {
-    // default for nearest-neighbour is no oversampling
-    oversample = {1, 1, 1};
+    oversample = Adapter::OversampleFactors(parse_ints<Adapter::OversampleFactors::value_type>(opt[0][0]));
   }
 
   // Out of bounds value

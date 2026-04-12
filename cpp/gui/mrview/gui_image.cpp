@@ -440,8 +440,8 @@ template <typename ValueType> inline void Image::copy_texture_3D() {
                         buffer->intensity_offset(),
                         buffer->intensity_scale());
     }
-    std::function<ValueType(const void *, size_t, default_type, default_type)> fetch_func;
-    std::function<void(ValueType, void *, size_t, default_type, default_type)> store_func;
+    std::function<ValueType(const void *, MemIndex, default_type, default_type)> fetch_func;
+    std::function<void(ValueType, void *, MemIndex, default_type, default_type)> store_func;
   } V(image);
 
   const size_t N = (format == gl::RED ? 1 : 3);

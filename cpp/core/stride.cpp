@@ -15,6 +15,11 @@
  */
 
 #include "stride.h"
+
+#include <limits>
+#include <map>
+#include <set>
+
 #include "header.h"
 
 namespace MR::Stride {
@@ -31,6 +36,10 @@ const OptionGroup Options = OptionGroup("Stride options")
              " the output image format can support it.")
       + Argument("spec").type_sequence_int().type_image_in();
 // clang-format on
+
+} // namespace MR::Stride
+
+namespace MR::Stride::Legacy {
 
 List &sanitise(List &current, const List &desired, const std::vector<ssize_t> &dims) {
   // remove duplicates
@@ -142,6 +151,797 @@ List __from_command_line(const List &current) {
   }
 
   return strides;
+}
+
+} // namespace MR::Stride::Legacy
+
+namespace MR::Stride {
+
+Order::Order(const Permutation &permutation) {
+  assert(permutation.valid());
+  // May have multiple axes labelled under the same permutation;
+  //   sort axis indices numerically in that case
+  std::multimap<ArrayIndex, ArrayIndex> sorter;
+  for (ArrayIndex axis = 0; axis != permutation.size(); ++axis)
+    sorter.insert({permutation[axis], axis});
+  ArrayIndex index = 0;
+  for (const auto &item : sorter)
+    data_.push_back(item.second);
+  assert(is_sanitised());
+}
+
+Order::Order(const Symbolic &symbolic) : Order(Permutation(symbolic)) {}
+
+Order::Order(const std::vector<Order::value_type> &data) : Base(data) {}
+
+Order::operator Axes::Subset() const { return Axes::Subset(data_.begin(), data_.end()); }
+
+bool Order::is_canonical() const {
+  for (ArrayIndex axis = 0; axis != size(); ++axis) {
+    if (data_[axis] != axis)
+      return false;
+  }
+  return true;
+}
+
+bool Order::is_sanitised() const { return (valid()); }
+
+bool Order::valid() const {
+  if (empty())
+    return false;
+  if (*std::min_element(data_.begin(), data_.end()) != 0)
+    return false;
+  if (*std::max_element(data_.begin(), data_.end()) != size() - 1)
+    return false;
+  if (std::set<ArrayIndex>(data_.begin(), data_.end()).size() != size())
+    return false;
+  return true;
+}
+
+Axes::Subset Order::head(const size_t num_axes) const {
+  if (num_axes > size())
+    throw Exception("Requested axis order subset (" + str(num_axes) + ")" +
+                    " larger than the number of axes present (" + str(size()) + ")");
+  return Axes::Subset(data_.begin(), data_.begin() + num_axes);
+}
+
+Permutation Order::permutation() const { return Permutation(*this); }
+
+Axes::Subset Order::subset(const Axes::Subset &axes) const {
+  Axes::Subset result;
+  for (const auto axis : data_) {
+    if (std::find(axes.begin(), axes.end(), axis) != axes.end())
+      result.push_back(axis);
+  }
+  return result;
+}
+
+Axes::Subset Order::subset(const ArrayIndex from_axis, const ArrayIndex to_axis) const {
+  if (from_axis < 0 || (to_axis != Order::invalid && (to_axis <= from_axis || to_axis > size())))
+    throw Exception("Invalid axis range (" + str(from_axis) + " -- " + str(to_axis) + ")" + //
+                    " for extracting subset from " + str(size()) + " ordered axes");        //
+  Axes::Subset result;
+  for (const auto axis : data_) {
+    if (axis >= from_axis && (to_axis == -1 || axis < to_axis))
+      result.push_back(axis);
+  }
+  return result;
+}
+
+Axes::Subset Order::tail(const size_t num_axes) const {
+  if (num_axes > size())
+    throw Exception("Requested axis order subset (" + str(num_axes) + ")" +           //
+                    " larger than the number of axes present (" + str(size()) + ")"); //
+  return Axes::Subset(std::vector<value_type>(data_.begin() + (size() - num_axes), data_.end()));
+}
+
+Order Order::canonical(const size_t num_axes) {
+  vector_type order(num_axes);
+  for (ArrayIndex axis = 0; axis != static_cast<ArrayIndex>(num_axes); ++axis)
+    order[axis] = axis;
+  Order result(order);
+  assert(result.is_sanitised());
+  return result;
+}
+
+Permutation::Permutation(const Permutation::vector_type &permutation) : Base(permutation) {}
+
+Permutation::Permutation(const Order &order) {
+  for (ArrayIndex index = 0; index != static_cast<ArrayIndex>(order.size()); ++index) {
+    if (order[index] >= size())
+      data_.resize(order[index] + 1, Permutation::invalid);
+    data_[order[index]] = index;
+  }
+  assert(valid());
+  assert(!is_degenerate());
+}
+
+Permutation::Permutation(const Symbolic &symbolic) : Base(symbolic.size(), Permutation::invalid) {
+  std::multimap<Symbolic::value_type, ArrayIndex> sorter;
+  for (ArrayIndex axis = 0; axis != size(); ++axis) {
+    if (symbolic[axis] != Symbolic::invalid)
+      sorter.insert({MR::abs(symbolic[axis]), axis});
+  }
+  ArrayIndex perm_index = 0;
+  Symbolic::value_type last_symbolic = Symbolic::invalid;
+  for (const auto &item : sorter) {
+    if (item.first != last_symbolic) {
+      if (last_symbolic != Symbolic::invalid)
+        ++perm_index;
+      last_symbolic = item.first;
+    }
+    data_[item.second] = perm_index;
+  }
+  ++perm_index;
+  for (ArrayIndex axis = 0; axis != size(); ++axis) {
+    if (symbolic[axis] == Symbolic::invalid)
+      data_[axis] = perm_index;
+  }
+#ifdef MRTRIX_DEBUG_STRIDES
+  DEBUG("From symbolic strides [" + str(symbolic) + "]," + " constructed permutation [" + str(*this) + "]");
+#endif
+}
+
+Permutation::Permutation(const Actual &actual) : Permutation(Symbolic(actual)) {}
+
+bool Permutation::is_canonical() const {
+  for (ArrayIndex axis = 0; axis != size(); ++axis) {
+    if (data_[axis] != axis)
+      return false;
+  }
+  return true;
+}
+
+bool Permutation::is_degenerate() const {
+  std::set<ArrayIndex> valid_indices;
+  for (ArrayIndex axis = 0; axis != size(); ++axis) {
+    if (data_[axis] != invalid) {
+      if (valid_indices.find(data_[axis]) != valid_indices.end())
+        return true;
+      valid_indices.insert(data_[axis]);
+    }
+  }
+  return false;
+}
+
+bool Permutation::is_sanitised() const {
+  if (!valid())
+    return false;
+  // First axis must be indexed as zero
+  if (*std::min_element(data_.begin(), data_.end()) != 0)
+    return false;
+  // Should not be any values beyond the number of dimensions
+  if (*std::max_element(data_.begin(), data_.end()) != data_.size() - 1)
+    return false;
+  // No duplicates
+  if (is_degenerate())
+    return false;
+  return true;
+}
+
+bool Permutation::valid() const {
+  // If empty, not a valid permutation
+  if (empty())
+    return false;
+  // No negative axis indices
+  if (*std::min_element(data_.begin(), data_.end()) < 0)
+    return false;
+  return true;
+}
+
+void Permutation::conform(const Permutation &permutation) {
+  const std::set<value_type> unique_input(permutation.data_.begin(), permutation.data_.end());
+  std::multimap<ArrayIndex, ArrayIndex> sorter;
+  vector_type result(size(), Permutation::invalid);
+  ArrayIndex index = 0;
+  for (auto input : unique_input) {
+    sorter.clear();
+    for (ArrayIndex axis = 0; axis != size(); ++axis) {
+      if (permutation[axis] == input)
+        sorter.insert({data_[axis], axis});
+    }
+    ArrayIndex previous = Permutation::invalid;
+    for (auto current : sorter) {
+      if (previous == Permutation::invalid) {
+        result[current.second] = index;
+        previous = current.first;
+      } else {
+        result[current.second] = current.first == previous ? index : ++index;
+        previous = current.first;
+      }
+    }
+    ++index;
+  }
+  data_ = result;
+  assert(valid());
+}
+
+Permutation Permutation::conformed(const Permutation &permutation) const {
+  Permutation result(*this);
+  result.conform(permutation);
+  return result;
+}
+
+Permutation Permutation::head(const size_t num_axes) const {
+  if (num_axes > size())
+    throw Exception("Requested axis subset (" + str(num_axes) + ")" +
+                    " larger than the number of axes present in permutation (" + str(size()) + ")");
+  Permutation::vector_type result(*this);
+  result.resize(num_axes);
+  return Permutation(result);
+}
+
+Order Permutation::order() const { return Order(*this); }
+
+void Permutation::sanitise() {
+  std::multimap<value_type, ArrayIndex> sorter;
+  for (ArrayIndex index = 0; index != size(); ++index) {
+    if (data_[index] == Permutation::invalid)
+      throw Exception("Cannot sanitise an axis permutation that contains invalid values");
+    sorter.insert({data_[index], index});
+  }
+#ifdef MRTRIX_DEBUG_STRIDES
+  std::ostringstream oss;
+  oss << "Sanitised permutation [" << *this << "]";
+#endif
+  value_type axis = 0;
+  for (const auto &sorted : sorter)
+    data_[sorted.second] = axis++;
+#ifdef MRTRIX_DEBUG_STRIDES
+  oss << " as [" << *this << "]";
+  DEBUG(oss.str());
+#endif
+  assert(is_sanitised());
+}
+
+Permutation Permutation::sanitised() const {
+  Permutation result(*this);
+  result.sanitise();
+  return result;
+}
+
+Symbolic Permutation::symbolic() const { return Symbolic(*this); }
+
+Permutation Permutation::axis_range(const ArrayIndex from, const ArrayIndex to) {
+  assert(to > from);
+  vector_type permutation(to - from, Permutation::invalid);
+  for (ArrayIndex i = 0; i != permutation.size(); ++i)
+    permutation[i] = from + i;
+  const Permutation result(permutation);
+  assert(result.valid());
+  if (from == 0) {
+    assert(result.is_sanitised());
+  }
+  return result;
+}
+
+Permutation Permutation::canonical(const size_t num_axes) {
+  vector_type permutation(num_axes);
+  for (ArrayIndex axis = 0; axis != num_axes; ++axis)
+    permutation[axis] = axis;
+  const Permutation result(permutation);
+  assert(result.is_sanitised());
+  return result;
+}
+
+Permutation Permutation::contiguous_along_axis(const size_t num_axes, const ArrayIndex axis) {
+  assert(axis >= 0);
+  assert(axis < num_axes);
+  vector_type permutation(num_axes, 1);
+  permutation[axis] = 0;
+  return Permutation(permutation);
+}
+
+Permutation Permutation::contiguous_along_spatial_axes(const size_t num_axes) {
+  Permutation::vector_type permutation(num_axes, 0);
+  for (ArrayIndex nonspatial_axis = 3; nonspatial_axis < static_cast<ArrayIndex>(num_axes); ++nonspatial_axis)
+    permutation[nonspatial_axis] = 1;
+  return Permutation(permutation);
+}
+
+const Permutation Permutation::volume_contiguous({1, 1, 1, 0});
+
+Symbolic::Symbolic(const Symbolic::vector_type &in) : Base(in) {}
+
+Symbolic::Symbolic(const Permutation &in) {
+  resize(in.size());
+  for (ArrayIndex axis = 0; axis != size(); ++axis)
+    data_[axis] = static_cast<Symbolic::value_type>(in[axis]) + 1;
+}
+
+Symbolic::Symbolic(const Header &header) : Symbolic(header.strides()) {}
+
+Symbolic::Symbolic(const Actual &actual) : Base(actual.size(), Symbolic::invalid) {
+  std::multimap<Actual::value_type, ArrayIndex> sorter;
+  for (ArrayIndex axis = 0; axis != size(); ++axis)
+    sorter.insert(
+        {actual[axis] == Actual::invalid ? std::numeric_limits<Actual::value_type>::max() : MR::abs(actual[axis]),
+         axis});
+  value_type index = 1;
+  value_type counter = 0;
+  Actual::value_type prev_actual = Actual::invalid;
+  std::ostringstream oss;
+  for (const auto &item : sorter) {
+    if (item.first == prev_actual) {
+      data_[item.second] = index * (actual[item.second] < 0 ? -1 : 1);
+      ++counter;
+    } else {
+      data_[item.second] = ++counter * (actual[item.second] < 0 ? -1 : 1);
+      prev_actual = item.first;
+      index = counter;
+    }
+  }
+#ifdef MRTRIX_DEBUG_STRIDES
+  DEBUG("From actual strides [" + str(actual) + "]," +         //
+        " constructed symbolic strides [" + str(*this) + "]"); //
+#endif
+  // If Actual contains ties, then Symbolic will not be sanitised as ties will be preserved
+  if (actual.is_degenerate()) {
+    assert(valid());
+  } else {
+    assert(is_sanitised());
+  }
+}
+
+Symbolic::Symbolic(const Actual::vector_type &actual, const std::vector<VoxelIndex> &sizes)
+    : Base(actual.size(), Symbolic::invalid) {
+  assert(actual.size() == sizes.size());
+  class Data {
+  public:
+    Data(const ArrayIndex axis, const Actual::value_type stride, const VoxelIndex size)
+        : axis(axis), stride(stride), size(size) {}
+    bool operator<(const Data &that) const {
+      if (MR::abs(stride) != MR::abs(that.stride))
+        return MR::abs(stride) < MR::abs(that.stride);
+      if (size == 1 && that.size > 1)
+        return false;
+      if (size > 1 && that.size == 1)
+        return true;
+      return axis < that.axis;
+    }
+    ArrayIndex axis;
+    Actual::value_type stride;
+    VoxelIndex size;
+  };
+  std::set<Data> sorter;
+  for (ArrayIndex axis = 0; axis != actual.size(); ++axis)
+    sorter.insert({axis, actual[axis], sizes[axis]});
+  value_type index = 1;
+  value_type counter = 0;
+  Actual::value_type prev_actual = Actual::invalid;
+  for (const auto &item : sorter) {
+    if (item.size > 1) {
+      if (MR::abs(item.stride) == MR::abs(prev_actual)) {
+        data_[item.axis] = index * (item.stride < 0 ? -1 : 1);
+        ++counter;
+      } else {
+        data_[item.axis] = ++counter * (item.stride < 0 ? -1 : 1);
+        prev_actual = item.stride;
+        index = counter;
+      }
+    }
+  }
+}
+
+bool Symbolic::is_canonical() const {
+  for (ArrayIndex axis = 0; axis != size(); ++axis) {
+    if (data_[axis] != axis + 1)
+      return false;
+  }
+  return true;
+}
+
+bool Symbolic::is_degenerate() const {
+  std::set<ArrayIndex> nonzero_magnitudes;
+  for (ArrayIndex axis = 0; axis != size(); ++axis) {
+    if (data_[axis] != invalid) {
+      if (nonzero_magnitudes.find(MR::abs(data_[axis])) != nonzero_magnitudes.end())
+        return true;
+      nonzero_magnitudes.insert(MR::abs(data_[axis]));
+    }
+  }
+  return false;
+}
+
+bool Symbolic::is_sanitised() const {
+  if (!valid())
+    return false;
+  if (is_degenerate())
+    return false;
+  std::set<ArrayIndex> magnitudes;
+  for (ArrayIndex axis = 0; axis != size(); ++axis)
+    magnitudes.insert(MR::abs(data_[axis]));
+  if (*std::min_element(magnitudes.begin(), magnitudes.end()) != 1)
+    return false;
+  if (*std::max_element(magnitudes.begin(), magnitudes.end()) != size())
+    return false;
+  return true;
+}
+
+bool Symbolic::valid() const {
+  if (empty())
+    return false;
+  if (std::any_of(data_.begin(), data_.end(), [](const value_type value) { return value == invalid; }))
+    return false;
+  return true;
+}
+
+Symbolic Symbolic::block(const ArrayIndex from_axis, const ArrayIndex to_axis) const {
+  if (from_axis < 0 || from_axis >= size() || (to_axis != -1 && (to_axis <= from_axis || to_axis > size())))
+    throw Exception("Invalid axis range (" + str(from_axis) + " -- " + str(to_axis) + ")" +
+                    " for subset of symbolic strides with " + str(size()) + " axes");
+  if (to_axis == -1)
+    return Symbolic(vector_type(data_.begin() + from_axis, data_.end()));
+  return Symbolic(vector_type(data_.begin() + from_axis,                                            //
+                              data_.begin() + std::min(static_cast<ArrayIndex>(size()), to_axis))); //
+}
+
+void Symbolic::conform(const Symbolic &in) {
+  if (in.size() != size())
+    throw Exception("Mismatch in size between current symbolic strides [" + str(*this) + "]" +
+                    " and requested symbolic strides [" + str(in) + "]");
+  const Stride::Permutation perm_in(in);
+  const Symbolic reordered_this = reordered(perm_in);
+  if (reordered_this == *this)
+    return;
+  // "First, non-zero strides in desired are used as-is"
+  vector_type result(in);
+  // "then the remaining strides are taken from current where specified and used with higher values"
+  value_type index_out = *std::max_element(result.begin(), result.end());
+  for (ArrayIndex axis = 0; axis != size(); ++axis) {
+    if ((*this)[axis] != Symbolic::invalid && in[axis] == Symbolic::invalid)
+      result[axis] = ++index_out * ((*this)[axis] < 0 ? -1 : 1);
+  }
+  // "followed by those strides not specified in either."
+  for (ArrayIndex axis = 0; axis != size(); ++axis) {
+    if ((*this)[axis] == Symbolic::invalid && in[axis] == Symbolic::invalid)
+      result[axis] = ++index_out;
+  }
+  data_ = result;
+}
+
+Symbolic Symbolic::conformed(const Symbolic &in) const {
+  Symbolic result(*this);
+  result.conform(in);
+  return result;
+}
+
+void Symbolic::demote_unity(const std::vector<VoxelIndex> &sizes) {
+  assert(sizes.size() == size());
+  const bool was_sanitised = is_sanitised();
+  for (ArrayIndex axis = 0; axis != size(); ++axis) {
+    assert(sizes[axis] > 0);
+    if (sizes[axis] == 1)
+      data_[axis] = Symbolic::invalid;
+  }
+  if (was_sanitised)
+    sanitise();
+}
+
+void Symbolic::flip(const ArrayIndex axis) {
+  if (axis < 0 || axis >= size())
+    throw Exception("Invalid axis index (" + str(axis) + " of " + str(size()) + ") for symbolic stride signflip");
+  data_[axis] *= -1;
+}
+
+Symbolic Symbolic::head(const ArrayIndex num_axes) const {
+  if (num_axes > size())
+    throw Exception("Requested axis subset (" + str(num_axes) + ")" +                 //
+                    " larger than the number of axes present (" + str(size()) + ")"); //
+  return Symbolic(vector_type(data_.begin(), data_.begin() + num_axes));
+}
+
+void Symbolic::invalidate(const ArrayIndex axis) {
+  assert(axis >= 0 && axis < size());
+  data_[axis] = Symbolic::invalid;
+}
+
+Order Symbolic::order() const { return permutation().order(); }
+
+Permutation Symbolic::permutation() const { return Permutation(*this); }
+
+void Symbolic::resize(const size_t num_axes) {
+  if (num_axes == size())
+    return;
+  if (num_axes > size()) {
+    data_.resize(num_axes, Symbolic::invalid);
+    return;
+  }
+  const bool resanitise = is_sanitised();
+  data_.resize(num_axes);
+  if (resanitise)
+    sanitise();
+}
+
+Symbolic Symbolic::resized(const size_t num_axes) const {
+  Symbolic result(*this);
+  result.resize(num_axes);
+  return result;
+}
+
+void Symbolic::reorder(const Permutation &permutation) {
+
+  if (permutation.size() != size())
+    throw Exception("Mismatch in size between current symbolic strides [" + str(*this) + ")" +
+                    " and stride permutation [" + str(permutation) + "]");
+
+  class Data {
+  public:
+    Data(const ArrayIndex axis_index, const value_type current_symbolic, const ArrayIndex permutation_group)
+        : axis_index(axis_index), current_symbolic(current_symbolic), permutation_group(permutation_group) {}
+    ArrayIndex axis_index;
+    value_type current_symbolic;
+    ArrayIndex permutation_group;
+    bool operator<(const Data &that) const {
+      if (permutation_group != that.permutation_group)
+        return permutation_group < that.permutation_group;
+      if (MR::abs(current_symbolic) != MR::abs(that.current_symbolic)) {
+        if (that.current_symbolic == Symbolic::invalid)
+          return true;
+        if (current_symbolic == Symbolic::invalid)
+          return false;
+        return MR::abs(current_symbolic) < MR::abs(that.current_symbolic);
+      }
+      assert(axis_index != that.axis_index);
+      return axis_index < that.axis_index;
+    }
+  };
+  std::vector<Data> sorted;
+  for (ArrayIndex axis = 0; axis != size(); ++axis)
+    sorted.emplace_back(Data(axis, data_[axis], permutation[axis]));
+  std::sort(sorted.begin(), sorted.end());
+#ifdef MRTRIX_DEBUG_STRIDES
+  std::ostringstream oss;
+  oss << "Symbolic strides [" << *this << "]"
+      << " following application of permutation [" << permutation << "]";
+#endif
+  for (ArrayIndex order_indexed = 0; order_indexed != size(); ++order_indexed)
+    data_[sorted[order_indexed].axis_index] =
+        (order_indexed + 1) * (sorted[order_indexed].current_symbolic < 0 ? -1 : 1);
+#ifdef MRTRIX_DEBUG_STRIDES
+  oss << " are [" << *this << "]";
+  DEBUG(oss.str());
+#endif
+  assert(valid());
+}
+
+Symbolic Symbolic::reordered(const Permutation &order) const {
+  Symbolic result(*this);
+  result.reorder(order);
+  return result;
+}
+
+void Symbolic::sanitise() {
+  // Key is absolute value of current stride:
+  //   - If currently set to zero,
+  //     then axis will be promoted to as contiguous as possible
+  //     (contingent on earlier axes being the same)
+  //   - If currently non-zero,
+  //     they will be ordered
+  std::multimap<value_type, ArrayIndex> sorter;
+  for (ArrayIndex axis = 0; axis != size(); ++axis) {
+    if (data_[axis] != Symbolic::invalid)
+      sorter.insert({MR::abs(data_[axis]), axis});
+  }
+  vector_type result(size());
+  ArrayIndex counter = 0;
+  for (const auto &item : sorter)
+    result[item.second] = ++counter * (data_[item.second] < 0 ? -1 : 1);
+  for (ArrayIndex axis = 0; axis != size(); ++axis) {
+    if (data_[axis] == Symbolic::invalid)
+      result[axis] = ++counter;
+  }
+#ifdef MRTRIX_DEBUG_STRIDES
+  if (result != data_) {
+    std::ostringstream oss;
+    oss << "Symbolic strides [" << *this << "]";
+    oss << " sanitised as [" << result << "]";
+    DEBUG(oss.str());
+  }
+#endif
+  data_ = result;
+  assert(is_sanitised());
+}
+
+void Symbolic::sanitise(const std::vector<VoxelIndex> &sizes) {
+  Permutation::vector_type permutation(size(), 0);
+  for (ArrayIndex axis = 0; axis != size(); ++axis) {
+    if (sizes[axis] == 1)
+      permutation[axis] = 1;
+  }
+  reorder(Permutation(permutation));
+  sanitise();
+}
+
+Symbolic Symbolic::sanitised() const {
+  Symbolic result(*this);
+  result.sanitise();
+  return result;
+}
+
+Symbolic Symbolic::sanitised(const std::vector<VoxelIndex> &sizes) const {
+  Symbolic result(*this);
+  result.sanitise(sizes);
+  return result;
+}
+
+Symbolic Symbolic::unity_demoted(const std::vector<VoxelIndex> &sizes) const {
+  Symbolic result(*this);
+  result.demote_unity(sizes);
+  return result;
+}
+
+Symbolic Symbolic::canonical(const size_t num_axes) {
+  vector_type result(num_axes);
+  for (ArrayIndex axis = 0; axis != static_cast<ArrayIndex>(num_axes); ++axis)
+    result[axis] = axis + 1;
+  const Symbolic symbolic(result);
+  assert(symbolic.valid());
+  return symbolic;
+}
+
+Actual::Actual() : offset_(0) {}
+
+Actual::Actual(const vector_type &actual, const std::vector<ArrayIndex> &sizes) : Base(actual), offset_(0) {
+  for (ArrayIndex i = 0; i < size(); ++i) {
+    if (data_[i] < 0)
+      offset_ += static_cast<MemIndex>(-data_[i]) * (sizes[i] - 1);
+  }
+}
+
+template <>
+Actual::Actual(const Symbolic &symbolic, const std::vector<VoxelIndex> &sizes)
+    : Base<value_type>(symbolic.size(), invalid), offset_(0) {
+  assert(symbolic.is_sanitised());
+  assert(symbolic.size() == sizes.size());
+  const Permutation permutation(symbolic.unity_demoted(sizes));
+  const Order order(permutation);
+  value_type skip = 1;
+  for (ArrayIndex i = 0; i < size(); ++i) {
+    data_[order[i]] = symbolic[order[i]] < 0 ? -skip : skip;
+    skip *= sizes[order[i]];
+    if (data_[order[i]] < 0)
+      offset_ += static_cast<MemIndex>(-data_[order[i]]) * (sizes[order[i]] - 1);
+  }
+#ifdef MRTRIX_DEBUG_STRIDES
+  DEBUG("Symbolic strides [" + str(symbolic) + "]" + //
+        " actualised using sizes " + str(sizes) +    //
+        " as [" + str(*this) + "]" +                 //
+        " with offset " + str(offset_));             //
+#endif
+}
+
+bool Actual::is_canonical() const {
+  if (!valid())
+    return false;
+  value_type last = 0;
+  for (ArrayIndex axis = 0; axis != size(); ++axis) {
+    // Permissive of equality:
+    //   axis of unity size will result in two sequential axes having equal actual strides
+    if (data_[axis] < last)
+      return false;
+    last = data_[axis];
+  }
+  return true;
+}
+
+// It is possible for an image with an axis of unity size
+//   to have two axes with actual strides of equal absolute value;
+//   this is however not actually a problem
+bool Actual::is_degenerate() const {
+  std::set<value_type> set_abs;
+  for (auto value : data_) {
+    const value_type abs = MR::abs(value);
+    if (set_abs.find(abs) != set_abs.end())
+      return true;
+    set_abs.insert(abs);
+  }
+  return false;
+}
+
+bool Actual::valid() const {
+  if (empty())
+    return false;
+  return (!std::any_of(data_.begin(), data_.end(), [](value_type value) { return value == Actual::invalid; }));
+}
+
+Order Actual::order() const { return permutation().order(); }
+
+Permutation Actual::permutation() const { return symbolic().permutation(); }
+
+Symbolic Actual::symbolic() const { return Symbolic(*this); }
+
+std::optional<Symbolic> __from_command_line(const Symbolic &current) {
+
+  auto opt = App::get_options("strides");
+  if (opt.empty())
+    return std::nullopt;
+
+  Symbolic user_specification;
+  try {
+    user_specification = Symbolic(Header::open(opt[0][0]));
+  } catch (Exception &E_asimage) {
+    E_asimage.display(3);
+    try {
+      const auto intseq = parse_ints<MR::App::ParsedArgument::IntType>(opt[0][0]);
+      if (*std::min_element(intseq.begin(), intseq.end()) < std::numeric_limits<Symbolic::value_type>::min() ||
+          *std::max_element(intseq.begin(), intseq.end()) > std::numeric_limits<Symbolic::value_type>::max())
+        throw Exception("Integer sequence \"" + str(intseq) +
+                        "\" exceeds permissible range for symbolic strides"
+                        " ([" +
+                        str(std::numeric_limits<Symbolic::value_type>::min()) + " - " +
+                        str(std::numeric_limits<Symbolic::value_type>::max()) + "])");
+      const Symbolic::vector_type temp = MR::container_cast<Symbolic::vector_type>(intseq);
+      user_specification = Symbolic(temp);
+    } catch (Exception &E_asstrides) {
+      Exception e("Argument \"" + static_cast<std::string>(opt[0][0]) + "\"" +
+                  " to option \"-strides\" could not be properly interpreted");
+      e.push_back("Error when attempting to interpret as image:");
+      for (ArrayIndex i = 0; i != E_asimage.num(); ++i)
+        e.push_back(E_asimage[i]);
+      e.push_back("Error when attempting to interpret as sequence of integers:");
+      for (ArrayIndex i = 0; i != E_asstrides.num(); ++i)
+        e.push_back(E_asstrides[i]);
+      throw e;
+    }
+    if (user_specification.size() > current.size()) {
+      INFO("template image provided to -strides option has more axes than the image being modified;"
+           " ignoring excess strides");
+      user_specification.resize(current.size());
+    }
+  }
+
+  return __from_command_line(user_specification, current);
+}
+
+std::optional<Symbolic> __from_command_line(const Symbolic &user_specification, const Symbolic &current) {
+
+  if (user_specification.size() > current.size())
+    throw Exception("too many axes supplied to -strides option");
+
+  for (ArrayIndex axis = 0; axis != user_specification.size(); ++axis) {
+    if (MR::abs(user_specification[axis]) > current.size())
+      throw Exception(std::string("strides specified exceed image dimensions:") + //
+                      " got " + str(user_specification) + "," +                   //
+                      " but image has " + str(current.size()) + " axes");         //
+  }
+
+  if (user_specification.is_degenerate())
+    throw Exception("duplicate entries provided to \"-strides\" option: " + str(user_specification));
+
+  // 1. For all non-zero entries in the user specification,
+  //    place in sequential order,
+  //    preserving sign
+  // 2. For all zero entries in the user specification,
+  //    place in sequential order atop step 1,
+  //    preserving sign from current image attributes
+  Symbolic::vector_type new_symbolic(current.size(), Symbolic::invalid);
+  std::multimap<Symbolic::value_type, Symbolic::value_type> order_userspec;
+  std::multimap<Symbolic::value_type, Symbolic::value_type> order_current;
+  for (ArrayIndex axis = 0; axis != static_cast<ArrayIndex>(current.size()); ++axis) {
+    if (user_specification[axis] == 0)
+      order_current.insert({MR::abs(current[axis]), axis});
+    else
+      order_userspec.insert({MR::abs(user_specification[axis]), axis});
+  }
+  Symbolic::value_type out_absstride = 1;
+  for (const auto &item : order_userspec)
+    new_symbolic[item.second] = out_absstride++ * (user_specification[item.second] < 0 ? -1 : 1);
+  for (const auto &item : order_current)
+    new_symbolic[item.second] = out_absstride++ * (current[item.second] < 0 ? -1 : 1);
+  const Symbolic result(new_symbolic);
+  assert(result.valid());
+  DEBUG("Current symbolic strides [" + str(current) + "]" + " conformed to user specification [" +
+        str(user_specification) + "]" + " as [" + str(result) + "]");
+  return {result};
+}
+
+void set_from_command_line(Header &header, const Permutation &default_order) {
+  auto cmdline_strides = __from_command_line(header.strides());
+  if (cmdline_strides.has_value())
+    header.strides() = *cmdline_strides;
+  else if (!default_order.empty())
+    header.strides() = header.strides().reordered(default_order);
 }
 
 } // namespace MR::Stride

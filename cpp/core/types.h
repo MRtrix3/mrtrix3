@@ -151,8 +151,31 @@ template <typename T> struct container_cast : public T {
   template <typename U> container_cast(const U &x) : T(x.begin(), x.end()) {}
 };
 
-//! the default type used throughout MRtrix
+//! the default floating-point type used throughout MRtrix
 using default_type = double;
+
+//! default integer types to be used throughout MRtrix
+// For indexing into array data, particularly involving interaction with Eigen objects
+// Guaranteed to support value = -1, but < -1 technically not guaranteed
+// Developers are free to use Eigen::Index dirctly
+//   if operating _exclusively_ with Eigen classes;
+//   but for indexing that extends at all beyond this context this typedef is preferred
+using ArrayIndex = Eigen::Index;
+// For indexing into array data when only std namespace objects are involved
+// This is just to avoid unnecessary conversions between signed and unsigned types
+//   if the data being interfaced with are _exclusively_ std containers
+using StdIndex = std::size_t;
+// For specifying the voxel index position in an image along a given axis
+// Values < -1 must be supported in this instance
+using VoxelIndex = int64_t;
+// Operations involving positions in memory
+// Note that use of this class does not necessarily guarantee
+//   that the magnitude of the value reflects a memory address offset;
+//   only that the parameter in question pertains primarily
+//   to the navigation of serialised memory storage
+using MemIndex = std::ptrdiff_t;
+// TODO Consider a "size_type" / "count_type" that is a standard integer type
+//   not explicitly intended for indexing into array data
 
 constexpr default_type NaN = std::numeric_limits<default_type>::quiet_NaN();
 constexpr float NaNF = std::numeric_limits<float>::quiet_NaN();

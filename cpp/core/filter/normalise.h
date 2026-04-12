@@ -20,6 +20,8 @@
 #include "algo/threaded_copy.h"
 #include "filter/base.h"
 #include "image.h"
+#include "misc/cuboid_extent.h"
+#include "types.h"
 
 namespace MR::Filter {
 /** \addtogroup Filters
@@ -39,36 +41,24 @@ namespace MR::Filter {
 class Normalise : public Base {
 
 public:
-  template <class HeaderType> Normalise(const HeaderType &in) : Base(in), extent(1, 3) {
+  template <class HeaderType> Normalise(const HeaderType &in) : Base(in), extent(3) { datatype() = DataType::Float32; }
+
+  template <class HeaderType> Normalise(const HeaderType &in, std::string_view message) : Base(in, message), extent(3) {
+    datatype() = DataType::Float32;
+  }
+
+  template <class HeaderType> Normalise(const HeaderType &in, const CuboidExtent &extent) : Base(in), extent(extent) {
     datatype() = DataType::Float32;
   }
 
   template <class HeaderType>
-  Normalise(const HeaderType &in, std::string_view message) : Base(in, message), extent(1, 3) {
-    datatype() = DataType::Float32;
-  }
-
-  template <class HeaderType>
-  Normalise(const HeaderType &in, const std::vector<uint32_t> &extent) : Base(in), extent(extent) {
-    datatype() = DataType::Float32;
-  }
-
-  template <class HeaderType>
-  Normalise(const HeaderType &in, std::string_view message, const std::vector<uint32_t> &extent)
+  Normalise(const HeaderType &in, std::string_view message, const CuboidExtent &extent)
       : Base(in, message), extent(extent) {
     datatype() = DataType::Float32;
   }
 
   //! Set the extent of normalise filtering neighbourhood in voxels.
-  //! This must be set as a single value for all three dimensions
-  //! or three values, one for each dimension. Default 3x3x3.
-  void set_extent(const std::vector<uint32_t> &ext) {
-    for (size_t i = 0; i < ext.size(); ++i) {
-      if (!(ext[i] & uint32_t(1)))
-        throw Exception("expected odd number for extent");
-    }
-    extent = ext;
-  }
+  void set_extent(const CuboidExtent &ext) { extent = ext; }
 
   template <class InputImageType, class OutputImageType> void operator()(InputImageType &in, OutputImageType &out) {
     Adapter::Normalise3D<InputImageType> normalise(in, extent);
@@ -79,7 +69,7 @@ public:
   }
 
 protected:
-  std::vector<uint32_t> extent;
+  CuboidExtent extent;
 };
 //! @}
 } // namespace MR::Filter

@@ -18,6 +18,15 @@
 
 namespace MR::Axes {
 
+Subset Subset::head(const ssize_t count) const {
+  assert(count <= size());
+  return Subset(begin(), begin() + count);
+}
+Subset Subset::tail(const ssize_t count) const {
+  assert(count <= size());
+  return Subset(begin() + (size() - count), end());
+}
+
 Shuffle get_shuffle_to_make_RAS(const transform_type &T) {
   Shuffle result;
   result.permutations = closest(T.linear());

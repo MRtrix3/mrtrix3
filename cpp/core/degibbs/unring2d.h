@@ -105,8 +105,8 @@ private:
 
 class Unring2DFunctor {
 public:
-  Unring2DFunctor(const std::vector<size_t> &outer_axes,
-                  const std::vector<size_t> &slice_axes,
+  Unring2DFunctor(const Axes::Subset &outer_axes,
+                  const Axes::Subset &slice_axes,
                   const int &nsh,
                   const int &minW,
                   const int &maxW,
@@ -134,8 +134,8 @@ public:
   }
 
 protected:
-  const std::vector<size_t> &outer_axes;
-  const std::vector<size_t> &slice_axes;
+  const Axes::Subset &outer_axes;
+  const Axes::Subset &slice_axes;
   Image<complex_type> in, out;
   Eigen::Matrix<complex_type, Eigen::Dynamic, Eigen::Dynamic> slice;
   Unring2D unring2d;

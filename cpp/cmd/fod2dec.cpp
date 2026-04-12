@@ -274,12 +274,12 @@ void run() {
     auto dec_img = Image<value_type>();
 
     {
-      auto fod_img = fod_hdr.get_image<value_type>().with_direct_io(3);
+      auto fod_img = fod_hdr.get_image<value_type>().with_direct_io(Stride::Permutation::volume_contiguous);
 
       auto dec_hdr = Header(fod_img);
       dec_hdr.ndim() = 4;
       dec_hdr.size(3) = 3;
-      Stride::set(dec_hdr, Stride::contiguous_along_axis(3, dec_hdr));
+      dec_hdr.strides().reorder(Stride::Permutation::volume_contiguous);
       dec_img = Image<value_type>::scratch(dec_hdr, "DEC map");
 
       Eigen::Matrix<double, 1281, 2> dirs = DWI::Directions::tesselation_1281();
@@ -289,7 +289,10 @@ void run() {
         mask_img = mask_hdr.get_image<bool>();
 
       if (do_weighting && !map_hdr) {
+        // TODO Starting with dec_hdr would probably fix;
+        //   but leave problem in place for now to try to resolve
         auto int_hdr = Header(dec_img);
+        // TODO Change to .ndim() = 3?
         int_hdr.size(3) = 1;
         w_img = Image<value_type>::scratch(int_hdr, "FOD integral map");
       }
@@ -304,11 +307,11 @@ void run() {
     out_hdr.datatype() = DataType::Float32;
     out_hdr.ndim() = 4;
     out_hdr.size(3) = 3;
-    Stride::set(out_hdr, Stride::contiguous_along_axis(3, out_hdr));
+    out_hdr.strides().reorder(Stride::Permutation::volume_contiguous);
     out_img = Image<value_type>::create(argument[1], out_hdr);
 
     if (needtoslice)
-      Filter::reslice<Interp::Cubic>(dec_img, out_img, Adapter::NoTransform, Adapter::AutoOverSample, UNIT);
+      Filter::reslice<Interp::Cubic>(dec_img, out_img, Adapter::NoTransform, Adapter::OversampleFactors::Auto, UNIT);
     else
       copy(dec_img, out_img);
   }
