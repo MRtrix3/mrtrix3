@@ -66,6 +66,7 @@ List of MRtrix3 commands
     commands/labelsgmfirst
     commands/labelstats
     commands/mask2glass
+    commands/maskdistance
     commands/maskdump
     commands/maskfilter
     commands/mesh2voxel
@@ -201,6 +202,7 @@ List of MRtrix3 commands
     |python.png|, :ref:`labelsgmfirst`, "In a FreeSurfer parcellation image, replace the sub-cortical grey matter structure delineations using FSL FIRST"
     |cpp.png|, :ref:`labelstats`, "Compute statistics of parcels within a label image"
     |python.png|, :ref:`mask2glass`, "Create a glass brain from mask input"
+    |cpp.png|, :ref:`maskdistance`, "Map the minimal distance to a mask along streamlines trajectories"
     |cpp.png|, :ref:`maskdump`, "Print out the locations of all non-zero voxels in a mask image"
     |cpp.png|, :ref:`maskfilter`, "Perform filtering operations on 3D / 4D mask images"
     |cpp.png|, :ref:`mesh2voxel`, "Convert a mesh surface to a partial volume estimation image"
