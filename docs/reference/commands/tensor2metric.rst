@@ -47,6 +47,10 @@ Diffusion Tensor Imaging
 
 -  **-cs image** compute the sphericity metric of the diffusion tensor. (one of the three Westin shape metrics)
 
+-  **-na image** compute the norm of anistropy (NA) of the diffusion tensor.
+
+-  **-mo image** compute the mode of anisotropy (MO) of the diffusion tensor.
+
 Diffusion Kurtosis Imaging
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -88,6 +92,9 @@ Basser, P. J.; Mattiello, J. & Lebihan, D. MR diffusion tensor spectroscopy and 
 
 * If using -cl, -cp or -cs options:  |br|
   Westin, C. F.; Peled, S.; Gudbjartsson, H.; Kikinis, R. & Jolesz, F. A. Geometrical diffusion measures for MRI from tensor basis analysis. Proc Intl Soc Mag Reson Med, 1997, 5, 1742
+
+* If using -na or -mo options:  |br|
+  Ennis, D. B., & Kindlmann, G. (2006). Orthogonal tensor invariants and the analysis of diffusion tensor magnetic resonance images. Magnetic resonance in medicine, 55(1), 136-146.
 
 Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
 

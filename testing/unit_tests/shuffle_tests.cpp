@@ -34,6 +34,7 @@ using namespace App;
 using namespace Math::Stats;
 using MR::Math::Stats::index_array_type;
 using MR::Math::Stats::matrix_type;
+using MR::Math::Stats::value_type;
 
 constexpr size_t ROWS = 6;
 const index_array_type BLOCK_INDICES = (index_array_type(ROWS) << 0, 1, 0, 1, 2, 2).finished();
@@ -135,7 +136,7 @@ protected:
     Shuffle shuffle;
     Eigen::Array<int, Eigen::Dynamic, 1> shuffled_data;
     while (in(shuffle)) {
-      shuffled_data = (shuffle.data * dummy_data.matrix()).cast<int>();
+      shuffled_data = (shuffle.data.cast<value_type>() * dummy_data.matrix()).cast<int>();
       for (size_t i = 0; i != ROWS; ++i) {
         if (block_indices[std::abs(shuffled_data[static_cast<Eigen::Index>(i)]) - 1] != block_indices[i]) {
           GTEST_FAIL() << fail_msg << ": permutation occurred outside of defined block.";
@@ -149,7 +150,7 @@ protected:
     Shuffle shuffle;
     Eigen::Array<int, Eigen::Dynamic, 1> shuffled_data;
     while (in(shuffle)) {
-      shuffled_data = (shuffle.data * dummy_data.matrix()).cast<int>();
+      shuffled_data = (shuffle.data.cast<value_type>() * dummy_data.matrix()).cast<int>();
       for (const auto &b : blocks) {
         auto it = b.begin();
         const bool flipped = shuffled_data[*it] < 0.0;
@@ -167,7 +168,7 @@ protected:
     Shuffle shuffle;
     Eigen::Array<int, Eigen::Dynamic, 1> shuffled_data;
     while (in(shuffle)) {
-      shuffled_data = (shuffle.data * dummy_data.matrix()).cast<int>();
+      shuffled_data = (shuffle.data.cast<value_type>() * dummy_data.matrix()).cast<int>();
       for (const auto &b1 : blocks) {
         const size_t first_in = *b1.begin();
         const size_t first_out = std::abs(shuffled_data[static_cast<Eigen::Index>(first_in)]) - 1;

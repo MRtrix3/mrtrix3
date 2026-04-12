@@ -19,19 +19,25 @@
 #include <string>
 
 #include "app.h"
-#include "types.h"
-
+#include "file/config.h"
 #include "math/condition_number.h"
 #include "math/least_squares.h"
 #include "math/stats/import.h"
 #include "math/stats/typedefs.h"
 #include "math/zstatistic.h"
+#include "types.h"
+
+#define MRTRIX_USE_ZSTATISTIC_LOOKUP
 
 namespace MR::Math::Stats::GLM {
 
 extern const std::string column_ones_description;
 
+constexpr default_type condnumber_warning_threshold = 100.0;
+
 App::OptionGroup glm_options(std::string_view element_name);
+
+index_type batch_size();
 
 // Define a base class to contain information regarding an individual hypothesis, and
 //   pre-compute as much as possible with regards to Freedman-Lane
@@ -73,7 +79,7 @@ public:
     check_nonzero();
   }
 
-  Partition partition(const matrix_type &) const;
+  template <class MatrixType> Partition partition(const MatrixType &) const;
 
   const matrix_type &matrix() const { return c; }
   index_type cols() const { return c.cols(); }
@@ -92,10 +98,18 @@ private:
 };
 
 void check_design(const matrix_type &, const bool);
+void check_design(const vector_type &);
 
 index_array_type load_variance_groups(const index_type num_inputs);
 
-std::vector<Hypothesis> load_hypotheses(std::string_view file_path);
+std::vector<Hypothesis> load_hypotheses(const ssize_t num_factors);
+
+// TODO Investigate how new GLM test classes could potentially be used to make
+//   the set of functions below redundant; not only for brevity, but also because
+//   many of the functions below will not be compatible with data that contains
+//   non-finite values
+// Would need to look into ways to provide access to intermediate data for all
+//   elements, but preferably without affecting performance of main loop
 
 /** \addtogroup Statistics
   @{ */
@@ -104,7 +118,7 @@ std::vector<Hypothesis> load_hypotheses(std::string_view file_path);
  * @param design the design matrix
  * @return the matrix containing the output GLM betas (one column of factor betas per element)
  */
-matrix_type solve_betas(const matrix_type &measurements, const matrix_type &design);
+matrix_type solve_betas(const measurements_matrix_type &measurements, const matrix_type &design);
 
 /*! Compute the effect of interest
  * @param measurements a matrix storing the measured data across subjects in each column
@@ -112,23 +126,26 @@ matrix_type solve_betas(const matrix_type &measurements, const matrix_type &desi
  * @param hypothesis a Hypothesis class instance defining the effect of interest
  * @return the matrix containing the output absolute effect sizes (one column of element effect sizes per contrast)
  */
-vector_type abs_effect_size(const matrix_type &measurements, const matrix_type &design, const Hypothesis &hypothesis);
-matrix_type
-abs_effect_size(const matrix_type &measurements, const matrix_type &design, const std::vector<Hypothesis> &hypotheses);
+vector_type
+abs_effect_size(const measurements_matrix_type &measurements, const matrix_type &design, const Hypothesis &hypothesis);
+matrix_type abs_effect_size(const measurements_matrix_type &measurements,
+                            const matrix_type &design,
+                            const std::vector<Hypothesis> &hypotheses);
 
 /*! Compute the pooled standard deviation
  * @param measurements a matrix storing the measured data across subjects in each column
  * @param design the design matrix
  * @return the vector containing the output standard deviation for each element
  */
-matrix_type stdev(const matrix_type &measurements, const matrix_type &design);
+matrix_type stdev(const measurements_matrix_type &measurements, const matrix_type &design);
 
 /*! Compute the standard deviation of each variance group
  * @param measurements a matrix storing the measured data across subjects in each column
  * @param design the design matrix
  * @return the vector containing the output standard deviation for each element
  */
-matrix_type stdev(const matrix_type &measurements, const matrix_type &design, const index_array_type &variance_groups);
+matrix_type
+stdev(const measurements_matrix_type &measurements, const matrix_type &design, const index_array_type &variance_groups);
 
 /*! Compute cohen's d, the standardised effect size between two means
  * @param measurements a matrix storing the measured data across subjects in each column
@@ -136,9 +153,11 @@ matrix_type stdev(const matrix_type &measurements, const matrix_type &design, co
  * @param hypothesis a Hypothesis class instance defining the effect of interest
  * @return the matrix containing the output standardised effect sizes (one column of element effect sizes per contrast)
  */
-vector_type std_effect_size(const matrix_type &measurements, const matrix_type &design, const Hypothesis &hypothesis);
-matrix_type
-std_effect_size(const matrix_type &measurements, const matrix_type &design, const std::vector<Hypothesis> &hypotheses);
+vector_type
+std_effect_size(const measurements_matrix_type &measurements, const matrix_type &design, const Hypothesis &hypothesis);
+matrix_type std_effect_size(const measurements_matrix_type &measurements,
+                            const matrix_type &design,
+                            const std::vector<Hypothesis> &hypotheses);
 
 /*! Compute all GLM-related statistics
  * This function can be used when the design matrix remains fixed for all
@@ -151,7 +170,7 @@ std_effect_size(const matrix_type &measurements, const matrix_type &design, cons
  * @param std_effect_size the matrix containing the output standardised effect size
  * @param stdev the matrix containing the output standard deviation
  */
-void all_stats(const matrix_type &measurements,
+void all_stats(const measurements_matrix_type &measurements,
                const matrix_type &design,
                const std::vector<Hypothesis> &hypotheses,
                const index_array_type &variance_groups,
@@ -172,7 +191,7 @@ void all_stats(const matrix_type &measurements,
  * @param std_effect_size the matrix containing the output standardised effect size
  * @param stdev the matrix containing the output standard deviation
  */
-void all_stats(const matrix_type &measurements,
+void all_stats(const measurements_matrix_type &measurements,
                const matrix_type &design,
                const std::vector<CohortDataImport> &extra_columns,
                const std::vector<Hypothesis> &hypotheses,
@@ -185,34 +204,68 @@ void all_stats(const matrix_type &measurements,
 
 //! @}
 
-// Define a base class for GLM tests
+// Only exists to permit the use of a base class pointer in the TestBase class
+class SharedBase {
+public:
+  SharedBase() = default;
+  SharedBase(const SharedBase &) = delete;
+  SharedBase(SharedBase &&) = delete;
+  SharedBase &operator=(const SharedBase &) = delete;
+  SharedBase &operator=(SharedBase &&) = delete;
+  virtual ~SharedBase() {}
+};
+
+using SharedHomoscedasticBase = Math::Zstatistic;
+
+class SharedFixedBase {
+public:
+  SharedFixedBase(const measurements_matrix_type &measurements,
+                  const matrix_type &design,
+                  const std::vector<Hypothesis> &hypotheses);
+  std::vector<Hypothesis::Partition> partitions;
+  const matrix_type pinvM;
+  const matrix_type Rm;
+};
+
+class SharedVariableBase {
+public:
+  SharedVariableBase(const std::vector<CohortDataImport> &importers,
+                     const bool nans_in_data,
+                     const bool nans_in_columns);
+  const std::vector<CohortDataImport> &importers;
+  const bool nans_in_data;
+  const bool nans_in_columns;
+};
+
+class SharedHeteroscedasticBase {
+public:
+  SharedHeteroscedasticBase(const std::vector<Hypothesis> &hypotheses, const index_array_type &variance_groups);
+  index_array_type VG;
+  size_t num_vgs;
+  vector_type gamma_weights;
+};
+
 class TestBase {
 public:
-  TestBase(const matrix_type &measurements, const matrix_type &design, const std::vector<Hypothesis> &hypotheses)
-      : y(measurements), M(design), c(hypotheses), stat2z(new Math::Zstatistic()) {
+  TestBase(const measurements_matrix_type &measurements,
+           const matrix_type &design,
+           const std::vector<Hypothesis> &hypotheses)
+      : y(measurements), M(design), c(hypotheses) {
     assert(y.rows() == M.rows());
-    // Can no longer apply this assertion here; GLMTTestVariable later
-    //   expands the number of columns in M
-    // assert (c.cols() == M.cols());
   }
 
   virtual ~TestBase() {}
 
-  /*! Compute Z-statistics
-   * @param shuffling_matrix a matrix to permute / sign flip the residuals (for permutation testing)
-   * @param output the matrix containing the output statistics (one column per hypothesis)
-   *
-   * This version ignores the statistics values themselves, and only exports Z-statistics
-   *   (as these are what is used for statistical enhancement)
-   */
-  virtual void operator()(const matrix_type &shuffling_matrix, matrix_type &output) const;
+  // This gets utilised within the multi-threading back-end to clone derived classes
+  //   based on a pointer to this base class
+  virtual std::unique_ptr<TestBase> _clone() const = 0;
 
   /*! Compute the statistics, including conversion to Z-score
    * @param shuffling_matrix a matrix to permute / sign flip the residuals (for permutation testing)
    * @param stat the matrix containing the output statistics (one column per hypothesis)
    * @param zstat the matrix containing the Z-transformed statistics (one column per hypothesis)
    */
-  virtual void operator()(const matrix_type &shuffling_matrix, matrix_type &stat, matrix_type &zstat) const = 0;
+  virtual void operator()(const shuffle_matrix_type &shuffling_matrix, matrix_type &stat, matrix_type &zstat) = 0;
 
   index_type num_inputs() const { return M.rows(); }
   index_type num_elements() const { return y.cols(); }
@@ -221,47 +274,80 @@ public:
   virtual index_type num_factors() const { return M.cols(); }
 
 protected:
-  const matrix_type &y, M;
+  const measurements_matrix_type &y;
+  const matrix_type &M;
   const std::vector<Hypothesis> &c;
-  std::shared_ptr<Math::Zstatistic> stat2z;
+
+  std::shared_ptr<const SharedBase> shared;
 };
 
 /** \addtogroup Statistics
 @{ */
 /*! A class to compute statistics from homoscedastic using a fixed General Linear Model.
  * This class produces a statistic per effect of interest: t-statistic for
- * t-tests, sqrt(F-statistic) for F-tests. It should be used in cases where:
+ * t-tests, F-statistic for F-tests. In both cases, corresponding Z-scores are also
+ * calculated. It should be used in cases where:
  *   - the same design matrix is to be applied for all image elements being
  *     tested (it is thus able to pre-compute a number of matrices before testing,
  *     improving execution speed);
  *   - When the data are considered to be homoscedastic; that is, the variance is
  *     equivalent across all inputs.
  */
-class TestFixedHomoscedastic : public TestBase {
+class TestFixedHomoscedastic final : public TestBase {
 public:
+  class Shared final : public SharedBase,
+                       public SharedFixedBase
+#ifdef MRTRIX_USE_ZSTATISTIC_LOOKUP
+      ,
+                       public SharedHomoscedasticBase
+#endif
+  {
+  public:
+    Shared(const measurements_matrix_type &measurements,
+           const matrix_type &design,
+           const std::vector<Hypothesis> &hypotheses);
+    Shared() = delete;
+    Shared(const Shared &) = delete;
+    Shared(Shared &&) = delete;
+    Shared &operator=(const Shared &) = delete;
+    Shared &operator=(Shared &&) = delete;
+    ~Shared() final {}
+    std::vector<matrix_type> XtX;
+    std::vector<size_t> dof;
+    std::vector<default_type> one_over_dof;
+  };
+
   /*!
    * @param measurements a matrix storing the measured data across subjects in each column
    * @param design the design matrix
    * @param hypotheses a vector of Hypothesis instances
    */
-  TestFixedHomoscedastic(const matrix_type &measurements,
+  TestFixedHomoscedastic(const measurements_matrix_type &measurements,
                          const matrix_type &design,
                          const std::vector<Hypothesis> &hypotheses);
+
+  TestFixedHomoscedastic(const TestFixedHomoscedastic &that);
+
+  ~TestFixedHomoscedastic() final = default;
+
+  std::unique_ptr<TestBase> _clone() const final;
 
   /*! Compute the statistics
    * @param shuffling_matrix a matrix to permute / sign flip the residuals (for permutation testing)
    * @param stats the vector containing the output statistics (one column per hypothesis)
    * @param zstats the vector containing the Z-transformed output statistics (one column per hypothesis)
    */
-  void operator()(const matrix_type &shuffling_matrix, matrix_type &stats, matrix_type &zstats) const override;
+  void operator()(const shuffle_matrix_type &shuffling_matrix, matrix_type &stats, matrix_type &zstats) override;
 
-protected:
-  // New classes to store information relevant to Freedman-Lane implementation
-  std::vector<Hypothesis::Partition> partitions;
-  const matrix_type pinvM;
-  const matrix_type Rm;
-  std::vector<matrix_type> XtX;
-  std::vector<default_type> one_over_dof;
+  index_type num_factors() const override { return M.cols(); }
+
+  const Shared &S() const { return *dynamic_cast<const Shared *const>(shared.get()); }
+
+private:
+  // Temporaries
+  matrix_type Sy, lambdas, residuals;
+  std::vector<matrix_type> betas;
+  vector_type sse;
 };
 //! @}
 
@@ -276,8 +362,25 @@ protected:
  *     between all observations, but these can be placed into "variance groups", within which
  *     all observations can be considered to have the same variance.
  */
-class TestFixedHeteroscedastic : public TestFixedHomoscedastic {
+class TestFixedHeteroscedastic final : public TestBase {
 public:
+  class Shared final : public SharedBase, public SharedFixedBase, public SharedHeteroscedasticBase {
+  public:
+    Shared(const measurements_matrix_type &measurements,
+           const matrix_type &design,
+           const std::vector<Hypothesis> &hypotheses,
+           const index_array_type &variance_groups);
+    Shared() = delete;
+    Shared(const Shared &) = delete;
+    Shared(Shared &&) = delete;
+    Shared &operator=(const Shared &) = delete;
+    Shared &operator=(Shared &&) = delete;
+    ~Shared() final {}
+    std::vector<size_t> inputs_per_vg;
+    vector_type Rnn_sums;
+    vector_type inv_Rnn_sums;
+  };
+
   /*!
    * @param measurements a matrix storing the measured data across subjects in each column
    * @param design the design matrix
@@ -285,37 +388,69 @@ public:
    * @param variance_groups a vector of integers corresponding to variance group assignments (should be indexed from
    * zero)
    */
-  TestFixedHeteroscedastic(const matrix_type &measurements,
+  TestFixedHeteroscedastic(const measurements_matrix_type &measurements,
                            const matrix_type &design,
                            const std::vector<Hypothesis> &hypotheses,
                            const index_array_type &variance_groups);
 
-  index_type num_variance_groups() const { return num_vgs; }
+  TestFixedHeteroscedastic(const TestFixedHeteroscedastic &that);
+
+  ~TestFixedHeteroscedastic() final = default;
+
+  std::unique_ptr<TestBase> _clone() const final;
 
   /*! Compute the statistics
    * @param shuffling_matrix a matrix to permute / sign flip the residuals (for permutation testing)
    * @param stats the vector containing the output statistics (one column per hypothesis)
    * @param zstats the vector containing the Z-transformed output statistics (one column per hypothesis)
    */
-  void operator()(const matrix_type &shuffling_matrix, matrix_type &stats, matrix_type &zstats) const override;
+  void operator()(const shuffle_matrix_type &shuffling_matrix, matrix_type &stats, matrix_type &zstats) override;
 
-protected:
-  // Variance group assignments
-  const index_array_type &VG;
-  // Total number of variance groups
-  const index_type num_vgs;
-  // Number of inputs that are part of each variance group
-  std::vector<index_type> inputs_per_vg;
-  // Might as well construct this in the functor rather than here,
-  //   given 1 value for each VG is computed
-  vector_type Rnn_sums;
-  // Also store the reciprocal of these, so as to avoid repeated division
-  vector_type inv_Rnn_sums;
-  // Multiplication weights for calculation of gamma;
-  //   varies depending on the rank of the contrast matrix of each hypothesis
-  vector_type gamma_weights;
+  index_type num_factors() const final { return M.cols(); }
+  index_type num_variance_groups() const { return S().num_vgs; }
+
+  const Shared &S() const { return *dynamic_cast<const Shared *const>(shared.get()); }
+
+private:
+  // Temporaries
+  matrix_type Sy;
+  matrix_type lambdas;
+  Eigen::Array<default_type, Eigen::Dynamic, Eigen::Dynamic> sq_residuals;
+  Eigen::Array<default_type, Eigen::Dynamic, Eigen::Dynamic> sse_per_vg;
+  Eigen::Array<default_type, Eigen::Dynamic, Eigen::Dynamic> Wterms;
+  Eigen::Matrix<default_type, Eigen::Dynamic, 1> W;
 };
 //! @}
+
+class TestVariableBase : public TestBase {
+public:
+  TestVariableBase(const measurements_matrix_type &measurements,
+                   const matrix_type &design,
+                   const std::vector<Hypothesis> &hypotheses,
+                   const std::vector<CohortDataImport> &importers);
+
+  TestVariableBase(const TestVariableBase &that);
+
+  ~TestVariableBase() override = default;
+
+  std::unique_ptr<TestBase> _clone() const override = 0;
+
+  virtual index_type num_importers() const = 0;
+
+protected:
+  // Temporaries
+  matrix_type dof;
+  measurements_matrix_type extra_column_data;
+  element_mask_type element_mask, permuted_mask;
+  shuffle_matrix_type intermediate_shuffling_matrix, shuffling_matrix_masked;
+  matrix_type Mfull_masked, pinvMfull_masked, Rm;
+  measurements_vector_type y_masked;
+  vector_type Sy, lambda;
+
+  template <class SharedType> void set_mask(const SharedType &s, const index_type ie);
+
+  void apply_mask(const index_type ie, const shuffle_matrix_type &shuffling_matrix);
+};
 
 /** \addtogroup Statistics
 @{ */
@@ -331,39 +466,55 @@ protected:
  *   - Input data are considered to be homoscedastic; that is, the variance is
  *     equivalent across all inputs.
  */
-class TestVariableHomoscedastic : public TestBase {
+class TestVariableHomoscedastic final : public TestVariableBase {
 public:
-  TestVariableHomoscedastic(const std::vector<CohortDataImport> &importers,
-                            const matrix_type &measurements,
+  class Shared final : public SharedBase,
+                       public SharedVariableBase
+#ifdef MRTRIX_USE_ZSTATISTIC_LOOKUP
+      ,
+                       public SharedHomoscedasticBase
+#endif
+  {
+  public:
+    Shared(const std::vector<CohortDataImport> &importers, const bool nans_in_data, const bool nans_in_columns);
+    Shared() = delete;
+    Shared(const Shared &) = delete;
+    Shared(Shared &&) = delete;
+    Shared &operator=(const Shared &) = delete;
+    Shared &operator=(Shared &&) = delete;
+    ~Shared() final {}
+  };
+
+  TestVariableHomoscedastic(const measurements_matrix_type &measurements,
                             const matrix_type &design,
                             const std::vector<Hypothesis> &hypotheses,
+                            const std::vector<CohortDataImport> &importers,
                             const bool nans_in_data,
                             const bool nans_in_columns);
+
+  TestVariableHomoscedastic(const TestVariableHomoscedastic &that);
+
+  ~TestVariableHomoscedastic() final = default;
+
+  std::unique_ptr<TestBase> _clone() const final;
 
   /*! Compute the statistics
    * @param shuffling_matrix a matrix to permute / sign flip the residuals (for permutation testing)
    * @param stat the vector containing the native output statistics (one column per hypothesis)
    * @param zstat the vector containing the Z-transformed output statistics (one column per hypothesis)
    *
-   * In TestVariable* classes, this function additionally needs to import the
+   * In TestVariable* classes, this function additionally needs to import any
    * extra external data individually for each element tested.
    */
-  void operator()(const matrix_type &shuffling_matrix, matrix_type &stat, matrix_type &zstat) const override;
+  void operator()(const shuffle_matrix_type &shuffling_matrix, matrix_type &stat, matrix_type &zstat) override;
 
-  index_type num_factors() const override { return M.cols() + importers.size(); }
+  index_type num_factors() const final { return M.cols() + num_importers(); }
+  index_type num_importers() const final { return S().importers.size(); }
 
-protected:
-  const std::vector<CohortDataImport> &importers;
-  const bool nans_in_data, nans_in_columns;
+  const Shared &S() const { return *dynamic_cast<const Shared *const>(shared.get()); }
 
-  void get_mask(const index_type ie, element_mask_type &mask, const matrix_type &extra_columns) const;
-  void apply_mask(const element_mask_type &mask,
-                  matrix_type::ConstColXpr data,
-                  const matrix_type &shuffling_matrix,
-                  const matrix_type &extra_column_data,
-                  matrix_type &Mfull_masked,
-                  matrix_type &shuffling_matrix_masked,
-                  vector_type &data_masked) const;
+private:
+  std::vector<matrix_type> XtX, beta;
 };
 
 /** \addtogroup Statistics
@@ -381,15 +532,36 @@ protected:
  *     between all observations, but these can be placed into "variance groups", within which
  *     all observations can be considered to have the same variance.
  */
-class TestVariableHeteroscedastic : public TestVariableHomoscedastic {
+class TestVariableHeteroscedastic final : public TestVariableBase {
 public:
-  TestVariableHeteroscedastic(const std::vector<CohortDataImport> &importers,
-                              const matrix_type &measurements,
+  class Shared final : public SharedBase, public SharedVariableBase, public SharedHeteroscedasticBase {
+  public:
+    Shared(const std::vector<Hypothesis> &hypotheses,
+           const index_array_type &variance_groups,
+           const std::vector<CohortDataImport> &importers,
+           const bool nans_in_data,
+           const bool nans_in_columns);
+    Shared() = delete;
+    Shared(const Shared &) = delete;
+    Shared(Shared &&) = delete;
+    Shared &operator=(const Shared &) = delete;
+    Shared &operator=(Shared &&) = delete;
+    ~Shared() final {}
+  };
+
+  TestVariableHeteroscedastic(const measurements_matrix_type &measurements,
                               const matrix_type &design,
                               const std::vector<Hypothesis> &hypotheses,
                               const index_array_type &variance_groups,
+                              const std::vector<CohortDataImport> &importers,
                               const bool nans_in_data,
                               const bool nans_in_columns);
+
+  TestVariableHeteroscedastic(const TestVariableHeteroscedastic &that);
+
+  ~TestVariableHeteroscedastic() final = default;
+
+  std::unique_ptr<TestBase> _clone() const final;
 
   /*! Compute the statistics
    * @param shuffling_matrix a matrix to permute / sign flip the residuals (for permutation testing)
@@ -399,20 +571,18 @@ public:
    * In TestVariable* classes, this function additionally needs to import the
    * extra external data individually for each element tested.
    */
-  void operator()(const matrix_type &shuffling_matrix, matrix_type &stat, matrix_type &zstat) const override;
+  void operator()(const shuffle_matrix_type &shuffling_matrix, matrix_type &stat, matrix_type &zstat) override;
 
-  index_type num_factors() const override { return M.cols() + importers.size(); }
-  index_type num_variance_groups() const { return num_vgs; }
+  index_type num_factors() const final { return M.cols() + num_importers(); }
+  index_type num_variance_groups() const { return S().num_vgs; }
+  index_type num_importers() const final { return S().importers.size(); }
 
-protected:
-  // Only a limited amount can be pre-calculated from the variance group information;
-  //   other data may vary as rows of the design matrix & data are excluded
-  const index_array_type &VG;
-  const index_type num_vgs;
-  vector_type gamma_weights;
+  const Shared &S() const { return *dynamic_cast<const Shared *const>(shared.get()); }
 
-  // Need to apply the row selection mask to the variance groups in addition to other data
-  void apply_mask_VG(const element_mask_type &mask, index_array_type &VG_masked, index_array_type &VG_counts) const;
+private:
+  // Temporaries
+  vector_type W, sq_residuals, sse_per_vg, Rnn_sums, Wterms;
+  index_array_type VG_masked, VG_counts;
 };
 
 } // namespace MR::Math::Stats::GLM

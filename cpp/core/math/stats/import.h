@@ -13,6 +13,7 @@
  *
  * For more details, see http://www.mrtrix.org/.
  */
+
 #pragma once
 
 #include <fstream>
@@ -47,13 +48,13 @@ public:
    * @param row the row of a matrix into which the data from this
    * particular file should be loaded
    */
-  virtual void operator()(matrix_type::RowXpr column) const = 0;
+  virtual void operator()(measurements_matrix_type::RowXpr column) const = 0;
 
   /*!
    * @param index extract the data from this file corresponding to a particular
    * row in the measurements vector
    */
-  virtual default_type operator[](const index_type index) const = 0;
+  virtual measurements_value_type operator[](const index_type index) const = 0;
 
   std::string name() const { return path; }
 
@@ -83,9 +84,9 @@ public:
    * @param index for a particular element being tested (data will be acquired for
    * all subjects for that element)
    */
-  vector_type operator()(const index_type index) const;
+  measurements_vector_type operator()(const index_type element_index) const;
 
-  operator bool() const { return bool(!files.empty()); }
+  operator bool() const { return !files.empty(); }
   index_type size() const { return files.size(); }
 
   std::shared_ptr<SubjectDataImportBase> operator[](const index_type i) const {

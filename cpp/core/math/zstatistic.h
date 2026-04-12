@@ -17,30 +17,28 @@
 #pragma once
 
 #include <map>
-#include <mutex>
+#include <shared_mutex>
 
 #include "math/stats/typedefs.h"
 
 namespace MR::Math {
 
-default_type t2z(const default_type stat, const default_type dof);
-default_type F2z(const default_type stat, const size_t rank, const default_type dof);
+default_type t2z(const default_type t, const size_t dof);
+default_type F2z(const default_type F, const size_t rank, const size_t dof);
+default_type v2z(const default_type v, const default_type dof);
+default_type G2z(const default_type G, const size_t rank, const default_type dof);
 
 class Zstatistic {
 public:
   Zstatistic() {}
+  Zstatistic(const Zstatistic &) = delete;
+  Zstatistic &operator=(const Zstatistic &) = delete;
 
   // Convert a t-statistic to a z-statistic
-  default_type t2z(const default_type t, const size_t dof);
+  default_type t2z(const default_type t, const size_t dof) const;
 
   // Convert an F-statistic to a z-statistic
-  default_type F2z(const default_type F, const size_t rank, const size_t dof);
-
-  // Convert an Aspin-Welch v to a z-statistic
-  default_type v2z(const default_type v, const default_type dof);
-
-  // Convert a G-statistic to a z-statistic
-  default_type G2z(const default_type G, const size_t rank, const default_type dof);
+  default_type F2z(const default_type F, const size_t rank, const size_t dof) const;
 
 protected:
   class LookupBase {
@@ -58,7 +56,7 @@ protected:
                         const default_type offset,
                         const default_type scale,
                         const array_type &data,
-                        std::function<default_type(default_type)> func) const; // check_syntax off
+                        std::function<default_type(default_type)> func) const;
   };
 
   class Lookup_t2z : public LookupBase {
@@ -86,9 +84,9 @@ protected:
     array_type data_lower;
   };
 
-  std::map<size_t, Lookup_t2z> t2z_data;
-  std::map<std::pair<size_t, size_t>, Lookup_F2z> F2z_data;
-  std::mutex mutex;
+  mutable std::map<size_t, Lookup_t2z> t2z_data;
+  mutable std::map<std::pair<size_t, size_t>, Lookup_F2z> F2z_data;
+  mutable std::shared_mutex mutex;
 };
 
 } // namespace MR::Math
