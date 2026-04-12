@@ -51,7 +51,7 @@ void debug_validate_directory(std::string_view fixel_directory_path);
 
 //! Call validate_debug_index_image() only when running in debug mode (log_level >= 3).
 //! Intended for use in other fixel commands to add lightweight validation in debug builds.
-void debug_validate_index_image(Image<index_type> index_image);
+void debug_validate_index_image(const Image<index_type> &index_image);
 
 } // namespace MR::Fixel
 
@@ -99,6 +99,6 @@ void validate_header(const Header &H);
 //! Call validate_peaks_image() only when running in debug mode (log_level >= 3).
 //! Format errors are always re-thrown; content findings are emitted as DEBUG messages.
 //! Intended for use in peaks-processing commands.
-void debug_validate_image(Image<float> image);
+void debug_validate_image(const Image<float> &image);
 
 } // namespace MR::Peaks

@@ -51,7 +51,7 @@ public:
       indices[counter] = *i;
   }
 
-  Polygon() { indices = {0, 0, 0}; }
+  Polygon() : indices({0, 0, 0}) {}
 
   vertex_index_type &operator[](const size_t i) {
     assert(i < vertices);

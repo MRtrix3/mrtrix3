@@ -4,7 +4,7 @@ Verify operation of the C++ command-line interface & parser
 
 ## Usage
 
-    testing_cpp_cli [ options ]
+    testing_cpp_cli [ options ] 
 
 
 ## Options

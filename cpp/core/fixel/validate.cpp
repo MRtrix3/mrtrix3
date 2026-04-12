@@ -35,7 +35,7 @@ void validate_directory(std::string_view fixel_directory_path) {
   find_directions_header(fixel_directory_path);
 
   // Verify that the index image is well-posed.
-  index_type total_nfixels;
+  index_type total_nfixels = 0U;
   try {
     total_nfixels = validate_index_image(index_header.get_image<index_type>());
   } catch (Exception &e) {
@@ -75,7 +75,7 @@ index_type validate_index_image(Image<index_type> index_image) {
     for (auto l = Loop(index_image, 0, 3)(index_image); l; ++l) {
       index_image.index(3) = 0;
       const index_type count = index_image.value();
-      if (!count)
+      if (count == 0U)
         continue;
       index_image.index(3) = 1;
       const index_type offset = index_image.value();
@@ -104,7 +104,7 @@ index_type validate_index_image(Image<index_type> index_image) {
            " does not match that indicated in image data" +                                       //
            " (" + str(total_nfixels) + ")");                                                      //
     }
-  } catch (std::out_of_range) {
+  } catch (std::out_of_range &) {
   }
 
   // Verify that every fixel index in [0, total_nfixels) is covered
@@ -129,7 +129,7 @@ void debug_validate_directory(std::string_view fixel_directory_path) {
     validate_directory(fixel_directory_path);
 }
 
-void debug_validate_index_image(Image<index_type> index_image) {
+void debug_validate_index_image(const Image<index_type> &index_image) {
   if (App::log_level >= 3)
     validate_index_image(index_image);
 }
@@ -149,7 +149,7 @@ void validate_header(const Header &H) {
     } catch (Exception &e) {
       throw Exception(e, "Expect 4 dimensions");
     }
-    if (H.size(3) % 3)
+    if (H.size(3) % 3 != 0U)
       throw Exception("Number of volumes must be a multiple of 3");
   } catch (Exception &e) {
     throw Exception(e, "Image \"" + H.name() + "\" is not a valid peaks image");
@@ -264,13 +264,13 @@ const PeaksValidation validate_image(Image<float> image) {
                 (infinity_count > 1 ? "s that contain" : " that contains") + //
                 " impermitted infinity values");                             //
 
-  if (e.num())
-    throw e;
+  if (e.num() > size_t(0))
+    throw Exception(e, "Major content error(s) in peaks image");
 
   return result;
 }
 
-void debug_validate_image(Image<float> image) {
+void debug_validate_image(const Image<float> &image) {
   validate_header(image);
   if (App::log_level < 3)
     return;

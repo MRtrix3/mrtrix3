@@ -61,6 +61,6 @@ void validate_label_header(const Header &H);
 //! Call validate_label_image() only when running in debug mode (log_level >= 3).
 //! Format errors are re-thrown; contiguity findings are reported as DEBUG messages.
 //! Intended for use in label-processing commands to add validation in debug builds.
-void debug_validate_label_image(Image<node_t> image);
+void debug_validate_label_image(const Image<node_t> &image);
 
 } // namespace MR::Connectome

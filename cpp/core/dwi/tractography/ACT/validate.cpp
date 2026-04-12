@@ -99,14 +99,14 @@ void debug_validate_5TT_image(const Image<float> &in) {
   if (App::log_level < 3)
     return;
   const FiveTTValidation v = validate_5TT_image(in);
-  if (!v.n_voxels_abs_error && !v.n_voxels_sum_error) {
+  if (v.n_voxels_abs_error == size_t(0) && v.n_voxels_sum_error == size_t(0)) {
     DEBUG("5TT image \"" + in.name() + "\": validation OK");
     return;
   }
-  if (v.n_voxels_abs_error)
+  if (v.n_voxels_abs_error > size_t(0))
     WARN("5TT image \"" + in.name() + "\": " + str(v.n_voxels_abs_error) +
          " brain voxel(s) with a non-physical partial volume fraction");
-  if (v.n_voxels_sum_error)
+  if (v.n_voxels_sum_error > size_t(0))
     WARN("5TT image \"" + in.name() + "\": " + str(v.n_voxels_sum_error) +
          " brain voxel(s) with a non-unity partial volume sum");
 }

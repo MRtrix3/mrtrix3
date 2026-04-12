@@ -458,7 +458,7 @@ void run() {
     if (opt.empty()) {
       directions_cartesian = Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300());
     } else {
-      Eigen::MatrixXd directions = File::Matrix::load_matrix(opt[0][0]);
+      const Eigen::MatrixXd directions = File::Matrix::load_matrix(opt[0][0]);
       DWI::Directions::validate(directions, opt[0][0], false);
       directions_cartesian = Math::Sphere::as_cartesian(directions);
     }

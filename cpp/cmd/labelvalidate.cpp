@@ -102,7 +102,7 @@ void run() {
     constexpr size_t max_listed = 20;
     std::string missing_str;
     for (size_t i = 0; i < std::min(ngaps, max_listed); ++i) {
-      if (i)
+      if (i > 0U)
         missing_str += ", ";
       missing_str += str(result.missing_indices[i]);
     }
@@ -117,8 +117,8 @@ void run() {
   if (result.disconnected_components == 0) {
     CONSOLE("All " + str(result.labels.size()) + " labels are spatially contiguous");
   } else {
-    std::string msg(str(result.disconnected_components) + " of " + str(result.labels.size()) +
-                    " labels are spatially disconnected: ");
+    const std::string msg(str(result.disconnected_components) + " of " + str(result.labels.size()) + //
+                          " labels are spatially disconnected: ");                                   //
     std::vector<node_t> disconnected_labels;
     for (auto label : result.labels) {
       if (result.component_counts.at(label) > 1)

@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <string_view>
+
 #include "algo/loop.h"
 #include "app.h"
 #include "fixel/fixel.h"

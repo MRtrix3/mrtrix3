@@ -170,20 +170,18 @@ TckValidation validate_tck(std::string_view path) {
 }
 
 void validate_tsf_properties(const Properties &a, const Properties &b, std::string_view file_types) {
-  Properties::const_iterator stamp_a = a.find("timestamp");
-  Properties::const_iterator stamp_b = b.find("timestamp");
+  const Properties::const_iterator stamp_a = a.find("timestamp");
+  const Properties::const_iterator stamp_b = b.find("timestamp");
   if (stamp_a == a.end() || stamp_b == b.end())
     throw Exception("Unable to verify " + file_types + ": missing timestamp");
   if (stamp_a->second != stamp_b->second) {
-    VAR(stamp_a->second);
-    VAR(stamp_b->second);
     throw Exception("Invalid " + file_types + ":" +                     //
                     " timestamps do not match," +                       //
                     " suggesting differing originating tractogram(s)"); //
   }
 
-  Properties::const_iterator count_a = a.find("count");
-  Properties::const_iterator count_b = b.find("count");
+  const Properties::const_iterator count_a = a.find("count");
+  const Properties::const_iterator count_b = b.find("count");
   if ((count_a == a.end()) || (count_b == b.end()))
     throw Exception("Unable to validate " + file_types + ": missing count field");
   if (to<size_t>(count_a->second) != to<size_t>(count_b->second))

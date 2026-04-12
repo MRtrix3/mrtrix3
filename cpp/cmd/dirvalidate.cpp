@@ -60,7 +60,7 @@ void usage() {
 // clang-format on
 
 void run() {
-  Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> matrix = File::Matrix::load_matrix(argument[0]);
+  const Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> matrix = File::Matrix::load_matrix(argument[0]);
   const DirectionsValidation result = MR::DWI::Directions::validate(matrix, argument[0], true);
 
   const std::string fmt = result.format == DirectionsFormat::Spherical   ? "spherical coordinates"
@@ -71,7 +71,7 @@ void run() {
           str(result.n_directions) + " direction(s) in " + fmt + " format"); //
 
   if (result.format == DirectionsFormat::Cartesian || result.format == DirectionsFormat::GradientTable) {
-    if (result.n_non_unit) {
+    if (result.n_non_unit > 0U) {
       WARN(str(result.n_non_unit) + " of " + str(result.n_directions) + " direction(s) are not of unit norm");
     } else {
       CONSOLE("All directions are of unit norm");

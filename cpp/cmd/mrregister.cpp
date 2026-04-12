@@ -225,7 +225,7 @@ void run() {
   Eigen::MatrixXd directions_cartesian;
   auto opt = get_options("directions");
   if (!opt.empty()) {
-    Eigen::MatrixXd directions = File::Matrix::load_matrix(opt[0][0]);
+    const Eigen::MatrixXd directions = File::Matrix::load_matrix(opt[0][0]);
     DWI::Directions::validate(directions, opt[0][0], false);
     directions_cartesian = Math::Sphere::as_cartesian(directions).transpose();
   }

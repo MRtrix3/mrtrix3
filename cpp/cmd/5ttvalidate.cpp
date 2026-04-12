@@ -77,7 +77,8 @@ void usage() {
 void run() {
   const std::string voxels_prefix = get_option_value<std::string>("voxels", "");
 
-  size_t major_error_count = 0, minor_error_count = 0;
+  size_t major_error_count = 0;
+  size_t minor_error_count = 0;
 
   for (size_t i = 0; i != argument.size(); ++i) {
 
@@ -176,12 +177,11 @@ void run() {
                                std::string(major_error_count > 1 ? "outputs from" : "output of") + " -voxels option)");
 
   if (major_error_count) {
-    if (argument.size() > 1)
-      throw Exception(str(major_error_count) + " input image" + (major_error_count > 1 ? "s do" : " does") +
-                      " not conform to 5TT format");
-    else
-      throw Exception("Input image does not conform to 5TT format");
-  } else if (minor_error_count) {
+    throw Exception((argument.size() > 1
+                         ? (str(major_error_count) + " input image" + (major_error_count > 1 ? "s do" : " does"))
+                         : "Input image does") +
+                    " not conform to 5TT format");
+  } else if (minor_error_count > size_t(0)) {
     WARN((argument.size() > 1
               ? (str(minor_error_count) + " input image" + (minor_error_count > 1 ? "s do" : " does")) //
               : "Input image does") +                                                                  //

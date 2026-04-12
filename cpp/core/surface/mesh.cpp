@@ -519,13 +519,15 @@ void Mesh::load_obj(std::string_view path) {
               str(counter));
         face_data.push_back(temp);
       }
-      if (face_data.size() == 3) {
-        std::vector<vertex_index_type> temp{face_data[0].vertex, face_data[1].vertex, face_data[2].vertex};
-        triangles.push_back(Triangle(temp));
-      } else {
-        std::vector<vertex_index_type> temp{
-            face_data[0].vertex, face_data[1].vertex, face_data[2].vertex, face_data[3].vertex};
-        quads.push_back(Quad(temp));
+      switch (face_data.size()) {
+      case 3:
+        triangles.emplace_back(Triangle({face_data[0].vertex, face_data[1].vertex, face_data[2].vertex}));
+        break;
+      case 4:
+        quads.emplace_back(Quad({face_data[0].vertex, face_data[1].vertex, face_data[2].vertex, face_data[3].vertex}));
+        break;
+      default:
+        throw Exception("Invalid number of vertices (" + str(face_data.size()) + ") for a face; line " + str(counter));
       }
       // The OBJ format allows defining different vertex-based normals for different faces that reference the same
       // vertex This isn't consistent with the internal storage mechanism used in the Mesh class, and isn't really a

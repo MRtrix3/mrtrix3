@@ -77,7 +77,7 @@ public:
     }
   }
   virtual ~BoundsCheck() {
-    std::lock_guard<std::mutex> lock(mutex);
+    const std::lock_guard<std::mutex> lock(mutex);
     counter += count;
   }
 

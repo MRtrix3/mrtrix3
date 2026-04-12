@@ -103,7 +103,7 @@ void validate(const Mesh &mesh) {
     for (size_t i = 0; i != nq; ++i)
       for (size_t j = 0; j != 4; ++j)
         referenced[quads[i][j]] = true;
-    const Eigen::Index unreferenced_count = nv - referenced.count();
+    const size_t unreferenced_count = nv - static_cast<size_t>(referenced.count());
     if (unreferenced_count > 0)
       throw Exception("Mesh \"" + mesh.get_name() + "\": " +                                                //
                       str(unreferenced_count) + (unreferenced_count > 1 ? " vertices are" : " vertex is") + //
@@ -153,7 +153,7 @@ void validate(const Mesh &mesh) {
   {
     std::set<std::vector<vertex_index_type>> seen;
     size_t duplicate_count = 0;
-    auto check_poly = [&](const auto &poly, const size_t idx, std::string_view type) {
+    auto check_poly = [&](const auto &poly, std::string_view type) {
       std::vector<vertex_index_type> key(poly.size());
       for (size_t j = 0; j != poly.size(); ++j)
         key[j] = poly[j];
@@ -162,9 +162,9 @@ void validate(const Mesh &mesh) {
         ++duplicate_count;
     };
     for (size_t i = 0; i != nt; ++i)
-      check_poly(triangles[i], i, "triangle");
+      check_poly(triangles[i], "triangle");
     for (size_t i = 0; i != nq; ++i)
-      check_poly(quads[i], i, "quad");
+      check_poly(quads[i], "quad");
     if (duplicate_count > 0)
       throw Exception("Mesh \"" + mesh.get_name() + "\": " +                     //
                       str(duplicate_count) + " duplicate polygon" +              //
@@ -281,8 +281,8 @@ void debug_validate(const MeshMulti &meshes) {
         e_all.push_back(e[i]);
     }
   }
-  if (e_all.num())
-    throw e_all;
+  if (e_all.num() > size_t(0))
+    throw Exception(e_all, "Error(s) in surface data validation");
 }
 
 } // namespace MR::Surface

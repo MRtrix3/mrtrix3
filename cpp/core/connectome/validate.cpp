@@ -116,7 +116,7 @@ const LabelValidation validate_label_image(Image<node_t> image) {
   // ---------------------------------------------------------------
   std::set<node_t> label_set;
   for (const node_t v : lflat) {
-    if (v)
+    if (v > 0U)
       label_set.insert(v);
   }
   result.labels = MR::container_cast<std::vector<node_t>>(label_set);
@@ -128,7 +128,7 @@ const LabelValidation validate_label_image(Image<node_t> image) {
   if (!label_set.empty()) {
     const node_t max_label = result.labels.back();
     for (node_t i = 1; i <= max_label; ++i) {
-      if (!label_set.count(i)) {
+      if (label_set.count(i) == size_t(0)) {
         result.indices_contiguous = false;
         result.missing_indices.push_back(i);
       }
@@ -157,7 +157,7 @@ const LabelValidation validate_label_image(Image<node_t> image) {
   };
   class Worker {
   public:
-    Worker(Image<node_t> image) : image(image), H_3D(std::make_shared<Header>(image)) { H_3D->ndim() = 3; }
+    Worker(const Image<node_t> &image) : image(image), H_3D(std::make_shared<Header>(image)) { H_3D->ndim() = 3; }
     Worker(const Worker &) = default;
     bool operator()(const node_t &label, std::pair<node_t, uint32_t> &count) {
       Image<bool> mask = Image<bool>::scratch(*H_3D, "Scratch boolean mask per unique label");
@@ -165,8 +165,7 @@ const LabelValidation validate_label_image(Image<node_t> image) {
         if (image.value() == label)
           mask.value() = true;
       }
-      Image<uint32_t> clusterids = Image<uint32_t>::scratch(*H_3D, "Scratch integer cluster labels");
-      Voxel2Vector v2v(mask, *H_3D);
+      const Voxel2Vector v2v(mask, *H_3D);
       Filter::Connector connector;
       connector.adjacency.set_axes(Filter::Base::axis_mask_type::Ones(3));
       connector.adjacency.set_26_adjacency(true);
@@ -213,7 +212,7 @@ const LabelValidation validate_label_image(Image<node_t> image) {
   return result;
 }
 
-void debug_validate_label_image(Image<node_t> image) {
+void debug_validate_label_image(const Image<node_t> &image) {
   validate_label_header(image);
   if (App::log_level < 3)
     return;
