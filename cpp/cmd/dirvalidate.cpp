@@ -35,8 +35,10 @@ void usage() {
     " The format is inferred from the number of columns:"
 
   + "2 columns: spherical coordinates (azimuth, inclination)."
-    " The azimuth must lie strictly within (-2π, 2π)."
-    " The inclination must lie within [-π, π]."
+    " The azimuth must lie strictly within [-2π, 2π],"
+    " and the difference between maximal and minimal values must not exceed 2π."
+    " The inclination must lie within [-π, π],"
+    " and the difference between maximal and minimal values must not exceed π."
 
   + "3 columns: Cartesian unit directions (x, y, z)."
     " All three components must lie within [-1, 1]."
@@ -69,9 +71,10 @@ void run() {
           str(result.n_directions) + " direction(s) in " + fmt + " format"); //
 
   if (result.format == DirectionsFormat::Cartesian || result.format == DirectionsFormat::GradientTable) {
-    if (result.n_non_unit)
+    if (result.n_non_unit) {
       WARN(str(result.n_non_unit) + " of " + str(result.n_directions) + " direction(s) are not of unit norm");
-    else
+    } else {
       CONSOLE("All directions are of unit norm");
+    }
   }
 }

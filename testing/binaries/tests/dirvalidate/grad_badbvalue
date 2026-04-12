@@ -1,0 +1,10 @@
+#!/bin/bash
+# Ensure that presence of an erroneous b-value leads to an error
+
+rm -f tmp_gradnegbvalue.b
+sed "1s/.*/-0.0509541 0.0617551 -0.99679 -2950/" dirvalidate/grad.b > tmp_gradnegbvalue.b
+
+rm -f tmp.txt
+! ( dirvalidate tmp_gradnegbvalue.b > tmp.txt 2>&1 )
+cat tmp.txt
+grep -E "b\\-value .+ is negative" tmp.txt

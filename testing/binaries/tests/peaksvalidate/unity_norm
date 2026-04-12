@@ -1,0 +1,20 @@
+#!/bin/bash
+# Verify that when the input image contains exclusively 3-vectors that are of unit norm,
+#   this is detected and communicated appropriately.
+
+mrconvert peaks.mif -coord 3 0:2 tmp_peak0.mif -force
+mrconvert peaks.mif -coord 3 3:5 tmp_peak1.mif -force
+mrconvert peaks.mif -coord 3 6:8 tmp_peak2.mif -force
+
+mrmath tmp_peak0.mif norm -axis 3 - | \
+mrcalc tmp_peak0.mif - -div tmp_peak0.mif -force
+mrmath tmp_peak1.mif norm -axis 3 - | \
+mrcalc tmp_peak1.mif - -div tmp_peak1.mif -force
+mrmath tmp_peak2.mif norm -axis 3 - | \
+mrcalc tmp_peak2.mif - -div tmp_peak2.mif -force
+
+mrcat tmp_peak0.mif tmp_peak1.mif tmp_peak2.mif tmp_peaksnorm.mif -force
+
+rm -f tmp.txt
+peaksvalidate tmp_peaksnorm.mif 2>&1 | tee tmp.txt
+grep -E "Peak norms\\: all peaks are unit\\-norm" tmp.txt

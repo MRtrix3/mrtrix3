@@ -1,0 +1,10 @@
+#!/bin/bash
+# Verify successful operation of the "labelvalidate" command
+#   when the input parcellation image is acceptable,
+#   though indices are non-contiguous
+#   (which can be problematic for some operations)
+
+rm -f tmp.txt
+labelvalidate labelconvert/in_fs.mif.gz 2>&1 | tee tmp.txt
+grep "image values verified to be non\\-negative integers" tmp.txt
+grep "Label indices: non\\-contiguous" tmp.txt

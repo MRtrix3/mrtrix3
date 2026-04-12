@@ -1,0 +1,9 @@
+#!/bin/bash
+# Verify default operation of the "tckvalidate" command
+#   with a well-formed input file
+
+rm -f tmp.txt
+tckvalidate tckvalidate/orig.tck 2>&1 | tee tmp.txt
+grep -E "Tractogram \".+\" is valid: .+ streamline\\(s\\)" tmp.txt
+! ( grep -E "\\bWARNING\\b" tmp.txt )
+grep "All streamlines have two or more vertices" tmp.txt

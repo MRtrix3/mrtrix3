@@ -111,16 +111,18 @@ void run() {
   }
 
   // ---------------------------------------------------------------
-  // Count number of labels without spatial contiguity
+  // Report number of labels without spatial contiguity
   // ---------------------------------------------------------------
-  size_t n_disconnected = 0;
-  for (const auto &[label, count] : result.component_counts) {
-    if (count > 1)
-      ++n_disconnected;
-  }
-  if (n_disconnected == 0) {
-    CONSOLE("All " + str(result.labels.size()) + " label(s) are spatially contiguous");
+  if (result.disconnected_components == 0) {
+    CONSOLE("All " + str(result.labels.size()) + " labels are spatially contiguous");
   } else {
-    WARN(str(n_disconnected) + " of " + str(result.labels.size()) + " label(s) are spatially disconnected");
+    std::string msg(str(result.disconnected_components) + " of " + str(result.labels.size()) +
+                    " labels are spatially disconnected: ");
+    std::vector<node_t> disconnected_labels;
+    for (auto label : result.labels) {
+      if (result.component_counts.at(label) > 1)
+        disconnected_labels.push_back(label);
+    }
+    WARN(msg + str(disconnected_labels));
   }
 }

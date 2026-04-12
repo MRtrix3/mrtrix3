@@ -1,0 +1,21 @@
+#!/bin/bash
+# Ensure that if the number of voxels in which a fixel appears is not one,
+#   the right error is produced.
+
+# Achieve this by finding the voxel with the largest offset in the index image (second volume),
+#   and decrementing its offset by one and incrementing its fixel count by one;
+#   that way just one fixel appears in two different voxels,
+#   but the total number of unique fixels is still correct
+mrconvert fixel_image/index.mif -coord 3 1 -axes 0,1,2 - | \
+mrthreshold - -top 1 tmp_lastvoxel.mif -force
+
+rm -rf tmp/
+mkdir tmp/
+mrcat tmp_lastvoxel.mif $(mrcalc tmp_lastvoxel.mif -1 -mult -) -axis 3 - | \
+mrcalc fixel_image/index.mif - -add tmp/index.mif
+cp fixel_image/directions.mif tmp/directions.mif
+
+rm -f tmp.txt
+! ( fixelvalidate tmp/ > tmp.txt 2>&1 )
+cat tmp.txt
+grep -E "Fixel index .+ in image \".+\" is covered by 2 voxel\\(s\\) in the index image" tmp.txt

@@ -26,31 +26,16 @@
 #include "algo/loop.h"
 #include "app.h"
 #include "connectome/connectome.h"
+#include "datatype.h"
 #include "exception.h"
+#include "filter/connected_components.h"
 #include "header.h"
 #include "image.h"
+#include "misc/voxel2vector.h"
 #include "mrtrix.h"
+#include "thread_queue.h"
 
 namespace MR::Connectome {
-
-// The 13 "forward" half-neighbours for 26-NN connectivity.
-// Processing only these avoids visiting each unordered pair twice.
-// Composed of:
-//   dz=0: (1,0,0), (-1,1,0), (0,1,0), (1,1,0)           — 4 neighbours
-//   dz=1: all (dx,dy,1) for dx,dy in {-1,0,+1}           — 9 neighbours
-static constexpr int32_t half_offsets[13][3] = {{1, 0, 0},
-                                                {-1, 1, 0},
-                                                {0, 1, 0},
-                                                {1, 1, 0},
-                                                {-1, -1, 1},
-                                                {0, -1, 1},
-                                                {1, -1, 1},
-                                                {-1, 0, 1},
-                                                {0, 0, 1},
-                                                {1, 0, 1},
-                                                {-1, 1, 1},
-                                                {0, 1, 1},
-                                                {1, 1, 1}};
 
 void validate_label_header(const Header &H) {
   // Basic format validation: 3D (or 4D with singleton), non-negative integers only.
@@ -151,64 +136,79 @@ const LabelValidation validate_label_image(Image<node_t> image) {
   }
 
   // ---------------------------------------------------------------
-  // Spatial contiguity via union-find with 26-NN connectivity
+  // Spatial contiguity via connected-component analysis
   // ---------------------------------------------------------------
-  // parent[i] is the representative of the connected component containing voxel i.
-  std::vector<uint32_t> parent(total, uint32_t(0));
 
-  // Path-halving find: amortised near-O(1) per operation.
-  auto find = [&parent](uint32_t x) -> uint32_t {
-    while (parent[x] != x) {
-      parent[x] = parent[parent[x]];
-      x = parent[x];
+  class Seeder {
+  public:
+    Seeder(const std::vector<node_t> &labels) : data(labels), index(0) {}
+    bool operator()(node_t &out) {
+      if (index == data.size()) {
+        out = std::numeric_limits<node_t>::max();
+        return false;
+      }
+      out = data[index++];
+      return true;
     }
-    return x;
+
+  private:
+    std::vector<node_t> data;
+    size_t index;
+  };
+  class Worker {
+  public:
+    Worker(Image<node_t> image) : image(image), H_3D(std::make_shared<Header>(image)) { H_3D->ndim() = 3; }
+    Worker(const Worker &) = default;
+    bool operator()(const node_t &label, std::pair<node_t, uint32_t> &count) {
+      Image<bool> mask = Image<bool>::scratch(*H_3D, "Scratch boolean mask per unique label");
+      for (auto l = Loop(image)(image, mask); l; ++l) {
+        if (image.value() == label)
+          mask.value() = true;
+      }
+      Image<uint32_t> clusterids = Image<uint32_t>::scratch(*H_3D, "Scratch integer cluster labels");
+      Voxel2Vector v2v(mask, *H_3D);
+      Filter::Connector connector;
+      connector.adjacency.set_axes(Filter::Base::axis_mask_type::Ones(3));
+      connector.adjacency.set_26_adjacency(true);
+      connector.adjacency.initialise(mask, v2v);
+      std::vector<Filter::Connector::Cluster> clusters;
+      std::vector<uint32_t> labels;
+      connector.run(clusters, labels);
+      count = {label, clusters.size()};
+      return true;
+    }
+
+  private:
+    Image<node_t> image;
+    std::shared_ptr<Header> H_3D;
+  };
+  class Receiver {
+  public:
+    Receiver(const node_t num_labels) : progress("Assessing spatial contiguity of labels", num_labels) {}
+    bool operator()(const std::pair<node_t, uint32_t> &in) {
+      data.insert(in);
+      ++progress;
+      return true;
+    }
+    const std::map<node_t, uint32_t> &count_per_label() const { return data; }
+    node_t disconnected_count() const {
+      node_t result = 0;
+      for (const auto &item : data) {
+        if (item.second > 1)
+          ++result;
+      }
+      return result;
+    }
+
+  private:
+    ProgressBar progress;
+    std::map<node_t, uint32_t> data;
   };
 
-  for (uint32_t z = 0; z < Z; ++z) {
-    for (uint32_t y = 0; y < Y; ++y) {
-      for (uint32_t x = 0; x < X; ++x) {
-        const uint32_t idx = x + X * y + X * Y * z;
-        const node_t label = lflat[idx];
-        if (!label)
-          continue;
-
-        for (const auto &o : half_offsets) {
-          const int32_t nx = static_cast<int32_t>(x) + o[0];
-          const int32_t ny = static_cast<int32_t>(y) + o[1];
-          const int32_t nz = static_cast<int32_t>(z) + o[2];
-          if (nx < 0 || nx >= static_cast<int32_t>(X))
-            continue;
-          if (ny < 0 || ny >= static_cast<int32_t>(Y))
-            continue;
-          if (nz < 0 || nz >= static_cast<int32_t>(Z))
-            continue;
-          const uint32_t nidx = static_cast<uint32_t>(nx) +     //
-                                X * static_cast<uint32_t>(ny) + //
-                                X * Y * static_cast<uint32_t>(nz);
-          if (lflat[nidx] != label)
-            continue;
-          const uint32_t ra = find(idx);
-          const uint32_t rb = find(nidx);
-          if (ra != rb)
-            parent[ra] = rb;
-        }
-      }
-    }
-  }
-
-  // Count the number of distinct component roots per label.
-  std::map<node_t, std::set<uint32_t>> roots_per_label;
-  for (uint32_t i = 0; i < total; ++i) {
-    if (lflat[i])
-      roots_per_label[lflat[i]].insert(find(i));
-  }
-  result.disconnected_components = 0;
-  for (const auto &[label, roots] : roots_per_label) {
-    result.component_counts[label] = static_cast<uint32_t>(roots.size());
-    if (roots.size() > 1)
-      ++result.disconnected_components;
-  }
+  Receiver receiver(result.labels.size());
+  Thread::run_queue(Seeder(result.labels), node_t(0), Worker(image), std::pair<node_t, uint32_t>({0, 0}), receiver);
+  result.component_counts = receiver.count_per_label();
+  result.disconnected_components = receiver.disconnected_count();
 
   return result;
 }

@@ -1,0 +1,15 @@
+#!/bin/bash
+# Verify that when the input image is not of real floating-point type,
+#   an appropriate error message is produced.
+
+rm -f tmp.txt
+! ( mrconvert peaks.mif -datatype uint8 - | \
+    peaksvalidate - > tmp.txt 2>&1 )
+cat tmp.txt
+grep "Does not contain floating\\-point data" tmp.txt
+
+rm -f tmp.txt
+! ( mrconvert peaks.mif -datatype cfloat32 - | \
+    peaksvalidate - > tmp.txt 2>&1 )
+cat tmp.txt
+grep "Complex data not supported in \"peaks\" format" tmp.txt

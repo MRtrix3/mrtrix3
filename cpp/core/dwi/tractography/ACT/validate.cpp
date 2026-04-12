@@ -30,15 +30,18 @@
 namespace MR::DWI::Tractography::ACT {
 
 void validate_5TT_header(const Header &H) {
-  if (!H.datatype().is_floating_point() || H.ndim() != 4 || H.size(3) != 5)
-    throw Exception("Image " + std::string(H.name()) + " is not a valid ACT 5TT image" + //
-                    " (expecting 4D image with 5 volumes and floating-point datatype)"); //
   try {
-    check_3D_nonunity(H);
+    if (!H.datatype().is_floating_point())
+      throw Exception("Not of floating-point datatype");
+    if (H.ndim() != 4 || H.size(3) != 5)
+      throw Exception("Should be 4D image with 5 volumes");
+    try {
+      check_3D_nonunity(H);
+    } catch (Exception &e) {
+      throw Exception(e, "Needs to be non-unity in all three spatial dimensions");
+    }
   } catch (Exception &e) {
-    throw Exception(e,
-                    "Image " + std::string(H.name()) + " is not a valid ACT 5TT image" + //
-                        " (needs to be non-unity in all three spatial dimensions)");     //
+    throw Exception(e, "Image " + std::string(H.name()) + " is not a valid ACT 5TT image");
   }
 }
 

@@ -32,11 +32,16 @@ namespace MR::Registration::Warp {
 WarpFormat validate_header(const Header &H) {
 
   // ---------------------------------------------------------------
-  // Check 1: the image must be of floating-point type.
+  // Check 1: the image must be of real floating-point type.
   // ---------------------------------------------------------------
   if (!H.datatype().is_floating_point())
     throw Exception("Warp image \"" + H.name() + "\":" +          //
                     " expected a floating-point data type" +      //
+                    " (got " + H.datatype().description() + ")"); //
+
+  if (H.datatype().is_complex())
+    throw Exception("Warp image \"" + H.name() + "\":" +          //
+                    " expected a real data type" +                //
                     " (got " + H.datatype().description() + ")"); //
 
   // ---------------------------------------------------------------
@@ -67,14 +72,11 @@ WarpFormat validate_header(const Header &H) {
     // Check 3: for full warp images, the header must contain the
     // "linear1" and "linear2" linear transform keys.
     // ---------------------------------------------------------------
-    if (H.keyval().find("linear1") == H.keyval().end())
-      throw Exception("Warp image \"" + H.name() + "\":" +                   //
-                      " full warp image header is missing the \"linear1\"" + //
-                      " linear transform field");                            //
-    if (H.keyval().find("linear2") == H.keyval().end())
-      throw Exception("Warp image \"" + H.name() + "\":" +                   //
-                      " full warp image header is missing the \"linear2\"" + //
-                      " linear transform field");                            //
+    if (H.keyval().find("linear1") == H.keyval().end() || //
+        H.keyval().find("linear2") == H.keyval().end())
+      throw Exception("Warp image \"" + H.name() + "\":" +                                   //
+                      " full warp image header must have both \"linear1\" and \"linear2\"" + //
+                      " linear transform fields in the associated metadata");                //
 
     return WarpFormat::Full;
   }
@@ -90,6 +92,10 @@ struct Compare {
   template <typename ValueType> bool operator()(const ValueType a, const ValueType b) const {
     if (std::isnan(a) && std::isnan(b))
       return false;
+    if (std::isnan(a) && !std::isnan(b))
+      return false;
+    if (!std::isnan(a) && std::isnan(b))
+      return true;
     return a < b;
   };
 };
@@ -97,7 +103,7 @@ struct Compare {
 
 template <typename ValueType> WarpValidation validate_image(Image<ValueType> image) {
 
-  constexpr size_t minratio_voxels_to_fill = 10000;
+  constexpr size_t minratio_finite_to_fill = 10000;
   constexpr size_t minratio_firstfill_to_secondfill = 100;
 
   WarpValidation result;
@@ -150,7 +156,8 @@ template <typename ValueType> WarpValidation validate_image(Image<ValueType> ima
       if (potential_fill) {
         auto existing_fill = fill_counts.find(x);
         if (existing_fill == fill_counts.end())
-          fill_counts.insert({x, 1});
+          // Don't set as "-nan"
+          fill_counts.insert({std::isnan(x) ? NaNF : x, 1});
         else
           ++existing_fill->second;
         continue;
@@ -172,7 +179,7 @@ template <typename ValueType> WarpValidation validate_image(Image<ValueType> ima
   // Triplets that are all-equal or all-NaN are treated as fill.
   // The same fill convention must be used throughout the image.
   // ---------------------------------------------------------------
-  // TODO Accept a fill value as long as it is a clear majority
+  // Accept a fill value as long as it is a clear majority
   // (there is a small chance that there may exist a voxel
   //  where all three finite values are equivalent,
   //  but the number of such voxels is expected to be way smaller than the true fill)
@@ -182,7 +189,8 @@ template <typename ValueType> WarpValidation validate_image(Image<ValueType> ima
       sort_fills.insert({value_count.second, value_count.first});
     // Only set this as the fill value
     //   if the fraction of the image occupied by that value is larger than some fraction
-    if (voxel_count(image) / sort_fills.begin()->first > minratio_voxels_to_fill) {
+    //   (ie. don't label a single voxel as fill just because the x, y, z components were identical)
+    if ((voxel_count(image) / 3) / sort_fills.begin()->first < minratio_finite_to_fill) {
       result.fill_value = sort_fills.begin()->second;
       if (fill_counts.size() > 1) {
         auto second_fill = sort_fills.begin();
@@ -198,17 +206,18 @@ template <typename ValueType> WarpValidation validate_image(Image<ValueType> ima
               " despite detection of multiple potential fill values"); //
       }
     } else {
-      DEBUG("Warp image \"" + image.name() + "\": " +                              //
-            "No explicit fill value chosen" +                                      //
+      DEBUG("Warp image \"" + image.name() + "\":" +                               //
+            " No explicit fill value chosen" +                                     //
             " due to too few voxels (" + str(sort_fills.begin()->first) + ")" +    //
             "containing candidate fill value " + str(sort_fills.begin()->second)); //
     }
   }
 
   if (finitemix_count > 0)
-    throw Exception("Warp image \"" + image.name() + "\":" +                                              //
-                    str(finitemix_count) + " voxel(s) contain(s) a mix of finite and non-finite values" + //
-                    " (a warp triplet must be either all-finite, or an all-nonfinite fill)");             //
+    throw Exception("Warp image \"" + image.name() + "\": " +                                           //
+                    str(finitemix_count) + (finitemix_count > 1 ? " peaks contain" : "peak contains") + //
+                    " a mix of finite and non-finite values; " +                                        //
+                    " a warp triplet must be either all-finite, or an all-nonfinite fill");             //
 
   return result;
 }

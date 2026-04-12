@@ -1,0 +1,11 @@
+#!/bin/bash
+# Ensure that if two vertices share exactly the same spatial location,
+#   the correct error message is produced.
+
+rm -f tmp.vtk
+sed '6h; 7g' meshconvert/in_ascii.vtk > tmp.vtk
+
+rm -f tmp.txt
+! ( meshvalidate tmp.vtk > tmp.txt 2>&1 )
+cat tmp.txt
+grep -E "Mesh \".+\": 1 duplicate vertex \\(precisely equivalent position to another vertex\\)" tmp.txt

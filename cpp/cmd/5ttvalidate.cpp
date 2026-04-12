@@ -80,13 +80,19 @@ void run() {
   size_t major_error_count = 0, minor_error_count = 0;
 
   for (size_t i = 0; i != argument.size(); ++i) {
-    Header H = Header::open(argument[i]);
-    auto in = H.get_image<float>();
 
     // ---------------------------------------------------------------
-    // Phase 1: validate the image (structural check + content scan).
+    // Phase 1: validate the header (structural check).
     // Only structural violations throw — content violations are returned.
     // ---------------------------------------------------------------
+    Header H = Header::open(argument[i]);
+    validate_5TT_header(H);
+
+    // ---------------------------------------------------------------
+    // Phase 2: validate the image (content scan).
+    // Only structural violations throw — content violations are returned.
+    // ---------------------------------------------------------------
+    auto in = H.get_image<float>();
     FiveTTValidation result;
     try {
       result = validate_5TT_image(in);
@@ -98,7 +104,7 @@ void run() {
     }
 
     // ---------------------------------------------------------------
-    // Phase 2: optionally produce a voxel-error mask.
+    // Phase 3: optionally produce a voxel-error mask.
     // A second pass is performed only when -voxels is requested and at
     // least one content violation was detected in phase 1.
     // ---------------------------------------------------------------
@@ -142,7 +148,7 @@ void run() {
     }
 
     // ---------------------------------------------------------------
-    // Phase 3: report findings and accumulate error counts.
+    // Phase 4: report findings and accumulate error counts.
     // ---------------------------------------------------------------
     if (result.n_voxels_sum_error > 1) {
       WARN("Image \"" + std::string(argument[i]) + "\" contains " + //
@@ -165,7 +171,7 @@ void run() {
 
   const std::string vox_option_suggestion =
       voxels_prefix.empty() ? " (suggest re-running using the -voxels option"
-                              " to see voxels where tissue fractions do not sum to 1.0)"
+                              " to see voxels with non-conformant tissue fractions)"
                             : (" (suggest checking " +
                                std::string(major_error_count > 1 ? "outputs from" : "output of") + " -voxels option)");
 
@@ -176,13 +182,11 @@ void run() {
     else
       throw Exception("Input image does not conform to 5TT format");
   } else if (minor_error_count) {
-    if (argument.size() > 1) {
-      WARN(str(minor_error_count) + " input image" + (minor_error_count > 1 ? "s do" : " does") +
-           " not perfectly conform to 5TT format, but may still be applicable" + vox_option_suggestion);
-    } else {
-      WARN(std::string("Input image does not perfectly conform to 5TT format,") + //
-           " but may still be applicable" + vox_option_suggestion);               //
-    }
+    WARN((argument.size() > 1
+              ? (str(minor_error_count) + " input image" + (minor_error_count > 1 ? "s do" : " does")) //
+              : "Input image does") +                                                                  //
+         " not perfectly conform to 5TT format, but may still be applicable" +                         //
+         vox_option_suggestion);
   } else {
     CONSOLE(std::string(argument.size() > 1 ? "All images" : "Input image") + " checked OK");
   }

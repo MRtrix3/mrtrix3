@@ -1,0 +1,9 @@
+#!/bin/bash
+# Ensure that if input image contains a negative integer,
+#   the correct error message is produced.
+rm -f tmp.txt
+! ( mrcalc labelconvert/out_fs.mif.gz -1 -mult - | \
+    mrconvert - -datatype int32 - | \
+    labelvalidate - > tmp.txt 2>&1 )
+cat tmp.txt
+grep -E "Negative value detected in image \".+\"; label images must be strictly non\\-negative" tmp.txt

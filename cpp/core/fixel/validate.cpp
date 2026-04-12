@@ -57,10 +57,10 @@ void validate_directory(std::string_view fixel_directory_path) {
       if (!is_data_file(H))
         continue;
       if (static_cast<index_type>(H.size(0)) != total_nfixels)
-        throw InvalidDirectoryException("fixel data file \"" + fname + "\"" +                           //
+        throw InvalidDirectoryException("Fixel data file \"" + fname + "\"" +                           //
                                         " in directory \"" + std::string(fixel_directory_path) + "\"" + //
-                                        " contains " + str(H.size(0)) + " fixel(s)," +                  //
-                                        " but the index image implies " + str(total_nfixels));          //
+                                        " contains " + str(H.size(0)) + " fixels," +                    //
+                                        " but the index image contains " + str(total_nfixels));         //
     } catch (InvalidDirectoryException &) {
       throw;
     } catch (...) {
@@ -88,10 +88,10 @@ index_type validate_index_image(Image<index_type> index_image) {
   index_type total_nfixels = 0;
   for (const auto &[offset, count] : entries) {
     if (offset > std::numeric_limits<index_type>::max() - count)
-      throw InvalidDirectoryException("Fixel index image \"" + index_image.name() + "\"" + //
-                                      " contains an entry where offset (" + str(offset) + ") + count (" + str(count) +
-                                      ")" +                         //
-                                      " overflows the index type"); //
+      throw InvalidDirectoryException(                                                           //
+          "Fixel index image \"" + index_image.name() + "\"" +                                   //
+          " contains an entry where offset (" + str(offset) + ") + count (" + str(count) + ")" + //
+          " overflows the index type");                                                          //
     total_nfixels = std::max(total_nfixels, offset + count);
   }
 
@@ -101,7 +101,8 @@ index_type validate_index_image(Image<index_type> index_image) {
     if (to<index_type>(index_image.keyval().at(n_fixels_key)) != total_nfixels) {
       WARN("Total number of fixels indicated in header of image \"" + index_image.name() + "\"" + //
            " (" + str(nfixels_header) + ")" +                                                     //
-           " does not match that indicated in image data (" + str(total_nfixels) + ")");          //
+           " does not match that indicated in image data" +                                       //
+           " (" + str(total_nfixels) + ")");                                                      //
     }
   } catch (std::out_of_range) {
   }
@@ -141,6 +142,8 @@ void validate_header(const Header &H) {
   try {
     if (!H.datatype().is_floating_point())
       throw Exception("Does not contain floating-point data");
+    if (H.datatype().is_complex())
+      throw Exception("Complex data not supported in \"peaks\" format");
     try {
       check_effective_dimensionality(H, 4);
     } catch (Exception &e) {
@@ -202,7 +205,7 @@ const PeaksValidation validate_image(Image<float> image) {
         if (!result.fill_value.has_value()) {
           // First fill triplet seen — lock in the fill convention.
           result.fill_value = this_fill;
-        } else if (this_fill != *result.fill_value) {
+        } else if ((std::isnan(this_fill) ? 1 : 0) + (std::isnan(*result.fill_value) ? 1 : 0) == 1) {
           throw Exception("Peaks image \"" + image.name() + "\":" +        //
                           " mixed fill values detected" +                  //
                           " (both zero and NaN triplets are present);" +   //
@@ -221,14 +224,18 @@ const PeaksValidation validate_image(Image<float> image) {
       // ---------------------------------------------------------------
       // We already know the triplet is not all-NaN (handled above).
       // So this is a partial-NaN triplet, which is always invalid.
-      if (any_nan)
+      if (any_nan) {
         ++partial_nan_count;
+        continue;
+      }
 
       // ---------------------------------------------------------------
       // Check 5: Infinity values are not permitted.
       // ---------------------------------------------------------------
-      if (any_inf)
+      if (any_inf) {
         ++infinity_count;
+        continue;
+      }
 
       // Track the norm range.
       const float this_norm = std::sqrt(Math::pow2(x) + Math::pow2(y) + Math::pow2(z));
@@ -242,18 +249,23 @@ const PeaksValidation validate_image(Image<float> image) {
     }
   }
 
+  Exception e;
+  if (partial_nan_count > 0 || infinity_count > 0)
+    e.push_back("Peaks image \"" + image.name() + "\":");
+
   if (partial_nan_count > 0)
-    throw Exception("Peaks image \"" + image.name() + "\":" +                       //
-                    str(partial_nan_count) + " peak triplet" +                      //
-                    (partial_nan_count > 1 ? "s that contain" : " that contains") + //
-                    " a mixture of NaN and non-NaN values" +                        //
-                    " (a peak triplet must be either all-finite or all-NaN)");      //
+    e.push_back(str(partial_nan_count) + " peak triplet" +                      //
+                (partial_nan_count > 1 ? "s that contain" : " that contains") + //
+                " a mixture of NaN and non-NaN values" +                        //
+                " (a peak triplet must be either all-finite or all-NaN)");      //
 
   if (infinity_count > 0)
-    throw Exception("Peaks image \"" + image.name() + "\":" +                       //
-                    str(partial_nan_count) + " peak triplet" +                      //
-                    (partial_nan_count > 1 ? "s that contain" : " that contains") + //
-                    " impermitted infinity values");                                //
+    e.push_back(str(infinity_count) + " peak triplet" +                      //
+                (infinity_count > 1 ? "s that contain" : " that contains") + //
+                " impermitted infinity values");                             //
+
+  if (e.num())
+    throw e;
 
   return result;
 }

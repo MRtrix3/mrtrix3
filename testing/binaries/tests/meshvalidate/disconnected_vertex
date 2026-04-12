@@ -1,0 +1,12 @@
+#!/bin/bash
+# Ensure that if a vertex is not a member of any polygon,
+#   the correct error message is produced.
+
+rm -f tmp.vtk
+sed '5c\POINTS 643 float' meshconvert/in_ascii.vtk | \
+sed '648i\0.0 0.0 0.0' > tmp.vtk
+
+rm -f tmp.txt
+! ( meshvalidate tmp.vtk > tmp.txt 2>&1 )
+cat tmp.txt
+grep -E "Mesh \".+\": 1 vertex is not referenced by any polygon \\(disconnected vertex\\)" tmp.txt

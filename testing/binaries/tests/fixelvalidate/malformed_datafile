@@ -1,0 +1,13 @@
+#!/bin/bash
+# Ensure that if a fixel data file has the wrong number of fixels, the right error is produced.
+
+rm -rf tmp/
+mkdir tmp/
+cp fixel_image/index.mif tmp/index.mif
+cp fixel_image/directions.mif tmp/directions.mif
+mrconvert fixel_image/afd.mif -coord 0 0:999 tmp/afd.mif
+
+rm -f tmp.txt
+! ( fixelvalidate tmp/ > tmp.txt 2>&1 )
+cat tmp.txt
+grep -E "Fixel data file \".+\" in directory \".+\" contains .+ fixels, but the index image contains .+" tmp.txt

@@ -1,0 +1,9 @@
+#!/bin/bash
+# Verify that when the input image has a number of volumes not compatible with triplets encoding 3-vectors,
+#   an appropriate error message is produced.
+
+rm -f tmp.txt
+! ( mrconvert peaks.mif -coord 3 0:7 - | \
+    peaksvalidate - > tmp.txt 2>&1 )
+cat tmp.txt
+grep "Number of volumes must be a multiple of 3" tmp.txt

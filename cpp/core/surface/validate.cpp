@@ -165,9 +165,9 @@ void validate(const Mesh &mesh) {
     for (size_t i = 0; i != nq; ++i)
       check_poly(quads[i], i, "quad");
     if (duplicate_count > 0)
-      throw Exception("Mesh " + mesh.get_name() + "\": " +                       //
+      throw Exception("Mesh \"" + mesh.get_name() + "\": " +                     //
                       str(duplicate_count) + " duplicate polygon" +              //
-                      (duplicate_count > 0 ? "s" : "") + " detected" +           //
+                      (duplicate_count > 1 ? "s" : "") + " detected" +           //
                       " (polygons referencing the exact same set of vertices)"); //
   }
 

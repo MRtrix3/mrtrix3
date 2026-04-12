@@ -1,0 +1,8 @@
+#!/bin/bash
+# Basic test of operation with input as valid diffusion gradient table
+
+rm -f tmp.txt
+dirvalidate dirvalidate/grad.b 2>&1 | tee tmp.txt
+grep "in diffusion gradient table format" tmp.txt
+grep "All directions are of unit norm" tmp.txt
+! ( grep -E "\\bWARNING\\b" tmp.txt )

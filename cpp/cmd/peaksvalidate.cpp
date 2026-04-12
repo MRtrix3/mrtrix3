@@ -28,7 +28,7 @@ void usage() {
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  SYNOPSIS = "Validate a peaks (fixel directions) image";
+  SYNOPSIS = "Validate a \"peaks\" image (sets of 3-vectors encoding orientations per voxel)";
 
   DESCRIPTION
   + "This command checks that an image conforms to the requirements of a"

@@ -1,0 +1,24 @@
+#!/bin/bash
+# Verify that if the datatype of a non-linear warp image
+#   is either not floating-point or of complex datatype,
+#   a suitable error message is produced.
+
+##############################
+# Test 1: Not floating-point #
+##############################
+
+rm -f tmp.txt
+! ( mrconvert warp.mif -datatype int32 - | \
+    warpvalidate - > tmp.txt 2>&1 )
+cat tmp.txt
+grep "expected a floating\\-point data type" tmp.txt
+
+###########################
+# Test 1: Not real-valued #
+###########################
+
+rm -f tmp.txt
+! ( mrconvert warp.mif -datatype cfloat32 - | \
+    warpvalidate - > tmp.txt 2>&1 )
+cat tmp.txt
+grep "expected a real data type" tmp.txt

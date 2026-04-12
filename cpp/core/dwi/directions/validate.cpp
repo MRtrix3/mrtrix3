@@ -69,15 +69,15 @@ const DirectionsValidation validate(const MatrixType &M, std::string_view path, 
         inc_max = std::max(inc_max, inc);
         if (az < -two_pi || az > two_pi)
           throw Exception("Row " + str(r + 1) + ": " + //
-                          "azimuth value " + str(az) + " is outside the permitted range [-2π, 2π]");
+                          "azimuth value " + str(az) + " is outside the permitted range [-2pi, 2pi]");
         if (inc < -Math::pi || inc > Math::pi)
           throw Exception("Row " + str(r + 1) + ": " + //
-                          "inclination value " + str(inc) + " is outside the permitted range [-π, π]");
+                          "inclination value " + str(inc) + " is outside the permitted range [-pi, pi]");
       }
       if (az_max - az_min > two_pi - range_tol)
-        throw Exception("Range of azimuth values exceeds 2π");
+        throw Exception("Range of azimuth values exceeds 2pi");
       if (inc_max - inc_min > Math::pi - range_tol)
-        throw Exception("Range of inclination values exceeds π");
+        throw Exception("Range of inclination values exceeds pi");
 
     } break;
 
@@ -94,18 +94,15 @@ const DirectionsValidation validate(const MatrixType &M, std::string_view path, 
         const value_type y = M(r, 1);
         const value_type z = M(r, 2);
         if (x < -1.0 || x > 1.0)
-          throw Exception("Row " + str(r + 1) + ": " +                                          //
-                          "x component " + str(x) + " is outside the permitted range [-1, 1]"); //
+          throw Exception("Row " + str(r + 1) + ": " +                                              //
+                          "x component " + str(x) + " is outside the permitted range [-1.0, 1.0]"); //
         if (y < -1.0 || y > 1.0)
-          throw Exception("Row " + str(r + 1) + ": " +                                          //
-                          "y component " + str(y) + " is outside the permitted range [-1, 1]"); //
+          throw Exception("Row " + str(r + 1) + ": " +                                              //
+                          "y component " + str(y) + " is outside the permitted range [-1.0, 1.0]"); //
         if (z < -1.0 || z > 1.0)
-          throw Exception("Row " + str(r + 1) + ": " +                                          //
-                          "z component " + str(z) + " is outside the permitted range [-1, 1]"); //
-        const double norm = std::sqrt(x * x + y * y + z * z);
-        if (norm > 1.0 + unit_tol)
-          throw Exception("Row " + str(r + 1) + ": " +                  //
-                          "vector norm " + str(norm) + " exceeds 1.0"); //
+          throw Exception("Row " + str(r + 1) + ": " +                                              //
+                          "z component " + str(z) + " is outside the permitted range [-1.0, 1.0]"); //
+        const value_type norm = M.row(r).norm();
         if (std::abs(norm - value_type(1)) > unit_tol)
           ++result.n_non_unit;
       }
@@ -138,20 +135,17 @@ const DirectionsValidation validate(const MatrixType &M, std::string_view path, 
           throw Exception("Row " + str(r + 1) + ": " +           //
                           "b-value " + str(b) + " is negative"); //
         if (x < -1.0 || x > 1.0)
-          throw Exception("Row " + str(r + 1) + ": " +                                          //
-                          "x component " + str(x) + " is outside the permitted range [-1, 1]"); //
+          throw Exception("Row " + str(r + 1) + ": " +                                              //
+                          "x component " + str(x) + " is outside the permitted range [-1.0, 1.0]"); //
         if (y < -1.0 || y > 1.0)
-          throw Exception("Row " + str(r + 1) + ": " +                                          //
-                          "y component " + str(y) + " is outside the permitted range [-1, 1]"); //
+          throw Exception("Row " + str(r + 1) + ": " +                                              //
+                          "y component " + str(y) + " is outside the permitted range [-1.0, 1.0]"); //
         if (z < -1.0 || z > 1.0)
-          throw Exception("Row " + str(r + 1) + ": " +                                          //
-                          "z component " + str(z) + " is outside the permitted range [-1, 1]"); //
+          throw Exception("Row " + str(r + 1) + ": " +                                              //
+                          "z component " + str(z) + " is outside the permitted range [-1.0, 1.0]"); //
         if (b > bthresh) {
           // const value_type norm = M.block<1,3>(r, 0).norm();
           const value_type norm = M.block(r, 0, 1, 3).norm();
-          if (norm > 1.0 + unit_tol)
-            throw Exception("Row " + str(r + 1) + ": " +                  //
-                            "vector norm " + str(norm) + " exceeds 1.0"); //
           if (std::abs(norm - value_type(1)) > unit_tol)
             ++result.n_non_unit;
         }

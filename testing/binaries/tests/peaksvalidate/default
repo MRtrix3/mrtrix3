@@ -1,0 +1,9 @@
+#!/bin/bash
+# Verify default operation of the "peaksvalidate" command
+#   with a well-formed input file
+
+rm -f tmp.txt
+peaksvalidate peaks.mif 2>&1 | tee tmp.txt
+grep -E "3 peak slot\\(s\\) per voxel" tmp.txt
+grep "Fill value: none detected" tmp.txt
+grep -E "Peak norms: range .+quantitative amplitudes encoded in vector norm" tmp.txt

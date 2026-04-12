@@ -1,0 +1,12 @@
+#!/bin/bash
+# Ensure that if the index image has the wrong dimensions, the right error is produced.
+
+rm -rf tmp/
+mkdir tmp/
+mrconvert fixel_image/index.mif -coord 3 0 tmp/index.mif
+cp fixel_image/directions.mif tmp/directions.mif
+
+rm -f tmp.txt
+! ( fixelvalidate tmp/ > tmp.txt 2>&1 )
+cat tmp.txt
+grep "is not a valid fixel index image\\. Image must be 4D with 2 volumes in the 4th dimension" tmp.txt

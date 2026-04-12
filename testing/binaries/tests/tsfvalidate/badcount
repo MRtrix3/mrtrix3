@@ -1,0 +1,9 @@
+#!/bin/bash
+# Verify that when the number of streamlines indicated within the .tsf file header
+#   differs to the number of streamlines read from the file,
+#   an appropriate error message is emitted.
+
+rm -f tmp.txt
+! ( tsfvalidate tsfvalidate/badcount.tsf tckvalidate/badcount.tck > tmp.txt 2>&1 )
+cat tmp.txt
+grep -E "header \"count\" .+ does not match the number of scalar sequences read" tmp.txt

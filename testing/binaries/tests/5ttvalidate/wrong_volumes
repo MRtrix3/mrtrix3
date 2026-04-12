@@ -1,0 +1,8 @@
+#!/bin/bash
+# Ensure that input image having wrong number of volumes yields an error
+
+rm -f tmp.txt
+! ( mrconvert 5ttedit/in.mif -coord 3 0:3 - | \
+    5ttvalidate - > tmp.txt 2>&1 )
+cat tmp.txt
+grep "Should be 4D image with 5 volumes" tmp.txt
