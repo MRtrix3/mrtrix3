@@ -333,6 +333,18 @@ template <class HeaderType> inline List contiguous_along_spatial_axes(const Head
   return strides;
 }
 
+//! check that the stride order of the first common spatial dimensions of two headers matches
+template <class HeaderType1, class HeaderType2>
+inline bool spatial_stride_order_matches(const HeaderType1 &header1, const HeaderType2 &header2) {
+  Stride::List stride1 = Stride::get_symbolic(header1);
+  Stride::List stride2 = Stride::get_symbolic(header2);
+  const signed long int offset = (signed long int)stride2[0] - (signed long int)stride1[0];
+  for (size_t i = 1; i < std::min<unsigned long>(3, std::min(stride1.size(), stride2.size())); i++)
+    if ((signed long int)stride2[i] - (signed long int)stride1[i] - offset != 0)
+      return false;
+  return true;
+}
+
 List __from_command_line(const List &current);
 
 template <class HeaderType>
