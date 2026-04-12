@@ -1,0 +1,19 @@
+#!/bin/bash
+# Verify "5ttgen fsl" operation when -fast_dir is used
+# Only ensure successful completion
+# Make sure that 5ttgen fsl doesn't invoke FAST
+
+mkdir tmp_fast
+
+mrconvert BIDS/sub-01/anat/sub-01_T1w.nii.gz tmp_fast/T1w.nii
+
+fast tmp_fast/T1w.nii tmp_fast/prefix
+
+echo "false" > tmp_fast/fast
+chmod 775 tmp_fast/fast
+export PATH=$(pwd)/tmp_fast:$PATH
+
+5ttgen fsl BIDS/sub-01/anat/sub-01_T1w.nii.gz tmp.mif \
+-fast_dir tmp_fast/ \
+-force
+

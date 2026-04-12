@@ -24,6 +24,25 @@ _SUFFIX = ''
 
 
 # Functions that may be useful for scripts that interface with FMRIB FSL tools
+# If user provides directory containing pre-calculated FIRST outputs,
+#   need to:
+#   - Ensure set of files to use is unambiguous
+#   - Check that everything expected to be present is there
+#   - Yield the filename prefix so that files can be loaded easily
+def check_first_input(dirpath, structures): #pylint: disable=unused-variable
+  candidate_files = list(dirpath.glob('*_first.vtk'))
+  filename_prefix = candidate_files[0][:-(6+len('_first.vtk'))]
+  if not all(item.startswith(filename_prefix) for item in candidate_files):
+    raise MRtrixError(f'Inconsistency in filename prefixes in FIRST input directory {dirpath}')
+  for struct in structures:
+    filename = f'{filename_prefix}{struct}_first.vtk'
+    inpath = dirpath / filename
+    if not inpath.is_file():
+      raise MRtrixError(f'Unable to find VTK file for structure "{struct}" in FIRST input directory '
+                        f'(expected location: {inpath})')
+  # TODO Also decide on a suitable image to use as the reference for conversion to realspace,
+  #   and check for its presence
+  return filename_prefix
 
 # FSL's run_first_all script can be difficult to wrap, since:
 #   - It may or may not run via SGE or SLURM, and therefore execution control will
@@ -36,7 +55,7 @@ _SUFFIX = ''
 #     later because eg. they are being executed via SGE
 # This function attempts to provide a unified interface for querying whether or not
 #   FIRST was successful, taking all of these into account
-def check_first(prefix, structures=None, first_stdout=None): #pylint: disable=unused-variable
+def check_first_output(prefix, structures=None, first_stdout=None): #pylint: disable=unused-variable
   from mrtrix3 import app, path, utils #pylint: disable=import-outside-toplevel
   job_id = None
   if first_stdout:
