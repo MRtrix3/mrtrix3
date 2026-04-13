@@ -1,7 +1,0 @@
-#!/bin/bash
-# Ensure that when an image known to be stored using the _new_ SH convention
-#   is explicitly requested in the _old_ SH convention,
-#   the result matches an image that was manually confirmed to be stored using the old convention
-mrconvert dwi2fod/out.mif tmp.mif -force
-shbasis tmp.mif -convert old
-testing_diff_image tmp.mif shbasis/old.mif -frac 1e-5

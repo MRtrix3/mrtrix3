@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,6 +22,8 @@
 #include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/scalar_file.h"
+#include "enum.h"
+#include "file/matrix.h"
 #include "file/ofstream.h"
 #include "file/path.h"
 #include "image.h"
@@ -35,11 +37,13 @@
 #include "ordered_thread_queue.h"
 #include "thread.h"
 
+#include <optional>
+#include <tcb/span.hpp>
+
 using namespace MR;
 using namespace App;
 
-enum stat_tck { MEAN, MEDIAN, MIN, MAX, NONE };
-const std::vector<std::string> statistics = {"mean", "median", "min", "max"};
+enum class Statistic { MEAN, MEDIAN, MIN, MAX };
 enum interp_type { NEAREST, LINEAR, PRECISE };
 enum contrast_type { SCALAR, SH };
 
@@ -74,10 +78,9 @@ void usage ()
   + Argument ("values", "the output sampled values").type_file_out();
 
   OPTIONS
-
-  + Option ("stat_tck", "compute some statistic from the values along each streamline "
-                        "(options are: " + join(statistics, ",") + ")")
-    + Argument ("statistic").type_choice (statistics)
+  + Option ("stat_tck", "compute some statistic from the values along each streamline;"
+                        " options are: " + MR::Enum::join<Statistic>())
+    + Argument ("statistic").type_choice<Statistic>()
 
   + Option ("nointerp", "do not use trilinear interpolation when sampling image values")
 
@@ -146,10 +149,12 @@ protected:
 class SamplerBase {
 
 public:
-  SamplerBase(const contrast_type contrast, const stat_tck statistic) //
-      : _contrast(contrast),                                          //
-        _statistic(statistic) {}                                      //
+  SamplerBase(const contrast_type contrast, const std::optional<stat_tck> &statistic) //
+      : _contrast(contrast),                                                          //
+        _statistic(statistic) {}                                                      //
+
   SamplerBase(const SamplerBase &that) = default;
+
   virtual ~SamplerBase() {}
 
   // Note: While these are shown as virtual,
@@ -165,23 +170,25 @@ public:
 
   virtual size_t num_contrasts() const = 0;
   contrast_type contrast() const { return _contrast; }
-  stat_tck statistic() const { return _statistic; }
+  const std::optional<stat_tck> &statistic() const { return _statistic; }
 
 protected:
   const contrast_type _contrast;
-  const stat_tck _statistic;
+  const std::optional<stat_tck> _statistic;
 };
 
 template <class Interp> class SamplerNonPreciseBase : public SamplerBase {
 public:
   using BaseType = SamplerBase;
-  SamplerNonPreciseBase(Image<value_type> &image, const contrast_type contrast, const stat_tck statistic)
+  SamplerNonPreciseBase(Image<value_type> &image,
+                        const contrast_type contrast,
+                        const std::optional<stat_tck> &statistic)
       : BaseType(contrast, statistic), interp(image) {}
   SamplerNonPreciseBase(const SamplerNonPreciseBase &that) = default;
   virtual ~SamplerNonPreciseBase() = default;
 
   bool operator()(const DWI::Tractography::Streamline<value_type> &tck, OnePerStreamline &out) override {
-    assert(statistic() != stat_tck::NONE);
+    assert(statistic().has_value());
     out.index = tck.get_index();
     DWI::Tractography::TrackScalar<value_type> values;
     (*this)(tck, values);
@@ -192,7 +199,7 @@ public:
   }
 
   bool operator()(const DWI::Tractography::Streamline<value_type> &tck, ManyPerStreamline &out) override {
-    assert(statistic() != stat_tck::NONE);
+    assert(statistic().has_value());
     out.index = tck.get_index();
     matrix_type values;
     (*this)(tck, values);
@@ -231,6 +238,7 @@ private:
 
   template <class VectorType>
   value_type compute_statistic(const VectorType &data, const std::vector<value_type> &weights) const {
+    assert(statistic().has_value());
     switch (statistic()) {
     case stat_tck::MEAN: {
       value_type integral = value_type(0);
@@ -275,9 +283,6 @@ private:
       }
       return cast_to_nan ? std::numeric_limits<value_type>::quiet_NaN() : value;
     } break;
-    default:
-      assert(0);
-      return std::numeric_limits<value_type>::signaling_NaN();
     }
   }
 };
@@ -285,9 +290,9 @@ private:
 class SamplerPreciseBase : public SamplerBase {
 public:
   using BaseType = SamplerBase;
-  SamplerPreciseBase(Image<value_type> &image, const contrast_type contrast, const stat_tck statistic)
+  SamplerPreciseBase(Image<value_type> &image, const contrast_type contrast, const std::optional<stat_tck> &statistic)
       : BaseType(contrast, statistic), image(image), mapper(new DWI::Tractography::Mapping::TrackMapperBase(image)) {
-    assert(statistic != stat_tck::NONE);
+    assert(statistic.has_value());
     mapper->set_use_precise_mapping(true);
   }
   SamplerPreciseBase(const SamplerPreciseBase &that) = default;
@@ -315,7 +320,7 @@ protected:
   value_type compute_statistic(std::vector<ValueLength> &data) const {
     if (data.empty())
       return std::numeric_limits<value_type>::quiet_NaN();
-    switch (statistic()) {
+    switch (statistic().value()) {
     case stat_tck::MEAN: {
       value_type integral = value_type(0);
       value_type sum_lengths = value_type(0);
@@ -367,10 +372,6 @@ protected:
       }
       return cast_to_nan ? std::numeric_limits<value_type>::quiet_NaN() : maxvalue;
     }
-    default: {
-      assert(0);
-      return std::numeric_limits<value_type>::signaling_NaN();
-    }
     }
   }
 };
@@ -379,7 +380,9 @@ class SamplerPreciseScalar : public SamplerPreciseBase {
 public:
   using BaseType = SamplerPreciseBase;
   using SamplerPreciseBase::ValueLength;
-  SamplerPreciseScalar(Image<value_type> &image, const stat_tck statistic, const Image<value_type> &precalc_tdi)
+  SamplerPreciseScalar(Image<value_type> &image,
+                       const std::optional<stat_tck> &statistic,
+                       const Image<value_type> &precalc_tdi)
       : BaseType(image, contrast_type::SCALAR, statistic), tdi(precalc_tdi) {}
   SamplerPreciseScalar(const SamplerPreciseScalar &that) = default;
 
@@ -440,7 +443,7 @@ template <class Interp> class SamplerNonPreciseScalar : public SamplerNonPrecise
 public:
   using BaseType = SamplerNonPreciseBase<Interp>;
   using BaseType::interp;
-  SamplerNonPreciseScalar(Image<value_type> &image, const stat_tck statistic)
+  SamplerNonPreciseScalar(Image<value_type> &image, const std::optional<stat_tck> &statistic)
       : BaseType(image, contrast_type::SCALAR, statistic) {}
   SamplerNonPreciseScalar(const SamplerNonPreciseScalar &that) = default;
 
@@ -487,7 +490,7 @@ template <class Interp> class SamplerNonPreciseSH : public SamplerNonPreciseBase
 public:
   using BaseType = SamplerNonPreciseBase<Interp>;
   using BaseType::interp;
-  SamplerNonPreciseSH(Image<value_type> &image, const stat_tck statistic)
+  SamplerNonPreciseSH(Image<value_type> &image, const std::optional<stat_tck> &statistic)
       : BaseType(image, contrast_type::SH, statistic),
         sh_precomputer(std::make_shared<Math::SH::PrecomputedAL<default_type>>()),
         sh_coeffs(image.size(3)) {
@@ -549,11 +552,11 @@ class SamplerPreciseSH : public SamplerPreciseBase {
 public:
   using BaseType = SamplerPreciseBase;
   using SamplerPreciseBase::ValueLength;
-  SamplerPreciseSH(Image<value_type> &image, const stat_tck statistic)
+  SamplerPreciseSH(Image<value_type> &image, const std::optional<stat_tck> &statistic)
       : BaseType(image, contrast_type::SH, statistic),
         sh_precomputer(std::make_shared<Math::SH::PrecomputedAL<default_type>>()),
         sh_coeffs(image.size(3)) {
-    assert(statistic != stat_tck::NONE);
+    assert(statistic().has_value());
     sh_precomputer->init(Math::SH::LforN(image.size(3)));
   }
   SamplerPreciseSH(const SamplerPreciseSH &that) = default;
@@ -576,8 +579,7 @@ public:
   }
 
   bool operator()(const DWI::Tractography::Streamline<value_type> &tck, ManyPerStreamline &out) override {
-    throw Exception("Implementation error:"
-                    " Unable to sample multiple SH contrasts");
+    throw Exception("Implementation error: unable to sample multiple SH contrasts");
     return false;
   }
 
@@ -634,20 +636,20 @@ private:
 class Receiver_OnePerStreamline : public ReceiverBase {
 public:
   using InputType = OnePerStreamline;
-  Receiver_OnePerStreamline(const size_t num_tracks, const std::string &path)
+  Receiver_OnePerStreamline(const size_t num_tracks, std::string_view path)
       : ReceiverBase(num_tracks, false, path), data(vector_type::Zero(num_tracks)) {}
   Receiver_OnePerStreamline(const Receiver_OnePerStreamline &) = delete;
   ~Receiver_OnePerStreamline() { File::Matrix::save_vector(data, path); }
 
   bool operator()(InputType &in) {
-    if (in.index >= size_t(data.size()))
+    if (in.index >= static_cast<size_t>(data.size()))
       data.conservativeResizeLike(vector_type::Zero(in.index + 1));
     data[in.index] = in.value;
     ++(*this);
     return true;
   }
 
-  void save(const std::string &path) { File::Matrix::save_vector(data, path); }
+  void save(std::string_view path) { File::Matrix::save_vector(data, path); }
 
 private:
   vector_type data;
@@ -656,7 +658,7 @@ private:
 class Receiver_ManyPerStreamline : public ReceiverBase {
 public:
   using InputType = ManyPerStreamline;
-  Receiver_ManyPerStreamline(const size_t num_tracks, const size_t num_metrics, const std::string &path)
+  Receiver_ManyPerStreamline(const size_t num_tracks, const size_t num_metrics, std::string_view path)
       : ReceiverBase(num_tracks, false, path), data(matrix_type::Zero(num_tracks, num_metrics)) {}
   Receiver_ManyPerStreamline(const Receiver_ManyPerStreamline &) = delete;
   ~Receiver_ManyPerStreamline() { File::Matrix::save_matrix(data, path); }
@@ -677,7 +679,7 @@ private:
 class Receiver_PerVertex : public ReceiverBase {
 public:
   using InputType = DWI::Tractography::TrackScalar<value_type>;
-  Receiver_PerVertex(const DWI::Tractography::Properties &properties, const size_t num_tracks, const std::string &path)
+  Receiver_PerVertex(const DWI::Tractography::Properties &properties, const size_t num_tracks, std::string_view path)
       : ReceiverBase(num_tracks, true, path) {
     if (Path::has_suffix(path, ".tsf")) {
       tsf.reset(new DWI::Tractography::ScalarWriter<value_type>(path, properties));
@@ -732,7 +734,7 @@ void execute(DWI::Tractography::Reader<value_type> &reader,
              Image<value_type> &image,
              const interp_type interp,
              const bool sample_sh,
-             const stat_tck statistic,
+             const std::optional<stat_tck> &statistic,
              Image<value_type> &tdi,
              ReceiverType &receiver) {
   if (sample_sh) {
@@ -774,9 +776,9 @@ void execute(DWI::Tractography::Reader<value_type> &reader,
              Image<value_type> &image,
              const interp_type interp,
              const contrast_type contrast,
-             const stat_tck statistic,
+             const std::optional<stat_tck> &statistic,
              Image<value_type> &tdi,
-             const std::string &path) {
+             std::string_view path) {
   const size_t num_metrics = image.ndim() == 4 && contrast == contrast_type::SCALAR ? image.size(3) : 1;
   if (statistic == stat_tck::NONE) {
     Receiver_PerVertex receiver(properties, num_tracks, path);
@@ -811,7 +813,7 @@ void run() {
       // clang-format on
     }
   } else if (plausibly_SH) {
-    if (bool(opt[0][0])) {
+    if (static_cast<bool>(opt[0][0])) {
       DEBUG("User specified -sh true, "
             "and image can be interpreted as spherical harmonics; "
             "spherical harmonics sampling will be used");
@@ -822,7 +824,7 @@ void run() {
             "it will instead be sampled as individual volumes");
     }
   } else {
-    if (bool(opt[0][0])) {
+    if (static_cast<bool>(opt[0][0])) {
       throw Exception("Cannot sample spherical harmonic function amplitudes, "
                       "as input image cannot be interpreted as such");
     } else {
@@ -831,12 +833,12 @@ void run() {
     }
   }
 
-  opt = get_options("stat_tck");
-  const stat_tck statistic = opt.empty() ? stat_tck::NONE : stat_tck(int(opt[0][0]));
+  const std::optional<stat_tck> statistic =
+      opt.empty() ? std::nullopt : std::optional<Statistic>(get_option_choice<Statistic>("stat_tck", Statistic::MEAN));
 
   size_t num_metrics = 1;
   if (H.ndim() == 4 && H.size(3) > 1 && contrast == contrast_type::SCALAR) {
-    if (statistic == stat_tck::NONE)
+    if (!statistic.has_value())
       throw Exception("Cannot export per-vertex values for more than one contrast");
     num_metrics = H.size(3);
     INFO("Input image is 4D; output will be 2D matrix");
@@ -844,7 +846,7 @@ void run() {
     throw Exception("Input image is of unsupported dimensionality");
   }
 
-  if (contrast == contrast_type::SCALAR && H.ndim() == 4 && H.size(3) != 1 && statistic != stat_tck::NONE) {
+  if (contrast == contrast_type::SCALAR && H.ndim() == 4 && H.size(3) != 1 && statistic.has_value()) {
     INFO("Input image is 4D; output will be 2D matrix");
   } else if (H.ndim() > 4) {
     throw Exception("Input image is of unsupported dimensionality");
@@ -855,13 +857,13 @@ void run() {
   if (nointerp && precise)
     throw Exception("Options -nointerp and -precise are mutually exclusive");
   const interp_type interp = nointerp ? interp_type::NEAREST : (precise ? interp_type::PRECISE : interp_type::LINEAR);
-  if (statistic == stat_tck::NONE && interp == interp_type::PRECISE)
+  if (!statistic.has_value() && interp == interp_type::PRECISE)
     throw Exception("Cannot combine per-vertex values with precise mapping mechanism");
   const size_t num_tracks = properties.find("count") == properties.end() ? 0 : to<size_t>(properties["count"]);
 
   Image<value_type> tdi;
-  if (get_options("use_tdi_fraction").size()) {
-    if (statistic == stat_tck::NONE)
+  if (!get_options("use_tdi_fraction").empty()) {
+    if (!statistic.has_value())
       throw Exception("Cannot use -use_tdi_fraction option unless a per-streamline statistic is used");
     if (contrast == contrast_type::SH)
       throw Exception("Cannot use -use_tdi_fraction option in conjunction with SH function sampling");

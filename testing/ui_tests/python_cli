@@ -1,0 +1,101 @@
+#!/bin/bash
+# Various tests of the functionality of the Pyhon command-line interface
+
+# Utilisation of all argument types
+trap "rm -rf tmp-dirin/ tmp-filein.txt tmp-tracksin.tck" EXIT; \
+mkdir -p tmp-dirin/ \
+    && touch tmp-filein.txt \
+    && touch tmp-tracksin.tck \
+    && testing_python_cli \
+        -flag \
+        -string_implicit my_implicit_string \
+        -string_explicit my_explicit_string \
+        -choice One \
+        -bool false \
+        -int_builtin 0 \
+        -float_builtin 0.0 \
+        -int_unbound 0 \
+        -int_nonneg 1 \
+        -int_bound 50 \
+        -float_unbound 0.0 \
+        -float_nonneg 1.0 \
+        -float_bound 0.5 \
+        -int_seq 1,2,3 \
+        -float_seq 0.1,0.2,0.3 \
+        -dir_in tmp-dirin/ \
+        -dir_out tmp-dirout/ \
+        -file_in tmp-filein.txt \
+        -file_out tmp-fileout.txt \
+        -tracks_in tmp-tracksin.tck \
+        -tracks_out tmp-tracksout.tck \
+        -custom my_custom
+
+# Ensure that export of the command-line interfaces in various file formats obeys expectations
+trap "rm -f tmp.txt" EXIT; \
+    testing_python_cli -help | \
+    tail -n +3 | \
+    diff -a --strip-trailing-cr - python_cli/help.txt
+trap "rm -f tmp.txt" EXIT; \
+    testing_python_cli __print_full_usage__ | \
+    diff -a --strip-trailing-cr - python_cli/full_usage.txt
+trap "rm -f tmp.md" EXIT; \
+    testing_python_cli __print_usage_markdown__ | \
+    diff -a --strip-trailing-cr - python_cli/markdown.md
+trap "rm -f tmp.rst" EXIT; \
+    testing_python_cli __print_usage_rst__ | \
+    diff -a --strip-trailing-cr - python_cli/restructured_text.rst
+
+# Test various argument types for both appropriate and inappropriate inputs
+testing_python_cli -bool false
+testing_python_cli -bool False
+testing_python_cli -bool FALSE
+testing_python_cli -bool true
+testing_python_cli -bool True
+testing_python_cli -bool TRUE
+testing_python_cli -bool 0
+testing_python_cli -bool 1
+testing_python_cli -bool 2
+! testing_python_cli -bool NotABool
+! testing_python_cli -int_builtin 0.1
+! testing_python_cli -int_builtin NotAnInt
+! testing_python_cli -int_unbound 0.1
+! testing_python_cli -int_unbound NotAnInt
+! testing_python_cli -int_nonneg -1
+! testing_python_cli -int_bound 101
+! testing_python_cli -float_builtin NotAFloat
+! testing_python_cli -float_unbound NotAFloat
+! testing_python_cli -float_nonneg -0.1
+! testing_python_cli -float_bound 1.1
+! testing_python_cli -int_seq 0.1,0.2,0.3
+! testing_python_cli -int_seq Not,An,Int,Seq
+! testing_python_cli -float_seq Not,A,Float,Seq
+
+# Verify correct parsing of option arguments that begin with a dash.
+testing_python_cli -int_unbound -123 2>&1 | grep "int_unbound: -123"
+! testing_python_cli -int_unbound --1
+testing_python_cli -float_unbound -1.5 2>&1 | grep "float_unbound: -1.5"
+! testing_python_cli -float_unbound --1.5
+#testing_python_cli -file_out - 2>&1 | grep "file_out: -"
+! testing_python_cli -int_seq --1,1
+! testing_python_cli -float_seq --1.5,1.5
+# Following tests currently *not* working due to argparse
+#testing_python_cli -float_seq -1.5,1.5 2>&1 | grep "float_seq: \[-1.5,1.5\]"
+#testing_python_cli -string_explicit "-a-b-c" 2>&1 | grep "string: -a-b-c"
+#testing_python_cli -string_implicit "-a-b-c" 2>&1 | grep "string: -a-b-c"
+#testing_python_cli -int_seq -1,-1,-1,5 2>&1 | grep "int_seq: \[-1,-1,-1,5\]"
+
+# Tests relating to filesystem paths:
+# - Ensure that absent inputs result in appropriate error
+# - Ensure that pre-existing output paths are handled accordingly
+#   based on presence or absence of -force option
+rm -rf tmp-dirin/ && ! testing_python_cli -dir_in tmp-dirin/
+trap "rm -rf tmp-dirout/" EXIT; mkdir -p tmp-dirout/ && ! testing_python_cli -dir_out tmp-dirout/
+trap "rm -rf tmp-dirout/" EXIT; mkdir -p tmp-dirout/ && testing_python_cli -dir_out tmp-dirout/ -force
+rm -f tmp-filein.txt && ! testing_python_cli -file_in tmp-filein.txt
+trap "rm -f tmp-fileout.txt" EXIT; touch tmp-fileout.txt && ! testing_python_cli -file_out tmp-fileout.txt
+trap "rm -f tmp-fileout.txt" EXIT; touch tmp-fileout.txt && testing_python_cli -file_out tmp-fileout.txt -force
+rm -f tmp-tracksin.tck && ! testing_python_cli -tracks_in tmp-tracksin.tck
+trap "rm -f tmp-filein.txt" EXIT; touch tmp-filein.txt && ! testing_python_cli -tracks_in tmp-filein.txt
+trap "rm -f tmp-tracksout.txt" EXIT; touch tmp-tracksout.tck && ! testing_python_cli -tracks_out tmp-tracksout.tck
+trap "rm -f tmp-tracksout.txt" EXIT; touch tmp-tracksout.tck && testing_python_cli -tracks_out tmp-tracksout.tck -force
+

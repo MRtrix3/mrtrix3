@@ -1,0 +1,12 @@
+#!/bin/bash
+# Verify operation of the "peakscheck" command
+#   when the input image is in spherical rather than 3-vector format
+# With an adequate number of streamlines generated,
+#   the command should correctly identify that the input data
+#   already conform to the expected format & reference
+
+peaksconvert peakscheck/posdet_xyz3vector.mif \
+    -out_format spherical \
+    - | \
+peakscheck - \
+    -in_format spherical

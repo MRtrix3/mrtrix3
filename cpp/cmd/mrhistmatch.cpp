@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,6 +19,7 @@
 
 #include "command.h"
 #include "datatype.h"
+#include "enum.h"
 #include "header.h"
 #include "image.h"
 
@@ -29,7 +30,7 @@
 using namespace MR;
 using namespace App;
 
-const std::vector<std::string> choices = {"scale", "linear", "nonlinear"};
+enum class MatchType { SCALE, LINEAR, NONLINEAR };
 
 // clang-format off
 void usage() {
@@ -40,7 +41,7 @@ void usage() {
 
   ARGUMENTS
     + Argument ("type", "type of histogram matching to perform;"
-                        " options are: " + join(choices, ",")).type_choice (choices)
+                        " options are: " + MR::Enum::join<MatchType>() + ".").type_choice<MatchType>()
     + Argument ("input", "the input image to be modified").type_image_in ()
     + Argument ("target", "the input image from which to derive the target histogram").type_image_in()
     + Argument ("output", "the output image").type_image_out();
@@ -111,10 +112,10 @@ void match_linear(Image<float> &input,
   Eigen::Matrix<default_type, Eigen::Dynamic, 1> output_vector(input_data.size());
   for (size_t input_index = 0; input_index != input_data.size() - 1; ++input_index) {
     input_matrix(input_index, 0) = input_data[input_index];
-    const default_type output_position =
-        (target_data.size() - 1) * (default_type(input_index) / default_type(input_data.size() - 1));
-    const size_t target_index_lower = std::floor(output_position);
-    const default_type mu = output_position - default_type(target_index_lower);
+    const default_type output_position = (target_data.size() - 1) * (static_cast<default_type>(input_index) /
+                                                                     static_cast<default_type>(input_data.size() - 1));
+    const size_t target_index_lower = static_cast<size_t>(std::floor(output_position));
+    const default_type mu = output_position - static_cast<default_type>(target_index_lower);
     output_vector[input_index] =
         ((1.0 - mu) * target_data[target_index_lower]) + (mu * target_data[target_index_lower + 1]);
   }
@@ -200,14 +201,14 @@ void run() {
     check_dimensions(target, mask_target, 0, 3);
   }
 
-  switch (int(argument[0])) {
-  case 0: // Scale
+  switch (MR::Enum::from_name<MatchType>(argument[0])) {
+  case MatchType::SCALE:
     match_linear(input, target, mask_input, mask_target, false);
     break;
-  case 1: // Linear
+  case MatchType::LINEAR:
     match_linear(input, target, mask_input, mask_target, true);
     break;
-  case 2: // Non-linear
+  case MatchType::NONLINEAR:
     match_nonlinear(input, target, mask_input, mask_target, get_option_value("bins", 0));
     break;
   default:

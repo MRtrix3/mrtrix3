@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,11 +20,11 @@
 #include "mrview/sync/client.h"
 #include "mrview/sync/localsocketreader.h"
 
+namespace MR::GUI::MRView::Sync {
+
 // maximum number of inter process syncers that are allowed. This can be
 // raised, but may reduce performance when new IPS are created.
-#define MAX_NO_ALLOWED 32
-
-namespace MR::GUI::MRView::Sync {
+constexpr ssize_t maximum_instances = 32;
 
 /**
  * Sends and receives information from other MRView processes
@@ -34,8 +34,6 @@ class InterprocessCommunicator : public QObject {
 
 public:
   InterprocessCommunicator();
-  static void Int32ToChar(char a[], int n);
-  static int CharTo32bitNum(char a[]);
   bool SendData(QByteArray data); // sends data to be synced
 
 private slots:
@@ -43,9 +41,9 @@ private slots:
   void OnDataReceived(std::vector<std::shared_ptr<QByteArray>> dat);
 
 signals:
-  void SyncDataReceived(
-      std::vector<std::shared_ptr<QByteArray>> data); // fires when data is received which is for syncing. It is
-                                                      // up to listeners to validate and store this value
+  // Fires when data is received which is for syncing.
+  // It is up to listeners to validate and store this value
+  void SyncDataReceived(std::vector<std::shared_ptr<QByteArray>> data);
 
 private:
   int id;                                                          // id which is unique between mrview processes

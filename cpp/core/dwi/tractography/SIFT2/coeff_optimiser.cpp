@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -26,7 +26,7 @@ CoefficientOptimiserBase::CoefficientOptimiserBase(TckFactor &tckfactor,
                                                    StreamlineStats &step_stats,
                                                    StreamlineStats &coefficient_stats,
                                                    unsigned int &nonzero_streamlines,
-                                                   BitSet &fixels_to_exclude,
+                                                   fixel_mask_type &fixels_to_exclude,
                                                    double &sum_costs)
     : master(tckfactor),
       mu(tckfactor.mu()),
@@ -45,7 +45,7 @@ CoefficientOptimiserBase::CoefficientOptimiserBase(TckFactor &tckfactor,
       local_stats_steps(),
       local_stats_coefficients(),
       local_nonzero_count(0),
-      local_to_exclude(fixels_to_exclude.size()),
+      local_to_exclude(fixel_mask_type::Zero(fixels_to_exclude.size())),
       local_sum_costs(0.0) {
 }
 
@@ -67,7 +67,7 @@ CoefficientOptimiserBase::CoefficientOptimiserBase(const CoefficientOptimiserBas
       local_stats_steps(),
       local_stats_coefficients(),
       local_nonzero_count(0),
-      local_to_exclude(fixels_to_exclude.size()),
+      local_to_exclude(fixel_mask_type::Zero(that.fixels_to_exclude.size())),
       local_sum_costs(0.0) {
 }
 
@@ -86,7 +86,7 @@ CoefficientOptimiserBase::~CoefficientOptimiserBase() {
   step_stats += local_stats_steps;
   coefficient_stats += local_stats_coefficients;
   nonzero_streamlines += local_nonzero_count;
-  fixels_to_exclude |= local_to_exclude;
+  fixels_to_exclude = fixels_to_exclude || local_to_exclude;
   sum_costs += local_sum_costs;
 }
 
@@ -148,7 +148,7 @@ bool CoefficientOptimiserBase::operator()(const SIFT::TrackIndexRange &range) {
         std::ofstream out("soi_ls_coeff.csv", std::ios_base::out | std::ios_base::app | std::ios_base::ate);
         LineSearchFunctor line_search_functor(track_index, master, this_projected_step);
         for (size_t i = 0; i != 2001; ++i) {
-          const float dFs = 0.001 * (float(i) - 1000.0);
+          const float dFs = 0.001F * (static_cast<float>(i) - 1000.0F);
           if (i)
             out << ",";
           out << line_search_functor(dFs);
@@ -209,7 +209,7 @@ CoefficientOptimiserGSS::CoefficientOptimiserGSS(TckFactor &tckfactor,
                                                  StreamlineStats &step_stats,
                                                  StreamlineStats &coefficient_stats,
                                                  unsigned int &nonzero_streamlines,
-                                                 BitSet &fixels_to_exclude,
+                                                 fixel_mask_type &fixels_to_exclude,
                                                  double &sum_costs)
     : CoefficientOptimiserBase(
           tckfactor, step_stats, coefficient_stats, nonzero_streamlines, fixels_to_exclude, sum_costs) {}
@@ -239,7 +239,7 @@ CoefficientOptimiserQLS::CoefficientOptimiserQLS(TckFactor &tckfactor,
                                                  StreamlineStats &step_stats,
                                                  StreamlineStats &coefficient_stats,
                                                  unsigned int &nonzero_streamlines,
-                                                 BitSet &fixels_to_exclude,
+                                                 fixel_mask_type &fixels_to_exclude,
                                                  double &sum_costs)
     : CoefficientOptimiserBase(
           tckfactor, step_stats, coefficient_stats, nonzero_streamlines, fixels_to_exclude, sum_costs),
@@ -285,7 +285,7 @@ CoefficientOptimiserIterative::CoefficientOptimiserIterative(TckFactor &tckfacto
                                                              StreamlineStats &step_stats,
                                                              StreamlineStats &coefficient_stats,
                                                              unsigned int &nonzero_streamlines,
-                                                             BitSet &fixels_to_exclude,
+                                                             fixel_mask_type &fixels_to_exclude,
                                                              double &sum_costs)
     : CoefficientOptimiserBase(
           tckfactor, step_stats, coefficient_stats, nonzero_streamlines, fixels_to_exclude, sum_costs)
@@ -308,7 +308,7 @@ CoefficientOptimiserIterative::CoefficientOptimiserIterative(const CoefficientOp
 CoefficientOptimiserIterative::~CoefficientOptimiserIterative() {
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG
   Thread::Mutex::Lock lock(master.mutex);
-  fprintf(stderr, "Mean number of iterations: %f\n", iter_count / float(total));
+  fprintf(stderr, "Mean number of iterations: %f\n", static_cast<float>(iter_count) / static_cast<float>(total));
 #endif
 }
 
@@ -356,7 +356,7 @@ double CoefficientOptimiserIterative::get_coeff_change(const SIFT::track_t track
       dFs += change;
     }
 
-  } while ((++iter < 100) && (abs(change) > 0.001));
+  } while ((++iter < 100) && (std::fabs(change) > 0.001));
 
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG
   iter_count += iter;

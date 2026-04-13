@@ -30,7 +30,7 @@ Non-linear registration computes warps to map from both image1->image2 and image
 Options
 -------
 
--  **-type choice** the registration type. Valid choices are: rigid, affine, nonlinear, rigid_affine, rigid_nonlinear, affine_nonlinear, rigid_affine_nonlinear (Default: affine_nonlinear)
+-  **-type choice** the registration type. Valid choices are: rigid, affine, nonlinear, rigid_affine, rigid_nonlinear, affine_nonlinear, rigid_affine_nonlinear (default: affine_nonlinear)
 
 -  **-transformed image** *(multiple uses permitted)* image1 after registration transformed and regridded to the space of image2. Note that -transformed needs to be repeated for each contrast if multi-contrast registration is used.
 
@@ -205,7 +205,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** David Raffelt (david.raffelt@florey.edu.au) and Max Pietsch (maximilian.pietsch@kcl.ac.uk)
 
-**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2026 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

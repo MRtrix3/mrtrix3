@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -76,7 +76,7 @@ void usage() {
   REFERENCES
   + "Smith, R. E.; Raffelt, D.; Tournier, J.-D.; Connelly, A. " // Internal
     "Quantitative Streamlines Tractography: Methods and Inter-Subject Normalisation. "
-    "Open Science Framework, https://doi.org/10.31219/osf.io/c67kn.";
+    "OHBM Aperture, 10.52294/ApertureNeuro.2022.2.NEOD9565.";
 
 
   ARGUMENTS
@@ -128,8 +128,8 @@ class AFDConnectivity : public DWI::Tractography::SIFT::ModelBase<AFDConnFixel> 
 public:
   AFDConnectivity(Image<value_type> &fod_buffer,
                   const DWI::Directions::FastLookupSet &dirs,
-                  const std::string &tck_path,
-                  const std::string &wbft_path)
+                  std::string_view tck_path,
+                  std::string_view wbft_path)
       : DWI::Tractography::SIFT::ModelBase<AFDConnFixel>(fod_buffer, dirs),
         have_wbft(!wbft_path.empty()),
         all_fixels(false),
@@ -147,8 +147,8 @@ public:
 
   void set_all_fixels(const bool i) { all_fixels = i; }
 
-  value_type get(const std::string &path);
-  void save(const std::string &path);
+  value_type get(std::string_view path);
+  void save(std::string_view path);
 
 private:
   const bool have_wbft;
@@ -160,7 +160,7 @@ private:
   using Fixel_map<AFDConnFixel>::accessor;
 };
 
-value_type AFDConnectivity::get(const std::string &path) {
+value_type AFDConnectivity::get(std::string_view path) {
 
   Tractography::Properties properties;
   Tractography::Reader<value_type> reader(path, properties);
@@ -255,14 +255,14 @@ value_type AFDConnectivity::get(const std::string &path) {
 
     // sum_contributions currently stores sum of streamline lengths;
     //   turn into a mean length, then combine with volume to get a connectivity value
-    const double mean_length = sum_contributions / double(count);
+    const double mean_length = sum_contributions / static_cast<double>(count);
     sum_contributions = sum_volumes / mean_length;
   }
 
   return sum_contributions;
 }
 
-void AFDConnectivity::save(const std::string &path) {
+void AFDConnectivity::save(std::string_view path) {
   auto out = Image<value_type>::create(path, Fixel_map<AFDConnFixel>::header());
   VoxelAccessor v(accessor());
   for (auto l = Loop(v)(v, out); l; ++l) {

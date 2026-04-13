@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,13 +20,11 @@
 #include "math/math.h"
 #include "math/vector.h"
 
-namespace MR {
-namespace Math {
-namespace Rician {
+namespace MR::Math::Rician {
 
 template <typename T> inline T lnP(const T measured, const T actual, const T one_over_noise_squared) {
   T nm = one_over_noise_squared * measured;
-  T s = abs(actual);
+  T s = std::fabs(actual);
   return 0.5 * one_over_noise_squared * pow2(measured - s) - log(nm * Bessel::I0_scaled(nm * s));
 }
 
@@ -34,7 +32,7 @@ template <typename T> inline T lnP(const T measured, T actual, const T one_over_
   assert(measured >= 0.0);
   assert(one_over_noise_squared > 0.0);
 
-  actual = abs(actual);
+  actual = std::fabs(actual);
   T nm = one_over_noise_squared * measured;
   T nms = nm * actual;
   T F0 = Bessel::I0_scaled(nms);
@@ -52,7 +50,7 @@ inline T lnP(const T measured, const T actual, const T one_over_noise_squared, T
   assert(one_over_noise_squared > 0.0);
 
   bool actual_is_positive = (actual >= 0.0);
-  T actual_pos = abs(actual);
+  T actual_pos = std::fabs(actual);
   T nm = one_over_noise_squared * measured;
   T nms = nm * actual_pos;
   T F0 = Bessel::I0_scaled(nms);
@@ -77,7 +75,7 @@ inline T lnP(const int N, const T *measured, const T *actual, const T one_over_n
   for (int i = 0; i < N; i++) {
     assert(measured[i] >= 0.0);
 
-    T actual_pos = abs(actual[i]);
+    T actual_pos = std::fabs(actual[i]);
     T nm = one_over_noise_squared * measured[i];
     T nms = nm * actual_pos;
     T F0 = Bessel::I0_scaled(nms);
@@ -108,7 +106,7 @@ inline T lnP(const std::vector<T> &measured,
   for (size_t i = 0; i < measured.size(); i++) {
     assert(measured[i] > 0.0);
 
-    T actual_pos = abs(actual[i]);
+    T actual_pos = std::fabs(actual[i]);
     T nm = one_over_noise_squared * measured[i];
     T nms = nm * actual_pos;
     T F0 = Bessel::I0_scaled(nms);
@@ -141,7 +139,7 @@ inline T lnP(const std::vector<T> &measured,
   for (size_t i = 0; i < measured.size(); i++) {
     assert(measured[i] > 0.0);
 
-    T actual_pos = abs(actual[i]);
+    T actual_pos = std::fabs(actual[i]);
     T nm = one_over_noise_squared * measured[i];
     T nms = nm * actual_pos;
     T F0 = Bessel::I0_scaled(nms);
@@ -160,6 +158,4 @@ inline T lnP(const std::vector<T> &measured,
   return lnP;
 }
 
-} // namespace Rician
-} // namespace Math
-} // namespace MR
+} // namespace MR::Math::Rician

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,10 +18,10 @@
 
 namespace MR::Math::Stats {
 
-vector_type CohortDataImport::operator()(const index_type element) const {
-  vector_type result(files.size());
+measurements_vector_type CohortDataImport::operator()(const index_type element_index) const {
+  measurements_vector_type result(files.size());
   for (index_type i = 0; i != files.size(); ++i)
-    result[i] = (*files[i])[element]; // Get the intensity for just a particular element from this input data file
+    result[i] = (*files[i])[element_index]; // Get the intensity for just a particular element from this input data file
   return result;
 }
 
@@ -29,7 +29,7 @@ bool CohortDataImport::allFinite() const {
   // TESTME Should be possible to do this faster by populating matrix data
   if (!size())
     return true;
-  matrix_type data(size(), files[0]->size());
+  measurements_matrix_type data(size(), files[0]->size());
   for (index_type i = 0; i != size(); ++i)
     (*files[i])(data.row(i));
   return data.allFinite();

@@ -4,8 +4,10 @@
 # Ensure that statistical significance mask (p<0.05) matches the synthetic effect introduced in the test data
 rm -rf tmp/
 
-fixelcfestats fixelfilter/smooth/out/ fixelcfestats/subjects.txt fixelcfestats/design.txt fixelcfestats/contrast.txt SIFT_phantom/matrix/ tmp/ \
--cfe_legacy -force
+fixelcfestats fixelfilter/smooth/out/ fixelcfestats/subjects.txt fixelcfestats/design.txt SIFT_phantom/matrix/ tmp/ \
+    -ttests fixelcfestats/contrast.txt \
+    -cfe_legacy \
+    -force
 
 for f in abs_effect.mif beta0.mif beta1.mif std_dev.mif std_effect.mif tvalue.mif; do
     testing_diff_image tmp/$f fixelcfestats/legacy/$f -frac 1e-6 || exit 1;

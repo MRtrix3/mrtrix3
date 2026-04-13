@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -138,18 +138,18 @@ template <class InputType, class OutputType> void CFE::run(InputType stats, Outp
         c.exponentiate(C);
         sum += c.value();
       }
-      connections.normalise(Fixel::Matrix::connectivity_value_type(sum));
+      connections.normalise(static_cast<Fixel::Matrix::connectivity_value_type>(sum));
     }
     // Rather than allocating data for the stats and then looping over dh,
     //   divide statistic by dh to determine the number of cluster sizes that should
     //   be incremented, and dynamically increment all cluster sizes for that
     //   particular connected fixel
-    std::vector<Fixel::Matrix::connectivity_value_type> extents(std::floor(stat / dh),
+    std::vector<Fixel::Matrix::connectivity_value_type> extents(static_cast<size_t>(std::floor(stat / dh)),
                                                                 Fixel::Matrix::connectivity_value_type(0));
     for (const auto &connection : connections) {
       const default_type connection_stat = get(stats, connection.index());
       if (connection_stat > dh) {
-        const size_t cluster_count = std::min(extents.size(), size_t(std::floor(connection_stat / dh)));
+        const size_t cluster_count = std::min(extents.size(), static_cast<size_t>(std::floor(connection_stat / dh)));
         for (size_t cluster_index = 0; cluster_index != cluster_count; ++cluster_index)
           extents[cluster_index] += connection.value();
       }

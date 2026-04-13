@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -37,6 +37,8 @@ void InternalEnergyComputer::scanNeighbourhood(const Particle *p, const int alph
   normalization = 1.0;
 
   Point_t ep = p->getEndPoint(alpha0);
+  if (pGrid.isoutofbounds(ep))
+    return;
   size_t x, y, z;
   pGrid.pos2xyz(ep, x, y, z);
 
@@ -48,11 +50,13 @@ void InternalEnergyComputer::scanNeighbourhood(const Particle *p, const int alph
   for (int i = -1; i <= 1; i++) {
     for (int j = -1; j <= 1; j++) {
       for (int k = -1; k <= 1; k++) {
-        const ParticleGrid::ParticleVectorType *pvec = pGrid.at(x + i, y + j, z + k);
-        if (pvec == NULL)
+        const ParticleGrid::ParticleContainer *pvec = pGrid.at(x + i, y + j, z + k);
+        if (pvec == nullptr)
           continue;
 
-        for (ParticleGrid::ParticleVectorType::const_iterator it = pvec->begin(); it != pvec->end(); ++it) {
+        std::lock_guard<std::mutex> lock(pvec->mutex);
+
+        for (ParticleGrid::ParticleContainer::const_iterator it = pvec->begin(); it != pvec->end(); ++it) {
           pe.par = *it;
           if (pe.par == p)
             continue;
@@ -60,11 +64,9 @@ void InternalEnergyComputer::scanNeighbourhood(const Particle *p, const int alph
           d2 = (ep - pe.par->getEndPoint(+1)).squaredNorm();
           d = (d1 < d2) ? d1 : d2;
           pe.alpha = (d1 < d2) ? -1 : 1;
-          if ((pe.alpha == -1)
-                  ? (pe.par->hasPredecessor() && pe.par->getPredecessor() != p)
-                  : (pe.par->hasSuccessor() &&
-                     pe.par->getSuccessor() !=
-                         p)) // Exclude connected endpoints, unless they are connected to the current particle.
+          // Exclude connected endpoints, unless they are connected to the current particle.
+          if ((pe.alpha == -1) ? (pe.par->hasPredecessor() && pe.par->getPredecessor() != p)
+                               : (pe.par->hasSuccessor() && pe.par->getSuccessor() != p))
             continue;
           ct = (-alpha0 * pe.alpha) * p->getDirection().dot(pe.par->getDirection());
           if (d < tolerance2 && ct > costheta) {

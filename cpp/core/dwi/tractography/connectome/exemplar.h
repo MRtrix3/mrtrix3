@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -25,6 +25,9 @@
 namespace MR::DWI::Tractography::Connectome {
 
 class Exemplar : private Tractography::Streamline<float> {
+  // Fraction of the streamline length at each end that will be pulled toward the node centre-of-mass
+  static const default_type endpoint_convergence_fraction;
+
 public:
   using Tractography::Streamline<float>::point_type;
   Exemplar(const size_t exemplar_index,

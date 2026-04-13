@@ -1,7 +1,0 @@
-#!/bin/bash
-# Ensure that when an image known to be stored using the _old_ SH basis
-#   is explicitly requested to be converted into the _new_ SH basis,
-#   the result matches the version of the original image known to conform to the new SH basis
-mrconvert shbasis/old.mif tmp.mif -force
-shbasis tmp.mif -convert new
-testing_diff_image tmp.mif dwi2fod/out.mif -frac 1e-5

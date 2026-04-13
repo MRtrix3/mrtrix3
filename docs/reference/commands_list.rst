@@ -44,6 +44,7 @@ List of MRtrix3 commands
     commands/dwifslpreproc
     commands/dwigradcheck
     commands/dwinormalise
+    commands/dwirecon
     commands/dwishellmath
     commands/fixel2peaks
     commands/fixel2sh
@@ -51,11 +52,11 @@ List of MRtrix3 commands
     commands/fixel2voxel
     commands/fixelcfestats
     commands/fixelconnectivity
-    commands/fixelconvert
     commands/fixelcorrespondence
     commands/fixelcrop
     commands/fixelfilter
     commands/fixelreorient
+    commands/fixeltransform
     commands/fod2dec
     commands/fod2fixel
     commands/for_each
@@ -97,13 +98,14 @@ List of MRtrix3 commands
     commands/mtnormalise
     commands/peaks2amp
     commands/peaks2fixel
+    commands/peakscheck
+    commands/peaksconvert
     commands/population_template
     commands/responsemean
     commands/sh2amp
     commands/sh2peaks
     commands/sh2power
     commands/sh2response
-    commands/shbasis
     commands/shconv
     commands/shview
     commands/tck2connectome
@@ -147,7 +149,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`5tt2gmwmi`, "Generate a mask image appropriate for seeding streamlines on the grey matter-white matter interface"
     |cpp.png|, :ref:`5tt2vis`, "Generate an image for visualisation purposes from an ACT 5TT segmented anatomical image"
     |cpp.png|, :ref:`5ttcheck`, "Thoroughly check that one or more images conform to the expected ACT five-tissue-type (5TT) format"
-    |cpp.png|, :ref:`5ttedit`, "Manually set the partial volume fractions in an ACT five-tissue-type (5TT) image using mask images"
+    |cpp.png|, :ref:`5ttedit`, "Manually set the partial volume fractions in an ACT five-tissue-type (5TT) image"
     |python.png|, :ref:`5ttgen`, "Generate a 5TT image suitable for ACT"
     |cpp.png|, :ref:`afdconnectivity`, "Obtain an estimate of fibre connectivity between two regions using AFD and streamlines tractography"
     |cpp.png|, :ref:`amp2response`, "Estimate response function coefficients based on the DWI signal in single-fibre voxels"
@@ -177,18 +179,19 @@ List of MRtrix3 commands
     |python.png|, :ref:`dwifslpreproc`, "Perform diffusion image pre-processing using FSL's eddy tool; including inhomogeneity distortion correction using FSL's topup tool if possible"
     |python.png|, :ref:`dwigradcheck`, "Check the orientation of the diffusion gradient table"
     |python.png|, :ref:`dwinormalise`, "Perform various forms of intensity normalisation of DWIs"
+    |cpp.png|, :ref:`dwirecon`, "Perform reconstruction of DWI data from an input DWI series"
     |python.png|, :ref:`dwishellmath`, "Apply an mrmath operation to each b-value shell in a DWI series"
     |cpp.png|, :ref:`fixel2peaks`, "Convert data in the fixel directory format into a 4D image of 3-vectors"
-    |cpp.png|, :ref:`fixel2sh`, "Convert a fixel-based sparse-data image into an spherical harmonic image"
+    |cpp.png|, :ref:`fixel2sh`, "Generate spherical harmonics decompositions that mimic the content of a fixel data file"
     |cpp.png|, :ref:`fixel2tsf`, "Map fixel values to a track scalar file based on an input tractogram"
-    |cpp.png|, :ref:`fixel2voxel`, "Convert a fixel-based sparse-data image into some form of scalar image"
+    |cpp.png|, :ref:`fixel2voxel`, "Aggregate content from a fixel data file into a voxel scalar image"
     |cpp.png|, :ref:`fixelcfestats`, "Fixel-based analysis using connectivity-based fixel enhancement and non-parametric permutation testing"
     |cpp.png|, :ref:`fixelconnectivity`, "Generate a fixel-fixel connectivity matrix"
-    |cpp.png|, :ref:`fixelconvert`, "Convert between the old format fixel image (.msf / .msh) and the new fixel directory format"
     |cpp.png|, :ref:`fixelcorrespondence`, "Obtain fixel-fixel correpondence between a subject fixel image and a template fixel mask"
     |cpp.png|, :ref:`fixelcrop`, "Crop/remove fixels from sparse fixel image using a binary fixel mask"
     |cpp.png|, :ref:`fixelfilter`, "Perform filtering operations on fixel-based data"
     |cpp.png|, :ref:`fixelreorient`, "Reorient fixel directions"
+    |cpp.png|, :ref:`fixeltransform`, "Transform a fixel dataset"
     |cpp.png|, :ref:`fod2dec`, "Generate FOD-based DEC maps, with optional panchromatic sharpening and/or luminance/perception correction"
     |cpp.png|, :ref:`fod2fixel`, "Perform segmentation of continuous Fibre Orientation Distributions (FODs) to produce discrete fixels"
     |python.png|, :ref:`for_each`, "Perform some arbitrary processing step for each of a set of inputs"
@@ -230,13 +233,14 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`mtnormalise`, "Multi-tissue informed log-domain intensity normalisation"
     |cpp.png|, :ref:`peaks2amp`, "Extract amplitudes from a peak directions image"
     |cpp.png|, :ref:`peaks2fixel`, "Convert peak directions image to a fixel directory"
+    |python.png|, :ref:`peakscheck`, "Check the orientations of an image containing discrete fibre orientations"
+    |cpp.png|, :ref:`peaksconvert`, "Convert peak directions images between formats and/or conventions"
     |python.png|, :ref:`population_template`, "Generates an unbiased group-average template from a series of images"
     |python.png|, :ref:`responsemean`, "Calculate the mean response function from a set of text files"
     |cpp.png|, :ref:`sh2amp`, "Evaluate the amplitude of an image of spherical harmonic functions along specified directions"
     |cpp.png|, :ref:`sh2peaks`, "Extract the peaks of a spherical harmonic function in each voxel"
     |cpp.png|, :ref:`sh2power`, "Compute the total power of a spherical harmonics image"
     |cpp.png|, :ref:`sh2response`, "Generate an appropriate response function from the image data for spherical deconvolution"
-    |cpp.png|, :ref:`shbasis`, "Examine the values in spherical harmonic images to estimate (and optionally change) the SH basis used"
     |cpp.png|, :ref:`shconv`, "Perform spherical convolution"
     |cpp.png|, :ref:`shview`, "View spherical harmonics surface plots"
     |cpp.png|, :ref:`tck2connectome`, "Generate a connectome matrix from a streamlines file and a node parcellation image"

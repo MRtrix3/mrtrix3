@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,16 +16,16 @@
 
 #pragma once
 
-#include <string>
+#include <string_view>
 
 namespace MR::File {
 
-void remove(const std::string &file);
-void create(const std::string &filename, int64_t size = 0);
-void resize(const std::string &filename, int64_t size);
-bool is_tempfile(const std::string &name, const char *suffix = NULL);
-std::string create_tempfile(int64_t size = 0, const char *suffix = NULL);
-void mkdir(const std::string &folder);
-void rmdir(const std::string &folder, bool recursive = false);
+void remove(std::string_view filename);
+void create(std::string_view filename, int64_t size = 0);
+void resize(std::string_view filename, int64_t size);
+bool is_tempfile(std::string_view name, std::string_view suffix = "");
+std::string create_tempfile(int64_t size = 0, std::string_view suffix = "");
+void mkdir(std::string_view folder);
+void rmdir(std::string_view folder, bool recursive = false);
 
 } // namespace MR::File

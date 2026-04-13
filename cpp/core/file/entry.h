@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -24,7 +24,7 @@ namespace MR::File {
 
 class Entry {
 public:
-  Entry(const std::string &fname, int64_t offset = 0) : name(fname), start(offset) {}
+  Entry(std::string_view fname, int64_t offset = 0) : name(fname), start(offset) {}
 
   Entry(const Entry &) = default;
   Entry(Entry &&) noexcept = default;

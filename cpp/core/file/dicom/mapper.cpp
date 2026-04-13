@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -313,7 +313,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
       //   base-10 scaling
       for (size_t n = 0; n < image.images_in_mosaic; ++n) {
         slices_timing_float.push_back(0.001 * image.mosaic_slices_timing[n]);
-        std::string temp = str(int(10.0 * image.mosaic_slices_timing[n]));
+        std::string temp = str(static_cast<int>(std::floor(10.0 * image.mosaic_slices_timing[n])));
         const bool neg = image.mosaic_slices_timing[n] < 0.0;
         if (neg)
           temp.erase(temp.begin());
@@ -336,9 +336,9 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
     DEBUG("Estimating slice timing from DICOM AcquisitionTime field");
     default_type min_acquisition_time = std::numeric_limits<default_type>::infinity();
     for (size_t n = 0; n != dim[1]; ++n)
-      min_acquisition_time = std::min(min_acquisition_time, default_type(frames[n]->acquisition_time));
+      min_acquisition_time = std::min(min_acquisition_time, static_cast<default_type>(frames[n]->acquisition_time));
     for (size_t n = 0; n != dim[1]; ++n)
-      slices_timing_float.push_back(default_type(frames[n]->acquisition_time) - min_acquisition_time);
+      slices_timing_float.push_back(static_cast<default_type>(frames[n]->acquisition_time) - min_acquisition_time);
   }
   if (!slices_timing_float.empty()) {
     const size_t slices_acquired_at_zero = std::count(slices_timing_float.begin(), slices_timing_float.end(), 0.0f);
@@ -376,7 +376,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
     H.size(1) = std::floor(frame.dim[1] / mosaic_size);
     H.size(2) = image.images_in_mosaic;
 
-    if (frame.acq_dim[0] > size_t(H.size(0)) || frame.acq_dim[1] > size_t(H.size(1))) {
+    if (frame.acq_dim[0] > static_cast<size_t>(H.size(0)) || frame.acq_dim[1] > static_cast<size_t>(H.size(1))) {
       WARN("acquisition matrix [ " + str(frame.acq_dim[0]) + " " + str(frame.acq_dim[1]) +
            " ] is smaller than expected [ " + str(H.size(0)) + " " + str(H.size(1)) + " ] in DICOM mosaic");
       WARN("  image may be incorrectly reformatted");
@@ -391,7 +391,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
       WARN("  image may be incorrectly reformatted");
     }
 
-    if (frame.acq_dim[0] != size_t(H.size(0)) || frame.acq_dim[1] != size_t(H.size(1)))
+    if (frame.acq_dim[0] != static_cast<size_t>(H.size(0)) || frame.acq_dim[1] != static_cast<size_t>(H.size(1)))
       INFO("note: acquisition matrix [ " + str(frame.acq_dim[0]) + " " + str(frame.acq_dim[1]) +
            " ] differs from reconstructed matrix [ " + str(H.size(0)) + " " + str(H.size(1)) + " ]");
 

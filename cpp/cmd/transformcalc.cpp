@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,7 @@
  */
 
 #include "command.h"
+#include "enum.h"
 #include "file/key_value.h"
 #include "file/matrix.h"
 #include "file/nifti_utils.h"
@@ -29,15 +30,17 @@
 using namespace MR;
 using namespace App;
 
-const std::vector<std::string> operations = {"invert",
-                                             "half",
-                                             "rigid",
-                                             "header",
-                                             "average",
-                                             "interpolate",
-                                             "decompose",
-                                             "align_vertices_rigid",
-                                             "align_vertices_rigid_scale"};
+enum class Operation {
+  INVERT,
+  HALF,
+  RIGID,
+  HEADER,
+  AVERAGE,
+  INTERPOLATE,
+  DECOMPOSE,
+  ALIGN_VERTICES_RIGID,
+  ALIGN_VERTICES_RIGID_SCALE
+};
 
 // clang-format off
 void usage() {
@@ -47,10 +50,10 @@ void usage() {
   SYNOPSIS = "Perform calculations on linear transformation matrices";
 
   ARGUMENTS
-  + Argument ("inputs", "the input(s) for the specified operation").allow_multiple()
+  + Argument ("inputs", "the input(s) for the specified operation").type_image_in().type_file_in().allow_multiple()
   + Argument ("operation", "the operation to perform;"
-                           " one of: " + join(operations, ", ") +
-                           " (see description section for details).").type_choice (operations)
+                           " one of: " + MR::Enum::join<Operation>(", ") +
+                           " (see description section for details).").type_choice<Operation>()
   + Argument ("output", "the output transformation matrix.").type_file_out ();
 
   EXAMPLES
@@ -138,7 +141,7 @@ align_corresponding_vertices(const Eigen::MatrixXd &src_vertices, const Eigen::M
   Eigen::VectorXd src_centre = src_vertices.colwise().mean();
   Eigen::MatrixXd trg_centred = trg_vertices.rowwise() - trg_centre.transpose();
   Eigen::MatrixXd src_centred = src_vertices.rowwise() - src_centre.transpose();
-  Eigen::MatrixXd cov = (src_centred.adjoint() * trg_centred) / default_type(n - 1);
+  Eigen::MatrixXd cov = (src_centred.adjoint() * trg_centred) / static_cast<default_type>(n - 1);
 
   Eigen::JacobiSVD<Eigen::Matrix3d> svd(cov, Eigen::ComputeFullU | Eigen::ComputeFullV);
 
@@ -180,18 +183,18 @@ align_corresponding_vertices(const Eigen::MatrixXd &src_vertices, const Eigen::M
 
 void run() {
   const size_t num_inputs = argument.size() - 2;
-  const int op = argument[num_inputs];
-  const std::string &output_path = argument.back();
+  const Operation op = MR::Enum::from_name<Operation>(argument[num_inputs]);
+  const std::string_view output_path = argument.back();
 
   switch (op) {
-  case 0: { // invert
+  case Operation::INVERT: {
     if (num_inputs != 1)
       throw Exception("invert requires 1 input");
     transform_type input = File::Matrix::load_transform(argument[0]);
     File::Matrix::save_transform(input.inverse(), output_path);
     break;
   }
-  case 1: { // half
+  case Operation::HALF: {
     if (num_inputs != 1)
       throw Exception("half requires 1 input");
     Eigen::Transform<default_type, 3, Eigen::Projective> input = File::Matrix::load_transform(argument[0]);
@@ -201,7 +204,7 @@ void run() {
     File::Matrix::save_transform(output, output_path);
     break;
   }
-  case 2: { // rigid
+  case Operation::RIGID: {
     if (num_inputs != 1)
       throw Exception("rigid requires 1 input");
     transform_type input = File::Matrix::load_transform(argument[0]);
@@ -210,7 +213,7 @@ void run() {
     File::Matrix::save_transform(output, output_path);
     break;
   }
-  case 3: { // header
+  case Operation::HEADER: {
     if (num_inputs != 2)
       throw Exception("header requires 2 inputs");
     auto orig_header = Header::open(argument[0]);
@@ -221,7 +224,7 @@ void run() {
     File::Matrix::save_transform(forward_transform.inverse(), output_path);
     break;
   }
-  case 4: { // average
+  case Operation::AVERAGE: {
     if (num_inputs < 2)
       throw Exception("average requires at least 2 inputs");
     transform_type transform_out;
@@ -240,7 +243,7 @@ void run() {
     File::Matrix::save_transform(transform_out, output_path);
     break;
   }
-  case 5: { // interpolate
+  case Operation::INTERPOLATE: {
     if (num_inputs != 3)
       throw Exception("interpolation requires 3 inputs");
     transform_type transform1 = File::Matrix::load_transform(argument[0]);
@@ -279,7 +282,7 @@ void run() {
     File::Matrix::save_transform(transform_out, output_path);
     break;
   }
-  case 6: { // decompose
+  case Operation::DECOMPOSE: {
     if (num_inputs != 1)
       throw Exception("decomposition requires 1 input");
     transform_type transform = File::Matrix::load_transform(argument[0]);
@@ -321,13 +324,14 @@ void run() {
 
     break;
   }
-  case 7:
-  case 8: { // align_vertices_rigid and align_vertices_rigid_scale
+  case Operation::ALIGN_VERTICES_RIGID:
+  case Operation::ALIGN_VERTICES_RIGID_SCALE: {
     if (num_inputs != 2)
       throw Exception("align_vertices_rigid requires 2 inputs");
     const Eigen::MatrixXd target_vertices = File::Matrix::load_matrix(argument[0]);
     const Eigen::MatrixXd moving_vertices = File::Matrix::load_matrix(argument[1]);
-    const transform_type T = align_corresponding_vertices(moving_vertices, target_vertices, op == 8);
+    const transform_type T =
+        align_corresponding_vertices(moving_vertices, target_vertices, op == Operation::ALIGN_VERTICES_RIGID_SCALE);
     File::Matrix::save_transform(T, output_path);
     break;
   }

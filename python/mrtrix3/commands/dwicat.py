@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2025 the MRtrix3 contributors.
+# Copyright (c) 2008-2026 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -62,7 +62,7 @@ def usage(cmdline): #pylint: disable=unused-variable
 
 
 def execute(): #pylint: disable=unused-variable
-  from mrtrix3 import CONFIG, MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
+  from mrtrix3 import BZERO_THRESHOLD_DEFAULT, CONFIG, MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
   from mrtrix3 import app, image, run #pylint: disable=no-name-in-module, import-outside-toplevel
 
   num_inputs = len(app.ARGS.inputs)
@@ -90,7 +90,7 @@ def execute(): #pylint: disable=unused-variable
       if num_grad_lines != num_volumes:
         raise MRtrixError(f'Number of lines in gradient table for image "{header.name()}" ({num_grad_lines}) '
                           f'does not match number of volumes ({num_volumes})')
-    elif not (num_grad_lines == 1 and len(dw_scheme) >= 4 and dw_scheme[3] <= float(CONFIG.get('BZeroThreshold', 10.0))):
+    elif not (num_grad_lines == 1 and len(dw_scheme) >= 4 and dw_scheme[3] <= float(CONFIG.get('BZeroThreshold', BZERO_THRESHOLD_DEFAULT))):
       raise MRtrixError(f'Image "{header.name()}" is 3D, and cannot be validated as a b=0 volume')
 
   first_header = image.Header(app.ARGS.inputs[0])

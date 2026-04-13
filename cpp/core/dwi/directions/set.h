@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,6 +18,7 @@
 
 #include <cstdint>
 
+#include "dwi/directions/directions.h"
 #include "dwi/directions/predefined.h"
 #include "file/matrix.h"
 #include "math/math.h"
@@ -26,25 +27,23 @@
 
 namespace MR::DWI::Directions {
 
-using index_type = unsigned int;
-
 class Set {
 
 public:
-  explicit Set(const std::string &path) : dir_mask_bytes(0), dir_mask_excess_bits(0), dir_mask_excess_bits_mask(0) {
+  explicit Set(std::string_view path) : dir_mask_bytes(0), dir_mask_excess_bits(0), dir_mask_excess_bits_mask(0) {
     auto matrix = File::Matrix::load_matrix(path);
 
     if (matrix.cols() != 2 && matrix.cols() != 3)
       throw Exception("Text file \"" + path +
-                      "\"does not contain directions as either azimuth-elevation pairs or XYZ triplets");
+                      "\"does not contain directions as either azimuth-inclination pairs or XYZ triplets");
 
     initialise(matrix);
   }
 
   explicit Set(const size_t d) : dir_mask_bytes(0), dir_mask_excess_bits(0), dir_mask_excess_bits_mask(0) {
-    Eigen::MatrixXd az_el_pairs;
-    load_predefined(az_el_pairs, d);
-    initialise(az_el_pairs);
+    Eigen::MatrixXd az_in_pairs;
+    load_predefined(az_in_pairs, d);
+    initialise(az_in_pairs);
   }
 
   Set(const Set &that) = default;
@@ -74,14 +73,14 @@ public:
     assert(i < size());
     return adj_dirs[i];
   }
-  bool dirs_are_adjacent(const index_type one, const index_type two) const {
+  bool adjacent(const index_type one, const index_type two) const {
     assert(one < size());
     assert(two < size());
-    for (const auto &i : adj_dirs[one]) {
-      if (i == two)
-        return true;
-    }
-    return false;
+    return std::any_of(adj_dirs[one].begin(), adj_dirs[one].end(), [&](index_type i) { return i == two; });
+  }
+  bool adjacent(const mask_type &mask, const index_type i) const {
+    assert(mask.size() == size());
+    return std::any_of(adj_dirs[i].begin(), adj_dirs[i].end(), [&](index_type j) { return mask[j]; });
   }
 
   index_type get_min_linkage(const index_type one, const index_type two) const;
@@ -103,7 +102,7 @@ private:
 
   Set();
 
-  void load_predefined(Eigen::MatrixXd &az_el_pairs, const size_t);
+  void load_predefined(Eigen::MatrixXd &az_in_pairs, const size_t);
   template <class MatrixType> void initialise(const Eigen::Matrix<MatrixType, Eigen::Dynamic, Eigen::Dynamic> &);
   void initialise_adjacency();
   void initialise_mask();
@@ -114,13 +113,15 @@ template <class MatrixType> void Set::initialise(const Eigen::Matrix<MatrixType,
   if (in.cols() == 2) {
     for (size_t i = 0; i != size(); ++i) {
       const default_type azimuth = in(i, 0);
-      const default_type elevation = in(i, 1);
-      const default_type sin_elevation = std::sin(elevation);
-      unit_vectors[i] = {std::cos(azimuth) * sin_elevation, std::sin(azimuth) * sin_elevation, std::cos(elevation)};
+      const default_type inclination = in(i, 1);
+      const default_type sin_inclination = std::sin(inclination);
+      unit_vectors[i] = {std::cos(azimuth) * sin_inclination, //
+                         std::sin(azimuth) * sin_inclination, //
+                         std::cos(inclination)};              //
     }
   } else if (in.cols() == 3) {
     for (size_t i = 0; i != size(); ++i)
-      unit_vectors[i] = {default_type(in(i, 0)), default_type(in(i, 1)), default_type(in(i, 2))};
+      unit_vectors[i] = in.row(i).template cast<default_type>();
   } else {
     assert(0);
   }
@@ -131,7 +132,7 @@ template <class MatrixType> void Set::initialise(const Eigen::Matrix<MatrixType,
 class FastLookupSet : public Set {
 
 public:
-  FastLookupSet(const std::string &path) : Set(path) { initialise(); }
+  FastLookupSet(std::string_view path) : Set(path) { initialise(); }
 
   FastLookupSet(const size_t d) : Set(d) { initialise(); }
 

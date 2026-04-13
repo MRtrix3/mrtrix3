@@ -27,7 +27,7 @@ List of MRtrix3 configuration file options
 
 .. option:: BZeroThreshold
 
-    *default: 10.0*
+    *default: 22.5*
 
      Specifies the b-value threshold for determining those image
      volumes that correspond to b=0.
@@ -152,8 +152,8 @@ List of MRtrix3 configuration file options
 
     *default: 1.0*
 
-     The multiplicative factor to apply to the transparency of nodes not currently selected nor associated with a
-     selected node.
+     The multiplicative factor to apply to the transparency of nodes not currently selected nor associated with
+     a selected node.
 
 .. option:: ConnectomeNodeOtherColour
 
@@ -172,8 +172,8 @@ List of MRtrix3 configuration file options
 
     *default: 1.0*
 
-     The multiplicative factor to apply to the size of nodes not currently selected nor associated with a selected
-     node.
+     The multiplicative factor to apply to the size of nodes not currently selected nor associated with a
+     selected node.
 
 .. option:: ConnectomeNodeOtherVisibilityOverride
 
@@ -316,9 +316,18 @@ List of MRtrix3 configuration file options
 
      The size (in points) of the font to be used in OpenGL viewports (mrview and shview).
 
+.. option:: GLMBatchSize
+
+    *default: 16384*
+
+     Where the GLM design matrix is fixed across all elements,
+     this is the number of elements for which data shuffling and model
+     inversion will be performed concurrently,
+     ie. in a single set of linear algebra operations
+
 .. option:: HelpCommand
 
-    *default: less*
+    *default: less -X*
 
      The command to use to display each command's help page (leave
      empty to send directly to the terminal).
@@ -695,12 +704,6 @@ List of MRtrix3 configuration file options
      script itself will be used, followed by `-tmp-` (six random
      characters are then appended to produce a unique name in cases
      where a script may be run multiple times in parallel).
-
-.. option:: SparseDataInitialSize
-
-    *default: 16777216*
-
-     Initial buffer size for data in MRtrix sparse image format file (in bytes).
 
 .. option:: SpecularExponent
 

@@ -2,10 +2,11 @@
 # Ensure that when the -rpe_header option is utilised,
 #   but there is not phase encoding contrast present in the input data,
 #   the command generates the requisite internal metadata and executes successfully
-mrconvert BIDS/sub-04/dwi/sub-04_dwi.nii.gz tmp-sub-04_dwi.mif -force \
--fslgrad BIDS/sub-04/dwi/sub-04_dwi.bvec BIDS/sub-04/dwi/sub-04_dwi.bval \
--json_import BIDS/sub-04/dwi/sub-04_dwi.json \
--strides 0,0,0,1
+mrconvert BIDS/sub-04/dwi/sub-04_dwi.nii.gz tmp-sub-04_dwi.mif \
+    -fslgrad BIDS/sub-04/dwi/sub-04_dwi.bvec BIDS/sub-04/dwi/sub-04_dwi.bval \
+    -json_import BIDS/sub-04/dwi/sub-04_dwi.json \
+    -strides 0,0,0,1 \
+    -force
 
 dwifslpreproc tmp-sub-04_dwi.mif tmp.mif -rpe_header -force
 

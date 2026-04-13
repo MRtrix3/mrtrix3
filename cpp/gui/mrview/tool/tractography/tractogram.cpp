@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,9 @@
  */
 
 #include "mrview/tool/tractography/tractogram.h"
+
+#include <cstdint>
+
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/scalar_file.h"
@@ -25,7 +28,8 @@
 #include "progressbar.h"
 #include "projection.h"
 
-const size_t MAX_BUFFER_SIZE = 2796200; // number of points to fill 32MB
+const size_t MAX_BUFFER_SIZE = 2796200;                      // number of points to fill 32MB
+constexpr uint32_t PRIMITIVE_RESTART_SENTINEL = 0xFFFFFFFFu; // Primitive restart index for UNSIGNED_INT
 
 namespace MR::GUI::MRView::Tool {
 const int Tractogram::track_padding;
@@ -113,22 +117,22 @@ std::string Tractogram::Shader::geometry_shader_source(const Displayable &) {
                        "uniform float downscale_factor;\n"
                        "uniform mat4 MV;\n"
 
-                       "in vec3 v_tangent[];\n"
-                       "in vec2 v_end[];\n";
+                       "in vec3 v_tangent[];\n" // check_syntax off
+                       "in vec2 v_end[];\n";    // check_syntax off
 
   if (threshold_type != TrackThresholdType::None)
-    source += "in float v_amp[];\n"
+    source += "in float v_amp[];\n" // check_syntax off
               "out float g_amp;\n";
 
   if (do_crop_to_slab)
-    source += "in float v_include[];\n"
+    source += "in float v_include[];\n" // check_syntax off
               "out float g_include;\n";
 
   if (use_lighting || color_type == TrackColourType::Direction)
     source += "out vec3 g_tangent;\n";
 
   if (color_type == TrackColourType::ScalarFile || color_type == TrackColourType::Ends)
-    source += "in vec3 v_colour[];\n"
+    source += "in vec3 v_colour[];\n" // check_syntax off
               "out vec3 fColour;\n";
 
   if (use_lighting)
@@ -307,10 +311,10 @@ void Tractogram::Shader::update(const Displayable &object) {
   Displayable::Shader::update(object);
 }
 
-Tractogram::Tractogram(Tractography &tool, const std::string &filename)
+Tractogram::Tractogram(Tractography &tool, std::string_view filename)
     : Displayable(filename),
       show_colour_bar(true),
-      original_fov(NAN),
+      original_fov(NaNF),
       line_thickness(0.f),
       intensity_scalar_filename(std::string()),
       threshold_scalar_filename(std::string()),
@@ -321,8 +325,8 @@ Tractogram::Tractogram(Tractography &tool, const std::string &filename)
       geometry_type(default_tract_geom),
       sample_stride(0),
       vao_dirty(true),
-      threshold_min(NaN),
-      threshold_max(NaN) {
+      threshold_min(NaNF),
+      threshold_max(NaNF) {
   set_allowed_features(true, true, true);
   colourmap = 1;
   connect(&window(), SIGNAL(fieldOfViewChanged()), this, SLOT(on_FOV_changed()));
@@ -341,6 +345,8 @@ Tractogram::~Tractogram() {
     gl::DeleteBuffers(intensity_scalar_buffers.size(), &intensity_scalar_buffers[0]);
   if (!threshold_scalar_buffers.empty())
     gl::DeleteBuffers(threshold_scalar_buffers.size(), &threshold_scalar_buffers[0]);
+  if (!element_buffers.empty())
+    gl::DeleteBuffers(element_buffers.size(), &element_buffers[0]);
   GL::assert_context_is_current();
 }
 
@@ -379,7 +385,7 @@ void Tractogram::render(const Projection &transform) {
 
   if (tractography_tool.use_lighting) {
     gl::UniformMatrix4fv(gl::GetUniformLocation(track_shader, "MV"), 1, gl::FALSE_, transform.modelview());
-    gl::Uniform3fv(gl::GetUniformLocation(track_shader, "light_pos"), 1, tractography_tool.lighting->lightpos);
+    gl::Uniform3fv(gl::GetUniformLocation(track_shader, "light_pos"), 1, tractography_tool.lighting->lightpos.data());
     gl::Uniform1f(gl::GetUniformLocation(track_shader, "ambient"), tractography_tool.lighting->ambient);
     gl::Uniform1f(gl::GetUniformLocation(track_shader, "diffuse"), tractography_tool.lighting->diffuse);
     gl::Uniform1f(gl::GetUniformLocation(track_shader, "specular"), tractography_tool.lighting->specular);
@@ -389,10 +395,11 @@ void Tractogram::render(const Projection &transform) {
   if (!std::isfinite(original_fov)) {
     // set line thickness once upon loading, but don't touch it after that:
     // it shouldn't change when the background image changes
-    default_type dim[] = {window().image()->header().size(0) * window().image()->header().spacing(0),
-                          window().image()->header().size(1) * window().image()->header().spacing(1),
-                          window().image()->header().size(2) * window().image()->header().spacing(2)};
-    original_fov = std::pow(dim[0] * dim[1] * dim[2], 1.0f / 3.0f);
+    const std::array<default_type, 3> dim = {
+        window().image()->header().size(0) * window().image()->header().spacing(0),  //
+        window().image()->header().size(1) * window().image()->header().spacing(1),  //
+        window().image()->header().size(2) * window().image()->header().spacing(2)}; //
+    original_fov = std::pow(dim[0] * dim[1] * dim[2], 1.0F / 3.0F);
   }
 
   float line_thickness_screenspace = Tractogram::default_line_thickness * std::exp(2.0e-3f * line_thickness) *
@@ -488,8 +495,10 @@ inline void Tractogram::render_streamlines() {
           2, 3, gl::FLOAT, gl::FALSE_, 3 * sample_stride * sizeof(float), (void *)(6 * sample_stride * sizeof(float)));
 
       for (size_t j = 0, M = track_sizes[buf].size(); j < M; ++j) {
-        track_sizes[buf][j] = (GLint)std::ceil(original_track_sizes[buf][j] / (float)sample_stride);
-        track_starts[buf][j] = (GLint)std::floor(original_track_starts[buf][j] / (float)sample_stride);
+        track_sizes[buf][j] = static_cast<GLint>(
+            std::ceil(static_cast<float>(original_track_sizes[buf][j]) / static_cast<float>(sample_stride)));
+        track_starts[buf][j] = static_cast<GLint>(
+            std::floor(static_cast<float>(original_track_starts[buf][j]) / static_cast<float>(sample_stride)));
 
         // Vertex attributes are packed prev, curr, next
         // So ensure first curr does indeed correspond to track start
@@ -500,13 +509,23 @@ inline void Tractogram::render_streamlines() {
         GLint offset = original_track_starts[buf][j] + original_track_sizes[buf][j] -
                        (track_starts[buf][j] + track_sizes[buf][j] - 1) * sample_stride;
 
-        track_sizes[buf][j] += (GLint)std::floor(offset / (float)sample_stride);
+        track_sizes[buf][j] +=
+            static_cast<GLint>(std::floor(static_cast<float>(offset) / static_cast<float>(sample_stride)));
       }
     }
 
     auto mode = geometry_type == TrackGeometryType::Points ? gl::POINTS : gl::LINE_STRIP;
 
-    gl::MultiDrawArrays(mode, &track_starts[buf][0], &track_sizes[buf][0], num_tracks_per_buffer[buf]);
+    if (mode == gl::POINTS) {
+      gl::MultiDrawArrays(mode, &track_starts[buf][0], &track_sizes[buf][0], num_tracks_per_buffer[buf]);
+    } else if (element_counts[buf] > 0 && element_buffers[buf] != 0) {
+      // Use the EBO stored with this VAO to render all tracks in this chunk
+      gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, element_buffers[buf]);
+      gl::Enable(gl::PRIMITIVE_RESTART);
+      gl::PrimitiveRestartIndex(PRIMITIVE_RESTART_SENTINEL);
+      gl::DrawElements(gl::LINE_STRIP, element_counts[buf], gl::UNSIGNED_INT, nullptr);
+      gl::Disable(gl::PRIMITIVE_RESTART);
+    }
   }
 
   vao_dirty = false;
@@ -522,7 +541,8 @@ inline void Tractogram::update_stride() {
   if (geometry_type == TrackGeometryType::Pseudotubes && std::isfinite(step_size)) {
     const auto geom_size = geometry_type == TrackGeometryType::Pseudotubes ? Tractogram::default_line_thickness
                                                                            : Tractogram::default_point_size;
-    new_stride = GLint(geom_size * std::exp(2.0e-3f * line_thickness) * original_fov / step_size);
+    new_stride =
+        static_cast<GLint>(std::floor(geom_size * std::exp(2.0e-3F * line_thickness) * original_fov / step_size));
     // We have to ensure that our vertex buffer contains at least two copies
     // of track start and track end to correctly render our tracks
     // => Max stride = track_padding / 2
@@ -606,7 +626,7 @@ void Tractogram::load_end_colours() {
     for (size_t buffer_tck_counter = 0; buffer_tck_counter != num_tracks; ++buffer_tck_counter) {
 
       const Eigen::Vector3f &tangent(endpoint_tangents[total_tck_counter++]);
-      const Eigen::Vector3f colour(abs(tangent[0]), abs(tangent[1]), abs(tangent[2]));
+      const Eigen::Vector3f colour(tangent.array().abs());
       const size_t tck_length = original_track_sizes[buffer_index][buffer_tck_counter];
 
       // Includes pre- and post-padding to coincide with tracks buffer
@@ -621,7 +641,7 @@ void Tractogram::load_end_colours() {
   GL::assert_context_is_current();
 }
 
-void Tractogram::load_intensity_track_scalars(const std::string &filename) {
+void Tractogram::load_intensity_track_scalars(std::string_view filename) {
   // Make sure to set graphics context!
   // We're setting up vertex array objects
   GL::Context::Grab context;
@@ -641,7 +661,7 @@ void Tractogram::load_intensity_track_scalars(const std::string &filename) {
     while (file(tck_scalar)) {
 
       const size_t tck_size = tck_scalar.size();
-      assert(tck_size == size_t(original_track_sizes[intensity_scalar_buffers.size()][tck_count]));
+      assert(tck_size == static_cast<size_t>(original_track_sizes[intensity_scalar_buffers.size()][tck_count]));
 
       if (!tck_size)
         continue;
@@ -673,7 +693,7 @@ void Tractogram::load_intensity_track_scalars(const std::string &filename) {
     size_t total_num_tracks = 0;
     for (std::vector<size_t>::const_iterator i = num_tracks_per_buffer.begin(); i != num_tracks_per_buffer.end(); ++i)
       total_num_tracks += *i;
-    if (size_t(scalars.size()) != total_num_tracks)
+    if (static_cast<size_t>(scalars.size()) != total_num_tracks)
       throw Exception("The scalar text file does not contain the same number of elements as the selected tractogram");
     size_t running_index = 0;
 
@@ -713,7 +733,7 @@ void Tractogram::load_intensity_track_scalars(const std::string &filename) {
   GL::assert_context_is_current();
 }
 
-void Tractogram::load_threshold_track_scalars(const std::string &filename) {
+void Tractogram::load_threshold_track_scalars(std::string_view filename) {
   // Make sure to set graphics context!
   // We're setting up vertex array objects
   GL::Context::Grab context;
@@ -733,7 +753,7 @@ void Tractogram::load_threshold_track_scalars(const std::string &filename) {
     while (file(tck_scalar)) {
 
       const size_t tck_size = tck_scalar.size();
-      assert(tck_size == size_t(original_track_sizes[threshold_scalar_buffers.size()][tck_count]));
+      assert(tck_size == static_cast<size_t>(original_track_sizes[threshold_scalar_buffers.size()][tck_count]));
 
       if (!tck_size)
         continue;
@@ -765,7 +785,7 @@ void Tractogram::load_threshold_track_scalars(const std::string &filename) {
     size_t total_num_tracks = 0;
     for (std::vector<size_t>::const_iterator i = num_tracks_per_buffer.begin(); i != num_tracks_per_buffer.end(); ++i)
       total_num_tracks += *i;
-    if (size_t(scalars.size()) != total_num_tracks)
+    if (static_cast<size_t>(scalars.size()) != total_num_tracks)
       throw Exception("The scalar text file does not contain the same number of elements as the selected tractogram");
     size_t running_index = 0;
 
@@ -832,7 +852,8 @@ void Tractogram::erase_threshold_scalar_data() {
     threshold_scalar_buffers.clear();
   }
   threshold_scalar_filename.clear();
-  threshold_min = threshold_max = NaN;
+  threshold_min = NaNF;
+  threshold_max = NaNF;
   set_use_discard_lower(false);
   set_use_discard_upper(false);
   GL::assert_context_is_current();
@@ -887,6 +908,34 @@ void Tractogram::load_tracks_onto_GPU(std::vector<Eigen::Vector3f> &buffer,
   original_track_starts.push_back(starts);
   original_track_sizes.push_back(sizes);
   num_tracks_per_buffer.push_back(tck_count);
+
+  // Build an index buffer for this chunk of tracks
+  std::vector<uint32_t> chunk_indices;
+  for (size_t t = 0; t < sizes.size(); ++t) {
+    const GLint start = starts[t];
+    const GLint n = sizes[t];
+    if (n < 2)
+      continue;
+    for (GLint k = 0; k < n; ++k)
+      chunk_indices.push_back(static_cast<uint32_t>(start + k));
+    chunk_indices.push_back(PRIMITIVE_RESTART_SENTINEL);
+  }
+
+  if (!chunk_indices.empty()) {
+    GLuint ebo = 0;
+    gl::GenBuffers(1, &ebo);
+    // bind to the VAO so that ELEMENT_ARRAY_BUFFER is part of VAO state
+    gl::BindVertexArray(vertex_array_object);
+    gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
+    gl::BufferData(
+        gl::ELEMENT_ARRAY_BUFFER, chunk_indices.size() * sizeof(uint32_t), chunk_indices.data(), gl::STATIC_DRAW);
+    element_buffers.push_back(ebo);
+    element_counts.push_back(static_cast<GLsizei>(chunk_indices.size()));
+  } else {
+    // keep arrays aligned with other per-chunk vectors
+    element_buffers.push_back(0);
+    element_counts.push_back(0);
+  }
 
   buffer.clear();
   starts.clear();

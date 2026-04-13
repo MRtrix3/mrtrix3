@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,6 +19,7 @@
 #include "algo/threaded_loop.h"
 #include "command.h"
 #include "dwi/gradient.h"
+#include "enum.h"
 #include "image.h"
 #include "image_helpers.h"
 #include "math/math.h"
@@ -33,20 +34,7 @@
 using namespace MR;
 using namespace App;
 
-const std::vector<std::string> operations = {
-    "mean",
-    "median",
-    "sum",
-    "product",
-    "rms",
-    "norm",
-    "var",
-    "std",
-    "min",
-    "max",
-    "absmax", // Maximum of absolute values
-    "magmax"  // Value for which the magnitude is the maximum (i.e. preserves signed-ness)
-};
+enum class Operation { MEAN, MEDIAN, SUM, PRODUCT, RMS, NORM, VAR, STD, MIN, MAX, ABSMAX, MAGMAX };
 
 // clang-format off
 void usage() {
@@ -98,7 +86,7 @@ void usage() {
   ARGUMENTS
   + Argument ("input", "the input image(s).").type_image_in ().allow_multiple()
   + Argument ("operation", "the operation to apply;"
-                           " one of: " + join(operations, ", ") + ".").type_choice (operations)
+                           " options are: " + MR::Enum::join<Operation>() + ".").type_choice<Operation>()
   + Argument ("output", "the output image.").type_image_out ();
 
   OPTIONS
@@ -125,7 +113,7 @@ public:
   }
   value_type result() const {
     if (!count)
-      return NAN;
+      return NaNF;
     return sum / count;
   }
   double sum;
@@ -156,7 +144,7 @@ public:
 
 class Product {
 public:
-  Product() : product(NAN) {}
+  Product() : product(NaN) {}
   void operator()(value_type val) {
     if (std::isfinite(val))
       product = std::isfinite(product) ? product * val : val;
@@ -176,7 +164,7 @@ public:
   }
   value_type result() const {
     if (!count)
-      return NAN;
+      return NaNF;
     return std::sqrt(sum / count);
   }
   double sum;
@@ -194,7 +182,7 @@ public:
   }
   value_type result() const {
     if (!count)
-      return NAN;
+      return NaNF;
     return std::sqrt(sum);
   }
   double sum;
@@ -216,7 +204,7 @@ public:
   }
   value_type result() const {
     if (count < 2)
-      return NAN;
+      return NaNF;
     return m2 / (static_cast<double>(count) - 1.0);
   }
   double delta, delta2, mean, m2;
@@ -236,7 +224,7 @@ public:
     if (std::isfinite(val) && val < min)
       min = val;
   }
-  value_type result() const { return std::isfinite(min) ? min : NAN; }
+  value_type result() const { return std::isfinite(min) ? min : NaNF; }
   value_type min;
 };
 
@@ -247,7 +235,7 @@ public:
     if (std::isfinite(val) && val > max)
       max = val;
   }
-  value_type result() const { return std::isfinite(max) ? max : NAN; }
+  value_type result() const { return std::isfinite(max) ? max : NaNF; }
   value_type max;
 };
 
@@ -255,10 +243,10 @@ class AbsMax {
 public:
   AbsMax() : max(-std::numeric_limits<value_type>::infinity()) {}
   void operator()(value_type val) {
-    if (std::isfinite(val) && abs(val) > max)
-      max = abs(val);
+    if (std::isfinite(val) && std::fabs(val) > max)
+      max = std::fabs(val);
   }
-  value_type result() const { return std::isfinite(max) ? max : NAN; }
+  value_type result() const { return std::isfinite(max) ? max : NaNF; }
   value_type max;
 };
 
@@ -267,10 +255,10 @@ public:
   MagMax() : max(-std::numeric_limits<value_type>::infinity()) {}
   MagMax(const int i) : max(-std::numeric_limits<value_type>::infinity()) {}
   void operator()(value_type val) {
-    if (std::isfinite(val) && (!std::isfinite(max) || abs(val) > abs(max)))
+    if (std::isfinite(val) && (!std::isfinite(max) || std::fabs(val) > std::fabs(max)))
       max = val;
   }
-  value_type result() const { return std::isfinite(max) ? max : NAN; }
+  value_type result() const { return std::isfinite(max) ? max : NaNF; }
   value_type max;
 };
 
@@ -334,8 +322,8 @@ protected:
 
 void run() {
   const size_t num_inputs = argument.size() - 2;
-  const int op = argument[num_inputs];
-  const std::string &output_path = argument.back();
+  const Operation op = MR::Enum::from_name<Operation>(argument[num_inputs]);
+  const std::string_view output_path = argument.back();
 
   auto opt = get_options("axis");
   if (!opt.empty()) {
@@ -369,44 +357,44 @@ void run() {
 
     auto image_out = Header::create(output_path, header_out).get_image<float>();
 
-    auto loop =
-        ThreadedLoop(std::string("computing ") + operations[op] + " along axis " + str(axis) + "...", image_out);
+    auto loop = ThreadedLoop(
+        std::string("computing ") + MR::Enum::lowercase_name(op) + " along axis " + str(axis) + "...", image_out);
 
     switch (op) {
-    case 0:
+    case Operation::MEAN:
       loop.run(AxisKernel<Mean>(axis), image_in, image_out);
       return;
-    case 1:
+    case Operation::MEDIAN:
       loop.run(AxisKernel<Median>(axis), image_in, image_out);
       return;
-    case 2:
+    case Operation::SUM:
       loop.run(AxisKernel<Sum>(axis), image_in, image_out);
       return;
-    case 3:
+    case Operation::PRODUCT:
       loop.run(AxisKernel<Product>(axis), image_in, image_out);
       return;
-    case 4:
+    case Operation::RMS:
       loop.run(AxisKernel<RMS>(axis), image_in, image_out);
       return;
-    case 5:
+    case Operation::NORM:
       loop.run(AxisKernel<NORM2>(axis), image_in, image_out);
       return;
-    case 6:
+    case Operation::VAR:
       loop.run(AxisKernel<Var>(axis), image_in, image_out);
       return;
-    case 7:
+    case Operation::STD:
       loop.run(AxisKernel<Std>(axis), image_in, image_out);
       return;
-    case 8:
+    case Operation::MIN:
       loop.run(AxisKernel<Min>(axis), image_in, image_out);
       return;
-    case 9:
+    case Operation::MAX:
       loop.run(AxisKernel<Max>(axis), image_in, image_out);
       return;
-    case 10:
+    case Operation::ABSMAX:
       loop.run(AxisKernel<AbsMax>(axis), image_in, image_out);
       return;
-    case 11:
+    case Operation::MAGMAX:
       loop.run(AxisKernel<MagMax>(axis), image_in, image_out);
       return;
     default:
@@ -455,40 +443,40 @@ void run() {
     // Instantiate a kernel depending on the operation requested
     std::unique_ptr<ImageKernelBase> kernel;
     switch (op) {
-    case 0:
+    case Operation::MEAN:
       kernel.reset(new ImageKernel<Mean>(header));
       break;
-    case 1:
+    case Operation::MEDIAN:
       kernel.reset(new ImageKernel<Median>(header));
       break;
-    case 2:
+    case Operation::SUM:
       kernel.reset(new ImageKernel<Sum>(header));
       break;
-    case 3:
+    case Operation::PRODUCT:
       kernel.reset(new ImageKernel<Product>(header));
       break;
-    case 4:
+    case Operation::RMS:
       kernel.reset(new ImageKernel<RMS>(header));
       break;
-    case 5:
+    case Operation::NORM:
       kernel.reset(new ImageKernel<NORM2>(header));
       break;
-    case 6:
+    case Operation::VAR:
       kernel.reset(new ImageKernel<Var>(header));
       break;
-    case 7:
+    case Operation::STD:
       kernel.reset(new ImageKernel<Std>(header));
       break;
-    case 8:
+    case Operation::MIN:
       kernel.reset(new ImageKernel<Min>(header));
       break;
-    case 9:
+    case Operation::MAX:
       kernel.reset(new ImageKernel<Max>(header));
       break;
-    case 10:
+    case Operation::ABSMAX:
       kernel.reset(new ImageKernel<AbsMax>(header));
       break;
-    case 11:
+    case Operation::MAGMAX:
       kernel.reset(new ImageKernel<MagMax>(header));
       break;
     default:
@@ -497,7 +485,8 @@ void run() {
 
     // Feed the input images to the kernel one at a time
     {
-      ProgressBar progress(std::string("computing ") + operations[op] + " across " + str(headers_in.size()) + " images",
+      ProgressBar progress(std::string("computing ") + MR::Enum::lowercase_name(op) + " across " +
+                               str(headers_in.size()) + " images",
                            num_inputs);
       for (size_t i = 0; i != headers_in.size(); ++i) {
         assert(headers_in[i].valid());

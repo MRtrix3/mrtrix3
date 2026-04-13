@@ -1,0 +1,12 @@
+#!/bin/bash
+# Verify that the "peakscheck" command
+#   is capable of detecting a fault in the input data
+#   where angles in a spherical representation have been erroneously permuted
+peaksconvert peakscheck/posdet_xyz3vector.mif \
+    -out_format spherical \
+    - | \
+mrconvert - \
+    -coord 3 0,2,1,3,5,4,6,8,7 \
+    tmp.mif -force
+! peakscheck tmp.mif \
+    -in_format spherical

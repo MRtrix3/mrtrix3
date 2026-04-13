@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -42,28 +42,31 @@
 
 #define SECTION_TITLE(TITLE)
 
+// clang-format off
 #define UNARY_OP(OPTION, FEEDBACK, FLAGS, DESCRIPTION, REAL_OPERATION, COMPLEX_OPERATION)                              \
   class Op_##OPTION : public OpUnary {                                                                                 \
   public:                                                                                                              \
     Op_##OPTION() : OpUnary(FEEDBACK, FLAGS & COMPLEX_MAPS_TO_REAL, FLAGS & REAL_MAPS_TO_COMPLEX) {}                   \
-    complex_type R(real_type v) const REAL_OPERATION complex_type Z(complex_type v) const COMPLEX_OPERATION            \
+    complex_type R(real_type v) const REAL_OPERATION                                                                   \
+    complex_type Z(complex_type v) const COMPLEX_OPERATION                                                             \
   };
 
 #define BINARY_OP(OPTION, FEEDBACK, FLAGS, DESCRIPTION, REAL_OPERATION, COMPLEX_OPERATION)                             \
   class Op_##OPTION : public OpBinary {                                                                                \
   public:                                                                                                              \
     Op_##OPTION() : OpBinary(FEEDBACK, FLAGS & COMPLEX_MAPS_TO_REAL, FLAGS & REAL_MAPS_TO_COMPLEX) {}                  \
-    complex_type R(real_type a, real_type b) const REAL_OPERATION complex_type                                         \
-        Z(complex_type a, complex_type b) const COMPLEX_OPERATION                                                      \
+    complex_type R(real_type a, real_type b) const REAL_OPERATION                                                      \
+    complex_type Z(complex_type a, complex_type b) const COMPLEX_OPERATION                                             \
   };
 
 #define TERNARY_OP(OPTION, FEEDBACK, FLAGS, DESCRIPTION, REAL_OPERATION, COMPLEX_OPERATION)                            \
   class Op_##OPTION : public OpTernary {                                                                               \
   public:                                                                                                              \
     Op_##OPTION() : OpTernary(FEEDBACK, FLAGS & COMPLEX_MAPS_TO_REAL, FLAGS & REAL_MAPS_TO_COMPLEX) {}                 \
-    complex_type R(real_type a, real_type b, real_type c) const REAL_OPERATION complex_type                            \
-        Z(complex_type a, complex_type b, complex_type c) const COMPLEX_OPERATION                                      \
+    complex_type R(real_type a, real_type b, real_type c) const REAL_OPERATION                                         \
+    complex_type Z(complex_type a, complex_type b, complex_type c) const COMPLEX_OPERATION                             \
   };
+// clang-format on
 
 #elif SECTION == 3 // parsing section
 
@@ -80,11 +83,12 @@
 
 #endif
 
-#define NORMAL 0U
-#define COMPLEX_MAPS_TO_REAL 1U
-#define REAL_MAPS_TO_COMPLEX 2U
-#define NOT_IMPLEMENTED                                                                                                \
-  { throw Exception("operation not supported"); }
+#define NORMAL 0b00000000               // check_syntax off
+#define COMPLEX_MAPS_TO_REAL 0b00000001 // check_syntax off
+#define REAL_MAPS_TO_COMPLEX 0b00000010 // check_syntax off
+
+#define COMPLEX_UNDEFINED                                                                                              \
+  { throw Exception("operation undefined for complex input(s)"); }
 
 /**********************************************************************
   Operations defined below:
@@ -96,8 +100,8 @@ UNARY_OP(
     "|%1|",
     COMPLEX_MAPS_TO_REAL,
     "return absolute value (magnitude) of real or complex number",
-    { return abs(v); },
-    { return abs(v); })
+    { return MR::abs(v); },
+    { return MR::abs(v); })
 UNARY_OP(
     neg, "-%1", NORMAL, "negative value", { return -v; }, { return -v; })
 BINARY_OP(
@@ -114,26 +118,26 @@ BINARY_OP(
     NORMAL,
     "remainder after dividing (n-1)th operand by nth",
     { return std::fmod(a, b); },
-    NOT_IMPLEMENTED)
+    COMPLEX_UNDEFINED)
 BINARY_OP(
-    min, "min (%1, %2)", NORMAL, "smallest of last two operands", { return std::min(a, b); }, NOT_IMPLEMENTED)
+    min, "min (%1, %2)", NORMAL, "smallest of last two operands", { return std::min(a, b); }, COMPLEX_UNDEFINED)
 BINARY_OP(
-    max, "max (%1, %2)", NORMAL, "greatest of last two operands", { return std::max(a, b); }, NOT_IMPLEMENTED)
+    max, "max (%1, %2)", NORMAL, "greatest of last two operands", { return std::max(a, b); }, COMPLEX_UNDEFINED)
 
 SECTION_TITLE("comparison operators")
 BINARY_OP(
-    lt, "(%1 < %2)", NORMAL, "less-than operator (true=1, false=0)", { return a < b; }, NOT_IMPLEMENTED)
+    lt, "(%1 < %2)", NORMAL, "less-than operator (true=1, false=0)", { return a < b; }, COMPLEX_UNDEFINED)
 BINARY_OP(
-    gt, "(%1 > %2)", NORMAL, "greater-than operator (true=1, false=0)", { return a > b; }, NOT_IMPLEMENTED)
+    gt, "(%1 > %2)", NORMAL, "greater-than operator (true=1, false=0)", { return a > b; }, COMPLEX_UNDEFINED)
 BINARY_OP(
-    le, "(%1 <= %2)", NORMAL, "less-than-or-equal-to operator (true=1, false=0)", { return a <= b; }, NOT_IMPLEMENTED)
+    le, "(%1 <= %2)", NORMAL, "less-than-or-equal-to operator (true=1, false=0)", { return a <= b; }, COMPLEX_UNDEFINED)
 BINARY_OP(
     ge,
     "(%1 >= %2)",
     NORMAL,
     "greater-than-or-equal-to operator (true=1, false=0)",
     { return a >= b; },
-    NOT_IMPLEMENTED)
+    COMPLEX_UNDEFINED)
 BINARY_OP(
     eq,
     "(%1 == %2)",
@@ -173,11 +177,11 @@ BINARY_OP(
 
 SECTION_TITLE("nearest integer operations")
 UNARY_OP(
-    round, "round (%1)", NORMAL, "round to nearest integer", { return std::round(v); }, NOT_IMPLEMENTED)
+    round, "round (%1)", NORMAL, "round to nearest integer", { return std::round(v); }, COMPLEX_UNDEFINED)
 UNARY_OP(
-    ceil, "ceil (%1)", NORMAL, "round up to nearest integer", { return std::ceil(v); }, NOT_IMPLEMENTED)
+    ceil, "ceil (%1)", NORMAL, "round up to nearest integer", { return std::ceil(v); }, COMPLEX_UNDEFINED)
 UNARY_OP(
-    floor, "floor (%1)", NORMAL, "round down to nearest integer", { return std::floor(v); }, NOT_IMPLEMENTED)
+    floor, "floor (%1)", NORMAL, "round down to nearest integer", { return std::floor(v); }, COMPLEX_UNDEFINED)
 
 SECTION_TITLE("logical operators")
 UNARY_OP(
@@ -241,14 +245,14 @@ BINARY_OP(
     REAL_MAPS_TO_COMPLEX,
     "create complex number using the last two operands as real,imaginary components",
     { return complex_type(a, b); },
-    NOT_IMPLEMENTED)
+    COMPLEX_UNDEFINED)
 BINARY_OP(
     polar,
     "(%1 /_ %2)",
     REAL_MAPS_TO_COMPLEX,
     "create complex number using the last two operands as magnitude,phase components (phase in radians)",
     { return std::polar(a, b); },
-    NOT_IMPLEMENTED)
+    COMPLEX_UNDEFINED)
 UNARY_OP(
     real, "real (%1)", COMPLEX_MAPS_TO_REAL, "real part of complex number", { return v; }, { return v.real(); })
 UNARY_OP(
@@ -396,17 +400,27 @@ EXAMPLES
              " 1.0/sqrt(4*pi),"
              " such that a single-tissue voxel"
              " containing the same intensities as the response function of that tissue"
-             " should contain the value 1.0.");
+             " should contain the value 1.0.")
+
+  + Example ("Produce a complex datatype image from Siemens magnitude & phase series",
+             "mrcalc DWI_MAG/ DWI_PHASE/ pi 4096 -div -mult -polar dwi_complex.mif",
+             "Phase images from Siemens scanners are typically not provided in Radians units, "
+             "but rather contain values in the range [-4096, +4094]. "
+             "This command usage pre-multiplies these phase values by (pi/4096) "
+             "to get them into units of Radians, "
+             "prior to using the -polar option "
+             "that combines magnitude & phase components at its input "
+             "to produce complex data.");
 
 ARGUMENTS
   + Argument ("operand", "an input image,"
                          " intensity value,"
                          " or special keyword"
-                         " (see Description)").type_various().allow_multiple();
+                         " (see Description)").type_image_in().type_image_out().type_float().type_text().allow_multiple();
 
 OPTIONS
 
-#define SECTION 1
+#define SECTION 1 // check_syntax off
 #include "mrcalc.cpp"
 
   + DataType::options();
@@ -550,14 +564,11 @@ std::map<std::string, LoadedImage> StackEntry::image_list;
 
 class Evaluator {
 public:
-  Evaluator(const std::string &name,
-            const char *format_string,
-            bool complex_maps_to_real = false,
-            bool real_maps_to_complex = false)
-      : id(name), format(format_string), ZtoR(complex_maps_to_real), RtoZ(real_maps_to_complex) {}
+  Evaluator(std::string_view name, std::string_view format_string, bool Z2R = false, bool R2Z = false)
+      : id(name), format(format_string), ZtoR(Z2R), RtoZ(R2Z) {}
   virtual ~Evaluator() {}
   const std::string id;
-  const char *format;
+  const std::string format;
   bool ZtoR, RtoZ;
   std::vector<StackEntry> operands;
 
@@ -622,7 +633,7 @@ inline Chunk &StackEntry::evaluate(ThreadLocalStorage &storage) const {
   return storage.next();
 }
 
-inline void replace(std::string &orig, size_t n, const std::string &value) {
+inline void replace(std::string &orig, size_t n, std::string_view value) {
   if (orig[0] == '(' && orig[orig.size() - 1] == ')') {
     size_t pos = orig.find("(%" + str(n + 1) + ")");
     if (pos != orig.npos) {
@@ -642,7 +653,7 @@ inline void replace(std::string &orig, size_t n, const std::string &value) {
 // later:
 std::string operation_string(const StackEntry &entry) {
   if (entry.image)
-    return entry.image->name();
+    return std::string(entry.image->name());
   else if (entry.rng)
     return entry.rng_gaussian ? "randn()" : "rand()";
   else if (entry.evaluator) {
@@ -656,7 +667,7 @@ std::string operation_string(const StackEntry &entry) {
 
 template <class Operation> class UnaryEvaluator : public Evaluator {
 public:
-  UnaryEvaluator(const std::string &name, Operation operation, const StackEntry &operand)
+  UnaryEvaluator(std::string_view name, Operation operation, const StackEntry &operand)
       : Evaluator(name, operation.format, operation.ZtoR, operation.RtoZ), op(operation) {
     operands.push_back(operand);
   }
@@ -677,7 +688,7 @@ public:
 
 template <class Operation> class BinaryEvaluator : public Evaluator {
 public:
-  BinaryEvaluator(const std::string &name, Operation operation, const StackEntry &operand1, const StackEntry &operand2)
+  BinaryEvaluator(std::string_view name, Operation operation, const StackEntry &operand1, const StackEntry &operand2)
       : Evaluator(name, operation.format, operation.ZtoR, operation.RtoZ), op(operation) {
     operands.push_back(operand1);
     operands.push_back(operand2);
@@ -700,7 +711,7 @@ public:
 
 template <class Operation> class TernaryEvaluator : public Evaluator {
 public:
-  TernaryEvaluator(const std::string &name,
+  TernaryEvaluator(std::string_view name,
                    Operation operation,
                    const StackEntry &operand1,
                    const StackEntry &operand2,
@@ -729,7 +740,7 @@ public:
 };
 
 template <class Operation>
-void unary_operation(const std::string &operation_name, std::vector<StackEntry> &stack, Operation operation) {
+void unary_operation(std::string_view operation_name, std::vector<StackEntry> &stack, Operation operation) {
   if (stack.empty())
     throw Exception("no operand in stack for operation \"" + operation_name + "\"!");
   StackEntry &a(stack[stack.size() - 1]);
@@ -747,7 +758,7 @@ void unary_operation(const std::string &operation_name, std::vector<StackEntry> 
 }
 
 template <class Operation>
-void binary_operation(const std::string &operation_name, std::vector<StackEntry> &stack, Operation operation) {
+void binary_operation(std::string_view operation_name, std::vector<StackEntry> &stack, Operation operation) {
   if (stack.size() < 2)
     throw Exception("not enough operands in stack for operation \"" + operation_name + "\"");
   StackEntry &a(stack[stack.size() - 2]);
@@ -766,7 +777,7 @@ void binary_operation(const std::string &operation_name, std::vector<StackEntry>
 }
 
 template <class Operation>
-void ternary_operation(const std::string &operation_name, std::vector<StackEntry> &stack, Operation operation) {
+void ternary_operation(std::string_view operation_name, std::vector<StackEntry> &stack, Operation operation) {
   if (stack.size() < 3)
     throw Exception("not enough operands in stack for operation \"" + operation_name + "\"");
   StackEntry &a(stack[stack.size() - 3]);
@@ -920,16 +931,15 @@ void run_operations(const std::vector<StackEntry> &stack) {
 
 class OpBase {
 public:
-  OpBase(const char *format_string, bool complex_maps_to_real = false, bool real_map_to_complex = false)
-      : format(format_string), ZtoR(complex_maps_to_real), RtoZ(real_map_to_complex) {}
-  const char *format;
+  OpBase(std::string_view format_string, bool Z2R = false, bool R2Z = false)
+      : format(format_string), ZtoR(Z2R), RtoZ(R2Z) {}
+  const std::string format;
   const bool ZtoR, RtoZ;
 };
 
 class OpUnary : public OpBase {
 public:
-  OpUnary(const char *format_string, bool complex_maps_to_real = false, bool real_map_to_complex = false)
-      : OpBase(format_string, complex_maps_to_real, real_map_to_complex) {}
+  OpUnary(std::string_view format_string, bool Z2R = false, bool R2Z = false) : OpBase(format_string, Z2R, R2Z) {}
   complex_type R(real_type v) const {
     throw Exception("operation not supported!");
     return v;
@@ -942,8 +952,7 @@ public:
 
 class OpBinary : public OpBase {
 public:
-  OpBinary(const char *format_string, bool complex_maps_to_real = false, bool real_map_to_complex = false)
-      : OpBase(format_string, complex_maps_to_real, real_map_to_complex) {}
+  OpBinary(std::string_view format_string, bool Z2R = false, bool R2Z = false) : OpBase(format_string, Z2R, R2Z) {}
   complex_type R(real_type a, real_type b) const {
     throw Exception("operation not supported!");
     return a;
@@ -956,8 +965,7 @@ public:
 
 class OpTernary : public OpBase {
 public:
-  OpTernary(const char *format_string, bool complex_maps_to_real = false, bool real_map_to_complex = false)
-      : OpBase(format_string, complex_maps_to_real, real_map_to_complex) {}
+  OpTernary(std::string_view format_string, bool Z2R = false, bool R2Z = false) : OpBase(format_string, Z2R, R2Z) {}
   complex_type R(real_type a, real_type b, real_type c) const {
     throw Exception("operation not supported!");
     return a;
@@ -972,7 +980,7 @@ public:
         EXPAND OPERATIONS:
 **********************************************************************/
 
-#define SECTION 2
+#define SECTION 2 // check_syntax off
 #include "mrcalc.cpp"
 
 /**********************************************************************
@@ -994,7 +1002,7 @@ void run() {
       else if (opt->is("config"))
         n += 2;
 
-#define SECTION 3
+#define SECTION 3 // check_syntax off
 #include "mrcalc.cpp"
 
       else

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -52,8 +52,9 @@ bool WriteKernel::operator()(const GeneratedTrack &tck) {
       },
       always_increment ? true : tck.size());
   if (early_exit(seeds, selected)) {
-    WARN("Track generation terminating prematurely: Highly unlikely to reach target number of streamlines (p<" +
-         str(TCKGEN_EARLY_EXIT_PROB_THRESHOLD, 1) + ")");
+    WARN(std::string("Track generation terminating prematurely:"                   //
+                     " Highly unlikely to reach target number of streamlines (p<") //
+         + str(EarlyExit::probability_threshold, 1) + ")");                        //
     return false;
   }
   return true;

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,10 +22,12 @@
 #include "opengl/transformation.h"
 #include "projection.h"
 
-#define ROTATION_INC 0.002
-#define MOVE_IN_OUT_FOV_MULTIPLIER 1.0e-3f
-
 namespace MR::GUI::MRView {
+
+// Note: distinct from MR::GUI::MRView::Tool::fovrate_multipler
+constexpr float moveinout_fovmultiplier = 1e-3F;
+
+constexpr float rotation_increment = 0.002F;
 
 namespace Tool {
 class Dock;
@@ -139,7 +141,7 @@ public:
   }
 
   Eigen::Vector3f get_through_plane_translation_FOV(int increment, const ModelViewProjection &projection) {
-    return get_through_plane_translation(MOVE_IN_OUT_FOV_MULTIPLIER * increment * FOV(), projection);
+    return get_through_plane_translation(moveinout_fovmultiplier * increment * FOV(), projection);
   }
 
   void render_tools(const Projection &projection, bool is_3D = false, int axis = 0, int slice = 0) {
@@ -163,7 +165,7 @@ public:
 
   Eigen::Vector3f voxel_at(const Eigen::Vector3f &pos) const {
     if (!image())
-      return Eigen::Vector3f{NAN, NAN, NAN};
+      return Eigen::Vector3f::Constant(NaNF);
     const Eigen::Vector3f result = image()->scanner2voxel().cast<float>() * pos;
     return result;
   }
@@ -202,7 +204,7 @@ protected:
 //! \cond skip
 class __Action__ : public QAction {
 public:
-  __Action__(QActionGroup *parent, const char *const name, const char *const description, int index)
+  __Action__(QActionGroup *parent, const char *const name, const char *const description, int index) // check_syntax off
       : QAction(name, parent) {
     setCheckable(true);
     setShortcut(tr(std::string("F" + str(index)).c_str()));
@@ -215,7 +217,7 @@ public:
 
 template <class T> class Action : public __Action__ {
 public:
-  Action(QActionGroup *parent, const char *const name, const char *const description, int index)
+  Action(QActionGroup *parent, const char *const name, const char *const description, int index) // check_syntax off
       : __Action__(parent, name, description, index) {}
 
   virtual Base *create() const { return new T; }

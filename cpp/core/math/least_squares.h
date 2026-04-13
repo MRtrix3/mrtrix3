@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -43,6 +43,18 @@ template <class MatrixType> inline size_t rank(const MatrixType &M) {
 }
 
 /** @} */
+
+//! return solution matrix for a weighted least squares fit
+template <class MatrixType, class VectorType>
+inline Eigen::Matrix<typename MatrixType::Scalar, Eigen::Dynamic, Eigen::Dynamic> wls(const MatrixType &M,
+                                                                                      const VectorType &w) {
+  assert(M.rows() >= M.cols());
+  assert(w.size() == M.rows());
+  return (M.transpose() * w.template cast<typename MatrixType::Scalar>().asDiagonal() * M) //
+      .ldlt()                                                                              //
+      .solve(M.transpose() * w.template cast<typename MatrixType::Scalar>().asDiagonal()); //
+}
+
 /** @} */
 
 } // namespace MR::Math

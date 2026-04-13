@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -32,10 +32,6 @@
 #include "dwi/tractography/mapping/voxel.h"
 
 #include "math/hermite.h"
-
-// Didn't bother making this a command-line option, since curvature contrast results were very poor regardless of
-// smoothing
-#define CURVATURE_TRACK_SMOOTHING_FWHM 10.0 // In mm
 
 namespace MR::DWI::Tractography::Mapping {
 
@@ -139,38 +135,30 @@ protected:
   virtual void postprocess(const Streamline<> &tck, SetVoxelExtras &out) const {}
 
   // Used by voxelise() and voxelise_precise() to increment the relevant set
-  inline void add_to_set(SetVoxel &, const Eigen::Vector3i &, const Eigen::Vector3d &, const default_type) const;
-  inline void add_to_set(SetVoxelDEC &, const Eigen::Vector3i &, const Eigen::Vector3d &, const default_type) const;
-  inline void add_to_set(SetVoxelDir &, const Eigen::Vector3i &, const Eigen::Vector3d &, const default_type) const;
-  inline void add_to_set(SetDixel &, const Eigen::Vector3i &, const Eigen::Vector3d &, const default_type) const;
-  inline void add_to_set(SetVoxelTOD &, const Eigen::Vector3i &, const Eigen::Vector3d &, const default_type) const;
+  inline void
+  add_to_set(SetVoxel &, const Eigen::Vector3i &, const Streamline<>::tangent_type &, const default_type) const;
+  inline void
+  add_to_set(SetVoxelDEC &, const Eigen::Vector3i &, const Streamline<>::tangent_type &, const default_type) const;
+  inline void
+  add_to_set(SetVoxelDir &, const Eigen::Vector3i &, const Streamline<>::tangent_type &, const default_type) const;
+  inline void
+  add_to_set(SetDixel &, const Eigen::Vector3i &, const Streamline<>::tangent_type &, const default_type) const;
+  inline void
+  add_to_set(SetVoxelTOD &, const Eigen::Vector3i &, const Streamline<>::tangent_type &, const default_type) const;
 
   DWI::Tractography::Resampling::Upsampler upsampler;
 };
 
 template <class Cont> void TrackMapperBase::voxelise(const Streamline<> &tck, Cont &output) const {
-
-  auto prev = tck.cbegin();
-  const auto last = tck.cend() - 1;
-
   Eigen::Vector3i vox;
-  for (auto i = tck.cbegin(); i != last; ++i) {
-    vox = round(scanner2voxel * (*i));
+  for (ssize_t i = 0; i != tck.size(); ++i) {
+    vox = round(scanner2voxel * tck[i]);
     if (check(vox, info)) {
-      const Eigen::Vector3d dir = (*(i + 1) - *prev).cast<default_type>().normalized();
+      const Streamline<>::tangent_type dir = Tractography::tangent(tck, i);
       if (dir.allFinite() && !dir.isZero())
         add_to_set(output, vox, dir, 1.0);
     }
-    prev = i;
   }
-
-  vox = round(scanner2voxel * (*last));
-  if (check(vox, info)) {
-    const Eigen::Vector3d dir = (*last - *prev).cast<default_type>().normalized();
-    if (dir.allFinite() && !dir.isZero())
-      add_to_set(output, vox, dir, 1.0);
-  }
-
   for (auto &i : output)
     i.normalize();
 }
@@ -245,7 +233,7 @@ template <class Cont> void TrackMapperBase::voxelise_precise(const Streamline<> 
     }
 
     length += (p_prev - p_voxel_exit).norm();
-    const Eigen::Vector3d traversal_vector = (p_voxel_exit - p_voxel_entry).cast<default_type>().normalized();
+    const Streamline<>::tangent_type traversal_vector = (p_voxel_exit - p_voxel_entry).normalized();
     if (std::isfinite(traversal_vector[0]) && check(this_voxel, info))
       add_to_set(out, this_voxel, traversal_vector, length);
 
@@ -258,15 +246,17 @@ template <class Cont> void TrackMapperBase::voxelise_ends(const Streamline<> &tc
   if (tck.size() == 1) {
     const auto vox = round(scanner2voxel * tck.front());
     if (check(vox, info))
-      add_to_set(out, vox, Eigen::Vector3d(NaN, NaN, NaN), 1.0);
+      add_to_set(
+          out,
+          vox,
+          Streamline<>::tangent_type::Constant(std::numeric_limits<Streamline<>::tangent_type::Scalar>::quiet_NaN()),
+          1.0);
     return;
   }
   for (size_t end = 0; end != 2; ++end) {
     const auto vox = round(scanner2voxel * (end ? tck.back() : tck.front()));
     if (check(vox, info)) {
-      Eigen::Vector3d dir{NaN, NaN, NaN};
-      if (tck.size() > 1)
-        dir = (end ? (tck[tck.size() - 1] - tck[tck.size() - 2]) : (tck[0] - tck[1])).cast<default_type>().normalized();
+      const Streamline<>::tangent_type dir(Tractography::tangent(tck, end ? tck.size() - 1 : 0));
       add_to_set(out, vox, dir, 1.0);
     }
   }
@@ -275,25 +265,25 @@ template <class Cont> void TrackMapperBase::voxelise_ends(const Streamline<> &tc
 // These are inlined to make as fast as possible
 inline void TrackMapperBase::add_to_set(SetVoxel &out,
                                         const Eigen::Vector3i &v,
-                                        const Eigen::Vector3d &d,
+                                        const Streamline<>::tangent_type &d,
                                         const default_type l) const {
   out.insert(v, l);
 }
 inline void TrackMapperBase::add_to_set(SetVoxelDEC &out,
                                         const Eigen::Vector3i &v,
-                                        const Eigen::Vector3d &d,
+                                        const Streamline<>::tangent_type &d,
                                         const default_type l) const {
   out.insert(v, d, l);
 }
 inline void TrackMapperBase::add_to_set(SetVoxelDir &out,
                                         const Eigen::Vector3i &v,
-                                        const Eigen::Vector3d &d,
+                                        const Streamline<>::tangent_type &d,
                                         const default_type l) const {
   out.insert(v, d, l);
 }
 inline void TrackMapperBase::add_to_set(SetDixel &out,
                                         const Eigen::Vector3i &v,
-                                        const Eigen::Vector3d &d,
+                                        const Streamline<>::tangent_type &d,
                                         const default_type l) const {
   assert(dixel_plugin);
   const DWI::Directions::index_type bin = (*dixel_plugin)(d);
@@ -301,7 +291,7 @@ inline void TrackMapperBase::add_to_set(SetDixel &out,
 }
 inline void TrackMapperBase::add_to_set(SetVoxelTOD &out,
                                         const Eigen::Vector3i &v,
-                                        const Eigen::Vector3d &d,
+                                        const Streamline<>::tangent_type &d,
                                         const default_type l) const {
   assert(tod_plugin);
   Eigen::Matrix<default_type, Eigen::Dynamic, 1> sh;
@@ -324,12 +314,12 @@ public:
       image_plugin.reset(that.image_plugin->clone());
   }
 
-  void add_scalar_image(const std::string &);
+  void add_scalar_image(std::string_view);
   void set_backtrack();
-  void add_fod_image(const std::string &);
+  void add_fod_image(std::string_view);
   void add_twdfc_static_image(Image<float> &);
   void add_twdfc_dynamic_image(Image<float> &, const std::vector<float> &, const ssize_t);
-  void add_vector_data(const std::string &);
+  void add_vector_data(std::string_view);
 
 protected:
   const contrast_t contrast;

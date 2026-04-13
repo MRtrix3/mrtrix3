@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -61,7 +61,7 @@ public:
               float local_max_value,
               float global_min_value,
               float global_range,
-              Eigen::Array3f colour = {NAN, NAN, NAN});
+              Eigen::Array3f colour = Eigen::Array3f::Constant(NaNF));
 
   void render(const Displayable &object, bool inverted);
 

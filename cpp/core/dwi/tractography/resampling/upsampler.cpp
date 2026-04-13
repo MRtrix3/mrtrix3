@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -49,7 +49,7 @@ void Upsampler::set_ratio(const size_t upsample_ratio) {
     Math::Hermite<value_type> interp(hermite_tension);
     M.resize(dim, 4);
     for (size_t i = 0; i != dim; ++i) {
-      interp.set((i + 1.0) / value_type(upsample_ratio));
+      interp.set((i + 1.0) / static_cast<value_type>(upsample_ratio));
       for (size_t j = 0; j != 4; ++j)
         M(i, j) = interp.coef(j);
     }

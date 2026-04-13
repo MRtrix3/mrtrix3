@@ -1,100 +1,268 @@
 include(FetchContent)
+include(MacOSUniversalSlang)
 
-if(NOT ${MRTRIX_DEPENDENCIES_DIR} STREQUAL "")
-    message(STATUS "Using local dependencies at ${MRTRIX_DEPENDENCIES_DIR}")
-    set(MRTRIX_LOCAL_DEPENDENCIES ON)
-else()
-    set(MRTRIX_LOCAL_DEPENDENCIES OFF)
-endif()
 
 # Eigen
-# We avoid configuring the Eigen library via FetchContent_MakeAvaiable
-# to avoid the verbosity of Eigen's CMake configuration output.
-if(MRTRIX_LOCAL_DEPENDENCIES)
-    set(eigen_url ${MRTRIX_DEPENDENCIES_DIR}/eigen-3.4.0.tar.gz)
+if(MRTRIX_USE_SYSTEM_EIGEN)
+    find_package(Eigen3 3.4 CONFIG REQUIRED)
 else()
+    # We avoid configuring the Eigen library via FetchContent_MakeAvailable
+    # to avoid the verbosity of Eigen's CMake configuration output.
     set(eigen_url "https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz")
-endif()
+    FetchContent_Declare(
+        eigen3
+        DOWNLOAD_EXTRACT_TIMESTAMP ON
+        URL ${eigen_url}
+        # Hack to turn off Eigen's configure
+        # See https://stackoverflow.com/questions/77210209/how-to-prevent-eigen-targets-to-show-up-in-the-main-app-in-a-cmake-project
+        SOURCE_SUBDIR non_existent_dir
+    )
 
-FetchContent_Declare(
-    eigen3
-    DOWNLOAD_EXTRACT_TIMESTAMP ON
-    URL ${eigen_url}
-    # Hack to turn off Eigen's configure
-    # See https://stackoverflow.com/questions/77210209/how-to-prevent-eigen-targets-to-show-up-in-the-main-app-in-a-cmake-project
-    SOURCE_SUBDIR non_existent_dir
-)
+    FetchContent_MakeAvailable(eigen3)
 
-FetchContent_MakeAvailable(eigen3)
-
-if(NOT TARGET Eigen3::Eigen)
-    add_library(Eigen3 INTERFACE)
-    add_library(Eigen3::Eigen ALIAS Eigen3)
-    set_target_properties(Eigen3 PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${eigen3_SOURCE_DIR})
+    if(NOT TARGET Eigen3::Eigen)
+        add_library(Eigen3 INTERFACE)
+        add_library(Eigen3::Eigen ALIAS Eigen3)
+        set_target_properties(Eigen3 PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${eigen3_SOURCE_DIR})
+    endif()
 endif()
 
 
 # Json for Modern C++
-if(MRTRIX_LOCAL_DEPENDENCIES)
-    set(json_url ${MRTRIX_DEPENDENCIES_DIR}/json.tar.xz)
+if(MRTRIX_USE_SYSTEM_JSON)
+    find_package(nlohmann_json 3.11.3 REQUIRED)
 else()
     set(json_url "https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz")
+    FetchContent_Declare(
+        json
+        DOWNLOAD_EXTRACT_TIMESTAMP ON
+        URL ${json_url}
+    )
+    FetchContent_MakeAvailable(json)
 endif()
-FetchContent_Declare(
-    json
-    DOWNLOAD_EXTRACT_TIMESTAMP ON
-    URL ${json_url}
-)
-FetchContent_MakeAvailable(json)
-
-
-# Half-precision floating-point library
-if(MRTRIX_LOCAL_DEPENDENCIES)
-    set(half_url ${MRTRIX_DEPENDENCIES_DIR}/half-2.1.0.zip)
-else()
-    set(half_url "https://sourceforge.net/projects/half/files/half/2.1.0/half-2.1.0.zip/download")
-endif()
-FetchContent_Declare(
-    half
-    DOWNLOAD_EXTRACT_TIMESTAMP ON
-    URL ${half_url}
-)
-FetchContent_MakeAvailable(half)
-
-add_library(half INTERFACE)
-add_library(half::half ALIAS half)
-target_include_directories(half INTERFACE "${half_SOURCE_DIR}/include")
 
 
 # Nifti headers
-add_library(nifti INTERFACE)
-add_library(nifti::nifti ALIAS nifti)
-
-if(MRTRIX_LOCAL_DEPENDENCIES)
-    target_include_directories(nifti INTERFACE "${MRTRIX_DEPENDENCIES_DIR}/nifti")
+if(MRTRIX_USE_SYSTEM_NIFTI)
+    find_path(NIFTI1_INCLUDE_DIR 
+        NAMES nifti1.h
+        PATHS ${NIFTI_DIR} /usr/include /usr/local/include
+    )
+    find_path(NIFTI2_INCLUDE_DIR 
+        NAMES nifti2.h
+        PATHS ${NIFTI_DIR} /usr/include /usr/local/include
+    )
+    if(NOT NIFTI1_INCLUDE_DIR)
+        message(FATAL_ERROR "Could not find NIFTI1 headers. Please set NIFTI_DIR to the installation prefix.")
+    endif()
+    if(NOT NIFTI2_INCLUDE_DIR)
+        message(FATAL_ERROR "Could not find NIFTI2 headers. Please set NIFTI_DIR to the installation prefix.")
+    endif()
+    set(NIFTI_INCLUDE_DIRS "${NIFTI1_INCLUDE_DIR};${NIFTI2_INCLUDE_DIR}")
 else()
     set(NIFTI1_URL "https://raw.githubusercontent.com/NIFTI-Imaging/nifti_clib/master/nifti2/nifti1.h")
     set(NIFTI2_URL "https://raw.githubusercontent.com/NIFTI-Imaging/nifti_clib/master/nifti2/nifti2.h")
-    # DOWNLOAD_NO_EXTRACT for FetchContent is only available in CMake 3.18 and later
-    if(CMAKE_VERSION VERSION_LESS 3.18)
-        file(DOWNLOAD ${NIFTI1_URL} "${CMAKE_CURRENT_BINARY_DIR}/nifti/nifti1.h")
-        file(DOWNLOAD ${NIFTI2_URL} "${CMAKE_CURRENT_BINARY_DIR}/nifti/nifti2.h")
-        target_include_directories(nifti INTERFACE "${CMAKE_CURRENT_BINARY_DIR}/nifti")
+
+    FetchContent_Declare(
+        nifti1
+        DOWNLOAD_NO_EXTRACT ON
+        URL ${NIFTI1_URL}
+    )
+    FetchContent_Declare(
+        nifti2
+        DOWNLOAD_NO_EXTRACT ON
+        URL ${NIFTI2_URL}
+    )
+    FetchContent_MakeAvailable(nifti1 nifti2)
+    set(NIFTI_INCLUDE_DIRS "${nifti1_SOURCE_DIR};${nifti2_SOURCE_DIR}")
+endif()
+
+add_library(nifti INTERFACE)
+add_library(nifti::nifti ALIAS nifti)
+
+target_include_directories(nifti INTERFACE "${NIFTI_INCLUDE_DIRS}")
+
+# Google Test
+if(MRTRIX_BUILD_TESTS)
+    set(googletest_version 1.17.0)
+
+    if(MRTRIX_USE_SYSTEM_GTEST)
+        find_package(GTest ${googletest_version} REQUIRED)
     else()
+        set(googletest_url "https://github.com/google/googletest/releases/download/v${googletest_version}/googletest-${googletest_version}.tar.gz")
         FetchContent_Declare(
-            nifti1
-            DOWNLOAD_NO_EXTRACT ON
-            URL ${NIFTI1_URL}
+            googletest
+            DOWNLOAD_EXTRACT_TIMESTAMP ON
+            URL ${googletest_url}
         )
+        FetchContent_MakeAvailable(googletest)
+    endif()
+endif()
+
+
+if(MRTRIX_ENABLE_GPU)
+    # Dawn
+
+    # Threads (required by Dawn exported targets)
+    find_package(Threads REQUIRED)
+
+    if(NOT MRTRIX_USE_SYSTEM_DAWN)
+        message(STATUS "Downloading prebuilt binaries for Dawn...")
+        include(FetchContent)
+        set(FETCHCONTENT_QUIET OFF)
+
+        if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+            set(DAWN_PLATFORM "linux")
+        elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+            set(DAWN_PLATFORM "macos")
+        elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+            set(DAWN_PLATFORM "windows-msys2")
+        else()
+            message(FATAL_ERROR "Unsupported platform: ${CMAKE_SYSTEM_NAME}")
+        endif()
+
+        set(DAWN_VERSION 7750)
+
+
+        set(DAWN_BINARIES_URL_PREFIX
+            "https://github.com/mrtrix3/webgpu-dawn-binaries/releases/download/chromium")
+        set(DAWN_BINARIES_URL
+            ${DAWN_BINARIES_URL_PREFIX}-${DAWN_VERSION}/webgpu-dawn-chromium-${DAWN_VERSION}-${DAWN_PLATFORM}.zip
+        )
+
         FetchContent_Declare(
-            nifti2
-            DOWNLOAD_NO_EXTRACT ON
-            URL ${NIFTI2_URL}
+            dawn
+            DOWNLOAD_NO_PROGRESS         1
+            URL ${DAWN_BINARIES_URL}
         )
-        FetchContent_MakeAvailable(nifti1 nifti2)
-        target_include_directories(nifti INTERFACE
-            "${nifti1_SOURCE_DIR}"
-            "${nifti2_SOURCE_DIR}"
+        FetchContent_MakeAvailable(dawn)
+
+        set(DAWN_LIB_DIR_NAME "lib")
+        set(
+          Dawn_DIR
+          "${dawn_SOURCE_DIR}/${DAWN_LIB_DIR_NAME}/cmake/Dawn"
+          CACHE PATH "Folder containing DawnConfig.cmake"
+          FORCE
+        )
+        set(FETCHCONTENT_QUIET ON)
+    endif()
+
+
+    # Slang
+
+    if(MRTRIX_USE_SYSTEM_SLANG)
+        find_package(slang CONFIG REQUIRED)
+    else()
+        message(STATUS "Downloading prebuilt binaries for Slang...")
+        set(SLANG_VERSION "2026.5.1" CACHE STRING "Slang version to download from GitHub releases")
+        set(SLANG_DOWNLOAD_URL_PREFIX
+            "https://github.com/shader-slang/slang/releases/download/v${SLANG_VERSION}"
+        )
+
+        if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+            set(SLANG_OS "linux")
+        elseif(APPLE)
+            set(SLANG_OS "macos")
+        else()
+            set(SLANG_OS "windows")
+        endif()
+
+        set(slang_use_universal FALSE)
+        if(APPLE AND CMAKE_OSX_ARCHITECTURES)
+            set(slang_requested_arches ${CMAKE_OSX_ARCHITECTURES})
+            list(LENGTH slang_requested_arches slang_requested_arch_count)
+
+            if("x86_64" IN_LIST slang_requested_arches AND "arm64" IN_LIST slang_requested_arches)
+                set(slang_use_universal TRUE)
+            elseif(slang_requested_arch_count GREATER 1)
+                message(FATAL_ERROR "Unsupported macOS architecture set for bundled Slang: ${CMAKE_OSX_ARCHITECTURES}")
+            elseif("arm64" IN_LIST slang_requested_arches)
+                set(SLANG_ARCH "aarch64")
+            else()
+                set(SLANG_ARCH "x86_64")
+            endif()
+        elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64" OR CMAKE_SYSTEM_PROCESSOR MATCHES "arm64")
+            set(SLANG_ARCH "aarch64")
+        else()
+            set(SLANG_ARCH "x86_64")
+        endif()
+
+        if(slang_use_universal)
+            message(STATUS "Downloading Slang ${SLANG_VERSION} (macos/x86_64 + macos/aarch64)...")
+
+            mrtrix_prepare_universal_slang(
+                "${SLANG_DOWNLOAD_URL_PREFIX}/slang-${SLANG_VERSION}-macos-x86_64.zip"
+                "${SLANG_DOWNLOAD_URL_PREFIX}/slang-${SLANG_VERSION}-macos-aarch64.zip"
+                slang_root
+            )
+        else()
+            set(slang_download_url
+                "${SLANG_DOWNLOAD_URL_PREFIX}/slang-${SLANG_VERSION}-${SLANG_OS}-${SLANG_ARCH}.zip"
+            )
+
+            message(STATUS "Downloading Slang ${SLANG_VERSION} (${SLANG_OS}/${SLANG_ARCH})...")
+
+            FetchContent_Declare(
+              slang
+                DOWNLOAD_NO_PROGRESS         1
+                URL                          ${slang_download_url}
+            )
+            FetchContent_MakeAvailable(slang)
+            set(slang_root "${slang_SOURCE_DIR}")
+        endif()
+
+        if(WIN32)
+            set(slang_DIR_PATH "${slang_root}/cmake")
+        else()
+            set(slang_DIR_PATH "${slang_root}/lib/cmake/slang")
+        endif()
+
+        set(
+          slang_DIR
+          "${slang_DIR_PATH}"
+          CACHE PATH "Folder containing SlangConfig.cmake"
+          FORCE
         )
     endif()
+endif()
+
+# tcb::span
+if(MRTRIX_USE_SYSTEM_TCB_SPAN)
+    find_path(TCB_SPAN_INCLUDE_DIR
+        NAMES tcb/span.hpp
+        PATHS /usr/include /usr/local/include
+    )
+    if(NOT TCB_SPAN_INCLUDE_DIR)
+        message(FATAL_ERROR "Could not find tcb::span headers. Please install tcb::span or disable MRTRIX_USE_SYSTEM_TCB_SPAN.")
+    endif()
+
+    add_library(tcb_span INTERFACE)
+    target_include_directories(tcb_span INTERFACE ${TCB_SPAN_INCLUDE_DIR})
+    add_library(tcb::span ALIAS tcb_span)
+else()
+    message(STATUS "Downloading tcb::span...")
+
+    FetchContent_Populate(
+        tcb_span
+        GIT_REPOSITORY https://github.com/tcbrindle/span.git
+        GIT_TAG        836dc6a0efd9849cb194e88e4aa2387436bb079b
+    )
+
+    add_library(tcb_span INTERFACE)
+    target_include_directories(tcb_span INTERFACE ${tcb_span_SOURCE_DIR}/include)
+    add_library(tcb::span ALIAS tcb_span)
+endif()
+
+# magic_enum
+set(MAGIC_ENUM_VERSION 0.9.7)
+if(MRTRIX_USE_SYSTEM_MAGIC_ENUM)
+    find_package(magic_enum ${MAGIC_ENUM_VERSION} CONFIG REQUIRED)
+else()
+    set(magic_enum_url "https://github.com/Neargye/magic_enum/archive/refs/tags/v${MAGIC_ENUM_VERSION}.tar.gz")
+    FetchContent_Declare(
+        magic_enum
+        DOWNLOAD_EXTRACT_TIMESTAMP ON
+        URL ${magic_enum_url}
+    )
+    FetchContent_MakeAvailable(magic_enum)
 endif()

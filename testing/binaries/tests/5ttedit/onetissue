@@ -1,0 +1,45 @@
+#!/bin/bash
+# Test re-introduction of a single tissue
+# - Remove a single tissue:
+#   - Replace one volume with an empty volume
+#   - Rescale all remaining tissues to have a unity partial volume sum
+#   - Run 5ttedit, providing the removed tissue
+#   - Make sure the result matches the original
+
+mrconvert 5ttedit/in.mif tmp_in[].mif -force
+
+mrcalc tmp_in0.mif 0 -lt tmp_zero.mif -force
+
+mrmath tmp_in1.mif tmp_in2.mif tmp_in3.mif tmp_in4.mif sum tmp_sumexc0.mif -force
+mrmath tmp_in0.mif tmp_in2.mif tmp_in3.mif tmp_in4.mif sum tmp_sumexc1.mif -force
+mrmath tmp_in0.mif tmp_in1.mif tmp_in3.mif tmp_in4.mif sum tmp_sumexc2.mif -force
+mrmath tmp_in0.mif tmp_in1.mif tmp_in2.mif tmp_in4.mif sum tmp_sumexc3.mif -force
+mrmath tmp_in0.mif tmp_in1.mif tmp_in2.mif tmp_in3.mif sum tmp_sumexc4.mif -force
+
+mrcat tmp_zero.mif tmp_in1.mif tmp_in2.mif tmp_in3.mif tmp_in4.mif -axis 3 - | \
+    mrcalc tmp_sumexc0.mif 0 -gt - tmp_sumexc0.mif -div 0.0 -if tmp_5ttexc0.mif -force
+mrcat tmp_in0.mif tmp_zero.mif tmp_in2.mif tmp_in3.mif tmp_in4.mif -axis 3 - | \
+    mrcalc tmp_sumexc1.mif 0 -gt - tmp_sumexc1.mif -div 0.0 -if tmp_5ttexc1.mif -force
+mrcat tmp_in0.mif tmp_in1.mif tmp_zero.mif tmp_in3.mif tmp_in4.mif -axis 3 - | \
+    mrcalc tmp_sumexc2.mif 0 -gt - tmp_sumexc2.mif -div 0.0 -if tmp_5ttexc2.mif -force
+mrcat tmp_in0.mif tmp_in1.mif tmp_in2.mif tmp_zero.mif tmp_in4.mif -axis 3 - | \
+    mrcalc tmp_sumexc3.mif 0 -gt - tmp_sumexc3.mif -div 0.0 -if tmp_5ttexc3.mif -force
+mrcat tmp_in0.mif tmp_in1.mif tmp_in2.mif tmp_in3.mif tmp_zero.mif -axis 3 - | \
+    mrcalc tmp_sumexc4.mif 0 -gt - tmp_sumexc4.mif -div 0.0 -if tmp_5ttexc4.mif -force
+
+5ttcheck tmp_5ttexc0.mif
+5ttcheck tmp_5ttexc1.mif
+5ttcheck tmp_5ttexc2.mif
+5ttcheck tmp_5ttexc3.mif
+5ttcheck tmp_5ttexc4.mif
+
+5ttedit tmp_5ttexc0.mif -cgm tmp_in0.mif - | \
+    testing_diff_image - 5ttedit/in.mif -abs 1e-5
+5ttedit tmp_5ttexc1.mif -sgm tmp_in1.mif - | \
+    testing_diff_image - 5ttedit/in.mif -abs 1e-5
+5ttedit tmp_5ttexc2.mif -wm tmp_in2.mif - | \
+    testing_diff_image - 5ttedit/in.mif -abs 1e-5
+5ttedit tmp_5ttexc3.mif -csf tmp_in3.mif - | \
+    testing_diff_image - 5ttedit/in.mif -abs 1e-5
+5ttedit tmp_5ttexc4.mif -path tmp_in4.mif - | \
+    testing_diff_image - 5ttedit/in.mif -abs 1e-5

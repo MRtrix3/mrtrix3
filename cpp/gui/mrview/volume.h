@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,8 @@
  */
 
 #pragma once
+
+#include <array>
 
 #include "header.h"
 #include "transform.h"
@@ -92,9 +94,9 @@ public:
   void allocate();
 
   float focus_rate() const {
-    return 1.0e-3 * (std::pow(_header.size(0) * _header.spacing(0) * _header.size(1) * _header.spacing(1) *
-                                  _header.size(2) * _header.spacing(2),
-                              float(1.0 / 3.0)));
+    return 1.0e-3F * (std::pow(_header.size(0) * _header.spacing(0) * _header.size(1) * _header.spacing(1) *
+                                   _header.size(2) * _header.spacing(2),
+                               1.0F / 3.0F));
   }
 
   float scale_factor() const { return _scale_factor; }
@@ -124,8 +126,11 @@ protected:
   float _scale_factor;
   bool texture_mode_changed;
 
-  Eigen::Vector3f pos[4], tex[4], z, im_z;
-  Eigen::Vector3f vertices[8];
+  std::array<Eigen::Vector3f, 4> pos;
+  std::array<Eigen::Vector3f, 4> tex;
+  Eigen::Vector3f z;
+  Eigen::Vector3f im_z;
+  std::array<Eigen::Vector3f, 8> vertices;
 
   inline Eigen::Vector3f div(const Eigen::Vector3f &a, const Eigen::Vector3f &b) {
     return Eigen::Vector3f(a[0] / b[0], a[1] / b[1], a[2] / b[2]);

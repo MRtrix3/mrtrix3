@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,24 +16,30 @@
 
 #pragma once
 
+#include <array>
+#include <map>
+
 #include "file/key_value.h"
 #include "types.h"
-#include <map>
 
 namespace MR::File {
 class Config {
 public:
   static void init();
 
-  static void set(const std::string &key, const std::string &value) { config[key] = value; }
-  static std::string get(const std::string &key);
-  static std::string get(const std::string &key, const std::string &default_value);
-  static bool get_bool(const std::string &key, bool default_value);
-  static int get_int(const std::string &key, int default_value);
-  static float get_float(const std::string &key, float default_value);
-  static void get_RGB(const std::string &key, float *ret, float default_R, float default_G, float default_B);
+  static void set(std::string_view key, std::string_view value) { config[std::string(key)] = std::string(value); }
+  static std::string get(std::string_view key);
+  static std::string get(std::string_view key, std::string_view default_value);
+  static bool get_bool(std::string_view key, bool default_value);
+  static int get_int(std::string_view key, int default_value);
+  static float get_float(std::string_view key, float default_value);
+  static Eigen::Array3f get_RGB(std::string_view key, const Eigen::Array3f &default_value);
 
 private:
   static KeyValues config;
+
+  static const std::string file_basename;
+  static const std::string default_sys_config_file;
+  static const std::string user_config_file;
 };
 } // namespace MR::File
