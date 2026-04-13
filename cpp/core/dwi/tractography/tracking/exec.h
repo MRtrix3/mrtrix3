@@ -32,11 +32,24 @@
 #include "dwi/tractography/mapping/voxel.h"
 
 #include "dwi/tractography/seeding/dynamic.h"
+#include "dwi/tractography/editing/loader.h"
+#include "dwi/tractography/editing/receiver.h"
+#include "ordered_thread_queue.h"
 
 namespace MR::DWI::Tractography::Tracking {
 
+using namespace MR::DWI::Tractography::Editing;
+
 constexpr ssize_t failed_seed_attempts_to_abort = 100000;
 constexpr ssize_t streamline_generation_batch_size = 10;
+
+struct BacktrackConfig {
+  float retrack_fraction;
+  float terminal_search_length;
+  float min_wm_length;
+  float truncation_margin_length;
+  float min_sgm_length;
+};
 
 // TODO Try having ACT as a template boolean; allow compiler to optimise out branch statements
 
@@ -90,17 +103,48 @@ public:
     }
   }
 
+  static void run_backtrack(std::string_view in_fod, std::string_view out_tck, std::string_view in_tck,
+                            std::string_view in_5tt, DWI::Tractography::Properties &properties,
+                            const BacktrackConfig &config) {
+    properties["act"] = std::string(in_5tt);
+    properties["backtrack"] = "1";
+    const size_t number = to<size_t>(properties["max_num_tracks"]);
+    const size_t skip = 0;
+
+    // create a seeder
+    DWI::Directions::FastLookupSet dirs(1281);
+    auto fod_data = Image<float>::open(in_fod);
+    Math::SH::check(fod_data);
+    Seeding::Dynamic *seeder = new Seeding::Dynamic(std::string(in_fod), fod_data, number, dirs);
+    properties.seeds.add(seeder);
+
+    std::vector<std::string> input_file_list;
+    input_file_list.push_back(std::string(in_tck));
+
+    Loader loader(input_file_list);
+    Receiver receiver(std::string(out_tck), properties, number, skip);
+    typename Method::Shared shared(in_fod, properties);
+
+    Exec<Method> tracker(shared);
+    tracker.backtrack_config = config;
+
+    Thread::run_ordered_queue(loader, Thread::batch(Streamline<>()), Thread::multi(tracker),
+                               Thread::batch(Streamline<>()), receiver);
+  }
+
   Exec(const typename Method::Shared &shared)
       : S(shared),
         method(shared),
         track_excluded(false),
-        include_visitation(S.properties.include, S.properties.ordered_include) {}
+        include_visitation(S.properties.include, S.properties.ordered_include),
+        backtrack_config() {}
 
   Exec(const Exec &that)
       : S(that.S),
         method(that.method),
         track_excluded(false),
-        include_visitation(S.properties.include, S.properties.ordered_include) {}
+        include_visitation(S.properties.include, S.properties.ordered_include),
+        backtrack_config(that.backtrack_config) {}
 
   bool operator()(GeneratedTrack &item) {
     if (!seed_track(item))
@@ -123,11 +167,341 @@ public:
     return true;
   }
 
+  bool operator()(const Streamline<> &streamline_in, Streamline<> &streamline_out) {
+    streamline_out = streamline_in;
+    TissuePattern tissue_pattern = get_tissue_pattern(streamline_in);
+    size_t front_truncate = 0, back_truncate = 0;
+    find_truncation(tissue_pattern, front_truncate, back_truncate);
+
+    if (streamline_out.size() > (front_truncate + back_truncate) && (front_truncate > 0 || back_truncate > 0)) {
+      streamline_out.erase(streamline_out.begin(), streamline_out.begin() + front_truncate);
+      streamline_out.resize(streamline_out.size() - back_truncate);
+    } else {
+      front_truncate = back_truncate = 0;
+    }
+
+    if (front_truncate > 0 || back_truncate > 0) {
+      float native_length = 0.0f;
+      for (size_t i = 1; i < streamline_in.size(); ++i) {
+        native_length += (streamline_in[i] - streamline_in[i - 1]).norm();
+      }
+      const float retrack_length_buffer = native_length * backtrack_config.retrack_fraction;
+
+      // Front tracking
+      if (front_truncate > 0) {
+        const_cast<typename Method::Shared &>(S).max_num_points_preds =
+            front_truncate + (retrack_length_buffer / S.step_size);
+        track_excluded = false;
+        method.pos = streamline_out.front();
+        method.dir = -(streamline_out[1] - streamline_out[0]).normalized();
+        if (method.check_seed() && method.init()) {
+          GeneratedTrack front_track;
+          front_track.clear();
+          front_track.push_back(method.pos);
+          gen_track_unidir(front_track);
+
+          if (front_track.size() > 1) {
+            if (S.downsampler.get_ratio() > 1 || (S.is_act() && S.act().crop_at_gmwmi())) {
+              S.downsampler(front_track);
+              check_downsampled_length(front_track);
+            }
+            if (front_track.get_status() == GeneratedTrack::status_t::ACCEPTED) {
+              Streamline<> final_track;
+              final_track.reserve(front_track.size() + streamline_out.size());
+              final_track.insert(final_track.end(), front_track.rbegin(), front_track.rend());
+              final_track.insert(final_track.end(), streamline_out.begin(), streamline_out.end());
+              streamline_out = std::move(final_track);
+            }
+          }
+        }
+      }
+
+      // Back tracking
+      if (back_truncate > 0) {
+        const_cast<typename Method::Shared &>(S).max_num_points_preds =
+            back_truncate + (retrack_length_buffer / S.step_size);
+        track_excluded = false;
+        method.pos = streamline_out.back();
+        method.dir =
+            (streamline_out[streamline_out.size() - 1] - streamline_out[streamline_out.size() - 2]).normalized();
+        if (method.check_seed() && method.init()) {
+          GeneratedTrack back_track;
+          back_track.clear();
+          back_track.push_back(method.pos);
+          gen_track_unidir(back_track);
+
+          if (back_track.size() > 1) {
+            if (S.downsampler.get_ratio() > 1 || (S.is_act() && S.act().crop_at_gmwmi())) {
+              S.downsampler(back_track);
+              check_downsampled_length(back_track);
+            }
+            if (back_track.get_status() == GeneratedTrack::status_t::ACCEPTED) {
+              streamline_out.insert(streamline_out.end(), back_track.begin(), back_track.end());
+            }
+          }
+        }
+      }
+    }
+    return true;
+  }
+
 private:
   const typename Method::Shared &S;
   Method method;
   bool track_excluded;
   IncludeROIVisitation include_visitation;
+  BacktrackConfig backtrack_config;
+
+  struct TissuePattern {
+    std::vector<uint8_t> pattern;
+    std::vector<float> lengths;
+  };
+
+  TissuePattern get_tissue_pattern(const Streamline<> &tck) {
+    constexpr uint8_t WM = 0x1;
+    constexpr uint8_t CGM = 0x2;
+    constexpr uint8_t CSF = 0x4;
+    constexpr uint8_t SGM = 0x8;
+
+    TissuePattern tissue_pattern;
+    tissue_pattern.pattern.reserve(tck.size());
+    tissue_pattern.lengths.reserve(tck.size());
+
+    float cumulative_length = 0.0f;
+    for (size_t i = 0; i < tck.size(); ++i) {
+      method.act().fetch_tissue_data(tck[i]);
+      const auto &tissues = method.act().tissues();
+      uint8_t vox = 0x0;
+      if (tissues.get_wm() > 0.5)
+        vox |= WM;
+      if (tissues.get_cgm() > 0.5)
+        vox |= CGM;
+      if (tissues.get_csf() > 0.5)
+        vox |= CSF;
+      if (tissues.get_sgm() > 0.5)
+        vox |= SGM;
+
+      tissue_pattern.pattern.push_back(vox);
+      if (i > 0) {
+        cumulative_length += (tck[i] - tck[i - 1]).norm();
+      }
+      tissue_pattern.lengths.push_back(cumulative_length);
+    }
+    return tissue_pattern;
+  }
+
+  bool check_wm_in_region(const std::vector<uint8_t> &pattern, size_t start, size_t end) {
+    for (size_t i = start; i < end; ++i) {
+      if (pattern[i] & 0x1)
+        return true;
+    }
+    return false;
+  }
+
+  bool check_onlywm_in_region(const std::vector<uint8_t> &pattern, size_t start, size_t end) {
+    for (size_t i = start; i < end; ++i) {
+      if (!(pattern[i] & 0x1))
+        return false;
+    }
+    return true;
+  }
+
+  bool check_onlysgm_in_region(const std::vector<uint8_t> &pattern, size_t start, size_t end, bool is_front = true) {
+    size_t sgm_count = 0;
+    if (is_front) {
+      for (size_t i = start; i < end; ++i) {
+        if (pattern[i] & 0x8)
+          sgm_count++;
+        else
+          break;
+      }
+    } else {
+      for (size_t i = end; i-- > start;) {
+        if (pattern[i] & 0x8)
+          sgm_count++;
+        else
+          break;
+      }
+    }
+    const size_t min_sgm_points = std::max (size_t(1), size_t(std::round (backtrack_config.min_sgm_length / S.step_size)));
+    return (sgm_count > min_sgm_points);
+  }
+
+  size_t findIndexBeyondThreshold(const std::vector<float> &lengths, float threshold) {
+    size_t idx = 0;
+    while (idx < lengths.size() && lengths[idx] < threshold) {
+      idx++;
+    }
+    return idx;
+  }
+
+  size_t findIndexBeforeThreshold(const std::vector<float> &lengths, float total_length, float threshold) {
+    size_t idx = lengths.size() - 1;
+    while (idx > 0 && (total_length - lengths[idx - 1]) < threshold) {
+      idx--;
+    }
+    return idx;
+  }
+
+  struct WMRegion {
+    size_t start;
+    size_t length;
+  };
+
+  WMRegion findLongestWMRegion(const std::vector<uint8_t> &pattern, float min_length_mm, uint8_t wm_flag) {
+    WMRegion result = {0, 0};
+    size_t current_start = 0;
+    size_t current_length = 0;
+    const size_t min_length = std::max (size_t(1), size_t(std::round (min_length_mm / S.step_size)));
+    for (size_t i = 0; i < pattern.size(); ++i) {
+      if ((pattern[i] & wm_flag)) {
+        if (current_length == 0) {
+          current_start = i;
+        }
+        current_length++;
+      } else {
+        if (current_length > result.length && current_length >= min_length) {
+          result.start = current_start;
+          result.length = current_length;
+        }
+        current_length = 0;
+      }
+    }
+    if (current_length > result.length && current_length >= min_length) {
+      result.start = current_start;
+      result.length = current_length;
+    }
+    return result;
+  }
+
+  size_t processFrontTerminal(const std::vector<uint8_t> &pattern, size_t front_terminal_idx, bool has_wm, bool has_sgm,
+                              bool has_onlywm, uint8_t wm_flag, uint8_t sgm_flag, size_t safety_margin) {
+    if (has_wm && !has_sgm) {
+      if (has_onlywm) {
+        return safety_margin;
+      } else {
+        for (size_t i = front_terminal_idx; i > 0; --i) {
+          if ((pattern[i - 1] & wm_flag)) {
+            size_t k = i - 1;
+            while (k > 0 && (pattern[k - 1] & wm_flag)) {
+              k--;
+            }
+            size_t wm_count = 0;
+            while (k < pattern.size() - 1 && wm_count < safety_margin) {
+              if (!(pattern[k - 1] & wm_flag))
+                break;
+              k++;
+              wm_count++;
+            }
+            return k;
+          }
+        }
+      }
+    } else if (has_sgm) {
+      for (size_t i = 0; i < front_terminal_idx; ++i) {
+        if (!(pattern[i] & sgm_flag)) {
+          size_t k = i - 1;
+          size_t sgm_count = 0;
+          while (k > 0 && sgm_count < safety_margin) {
+            if (!(pattern[k - 1] & sgm_flag))
+              break;
+            k--;
+            sgm_count++;
+          }
+          return k;
+        }
+      }
+      return safety_margin;
+    }
+    return 0;
+  }
+
+  size_t processBackTerminal(const std::vector<uint8_t> &pattern, size_t back_terminal_idx, bool has_wm, bool has_sgm,
+                             bool has_onlywm, uint8_t wm_flag, uint8_t sgm_flag, size_t safety_margin) {
+    if (has_wm && !has_sgm) {
+      if (has_onlywm) {
+        return safety_margin;
+      } else {
+        for (size_t i = back_terminal_idx; i < pattern.size(); ++i) {
+          if ((pattern[i] & wm_flag)) {
+            size_t k = i;
+            while (k < pattern.size() - 1 && (pattern[k + 1] & wm_flag)) {
+              k++;
+            }
+            size_t wm_count = 0;
+            while (k > 0 && wm_count < safety_margin) {
+              if (!(pattern[k - 1] & wm_flag))
+                break;
+              k--;
+              wm_count++;
+            }
+            return pattern.size() - k - 1;
+          }
+        }
+      }
+    } else if (has_sgm) {
+      for (size_t i = pattern.size() - 1; i > back_terminal_idx; --i) {
+        if (!(pattern[i] & sgm_flag)) {
+          size_t k = i + 1;
+          size_t sgm_count = 0;
+          while (k < pattern.size() && sgm_count < safety_margin) {
+            if (!(pattern[k] & sgm_flag))
+              break;
+            k++;
+            sgm_count++;
+          }
+          return pattern.size() - k;
+        }
+      }
+      return safety_margin;
+    }
+    return 0;
+  }
+
+  void find_truncation(const TissuePattern &tissue_pattern, size_t &front_truncate, size_t &back_truncate) {
+    front_truncate = back_truncate = 0;
+    const std::vector<uint8_t> &pattern = tissue_pattern.pattern;
+    const std::vector<float> &lengths = tissue_pattern.lengths;
+    if (pattern.empty() || lengths.empty()) {
+      return;
+    }
+    const float terminal_search_length = backtrack_config.terminal_search_length;
+    const float min_wm_length = backtrack_config.min_wm_length;
+    const float truncation_margin_length = backtrack_config.truncation_margin_length;
+    const size_t truncation_margin = std::max (size_t(1), size_t(std::round (truncation_margin_length / S.step_size)));
+    const size_t min_wm_points = std::max (size_t(1), size_t(std::round (min_wm_length / S.step_size)));
+
+    const uint8_t WM_FLAG = 0x1;
+    const uint8_t SGM_FLAG = 0x8;
+
+    WMRegion wm_region = findLongestWMRegion(pattern, min_wm_length, WM_FLAG);
+    if (wm_region.length < min_wm_points) {
+      return;
+    }
+
+    size_t front_terminal_idx, back_terminal_idx;
+    float total_length = lengths.back();
+    if (total_length >= 2 * terminal_search_length) {
+      front_terminal_idx = findIndexBeyondThreshold(lengths, terminal_search_length);
+      back_terminal_idx = findIndexBeforeThreshold(lengths, total_length, terminal_search_length);
+    } else {
+      front_terminal_idx = wm_region.start + truncation_margin;
+      back_terminal_idx = wm_region.start + wm_region.length - truncation_margin;
+    }
+    bool front_has_wm = check_wm_in_region(pattern, 0, front_terminal_idx);
+    bool back_has_wm = check_wm_in_region(pattern, back_terminal_idx, pattern.size());
+    bool front_has_sgm = check_onlysgm_in_region(pattern, 0, front_terminal_idx, true);
+    bool back_has_sgm = check_onlysgm_in_region(pattern, back_terminal_idx, pattern.size(), false);
+    bool front_has_onlywm = check_onlywm_in_region(pattern, 0, front_terminal_idx);
+    bool back_has_onlywm = check_onlywm_in_region(pattern, back_terminal_idx, pattern.size());
+    front_truncate = processFrontTerminal(pattern, front_terminal_idx, front_has_wm, front_has_sgm, front_has_onlywm,
+                                           WM_FLAG, SGM_FLAG, truncation_margin);
+    back_truncate = processBackTerminal(pattern, back_terminal_idx, back_has_wm, back_has_sgm, back_has_onlywm,
+                                         WM_FLAG, SGM_FLAG, truncation_margin);
+    if (front_truncate + back_truncate >= pattern.size() - 1) {
+      front_truncate = back_truncate = 0;
+    }
+  }
 
   term_t iterate() {
     const term_t method_term = (S.rk4 ? next_rk4() : method.next());
