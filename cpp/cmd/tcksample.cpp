@@ -44,8 +44,8 @@ using namespace MR;
 using namespace App;
 
 enum class Statistic { MEAN, MEDIAN, MIN, MAX };
-enum interp_type { NEAREST, LINEAR, PRECISE };
-enum contrast_type { SCALAR, SH };
+enum class interp_type { NEAREST, LINEAR, PRECISE };
+enum class contrast_type { SCALAR, SH };
 
 // clang-format off
 void usage ()
@@ -118,12 +118,12 @@ using vector_type = Eigen::VectorXf;
 using matrix_type = Eigen::MatrixXf;
 
 struct OnePerStreamline {
-  value_type value;
-  size_t index;
+  value_type value = std::numeric_limits<value_type>::quiet_NaN();
+  size_t index = size_t(-1);
 };
 struct ManyPerStreamline {
   vector_type values;
-  size_t index;
+  size_t index = size_t(-1);
 };
 
 class TDI {
@@ -141,7 +141,7 @@ public:
     return true;
   }
 
-protected:
+private:
   Image<value_type> &image;
   ProgressBar progress;
 };
@@ -341,11 +341,12 @@ protected:
         if (std::isfinite(d.value))
           sum_lengths += d.length;
       }
-      const value_type target_length = 0.5 * sum_lengths;
+      const value_type target_length = 0.5F * sum_lengths;
       sum_lengths = value_type(0);
       value_type prev_value = data.front().value;
       for (const auto &d : data) {
-        if ((sum_lengths += d.length) > target_length)
+        sum_lengths += d.length;
+        if (sum_lengths > target_length)
           return prev_value;
         prev_value = d.value;
       }
@@ -481,7 +482,7 @@ protected:
     for (size_t i = 0; i != tck.size(); ++i) {
       if (interp.scanner(tck[i])) {
         for (auto l = Loop(3)(interp); l; ++l)
-          out(i, ssize_t(interp.index(3))) = value_type(interp.value());
+          out(i, static_cast<Eigen::Index>(interp.index(3))) = static_cast<value_type>(interp.value());
       } else {
         out.row(i).setConstant(std::numeric_limits<value_type>::quiet_NaN());
       }
@@ -521,7 +522,7 @@ public:
         for (interp.index(3) = 0; interp.index(3) != interp.size(3); ++interp.index(3))
           sh_coeffs[interp.index(3)] = interp.value();
         const Eigen::Vector3f dir =
-            (tck[(i == ssize_t(tck.size() - 1)) ? i : (i + 1)] - tck[i > 0 ? (i - 1) : 0]).normalized();
+            (tck[(i == (tck.size() - 1)) ? i : (i + 1)] - tck[i > 0 ? (i - 1) : 0]).normalized();
         out[i] = sh_precomputer->value(sh_coeffs, dir);
       } else {
         out[i] = std::numeric_limits<value_type>::quiet_NaN();
@@ -669,7 +670,7 @@ public:
 
   bool operator()(InputType &in) {
     // TODO Chance that this will be prohibitively slow if count is not indicated in track file header
-    if (in.index >= size_t(data.rows()))
+    if (in.index >= static_cast<size_t>(data.rows()))
       data.conservativeResizeLike(matrix_type::Zero(in.index + 1, data.cols()));
     data.row(in.index) = in.values;
     ++(*this);
@@ -698,7 +699,7 @@ public:
     // Requires preservation of order
     assert(in.get_index() == ReceiverBase::received);
     if (ascii) {
-      if (in.size()) {
+      if (!in.empty()) {
         auto i = in.begin();
         (*ascii) << *i;
         for (++i; i != in.end(); ++i)
@@ -737,11 +738,12 @@ template <class ReceiverType>
 void execute(DWI::Tractography::Reader<value_type> &reader,
              Image<value_type> &image,
              const interp_type interp,
-             const bool sample_sh,
+             const contrast_type contrast,
              const std::optional<Statistic> &statistic,
              Image<value_type> &tdi,
              ReceiverType &receiver) {
-  if (sample_sh) {
+  switch (contrast) {
+  case contrast_type::SH: {
     switch (interp) {
     case interp_type::NEAREST: {
       SamplerNonPreciseSH<Interp::Nearest<Image<value_type>>> sampler(image, statistic);
@@ -756,7 +758,8 @@ void execute(DWI::Tractography::Reader<value_type> &reader,
       execute(reader, sampler, receiver);
     } break;
     }
-  } else {
+  } break;
+  case contrast_type::SCALAR: {
     switch (interp) {
     case interp_type::NEAREST: {
       SamplerNonPreciseScalar<Interp::Nearest<Image<value_type>>> sampler(image, statistic);
@@ -771,6 +774,7 @@ void execute(DWI::Tractography::Reader<value_type> &reader,
       execute(reader, sampler, receiver);
     } break;
     }
+  }
   }
 }
 
@@ -801,7 +805,8 @@ void run() {
   DWI::Tractography::Reader<value_type> reader(argument[0], properties);
 
   auto H = Header::open(argument[1]);
-  const bool plausibly_SH = H.ndim() > 3 && Math::SH::NforL(Math::SH::LforN(H.size(3))) == H.size(3);
+  const bool plausibly_SH =
+      H.ndim() > 3 && Math::SH::NforL(Math::SH::LforN(static_cast<int>(H.size(3)))) == static_cast<size_t>(H.size(3));
   auto opt = get_options("sh");
   contrast_type contrast(contrast_type::SCALAR);
   if (opt.empty()) {
@@ -828,13 +833,11 @@ void run() {
             "it will instead be sampled as individual volumes");
     }
   } else {
-    if (static_cast<bool>(opt[0][0])) {
+    if (static_cast<bool>(opt[0][0]))
       throw Exception("Cannot sample spherical harmonic function amplitudes, "
                       "as input image cannot be interpreted as such");
-    } else {
-      WARN("Specification of -sh false was unnecessary, "
-           "as input image could not be interpreted as spherical harmonics functions");
-    }
+    WARN("Specification of -sh false was unnecessary, "
+         "as input image could not be interpreted as spherical harmonics functions");
   }
 
   const std::optional<Statistic> statistic =
@@ -842,18 +845,16 @@ void run() {
           ? std::nullopt
           : std::optional<Statistic>(get_option_choice<Statistic>("stat_tck", Statistic::MEAN));
 
-  size_t num_metrics = 1;
   if (H.ndim() == 4 && H.size(3) > 1 && contrast == contrast_type::SCALAR) {
     if (!statistic.has_value())
       throw Exception("Cannot export per-vertex values for more than one contrast");
-    num_metrics = H.size(3);
     INFO("Input image is 4D; output will be 2D matrix");
   } else if (H.ndim() > 4) {
     throw Exception("Input image is of unsupported dimensionality");
   }
 
-  const bool nointerp = get_options("nointerp").size();
-  const bool precise = get_options("precise").size();
+  const bool nointerp = !get_options("nointerp").empty();
+  const bool precise = !get_options("precise").empty();
   if (nointerp && precise)
     throw Exception("Options -nointerp and -precise are mutually exclusive");
   const interp_type interp = nointerp ? interp_type::NEAREST : (precise ? interp_type::PRECISE : interp_type::LINEAR);
