@@ -2,3 +2,7 @@ mrmath dwi.mif mean -axis 3 - | testing_diff_image - mrmath/out1.mif -frac 1e-5
 mrmath dwi.mif rms -axis 3 - | testing_diff_image - mrmath/out2.mif -frac 1e-5
 mrmath dwi.mif norm -axis 3 - | mrcalc - 0.12126781251816648 -mult - | testing_diff_image - mrmath/out2.mif -frac 1e-5
 mrconvert dwi.mif tmp-[].mif; mrmath tmp-??.mif median - | testing_diff_image - mrmath/out3.mif -frac 1e-5
+! mrmath dwi.mif $(mrconvert dwi.mif -coord 3 0 -axes 0,1,2 -) mean tmp.mif -force
+! mrmath dwi.mif $(mrtransform dwi.mif -identity -) mean tmp.mif -force
+! mrmath dwi.mif $(mrcat dwi.mif dwi.mif -axis 3 -) mean tmp.mif -force
+! mrmath dwi.mif $(mrcat dwi.mif dwi.mif -axis 4 -) mean tmp.mif -force
