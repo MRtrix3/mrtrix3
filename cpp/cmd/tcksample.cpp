@@ -838,19 +838,15 @@ void run() {
   }
 
   const std::optional<Statistic> statistic =
-      opt.empty() ? std::nullopt : std::optional<Statistic>(get_option_choice<Statistic>("stat_tck", Statistic::MEAN));
+      get_options("stat_tck").empty()
+          ? std::nullopt
+          : std::optional<Statistic>(get_option_choice<Statistic>("stat_tck", Statistic::MEAN));
 
   size_t num_metrics = 1;
   if (H.ndim() == 4 && H.size(3) > 1 && contrast == contrast_type::SCALAR) {
     if (!statistic.has_value())
       throw Exception("Cannot export per-vertex values for more than one contrast");
     num_metrics = H.size(3);
-    INFO("Input image is 4D; output will be 2D matrix");
-  } else if (H.ndim() > 4) {
-    throw Exception("Input image is of unsupported dimensionality");
-  }
-
-  if (contrast == contrast_type::SCALAR && H.ndim() == 4 && H.size(3) != 1 && statistic.has_value()) {
     INFO("Input image is 4D; output will be 2D matrix");
   } else if (H.ndim() > 4) {
     throw Exception("Input image is of unsupported dimensionality");
