@@ -2,10 +2,11 @@
 # Ensure that if the two polygons sharing an edge have opposite winding orders,
 #   the correct error message is produced.
 
-rm -f tmp.vtk
-sed '649c\3 162 164 163' meshconvert/in_ascii.vtk > tmp.vtk
+# Data committed to test_data repo rather than generating on-the-fly
+#   due to differences between BSD and Unix sed
+#sed '649c\3 162 164 163' meshconvert/in_ascii.vtk > meshvalidate/inconsistent_normals.vtk
 
 rm -f tmp.txt
-! ( meshvalidate tmp.vtk > tmp.txt 2>&1 )
+! ( meshvalidate meshvalidate/inconsistent_normals.vtk > tmp.txt 2>&1 )
 cat tmp.txt
 grep "connected polygons with inconsistent normals" tmp.txt
