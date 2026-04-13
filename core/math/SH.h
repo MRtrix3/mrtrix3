@@ -522,7 +522,7 @@ namespace MR
           assert (std::isfinite (unit_init_dir[0]));
           for (int i = 0; i < 50; i++) {
             value_type az = std::atan2 (unit_init_dir[1], unit_init_dir[0]);
-            value_type el = std::acos (unit_init_dir[2]);
+            value_type el = std::atan2 (std::hypot (unit_init_dir[0], unit_init_dir[1]), unit_init_dir[2]);
             value_type amplitude, dSH_del, dSH_daz, d2SH_del2, d2SH_deldaz, d2SH_daz2;
             derivatives (sh, lmax, el, az, amplitude, dSH_del, dSH_daz, d2SH_del2, d2SH_deldaz, d2SH_daz2, precomputer);
 
@@ -536,7 +536,7 @@ namespace MR
 
             value_type dSH_dt = daz*dSH_daz + del*dSH_del;
             value_type d2SH_dt2 = daz*daz*d2SH_daz2 + 2.0*daz*del*d2SH_deldaz + del*del*d2SH_del2;
-            value_type dt = d2SH_dt2 ? (-dSH_dt / d2SH_dt2) : 0.0;
+            value_type dt = d2SH_dt2 ? (-dSH_dt / d2SH_dt2) : MAX_DIR_CHANGE;
 
             if (dt < 0.0) dt = -dt;
             if (dt > MAX_DIR_CHANGE) dt = MAX_DIR_CHANGE;
@@ -595,7 +595,7 @@ namespace MR
           else {
             Eigen::Matrix<value_type,Eigen::Dynamic,1,0,64> buf (lmax+1);
             for (int m = 0; m <= lmax; m++) {
-              Legendre::Plm_sph (buf, lmax, m, cel);
+              Legendre::Plm_sph (buf, lmax, m, cel, sel);
               for (int l = ( (m&1) ?m+1:m); l <= lmax; l+=2)
                 AL[index_mpos (l,m)] = buf[l];
             }
