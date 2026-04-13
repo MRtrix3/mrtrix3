@@ -149,9 +149,9 @@ protected:
 class SamplerBase {
 
 public:
-  SamplerBase(const contrast_type contrast, const std::optional<stat_tck> &statistic) //
-      : _contrast(contrast),                                                          //
-        _statistic(statistic) {}                                                      //
+  SamplerBase(const contrast_type contrast, const std::optional<Statistic> &statistic) //
+      : _contrast(contrast),                                                           //
+        _statistic(statistic) {}                                                       //
 
   SamplerBase(const SamplerBase &that) = default;
 
@@ -170,11 +170,11 @@ public:
 
   virtual size_t num_contrasts() const = 0;
   contrast_type contrast() const { return _contrast; }
-  const std::optional<stat_tck> &statistic() const { return _statistic; }
+  const std::optional<Statistic> &statistic() const { return _statistic; }
 
 protected:
   const contrast_type _contrast;
-  const std::optional<stat_tck> _statistic;
+  const std::optional<Statistic> _statistic;
 };
 
 template <class Interp> class SamplerNonPreciseBase : public SamplerBase {
@@ -182,7 +182,7 @@ public:
   using BaseType = SamplerBase;
   SamplerNonPreciseBase(Image<value_type> &image,
                         const contrast_type contrast,
-                        const std::optional<stat_tck> &statistic)
+                        const std::optional<Statistic> &statistic)
       : BaseType(contrast, statistic), interp(image) {}
   SamplerNonPreciseBase(const SamplerNonPreciseBase &that) = default;
   virtual ~SamplerNonPreciseBase() = default;
@@ -192,8 +192,8 @@ public:
     out.index = tck.get_index();
     DWI::Tractography::TrackScalar<value_type> values;
     (*this)(tck, values);
-    const std::vector<value_type> weights(statistic() == stat_tck::MEAN ? compute_weights(tck)
-                                                                        : std::vector<value_type>());
+    const std::vector<value_type> weights(statistic() == Statistic::MEAN ? compute_weights(tck)
+                                                                         : std::vector<value_type>());
     out.value = compute_statistic(values, weights);
     return true;
   }
@@ -203,8 +203,8 @@ public:
     out.index = tck.get_index();
     matrix_type values;
     (*this)(tck, values);
-    const std::vector<value_type> weights(statistic() == stat_tck::MEAN ? compute_weights(tck)
-                                                                        : std::vector<value_type>());
+    const std::vector<value_type> weights(statistic() == Statistic::MEAN ? compute_weights(tck)
+                                                                         : std::vector<value_type>());
     out.values.resize(interp.size(3));
     for (size_t i = 0; i != interp.size(3); ++i)
       out.values[i] = compute_statistic(values.col(i), weights);
@@ -239,8 +239,8 @@ private:
   template <class VectorType>
   value_type compute_statistic(const VectorType &data, const std::vector<value_type> &weights) const {
     assert(statistic().has_value());
-    switch (statistic()) {
-    case stat_tck::MEAN: {
+    switch (statistic().value()) {
+    case Statistic::MEAN: {
       value_type integral = value_type(0);
       value_type sum_weights = value_type(0);
       for (size_t i = 0; i != data.size(); ++i) {
@@ -251,7 +251,7 @@ private:
       }
       return sum_weights > value_type(0) ? (integral / sum_weights) : std::numeric_limits<value_type>::quiet_NaN();
     }
-    case stat_tck::MEDIAN: {
+    case Statistic::MEDIAN: {
       // Don't bother with a weighted median here
       std::vector<value_type> finite_data;
       finite_data.reserve(data.size());
@@ -261,7 +261,7 @@ private:
       }
       return finite_data.empty() ? std::numeric_limits<value_type>::quiet_NaN() : Math::median(finite_data);
     } break;
-    case stat_tck::MIN: {
+    case Statistic::MIN: {
       value_type value = std::numeric_limits<value_type>::infinity();
       bool cast_to_nan = true;
       for (size_t i = 0; i != data.size(); ++i) {
@@ -272,7 +272,7 @@ private:
       }
       return cast_to_nan ? std::numeric_limits<value_type>::quiet_NaN() : value;
     } break;
-    case stat_tck::MAX: {
+    case Statistic::MAX: {
       value_type value = -std::numeric_limits<value_type>::infinity();
       bool cast_to_nan = true;
       for (size_t i = 0; i != data.size(); ++i) {
@@ -284,13 +284,15 @@ private:
       return cast_to_nan ? std::numeric_limits<value_type>::quiet_NaN() : value;
     } break;
     }
+    assert(false);
+    return std::numeric_limits<value_type>::quiet_NaN();
   }
 };
 
 class SamplerPreciseBase : public SamplerBase {
 public:
   using BaseType = SamplerBase;
-  SamplerPreciseBase(Image<value_type> &image, const contrast_type contrast, const std::optional<stat_tck> &statistic)
+  SamplerPreciseBase(Image<value_type> &image, const contrast_type contrast, const std::optional<Statistic> &statistic)
       : BaseType(contrast, statistic), image(image), mapper(new DWI::Tractography::Mapping::TrackMapperBase(image)) {
     assert(statistic.has_value());
     mapper->set_use_precise_mapping(true);
@@ -321,7 +323,7 @@ protected:
     if (data.empty())
       return std::numeric_limits<value_type>::quiet_NaN();
     switch (statistic().value()) {
-    case stat_tck::MEAN: {
+    case Statistic::MEAN: {
       value_type integral = value_type(0);
       value_type sum_lengths = value_type(0);
       for (const auto &v : data) {
@@ -332,7 +334,7 @@ protected:
       }
       return sum_lengths > value_type(0) ? (integral / sum_lengths) : std::numeric_limits<value_type>::quiet_NaN();
     }
-    case stat_tck::MEDIAN: {
+    case Statistic::MEDIAN: {
       std::sort(data.begin(), data.end());
       value_type sum_lengths(value_type(0));
       for (const auto &d : data) {
@@ -350,7 +352,7 @@ protected:
       assert(false);
       return std::numeric_limits<value_type>::signaling_NaN();
     }
-    case stat_tck::MIN: {
+    case Statistic::MIN: {
       value_type minvalue = std::numeric_limits<value_type>::infinity();
       bool cast_to_nan = true;
       for (const auto &d : data) {
@@ -361,7 +363,7 @@ protected:
       }
       return cast_to_nan ? std::numeric_limits<value_type>::quiet_NaN() : minvalue;
     }
-    case stat_tck::MAX: {
+    case Statistic::MAX: {
       value_type maxvalue = -std::numeric_limits<value_type>::infinity();
       bool cast_to_nan = true;
       for (const auto &d : data) {
@@ -373,6 +375,8 @@ protected:
       return cast_to_nan ? std::numeric_limits<value_type>::quiet_NaN() : maxvalue;
     }
     }
+    assert(false);
+    return std::numeric_limits<value_type>::quiet_NaN();
   }
 };
 
@@ -381,7 +385,7 @@ public:
   using BaseType = SamplerPreciseBase;
   using SamplerPreciseBase::ValueLength;
   SamplerPreciseScalar(Image<value_type> &image,
-                       const std::optional<stat_tck> &statistic,
+                       const std::optional<Statistic> &statistic,
                        const Image<value_type> &precalc_tdi)
       : BaseType(image, contrast_type::SCALAR, statistic), tdi(precalc_tdi) {}
   SamplerPreciseScalar(const SamplerPreciseScalar &that) = default;
@@ -443,7 +447,7 @@ template <class Interp> class SamplerNonPreciseScalar : public SamplerNonPrecise
 public:
   using BaseType = SamplerNonPreciseBase<Interp>;
   using BaseType::interp;
-  SamplerNonPreciseScalar(Image<value_type> &image, const std::optional<stat_tck> &statistic)
+  SamplerNonPreciseScalar(Image<value_type> &image, const std::optional<Statistic> &statistic)
       : BaseType(image, contrast_type::SCALAR, statistic) {}
   SamplerNonPreciseScalar(const SamplerNonPreciseScalar &that) = default;
 
@@ -490,7 +494,7 @@ template <class Interp> class SamplerNonPreciseSH : public SamplerNonPreciseBase
 public:
   using BaseType = SamplerNonPreciseBase<Interp>;
   using BaseType::interp;
-  SamplerNonPreciseSH(Image<value_type> &image, const std::optional<stat_tck> &statistic)
+  SamplerNonPreciseSH(Image<value_type> &image, const std::optional<Statistic> &statistic)
       : BaseType(image, contrast_type::SH, statistic),
         sh_precomputer(std::make_shared<Math::SH::PrecomputedAL<default_type>>()),
         sh_coeffs(image.size(3)) {
@@ -552,11 +556,11 @@ class SamplerPreciseSH : public SamplerPreciseBase {
 public:
   using BaseType = SamplerPreciseBase;
   using SamplerPreciseBase::ValueLength;
-  SamplerPreciseSH(Image<value_type> &image, const std::optional<stat_tck> &statistic)
+  SamplerPreciseSH(Image<value_type> &image, const std::optional<Statistic> &statistic)
       : BaseType(image, contrast_type::SH, statistic),
         sh_precomputer(std::make_shared<Math::SH::PrecomputedAL<default_type>>()),
         sh_coeffs(image.size(3)) {
-    assert(statistic().has_value());
+    assert(statistic.has_value());
     sh_precomputer->init(Math::SH::LforN(image.size(3)));
   }
   SamplerPreciseSH(const SamplerPreciseSH &that) = default;
@@ -602,7 +606,7 @@ private:
 
 class ReceiverBase {
 public:
-  ReceiverBase(const size_t num_tracks, const bool ordered, const std::string &path)
+  ReceiverBase(const size_t num_tracks, const bool ordered, std::string_view path)
       : received(0),
         path(path),
         expected(num_tracks),
@@ -734,7 +738,7 @@ void execute(DWI::Tractography::Reader<value_type> &reader,
              Image<value_type> &image,
              const interp_type interp,
              const bool sample_sh,
-             const std::optional<stat_tck> &statistic,
+             const std::optional<Statistic> &statistic,
              Image<value_type> &tdi,
              ReceiverType &receiver) {
   if (sample_sh) {
@@ -776,11 +780,11 @@ void execute(DWI::Tractography::Reader<value_type> &reader,
              Image<value_type> &image,
              const interp_type interp,
              const contrast_type contrast,
-             const std::optional<stat_tck> &statistic,
+             const std::optional<Statistic> &statistic,
              Image<value_type> &tdi,
              std::string_view path) {
   const size_t num_metrics = image.ndim() == 4 && contrast == contrast_type::SCALAR ? image.size(3) : 1;
-  if (statistic == stat_tck::NONE) {
+  if (!statistic.has_value()) {
     Receiver_PerVertex receiver(properties, num_tracks, path);
     execute(reader, image, interp, contrast, statistic, tdi, receiver);
   } else if (num_metrics == 1) {
@@ -833,7 +837,7 @@ void run() {
     }
   }
 
-  const std::optional<stat_tck> statistic =
+  const std::optional<Statistic> statistic =
       opt.empty() ? std::nullopt : std::optional<Statistic>(get_option_choice<Statistic>("stat_tck", Statistic::MEAN));
 
   size_t num_metrics = 1;
