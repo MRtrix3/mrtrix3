@@ -371,7 +371,7 @@ void run() {
   Thread::run_queue(loader, Thread::batch(Streamline<>()),
                     Thread::multi(LabelCollector(labeled, intersected_lists)));
 
-  CONSOLE("Computing inverted index vector");
+  // CONSOLE("Computing inverted index vector");
   for (size_t track_index = 0; track_index < intersected_lists->size();
        ++track_index) {
     const auto &labels = (*intersected_lists)[track_index];
