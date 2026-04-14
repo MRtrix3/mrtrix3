@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <string_view>
+
 #include "dwi/tractography/roi.h"
 #include "dwi/tractography/seeding/base.h"
 #include "dwi/tractography/seeding/seeding.h"
@@ -93,7 +95,7 @@ private:
 
 class CoordinatesLoader {
 public:
-  CoordinatesLoader(const std::string &cds_path);
+  CoordinatesLoader(std::string_view cds_path);
 
 protected:
   Eigen::MatrixXf coords;
@@ -104,7 +106,7 @@ protected:
 
 class Count_per_coord : public Base, public CoordinatesLoader {
 public:
-  Count_per_coord(const std::string &in, const size_t streamlines_per_coord);
+  Count_per_coord(std::string_view in, const size_t streamlines_per_coord);
   virtual bool get_seed(Eigen::Vector3f &p) const override;
 
 private:
@@ -114,15 +116,15 @@ private:
   const ssize_t streamlines_per_coordinate;
 };
 
-class Coordinates : public Base, public CoordinatesLoader {
+class Random_coordinates : public Base, public CoordinatesLoader {
 public:
-  Coordinates(const std::string &in);
+  Random_coordinates(std::string_view in);
   virtual bool get_seed(Eigen::Vector3f &p) const override;
 };
 
 class Rejection_per_coord : public Base, public CoordinatesLoader {
 public:
-  Rejection_per_coord(const std::string &in);
+  Rejection_per_coord(std::string_view in);
   virtual bool get_seed(Eigen::Vector3f &p) const override;
 };
 

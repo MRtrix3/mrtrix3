@@ -190,16 +190,16 @@ void load_seed_mechanisms(Properties &properties) {
 
   opt = get_options("seed_coordinates");
   if (!opt.empty()) {
-    if (list.num_seeds())
+    if (!list.empty())
       throw Exception("If seeding from pre-specified coordinates with no fixed number of streamlines per coordinate,"
                       " cannot specify any other type of seed!");
-    Coordinates *seed = new Coordinates(opt[0][0]);
+    Random_coordinates *seed = new Random_coordinates(opt[0][0]);
     list.add(seed);
   }
 
   opt = get_options("seed_rejection_per_coordinate");
   if (opt.size()) {
-    if (list.num_seeds())
+    if (!list.empty())
       throw Exception("If performing rejection seeding from pre-specified coordinates,"
                       " cannot specify any other type of seed!");
     Rejection_per_coord *seed = new Rejection_per_coord(str(opt[0][0]));
@@ -210,10 +210,10 @@ void load_seed_mechanisms(Properties &properties) {
   //   internal FMLS segmenter has to use the same Directions::Set as TrackMapperDixel
   opt = get_options("seed_dynamic");
   if (!opt.empty()) {
-    if (list.num_seeds())
+    if (!list.empty())
       throw Exception("If performing dynamic streamline seeding, cannot specify any other type of seed!");
     properties["seed_dynamic"] = str(opt[0][0]);
-  } else if (!list.num_seeds()) {
+  } else if (list.empty()) {
     throw Exception("Must provide at least one source of streamline seeds!");
   }
 }

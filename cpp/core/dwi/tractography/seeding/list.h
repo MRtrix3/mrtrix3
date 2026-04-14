@@ -33,6 +33,7 @@ public:
   void clear();
   bool get_seed(Eigen::Vector3f &p, Eigen::Vector3f &d);
 
+  bool empty() const { return seeders.empty(); }
   size_t num_seeds() const { return seeders.size(); }
   const Base *operator[](const size_t n) const { return seeders[n].get(); }
   bool is_finite() const { return total_count; }

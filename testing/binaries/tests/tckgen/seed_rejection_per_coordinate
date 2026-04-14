@@ -11,6 +11,7 @@ tckgen SIFT_phantom/dwi.mif tmp_out.tck \
     -select 5K \
     -force
 
+rm -f tmp_out*.txt
 tckconvert tmp_out.tck tmp_out[].txt -force
 
 rm -f tmp_out.txt

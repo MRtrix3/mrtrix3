@@ -40,11 +40,11 @@ bool Sphere::get_seed(Eigen::Vector3f &p) const {
   return true;
 }
 
-SeedMask::SeedMask(std::string_view in)                                              //
-    : Base(in, "random seeding mask", attempts_per_seed.at(seed_attempt_t::RANDOM)), //
-      mask(in) {                                                                     //
-  Base::volume = static_cast<float>(static_cast<default_type>(get_count(mask)) * mask.spacing(0) * mask.spacing(1) *
-                                    mask.spacing(2));
+SeedMask::SeedMask(std::string_view in)                                                   //
+    : Base(in, "random seeding mask", attempts_per_seed.at(seed_attempt_t::RANDOM)),      //
+      mask(in) {                                                                          //
+  Base::volume = static_cast<float>(static_cast<default_type>(get_count(mask)) *          //
+                                    mask.spacing(0) * mask.spacing(1) * mask.spacing(2)); //
 }
 
 bool SeedMask::get_seed(Eigen::Vector3f &p) const {
@@ -157,7 +157,7 @@ bool Grid_per_voxel::get_seed(Eigen::Vector3f &p) const {
   return true;
 }
 
-Rejection_per_voxel::Rejection(std::string_view in)
+Rejection_per_voxel::Rejection_per_voxel(std::string_view in)
     : Base(in, "rejection sampling", attempts_per_seed.at(seed_attempt_t::RANDOM)),
 #ifdef REJECTION_SAMPLING_USE_INTERPOLATION
       interp(in),
@@ -249,8 +249,8 @@ bool Rejection_per_voxel::get_seed(Eigen::Vector3f &p) const {
   return true;
 }
 
-CoordinatesLoader::CoordinatesLoader(const std::string &cds_path) //
-    : coords(File::Matrix::load_matrix<float>(cds_path)) {        //
+CoordinatesLoader::CoordinatesLoader(std::string_view cds_path) //
+    : coords(File::Matrix::load_matrix<float>(cds_path)) {      //
   switch (coords.cols()) {
   case 3:
     break;
@@ -270,7 +270,7 @@ CoordinatesLoader::CoordinatesLoader(const std::string &cds_path) //
   }
 }
 
-Count_per_coord::Count_per_coord(const std::string &in, const size_t streamlines_per_coord)
+Count_per_coord::Count_per_coord(std::string_view in, const size_t streamlines_per_coord)
     : Base(in, "fixed streamlines per coordinate", attempts_per_seed.at(seed_attempt_t::FIXED)),
       CoordinatesLoader(in),
       current_coord(0),
@@ -301,7 +301,7 @@ bool Count_per_coord::get_seed(Eigen::Vector3f &p) const {
   return true;
 }
 
-Coordinates::Coordinates(const std::string &in)                                                      //
+Random_coordinates::Random_coordinates(std::string_view in)                                          //
     : Base(in, "random coordinate selection seeding", attempts_per_seed.at(seed_attempt_t::RANDOM)), //
       CoordinatesLoader(in) {                                                                        //
   if (have_weights())
@@ -310,12 +310,12 @@ Coordinates::Coordinates(const std::string &in)                                 
                     " (must be only 3 columns in input file)");   //
 }
 
-bool Coordinates::get_seed(Eigen::Vector3f &p) const {
+bool Random_coordinates::get_seed(Eigen::Vector3f &p) const {
   p = coords.row(std::uniform_int_distribution<>(0, num_coordinates() - 1)(rng));
   return true;
 }
 
-Rejection_per_coord::Rejection_per_coord(const std::string &in)                                      //
+Rejection_per_coord::Rejection_per_coord(std::string_view in)                                        //
     : Base(in, "rejection sampling from coordinates", attempts_per_seed.at(seed_attempt_t::RANDOM)), //
       CoordinatesLoader(in) {                                                                        //
   if (!have_weights())
