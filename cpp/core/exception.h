@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "format_string.h"
 #include "types.h"
 
 #ifdef MRTRIX_AS_R_LIBRARY
@@ -65,21 +66,21 @@ inline void __print_stderr(std::string_view text) {
  * debugging information; anything else: none. */
 extern void (*report_to_user_func)(std::string_view msg, int type);
 
-#define CONSOLE(msg)                                                                                                   \
+#define CONSOLE(...)                                                                                                   \
   if (MR::App::log_level >= 1)                                                                                         \
-  ::MR::report_to_user_func(msg, -1)
-#define FAIL(msg)                                                                                                      \
+  ::MR::report_to_user_func(::MR::format_string(__VA_ARGS__), -1)
+#define FAIL(...)                                                                                                      \
   if (MR::App::log_level >= 0)                                                                                         \
-  ::MR::report_to_user_func(msg, 0)
-#define WARN(msg)                                                                                                      \
+  ::MR::report_to_user_func(::MR::format_string(__VA_ARGS__), 0)
+#define WARN(...)                                                                                                      \
   if (MR::App::log_level >= 1)                                                                                         \
-  ::MR::report_to_user_func(msg, 1)
-#define INFO(msg)                                                                                                      \
+  ::MR::report_to_user_func(::MR::format_string(__VA_ARGS__), 1)
+#define INFO(...)                                                                                                      \
   if (MR::App::log_level >= 2)                                                                                         \
-  ::MR::report_to_user_func(msg, 2)
-#define DEBUG(msg)                                                                                                     \
+  ::MR::report_to_user_func(::MR::format_string(__VA_ARGS__), 2)
+#define DEBUG(...)                                                                                                     \
   if (MR::App::log_level >= 3)                                                                                         \
-  ::MR::report_to_user_func(msg, 3)
+  ::MR::report_to_user_func(::MR::format_string(__VA_ARGS__), 3)
 
 class Exception : public std::exception {
 public:
