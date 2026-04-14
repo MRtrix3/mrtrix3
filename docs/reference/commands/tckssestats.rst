@@ -13,12 +13,13 @@ Usage
 
 ::
 
-    tckssestats [ options ]  in_streamline_directory subjects design similarity out_streamline_directory
+    tckssestats [ options ]  in_streamline_directory subjects design similarity tck_weights_in out_streamline_directory
 
 -  *in_streamline_directory*: the streamline directory containing the data for each subject
 -  *subjects*: a text file listing the subject identifiers (one per line). This should correspond with the filenames in the image directory, and be listed in the same order as the rows of the design matrix.
 -  *design*: the design matrix
 -  *similarity*: the streamline similarity matrix
+-  *tck_weights_in*: txt file containing streamline-wise SIFT2 weights
 -  *out_streamline_directory*: the output directory where results will be saved. Will be created if it does not exist
 
 Description
@@ -34,11 +35,7 @@ In some software packages, a column of ones is automatically added to the GLM de
 Options
 -------
 
--  **-mask file** provide a text file containing a mask of those streamlines to be used during processing
-
 -  **-posthoc file** provide a text file containing a mask of those streamlines to contribute to statistical inference
-
--  **-tck_weights_in path** txt file containing the streamline-wise weights
 
 Options relating to shuffling of data for nonparametric statistical inference
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

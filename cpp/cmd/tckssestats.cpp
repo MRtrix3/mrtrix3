@@ -38,10 +38,11 @@
 using namespace MR;
 using namespace App;
 
-using Fixel::index_type;
-using Math::Stats::matrix_type;  // Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic>;
+using Math::Stats::matrix_type;
 using Math::Stats::value_type;
 using Math::Stats::vector_type;
+using Math::Stats::measurements_value_type;
+using Math::Stats::element_mask_type;
 using Stats::PermTest::count_matrix_type;
 
 constexpr double DEFAULT_SSE_DH = 0.1;
@@ -76,19 +77,19 @@ void usage ()
 
   + Argument ("similarity", "the streamline similarity matrix").type_directory_in ()
 
+  + Argument ("tck_weights_in", "txt file containing streamline-wise SIFT2 weights").type_file_in ()
+
   + Argument ("out_streamline_directory", "the output directory where results will be saved. Will be created if it does not exist").type_directory_out ();
 
 
   OPTIONS
 
-  + Option ("mask", "provide a text file containing a mask of those streamlines to be used during processing")
-    + Argument ("file").type_file_in()
+  // -mask has not been added at this stage. I wonder if that is needed in this circumstance or is it something that can be
+  // achieved via tckedit
 
   + Option ("posthoc", "provide a text file containing a mask of those streamlines to contribute to statistical inference")
     + Argument ("file").type_file_in()
 
-  +Option ("tck_weights_in", "txt file containing the streamline-wise weights").required()
-    + Argument ("path").type_file_in()
 
   + Math::Stats::shuffle_options (true, DEFAULT_EMPIRICAL_SKEW)
 
@@ -128,10 +129,10 @@ using ind_type = int;
 
 
 template <class VectorType>
-void write_streamline_output (std::string_view filename, const VectorType& data) {
+void write_streamline_output (std::string_view filename, const VectorType& data, const Math::Stats::element_mask_type* mask = nullptr) {
   Eigen::VectorXf temp (Eigen::VectorXf::Zero (data.size()));
   for (ssize_t j = 0; j < data.size(); j++) {
-    temp[j] = data[j];
+    temp[j] = (mask && !(*mask)[j]) ? NaNF : static_cast<float>(data[j]);
   }
   File::Matrix::save_vector(temp, filename);
 }
@@ -141,9 +142,7 @@ class SubjectTxtImport : public Math::Stats::SubjectDataImportBase {
 public:
   SubjectTxtImport(std::string_view path) : 
     Math::Stats::SubjectDataImportBase(path) {
-    data = File::Matrix::load_vector<float> (path);
-
-    // TODO Error handling
+    data = File::Matrix::load_vector<measurements_value_type> (path);
   }
 
   // write data into a matrix
@@ -154,7 +153,7 @@ public:
   }
 
   // access data
-  Math::Stats::measurements_value_type operator[](const Math::Stats::index_type index) const override {
+  measurements_value_type operator[](const Math::Stats::index_type index) const override {
     assert(index < data.size());
     return data[index];
   }
@@ -164,7 +163,7 @@ public:
   }
 
 private:
-  Eigen::Matrix<float, Eigen::Dynamic, 1> data;
+  Eigen::Matrix<measurements_value_type, Eigen::Dynamic, 1> data;
 };
 
 
@@ -181,8 +180,7 @@ void run()
 
   const bool normalise = get_options ("nonstationarity_intrinsic").size();
  
-  auto opt = get_options ("tck_weights_in");
-  Eigen::Matrix<float, Eigen::Dynamic, 1> weights = File::Matrix::load_vector<float> (opt[0][0]);
+  Eigen::Matrix<float, Eigen::Dynamic, 1> weights = File::Matrix::load_vector<float> (argument[4]);
 
   const bool do_nonstationarity_adjustment = get_options ("nonstationarity").size();
   const default_type empirical_skew = get_option_value ("skew_nonstationarity", DEFAULT_EMPIRICAL_SKEW);
@@ -208,19 +206,8 @@ void run()
   CONSOLE ("Number of inputs: " + str(importer.size()));
   CONSOLE("Number of streamlines: " + str(num_streamline));
 
-  Math::Stats::element_mask_type mask_processing (num_streamline);
-  mask_processing.setConstant (true);
-  opt = get_options ("mask");
-  if (opt.size()) {
-    auto data = File::Matrix::load_vector<int> (opt[0][0]);
-    if (data.size() != static_cast<ssize_t>(num_streamline))
-      throw Exception ("Processing mask file \"" + std::string(opt[0][0]) + "\" does not match number of streamlines");
-    for (size_t i = 0; i != num_streamline; ++i)
-      mask_processing[i] = (data[i] != 0);
-  }
-
   Math::Stats::element_mask_type mask_inference (num_streamline);
-  opt = get_options ("posthoc");
+  auto opt = get_options ("posthoc");
   if (opt.size()) {
     auto data = File::Matrix::load_vector<int> (opt[0][0]);
     if (data.size() != static_cast<ssize_t>(num_streamline))
@@ -228,7 +215,7 @@ void run()
     for (size_t i = 0; i != num_streamline; ++i)
       mask_inference[i] = (data[i] != 0);
   } else {
-    mask_inference = mask_processing;
+    mask_inference.setConstant (true);
   }
 
   const matrix_type design = File::Matrix::load_matrix (argument[2]);
@@ -253,7 +240,7 @@ void run()
       for (size_t j = 0; j != importer.size(); ++j)
         (*extra_columns[i][j]) (column_data.row (j));
       for (size_t j = 0; j != num_streamline; ++j) {
-        if (mask_processing[j] && !column_data.col(j).allFinite()) {
+        if (!column_data.col(j).allFinite()) {
           nans_in_columns = true;
           break;
         }
@@ -287,7 +274,7 @@ void run()
   Track::Matrix::Reader sim_matrix (argument[3]);
   CONSOLE("Matrix size: " + str(sim_matrix.size()));
 
-  const std::string output_streamline_directory = argument[4];
+  const std::string output_streamline_directory = argument[5];
     if (Path::exists (output_streamline_directory)) {
         if (!Path::is_dir (output_streamline_directory)) {
             if (App::overwrite_files) {
@@ -319,12 +306,8 @@ void run()
   }
 
   for (size_t i = 0; i != num_streamline; ++i) {
-    if (mask_processing[i]) {
-      if (!data.col(i).allFinite())
-        nans_in_data = true;
-    } else {
-      data.col(i).fill (std::numeric_limits<Math::Stats::value_type>::quiet_NaN());
-    }
+    if (!data.col(i).allFinite())
+      nans_in_data = true;
   }
 
   if (nans_in_data) {
@@ -466,12 +449,18 @@ void run()
     ++progress;
     
 
+    // The problem here is how mrview renders nan values from a per-streamline txt file
+    // Rendering: the nan values appear as black
+    // Thresholding: the nan values are not thresholded
+    // Conceptually it makes sense to set those to nan, but then one might want to either filter them
+    // or set them to 0 for thresholding purposes using external tools (e.g. Python).
+    // It should be less of a problem for the null_contribution as that may not be used for displaying purposes.
     for (size_t i = 0; i != num_hypotheses; ++i) {
-      write_streamline_output (Path::join (output_streamline_directory, "fwe_1mpvalue" + postfix(i) + ".txt"), pvalue_output.col(i));
+      write_streamline_output (Path::join (output_streamline_directory, "fwe_1mpvalue" + postfix(i) + ".txt"), pvalue_output.col(i), &mask_inference);
       ++progress;
-      write_streamline_output (Path::join (output_streamline_directory, "uncorrected_pvalue" + postfix(i) + ".txt"), uncorrected_pvalues.col(i));
+      write_streamline_output (Path::join (output_streamline_directory, "uncorrected_pvalue" + postfix(i) + ".txt"), uncorrected_pvalues.col(i), &mask_inference);
       ++progress;
-      write_streamline_output (Path::join (output_streamline_directory, "null_contributions" + postfix(i) + ".txt"), null_contributions.col(i));
+      write_streamline_output (Path::join (output_streamline_directory, "null_contributions" + postfix(i) + ".txt"), null_contributions.col(i), &mask_inference);
       ++progress;
     }
   }
