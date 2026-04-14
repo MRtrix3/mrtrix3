@@ -82,7 +82,7 @@ using vect_type = Eigen::VectorXf;
 
 class Source
 {
-public:
+  public:
     Source(const size_t N) : number(N), counter(0) {}
 
     bool operator()(size_t& track)
@@ -93,7 +93,7 @@ public:
         return true;
     }
 
-private:
+  private:
     const size_t number;
     size_t counter;
 };
@@ -101,7 +101,7 @@ private:
 
 class Worker
 {
-public:
+  public:
     Worker(const vect_type& in_samples, std::function<value_type(size_t)> weight_func, vect_type& out_data,
            const Track::Matrix::Reader& matrix_in, const value_type& simthreshold, const value_type& simdecay) :
         in_samples(in_samples), 
@@ -114,49 +114,49 @@ public:
 
     bool operator()(const size_t track)
     {
-        // initialised here to keep it thread-safe
-        Image<int> index_img = matrix.get_index_image();
-        Image<int> similar_img = matrix.get_streamlines_image();
-        Image<value_type> score_img = matrix.get_values_image();
+      // initialised here to keep it thread-safe
+      Image<int> index_img = matrix.get_index_image();
+      Image<int> similar_img = matrix.get_streamlines_image();
+      Image<value_type> score_img = matrix.get_values_image();
 
-        index_img.move_index(0, track);
-        size_t howmany = index_img.get_value();
-        index_img.move_index(3, 1);
-        int offset = index_img.get_value();
+      index_img.move_index(0, track);
+      size_t howmany = index_img.get_value();
+      index_img.move_index(3, 1);
+      int offset = index_img.get_value();
 
-        value_type numerator = 0.0f;
-        value_type denominator = 0.0f;
-        for (size_t i = 0; i < howmany; ++i) {
-          score_img.move_index(0, offset + i);
-          similar_img.move_index(0, offset + i);
+      value_type numerator = 0.0f;
+      value_type denominator = 0.0f;
+      for (size_t i = 0; i < howmany; ++i) {
+        score_img.move_index(0, offset + i);
+        similar_img.move_index(0, offset + i);
 
-          value_type curr_sample = in_samples[similar_img.get_value()];
-          value_type curr_weight = weight_func(similar_img.get_value());
-          value_type curr_score = score_img.get_value();
+        value_type curr_sample = in_samples[similar_img.get_value()];
+        value_type curr_weight = weight_func(similar_img.get_value());
+        value_type curr_score = score_img.get_value();
 
-          // avoids propagating NaNs and this also fixes existing NaNs
-          if (curr_score >= threshold && std::isfinite(curr_score)) {
-            value_type weight_score = curr_weight * std::pow(curr_score, decay);
-            numerator += (curr_sample * weight_score);
-            denominator += weight_score;
-          }
-
-          score_img.reset();
-          similar_img.reset();
+        // avoids propagating NaNs and this also fixes existing NaNs
+        if (curr_score >= threshold && std::isfinite(curr_score)) {
+          value_type weight_score = curr_weight * std::pow(curr_score, decay);
+          numerator += (curr_sample * weight_score);
+          denominator += weight_score;
         }
-        
-        index_img.reset();
 
-        value_type result = numerator / denominator;
+        score_img.reset();
+        similar_img.reset();
+      }
+      
+      index_img.reset();
 
-        output_data[track] = result;
+      value_type result = numerator / denominator;
 
-        ++(*progress);
+      output_data[track] = result;
 
-        return true;
+      ++(*progress);
+
+      return true;
     }
 
-private:
+  private:
     const vect_type& in_samples;
     std::function<value_type(size_t)> weight_func;
     vect_type& output_data;

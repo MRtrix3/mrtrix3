@@ -25,30 +25,26 @@
 namespace MR::Stats
 {
 
-    using value_type = Math::Stats::value_type;
-    // using direction_type = Eigen::Matrix<value_type, 3, 1>;
+  using value_type = Math::Stats::value_type;
+  // using direction_type = Eigen::Matrix<value_type, 3, 1>;
 
 
 
-    class SSE : public Stats::EnhancerBase {
-      public:
-        SSE (const Track::Matrix::Reader& similarity_matrix, const Eigen::Matrix<float, Eigen::Dynamic, 1> weights,
-             const value_type dh, const value_type E, const value_type H, const value_type M, const bool norm);
-        virtual ~SSE() { }
+  class SSE : public Stats::EnhancerBase {
+    public:
+      SSE (const Track::Matrix::Reader& similarity_matrix, const Eigen::Matrix<float, Eigen::Dynamic, 1> weights,
+            const value_type dh, const value_type E, const value_type H, const value_type M, const bool norm);
+      virtual ~SSE() { }
 
-      protected:
-        const Track::Matrix::Reader matrix;
-        const Eigen::Matrix<float, Eigen::Dynamic, 1> weights;
-        const value_type dh, E, H, M;
-        const bool normalise;
+    protected:
+      const Track::Matrix::Reader matrix;
+      const Eigen::Matrix<float, Eigen::Dynamic, 1> weights;
+      const value_type dh, E, H, M;
+      const bool normalise;
 
-        mutable std::vector<value_type> h_pow_H;
+      mutable std::vector<value_type> h_pow_H;
 
-        void operator() (in_column_type, out_column_type) const override;
-    };
-
-
+      void operator() (in_column_type, out_column_type) const override;
+  };
 
 }
-
-

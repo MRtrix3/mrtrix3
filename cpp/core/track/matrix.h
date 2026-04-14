@@ -23,33 +23,32 @@
 
 namespace MR::Track::Matrix
 {
+  using ind_type = int;
 
-      using ind_type = int;
+  class Reader
+  {
+    public:
+      Reader(std::string_view folder);
 
-      class Reader
-      {
-        public:
-            Reader(std::string_view folder);
+      // Eigen::Matrix<float, Eigen::Dynamic, 1> operator[] (const size_t index) const;
 
-            // Eigen::Matrix<float, Eigen::Dynamic, 1> operator[] (const size_t index) const;
+      FORCE_INLINE size_t size() const { return index_image.size(0); }
 
-            FORCE_INLINE size_t size() const { return index_image.size(0); }
+      FORCE_INLINE const Image<ind_type>& get_index_image() const { return index_image; }
+      FORCE_INLINE const Image<int>& get_streamlines_image() const { return streamlines_image; }
+      FORCE_INLINE const Image<float>& get_values_image() const { return values_image; }
 
-            FORCE_INLINE const Image<ind_type>& get_index_image() const { return index_image; }
-            FORCE_INLINE const Image<int>& get_streamlines_image() const { return streamlines_image; }
-            FORCE_INLINE const Image<float>& get_values_image() const { return values_image; }
+      Eigen::Matrix<float, Eigen::Dynamic, 1> get_scores(const size_t index) const;
+      Eigen::Matrix<float, Eigen::Dynamic, 1> get_similar(const size_t index) const;
 
-            Eigen::Matrix<float, Eigen::Dynamic, 1> get_scores(const size_t index) const;
-            Eigen::Matrix<float, Eigen::Dynamic, 1> get_similar(const size_t index) const;
-
-        private:
-            std::string index_file;
-            std::string streamlines_file;
-            std::string values_file;
-            Image<ind_type> index_image;
-            Image<ind_type> streamlines_image;
-            Image<float> values_image;
-      };
+    private:
+      std::string index_file;
+      std::string streamlines_file;
+      std::string values_file;
+      Image<ind_type> index_image;
+      Image<ind_type> streamlines_image;
+      Image<float> values_image;
+  };
 
       
 }
