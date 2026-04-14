@@ -47,7 +47,7 @@ using namespace MR;
 using namespace App;
 
 
-constexpr float DEFAULT_RETRACK_FRACTION = 0.25f;
+constexpr float DEFAULT_RETRACK_LENGTH_LIMIT = 0.25f;
 constexpr float DEFAULT_TERMINAL_SEARCH_LENGTH = 20.0f;
 constexpr float DEFAULT_MIN_WM_LENGTH = 5.0f;
 constexpr float DEFAULT_TRUNCATION_MARGIN_LENGTH = 2.0f;
@@ -66,13 +66,11 @@ void usage ()
 
     + "The process for each streamline is as follows:"
 
-    + "1. The tissue type at each streamline vertex is determined using the provided 5TT image."
+    + "1. Streamline tissue profiling: a 5TT segmentation is used to determine the underlying dominant tissue type for each vertex of the streamline"
 
-    + "2. The algorithm searches the ends of each streamline for terminations that are not consistent with a GM-WMI boundary crossing (e.g., ending abruptly in WM or deep CSF)."
+    + "2. Truncation: identification of a suitable point along the streamline where the terminal segment can be truncated due to conflict between streamline trajectory and 5TT"
 
-    + "3. If an implausible termination is found, the streamline is truncated back to a suitable location within the WM, close to the original boundary."
-
-    + "4. Tractography is then re-initiated from this new endpoint, using the provided FOD image, to generate a new termination.";
+    + "3. If a suitable truncation point could be identified, that is used as a seed to re-initiate fibre tracking using ACT";
 
   ARGUMENTS
     + Argument ("tracks_in", "the input file containing the tracks.").type_tracks_in()
@@ -89,13 +87,13 @@ void usage ()
 
   + OptionGroup ("Back-tracking/Re-tracking parameters")
 
-  + Option ("retrack_fraction", "set the extra length allowed for the re-tracked streamline segment as a fraction of the original streamline length (default: " + str(DEFAULT_RETRACK_FRACTION) + ")")
+  + Option ("retrack_length_limit", "set the maximum allowed length for re-tracking, expressed as a fraction of the original streamline length (default: " + str(DEFAULT_RETRACK_LENGTH_LIMIT) + ")")
     + Argument ("value").type_float(0.0, 1.0)
 
   + Option ("search_length", "set the length of the terminal region to examine for truncation (in mm) (default: " + str(DEFAULT_TERMINAL_SEARCH_LENGTH) + " mm)")
     + Argument ("value").type_float(0.0)
 
-  + Option ("min_wm_length", "set the minimum length of continuous white matter required to consider a streamline for backtracking (default: " + str(DEFAULT_MIN_WM_LENGTH) + " mm)")
+  + Option ("min_wm_length", "set the minimum length of continuous white matter required to consider a streamline for back-tracking (default: " + str(DEFAULT_MIN_WM_LENGTH) + " mm)")
     + Argument ("value").type_float(0.0)
 
   + Option ("min_sgm_length", "set the minimum length of continuous sub-cortical grey matter required to consider a termination valid within that tissue (default: " + str(DEFAULT_MIN_SGM_LENGTH) + " mm)")
@@ -160,14 +158,14 @@ void run ()
   properties["max_num_tracks"] = str(count);
 
   BacktrackConfig config;
-  config.retrack_fraction = get_option_value ("retrack_fraction", DEFAULT_RETRACK_FRACTION);
+  config.retrack_length_limit = get_option_value ("retrack_length_limit", DEFAULT_RETRACK_LENGTH_LIMIT);
   config.terminal_search_length = get_option_value ("search_length", DEFAULT_TERMINAL_SEARCH_LENGTH);
   config.min_wm_length = get_option_value ("min_wm_length", DEFAULT_MIN_WM_LENGTH);
   config.truncation_margin_length = get_option_value ("truncation_margin", DEFAULT_TRUNCATION_MARGIN_LENGTH);
   config.min_sgm_length = get_option_value ("min_sgm_length", DEFAULT_MIN_SGM_LENGTH);
 
-  if (config.retrack_fraction <= 0.0f)
-    throw Exception ("Retrack fraction (" + str(config.retrack_fraction) + ") must be positive");
+  if (config.retrack_length_limit <= 0.0f)
+    throw Exception ("Retrack length limit (" + str(config.retrack_length_limit) + ") must be positive");
 
   if (config.min_wm_length <= 2 * config.truncation_margin_length)
     throw Exception ("The minimum WM length (" + str(config.min_wm_length) + " mm) must be greater than twice the truncation margin (" + str(config.truncation_margin_length) + " mm)");

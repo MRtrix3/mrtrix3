@@ -44,7 +44,7 @@ constexpr ssize_t failed_seed_attempts_to_abort = 100000;
 constexpr ssize_t streamline_generation_batch_size = 10;
 
 struct BacktrackConfig {
-  float retrack_fraction;
+  float retrack_length_limit;
   float terminal_search_length;
   float min_wm_length;
   float truncation_margin_length;
@@ -185,7 +185,7 @@ public:
       for (size_t i = 1; i < streamline_in.size(); ++i) {
         native_length += (streamline_in[i] - streamline_in[i - 1]).norm();
       }
-      const float retrack_length_buffer = native_length * backtrack_config.retrack_fraction;
+      const float retrack_length_buffer = native_length * backtrack_config.retrack_length_limit;
 
       // Front tracking
       if (front_truncate > 0) {

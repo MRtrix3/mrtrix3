@@ -58,32 +58,37 @@ void usage ()
 {
   AUTHOR = "Simone Zanoni (simone.zanoni@sydney.edu.au)";
 
-  SYNOPSIS = "Streamline-based analysis using similarity-based streamline enhancement and non-parametric permutation testing";
+  SYNOPSIS = "Streamline-based analysis using Similarity-informed Streamline Enhancement (SSE) and non-parametric permutation testing";
 
   DESCRIPTION
 
-  + "Write a description here"
+  + "For Similarity-informed Streamline Enhancement,"
+    " use -nonstationarity_intrinsic to enable the intrinsic non-stationarity correction "
+    "and/or -nonstationarity for empirical non-stationarity correction."
+
+  + MR::Stats::PermTest::mask_posthoc_description
 
   + Math::Stats::GLM::column_ones_description;
 
   ARGUMENTS
-  + Argument ("in_streamline_directory", "the streamline directory containing the data files for each subject (after obtaining streamline similarity").type_directory_in()
+  + Argument ("in_streamline_directory", "the streamline directory containing the data for each subject").type_directory_in ()
 
-  + Argument ("subjects", "a text file listing the subject identifiers (one per line). This should correspond with the filenames "
-                          "in the streamline directory (including the file extension), and be listed in the same order as the rows of the design matrix.").type_file_in ()
+  + Argument ("subjects", "a text file listing the subject identifiers (one per line). "
+              "This should correspond with the filenames in the image directory, and be listed in the same order as the rows of the design matrix.").type_file_in ()
 
   + Argument ("design", "the design matrix").type_file_in ()
 
-  + Argument ("contrast", "the contrast matrix, specified as rows of weights").type_file_in ()
-
   + Argument ("similarity", "the streamline similarity matrix").type_directory_in ()
 
-  + Argument ("out_streamline_directory", "the output directory where results will be saved. Will be created if it does not exist").type_text();
+  + Argument ("out_streamline_directory", "the output directory where results will be saved. Will be created if it does not exist").type_directory_out ();
 
 
   OPTIONS
 
   + Option ("mask", "provide a text file containing a mask of those streamlines to be used during processing")
+    + Argument ("file").type_file_in()
+
+  + Option ("posthoc", "provide a text file containing a mask of those streamlines to contribute to statistical inference")
     + Argument ("file").type_file_in()
 
   +Option ("tck_weights_in", "txt file containing the streamline-wise weights").required()
@@ -105,9 +110,15 @@ void usage ()
   + Option ("sse_m", "sse similarity exponent (default: " + str(DEFAULT_SSE_M, 2) + ")")
   + Argument ("value").type_float (0.0, 100.0)
 
-  + Option ("normalise", "use the normalised version of SSE")
+  + Option ("nonstationarity_intrinsic", "use the intrinsic non-stationarity correction (normalised version of SSE)")
 
-  + Math::Stats::GLM::glm_options ("fixel");
+  + Math::Stats::GLM::glm_options ("streamline");
+
+  REFERENCES
+  + "Zanoni, S.; Lv, J.; Smith, R. E. & Calamante, F. "
+    "Streamline-Based Analysis: "
+    "A novel framework for tractogram-driven streamline-wise statistical analysis. "
+    "Proceedings of the International Society for Magnetic Resonance in Medicine, 2025, 4781";
 
 }
 
@@ -132,20 +143,6 @@ public:
     data = File::Matrix::load_vector<float> (path);
 
     // TODO Error handling
-    // try {
-    //     data = load_vector<float>(path);
-    // } catch (const std::exception& e) {// try {
-    //     data = load_vector<float>(path);
-    // } catch (const std::exception& e) {
-    //     throw Exception("Error loading .txt file: " + path + " - " + e.what());
-    // }
-    //     throw Exception("Error loading .txt file: " + path + " - " + e.what());
-    // }
-
-    // needs to check that it is streamline data here, which is the expected data format
-    // for the fixel data it only expects the data in the first dimension
-    // {
-    // }
   }
 
   // write data into a matrix
@@ -191,7 +188,7 @@ void run()
   const value_type sse_e = get_option_value ("sse_e", DEFAULT_SSE_E);
   const value_type sse_m = get_option_value ("sse_m", DEFAULT_SSE_M);
 
-  const bool normalise = get_options ("normalise").size();
+  const bool normalise = get_options ("nonstationarity_intrinsic").size();
  
   auto opt = get_options ("tck_weights_in");
   Eigen::Matrix<float, Eigen::Dynamic, 1> weights = File::Matrix::load_vector<float> (opt[0][0]);
@@ -220,22 +217,28 @@ void run()
   CONSOLE ("Number of inputs: " + str(importer.size()));
   CONSOLE("Number of streamlines: " + str(num_streamline));
 
-  // Eigen::Matrix<int, Eigen::Dynamic, 1> mask;
-  // auto opt_mask = get_options ("mask");
-  // size_t mask_streamlines = 0;
-  // if (opt_mask.size()) {
-  //   mask = load_vector<int> (opt_mask[0][0]);
-  //   if (mask.size() != num_streamline)
-  //     throw Exception ("Mask file does not have the same number of streamlines as the input data");
-  //   for (ssize_t i = 0; i < mask.size(); ++i) {
-  //     if (mask(i))
-  //       ++mask_streamlines;
-  //   }
-  //   CONSOLE ("Number of streamlines in mask: " + str(mask_streamlines));
-  // } else {
-  //   mask.setOnes(num_streamline);
-  //   mask_streamlines = num_streamline;
-  // }
+  Math::Stats::element_mask_type mask_processing (num_streamline);
+  mask_processing.setConstant (true);
+  opt = get_options ("mask");
+  if (opt.size()) {
+    auto data = File::Matrix::load_vector<int> (opt[0][0]);
+    if (data.size() != (ssize_t)num_streamline)
+      throw Exception ("Processing mask file \"" + std::string(opt[0][0]) + "\" does not match number of streamlines");
+    for (size_t i = 0; i != num_streamline; ++i)
+      mask_processing[i] = (data[i] != 0);
+  }
+
+  Math::Stats::element_mask_type mask_inference (num_streamline);
+  opt = get_options ("posthoc");
+  if (opt.size()) {
+    auto data = File::Matrix::load_vector<int> (opt[0][0]);
+    if (data.size() != (ssize_t)num_streamline)
+      throw Exception ("Post-hoc mask file \"" + std::string(opt[0][0]) + "\" does not match number of streamlines");
+    for (size_t i = 0; i != num_streamline; ++i)
+      mask_inference[i] = (data[i] != 0);
+  } else {
+    mask_inference = mask_processing;
+  }
 
   const matrix_type design = File::Matrix::load_matrix (argument[2]);
   if (design.rows() != (ssize_t)importer.size())
@@ -243,33 +246,36 @@ void run()
 
 
   // DEALING WITH EXTRA COLUMN
-  // Before validating the contrast matrix, we first need to see if there are any
-  //   additional design matrix columns coming from fixel-wise subject data
+  // See if there is any additional design matrix columns coming from subject data
+  bool nans_in_data = false;
+
   std::vector<Math::Stats::CohortDataImport> extra_columns;
   bool nans_in_columns = false;
 
-  // // TO BE TESTED
-  // opt = get_options ("column");
-  // for (size_t i = 0; i != opt.size(); ++i) {
-  //   extra_columns.push_back (Math::Stats::CohortDataImport());
-  //   extra_columns[i].initialise<SubjectTxtImport> (opt[i][0]);
-  //   // Check for non-finite values
-  //   // Can't use generic allFinite() function; need to populate matrix data
-  //   if (!nans_in_columns) {
-  //     Math::Stats::measurements_matrix_type column_data (importer.size(), num_streamline);
-  //     for (size_t j = 0; j != importer.size(); ++j)
-  //       (*extra_columns[i][j]) (column_data.row (j));
-  //     if (!column_data.allFinite())
-  //       nans_in_columns = true;
-  //   }
-  // }
-  
+  opt = get_options ("column");
+  for (size_t i = 0; i != opt.size(); ++i) {
+    extra_columns.emplace_back (Math::Stats::CohortDataImport());
+    extra_columns[i].initialise<SubjectTxtImport> (opt[i][0]);
+    // Check for non-finite values
+    if (!nans_in_columns) {
+      Math::Stats::measurements_matrix_type column_data (importer.size(), num_streamline);
+      for (size_t j = 0; j != importer.size(); ++j)
+        (*extra_columns[i][j]) (column_data.row (j));
+      for (size_t j = 0; j != num_streamline; ++j) {
+        if (mask_processing[j] && !column_data.col(j).allFinite()) {
+          nans_in_columns = true;
+          break;
+        }
+      }
+    }
+  }
+
   const ssize_t num_factors = design.cols() + extra_columns.size();
   CONSOLE ("Number of factors: " + str(num_factors));
   if (extra_columns.size()) {
     CONSOLE ("Number of element-wise design matrix columns: " + str(extra_columns.size()));
     if (nans_in_columns)
-      CONSOLE ("Non-finite values detected in element-wise design matrix columns; individual rows will be removed from fixel-wise design matrices accordingly");
+      CONSOLE ("Non-finite values detected in streamline-wise design matrix columns; individual rows will be removed from streamline-wise design matrices accordingly");
   }
 
   // DESIGN
@@ -281,20 +287,16 @@ void run()
   if (num_vgs > 1)
     CONSOLE ("Number of variance groups: " + str(num_vgs));
 
-  // CONTRAST
-  const std::vector<Math::Stats::GLM::Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses (argument[3]);
+  // Load hypotheses
+  const std::vector<Math::Stats::GLM::Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses (num_factors);
   const size_t num_hypotheses = hypotheses.size();
-  if (hypotheses[0].cols() != num_factors)
-    throw Exception ("The number of columns in the contrast matrix (" + str(hypotheses[0].cols()) + ")"
-                     + (extra_columns.size() ? " (in addition to the " + str(extra_columns.size()) + " uses of -column)" : "")
-                     + " does not equal the number of columns in the design matrix (" + str(design.cols()) + ")");
   CONSOLE ("Number of hypotheses: " + str(num_hypotheses));
 
   // SIMILARITY
-  Track::Matrix::Reader sim_matrix (argument[4]);
+  Track::Matrix::Reader sim_matrix (argument[3]);
   CONSOLE("Matrix size: " + str(sim_matrix.size()));
 
-  const std::string output_fixel_directory = argument[5];
+  const std::string output_fixel_directory = argument[4];
     if (Path::exists (output_fixel_directory)) {
         if (!Path::is_dir (output_fixel_directory)) {
             if (App::overwrite_files) {
@@ -309,21 +311,8 @@ void run()
 
 
 
-  // TO BE TESTED
-  // // Check for streamlines with no neighbours in the similarity matrix.
-  // // It is informative to know whether there are streamlines that
-  // //   don't have any similar neighbours; warn the user that these will be
-  // //   zeroed by the enhancement process.
-  // size_t num_unconnected_streamlines = 0;
-  // Image<int> index_img = sim_matrix.get_index_image();
-  // for (size_t s = 0; s < num_streamline; ++s) {
-  //   index_img.move_index(0, s);
-  //   if (index_img.get_value() <= 1) // A streamline should always have at least self-similarity
-  //     ++num_unconnected_streamlines;
-  // }
-  // if (num_unconnected_streamlines) {
-  //   WARN ("A total of " + str(num_unconnected_streamlines) + " streamlines do not possess any similar neighbours (based on the similarity threshold); these will not be enhanced by SSE, and hence cannot be tested for statistical significance");
-  // }
+  // TO DO
+  // Inform the used about the presence of streamlines with no similar streamlines
 
 
 
@@ -338,24 +327,21 @@ void run()
     }
   }
 
-  // Detect non-finite values in mask streamlines only; NaN-fill other streamlines
-  bool nans_in_data = false;
+  for (size_t i = 0; i != num_streamline; ++i) {
+    if (mask_processing[i]) {
+      if (!data.col(i).allFinite())
+        nans_in_data = true;
+    } else {
+      data.col(i).fill (std::numeric_limits<Math::Stats::value_type>::quiet_NaN());
+    }
+  }
 
-  // TO BE TESTED
-  // for (size_t i = 0; i < num_streamline; ++i) {
-  //   if (mask(i)) {
-  //     if (!data.col(i).allFinite())
-  //       nans_in_data = true;
-  //   } else {
-  //     data.col(i).fill(NaN);
-  //   }
-  // }
-  // if (nans_in_data) {
-  //   CONSOLE ("Non-finite values present in data; rows will be removed from streamline-wise design matrices accordingly");
-  //   if (!extra_columns.size()) {
-  //     CONSOLE ("(Note that this will result in slower execution than if such values were not present)");
-  //   }
-  // }
+  if (nans_in_data) {
+    CONSOLE ("Non-finite values present in data; rows will be removed from streamline-wise design matrices accordingly");
+    if (!extra_columns.size()) {
+      CONSOLE ("(Note that this will result in slower execution than if such values were not present)");
+    }
+  }
 
 
   // Only add contrast matrix row number to image outputs if there's more than one hypothesis
@@ -437,7 +423,8 @@ void run()
     for (size_t i = 0; i != num_hypotheses; ++i)
       write_streamline_output (Path::join (output_fixel_directory, "sse_empirical" + postfix(i) + ".txt"), empirical_sse_statistic.col(i));
   }
-  CONSOLE("Non-stationary: " + str(do_nonstationarity_adjustment));
+  CONSOLE ("Non-stationarity - empirical: " + str(do_nonstationarity_adjustment));
+  CONSOLE ("Non-stationarity - intrinsic: " + str(normalise));
 
 
 
@@ -468,10 +455,8 @@ void run()
 
     matrix_type null_distribution, uncorrected_pvalues;
     count_matrix_type null_contributions;
-    Math::Stats::element_mask_type mask (num_streamline);
-    mask.setConstant (true);
     Stats::PermTest::run_permutations (glm_test, sse_integrator, empirical_sse_statistic, default_enhanced, fwe_strong,
-                                       mask, null_distribution, null_contributions, uncorrected_pvalues);
+                                       mask_inference, null_distribution, null_contributions, uncorrected_pvalues);
 
     ProgressBar progress ("Outputting final results", (fwe_strong ? 1 : num_hypotheses) + 1 + 3*num_hypotheses);
 
@@ -486,7 +471,7 @@ void run()
       }
     }
 
-    const matrix_type pvalue_output = MR::Math::Stats::fwe_pvalue (null_distribution, default_enhanced, mask);
+    const matrix_type pvalue_output = MR::Math::Stats::fwe_pvalue (null_distribution, default_enhanced, mask_inference);
     ++progress;
     
 
