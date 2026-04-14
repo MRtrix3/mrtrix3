@@ -146,28 +146,18 @@ public:
   }
 
   // write data into a matrix
-  // write data into a matrix
   void operator() (Math::Stats::measurements_matrix_type::RowXpr row) const override {
-    // to be thread-safe a local variable is needed
-    Eigen::Matrix<float, Eigen::Dynamic, 1> temp (data);
-
-    for (size_t i = 0; i < static_cast<size_t>(temp.size()); ++i) {
-      row(i) = temp[i];
+    for (size_t i = 0; i < static_cast<size_t>(data.size()); ++i) {
+      row(i) = data[i];
     }
   }
 
   // access data
-  // access data
   Math::Stats::measurements_value_type operator[](const Math::Stats::index_type index) const override {
-    // to be thread-safe a local variable is needed
-    Eigen::Matrix<float, Eigen::Dynamic, 1> temp (data);
-
     assert(index < data.size());
-    return temp[index];
+    return data[index];
   }
 
-  // Size function: Return the number of rows (or elements) in the data
-  // Size function: Return the number of rows (or elements) in the data
   Math::Stats::index_type size() const override {
     return data.size();  // Number of rows in the .txt file
   }
@@ -296,17 +286,17 @@ void run()
   Track::Matrix::Reader sim_matrix (argument[3]);
   CONSOLE("Matrix size: " + str(sim_matrix.size()));
 
-  const std::string output_fixel_directory = argument[4];
-    if (Path::exists (output_fixel_directory)) {
-        if (!Path::is_dir (output_fixel_directory)) {
+  const std::string output_streamline_directory = argument[4];
+    if (Path::exists (output_streamline_directory)) {
+        if (!Path::is_dir (output_streamline_directory)) {
             if (App::overwrite_files) {
-              File::remove (output_fixel_directory);
+              File::remove (output_streamline_directory);
             } else {
-              throw Exception ("Cannot create stats folder \"" + output_fixel_directory + "\": Already exists as file");
+              throw Exception ("Cannot create stats folder \"" + output_streamline_directory + "\": Already exists as file");
             }
         }
     } else {
-        File::mkdir (output_fixel_directory);
+        File::mkdir (output_streamline_directory);
     }
 
 
@@ -361,16 +351,16 @@ void run()
     ProgressBar progress ("Outputting beta coefficients, effect size and standard deviation", num_factors + (2 * num_hypotheses) + num_vgs + (nans_in_data || extra_columns.size() ? 1 : 0));
 
     for (ssize_t i = 0; i != num_factors; ++i) {
-      write_streamline_output(Path::join (output_fixel_directory, "beta" + str(i) + ".txt"), betas.row(i));
+      write_streamline_output(Path::join (output_streamline_directory, "beta" + str(i) + ".txt"), betas.row(i));
       ++progress;
     }
 
     for (size_t i = 0; i != num_hypotheses; ++i) {
       if (!hypotheses[i].is_F()) {
-        write_streamline_output (Path::join (output_fixel_directory, "abs_effect" + postfix(i) + ".txt"), abs_effect_size.col(i));
+        write_streamline_output (Path::join (output_streamline_directory, "abs_effect" + postfix(i) + ".txt"), abs_effect_size.col(i));
         ++progress;
         if (num_vgs == 1)
-          write_streamline_output (Path::join (output_fixel_directory, "std_effect" + postfix(i) + ".txt"), std_effect_size.col(i));
+          write_streamline_output (Path::join (output_streamline_directory, "std_effect" + postfix(i) + ".txt"), std_effect_size.col(i));
       } else {
         ++progress;
       }
@@ -378,15 +368,15 @@ void run()
     }
 
     if (nans_in_data || extra_columns.size()) {
-      write_streamline_output (Path::join (output_fixel_directory, "cond.txt"), cond);
+      write_streamline_output (Path::join (output_streamline_directory, "cond.txt"), cond);
       ++progress;
     }
 
     if (num_vgs == 1) {
-      write_streamline_output (Path::join (output_fixel_directory, "std_dev.txt"), stdev.row (0));
+      write_streamline_output (Path::join (output_streamline_directory, "std_dev.txt"), stdev.row (0));
     } else {
       for (size_t i = 0; i != num_vgs; ++i) {
-        write_streamline_output (Path::join (output_fixel_directory, "std_dev" + str(i) + ".txt"), stdev.row (i));
+        write_streamline_output (Path::join (output_streamline_directory, "std_dev" + str(i) + ".txt"), stdev.row (i));
         ++progress;
       }
     }
@@ -421,7 +411,7 @@ void run()
   if (do_nonstationarity_adjustment) {
     Stats::PermTest::precompute_empirical_stat (glm_test, sse_integrator, empirical_skew, empirical_sse_statistic);
     for (size_t i = 0; i != num_hypotheses; ++i)
-      write_streamline_output (Path::join (output_fixel_directory, "sse_empirical" + postfix(i) + ".txt"), empirical_sse_statistic.col(i));
+      write_streamline_output (Path::join (output_streamline_directory, "sse_empirical" + postfix(i) + ".txt"), empirical_sse_statistic.col(i));
   }
   CONSOLE ("Non-stationarity - empirical: " + str(do_nonstationarity_adjustment));
   CONSOLE ("Non-stationarity - intrinsic: " + str(normalise));
@@ -437,9 +427,9 @@ void run()
 
   Stats::PermTest::precompute_default_permutation (glm_test, sse_integrator, empirical_sse_statistic, default_statistic, default_zstat, default_enhanced);
   for (size_t i = 0; i != num_hypotheses; ++i) {
-    write_streamline_output (Path::join (output_fixel_directory, (hypotheses[i].is_F() ? std::string("F") : std::string("t")) + "value" + postfix(i) + ".txt"), default_statistic.col(i));
-    write_streamline_output (Path::join (output_fixel_directory, "Zstat" + postfix(i) + ".txt"), default_zstat.col(i));
-    write_streamline_output (Path::join (output_fixel_directory, "sse" + postfix(i) + ".txt"), default_enhanced.col(i));
+    write_streamline_output (Path::join (output_streamline_directory, (hypotheses[i].is_F() ? std::string("F") : std::string("t")) + "value" + postfix(i) + ".txt"), default_statistic.col(i));
+    write_streamline_output (Path::join (output_streamline_directory, "Zstat" + postfix(i) + ".txt"), default_zstat.col(i));
+    write_streamline_output (Path::join (output_streamline_directory, "sse" + postfix(i) + ".txt"), default_enhanced.col(i));
   }
 
 
@@ -462,11 +452,11 @@ void run()
 
     // This is to output the empirical null distribution as the result of the permutation testing
     if (fwe_strong) {
-      File::Matrix::save_vector (null_distribution.col(0), Path::join (output_fixel_directory, "null_dist.txt"));
+      File::Matrix::save_vector (null_distribution.col(0), Path::join (output_streamline_directory, "null_dist.txt"));
       ++progress;
     } else {
       for (size_t i = 0; i != num_hypotheses; ++i) {
-        File::Matrix::save_vector (null_distribution.col(i), Path::join (output_fixel_directory, "null_dist" + postfix(i) + ".txt"));
+        File::Matrix::save_vector (null_distribution.col(i), Path::join (output_streamline_directory, "null_dist" + postfix(i) + ".txt"));
         ++progress;
       }
     }
@@ -476,11 +466,11 @@ void run()
     
 
     for (size_t i = 0; i != num_hypotheses; ++i) {
-      write_streamline_output (Path::join (output_fixel_directory, "fwe_1mpvalue" + postfix(i) + ".txt"), pvalue_output.col(i));
+      write_streamline_output (Path::join (output_streamline_directory, "fwe_1mpvalue" + postfix(i) + ".txt"), pvalue_output.col(i));
       ++progress;
-      write_streamline_output (Path::join (output_fixel_directory, "uncorrected_pvalue" + postfix(i) + ".txt"), uncorrected_pvalues.col(i));
+      write_streamline_output (Path::join (output_streamline_directory, "uncorrected_pvalue" + postfix(i) + ".txt"), uncorrected_pvalues.col(i));
       ++progress;
-      write_streamline_output (Path::join (output_fixel_directory, "null_contributions" + postfix(i) + ".txt"), null_contributions.col(i));
+      write_streamline_output (Path::join (output_streamline_directory, "null_contributions" + postfix(i) + ".txt"), null_contributions.col(i));
       ++progress;
     }
   }
