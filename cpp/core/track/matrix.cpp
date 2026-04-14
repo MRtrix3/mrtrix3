@@ -31,17 +31,13 @@
 #include "dwi/tractography/mapping/voxel.h"
 #include "dwi/tractography/streamline.h"
 
-namespace MR
+namespace MR::Track::Matrix
 {
-  namespace Track
-  {
-    namespace Matrix
-    {
 
-      Reader::Reader (const std::string& folder) {
-        index_file = folder + "/index.mif";
-        streamlines_file = folder + "/streamlines.mif";
-        values_file = folder + "/values.mif";
+      Reader::Reader (std::string_view folder) {
+        index_file = std::string(folder) + "/index.mif";
+        streamlines_file = std::string(folder) + "/streamlines.mif";
+        values_file = std::string(folder) + "/values.mif";
 
         index_image = Image<ind_type>::open(index_file);
         streamlines_image = Image<ind_type>::open(streamlines_file);
@@ -98,6 +94,4 @@ namespace MR
         return result;
       }
 
-    }
-  }
 }

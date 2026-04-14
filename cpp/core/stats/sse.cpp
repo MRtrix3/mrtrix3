@@ -16,10 +16,8 @@
 
 #include "stats/sse.h"
 
-namespace MR
+namespace MR::Stats
 {
-  namespace Stats
-  {
 
 
 
@@ -61,11 +59,11 @@ namespace MR
             norm_factor = sum;
 
             // see CFE implementation for reference
-            std::vector<float> extents (std::floor (stats[streamline]/dh), float(0));
+            std::vector<float> extents (std::floor (stats[streamline]/dh), static_cast<float>(0));
             for (ssize_t i = 0; i < similarities.size(); ++i) {
               const default_type similarity_stat = stats[tracks[i]];
               if (similarity_stat > dh) {
-                const size_t cluster_count = std::min (extents.size(), size_t(std::floor (similarity_stat / dh)));
+                const size_t cluster_count = std::min (extents.size(), static_cast<size_t>(std::floor (similarity_stat / dh)));
                 for (size_t cluster_index = 0; cluster_index != cluster_count; ++cluster_index) {
                   // sift2 is taken into account here
                   extents[cluster_index] += weights[tracks[i]] * std::pow (similarities[i], M);
@@ -96,5 +94,4 @@ namespace MR
 
 
 
-  }
 }

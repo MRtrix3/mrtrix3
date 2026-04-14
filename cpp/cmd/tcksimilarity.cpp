@@ -37,7 +37,7 @@
 #include "progressbar.h"
 #include "algo/loop.h"
 
-#define DEFAULT_SIMILARITY_THRESHOLD 0.1
+constexpr double DEFAULT_SIMILARITY_THRESHOLD = 0.1;
 
 using namespace MR::DWI;
 using namespace MR::DWI::Tractography;
@@ -319,7 +319,7 @@ private:
 
 void run() {
   const float similarity_threshold =
-      get_option_value("threshold", float(DEFAULT_SIMILARITY_THRESHOLD));
+      get_option_value("threshold", static_cast<float>(DEFAULT_SIMILARITY_THRESHOLD));
   if (similarity_threshold == 1.0)
     throw Exception("Setting -threshold to 1 would defeat the purpose of the "
                     "similarity computation");
@@ -437,10 +437,10 @@ void run() {
                   fmt)
            << "\n";
     stream << "file: ";
-    uint64_t offset = uint64_t(stream.tellp()) + 18;
+    uint64_t offset = static_cast<uint64_t>(stream.tellp()) + 18;
     offset += ((4 - (offset % 4)) % 4);
     stream << ". " << offset << "\nEND\n";
-    stream << std::string(offset - uint64_t(stream.tellp()), '\0');
+    stream << std::string(offset - static_cast<uint64_t>(stream.tellp()), '\0');
   }
 
   // write index.mif values
@@ -452,7 +452,7 @@ void run() {
     index_image.index(3) = 0;
     index_image.value() = results[i].size();
     index_image.index(3) = 1;
-    index_image.value() = results[i].size() ? data_count : uint64_t(0);
+    index_image.value() = results[i].size() ? data_count : static_cast<uint64_t>(0);
 
     for (const auto &pair : results[i]) {
       streamline_stream.write(reinterpret_cast<const char *>(&pair.first),

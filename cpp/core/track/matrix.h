@@ -15,26 +15,21 @@
  */
 
 
-#ifndef __track_matrix_h__
-#define __track_matrix_h__
+#pragma once
 
 #include "image.h"
 #include "types.h"
 #include "file/ofstream.h"
 
-namespace MR
+namespace MR::Track::Matrix
 {
-  namespace Track
-  {
-    namespace Matrix
-    {
 
       using ind_type = int;
 
       class Reader
       {
         public:
-            Reader(const std::string& folder);
+            Reader(std::string_view folder);
 
             // Eigen::Matrix<float, Eigen::Dynamic, 1> operator[] (const size_t index) const;
 
@@ -57,8 +52,6 @@ namespace MR
       };
 
       
-    }
-  }
 }
 
-#endif
+

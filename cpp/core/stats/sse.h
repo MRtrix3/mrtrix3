@@ -14,8 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __stats_sse_h__
-#define __stats_sse_h__
+#pragma once
 
 #include "types.h"
 #include "math/stats/typedefs.h"
@@ -23,10 +22,8 @@
 
 #include "track/matrix.h"
 
-namespace MR
+namespace MR::Stats
 {
-  namespace Stats
-  {
 
     using value_type = Math::Stats::value_type;
     // using direction_type = Eigen::Matrix<value_type, 3, 1>;
@@ -52,7 +49,6 @@ namespace MR
 
 
 
-  }
 }
 
-#endif
+

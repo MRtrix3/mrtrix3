@@ -323,7 +323,7 @@ private:
           break;
       }
     }
-    const size_t min_sgm_points = std::max (size_t(1), size_t(std::round (backtrack_config.min_sgm_length / S.step_size)));
+    const size_t min_sgm_points = std::max (static_cast<size_t>(1), static_cast<size_t>(std::round (backtrack_config.min_sgm_length / S.step_size)));
     return (sgm_count > min_sgm_points);
   }
 
@@ -352,7 +352,7 @@ private:
     WMRegion result = {0, 0};
     size_t current_start = 0;
     size_t current_length = 0;
-    const size_t min_length = std::max (size_t(1), size_t(std::round (min_length_mm / S.step_size)));
+    const size_t min_length = std::max (static_cast<size_t>(1), static_cast<size_t>(std::round (min_length_mm / S.step_size)));
     for (size_t i = 0; i < pattern.size(); ++i) {
       if ((pattern[i] & wm_flag)) {
         if (current_length == 0) {
@@ -468,8 +468,8 @@ private:
     const float terminal_search_length = backtrack_config.terminal_search_length;
     const float min_wm_length = backtrack_config.min_wm_length;
     const float truncation_margin_length = backtrack_config.truncation_margin_length;
-    const size_t truncation_margin = std::max (size_t(1), size_t(std::round (truncation_margin_length / S.step_size)));
-    const size_t min_wm_points = std::max (size_t(1), size_t(std::round (min_wm_length / S.step_size)));
+    const size_t truncation_margin = std::max (static_cast<size_t>(1), static_cast<size_t>(std::round (truncation_margin_length / S.step_size)));
+    const size_t min_wm_points = std::max (static_cast<size_t>(1), static_cast<size_t>(std::round (min_wm_length / S.step_size)));
 
     const uint8_t WM_FLAG = 0x1;
     const uint8_t SGM_FLAG = 0x8;

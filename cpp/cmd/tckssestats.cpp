@@ -44,15 +44,11 @@ using Math::Stats::value_type;
 using Math::Stats::vector_type;
 using Stats::PermTest::count_matrix_type;
 
-#define DEFAULT_ANGLE_THRESHOLD 45.0
-#define DEFAULT_CONNECTIVITY_THRESHOLD 0.01
-#define DEFAULT_SMOOTHING_FWHM 10.0
-
-#define DEFAULT_SSE_DH 0.1
-#define DEFAULT_SSE_E 2.0
-#define DEFAULT_SSE_H 3.0
-#define DEFAULT_SSE_M 0.25
-#define DEFAULT_EMPIRICAL_SKEW 1.0  // TODO Update from experience
+constexpr double DEFAULT_SSE_DH = 0.1;
+constexpr double DEFAULT_SSE_E = 2.0;
+constexpr double DEFAULT_SSE_H = 3.0;
+constexpr double DEFAULT_SSE_M = 0.25;
+constexpr double DEFAULT_EMPIRICAL_SKEW = 1.0;  // TODO Update from experience
 
 void usage ()
 {
@@ -132,7 +128,7 @@ using ind_type = int;
 
 
 template <class VectorType>
-void write_streamline_output (const std::string& filename, const VectorType& data) {
+void write_streamline_output (std::string_view filename, const VectorType& data) {
   Eigen::VectorXf temp (Eigen::VectorXf::Zero (data.size()));
   for (ssize_t j = 0; j < data.size(); j++) {
     temp[j] = data[j];
@@ -143,7 +139,7 @@ void write_streamline_output (const std::string& filename, const VectorType& dat
 
 class SubjectTxtImport : public Math::Stats::SubjectDataImportBase {
 public:
-  SubjectTxtImport(const std::string& path) : 
+  SubjectTxtImport(std::string_view path) : 
     Math::Stats::SubjectDataImportBase(path) {
     data = File::Matrix::load_vector<float> (path);
 
@@ -217,7 +213,7 @@ void run()
   opt = get_options ("mask");
   if (opt.size()) {
     auto data = File::Matrix::load_vector<int> (opt[0][0]);
-    if (data.size() != (ssize_t)num_streamline)
+    if (data.size() != static_cast<ssize_t>(num_streamline))
       throw Exception ("Processing mask file \"" + std::string(opt[0][0]) + "\" does not match number of streamlines");
     for (size_t i = 0; i != num_streamline; ++i)
       mask_processing[i] = (data[i] != 0);
@@ -227,7 +223,7 @@ void run()
   opt = get_options ("posthoc");
   if (opt.size()) {
     auto data = File::Matrix::load_vector<int> (opt[0][0]);
-    if (data.size() != (ssize_t)num_streamline)
+    if (data.size() != static_cast<ssize_t>(num_streamline))
       throw Exception ("Post-hoc mask file \"" + std::string(opt[0][0]) + "\" does not match number of streamlines");
     for (size_t i = 0; i != num_streamline; ++i)
       mask_inference[i] = (data[i] != 0);
@@ -236,7 +232,7 @@ void run()
   }
 
   const matrix_type design = File::Matrix::load_matrix (argument[2]);
-  if (design.rows() != (ssize_t)importer.size())
+  if (design.rows() != static_cast<ssize_t>(importer.size()))
     throw Exception ("Number of input files does not match number of rows in design matrix");
 
 

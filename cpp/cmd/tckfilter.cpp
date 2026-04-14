@@ -36,8 +36,8 @@
 using namespace MR;
 using namespace App;
 
-#define DEFAULT_SIMILARITY_THRESHOLD 0.0
-#define DEFAULT_SIMILARITY_DECAY 5.0
+constexpr double DEFAULT_SIMILARITY_THRESHOLD = 0.0;
+constexpr double DEFAULT_SIMILARITY_DECAY = 5.0;
 
 void usage ()
 {
@@ -172,10 +172,10 @@ void run()
 {
 
   // LOAD
-  const value_type similarity_threshold = get_option_value ("threshold", value_type(DEFAULT_SIMILARITY_THRESHOLD));
+  const value_type similarity_threshold = get_option_value ("threshold", static_cast<value_type>(DEFAULT_SIMILARITY_THRESHOLD));
   if (similarity_threshold == 1.0)
     throw Exception("Setting -threshold to 1 would defeat the purpose of the smoothing");
-  const value_type similarity_decay = get_option_value ("decay_rate", value_type(DEFAULT_SIMILARITY_DECAY));
+  const value_type similarity_decay = get_option_value ("decay_rate", static_cast<value_type>(DEFAULT_SIMILARITY_DECAY));
   CONSOLE("Ignoring similarity scores that are smaller than " + str(similarity_threshold));
   CONSOLE("Modulating the smoothing weights using a decay rate of " + str(similarity_decay));
 
