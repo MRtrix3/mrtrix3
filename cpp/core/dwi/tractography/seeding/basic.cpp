@@ -113,8 +113,8 @@ Grid_per_voxel::Grid_per_voxel(std::string_view in, const size_t os_factor)
       mask(in),
       os(os_factor),
       pos(os, os, os),
-      offset(-0.5 + (1.0 / (2 * os))),
-      step(1.0 / os),
+      offset(-0.5F + (1.0F / static_cast<float>(2 * os))),
+      step(1.0F / static_cast<float>(os)),
       expired(false) {
   Base::count = get_count(mask) * Math::pow3(os_factor);
 }
@@ -150,9 +150,9 @@ bool Grid_per_voxel::get_seed(Eigen::Vector3f &p) const {
     }
   }
 
-  p = {static_cast<float>(mask.index(0)) + offset + (pos[0] * step),
-       static_cast<float>(mask.index(1)) + offset + (pos[1] * step),
-       static_cast<float>(mask.index(2)) + offset + (pos[2] * step)};
+  p = {static_cast<float>(mask.index(0)) + offset + (static_cast<float>(pos[0]) * step),
+       static_cast<float>(mask.index(1)) + offset + (static_cast<float>(pos[1]) * step),
+       static_cast<float>(mask.index(2)) + offset + (static_cast<float>(pos[2]) * step)};
   p = (*mask.voxel2scanner) * p;
   return true;
 }
@@ -285,7 +285,7 @@ Count_per_coord::Count_per_coord(std::string_view in, const size_t streamlines_p
 }
 
 bool Count_per_coord::get_seed(Eigen::Vector3f &p) const {
-  std::lock_guard<std::mutex> lock(mutex);
+  const std::lock_guard<std::mutex> lock(mutex);
   if (expired)
     return false;
   if (num_at_coord == streamlines_per_coordinate) {
@@ -311,7 +311,7 @@ Random_coordinates::Random_coordinates(std::string_view in)                     
 }
 
 bool Random_coordinates::get_seed(Eigen::Vector3f &p) const {
-  p = coords.row(std::uniform_int_distribution<>(0, num_coordinates() - 1)(rng));
+  p = coords.row(std::uniform_int_distribution<>(0, static_cast<int>(num_coordinates() - 1))(rng));
   return true;
 }
 

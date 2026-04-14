@@ -198,7 +198,7 @@ void load_seed_mechanisms(Properties &properties) {
   }
 
   opt = get_options("seed_rejection_per_coordinate");
-  if (opt.size()) {
+  if (!opt.empty()) {
     if (!list.empty())
       throw Exception("If performing rejection seeding from pre-specified coordinates,"
                       " cannot specify any other type of seed!");

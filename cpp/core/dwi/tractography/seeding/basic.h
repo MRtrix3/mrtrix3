@@ -58,8 +58,8 @@ public:
 
 private:
   mutable Mask mask;
-  const ssize_t num;
-  mutable ssize_t inc;
+  const size_t num;
+  mutable size_t inc;
   mutable bool expired;
 };
 
@@ -71,8 +71,8 @@ public:
 
 private:
   mutable Mask mask;
-  const ssize_t os;
-  mutable Eigen::Vector3i pos;
+  const size_t os;
+  mutable Eigen::Array<size_t, 3, 1> pos;
   const float offset, step;
   mutable bool expired;
 };
@@ -107,25 +107,25 @@ protected:
 class Count_per_coord : public Base, public CoordinatesLoader {
 public:
   Count_per_coord(std::string_view in, const size_t streamlines_per_coord);
-  virtual bool get_seed(Eigen::Vector3f &p) const override;
+  bool get_seed(Eigen::Vector3f &p) const override;
 
 private:
   mutable ssize_t current_coord;
   mutable ssize_t num_at_coord;
   mutable bool expired;
-  const ssize_t streamlines_per_coordinate;
+  const size_t streamlines_per_coordinate;
 };
 
 class Random_coordinates : public Base, public CoordinatesLoader {
 public:
   Random_coordinates(std::string_view in);
-  virtual bool get_seed(Eigen::Vector3f &p) const override;
+  bool get_seed(Eigen::Vector3f &p) const override;
 };
 
 class Rejection_per_coord : public Base, public CoordinatesLoader {
 public:
   Rejection_per_coord(std::string_view in);
-  virtual bool get_seed(Eigen::Vector3f &p) const override;
+  bool get_seed(Eigen::Vector3f &p) const override;
 };
 
 } // namespace MR::DWI::Tractography::Seeding
