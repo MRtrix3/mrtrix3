@@ -118,7 +118,12 @@ void usage ()
   + "Zanoni, S.; Lv, J.; Smith, R. E. & Calamante, F. "
     "Streamline-Based Analysis: "
     "A novel framework for tractogram-driven streamline-wise statistical analysis. "
-    "Proceedings of the International Society for Magnetic Resonance in Medicine, 2025, 4781";
+    "Proceedings of the International Society for Magnetic Resonance in Medicine, 2025, 4781"
+
+  + "* If using the -nonstationary option: \n"
+    "Salimi-Khorshidi, G. Smith, S.M. Nichols, T.E. "
+    "Adjusting the effect of nonstationarity in cluster-based and TFCE inference. "
+    "NeuroImage, 2011, 54(3), 2006-19";
 
 }
 
