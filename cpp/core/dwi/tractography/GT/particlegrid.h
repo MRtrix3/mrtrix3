@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <array>
+#include <deque>
 #include <mutex>
 
 #include "dwi/tractography/file.h"
@@ -33,7 +35,33 @@ namespace MR::DWI::Tractography::GT {
  */
 class ParticleGrid {
 public:
-  using ParticleVectorType = std::vector<Particle *>;
+  class ParticleContainer {
+  public:
+    ParticleContainer() = default;
+    ParticleContainer(const ParticleContainer &other) : particles(other.particles) {}
+
+    void push_back(Particle *p) {
+      std::lock_guard<std::mutex> lock(mutex);
+      particles.push_back(p);
+    }
+    void remove(Particle *p) {
+      std::lock_guard<std::mutex> lock(mutex);
+      particles.erase(std::remove(particles.begin(), particles.end(), p), particles.end());
+    }
+
+    using iterator = std::deque<Particle *>::iterator;
+    using const_iterator = std::deque<Particle *>::const_iterator;
+
+    iterator begin() { return particles.begin(); }
+    iterator end() { return particles.end(); }
+    const_iterator begin() const { return particles.begin(); }
+    const_iterator end() const { return particles.end(); }
+
+    mutable std::mutex mutex;
+
+  private:
+    std::deque<Particle *> particles;
+  };
 
   ParticleGrid(const Header &H);
   ParticleGrid(const ParticleGrid &) = delete;
@@ -51,7 +79,7 @@ public:
 
   void clear();
 
-  const ParticleVectorType *at(const ssize_t x, const ssize_t y, const ssize_t z) const;
+  const ParticleContainer *at(const ssize_t x, const ssize_t y, const ssize_t z) const;
 
   inline Particle *getRandom() { return pool.random(); }
 
@@ -60,10 +88,11 @@ public:
 protected:
   std::mutex mutex;
   ParticlePool pool;
-  std::vector<ParticleVectorType> grid;
+  std::vector<ParticleContainer> grid;
   Math::RNG rng;
   transform_type T_s2g;
-  size_t dims[3];
+  std::array<size_t, 3> dims;
+  default_type grid_spacing;
 
   inline size_t pos2idx(const Point_t &pos) const {
     size_t x, y, z;
@@ -72,6 +101,12 @@ protected:
   }
 
 public:
+  inline bool isoutofbounds(const Point_t &pos) const {
+    const Point_t gpos = T_s2g.cast<float>() * pos;
+    return (gpos[0] <= -0.5) || (gpos[1] <= -0.5) || (gpos[2] <= -0.5) ||                          //
+           (gpos[0] >= dims[0] - 0.5) || (gpos[1] >= dims[1] - 0.5) || (gpos[2] >= dims[2] - 0.5); //
+  }
+
   inline void pos2xyz(const Point_t &pos, size_t &x, size_t &y, size_t &z) const {
     Point_t gpos = T_s2g.cast<float>() * pos;
     assert(gpos[0] >= -0.5 && gpos[1] >= -0.5 && gpos[2] >= -0.5);
@@ -79,6 +114,8 @@ public:
     y = Math::round<size_t>(gpos[1]);
     z = Math::round<size_t>(gpos[2]);
   }
+
+  inline default_type spacing() { return grid_spacing; }
 
 protected:
   inline size_t xyz2idx(const size_t x, const size_t y, const size_t z) const {

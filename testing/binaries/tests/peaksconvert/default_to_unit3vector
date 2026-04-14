@@ -26,6 +26,6 @@ mrcalc \
     -div tmp_unitpeaks.mif -force
 
 peaksconvert peaks.mif \
-    -out_format unit3vector \
+    -out_format unitcartesian \
     - | \
 testing_diff_peaks - tmp_unitpeaks.mif 1e-14

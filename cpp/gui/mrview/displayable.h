@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -61,13 +61,13 @@ class Displayable : public QAction {
   Q_OBJECT
 
 public:
-  Displayable(const std::string &filename);
+  Displayable(std::string_view filename);
 
   virtual ~Displayable();
 
   virtual void request_render_colourbar(DisplayableVisitor &) {}
 
-  const std::string &get_filename() const { return filename; }
+  std::string get_filename() const { return filename; }
 
   float scaling_min() const { return display_midpoint - 0.5f * display_range; }
 
@@ -197,14 +197,14 @@ public:
       GL::Shader::Fragment fragment_shader(fragment_shader_source(object));
 
       attach(vertex_shader);
-      if ((GLuint)geometry_shader)
+      if (static_cast<GLuint>(geometry_shader))
         attach(geometry_shader);
       attach(fragment_shader);
       link();
     }
   };
 
-  std::string declare_shader_variables(const std::string &with_prefix = "") const {
+  std::string declare_shader_variables(std::string_view with_prefix = "") const {
     std::string source = "uniform float " + with_prefix +
                          "offset;\n"
                          "uniform float " +
@@ -227,12 +227,12 @@ public:
     return source;
   }
 
-  void start(Shader &shader_program, float scaling = 1.0, const std::string &with_prefix = "") {
+  void start(Shader &shader_program, float scaling = 1.0, std::string_view with_prefix = "") {
     shader_program.start(*this);
     set_shader_variables(shader_program, scaling, with_prefix);
   }
 
-  void set_shader_variables(Shader &shader_program, float scaling = 1.0, const std::string &with_prefix = "") {
+  void set_shader_variables(Shader &shader_program, float scaling = 1.0, std::string_view with_prefix = "") {
     gl::Uniform1f(gl::GetUniformLocation(shader_program, (with_prefix + "offset").c_str()),
                   (display_midpoint - 0.5f * display_range) / scaling);
     gl::Uniform1f(gl::GetUniformLocation(shader_program, (with_prefix + "scale").c_str()), scaling / display_range);

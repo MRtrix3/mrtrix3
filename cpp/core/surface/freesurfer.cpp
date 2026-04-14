@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,8 +20,8 @@
 
 namespace MR::Surface::FreeSurfer {
 
-void read_annot(const std::string &path, label_vector_type &labels, Connectome::LUT &lut) {
-  std::ifstream in(path.c_str(), std::ios_base::in | std::ios_base::binary);
+void read_annot(std::string_view path, label_vector_type &labels, Connectome::LUT &lut) {
+  std::ifstream in(std::string(path).c_str(), std::ios_base::in | std::ios_base::binary);
   if (!in)
     throw Exception("Error opening input file!");
 
@@ -107,47 +107,54 @@ void read_annot(const std::string &path, label_vector_type &labels, Connectome::
     labels[vertices[i]] = rgb2index[vertex_labels[i]];
 }
 
-void read_label(const std::string &path, VertexList &vertices, Scalar &scalar) {
+void read_label(std::string_view path, VertexList &vertices, Scalar &scalar) {
   vertices.clear();
   scalar.resize(0);
 
-  std::ifstream in(path.c_str(), std::ios_base::in);
+  std::ifstream in(std::string(path).c_str(), std::ios_base::in);
   if (!in)
     throw Exception("Error opening input file!");
 
   std::string line;
   std::getline(in, line);
   if (line.substr(0, 13) != "#!ascii label")
-    throw Exception("Error parsing FreeSurfer label file \"" + Path::basename(path) + "\": Bad first line identifier");
+    throw Exception("Error parsing FreeSurfer label file \"" + Path::basename(path) + "\":" + //
+                    " Bad first line identifier");                                            //
   std::getline(in, line);
   uint32_t num_vertices = 0;
   try {
     num_vertices = to<size_t>(line);
   } catch (Exception &e) {
-    throw Exception(
-        e, "Error parsing FreeSurfer label file \"" + Path::basename(path) + "\": Bad second line vertex count");
+    throw Exception(e,
+                    "Error parsing FreeSurfer label file \"" + Path::basename(path) + "\":" + //
+                        " Bad second line vertex count");
   }
 
   for (size_t i = 0; i != num_vertices; ++i) {
     std::getline(in, line);
     uint32_t index = std::numeric_limits<uint32_t>::max();
-    default_type x = NaN, y = NaN, z = NaN, value = NaN;
+    default_type x = NaN;
+    default_type y = NaN;
+    default_type z = NaN;
+    default_type value = NaN;
     sscanf(line.c_str(), "%u %lf %lf %lf %lf", &index, &x, &y, &z, &value);
     if (index == std::numeric_limits<uint32_t>::max())
-      throw Exception("Error parsing FreeSurfer label file \"" + Path::basename(path) + "\": Malformed line");
+      throw Exception("Error parsing FreeSurfer label file \"" + Path::basename(path) + "\":" + //
+                      " Malformed line");                                                       //
     if (index >= scalar.size()) {
       scalar.conservativeResizeLike(Scalar::Base::Constant(index + 1, NaN));
       vertices.resize(index + 1, Vertex(NaN, NaN, NaN));
     }
     if (std::isfinite(scalar[index]))
-      throw Exception("Error parsing FreeSurfer label file \"" + Path::basename(path) + "\": Duplicated index (" +
-                      str(scalar[index]) + ")");
+      throw Exception("Error parsing FreeSurfer label file \"" + Path::basename(path) + "\":" + //
+                      " Duplicated index (" + str(scalar[index]) + ")");                        //
     scalar[index] = value;
     vertices[index] = Vertex(x, y, z);
   }
 
   if (!in.good())
-    throw Exception("Error parsing FreeSurfer label file \"" + Path::basename(path) + "\": End of file reached");
+    throw Exception("Error parsing FreeSurfer label file \"" + Path::basename(path) + "\":" + //
+                    " End of file reached");                                                  //
   scalar.set_name(path);
 }
 

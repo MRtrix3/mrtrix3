@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -322,7 +322,7 @@ public:
    * at least one item has been popped.  By default, the buffer size is
    * default_queue_capacity items.
    */
-  Queue(const std::string &description = "unnamed", size_t buffer_size = default_queue_capacity)
+  Queue(std::string_view description = "unnamed", size_t buffer_size = default_queue_capacity)
       : buffer(new T *[buffer_size]),
         front(buffer),
         back(buffer),

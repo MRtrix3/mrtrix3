@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,7 +20,7 @@ namespace MR::Stats {
 
 using namespace App;
 
-std::vector<std::string> field_choices{"mean", "median", "std", "std_rv", "min", "max", "count"};
+const std::vector<std::string> field_choices{"mean", "median", "std", "std_rv", "iqr", "min", "max", "count"};
 
 // clang-format off
 const OptionGroup Options =
@@ -29,7 +29,7 @@ const OptionGroup Options =
              "output only the field specified."
              " Multiple such options can be supplied if required."
              " Choices are: " + join(field_choices, ", ") + "."
-             " Useful for use in scripts. "
+             " Useful for use in scripts."
              " Both std options refer to the unbiased (sample) standard deviation."
              " For complex data, min, max and std are calculated separately for real and imaginary parts,"
              " std_rv is based on the real valued variance"
@@ -56,9 +56,9 @@ void Stats::operator()(complex_type val) {
     count++;
     // Welford's online algorithm for variance calculation:
     delta = val - mean;
-    mean += cdouble(delta.real() / static_cast<double>(count), delta.imag() / static_cast<double>(count));
+    mean += cdouble{delta.real() / static_cast<double>(count), delta.imag() / static_cast<double>(count)};
     delta2 = val - mean;
-    m2 += cdouble(delta.real() * delta2.real(), delta.imag() * delta2.imag());
+    m2 += cdouble{delta.real() * delta2.real(), delta.imag() * delta2.imag()};
     if (!is_complex)
       values.push_back(static_cast<value_type>(val.real()));
   }

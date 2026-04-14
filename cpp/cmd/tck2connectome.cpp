@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -43,6 +43,9 @@ void usage() {
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Generate a connectome matrix from a streamlines file and a node parcellation image";
+
+  DESCRIPTION
+  + MR::DWI::Tractography::Connectome::tck2nodes_description;
 
   EXAMPLES
   + Example ("Default usage",
@@ -122,7 +125,7 @@ void usage() {
                       " rather than a matrix of node-node connectivities");
 
   REFERENCES
-  + "If using the default streamline-parcel assignment mechanism"
+  + "If using the default \"radial search\" streamline-parcel assignment mechanism"
     " (or -assignment_radial_search option):\n" // Internal
     "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
     "The effects of SIFT on the reproducibility and biological accuracy of the structural connectome. "
@@ -150,7 +153,8 @@ void execute(Image<node_t> &node_image, const node_t max_node_index, const std::
   Tractography::Connectome::setup_metric(metric, node_image);
   std::unique_ptr<Tck2nodes_base> tck2nodes(load_assignment_mode(node_image));
   auto opt = get_options("stat_edge");
-  const stat_edge statistic = !opt.empty() ? stat_edge(int(opt[0][0])) : stat_edge::SUM;
+  const stat_edge statistic =
+      !opt.empty() ? stat_edge(static_cast<MR::App::ParsedArgument::IntType>(opt[0][0])) : stat_edge::SUM;
 
   // Prepare for reading the track data
   Tractography::Properties properties;

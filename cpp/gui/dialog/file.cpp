@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -31,7 +31,7 @@ namespace MR::GUI::Dialog::File {
 
 const std::string image_filter_string = "Medical Images (*" + join(MR::Formats::known_extensions, " *") + ")";
 
-std::string get_folder(QWidget *parent, const std::string &caption, std::string *folder) {
+std::string get_folder(QWidget *parent, std::string_view caption, std::string *folder) {
   QString qstring = QFileDialog::getExistingDirectory(
       parent, qstr(caption), folder ? qstr(*folder) : QString(), QFileDialog::ShowDirsOnly | FILE_DIALOG_OPTIONS);
 
@@ -44,7 +44,7 @@ std::string get_folder(QWidget *parent, const std::string &caption, std::string 
   return new_folder;
 }
 
-std::string get_file(QWidget *parent, const std::string &caption, const std::string &filter, std::string *folder) {
+std::string get_file(QWidget *parent, std::string_view caption, std::string_view filter, std::string *folder) {
   QString qstring = QFileDialog::getOpenFileName(
       parent, qstr(caption), folder ? qstr(*folder) : QString(), qstr(filter), 0, FILE_DIALOG_OPTIONS);
 
@@ -59,7 +59,7 @@ std::string get_file(QWidget *parent, const std::string &caption, const std::str
 }
 
 std::vector<std::string>
-get_files(QWidget *parent, const std::string &caption, const std::string &filter, std::string *folder) {
+get_files(QWidget *parent, std::string_view caption, std::string_view filter, std::string *folder) {
   QStringList qlist = QFileDialog::getOpenFileNames(
       parent, qstr(caption), folder ? qstr(*folder) : QString(), qstr(filter), 0, FILE_DIALOG_OPTIONS);
 
@@ -76,7 +76,7 @@ get_files(QWidget *parent, const std::string &caption, const std::string &filter
 
 bool overwrite_files = false;
 
-void check_overwrite_files_func(const std::string &name) {
+void check_overwrite_files_func(std::string_view name) {
   if (overwrite_files)
     return;
 
@@ -93,9 +93,9 @@ void check_overwrite_files_func(const std::string &name) {
 }
 
 std::string get_save_name(QWidget *parent,
-                          const std::string &caption,
-                          const std::string &suggested_name,
-                          const std::string &filter,
+                          std::string_view caption,
+                          std::string_view suggested_name,
+                          std::string_view filter,
                           std::string *folder) {
   overwrite_files = false;
 

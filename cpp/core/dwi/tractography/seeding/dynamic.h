@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -65,7 +65,7 @@ public:
   Fixel_TD_seed(const Fixel_TD_seed &that)
       : SIFT::FixelBase(that),
         voxel(that.voxel),
-        TD(double(that.TD)),
+        TD(static_cast<double>(that.TD)),
         update(that.update),
         old_prob(that.old_prob),
         applied_prob(that.applied_prob),
@@ -116,9 +116,9 @@ public:
       ;
     float cumulative_prob = old_prob;
     if (track_count > track_count_at_last_update) {
-      cumulative_prob =
-          ((track_count_at_last_update * old_prob) + ((track_count - track_count_at_last_update) * applied_prob)) /
-          float(track_count);
+      cumulative_prob = ((static_cast<float>(track_count_at_last_update) * old_prob) +
+                         (static_cast<float>(track_count - track_count_at_last_update) * applied_prob)) /
+                        static_cast<float>(track_count);
       old_prob = cumulative_prob;
       track_count_at_last_update = track_count;
     }
@@ -138,8 +138,8 @@ public:
 
 private:
   Eigen::Vector3i voxel;
-  std::atomic<double>
-      TD;      // Protect against concurrent reads & writes, though perfect thread concurrency is not necessary
+  // Protect against concurrent reads & writes, though perfect thread concurrency is not necessary
+  std::atomic<double> TD;
   bool update; // For small / noisy fixels, exclude the seeding probability from being updated
 
   // Multiple values to update - use an atomic boolean in a similar manner to a mutex, but with less overhead
@@ -152,7 +152,7 @@ private:
 class Dynamic_ACT_additions {
 
 public:
-  Dynamic_ACT_additions(const std::string &path)
+  Dynamic_ACT_additions(std::string_view path)
       : interp_template(Image<float>::open(path)), gmwmi_finder(interp_template) {}
 
   bool check_seed(Eigen::Vector3f &);
@@ -173,7 +173,7 @@ private:
   using VoxelAccessor = Fixel_map<Fixel>::VoxelAccessor;
 
 public:
-  Dynamic(const std::string &, Image<float> &, const size_t, const DWI::Directions::FastLookupSet &);
+  Dynamic(std::string_view, Image<float> &, const size_t, const DWI::Directions::FastLookupSet &);
   ~Dynamic();
 
   Dynamic(const Dynamic &) = delete;
@@ -193,7 +193,7 @@ public:
 #ifdef DYNAMIC_SEED_DEBUGGING
       const size_t updated_count = ++track_count;
       if (updated_count == target_trackcount / 2)
-        output_fixel_images();
+        output_fixel_images("midpoint");
       if (updated_count >= target_trackcount)
         return false;
 #else
@@ -222,7 +222,9 @@ private:
   Tractography::Writer<float> seed_output;
   void write_seed(const Eigen::Vector3f &);
   size_t test_fixel;
-  void output_fixel_images();
+  std::string debugging_fixel_path;
+  Header H_fixeldata;
+  void output_fixel_images(std::string_view /*prefix*/);
 #endif
 
   Transform transform;
@@ -234,7 +236,7 @@ private:
 
 class WriteKernelDynamic : public Tracking::WriteKernel {
 public:
-  WriteKernelDynamic(const Tracking::SharedBase &shared, const std::string &output_file, const Properties &properties)
+  WriteKernelDynamic(const Tracking::SharedBase &shared, std::string_view output_file, const Properties &properties)
       : Tracking::WriteKernel(shared, output_file, properties) {}
   WriteKernelDynamic(const WriteKernelDynamic &) = delete;
   WriteKernelDynamic &operator=(const WriteKernelDynamic &) = delete;

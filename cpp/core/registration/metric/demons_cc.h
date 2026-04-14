@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,9 +21,7 @@
 #include "adapter/gradient3D.h"
 #include "image_helpers.h"
 
-namespace MR {
-namespace Registration {
-namespace Metric {
+namespace MR::Registration::Metric {
 
 template <class Im1ImageType, class Im2ImageType, class Im1MaskType, class Im2MaskType> class DemonsCC {
 public:
@@ -148,6 +146,5 @@ protected:
   Im1MaskType im1_mask;
   Im2MaskType im2_mask;
 };
-} // namespace Metric
-} // namespace Registration
-} // namespace MR
+
+} // namespace MR::Registration::Metric

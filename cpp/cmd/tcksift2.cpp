@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -120,7 +120,7 @@ void usage() {
     "Smith, RE; Raffelt, D; Tournier, J-D; Connelly, A. " // Internal
     "Quantitative Streamlines Tractography:"
     " Methods and Inter-Subject Normalisation. "
-    "Open Science Framework, https://doi.org/10.31219/osf.io/c67kn.";
+    "OHBM Aperture, 10.52294/ApertureNeuro.2022.2.NEOD9565.";
 
   ARGUMENTS
   + Argument ("in_tracks", "the input track file").type_tracks_in()
@@ -194,28 +194,28 @@ void run() {
 
     opt = get_options("min_iters");
     if (!opt.empty())
-      tckfactor.set_min_iters(int(opt[0][0]));
+      tckfactor.set_min_iters(static_cast<int>(opt[0][0]));
     opt = get_options("max_iters");
     if (!opt.empty())
-      tckfactor.set_max_iters(int(opt[0][0]));
+      tckfactor.set_max_iters(static_cast<int>(opt[0][0]));
     opt = get_options("min_factor");
     if (!opt.empty())
-      tckfactor.set_min_factor(float(opt[0][0]));
+      tckfactor.set_min_factor(static_cast<float>(opt[0][0]));
     opt = get_options("min_coeff");
     if (!opt.empty())
-      tckfactor.set_min_coeff(float(opt[0][0]));
+      tckfactor.set_min_coeff(static_cast<float>(opt[0][0]));
     opt = get_options("max_factor");
     if (!opt.empty())
-      tckfactor.set_max_factor(float(opt[0][0]));
+      tckfactor.set_max_factor(static_cast<float>(opt[0][0]));
     opt = get_options("max_coeff");
     if (!opt.empty())
-      tckfactor.set_max_coeff(float(opt[0][0]));
+      tckfactor.set_max_coeff(static_cast<float>(opt[0][0]));
     opt = get_options("max_coeff_step");
     if (!opt.empty())
-      tckfactor.set_max_coeff_step(float(opt[0][0]));
+      tckfactor.set_max_coeff_step(static_cast<float>(opt[0][0]));
     opt = get_options("min_cf_decrease");
     if (!opt.empty())
-      tckfactor.set_min_cf_decrease(float(opt[0][0]));
+      tckfactor.set_min_cf_decrease(static_cast<float>(opt[0][0]));
 
     tckfactor.estimate_factors();
   }

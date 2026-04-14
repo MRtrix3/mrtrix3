@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,8 @@
  */
 
 #include "dwi/tractography/ACT/gmwmi.h"
+
+#include <array>
 
 namespace MR::DWI::Tractography::ACT {
 
@@ -61,14 +63,14 @@ bool GMWMI_finder::find_interface(Eigen::Vector3f &p, Interp &interp) const {
     p += step;
     tissues = get_tissues(p, interp);
   } while (tissues.valid() && step.squaredNorm() > 0.0F &&
-           (abs(tissues.get_gm() - tissues.get_wm()) > gmwmi_accuracy) && (++gradient_iters < max_iters));
+           (std::fabs(tissues.get_gm() - tissues.get_wm()) > gmwmi_accuracy) && ++gradient_iters < max_iters);
 
   // Make sure an appropriate cost function minimum has been found, and that
   //   this would be an acceptable termination point if it were processed by the tracking algorithm
   if (!tissues.valid() || tissues.is_csf() || tissues.is_path() || !tissues.get_wm() ||
-      (abs(tissues.get_gm() - tissues.get_wm()) > gmwmi_accuracy)) {
+      (std::fabs(tissues.get_gm() - tissues.get_wm()) > gmwmi_accuracy)) {
 
-    p = {NaN, NaN, NaN};
+    p.fill(NaNF);
     return false;
   }
 
@@ -79,7 +81,7 @@ bool GMWMI_finder::find_interface(Eigen::Vector3f &p, Interp &interp) const {
   if (!step.allFinite())
     return true;
   if (!step.squaredNorm()) {
-    p = {NaN, NaN, NaN};
+    p.fill(NaNF);
     return false;
   }
 
@@ -94,7 +96,7 @@ bool GMWMI_finder::find_interface(Eigen::Vector3f &p, Interp &interp) const {
 
   } while (step.norm() < 0.5 * min_vox);
 
-  p = {NaN, NaN, NaN};
+  p.fill(NaNF);
   return false;
 }
 
@@ -158,7 +160,7 @@ Eigen::Vector3f
 GMWMI_finder::find_interface(const std::vector<Eigen::Vector3f> &tck, const bool end, Interp &interp) const {
 
   if (tck.empty())
-    return {NaN, NaN, NaN};
+    return Eigen::Vector3f::Constant(NaNF);
 
   if (tck.size() == 1)
     return tck.front();
@@ -194,11 +196,7 @@ GMWMI_finder::find_interface(const std::vector<Eigen::Vector3f> &tck, const bool
   const Eigen::Vector3f extrap((end ? (tck[last] - tck[last - 1]) : (tck[0] - tck[1])) + curvature);
   const Eigen::Vector3f p_extrap(p_end + extrap);
 
-  Eigen::Vector3f domain[4];
-  domain[0] = (end ? tck[last - 2] : tck[2]);
-  domain[1] = p_prev;
-  domain[2] = p_end;
-  domain[3] = p_extrap;
+  const std::array<Eigen::Vector3f, 4> domain{end ? tck[last - 2] : tck[2], p_prev, p_end, p_extrap};
 
   Math::Hermite<float> hermite(hermite_tension);
 

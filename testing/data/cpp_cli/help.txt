@@ -65,8 +65,8 @@ OOPPTTIIOONNSS
   _-_t_r_a_c_k_s___o_u_t output
      an output tractogram
 
-  _-_v_a_r_i_o_u_s spec
-     an argument that could accept one of various forms
+  _-_a_n_y spec
+     an argument that could accept any of the various forms
 
   _-_n_a_r_g_s___t_w_o first second
      A command-line option that accepts two arguments
@@ -108,7 +108,7 @@ AAUUTTHHOORR
      Robert E. Smith (robert.smith@florey.edu.au)
 
 CCOOPPYYRRIIGGHHTT
-     Copyright (c) 2008-2025 the MRtrix3 contributors.
+     Copyright (c) 2008-2026 the MRtrix3 contributors.
      This Source Code Form is subject to the terms of the Mozilla Public
      License, v. 2.0. If a copy of the MPL was not distributed with this
      file, You can obtain one at http://mozilla.org/MPL/2.0/.

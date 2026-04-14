@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,15 +16,9 @@
 
 #pragma once
 
-namespace half_float {
-class half;
-}
-
 namespace std {
-template <> struct is_fundamental<half_float::half> : std::true_type {};
-template <> struct is_floating_point<half_float::half> : std::true_type {};
-template <> struct is_arithmetic<half_float::half> : std::true_type {};
-template <> struct is_integral<half_float::half> : std::false_type {};
+template <> struct is_fundamental<Eigen::half> : std::true_type {};
+template <> struct is_floating_point<Eigen::half> : std::true_type {};
+template <> struct is_arithmetic<Eigen::half> : std::true_type {};
+template <> struct is_integral<Eigen::half> : std::false_type {};
 } // namespace std
-
-#include "half.hpp"

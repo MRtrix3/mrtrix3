@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -26,7 +26,7 @@ size_t determine_upsample_ratio(const Header &header, const float step_size, con
   return upsample_ratio;
 }
 
-size_t determine_upsample_ratio(const Header &header, const std::string &tck_path, const float ratio) {
+size_t determine_upsample_ratio(const Header &header, std::string_view tck_path, const float ratio) {
   Properties properties;
   Reader<> reader(tck_path, properties);
   return determine_upsample_ratio(header, properties, ratio);
@@ -38,7 +38,7 @@ size_t determine_upsample_ratio(const Header &header, const Tractography::Proper
   return determine_upsample_ratio(header, properties.get_stepsize(), ratio);
 }
 
-void generate_header(Header &header, const std::string &tck_file_path, const std::vector<default_type> &voxel_size) {
+void generate_header(Header &header, std::string_view tck_file_path, const std::vector<default_type> &voxel_size) {
 
   Properties properties;
   Reader<> file(tck_file_path, properties);

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -30,7 +30,7 @@ class SDStream : public MethodBase {
 public:
   class Shared : public SharedBase {
   public:
-    Shared(const std::string &diff_path, DWI::Tractography::Properties &property_set)
+    Shared(std::string_view diff_path, DWI::Tractography::Properties &property_set)
         : SharedBase(diff_path, property_set), lmax(Math::SH::LforN(source.size(3))) {
       try {
         Math::SH::check(source);

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,6 +13,7 @@
  *
  * For more details, see http://www.mrtrix.org/.
  */
+
 #pragma once
 
 #include <fstream>
@@ -40,22 +41,22 @@ namespace MR::Math::Stats {
  */
 class SubjectDataImportBase {
 public:
-  SubjectDataImportBase(const std::string &path) : path(path) {}
+  SubjectDataImportBase(std::string_view path) : path(path) {}
   virtual ~SubjectDataImportBase() {}
 
   /*!
    * @param row the row of a matrix into which the data from this
    * particular file should be loaded
    */
-  virtual void operator()(matrix_type::RowXpr column) const = 0;
+  virtual void operator()(measurements_matrix_type::RowXpr column) const = 0;
 
   /*!
    * @param index extract the data from this file corresponding to a particular
    * row in the measurements vector
    */
-  virtual default_type operator[](const index_type index) const = 0;
+  virtual measurements_value_type operator[](const index_type index) const = 0;
 
-  const std::string &name() const { return path; }
+  std::string name() const { return path; }
 
   virtual index_type size() const = 0;
 
@@ -77,15 +78,15 @@ public:
   // Needs to be its own function rather than the constructor
   //   so that the correct template type can be invoked explicitly
   template <class SubjectDataImport>
-  void initialise(const std::string &listpath, const std::string &explicit_from_directory = "");
+  void initialise(std::string_view listpath, std::string_view explicit_from_directory = "");
 
   /*!
    * @param index for a particular element being tested (data will be acquired for
    * all subjects for that element)
    */
-  vector_type operator()(const index_type index) const;
+  measurements_vector_type operator()(const index_type element_index) const;
 
-  operator bool() const { return bool(!files.empty()); }
+  operator bool() const { return !files.empty(); }
   index_type size() const { return files.size(); }
 
   std::shared_ptr<SubjectDataImportBase> operator[](const index_type i) const {
@@ -100,7 +101,7 @@ protected:
 };
 
 template <class SubjectDataImport>
-void CohortDataImport::initialise(const std::string &listpath, const std::string &explicit_from_directory) {
+void CohortDataImport::initialise(std::string_view listpath, std::string_view explicit_from_directory) {
   // Read the provided text file one at a time
   // For each file, create an instance of SubjectDataImport
   //   (which must derive from SubjectDataImportBase)
@@ -115,9 +116,9 @@ void CohortDataImport::initialise(const std::string &listpath, const std::string
   //   text file is an attempt made to load all of those files
   std::vector<std::string> lines;
   {
-    std::ifstream ifs(listpath.c_str());
+    std::ifstream ifs(std::string(listpath).c_str());
     if (!ifs)
-      throw Exception("Unable to open subject file list \"" + listpath + "\"");
+      throw Exception("Unable to open subject file list \"" + std::string(listpath) + "\"");
     std::string line;
     while (getline(ifs, line)) {
       const size_t p = line.find_last_not_of(" \t");
@@ -134,7 +135,7 @@ void CohortDataImport::initialise(const std::string &listpath, const std::string
   else if (directories[0] != ".")
     directories.push_back(".");
   if (!explicit_from_directory.empty())
-    directories.insert(directories.begin(), explicit_from_directory);
+    directories.insert(directories.begin(), std::string(explicit_from_directory));
 
   Exception e_nosuccess("Unable to load all input data from file \"" + listpath + "\"");
   std::string load_from_dir;

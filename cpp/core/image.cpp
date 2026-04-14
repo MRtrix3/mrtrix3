@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -25,7 +25,7 @@ template Image<int32_t>::~Image();
 template Image<uint32_t>::~Image();
 template Image<int64_t>::~Image();
 template Image<uint64_t>::~Image();
-template Image<half_float::half>::~Image();
+template Image<Eigen::half>::~Image();
 template Image<float>::~Image();
 template Image<double>::~Image();
 template Image<cfloat>::~Image();

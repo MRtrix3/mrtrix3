@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -26,12 +26,14 @@
 #include <exception>
 #include <iostream>
 #include <string>
+#include <string_view>
 
-namespace MR {
-namespace App {
+namespace MR::App {
 extern int log_level;
 extern int exit_error_code;
-} // namespace App
+} // namespace MR::App
+
+namespace MR {
 
 //! print primary output to stdout as-is.
 /*! This function is intended for cases where the command's primary output is text, not
@@ -43,15 +45,15 @@ extern int exit_error_code;
  * least their filenames) between MRtrix commands. This function should
  * therefore never be used in commands that produce output images, as the two
  * different types of output may then interfere and cause unexpected issues. */
-extern void (*print)(const std::string &msg);
+extern void (*print)(std::string_view msg);
 
 //! \cond skip
 
 // for internal use only
 
-inline void __print_stderr(const std::string &text) {
+inline void __print_stderr(std::string_view text) {
 #ifdef MRTRIX_AS_R_LIBRARY
-  REprintf(text.c_str());
+  REprintf(std::string(text).c_str());
 #else
   std::cerr << text;
 #endif
@@ -61,7 +63,7 @@ inline void __print_stderr(const std::string &text) {
 //! display error, warning, debug, etc. message to user
 /*! types are: 0: error; 1: warning; 2: additional information; 3:
  * debugging information; anything else: none. */
-extern void (*report_to_user_func)(const std::string &msg, int type);
+extern void (*report_to_user_func)(std::string_view msg, int type);
 
 #define CONSOLE(msg)                                                                                                   \
   if (MR::App::log_level >= 1)                                                                                         \
@@ -83,18 +85,18 @@ class Exception : public std::exception {
 public:
   Exception() {}
 
-  Exception(const std::string &msg) { description.push_back(msg); }
-  Exception(const Exception &previous_exception, const std::string &msg) : description(previous_exception.description) {
-    description.push_back(msg);
+  Exception(std::string msg) { description.push_back(std::move(msg)); }
+  Exception(const Exception &previous_exception, std::string msg) : description(previous_exception.description) {
+    description.push_back(std::move(msg));
   }
 
-  const char *what() const noexcept override;
+  const char *what() const noexcept override; // check_syntax off
 
   void display(int log_level = 0) const { display_func(*this, log_level); }
 
   size_t num() const { return description.size(); }
-  const std::string &operator[](size_t n) const { return description[n]; }
-  void push_back(const std::string &s) { description.push_back(s); }
+  std::string operator[](size_t n) const { return description[n]; }
+  void push_back(std::string s) { description.push_back(std::move(s)); }
   void push_back(const Exception &e) {
     for (auto s : e.description)
       push_back(s);
@@ -107,9 +109,9 @@ public:
 
 class InvalidImageException : public Exception {
 public:
-  InvalidImageException(const std::string &msg) : Exception(msg) {}
-  InvalidImageException(const Exception &previous_exception, const std::string &msg)
-      : Exception(previous_exception, msg) {}
+  InvalidImageException(std::string msg) : Exception(std::move(msg)) {}
+  InvalidImageException(const Exception &previous_exception, std::string msg)
+      : Exception(previous_exception, std::move(msg)) {}
 };
 
 class CancelException : public Exception {
@@ -118,8 +120,8 @@ public:
 };
 
 void display_exception_cmdline(const Exception &E, int log_level);
-void cmdline_print_func(const std::string &msg);
-void cmdline_report_to_user_func(const std::string &msg, int type);
+void cmdline_print_func(std::string_view msg);
+void cmdline_report_to_user_func(std::string_view msg, int type);
 
 class LogLevelLatch {
 public:

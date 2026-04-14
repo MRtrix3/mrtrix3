@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -138,28 +138,30 @@ void ColourBars::render(size_t colourmap,
   }
 
   // Clamp the min/max fractions
-  float max_frac = std::min(std::max(0.0f, (local_max_value - global_min_value) / global_range), 1.0f);
-  float min_frac = std::min(std::max(0.0f, (local_min_value - global_min_value) / global_range), max_frac);
+  const float max_frac = std::min(std::max(0.0F, (local_max_value - global_min_value) / global_range), 1.0F);
+  const float min_frac = std::min(std::max(0.0F, (local_min_value - global_min_value) / global_range), max_frac);
 
-  int max_bars_per_row = std::max((int)std::ceil((float)(current_count) / max_n_rows), 1);
-  int ncols = (int)std::ceil((float)current_count / max_bars_per_row);
-  int column_index = current_colourbar_index % max_bars_per_row;
-  int row_index = current_colourbar_index / max_bars_per_row;
-  float scaled_width = width / max_bars_per_row;
-  float scaled_height = height / ncols;
+  const int max_bars_per_row =
+      std::max(static_cast<int>(std::ceil(static_cast<float>(current_count) / static_cast<float>(max_n_rows))), 1);
+  const int ncols =
+      static_cast<int>(std::ceil(static_cast<float>(current_count) / static_cast<float>(max_bars_per_row)));
+  const int column_index = current_colourbar_index % max_bars_per_row;
+  const int row_index = current_colourbar_index / max_bars_per_row;
+  const float scaled_width = width / static_cast<float>(max_bars_per_row);
+  const float scaled_height = height / static_cast<float>(ncols);
 
-  GLfloat data[] = {0.0f,
-                    0.0f,
-                    min_frac,
-                    0.0f,
-                    scaled_height,
-                    max_frac,
-                    scaled_width,
-                    scaled_height,
-                    max_frac,
-                    scaled_width,
-                    0.0f,
-                    min_frac};
+  std::array<GLfloat, 12> data = {0.0f,
+                                  0.0f,
+                                  min_frac,
+                                  0.0f,
+                                  scaled_height,
+                                  max_frac,
+                                  scaled_width,
+                                  scaled_height,
+                                  max_frac,
+                                  scaled_width,
+                                  0.0f,
+                                  min_frac};
   float x_offset = 0.0f, y_offset = 0.0f;
   int halign = -1;
 
@@ -183,7 +185,7 @@ void ColourBars::render(size_t colourmap,
   data[9] += x_offset;
   data[10] += y_offset;
 
-  gl::BufferData(gl::ARRAY_BUFFER, sizeof(data), data, gl::STREAM_DRAW);
+  gl::BufferData(gl::ARRAY_BUFFER, sizeof(data), data.data(), gl::STREAM_DRAW);
 
   gl::DepthMask(gl::FALSE_);
   gl::LineWidth(1.0);

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -260,7 +260,7 @@ class ToBoolTest : public ::testing::Test {};
 
 TEST_F(ToBoolTest, StringToBoolConversion) {
   for (size_t i = 0; i < kInputStrings.size(); ++i) {
-    const std::string &input_string = kInputStrings[i];
+    std::string_view input_string = kInputStrings[i];
     const bool expect_success = expectedBoolResults[i];
 
     if (expect_success) {
@@ -276,7 +276,7 @@ class ToIntTest : public ::testing::Test {};
 
 TEST_F(ToIntTest, StringToIntConversion) {
   for (size_t i = 0; i < kInputStrings.size(); ++i) {
-    const std::string &input_string = kInputStrings[i];
+    std::string_view input_string = kInputStrings[i];
     const bool expect_success = expectedIntResults[i];
 
     if (expect_success) {
@@ -291,7 +291,7 @@ class ToFloatTest : public ::testing::Test {};
 
 TEST_F(ToFloatTest, StringToFloatConversion) {
   for (size_t i = 0; i < kInputStrings.size(); ++i) {
-    const std::string &input_string = kInputStrings[i];
+    std::string_view input_string = kInputStrings[i];
     const bool expect_success = expectedFloatResults[i];
 
     if (expect_success) {
@@ -307,7 +307,7 @@ class ToComplexFloatTest : public ::testing::Test {};
 
 TEST_F(ToComplexFloatTest, StringToComplexFloatConversion) {
   for (size_t i = 0; i < kInputStrings.size(); ++i) {
-    const std::string &input_string = kInputStrings[i];
+    std::string_view input_string = kInputStrings[i];
     const bool expect_success = expectedComplexResults[i];
 
     if (expect_success) {

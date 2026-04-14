@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,6 +19,7 @@
 #include "dwi/directions/predefined.h"
 #include "dwi/gradient.h"
 #include "dwi/tensor.h"
+#include "enum.h"
 #include "file/matrix.h"
 #include "image.h"
 #include "progressbar.h"
@@ -28,7 +29,8 @@ using namespace MR;
 using namespace App;
 
 using value_type = float;
-const std::vector<std::string> modulate_choices = {"none", "fa", "eigval"};
+enum class ModulateChoice { NONE, FA, EIGVAL };
+constexpr ModulateChoice default_modulate_choice = ModulateChoice::FA;
 constexpr ssize_t default_rk_numdirections = 300;
 
 // clang-format off
@@ -76,10 +78,9 @@ void usage() {
 
     + Option("modulate",
              "specify how to modulate the magnitude of the eigenvectors."
-             " Valid choices are:"
-             " none, FA, eigval"
-             " (default = FA).")
-      + Argument("choice").type_choice(modulate_choices)
+             " Valid choices are: " + MR::Enum::join<ModulateChoice>() +
+             " (default = " + MR::Enum::lowercase_name(default_modulate_choice) + ").")
+      + Argument("choice").type_choice<ModulateChoice>()
 
     + Option("cl",
              "compute the linearity metric of the diffusion tensor."
@@ -94,6 +95,12 @@ void usage() {
     + Option("cs",
              "compute the sphericity metric of the diffusion tensor."
              " (one of the three Westin shape metrics)")
+      + Argument("image").type_image_out()
+
+    + Option("na", "compute the norm of anistropy (NA) of the diffusion tensor.")
+      + Argument("image").type_image_out()
+
+    + Option("mo", "compute the mode of anisotropy (MO) of the diffusion tensor.")
       + Argument("image").type_image_out()
 
   + OptionGroup("Diffusion Kurtosis Imaging")
@@ -134,7 +141,12 @@ void usage() {
   + "* If using -cl, -cp or -cs options: \n"
     "Westin, C. F.; Peled, S.; Gudbjartsson, H.; Kikinis, R. & Jolesz, F. A. "
     "Geometrical diffusion measures for MRI from tensor basis analysis. "
-    "Proc Intl Soc Mag Reson Med, 1997, 5, 1742";
+    "Proc Intl Soc Mag Reson Med, 1997, 5, 1742"
+  + "* If using -na or -mo options: \n"
+    "Ennis, D. B., & Kindlmann, G. (2006). "
+    "Orthogonal tensor invariants and the analysis "
+    "of diffusion tensor magnetic resonance images. "
+    "Magnetic resonance in medicine, 55(1), 136-146.";
 }
 // clang-format on
 
@@ -148,6 +160,8 @@ public:
             Image<value_type> &cl_img,
             Image<value_type> &cp_img,
             Image<value_type> &cs_img,
+            Image<value_type> &mo_img,
+            Image<value_type> &na_img,
             Image<value_type> &value_img,
             Image<value_type> &vector_img,
             Image<value_type> &dkt_img,
@@ -155,7 +169,7 @@ public:
             Image<value_type> &ak_img,
             Image<value_type> &rk_img,
             std::vector<uint32_t> &vals,
-            int modulate,
+            ModulateChoice modulate,
             Eigen::MatrixXd mk_dirs,
             int rk_ndirs)
       : mask_img(mask_img),
@@ -166,6 +180,8 @@ public:
         cl_img(cl_img),
         cp_img(cp_img),
         cs_img(cs_img),
+        mo_img(mo_img),
+        na_img(na_img),
         value_img(value_img),
         vector_img(vector_img),
         dkt_img(dkt_img),
@@ -177,7 +193,8 @@ public:
         mk_dirs(mk_dirs),
         rk_ndirs(rk_ndirs),
         need_eigenvalues(value_img.valid() || vector_img.valid() || ad_img.valid() || rd_img.valid() ||
-                         cl_img.valid() || cp_img.valid() || cs_img.valid() || ak_img.valid() || rk_img.valid()),
+                         cl_img.valid() || cp_img.valid() || cs_img.valid() || na_img.valid() || mo_img.valid() ||
+                         ak_img.valid() || rk_img.valid()),
         need_eigenvectors(vector_img.valid() || ak_img.valid() || rk_img.valid()),
         need_dkt(dkt_img.valid() || mk_img.valid() || ak_img.valid() || rk_img.valid()) {
     for (auto &n : this->vals)
@@ -210,7 +227,7 @@ public:
     }
 
     double fa = 0.0;
-    if (fa_img.valid() || (vector_img.valid() && (modulate == 1)))
+    if (fa_img.valid() || (vector_img.valid() && (modulate == ModulateChoice::FA)))
       fa = DWI::tensor2FA(dt);
 
     /* output fa */
@@ -233,14 +250,12 @@ public:
     }
 
     Eigen::Vector3d eigval;
-    ssize_t ith_eig[3] = {2, 1, 0};
+    std::array<ssize_t, 3> ith_eig = {2, 1, 0};
     if (need_eigenvalues) {
       eigval = es.eigenvalues();
-      ith_eig[0] = 0;
-      ith_eig[1] = 1;
-      ith_eig[2] = 2;
+      ith_eig = {0, 1, 2};
       std::sort(std::begin(ith_eig), std::end(ith_eig), [&eigval](size_t a, size_t b) {
-        return abs(eigval[a]) > abs(eigval[b]);
+        return std::fabs(eigval[a]) > std::fabs(eigval[b]);
       });
     }
 
@@ -289,6 +304,19 @@ public:
       }
     }
 
+    /* output mo */
+    if (mo_img.valid()) {
+      assign_pos_of(dt_img, 0, 3).to(mo_img);
+      mo_img.value() = DWI::eigen2MO(eigval);
+    }
+
+    /* output na */
+    if (na_img.valid()) {
+      assign_pos_of(dt_img, 0, 3).to(na_img);
+      na_img.value() = DWI::eigen2NA(eigval);
+      ;
+    }
+
     /* output vector */
     if (vector_img.valid()) {
       Eigen::Matrix3d eigvec = es.eigenvectors();
@@ -296,10 +324,18 @@ public:
       auto l = Loop(3)(vector_img);
       for (size_t i = 0; i < vals.size(); i++) {
         double fact = 1.0;
-        if (modulate == 1)
+        switch (modulate) {
+        case ModulateChoice::NONE:
+          break;
+        case ModulateChoice::FA:
           fact = fa;
-        else if (modulate == 2)
+          break;
+        case ModulateChoice::EIGVAL:
           fact = eigval(ith_eig[vals[i]]);
+          break;
+        default:
+          throw Exception("Unsupported modulation mode");
+        }
         vector_img.value() = eigvec(0, ith_eig[vals[i]]) * fact;
         l++;
         vector_img.value() = eigvec(1, ith_eig[vals[i]]) * fact;
@@ -357,6 +393,8 @@ private:
   Image<value_type> cl_img;
   Image<value_type> cp_img;
   Image<value_type> cs_img;
+  Image<value_type> mo_img;
+  Image<value_type> na_img;
   Image<value_type> value_img;
   Image<value_type> vector_img;
   Image<value_type> dkt_img;
@@ -364,7 +402,7 @@ private:
   Image<value_type> ak_img;
   Image<value_type> rk_img;
   std::vector<uint32_t> vals;
-  const int modulate;
+  ModulateChoice modulate;
   Eigen::MatrixXd mk_dirs;
   Eigen::MatrixXd mk_bmat, rk_bmat;
   Eigen::MatrixXd rk_dirs;
@@ -454,6 +492,22 @@ void run() {
     metric_count++;
   }
 
+  auto mo_img = Image<value_type>();
+  opt = get_options("mo");
+  if (opt.size()) {
+    header.ndim() = 3;
+    mo_img = Image<value_type>::create(opt[0][0], header);
+    metric_count++;
+  }
+
+  auto na_img = Image<value_type>();
+  opt = get_options("na");
+  if (opt.size()) {
+    header.ndim() = 3;
+    na_img = Image<value_type>::create(opt[0][0], header);
+    metric_count++;
+  }
+
   std::vector<uint32_t> vals = {1};
   opt = get_options("num");
   if (!opt.empty()) {
@@ -465,7 +519,7 @@ void run() {
         throw Exception("eigenvalue/eigenvector number is out of bounds");
   }
 
-  float modulate = get_option_value("modulate", 1);
+  const ModulateChoice modulate = get_option_choice<ModulateChoice>("modulate", default_modulate_choice);
 
   auto value_img = Image<value_type>();
   opt = get_options("value");
@@ -547,6 +601,8 @@ void run() {
                      cl_img,
                      cp_img,
                      cs_img,
+                     mo_img,
+                     na_img,
                      value_img,
                      vector_img,
                      dkt_img,

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -33,12 +33,12 @@ namespace MR::Fixel::Filter {
  */
 class Base {
 public:
-  Base(const std::string &s) : message(s) {}
+  Base(std::string_view s) : message(s) {}
   Base() {}
 
   virtual ~Base() {}
 
-  void set_message(const std::string &s) { message = s; }
+  void set_message(std::string_view s) { message = s; }
 
   virtual void operator()(Image<float> &, Image<float> &) const {
     throw Exception("Running empty function Fixel::Filter::Base::operator()");

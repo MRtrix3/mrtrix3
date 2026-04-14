@@ -19,7 +19,7 @@ You can address all *MRtrix3*-related queries there, using your GitHub or Google
 ## Quick install
 
 1. Install dependencies by whichever means your system uses. 
-   These include: CMake (>= 3.16), Python3, a C++ compiler with full C++17 support, 
+   These include: CMake (>= 3.22), Python3, a C++ compiler with full C++17 support, 
    Eigen (>=3.2.8), zlib, OpenGL (>=3.3), and Qt (>=5.5).
 
 2. Clone Git repository and compile:

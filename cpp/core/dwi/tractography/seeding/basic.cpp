@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,7 +20,7 @@
 
 namespace MR::DWI::Tractography::Seeding {
 
-Sphere::Sphere(const std::string &in)                                    //
+Sphere::Sphere(std::string_view in)                                      //
     : Base(in, "sphere", attempts_per_seed.at(seed_attempt_t::RANDOM)) { //
   auto F = parse_floats(in);
   if (F.size() != 4)
@@ -40,7 +40,7 @@ bool Sphere::get_seed(Eigen::Vector3f &p) const {
   return true;
 }
 
-SeedMask::SeedMask(const std::string &in)                                            //
+SeedMask::SeedMask(std::string_view in)                                              //
     : Base(in, "random seeding mask", attempts_per_seed.at(seed_attempt_t::RANDOM)), //
       mask(in) {                                                                     //
   Base::volume = static_cast<float>(static_cast<default_type>(get_count(mask)) * mask.spacing(0) * mask.spacing(1) *
@@ -62,7 +62,7 @@ bool SeedMask::get_seed(Eigen::Vector3f &p) const {
   return true;
 }
 
-Random_per_voxel::Random_per_voxel(const std::string &in, const size_t num_per_voxel)
+Random_per_voxel::Random_per_voxel(std::string_view in, const size_t num_per_voxel)
     : Base(in, "random per voxel", attempts_per_seed.at(seed_attempt_t::FIXED)),
       mask(in),
       num(num_per_voxel),
@@ -108,7 +108,7 @@ bool Random_per_voxel::get_seed(Eigen::Vector3f &p) const {
   return true;
 }
 
-Grid_per_voxel::Grid_per_voxel(const std::string &in, const size_t os_factor)
+Grid_per_voxel::Grid_per_voxel(std::string_view in, const size_t os_factor)
     : Base(in, "grid per voxel", attempts_per_seed.at(seed_attempt_t::FIXED)),
       mask(in),
       os(os_factor),
@@ -157,7 +157,7 @@ bool Grid_per_voxel::get_seed(Eigen::Vector3f &p) const {
   return true;
 }
 
-Rejection_per_voxel::Rejection_per_voxel(const std::string &in)
+Rejection_per_voxel::Rejection(std::string_view in)
     : Base(in, "rejection sampling", attempts_per_seed.at(seed_attempt_t::RANDOM)),
 #ifdef REJECTION_SAMPLING_USE_INTERPOLATION
       interp(in),
@@ -176,17 +176,17 @@ Rejection_per_voxel::Rejection_per_voxel(const std::string &in)
         throw Exception("Cannot have negative values in an image used for rejection sampling!");
       max = std::max(max, value);
       volume += value;
-      if (vox.index(0) < bottom[0])
+      if (static_cast<ssize_t>(vox.index(0)) < bottom[0])
         bottom[0] = vox.index(0);
-      if (vox.index(0) > top[0])
+      if (static_cast<ssize_t>(vox.index(0)) > top[0])
         top[0] = vox.index(0);
-      if (vox.index(1) < bottom[1])
+      if (static_cast<ssize_t>(vox.index(1)) < bottom[1])
         bottom[1] = vox.index(1);
-      if (vox.index(1) > top[1])
+      if (static_cast<ssize_t>(vox.index(1)) > top[1])
         top[1] = vox.index(1);
-      if (vox.index(2) < bottom[2])
+      if (static_cast<ssize_t>(vox.index(2)) < bottom[2])
         bottom[2] = vox.index(2);
-      if (vox.index(2) > top[2])
+      if (static_cast<ssize_t>(vox.index(2)) > top[2])
         top[2] = vox.index(2);
     }
   }
@@ -201,9 +201,9 @@ Rejection_per_voxel::Rejection_per_voxel(const std::string &in)
   if (bottom[2])
     --bottom[2];
 
-  top[0] = std::min(vox.size(0) - bottom[0], top[0] + 2 - bottom[0]);
-  top[1] = std::min(vox.size(1) - bottom[1], top[1] + 2 - bottom[1]);
-  top[2] = std::min(vox.size(2) - bottom[2], top[2] + 2 - bottom[2]);
+  top[0] = std::min(static_cast<ssize_t>(vox.size(0)) - bottom[0], top[0] + 2 - bottom[0]);
+  top[1] = std::min(static_cast<ssize_t>(vox.size(1)) - bottom[1], top[1] + 2 - bottom[1]);
+  top[2] = std::min(static_cast<ssize_t>(vox.size(2)) - bottom[2], top[2] + 2 - bottom[2]);
 
   auto sub = Adapter::make<Adapter::Subset>(vox, bottom, top);
   Header header = sub;

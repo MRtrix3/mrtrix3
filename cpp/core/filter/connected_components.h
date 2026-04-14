@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -40,18 +40,19 @@ public:
   //   correspond to neighbouring directions using a Directions::Set.
   class Adjacency {
   public:
-    typedef Voxel2Vector::index_t index_t;
+    using index_t = Voxel2Vector::index_t;
+    using axis_mask_type = Eigen::Array<bool, Eigen::Dynamic, 1>;
 
-    Adjacency() : use_26_neighbours(false), enabled_axes(3, true) {}
+    Adjacency() : use_26_neighbours(false), enabled_axes(axis_mask_type::Ones(3)) {}
 
     void toggle_axis(const size_t axis, const bool value) {
       if (axis > enabled_axes.size())
-        enabled_axes.resize(axis + 1, false);
+        enabled_axes.conservativeResizeLike(axis_mask_type::Zero(axis + 1));
       enabled_axes[axis] = value;
       data.clear();
     }
 
-    void set_axes(const std::vector<bool> &i) {
+    void set_axes(const axis_mask_type &i) {
       enabled_axes = i;
       data.clear();
     }
@@ -73,7 +74,7 @@ public:
 
   private:
     bool use_26_neighbours;
-    std::vector<bool> enabled_axes;
+    axis_mask_type enabled_axes;
     std::vector<std::vector<index_t>> data;
   } adjacency;
 
@@ -184,7 +185,11 @@ class ConnectedComponents : public Base {
 public:
   template <class HeaderType>
   ConnectedComponents(const HeaderType &in)
-      : Base(in), enabled_axes(ndim(), true), largest_only(false), do_26_connectivity(false), minsize(0) {
+      : Base(in),
+        enabled_axes(axis_mask_type::Ones(ndim())),
+        largest_only(false),
+        do_26_connectivity(false),
+        minsize(0) {
     if (this->ndim() > 4)
       throw Exception("Cannot run connected components analysis with more than 4 dimensions");
     datatype_ = DataType::UInt32;
@@ -194,7 +199,7 @@ public:
   }
 
   template <class HeaderType>
-  ConnectedComponents(const HeaderType &in, const std::string &message) : ConnectedComponents(in) {
+  ConnectedComponents(const HeaderType &in, std::string_view message) : ConnectedComponents(in) {
     set_message(message);
   }
 
@@ -250,7 +255,7 @@ public:
     if (max_axis >= ndim())
       throw Exception("Requested axis for connected-component filter (" + str(max_axis) +
                       " is beyond the dimensionality of the image (" + str(ndim()) + "D)");
-    enabled_axes.assign(std::max(max_axis + 1, size_t(ndim())), false);
+    enabled_axes = axis_mask_type::Zero(std::max(max_axis + 1, static_cast<size_t>(ndim())));
     for (const auto &axis : i) {
       if (axis < 0)
         throw Exception("Cannot specify negative axis index for connected-component filter");
@@ -258,7 +263,7 @@ public:
     }
   }
 
-  void set_axes(const std::vector<bool> &i) {
+  void set_axes(const axis_mask_type &i) {
     if (i.size() != ndim())
       throw Exception("Length of axis selection flag vector (" + str(i.size()) +
                       ") does not match dimensionality of connected-component filter (" + str(ndim()) + "D)");
@@ -272,7 +277,7 @@ public:
   void set_minsize(uint32_t value) { minsize = value; }
 
 protected:
-  std::vector<bool> enabled_axes;
+  axis_mask_type enabled_axes;
   bool largest_only;
   bool do_26_connectivity;
   uint32_t minsize;

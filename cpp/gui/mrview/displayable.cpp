@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,21 +18,21 @@
 
 namespace MR::GUI::MRView {
 
-Displayable::Displayable(const std::string &filename)
+Displayable::Displayable(std::string_view filename)
     : QAction(nullptr),
-      lessthan(NAN),
-      greaterthan(NAN),
-      display_midpoint(NAN),
-      display_range(NAN),
-      transparent_intensity(NAN),
-      opaque_intensity(NAN),
-      alpha(NAN),
+      lessthan(NaNF),
+      greaterthan(NaNF),
+      display_midpoint(NaNF),
+      display_range(NaNF),
+      transparent_intensity(NaNF),
+      opaque_intensity(NaNF),
+      alpha(NaNF),
       colourmap(0),
       show(true),
       show_colour_bar(true),
       filename(filename),
-      value_min(NAN),
-      value_max(NAN),
+      value_min(NaNF),
+      value_max(NaNF),
       flags_(0x00000000) {
   colour[0] = colour[1] = 255;
   colour[2] = 0;

@@ -5,6 +5,7 @@
 #   this image has no meaning,
 #   but is just used to ensure successful command execution
 # Outcome is compared to that generated using a prior software version
+rm -f tmp.txt
 mrcalc dwi_mean.mif noise.mif -complex - | \
 mrstats - -output mean -output std -output std_rv -output min -output max -output count > tmp.txt
 

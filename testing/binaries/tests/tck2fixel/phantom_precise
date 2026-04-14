@@ -1,0 +1,13 @@
+#!/bin/bash
+# Verification of operation of command
+#   run on the SIFT phantom with inclusion of SIFT2 per-streamline weights
+#   and also use of the -precise option;
+#   this should produce a distribution of fixel track densities
+#   that is more homogeneous than simply utilising the SIFT2 weights
+#   but performing a binary assignment of streamlines to fixels
+# Output is compared to that generated using a prior software version
+rm -rf tmp/
+tck2fixel SIFT_phantom/tracks.tck SIFT_phantom/fixels tmp/ td.mif \
+    -tck_weights_in SIFT_phantom/weights.csv \
+    -precise
+testing_diff_image tmp/td.mif tck2fixel/phantom_precise.mif -abs 0.1

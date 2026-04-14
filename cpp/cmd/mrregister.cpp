@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,7 @@
 
 #include "command.h"
 #include "dwi/directions/predefined.h"
+#include "enum.h"
 #include "file/matrix.h"
 #include "file/nifti_utils.h"
 #include "filter/reslice.h"
@@ -39,8 +40,6 @@
 using namespace MR;
 using namespace App;
 
-const std::vector<std::string> transformation_choices = {
-    "rigid", "affine", "nonlinear", "rigid_affine", "rigid_nonlinear", "affine_nonlinear", "rigid_affine_nonlinear"};
 enum class transformation_t {
   RIGID,
   AFFINE,
@@ -111,9 +110,9 @@ void usage() {
   OPTIONS
   + Option ("type", std::string("the registration type.") +
                     " Valid choices are: "
-                    + join(transformation_choices, ", ")
-                    + " (default: " + transformation_choices[static_cast<ssize_t>(default_transformation_type)] + ")")
-    + Argument ("choice").type_choice (transformation_choices)
+                    + MR::Enum::join<transformation_t>()
+                    + " (default: " + MR::Enum::lowercase_name(default_transformation_type) + ")")
+    + Argument ("choice").type_choice<transformation_t>()
 
   + Option ("transformed", "image1 after registration transformed and regridded to the space of image2."
                            " Note that -transformed needs to be repeated for each contrast"
@@ -180,8 +179,7 @@ void run() {
     check_3D_nonunity(input2[i]);
   }
 
-  const transformation_t registration_type =
-      transformation_t(get_option_value("type", static_cast<ssize_t>(default_transformation_type)));
+  const transformation_t registration_type = get_option_choice<transformation_t>("type", default_transformation_type);
   bool do_rigid = false;
   bool do_affine = false;
   bool do_nonlinear = false;
@@ -357,7 +355,7 @@ void run() {
   value_type out_of_bounds_value = 0.0;
   opt = get_options("nan");
   if (!opt.empty())
-    out_of_bounds_value = NAN;
+    out_of_bounds_value = std::numeric_limits<value_type>::quiet_NaN();
 
   // ****** RIGID REGISTRATION OPTIONS *******
   Registration::Linear rigid_registration;
@@ -396,12 +394,12 @@ void run() {
   if (!opt.empty()) {
     if (init_rigid_matrix_set)
       throw Exception("options -rigid_init_matrix and -rigid_init_translation are mutually exclusive");
-    Registration::set_init_translation_model_from_option(rigid_registration, (int)opt[0][0]);
+    Registration::set_init_translation_model_from_option(rigid_registration, static_cast<int>(opt[0][0]));
   }
 
   opt = get_options("rigid_init_rotation");
   if (!opt.empty())
-    Registration::set_init_rotation_model_from_option(rigid_registration, (int)opt[0][0]);
+    Registration::set_init_rotation_model_from_option(rigid_registration, static_cast<int>(opt[0][0]));
 
   opt = get_options("rigid_scale");
   if (!opt.empty()) {
@@ -427,7 +425,7 @@ void run() {
   opt = get_options("rigid_metric");
   Registration::LinearMetricType rigid_metric = Registration::Diff;
   if (!opt.empty()) {
-    switch ((int)opt[0][0]) {
+    switch (static_cast<int>(opt[0][0])) {
     case 0:
       rigid_metric = Registration::Diff;
       break;
@@ -447,7 +445,7 @@ void run() {
   if (!opt.empty()) {
     if (rigid_metric != Registration::Diff)
       throw Exception("rigid_metric.diff.estimator set but cost function is not diff.");
-    switch ((int)opt[0][0]) {
+    switch (static_cast<int>(opt[0][0])) {
     case 0:
       rigid_estimator = Registration::L1;
       break;
@@ -531,14 +529,14 @@ void run() {
   if (!opt.empty()) {
     if (init_affine_matrix_set)
       throw Exception("options -affine_init_matrix and -affine_init_translation are mutually exclusive");
-    Registration::set_init_translation_model_from_option(affine_registration, (int)opt[0][0]);
+    Registration::set_init_translation_model_from_option(affine_registration, static_cast<int>(opt[0][0]));
   }
 
   opt = get_options("affine_init_rotation");
   if (!opt.empty()) {
     if (init_affine_matrix_set)
       throw Exception("options -affine_init_matrix and -affine_init_rotation are mutually exclusive");
-    Registration::set_init_rotation_model_from_option(affine_registration, (int)opt[0][0]);
+    Registration::set_init_rotation_model_from_option(affine_registration, static_cast<int>(opt[0][0]));
   }
 
   opt = get_options("affine_scale");
@@ -558,7 +556,7 @@ void run() {
   opt = get_options("affine_metric");
   Registration::LinearMetricType affine_metric = Registration::Diff;
   if (!opt.empty()) {
-    switch ((int)opt[0][0]) {
+    switch (static_cast<int>(opt[0][0])) {
     case 0:
       affine_metric = Registration::Diff;
       break;
@@ -578,7 +576,7 @@ void run() {
   if (!opt.empty()) {
     if (affine_metric != Registration::Diff)
       throw Exception("affine_metric.diff.estimator set but cost function is not diff.");
-    switch ((int)opt[0][0]) {
+    switch (static_cast<int>(opt[0][0])) {
     case 0:
       affine_estimator = Registration::L1;
       break;
@@ -1202,8 +1200,7 @@ void run() {
           midway_header.size(3) = im2_image.size(3);
 
         const size_t nvols = im2_image.ndim() == 3 ? 1 : im2_image.size(3);
-        const value_type val = (std::sqrt(float(1 + 8 * nvols)) - 3.0) / 4.0;
-        const bool reorient_output = !reorientation_forbidden && (nvols > 1) && !(val - (int)val);
+        const bool reorient_output = !reorientation_forbidden && (nvols > 1) && Math::SH::feasible_N(nvols);
 
         if (do_nonlinear) {
           auto im2_midway = Image<default_type>::create(input2_midway_transformed_paths[idx], midway_header);

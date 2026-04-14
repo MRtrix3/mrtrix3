@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -27,11 +27,7 @@ void Pipe::load(const Header &header, size_t) {
   assert(files.size() == 1);
   DEBUG("mapping piped image \"" + files[0].name + "\"...");
 
-  segsize /= files.size();
   int64_t bytes_per_segment = (header.datatype().bits() * segsize + 7) / 8;
-
-  if (double(bytes_per_segment) >= double(std::numeric_limits<size_t>::max()))
-    throw Exception("image \"" + header.name() + "\" is larger than maximum accessible memory");
 
   mmap.reset(new File::MMap(files[0], writable, !is_new, bytes_per_segment));
   addresses.resize(1);
@@ -58,7 +54,7 @@ void Pipe::unload(const Header &) {
 // ENVVAR the piped commands are executed.
 namespace {
 bool preserve_tmpfile() {
-  const char *const MRTRIX_PRESERVE_TMPFILE = getenv("MRTRIX_PRESERVE_TMPFILE");
+  const char *const MRTRIX_PRESERVE_TMPFILE = getenv("MRTRIX_PRESERVE_TMPFILE"); // check_syntax off
   return (MRTRIX_PRESERVE_TMPFILE != nullptr && to<bool>(std::string(MRTRIX_PRESERVE_TMPFILE)));
 }
 } // namespace

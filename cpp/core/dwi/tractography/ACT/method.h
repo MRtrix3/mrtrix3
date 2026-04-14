@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -81,7 +81,7 @@ public:
 
     seed_in_sgm = false;
 
-    if (tissues().is_csf() > 0.0F || tissues().get_wm() == 0.0F ||
+    if (tissues().is_csf() || tissues().get_wm() == 0.0F ||
         ((tissues().get_gm() - tissues().get_wm()) >= gmwmi_accuracy))
       return false;
 

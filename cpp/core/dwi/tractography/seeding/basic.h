@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -31,7 +31,7 @@ namespace MR::DWI::Tractography::Seeding {
 
 class Sphere : public Base {
 public:
-  Sphere(const std::string &in);
+  Sphere(std::string_view in);
   virtual bool get_seed(Eigen::Vector3f &p) const override;
 
 private:
@@ -41,7 +41,7 @@ private:
 
 class SeedMask : public Base {
 public:
-  SeedMask(const std::string &in);
+  SeedMask(std::string_view in);
   virtual bool get_seed(Eigen::Vector3f &p) const override;
 
 private:
@@ -50,7 +50,7 @@ private:
 
 class Random_per_voxel : public Base {
 public:
-  Random_per_voxel(const std::string &in, const size_t num_per_voxel);
+  Random_per_voxel(std::string_view in, const size_t num_per_voxel);
   virtual bool get_seed(Eigen::Vector3f &p) const override;
   virtual ~Random_per_voxel() {}
 
@@ -63,7 +63,7 @@ private:
 
 class Grid_per_voxel : public Base {
 public:
-  Grid_per_voxel(const std::string &in, const size_t os_factor);
+  Grid_per_voxel(std::string_view in, const size_t os_factor);
   virtual ~Grid_per_voxel() {}
   virtual bool get_seed(Eigen::Vector3f &p) const override;
 
@@ -78,7 +78,7 @@ private:
 class Rejection_per_voxel : public Base {
 public:
   using transform_type = Eigen::Transform<float, 3, Eigen::AffineCompact>;
-  Rejection_per_voxel(const std::string &);
+  Rejection_per_voxel(std::string_view);
   virtual bool get_seed(Eigen::Vector3f &p) const override;
 
 private:

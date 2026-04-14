@@ -152,8 +152,8 @@ List of MRtrix3 configuration file options
 
     *default: 1.0*
 
-     The multiplicative factor to apply to the transparency of nodes not currently selected nor associated with a
-     selected node.
+     The multiplicative factor to apply to the transparency of nodes not currently selected nor associated with
+     a selected node.
 
 .. option:: ConnectomeNodeOtherColour
 
@@ -172,8 +172,8 @@ List of MRtrix3 configuration file options
 
     *default: 1.0*
 
-     The multiplicative factor to apply to the size of nodes not currently selected nor associated with a selected
-     node.
+     The multiplicative factor to apply to the size of nodes not currently selected nor associated with a
+     selected node.
 
 .. option:: ConnectomeNodeOtherVisibilityOverride
 
@@ -315,6 +315,15 @@ List of MRtrix3 configuration file options
     *default: 10*
 
      The size (in points) of the font to be used in OpenGL viewports (mrview and shview).
+
+.. option:: GLMBatchSize
+
+    *default: 16384*
+
+     Where the GLM design matrix is fixed across all elements,
+     this is the number of elements for which data shuffling and model
+     inversion will be performed concurrently,
+     ie. in a single set of linear algebra operations
 
 .. option:: HelpCommand
 
@@ -695,12 +704,6 @@ List of MRtrix3 configuration file options
      script itself will be used, followed by `-tmp-` (six random
      characters are then appended to produce a unique name in cases
      where a script may be run multiple times in parallel).
-
-.. option:: SparseDataInitialSize
-
-    *default: 16777216*
-
-     Initial buffer size for data in MRtrix sparse image format file (in bytes).
 
 .. option:: SpecularExponent
 

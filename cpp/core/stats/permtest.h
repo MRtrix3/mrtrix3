@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -33,26 +33,31 @@
 
 namespace MR::Stats::PermTest {
 
+extern const std::string mask_posthoc_description;
+
 using value_type = Math::Stats::value_type;
 using vector_type = Math::Stats::vector_type;
 using matrix_type = Math::Stats::matrix_type;
 using count_matrix_type = Eigen::Array<uint32_t, Eigen::Dynamic, Eigen::Dynamic>;
+using element_mask_type = Math::Stats::element_mask_type;
 
 /*! A class to pre-compute the empirical enhanced statistic image for non-stationarity correction */
 class PreProcessor {
 public:
-  PreProcessor(const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
+  PreProcessor(const std::unique_ptr<Math::Stats::GLM::TestBase> &stats_calculator,
                const std::shared_ptr<EnhancerBase> enhancer,
                const default_type skew,
                matrix_type &global_enhanced_sum,
                count_matrix_type &global_enhanced_count);
+
+  PreProcessor(const PreProcessor &that);
 
   ~PreProcessor();
 
   bool operator()(const Math::Stats::Shuffle &);
 
 protected:
-  std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator;
+  std::unique_ptr<Math::Stats::GLM::TestBase> stats_calculator;
   std::shared_ptr<EnhancerBase> enhancer;
   const default_type skew;
   matrix_type &global_enhanced_sum;
@@ -60,6 +65,7 @@ protected:
   matrix_type enhanced_sum;
   count_matrix_type enhanced_count;
   matrix_type stats;
+  matrix_type zstats;
   matrix_type enhanced_stats;
   std::shared_ptr<std::mutex> mutex;
 };
@@ -67,42 +73,47 @@ protected:
 /*! A class to perform the permutation testing */
 class Processor {
 public:
-  Processor(const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
+  Processor(const std::unique_ptr<Math::Stats::GLM::TestBase> &stats_calculator,
             const std::shared_ptr<EnhancerBase> enhancer,
             const matrix_type &empirical_enhanced_statistics,
             const matrix_type &default_enhanced_statistics,
+            const element_mask_type &mask,
             matrix_type &null_dist,
-            count_matrix_type &global_null_dist_contributions,
+            count_matrix_type &global_nulldist_contributions,
             count_matrix_type &global_uncorrected_pvalue_counter);
+
+  Processor(const Processor &that);
 
   ~Processor();
 
   bool operator()(const Math::Stats::Shuffle &);
 
 protected:
-  std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator;
+  std::unique_ptr<Math::Stats::GLM::TestBase> stats_calculator;
   std::shared_ptr<EnhancerBase> enhancer;
   const matrix_type &empirical_enhanced_statistics;
   const matrix_type &default_enhanced_statistics;
+  const element_mask_type &mask;
   matrix_type statistics;
+  matrix_type zstatistics;
   matrix_type enhanced_statistics;
   matrix_type &null_dist;
-  count_matrix_type &global_null_dist_contributions;
-  count_matrix_type null_dist_contribution_counter;
+  count_matrix_type &global_nulldist_contributions;
+  count_matrix_type local_nulldist_contributions;
   count_matrix_type &global_uncorrected_pvalue_counter;
-  count_matrix_type uncorrected_pvalue_counter;
+  count_matrix_type local_uncorrected_pvalue_counter;
   std::shared_ptr<std::mutex> mutex;
 };
 
 // Precompute the empircal test statistic for non-stationarity adjustment
-void precompute_empirical_stat(const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
+void precompute_empirical_stat(const std::unique_ptr<Math::Stats::GLM::TestBase> &stats_calculator,
                                const std::shared_ptr<EnhancerBase> enhancer,
                                const default_type skew,
                                matrix_type &empirical_statistic);
 
 // Precompute the default statistic image and enhanced statistic. We need to precompute this for calculating the
 // uncorrected p-values.
-void precompute_default_permutation(const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
+void precompute_default_permutation(const std::unique_ptr<Math::Stats::GLM::TestBase> &stats_calculator,
                                     const std::shared_ptr<EnhancerBase> enhancer,
                                     const matrix_type &empirical_enhanced_statistic,
                                     matrix_type &output_statistics,
@@ -110,13 +121,14 @@ void precompute_default_permutation(const std::shared_ptr<Math::Stats::GLM::Test
                                     matrix_type &output_enhanced);
 
 // Functions for running a large number of permutations
-void run_permutations(const std::shared_ptr<Math::Stats::GLM::TestBase> stats_calculator,
+void run_permutations(const std::unique_ptr<Math::Stats::GLM::TestBase> &stats_calculator,
                       const std::shared_ptr<EnhancerBase> enhancer,
                       const matrix_type &empirical_enhanced_statistic,
                       const matrix_type &default_enhanced_statistics,
                       const bool fwe_strong,
-                      matrix_type &perm_dist,
-                      count_matrix_type &perm_dist_contributions,
+                      const element_mask_type &mask,
+                      matrix_type &null_dist,
+                      count_matrix_type &nulldist_contributions,
                       matrix_type &uncorrected_pvalues);
 
 //! @}

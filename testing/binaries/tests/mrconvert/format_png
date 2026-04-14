@@ -68,9 +68,9 @@ mrconvert mrconvert/pngmask[].png - |
 #   and conform to what their contents are expected to be
 #   given the source image and the loss of spatial encoding information
 rm -f tmptissues*.png
-mrconvert dwi2fod/msmt/tissues.mif tmprgb[].png
+mrconvert dwi2fod/msmt_csd/tissues.mif tmprgb[].png
 testing_diff_image tmprgb[].png mrconvert/pngrgb[].png
 mrconvert mrconvert/pngrgb[].png - |
-    testing_diff_image - $(mrconvert dwi2fod/msmt/tissues.mif -vox 1,1,1 - |
+    testing_diff_image - $(mrconvert dwi2fod/msmt_csd/tissues.mif -vox 1,1,1 - |
         mrtransform - -replace identity.txt - |
         mrcalc - 255 -mult -round 255 -min -)

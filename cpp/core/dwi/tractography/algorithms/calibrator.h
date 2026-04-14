@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -71,7 +71,9 @@ template <class Method> void calibrate(Method &method) {
   }
   float zero = amps.back().incl;
 
-  float N_min = Inf, theta_min = NaN, ratio = NaN;
+  float N_min = InfF;
+  float theta_min = NaNF;
+  float ratio = NaNF;
   for (size_t i = 1; i < amps.size(); ++i) {
     float N = Math::pow2(max_angle);
     float Ns = N * (1.0 + amps[0].amp / amps[i].amp) / (2.0 * Math::pow2(zero));

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -75,7 +75,7 @@ void GZ::unload(const Header &header) {
       ProgressBar progress("compressing image \"" + header.name() + "\"",
                            files.size() * bytes_per_segment / bytes_per_zcall);
       for (size_t n = 0; n < files.size(); n++) {
-        assert(files[n].start == int64_t(lead_in_size));
+        assert(files[n].start == static_cast<int64_t>(lead_in_size));
         File::GZ zf(files[n].name, "wb");
         if (lead_in)
           zf.write(reinterpret_cast<const char *>(lead_in.get()), lead_in_size);

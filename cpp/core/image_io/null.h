@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,13 +14,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#ifndef __image_io_null_h__
-#define __image_io_null_h__
+#pragma once
 
 #include "image_io/base.h"
 
-namespace MR {
-namespace ImageIO {
+namespace MR::ImageIO {
 
 class Null : public Base {
 public:
@@ -31,7 +29,4 @@ protected:
   virtual void unload(const Header &);
 };
 
-} // namespace ImageIO
-} // namespace MR
-
-#endif
+} // namespace MR::ImageIO

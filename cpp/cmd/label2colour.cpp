@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -84,7 +84,7 @@ void run() {
         colour[0] = dist(rng);
         colour[1] = dist(rng);
         colour[2] = dist(rng);
-      } while (int(colour[0]) + int(colour[1]) + int(colour[2]) < 100);
+      } while (colour.sum() < 100);
       lut.insert(std::make_pair(i, LUT_node(str(i), colour)));
     }
   }

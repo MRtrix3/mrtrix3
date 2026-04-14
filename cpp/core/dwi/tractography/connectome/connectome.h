@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,9 @@
  */
 
 #pragma once
+
+#include <memory>
+#include <string>
 
 #include "app.h"
 #include "image.h"
@@ -34,9 +37,10 @@ constexpr default_type default_tck2nodes_radial_distance = 4.0;
 class Tck2nodes_base;
 class Metric;
 
-extern const char *modes[];
+extern const std::vector<std::string> assignment_options;
+extern const std::string tck2nodes_description;
 extern const App::OptionGroup AssignmentOptions;
-Tck2nodes_base *load_assignment_mode(Image<node_t> &);
+std::unique_ptr<Tck2nodes_base> load_assignment_mode(Image<node_t> &);
 
 extern const App::OptionGroup MetricOptions;
 void setup_metric(Metric &, Image<node_t> &);

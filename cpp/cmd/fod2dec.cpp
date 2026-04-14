@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -231,7 +231,7 @@ void run() {
     check_dimensions(mask_hdr, fod_hdr, 0, 3);
   }
 
-  float thresh = get_option_value("threshold", NAN);
+  float thresh = get_option_value("threshold", NaNF);
 
   bool needtolum = false;
   Eigen::Array<value_type, 3, 1> coefs(1.0, 1.0, 1.0);

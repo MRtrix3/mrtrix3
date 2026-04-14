@@ -27,7 +27,7 @@ By default, the value of the underlying image at each point along the track is w
 Options
 -------
 
--  **-stat_tck statistic** compute some statistic from the values along each streamline; (options are: mean,median,min,max)
+-  **-stat_tck statistic** compute some statistic from the values along each streamline; (options are: mean, median, min, max)
 
 -  **-nointerp** do not use trilinear interpolation when sampling image values
 
@@ -67,7 +67,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2026 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

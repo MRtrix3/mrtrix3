@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -98,7 +98,7 @@ template <class WriterType> void set_optional_outputs(WriterType &writer) {
 void run() {
   const value_type connectivity_threshold = get_option_value("connectivity", default_connectivity_threshold);
   const value_type angular_threshold =
-      get_option_value("angle", value_type(DWI::Tractography::Mapping::default_streamline2fixel_angle));
+      get_option_value("angle", static_cast<value_type>(DWI::Tractography::Mapping::default_streamline2fixel_angle));
 
   const std::string input_fixel_directory = argument[0];
   Header index_header = Fixel::find_index_header(input_fixel_directory);

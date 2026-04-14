@@ -5,7 +5,7 @@
 # - Input response function, of size 4 (rows; # unique b-values) x Z (for lmax of tissue)
 # , produces 5D output image of size X x Y x Z x max(N) x 4 (# unique b-values)
 shconv \
-dwi2fod/msmt/wm.mif dwi2fod/msmt/wm.txt \
-dwi2fod/msmt/gm.mif dwi2fod/msmt/gm.txt \
-dwi2fod/msmt/csf.mif dwi2fod/msmt/csf.txt - | \
+dwi2fod/msmt_csd/wm.mif dwi2fod/msmt_csd/wm.txt \
+dwi2fod/msmt_csd/gm.mif dwi2fod/msmt_csd/gm.txt \
+dwi2fod/msmt_csd/csf.mif dwi2fod/msmt_csd/csf.txt - | \
 testing_diff_image - shconv/out_msmt.mif -abs 1e-4
