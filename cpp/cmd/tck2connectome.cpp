@@ -21,6 +21,8 @@
 #include "thread_queue.h"
 #include "types.h"
 
+#include "connectome/validate.h"
+
 #include "dwi/tractography/connectome/connectome.h"
 #include "dwi/tractography/connectome/mapper.h"
 #include "dwi/tractography/connectome/matrix.h"
@@ -140,7 +142,7 @@ void usage() {
 // clang-format on
 
 template <typename T>
-void execute(Image<node_t> &node_image, const node_t max_node_index, const std::set<node_t> &missing_nodes) {
+void execute(Image<node_t> &node_image, const node_t max_node_index, const std::vector<node_t> &missing_nodes) {
   // Are we generating a matrix or a vector?
   const bool vector_output = !get_options("vector").empty();
 
@@ -196,8 +198,17 @@ void execute(Image<node_t> &node_image, const node_t max_node_index, const std::
 
 void run() {
   auto node_header = Header::open(argument[1]);
-  MR::Connectome::check(node_header);
+  MR::Connectome::validate_label_header(node_header);
   auto node_image = node_header.get_image<node_t>();
+  auto lv = MR::Connectome::validate_label_image(node_image);
+  if (!lv.indices_contiguous) {
+    WARN("The following nodes are missing from the parcellation image:");
+    WARN(str(lv.missing_indices));
+    WARN("(This may be the result of poor parcellation image preparation,"              //
+         " use of incorrect or incomplete LUT file(s) in MRtrix3 command labelconvert," //
+         " or very poor registration)");                                                //
+    WARN("This will result in empty rows / columns in the output matrix");
+  }
 
   // First, find out how many segmented nodes there are, so the matrix can be pre-allocated
   // Also check for node volume for all nodes
@@ -211,26 +222,10 @@ void run() {
     ++node_volumes[node_image.value()];
   }
 
-  std::set<node_t> missing_nodes;
-  for (size_t i = 1; i != node_volumes.size(); ++i) {
-    if (!node_volumes[i])
-      missing_nodes.insert(i);
-  }
-  if (!missing_nodes.empty()) {
-    WARN("The following nodes are missing from the parcellation image:");
-    std::set<node_t>::iterator i = missing_nodes.begin();
-    std::string list = str(*i);
-    for (++i; i != missing_nodes.end(); ++i)
-      list += ", " + str(*i);
-    WARN(list);
-    WARN("(This may indicate poor parcellation image preparation, use of incorrect or incomplete LUT file(s) in "
-         "labelconvert, or very poor registration)");
-  }
-
   if (max_node_index >= node_count_ram_limit) {
     INFO("Very large number of nodes detected; using single-precision floating-point storage");
-    execute<float>(node_image, max_node_index, missing_nodes);
+    execute<float>(node_image, max_node_index, lv.missing_indices);
   } else {
-    execute<double>(node_image, max_node_index, missing_nodes);
+    execute<double>(node_image, max_node_index, lv.missing_indices);
   }
 }

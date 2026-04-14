@@ -15,11 +15,13 @@
  */
 
 #include <limits>
+#include <mutex>
 
 #include "algo/threaded_loop.h"
 #include "command.h"
 #include "image.h"
 #include "registration/warp/helpers.h"
+#include "registration/warp/validate.h"
 
 using namespace MR;
 using namespace App;
@@ -33,7 +35,7 @@ void usage() {
            " and Max Pietsch (mail@maxpietsch.com)";
 
   SYNOPSIS = "Replaces voxels in a deformation field that point"
-             " to a specific out of bounds location with nan,nan,nan";
+             " to a specific out-of-bounds location with nan,nan,nan";
 
   DESCRIPTION
   + "This can be used in conjunction with the warpinit command"
@@ -45,8 +47,8 @@ void usage() {
   + Argument ("out", "the output warp image.").type_image_out();
 
   OPTIONS
-  + Option ("marker", "single value or a comma separated list of values"
-                      " that define out of bounds voxels in the input warp image."
+  + Option ("marker", "single value or a comma-separated list of three values"
+                      " that define out-of-bounds voxels in the input warp image."
                       " Default: (0,0,0).")
     + Argument ("coordinates").type_sequence_float()
   + Option ("tolerance", "numerical precision used for L2 matrix norm comparison."
@@ -74,7 +76,10 @@ public:
         out.value() = in.value();
     }
   }
-  virtual ~BoundsCheck() { counter += count; }
+  virtual ~BoundsCheck() {
+    const std::lock_guard<std::mutex> lock(mutex);
+    counter += count;
+  }
 
 protected:
   const value_type precision;
@@ -82,25 +87,48 @@ protected:
   size_t &counter;
   size_t count;
   Eigen::Matrix<value_type, 3, 1> val;
+
+  static std::mutex mutex;
 };
+std::mutex BoundsCheck::mutex;
 
 void run() {
-  auto input = Image<value_type>::open(argument[0]).with_direct_io(3);
-  Registration::Warp::check_warp(input);
-
-  auto output = Image<value_type>::create(argument[1], input);
+  Header H_input = Header::open(argument[0]);
+  Registration::Warp::validate_header(H_input);
+  auto input = H_input.get_image<value_type>().with_direct_io(3);
 
   Eigen::Matrix<value_type, 3, 1> oob_vector = Eigen::Matrix<value_type, 3, 1>::Zero();
+
   auto opt = get_options("marker");
-  if (opt.size() == 1) {
+  if (opt.empty()) {
+    try {
+      auto vw = Registration::Warp::validate_image(input);
+      if (vw.fill_value.has_value()) {
+        oob_vector = Eigen::Matrix<value_type, 3, 1>::Constant(*vw.fill_value);
+        CONSOLE("Inferred out-of-bounds fill value " + str(*vw.fill_value) + " from input data");
+      } else {
+        throw Exception("No out-of-bounds marker found in input image data");
+      }
+    } catch (Exception &e) {
+      WARN("No reliable out-of-bounds marker found in input image data;"
+           " default value of [0.0, 0.0, 0.0] will be used");
+    }
+  } else {
+    // If user has manually specified an out-of-bounds marker,
+    //   only perform a check of the input image data regardless if -debug was specified
+    Registration::Warp::debug_validate_image(input);
     const auto loc = parse_floats(opt[0][0]);
-    if (loc.size() == 1) {
+    switch (loc.size()) {
+    case 1:
       oob_vector.fill(loc[0]);
-    } else if (loc.size() == 3) {
+      break;
+    case 3:
       for (auto i = 0; i < 3; i++)
         oob_vector[i] = loc[i];
-    } else
+      break;
+    default:
       throw Exception("location option requires either single value or list of 3 values");
+    }
   }
 
   const value_type precision = get_option_value("tolerance", precision);
@@ -108,6 +136,7 @@ void run() {
   size_t count(0);
   auto func = BoundsCheck(precision, oob_vector, count);
 
+  auto output = Image<value_type>::create(argument[1], H_input);
   ThreadedLoop("correcting warp", input, 0, 3).run(func, input, output);
 
   if (count == 0)

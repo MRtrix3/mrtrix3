@@ -1,0 +1,8 @@
+#!/bin/bash
+# Ensure that if input image is of wrong dimensionality to be interpreted as a hard segmentation,
+#   the correct error message is produced.
+rm -f tmp.txt
+! ( mrcat labelconvert/out_fs.mif.gz labelconvert/out_fs.mif.gz -axis 3 - | \
+    labelvalidate - > tmp.txt 2>&1 )
+cat tmp.txt
+grep -E "Image \".+\" is not 3D, and hence is not a volume of node parcel indices" tmp.txt

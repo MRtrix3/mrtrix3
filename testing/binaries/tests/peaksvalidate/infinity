@@ -1,0 +1,13 @@
+#!/bin/bash
+# Verify that when the input image has any 3-vectors that contain at least one infinity value,
+#   this is detected and communicated appropriately.
+
+mrconvert peaks.mif -coord 3 0 -axes 0,1,2 - | \
+    mrcalc - -finite inf -mult tmp_inf.mif -force
+
+rm -f tmp.txt
+! ( mrconvert peaks.mif -coord 3 0:7 - | \
+    mrcat - tmp_inf.mif -axis 3 - | \
+    peaksvalidate - > tmp.txt 2>&1 )
+cat tmp.txt
+grep -E ".+ peak triplets? that contains? impermitted infinity values" tmp.txt

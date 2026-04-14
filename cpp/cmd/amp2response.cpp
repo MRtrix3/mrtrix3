@@ -17,6 +17,7 @@
 #include <Eigen/Dense>
 
 #include "command.h"
+#include "dwi/directions/validate.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
 #include "file/matrix.h"
@@ -207,7 +208,15 @@ void run() {
 
   auto opt = get_options("directions");
   if (!opt.empty()) {
-    dirs_azin.push_back(File::Matrix::load_matrix(opt[0][0]));
+    auto dirs = File::Matrix::load_matrix(opt[0][0]);
+    auto dv = DWI::Directions::validate(dirs, opt[0][0], false);
+    if (dv.n_non_unit > 0) {
+      WARN("Input directions file \"" + opt[0][0] + "\"" +                          //
+           " contains " + str(dv.n_non_unit) + " direction" +                       //
+           (dv.n_non_unit > 1 ? "s that are" : " that is") + " not of unit norm;" + //
+           " all directions will be interpreted agnostically of norm");             //
+    }
+    dirs_azin.push_back(Math::Sphere::as_spherical(dirs));
     volumes.push_back(all_volumes(dirs_azin.size()));
   } else {
     auto hit = header.keyval().find("directions");

@@ -1,0 +1,8 @@
+#!/bin/bash
+# Verify that when the expected triplet-of-Infinities End-Of-File delimiter is not present in the file,
+#   an appropriate error message is produced.
+
+rm -f tmp.txt
+! ( tckvalidate tckvalidate/noeofdelim.tck > tmp.txt 2>&1 )
+cat tmp.txt
+grep -E "binary data section ends without an end\\-of\\-file barrier triplet" tmp.txt

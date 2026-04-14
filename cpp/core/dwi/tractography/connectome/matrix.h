@@ -63,7 +63,7 @@ public:
 
   void finalize();
 
-  void error_check(const std::set<node_t> &);
+  void error_check(const std::vector<node_t> &);
 
   void write_assignments(std::string_view) const;
 

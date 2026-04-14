@@ -64,7 +64,7 @@ def execute(): #pylint: disable=unused-variable
 
   result_path = alg.execute()
   if result_path:
-    stderr = run.command(['5ttcheck', result_path]).stderr
+    stderr = run.command(['5ttvalidate', result_path]).stderr
     if '[WARNING]' in stderr:
       app.warn('Generated image does not perfectly conform to 5TT format:')
       for line in stderr.splitlines():

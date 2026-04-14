@@ -1,0 +1,9 @@
+#!/bin/bash
+# Verify that when the number of vertices within a given streamline
+#   differs between the .tsf and the read tractogram
+#   an appropriate error message is formed.
+
+rm -f tmp.txt
+! ( tsfvalidate tsfvalidate/badvertexcount.tsf tckvalidate/orig.tck > tmp.txt 2>&1 )
+cat tmp.txt
+grep "streamlines have a different number of vertices between the scalar file and the tractogram" tmp.txt

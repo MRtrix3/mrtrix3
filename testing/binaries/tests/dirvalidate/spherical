@@ -1,0 +1,8 @@
+#!/bin/bash
+# Basic test of operation with input as spherical coordinates
+
+rm -f tmp.txt
+dirvalidate dirvalidate/spherical.txt 2>&1 | tee tmp.txt
+grep "in spherical coordinates format" tmp.txt
+! ( grep "All directions are of unit norm" tmp.txt )
+! ( grep -E "\\bWARNING\\b" tmp.txt )

@@ -1,0 +1,9 @@
+#!/bin/bash
+# Verify that when the last streamline is not suitably terminated by a triplet-of-NaNs end-of-streamline delimiter
+#   prior to the triplet-of-Infinities End-Of-File delimiter,
+#   an appropriate error message is produced.
+
+rm -f tmp.txt
+! ( tckvalidate tckvalidate/nolastdelim.tck > tmp.txt 2>&1 )
+cat tmp.txt
+grep -E ".+ vert(ex|ices) in the last streamline, which has no terminating NaN delimiter before the end\\-of\\-file barrier" tmp.txt

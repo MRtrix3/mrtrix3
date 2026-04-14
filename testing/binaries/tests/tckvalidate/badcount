@@ -1,0 +1,8 @@
+#!/bin/bash
+# Verify that when there is a discrepancy between field "count" in the file header and the actual number of streamlines read,
+#   an appropriate error message is produced.
+
+rm -f tmp.txt
+! ( tckvalidate tckvalidate/badcount.tck > tmp.txt 2>&1 )
+cat tmp.txt
+grep -E "header count \\(.+\\) does not match the number of streamlines read \\(.+\\)" tmp.txt

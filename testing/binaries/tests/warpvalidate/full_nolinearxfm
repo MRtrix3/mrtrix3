@@ -1,0 +1,24 @@
+#!/bin/bash
+# Verify that if a 5D full warp image series
+#   does not include the requisite pair of linear transforms,
+#   a suitable error message is produced.
+
+#############################
+# Test 1: Missing "linear1" #
+#############################
+
+rm -f tmp.txt
+! ( mrconvert mrregister/warp_full.mif.gz -clear_property linear1 - | \
+    warpvalidate - > tmp.txt 2>&1 )
+cat tmp.txt
+grep "full warp image header must have both \"linear1\" and \"linear2\" linear transform fields in the associated metadata" tmp.txt
+
+#############################
+# Test 2: Missing "linear2" #
+#############################
+
+rm -f tmp.txt
+! ( mrconvert mrregister/warp_full.mif.gz -clear_property linear2 - | \
+    warpvalidate - > tmp.txt 2>&1 )
+cat tmp.txt
+grep "full warp image header must have both \"linear1\" and \"linear2\" linear transform fields in the associated metadata" tmp.txt

@@ -19,6 +19,7 @@
 #include "algo/iterator.h"
 #include "command.h"
 #include "dwi/tractography/ACT/act.h"
+#include "dwi/tractography/ACT/validate.h"
 #include "header.h"
 #include "image.h"
 #include "image_helpers.h"
@@ -221,9 +222,11 @@ bool Modifier::operator()(const Iterator &pos) {
 
 void run() {
 
-  auto in = Image<float>::open(argument[0]);
-  DWI::Tractography::ACT::verify_5TT_image(in);
-  auto out = Image<float>::create(argument[1], in);
+  Header H = Header::open(argument[0]);
+  DWI::Tractography::ACT::validate_5TT_header(H);
+  auto in = H.get_image<float>();
+  DWI::Tractography::ACT::debug_validate_5TT_image(in);
+  auto out = Image<float>::create(argument[1], H);
 
   Modifier modifier(in, out);
 

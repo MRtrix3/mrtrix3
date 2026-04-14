@@ -27,10 +27,13 @@
 #include "math/math.h"
 #include "math/rng.h"
 
+#include "connectome/validate.h"
+
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 
 #include "surface/mesh_multi.h"
+#include "surface/validate.h"
 
 namespace MR::GUI::MRView::Tool {
 
@@ -2429,15 +2432,13 @@ void Connectome::enable_all(const bool value) {
 
 void Connectome::initialise(std::string_view path) {
   MR::Header H = MR::Header::open(path);
-  if (!H.datatype().is_integer())
-    throw Exception("Input parcellation image must have an integer datatype; try running mrconvert -datatype uint32");
-  if (H.ndim() != 3)
-    throw Exception("Input parcellation image must be a 3D image");
+  MR::Connectome::validate_label_header(H);
   voxel_volume = H.spacing(0) * H.spacing(1) * H.spacing(2);
   {
     // Prevent progress dialog from appearing in a multi-threading context
     LogLevelLatch latch(0);
     buffer.reset(new MR::Image<node_t>(H.get_image<node_t>().with_direct_io()));
+    MR::Connectome::debug_validate_label_image(*buffer);
   }
   MR::Transform transform(H);
   std::vector<Eigen::Vector3f> node_coms;
@@ -4012,6 +4013,7 @@ void Connectome::get_meshes() {
   meshes.load(path);
   if (meshes.size() != nodes.size())
     throw Exception("Mesh file contains " + str(meshes.size()) + " objects; expected " + str(nodes.size()));
+  Surface::debug_validate(meshes);
   have_meshes = false;
   GL::Context::Grab context;
   for (node_t i = 1; i <= num_nodes(); ++i)

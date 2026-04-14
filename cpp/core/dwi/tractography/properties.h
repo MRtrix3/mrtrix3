@@ -25,10 +25,7 @@
 
 namespace MR::DWI::Tractography {
 
-constexpr ssize_t file_timestamp_precision = 20;
-
-void check_timestamps(const Properties &, const Properties &, std::string_view);
-void check_counts(const Properties &, const Properties &, std::string_view, bool abort_on_fail);
+constexpr size_t file_timestamp_precision = 20;
 
 class Properties : public KeyValues {
 public:

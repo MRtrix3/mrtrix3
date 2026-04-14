@@ -16,8 +16,11 @@
 
 #include "command.h"
 #include "dwi/directions/file.h"
+#include "dwi/directions/validate.h"
+#include "file/matrix.h"
 #include "file/ofstream.h"
 #include "math/rng.h"
+#include "math/sphere.h"
 #include "progressbar.h"
 
 #include <algorithm>
@@ -88,7 +91,10 @@ void run() {
     bvalue[nb] = to<value_type>(argument[current++]);
     std::vector<DirectionSet> d;
     for (size_t i = 0; i < num_subsets; ++i) {
-      auto m = DWI::Directions::load_cartesian(argument[current++]);
+      const std::string path = argument[current++];
+      auto m = File::Matrix::load_matrix(path);
+      DWI::Directions::validate(m, path, false);
+      m = Math::Sphere::as_cartesian(m);
       DirectionSet set;
       for (ssize_t r = 0; r < m.rows(); ++r)
         set.push_back(Direction(m(r, 0), m(r, 1), m(r, 2)));

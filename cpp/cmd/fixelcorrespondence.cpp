@@ -18,6 +18,7 @@
 #include "command.h"
 #include "fixel/fixel.h"
 #include "fixel/helpers.h"
+#include "fixel/validate.h"
 #include "image.h"
 #include "progressbar.h"
 
@@ -68,6 +69,7 @@ void run() {
                     " (not the fixel directory)");
 
   auto subject_index = Fixel::find_index_header(Fixel::get_fixel_directory(input_file)).get_image<index_type>();
+  Fixel::debug_validate_index_image(subject_index);
   auto subject_directions =
       Fixel::find_directions_header(Fixel::get_fixel_directory(input_file)).get_image<float>().with_direct_io();
 

@@ -1,0 +1,10 @@
+#!/bin/bash
+# Verify that if one attempts to provide an image of dimensionality
+#   that can neither be interpreted as a displacement / deformation field or a full warp image series,
+#   a suitable error message is produced.
+
+rm -f tmp.txt
+! ( mrconvert warp.mif -coord 3 0 -axes 0,1,2 - | \
+    warpvalidate - > tmp.txt 2>&1 )
+cat tmp.txt
+grep -E "expected a 4D image \\(displacement or deformation field\\) or a 5D image \\(full warp field\\)" tmp.txt

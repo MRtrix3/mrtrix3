@@ -1,0 +1,7 @@
+#!/bin/bash
+# Verify default operation of the "meshvalidate" command
+#   with a well-formed input file
+
+rm -f tmp.txt
+meshvalidate meshconvert/in_ascii.vtk 2>&1 | tee tmp.txt
+grep -E "Mesh \".+\" is valid:" tmp.txt

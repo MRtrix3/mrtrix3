@@ -1,0 +1,7 @@
+#!/bin/bash
+# Verify that when a streamline is present that contains just one vertex,
+#   an appropriate warning message is produced.
+
+rm -f tmp.txt
+tckvalidate tckvalidate/onevertex.tck 2>&1 | tee tmp.txt
+grep -E "1 single\\-vertex streamline\\(s\\) found" tmp.txt

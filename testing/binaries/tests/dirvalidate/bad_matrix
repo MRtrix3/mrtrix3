@@ -1,0 +1,10 @@
+#!/bin/bash
+# Ensure that an incompatible number of columns leads to an error
+
+rm -f tmp_5columns.b
+sed "s/$/ 1/" dirvalidate/grad.b > tmp_5columns.b
+
+rm -f tmp.txt
+! ( dirvalidate tmp_5columns.b > tmp.txt 2>&1 )
+cat tmp.txt
+grep "Unexpected number of columns" tmp.txt

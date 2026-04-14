@@ -27,11 +27,11 @@ mrcat tmp_in0.mif tmp_in1.mif tmp_in2.mif tmp_zero.mif tmp_in4.mif -axis 3 - | \
 mrcat tmp_in0.mif tmp_in1.mif tmp_in2.mif tmp_in3.mif tmp_zero.mif -axis 3 - | \
     mrcalc tmp_sumexc4.mif 0 -gt - tmp_sumexc4.mif -div 0.0 -if tmp_5ttexc4.mif -force
 
-5ttcheck tmp_5ttexc0.mif
-5ttcheck tmp_5ttexc1.mif
-5ttcheck tmp_5ttexc2.mif
-5ttcheck tmp_5ttexc3.mif
-5ttcheck tmp_5ttexc4.mif
+5ttvalidate tmp_5ttexc0.mif
+5ttvalidate tmp_5ttexc1.mif
+5ttvalidate tmp_5ttexc2.mif
+5ttvalidate tmp_5ttexc3.mif
+5ttvalidate tmp_5ttexc4.mif
 
 5ttedit tmp_5ttexc0.mif -cgm tmp_in0.mif - | \
     testing_diff_image - 5ttedit/in.mif -abs 1e-5

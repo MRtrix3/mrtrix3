@@ -18,6 +18,7 @@
 #include "command.h"
 #include "fixel/fixel.h"
 #include "fixel/helpers.h"
+#include "fixel/validate.h"
 #include "image.h"
 
 using namespace MR;
@@ -66,8 +67,9 @@ void run() {
   std::string dataname = get_option_value<std::string>("dataname", "");
 
   auto input_header = Header::open(argument[0]);
-  Peaks::check(input_header);
+  Peaks::validate_header(input_header);
   auto input_directions = input_header.get_image<float>();
+  Peaks::debug_validate_image(input_directions);
   uint32_t nfixels = 0;
   bool all_unit_norm = true;
   for (auto l = Loop("counting fixels in input image", 0, 3)(input_directions); l; ++l) {

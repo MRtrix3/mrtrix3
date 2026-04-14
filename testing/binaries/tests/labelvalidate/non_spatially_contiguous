@@ -1,0 +1,8 @@
+#!/bin/bash
+# Ensure that if input image contains a parcel that is not spatially contiguous
+#   (ie. contains discrete separate blobs in space),
+#   the correct warning message is produced.
+rm -f tmp.txt
+mredit labelconvert/out_fs.mif.gz -voxel 62,67,63 2 - | \
+   labelvalidate - 2>&1 | tee tmp.txt
+grep -E "labels are spatially disconnected: .+ 2 .+" tmp.txt

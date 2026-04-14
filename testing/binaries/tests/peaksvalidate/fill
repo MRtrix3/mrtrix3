@@ -1,0 +1,39 @@
+#!/bin/bash
+# Verify that when the input image has many 3-vectors containing a fixed fill value
+#   this is detected and communicated appropriately.
+
+##################################################
+# Test 1: Zero out the third peak in every voxel #
+##################################################
+
+mrconvert peaks.mif -coord 3 0 -axes 0,1,2 - | \
+    mrcalc - -isnan tmp_zero.mif -force
+
+rm -f tmp.txt
+mrconvert peaks.mif -coord 3 0:5 - | \
+    mrcat - tmp_zero.mif tmp_zero.mif tmp_zero.mif -axis 3 - | \
+    peaksvalidate - 2>&1 | tee tmp.txt
+grep "Fill value: zero" tmp.txt
+
+##################################################
+# Test 2: NaN-fill the third peak in every voxel #
+##################################################
+
+mrcalc tmp_zero.mif tmp_zero.mif -div tmp_nan.mif -force
+
+rm -f tmp.txt
+mrconvert peaks.mif -coord 3 0:5 - | \
+    mrcat - tmp_nan.mif tmp_nan.mif tmp_nan.mif -axis 3 - | \
+    peaksvalidate - 2>&1 | tee tmp.txt
+grep "Fill value: NaN" tmp.txt
+
+#############################################
+# Test 3: Inconsistency in fill values used #
+#############################################
+
+rm -f tmp.txt
+! ( mrconvert peaks.mif -coord 3 0:2 - | \
+    mrcat - tmp_nan.mif tmp_nan.mif tmp_nan.mif tmp_zero.mif tmp_zero.mif tmp_zero.mif -axis 3 - | \
+    peaksvalidate - > tmp.txt 2>&1 )
+cat tmp.txt
+grep "mixed fill values detected" tmp.txt

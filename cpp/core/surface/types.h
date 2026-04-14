@@ -21,6 +21,8 @@
 
 namespace MR::Surface {
 
+using vertex_index_type = uint32_t;
+
 using Vertex = Eigen::Vector3d;
 using VertexList = std::vector<Vertex>;
 using Triangle = Polygon<3>;

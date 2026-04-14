@@ -1,0 +1,24 @@
+#!/bin/bash
+# Verify that if a 5D image is attempted to be read as a 5D image series,
+#   but the number of elements along either the fourth or fifth axis is incorrect,
+#   a suitable error message is produced.
+
+####################################################
+# Test 1: Wrong number of volumes per volume group #
+####################################################
+
+rm -f tmp.txt
+! ( mrconvert mrregister/warp_full.mif.gz -coord 3 0,1 - | \
+    warpvalidate - > tmp.txt 2>&1 )
+cat tmp.txt
+grep "a 5D full warp image must have exactly 3 volumes in the 4th dimension \\(x/y/z components of each warp field\\)" tmp.txt
+
+#########################################
+# Test 2: Wrong number of volume groups #
+#########################################
+
+rm -f tmp.txt
+! ( mrconvert mrregister/warp_full.mif.gz -coord 4 0:2 - | \
+    warpvalidate - > tmp.txt 2>&1 )
+cat tmp.txt
+grep "a 5D full warp image must have exactly 4 volume groups in the 5th dimension" tmp.txt

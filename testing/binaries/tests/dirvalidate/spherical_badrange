@@ -1,0 +1,42 @@
+#!/bin/bash
+# Ensure that spherical angles not residing within a single circumnavigation of the sphere leads to an error
+
+######################################
+# Test 1: Subtract 2xpi from azimuth #
+######################################
+
+rm -f tmp_sphericalbadazrange.txt
+sed "1s/.*/-4.181275472,   0.5787523099/" dirvalidate/spherical.txt > tmp_sphericalbadazrange.txt
+
+rm -f tmp.txt
+! ( dirvalidate tmp_sphericalbadazrange.txt > tmp.txt 2>&1 )
+cat tmp.txt
+grep "Range of azimuth values exceeds" tmp.txt
+
+# ########################################################################
+# # Test 2: Subtract pi from azimuth, inclination as (pi - inclination)  #
+# # (effectively same direction,                                         #
+# #  but inclination is impermissible relative to other directions)      #
+# ########################################################################
+
+# rm -f tmp_sphericalbadincrange.txt
+# sed "1s/.*/-1.039682819,   2.562840344/" dirvalidate/spherical.txt > tmp_sphericalbadincrange.txt
+
+# rm -f tmp.txt
+# ! ( dirvalidate tmp_sphericalbadincrange.txt > tmp.txt 2>&1 )
+# cat tmp.txt
+# grep "Range of inclination values exceeds" tmp.txt
+
+###################################################################
+# Test 2: Subtract pi from inclination                            #
+# (effectively same direction,                                    #
+#  but inclination is impermissible relative to other directions) #
+###################################################################
+
+rm -f tmp_sphericalbadincrange.txt
+sed "1s/.*/2.101909835,   -2.562840344/" dirvalidate/spherical.txt > tmp_sphericalbadincrange.txt
+
+rm -f tmp.txt
+! ( dirvalidate tmp_sphericalbadincrange.txt > tmp.txt 2>&1 )
+cat tmp.txt
+grep "Range of inclination values exceeds" tmp.txt

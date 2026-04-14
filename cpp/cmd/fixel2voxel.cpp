@@ -32,6 +32,7 @@
 #include "fixel/fixel.h"
 #include "fixel/helpers.h"
 #include "fixel/loop.h"
+#include "fixel/validate.h"
 
 using namespace MR;
 using namespace App;
@@ -445,9 +446,9 @@ void run() {
     throw Exception("Input fixel data file must have a single scalar value per fixel (i.e. have dimensions Nx1x1)");
 
   Header in_index_header = Fixel::find_index_header(Fixel::get_fixel_directory(argument[0]));
+  Fixel::check_fixel_size(in_index_header, in_data);
   auto in_index_image = in_index_header.get_image<typename FixelIndexType::value_type>();
-
-  Image<float> in_directions;
+  Fixel::debug_validate_index_image(in_index_image);
 
   const Operation op = MR::Enum::from_name<Operation>(argument[1]);
 
@@ -483,6 +484,7 @@ void run() {
     H_out.ndim() = 3;
   }
 
+  Image<float> in_directions;
   if (op == Operation::DEC_UNIT || op == Operation::DEC_SCALED) // dec
     in_directions =
         Fixel::find_directions_header(Fixel::get_fixel_directory(in_data.name())).get_image<float>().with_direct_io();

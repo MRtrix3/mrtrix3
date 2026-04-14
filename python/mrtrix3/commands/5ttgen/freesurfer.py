@@ -41,6 +41,8 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 def execute(): #pylint: disable=unused-variable
   run.command(['mrconvert', app.ARGS.input, 'input.mif'],
               preserve_pipes=True)
+  if app.VERBOSITY >= 3:
+    run.command('labelvalidate input.mif')
   lut_input_path = 'LUT.txt'
   if app.ARGS.lut:
     run.function(shutil.copyfile, app.ARGS.lut, lut_input_path)

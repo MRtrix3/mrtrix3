@@ -26,6 +26,7 @@
 #include "algo/loop.h"
 
 #include "connectome/connectome.h"
+#include "connectome/validate.h"
 
 #include "surface/algo/image2mesh.h"
 #include "surface/mesh.h"
@@ -56,9 +57,20 @@ void usage() {
 void run() {
 
   Header labels_header = Header::open(argument[0]);
-  Connectome::check(labels_header);
+  Connectome::validate_label_header(labels_header);
   check_3D_nonunity(labels_header);
   auto labels = labels_header.get_image<uint32_t>();
+  auto lv = Connectome::validate_label_image(labels);
+  if (!lv.indices_contiguous) {
+    WARN("Image \"" + argument[0] + "\" does not contain contiguous indices;" + //
+         " output mesh file will contain empty objects");                       //
+  }
+  if (lv.disconnected_components > 0) {
+    WARN("Image \"" + argument[0] + "\" contains " +                                                 //
+         str(lv.disconnected_components) + "parcel" + (lv.disconnected_components > 0 ? "s" : "0") + //
+         " that are not spatially contiguous;" +                                                     //
+         " this may yield erroneous surfaces");                                                      //
+  }
 
   using voxel_corner_t = Eigen::Array<int, 3, 1>;
 
