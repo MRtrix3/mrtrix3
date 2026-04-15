@@ -137,18 +137,22 @@ void run() {
   Eigen::MatrixXd directions;
   try {
     directions = DWI::Directions::load_spherical(argument[1]);
-  } catch (Exception &E) {
+  } catch (Exception &) {
     try {
       directions = File::Matrix::load_matrix<double>(argument[1]);
       if (directions.cols() < 4)
         throw("unable to interpret file \"" + std::string(argument[1]) + "\" as a directions or gradient file");
-    } catch (Exception &E) {
-      auto header = Header::open(argument[1]);
-      directions = DWI::get_DW_scheme(header);
+    } catch (Exception &) {
+      try {
+        auto header = Header::open(argument[1]);
+        directions = DWI::get_DW_scheme(header);
+      } catch (Exception &) {
+        throw Exception("Unable to obtain a direection set for sampling from specification \"" + argument[1] + "\"");
+      }
     }
   }
 
-  if (!directions.size())
+  if (directions.rows() == 0) // check_syntax off
     throw Exception("no directions found in input directions file");
 
   Header amp_header(sh_data);

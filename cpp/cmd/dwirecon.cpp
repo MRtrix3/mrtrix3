@@ -15,6 +15,7 @@
  */
 
 #include <limits>
+#include <optional>
 #include <set>
 #include <string>
 #include <vector>
@@ -464,7 +465,7 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
   DEBUG("Input to output index:\n" + ss_in2out.str());
 
   header_out.size(3) = dwi_in.size(3) / 2;
-  DWI::set_DW_scheme(header_out, grad_out);
+  DWI::set_DW_scheme(header_out.keyval(), grad_out);
   Image<float> dwi_out = Image<float>::create(header_out.name(), header_out);
 
   if (field_image.valid()) {
@@ -923,6 +924,9 @@ void run() {
   auto dwi_in = Header::open(argument[0]).get_image<float>();
   auto grad_in = DWI::get_DW_scheme(dwi_in);
   auto pe_in = Metadata::PhaseEncoding::get_scheme(dwi_in);
+  if (!pe_in.has_value())
+    throw Exception("All currently-implemented reconstruction algorithms require a phase encoding table,"
+                    " but none was found");
 
   Header header_out(dwi_in);
   header_out.datatype() = DataType::Float32;
@@ -933,7 +937,7 @@ void run() {
 
   case Operation::COMBINE_PAIRS:
     Metadata::PhaseEncoding::clear_scheme(header_out.keyval());
-    run_combine_pairs(dwi_in, grad_in, pe_in, header_out);
+    run_combine_pairs(dwi_in, grad_in, *pe_in, header_out);
     break;
 
   case Operation::COMBINE_PREDICTED:
@@ -943,7 +947,7 @@ void run() {
     // - Fraction of each sample that comes from its own empirical data vs. prediction
     // - The predicted intensity generated there
     // Also throw in a bunch of assertions to make sure that the prediction generation is working
-    run_combine_predicted(dwi_in, grad_in, pe_in, header_out);
+    run_combine_predicted(dwi_in, grad_in, *pe_in, header_out);
     break;
 
   default: // no others yet implemented

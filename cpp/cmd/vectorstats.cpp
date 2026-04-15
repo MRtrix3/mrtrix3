@@ -189,7 +189,7 @@ void run() {
 
   // Load variance groups
   auto variance_groups = GLM::load_variance_groups(num_inputs);
-  const index_type num_vgs = variance_groups.size() == 0 ? 1 : (variance_groups.maxCoeff() + 1);
+  const index_type num_vgs = variance_groups.has_value() ? (variance_groups->maxCoeff() + 1) : 1;
   if (num_vgs > 1)
     CONSOLE("Number of variance groups: " + str(num_vgs));
 
@@ -263,15 +263,15 @@ void run() {
   // Construct the class for performing the initial statistical tests
   std::unique_ptr<GLM::TestBase> glm_test;
   if (variable_design_matrix) {
-    if (variance_groups.size() > 0)
+    if (variance_groups.has_value())
       glm_test = std::make_unique<GLM::TestVariableHeteroscedastic>(
-          data, design, hypotheses, variance_groups, extra_columns, nans_in_data, nans_in_columns);
+          data, design, hypotheses, *variance_groups, extra_columns, nans_in_data, nans_in_columns);
     else
       glm_test = std::make_unique<GLM::TestVariableHomoscedastic>(
           data, design, hypotheses, extra_columns, nans_in_data, nans_in_columns);
   } else {
-    if (variance_groups.size() > 0)
-      glm_test = std::make_unique<GLM::TestFixedHeteroscedastic>(data, design, hypotheses, variance_groups);
+    if (variance_groups.has_value())
+      glm_test = std::make_unique<GLM::TestFixedHeteroscedastic>(data, design, hypotheses, *variance_groups);
     else
       glm_test = std::make_unique<GLM::TestFixedHomoscedastic>(data, design, hypotheses);
   }

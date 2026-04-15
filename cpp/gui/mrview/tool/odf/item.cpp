@@ -68,9 +68,11 @@ bool ODF_Item::valid() const {
 ODF_Item::DixelPlugin::DixelPlugin(const MR::Header &H) : dir_type(dir_t::NONE), shell_index(0) {
   try {
     grad = MR::DWI::get_DW_scheme(H);
-    shells.reset(new MR::DWI::Shells(grad));
+    shells.reset(new MR::DWI::Shells(*grad));
     shell_index = shells->count() - 1;
   } catch (...) {
+    grad.reset();
+    shells.reset();
   }
   auto entry = H.keyval().find("directions");
   if (entry != H.keyval().end()) {
@@ -80,20 +82,20 @@ ODF_Item::DixelPlugin::DixelPlugin(const MR::Header &H) : dir_type(dir_t::NONE),
         throw Exception("malformed directions field in image \"" + H.name() + "\" - incorrect number of rows");
       for (size_t row = 0; row < lines.size(); ++row) {
         const auto values = parse_floats(lines[row]);
-        if (!header_dirs.rows()) {
+        if (!header_dirs.has_value()) {
           if (values.size() != 2 && values.size() != 3)
             throw Exception("malformed directions field in image \"" + H.name() + "\" - should have 2 or 3 columns");
-          header_dirs.resize(lines.size(), values.size());
-        } else if (values.size() != static_cast<size_t>(header_dirs.cols())) {
-          header_dirs.resize(0, 0);
+          header_dirs = Eigen::MatrixXf(lines.size(), values.size());
+        } else if (values.size() != static_cast<size_t>(header_dirs->cols())) {
+          header_dirs.reset();
           throw Exception("malformed directions field in image \"" + H.name() + "\" - variable number of columns");
         }
         for (size_t col = 0; col < values.size(); ++col)
-          header_dirs(row, col) = values[col];
+          (*header_dirs)(row, col) = values[col];
       }
     } catch (Exception &e) {
       DEBUG(e[0]);
-      header_dirs.resize(0, 0);
+      header_dirs.reset();
     }
   }
 }
@@ -105,8 +107,9 @@ void ODF_Item::DixelPlugin::set_shell(size_t index) {
     throw Exception("Shell index is outside valid range");
   Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> shell_dirs((*shells)[index].count(), 3);
   const std::vector<size_t> &volumes = (*shells)[index].get_volumes();
+  assert(grad.has_value());
   for (size_t row = 0; row != volumes.size(); ++row)
-    shell_dirs.row(row) = grad.row(volumes[row]).head<3>().cast<float>();
+    shell_dirs.row(row) = grad->row(volumes[row]).head<3>().cast<float>();
   auto new_dirs = std::make_unique<MR::DWI::Directions::Set>(shell_dirs);
   std::swap(dirs, new_dirs);
   shell_index = index;
@@ -114,9 +117,9 @@ void ODF_Item::DixelPlugin::set_shell(size_t index) {
 }
 
 void ODF_Item::DixelPlugin::set_header() {
-  if (!header_dirs.rows())
+  if (!header_dirs.has_value())
     throw Exception("No direction scheme defined in header");
-  auto new_dirs = std::make_unique<MR::DWI::Directions::Set>(header_dirs);
+  auto new_dirs = std::make_unique<MR::DWI::Directions::Set>(*header_dirs);
   std::swap(dirs, new_dirs);
   dir_type = DixelPlugin::dir_t::HEADER;
 }

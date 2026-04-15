@@ -124,10 +124,10 @@ void check_design(const vector_type &cond) {
   }
 }
 
-index_array_type load_variance_groups(const index_type num_inputs) {
+std::optional<index_array_type> load_variance_groups(const index_type num_inputs) {
   auto opt = App::get_options("variance");
   if (opt.empty())
-    return index_array_type();
+    return std::nullopt;
   try {
     auto data = File::Matrix::load_vector<index_type>(opt[0][0]);
     if (static_cast<index_type>(data.size()) != num_inputs)
@@ -203,37 +203,34 @@ matrix_type abs_effect_size(
   return result;
 }
 
-matrix_type stdev(const measurements_matrix_type &measurements, const matrix_type &design) {
-  const matrix_type residuals = measurements.cast<default_type>() - design * solve_betas(measurements, design);
-  const matrix_type sse = residuals.colwise().squaredNorm();
-  return (sse.array() / static_cast<value_type>(design.rows() - Math::rank(design))).sqrt();
-}
-
 matrix_type stdev(const measurements_matrix_type &measurements,
                   const matrix_type &design,
-                  const index_array_type &variance_groups) {
+                  const std::optional<index_array_type> &variance_groups) {
   assert(measurements.rows() == design.rows());
-  if (!variance_groups.size())
-    return stdev(measurements, design);
-  assert(measurements.rows() == variance_groups.rows());
+  if (!variance_groups.has_value()) {
+    const matrix_type residuals = measurements.cast<default_type>() - design * solve_betas(measurements, design);
+    const matrix_type sse = residuals.colwise().squaredNorm();
+    return (sse.array() / static_cast<value_type>(design.rows() - Math::rank(design))).sqrt();
+  }
+  assert(measurements.rows() == variance_groups->rows());
   // Residual-forming matrix
   const matrix_type R(matrix_type::Identity(design.rows(), design.rows()) - (design * Math::pinv(design)));
   // Residuals
   const matrix_type e(R * measurements.cast<default_type>());
   // One standard deviation per element per variance group
   // Rows are variance groups, columns are elements
-  const index_type num_vgs = variance_groups.array().maxCoeff() + 1;
+  const index_type num_vgs = variance_groups->array().maxCoeff() + 1;
   // Sum of residual-forming matrix diagonal elements within each variance group
   //   will be equivalent across elements
   vector_type Rnn_sums(vector_type::Zero(num_vgs));
   for (Eigen::Index i = 0; i != measurements.rows(); ++i)
-    Rnn_sums[variance_groups[i]] += R.diagonal()[i];
+    Rnn_sums[(*variance_groups)[i]] += R.diagonal()[i];
   // For each variance group, get the sum of squared residuals within that group
   matrix_type result(num_vgs, measurements.cols());
   for (Eigen::Index ie = 0; ie != measurements.cols(); ++ie) {
     vector_type sse(vector_type::Zero(num_vgs));
     for (Eigen::Index i = 0; i != measurements.rows(); ++i)
-      sse[variance_groups[i]] += Math::pow2(e(i, ie));
+      sse[(*variance_groups)[i]] += Math::pow2(e(i, ie));
     // (Rnn_sum / sse) is the inverse of the estimated variance
     result.col(ie) = (sse.array() / Rnn_sums.array()).sqrt();
   }
@@ -260,7 +257,7 @@ matrix_type std_effect_size(
 void all_stats(const measurements_matrix_type &measurements,
                 const matrix_type &design,
                 const std::vector<Hypothesis> &hypotheses,
-                const index_array_type &variance_groups,
+                const std::optional<index_array_type> &variance_groups,
                 matrix_type &betas,
                 matrix_type &abs_effect_size,
                 matrix_type &std_effect_size,
@@ -312,7 +309,7 @@ void all_stats(const measurements_matrix_type &measurements,
   if (progress)
     ++*progress;
 #endif
-  if (variance_groups.size())
+  if (variance_groups.has_value())
     std_effect_size = matrix_type::Constant(
         measurements.cols(), hypotheses.size(), std::numeric_limits<matrix_type::Scalar>::quiet_NaN());
   else
@@ -327,7 +324,7 @@ void all_stats(const measurements_matrix_type &measurements,
                 const matrix_type &fixed_design,
                 const std::vector<CohortDataImport> &extra_columns,
                 const std::vector<Hypothesis> &hypotheses,
-                const index_array_type &variance_groups,
+                const std::optional<index_array_type> &variance_groups,
                 vector_type &cond,
                 matrix_type &betas,
                 matrix_type &abs_effect_size,
@@ -368,7 +365,7 @@ void all_stats(const measurements_matrix_type &measurements,
             const matrix_type &design_fixed,
             const std::vector<CohortDataImport> &extra_columns,
             const std::vector<Hypothesis> &hypotheses,
-            const index_array_type &variance_groups,
+            const std::optional<index_array_type> &variance_groups,
             vector_type &cond,
             matrix_type &betas,
             matrix_type &abs_effect_size,
@@ -384,7 +381,7 @@ void all_stats(const measurements_matrix_type &measurements,
           global_abs_effect_size(abs_effect_size),
           global_std_effect_size(std_effect_size),
           global_stdev(stdev),
-          num_vgs(variance_groups.size() ? variance_groups.maxCoeff() + 1 : 1) {
+          num_vgs(variance_groups.has_value() ? variance_groups->maxCoeff() + 1 : 1) {
       assert(design_fixed.cols() + extra_columns.size() == hypotheses[0].cols());
     }
     bool operator()(const index_type &element_index) {
@@ -421,14 +418,16 @@ void all_stats(const measurements_matrix_type &measurements,
         // Need to reduce the data and design matrices to contain only finite data
         measurements_matrix_type element_data_finite(valid_rows, 1);
         matrix_type element_design_finite(valid_rows, element_design.cols());
-        index_array_type variance_groups_finite(variance_groups.size() ? valid_rows : 0);
+        std::optional<index_array_type> variance_groups_finite;
+        if (variance_groups.has_value())
+          variance_groups_finite = index_array_type(valid_rows);
         index_type output_row = 0;
         for (Eigen::Index row = 0; row != data.rows(); ++row) {
           if (std::isfinite(element_data(row)) && element_design.row(row).allFinite()) {
             element_data_finite(output_row, 0) = element_data(row);
             element_design_finite.row(output_row) = element_design.row(row);
-            if (variance_groups.size())
-              variance_groups_finite[output_row] = variance_groups[row];
+            if (variance_groups.has_value())
+              (*variance_groups_finite)[output_row] = (*variance_groups)[row];
             ++output_row;
           }
         }
@@ -464,7 +463,7 @@ void all_stats(const measurements_matrix_type &measurements,
     const matrix_type &design_fixed;
     const std::vector<CohortDataImport> &extra_columns;
     const std::vector<Hypothesis> &hypotheses;
-    const index_array_type &variance_groups;
+    const std::optional<index_array_type> &variance_groups;
     vector_type &global_cond;
     matrix_type &global_betas;
     matrix_type &global_abs_effect_size;

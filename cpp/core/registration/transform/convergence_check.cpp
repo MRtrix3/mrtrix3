@@ -26,7 +26,7 @@ bool DoubleExpSmoothSlopeCheck::go_on(const Eigen::Matrix<default_type, Eigen::D
   ++iter_count;
   // initialise
   if (len == 0) {
-    if (!x0.size()) {
+    if (!x0.size()) { // check_syntax off
       x0 = element;
       return true;
     } else {

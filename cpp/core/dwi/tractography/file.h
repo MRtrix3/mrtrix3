@@ -18,6 +18,7 @@
 
 #include <array>
 #include <map>
+#include <optional>
 
 #include "app.h"
 #include "dwi/tractography/file_base.h"
@@ -78,12 +79,12 @@ public:
       if (std::isnan(p[0])) {
         tck.set_index(current_index++);
 
-        if (weights.size()) {
+        if (weights.has_value()) {
 
-          if (tck.get_index() < static_cast<size_t>(weights.size())) {
-            tck.weight = weights[tck.get_index()];
+          if (tck.get_index() < static_cast<size_t>(weights->size())) {
+            tck.weight = (*weights)[tck.get_index()];
           } else {
-            WARN("Streamline weights file contains less entries (" + str(weights.size()) +
+            WARN("Streamline weights file contains less entries (" + str(weights->size()) +
                  ") than .tck file; "
                  "ceasing reading of streamline data");
             in.close();
@@ -110,7 +111,7 @@ protected:
   using __ReaderBase__::dtype;
   using __ReaderBase__::in;
 
-  Eigen::Matrix<ValueType, Eigen::Dynamic, 1> weights;
+  std::optional<Eigen::Matrix<ValueType, Eigen::Dynamic, 1>> weights;
 
   //! takes care of byte ordering issues
 
@@ -146,11 +147,11 @@ protected:
 
   //! Check that the weights file does not contain excess entries
   void check_excess_weights() {
-    if (!weights.size())
+    if (!weights.has_value())
       return;
-    if (static_cast<size_t>(weights.size()) > current_index) {
-      WARN("Streamline weights file contains more entries (" + str(weights.size()) + ") than .tck file (" +
-           str(current_index) + ")");
+    if (static_cast<size_t>(weights->size()) > current_index) {
+      WARN("Streamline weights file contains more entries (" + str(weights->size()) + ")" + //
+           " than .tck file (" + str(current_index) + ")");
     }
   }
 
@@ -356,7 +357,7 @@ public:
     }
     add_point(delimiter());
 
-    if (weights_name.size())
+    if (!weights_name.empty())
       weights_buffer += str(tck.weight) + ' ';
 
     ++count;
@@ -377,7 +378,7 @@ protected:
     WriterUnbuffered<ValueType>::commit(buffer.get(), buffer_size);
     buffer_size = 0;
 
-    if (weights_name.size()) {
+    if (!weights_name.empty()) {
       write_weights(weights_buffer);
       weights_buffer.clear();
     }

@@ -14,6 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <optional>
+
 #include "command.h"
 #include "dwi/directions/predefined.h"
 #include "enum.h"
@@ -220,7 +222,7 @@ void run() {
   // will be set to false if registration of all input SH images has lmax==0
   bool do_reorientation = !reorientation_forbidden;
 
-  Eigen::MatrixXd directions_cartesian;
+  std::optional<Eigen::MatrixXd> directions_cartesian;
   auto opt = get_options("directions");
   if (!opt.empty())
     directions_cartesian = Math::Sphere::spherical2cartesian(File::Matrix::load_matrix(opt[0][0])).transpose();
@@ -271,7 +273,7 @@ void run() {
         CONSOLE("SH image input pair " + input1[i].name() + ", " + input2[i].name());
         mc_params[i].do_reorientation = true;
         mc_params[i].image_lmax = Math::SH::LforN(nvols1);
-        if (!directions_cartesian.cols())
+        if (!directions_cartesian.has_value())
           directions_cartesian =
               Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_60()).transpose();
       } else {
@@ -298,7 +300,7 @@ void run() {
   });
   if (do_reorientation)
     CONSOLE("performing FOD registration");
-  if (!do_reorientation and directions_cartesian.cols())
+  if (!do_reorientation and directions_cartesian.has_value())
     WARN("-directions option ignored since no FOD reorientation is being performed");
 
   INFO("maximum input lmax: " + str(max_mc_image_lmax));
@@ -860,8 +862,10 @@ void run() {
     CONSOLE("running rigid registration");
 
     if (images2.ndim() == 4) {
-      if (do_reorientation)
-        rigid_registration.set_directions(directions_cartesian);
+      if (do_reorientation) {
+        assert(directions_cartesian.has_value());
+        rigid_registration.set_directions(*directions_cartesian);
+      }
       // if (rigid_metric == Registration::NCC) // TODO
       if (rigid_metric == Registration::Diff) {
         if (rigid_estimator == Registration::None) {
@@ -935,8 +939,10 @@ void run() {
     }
 
     if (images2.ndim() == 4) {
-      if (do_reorientation)
-        affine_registration.set_directions(directions_cartesian);
+      if (do_reorientation) {
+        assert(directions_cartesian.has_value());
+        affine_registration.set_directions(*directions_cartesian);
+      }
       // if (affine_metric == Registration::NCC) // TODO
       if (affine_metric == Registration::Diff) {
         if (affine_estimator == Registration::None) {
@@ -1002,8 +1008,10 @@ void run() {
   if (do_nonlinear) {
     CONSOLE("running non-linear registration");
 
-    if (do_reorientation)
-      nl_registration.set_aPSF_directions(directions_cartesian);
+    if (do_reorientation) {
+      assert(directions_cartesian.has_value());
+      nl_registration.set_aPSF_directions(*directions_cartesian);
+    }
 
     if (do_affine || init_affine_matrix_set) {
       nl_registration.run(affine, images1, images2, im1_mask, im2_mask);

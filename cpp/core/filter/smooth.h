@@ -206,9 +206,7 @@ protected:
     // the inner loop axis has to be the dimension the smoothing is applied to and
     // the loop has to start with image.index (smooth_axis) == 0
     void operator()(ImageType &image) {
-      if (!kernel.size())
-        return;
-
+      assert(kernel.size() > 0);
       const ssize_t pos = image.index(axis);
 
       // fill buffer for current image line if necessary

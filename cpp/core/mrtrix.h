@@ -355,7 +355,7 @@ Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> parse_matrix(std::strin
   const auto lines = split_lines(spec);
   for (size_t row = 0; row < lines.size(); ++row) {
     const auto values = parse_floats(lines[row]);
-    if (M.cols() == 0)
+    if (row == 0)
       M.resize(lines.size(), values.size());
     else if (M.cols() != static_cast<Eigen::Index>(values.size()))
       throw Exception("error converting string to matrix - uneven number of entries per row");

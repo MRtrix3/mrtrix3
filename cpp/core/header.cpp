@@ -329,7 +329,8 @@ Header Header::create(std::string_view image_name, const Header &template_header
     // FIXME This fails to appropriately assign rows of these schemes to images
     //   if splitting 4D image into 2D images
     const bool split_4d_schemes = (parser.ndim() == 1 && template_header.ndim() == 4);
-    Eigen::MatrixXd dw_scheme, pe_scheme;
+    std::optional<Eigen::MatrixXd> dw_scheme;
+    std::optional<Metadata::PhaseEncoding::scheme_type> pe_scheme;
     try {
       dw_scheme = DWI::parse_DW_scheme(template_header);
     } catch (Exception &) {
@@ -341,19 +342,23 @@ Header Header::create(std::string_view image_name, const Header &template_header
       Metadata::PhaseEncoding::clear_scheme(H.keyval());
     }
     if (split_4d_schemes) {
-      try {
-        DWI::check_DW_scheme(template_header, dw_scheme);
-        DWI::set_DW_scheme(H, dw_scheme.row(0));
-      } catch (Exception &) {
-        dw_scheme.resize(0, 0);
-        DWI::clear_DW_scheme(H);
+      if (dw_scheme.has_value()) {
+        try {
+          DWI::check_DW_scheme(template_header, *dw_scheme);
+          DWI::set_DW_scheme(H, dw_scheme->row(0));
+        } catch (Exception &) {
+          dw_scheme.reset();
+          DWI::clear_DW_scheme(H);
+        }
       }
-      try {
-        Metadata::PhaseEncoding::check(pe_scheme, template_header);
-        Metadata::PhaseEncoding::set_scheme(H.keyval(), pe_scheme.row(0));
-      } catch (Exception &) {
-        pe_scheme.resize(0, 0);
-        Metadata::PhaseEncoding::clear_scheme(H.keyval());
+      if (pe_scheme.has_value()) {
+        try {
+          Metadata::PhaseEncoding::check(*pe_scheme, template_header);
+          Metadata::PhaseEncoding::set_scheme(H.keyval(), pe_scheme->row(0));
+        } catch (Exception &) {
+          pe_scheme.reset();
+          Metadata::PhaseEncoding::clear_scheme(H.keyval());
+        }
       }
     }
 
@@ -384,10 +389,10 @@ Header Header::create(std::string_view image_name, const Header &template_header
       header.name() = parser.name(num);
       ++counter;
       if (split_4d_schemes) {
-        if (dw_scheme.rows())
-          DWI::set_DW_scheme(header, dw_scheme.row(counter));
-        if (pe_scheme.rows())
-          Metadata::PhaseEncoding::set_scheme(header.keyval(), pe_scheme.row(counter));
+        if (dw_scheme.has_value())
+          DWI::set_DW_scheme(header, dw_scheme->row(counter));
+        if (pe_scheme.has_value())
+          Metadata::PhaseEncoding::set_scheme(header.keyval(), pe_scheme->row(counter));
       }
       std::shared_ptr<ImageIO::Base> io_handler((*format_handler)->create(header));
       assert(io_handler);
@@ -417,8 +422,10 @@ Header Header::create(std::string_view image_name, const Header &template_header
     }
 
     if (split_4d_schemes) {
-      DWI::set_DW_scheme(H, dw_scheme);
-      Metadata::PhaseEncoding::set_scheme(H.keyval(), pe_scheme);
+      if (dw_scheme.has_value())
+        DWI::set_DW_scheme(H, *dw_scheme);
+      if (pe_scheme.has_value())
+        Metadata::PhaseEncoding::set_scheme(H.keyval(), *pe_scheme);
     }
     H.io->set_image_is_new(true);
     H.io->set_readwrite(true);
@@ -671,15 +678,15 @@ concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, con
     return condition;
   };
 
-  auto concat_scheme = [](Eigen::MatrixXd &existing, const Eigen::MatrixXd &extra) {
-    if (!existing.rows())
+  auto concat_scheme = [](std::optional<Eigen::MatrixXd> &existing, const std::optional<Eigen::MatrixXd> &extra) {
+    if (!existing.has_value())
       return;
-    if (!extra.rows() || (extra.cols() != existing.cols())) {
-      existing.resize(0, 0);
+    if (!extra.has_value() || (extra->cols() != existing->cols())) {
+      existing.reset();
       return;
     }
-    existing.conservativeResize(existing.rows() + extra.rows(), existing.cols());
-    existing.bottomRows(extra.rows()) = extra;
+    existing->conservativeResize(existing->rows() + extra->rows(), existing->cols());
+    existing->bottomRows(extra->rows()) = *extra;
   };
 
   if (headers.empty())
@@ -724,7 +731,8 @@ concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, con
   // Need an enum to track what we're going to do with these fields,
   //   rather than relying exclusively on Header::merge_keyval()
   enum class scheme_manip_t { ABSENT, MERGE, CONCAT, ERASE };
-  Eigen::MatrixXd dw_scheme, pe_scheme;
+  std::optional<Eigen::MatrixXd> dw_scheme;
+  std::optional<Metadata::PhaseEncoding::scheme_type> pe_scheme;
   scheme_manip_t dwscheme_manip = scheme_manip_t::MERGE;
   scheme_manip_t pescheme_manip = scheme_manip_t::MERGE;
   if (axis_to_concat == 3) {
@@ -736,7 +744,7 @@ concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, con
     }
     try {
       pe_scheme = Metadata::PhaseEncoding::get_scheme(result);
-      pescheme_manip = pe_scheme.rows() == 0 ? scheme_manip_t::ABSENT : scheme_manip_t::CONCAT;
+      pescheme_manip = pe_scheme.has_value() ? scheme_manip_t::ABSENT : scheme_manip_t::CONCAT;
     } catch (Exception &) {
       pescheme_manip = scheme_manip_t::ERASE;
     }
@@ -764,8 +772,8 @@ concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, con
       KeyValues kv(H.keyval());
 
       // Generate local copies of any schemes
-      Eigen::MatrixXd extra_dw;
-      Eigen::MatrixXd extra_pe;
+      std::optional<Eigen::MatrixXd> extra_dw;
+      std::optional<Metadata::PhaseEncoding::scheme_type> extra_pe;
       try {
         extra_dw = DWI::parse_DW_scheme(H);
       } catch (Exception &) {
@@ -777,15 +785,15 @@ concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, con
 
       switch (dwscheme_manip) {
       case scheme_manip_t::ABSENT:
-        if (extra_dw.rows() > 0)
+        if (extra_dw.has_value())
           dwscheme_manip = scheme_manip_t::ERASE;
         break;
       case scheme_manip_t::MERGE:
         assert(false);
         throw Exception("Logic error in header key-value merge of DW scheme");
       case scheme_manip_t::CONCAT:
-        if (extra_dw.rows() == 0) {
-          dw_scheme.resize(0, 0);
+        if (extra_dw.has_value()) {
+          dw_scheme.reset();
           dwscheme_manip = scheme_manip_t::ERASE;
         } else {
           concat_scheme(dw_scheme, extra_dw);
@@ -797,15 +805,15 @@ concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, con
 
       switch (pescheme_manip) {
       case scheme_manip_t::ABSENT:
-        if (extra_pe.rows() > 0)
+        if (extra_pe.has_value())
           pescheme_manip = scheme_manip_t::ERASE;
         break;
       case scheme_manip_t::MERGE:
         assert(false);
         throw Exception("Logic error in header key-value merge of PE scheme");
       case scheme_manip_t::CONCAT:
-        if (extra_pe.rows() == 0) {
-          pe_scheme.resize(0, 0);
+        if (extra_pe.has_value()) {
+          pe_scheme.reset();
           pescheme_manip = scheme_manip_t::ERASE;
         } else {
           concat_scheme(pe_scheme, extra_pe);
@@ -843,7 +851,8 @@ concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, con
   case scheme_manip_t::MERGE:
     break;
   case scheme_manip_t::CONCAT:
-    DWI::set_DW_scheme(result, dw_scheme);
+    assert(dw_scheme.has_value());
+    DWI::set_DW_scheme(result, *dw_scheme);
     break;
   case scheme_manip_t::ERASE:
     WARN("Erasing diffusion gradient table:"                          //
@@ -856,7 +865,8 @@ concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, con
   case scheme_manip_t::MERGE:
     break;
   case scheme_manip_t::CONCAT:
-    Metadata::PhaseEncoding::set_scheme(result.keyval(), pe_scheme);
+    assert(pe_scheme.has_value());
+    Metadata::PhaseEncoding::set_scheme(result.keyval(), *pe_scheme);
     break;
   case scheme_manip_t::ERASE:
     WARN("Erasing phase encoding information:"                        //

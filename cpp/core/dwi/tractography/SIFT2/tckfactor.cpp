@@ -383,7 +383,7 @@ void TckFactor::output_all_debug_images(std::string_view dirpath, std::string_vi
 
   Model<Fixel>::output_all_debug_images(dirpath, prefix);
 
-  if (!coefficients.size())
+  if (coefficients.size() == 0) // check_syntax off
     return;
 
   std::vector<double> mins(fixels.size(), std::numeric_limits<double>::infinity());

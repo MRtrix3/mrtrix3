@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <optional>
+
 #include "app.h"
 #include "progressbar.h"
 #include "types.h"
@@ -63,8 +65,8 @@ public:
            const index_type num_shuffles,
            const error_t error_types,
            const bool is_nonstationarity,
-           const index_array_type &eb_within,
-           const index_array_type &eb_whole,
+           const std::optional<index_array_type> &eb_within,
+           const std::optional<index_array_type> &eb_whole,
            std::string_view msg = "");
 
   // Don't store the full set of shuffling matrices;
@@ -86,8 +88,8 @@ private:
   void initialise(const error_t error_types,
                   const bool nshuffles_explicit,
                   const bool is_nonstationarity,
-                  const index_array_type &eb_within,
-                  const index_array_type &eb_whole);
+                  const std::optional<index_array_type> &eb_within,
+                  const std::optional<index_array_type> &eb_whole);
 
   // For exchangeability blocks (either within or whole)
   index_array_type load_blocks(std::string_view filename, const bool equal_sizes);
@@ -101,14 +103,14 @@ private:
   // Providing the number of rows is large then the likelihood of generating duplicates is low.
   void generate_random_permutations(const index_type num_perms,
                                     const index_type num_rows,
-                                    const index_array_type &eb_within,
-                                    const index_array_type &eb_whole,
+                                    const std::optional<index_array_type> &eb_within,
+                                    const std::optional<index_array_type> &eb_whole,
                                     const bool include_default,
                                     const bool permit_duplicates);
 
   void generate_all_permutations(const index_type num_rows,
-                                 const index_array_type &eb_within,
-                                 const index_array_type &eb_whole);
+                                 const std::optional<index_array_type> &eb_within,
+                                 const std::optional<index_array_type> &eb_whole);
 
   void load_permutations(std::string_view filename);
 
@@ -117,11 +119,11 @@ private:
 
   void generate_random_signflips(const index_type num_signflips,
                                  const index_type num_rows,
-                                 const index_array_type &blocks,
+                                 const std::optional<index_array_type> &blocks,
                                  const bool include_default,
                                  const bool permit_duplicates);
 
-  void generate_all_signflips(const index_type num_rows, const index_array_type &blocks);
+  void generate_all_signflips(const index_type num_rows, const std::optional<index_array_type> &blocks);
 
   std::vector<std::vector<index_type>> indices2blocks(const index_array_type &) const;
 };

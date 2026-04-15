@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <optional>
 #include <string>
 
 #include "app.h"
@@ -49,18 +50,23 @@ default_type bzero_threshold();
 /*! \note This is mostly for internal use. If you have obtained the DW
  * scheme using DWI::get_DW_scheme(), it should already by guaranteed to
  * match the corresponding header. */
+
 template <class MatrixType> inline void check_DW_scheme(const Header &header, const MatrixType &grad) {
-  if (!grad.rows())
-    throw Exception("no valid diffusion gradient table found");
+  assert(grad.rows() > 0);
   if (grad.cols() < 4)
     throw Exception("unexpected diffusion gradient table matrix dimensions");
-
   if (header.ndim() >= 4) {
     if (header.size(3) != static_cast<ssize_t>(grad.rows()))
       throw Exception("number of studies in base image (" + str(header.size(3)) +
                       ") does not match number of rows in diffusion gradient table (" + str(grad.rows()) + ")");
   } else if (grad.rows() != 1)
     throw Exception("For images with less than four dimensions, gradient table can have one row only");
+}
+
+template <class MatrixType> inline void check_DW_scheme(const Header &header, const std::optional<MatrixType> &grad) {
+  if (!grad.has_value())
+    throw Exception("no valid diffusion gradient table found");
+  check_DW_scheme(header, *grad);
 }
 
 /*! \brief convert the DW encoding matrix in \a grad into a
@@ -124,17 +130,16 @@ template <class MatrixType> std::string scheme2str(const MatrixType &G) {
 }
 } // namespace
 
+//! clear any DW gradient encoding scheme from the header
+void clear_DW_scheme(Header &);
+void clear_DW_scheme(KeyValues &);
+
 //! store the DW gradient encoding matrix in a header
 /*! this will store the DW gradient encoding matrix into the
  * Header::keyval() structure of \a header, under the key 'dw_scheme'.
  */
 template <class MatrixType> void set_DW_scheme(Header &header, const MatrixType &G) {
-  if (!G.rows()) {
-    auto it = header.keyval().find("dw_scheme");
-    if (it != header.keyval().end())
-      header.keyval().erase(it);
-    return;
-  }
+  assert(G.rows() > 0);
   try {
     check_DW_scheme(header, G);
     header.keyval()["dw_scheme"] = scheme2str(G);
@@ -142,18 +147,27 @@ template <class MatrixType> void set_DW_scheme(Header &header, const MatrixType 
     WARN("attempt to add non-matching DW scheme to header - ignored");
   }
 }
+template <class MatrixType> void set_DW_scheme(Header &header, const std::optional<MatrixType> &G) {
+  if (!G.has_value()) {
+    clear_DW_scheme(header.keyval());
+    return;
+  }
+  set_DW_scheme(header, *G);
+}
 
 //! store the DW gradient encoding matrix in a KeyValues structure
 /*! this will store the DW gradient encoding matrix under the key 'dw_scheme'.
  */
 template <class MatrixType> void set_DW_scheme(KeyValues &keyval, const MatrixType &G) {
-  if (!G.rows()) {
-    auto it = keyval.find("dw_scheme");
-    if (it != keyval.end())
-      keyval.erase(it);
+  assert(G.rows() > 0);
+  keyval["dw_scheme"] = scheme2str(G);
+}
+template <class MatrixType> void set_DW_scheme(KeyValues &keyval, const std::optional<MatrixType> &G) {
+  if (!G.has_value()) {
+    clear_DW_scheme(keyval);
     return;
   }
-  keyval["dw_scheme"] = scheme2str(G);
+  set_DW_scheme(keyval, *G);
 }
 
 template <class MatrixType1, class MatrixType2>
@@ -208,7 +222,7 @@ Eigen::MatrixXd resolve_DW_scheme(const MatrixType1 &one, const MatrixType2 &two
  * \note This is mostly for internal use. In general, you should use
  * DWI::get_DW_scheme()
  */
-Eigen::MatrixXd parse_DW_scheme(const Header &header);
+std::optional<Eigen::MatrixXd> parse_DW_scheme(const Header &header);
 
 //! get the DW scheme as found in the headers or supplied at the command-line
 /*! return the DW gradient encoding matrix found from the command-line
@@ -218,11 +232,7 @@ Eigen::MatrixXd parse_DW_scheme(const Header &header);
  * \note This is mostly for internal use. In general, you should use
  * DWI::get_DW_scheme()
  */
-Eigen::MatrixXd get_raw_DW_scheme(const Header &header);
-
-//! clear any DW gradient encoding scheme from the header
-void clear_DW_scheme(Header &);
-void clear_DW_scheme(KeyValues &);
+std::optional<Eigen::MatrixXd> get_raw_DW_scheme(const Header &header);
 
 //! 'stash' the DW gradient table
 /*! Store the _used_ DW gradient table to Header::keyval() key
@@ -235,8 +245,14 @@ void clear_DW_scheme(KeyValues &);
  */
 template <class MatrixType> void stash_DW_scheme(Header &header, const MatrixType &grad) {
   clear_DW_scheme(header);
-  if (grad.rows())
-    header.keyval()["prior_dw_scheme"] = scheme2str(grad);
+  header.keyval()["prior_dw_scheme"] = scheme2str(grad);
+}
+
+template <class MatrixType> void stash_DW_scheme(Header &header, const std::optional<MatrixType> &grad) {
+  if (grad.has_value())
+    stash_DW_scheme(header, *grad);
+  else
+    clear_DW_scheme(header);
 }
 
 enum class BValueScalingBehaviour { Auto, UserOn, UserOff };
