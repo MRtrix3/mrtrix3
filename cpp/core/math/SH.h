@@ -100,9 +100,9 @@ Eigen::Matrix<typename MatrixType::Scalar, Eigen::Dynamic, Eigen::Dynamic> init_
   Matrix<value_type, Dynamic, 1, 0, 64> AL(lmax + 1);
   for (ssize_t i = 0; i < dirs.rows(); i++) {
     value_type z = dirs(i, 2);
-    value_type rxy = std::hypot(dirs(i, 0), dirs(i, 1));
-    value_type cp = (rxy) ? dirs(i, 0) / rxy : 1.0;
-    value_type sp = (rxy) ? dirs(i, 1) / rxy : 0.0;
+    const value_type rxy = std::hypot(dirs(i, 0), dirs(i, 1));
+    const value_type cp = (rxy == value_type(0)) ? value_type(1) : (dirs(i, 0) / rxy);
+    const value_type sp = (rxy == value_type(0)) ? value_type(0) : (dirs(i, 1) / rxy);
     Legendre::Plm_sph(AL, lmax, 0, z);
     for (int l = 0; l <= lmax; l += 2)
       SHT(i, index(l, 0)) = AL[l];
@@ -238,9 +238,9 @@ inline typename VectorType::Scalar value(const VectorType &coefs,
 template <class VectorType1, class VectorType2>
 inline typename VectorType1::Scalar value(const VectorType1 &coefs, const VectorType2 &unit_dir, int lmax) {
   using value_type = typename VectorType1::Scalar;
-  value_type rxy = std::sqrt(pow2(unit_dir[1]) + pow2(unit_dir[0]));
-  value_type cp = (rxy) ? unit_dir[0] / rxy : 1.0;
-  value_type sp = (rxy) ? unit_dir[1] / rxy : 0.0;
+  const value_type rxy = std::hypot(unit_dir[0], unit_dir[1]);
+  const value_type cp = (rxy == value_type(0)) ? value_type(1) : (unit_dir[0] / rxy);
+  const value_type sp = (rxy == value_type(0)) ? value_type(0) : (unit_dir[1] / rxy);
   return value(coefs, unit_dir[2], cp, sp, lmax);
 }
 
@@ -248,9 +248,9 @@ template <class VectorType1, class VectorType2>
 inline VectorType1 &delta(VectorType1 &delta_vec, const VectorType2 &unit_dir, int lmax) {
   using value_type = typename VectorType1::Scalar;
   delta_vec.resize(NforL(lmax));
-  value_type rxy = std::sqrt(pow2(unit_dir[1]) + pow2(unit_dir[0]));
-  value_type cp = (rxy) ? unit_dir[0] / rxy : 1.0;
-  value_type sp = (rxy) ? unit_dir[1] / rxy : 0.0;
+  const value_type rxy = std::hypot(unit_dir[0], unit_dir[1]);
+  const value_type cp = (rxy == value_type(0)) ? value_type(1) : (unit_dir[0] / rxy);
+  const value_type sp = (rxy == value_type(0)) ? value_type(0) : (unit_dir[1] / rxy);
   Eigen::Matrix<value_type, Eigen::Dynamic, 1, 0, 64> AL(lmax + 1);
   Legendre::Plm_sph(AL, lmax, 0, unit_dir[2]);
   for (int l = 0; l <= lmax; l += 2)
@@ -414,10 +414,10 @@ public:
   template <class VectorType, class UnitVectorType>
   ValueType value(const VectorType &val, const UnitVectorType &unit_dir) const {
     PrecomputedFraction<ValueType> f;
-    set(f, std::acos(unit_dir[2]));
-    ValueType rxy = std::sqrt(pow2(unit_dir[1]) + pow2(unit_dir[0]));
-    ValueType cp = (rxy) ? unit_dir[0] / rxy : 1.0;
-    ValueType sp = (rxy) ? unit_dir[1] / rxy : 0.0;
+    set(f, std::acos(std::clamp(static_cast<ValueType>(unit_dir[2]), ValueType(-1), ValueType(1))));
+    const ValueType rxy = std::hypot(unit_dir[0], unit_dir[1]);
+    const ValueType cp = (rxy == ValueType(0)) ? ValueType(1) : (unit_dir[0] / rxy);
+    const ValueType sp = (rxy == ValueType(0)) ? ValueType(0) : (unit_dir[1] / rxy);
     ValueType v = 0.0;
     for (int l = 0; l <= lmax; l += 2)
       v += get(f, l, 0) * val[index(l, 0)];
