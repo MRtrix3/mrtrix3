@@ -1,0 +1,27 @@
+#!/bin/bash
+# Verify "5ttgen mcrib" operation with:
+# - A *T2-weighted* input image
+# - The M-CRIB template data *not* having been stripped;
+#   that is, as though the M-CRIB data have been downloaded as-is,
+#   with a sub-directory structure separating groups of image files
+# The output is not compared to that generated using a prior software version,
+#   given that ANTs seems to produce images with different dimensions between runs
+
+rm -rf tmp_mcrib
+mkdir tmp_mcrib
+
+mkdir tmp_mcrib/M-CRIB\ T1-weighted\ images
+mkdir tmp_mcrib/M-CRIB\ T2-weighted\ images
+mkdir tmp_mcrib/M-CRIB\ T2-weighted\ images/M-CRIB\ preprocessed\ T2
+mkdir tmp_mcrib/Original\ M-CRIB\ parcellations
+cp 5ttgen/mcrib/MCRIB/M-CRIB_P01_T2.nii.gz tmp_mcrib/M-CRIB\ T2-weighted\ images/M-CRIB\ preprocessed\ T2/
+cp 5ttgen/mcrib/MCRIB/M-CRIB_P02_T2.nii.gz tmp_mcrib/M-CRIB\ T2-weighted\ images/M-CRIB\ preprocessed\ T2/
+cp 5ttgen/mcrib/MCRIB/M-CRIB_orig_P01_parc.nii.gz tmp_mcrib/Original\ M-CRIB\ parcellations/
+cp 5ttgen/mcrib/MCRIB/M-CRIB_orig_P02_parc.nii.gz tmp_mcrib/Original\ M-CRIB\ parcellations/
+
+5ttgen mcrib 5ttgen/mcrib/in/T2w.mif t2w \
+    -mask 5ttgen/mcrib/in/mask.mif \
+    -mcrib tmp_mcrib/ \
+    tmp.mif -force
+
+#testing_diff_header tmp.mif 5ttgen/mcrib/out/T2w.mif
