@@ -22,7 +22,8 @@ namespace {
 
 constexpr float x = .525731112119133606;
 constexpr float z = .850650808352039932;
-constexpr float initial_vertices_data[]{x,   0.0, z,   //
+constexpr float initial_vertices_data[]{-x,  0.0, z,   //
+                                        x,   0.0, z,   //
                                         0.0, z,   x,   //
                                         0.0, -z,  x,   //
                                         z,   x,   0.0, //
