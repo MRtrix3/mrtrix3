@@ -16,8 +16,8 @@ tckconvert tmp_out.tck tmp_out[].txt -force
 
 rm -f tmp_uniquelines.txt
 cat tmp_out*.txt | \
-    sort -r | \
-    uniq -c |
+    sort -nr | \
+    uniq -c | \
     tee tmp_uniquelines.txt
 
 rm -f tmp_ratio.txt
@@ -33,7 +33,4 @@ cat tmp_ratio.txt | \
     awk '{print "scale=2; " $0 " > 9 && " $0 " < 11"}' | \
     tee tmp_equation.txt
 
-
-(( $(cat tmp_equation.txt | \
-    bc)
-))
+(( $(cat tmp_equation.txt | bc) ))
