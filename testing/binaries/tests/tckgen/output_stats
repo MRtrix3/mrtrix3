@@ -2,7 +2,7 @@
 # Verify that option -output_stats is operational
 # 1. Without ACT
 tckgen SIFT_phantom/fods.mif tmp.tck \
-    -seed_image SIFT_phantom/mask.mif \
+    -seed_voxels SIFT_phantom/mask.mif \
     -mask SIFT_phantom/mask.mif \
     -minlength 4 \
     -select 100 \
@@ -14,7 +14,7 @@ tckgen SIFT_phantom/fods.mif tmp.tck \
 
 # 2. With ACT
 tckgen SIFT_phantom/fods.mif tmp.tck \
-    -seed_image SIFT_phantom/mask.mif \
+    -seed_voxels SIFT_phantom/mask.mif \
     -act SIFT_phantom/5tt.mif \
     -minlength 4 \
     -select 100 \

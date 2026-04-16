@@ -65,7 +65,7 @@ SharedBase::SharedBase(std::string_view diff_path, Properties &property_set)
   max_num_seeds = Defaults::seed_to_select_ratio * max_num_tracks;
   properties.set(max_num_seeds, "max_num_seeds");
 
-  assert(properties.seeds.num_seeds());
+  assert(!properties.seeds.empty());
   max_seed_attempts = properties.seeds[0]->get_max_attempts();
   properties.set(max_seed_attempts, "max_seed_attempts");
 
