@@ -1,0 +1,7 @@
+#!/bin/bash
+# Verify that command terminates gracefully when:
+# - Input image is *not* a Spherical Harmonics image
+# - User attempts to manually specify that it is
+mrcat tcksample/fa.mif tcksample/adc.mif -axis 3 - | \
+    tcksample tracks.tck - tmp.csv -sh true -force 2>&1 |
+    grep "Cannot sample spherical harmonic function amplitudes, as input image cannot be interpreted as such$"

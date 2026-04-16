@@ -1,6 +1,0 @@
-#!/bin/bash
-# Verify command operation when no track-wise statistic is specified,
-#   and the output file is in the Track Scalar File (TSF) format
-# Outcome is verified against that generated using a prior software version
-tcksample tracks.tck tcksample/fa.mif tmp.tsf -force
-testing_diff_tsf tmp.tsf tcksample/out.tsf -frac 1e-5

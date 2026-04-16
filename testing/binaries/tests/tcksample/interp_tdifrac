@@ -1,0 +1,17 @@
+#!/bin/bash
+# Ensure that command exists gracefully if the user attempts to simultaneously use:
+# - *Interpolation*
+# - The "-use_tdi_fraction" command-line flag
+# This combination does not make sense.
+# The way that "-use_tdi_fraction" works is to take the intensity in each voxel,
+#   and sub-divide it to attribute fractions of it proportionally
+#   among the intersecting streamlines.
+# This can't work trivially if the mechanism
+#   by which values underlying streamline vertices are sampled
+#   is just a simple linear or nearest-neighbour interpolation.
+# It may be possible to do a sensible computation in this instance,
+#   but it would require greater care and motivation.
+tcksample tracks.tck afdtotal.mif tmp.csv -stat_tck mean -use_tdi_fraction -force 2>&1 |
+    grep "\\-use_tdi_fraction can only be used in conjunction with precise mapping$"
+tcksample tracks.tck afdtotal.mif tmp.csv -stat_tck mean -use_tdi_fraction -nointerp -force 2>&1 |
+    grep "\\-use_tdi_fraction can only be used in conjunction with precise mapping$"

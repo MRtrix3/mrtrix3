@@ -1,0 +1,11 @@
+#!/bin/bash
+# Ensure that command runs successfully with:
+# - A *3D* input image
+# - Using *Linear* interpolation
+# - *No* track-wise statistic, therefore writing a value per vertex
+# - The per-vertex values are written to a text file
+# The "testing_diff_matrix" command *cannot* be used to verify the output of this invocation,
+#   as the content is not a regular matrix
+#   (different number of vertices per streamline = different number of columns per row);
+#   this test therefore just ensures that the command completes without error
+tcksample tracks.tck tcksample/fa.mif tmp.txt -force

@@ -1,0 +1,11 @@
+#!/bin/bash
+# Ensure that command runs successfully with:
+# - A *Spherical Harmonics* input image
+# - Using *interpolation*
+#   (linear interpolation is used merely as an exemplar)
+# - *No* track-wise statistic, therefore writing a value per vertex
+#   These values are written to TSF rather than text file
+#   to facilitate comparison against expectation
+tcksample tracks.tck fod.mif tmp.tsf -sh true -force
+
+testing_diff_tsf tmp.tsf tcksample/inputsh_interplinear_statnone.tsf -frac 1e-5
