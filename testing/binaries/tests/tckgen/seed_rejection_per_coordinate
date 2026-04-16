@@ -14,14 +14,26 @@ tckgen SIFT_phantom/dwi.mif tmp_out.tck \
 rm -f tmp_out*.txt
 tckconvert tmp_out.tck tmp_out[].txt -force
 
-rm -f tmp_out.txt
-(( $(cat tmp_out*.txt | \
+rm -f tmp_uniquelines.txt
+cat tmp_out*.txt | \
     sort -r | \
-    uniq -c | \
+    uniq -c |
+    tee tmp_uniquelines.txt
+
+rm -f tmp_ratio.txt
+cat tmp_uniquelines.txt | \
     awk '{$1=$1};1' | \
     cut -d' ' -f1 | \
-    tr '\n' '/' |
+    tr '\n' '/' | \
     cut -d'/' -f1-2 | \
+    tee tmp_ratio.txt
+
+rm -f tmp_equation.txt
+cat tmp_ratio.txt | \
     awk '{print "scale=2; " $0 " > 9 && " $0 " < 11"}' | \
+    tee tmp_equation.txt
+
+
+(( $(cat tmp_equation.txt | \
     bc)
 ))
