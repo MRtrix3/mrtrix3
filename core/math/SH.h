@@ -268,7 +268,7 @@ namespace MR
         inline typename VectorType1::Scalar value (const VectorType1& coefs, const VectorType2& unit_dir, int lmax)
         {
           using value_type = typename VectorType1::Scalar;
-          value_type rxy = std::sqrt ( pow2(unit_dir[1]) + pow2(unit_dir[0]) );
+          value_type rxy = std::hypot(unit_dir[0], unit_dir[1]);
           value_type cp = (rxy) ? unit_dir[0]/rxy : 1.0;
           value_type sp = (rxy) ? unit_dir[1]/rxy : 0.0;
           return value (coefs, unit_dir[2], cp, sp, lmax);
@@ -280,7 +280,7 @@ namespace MR
         {
           using value_type = typename VectorType1::Scalar;
           delta_vec.resize (NforL (lmax));
-          value_type rxy = std::sqrt ( pow2(unit_dir[1]) + pow2(unit_dir[0]) );
+          value_type rxy = std::hypot(unit_dir[0], unit_dir[1]);
           value_type cp = (rxy) ? unit_dir[0]/rxy : 1.0;
           value_type sp = (rxy) ? unit_dir[1]/rxy : 0.0;
           Eigen::Matrix<value_type,Eigen::Dynamic,1,0,64> AL (lmax+1);
@@ -475,8 +475,8 @@ namespace MR
           template <class VectorType, class UnitVectorType>
             ValueType value (const VectorType& val, const UnitVectorType& unit_dir) const {
               PrecomputedFraction<ValueType> f;
-              set (f, std::acos (unit_dir[2]));
-              ValueType rxy = std::sqrt ( pow2(unit_dir[1]) + pow2(unit_dir[0]) );
+              set (f, std::acos (std::max(ValueType(-1), std::min(ValueType(1), ValueType(unit_dir[2])))));
+              ValueType rxy = std::hypot(unit_dir[0], unit_dir[1]);
               ValueType cp = (rxy) ? unit_dir[0]/rxy : 1.0;
               ValueType sp = (rxy) ? unit_dir[1]/rxy : 0.0;
               ValueType v = 0.0;
