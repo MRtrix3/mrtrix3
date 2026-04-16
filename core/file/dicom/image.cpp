@@ -595,12 +595,27 @@ namespace MR {
           sum_separation += separation;
         }
 
-        if (max_gap > 1e-4)
+        const default_type mean_separation = sum_separation / static_cast<default_type>(nslices - 1);
+        const default_type gap_threshold = std::sqrt(Eigen::NumTraits<float>::dummy_precision()) * mean_separation;
+        DEBUG("Threshold for evaluating slice gap:");
+        DEBUG("Mean separation = " + str(mean_separation) + ";" +
+              " maximal gap = " + str(max_gap) + ";" +
+              " auto-threshold = " + str(gap_threshold));
+        if (max_gap > gap_threshold) {
           WARN ("slice gap detected (maximum gap: " + str(max_gap, 3) + "mm)");
-        if (max_separation - min_separation > 2e-4)
+        }
+        const default_type separation_range_threshold = 2.0 * gap_threshold;
+        DEBUG("Threshold for evaluating variance in slice separation:");
+        DEBUG("Mean separation = " + str(mean_separation) + ";" +
+              " minimum separation = " + str(min_separation) + ";" +
+              " maximum separation = " + str(max_separation) + ";" +
+              " range = " + str(max_separation - min_separation) + ";" +
+              " auto-threshold = " + str(separation_range_threshold));
+        if (max_separation - min_separation > separation_range_threshold) {
           WARN ("slice separation is not constant (from " + str(min_separation, 8) + " to " + str(max_separation, 8) + "mm)");
+        }
 
-        return (sum_separation / default_type(nslices-1));
+        return mean_separation;
       }
 
 
