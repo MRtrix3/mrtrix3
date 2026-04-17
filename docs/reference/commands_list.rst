@@ -110,9 +110,11 @@ List of MRtrix3 commands
     commands/shview
     commands/tck2connectome
     commands/tck2fixel
+    commands/tckbacktrack
     commands/tckconvert
     commands/tckdfc
     commands/tckedit
+    commands/tckfilter
     commands/tckgen
     commands/tckglobal
     commands/tckinfo
@@ -121,6 +123,8 @@ List of MRtrix3 commands
     commands/tcksample
     commands/tcksift
     commands/tcksift2
+    commands/tcksimilarity
+    commands/tckssestats
     commands/tckstats
     commands/tcktransform
     commands/tensor2metric
@@ -245,9 +249,11 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`shview`, "View spherical harmonics surface plots"
     |cpp.png|, :ref:`tck2connectome`, "Generate a connectome matrix from a streamlines file and a node parcellation image"
     |cpp.png|, :ref:`tck2fixel`, "Compute a fixel TDI map from a tractogram"
+    |cpp.png|, :ref:`tckbacktrack`, "Perform streamline truncation based on a 5tt segmentation and re-track streamline terminations"
     |cpp.png|, :ref:`tckconvert`, "Convert between different track file formats"
     |cpp.png|, :ref:`tckdfc`, "Perform the Track-Weighted Dynamic Functional Connectivity (TW-dFC) method"
     |cpp.png|, :ref:`tckedit`, "Perform various editing operations on track files"
+    |cpp.png|, :ref:`tckfilter`, "Perform a smoothing operation on streamline-wise values"
     |cpp.png|, :ref:`tckgen`, "Perform streamlines tractography"
     |cpp.png|, :ref:`tckglobal`, "Multi-Shell Multi-Tissue Global Tractography"
     |cpp.png|, :ref:`tckinfo`, "Print out information about a track file"
@@ -256,6 +262,8 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`tcksample`, "Sample values of an associated image along tracks"
     |cpp.png|, :ref:`tcksift`, "Filter a whole-brain fibre-tracking data set such that the streamline densities match the FOD lobe integrals"
     |cpp.png|, :ref:`tcksift2`, "Optimise per-streamline cross-section multipliers to match a whole-brain tractogram to fixel-wise fibre densities"
+    |cpp.png|, :ref:`tcksimilarity`, "Generate a streamline-streamline similarity matrix"
+    |cpp.png|, :ref:`tckssestats`, "Streamline-based analysis using Similarity-informed Streamline Enhancement (SSE) and non-parametric permutation testing"
     |cpp.png|, :ref:`tckstats`, "Calculate statistics on streamlines lengths"
     |cpp.png|, :ref:`tcktransform`, "Apply a spatial transformation to a tracks file"
     |cpp.png|, :ref:`tensor2metric`, "Generate maps of tensor-derived parameters"
