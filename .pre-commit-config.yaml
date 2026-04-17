@@ -1,6 +1,14 @@
 default_language_version:
   python: python3
 repos:
+  - repo: local
+    hooks:
+      - id: check-syntax
+        name: check-syntax
+        entry: ./check_syntax --diff
+        language: system
+        pass_filenames: false
+        types_or: [c++]
   - repo: https://github.com/pre-commit/mirrors-clang-format
     rev: v16.0.4
     hooks:
