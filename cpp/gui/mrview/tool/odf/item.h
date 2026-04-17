@@ -66,9 +66,9 @@ public:
     dir_t dir_type;
     std::optional<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>> header_dirs;
     std::optional<Eigen::Matrix<double, Eigen::Dynamic, 4>> grad;
-    std::unique_ptr<MR::DWI::Shells> shells;
+    std::optional<MR::DWI::Shells> shells;
     size_t shell_index;
-    std::unique_ptr<MR::DWI::Directions::Set> dirs;
+    std::optional<MR::DWI::Directions::Set> dirs;
   };
   std::unique_ptr<DixelPlugin> dixel;
 };

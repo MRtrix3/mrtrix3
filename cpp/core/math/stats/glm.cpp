@@ -266,15 +266,15 @@ void all_stats(const measurements_matrix_type &measurements,
   // If this function is being invoked from the other version of all_stats(),
   //   on an element-by-element basis, don't interfere with the progress bar
   //   that's being displayed by that outer looping function
-  std::unique_ptr<ProgressBar> progress;
+  std::optional<ProgressBar> progress;
   if (measurements.cols() > 1)
-    progress.reset(new ProgressBar("Calculating basic properties of default permutation", 5));
+    progress.emplace("Calculating basic properties of default permutation", 5);
 #endif
   betas = solve_betas(measurements, design);
 #ifdef GLM_ALL_STATS_DEBUG
   std::cerr << "Betas: " << betas.rows() << " x " << betas.cols() << ", max " << betas.array().maxCoeff() << "\n";
 #else
-  if (progress)
+  if (progress.has_value())
     ++*progress;
 #endif
   abs_effect_size.resize(measurements.cols(), hypotheses.size());
@@ -289,7 +289,7 @@ void all_stats(const measurements_matrix_type &measurements,
   std::cerr << "abs_effect_size: " << abs_effect_size.rows() << " x " << abs_effect_size.cols() << ", max "
             << abs_effect_size.array().maxCoeff() << "\n";
 #else
-  if (progress)
+  if (progress.has_value())
     ++*progress;
 #endif
   // Explicit calculation of residuals before SSE, rather than in a single
@@ -299,14 +299,14 @@ void all_stats(const measurements_matrix_type &measurements,
   std::cerr << "Residuals: " << residuals.rows() << " x " << residuals.cols() << ", max "
             << residuals.array().maxCoeff() << "\n";
 #else
-  if (progress)
+  if (progress.has_value())
     ++*progress;
 #endif
   stdev = GLM::stdev(measurements, design, variance_groups);
 #ifdef GLM_ALL_STATS_DEBUG
   std::cerr << "stdev: " << stdev.rows() << " x " << stdev.cols() << ", max " << stdev.maxCoeff() << "\n";
 #else
-  if (progress)
+  if (progress.has_value())
     ++*progress;
 #endif
   if (variance_groups.has_value())
@@ -420,7 +420,7 @@ void all_stats(const measurements_matrix_type &measurements,
         matrix_type element_design_finite(valid_rows, element_design.cols());
         std::optional<index_array_type> variance_groups_finite;
         if (variance_groups.has_value())
-          variance_groups_finite = index_array_type(valid_rows);
+          variance_groups_finite.emplace(valid_rows);
         index_type output_row = 0;
         for (Eigen::Index row = 0; row != data.rows(); ++row) {
           if (std::isfinite(element_data(row)) && element_design.row(row).allFinite()) {

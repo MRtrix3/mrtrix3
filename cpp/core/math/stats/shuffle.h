@@ -83,7 +83,7 @@ private:
   std::vector<PermuteLabels> permutations;
   std::vector<FlipSigns> signflips;
   index_type nshuffles, counter;
-  std::unique_ptr<ProgressBar> progress;
+  std::optional<ProgressBar> progress;
 
   void initialise(const error_t error_types,
                   const bool nshuffles_explicit,

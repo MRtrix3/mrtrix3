@@ -225,7 +225,7 @@ void run() {
   std::optional<Eigen::MatrixXd> directions_cartesian;
   auto opt = get_options("directions");
   if (!opt.empty())
-    directions_cartesian = Math::Sphere::spherical2cartesian(File::Matrix::load_matrix(opt[0][0])).transpose();
+    directions_cartesian.emplace(Math::Sphere::spherical2cartesian(File::Matrix::load_matrix(opt[0][0])).transpose());
 
   // check header transformations for equality
   Eigen::MatrixXd trafo = MR::Transform(input1[0]).scanner2voxel.linear();
@@ -274,8 +274,8 @@ void run() {
         mc_params[i].do_reorientation = true;
         mc_params[i].image_lmax = Math::SH::LforN(nvols1);
         if (!directions_cartesian.has_value())
-          directions_cartesian =
-              Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_60()).transpose();
+          directions_cartesian.emplace(
+              Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_60()).transpose());
       } else {
         CONSOLE("4D scalar input pair " + input1[i].name() + ", " + input2[i].name());
         mc_params[i].do_reorientation = false;

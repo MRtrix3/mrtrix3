@@ -186,14 +186,17 @@ std::optional<scheme_type> get_scheme(const Header &header) {
   scheme_type result;
 
   try {
-    if (!opt_table.empty())
+    if (!opt_table.empty()) {
       result = load_table(opt_table[0][0], header);
-    else if (!opt_topup.empty())
+    } else if (!opt_topup.empty()) {
       result = load_topup(opt_topup[0][0], header);
-    else if (!opt_eddy.empty())
+    } else if (!opt_eddy.empty()) {
       result = load_eddy(opt_eddy[0][0], opt_eddy[0][1], header);
-    else
-      result = *parse_scheme(header.keyval(), header);
+    } else {
+      auto scheme = parse_scheme(header.keyval(), header);
+      if (scheme.has_value())
+        result = scheme.value();
+    }
   } catch (Exception &e) {
     throw Exception(e, "error importing phase encoding table for image \"" + std::string(header.name()) + "\"");
   }

@@ -72,7 +72,7 @@ public:
       }
       opt = get_options("filter");
       if (!opt.empty())
-        user_init_filter = File::Matrix::load_vector(opt[0][0]);
+        user_init_filter.emplace(File::Matrix::load_vector(opt[0][0]));
       opt = get_options("directions");
       if (!opt.empty())
         HR_dirs = File::Matrix::load_matrix(opt[0][0]);

@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <optional>
+
 #include "adapter/gaussian1D.h"
 #include "algo/copy.h"
 #include "algo/threaded_copy.h"
@@ -106,13 +108,13 @@ public:
     threaded_copy(input, *in);
     std::shared_ptr<Image<ValueType>> out;
 
-    std::unique_ptr<ProgressBar> progress;
+    std::optional<ProgressBar> progress;
     if (!message.empty()) {
       size_t axes_to_smooth = 0;
       for (std::vector<default_type>::const_iterator i = stdev.begin(); i != stdev.end(); ++i)
         if (*i)
           ++axes_to_smooth;
-      progress.reset(new ProgressBar(message, axes_to_smooth + 1));
+      progress.emplace(message, axes_to_smooth + 1);
     }
 
     for (size_t dim = 0; dim < 3; dim++) {
@@ -122,7 +124,7 @@ public:
         Adapter::Gaussian1D<Image<ValueType>> gaussian(*in, stdev[dim], dim, extent[dim], zero_boundary);
         threaded_copy(gaussian, *out, 0, input.ndim(), 2);
         in = out;
-        if (progress)
+        if (progress.has_value())
           ++(*progress);
       }
     }
@@ -131,13 +133,13 @@ public:
 
   //! Smooth the image in place
   template <class ImageType> void operator()(ImageType &in_and_output) {
-    std::unique_ptr<ProgressBar> progress;
+    std::optional<ProgressBar> progress;
     if (!message.empty()) {
       size_t axes_to_smooth = 0;
       for (std::vector<default_type>::const_iterator i = stdev.begin(); i != stdev.end(); ++i)
         if (*i)
           ++axes_to_smooth;
-      progress.reset(new ProgressBar(message, axes_to_smooth + 1));
+      progress.emplace(message, axes_to_smooth + 1);
     }
 
     for (size_t dim = 0; dim < 3; dim++) {
@@ -152,7 +154,7 @@ public:
         DEBUG("smoothing dimension " + str(dim) + " in place with stride order: " + str(axes));
         SmoothFunctor1D<ImageType> smooth(in_and_output, stdev[dim], dim, extent[dim], zero_boundary);
         ThreadedLoop(in_and_output, axes, std::min<size_t>(2, axes.size())).run(smooth, in_and_output);
-        if (progress)
+        if (progress.has_value())
           ++(*progress);
       }
     }

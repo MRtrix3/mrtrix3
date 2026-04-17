@@ -18,6 +18,7 @@
 
 #include <array>
 #include <iomanip>
+#include <optional>
 #include <sstream>
 
 #include "file/gz.h"
@@ -157,7 +158,7 @@ typedef struct {
   char name[strlen];      // human-readable description of frame contents; check_syntax off
   int32_t dof;            // for stat maps (e.g. # of subjects)
 
-  Eigen::Matrix<default_type, 4, 4> *m_ras2vox;
+  float32 m_ras2vox[16]; // check_syntax off
   float32 thresh;
   int32_t units; // e.g. UNITS_PPM,  UNITS_RAD_PER_SEC, ...
 
@@ -283,19 +284,16 @@ template <class Input> void read_other(Header &H, Input &in) {
   // First, encapsulate some functionalities for cleanliness...
   // TODO These may well be shared with the FreeSurfer surface file formats
 
-  auto read_matrix = [](Input &in) {
+  auto read_affine = [](Input &in, float32 *const data) {
     std::string buffer(matrix_strlen + 1, '\0');
     in.read(&buffer[0], matrix_strlen);
     // There's also a string before the 16 floating-point values, the FreeSurfer code
     //   discards it immediately
     std::string ch;
-    Eigen::Matrix<default_type, 4, 4> M;
     std::istringstream iss(buffer);
-    iss >> ch >> M(0, 0) >> M(0, 1) >> M(0, 2) >> M(0, 3) >> //
-        M(1, 0) >> M(1, 1) >> M(1, 2) >> M(1, 3) >>          //
-        M(2, 0) >> M(2, 1) >> M(2, 2) >> M(2, 3) >>          //
-        M(3, 0) >> M(3, 1) >> M(3, 2) >> M(3, 3);
-    return M;
+    iss >> ch;
+    for (size_t i = 0; i != 16; ++i)
+      iss >> data[i];
   };
 
   auto read_mri_frame = [&](Input &in, const int64_t len) {
@@ -329,7 +327,7 @@ template <class Input> void read_other(Header &H, Input &in) {
       // Single matrix is read here; use the same function as that for importing tag_auto_align
       fetch<int32_t>(in); // Skip the tag ID absorbed by znzTAGreadStart()
       fetch<int64_t>(in); // Also skip the length
-      frame.m_ras2vox = new Eigen::Matrix<default_type, 4, 4>(read_matrix(in));
+      read_affine(in, frame.m_ras2vox);
       frame.thresh = fetch<float32>(in);
       frame.units = fetch<int32_t>(in);
 
@@ -340,10 +338,10 @@ template <class Input> void read_other(Header &H, Input &in) {
             << frame.read_dir[0] << "," << frame.read_dir[1] << "," << frame.read_dir[2] << "," << frame.pe_dir[0]
             << "," << frame.pe_dir[1] << "," << frame.pe_dir[2] << "," << frame.slice_dir[0] << ","
             << frame.slice_dir[1] << "," << frame.slice_dir[2] << "," << frame.label << "," << frame.name << ","
-            << frame.dof << "," << frame.m_ras2vox->format(format) << "," << frame.thresh << "," << frame.units;
-
-      delete frame.m_ras2vox;
-      frame.m_ras2vox = nullptr;
+            << frame.dof;
+      for (size_t i = 0; i != 16; ++i)
+        table << "," << frame.m_ras2vox[i];
+      table << "," << frame.thresh << "," << frame.units;
 
       if (frame.type == frame_diffusion_augmented) {
         frame.DX = fetch<float64>(in);
@@ -514,11 +512,10 @@ template <class Input> void read_other(Header &H, Input &in) {
         add_line(H.keyval()["command_history"], content);
         break;
       case tag_auto_align: {
-        // Imports data into a 4x4 matrix, and stores in header by converting to string
-        Eigen::IOFormat format(10, Eigen::DontAlignCols, ",", "\n", "", "", "", "");
-        std::stringstream sstream;
-        sstream << read_matrix(in).format(format);
-        H.keyval()[tag_ID_to_string(id)] = sstream.str();
+        // Imports data into a serialised 4x4 matrix, and stores in header by converting to string
+        std::array<float32, 16> autoalign;
+        read_affine(in, autoalign.data());
+        H.keyval()[tag_ID_to_string(id)] = join(autoalign, ",");
       } break;
       case tag_pedir:
         in.read(&content[0], size);
@@ -638,13 +635,11 @@ template <class Output> void write_other(const Header &H, Output &out) {
 
   // Function znzWriteMatrix() is used for both tag_auto_align tag entries,
   //   and in znzTAGwriteMRIframes() for the VOX2RAS matrix.
-  auto write_matrix = [](const Eigen::Matrix<default_type, 4, 4> &M, Output &out) {
+  auto write_affine = [](const float32 *const data, Output &out) {
     std::ostringstream oss;
     oss << "AutoAlign " << std::setprecision(10);
-    oss << M(0, 0) << " " << M(0, 1) << " " << M(0, 2) << " " << M(0, 3) << " ";
-    oss << M(1, 0) << " " << M(1, 1) << " " << M(1, 2) << " " << M(1, 3) << " ";
-    oss << M(2, 0) << " " << M(2, 1) << " " << M(2, 2) << " " << M(2, 3) << " ";
-    oss << M(3, 0) << " " << M(3, 1) << " " << M(3, 2) << " " << M(3, 3) << " ";
+    for (size_t i = 0; i != 16; ++i)
+      oss << data[i];
     std::string buffer(matrix_strlen, '\0');
     buffer.substr(oss.str().size()) = oss.str();
     store<int32_t>(tag_auto_align, out);
@@ -693,8 +688,6 @@ template <class Output> void write_other(const Header &H, Output &out) {
       memset(frame.name, 0x00, strlen);
       strncpy(frame.name, entries[19].c_str(), strlen); // check_syntax off
       frame.dof = to<int32_t>(entries[20]);
-
-      frame.m_ras2vox = new Eigen::Matrix<default_type, 4, 4>(Eigen::Matrix<default_type, 4, 4>::Zero());
       const auto M = split(entries[21], " ");
       if (M.size() != 16) {
         WARN(std::string("Error writing MRI frame data to output image") +               //
@@ -702,23 +695,8 @@ template <class Output> void write_other(const Header &H, Output &out) {
              " omitting information from output image");                                 //
         return;
       }
-      (*frame.m_ras2vox)(0, 0) = to<default_type>(M[0]);
-      (*frame.m_ras2vox)(0, 1) = to<default_type>(M[1]);
-      (*frame.m_ras2vox)(0, 2) = to<default_type>(M[2]);
-      (*frame.m_ras2vox)(0, 3) = to<default_type>(M[3]);
-      (*frame.m_ras2vox)(1, 0) = to<default_type>(M[4]);
-      (*frame.m_ras2vox)(1, 1) = to<default_type>(M[5]);
-      (*frame.m_ras2vox)(1, 2) = to<default_type>(M[6]);
-      (*frame.m_ras2vox)(1, 3) = to<default_type>(M[7]);
-      (*frame.m_ras2vox)(2, 0) = to<default_type>(M[8]);
-      (*frame.m_ras2vox)(2, 1) = to<default_type>(M[9]);
-      (*frame.m_ras2vox)(2, 2) = to<default_type>(M[10]);
-      (*frame.m_ras2vox)(2, 3) = to<default_type>(M[11]);
-      (*frame.m_ras2vox)(3, 0) = to<default_type>(M[12]);
-      (*frame.m_ras2vox)(3, 1) = to<default_type>(M[13]);
-      (*frame.m_ras2vox)(3, 2) = to<default_type>(M[14]);
-      (*frame.m_ras2vox)(3, 3) = to<default_type>(M[15]);
-
+      for (size_t i = 0; i != 16; ++i)
+        frame.m_ras2vox[i] = to<float32>(M[i]);
       frame.thresh = to<float32>(entries[22]);
       frame.units = to<int32_t>(entries[23]);
 
@@ -783,9 +761,7 @@ template <class Output> void write_other(const Header &H, Output &out) {
       store<int32_t>(frame.label, out);
       out.write(frame.name, strlen);
       store<int32_t>(frame.dof, out);
-      write_matrix(*frame.m_ras2vox, out);
-      delete frame.m_ras2vox;
-      frame.m_ras2vox = nullptr;
+      write_affine(frame.m_ras2vox, out);
       store<float32>(frame.thresh, out);
       store<int32_t>(frame.units, out);
       if (frame.type == frame_diffusion_augmented) {
@@ -885,7 +861,7 @@ template <class Output> void write_other(const Header &H, Output &out) {
   float32 fov = 0.0F;        /*!< IGNORE THIS FIELD (data is inconsistent) */
   Tag transform_tag;
   std::vector<Tag> tags; /*!< variable length char strings */
-  std::unique_ptr<Eigen::Matrix<default_type, 4, 4>> auto_align_matrix;
+  std::optional<std::array<float32, 16>> auto_align_matrix;
   std::string pe_dir("UNKNOWN");
   float32 field_strength = NaNF;
   std::string mri_frames, colour_table;
@@ -916,11 +892,12 @@ template <class Output> void write_other(const Header &H, Output &out) {
         transform_tag.set(tag_mgh_xform, entry.second);
         break;
       case tag_auto_align: {
-        auto_align_matrix.reset(new Eigen::Matrix<default_type, 4, 4>(Eigen::Matrix<default_type, 4, 4>::Zero()));
         const auto lines = split_lines(entry.second);
         if (lines.size() != 4)
           throw Exception(std::string("Error parsing auto align header entry for MGH format:") + //
                           "Invalid number of lines (" + str(lines.size()) + "; should be 4)");   //
+        auto_align_matrix = std::array<float32, 16>();
+        size_t out_index = 0;
         for (size_t row = 0; row != 4; ++row) {
           const auto entries = split(strip(lines[row]), ", ", true);
           if (entries.size() != 4)
@@ -928,8 +905,9 @@ template <class Output> void write_other(const Header &H, Output &out) {
                             " Invalid number of entries on line " + str(row) + " (" + str(entries.size()) + ";" +
                             " should be 4)");
           for (size_t col = 0; col != 4; ++col)
-            (*auto_align_matrix)(row, col) = to<default_type>(entries[col]);
+            (*auto_align_matrix)[out_index++] = to<float32>(entries[col]);
         }
+        assert(out_index == 16);
       } break;
       case tag_pedir:
         pe_dir = entry.second;
@@ -978,7 +956,7 @@ template <class Output> void write_other(const Header &H, Output &out) {
     out.write(tag.content.c_str(), tag.content.size() + 1);
   }
   if (auto_align_matrix)
-    write_matrix(*auto_align_matrix, out);
+    write_affine(auto_align_matrix->data(), out);
   store<int32_t>(tag_pedir, out);
   store<int64_t>(pe_dir.size() + 1, out);
   out.write(pe_dir.c_str(), pe_dir.size() + 1);

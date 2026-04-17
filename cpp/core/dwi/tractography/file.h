@@ -53,7 +53,7 @@ public:
     open(file, "tracks", properties);
     auto opt = App::get_options("tck_weights_in");
     if (!opt.empty())
-      weights = File::Matrix::load_vector<ValueType>(opt[0][0]);
+      weights.emplace(File::Matrix::load_vector<ValueType>(opt[0][0]));
   }
 
   //! fetch next track from file

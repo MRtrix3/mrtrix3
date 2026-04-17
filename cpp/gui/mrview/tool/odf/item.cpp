@@ -37,7 +37,7 @@ ODF_Item::ODF_Item(
   // If dixel image is opened, try to intelligently determine the
   //   appropriate source of direction information
   try {
-    if (!dixel->shells)
+    if (!dixel->shells.has_value())
       throw Exception("No shell data");
     dixel->set_shell(dixel->shells->count() - 1);
     DEBUG("Image " + image.header().name() + " initialised as dixel ODF using DW scheme");
@@ -60,15 +60,15 @@ bool ODF_Item::valid() const {
   if (odf_type == odf_type_t::SH || odf_type == odf_type_t::TENSOR)
     return true;
   assert(dixel);
-  if (!dixel->dirs)
+  if (!dixel->dirs.has_value())
     return false;
   return dixel->dirs->size();
 }
 
 ODF_Item::DixelPlugin::DixelPlugin(const MR::Header &H) : dir_type(dir_t::NONE), shell_index(0) {
   try {
-    grad = MR::DWI::get_DW_scheme(H);
-    shells.reset(new MR::DWI::Shells(*grad));
+    grad.emplace(MR::DWI::get_DW_scheme(H));
+    shells.emplace(*grad);
     shell_index = shells->count() - 1;
   } catch (...) {
     grad.reset();
@@ -101,7 +101,7 @@ ODF_Item::DixelPlugin::DixelPlugin(const MR::Header &H) : dir_type(dir_t::NONE),
 }
 
 void ODF_Item::DixelPlugin::set_shell(size_t index) {
-  if (!shells)
+  if (!shells.has_value())
     throw Exception("No valid DW scheme defined in header");
   if (index >= shells->count())
     throw Exception("Shell index is outside valid range");
@@ -110,8 +110,7 @@ void ODF_Item::DixelPlugin::set_shell(size_t index) {
   assert(grad.has_value());
   for (size_t row = 0; row != volumes.size(); ++row)
     shell_dirs.row(row) = grad->row(volumes[row]).head<3>().cast<float>();
-  auto new_dirs = std::make_unique<MR::DWI::Directions::Set>(shell_dirs);
-  std::swap(dirs, new_dirs);
+  dirs.emplace(shell_dirs);
   shell_index = index;
   dir_type = DixelPlugin::dir_t::DW_SCHEME;
 }
@@ -119,31 +118,27 @@ void ODF_Item::DixelPlugin::set_shell(size_t index) {
 void ODF_Item::DixelPlugin::set_header() {
   if (!header_dirs.has_value())
     throw Exception("No direction scheme defined in header");
-  auto new_dirs = std::make_unique<MR::DWI::Directions::Set>(*header_dirs);
-  std::swap(dirs, new_dirs);
+  dirs.emplace(*header_dirs);
   dir_type = DixelPlugin::dir_t::HEADER;
 }
 
 void ODF_Item::DixelPlugin::set_internal(const size_t n) {
-  auto new_dirs = std::make_unique<MR::DWI::Directions::Set>(n);
-  std::swap(dirs, new_dirs);
+  dirs.emplace(n);
   dir_type = DixelPlugin::dir_t::INTERNAL;
 }
 
 void ODF_Item::DixelPlugin::set_none() {
-  if (dirs)
-    delete dirs.release();
+  dirs.reset();
   dir_type = DixelPlugin::dir_t::NONE;
 }
 
 void ODF_Item::DixelPlugin::set_from_file(std::string_view path) {
-  auto new_dirs = std::make_unique<MR::DWI::Directions::Set>(path);
-  std::swap(dirs, new_dirs);
+  dirs.emplace(path);
   dir_type = DixelPlugin::dir_t::FILE;
 }
 
 Eigen::VectorXf ODF_Item::DixelPlugin::get_shell_data(const Eigen::VectorXf &values) const {
-  assert(shells);
+  assert(shells.has_value());
   const std::vector<size_t> &volumes((*shells)[shell_index].get_volumes());
   Eigen::VectorXf result(volumes.size());
   for (size_t i = 0; i != volumes.size(); ++i)
@@ -152,7 +147,7 @@ Eigen::VectorXf ODF_Item::DixelPlugin::get_shell_data(const Eigen::VectorXf &val
 }
 
 size_t ODF_Item::DixelPlugin::num_DW_shells() const {
-  if (!shells)
+  if (!shells.has_value())
     return 0;
   return shells->count();
 }

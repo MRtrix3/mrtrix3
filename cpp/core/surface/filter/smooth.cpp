@@ -16,6 +16,7 @@
 
 #include "surface/filter/smooth.h"
 
+#include <optional>
 #include <set>
 
 #include "surface/utils.h"
@@ -23,9 +24,9 @@
 namespace MR::Surface::Filter {
 
 void Smooth::operator()(const Mesh &in, Mesh &out) const {
-  std::unique_ptr<ProgressBar> progress;
+  std::optional<ProgressBar> progress;
   if (!message.empty())
-    progress.reset(new ProgressBar(message, 8));
+    progress.emplace(message, 8);
   out.clear();
 
   const size_t V = in.num_vertices();
@@ -50,7 +51,7 @@ void Smooth::operator()(const Mesh &in, Mesh &out) const {
     centroids.push_back((in.vertices[(*p)[0]] + in.vertices[(*p)[1]] + in.vertices[(*p)[2]]) * (1.0 / 3.0));
     areas.push_back(area(in, *p));
   }
-  if (progress)
+  if (progress.has_value())
     ++(*progress);
 
   // Perform pre-calculation of an appropriate mesh neighbourhood for each vertex
@@ -73,7 +74,7 @@ void Smooth::operator()(const Mesh &in, Mesh &out) const {
       vert_polys_to_expand[(in.triangles[t])[i]].push_back(t);
     }
   }
-  if (progress)
+  if (progress.has_value())
     ++(*progress);
 
   // Now, we want to expand this selection outwards for each vertex
@@ -88,7 +89,7 @@ void Smooth::operator()(const Mesh &in, Mesh &out) const {
       }
     }
   }
-  if (progress)
+  if (progress.has_value())
     ++(*progress);
 
   // TODO Will want to develop a better heuristic for this
@@ -113,7 +114,7 @@ void Smooth::operator()(const Mesh &in, Mesh &out) const {
       vert_polys_to_expand[v] = std::move(next_front);
     }
   }
-  if (progress)
+  if (progress.has_value())
     ++(*progress);
 
   // Need to perform a first mollification pass, where the polygon normals are
@@ -145,7 +146,7 @@ void Smooth::operator()(const Mesh &in, Mesh &out) const {
     new_pos *= (1.0 / sum_weights);
     mollified_vertices.push_back(new_pos);
   }
-  if (progress)
+  if (progress.has_value())
     ++(*progress);
 
   // Have new vertices; compute polygon normals based on these vertices
@@ -154,7 +155,7 @@ void Smooth::operator()(const Mesh &in, Mesh &out) const {
   VertexList tangents;
   for (TriangleList::const_iterator p = mollified_mesh.triangles.begin(); p != mollified_mesh.triangles.end(); ++p)
     tangents.push_back(normal(mollified_mesh, *p));
-  if (progress)
+  if (progress.has_value())
     ++(*progress);
 
   // Now perform the actual smoothing
@@ -181,7 +182,7 @@ void Smooth::operator()(const Mesh &in, Mesh &out) const {
     new_pos *= (1.0 / sum_weights);
     out.vertices.push_back(new_pos);
   }
-  if (progress)
+  if (progress.has_value())
     ++(*progress);
 
   out.triangles = in.triangles;

@@ -744,7 +744,7 @@ concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, con
     }
     try {
       pe_scheme = Metadata::PhaseEncoding::get_scheme(result);
-      pescheme_manip = pe_scheme.has_value() ? scheme_manip_t::ABSENT : scheme_manip_t::CONCAT;
+      pescheme_manip = pe_scheme.has_value() ? scheme_manip_t::CONCAT : scheme_manip_t::ABSENT;
     } catch (Exception &) {
       pescheme_manip = scheme_manip_t::ERASE;
     }
@@ -793,10 +793,10 @@ concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, con
         throw Exception("Logic error in header key-value merge of DW scheme");
       case scheme_manip_t::CONCAT:
         if (extra_dw.has_value()) {
+          concat_scheme(dw_scheme, extra_dw);
+        } else {
           dw_scheme.reset();
           dwscheme_manip = scheme_manip_t::ERASE;
-        } else {
-          concat_scheme(dw_scheme, extra_dw);
         }
         break;
       case scheme_manip_t::ERASE:
@@ -813,10 +813,10 @@ concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, con
         throw Exception("Logic error in header key-value merge of PE scheme");
       case scheme_manip_t::CONCAT:
         if (extra_pe.has_value()) {
+          concat_scheme(pe_scheme, extra_pe);
+        } else {
           pe_scheme.reset();
           pescheme_manip = scheme_manip_t::ERASE;
-        } else {
-          concat_scheme(pe_scheme, extra_pe);
         }
         break;
       case scheme_manip_t::ERASE:

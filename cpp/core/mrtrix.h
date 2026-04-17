@@ -367,11 +367,6 @@ Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> parse_matrix(std::strin
 
 std::string join(const std::vector<std::string> &V, std::string_view delimiter);
 
-template <size_t N> inline std::string join(const std::array<std::string, N> &array, std::string_view delimiter) {
-  const auto v = std::vector<std::string>(array.begin(), array.end());
-  return join(v, delimiter);
-}
-
 template <typename T> inline std::string join(const std::vector<T> &V, std::string_view delimiter) {
   std::string ret;
   if (V.empty())
@@ -380,6 +375,11 @@ template <typename T> inline std::string join(const std::vector<T> &V, std::stri
   for (typename std::vector<T>::const_iterator i = V.begin() + 1; i != V.end(); ++i)
     ret += delimiter + str(*i);
   return ret;
+}
+
+template <typename T, size_t N> inline std::string join(const std::array<T, N> &array, std::string_view delimiter) {
+  const auto v = std::vector<T>(array.begin(), array.end());
+  return join(v, delimiter);
 }
 
 std::string join(const char *const *null_terminated_array, std::string_view delimiter); // check_syntax off

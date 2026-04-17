@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <optional>
+
 #include "algo/copy.h"
 #include "algo/loop.h"
 #include "filter/base.h"
@@ -54,7 +56,9 @@ public:
     std::shared_ptr<Image<bool>> in(new Image<bool>(Image<bool>::scratch(input)));
     copy(input, *in);
     std::shared_ptr<Image<bool>> out;
-    std::shared_ptr<ProgressBar> progress(!message.empty() ? new ProgressBar(message, npass + 1) : nullptr);
+    std::optional<ProgressBar> progress;
+    if (!message.empty())
+      progress = ProgressBar(message, npass + 1);
 
     for (unsigned int pass = 0; pass < npass; pass++) {
       out = std::make_shared<Image<bool>>(Image<bool>::scratch(input));
@@ -62,7 +66,7 @@ public:
         out->value() = dilate(*in);
       if (pass < npass - 1)
         in = out;
-      if (progress)
+      if (progress.has_value())
         ++(*progress);
     }
     copy(*out, output);

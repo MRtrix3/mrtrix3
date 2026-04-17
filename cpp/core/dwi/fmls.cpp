@@ -240,7 +240,7 @@ bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
       for (size_t peak_index = 0; peak_index != i->num_peaks(); ++peak_index) {
         Eigen::Vector3d newton_peak_dir =
             i->get_peak_dir(peak_index); // to be updated by subsequent Math::SH::get_peak() call
-        const default_type newton_peak_value = Math::SH::get_peak(in, lmax, newton_peak_dir, &(*precomputer));
+        const default_type newton_peak_value = Math::SH::get_peak(in, lmax, newton_peak_dir, precomputer.get());
         if (std::isfinite(newton_peak_value) && newton_peak_dir.allFinite()) {
 
           // Ensure that the new peak direction found via Newton optimisation

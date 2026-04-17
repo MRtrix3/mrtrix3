@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <optional>
+
 #include "dwi/tractography/tracking/method.h"
 #include "dwi/tractography/tracking/shared.h"
 #include "dwi/tractography/tracking/tractography.h"
@@ -55,17 +57,14 @@ public:
       bool precomputed = true;
       properties.set(precomputed, "sh_precomputed");
       if (precomputed)
-        precomputer = new Math::SH::PrecomputedAL<float>(lmax);
+        precomputer.emplace(lmax);
     }
 
-    ~Shared() {
-      if (precomputer)
-        delete precomputer;
-    }
+    ~Shared() {}
 
     float dot_threshold;
     size_t lmax;
-    Math::SH::PrecomputedAL<float> *precomputer;
+    std::optional<Math::SH::PrecomputedAL<float>> precomputer;
   };
 
   SDStream(const Shared &shared) : MethodBase(shared), S(shared), source(S.source) {}
@@ -118,14 +117,14 @@ protected:
   Interpolator<Image<float>>::type source;
 
   float find_peak() {
-    float FOD = Math::SH::get_peak(values, S.lmax, dir, S.precomputer);
+    float FOD = Math::SH::get_peak(values, S.lmax, dir, S.precomputer.has_value() ? &(*S.precomputer) : nullptr);
     if (!std::isfinite(FOD) || FOD < S.threshold)
       FOD = 0.0;
     return FOD;
   }
 
   float FOD(const Eigen::Vector3f &d) const {
-    return (S.precomputer ? S.precomputer->value(values, d) : Math::SH::value(values, d, S.lmax));
+    return (S.precomputer.has_value() ? S.precomputer->value(values, d) : Math::SH::value(values, d, S.lmax));
   }
 };
 

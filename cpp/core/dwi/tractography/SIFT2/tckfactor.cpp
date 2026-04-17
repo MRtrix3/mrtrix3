@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <optional>
 #include <vector>
 
 #include "header.h"
@@ -213,10 +214,9 @@ void TckFactor::estimate_factors() {
       ++total_excluded;
   }
 
-  std::unique_ptr<std::ofstream> csv_out;
+  std::optional<std::ofstream> csv_out;
   if (!csv_path.empty()) {
-    csv_out.reset(new std::ofstream());
-    csv_out->open(csv_path.c_str(), std::ios_base::trunc);
+    csv_out.emplace(csv_path.c_str(), std::ios_base::trunc);
     (*csv_out)
         << "Iteration,Cost_data,Cost_reg_tik,Cost_reg_tv,Cost_reg,Cost_total,Streamlines,Fixels_excluded,Step_min,Step_"
            "mean,Step_mean_abs,Step_var,Step_max,Coeff_min,Coeff_mean,Coeff_mean_abs,Coeff_var,Coeff_max,Coeff_norm,\n";
@@ -301,7 +301,7 @@ void TckFactor::estimate_factors() {
 
     new_cf = cf_data + cf_reg;
 
-    if (!csv_path.empty()) {
+    if (csv_out.has_value()) {
       (*csv_out) << str(iter) << "," << str(cf_data) << "," << str(cf_reg_tik) << "," << str(cf_reg_tv) << ","
                  << str(cf_reg) << "," << str(new_cf) << "," << str(nonzero_streamlines) << "," << str(total_excluded)
                  << "," << str(step_stats.get_min()) << "," << str(step_stats.get_mean()) << ","

@@ -141,7 +141,7 @@ Shuffler::Shuffler(const index_type num_rows, const bool is_nonstationarity, std
   }
 
   opt = get_options("exchange_within");
-  index_array_type eb_within;
+  std::optional<index_array_type> eb_within;
   if (!opt.empty()) {
     try {
       eb_within = load_blocks(std::string(opt[0][0]), false);
@@ -151,9 +151,9 @@ Shuffler::Shuffler(const index_type num_rows, const bool is_nonstationarity, std
   }
 
   opt = get_options("exchange_whole");
-  index_array_type eb_whole;
+  std::optional<index_array_type> eb_whole;
   if (!opt.empty()) {
-    if (eb_within.size())
+    if (eb_within.has_value())
       throw Exception("Cannot specify both \"within\" and \"whole\" exchangeability block data");
     try {
       eb_whole = load_blocks(std::string(opt[0][0]), true);
@@ -165,7 +165,7 @@ Shuffler::Shuffler(const index_type num_rows, const bool is_nonstationarity, std
   initialise(error_types, nshuffles_explicit, is_nonstationarity, eb_within, eb_whole);
 
   if (!msg.empty())
-    progress.reset(new ProgressBar(msg, nshuffles));
+    progress.emplace(msg, nshuffles);
 }
 
 Shuffler::Shuffler(const index_type num_rows,
@@ -185,14 +185,14 @@ Shuffler::Shuffler(const index_type num_rows,
     : rows(num_rows), nshuffles(num_shuffles) {
   initialise(error_types, true, is_nonstationarity, eb_within, eb_whole);
   if (!msg.empty())
-    progress.reset(new ProgressBar(msg, nshuffles));
+    progress.emplace(msg, nshuffles);
 }
 
 bool Shuffler::operator()(Shuffle &output) {
   output.index = counter;
   if (counter >= nshuffles) {
-    if (progress)
-      progress.reset(nullptr);
+    if (progress.has_value())
+      progress.reset();
     output.data.resize(0, 0);
     return false;
   }
@@ -214,7 +214,7 @@ bool Shuffler::operator()(Shuffle &output) {
     }
   }
   ++counter;
-  if (progress)
+  if (progress.has_value())
     ++(*progress);
   return true;
 }
