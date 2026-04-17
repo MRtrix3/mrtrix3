@@ -201,14 +201,18 @@ public:
           gen_track_unidir(front_track);
 
           if (front_track.size() > 1) {
-            if (S.downsampler.get_ratio() > 1 || (S.is_act() && S.act().crop_at_gmwmi())) {
-              S.downsampler(front_track);
-              check_downsampled_length(front_track);
+            if (track_excluded) {
+              front_track.set_status(GeneratedTrack::status_t::TRACK_REJECTED);
+            } else {
+              if (S.downsampler.get_ratio() > 1 || (S.is_act() && S.act().crop_at_gmwmi())) {
+                S.downsampler(front_track);
+              }
+              front_track.set_status(GeneratedTrack::status_t::ACCEPTED);
             }
             if (front_track.get_status() == GeneratedTrack::status_t::ACCEPTED) {
               Streamline<> final_track;
               final_track.reserve(front_track.size() + streamline_out.size());
-              final_track.insert(final_track.end(), front_track.rbegin(), front_track.rend());
+              final_track.insert(final_track.end(), front_track.rbegin(), front_track.rend() - 1);
               final_track.insert(final_track.end(), streamline_out.begin(), streamline_out.end());
               streamline_out = std::move(final_track);
             }
@@ -231,12 +235,16 @@ public:
           gen_track_unidir(back_track);
 
           if (back_track.size() > 1) {
-            if (S.downsampler.get_ratio() > 1 || (S.is_act() && S.act().crop_at_gmwmi())) {
-              S.downsampler(back_track);
-              check_downsampled_length(back_track);
+            if (track_excluded) {
+              back_track.set_status(GeneratedTrack::status_t::TRACK_REJECTED);
+            } else {
+              if (S.downsampler.get_ratio() > 1 || (S.is_act() && S.act().crop_at_gmwmi())) {
+                S.downsampler(back_track);
+              }
+              back_track.set_status(GeneratedTrack::status_t::ACCEPTED);
             }
             if (back_track.get_status() == GeneratedTrack::status_t::ACCEPTED) {
-              streamline_out.insert(streamline_out.end(), back_track.begin(), back_track.end());
+              streamline_out.insert(streamline_out.end(), back_track.begin() + 1, back_track.end());
             }
           }
         }
