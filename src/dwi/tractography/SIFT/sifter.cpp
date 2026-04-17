@@ -131,7 +131,9 @@ namespace MR
           // Trying a heuristic for now; go for a sort size of 1000 following initial sort, assuming half of all
           //   remaining streamlines have a negative gradient
 
-          const track_t sort_size = std::min (std::ceil(num_tracks() / double(Thread::number_of_threads())), std::round (2000.0 * double(num_tracks()) / double(tracks_remaining)));
+          track_t sort_size = std::round (2000.0 * double(num_tracks()) / double(tracks_remaining));
+          if (Thread::number_of_threads() != 0)
+            sort_size = std::min(sort_size, track_t(std::ceil(num_tracks() / double(Thread::number_of_threads()))));
           MT_gradient_vector_sorter sorter (gradient_vector, sort_size);
 
           // Remove candidate streamlines one at a time, and correspondingly modify the fixels to which they were attributed
