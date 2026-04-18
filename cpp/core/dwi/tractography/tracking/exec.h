@@ -427,13 +427,15 @@ private:
 
   void truncate_exit_sgm(std::vector<Eigen::Vector3f> &tck) {
     switch (S.act().sgm_trunc()) {
+    case ACT::sgm_trunc_t::DEFAULT:
+      throw Exception("FIXME: Algorithm failed to set default SGM truncation method");
     case ACT::sgm_trunc_t::ENTRY:
       tck.resize(tck.size() - method.act().sgm_depth);
       return;
     case ACT::sgm_trunc_t::EXIT:
       // Do nothing
       return;
-    case ACT::sgm_trunc_enum::MINIMUM: {
+    case ACT::sgm_trunc_t::MINIMUM: {
       const size_t sgm_start = tck.size() - method.act().sgm_depth;
       assert(sgm_start >= 0 && sgm_start < tck.size());
       size_t best_termination = tck.size() - 1;

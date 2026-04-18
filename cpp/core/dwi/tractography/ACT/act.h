@@ -32,7 +32,7 @@ class Properties;
 
 namespace MR::DWI::Tractography::ACT {
 
-enum class sgm_trunc_t { ENTRY, EXIT, MINIMUM, RANDOM, ROULETTE };
+enum class sgm_trunc_t { DEFAULT, ENTRY, EXIT, MINIMUM, RANDOM, ROULETTE };
 
 // If the sum of tissue probabilities is below this threshold, the image is being exited, so a boolean flag is thrown
 // The values will however still be accessible
