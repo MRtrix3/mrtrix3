@@ -60,7 +60,7 @@ void load_act_properties(Properties &properties) {
     if (!opt.empty())
       properties["crop_at_gmwmi"] = "1";
     opt = get_options("sgm_truncation");
-    if (opt.size())
+    if (!opt.empty())
       properties["sgm_truncation"] = std::string(opt[0][0]);
 
   } else {
@@ -69,7 +69,7 @@ void load_act_properties(Properties &properties) {
       WARN("ignoring -backtrack option: only valid if using ACT");
     if (!get_options("crop_at_gmwmi").empty())
       WARN("ignoring -crop_at_gmwmi option: only valid if using ACT");
-    if (get_options("sgm_truncation").size())
+    if (!get_options("sgm_truncation").empty())
       WARN("ignoring -sgm_truncation option: only valid if using ACT");
   }
 }

@@ -478,7 +478,8 @@ private:
         const default_type sample = method.uniform(rng) * total_sum;
         default_type cumulative_sum = 0.0;
         for (auto vertex = vertices.begin(); vertex != vertices.end(); ++vertex) {
-          if ((cumulative_sum += vertex->value()) > sample) {
+          cumulative_sum += vertex->value();
+          if (cumulative_sum > sample) {
             total_sum -= vertex->value();
             vertices.erase(vertex);
             break;
