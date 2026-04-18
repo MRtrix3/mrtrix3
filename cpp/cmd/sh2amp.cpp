@@ -177,7 +177,7 @@ void run() {
     auto transform = Math::SH::init_transform(directions, lmax);
 
     SH2Amp sh2amp(transform, nonnegative);
-    ThreadedLoop("computing amplitudes", sh_data, 0, 3, 2).run(sh2amp, sh_data, amp_data);
+    ThreadedLoop("computing amplitudes", sh_data, 0, 3).run(sh2amp, sh_data, amp_data);
 
   } else { // full gradient scheme:
 

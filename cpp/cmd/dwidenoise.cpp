@@ -299,7 +299,7 @@ void process_image(Header &data,
   auto output = Image<T>::create(output_name, header);
   // run
   DenoisingFunctor<T> func(data.size(3), extent, mask, noise, rank, exp1);
-  ThreadedLoop("running MP-PCA denoising", data, 0, 3).run(func, input, output);
+  ThreadedLoop("running MP-PCA denoising", data, 0, 3, 1).run(func, input, output);
 }
 
 void run() {

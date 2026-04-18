@@ -145,7 +145,7 @@ public:
   //       DEBUG ("stochastic gradient descent, density: " + str(params.loop_density));
   //       Math::RNG rng;
   //       gradient.setZero();
-  //       auto loop = ThreadedLoop (params.midway_image, 0, 3, 2);
+  //       auto loop = ThreadedLoop (params.midway_image, 0, 3);
   //       if (overlap_count)
   //         *overlap_count = 0;
   //       StochasticThreadKernel <MetricType, ParamType> functor (loop.inner_axes, params.loop_density, metric, params,
@@ -216,7 +216,7 @@ public:
       DEBUG("stochastic gradient descent, density: " + str(params.loop_density));
       Math::RNG rng;
       gradient.setZero();
-      auto loop = ThreadedLoop(params.midway_image, 0, 3, 2);
+      auto loop = ThreadedLoop(params.midway_image, 0, 3);
       overlap_count = 0;
       StochasticThreadKernel<MetricType, ParamType> functor(
           loop.inner_axes, params.loop_density, metric, params, overall_cost_function, gradient, rng, &overlap_count);

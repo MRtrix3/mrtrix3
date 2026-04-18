@@ -16,12 +16,14 @@
 
 #pragma once
 
+#include <optional>
+#include <tuple>
+
 #include "algo/iterator.h"
 #include "algo/loop.h"
 #include "debug.h"
 #include "mutexprotected.h"
 #include "thread.h"
-#include <tuple>
 
 namespace MR {
 
@@ -241,10 +243,12 @@ namespace MR {
 namespace {
 
 inline std::vector<size_t> get_inner_axes(const std::vector<size_t> &axes, size_t num_inner_axes) {
+  assert(num_inner_axes <= axes.size());
   return {axes.begin(), axes.begin() + num_inner_axes};
 }
 
 inline std::vector<size_t> get_outer_axes(const std::vector<size_t> &axes, size_t num_inner_axes) {
+  assert(num_inner_axes <= axes.size());
   return {axes.begin() + num_inner_axes, axes.end()};
 }
 
@@ -386,9 +390,14 @@ ThreadedLoop(const HeaderType &source, const std::vector<size_t> &outer_axes, co
 //! Multi-threaded loop object
 //* \sa image_thread_looping for details */
 template <class HeaderType>
-inline ThreadedLoopRunOuter<decltype(Loop(std::vector<size_t>()))>
-ThreadedLoop(const HeaderType &source, const std::vector<size_t> &axes, size_t num_inner_axes = 1) {
-  return {source, Loop(get_outer_axes(axes, num_inner_axes)), get_inner_axes(axes, num_inner_axes)};
+inline ThreadedLoopRunOuter<decltype(Loop(std::vector<size_t>()))> ThreadedLoop(
+    const HeaderType &source, const std::vector<size_t> &axes, std::optional<size_t> num_inner_axes = std::nullopt) {
+  if (num_inner_axes.has_value()) {
+    assert(num_inner_axes.value() <= axes.size());
+  } else {
+    num_inner_axes = axes.size() > 2 ? 2 : 1;
+  }
+  return {source, Loop(get_outer_axes(axes, num_inner_axes.value())), get_inner_axes(axes, num_inner_axes.value())};
 }
 
 //! Multi-threaded loop object
@@ -398,10 +407,16 @@ inline ThreadedLoopRunOuter<decltype(Loop(std::vector<size_t>()))>
 ThreadedLoop(const HeaderType &source,
              size_t from_axis = 0,
              size_t to_axis = std::numeric_limits<size_t>::max(),
-             size_t num_inner_axes = 1) {
+             std::optional<size_t> num_inner_axes = std::nullopt) {
+  const size_t num_axes = (to_axis == std::numeric_limits<size_t>::max() ? source.ndim() : to_axis) - from_axis;
+  if (num_inner_axes.has_value()) {
+    assert(num_inner_axes.value() <= num_axes);
+  } else {
+    num_inner_axes = num_axes > 2 ? 2 : 1;
+  }
   return {source,
-          Loop(get_outer_axes(source, num_inner_axes, from_axis, to_axis)),
-          get_inner_axes(source, num_inner_axes, from_axis, to_axis)};
+          Loop(get_outer_axes(source, num_inner_axes.value(), from_axis, to_axis)),
+          get_inner_axes(source, num_inner_axes.value(), from_axis, to_axis)};
 }
 
 //! Multi-threaded loop object
@@ -418,11 +433,19 @@ ThreadedLoop(std::string_view progress_message,
 //! Multi-threaded loop object
 //* \sa image_thread_looping for details */
 template <class HeaderType>
-inline ThreadedLoopRunOuter<decltype(Loop("", std::vector<size_t>()))> ThreadedLoop(std::string_view progress_message,
-                                                                                    const HeaderType &source,
-                                                                                    const std::vector<size_t> &axes,
-                                                                                    size_t num_inner_axes = 1) {
-  return {source, Loop(progress_message, get_outer_axes(axes, num_inner_axes)), get_inner_axes(axes, num_inner_axes)};
+inline ThreadedLoopRunOuter<decltype(Loop("", std::vector<size_t>()))>
+ThreadedLoop(std::string_view progress_message,
+             const HeaderType &source,
+             const std::vector<size_t> &axes,
+             std::optional<size_t> num_inner_axes = std::nullopt) {
+  if (num_inner_axes.has_value()) {
+    assert(num_inner_axes.value() <= axes.size());
+  } else {
+    num_inner_axes = axes.size() > 2 ? 2 : 1;
+  }
+  return {source,
+          Loop(progress_message, get_outer_axes(axes, num_inner_axes.value())),
+          get_inner_axes(axes, num_inner_axes.value())};
 }
 
 //! Multi-threaded loop object
@@ -433,10 +456,16 @@ ThreadedLoop(std::string_view progress_message,
              const HeaderType &source,
              size_t from_axis = 0,
              size_t to_axis = std::numeric_limits<size_t>::max(),
-             size_t num_inner_axes = 1) {
+             std::optional<size_t> num_inner_axes = std::nullopt) {
+  const size_t num_axes = (to_axis == std::numeric_limits<size_t>::max() ? source.ndim() : to_axis) - from_axis;
+  if (num_inner_axes.has_value()) {
+    assert(num_inner_axes.value() <= num_axes);
+  } else {
+    num_inner_axes = num_axes > 2 ? 2 : 1;
+  }
   return {source,
-          Loop(progress_message, get_outer_axes(source, num_inner_axes, from_axis, to_axis)),
-          get_inner_axes(source, num_inner_axes, from_axis, to_axis)};
+          Loop(progress_message, get_outer_axes(source, num_inner_axes.value(), from_axis, to_axis)),
+          get_inner_axes(source, num_inner_axes.value(), from_axis, to_axis)};
 }
 
 } // namespace MR

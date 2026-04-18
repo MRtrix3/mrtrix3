@@ -317,5 +317,5 @@ void run() {
     w_img = map_hdr.get_image<value_type>();
 
   if (w_img.valid() || needtolum || needtoslice)
-    ThreadedLoop("(re)weighting", out_img, 0, 3, 2).run(DecWeighter(coefs, gamma, w_img), out_img);
+    ThreadedLoop("(re)weighting", out_img, 0, 3).run(DecWeighter(coefs, gamma, w_img), out_img);
 }

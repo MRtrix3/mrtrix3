@@ -283,10 +283,9 @@ void get_centre_of_mass(Image<default_type> &im,
   centre_of_mass.setZero();
   default_type mass(0.0);
 
-  ThreadedLoop(im, 0, 3, 2)
-      .run(WeightedMassFunctor<Image<default_type>, Image<default_type>>(
-               im, mask, mass, centre_of_mass, contrast_settings),
-           im);
+  ThreadedLoop(im, 0, 3).run(
+      WeightedMassFunctor<Image<default_type>, Image<default_type>>(im, mask, mass, centre_of_mass, contrast_settings),
+      im);
 
   if (mass == 0.0)
     throw Exception("centre of mass initialisation not possible for empty image");
@@ -509,7 +508,7 @@ bool MomentsInitialiser::calculate_eigenvectors(Image<default_type> &image_1,
   Eigen::VectorXd m = Eigen::VectorXd::Zero(4);  // m000, m100, m010, m001
   Eigen::VectorXd mu = Eigen::VectorXd::Zero(6); // mu110, mu011, mu101, mu200, mu020, mu002
   get_geometric_centre(image_1, im1_centre);
-  ThreadedLoop(image_1, 0, 3, 2)
+  ThreadedLoop(image_1, 0, 3)
       .run(WeightedMomentsFunctor<Image<default_type>, Image<default_type>>(
                image_1, mask_1, im1_centre, m, mu, contrast_settings),
            image_1);
@@ -527,7 +526,7 @@ bool MomentsInitialiser::calculate_eigenvectors(Image<default_type> &image_1,
   get_geometric_centre(image_2, im2_centre);
   m.setZero();
   mu.setZero();
-  ThreadedLoop(image_2, 0, 3, 2)
+  ThreadedLoop(image_2, 0, 3)
       .run(WeightedMomentsFunctor<Image<default_type>, Image<default_type>>(
                image_2, mask_2, im2_centre, m, mu, contrast_settings),
            image_2);

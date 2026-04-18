@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <optional>
+
 #include "algo/threaded_loop.h"
 
 namespace MR {
@@ -38,7 +40,7 @@ template <class InputImageType, class OutputImageType>
 inline void threaded_copy(InputImageType &source,
                           OutputImageType &destination,
                           const std::vector<size_t> &axes,
-                          size_t num_axes_in_thread = 1) {
+                          std::optional<size_t> num_axes_in_thread = std::nullopt) {
   ThreadedLoop(source, axes, num_axes_in_thread).run(__copy_func(), source, destination);
 }
 
@@ -47,7 +49,7 @@ inline void threaded_copy(InputImageType &source,
                           OutputImageType &destination,
                           size_t from_axis = 0,
                           size_t to_axis = std::numeric_limits<size_t>::max(),
-                          size_t num_axes_in_thread = 1) {
+                          std::optional<size_t> num_axes_in_thread = std::nullopt) {
   ThreadedLoop(source, from_axis, to_axis, num_axes_in_thread).run(__copy_func(), source, destination);
 }
 
@@ -56,7 +58,7 @@ inline void threaded_copy_with_progress_message(std::string_view message,
                                                 InputImageType &source,
                                                 OutputImageType &destination,
                                                 const std::vector<size_t> &axes,
-                                                size_t num_axes_in_thread = 1) {
+                                                std::optional<size_t> num_axes_in_thread = std::nullopt) {
   ThreadedLoop(message, source, axes, num_axes_in_thread).run(__copy_func(), source, destination);
 }
 
@@ -66,7 +68,7 @@ inline void threaded_copy_with_progress_message(std::string_view message,
                                                 OutputImageType &destination,
                                                 size_t from_axis = 0,
                                                 size_t to_axis = std::numeric_limits<size_t>::max(),
-                                                size_t num_axes_in_thread = 1) {
+                                                std::optional<size_t> num_axes_in_thread = std::nullopt) {
   ThreadedLoop(message, source, from_axis, to_axis, num_axes_in_thread).run(__copy_func(), source, destination);
 }
 
@@ -74,7 +76,7 @@ template <class InputImageType, class OutputImageType>
 inline void threaded_copy_with_progress(InputImageType &source,
                                         OutputImageType &destination,
                                         const std::vector<size_t> &axes,
-                                        size_t num_axes_in_thread = 1) {
+                                        std::optional<size_t> num_axes_in_thread = std::nullopt) {
   threaded_copy_with_progress_message("copying from \"" + shorten(source.name()) + "\" to \"" +
                                           shorten(destination.name()) + "\"",
                                       source,
@@ -88,7 +90,7 @@ inline void threaded_copy_with_progress(InputImageType &source,
                                         OutputImageType &destination,
                                         size_t from_axis = 0,
                                         size_t to_axis = std::numeric_limits<size_t>::max(),
-                                        size_t num_axes_in_thread = 1) {
+                                        std::optional<size_t> num_axes_in_thread = std::nullopt) {
   threaded_copy_with_progress_message("copying from \"" + shorten(source.name()) + "\" to \"" +
                                           shorten(destination.name()) + "\"",
                                       source,

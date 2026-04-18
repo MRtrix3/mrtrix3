@@ -213,7 +213,7 @@ public:
 
       // apply unringing operation on desired axis:
       INFO("performing unringing along axis " + str(axis) + "...");
-      ThreadedLoop(vol_filtered, strides_for_axis(axis))
+      ThreadedLoop(vol_filtered, strides_for_axis(axis), 1)
           .run_outer(LineProcessor<VolumeOut>(axis, vol_filtered, output, minW, maxW, num_shifts));
 
       ++progress;

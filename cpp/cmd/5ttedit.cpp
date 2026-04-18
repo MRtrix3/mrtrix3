@@ -246,5 +246,5 @@ void run() {
   if (!opt.empty())
     modifier.set_none_mask(opt[0][0]);
 
-  ThreadedLoop("Modifying ACT 5TT image", in, 0, 3, 2).run(modifier);
+  ThreadedLoop("Modifying ACT 5TT image", in, 0, 3).run(modifier);
 }
