@@ -95,7 +95,9 @@ run_checks() {
 # remove any duplicate spaces:
   perl -pe 's|\s+| |g' | \
 # remove C-style comments:
-  perl -pe 's|/\*.*?\*/||g' > .check_syntax3.tmp
+  perl -pe 's|/\*.*?\*/||g' | \
+# split diff hunks across lines
+  perl -pe 's|\s?\@\@\@HUNK_BREAK\@\@\@\s?|\n|g' > .check_syntax3.tmp
 
 # detect any instances of %zu in a print() call (not supported on MSYS2):
   res="$res"$(
