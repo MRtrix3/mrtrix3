@@ -123,7 +123,7 @@ public:
                     const std::optional<Statistic> statistic,
                     const Image<value_type> &precalc_tdi)
       : interp(image),
-        mapper(precalc_tdi.valid() ? new DWI::Tractography::Mapping::TrackMapperBase(image) : nullptr),
+        mapper(precalc_tdi.valid() ? std::make_shared<DWI::Tractography::Mapping::TrackMapperBase>(image) : nullptr),
         tdi(precalc_tdi),
         statistic(statistic) {
     if (mapper)
@@ -217,7 +217,7 @@ class SamplerPrecise {
 public:
   SamplerPrecise(Image<value_type> &image, const Statistic statistic, const Image<value_type> &precalc_tdi)
       : image(image),
-        mapper(new DWI::Tractography::Mapping::TrackMapperBase(image)),
+        mapper(std::make_shared<DWI::Tractography::Mapping::TrackMapperBase>(image)),
         tdi(precalc_tdi),
         statistic(statistic) {
     mapper->set_use_precise_mapping(true);
@@ -353,9 +353,9 @@ public:
   Receiver_NoStatistic(std::string_view path, const size_t num_tracks, const DWI::Tractography::Properties &properties)
       : ReceiverBase(num_tracks) {
     if (Path::has_suffix(path, ".tsf")) {
-      tsf.reset(new DWI::Tractography::ScalarWriter<value_type>(path, properties));
+      tsf = std::make_unique<DWI::Tractography::ScalarWriter<value_type>>(path, properties);
     } else {
-      ascii.reset(new File::OFStream(path));
+      ascii = std::make_unique<File::OFStream>(path);
       (*ascii) << "# " << App::command_history_string << "\n";
     }
   }

@@ -45,8 +45,7 @@ std::unique_ptr<ImageIO::Base> Pipe::read(Header &H) const {
     throw Exception("MRtrix only supports the .mif format for command-line piping");
 
   std::unique_ptr<ImageIO::Base> original_handler(mrtrix_handler.read(H));
-  std::unique_ptr<ImageIO::Pipe> io_handler(new ImageIO::Pipe(std::move(*original_handler)));
-  return io_handler;
+  return std::make_unique<ImageIO::Pipe>(std::move(*original_handler));
 }
 
 bool Pipe::check(Header &H, size_t num_axes) const {
@@ -66,8 +65,7 @@ bool Pipe::check(Header &H, size_t num_axes) const {
 
 std::unique_ptr<ImageIO::Base> Pipe::create(Header &H) const {
   std::unique_ptr<ImageIO::Base> original_handler(mrtrix_handler.create(H));
-  std::unique_ptr<ImageIO::Pipe> io_handler(new ImageIO::Pipe(std::move(*original_handler)));
-  return io_handler;
+  return std::make_unique<ImageIO::Pipe>(std::move(*original_handler));
 }
 
 } // namespace MR::Formats

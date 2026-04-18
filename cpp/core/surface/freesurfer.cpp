@@ -53,11 +53,11 @@ void read_annot(std::string_view path, label_vector_type &labels, Connectome::LU
   if (num_entries > 0) {
 
     const int32_t orig_lut_name_length = get_BE<int32_t>(in);
-    std::unique_ptr<char[]> orig_lut_name(new char[orig_lut_name_length]);
+    auto orig_lut_name = std::make_unique<char[]>(orig_lut_name_length);
     in.read(orig_lut_name.get(), orig_lut_name_length);
     for (int32_t i = 0; i != num_entries; ++i) {
       const int32_t struct_name_length = get_BE<int32_t>(in);
-      std::unique_ptr<char[]> struct_name(new char[struct_name_length]);
+      auto struct_name = std::make_unique<char[]>(struct_name_length);
       in.read(struct_name.get(), struct_name_length);
       const int32_t r = get_BE<int32_t>(in);
       const int32_t g = get_BE<int32_t>(in);
@@ -77,7 +77,7 @@ void read_annot(std::string_view path, label_vector_type &labels, Connectome::LU
 
     num_entries = get_BE<int32_t>(in);
     const int32_t orig_lut_name_length = get_BE<int32_t>(in);
-    std::unique_ptr<char[]> orig_lut_name(new char[orig_lut_name_length]);
+    auto orig_lut_name = std::make_unique<char[]>(orig_lut_name_length);
     in.read(orig_lut_name.get(), orig_lut_name_length);
 
     const int32_t num_entries_to_read = get_BE<int32_t>(in);
@@ -90,7 +90,7 @@ void read_annot(std::string_view path, label_vector_type &labels, Connectome::LU
         throw Exception("Error reading FreeSurfer annotation file \"" + Path::basename(path) +
                         "\": Duplicate structure index");
       const int32_t struct_name_length = get_BE<int32_t>(in);
-      std::unique_ptr<char[]> struct_name(new char[struct_name_length]);
+      auto struct_name = std::make_unique<char[]>(struct_name_length);
       in.read(struct_name.get(), struct_name_length);
       const int32_t r = get_BE<int32_t>(in);
       const int32_t g = get_BE<int32_t>(in);

@@ -54,7 +54,7 @@ public:
         map_zero(false),
         precise(false),
         ends_only(false),
-        dixel_plugin(new DixelMappingPlugin(dirs)),
+        dixel_plugin(std::make_shared<DixelMappingPlugin>(dirs)),
         upsampler(1) {}
 
   TrackMapperBase(const TrackMapperBase &) = default;
@@ -77,12 +77,12 @@ public:
 
   void create_dixel_plugin(const DWI::Directions::FastLookupSet &dirs) {
     assert(!dixel_plugin && !tod_plugin);
-    dixel_plugin.reset(new DixelMappingPlugin(dirs));
+    dixel_plugin = std::make_shared<DixelMappingPlugin>(dirs);
   }
 
   void create_tod_plugin(const size_t N) {
     assert(!dixel_plugin && !tod_plugin);
-    tod_plugin.reset(new TODMappingPlugin(N));
+    tod_plugin = std::make_shared<TODMappingPlugin>(N);
   }
 
   template <class Cont> bool operator()(const Streamline<> &in, Cont &out) const {
@@ -311,7 +311,7 @@ public:
         track_statistic(that.track_statistic),
         vector_data(that.vector_data) {
     if (that.image_plugin)
-      image_plugin.reset(that.image_plugin->clone());
+      image_plugin = that.image_plugin->clone();
   }
 
   void add_scalar_image(std::string_view);

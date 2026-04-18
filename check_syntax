@@ -140,7 +140,7 @@ for f in $(find cpp -type f -name '*.h' -o -name '*.cpp' | $grep -v '_moc.cpp' |
     $grep -Po '\busing\snamespace\sstd\s?;'
   )
 
-# Check for any instances of "if (!X.rows())" or "if (X.rows() == 0)"
+# - Check for any instances of "if (!X.rows())" or "if (X.rows() == 0)"
 #   (or ".cols()" / ".size()" instead of ".rows()");
 #   this could be where std::optional would be appropriate
   res="$res"$(
@@ -148,19 +148,33 @@ for f in $(find cpp -type f -name '*.h' -o -name '*.cpp' | $grep -v '_moc.cpp' |
     $grep -Po 'if\s*\((\!\w+(\(\))?((\-\>|\.)\w+(\(\))?)+\.(rows|cols|size)\(\)|\w+(\(\))?((\-\>|\.)\w+(\(\))?)+\.(rows|cols|size)\(\)\s*==\s*0\))'
   )
 
-# Detect any instances of C-style casts
+# - Detect any instances of C-style casts
   res="$res"$(
     cat .check_syntax4.tmp | \
     $grep -Po '(\((?!void\))[a-zA-Z][a-zA-Z0-9_]*\)[a-zA-Z][a-zA-Z0-9_]*|\([a-zA-Z][a-zA-Z0-9_]*\s?\*(\s?const)?\)[a-zA-Z][a-zA-Z0-9_]*|(?<!\bstd::function<)\b(GLint|GLfloat|c?float|c?double|(default|value|index)_type|[^\w_](unsigned\s+)?int|u?int(8|16|32|64)_t|s?size_t|ValueType|(?<!Scalar)::Scalar)\(\(*\**(?![\d\.]*\)))'
   )
 
-# Detect any instances of macros NULL (nullptr is better), NAN, INFINITY
+# - Detect any instances of macros NULL (nullptr is better), NAN, INFINITY
   res="$res"$(
     cat .check_syntax4.tmp | \
     $grep -Po '\b(NAN|INFINITY|NULL)\b'
   )
 
-# detect any instances of std::abs() or non-disambiguated abs() (outside of the SFINAE call in core/types.h):
+# - Detect usage of C-style "new" allocation or "delete" deallocation
+#   Only applies to cpp/cmd/ and cpp/core/;
+#   the Qt code relies heavily on naked pointers
+  if [[ ! "$f" == "cpp/gui/"* ]]; then
+    res="$res"$(
+      cat .check_syntax4.tmp | \
+      $grep -Po '(return\s+|\w+([\(\[][\d\w]*[\)\]])?\s*=\s*|\w+([\(\[][\d\w]*[\)\]])?\.reset\s*\(|\w+\(\s*|\w+<\w+\[\]>\s?\(\s?)new\s+\w+(\(|\[)?'
+    )
+    res="$res"$(
+      cat .check_syntax4.tmp | \
+      $grep -Po '(?<!=)\s*\bdelete\b\s?(\[\]|)\s*\w+[^;];'
+    )
+  fi
+
+# - Detect any instances of std::abs() or non-disambiguated abs() (outside of the SFINAE call in core/types.h):
   if [[ ! "$f" -ef "cpp/core/types.h" ]]; then
     res="$res"$(
       cat .check_syntax4.tmp | \

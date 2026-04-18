@@ -154,7 +154,7 @@ public:
   ScalarWriter(std::string_view file, const Properties &properties)
       : __WriterBase__<T>(file),
         buffer_capacity(File::Config::get_int("TrackWriterBufferSize", 16777216) / sizeof(value_type)),
-        buffer(new value_type[buffer_capacity + 1]),
+        buffer(std::make_unique<value_type[]>(buffer_capacity + 1)),
         buffer_size(0) {
     File::OFStream out;
     try {

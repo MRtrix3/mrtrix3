@@ -228,9 +228,8 @@ std::unique_ptr<ImageIO::Base> MRI::read(Header &H) const {
   if (!data_offset)
     throw Exception("no data field found in MRI image \"" + H.name() + "\"");
 
-  std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));
-  io_handler->files.push_back(File::Entry(H.name(), data_offset));
-
+  auto io_handler = std::make_unique<ImageIO::Default>(H);
+  io_handler->files.emplace_back(File::Entry(H.name(), data_offset));
   return io_handler;
 }
 
@@ -313,10 +312,9 @@ std::unique_ptr<ImageIO::Base> MRI::create(Header &H) const {
   size_t data_offset = static_cast<size_t>(out.tellp());
   out.close();
 
-  std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));
+  auto io_handler = std::make_unique<ImageIO::Default>(H);
   File::resize(H.name(), data_offset + footprint(H));
-  io_handler->files.push_back(File::Entry(H.name(), data_offset));
-
+  io_handler->files.emplace_back(File::Entry(H.name(), data_offset));
   return io_handler;
 }
 

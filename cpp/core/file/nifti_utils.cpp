@@ -659,8 +659,8 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> read(Header &H) {
   try {
     File::MMap fmap{MR::File::Entry(header_path)};
     const size_t data_offset = fetch(H, *((const nifti_header *)fmap.address()));
-    std::unique_ptr<ImageIO::Default> handler(new ImageIO::Default(H));
-    handler->files.push_back(File::Entry(H.name(), (single_file ? data_offset : 0)));
+    auto handler = std::make_unique<ImageIO::Default>(H);
+    handler->files.emplace_back(File::Entry(H.name(), (single_file ? data_offset : 0)));
     return handler;
   } catch (Exception &e) {
     e.display();
@@ -681,10 +681,10 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> read_gz(Header &H) {
 
   try {
     const size_t data_offset = fetch(H, NH);
-    std::unique_ptr<ImageIO::GZ> io_handler(new ImageIO::GZ(H, data_offset));
+    auto io_handler = std::make_unique<ImageIO::GZ>(H, data_offset);
     memcpy(io_handler.get()->header(), &NH, sizeof(NH));
     memset(io_handler.get()->header() + sizeof(NH), 0, sizeof(nifti1_extender));
-    io_handler->files.push_back(File::Entry(H.name(), data_offset));
+    io_handler->files.emplace_back(File::Entry(H.name(), data_offset));
     return io_handler;
   } catch (...) {
     return std::unique_ptr<ImageIO::Base>();
@@ -717,8 +717,8 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> create(Header &H) {
   else
     File::create(H.name(), footprint(H));
 
-  std::unique_ptr<ImageIO::Default> handler(new ImageIO::Default(H));
-  handler->files.push_back(File::Entry(H.name(), data_offset));
+  auto handler = std::make_unique<ImageIO::Default>(H);
+  handler->files.emplace_back(File::Entry(H.name(), data_offset));
 
   return handler;
 }
@@ -730,14 +730,14 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> create_gz(Header &H) {
   if (H.ndim() > 7)
     throw Exception(version + " format cannot support more than 7 dimensions for image \"" + H.name() + "\"");
 
-  std::unique_ptr<ImageIO::GZ> io_handler(new ImageIO::GZ(H, sizeof(nifti_header) + 4));
+  auto io_handler = std::make_unique<ImageIO::GZ>(H, sizeof(nifti_header) + 4);
   nifti_header &NH = *reinterpret_cast<nifti_header *>(io_handler->header());
 
   store(NH, H, true);
   memset(io_handler->header() + sizeof(nifti_header), 0, sizeof(nifti1_extender));
 
   File::create(H.name());
-  io_handler->files.push_back(File::Entry(H.name(), sizeof(nifti_header) + 4));
+  io_handler->files.emplace_back(File::Entry(H.name(), sizeof(nifti_header) + 4));
 
   return io_handler;
 }

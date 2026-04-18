@@ -70,7 +70,7 @@ public:
 
 protected:
   std::string tck_file_path;
-  std::vector<TrackContribution *> contributions;
+  std::vector<std::unique_ptr<TrackContribution>> contributions;
 
   using Fixel_map<Fixel>::accessor;
   using Fixel_map<Fixel>::begin;
@@ -87,30 +87,30 @@ private:
     TrackMappingWorker(Model &i, const default_type upsample_ratio)
         : master(i),
           mapper(i.header(), i.dirs),
-          mutex(new std::mutex),
           TD_sum(0.0),
           fixel_TDs(master.fixels.size(), 0.0),
-          fixel_counts(master.fixels.size(), 0) {
+          fixel_counts(master.fixels.size(), 0),
+          mutex(std::make_shared<std::mutex>()) {
       mapper.set_upsample_ratio(upsample_ratio);
       mapper.set_use_precise_mapping(true);
     }
     TrackMappingWorker(const TrackMappingWorker &that)
         : master(that.master),
           mapper(that.mapper),
-          mutex(that.mutex),
           TD_sum(0.0),
           fixel_TDs(master.fixels.size(), 0.0),
-          fixel_counts(master.fixels.size(), 0) {}
+          fixel_counts(master.fixels.size(), 0),
+          mutex(that.mutex) {}
     ~TrackMappingWorker();
     bool operator()(const Tractography::Streamline<> &);
 
   private:
     Model &master;
     Mapping::TrackMapperBase mapper;
-    std::shared_ptr<std::mutex> mutex;
     double TD_sum;
     std::vector<double> fixel_TDs;
     std::vector<track_t> fixel_counts;
+    std::shared_ptr<std::mutex> mutex;
   };
 
   class FixelRemapper {
@@ -125,11 +125,9 @@ private:
 };
 
 template <class Fixel> Model<Fixel>::~Model() {
-  for (std::vector<TrackContribution *>::iterator i = contributions.begin(); i != contributions.end(); ++i) {
-    if (*i) {
-      delete *i;
-      *i = nullptr;
-    }
+  for (auto &i : contributions) {
+    if (i)
+      i.reset(nullptr);
   }
 }
 
@@ -141,7 +139,7 @@ template <class Fixel> void Model<Fixel>::map_streamlines(std::string_view path)
   if (!count)
     throw Exception("Cannot map streamlines: track file " + Path::basename(path) + " is empty");
 
-  contributions.assign(count, nullptr);
+  contributions.resize(count);
 
   {
     Mapping::TrackLoader loader(file, count);
@@ -199,7 +197,7 @@ template <class Fixel> void Model<Fixel>::remove_excluded_fixels() {
       if (new_fixels.size() == new_start_index)
         v.value() = nullptr;
       else
-        v.value() = new MapVoxel(new_start_index, new_fixels.size() - new_start_index);
+        v.value() = new MapVoxel(new_start_index, new_fixels.size() - new_start_index); // check_syntax off
     }
   }
 
@@ -229,9 +227,9 @@ template <class Fixel> void Model<Fixel>::check_TD() {
   VAR(sum_from_fixels);
   VAR(sum_from_fixels_weighted);
   double sum_from_tracks = 0.0;
-  for (std::vector<TrackContribution *>::const_iterator i = contributions.begin(); i != contributions.end(); ++i) {
-    if (*i)
-      sum_from_tracks += (*i)->get_total_contribution();
+  for (const auto &i : contributions) {
+    if (i)
+      sum_from_tracks += i->get_total_contribution();
   }
   VAR(sum_from_tracks);
 }
@@ -295,7 +293,8 @@ template <class Fixel> bool Model<Fixel>::TrackMappingWorker::operator()(const T
     for (Mapping::SetDixel::const_iterator i = dixels.begin(); i != dixels.end(); ++i) {
       total_length += i->get_length();
       const size_t fixel_index = master.dixel2fixel(*i);
-      if (fixel_index && (i->get_length() > Track_fixel_contribution::min())) {
+      if (fixel_index != 0 && (i->get_length() > Track_fixel_contribution::min())) {
+        assert(fixel_index < master.num_fixels());
         total_contribution += i->get_length() * master.fixels[fixel_index].get_weight();
         bool incremented = false;
         for (std::vector<Track_fixel_contribution>::iterator c = masked_contributions.begin();
@@ -310,7 +309,7 @@ template <class Fixel> bool Model<Fixel>::TrackMappingWorker::operator()(const T
     }
 
     master.contributions[in.get_index()] =
-        new TrackContribution(masked_contributions, total_contribution, total_length);
+        std::make_unique<TrackContribution>(masked_contributions, total_contribution, total_length);
 
     TD_sum += total_contribution;
     for (std::vector<Track_fixel_contribution>::const_iterator i = masked_contributions.begin();
@@ -341,10 +340,9 @@ template <class Fixel> bool Model<Fixel>::FixelRemapper::operator()(const TrackI
           total_contribution += this_cont[i].get_length() * master[new_index].get_weight();
         }
       }
-      TrackContribution *new_contribution =
-          new TrackContribution(new_cont, total_contribution, this_cont.get_total_length());
-      delete master.contributions[track_index];
-      master.contributions[track_index] = new_contribution;
+      master.contributions[track_index] =
+          std::make_unique<TrackContribution>(new_cont, total_contribution, this_cont.get_total_length());
+      ;
     }
   }
   return true;

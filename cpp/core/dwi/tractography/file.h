@@ -333,7 +333,7 @@ public:
   Writer(std::string_view file, const Properties &properties, size_t default_buffer_capacity = 16777216)
       : WriterUnbuffered<ValueType>(file, properties),
         buffer_capacity(File::Config::get_int("TrackWriterBufferSize", default_buffer_capacity) / sizeof(vector_type)),
-        buffer(new vector_type[buffer_capacity]),
+        buffer(std::make_unique<vector_type[]>(buffer_capacity)),
         buffer_size(0) {}
 
   Writer(const Writer &W) = delete;
@@ -348,7 +348,7 @@ public:
 
     if (tck.size() + 1 >= buffer_capacity) {
       buffer_capacity = tck.size() + 1;
-      buffer.reset(new vector_type[buffer_capacity]);
+      buffer = std::make_unique<vector_type[]>(buffer_capacity);
     }
 
     for (const auto &i : tck) {

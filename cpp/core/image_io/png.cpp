@@ -30,7 +30,7 @@ void PNG::load(const Header &header, size_t) {
         + " \"" + header.name() + "\"");          //
   segsize = (header.datatype().bits() * voxel_count(header) + 7) / 8;
   addresses.resize(1);
-  addresses[0].reset(new uint8_t[segsize]);
+  addresses[0] = std::make_unique<uint8_t[]>(segsize);
   if (is_new) {
     memset(addresses[0].get(), 0x00, segsize);
   } else {

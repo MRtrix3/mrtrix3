@@ -61,7 +61,7 @@ extern "C" void R_usage(char **output) { // check_syntax off
   ::MR::App::OPTIONS.clear();
   usage();
   std::string s = MR::App::full_usage();
-  *output = new char[s.size() + 1];
+  *output = new char[s.size() + 1];          // check_syntax off
   strncpy(*output, s.c_str(), s.size() + 1); // check_syntax off
 }
 

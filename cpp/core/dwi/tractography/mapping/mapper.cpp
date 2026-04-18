@@ -169,7 +169,7 @@ void TrackMapperTWI::add_scalar_image(std::string_view path) {
     throw Exception("Cannot add more than one associated image to TWI");
   if (contrast != contrast_t::SCALAR_MAP && contrast != contrast_t::SCALAR_MAP_COUNT)
     throw Exception("Cannot add a scalar image to TWI unless the contrast depends on it");
-  image_plugin.reset(new TWIScalarImagePlugin(path, track_statistic));
+  image_plugin = std::make_unique<TWIScalarImagePlugin>(path, track_statistic);
 }
 
 void TrackMapperTWI::set_backtrack() {
@@ -179,6 +179,7 @@ void TrackMapperTWI::set_backtrack() {
   if (typeid(*base) != typeid(TWIScalarImagePlugin))
     throw Exception("Backtracking is only applicable to scalar image TWI plugins");
   TWIScalarImagePlugin *const ptr = dynamic_cast<TWIScalarImagePlugin *>(image_plugin.get());
+  assert(ptr != nullptr);
   ptr->set_backtrack();
 }
 
@@ -187,7 +188,7 @@ void TrackMapperTWI::add_fod_image(std::string_view path) {
     throw Exception("Cannot add more than one associated image to TWI");
   if (contrast != contrast_t::FOD_AMP)
     throw Exception("Cannot add an FOD image to TWI unless the FOD_AMP contrast is used");
-  image_plugin.reset(new TWIFODImagePlugin(path, track_statistic));
+  image_plugin = std::make_unique<TWIFODImagePlugin>(path, track_statistic);
 }
 
 void TrackMapperTWI::add_twdfc_static_image(Image<float> &image) {
@@ -197,7 +198,7 @@ void TrackMapperTWI::add_twdfc_static_image(Image<float> &image) {
     throw Exception("For fMRI correlation mapping, mapper must be set to SCALAR_MAP contrast");
   if (track_statistic != tck_stat_t::ENDS_CORR)
     throw Exception("For fMRI correlation mapping, only the endpoint correlation track-wise statistic is valid");
-  image_plugin.reset(new TWDFCStaticImagePlugin(image));
+  image_plugin = std::make_unique<TWDFCStaticImagePlugin>(image);
 }
 
 void TrackMapperTWI::add_twdfc_dynamic_image(Image<float> &image,
@@ -210,7 +211,7 @@ void TrackMapperTWI::add_twdfc_dynamic_image(Image<float> &image,
   if (track_statistic != tck_stat_t::ENDS_CORR)
     throw Exception(
         "For sliding time-window fMRI mapping, only the endpoint correlation track-wise statistic is valid");
-  image_plugin.reset(new TWDFCDynamicImagePlugin(image, kernel, timepoint));
+  image_plugin = std::make_unique<TWDFCDynamicImagePlugin>(image, kernel, timepoint);
 }
 
 void TrackMapperTWI::add_vector_data(std::string_view path) {
@@ -218,7 +219,7 @@ void TrackMapperTWI::add_vector_data(std::string_view path) {
     throw Exception("Cannot add both an associated image and a vector data file to TWI");
   if (contrast != contrast_t::VECTOR_FILE)
     throw Exception("Cannot add a vector data file to TWI unless the VECTOR_FILE contrast is used");
-  vector_data.reset(new Eigen::VectorXf(File::Matrix::load_vector<float>(path)));
+  vector_data = std::make_unique<Eigen::VectorXf>(File::Matrix::load_vector<float>(path));
 }
 
 void TrackMapperTWI::load_factors(const Streamline<> &tck) const {

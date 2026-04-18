@@ -36,10 +36,12 @@ public:
   Mask(const Mask &) = default;
   Mask(std::string_view name)
       : Image<bool>(get_mask(name)),
-        scanner2voxel(new transform_type(Transform(*this).scanner2voxel.cast<float>())),
-        voxel2scanner(new transform_type(Transform(*this).voxel2scanner.cast<float>())) {}
+        scanner2voxel(std::make_shared<transform_type>(Transform(*this).scanner2voxel.cast<float>())),
+        voxel2scanner(std::make_shared<transform_type>(Transform(*this).voxel2scanner.cast<float>())) {}
 
-  std::shared_ptr<transform_type> scanner2voxel, voxel2scanner; // Ptr to prevent unnecessary copy-construction
+  // Ptrs to prevent unnecessary copy-construction
+  std::shared_ptr<transform_type> scanner2voxel;
+  std::shared_ptr<transform_type> voxel2scanner;
 
 private:
   static Image<bool> get_mask(std::string_view name);

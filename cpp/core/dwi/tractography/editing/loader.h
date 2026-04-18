@@ -31,7 +31,10 @@ class Loader {
 
 public:
   Loader(const std::vector<std::string> &files)
-      : file_list(files), dummy_properties(), reader(new Reader<>(file_list[0], dummy_properties)), file_index(0) {}
+      : file_list(files),
+        dummy_properties(),
+        reader(std::make_unique<Reader<>>(file_list[0], dummy_properties)),
+        file_index(0) {}
 
   bool operator()(Streamline<> &);
 
@@ -50,7 +53,7 @@ bool Loader::operator()(Streamline<> &out) {
 
   while (++file_index != file_list.size()) {
     dummy_properties.clear();
-    reader.reset(new Reader<>(file_list[file_index], dummy_properties));
+    reader = std::make_unique<Reader<>>(file_list[file_index], dummy_properties);
     if ((*reader)(out))
       return true;
   }

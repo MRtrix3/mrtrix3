@@ -63,18 +63,16 @@ public:
         im1_image(im1_image),
         im2_image(im2_image),
         midway_image(midway_image),
+        im1_image_interp(MR::make_copy<Im1ImageInterpType>(im1_image)),
+        im2_image_interp(MR::make_copy<Im2ImageInterpType>(im2_image)),
         im1_mask(im1_mask),
         im2_mask(im2_mask),
+        im1_mask_interp(im1_mask.valid() ? MR::make_copy<Im1MaskInterpolatorType>(im1_mask) : nullptr),
+        im2_mask_interp(im2_mask.valid() ? MR::make_copy<Im2MaskInterpolatorType>(im2_mask) : nullptr),
         loop_density(1.0),
         control_point_exent(10.0, 10.0, 10.0),
         robust_estimate_subset(false),
         robust_estimate_use_score(false) {
-    im1_image_interp.reset(new Im1ImageInterpType(im1_image));
-    im2_image_interp.reset(new Im2ImageInterpType(im2_image));
-    if (im1_mask.valid())
-      im1_mask_interp.reset(new Im1MaskInterpolatorType(im1_mask));
-    if (im2_mask.valid())
-      im2_mask_interp.reset(new Im2MaskInterpolatorType(im2_mask));
     update_control_points();
   }
 
@@ -109,8 +107,8 @@ public:
     update_control_points();
   }
 
-  void set_im1_iterpolator(Im1ImageType &im1_image) { im1_image_interp.reset(new Im1ImageInterpType(im1_image)); }
-  void set_im2_iterpolator(Im1ImageType &im2_image) { im2_image_interp.reset(new Im2ImageInterpType(im2_image)); }
+  void set_im1_iterpolator(Im1ImageType &im1_image) { im1_image_interp = MR::make_copy<Im1ImageInterpType>(im1_image); }
+  void set_im2_iterpolator(Im1ImageType &im2_image) { im2_image_interp = MR::make_copy<Im2ImageInterpType>(im2_image); }
 
   void update_control_points() {
     const Eigen::Vector3d centre = transformation.get_centre();

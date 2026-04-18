@@ -391,10 +391,10 @@ void run() {
   std::shared_ptr<Stats::EnhancerBase> enhancer;
   if (use_tfce) {
     std::shared_ptr<Stats::TFCE::EnhancerBase> base(
-        new Stats::Cluster::ClusterSize(connector, cluster_forming_threshold));
-    enhancer.reset(new Stats::TFCE::Wrapper(base, tfce_dh, tfce_E, tfce_H));
+        std::make_shared<Stats::Cluster::ClusterSize>(connector, cluster_forming_threshold));
+    enhancer = std::make_shared<Stats::TFCE::Wrapper>(base, tfce_dh, tfce_E, tfce_H);
   } else {
-    enhancer.reset(new Stats::Cluster::ClusterSize(connector, cluster_forming_threshold));
+    enhancer = std::make_shared<Stats::Cluster::ClusterSize>(connector, cluster_forming_threshold);
   }
 
   matrix_type empirical_enhanced_statistic;

@@ -35,7 +35,7 @@ void Mosaic::load(const Header &header, size_t) {
 
   DEBUG("loading mosaic image \"" + header.name() + "\"...");
   addresses.resize(1);
-  addresses[0].reset(new uint8_t[files.size() * bytes_per_segment]);
+  addresses[0] = std::make_unique<uint8_t[]>(files.size() * bytes_per_segment);
   if (!addresses[0])
     throw Exception("failed to allocate memory for image \"" + header.name() + "\"");
 

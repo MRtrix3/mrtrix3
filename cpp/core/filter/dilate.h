@@ -53,9 +53,9 @@ public:
 
   template <class InputImageType, class OutputImageType>
   void operator()(InputImageType &input, OutputImageType &output) {
-    std::shared_ptr<Image<bool>> in(new Image<bool>(Image<bool>::scratch(input)));
+    auto in = std::make_shared<Image<bool>>(Image<bool>::scratch(input));
     copy(input, *in);
-    std::shared_ptr<Image<bool>> out;
+    decltype(in) out;
     std::optional<ProgressBar> progress;
     if (!message.empty())
       progress = ProgressBar(message, npass + 1);

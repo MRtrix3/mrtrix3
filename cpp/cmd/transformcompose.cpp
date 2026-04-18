@@ -109,21 +109,17 @@ void run() {
 
   for (size_t i = 0; i < argument.size() - 1; ++i) {
     try {
-      template_header.reset(new Header(Header::open(argument[i])));
-      auto image = Image<default_type>::open(argument[i]);
-
-      if (image.ndim() != 4)
+      template_header = std::make_unique<Header>(Header::open(argument[i]));
+      if (template_header->ndim() != 4)
         throw Exception("input warp is not a 4D image");
-
-      if (image.size(3) != 3)
+      if (template_header->size(3) != 3)
         throw Exception("input warp should have 3 volumes in the 4th dimension");
-
-      std::unique_ptr<TransformBase> transform(new Warp(image));
-      transform_list.push_back(std::move(transform));
-
+      auto warp_image = template_header->get_image<default_type>();
+      std::unique_ptr<Warp> warp = std::make_unique<Warp>(warp_image);
+      transform_list.push_back(std::move(warp));
     } catch (Exception &E) {
       try {
-        std::unique_ptr<TransformBase> transform(new Linear(File::Matrix::load_transform(argument[i])));
+        std::unique_ptr<Linear> transform = std::make_unique<Linear>(File::Matrix::load_transform(argument[i]));
         transform_list.push_back(std::move(transform));
       } catch (Exception &E) {
         throw Exception("error reading input file: " + str(argument[i]) +
@@ -134,13 +130,14 @@ void run() {
   auto opt = get_options("template");
 
   if (!opt.empty()) {
-    template_header.reset(new Header(Header::open(opt[0][0])));
+    template_header = std::make_unique<Header>(Header::open(opt[0][0]));
     // no template is supplied and there are input warps, then make sure the last transform in the list is a warp
   } else if (template_header) {
     if (!dynamic_cast<Warp *>(transform_list[transform_list.size() - 1].get()))
       throw Exception(
-          "Output deformation field grid not defined. When composing warps either use the -template "
-          "option to define the output deformation field grid, or ensure the last input transformation is a warp.");
+          "Output deformation field grid not defined;"
+          " when composing warps either use the -template option to define the output deformation field grid,"
+          " or ensure the last input transformation is a warp.");
   }
 
   // all inputs are linear so compose and output as text file

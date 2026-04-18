@@ -105,8 +105,8 @@ std::unique_ptr<ImageIO::Base> PNG::read(Header &H) const {
     throw Exception("Unexpected bit depth (" + str(png.get_bitdepth()) + ") in PNG image \"" + H.name() + "\"");
   }
 
-  std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::PNG(H));
-  io_handler->files.push_back(File::Entry(H.name(), 0));
+  auto io_handler = std::make_unique<ImageIO::PNG>(H);
+  io_handler->files.emplace_back(File::Entry(H.name(), 0));
 
   return io_handler;
 }
@@ -222,8 +222,8 @@ bool PNG::check(Header &H, size_t num_axes) const {
 }
 
 std::unique_ptr<ImageIO::Base> PNG::create(Header &H) const {
-  std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::PNG(H));
-  io_handler->files.push_back(File::Entry(H.name(), 0));
+  auto io_handler = std::make_unique<ImageIO::PNG>(H);
+  io_handler->files.emplace_back(File::Entry(H.name(), 0));
   return io_handler;
 }
 

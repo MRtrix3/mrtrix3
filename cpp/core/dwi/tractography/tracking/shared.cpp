@@ -80,7 +80,7 @@ SharedBase::SharedBase(std::string_view diff_path, Properties &property_set)
   }
 
   if (properties.find("act") != properties.end()) {
-    act_shared_additions.reset(new ACT::ACT_Shared_additions(properties["act"], property_set));
+    act_shared_additions = std::make_unique<ACT::ACT_Shared_additions>(properties["act"], property_set);
     if (act().backtrack() && stop_on_all_include)
       throw Exception("Cannot use -stop option if ACT backtracking is enabled");
   }
@@ -97,7 +97,7 @@ SharedBase::SharedBase(std::string_view diff_path, Properties &property_set)
   debug_header.datatype() = DataType::UInt32;
   for (const auto &i : termination_info)
     debug_images.emplace_back(
-        new Image<uint32_t>(Image<uint32_t>::create("terms_" + i.second.name + ".mif", debug_header)));
+        std::make_unique<Image<uint32_t>>(Image<uint32_t>::create("terms_" + i.second.name + ".mif", debug_header)));
 #endif
 }
 

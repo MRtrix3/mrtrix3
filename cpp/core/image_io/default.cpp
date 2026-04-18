@@ -69,7 +69,7 @@ void Default::map_files(const Header &header) {
   mmaps.resize(files.size());
   addresses.resize(mmaps.size());
   for (size_t n = 0; n < files.size(); n++) {
-    mmaps[n].reset(new File::MMap(files[n], writable, !is_new, bytes_per_segment));
+    mmaps[n] = std::make_shared<File::MMap>(files[n], writable, !is_new, bytes_per_segment);
     addresses[n].reset(mmaps[n]->address());
   }
 }
@@ -79,7 +79,7 @@ void Default::copy_to_mem(const Header &header) {
   addresses.resize(files.size() > 1 && header.datatype().bits() * segsize != 8 * static_cast<size_t>(bytes_per_segment)
                        ? files.size()
                        : 1);
-  addresses[0].reset(new uint8_t[files.size() * bytes_per_segment]);
+  addresses[0] = std::make_unique<uint8_t[]>(files.size() * bytes_per_segment);
   if (!addresses[0])
     throw Exception("failed to allocate memory for image \"" + header.name() + "\"");
 

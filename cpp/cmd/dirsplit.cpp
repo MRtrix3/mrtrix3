@@ -58,7 +58,8 @@ public:
         subset(num_subsets),
         best_energy(std::numeric_limits<value_type>::max()),
         target_num_permutations(target_num_permutations),
-        num_permutations(0) {
+        num_permutations(0),
+        progress("distributing directions", target_num_permutations) {
     size_t s = 0;
     for (ssize_t n = 0; n < directions.rows(); ++n) {
       subset[s++].push_back(n);
@@ -76,15 +77,13 @@ public:
 
   bool update(value_type energy, const std::vector<std::vector<size_t>> &set) {
     std::lock_guard<std::mutex> lock(mutex);
-    if (!progress)
-      progress.reset(new ProgressBar("distributing directions", target_num_permutations));
     if (energy < best_energy) {
       best_energy = energy;
       best_subset = set;
-      progress->set_text("distributing directions (current best configuration: energy = " + str(best_energy) + ")");
+      progress.set_text("distributing directions (current best configuration: energy = " + str(best_energy) + ")");
     }
     ++num_permutations;
-    ++(*progress);
+    ++progress;
     return num_permutations < target_num_permutations;
   }
 
@@ -104,7 +103,7 @@ protected:
   value_type best_energy;
   const size_t target_num_permutations;
   size_t num_permutations;
-  std::unique_ptr<ProgressBar> progress;
+  ProgressBar progress;
 };
 
 class EnergyCalculator {

@@ -209,13 +209,13 @@ public:
       ThreadedLoop(cc_mask).run([](decltype(cc_mask) &m) { m.value() = true; }, cc_mask);
     }
     parameters.processed_mask = cc_mask;
-    parameters.processed_mask_interp.reset(new ProcessedMaskInterpolatorType(parameters.processed_mask));
+    parameters.processed_mask_interp = MR::make_copy<ProcessedMaskInterpolatorType>(parameters.processed_mask);
     auto loop = ThreadedLoop("precomputing cross correlation data...", parameters.processed_mask);
     loop.run(LCCPrecomputeFunctorMasked_Naive<decltype(interp1), decltype(interp2)>(extent, interp1, interp2),
              parameters.processed_mask,
              cc_image);
     parameters.processed_image = cc_image;
-    parameters.processed_image_interp.reset(new CCInterpType(parameters.processed_image));
+    parameters.processed_image_interp = MR::make_copy<CCInterpType>(parameters.processed_image);
     // display<Image<default_type>>(parameters.processed_image);
     return 0.0;
   }

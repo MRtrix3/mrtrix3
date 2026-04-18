@@ -178,7 +178,7 @@ std::string NameParser::name(const std::vector<uint32_t> &indices) {
 
 std::string NameParser::get_next_match(std::vector<uint32_t> &indices, bool return_seq_index) {
   if (!folder)
-    folder.reset(new Path::Dir(folder_name));
+    folder = std::make_unique<Path::Dir>(folder_name);
 
   std::string fname;
   while (!(fname = folder->read_name()).empty()) {
@@ -226,14 +226,14 @@ std::vector<uint32_t> ParsedName::List::parse_scan_check(std::string_view specif
 void ParsedName::List::scan(NameParser &parser) {
   std::vector<uint32_t> index;
   if (parser.ndim() == 0) {
-    list.push_back(std::shared_ptr<ParsedName>(new ParsedName(parser.name(index), index)));
+    list.emplace_back(std::make_shared<ParsedName>(parser.name(index), index));
     return;
   }
 
   std::string entry;
 
   while (!(entry = parser.get_next_match(index, true)).empty())
-    list.push_back(std::shared_ptr<ParsedName>(new ParsedName(entry, index)));
+    list.emplace_back(std::make_shared<ParsedName>(entry, index));
 
   if (!size())
     throw Exception("no matching files found for image specifier \"" + parser.spec() + "\"");

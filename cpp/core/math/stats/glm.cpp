@@ -341,7 +341,7 @@ void all_stats(const measurements_matrix_type &measurements,
     Source(const index_type num_elements)
         : num_elements(num_elements),
           counter(0),
-          progress(new ProgressBar("Calculating basic properties of default permutation", num_elements)) {}
+          progress(std::make_unique<ProgressBar>("Calculating basic properties of default permutation", num_elements)) {}
     bool operator()(index_type &element_index) {
       element_index = counter++;
       if (element_index >= num_elements) {

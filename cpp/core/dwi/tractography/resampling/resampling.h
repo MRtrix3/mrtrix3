@@ -25,7 +25,7 @@ namespace MR::DWI::Tractography::Resampling {
 extern const App::OptionGroup ResampleOption;
 
 class Base;
-Base *get_resampler();
+std::unique_ptr<Base> get_resampler();
 
 using value_type = float;
 using point_type = typename Streamline<>::point_type;
@@ -38,14 +38,14 @@ public:
   Base() {}
   virtual ~Base() {}
 
-  virtual Base *clone() const = 0;
+  virtual std::unique_ptr<Base> clone() const = 0;
   virtual bool operator()(const Streamline<> &, Streamline<> &) const = 0;
   virtual bool valid() const = 0;
 };
 
 template <class Derived> class BaseCRTP : public Base {
 public:
-  virtual Base *clone() const { return new Derived(static_cast<Derived const &>(*this)); }
+  virtual std::unique_ptr<Base> clone() const { return std::make_unique<Derived>(static_cast<Derived const &>(*this)); }
 };
 
 } // namespace MR::DWI::Tractography::Resampling

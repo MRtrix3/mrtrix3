@@ -24,11 +24,11 @@
 namespace MR::DWI {
 
 template <typename T, class MatrixType>
-inline Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> grad2bmatrix(const MatrixType &grad, bool dki = false) {
+inline Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> grad2bmatrix(const MatrixType &grad, const bool dki = false) {
   if (grad.cols() > 3) {
     std::unique_ptr<DWI::Shells> shells;
     try {
-      shells.reset(new DWI::Shells(grad));
+      shells = std::make_unique<DWI::Shells>(grad);
     } catch (...) {
       WARN("Unable to separate diffusion gradient table into shells; tensor estimation success uncertain");
     }

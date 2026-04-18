@@ -39,8 +39,8 @@ std::unique_ptr<ImageIO::Base> MGH::read(Header &H) const {
 
   in.close();
 
-  std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));
-  io_handler->files.push_back(File::Entry(H.name(), File::MGH::data_offset));
+  auto io_handler = std::make_unique<ImageIO::Default>(H);
+  io_handler->files.emplace_back(File::Entry(H.name(), File::MGH::data_offset));
 
   return io_handler;
 }
@@ -57,8 +57,8 @@ std::unique_ptr<ImageIO::Base> MGH::create(Header &H) const {
   out.seekp(File::MGH::data_offset + footprint(H));
   File::MGH::write_other(H, out);
 
-  std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));
-  io_handler->files.push_back(File::Entry(H.name(), File::MGH::data_offset));
+  auto io_handler = std::make_unique<ImageIO::Default>(H);
+  io_handler->files.emplace_back(File::Entry(H.name(), File::MGH::data_offset));
 
   return io_handler;
 }

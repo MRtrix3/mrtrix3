@@ -194,18 +194,18 @@ void run() {
     auto opt = get_options("threshold");
     if (opt.empty())
       throw Exception("For NBS algorithm, -threshold option must be provided");
-    enhancer.reset(new MR::Connectome::Enhance::NBS(num_nodes, opt[0][0]));
+    enhancer = std::make_shared<MR::Connectome::Enhance::NBS>(num_nodes, opt[0][0]);
   } break;
   case Algorithm::TFNBS: {
-    std::shared_ptr<Stats::TFCE::EnhancerBase> base(new MR::Connectome::Enhance::NBS(num_nodes));
-    enhancer.reset(new Stats::TFCE::Wrapper(base));
+    auto base = std::make_shared<MR::Connectome::Enhance::NBS>(num_nodes);
+    enhancer = std::make_shared<Stats::TFCE::Wrapper>(base);
     load_tfce_parameters(*(dynamic_cast<Stats::TFCE::Wrapper *>(enhancer.get())));
     if (!get_options("threshold").empty())
       WARN(MR::Enum::lowercase_name(Algorithm::TFNBS) + " is a threshold-free algorithm;" + //
            " -threshold option ignored");                                                   //
   } break;
   case Algorithm::None: {
-    enhancer.reset(new MR::Connectome::Enhance::PassThrough());
+    enhancer = std::make_shared<MR::Connectome::Enhance::PassThrough>();
     if (!get_options("threshold").empty())
       WARN("No enhancement algorithm being used; -threshold option ignored");
   } break;

@@ -53,8 +53,8 @@ public:
       : EnergyComputer(stat), _e1(e1), _e2(e2), l1(lam1), l2(lam2) {}
 
   ~EnergySumComputer() {
-    delete _e1;
-    delete _e2;
+    delete _e1; // check_syntax off
+    delete _e2; // check_syntax off
   }
 
   double stageAdd(const Point_t &pos, const Point_t &dir) {
@@ -83,7 +83,9 @@ public:
     _e2->clearChanges();
   }
 
-  EnergyComputer *clone() const { return new EnergySumComputer(stats, _e1->clone(), l1, _e2->clone(), l2); }
+  EnergyComputer *clone() const {
+    return new EnergySumComputer(stats, _e1->clone(), l1, _e2->clone(), l2); // check_syntax off
+  }
 
 protected:
   EnergyComputer *_e1;

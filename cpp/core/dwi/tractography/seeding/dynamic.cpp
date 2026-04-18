@@ -65,7 +65,7 @@ Dynamic::Dynamic(std::string_view in,
       transform(fod_data) {
   auto opt = App::get_options("act");
   if (!opt.empty())
-    act.reset(new Dynamic_ACT_additions(opt[0][0]));
+    act = std::make_unique<Dynamic_ACT_additions>(opt[0][0]);
 
   perform_FOD_segmentation(fod_data);
 

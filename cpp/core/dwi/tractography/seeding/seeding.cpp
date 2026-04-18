@@ -123,32 +123,32 @@ void load_seed_mechanisms(Properties &properties) {
 
   auto opt = get_options("seed_image");
   for (size_t i = 0; i < opt.size(); ++i) {
-    SeedMask *seed = new SeedMask(opt[i][0]);
-    list.add(seed);
+    std::unique_ptr<SeedMask> seed = std::make_unique<SeedMask>(opt[i][0]);
+    list.add(std::move(seed));
   }
 
   opt = get_options("seed_sphere");
   for (size_t i = 0; i < opt.size(); ++i) {
-    Sphere *seed = new Sphere(opt[i][0]);
-    list.add(seed);
+    std::unique_ptr<Sphere> seed = std::make_unique<Sphere>(opt[i][0]);
+    list.add(std::move(seed));
   }
 
   opt = get_options("seed_random_per_voxel");
   for (size_t i = 0; i < opt.size(); ++i) {
-    Random_per_voxel *seed = new Random_per_voxel(opt[i][0], opt[i][1]);
-    list.add(seed);
+    std::unique_ptr<Random_per_voxel> seed = std::make_unique<Random_per_voxel>(opt[i][0], opt[i][1]);
+    list.add(std::move(seed));
   }
 
   opt = get_options("seed_grid_per_voxel");
   for (size_t i = 0; i < opt.size(); ++i) {
-    Grid_per_voxel *seed = new Grid_per_voxel(opt[i][0], opt[i][1]);
-    list.add(seed);
+    std::unique_ptr<Grid_per_voxel> seed = std::make_unique<Grid_per_voxel>(opt[i][0], opt[i][1]);
+    list.add(std::move(seed));
   }
 
   opt = get_options("seed_rejection");
   for (size_t i = 0; i < opt.size(); ++i) {
-    Rejection *seed = new Rejection(opt[i][0]);
-    list.add(seed);
+    std::unique_ptr<Rejection> seed = std::make_unique<Rejection>(opt[i][0]);
+    list.add(std::move(seed));
   }
 
   opt = get_options("seed_gmwmi");
@@ -157,8 +157,8 @@ void load_seed_mechanisms(Properties &properties) {
     if (opt_act.empty())
       throw Exception("Cannot perform GM-WM Interface seeding without ACT segmented tissue image");
     for (size_t i = 0; i < opt.size(); ++i) {
-      GMWMI *seed = new GMWMI(opt[i][0], str(opt_act[0][0]));
-      list.add(seed);
+      std::unique_ptr<GMWMI> seed = std::make_unique<GMWMI>(opt[i][0], str(opt_act[0][0]));
+      list.add(std::move(seed));
     }
   }
 

@@ -377,7 +377,7 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
 
     {
       // Generate a set of points within this voxel that need to be tested individually
-      offsets_to_test.reset(new std::vector<Eigen::Vector3d>());
+      offsets_to_test = std::make_shared<std::vector<Eigen::Vector3d>>();
       offsets_to_test->reserve(pve_nsamples);
       for (size_t x_idx = 0; x_idx != pve_os_ratio; ++x_idx) {
         const default_type x =

@@ -78,7 +78,7 @@ public:
 
   void acceptChanges() { stats.incEintTotal(dEint); }
 
-  EnergyComputer *clone() const { return new InternalEnergyComputer(*this); }
+  EnergyComputer *clone() const { return new InternalEnergyComputer(*this); } // check_syntax off
 
   double getConnPot() const { return cpot; }
 

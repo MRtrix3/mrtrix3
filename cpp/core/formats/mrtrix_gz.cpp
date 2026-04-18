@@ -51,10 +51,10 @@ std::unique_ptr<ImageIO::Base> MRtrix_GZ::read(Header &H) const {
   write_offset += ((4 - (offset % 4)) % 4);
   header << "file: . " << write_offset << "\nEND\n";
 
-  std::unique_ptr<ImageIO::GZ> io_handler(new ImageIO::GZ(H, write_offset));
+  auto io_handler = std::make_unique<ImageIO::GZ>(H, write_offset);
   memcpy(io_handler.get()->header(), header.str().c_str(), header.str().size());
   memset(io_handler.get()->header() + header.str().size(), 0, write_offset - header.str().size());
-  io_handler->files.push_back(File::Entry(H.name(), offset));
+  io_handler->files.emplace_back(File::Entry(H.name(), offset));
 
   return io_handler;
 }
@@ -82,11 +82,10 @@ std::unique_ptr<ImageIO::Base> MRtrix_GZ::create(Header &H) const {
   while (static_cast<int64_t>(header.tellp()) < offset)
     header << '\0';
 
-  std::unique_ptr<ImageIO::GZ> io_handler(new ImageIO::GZ(H, offset));
+  auto io_handler = std::make_unique<ImageIO::GZ>(H, offset);
   memcpy(io_handler->header(), header.str().c_str(), offset);
-
   File::create(H.name());
-  io_handler->files.push_back(File::Entry(H.name(), offset));
+  io_handler->files.emplace_back(File::Entry(H.name(), offset));
 
   return io_handler;
 }

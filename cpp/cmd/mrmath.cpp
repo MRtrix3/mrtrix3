@@ -423,7 +423,6 @@ void run() {
     // Verify that dimensions of all input images adequately match
     for (size_t i = 1; i != num_inputs; ++i) {
       const std::string path = argument[i];
-      // headers_in.push_back (std::unique_ptr<Header> (new Header (Header::open (path))));
       headers_in[i] = Header::open(path);
       const Header &temp(headers_in[i]);
       if (temp.ndim() < header.ndim())
@@ -444,40 +443,40 @@ void run() {
     std::unique_ptr<ImageKernelBase> kernel;
     switch (op) {
     case Operation::MEAN:
-      kernel.reset(new ImageKernel<Mean>(header));
+      kernel = std::make_unique<ImageKernel<Mean>>(header);
       break;
     case Operation::MEDIAN:
-      kernel.reset(new ImageKernel<Median>(header));
+      kernel = std::make_unique<ImageKernel<Median>>(header);
       break;
     case Operation::SUM:
-      kernel.reset(new ImageKernel<Sum>(header));
+      kernel = std::make_unique<ImageKernel<Sum>>(header);
       break;
     case Operation::PRODUCT:
-      kernel.reset(new ImageKernel<Product>(header));
+      kernel = std::make_unique<ImageKernel<Product>>(header);
       break;
     case Operation::RMS:
-      kernel.reset(new ImageKernel<RMS>(header));
+      kernel = std::make_unique<ImageKernel<RMS>>(header);
       break;
     case Operation::NORM:
-      kernel.reset(new ImageKernel<NORM2>(header));
+      kernel = std::make_unique<ImageKernel<NORM2>>(header);
       break;
     case Operation::VAR:
-      kernel.reset(new ImageKernel<Var>(header));
+      kernel = std::make_unique<ImageKernel<Var>>(header);
       break;
     case Operation::STD:
-      kernel.reset(new ImageKernel<Std>(header));
+      kernel = std::make_unique<ImageKernel<Std>>(header);
       break;
     case Operation::MIN:
-      kernel.reset(new ImageKernel<Min>(header));
+      kernel = std::make_unique<ImageKernel<Min>>(header);
       break;
     case Operation::MAX:
-      kernel.reset(new ImageKernel<Max>(header));
+      kernel = std::make_unique<ImageKernel<Max>>(header);
       break;
     case Operation::ABSMAX:
-      kernel.reset(new ImageKernel<AbsMax>(header));
+      kernel = std::make_unique<ImageKernel<AbsMax>>(header);
       break;
     case Operation::MAGMAX:
-      kernel.reset(new ImageKernel<MagMax>(header));
+      kernel = std::make_unique<ImageKernel<MagMax>>(header);
       break;
     default:
       assert(0);

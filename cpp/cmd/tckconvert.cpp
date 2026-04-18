@@ -684,11 +684,11 @@ void run() {
   Properties properties;
   std::unique_ptr<ReaderInterface<float>> reader;
   if (Path::has_suffix(argument[0], ".tck")) {
-    reader.reset(new Reader<float>(argument[0], properties));
+    reader = std::make_unique<Reader<float>>(argument[0], properties);
   } else if (Path::has_suffix(argument[0], ".txt")) {
-    reader.reset(new ASCIIReader(argument[0]));
+    reader = std::make_unique<ASCIIReader>(argument[0]);
   } else if (Path::has_suffix(argument[0], ".vtk")) {
-    reader.reset(new VTKReader(argument[0]));
+    reader = std::make_unique<VTKReader>(argument[0]);
   } else {
     throw Exception("Unsupported input file type.");
   }
@@ -696,19 +696,19 @@ void run() {
   // Writer
   std::unique_ptr<WriterInterface<float>> writer;
   if (Path::has_suffix(argument[1], ".tck")) {
-    writer.reset(new Writer<float>(argument[1], properties));
+    writer = std::make_unique<Writer<float>>(argument[1], properties);
   } else if (Path::has_suffix(argument[1], ".vtk")) {
     auto write_ascii = get_options("ascii").size();
-    writer.reset(new VTKWriter(argument[1], write_ascii));
+    writer = std::make_unique<VTKWriter>(argument[1], write_ascii);
   } else if (Path::has_suffix(argument[1], ".ply")) {
     const int increment = get_option_value("increment", default_ply_increment);
     const float radius = get_option_value("radius", default_ply_radius);
     const int sides = get_option_value("sides", default_ply_sides);
-    writer.reset(new PLYWriter(argument[1], increment, radius, sides));
+    writer = std::make_unique<PLYWriter>(argument[1], increment, radius, sides);
   } else if (Path::has_suffix(argument[1], ".rib")) {
-    writer.reset(new RibWriter(argument[1]));
+    writer = std::make_unique<RibWriter>(argument[1]);
   } else if (Path::has_suffix(argument[1], ".txt")) {
-    writer.reset(new ASCIIWriter(argument[1]));
+    writer = std::make_unique<ASCIIWriter>(argument[1]);
   } else {
     throw Exception("Unsupported output file type.");
   }

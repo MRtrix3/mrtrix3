@@ -226,7 +226,7 @@ void run() {
       volumes.push_back(all_volumes(dirs_azin.size()));
     } else {
       auto grad = DWI::get_DW_scheme(header);
-      shells.reset(new DWI::Shells(grad));
+      shells = std::make_unique<DWI::Shells>(grad);
       shells->select_shells(false, false, false);
       for (size_t i = 0; i != shells->count(); ++i) {
         volumes.push_back((*shells)[i].get_volumes());

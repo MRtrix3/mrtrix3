@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <optional>
 #include <unordered_map>
 
 #include "algo/loop.h"
@@ -76,7 +77,7 @@ protected:
   //   or if the output is a voxel_summed DEC image.
   // counts needs to be floating-point to cover possibility of weighted streamlines
   // It's also hijacked to store per-voxel min/max factors in the case of TOD
-  std::unique_ptr<Image<float>> counts;
+  std::optional<Image<float>> counts;
 };
 
 template <typename value_type> class MapWriter : public MapWriterBase {
@@ -115,7 +116,7 @@ public:
       Header H_counts(header);
       if (type == writer_dim::DEC || type == writer_dim::TOD)
         H_counts.ndim() = 3;
-      counts.reset(new Image<float>(Image<float>::scratch(H_counts, "TWI streamline count buffer")));
+      counts = Image<float>::scratch(H_counts, "TWI streamline count buffer");
     }
   }
 
@@ -128,7 +129,7 @@ public:
 
     case vox_stat_t::SUM:
       if (type == writer_dim::DEC) {
-        assert(counts);
+        assert(counts.has_value());
         for (auto l = loop(buffer, *counts); l; ++l) {
           const float total_weight = counts->value();
           if (total_weight) {
@@ -151,7 +152,7 @@ public:
 
     case vox_stat_t::MEAN:
       if (type == writer_dim::GREYSCALE) {
-        assert(counts);
+        assert(counts.has_value());
         for (auto l = loop(buffer, *counts); l; ++l) {
           if (counts->value())
             buffer.value() /= static_cast<float>(counts->value());
@@ -163,7 +164,7 @@ public:
             set_dec(value.normalized());
         }
       } else if (type == writer_dim::TOD) {
-        assert(counts);
+        assert(counts.has_value());
         for (auto l = loop(buffer, *counts); l; ++l) {
           if (counts->value()) {
             VoxelTOD::vector_type value;
@@ -173,7 +174,7 @@ public:
           }
         }
       } else { // Dixel
-        assert(counts);
+        assert(counts.has_value());
         // TODO For dixels, should this be a voxel mean i.e. normalise each non-zero voxel to unit density,
         //   rather than a per-dixel mean?
         for (auto l = Loop(buffer)(buffer, *counts); l; ++l) {
@@ -300,7 +301,7 @@ template <typename value_type> template <class Cont> void MapWriter<value_type>:
       break;
     case vox_stat_t::MEAN:
       add(weight, factor);
-      assert(counts);
+      assert(counts.has_value());
       assign_pos_of(i).to(*counts);
       counts->value() += weight;
       break;
@@ -321,7 +322,7 @@ template <typename value_type> template <class Cont> void MapWriter<value_type>:
     switch (voxel_statistic) {
     case vox_stat_t::SUM:
       set_dec(current_value + (scaled_colour * weight));
-      assert(counts);
+      assert(counts.has_value());
       assign_pos_of(i).to(*counts);
       counts->value() += weight;
       break;
@@ -361,7 +362,7 @@ template <typename value_type> template <class Cont> void MapWriter<value_type>:
       break;
     case vox_stat_t::MEAN:
       add(weight, factor);
-      assert(counts);
+      assert(counts.has_value());
       assign_pos_of(i, 0, 3).to(*counts);
       counts->index(3) = i.get_dir();
       counts->value() += weight;
@@ -380,7 +381,7 @@ template <typename value_type> template <class Cont> void MapWriter<value_type>:
     const default_type factor = get_factor(i, in);
     const default_type weight = in.weight * i.get_length();
     get_tod(sh_coefs);
-    if (counts)
+    if (counts.has_value())
       assign_pos_of(i, 0, 3).to(*counts);
     switch (voxel_statistic) {
     case vox_stat_t::SUM:
@@ -390,7 +391,7 @@ template <typename value_type> template <class Cont> void MapWriter<value_type>:
       break;
       // For TOD, need to store min/max factors - counts buffer is hijacked to do this
     case vox_stat_t::MIN:
-      assert(counts);
+      assert(counts.has_value());
       if (factor < counts->value()) {
         counts->value() = factor;
         auto tod = i.get_tod();
@@ -399,7 +400,7 @@ template <typename value_type> template <class Cont> void MapWriter<value_type>:
       }
       break;
     case vox_stat_t::MAX:
-      assert(counts);
+      assert(counts.has_value());
       if (factor > counts->value()) {
         counts->value() = factor;
         auto tod = i.get_tod();
@@ -408,7 +409,7 @@ template <typename value_type> template <class Cont> void MapWriter<value_type>:
       }
       break;
     case vox_stat_t::MEAN:
-      assert(counts);
+      assert(counts.has_value());
       for (ssize_t index = 0; index != sh_coefs.size(); ++index)
         sh_coefs[index] += i.get_tod()[index] * weight * factor;
       set_tod(sh_coefs);

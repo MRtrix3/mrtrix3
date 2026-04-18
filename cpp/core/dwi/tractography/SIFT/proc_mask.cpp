@@ -97,7 +97,7 @@ void initialise_processing_mask(Image<float> &in_dwi, Image<float> &out_mask, Im
 
 ResampleFunctor::ResampleFunctor(Image<float> &dwi, Image<float> &anat, Image<float> &out)
     : dwi(dwi),
-      voxel2scanner(new transform_type(Transform(dwi).voxel2scanner.cast<float>())),
+      voxel2scanner(std::make_shared<transform_type>(Transform(dwi).voxel2scanner.cast<float>())),
       interp_anat(anat),
       out(out) {}
 

@@ -48,7 +48,6 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
   bool preserve_philips_iso = (getenv("MRTRIX_PRESERVE_PHILIPS_ISO") != nullptr);
 
   assert(series.size() > 0);
-  std::unique_ptr<MR::ImageIO::Base> io_handler;
 
   Patient *patient(series[0]->study->patient);
   std::string sbuf = (!patient->name.empty() ? patient->name : "unnamed");
@@ -361,9 +360,10 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
     WARN("See the MRtrix3 documentation on DICOM handling for details:");
     WARN("    http://mrtrix.readthedocs.io/en/latest/tips_and_tricks/dicom_handling.html" //
          "#error-unsupported-transfer-syntax");                                           //
-    io_handler.reset(new MR::ImageIO::Null(H));
-    return io_handler;
+    return std::make_unique<MR::ImageIO::Null>(H);
   }
+
+  std::unique_ptr<MR::ImageIO::Base> io_handler;
 
   if (image.images_in_mosaic) {
 
@@ -400,7 +400,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
     for (size_t i = 0; i < 3; i++)
       H.transform()(i, 3) += xinc * H.transform()(i, 0) + yinc * H.transform()(i, 1);
 
-    io_handler.reset(new MR::ImageIO::Mosaic(H, frame.dim[0], frame.dim[1], H.size(0), H.size(1), H.size(2)));
+    io_handler = std::make_unique<MR::ImageIO::Mosaic>(H, frame.dim[0], frame.dim[1], H.size(0), H.size(1), H.size(2));
 
   } else if (inconsistent_scaling) {
 
@@ -408,15 +408,14 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
     H.datatype() = DataType::Float32;
     H.datatype().set_byte_order_native();
 
-    MR::ImageIO::VariableScaling *handler = new MR::ImageIO::VariableScaling(H);
-
+    io_handler = std::make_unique<MR::ImageIO::VariableScaling>(H);
     for (size_t n = 0; n < frames.size(); ++n)
-      handler->scale_factors.push_back({frames[n]->scale_intercept, frames[n]->scale_slope});
+      dynamic_cast<MR::ImageIO::VariableScaling *const>(io_handler.get())
+          ->scale_factors.push_back({frames[n]->scale_intercept, frames[n]->scale_slope});
 
-    io_handler.reset(handler);
   } else {
 
-    io_handler.reset(new MR::ImageIO::Default(H));
+    io_handler = std::make_unique<MR::ImageIO::Default>(H);
   }
 
   for (size_t n = 0; n < frames.size(); ++n)

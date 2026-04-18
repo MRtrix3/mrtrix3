@@ -93,7 +93,7 @@ void run() {
     const default_type spatial = get_option_value("smooth_spatial", Filter::default_smoothing_spatial_factor);
     const default_type influence = get_option_value("smooth_influence", Filter::default_smoothing_influence_factor);
     const std::string msg = in.size() > 1 ? "Applying smoothing filter to multiple meshes" : "";
-    filter.reset(new Filter::Smooth(msg, spatial, influence));
+    filter = std::make_unique<Filter::Smooth>(msg, spatial, influence);
   } else {
     assert(0);
   }

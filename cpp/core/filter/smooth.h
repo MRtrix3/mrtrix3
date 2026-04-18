@@ -104,9 +104,9 @@ public:
   //! Smooth the input image. Both input and output images can be the same image
   template <class InputImageType, class OutputImageType, typename ValueType = float>
   void operator()(InputImageType &input, OutputImageType &output) {
-    std::shared_ptr<Image<ValueType>> in(std::make_shared<Image<ValueType>>(Image<ValueType>::scratch(input)));
+    auto in = std::make_shared<Image<ValueType>>(Image<ValueType>::scratch(input));
     threaded_copy(input, *in);
-    std::shared_ptr<Image<ValueType>> out;
+    decltype(in) out;
 
     std::optional<ProgressBar> progress;
     if (!message.empty()) {

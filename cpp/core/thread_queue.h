@@ -323,9 +323,9 @@ public:
    * default_queue_capacity items.
    */
   Queue(std::string_view description = "unnamed", size_t buffer_size = default_queue_capacity)
-      : buffer(new T *[buffer_size]),
-        front(buffer),
-        back(buffer),
+      : buffer(std::make_unique<T *[]>(buffer_size)),
+        front(buffer.get()),
+        back(buffer.get()),
         capacity(buffer_size),
         writer_count(0),
         reader_count(0),
@@ -338,7 +338,7 @@ public:
   Queue &operator=(const Queue &) = delete;
   Queue &operator=(Queue &&) = default;
 
-  ~Queue() { delete[] buffer; }
+  ~Queue() = default;
 
   //! This class is used to register a writer with the queue
   /*! Items cannot be written directly onto a Thread::Queue queue. An
@@ -474,7 +474,7 @@ public:
 private:
   std::mutex mutex;
   std::condition_variable more_data, more_space;
-  T **buffer;
+  std::unique_ptr<T *[]> buffer;
   T **front;
   T **back;
   size_t capacity;
@@ -516,9 +516,8 @@ private:
 
   FORCE_INLINE T *get_item() {
     std::lock_guard<std::mutex> lock(mutex);
-    T *item(new T);
-    items.push_back(std::unique_ptr<T>(item));
-    return item;
+    items.emplace_back(std::make_unique<T>());
+    return items.back().get();
   }
 
   FORCE_INLINE bool push(T *&item) {
@@ -529,8 +528,8 @@ private:
     *back = item;
     back = inc(back);
     if (item_stack.empty()) {
-      item = new T;
-      items.push_back(std::unique_ptr<T>(item));
+      items.emplace_back(std::make_unique<T>());
+      item = items.back().get();
     } else {
       item = item_stack.top();
       item_stack.pop();
@@ -561,8 +560,8 @@ private:
 
   FORCE_INLINE T **inc(T **p) const {
     ++p;
-    if (p >= buffer + capacity)
-      p = buffer;
+    if (p >= buffer.get() + capacity)
+      p = buffer.get();
     return p;
   }
 };

@@ -55,6 +55,7 @@ public:
 
     } else {
 
+      assert(properties.seeds.empty());
       const std::string fod_path(properties["seed_dynamic"]);
       const std::string max_num_tracks = properties["max_num_tracks"];
       if (max_num_tracks.empty())
@@ -68,8 +69,9 @@ public:
       DWI::Directions::FastLookupSet dirs(1281);
       auto fod_data = Image<float>::open(fod_path);
       Math::SH::check(fod_data);
-      Seeding::Dynamic *seeder = new Seeding::Dynamic(fod_path, fod_data, num_tracks, dirs);
-      properties.seeds.add(seeder); // List is responsible for deleting this from memory
+      std::unique_ptr<Seeding::Dynamic> seeder =
+          std::make_unique<Seeding::Dynamic>(fod_path, fod_data, num_tracks, dirs);
+      properties.seeds.add(std::move(seeder)); // List is responsible for deleting this from memory
 
       typename Method::Shared shared(diff_path, properties);
 
@@ -80,13 +82,14 @@ public:
       mapper.set_upsample_ratio(Mapping::determine_upsample_ratio(fod_data, properties, 0.25));
       mapper.set_use_precise_mapping(true);
 
-      Thread::run_queue(Thread::multi(tracker),
-                        Thread::batch(GeneratedTrack(), streamline_generation_batch_size),
-                        writer,
-                        Thread::batch(Streamline<>(), streamline_generation_batch_size),
-                        Thread::multi(mapper),
-                        Thread::batch(SetDixel(), streamline_generation_batch_size),
-                        *seeder);
+      Thread::run_queue(
+          Thread::multi(tracker),
+          Thread::batch(GeneratedTrack(), streamline_generation_batch_size),
+          writer,
+          Thread::batch(Streamline<>(), streamline_generation_batch_size),
+          Thread::multi(mapper),
+          Thread::batch(SetDixel(), streamline_generation_batch_size),
+          *const_cast<Seeding::Dynamic *const>(dynamic_cast<const Seeding::Dynamic *const>(properties.seeds[0])));
     }
   }
 

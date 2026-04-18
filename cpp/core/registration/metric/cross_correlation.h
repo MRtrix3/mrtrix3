@@ -157,15 +157,13 @@ private:
           global_cnt(overlap),
           s1(0.0),
           s2(0.0),
-          cnt(0) {
+          cnt(0),
+          im1_image_interp(MR::make_copy<Im1ImageInterpolatorType>(in1)),
+          im2_image_interp(MR::make_copy<Im2ImageInterpolatorType>(in2)),
+          im1_mask_interp(msk1.valid() ? MR::make_copy<Im1MaskInterpolatorType>(msk1) : nullptr),
+          im2_mask_interp(msk2.valid() ? MR::make_copy<Im2MaskInterpolatorType>(msk2) : nullptr) {
       assert(in1.valid());
       assert(in2.valid());
-      im1_image_interp.reset(new Im1ImageInterpolatorType(in1));
-      im2_image_interp.reset(new Im2ImageInterpolatorType(in2));
-      if (msk1.valid())
-        im1_mask_interp.reset(new Im1MaskInterpolatorType(msk1));
-      if (msk2.valid())
-        im2_mask_interp.reset(new Im2MaskInterpolatorType(msk2));
     }
 
     ~CCNoGradientPrecomputeFunctor() {

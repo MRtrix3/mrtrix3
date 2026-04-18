@@ -29,12 +29,12 @@ public:
 
   List(const List &) = delete;
 
-  void add(Base *const in);
+  void add(std::unique_ptr<Base> &&in);
   void clear();
+  bool empty() const { return total_count == 0; }
   bool get_seed(Eigen::Vector3f &p, Eigen::Vector3f &d);
-
   size_t num_seeds() const { return seeders.size(); }
-  const Base *operator[](const size_t n) const { return seeders[n].get(); }
+  const Base *const operator[](const size_t n) const { return seeders[n].get(); }
   bool is_finite() const { return total_count; }
   uint32_t get_total_count() const { return total_count; }
 

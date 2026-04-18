@@ -29,7 +29,7 @@ public:
     verify_5TT_image(voxel);
     property_set.set(bt, "backtrack");
     if (property_set.find("crop_at_gmwmi") != property_set.end())
-      gmwmi_finder.reset(new GMWMI_finder(voxel));
+      gmwmi_finder = std::make_unique<GMWMI_finder>(voxel);
   }
 
   bool backtrack() const { return bt; }

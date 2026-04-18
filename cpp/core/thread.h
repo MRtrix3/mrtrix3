@@ -57,24 +57,23 @@ namespace MR::Thread {
 class __Backend {
 public:
   __Backend();
+  __Backend(const __Backend &) = delete;
   ~__Backend();
 
   static void register_thread() {
     std::lock_guard<std::mutex> lock(mutex);
     if (!backend)
-      backend = new __Backend;
+      backend = std::make_unique<__Backend>();
     ++backend->refcount;
   }
   static void unregister_thread() {
     assert(backend);
     std::lock_guard<std::mutex> lock(mutex);
-    if (!(--backend->refcount)) {
-      delete backend;
-      backend = nullptr;
-    }
+    if (--backend->refcount == 0)
+      backend.reset();
   }
 
-  static bool valid() { return backend; }
+  static bool valid() { return static_cast<bool>(backend); }
 
   static void thread_print_func(std::string_view msg);
   static void thread_report_to_user_func(std::string_view msg, int type);
@@ -85,7 +84,7 @@ public:
 protected:
   size_t refcount;
 
-  static __Backend *backend;
+  static std::unique_ptr<__Backend> backend;
   static std::mutex mutex;
 };
 

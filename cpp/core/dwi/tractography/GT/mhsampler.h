@@ -84,8 +84,8 @@ protected:
   Properties &props;
   Stats &stats;
   ParticleGrid &pGrid;
-  EnergyComputer
-      *E; // Polymorphic copy requires call to EnergyComputer::clone(), hence references or smart pointers won't do.
+  // Polymorphic copy requires call to EnergyComputer::clone(), hence references or smart pointers won't do.
+  EnergyComputer *E;
 
   Transform T;
   std::vector<size_t> dims;

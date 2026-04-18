@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <memory>
 #include <set>
 
 #include "command.h"
@@ -224,22 +225,20 @@ void usage () {
 }
 // clang-format on
 
-MapWriterBase *make_writer(Header &H, std::string_view name, const vox_stat_t stat_vox, const writer_dim dim) {
-  MapWriterBase *writer = nullptr;
+std::unique_ptr<MapWriterBase>
+make_writer(Header &H, std::string_view name, const vox_stat_t stat_vox, const writer_dim dim) {
   const uint8_t dt = static_cast<uint8_t>(H.datatype()()) & DataType::Type;
   if (dt == DataType::Bit)
-    writer = new MapWriter<bool>(H, name, stat_vox, dim);
-  else if (dt == DataType::UInt8)
-    writer = new MapWriter<uint8_t>(H, name, stat_vox, dim);
-  else if (dt == DataType::UInt16)
-    writer = new MapWriter<uint16_t>(H, name, stat_vox, dim);
-  else if (dt == DataType::UInt32 || dt == DataType::UInt64)
-    writer = new MapWriter<uint32_t>(H, name, stat_vox, dim);
-  else if (dt == DataType::Float32 || dt == DataType::Float64)
-    writer = new MapWriter<float>(H, name, stat_vox, dim);
-  else
-    throw Exception("Unsupported data type in image header");
-  return writer;
+    return std::make_unique<MapWriter<bool>>(H, name, stat_vox, dim);
+  if (dt == DataType::UInt8)
+    return std::make_unique<MapWriter<uint8_t>>(H, name, stat_vox, dim);
+  if (dt == DataType::UInt16)
+    return std::make_unique<MapWriter<uint16_t>>(H, name, stat_vox, dim);
+  if (dt == DataType::UInt32 || dt == DataType::UInt64)
+    return std::make_unique<MapWriter<uint32_t>>(H, name, stat_vox, dim);
+  if (dt == DataType::Float32 || dt == DataType::Float64)
+    return std::make_unique<MapWriter<float>>(H, name, stat_vox, dim);
+  throw Exception("Unsupported data type in image header");
 }
 
 DataType determine_datatype(const DataType current_dt,
@@ -353,9 +352,9 @@ void run() {
       throw Exception("Options for setting output image dimensionality are mutually exclusive");
     writer_type = writer_dim::DIXEL;
     if (Path::exists(opt[0][0]))
-      dirs.reset(new Directions::FastLookupSet(str(opt[0][0])));
+      dirs = std::make_unique<Directions::FastLookupSet>(str(opt[0][0]));
     else
-      dirs.reset(new Directions::FastLookupSet(to<size_t>(opt[0][0])));
+      dirs = std::make_unique<Directions::FastLookupSet>(to<size_t>(opt[0][0]));
     header.ndim() = 4;
     header.size(3) = dirs->size();
     header.sanitise();
@@ -522,8 +521,8 @@ void run() {
   TrackLoader loader(file, num_tracks);
 
   std::unique_ptr<TrackMapperTWI> mapper((stat_tck == tck_stat_t::GAUSSIAN)
-                                             ? (new Gaussian::TrackMapper(header, contrast))
-                                             : (new TrackMapperTWI(header, contrast, stat_tck)));
+                                             ? std::make_unique<Gaussian::TrackMapper>(header, contrast)
+                                             : std::make_unique<TrackMapperTWI>(header, contrast, stat_tck));
   mapper->set_upsample_ratio(upsample_ratio);
   mapper->set_map_zero(map_zero);
   mapper->set_use_precise_mapping(precise);
@@ -567,16 +566,16 @@ void run() {
   case writer_dim::UNDEFINED:
     throw Exception("Invalid TWI writer image dimensionality");
   case writer_dim::GREYSCALE:
-    writer.reset(make_writer(header, argument[1], stat_vox, writer_dim::GREYSCALE));
+    writer = make_writer(header, argument[1], stat_vox, writer_dim::GREYSCALE);
     break;
   case writer_dim::DEC:
-    writer.reset(new MapWriter<float>(header, argument[1], stat_vox, writer_dim::DEC));
+    writer = std::make_unique<MapWriter<float>>(header, argument[1], stat_vox, writer_dim::DEC);
     break;
   case writer_dim::DIXEL:
-    writer.reset(make_writer(header, argument[1], stat_vox, writer_dim::DIXEL));
+    writer = make_writer(header, argument[1], stat_vox, writer_dim::DIXEL);
     break;
   case writer_dim::TOD:
-    writer.reset(new MapWriter<float>(header, argument[1], stat_vox, writer_dim::TOD));
+    writer = std::make_unique<MapWriter<float>>(header, argument[1], stat_vox, writer_dim::TOD);
     break;
   }
 

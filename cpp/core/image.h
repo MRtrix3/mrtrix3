@@ -321,8 +321,7 @@ template <typename ValueType> void *Image<ValueType>::Buffer::get_data_pointer()
 template <typename ValueType> Image<ValueType> Header::get_image(bool read_write_if_existing) {
   if (!valid())
     throw Exception("FIXME: don't invoke get_image() with invalid Header!");
-  std::shared_ptr<typename Image<ValueType>::Buffer> buffer(
-      new typename Image<ValueType>::Buffer(*this, read_write_if_existing));
+  auto buffer = std::make_shared<typename Image<ValueType>::Buffer>(*this, read_write_if_existing);
   return {buffer};
 }
 
@@ -379,7 +378,7 @@ template <typename ValueType> Image<ValueType> Image<ValueType>::with_direct_io(
 
   // the buffer into which to copy the data:
   const auto buffer_size = footprint<ValueType>(voxel_count(*this));
-  buffer->data_buffer = std::unique_ptr<uint8_t[]>(new uint8_t[buffer_size]);
+  buffer->data_buffer = std::make_unique<uint8_t[]>(buffer_size);
 
   if (buffer->get_io()->is_image_new()) {
     // no need to preload if data is zero anyway:
