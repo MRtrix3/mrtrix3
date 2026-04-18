@@ -36,6 +36,9 @@ function(add_cmd CMD_SRC IS_GUI)
         $<IF:$<BOOL:${IS_GUI}>,mrtrix::gui,mrtrix::core>
         mrtrix::executable-version
     )
+    if(CMD_NAME STREQUAL "tckconvert")
+        target_link_libraries(${CMD_NAME} PRIVATE trx-cpp::trx)
+    endif()
     set_target_properties(${CMD_NAME} PROPERTIES
         LINK_DEPENDS_NO_SHARED true
         RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin
