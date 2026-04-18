@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <list>
+#include <deque>
 
 #include "dwi/directions/set.h"
 #include "dwi/tractography/rng.h"
@@ -456,7 +456,6 @@ private:
       return;
     case ACT::sgm_trunc_t::ROULETTE: {
       const size_t sgm_start = tck.size() - method.act().sgm_depth;
-      default_type total_sum = 0.0;
       class IndexAndValue {
       public:
         IndexAndValue(const size_t index, const float value) : i(index), v(value) {}
@@ -467,26 +466,35 @@ private:
         const size_t i;
         const float v;
       };
-      std::list<IndexAndValue> vertices;
+      std::deque<IndexAndValue> valid_vertices;
+      std::vector<size_t> invalid_vertices;
+      default_type total_sum = 0.0;
       for (size_t i = sgm_start; i != tck.size(); ++i) {
         const Eigen::Vector3f direction = Tractography::tangent(tck, i);
-        const float this_value = method.get_metric(tck[i], direction);
-        total_sum += this_value;
-        vertices.emplace_back(IndexAndValue(i, this_value));
-      }
-      while (vertices.size() > 1) {
-        const default_type sample = method.uniform(rng) * total_sum;
-        default_type cumulative_sum = 0.0;
-        for (auto vertex = vertices.begin(); vertex != vertices.end(); ++vertex) {
-          cumulative_sum += vertex->value();
-          if (cumulative_sum > sample) {
-            total_sum -= vertex->value();
-            vertices.erase(vertex);
-            break;
-          }
+        const float this_metric = method.get_metric(tck[i], direction);
+        if (this_metric > 0.0F) {
+          const float this_probability = std::exp((method.get_threshold() - this_metric) / method.get_threshold());
+          total_sum += this_probability;
+          valid_vertices.emplace_back(IndexAndValue(i, this_probability));
+        } else {
+          invalid_vertices.push_back(i);
         }
       }
-      tck.resize(vertices.front().index() + 1);
+      if (invalid_vertices.empty()) {
+        const default_type sample = method.uniform(rng) * total_sum;
+        default_type cumulative_sum = 0.0;
+        while (valid_vertices.size() > 1) {
+          cumulative_sum += valid_vertices.front().value();
+          if (cumulative_sum > sample)
+            break;
+          valid_vertices.pop_front();
+        }
+        tck.resize(valid_vertices.front().index() + 1);
+      } else {
+        const default_type sample = method.uniform(rng) * static_cast<default_type>(invalid_vertices.size());
+        const size_t truncation_vertex = invalid_vertices[std::trunc(sample)];
+        tck.resize(truncation_vertex + 1);
+      }
     }
       return;
     }

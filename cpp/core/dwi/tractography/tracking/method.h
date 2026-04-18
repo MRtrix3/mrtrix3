@@ -57,6 +57,7 @@ public:
   virtual bool init() = 0;
   virtual term_t next() = 0;
   virtual float get_metric(const Eigen::Vector3f &position, const Eigen::Vector3f &direction) = 0;
+  float get_threshold() const { return S.threshold; }
 
   virtual void reverse_track() {
     if (act_method_additions)
