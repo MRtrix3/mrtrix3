@@ -129,6 +129,8 @@ Anatomically-Constrained Tractography options
 
 -  **-crop_at_gmwmi** crop streamline endpoints more precisely as they cross the GM-WM interface
 
+-  **-sgm_truncation choice** control how truncation of streamlines is performed if they attempt to enter and then exit sub-cortical grey matter; options are: default, entry, exit, minimum, random, roulette
+
 Options specific to the iFOD tracking algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

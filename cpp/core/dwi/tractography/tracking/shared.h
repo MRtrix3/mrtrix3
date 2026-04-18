@@ -60,7 +60,7 @@ public:
 
   // Additional members for ACT
   bool is_act() const { return bool(act_shared_additions); }
-  const ACT::ACT_Shared_additions &act() const { return *act_shared_additions; }
+  ACT::ACT_Shared_additions &act() const { return *act_shared_additions; }
 
   float vox() const {
     return std::pow(source_header.spacing(0) * source_header.spacing(1) * source_header.spacing(2), 1.0F / 3.0F);

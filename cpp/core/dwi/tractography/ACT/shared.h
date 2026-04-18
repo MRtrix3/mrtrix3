@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <memory>
+
 #include "dwi/tractography/ACT/gmwmi.h"
 #include "dwi/tractography/properties.h"
 #include "memory.h"
@@ -25,11 +27,15 @@ namespace MR::DWI::Tractography::ACT {
 class ACT_Shared_additions {
 
 public:
-  ACT_Shared_additions(std::string_view path, Properties &property_set) : voxel(Image<float>::open(path)), bt(false) {
+  ACT_Shared_additions(std::string_view path, Properties &property_set)
+      : voxel(Image<float>::open(path)), bt(false), trunc(sgm_trunc_t::DEFAULT) {
     verify_5TT_image(voxel);
     property_set.set(bt, "backtrack");
     if (property_set.find("crop_at_gmwmi") != property_set.end())
       gmwmi_finder.reset(new GMWMI_finder(voxel));
+    auto sgm_trunc_property = property_set.find("sgm_truncation");
+    if (sgm_trunc_property != property_set.end())
+      trunc = Enum::from_name<sgm_trunc_t>(sgm_trunc_property->second);
   }
 
   bool backtrack() const { return bt; }
@@ -40,9 +46,17 @@ public:
     tck.back() = gmwmi_finder->find_interface(tck, true);
   }
 
+  sgm_trunc_t sgm_trunc() const { return trunc; }
+  void set_default_sgm_trunc(const sgm_trunc_t default_value) {
+    if (trunc == sgm_trunc_t::DEFAULT)
+      trunc = default_value;
+  }
+  void set_sgm_trunc(const sgm_trunc_t value) { trunc = value; }
+
 private:
   Image<float> voxel;
   bool bt;
+  sgm_trunc_t trunc;
 
   std::unique_ptr<GMWMI_finder> gmwmi_finder;
 

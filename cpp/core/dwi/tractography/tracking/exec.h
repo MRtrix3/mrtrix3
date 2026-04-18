@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <deque>
+
 #include "dwi/directions/set.h"
 #include "dwi/tractography/rng.h"
 #include "dwi/tractography/roi.h"
@@ -26,6 +28,8 @@
 #include "dwi/tractography/tracking/write_kernel.h"
 #include "thread.h"
 #include "thread_queue.h"
+
+#include "dwi/tractography/ACT/act.h"
 
 #include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/mapping/mapping.h"
@@ -422,19 +426,78 @@ private:
   }
 
   void truncate_exit_sgm(std::vector<Eigen::Vector3f> &tck) {
-    const size_t sgm_start = tck.size() - method.act().sgm_depth;
-    assert(sgm_start >= 0 && sgm_start < tck.size());
-    size_t best_termination = tck.size() - 1;
-    float min_value = std::numeric_limits<float>::infinity();
-    for (size_t i = sgm_start; i != tck.size(); ++i) {
-      const Eigen::Vector3f direction = (tck[i] - tck[i - 1]).normalized();
-      const float this_value = method.get_metric(tck[i], direction);
-      if (this_value < min_value) {
-        min_value = this_value;
-        best_termination = i;
+    switch (S.act().sgm_trunc()) {
+    case ACT::sgm_trunc_t::DEFAULT:
+      throw Exception("FIXME: Algorithm failed to set default SGM truncation method");
+    case ACT::sgm_trunc_t::ENTRY:
+      tck.resize(tck.size() - method.act().sgm_depth);
+      return;
+    case ACT::sgm_trunc_t::EXIT:
+      // Do nothing
+      return;
+    case ACT::sgm_trunc_t::MINIMUM: {
+      const size_t sgm_start = tck.size() - method.act().sgm_depth;
+      assert(sgm_start >= 0 && sgm_start < tck.size());
+      size_t best_termination = tck.size() - 1;
+      float min_value = std::numeric_limits<float>::infinity();
+      for (size_t i = sgm_start; i != tck.size(); ++i) {
+        const Eigen::Vector3f direction = Tractography::tangent(tck, i);
+        const float this_value = method.get_metric(tck[i], direction);
+        if (this_value < min_value) {
+          min_value = this_value;
+          best_termination = i;
+        }
+      }
+      tck.resize(best_termination + 1);
+    }
+      return;
+    case ACT::sgm_trunc_t::RANDOM:
+      tck.resize(tck.size() - static_cast<size_t>(std::round(method.act().sgm_depth * method.uniform(rng))));
+      return;
+    case ACT::sgm_trunc_t::ROULETTE: {
+      const size_t sgm_start = tck.size() - method.act().sgm_depth;
+      class IndexAndValue {
+      public:
+        IndexAndValue(const size_t index, const float value) : i(index), v(value) {}
+        size_t index() const { return i; }
+        float value() const { return v; }
+
+      private:
+        const size_t i;
+        const float v;
+      };
+      std::deque<IndexAndValue> valid_vertices;
+      std::vector<size_t> invalid_vertices;
+      default_type total_sum = 0.0;
+      for (size_t i = sgm_start; i != tck.size(); ++i) {
+        const Eigen::Vector3f direction = Tractography::tangent(tck, i);
+        const float this_metric = method.get_metric(tck[i], direction);
+        if (this_metric > 0.0F) {
+          const float this_probability = std::exp((method.get_threshold() - this_metric) / method.get_threshold());
+          total_sum += this_probability;
+          valid_vertices.emplace_back(IndexAndValue(i, this_probability));
+        } else {
+          invalid_vertices.push_back(i);
+        }
+      }
+      if (invalid_vertices.empty()) {
+        const default_type sample = method.uniform(rng) * total_sum;
+        default_type cumulative_sum = 0.0;
+        while (valid_vertices.size() > 1) {
+          cumulative_sum += valid_vertices.front().value();
+          if (cumulative_sum > sample)
+            break;
+          valid_vertices.pop_front();
+        }
+        tck.resize(valid_vertices.front().index() + 1);
+      } else {
+        const default_type sample = method.uniform(rng) * static_cast<default_type>(invalid_vertices.size());
+        const size_t truncation_vertex = invalid_vertices[std::trunc(sample)];
+        tck.resize(truncation_vertex + 1);
       }
     }
-    tck.erase(tck.begin() + best_termination + 1, tck.end());
+      return;
+    }
   }
 
   void check_downsampled_length(GeneratedTrack &tck) {

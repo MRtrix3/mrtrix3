@@ -37,6 +37,8 @@ public:
                          curvature_constraint_t::LIMITED_SEARCH);
       set_num_points();
       set_cutoff(0.0f);
+      if (is_act())
+        act().set_default_sgm_trunc(ACT::sgm_trunc_t::RANDOM);
       sin_max_angle_1o = std::sin(max_angle_1o);
       properties["method"] = "Nulldist1";
     }
@@ -79,6 +81,8 @@ public:
     Shared(std::string_view diff_path, DWI::Tractography::Properties &property_set)
         : iFOD2::Shared(diff_path, property_set) {
       set_cutoff(0.0f);
+      if (is_act())
+        act().set_default_sgm_trunc(ACT::sgm_trunc_t::RANDOM);
       properties["method"] = "Nulldist2";
     }
   };

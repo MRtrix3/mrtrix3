@@ -15,23 +15,38 @@
  */
 
 #include "dwi/tractography/ACT/act.h"
+
+#include <string>
+
+#include "app.h"
 #include "dwi/tractography/properties.h"
+#include "enum.h"
 
 namespace MR::DWI::Tractography::ACT {
 
 using namespace App;
 
+// clang-format off
 const OptionGroup ACTOption =
     OptionGroup("Anatomically-Constrained Tractography options")
 
     + Option("act",
              "use the Anatomically-Constrained Tractography framework during tracking; "
-             "provided image must be in the 5TT (five-tissue-type) format") +
-    Argument("image").type_image_in()
+             "provided image must be in the 5TT (five-tissue-type) format")
+      + Argument("image").type_image_in()
 
-    + Option("backtrack", "allow tracks to be truncated and re-tracked if a poor structural termination is encountered")
+    + Option("backtrack",
+             "allow tracks to be truncated and re-tracked if a poor structural termination is encountered")
 
-    + Option("crop_at_gmwmi", "crop streamline endpoints more precisely as they cross the GM-WM interface");
+    + Option("crop_at_gmwmi",
+             "crop streamline endpoints more precisely as they cross the GM-WM interface")
+
+    + Option("sgm_truncation",
+             "control how truncation of streamlines is performed"
+             " if they attempt to enter and then exit sub-cortical grey matter;"
+             " options are: " + Enum::join<sgm_trunc_t>())
+      + Argument ("choice").type_choice<sgm_trunc_t>();
+// clang-format on
 
 void load_act_properties(Properties &properties) {
   auto opt = App::get_options("act");
@@ -44,6 +59,9 @@ void load_act_properties(Properties &properties) {
     opt = get_options("crop_at_gmwmi");
     if (!opt.empty())
       properties["crop_at_gmwmi"] = "1";
+    opt = get_options("sgm_truncation");
+    if (!opt.empty())
+      properties["sgm_truncation"] = std::string(opt[0][0]);
 
   } else {
 
@@ -51,6 +69,8 @@ void load_act_properties(Properties &properties) {
       WARN("ignoring -backtrack option: only valid if using ACT");
     if (!get_options("crop_at_gmwmi").empty())
       WARN("ignoring -crop_at_gmwmi option: only valid if using ACT");
+    if (!get_options("sgm_truncation").empty())
+      WARN("ignoring -sgm_truncation option: only valid if using ACT");
   }
 }
 

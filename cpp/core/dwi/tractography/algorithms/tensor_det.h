@@ -24,6 +24,7 @@
 
 #include "dwi/gradient.h"
 #include "dwi/tensor.h"
+#include "dwi/tractography/ACT/act.h"
 #include "dwi/tractography/tracking/method.h"
 #include "dwi/tractography/tracking/shared.h"
 #include "dwi/tractography/tracking/tractography.h"
@@ -41,8 +42,11 @@ public:
     Shared(std::string_view diff_path, DWI::Tractography::Properties &property_set)
         : SharedBase(diff_path, property_set) {
 
-      if (is_act() && act().backtrack())
-        throw Exception("Backtracking not valid for deterministic algorithms");
+      if (is_act()) {
+        if (act().backtrack())
+          throw Exception("Backtracking not valid for deterministic algorithms");
+        act().set_default_sgm_trunc(ACT::sgm_trunc_t::MINIMUM);
+      }
 
       set_step_and_angle(rk4 ? Defaults::stepsize_voxels_rk4 : Defaults::stepsize_voxels_firstorder,
                          Defaults::angle_deterministic,
