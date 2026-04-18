@@ -1,0 +1,5 @@
+#!/bin/bash
+# Convert an image to a big endian floating-point type,
+#   and ensure that this is subsequently interpreted as being identical to the input image
+mrconvert mrconvert/in.mif -datatype float32be - | \
+testing_diff_image - mrconvert/in.mif

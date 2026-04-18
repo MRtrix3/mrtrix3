@@ -1,0 +1,5 @@
+#!/bin/bash
+# Basic test verifying default operation of command
+# Ensure that output matches that generated using a prior software version
+fixel2tsf fixel_image/afd.mif tracks.tck tmp.tsf -force
+testing_diff_tsf tmp.tsf fixel2tsf/out.tsf -frac 1e-5

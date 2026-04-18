@@ -1,0 +1,24 @@
+#!/bin/bash
+# Evaluation of command operation for conversion from default format to:
+# - Non-unit 3-vector
+# - Using "fsl" reference axes
+# Because the input image has a positive determinant,
+#   it can be expected that the content of this image
+#   will be identical to that generated using "ijk" reference axes,
+#   but with negation of the first component
+peaksconvert peaks.mif \
+    -out_reference fsl \
+    - | \
+testing_diff_peaks - \
+    $(mrcat \
+          $(mrconvert peaksconvert/ijk3vector.mif -coord 3 0 - | \
+                  mrcalc - -1 -mult -) \
+          $(mrconvert peaksconvert/ijk3vector.mif -coord 3 1,2 -) \
+          $(mrconvert peaksconvert/ijk3vector.mif -coord 3 3 - | \
+                  mrcalc - -1 -mult -) \
+          $(mrconvert peaksconvert/ijk3vector.mif -coord 3 4,5 -) \
+          $(mrconvert peaksconvert/ijk3vector.mif -coord 3 6 - | \
+                  mrcalc - -1 -mult -) \
+          $(mrconvert peaksconvert/ijk3vector.mif -coord 3 7,8 -) \
+      -axis 3 -) \
+    1e-15

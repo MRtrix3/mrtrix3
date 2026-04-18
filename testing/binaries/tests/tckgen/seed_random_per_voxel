@@ -1,0 +1,10 @@
+#!/bin/bash
+# Verify operation of the -seed_random_per_voxel option
+# While the placement of each seed location within the corresponding voxel is random,
+#   the number of seeds within each voxel should be consistent between runsl
+#   hence the tolerance on the test is zero
+tckgen SIFT_phantom/dwi.mif -algo seedtest tmp.tck -force \
+-seed_random_per_voxel SIFT_phantom/mask.mif 27
+
+tckmap tmp.tck -template SIFT_phantom/dwi.mif -ends_only - | \
+testing_diff_image - tckgen/SIFT_phantom_seeds.mif

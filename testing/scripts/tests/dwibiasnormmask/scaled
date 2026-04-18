@@ -1,0 +1,14 @@
+#!/bin/bash
+# Verify operation of dwibiasnormmask command
+#   when the input image has been artificially scaled;
+#   the command should calculate and correct the rectifying scale factor
+#   such that the command output looks the same as what it yields
+#   in the absence of such a scaling
+mrconvert BIDS/sub-01/dwi/sub-01_dwi.nii.gz - \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval | \
+mrcalc - 1000.0 -div tmp-sub-01_dwi_scaled.mif -force
+
+dwibiasnormmask tmp-sub-01_dwi_scaled.mif tmpout.mif tmpmask.mif -force \
+-output_scale tmpscale.txt
+
+testing_diff_image tmpout.mif dwibiasnormmask/default_out.mif.gz -frac 1e-5

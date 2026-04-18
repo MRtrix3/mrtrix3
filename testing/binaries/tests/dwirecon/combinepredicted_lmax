@@ -1,0 +1,48 @@
+# Verify operation of "dwirecon" command for:
+# - "combine_predicted" option:
+#   each volume undergoes a weighted mean with a prediction generated
+#   from volumes with phase encodings other than that used for acquisition of that volume
+# - *Two* input phase encoding directions
+# - Different choices for *user-specified -lmax*
+
+mrcat \
+    $(mrconvert dwirecon/LR_preproc.mif -coord 3 0:13 -) \
+    $(mrconvert dwirecon/RL_preproc.mif -coord 3 13:end -) \
+    -axis 3 \
+    tmp_in.mif -force
+
+# 0. Erroneous specification of -lmax
+dwirecon tmp_in.mif combine_predicted \
+    -field dwirecon/field.mif \
+    -lmax 2 \
+    tmp.mif 2>&1 | \
+grep "\-lmax option must specify one lmax for each unique b\-value"
+
+# 1. With -lmax 0,
+#    the reconstructed volumes should start to look isotropic in compressed regions
+dwirecon tmp_in.mif combine_predicted \
+    -field dwirecon/field.mif \
+    -lmax 0,0 \
+    - | \
+testing_diff_image - dwirecon/combine_predicted/lmax0.mif -frac 1e-5
+
+# 2. With -lmax 2,
+#    the result should match what is produced under default behaviour
+#    (the two phase encoding groups have 12-13 volumes each)
+dwirecon tmp_in.mif combine_predicted \
+    -field dwirecon/field.mif \
+    -lmax 0,2 \
+    - | \
+testing_diff_image - dwirecon/combine_predicted/rpepair1.mif -frac 1e-5
+
+# 3. With -lmax 4,
+#    the command should ideally error out:
+#    while the data in their totality support an lmax of 4,
+#    the transform for predicting image intensities within each phase encoding group
+#    without utilising the empirical data from that group
+#    only support up to an lmax of 2
+dwirecon tmp_in.mif combine_predicted \
+    -field dwirecon/field.mif \
+    -lmax 0,4 \
+    tmp.mif -force 2>&1 | \
+grep "exceeds what can be predicted from data after phase encoding group exclusion"

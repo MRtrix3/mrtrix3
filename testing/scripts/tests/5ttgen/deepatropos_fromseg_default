@@ -1,0 +1,6 @@
+#!/bin/bash
+# Verify default operation of "5ttgen deep_atropos"
+#   where input image is the segmentation label image
+# Outcome is compared to that generated using a prior software version
+5ttgen deep_atropos 5ttgen/deep_atropos/segmentation_image.nii.gz tmp.mif -force
+testing_diff_image tmp.mif 5ttgen/deep_atropos/fromseg_default.mif.gz

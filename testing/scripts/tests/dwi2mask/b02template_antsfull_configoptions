@@ -1,0 +1,13 @@
+#!/bin/bash
+# Verify operation of "dwi2mask b02template" algorithm, when:
+# - "antsfull" software choice is used,
+#   which involes ANTs command "antsRegistration"
+# - A custom set of command-line options for command "antsRegistration"
+#   is specified in the MRtrix config file;
+#   since the test cannot modify the user's config file,
+#   this is simulated by using the standard command-line option "-config"
+dwi2mask b02template BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-software antsfull \
+-template dwi2mask/template_image.mif.gz dwi2mask/template_mask.mif.gz \
+-config Dwi2maskTemplateAntsFullOptions "--use-histogram-matching 1 --initial-moving-transform [template_image.nii,bzero.nii,1] --transform Rigid[0.1] --metric MI[template_image.nii,bzero.nii,1,32,Regular,0.25] --convergence 1000x500x250x100 --smoothing-sigmas 3x2x1x0 --shrink-factors 8x4x2x1"

@@ -1,0 +1,8 @@
+#!/bin/bash
+# Verify operation of the "peakscheck" command
+#   under default usage,
+#   with the input image being of the default format
+# With an adequate number of streamlines generated,
+#   the command should correctly identify that the input data
+#   already conform to the expected format & reference
+peakscheck peakscheck/posdet_xyz3vector.mif

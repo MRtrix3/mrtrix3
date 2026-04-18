@@ -1,0 +1,10 @@
+#!/bin/bash
+# Verify that command "dwi2mask ants" executes to completion,
+#   which invokes ANTs command "antsBrainExtraction.sh"
+# No reference output to which to compare the result exists;
+#   just make sure that the command executes to completion
+# In this use case, the requisite template image and corresponding binary brain mask
+#   are provided via the -template command-line option
+dwi2mask ants BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-template dwi2mask/template_image.mif.gz dwi2mask/template_mask.mif.gz

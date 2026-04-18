@@ -13,12 +13,11 @@ Usage
 
 ::
 
-    connectomestats [ options ]  input algorithm design contrast output
+    connectomestats [ options ]  input algorithm design output
 
 -  *input*: a text file listing the file names of the input connectomes
--  *algorithm*: the algorithm to use in network-based clustering/enhancement. Options are: nbs, tfnbs, none
+-  *algorithm*: the algorithm to use in network-based clustering/enhancement. Options are: nbs, tfnbs, none.
 -  *design*: the design matrix
--  *contrast*: the contrast matrix
 -  *output*: the filename prefix for all output.
 
 Description
@@ -30,10 +29,18 @@ and:  |br|
 Vinokur, L.; Zalesky, A.; Raffelt, D.; Smith, R.E. & Connelly, A. A novel threshold-free network-based statistical method: Demonstration and parameter optimisation using in vivo simulated pathology. In Proc ISMRM, 2015, 2846.  |br|
 Note however that not only was the optimisation of these parameters not very precise, but the outcomes of statistical inference (for both this algorithm and the NBS method) can vary markedly for even small changes to enhancement parameters. Therefore the specificity of results obtained using either of these methods should be interpreted with caution.
 
-In some software packages, a column of ones is automatically added to the GLM design matrix; the purpose of this column is to estimate the "global intercept", which is the predicted value of the observed variable if all explanatory variables were to be zero. However there are rare situations where including such a column would not be appropriate for a particular experimental design. Hence, in MRtrix3 statistical inference commands, it is up to the user to determine whether or not this column of ones should be included in their design matrix, and add it explicitly if necessary. The contrast matrix must also reflect the presence of this additional column.
+Operation of the -posthoc option, and how it differs from the -mask option, is described in the main documentation, which can be found at the following link:  |br|
+https://mrtrix.readthedocs.io/en/3.0.8/statistical_inference/posthoc_testing.html
+
+In some software packages, a column of ones is automatically added to the GLM design matrix; the purpose of this column is to estimate the "global intercept", which is the predicted value of the observed variable if all explanatory variables were to be zero. However there are rare situations where including such a column would not be appropriate for a particular experimental design. Hence, in MRtrix3 statistical inference commands, it is up to the user to determine whether or not this column of ones should be included in their design matrix, and add it explicitly if necessary. Matrices specified for t-tests and F-tests must also reflect the presence of this additional column.
 
 Options
 -------
+
+Options for constraining analysis to specific edges
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-posthoc file** provide a matrix file containing a mask of those edges to contribute to statistical inference (see Description)
 
 Options relating to shuffling of data for nonparametric statistical inference
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -52,7 +59,7 @@ Options relating to shuffling of data for nonparametric statistical inference
 
 -  **-permutations file** manually define the permutations (relabelling). The input should be a text file defining a m x n matrix, where each relabelling is defined as a column vector of size m, and the number of columns, n, defines the number of permutations. Can be generated with the palm_quickperms function in PALM (http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/PALM). Overrides the -nshuffles option.
 
--  **-nonstationarity** perform non-stationarity correction
+-  **-nonstationarity** perform empirical non-stationarity correction
 
 -  **-skew_nonstationarity value** specify the skew parameter for empirical statistic calculation (default for this command is 1)
 
@@ -72,11 +79,11 @@ Options for controlling TFCE behaviour
 Options related to the General Linear Model (GLM)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+-  **-ttests path** perform one or more t-tests; input matrix text file should contain one row for each hypothesis, with each row performing a dot product with the GLM beta coefficients to form a contrast of interest
+
+-  **-ftest path** *(multiple uses permitted)* perform an F-test; input matrix text file should contain one or more rows, with each row specifying an undirected contrast to contribute to the F-test
+
 -  **-variance file** define variance groups for the G-statistic; measurements for which the expected variance is equivalent should contain the same index
-
--  **-ftests path** perform F-tests; input text file should contain, for each F-test, a row containing ones and zeros, where ones indicate the rows of the contrast matrix to be included in the F-test.
-
--  **-fonly** only assess F-tests; do not perform statistical inference on entries in the contrast matrix
 
 -  **-column path** *(multiple uses permitted)* add a column to the design matrix corresponding to subject edge-wise values (note that the contrast matrix must include an additional column for each use of this option); the text file provided via this option should contain a file name for each subject
 
@@ -108,15 +115,13 @@ References
 ^^^^^^^^^^
 
 * If using the NBS algorithm:  |br|
-  Zalesky, A.; Fornito, A. & Bullmore, E. T. Network-based statistic: Identifying differences in brain networks.  |br|
-  NeuroImage, 2010, 53, 1197-1207
+  Zalesky, A.; Fornito, A. & Bullmore, E. T. Network-based statistic: Identifying differences in brain networks. NeuroImage, 2010, 53, 1197-1207
 
 * If using the TFNBS algorithm:  |br|
   Baggio, H.C.; Abos, A.; Segura, B.; Campabadal, A.; Garcia-Diaz, A.; Uribe, C.; Compta, Y.; Marti, M.J.; Valldeoriola, F.; Junque, C. Statistical inference in brain graphs using threshold-free network-based statistics.HBM, 2018, 39, 2289-2302
 
 * If using the -nonstationary option:  |br|
-  Salimi-Khorshidi, G.; Smith, S.M. & Nichols, T.E. Adjusting the effect of nonstationarity in cluster-based and TFCE inference.  |br|
-  Neuroimage, 2011, 54(3), 2006-19
+  Salimi-Khorshidi, G.; Smith, S.M. & Nichols, T.E. Adjusting the effect of nonstationarity in cluster-based and TFCE inference. Neuroimage, 2011, 54(3), 2006-19
 
 Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
 
@@ -126,7 +131,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2023 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2026 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

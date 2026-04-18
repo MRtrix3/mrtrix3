@@ -1,0 +1,14 @@
+#!/bin/bash
+# Verify operation of the "peakscheck" command
+#   with use of the "-notransform" option
+# This option reduces the search space somewhat:
+#   a total of 24 possible permitations & flips of the three spatial axes
+# Make sure that the command does indeed reduce the numebr of variants that it tests
+rm -f tmp.txt
+peakscheck peakscheck/posdet_xyz3vector.mif \
+    -number 100 \
+    -threshold 0.0 \
+    -notransform \
+    > tmp.txt 2>&1
+
+grep -E "Testing peaks orientation alterations \(24 variants\)" tmp.txt

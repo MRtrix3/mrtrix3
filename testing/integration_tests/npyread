@@ -1,0 +1,5 @@
+#!/bin/bash
+# Test reading of NPY data generated in Python into C++ API
+rm -rf tmp-npyread/
+testing_gen_npy tmp-npyread/
+testing_npyread tmp-npyread/

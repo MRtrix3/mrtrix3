@@ -1,0 +1,9 @@
+#!/bin/bash
+# Test sh2peaks command when the -fast command-line flag is specified;
+#   this uses a lookup table to compute the associated Legendre polynomials,
+#   which ised used elsewhere in the code base to perform efficient approximate calculation of SH amplitudes
+# This test therefore primarily serves to ensure that the values yielded by this faster calculation
+#   is consistent with those obtained using the comprehensive calculation
+#   (as a bug in a prior software version resulted in much larger differences between these two)
+sh2peaks fod.mif -fast - | \
+testing_diff_peaks - peaks.mif 1e-3

@@ -1,0 +1,61 @@
+# Maintainer: J-Donald Tournier <jdtournier@gmail.com>
+
+_realname=mrtrix3
+pkgbase=mingw-w64-${_realname}
+pkgname="${MINGW_PACKAGE_PREFIX}-${_realname}"
+pkgver=0
+pkgrel=1
+arch=('x86_64')
+pkgdesc="Tools for the analysis of diffusion MRI data (mingw-w64)"
+depends=("python"
+         "${MINGW_PACKAGE_PREFIX}-qt6-svg"
+         "${MINGW_PACKAGE_PREFIX}-fftw"
+         "${MINGW_PACKAGE_PREFIX}-zlib")
+makedepends=("git"
+             "python"
+             "${MINGW_PACKAGE_PREFIX}-pkg-config"
+	     "${MINGW_PACKAGE_PREFIX}-bc"
+	     "${MINGW_PACKAGE_PREFIX}-cmake"
+	     "${MINGW_PACKAGE_PREFIX}-diffutils"
+             "${MINGW_PACKAGE_PREFIX}-eigen3"
+	     "${MINGW_PACKAGE_PREFIX}-ninja"
+             "${MINGW_PACKAGE_PREFIX}-fftw"
+             "${MINGW_PACKAGE_PREFIX}-gcc"
+             "${MINGW_PACKAGE_PREFIX}-qt6-svg"
+	     "${MINGW_PACKAGE_PREFIX}-qt6-base"
+             "${MINGW_PACKAGE_PREFIX}-zlib")
+
+
+license=("MPL")
+url="http://www.mrtrix.org/"
+source=("${_realname}::git+https://github.com/GIT_USER/${_realname}.git#commit=GIT_COMMIT")
+sha512sums=('SKIP')
+
+
+pkgver() {
+  cd "${_realname}"
+  git describe --abbrev=8 | tr '-' '_'
+}
+
+build() {
+  cd "${_realname}"
+  cmake -B build -G Ninja
+  cmake --build build
+  cmake --install build --prefix=./install
+}
+
+package() {
+
+  cd "${_realname}/install"
+
+  install -d "${pkgdir}${MINGW_PREFIX}/bin/"
+  install -D bin/* "${pkgdir}${MINGW_PREFIX}/bin/"
+
+  for fname in $(find lib/ share/ -type f); do
+    install -Dm644 "${fname}" "${pkgdir}${MINGW_PREFIX}/${fname}"
+  done
+
+  mkdir -p "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}-${pkgver}"
+  cp ../LICENCE.txt "${pkgdir}${MINGW_PREFIX}/share/licenses/${_realname}-${pkgver}"
+}
+

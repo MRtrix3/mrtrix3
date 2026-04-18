@@ -1,0 +1,29 @@
+#!/bin/bash
+# Evaluation of command operation for conversion:
+#   - From:
+#     - Non-unit 3-vector
+#     - Using "fsl" reference axes
+#   - To default format (non-unit 3-vector, xyz reference)
+# Because the input image has a positive determinant,
+#   The "fsl" reference axis version of the image can be generated manually
+#   by explicitly flipping the first coefficient of each fixel direction
+#   for the image data defined using the "ijk" reference
+# Once this image has been formed,
+#   running it through peaksconvert should reproduce the original peaks image
+#   from which the "ijk" reference image was produced
+mrcat \
+    $(mrconvert peaksconvert/ijk3vector.mif -coord 3 0 - | \
+        mrcalc - -1 -mult -) \
+    $(mrconvert peaksconvert/ijk3vector.mif -coord 3 1,2 -) \
+    $(mrconvert peaksconvert/ijk3vector.mif -coord 3 3 - | \
+        mrcalc - -1 -mult -) \
+    $(mrconvert peaksconvert/ijk3vector.mif -coord 3 4,5 -) \
+    $(mrconvert peaksconvert/ijk3vector.mif -coord 3 6 - | \
+        mrcalc - -1 -mult -) \
+    $(mrconvert peaksconvert/ijk3vector.mif -coord 3 7,8 -) \
+    -axis 3 \
+    - | \
+peaksconvert - \
+    -in_reference fsl \
+    - | \
+testing_diff_peaks - peaks.mif 1e-14

@@ -1,0 +1,7 @@
+#!/bin/bash
+# Verification of default operation of command,
+#   run on the SIFT phantom without SIFT2 per-streamline weights
+# Output is compared to that generated using a prior software version
+rm -rf tmp/
+tck2fixel SIFT_phantom/tracks.tck SIFT_phantom/fixels tmp/ tdi.mif
+testing_diff_image tmp/tdi.mif tck2fixel/phantom_unweighted.mif -abs 0.5

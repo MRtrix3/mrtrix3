@@ -1,0 +1,6 @@
+Language: Cpp
+BasedOnStyle: LLVM
+BinPackArguments: false
+BinPackParameters: false
+PackConstructorInitializers: NextLine
+ColumnLimit: 120

@@ -1,0 +1,32 @@
+#!/bin/bash
+# Evaluate operation of population_template command
+#   where filesystem paths include whitespace characters
+
+rm -rf "tmp *"
+mkdir "tmp fa" "tmp mask" "tmp scratch"
+
+dwi2tensor BIDS/sub-02/dwi/sub-02_dwi.nii.gz - \
+-fslgrad BIDS/sub-02/dwi/sub-02_dwi.bvec BIDS/sub-02/dwi/sub-02_dwi.bval \
+-mask BIDS/sub-02/dwi/sub-02_brainmask.nii.gz | \
+tensor2metric - -fa "tmp fa/sub 02.mif"
+dwi2tensor BIDS/sub-03/dwi/sub-03_dwi.nii.gz - \
+-fslgrad BIDS/sub-03/dwi/sub-03_dwi.bvec BIDS/sub-03/dwi/sub-03_dwi.bval \
+-mask BIDS/sub-03/dwi/sub-03_brainmask.nii.gz | \
+tensor2metric - -fa "tmp fa/sub 03.mif"
+
+mrconvert BIDS/sub-02/dwi/sub-02_brainmask.nii.gz "tmp mask/sub 02.mif"
+mrconvert BIDS/sub-03/dwi/sub-03_brainmask.nii.gz "tmp mask/sub 03.mif"
+
+# Output template image is a pipe
+population_template "tmp fa/" "tmp template.mif" -force \
+-mask_dir "tmp mask/" \
+-template_mask "tmp mask.mif" \
+-warp_dir "tmp warps/" \
+-linear_transformations_dir "tmp linear_transformations/" \
+-scratch "tmp scratch"
+
+testing_diff_image "tmp template.mif" population_template/fa_masked_template.mif.gz -abs 0.01
+testing_diff_image $(mrfilter "tmp mask.mif" smooth -) $(mrfilter population_template/fa_masked_mask.mif.gz smooth -) -abs 0.3
+
+ls | grep "^tmp warps\/$"
+ls | grep "^tmp linear_transformations\/$"

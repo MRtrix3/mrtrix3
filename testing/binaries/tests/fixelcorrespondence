@@ -1,1 +1,0 @@
-fixelcorrespondence fixel_image/afd.mif fixel_image_template tmp afd.mif && testing_diff_fixel tmp fixelcorrespondence -frac 0.001

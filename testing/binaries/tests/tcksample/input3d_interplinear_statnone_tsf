@@ -1,0 +1,8 @@
+#!/bin/bash
+# Ensure that command runs successfully with:
+# - A *3D* input image
+# - Using *linear* interpolation
+# - *No* track-wise statistic, therefore writing a value per vertex
+# - The per-vertex values are written to a Track Scalar File (TSF)
+tcksample tracks.tck tcksample/fa.mif tmp.tsf -force
+testing_diff_tsf tmp.tsf tcksample/input3d_interplinear_statnone.tsf -frac 1e-5
