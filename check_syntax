@@ -15,6 +15,20 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
+DIFF_MODE=0
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --diff)
+      DIFF_MODE=1
+      shift
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      exit 1
+      ;;
+  esac
+done
+
 LOG=syntax.log
 echo -n "Checking syntax... "
 echo "Checking syntax..." > $LOG
@@ -35,13 +49,12 @@ retval=0
 
 rm -f .check_syntax1.tmp .check_syntax2.tmp .check_syntax3.tmp .check_syntax4.tmp
 
-for f in $(find cpp -type f -name '*.h' -o -name '*.cpp' | $grep -v '_moc.cpp' | $grep -v 'gl_core_3_3' | sort); do
-
-######################################################################
-# Version of source code file omitting lines nominated to be ignored #
-######################################################################
-  cat $f | \
-  $grep -v '\/\/.*\bcheck_syntax\soff' > .check_syntax1.tmp
+# Run all syntax checks on content already written to .check_syntax1.tmp.
+# Argument: $1 = filename (for log reporting and special-case handling).
+# Cleans up all .check_syntax*.tmp files on exit.
+run_checks() {
+  local f="$1"
+  local res=""
 
 # Check for use of #define for constants
 # Intended to catch integers, floats, scientific notation, hexadecimal, bitwise, and strings
@@ -82,7 +95,9 @@ for f in $(find cpp -type f -name '*.h' -o -name '*.cpp' | $grep -v '_moc.cpp' |
 # remove any duplicate spaces:
   perl -pe 's|\s+| |g' | \
 # remove C-style comments:
-  perl -pe 's|/\*.*?\*/||g' > .check_syntax3.tmp
+  perl -pe 's|/\*.*?\*/||g' | \
+# split diff hunks across lines
+  perl -pe 's|\s?\@\@\@HUNK_BREAK\@\@\@\s?|\n|g' > .check_syntax3.tmp
 
 # detect any instances of %zu in a print() call (not supported on MSYS2):
   res="$res"$(
@@ -160,8 +175,7 @@ for f in $(find cpp -type f -name '*.h' -o -name '*.cpp' | $grep -v '_moc.cpp' |
     )
   fi
 
-# delete intermediate files
-rm -f .check_syntax1.tmp .check_syntax2.tmp .check_syntax3.tmp .check_syntax4.tmp
+  rm -f .check_syntax1.tmp .check_syntax2.tmp .check_syntax3.tmp .check_syntax4.tmp
 
 # if anything is left after that, show it:
   if [[ ! -z $res ]]; then
@@ -169,8 +183,49 @@ rm -f .check_syntax1.tmp .check_syntax2.tmp .check_syntax3.tmp .check_syntax4.tm
     echo "$res" >> $LOG
     retval=1
   fi
+}
 
-done
+if [[ $DIFF_MODE -eq 1 ]]; then
+
+  staged_cpp_files=$(git diff --cached --name-only | \
+    $grep -E '\.(h|cpp)$' | \
+    $grep -v '_moc\.cpp' | \
+    $grep -v 'gl_core_3_3' | \
+    $grep '^cpp/')
+
+  if [[ -z "$staged_cpp_files" ]]; then
+    echo "OK"
+    echo "no issues detected" >> $LOG
+    exit 0
+  fi
+
+  diff_tmp=$(mktemp)
+  git diff --cached > "$diff_tmp"
+
+  for f in $staged_cpp_files; do
+    awk -v target="b/$f" '
+      /^diff --git / { in_file = ($4 == target); hunk_started = 0 }
+      in_file && /^\+\+\+ / { next }
+      in_file && /^@@ / { if (hunk_started) print "@@@HUNK_BREAK@@@"; hunk_started = 1; next }
+      in_file && /^[+ ]/ { print substr($0, 2) }
+    ' "$diff_tmp" | \
+    $grep -v '\/\/.*\bcheck_syntax\soff' > .check_syntax1.tmp
+
+    run_checks "$f"
+  done
+
+  rm -f "$diff_tmp"
+
+else
+
+  for f in $(find cpp -type f -name '*.h' -o -name '*.cpp' | $grep -v '_moc.cpp' | $grep -v 'gl_core_3_3' | sort); do
+    cat $f | \
+    $grep -v '\/\/.*\bcheck_syntax\soff' > .check_syntax1.tmp
+
+    run_checks "$f"
+  done
+
+fi
 
 
 # set exit code:
