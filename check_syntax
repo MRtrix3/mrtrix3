@@ -202,9 +202,10 @@ if [[ $DIFF_MODE -eq 1 ]]; then
 
   for f in $staged_cpp_files; do
     awk -v target="b/$f" '
-      /^diff --git / { in_file = ($4 == target) }
+      /^diff --git / { in_file = ($4 == target); hunk_started = 0 }
       in_file && /^\+\+\+ / { next }
-      in_file && /^\+/ { print substr($0, 2) }
+      in_file && /^@@ / { if (hunk_started) print "@@@HUNK_BREAK@@@"; hunk_started = 1; next }
+      in_file && /^[+ ]/ { print substr($0, 2) }
     ' "$diff_tmp" | \
     $grep -v '\/\/.*\bcheck_syntax\soff' > .check_syntax1.tmp
 
