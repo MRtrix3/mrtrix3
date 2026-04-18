@@ -127,6 +127,28 @@ TEST_F(GPUTest, BufferFromHostMemoryObject) {
   EXPECT_EQ(downloaded_data.c, host_data.c);
 }
 
+TEST_F(GPUTest, WriteObjectToBuffer) {
+  struct Data {
+    float a;
+    float b;
+    float c;
+  };
+
+  const Data initial_data{0.0F, 0.0F, 0.0F};
+  const Buffer<std::byte> buffer = context.new_buffer_from_host_object(initial_data, BufferType::UniformBuffer);
+
+  const Data host_data{1.25F, -2.5F, 3.75F};
+  context.write_object_to_buffer(buffer, host_data);
+
+  Data downloaded_data{};
+  auto downloaded_bytes = tcb::as_writable_bytes(tcb::span<Data>(&downloaded_data, 1));
+  context.download_buffer<std::byte>(buffer, downloaded_bytes);
+
+  EXPECT_EQ(downloaded_data.a, host_data.a);
+  EXPECT_EQ(downloaded_data.b, host_data.b);
+  EXPECT_EQ(downloaded_data.c, host_data.c);
+}
+
 TEST_F(GPUTest, BufferFromHostMemoryMultipleRegions) {
   std::vector<uint32_t> region1 = {1, 2, 3};
   std::vector<uint32_t> region2 = {4, 5};
