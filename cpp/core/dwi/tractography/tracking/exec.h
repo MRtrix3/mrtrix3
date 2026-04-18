@@ -441,7 +441,7 @@ private:
       size_t best_termination = tck.size() - 1;
       float min_value = std::numeric_limits<float>::infinity();
       for (size_t i = sgm_start; i != tck.size(); ++i) {
-        const Eigen::Vector3f direction = (tck[i] - tck[i - 1]).normalized();
+        const Eigen::Vector3f direction = Tractography::tangent(tck, i);
         const float this_value = method.get_metric(tck[i], direction);
         if (this_value < min_value) {
           min_value = this_value;
@@ -469,7 +469,7 @@ private:
       };
       std::list<IndexAndValue> vertices;
       for (size_t i = sgm_start; i != tck.size(); ++i) {
-        const Eigen::Vector3f direction = (tck[i] - tck[i - 1]).normalized();
+        const Eigen::Vector3f direction = Tractography::tangent(tck, i);
         const float this_value = method.get_metric(tck[i], direction);
         total_sum += this_value;
         vertices.emplace_back(IndexAndValue(i, this_value));
