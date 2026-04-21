@@ -226,6 +226,7 @@ public:
   Buffer &operator=(const Buffer &) = delete;
   Buffer &operator=(Buffer &&) = default;
   Buffer(const Buffer &b) : Header(b), fetch_func(b.fetch_func), store_func(b.store_func) {}
+  ~Buffer();
 
   FORCE_INLINE ValueType get_value(size_t offset) const {
     ssize_t nseg = offset / io->segment_size();
@@ -238,6 +239,8 @@ public:
   }
 
   std::unique_ptr<uint8_t[]> data_buffer;
+  Stride::List data_buffer_strides;
+  size_t data_buffer_offset;
   void *get_data_pointer();
 
   FORCE_INLINE ImageIO::Base *get_io() const { return io.get(); }
@@ -341,27 +344,14 @@ Image<ValueType>::Image(const std::shared_ptr<Image<ValueType>::Buffer> &buffer_
         ", using " + (is_direct_io() ? "" : "in") + "direct IO");
 }
 
-template <typename ValueType> Image<ValueType>::~Image() {
-  if (buffer.unique()) {
-    // was image preloaded and read/write? If so, need to write back:
-    if (buffer->get_io()) {
-      if (buffer->get_io()->is_image_readwrite() && buffer->data_buffer) {
-        auto data_buffer = std::move(buffer->data_buffer);
-        TmpImage<ValueType> src = {
-            *buffer, data_buffer.get(), std::vector<ssize_t>(ndim(), 0), strides, Stride::offset(*this)};
-        Image<ValueType> dest(buffer);
-        threaded_copy_with_progress_message("writing back direct IO buffer for \"" + name() + "\"", src, dest);
-      }
-    }
-  }
-}
+template <typename ValueType> Image<ValueType>::~Image() {}
 
 template <typename ValueType> Image<ValueType> Image<ValueType>::with_direct_io(Stride::List with_strides) {
   if (buffer->data_buffer)
     throw Exception("FIXME: don't invoke 'with_direct_io()' on images already using direct IO!");
   if (!buffer->get_io())
     throw Exception("FIXME: don't invoke 'with_direct_io()' on non-validated images!");
-  if (!buffer.unique())
+  if (buffer.use_count() != 1)
     throw Exception("FIXME: don't invoke 'with_direct_io()' on images if other copies exist!");
 
   bool preload = (buffer->datatype() != DataType::from<ValueType>()) || (buffer->get_io()->files.size() > 1);
@@ -380,6 +370,8 @@ template <typename ValueType> Image<ValueType> Image<ValueType>::with_direct_io(
   // the buffer into which to copy the data:
   const auto buffer_size = footprint<ValueType>(voxel_count(*this));
   buffer->data_buffer = std::unique_ptr<uint8_t[]>(new uint8_t[buffer_size]);
+  buffer->data_buffer_strides = with_strides;
+  buffer->data_buffer_offset = Stride::offset(with_strides, *this);
 
   if (buffer->get_io()->is_image_new()) {
     // no need to preload if data is zero anyway:
@@ -395,6 +387,23 @@ template <typename ValueType> Image<ValueType> Image<ValueType>::with_direct_io(
   }
 
   return Image(buffer, with_strides);
+}
+
+template <typename ValueType> Image<ValueType>::Buffer::~Buffer() {
+  if (!get_io())
+    return;
+  if (!get_io()->is_image_readwrite())
+    return;
+  if (!data_buffer)
+    return;
+  auto local_data = std::move(data_buffer);
+  // Construct a temporary shared_ptr with a no-op deleter so that Image can be
+  // used as a write destination without triggering a second deletion of this.
+  std::shared_ptr<Buffer> self(this, [](Buffer *) {});
+  TmpImage<ValueType> src = {
+      *this, local_data.get(), std::vector<ssize_t>(ndim(), 0), data_buffer_strides, data_buffer_offset};
+  Image<ValueType> dest(self);
+  threaded_copy_with_progress_message("writing back direct IO buffer for \"" + name() + "\"", src, dest);
 }
 
 template <typename ValueType>
@@ -481,18 +490,18 @@ template <class ImageType> typename enable_if_image_type<ImageType, void>::type 
     WARN(std::string("error invoking viewer: ") + strerror(errno));
 }
 // Explicit instantiations in image.cpp:
-extern template MR::Image<bool>::~Image();
-extern template MR::Image<int8_t>::~Image();
-extern template MR::Image<uint8_t>::~Image();
-extern template MR::Image<int16_t>::~Image();
-extern template MR::Image<uint16_t>::~Image();
-extern template MR::Image<int32_t>::~Image();
-extern template MR::Image<uint32_t>::~Image();
-extern template MR::Image<int64_t>::~Image();
-extern template MR::Image<uint64_t>::~Image();
-extern template MR::Image<Eigen::half>::~Image();
-extern template MR::Image<float>::~Image();
-extern template MR::Image<double>::~Image();
-extern template MR::Image<cfloat>::~Image();
-extern template MR::Image<cdouble>::~Image();
+extern template MR::Image<bool>::Buffer::~Buffer();
+extern template MR::Image<int8_t>::Buffer::~Buffer();
+extern template MR::Image<uint8_t>::Buffer::~Buffer();
+extern template MR::Image<int16_t>::Buffer::~Buffer();
+extern template MR::Image<uint16_t>::Buffer::~Buffer();
+extern template MR::Image<int32_t>::Buffer::~Buffer();
+extern template MR::Image<uint32_t>::Buffer::~Buffer();
+extern template MR::Image<int64_t>::Buffer::~Buffer();
+extern template MR::Image<uint64_t>::Buffer::~Buffer();
+extern template MR::Image<Eigen::half>::Buffer::~Buffer();
+extern template MR::Image<float>::Buffer::~Buffer();
+extern template MR::Image<double>::Buffer::~Buffer();
+extern template MR::Image<cfloat>::Buffer::~Buffer();
+extern template MR::Image<cdouble>::Buffer::~Buffer();
 } // namespace MR
