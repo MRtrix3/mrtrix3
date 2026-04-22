@@ -20,6 +20,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <iomanip>
 #include <iostream>
 #include <limits>
 #include <sstream>
@@ -120,12 +121,13 @@ bool starts_with_dash(std::string_view arg);
 //! returns string without leading dashes
 std::string without_leading_dash(std::string_view arg);
 
-template <class T> inline std::string str(const T &value, int precision = 0) {
+template <class T> inline std::string str(const T &value, const int precision = 0) {
+  assert(precision >= 0);
   std::ostringstream stream;
-  if (precision)
-    stream.precision(precision);
+  if (precision > 0)
+    stream << std::setprecision(precision);
   else if (max_digits<T>::value())
-    stream.precision(max_digits<T>::value());
+    stream << std::setprecision(max_digits<T>::value());
   stream << value;
   if (stream.fail())
     throw Exception(std::string("error converting type \"") + typeid(T).name() + "\" value to string");
