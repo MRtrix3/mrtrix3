@@ -19,6 +19,7 @@
 #define IMAGE_H
 
 #include <functional>
+#include <optional>
 #include <tuple>
 #include <type_traits>
 
@@ -219,7 +220,7 @@ protected:
 
 template <typename ValueType> class Image<ValueType>::Buffer : public Header {
 public:
-  Buffer() {} // TODO: delete this line! Only for testing memory alignment issues.
+  // Buffer() {} // TODO: delete this line! Only for testing memory alignment issues.
   //! construct a Buffer object to access the data in the image specified
   Buffer(Header &H, bool read_write_if_existing = false);
   Buffer(Buffer &&) = default;
@@ -238,12 +239,19 @@ public:
     store_func(val, io->segment(nseg), offset - nseg * io->segment_size(), intensity_offset(), intensity_scale());
   }
 
-  std::unique_ptr<uint8_t[]> data_buffer;
-  Stride::List data_buffer_strides;
-  size_t data_buffer_offset;
   void *get_data_pointer();
 
   FORCE_INLINE ImageIO::Base *get_io() const { return io.get(); }
+
+  class RAM {
+  public:
+    RAM(const size_t bytes, const Stride::List &with_strides, const size_t with_offset)
+        : data(std::make_unique<uint8_t[]>(bytes)), strides(with_strides), offset(with_offset) {}
+    std::unique_ptr<uint8_t[]> data;
+    Stride::List strides;
+    size_t offset;
+  };
+  std::optional<RAM> ram;
 
 protected:
   std::function<ValueType(const void *, size_t, default_type, default_type)> fetch_func;
@@ -304,8 +312,8 @@ template <typename ValueType> Image<ValueType>::Buffer::Buffer(Header &H, bool r
 }
 
 template <typename ValueType> void *Image<ValueType>::Buffer::get_data_pointer() {
-  if (data_buffer) // already allocated via with_direct_io()
-    return data_buffer.get();
+  if (ram.has_value()) // already allocated via with_direct_io()
+    return ram->data.get();
 
   assert(io && "data pointer will only be set for valid Images");
   if (!io->is_file_backed()) // this is a scratch image
@@ -347,7 +355,7 @@ Image<ValueType>::Image(const std::shared_ptr<Image<ValueType>::Buffer> &buffer_
 template <typename ValueType> Image<ValueType>::~Image() {}
 
 template <typename ValueType> Image<ValueType> Image<ValueType>::with_direct_io(Stride::List with_strides) {
-  if (buffer->data_buffer)
+  if (buffer->ram.has_value())
     throw Exception("FIXME: don't invoke 'with_direct_io()' on images already using direct IO!");
   if (!buffer->get_io())
     throw Exception("FIXME: don't invoke 'with_direct_io()' on non-validated images!");
@@ -369,17 +377,16 @@ template <typename ValueType> Image<ValueType> Image<ValueType>::with_direct_io(
 
   // the buffer into which to copy the data:
   const auto buffer_size = footprint<ValueType>(voxel_count(*this));
-  buffer->data_buffer = std::unique_ptr<uint8_t[]>(new uint8_t[buffer_size]);
-  buffer->data_buffer_strides = with_strides;
-  buffer->data_buffer_offset = Stride::offset(with_strides, *this);
+  buffer->ram.emplace(
+      typename Image<ValueType>::Buffer::RAM(buffer_size, with_strides, Stride::offset(with_strides, *this)));
 
   if (buffer->get_io()->is_image_new()) {
     // no need to preload if data is zero anyway:
-    memset(buffer->data_buffer.get(), 0, buffer_size);
+    memset(buffer->ram->data.get(), 0, buffer_size);
   } else {
     auto src(*this);
     TmpImage<ValueType> dest = {*buffer,
-                                buffer->data_buffer.get(),
+                                buffer->ram->data.get(),
                                 std::vector<ssize_t>(ndim(), 0),
                                 with_strides,
                                 Stride::offset(with_strides, *this)};
@@ -394,14 +401,13 @@ template <typename ValueType> Image<ValueType>::Buffer::~Buffer() {
     return;
   if (!get_io()->is_image_readwrite())
     return;
-  if (!data_buffer)
+  if (!ram.has_value())
     return;
-  auto local_data = std::move(data_buffer);
+  auto local_data = std::move(ram->data);
   // Construct a temporary shared_ptr with a no-op deleter so that Image can be
   // used as a write destination without triggering a second deletion of this.
   std::shared_ptr<Buffer> self(this, [](Buffer *) {});
-  TmpImage<ValueType> src = {
-      *this, local_data.get(), std::vector<ssize_t>(ndim(), 0), data_buffer_strides, data_buffer_offset};
+  TmpImage<ValueType> src = {*this, local_data.get(), std::vector<ssize_t>(ndim(), 0), ram->strides, ram->offset};
   Image<ValueType> dest(self);
   threaded_copy_with_progress_message("writing back direct IO buffer for \"" + name() + "\"", src, dest);
 }
