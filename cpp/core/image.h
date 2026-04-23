@@ -252,6 +252,7 @@ public:
     size_t offset;
   };
   std::optional<RAM> ram;
+  std::mutex direct_io_mutex;
 
 protected:
   std::function<ValueType(const void *, size_t, default_type, default_type)> fetch_func;
@@ -355,6 +356,8 @@ Image<ValueType>::Image(const std::shared_ptr<Image<ValueType>::Buffer> &buffer_
 template <typename ValueType> Image<ValueType>::~Image() {}
 
 template <typename ValueType> Image<ValueType> Image<ValueType>::with_direct_io(Stride::List with_strides) {
+  std::lock_guard lock(buffer->direct_io_mutex);
+
   if (buffer->ram.has_value())
     throw Exception("FIXME: don't invoke 'with_direct_io()' on images already using direct IO!");
   if (!buffer->get_io())
