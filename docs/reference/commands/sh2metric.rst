@@ -41,6 +41,8 @@ Options specific to the "entropy" metric
 
 -  **-normalise** normalise the voxel-wise entropy measure to the range [0.0, 1.0]
 
+-  **-directions spec** specify the direction set to be used for SH amplitude sampling; either an input file containing a set of directions, or an integer corresponding to a built-in direction set
+
 Options specific to the "power" metric
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

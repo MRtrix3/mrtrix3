@@ -1,0 +1,13 @@
+#!/bin/bash
+# Evaluation of the operation of the "entropy" operation for the sh2metric command
+#   when the -directions option is specified
+
+# Here the same number of directions is specified as is under use by default;
+#   the test only ensures that the command-line option is appropriately parsed
+sh2metric amp2sh/out.mif entropy - -directions 1281 | \
+testing_diff_image - sh2power/entropy.mif -frac 0.1
+
+# Ensure that the command succeeds in parsing a filesystem path
+#   containing a direction set
+sh2metric amp2sh/out.mif entropy tmp.mif -force \
+    -directions dirvalidate/spherical.txt

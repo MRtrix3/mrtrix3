@@ -437,6 +437,7 @@ add_bash_binary_test(sh2amp/msmt)
 add_bash_binary_test(sh2amp/nonnegative)
 
 add_bash_binary_test(sh2metric/entropy)
+add_bash_binary_test(sh2metric/entropy_directions)
 add_bash_binary_test(sh2metric/entropy_multiinput)
 add_bash_binary_test(sh2metric/entropy_normalised)
 add_bash_binary_test(sh2metric/power)

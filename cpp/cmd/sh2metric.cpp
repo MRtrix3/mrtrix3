@@ -68,6 +68,10 @@ void usage() {
   OPTIONS
     + OptionGroup ("Options specific to the \"entropy\" metric")
     + Option ("normalise", "normalise the voxel-wise entropy measure to the range [0.0, 1.0]")
+    + Option ("directions", "specify the direction set to be used for SH amplitude sampling;"
+                            " either an input file containing a set of directions,"
+                            " or an integer corresponding to a built-in direction set")
+      + Argument ("spec").type_file_in().type_integer(1)
 
     + OptionGroup ("Options specific to the \"power\" metric")
     + Option ("spectrum", "output the power spectrum,"
@@ -76,6 +80,22 @@ void usage() {
 
 }
 // clang-format on
+
+const DWI::Directions::Set get_directions() {
+  auto opt = get_options("directions");
+  if (!opt.empty()) {
+    try {
+      return DWI::Directions::Set(static_cast<std::string>(opt[0][0]));
+    } catch (Exception &) {
+    }
+    try {
+      return DWI::Directions::Set(static_cast<size_t>(opt[0][0]));
+    } catch (Exception &) {
+      throw Exception("Unable to interpret user input \"" + opt[0][0] + "\" as a direction set");
+    }
+  }
+  return DWI::Directions::Set(default_direction_set);
+}
 
 void run_entropy() {
   std::vector<Image<float>> SH_images;
@@ -96,7 +116,7 @@ void run_entropy() {
   }
   H_out.ndim() = 3;
 
-  const DWI::Directions::Set dirs(default_direction_set);
+  const DWI::Directions::Set dirs(get_directions());
   Image<float> image_out(Image<float>::create(argument[argument.size() - 1], H_out));
   const bool normalise = !get_options("normalise").empty();
 
