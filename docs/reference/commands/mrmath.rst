@@ -16,7 +16,7 @@ Usage
     mrmath [ options ]  input [ input ... ] operation output
 
 -  *input*: the input image(s).
--  *operation*: the operation to apply; options are: mean, median, sum, product, rms, norm, var, std, min, max, absmax, magmax.
+-  *operation*: the operation to apply; options are: mean, median, sum, product, rms, norm, var, std, min, max, absmax, magmax, entropy_bits, entropy_nits, entropy_dits.
 -  *output*: the output image.
 
 Description
@@ -24,7 +24,9 @@ Description
 
 Supported operations are:
 
-mean, median, sum, product, rms (root-mean-square value), norm (vector 2-norm), var (unbiased variance), std (unbiased standard deviation), min, max, absmax (maximum absolute value), magmax (value with maximum absolute value, preserving its sign).
+mean, median, sum, product, rms (root-mean-square value), norm (vector 2-norm), var (unbiased variance), std (unbiased standard deviation), min, max, absmax (maximum absolute value), magmax (value with maximum absolute value, preserving its sign), entropy_bits (Shannon entropy in bits, using log base 2), entropy_nits (Shannon entropy in nats, using natural logarithm), entropy_dits (Shannon entropy in hartleys, using log base 10).
+
+For entropy operations, the input values are first normalised to form a probability distribution (non-finite and negative values are treated as zero), and the Shannon entropy of this distribution is then computed using the specified logarithmic base.
 
 This command is used to traverse either along an image axis, or across a set of input images, calculating some statistic from the values along each traversal. If you are seeking to instead perform mathematical calculations that are done independently for each voxel, pleaase see the 'mrcalc' command.
 

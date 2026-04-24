@@ -22,6 +22,7 @@
 #include "enum.h"
 #include "image.h"
 #include "image_helpers.h"
+#include "math/entropy.h"
 #include "math/math.h"
 #include "math/median.h"
 #include "memory.h"
@@ -34,7 +35,23 @@
 using namespace MR;
 using namespace App;
 
-enum class Operation { MEAN, MEDIAN, SUM, PRODUCT, RMS, NORM, VAR, STD, MIN, MAX, ABSMAX, MAGMAX };
+enum class Operation {
+  MEAN,
+  MEDIAN,
+  SUM,
+  PRODUCT,
+  RMS,
+  NORM,
+  VAR,
+  STD,
+  MIN,
+  MAX,
+  ABSMAX,
+  MAGMAX,
+  ENTROPY_BITS,
+  ENTROPY_NITS,
+  ENTROPY_DITS
+};
 
 // clang-format off
 void usage() {
@@ -58,7 +75,16 @@ void usage() {
       " min,"
       " max,"
       " absmax (maximum absolute value),"
-      " magmax (value with maximum absolute value, preserving its sign)."
+      " magmax (value with maximum absolute value, preserving its sign),"
+      " entropy_bits (Shannon entropy in bits, using log base 2),"
+      " entropy_nits (Shannon entropy in nats, using natural logarithm),"
+      " entropy_dits (Shannon entropy in hartleys, using log base 10)."
+
+    + "For entropy operations,"
+      " the input values are first normalised to form a probability distribution"
+      " (non-finite and negative values are treated as zero),"
+      " and the Shannon entropy of this distribution is then computed"
+      " using the specified logarithmic base."
 
     + "This command is used to traverse either along an image axis,"
       " or across a set of input images,"
@@ -262,6 +288,31 @@ public:
   value_type max;
 };
 
+template <Math::Entropy::log_base_t logbase> class EntropyKernel {
+public:
+  void operator()(value_type val) {
+    if (std::isfinite(val))
+      values.push_back(val);
+  }
+  value_type result() const {
+    if (values.empty())
+      return NaNF;
+    if constexpr (logbase == Math::Entropy::log_base_t::TWO)
+      return static_cast<value_type>(Math::Entropy::bits(values));
+    else if constexpr (logbase == Math::Entropy::log_base_t::E)
+      return static_cast<value_type>(Math::Entropy::nits(values));
+    else
+      return static_cast<value_type>(Math::Entropy::dits(values));
+  }
+
+private:
+  std::vector<value_type> values;
+};
+
+using EntropyBits = EntropyKernel<Math::Entropy::log_base_t::TWO>;
+using EntropyNits = EntropyKernel<Math::Entropy::log_base_t::E>;
+using EntropyDits = EntropyKernel<Math::Entropy::log_base_t::TEN>;
+
 template <class Operation> class AxisKernel {
 public:
   AxisKernel(size_t axis) : axis(axis) {}
@@ -397,6 +448,15 @@ void run() {
     case Operation::MAGMAX:
       loop.run(AxisKernel<MagMax>(axis), image_in, image_out);
       return;
+    case Operation::ENTROPY_BITS:
+      loop.run(AxisKernel<EntropyBits>(axis), image_in, image_out);
+      return;
+    case Operation::ENTROPY_NITS:
+      loop.run(AxisKernel<EntropyNits>(axis), image_in, image_out);
+      return;
+    case Operation::ENTROPY_DITS:
+      loop.run(AxisKernel<EntropyDits>(axis), image_in, image_out);
+      return;
     default:
       assert(0);
     }
@@ -478,6 +538,15 @@ void run() {
       break;
     case Operation::MAGMAX:
       kernel.reset(new ImageKernel<MagMax>(header));
+      break;
+    case Operation::ENTROPY_BITS:
+      kernel.reset(new ImageKernel<EntropyBits>(header));
+      break;
+    case Operation::ENTROPY_NITS:
+      kernel.reset(new ImageKernel<EntropyNits>(header));
+      break;
+    case Operation::ENTROPY_DITS:
+      kernel.reset(new ImageKernel<EntropyDits>(header));
       break;
     default:
       assert(0);
