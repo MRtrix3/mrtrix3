@@ -53,6 +53,4 @@ extern const App::OptionGroup ACTOption;
 
 void load_act_properties(Properties &properties);
 
-void verify_5TT_image(const Header &);
-
 } // namespace MR::DWI::Tractography::ACT

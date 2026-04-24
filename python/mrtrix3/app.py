@@ -881,7 +881,7 @@ class Parser(argparse.ArgumentParser):
       standard_options.add_argument('-debug',
                                     action='store_true',
                                     default=None,
-                                    help='display debugging messages.')
+                                    help='display debugging messages & debug input data.')
       self.flag_mutually_exclusive_options( [ 'info', 'quiet', 'debug' ] )
       standard_options.add_argument('-force',
                                     action='store_true',

@@ -22,6 +22,7 @@
 #include "fixel/loop.h"
 #include "image.h"
 #include "registration/warp/helpers.h"
+#include "registration/warp/validate.h"
 
 using namespace MR;
 using namespace App;
@@ -37,7 +38,8 @@ void usage() {
   + Fixel::format_description;
 
   REFERENCES
-  + "Raffelt, D.; Tournier, JD/; Smith, RE.; Vaughan, DN.; Jackson, G.; Ridgway, GR. Connelly, A. " // Internal
+  + "* If using the -fc option: \n" // Internal
+    "Raffelt, D.; Tournier, JD/; Smith, RE.; Vaughan, DN.; Jackson, G.; Ridgway, GR. Connelly, A. "
     "Investigating White Matter Fibre Density and Morphology using Fixel-Based Analysis. "
     "Neuroimage, 2017, 144, 58-73. "
     "doi: 10.1016/j.neuroimage.2016.09.029";
@@ -68,8 +70,13 @@ void usage() {
 using value_type = float;
 
 void run() {
-  auto input = Image<value_type>::open(argument[0]).with_direct_io(3);
-  Registration::Warp::check_warp(input);
+  Header H = Header::open(argument[0]);
+  auto format = Registration::Warp::validate_header(H);
+  if (format != Registration::Warp::WarpFormat::Simple)
+    throw Exception("Command only operates on 4D deformation fields,"
+                    " not the 5D \"full\" warp field format");
+  auto input = H.get_image<value_type>().with_direct_io(3);
+  Registration::Warp::debug_validate_image(input);
 
   Image<value_type> jmatrix_output;
   Image<value_type> jdeterminant_output;

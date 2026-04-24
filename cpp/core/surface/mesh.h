@@ -126,7 +126,7 @@ public:
 
   void save(std::string_view, const bool binary = false) const;
 
-  size_t num_vertices() const { return vertices.size(); }
+  vertex_index_type num_vertices() const { return vertices.size(); }
   size_t num_triangles() const { return triangles.size(); }
   size_t num_quads() const { return quads.size(); }
   size_t num_polygons() const { return triangles.size() + quads.size(); }
@@ -137,11 +137,11 @@ public:
   std::string get_name() const { return name; }
   void set_name(std::string_view s) { name = s; }
 
-  const Vertex &vert(const size_t i) const {
+  const Vertex &vert(const vertex_index_type i) const {
     assert(i < vertices.size());
     return vertices[i];
   }
-  const Vertex &norm(const size_t i) const {
+  const Vertex &norm(const vertex_index_type i) const {
     assert(i < normals.size());
     return normals[i];
   }

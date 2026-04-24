@@ -60,6 +60,22 @@ spherical2cartesian(const MatrixType &az_in) {
   return cartesian;
 }
 
+//! get direction set as cartesian regardless of whether input is spherical or cartesian
+template <class MatrixType>
+inline typename std::enable_if<!MatrixType::IsVectorAtCompileTime, Eigen::MatrixXd>::type
+as_cartesian(const MatrixType &in) {
+  switch (in.cols()) {
+  case 2:
+    return spherical2cartesian(in);
+  case 3:
+    return in.eval();
+  default:
+    throw Exception("Unsupported input to Math::Sphere::as_cartesian()"
+                    " (expected 2 or 3 columns; got " +
+                    str(in.cols()) + ")");
+  }
+}
+
 //! convert Cartesian coordinates to spherical coordinates
 template <class VectorType1, class VectorType2>
 inline typename std::enable_if<VectorType1::IsVectorAtCompileTime, void>::type
@@ -88,6 +104,22 @@ cartesian2spherical(const MatrixType &cartesian, bool include_r = false) {
   for (ssize_t dir = 0; dir < cartesian.rows(); ++dir)
     cartesian2spherical(cartesian.row(dir), az_in.row(dir));
   return az_in;
+}
+
+//! get direction set as spherical regardless of whether input is spherical or cartesian
+template <class MatrixType>
+inline typename std::enable_if<!MatrixType::IsVectorAtCompileTime, Eigen::MatrixXd>::type
+as_spherical(const MatrixType &in) {
+  switch (in.cols()) {
+  case 2:
+    return in.eval();
+  case 3:
+    return cartesian2spherical(in);
+  default:
+    throw Exception("Unsupported input to Math::Sphere::as_spherical()"
+                    " (expected 2 or 3 columns; got " +
+                    str(in.cols()) + ")");
+  }
 }
 
 //! normalise a set of Cartesian coordinates

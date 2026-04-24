@@ -21,6 +21,7 @@
 #include "interp/linear.h"
 #include "ordered_thread_queue.h"
 #include "progressbar.h"
+#include "registration/warp/validate.h"
 
 using namespace MR;
 using namespace MR::DWI;
@@ -32,6 +33,18 @@ void usage() {
   AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
 
   SYNOPSIS = "Apply a spatial transformation to a tracks file";
+
+  DESCRIPTION
+  + "Unlike the non-linear transformation of image data,"
+    " where the value of the deformation field in a destination voxel position"
+    " defines the location in space from which to \"pull\" image data into that voxel,"
+    " the non-linear transformation of streamlines data"
+    " involves sampling the deformation field at each streamline vertex location"
+    " to determine the new spatial location to which to \"push\" that vertex."
+    " As such, the appropriate deformation field to apply to streamlines data"
+    " is the inverse of what would be applied to image data."
+    " So for instance, this may involve the utilisation of a template-to-subject warp field"
+    " in order to transform streamlines from subject to template space.";
 
   ARGUMENTS
   + Argument ("tracks", "the input track file.").type_tracks_in()
@@ -111,7 +124,14 @@ protected:
 void run() {
   Loader loader(argument[0]);
 
-  auto data = Image<value_type>::open(argument[1]).with_direct_io(3);
+  Header H_warp = Header::open(argument[1]);
+  auto warp_format = Registration::Warp::validate_header(H_warp);
+  if (warp_format != Registration::Warp::WarpFormat::Simple)
+    throw Exception("Command is only compatible with 4D deformation warp fields,"
+                    " not the 5D \"full\" warp format"
+                    " (see eg. command \"warpconvert\")");
+  auto data = H_warp.get_image<value_type>().with_direct_io(3);
+  Registration::Warp::debug_validate_image(data);
   Warper warper(data);
 
   Writer writer(argument[2], loader.properties);

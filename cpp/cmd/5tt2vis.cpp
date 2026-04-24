@@ -21,6 +21,7 @@
 
 #include "dwi/tractography/ACT/act.h"
 #include "dwi/tractography/ACT/tissues.h"
+#include "dwi/tractography/ACT/validate.h"
 
 using namespace MR;
 using namespace App;
@@ -75,11 +76,13 @@ void usage() {
 
 void run() {
 
-  auto input = Image<float>::open(argument[0]);
-  DWI::Tractography::ACT::verify_5TT_image(input);
+  Header H_in = Header::open(argument[0]);
+  DWI::Tractography::ACT::validate_5TT_header(H_in);
+  auto input = H_in.get_image<float>();
+  DWI::Tractography::ACT::debug_validate_5TT_image(input);
 
-  Header H(input);
-  H.ndim() = 3;
+  Header H_out(H_in);
+  H_out.ndim() = 3;
 
   const float bg_multiplier = get_option_value("bg", default_value_background);
   const float cgm_multiplier = get_option_value("cgm", default_value_cgm);
@@ -88,7 +91,7 @@ void run() {
   const float csf_multiplier = get_option_value("csf", default_value_csf);
   const float path_multiplier = get_option_value("path", default_value_pathology);
 
-  auto output = Image<float>::create(argument[1], H);
+  auto output = Image<float>::create(argument[1], H_out);
 
   auto f = [&](decltype(input) &in, decltype(output) &out) {
     const DWI::Tractography::ACT::Tissues t(in);

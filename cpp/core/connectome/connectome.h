@@ -95,6 +95,4 @@ template <class MatrixType> void to_upper(MatrixType &in) {
   }
 }
 
-void check(const Header &);
-
 } // namespace MR::Connectome

@@ -23,6 +23,7 @@
 #include "surface/filter/smooth.h"
 #include "surface/mesh.h"
 #include "surface/mesh_multi.h"
+#include "surface/validate.h"
 
 using namespace MR;
 using namespace App;
@@ -83,6 +84,7 @@ void run() {
   } catch (...) {
     in.load(argument[0]);
   }
+  debug_validate(in);
 
   MeshMulti out;
 

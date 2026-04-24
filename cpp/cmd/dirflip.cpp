@@ -16,9 +16,12 @@
 
 #include "command.h"
 #include "dwi/directions/file.h"
+#include "dwi/directions/validate.h"
+#include "file/matrix.h"
 #include "file/utils.h"
 #include "math/SH.h"
 #include "math/rng.h"
+#include "math/sphere.h"
 #include "progressbar.h"
 #include "thread.h"
 
@@ -143,7 +146,9 @@ protected:
 };
 
 void run() {
-  auto directions = DWI::Directions::load_cartesian(argument[0]);
+  auto directions = File::Matrix::load_matrix<value_type>(argument[0]);
+  DWI::Directions::validate(directions, argument[0], false);
+  directions = Math::Sphere::as_cartesian(directions);
 
   const size_t num_shuffles = get_option_value<size_t>("number", default_number);
   const size_t preserve = get_option_value<size_t>("preserve", 0);

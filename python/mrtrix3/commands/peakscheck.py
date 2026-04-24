@@ -375,6 +375,9 @@ def execute(): #pylint: disable=unused-variable
               ' -datatype float32'
               f' {NO_REALIGN_OPTIONSTR}')
 
+  if app.ARGS.format in ('unitcartesian', 'cartesian') and app.VERBOSITY >= 3:
+    run.command('peaksvalidate data.mif')
+
   if app.ARGS.mask:
     run.command(f'mrconvert {app.ARGS.mask} mask.mif'
                 ' -datatype bit'

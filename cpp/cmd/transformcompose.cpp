@@ -19,6 +19,7 @@
 #include "file/matrix.h"
 #include "image.h"
 #include "interp/linear.h"
+#include "registration/warp/validate.h"
 
 using namespace MR;
 using namespace App;
@@ -110,24 +111,20 @@ void run() {
   for (size_t i = 0; i < argument.size() - 1; ++i) {
     try {
       template_header.reset(new Header(Header::open(argument[i])));
-      auto image = Image<default_type>::open(argument[i]);
-
-      if (image.ndim() != 4)
-        throw Exception("input warp is not a 4D image");
-
-      if (image.size(3) != 3)
-        throw Exception("input warp should have 3 volumes in the 4th dimension");
-
-      std::unique_ptr<TransformBase> transform(new Warp(image));
-      transform_list.push_back(std::move(transform));
-
+      auto warp_format = Registration::Warp::validate_header(*template_header);
+      if (warp_format != Registration::Warp::WarpFormat::Simple)
+        throw Exception("Input non-linear warp field images must be simple 4D deformation fields,"
+                        " not the 5D \"full\" warp series format");
+      auto image = template_header->get_image<default_type>();
+      Registration::Warp::debug_validate_image(image);
+      transform_list.emplace_back(std::make_unique<Warp>(image));
     } catch (Exception &E) {
       try {
-        std::unique_ptr<TransformBase> transform(new Linear(File::Matrix::load_transform(argument[i])));
-        transform_list.push_back(std::move(transform));
+        transform_list.emplace_back(std::make_unique<Linear>(File::Matrix::load_transform(argument[i])));
       } catch (Exception &E) {
-        throw Exception("error reading input file: " + str(argument[i]) +
-                        ". Does not appear to be a 4D warp image or 4x4 linear transform.");
+        throw Exception("error reading input file " + str(argument[i]) +
+                        ":"
+                        " does not appear to be a 4D warp image or 4x4 linear transform");
       }
     }
   }
@@ -139,8 +136,9 @@ void run() {
   } else if (template_header) {
     if (!dynamic_cast<Warp *>(transform_list[transform_list.size() - 1].get()))
       throw Exception(
-          "Output deformation field grid not defined. When composing warps either use the -template "
-          "option to define the output deformation field grid, or ensure the last input transformation is a warp.");
+          "Output deformation field grid not defined;"
+          " when composing warps either use the -template option to define the output deformation field grid,"
+          " or ensure the last input transformation is a warp.");
   }
 
   // all inputs are linear so compose and output as text file

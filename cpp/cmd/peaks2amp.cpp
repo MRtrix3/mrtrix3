@@ -17,6 +17,7 @@
 #include "algo/loop.h"
 #include "command.h"
 #include "fixel/helpers.h"
+#include "fixel/validate.h"
 #include "image.h"
 
 using namespace MR;
@@ -41,8 +42,9 @@ void usage() {
 
 void run() {
   Header H_in = Header::open(argument[0]);
-  Peaks::check(H_in);
+  Peaks::validate_header(H_in);
   auto dir = H_in.get_image<float>();
+  Peaks::debug_validate_image(dir);
 
   Header header(dir);
   header.size(3) = header.size(3) / 3;

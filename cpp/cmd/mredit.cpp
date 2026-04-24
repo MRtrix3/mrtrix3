@@ -99,9 +99,9 @@ void run() {
   if (inplace) {
     out = Image<float>(in);
   } else {
-    if (std::string(argument[1]) ==
-        std::string(argument[0])) // Not ideal test - could be different paths to the same file
-      throw Exception("Do not provide same image as input and output; instad specify image to be edited in-place");
+    // Not ideal test - could be different paths to the same file
+    if ((std::string(argument[1]) == std::string(argument[0])) && (std::string(argument[0]) != "-"))
+      throw Exception("Do not provide same image as input and output; instead specify image to be edited in-place");
     out = Image<float>::create(argument[1], H);
     copy(in, out);
   }

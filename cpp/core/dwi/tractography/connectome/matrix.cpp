@@ -140,7 +140,7 @@ template <typename T> void Matrix<T>::finalize() {
   }
 }
 
-template <typename T> void Matrix<T>::error_check(const std::set<node_t> &missing_nodes) {
+template <typename T> void Matrix<T>::error_check(const std::vector<node_t> &missing_nodes) {
   // Don't bother looking for empty nodes if we're generating a
   //   connectivity vector from a seed region rather than a
   //   connectome from a whole-brain tractogram
@@ -157,11 +157,11 @@ template <typename T> void Matrix<T>::error_check(const std::set<node_t> &missin
   }
   std::vector<std::string> empty_nodes;
   for (node_t i = 1; i != visited.size(); ++i) {
-    if (!visited[i] && missing_nodes.find(i) == missing_nodes.end())
+    if (!visited[i] && std::find(missing_nodes.begin(), missing_nodes.end(), i) == missing_nodes.end())
       empty_nodes.push_back(str(i));
   }
   if (!empty_nodes.empty()) {
-    WARN("The following nodes do not have any streamlines assigned:");
+    WARN("The following nodes present in the parcellation do not have any streamlines assigned:");
     WARN(join(empty_nodes, ", "));
     WARN("(This may indicate a poor registration)");
   }

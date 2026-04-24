@@ -18,6 +18,7 @@
 
 #include "dwi/tractography/ACT/act.h"
 #include "dwi/tractography/ACT/tissues.h"
+#include "dwi/tractography/ACT/validate.h"
 #include "image.h"
 #include "interp/linear.h"
 #include "math/hermite.h"
@@ -38,10 +39,16 @@ protected:
 
 public:
   GMWMI_finder(const Image<float> &buffer)
-      : interp_template(buffer), min_vox(std::min(buffer.spacing(0), std::min(buffer.spacing(1), buffer.spacing(2)))) {}
+      : interp_template(buffer),
+        min_vox(static_cast<float>(std::min(buffer.spacing(0), std::min(buffer.spacing(1), buffer.spacing(2))))) {
+    ACT::debug_validate_5TT_image(buffer);
+  }
 
   GMWMI_finder(const Interp &interp)
-      : interp_template(interp), min_vox(std::min(interp.spacing(0), std::min(interp.spacing(1), interp.spacing(2)))) {}
+      : interp_template(interp),
+        min_vox(static_cast<float>(std::min(interp.spacing(0), std::min(interp.spacing(1), interp.spacing(2))))) {
+    ACT::debug_validate_5TT_image(interp);
+  }
 
   GMWMI_finder(const GMWMI_finder &that) : interp_template(that.interp_template), min_vox(that.min_vox) {}
 

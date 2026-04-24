@@ -1,0 +1,10 @@
+#!/bin/bash
+# Ensure that presence of an erroneous spatial component leads to an error
+
+rm -f tmp_gradgtunity.b
+sed "1s/.*/-0.0509541 0.0617551 -1.00321 2950/" dirvalidate/grad.b > tmp_gradgtunity.b
+
+rm -f tmp.txt
+! ( dirvalidate tmp_gradgtunity.b > tmp.txt 2>&1 )
+cat tmp.txt
+grep -E "component .+ is outside the permitted range" tmp.txt
