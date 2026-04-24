@@ -28,6 +28,7 @@
 #include "dwi/tractography/scalar_file.h"
 
 #include "math/SH.h"
+#include "math/entropy.h"
 
 #include "fixel/fixel.h"
 #include "fixel/helpers.h"
@@ -50,6 +51,7 @@ enum class Operation {
   COUNT,
   COMPLEXITY,
   SF,
+  ENTROPY,
   DEC_UNIT,
   DEC_SCALED,
   NONE
@@ -69,7 +71,7 @@ void usage() {
   + "- Some statistic computed across all fixel values within a voxel:"
        " mean, sum, product, min, max, absmax, magmax"
   + "- The number of fixels in each voxel: count"
-  + "- Some measure of crossing-fibre organisation: complexity, sf ('single-fibre')"
+  + "- Some measure of crossing-fibre organisation: complexity, sf ('single-fibre'), entropy"
   + "- A 4D directionally-encoded colour image: dec_unit, dec_scaled"
   + "- A 4D image containing all fixel data values in each voxel unmodified: none"
 
@@ -354,6 +356,28 @@ public:
   }
 };
 
+class Entropy : protected Base {
+public:
+  Entropy(FixelDataType &data, const index_type max_fixels) : Base(data, max_fixels) {}
+
+  void operator()(FixelIndexType &index, Image<float> &out) {
+    std::vector<default_type> values;
+    for (auto f = Base::Loop(index)(data); f; ++f) {
+      if (!f.padding())
+        values.push_back(data.value());
+    }
+    if (values.empty()) {
+      out.value() = NaNF;
+      return;
+    }
+    try {
+      out.value() = MR::Math::Entropy::nats(values);
+    } catch (Exception &) {
+      out.value() = NaNF;
+    }
+  }
+};
+
 class DEC_unit : protected Base {
 public:
   DEC_unit(FixelDataType &data, const index_type max_fixels, FixelDataType &vol, Image<float> &dir)
@@ -505,6 +529,7 @@ void run() {
   case Operation::COUNT:
   case Operation::COMPLEXITY:
   case Operation::SF:
+  case Operation::ENTROPY:
   case Operation::NONE:
     if (in_vol.valid())
       WARN("Option -weighted has no meaningful interpretation for the operation specified; ignoring");
@@ -557,6 +582,9 @@ void run() {
     break;
   case Operation::SF:
     loop.run(SF(in_data, max_fixels), in_index_image, out);
+    break;
+  case Operation::ENTROPY:
+    loop.run(Entropy(in_data, max_fixels), in_index_image, out);
     break;
   case Operation::DEC_UNIT:
     loop.run(DEC_unit(in_data, max_fixels, in_vol, in_directions), in_index_image, out);
