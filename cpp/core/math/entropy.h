@@ -16,25 +16,43 @@
 
 #pragma once
 
+#include "math/math.h"
 #include "types.h"
 #include <Eigen/Dense>
 #include <cmath>
+#include <type_traits>
 
 namespace MR::Math::Entropy {
 
 enum class log_base_t { TWO, E, TEN };
 
 namespace {
-template <class Cont> default_type prob_norm(const Cont &data) {
-  // Can't use array().sum(), as there could be negative values;
-  //   also function generalises to STL containers
+template <class Cont>
+typename std::enable_if<!is_eigen_type<Cont>::value, default_type>::type prob_norm(const Cont &data) {
   default_type sum(0.0);
   for (ssize_t i = 0; i != data.size(); ++i) {
-    if (std::isfinite(data[i]))
-      sum += std::max(0.0, data[i]);
+    if (std::isinf(data[i]) && data[i] > 0.0)
+      throw Exception("Cannot normalise probabilities in presence of +inf values");
+    if (std::isfinite(data[i])) // Ignore -inf, NaN
+      sum += std::max(0.0, static_cast<default_type>(data[i]));
   }
   if (sum == 0.0)
-    throw Exception("Cannot compute entropy of vector with no positive values");
+    throw Exception("Cannot compute probability normalisation of vector with no positive values");
+  return 1.0 / sum;
+}
+
+template <class Cont>
+typename std::enable_if<is_eigen_type<Cont>::value, default_type>::type prob_norm(const Cont &data) {
+  using Scalar = typename Cont::Scalar;
+  const default_type sum = data.array()
+                               .unaryExpr([](Scalar x) -> Scalar {
+                                 if (std::isinf(x) && x > Scalar(0))
+                                   throw Exception("Cannot normalise probabilities in presence of +inf values");
+                                 return std::isfinite(x) ? std::max(Scalar(0), x) : Scalar(0); // Ignore -inf, NaN
+                               })
+                               .sum();
+  if (sum == 0.0)
+    throw Exception("Cannot compute probability normalisation of vector with no positive values");
   return 1.0 / sum;
 }
 
