@@ -1,9 +1,9 @@
 #!/bin/bash
-# Verify operation of the -seed_image option
+# Verify operation of the -seed_voxels option
 # Seeding is stochastic throughout the whole input mask,
 #   so tolerance between what is generated and the reference must be reasonably high
 tckgen SIFT_phantom/dwi.mif -algo seedtest -select 3888 tmp.tck -force \
--seed_image SIFT_phantom/mask.mif
+-seed_voxels SIFT_phantom/mask.mif
 
 tckmap tmp.tck -template SIFT_phantom/dwi.mif -ends_only - | \
 testing_diff_image - tckgen/SIFT_phantom_seeds.mif -abs 26

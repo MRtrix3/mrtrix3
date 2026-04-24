@@ -16,8 +16,11 @@
 
 #pragma once
 
-#include "app.h"
-#include "header.h"
+#include "types.h"
+
+namespace MR {
+class Header;
+} // namespace MR
 
 namespace MR::App {
 class OptionGroup;
@@ -28,6 +31,8 @@ class Properties;
 } // namespace MR::DWI::Tractography
 
 namespace MR::DWI::Tractography::ACT {
+
+enum class sgm_trunc_t { DEFAULT, ENTRY, EXIT, MINIMUM, RANDOM, ROULETTE };
 
 // If the sum of tissue probabilities is below this threshold, the image is being exited, so a boolean flag is thrown
 // The values will however still be accessible

@@ -18,6 +18,7 @@
 
 #include <algorithm>
 
+#include "dwi/tractography/ACT/act.h"
 #include "dwi/tractography/algorithms/calibrator.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/tracking/method.h"
@@ -64,6 +65,9 @@ public:
                          curvature_constraint_t::LIMITED_SEARCH);
       sin_max_angle_ho = std::sin(max_angle_ho);
       set_cutoff(Defaults::cutoff_fod * (is_act() ? Defaults::cutoff_act_multiplier : 1.0));
+
+      if (is_act())
+        act().set_default_sgm_trunc(ACT::sgm_trunc_t::ROULETTE);
 
       properties["method"] = "iFOD2";
       properties.set(lmax, "lmax");

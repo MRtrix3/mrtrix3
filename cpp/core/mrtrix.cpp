@@ -16,7 +16,6 @@
 
 #include "mrtrix.h"
 
-#include <cstdarg>
 #include <string_view>
 
 namespace MR {
@@ -165,19 +164,6 @@ std::string uppercase(std::string_view string) {
   ret.resize(string.size());
   transform(string.begin(), string.end(), ret.begin(), toupper);
   return ret;
-}
-
-std::string printf(const char *format, ...) { // check_syntax off
-  size_t len = 0;
-  va_list list1, list2;
-  va_start(list1, format);
-  va_copy(list2, list1);
-  len = vsnprintf(nullptr, 0, format, list1) + 1;
-  va_end(list1);
-  VLA(buf, char, len);
-  vsnprintf(buf, len, format, list2);
-  va_end(list2);
-  return buf;
 }
 
 std::string strip(std::string_view string, std::string_view ws, bool left, bool right) {

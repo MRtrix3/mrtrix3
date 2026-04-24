@@ -1,0 +1,36 @@
+#!/bin/bash
+# Verify operation of the -seed_rejection_per_coordinate option
+# Ensure that the coordinates are utilised with the same ratio
+#   as that of the weights nominated in the file
+rm -f tmp_in.txt
+printf "3 3 3 1\n-3 -3 -3 0.1" > tmp_in.txt
+
+tckgen SIFT_phantom/dwi.mif tmp_out.tck \
+    -algo seedtest \
+    -seed_rejection_per_coordinate tmp_in.txt \
+    -select 5K \
+    -force
+
+rm -f tmp_out*.txt
+tckconvert tmp_out.tck tmp_out[].txt -force
+
+rm -f tmp_uniquelines.txt
+cat tmp_out*.txt | \
+    sort -nr | \
+    uniq -c | \
+    tee tmp_uniquelines.txt
+
+rm -f tmp_ratio.txt
+cat tmp_uniquelines.txt | \
+    awk '{$1=$1};1' | \
+    cut -d' ' -f1 | \
+    tr '\n' '/' | \
+    cut -d'/' -f1-2 | \
+    tee tmp_ratio.txt
+
+rm -f tmp_equation.txt
+cat tmp_ratio.txt | \
+    awk '{print "scale=2; " $0 " > 9 && " $0 " < 11"}' | \
+    tee tmp_equation.txt
+
+(( $(cat tmp_equation.txt | bc) ))
