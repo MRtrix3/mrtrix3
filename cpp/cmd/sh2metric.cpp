@@ -160,7 +160,7 @@ void run_entropy() {
       return true;
     }
 
-  protected:
+  private:
     std::vector<Image<float>> images;
     Image<float> out;
     vector_type SH_coefs;
@@ -196,7 +196,7 @@ void run_entropy() {
       size_t get_num_dirs() const { return num_dirs; }
       default_type normalise(const default_type in) const { return normalisation(in); }
 
-    protected:
+    private:
       const size_t num_dirs;
       std::map<size_t, transform_type> transforms;
 
@@ -224,7 +224,7 @@ void run_entropy() {
           return std::max(0.0, std::min(1.0, ((in - lower) / (upper - lower))));
         }
 
-      protected:
+      private:
         default_type lower;
         default_type upper;
       } normalisation;
@@ -244,7 +244,7 @@ void run_power() {
 
   const bool spectrum = !get_options("spectrum").empty();
 
-  const int lmax = Math::SH::LforN(SH_data.size(3));
+  const size_t lmax = Math::SH::LforN(SH_data.size(3));
   INFO("calculating spherical harmonic power up to degree " + str(lmax));
 
   if (spectrum)
@@ -257,14 +257,14 @@ void run_power() {
 
   auto f1 = [&](decltype(power_data) &P, decltype(SH_data) &SH) {
     P.index(3) = 0;
-    for (int l = 0; l <= lmax; l += 2) {
-      float power = 0.0;
+    for (size_t l = 0; l <= lmax; l += 2) {
+      default_type power = 0.0;
       for (int m = -l; m <= l; ++m) {
-        SH.index(3) = Math::SH::index(l, m);
-        float val = SH.value();
-        power += Math::pow2(val);
+        SH.index(3) = static_cast<ssize_t>(Math::SH::index(l, m));
+        const float val = SH.value();
+        power += Math::pow2(static_cast<default_type>(val));
       }
-      P.value() = power / (Math::pi * 4);
+      P.value() = static_cast<float>(power / (Math::pi * 4));
       ++P.index(3);
     }
   };
@@ -278,7 +278,7 @@ void run_power() {
         power += Math::pow2(val);
       }
     }
-    P.value() = power / (Math::pi * 4);
+    P.value() = static_cast<float>(power / (Math::pi * 4));
   };
 
   auto loop = ThreadedLoop("calculating SH power", SH_data, 0, 3);
