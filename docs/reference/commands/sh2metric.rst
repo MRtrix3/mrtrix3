@@ -16,7 +16,7 @@ Usage
     sh2metric [ options ]  SH [ SH ... ] metric power
 
 -  *SH*: the input spherical harmonics coefficients image
--  *metric*: the metrc to compute; one of: entropy,power
+-  *metric*: the metrc to compute; one of: entropy, power
 -  *power*: the output metric image
 
 Description

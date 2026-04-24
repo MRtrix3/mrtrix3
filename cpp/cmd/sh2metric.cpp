@@ -20,6 +20,7 @@
 #include "algo/threaded_loop.h"
 #include "command.h"
 #include "dwi/directions/set.h"
+#include "enum.h"
 #include "image.h"
 #include "image_helpers.h"
 #include "math/SH.h"
@@ -31,7 +32,7 @@ using namespace App;
 
 constexpr size_t default_direction_set = 1281;
 
-const std::vector<std::string> metrics = {"entropy", "power"};
+enum class metrics { ENTROPY, POWER };
 
 // clang-format off
 void usage() {
@@ -62,7 +63,7 @@ void usage() {
 
   ARGUMENTS
     + Argument ("SH", "the input spherical harmonics coefficients image").type_image_in().allow_multiple()
-    + Argument ("metric", "the metrc to compute; one of: " + join(metrics, ",")).type_choice(metrics)
+    + Argument ("metric", "the metrc to compute; one of: " + Enum::join<metrics>()).type_choice<metrics>()
     + Argument ("power", "the output metric image").type_image_out();
 
   OPTIONS
@@ -289,11 +290,11 @@ void run_power() {
 }
 
 void run() {
-  switch (int(argument[argument.size() - 2])) {
-  case 0: // "entropy"
+  switch (Enum::from_name<metrics>(argument[argument.size() - 2])) {
+  case metrics::ENTROPY:
     run_entropy();
     return;
-  case 1: // "power"
+  case metrics::POWER:
     run_power();
     return;
   }
