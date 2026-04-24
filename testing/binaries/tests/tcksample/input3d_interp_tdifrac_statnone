@@ -1,0 +1,8 @@
+#!/bin/bash
+# Verify that command suitably errors out when using:
+# - A *3D* input image
+# - *Nearest-neighbour* interpolation
+# - The "-use_tdi_fraction" command-line flag
+# - *No* track-wise statistic
+tcksample tracks.tck afdtotal.mif tmp.csv -use_tdi_fraction -force 2>&1 | \
+    grep "Cannot use \-use_tdi_fraction option unless a per\-streamline statistic is used"

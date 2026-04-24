@@ -1,0 +1,10 @@
+#!/bin/bash
+# Ensure that command runs successfully with:
+# - A *Spherical Harmonics* input image
+# - Using *interpolation*
+#   (linear interpolation is used merely as an exemplar)
+# - *Including( use of a track-wise statistic
+#   (mean is used here merely as an exemplar)
+tcksample tracks.tck fod.mif tmp.csv -stat_tck mean -sh true -force
+
+testing_diff_matrix tmp.csv tcksample/inputsh_interplinear_statmean.csv -frac 1e-5

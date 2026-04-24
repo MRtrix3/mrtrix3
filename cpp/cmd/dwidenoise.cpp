@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -23,8 +23,8 @@
 using namespace MR;
 using namespace App;
 
-const std::vector<std::string> dtypes = {"float32", "float64"};
-const std::vector<std::string> estimators = {"exp1", "exp2"};
+enum class DType { FLOAT32, FLOAT64 };
+enum class Estimator { EXP1, EXP2 };
 
 // clang-format off
 void usage() {
@@ -103,7 +103,7 @@ void usage() {
            " (single or double precision). "
            "For complex input data,"
            " this will select complex float32 or complex float64 datatypes.")
-    + Argument("float32/float64").type_choice(dtypes)
+    + Argument("float32/float64").type_choice<DType>()
 
   + Option("estimator",
            "Select the noise level estimator"
@@ -111,7 +111,7 @@ void usage() {
            " either: \n"
            "* Exp1: the original estimator used in Veraart et al. (2016), or \n"
            "* Exp2: the improved estimator introduced in Cordero-Grande et al. (2019).")
-    + Argument("Exp1/Exp2").type_choice(estimators);
+    + Argument("Exp1/Exp2").type_choice<Estimator>();
 
   COPYRIGHT =
       "Copyright (c) 2016 New York University, University of Antwerp, and the MRtrix3 contributors \n \n"
@@ -200,8 +200,8 @@ public:
     {                               // (as opposed to the paper where p is defined as the number of signal components)
       double lam = std::max(s[p], 0.0) / q;
       clam += lam;
-      double gam = double(p + 1) / (exp1 ? q : q - (r - p - 1));
-      double sigsq1 = clam / double(p + 1);
+      double gam = static_cast<double>(p + 1) / static_cast<double>(exp1 ? q : q - (r - p - 1));
+      double sigsq1 = clam / static_cast<double>(p + 1);
       double sigsq2 = (lam - lam_r) / (4.0 * std::sqrt(gam));
       // sigsq2 > sigsq1 if signal else noise
       if (sigsq2 < sigsq1) {
@@ -232,7 +232,7 @@ public:
     // store rank map if requested:
     if (rankmap.valid()) {
       assign_pos_of(dwi, 0, 3).to(rankmap);
-      rankmap.value() = uint16_t(r - cutoff_p);
+      rankmap.value() = static_cast<uint16_t>(r - cutoff_p);
     }
   }
 
@@ -289,7 +289,7 @@ void process_image(Header &data,
                    Image<bool> &mask,
                    Image<real_type> &noise,
                    Image<uint16_t> &rank,
-                   const std::string &output_name,
+                   std::string_view output_name,
                    const std::vector<uint32_t> &extent,
                    bool exp1) {
   auto input = data.get_image<T>().with_direct_io(3);
@@ -333,12 +333,15 @@ void run() {
     uint32_t e = 1;
     while (e * e * e < dwi.size(3))
       e += 2;
-    extent = {
-        std::min(e, uint32_t(dwi.size(0))), std::min(e, uint32_t(dwi.size(1))), std::min(e, uint32_t(dwi.size(2)))};
+    extent = {std::min(e, static_cast<uint32_t>(dwi.size(0))),
+              std::min(e, static_cast<uint32_t>(dwi.size(1))),
+              std::min(e, static_cast<uint32_t>(dwi.size(2)))};
   }
   INFO("selected patch size: " + str(extent[0]) + " x " + str(extent[1]) + " x " + str(extent[2]) + ".");
 
-  bool exp1 = get_option_value("estimator", 1) == 0; // default: Exp2 (unbiased estimator)
+  const Estimator estimator =
+      get_option_choice<Estimator>("estimator", Estimator::EXP2); // default: Exp2 (unbiased estimator)
+  const bool exp1 = estimator == Estimator::EXP1;
 
   if (std::min<uint32_t>(dwi.size(3), extent[0] * extent[1] * extent[2]) < 15) {
     WARN("The number of volumes or the patch size is small. This may lead to discretisation effects "
@@ -364,15 +367,16 @@ void run() {
     rank = Image<uint16_t>::create(opt[0][0], header);
   }
 
-  int prec = get_option_value("datatype", 0); // default: single precision
+  const DType precision = get_option_choice<DType>("datatype", DType::FLOAT32); // default: single precision
+  int prec = static_cast<int>(precision);
   if (dwi.datatype().is_complex())
     prec += 2; // support complex input data
   switch (prec) {
-  case 0:
+  case static_cast<int>(DType::FLOAT32):
     INFO("select real float32 for processing");
     process_image<float>(dwi, mask, noise, rank, argument[1], extent, exp1);
     break;
-  case 1:
+  case static_cast<int>(DType::FLOAT64):
     INFO("select real float64 for processing");
     process_image<double>(dwi, mask, noise, rank, argument[1], extent, exp1);
     break;

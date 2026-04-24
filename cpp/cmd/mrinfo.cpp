@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -208,24 +208,24 @@ void print_transform(const Header &header) {
   std::cout << matrix.format(fmt);
 }
 
-void print_properties(const Header &header, const std::string &key, const size_t indent = 0) {
+void print_properties(const Header &header, std::string_view key, const size_t indent = 0) {
   if (lowercase(key) == "all") {
     for (const auto &it : header.keyval()) {
       std::cout << it.first << ": ";
       print_properties(header, it.first, it.first.size() + 2);
     }
   } else {
-    const auto values = header.keyval().find(key);
+    const auto values = header.keyval().find(std::string(key));
     if (values != header.keyval().end()) {
       auto lines = split(values->second, "\n");
-      INFO("showing property " + key + ":");
+      INFO("showing property " + std::string(key) + ":");
       std::cout << lines[0] << "\n";
       for (size_t i = 1; i != lines.size(); ++i) {
         lines[i].insert(0, indent, ' ');
         std::cout << lines[i] << "\n";
       }
     } else {
-      WARN("no \"" + key + "\" entries found in \"" + header.name() + "\"");
+      WARN("no \"" + std::string(key) + "\" entries found in \"" + std::string(header.name()) + "\"");
     }
   }
 }
@@ -317,7 +317,7 @@ void run() {
     if (spacing)
       print_spacing(header);
     if (datatype)
-      std::cout << (header.datatype().specifier() ? header.datatype().specifier() : "invalid") << "\n";
+      std::cout << header.datatype().specifier() << "\n";
     if (strides)
       print_strides(header);
     if (offset)

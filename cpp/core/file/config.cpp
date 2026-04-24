@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,13 +21,12 @@
 #include "file/config.h"
 #include "file/path.h"
 
-#define MRTRIX_CONFIG_FILE "mrtrix.conf"
-#define MRTRIX_SYS_CONFIG_FILE "/etc/" MRTRIX_CONFIG_FILE
-#define MRTRIX_USER_CONFIG_FILE "." MRTRIX_CONFIG_FILE
-
 namespace MR::File {
 
 KeyValues Config::config;
+
+const std::string Config::file_basename("mrtrix.conf");
+const std::string Config::default_sys_config_file("/etc/" + file_basename);
 
 // ENVVAR name: MRTRIX_CONFIGFILE
 // ENVVAR This can be used to set the location of the system-wide
@@ -37,30 +36,30 @@ KeyValues Config::config;
 // ENVVAR the software to have different configurations, etc.
 
 void Config::init() {
-  const char *sysconf_location = getenv("MRTRIX_CONFIGFILE");
-  if (!sysconf_location)
-    sysconf_location = MRTRIX_SYS_CONFIG_FILE;
+  const char *sysconf_location_env = getenv("MRTRIX_CONFIGFILE"); // check_syntax off
+  const std::string sysconf_location(sysconf_location_env == nullptr ? default_sys_config_file
+                                                                     : std::string(sysconf_location_env));
 
   if (Path::is_file(sysconf_location)) {
-    INFO(std::string("reading config file \"") + sysconf_location + "\"...");
+    INFO("reading config file \"" + sysconf_location + "\"...");
     try {
       KeyValue::Reader kv(sysconf_location);
       while (kv.next()) {
-        config[kv.key()] = kv.value();
+        config[std::string(kv.key())] = std::string(kv.value());
       }
     } catch (...) {
     }
   } else {
-    DEBUG(std::string("No config file found at \"") + sysconf_location + "\"");
+    DEBUG("No config file found at \"" + sysconf_location + "\"");
   }
 
-  std::string path = Path::join(Path::home(), MRTRIX_USER_CONFIG_FILE);
+  const std::string path = Path::join(Path::home(), "." + file_basename);
   if (Path::is_file(path)) {
     INFO("reading config file \"" + path + "\"...");
     try {
       KeyValue::Reader kv(path);
       while (kv.next()) {
-        config[kv.key()] = kv.value();
+        config[std::string(kv.key())] = std::string(kv.value());
       }
     } catch (...) {
     }
@@ -79,18 +78,18 @@ void Config::init() {
   Header::do_realign_transform = get_bool("RealignTransform", true);
 }
 
-std::string Config::get(const std::string &key) {
-  const KeyValues::const_iterator i = config.find(key);
+std::string Config::get(std::string_view key) {
+  const KeyValues::const_iterator i = config.find(std::string(key));
   return (i != config.end() ? i->second : "");
 }
 
-std::string Config::get(const std::string &key, const std::string &default_value) {
-  KeyValues::iterator i = config.find(key);
-  return (i != config.end() ? i->second : default_value);
+std::string Config::get(std::string_view key, std::string_view default_value) {
+  const KeyValues::const_iterator i = config.find(std::string(key));
+  return (i != config.end() ? i->second : std::string(default_value));
 }
 
-bool Config::get_bool(const std::string &key, bool default_value) {
-  std::string value = get(key);
+bool Config::get_bool(std::string_view key, bool default_value) {
+  const std::string value = get(std::string(key));
   if (value.empty())
     return default_value;
   try {
@@ -101,8 +100,8 @@ bool Config::get_bool(const std::string &key, bool default_value) {
   }
 }
 
-int Config::get_int(const std::string &key, int default_value) {
-  std::string value = get(key);
+int Config::get_int(std::string_view key, int default_value) {
+  const std::string value = get(std::string(key));
   if (value.empty())
     return default_value;
   try {
@@ -113,8 +112,8 @@ int Config::get_int(const std::string &key, int default_value) {
   }
 }
 
-float Config::get_float(const std::string &key, float default_value) {
-  std::string value = get(key);
+float Config::get_float(std::string_view key, float default_value) {
+  const std::string value = get(std::string(key));
   if (value.empty())
     return default_value;
   try {
@@ -125,23 +124,20 @@ float Config::get_float(const std::string &key, float default_value) {
   }
 }
 
-void Config::get_RGB(const std::string &key, float *ret, float default_R, float default_G, float default_B) {
-  std::string value = get(key);
+Eigen::Array3f Config::get_RGB(std::string_view key, const Eigen::Array3f &default_value) {
+  const std::string value = get(std::string(key));
   if (!value.empty()) {
     try {
       std::vector<default_type> V(parse_floats(value));
       if (V.size() < 3)
         throw Exception("malformed RGB entry \"" + value + "\" for key \"" + key +
                         "\" in configuration file - ignored");
-      ret[0] = V[0];
-      ret[1] = V[1];
-      ret[2] = V[2];
+      return {static_cast<float>(V[0]), static_cast<float>(V[1]), static_cast<float>(V[2])};
     } catch (Exception) {
+      return default_value;
     }
   } else {
-    ret[0] = default_R;
-    ret[1] = default_G;
-    ret[2] = default_B;
+    return default_value;
   }
 }
 

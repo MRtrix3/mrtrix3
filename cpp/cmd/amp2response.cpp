@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,6 +17,7 @@
 #include <Eigen/Dense>
 
 #include "command.h"
+#include "dwi/directions/validate.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
 #include "file/matrix.h"
@@ -207,7 +208,15 @@ void run() {
 
   auto opt = get_options("directions");
   if (!opt.empty()) {
-    dirs_azin.push_back(File::Matrix::load_matrix(opt[0][0]));
+    auto dirs = File::Matrix::load_matrix(opt[0][0]);
+    auto dv = DWI::Directions::validate(dirs, opt[0][0], false);
+    if (dv.n_non_unit > 0) {
+      WARN("Input directions file \"" + opt[0][0] + "\"" +                          //
+           " contains " + str(dv.n_non_unit) + " direction" +                       //
+           (dv.n_non_unit > 1 ? "s that are" : " that is") + " not of unit norm;" + //
+           " all directions will be interpreted agnostically of norm");             //
+    }
+    dirs_azin.push_back(Math::Sphere::as_spherical(dirs));
     volumes.push_back(all_volumes(dirs_azin.size()));
   } else {
     auto hit = header.keyval().find("directions");
@@ -306,7 +315,7 @@ void run() {
       auto transform = Math::ZSH::init_amp_transform<default_type>(dirs_azin[shell_index].col(1), lmax[shell_index]);
       if (!transform.allFinite()) {
         Exception e("Unable to construct A2SH transformation for shell b=" +
-                    str(int(std::round((*shells)[shell_index].get_mean()))) + ";");
+                    str(static_cast<ssize_t>(std::round((*shells)[shell_index].get_mean()))) + ";");
         e.push_back("  lmax (" + str(lmax[shell_index]) + ") may be too large for this shell");
         if (!shell_index && (*shells)[0].is_bzero())
           e.push_back("  (this appears to be a b=0 shell, and therefore lmax should be set to 0 for this shell)");
@@ -334,7 +343,7 @@ void run() {
       const size_t num_angles_constraint = 90;
       Eigen::VectorXd els(num_angles_constraint + 1);
       for (size_t i = 0; i <= num_angles_constraint; ++i)
-        els[i] = default_type(i) * Math::pi / 180.0;
+        els[i] = static_cast<default_type>(i) * Math::pi / 180.0;
       auto amp_transform = Math::ZSH::init_amp_transform<default_type>(els, lmax[shell_index]);
       auto deriv_transform = Math::ZSH::init_deriv_transform<default_type>(els, lmax[shell_index]);
 

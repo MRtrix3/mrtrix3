@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,9 @@
  */
 
 #include "mrview/tool/tractography/tractography.h"
+
+#include <array>
+
 #include "dialog/file.h"
 #include "lighting_dock.h"
 #include "mrtrix.h"
@@ -45,7 +48,7 @@ TrackGeometryType geometry_index2type(const int idx) {
 size_t geometry_string2index(std::string type_str) {
   type_str = lowercase(type_str);
 
-  auto matches = [&type_str](const std::string &s) { return type_str == lowercase(s); };
+  auto matches = [&type_str](std::string_view s) { return type_str == lowercase(s); };
   const auto &list = tractogram_geometry_types;
   auto it = std::find_if(list.begin(), list.end(), matches);
   if (it != list.end())
@@ -503,15 +506,15 @@ void Tractography::randomise_track_colour_slot() {
   QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
   for (int i = 0; i < indices.size(); ++i) {
     Tractogram *tractogram = tractogram_list_model->get_tractogram(indices[i]);
-    float colour[3];
+    std::array<float, 3> colour;
     Math::RNG::Uniform<float> rng;
     do {
       colour[0] = rng();
       colour[1] = rng();
       colour[2] = rng();
-    } while (colour[0] < 0.5 && colour[1] < 0.5 && colour[2] < 0.5);
+    } while (colour[0] < 0.5F && colour[1] < 0.5F && colour[2] < 0.5F);
     tractogram->set_color_type(TrackColourType::Manual);
-    QColor c(colour[0] * 255.0f, colour[1] * 255.0f, colour[2] * 255.0f);
+    QColor c(colour[0] * 255.0F, colour[1] * 255.0F, colour[2] * 255.0F);
     tractogram->set_colour(c);
     if (tractogram->get_threshold_type() == TrackThresholdType::UseColourFile)
       tractogram->set_threshold_type(TrackThresholdType::None);
@@ -728,7 +731,7 @@ void Tractography::selection_changed_slot(const QItemSelection &, const QItemSel
   }
 
   thickness_slider->blockSignals(true);
-  thickness_slider->setSliderPosition(mean_thickness / float(indices.size()));
+  thickness_slider->setSliderPosition(mean_thickness / static_cast<float>(indices.size()));
   thickness_slider->blockSignals(false);
 }
 
@@ -895,7 +898,7 @@ bool Tractography::process_commandline_option(const MR::App::ParsedOption &opt) 
 
   if (opt.opt->is("tractography.thickness")) {
     // Thickness runs from -1000 to 1000,
-    float thickness = float(opt[0]) * 1000.0f;
+    float thickness = static_cast<float>(opt[0]) * 1000.0F;
     try {
       thickness_slider->setValue(thickness);
     } catch (Exception &E) {
@@ -907,7 +910,7 @@ bool Tractography::process_commandline_option(const MR::App::ParsedOption &opt) 
   if (opt.opt->is("tractography.tsf_colourmap")) {
     try {
       int n = opt[0];
-      if (n < 0 || !ColourMap::maps[n].name)
+      if (n < 0 || ColourMap::maps[n].name.empty())
         throw Exception("invalid tsf colourmap index \"" + std::string(opt[0]) +
                         "\" for -tractography.tsf_colourmap option");
       if (process_commandline_option_tsf_check_tracto_loaded()) {
@@ -987,7 +990,7 @@ bool Tractography::process_commandline_option(const MR::App::ParsedOption &opt) 
 
   if (opt.opt->is("tractography.opacity")) {
     // Opacity runs from 0 to 1000, so multiply by 1000
-    float opacity = float(opt[0]) * 1000.0f;
+    float opacity = static_cast<float>(opt[0]) * 1000.0F;
     try {
       opacity_slider->setValue(opacity);
     } catch (Exception &E) {

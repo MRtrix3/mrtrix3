@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -46,7 +46,7 @@ void Wrapper::operator()(in_column_type in, out_column_type out) const {
     matrix_type temp(in.size(), 1);
     (*enhancer)(in, h, temp.col(0));
     const value_type h_multiplier = std::pow(h, H);
-    for (size_t index = 0; index != size_t(in.size()); ++index)
+    for (Eigen::Index index = 0; index != in.size(); ++index)
       out[index] += (std::pow(temp(index, 0), E) * h_multiplier);
   }
 }

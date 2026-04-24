@@ -20,7 +20,7 @@ jobs:
       run: git clone https://github.com/MRtrix3/macos-installer.git
 
     - name: build packages
-      run: ./build ${GITHUB_REF#refs/*/} 5.15.16 ${{ github.workspace }}/python_dir
+      run: ./build ${GITHUB_REF#refs/*/} 5.15.17 ${{ github.workspace }}/python_dir
       working-directory: ./macos-installer
 
     - name: Upload package to GitHub Release

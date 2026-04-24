@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,6 +13,8 @@
  *
  * For more details, see http://www.mrtrix.org/.
  */
+
+#include <array>
 
 #include "file/entry.h"
 #include "file/ofstream.h"
@@ -37,7 +39,7 @@ std::unique_ptr<ImageIO::Base> XDS::read(Header &H) const {
   std::ifstream in(name.c_str());
   if (!in)
     throw Exception("error reading header file \"" + name + "\": " + strerror(errno));
-  int dim[3];
+  std::array<int, 3> dim{};
   in >> dim[0] >> dim[1] >> dim[2] >> BE;
   H.size(0) = dim[1];
   H.size(1) = dim[0];
@@ -117,7 +119,7 @@ std::unique_ptr<ImageIO::Base> XDS::create(Header &H) const {
   out.close();
 
   std::unique_ptr<ImageIO::Default> io_handler(new ImageIO::Default(H));
-  File::create(H.name(), footprint(H, "11 1"));
+  File::create(H.name(), footprint(H, {0, 1, 3}));
   io_handler->files.push_back(File::Entry(H.name()));
 
   return io_handler;

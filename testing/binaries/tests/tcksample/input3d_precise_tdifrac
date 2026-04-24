@@ -1,0 +1,11 @@
+#!/bin/bash
+# Verify command operation when using:
+# - A *3D* input image
+# - *Precise* streamline-to-voxel mapping mechanism
+# - *-use_tdi_fraction* option is specified
+# - A track-wise statistic *is* used
+#   (mean is used as an exemplar but this is arbitrary)
+# Outcome is verified against that generated using a prior software version
+# More lenient threshold found to be necessary to pass tests on MacOS
+tcksample tracks.tck afdtotal.mif tmp.csv -precise -stat_tck mean -use_tdi_fraction -force
+testing_diff_matrix tmp.csv tcksample/input3d_precise_tdifrac.csv -frac 2e-5

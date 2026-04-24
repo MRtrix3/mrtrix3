@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,6 +21,8 @@
 
 namespace MR::Surface {
 
+using vertex_index_type = uint32_t;
+
 using Vertex = Eigen::Vector3d;
 using VertexList = std::vector<Vertex>;
 using Triangle = Polygon<3>;
@@ -32,7 +34,7 @@ class Vox : public Eigen::Array3i {
 public:
   using Eigen::Array3i::Array3i;
   Vox() : Eigen::Array3i(-1, -1, -1) {}
-  Vox(const Eigen::Vector3d &p) : Eigen::Array3i(int(std::round(p[0])), int(std::round(p[1])), int(std::round(p[2]))) {}
+  Vox(const Eigen::Vector3d &p) : Eigen::Array3i(p.array().round().cast<int>()) {}
   bool operator<(const Vox &i) const {
     return ((*this)[2] == i[2] ? (((*this)[1] == i[1]) ? ((*this)[0] < i[0]) : ((*this)[1] < i[1]))
                                : ((*this)[2] < i[2]));

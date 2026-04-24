@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,12 +16,13 @@
 
 #include "surface/mesh_multi.h"
 
+#include <array>
 #include <ios>
 #include <iostream>
 
 namespace MR::Surface {
 
-void MeshMulti::load(const std::string &path) {
+void MeshMulti::load(std::string_view path) {
 
   struct FaceData {
     uint32_t vertex, texture, normal;
@@ -30,7 +31,7 @@ void MeshMulti::load(const std::string &path) {
   if (!Path::has_suffix(path, "obj") && !Path::has_suffix(path, "OBJ"))
     throw Exception("Multiple meshes only supported by OBJ file format");
 
-  std::ifstream in(path.c_str(), std::ios_base::in);
+  std::ifstream in(std::string(path).c_str(), std::ios_base::in);
   if (!in)
     throw Exception("Error opening input file!");
   std::string line;
@@ -53,8 +54,8 @@ void MeshMulti::load(const std::string &path) {
     std::string data(line.substr(divider + 1, line.npos));
     if (prefix == "v") {
       if (index < 0)
-        throw Exception("Malformed OBJ file; vertex outside object (line " + str(counter) + ")");
-      float values[4];
+        throw Exception("Malformed OBJ file: vertex outside object (line " + str(counter) + ")");
+      std::array<float, 4> values{};
       sscanf(data.c_str(), "%f %f %f %f", &values[0], &values[1], &values[2], &values[3]);
       vertices.push_back(Vertex(values[0], values[1], values[2]));
     } else if (prefix == "vt") {
@@ -67,7 +68,7 @@ void MeshMulti::load(const std::string &path) {
     } else if (prefix == "vp") {
     } else if (prefix == "f") {
       if (index < 0)
-        throw Exception("Malformed OBJ file; face outside object (line " + str(counter) + ")");
+        throw Exception("Malformed OBJ file: face outside object (line " + str(counter) + ")");
       std::vector<std::string> elements;
       do {
         const size_t first_space = data.find_first_of(' ');
@@ -81,8 +82,8 @@ void MeshMulti::load(const std::string &path) {
         }
       } while (!data.empty());
       if (elements.size() != 3 && elements.size() != 4)
-        throw Exception("Malformed face information in input OBJ file (face with neither 3 nor 4 vertices; line " +
-                        str(counter) + ")");
+        throw Exception(std::string("Malformed face information in input OBJ file") +        //
+                        " (face with neither 3 nor 4 vertices; line " + str(counter) + ")"); //
       std::vector<FaceData> face_data;
       size_t values_per_element = 0;
       for (std::vector<std::string>::iterator i = elements.begin(); i != elements.end(); ++i) {
@@ -109,9 +110,8 @@ void MeshMulti::load(const std::string &path) {
         if (!values_per_element)
           values_per_element = this_values_count;
         else if (values_per_element != this_values_count)
-          throw Exception(
-              "Malformed face information in input OBJ file (inconsistent vertex / texture / normal detail); line " +
-              str(counter));
+          throw Exception(std::string("Malformed face information in input OBJ file:") +           //
+                          " inconsistent vertex / texture / normal detail; line " + str(counter)); //
         face_data.push_back(temp);
       }
       if (face_data.size() == 3) {
@@ -145,8 +145,8 @@ void MeshMulti::load(const std::string &path) {
   }
 }
 
-void MeshMulti::save(const std::string &path) const {
-  if (!Path::has_suffix(path, "obj") && !Path::has_suffix(path, "OBJ"))
+void MeshMulti::save(std::string_view path) const {
+  if (!Path::has_suffix(path, {"obj", "OBJ"}))
     throw Exception("Multiple meshes only supported by OBJ file format");
   File::OFStream out(path);
   size_t offset = 1;

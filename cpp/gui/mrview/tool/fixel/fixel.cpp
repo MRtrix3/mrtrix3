@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,14 +16,15 @@
 
 #include "mrview/tool/fixel/fixel.h"
 
+#include "app.h"
 #include "dialog/file.h"
+#include "fixel/validate.h"
 #include "math/rng.h"
 #include "mrtrix.h"
 #include "mrview/qthelpers.h"
 #include "mrview/tool/fixel/base_fixel.h"
 #include "mrview/tool/fixel/directory.h"
 #include "mrview/tool/fixel/image4D.h"
-#include "mrview/tool/fixel/legacy.h"
 #include "mrview/tool/list_model_base.h"
 #include "mrview/window.h"
 
@@ -40,23 +41,18 @@ public:
     for (size_t i = 0, N = filenames.size(); i < N; ++i) {
       BaseFixel *fixel_image(nullptr);
       try {
+        MR::Fixel::debug_validate_directory(filenames[i]);
+        fixel_image = new Directory(filenames[i], fixel_tool);
+      } catch (MR::Fixel::InvalidDirectoryException &error) {
+        error.push_back("Couldn't open \"" + filenames[i] + "\" as a Directory fixel dataset");
         try {
-          if (Path::has_suffix(filenames[i], {".msf", ".msh"}))
-            fixel_image = new Legacy(filenames[i], fixel_tool);
-          else
-            fixel_image = new Directory(filenames[i], fixel_tool);
-        } catch (InvalidFixelDirectoryException &error) {
-          error.push_back("Couldn't open \"" + filenames[i] + "\" as a Directory fixel dataset");
-          try {
-            fixel_image = new Image4D(filenames[i], fixel_tool);
-          } catch (InvalidImageException &e) {
-            error.push_back(e);
-            error.push_back("Couldn't open \"" + filenames[i] + "\" as a 4D vector image");
-            throw error;
-          }
+          if (MR::App::log_level >= 3)
+            MR::Peaks::debug_validate_image(MR::Image<float>::open(filenames[i]));
+          fixel_image = new Image4D(filenames[i], fixel_tool);
         } catch (InvalidImageException &e) {
-          e.push_back("Couldn't open \"" + filenames[i] + "\" as a Legacy fixel dataset");
-          throw e;
+          error.push_back(e);
+          error.push_back("Couldn't open \"" + filenames[i] + "\" as a 4D vector image");
+          throw error;
         }
       } catch (Exception &e) {
         e.push_back("Error loading \"" + filenames[i] + "\" as a fixel dataset");
@@ -392,9 +388,9 @@ void Fixel::update_gui_colour_controls(bool reload_colour_types) {
   min_value->setEnabled(n_images);
 
   if (!n_images) {
-    max_value->setValue(NAN);
-    min_value->setValue(NAN);
-    length_multiplier->setValue(NAN);
+    max_value->setValue(NaNF);
+    min_value->setValue(NaNF);
+    length_multiplier->setValue(NaNF);
     return;
   }
 
@@ -458,7 +454,7 @@ void Fixel::update_gui_scaling_controls(bool reload_scaling_types) {
   length_combobox->setEnabled(n_images == 1);
 
   if (!n_images) {
-    length_multiplier->setValue(NAN);
+    length_multiplier->setValue(NaNF);
     return;
   }
 
@@ -485,8 +481,8 @@ void Fixel::update_gui_threshold_controls(bool reload_threshold_types) {
   threshold_combobox->setEnabled(n_images == 1);
 
   if (!n_images) {
-    threshold_lower->setValue(NAN);
-    threshold_upper->setValue(NAN);
+    threshold_lower->setValue(NaNF);
+    threshold_upper->setValue(NaNF);
     return;
   }
 
@@ -738,9 +734,7 @@ void Fixel::add_commandline_options(MR::App::OptionList &options) {
   // clang-format off
   options + OptionGroup("Fixel plot tool options")
       + Option("fixel.load",
-               "Load a fixel file"
-               " (any file inside a fixel directory,"
-               " or an old .msf / .msh legacy format file)"
+               "Load a fixel data file inside a fixel directory"
                " into the fixel tool.").allow_multiple()
         + Argument("image").type_image_in();
   // clang-format on

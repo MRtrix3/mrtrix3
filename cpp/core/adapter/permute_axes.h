@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -31,7 +31,7 @@ public:
   PermuteAxes(const ImageType &original, const std::vector<int> &axes) : base_type(original), axes_(axes) {
     for (int i = 0; i < static_cast<int>(parent().ndim()); ++i) {
       for (size_t a = 0; a < axes_.size(); ++a) {
-        if (axes_[a] >= int(parent().ndim()))
+        if (axes_[a] >= static_cast<int>(parent().ndim()))
           throw Exception("axis " + str(axes_[a]) + " exceeds image dimensionality");
         if (axes_[a] == i)
           goto next_axis;

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,5 +22,6 @@ namespace MR::DWI::Tractography::SIFT {
 
 using track_t = unsigned int;
 using voxel_t = unsigned int;
+using fixel_mask_type = Eigen::Array<bool, Eigen::Dynamic, 1>;
 
 } // namespace MR::DWI::Tractography::SIFT

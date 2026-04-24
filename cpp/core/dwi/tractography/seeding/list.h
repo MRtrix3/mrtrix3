@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -33,6 +33,7 @@ public:
   void clear();
   bool get_seed(Eigen::Vector3f &p, Eigen::Vector3f &d);
 
+  bool empty() const { return seeders.empty(); }
   size_t num_seeds() const { return seeders.size(); }
   const Base *operator[](const size_t n) const { return seeders[n].get(); }
   bool is_finite() const { return total_count; }

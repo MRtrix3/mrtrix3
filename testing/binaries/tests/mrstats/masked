@@ -2,7 +2,8 @@
 # Verify operation when exporting all statistics of interest to stdout,
 #   but additinoally constraining which voxels do vs. do not contribute to those statistics
 # Compare outcomes to those calculated using a prior software version
+rm -f tmp.txt
 mrstats dwi.mif -mask mask.mif \
--output mean -output median -output std -output std_rv -output min -output max -output count > tmp.txt
+-output mean -output median -output std -output std_rv -output iqr -output min -output max -output count > tmp.txt
 
 testing_diff_matrix tmp.txt mrstats/masked.txt -frac 1e-5

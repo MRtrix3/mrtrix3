@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,13 +19,12 @@
 #include "app.h"
 #include "dwi/fmls.h"
 #include "dwi/tractography/rng.h"
-#include "dwi/tractography/seeding/dynamic.h"
+#include "dwi/tractography/seeding/seeding.h"
 #include "math/SH.h"
 
-#include "fixel/legacy/fixel_metric.h"
-#include "fixel/legacy/image.h"
-#include "fixel/legacy/keys.h"
-
+#ifdef DYNAMIC_SEEDING_DEBUGGING
+#include "file/utils.h"
+#endif
 namespace MR::DWI::Tractography::Seeding {
 
 bool Dynamic_ACT_additions::check_seed(Eigen::Vector3f &p) {
@@ -44,16 +43,15 @@ bool Dynamic_ACT_additions::check_seed(Eigen::Vector3f &p) {
 
   // Detrimental to remove this in all cases tested
   return gmwmi_finder.find_interface(p, interp);
-
-  // auto retval = gmwmi_finder.find_interface (p);
-  // return retval;
 }
 
-Dynamic::Dynamic(const std::string &in,
+const default_type Dynamic::initial_td_sum = 1e-6;
+
+Dynamic::Dynamic(std::string_view in,
                  Image<float> &fod_data,
                  const size_t num,
                  const DWI::Directions::FastLookupSet &dirs)
-    : Base(in, "dynamic", MAX_TRACKING_SEED_ATTEMPTS_DYNAMIC),
+    : Base(in, "dynamic", attempts_per_seed.at(seed_attempt_t::DYNAMIC)),
       SIFT::ModelBase<Fixel_TD_seed>(fod_data, dirs),
       target_trackcount(num),
       track_count(0),
@@ -61,6 +59,7 @@ Dynamic::Dynamic(const std::string &in,
       seeds(0),
 #ifdef DYNAMIC_SEED_DEBUGGING
       seed_output("seeds.tck", Tractography::Properties()),
+      debugging_fixel_path("dynamic_seeding"),
       test_fixel(0),
 #endif
       transform(fod_data) {
@@ -76,16 +75,70 @@ Dynamic::Dynamic(const std::string &in,
   volume *= fod_data.spacing(0) * fod_data.spacing(1) * fod_data.spacing(2);
 
   // Prevent divide-by-zero at commencement
-  SIFT::ModelBase<Fixel_TD_seed>::TD_sum = DYNAMIC_SEED_INITIAL_TD_SUM;
+  SIFT::ModelBase<Fixel_TD_seed>::TD_sum = initial_td_sum;
 
   // For small / unreliable fixels, don't modify the seeding probability during execution
   perform_fixel_masking();
 
 #ifdef DYNAMIC_SEED_DEBUGGING
+  File::mkdir(debugging_fixel_path);
+
+  Header H_index(this->header());
+  H_index.ndim() = 4;
+  H_index.size(3) = 2;
+  H_index.datatype() = DataType::native(DataType::UInt64);
+  Header H_directions;
+  H_directions.ndim() = 3;
+  H_directions.size(0) = fixels.size();
+  H_directions.size(1) = 3;
+  H_directions.size(2) = 1;
+  H_directions.stride(0) = 2;
+  H_directions.stride(1) = 1;
+  H_directions.stride(2) = 3;
+  H_directions.spacing(0) = H_directions.spacing(1) = H_directions.spacing(2) = 1.0;
+  H_directions.transform().setIdentity();
+  H_directions.datatype() = DataType::native(DataType::from<float>());
+  Image<uint64_t> index_image = Image<uint64_t>::create(Path::join(debugging_fixel_path, "index.mif"), H_index);
+  Image<float> directions_image =
+      Image<float>::create(Path::join(debugging_fixel_path, "directions.mif"), H_directions);
+  VoxelAccessor v(accessor());
+  for (auto l = Loop(v)(v, index_image); l; ++l) {
+    if (v.value()) {
+      index_image.index(3) = 0;
+      index_image.value() = (*v.value()).num_fixels();
+      index_image.index(3) = 1;
+      index_image.value() = (*v.value()).first_index();
+    }
+  }
+  for (size_t i = 0; i != fixels.size(); ++i) {
+    directions_image.index(0) = i;
+    directions_image.row(1) = fixels[i].get_dir();
+  }
+
+  // Pre-configure a Header instance to use in constructing output fixel data files
+  H_fixeldata.ndim() = 3;
+  H_fixeldata.size(0) = fixels.size();
+  H_fixeldata.size(1) = 1;
+  H_fixeldata.size(2) = 1;
+  H_fixeldata.stride(0) = 1;
+  H_fixeldata.stride(1) = 2;
+  H_fixeldata.stride(2) = 3;
+  H_fixeldata.spacing(0) = H_fixeldata.spacing(1) = H_fixeldata.spacing(2) = 1.0;
+  H_fixeldata.transform().setIdentity();
+  H_fixeldata.datatype() = DataType::native(DataType::from<float>());
+
+  // Write the FD image only once
+  Image<float> image_FD(Image<float>::create(Path::join(debugging_fixel_path, "FD.mif"), H_fixeldata));
+  for (auto l = Loop(0)(image_FD); l; ++l)
+    image_FD.value() = fixels[image_FD.index(0)].get_FOD();
+
   // Pick a good fixel to use for testing / debugging
+  std::uniform_real_distribution<float> uniform;
   do {
-    test_fixel = 1 + Base::rng.uniform_int(fixels.size() - 1);
+    test_fixel = std::uniform_int_distribution<int>(1, fixels.size() - 1)(rng);
   } while (fixels[test_fixel].get_weight() < 1.0 || fixels[test_fixel].get_FOD() < 0.5);
+
+  output_fixel_images("begin");
 #endif
 }
 
@@ -106,47 +159,19 @@ Dynamic::~Dynamic() {
     if (!force_seed) {
       const uint64_t total_seeds = seeds.load(std::memory_order_relaxed);
       const uint64_t fixel_seeds = fixel.get_seed_count();
-      seed_prob = cumulative_prob * (current_trackcount / float(target_trackcount - current_trackcount)) *
-                  (((total_seeds / float(fixel_seeds)) * (target_trackcount / float(current_trackcount)) *
-                    ((1.0f / ratio) - ((total_seeds - fixel_seeds) / float(total_seeds)))) -
-                   1.0f);
-      seed_prob = std::min(1.0f, seed_prob);
-      seed_prob = std::max(0.0f, seed_prob);
+      seed_prob =
+          cumulative_prob * (current_trackcount / static_cast<float>(target_trackcount - current_trackcount)) *
+          (((static_cast<float>(total_seeds) / static_cast<float>(fixel_seeds)) *
+            (static_cast<float>(target_trackcount) / static_cast<float>(current_trackcount)) *
+            ((1.0F / ratio) - (static_cast<float>(total_seeds - fixel_seeds) / static_cast<float>(total_seeds)))) -
+           1.0F);
+      seed_prob = std::min(1.0F, seed_prob);
+      seed_prob = std::max(0.0F, seed_prob);
     }
     fixel.update_prob(seed_prob, false);
   }
 
-  // Output seeding probabilites at end of execution
-  // Also output reconstruction ratios at end of execution
-  Image::Header H;
-  H.info() = info();
-  H.datatype() = DataType::UInt64;
-  H.datatype().set_byte_order_native();
-  H[Image::Fixel::Legacy::name_key] = str(typeid(Image::Fixel::Legacy::FixelMetric).name());
-  H[Image::Fixel::Legacy::size_key] = str(sizeof(Image::Fixel::Legacy::FixelMetric));
-  Image::BufferSparse<Image::Fixel::Legacy::FixelMetric> buffer_probs("final_seed_probs.msf", H),
-      buffer_logprobs("final_seed_logprobs.msf", H), buffer_ratios("final_fixel_ratios.msf", H);
-  auto out_probs = buffer_probs.voxel(), out_logprobs = buffer_logprobs.voxel(), out_ratios = buffer_ratios.voxel();
-  VoxelAccessor v(accessor);
-  Image::Loop loop;
-  for (loop.start(v, out_probs, out_logprobs, out_ratios); loop.ok();
-       loop.next(v, out_probs, out_logprobs, out_ratios)) {
-    if (v.value()) {
-      out_probs.value().set_size((*v.value()).num_fixels());
-      out_logprobs.value().set_size((*v.value()).num_fixels());
-      out_ratios.value().set_size((*v.value()).num_fixels());
-      size_t index = 0;
-      for (Fixel_map<Fixel_TD_seed>::ConstIterator i = begin(v); i; ++i, ++index) {
-        Image::Fixel::Legacy::FixelMetric fixel(i().get_dir(), i().get_FOD(), i().get_old_prob());
-        out_probs.value()[index] = fixel;
-        fixel.value = log10(fixel.value);
-        out_logprobs.value()[index] = fixel;
-        fixel.value = mu() * i().get_TD() / i().get_FOD();
-        out_ratios.value()[index] = fixel;
-      }
-    }
-  }
-
+  output_fixel_images("end");
 #endif
 }
 
@@ -156,7 +181,7 @@ bool Dynamic::get_seed(Eigen::Vector3f &p, Eigen::Vector3f &d) {
 
   uint64_t this_attempts = 0;
   std::uniform_int_distribution<size_t> uniform_int(0, fixels.size() - 2);
-  std::uniform_real_distribution<float> uniform_float(0.0f, 1.0f);
+  std::uniform_real_distribution<float> uniform_float(0.0F, 1.0F);
 
   while (1) {
 
@@ -190,8 +215,8 @@ bool Dynamic::get_seed(Eigen::Vector3f &p, Eigen::Vector3f &d) {
 #endif
 
         // These can occur fairly regularly, depending on the exact derivation
-        seed_prob = std::min(1.0f, seed_prob);
-        seed_prob = std::max(0.0f, seed_prob);
+        seed_prob = std::min(1.0F, seed_prob);
+        seed_prob = std::max(0.0F, seed_prob);
       }
 
     } else {
@@ -254,44 +279,27 @@ void Dynamic::write_seed(const Eigen::Vector3f &p) {
   seed_output(tck);
 }
 
-void Dynamic::output_fixel_images() {
-
-  // Output seeding probabilites at halfway point
-  Image::Header H;
-  H.info() = info();
-  H.datatype() = DataType::UInt64;
-  H.datatype().set_byte_order_native();
-  H[Image::Fixel::Legacy::name_key] = str(typeid(Image::Fixel::Legacy::FixelMetric).name());
-  H[Image::Fixel::Legacy::size_key] = str(sizeof(Image::Fixel::Legacy::FixelMetric));
-  Image::BufferSparse<Image::Fixel::Legacy::FixelMetric> buffer_probs("mid_seed_probs.msf", H),
-      buffer_logprobs("mid_seed_logprobs.msf", H), buffer_ratios("mid_fixel_ratios.msf", H),
-      buffer_FDs("mid_FDs.msf", H), buffer_TDs("mid_TDs.msf", H);
-  auto out_probs = buffer_probs.voxel(), out_logprobs = buffer_logprobs.voxel(), out_ratios = buffer_ratios.voxel(),
-       out_FDs = buffer_FDs.voxel(), out_TDs = buffer_TDs.voxel();
-  VoxelAccessor v(accessor);
-  Image::Loop loop;
-  for (auto loopiter = loop(v, out_probs, out_logprobs, out_ratios, out_FDs, out_TDs); loopiter; ++loopiter) {
-    if (v.value()) {
-      out_probs.value().set_size((*v.value()).num_fixels());
-      out_logprobs.value().set_size((*v.value()).num_fixels());
-      out_ratios.value().set_size((*v.value()).num_fixels());
-      out_FDs.value().set_size((*v.value()).num_fixels());
-      out_TDs.value().set_size((*v.value()).num_fixels());
-      size_t index = 0;
-      for (Fixel_map<Fixel_TD_seed>::ConstIterator i = begin(v); i; ++i, ++index) {
-        Image::Fixel::Legacy::FixelMetric fixel(i().get_dir(), i().get_FOD(), i().get_old_prob());
-        out_probs.value()[index] = fixel;
-        fixel.value = log10(fixel.value);
-        out_logprobs.value()[index] = fixel;
-        fixel.value = mu() * i().get_TD() / i().get_FOD();
-        out_ratios.value()[index] = fixel;
-        fixel.value = i().get_FOD();
-        out_FDs.value()[index] = fixel;
-        fixel.value = i().get_TD() * mu();
-        out_TDs.value()[index] = fixel;
-      }
-    }
+void Dynamic::output_fixel_images(std::string_view prefix) {
+  Image<float> image_seedprobability(
+      Image<float>::create(Path::join(debugging_fixel_path, prefix + "_seedprobability.mif"), H_fixeldata));
+  Image<float> image_logseedprob(
+      Image<float>::create(Path::join(debugging_fixel_path, prefix + "_seedlogprob.mif"), H_fixeldata));
+  Image<float> image_TD(Image<float>::create(Path::join(debugging_fixel_path, prefix + "_TD.mif"), H_fixeldata));
+  Image<float> image_reconratio(
+      Image<float>::create(Path::join(debugging_fixel_path, prefix + "_reconratio.mif"), H_fixeldata));
+  for (auto l = Loop(0)(image_seedprobability, image_logseedprob, image_TD, image_reconratio); l; ++l) {
+    const size_t fixel_index = image_seedprobability.index(0);
+    image_seedprobability.value() = fixels[fixel_index].get_old_prob();
+    image_logseedprob.value() = std::log10(image_seedprobability.value());
+    image_TD.value() = mu() * fixels[fixel_index].get_TD();
+    image_reconratio.value() = image_TD.value() / fixels[fixel_index].get_FOD();
   }
+  Header H_fixelmask(H_fixeldata);
+  H_fixelmask.datatype() = DataType::Bit;
+  Image<float> fixelmask_image(
+      Image<float>::create(Path::join(debugging_fixel_path, prefix + "_fixelmask.mif"), H_fixelmask));
+  for (auto l = Loop(0)(fixelmask_image); l; ++l)
+    fixelmask_image.value() = fixels[fixelmask_image.index(0)].can_update();
 }
 
 #endif
@@ -308,37 +316,15 @@ void Dynamic::perform_fixel_masking() {
     if (fixels[i].get_FOD() * fixels[i].get_weight() < 0.1)
       fixels[i].mask();
   }
-#ifdef DYNAMIC_SEED_DEBUGGING
-  Image::Header H;
-  H.info() = info();
-  H.datatype() = DataType::UInt64;
-  H.datatype().set_byte_order_native();
-  H[Image::Fixel::Legacy::name_key] = str(typeid(Image::Fixel::Legacy::FixelMetric).name());
-  H[Image::Fixel::Legacy::size_key] = str(sizeof(Image::Fixel::Legacy::FixelMetric));
-  Image::BufferSparse<Image::Fixel::Legacy::FixelMetric> buffer("fixel_mask.msf", H);
-  auto out = buffer.voxel();
-  VoxelAccessor v(accessor);
-  Image::Loop loop;
-  for (loop.start(v, out); loop.ok(); loop.next(v, out)) {
-    if (v.value()) {
-      out.value().set_size((*v.value()).num_fixels());
-      size_t index = 0;
-      for (Fixel_map<Fixel_TD_seed>::ConstIterator f = begin(v); f; ++f, ++index) {
-        Image::Fixel::Legacy::FixelMetric fixel(f().get_dir(), f().get_FOD(), (f().can_update() ? 1.0f : 0.0f));
-        out.value()[index] = fixel;
-      }
-    }
-  }
-#endif
 }
 
 bool WriteKernelDynamic::operator()(const Tracking::GeneratedTrack &in, Tractography::Streamline<> &out) {
   out.set_index(writer.count);
-  out.weight = 1.0f;
+  out.weight = 1.0F;
   if (!WriteKernel::operator()(in)) {
     out.clear();
     // Flag to indicate that tracking has completed, and threads should therefore terminate
-    out.weight = 0.0f;
+    out.weight = 0.0F;
     // Actually need to pass this down the queue so that the seeder thread receives it and knows to terminate
     return true;
   }

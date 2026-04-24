@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,9 +16,12 @@
 
 #include "command.h"
 #include "dwi/directions/file.h"
+#include "dwi/directions/validate.h"
+#include "file/matrix.h"
 #include "file/utils.h"
 #include "math/SH.h"
 #include "math/rng.h"
+#include "math/sphere.h"
 #include "progressbar.h"
 #include "thread.h"
 
@@ -54,8 +57,7 @@ void usage() {
     + Option ("preserve", "preserve the sign of some number of directions at the start of the set")
       + Argument ("num").type_integer(1)
 
-    + Option ("cartesian", "Output the directions in Cartesian coordinates [x y z]"
-                           " instead of [az el].");
+    + DWI::Directions::cartesian_option;
 }
 // clang-format on
 
@@ -144,7 +146,9 @@ protected:
 };
 
 void run() {
-  auto directions = DWI::Directions::load_cartesian(argument[0]);
+  auto directions = File::Matrix::load_matrix<value_type>(argument[0]);
+  DWI::Directions::validate(directions, argument[0], false);
+  directions = Math::Sphere::as_cartesian(directions);
 
   const size_t num_shuffles = get_option_value<size_t>("number", default_number);
   const size_t preserve = get_option_value<size_t>("preserve", 0);

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,7 +18,6 @@
 
 #include "file/matrix.h"
 #include "file/path.h"
-#include "misc/bitset.h"
 
 namespace MR::DWI::Tractography::Connectome {
 
@@ -141,14 +140,14 @@ template <typename T> void Matrix<T>::finalize() {
   }
 }
 
-template <typename T> void Matrix<T>::error_check(const std::set<node_t> &missing_nodes) {
+template <typename T> void Matrix<T>::error_check(const std::vector<node_t> &missing_nodes) {
   // Don't bother looking for empty nodes if we're generating a
   //   connectivity vector from a seed region rather than a
   //   connectome from a whole-brain tractogram
   if (vector_output)
     return;
   assert(mat2vec);
-  BitSet visited(mat2vec->mat_size());
+  Eigen::Array<bool, Eigen::Dynamic, 1> visited(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(mat2vec->mat_size()));
   for (ssize_t i = 0; i != data.size(); ++i) {
     if (std::isfinite(data[i]) && data[i]) {
       auto nodes = (*mat2vec)(i);
@@ -158,17 +157,17 @@ template <typename T> void Matrix<T>::error_check(const std::set<node_t> &missin
   }
   std::vector<std::string> empty_nodes;
   for (node_t i = 1; i != visited.size(); ++i) {
-    if (!visited[i] && missing_nodes.find(i) == missing_nodes.end())
+    if (!visited[i] && std::find(missing_nodes.begin(), missing_nodes.end(), i) == missing_nodes.end())
       empty_nodes.push_back(str(i));
   }
   if (!empty_nodes.empty()) {
-    WARN("The following nodes do not have any streamlines assigned:");
+    WARN("The following nodes present in the parcellation do not have any streamlines assigned:");
     WARN(join(empty_nodes, ", "));
     WARN("(This may indicate a poor registration)");
   }
 }
 
-template <typename T> void Matrix<T>::write_assignments(const std::string &path) const {
+template <typename T> void Matrix<T>::write_assignments(std::string_view path) const {
   if (!track_assignments)
     throw Exception("Cannot write streamline assignments to file as they were not stored during processing");
   File::OFStream stream(path);
@@ -187,7 +186,7 @@ template <typename T> void Matrix<T>::write_assignments(const std::string &path)
 }
 
 template <typename T>
-void Matrix<T>::save(const std::string &path,
+void Matrix<T>::save(std::string_view path,
                      const bool keep_unassigned,
                      const bool symmetric,
                      const bool zero_diagonal) const {

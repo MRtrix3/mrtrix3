@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -234,7 +234,7 @@ void usage() {
   + Option ("copy_properties",
             "clear all generic properties"
             " and replace with the properties from the image / file specified.")
-  + Argument ("source").type_various()
+  + Argument ("source").type_image_in().type_file_in()
 
   + Stride::Options
 
@@ -359,7 +359,7 @@ template <class ImageType> inline std::vector<int> set_header(Header &header, co
 }
 
 template <typename T, class InputType>
-void copy_permute(const InputType &in, Header &header_out, const std::string &output_filename) {
+void copy_permute(const InputType &in, Header &header_out, std::string_view output_filename) {
   const auto axes = set_header(header_out, in);
   auto out = Image<T>::create(output_filename, header_out, add_to_command_history);
   DWI::export_grad_commandline(out);
@@ -372,7 +372,7 @@ template <typename T>
 void extract(Header &header_in,
              Header &header_out,
              const std::vector<std::vector<uint32_t>> &pos,
-             const std::string &output_filename) {
+             std::string_view output_filename) {
   auto in = header_in.get_image<T>();
   if (pos.empty()) {
     copy_permute<T, decltype(in)>(in, header_out, output_filename);
@@ -429,7 +429,7 @@ void run() {
     auto entry = header_out.keyval().find(opt[n][0]);
     if (entry == header_out.keyval().end()) {
       if (std::string(opt[n][0]) != "command_history") {
-        WARN("No header key/value entry \"" + opt[n][0] + "\" found; ignored");
+        WARN("No header key/value entry \"" + std::string(opt[n][0]) + "\" found; ignored");
       }
     } else {
       header_out.keyval().erase(entry);
@@ -440,14 +440,14 @@ void run() {
   for (size_t n = 0; n < opt.size(); ++n) {
     if (str(opt[n][0]) == "command_history")
       add_to_command_history = false;
-    header_out.keyval()[opt[n][0].as_text()] = opt[n][1].as_text();
+    header_out.keyval()[std::string(opt[n][0])] = std::string(opt[n][1]);
   }
 
   opt = get_options("append_property");
   for (size_t n = 0; n < opt.size(); ++n) {
     if (str(opt[n][0]) == "command_history")
       add_to_command_history = false;
-    add_line(header_out.keyval()[opt[n][0].as_text()], opt[n][1].as_text());
+    add_line(header_out.keyval()[std::string(opt[n][0])], std::string(opt[n][1]));
   }
 
   opt = get_options("coord");
@@ -475,7 +475,7 @@ void run() {
       if (axis == 3) {
         const auto grad = DWI::parse_DW_scheme(header_out);
         if (grad.rows()) {
-          if ((ssize_t)grad.rows() != header_in.size(3)) {
+          if (static_cast<ssize_t>(grad.rows()) != header_in.size(3)) {
             WARN("Diffusion encoding of input file does not match number of image volumes;" //
                  " omitting gradient information from output image");                       //
             DWI::clear_DW_scheme(header_out);
@@ -506,8 +506,8 @@ void run() {
     for (size_t n = 0; n < header_in.ndim(); ++n) {
       if (pos[n].empty()) {
         pos[n].resize(header_in.size(n));
-        for (uint32_t i = 0; i < uint32_t(pos[n].size()); i++)
-          pos[n][i] = i;
+        for (size_t i = 0; i < pos[n].size(); i++)
+          pos[n][i] = static_cast<uint32_t>(i);
       }
     }
   }

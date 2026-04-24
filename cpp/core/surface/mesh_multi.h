@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -32,8 +32,8 @@ class MeshMulti : public std::vector<Mesh> {
 public:
   using std::vector<Mesh>::vector;
 
-  void load(const std::string &);
-  void save(const std::string &) const;
+  void load(std::string_view);
+  void save(std::string_view) const;
 };
 
 } // namespace MR::Surface

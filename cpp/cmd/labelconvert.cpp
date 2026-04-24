@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -28,6 +28,7 @@
 
 #include "connectome/connectome.h"
 #include "connectome/lut.h"
+#include "connectome/validate.h"
 
 #include <string>
 
@@ -86,8 +87,9 @@ void run() {
 
   // Open the input file
   auto H = Header::open(argument[0]);
-  Connectome::check(H);
+  Connectome::validate_label_header(H);
   auto in = H.get_image<node_t>();
+  Connectome::debug_validate_label_image(in);
 
   // Load the lookup tables
   LUT lut_in(argument[1]), lut_out(argument[2]);

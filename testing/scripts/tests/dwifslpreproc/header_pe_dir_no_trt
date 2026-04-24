@@ -7,10 +7,11 @@
 
 mrconvert BIDS/sub-04/dwi/sub-04_dwi.nii.gz \
     -fslgrad BIDS/sub-04/dwi/sub-04_dwi.bvec BIDS/sub-04/dwi/sub-04_dwi.bval \
-    -json_import BIDS/sub-04/dwi/sub-04_dwi.json tmp-sub-04_dwi.mif \
+    -json_import BIDS/sub-04/dwi/sub-04_dwi.json \
     -strides 0,0,0,1 \
     -clear_property TotalReadoutTime \
+    tmp-sub-04_dwi.mif \
     -force
 
-dwifslpreproc tmp-sub-04_trt-none_dwi.mif ../tmp/dwifslpreproc/no_trt_header.mif \
+dwifslpreproc tmp-sub-04_dwi.mif tmp.mif \
     -rpe_none -pe_dir ap -readout_time 0.1 -force

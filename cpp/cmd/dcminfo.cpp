@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -55,7 +55,7 @@ public:
   std::string value;
 };
 
-inline uint16_t read_hex(const std::string &m) {
+inline uint16_t read_hex(const std::string m) {
   uint16_t value;
   std::istringstream hex(m);
   hex >> std::hex >> value;

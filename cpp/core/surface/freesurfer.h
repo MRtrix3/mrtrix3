@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -34,10 +34,10 @@ constexpr int32_t quad_file_magic_number = 16777215;
 constexpr int32_t new_curv_file_magic_number = 16777215;
 
 inline int32_t get_int24_BE(std::ifstream &stream) {
-  uint8_t bytes[3];
-  for (size_t i = 0; i != 3; ++i)
-    stream.read(reinterpret_cast<char *>(bytes + i), 1);
-  return (int32_t(bytes[0]) << 16) | (int32_t(bytes[1]) << 8) | int32_t(bytes[2]);
+  std::array<uint8_t, 3> bytes{};
+  stream.read(reinterpret_cast<char *>(bytes.data()), 3);
+  return (static_cast<int32_t>(bytes[0]) << 16) | (static_cast<int32_t>(bytes[1]) << 8) |
+         static_cast<int32_t>(bytes[2]);
 }
 
 template <typename T> inline T get_BE(std::ifstream &stream) {
@@ -46,7 +46,7 @@ template <typename T> inline T get_BE(std::ifstream &stream) {
   return Raw::fetch_BE<T>(&temp);
 }
 
-void read_annot(const std::string &, label_vector_type &, Connectome::LUT &);
-void read_label(const std::string &, VertexList &, Scalar &);
+void read_annot(std::string_view, label_vector_type &, Connectome::LUT &);
+void read_label(std::string_view, VertexList &, Scalar &);
 
 } // namespace MR::Surface::FreeSurfer

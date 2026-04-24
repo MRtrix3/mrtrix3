@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,14 +16,16 @@
 
 #pragma once
 
+#include <array>
+
 #include "image_helpers.h"
 #include "transform.h"
 
 namespace MR {
-
 class Header;
+} // namespace MR
 
-namespace Interp {
+namespace MR::Interp {
 
 //! \addtogroup interp
 // @{
@@ -180,7 +182,7 @@ public:
   bool operator!() const { return out_of_bounds; }
 
 protected:
-  default_type bounds[3];
+  std::array<default_type, 3> bounds;
   bool out_of_bounds;
 
   // Some helper functions
@@ -193,12 +195,11 @@ protected:
 
   template <class VectorType> Eigen::Vector3d intravoxel_offset(const VectorType &pos) {
     if (set_out_of_bounds(pos))
-      return Eigen::Vector3d(NaN, NaN, NaN);
+      return Eigen::Vector3d::Constant(NaN);
     return Eigen::Vector3d(pos[0] - std::floor(pos[0]), pos[1] - std::floor(pos[1]), pos[2] - std::floor(pos[2]));
   }
 };
 
 //! @}
 
-} // namespace Interp
-} // namespace MR
+} // namespace MR::Interp

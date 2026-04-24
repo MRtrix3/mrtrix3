@@ -7,7 +7,8 @@
 rm -rf tmp/
 mkdir tmp/
 
-mrclusterstats mrclusterstats/subjects.txt mrclusterstats/design.txt mrclusterstats/contrast.txt SIFT_phantom/upper.mif tmp/
+mrclusterstats mrclusterstats/subjects.txt mrclusterstats/design.txt SIFT_phantom/upper.mif tmp/ \
+    -ttests mrclusterstats/contrast.txt
 
 testing_diff_image tmp/abs_effect.mif mrclusterstats/masked/abs_effect.mif
 testing_diff_image tmp/beta0.mif mrclusterstats/masked/beta0.mif

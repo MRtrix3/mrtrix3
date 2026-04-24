@@ -16,7 +16,7 @@ include(ExternalProject)
 ExternalProject_Add(BinariesTestData
     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/binaries_data
     GIT_REPOSITORY ${mrtrix_binaries_data_url}
-    GIT_TAG c1add54aa60c7cd69b9afde44607ed08b547a99b
+    GIT_TAG 7f738dd297336598233dfad1f14bcc9cf2caa106
     GIT_PROGRESS TRUE
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
@@ -44,7 +44,9 @@ set(SCRIPT_DATA_DIR
 )
 
 add_subdirectory(binaries)
+add_subdirectory(integration_tests)
 add_subdirectory(lib)
 add_subdirectory(scripts)
 add_subdirectory(tools)
+add_subdirectory(ui_tests)
 add_subdirectory(unit_tests)

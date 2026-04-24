@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,7 @@
  */
 
 #include "command.h"
+#include "enum.h"
 #include "image.h"
 
 #include "dwi/tractography/properties.h"
@@ -40,10 +41,8 @@
 using namespace MR;
 using namespace App;
 
-#define DEFAULT_ALGORITHM 2 // ifod2
-
-const std::vector<std::string> algorithms = {
-    "fact", "ifod1", "ifod2", "nulldist1", "nulldist2", "sd_stream", "seedtest", "tensor_det", "tensor_prob"};
+enum class algorithm_t { FACT, IFOD1, IFOD2, NULLDIST1, NULLDIST2, SD_STREAM, SEEDTEST, TENSOR_DET, TENSOR_PROB };
+constexpr algorithm_t default_algorithm = algorithm_t::IFOD2;
 
 // clang-format off
 void usage() {
@@ -213,9 +212,9 @@ void usage() {
   + Option ("algorithm",
             "specify the tractography algorithm to use."
             " Valid choices are: "
-            "FACT, iFOD1, iFOD2, Nulldist1, Nulldist2, SD_Stream, Seedtest, Tensor_Det, Tensor_Prob"
-            " (default: iFOD2).")
-    + Argument ("name").type_choice(algorithms)
+            + MR::Enum::join<algorithm_t>()
+            + " (default: " + MR::Enum::lowercase_name(default_algorithm) + ").")
+    + Argument ("name").type_choice<algorithm_t>()
 
   + DWI::Tractography::Tracking::TrackOption
 
@@ -230,6 +229,12 @@ void usage() {
   + DWI::Tractography::Algorithms::iFODOptions
   + DWI::Tractography::Algorithms::iFOD2Options
 
+  + OptionGroup("Options for additional data export")
+    + Option ("output_seeds", "output the seed location of all successful streamlines to a text file")
+      + Argument ("path").type_file_out()
+    + Option ("output_stats", "output statistics on streamline generation to a JSON file")
+      + Argument ("path").type_file_out()
+
   + DWI::GradImportOptions();
 
 }
@@ -243,17 +248,21 @@ void run() {
 
   Properties properties;
 
-  const int algorithm = get_option_value("algorithm", DEFAULT_ALGORITHM);
+  const algorithm_t algorithm = get_option_choice<algorithm_t>("algorithm", default_algorithm);
 
   ACT::load_act_properties(properties);
 
   Seeding::load_seed_mechanisms(properties);
   Seeding::load_seed_parameters(properties);
 
-  if (algorithm == 1 || algorithm == 2)
+  if (algorithm == algorithm_t::IFOD1 || algorithm == algorithm_t::IFOD2)
     Algorithms::load_iFOD_options(properties);
-  if (algorithm == 2)
+  if (algorithm == algorithm_t::IFOD2)
     Algorithms::load_iFOD2_options(properties);
+
+  auto opt = get_options("output_seeds");
+  if (!opt.empty())
+    properties["seed_output"] = std::string(opt[0][0]);
 
   // load ROIs and tractography specific options
   // NB must occur before seed check below due to -select option override
@@ -276,34 +285,32 @@ void run() {
   }
 
   switch (algorithm) {
-  case 0:
+  case algorithm_t::FACT:
     Exec<FACT>::run(argument[0], argument[1], properties);
     break;
-  case 1:
+  case algorithm_t::IFOD1:
     Exec<iFOD1>::run(argument[0], argument[1], properties);
     break;
-  case 2:
+  case algorithm_t::IFOD2:
     Exec<iFOD2>::run(argument[0], argument[1], properties);
     break;
-  case 3:
+  case algorithm_t::NULLDIST1:
     Exec<NullDist1>::run(argument[0], argument[1], properties);
     break;
-  case 4:
+  case algorithm_t::NULLDIST2:
     Exec<NullDist2>::run(argument[0], argument[1], properties);
     break;
-  case 5:
+  case algorithm_t::SD_STREAM:
     Exec<SDStream>::run(argument[0], argument[1], properties);
     break;
-  case 6:
+  case algorithm_t::SEEDTEST:
     Exec<Seedtest>::run(argument[0], argument[1], properties);
     break;
-  case 7:
+  case algorithm_t::TENSOR_DET:
     Exec<Tensor_Det>::run(argument[0], argument[1], properties);
     break;
-  case 8:
+  case algorithm_t::TENSOR_PROB:
     Exec<Tensor_Prob>::run(argument[0], argument[1], properties);
     break;
-  default:
-    assert(0);
   }
 }

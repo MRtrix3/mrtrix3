@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -33,7 +33,7 @@ inline bool in_seq(const std::vector<uint32_t> &seq, uint32_t val) {
 
 } // namespace
 
-void NameParser::parse(const std::string &imagename, size_t max_num_sequences) {
+void NameParser::parse(std::string_view imagename, size_t max_num_sequences) {
   specification = imagename;
   if (Path::is_dir(imagename)) {
     array.resize(1);
@@ -95,7 +95,7 @@ std::ostream &operator<<(std::ostream &stream, const NameParser &parser) {
   return stream;
 }
 
-bool NameParser::match(const std::string &file_name, std::vector<uint32_t> &indices) const {
+bool NameParser::match(std::string_view file_name, std::vector<uint32_t> &indices) const {
   uint32_t current = 0;
   size_t num = 0;
   indices.resize(seq_index.size());
@@ -131,7 +131,7 @@ void NameParser::calculate_padding(const std::vector<uint32_t> &maxvals) {
     Item &item(array[seq_index[n]]);
     if (!item.sequence().empty()) {
       if (maxvals[m])
-        if (item.sequence().size() != (size_t)maxvals[m])
+        if (item.sequence().size() != static_cast<size_t>(maxvals[m]))
           throw Exception("dimensions requested in image specifier \"" + specification +
                           "\" do not match supplied header information");
     } else {
@@ -147,7 +147,7 @@ void NameParser::calculate_padding(const std::vector<uint32_t> &maxvals) {
 void NameParser::Item::calc_padding(size_t maxval) {
   for (size_t i = 0; i < sequence().size(); i++) {
     assert(sequence()[i] >= 0);
-    if (maxval < (size_t)sequence()[i])
+    if (maxval < static_cast<size_t>(sequence()[i]))
       maxval = sequence()[i];
   }
 
@@ -207,7 +207,7 @@ bool ParsedName::operator<(const ParsedName &pn) const {
   return false;
 }
 
-std::vector<uint32_t> ParsedName::List::parse_scan_check(const std::string &specifier, size_t max_num_sequences) {
+std::vector<uint32_t> ParsedName::List::parse_scan_check(std::string_view specifier) {
   NameParser parser;
   parser.parse(specifier);
 

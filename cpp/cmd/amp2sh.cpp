@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,11 +16,13 @@
 
 #include "algo/threaded_loop.h"
 #include "command.h"
+#include "dwi/directions/validate.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
 #include "file/matrix.h"
 #include "image.h"
 #include "math/SH.h"
+#include "math/sphere.h"
 #include "metadata/phase_encoding.h"
 #include "progressbar.h"
 
@@ -42,7 +44,7 @@ void usage() {
 
   + "The directions can be defined either as a DW gradient scheme"
     " (for example to compute the SH representation of the DW signal),"
-    " a set of [az el] pairs as output by the dirgen command,"
+    " a set of [az in] pairs as output by the dirgen command,"
     " or a set of [ x y z ] directions in Cartesian coordinates."
     " The DW gradient scheme or direction set can be supplied within the input image header"
     " or using the -gradient or -directions option."
@@ -69,7 +71,7 @@ void usage() {
   + Option ("directions", "the directions corresponding to the input amplitude image used to sample AFD."
                           " By default this option is not required"
                           " providing the direction set is supplied in the amplitude image."
-                          " This should be supplied as a list of directions [az el],"
+                          " This should be supplied as a list of directions [az in],"
                           " as generated using the dirgen command,"
                           " or as a list of [ x y z ] Cartesian coordinates.")
   +   Argument ("file").type_file_in()
@@ -84,9 +86,8 @@ void usage() {
 }
 // clang-format on
 
-#define RICIAN_POWER 2.25
-
 using value_type = float;
+constexpr default_type rician_power = 2.25;
 
 class Amp2SHCommon {
 public:
@@ -170,10 +171,10 @@ protected:
     default_type norm_diff = 0.0;
     default_type norm_amp = 0.0;
     for (ssize_t n = 0; n < ap.size(); ++n) {
-      ap[n] = std::max(ap[n], default_type(0.0));
-      default_type t = std::pow(ap[n] / noise, default_type(RICIAN_POWER));
+      ap[n] = std::max(ap[n], 0.0);
+      const default_type t = std::pow(ap[n] / noise, rician_power);
       w[n] = Math::pow2((t + 1.7) / (t + 1.12));
-      default_type diff = a[n] - noise * std::pow(t + 1.65, 1.0 / RICIAN_POWER);
+      const default_type diff = a[n] - noise * std::pow(t + 1.65, 1.0 / rician_power);
       norm_diff += Math::pow2(diff);
       norm_amp += Math::pow2(a[n]);
       ap[n] += diff;
@@ -192,6 +193,13 @@ void run() {
   auto opt = get_options("directions");
   if (!opt.empty()) {
     dirs = File::Matrix::load_matrix(opt[0][0]);
+    auto dv = DWI::Directions::validate(dirs, opt[0][0], false);
+    if (dv.n_non_unit > 0) {
+      WARN("Input directions file \"" + opt[0][0] + "\"" +                          //
+           " contains " + str(dv.n_non_unit) + " direction" +                       //
+           (dv.n_non_unit > 1 ? "s that are" : " that is") + " not of unit norm;" + //
+           " all directions will be interpreted agnostically of norm");             //
+    }
     if (dirs.cols() == 3)
       dirs = Math::Sphere::cartesian2spherical(dirs);
   } else {

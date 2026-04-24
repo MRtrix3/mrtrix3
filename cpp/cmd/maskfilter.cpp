@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,7 @@
  */
 
 #include "command.h"
+#include "enum.h"
 #include "filter/base.h"
 #include "filter/connected_components.h"
 #include "filter/dilate.h"
@@ -27,9 +28,9 @@
 using namespace MR;
 using namespace App;
 
-#define DEFAULT_CLEAN_SCALE 2
+constexpr ssize_t default_clean_scale = 2;
 
-const std::vector<std::string> filters = {"clean", "connect", "dilate", "erode", "fill", "median"};
+enum class FilterType { CLEAN, CONNECT, DILATE, ERODE, FILL, MEDIAN };
 
 // clang-format off
 const OptionGroup CleanOption =
@@ -37,7 +38,7 @@ const OptionGroup CleanOption =
       + Option("scale",
                "the maximum scale used to cut bridges."
                " A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale."
-               " (Default: " + str(DEFAULT_CLEAN_SCALE, 2) + ")")
+               " (Default: " + str(default_clean_scale, 2) + ")")
         + Argument("value").type_integer(1, 1e6);
 
 const OptionGroup ConnectOption =
@@ -97,7 +98,7 @@ void usage() {
   ARGUMENTS
   + Argument("input", "the input mask.").type_image_in()
   + Argument("filter", "the name of the filter to be applied;"
-                       " options are: " + join(filters, ", ")).type_choice(filters)
+                       " options are: " + MR::Enum::join<FilterType>() + ".").type_choice<FilterType>()
   + Argument("output", "the output mask.").type_image_out();
 
   OPTIONS
@@ -118,12 +119,13 @@ void run() {
 
   auto input_image = Image<value_type>::open(argument[0]);
 
-  int filter_index = argument[1];
+  const FilterType filter_index = MR::Enum::from_name<FilterType>(argument[1]);
 
-  if (filter_index == 0) { // Mask clean
+  switch (filter_index) {
+  case FilterType::CLEAN: {
     Filter::MaskClean filter(input_image,
                              std::string("applying mask cleaning filter to image ") + Path::basename(argument[0]));
-    filter.set_scale(get_option_value("scale", DEFAULT_CLEAN_SCALE));
+    filter.set_scale(get_option_value("scale", default_clean_scale));
 
     Stride::set_from_command_line(filter);
 
@@ -132,7 +134,7 @@ void run() {
     return;
   }
 
-  if (filter_index == 1) { // Connected components
+  case FilterType::CONNECT: {
     Filter::ConnectedComponents filter(
         input_image, std::string("applying connected-component filter to image ") + Path::basename(argument[0]));
     auto opt = get_options("axes");
@@ -168,11 +170,11 @@ void run() {
     return;
   }
 
-  if (filter_index == 2) { // Dilate
+  case FilterType::DILATE: {
     Filter::Dilate filter(input_image, std::string("applying dilate filter to image ") + Path::basename(argument[0]));
     auto opt = get_options("npass");
     if (!opt.empty())
-      filter.set_npass(int(opt[0][0]));
+      filter.set_npass(static_cast<unsigned int>(opt[0][0]));
 
     Stride::set_from_command_line(filter);
     filter.datatype() = DataType::Bit;
@@ -182,11 +184,11 @@ void run() {
     return;
   }
 
-  if (filter_index == 3) { // Erode
+  case FilterType::ERODE: {
     Filter::Erode filter(input_image, std::string("applying erode filter to image ") + Path::basename(argument[0]));
     auto opt = get_options("npass");
     if (!opt.empty())
-      filter.set_npass(int(opt[0][0]));
+      filter.set_npass(static_cast<unsigned int>(opt[0][0]));
 
     Stride::set_from_command_line(filter);
     filter.datatype() = DataType::Bit;
@@ -196,7 +198,7 @@ void run() {
     return;
   }
 
-  if (filter_index == 4) { // Fill
+  case FilterType::FILL: {
     Filter::Fill filter(input_image, std::string("filling interior of image ") + Path::basename(argument[0]));
     auto opt = get_options("axes");
     if (!opt.empty()) {
@@ -212,7 +214,7 @@ void run() {
     return;
   }
 
-  if (filter_index == 5) { // Median
+  case FilterType::MEDIAN: {
     Filter::Median filter(input_image, std::string("applying median filter to image ") + Path::basename(argument[0]));
     auto opt = get_options("extent");
     if (!opt.empty())
@@ -224,5 +226,8 @@ void run() {
     auto output_image = Image<value_type>::create(argument[2], filter);
     filter(input_image, output_image);
     return;
+  }
+  default:
+    throw Exception("Unsupported mask filter");
   }
 }

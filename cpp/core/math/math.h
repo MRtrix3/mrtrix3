@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,8 +22,7 @@
 
 #include "types.h"
 
-namespace MR {
-namespace Math {
+namespace MR::Math {
 
 /** @defgroup mathconstants Mathematical constants
   @{ */
@@ -69,11 +68,13 @@ template <typename I, typename T> inline constexpr I floor(const T x) throw() { 
 template <typename I, typename T> inline constexpr I ceil(const T x) throw() { return static_cast<I>(std::ceil(x)); }
 
 /** @} */
-} // namespace Math
+} // namespace MR::Math
+
+namespace MR {
 
 //! convenience functions for SFINAE on std:: / Eigen containers
 template <class Cont> class is_eigen_type {
-  typedef char yes[1], no[2];
+  typedef char yes[1], no[2]; // check_syntax off
   template <typename C> static yes &test(typename C::Scalar);
   template <typename C> static no &test(...);
 

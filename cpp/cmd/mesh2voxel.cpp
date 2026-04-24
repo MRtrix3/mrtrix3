@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,6 +22,7 @@
 
 #include "surface/algo/mesh2image.h"
 #include "surface/mesh.h"
+#include "surface/validate.h"
 
 using namespace MR;
 using namespace App;
@@ -52,10 +53,12 @@ void run() {
 
   // Read in the mesh data
   Surface::Mesh mesh(argument[0]);
+  Surface::debug_validate(mesh);
 
   // Get the template image
   Header template_header = Header::open(argument[1]);
   check_3D_nonunity(template_header);
+  template_header.ndim() = 3;
 
   // Ensure that a floating-point representation is used for the output image,
   //   as is required for representing partial volumes

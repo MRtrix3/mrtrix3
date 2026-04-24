@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,6 +22,7 @@
 
 #include "fixel/fixel.h"
 #include "fixel/helpers.h"
+#include "fixel/validate.h"
 
 using namespace MR;
 using namespace App;
@@ -53,8 +54,9 @@ void usage() {
 // clang-format on
 
 void run() {
-  const auto in_directory = argument[0];
+  const std::string in_directory = argument[0];
   Fixel::check_fixel_directory(in_directory);
+  Fixel::debug_validate_directory(in_directory);
   Header in_index_header = Fixel::find_index_header(in_directory);
   auto in_index_image = in_index_header.get_image<index_type>();
 

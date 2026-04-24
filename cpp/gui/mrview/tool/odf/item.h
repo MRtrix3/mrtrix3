@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -57,7 +57,7 @@ public:
     void set_header();
     void set_internal(const size_t n);
     void set_none();
-    void set_from_file(const std::string &path);
+    void set_from_file(std::string_view path);
 
     Eigen::VectorXf get_shell_data(const Eigen::VectorXf &values) const;
 

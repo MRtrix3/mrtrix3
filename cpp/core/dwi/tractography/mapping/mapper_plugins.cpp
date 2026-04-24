@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,8 @@
 
 #include "dwi/tractography/mapping/mapper_plugins.h"
 
+#include <array>
+
 #include "algo/threaded_loop.h"
 #include "image_helpers.h"
 
@@ -23,7 +25,7 @@ namespace MR::DWI::Tractography::Mapping {
 
 void TWIImagePluginBase::set_backtrack() {
   backtrack = true;
-  if (statistic != ENDS_CORR)
+  if (statistic != tck_stat_t::ENDS_CORR)
     return;
   Header H(interp);
   H.ndim() = 3;
@@ -50,11 +52,11 @@ ssize_t TWIImagePluginBase::get_end_index(const Streamline<> &tck, const bool en
 
     const ssize_t step = end ? -1 : 1;
 
-    if (statistic == ENDS_CORR) {
+    if (statistic == tck_stat_t::ENDS_CORR) {
 
-      for (; index >= 0 && index < ssize_t(tck.size()); index += step) {
-        const Eigen::Vector3d p = interp.scanner2voxel * tck[index].cast<default_type>();
-        const Eigen::Array3i v({int(std::round(p[0])), int(std::round(p[1])), int(std::round(p[2]))});
+      for (; index >= 0 && index < static_cast<ssize_t>(tck.size()); index += step) {
+        const Eigen::Array3i v(
+            (interp.scanner2voxel * tck[index].cast<default_type>()).array().round().cast<Eigen::Array3i::Scalar>());
         if (!is_out_of_bounds(backtrack_mask, v)) {
           assign_pos_of(v, 0, 3).to(backtrack_mask);
           if (backtrack_mask.value())
@@ -67,7 +69,7 @@ ssize_t TWIImagePluginBase::get_end_index(const Streamline<> &tck, const bool en
 
       while (!interp.scanner(tck[index])) {
         index += step;
-        if (index == -1 || index == ssize_t(tck.size()))
+        if (index == -1 || index == static_cast<ssize_t>(tck.size()))
           return -1;
       }
     }
@@ -82,12 +84,13 @@ ssize_t TWIImagePluginBase::get_end_index(const Streamline<> &tck, const bool en
 const Streamline<>::point_type TWIImagePluginBase::get_end_point(const Streamline<> &tck, const bool end) const {
   const ssize_t index = get_end_index(tck, end);
   if (index == -1)
-    return {NaN, NaN, NaN};
+    return Streamline<>::point_type::Constant(std::numeric_limits<Streamline<>::value_type>::quiet_NaN());
   return tck[index];
 }
 
 void TWIScalarImagePlugin::load_factors(const Streamline<> &tck, std::vector<default_type> &factors) const {
-  if (statistic == ENDS_MIN || statistic == ENDS_MEAN || statistic == ENDS_MAX || statistic == ENDS_PROD) {
+  if (statistic == tck_stat_t::ENDS_MIN || statistic == tck_stat_t::ENDS_MEAN || statistic == tck_stat_t::ENDS_MAX ||
+      statistic == tck_stat_t::ENDS_PROD) {
 
     // Only the track endpoints contribute
     for (size_t tck_end_index = 0; tck_end_index != 2; ++tck_end_index) {
@@ -115,8 +118,9 @@ void TWIScalarImagePlugin::load_factors(const Streamline<> &tck, std::vector<def
 }
 
 void TWIFODImagePlugin::load_factors(const Streamline<> &tck, std::vector<default_type> &factors) const {
-  assert(statistic != ENDS_CORR);
-  if (statistic == ENDS_MAX || statistic == ENDS_MEAN || statistic == ENDS_MIN || statistic == ENDS_PROD) {
+  assert(statistic != tck_stat_t::ENDS_CORR);
+  if (statistic == tck_stat_t::ENDS_MAX || statistic == tck_stat_t::ENDS_MEAN || statistic == tck_stat_t::ENDS_MIN ||
+      statistic == tck_stat_t::ENDS_PROD) {
 
     for (size_t tck_end_index = 0; tck_end_index != 2; ++tck_end_index) {
       const ssize_t index = get_end_index(tck, tck_end_index);
@@ -124,11 +128,7 @@ void TWIFODImagePlugin::load_factors(const Streamline<> &tck, std::vector<defaul
         if (interp.scanner(tck[index])) {
           for (interp.index(3) = 0; interp.index(3) != interp.size(3); ++interp.index(3))
             sh_coeffs[interp.index(3)] = interp.value();
-          const Eigen::Vector3d dir =
-              (tck[(index == ssize_t(tck.size() - 1)) ? index : (index + 1)] - tck[index ? (index - 1) : 0])
-                  .cast<default_type>()
-                  .normalized();
-          factors.push_back(precomputer->value(sh_coeffs, dir));
+          factors.push_back(precomputer->value(sh_coeffs, Tractography::tangent(tck, index)));
         } else {
           factors.push_back(NaN);
         }
@@ -145,9 +145,7 @@ void TWIFODImagePlugin::load_factors(const Streamline<> &tck, std::vector<defaul
         for (interp.index(3) = 0; interp.index(3) != interp.size(3); ++interp.index(3))
           sh_coeffs[interp.index(3)] = interp.value();
         // Get the FOD amplitude along the streamline tangent
-        const Eigen::Vector3d dir =
-            (tck[(i == tck.size() - 1) ? i : (i + 1)] - tck[i ? (i - 1) : 0]).cast<default_type>().normalized();
-        factors.push_back(precomputer->value(sh_coeffs, dir));
+        factors.push_back(precomputer->value(sh_coeffs, Tractography::tangent(tck, i)));
       } else {
         factors.push_back(NaN);
       }
@@ -172,35 +170,36 @@ void TWDFCStaticImagePlugin::load_factors(const Streamline<> &tck, std::vector<d
   }
 
   // Calculate the Pearson correlation coefficient
-  default_type sums[2] = {0.0, 0.0};
+  std::array<default_type, 2> sums = {0.0, 0.0};
   for (ssize_t i = 0; i != interp.size(3); ++i) {
     sums[0] += values[0][i];
     sums[1] += values[1][i];
   }
-  const default_type means[2] = {sums[0] / default_type(interp.size(3)), sums[1] / default_type(interp.size(3))};
+  const std::array<default_type, 2> means = {sums[0] / static_cast<default_type>(interp.size(3)),
+                                             sums[1] / static_cast<default_type>(interp.size(3))};
 
   default_type product = 0.0;
-  default_type variances[2] = {0.0, 0.0};
+  std::array<default_type, 2> variances = {0.0, 0.0};
   for (ssize_t i = 0; i != interp.size(3); ++i) {
     product += ((values[0][i] - means[0]) * (values[1][i] - means[1]));
     variances[0] += Math::pow2(values[0][i] - means[0]);
     variances[1] += Math::pow2(values[1][i] - means[1]);
   }
-  const default_type product_expectation = product / default_type(interp.size(3));
-  const default_type stdevs[2] = {std::sqrt(variances[0] / default_type(interp.size(3) - 1)),
-                                  std::sqrt(variances[1] / default_type(interp.size(3) - 1))};
+  const default_type product_expectation = product / static_cast<default_type>(interp.size(3));
+  const std::array<default_type, 2> stdevs = {std::sqrt(variances[0] / static_cast<default_type>(interp.size(3) - 1)),
+                                              std::sqrt(variances[1] / static_cast<default_type>(interp.size(3) - 1))};
 
   if (stdevs[0] && stdevs[1])
     factors[0] = product_expectation / (stdevs[0] * stdevs[1]);
 }
 
 void TWDFCDynamicImagePlugin::load_factors(const Streamline<> &tck, std::vector<default_type> &factors) const {
-  assert(statistic == ENDS_CORR);
+  assert(statistic == tck_stat_t::ENDS_CORR);
   factors.assign(1, NaN);
 
   // Use trilinear interpolation
   // Store values into local vectors, since it's a two-pass operation
-  std::vector<default_type> values[2];
+  std::array<std::vector<default_type>, 2> values;
   for (size_t tck_end_index = 0; tck_end_index != 2; ++tck_end_index) {
     const ssize_t index = get_end_index(tck, tck_end_index);
     if (index < 0)
@@ -218,7 +217,7 @@ void TWDFCDynamicImagePlugin::load_factors(const Streamline<> &tck, std::vector<
   }
 
   // Calculate the Pearson correlation coefficient within the kernel window
-  default_type sums[2] = {0.0, 0.0};
+  std::array<default_type, 2> sums = {0.0, 0.0};
   default_type kernel_sum = 0.0, kernel_sq_sum = 0.0;
   for (size_t i = 0; i != kernel.size(); ++i) {
     if (std::isfinite(values[0][i])) {
@@ -228,23 +227,24 @@ void TWDFCDynamicImagePlugin::load_factors(const Streamline<> &tck, std::vector<
       kernel_sq_sum += Math::pow2(kernel[i]);
     }
   }
-  const default_type means[2] = {sums[0] / kernel_sum, sums[1] / kernel_sum};
+  const std::array<default_type, 2> means = {sums[0] / kernel_sum, sums[1] / kernel_sum};
   const default_type denom = kernel_sum - (kernel_sq_sum / kernel_sum);
 
-  default_type corr = 0.0, start_variance = 0.0, end_variance = 0.0;
+  default_type corr = 0.0;
+  std::array<default_type, 2> variance = {0.0, 0.0};
   for (size_t i = 0; i != kernel.size(); ++i) {
     if (std::isfinite(values[0][i])) {
       corr += kernel[i] * (values[0][i] - means[0]) * (values[1][i] - means[1]);
-      start_variance += kernel[i] * Math::pow2(values[0][i] - means[0]);
-      end_variance += kernel[i] * Math::pow2(values[1][i] - means[1]);
+      variance[0] += kernel[i] * Math::pow2(values[0][i] - means[0]);
+      variance[1] += kernel[i] * Math::pow2(values[1][i] - means[1]);
     }
   }
   corr /= denom;
-  start_variance /= denom;
-  end_variance /= denom;
+  variance[0] /= denom;
+  variance[1] /= denom;
 
-  if (start_variance && end_variance)
-    factors[0] = corr / std::sqrt(start_variance * end_variance);
+  if (variance[0] != 0.0 && variance[1] != 0.0)
+    factors[0] = corr / std::sqrt(variance[0] * variance[1]);
 }
 
 } // namespace MR::DWI::Tractography::Mapping

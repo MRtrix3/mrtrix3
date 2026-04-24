@@ -1,9 +1,0 @@
-#!/bin/bash
-# Verify operation of the "-use_tdi_fraction" command-line flag
-# Note that the use of this option does not actually make physical sense in this example,
-#   since it is not sensible to claim that the FA in each voxel can be
-#   proportionally divided among the streamlines traversing it;
-#   it is nevertheless used for the test here given the FA image was used for all other tcksample tests,
-#   and it is what the data already generated using a prior software version used.
-tcksample tracks.tck tcksample/fa.mif tmp.csv -stat_tck median -precise -use_tdi_fraction -force
-testing_diff_matrix tmp.csv tcksample/tdidiv.csv -frac 1e-3

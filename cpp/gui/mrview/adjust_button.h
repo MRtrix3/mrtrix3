@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,23 +19,23 @@
 #include "mrtrix.h"
 #include "opengl/glutils.h"
 
-#define ADJUST_BUTTON_DEADZONE_SIZE 8
-
 namespace MR::GUI::MRView {
 
 class AdjustButton : public QLineEdit {
   Q_OBJECT
+
+  static const ssize_t deadzone_size;
 
 public:
   AdjustButton(QWidget *parent, float change_rate = 1.0);
 
   float value() const {
     if (text().isEmpty())
-      return NAN;
+      return NaNF;
     try {
       return to<float>(text().toStdString());
     } catch (Exception) {
-      return NAN;
+      return NaNF;
     }
   }
 

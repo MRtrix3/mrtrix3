@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -28,36 +28,11 @@
 
 namespace MR::DWI::Tractography {
 
-//! convenience function to verify that tck/tsf files match
-/*! in order to be interpreted correctly, track scalar files must match some
- * corresponding streamline data (.tck) file; this is handled using the timestamp
- * field in the Properties class. Alternatively two .tsf files may be processed,
- * but these must both correspond to the same .tck file (even if that file is
- * not explicitly read).
- *
- * Furthermore, in some contexts it may be necessary to ensure that two
- * files contain the same number of streamlines (or scalar data
- * corresponding to the same number of streamlines). This check is also
- * provided: if \a abort_on_fail is true, a mis-match of the 'count'
- * field results in an exception being thrown, otherwise only a warning
- * is issued and processing is free to continue.
- *
- * The \a type argument is used to specify the type of files being
- * compared, so that more appropriate information can be shown to the
- * user in the event of a mismatch.  */
-inline void check_properties_match(const Properties &p_tck,
-                                   const Properties &p_tsf,
-                                   const std::string &type,
-                                   bool abort_on_fail = true) {
-  check_timestamps(p_tck, p_tsf, type);
-  check_counts(p_tck, p_tsf, type, abort_on_fail);
-}
-
 template <typename T = float> class ScalarReader : public __ReaderBase__ {
 public:
   using value_type = T;
 
-  ScalarReader(const std::string &file, Properties &properties) { open(file, "track scalars", properties); }
+  ScalarReader(std::string_view file, Properties &properties) { open(file, "track scalars", properties); }
 
   bool operator()(TrackScalar<T> &tck_scalar) {
     tck_scalar.clear();
@@ -97,28 +72,28 @@ protected:
     case DataType::Float32LE: {
       float val;
       in.read((char *)&val, sizeof(val));
-      return (value_type(LE(val)));
+      return static_cast<value_type>(LE(val));
     }
     case DataType::Float32BE: {
       float val;
       in.read((char *)&val, sizeof(val));
-      return (value_type(BE(val)));
+      return static_cast<value_type>(BE(val));
     }
     case DataType::Float64LE: {
       double val;
       in.read((char *)&val, sizeof(val));
-      return (value_type(LE(val)));
+      return static_cast<value_type>(LE(val));
     }
     case DataType::Float64BE: {
       double val;
       in.read((char *)&val, sizeof(val));
-      return (value_type(BE(val)));
+      return static_cast<value_type>(BE(val));
     }
     default:
       assert(0);
       break;
     }
-    return (value_type(NaN));
+    return std::numeric_limits<value_type>::quiet_NaN();
   }
 
   ScalarReader(const ScalarReader &) = delete;
@@ -151,7 +126,7 @@ public:
   using __WriterBase__<T>::verify_stream;
   using __WriterBase__<T>::open_success;
 
-  ScalarWriter(const std::string &file, const Properties &properties)
+  ScalarWriter(std::string_view file, const Properties &properties)
       : __WriterBase__<T>(file),
         buffer_capacity(File::Config::get_int("TrackWriterBufferSize", 16777216) / sizeof(value_type)),
         buffer(new value_type[buffer_capacity + 1]),
@@ -195,7 +170,7 @@ protected:
 
   void add_scalar(const value_type &s) { format_scalar(s, buffer[buffer_size++]); }
 
-  value_type delimiter() const { return value_type(NAN); }
+  value_type delimiter() const { return std::numeric_limits<value_type>::quiet_NaN(); }
 
   void format_scalar(const value_type &s, value_type &destination) {
     using namespace ByteOrder;
@@ -211,7 +186,7 @@ protected:
     File::OFStream out(name, std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
     out.seekp(current_offset, out.beg);
     out.write(reinterpret_cast<char *>(buffer.get()), sizeof(value_type) * buffer_size);
-    current_offset = int64_t(out.tellp());
+    current_offset = static_cast<int64_t>(out.tellp());
     verify_stream(out);
     update_counts(out);
     verify_stream(out);

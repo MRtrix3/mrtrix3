@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,7 +16,13 @@
 
 #include "dwi/tractography/ACT/gmwmi.h"
 
+#include <array>
+
 namespace MR::DWI::Tractography::ACT {
+
+const default_type GMWMI_finder::perturbation_mm = 0.001;
+const ssize_t GMWMI_finder::max_iters = 10;
+const default_type GMWMI_finder::hermite_tension = 0.1;
 
 bool GMWMI_finder::find_interface(Eigen::Vector3f &p) const {
   Interp interp(interp_template);
@@ -47,7 +53,7 @@ bool GMWMI_finder::find_interface(Eigen::Vector3f &p, Interp &interp) const {
 
   Tissues tissues;
 
-  Eigen::Vector3f step(0.0, 0.0, 0.0);
+  Eigen::Vector3f step(Eigen::Vector3f::Zero());
   size_t gradient_iters = 0;
 
   tissues = get_tissues(p, interp);
@@ -56,15 +62,15 @@ bool GMWMI_finder::find_interface(Eigen::Vector3f &p, Interp &interp) const {
     step = get_cf_min_step(p, interp);
     p += step;
     tissues = get_tissues(p, interp);
-  } while (tissues.valid() && step.squaredNorm() && (abs(tissues.get_gm() - tissues.get_wm()) > GMWMI_ACCURACY) &&
-           (++gradient_iters < GMWMI_MAX_ITERS_TO_FIND_BOUNDARY));
+  } while (tissues.valid() && step.squaredNorm() > 0.0F &&
+           (std::fabs(tissues.get_gm() - tissues.get_wm()) > gmwmi_accuracy) && ++gradient_iters < max_iters);
 
   // Make sure an appropriate cost function minimum has been found, and that
   //   this would be an acceptable termination point if it were processed by the tracking algorithm
   if (!tissues.valid() || tissues.is_csf() || tissues.is_path() || !tissues.get_wm() ||
-      (abs(tissues.get_gm() - tissues.get_wm()) > GMWMI_ACCURACY)) {
+      (std::fabs(tissues.get_gm() - tissues.get_wm()) > gmwmi_accuracy)) {
 
-    p = {NaN, NaN, NaN};
+    p.fill(NaNF);
     return false;
   }
 
@@ -75,7 +81,7 @@ bool GMWMI_finder::find_interface(Eigen::Vector3f &p, Interp &interp) const {
   if (!step.allFinite())
     return true;
   if (!step.squaredNorm()) {
-    p = {NaN, NaN, NaN};
+    p.fill(NaNF);
     return false;
   }
 
@@ -85,27 +91,27 @@ bool GMWMI_finder::find_interface(Eigen::Vector3f &p, Interp &interp) const {
     tissues = get_tissues(p, interp);
 
     if (tissues.valid() && (tissues.get_gm() >= tissues.get_wm()) &&
-        (tissues.get_gm() - tissues.get_wm() < GMWMI_ACCURACY))
+        (tissues.get_gm() - tissues.get_wm() < gmwmi_accuracy))
       return true;
 
   } while (step.norm() < 0.5 * min_vox);
 
-  p = {NaN, NaN, NaN};
+  p.fill(NaNF);
   return false;
 }
 
 Eigen::Vector3f GMWMI_finder::get_normal(const Eigen::Vector3f &p, Interp &interp) const {
 
-  Eigen::Vector3f normal(0.0, 0.0, 0.0);
+  Eigen::Vector3f normal(Eigen::Vector3f::Zero());
 
   for (size_t axis = 0; axis != 3; ++axis) {
 
     Eigen::Vector3f p_minus(p);
-    p_minus[axis] -= 0.5 * GMWMI_PERTURBATION;
+    p_minus[axis] -= 0.5 * perturbation_mm;
     const Tissues v_minus = get_tissues(p_minus, interp);
 
     Eigen::Vector3f p_plus(p);
-    p_plus[axis] += 0.5 * GMWMI_PERTURBATION;
+    p_plus[axis] += 0.5 * perturbation_mm;
     const Tissues v_plus = get_tissues(p_plus, interp);
 
     normal[axis] = (v_plus.get_wm() - v_plus.get_gm()) - (v_minus.get_wm() - v_minus.get_gm());
@@ -116,28 +122,28 @@ Eigen::Vector3f GMWMI_finder::get_normal(const Eigen::Vector3f &p, Interp &inter
 
 Eigen::Vector3f GMWMI_finder::get_cf_min_step(const Eigen::Vector3f &p, Interp &interp) const {
 
-  Eigen::Vector3f grad(0.0, 0.0, 0.0);
+  Eigen::Vector3f grad(Eigen::Vector3f::Zero());
 
   for (size_t axis = 0; axis != 3; ++axis) {
 
     Eigen::Vector3f p_minus(p);
-    p_minus[axis] -= 0.5 * GMWMI_PERTURBATION;
+    p_minus[axis] -= 0.5 * perturbation_mm;
     const Tissues v_minus = get_tissues(p_minus, interp);
 
     Eigen::Vector3f p_plus(p);
-    p_plus[axis] += 0.5 * GMWMI_PERTURBATION;
+    p_plus[axis] += 0.5 * perturbation_mm;
     const Tissues v_plus = get_tissues(p_plus, interp);
 
     if (!v_minus.valid() || !v_plus.valid())
-      return {0.0, 0.0, 0.0};
+      return Eigen::Vector3f::Zero();
 
     grad[axis] = (v_plus.get_gm() - v_plus.get_wm()) - (v_minus.get_gm() - v_minus.get_wm());
   }
 
-  grad *= (1.0 / GMWMI_PERTURBATION);
+  grad *= (1.0 / perturbation_mm);
 
   if (!grad.squaredNorm())
-    return {0.0, 0.0, 0.0};
+    return Eigen::Vector3f::Zero();
 
   const Tissues local_tissue = get_tissues(p, interp);
   const float diff = local_tissue.get_gm() - local_tissue.get_wm();
@@ -154,7 +160,7 @@ Eigen::Vector3f
 GMWMI_finder::find_interface(const std::vector<Eigen::Vector3f> &tck, const bool end, Interp &interp) const {
 
   if (tck.empty())
-    return {NaN, NaN, NaN};
+    return Eigen::Vector3f::Constant(NaNF);
 
   if (tck.size() == 1)
     return tck.front();
@@ -182,7 +188,7 @@ GMWMI_finder::find_interface(const std::vector<Eigen::Vector3f> &tck, const bool
   }
 
   // Also make sure that the existing endpoint doesn't already obey the criterion
-  if (t_end.get_gm() - t_end.get_wm() < GMWMI_ACCURACY)
+  if (t_end.get_gm() - t_end.get_wm() < gmwmi_accuracy)
     return p_end;
 
   const Eigen::Vector3f curvature(end ? ((tck[last] - tck[last - 1]) - (tck[last - 1] - tck[last - 2]))
@@ -190,13 +196,9 @@ GMWMI_finder::find_interface(const std::vector<Eigen::Vector3f> &tck, const bool
   const Eigen::Vector3f extrap((end ? (tck[last] - tck[last - 1]) : (tck[0] - tck[1])) + curvature);
   const Eigen::Vector3f p_extrap(p_end + extrap);
 
-  Eigen::Vector3f domain[4];
-  domain[0] = (end ? tck[last - 2] : tck[2]);
-  domain[1] = p_prev;
-  domain[2] = p_end;
-  domain[3] = p_extrap;
+  const std::array<Eigen::Vector3f, 4> domain{end ? tck[last - 2] : tck[2], p_prev, p_end, p_extrap};
 
-  Math::Hermite<float> hermite(GMWMI_HERMITE_TENSION);
+  Math::Hermite<float> hermite(hermite_tension);
 
   float min_mu = 0.0, max_mu = 1.0;
   Eigen::Vector3f p_best = p_end;
@@ -212,10 +214,10 @@ GMWMI_finder::find_interface(const std::vector<Eigen::Vector3f> &tck, const bool
     } else {
       max_mu = mu;
       p_best = p;
-      if (t.get_gm() - t.get_wm() < GMWMI_ACCURACY)
+      if (t.get_gm() - t.get_wm() < gmwmi_accuracy)
         return p_best;
     }
-  } while (++iters != GMWMI_MAX_ITERS_TO_FIND_BOUNDARY);
+  } while (++iters != max_iters);
 
   return p_best;
 }

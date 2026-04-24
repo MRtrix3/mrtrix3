@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,11 +16,12 @@
 
 #include "dwi/tractography/seeding/gmwmi.h"
 #include "dwi/tractography/rng.h"
+#include "dwi/tractography/seeding/seeding.h"
 
 namespace MR::DWI::Tractography::Seeding {
 
-GMWMI::GMWMI(const std::string &in, const std::string &anat_path)
-    : Base(in, "GM-WM interface", MAX_TRACKING_SEED_ATTEMPTS_GMWMI),
+GMWMI::GMWMI(std::string_view in, std::string_view anat_path)
+    : Base(in, "GM-WM interface", attempts_per_seed.at(seed_attempt_t::GMWMI)),
       GMWMI_5TT_Wrapper(anat_path),
       ACT::GMWMI_finder(anat_data),
       init_seeder(in),

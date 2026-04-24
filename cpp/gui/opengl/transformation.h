@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -44,12 +44,12 @@ public:
     v[2] = p[2];
     v[3] = w;
   }
-  vec4(const float *p) { memcpy(v, p, sizeof(v)); }
+  vec4(const float *p) { memcpy(v.data(), p, sizeof(v)); }
 
-  void zero() { memset(v, 0, sizeof(v)); }
+  void zero() { v = {0.0F, 0.0F, 0.0F, 0.0F}; }
 
-  operator const GLfloat *() const { return v; }
-  operator GLfloat *() { return v; }
+  operator const GLfloat *() const { return v.data(); }
+  operator GLfloat *() { return v.data(); }
 
   friend std::ostream &operator<<(std::ostream &stream, const vec4 &v) {
     for (size_t i = 0; i < 4; ++i)
@@ -58,14 +58,14 @@ public:
   }
 
 protected:
-  GLfloat v[4];
+  std::array<GLfloat, 4> v;
 };
 
 class mat4 {
 public:
   mat4() {}
-  mat4(const mat4 &a) { memcpy(m, a.m, sizeof(m)); }
-  mat4(const float *p) { memcpy(m, p, sizeof(m)); }
+  mat4(const mat4 &a) : m(a.m) {}
+  mat4(const float *p) { memcpy(m.data(), p, sizeof(m)); }
   mat4(const Eigen::Quaternionf &v) {
     const auto R = v.matrix();
     zero();
@@ -76,7 +76,7 @@ public:
     (*this)(3, 3) = 1.0f;
   }
   template <class M> mat4(const M &a) {
-    for (size_t i = 0; i != size_t(a.rows()); ++i) {
+    for (size_t i = 0; i != static_cast<size_t>(a.rows()); ++i) {
       for (size_t j = 0; j != 4; ++j)
         (*this)(i, j) = a(i, j);
     }
@@ -87,14 +87,14 @@ public:
   }
 
   mat4 &operator=(const mat4 &a) {
-    memcpy(m, a.m, sizeof(m));
+    m = a.m;
     return *this;
   }
 
-  void zero() { memset(m, 0, sizeof(m)); }
+  void zero() { std::fill(std::begin(m), std::end(m), 0.0F); }
 
-  operator const GLfloat *() const { return m; }
-  operator GLfloat *() { return m; }
+  operator const GLfloat *() const { return m.data(); }
+  operator GLfloat *() { return m.data(); }
 
   GLfloat &operator()(size_t i, size_t j) { return m[i + 4 * j]; }
   const GLfloat &operator()(size_t i, size_t j) const { return m[i + 4 * j]; }
@@ -135,7 +135,7 @@ public:
   }
 
 protected:
-  GLfloat m[16];
+  std::array<GLfloat, 16> m;
 };
 
 inline mat4 identity() {

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -75,11 +75,11 @@ template <class Functor> void run_volume(Functor &functor, Image<float> &data, I
   if (mask.valid()) {
     for (auto l = Loop(0, 3)(data, mask); l; ++l) {
       if (mask.value())
-        functor(float(data.value()));
+        functor(static_cast<float>(data.value()));
     }
   } else {
     for (auto l = Loop(0, 3)(data); l; ++l)
-      functor(float(data.value()));
+      functor(static_cast<float>(data.value()));
   }
 }
 

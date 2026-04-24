@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -55,10 +55,8 @@ bool Client::TryConnect() {
 void Client::SendData(QByteArray dat) {
   // Prefix data with how long the message is
   QByteArray prefixedData;
-  char a[4];
   unsigned int size = (unsigned int)dat.size();
-  memcpy(a, &size, 4);
-  prefixedData.insert(0, a, 4);
+  prefixedData.insert(0, reinterpret_cast<const char *>(&size), 4);
   prefixedData.insert(4, dat, dat.size());
 
   // send

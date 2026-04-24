@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,18 +16,20 @@
 
 #pragma once
 
+#include <array>
+
 #include "types.h"
 
 namespace MR::DWI::Directions {
 
-extern const default_type electrostatic_repulsion_60_data[];
-extern const default_type electrostatic_repulsion_300_data[];
-extern const default_type electrostatic_repulsion_5000_data[];
-extern const default_type tesselation_129_data[];
-extern const default_type tesselation_321_data[];
-extern const default_type tesselation_469_data[];
-extern const default_type tesselation_513_data[];
-extern const default_type tesselation_1281_data[];
+extern const std::array<default_type, 120> electrostatic_repulsion_60_data;
+extern const std::array<default_type, 600> electrostatic_repulsion_300_data;
+extern const std::array<default_type, 10000> electrostatic_repulsion_5000_data;
+extern const std::array<default_type, 258> tesselation_129_data;
+extern const std::array<default_type, 642> tesselation_321_data;
+extern const std::array<default_type, 938> tesselation_469_data;
+extern const std::array<default_type, 1026> tesselation_513_data;
+extern const std::array<default_type, 2562> tesselation_1281_data;
 
 namespace {
 inline Eigen::MatrixXd copy(const default_type *p, ssize_t rows) {
@@ -40,23 +42,23 @@ inline Eigen::MatrixXd copy(const default_type *p, ssize_t rows) {
 }
 } // namespace
 
-inline Eigen::MatrixXd electrostatic_repulsion_60() { return copy(electrostatic_repulsion_60_data, 60); }
-inline Eigen::MatrixXd electrostatic_repulsion_300() { return copy(electrostatic_repulsion_300_data, 300); }
-inline Eigen::MatrixXd electrostatic_repulsion_5000() { return copy(electrostatic_repulsion_5000_data, 5000); }
+inline Eigen::MatrixXd electrostatic_repulsion_60() { return copy(electrostatic_repulsion_60_data.data(), 60); }
+inline Eigen::MatrixXd electrostatic_repulsion_300() { return copy(electrostatic_repulsion_300_data.data(), 300); }
+inline Eigen::MatrixXd electrostatic_repulsion_5000() { return copy(electrostatic_repulsion_5000_data.data(), 5000); }
 
 //! 3rd-order tessellation of an octahedron
-inline Eigen::MatrixXd tesselation_129() { return copy(tesselation_129_data, 129); }
+inline Eigen::MatrixXd tesselation_129() { return copy(tesselation_129_data.data(), 129); }
 
 //! 3rd-order tessellation of an icosahedron
-inline Eigen::MatrixXd tesselation_321() { return copy(tesselation_321_data, 321); }
+inline Eigen::MatrixXd tesselation_321() { return copy(tesselation_321_data.data(), 321); }
 
 //! 4th-order tessellation of a tetrahedron
-inline Eigen::MatrixXd tesselation_469() { return copy(tesselation_469_data, 469); }
+inline Eigen::MatrixXd tesselation_469() { return copy(tesselation_469_data.data(), 469); }
 
 //! 4th-order tessellation of an octahedron
-inline Eigen::MatrixXd tesselation_513() { return copy(tesselation_513_data, 513); }
+inline Eigen::MatrixXd tesselation_513() { return copy(tesselation_513_data.data(), 513); }
 
 //! 4th-order tessellation of an icosahedron
-inline Eigen::MatrixXd tesselation_1281() { return copy(tesselation_1281_data, 1281); }
+inline Eigen::MatrixXd tesselation_1281() { return copy(tesselation_1281_data.data(), 1281); }
 
 } // namespace MR::DWI::Directions

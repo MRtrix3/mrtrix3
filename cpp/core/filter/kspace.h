@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -77,10 +77,10 @@ public:
     if (outer_axes.size()) {
       Adapter::Replicate<Image<double>> replicating_window(window, in);
       for (auto l = Loop(in)(kspace, replicating_window); l; ++l)
-        kspace.value() *= double(replicating_window.value());
+        kspace.value() *= static_cast<double>(replicating_window.value());
     } else {
       for (auto l = Loop(in)(kspace, window); l; ++l)
-        kspace.value() *= double(window.value());
+        kspace.value() *= static_cast<double>(window.value());
     }
 
     for (ssize_t n = 0; n != inner_axes.size(); ++n) {
@@ -101,7 +101,7 @@ public:
   operator()(InputImageType &in, OutputImageType &out) {
     Image<cdouble> temp = Image<cdouble>::scratch(in, "Scratch \"" + in.name() + "\" converted to cdouble for FFT");
     for (auto l = Loop(in)(in, temp); l; ++l)
-      temp.value() = {double(in.value()), double(0)};
+      temp.value() = {static_cast<double>(in.value()), 0.0};
     (*this)(temp, out);
   }
 
@@ -141,11 +141,11 @@ public:
       const default_type transition_upper = 0.5 + 0.5 * cosine_frac;
       // Beware of FFT being non-centred
       for (size_t n = 0; n != N; ++n) {
-        const default_type pos = default_type(n) / default_type(N);
+        const default_type pos = static_cast<default_type>(n) / static_cast<default_type>(N);
         if (pos > transition_lower && pos < transition_upper)
           window1d[n] = 0.5 + 0.5 * std::cos(2.0 * Math::pi * (pos - transition_lower) / cosine_frac);
       }
-      window1d *= 1.0 / double(N);
+      window1d *= 1.0 / static_cast<double>(N);
       apply_window1D(window, window1d, axis, inner_axes);
     }
     return window;
@@ -173,7 +173,7 @@ public:
                       - 0.083578947 * std::cos(6.0 * Math::pi * n_centred / N)  //
                       + 0.006947368 * std::cos(8.0 * Math::pi * n_centred / N); //
       }
-      window1d *= 1.0 / double(N);
+      window1d *= 1.0 / static_cast<double>(N);
       apply_window1D(window, window1d, axis, inner_axes);
     }
     return window;
@@ -189,7 +189,7 @@ public:
       Eigen::Array<double, Eigen::Dynamic, 1> window1d(N);
       for (size_t n = 0; n != N; ++n)
         window1d[n] = Math::pow2(std::cos(Math::pi * n / N));
-      window1d *= 1.0 / double(N);
+      window1d *= 1.0 / static_cast<double>(N);
       apply_window1D(window, window1d, axis, inner_axes);
     }
     return window;
@@ -229,7 +229,8 @@ protected:
     assert(scratch.valid());
     Math::FFT(kspace, scratch, axis, FFTW_BACKWARD, false);
     for (auto l = Loop(out)(scratch, out); l; ++l)
-      out.value() = {float(cdouble(scratch.value()).real()), float(cdouble(scratch.value()).imag())};
+      out.value() = {static_cast<float>(static_cast<cdouble>(scratch.value()).real()),
+                     static_cast<float>(static_cast<cdouble>(scratch.value()).imag())};
   }
   template <class ImageType>
   typename std::enable_if<!MR::is_complex<typename ImageType::value_type>::value, void>::type
@@ -237,7 +238,7 @@ protected:
     assert(scratch.valid());
     Math::FFT(kspace, scratch, axis, FFTW_BACKWARD, false);
     for (auto l = Loop(out)(scratch, out); l; ++l)
-      out.value() = std::abs(cdouble(scratch.value()));
+      out.value() = MR::abs(static_cast<cdouble>(scratch.value()));
   }
 
   static Header make_window_header(const Header &header, const std::vector<size_t> &inner_axes) {

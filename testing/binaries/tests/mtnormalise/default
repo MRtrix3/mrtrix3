@@ -1,10 +1,10 @@
 #!/bin/bash
 # Evaluation of the mtnormalise command under typical operation,
 #   where three ODF images are provided as input
-mtnormalise -mask dwi2fod/msmt/mask.mif \
-dwi2fod/msmt/wm.mif tmp_wm.mif \
-dwi2fod/msmt/gm.mif tmp_gm.mif \
-dwi2fod/msmt/csf.mif tmp_csf.mif \
+mtnormalise -mask dwi2fod/msmt_csd/mask.mif \
+dwi2fod/msmt_csd/wm.mif tmp_wm.mif \
+dwi2fod/msmt_csd/gm.mif tmp_gm.mif \
+dwi2fod/msmt_csd/csf.mif tmp_csf.mif \
 -check_norm tmp_field.mif \
 -force
 

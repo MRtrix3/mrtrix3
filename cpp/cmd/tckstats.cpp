@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,7 @@
  */
 
 #include "command.h"
+#include "enum.h"
 #include "memory.h"
 #include "progressbar.h"
 #include "types.h"
@@ -35,7 +36,7 @@ using namespace MR::DWI::Tractography;
 // TODO Make compatible with stats generic options?
 // - Some features would not be compatible due to potential presence of track weights
 
-const std::vector<std::string> field_choices = {"mean", "median", "std", "min", "max", "count"};
+enum class FieldChoice { MEAN, MEDIAN, STD, MIN, MAX, COUNT };
 
 // clang-format off
 void usage() {
@@ -51,9 +52,9 @@ void usage() {
 
   + Option ("output", "output only the field specified."
                       " Multiple such options can be supplied if required."
-                      " Choices are: " + join (field_choices, ", ") + "."
+                      " Choices are: " + MR::Enum::join<FieldChoice>() + "."
                       " Useful for use in scripts.").allow_multiple()
-    + Argument ("field").type_choice(field_choices)
+    + Argument ("field").type_choice<FieldChoice>()
 
   + Option ("histogram", "output a histogram of streamline lengths")
     + Argument ("path").type_file_out()
@@ -72,7 +73,7 @@ void usage() {
 class LW {
 public:
   LW(const float l, const float w) : length(l), weight(w) {}
-  LW() : length(NaN), weight(NaN) {}
+  LW() : length(NaNF), weight(NaNF) {}
   bool operator<(const LW &that) const { return length < that.length; }
   float get_length() const { return length; }
   float get_weight() const { return weight; }
@@ -94,7 +95,7 @@ void run() {
 
   const bool weights_provided = !get_options("tck_weights_in").empty();
 
-  float step_size = NaN;
+  float step_size = NaNF;
   size_t count = 0, header_count = 0;
   float min_length = std::numeric_limits<float>::infinity();
   float max_length = -std::numeric_limits<float>::infinity();
@@ -163,11 +164,11 @@ void run() {
   if (count != header_count)
     WARN("expected " + str(header_count) + " tracks according to header; read " + str(count));
   if (!std::isfinite(min_length))
-    min_length = NaN;
+    min_length = NaNF;
   if (!std::isfinite(max_length))
-    max_length = NaN;
+    max_length = NaNF;
 
-  const float mean_length = sum_weights ? (sum_lengths / sum_weights) : NaN;
+  const float mean_length = sum_weights ? (sum_lengths / sum_weights) : NaNF;
 
   float median_length = 0.0f;
   if (count) {
@@ -184,33 +185,33 @@ void run() {
       median_length = Math::median(all_lengths).get_length();
     }
   } else {
-    median_length = NaN;
+    median_length = NaNF;
   }
 
   default_type ssd = 0.0;
   for (std::vector<LW>::const_iterator i = all_lengths.begin(); i != all_lengths.end(); ++i)
     ssd += i->get_weight() * Math::pow2(i->get_length() - mean_length);
-  const float stdev = sum_weights ? (std::sqrt(ssd / (((count - 1) / default_type(count)) * sum_weights))) : NaN;
+  const float stdev = sum_weights ? (std::sqrt(ssd / ((static_cast<default_type>(count - 1) / static_cast<default_type>(count)) * sum_weights))) : NaNF;
 
-  std::vector<std::string> fields;
+  std::vector<FieldChoice> fields;
   auto opt = get_options("output");
   for (size_t n = 0; n < opt.size(); ++n)
-    fields.push_back(opt[n][0]);
+    fields.push_back(MR::Enum::from_name<FieldChoice>(opt[n][0]));
 
   if (!fields.empty()) {
 
     for (size_t n = 0; n < fields.size(); ++n) {
-      if (fields[n] == "mean")
+      if (fields[n] == FieldChoice::MEAN)
         std::cout << str(mean_length) << " ";
-      else if (fields[n] == "median")
+      else if (fields[n] == FieldChoice::MEDIAN)
         std::cout << str(median_length) << " ";
-      else if (fields[n] == "std")
+      else if (fields[n] == FieldChoice::STD)
         std::cout << str(stdev) << " ";
-      else if (fields[n] == "min")
+      else if (fields[n] == FieldChoice::MIN)
         std::cout << str(min_length) << " ";
-      else if (fields[n] == "max")
+      else if (fields[n] == FieldChoice::MAX)
         std::cout << str(max_length) << " ";
-      else if (fields[n] == "count")
+      else if (fields[n] == FieldChoice::COUNT)
         std::cout << count << " ";
     }
     std::cout << "\n";

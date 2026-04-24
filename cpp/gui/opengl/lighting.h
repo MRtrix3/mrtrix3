@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -27,7 +27,9 @@ public:
   Lighting(QObject *parent) : QObject(parent), set_background(false) { load_defaults(); }
 
   float ambient, diffuse, specular, shine;
-  float light_color[3], lightpos[3], background_color[3];
+  Eigen::Array3f light_color;
+  Eigen::Vector3f lightpos;
+  Eigen::Array3f background_color;
   bool set_background;
 
   void set() const;

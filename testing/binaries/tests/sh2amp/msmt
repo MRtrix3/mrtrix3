@@ -4,5 +4,5 @@
 #   has dimensions X x Y x Z x 45 (N for lmax=8) x 4 (# unique b-values)
 # The exemplar output image, having been generated from a prior software version,
 #   has dimensions X x Y x Z x 102 (# DWI volumes)
-sh2amp shconv/out_msmt.mif dwi2fod/msmt/dwi.mif - | \
+sh2amp shconv/out_msmt.mif dwi2fod/msmt_csd/dwi.mif - | \
 testing_diff_image - sh2amp/out_msmt.mif -voxel 1e-5

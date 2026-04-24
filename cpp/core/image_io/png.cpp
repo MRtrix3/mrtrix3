@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -43,7 +43,7 @@ void PNG::load(const Header &header, size_t) {
     for (size_t i = 0; i != files.size(); ++i) {
       File::PNG::Reader png(files[i].name);
       if (png.get_width() != header.size(0) || png.get_height() != header.size(1) ||
-          png.get_output_bitdepth() != int(header.datatype().bits()) ||
+          png.get_output_bitdepth() != static_cast<int>(header.datatype().bits()) ||
           ((header.ndim() > 3 && png.get_channels() != header.size(3)) ||
            (header.ndim() <= 3 && png.get_channels() > 1))) {
         Exception e("Inconsistent image properties within series \"" + header.name() + "\"");

@@ -3,18 +3,11 @@
 #
 # Usage:
 #   find_package(FFTW [REQUIRED] [QUIET] )
-#     
-# It sets the following variables:
-#   FFTW_FOUND               ... true if fftw is found on the system
-#   FFTW_LIBRARIES           ... full path to fftw library
-#   FFTW_INCLUDES            ... fftw include directory
 #
 # The following variables will be checked by the function
 #   FFTW_USE_STATIC_LIBS    ... if true, only static libraries are found
 #   FFTW_ROOT               ... if set, the libraries are exclusively searched
 #                               under this path
-#   FFTW_LIBRARY            ... fftw library to use
-#   FFTW_INCLUDE_DIR        ... fftw include directory
 #
 
 #If environment variable FFTWDIR is specified, it has same effect as FFTW_ROOT
@@ -79,13 +72,27 @@ else()
 
 endif()
 
-set(FFTW_LIBRARIES ${FFTW_LIB})
+if(FFTW_LIB)
+  if(NOT TARGET fftw3::fftw)
+    add_library(fftw3::fftw UNKNOWN IMPORTED)
+    set_target_properties(fftw3::fftw PROPERTIES
+      IMPORTED_LOCATION "${FFTW_LIB}"
+      INTERFACE_INCLUDE_DIRECTORIES "${FFTW_INCLUDES}"
+    )
+  endif()
+endif()
 
-set( CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_SAV} )
+
+if(TARGET fftw3::fftw)
+  set(FFTW_FOUND TRUE)
+else()
+  set(FFTW_FOUND FALSE)
+endif()
+
+set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES_SAV})
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(FFTW DEFAULT_MSG
-                                  FFTW_INCLUDES FFTW_LIBRARIES)
+                                  FFTW_INCLUDES FFTW_LIB)
 
-mark_as_advanced(FFTW_INCLUDES FFTW_LIBRARIES FFTW_LIB)
-
+mark_as_advanced(FFTW_INCLUDES FFTW_LIB)

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -45,7 +45,7 @@ const Eigen::Array<bool, 3, 1> reference_1d_bool{false, true, true};
 const Eigen::Array<default_type, 3, 2> reference_2d{{0.0, 1.0}, {10.0, 11.0}, {20.0, 21.0}};
 const Eigen::Array<bool, 3, 2> reference_2d_bool{{false, true}, {true, true}, {true, true}};
 
-template <bool isboolean, bool is1D> bool verify_basic(const std::string &filepath) {
+template <bool isboolean, bool is1D> bool verify_basic(std::string_view filepath) {
   if (is1D) {
     const Eigen::Array<default_type, Eigen::Dynamic, 1> data = File::Matrix::load_vector(filepath);
     return (isboolean ? data.cast<bool>().isApprox(reference_1d_bool) : data.isApprox(reference_1d));
@@ -110,7 +110,7 @@ bool check_datatype(void *address, const File::NPY::ReadInfo &info) {
   if (type == DataType::UInt16)
     return check_major<uint16_t>(address, info);
   if (type == DataType::Float16)
-    return check_major<half_float::half>(address, info);
+    return check_major<Eigen::half>(address, info);
   if (type == DataType::Int32)
     return check_major<int32_t>(address, info);
   if (type == DataType::UInt32)
@@ -128,7 +128,7 @@ bool check_datatype(void *address, const File::NPY::ReadInfo &info) {
 }
 } // namespace
 
-bool verify_advanced(const std::string &filepath, const File::NPY::ReadInfo &info) {
+bool verify_advanced(std::string_view filepath, const File::NPY::ReadInfo &info) {
   File::MMap mmap({filepath, info.data_offset}, false);
   return check_datatype(mmap.address(), info);
 }

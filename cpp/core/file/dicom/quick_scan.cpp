@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -23,7 +23,7 @@
 namespace MR::File::Dicom {
 
 bool QuickScan::read(
-    const std::string &file_name, bool print_DICOM_fields, bool print_CSA_fields, bool print_Phoenix, bool force_read) {
+    std::string_view file_name, bool print_DICOM_fields, bool print_CSA_fields, bool print_Phoenix, bool force_read) {
   filename = file_name;
   modality.clear();
   patient.clear();
@@ -112,7 +112,7 @@ bool QuickScan::read(
               item.element == 0x1120U || item.element == 0x1210U || item.element == 0x1220U) {
             CSAEntry entry(item.data, item.data + item.size);
             while (entry.parse()) {
-              const bool is_phoenix = (strcmp("MrPhoenixProtocol", entry.key()) == 0);
+              const bool is_phoenix = entry.key() == "MrPhoenixProtocol";
               if ((print_Phoenix && is_phoenix) || (print_CSA_fields && !is_phoenix)) {
                 if (print_CSA_fields) {
                   print(str(entry));

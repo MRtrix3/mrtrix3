@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,9 +20,11 @@
 #include "image.h"
 #include "progressbar.h"
 #include "registration/warp/helpers.h"
+#include "registration/warp/validate.h"
 
 #include "fixel/fixel.h"
 #include "fixel/helpers.h"
+#include "fixel/validate.h"
 
 using namespace MR;
 using namespace App;
@@ -37,6 +39,18 @@ void usage() {
   SYNOPSIS = "Reorient fixel directions";
 
   DESCRIPTION
+  + "Whenever data that encode some orientation-dependent data are transformed in space,"
+    " there is a corresponding rotation of that orientation-dependent data that must occur."
+    " Typically, spatial transformation and reorientation of data should happen simultaneously."
+    " This command however operates in a very specific context where this is NOT the case."
+    " If the data from which fixels are estimated have been transformed in space,"
+    " but the corresponding requisite reorientation that should accompany such a transformation was NOT applied,"
+    " then that reorientation can instead be applied to the fixel directions after the fact."
+    " The most common scenario is where FODs are transformed from one space to another,"
+    " but FOD-based reorientation is explicitly disabled during such"
+    " due to its potentially deleterious consequences on FOD shape,"
+    " with the requisite reorientation instead applied to the fixels resulting from FOD segmentation."
+
   + "Reorientation is performed by transforming the vector representing the fixel direction"
     " with the Jacobian (local affine transform)"
     " computed at each voxel in the warp,"
@@ -60,13 +74,16 @@ void usage() {
 void run() {
   std::string input_fixel_directory = argument[0];
   Fixel::check_fixel_directory(input_fixel_directory);
+  Fixel::debug_validate_directory(input_fixel_directory);
 
   auto input_index_image = Fixel::find_index_header(input_fixel_directory).get_image<index_type>();
 
   Header warp_header = Header::open(argument[1]);
-  Registration::Warp::check_warp(warp_header);
+  Registration::Warp::validate_header(warp_header);
   check_dimensions(input_index_image, warp_header, 0, 3);
-  Adapter::Jacobian<Image<float>> jacobian(warp_header.get_image<float>());
+  auto warp_image = warp_header.get_image<float>();
+  Registration::Warp::debug_validate_image(warp_image);
+  Adapter::Jacobian<Image<float>> jacobian(warp_image);
 
   std::string output_fixel_directory = argument[2];
   Fixel::check_fixel_directory(output_fixel_directory, true);

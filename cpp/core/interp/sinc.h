@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,8 +19,6 @@
 #include "interp/base.h"
 #include "math/sinc.h"
 #include "types.h"
-
-#define SINC_WINDOW_SIZE 7
 
 namespace MR::Interp {
 
@@ -63,13 +61,14 @@ namespace MR::Interp {
 
 template <class ImageType> class Sinc : public Base<ImageType> {
 public:
+  static const ssize_t default_windowsize;
   using typename Base<ImageType>::value_type;
   using Base<ImageType>::out_of_bounds;
   using Base<ImageType>::out_of_bounds_value;
 
   Sinc(const ImageType &parent,
        value_type value_when_out_of_bounds = Base<ImageType>::default_out_of_bounds_value(),
-       const size_t w = SINC_WINDOW_SIZE)
+       const size_t w = default_windowsize)
       : Base<ImageType>(parent, value_when_out_of_bounds),
         window_size(w),
         kernel_width((window_size - 1) / 2),
@@ -149,6 +148,8 @@ protected:
   Math::Sinc<value_type> Sinc_x, Sinc_y, Sinc_z;
   std::vector<value_type> y_values, z_values;
 };
+
+template <class ImageType> const ssize_t Sinc<ImageType>::default_windowsize = 7;
 
 template <class ImageType, typename... Args> inline Sinc<ImageType> make_sinc(const ImageType &parent, Args &&...args) {
   return Sinc<ImageType>(parent, std::forward<Args>(args)...);

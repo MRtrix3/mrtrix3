@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,8 @@
 
 #include "command.h"
 #include "dwi/directions/file.h"
+#include "dwi/directions/validate.h"
+#include "file/matrix.h"
 #include "math/rng.h"
 #include "progressbar.h"
 #include "thread.h"
@@ -38,14 +40,12 @@ ARGUMENTS
   + Argument ("dirs", "the text file containing the directions.").type_file_in()
   + Argument ("out", "the output partitioned directions").type_file_out().allow_multiple();
 
-
 OPTIONS
   + Option ("number", "number of permutations to try"
-                            " (default: " + str(default_number) + ")")
+                      " (default: " + str(default_number) + ")")
     + Argument ("num").type_integer (1)
 
-  + Option ("cartesian", "Output the directions in Cartesian coordinates [x y z]"
-                         " instead of [az el].");
+  + DWI::Directions::cartesian_option;
 
 }
 // clang-format on
@@ -154,7 +154,9 @@ protected:
 };
 
 void run() {
-  auto directions = DWI::Directions::load_cartesian(argument[0]);
+  auto directions = File::Matrix::load_matrix(argument[0]);
+  DWI::Directions::validate(directions, argument[0], false);
+  directions = Math::Sphere::as_cartesian(directions);
 
   const size_t num_subsets = argument.size() - 1;
   if (num_subsets == 1)

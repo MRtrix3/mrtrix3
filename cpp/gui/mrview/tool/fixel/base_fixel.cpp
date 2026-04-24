@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,7 +17,7 @@
 #include "mrview/tool/fixel/base_fixel.h"
 
 namespace MR::GUI::MRView::Tool {
-BaseFixel::BaseFixel(const std::string &filename, Fixel &fixel_tool)
+BaseFixel::BaseFixel(std::string_view filename, Fixel &fixel_tool)
     : Displayable(filename),
       header(MR::Header::open(filename)),
       slice_fixel_indices(3),
@@ -53,6 +53,7 @@ BaseFixel::~BaseFixel() {
   regular_grid_dir_buffer.clear();
   regular_grid_colour_buffer.clear();
   regular_grid_val_buffer.clear();
+  element_index_buffer.clear();
 }
 
 std::string BaseFixel::Shader::vertex_shader_source(const Displayable &) {
@@ -81,10 +82,10 @@ std::string BaseFixel::Shader::geometry_shader_source(const Displayable &object)
 
   std::string source = "layout(points) in;\n"
                        "layout(triangle_strip, max_vertices = 4) out;\n"
-                       "in vec3 v_dir[];\n"
-                       "in float v_colour[];\n"
-                       "in float v_scale[];\n"
-                       "in float v_threshold[];\n"
+                       "in vec3 v_dir[];\n"        // check_syntax off
+                       "in float v_colour[];\n"    // check_syntax off
+                       "in float v_scale[];\n"     // check_syntax off
+                       "in float v_threshold[];\n" // check_syntax off
                        "uniform mat4 MVP;\n"
                        "uniform float length_mult;\n"
                        "uniform vec3 colourmap_colour;\n"
@@ -232,14 +233,13 @@ void BaseFixel::render(const Projection &projection) {
 
   if (!fixel_tool.is_cropped_to_slab()) {
     vertex_array_object.bind();
-    for (size_t x = 0, N = slice_fixel_indices[0].size(); x < N; ++x) {
-      if (slice_fixel_counts[0][x])
-        gl::MultiDrawArrays(
-            gl::POINTS, &slice_fixel_indices[0][x][0], &slice_fixel_sizes[0][x][0], slice_fixel_counts[0][x]);
-    }
+    if (element_indices_dirty)
+      rebuild_element_index_buffer();
+    element_index_buffer.bind(gl::ELEMENT_ARRAY_BUFFER);
+    if (!element_indices.empty())
+      gl::DrawElements(gl::POINTS, static_cast<GLsizei>(element_indices.size()), gl::UNSIGNED_INT, (void *)0);
   } else {
     request_update_interp_image_buffer(projection);
-
     if (GLsizei points_count = regular_grid_buffer_pos.size())
       gl::DrawArrays(gl::POINTS, 0, points_count);
   }
@@ -282,11 +282,8 @@ void BaseFixel::update_interp_image_buffer(const Projection &projection,
   p += projection.screen_normal() * (projection.screen_normal().dot(Window::main->focus() - p));
   p = transform.scanner2voxel.cast<float>() * p;
 
-  if (fixel_tool.is_locked_to_grid()) {
-    p[0] = (int)std::round(p[0]);
-    p[1] = (int)std::round(p[1]);
-    p[2] = (int)std::round(p[2]);
-  }
+  if (fixel_tool.is_locked_to_grid())
+    p = p.array().round();
 
   p = transform.voxel2scanner.cast<float>() * p;
 
@@ -326,10 +323,11 @@ void BaseFixel::update_interp_image_buffer(const Projection &projection,
 
   for (int y = -ny; y <= ny; ++y) {
     for (int x = -nx; x <= nx; ++x) {
-      Eigen::Vector3f scanner_pos = p + float(x) * x_dir + float(y) * y_dir;
-      Eigen::Vector3f voxel_pos = transform.scanner2voxel.cast<float>() * scanner_pos;
-      std::array<int, 3> voxel{
-          {(int)std::round(voxel_pos[0]), (int)std::round(voxel_pos[1]), (int)std::round(voxel_pos[2])}};
+      const Eigen::Vector3f scanner_pos = p + static_cast<float>(x) * x_dir + static_cast<float>(y) * y_dir;
+      const Eigen::Vector3f voxel_pos = transform.scanner2voxel.cast<float>() * scanner_pos;
+      const std::array<int, 3> voxel{static_cast<int>(std::round(voxel_pos[0])),
+                                     static_cast<int>(std::round(voxel_pos[1])),
+                                     static_cast<int>(std::round(voxel_pos[2]))};
 
       // Find and add point indices that correspond to projected voxel
       const auto &voxel_indices = voxel_to_indices_map[voxel];
@@ -409,7 +407,7 @@ void BaseFixel::update_interp_image_buffer(const Projection &projection,
   GL::assert_context_is_current();
 }
 
-void BaseFixel::load_image(const std::string &filename) {
+void BaseFixel::load_image(std::string_view filename) {
   // Make sure to set graphics context!
   // We're setting up vertex array objects
   GL::Context::Grab context;
@@ -448,6 +446,7 @@ void BaseFixel::load_image(const std::string &filename) {
   value_buffer.gen();
   colour_buffer.gen();
   threshold_buffer.gen();
+  element_index_buffer.gen();
 
   // voxel centres
   vertex_buffer.bind(gl::ARRAY_BUFFER);
@@ -456,12 +455,51 @@ void BaseFixel::load_image(const std::string &filename) {
   gl::EnableVertexAttribArray(0);
   gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 0, (void *)0);
 
+  rebuild_element_index_buffer();
+  element_indices_dirty = false;
+
   GL::assert_context_is_current();
 
   dir_buffer_dirty = true;
   value_buffer_dirty = true;
   colour_buffer_dirty = true;
   threshold_buffer_dirty = true;
+}
+
+void BaseFixel::rebuild_element_index_buffer() {
+  GL::Context::Grab context;
+  GL::assert_context_is_current();
+
+  element_indices.clear();
+  if (!slice_fixel_indices.empty() && !slice_fixel_sizes.empty() && !slice_fixel_counts.empty()) {
+    const auto &starts_by_slice = slice_fixel_indices[0];
+    const auto &sizes_by_slice = slice_fixel_sizes[0];
+    const auto &counts_by_slice = slice_fixel_counts[0];
+    const size_t S = starts_by_slice.size();
+    for (size_t s = 0; s < S; ++s) {
+      const auto &starts = starts_by_slice[s];
+      const auto &sizes = sizes_by_slice[s];
+      const GLsizei draw_count = counts_by_slice[s];
+      if (!draw_count)
+        continue;
+      assert(starts.size() == sizes.size());
+      assert(static_cast<size_t>(draw_count) <= starts.size());
+      for (GLsizei d = 0; d < draw_count; ++d) {
+        const uint32_t start = static_cast<uint32_t>(starts[d]);
+        const uint32_t len = static_cast<uint32_t>(sizes[d]);
+        for (uint32_t i = 0; i < len; ++i)
+          element_indices.push_back(start + i);
+      }
+    }
+  }
+
+  vertex_array_object.bind();
+  element_index_buffer.bind(gl::ELEMENT_ARRAY_BUFFER);
+  if (!element_indices.empty())
+    gl::BufferData(
+        gl::ELEMENT_ARRAY_BUFFER, element_indices.size() * sizeof(uint32_t), element_indices.data(), gl::STATIC_DRAW);
+
+  element_indices_dirty = false;
 }
 
 void BaseFixel::reload_directions_buffer() {

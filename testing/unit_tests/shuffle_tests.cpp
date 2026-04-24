@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -34,6 +34,7 @@ using namespace App;
 using namespace Math::Stats;
 using MR::Math::Stats::index_array_type;
 using MR::Math::Stats::matrix_type;
+using MR::Math::Stats::value_type;
 
 constexpr size_t ROWS = 6;
 const index_array_type BLOCK_INDICES = (index_array_type(ROWS) << 0, 1, 0, 1, 2, 2).finished();
@@ -130,12 +131,12 @@ protected:
       blocks[block_indices[i]].insert(i);
   }
 
-  void TestPermutationWithin(Shuffler &in, const std::string &fail_msg) {
+  void TestPermutationWithin(Shuffler &in, std::string_view fail_msg) {
     in.reset();
     Shuffle shuffle;
     Eigen::Array<int, Eigen::Dynamic, 1> shuffled_data;
     while (in(shuffle)) {
-      shuffled_data = (shuffle.data * dummy_data.matrix()).cast<int>();
+      shuffled_data = (shuffle.data.cast<value_type>() * dummy_data.matrix()).cast<int>();
       for (size_t i = 0; i != ROWS; ++i) {
         if (block_indices[std::abs(shuffled_data[static_cast<Eigen::Index>(i)]) - 1] != block_indices[i]) {
           GTEST_FAIL() << fail_msg << ": permutation occurred outside of defined block.";
@@ -144,12 +145,12 @@ protected:
     }
   }
 
-  void TestSignflipWhole(Shuffler &in, const std::string &fail_msg) {
+  void TestSignflipWhole(Shuffler &in, std::string_view fail_msg) {
     in.reset();
     Shuffle shuffle;
     Eigen::Array<int, Eigen::Dynamic, 1> shuffled_data;
     while (in(shuffle)) {
-      shuffled_data = (shuffle.data * dummy_data.matrix()).cast<int>();
+      shuffled_data = (shuffle.data.cast<value_type>() * dummy_data.matrix()).cast<int>();
       for (const auto &b : blocks) {
         auto it = b.begin();
         const bool flipped = shuffled_data[*it] < 0.0;
@@ -162,12 +163,12 @@ protected:
     }
   }
 
-  void TestPermutationWhole(Shuffler &in, const std::string &fail_msg) {
+  void TestPermutationWhole(Shuffler &in, std::string_view fail_msg) {
     in.reset();
     Shuffle shuffle;
     Eigen::Array<int, Eigen::Dynamic, 1> shuffled_data;
     while (in(shuffle)) {
-      shuffled_data = (shuffle.data * dummy_data.matrix()).cast<int>();
+      shuffled_data = (shuffle.data.cast<value_type>() * dummy_data.matrix()).cast<int>();
       for (const auto &b1 : blocks) {
         const size_t first_in = *b1.begin();
         const size_t first_out = std::abs(shuffled_data[static_cast<Eigen::Index>(first_in)]) - 1;
@@ -185,7 +186,7 @@ protected:
     }
   }
 
-  void TestUnique(Shuffler &in, const std::string &fail_msg) {
+  void TestUnique(Shuffler &in, std::string_view fail_msg) {
     in.reset();
     std::vector<Shuffle> matrices;
     Shuffle temp;
