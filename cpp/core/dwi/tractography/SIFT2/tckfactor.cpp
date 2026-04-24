@@ -333,7 +333,7 @@ void TckFactor::report_entropy() const {
   const default_type logP_before = std::log2(P_before);
   const default_type H_before = -coefficients.size() * (P_before * logP_before);
   // After SIFT2:
-  const default_type H_after = Math::Entropy::bits(coefficients.exp());
+  const default_type H_after = Math::Entropy::shannons(coefficients.exp());
   const size_t equiv_N = std::round(std::pow(2.0, H_after));
   INFO("Entropy decreased from " + str(H_before, 6) + " to " + str(H_after, 6) + "; " + "this is equivalent to " +
        str(equiv_N) + " equally-weighted streamlines");

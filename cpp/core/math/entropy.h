@@ -56,7 +56,9 @@ typename std::enable_if<is_eigen_type<Cont>::value, default_type>::type prob_nor
   return 1.0 / sum;
 }
 
-template <class Cont, log_base_t logbase> default_type xits(const Cont &data) {
+} // namespace
+
+template <class Cont, log_base_t logbase> default_type entropy(const Cont &data) {
   const default_type norm = prob_norm(data);
   default_type result(0.0);
   for (ssize_t i = 0; i != data.size(); ++i) {
@@ -82,10 +84,9 @@ template <class Cont, log_base_t logbase> default_type xits(const Cont &data) {
   result *= -1.0;
   return result;
 }
-} // namespace
 
-template <class Cont> default_type bits(const Cont &data) { return xits<Cont, log_base_t::TWO>(data); }
-template <class Cont> default_type nits(const Cont &data) { return xits<Cont, log_base_t::E>(data); }
-template <class Cont> default_type dits(const Cont &data) { return xits<Cont, log_base_t::TEN>(data); }
+template <class Cont> default_type shannons(const Cont &data) { return entropy<Cont, log_base_t::TWO>(data); }
+template <class Cont> default_type nats(const Cont &data) { return entropy<Cont, log_base_t::E>(data); }
+template <class Cont> default_type hartleys(const Cont &data) { return entropy<Cont, log_base_t::TEN>(data); }
 
 } // namespace MR::Math::Entropy

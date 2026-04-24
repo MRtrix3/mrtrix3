@@ -48,9 +48,9 @@ enum class Operation {
   MAX,
   ABSMAX,
   MAGMAX,
-  ENTROPY_BITS,
-  ENTROPY_NITS,
-  ENTROPY_DITS
+  SHANNONS,
+  NATS,
+  HARTLEYS
 };
 
 // clang-format off
@@ -76,9 +76,9 @@ void usage() {
       " max,"
       " absmax (maximum absolute value),"
       " magmax (value with maximum absolute value, preserving its sign),"
-      " entropy_bits (Shannon entropy in bits, using log base 2),"
-      " entropy_nits (Shannon entropy in nats, using natural logarithm),"
-      " entropy_dits (Shannon entropy in hartleys, using log base 10)."
+      " shannons (Shannon entropy in bits, using log base 2),"
+      " nats (Shannon entropy in nats, using natural logarithm),"
+      " hartleys (Shannon entropy in hartleys, using log base 10)."
 
     + "For entropy operations,"
       " the input values are first normalised to form a probability distribution"
@@ -291,18 +291,18 @@ public:
 template <Math::Entropy::log_base_t logbase> class EntropyKernel {
 public:
   void operator()(value_type val) {
-    if (std::isfinite(val))
+    if (!std::isnan(val))
       values.push_back(val);
   }
   value_type result() const {
     if (values.empty())
       return NaNF;
     if constexpr (logbase == Math::Entropy::log_base_t::TWO)
-      return static_cast<value_type>(Math::Entropy::bits(values));
+      return static_cast<value_type>(Math::Entropy::shannons(values));
     else if constexpr (logbase == Math::Entropy::log_base_t::E)
-      return static_cast<value_type>(Math::Entropy::nits(values));
+      return static_cast<value_type>(Math::Entropy::nats(values));
     else
-      return static_cast<value_type>(Math::Entropy::dits(values));
+      return static_cast<value_type>(Math::Entropy::hartleys(values));
   }
 
 private:
@@ -448,13 +448,13 @@ void run() {
     case Operation::MAGMAX:
       loop.run(AxisKernel<MagMax>(axis), image_in, image_out);
       return;
-    case Operation::ENTROPY_BITS:
+    case Operation::SHANNONS:
       loop.run(AxisKernel<EntropyBits>(axis), image_in, image_out);
       return;
-    case Operation::ENTROPY_NITS:
+    case Operation::NATS:
       loop.run(AxisKernel<EntropyNits>(axis), image_in, image_out);
       return;
-    case Operation::ENTROPY_DITS:
+    case Operation::HARTLEYS:
       loop.run(AxisKernel<EntropyDits>(axis), image_in, image_out);
       return;
     default:
@@ -539,13 +539,13 @@ void run() {
     case Operation::MAGMAX:
       kernel.reset(new ImageKernel<MagMax>(header));
       break;
-    case Operation::ENTROPY_BITS:
+    case Operation::SHANNONS:
       kernel.reset(new ImageKernel<EntropyBits>(header));
       break;
-    case Operation::ENTROPY_NITS:
+    case Operation::NATS:
       kernel.reset(new ImageKernel<EntropyNits>(header));
       break;
-    case Operation::ENTROPY_DITS:
+    case Operation::HARTLEYS:
       kernel.reset(new ImageKernel<EntropyDits>(header));
       break;
     default:

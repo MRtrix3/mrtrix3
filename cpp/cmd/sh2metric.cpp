@@ -50,7 +50,7 @@ void usage() {
     + "The various metrics available are detailed individually below."
 
     + "\"entropy\":"
-      " this metric computes the entropy (in nits, ie. logarithm base e)"
+      " this metric computes the entropy (in nats, ie. logarithm base e)"
       " of one or more spherical harmonics functions."
       " This can be thought of as being inversely proportional to the overall \"complexity\""
       " of the (set of) spherical harmonics function(s)."
@@ -154,7 +154,7 @@ void run_entropy() {
       }
       assign_pos_of(pos).to(out);
       try {
-        out.value() = shared->normalise(Math::Entropy::nits(concat_amps));
+        out.value() = shared->normalise(Math::Entropy::nats(concat_amps));
       } catch (Exception &) {
         out.value() = std::numeric_limits<float>::quiet_NaN();
       }
@@ -215,8 +215,8 @@ void run_entropy() {
           Eigen::Matrix<default_type, Eigen::Dynamic, 1> amps = transform * delta_coefs;
           amps.conservativeResizeLike(
               Eigen::Matrix<default_type, Eigen::Dynamic, 1>::Zero(num_images * transform.rows()));
-          lower = Math::Entropy::nits(amps);
-          upper = Math::Entropy::nits(
+          lower = Math::Entropy::nats(amps);
+          upper = Math::Entropy::nats(
               Eigen::Matrix<default_type, Eigen::Dynamic, 1>::Constant(num_images * transform.rows(), 1.0));
         }
         default_type operator()(const default_type in) const {

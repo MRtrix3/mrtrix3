@@ -26,7 +26,7 @@ Depending on the particular metric being computed, the command may only accept a
 
 The various metrics available are detailed individually below.
 
-"entropy": this metric computes the entropy (in nits, ie. logarithm base e) of one or more spherical harmonics functions. This can be thought of as being inversely proportional to the overall "complexity" of the (set of) spherical harmonics function(s).
+"entropy": this metric computes the entropy (in nats, ie. logarithm base e) of one or more spherical harmonics functions. This can be thought of as being inversely proportional to the overall "complexity" of the (set of) spherical harmonics function(s).
 
 "power": this metric computes the sum of squared SH coefficients, which equals the mean-squared amplitude of the spherical function it represents.
 
