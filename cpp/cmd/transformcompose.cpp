@@ -117,7 +117,7 @@ void run() {
                         " not the 5D \"full\" warp series format");
       auto warp_image = template_header->get_image<default_type>();
       Registration::Warp::debug_validate_image(warp_image);
-      transform_list.emplace_back(std::make_unique<Warp>(image));
+      transform_list.emplace_back(std::make_unique<Warp>(warp_image));
     } catch (Exception &E) {
       try {
         transform_list.emplace_back(std::make_unique<Linear>(File::Matrix::load_transform(argument[i])));

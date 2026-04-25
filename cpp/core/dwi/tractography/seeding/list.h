@@ -31,10 +31,8 @@ public:
 
   void add(std::unique_ptr<Base> &&in);
   void clear();
-  bool empty() const { return total_count == 0; }
-  bool get_seed(Eigen::Vector3f &p, Eigen::Vector3f &d);
-
   bool empty() const { return seeders.empty(); }
+  bool get_seed(Eigen::Vector3f &p, Eigen::Vector3f &d);
   size_t num_seeds() const { return seeders.size(); }
   const Base *const operator[](const size_t n) const { return seeders[n].get(); }
   bool is_finite() const { return total_count; }

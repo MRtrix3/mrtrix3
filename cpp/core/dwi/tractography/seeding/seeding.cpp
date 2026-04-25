@@ -165,7 +165,7 @@ void load_seed_mechanisms(Properties &properties) {
 
   opt = get_options("seed_rejection_per_voxel");
   for (size_t i = 0; i < opt.size(); ++i) {
-    std::unique_ptr<Rejection> seed = std::make_unique<Rejection_per_voxel>(opt[i][0]);
+    std::unique_ptr<Rejection_per_voxel> seed = std::make_unique<Rejection_per_voxel>(opt[i][0]);
     list.add(std::move(seed));
   }
 
