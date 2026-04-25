@@ -34,6 +34,8 @@ constexpr size_t default_direction_set = 1281;
 
 enum class metrics { ENTROPY, POWER };
 
+enum class entropy_normalisation { NONE, NORM, INVNORM };
+
 // clang-format off
 void usage() {
 
@@ -54,6 +56,8 @@ void usage() {
       " of one or more spherical harmonics functions."
       " This can be thought of as being inversely proportional to the overall \"complexity\""
       " of the (set of) spherical harmonics function(s)."
+      " Used in conjunction with the -invnorm option,"
+      " the result behaves somewhat akin to an anisotropy measure."
 
     + "\"power\":"
       " this metric computes the sum of squared SH coefficients,"
@@ -69,6 +73,9 @@ void usage() {
   OPTIONS
     + OptionGroup ("Options specific to the \"entropy\" metric")
     + Option ("normalised", "normalise the voxel-wise entropy measure to the range [0.0, 1.0]")
+    + Option ("invnorm", "compute the complement of the normalised voxel-wise entropy measure"
+                         " (ie. 1.0 - normalised),"
+                         " such that values closer to 1.0 reflect greater concentration of the function")
     + Option ("directions", "specify the direction set to be used for SH amplitude sampling;"
                             " either an input file containing a set of directions,"
                             " or an integer corresponding to a built-in direction set")
@@ -119,7 +126,13 @@ void run_entropy() {
 
   const DWI::Directions::Set dirs(get_directions());
   Image<float> image_out(Image<float>::create(argument[argument.size() - 1], H_out));
-  const bool normalise = !get_options("normalised").empty();
+  const bool opt_normalised = !get_options("normalised").empty();
+  const bool opt_invnorm = !get_options("invnorm").empty();
+  if (opt_normalised && opt_invnorm)
+    throw Exception("Options \"-normalised\" and \"-invnorm\" are mutually exclusive");
+  const entropy_normalisation norm_mode =
+      opt_normalised ? entropy_normalisation::NORM
+                     : (opt_invnorm ? entropy_normalisation::INVNORM : entropy_normalisation::NONE);
 
   class Processor {
   public:
@@ -127,10 +140,10 @@ void run_entropy() {
     Processor(const std::vector<Image<float>> &SH_images,
               const DWI::Directions::Set &dirs,
               const Image<float> &output_image,
-              const bool normalise)
+              const entropy_normalisation norm_mode)
         : out(output_image),
           concat_amps(SH_images.size() * dirs.size()),
-          shared(new Shared(SH_images, dirs, normalise)) {
+          shared(new Shared(SH_images, dirs, norm_mode)) {
       for (const auto &i : SH_images)
         images.emplace_back(Image<float>(i));
     }
@@ -173,7 +186,9 @@ void run_entropy() {
     class Shared {
     public:
       using transform_type = Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic>;
-      Shared(const std::vector<Image<float>> &SH_images, const DWI::Directions::Set &dirs, const bool normalise)
+      Shared(const std::vector<Image<float>> &SH_images,
+             const DWI::Directions::Set &dirs,
+             const entropy_normalisation norm_mode)
           : num_dirs(dirs.size()) {
         Eigen::Matrix<default_type, Eigen::Dynamic, 3> dirs_as_matrix(dirs.size(), 3);
         for (ssize_t row = 0; row != dirs.size(); ++row)
@@ -185,8 +200,8 @@ void run_entropy() {
             transforms.insert(std::make_pair(lmax, Math::SH::init_transform_cart(dirs_as_matrix, lmax)));
           max_lmax = std::max(max_lmax, lmax);
         }
-        if (normalise)
-          normalisation.initialise(SH_images.size(), transforms[max_lmax]);
+        if (norm_mode != entropy_normalisation::NONE)
+          normalisation.initialise(norm_mode, SH_images.size(), transforms[max_lmax]);
       }
       vector_type operator()(vector_type &SH_coefs) const {
         const size_t lmax = Math::SH::LforN(SH_coefs.size());
@@ -204,9 +219,13 @@ void run_entropy() {
       class Normalisation {
       public:
         Normalisation()
-            : lower(std::numeric_limits<default_type>::quiet_NaN()),
+            : mode(entropy_normalisation::NONE),
+              lower(std::numeric_limits<default_type>::quiet_NaN()),
               upper(std::numeric_limits<default_type>::quiet_NaN()) {}
-        void initialise(const size_t num_images, const transform_type &transform) {
+        void initialise(const entropy_normalisation normalise_mode,
+                        const size_t num_images,
+                        const transform_type &transform) {
+          mode = normalise_mode;
           Eigen::Matrix<default_type, Eigen::Dynamic, 1> delta_coefs;
           Math::SH::delta(
               delta_coefs, Eigen::Matrix<default_type, 3, 1>({0.0, 0.0, 1.0}), Math::SH::LforN(transform.cols()));
@@ -220,19 +239,21 @@ void run_entropy() {
               Eigen::Matrix<default_type, Eigen::Dynamic, 1>::Constant(num_images * transform.rows(), 1.0));
         }
         default_type operator()(const default_type in) const {
-          if (!std::isfinite(lower) || !std::isfinite(upper))
+          if (mode == entropy_normalisation::NONE)
             return in;
-          return std::max(0.0, std::min(1.0, ((in - lower) / (upper - lower))));
+          const default_type scaled = std::max(0.0, std::min(1.0, (in - lower) / (upper - lower)));
+          return (mode == entropy_normalisation::INVNORM) ? (1.0 - scaled) : scaled;
         }
 
       private:
+        entropy_normalisation mode;
         default_type lower;
         default_type upper;
       } normalisation;
     };
     std::shared_ptr<Shared> shared;
 
-  } processor(SH_images, dirs, image_out, normalise);
+  } processor(SH_images, dirs, image_out, norm_mode);
 
   ThreadedLoop("computing entropy", H_out).run(processor);
 }

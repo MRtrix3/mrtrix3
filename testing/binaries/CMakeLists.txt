@@ -441,6 +441,7 @@ add_bash_binary_test(sh2metric/entropy)
 add_bash_binary_test(sh2metric/entropy_directions)
 add_bash_binary_test(sh2metric/entropy_multiinput)
 add_bash_binary_test(sh2metric/entropy_normalised)
+add_bash_binary_test(sh2metric/entropy_invnorm)
 add_bash_binary_test(sh2metric/power)
 
 add_bash_binary_test(sh2peaks/default)

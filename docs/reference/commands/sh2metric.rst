@@ -26,7 +26,7 @@ Depending on the particular metric being computed, the command may only accept a
 
 The various metrics available are detailed individually below.
 
-"entropy": this metric computes the entropy (in nats, ie. logarithm base e) of one or more spherical harmonics functions. This can be thought of as being inversely proportional to the overall "complexity" of the (set of) spherical harmonics function(s).
+"entropy": this metric computes the entropy (in nats, ie. logarithm base e) of one or more spherical harmonics functions. This can be thought of as being inversely proportional to the overall "complexity" of the (set of) spherical harmonics function(s). Used in conjunction with the -invnorm option, the result behaves somewhat akin to an anisotropy measure.
 
 "power": this metric computes the sum of squared SH coefficients, which equals the mean-squared amplitude of the spherical function it represents.
 
@@ -40,6 +40,8 @@ Options specific to the "entropy" metric
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-normalised** normalise the voxel-wise entropy measure to the range [0.0, 1.0]
+
+-  **-invnorm** compute the complement of the normalised voxel-wise entropy measure (ie. 1.0 - normalised), such that values closer to 1.0 reflect greater concentration of the function
 
 -  **-directions spec** specify the direction set to be used for SH amplitude sampling; either an input file containing a set of directions, or an integer corresponding to a built-in direction set
 
