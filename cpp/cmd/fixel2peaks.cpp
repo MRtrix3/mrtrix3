@@ -24,6 +24,7 @@
 #include "fixel/fixel.h"
 #include "fixel/helpers.h"
 #include "fixel/loop.h"
+#include "fixel/validate.h"
 
 using namespace MR;
 using namespace App;
@@ -96,6 +97,7 @@ void run() {
   }
 
   Image<index_type> index_image(index_header.get_image<index_type>());
+  Fixel::debug_validate_index_image(index_image);
   Image<float> directions_image(directions_header.get_image<float>());
   Image<float> data_image;
   if (data_header.valid())

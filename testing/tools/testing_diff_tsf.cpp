@@ -17,6 +17,7 @@
 #include "command.h"
 #include "dwi/tractography/scalar_file.h"
 #include "dwi/tractography/streamline.h"
+#include "dwi/tractography/validate.h"
 
 using namespace MR;
 using namespace App;
@@ -49,7 +50,7 @@ void run() {
   DWI::Tractography::ScalarReader<value_type> reader1(argument[0], properties1);
   DWI::Tractography::ScalarReader<value_type> reader2(argument[1], properties2);
 
-  DWI::Tractography::check_properties_match(properties1, properties2, "scalar", false);
+  DWI::Tractography::validate_tsf_properties(properties1, properties2, "TSF pair");
 
   DWI::Tractography::TrackScalar<value_type> tck_scalar1;
   DWI::Tractography::TrackScalar<value_type> tck_scalar2;

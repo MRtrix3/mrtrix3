@@ -25,6 +25,7 @@
 #include "fixel/fixel.h"
 #include "fixel/helpers.h"
 #include "fixel/loop.h"
+#include "fixel/validate.h"
 
 using namespace MR;
 using namespace App;
@@ -62,9 +63,10 @@ void usage() {
 
 void run() {
   auto in_data_image = Fixel::open_fixel_data_file<float>(argument[0]);
-
   Header in_index_header = Fixel::find_index_header(Fixel::get_fixel_directory(argument[0]));
+  Fixel::check_fixel_size(in_index_header, in_data_image);
   auto in_index_image = in_index_header.get_image<index_type>();
+  Fixel::debug_validate_index_image(in_index_image);
   auto in_directions_image =
       Fixel::find_directions_header(Fixel::get_fixel_directory(argument[0])).get_image<float>().with_direct_io();
 

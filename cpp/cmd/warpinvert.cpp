@@ -20,6 +20,7 @@
 #include "image.h"
 #include "registration/warp/helpers.h"
 #include "registration/warp/invert.h"
+#include "registration/warp/validate.h"
 
 using namespace MR;
 using namespace App;
@@ -59,22 +60,23 @@ void usage() {
 void run() {
   const bool displacement = !get_options("displacement").empty();
   Header header_in(Header::open(argument[0]));
-  Registration::Warp::check_warp(header_in);
+  auto format = Registration::Warp::validate_header(header_in);
+  if (format != Registration::Warp::WarpFormat::Simple)
+    throw Exception("Command requires as input a 4D deformation or displacement field,"
+                    " not a 5D \"full\" warp field series"
+                    " (see MRtrix command \"warpconvert\")");
   Header header_out(header_in);
   auto opt = get_options("template");
   if (!opt.empty()) {
     header_out = Header::open(opt[0][0]);
-    if (displacement) {
-      header_out.ndim() = 3;
-    } else {
-      header_out.ndim() = 4;
-      header_out.size(3) = 3;
-    }
+    header_out.ndim() = 4;
+    header_out.size(3) = 3;
     header_out.datatype() = DataType::Float32;
     header_out.datatype().set_byte_order_native();
   }
 
   Image<default_type> image_in(header_in.get_image<default_type>());
+  Registration::Warp::debug_validate_image(image_in);
   Image<default_type> image_out(Image<default_type>::create(argument[1], header_out));
 
   if (displacement) {

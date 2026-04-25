@@ -207,7 +207,8 @@ bool Element::read() {
   case group_byte_order:
     switch (element) {
     case element_transfer_syntax_uid: {
-      const std::string data_as_string(reinterpret_cast<const char *>(data), size);
+      std::string data_as_string(reinterpret_cast<const char *>(data), size);
+      data_as_string.erase(data_as_string.find_last_not_of('\0') + 1, std::string::npos);
       if (data_as_string == "1.2.840.10008.1.2.1") {
         is_BE = is_transfer_syntax_BE = false; // explicit VR Little Endian
         is_explicit = true;

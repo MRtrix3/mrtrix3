@@ -17,6 +17,7 @@
 #include <sstream>
 
 #include "command.h"
+#include "dwi/directions/validate.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
 #include "file/matrix.h"
@@ -136,24 +137,18 @@ void run() {
 
   Eigen::MatrixXd directions;
   try {
-    directions = DWI::Directions::load_spherical(argument[1]);
+    directions = File::Matrix::load_matrix(argument[1]);
+    DWI::Directions::validate(directions, argument[1], true);
+    if (directions.cols() == 3)
+      directions = Math::Sphere::cartesian2spherical(directions);
   } catch (Exception &) {
     try {
-      directions = File::Matrix::load_matrix<double>(argument[1]);
-      if (directions.cols() < 4)
-        throw("unable to interpret file \"" + std::string(argument[1]) + "\" as a directions or gradient file");
+      auto header = Header::open(argument[1]);
+      directions = DWI::get_DW_scheme(header);
     } catch (Exception &) {
-      try {
-        auto header = Header::open(argument[1]);
-        directions = DWI::get_DW_scheme(header);
-      } catch (Exception &) {
-        throw Exception("Unable to obtain a direection set for sampling from specification \"" + argument[1] + "\"");
-      }
+      throw Exception("Unable to obtain a direection set for sampling from specification \"" + argument[1] + "\"");
     }
   }
-
-  if (directions.rows() == 0) // check_syntax off
-    throw Exception("no directions found in input directions file");
 
   Header amp_header(sh_data);
   amp_header.ndim() = 4;

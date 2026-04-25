@@ -19,6 +19,7 @@
 #include "interp/masked.h"
 #include "interp/nearest.h"
 
+#include "dwi/tractography/ACT/act.h"
 #include "dwi/tractography/tracking/method.h"
 #include "dwi/tractography/tracking/shared.h"
 #include "dwi/tractography/tracking/tractography.h"
@@ -38,8 +39,11 @@ public:
       if (source.size(3) % 3)
         throw Exception("Number of volumes in FACT algorithm input image should be a multiple of 3");
 
-      if (is_act() && act().backtrack())
-        throw Exception("Backtracking not valid for deterministic algorithms");
+      if (is_act()) {
+        if (act().backtrack())
+          throw Exception("Backtracking not valid for deterministic algorithms");
+        act().set_default_sgm_trunc(ACT::sgm_trunc_t::MINIMUM);
+      }
 
       if (rk4)
         throw Exception("4th-order Runge-Kutta integration not valid for FACT algorithm");

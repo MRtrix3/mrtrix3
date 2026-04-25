@@ -6,7 +6,7 @@ warpcorrect
 Synopsis
 --------
 
-Replaces voxels in a deformation field that point to a specific out of bounds location with nan,nan,nan
+Replaces voxels in a deformation field that point to a specific out-of-bounds location with nan,nan,nan
 
 Usage
 --------
@@ -26,7 +26,7 @@ This can be used in conjunction with the warpinit command to compute a MRtrix co
 Options
 -------
 
--  **-marker coordinates** single value or a comma separated list of values that define out of bounds voxels in the input warp image. Default: (0,0,0).
+-  **-marker coordinates** single value or a comma-separated list of three values that define out-of-bounds voxels in the input warp image. Default: (0,0,0).
 
 -  **-tolerance value** numerical precision used for L2 matrix norm comparison. Default: 9.99999975e-06.
 
@@ -37,7 +37,7 @@ Standard options
 
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
--  **-debug** display debugging messages.
+-  **-debug** display debugging messages & debug input data.
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 

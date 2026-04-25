@@ -51,7 +51,7 @@ Standard options
 
 - **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-debug** display debugging messages.
+- **-debug** display debugging messages & debug input data.
 
 - **-force** force overwrite of output files.
 
@@ -160,7 +160,7 @@ Standard options
 
 - **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-debug** display debugging messages.
+- **-debug** display debugging messages & debug input data.
 
 - **-force** force overwrite of output files.
 
@@ -251,7 +251,7 @@ Standard options
 
 - **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-debug** display debugging messages.
+- **-debug** display debugging messages & debug input data.
 
 - **-force** force overwrite of output files.
 
@@ -363,7 +363,7 @@ Standard options
 
 - **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-debug** display debugging messages.
+- **-debug** display debugging messages & debug input data.
 
 - **-force** force overwrite of output files.
 
@@ -462,7 +462,7 @@ Standard options
 
 - **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-debug** display debugging messages.
+- **-debug** display debugging messages & debug input data.
 
 - **-force** force overwrite of output files.
 
@@ -559,7 +559,7 @@ Standard options
 
 - **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-debug** display debugging messages.
+- **-debug** display debugging messages & debug input data.
 
 - **-force** force overwrite of output files.
 
@@ -650,7 +650,7 @@ Standard options
 
 - **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-debug** display debugging messages.
+- **-debug** display debugging messages & debug input data.
 
 - **-force** force overwrite of output files.
 
@@ -738,7 +738,7 @@ Standard options
 
 - **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-debug** display debugging messages.
+- **-debug** display debugging messages & debug input data.
 
 - **-force** force overwrite of output files.
 
@@ -829,7 +829,7 @@ Standard options
 
 - **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-debug** display debugging messages.
+- **-debug** display debugging messages & debug input data.
 
 - **-force** force overwrite of output files.
 
@@ -933,7 +933,7 @@ Standard options
 
 - **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-debug** display debugging messages.
+- **-debug** display debugging messages & debug input data.
 
 - **-force** force overwrite of output files.
 
@@ -1039,7 +1039,7 @@ Standard options
 
 - **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-debug** display debugging messages.
+- **-debug** display debugging messages & debug input data.
 
 - **-force** force overwrite of output files.
 
@@ -1139,7 +1139,7 @@ Standard options
 
 - **-quiet** do not display information messages or progress status. Alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
-- **-debug** display debugging messages.
+- **-debug** display debugging messages & debug input data.
 
 - **-force** force overwrite of output files.
 

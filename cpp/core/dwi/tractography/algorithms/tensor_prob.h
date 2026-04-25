@@ -31,8 +31,11 @@ public:
     Shared(std::string_view diff_path, DWI::Tractography::Properties &property_set)
         : Tensor_Det::Shared(diff_path, property_set) {
 
-      if (is_act() && act().backtrack())
-        throw Exception("Sorry, backtracking not currently enabled for TensorProb algorithm");
+      if (is_act()) {
+        if (act().backtrack())
+          throw Exception("Sorry, backtracking not currently enabled for TensorProb algorithm");
+        act().set_default_sgm_trunc(ACT::sgm_trunc_t::ROULETTE);
+      }
 
       properties["method"] = "TensorProb";
 

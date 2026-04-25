@@ -1,0 +1,16 @@
+#!/bin/bash
+# Verify that if there is ambiguity about what value should be interpreted as the fill value,
+#   due the the prevalence of multiple such candidate values in the input data,
+#   then a suitable error will be produced.
+# This is done by relying on existing zero-filled voxels within the image,
+#   but introducing a slice of NaN values.
+
+mrconvert warp.mif -coord 3 0 -axes 0,1,2 - | \
+mrcalc - -finite - | \
+mredit - -plane 2 0 0.0 - | \
+mrcalc warp.mif - -div tmp_warpfillmixed.mif -force
+
+rm -f tmp.txt
+! ( warpvalidate tmp_warpfillmixed.mif > tmp.txt 2>&1 )
+cat tmp.txt
+grep "Unable to unambiguously determine fill value due to presence of different voxels with different constant values; a single fill convention must be used throughout" tmp.txt

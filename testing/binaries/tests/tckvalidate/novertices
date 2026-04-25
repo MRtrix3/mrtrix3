@@ -1,0 +1,8 @@
+#!/bin/bash
+# Verify that when a streamline is present that contains no vertices
+#   (eg. sequential triplet-of-NaNs),
+#   an appropriate warning message is produced.
+
+rm -f tmp.txt
+tckvalidate tckvalidate/novertices.tck 2>&1 | tee tmp.txt
+grep -E "1 empty streamline\\(s\\) \\(0 vertices\\) found" tmp.txt

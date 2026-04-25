@@ -1,0 +1,9 @@
+#!/bin/bash
+# Verify default operation of the "warpvalidate" command
+#   with a well-formed deformation field image
+
+rm -f tmp.txt
+warpvalidate warp.mif 2>&1 | tee tmp.txt
+grep -E "Warp image \".+\": valid simple \\(displacement or deformation\\) field" tmp.txt
+grep -E "Fill value: 0" tmp.txt
+! ( grep -E "\\bWARNING\\b" tmp.txt )

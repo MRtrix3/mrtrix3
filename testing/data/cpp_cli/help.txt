@@ -85,7 +85,7 @@ SSttaannddaarrdd  ooppttiioonnss
      non-empty string.
 
   _-_d_e_b_u_g
-     display debugging messages.
+     display debugging messages & debug input data.
 
   _-_f_o_r_c_e
      force overwrite of output files (caution: using the same file as input and
