@@ -8,7 +8,7 @@ printf "3 3 3 1\n-3 -3 -3 0.1" > tmp_in.txt
 tckgen SIFT_phantom/dwi.mif tmp_out.tck \
     -algo seedtest \
     -seed_rejection_per_coordinate tmp_in.txt \
-    -select 5K \
+    -select 11K \
     -force
 
 rm -f tmp_out*.txt
