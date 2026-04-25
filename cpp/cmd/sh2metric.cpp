@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -62,13 +62,13 @@ void usage() {
     + Math::SH::encoding_description;
 
   ARGUMENTS
-    + Argument ("SH", "the input spherical harmonics coefficients image").type_image_in().allow_multiple()
+    + Argument ("SH", "the input spherical harmonics coefficients image(s)").type_image_in().allow_multiple()
     + Argument ("metric", "the metrc to compute; one of: " + Enum::join<metrics>()).type_choice<metrics>()
-    + Argument ("power", "the output metric image").type_image_out();
+    + Argument ("output", "the output metric image").type_image_out();
 
   OPTIONS
     + OptionGroup ("Options specific to the \"entropy\" metric")
-    + Option ("normalise", "normalise the voxel-wise entropy measure to the range [0.0, 1.0]")
+    + Option ("normalised", "normalise the voxel-wise entropy measure to the range [0.0, 1.0]")
     + Option ("directions", "specify the direction set to be used for SH amplitude sampling;"
                             " either an input file containing a set of directions,"
                             " or an integer corresponding to a built-in direction set")
@@ -119,7 +119,7 @@ void run_entropy() {
 
   const DWI::Directions::Set dirs(get_directions());
   Image<float> image_out(Image<float>::create(argument[argument.size() - 1], H_out));
-  const bool normalise = !get_options("normalise").empty();
+  const bool normalise = !get_options("normalised").empty();
 
   class Processor {
   public:
@@ -254,7 +254,7 @@ void run_power() {
     power_header.ndim() = 3;
   power_header.datatype() = DataType::Float32;
 
-  auto power_data = Image<float>::create(argument[1], power_header);
+  auto power_data = Image<float>::create(argument[2], power_header);
 
   auto f1 = [&](decltype(power_data) &P, decltype(SH_data) &SH) {
     P.index(3) = 0;

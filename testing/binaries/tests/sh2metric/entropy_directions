@@ -5,7 +5,7 @@
 # Here the same number of directions is specified as is under use by default;
 #   the test only ensures that the command-line option is appropriately parsed
 sh2metric amp2sh/out.mif entropy - -directions 1281 | \
-testing_diff_image - sh2power/entropy.mif -frac 0.1
+testing_diff_image - sh2metric/entropy.mif -frac 0.1
 
 # Ensure that the command succeeds in parsing a filesystem path
 #   containing a direction set
