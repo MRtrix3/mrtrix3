@@ -309,10 +309,9 @@ private:
   std::vector<value_type> values;
 };
 
-// TODO Rename
-using EntropyBits = EntropyKernel<Math::Entropy::log_base_t::TWO>;
-using EntropyNits = EntropyKernel<Math::Entropy::log_base_t::E>;
-using EntropyDits = EntropyKernel<Math::Entropy::log_base_t::TEN>;
+using Shannons = EntropyKernel<Math::Entropy::log_base_t::TWO>;
+using Nats = EntropyKernel<Math::Entropy::log_base_t::E>;
+using Hartleys = EntropyKernel<Math::Entropy::log_base_t::TEN>;
 
 template <class Operation> class AxisKernel {
 public:
@@ -450,13 +449,13 @@ void run() {
       loop.run(AxisKernel<MagMax>(axis), image_in, image_out);
       return;
     case Operation::SHANNONS:
-      loop.run(AxisKernel<EntropyBits>(axis), image_in, image_out);
+      loop.run(AxisKernel<Shannons>(axis), image_in, image_out);
       return;
     case Operation::NATS:
-      loop.run(AxisKernel<EntropyNits>(axis), image_in, image_out);
+      loop.run(AxisKernel<Nats>(axis), image_in, image_out);
       return;
     case Operation::HARTLEYS:
-      loop.run(AxisKernel<EntropyDits>(axis), image_in, image_out);
+      loop.run(AxisKernel<Hartleys>(axis), image_in, image_out);
       return;
     default:
       assert(0);
@@ -540,13 +539,13 @@ void run() {
       kernel = std::make_unique<ImageKernel<MagMax>>(header);
       break;
     case Operation::SHANNONS:
-      kernel = std::make_unique<ImageKernel<EntropyBits>>(header);
+      kernel = std::make_unique<ImageKernel<Shannons>>(header);
       break;
     case Operation::NATS:
-      kernel = std::make_unique<ImageKernel<EntropyNits>>(header);
+      kernel = std::make_unique<ImageKernel<Nats>>(header);
       break;
     case Operation::HARTLEYS:
-      kernel = std::make_unique<ImageKernel<EntropyDits>>(header);
+      kernel = std::make_unique<ImageKernel<Hartleys>>(header);
       break;
     default:
       assert(0);

@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -689,9 +690,9 @@ public:
   Receiver_PerVertex(const DWI::Tractography::Properties &properties, const size_t num_tracks, std::string_view path)
       : ReceiverBase(num_tracks, true, path) {
     if (Path::has_suffix(path, ".tsf")) {
-      tsf = std::make_unique<DWI::Tractography::ScalarWriter<value_type>>(path, properties);
+      tsf.emplace(path, properties);
     } else {
-      ascii = std::make_unique<File::OFStream>(path);
+      ascii.emplace(path);
       (*ascii) << "# " << App::command_history_string << "\n";
     }
   }
@@ -700,7 +701,7 @@ public:
   bool operator()(const InputType &in) {
     // Requires preservation of order
     assert(in.get_index() == ReceiverBase::received);
-    if (ascii) {
+    if (ascii.has_value()) {
       if (!in.empty()) {
         auto i = in.begin();
         (*ascii) << *i;
@@ -716,9 +717,8 @@ public:
   }
 
 private:
-  // TODO Change to std::optional (or std::variant)
-  std::unique_ptr<File::OFStream> ascii;
-  std::unique_ptr<DWI::Tractography::ScalarWriter<value_type>> tsf;
+  std::optional<File::OFStream> ascii;
+  std::optional<DWI::Tractography::ScalarWriter<value_type>> tsf;
 };
 
 template <class SamplerType, class ReceiverType>
