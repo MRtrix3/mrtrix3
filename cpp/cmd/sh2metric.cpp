@@ -112,7 +112,7 @@ void run_entropy() {
   for (size_t i = 0; i != argument.size() - 2; ++i) {
     Header header(Header::open(argument[i]));
     Math::SH::check(header);
-    max_lmax = std::max(max_lmax, Math::SH::LforN(header.size(3)));
+    max_lmax = std::max(max_lmax, Math::SH::LforN(static_cast<int>(header.size(3))));
     if (i == 0) {
       H_out = header;
     } else {
@@ -125,7 +125,6 @@ void run_entropy() {
   H_out.ndim() = 3;
 
   const DWI::Directions::Set dirs(get_directions());
-  Image<float> image_out(Image<float>::create(argument[argument.size() - 1], H_out));
   const bool opt_normalised = !get_options("normalised").empty();
   const bool opt_invnorm = !get_options("invnorm").empty();
   if (opt_normalised && opt_invnorm)
@@ -133,6 +132,7 @@ void run_entropy() {
   const entropy_normalisation norm_mode =
       opt_normalised ? entropy_normalisation::NORM
                      : (opt_invnorm ? entropy_normalisation::INVNORM : entropy_normalisation::NONE);
+  const Image<float> image_out(Image<float>::create(argument[argument.size() - 1], H_out));
 
   class Processor {
   public:
@@ -167,7 +167,7 @@ void run_entropy() {
       }
       assign_pos_of(pos).to(out);
       try {
-        out.value() = shared->normalise(Math::Entropy::nats(concat_amps));
+        out.value() = static_cast<float>(shared->normalise(Math::Entropy::nats(concat_amps)));
       } catch (Exception &) {
         out.value() = std::numeric_limits<float>::quiet_NaN();
       }
@@ -195,16 +195,17 @@ void run_entropy() {
           dirs_as_matrix.row(row) = dirs[row];
         size_t max_lmax = 0;
         for (const auto &i : SH_images) {
-          const size_t lmax = Math::SH::LforN(i.size(3));
+          const size_t lmax = Math::SH::LforN(static_cast<int>(i.size(3)));
           if (transforms.find(lmax) == transforms.end())
-            transforms.insert(std::make_pair(lmax, Math::SH::init_transform_cart(dirs_as_matrix, lmax)));
+            transforms.insert(
+                std::make_pair(lmax, Math::SH::init_transform_cart(dirs_as_matrix, static_cast<int>(lmax))));
           max_lmax = std::max(max_lmax, lmax);
         }
         if (norm_mode != entropy_normalisation::NONE)
           normalisation.initialise(norm_mode, SH_images.size(), transforms[max_lmax]);
       }
       vector_type operator()(vector_type &SH_coefs) const {
-        const size_t lmax = Math::SH::LforN(SH_coefs.size());
+        const size_t lmax = Math::SH::LforN(static_cast<int>(SH_coefs.size()));
         auto transform_it = transforms.find(lmax);
         assert(transform_it != transforms.end());
         return (transform_it->second * SH_coefs).eval();
@@ -227,16 +228,17 @@ void run_entropy() {
                         const transform_type &transform) {
           mode = normalise_mode;
           Eigen::Matrix<default_type, Eigen::Dynamic, 1> delta_coefs;
-          Math::SH::delta(
-              delta_coefs, Eigen::Matrix<default_type, 3, 1>({0.0, 0.0, 1.0}), Math::SH::LforN(transform.cols()));
+          Math::SH::delta(delta_coefs,
+                          Eigen::Matrix<default_type, 3, 1>({0.0, 0.0, 1.0}),
+                          static_cast<int>(Math::SH::LforN(static_cast<int>(transform.cols()))));
           // Get amplitude samples of this delta function,
           //   and pad out zeroes to simulate all other input SH functions being zero
           Eigen::Matrix<default_type, Eigen::Dynamic, 1> amps = transform * delta_coefs;
-          amps.conservativeResizeLike(
-              Eigen::Matrix<default_type, Eigen::Dynamic, 1>::Zero(num_images * transform.rows()));
+          amps.conservativeResizeLike(Eigen::Matrix<default_type, Eigen::Dynamic, 1>::Zero(
+              static_cast<Eigen::Index>(num_images) * transform.rows()));
           lower = Math::Entropy::nats(amps);
-          upper = Math::Entropy::nats(
-              Eigen::Matrix<default_type, Eigen::Dynamic, 1>::Constant(num_images * transform.rows(), 1.0));
+          upper = Math::Entropy::nats(Eigen::Matrix<default_type, Eigen::Dynamic, 1>::Constant(
+              static_cast<Eigen::Index>(num_images) * transform.rows(), 1.0));
         }
         default_type operator()(const default_type in) const {
           if (mode == entropy_normalisation::NONE)
@@ -266,11 +268,11 @@ void run_power() {
 
   const bool spectrum = !get_options("spectrum").empty();
 
-  const size_t lmax = Math::SH::LforN(SH_data.size(3));
+  const size_t lmax = Math::SH::LforN(static_cast<int>(SH_data.size(3)));
   INFO("calculating spherical harmonic power up to degree " + str(lmax));
 
   if (spectrum)
-    power_header.size(3) = 1 + lmax / 2;
+    power_header.size(3) = static_cast<ssize_t>(1 + lmax / 2);
   else
     power_header.ndim() = 3;
   power_header.datatype() = DataType::Float32;
@@ -279,7 +281,8 @@ void run_power() {
 
   auto f1 = [&](decltype(power_data) &P, decltype(SH_data) &SH) {
     P.index(3) = 0;
-    for (size_t l = 0; l <= lmax; l += 2) {
+    // Use signed type to enable initialisation of m
+    for (int l = 0; l <= static_cast<int>(lmax); l += 2) {
       default_type power = 0.0;
       for (int m = -l; m <= l; ++m) {
         SH.index(3) = static_cast<ssize_t>(Math::SH::index(l, m));
@@ -293,10 +296,10 @@ void run_power() {
 
   auto f2 = [&](decltype(power_data) &P, decltype(SH_data) &SH) {
     float power = 0.0;
-    for (int l = 0; l <= lmax; l += 2) {
+    for (int l = 0; l <= static_cast<int>(lmax); l += 2) {
       for (int m = -l; m <= l; ++m) {
-        SH.index(3) = Math::SH::index(l, m);
-        float val = SH.value();
+        SH.index(3) = static_cast<ssize_t>(Math::SH::index(l, m));
+        const float val = SH.value();
         power += Math::pow2(val);
       }
     }

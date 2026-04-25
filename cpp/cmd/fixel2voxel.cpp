@@ -371,7 +371,7 @@ public:
       return;
     }
     try {
-      out.value() = MR::Math::Entropy::nats(values);
+      out.value() = static_cast<float>(MR::Math::Entropy::nats(values));
     } catch (Exception &) {
       out.value() = NaNF;
     }
