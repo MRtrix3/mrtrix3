@@ -16,17 +16,38 @@
 # For more details, see http://www.mrtrix.org/.
 
 DIFF_MODE=0
+PATHS=()
 while [[ $# -gt 0 ]]; do
   case $1 in
     --diff)
       DIFF_MODE=1
       shift
       ;;
-    *)
+    -*)
       echo "Unknown option: $1" >&2
       exit 1
       ;;
+    *)
+      PATHS+=("$1")
+      shift
+      ;;
   esac
+done
+
+if [[ $DIFF_MODE -eq 1 ]] && [[ ${#PATHS[@]} -gt 0 ]]; then
+  echo "Error: --diff and file paths cannot be specified together" >&2
+  exit 1
+fi
+
+for p in "${PATHS[@]}"; do
+  if [[ ! -f "$p" ]]; then
+    echo "Error: File does not exist: $p" >&2
+    exit 1
+  fi
+  if [[ "$p" != *.h ]] && [[ "$p" != *.cpp ]]; then
+    echo "Error: File does not have .h or .cpp extension: $p" >&2
+    exit 1
+  fi
 done
 
 LOG=syntax.log
@@ -212,8 +233,7 @@ if [[ $DIFF_MODE -eq 1 ]]; then
   staged_cpp_files=$(git diff --cached --name-only | \
     $grep -E '\.(h|cpp)$' | \
     $grep -v '_moc\.cpp' | \
-    $grep -v 'gl_core_3_3' | \
-    $grep '^cpp/')
+    $grep -v 'gl_core_3_3')
 
   if [[ -z "$staged_cpp_files" ]]; then
     echo "OK"
@@ -237,6 +257,15 @@ if [[ $DIFF_MODE -eq 1 ]]; then
   done
 
   rm -f "$diff_tmp"
+
+elif [[ ${#PATHS[@]} -gt 0 ]]; then
+
+  for f in "${PATHS[@]}"; do
+    cat "$f" | \
+    $grep -v '\/\/.*\bcheck_syntax\soff' > .check_syntax1.tmp
+
+    run_checks "$f"
+  done
 
 else
 
