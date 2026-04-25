@@ -1,27 +1,34 @@
-.. _sh2power:
+.. _sh2metric:
 
-sh2power
+sh2metric
 ===================
 
 Synopsis
 --------
 
-Compute the total power of a spherical harmonics image
+Compute voxel-wise metrics from one or more spherical harmonics images
 
 Usage
 --------
 
 ::
 
-    sh2power [ options ]  SH power
+    sh2metric [ options ]  SH [ SH ... ] metric output
 
--  *SH*: the input spherical harmonics coefficients image.
--  *power*: the output power image.
+-  *SH*: the input spherical harmonics coefficients image(s)
+-  *metric*: the metrc to compute; one of: entropy, power
+-  *output*: the output metric image
 
 Description
 -----------
 
-This command computes the sum of squared SH coefficients, which equals the mean-squared amplitude of the spherical function it represents.
+Depending on the particular metric being computed, the command may only accept a single input SH image; wheras other metrics may accept multiple SH images as input (eg. ODFs) and compute a single scalar output image.
+
+The various metrics available are detailed individually below.
+
+"entropy": this metric computes the entropy (in nats, ie. logarithm base e) of one or more spherical harmonics functions. This can be thought of as being inversely proportional to the overall "complexity" of the (set of) spherical harmonics function(s). Used in conjunction with the -invnorm option, the result behaves somewhat akin to an anisotropy measure.
+
+"power": this metric computes the sum of squared SH coefficients, which equals the mean-squared amplitude of the spherical function it represents.
 
 The spherical harmonic coefficients are stored according to the conventions described in the main documentation, which can be found at the following link:  |br|
 https://mrtrix.readthedocs.io/en/3.0.8/concepts/spherical_harmonics.html
@@ -29,7 +36,19 @@ https://mrtrix.readthedocs.io/en/3.0.8/concepts/spherical_harmonics.html
 Options
 -------
 
--  **-spectrum** output the power spectrum, i.e., the power contained within each harmonic degree (l=0, 2, 4, ...) as a 4-D image.
+Options specific to the "entropy" metric
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-normalised** normalise the voxel-wise entropy measure to the range [0.0, 1.0]
+
+-  **-invnorm** compute the complement of the normalised voxel-wise entropy measure (ie. 1.0 - normalised), such that values closer to 1.0 reflect greater concentration of the function
+
+-  **-directions spec** specify the direction set to be used for SH amplitude sampling; either an input file containing a set of directions, or an integer corresponding to a built-in direction set
+
+Options specific to the "power" metric
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-spectrum** output the power spectrum, i.e., the power contained within each harmonic degree (l=0, 2, 4, ...) as a 4D image.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -59,7 +78,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 
 
-**Author:** J-Donald Tournier (jdtournier@gmail.com)
+**Author:** J-Donald Tournier (jdtournier@gmail.com) and Robert E. Smith <robert.smith@florey.edu.au>
 
 **Copyright:** Copyright (c) 2008-2026 the MRtrix3 contributors.
 

@@ -230,7 +230,7 @@ void run_permutations(const std::unique_ptr<Math::Stats::GLM::TestBase> &stats_c
                       count_matrix_type &nulldist_contributions,
                       matrix_type &uncorrected_pvalues) {
   assert(stats_calculator);
-  assert(stats_calculator->num_elements() == size_t(mask.size()));
+  assert(stats_calculator->num_elements() == static_cast<size_t>(mask.size()));
   Math::Stats::Shuffler shuffler(stats_calculator->num_inputs(), false, "Running permutations");
   null_dist.resize(shuffler.size(), fwe_strong ? 1 : stats_calculator->num_hypotheses());
   nulldist_contributions =

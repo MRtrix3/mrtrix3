@@ -75,6 +75,7 @@ void usage() {
 }
 // clang-format on
 
+using Math::Stats::index_type;
 using Math::Stats::matrix_type;
 using Math::Stats::measurements_matrix_type;
 using Math::Stats::measurements_value_type;
@@ -153,7 +154,7 @@ void run() {
   auto opt = get_options("mask");
   if (!opt.empty()) {
     mask = File::Matrix::load_vector<bool>(opt[0][0]);
-    if (index_type(mask.size()) != num_elements)
+    if (static_cast<index_type>(mask.size()) != num_elements)
       throw Exception("Length of mask (" + str(mask.size()) + ")" +
                       " does not match number of elements in data matrix (" + str(num_elements) + ")");
     CONSOLE("Number of elements included in mask: " + str(mask.count()));
