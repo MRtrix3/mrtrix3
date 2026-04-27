@@ -1,0 +1,17 @@
+#!/bin/bash
+# Verify "5ttgen mcrib" operation with use of -mask_hdbet option
+#
+# Other features that are not the core focus of the test:
+# - T2-weighted input image
+# - Using the M-CRIB template data as stored in the test data repository,
+#   where the sub-directory structure has already been stripped
+#
+# The output is not compared to that generated using a prior software version,
+#   given that the image dimensions of the outputs of the ANTs commands can seemingly change
+
+5ttgen mcrib 5ttgen/mcrib/in/T2w.mif t2w \
+    -mask_hdbet \
+    -mcrib 5ttgen/mcrib/MCRIB \
+    tmp.mif -force
+
+#testing_diff_header tmp.mif 5ttgen/mcrib/out/T2w.mif

@@ -1,0 +1,14 @@
+#!/bin/bash
+# Verify "5ttgen mcrib" operation with:
+# - A *T2-weighted* input image
+# - The M-CRIB database structure having been *stripped*;
+#   that is, all image files reside in a single directory,
+#   with no sub-directory structure
+# The output is not compared to that generated using a prior software version,
+#   given that the image dimensions of the outputs of the ANTs commands can seemingly change
+5ttgen mcrib 5ttgen/mcrib/in/T2w.mif t2w \
+    -mask 5ttgen/mcrib/in/mask.mif \
+    -mcrib 5ttgen/mcrib/MCRIB \
+    tmp.mif -force
+
+#testing_diff_header tmp.mif 5ttgen/mcrib/out/T2w.mif

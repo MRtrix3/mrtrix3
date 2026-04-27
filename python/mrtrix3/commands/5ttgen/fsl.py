@@ -58,7 +58,7 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                        action='store_true',
                        default=None,
                        help='Indicate that brain masking has already been applied to the input image')
-  parser.flag_mutually_exclusive_options( [ 'mask', 'premasked' ] )
+  #parser.flag_mutually_exclusive_options( [ 'mask', 'premasked' ] )
 
 
 
@@ -83,6 +83,9 @@ def execute(): #pylint: disable=unused-variable
                       'please install fsl-first-data using your relevant package manager')
 
   fsl_suffix = fsl.suffix()
+
+  if app.ARGS.mask and app.ARGS.premasked:
+    raise MRtrixError('Options -mask and -premasked are mutually exclusive')
 
   image.check_3d_nonunity(app.ARGS.input)
   run.command(['mrconvert', app.ARGS.input, 'input.mif'],
