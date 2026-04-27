@@ -1,0 +1,8 @@
+#!/bin/bash
+# Verify that the "peakscheck" command
+#   is capable of detecting a fault in the input data
+#   where axes have been erroneously permuted
+mrconvert peakscheck/posdet_xyz3vector.mif \
+    -coord 3 1,0,2,4,3,5,7,6,8 \
+    tmp.mif -force
+! peakscheck tmp.mif

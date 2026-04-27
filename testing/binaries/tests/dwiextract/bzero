@@ -1,0 +1,5 @@
+#!/bin/bash
+# Verify operation of command when "-bzero" option is specified
+# Ensure that output matches that generated using a prior software version
+dwiextract dwi.mif -bzero - | \
+testing_diff_image - dwiextract/out2.mif

@@ -1,0 +1,12 @@
+#!/bin/bash
+# Evaluate the standard operation of the "gradient" filter
+# Note that this is not exactly a "default" behaviour,
+#   as the original test data against which the results are compared
+#   was generated using an anisotropic smoothing kernel
+# The tolerance for the comparison is modulated
+#   based on the intensity of the image on which the gradients were calculated
+mrcalc dwi_mean.mif -abs 1e-5 -mult - | \
+mrfilter - smooth tmp.mif -force
+
+mrfilter dwi.mif gradient -stdev 1.5,2.5,3.5 - | \
+testing_diff_image - mrfilter/out14.mif -image tmp.mif

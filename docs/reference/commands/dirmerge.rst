@@ -24,6 +24,8 @@ Options
 
 -  **-unipolar_weight value** set the weight given to the unipolar electrostatic repulsion model compared to the bipolar model (default: 0.2).
 
+-  **-firstisfirst** choose the first volume in the list from the first shell, rather than choosing such from the shell with the most volumes (replicates behaviour prior to version 3.1.0)
+
 Standard options
 ^^^^^^^^^^^^^^^^
 
@@ -31,7 +33,7 @@ Standard options
 
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
--  **-debug** display debugging messages.
+-  **-debug** display debugging messages & debug input data.
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
@@ -54,7 +56,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** J-Donald Tournier (jdtournier@gmail.com)
 
-**Copyright:** Copyright (c) 2008-2023 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2026 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

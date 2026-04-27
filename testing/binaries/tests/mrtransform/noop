@@ -1,0 +1,12 @@
+#!/bin/bash
+# Test two consecutive "no-op" operations of the mrtransform command:
+# - Replacing the header transform ofthe image with the header that was extracted from that same image
+# - Resampling the image intensities onto the same voxel grid on which they are already defined
+mrcalc dwi_mean.mif -abs 1e-5 -mult - | \
+mrfilter - smooth tmp.mif -force
+
+mrinfo dwi_mean.mif -transform > tmp.txt
+
+mrtransform -replace tmp.txt dwi_mean.mif - | \
+mrtransform dwi_mean.mif -template - - | \
+testing_diff_image - dwi_mean.mif -image tmp.mif

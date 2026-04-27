@@ -1,0 +1,30 @@
+#!/bin/bash
+# Evaluate population template construction for:
+# - 4D FOD input images
+# - Include mask image per input
+# - Default registration type (rigid-body, then affine, then non-linear)
+rm -rf tmp-fod tmp-mask
+mkdir tmp-fod
+mkdir tmp-mask
+
+mrconvert BIDS/sub-02/dwi/sub-02_brainmask.nii.gz tmp-mask/sub-02.mif
+mrconvert BIDS/sub-03/dwi/sub-03_brainmask.nii.gz tmp-mask/sub-03.mif
+
+tail -n1 BIDS/sub-02/dwi/sub-02_tissue-WM_response.txt > tmp-sub-02_WM.txt
+
+dwi2fod csd BIDS/sub-02/dwi/sub-02_dwi.nii.gz tmp-sub-02_WM.txt tmp-fod/sub-02.mif -lmax 4 -force \
+-fslgrad BIDS/sub-02/dwi/sub-02_dwi.bvec BIDS/sub-02/dwi/sub-02_dwi.bval \
+-mask BIDS/sub-02/dwi/sub-02_brainmask.nii.gz
+
+tail -n1 BIDS/sub-03/dwi/sub-03_tissue-WM_response.txt > tmp-sub-03_WM.txt
+dwi2fod csd BIDS/sub-03/dwi/sub-03_dwi.nii.gz tmp-sub-02_WM.txt tmp-fod/sub-03.mif -lmax 4 -force \
+-fslgrad BIDS/sub-03/dwi/sub-03_dwi.bvec BIDS/sub-03/dwi/sub-03_dwi.bval \
+-mask BIDS/sub-03/dwi/sub-03_brainmask.nii.gz 
+
+population_template tmp-fod/ tmp-template.mif -mask_dir tmp-mask/ -template_mask tmp-mask.mif -force
+
+testing_diff_image tmp-template.mif population_template/fod_template.mif.gz -abs 0.01
+
+testing_diff_image -abs 0.3 \
+$(mrfilter tmp-mask.mif smooth -) \
+$(mrfilter population_template/fod_mask.mif.gz smooth -)

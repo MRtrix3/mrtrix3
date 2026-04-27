@@ -1,0 +1,7 @@
+#!/bin/bash
+# Verify calculation of the new contrasts in #3269:
+# - "MO": MOde of anisotropy
+# - "NA": Norm of Anisotropy
+tensor2metric tensor2metric/dt.mif -mo tmp-mo.mif -na tmp-na.mif -force
+testing_diff_image tmp-mo.mif tensor2metric/mo.mif -frac 1e-5
+testing_diff_image tmp-na.mif tensor2metric/na.mif -frac 1e-5

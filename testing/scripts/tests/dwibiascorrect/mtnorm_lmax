@@ -1,0 +1,10 @@
+#!/bin/bash
+# Verify operation of "dwibiascorrect mtnorm" command
+#   when the maximal spherical harmonic order per tissue is modified by the user
+dwibiascorrect mtnorm BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmpout.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-lmax 6,0,0 \
+-bias tmpbias.mif
+
+testing_diff_image tmpout.mif dwibiascorrect/mtnorm/lmax600_out.mif.gz
+testing_diff_image tmpbias.mif dwibiascorrect/mtnorm/lmax600_bias.mif.gz

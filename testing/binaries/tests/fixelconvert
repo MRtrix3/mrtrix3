@@ -1,2 +1,0 @@
-fixelconvert fixel_image tmp.msf -value fixel_image/afd.mif && testing_diff_fixel_old tmp.msf old_fixel.msf 0.001
-fixelconvert old_fixel.msf tmp && testing_diff_fixel tmp fixelconvert

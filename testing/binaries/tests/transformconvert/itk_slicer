@@ -1,0 +1,5 @@
+#!/bin/bash
+# Verify import of an ITK format affone transformat created by Slicer
+# Outcome is compared to that computed using a prior software version
+transformconvert transformconvert/affine2_slicer.txt itk_import tmp.txt -force
+testing_diff_matrix tmp.txt transformconvert/affine2_mrtrix.txt -abs 1e-3

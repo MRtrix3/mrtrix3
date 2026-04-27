@@ -1,0 +1,43 @@
+#!/bin/bash
+# Basic test of default operation with no command-line options
+# Cannot compare directly to a pre-generated output due to stochasticity of command;
+#   instead ensure that:
+# - Statistical properties of direction set is unchanged
+#   (here going to test SH condition numbers
+# - Peak gradient magnitude is decreased
+
+dirgen 30 tmp1.txt -force -cartesian -restarts 1
+
+rm -f tmp1_stats.txt
+dirstat tmp1.txt | \
+grep 'condition numbers for lmax' | \
+awk '{ print $10,$11,$12 }' > tmp1_stats.txt
+
+dirrotate tmp1.txt tmp2.txt -force -cartesian -number 1M
+
+rm -f tmp2_stats.txt
+dirstat tmp2.txt | \
+grep 'condition numbers for lmax' | \
+awk '{ print $10,$11,$12 }' > tmp2_stats.txt
+
+testing_diff_matrix tmp1_stats.txt tmp2_stats.txt
+
+rm -f tmp1_max.txt
+cat tmp1.txt | \
+tail -n +2 | \
+tr " " "\n" | \
+sed 's/^-//' | \
+sort -g -r | \
+head -n1 > tmp1_max.txt
+
+rm -f tmp2_max.txt
+cat tmp2.txt | \
+tail -n +2 | \
+tr " " "\n" | \
+sed 's/^-//' | \
+sort -g -r | \
+head -n1 > tmp2_max.txt
+
+a=$(cat tmp1_max.txt)
+b=$(cat tmp2_max.txt)
+awk 'BEGIN{if ('$a'<='$b') exit 1}'

@@ -20,7 +20,7 @@ Usage
 Options
 -------
 
--  **-response** assume SH coefficients file only contains m=0 terms (zonal harmonics). Used to display the response function as produced by estimate_response
+-  **-response** assume SH coefficients file only contains m=0 terms (zonal harmonics). Used to display the response function as produced by eg. amp2response
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -29,7 +29,7 @@ Standard options
 
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
--  **-debug** display debugging messages.
+-  **-debug** display debugging messages & debug input data.
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
@@ -52,7 +52,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** J-Donald Tournier (jdtournier@gmail.com)
 
-**Copyright:** Copyright (c) 2008-2023 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2026 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

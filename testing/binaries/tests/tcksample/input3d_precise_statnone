@@ -1,0 +1,8 @@
+#!/bin/bash
+# Ensure that command *does not* run successfully with:
+# - Using *precise* streamline-to-voxel mapping mechanism
+# - *No* track-wise statistic, therefore writing a value per vertex
+# The precise mapping mechanism by definition does not provide information per vertex,
+#   and so this combined usage does not make sense
+tcksample tracks.tck tcksample/fa.mif -precise tmp.txt -force 2>&1 | \
+    grep "Cannot combine per\\-vertex values with precise mapping mechanism$"

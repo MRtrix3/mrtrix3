@@ -1,0 +1,22 @@
+#!/bin/bash
+# Ensure that the dwigradcheck script completes successfully
+#   when filesystem paths include whitespace characters
+# Ensure that output filesystem paths appear at the expected locations
+rm -f "tmp out.*"
+rm -rf "tmp scratch"
+
+ln -s BIDS/sub-01/dwi/sub-01_brainmask.nii.gz "tmp mask.nii.gz"
+ln -s BIDS/sub-01/dwi/sub-01_dwi.nii.gz "tmp in.nii.gz"
+ln -s BIDS/sub-01/dwi/sub-01_dwi.bvec "tmp in.bvec"
+ln -s BIDS/sub-01/dwi/sub-01_dwi.bval "tmp in.bval"
+
+mkdir "tmp scratch"
+
+dwigradcheck "tmp in.nii.gz" \
+-fslgrad "tmp in.bvec" "tmp in.bval" \
+-mask "tmp mask.nii.gz" \
+-export_grad_fsl "tmp out.bvec" "tmp out.bval" \
+-scratch "tmp scratch"
+
+ls | grep "^tmp out\.bvec$"
+ls | grep "^tmp out\.bval$"

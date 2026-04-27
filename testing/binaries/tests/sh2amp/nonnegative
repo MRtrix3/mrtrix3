@@ -1,0 +1,5 @@
+#!/bin/bash
+# Evaluation of the "-nonnegative" command-line flag
+# Output is compared to that generated using a prior software version
+sh2amp amp2sh/out.mif sh2amp/dir20.txt -nonnegative - | \
+testing_diff_image - sh2amp/out_nonneg.mif -voxel 1e-5

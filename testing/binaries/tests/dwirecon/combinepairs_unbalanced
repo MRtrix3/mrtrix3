@@ -1,0 +1,52 @@
+# Verify graceful termination of "dwirecon" command
+#   for "combine_pairs" option
+#   when the input data do not consist of matched pairs of volumes
+
+# 1. Missing volume
+mrcat \
+    $(mrconvert dwirecon/LR_preproc.mif -coord 3 0:6 -) \
+    $(mrconvert dwirecon/RL_preproc.mif -coord 3 0:5 -) \
+    -axis 3 \
+    - | \
+dwirecon - combine_pairs \
+    -field dwirecon/field.mif \
+    tmp.mif -force 2>&1 | \
+grep "Cannot perform explicit volume recombination based on phase encoding pairs\: number of volumes is odd"
+
+# 2. Duplicate volume
+#    (technically there's a matching volume present,
+#    but it's not a bijective mapping)
+mrcat \
+    $(mrconvert dwirecon/LR_preproc.mif -coord 3 0:6 -) \
+    $(mrconvert dwirecon/RL_preproc.mif -coord 3 0:6 -) \
+    $(mrconvert dwirecon/RL_preproc.mif -coord 3 6 -) \
+    -axis 3 \
+    - | \
+dwirecon - combine_pairs \
+    -field dwirecon/field.mif \
+    tmp.mif -force 2>&1 | \
+grep "Cannot perform explicit volume recombination based on phase encoding pairs\: number of volumes is odd"
+
+# 3. Number of phase encoding directions not an even number,
+#    so definitionally the is an imbalance
+mrcat \
+    $(mrconvert dwirecon/AP_preproc.mif -coord 3 0:7 -) \
+    $(mrconvert dwirecon/LR_preproc.mif -coord 3 0:7 -) \
+    $(mrconvert dwirecon/RL_preproc.mif -coord 3 0:7 -) \
+    -axis 3 \
+    - | \
+dwirecon - combine_pairs \
+    -field dwirecon/field.mif \
+    tmp.mif -force 2>&1 | \
+grep "number of unique phase encodings is odd"
+
+# 4. Gradient tables don't match
+mrcat \
+    $(mrconvert dwirecon/LR_preproc.mif -coord 3 0:6 -) \
+    $(mrconvert dwirecon/RL_preproc.mif -coord 3 13:19 -) \
+    -axis 3 \
+    - | \
+dwirecon - combine_pairs \
+    -field dwirecon/field.mif \
+    tmp.mif -force 2>&1 | \
+grep "Ambiguity in establishing reversed phase encoding volume pairs"

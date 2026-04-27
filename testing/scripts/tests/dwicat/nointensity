@@ -1,0 +1,11 @@
+#!/bin/bash
+# Ensure that the command executes successfully
+#   when the -nointensity flag is specified,
+#   such that the command only checks and corrects for
+#   differences in header transforms
+mrconvert BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval
+
+dwicat tmp.mif tmp.mif ../tmp/dwicat/nointensity.mif -nointensity -force
+
+testing_diff_image ../tmp/dwicat/nointensity.mif $(mrcat tmp.mif tmp.mif -axis 3 -)

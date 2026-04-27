@@ -1,0 +1,8 @@
+#!/bin/bash
+# Verify default operation of the "tsfvalidate" command
+#   with a well-formed input file
+
+rm -f tmp.txt
+tsfvalidate tsfvalidate/orig.tsf tckvalidate/orig.tck 2>&1 | tee tmp.txt
+grep -E "Track scalar file \".+\" is valid with respect to tractogram \".+\"" tmp.txt
+! ( grep "\\bWARNING\\b" tmp.txt )

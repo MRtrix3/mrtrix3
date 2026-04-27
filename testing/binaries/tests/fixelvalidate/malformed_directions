@@ -1,0 +1,12 @@
+#!/bin/bash
+# Ensure that if the directions image has the wrong number of fixels, the right error is produced.
+
+rm -rf tmp/
+mkdir tmp/
+cp fixel_image/index.mif tmp/index.mif
+mrconvert fixel_image/directions.mif -coord 0 0:999 tmp/directions.mif
+
+rm -f tmp.txt
+! ( fixelvalidate tmp/ > tmp.txt 2>&1 )
+cat tmp.txt
+grep -E "fixel directions file \\(.+\\) does not contain the same number of elements as fixels in the index file" tmp.txt

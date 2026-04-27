@@ -1,0 +1,26 @@
+#!/bin/bash
+# Verify operation of the "dwi2mask b02template" command
+#   when different images are specified using pipes
+
+# Pre-convert the input image since it will be used in multiple subsequent tests
+mrconvert BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp-in.mif \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval
+
+# Both input and output images are pipes
+mrconvert tmp-in.mif - |
+dwi2mask b02template - - \
+-software antsquick \
+-template dwi2mask/template_image.mif.gz dwi2mask/template_mask.mif.gz | \
+mrconvert - tmp-out.mif -force
+
+# Input template image is a pipe
+mrconvert dwi2mask/template_image.mif.gz - | \
+dwi2mask b02template tmp-in.mif tmp-out.mif -force \
+-software antsquick \
+-template - dwi2mask/template_mask.mif.gz
+
+# Input template mask is a pipe
+mrconvert dwi2mask/template_mask.mif.gz - | \
+dwi2mask b02template tmp-in.mif tmp-out.mif -force \
+-software antsquick \
+-template dwi2mask/template_image.mif.gz -

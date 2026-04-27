@@ -1,0 +1,5 @@
+#!/bin/bash
+# Ensure that an image can be written to a compressed .mif,
+#   and that this can be subsequently read and interpreted as being identical to the original
+mrconvert mrconvert/in.mif tmp.mif.gz -force
+testing_diff_image tmp.mif.gz mrconvert/in.mif

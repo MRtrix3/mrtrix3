@@ -1,0 +1,8 @@
+#!/bin/bash
+# Ensure that if input image contains non-integer values,
+#   the correct error message is produced.
+rm -f tmp.txt
+! ( mrcalc labelconvert/out_fs.mif.gz 0.5 -mult - | \
+    labelvalidate - > tmp.txt 2>&1 )
+cat tmp.txt
+grep -E "Floating\\-point number detected in image \".+\"; label images should contain integers only" tmp.txt

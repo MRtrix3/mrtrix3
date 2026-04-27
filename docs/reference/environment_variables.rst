@@ -24,6 +24,13 @@ List of MRtrix3 environment variables
      when reading DICOM data, match the StudyName entry against
      the string provided
 
+.. envvar:: MRTRIX_CLI_PARSE_ONLY
+
+     Set the command to parse the provided inputs and then quit
+     if it is set. This can be used in the CI of wrapping code,
+     such as the automatically generated Pydra interfaces.
+     Note that it will have no effect for R interfaces
+
 .. envvar:: MRTRIX_CONFIGFILE
 
      This can be used to set the location of the system-wide
@@ -67,6 +74,15 @@ List of MRtrix3 environment variables
      will normally have been modified from its initial value
      (e.g. [ 0 0 0 1000 ] for a b=1000 acquisition) to b=0 due to
      b-value scaling.
+
+.. envvar:: MRTRIX_PRESERVE_TMPFILE
+
+     This variable decides whether the temporary piped image
+     should be preserved rather than the usual behaviour of
+     deletion at command completion.
+     For example, in case of piped commands from Python API,
+     it is necessary to retain the temp files until all
+     the piped commands are executed.
 
 .. envvar:: MRTRIX_QUIET
 

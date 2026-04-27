@@ -1,0 +1,6 @@
+#!/bin/bash
+# Ensure successful execution of "dwi2mask fslbet" algorithm,
+#   which internally invokes FSL command "bet"
+# Here the algorithm is permitted to run under its own defaults
+dwi2mask fslbet BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval

@@ -1,0 +1,10 @@
+#!/bin/bash
+# Multi-contrast registration;
+#   affine only
+# In this test, weights per contrast are specified.
+#   Since the images are identical between the two contrasts,
+#   this does not influence the outcomes of registration in any way;
+#   this test therefore only ensures that that information is parsed without failure.
+mrregister moving.mif.gz template.mif.gz moving.mif.gz template.mif.gz \
+-type affine -affine_niter 15 -mc_weights 1,2 -transformed - | \
+testing_diff_image - mrregister/out.mif.gz -abs 1e-5

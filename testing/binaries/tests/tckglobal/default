@@ -1,0 +1,9 @@
+# Test default operation of tckglobal command
+# Test only ensures that the command executes to completion without error
+dwiextract dwi.mif - | \
+tckglobal - response.txt tmp.tck \
+    -fod tmp_fod.mif \
+    -eext tmp_eext.mif \
+    -etrend tmp_etrend.txt \
+    -niter 100000 \
+    -force

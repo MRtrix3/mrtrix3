@@ -1,0 +1,6 @@
+#!/bin/bash
+# Test the "pad" operation,
+#   applying uniform padding to all axes
+# Outcome is tested against a pre-generated version calculated from a prior software version
+mrgrid dwi.mif pad -uniform 3 - | \
+testing_diff_image - mrpad/out.mif

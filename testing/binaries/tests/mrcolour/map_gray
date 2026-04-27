@@ -1,0 +1,5 @@
+#!/bin/bash
+# Validate defulat operation with the "gray" colourmap
+#   against a result generated with a prior software version
+mrcolour dwi_mean.mif gray - | \
+testing_diff_image - mrcolour/gray.mif -abs 1e-5

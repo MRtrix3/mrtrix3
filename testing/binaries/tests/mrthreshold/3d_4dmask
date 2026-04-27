@@ -1,0 +1,9 @@
+#!/bin/bash
+# This test ensures that if the image provided as input to the -mask option
+#   is not exactly a 3D image,
+#   but rather is a 4D image with only one volume,
+#   the command will nevertheless proceed as one would intuit
+#   (this verifies rectification of a bug in a prior software version)
+mrconvert mask.mif -axes 0,1,2,-1 - | \
+mrthreshold dwi_mean.mif - -mask - | \
+testing_diff_image - mrthreshold/3d_masked.mif

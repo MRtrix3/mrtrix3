@@ -1,0 +1,34 @@
+#!/bin/bash
+# Ensure that non-physical partial volume fractions yield an error
+
+mrconvert 5ttedit/in.mif -coord 3 0 -axes 0,1,2 - | \
+mrcalc - 0 -mult tmp_zero.mif -force
+
+# Generate a ROI containing a single voxel in the WM
+mredit tmp_zero.mif tmp_one.mif -force \
+    -voxel 34,51,46 1
+
+#####################
+# Test 1: PVE < 0.0 #
+#####################
+
+# Make the CSF fraction less than 0,
+#   adding the same amount back to sub-cortical GM in order to preserve the unity sum
+mrcat tmp_zero.mif $(mrcalc tmp_one.mif 0.1 -mult -) tmp_zero.mif $(mrcalc tmp_one.mif -0.1 -mult -) tmp_zero.mif \
+    -axis 3 \
+    - | \
+mrcalc 5ttedit/in.mif - -add tmp_pvelessthanzero.mif -force
+rm -f tmp.txt
+! ( 5ttvalidate tmp_pvelessthanzero.mif > tmp.txt 2>&1 )
+cat tmp.txt
+grep "brain voxels with a non\\-physical partial volume fraction" tmp.txt
+
+#########################
+# Test 2: Non-unity sum #
+#########################
+
+mrcalc 1.0 tmp_one.mif 0.1 -mult -add 5ttedit/in.mif -mult 1.0 -max tmp_sumexceedsunity.mif -force
+rm -f tmp.txt
+! ( 5ttvalidate tmp_sumexceedsunity.mif > tmp.txt 2>&1 )
+cat tmp.txt
+grep "with non\\-unity sum of partial volume fractions" tmp.txt

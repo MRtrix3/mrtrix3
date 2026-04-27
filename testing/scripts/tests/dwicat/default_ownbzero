@@ -1,0 +1,49 @@
+#!/bin/bash
+# Verify operation of dwicat command for a synthetically modified dataset
+# For each unique (non-zero) b-value,
+#   create a series containing all volumes of that b-value,
+#   as well as two b=0 volumes that are _not_ shared with any other series;
+#   then artificially modulate the image intensitities between series
+# If the dwicat performs its role successfully,
+#   then that artificial intensity modulation should be corrected
+# Because this test involves assigning different (inherently noisy) b=0 volumes
+#   to each of the b>0 shell series,
+#   the correction of that false intensity modulation cannot be as accurate;
+#   as such, the tolerance on the tests is greater than that
+#   of the "default_sharedbzero" test
+
+mrconvert BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval
+
+# Split volumes according to b-value
+dwiextract tmp.mif tmp11_b0.mif -shell 0 -force
+dwiextract tmp.mif tmp11_b1000.mif -shell 1000 -force
+dwiextract tmp.mif tmp11_b2000.mif -shell 2000 -force
+dwiextract tmp.mif tmp11_b3000.mif -shell 3000 -force
+
+# Attach two unique b=0 volumes to the start of each b>0 series
+mrconvert tmp11_b0.mif -coord 3 0,1 - | \
+mrcat - tmp11_b1000.mif tmp12_b1000.mif -axis 3 -force
+mrconvert tmp11_b0.mif -coord 3 2,3 - | \
+mrcat - tmp11_b2000.mif tmp12_b2000.mif -axis 3 -force
+mrconvert tmp11_b0.mif -coord 3 4,5 - | \
+mrcat - tmp11_b3000.mif tmp12_b3000.mif -axis 3 -force
+
+# Artificially scale the intensities of two of the shells
+mrcalc tmp12_b2000.mif 0.2 -mult tmp13_b2000.mif -force
+mrcalc tmp12_b3000.mif 5.0 -mult tmp13_b3000.mif -force
+
+# Do a straight concatenation of the shells where no intensity scaling has been applied;
+#   this forms the reference dataset where there is no artifial scaling between shells
+mrcat tmp12_b1000.mif tmp12_b2000.mif tmp12_b3000.mif tmp14.mif -axis 3 -force
+
+# Run dwicat including a brain mask
+dwicat tmp12_b1000.mif tmp13_b2000.mif tmp13_b3000.mif tmpmasked.mif -force \
+-mask BIDS/sub-01/dwi/sub-01_brainmask.nii.gz
+testing_diff_image tmpmasked.mif tmp14.mif -frac 0.01
+
+# Run dwicat without a brain mask;
+#   the accuracy of intensity modulation correction is inherently poorer,
+#   and so the tolerance on the test is greater
+dwicat tmp12_b1000.mif tmp13_b2000.mif tmp13_b3000.mif tmpunmasked.mif -force
+testing_diff_image tmpunmasked.mif tmp14.mif -frac 0.02

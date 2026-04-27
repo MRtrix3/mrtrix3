@@ -1,0 +1,24 @@
+#!/bin/bash
+# Ensure that the dwigradcheck script completes successfully
+#   regardless of whether the input gradient table is accessed from:
+# - The image header
+# - The -fslgrad option
+# - The -grad option
+# Also test the -export_grad_fsl and -export_grad_mrtrix options
+
+mrconvert BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp-sub-01_dwi.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-export_grad_mrtrix tmp-sub-01_dwi.b \
+-strides 0,0,0,1
+
+dwigradcheck tmp-sub-01_dwi.mif
+
+dwigradcheck BIDS/sub-01/dwi/sub-01_dwi.nii.gz -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-export_grad_fsl tmp.bvec tmp.bval
+testing_diff_matrix tmp.bvec dwigradcheck/fsl.bvec -abs 1e-3
+
+dwigradcheck BIDS/sub-01/dwi/sub-01_dwi.nii.gz -force \
+-grad tmp-sub-01_dwi.b \
+-export_grad_mrtrix tmp.b
+testing_diff_matrix tmp.b dwigradcheck/grad.b -abs 1e-3

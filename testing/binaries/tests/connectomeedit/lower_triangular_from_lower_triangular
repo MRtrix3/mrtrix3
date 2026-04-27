@@ -1,0 +1,10 @@
+#!/bin/bash
+# Verify "lower_triangular" operation, when input data are lower triangular
+# Input:
+# [[1, 0, 0],
+#  [2, 3, 0],
+#  [4, 5, 6]]
+# Output: Same as input
+printf $"1 0 0\n2 3 0\n4 5 6\n" > tmp.txt
+connectomeedit -force tmp.txt lower_triangular tmp1.txt
+testing_diff_matrix tmp1.txt tmp.txt

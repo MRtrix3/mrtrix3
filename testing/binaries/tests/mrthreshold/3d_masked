@@ -1,0 +1,8 @@
+#!/bin/bash
+# Verify command operation when the process of automatic threshold determination
+#   only considers those voxels within a user-specified input mask image;
+#   note that as per command documentation,
+#   this does not mean that voxels outside of that mask will be omitted from the output image,
+#   only that they will not contribute to automatic threshold determination
+mrthreshold dwi_mean.mif - -mask mask.mif | \
+testing_diff_image - mrthreshold/3d_masked.mif

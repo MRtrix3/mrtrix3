@@ -1,0 +1,6 @@
+#!/bin/bash
+# Verify that if the "mask2glass" command is provided
+#   with a 4D image series as input,
+#   it exits gracefully with an appropriate error message
+mask2glass BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp.mif -force 2>&1 | \
+grep "Command expects as input a 3D image"

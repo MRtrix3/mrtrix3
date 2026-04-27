@@ -1,0 +1,23 @@
+#!/bin/bash
+# Verify execution of "dwi2mask consensus" algorithm
+#   when utilising image paths that include whitespace characters
+# Make sure that output image appears at the expected location
+rm -f "tmp out.mif"
+rm -rf "tmp scratch"
+
+ln -s dwi2mask/template_image.mif.gz "tmp template.mif.gz"
+ln -s dwi2mask/template_mask.mif.gz "tmp mask.mif.gz"
+
+ln -s BIDS/sub-01/dwi/sub-01_dwi.nii.gz "tmp in.nii.gz"
+ln -s BIDS/sub-01/dwi/sub-01_dwi.bvec "tmp in.bvec"
+ln -s BIDS/sub-01/dwi/sub-01_dwi.bval "tmp in.bval"
+
+mkdir "tmp scratch"
+
+dwi2mask consensus "tmp in.nii.gz" "tmp out.mif" -force \
+-fslgrad "tmp in.bvec" "tmp in.bval" \
+-template "tmp template.mif.gz" "tmp mask.mif.gz" \
+-masks "tmp masks.mif" \
+-scratch "tmp scratch"
+
+ls | grep "^tmp out\.mif$"

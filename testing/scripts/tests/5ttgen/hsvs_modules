@@ -1,0 +1,5 @@
+#!/bin/bash
+# Verify "5ttgen hsvs" operation when it is explicitly requested that
+#   FreeSurfer sub-cortical gray matter nuclei segmentation modules are utilised
+5ttgen hsvs freesurfer/sub-01 tmp.mif -hippocampi subfields -thalami nuclei -force
+testing_diff_header tmp.mif 5ttgen/hsvs/modules.mif.gz

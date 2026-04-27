@@ -105,6 +105,10 @@ The following basic usage has been shown to work on Linux::
 
     singularity run -B /run MRtrix3.sif mrview
 
+If you have NVidia graphics drivers, you may need to instead use the `--nv` option::
+
+    singularity run --nv /run MRtrix3.sif mrview
+    
 If you wish to utilise a *clean environment* when executing ``mrview``,
 you will likely find that it is necessary to explicitly set the ``DISPLAY``
 and ``XDG_RUNTIME_DIR`` environment variables. This could be done in a

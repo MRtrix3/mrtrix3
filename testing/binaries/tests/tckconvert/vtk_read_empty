@@ -1,0 +1,3 @@
+#!/bin/bash
+# Ensure that reading from a VTK file that does not contain any streamlines nevertheless succeeds
+tckconvert -force -quiet tckconvert/empty.vtk tmp.tck

@@ -1,0 +1,10 @@
+#!/bin/bash
+# Verify "dwi2mask mtnorm" algorithm,
+#   where an initial brain mask estimate is provided by the user
+dwi2mask mtnorm BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmpmask.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-init_mask BIDS/sub-01/dwi/sub-01_brainmask.nii.gz \
+-tissuesum tmptissuesum.mif
+
+testing_diff_image tmpmask.mif dwi2mask/mtnorm_initmask_mask.mif.gz
+testing_diff_image tmptissuesum.mif dwi2mask/mtnorm_initmask_tissuesum.mif.gz -abs 1e-5

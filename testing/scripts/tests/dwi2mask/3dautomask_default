@@ -1,0 +1,7 @@
+#!/bin/bash
+# Verify successful execution of "dwi2mask 3dautomask",
+#   which invokes command "3dautomask" from AFNI software
+# Only ensure that the command executes successfully;
+#   no reference output to which to compare
+dwi2mask 3dautomask BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval

@@ -1,0 +1,18 @@
+#!/bin/bash
+# Verify operation of "dwibiascorrect ants" algorithm
+#   where image piping is utilised
+
+# Input and output DWIs are piped
+mrconvert BIDS/sub-01/dwi/sub-01_dwi.nii.gz - \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-strides 0,0,0,1 | \
+dwibiascorrect ants - - | \
+testing_diff_header - dwibiascorrect/ants/default_out.mif.gz
+
+# Input mask and output bias field estimate are piped
+mrconvert BIDS/sub-01/dwi/sub-01_brainmask.nii.gz - | \
+dwibiascorrect ants BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-mask - \
+-bias - | \
+testing_diff_header - dwibiascorrect/ants/default_bias.mif.gz

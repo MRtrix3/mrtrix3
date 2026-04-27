@@ -1,0 +1,6 @@
+#!/bin/bash
+# Verify operation of command when fixel index image is provided as input
+# Since only the index and directions image can be found automatically,
+#   the output is expected to contain only unit 3-vectors
+fixel2peaks fixel_image/index.mif - | \
+testing_diff_peaks - fixel2peaks/nodata.mif 1e-6

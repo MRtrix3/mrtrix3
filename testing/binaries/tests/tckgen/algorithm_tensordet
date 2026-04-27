@@ -1,0 +1,5 @@
+#!/bin/bash
+# Ensure that "tensor_det" algorithm duplicates behaviour of prior software
+tckgen dwi.mif -algo tensor_det -seed_grid_per_voxel mrcrop/mask.mif 3 -nthread 0 tmp.tck -force
+testing_diff_tck tmp.tck tckgen/tensor_det.tck -distance 1e-4
+

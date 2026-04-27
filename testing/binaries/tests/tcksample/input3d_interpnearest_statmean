@@ -1,0 +1,9 @@
+#!/bin/bash
+# Verify command operation when using:
+# - A *3D* input image
+# - *Nearest-neighbour* interpolation
+# - A track-wise statistic *is* used
+#   (the mean is used here merely as an exemplar)
+# Outcome is verified against that generated using a prior software version
+tcksample tracks.tck tcksample/fa.mif tmp.csv -nointerp -stat_tck mean -force
+testing_diff_matrix tmp.csv tcksample/input3d_interpnearest_statmean.csv -frac 1e-5

@@ -1,0 +1,11 @@
+#!/bin/bash
+# Test operation of the shconv command when used in the context of multi-shell multi-tissue data
+# From the input data, which consists of pairs of:
+# - Input 4D ODF image, of size X x Y x Z x N (for lmax of tissue)
+# - Input response function, of size 4 (rows; # unique b-values) x Z (for lmax of tissue)
+# , produces 5D output image of size X x Y x Z x max(N) x 4 (# unique b-values)
+shconv \
+dwi2fod/msmt_csd/wm.mif dwi2fod/msmt_csd/wm.txt \
+dwi2fod/msmt_csd/gm.mif dwi2fod/msmt_csd/gm.txt \
+dwi2fod/msmt_csd/csf.mif dwi2fod/msmt_csd/csf.txt - | \
+testing_diff_image - shconv/out_msmt.mif -abs 1e-4

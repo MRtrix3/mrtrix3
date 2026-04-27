@@ -1,0 +1,19 @@
+#!/bin/bash
+# Verify operation of command
+#   when making use of command-line option "-fixed"
+# Here three fiducial directions are forced to appear
+#   at the start of the direction set;
+#   we then check to make sure that those three directions
+#   are preserved at the head of the result
+
+dirgen 30 tmp.txt -cartesian -force \
+    -fixed 1,0,0 \
+    -fixed 0,1,0 \
+    -fixed 0,0,1
+
+sed '/^#/d' tmp.txt | \
+    head -n3 > tmp2.txt
+
+echo -e "1 0 0\n0 1 0\n0 0 1\n" > tmp3.txt
+
+testing_diff_matrix tmp2.txt tmp3.txt
