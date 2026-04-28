@@ -175,12 +175,12 @@ def match(image_one, image_two, **kwargs): #pylint: disable=unused-variable, too
     raise TypeError('Unsupported keyword arguments passed to image.match(): '
                     + str(kwargs))
   if not isinstance(image_one, Header):
-    if not isinstance(image_one, str):
+    if not isinstance(image_one, (str, pathlib.Path)):
       raise MRtrixError(f'Error trying to test "{image_one}": '
                         'Not an image header or file path')
     image_one = Header(image_one)
   if not isinstance(image_two, Header):
-    if not isinstance(image_two, str):
+    if not isinstance(image_two, (str, pathlib.Path)):
       raise MRtrixError(f'Error trying to test "{image_two}": '
                         'Not an image header or file path')
     image_two = Header(image_two)

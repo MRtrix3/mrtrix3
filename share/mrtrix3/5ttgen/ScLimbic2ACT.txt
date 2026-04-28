@@ -1,0 +1,19 @@
+# Color table for subcortical limbic structures (sclimbic)
+# This must be in the same order as during training
+0 Unknown
+
+# Unused (preserve FreeSurfer seg labels / FSL FIRST)
+#  26 Left-Nucleus-Accumbens     234 197 102 0
+#  58 Right-Nucleus-Accumbens    245 155   0 0
+# 865 Left-Basal-Forebrain       170  85   0 0
+# 866 Right-Basal-Forebrain      139  69  19 0
+
+2 Left-HypoThal-noMB
+2 Right-HypoThal-noMB
+3 Left-Fornix
+3 Right-Fornix
+2 Left-MammillaryBody
+2 Right-MammillaryBody
+3 Mid-AntCom
+2 Left-SeptalNuc
+2 Right-SeptalNuc

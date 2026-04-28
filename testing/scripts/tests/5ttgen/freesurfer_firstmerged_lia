@@ -1,0 +1,10 @@
+#!/bin/bash
+# Verify default operation of "5ttgen freesurfer"
+#   when the -first option is used;
+#   and the combined parcellation image is provided as input,
+#   such that the image is simply used as a binary SGM mask;
+#   additionally FIRST was run on a NIfTI image conformaed to FreeSurfer LIA coordinates
+# Outcome is compared to that generated using a prior software version
+5ttgen freesurfer freesurfer/sub-01/mri/aparc+aseg.mgz tmp.mif -force \
+    -first freesurfer/sub-01/first/LIA/norm_all_fast_firstseg.nii.gz
+testing_diff_image tmp.mif 5ttgen/freesurfer/first_merged.mif.gz

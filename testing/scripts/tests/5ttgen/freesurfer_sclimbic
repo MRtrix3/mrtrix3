@@ -1,0 +1,7 @@
+#!/bin/bash
+# Verify default operation of "5ttgen freesurfer"
+#   when the -sclimbic option is used
+# Outcome is compared to that generated using a prior software version
+5ttgen freesurfer freesurfer/sub-01/mri/aparc+aseg.mgz tmp.mif -force \
+    -sclimbic freesurfer/sub-01/mri/sclimbic.mgz
+testing_diff_image tmp.mif 5ttgen/freesurfer/sclimbic.mif.gz
