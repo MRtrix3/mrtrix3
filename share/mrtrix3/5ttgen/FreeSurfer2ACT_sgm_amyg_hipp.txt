@@ -28,7 +28,7 @@
 4   Left-Lateral-Ventricle
 4   Left-Inf-Lat-Vent
 3   Left-Cerebellum-White-Matter
-1   Left-Cerebellum-Cortex
+2   Left-Cerebellum-Cortex
 2   Left-Thalamus
 2   Left-Thalamus-Proper
 2   Left-Caudate
@@ -36,22 +36,23 @@
 2   Left-Pallidum
 4   3rd-Ventricle
 4   4th-Ventricle
-3   Brain-Stem
+5   Brain-Stem
 2   Left-Hippocampus
 2   Left-Amygdala
 4   CSF
 2   Left-Lesion
 2   Left-Accumbens-area
-3   Left-VentralDC
+5   Left-VentralDC
 4   Left-vessel
 4   Left-choroid-plexus
+5   Left-Substancia-Nigra
 
 3   Right-Cerebral-White-Matter
 1   Right-Cerebral-Cortex
 4   Right-Lateral-Ventricle
 4   Right-Inf-Lat-Vent
 3   Right-Cerebellum-White-Matter
-1   Right-Cerebellum-Cortex
+2   Right-Cerebellum-Cortex
 2   Right-Thalamus
 2   Right-Thalamus-Proper
 2   Right-Caudate
@@ -61,9 +62,10 @@
 2   Right-Amygdala
 2   Right-Lesion
 2   Right-Accumbens-area
-3   Right-VentralDC
+5   Right-VentralDC
 4   Right-vessel
 4   Right-choroid-plexus
+5   Right-Substancia-Nigra
 
 4   5th-Ventricle
 4   Left-Lateral-Ventricles
