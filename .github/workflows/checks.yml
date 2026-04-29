@@ -312,3 +312,48 @@ jobs:
         clangFormatVersion: 16
         # Ignore third party headers
         exclude: './thirdparty ./_deps'
+
+  pythonci:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        submodules: true
+
+    - name: Set up Python 3.7
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.7'
+
+    - name: verify Python version
+      run: |
+        version=$(python3 --version 2>&1 | awk '{print $2}')
+        echo "python3 --version: $version"
+        echo "$version" | grep -q '^3\.7' || { echo "ERROR: Expected Python 3.7 but got $version"; exit 1; }
+
+    - name: install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install zlib1g-dev libfftw3-dev ninja-build libpng-dev python3-pip
+        pip3 install numpy
+
+    - name: Get CMake
+      uses: lukka/get-cmake@latest
+      with:
+        cmakeVersion: '3.22.1'
+
+    - name: configure
+      run: >
+        cmake
+        -B build
+        -G Ninja
+        -D CMAKE_BUILD_TYPE=Release
+        -D MRTRIX_BUILD_TESTS=ON
+        -D MRTRIX_BUILD_GUI=OFF
+
+    - name: build
+      run: cmake --build build
+
+    - name: run pythonci tests
+      run: cd build && ctest -L pythonci --output-on-failure
