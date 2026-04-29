@@ -188,7 +188,7 @@ void run() {
   const std::string input_fixel_folder = argument[1];
   Header index_header = Fixel::find_index_header(input_fixel_folder);
   auto index_image = index_header.get_image<index_type>();
-  auto directions_image = Fixel::find_directions_header(input_fixel_folder).get_image<float>().with_direct_io(1);
+  auto directions_image = Fixel::find_directions_header(input_fixel_folder).get_image<float>(DirectIO{1});
   const index_type num_fixels = Fixel::get_number_of_fixels(index_header);
 
   const float angular_threshold = get_option_value("angle", DWI::Tractography::Mapping::default_streamline2fixel_angle);

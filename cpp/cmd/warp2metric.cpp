@@ -68,7 +68,7 @@ void usage() {
 using value_type = float;
 
 void run() {
-  auto input = Image<value_type>::open(argument[0]).with_direct_io(3);
+  auto input = Image<value_type>::open(argument[0], DirectIO{3});
   Registration::Warp::check_warp(input);
 
   Image<value_type> jmatrix_output;
@@ -83,7 +83,7 @@ void run() {
     std::string template_fixel_directory(opt[0][0]);
     fixel_template_index = Fixel::find_index_header(template_fixel_directory).get_image<uint32_t>();
     fixel_template_directions =
-        Fixel::find_directions_header(template_fixel_directory).get_image<value_type>().with_direct_io();
+        Fixel::find_directions_header(template_fixel_directory).get_image<value_type>(DirectIO{});
 
     std::string output_fixel_directory(opt[0][1]);
     if (template_fixel_directory != output_fixel_directory) {

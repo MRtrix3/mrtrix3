@@ -85,7 +85,7 @@ protected:
 };
 
 void run() {
-  auto input = Image<value_type>::open(argument[0]).with_direct_io(3);
+  auto input = Image<value_type>::open(argument[0], DirectIO{3});
   Registration::Warp::check_warp(input);
 
   auto output = Image<value_type>::create(argument[1], input);

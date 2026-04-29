@@ -94,7 +94,7 @@ const std::array<Vox, 6> voxel_offsets = {
 void run() {
   bool inplace = (argument.size() == 1);
   auto H = Header::open(argument[0]);
-  auto in = H.get_image<float>(inplace); // Need to set read/write flag
+  auto in = H.get_image<float>(std::nullopt, inplace); // Need to set read/write flag
   Image<float> out;
   if (inplace) {
     out = Image<float>(in);

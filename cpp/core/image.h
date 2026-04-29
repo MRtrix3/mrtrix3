@@ -22,6 +22,7 @@
 #include <optional>
 #include <tuple>
 #include <type_traits>
+#include <variant>
 
 #include "algo/copy.h"
 #include "algo/threaded_copy.h"
@@ -37,6 +38,55 @@
 namespace MR {
 
 constexpr int SpatiallyContiguous = -1;
+
+//! Request that an Image be backed by direct RAM access.
+/*! Passed (wrapped in std::optional) to the Image factory functions
+ * (Image::open(), Image::create(), Image::scratch(), Header::get_image())
+ * to demand that the resulting Image use direct memory access for voxel
+ * fetch / store, preloading from file into RAM if necessary.
+ *
+ * The default-constructed value requests direct IO with no constraints
+ * on memory layout: a preload only occurs if the file's datatype, scaling
+ * or segmentation forces it, otherwise the existing strides are kept.
+ *
+ * Construction from an integer requests direct IO with the specified \a axis
+ * laid out contiguously in memory; a negative value (the SpatiallyContiguous
+ * constant) requests that the spatial axes be contiguous.
+ *
+ * Construction from a Stride::List requests direct IO with the specified
+ * explicit memory strides.
+ *
+ * The resulting Buffer is preloaded, if needed, during construction; once
+ * the Image is observable (i.e. after the factory has returned), the
+ * underlying RAM allocation is immutable until destruction. There is
+ * therefore no need for runtime synchronisation between Image copies. */
+class DirectIO {
+public:
+  DirectIO() = default;
+  DirectIO(int axis) : request_(axis) {}
+  DirectIO(Stride::List strides) : request_(std::move(strides)) {}
+
+  //! Resolve the requested memory strides given a \a header.
+  /*! Returns an empty Stride::List when no specific layout was requested
+   * (i.e. when default-constructed). */
+  template <class HeaderType> Stride::List resolve(const HeaderType &header) const {
+    return std::visit(
+        [&header](auto &&request) -> Stride::List {
+          using T = std::decay_t<decltype(request)>;
+          if constexpr (std::is_same_v<T, std::monostate>)
+            return {};
+          else if constexpr (std::is_same_v<T, int>)
+            return request < 0 ? Stride::contiguous_along_spatial_axes(header)
+                               : Stride::contiguous_along_axis(request, header);
+          else
+            return request;
+        },
+        request_);
+  }
+
+private:
+  std::variant<std::monostate, int, Stride::List> request_;
+};
 
 template <typename ValueType> class Image : public ImageBase<Image<ValueType>, ValueType> {
 public:
@@ -127,63 +177,15 @@ public:
    * write-out (this avoids any further buffering before write-out).
    *
    * \note this will only work for images accessed using direct IO (i.e.
-   * opened as a scratch image, or using with_direct_io(), and only
-   * supports output to MRtrix format images (*.mif / *.mih). There is a
-   * chance that images opened in other ways may also use direct IO (e.g.
-   * if the datatype & strides match, and the image is single-file), you
-   * can check using the is_direct_io() method. If there is any
-   * possibility that this image might use indirect IO, you should use
-   * the save() function instead (and even then, it should only be used
-   * for debugging purposes). */
+   * opened as a scratch image, or by passing a DirectIO request to one of
+   * the Image factory functions), and only supports output to MRtrix format
+   * images (*.mif / *.mih). There is a chance that images opened in other
+   * ways may also use direct IO (e.g. if the datatype & strides match, and
+   * the image is single-file); you can check using the is_direct_io()
+   * method. If there is any possibility that this image might use indirect
+   * IO, you should use the save() function instead (and even then, it
+   * should only be used for debugging purposes). */
   std::string dump_to_mrtrix_file(std::string_view nominated_filename) const;
-
-  //! return a new Image using direct IO
-  /*!
-   * this will preload the data into RAM if the datatype on file doesn't
-   * match that on file (or if any scaling is applied to the data). The
-   * optional \a with_strides argument is used to additionally enforce
-   * preloading if the strides aren't compatible with those specified.
-   *
-   * Example:
-   * \code
-   * auto image = Header::open (argument[0]).get_image().with_direct_io();
-   * \endcode
-   * \note this invalidate the invoking Image - do not use the original
-   * image in subsequent code.*/
-  Image with_direct_io(Stride::List with_strides = Stride::List());
-
-  //! return a new Image using direct IO
-  /*!
-   * this is a convenience function, performing the same function as
-   * with_direct_io(Stride::List). The difference is that the \a axis
-   * argument specifies which axis should be contiguous, or if \a axis is
-   * negative, that the spatial axes should be contiguous (the \c
-   * SpatiallyContiguous constexpr, set to -1, is provided for clarity).
-   * In other words:
-   * \code
-   * auto image = Image<float>::open (filename).with_direct_io (3);
-   * \endcode
-   * is equivalent to:
-   * \code
-   * auto header = Header::open (filename);
-   * auto image = header.get_image<float>().with_direct_io (Stride::contiguous_along_axis (3, header));
-   * \endcode
-   * and
-   * \code
-   * auto image = Image<float>::open (filename).with_direct_io (-1);
-   * // or;
-   * auto image = Image<float>::open (filename).with_direct_io (SpatiallyContiguous);
-   * \endcode
-   * is equivalent to:
-   * \code
-   * auto header = Header::open (filename);
-   * auto image = header.get_image<float>().with_direct_io (Stride::contiguous_along_spatial_axes (header));
-   * \endcode
-   */
-  Image with_direct_io(int axis) {
-    return with_direct_io(axis < 0 ? Stride::contiguous_along_spatial_axes(*buffer)
-                                   : Stride::contiguous_along_axis(axis, *buffer));
-  }
 
   //! return RAM address of current voxel
   /*! \note this will only work if image access is direct (i.e. for a
@@ -194,14 +196,24 @@ public:
     return data_pointer ? static_cast<ValueType *>(data_pointer) + data_offset : nullptr;
   }
 
-  static Image open(std::string_view image_name, bool read_write_if_existing = false) {
-    return Header::open(image_name).get_image<ValueType>(read_write_if_existing);
+  //! open an existing image; pass \a direct_io to demand direct RAM access, see DirectIO.
+  static Image open(std::string_view image_name,
+                    std::optional<DirectIO> direct_io = std::nullopt,
+                    bool read_write_if_existing = false) {
+    return Header::open(image_name).get_image<ValueType>(direct_io, read_write_if_existing);
   }
-  static Image create(std::string_view image_name, const Header &template_header, bool add_to_command_history = true) {
-    return Header::create(image_name, template_header, add_to_command_history).get_image<ValueType>();
+  //! create a new image; pass \a direct_io to demand direct RAM access, see DirectIO.
+  static Image create(std::string_view image_name,
+                      const Header &template_header,
+                      std::optional<DirectIO> direct_io = std::nullopt,
+                      bool add_to_command_history = true) {
+    return Header::create(image_name, template_header, add_to_command_history).get_image<ValueType>(direct_io);
   }
-  static Image scratch(const Header &template_header, std::string_view label = "scratch image") {
-    return Header::scratch(template_header, label).get_image<ValueType>();
+  //! allocate a scratch image; pass \a direct_io to constrain the in-RAM stride layout, see DirectIO.
+  static Image scratch(const Header &template_header,
+                       std::string_view label = "scratch image",
+                       std::optional<DirectIO> direct_io = std::nullopt) {
+    return Header::scratch(template_header, label).get_image<ValueType>(direct_io);
   }
 
   //! shared reference to header/buffer
@@ -220,9 +232,11 @@ protected:
 
 template <typename ValueType> class Image<ValueType>::Buffer : public Header {
 public:
-  // Buffer() {} // TODO: delete this line! Only for testing memory alignment issues.
   //! construct a Buffer object to access the data in the image specified
-  Buffer(Header &H, bool read_write_if_existing = false);
+  /*! If \a direct_io is provided, the data will be preloaded into RAM during
+   * construction (if required to satisfy the request); the ::ram member is
+   * thereafter immutable until destruction. */
+  Buffer(Header &H, bool read_write_if_existing = false, std::optional<DirectIO> direct_io = std::nullopt);
   Buffer(Buffer &&) = default;
   Buffer &operator=(const Buffer &) = delete;
   Buffer &operator=(Buffer &&) = default;
@@ -251,8 +265,12 @@ public:
     Stride::List strides;
     size_t offset;
   };
+  //! Holds the preloaded RAM buffer when direct IO was requested at construction.
+  /*! \note Set only during Buffer construction (before any shared_ptr<Buffer>
+   * exists); never mutated thereafter except by the destructor as part of writeback.
+   * Concurrent reads from copies of an Image referencing this buffer therefore
+   * require no synchronisation. */
   std::optional<RAM> ram;
-  std::mutex direct_io_mutex;
 
 protected:
   std::function<ValueType(const void *, size_t, default_type, default_type)> fetch_func;
@@ -300,7 +318,9 @@ template <typename ValueType> struct TmpImage : public ImageBase<TmpImage<ValueT
 
 } // namespace
 
-template <typename ValueType> Image<ValueType>::Buffer::Buffer(Header &H, bool read_write_if_existing) : Header(H) {
+template <typename ValueType>
+Image<ValueType>::Buffer::Buffer(Header &H, bool read_write_if_existing, std::optional<DirectIO> direct_io)
+    : Header(H) {
   assert(H.valid() && "IO handler must be set when creating an Image");
   assert((H.is_file_backed() ? is_data_type<ValueType>::value : true) &&
          "class types cannot be stored on file using the Image class");
@@ -310,10 +330,48 @@ template <typename ValueType> Image<ValueType>::Buffer::Buffer(Header &H, bool r
   io->open(*this, footprint<ValueType>(voxel_count(*this)));
   if (io->is_file_backed())
     set_fetch_store_functions();
+
+  if (!direct_io.has_value())
+    return;
+
+  // Resolve requested layout against this buffer; an empty list means "any layout".
+  Stride::List desired = direct_io->resolve(*this);
+  bool preload = (datatype() != DataType::from<ValueType>()) || (io->files.size() > 1);
+  if (!desired.empty()) {
+    auto new_strides = Stride::get_actual(Stride::get_nearest_match(*this, desired), *this);
+    preload |= (new_strides != Stride::get(*this));
+    desired = new_strides;
+  } else {
+    desired = Stride::get(*this);
+  }
+
+  if (!preload)
+    return;
+
+  // Allocate aside; only commit to ::ram once the copy has completed, so that
+  // get_data_pointer() invoked by the source Image below still reflects
+  // pre-preload state (and therefore reads via the file-backed segments).
+  const auto buffer_size = footprint<ValueType>(voxel_count(*this));
+  RAM staging(buffer_size, desired, Stride::offset(desired, *this));
+
+  if (io->is_image_new()) {
+    memset(staging.data.get(), 0, buffer_size);
+  } else {
+    // Wrap *this in a no-op-deleter shared_ptr purely to source-iterate.
+    // Safe because no other shared_ptr<Buffer> exists yet (we are still in
+    // construction and the unique_ptr in the factory has not been released).
+    std::shared_ptr<Buffer> self(this, [](Buffer *) {});
+    Image<ValueType> src(self);
+    TmpImage<ValueType> dest{
+        *this, staging.data.get(), std::vector<ssize_t>(ndim(), 0), staging.strides, staging.offset};
+    threaded_copy_with_progress_message("preloading data for \"" + name() + "\"", src, dest);
+  }
+
+  ram.emplace(std::move(staging));
 }
 
 template <typename ValueType> void *Image<ValueType>::Buffer::get_data_pointer() {
-  if (ram.has_value()) // already allocated via with_direct_io()
+  if (ram.has_value()) // preloaded by Buffer ctor in response to a DirectIO request
     return ram->data.get();
 
   assert(io && "data pointer will only be set for valid Images");
@@ -330,12 +388,19 @@ template <typename ValueType> void *Image<ValueType>::Buffer::get_data_pointer()
   return nullptr;
 }
 
-template <typename ValueType> Image<ValueType> Header::get_image(bool read_write_if_existing) {
+template <typename ValueType>
+Image<ValueType> Header::get_image(std::optional<DirectIO> direct_io, bool read_write_if_existing) {
   if (!valid())
     throw Exception("FIXME: don't invoke get_image() with invalid Header!");
-  std::shared_ptr<typename Image<ValueType>::Buffer> buffer(
-      new typename Image<ValueType>::Buffer(*this, read_write_if_existing));
-  return {buffer};
+  // Build the buffer in a unique_ptr while it has no observers, so any
+  // direct-IO preload completes before the shared_ptr is published. After this
+  // point, Buffer::ram is immutable until destruction (writeback).
+  auto raw = std::make_unique<typename Image<ValueType>::Buffer>(*this, read_write_if_existing, std::move(direct_io));
+  Stride::List image_strides;
+  if (raw->ram.has_value())
+    image_strides = raw->ram->strides;
+  std::shared_ptr<typename Image<ValueType>::Buffer> buffer(std::move(raw));
+  return Image<ValueType>(buffer, image_strides);
 }
 
 template <typename ValueType> FORCE_INLINE Image<ValueType>::Image() : data_pointer(nullptr), data_offset(0) {}
@@ -354,50 +419,6 @@ Image<ValueType>::Image(const std::shared_ptr<Image<ValueType>::Buffer> &buffer_
 }
 
 template <typename ValueType> Image<ValueType>::~Image() {}
-
-template <typename ValueType> Image<ValueType> Image<ValueType>::with_direct_io(Stride::List with_strides) {
-  std::lock_guard lock(buffer->direct_io_mutex);
-
-  if (buffer->ram.has_value())
-    throw Exception("FIXME: don't invoke 'with_direct_io()' on images already using direct IO!");
-  if (!buffer->get_io())
-    throw Exception("FIXME: don't invoke 'with_direct_io()' on non-validated images!");
-  if (buffer.use_count() != 1)
-    throw Exception("FIXME: don't invoke 'with_direct_io()' on images if other copies exist!");
-
-  bool preload = (buffer->datatype() != DataType::from<ValueType>()) || (buffer->get_io()->files.size() > 1);
-  if (!with_strides.empty()) {
-    auto new_strides = Stride::get_actual(Stride::get_nearest_match(*this, with_strides), *this);
-    preload |= (new_strides != Stride::get(*this));
-    with_strides = new_strides;
-  } else
-    with_strides = Stride::get(*this);
-
-  if (!preload)
-    return *this;
-
-  // do the preload:
-
-  // the buffer into which to copy the data:
-  const auto buffer_size = footprint<ValueType>(voxel_count(*this));
-  buffer->ram.emplace(
-      typename Image<ValueType>::Buffer::RAM(buffer_size, with_strides, Stride::offset(with_strides, *this)));
-
-  if (buffer->get_io()->is_image_new()) {
-    // no need to preload if data is zero anyway:
-    memset(buffer->ram->data.get(), 0, buffer_size);
-  } else {
-    auto src(*this);
-    TmpImage<ValueType> dest = {*buffer,
-                                buffer->ram->data.get(),
-                                std::vector<ssize_t>(ndim(), 0),
-                                with_strides,
-                                Stride::offset(with_strides, *this)};
-    threaded_copy_with_progress_message("preloading data for \"" + name() + "\"", src, dest);
-  }
-
-  return Image(buffer, with_strides);
-}
 
 template <typename ValueType> Image<ValueType>::Buffer::~Buffer() {
   if (!get_io())

@@ -98,17 +98,17 @@ void run() {
     if (!get_options("from").empty())
       WARN("-from option ignored with deformation2displacement conversion type");
 
-    auto deformation = Image<default_type>::open(argument[0]).with_direct_io(3);
+    auto deformation = Image<default_type>::open(argument[0], DirectIO{3});
     Registration::Warp::check_warp(deformation);
 
     Header header(deformation);
     header.datatype() = DataType::from_command_line(DataType::Float32);
-    Image<default_type> displacement = Image<default_type>::create(argument[2], header).with_direct_io();
+    Image<default_type> displacement = Image<default_type>::create(argument[2], header, DirectIO{});
     Registration::Warp::deformation2displacement(deformation, displacement);
     break;
   }
   case ConversionType::Displacement2Deformation: {
-    auto displacement = Image<default_type>::open(argument[0]).with_direct_io(3);
+    auto displacement = Image<default_type>::open(argument[0], DirectIO{3});
     Registration::Warp::check_warp(displacement);
 
     if (midway_space)
@@ -120,7 +120,7 @@ void run() {
 
     Header header(displacement);
     header.datatype() = DataType::from_command_line(DataType::Float32);
-    Image<default_type> deformation = Image<default_type>::create(argument[2], header).with_direct_io();
+    Image<default_type> deformation = Image<default_type>::create(argument[2], header, DirectIO{});
     Registration::Warp::displacement2deformation(displacement, deformation);
     break;
   }
@@ -133,7 +133,7 @@ void run() {
       WARN("warp_full image is not in original .mif/.mih file format or in NIfTI file format with associated JSON.  "
            "Converting to other file formats may remove linear transformations stored in the image header.");
     }
-    auto warp = Image<default_type>::open(argument[0]).with_direct_io(3);
+    auto warp = Image<default_type>::open(argument[0], DirectIO{3});
     Registration::Warp::check_warp_full(warp);
 
     Image<default_type> warp_output;

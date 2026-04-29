@@ -292,7 +292,7 @@ void process_image(Header &data,
                    std::string_view output_name,
                    const std::vector<uint32_t> &extent,
                    bool exp1) {
-  auto input = data.get_image<T>().with_direct_io(3);
+  auto input = data.get_image<T>(DirectIO{3});
   // create output
   Header header(data);
   header.datatype() = DataType::from<T>();

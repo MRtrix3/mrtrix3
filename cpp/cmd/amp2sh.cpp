@@ -231,12 +231,12 @@ void run() {
   Stride::set_from_command_line(header_out);
 
   Amp2SHCommon common(sh2amp, bzeros, dwis, normalise);
-  auto amp = header_in.get_image<value_type>().with_direct_io(3);
+  auto amp = header_in.get_image<value_type>(DirectIO{3});
   auto SH = Image<value_type>::create(argument[1], header_out);
 
   opt = get_options("rician");
   if (!opt.empty()) {
-    auto noise = Image<value_type>::open(opt[0][0]).with_direct_io();
+    auto noise = Image<value_type>::open(opt[0][0], DirectIO{});
     ThreadedLoop("mapping amplitudes to SH coefficients", amp, 0, 3).run(Amp2SH(common), SH, amp, noise);
   } else {
     ThreadedLoop("mapping amplitudes to SH coefficients", amp, 0, 3).run(Amp2SH(common), SH, amp);

@@ -345,7 +345,7 @@ void run() {
       WARN("warp_full image is not in original .mif/.mih file format or in NIfTI file format with associated JSON.  "
            "Converting to other file formats may remove linear transformations stored in the image header.");
     }
-    warp = Image<default_type>::open(opt[0][0]).with_direct_io();
+    warp = Image<default_type>::open(opt[0][0], DirectIO{});
     Registration::Warp::check_warp_full(warp);
     if (linear)
       throw Exception("the -warp_full option cannot be applied in combination with -linear"
@@ -366,7 +366,7 @@ void run() {
   if (!opt.empty()) {
     if (warp.valid())
       throw Exception("only one warp field can be input with either -warp or -warp_mid");
-    warp = Image<default_type>::open(opt[0][0]).with_direct_io(Stride::contiguous_along_axis(3));
+    warp = Image<default_type>::open(opt[0][0], DirectIO{Stride::contiguous_along_axis(3)});
     if (warp.ndim() != 4)
       throw Exception("the input -warp file must be a 4D deformation field");
     if (warp.size(3) != 3)
@@ -610,7 +610,7 @@ void run() {
       WARN("Out of bounds value ignored since the input image will not be regridded");
   }
 
-  auto input = input_header.get_image<float>().with_direct_io(stride);
+  auto input = input_header.get_image<float>(DirectIO{stride});
 
   // Reslice the image onto template
   if (template_header.valid() && !warp) {

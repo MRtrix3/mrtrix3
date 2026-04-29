@@ -160,7 +160,7 @@ public:
     auto cc_mask_header = Header::scratch(parameters.midway_image);
 
     auto cc_image =
-        cc_image_header.template get_image<ProcessedImageValueType>().with_direct_io(Stride::contiguous_along_axis(3));
+        cc_image_header.template get_image<ProcessedImageValueType>(DirectIO{Stride::contiguous_along_axis(3)});
     std::vector<uint32_t> NoOversample;
     {
       LogLevelLatch log_level(0);

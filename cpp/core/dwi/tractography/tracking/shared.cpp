@@ -20,7 +20,7 @@ namespace MR::DWI::Tractography::Tracking {
 
 SharedBase::SharedBase(std::string_view diff_path, Properties &property_set)
     : source_header(Header::open(diff_path)),
-      source(source_header.get_image<float>().with_direct_io(3)),
+      source(source_header.get_image<float>(DirectIO{3})),
       properties(property_set),
       init_dir(Eigen::Vector3f::Constant(NaN)),
       min_num_points_preds(0),

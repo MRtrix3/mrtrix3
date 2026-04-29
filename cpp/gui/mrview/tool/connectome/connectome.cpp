@@ -2437,7 +2437,7 @@ void Connectome::initialise(std::string_view path) {
   {
     // Prevent progress dialog from appearing in a multi-threading context
     LogLevelLatch latch(0);
-    buffer.reset(new MR::Image<node_t>(H.get_image<node_t>().with_direct_io()));
+    buffer.reset(new MR::Image<node_t>(H.get_image<node_t>(MR::DirectIO{})));
   }
   MR::Transform transform(H);
   std::vector<Eigen::Vector3f> node_coms;
