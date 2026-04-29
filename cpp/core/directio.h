@@ -18,6 +18,7 @@
 
 #include <variant>
 
+#include "match_variant.h"
 #include "stride.h"
 
 namespace MR {
@@ -53,17 +54,11 @@ public:
   /*! Returns an empty Stride::List when no specific layout was requested
    * (i.e. when default-constructed). */
   template <class HeaderType> Stride::List resolve(const HeaderType &header) const {
-    return std::visit(
-        [&header](auto &&request) -> Stride::List {
-          using T = std::decay_t<decltype(request)>;
-          if constexpr (std::is_same_v<T, std::monostate>)
-            return {};
-          else if constexpr (std::is_same_v<T, int>)
-            return Stride::contiguous_along_axis(request, header);
-          else
-            return request;
-        },
-        request_);
+    return MR::match_v(
+        request_,
+        [](std::monostate) { return Stride::List(); },
+        [&](int axis) { return Stride::contiguous_along_axis(axis, header); },
+        [](const Stride::List &list) { return list; });
   }
 
 private:
