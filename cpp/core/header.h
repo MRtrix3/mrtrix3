@@ -24,6 +24,7 @@
 #include "axes.h"
 #include "datatype.h"
 #include "debug.h"
+#include "directio.h"
 #include "file/mmap.h"
 #include "image_helpers.h"
 #include "image_io/base.h"

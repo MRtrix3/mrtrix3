@@ -22,11 +22,11 @@
 #include <optional>
 #include <tuple>
 #include <type_traits>
-#include <variant>
 
 #include "algo/copy.h"
 #include "algo/threaded_copy.h"
 #include "debug.h"
+#include "directio.h"
 #include "fetch_store.h"
 #include "file/ofstream.h"
 #include "file/utils.h"
@@ -36,57 +36,6 @@
 #include "image_helpers.h"
 
 namespace MR {
-
-constexpr int SpatiallyContiguous = -1;
-
-//! Request that an Image be backed by direct RAM access.
-/*! Passed (wrapped in std::optional) to the Image factory functions
- * (Image::open(), Image::create(), Image::scratch(), Header::get_image())
- * to demand that the resulting Image use direct memory access for voxel
- * fetch / store, preloading from file into RAM if necessary.
- *
- * The default-constructed value requests direct IO with no constraints
- * on memory layout: a preload only occurs if the file's datatype, scaling
- * or segmentation forces it, otherwise the existing strides are kept.
- *
- * Construction from an integer requests direct IO with the specified \a axis
- * laid out contiguously in memory; a negative value (the SpatiallyContiguous
- * constant) requests that the spatial axes be contiguous.
- *
- * Construction from a Stride::List requests direct IO with the specified
- * explicit memory strides.
- *
- * The resulting Buffer is preloaded, if needed, during construction; once
- * the Image is observable (i.e. after the factory has returned), the
- * underlying RAM allocation is immutable until destruction. There is
- * therefore no need for runtime synchronisation between Image copies. */
-class DirectIO {
-public:
-  DirectIO() = default;
-  DirectIO(int axis) : request_(axis) {}
-  DirectIO(Stride::List strides) : request_(std::move(strides)) {}
-
-  //! Resolve the requested memory strides given a \a header.
-  /*! Returns an empty Stride::List when no specific layout was requested
-   * (i.e. when default-constructed). */
-  template <class HeaderType> Stride::List resolve(const HeaderType &header) const {
-    return std::visit(
-        [&header](auto &&request) -> Stride::List {
-          using T = std::decay_t<decltype(request)>;
-          if constexpr (std::is_same_v<T, std::monostate>)
-            return {};
-          else if constexpr (std::is_same_v<T, int>)
-            return request < 0 ? Stride::contiguous_along_spatial_axes(header)
-                               : Stride::contiguous_along_axis(request, header);
-          else
-            return request;
-        },
-        request_);
-  }
-
-private:
-  std::variant<std::monostate, int, Stride::List> request_;
-};
 
 template <typename ValueType> class Image : public ImageBase<Image<ValueType>, ValueType> {
 public:
