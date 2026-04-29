@@ -1,0 +1,10 @@
+#!/bin/bash
+# Verify default operation of the "warpvalidate" command
+#   with a well-formed full warp field series
+
+rm -f tmp.txt
+warpvalidate mrregister/warp_full.mif.gz 2>&1 | tee tmp.txt
+grep -E "valid full warp field" tmp.txt
+grep "Fill value: not auto\\-detected from input data" tmp.txt
+! ( grep "\\bWARNING\\b" tmp.txt )
+

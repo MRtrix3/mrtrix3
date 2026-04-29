@@ -1,35 +1,43 @@
-.. _sh2power:
+.. _peaksvalidate:
 
-sh2power
+peaksvalidate
 ===================
 
 Synopsis
 --------
 
-Compute the total power of a spherical harmonics image
+Validate a so-called peaks image (a set of 3-vectors per voxel where each encodes an orientation)
 
 Usage
 --------
 
 ::
 
-    sh2power [ options ]  SH power
+    peaksvalidate [ options ]  image
 
--  *SH*: the input spherical harmonics coefficients image.
--  *power*: the output power image.
+-  *image*: the input peaks image
 
 Description
 -----------
 
-This command computes the sum of squared SH coefficients, which equals the mean-squared amplitude of the spherical function it represents.
+This command checks that an image conforms to the requirements of a peaks image, in which successive triplets of volumes encode the (x, y, z) Cartesian components of one peak direction per triplet.
 
-The spherical harmonic coefficients are stored according to the conventions described in the main documentation, which can be found at the following link:  |br|
-https://mrtrix.readthedocs.io/en/3.0.8/concepts/spherical_harmonics.html
+The following checks are performed:
+
+1. The image must be of floating-point type.
+
+2. The image must be 4-dimensional, with the number of volumes a multiple of three.
+
+3. Where a voxel contains fewer peaks than the maximum, the unfilled peak slots must use a single consistent fill convention across the entire image: either all three components of the fill triplet are zero, or all three components are NaN. Both conventions must not be mixed within the same image.
+
+4. When the fill convention is NaN, every individual triplet must be either entirely finite or entirely NaN. Triplets that are partly NaN and partly non-NaN are not valid.
+
+5. Every non-fill peak must contain finite values.
+
+The command also reports the range of norms across all non-fill peaks, indicating whether the image stores unit-norm directions only or whether a quantitative value is associated with each peak (encoded in the vector norm).
 
 Options
 -------
-
--  **-spectrum** output the power spectrum, i.e., the power contained within each harmonic degree (l=0, 2, 4, ...) as a 4-D image.
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -38,7 +46,7 @@ Standard options
 
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
--  **-debug** display debugging messages.
+-  **-debug** display debugging messages & debug input data.
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
@@ -59,7 +67,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 
 
-**Author:** J-Donald Tournier (jdtournier@gmail.com)
+**Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
 **Copyright:** Copyright (c) 2008-2026 the MRtrix3 contributors.
 

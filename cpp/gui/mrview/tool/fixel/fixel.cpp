@@ -16,7 +16,9 @@
 
 #include "mrview/tool/fixel/fixel.h"
 
+#include "app.h"
 #include "dialog/file.h"
+#include "fixel/validate.h"
 #include "math/rng.h"
 #include "mrtrix.h"
 #include "mrview/qthelpers.h"
@@ -39,10 +41,13 @@ public:
     for (size_t i = 0, N = filenames.size(); i < N; ++i) {
       BaseFixel *fixel_image(nullptr);
       try {
+        MR::Fixel::debug_validate_directory(filenames[i]);
         fixel_image = new Directory(filenames[i], fixel_tool);
-      } catch (InvalidFixelDirectoryException &error) {
+      } catch (MR::Fixel::InvalidDirectoryException &error) {
         error.push_back("Couldn't open \"" + filenames[i] + "\" as a Directory fixel dataset");
         try {
+          if (MR::App::log_level >= 3)
+            MR::Peaks::debug_validate_image(MR::Image<float>::open(filenames[i]));
           fixel_image = new Image4D(filenames[i], fixel_tool);
         } catch (InvalidImageException &e) {
           error.push_back(e);

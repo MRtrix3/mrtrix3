@@ -1,26 +1,41 @@
-.. _5ttcheck:
+.. _meshvalidate:
 
-5ttcheck
+meshvalidate
 ===================
 
 Synopsis
 --------
 
-Thoroughly check that one or more images conform to the expected ACT five-tissue-type (5TT) format
+Validate a mesh surface file
 
 Usage
 --------
 
 ::
 
-    5ttcheck [ options ]  input [ input ... ]
+    meshvalidate [ options ]  mesh
 
--  *input*: the 5TT image(s) to be tested
+-  *mesh*: the input mesh file
+
+Description
+-----------
+
+This command checks that a mesh surface file conforms to the requirements of a valid closed orientable surface. The following properties are verified:
+
+1. No disconnected vertices: every vertex in the file must be referenced by at least one polygon.
+
+2. No duplicate vertices: no two vertices may occupy the same 3D position.
+
+3. No duplicate polygons: no two polygons may reference the same set of vertex indices.
+
+4. Closed surface: every edge must be shared by exactly two polygons. An edge belonging to only one polygon indicates a boundary (open surface); an edge shared by three or more polygons indicates a non-manifold mesh.
+
+5. Single connected component: all polygons must belong to a single connected piece. A surface with multiple disconnected pieces is not valid.
+
+6. Consistent normal orientation: for every shared edge, the two adjacent polygons must traverse it in opposite directions. If both polygons traverse the edge in the same direction their winding orders — and therefore their surface normals — are inconsistent.
 
 Options
 -------
-
--  **-voxels prefix** output mask images highlighting voxels where the input does not conform to 5TT requirements
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -29,7 +44,7 @@ Standard options
 
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
--  **-debug** display debugging messages.
+-  **-debug** display debugging messages & debug input data.
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 

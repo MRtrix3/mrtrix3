@@ -17,6 +17,7 @@
 #include "algo/threaded_copy.h"
 #include "command.h"
 #include "dwi/directions/predefined.h"
+#include "dwi/directions/validate.h"
 #include "dwi/gradient.h"
 #include "dwi/tensor.h"
 #include "file/matrix.h"
@@ -325,9 +326,14 @@ void run() {
   Eigen::MatrixXd Aneq;
   if (constrain) {
     opt = get_options("directions");
-    const Eigen::MatrixXd constr_dirs =
-        !opt.empty() ? File::Matrix::load_matrix(opt[0][0])
-                     : Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300());
+    Eigen::MatrixXd constr_dirs;
+    if (opt.empty()) {
+      constr_dirs = Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300());
+    } else {
+      constr_dirs = File::Matrix::load_matrix(opt[0][0]);
+      DWI::Directions::validate(constr_dirs, opt[0][0], false);
+      constr_dirs = Math::Sphere::as_cartesian(constr_dirs);
+    }
     Eigen::MatrixXd tmp = DWI::grad2bmatrix<double>(constr_dirs, dki);
     if (dki) {
       auto maxb = grad.col(3).maxCoeff();

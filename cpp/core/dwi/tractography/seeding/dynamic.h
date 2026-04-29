@@ -24,6 +24,7 @@
 #include "dwi/fmls.h"
 #include "dwi/tractography/ACT/gmwmi.h"
 #include "dwi/tractography/ACT/tissues.h"
+#include "dwi/tractography/ACT/validate.h"
 #include "dwi/tractography/SIFT/model_base.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/mapping/voxel.h"
@@ -153,11 +154,17 @@ class Dynamic_ACT_additions {
 
 public:
   Dynamic_ACT_additions(std::string_view path)
-      : interp_template(Image<float>::open(path)), gmwmi_finder(interp_template) {}
+      : image(Image<float>::open(path)), interp_template(image), gmwmi_finder(interp_template) {
+    ACT::debug_validate_5TT_image(image);
+    image = Image<float>();
+  }
 
   bool check_seed(Eigen::Vector3f &);
 
 private:
+  // Only held temporarily for debugging checks at construction
+  Image<float> image;
+
   Interp::Linear<Image<float>> interp_template;
   ACT::GMWMI_finder gmwmi_finder;
 };

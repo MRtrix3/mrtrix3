@@ -21,6 +21,7 @@
 #include "dwi/tractography/mapping/mapping.h"
 #include "dwi/tractography/weights.h"
 #include "fixel/matrix.h"
+#include "fixel/validate.h"
 
 using namespace MR;
 using namespace App;
@@ -103,6 +104,7 @@ void run() {
   const std::string input_fixel_directory = argument[0];
   Header index_header = Fixel::find_index_header(input_fixel_directory);
   auto index_image = index_header.get_image<index_type>();
+  Fixel::debug_validate_index_image(index_image);
   const index_type num_fixels = Fixel::get_number_of_fixels(index_image);
 
   // When provided with a mask, this only influences which fixels get their connectivity quantified;

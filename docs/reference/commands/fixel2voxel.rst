@@ -16,7 +16,7 @@ Usage
     fixel2voxel [ options ]  fixel_in operation image_out
 
 -  *fixel_in*: the input fixel data file
--  *operation*: the operation to apply, one of: mean, sum, product, min, max, absmax, magmax, count, complexity, sf, dec_unit, dec_scaled, none.
+-  *operation*: the operation to apply, one of: mean, sum, product, min, max, absmax, magmax, count, complexity, sf, entropy, dec_unit, dec_scaled, none.
 -  *image_out*: the output scalar image.
 
 Description
@@ -28,7 +28,7 @@ Fixel data can be reduced to voxel data in a number of ways:
 
 - The number of fixels in each voxel: count
 
-- Some measure of crossing-fibre organisation: complexity, sf ('single-fibre')
+- Some measure of crossing-fibre organisation: complexity, sf ('single-fibre'), entropy
 
 - A 4D directionally-encoded colour image: dec_unit, dec_scaled
 
@@ -55,7 +55,7 @@ Standard options
 
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
--  **-debug** display debugging messages.
+-  **-debug** display debugging messages & debug input data.
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 

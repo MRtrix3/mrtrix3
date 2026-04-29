@@ -16,6 +16,8 @@
 
 #include "command.h"
 #include "dwi/directions/file.h"
+#include "dwi/directions/validate.h"
+#include "file/matrix.h"
 #include "math/rng.h"
 #include "progressbar.h"
 #include "thread.h"
@@ -152,7 +154,9 @@ protected:
 };
 
 void run() {
-  auto directions = DWI::Directions::load_cartesian(argument[0]);
+  auto directions = File::Matrix::load_matrix(argument[0]);
+  DWI::Directions::validate(directions, argument[0], false);
+  directions = Math::Sphere::as_cartesian(directions);
 
   const size_t num_subsets = argument.size() - 1;
   if (num_subsets == 1)

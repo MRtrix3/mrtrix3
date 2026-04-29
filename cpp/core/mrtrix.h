@@ -78,7 +78,15 @@ std::string lowercase(std::string_view string);
 //! return uppercase version of string
 std::string uppercase(std::string_view string);
 
-std::string printf(const char *format, ...); // check_syntax off
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-security"
+template <typename... Args> std::string printf(const std::string format, Args... args) {
+  const int len = std::snprintf(nullptr, 0, format.c_str(), args...) + 1;
+  VLA(buf, char, len);
+  std::snprintf(buf, len, format.c_str(), args...);
+  return std::string(buf);
+}
+#pragma GCC diagnostic pop
 
 std::string strip(std::string_view string, std::string_view ws = {" \0\t\r\n", 5}, bool left = true, bool right = true);
 

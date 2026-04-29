@@ -28,6 +28,7 @@
 
 #include "connectome/connectome.h"
 #include "connectome/lut.h"
+#include "connectome/validate.h"
 
 #include <string>
 
@@ -86,8 +87,9 @@ void run() {
 
   // Open the input file
   auto H = Header::open(argument[0]);
-  Connectome::check(H);
+  Connectome::validate_label_header(H);
   auto in = H.get_image<node_t>();
+  Connectome::debug_validate_label_image(in);
 
   // Load the lookup tables
   LUT lut_in(argument[1]), lut_out(argument[2]);

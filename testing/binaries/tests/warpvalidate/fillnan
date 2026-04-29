@@ -1,0 +1,12 @@
+#!/bin/bash
+# Verify automated detection of fill value from the input image data
+# Test "deformation" already checks that the existing fill value of 0.0 is detected;
+#   here testing that it suitably detects the use of NaN as the fill value
+
+mrmath warp.mif norm -axis 3 - | \
+mrthreshold - -abs 0.0 -comparison gt - | \
+mrcalc warp.mif - -div tmp_warpnanfill.mif -force
+
+rm -f tmp.txt
+warpvalidate tmp_warpnanfill.mif 2>&1 | tee tmp.txt
+grep "Fill value: nan" tmp.txt

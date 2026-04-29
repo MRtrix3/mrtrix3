@@ -67,7 +67,7 @@ display information messages.
 OPTION quiet 1 0
 do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 OPTION debug 1 0
-display debugging messages.
+display debugging messages & debug input data.
 OPTION force 1 0
 force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 OPTION nthreads 1 0

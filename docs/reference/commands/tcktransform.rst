@@ -19,6 +19,11 @@ Usage
 -  *transform*: the image containing the transform.
 -  *output*: the output track file
 
+Description
+-----------
+
+Unlike the non-linear transformation of image data, where the value of the deformation field in a destination voxel position defines the location in space from which to "pull" image data into that voxel, the non-linear transformation of streamlines data involves sampling the deformation field at each streamline vertex location to determine the new spatial location to which to "push" that vertex. As such, the appropriate deformation field to apply to streamlines data is the inverse of what would be applied to image data. So for instance, this may involve the utilisation of a template-to-subject warp field in order to transform streamlines from subject to template space.
+
 Options
 -------
 
@@ -29,7 +34,7 @@ Standard options
 
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
--  **-debug** display debugging messages.
+-  **-debug** display debugging messages & debug input data.
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 

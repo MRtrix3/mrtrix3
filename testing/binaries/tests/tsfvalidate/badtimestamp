@@ -1,0 +1,8 @@
+#!/bin/bash
+# Verify that when the timestamp of the .tsf does not match the corresponding .tck,
+#   an appropriate error message is formed.
+
+rm -f tmp.txt
+! ( tsfvalidate tsfvalidate/badtimestamp.tsf tckvalidate/orig.tck > tmp.txt 2>&1 )
+cat tmp.txt
+grep "timestamps do not match, suggesting differing originating tractogram" tmp.txt

@@ -25,6 +25,7 @@
 
 #include "connectome/connectome.h"
 #include "connectome/lut.h"
+#include "connectome/validate.h"
 
 using namespace MR;
 using namespace App;
@@ -57,8 +58,9 @@ void usage() {
 void run() {
 
   auto H = Header::open(argument[0]);
-  Connectome::check(H);
+  Connectome::validate_label_header(H);
   auto nodes = H.get_image<node_t>();
+  Connectome::debug_validate_label_image(nodes);
 
   const std::string lut_path = get_option_value<std::string>("lut", "");
   LUT lut;

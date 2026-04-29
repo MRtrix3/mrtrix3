@@ -23,10 +23,12 @@
 #include "fixel/fixel.h"
 #include "fixel/helpers.h"
 #include "fixel/loop.h"
+#include "fixel/validate.h"
 #include "image.h"
 #include "interp/nearest.h"
 #include "progressbar.h"
 #include "registration/warp/helpers.h"
+#include "registration/warp/validate.h"
 
 using namespace MR;
 using namespace App;
@@ -73,6 +75,7 @@ using dir_type = Eigen::Vector3f;
 void run() {
   const std::string input_fixel_directory = argument[0];
   Fixel::check_fixel_directory(input_fixel_directory);
+  Fixel::debug_validate_directory(input_fixel_directory);
   Header input_index_header(Fixel::find_index_header(input_fixel_directory));
   Interp::Nearest<Image<index_type>> input_index_image(input_index_header.get_image<index_type>());
   const index_type nfixels_in = Fixel::get_number_of_fixels(input_index_image);
@@ -94,8 +97,11 @@ void run() {
   INFO(str(fixel_data_headers.size()) + " fixel data files to be transformed");
 
   Header warp_header = Header::open(argument[1]);
-  Registration::Warp::check_warp(warp_header);
+  auto warp_format = Registration::Warp::validate_header(warp_header);
+  if (warp_format != Registration::Warp::WarpFormat::Simple)
+    throw Exception("Command only compatible with deformation fields, not full warp files");
   auto warp_image = warp_header.get_image<float>();
+  Registration::Warp::debug_validate_image(warp_image);
   Adapter::Jacobian<Image<float>> jacobian_adapter(warp_image);
 
   const std::string output_fixel_directory = argument[2];
