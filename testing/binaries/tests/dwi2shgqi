@@ -1,0 +1,2 @@
+dwi2shgqi dwi.mif - | testing_diff_image - dwi2shgqi/out.mif -voxel 1e-5
+dwi2shgqi dwi.mif -lmax 6 - | testing_diff_image - dwi2shgqi/out_lmax6.mif -voxel 1e-5
