@@ -345,11 +345,12 @@ void run() {
       WARN("warp_full image is not in original .mif/.mih file format or in NIfTI file format with associated JSON.  "
            "Converting to other file formats may remove linear transformations stored in the image header.");
     }
-    warp = Image<default_type>::open(opt[0][0], DirectIO{});
-    Registration::Warp::check_warp_full(warp);
     if (linear)
       throw Exception("the -warp_full option cannot be applied in combination with -linear"
                       " since the linear transform is already included in the warp header");
+    auto warp_header = Header::open(opt[0][0]);
+    Registration::Warp::check_warp_full(warp_header);
+    warp = warp_header.get_image<default_type>(DirectIO(3));
   }
 
   // Warp from image1 or image2
@@ -366,11 +367,12 @@ void run() {
   if (!opt.empty()) {
     if (warp.valid())
       throw Exception("only one warp field can be input with either -warp or -warp_mid");
-    warp = Image<default_type>::open(opt[0][0], DirectIO{Stride::contiguous_along_axis(3)});
-    if (warp.ndim() != 4)
+    auto warp_header = Header::open(opt[0][0]);
+    if (warp_header.ndim() != 4)
       throw Exception("the input -warp file must be a 4D deformation field");
-    if (warp.size(3) != 3)
+    if (warp_header.size(3) != 3)
       throw Exception("the input -warp file must have 3 volumes in the 4th dimension (x,y,z positions)");
+    warp = warp_header.get_image<default_type>(DirectIO(3));
   }
 
   // Inverse

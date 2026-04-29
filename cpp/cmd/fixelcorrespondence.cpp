@@ -69,7 +69,7 @@ void run() {
 
   auto subject_index = Fixel::find_index_header(Fixel::get_fixel_directory(input_file)).get_image<index_type>();
   auto subject_directions =
-      Fixel::find_directions_header(Fixel::get_fixel_directory(input_file)).get_image<float>(DirectIO{});
+      Fixel::find_directions_header(Fixel::get_fixel_directory(input_file)).get_image<float>(DirectIO(1));
 
   if (input_file == subject_directions.name())
     throw Exception("input fixel data file cannot be the directions file");
@@ -78,7 +78,7 @@ void run() {
   Fixel::check_fixel_size(subject_index, subject_data);
 
   auto template_index = Fixel::find_index_header(argument[1]).get_image<index_type>();
-  auto template_directions = Fixel::find_directions_header(argument[1]).get_image<float>(DirectIO{});
+  auto template_directions = Fixel::find_directions_header(argument[1]).get_image<float>(DirectIO(1));
 
   check_dimensions(subject_index, template_index);
   std::string output_fixel_directory = argument[2];

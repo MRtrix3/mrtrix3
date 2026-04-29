@@ -103,7 +103,7 @@ void run() {
 
     Header header(deformation);
     header.datatype() = DataType::from_command_line(DataType::Float32);
-    Image<default_type> displacement = Image<default_type>::create(argument[2], header, DirectIO{});
+    Image<default_type> displacement = Image<default_type>::create(argument[2], header, DirectIO{3});
     Registration::Warp::deformation2displacement(deformation, displacement);
     break;
   }
@@ -120,7 +120,7 @@ void run() {
 
     Header header(displacement);
     header.datatype() = DataType::from_command_line(DataType::Float32);
-    Image<default_type> deformation = Image<default_type>::create(argument[2], header, DirectIO{});
+    Image<default_type> deformation = Image<default_type>::create(argument[2], header, DirectIO{3});
     Registration::Warp::displacement2deformation(displacement, deformation);
     break;
   }

@@ -83,7 +83,7 @@ void run() {
     std::string template_fixel_directory(opt[0][0]);
     fixel_template_index = Fixel::find_index_header(template_fixel_directory).get_image<uint32_t>();
     fixel_template_directions =
-        Fixel::find_directions_header(template_fixel_directory).get_image<value_type>(DirectIO{});
+        Fixel::find_directions_header(template_fixel_directory).get_image<value_type>(DirectIO(1));
 
     std::string output_fixel_directory(opt[0][1]);
     if (template_fixel_directory != output_fixel_directory) {

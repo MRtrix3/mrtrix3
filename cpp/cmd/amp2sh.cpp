@@ -236,7 +236,7 @@ void run() {
 
   opt = get_options("rician");
   if (!opt.empty()) {
-    auto noise = Image<value_type>::open(opt[0][0], DirectIO{});
+    auto noise = Image<value_type>::open(opt[0][0]);
     ThreadedLoop("mapping amplitudes to SH coefficients", amp, 0, 3).run(Amp2SH(common), SH, amp, noise);
   } else {
     ThreadedLoop("mapping amplitudes to SH coefficients", amp, 0, 3).run(Amp2SH(common), SH, amp);
