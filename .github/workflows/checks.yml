@@ -313,8 +313,8 @@ jobs:
         # Ignore third party headers
         exclude: './thirdparty ./_deps'
 
-  pythonci:
-    runs-on: ubuntu-latest
+  python-ci:
+    runs-on: ubuntu-22.04
 
     steps:
     - uses: actions/checkout@v1
@@ -324,7 +324,7 @@ jobs:
     - name: Set up Python 3.7
       uses: actions/setup-python@v5
       with:
-        python-version: '3.7'
+        python-version: '3.7.17'
 
     - name: verify Python version
       run: |
