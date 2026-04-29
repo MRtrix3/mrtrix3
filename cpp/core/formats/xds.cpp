@@ -64,8 +64,8 @@ std::unique_ptr<ImageIO::Base> XDS::read(Header &H) const {
   H.stride(2) = 0;
   H.stride(3) = 3;
 
-  std::unique_ptr<ImageIO::Default> io_handler(new ImageIO::Default(H));
-  io_handler->files.push_back(File::Entry(H.name()));
+  auto io_handler = std::make_unique<ImageIO::Default>(H);
+  io_handler->files.emplace_back(File::Entry(H.name()));
 
   return io_handler;
 }
@@ -118,9 +118,9 @@ std::unique_ptr<ImageIO::Base> XDS::create(Header &H) const {
   out << H.size(1) << " " << H.size(0) << " " << H.size(3) << " " << (H.datatype().is_little_endian() ? 1 : 0) << "\n";
   out.close();
 
-  std::unique_ptr<ImageIO::Default> io_handler(new ImageIO::Default(H));
+  auto io_handler = std::make_unique<ImageIO::Default>(H);
   File::create(H.name(), footprint(H, {0, 1, 3}));
-  io_handler->files.push_back(File::Entry(H.name()));
+  io_handler->files.emplace_back(File::Entry(H.name()));
 
   return io_handler;
 }

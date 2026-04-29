@@ -101,17 +101,16 @@ BValueScalingBehaviour get_cmdline_bvalue_scaling_behaviour() {
   return BValueScalingBehaviour::UserOff;
 }
 
-Eigen::MatrixXd parse_DW_scheme(const Header &header) {
-  Eigen::MatrixXd G;
+std::optional<Eigen::MatrixXd> parse_DW_scheme(const Header &header) {
   const auto it = header.keyval().find("dw_scheme");
   if (it != header.keyval().end()) {
     try {
-      G = MR::parse_matrix(it->second);
+      return MR::parse_matrix(it->second);
     } catch (Exception &e) {
       throw Exception(e, "malformed DW scheme in image \"" + std::string(header.name()) + "\"");
     }
   }
-  return G;
+  return std::nullopt;
 }
 
 Eigen::MatrixXd load_bvecs_bvals(const Header &header, std::string_view bvecs_path, std::string_view bvals_path) {
@@ -214,11 +213,13 @@ Eigen::MatrixXd load_bvecs_bvals(const Header &header, std::string_view bvecs_pa
 
 void save_bvecs_bvals(const Header &header, std::string_view bvecs_path, std::string_view bvals_path) {
   const auto grad = parse_DW_scheme(header);
+  if (!grad.has_value())
+    throw Exception("No gradient table available to export to bvecs / bvals pair");
   Axes::permutations_type order;
   const auto adjusted_transform = File::NIfTI::adjust_transform(header, order);
-  Eigen::MatrixXd bvecs = adjusted_transform.inverse().linear() * grad.leftCols<3>().transpose();
+  Eigen::MatrixXd bvecs = adjusted_transform.inverse().linear() * grad->leftCols<3>().transpose();
 
-  Eigen::VectorXd bvals = grad.col(3);
+  Eigen::VectorXd bvals = grad->col(3);
   size_t bval_zeroed_count = 0;
   for (ssize_t n = 0; n < bvals.size(); ++n) {
     if (bvecs.col(n).squaredNorm() > 0.0 && bvals[n] > 0.0 && bvals[n] <= bzero_threshold()) {
@@ -252,35 +253,32 @@ void clear_DW_scheme(KeyValues &kv) {
     kv.erase(it);
 }
 
-Eigen::MatrixXd get_raw_DW_scheme(const Header &header) {
+std::optional<Eigen::MatrixXd> get_raw_DW_scheme(const Header &header) {
   DEBUG("searching for suitable gradient encoding...");
   using namespace App;
-  Eigen::MatrixXd grad;
 
   // check whether the DW scheme has been provided via the command-line:
   const auto opt_mrtrix = get_options("grad");
   if (!opt_mrtrix.empty())
-    grad = File::Matrix::load_matrix<>(opt_mrtrix[0][0]);
+    return File::Matrix::load_matrix<>(opt_mrtrix[0][0]);
 
   const auto opt_fsl = get_options("fslgrad");
   if (!opt_fsl.empty()) {
     if (!opt_mrtrix.empty())
       throw Exception("Diffusion gradient table can be provided using either -grad or -fslgrad option,"
                       " but NOT both");
-    grad = load_bvecs_bvals(header, opt_fsl[0][0], opt_fsl[0][1]);
+    return load_bvecs_bvals(header, opt_fsl[0][0], opt_fsl[0][1]);
   }
 
   // otherwise use the information from the header:
-  if (opt_mrtrix.empty() && opt_fsl.empty())
-    grad = parse_DW_scheme(header);
-
-  return grad;
+  return parse_DW_scheme(header);
 }
 
 Eigen::MatrixXd get_DW_scheme(const Header &header, BValueScalingBehaviour bvalue_scaling) {
   try {
-    auto grad = get_raw_DW_scheme(header);
-    check_DW_scheme(header, grad);
+    auto optgrad = get_raw_DW_scheme(header);
+    check_DW_scheme(header, optgrad);
+    Eigen::MatrixXd grad = *optgrad;
 
     Eigen::Array<default_type, Eigen::Dynamic, 1> squared_norms = grad.leftCols(3).rowwise().squaredNorm();
     // ensure interpreted directions are always normalised
@@ -355,7 +353,7 @@ void export_grad_commandline(const Header &header) {
 
   auto opt = get_options("export_grad_mrtrix");
   if (!opt.empty())
-    File::Matrix::save_matrix(parse_DW_scheme(check(header)), opt[0][0]);
+    File::Matrix::save_matrix(*parse_DW_scheme(check(header)), opt[0][0]);
 
   opt = get_options("export_grad_fsl");
   if (!opt.empty())

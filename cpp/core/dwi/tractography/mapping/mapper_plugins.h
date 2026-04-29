@@ -42,7 +42,7 @@ private:
 
 class TODMappingPlugin {
 public:
-  TODMappingPlugin(const size_t N) : generator(new Math::SH::aPSF<float>(Math::SH::LforN(N))) {}
+  TODMappingPlugin(const size_t N) : generator(std::make_shared<Math::SH::aPSF<float>>(Math::SH::LforN(N))) {}
   template <class VectorType, class UnitVectorType> void operator()(VectorType &sh, const UnitVectorType &d) const {
     (*generator)(sh, d);
   }
@@ -67,7 +67,7 @@ public:
 
   virtual ~TWIImagePluginBase() {}
 
-  virtual TWIImagePluginBase *clone() const = 0;
+  virtual std::unique_ptr<TWIImagePluginBase> clone() const = 0;
 
   void set_backtrack();
 
@@ -106,7 +106,7 @@ public:
       interp.index(3) = 0;
   }
 
-  TWIScalarImagePlugin *clone() const override { return new TWIScalarImagePlugin(*this); }
+  std::unique_ptr<TWIImagePluginBase> clone() const override { return std::make_unique<TWIScalarImagePlugin>(*this); }
 
   void load_factors(const Streamline<> &, std::vector<default_type> &) const override;
 };
@@ -116,16 +116,15 @@ public:
   TWIFODImagePlugin(std::string_view input_image, const tck_stat_t track_statistic)
       : TWIImagePluginBase(input_image, track_statistic),
         sh_coeffs(interp.size(3)),
-        precomputer(new Math::SH::PrecomputedAL<default_type>()) {
+        precomputer(std::make_shared<Math::SH::PrecomputedAL<default_type>>(Math::SH::LforN(interp.size(3)))) {
     if (track_statistic == tck_stat_t::ENDS_CORR)
       throw Exception("Cannot use ends_corr track statistic with an FOD image");
     Math::SH::check(Header(interp));
-    precomputer->init(Math::SH::LforN(sh_coeffs.size()));
   }
 
   TWIFODImagePlugin(const TWIFODImagePlugin &that) = default;
 
-  TWIFODImagePlugin *clone() const override { return new TWIFODImagePlugin(*this); }
+  std::unique_ptr<TWIImagePluginBase> clone() const override { return std::make_unique<TWIFODImagePlugin>(*this); }
 
   void load_factors(const Streamline<> &, std::vector<default_type> &) const override;
 
@@ -140,7 +139,7 @@ public:
 
   TWDFCStaticImagePlugin(const TWDFCStaticImagePlugin &that) = default;
 
-  TWDFCStaticImagePlugin *clone() const override { return new TWDFCStaticImagePlugin(*this); }
+  std::unique_ptr<TWIImagePluginBase> clone() const override { return std::make_unique<TWDFCStaticImagePlugin>(*this); }
 
   void load_factors(const Streamline<> &, std::vector<default_type> &) const override;
 };
@@ -155,7 +154,9 @@ public:
 
   TWDFCDynamicImagePlugin(const TWDFCDynamicImagePlugin &that) = default;
 
-  TWDFCDynamicImagePlugin *clone() const override { return new TWDFCDynamicImagePlugin(*this); }
+  std::unique_ptr<TWIImagePluginBase> clone() const override {
+    return std::make_unique<TWDFCDynamicImagePlugin>(*this);
+  }
 
   void load_factors(const Streamline<> &, std::vector<default_type> &) const override;
 

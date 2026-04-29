@@ -110,14 +110,14 @@ void run() {
 
   for (size_t i = 0; i < argument.size() - 1; ++i) {
     try {
-      template_header.reset(new Header(Header::open(argument[i])));
+      template_header = std::make_unique<Header>(Header::open(argument[i]));
       auto warp_format = Registration::Warp::validate_header(*template_header);
       if (warp_format != Registration::Warp::WarpFormat::Simple)
         throw Exception("Input non-linear warp field images must be simple 4D deformation fields,"
                         " not the 5D \"full\" warp series format");
-      auto image = template_header->get_image<default_type>();
-      Registration::Warp::debug_validate_image(image);
-      transform_list.emplace_back(std::make_unique<Warp>(image));
+      auto warp_image = template_header->get_image<default_type>();
+      Registration::Warp::debug_validate_image(warp_image);
+      transform_list.emplace_back(std::make_unique<Warp>(warp_image));
     } catch (Exception &E) {
       try {
         transform_list.emplace_back(std::make_unique<Linear>(File::Matrix::load_transform(argument[i])));
@@ -131,7 +131,7 @@ void run() {
   auto opt = get_options("template");
 
   if (!opt.empty()) {
-    template_header.reset(new Header(Header::open(opt[0][0])));
+    template_header = std::make_unique<Header>(Header::open(opt[0][0]));
     // no template is supplied and there are input warps, then make sure the last transform in the list is a warp
   } else if (template_header) {
     if (!dynamic_cast<Warp *>(transform_list[transform_list.size() - 1].get()))

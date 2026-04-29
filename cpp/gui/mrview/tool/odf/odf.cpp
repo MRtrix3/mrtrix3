@@ -593,7 +593,7 @@ void ODF::dirs_slot() {
       settings->dixel->set_shell(settings->dixel->shell_index);
       break;
     case 1: // Header
-      if (!settings->dixel->header_dirs.rows())
+      if (!settings->dixel->header_dirs.has_value())
         throw Exception("Cannot draw orientation information from header: no such data exist");
       settings->dixel->set_header();
       break;

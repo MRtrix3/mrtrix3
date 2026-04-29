@@ -18,6 +18,7 @@
 
 #include <Eigen/Dense>
 #include <array>
+#include <optional>
 
 #include "app.h"
 #include "axes.h"
@@ -66,7 +67,7 @@ void clear_scheme(KeyValues &keyval);
  *  if one is present. The key-value dictionary is not in all use cases
  *  the "keyval" member of the Header class.
  */
-Eigen::MatrixXd parse_scheme(const KeyValues &, const Header &);
+std::optional<scheme_type> parse_scheme(const KeyValues &, const Header &);
 
 //! get a phase encoding matrix
 /*! get a valid phase-encoding matrix, either from files specified at
@@ -74,7 +75,7 @@ Eigen::MatrixXd parse_scheme(const KeyValues &, const Header &);
  *  (ie. NOT from .json; that is handled elsewhere),
  *  or from the contents of the image header.
  */
-Eigen::MatrixXd get_scheme(const Header &);
+std::optional<scheme_type> get_scheme(const Header &);
 
 //! Convert a phase-encoding scheme  in TOPUP format into the EDDY config / indices format
 void topup2eddy(const scheme_type &PE, Eigen::MatrixXd &config, Eigen::Array<int, Eigen::Dynamic, 1> &indices);
@@ -94,10 +95,10 @@ scheme_type transform_for_nifti_write(const scheme_type &pe_scheme, const Header
 void save_table(const scheme_type &PE, std::string_view path, bool write_command_history);
 
 template <class HeaderType> void save_table(const HeaderType &header, std::string_view path) {
-  const scheme_type scheme = get_scheme(header);
-  if (scheme.rows() == 0)
+  const auto scheme = get_scheme(header);
+  if (!scheme.has_value())
     throw Exception("No phase encoding scheme in header of image \"" + header.name() + "\" to save");
-  save(scheme, header, path);
+  save_table(*scheme, header, path);
 }
 
 //! Save a phase-encoding scheme associated with an image to file

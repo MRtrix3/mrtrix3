@@ -146,15 +146,13 @@ public:
     void update_mesh(const size_t, const int);
 
     void compute_r_del_daz(matrix_t &r_del_daz, const matrix_t &SH) const {
-      if (!SH.rows() || !SH.cols())
-        return;
+      assert(SH.rows() > 0);
       assert(transform.rows());
       r_del_daz.noalias() = SH * transform.transpose();
     }
 
     void compute_r_del_daz(vector_t &r_del_daz, const vector_t &SH) const {
-      if (!SH.size())
-        return;
+      assert(SH.size() > 0);
       assert(transform.rows());
       r_del_daz.noalias() = transform * SH;
     }

@@ -59,7 +59,7 @@ void NBS::initialise(const node_t num_nodes) {
   const Mat2Vec mat2vec(num_nodes);
   const size_t num_edges = mat2vec.vec_size();
   ProgressBar progress("Pre-computing statistical correlation matrix...", num_edges);
-  adjacency.reset(new std::vector<std::vector<size_t>>(num_edges, std::vector<size_t>()));
+  adjacency = std::make_shared<std::vector<std::vector<size_t>>>(num_edges, std::vector<size_t>());
   for (node_t row = 0; row != num_nodes; ++row) {
     for (node_t column = row; column != num_nodes; ++column) {
 

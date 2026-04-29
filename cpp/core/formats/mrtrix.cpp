@@ -49,9 +49,9 @@ std::unique_ptr<ImageIO::Base> MRtrix::read(Header &H) const {
   File::ParsedName::List list;
   auto num = list.parse_scan_check(fname);
 
-  std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));
+  auto io_handler = std::make_unique<ImageIO::Default>(H);
   for (size_t n = 0; n < list.size(); ++n)
-    io_handler->files.push_back(File::Entry(list[n].name(), offset));
+    io_handler->files.emplace_back(File::Entry(list[n].name(), offset));
 
   return io_handler;
 }
@@ -88,14 +88,14 @@ std::unique_ptr<ImageIO::Base> MRtrix::create(Header &H) const {
 
   out.close();
 
-  std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));
+  auto io_handler = std::make_unique<ImageIO::Default>(H);
   if (single_file) {
     File::resize(H.name(), offset + footprint(H));
-    io_handler->files.push_back(File::Entry(H.name(), offset));
+    io_handler->files.emplace_back(File::Entry(H.name(), offset));
   } else {
     std::string data_file(H.name().substr(0, H.name().size() - 4) + ".dat");
     File::create(data_file, footprint(H));
-    io_handler->files.push_back(File::Entry(data_file));
+    io_handler->files.emplace_back(File::Entry(data_file));
   }
 
   return io_handler;

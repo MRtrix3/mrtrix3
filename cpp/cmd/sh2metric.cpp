@@ -143,7 +143,7 @@ void run_entropy() {
               const entropy_normalisation norm_mode)
         : out(output_image),
           concat_amps(SH_images.size() * dirs.size()),
-          shared(new Shared(SH_images, dirs, norm_mode)) {
+          shared(std::make_shared<Shared>(SH_images, dirs, norm_mode)) {
       for (const auto &i : SH_images)
         images.emplace_back(Image<float>(i));
     }

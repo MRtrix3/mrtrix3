@@ -72,7 +72,7 @@ bool Worker::operator()(Streamline<> &in, Streamline<> &out) const {
   if (exclude != inverse)
     return true;
 
-  if (!properties.mask.size()) {
+  if (properties.mask.empty()) {
     std::swap(in, out);
     return true;
   }

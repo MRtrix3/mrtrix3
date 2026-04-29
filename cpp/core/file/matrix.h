@@ -88,7 +88,7 @@ std::vector<std::vector<ValueType>> load_matrix_2D_vector(std::string_view filen
   if (stream.bad())
     throw Exception(strerror(errno));
 
-  if (!V.size())
+  if (V.empty())
     throw Exception("no data in matrix text file \"" + filename + "\"");
 
   return V;

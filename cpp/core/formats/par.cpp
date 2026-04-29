@@ -270,8 +270,8 @@ std::unique_ptr<ImageIO::Base> PAR::read(Header &H) const {
     DWI::set_DW_scheme(H, grad);
   }
 
-  std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));
-  io_handler->files.push_back(File::Entry(rec_file));
+  auto io_handler = std::make_unique<ImageIO::Default>(H);
+  io_handler->files.emplace_back(File::Entry(rec_file));
 
   return io_handler;
 }

@@ -63,6 +63,8 @@ public:
 
   const ::MR::Header &header() const { return _header; }
 
+  size_t num_fixels() const { return fixels.size(); }
+
 protected:
   std::vector<Fixel> fixels;
 
@@ -78,19 +80,14 @@ private:
 
 template <class Fixel> class Fixel_map<Fixel>::MapVoxel {
 public:
-  MapVoxel(const FMLS::FOD_lobes &in, const size_t first)
-      : first_fixel_index(first), count(in.size()), lookup_table(new uint8_t[in.lut.size()]) {
-    memcpy(lookup_table, &in.lut[0], in.lut.size() * sizeof(uint8_t));
-  }
-
-  MapVoxel(const size_t first, const size_t size) : first_fixel_index(first), count(size), lookup_table(nullptr) {}
-
-  ~MapVoxel() {
-    if (lookup_table) {
-      delete[] lookup_table;
-      lookup_table = nullptr;
+  MapVoxel(const FMLS::FOD_lobes &in, const size_t first) : first_fixel_index(first), count(in.size()) {
+    if (count > 0) {
+      lookup_table = std::make_unique<Eigen::Array<uint8_t, Eigen::Dynamic, 1>>(in.lut.size());
+      memcpy(lookup_table->data(), in.lut.data(), in.lut.size() * sizeof(uint8_t));
     }
   }
+
+  MapVoxel(const size_t first, const size_t size) : first_fixel_index(first), count(size) {}
 
   size_t first_index() const { return first_fixel_index; }
   size_t num_fixels() const { return count; }
@@ -98,14 +95,16 @@ public:
 
   // Direction must have been assigned to a histogram bin first
   size_t dir2fixel(const size_t dir) const {
-    assert(lookup_table);
-    const size_t offset = lookup_table[dir];
+    // assert(lookup_table.has_value());
+    if (!lookup_table)
+      return 0;
+    const size_t offset = (*lookup_table)[dir];
     return ((offset == count) ? 0 : (first_fixel_index + offset));
   }
 
 private:
   size_t first_fixel_index, count;
-  uint8_t *lookup_table;
+  std::unique_ptr<Eigen::Array<uint8_t, Eigen::Dynamic, 1>> lookup_table;
 };
 
 template <class Fixel> class Fixel_map<Fixel>::Iterator {
@@ -155,7 +154,7 @@ template <class Fixel> bool Fixel_map<Fixel>::operator()(const FMLS::FOD_lobes &
     return false;
   if (v.value())
     throw Exception("FIXME: FOD_map has received multiple segmentations for the same voxel!");
-  v.value() = new MapVoxel(in, fixels.size());
+  v.value() = new MapVoxel(in, fixels.size()); // check_syntax off
   for (const auto &i : in)
     fixels.push_back(Fixel(i));
   return true;

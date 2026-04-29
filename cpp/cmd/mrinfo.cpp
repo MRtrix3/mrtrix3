@@ -326,8 +326,11 @@ void run() {
       std::cout << header.intensity_scale() << "\n";
     if (transform)
       print_transform(header);
-    if (petable)
-      std::cout << Metadata::PhaseEncoding::get_scheme(header) << "\n";
+    if (petable) {
+      const auto scheme = Metadata::PhaseEncoding::get_scheme(header);
+      if (scheme.has_value())
+        std::cout << *scheme << "\n";
+    }
 
     for (size_t n = 0; n < properties.size(); ++n)
       print_properties(header, properties[n][0]);

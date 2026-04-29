@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <optional>
 #include <string>
 
 #include "app.h"
@@ -100,7 +101,7 @@ private:
 void check_design(const matrix_type &, const bool);
 void check_design(const vector_type &);
 
-index_array_type load_variance_groups(const index_type num_inputs);
+std::optional<index_array_type> load_variance_groups(const index_type num_inputs);
 
 std::vector<Hypothesis> load_hypotheses(const ssize_t num_factors);
 
@@ -132,20 +133,17 @@ matrix_type abs_effect_size(const measurements_matrix_type &measurements,
                             const matrix_type &design,
                             const std::vector<Hypothesis> &hypotheses);
 
-/*! Compute the pooled standard deviation
+/*! Compute the pooled standard deviation in the absence of variance groups,
+ *! or the standard deviation within each variance group
  * @param measurements a matrix storing the measured data across subjects in each column
  * @param design the design matrix
- * @return the vector containing the output standard deviation for each element
+ * @param variance_groups the variance groups
+ * @return either a vector containing the pooled standard deviation for each element,
+ * or a vector standard deviation per variance group for each element
  */
-matrix_type stdev(const measurements_matrix_type &measurements, const matrix_type &design);
-
-/*! Compute the standard deviation of each variance group
- * @param measurements a matrix storing the measured data across subjects in each column
- * @param design the design matrix
- * @return the vector containing the output standard deviation for each element
- */
-matrix_type
-stdev(const measurements_matrix_type &measurements, const matrix_type &design, const index_array_type &variance_groups);
+matrix_type stdev(const measurements_matrix_type &measurements,
+                  const matrix_type &design,
+                  const std::optional<index_array_type> &variance_groups = std::nullopt);
 
 /*! Compute cohen's d, the standardised effect size between two means
  * @param measurements a matrix storing the measured data across subjects in each column
@@ -173,7 +171,7 @@ matrix_type std_effect_size(const measurements_matrix_type &measurements,
 void all_stats(const measurements_matrix_type &measurements,
                const matrix_type &design,
                const std::vector<Hypothesis> &hypotheses,
-               const index_array_type &variance_groups,
+               const std::optional<index_array_type> &variance_groups,
                matrix_type &betas,
                matrix_type &abs_effect_size,
                matrix_type &std_effect_size,
@@ -195,7 +193,7 @@ void all_stats(const measurements_matrix_type &measurements,
                const matrix_type &design,
                const std::vector<CohortDataImport> &extra_columns,
                const std::vector<Hypothesis> &hypotheses,
-               const index_array_type &variance_groups,
+               const std::optional<index_array_type> &variance_groups,
                vector_type &cond,
                matrix_type &betas,
                matrix_type &abs_effect_size,

@@ -141,13 +141,14 @@ void run() {
     DWI::Directions::validate(directions, argument[1], true);
     if (directions.cols() == 3)
       directions = Math::Sphere::cartesian2spherical(directions);
-  } catch (Exception &E) {
-    auto header = Header::open(argument[1]);
-    directions = DWI::get_DW_scheme(header);
+  } catch (Exception &) {
+    try {
+      auto header = Header::open(argument[1]);
+      directions = DWI::get_DW_scheme(header);
+    } catch (Exception &) {
+      throw Exception("Unable to obtain a direection set for sampling from specification \"" + argument[1] + "\"");
+    }
   }
-
-  if (!directions.size())
-    throw Exception("no directions found in input directions file");
 
   Header amp_header(sh_data);
   amp_header.ndim() = 4;

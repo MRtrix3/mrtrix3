@@ -302,7 +302,7 @@ ReadInfo read_header(std::string_view path) {
   default:
     throw Exception("Incompatible major version (" + str(major_version) + ") detected in NumPy file \"" + path + "\"");
   }
-  std::unique_ptr<char[]> header_cstr(new char[header_len + 1]);
+  auto header_cstr = std::make_unique<char[]>(header_len + 1);
   in.read(header_cstr.get(), header_len);
   header_cstr[header_len] = '\0';
   info.data_offset = in.tellg();
@@ -418,7 +418,7 @@ WriteInfo prepare_ND_write(std::string_view path, const DataType data_type, cons
   const size_t num_elements = shape[0] * (shape.size() == 2 ? shape[1] : 1);
   const size_t data_size = num_elements * info.data_type.bytes();
   File::resize(path, leadin_size + data_size);
-  info.mmap.reset(new File::MMap({path, leadin_size}, true, false));
+  info.mmap = std::make_unique<File::MMap>(File::Entry(path, leadin_size), true, false);
   return info;
 }
 

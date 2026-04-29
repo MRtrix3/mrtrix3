@@ -26,6 +26,7 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include <optional>
 #include <set>
 #include <vector>
 
@@ -216,8 +217,18 @@ class ShufflerParamTest : public ShufflerTest, public ::testing::WithParamInterf
 TEST_P(ShufflerParamTest, VerifyShufflingMechanisms) {
   const auto &params = GetParam();
 
-  const index_array_type eb_within(params.exchange_type == Exchange::WITHIN ? block_indices : index_array_type());
-  const index_array_type eb_whole(params.exchange_type == Exchange::WHOLE ? block_indices : index_array_type());
+  std::optional<index_array_type> eb_within;
+  std::optional<index_array_type> eb_whole;
+  switch (params.exchange_type) {
+  case Exchange::NONE:
+    break;
+  case Exchange::WITHIN:
+    eb_within.emplace(block_indices);
+    break;
+  case Exchange::WHOLE:
+    eb_whole.emplace(block_indices);
+    break;
+  }
 
   size_t max_num_permutations = 0;
   size_t max_num_signflips = 0;
@@ -261,10 +272,9 @@ TEST_P(ShufflerParamTest, VerifyShufflingMechanisms) {
 
   ASSERT_EQ(shuffler.size(), expected_number) << fail_msg << " (incorrect number of shuffles)";
 
-  if (eb_within.size() != 0) {
+  if (eb_within.has_value()) {
     TestPermutationWithin(shuffler, fail_msg + " (broken within-block permutation)");
-  }
-  if (eb_whole.size() != 0) {
+  } else if (eb_whole.has_value()) {
     if (params.error_type == Shuffler::error_t::EE || params.error_type == Shuffler::error_t::BOTH)
       TestPermutationWhole(shuffler, fail_msg + " (broken whole-block exchangeability)");
     if (params.error_type == Shuffler::error_t::ISE || params.error_type == Shuffler::error_t::BOTH)

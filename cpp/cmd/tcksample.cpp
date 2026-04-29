@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -293,7 +294,9 @@ class SamplerPreciseBase : public SamplerBase {
 public:
   using BaseType = SamplerBase;
   SamplerPreciseBase(Image<value_type> &image, const contrast_type contrast, const std::optional<Statistic> &statistic)
-      : BaseType(contrast, statistic), image(image), mapper(new DWI::Tractography::Mapping::TrackMapperBase(image)) {
+      : BaseType(contrast, statistic),
+        image(image),
+        mapper(std::make_shared<DWI::Tractography::Mapping::TrackMapperBase>(image)) {
     assert(statistic.has_value());
     mapper->set_use_precise_mapping(true);
   }
@@ -687,9 +690,9 @@ public:
   Receiver_PerVertex(const DWI::Tractography::Properties &properties, const size_t num_tracks, std::string_view path)
       : ReceiverBase(num_tracks, true, path) {
     if (Path::has_suffix(path, ".tsf")) {
-      tsf.reset(new DWI::Tractography::ScalarWriter<value_type>(path, properties));
+      tsf.emplace(path, properties);
     } else {
-      ascii.reset(new File::OFStream(path));
+      ascii.emplace(path);
       (*ascii) << "# " << App::command_history_string << "\n";
     }
   }
@@ -698,7 +701,7 @@ public:
   bool operator()(const InputType &in) {
     // Requires preservation of order
     assert(in.get_index() == ReceiverBase::received);
-    if (ascii) {
+    if (ascii.has_value()) {
       if (!in.empty()) {
         auto i = in.begin();
         (*ascii) << *i;
@@ -714,8 +717,8 @@ public:
   }
 
 private:
-  std::unique_ptr<File::OFStream> ascii;
-  std::unique_ptr<DWI::Tractography::ScalarWriter<value_type>> tsf;
+  std::optional<File::OFStream> ascii;
+  std::optional<DWI::Tractography::ScalarWriter<value_type>> tsf;
 };
 
 template <class SamplerType, class ReceiverType>

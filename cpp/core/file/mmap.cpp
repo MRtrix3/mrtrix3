@@ -123,7 +123,7 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, int64_t mapped_size
 
     if (delayed_writeback) {
       try {
-        first = new uint8_t[msize];
+        first = new uint8_t[msize]; // check_syntax off
         if (!first)
           throw 1;
       } catch (...) {
@@ -182,7 +182,7 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, int64_t mapped_size
 }
 
 MMap::~MMap() {
-  if (!first)
+  if (first == nullptr)
     return;
   if (addr) {
     DEBUG("unmapping file \"" + Entry::name + "\"");
@@ -207,7 +207,7 @@ MMap::~MMap() {
         App::exit_error_code = 1;
       }
     }
-    delete[] first;
+    delete[] first; // check_syntax off
   }
 }
 

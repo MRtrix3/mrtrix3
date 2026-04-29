@@ -20,6 +20,7 @@
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 
 #include "types.h"
 
@@ -36,36 +37,34 @@ template <class T> class Min_mem_array {
 public:
   Min_mem_array() : n(0), d(nullptr) {}
 
-  Min_mem_array(const T &i) : n(1), d(new T[1]) { d[0] = i; }
+  Min_mem_array(const T &i) : n(1), d(std::make_unique<T[]>(1)) { d[0] = i; }
 
-  Min_mem_array(const size_t size, const T &i) : n(size), d(new T[n]) {
+  Min_mem_array(const size_t size, const T &i) : n(size), d(std::make_unique<T[]>(n)) {
     for (size_t a = 0; a != n; ++a)
       d[n] = i;
   }
 
-  template <class C> Min_mem_array(const C &data) : n(data.size()), d(new T[data.size()]) {
+  template <class C> Min_mem_array(const C &data) : n(data.size()), d(std::make_unique<T[]>(data.size())) {
     size_t index = 0;
     for (typename C::const_iterator i = data.begin(); i != data.end(); ++i, ++index)
       d[index] = *i;
   }
 
-  Min_mem_array(const Min_mem_array &that) : n(that.n), d(new T[n]) { memcpy(d, that.d, n * sizeof(T)); }
-
-  virtual ~Min_mem_array() {
-    delete[] d;
-    d = nullptr;
+  Min_mem_array(const Min_mem_array &that) : n(that.n), d(std::make_unique<T[]>(n)) {
+    memcpy(d.get(), that.d.get(), n * sizeof(T));
   }
+
+  ~Min_mem_array() = default;
 
   void add(const T &i) {
     if (d) {
-      T *new_data = new T[n + 1];
-      memcpy(new_data, d, n * sizeof(T));
+      auto new_data = std::make_unique<T[]>(n + 1);
+      memcpy(new_data.get(), d.get(), n * sizeof(T));
       new_data[n] = i;
-      delete[] d;
-      d = new_data;
+      d = std::move(new_data);
       ++n;
     } else {
-      d = new T[1];
+      d = std::make_unique<T[]>(1);
       d[0] = i;
       n = 1;
     }
@@ -74,26 +73,22 @@ public:
   // Second version of add() which invokes copy constructors in the underlying data
   void add_copyconstruct(const T &i) {
     if (d) {
-      T *new_data = new T[n + 1];
+      auto new_data = std::make_unique<T[]>(n + 1);
       for (size_t a = 0; a != n; ++a)
         new_data[a] = d[a];
       new_data[n] = i;
-      delete[] d;
-      d = new_data;
+      d = std::move(new_data);
       ++n;
     } else {
-      d = new T[1];
+      d = std::make_unique<T[]>(1);
       d[0] = i;
       n = 1;
     }
   }
 
   void erase() {
-    if (d) {
-      delete[] d;
-      d = nullptr;
-      n = 0;
-    }
+    d.reset();
+    n = 0;
   }
 
   // TODO Should be 2 versions of this; 1 retains current size, other takes on size of container
@@ -105,14 +100,16 @@ public:
 
   size_t dim() const { return n; }
 
-  bool operator==(const Min_mem_array<T> &that) const { return ((n == that.n) && !memcmp(d, that.d, n * sizeof(T))); }
+  bool operator==(const Min_mem_array<T> &that) const {
+    return ((n == that.n) && !memcmp(d.get(), that.d.get(), n * sizeof(T)));
+  }
 
   bool operator<(const Min_mem_array<T> &that) const {
     // If one is empty and the other is not, one is 'less than' the other; but if both are empty, then '<' should return
     // false
-    if (!n)
+    if (n == 0)
       return that.n;
-    if (!that.n)
+    if (that.n == 0)
       return false;
     for (size_t i = 0; i != std::min(n, that.n); ++i) {
       if (d[i] < that.d[i])
@@ -139,16 +136,14 @@ public:
 
   Min_mem_array<T> &operator=(const Min_mem_array<T> &that) {
     n = that.n;
-    if (d)
-      delete[] d;
-    d = new T[n];
-    memcpy(d, that.d, n * sizeof(T));
+    d = std::make_unique<T[]>(n);
+    memcpy(d.get(), that.d.get(), n * sizeof(T));
     return (*this);
   }
 
 private:
   size_t n;
-  T *d;
+  std::unique_ptr<T[]> d;
 };
 
 } // namespace MR

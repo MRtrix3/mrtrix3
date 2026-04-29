@@ -64,11 +64,11 @@ public:
     size_t num_DW_shells() const;
 
     dir_t dir_type;
-    Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> header_dirs;
-    Eigen::Matrix<double, Eigen::Dynamic, 4> grad;
-    std::unique_ptr<MR::DWI::Shells> shells;
+    std::optional<Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic>> header_dirs;
+    std::optional<Eigen::Matrix<double, Eigen::Dynamic, 4>> grad;
+    std::optional<MR::DWI::Shells> shells;
     size_t shell_index;
-    std::unique_ptr<MR::DWI::Directions::Set> dirs;
+    std::optional<MR::DWI::Directions::Set> dirs;
   };
   std::unique_ptr<DixelPlugin> dixel;
 };

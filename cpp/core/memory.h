@@ -38,9 +38,14 @@ public:
   }
 };
 
+template <class T, class... Args> copy_ptr<T> make_copy(Args &&...args) {
+  return copy_ptr<T>(new T(std::forward<Args>(args)...)); // check_syntax off
+}
+
 struct compare_ptr_contents {
   template <class X> bool operator()(const X &a, const X &b) const { return *a < *b; }
   template <class X> bool operator()(const std::shared_ptr<X> &a, const std::shared_ptr<X> &b) const { return *a < *b; }
+  template <class X> bool operator()(const std::unique_ptr<X> &a, const std::unique_ptr<X> &b) const { return *a < *b; }
 };
 
 } // namespace MR

@@ -446,10 +446,11 @@ protected:
  * will be used to speed up the calculations, at the cost of a minor
  * reduction in accuracy. */
 template <class VectorType, class UnitVectorType>
-inline typename VectorType::Scalar get_peak(const VectorType &sh,
-                                            int lmax,
-                                            UnitVectorType &unit_init_dir,
-                                            PrecomputedAL<typename VectorType::Scalar> *precomputer = nullptr) {
+inline typename VectorType::Scalar
+get_peak(const VectorType &sh,
+         int lmax,
+         UnitVectorType &unit_init_dir,
+         const PrecomputedAL<typename VectorType::Scalar> *const precomputer = nullptr) {
   static const default_type max_dir_change = 0.2;
   static const default_type angle_tolerance = 1e-4;
   using value_type = typename VectorType::Scalar;
@@ -506,7 +507,7 @@ inline void derivatives(const VectorType &sh,
                         typename VectorType::Scalar &d2SH_del2,
                         typename VectorType::Scalar &d2SH_deldaz,
                         typename VectorType::Scalar &d2SH_daz2,
-                        PrecomputedAL<typename VectorType::Scalar> *precomputer) {
+                        const PrecomputedAL<typename VectorType::Scalar> *const precomputer = nullptr) {
   if (lmax < 0) {
     throw std::logic_error("lmax cannot be negative!");
   }
@@ -519,17 +520,17 @@ inline void derivatives(const VectorType &sh,
   dSH_del = dSH_daz = d2SH_del2 = d2SH_deldaz = d2SH_daz2 = 0.0;
   VLA_MAX(AL, value_type, NforL_mpos(lmax), 64);
 
-  if (precomputer) {
-    PrecomputedFraction<value_type> f;
-    precomputer->set(f, inclination);
-    precomputer->get(AL, f);
-  } else {
+  if (precomputer == nullptr) {
     Eigen::Matrix<value_type, Eigen::Dynamic, 1, 0, 64> buf(lmax + 1);
     for (int m = 0; m <= lmax; m++) {
       Legendre::Plm_sph(buf, lmax, m, cos_incl);
       for (int l = ((m & 1) ? m + 1 : m); l <= lmax; l += 2)
         AL[index_mpos(l, m)] = buf[l];
     }
+  } else {
+    PrecomputedFraction<value_type> f;
+    precomputer->set(f, inclination);
+    precomputer->get(AL, f);
   }
 
   amplitude = sh[index(0, 0)] * AL[index_mpos(0, 0)];

@@ -39,7 +39,7 @@ Tree::find(std::string_view patient_name, std::string_view patient_ID, std::stri
     }
   }
 
-  push_back(std::shared_ptr<Patient>(new Patient(patient_name, patient_ID, patient_DOB)));
+  push_back(std::make_shared<Patient>(patient_name, patient_ID, patient_DOB));
   return back();
 }
 
@@ -89,7 +89,7 @@ void Tree::read_file(std::string_view filename) {
                                                  reader.series_date,
                                                  reader.series_time);
 
-    std::shared_ptr<Image> image(new Image);
+    auto image = std::make_shared<Image>();
     image->filename = filename;
     image->series = series.get();
     image->sequence_name = reader.sequence;

@@ -252,7 +252,7 @@ void usage() {
 
 void permute_DW_scheme(Header &H, const std::vector<int> &axes) {
   auto in = DWI::parse_DW_scheme(H);
-  if (!in.rows())
+  if (!in.has_value())
     return;
 
   Transform T(H);
@@ -261,29 +261,29 @@ void permute_DW_scheme(Header &H, const std::vector<int> &axes) {
     permute(axes[axis], axis) = 1.0;
   const Eigen::Matrix3d R = T.scanner2voxel.rotation() * permute * T.voxel2scanner.rotation();
 
-  Eigen::MatrixXd out(in.rows(), in.cols());
+  Eigen::MatrixXd out(in->rows(), in->cols());
   out.block(0, 3, out.rows(), out.cols() - 3) =
-      in.block(0, 3, in.rows(), in.cols() - 3); // Copy b-values (and anything else stored in dw_scheme)
-  for (int row = 0; row != in.rows(); ++row)
-    out.block<1, 3>(row, 0) = in.block<1, 3>(row, 0) * R;
+      in->block(0, 3, in->rows(), in->cols() - 3); // Copy b-values (and anything else stored in dw_scheme)
+  for (int row = 0; row != in->rows(); ++row)
+    out.block<1, 3>(row, 0) = in->block<1, 3>(row, 0) * R;
 
   DWI::set_DW_scheme(H, out);
 }
 
 void permute_PE_scheme(Header &H, const std::vector<int> &axes) {
-  auto in = Metadata::PhaseEncoding::parse_scheme(H.keyval(), H);
-  if (!in.rows())
+  const auto in = Metadata::PhaseEncoding::parse_scheme(H.keyval(), H);
+  if (!in.has_value())
     return;
 
   Eigen::Matrix3d permute = Eigen::Matrix3d::Zero();
   for (size_t axis = 0; axis != 3; ++axis)
     permute(axes[axis], axis) = 1.0;
 
-  Eigen::MatrixXd out(in.rows(), in.cols());
+  Eigen::MatrixXd out(in->rows(), in->cols());
   out.block(0, 3, out.rows(), out.cols() - 3) =
-      in.block(0, 3, in.rows(), in.cols() - 3); // Copy total readout times (and anything else stored in pe_scheme)
-  for (int row = 0; row != in.rows(); ++row)
-    out.block<1, 3>(row, 0) = in.block<1, 3>(row, 0) * permute;
+      in->block(0, 3, in->rows(), in->cols() - 3); // Copy total readout times (and anything else stored in pe_scheme)
+  for (int row = 0; row != in->rows(); ++row)
+    out.block<1, 3>(row, 0) = in->block<1, 3>(row, 0) * permute;
 
   Metadata::PhaseEncoding::set_scheme(H.keyval(), out);
 }
@@ -397,8 +397,11 @@ void run() {
     File::JSON::load(header_in, opt[0][0]);
   if (!get_options("import_pe_table").empty() || //
       !get_options("import_pe_topup").empty() || //
-      !get_options("import_pe_eddy").empty())    //
-    Metadata::PhaseEncoding::set_scheme(header_in.keyval(), Metadata::PhaseEncoding::get_scheme(header_in));
+      !get_options("import_pe_eddy").empty()) {  //
+    const auto scheme = Metadata::PhaseEncoding::get_scheme(header_in);
+    assert(scheme.has_value());
+    Metadata::PhaseEncoding::set_scheme(header_in.keyval(), *scheme);
+  }
 
   Header header_out(header_in);
   header_out.datatype() = DataType::from_command_line(header_out.datatype());
@@ -474,25 +477,25 @@ void run() {
       header_out.size(axis) = pos[axis].size();
       if (axis == 3) {
         const auto grad = DWI::parse_DW_scheme(header_out);
-        if (grad.rows()) {
-          if (static_cast<ssize_t>(grad.rows()) != header_in.size(3)) {
+        if (grad.has_value()) {
+          if (static_cast<ssize_t>(grad->rows()) != header_in.size(3)) {
             WARN("Diffusion encoding of input file does not match number of image volumes;" //
                  " omitting gradient information from output image");                       //
             DWI::clear_DW_scheme(header_out);
           } else {
-            Eigen::MatrixXd extract_grad(pos[3].size(), grad.cols());
+            Eigen::MatrixXd extract_grad(pos[3].size(), grad->cols());
             for (size_t dir = 0; dir != pos[3].size(); ++dir)
-              extract_grad.row(dir) = grad.row(pos[3][dir]);
+              extract_grad.row(dir) = grad->row(pos[3][dir]);
             DWI::set_DW_scheme(header_out, extract_grad);
           }
         }
-        Eigen::MatrixXd pe_scheme;
+        std::optional<Metadata::PhaseEncoding::scheme_type> pe_scheme;
         try {
           pe_scheme = Metadata::PhaseEncoding::get_scheme(header_in);
-          if (pe_scheme.rows()) {
-            Eigen::MatrixXd extract_scheme(pos[3].size(), pe_scheme.cols());
+          if (pe_scheme.has_value()) {
+            Eigen::MatrixXd extract_scheme(pos[3].size(), pe_scheme->cols());
             for (size_t vol = 0; vol != pos[3].size(); ++vol)
-              extract_scheme.row(vol) = pe_scheme.row(pos[3][vol]);
+              extract_scheme.row(vol) = pe_scheme->row(pos[3][vol]);
             Metadata::PhaseEncoding::set_scheme(header_out.keyval(), extract_scheme);
           }
         } catch (...) {

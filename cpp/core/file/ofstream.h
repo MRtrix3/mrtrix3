@@ -32,11 +32,17 @@ namespace MR::File {
 class OFStream : public std::ofstream {
 public:
   OFStream() {}
+  OFStream(const OFStream &) = delete;
+  OFStream(OFStream &&) = delete;
   OFStream(std::string_view path, const std::ios_base::openmode mode = std::ios_base::out | std::ios_base::binary) {
     open(path, mode);
   }
+  ~OFStream() = default;
 
   void open(std::string_view path, const std::ios_base::openmode mode = std::ios_base::out | std::ios_base::binary);
+
+  OFStream &operator=(const OFStream &) = delete;
+  OFStream &operator=(OFStream &&) = default;
 };
 
 } // namespace MR::File

@@ -77,7 +77,7 @@ point_type get_pos(const std::vector<default_type> &s) {
 }
 } // namespace
 
-Base *get_resampler() {
+std::unique_ptr<Base> get_resampler() {
   const size_t count = (!get_options("upsample").empty() ? 1 : 0) + (!get_options("downsample").empty() ? 1 : 0) +
                        (!get_options("step_size").empty() ? 1 : 0) + (!get_options("num_points").empty() ? 1 : 0) +
                        (!get_options("endpoints").empty() ? 1 : 0) + (!get_options("line").empty() ? 1 : 0) +
@@ -89,30 +89,31 @@ Base *get_resampler() {
 
   auto opt = get_options("upsample");
   if (!opt.empty())
-    return new Upsampler(opt[0][0]);
+    return std::make_unique<Upsampler>(opt[0][0]);
   opt = get_options("downsample");
   if (!opt.empty())
-    return new Downsampler(opt[0][0]);
+    return std::make_unique<Downsampler>(opt[0][0]);
   opt = get_options("step_size");
   if (!opt.empty())
-    return new FixedStepSize(opt[0][0]);
+    return std::make_unique<FixedStepSize>(opt[0][0]);
   opt = get_options("num_points");
   if (!opt.empty())
-    return new FixedNumPoints(opt[0][0]);
+    return std::make_unique<FixedNumPoints>(opt[0][0]);
   opt = get_options("endpoints");
   if (!opt.empty())
-    return new Endpoints;
+    return std::make_unique<Endpoints>();
   opt = get_options("line");
   if (!opt.empty())
-    return new Arc(opt[0][0], get_pos(opt[0][1].as_sequence_float()), get_pos(opt[0][2].as_sequence_float()));
+    return std::make_unique<Arc>(
+        opt[0][0], get_pos(opt[0][1].as_sequence_float()), get_pos(opt[0][2].as_sequence_float()));
   opt = get_options("arc");
   if (!opt.empty())
-    return new Arc(opt[0][0],
-                   get_pos(opt[0][1].as_sequence_float()),
-                   get_pos(opt[0][2].as_sequence_float()),
-                   get_pos(opt[0][3].as_sequence_float()));
+    return std::make_unique<Arc>(opt[0][0],
+                                 get_pos(opt[0][1].as_sequence_float()),
+                                 get_pos(opt[0][2].as_sequence_float()),
+                                 get_pos(opt[0][3].as_sequence_float()));
 
-  assert(0);
+  assert(false);
   return nullptr;
 }
 

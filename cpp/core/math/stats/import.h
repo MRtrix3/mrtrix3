@@ -162,8 +162,7 @@ void CohortDataImport::initialise(std::string_view listpath, std::string_view ex
 
   for (const auto &line : lines) {
     try {
-      std::shared_ptr<SubjectDataImport> subject(new SubjectDataImport(Path::join(load_from_dir, line)));
-      files.emplace_back(subject);
+      files.emplace_back(std::make_shared<SubjectDataImport>(Path::join(load_from_dir, line)));
     } catch (Exception &e) {
       throw Exception(e, "Input data not successfully configured for load: \"" + line + "\"");
     }

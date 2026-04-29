@@ -35,7 +35,7 @@ public:
         global_voxel_count(global_voxel_count),
         thread_cost(0.0),
         thread_voxel_count(0),
-        mutex(new std::mutex),
+        mutex(std::make_shared<std::mutex>()),
         normaliser(0.0),
         robustness_parameter(1.e-12),
         intensity_difference_threshold(0.001),

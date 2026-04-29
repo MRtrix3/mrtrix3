@@ -19,7 +19,7 @@
 
 namespace MR::DWI::Tractography::Seeding {
 
-void List::add(Base *const in) {
+void List::add(std::unique_ptr<Base> &&in) {
   if (!seeders.empty() && !(in->is_finite() == is_finite()))
     throw Exception("Cannot use a combination of seed types where some are number-limited and some are not!");
 
@@ -29,9 +29,9 @@ void List::add(Base *const in) {
         throw Exception("Cannot use a combination of seed types where the default maximum number "
                         "of sampling attempts per seed is unequal, unless you use the -max_seed_attempts option.");
 
-  seeders.push_back(std::unique_ptr<Base>(in));
   total_volume += in->vol();
   total_count += in->num();
+  seeders.push_back(std::move(in));
 }
 
 void List::clear() {

@@ -84,15 +84,15 @@ ImageProperties::ImageProperties(QWidget *parent, const MR::Header &header)
   }
 
   auto DW_scheme = DWI::parse_DW_scheme(H);
-  if (DW_scheme.rows()) {
-    if (DW_scheme.cols() < 4) {
+  if (DW_scheme.has_value()) {
+    if (DW_scheme->cols() < 4) {
       root->appendChild(new TreeItem("Diffusion scheme", "(invalid)", root));
     } else {
       TreeItem *scheme = new TreeItem("Diffusion scheme", std::string(), root);
       root->appendChild(scheme);
-      for (Eigen::Index n = 0; n < DW_scheme.rows(); ++n) {
+      for (Eigen::Index n = 0; n < DW_scheme->rows(); ++n) {
         std::stringstream ss;
-        ss << DW_scheme.row(n).format(Fmt);
+        ss << DW_scheme->row(n).format(Fmt);
         scheme->appendChild(new TreeItem(std::string(), ss.str(), scheme));
       }
     }
@@ -129,11 +129,12 @@ void ImageProperties::context_menu(const QPoint &point) {
     k = k.parent();
   std::string text = k.data().toString().toUtf8().constData();
 
-  if (text == "Transform")
+  if (text == "Transform") {
     save_data = H.transform().matrix();
-  else if (text == "Diffusion scheme")
-    save_data = DWI::parse_DW_scheme(H);
-  else {
+  } else if (text == "Diffusion scheme") {
+    const auto scheme = DWI::parse_DW_scheme(H);
+    save_data = scheme.has_value() ? *scheme : Eigen::MatrixXd();
+  } else {
     save_data.resize(0, 0);
     return;
   }

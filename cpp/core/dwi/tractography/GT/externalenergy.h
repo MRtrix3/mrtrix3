@@ -57,7 +57,7 @@ public:
 
   void clearChanges();
 
-  EnergyComputer *clone() const { return new ExternalEnergyComputer(*this); }
+  EnergyComputer *clone() const { return new ExternalEnergyComputer(*this); } // check_syntax off
 
 protected:
   Image<float> dwi;

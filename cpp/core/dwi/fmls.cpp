@@ -118,7 +118,7 @@ IntegrationWeights::IntegrationWeights(const DWI::Directions::Set &dirs) : data(
 Segmenter::Segmenter(const DWI::Directions::FastLookupSet &directions, const size_t l)
     : dirs(directions),
       lmax(l),
-      precomputer(new Math::SH::PrecomputedAL<default_type>(lmax, 2 * dirs.size())),
+      precomputer(std::make_shared<Math::SH::PrecomputedAL<default_type>>(lmax, 2 * dirs.size())),
       integral_threshold(default_integral_threshold),
       peak_value_threshold(default_peakamp_threshold),
       lobe_merge_ratio(default_mergeratio_bridgetopeak),
@@ -131,8 +131,8 @@ Segmenter::Segmenter(const DWI::Directions::FastLookupSet &directions, const siz
     az_in_pairs(row, 0) = std::atan2(d[1], d[0]);
     az_in_pairs(row, 1) = std::acos(d[2]);
   }
-  transform.reset(new Math::SH::Transform<default_type>(az_in_pairs, lmax));
-  weights.reset(new IntegrationWeights(dirs));
+  transform = std::make_shared<Math::SH::Transform<default_type>>(az_in_pairs, lmax);
+  weights = std::make_shared<IntegrationWeights>(dirs);
 }
 
 class Max_abs {
@@ -240,7 +240,7 @@ bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
       for (size_t peak_index = 0; peak_index != i->num_peaks(); ++peak_index) {
         Eigen::Vector3d newton_peak_dir =
             i->get_peak_dir(peak_index); // to be updated by subsequent Math::SH::get_peak() call
-        const default_type newton_peak_value = Math::SH::get_peak(in, lmax, newton_peak_dir, &(*precomputer));
+        const default_type newton_peak_value = Math::SH::get_peak(in, lmax, newton_peak_dir, precomputer.get());
         if (std::isfinite(newton_peak_value) && newton_peak_dir.allFinite()) {
 
           // Ensure that the new peak direction found via Newton optimisation

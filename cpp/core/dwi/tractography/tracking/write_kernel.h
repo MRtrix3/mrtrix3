@@ -50,7 +50,7 @@ public:
         early_exit(shared) {
     const auto p = properties.find("seed_output");
     if (p != properties.end()) {
-      output_seeds.reset(new File::OFStream(p->second, std::ios_base::out | std::ios_base::trunc));
+      output_seeds = std::make_unique<File::OFStream>(p->second, std::ios_base::out | std::ios_base::trunc);
       (*output_seeds) << "# " << App::command_history_string << "\n";
       (*output_seeds) << "#Track_index,Seed_index,Pos_x,Pos_y,Pos_z,\n";
     }
@@ -70,6 +70,7 @@ public:
     if (output_seeds) {
       (*output_seeds) << "\n";
       output_seeds->close();
+      output_seeds.reset(nullptr);
     }
     auto opt = App::get_options("output_stats");
     if (!opt.empty()) {
@@ -102,7 +103,7 @@ protected:
   Writer<> writer;
   const bool always_increment, warn_on_max_seeds;
   size_t seeds, streamlines, selected;
-  std::unique_ptr<File::OFStream> output_seeds;
+  std::unique_ptr<File::OFStream> output_seeds; // Can't use std::optional: requires valid copy-constructor
   ProgressBar progress;
   EarlyExit early_exit;
 };

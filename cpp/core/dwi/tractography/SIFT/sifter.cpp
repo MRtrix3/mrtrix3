@@ -126,11 +126,12 @@ void SIFTer::perform_filtering() {
     // Trying a heuristic for now; go for a sort size of 1000 following initial sort, assuming half of all
     //   remaining streamlines have a negative gradient
 
-    const track_t sort_size =
-        std::min(static_cast<track_t>(std::ceil(static_cast<default_type>(num_tracks()) /
-                                                static_cast<default_type>(Thread::number_of_threads()))),
-                 static_cast<track_t>(std::round(2000.0 * static_cast<default_type>(num_tracks()) /
-                                                 static_cast<default_type>(tracks_remaining))));
+    track_t sort_size = static_cast<track_t>(
+        std::round(2000.0 * static_cast<default_type>(num_tracks()) / static_cast<default_type>(tracks_remaining)));
+    if (Thread::number_of_threads() != 0)
+      sort_size = std::min(sort_size,
+                           static_cast<track_t>(std::ceil(static_cast<default_type>(num_tracks()) /
+                                                          static_cast<default_type>(Thread::number_of_threads()))));
     MT_gradient_vector_sorter sorter(gradient_vector, sort_size);
 
     // Remove candidate streamlines one at a time, and correspondingly modify the fixels to which they were attributed
@@ -171,8 +172,7 @@ void SIFTer::perform_filtering() {
 
         // Remove this streamline, and adjust all of the relevant quantities
         noncontributing_length_removed += contributions[to_remove]->get_total_length();
-        delete contributions[to_remove];
-        contributions[to_remove] = nullptr;
+        contributions[to_remove].reset();
         ++removed_this_iteration;
         --tracks_remaining;
 
@@ -234,8 +234,7 @@ void SIFTer::perform_filtering() {
           }
           TD_sum -= candidate_contribution.get_total_contribution();
           contributing_length_removed += candidate_contribution.get_total_length();
-          delete contributions[candidate_index];
-          contributions[candidate_index] = nullptr;
+          contributions[candidate_index].reset();
           ++removed_this_iteration;
           --tracks_remaining;
 

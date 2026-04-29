@@ -46,12 +46,10 @@ std::unique_ptr<ImageIO::Base> MGZ::read(Header &H) const {
   std::ostringstream mgh_tailer;
   File::MGH::write_other(H, mgh_tailer);
 
-  auto gz_handler = new ImageIO::GZ(H, File::MGH::data_offset, mgh_tailer.str().size());
-  memcpy(gz_handler->header(), mgh_header.c_str(), mgh_header.size());
-  memcpy(gz_handler->tailer(), mgh_tailer.str().c_str(), mgh_tailer.str().size());
-
-  std::unique_ptr<ImageIO::Base> io_handler(gz_handler);
-  io_handler->files.push_back(File::Entry(H.name(), File::MGH::data_offset));
+  auto io_handler = std::make_unique<ImageIO::GZ>(H, File::MGH::data_offset, mgh_tailer.str().size());
+  memcpy(io_handler->header(), mgh_header.c_str(), mgh_header.size());
+  memcpy(io_handler->tailer(), mgh_tailer.str().c_str(), mgh_tailer.str().size());
+  io_handler->files.emplace_back(File::Entry(H.name(), File::MGH::data_offset));
 
   return io_handler;
 }
@@ -68,14 +66,12 @@ std::unique_ptr<ImageIO::Base> MGZ::create(Header &H) const {
   File::MGH::write_other(H, mgh_tailer);
 
   File::create(H.name());
-  auto gz_handler = new ImageIO::GZ(H, File::MGH::data_offset, mgh_tailer.str().size());
+  auto io_handler = std::make_unique<ImageIO::GZ>(H, File::MGH::data_offset, mgh_tailer.str().size());
 
-  memset(gz_handler->header(), 0, File::MGH::data_offset);
-  memcpy(gz_handler->header(), mgh_header.str().c_str(), mgh_header.str().size());
-  memcpy(gz_handler->tailer(), mgh_tailer.str().c_str(), mgh_tailer.str().size());
-
-  std::unique_ptr<ImageIO::Base> io_handler(gz_handler);
-  io_handler->files.push_back(File::Entry(H.name(), File::MGH::data_offset));
+  memset(io_handler->header(), 0, File::MGH::data_offset);
+  memcpy(io_handler->header(), mgh_header.str().c_str(), mgh_header.str().size());
+  memcpy(io_handler->tailer(), mgh_tailer.str().c_str(), mgh_tailer.str().size());
+  io_handler->files.emplace_back(File::Entry(H.name(), File::MGH::data_offset));
 
   return io_handler;
 }

@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <optional>
+
 #include "algo/copy.h"
 #include "filter/base.h"
 #include "filter/reslice.h"
@@ -61,9 +63,7 @@ public:
         interp_type(MR::Interp::interp_type::CUBIC),
         transformation(Adapter::NoTransform),
         oversampling(Adapter::AutoOverSample),
-        out_of_bounds_value(nullptr) {}
-
-  ~Resize() { delete out_of_bounds_value; }
+        out_of_bounds_value(std::nullopt) {}
 
   void set_voxel_size(default_type size) {
     std::vector<default_type> voxel_size(3, size);
@@ -133,15 +133,13 @@ public:
 
   void set_transform(const transform_type &trafo) { transform_ = trafo; }
 
-  void set_out_of_bounds_value(default_type value) {
-    out_of_bounds_value = new default_type;
-    *out_of_bounds_value = value;
-  }
+  void set_out_of_bounds_value(default_type value) { out_of_bounds_value = value; }
 
   template <class InputImageType, class OutputImageType>
   void operator()(InputImageType &input, OutputImageType &output) {
     const typename InputImageType::value_type oob =
-        out_of_bounds_value ? *out_of_bounds_value : Interp::Base<InputImageType>::default_out_of_bounds_value();
+        out_of_bounds_value.has_value() ? static_cast<typename InputImageType::value_type>(*out_of_bounds_value)
+                                        : Interp::Base<InputImageType>::default_out_of_bounds_value();
     switch (interp_type) {
     case MR::Interp::interp_type::NEAREST:
       // Use of oversampling is prevented in reslice adapter
@@ -166,7 +164,7 @@ protected:
   MR::Interp::interp_type interp_type;
   transform_type transformation;
   std::vector<uint32_t> oversampling;
-  default_type *out_of_bounds_value;
+  std::optional<default_type> out_of_bounds_value;
 };
 //! @}
 } // namespace MR::Filter

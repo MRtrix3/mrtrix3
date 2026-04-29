@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <optional>
+
 #include "app.h"
 #include "dwi/directions/predefined.h"
 #include "dwi/directions/validate.h"
@@ -72,7 +74,7 @@ public:
       }
       opt = get_options("filter");
       if (!opt.empty())
-        init_filter = File::Matrix::load_vector(opt[0][0]);
+        user_init_filter.emplace(File::Matrix::load_vector(opt[0][0]));
       opt = get_options("directions");
       if (!opt.empty()) {
         const Eigen::MatrixXd directions = File::Matrix::load_matrix(opt[0][0]);
@@ -122,9 +124,12 @@ public:
       lmax_response = std::min(lmax_response, std::min(lmax_data, lmax));
       INFO("calculating even spherical harmonic components up to order " + str(lmax_response) + " for initialisation");
 
-      if (!init_filter.size())
+      if (user_init_filter.has_value()) {
+        init_filter = *user_init_filter;
+      } else {
         init_filter = Eigen::VectorXd::Ones(3);
-      init_filter.conservativeResizeLike(Eigen::VectorXd::Zero(Math::ZSH::NforL(lmax_response)));
+        init_filter.conservativeResizeLike(Eigen::VectorXd::Zero(Math::ZSH::NforL(lmax_response)));
+      }
 
       RH = Math::ZSH::ZSH2RH(response);
       if (static_cast<size_t>(RH.size()) < Math::ZSH::NforL(lmax))
@@ -188,6 +193,7 @@ public:
     size_t nSH() const { return HR_trans.cols(); }
 
     Eigen::MatrixXd grad;
+    std::optional<Eigen::VectorXd> user_init_filter;
     Eigen::VectorXd response, init_filter, RH;
     Eigen::MatrixXd fconv, DW_dirs, HR_dirs;
     Eigen::MatrixXd rconv, HR_trans, M, Mt_M;

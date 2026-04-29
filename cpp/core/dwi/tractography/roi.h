@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <optional>
+
 #include "app.h"
 #include "image.h"
 #include "interp/linear.h"
@@ -34,10 +36,12 @@ public:
   Mask(const Mask &) = default;
   Mask(std::string_view name)
       : Image<bool>(get_mask(name)),
-        scanner2voxel(new transform_type(Transform(*this).scanner2voxel.cast<float>())),
-        voxel2scanner(new transform_type(Transform(*this).voxel2scanner.cast<float>())) {}
+        scanner2voxel(std::make_shared<transform_type>(Transform(*this).scanner2voxel.cast<float>())),
+        voxel2scanner(std::make_shared<transform_type>(Transform(*this).voxel2scanner.cast<float>())) {}
 
-  std::shared_ptr<transform_type> scanner2voxel, voxel2scanner; // Ptr to prevent unnecessary copy-construction
+  // Ptrs to prevent unnecessary copy-construction
+  std::shared_ptr<transform_type> scanner2voxel;
+  std::shared_ptr<transform_type> voxel2scanner;
 
 private:
   static Image<bool> get_mask(std::string_view name);
@@ -46,7 +50,7 @@ private:
 class ROI {
 public:
   ROI(const Eigen::Vector3f &sphere_pos, float sphere_radius)
-      : pos(sphere_pos), radius(sphere_radius), radius2(Math::pow2(radius)) {}
+      : pos(sphere_pos), radius(sphere_radius), radius2(Math::pow2(radius)), mask(std::nullopt) {}
 
   ROI(std::string_view spec) : radius(NaNF), radius2(NaNF) {
     try {
@@ -60,7 +64,7 @@ public:
       radius2 = Math::pow2(radius);
     } catch (Exception &e_assphere) {
       try {
-        mask.reset(new Mask(spec));
+        mask.emplace(spec);
       } catch (Exception &e_asimage) {
         Exception e("Unable to parse text \"" + spec + "\" as a ROI");
         e.push_back("If interpreted as sphere:");
@@ -74,18 +78,19 @@ public:
     }
   }
 
-  std::string shape() const { return (mask ? "image" : "sphere"); }
+  std::string shape() const { return (mask.has_value() ? "image" : "sphere"); }
 
   std::string parameters() const {
-    return mask ? std::string(mask->name()) : str(pos[0]) + "," + str(pos[1]) + "," + str(pos[2]) + "," + str(radius);
+    return mask.has_value() ? std::string(mask->name())
+                            : str(pos[0]) + "," + str(pos[1]) + "," + str(pos[2]) + "," + str(radius);
   }
 
   float min_featurelength() const {
-    return mask ? std::min({mask->spacing(0), mask->spacing(1), mask->spacing(2)}) : radius;
+    return mask.has_value() ? std::min({mask->spacing(0), mask->spacing(1), mask->spacing(2)}) : radius;
   }
 
   bool contains(const Eigen::Vector3f &p) const {
-    if (mask) {
+    if (mask.has_value()) {
       Eigen::Vector3f v = *(mask->scanner2voxel) * p;
       Mask temp(*mask); // Required for thread-safety
       temp.index(0) = std::round(v[0]);
@@ -106,7 +111,7 @@ public:
 private:
   Eigen::Vector3f pos;
   float radius, radius2;
-  std::shared_ptr<Mask> mask;
+  std::optional<Mask> mask;
 };
 
 class ROISetBase {

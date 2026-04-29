@@ -16,17 +16,17 @@
 
 #include "surface/filter/base.h"
 
-#include <memory>
 #include <mutex>
+#include <optional>
 
 #include "thread_queue.h"
 
 namespace MR::Surface::Filter {
 
 void Base::operator()(const MeshMulti &in, MeshMulti &out) const {
-  std::unique_ptr<ProgressBar> progress;
+  std::optional<ProgressBar> progress;
   if (!message.empty())
-    progress.reset(new ProgressBar(message, in.size()));
+    progress.emplace(message, in.size());
   out.assign(in.size(), Mesh());
 
   std::mutex mutex;
@@ -37,7 +37,7 @@ void Base::operator()(const MeshMulti &in, MeshMulti &out) const {
   };
   auto worker = [&](const size_t &index) {
     (*this)(in[index], out[index]);
-    if (progress) {
+    if (progress.has_value()) {
       std::lock_guard<std::mutex> lock(mutex);
       ++(*progress);
     }

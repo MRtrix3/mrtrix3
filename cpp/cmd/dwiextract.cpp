@@ -111,7 +111,7 @@ void run() {
   auto opt = get_options("pe");
   const auto pe_scheme = Metadata::PhaseEncoding::get_scheme(header_in);
   if (!opt.empty()) {
-    if (!pe_scheme.rows())
+    if (!pe_scheme.has_value())
       throw Exception("Cannot filter volumes by phase-encoding: No such information present");
     const auto filter = parse_floats(opt[0][0]);
     if (!(filter.size() == 3 || filter.size() == 4))
@@ -120,13 +120,13 @@ void run() {
     for (const auto i : volumes) {
       bool keep = true;
       for (size_t axis = 0; axis != 3; ++axis) {
-        if (pe_scheme(i, axis) != filter[axis]) {
+        if ((*pe_scheme)(i, axis) != filter[axis]) {
           keep = false;
           break;
         }
       }
       if (filter.size() == 4) {
-        if (std::fabs(pe_scheme(i, 3) - filter[3]) > 5e-3)
+        if (std::fabs((*pe_scheme)(i, 3) - filter[3]) > 5e-3)
           keep = false;
       }
       if (keep)
@@ -149,12 +149,12 @@ void run() {
   Eigen::MatrixXd new_grad(volumes.size(), grad.cols());
   for (size_t i = 0; i < volumes.size(); i++)
     new_grad.row(i) = grad.row(volumes[i]);
-  DWI::set_DW_scheme(header_out, new_grad);
+  DWI::set_DW_scheme(header_out.keyval(), new_grad);
 
-  if (pe_scheme.rows()) {
-    Eigen::MatrixXd new_scheme(volumes.size(), pe_scheme.cols());
+  if (pe_scheme.has_value()) {
+    Eigen::MatrixXd new_scheme(volumes.size(), pe_scheme->cols());
     for (size_t i = 0; i != volumes.size(); ++i)
-      new_scheme.row(i) = pe_scheme.row(volumes[i]);
+      new_scheme.row(i) = pe_scheme->row(volumes[i]);
     Metadata::PhaseEncoding::set_scheme(header_out.keyval(), new_scheme);
   }
 

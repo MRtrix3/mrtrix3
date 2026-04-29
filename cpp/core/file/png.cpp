@@ -132,12 +132,10 @@ void Reader::load(uint8_t *image_data) {
     throw Exception("Fatal error reading PNG image");
   }
   const int row_bytes = png_get_rowbytes(png_ptr, info_ptr);
-  png_bytepp row_pointers = new png_bytep[height];
+  auto row_pointers = std::make_unique<png_bytep[]>(height);
   for (png_uint_32 i = 0; i != height; ++i)
     row_pointers[i] = image_data + i * row_bytes;
-  png_read_image(png_ptr, row_pointers);
-  delete[] row_pointers;
-  row_pointers = nullptr;
+  png_read_image(png_ptr, row_pointers.get());
 }
 
 jmp_buf Writer::jmpbuf;
@@ -307,7 +305,7 @@ void Writer::save(uint8_t *data) {
   const size_t row_bytes = png_get_rowbytes(png_ptr, info_ptr);
 
   auto finish = [&](uint8_t *to_write) {
-    std::unique_ptr<png_bytep[]> row_pointers(new png_bytep[height]);
+    auto row_pointers = std::make_unique<png_bytep[]>(height);
     for (size_t row = 0; row != height; ++row)
       row_pointers[row] = to_write + row * row_bytes;
     png_write_image(png_ptr, row_pointers.get());

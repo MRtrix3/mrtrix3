@@ -16,17 +16,38 @@
 # For more details, see http://www.mrtrix.org/.
 
 DIFF_MODE=0
+PATHS=()
 while [[ $# -gt 0 ]]; do
   case $1 in
     --diff)
       DIFF_MODE=1
       shift
       ;;
-    *)
+    -*)
       echo "Unknown option: $1" >&2
       exit 1
       ;;
+    *)
+      PATHS+=("$1")
+      shift
+      ;;
   esac
+done
+
+if [[ $DIFF_MODE -eq 1 ]] && [[ ${#PATHS[@]} -gt 0 ]]; then
+  echo "Error: --diff and file paths cannot be specified together" >&2
+  exit 1
+fi
+
+for p in "${PATHS[@]}"; do
+  if [[ ! -f "$p" ]]; then
+    echo "Error: File does not exist: $p" >&2
+    exit 1
+  fi
+  if [[ "$p" != *.h ]] && [[ "$p" != *.cpp ]]; then
+    echo "Error: File does not have .h or .cpp extension: $p" >&2
+    exit 1
+  fi
 done
 
 LOG=syntax.log
@@ -155,6 +176,14 @@ run_checks() {
     $grep -Po '\busing\snamespace\sstd\s?;'
   )
 
+# - Check for any instances of "if (!X.rows())" or "if (X.rows() == 0)"
+#   (or ".cols()" / ".size()" instead of ".rows()");
+#   this could be where std::optional would be appropriate
+  res="$res"$(
+    cat .check_syntax4.tmp | \
+    $grep -Po 'if\s*\((\!\w+(\(\))?((\-\>|\.)\w+(\(\))?)+\.(rows|cols|size)\(\)|\w+(\(\))?((\-\>|\.)\w+(\(\))?)+\.(rows|cols|size)\(\)\s*==\s*0\))'
+  )
+
 # - Detect any instances of C-style casts
   res="$res"$(
     cat .check_syntax4.tmp | \
@@ -167,7 +196,21 @@ run_checks() {
     $grep -Po '\b(NAN|INFINITY|NULL)\b'
   )
 
-# detect any instances of std::abs() or non-disambiguated abs() (outside of the SFINAE call in core/types.h):
+# - Detect usage of C-style "new" allocation or "delete" deallocation
+#   Only applies to cpp/cmd/ and cpp/core/;
+#   the Qt code relies heavily on naked pointers
+  if [[ ! "$f" == "cpp/gui/"* ]]; then
+    res="$res"$(
+      cat .check_syntax4.tmp | \
+      $grep -Po '(return\s+|\w+([\(\[][\d\w]*[\)\]])?\s*=\s*|\w+([\(\[][\d\w]*[\)\]])?\.reset\s*\(|\w+\(\s*|\w+<\w+\[\]>\s?\(\s?)new\s+\w+(\(|\[)?'
+    )
+    res="$res"$(
+      cat .check_syntax4.tmp | \
+      $grep -Po '(?<!=)\s*\bdelete\b\s?(\[\]|)\s*\w+[^;];'
+    )
+  fi
+
+# - Detect any instances of std::abs() or non-disambiguated abs() (outside of the SFINAE call in core/types.h):
   if [[ ! "$f" -ef "cpp/core/types.h" ]]; then
     res="$res"$(
       cat .check_syntax4.tmp | \
@@ -190,8 +233,7 @@ if [[ $DIFF_MODE -eq 1 ]]; then
   staged_cpp_files=$(git diff --cached --name-only | \
     $grep -E '\.(h|cpp)$' | \
     $grep -v '_moc\.cpp' | \
-    $grep -v 'gl_core_3_3' | \
-    $grep '^cpp/')
+    $grep -v 'gl_core_3_3')
 
   if [[ -z "$staged_cpp_files" ]]; then
     echo "OK"
@@ -215,6 +257,15 @@ if [[ $DIFF_MODE -eq 1 ]]; then
   done
 
   rm -f "$diff_tmp"
+
+elif [[ ${#PATHS[@]} -gt 0 ]]; then
+
+  for f in "${PATHS[@]}"; do
+    cat "$f" | \
+    $grep -v '\/\/.*\bcheck_syntax\soff' > .check_syntax1.tmp
+
+    run_checks "$f"
+  done
 
 else
 
@@ -248,6 +299,7 @@ else
   - Replace all instances of %zu in print() calls with PRI_SIZET;
   - Use nullptr rather than NULL macro;
   - Use std::numeric_limits<> or MR::NaN(F) / MR::Inf(F) rather than macros NAN / INFINITY;
-  - Do not use C-style arrays (replace with eg. std::array<>)." >> $LOG
+  - Do not use C-style arrays (replace with eg. std::array<>);
+  - Use std::optional<> rather than checks for empty matrices." >> $LOG
   exit 1
 fi

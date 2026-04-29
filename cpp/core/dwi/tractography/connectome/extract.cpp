@@ -186,7 +186,7 @@ WriterExtraction::WriterExtraction(const Tractography::Properties &p,
 
 void WriterExtraction::add(const node_t node, std::string_view path, const std::string weights_path = "") {
   selectors.emplace_back(Selector(node, keep_self));
-  writers.emplace_back(new Tractography::WriterUnbuffered<float>(path, properties));
+  writers.emplace_back(std::make_unique<Tractography::WriterUnbuffered<float>>(path, properties));
   if (!weights_path.empty())
     writers.back()->set_weights_path(weights_path);
 }
@@ -197,7 +197,7 @@ void WriterExtraction::add(const node_t node_one,
                            const std::string weights_path = "") {
   if (keep_self || (node_one != node_two)) {
     selectors.emplace_back(Selector(node_one, node_two));
-    writers.emplace_back(new Tractography::WriterUnbuffered<float>(path, properties));
+    writers.emplace_back(std::make_unique<Tractography::WriterUnbuffered<float>>(path, properties));
     if (!weights_path.empty())
       writers.back()->set_weights_path(weights_path);
   }
@@ -207,7 +207,7 @@ void WriterExtraction::add(const std::vector<node_t> &list,
                            std::string_view path,
                            const std::string weights_path = "") {
   selectors.emplace_back(Selector(list, exclusive, keep_self));
-  writers.emplace_back(new Tractography::WriterUnbuffered<float>(path, properties));
+  writers.emplace_back(std::make_unique<Tractography::WriterUnbuffered<float>>(path, properties));
   if (!weights_path.empty())
     writers.back()->set_weights_path(weights_path);
 }

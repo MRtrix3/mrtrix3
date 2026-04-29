@@ -495,7 +495,8 @@ class StackEntry {
 public:
   StackEntry(std::string entry) : arg(std::move(entry)), rng_gaussian(false), image_is_complex(false) {}
 
-  StackEntry(Evaluator *evaluator_p) : evaluator(evaluator_p), rng_gaussian(false), image_is_complex(false) {}
+  StackEntry(std::shared_ptr<Evaluator> evaluator_p)
+      : evaluator(evaluator_p), rng_gaussian(false), image_is_complex(false) {}
 
   void load() {
     if (arg.empty())
@@ -509,7 +510,7 @@ public:
       try {
         auto header = Header::open(arg);
         image_is_complex = header.datatype().is_complex();
-        image.reset(new Image<complex_type>(header.get_image<complex_type>()));
+        image = std::make_shared<Image<complex_type>>(header.get_image<complex_type>());
         image_list.insert(std::make_pair(arg, LoadedImage(image, image_is_complex)));
       } catch (Exception &e_image) {
         try {
@@ -520,11 +521,11 @@ public:
             value = Math::e;
           } else if (a == "rand") {
             value = 0.0;
-            rng.reset(new Math::RNG());
+            rng = make_copy<Math::RNG>();
             rng_gaussian = false;
           } else if (a == "randn") {
             value = 0.0;
-            rng.reset(new Math::RNG());
+            rng = make_copy<Math::RNG>();
             rng_gaussian = true;
           } else {
             value = to<complex_type>(arg);
@@ -746,7 +747,7 @@ void unary_operation(std::string_view operation_name, std::vector<StackEntry> &s
   StackEntry &a(stack[stack.size() - 1]);
   a.load();
   if (a.evaluator || a.image || a.rng) {
-    StackEntry entry(new UnaryEvaluator<Operation>(operation_name, operation, a));
+    StackEntry entry(std::make_shared<UnaryEvaluator<Operation>>(operation_name, operation, a));
     stack.back() = entry;
   } else {
     try {
@@ -766,7 +767,7 @@ void binary_operation(std::string_view operation_name, std::vector<StackEntry> &
   a.load();
   b.load();
   if (a.evaluator || a.image || a.rng || b.evaluator || b.image || b.rng) {
-    StackEntry entry(new BinaryEvaluator<Operation>(operation_name, operation, a, b));
+    StackEntry entry(std::make_shared<BinaryEvaluator<Operation>>(operation_name, operation, a, b));
     stack.pop_back();
     stack.back() = entry;
   } else {
@@ -787,7 +788,7 @@ void ternary_operation(std::string_view operation_name, std::vector<StackEntry> 
   b.load();
   c.load();
   if (a.evaluator || a.image || a.rng || b.evaluator || b.image || b.rng || c.evaluator || c.image || c.rng) {
-    StackEntry entry(new TernaryEvaluator<Operation>(operation_name, operation, a, b, c));
+    StackEntry entry(std::make_shared<TernaryEvaluator<Operation>>(operation_name, operation, a, b, c));
     stack.pop_back();
     stack.pop_back();
     stack.back() = entry;
@@ -858,7 +859,7 @@ public:
 
     storage.push_back(ThreadLocalStorageItem());
     if (entry.image) {
-      storage.back().image.reset(new Image<complex_type>(*entry.image));
+      storage.back().image = MR::make_copy<Image<complex_type>>(*entry.image);
       storage.back().chunk.resize(chunk_size);
       return;
     } else if (entry.rng) {
