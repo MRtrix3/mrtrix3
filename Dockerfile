@@ -7,33 +7,37 @@ FROM buildpack-deps:bookworm AS base-builder
 FROM base-builder AS mrtrix3-builder
 
 # Git commitish from which to build MRtrix3.
-ARG MRTRIX3_GIT_COMMITISH="master"
-# Command-line arguments for `./configure`
-ARG MRTRIX3_CONFIGURE_FLAGS=""
-# Command-line arguments for `./build`
-ARG MRTRIX3_BUILD_FLAGS="-persistent -nopaginate"
+ARG MRTRIX3_GIT_COMMITISH="dev"
+# CMake build directory
+ARG MRTRIX3_CMAKE_BUILD_DIR="build"
+# Number of parallel build jobs
+ARG MRTRIX3_BUILD_JOBS="1"
 
 RUN apt-get -qq update \
     && apt-get install -yq --no-install-recommends \
+        cmake \
         libeigen3-dev \
         libfftw3-dev \
         libgl1-mesa-dev \
         libpng-dev \
-        libqt5opengl5-dev \
-        libqt5svg5-dev \
+        libqt6base-dev \
+        libqt6svg6-dev \
         libtiff5-dev \
+        ninja-build \
         python3 \
-        qtbase5-dev \
         zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Clone, build, and install MRtrix3.
+# Clone, configure, and build MRtrix3.
 ARG MAKE_JOBS
+ARG MRTRIX3_CMAKE_BUILD_DIR
+ARG MRTRIX3_BUILD_JOBS
 WORKDIR /opt/mrtrix3
 RUN git clone -b $MRTRIX3_GIT_COMMITISH --depth 1 https://github.com/MRtrix3/mrtrix3.git . \
-    && python3 ./configure $MRTRIX3_CONFIGURE_FLAGS \
-    && NUMBER_OF_PROCESSORS=$MAKE_JOBS python3 ./build $MRTRIX3_BUILD_FLAGS \
-    && rm -rf tmp
+    && cmake -B $MRTRIX3_CMAKE_BUILD_DIR -GNinja -DCMAKE_INSTALL_PREFIX=/opt/mrtrix3 . \
+    && cmake --build $MRTRIX3_CMAKE_BUILD_DIR -j $MRTRIX3_BUILD_JOBS \
+    && cmake --install $MRTRIX3_CMAKE_BUILD_DIR \
+    && rm -rf $MRTRIX3_CMAKE_BUILD_DIR
 
 # Download minified ART ACPCdetect (V2.0).
 FROM base-builder AS acpcdetect-installer
@@ -75,13 +79,13 @@ RUN apt-get -qq update \
         libgomp1 \
         liblapack3 \
         libpng16-16 \
-        libqt5core5a \
-        libqt5gui5 \
-        libqt5network5 \
-        libqt5svg5 \
-        libqt5widgets5 \
+        libqt6core6t64 \
+        libqt6gui6t64 \
+        libqt6network6t64 \
+        libqt6svg6 \
+        libqt6widgets6t64 \
         libquadmath0 \
-        libtiff5-dev \
+        libtiff6 \
         python3-distutils \
         procps \
     && rm -rf /var/lib/apt/lists/*
@@ -103,7 +107,7 @@ ENV ANTSPATH="/opt/ants/bin" \
     PATH="/opt/mrtrix3/bin:/opt/ants/bin:/opt/art/bin:/opt/fsl/share/fsl/bin:$PATH"
 
 # Fix "Singularity container cannot load libQt5Core.so.5" on CentOS 7
-RUN strip --remove-section=.note.ABI-tag /usr/lib/x86_64-linux-gnu/libQt5Core.so.5 \
+RUN strip --remove-section=.note.ABI-tag /usr/lib/x86_64-linux-gnu/libQt6Core.so.6 \
     && ldconfig \
     && apt-get purge -yq binutils
 
