@@ -175,6 +175,12 @@ run_checks() {
     )
   fi
 
+# detect use of std::visit with a lambda function
+  res="$res"$(
+    cat .check_syntax4.tmp | \
+    $grep -Po 'std::visit\s?\(\s?\[\s?(&?\w+(,\s?&?\w+)*)?\]\s?\('
+  )
+
   rm -f .check_syntax1.tmp .check_syntax2.tmp .check_syntax3.tmp .check_syntax4.tmp
 
 # if anything is left after that, show it:
@@ -248,6 +254,7 @@ else
   - Replace all instances of %zu in print() calls with PRI_SIZET;
   - Use nullptr rather than NULL macro;
   - Use std::numeric_limits<> or MR::NaN(F) / MR::Inf(F) rather than macros NAN / INFINITY;
-  - Do not use C-style arrays (replace with eg. std::array<>)." >> $LOG
+  - Do not use C-style arrays (replace with eg. std::array<>);
+  - Use MR::match_v() rather than std::visit() with a lambda function." >> $LOG
   exit 1
 fi
