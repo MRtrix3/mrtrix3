@@ -329,7 +329,7 @@ private:
       case term_t::HIGH_CURVATURE:
         if (method.act().sgm_depth)
           termination = term_t::TERM_IN_SGM;
-        else if (!method.act().in_pathology())
+        else if (!method.act().in_other())
           track_excluded = true;
         break;
       }

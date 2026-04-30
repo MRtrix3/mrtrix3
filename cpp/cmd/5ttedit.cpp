@@ -65,7 +65,7 @@ void usage() {
   + Option ("csf", "provide an image of new CSF partial volume fractions")
     + Argument ("image").type_image_in()
 
-  + Option ("path", "provide an image of new pathological tissue partial volume fractions")
+  + Option ("other", "provide an image of new other-tissue partial volume fractions")
     + Argument ("image").type_image_in()
 
   + Option ("none", "provide a mask of voxels that should be cleared"
@@ -100,7 +100,7 @@ public:
   void set_sgm_input(std::string_view path) { load(path, 1); }
   void set_wm_input(std::string_view path) { load(path, 2); }
   void set_csf_input(std::string_view path) { load(path, 3); }
-  void set_path_input(std::string_view path) { load(path, 4); }
+  void set_other_input(std::string_view other_path) { load(other_path, 4); }
 
   void set_none_mask(std::string_view path) {
     none = Image<bool>::open(path);
@@ -242,9 +242,9 @@ void run() {
   opt = get_options("csf");
   if (!opt.empty())
     modifier.set_csf_input(opt[0][0]);
-  opt = get_options("path");
+  opt = get_options("other");
   if (!opt.empty())
-    modifier.set_path_input(opt[0][0]);
+    modifier.set_other_input(opt[0][0]);
   opt = get_options("none");
   if (!opt.empty())
     modifier.set_none_mask(opt[0][0]);

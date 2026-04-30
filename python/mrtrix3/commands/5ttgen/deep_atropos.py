@@ -87,7 +87,7 @@ def execute():  #pylint: disable=unused-variable
     run.command('mrcalc input.mif 4 -eq input.mif 6 -eq -add sGM.mif')
     run.command(f'mrcalc input.mif 3 -eq{" input.mif 5 -eq -add" if app.ARGS.white_stem else ""} WM.mif')
     run.command('mrcalc input.mif 1 -eq CSF.mif')
-    run.command(f'mrcalc input.mif {("0 -mult" if app.ARGS.white_stem else "5 -eq")} path.mif')
+    run.command(f'mrcalc input.mif {("0 -mult" if app.ARGS.white_stem else "5 -eq")} other.mif')
   else:
     # Brain mask = non-brain probability is <50%
     run.command('mrconvert input.mif -coord 3 0 -axes 0,1,2 - | '
@@ -108,12 +108,12 @@ def execute():  #pylint: disable=unused-variable
       run.command('mrconvert input.mif -coord 3 3 -axes 0,1,2 WM.mif')
     run.command('mrconvert input.mif -coord 3 1 -axes 0,1,2 CSF.mif')
     if app.ARGS.white_stem:
-      run.command('mrcalc cGM.mif 0 -mult path.mif')
+      run.command('mrcalc cGM.mif 0 -mult other.mif')
     else:
-      run.command('mrconvert input.mif -coord 3 5 -axes 0,1,2 path.mif')
+      run.command('mrconvert input.mif -coord 3 5 -axes 0,1,2 other.mif')
 
   # Concatenate into the 5TT image
-  run.command('mrcat cGM.mif sGM.mif WM.mif CSF.mif path.mif - -axis 3 | '
+  run.command('mrcat cGM.mif sGM.mif WM.mif CSF.mif other.mif - -axis 3 | '
     f'{"mrcalc - multiplier.mif -mult mask.mif -mult - | " if len(dim) == 4 else ""}'
     'mrconvert - combined_precrop.mif -strides +2,+3,+4,+1')
 

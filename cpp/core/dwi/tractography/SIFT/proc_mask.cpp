@@ -120,7 +120,7 @@ void ResampleFunctor::operator()(const Iterator &pos) {
     out.index(3) = 3;
     out.value() = tissues.get_csf();
     out.index(3) = 4;
-    out.value() = tissues.get_path();
+    out.value() = tissues.get_other();
   } else {
     for (out.index(3) = 0; out.index(3) != 5; ++out.index(3))
       out.value() = 0.0;
@@ -132,7 +132,7 @@ ACT::Tissues ResampleFunctor::ACT2pve(const Iterator &pos) {
   static const float os_step = 1.0 / static_cast<float>(os_ratio);
   static const float os_offset = 0.5 * os_step;
 
-  size_t cgm_count = 0, sgm_count = 0, wm_count = 0, csf_count = 0, path_count = 0, total_count = 0;
+  size_t cgm_count = 0, sgm_count = 0, wm_count = 0, csf_count = 0, other_count = 0, total_count = 0;
 
   Eigen::Array3i i;
   Eigen::Vector3f subvoxel_pos_dwi;
@@ -156,8 +156,8 @@ ACT::Tissues ResampleFunctor::ACT2pve(const Iterator &pos) {
               ++wm_count;
             else if (tissues.is_csf())
               ++csf_count;
-            else if (tissues.is_path())
-              ++path_count;
+            else if (tissues.is_other())
+              ++other_count;
             else
               --total_count;
           }
@@ -171,7 +171,7 @@ ACT::Tissues ResampleFunctor::ACT2pve(const Iterator &pos) {
                         sgm_count / static_cast<float>(total_count),
                         wm_count / static_cast<float>(total_count),
                         csf_count / static_cast<float>(total_count),
-                        path_count / static_cast<float>(total_count));
+                        other_count / static_cast<float>(total_count));
   } else {
     return ACT::Tissues();
   }

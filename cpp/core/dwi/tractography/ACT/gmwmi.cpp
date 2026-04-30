@@ -67,7 +67,7 @@ bool GMWMI_finder::find_interface(Eigen::Vector3f &p, Interp &interp) const {
 
   // Make sure an appropriate cost function minimum has been found, and that
   //   this would be an acceptable termination point if it were processed by the tracking algorithm
-  if (!tissues.valid() || tissues.is_csf() || tissues.is_path() || !tissues.get_wm() ||
+  if (!tissues.valid() || tissues.is_csf() || tissues.is_other() || !tissues.get_wm() ||
       (std::fabs(tissues.get_gm() - tissues.get_wm()) > gmwmi_accuracy)) {
 
     p.fill(NaNF);

@@ -245,8 +245,8 @@ def execute(): #pylint: disable=unused-variable
   run.command('mrcalc multiplier.mif -finite multiplier.mif 0.0 -if multiplier_noNAN.mif')
   run.command(f'mrcalc {fast_gm_output} multiplier_noNAN.mif -mult remove_unconnected_wm_mask.mif -mult cgm.mif')
   run.command(f'mrcalc {fast_wm_output} multiplier_noNAN.mif -mult remove_unconnected_wm_mask.mif -mult wm.mif')
-  run.command('mrcalc 0 wm.mif -min path.mif')
-  run.command('mrcat cgm.mif sgm.mif wm.mif csf.mif path.mif - -axis 3 | '
+  run.command('mrcalc 0 wm.mif -min other.mif')
+  run.command('mrcat cgm.mif sgm.mif wm.mif csf.mif other.mif - -axis 3 | '
               'mrconvert - combined_precrop.mif -strides +2,+3,+4,+1')
 
   # Crop to reduce file size (improves caching of image data during tracking)

@@ -916,7 +916,7 @@ def execute(): #pylint: disable=unused-variable
 
 
 
-  # Move brain stem from white matter to pathology at final step:
+  # Move brain stem from white matter to other at final step:
   #   this prevents the brain stem segmentation from overwriting other
   #   structures that it otherwise wouldn't if it were written to WM
   if not app.ARGS.white_stem:

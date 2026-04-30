@@ -36,7 +36,7 @@ Options
 
 -  **-csf image** provide an image of new CSF partial volume fractions
 
--  **-path image** provide an image of new pathological tissue partial volume fractions
+-  **-other image** provide an image of new other-tissue partial volume fractions
 
 -  **-none image** provide a mask of voxels that should be cleared (i.e. are non-brain)
 
