@@ -28,8 +28,8 @@ namespace Algorithms {
 
 class Base {
 public:
-  Base() {}
-  ~Base() {}
+  Base() = default;
+  virtual ~Base() = default;
 
   void export_cost_image(std::string_view path) {
     if (!cost_image.valid())
@@ -38,9 +38,9 @@ public:
     copy(cost_image, output);
   }
 
-  virtual vector<vector<uint32_t>> operator()(const voxel_t &v,
-                                              const vector<Correspondence::Fixel> &s,
-                                              const vector<Correspondence::Fixel> &t) const = 0;
+  virtual std::vector<std::vector<uint32_t>> operator()(const voxel_t &v,
+                                                        const std::vector<Correspondence::Fixel> &s,
+                                                        const std::vector<Correspondence::Fixel> &t) const = 0;
 
 protected:
   Image<float> cost_image;

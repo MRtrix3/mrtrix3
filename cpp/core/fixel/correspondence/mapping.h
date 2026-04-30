@@ -24,7 +24,7 @@ namespace Correspondence {
 // TODO Do we want to store a fractional weight for each projection as part of the mapping,
 //   both in the internal RAM representation and on the filesystem?
 //
-// TODO Change from a vector< vector<uint32_t> > (vector of fixel indices per fixel)
+// TODO Change from a std::vector< std::vector<uint32_t> > (vector of fixel indices per fixel)
 //   to something more faithful to what will be stored on disk (and have less overhead):
 //   Forward:
 //     Eigen::Array<index_type, Nt, 2, RowMajor>
@@ -60,13 +60,13 @@ public:
   // - fixels_inverse.mif: C x 1 x 1, containing target fixel indices to pull into source fixels
   void save(std::string_view directory) const;
 
-  const vector<uint32_t> &operator[](const size_t index) const { return M[index]; }
+  const std::vector<uint32_t> &operator[](const size_t index) const { return M[index]; }
 
   class Value {
   public:
-    Value(vector<vector<uint32_t>> &M, const size_t index) : M(M), index(index) { assert(index < M.size()); }
-    const vector<uint32_t> &operator()() const { return M[index]; }
-    const vector<uint32_t> &operator=(const vector<uint32_t> &data) {
+    Value(std::vector<std::vector<uint32_t>> &M, const size_t index) : M(M), index(index) { assert(index < M.size()); }
+    const std::vector<uint32_t> &operator()() const { return M[index]; }
+    const std::vector<uint32_t> &operator=(const std::vector<uint32_t> &data) {
       M[index] = data;
       return M[index];
     }
@@ -76,7 +76,7 @@ public:
     }
 
   private:
-    vector<vector<uint32_t>> &M;
+    std::vector<std::vector<uint32_t>> &M;
     const size_t index;
   };
   Value operator[](const size_t index) { return Value(M, index); }
@@ -84,11 +84,11 @@ public:
   size_t size() const { return M.size(); }
 
   // TODO Modify to yield a complete instance of the Mapping class?
-  vector<vector<uint32_t>> inverse() const;
+  std::vector<std::vector<uint32_t>> inverse() const;
 
 private:
   uint32_t source_fixels, target_fixels;
-  vector<vector<uint32_t>> M;
+  std::vector<std::vector<uint32_t>> M;
 
   void save(std::string_view directory, const bool export_inverse) const;
 };

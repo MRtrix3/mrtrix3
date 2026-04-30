@@ -84,7 +84,7 @@ void Matcher::operator()(Image<uint32_t> &voxel) {
   //   then be palmed off to the appropriate algorithm
   // By pre-loading into vectors, can have fixels in both spaces indexed from zero
   //   during the correspondence determination
-  vector<Correspondence::Fixel> source_fixels, target_fixels;
+  std::vector<Correspondence::Fixel> source_fixels, target_fixels;
   for (uint32_t i = 0; i != nfixels_source; ++i) {
     source_directions.index(0) = source_data.index(0) = offset_source + i;
     source_fixels.push_back(Correspondence::Fixel(source_directions.row(1), source_data.value()));
@@ -94,7 +94,7 @@ void Matcher::operator()(Image<uint32_t> &voxel) {
     target_fixels.push_back(Correspondence::Fixel(target_directions.row(1), target_data.value()));
   }
 
-  vector<vector<uint32_t>> M;
+  std::vector<std::vector<uint32_t>> M;
   if (target_fixels.size()) {
     if (source_fixels.size())
       M = (*algorithm)({static_cast<uint32_t>(voxel.index(0)),
@@ -103,7 +103,7 @@ void Matcher::operator()(Image<uint32_t> &voxel) {
                        source_fixels,
                        target_fixels);
     else
-      M.assign(target_fixels.size(), vector<uint32_t>());
+      M.assign(target_fixels.size(), std::vector<uint32_t>());
   }
 
   // TODO Generate the set of remapped subject fixels

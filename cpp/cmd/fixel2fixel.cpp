@@ -162,7 +162,7 @@ public:
     //   - Wherever an input fixel contributes to more than one output fixel, its
     //     volume is effectively "spread" over those fixels; hence it needs to
     //     contribute with less weight
-    vector<uint8_t> objectives_per_source_fixel(input_header.size(0), 0);
+    std::vector<uint8_t> objectives_per_source_fixel(input_header.size(0), 0);
     for (size_t out_index = 0; out_index != correspondence.size(); ++out_index) {
       for (auto i : correspondence[out_index]) {
         assert(i < input_header.size(0));
@@ -201,8 +201,8 @@ public:
     // Regardless of which metric we are calculating, still need to
     //   accumulate all of the input fixel data for this output fixel
 
-    vector<dir_t> directions;
-    vector<float> values, weights;
+    std::vector<dir_t> directions;
+    std::vector<float> values, weights;
     for (auto i : in_indices) {
       // If set up to fill with NaN whenever an input fixel contributes to more than one output fixel,
       //   need to see if any of the input fixels for this output fixel also contribute to at least one

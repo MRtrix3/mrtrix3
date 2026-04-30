@@ -23,7 +23,7 @@ namespace Fixel {
 namespace Correspondence {
 
 Mapping::Mapping(const uint32_t source_fixels, const uint32_t target_fixels)
-    : source_fixels(source_fixels), target_fixels(target_fixels), M(target_fixels, vector<uint32_t>()) {}
+    : source_fixels(source_fixels), target_fixels(target_fixels), M(target_fixels, std::vector<uint32_t>()) {}
 
 Mapping::Mapping(std::string_view directory) { load(directory); }
 
@@ -34,7 +34,7 @@ void Mapping::load(std::string_view directory, const bool import_inverse) {
   Header converse_index_header =
       Header::open(Path::join(directory, std::string("index_") + (import_inverse ? "forward" : "inverse") + ".mif"));
 
-  M.assign(index_image.size(0), vector<uint32_t>());
+  M.assign(index_image.size(0), std::vector<uint32_t>());
   for (uint32_t t_index = 0; t_index != index_image.size(0); ++t_index) {
     index_image.index(0) = t_index;
     index_image.index(1) = 0;
@@ -58,8 +58,8 @@ void Mapping::save(std::string_view directory) const {
   save(directory, true);
 }
 
-vector<vector<uint32_t>> Mapping::inverse() const {
-  vector<vector<uint32_t>> Minv(source_fixels, vector<uint32_t>());
+std::vector<std::vector<uint32_t>> Mapping::inverse() const {
+  std::vector<std::vector<uint32_t>> Minv(source_fixels, std::vector<uint32_t>());
   for (uint32_t t_index = 0; t_index != target_fixels; ++t_index) {
     for (auto s_index : M[t_index])
       Minv[s_index].push_back(t_index);
@@ -68,10 +68,10 @@ vector<vector<uint32_t>> Mapping::inverse() const {
 }
 
 void Mapping::save(std::string_view directory, const bool export_inverse) const {
-  vector<vector<uint32_t>> Minv;
+  std::vector<std::vector<uint32_t>> Minv;
   if (export_inverse)
     Minv = inverse();
-  const vector<vector<uint32_t>> &data(export_inverse ? Minv : M);
+  const std::vector<std::vector<uint32_t>> &data(export_inverse ? Minv : M);
   const std::string dir_string = (export_inverse ? "inverse" : "forward");
   const std::string index_path = Path::join(directory, "index_" + dir_string + ".mif");
   const std::string fixels_path = Path::join(directory, "fixels_" + dir_string + ".mif");

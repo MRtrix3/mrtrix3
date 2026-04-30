@@ -27,7 +27,7 @@ namespace Correspondence {
 class Adjacency {
 
 public:
-  Adjacency(const vector<Correspondence::Fixel> &fixels) {
+  Adjacency(const std::vector<Correspondence::Fixel> &fixels) {
     if (fixels.size() < min_dirs_to_enforce_adjacency)
       return;
     Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> temp(fixels.size(), 3);
@@ -42,12 +42,12 @@ public:
       return true;
     assert(i < dirs->size());
     assert(j < dirs->size());
-    return dirs->dirs_are_adjacent(i, j);
+    return dirs->adjacent(i, j);
   }
 
   // Is a specific set of source fixels permissible?
   // For all fixels, at least one of the other fixels in the set must be present in the adjacency set
-  bool operator()(const vector<uint32_t> &indices) const {
+  bool operator()(const std::vector<uint32_t> &indices) const {
     if (!dirs || indices.size() < 2)
       return true;
     for (const auto i : indices) {

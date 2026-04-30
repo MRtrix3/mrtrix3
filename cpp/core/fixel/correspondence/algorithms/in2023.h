@@ -36,9 +36,9 @@ public:
   IN2023(const size_t max_origins_per_target, const size_t max_objectives_per_source, const Header &H_cost)
       : Combinatorial(max_origins_per_target, max_objectives_per_source, H_cost) {}
 
-  FORCE_INLINE static float calculate(const vector<Correspondence::Fixel> &s,
-                                      const vector<Correspondence::Fixel> &rs,
-                                      const vector<Correspondence::Fixel> &t,
+  FORCE_INLINE static float calculate(const std::vector<Correspondence::Fixel> &s,
+                                      const std::vector<Correspondence::Fixel> &rs,
+                                      const std::vector<Correspondence::Fixel> &t,
                                       const Eigen::Array<int8_t, Eigen::Dynamic, 1> &objectives_per_source_fixel,
                                       const Eigen::Array<int8_t, Eigen::Dynamic, 1> &origins_per_remapped_fixel) {
     assert(rs.size() == t.size());

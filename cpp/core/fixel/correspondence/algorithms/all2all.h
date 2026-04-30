@@ -30,11 +30,11 @@ class All2All : public Base {
 public:
   All2All() {}
   virtual ~All2All() {}
-  vector<vector<uint32_t>> operator()(const voxel_t &,
-                                      const vector<Correspondence::Fixel> &s,
-                                      const vector<Correspondence::Fixel> &t) const final {
-    vector<vector<uint32_t>> result;
-    vector<uint32_t> all_s;
+  std::vector<std::vector<uint32_t>> operator()(const voxel_t &,
+                                                const std::vector<Correspondence::Fixel> &s,
+                                                const std::vector<Correspondence::Fixel> &t) const final {
+    std::vector<std::vector<uint32_t>> result;
+    std::vector<uint32_t> all_s;
     for (uint32_t i = 0; i != s.size(); ++i)
       all_s.push_back(i);
     result.assign(t.size(), all_s);

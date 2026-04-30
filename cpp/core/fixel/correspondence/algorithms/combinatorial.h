@@ -54,9 +54,9 @@ public:
 
   virtual ~Combinatorial() {}
 
-  vector<vector<uint32_t>> operator()(const voxel_t &v,
-                                      const vector<Correspondence::Fixel> &s,
-                                      const vector<Correspondence::Fixel> &t) const final {
+  std::vector<std::vector<uint32_t>> operator()(const voxel_t &v,
+                                                const std::vector<Correspondence::Fixel> &s,
+                                                const std::vector<Correspondence::Fixel> &t) const final {
     if (std::max(s.size(), t.size()) > max_fixels_for_no_combinatorial_warning &&
         !fixel_count_warning_issued.test_and_set(std::memory_order_relaxed)) {
       WARN("Excessive fixel counts can currently lead to prohibitively long execution times; "
@@ -66,7 +66,7 @@ public:
 
     // For each remapped source fixel, these are the source fixels
     //   from which they could possibly be derived
-    vector<vector<uint32_t>> remapping_origins;
+    std::vector<std::vector<uint32_t>> remapping_origins;
 
     // May need to forbid certain mappings due to source fixels not forming a
     //   cohesive cluster (based on connectivity in the convex set)
@@ -96,7 +96,7 @@ public:
               << max_src_fixel_combinations << " maximum combinations for " << s.size() << " source fixels:\n";
 #endif
     for (uint32_t code = 0; code != max_src_fixel_combinations; ++code) {
-      vector<uint32_t> fixels;
+      std::vector<uint32_t> fixels;
 #ifdef FIXELCORRESPONDENCE_TEST_PERVOXEL
       std::cerr << "[ ";
 #endif
@@ -168,7 +168,7 @@ public:
     /////////////////////////////////////////////////////////////
 
     // Each template fixel indexes into "remapping_origins"
-    vector<uint32_t> mapping(t.size(), 0);
+    std::vector<uint32_t> mapping(t.size(), 0);
 
     // Note: Signed type used to permit 8-bit Math::pow2() following subtraction of 1 from 0
     //   within some CostFunctors
@@ -184,7 +184,7 @@ public:
     // Required for enforcing the criterion where if a single source fixel maps to
     //   multiple template fixels, those template fixels must not be disconnected
     //   from one another in the space of convex hull adjacency
-    vector<vector<uint32_t>> inv_mapping(s.size());
+    std::vector<std::vector<uint32_t>> inv_mapping(s.size());
     const Correspondence::Adjacency adjacency_t(t);
 
 #if defined(FIXELCORRESPONDENCE_TEST_COMBINATORICS) || !defined(NDEBUG)
@@ -193,7 +193,7 @@ public:
     uint64_t skipped_entirely_counter = 0;
 #endif
 
-    vector<vector<uint32_t>> result;
+    std::vector<std::vector<uint32_t>> result;
     float min_cost = std::numeric_limits<float>::infinity();
 
     do {
@@ -345,12 +345,12 @@ public:
 #endif
 
         // Loops over remapped source fixels
-        vector<Correspondence::Fixel> rs;
+        std::vector<Correspondence::Fixel> rs;
         for (uint32_t rs_index = 0; rs_index != t.size(); ++rs_index) {
 
           // This is the list of source fixels from which data shall be drawn
           //   in the construction of this remapped source fixel
-          const vector<uint32_t> &origin_fixels(remapping_origins[mapping[rs_index]]);
+          const std::vector<uint32_t> &origin_fixels(remapping_origins[mapping[rs_index]]);
 
           mean_direction.setZero();
           sum_densities = 0.0f;
@@ -424,9 +424,9 @@ protected:
   // Derived class function to calculate cost function
   // CRTP to template out: Can't be calling a virtual function
   //   this regularly without severe slowdown...
-  FORCE_INLINE static float calculate(const vector<Correspondence::Fixel> &s,
-                                      const vector<Correspondence::Fixel> &rs,
-                                      const vector<Correspondence::Fixel> &t,
+  FORCE_INLINE static float calculate(const std::vector<Correspondence::Fixel> &s,
+                                      const std::vector<Correspondence::Fixel> &rs,
+                                      const std::vector<Correspondence::Fixel> &t,
                                       const Eigen::Array<int8_t, Eigen::Dynamic, 1> &objectives_per_source_fixel,
                                       const Eigen::Array<int8_t, Eigen::Dynamic, 1> &origins_per_remapped_fixel) {
     return CostFunctor::calculate(s, rs, t, objectives_per_source_fixel, origins_per_remapped_fixel);
