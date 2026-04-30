@@ -39,10 +39,10 @@ Include: apt
     apt-get update && apt-get upgrade -y
 
 # Runtime requirements
-    apt-get update && apt-get install -y --no-install-recommends dbus dc less libfftw3-bin liblapack3 libpng16-16 libqt6core6t64 libqt6gui6t64 libqt6network6t64 libqt6svg6 libqt6widgets6t64 python3 python3-distutils zlib1g
+    apt-get update && apt-get install -y --no-install-recommends dbus dc less libfftw3-bin liblapack3 libpng16-16 libqt6core6 libqt6gui6 libqt6network6 libqt6opengl6 libqt6openglwidgets6 libqt6svg6 libqt6widgets6 python3 python3-distutils zlib1g
 
 # Build requirements
-    apt-get update && apt-get install -y --no-install-recommends build-essential ca-certificates cmake curl git libeigen3-dev libfftw3-dev libgl1-mesa-dev libpng-dev libqt6base-dev libqt6svg6-dev libtiff6-dev ninja-build wget zlib1g-dev
+    apt-get update && apt-get install -y --no-install-recommends build-essential ca-certificates cmake curl git libeigen3-dev libfftw3-dev libgl1-mesa-dev libpng-dev libqt6opengl6-dev libqt6svg6-dev libtiff6-dev ninja-build qt6-base-dev wget zlib1g-dev
 
 # Neuroimaging software / data dependencies
     # Download minified ART ACPCdetect (V2.0).

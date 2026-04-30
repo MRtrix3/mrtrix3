@@ -20,11 +20,12 @@ RUN apt-get -qq update \
         libfftw3-dev \
         libgl1-mesa-dev \
         libpng-dev \
-        libqt6base-dev \
+        libqt6opengl6-dev \
         libqt6svg6-dev \
         libtiff5-dev \
         ninja-build \
         python3 \
+        qt6-base-dev \
         zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 
@@ -79,11 +80,13 @@ RUN apt-get -qq update \
         libgomp1 \
         liblapack3 \
         libpng16-16 \
-        libqt6core6t64 \
-        libqt6gui6t64 \
-        libqt6network6t64 \
+        libqt6core6 \
+        libqt6gui6 \
+        libqt6network6 \
+        libqt6opengl6 \
+        libqt6openglwidgets6 \
         libqt6svg6 \
-        libqt6widgets6t64 \
+        libqt6widgets6 \
         libquadmath0 \
         libtiff6 \
         python3-distutils \
