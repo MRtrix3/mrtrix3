@@ -1,0 +1,12 @@
+#!/bin/bash
+# Verify intended operation of the -ignorezero command-line flag
+# This test is based on the assertion that the following statement should be true:
+#   multiplying some voxels of the input image by zero,
+#   and then specifying the -ignorezero flag,
+#   should have an equivalent effect on calculation of the median across all other voxels
+#   than would instead specifying the complement set of voxels from which the median should be calculated.
+mrcalc mrthreshold/3d_median_masked.mif mask.mif -mult tmp.mif -force
+
+mrcalc dwi_mean.mif mask.mif -mult - | \
+mrthreshold - -percentile 50 -ignorezero - | \
+testing_diff_image - tmp.mif

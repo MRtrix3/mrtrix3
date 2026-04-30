@@ -1,0 +1,6 @@
+# Test that command runs without error when a mask is provided
+dwiextract dwi.mif - | \
+tckglobal - response.txt tmp.tck \
+    -mask mask.mif \
+    -niter 100000 \
+    -force

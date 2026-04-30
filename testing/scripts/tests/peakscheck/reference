@@ -1,0 +1,273 @@
+#!/bin/bash
+# Verify operation of the "peakscheck" command
+#   with respect to different reference axes in the input dataset
+# In particular this test is interested in the distinction
+#   between the "ijk" and "fsl" reference axes;
+#   this is facilitated in part
+#   through accessing two different versions of the same input DICOM series
+#   that have been converted through MRtrix3 mrconvert and dcm2niix,
+#   which have yielded right-handed (positive determinant)
+#   and left-handed (negative determinant) axis sets respectively.
+
+echo "IJK reference 3-vectors"
+peaksconvert peakscheck/posdet_xyz3vector.mif \
+    -out_reference ijk \
+    tmp_posdet_ijk3vector.mif \
+    -config RealignTransform false \
+    -force
+peakscheck tmp_posdet_ijk3vector.mif \
+    -in_reference ijk
+
+peaksconvert peakscheck/negdet_xyz3vector.mif \
+    -out_reference ijk \
+    tmp_negdet_ijk3vector.mif \
+    -config RealignTransform false \
+    -force
+peakscheck tmp_negdet_ijk3vector.mif \
+    -in_reference ijk
+
+echo "FSL reference 3-vectors"
+peaksconvert peakscheck/posdet_xyz3vector.mif \
+    -out_reference fsl \
+    tmp_posdet_fsl3vector.mif \
+    -config RealignTransform false \
+    -force
+peakscheck tmp_posdet_fsl3vector.mif \
+    -in_reference fsl
+
+peaksconvert peakscheck/negdet_xyz3vector.mif \
+    -out_reference fsl \
+    tmp_negdet_fsl3vector.mif \
+    -config RealignTransform false \
+    -force
+peakscheck tmp_negdet_fsl3vector.mif \
+    -in_reference fsl
+
+# Manual manipulation of 3-vectors
+# Based on an understanding of how FSL interprets such data,
+#   it should be the case that:
+# - For an image with a negative determinant,
+#   the "ijk" and "fsl" references should be equivalent
+# - For an image with a positive determinant,
+#   the "ijk" and "fsl" references should differ in the sign
+#   of the first coefficient of each 3-vector
+
+# a. With a negative determinant,
+#   an image defined with respect to the "ijk" reference
+#   can be safely interpreted as being with respect to the "fsl" reference
+#   and vice-versa,
+#   as the two are identical
+echo "Interoperability of IJK and FSL references for negative determinant image"
+peakscheck tmp_negdet_ijk3vector.mif -in_reference fsl
+peakscheck tmp_negdet_fsl3vector.mif -in_reference ijk
+
+# b. With a negative determinant,
+#   if we *erroneously* flip the first coefficient of each of the vectors
+#   as defined with respect to the "ijk" reference,
+#   then the expected transform should be sub-optimal
+#   if the input data are erroneously interpreted
+#   as being with respect to the "fsl" reference
+echo "Ensuring erroneous first-axis flip translation between IJK and FSL references" \
+     "for negative determinant image"
+mrcat \
+    $(mrconvert tmp_negdet_ijk3vector.mif \
+          -coord 3 0 \
+          -config RealignTransform false \
+          - | \
+      mrcalc - -1 -mult - \
+          -config RealignTransform false) \
+    $(mrconvert tmp_negdet_ijk3vector.mif \
+          -coord 3 1,2 \
+          -config RealignTransform false \
+          -) \
+    $(mrconvert tmp_negdet_ijk3vector.mif \
+          -coord 3 3 \
+          -config RealignTransform false \
+          - | \
+      mrcalc - -1 -mult - \
+          -config RealignTransform false) \
+    $(mrconvert tmp_negdet_ijk3vector.mif \
+          -coord 3 4,5 \
+          -config RealignTransform false \
+          -) \
+    $(mrconvert tmp_negdet_ijk3vector.mif \
+          -coord 3 6 \
+          -config RealignTransform false \
+          - | \
+      mrcalc - -1 -mult - \
+          -config RealignTransform false) \
+    $(mrconvert tmp_negdet_ijk3vector.mif \
+          -coord 3 7,8 \
+          -config RealignTransform false \
+          -) \
+    tmp_negdet_ijk3vector_negi.mif \
+    -axis 3 \
+    -config RealignTransform false \
+    -force
+! peakscheck tmp_negdet_ijk3vector_negi.mif -in_reference fsl
+
+mrcat \
+    $(mrconvert tmp_negdet_fsl3vector.mif \
+          -coord 3 0 \
+          -config RealignTransform false \
+          - | \
+      mrcalc - -1 -mult - \
+          -config RealignTransform false) \
+    $(mrconvert tmp_negdet_fsl3vector.mif \
+          -coord 3 1,2 \
+          -config RealignTransform false \
+          -) \
+    $(mrconvert tmp_negdet_fsl3vector.mif \
+          -coord 3 3 \
+          -config RealignTransform false \
+          - | \
+      mrcalc - -1 -mult - \
+          -config RealignTransform false) \
+    $(mrconvert tmp_negdet_fsl3vector.mif \
+          -coord 3 4,5 \
+          -config RealignTransform false \
+          -) \
+    $(mrconvert tmp_negdet_fsl3vector.mif \
+          -coord 3 6 \
+          -config RealignTransform false \
+          - | \
+      mrcalc - -1 -mult - \
+          -config RealignTransform false) \
+    $(mrconvert tmp_negdet_fsl3vector.mif \
+          -coord 3 7,8 \
+          -config RealignTransform false \
+          -) \
+    tmp_negdet_fsl3vector_negi.mif \
+    -axis 3 \
+    -config RealignTransform false \
+    -force
+! peakscheck tmp_negdet_fsl3vector_negi.mif -in_reference ijk
+
+# c. With a positive determinant,
+#   an image defined with respect to the "ijk" reference
+#   will be sub-optimal if erroneously interpreted as being defined
+#   with respect to the "fsl" reference,
+#   or vice-versa
+echo "Non-interoperability of IJK and FSL references for positive determinant image"
+! peakscheck tmp_posdet_ijk3vector.mif -in_reference fsl
+! peakscheck tmp_posdet_fsl3vector.mif -in_reference ijk
+
+# d. With a positive determinant,
+#   if we manually flip the first coefficient of each of the vectors
+#   as defined with respect to the "ijk" reference,
+#   then this is equivalent to defining those vectors
+#   with respect to the "fsl" reference,
+#   and interpretation according to that reference should therefore be seen as optimal;
+#   and the same should occur if done in the opposite direction
+echo "Translation between IJK and FSL references" \
+     "through manual flipping of first coefficients"
+mrcat \
+    $(mrconvert tmp_posdet_ijk3vector.mif \
+          -coord 3 0 \
+          -config RealignTransform false \
+          - | \
+      mrcalc - -1 -mult - \
+          -config RealignTransform false) \
+    $(mrconvert tmp_posdet_ijk3vector.mif \
+          -coord 3 1,2 \
+          -config RealignTransform false \
+          -) \
+    $(mrconvert tmp_posdet_ijk3vector.mif \
+          -coord 3 3 \
+          -config RealignTransform false \
+          - | \
+      mrcalc - -1 -mult - \
+          -config RealignTransform false) \
+    $(mrconvert tmp_posdet_ijk3vector.mif \
+          -coord 3 4,5 \
+          -config RealignTransform false \
+          -) \
+    $(mrconvert tmp_posdet_ijk3vector.mif \
+          -coord 3 6 \
+          -config RealignTransform false \
+          - | \
+      mrcalc - -1 -mult - \
+          -config RealignTransform false) \
+    $(mrconvert tmp_posdet_ijk3vector.mif \
+          -coord 3 7,8 \
+          -config RealignTransform false \
+          -) \
+    tmp_posdet_ijk3vector_negi.mif \
+    -axis 3 \
+    -config RealignTransform false \
+    -force
+peakscheck tmp_posdet_ijk3vector_negi.mif -in_reference fsl
+
+mrcat \
+    $(mrconvert tmp_posdet_fsl3vector.mif \
+          -coord 3 0 \
+          -config RealignTransform false \
+          - | \
+      mrcalc - -1 -mult - \
+          -config RealignTransform false) \
+    $(mrconvert tmp_posdet_fsl3vector.mif \
+          -coord 3 1,2 \
+          -config RealignTransform false \
+          -) \
+    $(mrconvert tmp_posdet_fsl3vector.mif \
+          -coord 3 3 \
+          -config RealignTransform false \
+          - | \
+      mrcalc - -1 -mult - \
+          -config RealignTransform false) \
+    $(mrconvert tmp_posdet_fsl3vector.mif \
+          -coord 3 4,5 \
+          -config RealignTransform false \
+          -) \
+    $(mrconvert tmp_posdet_fsl3vector.mif \
+          -coord 3 6 \
+          -config RealignTransform false \
+          - | \
+      mrcalc - -1 -mult - \
+          -config RealignTransform false) \
+    $(mrconvert tmp_posdet_fsl3vector.mif \
+          -coord 3 7,8 \
+          -config RealignTransform false \
+          -) \
+    tmp_posdet_fsl3vector_negi.mif \
+    -axis 3 \
+    -config RealignTransform false \
+    -force
+peakscheck tmp_posdet_fsl3vector_negi.mif -in_reference ijk
+
+echo "Spherical coordinate inputs with alternative reference frames"
+peaksconvert peakscheck/posdet_xyz3vector.mif \
+    -out_format spherical \
+    -out_reference ijk \
+    -config RealignTransform false \
+    - | \
+peakscheck - \
+    -in_format spherical \
+    -in_reference ijk
+
+peaksconvert peakscheck/negdet_xyz3vector.mif \
+    -out_format spherical \
+    -out_reference ijk \
+    -config RealignTransform false \
+    - | \
+peakscheck - \
+    -in_format spherical \
+    -in_reference ijk
+
+peaksconvert peakscheck/posdet_xyz3vector.mif \
+    -out_format spherical \
+    -out_reference fsl \
+    -config RealignTransform false \
+    - | \
+peakscheck - \
+    -in_format spherical \
+    -in_reference fsl
+
+peaksconvert peakscheck/negdet_xyz3vector.mif \
+    -out_format spherical \
+    -out_reference fsl \
+    -config RealignTransform false \
+    - | \
+peakscheck - \
+    -in_format spherical \
+    -in_reference fsl

@@ -1,0 +1,40 @@
+#!/bin/bash
+# Various tests for appropriate handling of FSL bval format
+#   with regards to b=0 volumes
+
+mrinfo dwi.mif -export_grad_fsl tmp.bvec tmp.bval -force
+
+# Ensure that if MRtrix3 is presented with a bval file
+#   that contains NaN values
+#   (perhaps due to external software attempting to normalise b-values
+#   based on zero-norm bvecs),
+#   it will still read those in without issue
+sed "s/^0/NaN/" tmp.bval > tmp2.bval
+mrinfo dwi.mif -fslgrad tmp.bvec tmp2.bval
+
+# Ensure that if MRtrix3 is presented with a bvec file
+#   (in contrast to a bval file as in the first test)
+#   that contains NaN values,
+#   MRtrix3 will still read those without issue
+sed "s/^0/NaN/" tmp.bvec > tmp2.bvec
+mrinfo dwi.mif -fslgrad tmp2.bvec tmp.bval
+
+# If the reported b-value is NaN,
+#   but the vector direction is non-zero,
+#   then this should yield an error in MRtrix3
+sed "s/^0/1/" tmp.bvec > tmp3.bvec
+sed "s/^0/NaN/" tmp.bval > tmp3.bval
+if [[ $(mrinfo dwi.mif -fslgrad tmp3.bvec tmp3.bval) ]]; then
+    echo "Erroneously successfully read non-zero bvec with NaN bval"
+    exit 1
+fi
+
+# If the vector direction is non-finite,
+#   but the reported b-value is non-zero,
+#   then this should yield an error in MRtrix3
+sed "s/^0/NaN/" tmp.bvec > tmp4.bvec
+sed "s/^0/3000/" tmp.bval > tmp4.bval
+if [[ $(mrinfo dwi.mif -fslgrad tmp4.bvec tmp4.bval) ]]; then
+    echo "Erroneously successfully read NaN bvec with non-zero bval"
+    exit 1
+fi

@@ -1,0 +1,4 @@
+#!/bin/bash
+# Verify "5ttgen fsl" operation when the -nocrop option is specified
+5ttgen fsl BIDS/sub-01/anat/sub-01_T1w.nii.gz tmp.mif -nocrop -force
+testing_diff_header tmp.mif 5ttgen/fsl/nocrop.mif.gz

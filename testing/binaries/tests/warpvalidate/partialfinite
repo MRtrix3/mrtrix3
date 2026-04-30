@@ -1,0 +1,16 @@
+#!/bin/bash
+# Verify that if there exists any coordinate triplet
+#   that contains a mixture of finite and non-finite values,
+#   which can tehrefore be interpreted neither as a vaid displacement / deformation nor a fill,
+#   then a suitable error message is produced.
+
+mrconvert warp.mif -coord 3 0 -axes 0,1,2 - | \
+mrcalc - inf -mult tmp_inf.mif -force
+
+mrconvert warp.mif -coord 3 0,1 - | \
+mrcat - tmp_inf.mif -axis 3 tmp_partialfinite.mif -force
+
+rm -f tmp.txt
+! ( warpvalidate tmp_partialfinite.mif > tmp.txt 2>&1 )
+cat tmp.txt
+grep -E "peaks contain a mix of finite and non\\-finite values" tmp.txt

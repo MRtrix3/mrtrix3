@@ -1,0 +1,6 @@
+#!/bin/bash
+# Ensure correct operation of the "5ttgen freesurfer" command
+#  for both input and output image piping
+mrconvert BIDS/sub-01/anat/aparc+aseg.mgz - | \
+5ttgen freesurfer - - | \
+testing_diff_image - 5ttgen/freesurfer/default.mif.gz

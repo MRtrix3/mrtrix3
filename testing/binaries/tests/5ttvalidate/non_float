@@ -1,0 +1,8 @@
+#!/bin/bash
+# Ensure that input image not being of a floating-point type yields an error
+
+rm -f tmp.txt
+! ( mrconvert 5ttedit/in.mif -datatype uint8 - | \
+    5ttvalidate - > tmp.txt 2>&1 )
+cat tmp.txt
+grep "Not of floating\\-point datatype" tmp.txt

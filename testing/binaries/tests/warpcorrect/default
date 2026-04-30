@@ -1,0 +1,5 @@
+#!/bin/bash
+# Basic test of command execution
+# Outcome is compared to that generated using a prior software version
+warpcorrect warp.mif - | \
+testing_diff_image - warpcorrect/out.mif -frac 1e-5

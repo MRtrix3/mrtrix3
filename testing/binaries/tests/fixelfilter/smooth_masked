@@ -1,0 +1,19 @@
+#!/bin/bash
+# Verify "smooth" operation when input is a single fixel data file,
+#   and a fixel mask is additionally provided
+# Ensure that output matches expectations:
+# - Within the provided mask,
+#   output data should be equivalent to pre-computed smoothed data
+# - Outside of the provided mask,
+#   output data should be equivalent to the input data
+fixelfilter fixelfilter/smooth/in/sub01.mif smooth \
+    -matrix SIFT_phantom/matrix \
+    -mask SIFT_phantom/fixels/upper.mif \
+    - | \
+testing_diff_image - \
+    $(mrcalc \
+        SIFT_phantom/fixels/upper.mif \
+        fixelfilter/smooth/out/sub01.mif \
+        fixelfilter/smooth/in/sub01.mif \
+        -if -) \
+    -frac 1e-5

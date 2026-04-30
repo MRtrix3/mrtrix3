@@ -1,0 +1,4 @@
+#!/bin/bash
+# Verify "5ttgen hsvs" command when command-line flag "-white_stem" is specified
+5ttgen hsvs freesurfer/sub-01 tmp.mif -white_stem -force
+testing_diff_header tmp.mif 5ttgen/hsvs/white_stem.mif.gz

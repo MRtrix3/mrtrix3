@@ -1,0 +1,15 @@
+#!/bin/bash
+# Ensure correct operation of the "5ttgen fsl" command
+#   where image paths include whitespace
+# Make sure that the output image is stored at the expected path
+rm -f "tmp out.mif"
+rm -rf "tmp scratch"
+
+mkdir "tmp scratch"
+
+mrconvert BIDS/sub-01/anat/sub-01_T1w.nii.gz "tmp in.mif" -force
+
+5ttgen fsl "tmp in.mif" "tmp out.mif" -force \
+-scratch "tmp scratch"
+
+ls | grep "^tmp out\.mif$"

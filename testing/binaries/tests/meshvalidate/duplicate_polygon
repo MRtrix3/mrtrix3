@@ -1,0 +1,13 @@
+#!/bin/bash
+# Ensure that if two polygons share exactly the same set of vertices,
+#   the correct error message is produced.
+
+# Data committed to test_data repo rather than generating on-the-fly
+#   due to differences between BSD and Unix sed
+#sed '648c\POLYGONS 1281 5124' meshconvert/in_ascii.vtk | \
+#sed '$a 3 373 2 492' > meshvalidate/duplicate_polygon.vtk
+
+rm -f tmp.txt
+! ( meshvalidate meshvalidate/duplicate_polygon.vtk > tmp.txt 2>&1 )
+cat tmp.txt
+grep -E "1 duplicate polygon detected \\(polygons referencing the exact same set of vertices\\)" tmp.txt

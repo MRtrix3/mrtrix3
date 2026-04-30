@@ -1,0 +1,8 @@
+#!/bin/bash
+# Verify operation of the -seed_gmwmi option
+tckgen SIFT_phantom/dwi.mif -algo seedtest -act SIFT_phantom/5tt.mif -select 100000 tmp.tck -force \
+-seed_gmwmi 5tt2gmwmi/out.mif
+
+tckmap tmp.tck -template tckgen/gmwmi_seeds.mif -ends_only - | \
+mrthreshold - - -abs 0.5 | \
+testing_diff_image - tckgen/gmwmi_seeds.mif

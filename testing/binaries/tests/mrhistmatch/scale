@@ -1,0 +1,15 @@
+#!/bin/bash
+# Verify "scale" operation,
+#   which only permits use of a single multiplicative factor to match intensities between images
+# The test involves generating a modified version of the input image as the target,
+#   where a random multiplicative factor has been applied;
+#   it then ensures that when the histograms of the input image is matched to the target,
+#   the correction factor calculated by mrhistmatch
+#   matches what was known to have been applied to generate the target image
+M=$(bc <<< "scale=9; $RANDOM/16384")
+echo $M > tmp1.txt
+mrcalc b0.nii.gz $M -mult tmp1.mif -force
+
+mrhistmatch scale b0.nii.gz tmp1.mif tmp2.mif -force
+mrinfo tmp2.mif -property mrhistmatch_scale > tmp2.txt
+testing_diff_matrix tmp1.txt tmp2.txt -frac 1e-4

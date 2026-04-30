@@ -1,0 +1,11 @@
+#!/bin/bash
+# Verify operation of the -seed_sphere option
+# Results are compared to prior behaviour by counting
+#   the number of seed points within each voxel,
+#   since the seed points are drawn at random and therefore can't be directly cross-referenced
+# Tolerance on counts per voxel must nevertheless be reasonably high
+tckgen SIFT_phantom/dwi.mif -algo seedtest -select 50000 tmp.tck -force \
+-seed_sphere 0,0,4,4
+
+tckmap tmp.tck -template SIFT_phantom/dwi.mif -ends_only - | \
+testing_diff_image - tckgen/seed_sphere.mif -abs 1000

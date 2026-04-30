@@ -1,0 +1,37 @@
+#!/bin/bash
+# Generate a multi-series DWI dataset,
+#   one series per b-value shell,
+#   where an artificial scaling factor is introduced to different shells;
+#   the dwicat command should estimate and correct these scaling factors
+# Crucially, in this test,
+#   the same b=0 data are included in all shells;
+#   this means that the appropriate scaling factor to apply to each shell
+#   should be possible to calculate with high accuracy
+
+mrconvert BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval
+
+# Set of series where no artificial scaling has been applied to data from the different shells
+dwiextract tmp.mif tmp01_b1000.mif -shells 0,1000 -force
+dwiextract tmp.mif tmp01_b2000.mif -shells 0,2000 -force
+dwiextract tmp.mif tmp01_b3000.mif -shells 0,3000 -force
+mrcat tmp01_b1000.mif tmp01_b2000.mif tmp01_b3000.mif -axis 3 tmp02.mif -force
+
+# Set of series where intensity between shells is artificially modulated
+mrcalc tmp01_b2000.mif 0.2 -mult tmp03_b2000.mif -force
+mrcalc tmp01_b3000.mif 5.0 -mult tmp03_b3000.mif -force
+mrcat tmp01_b1000.mif tmp03_b2000.mif tmp03_b3000.mif -axis 3 tmp03.mif -force
+
+# For the first test,
+#   provide a brain mask to constrain those voxels that contribute to the scaling factor estimation
+dwicat tmp01_b1000.mif tmp03_b2000.mif tmp03_b3000.mif tmpmasked.mif -force \
+-mask BIDS/sub-01/dwi/sub-01_brainmask.nii.gz
+# Output of dwicat when provided with the articially scaled series
+#   should match the result of straight concatenation of unscaled series
+testing_diff_image tmpmasked.mif tmp02.mif -frac 1e-6
+
+# Do the same test,
+#   but do not provide a brain mask;
+#   the estimation of scaling factors is not quite as accurate
+dwicat tmp01_b1000.mif tmp03_b2000.mif tmp03_b3000.mif tmpunmasked.mif -force
+testing_diff_image tmpunmasked.mif tmp02.mif -frac 1e-6

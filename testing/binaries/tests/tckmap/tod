@@ -1,0 +1,7 @@
+#!/bin/bash
+# Verify operation of Track Orientation Density (TOD) imaging
+# Outcome is compared against that generated using a prior software version;
+#   a difference of up to 1 streamline is permitted
+#   in case of differences in precision / rounding between platforms
+tckmap tracks.tck -tod 6 -template dwi.mif - | \
+testing_diff_image - tckmap/tod_lmax6.mif.gz -voxel 1e-4

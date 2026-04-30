@@ -1,0 +1,21 @@
+#!/bin/bash
+# Verify operation of the dwishellmath command
+#   when image pipes are utilised
+
+mrconvert BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp_in.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval
+
+dwiextract tmp_in.mif tmp_allb0.mif -shell 0 -force
+dwiextract tmp_in.mif tmp_allb1000.mif -shell 1000 -force
+dwiextract tmp_in.mif tmp_allb2000.mif -shell 2000 -force
+dwiextract tmp_in.mif tmp_allb3000.mif -shell 3000 -force
+mrmath tmp_allb0.mif mean tmp_meanb0.mif -axis 3 -force
+mrmath tmp_allb1000.mif mean tmp_meanb1000.mif -axis 3 -force
+mrmath tmp_allb2000.mif mean tmp_meanb2000.mif -axis 3 -force
+mrmath tmp_allb3000.mif mean tmp_meanb3000.mif -axis 3 -force
+mrcat tmp_meanb0.mif tmp_meanb1000.mif tmp_meanb2000.mif tmp_meanb3000.mif tmp-target.mif -force \
+-axis 3
+
+mrconvert tmp_in.mif - | \
+dwishellmath - mean - | \
+testing_diff_image - tmp-target.mif

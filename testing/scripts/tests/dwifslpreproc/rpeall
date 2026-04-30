@@ -1,0 +1,13 @@
+#!/bin/bash
+# Test basic operation of the -rpe_all mode
+mrconvert BIDS/sub-05/dwi/sub-05_acq-1_dwi.nii.gz tmp1.mif -force \
+-fslgrad BIDS/sub-05/dwi/sub-05_acq-1_dwi.bvec BIDS/sub-05/dwi/sub-05_acq-1_dwi.bval \
+-json_import BIDS/sub-05/dwi/sub-05_acq-1_dwi.json
+mrconvert BIDS/sub-05/dwi/sub-05_acq-2_dwi.nii.gz tmp2.mif -force \
+-fslgrad BIDS/sub-05/dwi/sub-05_acq-2_dwi.bvec BIDS/sub-05/dwi/sub-05_acq-2_dwi.bval \
+-json_import BIDS/sub-05/dwi/sub-05_acq-2_dwi.json
+mrcat tmp1.mif tmp2.mif tmp-sub-05_dwi.mif -axis 3 -force
+
+dwifslpreproc tmp-sub-05_dwi.mif tmp.mif -rpe_header -force
+
+testing_diff_header tmp.mif dwifslpreproc/rpeall.mif.gz

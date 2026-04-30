@@ -1,0 +1,9 @@
+#!/bin/bash
+# Verify that when the input image has image dimensions not supported by that format,
+#   an appropriate error message is produced.
+
+rm -f tmp.txt
+! ( mrconvert peaks.mif -coord 3 0 -axes 0,1,2 - | \
+    peaksvalidate - > tmp.txt 2>&1 )
+cat tmp.txt
+grep "Expect 4 dimensions" tmp.txt

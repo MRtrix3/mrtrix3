@@ -1,0 +1,11 @@
+#!/bin/bash
+# Ensure that command exists gracefully
+#   if provided with a Spherical Harmonics image,
+#   but user neglects to include the -sh option
+# In the absence of use of that option,
+#   there is no way to know for sure whether the image intensities
+#   should be interpreted as coefficients in a spherical harmonics decomposition,
+#   or as individual volumes containing independent contrasts
+#   from which to sample
+tcksample tracks.tck fod.mif tmp.csv -stat_tck mean -force 2>&1 | \
+    grep "Input image could plausibly be interpreted as spherical harmonics; must specify the \-sh option to inform command whether to interpret image in this way"

@@ -1,0 +1,10 @@
+#!/bin/bash
+# Verify operation of the "dwinormalise mtnorm" algorithm
+#   when a processing mask is explicitly provided as input
+dwinormalise mtnorm BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmpout.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-mask BIDS/sub-01/dwi/sub-01_brainmask.nii.gz \
+-scale tmpscale.txt
+
+testing_diff_image tmpout.mif dwinormalise/mtnorm/masked_out.mif.gz -frac 1e-5
+testing_diff_matrix tmpscale.txt dwinormalise/mtnorm/masked_scale.txt -abs 1e-5

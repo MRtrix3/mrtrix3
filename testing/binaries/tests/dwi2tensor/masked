@@ -1,0 +1,5 @@
+#!/bin/bash
+# Verify operation of command when a user-specified mask is provided
+# Ensure that output matches that generated using a prior software version
+dwi2tensor dwi.mif -mask mask.mif - | \
+testing_diff_image - dwi2tensor/out_mask.mif -frac 1e-5

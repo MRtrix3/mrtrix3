@@ -1,0 +1,8 @@
+#!/bin/bash
+# Verify that when finite vertex data erroneously appears after the triplet-of-Infinities End-Of-File delimiter,
+#   an appropriate error message is produced.
+
+rm -f tmp.txt
+! ( tckvalidate tckvalidate/dataaftereofdelim.tck > tmp.txt 2>&1 )
+cat tmp.txt
+grep -E "vertex data present after the end\\-of\\-file barrier triplet" tmp.txt

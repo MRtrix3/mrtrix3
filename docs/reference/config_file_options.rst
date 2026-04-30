@@ -27,7 +27,7 @@ List of MRtrix3 configuration file options
 
 .. option:: BZeroThreshold
 
-    *default: 10.0*
+    *default: 22.5*
 
      Specifies the b-value threshold for determining those image
      volumes that correspond to b=0.
@@ -109,7 +109,8 @@ List of MRtrix3 configuration file options
 
     *default: 0.5*
 
-     The fraction of the colour of an edge connected to two selected nodes determined by the fixed selection highlight colour.
+     The fraction of the colour of an edge connected to two selected nodes determined by the fixed selection
+     highlight colour.
 
 .. option:: ConnectomeEdgeSelectedSizeMultiplier
 
@@ -151,7 +152,8 @@ List of MRtrix3 configuration file options
 
     *default: 1.0*
 
-     The multiplicative factor to apply to the transparency of nodes not currently selected nor associated with a selected node.
+     The multiplicative factor to apply to the transparency of nodes not currently selected nor associated with
+     a selected node.
 
 .. option:: ConnectomeNodeOtherColour
 
@@ -163,13 +165,15 @@ List of MRtrix3 configuration file options
 
     *default: 0.75*
 
-     The fraction of the colour of an unselected, non-associated node determined by the fixed not-selected highlight colour.
+     The fraction of the colour of an unselected, non-associated node determined by the fixed not-selected
+     highlight colour.
 
 .. option:: ConnectomeNodeOtherSizeMultiplier
 
     *default: 1.0*
 
-     The multiplicative factor to apply to the size of nodes not currently selected nor associated with a selected node.
+     The multiplicative factor to apply to the size of nodes not currently selected nor associated with a
+     selected node.
 
 .. option:: ConnectomeNodeOtherVisibilityOverride
 
@@ -312,9 +316,18 @@ List of MRtrix3 configuration file options
 
      The size (in points) of the font to be used in OpenGL viewports (mrview and shview).
 
+.. option:: GLMBatchSize
+
+    *default: 16384*
+
+     Where the GLM design matrix is fixed across all elements,
+     this is the number of elements for which data shuffling and model
+     inversion will be performed concurrently,
+     ie. in a single set of linear algebra operations
+
 .. option:: HelpCommand
 
-    *default: less*
+    *default: less -X*
 
      The command to use to display each command's help page (leave
      empty to send directly to the terminal).
@@ -570,6 +583,14 @@ List of MRtrix3 configuration file options
      qform matrix. The default is to use the sform matrix;
      set to 0 / false to override and instead use the qform.
 
+.. option:: NPYFloatMaxSavePrecision
+
+    *default: 64*
+
+     When exporting floating-point data to NumPy .npy format, do not
+     use a precision any greater than this value in bits (used to
+     minimise file size). Must be equal to either 16, 32 or 64.
+
 .. option:: NeedOpenGLCoreProfile
 
     *default: 1 (true)*
@@ -660,7 +681,8 @@ List of MRtrix3 configuration file options
 
     *default: 0.0001*
 
-     Linear registration: smallest gradient descent step measured in fraction of a voxel at which to stop registration.
+     Linear registration: smallest gradient descent step measured in fraction of a voxel at which to stop
+     registration.
 
 .. option:: ScriptScratchDir
 
@@ -682,12 +704,6 @@ List of MRtrix3 configuration file options
      script itself will be used, followed by `-tmp-` (six random
      characters are then appended to produce a unique name in cases
      where a script may be run multiple times in parallel).
-
-.. option:: SparseDataInitialSize
-
-    *default: 16777216*
-
-     Initial buffer size for data in MRtrix sparse image format file (in bytes).
 
 .. option:: SpecularExponent
 

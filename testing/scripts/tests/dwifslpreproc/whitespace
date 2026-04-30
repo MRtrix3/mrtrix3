@@ -1,0 +1,36 @@
+#!/bin/bash
+# Ensure that dwifslpreproc executes successfully
+#  whenever filesystem paths include whitespace characters
+rm -rf "tmp *"
+
+ln -s BIDS/sub-04/dwi/sub-04_dwi.nii.gz "tmp in.nii.gz"
+ln -s BIDS/sub-04/dwi/sub-04_dwi.bvec "tmp in.bvec"
+ln -s BIDS/sub-04/dwi/sub-04_dwi.bval "tmp in.bval"
+ln -s BIDS/sub-04/dwi/sub-04_dwi.json "tmp in.json"
+
+mrconvert BIDS/sub-04/fmap/sub-04_dir-1_epi.nii.gz tmp1.mif -force \
+-json_import BIDS/sub-04/fmap/sub-04_dir-1_epi.json
+mrconvert BIDS/sub-04/fmap/sub-04_dir-2_epi.nii.gz tmp2.mif -force \
+-json_import BIDS/sub-04/fmap/sub-04_dir-2_epi.json
+mrcat tmp1.mif tmp2.mif "tmp seepi.mif" -axis 3 -force
+
+dwi2mask legacy BIDS/sub-04/dwi/sub-04_dwi.nii.gz tmpeddymask.mif -force \
+-fslgrad BIDS/sub-04/dwi/sub-04_dwi.bvec BIDS/sub-04/dwi/sub-04_dwi.bval
+ln -s tmpeddymask.mif "tmp eddymask.mif"
+
+mkdir "tmp scratch"
+
+dwifslpreproc "tmp in.nii.gz" "tmp out.nii" -force \
+-fslgrad "tmp in.bvec" "tmp in.bval" \
+-json_import "tmp in.json" \
+-pe_dir ap -readout_time 0.1 -rpe_pair \
+-se_epi "tmp seepi.mif" \
+-eddy_mask "tmp eddymask.mif" \
+-eddyqc_text "tmp eddyqc" \
+-export_grad_fsl "tmp out.bvec" "tmp out.bval" \
+-scratch "tmp scratch"
+
+ls | grep "^tmp out\.nii$"
+ls | grep "^tmp out\.bvec$"
+ls | grep "^tmp out\.bval$"
+ls | grep "^tmp eddyqc$"

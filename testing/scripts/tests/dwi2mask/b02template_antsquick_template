@@ -1,0 +1,12 @@
+#!/bin/bash
+# Verify operation of "dwi2mask b02template" command, when:
+# - "antsquick" software selection,
+#   whcih invokes ANTs command "antsRegistrationSyNQuick.sh"
+# - The template image and corresponding brain mask are provided
+#   via command-line option -template
+# - The transformation is constrained to be rigid-body only
+dwi2mask b02template BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-software antsquick \
+-template dwi2mask/template_image.mif.gz dwi2mask/template_mask.mif.gz \
+-ants_options "-t r"

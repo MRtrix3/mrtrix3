@@ -1,0 +1,9 @@
+#!/bin/bash
+# Test operation of the "dwi2mask b02template" command:
+# - Using the "antsfull" software selection,
+#   which makes use of ANTs command "antsRegistration"
+# - Providing the template image and corresponding brain mask using -template command-line option
+dwi2mask b02template BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-software antsfull \
+-template dwi2mask/template_image.mif.gz dwi2mask/template_mask.mif.gz -force

@@ -1,0 +1,5 @@
+#!/bin/bash
+# Ensure that a binary VTK file can be read successfully,
+#   and is determined to be equivalent to the .tck file from which it was generated
+tckconvert tckconvert/tracks-binary.vtk tmp.tck -force
+testing_diff_tck tmp.tck tracks.tck

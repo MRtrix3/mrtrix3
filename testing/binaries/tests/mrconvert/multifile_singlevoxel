@@ -1,0 +1,13 @@
+#!/bin/bash
+# Ensures that the multi-file numbered image support works
+#   even in the situation where the input data consist of a single voxel
+mrconvert mrcat/voxel[].mih - | \
+testing_diff_header -keyval - mrcat/all_axis0.mif
+
+mrconvert mrcat/all_axis3.mif tmp-[].mif -force
+testing_diff_header -keyval tmp-0.mif mrcat/voxel1.mih
+testing_diff_header -keyval tmp-1.mif mrcat/voxel2.mih
+testing_diff_header -keyval tmp-2.mif mrcat/voxel3.mih
+testing_diff_header -keyval tmp-3.mif mrcat/voxel4.mih
+testing_diff_header -keyval tmp-4.mif mrcat/voxel5.mih
+testing_diff_header -keyval tmp-5.mif mrcat/voxel6.mih

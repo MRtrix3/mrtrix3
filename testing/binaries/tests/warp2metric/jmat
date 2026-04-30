@@ -1,0 +1,5 @@
+#!/bin/bash
+# Test export of the full Jacobain matrix in each voxel
+# Outcome is compared to that calculated using a prior software version
+warp2metric fod_warp.mif -jmat - | \
+testing_diff_image - warp2metric/jmat.mif -frac 0.001

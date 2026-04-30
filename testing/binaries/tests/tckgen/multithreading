@@ -1,0 +1,16 @@
+#!/bin/bash
+# Perform some verification of appropriate handling of multi-threaded processing
+# - If no multi-threading is performed,
+#   then for a deterministic ordered seeding mechanism of fixed cardinality
+#   and a deterministic tracking algorithm,
+#   the resulting track file should be identical to one previously generated
+# - If multi-threading is used,
+#   using the same seeding & tracking as before,
+#   then there should be one-to-one correspondence in streamlines,
+#   only that their orders may be different.
+tckgen dwi.mif -algo tensor_det -seed_grid_per_voxel mrcrop/mask.mif 3 -nthread 0 tmp.tck -force
+testing_diff_tck tmp.tck tckgen/tensor_det.tck -distance 1e-4
+
+tckgen dwi.mif -algo tensor_det -seed_grid_per_voxel mrcrop/mask.mif 3 tmp.tck -force
+testing_diff_tck tmp.tck tckgen/tensor_det.tck -unordered -distance 1e-4
+testing_diff_tck tckgen/tensor_det.tck tmp.tck -unordered -distance 1e-4

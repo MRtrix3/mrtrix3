@@ -1,0 +1,9 @@
+#!/bin/bash
+# Verify that when a triplet is present that contains a mixture of finite and non-finite values
+#   (which cannot be entirely faithfully interpreted as either a vertex location or a delimiter),
+#   an appropriate error message is produced.
+
+rm -f tmp.txt
+! ( tckvalidate tckvalidate/partialfinite.tck > tmp.txt 2>&1 )
+cat tmp.txt
+grep -E "invalid partially\\-finite triplet detected" tmp.txt

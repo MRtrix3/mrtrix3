@@ -1,0 +1,6 @@
+#!/bin/bash
+# Verify default operation of the command with an output path specified,
+#   resulting in a binary mask image output
+#   based on applying the default greater-than-or-equal-to comparison
+mrthreshold dwi_mean.mif - | \
+testing_diff_image - mrthreshold/3d_default.mif

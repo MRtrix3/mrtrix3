@@ -1,0 +1,9 @@
+#!/bin/bash
+# Default test:
+# Run on the 5ttedit sample input
+# Checks should complete without issue
+
+rm -f tmp.txt
+5ttvalidate 5ttedit/in.mif 2>&1 | tee tmp.txt
+grep "Input image checked OK" tmp.txt
+! (grep "\\bWARNING\\b" tmp.txt)

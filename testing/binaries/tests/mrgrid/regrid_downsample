@@ -1,0 +1,8 @@
+#!/bin/bash
+# Verify the downsampling capability of the "regrid" operation
+# The output is re-cast back to uint16
+#   (the same as the input image)
+#   because this is what was performed in generating the original test reference data
+#   against which the result is compared.
+mrgrid dwi.mif regrid -scale 0.4 -datatype uint16 - | \
+testing_diff_image - mrresize/out1.mif

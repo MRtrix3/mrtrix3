@@ -1,0 +1,12 @@
+#!/bin/bash
+# Verify successful execution when there is a rigid-body rotation
+#   in between two input series
+
+mrconvert BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp1.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval
+
+mrtransform tmp1.mif -linear dwicat/rotation.txt tmp2.mif -force
+
+dwicat tmp1.mif tmp2.mif tmpout.mif -force
+
+testing_diff_image tmpout.mif dwicat/rotated.mif.gz -frac 1e-6
