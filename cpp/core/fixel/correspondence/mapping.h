@@ -21,12 +21,6 @@
 
 namespace MR::Fixel::Correspondence {
 
-// TODO Consider (both here and potentially for fixel dataset also) a pair of classes where
-//   one uses a data representation that clearly comes straight from disk and is read-only,
-//   and one is intended to be dynamically resizable,
-//   but they operate using the same interface (perhaps using CRTP)
-// In this way the interface for fixelcorrespondence and fixel2fixel could look identical,
-//   even though the underlying data structures would be different
 class Mapping {
 public:
   /// @brief A single fixel-to-fixel association: destination index and fractional contribution weight.

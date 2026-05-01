@@ -16,6 +16,7 @@
 
 #include "algo/threaded_loop.h"
 #include "command.h"
+#include "enum.h"
 #include "fixel/helpers.h"
 #include "header.h"
 
@@ -70,18 +71,29 @@ using namespace MR::Fixel::Correspondence;
 //   used for determining antipodal orientation;
 //   could this be bypassed to make the generation of remapped source fixels entirely
 //   independent of the objective target fixels?
+//
+//
+// Consider instead of Mapping class a pair of classes where
+//   one uses a data representation that clearly comes straight from disk and is read-only,
+//   and one is intended to be dynamically resizable,
+//   but they operate using the same interface (perhaps using CRTP)
+// In this way the interface for fixelcorrespondence and fixel2fixel could look identical,
+//   even though the underlying data structures would be different,
+//   and the latter would not need to do an explicit load into RAM
 
-const std::vector<std::string> algorithms = {
+enum class algorithm_t {
 #ifdef FIXELCORRESPONDENCE_INCLUDE_ALL2ALL
-    "all2all",
+  ALL2ALL,
 #endif
-    "legacy",
-    "nearest",
-    "ismrm2018",
-    "in2023"};
+  LEGACY,
+  NEAREST,
+  ISMRM2018,
+  IN2023
+};
 
 // clang-format off
 void usage() {
+
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   SYNOPSIS = "Establish correpondence between two fixel datasets";
@@ -125,8 +137,8 @@ void usage() {
 
   OPTIONS
   + Option ("algorithm", "the algorithm to use when establishing fixel correspondence; "
-                         "options are: " + join(algorithms, ",") + " (default: in2023)")
-    + Argument ("choice").type_choice (algorithms)
+                         "options are: " + Enum::join<algorithm_t>() + " (default: in2023)")
+    + Argument ("choice").type_choice<algorithm_t>()
 
   + Option ("remapped", "export the remapped source fixels to a new fixel directory")
     + Argument ("path").type_directory_out()
@@ -150,32 +162,26 @@ void run() {
   H_cost.ndim() = 3;
   H_cost.datatype() = DataType::Float32;
   H_cost.datatype().set_byte_order_native();
-  int algorithm_index = get_option_value("algorithm",
-#ifdef FIXELCORRESPONDENCE_INCLUDE_ALL2ALL
-                                         4);
-#else
-                                         3);
-  ++algorithm_index;
-#endif
+  const algorithm_t algorithm_choice = get_option_choice<algorithm_t>("algorithm", algorithm_t::IN2023);
   std::shared_ptr<Algorithms::Base> algorithm;
-  switch (algorithm_index) {
+  switch (algorithm_choice) {
 #ifdef FIXELCORRESPONDENCE_INCLUDE_ALL2ALL
-  case 0:
+  case algorithm_t::ALL2ALL:
     algorithm.reset(new Algorithms::All2All());
     break;
 #endif
-  case 1:
+  case algorithm_t::LEGACY:
     algorithm.reset(new Algorithms::Legacy(get_option_value("angle", default_nearest_maxangle)));
     break;
-  case 2:
+  case algorithm_t::NEAREST:
     algorithm.reset(new Algorithms::Nearest(get_option_value("angle", default_nearest_maxangle)));
     break;
-  case 3:
+  case algorithm_t::ISMRM2018:
     algorithm.reset(new Algorithms::ISMRM2018(get_option_value("max_origins", default_max_origins_per_target),
                                               get_option_value("max_objectives", default_max_objectives_per_source),
                                               H_cost));
     break;
-  case 4:
+  case algorithm_t::IN2023:
     algorithm.reset(new Algorithms::IN2023(get_option_value("max_origins", default_max_origins_per_target),
                                            get_option_value("max_objectives", default_max_objectives_per_source),
                                            H_cost));

@@ -32,14 +32,14 @@ namespace {
 template <typename T>
 void validate_npy_1d(File::NPY::ReadInfo info, std::string_view entry_name, std::string_view npz_path) {
   if (info.shape.size() != 1)
-    throw Exception("Expected 1D array in entry \"" + std::string(entry_name) + "\" in \"" + std::string(npz_path) +
-                    "\"");
+    throw Exception("Expected 1D array in entry \"" + std::string(entry_name) + "\"" + //
+                    " in \"" + std::string(npz_path) + "\"");                          //
   if (info.data_type != DataType::from<T>())
-    throw Exception("Unexpected data type in entry \"" + std::string(entry_name) + "\" in \"" + std::string(npz_path) +
-                    "\"");
+    throw Exception("Unexpected data type in entry \"" + std::string(entry_name) + "\"" + //
+                    " in \"" + std::string(npz_path) + "\"");                             //
   if (!info.data_type.is_byte_order_native())
-    throw Exception("Non-native byte order in entry \"" + std::string(entry_name) + "\" in \"" + std::string(npz_path) +
-                    "\"");
+    throw Exception("Non-native byte order in entry \"" + std::string(entry_name) + "\"" + //
+                    " in \"" + std::string(npz_path) + "\"");                              //
 }
 
 } // namespace

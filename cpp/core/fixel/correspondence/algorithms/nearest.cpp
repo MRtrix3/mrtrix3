@@ -56,11 +56,12 @@ std::vector<std::vector<Mapping::Entry>> Nearest::operator()(const voxel_t &,
   return result;
 }
 
-OptionGroup NearestOptions = OptionGroup("Options specific to algorithms \"legacy\" and \"nearest\"") +
-                             Option("angle",
-                                    "maximum angle within which a corresponding fixel may be selected, in degrees "
-                                    "(default: " +
-                                        str(default_nearest_maxangle) + ")") +
-                             Argument("value").type_float(0.0f, 90.0f);
+// clang-format off
+OptionGroup NearestOptions = OptionGroup("Options specific to algorithms \"legacy\" and \"nearest\"")
+  + Option("angle",
+           "maximum angle within which a corresponding fixel may be selected, in degrees"
+           " (default: " + str(default_nearest_maxangle) + ")")
+    + Argument("value").type_float(0.0f, 90.0f);
+// clang-format on
 
 } // namespace MR::Fixel::Correspondence::Algorithms

@@ -337,22 +337,21 @@ template <class CostFunctor> uint64_t Combinatorial<CostFunctor>::max_computed_c
 template class Combinatorial<ISMRM2018>;
 template class Combinatorial<IN2023>;
 
-OptionGroup CombinatorialOptions =
-    OptionGroup("Options applicable to all combinatorial-based algorithms")
+// clang-format off
+OptionGroup CombinatorialOptions = OptionGroup("Options applicable to all combinatorial-based algorithms")
+  + Option("max_origins",
+           "maximal number of origin source fixels for an individual target fixel"
+           " (default: " + str(default_max_origins_per_target) + ")")
+    + Argument("value").type_integer(1)
 
-    + Option("max_origins",
-             "maximal number of origin source fixels for an individual target fixel "
-             "(default: " +
-                 str(default_max_origins_per_target) + ")") +
-    Argument("value").type_integer(1)
+  + Option("max_objectives",
+           "maximal number of objective target fixels for an individual source fixel"
+           " (default: " + str(default_max_objectives_per_source) + ")")
+    + Argument("value").type_integer(1)
 
-    + Option("max_objectives",
-             "maximal number of objective target fixels for an individual source fixel "
-             "(default: " +
-                 str(default_max_objectives_per_source) + ")") +
-    Argument("value").type_integer(1)
-
-    + Option("cost", "export a 3D image containing the optimal value of the relevant cost function in each voxel") +
-    Argument("path").type_image_out();
+  + Option("cost",
+           "export a 3D image containing the optimal value of the relevant cost function in each voxel")
+    + Argument("path").type_image_out();
+// clang-format on
 
 } // namespace MR::Fixel::Correspondence::Algorithms
