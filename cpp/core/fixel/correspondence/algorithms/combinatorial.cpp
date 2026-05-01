@@ -226,7 +226,14 @@ std::vector<std::vector<Mapping::Entry>> Combinatorial<CostFunctor>::operator()(
 
 #if defined(FIXELCORRESPONDENCE_TEST_COMBINATORICS) || !defined(NDEBUG)
       ++skip_trigger_counter;
-      skipped_entirely_counter += std::pow<uint64_t>(remapping_origins.size(), increment_index_for_skip) - 1;
+      uint64_t block_position = 0;
+      uint64_t block_size = 1;
+      for (index_type i = 0; i != increment_index_for_skip; ++i) {
+        block_position += static_cast<uint64_t>(mapping[i]) * block_size;
+        block_size *= remapping_origins.size();
+      }
+      skipped_entirely_counter += block_size - 1 - block_position;
+      // skipped_entirely_counter += std::pow<uint64_t>(remapping_origins.size(), increment_index_for_skip) - 1;
 #endif
 
       // At least one source fixel is contributing to more than "max_objectives_per_source"
