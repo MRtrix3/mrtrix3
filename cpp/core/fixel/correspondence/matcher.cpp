@@ -20,9 +20,7 @@
 #include "fixel/helpers.h"
 #include "header.h"
 
-namespace MR {
-namespace Fixel {
-namespace Correspondence {
+namespace MR::Fixel::Correspondence {
 
 Matcher::Matcher(std::string_view source_file,
                  std::string_view target_file,
@@ -74,8 +72,8 @@ Matcher::Matcher(std::string_view source_file,
 void Matcher::operator()(Image<uint32_t> &voxel) {
   assign_pos_of(voxel, 0, 3).to(source_index, target_index);
   source_index.index(3) = target_index.index(3) = 0;
-  const uint32_t nfixels_source = source_index.value();
-  const uint32_t nfixels_target = target_index.value();
+  const index_type nfixels_source = source_index.value();
+  const index_type nfixels_target = target_index.value();
   source_index.index(3) = target_index.index(3) = 1;
   const uint32_t offset_source = source_index.value();
   const uint32_t offset_target = target_index.value();
@@ -85,16 +83,16 @@ void Matcher::operator()(Image<uint32_t> &voxel) {
   // By pre-loading into vectors, can have fixels in both spaces indexed from zero
   //   during the correspondence determination
   std::vector<Correspondence::Fixel> source_fixels, target_fixels;
-  for (uint32_t i = 0; i != nfixels_source; ++i) {
+  for (index_type i = 0; i != nfixels_source; ++i) {
     source_directions.index(0) = source_data.index(0) = offset_source + i;
     source_fixels.push_back(Correspondence::Fixel(source_directions.row(1), source_data.value()));
   }
-  for (uint32_t i = 0; i != nfixels_target; ++i) {
+  for (index_type i = 0; i != nfixels_target; ++i) {
     target_directions.index(0) = target_data.index(0) = offset_target + i;
     target_fixels.push_back(Correspondence::Fixel(target_directions.row(1), target_data.value()));
   }
 
-  std::vector<std::vector<uint32_t>> M;
+  std::vector<std::vector<Mapping::Entry>> M;
   if (target_fixels.size()) {
     if (source_fixels.size())
       M = (*algorithm)({static_cast<uint32_t>(voxel.index(0)),
@@ -103,26 +101,17 @@ void Matcher::operator()(Image<uint32_t> &voxel) {
                        source_fixels,
                        target_fixels);
     else
-      M.assign(target_fixels.size(), std::vector<uint32_t>());
+      M.assign(target_fixels.size(), std::vector<Mapping::Entry>());
   }
 
-  // TODO Generate the set of remapped subject fixels
-  Eigen::Array<uint8_t, Eigen::Dynamic, 1> objectives_per_source_fixel(
-      Eigen::Array<uint8_t, Eigen::Dynamic, 1>::Zero(nfixels_source));
-  for (uint32_t it = 0; it != nfixels_target; ++it) {
-    for (auto is : M[it])
-      ++objectives_per_source_fixel[is];
-  }
-  const Eigen::Array<float, Eigen::Dynamic, 1> source_fixel_multipliers(1.0 /
-                                                                        objectives_per_source_fixel.cast<float>());
-  for (uint32_t it = 0; it != nfixels_target; ++it) {
+  for (index_type it = 0; it != nfixels_target; ++it) {
     target_directions.index(0) = remapped_directions.index(0) = remapped_data.index(0) = offset_target + it;
     dir_t direction(0.0f, 0.0f, 0.0f);
     float density = 0.0f;
-    for (auto is : M[it]) {
-      direction += source_fixels[is].density() * source_fixels[is].dir() *
-                   (source_fixels[is].dot(target_fixels[it]) > 0.0f ? 1.0f : -1.0f);
-      density += source_fixels[is].density();
+    for (const auto &e : M[it]) {
+      direction += source_fixels[e.index].density() * source_fixels[e.index].dir() *
+                   (source_fixels[e.index].dot(target_fixels[it]) > 0.0f ? 1.0f : -1.0f);
+      density += source_fixels[e.index].density();
     }
     remapped_directions.row(1) = direction.normalized();
     remapped_data.value() = density;
@@ -131,10 +120,12 @@ void Matcher::operator()(Image<uint32_t> &voxel) {
   // When writing, need to now deal with the offset to the first fixel in the
   //   voxel for each of the two images
   assert(M.size() == nfixels_target);
-  for (uint32_t i = 0; i != nfixels_target; ++i) {
-    for (uint32_t j = 0; j != M[i].size(); ++j)
-      M[i][j] += offset_source;
-    (*mapping)[offset_target + i] = M[i];
+  for (index_type i = 0; i != nfixels_target; ++i) {
+    std::vector<Mapping::Entry> entries;
+    entries.reserve(M[i].size());
+    for (const auto &e : M[i])
+      entries.push_back({e.index + offset_source, e.weight});
+    (*mapping)[offset_target + i] = entries;
   }
 }
 
@@ -148,6 +139,4 @@ void Matcher::export_remapped(std::string_view dirname) {
   copy(remapped_data, out_data);
 }
 
-} // namespace Correspondence
-} // namespace Fixel
-} // namespace MR
+} // namespace MR::Fixel::Correspondence

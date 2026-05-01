@@ -34,7 +34,7 @@ constexpr float default_fillvalue = 0.0f;
 
 enum class metric_t { SUM, MEAN, COUNT, ANGLE };
 const std::vector<std::string> metrics = {"sum", "mean", "count", "angle"};
-// TODO Other metrics:
+// Other potential metrics:
 //   - Angle that also takes into account misalignment of multiple source fixels
 //     that are mapped to the same target fixel
 
@@ -61,7 +61,7 @@ void usage() {
   EXAMPLES
   +Example("Replicate the behaviour of the fixelcorrespondence command from MRtrix version 3.0.x",
            "fixelcorrespondence subject/fd.mif template/fd.mif fixelmapping -algorithm nearest; "
-           "fixel2fixel subject/fd.mif fixelmapping sum fd_template subject.mif -no_implicit_weights",
+           "fixel2fixel subject/fd.mif fixelmapping sum fd_template subject.mif -ignore_weights",
            "To reproduce the behaviour of the 3.0.x version of the fixelcorrespondence command "
            "requires two explicit modifications to the default behaviours "
            "of both the new fixelcorrespondence command and command fixel2fixel. "
@@ -73,7 +73,7 @@ void usage() {
            "the entirety of the fibre density in that fixel would be projected to both template fixels. "
            "Under the default behaviour of command fixel2fixel, "
            "the fibre density of that subject fixel would instead be split between those two template fixels. "
-           "Option -no_implicit_weights disables that behaviour, "
+           "Option -ignore_weights disables that behaviour, "
            "thereby manifesting the same (potentially undesirable) behaviour of the earlier software. "
            "Note that this example is provided for understanding and backwards compatibility "
            "and should not be interpreted as explicit advocacy for its use.");
@@ -97,8 +97,8 @@ void usage() {
           "specify fixel data file containing weights to use during aggregation of multiple source fixels") +
       Argument("weights_in").type_image_in()
 
-      + Option("no_implicit_weights",
-               "disable implicit scaling of contributions of those source fixels that map to multiple template fixels")
+      +
+      Option("ignore_weights", "do not apply the fixel-fixel mapping weights as stored in the correspondence data file")
 
       + OptionGroup("Options relating to filling data values for specific fixels") +
       Option("fill",
@@ -130,7 +130,11 @@ public:
           const FillSettings &fill_settings,
           Image<float> &explicit_weights,
           std::string_view output_directory)
-      : correspondence(correspondence), metric(metric), fill(fill_settings), explicit_weights(explicit_weights) {
+      : correspondence(correspondence),
+        metric(metric),
+        fill(fill_settings),
+        ignore_weights(!get_options("ignore_weights").empty()),
+        explicit_weights(explicit_weights) {
     if (Path::is_dir(input_path))
       throw Exception("Input must be a fixel data file to be mapped, not a fixel directory");
     Header input_header(Header::open(input_path));
@@ -154,33 +158,6 @@ public:
     Header H_output(target_directions);
     H_output.size(1) = 1;
     output_data = Image<float>::scratch(H_output, "scratch storage of remapped fixel data");
-
-    // Here we need the number of output fixels to which each input fixel maps,
-    //   for two reasons:
-    //   - If fill.nan_one2many is set, want to detect this as soon as possible,
-    //     insert the fill value and exit
-    //   - Wherever an input fixel contributes to more than one output fixel, its
-    //     volume is effectively "spread" over those fixels; hence it needs to
-    //     contribute with less weight
-    std::vector<uint8_t> objectives_per_source_fixel(input_header.size(0), 0);
-    for (size_t out_index = 0; out_index != correspondence.size(); ++out_index) {
-      for (auto i : correspondence[out_index]) {
-        assert(i < input_header.size(0));
-        ++objectives_per_source_fixel[i];
-      }
-    }
-    implicit_weights = Image<float>::scratch(
-        input_data, "Implicit weights for source fixels based on multiple objective target fixels");
-    if (get_options("no_implicit_weights").empty()) {
-      for (auto l = Loop(0)(implicit_weights); l; ++l)
-        implicit_weights.value() =
-            objectives_per_source_fixel[implicit_weights.index(0)]
-                ? 1.0f / static_cast<float>(objectives_per_source_fixel[implicit_weights.index(0)])
-                : 0.0f;
-    } else {
-      for (auto l = Loop(0)(implicit_weights); l; ++l)
-        implicit_weights.value() = 1.0f;
-    }
   }
 
   // Input argument is the fixel index of the output file
@@ -188,12 +165,12 @@ public:
     assert(out_index < correspondence.size());
     output_data.index(0) = out_index;
 
-    const auto &in_indices = correspondence[out_index];
-    if (!in_indices.size()) {
+    const auto &in_entries = correspondence[out_index];
+    if (in_entries.empty()) {
       output_data.value() = fill.value;
       return true;
     }
-    if (in_indices.size() > 1 && fill.nan_many2one) {
+    if (in_entries.size() > 1 && fill.nan_many2one) {
       output_data.value() = std::numeric_limits<float>::quiet_NaN();
       return true;
     }
@@ -203,50 +180,48 @@ public:
 
     std::vector<dir_t> directions;
     std::vector<float> values, weights;
-    for (auto i : in_indices) {
-      // If set up to fill with NaN whenever an input fixel contributes to more than one output fixel,
-      //   need to see if any of the input fixels for this output fixel also contribute to at least one
-      //   other output fixel
-      implicit_weights.index(0) = i;
-      if (fill.nan_one2many && implicit_weights.value() < 1.0f) {
+    for (const auto &e : in_entries) {
+      // Detect source fixels that contribute to more than one target (weight < 1)
+      if (fill.nan_one2many && e.weight < 1.0f) {
         output_data.value() = std::numeric_limits<float>::quiet_NaN();
         return true;
       }
-      input_directions.index(0) = i;
+      input_directions.index(0) = e.index;
       directions.emplace_back(dir_t(input_directions.row(1)));
-      input_data.index(0) = i;
+      input_data.index(0) = e.index;
       values.push_back(input_data.value());
 
+      const float agg_weight = ignore_weights ? 1.0f : e.weight;
       if (explicit_weights.valid()) {
-        explicit_weights.index(0) = i;
-        weights.push_back(implicit_weights.value() * explicit_weights.value());
+        explicit_weights.index(0) = e.index;
+        weights.push_back(agg_weight * explicit_weights.value());
       } else {
-        weights.push_back(implicit_weights.value());
+        weights.push_back(agg_weight);
       }
     }
 
     float result = 0.0f;
     switch (metric) {
     case metric_t::SUM: {
-      for (size_t i = 0; i != in_indices.size(); ++i)
+      for (size_t i = 0; i != in_entries.size(); ++i)
         result += values[i] * weights[i];
     } break;
     case metric_t::MEAN: {
       float sum_weights = 0.0f;
-      for (size_t i = 0; i != in_indices.size(); ++i) {
+      for (size_t i = 0; i != in_entries.size(); ++i) {
         result += values[i] * weights[i];
         sum_weights += weights[i];
       }
       result /= sum_weights;
     } break;
     case metric_t::COUNT:
-      result = in_indices.size();
+      result = in_entries.size();
       break;
     case metric_t::ANGLE: {
       target_directions.index(0) = out_index;
       const dir_t out_dir(target_directions.row(1));
       dir_t mean_dir(0.0f, 0.0f, 0.0f);
-      for (size_t i = 0; i != in_indices.size(); ++i)
+      for (size_t i = 0; i != in_entries.size(); ++i)
         mean_dir += directions[i] * weights[i] * (out_dir.dot(directions[i]) < 0.0 ? -1.0f : +1.0f);
       mean_dir.normalize();
       result = std::acos(out_dir.dot(mean_dir));
@@ -266,9 +241,9 @@ private:
   const Mapping &correspondence;
   const metric_t metric;
   const FillSettings &fill;
+  const bool ignore_weights;
 
   Image<float> input_data;
-  Image<float> implicit_weights;
   Image<float> explicit_weights;
   Image<float> input_directions;
   Image<float> target_directions;

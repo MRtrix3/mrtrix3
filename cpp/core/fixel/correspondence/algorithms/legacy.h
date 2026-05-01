@@ -17,21 +17,18 @@
 
 #include "fixel/correspondence/algorithms/base.h"
 
-namespace MR::App {
-class OptionGroup;
-}
-
 namespace MR::Fixel::Correspondence::Algorithms {
 
-extern App::OptionGroup NearestOptions;
-
-// Duplicate the functionality of the old fixelcorrespondence command:
-// For each target fixel, simply select the closest source fixel,
-//   as long as it is within some angular limit
-class Nearest : public Base {
+// Replicate the unweighted nearest-fixel behaviour of the fixelcorrespondence
+//   command from MRtrix versions 3.0.x and earlier:
+// For each target fixel, select the nearest source fixel with weight 1.0,
+//   provided the angle between them is within the threshold.
+// Unlike algorithm "nearest", no normalisation is applied when multiple target
+//   fixels select the same source fixel.
+class Legacy : public Base {
 public:
-  Nearest(const float max_angle) : dp_threshold(std::cos(max_angle * Math::pi / 180.0)) {}
-  virtual ~Nearest() {}
+  Legacy(const float max_angle) : dp_threshold(std::cos(max_angle * Math::pi / 180.0)) {}
+  virtual ~Legacy() {}
 
   std::vector<std::vector<Mapping::Entry>> operator()(const voxel_t &v,
                                                       const std::vector<Correspondence::Fixel> &s,

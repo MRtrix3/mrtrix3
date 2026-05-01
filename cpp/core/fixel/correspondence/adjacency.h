@@ -16,9 +16,7 @@
 #include "fixel/correspondence/correspondence.h"
 #include "fixel/correspondence/fixel.h"
 
-namespace MR {
-namespace Fixel {
-namespace Correspondence {
+namespace MR::Fixel::Correspondence {
 
 // Class that assists in classifying impermissible mappings based on fixel adjacency
 // If the number of fixels is fewer than 4 / 5, then any mapping will be permitted;
@@ -47,7 +45,7 @@ public:
 
   // Is a specific set of source fixels permissible?
   // For all fixels, at least one of the other fixels in the set must be present in the adjacency set
-  bool operator()(const std::vector<uint32_t> &indices) const {
+  bool operator()(const std::vector<index_type> &indices) const {
     if (!dirs || indices.size() < 2)
       return true;
     for (const auto i : indices) {
@@ -68,6 +66,4 @@ private:
   std::unique_ptr<DWI::Directions::Set> dirs;
 };
 
-} // namespace Correspondence
-} // namespace Fixel
-} // namespace MR
+} // namespace MR::Fixel::Correspondence

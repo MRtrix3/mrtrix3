@@ -15,41 +15,73 @@
 
 #include <string>
 
-#include "header.h"
-#include "image.h"
+#include "file/npy.h"
+#include "file/path.h"
+#include "file/utils.h"
 
-namespace MR {
-namespace Fixel {
-namespace Correspondence {
+namespace MR::Fixel::Correspondence {
 
 Mapping::Mapping(const uint32_t source_fixels, const uint32_t target_fixels)
-    : source_fixels(source_fixels), target_fixels(target_fixels), M(target_fixels, std::vector<uint32_t>()) {}
+    : source_fixels(source_fixels), target_fixels(target_fixels), M(target_fixels, std::vector<Entry>()) {}
 
 Mapping::Mapping(std::string_view directory) { load(directory); }
 
+namespace {
+
+template <typename T> File::NPY::ReadInfo load_npy_1d(std::string_view path) {
+  File::NPY::ReadInfo info = File::NPY::read_header(path);
+  if (info.shape.size() != 1)
+    throw Exception("Expected 1D array in fixel correspondence file \"" + path + "\"");
+  if (info.data_type != DataType::from<T>())
+    throw Exception("Unexpected data type in fixel correspondence file \"" + path + "\"");
+  if (!info.data_type.is_byte_order_native())
+    throw Exception("Non-native byte order in fixel correspondence file \"" + path + "\"");
+  return info;
+}
+
+} // namespace
+
 void Mapping::load(std::string_view directory, const bool import_inverse) {
   const std::string dir_string = import_inverse ? "inverse" : "forward";
-  Image<uint32_t> index_image = Image<uint32_t>::open(Path::join(directory, "index_" + dir_string + ".mif"));
-  Image<uint32_t> fixels_image = Image<uint32_t>::open(Path::join(directory, "fixels_" + dir_string + ".mif"));
-  Header converse_index_header =
-      Header::open(Path::join(directory, std::string("index_") + (import_inverse ? "forward" : "inverse") + ".mif"));
+  const std::string indptr_path = Path::join(directory, "indptr_" + dir_string + ".npy");
+  const std::string indices_path = Path::join(directory, "indices_" + dir_string + ".npy");
+  const std::string data_path = Path::join(directory, "data_" + dir_string + ".npy");
+  const std::string converse_indptr_path =
+      Path::join(directory, std::string("indptr_") + (import_inverse ? "forward" : "inverse") + ".npy");
 
-  M.assign(index_image.size(0), std::vector<uint32_t>());
-  for (uint32_t t_index = 0; t_index != index_image.size(0); ++t_index) {
-    index_image.index(0) = t_index;
-    index_image.index(1) = 0;
-    const uint32_t count = index_image.value();
-    index_image.index(1) = 1;
-    const uint32_t offset = index_image.value();
-    M[t_index].reserve(count);
-    fixels_image.index(0) = offset;
-    for (uint32_t i = 0; i != count; ++i) {
-      M[t_index].push_back(fixels_image.value());
-      fixels_image.index(0)++;
+  const File::NPY::ReadInfo indptr_info = load_npy_1d<uint32_t>(indptr_path);
+  const File::NPY::ReadInfo indices_info = load_npy_1d<uint32_t>(indices_path);
+  const File::NPY::ReadInfo data_info = load_npy_1d<float>(data_path);
+  const File::NPY::ReadInfo converse_info = load_npy_1d<uint32_t>(converse_indptr_path);
+
+  if (indices_info.shape[0] != data_info.shape[0])
+    throw Exception("Size mismatch between indices and data arrays in fixel correspondence directory \"" + directory +
+                    "\"");
+
+  const uint32_t N = static_cast<uint32_t>(indptr_info.shape[0]) - 1;
+  M.assign(N, std::vector<Entry>());
+
+  {
+    File::MMap indptr_mmap({indptr_path, indptr_info.data_offset}, false);
+    File::MMap indices_mmap({indices_path, indices_info.data_offset}, false);
+    File::MMap data_mmap({data_path, data_info.data_offset}, false);
+    const Eigen::Map<const Eigen::Array<uint32_t, Eigen::Dynamic, 1>> indptr_map(
+        reinterpret_cast<const uint32_t *>(indptr_mmap.address()), indptr_info.shape[0]);
+    const Eigen::Map<const Eigen::Array<uint32_t, Eigen::Dynamic, 1>> indices_map(
+        reinterpret_cast<const uint32_t *>(indices_mmap.address()), indices_info.shape[0]);
+    const Eigen::Map<const Eigen::Array<float, Eigen::Dynamic, 1>> data_map(
+        reinterpret_cast<const float *>(data_mmap.address()), data_info.shape[0]);
+    for (uint32_t i = 0; i != N; ++i) {
+      const uint32_t begin = indptr_map(i);
+      const uint32_t end = indptr_map(i + 1);
+      M[i].reserve(end - begin);
+      for (uint32_t j = begin; j != end; ++j)
+        M[i].push_back({indices_map(j), data_map(j)});
     }
   }
-  source_fixels = converse_index_header.size(0);
-  target_fixels = index_image.size(0);
+
+  source_fixels = static_cast<uint32_t>(converse_info.shape[0]) - 1;
+  target_fixels = N;
 }
 
 void Mapping::save(std::string_view directory) const {
@@ -58,72 +90,65 @@ void Mapping::save(std::string_view directory) const {
   save(directory, true);
 }
 
-std::vector<std::vector<uint32_t>> Mapping::inverse() const {
-  std::vector<std::vector<uint32_t>> Minv(source_fixels, std::vector<uint32_t>());
-  for (uint32_t t_index = 0; t_index != target_fixels; ++t_index) {
-    for (auto s_index : M[t_index])
-      Minv[s_index].push_back(t_index);
-  }
-  return Minv;
+Mapping Mapping::inverse() const {
+  std::vector<float> target_weight_sum(target_fixels, 0.0f);
+  for (uint32_t t = 0; t != target_fixels; ++t)
+    for (const auto &e : M[t])
+      target_weight_sum[t] += e.weight;
+
+  Mapping inv(target_fixels, source_fixels);
+  for (uint32_t t = 0; t != target_fixels; ++t)
+    for (const auto &e : M[t])
+      inv.M[e.index].push_back({t, target_weight_sum[t] > 0.0f ? e.weight / target_weight_sum[t] : 0.0f});
+  return inv;
 }
 
 void Mapping::save(std::string_view directory, const bool export_inverse) const {
-  std::vector<std::vector<uint32_t>> Minv;
+  Mapping inv(0, 0);
   if (export_inverse)
-    Minv = inverse();
-  const std::vector<std::vector<uint32_t>> &data(export_inverse ? Minv : M);
-  const std::string dir_string = (export_inverse ? "inverse" : "forward");
-  const std::string index_path = Path::join(directory, "index_" + dir_string + ".mif");
-  const std::string fixels_path = Path::join(directory, "fixels_" + dir_string + ".mif");
+    inv = inverse();
+  const std::vector<std::vector<Entry>> &data(export_inverse ? inv.M : M);
+  const std::string dir_string = export_inverse ? "inverse" : "forward";
+  const std::string indptr_path = Path::join(directory, "indptr_" + dir_string + ".npy");
+  const std::string indices_path = Path::join(directory, "indices_" + dir_string + ".npy");
+  const std::string data_path = Path::join(directory, "data_" + dir_string + ".npy");
 
-  uint32_t fixel_map_count = 0;
+  uint32_t total_entries = 0;
   for (const auto &row : data)
-    fixel_map_count += row.size();
+    total_entries += static_cast<uint32_t>(row.size());
 
-  Header H_index;
-  H_index.ndim() = 3;
-  H_index.size(0) = data.size();
-  H_index.size(1) = 2;
-  H_index.size(2) = 1;
-  H_index.stride(0) = 2;
-  H_index.stride(1) = 1;
-  H_index.stride(2) = 3;
-  H_index.spacing(0) = H_index.spacing(1) = H_index.spacing(2) = 1.0;
-  H_index.transform() = transform_type::Identity();
-  H_index.datatype() = DataType::UInt32;
-  H_index.datatype().set_byte_order_native();
-  H_index.keyval()["fixels"] = "fixels_" + dir_string + ".mif";
-
-  Header H_fixels;
-  H_fixels.ndim() = 3;
-  H_fixels.size(0) = fixel_map_count;
-  H_fixels.size(1) = 1;
-  H_fixels.size(2) = 1;
-  H_fixels.stride(0) = 1;
-  H_fixels.stride(1) = 2;
-  H_fixels.stride(2) = 3;
-  H_fixels.spacing(0) = H_fixels.spacing(1) = H_fixels.spacing(2) = 1.0;
-  H_fixels.transform() = transform_type::Identity();
-  H_fixels.datatype() = DataType::UInt32;
-  H_fixels.datatype().set_byte_order_native();
-  H_fixels.keyval()["index"] = "index_" + dir_string + ".mif";
-
-  Image<uint32_t> index_image = Image<uint32_t>::create(index_path, H_index);
-  Image<uint32_t> fixels_image = Image<uint32_t>::create(fixels_path, H_fixels);
-
-  for (size_t t_index = 0; t_index != data.size(); ++t_index) {
-    index_image.index(0) = t_index;
-    index_image.index(1) = 0;
-    index_image.value() = data[t_index].size();
-    index_image.index(1) = 1;
-    index_image.value() = fixels_image.index(0);
-    for (auto s_index : data[t_index]) {
-      fixels_image.value() = s_index;
-      fixels_image.index(0) += 1;
+  // Write CSR index pointer array: N+1 uint32 values, indptr[i] is the offset
+  //   of entry i in the indices array; indptr[N] holds the total entry count
+  {
+    File::NPY::WriteInfo indptr_write =
+        File::NPY::prepare_ND_write(indptr_path, DataType::from<uint32_t>(), {data.size() + 1});
+    uint32_t *ptr = reinterpret_cast<uint32_t *>(indptr_write.mmap->address());
+    uint32_t offset = 0;
+    for (size_t i = 0; i != data.size(); ++i) {
+      ptr[i] = offset;
+      offset += static_cast<uint32_t>(data[i].size());
     }
+    ptr[data.size()] = offset;
+  }
+
+  {
+    File::NPY::WriteInfo indices_write =
+        File::NPY::prepare_ND_write(indices_path, DataType::from<uint32_t>(), {total_entries});
+    uint32_t *ptr = reinterpret_cast<uint32_t *>(indices_write.mmap->address());
+    size_t k = 0;
+    for (const auto &row : data)
+      for (const auto &e : row)
+        ptr[k++] = e.index;
+  }
+
+  {
+    File::NPY::WriteInfo data_write = File::NPY::prepare_ND_write(data_path, DataType::from<float>(), {total_entries});
+    float *ptr = reinterpret_cast<float *>(data_write.mmap->address());
+    size_t k = 0;
+    for (const auto &row : data)
+      for (const auto &e : row)
+        ptr[k++] = e.weight;
   }
 }
 
-} // namespace Correspondence
-} // namespace Fixel
-} // namespace MR
+} // namespace MR::Fixel::Correspondence

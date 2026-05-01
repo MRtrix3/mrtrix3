@@ -19,63 +19,29 @@
 
 #include "fixel/correspondence/algorithms/combinatorial.h"
 
-namespace MR {
-
-namespace App {
+namespace MR::App {
 class OptionGroup;
-}
+} // namespace MR::App
 
-namespace Fixel {
-namespace Correspondence {
-namespace Algorithms {
+namespace MR::Fixel::Correspondence::Algorithms {
 
 extern App::OptionGroup IN2023Options;
 
 class IN2023 : public Combinatorial<IN2023> {
 public:
-  IN2023(const size_t max_origins_per_target, const size_t max_objectives_per_source, const Header &H_cost)
+  IN2023(const index_type max_origins_per_target, const index_type max_objectives_per_source, const Header &H_cost)
       : Combinatorial(max_origins_per_target, max_objectives_per_source, H_cost) {}
 
-  FORCE_INLINE static float calculate(const std::vector<Correspondence::Fixel> &s,
-                                      const std::vector<Correspondence::Fixel> &rs,
-                                      const std::vector<Correspondence::Fixel> &t,
-                                      const Eigen::Array<int8_t, Eigen::Dynamic, 1> &objectives_per_source_fixel,
-                                      const Eigen::Array<int8_t, Eigen::Dynamic, 1> &origins_per_remapped_fixel) {
-    assert(rs.size() == t.size());
-    assert(s.size() == static_cast<size_t>(objectives_per_source_fixel.size()));
-    float result = 0.0f;
-    for (uint32_t t_index = 0; t_index != rs.size(); ++t_index) {
+  static float calculate(const std::vector<Correspondence::Fixel> &s,
+                         const std::vector<Correspondence::Fixel> &rs,
+                         const std::vector<Correspondence::Fixel> &t,
+                         const std::vector<std::vector<index_type>> &inv_mapping,
+                         const Eigen::Array<int8_t, Eigen::Dynamic, 1> &origins_per_remapped_fixel);
 
-      result += t[t_index].density() * (rs[t_index].density() ? dp2cost(t[t_index].absdot(rs[t_index])) : 1.0f);
-
-      result += a * Math::pow2(t[t_index].density() - rs[t_index].density());
-
-      result += b * Math::pow2(origins_per_remapped_fixel[t_index] - int8_t(1));
-    }
-
-    for (uint32_t s_index = 0; s_index != s.size(); ++s_index) {
-
-      if (!objectives_per_source_fixel[s_index]) {
-        result += s[s_index].density();
-        result += a * Math::pow2(s[s_index].density());
-      }
-
-      result += b * Math::pow2(objectives_per_source_fixel[s_index] - int8_t(1));
-    }
-
-    return result;
-  }
-
-  static void set_constants(const float alpha, const float beta) {
-    a = alpha;
-    b = beta;
-  }
+  static void set_constants(const float alpha, const float beta);
 
 protected:
   static float a, b;
 };
 
-} // namespace Algorithms
-} // namespace Correspondence
-} // namespace Fixel
-} // namespace MR
+} // namespace MR::Fixel::Correspondence::Algorithms

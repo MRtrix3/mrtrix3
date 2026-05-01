@@ -18,46 +18,18 @@
 #include "math/math.h"
 #include "types.h"
 
-namespace MR {
-namespace Fixel {
-namespace Correspondence {
-namespace Algorithms {
+namespace MR::Fixel::Correspondence::Algorithms {
 
 class ISMRM2018 : public Combinatorial<ISMRM2018> {
 public:
-  ISMRM2018(const size_t max_origins_per_target, const size_t max_objectives_per_source, const Header &H_cost)
+  ISMRM2018(const index_type max_origins_per_target, const index_type max_objectives_per_source, const Header &H_cost)
       : Combinatorial(max_origins_per_target, max_objectives_per_source, H_cost) {}
 
-  FORCE_INLINE static float calculate(const std::vector<Correspondence::Fixel> &s,
-                                      const std::vector<Correspondence::Fixel> &rs,
-                                      const std::vector<Correspondence::Fixel> &t,
-                                      const Eigen::Array<int8_t, Eigen::Dynamic, 1> &objectives_per_source_fixel,
-                                      const Eigen::Array<int8_t, Eigen::Dynamic, 1> &origins_per_remapped_fixel) {
-    assert(rs.size() == t.size());
-    assert(s.size() == static_cast<size_t>(objectives_per_source_fixel.size()));
-    float result = 0.0f;
-    for (uint32_t index = 0; index != rs.size(); ++index) {
-      if (rs[index].density()) {
-        // Differences in fixel orientation contribute in such a way that
-        //   angles of greater than 45 degrees are penalised more severely
-        //   than would be leaving those fixels unmatched
-        result += Math::pow2(t[index].density() - rs[index].density()) * dp2cost(t[index].absdot(rs[index]));
-      } else {
-        result += Math::pow2(t[index].density());
-      }
-    }
-
-    // Need to find source fixels that did not contribute to any remapped fixel
-    for (uint32_t index = 0; index != s.size(); ++index) {
-      if (!objectives_per_source_fixel[index])
-        result += Math::pow2(s[index].density());
-    }
-
-    return result;
-  }
+  static float calculate(const std::vector<Correspondence::Fixel> &s,
+                         const std::vector<Correspondence::Fixel> &rs,
+                         const std::vector<Correspondence::Fixel> &t,
+                         const std::vector<std::vector<index_type>> &inv_mapping,
+                         const Eigen::Array<int8_t, Eigen::Dynamic, 1> &origins_per_remapped_fixel);
 };
 
-} // namespace Algorithms
-} // namespace Correspondence
-} // namespace Fixel
-} // namespace MR
+} // namespace MR::Fixel::Correspondence::Algorithms

@@ -23,6 +23,7 @@
 #include "fixel/correspondence/algorithms/base.h"
 #include "fixel/correspondence/algorithms/in2023.h"
 #include "fixel/correspondence/algorithms/ismrm2018.h"
+#include "fixel/correspondence/algorithms/legacy.h"
 #include "fixel/correspondence/algorithms/nearest.h"
 #include "fixel/correspondence/correspondence.h"
 #include "fixel/correspondence/matcher.h"
@@ -74,6 +75,7 @@ const std::vector<std::string> algorithms = {
 #ifdef FIXELCORRESPONDENCE_INCLUDE_ALL2ALL
     "all2all",
 #endif
+    "legacy",
     "nearest",
     "ismrm2018",
     "in2023"};
@@ -100,9 +102,15 @@ void usage() {
     "It assigns all source fixels to all target fixels, and is therefore not appropriate for practical use."
 #endif
 
-  + "\"nearest\": This algorithm duplicates the behaviour of the fixelcorrespondence command in MRtrix versions 3.0.x. and earlier. "
-    "It determines, for every target fixel, the nearest source fixel, and then assigns that source fixel to the target fixel "
-    "as long as the angle between them is less than some threshold."
+  + "\"legacy\": This algorithm duplicates the behaviour of the fixelcorrespondence command in MRtrix versions 3.0.x. and earlier. "
+    "It determines, for every target fixel, the nearest source fixel, and assigns that source fixel to the target fixel "
+    "with a weight of 1.0, as long as the angle between them is less than some threshold. "
+    "Note that if multiple target fixels select the same source fixel, "
+    "the entirety of the data from that source fixel is projected to each of those target fixels independently."
+
+  + "\"nearest\": Similar to algorithm \"legacy\", but normalises the contribution of each source fixel "
+    "according to the number of target fixels to which it maps, "
+    "such that contributions from a source fixel sum to unity across all target fixels that draw from it."
 
   + "\"ismrm2018\": This is a combinatorial algorithm, for which the algorithm and cost function are described in the "
     "relevant reference (Smith et al., 2018)."
@@ -149,9 +157,9 @@ void run() {
   H_cost.datatype().set_byte_order_native();
   int algorithm_index = get_option_value("algorithm",
 #ifdef FIXELCORRESPONDENCE_INCLUDE_ALL2ALL
-                                         3);
+                                         4);
 #else
-                                         2);
+                                         3);
   ++algorithm_index;
 #endif
   std::shared_ptr<Algorithms::Base> algorithm;
@@ -162,14 +170,17 @@ void run() {
     break;
 #endif
   case 1:
-    algorithm.reset(new Algorithms::Nearest(get_option_value("angle", default_nearest_maxangle)));
+    algorithm.reset(new Algorithms::Legacy(get_option_value("angle", default_nearest_maxangle)));
     break;
   case 2:
+    algorithm.reset(new Algorithms::Nearest(get_option_value("angle", default_nearest_maxangle)));
+    break;
+  case 3:
     algorithm.reset(new Algorithms::ISMRM2018(get_option_value("max_origins", default_max_origins_per_target),
                                               get_option_value("max_objectives", default_max_objectives_per_source),
                                               H_cost));
     break;
-  case 3:
+  case 4:
     algorithm.reset(new Algorithms::IN2023(get_option_value("max_origins", default_max_origins_per_target),
                                            get_option_value("max_objectives", default_max_objectives_per_source),
                                            H_cost));

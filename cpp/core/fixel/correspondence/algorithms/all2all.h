@@ -18,10 +18,7 @@
 #include "fixel/correspondence/algorithms/base.h"
 #include "fixel/correspondence/fixel.h"
 
-namespace MR {
-namespace Fixel {
-namespace Correspondence {
-namespace Algorithms {
+namespace MR::Fixel::Correspondence::Algorithms {
 
 #ifdef FIXELCORRESPONDENCE_INCLUDE_ALL2ALL
 // For the sake of testing, construct a correspondence algorithm with predictable behaviour:
@@ -30,20 +27,10 @@ class All2All : public Base {
 public:
   All2All() {}
   virtual ~All2All() {}
-  std::vector<std::vector<uint32_t>> operator()(const voxel_t &,
-                                                const std::vector<Correspondence::Fixel> &s,
-                                                const std::vector<Correspondence::Fixel> &t) const final {
-    std::vector<std::vector<uint32_t>> result;
-    std::vector<uint32_t> all_s;
-    for (uint32_t i = 0; i != s.size(); ++i)
-      all_s.push_back(i);
-    result.assign(t.size(), all_s);
-    return result;
-  }
+  std::vector<std::vector<Mapping::Entry>> operator()(const voxel_t &v,
+                                                      const std::vector<Correspondence::Fixel> &s,
+                                                      const std::vector<Correspondence::Fixel> &t) const final;
 };
 #endif
 
-} // namespace Algorithms
-} // namespace Correspondence
-} // namespace Fixel
-} // namespace MR
+} // namespace MR::Fixel::Correspondence::Algorithms

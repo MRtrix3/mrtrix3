@@ -21,13 +21,11 @@
 #include "fixel/correspondence/correspondence.h"
 #include "fixel/correspondence/mapping.h"
 
-namespace MR {
-namespace Fixel {
-namespace Correspondence {
-
-namespace Algorithms {
+namespace MR::Fixel::Correspondence::Algorithms {
 class Base;
 }
+
+namespace MR::Fixel::Correspondence {
 
 // Functor is safe to copy-construct for multi-threading:
 //   correspondence data are stored in a std::shared_ptr<>
@@ -71,6 +69,4 @@ private:
 uint64_t Matcher::max_computed_combinations = 0;
 #endif
 
-} // namespace Correspondence
-} // namespace Fixel
-} // namespace MR
+} // namespace MR::Fixel::Correspondence

@@ -18,9 +18,7 @@
 
 #include "fixel/correspondence/correspondence.h"
 
-namespace MR {
-namespace Fixel {
-namespace Correspondence {
+namespace MR::Fixel::Correspondence {
 
 // Information to be stored for each fixel that will be useful during correspondence
 class Fixel {
@@ -40,6 +38,4 @@ protected:
   const float _density;
 };
 
-} // namespace Correspondence
-} // namespace Fixel
-} // namespace MR
+} // namespace MR::Fixel::Correspondence

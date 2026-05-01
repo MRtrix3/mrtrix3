@@ -17,9 +17,7 @@
 
 // #define FIXELCORRESPONDENCE_TEST_DP2COST
 
-namespace MR {
-namespace Fixel {
-namespace Correspondence {
+namespace MR::Fixel::Correspondence {
 
 // Fast lookup for angular penalisation term
 class DP2Cost {
@@ -51,6 +49,4 @@ private:
   const float multiplier;
 };
 
-} // namespace Correspondence
-} // namespace Fixel
-} // namespace MR
+} // namespace MR::Fixel::Correspondence

@@ -20,11 +20,9 @@
 
 #include "fixel/correspondence/correspondence.h"
 #include "fixel/correspondence/fixel.h"
+#include "fixel/correspondence/mapping.h"
 
-namespace MR {
-namespace Fixel {
-namespace Correspondence {
-namespace Algorithms {
+namespace MR::Fixel::Correspondence::Algorithms {
 
 class Base {
 public:
@@ -38,15 +36,12 @@ public:
     copy(cost_image, output);
   }
 
-  virtual std::vector<std::vector<uint32_t>> operator()(const voxel_t &v,
-                                                        const std::vector<Correspondence::Fixel> &s,
-                                                        const std::vector<Correspondence::Fixel> &t) const = 0;
+  virtual std::vector<std::vector<Mapping::Entry>> operator()(const voxel_t &v,
+                                                              const std::vector<Correspondence::Fixel> &s,
+                                                              const std::vector<Correspondence::Fixel> &t) const = 0;
 
 protected:
   Image<float> cost_image;
 };
 
-} // namespace Algorithms
-} // namespace Correspondence
-} // namespace Fixel
-} // namespace MR
+} // namespace MR::Fixel::Correspondence::Algorithms
