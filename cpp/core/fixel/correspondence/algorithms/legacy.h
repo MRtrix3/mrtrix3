@@ -17,7 +17,13 @@
 
 #include "fixel/correspondence/algorithms/base.h"
 
+namespace MR::App {
+class OptionGroup;
+}
+
 namespace MR::Fixel::Correspondence::Algorithms {
+
+extern App::OptionGroup LegacyOptions;
 
 // Replicate the unweighted nearest-fixel behaviour of the fixelcorrespondence
 //   command from MRtrix versions 3.0.x and earlier:

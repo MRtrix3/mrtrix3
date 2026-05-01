@@ -17,6 +17,7 @@
 
 #include "fixel/correspondence/algorithms/base.h"
 #include "fixel/correspondence/fixel.h"
+#include "fixel/fixel.h"
 #include "fixel/helpers.h"
 #include "header.h"
 
@@ -39,7 +40,7 @@ Matcher::Matcher(std::string_view source_file,
     throw Exception("Source input image is not a fixel data file");
 
   const std::string source_directory = MR::Fixel::get_fixel_directory(source_file);
-  source_index = MR::Fixel::find_index_header(source_directory).get_image<Fixel::index_type>();
+  source_index = MR::Fixel::find_index_header(source_directory).get_image<MR::Fixel::index_type>();
   source_directions = MR::Fixel::find_directions_header(source_directory).get_image<float>();
   source_data = source_header.get_image<float>();
   MR::Fixel::check_fixel_size(source_index, source_data);
@@ -52,7 +53,7 @@ Matcher::Matcher(std::string_view source_file,
     throw Exception("Target input image is not a fixel data file");
 
   const std::string target_directory = MR::Fixel::get_fixel_directory(target_file);
-  target_index = MR::Fixel::find_index_header(target_directory).get_image<Fixel::index_type>();
+  target_index = MR::Fixel::find_index_header(target_directory).get_image<MR::Fixel::index_type>();
   target_directions = MR::Fixel::find_directions_header(target_directory).get_image<float>();
   target_data = target_header.get_image<float>();
   MR::Fixel::check_fixel_size(target_index, target_data);
@@ -69,7 +70,7 @@ Matcher::Matcher(std::string_view source_file,
                                                        MR::Fixel::get_number_of_fixels(target_index)));
 }
 
-void Matcher::operator()(Image<Fixel::index_type> &voxel) {
+void Matcher::operator()(Image<MR::Fixel::index_type> &voxel) {
   assign_pos_of(voxel, 0, 3).to(source_index, target_index);
   source_index.index(3) = target_index.index(3) = 0;
   const index_type nfixels_source = source_index.value();
@@ -131,7 +132,8 @@ void Matcher::operator()(Image<Fixel::index_type> &voxel) {
 
 void Matcher::export_remapped(std::string_view dirname) {
   MR::Fixel::check_fixel_directory(dirname, true, true);
-  Image<Fixel::index_type> out_index(Image<Fixel::index_type>::create(Path::join(dirname, "index.mif"), target_index));
+  Image<MR::Fixel::index_type> out_index(
+      Image<MR::Fixel::index_type>::create(Path::join(dirname, "index.mif"), target_index));
   copy(target_index, out_index);
   Image<float> out_directions(Image<float>::create(Path::join(dirname, "directions.mif"), target_directions));
   copy(remapped_directions, out_directions);

@@ -13,7 +13,17 @@
 
 #include "fixel/correspondence/algorithms/legacy.h"
 
+#include "app.h"
+
 namespace MR::Fixel::Correspondence::Algorithms {
+
+// clang-format off
+App::OptionGroup LegacyOptions = App::OptionGroup("Options specific to algorithm \"legacy\"")
+  + App::Option("angle",
+           "maximum angle within which a corresponding fixel may be selected, in degrees"
+           " (default: " + str(default_nearest_maxangle) + ")")
+    + App::Argument("value").type_float(0.0f, 90.0f);
+// clang-format on
 
 std::vector<std::vector<Mapping::Entry>> Legacy::operator()(const voxel_t &,
                                                             const std::vector<Correspondence::Fixel> &s,

@@ -25,7 +25,6 @@
 #include "fixel/correspondence/algorithms/in2023.h"
 #include "fixel/correspondence/algorithms/ismrm2018.h"
 #include "fixel/correspondence/algorithms/legacy.h"
-#include "fixel/correspondence/algorithms/nearest.h"
 #include "fixel/correspondence/correspondence.h"
 #include "fixel/correspondence/matcher.h"
 
@@ -86,7 +85,6 @@ enum class algorithm_t {
   ALL2ALL,
 #endif
   LEGACY,
-  NEAREST,
   ISMRM2018,
   IN2023
 };
@@ -103,9 +101,11 @@ void usage() {
     "One would typically also want to have performed a reorientation of fibre information to reflect this spatial normalisation "
     "prior to invoking this command, as this would be expected to improve fibre orientation correspondence across datasets."
 
-  + "The output of the command is a .npz file (uncompressed ZIP archive) encoding how data from source fixels should be remapped in order to "
-    "express those data in target fixel space. This information would typically then be utilised by command fixel2fixel "
-    "to project some quantitative parameter from the source fixel dataset to the target fixels."
+  + "The output of the command is a .npz file (uncompressed ZIP archive)"
+    " encoding how data from source fixels should be remapped "
+    " in order to express those data in target fixel space."
+    " This information would typically then be utilised by command fixel2fixel "
+    " to project some quantitative parameter from the source fixel dataset to the target fixels."
 
   + "Multiple algorithms are provided; a brief description of each of these is provided below."
 
@@ -119,10 +119,6 @@ void usage() {
     "with a weight of 1.0, as long as the angle between them is less than some threshold. "
     "Note that if multiple target fixels select the same source fixel, "
     "the entirety of the data from that source fixel is projected to each of those target fixels independently."
-
-  + "\"nearest\": Similar to algorithm \"legacy\", but normalises the contribution of each source fixel "
-    "according to the number of target fixels to which it maps, "
-    "such that contributions from a source fixel sum to unity across all target fixels that draw from it."
 
   + "\"ismrm2018\": This is a combinatorial algorithm, for which the algorithm and cost function are described in the "
     "relevant reference (Smith et al., 2018)."
@@ -143,11 +139,11 @@ void usage() {
   + Option ("remapped", "export the remapped source fixels to a new fixel directory")
     + Argument ("path").type_directory_out()
 
-  + Algorithms::NearestOptions
+  + Algorithms::LegacyOptions
 
-  + Algorithms::IN2023Options
+  + Algorithms::CombinatorialOptions
 
-  + Algorithms::CombinatorialOptions;
+  + Algorithms::IN2023Options;
 
   REFERENCES
   + "* If using -algorithm ismrm2018 or -algorithm in2023: " // Internal
@@ -172,9 +168,6 @@ void run() {
 #endif
   case algorithm_t::LEGACY:
     algorithm.reset(new Algorithms::Legacy(get_option_value("angle", default_nearest_maxangle)));
-    break;
-  case algorithm_t::NEAREST:
-    algorithm.reset(new Algorithms::Nearest(get_option_value("angle", default_nearest_maxangle)));
     break;
   case algorithm_t::ISMRM2018:
     algorithm.reset(new Algorithms::ISMRM2018(get_option_value("max_origins", default_max_origins_per_target),
