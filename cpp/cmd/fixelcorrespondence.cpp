@@ -91,7 +91,7 @@ void usage() {
     "One would typically also want to have performed a reorientation of fibre information to reflect this spatial normalisation "
     "prior to invoking this command, as this would be expected to improve fibre orientation correspondence across datasets."
 
-  + "The output of the command is a directory encoding how data from source fixels should be remapped in order to "
+  + "The output of the command is a .npz file (uncompressed ZIP archive) encoding how data from source fixels should be remapped in order to "
     "express those data in target fixel space. This information would typically then be utilised by command fixel2fixel "
     "to project some quantitative parameter from the source fixel dataset to the target fixels."
 
@@ -121,7 +121,7 @@ void usage() {
   ARGUMENTS
   + Argument ("source_density", "the input source fixel data file corresponding to the FD or FDC metric").type_image_in()
   + Argument ("target_density", "the input target fixel data file corresponding to the FD or FDC metric").type_image_in()
-  + Argument ("output", "the name of the output directory encoding the fixel correspondence").type_directory_out();
+  + Argument ("output", "the name of the output .npz file encoding the fixel correspondence").type_file_out();
 
   OPTIONS
   + Option ("algorithm", "the algorithm to use when establishing fixel correspondence; "
@@ -146,11 +146,6 @@ void usage() {
 // clang-format on
 
 void run() {
-  if (Path::exists(argument[2]))
-    throw Exception(std::string("Output target already exists") +
-                    (App::overwrite_files
-                         ? " (-force option cannot safely be applied on directories; please erase manually instead)"
-                         : ""));
   Header H_cost = MR::Fixel::find_index_header(Path::dirname(argument[1]));
   H_cost.ndim() = 3;
   H_cost.datatype() = DataType::Float32;

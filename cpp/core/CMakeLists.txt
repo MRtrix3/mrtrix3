@@ -4,6 +4,7 @@ find_package(FFTW REQUIRED)
 find_package(Git QUIET)
 find_package(Threads REQUIRED)
 find_package(PNG QUIET)
+find_package(LibZip REQUIRED)
 
 if(PNG_FOUND)
     message(STATUS "Found PNG: ${PNG_LIBRARIES}")
@@ -120,6 +121,7 @@ target_link_libraries(mrtrix-core PUBLIC
     nifti::nifti
     tcb::span
     magic_enum::magic_enum
+    libzip::zip
 )
 
 if(MRTRIX_ENABLE_GPU)

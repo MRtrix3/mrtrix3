@@ -45,7 +45,8 @@ void usage() {
 
   DESCRIPTION
   +"This command requires pre-calculation of fixel correspondence between two fixel datasets; "
-   "this would most typically be achieved using the fixelcorrespondence command."
+   "this would most typically be achieved using the fixelcorrespondence command, "
+   "which produces a .npz file as input to this command."
 
       + "The -weighted option does not act as a per-fixel value multipler as is done in the "
         "calculation of the Fibre Density and Cross-section (FDC) measure. Rather, whenever "
@@ -60,8 +61,8 @@ void usage() {
 
   EXAMPLES
   +Example("Replicate the behaviour of the fixelcorrespondence command from MRtrix version 3.0.x",
-           "fixelcorrespondence subject/fd.mif template/fd.mif fixelmapping -algorithm nearest; "
-           "fixel2fixel subject/fd.mif fixelmapping sum fd_template subject.mif -ignore_weights",
+           "fixelcorrespondence subject/fd.mif template/fd.mif fixelmapping.npz -algorithm nearest; "
+           "fixel2fixel subject/fd.mif fixelmapping.npz sum fd_template subject.mif -ignore_weights",
            "To reproduce the behaviour of the 3.0.x version of the fixelcorrespondence command "
            "requires two explicit modifications to the default behaviours "
            "of both the new fixelcorrespondence command and command fixel2fixel. "
@@ -80,8 +81,7 @@ void usage() {
 
   ARGUMENTS
   +Argument("data_in", "the source fixel data file").type_image_in() +
-      Argument("correspondence", "the directory containing the fixel-fixel correspondence mapping")
-          .type_directory_in() +
+      Argument("correspondence", "the .npz file containing the fixel-fixel correspondence mapping").type_file_in() +
       Argument("metric",
                "the metric to calculate when mapping multiple input fixels to an output fixel; "
                "options are: " +
