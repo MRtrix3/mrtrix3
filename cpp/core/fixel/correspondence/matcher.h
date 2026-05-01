@@ -35,10 +35,10 @@ public:
   Matcher(std::string_view source_file, std::string_view target_file, std::shared_ptr<Algorithms::Base> &algorithm);
 
   // Input is just a dummy iterator that provides the location
-  void operator()(Image<uint32_t> &voxel);
+  void operator()(Image<index_type> &voxel);
 
   // Use this to get a template image in order to loop over voxels
-  Image<uint32_t> get_template() const { return Image<uint32_t>(target_index); }
+  Image<index_type> get_template() const { return Image<index_type>(target_index); }
 
   const MR::Fixel::Correspondence::Mapping &get_mapping() const {
     assert(mapping);
@@ -53,7 +53,7 @@ public:
 private:
   std::shared_ptr<Algorithms::Base> algorithm;
 
-  Image<uint32_t> source_index, target_index;
+  Image<index_type> source_index, target_index;
   Image<float> source_directions, target_directions, remapped_directions;
   Image<float> source_data, target_data, remapped_data;
 

@@ -24,6 +24,11 @@ using index_type = MR::Fixel::index_type;
 using dir_t = Eigen::Matrix<float, 3, 1>;
 using voxel_t = Eigen::Array<uint32_t, 3, 1>;
 
+/// @brief Integer type used for CSR indptr and indices arrays in .npz correspondence files.
+using npz_index_type = uint32_t;
+/// @brief Value type used for CSR data arrays in .npz correspondence files.
+using npz_value_type = float;
+
 constexpr index_type min_dirs_to_enforce_adjacency = 4;
 constexpr index_type max_fixels_for_no_combinatorial_warning = 6;
 constexpr unsigned int dp2cost_lookup_resolution = 1000;

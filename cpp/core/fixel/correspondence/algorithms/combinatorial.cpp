@@ -50,8 +50,8 @@ std::vector<std::vector<Mapping::Entry>> Combinatorial<CostFunctor>::operator()(
   //   here we want to ensure that the generated number of
   //   combinations matches with theory
   uint32_t permissible_src_fixel_combinations = max_src_fixel_combinations;
-  for (uint32_t r = s.size(); r > max_origins_per_target; --r)
-    permissible_src_fixel_combinations -= Math::n_choose_k(static_cast<uint32_t>(s.size()), r);
+  for (index_type r = s.size(); r > max_origins_per_target; --r)
+    permissible_src_fixel_combinations -= Math::n_choose_k(static_cast<index_type>(s.size()), r);
 #endif
 
 #ifdef FIXELCORRESPONDENCE_TEST_COMBINATORICS

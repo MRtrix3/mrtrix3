@@ -29,18 +29,19 @@ public:
     float weight;
   };
 
-  Mapping(const uint32_t source_fixels, const uint32_t target_fixels);
+  Mapping(const index_type source_fixels, const index_type target_fixels);
   Mapping(std::string_view path);
 
   void load(std::string_view path, const bool import_inverse = false);
 
   // Save to CSR format as an uncompressed .npz archive containing six .npy entries:
-  // - indptr_forward.npy: (Nt+1) uint32 vector, CSR index pointer array for forward mapping
-  // - indices_forward.npy: C uint32 vector, source fixel indices to pull into target fixels
-  // - data_forward.npy: C float vector, fractional contribution of each source fixel to its target fixel
-  // - indptr_inverse.npy: (Ns+1) uint32 vector, CSR index pointer array for inverse mapping
-  // - indices_inverse.npy: C uint32 vector, target fixel indices to pull into source fixels
-  // - data_inverse.npy: C float vector, forward weights per (source, target) pair normalised to unity sum per target
+  // - indptr_forward.npy: (Nt+1) npz_index_type vector, CSR index pointer array for forward mapping
+  // - indices_forward.npy: C npz_index_type vector, source fixel indices to pull into target fixels
+  // - data_forward.npy: C npz_value_type vector, fractional contribution of each source fixel to its target fixel
+  // - indptr_inverse.npy: (Ns+1) npz_index_type vector, CSR index pointer array for inverse mapping
+  // - indices_inverse.npy: C npz_index_type vector, target fixel indices to pull into source fixels
+  // - data_inverse.npy: C npz_value_type vector, forward weights per (source, target) pair normalised to unity sum per
+  // target
   void save(std::string_view path) const;
 
   const std::vector<Entry> &operator[](const size_t index) const { return M[index]; }
@@ -69,7 +70,7 @@ public:
   Mapping inverse() const;
 
 private:
-  uint32_t source_fixels, target_fixels;
+  index_type source_fixels, target_fixels;
   std::vector<std::vector<Entry>> M;
 };
 

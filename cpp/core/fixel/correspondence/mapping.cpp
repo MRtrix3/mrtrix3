@@ -22,7 +22,7 @@
 
 namespace MR::Fixel::Correspondence {
 
-Mapping::Mapping(const uint32_t source_fixels, const uint32_t target_fixels)
+Mapping::Mapping(const index_type source_fixels, const index_type target_fixels)
     : source_fixels(source_fixels), target_fixels(target_fixels), M(target_fixels, std::vector<Entry>()) {}
 
 Mapping::Mapping(std::string_view path) { load(path); }
@@ -74,30 +74,31 @@ void Mapping::load(std::string_view npz_path, const bool import_inverse) {
   const File::NPY::ReadInfo data_info = File::NPZ::parse_1d_header_from_buffer(data_buf, data_name);
   const File::NPY::ReadInfo converse_info = File::NPZ::parse_1d_header_from_buffer(converse_buf, converse_indptr_name);
 
-  validate_npy_1d<uint32_t>(indptr_info, indptr_name, npz_path);
-  validate_npy_1d<uint32_t>(indices_info, indices_name, npz_path);
-  validate_npy_1d<float>(data_info, data_name, npz_path);
-  validate_npy_1d<uint32_t>(converse_info, converse_indptr_name, npz_path);
+  validate_npy_1d<npz_index_type>(indptr_info, indptr_name, npz_path);
+  validate_npy_1d<npz_index_type>(indices_info, indices_name, npz_path);
+  validate_npy_1d<npz_value_type>(data_info, data_name, npz_path);
+  validate_npy_1d<npz_index_type>(converse_info, converse_indptr_name, npz_path);
 
   if (indices_info.shape[0] != data_info.shape[0])
     throw Exception("Size mismatch between indices and data arrays in NPZ file \"" + std::string(npz_path) + "\"");
 
-  const uint32_t N = static_cast<uint32_t>(indptr_info.shape[0]) - 1;
+  const index_type N = static_cast<index_type>(indptr_info.shape[0]) - 1;
   M.assign(N, std::vector<Entry>());
 
-  const uint32_t *indptr = reinterpret_cast<const uint32_t *>(indptr_buf.data() + indptr_info.data_offset);
-  const uint32_t *indices = reinterpret_cast<const uint32_t *>(indices_buf.data() + indices_info.data_offset);
-  const float *data = reinterpret_cast<const float *>(data_buf.data() + data_info.data_offset);
+  const npz_index_type *indptr = reinterpret_cast<const npz_index_type *>(indptr_buf.data() + indptr_info.data_offset);
+  const npz_index_type *indices =
+      reinterpret_cast<const npz_index_type *>(indices_buf.data() + indices_info.data_offset);
+  const npz_value_type *data = reinterpret_cast<const npz_value_type *>(data_buf.data() + data_info.data_offset);
 
-  for (uint32_t i = 0; i != N; ++i) {
-    const uint32_t begin = indptr[i];
-    const uint32_t end = indptr[i + 1];
+  for (index_type i = 0; i != N; ++i) {
+    const npz_index_type begin = indptr[i];
+    const npz_index_type end = indptr[i + 1];
     M[i].reserve(end - begin);
-    for (uint32_t j = begin; j != end; ++j)
+    for (npz_index_type j = begin; j != end; ++j)
       M[i].push_back({indices[j], data[j]});
   }
 
-  source_fixels = static_cast<uint32_t>(converse_info.shape[0]) - 1;
+  source_fixels = static_cast<index_type>(converse_info.shape[0]) - 1;
   target_fixels = N;
 }
 
@@ -105,49 +106,49 @@ void Mapping::save(std::string_view npz_path) const {
   const Mapping inv = inverse();
 
   // Build CSR arrays for forward mapping
-  const uint32_t fwd_N = static_cast<uint32_t>(M.size());
-  uint32_t fwd_total = 0;
+  const index_type fwd_N = static_cast<index_type>(M.size());
+  npz_index_type fwd_total = 0;
   for (const auto &row : M)
-    fwd_total += static_cast<uint32_t>(row.size());
+    fwd_total += static_cast<npz_index_type>(row.size());
 
-  std::vector<uint32_t> fwd_indptr(fwd_N + 1);
-  std::vector<uint32_t> fwd_indices(fwd_total);
-  std::vector<float> fwd_data(fwd_total);
+  std::vector<npz_index_type> fwd_indptr(fwd_N + 1);
+  std::vector<npz_index_type> fwd_indices(fwd_total);
+  std::vector<npz_value_type> fwd_data(fwd_total);
   {
-    uint32_t offset = 0;
+    npz_index_type offset = 0;
     size_t k = 0;
-    for (size_t i = 0; i != fwd_N; ++i) {
+    for (index_type i = 0; i != fwd_N; ++i) {
       fwd_indptr[i] = offset;
       for (const auto &e : M[i]) {
         fwd_indices[k] = e.index;
         fwd_data[k] = e.weight;
         ++k;
       }
-      offset += static_cast<uint32_t>(M[i].size());
+      offset += static_cast<npz_index_type>(M[i].size());
     }
     fwd_indptr[fwd_N] = offset;
   }
 
   // Build CSR arrays for inverse mapping
-  const uint32_t inv_N = static_cast<uint32_t>(inv.M.size());
-  uint32_t inv_total = 0;
+  const index_type inv_N = static_cast<index_type>(inv.M.size());
+  npz_index_type inv_total = 0;
   for (const auto &row : inv.M)
-    inv_total += static_cast<uint32_t>(row.size());
+    inv_total += static_cast<npz_index_type>(row.size());
 
-  std::vector<uint32_t> inv_indptr(inv_N + 1);
-  std::vector<uint32_t> inv_indices(inv_total);
-  std::vector<float> inv_data(inv_total);
+  std::vector<npz_index_type> inv_indptr(inv_N + 1);
+  std::vector<npz_index_type> inv_indices(inv_total);
+  std::vector<npz_value_type> inv_data(inv_total);
   {
-    uint32_t offset = 0;
+    npz_index_type offset = 0;
     size_t k = 0;
-    for (size_t i = 0; i != inv_N; ++i) {
+    for (index_type i = 0; i != inv_N; ++i) {
       inv_indptr[i] = offset;
       for (const auto &e : inv.M[i]) {
         inv_indices[k] = e.index;
         inv_data[k] = e.weight;
         ++k;
       }
-      offset += static_cast<uint32_t>(inv.M[i].size());
+      offset += static_cast<npz_index_type>(inv.M[i].size());
     }
     inv_indptr[inv_N] = offset;
   }
@@ -164,12 +165,12 @@ void Mapping::save(std::string_view npz_path) const {
 
 Mapping Mapping::inverse() const {
   std::vector<float> target_weight_sum(target_fixels, 0.0f);
-  for (uint32_t t = 0; t != target_fixels; ++t)
+  for (index_type t = 0; t != target_fixels; ++t)
     for (const auto &e : M[t])
       target_weight_sum[t] += e.weight;
 
   Mapping inv(target_fixels, source_fixels);
-  for (uint32_t t = 0; t != target_fixels; ++t)
+  for (index_type t = 0; t != target_fixels; ++t)
     for (const auto &e : M[t])
       inv.M[e.index].push_back({t, target_weight_sum[t] > 0.0f ? e.weight / target_weight_sum[t] : 0.0f});
   return inv;
