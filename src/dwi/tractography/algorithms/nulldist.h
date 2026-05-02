@@ -144,10 +144,10 @@ namespace MR
 
       }
 
-      void reverse_track() override
+      void reverse_track (GeneratedTrack& tck, const Eigen::Vector3f& seed_dir) override
       {
         sample_idx = S.num_samples;
-        MethodBase::reverse_track();
+        MethodBase::reverse_track (tck, seed_dir);
       }
 
       void truncate_track (GeneratedTrack& tck, const size_t length_to_revert_from, const size_t revert_step) override
