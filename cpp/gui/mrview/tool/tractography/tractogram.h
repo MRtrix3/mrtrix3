@@ -49,8 +49,8 @@ public:
   void load_tracks();
 
   void load_end_colours();
-  void load_intensity_track_scalars(const std::string &);
-  void load_threshold_track_scalars(const std::string &);
+  void load_intensity_track_scalars(const std::filesystem::path &);
+  void load_threshold_track_scalars(const std::filesystem::path &);
   void erase_colour_data();
   void erase_intensity_scalar_data();
   void erase_threshold_scalar_data();

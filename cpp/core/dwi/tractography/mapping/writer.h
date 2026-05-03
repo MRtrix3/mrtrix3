@@ -38,7 +38,7 @@ class MapWriterBase {
 
 public:
   MapWriterBase(const Header &header,
-                const std::string &name,
+                const std::filesystem::path &name,
                 const vox_stat_t s = V_SUM,
                 const writer_dim t = GREYSCALE)
       : H(header), output_image_name(name), voxel_statistic(s), type(t) {
@@ -66,7 +66,7 @@ public:
 
 protected:
   const Header &H;
-  const std::string output_image_name;
+  const std::filesystem::path output_image_name;
   const vox_stat_t voxel_statistic;
   const writer_dim type;
 
@@ -81,7 +81,7 @@ template <typename value_type> class MapWriter : public MapWriterBase {
 
 public:
   MapWriter(const Header &header,
-            const std::string &name,
+            const std::filesystem::path &name,
             const vox_stat_t voxel_statistic = V_SUM,
             const writer_dim type = GREYSCALE)
       : MapWriterBase(header, name, voxel_statistic, type),

@@ -50,7 +50,7 @@ public:
 
 public slots:
   bool open_intensity_track_scalar_file_slot();
-  bool open_intensity_track_scalar_file_slot(std::string);
+  bool open_intensity_track_scalar_file_slot(std::filesystem::path);
 
 private slots:
   void on_set_scaling_slot();

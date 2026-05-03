@@ -256,10 +256,10 @@ Eigen::MatrixXd initialise_basis(IndexType &index, size_t num_voxels, int order)
   return basis;
 }
 
-void load_data(Eigen::MatrixXd &data, const std::string &image_name, IndexType &index) {
+void load_data(Eigen::MatrixXd &data, const std::filesystem::path &image_name, IndexType &index) {
   static int num = 0;
 
-  auto in = ImageType::open(image_name);
+  auto in = ImageType::open(image_name.string());
   check_dimensions(index, in, 0, 3);
 
   struct Loader {

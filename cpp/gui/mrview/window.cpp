@@ -862,12 +862,13 @@ void Window::add_images(std::vector<std::unique_ptr<MR::Header>> &list) {
 }
 
 void Window::image_save_slot() {
-  std::string image_name = Dialog::File::get_save_image_name(this, "Select image destination", "", &current_folder);
+  const std::filesystem::path image_name =
+      Dialog::File::get_save_image_name(this, "Select image destination", "", &current_folder);
   if (image_name.empty())
     return;
 
   try {
-    auto dest = MR::Image<cfloat>::create(image_name, image()->header());
+    auto dest = MR::Image<cfloat>::create(image_name.string(), image()->header());
     MR::copy_with_progress(image()->image, dest);
   } catch (Exception &E) {
     E.display();

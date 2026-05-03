@@ -191,12 +191,12 @@ void TrackScalarFileOptions::update_UI() {
 }
 
 bool TrackScalarFileOptions::open_intensity_track_scalar_file_slot() {
-  std::string scalar_file = Dialog::File::get_file(
+  std::filesystem::path scalar_file = Dialog::File::get_file(
       this, "Select scalar text file or Track Scalar file (.tsf) to open", "", &tool->current_folder);
   return open_intensity_track_scalar_file_slot(scalar_file);
 }
 
-bool TrackScalarFileOptions::open_intensity_track_scalar_file_slot(std::string scalar_file) {
+bool TrackScalarFileOptions::open_intensity_track_scalar_file_slot(std::filesystem::path scalar_file) {
   if (!scalar_file.empty()) {
     try {
       tractogram->load_intensity_track_scalars(scalar_file);
@@ -269,7 +269,7 @@ void TrackScalarFileOptions::on_set_scaling_slot() {
 
 bool TrackScalarFileOptions::threshold_scalar_file_slot(int /*unused*/) {
 
-  std::string file_path;
+  std::filesystem::path file_path;
   switch (threshold_file_combobox->currentIndex()) {
   case 0:
     tractogram->set_threshold_type(TrackThresholdType::None);

@@ -91,7 +91,7 @@ private:
                   const index_array_type &eb_whole);
 
   // For exchangeability blocks (either within or whole)
-  index_array_type load_blocks(const std::string &filename, const bool equal_sizes);
+  index_array_type load_blocks(const std::filesystem::path &filename, const bool equal_sizes);
 
   // For generating unique permutations
   bool is_duplicate(const PermuteLabels &, const PermuteLabels &) const;
@@ -111,7 +111,7 @@ private:
                                  const index_array_type &eb_within,
                                  const index_array_type &eb_whole);
 
-  void load_permutations(const std::string &filename);
+  void load_permutations(const std::filesystem::path &filename);
 
   // Similar functions required for sign-flipping
   bool is_duplicate(const BitSet &) const;

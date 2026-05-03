@@ -442,8 +442,8 @@ template <typename ValueType> std::string Image<ValueType>::dump_to_mrtrix_file(
 }
 
 template <class ImageType>
-std::string __save_generic(ImageType &x, const std::string &filename, bool use_multi_threading) {
-  auto out = Image<typename ImageType::value_type>::create(filename, x);
+std::string __save_generic(ImageType &x, const std::filesystem::path &filename, bool use_multi_threading) {
+  auto out = Image<typename ImageType::value_type>::create(filename.string(), x);
   if (use_multi_threading)
     threaded_copy(x, out);
   else
@@ -456,16 +456,16 @@ std::string __save_generic(ImageType &x, const std::string &filename, bool use_m
 //! save contents of an existing image to file (for debugging only)
 template <class ImageType>
 typename std::enable_if<is_adapter_type<typename std::remove_reference<ImageType>::type>::value, std::string>::type
-save(ImageType &&x, const std::string &filename, bool use_multi_threading = true) {
+save(ImageType &&x, const std::filesystem::path &filename, bool use_multi_threading = true) {
   return __save_generic(x, filename, use_multi_threading);
 }
 
 //! save contents of an existing image to file (for debugging only)
 template <class ImageType>
 typename std::enable_if<is_pure_image<typename std::remove_reference<ImageType>::type>::value, std::string>::type
-save(ImageType &&x, const std::string &filename, bool use_multi_threading = true) {
+save(ImageType &&x, const std::filesystem::path &filename, bool use_multi_threading = true) {
   try {
-    return x.dump_to_mrtrix_file(filename, use_multi_threading);
+    return x.dump_to_mrtrix_file(filename.string(), use_multi_threading);
   } catch (...) {
   }
   return __save_generic(x, filename, use_multi_threading);

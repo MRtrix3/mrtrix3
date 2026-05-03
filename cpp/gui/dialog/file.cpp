@@ -54,7 +54,7 @@ get_file(QWidget *parent, const std::string &caption, const std::string &filter,
     filepath = qstring.toUtf8().data();
     std::filesystem::path new_folder = filepath.parent_path();
     if (folder)
-      *folder = new_folder;
+      *folder = new_folder.string();
   }
   return filepath;
 }
@@ -70,7 +70,7 @@ get_files(QWidget *parent, const std::string &caption, const std::string &filter
       list.push_back(qlist[n].toUtf8().data());
     std::filesystem::path new_folder = std::filesystem::path{list[0]}.parent_path();
     if (folder)
-      *folder = new_folder;
+      *folder = new_folder.string();
   }
   return list;
 }
@@ -93,18 +93,19 @@ void check_overwrite_files_func(const std::filesystem::path &name) {
     overwrite_files = true;
 }
 
-std::string get_save_name(QWidget *parent,
-                          const std::string &caption,
-                          const std::string &suggested_name,
-                          const std::string &filter,
-                          std::string *folder) {
+std::filesystem::path get_save_name(QWidget *parent,
+                                    const std::string &caption,
+                                    const std::filesystem::path &suggested_name,
+                                    const std::string &filter,
+                                    std::string *folder) {
   overwrite_files = false;
 
   QString selection;
   if (folder) {
-    selection = suggested_name.empty() ? qstr(*folder) : qstr(MR::(*folder / suggested_name));
+    selection =
+        suggested_name.empty() ? qstr(*folder) : qstr((std::filesystem::path(*folder) / suggested_name).string());
   } else if (!suggested_name.empty()) {
-    selection = qstr(suggested_name);
+    selection = qstr(suggested_name.string());
   }
 
   QString qstring = QFileDialog::getSaveFileName(
@@ -115,7 +116,7 @@ std::string get_save_name(QWidget *parent,
     filename = qstring.toUtf8().data();
     std::filesystem::path new_folder = filename.parent_path();
     if (folder)
-      *folder = new_folder;
+      *folder = new_folder.string();
   }
   return filename;
 }

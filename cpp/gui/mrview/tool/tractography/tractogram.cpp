@@ -621,7 +621,7 @@ void Tractogram::load_end_colours() {
   GL::assert_context_is_current();
 }
 
-void Tractogram::load_intensity_track_scalars(const std::string &filename) {
+void Tractogram::load_intensity_track_scalars(const std::filesystem::path &filename) {
   // Make sure to set graphics context!
   // We're setting up vertex array objects
   GL::Context::Grab context;
@@ -633,9 +633,9 @@ void Tractogram::load_intensity_track_scalars(const std::string &filename) {
   std::vector<float> buffer;
   DWI::Tractography::TrackScalar<float> tck_scalar;
 
-  if (Path::has_suffix(std::filesystem::path(filename), ".tsf")) {
+  if (Path::has_suffix(filename, ".tsf")) {
     DWI::Tractography::Properties scalar_properties;
-    DWI::Tractography::ScalarReader<float> file(filename, scalar_properties);
+    DWI::Tractography::ScalarReader<float> file(filename.string(), scalar_properties);
     DWI::Tractography::check_properties_match(properties, scalar_properties, ".tck / .tsf");
     size_t tck_count = 0;
     while (file(tck_scalar)) {
@@ -713,7 +713,7 @@ void Tractogram::load_intensity_track_scalars(const std::string &filename) {
   GL::assert_context_is_current();
 }
 
-void Tractogram::load_threshold_track_scalars(const std::string &filename) {
+void Tractogram::load_threshold_track_scalars(const std::filesystem::path &filename) {
   // Make sure to set graphics context!
   // We're setting up vertex array objects
   GL::Context::Grab context;
@@ -725,9 +725,9 @@ void Tractogram::load_threshold_track_scalars(const std::string &filename) {
   std::vector<float> buffer;
   DWI::Tractography::TrackScalar<float> tck_scalar;
 
-  if (Path::has_suffix(std::filesystem::path(filename), ".tsf")) {
+  if (Path::has_suffix(filename, ".tsf")) {
     DWI::Tractography::Properties scalar_properties;
-    DWI::Tractography::ScalarReader<float> file(filename, scalar_properties);
+    DWI::Tractography::ScalarReader<float> file(filename.string(), scalar_properties);
     DWI::Tractography::check_properties_match(properties, scalar_properties, ".tck / .tsf");
     size_t tck_count = 0;
     while (file(tck_scalar)) {

@@ -123,7 +123,7 @@ Shuffler::Shuffler(const index_type num_rows, const bool is_nonstationarity, con
   opt = get_options(is_nonstationarity ? "permutations_nonstationarity" : "permutations");
   if (!opt.empty()) {
     if (error_types == error_t::EE || error_types == error_t::BOTH) {
-      load_permutations(opt[0][0]);
+      load_permutations(std::filesystem::path{std::string(opt[0][0])});
       if (permutations[0].size() != rows)
         throw Exception("Number of entries per shuffle in file \"" + std::string(opt[0][0]) +
                         "\" does not match number of rows in design matrix (" + str(rows) + ")");
@@ -141,7 +141,7 @@ Shuffler::Shuffler(const index_type num_rows, const bool is_nonstationarity, con
   index_array_type eb_within;
   if (!opt.empty()) {
     try {
-      eb_within = load_blocks(std::string(opt[0][0]), false);
+      eb_within = load_blocks(std::filesystem::path{std::string(opt[0][0])}, false);
     } catch (Exception &e) {
       throw Exception(e, "Unable to read file \"" + std::string(opt[0][0]) + "\" as within-block exchangeability");
     }
@@ -153,7 +153,7 @@ Shuffler::Shuffler(const index_type num_rows, const bool is_nonstationarity, con
     if (eb_within.size())
       throw Exception("Cannot specify both \"within\" and \"whole\" exchangeability block data");
     try {
-      eb_whole = load_blocks(std::string(opt[0][0]), true);
+      eb_whole = load_blocks(std::filesystem::path{std::string(opt[0][0])}, true);
     } catch (Exception &e) {
       throw Exception(e, "Unable to read file \"" + std::string(opt[0][0]) + "\" as whole-block exchangeability");
     }
@@ -375,15 +375,15 @@ void Shuffler::initialise(const error_t error_types,
     nshuffles = max_shuffles;
 }
 
-index_array_type Shuffler::load_blocks(const std::string &filename, const bool equal_sizes) {
+index_array_type Shuffler::load_blocks(const std::filesystem::path &filename, const bool equal_sizes) {
   index_array_type data = File::Matrix::load_vector<index_type>(filename).array();
   if (index_type(data.size()) != rows)
-    throw Exception("Number of entries in file \"" + filename + "\" (" + str(data.size()) +
+    throw Exception("Number of entries in file \"" + filename.string() + "\" (" + str(data.size()) +
                     ") does not match number of inputs (" + str(rows) + ")");
   const index_type min_coeff = data.minCoeff();
   index_type max_coeff = data.maxCoeff();
   if (min_coeff > 1)
-    throw Exception("Minimum index in file \"" + filename + "\" must be either 0 or 1");
+    throw Exception("Minimum index in file \"" + filename.string() + "\" must be either 0 or 1");
   if (min_coeff) {
     data.array() -= 1;
     max_coeff--;
@@ -393,12 +393,14 @@ index_array_type Shuffler::load_blocks(const std::string &filename, const bool e
     counts[data[i]]++;
   for (index_type i = 0; i <= max_coeff; ++i) {
     if (counts[i] < 2)
-      throw Exception("Sequential indices in file \"" + filename + "\" must contain at least two entries each");
+      throw Exception("Sequential indices in file \"" + filename.string() +
+                      "\" must contain at least two entries each");
   }
   if (equal_sizes) {
     for (index_type i = 1; i <= max_coeff; ++i) {
       if (counts[i] != counts[0])
-        throw Exception("Indices in file \"" + filename + "\" do not contain the same number of elements each");
+        throw Exception("Indices in file \"" + filename.string() +
+                        "\" do not contain the same number of elements each");
     }
   }
   return data;
@@ -573,10 +575,10 @@ void Shuffler::generate_all_permutations(const index_type num_rows,
     write(indices);
 }
 
-void Shuffler::load_permutations(const std::string &filename) {
+void Shuffler::load_permutations(const std::filesystem::path &filename) {
   std::vector<std::vector<index_type>> temp = File::Matrix::load_matrix_2D_vector<index_type>(filename);
   if (temp.empty())
-    throw Exception("no data found in permutations file: " + str(filename));
+    throw Exception("no data found in permutations file: " + filename.string());
 
   const index_type min_value = *std::min_element(std::begin(temp[0]), std::end(temp[0]));
   if (min_value > 1)

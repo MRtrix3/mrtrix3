@@ -33,11 +33,11 @@ std::vector<std::string> get_files(QWidget *parent,
                                    const std::string &caption,
                                    const std::string &filter = std::string(),
                                    std::string *folder = nullptr);
-std::string get_save_name(QWidget *parent,
-                          const std::string &caption,
-                          const std::string &suggested_name = std::string(),
-                          const std::string &filter = std::string(),
-                          std::string *folder = nullptr);
+std::filesystem::path get_save_name(QWidget *parent,
+                                    const std::string &caption,
+                                    const std::filesystem::path &suggested_name = std::filesystem::path(),
+                                    const std::string &filter = std::string(),
+                                    std::string *folder = nullptr);
 
 inline std::string get_image(QWidget *parent, const std::string &caption, std::string *folder = nullptr) {
   return get_file(parent, caption, image_filter_string, folder);
@@ -47,10 +47,10 @@ inline std::vector<std::string> get_images(QWidget *parent, const std::string &c
   return get_files(parent, caption, image_filter_string, folder);
 }
 
-inline std::string get_save_image_name(QWidget *parent,
-                                       const std::string &caption,
-                                       const std::string &suggested_name = std::string(),
-                                       std::string *folder = nullptr) {
+inline std::filesystem::path get_save_image_name(QWidget *parent,
+                                                 const std::string &caption,
+                                                 const std::filesystem::path &suggested_name = std::filesystem::path(),
+                                                 std::string *folder = nullptr) {
   return get_save_name(parent, caption, suggested_name, image_filter_string, folder);
 }
 

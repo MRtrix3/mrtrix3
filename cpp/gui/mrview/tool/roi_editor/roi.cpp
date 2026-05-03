@@ -319,10 +319,10 @@ void ROI::save(ROI_Item *roi) {
     MR::Header header(roi->header());
     header.ndim() = 3;
     header.datatype() = DataType::Bit;
-    std::string name = GUI::Dialog::File::get_save_image_name(
+    const std::filesystem::path name = GUI::Dialog::File::get_save_image_name(
         &window(), "Select name of ROI to save", roi->get_filename(), &current_folder);
     if (!name.empty()) {
-      auto out = MR::Image<bool>::create(name, header);
+      auto out = MR::Image<bool>::create(name.string(), header);
       roi->save(out, data.data());
     }
   } catch (Exception &E) {

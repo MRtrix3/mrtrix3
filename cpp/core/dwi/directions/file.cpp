@@ -20,27 +20,27 @@
 
 namespace MR::DWI::Directions {
 
-Eigen::MatrixXd load_spherical(const std::string &filename) {
+Eigen::MatrixXd load_spherical(const std::filesystem::path &filename) {
   auto directions = File::Matrix::load_matrix<>(filename);
   if (directions.cols() == 2)
     return directions;
   if (directions.cols() != 3)
-    throw Exception("unexpected number of columns for directions file \"" + filename + "\"");
+    throw Exception("unexpected number of columns for directions file \"" + filename.string() + "\"");
 
   return Math::Sphere::cartesian2spherical(directions);
 }
 
-Eigen::MatrixXd load_cartesian(const std::string &filename) {
+Eigen::MatrixXd load_cartesian(const std::filesystem::path &filename) {
   auto directions = File::Matrix::load_matrix<>(filename);
   if (directions.cols() == 2)
     directions = Math::Sphere::spherical2cartesian(directions);
   else {
     if (directions.cols() != 3)
-      throw Exception("unexpected number of columns for directions file \"" + filename + "\"");
+      throw Exception("unexpected number of columns for directions file \"" + filename.string() + "\"");
     for (ssize_t n = 0; n < directions.rows(); ++n) {
       auto norm = directions.row(n).norm();
       if (abs(default_type(1.0) - norm) > 1.0e-4)
-        WARN("directions file \"" + filename + "\" contains non-unit direction vectors");
+        WARN("directions file \"" + filename.string() + "\" contains non-unit direction vectors");
       directions.row(n).array() *= norm ? default_type(1.0) / norm : default_type(0.0);
     }
   }
