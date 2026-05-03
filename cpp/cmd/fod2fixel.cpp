@@ -167,7 +167,7 @@ void Segmented_FOD_receiver::commit() {
   using DataImage = Image<float>;
   using IndexImage = Image<index_type>;
 
-  const auto index_filepath = Path::join(fixel_directory_path, index_path);
+  const auto index_filepath = (fixel_directory_path / index_path);
 
   std::unique_ptr<IndexImage> index_image;
   std::unique_ptr<DataImage> dir_image;
@@ -195,7 +195,7 @@ void Segmented_FOD_receiver::commit() {
   if (!dir_path.empty()) {
     auto dir_header(fixel_data_header);
     dir_header.size(1) = 3;
-    dir_image = std::make_unique<DataImage>(DataImage::create(Path::join(fixel_directory_path, dir_path), dir_header));
+    dir_image = std::make_unique<DataImage>(DataImage::create((fixel_directory_path / dir_path), dir_header));
     dir_image->index(1) = 0;
     Fixel::check_fixel_size(*index_image, *dir_image);
   }
@@ -203,7 +203,7 @@ void Segmented_FOD_receiver::commit() {
   if (!afd_path.empty()) {
     auto afd_header(fixel_data_header);
     afd_header.size(1) = 1;
-    afd_image = std::make_unique<DataImage>(DataImage::create(Path::join(fixel_directory_path, afd_path), afd_header));
+    afd_image = std::make_unique<DataImage>(DataImage::create((fixel_directory_path / afd_path), afd_header));
     afd_image->index(1) = 0;
     Fixel::check_fixel_size(*index_image, *afd_image);
   }
@@ -211,8 +211,8 @@ void Segmented_FOD_receiver::commit() {
   if (!peak_amp_path.empty()) {
     auto peak_amp_header(fixel_data_header);
     peak_amp_header.size(1) = 1;
-    peak_amp_image = std::make_unique<DataImage>(
-        DataImage::create(Path::join(fixel_directory_path, peak_amp_path), peak_amp_header));
+    peak_amp_image =
+        std::make_unique<DataImage>(DataImage::create((fixel_directory_path / peak_amp_path), peak_amp_header));
     peak_amp_image->index(1) = 0;
     Fixel::check_fixel_size(*index_image, *peak_amp_image);
   }
@@ -220,8 +220,7 @@ void Segmented_FOD_receiver::commit() {
   if (!disp_path.empty()) {
     auto disp_header(fixel_data_header);
     disp_header.size(1) = 1;
-    disp_image =
-        std::make_unique<DataImage>(DataImage::create(Path::join(fixel_directory_path, disp_path), disp_header));
+    disp_image = std::make_unique<DataImage>(DataImage::create((fixel_directory_path / disp_path), disp_header));
     disp_image->index(1) = 0;
     Fixel::check_fixel_size(*index_image, *disp_image);
   }

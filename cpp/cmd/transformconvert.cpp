@@ -191,7 +191,7 @@ void run() {
 
     transform_type transform = File::Matrix::load_transform(first_input_path);
 
-    auto src_header = Header::open(second_input_path);  // -in
+    auto src_header = Header::open(second_input_path); // -in
     auto dest_header = Header::open(third_input_path); // -ref
 
     if (transform.matrix().topLeftCorner<3, 3>().determinant() == float(0.0))

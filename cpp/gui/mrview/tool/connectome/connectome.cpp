@@ -887,7 +887,8 @@ bool Connectome::process_commandline_option(const MR::App::ParsedOption &opt) {
 }
 
 void Connectome::image_open_slot() {
-  const std::filesystem::path path = Dialog::File::get_image(this, "Select connectome parcellation image", &current_folder);
+  const std::filesystem::path path =
+      Dialog::File::get_image(this, "Select connectome parcellation image", &current_folder);
   if (path.empty())
     return;
 
@@ -2911,8 +2912,8 @@ bool Connectome::import_vector_file(FileDataVector &data, const std::string &att
     if (data.size() != num_nodes()) {
       // Restore data in case user is trying to change from one file to another
       data = std::move(prev_data);
-      throw Exception("File " + path.filename().string() + " contains " + str(numel) + " elements, but connectome has " +
-                      str(num_nodes()) + " nodes");
+      throw Exception("File " + path.filename().string() + " contains " + str(numel) +
+                      " elements, but connectome has " + str(num_nodes()) + " nodes");
     }
     data.set_name(path.filename());
     return true;

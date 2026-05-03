@@ -45,7 +45,8 @@ void SparseLegacy::load(const Header &header, size_t) {
     const size_t new_file_size = file.start + init_sparse_data_size;
     DEBUG("Initialising output sparse data file " + file.name + ": new file size " + str(new_file_size) + " (" +
           str(init_sparse_data_size) + " of which is initial sparse data buffer)");
-    File::resize(file.name, new_file_size);
+    const std::filesystem::path data_path = file.name;
+    std::filesystem::resize_file(data_path, new_file_size);
     mmap.reset(new File::MMap(file, is_image_readwrite(), false, init_sparse_data_size));
 
     // Writes a single uint32_t(0) to the start of the sparse data region
@@ -77,7 +78,8 @@ void SparseLegacy::unload(const Header &header) {
 
   if (truncate_file_size) {
     DEBUG("truncating sparse image data file " + file.name + " to " + str(truncate_file_size) + " bytes");
-    File::resize(file.name, truncate_file_size);
+    const std::filesystem::path data_path = file.name;
+    std::filesystem::resize_file(data_path, truncate_file_size);
   }
 }
 
@@ -138,7 +140,8 @@ uint64_t SparseLegacy::set_numel(const uint64_t old_offset, const uint32_t numel
     const size_t new_file_size = file.start + new_sparse_data_size;
     DEBUG("Resizing sparse data file " + file.name + ": new file size " + str(new_file_size) + " (" +
           str(new_sparse_data_size) + " of which is for sparse data)");
-    File::resize(file.name, new_file_size);
+    const std::filesystem::path data_path = file.name;
+    std::filesystem::resize_file(data_path, new_file_size);
     mmap.reset(new File::MMap(file, Base::writable, true, new_sparse_data_size));
   }
 

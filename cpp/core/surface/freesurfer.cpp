@@ -118,7 +118,8 @@ void read_label(const std::filesystem::path &path, VertexList &vertices, Scalar 
   std::string line;
   std::getline(in, line);
   if (line.substr(0, 13) != "#!ascii label")
-    throw Exception("Error parsing FreeSurfer label file \"" + path.filename().string() + "\": Bad first line identifier");
+    throw Exception("Error parsing FreeSurfer label file \"" + path.filename().string() +
+                    "\": Bad first line identifier");
   std::getline(in, line);
   uint32_t num_vertices = 0;
   try {

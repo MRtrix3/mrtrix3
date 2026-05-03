@@ -150,7 +150,7 @@ Writer::Writer(const Header &H, const std::string &filename)
       data_type(H.datatype()),
       multiplier(1.0),
       outfile(NULL) {
-  if (Path::exists(filename) && !App::overwrite_files)
+  if (std::filesystem::exists(filename) && !App::overwrite_files)
     throw Exception("output file \"" + filename + "\" already exists (use -force option to force overwrite)");
   if (!(png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, this, &error_handler, NULL)))
     throw Exception("Unable to create PNG write structure for image \"" + filename + "\"");

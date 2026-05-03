@@ -666,13 +666,13 @@ void run() {
   }
 
   opt = get_options("nl_warp_full");
-  std::filesystem::path warp_full_filename;
+  std::filesystem::path warp_full_path;
   if (!opt.empty()) {
     if (!do_nonlinear)
       throw Exception("Non-linear warp output requested when no non-linear registration is requested");
-    warp_full_filename = opt[0][0];
-    if (!Path::is_mrtrix_image(warp_full_filename) && //
-        !(Path::has_suffix(warp_full_filename, {".nii", ".nii.gz"}) &&
+    warp_full_path = opt[0][0];
+    if (!Path::is_mrtrix_image(warp_full_path) && //
+        !(Path::has_suffix(std::filesystem::path(warp_full_path), {".nii", ".nii.gz"}) &&
           File::Config::get_bool("NIfTIAutoSaveJSON", false))) {
       throw Exception("nl_warp_full output requires .mif/.mih or NIfTI file format"
                       " with NIfTIAutoSaveJSON config option set.");
@@ -682,15 +682,15 @@ void run() {
   opt = get_options("nl_init");
   const bool nonlinear_init = !opt.empty();
   if (nonlinear_init) {
-    const std::filesystem::path nl_init_filename{opt[0][0]};
+    const std::filesystem::path nl_init_path{opt[0][0]};
     if (!do_nonlinear)
       throw Exception(
           "the non linear initialisation option -nl_init cannot be used when no non linear registration is requested");
 
-    if (!Path::is_mrtrix_image(nl_init_filename) &&                  //
-        !(Path::has_suffix(nl_init_filename, {".nii", ".nii.gz"}) && //
-          File::Config::get_bool("NIfTIAutoLoadJSON", false) &&      //
-          Path::exists(File::NIfTI::get_json_path(opt[0][0])))) {
+    if (!Path::is_mrtrix_image(nl_init_path) &&                                         //
+        !(Path::has_suffix(std::filesystem::path(nl_init_path), {".nii", ".nii.gz"}) && //
+          File::Config::get_bool("NIfTIAutoLoadJSON", false) &&                         //
+          std::filesystem::exists(File::NIfTI::get_json_path(opt[0][0])))) {
       WARN("nl_init input requires warp_full in original .mif/.mih file format"
            " or in NIfTI file format with associated JSON."
            " Converting to other file formats may remove linear transformations stored in the image header.");

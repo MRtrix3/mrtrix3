@@ -38,13 +38,11 @@ size_t ODF_Model::add_items(const std::vector<std::string> &list,
         if (header->ndim() != 4)
           throw Exception("Image \"" + header_basename + "\" is not 4D; not a tensor image");
         if (header->size(3) != 6)
-          throw Exception("Image \"" + header_basename +
-                          "\" does not contain 6 volumes; not a tensor image");
+          throw Exception("Image \"" + header_basename + "\" does not contain 6 volumes; not a tensor image");
         break;
       case odf_type_t::DIXEL:
         if (header->ndim() != 4)
-          throw Exception("Image \"" + header_basename +
-                          "\" is not 4D; cannot contain direction amplitudes");
+          throw Exception("Image \"" + header_basename + "\" is not 4D; cannot contain direction amplitudes");
         break;
       }
       hlist.push_back(std::move(header));

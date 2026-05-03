@@ -344,7 +344,7 @@ public:
                        const size_t num_tracks,
                        const DWI::Tractography::Properties &properties)
       : ReceiverBase(num_tracks) {
-    if (Path::has_suffix(path, ".tsf")) {
+    if (Path::has_suffix(std::filesystem::path(path), ".tsf")) {
       tsf.reset(new DWI::Tractography::ScalarWriter<value_type>(path, properties));
     } else {
       ascii.reset(new File::OFStream(path));

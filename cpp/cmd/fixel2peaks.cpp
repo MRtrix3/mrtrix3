@@ -85,7 +85,7 @@ void run() {
     }
   } catch (Exception &e_asimage) {
     try {
-      if (!Path::is_dir(input_path))
+      if (!std::filesystem::is_directory(input_path))
         throw Exception("Input path is not a directory");
       index_header = Fixel::find_index_header(input_path);
       directions_header = Fixel::find_directions_header(input_path);

@@ -17,6 +17,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 
 #include "file/path.h"
 #include "memory.h"
@@ -77,7 +78,7 @@ public:
 
   size_t num() const { return (array.size()); }
 
-  std::string spec() const { return (specification); }
+  std::string spec() const { return (specification_path); }
 
   const Item &operator[](size_t i) const { return (array[i]); }
 
@@ -97,8 +98,8 @@ public:
 private:
   std::vector<Item> array;
   std::vector<size_t> seq_index;
-  std::filesystem::path folder_name, specification, current_name;
-  std::unique_ptr<Path::Dir> folder;
+  std::filesystem::path folder_path, specification_path, current_path;
+  std::optional<std::filesystem::directory_iterator> folder;
 
   void insert_str(const std::string &str) {
     Item item;

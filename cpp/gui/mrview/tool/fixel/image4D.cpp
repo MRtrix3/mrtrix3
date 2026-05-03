@@ -22,8 +22,8 @@ void Image4D::load_image_buffer() {
   size_t ndim = fixel_data->ndim();
 
   if (ndim < 4)
-    throw InvalidImageException("Vector image " + filename.string() + " should contain 4 dimensions. Instead " + str(ndim) +
-                                " found.");
+    throw InvalidImageException("Vector image " + filename.string() + " should contain 4 dimensions. Instead " +
+                                str(ndim) + " found.");
 
   const size_t dim4_len = fixel_data->size(3);
 

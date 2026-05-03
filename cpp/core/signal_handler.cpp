@@ -48,7 +48,7 @@ void handler(int i) noexcept {
   if (!flag.test_and_set()) {
 
     // Try to do a tempfile cleanup before printing the error, since the latter's not guaranteed to work...
-    // Don't use File::remove: may throw an exception
+    // Don't use std::filesystem::remove directly: may throw an exception
     for (auto func : cleanup_operations)
       func();
 

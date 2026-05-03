@@ -37,14 +37,12 @@ inline char random_char() {
 }
 
 // CONF option: TmpFileDir
-// CONF default: `/tmp` (on Unix), `.` (on Windows)
+// CONF default: System temporary directory (determined by std::filesystem::temp_directory_path())
 // CONF The prefix for temporary files (as used in pipelines). By default,
-// CONF these files get written to the current folder on Windows machines,
-// CONF which may cause performance issues, particularly when operating
-// CONF over distributed file systems. On Unix machines, the default is
-// CONF /tmp/, which is typically a RAM file system and should therefore
-// CONF be fast; but may cause issues on machines with little RAM
-// CONF capacity or where write-access to this location is not permitted.
+// CONF these files get written to the system temporary directory, which is
+// CONF typically a RAM file system on Unix machines and should therefore
+// CONF be fast; but may cause issues on machines with little RAM capacity
+// CONF or where write-access to this location is not permitted.
 // CONF
 // CONF Note that this location can also be manipulated using the
 // CONF :envvar:`MRTRIX_TMPFILE_DIR` environment variable, without editing the
@@ -64,13 +62,7 @@ const std::string __get_tmpfile_dir() {
   if (from_env_mrtrix != nullptr)
     return from_env_mrtrix;
 
-  const char *default_tmpdir =
-#ifdef MRTRIX_WINDOWS
-      "."
-#else
-      "/tmp"
-#endif
-      ;
+  std::string default_tmpdir = std::filesystem::temp_directory_path().string();
 
   const char *from_env_general = getenv("TMPDIR");
   if (from_env_general != nullptr)
@@ -113,58 +105,11 @@ const std::string &tmpfile_prefix() {
 
 } // namespace
 
-void remove(const std::string &file) {
-  if (std::remove(file.c_str()) != 0)
-    throw Exception("error deleting file \"" + file + "\": " + strerror(errno));
-}
-
-void create(const std::string &filename, int64_t size) {
-  DEBUG(std::string("creating ") + (size ? "" : "empty ") + "file \"" + filename + "\"" +
-        (size == 0 ? "" : (" with size " + str(size))));
-
-  int fid(0);
-  while ((fid = open(filename.c_str(),
-                     O_CREAT | O_RDWR | O_EXCL,
-                     S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH)) < 0) {
-    if (errno == EEXIST) {
-      App::check_overwrite(filename);
-      INFO("file \"" + filename + "\" already exists - removing");
-      remove(filename);
-    } else
-      throw Exception("error creating output file \"" + filename + "\": " + std::strerror(errno));
-  }
-  if (fid < 0) {
-    std::string mesg("error creating file \"" + filename + "\": " + strerror(errno));
-    if (errno == EEXIST)
-      mesg += " (use -force option to force overwrite)";
-    throw Exception(mesg);
-  }
-
-  if (size != 0)
-    size = ftruncate(fid, size);
-  close(fid);
-
-  if (size != 0)
-    throw Exception("cannot resize file \"" + filename + "\": " + strerror(errno));
-}
-
-void resize(const std::string &filename, int64_t size) {
-  DEBUG("resizing file \"" + filename + "\" to " + str(size));
-
-  const int fd = open(filename.c_str(), O_RDWR, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
-  if (fd < 0)
-    throw Exception("error opening file \"" + filename + "\" for resizing: " + strerror(errno));
-  const int status = ftruncate(fd, size);
-  close(fd);
-  if (status != 0)
-    throw Exception("cannot resize file \"" + filename + "\": " + strerror(errno));
-}
-
 bool is_tempfile(const std::filesystem::path &name, const char *suffix) {
   if (name.filename().string().compare(0, tmpfile_prefix().size(), tmpfile_prefix()) != 0)
     return false;
   if (suffix != nullptr)
-    if (!Path::has_suffix(name, suffix))
+    if (!Path::has_suffix(std::filesystem::path(name), suffix))
       return false;
   return true;
 }
@@ -172,7 +117,7 @@ bool is_tempfile(const std::filesystem::path &name, const char *suffix) {
 std::string create_tempfile(int64_t size, const char *suffix) {
   DEBUG("creating temporary file of size " + str(size));
 
-  std::string filename(Path::join(tmpfile_dir(), tmpfile_prefix()) + "XXXXXX.");
+  std::string filename((tmpfile_dir() / tmpfile_prefix()) + "XXXXXX.");
   const int rand_index = filename.size() - 7;
   if (suffix != nullptr)
     filename += suffix;
@@ -194,33 +139,6 @@ std::string create_tempfile(int64_t size, const char *suffix) {
     throw Exception("cannot resize file \"" + filename + "\": " + strerror(errno));
 
   return filename;
-}
-
-void mkdir(const std::string &folder) {
-  if (::mkdir(folder.c_str()
-#ifndef MRTRIX_WINDOWS
-                  ,
-              0777
-#endif
-              ) != 0)
-    throw Exception("error creating folder \"" + folder + "\": " + strerror(errno));
-}
-
-void rmdir(const std::string &folder, bool recursive) {
-  if (recursive) {
-    Path::Dir dir(folder);
-    std::string entry;
-    while (!(entry = dir.read_name()).empty()) {
-      std::string path = Path::join(folder, entry);
-      if (Path::is_dir(path))
-        rmdir(path, true);
-      else
-        remove(path);
-    }
-  }
-  DEBUG("deleting folder \"" + folder + "\"...");
-  if (::rmdir(folder.c_str()))
-    throw Exception("error deleting folder \"" + folder + "\": " + strerror(errno));
 }
 
 } // namespace MR::File

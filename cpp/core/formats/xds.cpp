@@ -25,7 +25,8 @@
 namespace MR::Formats {
 
 std::unique_ptr<ImageIO::Base> XDS::read(Header &H) const {
-  if (!Path::has_suffix(H.name(), ".bfloat") && !Path::has_suffix(H.name(), ".bshort"))
+  if (!Path::has_suffix(std::filesystem::path(H.name()), ".bfloat") &&
+      !Path::has_suffix(std::filesystem::path(H.name()), ".bshort"))
     return std::unique_ptr<ImageIO::Base>();
 
   H.ndim() = 4;
@@ -44,7 +45,7 @@ std::unique_ptr<ImageIO::Base> XDS::read(Header &H) const {
   H.size(2) = dim[2];
   in.close();
 
-  H.datatype() = (Path::has_suffix(H.name(), ".bfloat") ? DataType::Float32 : DataType::UInt16);
+  H.datatype() = (Path::has_suffix(std::filesystem::path(H.name()), ".bfloat") ? DataType::Float32 : DataType::UInt16);
   if (BE)
     H.datatype().set_flag(DataType::LittleEndian);
   else
@@ -69,7 +70,8 @@ std::unique_ptr<ImageIO::Base> XDS::read(Header &H) const {
 }
 
 bool XDS::check(Header &H, size_t num_axes) const {
-  if (!Path::has_suffix(H.name(), ".bfloat") && !Path::has_suffix(H.name(), ".bshort"))
+  if (!Path::has_suffix(std::filesystem::path(H.name()), ".bfloat") &&
+      !Path::has_suffix(std::filesystem::path(H.name()), ".bshort"))
     return false;
 
   if (num_axes > 4)
@@ -98,7 +100,7 @@ bool XDS::check(Header &H, size_t num_axes) const {
   H.stride(2) = 0;
   H.stride(3) = 3;
 
-  DataType dtype(Path::has_suffix(H.name(), ".bfloat") ? DataType::Float32 : DataType::UInt16);
+  DataType dtype(Path::has_suffix(std::filesystem::path(H.name()), ".bfloat") ? DataType::Float32 : DataType::UInt16);
   if (H.datatype().is_big_endian())
     dtype.set_flag(DataType::LittleEndian);
   else
@@ -117,7 +119,10 @@ std::unique_ptr<ImageIO::Base> XDS::create(Header &H) const {
   out.close();
 
   std::unique_ptr<ImageIO::Default> io_handler(new ImageIO::Default(H));
-  File::create(H.name(), footprint(H, "11 1"));
+  const std::filesystem::path data_path = H.name();
+  File::OFStream out_dat(data_path);
+  out_dat.close();
+  std::filesystem::resize_file(data_path, footprint(H, "11 1"));
   io_handler->files.push_back(File::Entry(H.name()));
 
   return io_handler;

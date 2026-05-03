@@ -28,7 +28,8 @@
 namespace MR::Formats {
 
 std::unique_ptr<ImageIO::Base> PNG::read(Header &H) const {
-  if (!(Path::has_suffix(H.name(), ".png") || Path::has_suffix(H.name(), ".PNG")))
+  if (!(Path::has_suffix(std::filesystem::path(H.name()), ".png") ||
+        Path::has_suffix(std::filesystem::path(H.name()), ".PNG")))
     return std::unique_ptr<ImageIO::Base>();
 
   File::PNG::Reader png(H.name());
@@ -112,7 +113,8 @@ std::unique_ptr<ImageIO::Base> PNG::read(Header &H) const {
 }
 
 bool PNG::check(Header &H, size_t num_axes) const {
-  if (!(Path::has_suffix(H.name(), ".png") || Path::has_suffix(H.name(), ".PNG")))
+  if (!(Path::has_suffix(std::filesystem::path(H.name()), ".png") ||
+        Path::has_suffix(std::filesystem::path(H.name()), ".PNG")))
     return false;
 
   if (H.datatype().is_complex())

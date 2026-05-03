@@ -101,7 +101,7 @@ void run() {
   Fixel::check_fixel_directory(output_path, true, true);
 
   // Easiest if we first make the index image
-  const std::string index_path = Path::join(output_path, "index.mif");
+  const std::string index_path = (output_path / "index.mif");
   Header index_header(input_header);
   index_header.name() = index_path;
   index_header.datatype() = DataType::UInt32;
@@ -113,12 +113,12 @@ void run() {
   Header directions_header = Fixel::directions_header_from_index(index_header);
   directions_header.datatype() = DataType::Float32;
   directions_header.datatype().set_byte_order_native();
-  auto directions_image = Image<float>::create(Path::join(output_path, "directions.mif"), directions_header);
+  auto directions_image = Image<float>::create((output_path / "directions.mif"), directions_header);
 
   Image<float> amplitudes_image;
   if (!dataname.empty()) {
     Header amplitudes_header = Fixel::data_header_from_index(index_header);
-    amplitudes_image = Image<float>::create(Path::join(output_path, dataname), amplitudes_header);
+    amplitudes_image = Image<float>::create((output_path / dataname), amplitudes_header);
   }
 
   uint32_t output_index = 0;

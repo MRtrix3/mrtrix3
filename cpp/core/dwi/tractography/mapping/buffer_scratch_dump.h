@@ -52,10 +52,10 @@ template <> inline const char *BufferScratchDump<bool>::get_data_ptr() const {
 template <typename value_type>
 void BufferScratchDump<value_type>::dump_to_file(const std::filesystem::path &path, const Header &H) const {
 
-  if (!Path::has_suffix(path, ".mih") && !Path::has_suffix(path, ".mif"))
+  if (!Path::has_suffix(std::filesystem::path(path), ".mih") && !Path::has_suffix(std::filesystem::path(path), ".mif"))
     throw Exception("Can only perform direct dump to file for .mih / .mif files");
 
-  const bool single_file = Path::has_suffix(path, ".mif");
+  const bool single_file = Path::has_suffix(std::filesystem::path(path), ".mif");
 
   std::filesystem::path dat_path;
   if (!single_file) {
@@ -121,7 +121,7 @@ void BufferScratchDump<value_type>::dump_to_file(const std::filesystem::path &pa
 
   File::OFStream out_dat;
   if (single_file) {
-    File::resize(path, offset);
+    std::filesystem::resize_file(path, offset);
     out_dat.open(path, std::ios_base::out | std::ios_base::binary | std::ios_base::app);
   } else {
     out_dat.open(dat_path, std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
@@ -133,9 +133,9 @@ void BufferScratchDump<value_type>::dump_to_file(const std::filesystem::path &pa
 
   // If dat_size exceeds some threshold, ostream artificially increases the file size beyond that required at close()
   if (single_file)
-    File::resize(path, offset + dat_size);
+    std::filesystem::resize_file(path, offset + dat_size);
   else
-    File::resize(dat_path, dat_size);
+    std::filesystem::resize_file(dat_path, dat_size);
 }
 
 } // namespace Mapping

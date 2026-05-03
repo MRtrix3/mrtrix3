@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <filesystem>
 #include <functional>
 #include <map>
 
@@ -64,6 +65,7 @@ public:
       : axes_(std::move(H.axes_)),
         transform_(std::move(H.transform_)),
         name_(std::move(H.name_)),
+        path_(std::move(H.path_)),
         keyval_(std::move(H.keyval_)),
         format_(H.format_),
         io(std::move(H.io)),
@@ -77,6 +79,7 @@ public:
     axes_ = std::move(H.axes_);
     transform_ = std::move(H.transform_);
     name_ = std::move(H.name_);
+    path_ = std::move(H.path_);
     keyval_ = std::move(H.keyval_);
     format_ = H.format_;
     io = std::move(H.io);
@@ -95,6 +98,7 @@ public:
       : axes_(H.axes_),
         transform_(H.transform_),
         name_(H.name_),
+        path_(H.path_),
         keyval_(H.keyval_),
         format_(H.format_),
         datatype_(H.datatype_),
@@ -138,6 +142,7 @@ public:
     axes_ = H.axes_;
     transform_ = H.transform_;
     name_ = H.name_;
+    path_ = H.path_;
     keyval_ = H.keyval_;
     format_ = H.format_;
     datatype_ = H.datatype_;
@@ -239,6 +244,31 @@ public:
   size_t ndim() const { return axes_.size(); }
   //! set the number of dimensions (axes) of image
   NDimProxy ndim() { return {axes_}; }
+
+  class PathProxy {
+  public:
+    PathProxy(std::string &name, std::filesystem::path &path) : name(name), path(path) {}
+    PathProxy(PathProxy &&) = default;
+    PathProxy(const PathProxy &) = delete;
+    PathProxy &operator=(PathProxy &&) = delete;
+    PathProxy &operator=(const PathProxy &) = delete;
+
+    operator const std::filesystem::path &() const { return path; }
+    const std::filesystem::path &operator=(const std::filesystem::path &new_path) {
+      path = new_path;
+      name = path.filename().string();
+      return path;
+    }
+
+  private:
+    std::string &name;
+    std::filesystem::path &path;
+  };
+
+  //! get the path of the image
+  const std::filesystem::path &path() const { return path_; }
+  //! get/set the path of the image
+  PathProxy path() { return {name_, path_}; }
 
   //! get the number of voxels across axis
   const ssize_t &size(size_t axis) const;
@@ -380,6 +410,7 @@ protected:
   std::vector<Axis> axes_;
   transform_type transform_;
   std::string name_;
+  std::filesystem::path path_;
   KeyValues keyval_;
   const char *format_;
 

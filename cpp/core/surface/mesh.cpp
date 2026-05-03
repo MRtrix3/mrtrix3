@@ -386,8 +386,8 @@ void Mesh::load_stl(const std::filesystem::path &path) {
           throw Exception("Error parsing STL file " + path.filename().string() + ": facet ending without start");
         inside_facet = false;
         if (vertex_index != 3)
-          throw Exception("Error parsing STL file " + path.filename().string() + ": facet ended with " + str(vertex_index) +
-                          " vertices");
+          throw Exception("Error parsing STL file " + path.filename().string() + ": facet ended with " +
+                          str(vertex_index) + " vertices");
         triangles.push_back(std::vector<uint32_t>{
             uint32_t(vertices.size() - 3), uint32_t(vertices.size() - 2), uint32_t(vertices.size() - 1)});
         vertex_index = 0;

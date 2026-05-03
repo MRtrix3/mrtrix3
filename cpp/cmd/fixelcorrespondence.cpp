@@ -70,7 +70,7 @@ void run() {
   const float angular_threshold_dp = cos(angular_threshold * (Math::pi / 180.0));
 
   const std::string input_file(input_data_path);
-  if (Path::is_dir(input_file))
+  if (std::filesystem::is_directory(input_file))
     throw Exception("please input the specific fixel data file to be converted"
                     " (not the fixel directory)");
 
@@ -93,7 +93,7 @@ void run() {
 
   Header output_data_header(template_directions);
   output_data_header.size(1) = 1;
-  auto output_data = Image<float>::create(Path::join(output_fixel_directory, output_data_path), output_data_header);
+  auto output_data = Image<float>::create((output_fixel_directory / output_data_path), output_data_header);
 
   for (auto i =
            Loop("mapping subject fixel data to template fixels", template_index, 0, 3)(template_index, subject_index);

@@ -209,7 +209,7 @@ void run() {
   const std::filesystem::path connectivity_matrix_path{argument[4]};
   const std::filesystem::path output_fixel_directory{argument[5]};
 
-  if (Path::has_suffix(connectivity_matrix_path, ".tck"))
+  if (Path::has_suffix(std::filesystem::path(connectivity_matrix_path), ".tck"))
     throw Exception("This version of fixelcfestats requires as input not a track file, but a "
                     "pre-calculated fixel-fixel connectivity matrix; in addition, input fixel "
                     "data must be pre-smoothed. Please check command / pipeline documentation "
@@ -400,19 +400,16 @@ void run() {
                          num_factors + (2 * num_hypotheses) + num_vgs + (variable_design_matrix ? 1 : 0));
 
     for (Math::Stats::index_type i = 0; i != num_factors; ++i) {
-      write_fixel_output(
-          Path::join(output_fixel_directory, "beta" + str(i) + ".mif"), betas.row(i), mask, output_header);
+      write_fixel_output((output_fixel_directory / "beta" + str(i) + ".mif"), betas.row(i), mask, output_header);
       ++progress;
     }
     for (Math::Stats::index_type i = 0; i != num_hypotheses; ++i) {
       if (!hypotheses[i].is_F()) {
-        write_fixel_output(Path::join(output_fixel_directory, "abs_effect" + postfix(i) + ".mif"),
-                           abs_effect_size.col(i),
-                           mask,
-                           output_header);
+        write_fixel_output(
+            (output_fixel_directory / "abs_effect" + postfix(i) + ".mif"), abs_effect_size.col(i), mask, output_header);
         ++progress;
         if (num_vgs == 1)
-          write_fixel_output(Path::join(output_fixel_directory, "std_effect" + postfix(i) + ".mif"),
+          write_fixel_output((output_fixel_directory / "std_effect" + postfix(i) + ".mif"),
                              std_effect_size.col(i),
                              mask,
                              output_header);
@@ -422,15 +419,14 @@ void run() {
       ++progress;
     }
     if (variable_design_matrix) {
-      write_fixel_output(Path::join(output_fixel_directory, "cond.mif"), cond, mask, output_header);
+      write_fixel_output((output_fixel_directory / "cond.mif"), cond, mask, output_header);
       ++progress;
     }
     if (num_vgs == 1) {
-      write_fixel_output(Path::join(output_fixel_directory, "std_dev.mif"), stdev.row(0), mask, output_header);
+      write_fixel_output((output_fixel_directory / "std_dev.mif"), stdev.row(0), mask, output_header);
     } else {
       for (Math::Stats::index_type i = 0; i != num_vgs; ++i) {
-        write_fixel_output(
-            Path::join(output_fixel_directory, "std_dev" + str(i) + ".mif"), stdev.row(i), mask, output_header);
+        write_fixel_output((output_fixel_directory / "std_dev" + str(i) + ".mif"), stdev.row(i), mask, output_header);
         ++progress;
       }
     }
@@ -461,7 +457,7 @@ void run() {
     Stats::PermTest::precompute_empirical_stat(glm_test, cfe_integrator, empirical_skew, empirical_cfe_statistic);
     output_header.keyval()["nonstationarity_adjustment"] = str(true);
     for (Math::Stats::index_type i = 0; i != num_hypotheses; ++i)
-      write_fixel_output(Path::join(output_fixel_directory, "cfe_empirical" + postfix(i) + ".mif"),
+      write_fixel_output((output_fixel_directory / "cfe_empirical" + postfix(i) + ".mif"),
                          empirical_cfe_statistic.col(i),
                          mask,
                          output_header);
@@ -474,16 +470,15 @@ void run() {
   Stats::PermTest::precompute_default_permutation(
       glm_test, cfe_integrator, empirical_cfe_statistic, default_statistic, default_zstat, default_enhanced);
   for (Math::Stats::index_type i = 0; i != num_hypotheses; ++i) {
+    write_fixel_output((output_fixel_directory / (hypotheses[i].is_F() ? std::string("F") : std::string("t")) +
+                        "value" + postfix(i) + ".mif"),
+                       default_statistic.col(i),
+                       mask,
+                       output_header);
     write_fixel_output(
-        Path::join(output_fixel_directory,
-                   (hypotheses[i].is_F() ? std::string("F") : std::string("t")) + "value" + postfix(i) + ".mif"),
-        default_statistic.col(i),
-        mask,
-        output_header);
+        (output_fixel_directory / "Zstat" + postfix(i) + ".mif"), default_zstat.col(i), mask, output_header);
     write_fixel_output(
-        Path::join(output_fixel_directory, "Zstat" + postfix(i) + ".mif"), default_zstat.col(i), mask, output_header);
-    write_fixel_output(
-        Path::join(output_fixel_directory, "cfe" + postfix(i) + ".mif"), default_enhanced.col(i), mask, output_header);
+        (output_fixel_directory / "cfe" + postfix(i) + ".mif"), default_enhanced.col(i), mask, output_header);
   }
 
   // Perform permutation testing
@@ -508,12 +503,12 @@ void run() {
     ProgressBar progress("Outputting final results", (fwe_strong ? 1 : num_hypotheses) + 1 + 3 * num_hypotheses);
 
     if (fwe_strong) {
-      File::Matrix::save_vector(null_distribution.col(0), Path::join(output_fixel_directory, "null_dist.txt"));
+      File::Matrix::save_vector(null_distribution.col(0), (output_fixel_directory / "null_dist.txt"));
       ++progress;
     } else {
       for (Math::Stats::index_type i = 0; i != num_hypotheses; ++i) {
         File::Matrix::save_vector(null_distribution.col(i),
-                                  Path::join(output_fixel_directory, "null_dist" + postfix(i) + ".txt"));
+                                  (output_fixel_directory / "null_dist" + postfix(i) + ".txt"));
         ++progress;
       }
     }
@@ -521,17 +516,15 @@ void run() {
     const matrix_type pvalue_output = MR::Math::Stats::fwe_pvalue(null_distribution, default_enhanced);
     ++progress;
     for (Math::Stats::index_type i = 0; i != num_hypotheses; ++i) {
-      write_fixel_output(Path::join(output_fixel_directory, "fwe_1mpvalue" + postfix(i) + ".mif"),
-                         pvalue_output.col(i),
-                         mask,
-                         output_header);
+      write_fixel_output(
+          (output_fixel_directory / "fwe_1mpvalue" + postfix(i) + ".mif"), pvalue_output.col(i), mask, output_header);
       ++progress;
-      write_fixel_output(Path::join(output_fixel_directory, "uncorrected_1mpvalue" + postfix(i) + ".mif"),
+      write_fixel_output((output_fixel_directory / "uncorrected_1mpvalue" + postfix(i) + ".mif"),
                          uncorrected_pvalues.col(i),
                          mask,
                          output_header);
       ++progress;
-      write_fixel_output(Path::join(output_fixel_directory, "null_contributions" + postfix(i) + ".mif"),
+      write_fixel_output((output_fixel_directory / "null_contributions" + postfix(i) + ".mif"),
                          null_contributions.col(i),
                          mask,
                          output_header);

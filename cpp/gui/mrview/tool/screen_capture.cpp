@@ -323,7 +323,7 @@ void Capture::run(bool with_capture) {
       break;
 
     if (with_capture)
-      win.captureGL(Path::join(current_folder, prefix + printf("%04d.png", i)));
+      win.captureGL((current_folder / prefix + printf("%04d.png", i)));
 
     // Rotation
     Eigen::Quaternionf orientation(win.orientation());

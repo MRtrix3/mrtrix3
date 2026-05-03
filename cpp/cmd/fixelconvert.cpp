@@ -144,14 +144,14 @@ void convert_old2new() {
   header.datatype() = DataType::from<index_type>();
   header.datatype().set_byte_order_native();
 
-  auto index_image = Image<index_type>::create(Path::join(output_fixel_directory, "index" + file_extension), header);
+  auto index_image = Image<index_type>::create((output_fixel_directory / "index" + file_extension), header);
   auto directions_image =
-      Image<float>::create(Path::join(output_fixel_directory, "directions" + file_extension), directions_header)
+      Image<float>::create((output_fixel_directory / "directions" + file_extension), directions_header)
           .with_direct_io();
-  auto value_image = Image<float>::create(Path::join(output_fixel_directory, value_name + file_extension), data_header);
+  auto value_image = Image<float>::create((output_fixel_directory / value_name + file_extension), data_header);
   Image<float> size_image;
   if (output_size)
-    size_image = Image<float>::create(Path::join(output_fixel_directory, "size" + file_extension), data_header);
+    size_image = Image<float>::create((output_fixel_directory / "size" + file_extension), data_header);
 
   Image<index_type> template_index_image;
   Image<float> template_directions_image;
@@ -266,7 +266,8 @@ void convert_new2old() {
 }
 
 bool is_old_format(const std::string &path) {
-  return (Path::has_suffix(path, ".msf") || Path::has_suffix(path, ".msh"));
+  return (Path::has_suffix(std::filesystem::path(path), ".msf") ||
+          Path::has_suffix(std::filesystem::path(path), ".msh"));
 }
 
 void run() {

@@ -185,7 +185,7 @@ public:
   //! create a new track file with the specified properties
   WriterUnbuffered(const std::string &file, const Properties &properties) : __WriterBase__<ValueType>(file) {
 
-    if (!Path::has_suffix(name, ".tck"))
+    if (!Path::has_suffix(std::filesystem::path(name), ".tck"))
       throw Exception("output track files must use the .tck suffix");
 
     File::OFStream out;
@@ -226,7 +226,7 @@ public:
 
     commit(buffer, tck.size() + 1);
 
-    if (!weights_name.empty())
+    if (!weights_path.empty())
       write_weights(str(tck.weight) + "\n");
 
     ++count;
@@ -236,15 +236,15 @@ public:
 
   //! set the path to the track weights
   void set_weights_path(const std::string &path) {
-    if (!weights_name.empty())
+    if (!weights_path.empty())
       throw Exception("Cannot change output streamline weights file path");
-    weights_name = path;
-    App::check_overwrite(weights_name);
-    File::OFStream out(weights_name, std::ios::out | std::ios::binary | std::ios::trunc);
+    weights_path = std::filesystem::path(path);
+    App::check_overwrite(weights_path);
+    File::OFStream out(weights_path, std::ios::out | std::ios::binary | std::ios::trunc);
   }
 
 protected:
-  std::string weights_name;
+  std::filesystem::path weights_path;
   int64_t barrier_addr;
 
   //! indicates end of track and start of new track
@@ -263,10 +263,10 @@ protected:
 
   //! write track weights data to file
   void write_weights(const std::string &contents) {
-    File::OFStream out(weights_name, std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
+    File::OFStream out(weights_path, std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
     out << contents;
     if (!out.good())
-      throw Exception("error writing streamline weights file \"" + weights_name + "\": " + strerror(errno));
+      throw Exception("error writing streamline weights file \"" + weights_path.string() + "\": " + strerror(errno));
   }
 
   //! write track point data to file
@@ -313,7 +313,7 @@ public:
   using __WriterBase__<ValueType>::total_count;
   using WriterUnbuffered<ValueType>::delimiter;
   using WriterUnbuffered<ValueType>::format_point;
-  using WriterUnbuffered<ValueType>::weights_name;
+  using WriterUnbuffered<ValueType>::weights_path;
   using WriterUnbuffered<ValueType>::write_weights;
   using vector_type = typename WriterUnbuffered<ValueType>::vector_type;
 
@@ -350,7 +350,7 @@ public:
     }
     add_point(delimiter());
 
-    if (weights_name.size())
+    if (weights_path.size())
       weights_buffer += str(tck.weight) + ' ';
 
     ++count;
@@ -371,7 +371,7 @@ protected:
     WriterUnbuffered<ValueType>::commit(buffer.get(), buffer_size);
     buffer_size = 0;
 
-    if (weights_name.size()) {
+    if (weights_path.size()) {
       write_weights(weights_buffer);
       weights_buffer.clear();
     }

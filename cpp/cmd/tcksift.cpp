@@ -92,9 +92,9 @@ void run() {
 
   if (!debug_path.empty()) {
     sifter.initialise_debug_image_output(debug_path);
-    sifter.output_proc_mask(Path::join(debug_path, "proc_mask.mif"));
+    sifter.output_proc_mask((debug_path / "proc_mask.mif"));
     if (!get_options("act").empty())
-      sifter.output_5tt_image(Path::join(debug_path, "5tt.mif"));
+      sifter.output_5tt_image((debug_path / "5tt.mif"));
   }
 
   sifter.perform_FOD_segmentation(in_dwi);

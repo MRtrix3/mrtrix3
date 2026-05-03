@@ -558,12 +558,12 @@ public:
       std::ifstream vertexIF(vertexFilename);
       out << vertexIF.rdbuf();
       vertexIF.close();
-      File::remove(vertexFilename);
+      std::filesystem::remove(std::filesystem::path(vertexFilename));
 
       std::ifstream faceIF(faceFilename);
       out << faceIF.rdbuf();
       faceIF.close();
-      File::remove(faceFilename);
+      std::filesystem::remove(std::filesystem::path(faceFilename));
 
       out.close();
     } catch (Exception &e) {
@@ -657,8 +657,8 @@ public:
 
       out.close();
 
-      File::remove(pointsFilename);
-      File::remove(decFilename);
+      std::filesystem::remove(std::filesystem::path(pointsFilename));
+      std::filesystem::remove(std::filesystem::path(decFilename));
 
     } catch (Exception &e) {
       e.display();
@@ -685,11 +685,11 @@ void run() {
   // Reader
   Properties properties;
   std::unique_ptr<ReaderInterface<float>> reader;
-  if (Path::has_suffix(input_track_path, ".tck")) {
+  if (Path::has_suffix(std::filesystem::path(input_track_path), ".tck")) {
     reader.reset(new Reader<float>(input_track_path, properties));
-  } else if (Path::has_suffix(input_track_path, ".txt")) {
+  } else if (Path::has_suffix(std::filesystem::path(input_track_path), ".txt")) {
     reader.reset(new ASCIIReader(input_track_path));
-  } else if (Path::has_suffix(input_track_path, ".vtk")) {
+  } else if (Path::has_suffix(std::filesystem::path(input_track_path), ".vtk")) {
     reader.reset(new VTKReader(input_track_path));
   } else {
     throw Exception("Unsupported input file type.");
@@ -697,19 +697,19 @@ void run() {
 
   // Writer
   std::unique_ptr<WriterInterface<float>> writer;
-  if (Path::has_suffix(output_track_path, ".tck")) {
+  if (Path::has_suffix(std::filesystem::path(output_track_path), ".tck")) {
     writer.reset(new Writer<float>(output_track_path, properties));
-  } else if (Path::has_suffix(output_track_path, ".vtk")) {
+  } else if (Path::has_suffix(std::filesystem::path(output_track_path), ".vtk")) {
     auto write_ascii = get_options("ascii").size();
     writer.reset(new VTKWriter(output_track_path, write_ascii));
-  } else if (Path::has_suffix(output_track_path, ".ply")) {
+  } else if (Path::has_suffix(std::filesystem::path(output_track_path), ".ply")) {
     const int increment = get_option_value("increment", DEFAULT_PLY_INCREMENT);
     const float radius = get_option_value("radius", DEFAULT_PLY_RADIUS);
     const int sides = get_option_value("sides", DEFAULT_PLY_SIDES);
     writer.reset(new PLYWriter(output_track_path, increment, radius, sides));
-  } else if (Path::has_suffix(output_track_path, ".rib")) {
+  } else if (Path::has_suffix(std::filesystem::path(output_track_path), ".rib")) {
     writer.reset(new RibWriter(output_track_path));
-  } else if (Path::has_suffix(output_track_path, ".txt")) {
+  } else if (Path::has_suffix(std::filesystem::path(output_track_path), ".txt")) {
     writer.reset(new ASCIIWriter(output_track_path));
   } else {
     throw Exception("Unsupported output file type.");

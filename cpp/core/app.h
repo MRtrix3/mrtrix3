@@ -41,7 +41,7 @@ extern int exit_error_code;
 extern std::string NAME;
 extern std::string command_history_string;
 extern bool overwrite_files;
-extern void (*check_overwrite_files_func)(const std::string &name);
+extern void (*check_overwrite_files_func)(const std::filesystem::path &name);
 extern bool fail_on_warn;
 extern bool terminal_use_colour;
 extern const std::thread::id main_thread_ID;
@@ -111,7 +111,7 @@ public:
   std::string syntax(int format) const;
 };
 
-void check_overwrite(const std::string &name);
+void check_overwrite(const std::filesystem::path &name);
 
 //! initialise MRtrix and parse command-line arguments
 /*! this function must be called from within main(), immediately after the

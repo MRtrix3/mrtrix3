@@ -37,7 +37,8 @@ namespace MR::Formats {
 // mif: MRtrix Image File
 
 std::unique_ptr<ImageIO::Base> MRtrix::read(Header &H) const {
-  if (!Path::has_suffix(H.name(), ".mih") && !Path::has_suffix(H.name(), ".mif"))
+  if (!Path::has_suffix(std::filesystem::path(H.name()), ".mih") &&
+      !Path::has_suffix(std::filesystem::path(H.name()), ".mif"))
     return std::unique_ptr<ImageIO::Base>();
 
   File::KeyValue::Reader kv(H.name(), "mrtrix image");
@@ -59,7 +60,8 @@ std::unique_ptr<ImageIO::Base> MRtrix::read(Header &H) const {
 }
 
 bool MRtrix::check(Header &H, size_t num_axes) const {
-  if (!Path::has_suffix(H.name(), ".mih") && !Path::has_suffix(H.name(), ".mif"))
+  if (!Path::has_suffix(std::filesystem::path(H.name()), ".mih") &&
+      !Path::has_suffix(std::filesystem::path(H.name()), ".mif"))
     return false;
 
   H.ndim() = num_axes;
@@ -77,7 +79,7 @@ std::unique_ptr<ImageIO::Base> MRtrix::create(Header &H) const {
 
   write_mrtrix_header(H, out);
 
-  bool single_file = Path::has_suffix(H.name(), ".mif");
+  bool single_file = Path::has_suffix(std::filesystem::path(H.name()), ".mif");
 
   int64_t offset = 0;
   out << "file: ";
@@ -90,13 +92,16 @@ std::unique_ptr<ImageIO::Base> MRtrix::create(Header &H) const {
 
   out.close();
 
+  const std::filesystem::path data_path = H.name();
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));
   if (single_file) {
-    File::resize(H.name(), offset + footprint(H));
+    std::filesystem::resize_file(data_path, offset + footprint(H));
     io_handler->files.push_back(File::Entry(H.name(), offset));
   } else {
-    std::string data_file(H.name().substr(0, H.name().size() - 4) + ".dat");
-    File::create(data_file, footprint(H));
+    std::filesystem::path data_file(H.name().substr(0, H.name().size() - 4) + ".dat");
+    File::OFStream out_dat(data_file);
+    out_dat.close();
+    std::filesystem::resize_file(data_file, footprint(H));
     io_handler->files.push_back(File::Entry(data_file));
   }
 

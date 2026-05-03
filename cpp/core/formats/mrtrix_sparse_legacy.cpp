@@ -38,7 +38,8 @@ namespace MR::Formats {
 // msf: MRtrix Sparse image File
 
 std::unique_ptr<ImageIO::Base> MRtrix_sparse::read(Header &H) const {
-  if (!Path::has_suffix(H.name(), ".msh") && !Path::has_suffix(H.name(), ".msf"))
+  if (!Path::has_suffix(std::filesystem::path(H.name()), ".msh") &&
+      !Path::has_suffix(std::filesystem::path(H.name()), ".msf"))
     return std::unique_ptr<ImageIO::Base>();
 
   File::KeyValue::Reader kv(H.name(), "mrtrix sparse image");
@@ -86,7 +87,8 @@ std::unique_ptr<ImageIO::Base> MRtrix_sparse::read(Header &H) const {
 }
 
 bool MRtrix_sparse::check(Header &H, size_t num_axes) const {
-  if (!Path::has_suffix(H.name(), ".msh") && !Path::has_suffix(H.name(), ".msf"))
+  if (!Path::has_suffix(std::filesystem::path(H.name()), ".msh") &&
+      !Path::has_suffix(std::filesystem::path(H.name()), ".msf"))
     return false;
 
   if (H.keyval().find(Fixel::Legacy::name_key) == H.keyval().end() ||
@@ -120,10 +122,11 @@ std::unique_ptr<ImageIO::Base> MRtrix_sparse::create(Header &H) const {
 
   write_mrtrix_header(H, out);
 
-  bool single_file = Path::has_suffix(H.name(), ".msf");
+  bool single_file = Path::has_suffix(std::filesystem::path(H.name()), ".msf");
 
   int64_t image_offset = 0, sparse_offset = 0;
-  std::string image_path, sparse_path;
+  std::filesystem::path image_path, sparse_path;
+  const std::filesystem::path data_path = H.name();
   if (single_file) {
 
     image_offset = int64_t(out.tellp()) + int64_t(54);
@@ -132,7 +135,7 @@ std::unique_ptr<ImageIO::Base> MRtrix_sparse::create(Header &H) const {
 
     out << "file: . " << image_offset << "\nsparse_file: . " << sparse_offset << "\nEND\n";
 
-    File::resize(H.name(), sparse_offset);
+    std::filesystem::resize_file(data_path, sparse_offset);
     image_path = H.name();
     sparse_path = H.name();
 
@@ -143,8 +146,11 @@ std::unique_ptr<ImageIO::Base> MRtrix_sparse::create(Header &H) const {
 
     out << "file: " << image_path << "\nsparse_file: " << sparse_path << "\nEND\n";
 
-    File::create(image_path, footprint(H));
-    File::create(sparse_path);
+    File::OFStream image_file(image_path);
+    image_file.close();
+    std::filesystem::resize_file(image_path, footprint(H));
+    File::OFStream sparse_file(sparse_path);
+    sparse_file.close();
   }
 
   std::unique_ptr<ImageIO::SparseLegacy> io_handler(new ImageIO::SparseLegacy(

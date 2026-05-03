@@ -145,7 +145,7 @@ uint8_t store_datatype(const DataType &dt) {
 } // namespace
 
 std::unique_ptr<ImageIO::Base> MRI::read(Header &H) const {
-  if (!Path::has_suffix(H.name(), ".mri"))
+  if (!Path::has_suffix(std::filesystem::path(H.name()), ".mri"))
     return std::unique_ptr<ImageIO::Base>();
 
   File::MMap fmap(H.name());
@@ -236,7 +236,7 @@ std::unique_ptr<ImageIO::Base> MRI::read(Header &H) const {
 }
 
 bool MRI::check(Header &H, size_t num_axes) const {
-  if (!Path::has_suffix(H.name(), ".mri"))
+  if (!Path::has_suffix(std::filesystem::path(H.name()), ".mri"))
     return false;
 
   if (H.ndim() > num_axes && num_axes != 4)
@@ -314,8 +314,9 @@ std::unique_ptr<ImageIO::Base> MRI::create(Header &H) const {
   size_t data_offset = int64_t(out.tellp());
   out.close();
 
+  const std::filesystem::path data_path = H.name();
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));
-  File::resize(H.name(), data_offset + footprint(H));
+  std::filesystem::resize_file(data_path, data_offset + footprint(H));
   io_handler->files.push_back(File::Entry(H.name(), data_offset));
 
   return io_handler;

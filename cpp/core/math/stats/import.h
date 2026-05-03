@@ -139,13 +139,13 @@ void CohortDataImport::initialise(const std::filesystem::path &listpath, const s
     directories.insert(directories.begin(), explicit_from_directory);
 
   Exception e_nosuccess("Unable to load all input data from file \"" + listpath.string() + "\"");
-  std::string load_from_dir;
+  std::filesystem::path load_from_dir;
   for (const auto &directory : directories) {
     try {
       for (const auto &line : lines) {
-        const std::string full_path = Path::join(directory, line);
-        if (!Path::is_file(full_path))
-          throw Exception("File \"" + full_path + "\" not found");
+        const std::filesystem::path full_path = (directory / line);
+        if (!std::filesystem::is_regular_file(full_path))
+          throw Exception("File \"" + full_path.string() + "\" not found");
       }
       load_from_dir = directory;
       break;
@@ -158,12 +158,13 @@ void CohortDataImport::initialise(const std::filesystem::path &listpath, const s
   if (load_from_dir.empty())
     throw e_nosuccess;
 
-  ProgressBar progress("Configuring data import from files listed in \"" + std::filesystem::path(listpath).filename().string() +
-                       "\" as found relative to directory \"" + load_from_dir + "\"");
+  ProgressBar progress("Configuring data import from files listed in \"" +
+                       std::filesystem::path(listpath).filename().string() + "\" as found relative to directory \"" +
+                       load_from_dir.string() + "\"");
 
   for (const auto &line : lines) {
     try {
-      std::shared_ptr<SubjectDataImport> subject(new SubjectDataImport(Path::join(load_from_dir, line)));
+      std::shared_ptr<SubjectDataImport> subject(new SubjectDataImport((load_from_dir / line)));
       files.emplace_back(subject);
     } catch (Exception &e) {
       throw Exception(e, "Input data not successfully configured for load: \"" + line + "\"");

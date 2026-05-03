@@ -251,7 +251,8 @@ template <class Fixel> void ModelBase<Fixel>::output_5tt_image(const std::string
 }
 
 template <class Fixel> void ModelBase<Fixel>::initialise_debug_image_output(const std::string &dirpath) const {
-  File::mkdir(dirpath);
+  const std::filesystem::path dir_path = dirpath;
+  std::filesystem::create_directory(dir_path);
 #ifdef SIFT_MODEL_OUTPUT_FIXEL_IMAGES
   Header H_index(this->header());
   H_index.ndim() = 4;
@@ -268,8 +269,8 @@ template <class Fixel> void ModelBase<Fixel>::initialise_debug_image_output(cons
   H_directions.spacing(0) = H_directions.spacing(1) = H_directions.spacing(2) = 1.0;
   H_directions.transform().setIdentity();
   H_directions.datatype() = DataType::native(DataType::from<float>());
-  Image<uint64_t> index_image = Image<uint64_t>::create(Path::join(dirpath, "index.mif"), H_index);
-  Image<float> directions_image = Image<float>::create(Path::join(dirpath, "directions.mif"), H_directions);
+  Image<uint64_t> index_image = Image<uint64_t>::create((dir_path / "index.mif"), H_index);
+  Image<float> directions_image = Image<float>::create((dir_path / "directions.mif"), H_directions);
   VoxelAccessor v(accessor());
   for (auto l = Loop(v)(v, index_image); l; ++l) {
     if (v.value()) {
@@ -286,26 +287,27 @@ template <class Fixel> void ModelBase<Fixel>::initialise_debug_image_output(cons
 #endif
 
   // These images do not change between before and after filtering
-  output_target_voxel(Path::join(dirpath, "target_voxel.mif"));
+  output_target_voxel((dir_path / "target_voxel.mif"));
 #ifdef SIFT_MODEL_OUTPUT_SH_IMAGES
-  output_target_sh(Path::join(dirpath, "target_sh.mif"));
+  output_target_sh((dir_path / "target_sh.mif"));
 #endif
 #ifdef SIFT_MODEL_OUTPUT_FIXEL_IMAGES
-  output_target_fixel(Path::join(dirpath, "target_fixel.mif"));
+  output_target_fixel((dir_path / "target_fixel.mif"));
 #endif
-  output_fixel_count_image(Path::join(dirpath, "trackcount_fixel.mif"));
+  output_fixel_count_image((dir_path / "trackcount_fixel.mif"));
 }
 
 template <class Fixel>
 void ModelBase<Fixel>::output_all_debug_images(const std::string &dirpath, const std::string &prefix) const {
-  output_tdi_voxel(Path::join(dirpath, prefix + "_tdi_voxel.mif"));
+  const std::filesystem::path dir_path = dirpath;
+  output_tdi_voxel((dir_path / (prefix + "_tdi_voxel.mif")));
   if (have_null_lobes)
-    output_tdi_null_lobes(Path::join(dirpath, prefix + "_tdi_nulllobes.mif"));
+    output_tdi_null_lobes((dir_path / (prefix + "_tdi_nulllobes.mif")));
 #ifdef SIFT_MODEL_OUTPUT_SH_IMAGES
-  output_tdi_sh(Path::join(dirpath, prefix + "_tdi_sh.mif"));
+  output_tdi_sh((dir_path / (prefix + "_tdi_sh.mif")));
 #endif
 #ifdef SIFT_MODEL_OUTPUT_FIXEL_IMAGES
-  output_tdi_fixel(Path::join(dirpath, prefix + "_tdi_fixel.mif"));
+  output_tdi_fixel((dir_path / (prefix + "_tdi_fixel.mif")));
 #endif
 
   output_errors_voxel(
@@ -313,7 +315,7 @@ void ModelBase<Fixel>::output_all_debug_images(const std::string &dirpath, const
 #ifdef SIFT_MODEL_OUTPUT_FIXEL_IMAGES
   output_errors_fixel(dirpath, prefix + "_diff_fixel.mif", prefix + "_cost_fixel.mif");
 #endif
-  output_scatterplot(Path::join(dirpath, prefix + "_scatterplot.csv"));
+  output_scatterplot((dir_path / (prefix + "_scatterplot.csv")));
 }
 
 } // namespace MR::DWI::Tractography::SIFT

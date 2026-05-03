@@ -41,21 +41,22 @@ void Config::init() {
   if (!sysconf_location)
     sysconf_location = MRTRIX_SYS_CONFIG_FILE;
 
-  if (Path::is_file(sysconf_location)) {
-    INFO(std::string("reading config file \"") + sysconf_location + "\"...");
+  std::filesystem::path sysconf_path(sysconf_location);
+  if (std::filesystem::is_regular_file(sysconf_path)) {
+    INFO(std::string("reading config file \"") + sysconf_path.string() + "\"...");
     try {
-      KeyValue::Reader kv(sysconf_location);
+      KeyValue::Reader kv(sysconf_path);
       while (kv.next()) {
         config[kv.key()] = kv.value();
       }
     } catch (...) {
     }
   } else {
-    DEBUG(std::string("No config file found at \"") + sysconf_location + "\"");
+    DEBUG(std::string("No config file found at \"") + sysconf_path.string() + "\"");
   }
 
-  std::string path = Path::join(Path::home(), MRTRIX_USER_CONFIG_FILE);
-  if (Path::is_file(path)) {
+  std::filesystem::path path = (Path::home() / MRTRIX_USER_CONFIG_FILE);
+  if (std::filesystem::is_regular_file(path)) {
     INFO("reading config file \"" + path + "\"...");
     try {
       KeyValue::Reader kv(path);

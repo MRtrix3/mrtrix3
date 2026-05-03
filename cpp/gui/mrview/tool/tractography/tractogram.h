@@ -86,8 +86,8 @@ public:
   bool should_update_stride;
   float original_fov;
   float line_thickness;
-  std::filesystem::path intensity_scalar_filename;
-  std::filesystem::path threshold_scalar_filename;
+  std::filesystem::path intensity_scalar_path;
+  std::filesystem::path threshold_scalar_path;
 
   class Shader : public Displayable::Shader {
   public:

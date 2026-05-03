@@ -45,16 +45,20 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, int64_t mapped_size
     : Entry(entry), addr(NULL), first(NULL), msize(mapped_size), readwrite(readwrite) {
   DEBUG("memory-mapping file \"" + Entry::name + "\"...");
 
-  struct stat sbuf;
-  if (stat(Entry::name.c_str(), &sbuf))
-    throw Exception("cannot stat file \"" + Entry::name + "\": " + strerror(errno));
-
-  mtime = sbuf.st_mtime;
-
-  if (msize < 0)
-    msize = sbuf.st_size - start;
-  else if (start + msize > sbuf.st_size)
-    throw Exception("file \"" + Entry::name + "\" is smaller than expected");
+  std::filesystem::path file_path(Entry::name);
+  try {
+    auto last_write = std::filesystem::last_write_time(file_path);
+    auto sctp = std::chrono::time_point_cast<std::chrono::system_clock::duration>(
+        last_write - std::filesystem::file_time_type::clock::now() + std::chrono::system_clock::now());
+    mtime = std::chrono::system_clock::to_time_t(sctp);
+    int64_t file_size = std::filesystem::file_size(file_path);
+    if (msize < 0)
+      msize = file_size - start;
+    else if (start + msize > file_size)
+      throw Exception("file \"" + Entry::name + "\" is smaller than expected");
+  } catch (const std::exception &e) {
+    throw Exception("cannot stat file \"" + Entry::name + "\": " + e.what());
+  }
 
   bool delayed_writeback = false;
   if (readwrite) {
@@ -211,14 +215,21 @@ MMap::~MMap() {
 
 bool MMap::changed() const {
   assert(fd >= 0);
-  struct stat sbuf;
-  if (fstat(fd, &sbuf))
+  try {
+    std::filesystem::path file_path(Entry::name);
+    int64_t file_size = std::filesystem::file_size(file_path);
+    if (int64_t(msize) != file_size)
+      return true;
+    auto last_write = std::filesystem::last_write_time(file_path);
+    auto sctp = std::chrono::time_point_cast<std::chrono::system_clock::duration>(
+        last_write - std::filesystem::file_time_type::clock::now() + std::chrono::system_clock::now());
+    time_t current_mtime = std::chrono::system_clock::to_time_t(sctp);
+    if (mtime != current_mtime)
+      return true;
     return false;
-  if (int64_t(msize) != sbuf.st_size)
-    return true;
-  if (mtime != sbuf.st_mtime)
-    return true;
-  return false;
+  } catch (...) {
+    return false;
+  }
 }
 
 } // namespace MR::File

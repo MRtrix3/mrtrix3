@@ -312,8 +312,8 @@ Tractogram::Tractogram(Tractography &tool, const std::string &filename)
       show_colour_bar(true),
       original_fov(NAN),
       line_thickness(0.f),
-      intensity_scalar_filename(std::string()),
-      threshold_scalar_filename(std::string()),
+      intensity_scalar_path(std::string()),
+      threshold_scalar_path(std::string()),
       tractography_tool(tool),
       filename(filename),
       color_type(TrackColourType::Direction),
@@ -633,7 +633,7 @@ void Tractogram::load_intensity_track_scalars(const std::string &filename) {
   std::vector<float> buffer;
   DWI::Tractography::TrackScalar<float> tck_scalar;
 
-  if (Path::has_suffix(filename, ".tsf")) {
+  if (Path::has_suffix(std::filesystem::path(filename), ".tsf")) {
     DWI::Tractography::Properties scalar_properties;
     DWI::Tractography::ScalarReader<float> file(filename, scalar_properties);
     DWI::Tractography::check_properties_match(properties, scalar_properties, ".tck / .tsf");
@@ -704,7 +704,7 @@ void Tractogram::load_intensity_track_scalars(const std::string &filename) {
     }
   }
   assert(intensity_scalar_buffers.size() == vertex_buffers.size());
-  intensity_scalar_filename = filename;
+  intensity_scalar_path = filename;
   this->set_windowing(value_min, value_max);
   if (!std::isfinite(greaterthan))
     greaterthan = value_max;
@@ -725,7 +725,7 @@ void Tractogram::load_threshold_track_scalars(const std::string &filename) {
   std::vector<float> buffer;
   DWI::Tractography::TrackScalar<float> tck_scalar;
 
-  if (Path::has_suffix(filename, ".tsf")) {
+  if (Path::has_suffix(std::filesystem::path(filename), ".tsf")) {
     DWI::Tractography::Properties scalar_properties;
     DWI::Tractography::ScalarReader<float> file(filename, scalar_properties);
     DWI::Tractography::check_properties_match(properties, scalar_properties, ".tck / .tsf");
@@ -796,7 +796,7 @@ void Tractogram::load_threshold_track_scalars(const std::string &filename) {
     }
   }
   assert(threshold_scalar_buffers.size() == vertex_buffers.size());
-  threshold_scalar_filename = filename;
+  threshold_scalar_path = filename;
   greaterthan = threshold_max;
   lessthan = threshold_min;
 
@@ -820,7 +820,7 @@ void Tractogram::erase_intensity_scalar_data() {
     gl::DeleteBuffers(intensity_scalar_buffers.size(), &intensity_scalar_buffers[0]);
     intensity_scalar_buffers.clear();
   }
-  intensity_scalar_filename.clear();
+  intensity_scalar_path.clear();
   GL::assert_context_is_current();
 }
 
@@ -831,7 +831,7 @@ void Tractogram::erase_threshold_scalar_data() {
     gl::DeleteBuffers(threshold_scalar_buffers.size(), &threshold_scalar_buffers[0]);
     threshold_scalar_buffers.clear();
   }
-  threshold_scalar_filename.clear();
+  threshold_scalar_path.clear();
   threshold_min = threshold_max = NaN;
   set_use_discard_lower(false);
   set_use_discard_upper(false);

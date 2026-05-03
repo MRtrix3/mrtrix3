@@ -130,12 +130,8 @@ void get_mrtrix_file_path(Header &H, const std::string &flag, std::string &fname
       throw Exception("invalid offset specified for embedded MRtrix image \"" + H.name() + "\"");
     fname = H.name();
   } else {
-    if (fname[0] != PATH_SEPARATORS[0]
-#ifdef MRTRIX_WINDOWS
-        && fname[0] != PATH_SEPARATORS[1]
-#endif
-    )
-      fname = Path::join(std::filesystem::path(H.name()).parent_path(), fname);
+    if (!std::filesystem::Path(fname).is_absolute())
+      fname = (std::filesystem::path(H.name()).parent_path() / fname);
   }
 }
 

@@ -124,7 +124,7 @@ void run() {
         } else {
           bool has_extension = false;
           for (auto p = MR::Formats::known_extensions; *p; ++p) {
-            if (Path::has_suffix(path, std::string(*p))) {
+            if (Path::has_suffix(std::filesystem::path(path), std::string(*p))) {
               has_extension = true;
               break;
             }

@@ -26,7 +26,8 @@
 namespace MR::Formats {
 
 std::unique_ptr<ImageIO::Base> MGZ::read(Header &H) const {
-  if (!Path::has_suffix(H.name(), ".mgh.gz") && !Path::has_suffix(H.name(), ".mgz"))
+  if (!Path::has_suffix(std::filesystem::path(H.name()), ".mgh.gz") &&
+      !Path::has_suffix(std::filesystem::path(H.name()), ".mgz"))
     return std::unique_ptr<ImageIO::Base>();
 
   std::string mgh_header(MGH_DATA_OFFSET, '\0');
@@ -57,7 +58,8 @@ std::unique_ptr<ImageIO::Base> MGZ::read(Header &H) const {
 }
 
 bool MGZ::check(Header &H, size_t num_axes) const {
-  if (!Path::has_suffix(H.name(), ".mgh.gz") && !Path::has_suffix(H.name(), ".mgz"))
+  if (!Path::has_suffix(std::filesystem::path(H.name()), ".mgh.gz") &&
+      !Path::has_suffix(std::filesystem::path(H.name()), ".mgz"))
     return false;
   return File::MGH::check(H, num_axes);
 }
@@ -67,7 +69,8 @@ std::unique_ptr<ImageIO::Base> MGZ::create(Header &H) const {
   File::MGH::write_header(H, mgh_header);
   File::MGH::write_other(H, mgh_tailer);
 
-  File::create(H.name());
+  File::OFStream out_dat(H.name());
+  out_dat.close();
   auto gz_handler = new ImageIO::GZ(H, MGH_DATA_OFFSET, mgh_tailer.str().size());
 
   memset(gz_handler->header(), 0, MGH_DATA_OFFSET);

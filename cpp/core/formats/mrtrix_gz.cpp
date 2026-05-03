@@ -25,7 +25,7 @@
 namespace MR::Formats {
 
 std::unique_ptr<ImageIO::Base> MRtrix_GZ::read(Header &H) const {
-  if (!Path::has_suffix(H.name(), ".mif.gz"))
+  if (!Path::has_suffix(std::filesystem::path(H.name()), ".mif.gz"))
     return std::unique_ptr<ImageIO::Base>();
   File::GZ zf(H.name(), "r");
   std::string first_line = zf.getline();
@@ -60,7 +60,7 @@ std::unique_ptr<ImageIO::Base> MRtrix_GZ::read(Header &H) const {
 }
 
 bool MRtrix_GZ::check(Header &H, size_t num_axes) const {
-  if (!Path::has_suffix(H.name(), ".mif.gz"))
+  if (!Path::has_suffix(std::filesystem::path(H.name()), ".mif.gz"))
     return false;
 
   H.ndim() = num_axes;
@@ -85,7 +85,8 @@ std::unique_ptr<ImageIO::Base> MRtrix_GZ::create(Header &H) const {
   std::unique_ptr<ImageIO::GZ> io_handler(new ImageIO::GZ(H, offset));
   memcpy(io_handler->header(), header.str().c_str(), offset);
 
-  File::create(H.name());
+  File::OFStream data_file(H.name());
+  data_file.close();
   io_handler->files.push_back(File::Entry(H.name(), offset));
 
   return io_handler;

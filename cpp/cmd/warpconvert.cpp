@@ -125,10 +125,10 @@ void run() {
 
     // warpfull2deformation & warpfull2displacement
   } else if (type == 2 || type == 3) {
-    if (!Path::is_mrtrix_image(input_path) &&                   //
-        !(Path::has_suffix(input_path, {".nii", ".nii.gz"}) &&  //
-          File::Config::get_bool("NIfTIAutoLoadJSON", false) && //
-          Path::exists(File::NIfTI::get_json_path(input_path)))) {
+    if (!Path::is_mrtrix_image(input_path) &&                                         //
+        !(Path::has_suffix(std::filesystem::path(input_path), {".nii", ".nii.gz"}) && //
+          File::Config::get_bool("NIfTIAutoLoadJSON", false) &&                       //
+          std::filesystem::exists(File::NIfTI::get_json_path(input_path)))) {
       WARN("warp_full image is not in original .mif/.mih file format or in NIfTI file format with associated JSON.  "
            "Converting to other file formats may remove linear transformations stored in the image header.");
     }

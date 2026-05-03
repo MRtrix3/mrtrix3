@@ -155,7 +155,7 @@ int num_basis_vec_for_order(int order) {
 
 // Struct to get user specified number of basis functions
 struct PolyBasisFunction {
-  PolyBasisFunction(const int order) : n_basis_vecs(num_basis_vec_for_order(order)) {};
+  PolyBasisFunction(const int order) : n_basis_vecs(num_basis_vec_for_order(order)){};
 
   const int n_basis_vecs;
 

@@ -58,7 +58,7 @@ void Element::set(const std::string &filename, bool force_read, bool read_write)
     is_explicit = false;
     DEBUG("DICOM magic number not found in file \"" + fmap->name().string() + "\" - trying truncated format");
     if (!force_read)
-      if (!Path::has_suffix(fmap->name().string(), ".dcm"))
+      if (!Path::has_suffix(std::filesystem::path(fmap->name().string()), ".dcm"))
         throw Exception("file \"" + fmap->name().string() +
                         "\" does not have the DICOM magic number or the .dcm extension - assuming not DICOM");
   } else

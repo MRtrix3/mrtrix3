@@ -54,13 +54,18 @@ public:
   using value_type = ValueType;
 
   __WriterBase__(const std::string &name)
-      : count(0), total_count(0), name(name), dtype(DataType::from<ValueType>()), count_offset(0), open_success(false) {
+      : count(0),
+        total_count(0),
+        name(std::filesystem::path(name)),
+        dtype(DataType::from<ValueType>()),
+        count_offset(0),
+        open_success(false) {
     dtype.set_byte_order_native();
     if (dtype != DataType::Float32LE && dtype != DataType::Float32BE && dtype != DataType::Float64LE &&
         dtype != DataType::Float64BE)
       throw Exception("only supported datatype for tracks file are "
                       "Float32LE, Float32BE, Float64LE & Float64BE");
-    App::check_overwrite(name);
+    App::check_overwrite(this->name);
   }
 
   ~__WriterBase__() {
@@ -112,14 +117,14 @@ public:
   uint64_t count, total_count;
 
 protected:
-  std::string name;
+  std::filesystem::path name;
   DataType dtype;
   int64_t count_offset;
   bool open_success;
 
   void verify_stream(const File::OFStream &out) {
     if (!out.good())
-      throw Exception("error writing file \"" + name + "\": " + strerror(errno));
+      throw Exception("error writing file \"" + name.string() + "\": " + strerror(errno));
   }
 
   void update_counts(File::OFStream &out) {

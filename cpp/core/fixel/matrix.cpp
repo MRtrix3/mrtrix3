@@ -188,10 +188,9 @@ private:
 } // namespace
 
 #define FIXEL_MATRIX_GENERATE_SHARED                                                                                   \
-  const auto fixel_dir_path = std::filesystem::path{index_image.name()}.parent_path();                                \
-  auto directions_image = Fixel::find_directions_header(fixel_dir_path)                                                \
-                              .template get_image<default_type>()                                                      \
-                              .with_direct_io({+2, +1});                                                               \
+  const auto fixel_dir_path = std::filesystem::path{index_image.name()}.parent_path();                                 \
+  auto directions_image =                                                                                              \
+      Fixel::find_directions_header(fixel_dir_path).template get_image<default_type>().with_direct_io({+2, +1});       \
   DWI::Tractography::Properties properties;                                                                            \
   DWI::Tractography::Reader<float> track_file(track_filename, properties);                                             \
   const uint32_t num_tracks = properties["count"].empty() ? 0 : to<uint32_t>(properties["count"]);                     \
@@ -242,24 +241,24 @@ template <class MatrixType> void Writer<MatrixType>::set_extent_path(const std::
 }
 
 template <class MatrixType> void Writer<MatrixType>::save(const std::string &path) const {
-  if (Path::exists(path)) {
-    if (Path::is_dir(path)) {
-      if (!App::overwrite_files &&
-          (Path::is_file(Path::join(path, "index.mif")) || Path::is_file(Path::join(path, "fixels.mif")) ||
-           Path::is_file(Path::join(path, "values.mif"))))
+  if (std::filesystem::exists(path)) {
+    if (std::filesystem::is_directory(path)) {
+      if (!App::overwrite_files && (std::filesystem::is_regular_file((path / "index.mif")) ||
+                                    std::filesystem::is_regular_file((path / "fixels.mif")) ||
+                                    std::filesystem::is_regular_file((path / "values.mif"))))
         throw Exception("Cannot create fixel-fixel connectivity matrix \"" + path +
                         "\": "
                         "one or more files already exists (use -force to override)");
     } else {
       if (App::overwrite_files) {
-        File::remove(path);
+        std::filesystem::remove(std::filesystem::path(path));
       } else {
         throw Exception("Cannot create fixel-fixel connectivity matrix directory \"" + path +
                         "\": Already exists as file");
       }
     }
   } else {
-    File::mkdir(path);
+    std::filesystem::create_directory(std::filesystem::path(path));
   }
 
   Header index_header;
@@ -318,9 +317,9 @@ template <class MatrixType> void Writer<MatrixType>::save(const std::string &pat
   Image<connectivity_value_type> value_image;
 
   try {
-    index_image = Image<index_image_type>::create(Path::join(path, "index.mif"), index_header);
-    fixel_image = Image<index_type>::create(Path::join(path, "fixels.mif"), fixel_header);
-    value_image = Image<connectivity_value_type>::create(Path::join(path, "values.mif"), value_header);
+    index_image = Image<index_image_type>::create((path / "index.mif"), index_header);
+    fixel_image = Image<index_type>::create((path / "fixels.mif"), fixel_header);
+    value_image = Image<connectivity_value_type>::create((path / "values.mif"), value_header);
   } catch (Exception &e) {
     throw Exception(e, "Unable to allocate space on filesystem for fixel-fixel connectivity matrix data");
   }
@@ -372,13 +371,13 @@ template class Writer<InitMatrixWeighted>;
 
 Reader::Reader(const std::string &path, const Image<bool> &mask) : directory(path), mask_image(mask) {
   try {
-    index_image = Image<index_image_type>::open(Path::join(directory, "index.mif"));
+    index_image = Image<index_image_type>::open((directory / "index.mif"));
     if (index_image.ndim() != 4)
       throw Exception("Fixel-fixel connectivity matrix index image must be 4D");
     if (index_image.size(1) != 1 || index_image.size(2) != 1 || index_image.size(3) != 2)
       throw Exception("Fixel-fixel connectivity matrix index image must have size Nx1x1x2");
-    fixel_image = Image<fixel_index_type>::open(Path::join(directory, "fixels.mif"));
-    value_image = Image<connectivity_value_type>::open(Path::join(directory, "values.mif"));
+    fixel_image = Image<fixel_index_type>::open((directory / "fixels.mif"));
+    value_image = Image<connectivity_value_type>::open((directory / "values.mif"));
     if (value_image.size(0) != fixel_image.size(0))
       throw Exception("Number of fixels in value image (" + str(value_image.size(0)) +
                       ") does not match number of fixels in fixel image (" + str(fixel_image.size(0)) + ")");

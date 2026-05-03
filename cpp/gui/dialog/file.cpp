@@ -44,7 +44,8 @@ std::string get_folder(QWidget *parent, const std::string &caption, std::string 
   return new_folder;
 }
 
-std::filesystem::path get_file(QWidget *parent, const std::string &caption, const std::string &filter, std::string *folder) {
+std::filesystem::path
+get_file(QWidget *parent, const std::string &caption, const std::string &filter, std::string *folder) {
   QString qstring = QFileDialog::getOpenFileName(
       parent, qstr(caption), folder ? qstr(*folder) : QString(), qstr(filter), 0, FILE_DIALOG_OPTIONS);
 
@@ -76,14 +77,14 @@ get_files(QWidget *parent, const std::string &caption, const std::string &filter
 
 bool overwrite_files = false;
 
-void check_overwrite_files_func(const std::string &name) {
+void check_overwrite_files_func(const std::filesystem::path &name) {
   if (overwrite_files)
     return;
 
   QMessageBox::StandardButton response =
       QMessageBox::warning(QApplication::activeWindow(),
                            qstr("confirm file overwrite"),
-                           qstr("Action will overwrite file \"" + name + "\" - proceed?"),
+                           qstr("Action will overwrite file \"" + name.string() + "\" - proceed?"),
                            QMessageBox::Yes | QMessageBox::YesToAll | QMessageBox::Cancel,
                            QMessageBox::Cancel);
   if (response == QMessageBox::Cancel)
@@ -101,7 +102,7 @@ std::string get_save_name(QWidget *parent,
 
   QString selection;
   if (folder) {
-    selection = suggested_name.empty() ? qstr(*folder) : qstr(MR::Path::join(*folder, suggested_name));
+    selection = suggested_name.empty() ? qstr(*folder) : qstr(MR::(*folder / suggested_name));
   } else if (!suggested_name.empty()) {
     selection = qstr(suggested_name);
   }

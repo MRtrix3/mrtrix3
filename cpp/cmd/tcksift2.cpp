@@ -153,7 +153,7 @@ void run() {
   if (!get_options("max_factor").empty() && !get_options("max_coeff").empty())
     throw Exception("Options -max_factor and -max_coeff are mutually exclusive");
 
-  if (Path::has_suffix(output_weights_path, ".tck"))
+  if (Path::has_suffix(std::filesystem::path(output_weights_path), ".tck"))
     throw Exception("Output of tcksift2 command should be a text file, not a tracks file");
 
   auto in_dwi = Image<float>::open(input_fod_path);
@@ -168,7 +168,7 @@ void run() {
   std::string debug_path = get_option_value<std::string>("output_debug", "");
   if (!debug_path.empty()) {
     tckfactor.initialise_debug_image_output(debug_path);
-    tckfactor.output_proc_mask(Path::join(debug_path, "proc_mask.mif"));
+    tckfactor.output_proc_mask((debug_path / "proc_mask.mif"));
   }
 
   tckfactor.map_streamlines(input_tracks_path);

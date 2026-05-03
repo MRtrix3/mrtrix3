@@ -178,5 +178,5 @@ void run() {
 
   Header output_header(Fixel::data_header_from_index(index_image));
 
-  write_fixel_output(Path::join(output_fixel_folder_path, argument[3]), fixel_TDI, output_header);
+  write_fixel_output((output_fixel_folder_path / argument[3]), fixel_TDI, output_header);
 }

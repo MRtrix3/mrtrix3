@@ -45,11 +45,10 @@ Tree::find(const std::string &patient_name, const std::string &patient_ID, const
 
 void Tree::read_dir(const std::string &filename, ProgressBar &progress) {
   try {
-    Path::Dir folder(filename);
-    std::string entry;
-    while (!(entry = folder.read_name()).empty()) {
-      std::string name(Path::join(filename, entry));
-      if (Path::is_dir(name))
+    std::filesystem::path folder_path(filename);
+    for (const auto &entry : std::filesystem::directory_iterator(folder_path)) {
+      std::string name = entry.path().string();
+      if (std::filesystem::is_directory(entry.path()))
         read_dir(name, progress);
       else {
         try {
@@ -101,7 +100,7 @@ void Tree::read_file(const std::string &filename) {
 
 void Tree::read(const std::string &filename) {
   description = filename;
-  if (Path::is_dir(filename)) {
+  if (std::filesystem::is_directory(filename)) {
     ProgressBar progress("scanning folder \"" + shorten(filename) + "\" for DICOM data", 0);
     read_dir(filename, progress);
   } else {

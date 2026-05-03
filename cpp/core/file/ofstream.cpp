@@ -16,6 +16,9 @@
 
 #include "file/ofstream.h"
 
+#include <filesystem>
+
+#include "app.h"
 #include "exception.h"
 #include "file/utils.h"
 
@@ -23,8 +26,13 @@ namespace MR::File {
 
 void OFStream::open(const std::string &path, const std::ios_base::openmode mode) {
   if (!(mode & std::ios_base::app) && !(mode & std::ios_base::ate) && !(mode & std::ios_base::in)) {
-    if (!File::is_tempfile(path))
-      File::create(path);
+    if (!File::is_tempfile(path)) {
+      const std::filesystem::path filepath = path;
+      if (std::filesystem::exists(filepath)) {
+        App::check_overwrite(filepath);
+        std::filesystem::remove(filepath);
+      }
+    }
   }
 
   std::ofstream::open(path.c_str(), mode);

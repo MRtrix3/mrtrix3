@@ -234,7 +234,7 @@ void save(const MatrixType &PE, const HeaderType &header, const std::string &pat
     throw Exception(e, "Cannot export phase-encoding table to file \"" + path + "\"");
   }
 
-  if (Path::has_suffix(header.name(), {".mgh", ".mgz", ".nii", ".nii.gz", ".img"})) {
+  if (Path::has_suffix(std::filesystem::path(header.name()), {".mgh", ".mgz", ".nii", ".nii.gz", ".img"})) {
     __save(transform_for_nifti_write(PE, header), path);
   } else {
     __save(PE, path);

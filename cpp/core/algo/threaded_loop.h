@@ -351,7 +351,7 @@ template <class OuterLoopType> struct ThreadedLoopRunOuter {
         while (shared.lock()->next(pos))
           func(pos);
       }
-    } loop_thread = {shared, functor};
+    } loop_thread = {shared, get_iterator(shared), functor};
 
     auto threads = Thread::run(Thread::multi(loop_thread), "loop threads");
 

@@ -41,7 +41,7 @@ public:
       BaseFixel *fixel_image(nullptr);
       try {
         try {
-          if (Path::has_suffix(filenames[i], {".msf", ".msh"}))
+          if (Path::has_suffix(std::filesystem::path(filenames[i]), {".msf", ".msh"}))
             fixel_image = new Legacy(filenames[i], fixel_tool);
           else
             fixel_image = new Directory(filenames[i], fixel_tool);

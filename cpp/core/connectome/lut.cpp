@@ -129,9 +129,9 @@ LUT::file_format LUT::guess_file_format(const std::filesystem::path &path) {
       //   encased within quotation marks
       auto split_by_quotes = split(line, "\"\'", false);
       if (!(split_by_quotes.size() % 2))
-        throw Exception("Line " + str(line_counter) +                     //
+        throw Exception("Line " + str(line_counter) +                         //
                         " of LUT file \"" + path.filename().string() + "\"" + //
-                        " contains an odd number of quotation marks," +   //
+                        " contains an odd number of quotation marks," +       //
                         " and hence cannot be properly split up according to quotation marks");
       decltype(split_by_quotes) entries;
       for (size_t i = 0; i != split_by_quotes.size(); ++i) {

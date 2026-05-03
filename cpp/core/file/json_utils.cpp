@@ -247,7 +247,7 @@ void write(const KeyValues &keyval, nlohmann::json &json) {
 void write(const Header &header, nlohmann::json &json, const std::string &image_path) {
   Header H_adj(header);
   H_adj.name() = image_path;
-  if (!Path::has_suffix(image_path, {".nii", ".nii.gz", ".img"})) {
+  if (!Path::has_suffix(std::filesystem::path(image_path), {".nii", ".nii.gz", ".img"})) {
     write(H_adj.keyval(), json);
     return;
   }

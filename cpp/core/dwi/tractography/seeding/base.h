@@ -79,7 +79,11 @@ class Base {
 
 public:
   Base(const std::filesystem::path &in, const std::string &desc, const size_t attempts)
-      : volume(0.0), count(0), type(desc), name(Path::exists(in) ? in.filename() : in), max_attempts(attempts) {}
+      : volume(0.0),
+        count(0),
+        type(desc),
+        name(std::filesystem::exists(in) ? in.filename() : in),
+        max_attempts(attempts) {}
 
   virtual ~Base() {}
 

@@ -122,7 +122,7 @@ const char *project_build_date = nullptr;
 std::vector<std::string> raw_arguments_list;
 
 bool overwrite_files = false;
-void (*check_overwrite_files_func)(const std::string &name) = nullptr;
+void (*check_overwrite_files_func)(const std::filesystem::path &name) = nullptr;
 
 namespace {
 
@@ -1079,61 +1079,65 @@ void parse() {
   // if necessary, also check for pre-existence of any output files with known paths
   //   (if the output is e.g. given as a prefix, the argument should be flagged as type_text())
   for (const auto &i : argument) {
-    const std::string text = std::string(i);
+    const std::filesystem::path text(i);
     if (i.arg->type == ArgFileIn || i.arg->type == TracksIn) {
-      if (!Path::exists(text))
-        throw Exception("required input file \"" + text + "\" not found");
-      if (!Path::is_file(text))
-        throw Exception("required input \"" + text + "\" is not a file");
+      if (!std::filesystem::exists(text))
+        throw Exception("required input file \"" + text.string() + "\" not found");
+      if (!std::filesystem::is_regular_file(text))
+        throw Exception("required input \"" + text.string() + "\" is not a file");
     }
     if (i.arg->type == ArgDirectoryIn) {
-      if (!Path::exists(text))
-        throw Exception("required input directory \"" + text + "\" not found");
-      if (!Path::is_dir(text))
-        throw Exception("required input \"" + text + "\" is not a directory");
+      if (!std::filesystem::exists(text))
+        throw Exception("required input directory \"" + text.string() + "\" not found");
+      if (!std::filesystem::is_directory(text))
+        throw Exception("required input \"" + text.string() + "\" is not a directory");
     }
     if (i.arg->type == ArgFileOut || i.arg->type == TracksOut) {
-      if (text.find_last_of(PATH_SEPARATORS) == text.size() - 1)
+      if (text.string().find_last_of(PATH_SEPARATORS) == text.string().size() - 1)
         throw Exception("output path \"" + std::string(i) +
                         "\" is not a valid file path (ends with directory path separator)");
       check_overwrite(text);
     }
     if (i.arg->type == ArgDirectoryOut)
       check_overwrite(text);
-    if (i.arg->type == TracksIn && !Path::has_suffix(text, ".tck"))
-      throw Exception("input file \"" + text + "\" is not a valid track file");
-    if (i.arg->type == TracksOut && !Path::has_suffix(text, ".tck"))
-      throw Exception("output track file \"" + text + "\" must use the .tck suffix");
+    if (i.arg->type == TracksIn && !Path::has_suffix(std::filesystem::path(text), ".tck"))
+      throw Exception("input file \"" + text.string() + "\" is not a valid track file");
+    if (i.arg->type == TracksOut && !Path::has_suffix(std::filesystem::path(text), ".tck"))
+      throw Exception("output track file \"" + text.string() + "\" must use the .tck suffix");
   }
   for (const auto &i : option) {
     for (size_t j = 0; j != i.opt->size(); ++j) {
       const Argument &arg = i.opt->operator[](j);
-      const std::string text = std::string(i.args[j]);
+      const std::filesystem::path text(i.args[j]);
       if (arg.type == ArgFileIn || arg.type == TracksIn) {
-        if (!Path::exists(text))
-          throw Exception("input file \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" not found");
-        if (!Path::is_file(text))
-          throw Exception("input \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" is not a file");
+        if (!std::filesystem::exists(text))
+          throw Exception("input file \"" + text.string() + "\" for option \"-" + std::string(i.opt->id) +
+                          "\" not found");
+        if (!std::filesystem::is_regular_file(text))
+          throw Exception("input \"" + text.string() + "\" for option \"-" + std::string(i.opt->id) +
+                          "\" is not a file");
       }
       if (arg.type == ArgDirectoryIn) {
-        if (!Path::exists(text))
-          throw Exception("input directory \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" not found");
-        if (!Path::is_dir(text))
-          throw Exception("input \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" is not a directory");
+        if (!std::filesystem::exists(text))
+          throw Exception("input directory \"" + text.string() + "\" for option \"-" + std::string(i.opt->id) +
+                          "\" not found");
+        if (!std::filesystem::is_directory(text))
+          throw Exception("input \"" + text.string() + "\" for option \"-" + std::string(i.opt->id) +
+                          "\" is not a directory");
       }
       if (arg.type == ArgFileOut || arg.type == TracksOut) {
-        if (text.find_last_of(PATH_SEPARATORS) == text.size() - 1)
-          throw Exception("output path \"" + text + "\" for option \"-" + std::string(i.opt->id) +
+        if (text.string().find_last_of(PATH_SEPARATORS) == text.string().size() - 1)
+          throw Exception("output path \"" + text.string() + "\" for option \"-" + std::string(i.opt->id) +
                           "\" is not a valid file path (ends with directory path separator)");
         check_overwrite(text);
       }
       if (arg.type == ArgDirectoryOut)
         check_overwrite(text);
-      if (arg.type == TracksIn && !Path::has_suffix(text, ".tck"))
-        throw Exception("input file \"" + text + "\" for option \"-" + std::string(i.opt->id) +
+      if (arg.type == TracksIn && !Path::has_suffix(std::filesystem::path(text), ".tck"))
+        throw Exception("input file \"" + text.string() + "\" for option \"-" + std::string(i.opt->id) +
                         "\" is not a valid track file");
-      if (arg.type == TracksOut && !Path::has_suffix(text, ".tck"))
-        throw Exception("output track file \"" + text + "\" for option \"-" + std::string(i.opt->id) +
+      if (arg.type == TracksOut && !Path::has_suffix(std::filesystem::path(text), ".tck"))
+        throw Exception("output track file \"" + text.string() + "\" for option \"-" + std::string(i.opt->id) +
                         "\" must use the .tck suffix");
     }
   }
@@ -1155,7 +1159,7 @@ void init(int cmdline_argc, const char *const *cmdline_argv) {
   raw_arguments_list.erase(raw_arguments_list.begin());
 
 #ifdef MRTRIX_WINDOWS
-  if (Path::has_suffix(NAME, ".exe"))
+  if (Path::has_suffix(std::filesystem::path(NAME), ".exe"))
     NAME.erase(NAME.size() - 4);
 #endif
 
@@ -1372,12 +1376,12 @@ void ParsedArgument::error(Exception &e) const {
   throw Exception(e, msg);
 }
 
-void check_overwrite(const std::string &name) {
-  if (Path::exists(name) && !overwrite_files) {
+void check_overwrite(const std::filesystem::path &name) {
+  if (std::filesystem::exists(name) && !overwrite_files) {
     if (check_overwrite_files_func != nullptr)
       check_overwrite_files_func(name);
     else
-      throw Exception("output path \"" + name + "\" already exists (use -force option to force overwrite)");
+      throw Exception("output path \"" + name.string() + "\" already exists (use -force option to force overwrite)");
   }
 }
 

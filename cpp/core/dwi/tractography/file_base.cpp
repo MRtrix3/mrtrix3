@@ -67,12 +67,13 @@ void __ReaderBase__::open(const std::filesystem::path &file, const std::string &
     try {
       files_stream >> offset;
     } catch (...) {
-      throw Exception("invalid offset specified for file \"" + fname + "\" in " + type + " file \"" + file.string() + "\"");
+      throw Exception("invalid offset specified for file \"" + fname + "\" in " + type + " file \"" + file.string() +
+                      "\"");
     }
   }
 
   if (fname != ".")
-    fname = Path::join(file.parent_path(), fname);
+    fname = (file.parent_path() / fname);
   else
     fname = file;
 

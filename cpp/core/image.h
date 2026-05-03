@@ -397,7 +397,8 @@ template <typename ValueType> Image<ValueType> Image<ValueType>::with_direct_io(
 }
 
 template <typename ValueType> std::string Image<ValueType>::dump_to_mrtrix_file(std::string filename, bool) const {
-  if (!data_pointer || (!Path::has_suffix(filename, ".mih") && !Path::has_suffix(filename, ".mif")))
+  if (!data_pointer || (!Path::has_suffix(std::filesystem::path(filename), ".mih") &&
+                        !Path::has_suffix(std::filesystem::path(filename), ".mif")))
     throw Exception("FIXME: image not suitable for use with 'Image::dump_to_mrtrix_file()'");
 
   // try to dump file to mrtrix format if possible (direct IO)
@@ -410,8 +411,8 @@ template <typename ValueType> std::string Image<ValueType>::dump_to_mrtrix_file(
   out << "mrtrix image\n";
   Formats::write_mrtrix_header(*buffer, out);
 
-  const bool single_file = Path::has_suffix(filename, ".mif");
-  std::filesystem::path data_filename = filename;
+  const bool single_file = Path::has_suffix(std::filesystem::path(filename), ".mif");
+  std::filesystem::path data_path = filename;
 
   int64_t offset = 0;
   out << "file: ";
@@ -420,22 +421,22 @@ template <typename ValueType> std::string Image<ValueType>::dump_to_mrtrix_file(
     offset += ((4 - (offset % 4)) % 4);
     out << ". " << offset << "\nEND\n";
   } else {
-    data_filename.replace_extension(".dat");
-    out << data_filename.filename().string() << "\n";
+    data_path.replace_extension(".dat");
+    out << data_path.filename().string() << "\n";
     out.close();
-    out.open(data_filename, std::ios::out | std::ios::binary);
+    out.open(data_path, std::ios::out | std::ios::binary);
   }
 
   const int64_t data_size = footprint(*buffer);
   out.seekp(offset, out.beg);
   out.write((const char *)data_pointer, data_size);
   if (!out.good())
-    throw Exception("error writing back contents of file \"" + data_filename.string() + "\": " + strerror(errno));
+    throw Exception("error writing back contents of file \"" + data_path.string() + "\": " + strerror(errno));
   out.close();
 
   // If data_size exceeds some threshold, ostream artificially increases the file size beyond that required at close()
   // TODO check whether this is still needed...?
-  File::resize(data_filename, offset + data_size);
+  std::filesystem::resize_file(data_path, offset + data_size);
 
   return filename;
 }

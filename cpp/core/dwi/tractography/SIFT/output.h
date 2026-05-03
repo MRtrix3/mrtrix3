@@ -165,9 +165,9 @@ void ModelBase<Fixel>::output_errors_voxel(const std::string &dirpath,
                                            const std::string &diff_path,
                                            const std::string &cost_path) const {
   const default_type current_mu = mu();
-  auto out_max_abs_diff = Image<float>::create(Path::join(dirpath, max_abs_diff_path), Fixel_map<Fixel>::header());
-  auto out_diff = Image<float>::create(Path::join(dirpath, diff_path), Fixel_map<Fixel>::header());
-  auto out_cost = Image<float>::create(Path::join(dirpath, cost_path), Fixel_map<Fixel>::header());
+  auto out_max_abs_diff = Image<float>::create((dirpath / max_abs_diff_path), Fixel_map<Fixel>::header());
+  auto out_diff = Image<float>::create((dirpath / diff_path), Fixel_map<Fixel>::header());
+  auto out_cost = Image<float>::create((dirpath / cost_path), Fixel_map<Fixel>::header());
   VoxelAccessor v(accessor());
   for (auto l = Loop(v)(v, out_max_abs_diff, out_diff, out_cost); l; ++l) {
     if (v.value()) {
@@ -195,8 +195,8 @@ void ModelBase<Fixel>::output_errors_fixel(const std::string &dirpath,
                                            const std::string &cost_path) const {
   const default_type current_mu = mu();
   Header H(MR::Fixel::data_header_from_nfixels(fixels.size()));
-  Image<float> image_diff(Image<float>::create(Path::join(dirpath, diff_path), H));
-  Image<float> image_cost(Image<float>::create(Path::join(dirpath, cost_path), H));
+  Image<float> image_diff(Image<float>::create((dirpath / diff_path), H));
+  Image<float> image_cost(Image<float>::create((dirpath / cost_path), H));
   for (auto l = Loop(0)(image_diff, image_cost); l; ++l) {
     image_diff.value() = fixels[image_diff.index(0)].get_diff(current_mu);
     image_cost.value() = fixels[image_cost.index(0)].get_cost(current_mu);

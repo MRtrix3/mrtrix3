@@ -342,10 +342,12 @@ ReadInfo read_header(const std::string &path) {
     info.shape.push_back(to<ssize_t>(s));
 
   // Make sure that the size of the file matches expectations given the offset to the data, the shape, and the data type
-  struct stat sbuf;
-  if (stat(path.c_str(), &sbuf))
-    throw Exception("Cannot query size of NumPy file \"" + path + "\": " + strerror(errno));
-  const size_t file_size = sbuf.st_size;
+  size_t file_size;
+  try {
+    file_size = std::filesystem::file_size(path);
+  } catch (const std::exception &e) {
+    throw Exception("Cannot query size of NumPy file \"" + path + "\": " + e.what());
+  }
   size_t num_elements = info.shape[0];
   if (info.shape.size() == 2)
     num_elements *= info.shape[1];
@@ -418,7 +420,8 @@ WriteInfo prepare_ND_write(const std::string &path, const DataType data_type, co
   out.close();
   const size_t num_elements = shape[0] * (shape.size() == 2 ? shape[1] : 1);
   const size_t data_size = num_elements * info.data_type.bytes();
-  File::resize(path, leadin_size + data_size);
+  const std::filesystem::path data_path = path;
+  std::filesystem::resize_file(data_path, leadin_size + data_size);
   info.mmap.reset(new File::MMap({path, leadin_size}, true, false));
   return info;
 }

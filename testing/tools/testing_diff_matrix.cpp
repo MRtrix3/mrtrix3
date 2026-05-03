@@ -64,7 +64,8 @@ void run() {
     const auto in2c = File::Matrix::load_matrix<cdouble>(argument[1]);
 
     if (in1c.rows() != in2c.rows() || in1c.cols() != in2c.cols())
-      throw Exception("matrices \"" + input_matrix_path1.filename().string() + "\" and \"" + input_matrix_path2.filename().string() +
+      throw Exception("matrices \"" + input_matrix_path1.filename().string() + "\" and \"" +
+                      input_matrix_path2.filename().string() +
                       "\" do not have matching sizes"
                       " (" +
                       str(in1.rows()) + "x" + str(in1c.cols()) + " vs " + str(in2c.rows()) + "x" + str(in2c.cols()) +
@@ -79,9 +80,10 @@ void run() {
               (abs(in1c(row, col).imag() - in2c(row, col).imag()) /
                    (0.5 * (in1c(row, col).imag() + in2c(row, col).imag())) >
                tolerance_frac))
-            throw Exception("matrices \"" + input_matrix_path1.filename().string() + "\" and \"" + input_matrix_path2.filename().string() +
-                            "\" do not match within fractional precision of " + str(tolerance_frac) + " ((" + str(row) +
-                            ", " + str(col) + "): " + str(in1c(row, col)) + " vs " + str(in2c(row, col)) + ")");
+            throw Exception("matrices \"" + input_matrix_path1.filename().string() + "\" and \"" +
+                            input_matrix_path2.filename().string() + "\" do not match within fractional precision of " +
+                            str(tolerance_frac) + " ((" + str(row) + ", " + str(col) + "): " + str(in1c(row, col)) +
+                            " vs " + str(in2c(row, col)) + ")");
         }
       }
     }
@@ -91,9 +93,10 @@ void run() {
         for (ssize_t row = 0; row != in1c.rows(); ++row) {
           if ((abs(in1c(row, col).real() - in2c(row, col).real()) > tolerance_abs) ||
               (abs(in1c(row, col).imag() - in2c(row, col).imag()) > tolerance_abs))
-            throw Exception("matrices \"" + input_matrix_path1.filename().string() + "\" and \"" + input_matrix_path2.filename().string() +
-                            "\" do not match within absolute precision of " + str(tolerance_abs) + " ((" + str(row) +
-                            ", " + str(col) + "): " + str(in1c(row, col)) + " vs " + str(in2c(row, col)) + ")");
+            throw Exception("matrices \"" + input_matrix_path1.filename().string() + "\" and \"" +
+                            input_matrix_path2.filename().string() + "\" do not match within absolute precision of " +
+                            str(tolerance_abs) + " ((" + str(row) + ", " + str(col) + "): " + str(in1c(row, col)) +
+                            " vs " + str(in2c(row, col)) + ")");
         }
       }
     }
@@ -102,7 +105,8 @@ void run() {
   }
 
   if (in1.rows() != in2.rows() || in1.cols() != in2.cols())
-    throw Exception("matrices \"" + input_matrix_path1.filename().string() + "\" and \"" + input_matrix_path2.filename().string() +
+    throw Exception("matrices \"" + input_matrix_path1.filename().string() + "\" and \"" +
+                    input_matrix_path2.filename().string() +
                     "\" do not have matching sizes"
                     " (" +
                     str(in1.rows()) + "x" + str(in1.cols()) + " vs " + str(in2.rows()) + "x" + str(in2.cols()) + ")");
@@ -111,9 +115,10 @@ void run() {
     for (ssize_t col = 0; col != in1.cols(); ++col) {
       for (ssize_t row = 0; row != in1.rows(); ++row) {
         if (abs(in1(row, col) - in2(row, col)) / (0.5 * (in1(row, col) + in2(row, col))) > tolerance_frac)
-          throw Exception("matrices \"" + input_matrix_path1.filename().string() + "\" and \"" + input_matrix_path2.filename().string() +
-                          "\" do not match within fractional precision of " + str(tolerance_abs) + " ((" + str(row) +
-                          ", " + str(col) + "): " + str(in1(row, col)) + " vs " + str(in2(row, col)) + ")");
+          throw Exception("matrices \"" + input_matrix_path1.filename().string() + "\" and \"" +
+                          input_matrix_path2.filename().string() + "\" do not match within fractional precision of " +
+                          str(tolerance_abs) + " ((" + str(row) + ", " + str(col) + "): " + str(in1(row, col)) +
+                          " vs " + str(in2(row, col)) + ")");
       }
     }
   }
@@ -122,9 +127,10 @@ void run() {
     for (ssize_t col = 0; col != in1.cols(); ++col) {
       for (ssize_t row = 0; row != in1.rows(); ++row) {
         if (abs(in1(row, col) - in2(row, col)) > tolerance_abs)
-          throw Exception("matrices \"" + input_matrix_path1.filename().string() + "\" and \"" + input_matrix_path2.filename().string() +
-                          "\" do not match within absolute precision of " + str(tolerance_abs) + " ((" + str(row) +
-                          ", " + str(col) + "): " + str(in1(row, col)) + " vs " + str(in2(row, col)) + ")");
+          throw Exception("matrices \"" + input_matrix_path1.filename().string() + "\" and \"" +
+                          input_matrix_path2.filename().string() + "\" do not match within absolute precision of " +
+                          str(tolerance_abs) + " ((" + str(row) + ", " + str(col) + "): " + str(in1(row, col)) +
+                          " vs " + str(in2(row, col)) + ")");
       }
     }
   }

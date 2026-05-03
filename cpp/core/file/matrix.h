@@ -131,7 +131,7 @@ void save_matrix(const MatrixType &M,
                  const std::string &filename,
                  const KeyValues &keyvals = KeyValues(),
                  const bool add_to_command_history = true) {
-  if (Path::has_suffix(filename, {"npy", ".NPY"}))
+  if (Path::has_suffix(std::filesystem::path(filename), {"npy", ".NPY"}))
     File::NPY::save_matrix(M, filename);
   else
     save_matrix_text<MatrixType>(M, filename, keyvals, add_to_command_history);
@@ -140,7 +140,7 @@ void save_matrix(const MatrixType &M,
 //! read matrix data into an Eigen::Matrix \a filename
 template <class ValueType = default_type>
 Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> load_matrix(const std::string &filename) {
-  if (Path::has_suffix(filename, {"npy", ".NPY"}))
+  if (Path::has_suffix(std::filesystem::path(filename), {"npy", ".NPY"}))
     return File::NPY::load_matrix<ValueType>(filename);
   else
     return load_matrix_text<ValueType>(filename);
@@ -240,7 +240,7 @@ void save_vector(const VectorType &V,
                  const std::string &filename,
                  const KeyValues &keyvals = KeyValues(),
                  const bool add_to_command_history = true) {
-  if (Path::has_suffix(filename, {".npy", ".NPY"}))
+  if (Path::has_suffix(std::filesystem::path(filename), {".npy", ".NPY"}))
     File::NPY::save_vector(V, filename);
   else
     save_vector_text(V, filename, keyvals, add_to_command_history);

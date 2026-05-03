@@ -43,8 +43,8 @@ Scalar::Scalar(const std::filesystem::path &path, const Mesh &mesh) {
     }
   }
   if (size_t(size()) != mesh.num_vertices())
-    throw Exception("Input surface scalar file \"" + path.string() + "\" has incorrect number of vertices (" + str(size()) +
-                    ", mesh has " + str(mesh.num_vertices()) + ")");
+    throw Exception("Input surface scalar file \"" + path.string() + "\" has incorrect number of vertices (" +
+                    str(size()) + ", mesh has " + str(mesh.num_vertices()) + ")");
   name = path.filename();
 }
 

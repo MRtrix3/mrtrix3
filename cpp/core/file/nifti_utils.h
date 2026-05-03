@@ -22,6 +22,7 @@
 #include "types.h"
 
 #include <array>
+#include <filesystem>
 
 namespace MR {
 class Header;
@@ -41,7 +42,7 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> create(Header &H);
 template <int VERSION> std::unique_ptr<ImageIO::Base> create_gz(Header &H);
 
 int version(Header &H);
-std::string get_json_path(const std::string &nifti_path);
+std::filesystem::path get_json_path(const std::filesystem::path &nifti_path);
 
 } // namespace File::NIfTI
 

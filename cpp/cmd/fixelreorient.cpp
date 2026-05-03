@@ -82,12 +82,11 @@ void run() {
     auto tmp = Fixel::find_directions_header(input_fixel_directory).get_image<float>();
     input_directions_image = Image<float>::scratch(tmp);
     threaded_copy(tmp, input_directions_image);
-    output_directions_filename =
-        output_directions_filename = std::filesystem::path{tmp.name()}.filename();
+    output_directions_filename = output_directions_filename = std::filesystem::path{tmp.name()}.filename();
   }
 
   auto output_directions_image =
-      Image<float>::create(Path::join(output_fixel_directory, output_directions_filename), input_directions_image)
+      Image<float>::create((output_fixel_directory / output_directions_filename), input_directions_image)
           .with_direct_io();
 
   for (auto i = Loop("reorienting fixel directions", input_index_image, 0, 3)(input_index_image, jacobian); i; ++i) {

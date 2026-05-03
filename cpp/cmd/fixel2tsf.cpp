@@ -88,7 +88,7 @@ void run() {
   DWI::Tractography::Reader<float> reader(input_tracks_path, properties);
   properties.comments.push_back("Created using fixel2tsf");
   properties.comments.push_back("Source fixel image: " + input_fixel_path.filename().string());
-  properties.comments.push_back("Source track file: " +input_tracks_path.filename().string());
+  properties.comments.push_back("Source track file: " + input_tracks_path.filename().string());
 
   DWI::Tractography::ScalarWriter<float> tsf_writer(output_tsf_path, properties);
 
