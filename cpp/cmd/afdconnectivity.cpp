@@ -130,8 +130,8 @@ class AFDConnectivity : public DWI::Tractography::SIFT::ModelBase<AFDConnFixel> 
 public:
   AFDConnectivity(Image<value_type> &fod_buffer,
                   const DWI::Directions::FastLookupSet &dirs,
-                  const std::string &tck_path,
-                  const std::string &wbft_path)
+                  const std::filesystem::path &tck_path,
+                  const std::filesystem::path &wbft_path)
       : DWI::Tractography::SIFT::ModelBase<AFDConnFixel>(fod_buffer, dirs),
         have_wbft(!wbft_path.empty()),
         all_fixels(false),
@@ -139,18 +139,18 @@ public:
         v_fod(fod_buffer) {
     if (have_wbft) {
       perform_FOD_segmentation(fod_buffer);
-      map_streamlines(wbft_path);
+      map_streamlines(wbft_path.string());
     } else {
       fmls.reset(new DWI::FMLS::Segmenter(dirs, Math::SH::LforN(fod_buffer.size(3))));
     }
-    mapper.set_upsample_ratio(DWI::Tractography::Mapping::determine_upsample_ratio(fod_buffer, tck_path, 0.1));
+    mapper.set_upsample_ratio(DWI::Tractography::Mapping::determine_upsample_ratio(fod_buffer, tck_path.string(), 0.1));
     mapper.set_use_precise_mapping(true);
   }
 
   void set_all_fixels(const bool i) { all_fixels = i; }
 
-  value_type get(const std::string &path);
-  void save(const std::string &path);
+  value_type get(const std::filesystem::path &path);
+  void save(const std::filesystem::path &path);
 
 private:
   const bool have_wbft;
@@ -162,10 +162,10 @@ private:
   using Fixel_map<AFDConnFixel>::accessor;
 };
 
-value_type AFDConnectivity::get(const std::string &path) {
+value_type AFDConnectivity::get(const std::filesystem::path &path) {
 
   Tractography::Properties properties;
-  Tractography::Reader<value_type> reader(path, properties);
+  Tractography::Reader<value_type> reader(path.string(), properties);
   const size_t track_count = (properties.find("count") == properties.end() ? 0 : to<size_t>(properties["count"]));
   DWI::Tractography::Mapping::TrackLoader loader(reader, track_count, "summing apparent fibre density within track");
 
@@ -264,8 +264,8 @@ value_type AFDConnectivity::get(const std::string &path) {
   return sum_contributions;
 }
 
-void AFDConnectivity::save(const std::string &path) {
-  auto out = Image<value_type>::create(path, Fixel_map<AFDConnFixel>::header());
+void AFDConnectivity::save(const std::filesystem::path &path) {
+  auto out = Image<value_type>::create(path.string(), Fixel_map<AFDConnFixel>::header());
   VoxelAccessor v(accessor());
   for (auto l = Loop(v)(v, out); l; ++l) {
     value_type value = 0.0;
@@ -309,5 +309,5 @@ void run() {
 
   opt = get_options("afd_map");
   if (!opt.empty())
-    model.save(opt[0][0]);
+    model.save(std::filesystem::path(opt[0][0]));
 }

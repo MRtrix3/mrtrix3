@@ -294,7 +294,7 @@ void run() {
   auto opt = get_options("linear");
   if (!opt.empty()) {
     linear = true;
-    linear_transform = File::Matrix::load_transform(opt[0][0]);
+    linear_transform = File::Matrix::load_transform(std::filesystem::path(opt[0][0]));
   }
 
   // Replace
@@ -307,7 +307,7 @@ void run() {
       linear_transform = template_header.transform();
     } catch (...) {
       try {
-        linear_transform = File::Matrix::load_transform(opt[0][0]);
+        linear_transform = File::Matrix::load_transform(std::filesystem::path(opt[0][0]));
       } catch (...) {
         throw Exception("Unable to extract transform matrix from -replace file \"" + str(opt[0][0]) + "\"");
       }
@@ -340,10 +340,10 @@ void run() {
   opt = get_options("warp_full");
   Image<default_type> warp;
   if (!opt.empty()) {
-    if (!Path::is_mrtrix_image(opt[0][0]) &&                                         //
+    if (!Path::is_mrtrix_image(std::filesystem::path(opt[0][0])) &&                  //
         !(Path::has_suffix(std::filesystem::path(opt[0][0]), {".nii", ".nii.gz"}) && //
           File::Config::get_bool("NIfTIAutoLoadJSON", false) &&                      //
-          std::filesystem::exists(File::NIfTI::get_json_path(opt[0][0])))) {
+          std::filesystem::exists(File::NIfTI::get_json_path(std::filesystem::path(opt[0][0]))))) {
       WARN("warp_full image is not in original .mif/.mih file format or in NIfTI file format with associated JSON.  "
            "Converting to other file formats may remove linear transformations stored in the image header.");
     }
@@ -449,8 +449,8 @@ void run() {
 
     Eigen::MatrixXd directions_az_el;
     opt = get_options("directions");
-    directions_az_el =
-        opt.empty() ? DWI::Directions::electrostatic_repulsion_300() : File::Matrix::load_matrix(opt[0][0]);
+    directions_az_el = opt.empty() ? DWI::Directions::electrostatic_repulsion_300()
+                                   : File::Matrix::load_matrix(std::filesystem::path(opt[0][0]));
     Math::Sphere::spherical2cartesian(directions_az_el, directions_cartesian);
 
     // load with SH coeffients contiguous in RAM

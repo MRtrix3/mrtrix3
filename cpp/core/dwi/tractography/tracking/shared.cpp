@@ -18,7 +18,7 @@
 
 namespace MR::DWI::Tractography::Tracking {
 
-SharedBase::SharedBase(const std::string &diff_path, Properties &property_set)
+SharedBase::SharedBase(const std::filesystem::path &diff_path, Properties &property_set)
     : source(Image<float>::open(diff_path).with_direct_io(3)),
       properties(property_set),
       init_dir({NaN, NaN, NaN}),

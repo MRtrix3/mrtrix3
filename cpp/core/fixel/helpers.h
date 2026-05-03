@@ -205,14 +205,13 @@ FORCE_INLINE Header find_index_header(const std::filesystem::path &fixel_directo
   return header;
 }
 
-FORCE_INLINE std::vector<Header> find_data_headers(const std::string &fixel_directory_path,
+FORCE_INLINE std::vector<Header> find_data_headers(const std::filesystem::path &fixel_directory_path,
                                                    const Header &index_header,
                                                    const bool include_directions = false) {
   check_index_image(index_header);
-  const std::filesystem::path dir_path = fixel_directory_path;
   std::vector<std::string> file_names;
   {
-    for (const auto &entry : std::filesystem::directory_iterator(dir_path))
+    for (const auto &entry : std::filesystem::directory_iterator(fixel_directory_path))
       file_names.push_back(entry.path().filename().string());
   }
   std::sort(file_names.begin(), file_names.end());
@@ -221,7 +220,7 @@ FORCE_INLINE std::vector<Header> find_data_headers(const std::string &fixel_dire
   for (auto fname : file_names) {
     if (Path::has_suffix(std::filesystem::path(fname), supported_sparse_formats)) {
       try {
-        auto H = Header::open((dir_path / fname));
+        auto H = Header::open((fixel_directory_path / fname));
         if (is_data_file(H)) {
           if (fixels_match(index_header, H)) {
             if (!is_directions_file(H) || include_directions)
@@ -240,21 +239,21 @@ FORCE_INLINE std::vector<Header> find_data_headers(const std::string &fixel_dire
   return data_headers;
 }
 
-FORCE_INLINE Header find_directions_header(const std::string fixel_directory_path) {
+FORCE_INLINE Header find_directions_header(const std::filesystem::path &fixel_directory_path) {
   bool directions_found(false);
   Header header;
   check_fixel_directory(fixel_directory_path);
-  const std::filesystem::path dir_path = fixel_directory_path;
   Header index_header = Fixel::find_index_header(fixel_directory_path);
 
-  for (const auto &entry : std::filesystem::directory_iterator(dir_path)) {
+  for (const auto &entry : std::filesystem::directory_iterator(fixel_directory_path)) {
     std::string fname = entry.path().filename().string();
     if (is_directions_filename(fname)) {
-      Header tmp_header = Header::open((dir_path / fname));
+      Header tmp_header = Header::open((fixel_directory_path / fname));
       if (is_directions_file(tmp_header)) {
         if (fixels_match(index_header, tmp_header)) {
           if (directions_found == true)
-            throw Exception("multiple directions files found in fixel image directory: " + fixel_directory_path);
+            throw Exception("multiple directions files found in fixel image directory: " +
+                            fixel_directory_path.string());
           directions_found = true;
           header = std::move(tmp_header);
         } else {
@@ -266,7 +265,8 @@ FORCE_INLINE Header find_directions_header(const std::string fixel_directory_pat
   }
 
   if (!directions_found)
-    throw InvalidFixelDirectoryException("Could not find directions image in directory " + fixel_directory_path);
+    throw InvalidFixelDirectoryException("Could not find directions image in directory " +
+                                         fixel_directory_path.string());
 
   return header;
 }

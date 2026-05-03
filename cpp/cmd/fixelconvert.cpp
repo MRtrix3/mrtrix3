@@ -120,7 +120,7 @@ void convert_old2new() {
 
   const bool output_size = !get_options("out_size").empty();
 
-  const std::string output_fixel_directory = argument[1];
+  const std::filesystem::path output_fixel_directory(argument[1]);
   Fixel::check_fixel_directory(output_fixel_directory, true, true);
 
   index_type fixel_count = 0;
@@ -144,24 +144,26 @@ void convert_old2new() {
   header.datatype() = DataType::from<index_type>();
   header.datatype().set_byte_order_native();
 
-  auto index_image = Image<index_type>::create((output_fixel_directory / "index" + file_extension), header);
+  auto index_image =
+      Image<index_type>::create((output_fixel_directory / std::string("index" + file_extension)), header);
   auto directions_image =
-      Image<float>::create((output_fixel_directory / "directions" + file_extension), directions_header)
+      Image<float>::create((output_fixel_directory / std::string("directions" + file_extension)), directions_header)
           .with_direct_io();
-  auto value_image = Image<float>::create((output_fixel_directory / value_name + file_extension), data_header);
+  auto value_image =
+      Image<float>::create((output_fixel_directory / std::string(value_name + file_extension)), data_header);
   Image<float> size_image;
   if (output_size)
-    size_image = Image<float>::create((output_fixel_directory / "size" + file_extension), data_header);
+    size_image = Image<float>::create((output_fixel_directory / std::string("size" + file_extension)), data_header);
 
   Image<index_type> template_index_image;
   Image<float> template_directions_image;
   opt = get_options("template");
   if (!opt.empty()) {
-    Fixel::check_fixel_directory(opt[0][0]);
+    Fixel::check_fixel_directory(std::filesystem::path(opt[0][0]));
     const std::filesystem::path fixel_directory_path(opt[0][0]);
     template_index_image = Fixel::find_index_header(fixel_directory_path).get_image<index_type>();
     check_dimensions(index_image, template_index_image);
-    template_directions_image = Fixel::find_directions_header(opt[0][0]).get_image<float>();
+    template_directions_image = Fixel::find_directions_header(std::filesystem::path(opt[0][0])).get_image<float>();
   }
 
   index_type offset = 0;
@@ -265,9 +267,8 @@ void convert_new2old() {
   }
 }
 
-bool is_old_format(const std::string &path) {
-  return (Path::has_suffix(std::filesystem::path(path), ".msf") ||
-          Path::has_suffix(std::filesystem::path(path), ".msh"));
+bool is_old_format(const std::filesystem::path &path) {
+  return (Path::has_suffix(path, ".msf") || Path::has_suffix(path, ".msh"));
 }
 
 void run() {

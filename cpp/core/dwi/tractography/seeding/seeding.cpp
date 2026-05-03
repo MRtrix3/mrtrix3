@@ -142,7 +142,7 @@ void load_seed_mechanisms(Properties &properties) {
     if (opt_act.empty())
       throw Exception("Cannot perform GM-WM Interface seeding without ACT segmented tissue image");
     for (size_t i = 0; i < opt.size(); ++i) {
-      GMWMI *seed = new GMWMI(opt[i][0], str(opt_act[0][0]));
+      GMWMI *seed = new GMWMI(std::filesystem::path(opt[i][0]), std::filesystem::path(opt_act[0][0]));
       list.add(seed);
     }
   }

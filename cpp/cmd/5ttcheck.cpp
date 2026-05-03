@@ -118,19 +118,19 @@ void run() {
       }
 
       if ((voxel_error_sum || voxel_error_abs) && voxels.valid()) {
-        std::string path = voxels_prefix;
+        std::filesystem::path path = voxels_prefix;
         if (argument.size() > 1) {
-          path += inPath.filename();
+          path /= inPath.filename();
         } else {
           bool has_extension = false;
           for (auto p = MR::Formats::known_extensions; *p; ++p) {
-            if (Path::has_suffix(std::filesystem::path(path), std::string(*p))) {
+            if (Path::has_suffix(path, std::string(*p))) {
               has_extension = true;
               break;
             }
           }
           if (!has_extension)
-            path += ".mif";
+            path.replace_extension(".mif");
         }
         auto out = Image<bool>::create(path, H_out);
         copy(voxels, out);

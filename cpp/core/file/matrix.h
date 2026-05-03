@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <filesystem>
 #include <string>
 
 #include "exception.h"
@@ -32,10 +33,10 @@ namespace {
 //! write the matrix \a M to text file
 template <class MatrixType>
 void save_matrix_text(const MatrixType &M,
-                      const std::string &filename,
+                      const std::filesystem::path &filename,
                       const KeyValues &keyvals = KeyValues(),
                       const bool add_to_command_history = true) {
-  DEBUG("saving " + str(M.rows()) + "x" + str(M.cols()) + " matrix to text file \"" + filename + "\"...");
+  DEBUG("saving " + str(M.rows()) + "x" + str(M.cols()) + " matrix to text file \"" + filename.string() + "\"...");
   File::OFStream out(filename);
   File::KeyValue::write(out, keyvals, "# ", add_to_command_history);
   Eigen::IOFormat fmt(
@@ -46,11 +47,11 @@ void save_matrix_text(const MatrixType &M,
 
 //! read matrix text data into a 2D vector \a filename
 template <class ValueType = default_type>
-std::vector<std::vector<ValueType>> load_matrix_2D_vector(const std::string &filename,
+std::vector<std::vector<ValueType>> load_matrix_2D_vector(const std::filesystem::path &filename,
                                                           std::vector<std::string> *comments = nullptr) {
   std::ifstream stream(filename, std::ios_base::in | std::ios_base::binary);
   if (!stream)
-    throw Exception("Unable to open numerical data text file \"" + filename + "\": " + strerror(errno));
+    throw Exception("Unable to open numerical data text file \"" + filename.string() + "\": " + strerror(errno));
   std::vector<std::vector<ValueType>> V;
   std::string sbuf, cbuf;
   size_t hash;
@@ -73,7 +74,7 @@ std::vector<std::vector<ValueType>> load_matrix_2D_vector(const std::string &fil
       for (const auto &entry : elements)
         V.back().push_back(to<ValueType>(entry));
     } catch (Exception &e) {
-      e.push_back("Cannot load row " + str(V.size()) + " of file \"" + filename +
+      e.push_back("Cannot load row " + str(V.size()) + " of file \"" + filename.string() +
                   "\" as delimited numerical matrix data:");
       e.push_back(sbuf);
       throw e;
@@ -81,22 +82,23 @@ std::vector<std::vector<ValueType>> load_matrix_2D_vector(const std::string &fil
 
     if (V.size() > 1)
       if (V.back().size() != V[0].size())
-        throw Exception("uneven rows in matrix text file \"" + filename + "\" " + "(first row: " + str(V[0].size()) +
-                        " columns; row " + str(V.size()) + ": " + str(V.back().size()) + " columns)");
+        throw Exception("uneven rows in matrix text file \"" + filename.string() + "\" " +
+                        "(first row: " + str(V[0].size()) + " columns; row " + str(V.size()) + ": " +
+                        str(V.back().size()) + " columns)");
   }
   if (stream.bad())
     throw Exception(strerror(errno));
 
   if (!V.size())
-    throw Exception("no data in matrix text file \"" + filename + "\"");
+    throw Exception("no data in matrix text file \"" + filename.string() + "\"");
 
   return V;
 }
 
 //! read matrix text data into an Eigen::Matrix \a filename
 template <class ValueType = default_type>
-Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> load_matrix_text(const std::string &filename) {
-  DEBUG("loading matrix file \"" + filename + "\"...");
+Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> load_matrix_text(const std::filesystem::path &filename) {
+  DEBUG("loading matrix file \"" + filename.string() + "\"...");
   const std::vector<std::vector<ValueType>> V = load_matrix_2D_vector<ValueType>(filename);
 
   Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> M(V.size(), V[0].size());
@@ -104,17 +106,17 @@ Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> load_matrix_text(const 
     for (ssize_t j = 0; j < M.cols(); j++)
       M(i, j) = V[i][j];
 
-  DEBUG("found " + str(M.rows()) + "x" + str(M.cols()) + " matrix in text file \"" + filename + "\"");
+  DEBUG("found " + str(M.rows()) + "x" + str(M.cols()) + " matrix in text file \"" + filename.string() + "\"");
   return M;
 }
 
 //! write the vector \a V to text file
 template <class VectorType>
 void save_vector_text(const VectorType &V,
-                      const std::string &filename,
+                      const std::filesystem::path &filename,
                       const KeyValues &keyvals,
                       const bool add_to_command_history) {
-  DEBUG("saving vector of size " + str(V.size()) + " to text file \"" + filename + "\"...");
+  DEBUG("saving vector of size " + str(V.size()) + " to text file \"" + filename.string() + "\"...");
   File::OFStream out(filename);
   File::KeyValue::write(out, keyvals, "# ", add_to_command_history);
   const char d(Path::delimiter(filename));
@@ -128,10 +130,10 @@ void save_vector_text(const VectorType &V,
 //! write the matrix \a M to file
 template <class MatrixType>
 void save_matrix(const MatrixType &M,
-                 const std::string &filename,
+                 const std::filesystem::path &filename,
                  const KeyValues &keyvals = KeyValues(),
                  const bool add_to_command_history = true) {
-  if (Path::has_suffix(std::filesystem::path(filename), {"npy", ".NPY"}))
+  if (Path::has_suffix(filename, {"npy", ".NPY"}))
     File::NPY::save_matrix(M, filename);
   else
     save_matrix_text<MatrixType>(M, filename, keyvals, add_to_command_history);
@@ -139,28 +141,29 @@ void save_matrix(const MatrixType &M,
 
 //! read matrix data into an Eigen::Matrix \a filename
 template <class ValueType = default_type>
-Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> load_matrix(const std::string &filename) {
-  if (Path::has_suffix(std::filesystem::path(filename), {"npy", ".NPY"}))
+Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> load_matrix(const std::filesystem::path &filename) {
+  if (Path::has_suffix(filename, {"npy", ".NPY"}))
     return File::NPY::load_matrix<ValueType>(filename);
   else
     return load_matrix_text<ValueType>(filename);
 }
 
 //! read matrix data from \a filename into an Eigen::Tranform class
-template <class VectorType> inline transform_type load_transform(const std::string &filename, VectorType &centre) {
-  DEBUG("loading transform file \"" + filename + "\"...");
+template <class VectorType>
+inline transform_type load_transform(const std::filesystem::path &filename, VectorType &centre) {
+  DEBUG("loading transform file \"" + filename.string() + "\"...");
 
   std::vector<std::string> comments;
   const std::vector<std::vector<default_type>> V = load_matrix_2D_vector<>(filename, &comments);
 
   if (V.empty())
-    throw Exception("transform in file " + filename + " is empty");
+    throw Exception("transform in file " + filename.string() + " is empty");
 
   if (V[0].size() != 4)
-    throw Exception("transform in file " + filename + " is invalid: does not contain 4 columns.");
+    throw Exception("transform in file " + filename.string() + " is invalid: does not contain 4 columns.");
 
   if (V.size() != 3 && V.size() != 4)
-    throw Exception("transform in file " + filename + " is invalid: must contain either 3 or 4 rows.");
+    throw Exception("transform in file " + filename.string() + " is invalid: must contain either 3 or 4 rows.");
 
   transform_type M;
   for (ssize_t i = 0; i < 3; i++)
@@ -181,14 +184,14 @@ template <class VectorType> inline transform_type load_transform(const std::stri
         elements = split(strip(line.substr(key_legacy.size())), " ,;\t", true);
       if (!elements.empty()) {
         if (elements.size() != 3)
-          throw Exception("could not parse centre in transformation file " + filename + ": " +
+          throw Exception("could not parse centre in transformation file " + filename.string() + ": " +
                           strip(line.substr(key.size())));
         try {
           centre[0] = to<default_type>(elements[0]);
           centre[1] = to<default_type>(elements[1]);
           centre[2] = to<default_type>(elements[2]);
         } catch (...) {
-          throw Exception("File \"" + filename + "\" contains non-numerical data in centre: " + //
+          throw Exception("File \"" + filename.string() + "\" contains non-numerical data in centre: " + //
                           strip(line.substr(key.size())));
         }
         break;
@@ -199,17 +202,17 @@ template <class VectorType> inline transform_type load_transform(const std::stri
   return M;
 }
 
-inline transform_type load_transform(const std::string &filename) {
+inline transform_type load_transform(const std::filesystem::path &filename) {
   Eigen::VectorXd c;
   return load_transform(filename, c);
 }
 
 //! write the transform \a M to file
 inline void save_transform(const transform_type &M,
-                           const std::string &filename,
+                           const std::filesystem::path &filename,
                            const KeyValues &keyvals = KeyValues(),
                            const bool add_to_command_history = true) {
-  DEBUG("saving transform to file \"" + filename + "\"...");
+  DEBUG("saving transform to file \"" + filename.string() + "\"...");
   File::OFStream out(filename);
   File::KeyValue::write(out, keyvals, "# ", add_to_command_history);
   const char d(Path::delimiter(filename));
@@ -221,7 +224,7 @@ inline void save_transform(const transform_type &M,
 template <class Derived>
 inline void save_transform(const transform_type &M,
                            const Eigen::MatrixBase<Derived> &centre,
-                           const std::string &filename,
+                           const std::filesystem::path &filename,
                            const KeyValues &keyvals = KeyValues(),
                            const bool add_to_command_history = true) {
   if (centre.rows() != 3 or centre.cols() != 1)
@@ -237,10 +240,10 @@ inline void save_transform(const transform_type &M,
 //! write the vector \a V to file
 template <class VectorType>
 void save_vector(const VectorType &V,
-                 const std::string &filename,
+                 const std::filesystem::path &filename,
                  const KeyValues &keyvals = KeyValues(),
                  const bool add_to_command_history = true) {
-  if (Path::has_suffix(std::filesystem::path(filename), {".npy", ".NPY"}))
+  if (Path::has_suffix(filename, {".npy", ".NPY"}))
     File::NPY::save_vector(V, filename);
   else
     save_vector_text(V, filename, keyvals, add_to_command_history);
@@ -248,12 +251,12 @@ void save_vector(const VectorType &V,
 
 //! read the vector data from \a filename
 template <class ValueType = default_type>
-Eigen::Matrix<ValueType, Eigen::Dynamic, 1> load_vector(const std::string &filename) {
+Eigen::Matrix<ValueType, Eigen::Dynamic, 1> load_vector(const std::filesystem::path &filename) {
   auto vec = load_matrix<ValueType>(filename);
   if (vec.cols() == 1)
     return vec.col(0);
   if (vec.rows() > 1)
-    throw Exception("file \"" + filename + "\" contains 2D matrix, not 1D vector");
+    throw Exception("file \"" + filename.string() + "\" contains 2D matrix, not 1D vector");
   return vec.row(0);
 }
 

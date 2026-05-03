@@ -111,12 +111,12 @@ public:
 
   void commit();
 
-  void set_fixel_directory_output(const std::string &path) { fixel_directory_path = path; }
-  void set_index_output(const std::string &path) { index_path = path; }
-  void set_directions_output(const std::string &path) { dir_path = path; }
-  void set_afd_output(const std::string &path) { afd_path = path; }
-  void set_peak_amp_output(const std::string &path) { peak_amp_path = path; }
-  void set_disp_output(const std::string &path) { disp_path = path; }
+  void set_fixel_directory_output(const std::filesystem::path &path) { fixel_directory_path = path; }
+  void set_index_output(const std::filesystem::path &path) { index_path = path; }
+  void set_directions_output(const std::filesystem::path &path) { dir_path = path; }
+  void set_afd_output(const std::filesystem::path &path) { afd_path = path; }
+  void set_peak_amp_output(const std::filesystem::path &path) { peak_amp_path = path; }
+  void set_disp_output(const std::filesystem::path &path) { disp_path = path; }
 
   bool operator()(const FOD_lobes &);
 
@@ -145,7 +145,7 @@ private:
   };
 
   Header H;
-  std::string fixel_directory_path, index_path, dir_path, afd_path, peak_amp_path, disp_path;
+  std::filesystem::path fixel_directory_path, index_path, dir_path, afd_path, peak_amp_path, disp_path;
   std::vector<Primitive_FOD_lobes> lobes;
   index_type fixel_count;
   index_type max_per_voxel;
@@ -298,13 +298,13 @@ void run() {
 
   auto opt = get_options("afd");
   if (!opt.empty())
-    receiver.set_afd_output(opt[0][0]);
+    receiver.set_afd_output(std::filesystem::path(opt[0][0]));
   opt = get_options("peak_amp");
   if (!opt.empty())
-    receiver.set_peak_amp_output(opt[0][0]);
+    receiver.set_peak_amp_output(std::filesystem::path(opt[0][0]));
   opt = get_options("disp");
   if (!opt.empty())
-    receiver.set_disp_output(opt[0][0]);
+    receiver.set_disp_output(std::filesystem::path(opt[0][0]));
 
   opt = get_options("mask");
   Image<float> mask;

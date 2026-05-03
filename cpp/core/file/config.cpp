@@ -55,9 +55,9 @@ void Config::init() {
     DEBUG(std::string("No config file found at \"") + sysconf_path.string() + "\"");
   }
 
-  std::filesystem::path path = (Path::home() / MRTRIX_USER_CONFIG_FILE);
+  std::filesystem::path path = (std::filesystem::path(Path::home()) / MRTRIX_USER_CONFIG_FILE);
   if (std::filesystem::is_regular_file(path)) {
-    INFO("reading config file \"" + path + "\"...");
+    INFO("reading config file \"" + path.string() + "\"...");
     try {
       KeyValue::Reader kv(path);
       while (kv.next()) {
@@ -66,7 +66,7 @@ void Config::init() {
     } catch (...) {
     }
   } else {
-    DEBUG("No config file found at \"" + path + "\"");
+    DEBUG("No config file found at \"" + path.string() + "\"");
   }
 
   auto opt = App::get_options("config");

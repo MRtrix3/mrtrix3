@@ -81,7 +81,8 @@ using Stats::PermTest::count_matrix_type;
 
 class SubjectVectorImport : public SubjectDataImportBase {
 public:
-  SubjectVectorImport(const std::string &path) : SubjectDataImportBase(path), data(File::Matrix::load_vector(path)) {}
+  SubjectVectorImport(const std::filesystem::path &path)
+      : SubjectDataImportBase(path), data(File::Matrix::load_vector(path)) {}
 
   void operator()(matrix_type::RowXpr row) const override {
     assert(index_type(row.size()) == size());
@@ -117,8 +118,9 @@ void run() {
     num_elements = importer[0]->size();
     for (index_type i = 0; i != importer.size(); ++i) {
       if (importer[i]->size() != num_elements)
-        throw Exception("Subject file \"" + importer[i]->name() + "\" contains incorrect number of elements (" +
-                        str(importer[i]) + "; expected " + str(num_elements) + ")");
+        throw Exception("Subject file \"" + importer[i]->name().string() +
+                        "\" contains incorrect number of elements (" + str(importer[i]) + "; expected " +
+                        str(num_elements) + ")");
     }
     data.resize(num_inputs, num_elements);
     for (index_type subject = 0; subject != num_inputs; subject++)

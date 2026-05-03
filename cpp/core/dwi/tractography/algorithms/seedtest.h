@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <filesystem>
+
 #include "dwi/tractography/tracking/method.h"
 #include "dwi/tractography/tracking/shared.h"
 #include "dwi/tractography/tracking/types.h"
@@ -29,7 +31,7 @@ class Seedtest : public MethodBase {
 public:
   class Shared : public SharedBase {
   public:
-    Shared(const std::string &diff_path, DWI::Tractography::Properties &property_set)
+    Shared(const std::filesystem::path &diff_path, DWI::Tractography::Properties &property_set)
         : SharedBase(diff_path, property_set) {
       set_step_and_angle(1.0f, 90.0f, false);
       min_num_points_preds = min_num_points_postds = 1;

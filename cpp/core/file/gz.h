@@ -83,27 +83,27 @@ public:
     assert(gz);
     z_off_t pos = gzseek(gz, offset, SEEK_SET);
     if (pos < 0)
-      throw Exception("error seeking in GZ file \"" + filename.string() + "\": " + error());
+      throw Exception("error seeking in GZ file \"" + filepath.string() + "\": " + error());
   }
 
   int read(char *s, size_t n) {
     assert(gz);
     int n_read = gzread(gz, s, n);
     if (n_read < 0)
-      throw Exception("error uncompressing GZ file \"" + filename.string() + "\": " + error());
+      throw Exception("error uncompressing GZ file \"" + filepath.string() + "\": " + error());
     return n_read;
   }
 
   void write(const char *s, size_t n) {
     assert(gz);
     if (gzwrite(gz, s, n) <= 0)
-      throw Exception("error writing to GZ file \"" + filename.string() + "\": " + error());
+      throw Exception("error writing to GZ file \"" + filepath.string() + "\": " + error());
   }
 
   void write(const std::string &s) {
     assert(gz);
     if (gzputs(gz, s.c_str()) < 0)
-      throw Exception("error writing to GZ file \"" + filename.string() + "\": " + error());
+      throw Exception("error writing to GZ file \"" + filepath.string() + "\": " + error());
   }
 
   std::string getline() {
@@ -115,7 +115,7 @@ public:
       if (c < 0) {
         if (eof())
           break;
-        throw Exception("error uncompressing GZ file \"" + filename.string() + "\": " + error());
+        throw Exception("error uncompressing GZ file \"" + filepath.string() + "\": " + error());
       }
       string += char(c);
     } while (c != '\n');
@@ -127,7 +127,7 @@ public:
   template <typename T> T get() {
     T val;
     if (read(&val, sizeof(T)) != sizeof(T))
-      throw Exception("error uncompressing GZ file \"" + filename.string() + "\": " + error());
+      throw Exception("error uncompressing GZ file \"" + filepath.string() + "\": " + error());
     return val;
   }
 
@@ -138,7 +138,7 @@ public:
 
   template <typename T> T *get(T *buf, size_t n) {
     if (read(buf, n * sizeof(T)) != n * sizeof(T))
-      throw Exception("error uncompressing GZ file \"" + filename.string() + "\": " + error());
+      throw Exception("error uncompressing GZ file \"" + filepath.string() + "\": " + error());
     return buf;
   }
 

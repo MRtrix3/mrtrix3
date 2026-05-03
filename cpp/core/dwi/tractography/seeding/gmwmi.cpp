@@ -14,12 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "dwi/tractography/seeding/gmwmi.h"
+#include <filesystem>
+
 #include "dwi/tractography/rng.h"
+#include "dwi/tractography/seeding/gmwmi.h"
 
 namespace MR::DWI::Tractography::Seeding {
 
-GMWMI::GMWMI(const std::string &in, const std::string &anat_path)
+GMWMI::GMWMI(const std::filesystem::path &in, const std::filesystem::path &anat_path)
     : Base(in, "GM-WM interface", MAX_TRACKING_SEED_ATTEMPTS_GMWMI),
       GMWMI_5TT_Wrapper(anat_path),
       ACT::GMWMI_finder(anat_data),

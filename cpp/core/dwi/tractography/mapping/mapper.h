@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <filesystem>
+
 #include "image.h"
 #include "thread_queue.h"
 #include "transform.h"
@@ -324,12 +326,12 @@ public:
       image_plugin.reset(that.image_plugin->clone());
   }
 
-  void add_scalar_image(const std::string &);
+  void add_scalar_image(const std::filesystem::path &);
   void set_backtrack();
-  void add_fod_image(const std::string &);
+  void add_fod_image(const std::filesystem::path &);
   void add_twdfc_static_image(Image<float> &);
   void add_twdfc_dynamic_image(Image<float> &, const std::vector<float> &, const ssize_t);
-  void add_vector_data(const std::string &);
+  void add_vector_data(const std::filesystem::path &);
 
 protected:
   const contrast_t contrast;

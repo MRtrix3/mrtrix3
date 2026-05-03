@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <filesystem>
+
 #include "app.h"
 #include "dwi/directions/predefined.h"
 #include "dwi/gradient.h"
@@ -70,10 +72,10 @@ public:
       }
       opt = get_options("filter");
       if (!opt.empty())
-        init_filter = File::Matrix::load_vector(opt[0][0]);
+        init_filter = File::Matrix::load_vector(std::filesystem::path(opt[0][0]));
       opt = get_options("directions");
       if (!opt.empty())
-        HR_dirs = File::Matrix::load_matrix(opt[0][0]);
+        HR_dirs = File::Matrix::load_matrix(std::filesystem::path(opt[0][0]));
       opt = get_options("neg_lambda");
       if (!opt.empty())
         neg_lambda = opt[0][0];
@@ -88,9 +90,9 @@ public:
         niter = opt[0][0];
     }
 
-    void set_response(const std::string &path) {
-      INFO("loading response function from file \"" + path + "\"");
-      set_response(File::Matrix::load_vector(path));
+    void set_response(const std::filesystem::path &path) {
+      INFO("loading response function from file \"" + path.string() + "\"");
+      set_response(File::Matrix::load_vector(path.string()));
     }
 
     template <class Derived> void set_response(const Eigen::MatrixBase<Derived> &in) {

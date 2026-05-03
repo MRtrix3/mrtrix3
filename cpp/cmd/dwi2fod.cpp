@@ -253,7 +253,7 @@ void run() {
     DWI::SDeconv::CSD::Shared shared(header_in);
     shared.parse_cmdline_options();
     try {
-      shared.set_response(argument[2]);
+      shared.set_response(std::filesystem::path(argument[2]));
     } catch (Exception &e) {
       throw Exception(e, "CSD algorithm expects second argument to be the input response function file");
     }
@@ -280,15 +280,15 @@ void run() {
     shared.parse_cmdline_options();
 
     const size_t num_tissues = (argument.size() - 2) / 2;
-    std::vector<std::string> response_paths;
-    std::vector<std::string> odf_paths;
+    std::vector<std::string> response_paths_str;
+    std::vector<std::filesystem::path> odf_paths;
     for (size_t i = 0; i < num_tissues; ++i) {
-      response_paths.push_back(argument[i * 2 + 2]);
-      odf_paths.push_back(argument[i * 2 + 3]);
+      response_paths_str.push_back(argument[i * 2 + 2]);
+      odf_paths.push_back(std::filesystem::path(argument[i * 2 + 3]));
     }
 
     try {
-      shared.set_responses(response_paths);
+      shared.set_responses(response_paths_str);
     } catch (Exception &e) {
       throw Exception(
           e, "MSMT_CSD algorithm expects the first file in each argument pair to be an input response function file");
@@ -301,7 +301,7 @@ void run() {
     std::vector<Image<float>> odfs;
     for (size_t i = 0; i < num_tissues; ++i) {
       header_out.size(3) = Math::SH::NforL(shared.lmax[i]);
-      odfs.push_back(Image<float>(Image<float>::create(odf_paths[i], header_out)));
+      odfs.push_back(Image<float>(Image<float>::create(odf_paths[i].string(), header_out)));
     }
 
     Image<float> dwi_modelled;

@@ -192,7 +192,7 @@ void execute(Image<node_t> &node_image, const node_t max_node_index, const std::
 
   opt = get_options("out_assignments");
   if (!opt.empty())
-    connectome.write_assignments(opt[0][0]);
+    connectome.write_assignments(std::filesystem::path(opt[0][0]));
 }
 
 void run() {

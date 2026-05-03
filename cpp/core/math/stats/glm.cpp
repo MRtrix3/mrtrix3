@@ -16,6 +16,8 @@
 
 #include "math/stats/glm.h"
 
+#include <filesystem>
+
 #include "debug.h"
 #include "file/matrix.h"
 #include "math/betainc.h"
@@ -106,7 +108,7 @@ index_array_type load_variance_groups(const index_type num_inputs) {
   if (opt.empty())
     return index_array_type();
   try {
-    auto data = File::Matrix::load_vector<index_type>(opt[0][0]);
+    auto data = File::Matrix::load_vector<index_type>(std::filesystem::path(opt[0][0]));
     if (index_type(data.size()) != num_inputs)
       throw Exception("Number of entries in variance group file \"" + std::string(opt[0][0]) + "\"" + //
                       " (" + str(data.size()) + ")" +                                                 //
@@ -136,14 +138,14 @@ index_array_type load_variance_groups(const index_type num_inputs) {
   }
 }
 
-std::vector<Hypothesis> load_hypotheses(const std::string &file_path) {
+std::vector<Hypothesis> load_hypotheses(const std::filesystem::path &file_path) {
   std::vector<Hypothesis> hypotheses;
-  const matrix_type contrast_matrix = File::Matrix::load_matrix(file_path);
+  const matrix_type contrast_matrix = File::Matrix::load_matrix(file_path.string());
   for (index_type row = 0; row != index_type(contrast_matrix.rows()); ++row)
     hypotheses.emplace_back(Hypothesis(contrast_matrix.row(row), row));
   auto opt = App::get_options("ftests");
   if (!opt.empty()) {
-    const matrix_type ftest_matrix = File::Matrix::load_matrix(opt[0][0]);
+    const matrix_type ftest_matrix = File::Matrix::load_matrix(std::filesystem::path(opt[0][0]));
     if (ftest_matrix.cols() != contrast_matrix.rows())
       throw Exception(std::string("Number of columns in F-test matrix") +   //
                       " (" + str(ftest_matrix.cols()) + ")" +               //

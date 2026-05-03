@@ -56,7 +56,7 @@ public:
         lmax = parse_ints<uint32_t>(opt[0][0]);
       opt = get_options("directions");
       if (!opt.empty())
-        HR_dirs = File::Matrix::load_matrix(opt[0][0]);
+        HR_dirs = File::Matrix::load_matrix(std::filesystem::path(opt[0][0]));
       opt = get_options("norm_lambda");
       if (!opt.empty())
         solution_min_norm_regularisation = opt[0][0];

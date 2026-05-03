@@ -40,8 +40,8 @@ void usage() {
 void run() {
   double tol = argument[2];
 
-  Eigen::MatrixXd dir1 = File::Matrix::load_matrix(argument[0]);
-  Eigen::MatrixXd dir2 = File::Matrix::load_matrix(argument[1]);
+  Eigen::MatrixXd dir1 = File::Matrix::load_matrix(std::filesystem::path(argument[0]));
+  Eigen::MatrixXd dir2 = File::Matrix::load_matrix(std::filesystem::path(argument[1]));
 
   if (dir1.cols() != dir2.cols())
     throw Exception("number of columns is not the same");

@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <filesystem>
+
 #include "app.h"
 #include "dwi/shells.h"
 #include "file/config.h"
@@ -91,7 +93,9 @@ template <class MatrixType> default_type condition_number_for_lmax(const MatrixT
  * vectors into the scanner frame of reference, and may also involve
  * re-ordering and/or inverting of the vector elements to match the
  * re-ordering performed by MRtrix for non-axial scans. */
-Eigen::MatrixXd load_bvecs_bvals(const Header &header, const std::string &bvecs_path, const std::string &bvals_path);
+Eigen::MatrixXd load_bvecs_bvals(const Header &header,
+                                 const std::filesystem::path &bvecs_path,
+                                 const std::filesystem::path &bvals_path);
 
 //! export gradient table in FSL format (bvecs/bvals)
 /*! This will take the gradient table information from a header and export it
@@ -100,7 +104,7 @@ Eigen::MatrixXd load_bvecs_bvals(const Header &header, const std::string &bvecs_
  * image space, and then to compensate for the fact that FSL defines its vectors
  * with regards to the data strides in the image file.
  */
-void save_bvecs_bvals(const Header &, const std::string &, const std::string &);
+void save_bvecs_bvals(const Header &, const std::filesystem::path &, const std::filesystem::path &);
 
 namespace {
 template <class MatrixType> std::string scheme2str(const MatrixType &G) {

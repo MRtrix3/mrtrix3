@@ -95,7 +95,7 @@ void run() {
       Fixel::copy_directions_file(template_fixel_directory, output_fixel_directory);
     }
 
-    fc_output_data = Image<value_type>::create((output_fixel_directory / opt[0][2]),
+    fc_output_data = Image<value_type>::create((std::filesystem::path(output_fixel_directory) / std::string(opt[0][2])),
                                                Fixel::data_header_from_index(fixel_template_index));
   }
 

@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <filesystem>
 #include <map>
 #include <string>
 
@@ -23,8 +24,6 @@
 #include "types.h"
 
 #include "connectome/connectome.h"
-
-#include <filesystem>
 
 namespace MR::Connectome {
 
@@ -73,8 +72,8 @@ class LUT : public std::multimap<node_t, LUT_node> {
 public:
   using map_type = std::multimap<node_t, LUT_node>;
   LUT() : exclusive(true) {}
-  LUT(const std::string &);
-  void load(const std::string &);
+  LUT(const std::filesystem::path &);
+  void load(const std::filesystem::path &);
   bool is_exclusive() const { return exclusive; }
 
 private:

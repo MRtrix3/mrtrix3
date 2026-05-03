@@ -69,7 +69,7 @@ void run() {
   const float angular_threshold = get_option_value("angle", DEFAULT_ANGLE_THRESHOLD);
   const float angular_threshold_dp = cos(angular_threshold * (Math::pi / 180.0));
 
-  const std::string input_file(input_data_path);
+  std::filesystem::path input_file = input_data_path;
   if (std::filesystem::is_directory(input_file))
     throw Exception("please input the specific fixel data file to be converted"
                     " (not the fixel directory)");

@@ -74,9 +74,8 @@ inline bool has_suffix(const std::filesystem::path &name, const std::vector<std:
       suffix_list.begin(), suffix_list.end(), [&](const std::string &suffix) { return has_suffix(name, suffix); });
 }
 
-inline bool is_mrtrix_image(const std::string &name) {
-  return strcmp(name.c_str(), std::string("-").c_str()) == 0 ||
-         Path::has_suffix(std::filesystem::path(name), {".mif", ".mih", ".mif.gz"});
+inline bool is_mrtrix_image(const std::filesystem::path &path) {
+  return path.native() == "-" || Path::has_suffix(path, {".mif", ".mih", ".mif.gz"});
 }
 
 inline std::string home() {
@@ -86,10 +85,10 @@ inline std::string home() {
   return home;
 }
 
-inline char delimiter(const std::string &filename) {
-  if (Path::has_suffix(std::filesystem::path(filename), ".tsv"))
+inline char delimiter(const std::filesystem::path &path) {
+  if (Path::has_suffix(path, ".tsv"))
     return '\t';
-  else if (Path::has_suffix(std::filesystem::path(filename), ".csv"))
+  else if (Path::has_suffix(path, ".csv"))
     return ',';
   else
     return ' ';

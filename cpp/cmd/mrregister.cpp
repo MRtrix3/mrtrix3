@@ -299,7 +299,7 @@ void run() {
   INFO("maximum input lmax: " + str(max_mc_image_lmax));
 
   opt = get_options("transformed");
-  std::vector<std::string> im1_transformed_paths;
+  std::vector<std::filesystem::path> im1_transformed_paths;
   if (!opt.empty()) {
     if (opt.size() > n_images)
       throw Exception("number of -transformed images exceeds number of contrasts");
@@ -309,12 +309,13 @@ void run() {
       const std::filesystem::path output_path{opt[c][0]};
       Registration::check_image_output(output_path, input2[c]);
       im1_transformed_paths.push_back(output_path);
-      INFO(input1[c].name() + ", transformed to space of image2, will be written to " + im1_transformed_paths[c]);
+      INFO(input1[c].name() + ", transformed to space of image2, will be written to " +
+           im1_transformed_paths[c].string());
     }
   }
 
-  std::vector<std::string> input1_midway_transformed_paths;
-  std::vector<std::string> input2_midway_transformed_paths;
+  std::vector<std::filesystem::path> input1_midway_transformed_paths;
+  std::vector<std::filesystem::path> input2_midway_transformed_paths;
   opt = get_options("transformed_midway");
   if (!opt.empty()) {
     if (opt.size() > n_images)
@@ -327,11 +328,11 @@ void run() {
       Registration::check_image_output(first_output_path, input2[c]);
       input1_midway_transformed_paths.push_back(first_output_path);
       INFO(input1[c].name() + ", transformed to midway space, will be written to " +
-           input1_midway_transformed_paths[c]);
+           input1_midway_transformed_paths[c].string());
       Registration::check_image_output(second_output_path, input1[c]);
       input2_midway_transformed_paths.push_back(second_output_path);
       INFO(input2[c].name() + ", transformed to midway space, will be written to " +
-           input2_midway_transformed_paths[c]);
+           input2_midway_transformed_paths[c].string());
     }
   }
 
@@ -690,13 +691,13 @@ void run() {
     if (!Path::is_mrtrix_image(nl_init_path) &&                                         //
         !(Path::has_suffix(std::filesystem::path(nl_init_path), {".nii", ".nii.gz"}) && //
           File::Config::get_bool("NIfTIAutoLoadJSON", false) &&                         //
-          std::filesystem::exists(File::NIfTI::get_json_path(opt[0][0])))) {
+          std::filesystem::exists(File::NIfTI::get_json_path(std::filesystem::path(opt[0][0]))))) {
       WARN("nl_init input requires warp_full in original .mif/.mih file format"
            " or in NIfTI file format with associated JSON."
            " Converting to other file formats may remove linear transformations stored in the image header.");
     }
 
-    Image<default_type> input_warps = Image<default_type>::open(nl_init_filename);
+    Image<default_type> input_warps = Image<default_type>::open(nl_init_path);
     if (input_warps.ndim() != 5)
       throw Exception("non-linear initialisation input is not 5D."
                       " Input must be from previous non-linear output");
@@ -1017,13 +1018,13 @@ void run() {
       Registration::Transform::Affine identity_transform;
       nl_registration.run(identity_transform, images1, images2, im1_mask, im2_mask);
     }
-    if (!warp_full_filename.empty()) {
+    if (!warp_full_path.empty()) {
       // TODO add affine parameters to comments too?
       Header output_header = nl_registration.get_output_warps_header();
       nl_registration.write_params_to_header(output_header);
       nl_registration.write_linear_to_header(output_header);
       output_header.datatype() = DataType::from_command_line(DataType::Float32);
-      auto output_warps = Image<float>::create(warp_full_filename, output_header);
+      auto output_warps = Image<float>::create(warp_full_path.string(), output_header);
       nl_registration.get_output_warps(output_warps);
     }
 
@@ -1073,14 +1074,15 @@ void run() {
     }
 
     for (size_t idx = 0; idx < im1_transformed_paths.size(); idx++) {
-      CONSOLE("... " + im1_transformed_paths[idx]);
+      CONSOLE("... " + im1_transformed_paths[idx].string());
       {
         // LogLevelLatch log_level (0);
         Image<value_type> im1_image = Image<value_type>::open(input1[idx].name());
 
         Header transformed_header(input2[idx]);
         transformed_header.datatype() = DataType::from_command_line(DataType::Float32);
-        Image<value_type> im1_transformed = Image<value_type>::create(im1_transformed_paths[idx], transformed_header);
+        Image<value_type> im1_transformed =
+            Image<value_type>::create(im1_transformed_paths[idx].string(), transformed_header);
 
         const size_t nvols = im1_image.ndim() == 3 ? 1 : im1_image.size(3);
         const bool reorient_output = !reorientation_forbidden && (nvols > 1) && SH::NforL(SH::LforN(nvols)) == nvols;
@@ -1141,7 +1143,7 @@ void run() {
     }
 
     for (size_t idx = 0; idx < input1_midway_transformed_paths.size(); idx++) {
-      CONSOLE("... " + input1_midway_transformed_paths[idx]);
+      CONSOLE("... " + input1_midway_transformed_paths[idx].string());
       {
         // LogLevelLatch log_level (0);
         Image<value_type> im1_image = Image<value_type>::open(input1[idx].name());
@@ -1153,7 +1155,7 @@ void run() {
         const bool reorient_output = !reorientation_forbidden && (nvols > 1) && SH::NforL(SH::LforN(nvols)) == nvols;
 
         if (do_nonlinear) {
-          auto im1_midway = Image<default_type>::create(input1_midway_transformed_paths[idx], midway_header);
+          auto im1_midway = Image<default_type>::create(input1_midway_transformed_paths[idx].string(), midway_header);
           Filter::warp<Interp::Cubic>(im1_image, im1_midway, im1_deform_field, out_of_bounds_value);
           if (reorient_output)
             Registration::Transform::reorient_warp(
@@ -1162,7 +1164,7 @@ void run() {
                 im1_deform_field,
                 Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300()).transpose());
         } else if (do_affine) {
-          auto im1_midway = Image<default_type>::create(input1_midway_transformed_paths[idx], midway_header);
+          auto im1_midway = Image<default_type>::create(input1_midway_transformed_paths[idx].string(), midway_header);
           Filter::reslice<Interp::Cubic>(
               im1_image, im1_midway, affine.get_transform_half(), Adapter::AutoOverSample, out_of_bounds_value);
           if (reorient_output)
@@ -1173,7 +1175,7 @@ void run() {
                 affine.get_transform_half(),
                 Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300()).transpose());
         } else { // rigid
-          auto im1_midway = Image<default_type>::create(input1_midway_transformed_paths[idx], midway_header);
+          auto im1_midway = Image<default_type>::create(input1_midway_transformed_paths[idx].string(), midway_header);
           Filter::reslice<Interp::Cubic>(
               im1_image, im1_midway, rigid.get_transform_half(), Adapter::AutoOverSample, out_of_bounds_value);
           if (reorient_output)
@@ -1195,7 +1197,7 @@ void run() {
     }
 
     for (size_t idx = 0; idx < input2_midway_transformed_paths.size(); idx++) {
-      CONSOLE("... " + input2_midway_transformed_paths[idx]);
+      CONSOLE("... " + input2_midway_transformed_paths[idx].string());
       {
         // LogLevelLatch log_level (0);
         Image<value_type> im2_image = Image<value_type>::open(input2[idx].name());
@@ -1208,7 +1210,7 @@ void run() {
         const bool reorient_output = !reorientation_forbidden && (nvols > 1) && !(val - (int)val);
 
         if (do_nonlinear) {
-          auto im2_midway = Image<default_type>::create(input2_midway_transformed_paths[idx], midway_header);
+          auto im2_midway = Image<default_type>::create(input2_midway_transformed_paths[idx].string(), midway_header);
           Filter::warp<Interp::Cubic>(im2_image, im2_midway, im2_deform_field, out_of_bounds_value);
           if (reorient_output)
             Registration::Transform::reorient_warp(
@@ -1217,7 +1219,7 @@ void run() {
                 im2_deform_field,
                 Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300()).transpose());
         } else if (do_affine) {
-          auto im2_midway = Image<default_type>::create(input2_midway_transformed_paths[idx], midway_header);
+          auto im2_midway = Image<default_type>::create(input2_midway_transformed_paths[idx].string(), midway_header);
           Filter::reslice<Interp::Cubic>(
               im2_image, im2_midway, affine.get_transform_half_inverse(), Adapter::AutoOverSample, out_of_bounds_value);
           if (reorient_output)
@@ -1228,7 +1230,7 @@ void run() {
                 affine.get_transform_half_inverse(),
                 Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300()).transpose());
         } else { // rigid
-          auto im2_midway = Image<default_type>::create(input2_midway_transformed_paths[idx], midway_header);
+          auto im2_midway = Image<default_type>::create(input2_midway_transformed_paths[idx].string(), midway_header);
           Filter::reslice<Interp::Cubic>(
               im2_image, im2_midway, rigid.get_transform_half_inverse(), Adapter::AutoOverSample, out_of_bounds_value);
           if (reorient_output)

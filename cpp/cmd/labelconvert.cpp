@@ -96,7 +96,7 @@ void run() {
   auto in = H.get_image<node_t>();
 
   // Load the lookup tables
-  LUT lut_in(input_lut_path), lut_out(argument[2]);
+  LUT lut_in{input_lut_path}, lut_out{std::filesystem::path(argument[2])};
 
   // Build the mapping from input to output indices
   const auto mapping = get_lut_mapping(lut_in, lut_out);

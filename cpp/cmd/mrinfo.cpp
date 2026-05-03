@@ -348,14 +348,14 @@ void run() {
   if (json_keyval) {
     auto opt = get_options("json_keyval");
     assert(opt.size());
-    File::OFStream out(opt[0][0]);
+    File::OFStream out{std::filesystem::path(opt[0][0])};
     out << json_keyval->dump(4) << "\n";
   }
 
   if (json_all) {
     auto opt = get_options("json_all");
     assert(opt.size());
-    File::OFStream out(opt[0][0]);
+    File::OFStream out{std::filesystem::path(opt[0][0])};
     out << json_all->dump(4) << "\n";
   }
 }

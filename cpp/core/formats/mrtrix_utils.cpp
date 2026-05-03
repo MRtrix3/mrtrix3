@@ -92,12 +92,12 @@ bool next_keyvalue(File::GZ &gz, std::string &key, std::string &value) {
 
   size_t colon = line.find_first_of(':');
   if (colon == std::string::npos) {
-    INFO("malformed key/value entry (\"" + line + "\") in file \"" + gz.name() + "\" - ignored");
+    INFO("malformed key/value entry (\"" + line + "\") in file \"" + gz.name().string() + "\" - ignored");
   } else {
     key = strip(line.substr(0, colon));
     value = strip(line.substr(colon + 1));
     if (key.empty() || value.empty()) {
-      INFO("malformed key/value entry (\"" + line + "\") in file \"" + gz.name() + "\" - ignored");
+      INFO("malformed key/value entry (\"" + line + "\") in file \"" + gz.name().string() + "\" - ignored");
       key.clear();
       value.clear();
     }
@@ -130,7 +130,7 @@ void get_mrtrix_file_path(Header &H, const std::string &flag, std::string &fname
       throw Exception("invalid offset specified for embedded MRtrix image \"" + H.name() + "\"");
     fname = H.name();
   } else {
-    if (!std::filesystem::Path(fname).is_absolute())
+    if (!std::filesystem::path(fname).is_absolute())
       fname = (std::filesystem::path(H.name()).parent_path() / fname);
   }
 }

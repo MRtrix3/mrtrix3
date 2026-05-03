@@ -17,6 +17,7 @@
 #pragma once
 
 #include <atomic>
+#include <filesystem>
 
 #include "dwi/tractography/ACT/shared.h"
 #include "dwi/tractography/properties.h"
@@ -38,7 +39,7 @@ namespace MR::DWI::Tractography::Tracking {
 class SharedBase {
 
 public:
-  SharedBase(const std::string &diff_path, Properties &property_set);
+  SharedBase(const std::filesystem::path &diff_path, Properties &property_set);
 
   virtual ~SharedBase();
 

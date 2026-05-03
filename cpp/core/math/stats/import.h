@@ -42,7 +42,7 @@ namespace MR::Math::Stats {
  */
 class SubjectDataImportBase {
 public:
-  SubjectDataImportBase(const std::string &path) : path(path) {}
+  SubjectDataImportBase(const std::filesystem::path &path) : path(path) {}
   virtual ~SubjectDataImportBase() {}
 
   /*!
@@ -57,12 +57,12 @@ public:
    */
   virtual default_type operator[](const index_type index) const = 0;
 
-  const std::string &name() const { return path; }
+  const std::filesystem::path &name() const { return path; }
 
   virtual index_type size() const = 0;
 
 protected:
-  const std::string path;
+  const std::filesystem::path path;
 };
 //! @}
 
@@ -117,7 +117,7 @@ void CohortDataImport::initialise(const std::filesystem::path &listpath, const s
   //   text file is an attempt made to load all of those files
   std::vector<std::string> lines;
   {
-    std::ifstream ifs(listpath.c_str());
+    std::ifstream ifs(listpath);
     if (!ifs)
       throw Exception("Unable to open subject file list \"" + listpath.string() + "\"");
     std::string line;

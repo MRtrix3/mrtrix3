@@ -332,7 +332,7 @@ public:
     return true;
   }
 
-  void save(const std::string &path) { File::Matrix::save_vector(vector_data, path); }
+  void save(const std::filesystem::path &path) { File::Matrix::save_vector(vector_data, path); }
 
 private:
   vector_type vector_data;
@@ -340,11 +340,11 @@ private:
 
 class Receiver_NoStatistic : private ReceiverBase {
 public:
-  Receiver_NoStatistic(const std::string &path,
+  Receiver_NoStatistic(const std::filesystem::path &path,
                        const size_t num_tracks,
                        const DWI::Tractography::Properties &properties)
       : ReceiverBase(num_tracks) {
-    if (Path::has_suffix(std::filesystem::path(path), ".tsf")) {
+    if (Path::has_suffix(path, ".tsf")) {
       tsf.reset(new DWI::Tractography::ScalarWriter<value_type>(path, properties));
     } else {
       ascii.reset(new File::OFStream(path));
@@ -381,7 +381,7 @@ void execute_nostat(DWI::Tractography::Reader<value_type> &reader,
                     const DWI::Tractography::Properties &properties,
                     const size_t num_tracks,
                     Image<value_type> &image,
-                    const std::string &path) {
+                    const std::filesystem::path &path) {
   SamplerNonPrecise<InterpType> sampler(image, stat_tck::NONE, Image<value_type>());
   Receiver_NoStatistic receiver(path, num_tracks, properties);
   Thread::run_ordered_queue(reader,
@@ -397,7 +397,7 @@ void execute(DWI::Tractography::Reader<value_type> &reader,
              Image<value_type> &image,
              const stat_tck statistic,
              Image<value_type> &tdi,
-             const std::string &path) {
+             const std::filesystem::path &path) {
   SamplerType sampler(image, statistic, tdi);
   Receiver_Statistic receiver(num_tracks);
   Thread::run_ordered_queue(reader,

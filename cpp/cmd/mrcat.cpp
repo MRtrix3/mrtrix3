@@ -107,7 +107,7 @@ void run() {
   const size_t axis = get_option_value("axis", std::max(size_t(3), size_t(std::max(ssize_t(0), max_axis_nonunity))));
 
   Header header_out = concatenate(headers, axis, true);
-  header_out.name() = std::string(output_path);
+  header_out.name() = output_path.string();
   header_out.datatype() = DataType::from_command_line(header_out.datatype());
 
   if (header_out.intensity_offset() == 0.0 && header_out.intensity_scale() == 1.0 &&

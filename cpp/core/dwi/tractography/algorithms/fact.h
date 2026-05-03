@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <filesystem>
+
 #include "interp/masked.h"
 #include "interp/nearest.h"
 
@@ -32,7 +34,7 @@ class FACT : public MethodBase {
 public:
   class Shared : public SharedBase {
   public:
-    Shared(const std::string &diff_path, DWI::Tractography::Properties &property_set)
+    Shared(const std::filesystem::path &diff_path, DWI::Tractography::Properties &property_set)
         : SharedBase(diff_path, property_set), num_vec(source.size(3) / 3) {
 
       if (source.size(3) % 3)

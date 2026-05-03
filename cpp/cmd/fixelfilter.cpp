@@ -123,7 +123,7 @@ void run() {
                       "\" is not a valid fixel data file (does not match corresponding index image)");
 
     auto opt = get_options("matrix");
-    Fixel::Matrix::Reader matrix(opt[0][0]);
+    Fixel::Matrix::Reader matrix{std::filesystem::path(opt[0][0])};
 
     Image<index_type> index_image = index_header.get_image<index_type>();
     const size_t nfixels = Fixel::get_number_of_fixels(index_image);

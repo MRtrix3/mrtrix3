@@ -398,7 +398,7 @@ void run() {
 
   auto opt = get_options("json_import");
   if (!opt.empty())
-    File::JSON::load(header_out, opt[0][0]);
+    File::JSON::load(header_out, std::filesystem::path(opt[0][0]));
 
   opt = get_options("copy_properties");
   if (!opt.empty()) {
@@ -409,7 +409,7 @@ void run() {
         header_out.keyval() = source.keyval();
       } catch (...) {
         try {
-          File::JSON::load(header_out, opt[0][0]);
+          File::JSON::load(header_out, std::filesystem::path(opt[0][0]));
         } catch (...) {
           throw Exception("Unable to obtain header key-value entries from spec \"" + str(opt[0][0]) + "\"");
         }
@@ -550,5 +550,5 @@ void run() {
 
   opt = get_options("json_export");
   if (!opt.empty())
-    File::JSON::save(header_out, opt[0][0], output_path);
+    File::JSON::save(header_out, std::filesystem::path(opt[0][0]), output_path);
 }

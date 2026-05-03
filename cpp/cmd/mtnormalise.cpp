@@ -572,7 +572,7 @@ void run() {
 
   opt = get_options("check_factors");
   if (!opt.empty()) {
-    File::OFStream factors_output(opt[0][0]);
+    File::OFStream factors_output{std::filesystem::path(opt[0][0])};
     factors_output << balance_factors.transpose() << "\n";
   }
 

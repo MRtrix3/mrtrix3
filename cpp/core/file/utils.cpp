@@ -117,7 +117,7 @@ bool is_tempfile(const std::filesystem::path &name, const char *suffix) {
 std::string create_tempfile(int64_t size, const char *suffix) {
   DEBUG("creating temporary file of size " + str(size));
 
-  std::string filename((tmpfile_dir() / tmpfile_prefix()) + "XXXXXX.");
+  std::string filename((std::filesystem::path(tmpfile_dir()) / tmpfile_prefix()).string() + "XXXXXX.");
   const int rand_index = filename.size() - 7;
   if (suffix != nullptr)
     filename += suffix;

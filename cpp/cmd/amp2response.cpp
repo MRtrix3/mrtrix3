@@ -214,7 +214,7 @@ void run() {
 
   auto opt = get_options("directions");
   if (!opt.empty()) {
-    dirs_azel.push_back(File::Matrix::load_matrix(opt[0][0]));
+    dirs_azel.push_back(File::Matrix::load_matrix(std::filesystem::path(opt[0][0])));
     volumes.push_back(all_volumes(dirs_azel.size()));
   } else {
     auto hit = header.keyval().find("directions");

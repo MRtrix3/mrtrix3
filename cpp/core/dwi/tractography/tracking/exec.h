@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <filesystem>
+
 #include "dwi/directions/set.h"
 #include "dwi/tractography/rng.h"
 #include "dwi/tractography/roi.h"
@@ -44,8 +46,9 @@ namespace MR::DWI::Tractography::Tracking {
 template <class Method> class Exec {
 
 public:
-  static void
-  run(const std::string &diff_path, const std::string &destination, DWI::Tractography::Properties &properties) {
+  static void run(const std::filesystem::path &diff_path,
+                  const std::string &destination,
+                  DWI::Tractography::Properties &properties) {
 
     if (properties.find("seed_dynamic") == properties.end()) {
 

@@ -31,20 +31,20 @@
 
 namespace MR::File::JSON {
 
-void load(Header &H, const std::string &path) {
+void load(Header &H, const std::filesystem::path &path) {
   std::ifstream in(path);
   if (!in)
-    throw Exception("Error opening JSON file \"" + path + "\"");
+    throw Exception("Error opening JSON file \"" + path.string() + "\"");
   nlohmann::json json;
   try {
     in >> json;
   } catch (std::logic_error &e) {
-    throw Exception("Error parsing JSON file \"" + path + "\": " + e.what());
+    throw Exception("Error parsing JSON file \"" + path.string() + "\": " + e.what());
   }
   read(json, H, true);
 }
 
-void save(const Header &H, const std::string &json_path, const std::string &image_path) {
+void save(const Header &H, const std::filesystem::path &json_path, const std::filesystem::path &image_path) {
   nlohmann::json json;
   write(H, json, image_path);
   File::OFStream out(json_path);
@@ -244,10 +244,10 @@ void write(const KeyValues &keyval, nlohmann::json &json) {
   }
 }
 
-void write(const Header &header, nlohmann::json &json, const std::string &image_path) {
+void write(const Header &header, nlohmann::json &json, const std::filesystem::path &image_path) {
   Header H_adj(header);
   H_adj.name() = image_path;
-  if (!Path::has_suffix(std::filesystem::path(image_path), {".nii", ".nii.gz", ".img"})) {
+  if (!Path::has_suffix(image_path, {".nii", ".nii.gz", ".img"})) {
     write(H_adj.keyval(), json);
     return;
   }

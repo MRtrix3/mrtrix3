@@ -149,7 +149,7 @@ void run() {
 
     auto opt = get_options("dump");
     if (!opt.empty())
-      File::Matrix::save_vector(dump, opt[0][0]);
+      File::Matrix::save_vector(dump, std::filesystem::path(opt[0][0]));
   }
 
   if (get_options("ignorezero").empty() && (empty_streamlines || zero_length_streamlines)) {
@@ -237,7 +237,7 @@ void run() {
 
   opt = get_options("histogram");
   if (!opt.empty()) {
-    File::OFStream out(opt[0][0], std::ios_base::out | std::ios_base::trunc);
+    File::OFStream out{std::filesystem::path(opt[0][0]), std::ios_base::out | std::ios_base::trunc};
     out << "# " << App::command_history_string << "\n";
     if (!std::isfinite(step_size))
       step_size = 1.0F;

@@ -21,7 +21,7 @@
 namespace MR::Surface::FreeSurfer {
 
 void read_annot(const std::filesystem::path &path, label_vector_type &labels, Connectome::LUT &lut) {
-  std::ifstream in(path.c_str(), std::ios_base::in | std::ios_base::binary);
+  std::ifstream in(path, std::ios_base::in | std::ios_base::binary);
   if (!in)
     throw Exception("Error opening input file!");
 
@@ -111,7 +111,7 @@ void read_label(const std::filesystem::path &path, VertexList &vertices, Scalar 
   vertices.clear();
   scalar.resize(0);
 
-  std::ifstream in(path.c_str(), std::ios_base::in);
+  std::ifstream in(path, std::ios_base::in);
   if (!in)
     throw Exception("Error opening input file!");
 

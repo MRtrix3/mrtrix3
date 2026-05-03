@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <filesystem>
+
 #include "dwi/tractography/algorithms/calibrator.h"
 #include "dwi/tractography/tracking/method.h"
 #include "dwi/tractography/tracking/shared.h"
@@ -34,7 +36,7 @@ class iFOD1 : public MethodBase {
 public:
   class Shared : public SharedBase {
   public:
-    Shared(const std::string &diff_path, DWI::Tractography::Properties &property_set)
+    Shared(const std::filesystem::path &diff_path, DWI::Tractography::Properties &property_set)
         : SharedBase(diff_path, property_set),
           lmax(Math::SH::LforN(source.size(3))),
           max_trials(Defaults::max_trials_per_step),

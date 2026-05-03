@@ -64,12 +64,12 @@ public:
 
   track_t num_tracks() const { return contributions.size(); }
 
-  void output_non_contributing_streamlines(const std::string &) const;
+  void output_non_contributing_streamlines(const std::filesystem::path &) const;
 
   using ModelBase<Fixel>::mu;
 
 protected:
-  std::string tck_file_path;
+  std::filesystem::path tck_file_path;
   std::vector<TrackContribution *> contributions;
 
   using Fixel_map<Fixel>::accessor;
@@ -236,7 +236,8 @@ template <class Fixel> void Model<Fixel>::check_TD() {
   VAR(sum_from_tracks);
 }
 
-template <class Fixel> void Model<Fixel>::output_non_contributing_streamlines(const std::string &output_path) const {
+template <class Fixel>
+void Model<Fixel>::output_non_contributing_streamlines(const std::filesystem::path &output_path) const {
   Tractography::Properties p;
   Tractography::Reader<float> reader(tck_file_path, p);
   Tractography::Writer<float> writer(output_path, p);

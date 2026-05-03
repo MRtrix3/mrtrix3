@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cmath>
+#include <filesystem>
 
 #include "adapter/replicate.h"
 #include "algo/loop.h"
@@ -53,7 +54,7 @@ public:
     return (*this)(typename T::value_type(val));
   }
 
-  void from_file(const std::string &);
+  void from_file(const std::filesystem::path &);
 
   void finalize(const size_t num_volumes, const bool is_integer);
 

@@ -18,6 +18,7 @@
 
 #include <Eigen/Dense>
 #include <array>
+#include <filesystem>
 
 #include "app.h"
 #include "axes.h"
@@ -210,7 +211,7 @@ Eigen::MatrixXd transform_for_nifti_write(const MatrixType &pe_scheme, const Hea
 }
 
 namespace {
-template <class MatrixType> void __save(const MatrixType &PE, const std::string &path) {
+template <class MatrixType> void __save(const MatrixType &PE, const std::filesystem::path &path) {
   File::OFStream out(path);
   for (ssize_t row = 0; row != PE.rows(); ++row) {
     // Write phase-encode direction as integers; other information as floating-point
@@ -227,14 +228,14 @@ template <class MatrixType> void __save(const MatrixType &PE, const std::string 
 //   only if the output target image is a NIfTI, the output file name must have
 //   already been set
 template <class MatrixType, class HeaderType>
-void save(const MatrixType &PE, const HeaderType &header, const std::string &path) {
+void save(const MatrixType &PE, const HeaderType &header, const std::filesystem::path &path) {
   try {
     check(PE, header);
   } catch (Exception &e) {
-    throw Exception(e, "Cannot export phase-encoding table to file \"" + path + "\"");
+    throw Exception(e, "Cannot export phase-encoding table to file \"" + path.string() + "\"");
   }
 
-  if (Path::has_suffix(std::filesystem::path(header.name()), {".mgh", ".mgz", ".nii", ".nii.gz", ".img"})) {
+  if (Path::has_suffix(header.name(), {".mgh", ".mgz", ".nii", ".nii.gz", ".img"})) {
     __save(transform_for_nifti_write(PE, header), path);
   } else {
     __save(PE, path);
@@ -245,8 +246,8 @@ void save(const MatrixType &PE, const HeaderType &header, const std::string &pat
 template <class MatrixType, class HeaderType>
 void save_eddy(const MatrixType &PE,
                const HeaderType &header,
-               const std::string &config_path,
-               const std::string &index_path) {
+               const std::filesystem::path &config_path,
+               const std::filesystem::path &index_path) {
   Eigen::MatrixXd config;
   Eigen::Array<int, Eigen::Dynamic, 1> indices;
   scheme2eddy(transform_for_nifti_write(PE, header), config, indices);
@@ -258,7 +259,7 @@ void save_eddy(const MatrixType &PE,
 void export_commandline(const Header &);
 
 //! Load a phase-encoding scheme from a matrix text file
-template <class HeaderType> Eigen::MatrixXd load(const std::string &path, const HeaderType &header) {
+template <class HeaderType> Eigen::MatrixXd load(const std::filesystem::path &path, const HeaderType &header) {
   const Eigen::MatrixXd PE = File::Matrix::load_matrix(path);
   check(PE, header);
   // As with JSON import, need to query the header to discover if the
@@ -270,7 +271,8 @@ template <class HeaderType> Eigen::MatrixXd load(const std::string &path, const 
 
 //! Load a phase-encoding scheme from an EDDY-format config / indices file pair
 template <class HeaderType>
-Eigen::MatrixXd load_eddy(const std::string &config_path, const std::string &index_path, const HeaderType &header) {
+Eigen::MatrixXd
+load_eddy(const std::filesystem::path &config_path, const std::filesystem::path &index_path, const HeaderType &header) {
   const Eigen::MatrixXd config = File::Matrix::load_matrix(config_path);
   const Eigen::Array<int, Eigen::Dynamic, 1> indices = File::Matrix::load_vector<int>(index_path);
   const Eigen::MatrixXd PE = eddy2scheme(config, indices);

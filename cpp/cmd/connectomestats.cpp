@@ -180,7 +180,7 @@ void run() {
 
   for (index_type i = 1; i < importer.size(); ++i) {
     if (importer[i]->size() != importer[0]->size())
-      throw Exception("Size of connectome for subject " + str(i) + " (file \"" + importer[i]->name() +
+      throw Exception("Size of connectome for subject " + str(i) + " (file \"" + importer[i]->name().string() +
                       "\" does not match that of first subject");
   }
 

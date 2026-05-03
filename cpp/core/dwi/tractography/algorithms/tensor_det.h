@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <filesystem>
+
 // These lines are to silence deprecation warnings with Eigen & GCC v5
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
@@ -38,7 +40,7 @@ class Tensor_Det : public MethodBase {
 public:
   class Shared : public SharedBase {
   public:
-    Shared(const std::string &diff_path, DWI::Tractography::Properties &property_set)
+    Shared(const std::filesystem::path &diff_path, DWI::Tractography::Properties &property_set)
         : SharedBase(diff_path, property_set) {
 
       if (is_act() && act().backtrack())

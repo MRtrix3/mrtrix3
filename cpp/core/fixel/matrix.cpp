@@ -16,6 +16,8 @@
 
 #include "fixel/matrix.h"
 
+#include <filesystem>
+
 #include "app.h"
 #include "file/path.h"
 #include "file/utils.h"
@@ -230,35 +232,35 @@ InitMatrixWeighted generate_weighted(const std::string &track_filename,
   return connectivity_matrix;
 }
 
-template <class MatrixType> void Writer<MatrixType>::set_count_path(const std::string &path) {
+template <class MatrixType> void Writer<MatrixType>::set_count_path(const std::filesystem::path &path) {
   assert(!count_image.valid());
   count_image = Image<count_type>::create(path, MR::Fixel::data_header_from_nfixels(matrix.size()));
 }
 
-template <class MatrixType> void Writer<MatrixType>::set_extent_path(const std::string &path) {
+template <class MatrixType> void Writer<MatrixType>::set_extent_path(const std::filesystem::path &path) {
   assert(!extent_image.valid());
   extent_image = Image<connectivity_value_type>::create(path, MR::Fixel::data_header_from_nfixels(matrix.size()));
 }
 
-template <class MatrixType> void Writer<MatrixType>::save(const std::string &path) const {
+template <class MatrixType> void Writer<MatrixType>::save(const std::filesystem::path &path) const {
   if (std::filesystem::exists(path)) {
     if (std::filesystem::is_directory(path)) {
       if (!App::overwrite_files && (std::filesystem::is_regular_file((path / "index.mif")) ||
                                     std::filesystem::is_regular_file((path / "fixels.mif")) ||
                                     std::filesystem::is_regular_file((path / "values.mif"))))
-        throw Exception("Cannot create fixel-fixel connectivity matrix \"" + path +
+        throw Exception("Cannot create fixel-fixel connectivity matrix \"" + path.string() +
                         "\": "
                         "one or more files already exists (use -force to override)");
     } else {
       if (App::overwrite_files) {
-        std::filesystem::remove(std::filesystem::path(path));
+        std::filesystem::remove(path);
       } else {
-        throw Exception("Cannot create fixel-fixel connectivity matrix directory \"" + path +
+        throw Exception("Cannot create fixel-fixel connectivity matrix directory \"" + path.string() +
                         "\": Already exists as file");
       }
     }
   } else {
-    std::filesystem::create_directory(std::filesystem::path(path));
+    std::filesystem::create_directory(path);
   }
 
   Header index_header;
@@ -324,7 +326,7 @@ template <class MatrixType> void Writer<MatrixType>::save(const std::string &pat
     throw Exception(e, "Unable to allocate space on filesystem for fixel-fixel connectivity matrix data");
   }
 
-  ProgressBar progress("Normalising and writing fixel-fixel connectivity matrix to directory \"" + path + "\"",
+  ProgressBar progress("Normalising and writing fixel-fixel connectivity matrix to directory \"" + path.string() + "\"",
                        matrix.size());
   for (size_t fixel_index = 0; fixel_index != matrix.size(); ++fixel_index) {
 
@@ -369,7 +371,7 @@ template <class MatrixType> void Writer<MatrixType>::save(const std::string &pat
 template class Writer<InitMatrixUnweighted>;
 template class Writer<InitMatrixWeighted>;
 
-Reader::Reader(const std::string &path, const Image<bool> &mask) : directory(path), mask_image(mask) {
+Reader::Reader(const std::filesystem::path &path, const Image<bool> &mask) : directory(path), mask_image(mask) {
   try {
     index_image = Image<index_image_type>::open((directory / "index.mif"));
     if (index_image.ndim() != 4)
@@ -385,11 +387,11 @@ Reader::Reader(const std::string &path, const Image<bool> &mask) : directory(pat
       throw Exception("Fixel image \"" + mask_image.name() + "\" has different number of fixels (" +
                       str(mask_image.size(0)) + ") to fixel-fixel connectivity matrix (" + str(size()) + ")");
   } catch (Exception &e) {
-    throw Exception(e, "Unable to load path \"" + directory + "\" as fixel-fixel connectivity data");
+    throw Exception(e, "Unable to load path \"" + directory.string() + "\" as fixel-fixel connectivity data");
   }
 }
 
-Reader::Reader(const std::string &path) : Reader(path, Image<bool>()) {}
+Reader::Reader(const std::filesystem::path &path) : Reader(path, Image<bool>()) {}
 
 NormFixel Reader::operator[](const size_t i) const {
   // For thread-safety

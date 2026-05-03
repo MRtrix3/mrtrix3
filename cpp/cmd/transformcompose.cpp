@@ -128,7 +128,8 @@ void run() {
 
     } catch (Exception &E) {
       try {
-        std::unique_ptr<TransformBase> transform(new Linear(File::Matrix::load_transform(argument[i])));
+        std::unique_ptr<TransformBase> transform(
+            new Linear(File::Matrix::load_transform(std::filesystem::path(argument[i]))));
         transform_list.push_back(std::move(transform));
       } catch (Exception &E) {
         throw Exception("error reading input file: " + input_path.string() +

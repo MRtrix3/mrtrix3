@@ -16,6 +16,8 @@
 
 #include "dwi/tractography/connectome/matrix.h"
 
+#include <filesystem>
+
 #include "file/matrix.h"
 #include "file/path.h"
 #include "misc/bitset.h"
@@ -168,10 +170,10 @@ template <typename T> void Matrix<T>::error_check(const std::set<node_t> &missin
   }
 }
 
-template <typename T> void Matrix<T>::write_assignments(const std::string &path) const {
+template <typename T> void Matrix<T>::write_assignments(const std::filesystem::path &path) const {
   if (!track_assignments)
     throw Exception("Cannot write streamline assignments to file as they were not stored during processing");
-  File::OFStream stream(path);
+  File::OFStream stream(path.string());
   stream << "# " << App::command_history_string << "\n";
   for (auto i = assignments_single.begin(); i != assignments_single.end(); ++i)
     stream << str(*i) << "\n";
@@ -187,7 +189,7 @@ template <typename T> void Matrix<T>::write_assignments(const std::string &path)
 }
 
 template <typename T>
-void Matrix<T>::save(const std::string &path,
+void Matrix<T>::save(const std::filesystem::path &path,
                      const bool keep_unassigned,
                      const bool symmetric,
                      const bool zero_diagonal) const {
@@ -200,15 +202,15 @@ void Matrix<T>::save(const std::string &path,
     if (zero_diagonal)
       WARN("Option -zero_diagonal not applicable when generating connectivity vector; ignored");
     if (keep_unassigned)
-      File::Matrix::save_vector(data, path);
+      File::Matrix::save_vector(data, path.string());
     else
-      File::Matrix::save_vector(data.tail(data.size() - 1), path);
+      File::Matrix::save_vector(data.tail(data.size() - 1), path.string());
     return;
   }
 
   assert(mat2vec);
 
-  File::OFStream out(path);
+  File::OFStream out(path.string());
   Eigen::IOFormat fmt(
       Eigen::FullPrecision, Eigen::DontAlignCols, std::string(1, Path::delimiter(path)), "\n", "", "", "", "");
   for (node_t row = 0; row != mat2vec->mat_size(); ++row) {

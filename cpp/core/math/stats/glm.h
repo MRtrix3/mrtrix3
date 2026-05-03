@@ -19,6 +19,8 @@
 #include "app.h"
 #include "types.h"
 
+#include <filesystem>
+
 #include "math/condition_number.h"
 #include "math/least_squares.h"
 #include "math/stats/import.h"
@@ -95,7 +97,7 @@ void check_design(const matrix_type &, const bool);
 
 index_array_type load_variance_groups(const index_type num_inputs);
 
-std::vector<Hypothesis> load_hypotheses(const std::string &file_path);
+std::vector<Hypothesis> load_hypotheses(const std::filesystem::path &file_path);
 
 /** \addtogroup Statistics
   @{ */

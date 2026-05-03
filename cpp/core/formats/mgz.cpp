@@ -16,6 +16,7 @@
 
 #include "file/gz.h"
 #include "file/mgh.h"
+#include "file/ofstream.h"
 #include "file/path.h"
 #include "file/utils.h"
 #include "formats/list.h"

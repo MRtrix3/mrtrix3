@@ -338,7 +338,7 @@ void apply(Image<value_type> &in,
 template <typename T>
 void execute(Image<value_type> &in,
              Image<bool> &mask,
-             const std::string &out_path,
+             const std::filesystem::path &out_path,
              const default_type abs,
              const default_type percentile,
              const ssize_t bottom,

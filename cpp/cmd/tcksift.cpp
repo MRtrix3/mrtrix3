@@ -120,7 +120,7 @@ void run() {
       sifter.set_term_mu(float(opt[0][0]));
     opt = get_options("csv");
     if (!opt.empty())
-      sifter.set_csv_path(opt[0][0]);
+      sifter.set_csv_path(std::filesystem::path(opt[0][0]));
     opt = get_options("output_at_counts");
     if (!opt.empty()) {
       std::vector<uint32_t> counts = parse_ints<uint32_t>(opt[0][0]);
@@ -136,12 +136,12 @@ void run() {
 
     opt = get_options("out_selection");
     if (!opt.empty())
-      sifter.output_selection(opt[0][0]);
+      sifter.output_selection(std::filesystem::path(opt[0][0]));
   }
 
   auto opt = get_options("out_mu");
   if (!opt.empty()) {
-    File::OFStream out_mu(opt[0][0]);
+    File::OFStream out_mu{std::filesystem::path(opt[0][0])};
     out_mu << sifter.mu();
   }
 }

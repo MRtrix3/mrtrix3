@@ -335,7 +335,7 @@ void run() {
   if (constrain) {
     opt = get_options("directions");
     const Eigen::MatrixXd constr_dirs =
-        !opt.empty() ? File::Matrix::load_matrix(opt[0][0])
+        !opt.empty() ? File::Matrix::load_matrix(std::filesystem::path(opt[0][0]))
                      : Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300());
     Eigen::MatrixXd tmp = DWI::grad2bmatrix<double>(constr_dirs, dki);
     if (dki) {

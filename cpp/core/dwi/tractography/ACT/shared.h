@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <filesystem>
+
 #include "dwi/tractography/ACT/gmwmi.h"
 #include "dwi/tractography/properties.h"
 #include "memory.h"
@@ -25,7 +27,8 @@ namespace MR::DWI::Tractography::ACT {
 class ACT_Shared_additions {
 
 public:
-  ACT_Shared_additions(const std::string &path, Properties &property_set) : voxel(Image<float>::open(path)), bt(false) {
+  ACT_Shared_additions(const std::filesystem::path &path, Properties &property_set)
+      : voxel(Image<float>::open(path)), bt(false) {
     verify_5TT_image(voxel);
     property_set.set(bt, "backtrack");
     if (property_set.find("crop_at_gmwmi") != property_set.end())

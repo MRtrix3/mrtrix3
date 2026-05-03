@@ -66,7 +66,7 @@ Dynamic::Dynamic(const std::string &in,
       transform(fod_data) {
   auto opt = App::get_options("act");
   if (!opt.empty())
-    act.reset(new Dynamic_ACT_additions(opt[0][0]));
+    act.reset(new Dynamic_ACT_additions(std::filesystem::path(opt[0][0])));
 
   perform_FOD_segmentation(fod_data);
 

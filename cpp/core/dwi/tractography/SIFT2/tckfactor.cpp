@@ -218,7 +218,7 @@ void TckFactor::estimate_factors() {
   std::unique_ptr<std::ofstream> csv_out;
   if (!csv_path.empty()) {
     csv_out.reset(new std::ofstream());
-    csv_out->open(csv_path.c_str(), std::ios_base::trunc);
+    csv_out->open(csv_path, std::ios_base::trunc);
     (*csv_out)
         << "Iteration,Cost_data,Cost_reg_tik,Cost_reg_tv,Cost_reg,Cost_total,Streamlines,Fixels_excluded,Step_min,Step_"
            "mean,Step_mean_abs,Step_var,Step_max,Coeff_min,Coeff_mean,Coeff_mean_abs,Coeff_var,Coeff_max,Coeff_norm,\n";
@@ -364,11 +364,13 @@ void TckFactor::output_factors(const std::filesystem::path &path) const {
   File::Matrix::save_vector(weights, path);
 }
 
-void TckFactor::output_coefficients(const std::string &path) const { File::Matrix::save_vector(coefficients, path); }
+void TckFactor::output_coefficients(const std::filesystem::path &path) const {
+  File::Matrix::save_vector(coefficients, path);
+}
 
-void TckFactor::output_TD_images(const std::string &dirpath,
-                                 const std::string &origTD_path,
-                                 const std::string &count_path) const {
+void TckFactor::output_TD_images(const std::filesystem::path &dirpath,
+                                 const std::filesystem::path &origTD_path,
+                                 const std::filesystem::path &count_path) const {
   Header H(MR::Fixel::data_header_from_nfixels(fixels.size()));
   Header H_count;
   H_count.datatype() = DataType::native(DataType::UInt32);
@@ -381,7 +383,8 @@ void TckFactor::output_TD_images(const std::string &dirpath,
   }
 }
 
-void TckFactor::output_all_debug_images(const std::string &dirpath, const std::string &prefix) const {
+void TckFactor::output_all_debug_images(const std::filesystem::path &dirpath,
+                                        const std::filesystem::path &prefix) const {
 
   Model<Fixel>::output_all_debug_images(dirpath, prefix);
 
@@ -425,12 +428,13 @@ void TckFactor::output_all_debug_images(const std::string &dirpath, const std::s
   Header H(MR::Fixel::data_header_from_nfixels(fixels.size()));
   Header H_excluded(H);
   H_excluded.datatype() = DataType::Bit;
-  Image<float> min_image(Image<float>::create((dirpath / prefix + "_coeff_min.mif"), H));
-  Image<float> mean_image(Image<float>::create((dirpath / prefix + "_coeff_mean.mif"), H));
-  Image<float> stdev_image(Image<float>::create((dirpath / prefix + "_coeff_stdev.mif"), H));
-  Image<float> max_image(Image<float>::create((dirpath / prefix + "_coeff_max.mif"), H));
-  Image<float> zeroed_image(Image<float>::create((dirpath / prefix + "_coeff_zeroed.mif"), H));
-  Image<bool> excluded_image(Image<bool>::create((dirpath / prefix + "_excludedfixels.mif"), H_excluded));
+  Image<float> min_image(Image<float>::create((dirpath / std::string(prefix.string() + "_coeff_min.mif")), H));
+  Image<float> mean_image(Image<float>::create((dirpath / std::string(prefix.string() + "_coeff_mean.mif")), H));
+  Image<float> stdev_image(Image<float>::create((dirpath / std::string(prefix.string() + "_coeff_stdev.mif")), H));
+  Image<float> max_image(Image<float>::create((dirpath / std::string(prefix.string() + "_coeff_max.mif")), H));
+  Image<float> zeroed_image(Image<float>::create((dirpath / std::string(prefix.string() + "_coeff_zeroed.mif")), H));
+  Image<bool> excluded_image(
+      Image<bool>::create((dirpath / std::string(prefix.string() + "_excludedfixels.mif")), H_excluded));
 
   for (auto l = Loop(0)(min_image, mean_image, stdev_image, max_image, zeroed_image, excluded_image); l; ++l) {
     const size_t index = min_image.index(0);

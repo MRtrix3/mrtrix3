@@ -51,7 +51,7 @@ public:
     open(file, "tracks", properties);
     auto opt = App::get_options("tck_weights_in");
     if (!opt.empty())
-      weights = File::Matrix::load_vector<ValueType>(opt[0][0]);
+      weights = File::Matrix::load_vector<ValueType>(std::filesystem::path(std::string(opt[0][0])));
   }
 
   //! fetch next track from file
@@ -206,12 +206,12 @@ public:
     format_point(barrier(), x);
     out.write(reinterpret_cast<char *>(&x[0]), sizeof(x));
     if (!out.good())
-      throw Exception("error writing tracks file \"" + name + "\": " + strerror(errno));
+      throw Exception("error writing tracks file \"" + name.string() + "\": " + strerror(errno));
     open_success = true;
 
     auto opt = App::get_options("tck_weights_out");
     if (!opt.empty())
-      set_weights_path(opt[0][0]);
+      set_weights_path(std::filesystem::path(std::string(opt[0][0])));
   }
 
   //! append track to file
@@ -235,7 +235,7 @@ public:
   }
 
   //! set the path to the track weights
-  void set_weights_path(const std::string &path) {
+  void set_weights_path(const std::filesystem::path &path) {
     if (!weights_path.empty())
       throw Exception("Cannot change output streamline weights file path");
     weights_path = std::filesystem::path(path);
@@ -350,7 +350,7 @@ public:
     }
     add_point(delimiter());
 
-    if (weights_path.size())
+    if (!weights_path.empty())
       weights_buffer += str(tck.weight) + ' ';
 
     ++count;
@@ -371,7 +371,7 @@ protected:
     WriterUnbuffered<ValueType>::commit(buffer.get(), buffer_size);
     buffer_size = 0;
 
-    if (weights_path.size()) {
+    if (!weights_path.empty()) {
       write_weights(weights_buffer);
       weights_buffer.clear();
     }

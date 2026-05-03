@@ -91,10 +91,10 @@ using Fixel::index_type;
 template <class WriterType> void set_optional_outputs(WriterType &writer) {
   auto opt = get_options("count");
   if (!opt.empty())
-    writer.set_count_path(opt[0][0]);
+    writer.set_count_path(std::filesystem::path(opt[0][0]));
   opt = get_options("extent");
   if (!opt.empty())
-    writer.set_extent_path(opt[0][0]);
+    writer.set_extent_path(std::filesystem::path(opt[0][0]));
 }
 
 void run() {

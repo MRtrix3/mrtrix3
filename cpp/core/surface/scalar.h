@@ -51,7 +51,7 @@ public:
     name.clear();
   }
 
-  void save(const std::string &) const;
+  void save(const std::filesystem::path &) const;
 
   const std::string &get_name() const { return name; }
   void set_name(const std::string &s) { name = s; }
@@ -59,8 +59,8 @@ public:
 private:
   std::string name;
 
-  void load_fs_w(const std::string &, const Mesh &);
-  void load_fs_curv(const std::string &, const Mesh &);
+  void load_fs_w(const std::filesystem::path &, const Mesh &);
+  void load_fs_curv(const std::filesystem::path &, const Mesh &);
 };
 
 } // namespace MR::Surface

@@ -374,12 +374,12 @@ void run() {
         ++progress;
       }
     } else if (file_format == 2) { // Single file
-      std::string path = output_prefix;
-      if (path.rfind(".tck") != path.size() - 4)
-        path += ".tck";
-      std::string weights_path = weights_prefix;
-      if (!weights_prefix.empty() && weights_path.rfind(".tck") != weights_path.size() - 4)
-        weights_path += ".csv";
+      std::filesystem::path path = output_prefix;
+      if (path.extension() != ".tck")
+        path.replace_extension(".tck");
+      std::filesystem::path weights_path = weights_prefix;
+      if (!weights_prefix.empty() && weights_path.extension() != ".csv")
+        weights_path.replace_extension(".csv");
       generator.write(path, weights_path);
     }
 

@@ -104,34 +104,38 @@ Eigen::MatrixXd parse_DW_scheme(const Header &header) {
   return G;
 }
 
-Eigen::MatrixXd load_bvecs_bvals(const Header &header, const std::string &bvecs_path, const std::string &bvals_path) {
+Eigen::MatrixXd load_bvecs_bvals(const Header &header,
+                                 const std::filesystem::path &bvecs_path,
+                                 const std::filesystem::path &bvals_path) {
   Eigen::MatrixXd bvals, bvecs;
   try {
     bvals = File::Matrix::load_matrix<>(bvals_path);
     bvecs = File::Matrix::load_matrix<>(bvecs_path);
   } catch (Exception &e) {
     throw Exception(e,
-                    "Unable to import files \"" + bvecs_path + "\" and \"" + bvals_path + "\" as FSL bvecs/bvals pair");
+                    "Unable to import files \"" + bvecs_path.string() + "\" and \"" + bvals_path.string() +
+                        "\" as FSL bvecs/bvals pair");
   }
 
   if (bvals.rows() != 1) {
     if (bvals.cols() == 1)
       bvals.transposeInPlace(); // transpose if file contains column vector
     else
-      throw Exception("bvals file must contain 1 row or column only (file \"" + bvals_path + "\" has " +
+      throw Exception("bvals file must contain 1 row or column only (file \"" + bvals_path.string() + "\" has " +
                       str(bvals.rows()) + ")");
   }
   if (bvecs.rows() != 3) {
     if (bvecs.cols() == 3)
       bvecs.transposeInPlace();
     else
-      throw Exception("bvecs file must contain exactly 3 rows or columns (file \"" + bvecs_path + "\" has " +
+      throw Exception("bvecs file must contain exactly 3 rows or columns (file \"" + bvecs_path.string() + "\" has " +
                       str(bvecs.rows()) + ")");
   }
 
   if (bvals.cols() != bvecs.cols())
-    throw Exception("bvecs and bvals files must have same number of diffusion directions (file \"" + bvecs_path +
-                    "\" has " + str(bvecs.cols()) + ", file \"" + bvals_path + "\" has " + str(bvals.cols()) + ")");
+    throw Exception("bvecs and bvals files must have same number of diffusion directions (file \"" +
+                    bvecs_path.string() + "\" has " + str(bvecs.cols()) + ", file \"" + bvals_path.string() +
+                    "\" has " + str(bvals.cols()) + ")");
 
   const size_t num_volumes = header.ndim() < 4 ? 1 : header.size(3);
   if (size_t(bvals.cols()) != num_volumes)
@@ -165,7 +169,9 @@ Eigen::MatrixXd load_bvecs_bvals(const Header &header, const std::string &bvecs_
   return grad;
 }
 
-void save_bvecs_bvals(const Header &header, const std::string &bvecs_path, const std::string &bvals_path) {
+void save_bvecs_bvals(const Header &header,
+                      const std::filesystem::path &bvecs_path,
+                      const std::filesystem::path &bvals_path) {
   const auto grad = parse_DW_scheme(header);
 
   // rotate vectors from scanner space to image space
@@ -208,14 +214,14 @@ Eigen::MatrixXd get_raw_DW_scheme(const Header &header) {
   // check whether the DW scheme has been provided via the command-line:
   const auto opt_mrtrix = get_options("grad");
   if (!opt_mrtrix.empty())
-    grad = File::Matrix::load_matrix<>(opt_mrtrix[0][0]);
+    grad = File::Matrix::load_matrix<>(std::filesystem::path(opt_mrtrix[0][0]));
 
   const auto opt_fsl = get_options("fslgrad");
   if (!opt_fsl.empty()) {
     if (!opt_mrtrix.empty())
       throw Exception("Diffusion gradient table can be provided using either -grad or -fslgrad option,"
                       " but NOT both");
-    grad = load_bvecs_bvals(header, opt_fsl[0][0], opt_fsl[0][1]);
+    grad = load_bvecs_bvals(header, std::filesystem::path(opt_fsl[0][0]), std::filesystem::path(opt_fsl[0][1]));
   }
 
   // otherwise use the information from the header:
@@ -300,11 +306,11 @@ void export_grad_commandline(const Header &header) {
 
   auto opt = get_options("export_grad_mrtrix");
   if (!opt.empty())
-    File::Matrix::save_matrix(parse_DW_scheme(check(header)), opt[0][0]);
+    File::Matrix::save_matrix(parse_DW_scheme(check(header)), std::filesystem::path(opt[0][0]));
 
   opt = get_options("export_grad_fsl");
   if (!opt.empty())
-    save_bvecs_bvals(check(header), opt[0][0], opt[0][1]);
+    save_bvecs_bvals(check(header), std::filesystem::path(opt[0][0]), std::filesystem::path(opt[0][1]));
 }
 
 } // namespace MR::DWI

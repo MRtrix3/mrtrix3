@@ -301,7 +301,7 @@ void run() {
   opt = get_options("seeds");
   Eigen::Matrix<value_type, Eigen::Dynamic, 2> dirs;
   if (!opt.empty())
-    dirs = File::Matrix::load_matrix<value_type>(opt[0][0]);
+    dirs = File::Matrix::load_matrix<value_type>(std::filesystem::path(opt[0][0]));
   else
     dirs = Eigen::Map<Eigen::Matrix<value_type, 60, 2>>(default_directions, 60, 2);
   if (dirs.cols() != 2)

@@ -17,6 +17,7 @@
 #pragma once
 
 #include <atomic>
+#include <filesystem>
 #include <fstream>
 #include <queue>
 
@@ -160,7 +161,7 @@ private:
 class Dynamic_ACT_additions {
 
 public:
-  Dynamic_ACT_additions(const std::string &path)
+  Dynamic_ACT_additions(const std::filesystem::path &path)
       : interp_template(Image<float>::open(path)), gmwmi_finder(interp_template) {}
 
   bool check_seed(Eigen::Vector3f &);

@@ -22,9 +22,9 @@
 
 namespace MR::Connectome {
 
-LUT::LUT(const std::string &path) : exclusive(true) { load(path); }
+LUT::LUT(const std::filesystem::path &path) : exclusive(true) { load(path); }
 
-void LUT::load(const std::string &path) {
+void LUT::load(const std::filesystem::path &path) {
   file_format format = LUT_NONE;
   try {
     format = guess_file_format(path);

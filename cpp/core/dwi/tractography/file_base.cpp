@@ -60,26 +60,27 @@ void __ReaderBase__::open(const std::filesystem::path &file, const std::string &
     throw Exception("missing \"files\" specification for " + type + " file \"" + file.string() + "\"");
 
   std::istringstream files_stream(data_file);
-  std::string fname;
-  files_stream >> fname;
+  std::string fname_str;
+  files_stream >> fname_str;
   int64_t offset = 0;
   if (files_stream.good()) {
     try {
       files_stream >> offset;
     } catch (...) {
-      throw Exception("invalid offset specified for file \"" + fname + "\" in " + type + " file \"" + file.string() +
-                      "\"");
+      throw Exception("invalid offset specified for file \"" + fname_str + "\" in " + type + " file \"" +
+                      file.string() + "\"");
     }
   }
 
-  if (fname != ".")
-    fname = (file.parent_path() / fname);
+  std::filesystem::path fname;
+  if (fname_str != ".")
+    fname = (file.parent_path() / fname_str);
   else
     fname = file;
 
-  in.open(fname.c_str(), std::ios::in | std::ios::binary);
+  in.open(fname, std::ios::in | std::ios::binary);
   if (!in)
-    throw Exception("error opening " + type + " data file \"" + fname + "\": " + strerror(errno));
+    throw Exception("error opening " + type + " data file \"" + fname.string() + "\": " + strerror(errno));
   in.seekg(offset);
 }
 

@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <filesystem>
+
 #include "dwi/tractography/tracking/method.h"
 #include "dwi/tractography/tracking/shared.h"
 #include "dwi/tractography/tracking/tractography.h"
@@ -30,7 +32,7 @@ class SDStream : public MethodBase {
 public:
   class Shared : public SharedBase {
   public:
-    Shared(const std::string &diff_path, DWI::Tractography::Properties &property_set)
+    Shared(const std::filesystem::path &diff_path, DWI::Tractography::Properties &property_set)
         : SharedBase(diff_path, property_set), lmax(Math::SH::LforN(source.size(3))) {
       try {
         Math::SH::check(source);

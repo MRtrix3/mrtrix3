@@ -17,6 +17,7 @@
 #pragma once
 
 #include <array>
+#include <filesystem>
 #include <sstream>
 
 #include "datatype.h"
@@ -48,10 +49,10 @@ struct ReadInfo {
   int64_t data_offset;
 };
 
-ReadInfo read_header(const std::string &path);
+ReadInfo read_header(const std::filesystem::path &path);
 
 template <typename ValueType>
-Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> load_matrix(const std::string &path) {
+Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> load_matrix(const std::filesystem::path &path) {
   const ReadInfo info = read_header(path);
 
   // Memory-map the data content of the file
@@ -81,9 +82,10 @@ struct WriteInfo {
   DataType data_type;
 };
 
-WriteInfo prepare_ND_write(const std::string &path, const DataType data_type, const std::vector<size_t> &shape);
+WriteInfo
+prepare_ND_write(const std::filesystem::path &path, const DataType data_type, const std::vector<size_t> &shape);
 
-template <class ContType> void save_vector(const ContType &data, const std::string &path) {
+template <class ContType> void save_vector(const ContType &data, const std::filesystem::path &path) {
   using ValueType = typename container_value_type<ContType>::type;
   const WriteInfo info = prepare_ND_write(path, DataType::from<ValueType>(), {size_t(data.size())});
   if (info.data_type == DataType::Bit) {
@@ -97,7 +99,7 @@ template <class ContType> void save_vector(const ContType &data, const std::stri
     store_func(data[i], info.mmap->address(), i);
 }
 
-template <class ContType> void save_matrix(const ContType &data, const std::string &path) {
+template <class ContType> void save_matrix(const ContType &data, const std::filesystem::path &path) {
   using ValueType = typename ContType::Scalar;
   const WriteInfo info =
       prepare_ND_write(path, DataType::from<ValueType>(), {size_t(data.rows()), size_t(data.cols())});

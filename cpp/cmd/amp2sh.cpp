@@ -195,7 +195,7 @@ void run() {
   Eigen::MatrixXd dirs;
   auto opt = get_options("directions");
   if (!opt.empty()) {
-    dirs = File::Matrix::load_matrix(opt[0][0]);
+    dirs = File::Matrix::load_matrix(std::filesystem::path(opt[0][0]));
     if (dirs.cols() == 3)
       dirs = Math::Sphere::cartesian2spherical(dirs);
   } else {
