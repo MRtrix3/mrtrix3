@@ -137,6 +137,10 @@ add_bash_binary_test(fixel2fixel/ismrm2018_sum)
 add_bash_binary_test(fixel2fixel/legacy_angle)
 add_bash_binary_test(fixel2fixel/legacy_count)
 add_bash_binary_test(fixel2fixel/legacy_fd)
+add_bash_binary_test(fixel2fixel/pot_angle)
+add_bash_binary_test(fixel2fixel/pot_count)
+add_bash_binary_test(fixel2fixel/pot_mean)
+add_bash_binary_test(fixel2fixel/pot_sum)
 
 add_bash_binary_test(fixel2peaks/input_afd)
 add_bash_binary_test(fixel2peaks/input_directions)
@@ -174,6 +178,7 @@ add_bash_binary_test(fixelconnectivity/weighted)
 add_bash_binary_test(fixelcorrespondence/in2023)
 add_bash_binary_test(fixelcorrespondence/ismrm2018)
 add_bash_binary_test(fixelcorrespondence/legacy)
+add_bash_binary_test(fixelcorrespondence/pot)
 
 add_bash_binary_test(fixelcrop/default)
 
