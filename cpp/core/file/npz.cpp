@@ -16,6 +16,7 @@
 
 #include "file/npz.h"
 
+#include "app.h"
 #include "raw.h"
 
 namespace MR::File::NPZ {
@@ -121,7 +122,7 @@ std::vector<uint8_t> read_entry(zip_t *archive, std::string_view entry_name, std
 
 Writer::Writer(std::string_view path) : path_(path), closed_(false) {
   int errcode = 0;
-  archive_ = zip_open(path_.c_str(), ZIP_CREATE | ZIP_EXCL, &errcode);
+  archive_ = zip_open(path_.c_str(), ZIP_CREATE | (App::overwrite_files ? ZIP_TRUNCATE : ZIP_EXCL), &errcode);
   if (archive_ == nullptr) {
     zip_error_t error;
     zip_error_init_with_code(&error, errcode);

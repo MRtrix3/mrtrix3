@@ -53,7 +53,9 @@ void Mapping::load(std::string_view npz_path, const bool import_inverse) {
   const std::string converse_indptr_name = "indptr_" + converse_string + ".npy";
 
   int errcode = 0;
-  zip_t *archive = zip_open(std::string(npz_path).c_str(), ZIP_RDONLY, &errcode);
+  zip_t *archive = zip_open(std::string(npz_path).c_str(),                                 //
+                            App::log_level >= 3 ? ZIP_RDONLY | ZIP_CHECKCONS : ZIP_RDONLY, //
+                            &errcode);                                                     //
   if (archive == nullptr) {
     zip_error_t error;
     zip_error_init_with_code(&error, errcode);

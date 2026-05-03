@@ -43,7 +43,7 @@ void usage() {
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  SYNOPSIS = "Project quantities from one fixel dataset to another";
+  SYNOPSIS = "Project a fixel-wise quantity from one fixel dataset to another";
 
   DESCRIPTION
   + "This command requires pre-calculation of fixel correspondence between two fixel datasets;"
@@ -63,6 +63,31 @@ void usage() {
   // TODO Should data_in be a directions file if angle is the metric of interest?
 
   EXAMPLES
+  + Example("Project a fixel-wise additive measure (such as fibre density)",
+            "fixel2fixel subject/fd.mif fixelmapping.npz sum template subject_fd.mif",
+            "For a measure that is naturally additive,"
+            " such as is the case for a fibre density measure relating to axonal volume,"
+            " the 'sum' metric should be used;"
+            " ie. if two subject fixels map to a single template fixel,"
+            " then the fibre density ascribed to that template fixel"
+            " should be the sum of the fibre densities of the two subject fixels.")
+
+  + Example("Project a fixel-wise non-additive measure (such as axonal diameter)",
+            "fixel2fixel subject/ad.mif fixelmapping.npz mean template subject_ad.mif"
+            " -weighted subject/fd.mif",
+            "For some fixel-wise measures,"
+            " such as axonal diameter in this example,"
+            " it would not be suitable to sum those measures across multiple fixels."
+            " Eg. if two subject fixels, with ascribed axonal diameters of 2um and 4um,"
+            " needed to be merged in order to map to a single template fixel,"
+            " then it would not be suitable to assign an axonal diameter of 6um to the template fixel;"
+            " in the absence of any other information,"
+            " a value of 3um would intuitively be more suitable."
+            " This can be further improved by specifying the -weighted option,"
+            " providing as input a fixel data file encoding some form of fibre density:"
+            " if eg. the 4um fixel is three times more dense than the 2um fixel,"
+            " then the weighted mean value projected to the template fixel should be 3.5um.")
+
   + Example("Replicate the behaviour of the fixelcorrespondence command from MRtrix version 3.0.x",
             "fixelcorrespondence subject/fd.mif template/fd.mif fixelmapping.npz -algorithm legacy;"
             " fixel2fixel subject/fd.mif fixelmapping.npz sum fd_template subject.mif -ignore_weights",
@@ -277,7 +302,7 @@ void run() {
 
   const std::string input_path(argument[0]);
   const Mapping correspondence((std::string(argument[1])));
-  const metric_t metric = get_option_choice<metric_t>(argument[2], metric_t::SUM);
+  const metric_t metric = MR::Enum::from_name<metric_t>(argument[2]);
   const std::string output_directory(argument[3]);
 
   if (!Path::is_dir(output_directory))
