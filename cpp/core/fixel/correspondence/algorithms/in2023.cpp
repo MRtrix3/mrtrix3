@@ -19,11 +19,14 @@ namespace MR::Fixel::Correspondence::Algorithms {
 
 using namespace App;
 
-OptionGroup IN2023Options =
-    OptionGroup("Options specific to algorithm \"in2023\"") +
-    Option("constants",
-           "set values for the two constants that modulate the influence of different cost function terms") +
-    Argument("alpha").type_float(0.0) + Argument("beta").type_float(0.0);
+// clang-format off
+OptionGroup IN2023Options = OptionGroup("Options specific to algorithm \"in2023\"")
+  + Option("in2023_constants",
+           "set values for the two constants"
+           " that modulate the influence of different cost function terms in the IN2023 expression")
+    + Argument("alpha").type_float(0.0)
+    + Argument("beta").type_float(0.0);
+// clang-format off
 
 float IN2023::a = default_in2023_alpha;
 float IN2023::b = default_in2023_beta;

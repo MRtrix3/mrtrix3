@@ -192,7 +192,7 @@ void run() {
                                            get_option_value("max_objectives", default_max_objectives_per_source),
                                            H_cost));
     {
-      auto opt = get_options("constants");
+      auto opt = get_options("in2023_constants");
       if (opt.size())
         dynamic_cast<Algorithms::IN2023 *>(algorithm.get())->set_constants(opt[0][0], opt[0][1]);
     }
