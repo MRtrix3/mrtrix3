@@ -36,6 +36,7 @@ extern App::OptionGroup CombinatorialOptions;
 // Forward declarations for explicit template instantiation
 class ISMRM2018;
 class IN2023;
+class POT;
 
 // Base class to handle the combinatorial aspects of both
 //   what was presented at ISMRM2018 and new proposed expression
@@ -92,5 +93,6 @@ protected:
 
 extern template class Combinatorial<ISMRM2018>;
 extern template class Combinatorial<IN2023>;
+extern template class Combinatorial<POT>;
 
 } // namespace MR::Fixel::Correspondence::Algorithms

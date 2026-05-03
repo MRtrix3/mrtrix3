@@ -25,6 +25,7 @@
 #include "fixel/correspondence/algorithms/in2023.h"
 #include "fixel/correspondence/algorithms/ismrm2018.h"
 #include "fixel/correspondence/algorithms/legacy.h"
+#include "fixel/correspondence/algorithms/pot.h"
 #include "fixel/correspondence/correspondence.h"
 #include "fixel/correspondence/matcher.h"
 
@@ -86,7 +87,8 @@ enum class algorithm_t {
 #endif
   LEGACY,
   ISMRM2018,
-  IN2023
+  IN2023,
+  POT
 };
 
 // clang-format off
@@ -124,7 +126,16 @@ void usage() {
     "relevant reference (Smith et al., 2018)."
 
   + "\"in2023\": This is a combinatorial algorithm, for which the combinatorial algorithm utilised is described in reference "
-    "(Smith et al., 2018), but an alternative cost function is proposed (publication pending).";
+    "(Smith et al., 2018), but an alternative cost function is proposed (publication pending)."
+
+  + "\"pot\": This is a combinatorial algorithm using a partial-optimal-transport-inspired cost function. "
+    "Matched fibre density between subject and template fixels is \"transported\" at a cost determined by directional misalignment, "
+    "while surplus density on either side is created or destroyed at unit cost; "
+    "subject or template fixels with no correspondence are penalised by their density. "
+    "Mapping topology (multiple subject fixels merged into one template fixel, "
+    "or one subject fixel split across multiple template fixels) is penalised linearly "
+    "with weight controlled by the \"gamma\" parameter, "
+    "and the angular sensitivity is controlled by exponent \"p\".";
 
   ARGUMENTS
   + Argument ("source_density", "the input source fixel data file corresponding to the FD or FDC metric").type_image_in()
@@ -143,7 +154,9 @@ void usage() {
 
   + Algorithms::CombinatorialOptions
 
-  + Algorithms::IN2023Options;
+  + Algorithms::IN2023Options
+
+  + Algorithms::POTOptions;
 
   REFERENCES
   + "* If using -algorithm ismrm2018 or -algorithm in2023: " // Internal
@@ -183,6 +196,14 @@ void run() {
       if (opt.size())
         dynamic_cast<Algorithms::IN2023 *>(algorithm.get())->set_constants(opt[0][0], opt[0][1]);
     }
+    break;
+  case algorithm_t::POT:
+    algorithm.reset(new Algorithms::POT(get_option_value("max_origins", default_max_origins_per_target),
+                                        get_option_value("max_objectives", default_max_objectives_per_source),
+                                        H_cost));
+    dynamic_cast<Algorithms::POT *>(algorithm.get())
+        ->set_constants(get_option_value("pot_steepness", default_pot_p),
+                        get_option_value("pot_complexity", default_pot_gamma));
     break;
   default:
     assert(0);
