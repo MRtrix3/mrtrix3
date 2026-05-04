@@ -413,11 +413,11 @@ ImageType compute_full_field(int order, const Eigen::VectorXd &field_coeffs, con
   return out;
 }
 
-void write_weights(const Eigen::VectorXd &data, IndexType &index, const std::string &output_file_name) {
+void write_weights(const Eigen::VectorXd &data, IndexType &index, const std::filesystem::path &output_filepath) {
   Header header(index);
   header.datatype() = DataType::Float32;
 
-  auto out = ImageType::create(output_file_name, header);
+  auto out = ImageType::create(output_filepath, header);
 
   struct Write {
     void operator()(ImageType &out, IndexType &index) const {

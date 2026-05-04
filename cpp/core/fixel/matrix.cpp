@@ -190,11 +190,11 @@ private:
 } // namespace
 
 #define FIXEL_MATRIX_GENERATE_SHARED                                                                                   \
-  const auto fixel_dir_path = std::filesystem::path{index_image.name()}.parent_path();                                 \
+  const auto fixel_dir_path = index_image.path().parent_path();                                                        \
   auto directions_image =                                                                                              \
       Fixel::find_directions_header(fixel_dir_path).template get_image<default_type>().with_direct_io({+2, +1});       \
   DWI::Tractography::Properties properties;                                                                            \
-  DWI::Tractography::Reader<float> track_file(track_filename, properties);                                             \
+  DWI::Tractography::Reader<float> track_file(track_filepath, properties);                                             \
   const uint32_t num_tracks = properties["count"].empty() ? 0 : to<uint32_t>(properties["count"]);                     \
   DWI::Tractography::Mapping::TrackLoader loader(track_file, num_tracks, "computing fixel-fixel connectivity matrix"); \
   DWI::Tractography::Mapping::TrackMapperBase mapper(index_image);                                                     \
@@ -202,7 +202,7 @@ private:
   mapper.set_use_precise_mapping(true);                                                                                \
   TrackProcessor track_processor(mapper, index_image, directions_image, fixel_mask, angular_threshold);
 
-InitMatrixUnweighted generate_unweighted(const std::string &track_filename,
+InitMatrixUnweighted generate_unweighted(const std::filesystem::path &track_filepath,
                                          Image<index_type> &index_image,
                                          Image<bool> &fixel_mask,
                                          const float angular_threshold) {
@@ -217,7 +217,7 @@ InitMatrixUnweighted generate_unweighted(const std::string &track_filename,
   return connectivity_matrix;
 }
 
-InitMatrixWeighted generate_weighted(const std::string &track_filename,
+InitMatrixWeighted generate_weighted(const std::filesystem::path &track_filepath,
                                      Image<index_type> &index_image,
                                      Image<bool> &fixel_mask,
                                      const float angular_threshold) {
@@ -248,15 +248,14 @@ template <class MatrixType> void Writer<MatrixType>::save(const std::filesystem:
       if (!App::overwrite_files && (std::filesystem::is_regular_file((path / "index.mif")) ||
                                     std::filesystem::is_regular_file((path / "fixels.mif")) ||
                                     std::filesystem::is_regular_file((path / "values.mif"))))
-        throw Exception("Cannot create fixel-fixel connectivity matrix \"" + path.string() +
-                        "\": "
-                        "one or more files already exists (use -force to override)");
+        throw Exception("Cannot create fixel-fixel connectivity matrix \"" + path.string() + "\":" + //
+                        " one or more files already exists (use -force to override)");               //
     } else {
       if (App::overwrite_files) {
         std::filesystem::remove(path);
       } else {
-        throw Exception("Cannot create fixel-fixel connectivity matrix directory \"" + path.string() +
-                        "\": Already exists as file");
+        throw Exception("Cannot create fixel-fixel connectivity matrix directory \"" + path.string() + "\":" + //
+                        " already exists as file");                                                            //
       }
     }
   } else {

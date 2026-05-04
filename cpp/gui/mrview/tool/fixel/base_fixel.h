@@ -62,7 +62,7 @@ public:
       visitor.render_fixel_colourbar(*this);
   }
 
-  void load_image(const std::filesystem::path &filename);
+  void load_image(const std::filesystem::path &filepath);
 
   void reload_directions_buffer();
 
@@ -271,7 +271,7 @@ private:
 
 template <typename ImageType> class FixelType : public BaseFixel {
 public:
-  FixelType(const std::string &filename, Fixel &fixel_tool) : BaseFixel(filename, fixel_tool), transform(header) {}
+  FixelType(const std::string &filepath, Fixel &fixel_tool) : BaseFixel(filepath, fixel_tool), transform(header) {}
 
 protected:
   std::unique_ptr<ImageType> fixel_data;

@@ -136,7 +136,8 @@ public:
    * possibility that this image might use indirect IO, you should use
    * the save() function instead (and even then, it should only be used
    * for debugging purposes). */
-  std::string dump_to_mrtrix_file(std::string filename, bool use_multi_threading = true) const;
+  std::filesystem::path dump_to_mrtrix_file(const std::filesystem::path &filepath,
+                                            bool use_multi_threading = true) const;
 
   //! return a new Image using direct IO
   /*!
@@ -400,26 +401,27 @@ template <typename ValueType> Image<ValueType> Image<ValueType>::with_direct_io(
   return Image(buffer, with_strides);
 }
 
-template <typename ValueType> std::string Image<ValueType>::dump_to_mrtrix_file(std::string filename, bool) const {
-  if (!data_pointer || (!Path::has_suffix(std::filesystem::path(filename), ".mih") &&
-                        !Path::has_suffix(std::filesystem::path(filename), ".mif")))
+template <typename ValueType>
+std::filesystem::path Image<ValueType>::dump_to_mrtrix_file(const std::filesystem::path &filepath, bool) const {
+  if (!data_pointer || !Path::has_suffix(filepath, {".mih", ".mif"}))
     throw Exception("FIXME: image not suitable for use with 'Image::dump_to_mrtrix_file()'");
 
   // try to dump file to mrtrix format if possible (direct IO)
-  if (is_dash(filename))
-    filename = File::create_tempfile(0, "mif");
+  std::filesystem::path resolved_path(filepath);
+  if (is_dash(filepath.string()))
+    resolved_path = File::create_tempfile(0, "mif");
 
-  DEBUG("dumping image \"" + name() + "\" to file \"" + filename + "\"...");
+  DEBUG("dumping image \"" + name() + "\" to file \"" + resolved_path.string() + "\"...");
 
-  File::OFStream out(filename, std::ios::out | std::ios::binary);
+  File::OFStream out(resolved_path, std::ios::out | std::ios::binary);
   out << "mrtrix image\n";
   Formats::write_mrtrix_header(*buffer, out);
 
-  const bool single_file = Path::has_suffix(std::filesystem::path(filename), ".mif");
-  std::filesystem::path data_path = filename;
+  const bool single_file = resolved_path.extension() == ".mif";
 
   int64_t offset = 0;
   out << "file: ";
+  std::filesystem::path data_path = resolved_path;
   if (single_file) {
     offset = int64_t(out.tellp()) + int64_t(18);
     offset += ((4 - (offset % 4)) % 4);
@@ -442,44 +444,46 @@ template <typename ValueType> std::string Image<ValueType>::dump_to_mrtrix_file(
   // TODO check whether this is still needed...?
   std::filesystem::resize_file(data_path, offset + data_size);
 
-  return filename;
+  return resolved_path;
 }
 
 template <class ImageType>
-std::string __save_generic(ImageType &x, const std::filesystem::path &filename, bool use_multi_threading) {
-  auto out = Image<typename ImageType::value_type>::create(filename, x);
+std::filesystem::path __save_generic(ImageType &x, const std::filesystem::path &filepath, bool use_multi_threading) {
+  auto out = Image<typename ImageType::value_type>::create(filepath, x);
   if (use_multi_threading)
     threaded_copy(x, out);
   else
     copy(x, out);
-  return out.name();
+  return out.path();
 }
 
 //! \endcond
 
 //! save contents of an existing image to file (for debugging only)
 template <class ImageType>
-typename std::enable_if<is_adapter_type<typename std::remove_reference<ImageType>::type>::value, std::string>::type
-save(ImageType &&x, const std::filesystem::path &filename, bool use_multi_threading = true) {
-  return __save_generic(x, filename, use_multi_threading);
+typename std::enable_if<is_adapter_type<typename std::remove_reference<ImageType>::type>::value,
+                        std::filesystem::path>::type
+save(ImageType &&x, const std::filesystem::path &filepath, bool use_multi_threading = true) {
+  return __save_generic(x, filepath, use_multi_threading);
 }
 
 //! save contents of an existing image to file (for debugging only)
 template <class ImageType>
-typename std::enable_if<is_pure_image<typename std::remove_reference<ImageType>::type>::value, std::string>::type
-save(ImageType &&x, const std::filesystem::path &filename, bool use_multi_threading = true) {
+typename std::enable_if<is_pure_image<typename std::remove_reference<ImageType>::type>::value,
+                        std::filesystem::path>::type
+save(ImageType &&x, const std::filesystem::path &filepath, bool use_multi_threading = true) {
   try {
-    return x.dump_to_mrtrix_file(filename.string(), use_multi_threading);
+    return x.dump_to_mrtrix_file(filepath.string(), use_multi_threading);
   } catch (...) {
   }
-  return __save_generic(x, filename, use_multi_threading);
+  return __save_generic(x, filepath, use_multi_threading);
 }
 
 //! display the contents of an image in MRView (for debugging only)
 template <class ImageType> typename enable_if_image_type<ImageType, void>::type display(ImageType &x) {
-  std::string filename = save(x, "-");
-  CONSOLE("displaying image \"" + filename + "\"");
-  if (system(("bash -c \"mrview " + filename + "\"").c_str()))
+  const std::filesystem::path filepath = save(x, "-");
+  CONSOLE("displaying image \"" + filepath.string() + "\"");
+  if (system(("bash -c \"mrview " + filepath.string() + "\"").c_str()))
     WARN(std::string("error invoking viewer: ") + strerror(errno));
 }
 // Explicit instantiations in image.cpp:

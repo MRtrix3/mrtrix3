@@ -341,9 +341,9 @@ void RenderFrame::wheelEvent(QWheelEvent *event) {
   update();
 }
 
-void RenderFrame::screenshot(int oversampling, const std::string &image_name) {
+void RenderFrame::screenshot(int oversampling, const std::filesystem::path &image_path) {
   QApplication::setOverrideCursor(Qt::BusyCursor);
-  screenshot_name = image_name;
+  screenshot_path = image_path;
   OS = oversampling;
   OS_x = OS_y = 0;
   framebuffer.reset(new GLubyte[3 * projection.width() * projection.height()]);
@@ -367,7 +367,7 @@ void RenderFrame::snapshot() {
   }
 
   if (OS_x == OS - 1 && OS_y == OS - 1)
-    pix->save(qstr(screenshot_name), "PNG");
+    pix->save(qstr(screenshot_path.string()), "PNG");
 
   OS_x++;
   if (OS_x >= OS) {

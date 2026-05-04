@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <filesystem>
 #include <iomanip>
 #include <map>
 #include <set>
@@ -53,24 +54,19 @@ template <typename ValueType = float> class __WriterBase__ {
 public:
   using value_type = ValueType;
 
-  __WriterBase__(const std::string &name)
-      : count(0),
-        total_count(0),
-        name(std::filesystem::path(name)),
-        dtype(DataType::from<ValueType>()),
-        count_offset(0),
-        open_success(false) {
+  __WriterBase__(const std::filesystem::path &path)
+      : count(0), total_count(0), path(path), dtype(DataType::from<ValueType>()), count_offset(0), open_success(false) {
     dtype.set_byte_order_native();
     if (dtype != DataType::Float32LE && dtype != DataType::Float32BE && dtype != DataType::Float64LE &&
         dtype != DataType::Float64BE)
       throw Exception("only supported datatype for tracks file are "
                       "Float32LE, Float32BE, Float64LE & Float64BE");
-    App::check_overwrite(this->name);
+    App::check_overwrite(path);
   }
 
   ~__WriterBase__() {
     if (open_success) {
-      File::OFStream out(name, std::ios::in | std::ios::out | std::ios::binary);
+      File::OFStream out(path, std::ios::in | std::ios::out | std::ios::binary);
       update_counts(out);
     }
   }
@@ -117,14 +113,14 @@ public:
   uint64_t count, total_count;
 
 protected:
-  std::filesystem::path name;
+  std::filesystem::path path;
   DataType dtype;
   int64_t count_offset;
   bool open_success;
 
   void verify_stream(const File::OFStream &out) {
     if (!out.good())
-      throw Exception("error writing file \"" + name.string() + "\": " + strerror(errno));
+      throw Exception("error writing file \"" + path.string() + "\": " + strerror(errno));
   }
 
   void update_counts(File::OFStream &out) {

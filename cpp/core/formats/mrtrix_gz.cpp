@@ -38,11 +38,11 @@ std::unique_ptr<ImageIO::Base> MRtrix_GZ::read(Header &H) const {
   read_mrtrix_header(H, zf);
   zf.close();
 
-  std::string fname;
+  std::filesystem::path filepath;
   size_t offset, write_offset;
-  get_mrtrix_file_path(H, "file", fname, offset);
+  get_mrtrix_file_path(H, "file", filepath, offset);
   write_offset = offset;
-  if (fname != hpath.string())
+  if (filepath != hpath)
     throw Exception("GZip-compressed MRtrix format images must have image data within the same file as the header");
 
   std::stringstream header;

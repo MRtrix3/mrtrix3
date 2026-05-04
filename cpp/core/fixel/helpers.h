@@ -94,7 +94,7 @@ template <class HeaderType> FORCE_INLINE void check_data_file(const HeaderType &
                                 " is not a valid fixel data file. Expected a 3-dimensional image of size n x m x 1");
 }
 
-FORCE_INLINE std::string get_fixel_directory(const std::filesystem::path &fixel_file) {
+FORCE_INLINE std::filesystem::path get_fixel_directory(const std::filesystem::path &fixel_file) {
   std::filesystem::path fixel_directory = fixel_file.parent_path();
   // assume the user is running the command from within the fixel directory
   if (fixel_directory.empty())
@@ -321,7 +321,7 @@ template <class IndexHeaderType> FORCE_INLINE Header directions_header_from_inde
 FORCE_INLINE void copy_fixel_file(const std::filesystem::path &input_file_path,
                                   const std::filesystem::path &output_directory) {
   check_fixel_directory(output_directory, true);
-  std::string output_path = (output_directory / input_file_path.string());
+  std::filesystem::path output_path = (output_directory / input_file_path.filename().string());
   Header input_header = Header::open(input_file_path);
   auto input_image = input_header.get_image<float>();
   auto output_image = Image<float>::create(output_path, input_header);
@@ -329,7 +329,8 @@ FORCE_INLINE void copy_fixel_file(const std::filesystem::path &input_file_path,
 }
 
 //! Copy the index file from one fixel directory into another
-FORCE_INLINE void copy_index_file(const std::string &input_directory, const std::string &output_directory) {
+FORCE_INLINE void copy_index_file(const std::filesystem::path &input_directory,
+                                  const std::filesystem::path &output_directory) {
   Header input_header = Fixel::find_index_header(input_directory);
   check_fixel_directory(output_directory, true);
 
@@ -341,7 +342,7 @@ FORCE_INLINE void copy_index_file(const std::string &input_directory, const std:
     auto input_image = input_header.get_image<index_type>();
     auto output_image = Image<index_type>::open(output_path);
     if (!images_match_abs(input_image, output_image))
-      throw Exception("output fixel directory \"" + output_directory + "\" already contains index file, " +
+      throw Exception("output fixel directory \"" + output_directory.string() + "\" already contains index file, " +
                       "which is not the same as the expected output" +
                       (App::overwrite_files
                            ? " (-force option cannot safely be applied on directories; please erase manually instead)"
@@ -356,7 +357,7 @@ FORCE_INLINE void copy_index_file(const std::string &input_directory, const std:
 
 //! Copy the directions file from one fixel directory into another.
 FORCE_INLINE void copy_directions_file(const std::filesystem::path &input_directory,
-                                       const std::string &output_directory) {
+                                       const std::filesystem::path &output_directory) {
   Header input_header = Fixel::find_directions_header(input_directory);
   namespace fs = std::filesystem;
   fs::path output_path = (output_directory / fs::path(input_header.name()).filename());
@@ -366,8 +367,8 @@ FORCE_INLINE void copy_directions_file(const std::filesystem::path &input_direct
     auto input_image = input_header.get_image<float>();
     auto output_image = Image<float>::open(output_path);
     if (!images_match_abs(input_image, output_image))
-      throw Exception("output fixel directory \"" + output_directory + "\" already contains directions file, " +
-                      "which is not the same as the expected output" +
+      throw Exception("output fixel directory \"" + output_directory.string() +
+                      "\" already contains directions file, " + "which is not the same as the expected output" +
                       (App::overwrite_files
                            ? " (-force option cannot safely be applied on directories; please erase manually instead)"
                            : ""));
@@ -379,15 +380,16 @@ FORCE_INLINE void copy_directions_file(const std::filesystem::path &input_direct
   }
 }
 
-FORCE_INLINE void copy_index_and_directions_file(const std::string &input_directory,
-                                                 const std::string &output_directory) {
+FORCE_INLINE void copy_index_and_directions_file(const std::filesystem::path &input_directory,
+                                                 const std::filesystem::path &output_directory) {
   copy_index_file(input_directory, output_directory);
   copy_directions_file(input_directory, output_directory);
 }
 
 //! Copy all data files in a fixel directory into another directory. Data files do not include the index or directions
 //! file.
-FORCE_INLINE void copy_all_data_files(const std::string &input_directory, const std::string &output_directory) {
+FORCE_INLINE void copy_all_data_files(const std::filesystem::path &input_directory,
+                                      const std::filesystem::path &output_directory) {
   for (auto &input_header : Fixel::find_data_headers(input_directory, Fixel::find_index_header(input_directory)))
     copy_fixel_file(input_header.name(), output_directory);
 }

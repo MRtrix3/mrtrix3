@@ -31,7 +31,7 @@ namespace MR::GUI::Dialog::File {
 
 const std::string image_filter_string = "Medical Images (*" + join(MR::Formats::known_extensions, " *") + ")";
 
-std::string get_folder(QWidget *parent, const std::string &caption, std::string *folder) {
+std::filesystem::path get_folder(QWidget *parent, const std::string &caption, std::string *folder) {
   QString qstring = QFileDialog::getExistingDirectory(
       parent, qstr(caption), folder ? qstr(*folder) : QString(), QFileDialog::ShowDirsOnly | FILE_DIALOG_OPTIONS);
 
@@ -93,7 +93,7 @@ void check_overwrite_files_func(const std::filesystem::path &name) {
     overwrite_files = true;
 }
 
-std::filesystem::path get_save_name(QWidget *parent,
+std::filesystem::path get_save_path(QWidget *parent,
                                     const std::string &caption,
                                     const std::filesystem::path &suggested_name,
                                     const std::string &filter,

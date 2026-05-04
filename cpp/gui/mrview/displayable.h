@@ -63,7 +63,7 @@ class Displayable : public QAction {
   Q_OBJECT
 
 public:
-  Displayable(const std::string &filepath);
+  Displayable(const std::filesystem::path &filepath);
 
   virtual ~Displayable();
 

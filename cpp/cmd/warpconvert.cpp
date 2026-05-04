@@ -86,7 +86,7 @@ void run() {
 
   const int type = argument[1];
   const bool midway_space = !get_options("midway_space").empty();
-  const std::string template_filename = get_option_value<std::string>("template", "");
+  const std::filesystem::path template_filepath = get_option_value<std::filesystem::path>("template", "");
   const int from = get_option_value("from", 1);
 
   // deformation2displacement
@@ -141,7 +141,7 @@ void run() {
     } else {
       if (get_options("template").empty())
         throw Exception("-template option required with warpfull2deformation or warpfull2displacement conversion type");
-      auto template_header = Header::open(template_filename);
+      auto template_header = Header::open(template_filepath);
       warp_output = Registration::Warp::compute_full_deformation(warp, template_header, from);
     }
 

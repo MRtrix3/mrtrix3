@@ -137,7 +137,7 @@ public:
   void calculate_normals();
 
   const std::string &get_name() const { return name; }
-  void set_name(const std::string &s) { name = s; }
+  void set_name(const std::string &n) { name = n; }
 
   const Vertex &vert(const size_t i) const {
     assert(i < vertices.size());

@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <filesystem>
+
 #include "mrview/mode/slice.h"
 
 namespace MR::GUI::MRView::Mode {
@@ -71,7 +73,7 @@ private:
 
   // Want layout state to persist even after instance is destroyed
   static bool show_grid_lines, show_volumes;
-  static std::string prev_image_name;
+  static std::filesystem::path prev_image_path;
   static ssize_t n_rows, n_cols, volume_increment;
   static float slice_focus_increment;
   static float slice_focus_inc_adjust_rate;

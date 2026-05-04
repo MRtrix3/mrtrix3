@@ -825,7 +825,7 @@ template <class Output> void write_other(const Header &H, Output &out) {
       return;
     store<int32_t>(MGH_TAG_OLD_COLORTABLE, out);
     store<int32_t>(lines.size(), out);
-    const std::string filename = "INTERNAL";
+    static const std::string filename = "INTERNAL";
     store<int32_t>(filename.size() + 1, out);
     out.write(filename.c_str(), filename.size() + 1);
     for (const auto &line : lines) {
@@ -856,7 +856,7 @@ template <class Output> void write_other(const Header &H, Output &out) {
       max_index = std::max(max_index, index);
     }
     store<int32_t>(max_index + 1, out);
-    const std::string filename = "INTERNAL";
+    static const std::string filename = "INTERNAL";
     store<int32_t>(filename.size() + 1, out);
     out.write(filename.c_str(), filename.size() + 1);
     // Actual number of entries in the table

@@ -70,8 +70,8 @@ void load_rois(Properties &properties) {
     properties.mask.add(ROI(opt[i][0]));
 }
 
-Image<bool> Mask::__get_mask(const std::string &name) {
-  auto data = Image<bool>::open(name);
+Image<bool> Mask::__get_mask(const std::filesystem::path &path) {
+  auto data = Image<bool>::open(path);
   std::vector<size_t> bottom(3, 0), top(3, 0);
   std::fill_n(bottom.begin(), 3, std::numeric_limits<size_t>::max());
 
@@ -96,7 +96,7 @@ Image<bool> Mask::__get_mask(const std::string &name) {
   }
 
   if (!sum)
-    throw Exception("Cannot use image " + name + " as ROI - image is empty");
+    throw Exception("Cannot use image " + path.string() + " as ROI - image is empty");
 
   if (bottom[0])
     --bottom[0];

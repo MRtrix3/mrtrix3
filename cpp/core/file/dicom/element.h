@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <filesystem>
 #include <unordered_map>
 
 #include "file/dicom/definitions.h"
@@ -94,7 +95,7 @@ public:
   std::vector<Sequence> parents;
   bool transfer_syntax_supported;
 
-  void set(const std::string &filename, bool force_read = false, bool read_write = false);
+  void set(const std::filesystem::path &filepath, bool force_read = false, bool read_write = false);
   bool read();
 
   bool is(uint16_t Group, uint16_t Element) const {

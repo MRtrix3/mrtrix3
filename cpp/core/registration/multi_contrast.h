@@ -33,19 +33,20 @@
 
 namespace MR::Registration {
 
-FORCE_INLINE void check_image_output(const std::string &image_name, const Header &reference) {
+FORCE_INLINE void check_image_output(const std::filesystem::path &image_path, const Header &reference) {
   std::vector<std::string> V;
-  if (image_name.empty())
+  if (image_path.empty())
     throw Exception("image output path is empty");
-  if (std::filesystem::exists(image_name) && !App::overwrite_files)
-    throw Exception("output image \"" + image_name + "\" already exists (use -force option to force overwrite)");
+  if (std::filesystem::exists(image_path) && !App::overwrite_files)
+    throw Exception("output image \"" + image_path.string() + "\" already exists" + //
+                    " (use -force option to force overwrite)");                     //
 
   Header H = reference;
   File::NameParser parser;
-  parser.parse(image_name);
+  parser.parse(image_path);
   std::vector<int> Pdim(parser.ndim());
 
-  H.name() = image_name;
+  H.path() = image_path;
 
   const Formats::Base **format_handler = Formats::handlers;
   for (; *format_handler; format_handler++)
@@ -53,13 +54,12 @@ FORCE_INLINE void check_image_output(const std::string &image_name, const Header
       break;
 
   if (!*format_handler) {
-    const std::string basename = std::filesystem::path(image_name).filename().string();
+    const std::string basename = image_path.filename().string();
     const size_t extension_index = basename.find_last_of(".");
-    if (extension_index == std::string::npos)
-      throw Exception("unknown format for image \"" + image_name + "\" (no file extension specified)");
-    else
-      throw Exception("unknown format for image \"" + image_name +
-                      "\" (unsupported file extension: " + basename.substr(extension_index) + ")");
+    throw Exception("unknown format for image \"" + image_path.string() + "\"" + //
+                    (extension_index == std::string::npos
+                         ? "(no file extension specified)"
+                         : (" (unsupported file extension: " + basename.substr(extension_index) + ")")));
   }
 }
 

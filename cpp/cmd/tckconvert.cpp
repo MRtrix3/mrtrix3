@@ -116,8 +116,8 @@ void usage() {
 
 class VTKWriter : public WriterInterface<float> {
 public:
-  VTKWriter(const std::string &file, bool write_ascii = true)
-      : VTKout(file, std::ios::binary), write_ascii(write_ascii) {
+  VTKWriter(const std::filesystem::path &path, bool write_ascii = true)
+      : VTKout(path, std::ios::binary), write_ascii(write_ascii) {
     // create and write header of VTK output file:
     VTKout << "# vtk DataFile Version 3.0\n"
               "Data values for Tracks\n";
@@ -218,8 +218,8 @@ template <class T> void loadLines(std::vector<int64_t> &lines, std::ifstream &in
 
 class VTKReader : public ReaderInterface<float> {
 public:
-  VTKReader(const std::string &file) {
-    std::ifstream input(file, std::ios::binary);
+  VTKReader(const std::filesystem::path &path) {
+    std::ifstream input(path, std::ios::binary);
     std::string line;
     int number_of_points = 0;
     number_of_lines = 0;
@@ -280,7 +280,7 @@ private:
 
 class ASCIIReader : public ReaderInterface<float> {
 public:
-  ASCIIReader(const std::string &file) { auto num = list.parse_scan_check(file); }
+  ASCIIReader(const std::filesystem::path &path) { auto num = list.parse_scan_check(path); }
 
   bool operator()(Streamline<float> &tck) {
     tck.clear();
@@ -303,9 +303,9 @@ private:
 
 class ASCIIWriter : public WriterInterface<float> {
 public:
-  ASCIIWriter(const std::string &file) {
+  ASCIIWriter(const std::filesystem::path &path) {
     count.push_back(0);
-    parser.parse(file);
+    parser.parse(path);
     if (parser.ndim() != 1)
       throw Exception("output file specifier should contain one placeholder for numbering (e.g. output-[].txt)");
     parser.calculate_padding({1000000});
@@ -330,11 +330,11 @@ private:
 
 class PLYWriter : public WriterInterface<float> {
 public:
-  PLYWriter(const std::string &file,
+  PLYWriter(const std::filesystem::path &path,
             int increment = DEFAULT_PLY_INCREMENT,
             float radius = DEFAULT_PLY_RADIUS,
             int sides = DEFAULT_PLY_SIDES)
-      : out(file), increment(increment), radius(radius), sides(sides) {
+      : out(path), increment(increment), radius(radius), sides(sides) {
     vertexFilename = File::create_tempfile(0, "vertex");
     faceFilename = File::create_tempfile(0, "face");
 
@@ -587,8 +587,8 @@ private:
 
 class RibWriter : public WriterInterface<float> {
 public:
-  RibWriter(const std::string &file, float radius = 0.1, bool dec = false)
-      : out(file), writeDEC(dec), radius(radius), hasPoints(false), wroteHeader(false) {
+  RibWriter(const std::filesystem::path &path, float radius = 0.1, bool dec = false)
+      : out(path), writeDEC(dec), radius(radius), hasPoints(false), wroteHeader(false) {
     pointsFilename = File::create_tempfile(0, "points");
     pointsOF.open(pointsFilename);
     pointsOF << "\"P\" [";

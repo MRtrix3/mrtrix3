@@ -97,7 +97,7 @@ void run() {
     print(File::Dicom::Element::print_header());
 
   if (reader.read(argument[0].as_text(), all, csa, phoenix, true))
-    throw Exception("error reading file \"" + reader.filename + "\"");
+    throw Exception("error reading file \"" + reader.filepath.string() + "\"");
 
   if (!all && !csa && !phoenix)
     std::cout << reader;

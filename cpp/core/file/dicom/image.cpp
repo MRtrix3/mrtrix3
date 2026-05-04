@@ -24,7 +24,7 @@
 
 namespace MR::File::Dicom {
 
-void Image::parse_item(Element &item, const std::string &dirname) {
+void Image::parse_item(Element &item /*, const std::string &dirname*/) {
   if (item.ignore_when_parsing())
     return;
 
@@ -293,7 +293,7 @@ void Image::parse_item(Element &item, const std::string &dirname) {
 void Image::read() {
   {
     Element item;
-    item.set(filename);
+    item.set(filepath);
 
     while (item.read()) {
       try {
@@ -457,13 +457,13 @@ std::ostream &operator<<(std::ostream &stream, const Frame &item) {
     if (item.bvalue > 0.0)
       stream << ", G = [ " << item.G[0] << " " << item.G[1] << " " << item.G[2] << " ]";
   }
-  stream << " (\"" << item.filename << "\", " << item.data << ")";
+  stream << " (\"" << item.filepath.string() << "\", " << item.data << ")";
 
   return stream;
 }
 
 std::ostream &operator<<(std::ostream &stream, const Image &item) {
-  stream << (!item.filename.empty() ? item.filename : "file not set") << ":\n"
+  stream << (!item.filepath.string().empty() ? item.filepath.string() : "file not set") << ":\n"
          << (!item.sequence_name.empty() ? item.sequence_name : "sequence not set") << " ["
          << (!item.manufacturer.empty() ? item.manufacturer : std::string("unknown manufacturer")) << "] "
          << (!item.frames.empty() ? str(item.frames.size()) + " frames with dim " + str(item.frame_dim)

@@ -122,7 +122,7 @@ public:
   bool get_use_lighting() const { return use_lighting; }
   bool get_normalise() const { return normalise; }
 
-  void screenshot(int oversampling, const std::string &image_name);
+  void screenshot(int oversampling, const std::filesystem::path &image_path);
 
 protected:
   float view_angle, distance, scale;
@@ -137,7 +137,7 @@ protected:
   Eigen::Quaternionf orientation;
   Eigen::Vector3f focus;
 
-  std::string screenshot_name;
+  std::filesystem::path screenshot_path;
   std::unique_ptr<QImage> pix;
   std::unique_ptr<GLubyte[]> framebuffer;
   int OS, OS_x, OS_y;

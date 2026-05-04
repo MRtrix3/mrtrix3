@@ -240,8 +240,10 @@ private:
 
 class WriteKernelDynamic : public Tracking::WriteKernel {
 public:
-  WriteKernelDynamic(const Tracking::SharedBase &shared, const std::string &output_file, const Properties &properties)
-      : Tracking::WriteKernel(shared, output_file, properties) {}
+  WriteKernelDynamic(const Tracking::SharedBase &shared,
+                     const std::filesystem::path &output_path,
+                     const Properties &properties)
+      : Tracking::WriteKernel(shared, output_path, properties) {}
   WriteKernelDynamic(const WriteKernelDynamic &) = delete;
   WriteKernelDynamic &operator=(const WriteKernelDynamic &) = delete;
   bool operator()(const Tracking::GeneratedTrack &, Streamline<> &);

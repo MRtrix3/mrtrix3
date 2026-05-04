@@ -262,6 +262,8 @@ public:
     }
 
     void clear() { path.clear(); }
+    bool empty() const { return path.string().empty(); }
+    std::string string() const { return path.string(); }
 
   private:
     std::string &name;

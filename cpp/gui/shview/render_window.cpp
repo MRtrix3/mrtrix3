@@ -240,9 +240,9 @@ Window::~Window() {
 }
 
 void Window::open_slot() {
-  std::string coef_file = Dialog::File::get_file(this, "Select SH coefficients file");
-  if (!coef_file.empty())
-    set_values(coef_file);
+  const std::filesystem::path coef_path = Dialog::File::get_file(this, "Select SH coefficients file");
+  if (!coef_path.empty())
+    set_values(coef_path);
 }
 
 void Window::close_slot() {

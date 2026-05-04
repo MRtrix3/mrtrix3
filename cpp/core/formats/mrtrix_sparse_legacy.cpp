@@ -67,7 +67,7 @@ std::unique_ptr<ImageIO::Base> MRtrix_sparse::read(Header &H) const {
   if (size_it == H.keyval().end())
     throw Exception("sparse data class size not specified in sparse image header " + H.name());
 
-  std::string image_fname, sparse_fname;
+  std::filesystem::path image_fname, sparse_fname;
   size_t image_offset, sparse_offset;
 
   get_mrtrix_file_path(H, "file", image_fname, image_offset);

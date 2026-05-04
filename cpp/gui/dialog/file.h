@@ -24,8 +24,8 @@ namespace MR::GUI::Dialog::File {
 extern const std::string image_filter_string;
 void check_overwrite_files_func(const std::filesystem::path &name);
 
-std::string get_folder(QWidget *parent, const std::string &caption, std::string *folder = nullptr);
-std::filesystem::path get_file(QWidget *parent,
+std::filesystem::path get_folder(QWidget *parent, const std::string &caption, std::string *folder = nullptr);
+std::filesystem::path get_path(QWidget *parent,
                                const std::string &caption,
                                const std::string &filter = std::string(),
                                std::string *folder = nullptr);
@@ -33,7 +33,7 @@ std::vector<std::string> get_files(QWidget *parent,
                                    const std::string &caption,
                                    const std::string &filter = std::string(),
                                    std::string *folder = nullptr);
-std::filesystem::path get_save_name(QWidget *parent,
+std::filesystem::path get_save_path(QWidget *parent,
                                     const std::string &caption,
                                     const std::filesystem::path &suggested_name = std::filesystem::path(),
                                     const std::string &filter = std::string(),
@@ -51,7 +51,7 @@ inline std::filesystem::path get_save_image_name(QWidget *parent,
                                                  const std::string &caption,
                                                  const std::filesystem::path &suggested_name = std::filesystem::path(),
                                                  std::string *folder = nullptr) {
-  return get_save_name(parent, caption, suggested_name, image_filter_string, folder);
+  return get_save_path(parent, caption, suggested_name, image_filter_string, folder);
 }
 
 } // namespace MR::GUI::Dialog::File

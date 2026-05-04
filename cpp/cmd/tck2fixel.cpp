@@ -110,8 +110,8 @@ void usage() {
 // clang-format on
 
 template <class VectorType>
-void write_fixel_output(const std::string &filename, const VectorType &data, const Header &header) {
-  auto output = Image<float>::create(filename, header);
+void write_fixel_output(const std::filesystem::path &filepath, const VectorType &data, const Header &header) {
+  auto output = Image<float>::create(filepath, header);
   for (size_t i = 0; i < data.size(); ++i) {
     output.index(0) = i;
     output.value() = data[i];

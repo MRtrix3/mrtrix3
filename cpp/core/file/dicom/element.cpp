@@ -39,7 +39,7 @@ std::ostream &operator<<(std::ostream &stream, const Time &item) {
 const char *Element::type_as_str[] = {
     "invalid", "integer", "unsigned integer", "floating-point", "date", "time", "string", "sequence", "other", nullptr};
 
-void Element::set(const std::string &filename, bool force_read, bool read_write) {
+void Element::set(const std::filesystem::path &filepath, bool force_read, bool read_write) {
   group = element = VR = 0;
   size = 0;
   start = data = next = NULL;
@@ -47,7 +47,7 @@ void Element::set(const std::string &filename, bool force_read, bool read_write)
   transfer_syntax_supported = true;
   parents.clear();
 
-  fmap.reset(new File::MMap(std::filesystem::path(filename), read_write));
+  fmap.reset(new File::MMap(filepath, read_write));
 
   if (fmap->size() < 256)
     throw Exception("\"" + fmap->name().string() + "\" is too small to be a valid DICOM file");

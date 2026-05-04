@@ -44,12 +44,12 @@ std::unique_ptr<ImageIO::Base> MRtrix::read(Header &H) const {
 
   read_mrtrix_header(H, kv);
 
-  std::string fname;
+  std::filesystem::path filepath;
   size_t offset;
-  get_mrtrix_file_path(H, "file", fname, offset);
+  get_mrtrix_file_path(H, "file", filepath, offset);
 
   File::ParsedName::List list;
-  auto num = list.parse_scan_check(fname);
+  auto num = list.parse_scan_check(filepath);
 
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));
   for (size_t n = 0; n < list.size(); ++n)

@@ -18,7 +18,7 @@
 
 namespace MR::GUI::MRView {
 
-Displayable::Displayable(const std::string &filename)
+Displayable::Displayable(const std::filesystem::path &filepath)
     : QAction(nullptr),
       lessthan(NAN),
       greaterthan(NAN),
@@ -30,7 +30,7 @@ Displayable::Displayable(const std::string &filename)
       colourmap(0),
       show(true),
       show_colour_bar(true),
-      filename(filename),
+      filepath(filepath),
       value_min(NAN),
       value_max(NAN),
       flags_(0x00000000) {

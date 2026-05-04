@@ -21,7 +21,7 @@
 namespace MR::GUI::MRView::Tool {
 class Legacy : public FixelType<FixelLegacyType> {
 public:
-  Legacy(const std::string &filename, Fixel &fixel_tool) : FixelType(filename, fixel_tool) {
+  Legacy(const std::filesystem::path &filepath, Fixel &fixel_tool) : FixelType(filepath, fixel_tool) {
     value_types = {"unity", "fixel size", "associated value"};
     colour_types = {"direction", "fixel size", "associated value"};
     threshold_types = {"fixel size", "associated value"};
@@ -29,7 +29,7 @@ public:
     fixel_values[value_types[2]];
 
     fixel_data.reset(new FixelLegacyType(header));
-    load_image(filename);
+    load_image(filepath);
   }
 
   void load_image_buffer() override;

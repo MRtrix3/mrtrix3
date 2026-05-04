@@ -47,11 +47,11 @@ public:
 template <class ValueType = float> class Reader : public __ReaderBase__, public ReaderInterface<ValueType> {
 public:
   //! open the \c file for reading and load header into \c properties
-  Reader(const std::string &file, Properties &properties) {
-    open(file, "tracks", properties);
+  Reader(const std::filesystem::path &path, Properties &properties) {
+    open(path, "tracks", properties);
     auto opt = App::get_options("tck_weights_in");
     if (!opt.empty())
-      weights = File::Matrix::load_vector<ValueType>(std::filesystem::path(std::string(opt[0][0])));
+      weights = File::Matrix::load_vector<ValueType>(static_cast<std::filesystem::path>(opt[0][0]));
   }
 
   //! fetch next track from file
@@ -173,7 +173,7 @@ class WriterUnbuffered : public __WriterBase__<ValueType>, public WriterInterfac
 public:
   using __WriterBase__<ValueType>::count;
   using __WriterBase__<ValueType>::total_count;
-  using __WriterBase__<ValueType>::name;
+  using __WriterBase__<ValueType>::path;
   using __WriterBase__<ValueType>::dtype;
   using __WriterBase__<ValueType>::create;
   using __WriterBase__<ValueType>::verify_stream;
@@ -183,14 +183,14 @@ public:
   using vector_type = Eigen::Matrix<ValueType, 3, 1>;
 
   //! create a new track file with the specified properties
-  WriterUnbuffered(const std::string &file, const Properties &properties) : __WriterBase__<ValueType>(file) {
+  WriterUnbuffered(const std::filesystem::path &path, const Properties &properties) : __WriterBase__<ValueType>(path) {
 
-    if (!Path::has_suffix(std::filesystem::path(name), ".tck"))
+    if (!Path::has_suffix(path, ".tck"))
       throw Exception("output track files must use the .tck suffix");
 
     File::OFStream out;
     try {
-      out.open(name, std::ios::out | std::ios::binary | std::ios::trunc);
+      out.open(path, std::ios::out | std::ios::binary | std::ios::trunc);
     } catch (Exception &e) {
       throw Exception(e, "Unable to create output track file");
     }
@@ -206,12 +206,12 @@ public:
     format_point(barrier(), x);
     out.write(reinterpret_cast<char *>(&x[0]), sizeof(x));
     if (!out.good())
-      throw Exception("error writing tracks file \"" + name.string() + "\": " + strerror(errno));
+      throw Exception("error writing tracks file \"" + path.string() + "\": " + strerror(errno));
     open_success = true;
 
     auto opt = App::get_options("tck_weights_out");
     if (!opt.empty())
-      set_weights_path(std::filesystem::path(std::string(opt[0][0])));
+      set_weights_path(opt[0][0]);
   }
 
   //! append track to file
@@ -238,7 +238,7 @@ public:
   void set_weights_path(const std::filesystem::path &path) {
     if (!weights_path.empty())
       throw Exception("Cannot change output streamline weights file path");
-    weights_path = std::filesystem::path(path);
+    weights_path = path;
     App::check_overwrite(weights_path);
     File::OFStream out(weights_path, std::ios::out | std::ios::binary | std::ios::trunc);
   }
@@ -279,7 +279,7 @@ protected:
     int64_t prev_barrier_addr = barrier_addr;
 
     format_point(barrier(), data[num_points]);
-    File::OFStream out(name, std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
+    File::OFStream out(path, std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
     out.write(reinterpret_cast<const char *const>(data + 1), sizeof(vector_type) * num_points);
     verify_stream(out);
     barrier_addr = int64_t(out.tellp()) - sizeof(vector_type);
@@ -328,8 +328,8 @@ public:
   // CONF writing track files. MRtrix will store the output tracks in a
   // CONF relatively large buffer to limit the number of write() calls,
   // CONF avoid associated issues such as file fragmentation.
-  Writer(const std::string &file, const Properties &properties, size_t default_buffer_capacity = 16777216)
-      : WriterUnbuffered<ValueType>(file, properties),
+  Writer(const std::filesystem::path &path, const Properties &properties, size_t default_buffer_capacity = 16777216)
+      : WriterUnbuffered<ValueType>(path, properties),
         buffer_capacity(File::Config::get_int("TrackWriterBufferSize", default_buffer_capacity) / sizeof(vector_type)),
         buffer(new vector_type[buffer_capacity]),
         buffer_size(0) {}

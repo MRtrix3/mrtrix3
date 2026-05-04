@@ -183,12 +183,12 @@ public:
 };
 
 // Generate a fixel-fixel connectivity matrix
-InitMatrixUnweighted generate_unweighted(const std::string &track_filename,
+InitMatrixUnweighted generate_unweighted(const std::filesystem::path &track_filepath,
                                          Image<fixel_index_type> &index_image,
                                          Image<bool> &fixel_mask,
                                          const float angular_threshold);
 
-InitMatrixWeighted generate_weighted(const std::string &track_filename,
+InitMatrixWeighted generate_weighted(const std::filesystem::path &track_filepath,
                                      Image<fixel_index_type> &index_image,
                                      Image<bool> &fixel_mask,
                                      const float angular_threshold);

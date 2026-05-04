@@ -39,7 +39,7 @@ std::atomic_flag flag = ATOMIC_FLAG_INIT;
 
 void delete_temporary_files() {
   for (const auto &i : marked_files)
-    std::remove(i.c_str());
+    std::filesystem::remove(i);
   marked_files.clear();
 }
 
@@ -117,19 +117,19 @@ void on_signal(cleanup_function_type func) {
   std::atexit(func);
 }
 
-void mark_file_for_deletion(const std::string &filename) {
+void mark_file_for_deletion(const std::filesystem::path &filepath) {
   while (!flag.test_and_set())
     ;
-  marked_files.push_back(filename);
+  marked_files.push_back(filepath);
   flag.clear();
 }
 
-void unmark_file_for_deletion(const std::string &filename) {
+void unmark_file_for_deletion(const std::filesystem::path &filepath) {
   while (!flag.test_and_set())
     ;
   auto i = marked_files.begin();
   while (i != marked_files.end()) {
-    if (*i == filename)
+    if (*i == filepath)
       i = marked_files.erase(i);
     else
       ++i;

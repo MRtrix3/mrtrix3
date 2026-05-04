@@ -39,10 +39,11 @@ public:
 
   const std::string &key() const throw() { return (K); }
   const std::string &value() const throw() { return (V); }
-  const std::string &name() const throw() { return (filename); }
+  const std::filesystem::path &path() const throw() { return (filepath); }
 
 protected:
-  std::string K, V, filename;
+  std::string K, V;
+  std::filesystem::path filepath;
   std::ifstream in;
 };
 

@@ -94,6 +94,7 @@ void run() {
       ProgressBar progress("writing track scalar data to ascii files");
       DWI::Tractography::TrackScalar<> tck;
       while (file(tck)) {
+        // TODO Refactor to use std::filesystem::path if changing CLI to provide output directory path (#3160)
         std::string filename(opt[0][0]);
         filename += "-000000.txt";
         std::string num(str(tck.get_index()));

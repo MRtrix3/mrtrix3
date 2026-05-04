@@ -291,14 +291,14 @@ void process_image(Header &data,
                    Image<bool> &mask,
                    Image<real_type> &noise,
                    Image<uint16_t> &rank,
-                   const std::string &output_name,
+                   const std::filesystem::path &output_path,
                    const std::vector<uint32_t> &extent,
                    bool exp1) {
   auto input = data.get_image<T>().with_direct_io(3);
   // create output
   Header header(data);
   header.datatype() = DataType::from<T>();
-  auto output = Image<T>::create(output_name, header);
+  auto output = Image<T>::create(output_path, header);
   // run
   DenoisingFunctor<T> func(data.size(3), extent, mask, noise, rank, exp1);
   ThreadedLoop("running MP-PCA denoising", data, 0, 3).run(func, input, output);

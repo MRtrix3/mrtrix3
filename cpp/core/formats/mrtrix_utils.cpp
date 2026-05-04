@@ -105,33 +105,35 @@ bool next_keyvalue(File::GZ &gz, std::string &key, std::string &value) {
   return true;
 }
 
-void get_mrtrix_file_path(Header &H, const std::string &flag, std::string &fname, size_t &offset) {
+void get_mrtrix_file_path(Header &H, const std::string &flag, std::filesystem::path &filepath, size_t &offset) {
 
   auto i = H.keyval().find(flag);
   if (i == H.keyval().end())
-    throw Exception("missing \"" + flag + "\" specification for MRtrix image \"" + H.name() + "\"");
+    throw Exception("missing \"" + flag + "\" specification for MRtrix image \"" + H.path().string() + "\"");
   const std::string path = i->second;
   H.keyval().erase(i);
 
   std::istringstream file_stream(path);
-  file_stream >> fname;
+  std::string filepath_str;
+  file_stream >> filepath_str;
+  filepath = std::filesystem::path(filepath_str);
   offset = 0;
   if (file_stream.good()) {
     try {
       file_stream >> offset;
     } catch (...) {
-      throw Exception("invalid offset specified for file \"" + fname + "\" in MRtrix image header \"" + H.name() +
-                      "\"");
+      throw Exception("invalid offset specified for file \"" + filepath.string() + "\"" + //
+                      " in MRtrix image header \"" + H.path().string() + "\"");           //
     }
   }
 
-  if (fname == ".") {
+  if (filepath_str == ".") {
     if (offset == 0)
-      throw Exception("invalid offset specified for embedded MRtrix image \"" + H.name() + "\"");
-    fname = H.name();
+      throw Exception("invalid offset specified for embedded MRtrix image \"" + H.path().string() + "\"");
+    filepath = H.path();
   } else {
-    if (!std::filesystem::path(fname).is_absolute())
-      fname = (static_cast<const Header &>(H).path().parent_path() / fname);
+    if (!filepath.is_absolute())
+      filepath = (static_cast<const Header &>(H).path().parent_path() / filepath_str);
   }
 }
 

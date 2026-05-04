@@ -14,6 +14,9 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <filesystem>
+#include <optional>
+
 #include "command.h"
 #include "dwi/directions/predefined.h"
 #include "file/matrix.h"
@@ -35,8 +38,6 @@
 #include "registration/transform/affine.h"
 #include "registration/transform/rigid.h"
 #include "transform.h"
-
-#include <filesystem>
 
 using namespace MR;
 using namespace App;
@@ -360,19 +361,25 @@ void run() {
 
   // ****** RIGID REGISTRATION OPTIONS *******
   Registration::Linear rigid_registration;
-  const std::string rigid_filename = get_option_value<std::string>("rigid", "");
-  const bool output_rigid = !rigid_filename.empty();
-  if (output_rigid && !do_rigid)
+  std::optional<std::filesystem::path> rigid_filepath;
+  opt = get_options("rigid");
+  if (!opt.empty())
+    rigid_filepath.emplace(static_cast<std::filesystem::path>(opt[0][0]));
+  if (rigid_filepath.has_value() && !do_rigid)
     throw Exception("rigid transformation output requested when no rigid registration is requested");
 
-  const std::string rigid_1tomid_filename = get_option_value<std::string>("rigid_1tomidway", "");
-  const bool output_rigid_1tomid = !rigid_1tomid_filename.empty();
-  if (output_rigid_1tomid && !do_rigid)
+  std::optional<std::filesystem::path> rigid_1tomid_filepath;
+  opt = get_options("rigid_1tomidway");
+  if (!opt.empty())
+    rigid_1tomid_filepath.emplace(static_cast<std::filesystem::path>(opt[0][0]));
+  if (rigid_1tomid_filepath.has_value() && !do_rigid)
     throw Exception("midway rigid transformation output requested when no rigid registration is requested");
 
-  const std::string rigid_2tomid_filename = get_option_value<std::string>("rigid_2tomidway", "");
-  const bool output_rigid_2tomid = !rigid_2tomid_filename.empty();
-  if (output_rigid_2tomid && !do_rigid)
+  std::optional<std::filesystem::path> rigid_2tomid_filepath;
+  opt = get_options("rigid_2tomidway");
+  if (!opt.empty())
+    rigid_2tomid_filepath.emplace(static_cast<std::filesystem::path>(opt[0][0]));
+  if (rigid_2tomid_filepath.has_value() && !do_rigid)
     throw Exception("midway rigid transformation output requested when no rigid registration is requested");
 
   Registration::Transform::Rigid rigid;
@@ -492,19 +499,25 @@ void run() {
 
   // ****** AFFINE REGISTRATION OPTIONS *******
   Registration::Linear affine_registration;
-  const std::string affine_filename = get_option_value<std::string>("affine", "");
-  const bool output_affine = !affine_filename.empty();
-  if (output_affine && !do_affine)
+  std::optional<std::filesystem::path> affine_filepath;
+  opt = get_options("affine");
+  if (!opt.empty())
+    affine_filepath.emplace(static_cast<std::filesystem::path>(opt[0][0]));
+  if (affine_filepath.has_value() && !do_affine)
     throw Exception("affine transformation output requested when no affine registration is requested");
 
-  const std::string affine_1tomid_filename = get_option_value<std::string>("affine_1tomidway", "");
-  const bool output_affine_1tomid = !affine_1tomid_filename.empty();
-  if (output_affine_1tomid && !do_affine)
+  std::optional<std::filesystem::path> affine_1tomid_filepath;
+  opt = get_options("affine_1tomidway");
+  if (!opt.empty())
+    affine_1tomid_filepath.emplace(static_cast<std::filesystem::path>(opt[0][0]));
+  if (affine_1tomid_filepath.has_value() && !do_affine)
     throw Exception("midway affine transformation output requested when no affine registration is requested");
 
-  const std::string affine_2tomid_filename = get_option_value<std::string>("affine_2tomidway", "");
-  const bool output_affine_2tomid = !affine_2tomid_filename.empty();
-  if (output_affine_2tomid && !do_affine)
+  std::optional<std::filesystem::path> affine_2tomid_filepath;
+  opt = get_options("affine_2tomidway");
+  if (!opt.empty())
+    affine_2tomid_filepath.emplace(static_cast<std::filesystem::path>(opt[0][0]));
+  if (affine_2tomid_filepath.has_value() && !do_affine)
     throw Exception("midway affine transformation output requested when no affine registration is requested");
 
   Registration::Transform::Affine affine;
@@ -657,23 +670,23 @@ void run() {
   // ****** NON-LINEAR REGISTRATION OPTIONS *******
   Registration::NonLinear nl_registration;
   opt = get_options("nl_warp");
-  std::string warp1_filename;
-  std::string warp2_filename;
+  std::optional<std::filesystem::path> warp1_filepath;
+  std::optional<std::filesystem::path> warp2_filepath;
   if (!opt.empty()) {
     if (!do_nonlinear)
       throw Exception("Non-linear warp output requested when no non-linear registration is requested");
-    warp1_filename = std::string(opt[0][0]);
-    warp2_filename = std::string(opt[0][1]);
+    warp1_filepath.emplace(static_cast<std::filesystem::path>(opt[0][0]));
+    warp2_filepath.emplace(static_cast<std::filesystem::path>(opt[0][1]));
   }
 
   opt = get_options("nl_warp_full");
-  std::filesystem::path warp_full_path;
+  std::optional<std::filesystem::path> warp_full_path;
   if (!opt.empty()) {
     if (!do_nonlinear)
       throw Exception("Non-linear warp output requested when no non-linear registration is requested");
-    warp_full_path = static_cast<std::filesystem::path>(opt[0][0]);
-    if (!Path::is_mrtrix_image(warp_full_path) && //
-        !(Path::has_suffix(std::filesystem::path(warp_full_path), {".nii", ".nii.gz"}) &&
+    warp_full_path.emplace(static_cast<std::filesystem::path>(opt[0][0]));
+    if (!Path::is_mrtrix_image(warp_full_path.value()) && //
+        !(Path::has_suffix(warp_full_path.value(), {".nii", ".nii.gz"}) &&
           File::Config::get_bool("NIfTIAutoSaveJSON", false))) {
       throw Exception("nl_warp_full output requires .mif/.mih or NIfTI file format"
                       " with NIfTIAutoSaveJSON config option set.");
@@ -919,14 +932,15 @@ void run() {
         throw Exception("FIXME: metric selection");
     }
 
-    if (output_rigid_1tomid)
-      File::Matrix::save_transform(rigid.get_transform_half(), rigid.get_centre(), rigid_1tomid_filename);
+    if (rigid_1tomid_filepath.has_value())
+      File::Matrix::save_transform(rigid.get_transform_half(), rigid.get_centre(), rigid_1tomid_filepath.value());
 
-    if (output_rigid_2tomid)
-      File::Matrix::save_transform(rigid.get_transform_half_inverse(), rigid.get_centre(), rigid_2tomid_filename);
+    if (rigid_2tomid_filepath.has_value())
+      File::Matrix::save_transform(
+          rigid.get_transform_half_inverse(), rigid.get_centre(), rigid_2tomid_filepath.value());
 
-    if (output_rigid)
-      File::Matrix::save_transform(rigid.get_transform(), rigid.get_centre(), rigid_filename);
+    if (rigid_filepath.has_value())
+      File::Matrix::save_transform(rigid.get_transform(), rigid.get_centre(), rigid_filepath.value());
   }
 
   // ****** RUN AFFINE REGISTRATION *******
@@ -993,14 +1007,15 @@ void run() {
       } else
         throw Exception("FIXME: metric selection");
     }
-    if (output_affine_1tomid)
-      File::Matrix::save_transform(affine.get_transform_half(), affine.get_centre(), affine_1tomid_filename);
+    if (affine_1tomid_filepath.has_value())
+      File::Matrix::save_transform(affine.get_transform_half(), affine.get_centre(), affine_1tomid_filepath.value());
 
-    if (output_affine_2tomid)
-      File::Matrix::save_transform(affine.get_transform_half_inverse(), affine.get_centre(), affine_2tomid_filename);
+    if (affine_2tomid_filepath.has_value())
+      File::Matrix::save_transform(
+          affine.get_transform_half_inverse(), affine.get_centre(), affine_2tomid_filepath.value());
 
-    if (output_affine)
-      File::Matrix::save_transform(affine.get_transform(), affine.get_centre(), affine_filename);
+    if (affine_filepath.has_value())
+      File::Matrix::save_transform(affine.get_transform(), affine.get_centre(), affine_filepath.value());
   }
 
   // ****** RUN NON-LINEAR REGISTRATION *******
@@ -1018,23 +1033,23 @@ void run() {
       Registration::Transform::Affine identity_transform;
       nl_registration.run(identity_transform, images1, images2, im1_mask, im2_mask);
     }
-    if (!warp_full_path.empty()) {
+    if (warp_full_path.has_value()) {
       // TODO add affine parameters to comments too?
       Header output_header = nl_registration.get_output_warps_header();
       nl_registration.write_params_to_header(output_header);
       nl_registration.write_linear_to_header(output_header);
       output_header.datatype() = DataType::from_command_line(DataType::Float32);
-      auto output_warps = Image<float>::create(warp_full_path, output_header);
+      auto output_warps = Image<float>::create(warp_full_path.value(), output_header);
       nl_registration.get_output_warps(output_warps);
     }
 
-    if (!warp1_filename.empty()) {
+    if (warp1_filepath.has_value()) {
       Header output_header(images2);
       output_header.ndim() = 4;
       output_header.size(3) = 3;
       nl_registration.write_params_to_header(output_header);
       output_header.datatype() = DataType::from_command_line(DataType::Float32);
-      auto warp1 = Image<default_type>::create(warp1_filename, output_header).with_direct_io();
+      auto warp1 = Image<default_type>::create(warp1_filepath.value(), output_header).with_direct_io();
       Registration::Warp::compute_full_deformation(nl_registration.get_im2_to_mid_linear().inverse(),
                                                    *(nl_registration.get_mid_to_im2()),
                                                    *(nl_registration.get_im1_to_mid()),
@@ -1042,13 +1057,13 @@ void run() {
                                                    warp1);
     }
 
-    if (!warp2_filename.empty()) {
+    if (warp2_filepath.has_value()) {
       Header output_header(images1);
       output_header.ndim() = 4;
       output_header.size(3) = 3;
       nl_registration.write_params_to_header(output_header);
       output_header.datatype() = DataType::from_command_line(DataType::Float32);
-      auto warp2 = Image<default_type>::create(warp2_filename, output_header).with_direct_io();
+      auto warp2 = Image<default_type>::create(warp2_filepath.value(), output_header).with_direct_io();
       Registration::Warp::compute_full_deformation(nl_registration.get_im1_to_mid_linear().inverse(),
                                                    *(nl_registration.get_mid_to_im1()),
                                                    *(nl_registration.get_im2_to_mid()),

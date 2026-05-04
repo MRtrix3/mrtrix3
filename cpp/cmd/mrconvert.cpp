@@ -350,9 +350,9 @@ template <class ImageType> inline std::vector<int> set_header(Header &header, co
 }
 
 template <typename T, class InputType>
-void copy_permute(const InputType &in, Header &header_out, const std::string &output_filename) {
+void copy_permute(const InputType &in, Header &header_out, const std::filesystem::path &output_filepath) {
   const auto axes = set_header(header_out, in);
-  auto out = Image<T>::create(output_filename, header_out, add_to_command_history);
+  auto out = Image<T>::create(output_filepath, header_out, add_to_command_history);
   DWI::export_grad_commandline(out);
   PhaseEncoding::export_commandline(out);
   auto perm = Adapter::make<Adapter::PermuteAxes>(in, axes);
@@ -363,13 +363,13 @@ template <typename T>
 void extract(Header &header_in,
              Header &header_out,
              const std::vector<std::vector<uint32_t>> &pos,
-             const std::string &output_filename) {
+             const std::filesystem::path &output_filepath) {
   auto in = header_in.get_image<T>();
   if (pos.empty()) {
-    copy_permute<T, decltype(in)>(in, header_out, output_filename);
+    copy_permute<T, decltype(in)>(in, header_out, output_filepath);
   } else {
     auto extract = Adapter::make<Adapter::Extract>(in, pos);
-    copy_permute<T, decltype(extract)>(extract, header_out, output_filename);
+    copy_permute<T, decltype(extract)>(extract, header_out, output_filepath);
   }
 }
 

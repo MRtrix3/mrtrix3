@@ -27,7 +27,7 @@
 
 namespace MR::Surface {
 
-Mesh::Mesh(const std::filesystem::path &path) {
+Mesh::Mesh(const std::filesystem::path &path) : name(path.filename()) {
   const std::string extension = path.extension().string();
 
   if (extension == ".vtk" || extension == ".VTK") {
@@ -44,7 +44,7 @@ Mesh::Mesh(const std::filesystem::path &path) {
       throw Exception("Input surface mesh file not in supported format");
     }
   }
-  name = path.filename();
+  set_name(path.filename());
 }
 
 void Mesh::save(const std::filesystem::path &path, const bool binary) const {
@@ -333,10 +333,10 @@ void Mesh::load_stl(const std::filesystem::path &path) {
         warn_nonstandard_normals = true;
     }
     if (triangles.size() != count)
-      WARN("Number of triangles indicated in file " + path.filename().string() + "(" + str(count) +
+      WARN("Number of triangles indicated in file " + name + "(" + str(count) +
            ") does not match number actually read (" + str(triangles.size()) + ")");
     if (warn_attribute)
-      WARN("Some facets in file " + path.filename().string() + " have extended attributes; ignoring");
+      WARN("Some facets in file " + name + " have extended attributes; ignoring");
 
   } else {
 
@@ -354,42 +354,41 @@ void Mesh::load_stl(const std::filesystem::path &path) {
       line = line.substr(line.find_first_not_of(' '), line.npos);
       if (line.substr(0, 12) == "facet normal") {
         if (!inside_solid)
-          throw Exception("Error parsing STL file " + path.filename().string() + ": facet outside solid");
+          throw Exception("Error parsing STL file " + name + ": facet outside solid");
         if (inside_facet)
-          throw Exception("Error parsing STL file " + path.filename().string() + ": nested facets");
+          throw Exception("Error parsing STL file " + name + ": nested facets");
         inside_facet = true;
         line = line.substr(12);
         sscanf(line.c_str(), "%lf %lf %lf", &normal[0], &normal[1], &normal[2]);
       } else if (line.substr(0, 10) == "outer loop") {
         if (inside_loop)
-          throw Exception("Error parsing STL file " + path.filename().string() + ": nested loops");
+          throw Exception("Error parsing STL file " + name + ": nested loops");
         if (!inside_facet)
-          throw Exception("Error parsing STL file " + path.filename().string() + ": loop outside facet");
+          throw Exception("Error parsing STL file " + name + ": loop outside facet");
         inside_loop = true;
       } else if (line.substr(0, 6) == "vertex") {
         if (!inside_loop)
-          throw Exception("Error parsing STL file " + path.filename().string() + ": vertex outside loop");
+          throw Exception("Error parsing STL file " + name + ": vertex outside loop");
         if (!inside_facet)
-          throw Exception("Error parsing STL file " + path.filename().string() + ": vertex outside facet");
+          throw Exception("Error parsing STL file " + name + ": vertex outside facet");
         line = line.substr(6);
         sscanf(line.c_str(), "%lf %lf %lf", &vertex[0], &vertex[1], &vertex[2]);
         vertices.push_back(vertex);
         ++vertex_index;
       } else if (line.substr(0, 7) == "endloop") {
         if (!inside_loop)
-          throw Exception("Error parsing STL file " + path.filename().string() + ": loop ending without start");
+          throw Exception("Error parsing STL file " + name + ": loop ending without start");
         if (!inside_facet)
-          throw Exception("Error parsing STL file " + path.filename().string() + ": loop ending outside facet");
+          throw Exception("Error parsing STL file " + name + ": loop ending outside facet");
         inside_loop = false;
       } else if (line.substr(0, 8) == "endfacet") {
         if (inside_loop)
-          throw Exception("Error parsing STL file " + path.filename().string() + ": facet ending inside loop");
+          throw Exception("Error parsing STL file " + name + ": facet ending inside loop");
         if (!inside_facet)
-          throw Exception("Error parsing STL file " + path.filename().string() + ": facet ending without start");
+          throw Exception("Error parsing STL file " + name + ": facet ending without start");
         inside_facet = false;
         if (vertex_index != 3)
-          throw Exception("Error parsing STL file " + path.filename().string() + ": facet ended with " +
-                          str(vertex_index) + " vertices");
+          throw Exception("Error parsing STL file " + name + ": facet ended with " + str(vertex_index) + " vertices");
         triangles.push_back(std::vector<uint32_t>{
             uint32_t(vertices.size() - 3), uint32_t(vertices.size() - 2), uint32_t(vertices.size() - 1)});
         vertex_index = 0;
@@ -400,28 +399,28 @@ void Mesh::load_stl(const std::filesystem::path &path) {
           warn_nonstandard_normals = true;
       } else if (line.substr(0, 8) == "endsolid") {
         if (inside_facet)
-          throw Exception("Error parsing STL file " + path.filename().string() + ": solid ending inside facet");
+          throw Exception("Error parsing STL file " + name + ": solid ending inside facet");
         inside_solid = false;
       } else if (line.substr(0, 5) == "solid") {
-        throw Exception("Error parsing STL file " + path.filename().string() + ": multiple solids in file");
+        throw Exception("Error parsing STL file " + name + ": multiple solids in file");
       } else {
-        throw Exception("Error parsing STL file " + path.filename().string() + ": unknown key (" + line + ")");
+        throw Exception("Error parsing STL file " + name + ": unknown key (" + line + ")");
       }
     }
     if (inside_solid)
-      throw Exception("Error parsing STL file " + path.filename().string() + ": Failed to close solid");
+      throw Exception("Error parsing STL file " + name + ": Failed to close solid");
     if (inside_facet)
-      throw Exception("Error parsing STL file " + path.filename().string() + ": Failed to close facet");
+      throw Exception("Error parsing STL file " + name + ": Failed to close facet");
     if (inside_loop)
-      throw Exception("Error parsing STL file " + path.filename().string() + ": Failed to close loop");
+      throw Exception("Error parsing STL file " + name + ": Failed to close loop");
     if (vertex_index)
-      throw Exception("Error parsing STL file " + path.filename().string() + ": Failed to complete triangle");
+      throw Exception("Error parsing STL file " + name + ": Failed to complete triangle");
   }
 
   if (warn_right_hand_rule)
-    WARN("File " + path.filename().string() + " does not strictly conform to the right-hand rule");
+    WARN("File " + name + " does not strictly conform to the right-hand rule");
   if (warn_nonstandard_normals)
-    WARN("File " + path.filename().string() + " contains non-standard normals, which will be ignored");
+    WARN("File " + name + " contains non-standard normals, which will be ignored");
 
   try {
     verify_data();
@@ -650,7 +649,7 @@ void Mesh::load_fs(const std::filesystem::path &path) {
     }
 
   } else {
-    throw Exception("File " + path.filename().string() + " is not a FreeSurfer surface file");
+    throw Exception("File " + name + " is not a FreeSurfer surface file");
   }
 
   try {

@@ -16,6 +16,9 @@
 
 #pragma once
 
+#include <filesystem>
+#include <optional>
+
 #include "algo/loop.h"
 #include "file/matrix.h"
 #include "image.h"
@@ -69,9 +72,9 @@ public:
     else if (scale_by_invlength)
       result = (tck.size() > 1 ? (result / Tractography::length(tck)) : 0.0);
     if (scale_by_file) {
-      if (tck.get_index() >= size_t(file_values.size()))
-        throw Exception("File " + file_path + " does not contain enough entries for this tractogram");
-      result *= file_values[tck.get_index()];
+      if (file_values.has_value() && tck.get_index() >= size_t(file_values->size()))
+        throw Exception("File " + file_path->string() + " does not contain enough entries for this tractogram");
+      result *= (*file_values)[tck.get_index()];
     }
     return result;
   }
@@ -102,19 +105,19 @@ public:
   void set_scale_file(const std::filesystem::path &path, const bool i = true) {
     scale_by_file = i;
     if (!i) {
-      file_path.clear();
-      file_values.resize(0);
+      file_path.reset();
+      file_values.reset();
       return;
     }
-    file_path = path.filename();
-    file_values = File::Matrix::load_vector(path);
+    file_path.emplace(path);
+    file_values.emplace(File::Matrix::load_vector(path));
   }
 
 private:
   bool scale_by_length, scale_by_invlength, scale_by_invnodevol, scale_by_file;
   Eigen::VectorXd node_volumes;
-  std::string file_path;
-  Eigen::VectorXd file_values;
+  std::optional<std::filesystem::path> file_path;
+  std::optional<Eigen::VectorXd> file_values;
 };
 
 } // namespace MR::DWI::Tractography::Connectome

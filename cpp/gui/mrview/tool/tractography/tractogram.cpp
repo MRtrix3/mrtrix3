@@ -307,15 +307,15 @@ void Tractogram::Shader::update(const Displayable &object) {
   Displayable::Shader::update(object);
 }
 
-Tractogram::Tractogram(Tractography &tool, const std::string &filename)
-    : Displayable(filename),
+Tractogram::Tractogram(Tractography &tool, const std::filesystem::path &filepath)
+    : Displayable(filepath),
       show_colour_bar(true),
       original_fov(NAN),
       line_thickness(0.f),
       intensity_scalar_path(std::string()),
       threshold_scalar_path(std::string()),
       tractography_tool(tool),
-      filename(filename),
+      filepath(filepath),
       color_type(TrackColourType::Direction),
       threshold_type(TrackThresholdType::None),
       geometry_type(default_tract_geom),
@@ -543,7 +543,7 @@ void Tractogram::load_tracks() {
   GL::Context::Grab context;
   GL::assert_context_is_current();
 
-  DWI::Tractography::Reader<float> file(filename, properties);
+  DWI::Tractography::Reader<float> file(filepath, properties);
   DWI::Tractography::Streamline<float> tck;
   std::vector<Eigen::Vector3f> buffer;
   std::vector<GLint> starts;
@@ -621,7 +621,7 @@ void Tractogram::load_end_colours() {
   GL::assert_context_is_current();
 }
 
-void Tractogram::load_intensity_track_scalars(const std::filesystem::path &filename) {
+void Tractogram::load_intensity_track_scalars(const std::filesystem::path &filepath) {
   // Make sure to set graphics context!
   // We're setting up vertex array objects
   GL::Context::Grab context;
@@ -633,9 +633,9 @@ void Tractogram::load_intensity_track_scalars(const std::filesystem::path &filen
   std::vector<float> buffer;
   DWI::Tractography::TrackScalar<float> tck_scalar;
 
-  if (Path::has_suffix(filename, ".tsf")) {
+  if (filepath.extension() == ".tsf") {
     DWI::Tractography::Properties scalar_properties;
-    DWI::Tractography::ScalarReader<float> file(filename.string(), scalar_properties);
+    DWI::Tractography::ScalarReader<float> file(filepath, scalar_properties);
     DWI::Tractography::check_properties_match(properties, scalar_properties, ".tck / .tsf");
     size_t tck_count = 0;
     while (file(tck_scalar)) {
@@ -669,7 +669,7 @@ void Tractogram::load_intensity_track_scalars(const std::filesystem::path &filen
       load_intensity_scalars_onto_GPU(buffer, tck_count);
     file.close();
   } else {
-    const Eigen::VectorXf scalars = File::Matrix::load_vector<float>(filename);
+    const Eigen::VectorXf scalars = File::Matrix::load_vector<float>(filepath);
     size_t total_num_tracks = 0;
     for (std::vector<size_t>::const_iterator i = num_tracks_per_buffer.begin(); i != num_tracks_per_buffer.end(); ++i)
       total_num_tracks += *i;
@@ -704,7 +704,7 @@ void Tractogram::load_intensity_track_scalars(const std::filesystem::path &filen
     }
   }
   assert(intensity_scalar_buffers.size() == vertex_buffers.size());
-  intensity_scalar_path = filename;
+  intensity_scalar_path = filepath;
   this->set_windowing(value_min, value_max);
   if (!std::isfinite(greaterthan))
     greaterthan = value_max;
@@ -713,7 +713,7 @@ void Tractogram::load_intensity_track_scalars(const std::filesystem::path &filen
   GL::assert_context_is_current();
 }
 
-void Tractogram::load_threshold_track_scalars(const std::filesystem::path &filename) {
+void Tractogram::load_threshold_track_scalars(const std::filesystem::path &filepath) {
   // Make sure to set graphics context!
   // We're setting up vertex array objects
   GL::Context::Grab context;
@@ -725,9 +725,9 @@ void Tractogram::load_threshold_track_scalars(const std::filesystem::path &filen
   std::vector<float> buffer;
   DWI::Tractography::TrackScalar<float> tck_scalar;
 
-  if (Path::has_suffix(filename, ".tsf")) {
+  if (filepath.extension() == ".tsf") {
     DWI::Tractography::Properties scalar_properties;
-    DWI::Tractography::ScalarReader<float> file(filename.string(), scalar_properties);
+    DWI::Tractography::ScalarReader<float> file(filepath, scalar_properties);
     DWI::Tractography::check_properties_match(properties, scalar_properties, ".tck / .tsf");
     size_t tck_count = 0;
     while (file(tck_scalar)) {
@@ -761,7 +761,7 @@ void Tractogram::load_threshold_track_scalars(const std::filesystem::path &filen
       load_threshold_scalars_onto_GPU(buffer, tck_count);
     file.close();
   } else {
-    const Eigen::VectorXf scalars = File::Matrix::load_vector<float>(filename);
+    const Eigen::VectorXf scalars = File::Matrix::load_vector<float>(filepath);
     size_t total_num_tracks = 0;
     for (std::vector<size_t>::const_iterator i = num_tracks_per_buffer.begin(); i != num_tracks_per_buffer.end(); ++i)
       total_num_tracks += *i;
@@ -796,7 +796,7 @@ void Tractogram::load_threshold_track_scalars(const std::filesystem::path &filen
     }
   }
   assert(threshold_scalar_buffers.size() == vertex_buffers.size());
-  threshold_scalar_path = filename;
+  threshold_scalar_path = filepath;
   greaterthan = threshold_max;
   lessthan = threshold_min;
 

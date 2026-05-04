@@ -131,7 +131,7 @@ transform_type get_flirt_transform(const Header &header) {
 // }
 
 template <typename TransformationType>
-void parse_itk_trafo(const std::string &itk_file,
+void parse_itk_trafo(const std::filesystem::path &itk_path,
                      TransformationType &transformation,
                      Eigen::Vector3d &centre_of_rotation) {
   const std::string first_line = "#Insight Transform File V1.0";
@@ -144,7 +144,7 @@ void parse_itk_trafo(const std::string &itk_file,
   // QuaternionRigidTransform_double_3_3?
   // QuaternionRigidTransform_float_3_3?
 
-  File::KeyValue::Reader file(itk_file, first_line.c_str());
+  File::KeyValue::Reader file(itk_path, first_line.c_str());
   std::string line;
   size_t invalid(2);
   while (file.next()) {
