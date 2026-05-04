@@ -265,7 +265,7 @@ value_type AFDConnectivity::get(const std::filesystem::path &path) {
 }
 
 void AFDConnectivity::save(const std::filesystem::path &path) {
-  auto out = Image<value_type>::create(path.string(), Fixel_map<AFDConnFixel>::header());
+  auto out = Image<value_type>::create(path, Fixel_map<AFDConnFixel>::header());
   VoxelAccessor v(accessor());
   for (auto l = Loop(v)(v, out); l; ++l) {
     value_type value = 0.0;

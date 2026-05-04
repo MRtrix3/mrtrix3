@@ -314,6 +314,8 @@ UNARY_OP(
   Main program
  **********************************************************************/
 
+#include <filesystem>
+
 #include "algo/threaded_copy.h"
 #include "command.h"
 #include "dwi/gradient.h"
@@ -494,7 +496,8 @@ public:
       image_is_complex = search->second.image_is_complex;
     } else {
       try {
-        auto header = Header::open(arg);
+        const std::filesystem::path image_path{arg};
+        auto header = Header::open(image_path);
         image_is_complex = header.datatype().is_complex();
         image.reset(new Image<complex_type>(header.get_image<complex_type>()));
         image_list.insert(std::make_pair(arg, LoadedImage(image, image_is_complex)));
@@ -907,7 +910,8 @@ void run_operations(const std::vector<StackEntry> &stack) {
   } else
     header.datatype() = DataType::from_command_line(DataType::Float32);
 
-  auto output = Header::create(stack[1].arg, header).get_image<complex_type>();
+  const std::filesystem::path output_path{stack[1].arg};
+  auto output = Header::create(output_path, header).get_image<complex_type>();
 
   auto loop = ThreadedLoop("computing: " + operation_string(stack[0]), output, 0, output.ndim(), 2);
 

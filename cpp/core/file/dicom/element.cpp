@@ -47,7 +47,7 @@ void Element::set(const std::string &filename, bool force_read, bool read_write)
   transfer_syntax_supported = true;
   parents.clear();
 
-  fmap.reset(new File::MMap(filename, read_write));
+  fmap.reset(new File::MMap(std::filesystem::path(filename), read_write));
 
   if (fmap->size() < 256)
     throw Exception("\"" + fmap->name().string() + "\" is too small to be a valid DICOM file");

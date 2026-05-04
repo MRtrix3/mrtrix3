@@ -145,10 +145,11 @@ uint8_t store_datatype(const DataType &dt) {
 } // namespace
 
 std::unique_ptr<ImageIO::Base> MRI::read(Header &H) const {
-  if (!Path::has_suffix(std::filesystem::path(H.name()), ".mri"))
+  if (!Path::has_suffix(H.path(), ".mri"))
     return std::unique_ptr<ImageIO::Base>();
 
-  File::MMap fmap(H.name());
+  const std::filesystem::path &hpath = static_cast<const Header &>(H).path();
+  File::MMap fmap(hpath);
 
   if (memcmp(fmap.address(), "MRI#", 4))
     throw Exception("file \"" + H.name() + "\" is not in MRI format (unrecognised magic number)");
@@ -230,13 +231,13 @@ std::unique_ptr<ImageIO::Base> MRI::read(Header &H) const {
     throw Exception("no data field found in MRI image \"" + H.name() + "\"");
 
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));
-  io_handler->files.push_back(File::Entry(H.name(), data_offset));
+  io_handler->files.push_back(File::Entry(hpath, data_offset));
 
   return io_handler;
 }
 
 bool MRI::check(Header &H, size_t num_axes) const {
-  if (!Path::has_suffix(std::filesystem::path(H.name()), ".mri"))
+  if (!Path::has_suffix(H.path(), ".mri"))
     return false;
 
   if (H.ndim() > num_axes && num_axes != 4)
@@ -248,7 +249,8 @@ bool MRI::check(Header &H, size_t num_axes) const {
 }
 
 std::unique_ptr<ImageIO::Base> MRI::create(Header &H) const {
-  File::OFStream out(H.name());
+  const std::filesystem::path &hpath = static_cast<const Header &>(H).path();
+  File::OFStream out(hpath);
 
 #ifdef MRTRIX_BYTE_ORDER_BIG_ENDIAN
   bool is_BE = true;
@@ -314,10 +316,9 @@ std::unique_ptr<ImageIO::Base> MRI::create(Header &H) const {
   size_t data_offset = int64_t(out.tellp());
   out.close();
 
-  const std::filesystem::path data_path = H.name();
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));
-  std::filesystem::resize_file(data_path, data_offset + footprint(H));
-  io_handler->files.push_back(File::Entry(H.name(), data_offset));
+  std::filesystem::resize_file(hpath, data_offset + footprint(H));
+  io_handler->files.push_back(File::Entry(hpath, data_offset));
 
   return io_handler;
 }

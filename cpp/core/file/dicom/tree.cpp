@@ -98,20 +98,20 @@ void Tree::read_file(const std::string &filename) {
   }
 }
 
-void Tree::read(const std::string &filename) {
-  description = filename;
+void Tree::read(const std::filesystem::path &filename) {
+  description = filename.string();
   if (std::filesystem::is_directory(filename)) {
-    ProgressBar progress("scanning folder \"" + shorten(filename) + "\" for DICOM data", 0);
-    read_dir(filename, progress);
+    ProgressBar progress("scanning folder \"" + shorten(filename.string()) + "\" for DICOM data", 0);
+    read_dir(filename.string(), progress);
   } else {
     try {
-      read_file(filename);
+      read_file(filename.string());
     } catch (Exception) {
     }
   }
 
   if (empty())
-    throw Exception("no DICOM images found in \"" + filename + "\"");
+    throw Exception("no DICOM images found in \"" + filename.string() + "\"");
 }
 
 std::ostream &operator<<(std::ostream &stream, const Tree &item) {

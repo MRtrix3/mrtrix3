@@ -318,7 +318,7 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
     // CONF A boolean value to indicate whether, when opening NIfTI images,
     // CONF any corresponding JSON file should be automatically loaded.
     if (File::Config::get_bool("NIfTIAutoLoadJSON", false)) {
-      std::filesystem::path json_path = H.name();
+      std::filesystem::path json_path = static_cast<const Header &>(H).path();
       if (Path::has_suffix(json_path, ".nii.gz"))
         json_path.replace_filename(json_path.stem().stem());
       else if (Path::has_suffix(json_path, ".nii"))
@@ -534,7 +534,7 @@ template <class NiftiHeader> void store(NiftiHeader &NH, const Header &H, const 
   // CONF to save any header entries that cannot be stored in the NIfTI
   // CONF header.
   if (single_file && File::Config::get_bool("NIfTIAutoSaveJSON", false)) {
-    std::filesystem::path json_path = H.name();
+    std::filesystem::path json_path = H.path();
     if (Path::has_suffix(json_path, ".nii.gz"))
       json_path.replace_filename(json_path.stem().stem());
     else if (Path::has_suffix(json_path, ".nii"))
@@ -581,7 +581,7 @@ transform_type adjust_transform(const Header &H, std::vector<size_t> &axes) {
 }
 
 bool check(int VERSION, Header &H, const size_t num_axes, const std::vector<std::string> &suffixes) {
-  if (!Path::has_suffix(std::filesystem::path(H.name()), suffixes))
+  if (!Path::has_suffix(H.path(), suffixes))
     return false;
 
   if (version(H) != VERSION)
@@ -641,19 +641,18 @@ template <> struct Get<2> {
 template <int VERSION> std::unique_ptr<ImageIO::Base> read(Header &H) {
   using nifti_header = typename Get<VERSION>::type;
 
-  if (!Path::has_suffix(std::filesystem::path(H.name()), ".nii") &&
-      !Path::has_suffix(std::filesystem::path(H.name()), ".img"))
+  const std::filesystem::path &hpath = static_cast<const Header &>(H).path();
+  if (!Path::has_suffix(hpath, ".nii") && !Path::has_suffix(hpath, ".img"))
     return std::unique_ptr<ImageIO::Base>();
 
-  const bool single_file = Path::has_suffix(std::filesystem::path(H.name()), ".nii");
-  std::filesystem::path header_path =
-      single_file ? std::filesystem::path(H.name()) : std::filesystem::path(H.name()).replace_extension(".hdr");
+  const bool single_file = Path::has_suffix(hpath, ".nii");
+  std::filesystem::path header_path = single_file ? hpath : std::filesystem::path(hpath).replace_extension(".hdr");
 
   try {
-    File::MMap fmap(header_path.string());
+    File::MMap fmap(header_path);
     const size_t data_offset = fetch(H, *((const nifti_header *)fmap.address()));
     std::unique_ptr<ImageIO::Default> handler(new ImageIO::Default(H));
-    handler->files.push_back(File::Entry(H.name(), (single_file ? data_offset : 0)));
+    handler->files.push_back(File::Entry(hpath, (single_file ? data_offset : 0)));
     return handler;
   } catch (Exception &e) {
     e.display();
@@ -664,11 +663,11 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> read(Header &H) {
 template <int VERSION> std::unique_ptr<ImageIO::Base> read_gz(Header &H) {
   using nifti_header = typename Get<VERSION>::type;
 
-  if (!Path::has_suffix(std::filesystem::path(H.name()), ".nii.gz"))
+  if (!Path::has_suffix(H.path(), ".nii.gz"))
     return std::unique_ptr<ImageIO::Base>();
 
   nifti_header NH;
-  File::GZ zf(H.name(), "rb");
+  File::GZ zf(H.path(), "rb");
   zf.read(reinterpret_cast<char *>(&NH), sizeof(NH));
   zf.close();
 
@@ -677,7 +676,7 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> read_gz(Header &H) {
     std::unique_ptr<ImageIO::GZ> io_handler(new ImageIO::GZ(H, data_offset));
     memcpy(io_handler.get()->header(), &NH, sizeof(NH));
     memset(io_handler.get()->header() + sizeof(NH), 0, sizeof(nifti1_extender));
-    io_handler->files.push_back(File::Entry(H.name(), data_offset));
+    io_handler->files.push_back(File::Entry(static_cast<const Header &>(H).path(), data_offset));
     return io_handler;
   } catch (...) {
     return std::unique_ptr<ImageIO::Base>();
@@ -691,9 +690,9 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> create(Header &H) {
   if (H.ndim() > 7)
     throw Exception(version + " format cannot support more than 7 dimensions for image \"" + H.name() + "\"");
 
-  const bool single_file = Path::has_suffix(std::filesystem::path(H.name()), ".nii");
-  std::filesystem::path header_path =
-      single_file ? std::filesystem::path(H.name()) : std::filesystem::path(H.name()).replace_extension(".hdr");
+  const std::filesystem::path &hpath = static_cast<const Header &>(H).path();
+  const bool single_file = Path::has_suffix(hpath, ".nii");
+  std::filesystem::path header_path = single_file ? hpath : std::filesystem::path(hpath).replace_extension(".hdr");
 
   nifti_header NH;
   store(NH, H, single_file);
@@ -705,18 +704,17 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> create(Header &H) {
   out.close();
 
   const size_t data_offset = single_file ? sizeof(NH) + 4 : 0;
-  const std::filesystem::path data_path = H.name();
 
   if (single_file)
-    std::filesystem::resize_file(data_path, data_offset + footprint(H));
+    std::filesystem::resize_file(hpath, data_offset + footprint(H));
   else {
-    File::OFStream data_file(H.name());
+    File::OFStream data_file(hpath);
     data_file.close();
-    std::filesystem::resize_file(data_path, footprint(H));
+    std::filesystem::resize_file(hpath, footprint(H));
   }
 
   std::unique_ptr<ImageIO::Default> handler(new ImageIO::Default(H));
-  handler->files.push_back(File::Entry(H.name(), data_offset));
+  handler->files.push_back(File::Entry(hpath, data_offset));
 
   return handler;
 }
@@ -734,9 +732,10 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> create_gz(Header &H) {
   store(NH, H, true);
   memset(io_handler->header() + sizeof(nifti_header), 0, sizeof(nifti1_extender));
 
-  File::OFStream data_file(H.name());
+  const std::filesystem::path &hpath = static_cast<const Header &>(H).path();
+  File::OFStream data_file(hpath);
   data_file.close();
-  io_handler->files.push_back(File::Entry(H.name(), sizeof(nifti_header) + 4));
+  io_handler->files.push_back(File::Entry(hpath, sizeof(nifti_header) + 4));
 
   return io_handler;
 }

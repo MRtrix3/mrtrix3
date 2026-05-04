@@ -57,6 +57,10 @@ public:
   FORCE_INLINE const KeyValues &keyval() const { return buffer->keyval(); }
 
   FORCE_INLINE const std::string &name() const { return buffer->name(); }
+  FORCE_INLINE const std::filesystem::path &path() const {
+    static const std::filesystem::path empty;
+    return valid() ? static_cast<const Header &>(*buffer).path() : empty;
+  }
   FORCE_INLINE const transform_type &transform() const { return buffer->transform(); }
 
   FORCE_INLINE size_t ndim() const { return buffer->ndim(); }
@@ -191,11 +195,11 @@ public:
     return data_pointer ? static_cast<ValueType *>(data_pointer) + data_offset : nullptr;
   }
 
-  static Image open(const std::string &image_name, bool read_write_if_existing = false) {
+  static Image open(const std::filesystem::path &image_name, bool read_write_if_existing = false) {
     return Header::open(image_name).get_image<ValueType>(read_write_if_existing);
   }
   static Image
-  create(const std::string &image_name, const Header &template_header, bool add_to_command_history = true) {
+  create(const std::filesystem::path &image_name, const Header &template_header, bool add_to_command_history = true) {
     return Header::create(image_name, template_header, add_to_command_history).get_image<ValueType>();
   }
   static Image scratch(const Header &template_header, const std::string &label = "scratch image") {
@@ -443,7 +447,7 @@ template <typename ValueType> std::string Image<ValueType>::dump_to_mrtrix_file(
 
 template <class ImageType>
 std::string __save_generic(ImageType &x, const std::filesystem::path &filename, bool use_multi_threading) {
-  auto out = Image<typename ImageType::value_type>::create(filename.string(), x);
+  auto out = Image<typename ImageType::value_type>::create(filename, x);
   if (use_multi_threading)
     threaded_copy(x, out);
   else

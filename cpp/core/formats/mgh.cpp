@@ -26,10 +26,11 @@
 namespace MR::Formats {
 
 std::unique_ptr<ImageIO::Base> MGH::read(Header &H) const {
-  if (!Path::has_suffix(std::filesystem::path(H.name()), ".mgh"))
+  if (!Path::has_suffix(H.path(), ".mgh"))
     return std::unique_ptr<ImageIO::Base>();
 
-  std::ifstream in(H.name(), std::ios_base::binary);
+  const std::filesystem::path &hpath = static_cast<const Header &>(H).path();
+  std::ifstream in(hpath, std::ios_base::binary);
   File::MGH::read_header(H, in);
 
   // Remaining header items appear AFTER the data
@@ -40,25 +41,26 @@ std::unique_ptr<ImageIO::Base> MGH::read(Header &H) const {
   in.close();
 
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));
-  io_handler->files.push_back(File::Entry(H.name(), MGH_DATA_OFFSET));
+  io_handler->files.push_back(File::Entry(hpath, MGH_DATA_OFFSET));
 
   return io_handler;
 }
 
 bool MGH::check(Header &H, size_t num_axes) const {
-  if (!Path::has_suffix(std::filesystem::path(H.name()), ".mgh"))
+  if (!Path::has_suffix(H.path(), ".mgh"))
     return (false);
   return File::MGH::check(H, num_axes);
 }
 
 std::unique_ptr<ImageIO::Base> MGH::create(Header &H) const {
-  File::OFStream out(H.name(), std::ios_base::binary);
+  const std::filesystem::path &hpath = static_cast<const Header &>(H).path();
+  File::OFStream out(hpath, std::ios_base::binary);
   File::MGH::write_header(H, out);
   out.seekp(MGH_DATA_OFFSET + footprint(H));
   File::MGH::write_other(H, out);
 
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));
-  io_handler->files.push_back(File::Entry(H.name(), MGH_DATA_OFFSET));
+  io_handler->files.push_back(File::Entry(hpath, MGH_DATA_OFFSET));
 
   return io_handler;
 }

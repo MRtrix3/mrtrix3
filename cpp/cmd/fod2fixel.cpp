@@ -309,7 +309,7 @@ void run() {
   opt = get_options("mask");
   Image<float> mask;
   if (!opt.empty()) {
-    mask = Image<float>::open(std::string(opt[0][0]));
+    mask = Image<float>::open(opt[0][0]);
     if (!dimensions_match(fod_data, mask, 0, 3))
       throw Exception("Cannot use image \"" + str(opt[0][0]) + "\" as mask image; dimensions do not match FOD image");
   }

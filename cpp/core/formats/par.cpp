@@ -110,16 +110,16 @@ inline const SliceData parse_line(const std::string &line, const ParCols &cols) 
 }
 
 std::unique_ptr<ImageIO::Base> PAR::read(Header &H) const {
-  if (!Path::has_suffix(std::filesystem::path(H.name()), ".PAR") &&
-      !Path::has_suffix(std::filesystem::path(H.name()), ".par"))
+  if (!Path::has_suffix(H.path(), ".PAR") && !Path::has_suffix(H.path(), ".par"))
     return std::unique_ptr<ImageIO::Base>();
 
   WARN("PAR/REC import is currently experimental - please verify the integrity of your data");
   WARN("  If your data does not import correctly, please report it to the MRtrix3 team");
 
-  std::string rec_file = H.name().substr(0, H.name().size() - 4) + ".REC";
+  const std::filesystem::path &hpath = static_cast<const Header &>(H).path();
+  const std::filesystem::path rec_file = std::filesystem::path(hpath).replace_extension(".REC");
 
-  std::ifstream in(H.name(), std::ios::binary);
+  std::ifstream in(hpath, std::ios::binary);
   if (!in)
     throw Exception("error opening PAR/REC header \"" + H.name() + "\": " + strerror(errno));
 

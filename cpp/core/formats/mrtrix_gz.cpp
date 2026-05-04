@@ -25,9 +25,10 @@
 namespace MR::Formats {
 
 std::unique_ptr<ImageIO::Base> MRtrix_GZ::read(Header &H) const {
-  if (!Path::has_suffix(std::filesystem::path(H.name()), ".mif.gz"))
+  if (!Path::has_suffix(H.path(), ".mif.gz"))
     return std::unique_ptr<ImageIO::Base>();
-  File::GZ zf(H.name(), "r");
+  const std::filesystem::path &hpath = static_cast<const Header &>(H).path();
+  File::GZ zf(hpath, "r");
   std::string first_line = zf.getline();
   if (first_line != "mrtrix image") {
     zf.close();
@@ -41,7 +42,7 @@ std::unique_ptr<ImageIO::Base> MRtrix_GZ::read(Header &H) const {
   size_t offset, write_offset;
   get_mrtrix_file_path(H, "file", fname, offset);
   write_offset = offset;
-  if (fname != H.name())
+  if (fname != hpath.string())
     throw Exception("GZip-compressed MRtrix format images must have image data within the same file as the header");
 
   std::stringstream header;
@@ -54,13 +55,13 @@ std::unique_ptr<ImageIO::Base> MRtrix_GZ::read(Header &H) const {
   std::unique_ptr<ImageIO::GZ> io_handler(new ImageIO::GZ(H, write_offset));
   memcpy(io_handler.get()->header(), header.str().c_str(), header.str().size());
   memset(io_handler.get()->header() + header.str().size(), 0, write_offset - header.str().size());
-  io_handler->files.push_back(File::Entry(H.name(), offset));
+  io_handler->files.push_back(File::Entry(hpath, offset));
 
   return io_handler;
 }
 
 bool MRtrix_GZ::check(Header &H, size_t num_axes) const {
-  if (!Path::has_suffix(std::filesystem::path(H.name()), ".mif.gz"))
+  if (!Path::has_suffix(H.path(), ".mif.gz"))
     return false;
 
   H.ndim() = num_axes;
@@ -85,9 +86,10 @@ std::unique_ptr<ImageIO::Base> MRtrix_GZ::create(Header &H) const {
   std::unique_ptr<ImageIO::GZ> io_handler(new ImageIO::GZ(H, offset));
   memcpy(io_handler->header(), header.str().c_str(), offset);
 
-  File::OFStream data_file(H.name());
+  const std::filesystem::path &hpath = static_cast<const Header &>(H).path();
+  File::OFStream data_file(hpath);
   data_file.close();
-  io_handler->files.push_back(File::Entry(H.name(), offset));
+  io_handler->files.push_back(File::Entry(hpath, offset));
 
   return io_handler;
 }

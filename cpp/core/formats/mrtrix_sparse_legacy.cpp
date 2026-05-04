@@ -38,11 +38,10 @@ namespace MR::Formats {
 // msf: MRtrix Sparse image File
 
 std::unique_ptr<ImageIO::Base> MRtrix_sparse::read(Header &H) const {
-  if (!Path::has_suffix(std::filesystem::path(H.name()), ".msh") &&
-      !Path::has_suffix(std::filesystem::path(H.name()), ".msf"))
+  if (!Path::has_suffix(H.path(), ".msh") && !Path::has_suffix(H.path(), ".msf"))
     return std::unique_ptr<ImageIO::Base>();
 
-  File::KeyValue::Reader kv(H.name(), "mrtrix sparse image");
+  File::KeyValue::Reader kv(static_cast<const Header &>(H).path(), "mrtrix sparse image");
 
   read_mrtrix_header(H, kv);
 
@@ -87,8 +86,7 @@ std::unique_ptr<ImageIO::Base> MRtrix_sparse::read(Header &H) const {
 }
 
 bool MRtrix_sparse::check(Header &H, size_t num_axes) const {
-  if (!Path::has_suffix(std::filesystem::path(H.name()), ".msh") &&
-      !Path::has_suffix(std::filesystem::path(H.name()), ".msf"))
+  if (!Path::has_suffix(H.path(), ".msh") && !Path::has_suffix(H.path(), ".msf"))
     return false;
 
   if (H.keyval().find(Fixel::Legacy::name_key) == H.keyval().end() ||
@@ -116,17 +114,17 @@ std::unique_ptr<ImageIO::Base> MRtrix_sparse::create(Header &H) const {
   H.datatype() = DataType::UInt64;
   H.datatype().set_byte_order_native();
 
-  File::OFStream out(H.name(), std::ios::out | std::ios::binary);
+  const std::filesystem::path &hpath = static_cast<const Header &>(H).path();
+  File::OFStream out(hpath, std::ios::out | std::ios::binary);
 
   out << "mrtrix sparse image\n";
 
   write_mrtrix_header(H, out);
 
-  bool single_file = Path::has_suffix(std::filesystem::path(H.name()), ".msf");
+  const bool single_file = Path::has_suffix(hpath, ".msf");
 
   int64_t image_offset = 0, sparse_offset = 0;
   std::filesystem::path image_path, sparse_path;
-  const std::filesystem::path data_path = H.name();
   if (single_file) {
 
     image_offset = int64_t(out.tellp()) + int64_t(54);
@@ -135,16 +133,16 @@ std::unique_ptr<ImageIO::Base> MRtrix_sparse::create(Header &H) const {
 
     out << "file: . " << image_offset << "\nsparse_file: . " << sparse_offset << "\nEND\n";
 
-    std::filesystem::resize_file(data_path, sparse_offset);
-    image_path = H.name();
-    sparse_path = H.name();
+    std::filesystem::resize_file(hpath, sparse_offset);
+    image_path = hpath;
+    sparse_path = hpath;
 
   } else {
 
-    image_path = std::filesystem::path(H.name().substr(0, H.name().size() - 4) + ".dat").filename();
-    sparse_path = std::filesystem::path(H.name().substr(0, H.name().size() - 4) + ".sdat").filename();
+    image_path = static_cast<const Header &>(H).path().filename().replace_extension(".dat");
+    sparse_path = static_cast<const Header &>(H).path().filename().replace_extension(".sdat");
 
-    out << "file: " << image_path << "\nsparse_file: " << sparse_path << "\nEND\n";
+    out << "file: " << image_path.string() << "\nsparse_file: " << sparse_path.string() << "\nEND\n";
 
     File::OFStream image_file(image_path);
     image_file.close();

@@ -50,8 +50,8 @@ void PNG::load(const Header &header, size_t) {
         e.push_back("Series: " + str(header.size(0)) + "x" + str(header.size(1)) + " x " +
                     str(header.datatype().bits()) + " bits, " + (header.ndim() > 3 ? str(header.size(3)) : "1") +
                     " volumes");
-        e.push_back("File \"" + files[i].name + ": " + str(png.get_width()) + "x" + str(png.get_height()) + " x " +
-                    str(png.get_bitdepth()) + "(->" + str(png.get_output_bitdepth()) + ") bits, " +
+        e.push_back("File \"" + files[i].name.string() + ": " + str(png.get_width()) + "x" + str(png.get_height()) +
+                    " x " + str(png.get_bitdepth()) + "(->" + str(png.get_output_bitdepth()) + ") bits, " +
                     str(png.get_channels()) + " channels");
         throw e;
       }

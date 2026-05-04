@@ -36,7 +36,7 @@ namespace MR::File {
 class GZ {
 public:
   GZ() : gz(NULL) {}
-  GZ(const std::string &fname, const char *mode) : gz(NULL) { open(fname, mode); }
+  GZ(const std::filesystem::path &fname, const char *mode) : gz(NULL) { open(fname, mode); }
   ~GZ() {
     try {
       close();

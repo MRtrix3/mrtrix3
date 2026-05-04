@@ -19,6 +19,8 @@
 #include "command.h"
 // clang-format on
 
+#include <filesystem>
+
 #include "memory.h"
 #include "mrview/icons.h"
 #include "mrview/mode/list.h"
@@ -89,7 +91,8 @@ void run() {
       QFileOpenEvent *openEvent = static_cast<QFileOpenEvent *>(event);
       std::vector<std::unique_ptr<MR::Header>> list;
       try {
-        list.push_back(std::make_unique<MR::Header>(MR::Header::open(openEvent->file().toUtf8().data())));
+        const std::filesystem::path file_path{openEvent->file().toUtf8().constData()};
+        list.push_back(std::make_unique<MR::Header>(MR::Header::open(file_path)));
       } catch (Exception &E) {
         E.display();
       }

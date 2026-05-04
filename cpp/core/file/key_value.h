@@ -16,9 +16,11 @@
 
 #pragma once
 
+#include <filesystem>
+#include <fstream>
+
 #include "mrtrix.h"
 #include "types.h"
-#include <fstream>
 
 namespace MR::File {
 
@@ -29,9 +31,9 @@ namespace KeyValue {
 class Reader {
 public:
   Reader() {}
-  Reader(const std::string &file, const char *first_line = nullptr) { open(file, first_line); }
+  Reader(const std::filesystem::path &file, const char *first_line = nullptr) { open(file, first_line); }
 
-  void open(const std::string &file, const char *first_line = nullptr);
+  void open(const std::filesystem::path &file, const char *first_line = nullptr);
   bool next();
   void close() { in.close(); }
 

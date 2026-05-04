@@ -175,6 +175,7 @@ public:
     }
     transform_ = original.transform();
     name_ = original.name();
+    path_.clear();
     keyval_ = original.keyval();
     format_ = nullptr;
     datatype_ = DataType::from<typename HeaderType::value_type>();
@@ -259,6 +260,8 @@ public:
       name = path.filename().string();
       return path;
     }
+
+    void clear() { path.clear(); }
 
   private:
     std::string &name;
@@ -392,9 +395,9 @@ public:
   //! merge key/value entries from another header
   void merge_keyval(const Header &H);
 
-  static Header open(const std::string &image_name);
+  static Header open(const std::filesystem::path &image_name);
   static Header
-  create(const std::string &image_name, const Header &template_header, bool add_to_command_history = true);
+  create(const std::filesystem::path &image_name, const Header &template_header, bool add_to_command_history = true);
   static Header scratch(const Header &template_header, const std::string &label = "scratch image");
 
   /*! use to prevent automatic realignment of transform matrix into

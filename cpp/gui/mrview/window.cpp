@@ -868,7 +868,7 @@ void Window::image_save_slot() {
     return;
 
   try {
-    auto dest = MR::Image<cfloat>::create(image_name.string(), image()->header());
+    auto dest = MR::Image<cfloat>::create(image_name, image()->header());
     MR::copy_with_progress(image()->image, dest);
   } catch (Exception &E) {
     E.display();

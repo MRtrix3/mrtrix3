@@ -71,8 +71,8 @@ const std::string __get_tmpfile_dir() {
   return File::Config::get("TmpFileDir", default_tmpdir);
 }
 
-const std::string &tmpfile_dir() {
-  static const std::string __tmpfile_dir = __get_tmpfile_dir();
+const std::filesystem::path &tmpfile_dir() {
+  static const std::filesystem::path __tmpfile_dir = static_cast<std::filesystem::path>(__get_tmpfile_dir());
   return __tmpfile_dir;
 }
 
@@ -114,31 +114,33 @@ bool is_tempfile(const std::filesystem::path &name, const char *suffix) {
   return true;
 }
 
-std::string create_tempfile(int64_t size, const char *suffix) {
+std::filesystem::path create_tempfile(int64_t size, const char *suffix) {
   DEBUG("creating temporary file of size " + str(size));
 
-  std::string filename((std::filesystem::path(tmpfile_dir()) / tmpfile_prefix()).string() + "XXXXXX.");
-  const int rand_index = filename.size() - 7;
+  std::filesystem::path filepath(tmpfile_dir() / (tmpfile_prefix() + "XXXXXX."));
+  const int rand_index = filepath.stem().string().size() - 7;
   if (suffix != nullptr)
-    filename += suffix;
+    filepath.stem() += suffix;
 
   int fid(0);
   do {
     for (int n = 0; n < 6; n++)
-      filename[rand_index + n] = random_char();
-    fid = open(filename.c_str(), O_CREAT | O_RDWR | O_EXCL, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+      filepath.stem().string()[rand_index + n] = random_char();
+    fid = open(filepath.string().c_str(),
+               O_CREAT | O_RDWR | O_EXCL,
+               S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
   } while (fid < 0 && errno == EEXIST);
 
   if (fid < 0)
-    throw Exception(std::string("error creating temporary file in directory \"" + tmpfile_dir() + "\": ") +
+    throw Exception(std::string("error creating temporary file in directory \"" + tmpfile_dir().string() + "\": ") +
                     strerror(errno));
 
   const int status = size == 0 ? 0 : ftruncate(fid, size);
   close(fid);
   if (status)
-    throw Exception("cannot resize file \"" + filename + "\": " + strerror(errno));
+    throw Exception("cannot resize file \"" + filepath.string() + "\": " + strerror(errno));
 
-  return filename;
+  return filepath;
 }
 
 } // namespace MR::File

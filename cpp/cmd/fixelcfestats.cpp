@@ -160,7 +160,10 @@ void usage() {
 // clang-format on
 
 template <class VectorType>
-void write_fixel_output(const std::string &filename, const VectorType &data, Image<bool> &mask, const Header &header) {
+void write_fixel_output(const std::filesystem::path &filename,
+                        const VectorType &data,
+                        Image<bool> &mask,
+                        const Header &header) {
   auto output = Image<float>::create(filename, header);
   for (auto l = Loop(0)(output, mask); l; ++l)
     output.value() = mask.value() ? data[output.index(0)] : NaN;

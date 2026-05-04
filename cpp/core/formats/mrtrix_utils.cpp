@@ -131,7 +131,7 @@ void get_mrtrix_file_path(Header &H, const std::string &flag, std::string &fname
     fname = H.name();
   } else {
     if (!std::filesystem::path(fname).is_absolute())
-      fname = (std::filesystem::path(H.name()).parent_path() / fname);
+      fname = (static_cast<const Header &>(H).path().parent_path() / fname);
   }
 }
 

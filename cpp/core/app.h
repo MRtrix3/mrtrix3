@@ -180,7 +180,8 @@ private:
   size_t index_;
 
   // TODO This will need to be updated once merged with #3074
-  bool is_filesystem_arg_type() const noexcept;
+  bool includes_filesystem_arg_type() const noexcept;
+  bool not_filesystem_arg_type() const noexcept;
 
   ParsedArgument(const Option *option, const Argument *argument, std::string text, size_t index);
 

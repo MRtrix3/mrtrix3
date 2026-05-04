@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <filesystem>
 #include <string>
 
 #include "types.h"
@@ -24,7 +25,7 @@ namespace MR::File {
 
 class Entry {
 public:
-  Entry(const std::string &fname, int64_t offset = 0) : name(fname), start(offset) {}
+  Entry(const std::filesystem::path &fname, int64_t offset = 0) : name(fname), start(offset) {}
 
   Entry(const Entry &) = default;
   Entry(Entry &&) noexcept = default;
@@ -34,12 +35,12 @@ public:
     return *this;
   }
 
-  std::string name;
+  std::filesystem::path name;
   int64_t start;
 };
 
 inline std::ostream &operator<<(std::ostream &stream, const Entry &e) {
-  stream << "File::Entry { \"" << e.name << "\", offset " << e.start << " }";
+  stream << "File::Entry { \"" << e.name.string() << "\", offset " << e.start << " }";
   return stream;
 }
 } // namespace MR::File

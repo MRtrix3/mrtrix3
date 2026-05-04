@@ -322,7 +322,7 @@ void ROI::save(ROI_Item *roi) {
     const std::filesystem::path name = GUI::Dialog::File::get_save_image_name(
         &window(), "Select name of ROI to save", roi->get_filename(), &current_folder);
     if (!name.empty()) {
-      auto out = MR::Image<bool>::create(name.string(), header);
+      auto out = MR::Image<bool>::create(name, header);
       roi->save(out, data.data());
     }
   } catch (Exception &E) {

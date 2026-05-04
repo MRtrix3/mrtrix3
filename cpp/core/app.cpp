@@ -1364,23 +1364,29 @@ ParsedArgument::ParsedArgument(const Option *option, const Argument *argument, s
   assert(!p.empty());
 }
 
-bool ParsedArgument::is_filesystem_arg_type() const noexcept {
-  return arg != nullptr && (arg->type == ArgFileIn || arg->type == ArgFileOut || arg->type == ArgDirectoryIn ||
-                            arg->type == ArgDirectoryOut);
+bool ParsedArgument::includes_filesystem_arg_type() const noexcept {
+  return arg != nullptr &&
+         (arg->type == ArgFileIn || arg->type == ArgFileOut || arg->type == ArgDirectoryIn ||
+          arg->type == ArgDirectoryOut || arg->type == ImageIn || arg->type == ImageOut || arg->type == Various);
+}
+
+bool ParsedArgument::not_filesystem_arg_type() const noexcept {
+  return arg == nullptr || (arg->type != ArgFileIn && arg->type != ArgFileOut && arg->type != ArgDirectoryIn &&
+                            arg->type != ArgDirectoryOut && arg->type != ImageIn && arg->type != ImageOut);
 }
 
 ParsedArgument::operator std::string() const {
-  assert(!is_filesystem_arg_type());
+  assert(not_filesystem_arg_type());
   return p;
 }
 
 ParsedArgument::operator std::filesystem::path() const {
-  assert(is_filesystem_arg_type());
+  assert(includes_filesystem_arg_type());
   return std::filesystem::path(p);
 }
 
 std::filesystem::path ParsedArgument::as_path() const {
-  assert(is_filesystem_arg_type());
+  assert(includes_filesystem_arg_type());
   return std::filesystem::path(p);
 }
 

@@ -144,21 +144,22 @@ std::string short_description(const Header &H) {
 }
 } // namespace
 
-Header Header::open(const std::string &image_name) {
+Header Header::open(const std::filesystem::path &image_name) {
   if (image_name.empty())
     throw Exception("no name supplied to open image!");
 
   Header H;
 
   try {
-    INFO("opening image \"" + image_name + "\"...");
+    INFO("opening image \"" + image_name.string() + "\"...");
 
     File::ParsedName::List list;
-    const auto num = list.parse_scan_check(image_name);
+    const auto num = list.parse_scan_check(image_name.string());
 
     const Formats::Base **format_handler = Formats::handlers;
     size_t item_index = 0;
     H.name() = list[item_index].name();
+    H.path_ = list[item_index].name();
 
     for (; *format_handler; format_handler++) {
       if ((H.io = (*format_handler)->read(H)))
@@ -252,7 +253,7 @@ Header Header::open(const std::string &image_name) {
   } catch (CancelException &e) {
     throw;
   } catch (Exception &E) {
-    throw Exception(E, "error opening image \"" + image_name + "\"");
+    throw Exception(E, "error opening image \"" + image_name.string() + "\"");
   }
 
   INFO("image \"" + H.name() + "\" opened" + short_description(H));
@@ -277,7 +278,8 @@ inline bool check_strides_match(const std::vector<ssize_t> &a, const std::vector
 
 } // namespace
 
-Header Header::create(const std::string &image_name, const Header &template_header, bool add_to_command_history) {
+Header
+Header::create(const std::filesystem::path &image_name, const Header &template_header, bool add_to_command_history) {
   if (image_name.empty())
     throw Exception("no name supplied to open image!");
 
@@ -285,7 +287,7 @@ Header Header::create(const std::string &image_name, const Header &template_head
   const auto previous_datatype = H.datatype();
 
   try {
-    INFO("creating image \"" + image_name + "\"...");
+    INFO("creating image \"" + image_name.string() + "\"...");
     if (add_to_command_history) {
       // Make sure the current command is not concatenated more than once
       const auto command_history = split_lines(H.keyval()["command_history"]);
@@ -307,7 +309,7 @@ Header Header::create(const std::string &image_name, const Header &template_head
     for (size_t i = 0; i < H.ndim(); ++i)
       Hdim[i] = H.size(i);
 
-    H.name() = image_name;
+    H.path() = image_name;
 
     const std::vector<ssize_t> strides(Stride::get_symbolic(H));
     const Formats::Base **format_handler = Formats::handlers;
@@ -316,18 +318,18 @@ Header Header::create(const std::string &image_name, const Header &template_head
         break;
 
     if (!*format_handler) {
-      const std::string basename = std::filesystem::path(image_name).filename();
+      const std::string basename = image_name.filename().string();
       const size_t extension_index = basename.find_last_of(".");
       if (extension_index == std::string::npos)
-        throw Exception("unknown format for image \"" + image_name + "\" (no file extension specified)");
+        throw Exception("unknown format for image \"" + image_name.string() + "\" (no file extension specified)");
       else
-        throw Exception("unknown format for image \"" + image_name +
+        throw Exception("unknown format for image \"" + image_name.string() +
                         "\" (unsupported file extension: " + basename.substr(extension_index) + ")");
     }
 
     const std::vector<ssize_t> strides_aftercheck(Stride::get_symbolic(H));
     if (!check_strides_match(strides, strides_aftercheck)) {
-      INFO("output strides for image " + image_name + " modified to " + str(strides_aftercheck) +
+      INFO("output strides for image " + image_name.string() + " modified to " + str(strides_aftercheck) +
            " - requested strides " + str(strides) + " are not supported in " + (*format_handler)->description +
            " format");
     }
@@ -373,7 +375,7 @@ Header Header::create(const std::string &image_name, const Header &template_head
     Header header(H);
     std::vector<uint32_t> num(Pdim.size());
 
-    if (!is_dash(image_name))
+    if (!is_dash(image_name.native()))
       H.name() = parser.name(num);
 
     H.io = (*format_handler)->create(H);
@@ -426,7 +428,7 @@ Header Header::create(const std::string &image_name, const Header &template_head
         H.stride(a) = ++next_stride;
       }
 
-      H.name() = image_name;
+      H.name() = image_name.string();
     }
 
     if (split_4d_schemes) {
@@ -438,7 +440,7 @@ Header Header::create(const std::string &image_name, const Header &template_head
 
     H.sanitise();
   } catch (Exception &E) {
-    throw Exception(E, "error creating image \"" + image_name + "\"");
+    throw Exception(E, "error creating image \"" + image_name.string() + "\"");
   }
 
   DataType new_datatype = H.datatype();
@@ -458,6 +460,7 @@ Header Header::create(const std::string &image_name, const Header &template_head
 Header Header::scratch(const Header &template_header, const std::string &label) {
   Header H(template_header);
   H.name() = label;
+  H.path().clear();
   H.reset_intensity_scaling();
   H.sanitise();
   H.format_ = "scratch image";

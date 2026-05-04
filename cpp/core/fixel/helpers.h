@@ -393,7 +393,7 @@ FORCE_INLINE void copy_all_data_files(const std::string &input_directory, const 
 }
 
 //! open a data file. checks that a user has not input a fixel directory or index image
-template <class ValueType> Image<ValueType> open_fixel_data_file(const std::string &input_file) {
+template <class ValueType> Image<ValueType> open_fixel_data_file(const std::filesystem::path &input_file) {
   if (std::filesystem::is_directory(input_file))
     throw Exception("please input the specific fixel data file to be converted (not the fixel directory)");
 

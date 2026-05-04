@@ -27,12 +27,11 @@
 namespace MR::Formats {
 
 std::unique_ptr<ImageIO::Base> MGZ::read(Header &H) const {
-  if (!Path::has_suffix(std::filesystem::path(H.name()), ".mgh.gz") &&
-      !Path::has_suffix(std::filesystem::path(H.name()), ".mgz"))
+  if (!Path::has_suffix(H.path(), ".mgh.gz") && !Path::has_suffix(H.path(), ".mgz"))
     return std::unique_ptr<ImageIO::Base>();
 
   std::string mgh_header(MGH_DATA_OFFSET, '\0');
-  File::GZ in(H.name(), "rb");
+  File::GZ in(static_cast<const Header &>(H).path(), "rb");
   in.read(reinterpret_cast<char *>(&mgh_header[0]), MGH_DATA_OFFSET);
   std::istringstream s(mgh_header);
   File::MGH::read_header(H, s);
@@ -53,14 +52,13 @@ std::unique_ptr<ImageIO::Base> MGZ::read(Header &H) const {
   memcpy(gz_handler->tailer(), mgh_tailer.str().c_str(), mgh_tailer.str().size());
 
   std::unique_ptr<ImageIO::Base> io_handler(gz_handler);
-  io_handler->files.push_back(File::Entry(H.name(), MGH_DATA_OFFSET));
+  io_handler->files.push_back(File::Entry(static_cast<const Header &>(H).path(), MGH_DATA_OFFSET));
 
   return io_handler;
 }
 
 bool MGZ::check(Header &H, size_t num_axes) const {
-  if (!Path::has_suffix(std::filesystem::path(H.name()), ".mgh.gz") &&
-      !Path::has_suffix(std::filesystem::path(H.name()), ".mgz"))
+  if (!Path::has_suffix(H.path(), ".mgh.gz") && !Path::has_suffix(H.path(), ".mgz"))
     return false;
   return File::MGH::check(H, num_axes);
 }
@@ -70,7 +68,8 @@ std::unique_ptr<ImageIO::Base> MGZ::create(Header &H) const {
   File::MGH::write_header(H, mgh_header);
   File::MGH::write_other(H, mgh_tailer);
 
-  File::OFStream out_dat(H.name());
+  const std::filesystem::path &hpath = static_cast<const Header &>(H).path();
+  File::OFStream out_dat(hpath);
   out_dat.close();
   auto gz_handler = new ImageIO::GZ(H, MGH_DATA_OFFSET, mgh_tailer.str().size());
 
@@ -79,7 +78,7 @@ std::unique_ptr<ImageIO::Base> MGZ::create(Header &H) const {
   memcpy(gz_handler->tailer(), mgh_tailer.str().c_str(), mgh_tailer.str().size());
 
   std::unique_ptr<ImageIO::Base> io_handler(gz_handler);
-  io_handler->files.push_back(File::Entry(H.name(), MGH_DATA_OFFSET));
+  io_handler->files.push_back(File::Entry(hpath, MGH_DATA_OFFSET));
 
   return io_handler;
 }

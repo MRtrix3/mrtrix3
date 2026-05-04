@@ -229,7 +229,7 @@ private:
 
 void run() {
   const std::filesystem::path input_path{argument[1]};
-  auto header_in = Header::open(input_path.string());
+  auto header_in = Header::open(input_path);
 
   Header header_out(header_in);
   header_out.ndim() = 4;
@@ -301,7 +301,7 @@ void run() {
     std::vector<Image<float>> odfs;
     for (size_t i = 0; i < num_tissues; ++i) {
       header_out.size(3) = Math::SH::NforL(shared.lmax[i]);
-      odfs.push_back(Image<float>(Image<float>::create(odf_paths[i].string(), header_out)));
+      odfs.push_back(Image<float>(Image<float>::create(odf_paths[i], header_out)));
     }
 
     Image<float> dwi_modelled;
