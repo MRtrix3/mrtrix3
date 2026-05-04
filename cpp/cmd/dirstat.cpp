@@ -180,7 +180,7 @@ public:
 
 Metrics compute(Eigen::MatrixXd &directions) {
   if (directions.cols() < 3)
-    throw Exception("unexpected matrix size for scheme \"" + str(argument[0]) + "\"");
+    throw Exception("unexpected matrix size for scheme \"" + argument[0].as_text() + "\"");
   Math::Sphere::normalise_cartesian(directions);
 
   std::vector<double> NN_bipolar(directions.rows(), -1.0);

@@ -161,7 +161,7 @@ protected:
 };
 
 void run() {
-  const std::filesystem::path input_path{std::string(argument[0])};
+  const std::filesystem::path input_path{argument[0]};
   const auto directions = std::make_shared<const cartesian_matrix_type>(DWI::Directions::load_cartesian(input_path));
 
   const size_t total_num_rotations = get_option_value<size_t>("number", default_number);
@@ -181,6 +181,6 @@ void run() {
   const cartesian_matrix_type result =
       (rotation_transform_type(rotation).linear() * directions->transpose()).transpose();
 
-  const std::filesystem::path output_path{std::string(argument[1])};
+  const std::filesystem::path output_path{argument[1]};
   DWI::Directions::save(result, output_path, !get_options("cartesian").empty());
 }

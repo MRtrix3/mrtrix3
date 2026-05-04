@@ -1079,7 +1079,7 @@ void parse() {
   // if necessary, also check for pre-existence of any output files with known paths
   //   (if the output is e.g. given as a prefix, the argument should be flagged as type_text())
   for (const auto &i : argument) {
-    const std::filesystem::path text(i);
+    const std::filesystem::path text{i.as_text()};
     if (i.arg->type == ArgFileIn || i.arg->type == TracksIn) {
       if (!std::filesystem::exists(text))
         throw Exception("required input file \"" + text.string() + "\" not found");
@@ -1094,7 +1094,7 @@ void parse() {
     }
     if (i.arg->type == ArgFileOut || i.arg->type == TracksOut) {
       if (text.string().find_last_of(PATH_SEPARATORS) == text.string().size() - 1)
-        throw Exception("output path \"" + std::string(i) +
+        throw Exception("output path \"" + text.string() +
                         "\" is not a valid file path (ends with directory path separator)");
       check_overwrite(text);
     }
@@ -1366,7 +1366,38 @@ ParsedArgument::ParsedArgument(const Option *option, const Argument *argument, s
   assert(!p.empty());
 }
 
-void ParsedArgument::error(Exception &e) const {
+bool ParsedArgument::is_filesystem_arg_type() const noexcept {
+  return arg != nullptr && (arg->type == ArgFileIn || arg->type == ArgFileOut || arg->type == ArgDirectoryIn ||
+                            arg->type == ArgDirectoryOut);
+}
+
+ParsedArgument::operator std::string() const {
+  if (is_filesystem_arg_type()) {
+    Exception e("implicit conversion of filesystem path argument to std::string is not permitted;"
+                " use operator std::filesystem::path() or as_path() instead");
+    error(e);
+  }
+  return p;
+}
+
+ParsedArgument::operator std::filesystem::path() const {
+  if (!is_filesystem_arg_type()) {
+    Exception e("implicit conversion to std::filesystem::path is only permitted for"
+                " file or directory argument types");
+    error(e);
+  }
+  return std::filesystem::path(p);
+}
+
+std::filesystem::path ParsedArgument::as_path() const {
+  if (!is_filesystem_arg_type()) {
+    Exception e("as_path() is only valid for file or directory argument types");
+    error(e);
+  }
+  return std::filesystem::path(p);
+}
+
+[[noreturn]] void ParsedArgument::error(Exception &e) const {
   std::string msg("error parsing token \"");
   msg += p;
   if (opt != nullptr)

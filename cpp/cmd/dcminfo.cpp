@@ -77,7 +77,7 @@ void run() {
     }
 
     File::Dicom::Element item;
-    item.set(argument[0], true);
+    item.set(argument[0].as_text(), true);
     while (item.read()) {
       for (size_t n = 0; n < opt.size(); ++n)
         if (item.is(tags[n].group, tags[n].element))
@@ -96,7 +96,7 @@ void run() {
   if (all)
     print(File::Dicom::Element::print_header());
 
-  if (reader.read(argument[0], all, csa, phoenix, true))
+  if (reader.read(argument[0].as_text(), all, csa, phoenix, true))
     throw Exception("error reading file \"" + reader.filename + "\"");
 
   if (!all && !csa && !phoenix)

@@ -139,9 +139,11 @@ std::string full_usage();
 
 class ParsedArgument {
 public:
-  operator std::string() const { return p; }
+  operator std::string() const;
+  operator std::filesystem::path() const;
 
   const std::string &as_text() const { return p; }
+  std::filesystem::path as_path() const;
   bool as_bool() const { return to<bool>(p); }
   int64_t as_int() const;
   uint64_t as_uint() const { return uint64_t(as_int()); }
@@ -177,9 +179,11 @@ private:
   std::string p;
   size_t index_;
 
+  bool is_filesystem_arg_type() const noexcept;
+
   ParsedArgument(const Option *option, const Argument *argument, std::string text, size_t index);
 
-  void error(Exception &e) const;
+  [[noreturn]] void error(Exception &e) const;
 
   friend class ParsedOption;
   friend class Options;
