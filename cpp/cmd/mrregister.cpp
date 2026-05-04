@@ -671,7 +671,7 @@ void run() {
   if (!opt.empty()) {
     if (!do_nonlinear)
       throw Exception("Non-linear warp output requested when no non-linear registration is requested");
-    warp_full_path = opt[0][0];
+    warp_full_path = static_cast<std::filesystem::path>(opt[0][0]);
     if (!Path::is_mrtrix_image(warp_full_path) && //
         !(Path::has_suffix(std::filesystem::path(warp_full_path), {".nii", ".nii.gz"}) &&
           File::Config::get_bool("NIfTIAutoSaveJSON", false))) {

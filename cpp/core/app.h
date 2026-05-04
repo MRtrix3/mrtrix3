@@ -179,11 +179,10 @@ private:
   std::string p;
   size_t index_;
 
+  // TODO This will need to be updated once merged with #3074
   bool is_filesystem_arg_type() const noexcept;
 
   ParsedArgument(const Option *option, const Argument *argument, std::string text, size_t index);
-
-  [[noreturn]] void error(Exception &e) const;
 
   friend class ParsedOption;
   friend class Options;

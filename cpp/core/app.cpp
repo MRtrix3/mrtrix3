@@ -1336,9 +1336,8 @@ std::vector<int32_t> ParsedArgument::as_sequence_int() const {
   try {
     return parse_ints<int32_t>(p);
   } catch (Exception &e) {
-    error(e);
+    throw Exception(e, "Unable to interpret command-line input \"" + as_text() + "\" as sequence of integers");
   }
-  return std::vector<int32_t>();
 }
 
 std::vector<uint32_t> ParsedArgument::as_sequence_uint() const {
@@ -1346,9 +1345,8 @@ std::vector<uint32_t> ParsedArgument::as_sequence_uint() const {
   try {
     return parse_ints<uint32_t>(p);
   } catch (Exception &e) {
-    error(e);
+    throw Exception(e, "Unable to interpret command-line input \"" + as_text() + "\" as sequence of integers");
   }
-  return std::vector<uint32_t>();
 }
 
 std::vector<default_type> ParsedArgument::as_sequence_float() const {
@@ -1356,9 +1354,9 @@ std::vector<default_type> ParsedArgument::as_sequence_float() const {
   try {
     return parse_floats(p);
   } catch (Exception &e) {
-    error(e);
+    throw Exception(
+        e, "Unable to interpret command-line input \"" + as_text() + "\" as sequence of floating-point values");
   }
-  return std::vector<default_type>();
 }
 
 ParsedArgument::ParsedArgument(const Option *option, const Argument *argument, std::string text, size_t index)
@@ -1372,39 +1370,18 @@ bool ParsedArgument::is_filesystem_arg_type() const noexcept {
 }
 
 ParsedArgument::operator std::string() const {
-  if (is_filesystem_arg_type()) {
-    Exception e("implicit conversion of filesystem path argument to std::string is not permitted;"
-                " use operator std::filesystem::path() or as_path() instead");
-    error(e);
-  }
+  assert(!is_filesystem_arg_type());
   return p;
 }
 
 ParsedArgument::operator std::filesystem::path() const {
-  if (!is_filesystem_arg_type()) {
-    Exception e("implicit conversion to std::filesystem::path is only permitted for"
-                " file or directory argument types");
-    error(e);
-  }
+  assert(is_filesystem_arg_type());
   return std::filesystem::path(p);
 }
 
 std::filesystem::path ParsedArgument::as_path() const {
-  if (!is_filesystem_arg_type()) {
-    Exception e("as_path() is only valid for file or directory argument types");
-    error(e);
-  }
+  assert(is_filesystem_arg_type());
   return std::filesystem::path(p);
-}
-
-[[noreturn]] void ParsedArgument::error(Exception &e) const {
-  std::string msg("error parsing token \"");
-  msg += p;
-  if (opt != nullptr)
-    msg += std::string("\" for option \"") + opt->id + "\"";
-  else
-    msg += std::string("\" for argument \"") + arg->id + "\"";
-  throw Exception(e, msg);
 }
 
 void check_overwrite(const std::filesystem::path &name) {

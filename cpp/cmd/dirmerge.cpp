@@ -92,7 +92,7 @@ void run() {
     bvalue[nb] = to<value_type>(path);
     std::vector<DirectionSet> d;
     for (size_t i = 0; i < num_subsets; ++i) {
-      path = argument[current++];
+      path = static_cast<std::filesystem::path>(argument[current++]);
       auto m = DWI::Directions::load_cartesian(path);
       DirectionSet set;
       for (ssize_t r = 0; r < m.rows(); ++r)

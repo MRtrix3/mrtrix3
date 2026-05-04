@@ -14,11 +14,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <filesystem>
 #include <string>
 
 #include "command.h"
 #include "datatype.h"
-#include <filesystem>
 
 #include "file/matrix.h"
 #include "file/npy.h"
@@ -55,7 +55,7 @@ template <typename T> void save_2d(const std::string &path) {
 }
 
 void run() {
-  File::mkdir(argument[0]);
+  std::filesystem::create_directory(argument[0]);
 
   File::Matrix::save_vector(reference_1d_bool, std::filesystem::path(std::string(argument[0])) / "1D3_BOOL.npy");
   save_1d<int8_t>("1D3_i1.npy");
