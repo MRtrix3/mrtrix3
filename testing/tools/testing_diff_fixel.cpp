@@ -14,6 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <filesystem>
+
 #include "command.h"
 #include "datatype.h"
 
@@ -52,20 +54,19 @@ void run() {
   if (fixel_directory1 == fixel_directory2)
     throw Exception("Input fixel directorys are the same");
 
-  auto dir_walker1 = Path::Dir(fixel_directory1);
-  std::string fname;
-  while (!(fname = dir_walker1.read_name()).empty()) {
-    auto in1 = Image<cdouble>::open(Path::join(fixel_directory1, fname));
-    std::string filename2 = Path::join(fixel_directory2, fname);
+  for (const auto &dir_entry : std::filesystem::directory_iterator(fixel_directory1)) {
+    const std::string fname = dir_entry.path().filename().string();
+    auto in1 = Image<cdouble>::open((std::filesystem::path(fixel_directory1) / fname).string());
+    const std::string filename2 = (std::filesystem::path(fixel_directory2) / fname).string();
     if (!std::filesystem::exists(filename2))
       throw Exception("File (" + fname + ") exists in fixel directory (" + fixel_directory1 +
                       ") but not in fixel directory (" + fixel_directory2 + ") ");
     auto in2 = Image<cdouble>::open(filename2);
     Testing::diff_images(in1, in2);
   }
-  auto dir_walker2 = Path::Dir(fixel_directory2);
-  while (!(fname = dir_walker2.read_name()).empty()) {
-    std::string filename1 = Path::join(fixel_directory1, fname);
+  for (const auto &dir_entry : std::filesystem::directory_iterator(fixel_directory2)) {
+    const std::string fname = dir_entry.path().filename().string();
+    const std::string filename1 = (std::filesystem::path(fixel_directory1) / fname).string();
     if (!std::filesystem::exists(filename1))
       throw Exception("File (" + fname + ") exists in fixel directory (" + fixel_directory2 +
                       ") but not in fixel directory (" + fixel_directory1 + ") ");
