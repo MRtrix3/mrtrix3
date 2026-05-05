@@ -17,41 +17,38 @@ Usage
 
 -  *source_density*: the input source fixel data file corresponding to the FD or FDC metric
 -  *target_density*: the input target fixel data file corresponding to the FD or FDC metric
--  *output*: the name of the output directory encoding the fixel correspondence
+-  *output*: the name of the output .npz file encoding the fixel correspondence
 
 Description
 -----------
 
 It is assumed that the source image has already been spatially normalised and is defined on the same voxel grid as the target. One would typically also want to have performed a reorientation of fibre information to reflect this spatial normalisation prior to invoking this command, as this would be expected to improve fibre orientation correspondence across datasets.
 
-The output of the command is a directory encoding how data from source fixels should be remapped in order to express those data in target fixel space. This information would typically then be utilised by command fixel2fixel to project some quantitative parameter from the source fixel dataset to the target fixels.
+The output of the command is a .npz file (uncompressed ZIP archive) encoding how data from source fixels should be remapped  in order to express those data in target fixel space. This information would typically then be utilised by command fixel2fixel  to project some quantitative parameter from the source fixel dataset to the target fixels.
 
 Multiple algorithms are provided; a brief description of each of these is provided below.
 
 "all2all": This algorithm is defined for debugging / demonstrative purposes only. It assigns all source fixels to all target fixels, and is therefore not appropriate for practical use.
 
-"nearest": This algorithm duplicates the behaviour of the fixelcorrespondence command in MRtrix versions 3.0.x. and earlier. It determines, for every target fixel, the nearest source fixel, and then assigns that source fixel to the target fixel as long as the angle between them is less than some threshold.
+"legacy": This algorithm duplicates the behaviour of the fixelcorrespondence command in MRtrix versions 3.0.x. and earlier. It determines, for every target fixel, the nearest source fixel, and assigns that source fixel to the target fixel with a weight of 1.0, as long as the angle between them is less than some threshold. Note that if multiple target fixels select the same source fixel, the entirety of the data from that source fixel is projected to each of those target fixels independently.
 
 "ismrm2018": This is a combinatorial algorithm, for which the algorithm and cost function are described in the relevant reference (Smith et al., 2018).
 
 "in2023": This is a combinatorial algorithm, for which the combinatorial algorithm utilised is described in reference (Smith et al., 2018), but an alternative cost function is proposed (publication pending).
 
+"pot": This is a combinatorial algorithm using a partial-optimal-transport-inspired cost function. Matched fibre density between subject and template fixels is "transported" at a cost determined by directional misalignment, while surplus density on either side is created or destroyed at unit cost; subject or template fixels with no correspondence are penalised by their density. Mapping topology (multiple subject fixels merged into one template fixel, or one subject fixel split across multiple template fixels) is penalised linearly with weight controlled by the "gamma" parameter, and the angular sensitivity is controlled by exponent "p".
+
 Options
 -------
 
--  **-algorithm choice** the algorithm to use when establishing fixel correspondence; options are: all2all,nearest,ismrm2018,in2023 (default: in2023)
+-  **-algorithm choice** the algorithm to use when establishing fixel correspondence; options are: all2all, legacy, ismrm2018, in2023, pot (default: pot)
 
 -  **-remapped path** export the remapped source fixels to a new fixel directory
 
-Options specific to algorithm "nearest"
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
--  **-angle value** maximum angle within which a corresponding fixel may be selected, in degrees (default: 45)
-
-Options specific to algorithm "in2023"
+Options specific to algorithm "legacy"
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-constants alpha beta** set values for the two constants that modulate the influence of different cost function terms
+-  **-angle value** maximum angle within which a corresponding fixel may be selected, in degrees (default: 45)
 
 Options applicable to all combinatorial-based algorithms
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -61,6 +58,18 @@ Options applicable to all combinatorial-based algorithms
 -  **-max_objectives value** maximal number of objective target fixels for an individual source fixel (default: 3)
 
 -  **-cost path** export a 3D image containing the optimal value of the relevant cost function in each voxel
+
+Options specific to algorithm "in2023"
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-in2023_constants alpha beta** set values for the two constants that modulate the influence of different cost function terms in the IN2023 expression
+
+Options specific to algorithm "pot"
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-pot_steepness value** exponent "p" controlling the angular sensitivity of the directional misalignment cost (default: 1)
+
+-  **-pot_complexity value** weight "gamma" applied to the linear penalty for merging multiple subject fixels into one template fixel or splitting one subject fixel across multiple template fixels (default: 0.5)
 
 Standard options
 ^^^^^^^^^^^^^^^^

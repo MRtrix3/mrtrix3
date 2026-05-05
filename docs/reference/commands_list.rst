@@ -190,7 +190,7 @@ List of MRtrix3 commands
     |python.png|, :ref:`dwinormalise`, "Perform various forms of intensity normalisation of DWIs"
     |cpp.png|, :ref:`dwirecon`, "Perform reconstruction of DWI data from an input DWI series"
     |python.png|, :ref:`dwishellmath`, "Apply an mrmath operation to each b-value shell in a DWI series"
-    |cpp.png|, :ref:`fixel2fixel`, "Project quantities from one fixel dataset to another"
+    |cpp.png|, :ref:`fixel2fixel`, "Project a fixel-wise quantity from one fixel dataset to another"
     |cpp.png|, :ref:`fixel2peaks`, "Convert data in the fixel directory format into a 4D image of 3-vectors"
     |cpp.png|, :ref:`fixel2sh`, "Generate spherical harmonics decompositions that mimic the content of a fixel data file"
     |cpp.png|, :ref:`fixel2tsf`, "Map fixel values to a track scalar file based on an input tractogram"
