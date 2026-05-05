@@ -90,6 +90,7 @@ enum class algorithm_t {
   IN2023,
   POT
 };
+constexpr algorithm_t default_algorithm = algorithm_t::POT;
 
 // clang-format off
 void usage() {
@@ -144,7 +145,7 @@ void usage() {
 
   OPTIONS
   + Option ("algorithm", "the algorithm to use when establishing fixel correspondence; "
-                         "options are: " + Enum::join<algorithm_t>() + " (default: in2023)")
+                         "options are: " + Enum::join<algorithm_t>() + " (default: " + Enum::lowercase_name<algorithm_t>(default_algorithm) + ")")
     + Argument ("choice").type_choice<algorithm_t>()
 
   + Option ("remapped", "export the remapped source fixels to a new fixel directory")
@@ -171,7 +172,7 @@ void run() {
   H_cost.ndim() = 3;
   H_cost.datatype() = DataType::Float32;
   H_cost.datatype().set_byte_order_native();
-  const algorithm_t algorithm_choice = get_option_choice<algorithm_t>("algorithm", algorithm_t::IN2023);
+  const algorithm_t algorithm_choice = get_option_choice<algorithm_t>("algorithm", default_algorithm);
   std::shared_ptr<Algorithms::Base> algorithm;
   switch (algorithm_choice) {
 #ifdef FIXELCORRESPONDENCE_INCLUDE_ALL2ALL
