@@ -18,6 +18,7 @@
 
 #include "datatype.h"
 #include "debug.h"
+#include <fmt/format.h>
 
 namespace MR::Math {
 
@@ -33,17 +34,17 @@ check_function_gradient(Function &function,
   const size_t N = function.size();
   Eigen::Matrix<value_type, Eigen::Dynamic, 1> g(N);
 
-  CONSOLE("checking gradient for cost function over " + str(N) + " parameters of type " +
+  CONSOLE("checking gradient for cost function over " + fmt::format("{} parameters of type ", N) +
           DataType::from<value_type>().specifier());
   value_type step_size = function.init(g);
-  CONSOLE("cost function suggests initial step size = " + str(step_size));
-  CONSOLE("cost function suggests initial position at [ " + str(g.transpose()) + "]");
+  CONSOLE(fmt::format("cost function suggests initial step size = {}", step_size));
+  CONSOLE(fmt::format("cost function suggests initial position at [ {}", g.transpose()) + "]");
 
-  CONSOLE("checking gradient at position [ " + str(x.transpose()) + "]:");
+  CONSOLE(fmt::format("checking gradient at position [ {}", x.transpose()) + "]:");
   Eigen::Matrix<value_type, Eigen::Dynamic, 1> g0(N);
   value_type f0 = function(x, g0);
-  CONSOLE("  cost function = " + str(f0));
-  CONSOLE("  gradient from cost function         = [ " + str(g0.transpose()) + "]");
+  CONSOLE(fmt::format("  cost function = {}", f0));
+  CONSOLE(fmt::format("  gradient from cost function         = [ {}", g0.transpose()) + "]");
 
   Eigen::Matrix<value_type, Eigen::Dynamic, 1> g_fd(N);
   Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> hessian;
@@ -83,8 +84,8 @@ check_function_gradient(Function &function,
     }
   }
 
-  CONSOLE("gradient by central finite difference = [ " + str(g_fd.transpose()) + "]");
-  CONSOLE("normalised dot product = " + str(g_fd.dot(g0) / g_fd.squaredNorm()));
+  CONSOLE(fmt::format("gradient by central finite difference = [ {}", g_fd.transpose()) + "]");
+  CONSOLE(fmt::format("normalised dot product = {}", g_fd.dot(g0) / g_fd.squaredNorm()));
 
   if (show_hessian) {
     hessian /= 4.0 * increment;
@@ -95,9 +96,9 @@ check_function_gradient(Function &function,
       for (; i < N; ++i)
         hessian(i, j) += hessian(j, i);
     }
-    // CONSOLE ("hessian = [ " + str(hessian) + "]");
+    // CONSOLE ("hessian = [ " + fmt::format("{}]", hessian));
     MAT(hessian);
-    CONSOLE("\033[00;34mcondition number: " + str(condition_number(hessian)) + "\033[0m");
+    CONSOLE(fmt::format("\033[00;34mcondition number: {}", condition_number(hessian)) + "\033[0m");
   }
   return hessian;
 }

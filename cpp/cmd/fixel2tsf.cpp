@@ -18,6 +18,7 @@
 #include "command.h"
 #include "image.h"
 #include "progressbar.h"
+#include <fmt/format.h>
 
 #include "fixel/fixel.h"
 #include "fixel/helpers.h"
@@ -59,7 +60,7 @@ void usage() {
   OPTIONS
   + Option ("angle", "the max anglular threshold for computing correspondence"
                      " between a fixel direction and track tangent"
-                     " (default = " + str(DWI::Tractography::Mapping::default_streamline2fixel_angle, 2) + " degrees)")
+                     " (default = " + fmt::format("{} degrees)", DWI::Tractography::Mapping::default_streamline2fixel_angle, 2))
   + Argument ("value").type_float (0.001, 90.0);
 
 }

@@ -22,6 +22,7 @@
 #include "dwi/gradient.h"
 #include "file/json_utils.h"
 #include "file/ofstream.h"
+#include "fmt.h"
 #include "header.h"
 #include "image.h"
 #include "metadata/phase_encoding.h"
@@ -416,7 +417,7 @@ void run() {
         try {
           File::JSON::load(header_out, opt[0][0]);
         } catch (...) {
-          throw Exception("Unable to obtain header key-value entries from spec \"" + str(opt[0][0]) + "\"");
+          throw Exception(fmt::format("Unable to obtain header key-value entries from spec \"{}\"", str(opt[0][0])));
         }
       }
     }
@@ -429,7 +430,7 @@ void run() {
     auto entry = header_out.keyval().find(opt[n][0]);
     if (entry == header_out.keyval().end()) {
       if (std::string(opt[n][0]) != "command_history") {
-        WARN("No header key/value entry \"" + std::string(opt[n][0]) + "\" found; ignored");
+        WARN(fmt::format("No header key/value entry \"{}\" found; ignored", opt[n][0]));
       }
     } else {
       header_out.keyval().erase(entry);
@@ -457,19 +458,21 @@ void run() {
     for (size_t n = 0; n < opt.size(); n++) {
       size_t axis = opt[n][0];
       if (axis >= header_in.ndim())
-        throw Exception("axis " + str(axis) + " provided with -coord option is out of range of input image");
+        throw Exception(fmt::format("axis {} provided with -coord option is out of range of input image", str(axis)));
       if (!pos[axis].empty())
-        throw Exception("\"coord\" option specified twice for axis " + str(axis));
+        throw Exception(fmt::format("\"coord\" option specified twice for axis {}", str(axis)));
       pos[axis] = parse_ints<uint32_t>(opt[n][1], header_in.size(axis) - 1);
 
       auto minval = std::min_element(std::begin(pos[axis]), std::end(pos[axis]));
       if (*minval < 0)
-        throw Exception("coordinate position " + str(*minval) + " for axis " + str(axis) +
-                        " provided with -coord option is negative");
+        throw Exception(fmt::format(
+            "coordinate position {} for axis {} provided with -coord option is negative", str(*minval), str(axis)));
       auto maxval = std::max_element(std::begin(pos[axis]), std::end(pos[axis]));
       if (*maxval >= header_in.size(axis))
-        throw Exception("coordinate position " + str(*maxval) + " for axis " + str(axis) +
-                        " provided with -coord option is out of range of input image");
+        throw Exception(
+            fmt::format("coordinate position {} for axis {} provided with -coord option is out of range of input image",
+                        str(*maxval),
+                        str(axis)));
 
       header_out.size(axis) = pos[axis].size();
       if (axis == 3) {

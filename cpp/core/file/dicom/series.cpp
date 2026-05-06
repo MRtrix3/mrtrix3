@@ -15,6 +15,7 @@
  */
 
 #include <array>
+#include <fmt/format.h>
 
 #include "file/dicom/patient.h"
 #include "file/dicom/series.h"

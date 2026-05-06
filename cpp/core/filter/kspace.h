@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <fmt/format.h>
 #include <string>
 #include <vector>
 
@@ -54,16 +55,13 @@ public:
       for (ssize_t n = 0; n != inner_axes.size(); ++n) {
         switch (n) {
         case 0:
-          kspace = Image<cdouble>::scratch(in,
-                                           "Scratch k-space for \"" + in.name() + "\""        //
-                                               + (inner_axes.size() > 1 ? " (1 of 2)" : "")); //
+          kspace = Image<cdouble>::scratch(
+              in, fmt::format("Scratch k-space for \"{}\"{}", in.name(), inner_axes.size() > 1 ? " (1 of 2)" : ""));
           Math::FFT(in, kspace, inner_axes[0], FFTW_FORWARD, false);
           break;
         case 1:
           temp = kspace;
-          kspace = Image<cdouble>::scratch(in,
-                                           "Scratch k-space for \"" + in.name() + "\" " //
-                                               + "(2 of 2)");                           //
+          kspace = Image<cdouble>::scratch(in, fmt::format("Scratch k-space for \"{}\" (2 of 2)", in.name()));
           Math::FFT(temp, kspace, inner_axes[n], FFTW_FORWARD, false);
           break;
         default:
@@ -99,7 +97,8 @@ public:
   template <class InputImageType, class OutputImageType>
   typename std::enable_if<!std::is_same<typename InputImageType::value_type, cdouble>::value, void>::type
   operator()(InputImageType &in, OutputImageType &out) {
-    Image<cdouble> temp = Image<cdouble>::scratch(in, "Scratch \"" + in.name() + "\" converted to cdouble for FFT");
+    Image<cdouble> temp =
+        Image<cdouble>::scratch(in, fmt::format("Scratch \"{}\" converted to cdouble for FFT", in.name()));
     for (auto l = Loop(in)(in, temp); l; ++l)
       temp.value() = {static_cast<double>(in.value()), 0.0};
     (*this)(temp, out);
@@ -130,8 +129,8 @@ public:
                                     const std::vector<size_t> &inner_axes, //
                                     const default_type cosine_frac) {      //
     assert(cosine_frac >= 0.0 && cosine_frac <= 1.0);
-    Image<double> window = Image<double>::scratch(make_window_header(header, inner_axes),
-                                                  "Scratch Tukey filter window with alpha=" + str(cosine_frac));
+    Image<double> window = Image<double>::scratch(
+        make_window_header(header, inner_axes), fmt::format("Scratch Tukey filter window with alpha={}", cosine_frac));
     for (auto l = Loop(window)(window); l; ++l)
       window.value() = 1.0;
     for (auto axis : inner_axes) {

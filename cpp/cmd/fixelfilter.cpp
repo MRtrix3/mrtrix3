@@ -24,12 +24,14 @@
 #include "header.h"
 #include "image.h"
 #include "progressbar.h"
+#include <fmt/format.h>
 
 #include "fixel/filter/base.h"
 #include "fixel/filter/cfe.h"
 #include "fixel/filter/connect.h"
 #include "fixel/filter/smooth.h"
 #include "fixel/matrix.h"
+#include "fmt.h"
 #include "stats/cfe.h"
 
 using namespace MR;
@@ -72,18 +74,18 @@ void usage() {
 
   + OptionGroup ("Options specific to the \"connect\" filter")
   + Option ("threshold_value", "specify a threshold for the input fixel data file values"
-                               " (default = " + str(Fixel::Filter::Connect::default_value_threshold) + ")")
+                               " (default = " + fmt::format("{})", Fixel::Filter::Connect::default_value_threshold))
     + Argument ("value").type_float ()
   + Option ("threshold_connectivity", "specify a fixel-fixel connectivity threshold for connected-component analysis"
-                                      " (default = " + str(Fixel::Filter::Connect::default_connectivity_threshold, 2) + ")")
+                                      " (default = " + fmt::format("{})", Fixel::Filter::Connect::default_connectivity_threshold, 2))
     + Argument ("value").type_float (0.0)
 
   + OptionGroup ("Options specific to the \"smooth\" filter")
   + Option ("fwhm", "the full-width half-maximum (FWHM) of the spatial component of the smoothing filter"
-                    " (default = " + str(Fixel::Filter::Smooth::default_fwhm) + "mm)")
+                    " (default = " + fmt::format("{}mm)", Fixel::Filter::Smooth::default_fwhm))
     + Argument ("value").type_float (0.0)
   + Option ("minweight", "apply a minimum threshold to smoothing weights"
-                         " (default = " + str(Fixel::Filter::Smooth::default_threshold, 2) + ")")
+                         " (default = " + fmt::format("{})", Fixel::Filter::Smooth::default_threshold, 2))
     + Argument ("value").type_float (0.0);
 
 }
@@ -116,7 +118,7 @@ void run() {
       multiple_files = Fixel::find_data_headers(argument[0], index_header);
       Fixel::debug_validate_directory(argument[0]);
       if (multiple_files.empty())
-        throw Exception("No fixel data files found in directory \"" + std::string(argument[0]) + "\"");
+        throw Exception(fmt::format("No fixel data files found in directory \"{}\"", argument[0]));
       output_header = Header(multiple_files[0]);
     } catch (...) {
       try {
@@ -125,14 +127,16 @@ void run() {
         Fixel::check_data_file(single_file);
         output_header = Header(single_file);
       } catch (...) {
-        throw Exception("Could not interpret first argument \"" + std::string(argument[0]) +
-                        "\" as either a fixel data file, or a fixel directory");
+        throw Exception(
+            fmt::format("Could not interpret first argument \"{}\" as either a fixel data file, or a fixel directory",
+                        argument[0]));
       }
     }
 
     if (single_file.valid() && !Fixel::fixels_match(index_header, single_file))
-      throw Exception("File \"" + std::string(argument[0]) + "\" is not a valid fixel data file" + //
-                      " (does not match corresponding index image)");                              //
+      throw Exception(fmt::format("File \"{}\" is not a valid fixel data file{}",
+                                  argument[0],                                     //
+                                  " (does not match corresponding index image)")); //
 
     Image<index_type> index_image = index_header.get_image<index_type>();
     if (multiple_files.empty())
@@ -152,18 +156,22 @@ void run() {
       if (mask.size(1) != 1)
         throw Exception("Fixel mask must be a 1D fixel data file");
       if (static_cast<size_t>(mask.size(0)) != nfixels)
-        throw Exception("Number of fixels in mask image (" + str(mask.size(0)) + ")" + //
-                        " does not match number of fixels in index image" +            //
-                        " (" + str(nfixels) + ")");                                    //
+        throw Exception(fmt::format("Number of fixels in mask image ({}){}{}{})",
+                                    str(mask.size(0)),                                 //
+                                    " does not match number of fixels in index image", //
+                                    " (",
+                                    str(nfixels))); //
     }
 
     opt = get_options("matrix");
     Fixel::Matrix::Reader matrix(opt[0][0], mask);
 
     if (nfixels != matrix.size())
-      throw Exception("Number of fixels in input (" + str(nfixels) + ")" +        //
-                      " does not match number of fixels in connectivity matrix" + //
-                      " (" + str(matrix.size()) + ")");                           //
+      throw Exception(fmt::format("Number of fixels in input ({}){}{}{})",
+                                  str(nfixels),                                              //
+                                  " does not match number of fixels in connectivity matrix", //
+                                  " (",
+                                  str(matrix.size()))); //
 
     switch (filter_type) {
     case FilterType::CFE: {
@@ -204,18 +212,20 @@ void run() {
 
   for (const auto &i : option_list) {
     if (!get_options(i).empty())
-      WARN("Option -" + i + " ignored:" + " not relevant to " + MR::Enum::lowercase_name(filter_type) + " filter");
+      WARN(fmt::format("Option -{} ignored: not relevant to {} filter", i, MR::Enum::lowercase_name(filter_type)));
   }
 
   if (single_file.valid()) {
     auto output_image = Image<float>::create(argument[2], single_file);
-    CONSOLE(std::string("Applying \"") + MR::Enum::lowercase_name(filter_type) + "\" operation to fixel data file \"" +
-            single_file.name() + "\"");
+    CONSOLE(fmt::format("Applying \"{}\" operation to fixel data file \"{}\"",
+                        MR::Enum::lowercase_name(filter_type),
+                        single_file.name()));
     (*filter)(single_file, output_image);
   } else {
     Fixel::copy_index_and_directions_file(argument[0], argument[2]);
-    ProgressBar progress(std::string("Applying \"") + MR::Enum::lowercase_name(filter_type) + "\" operation to " +
-                             str(multiple_files.size()) + " fixel data files",
+    ProgressBar progress(fmt::format("Applying \"{}\" operation to {} fixel data files",
+                                     MR::Enum::lowercase_name(filter_type),
+                                     multiple_files.size()),
                          multiple_files.size());
     for (auto &H : multiple_files) {
       auto input_image = H.get_image<float>();

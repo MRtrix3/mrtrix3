@@ -16,11 +16,13 @@
 
 #pragma once
 
+#include <fmt/format.h>
 #include <string>
 
 #include "app.h"
 #include "file/config.h"
 #include "file/path.h"
+#include "fmt.h"
 #include "header.h"
 #include "math/SH.h"
 #include "math/condition_number.h"
@@ -57,8 +59,9 @@ template <class MatrixType> inline void check_DW_scheme(const Header &header, co
 
   if (header.ndim() >= 4) {
     if (header.size(3) != static_cast<ssize_t>(grad.rows()))
-      throw Exception("number of studies in base image (" + str(header.size(3)) +
-                      ") does not match number of rows in diffusion gradient table (" + str(grad.rows()) + ")");
+      throw Exception(fmt::format("number of studies in base image ({}", str(header.size(3))) +
+                      fmt::format(") does not match number of rows in diffusion gradient table ({}", grad.rows()) +
+                      ")");
   } else if (grad.rows() != 1)
     throw Exception("For images with less than four dimensions, gradient table can have one row only");
 }
@@ -181,11 +184,13 @@ Eigen::MatrixXd resolve_DW_scheme(const MatrixType1 &one, const MatrixType2 &two
     } else {
       const Eigen::Vector3d mean_dir = (one_dir + two_dir).normalized();
       if (!is_bzero && mean_dir.dot(one_dir) < 1.0 - 1e-3) {
-        throw Exception(                                                                        //
-            std::string("Diffusion vector directions not equal within permissible imprecision") //
-            + " (row " + str(rowindex) + ":"                                                    //
-            + " " + str(one_dir.transpose()) + " <--> " + str(two_dir.transpose()) + ";"        //
-            + " dot product " + str(mean_dir.dot(one_dir)) + ")");                              //
+        throw Exception(fmt::format("Diffusion vector directions not equal within permissible imprecision (row {}:"
+                                    " {} <--> {};"
+                                    " dot product {})",
+                                    rowindex,
+                                    one_dir,
+                                    two_dir,
+                                    mean_dir.dot(one_dir)));
       }
       result.block<1, 3>(rowindex, 0) = mean_dir;
     }
@@ -292,7 +297,7 @@ compute_SH2amp_mapping(const MatrixType &directions, bool lmax_from_command_line
       if (lmax < 0)
         throw Exception("lmax must be a non-negative number");
       if (lmax > lmax_from_ndir) {
-        WARN("not enough directions for lmax = " + str(lmax) + " - dropping down to " + str(lmax_from_ndir));
+        WARN(fmt::format("not enough directions for lmax = {} - dropping down to {}", lmax, lmax_from_ndir));
         lmax = lmax_from_ndir;
       }
     }
@@ -304,7 +309,7 @@ compute_SH2amp_mapping(const MatrixType &directions, bool lmax_from_command_line
       lmax = default_lmax;
   }
 
-  INFO("computing SH transform using lmax = " + str(lmax));
+  INFO(fmt::format("computing SH transform using lmax = {}", lmax));
 
   int lmax_prev = lmax;
   Eigen::MatrixXd mapping;
@@ -313,14 +318,15 @@ compute_SH2amp_mapping(const MatrixType &directions, bool lmax_from_command_line
     const default_type cond = Math::condition_number(mapping);
     if (cond < 10.0)
       break;
-    WARN("directions are poorly distributed for lmax = " + str(lmax) + " (condition number = " + str(cond) + ")");
+    WARN("directions are poorly distributed for lmax = " + fmt::format("{} (condition number = ", lmax) +
+         fmt::format("{})", cond));
     if (cond < 100.0 || lmax_set_from_commandline)
       break;
     lmax -= 2;
   } while (lmax >= 0);
 
   if (lmax_prev != lmax)
-    WARN("reducing lmax to " + str(lmax) + " to improve conditioning");
+    WARN("reducing lmax to " + fmt::format("{} to improve conditioning", lmax));
 
   return mapping;
 }

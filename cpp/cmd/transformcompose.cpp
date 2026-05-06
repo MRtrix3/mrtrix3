@@ -20,6 +20,7 @@
 #include "image.h"
 #include "interp/linear.h"
 #include "registration/warp/validate.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -122,9 +123,9 @@ void run() {
       try {
         transform_list.emplace_back(std::make_unique<Linear>(File::Matrix::load_transform(argument[i])));
       } catch (Exception &E) {
-        throw Exception("error reading input file " + str(argument[i]) +
-                        ":"
-                        " does not appear to be a 4D warp image or 4x4 linear transform");
+        throw Exception(fmt::format("error reading input file {}:\"\n                        \" does not appear to be "
+                                    "a 4D warp image or 4x4 linear transform",
+                                    str(argument[i])));
       }
     }
   }

@@ -20,6 +20,7 @@
 #include <cstdio>
 #include <cstring>
 #include <fcntl.h>
+#include <fmt/format.h>
 #include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -41,7 +42,7 @@ public:
     try {
       close();
     } catch (...) {
-      FAIL("error closing GZ file \"" + filename + "\": " + error());
+      FAIL(fmt::format("error closing GZ file \"{}\": ", filename) + error());
       App::exit_error_code = 1;
     }
   }
@@ -52,17 +53,17 @@ public:
     close();
     filename = fname;
     if (!MR::Path::exists(filename))
-      throw Exception("cannot access file \"" + filename + "\": No such file or directory");
+      throw Exception(fmt::format("cannot access file \"{}\": No such file or directory", filename));
 
     gz = gzopen(filename.c_str(), std::string(mode).c_str());
     if (!gz)
-      throw Exception("error opening file \"" + filename + "\": " + strerror(errno));
+      throw Exception(fmt::format("error opening file \"{}\": {}", filename, strerror(errno)));
   }
 
   void close() {
     if (gz) {
       if (gzclose(gz))
-        throw Exception("error closing GZ file \"" + filename + "\": " + error());
+        throw Exception(fmt::format("error closing GZ file \"{}\": {}", filename, error()));
       filename.clear();
       gz = nullptr;
     }
@@ -83,27 +84,27 @@ public:
     assert(gz);
     z_off_t pos = gzseek(gz, offset, SEEK_SET);
     if (pos < 0)
-      throw Exception("error seeking in GZ file \"" + filename + "\": " + error());
+      throw Exception(fmt::format("error seeking in GZ file \"{}\": {}", filename, error()));
   }
 
   int read(void *const s, size_t n) {
     assert(gz);
     int n_read = gzread(gz, s, n);
     if (n_read < 0)
-      throw Exception("error uncompressing GZ file \"" + filename + "\": " + error());
+      throw Exception(fmt::format("error uncompressing GZ file \"{}\": {}", filename, error()));
     return n_read;
   }
 
   void write(const void *const s, size_t n) {
     assert(gz);
     if (gzwrite(gz, s, n) <= 0)
-      throw Exception("error writing to GZ file \"" + filename + "\": " + error());
+      throw Exception(fmt::format("error writing to GZ file \"{}\": {}", filename, error()));
   }
 
   void write(std::string_view s) {
     assert(gz);
     if (gzputs(gz, std::string(s).c_str()) < 0)
-      throw Exception("error writing to GZ file \"" + filename + "\": " + error());
+      throw Exception(fmt::format("error writing to GZ file \"{}\": {}", filename, error()));
   }
 
   std::string getline() {
@@ -115,7 +116,7 @@ public:
       if (c < 0) {
         if (eof())
           break;
-        throw Exception("error uncompressing GZ file \"" + filename + "\": " + error());
+        throw Exception(fmt::format("error uncompressing GZ file \"{}\": {}", filename, error()));
       }
       string += char(c);
     } while (c != '\n');
@@ -127,7 +128,7 @@ public:
   template <typename T> T get() {
     T val;
     if (read(&val, sizeof(T)) != sizeof(T))
-      throw Exception("error uncompressing GZ file \"" + filename + "\": " + error());
+      throw Exception(fmt::format("error uncompressing GZ file \"{}\": {}", filename, error()));
     return val;
   }
 
@@ -138,7 +139,7 @@ public:
 
   template <typename T> T *get(T *buf, size_t n) {
     if (read(buf, n * sizeof(T)) != n * sizeof(T))
-      throw Exception("error uncompressing GZ file \"" + filename + "\": " + error());
+      throw Exception(fmt::format("error uncompressing GZ file \"{}\": {}", filename, error()));
     return buf;
   }
 

@@ -16,7 +16,9 @@
 
 #include "command.h"
 #include "datatype.h"
+#include "fmt.h"
 #include "progressbar.h"
+#include <fmt/format.h>
 
 #include "algo/threaded_loop.h"
 #include "image.h"
@@ -44,23 +46,11 @@ void run() {
   auto in2 = Image<double>::open(argument[1]);
   check_dimensions(in1, in2);
   if (in1.ndim() != 4)
-    throw Exception("images \"" + in1.name() + "\" and \"" + in2.name() + "\" are not 4D");
+    throw Exception(fmt::format("images \"{}\" and \"{}\" are not 4D", in1.name(), in2.name()));
   if (in1.size(3) % 3)
-    throw Exception("images \"" + in1.name() + "\" and \"" + in2.name() + "\" do not contain XYZ peak directions");
-  for (size_t i = 0; i < in1.ndim(); ++i) {
-    if (std::isfinite(in1.size(i)))
-      if (in1.size(i) != in2.size(i))
-        throw Exception("images \"" + in1.name() + "\" and \"" + in2.name() +
-                        "\" do not have matching voxel spacings " + str(in1.size(i)) + " vs " + str(in2.size(i)));
-  }
-  for (size_t i = 0; i < 3; ++i) {
-    for (size_t j = 0; j < 4; ++j) {
-      if (abs(in1.transform().matrix()(i, j) - in2.transform().matrix()(i, j)) > 0.0001)
-        throw Exception("images \"" + in1.name() + "\" and \"" + in2.name() +
-                        "\" do not have matching header transforms " + "\n" + str(in1.transform().matrix()) + "vs \n " +
-                        str(in2.transform().matrix()) + ")");
-    }
-  }
+    throw Exception(fmt::format("images \"{}\" and \"{}\" do not contain XYZ peak directions", in1.name(), in2.name()));
+  if (!voxel_grids_match_in_scanner_space(in1, in2))
+    throw Exception(fmt::format("images \"{}\" and \"{}\" do not reside on same voxel grid", in1.name(), in2.name()));
 
   double tol = argument[2];
 
@@ -78,10 +68,16 @@ void run() {
           vecb.normalize();
           const double dp = abs(veca.dot(vecb));
           if (norma && normb && (1.0 - dp > tol))
-            throw Exception("images \"" + a.name() + "\" and \"" + b.name() +
-                            "\" do not match within specified precision of " + str(tol) + " ( [" +
-                            str(veca.transpose().cast<float>()) + "] vs [" + str(vecb.transpose().cast<float>()) +
-                            "], norms [" + str(norma) + " " + str(normb) + "], dot product = " + str(dp) + ")");
+            throw Exception(fmt::format("images \"{}\" and \"{}\" do not match within specified precision of {}"
+                                        " ( {} vs {}, norms [{} {}], dot product = {})",
+                                        a.name(),
+                                        b.name(),
+                                        tol,
+                                        veca.cast<float>(),
+                                        vecb.cast<float>(),
+                                        norma,
+                                        normb,
+                                        dp));
         }
       },
       in1,

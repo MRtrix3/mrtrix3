@@ -25,6 +25,7 @@
 #include "transform.h"
 #include <Eigen/Geometry>
 #include <algorithm>
+#include <fmt/format.h>
 #include <unsupported/Eigen/MatrixFunctions>
 
 using namespace MR;
@@ -168,7 +169,7 @@ align_corresponding_vertices(const Eigen::MatrixXd &src_vertices, const Eigen::M
     }
     // calculate and apply the scale
     default_type fscale = sqrt(fsq_t / fsq_s); // Umeyama: svd.singularValues().dot(e) / fsq;
-    DEBUG("scaling: " + str(fscale));
+    DEBUG(fmt::format("scaling: {}", str(fscale)));
     R *= fscale;
   }
 
@@ -277,8 +278,9 @@ void run() {
     transform_out.translation() = ((1.0 - t) * transform1.translation() + t * transform2.translation());
     Qout = Q1.slerp(t, Q2);
     transform_out.linear() = Qout * ((1 - t) * S1 + t * S2);
-    INFO("\n" +
-         str(transform_out.matrix().format(Eigen::IOFormat(Eigen::FullPrecision, 0, ", ", ",\n", "[", "]", "[", "]"))));
+    INFO(fmt::format(
+        "\n{}",
+        str(transform_out.matrix().format(Eigen::IOFormat(Eigen::FullPrecision, 0, ", ", ",\n", "[", "]", "[", "]")))));
     File::Matrix::save_transform(transform_out, output_path);
     break;
   }

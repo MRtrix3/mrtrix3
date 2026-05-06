@@ -15,8 +15,10 @@
  */
 
 #include "mrview/tool/overlay.h"
+#include <fmt/format.h>
 
 #include "dialog/file.h"
+#include "fmt.h"
 #include "mrtrix.h"
 #include "mrview/gui_image.h"
 #include "mrview/mode/slice.h"
@@ -571,7 +573,7 @@ void Overlay::update_selection() {
       SpinBox *vol_index = new SpinBox(this);
       vol_index->setMinimum(0);
       vol_index->setMaximum(overlay->image.size(d) - 1);
-      vol_index->setPrefix(qstr(str(d + 1) + ": "));
+      vol_index->setPrefix(qstr(fmt::format("{}: ", d + 1)));
       vol_index->setValue(overlay->image.index(d));
       vol_index->setEnabled(overlay->image.size(d) > 1);
       volume_index_layout->addWidget(vol_index, volume_index_layout->count() / 3, volume_index_layout->count() % 3);
@@ -684,8 +686,7 @@ bool Overlay::process_commandline_option(const MR::App::ParsedOption &opt) {
     try {
       int n = opt[0];
       if (n < 0 || ColourMap::maps[n].name.empty())
-        throw Exception("invalid overlay colourmap index \"" + std::string(opt[0]) +
-                        "\" for -overlay.colourmap option");
+        throw Exception(fmt::format("invalid overlay colourmap index \"{}\" for -overlay.colourmap option", opt[0]));
       colourmap_button->set_colourmap_index(n);
     } catch (Exception &e) {
       e.display();

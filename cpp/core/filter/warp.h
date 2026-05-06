@@ -81,16 +81,18 @@ void warp(ImageTypeSource &source,
         source, warp_resliced, value_when_out_of_bounds, jacobian_modulate);
 
     if (destination.ndim() == 4)
-      ThreadedLoop("warping \"" + source.name() + "\"" +
-                       (jacobian_modulate ? " with Jacobian intensity modulation" : ""),
+      ThreadedLoop(fmt::format("warping \"{}\"{}",
+                               source.name(),
+                               jacobian_modulate ? " with Jacobian intensity modulation" : ""),
                    interp,
                    0,
                    3,
                    1)
           .run(CopyKernel4D(), interp, destination);
     else
-      threaded_copy_with_progress_message("warping \"" + source.name() + "\"" +
-                                              (jacobian_modulate ? " with Jacobian intensity modulation" : ""),
+      threaded_copy_with_progress_message(fmt::format("warping \"{}\"{}",
+                                                      source.name(),
+                                                      jacobian_modulate ? " with Jacobian intensity modulation" : ""),
                                           interp,
                                           destination);
 
@@ -99,16 +101,18 @@ void warp(ImageTypeSource &source,
     Adapter::Warp<Interpolator, ImageTypeSource, Image<typename WarpType::value_type>> interp(
         source, warp, value_when_out_of_bounds, jacobian_modulate);
     if (destination.ndim() == 4 && destination.is_direct_io())
-      ThreadedLoop("warping \"" + source.name() + "\"" +
-                       (jacobian_modulate ? " with Jacobian intensity modulation" : ""),
+      ThreadedLoop(fmt::format("warping \"{}\"{}",
+                               source.name(),
+                               jacobian_modulate ? " with Jacobian intensity modulation" : ""),
                    interp,
                    0,
                    3,
                    1)
           .run(CopyKernel4D(), interp, destination);
     else
-      threaded_copy_with_progress_message("warping \"" + source.name() + "\"" +
-                                              (jacobian_modulate ? " with Jacobian intensity modulation" : ""),
+      threaded_copy_with_progress_message(fmt::format("warping \"{}\"{}",
+                                                      source.name(),
+                                                      jacobian_modulate ? " with Jacobian intensity modulation" : ""),
                                           interp,
                                           destination,
                                           0,

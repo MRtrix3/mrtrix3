@@ -25,6 +25,7 @@
 #include "math/SH.h"
 #include "math/sphere.h"
 #include "progressbar.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;

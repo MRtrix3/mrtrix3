@@ -27,6 +27,7 @@
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/weights.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -153,16 +154,16 @@ void run() {
   if (get_options("ignorezero").empty() && (empty_streamlines || zero_length_streamlines)) {
     std::string s("read");
     if (empty_streamlines) {
-      s += " " + str(empty_streamlines) + " empty streamlines";
+      s += " " + fmt::format("{} empty streamlines", empty_streamlines);
       if (zero_length_streamlines)
         s += " and";
     }
     if (zero_length_streamlines)
-      s += " " + str(zero_length_streamlines) + " streamlines with zero length (one vertex only)";
+      s += " " + fmt::format("{} streamlines with zero length (one vertex only)", zero_length_streamlines);
     WARN(s);
   }
   if (count != header_count)
-    WARN("expected " + str(header_count) + " tracks according to header; read " + str(count));
+    WARN(fmt::format("expected {} tracks according to header; read {}", str(header_count), str(count)));
   if (!std::isfinite(min_length))
     min_length = NaNF;
   if (!std::isfinite(max_length))

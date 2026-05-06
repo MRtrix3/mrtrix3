@@ -19,6 +19,7 @@
 #include "dwi/tractography/scalar_file.h"
 #include "dwi/tractography/streamline.h"
 #include "dwi/tractography/validate.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -50,13 +51,15 @@ void run() {
   DWI::Tractography::TrackScalar<> tck_scalar1, tck_scalar2, tck_scalar_output;
   while (reader1(tck_scalar1)) {
     if (!reader2(tck_scalar2)) {
-      WARN("No more track scalars left in input file \"" + std::string(argument[1]) + "\" after " +
-           str(tck_scalar1.get_index() + 1) + " streamlines; " + "but more data are present in input file \"" +
-           std::string(argument[0]) + "\"");
+      WARN(fmt::format("No more track scalars left in input file \"{}\" after {} streamlines; but more data are "
+                       "present in input file \"{}\"",
+                       std::string(argument[1]),
+                       str(tck_scalar1.get_index() + 1),
+                       std::string(argument[0])));
       break;
     }
     if (tck_scalar1.size() != tck_scalar2.size())
-      throw Exception("track scalar length mismatch at streamline index " + str(tck_scalar1.get_index()));
+      throw Exception(fmt::format("track scalar length mismatch at streamline index {}", str(tck_scalar1.get_index())));
 
     tck_scalar_output.set_index(tck_scalar1.get_index());
     tck_scalar_output.resize(tck_scalar1.size());
@@ -66,8 +69,10 @@ void run() {
     writer(tck_scalar_output);
   }
   if (reader2(tck_scalar2)) {
-    WARN("No more track scalars left in input file \"" + std::string(argument[0]) + "\" after " +
-         str(tck_scalar1.get_index() + 1) + " streamlines; " + "but more data are present in input file \"" +
-         std::string(argument[1]) + "\"");
+    WARN(fmt::format("No more track scalars left in input file \"{}\" after {} streamlines; but more data are present "
+                     "in input file \"{}\"",
+                     std::string(argument[0]),
+                     str(tck_scalar1.get_index() + 1),
+                     std::string(argument[1])));
   }
 }

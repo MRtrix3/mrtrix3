@@ -14,10 +14,12 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <fmt/format.h>
 #include <string>
 #include <vector>
 
 #include "command.h"
+#include "fmt.h"
 
 using namespace MR;
 using namespace App;
@@ -122,25 +124,25 @@ void run() {
     CONSOLE("-text: " + std::string(opt[0][0]));
   opt = get_options("bool");
   if (!opt.empty())
-    CONSOLE("-bool: " + str(bool(opt[0][0])));
+    CONSOLE(fmt::format("-bool: {}", bool(opt[0][0])));
   opt = get_options("int_unbound");
   if (!opt.empty())
-    CONSOLE("-int_unbound: " + str(int64_t(opt[0][0])));
+    CONSOLE(fmt::format("-int_unbound: {}", int64_t(opt[0][0])));
   opt = get_options("int_nonneg");
   if (!opt.empty())
-    CONSOLE("-int_nonneg: " + str(int64_t(opt[0][0])));
+    CONSOLE(fmt::format("-int_nonneg: {}", int64_t(opt[0][0])));
   opt = get_options("int_bound");
   if (!opt.empty())
-    CONSOLE("-int_bound: " + str(int64_t(opt[0][0])));
+    CONSOLE(fmt::format("-int_bound: {}", int64_t(opt[0][0])));
   opt = get_options("float_unbound");
   if (!opt.empty())
-    CONSOLE("-float_unbound: " + str(default_type(opt[0][0])));
+    CONSOLE(fmt::format("-float_unbound: {}", default_type(opt[0][0])));
   opt = get_options("float_nonneg");
   if (!opt.empty())
-    CONSOLE("-float_nonneg: " + str(default_type(opt[0][0])));
+    CONSOLE(fmt::format("-float_nonneg: {}", default_type(opt[0][0])));
   opt = get_options("float_bound");
   if (!opt.empty())
-    CONSOLE("-float_bound: " + str(default_type(opt[0][0])));
+    CONSOLE(fmt::format("-float_bound: {}", default_type(opt[0][0])));
   opt = get_options("int_seq");
   if (!opt.empty())
     CONSOLE("-int_seq: [" + join(parse_ints<int64_t>(opt[0][0]), ",") + "]");
@@ -149,37 +151,37 @@ void run() {
     CONSOLE("-float_seq: [" + join(parse_floats(opt[0][0]), ",") + "]");
   opt = get_options("choice");
   if (!opt.empty())
-    CONSOLE("-choice: " + str(opt[0][0]));
+    CONSOLE(fmt::format("-choice: {}", opt[0][0]));
   opt = get_options("file_in");
   if (!opt.empty())
-    CONSOLE("-file_in: " + str(opt[0][0]));
+    CONSOLE(fmt::format("-file_in: {}", opt[0][0]));
   opt = get_options("file_out");
   if (!opt.empty())
-    CONSOLE("-file_out: " + str(opt[0][0]));
+    CONSOLE(fmt::format("-file_out: {}", opt[0][0]));
   opt = get_options("dir_in");
   if (!opt.empty())
-    CONSOLE("-dir_in: " + str(opt[0][0]));
+    CONSOLE(fmt::format("-dir_in: {}", opt[0][0]));
   opt = get_options("dir_out");
   if (!opt.empty())
-    CONSOLE("-dir_out: " + str(opt[0][0]));
+    CONSOLE(fmt::format("-dir_out: {}", opt[0][0]));
   opt = get_options("tracks_in");
   if (!opt.empty())
-    CONSOLE("-tracks_in: " + str(opt[0][0]));
+    CONSOLE(fmt::format("-tracks_in: {}", opt[0][0]));
   opt = get_options("tracks_out");
   if (!opt.empty())
-    CONSOLE("-tracks_out: " + str(opt[0][0]));
+    CONSOLE(fmt::format("-tracks_out: {}", opt[0][0]));
 
   opt = get_options("any");
   if (!opt.empty())
-    CONSOLE("-any: " + str(opt[0][0]));
+    CONSOLE(fmt::format("-any: {}", opt[0][0]));
   opt = get_options("nargs_two");
   if (!opt.empty())
-    CONSOLE("-nargs_two: [" + str(opt[0][0]) + " " + str(opt[0][1]) + "]");
+    CONSOLE("-nargs_two: [" + fmt::format("{} ", opt[0][0]) + fmt::format("{}]", opt[0][1]));
   opt = get_options("multiple");
   if (!opt.empty()) {
     std::vector<std::string> specs;
     for (size_t i = 0; i != opt.size(); ++i)
-      specs.push_back(std::string("\"") + str(opt[i][0]) + "\"");
+      specs.push_back(std::string("\"") + fmt::format("{}\"", opt[i][0]));
     CONSOLE("-multiple: [" + join(specs, " ") + "]");
   }
 }

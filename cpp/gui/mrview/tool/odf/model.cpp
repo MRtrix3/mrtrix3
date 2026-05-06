@@ -17,6 +17,7 @@
 #include "mrview/tool/odf/model.h"
 
 #include "header.h"
+#include <fmt/format.h>
 
 namespace MR::GUI::MRView::Tool {
 
@@ -35,15 +36,15 @@ size_t ODF_Model::add_items(const std::vector<std::string> &list,
         break;
       case odf_type_t::TENSOR:
         if (header->ndim() != 4)
-          throw Exception("Image \"" + Path::basename(header->name()) + "\" is not 4D; not a tensor image");
+          throw Exception(fmt::format("Image \"{}\" is not 4D; not a tensor image", Path::basename(header->name())));
         if (header->size(3) != 6)
-          throw Exception("Image \"" + Path::basename(header->name()) +
-                          "\" does not contain 6 volumes; not a tensor image");
+          throw Exception(fmt::format("Image \"{}\" does not contain 6 volumes; not a tensor image",
+                                      Path::basename(header->name())));
         break;
       case odf_type_t::DIXEL:
         if (header->ndim() != 4)
-          throw Exception("Image \"" + Path::basename(header->name()) +
-                          "\" is not 4D; cannot contain direction amplitudes");
+          throw Exception(fmt::format("Image \"{}\" is not 4D; cannot contain direction amplitudes",
+                                      Path::basename(header->name())));
         break;
       }
       hlist.push_back(std::move(header));

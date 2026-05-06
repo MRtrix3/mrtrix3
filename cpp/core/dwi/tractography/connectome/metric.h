@@ -21,6 +21,7 @@
 #include "image.h"
 #include "interp/linear.h"
 #include "types.h"
+#include <fmt/format.h>
 
 #include "connectome/connectome.h"
 

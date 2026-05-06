@@ -17,8 +17,10 @@
 #pragma once
 
 #include <array>
+#include <fmt/format.h>
 
 #include "adapter/base.h"
+#include "fmt.h"
 #include "math/median.h"
 
 namespace MR::Adapter {
@@ -48,7 +50,7 @@ public:
     else
       extent = ext;
 
-    DEBUG("median adapter for image \"" + name() + "\" initialised with extent " + str(extent));
+    DEBUG(fmt::format("median adapter for image \"{}\" initialised with extent {}", name(), extent));
 
     for (size_t i = 0; i < 3; ++i)
       extent[i] = (extent[i] - 1) / 2;

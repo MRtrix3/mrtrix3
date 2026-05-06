@@ -20,6 +20,7 @@
 #include "mrview/tool/base.h"
 #include "mrview/tool/view.h"
 #include "opengl/lighting.h"
+#include <fmt/format.h>
 
 namespace MR::GUI::MRView::Mode {
 
@@ -28,18 +29,17 @@ std::string Volume::Shader::vertex_shader_source(const Displayable &) {
                        "uniform mat4 M;\n"
                        "out vec3 texcoord;\n";
 
-  for (int n = 0; n < mode.overlays_for_3D.size(); ++n)
-    source += "uniform mat4 overlay_M" + str(n) +
-              ";\n"
-              "out vec3 overlay_texcoord" +
-              str(n) + ";\n";
+  for (int n = 0; n < mode.overlays_for_3D.size(); ++n) {
+    source += fmt::format("uniform mat4 overlay_M{};\n", n);
+    source += fmt::format("out vec3 overlay_texcoord{};\n", n);
+  }
 
   source += "void main () {\n"
             "  texcoord = vertpos;\n"
             "  gl_Position =  M * vec4 (vertpos,1);\n";
 
   for (int n = 0; n < mode.overlays_for_3D.size(); ++n)
-    source += "  overlay_texcoord" + str(n) + " = (overlay_M" + str(n) + " * vec4 (vertpos,1)).xyz;\n";
+    source += fmt::format("  overlay_texcoord{} = (overlay_M{} * vec4 (vertpos,1)).xyz;\n", n, n);
 
   source += "}\n";
 
@@ -65,20 +65,14 @@ std::string Volume::Shader::fragment_shader_source(const Displayable &object) {
                                                            "in vec3 texcoord;\n";
 
   for (size_t n = 0; n < clip.size(); ++n)
-    source += "uniform vec4 clip" + str(n) +
-              ";\n"
-              "uniform int clip" +
-              str(n) + "_selected;\n";
+    source += fmt::format("uniform vec4 clip{};\nuniform int clip{}_selected;\n", n, n);
 
   for (int n = 0; n < mode.overlays_for_3D.size(); ++n) {
-    source += mode.overlays_for_3D[n]->declare_shader_variables("overlay" + str(n) + "_") +
-              "uniform sampler3D overlay_sampler" + str(n) + ";\n" + "uniform vec3 overlay_ray" + str(n) +
-              ";\n"
-              "uniform vec3 overlay" +
-              str(n) +
-              "_colourmap_colours;\n"
-              "in vec3 overlay_texcoord" +
-              str(n) + ";\n";
+    source += mode.overlays_for_3D[n]->declare_shader_variables(fmt::format("overlay{}_", n));
+    source += fmt::format("uniform sampler3D overlay_sampler{};\n", n);
+    source += fmt::format("uniform vec3 overlay_ray{};\n", n);
+    source += fmt::format("uniform vec3 overlay{}_colourmap_colours;\n", n);
+    source += fmt::format("in vec3 overlay_texcoord{};\n", n);
   }
 
   source += "uniform sampler2D depth_sampler;\n"
@@ -95,8 +89,7 @@ std::string Volume::Shader::fragment_shader_source(const Displayable &object) {
             "  vec3 coord = texcoord + ray * dither;\n";
 
   for (int n = 0; n < mode.overlays_for_3D.size(); ++n)
-    source +=
-        "  vec3 overlay_coord" + str(n) + " = overlay_texcoord" + str(n) + " + overlay_ray" + str(n) + " * dither;\n";
+    source += fmt::format("  vec3 overlay_coord{} = overlay_texcoord{} + overlay_ray{} * dither;\n", n, n, n);
 
   source += "  float depth = texelFetch (depth_sampler, ivec2(gl_FragCoord.xy), 0).r;\n"
             "  float current_depth = gl_FragCoord.z + ray_z * dither;\n"
@@ -113,38 +106,26 @@ std::string Volume::Shader::fragment_shader_source(const Displayable &object) {
             "    coord += ray;\n";
 
   if (!clip.empty()) {
-    source += std::string("    bool show = ") + (AND ? "false" : "true") + ";\n";
-    for (size_t n = 0; n < clip.size(); ++n)
-      source +=
-          std::string("    if (dot (coord, clip") + str(n) + ".xyz) " + (AND ? "<" : ">") + " clip" + str(n) + ".w)\n";
-    source += std::string("          show = ") + (AND ? "true" : "false") +
-              ";\n"
-              "    if (show) {\n";
+    source += fmt::format("    bool show = {};\n", AND ? "false" : "true");
+    for (size_t n = 0; n < clip.size(); ++n) {
+      source += fmt::format("    if (dot (coord, clip{}.xyz) {} clip{}.w)\n", n, (AND ? "<" : ">"), n);
+      source += fmt::format("      show = {};\n", AND ? "true" : "false");
+    }
+    source += "    if (show) {\n";
   }
 
-  source += "      color = texture (image_sampler, coord);\n"
-            "      amplitude = " +
-            std::string(ColourMap::maps[object.colourmap].amplitude) +
-            ";\n"
-            "      if (!isnan(amplitude) && !isinf(amplitude)";
+  source += "      color = texture (image_sampler, coord);\n";
+  source += fmt::format("      amplitude = {};\n", ColourMap::maps[object.colourmap].amplitude);
+  source += fmt::format("      if (!isnan(amplitude) && !isinf(amplitude){}{} && amplitude >= alpha_offset) {\n",
+                        (object.use_discard_lower() ? " && amplitude >= lower" : ""),
+                        (object.use_discard_upper() ? " && amplitude <= upper" : ""));
+  source += "        color.a = clamp ((amplitude - alpha_offset) * alpha_scale, 0, alpha);\n";
 
-  if (object.use_discard_lower())
-    source += " && amplitude >= lower";
+  if (!ColourMap::maps[object.colourmap].special)
+    source += fmt::format("        amplitude = clamp ({} scale * (amplitude - offset), 0.0, 1.0);\n",
+                          (object.scale_inverted() ? "1.0 -" : ""));
 
-  if (object.use_discard_upper())
-    source += " && amplitude <= upper";
-
-  source += " && amplitude >= alpha_offset) {\n"
-            "        color.a = clamp ((amplitude - alpha_offset) * alpha_scale, 0, alpha);\n";
-
-  if (!ColourMap::maps[object.colourmap].special) {
-    source += "        amplitude = clamp (";
-    if (object.scale_inverted())
-      source += "1.0 -";
-    source += " scale * (amplitude - offset), 0.0, 1.0);\n";
-  }
-
-  source += std::string("        ") + ColourMap::maps[object.colourmap].glsl_mapping;
+  source += fmt::format("        {}", ColourMap::maps[object.colourmap].glsl_mapping);
 
   source += "        final_color.rgb += (1.0 - final_color.a) * color.rgb * color.a;\n"
             "        final_color.a += color.a;\n"
@@ -156,49 +137,34 @@ std::string Volume::Shader::fragment_shader_source(const Displayable &object) {
   // OVERLAYS:
   for (size_t n = 0, N = mode.overlays_for_3D.size(); n < N; ++n) {
     const ImageBase *image = mode.overlays_for_3D[n];
-    source += "    overlay_coord" + str(n) + " += overlay_ray" + str(n) +
-              ";\n"
-              "    if (overlay_coord" +
-              str(n) + ".s >= 0.0 && overlay_coord" + str(n) +
-              ".s <= 1.0 &&\n"
-              "        overlay_coord" +
-              str(n) + ".t >= 0.0 && overlay_coord" + str(n) +
-              ".t <= 1.0 &&\n"
-              "        overlay_coord" +
-              str(n) + ".p >= 0.0 && overlay_coord" + str(n) +
-              ".p <= 1.0) {\n"
-              "      color = texture (overlay_sampler" +
-              str(n) + ", overlay_coord" + str(n) +
-              ");\n"
-              "      amplitude = " +
-              std::string(ColourMap::maps[image->colourmap].amplitude) +
-              ";\n"
-              "      if (!isnan(amplitude) && !isinf(amplitude)";
-
-    if (image->use_discard_lower())
-      source += " && amplitude >= overlay" + str(n) + "_lower";
-
-    if (image->use_discard_upper())
-      source += " && amplitude <= overlay" + str(n) + "_upper";
-
-    source += " && amplitude >= overlay" + str(n) + "_alpha_offset) {\n";
+    source += fmt::format("    overlay_coord{} += overlay_ray{};\n", n, n);
+    source += fmt::format("    if (overlay_coord{}.s >= 0.0 && overlay_coord{}.s <= 1.0 &&\n", n, n);
+    source += fmt::format("        overlay_coord{}.t >= 0.0 && overlay_coord{}.t <= 1.0 &&\n", n, n);
+    source += fmt::format("        overlay_coord{}.p >= 0.0 && overlay_coord{}.p <= 1.0) {\n", n, n);
+    source += fmt::format("      color = texture (overlay_sampler{}, overlay_coord{});\n", n, n);
+    source += fmt::format("      amplitude = {};\n", ColourMap::maps[image->colourmap].amplitude);
+    source +=
+        fmt::format("      if (!isnan(amplitude) && !isinf(amplitude){}{} && amplitude >= overlay{}_alpha_offset) {\n",
+                    image->use_discard_lower() ? fmt::format(" && amplitude >= overlay{}_lower", n) : "",
+                    image->use_discard_upper() ? fmt::format(" && amplitude <= overlay{}_upper", n) : "",
+                    n);
 
     if (!ColourMap::maps[image->colourmap].special) {
-      source += "        amplitude = clamp (";
-      if (image->scale_inverted())
-        source += "1.0 -";
-      source += " overlay" + str(n) + "_scale * (amplitude - overlay" + str(n) + "_offset), 0.0, 1.0);\n";
+      source +=
+          fmt::format("        amplitude = clamp ({}overlay{}_scale * (amplitude - overlay{}_offset), 0.0, 1.0);\n",
+                      image->scale_inverted() ? "1.0 - " : "",
+                      n,
+                      n);
     }
 
     std::string mapping(ColourMap::maps[image->colourmap].glsl_mapping);
-    replace(mapping, "scale", "overlay" + str(n) + "_scale");
-    replace(mapping, "offset", "overlay" + str(n) + "_offset");
-    replace(mapping, "colourmap_colour", "overlay" + str(n) + "_colourmap_colour");
-    source += std::string("        ") + mapping;
+    replace(mapping, "scale", fmt::format("overlay{}_scale", n));
+    replace(mapping, "offset", fmt::format("overlay{}_offset", n));
+    replace(mapping, "colourmap_colour", fmt::format("overlay{}_colourmap_colour", n));
+    source += fmt::format("        {}", mapping);
 
-    source += "        color.a = amplitude * overlay" + str(n) +
-              "_alpha;\n"
-              "        final_color.rgb += (1.0 - final_color.a) * color.rgb * color.a;\n"
+    source += fmt::format("        color.a = amplitude * overlay{}_alpha;\n", n);
+    source += "        final_color.rgb += (1.0 - final_color.a) * color.rgb * color.a;\n"
               "        final_color.a += color.a;\n"
               "      }\n"
               "    }\n";
@@ -206,17 +172,19 @@ std::string Volume::Shader::fragment_shader_source(const Displayable &object) {
 
   if (!clip.empty() && mode.get_cliphighlightstate()) {
     source += "    float highlight = 0.0;\n";
-    for (size_t n = 0; n < clip.size(); ++n)
-      source += "    if (clip" + str(n) +
-                "_selected != 0)\n"
-                "      highlight += clamp (selection_thickness - abs (dot (coord, clip" +
-                str(n) + ".xyz) - clip" + str(n) + ".w), 0.0, selection_thickness);\n";
-    source += "    highlight *= " + str(clip_color[3]) +
-              ";\n"
-              "    final_color.rgb += (1.0 - final_color.a) * vec3(" +
-              str(clip_color[0]) + "," + str(clip_color[1]) + "," + str(clip_color[2]) +
-              ") * highlight;\n"
-              "    final_color.a += highlight;\n";
+    for (size_t n = 0; n < clip.size(); ++n) {
+      source += fmt::format("    if (clip{}_selected != 0)\n", n);
+      source += fmt::format("      highlight += clamp (selection_thickness - abs (dot (coord, clip{}.xyz) - clip{}.w), "
+                            "0.0, selection_thickness);\n",
+                            n,
+                            n);
+    }
+    source += fmt::format("    highlight *= {};\n", clip_color[3]);
+    source += fmt::format("    final_color.rgb += (1.0 - final_color.a) * vec3({},{},{}) * highlight;\n",
+                          clip_color[0],
+                          clip_color[1],
+                          clip_color[2]);
+    source += "    final_color.a += highlight;\n";
   }
 
   source += "    if (final_color.a > 0.95) break;\n"
@@ -435,10 +403,11 @@ void Volume::paint(Projection &projection) {
   GL_CHECK_ERROR;
 
   for (size_t n = 0; n < clip.size(); ++n) {
-    gl::Uniform4fv(gl::GetUniformLocation(volume_shader, ("clip" + str(n)).c_str()),
+    gl::Uniform4fv(gl::GetUniformLocation(volume_shader, (fmt::format("clip{}", n)).c_str()),
                    1,
                    clip_real2tex(T2S, S2T, ray_real_space, clip[n].first));
-    gl::Uniform1i(gl::GetUniformLocation(volume_shader, ("clip" + str(n) + "_selected").c_str()), clip[n].second);
+    gl::Uniform1i(gl::GetUniformLocation(volume_shader, ("clip" + fmt::format("{}_selected", n)).c_str()),
+                  clip[n].second);
   }
   GL_CHECK_ERROR;
 
@@ -447,16 +416,16 @@ void Volume::paint(Projection &projection) {
     gl::BindTexture(gl::TEXTURE_3D, overlays_for_3D[n]->texture());
     overlays_for_3D[n]->update_texture3D();
     overlays_for_3D[n]->texture().set_interp_on(overlays_for_3D[n]->interpolate());
-    gl::Uniform1i(gl::GetUniformLocation(volume_shader, ("overlay_sampler" + str(n)).c_str()), 2 + n);
+    gl::Uniform1i(gl::GetUniformLocation(volume_shader, (fmt::format("overlay_sampler{}", n)).c_str()), 2 + n);
 
     GL::mat4 overlay_M = GL::inv(get_tex_to_scanner_matrix(*overlays_for_3D[n])) * T2S;
     GL::vec4 overlay_ray = overlay_M * GL::vec4(ray, 0.0);
     gl::UniformMatrix4fv(
-        gl::GetUniformLocation(volume_shader, ("overlay_M" + str(n)).c_str()), 1, gl::FALSE_, overlay_M);
-    gl::Uniform3fv(gl::GetUniformLocation(volume_shader, ("overlay_ray" + str(n)).c_str()), 1, overlay_ray);
+        gl::GetUniformLocation(volume_shader, (fmt::format("overlay_M{}", n)).c_str()), 1, gl::FALSE_, overlay_M);
+    gl::Uniform3fv(gl::GetUniformLocation(volume_shader, (fmt::format("overlay_ray{}", n)).c_str()), 1, overlay_ray);
 
     overlays_for_3D[n]->set_shader_variables(
-        volume_shader, overlays_for_3D[n]->scale_factor(), "overlay" + str(n) + "_");
+        volume_shader, overlays_for_3D[n]->scale_factor(), "overlay" + fmt::format("{}_", n));
   }
 
   GL_CHECK_ERROR;

@@ -18,6 +18,7 @@
 #include "connectome/enhance.h"
 #include "enum.h"
 #include "file/matrix.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace MR::Connectome;
@@ -51,7 +52,7 @@ void run() {
   const Operation op = MR::Enum::from_name<Operation>(argument[1]);
   const std::string_view output_path = argument[2];
 
-  INFO("Applying \'" + MR::Enum::lowercase_name(op) + "\' transformation to the input connectome.");
+  INFO(fmt::format("Applying \\'{}\\' transformation to the input connectome.", MR::Enum::lowercase_name(op)));
 
   switch (op) {
   case Operation::TO_SYMMETRIC:

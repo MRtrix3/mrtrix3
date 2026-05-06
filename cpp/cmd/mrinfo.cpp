@@ -26,6 +26,7 @@
 #include "metadata/phase_encoding.h"
 #include "types.h"
 
+#include <fmt/format.h>
 #include <nlohmann/json.hpp>
 
 using namespace MR;
@@ -218,14 +219,14 @@ void print_properties(const Header &header, std::string_view key, const size_t i
     const auto values = header.keyval().find(std::string(key));
     if (values != header.keyval().end()) {
       auto lines = split(values->second, "\n");
-      INFO("showing property " + std::string(key) + ":");
+      INFO(fmt::format("showing property {}:", key));
       std::cout << lines[0] << "\n";
       for (size_t i = 1; i != lines.size(); ++i) {
         lines[i].insert(0, indent, ' ');
         std::cout << lines[i] << "\n";
       }
     } else {
-      WARN("no \"" + std::string(key) + "\" entries found in \"" + std::string(header.name()) + "\"");
+      WARN(fmt::format("no \"{}\" entries found in \"{}\"", key, header.name()));
     }
   }
 }
@@ -349,7 +350,7 @@ void run() {
     Metadata::PhaseEncoding::export_commandline(header);
 
     if (json_keyval)
-      File::JSON::write(header, *json_keyval, (argument.size() > 1 ? std::string("") : std::string(argument[0])));
+      File::JSON::write(header, *json_keyval, (argument.size() > 1 ? "" : std::string(argument[0])));
 
     if (json_all)
       header2json(header, *json_all);

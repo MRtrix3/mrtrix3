@@ -31,6 +31,7 @@
 #include "surface/algo/image2mesh.h"
 #include "surface/mesh.h"
 #include "surface/mesh_multi.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -129,7 +130,7 @@ void run() {
 
       Adapter::Subset<Image<uint32_t>> subset(labels, from, dimensions);
 
-      auto scratch = Image<bool>::scratch(subset, "Node " + str(in) + " mask");
+      auto scratch = Image<bool>::scratch(subset, "Node " + fmt::format("{} mask", in));
       for (auto i = Loop(subset)(subset, scratch); i; ++i)
         scratch.value() = (subset.value() == in);
 

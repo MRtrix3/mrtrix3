@@ -23,6 +23,7 @@
 #include "math/rng.h"
 #include "thread.h"
 #include <algorithm> // std::shuffle
+#include <fmt/format.h>
 #include <random>
 #include <tuple>
 // #include "algo/random_loop.h"
@@ -57,10 +58,10 @@ template <int N, class Functor, class... ImageType> struct RandomThreadedLoopRun
     assign_pos_of(pos, outer_axes).to(vox);
     for (auto i = std::apply(loop, vox); i; ++i) {
       // if (rng() >= density){
-      //   DEBUG (str(pos) + " ...skipped inner");
+      //   DEBUG (fmt::format("{} ...skipped inner", pos));
       //   continue;
       // }
-      // DEBUG (str(pos) + " ...used inner");
+      // DEBUG (fmt::format("{} ...used inner", pos));
       std::apply(func, vox);
     }
   }
@@ -121,10 +122,10 @@ template <class Functor, class... ImageType> struct RandomThreadedLoopRunInner<0
       it++;
       // for (auto i = loop (pos); i; ++i){
       // if (rng() >= density){
-      //   DEBUG (str(pos) + " ...skipped inner.");
+      //   DEBUG (fmt::format("{} ...skipped inner.", pos));
       //   continue;
       // }
-      // DEBUG (str(pos) + " ...used inner.");
+      // DEBUG (fmt::format("{} ...used inner.", pos));
       // VAR(pos);
       // VAR(cnt);
       func(pos);

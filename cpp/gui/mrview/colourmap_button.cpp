@@ -15,6 +15,7 @@
  */
 
 #include "mrview/colourmap_button.h"
+#include <fmt/format.h>
 
 #include <array>
 
@@ -54,7 +55,7 @@ void ColourMapButton::init_core_menu_items(bool create_shortcuts) {
       addAction(action);
 
       if (create_shortcuts)
-        action->setShortcut(qstr("Ctrl+" + str(n + 1)));
+        action->setShortcut(qstr(fmt::format("Ctrl+{}", n + 1)));
 
       colourmap_actions.push_back(action);
       n++;
@@ -95,7 +96,7 @@ void ColourMapButton::init_special_colour_menu_items(bool create_shortcuts) {
       addAction(action);
 
       if (create_shortcuts)
-        action->setShortcut(qstr("Ctrl+" + str(n + 1)));
+        action->setShortcut(qstr(fmt::format("Ctrl+{}", n + 1)));
 
       colourmap_actions.push_back(action);
       n++;

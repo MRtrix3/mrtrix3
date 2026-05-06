@@ -15,9 +15,11 @@
  */
 
 #include "math/stats/glm.h"
+#include <fmt/format.h>
 
 #include "debug.h"
 #include "file/matrix.h"
+#include "fmt.h"
 #include "math/betainc.h"
 #include "math/erfinv.h"
 #include "math/welch_satterthwaite.h"
@@ -100,15 +102,12 @@ void check_design(const matrix_type &design, const bool extra_factors) {
     const default_type cond = Math::condition_number(design);
     if (cond > condnumber_warning_threshold) {
       if (extra_factors) {
-        CONSOLE("Design matrix conditioning is poor (condition number: " + str(cond, 6) +
-                ") before the addition of element-wise columns");
+        CONSOLE(fmt::format("Design matrix conditioning is poor (condition number: {:.6g}) before the addition of element-wise columns", cond));
       } else {
-        WARN("Design matrix conditioning is poor (condition number: " + str(cond, 6) +
-             "); model fitting may be highly influenced by noise");
+        WARN(fmt::format("Design matrix conditioning is poor (condition number: {:.6g}); model fitting may be highly influenced by noise", cond));
       }
     } else {
-      CONSOLE(std::string("Design matrix condition number") + (extra_factors ? " (without element-wise columns)" : "") +
-              ": " + str(cond, 6));
+      CONSOLE(fmt::format("Design matrix condition number{}: {:.6g}", extra_factors ? " (without element-wise columns)" : "", cond));
     }
   }
 }
@@ -116,8 +115,8 @@ void check_design(const matrix_type &design, const bool extra_factors) {
 void check_design(const vector_type &cond) {
   const auto mv = MR::Math::welford(cond.array());
   const default_type max = cond.array().maxCoeff();
-  CONSOLE("Condition number distribution: " + str(mv.mean) + " +/- " + str(std::sqrt(mv.std())) + //
-          " [" + str(cond.array().minCoeff()) + " -- " + str(max) + "]");                         //
+  CONSOLE("Condition number distribution: " + fmt::format("{} +/- ", mv.mean) + str(std::sqrt(mv.std())) + //
+          fmt::format(" [{}", cond.array().minCoeff()) + " -- " + fmt::format("{}]", max));                         //
   if (std::min(max, mv.mean + 2.0 * mv.std()) > condnumber_warning_threshold) {
     WARN("Design matrix condition number high even with inclusion of element-wise design matrix columns;"
           " check condition number map and restrict analysis if necessary");
@@ -131,14 +130,13 @@ index_array_type load_variance_groups(const index_type num_inputs) {
   try {
     auto data = File::Matrix::load_vector<index_type>(opt[0][0]);
     if (static_cast<index_type>(data.size()) != num_inputs)
-      throw Exception("Number of entries in variance group file \"" + std::string(opt[0][0]) + "\" (" +
-                      str(data.size()) + ") does not match number of inputs (" + str(num_inputs) + ")");
+      throw Exception(fmt::format("Number of entries in variance group file \"{}\" ({}) does not match number of inputs ({})", opt[0][0], str(data.size()), str(num_inputs)));
     const index_type min_coeff = data.minCoeff();
     const index_type max_coeff = data.maxCoeff();
     if (min_coeff > 1)
       throw Exception("Minimum coefficient needs to be either zero or one");
     if (max_coeff == min_coeff) {
-      WARN("Only a single variance group is defined in file \"" + opt[0][0] + "\"; variance groups will not be used");
+      WARN(fmt::format("Only a single variance group is defined in file \"{}\"; variance groups will not be used", opt[0][0]));
       return index_array_type();
     }
     std::vector<index_type> count_per_group(max_coeff + 1, 0);
@@ -146,13 +144,13 @@ index_array_type load_variance_groups(const index_type num_inputs) {
       count_per_group[data[i]]++;
     for (Eigen::Index vg_index = min_coeff; vg_index <= max_coeff; ++vg_index) {
       if (!count_per_group[vg_index])
-        throw Exception("No entries found for variance group " + str(vg_index));
+        throw Exception(fmt::format("No entries found for variance group {}", str(vg_index)));
     }
     if (min_coeff)
       data.array() -= 1;
     return data.array();
   } catch (Exception &e) {
-    throw Exception(e, "unable to read file \"" + opt[0][0] + "\" as variance group data");
+    throw Exception(e, fmt::format("unable to read file \"{}\" as variance group data", opt[0][0]));
   }
 }
 
@@ -162,9 +160,9 @@ std::vector<Hypothesis> load_hypotheses(const ssize_t num_factors) {
   if (!opt.empty()) {
     const matrix_type contrast_matrix = File::Matrix::load_matrix(opt[0][0]);
     if (contrast_matrix.cols() != num_factors)
-      throw Exception("Number of columns in T-test matrix file \"" + opt[0][0] + "\"" +      //
-                      " (" + str(contrast_matrix.cols()) + ")" +                             //
-                      " does not match number of model factors (" + str(num_factors) + ")"); //
+      throw Exception(fmt::format("Number of columns in T-test matrix file \"{}\"{}{}){}{})", opt[0][0], //
+                      " (", str(contrast_matrix.cols()), //
+                      " does not match number of model factors (", str(num_factors))); //
     for (Eigen::Index row = 0; row != contrast_matrix.rows(); ++row)
       hypotheses.emplace_back(Hypothesis(contrast_matrix.row(row), static_cast<index_type>(row)));
   }
@@ -172,9 +170,9 @@ std::vector<Hypothesis> load_hypotheses(const ssize_t num_factors) {
   for (size_t i = 0; i != opt.size(); ++i) {
     const matrix_type ftest_matrix = File::Matrix::load_matrix(opt[i][0]);
     if (ftest_matrix.cols() != num_factors)
-      throw Exception("Number of columns in F-test matrix \"" + opt[i][0] + "\"" +           //
-                      " (" + str(ftest_matrix.cols()) + ")" +                                //
-                      " does not match number of model factors (" + str(num_factors) + ")"); //
+      throw Exception(fmt::format("Number of columns in F-test matrix \"{}\"{}{}){}{})", opt[i][0], //
+                      " (", str(ftest_matrix.cols()), //
+                      " does not match number of model factors (", str(num_factors))); //
     hypotheses.emplace_back(Hypothesis(ftest_matrix, i));
   }
   if (hypotheses.empty())
@@ -532,10 +530,10 @@ matrix_type Hypothesis::check_rank(const matrix_type &in, const index_type index
   Eigen::FullPivLU<matrix_type> decomp(in.transpose());
   if (decomp.rank() == in.rows())
     return in;
-  WARN("F-test " + str(index + 1) + " is rank-deficient; row-space matrix decomposition will instead be used");
-  INFO("Original matrix: " + str(in));
+  WARN(fmt::format("F-test {} is rank-deficient; row-space matrix decomposition will instead be used", str(index + 1)));
+  INFO(fmt::format("Original matrix: {}", str(in)));
   const matrix_type result = decomp.image(in.transpose()).transpose();
-  INFO("Decomposed matrix: " + str(result));
+  INFO(fmt::format("Decomposed matrix: {}", str(result)));
   return result;
 }
 

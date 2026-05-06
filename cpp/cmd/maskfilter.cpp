@@ -24,6 +24,7 @@
 #include "filter/mask_clean.h"
 #include "filter/median.h"
 #include "image.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -123,8 +124,7 @@ void run() {
 
   switch (filter_index) {
   case FilterType::CLEAN: {
-    Filter::MaskClean filter(input_image,
-                             std::string("applying mask cleaning filter to image ") + Path::basename(argument[0]));
+    Filter::MaskClean filter(input_image, "applying mask cleaning filter to image " + Path::basename(argument[0]));
     filter.set_scale(get_option_value("scale", default_clean_scale));
 
     Stride::set_from_command_line(filter);
@@ -135,8 +135,8 @@ void run() {
   }
 
   case FilterType::CONNECT: {
-    Filter::ConnectedComponents filter(
-        input_image, std::string("applying connected-component filter to image ") + Path::basename(argument[0]));
+    Filter::ConnectedComponents filter(input_image,
+                                       "applying connected-component filter to image " + Path::basename(argument[0]));
     auto opt = get_options("axes");
     if (!opt.empty()) {
       const std::vector<int> axes = opt[0][0];
@@ -171,7 +171,7 @@ void run() {
   }
 
   case FilterType::DILATE: {
-    Filter::Dilate filter(input_image, std::string("applying dilate filter to image ") + Path::basename(argument[0]));
+    Filter::Dilate filter(input_image, "applying dilate filter to image " + Path::basename(argument[0]));
     auto opt = get_options("npass");
     if (!opt.empty())
       filter.set_npass(static_cast<unsigned int>(opt[0][0]));
@@ -185,7 +185,7 @@ void run() {
   }
 
   case FilterType::ERODE: {
-    Filter::Erode filter(input_image, std::string("applying erode filter to image ") + Path::basename(argument[0]));
+    Filter::Erode filter(input_image, "applying erode filter to image " + Path::basename(argument[0]));
     auto opt = get_options("npass");
     if (!opt.empty())
       filter.set_npass(static_cast<unsigned int>(opt[0][0]));
@@ -199,7 +199,7 @@ void run() {
   }
 
   case FilterType::FILL: {
-    Filter::Fill filter(input_image, std::string("filling interior of image ") + Path::basename(argument[0]));
+    Filter::Fill filter(input_image, "filling interior of image " + Path::basename(argument[0]));
     auto opt = get_options("axes");
     if (!opt.empty()) {
       const std::vector<int> axes = opt[0][0];
@@ -215,7 +215,7 @@ void run() {
   }
 
   case FilterType::MEDIAN: {
-    Filter::Median filter(input_image, std::string("applying median filter to image ") + Path::basename(argument[0]));
+    Filter::Median filter(input_image, "applying median filter to image " + Path::basename(argument[0]));
     auto opt = get_options("extent");
     if (!opt.empty())
       filter.set_extent(parse_ints<uint32_t>(opt[0][0]));

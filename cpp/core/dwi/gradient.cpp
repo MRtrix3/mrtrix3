@@ -19,6 +19,7 @@
 #include "file/config.h"
 #include "file/matrix.h"
 #include "file/nifti_utils.h"
+#include <fmt/format.h>
 
 namespace MR::DWI {
 
@@ -108,7 +109,7 @@ Eigen::MatrixXd parse_DW_scheme(const Header &header) {
     try {
       G = MR::parse_matrix(it->second);
     } catch (Exception &e) {
-      throw Exception(e, "malformed DW scheme in image \"" + std::string(header.name()) + "\"");
+      throw Exception(e, fmt::format("malformed DW scheme in image \"{}\"", header.name()));
     }
   }
   return G;
@@ -123,8 +124,7 @@ Eigen::MatrixXd load_bvecs_bvals(const Header &header, std::string_view bvecs_pa
     bvecs = File::Matrix::load_matrix<>(bvecs_path);
   } catch (Exception &e) {
     // clang-format off
-    throw Exception(e, "Unable to import files \"" + std::string(bvecs_path) + "\" and \"" + std::string(bvals_path) + "\""
-                       " as FSL bvecs/bvals pair");
+    throw Exception(e, fmt::format("Unable to import files \"{}\" and \"{}\" as FSL bvecs/bvals pair", bvecs_path, bvals_path));
     // clang-format on
   }
 
@@ -133,8 +133,7 @@ Eigen::MatrixXd load_bvecs_bvals(const Header &header, std::string_view bvecs_pa
       bvals.transposeInPlace(); // transpose if file contains column vector
     else
       // clang-format off
-      throw Exception("bvals file must contain 1 row or column only;"
-                      " file \"" + std::string(bvals_path) + "\" has " + str(bvals.rows()));
+      throw Exception(fmt::format("bvals file must contain 1 row or column only; file \"{}\" has {}", bvals_path, str(bvals.rows())));
     // clang-format on
   }
   if (bvecs.rows() != 3) {
@@ -142,24 +141,19 @@ Eigen::MatrixXd load_bvecs_bvals(const Header &header, std::string_view bvecs_pa
       bvecs.transposeInPlace();
     else
       // clang-format off
-      throw Exception("bvecs file must contain exactly 3 rows or columns;"
-                      " file \"" + std::string(bvecs_path) + "\" has " + str(bvecs.rows()));
+      throw Exception(fmt::format("bvecs file must contain exactly 3 rows or columns; file \"{}\" has {}", bvecs_path, str(bvecs.rows())));
     // clang-format on
   }
 
   if (bvals.cols() != bvecs.cols())
     // clang-format off
-    throw Exception("bvecs and bvals files must have same number of diffusion directions;"
-                    " file \"" + std::string(bvecs_path) + "\" has " + str(bvecs.cols()) + ","
-                    " file \"" + std::string(bvals_path) + "\" has " + str(bvals.cols()) + "");
+    throw Exception(fmt::format("bvecs and bvals files must have same number of diffusion directions; file \"{}\" has {}, file \"{}\" has {}", bvecs_path, str(bvecs.cols()), bvals_path, str(bvals.cols())));
   // clang-format on
 
   const size_t num_volumes = header.ndim() < 4 ? 1 : header.size(3);
   if (static_cast<size_t>(bvals.cols()) != num_volumes)
     // clang-format off
-    throw Exception("bvecs and bvals files do not have same number of diffusion directions as DW-image:"
-                    " gradients: " + str(bvecs.cols()) + ","
-                    " image: " + str(num_volumes));
+    throw Exception(fmt::format("bvecs and bvals files do not have same number of diffusion directions as DW-image: gradients: {}, image: {}", str(bvecs.cols()), str(num_volumes)));
   // clang-format on
 
   // bvecs format actually assumes a LHS coordinate system even if image is
@@ -180,9 +174,7 @@ Eigen::MatrixXd load_bvecs_bvals(const Header &header, std::string_view bvecs_pa
     if (std::isnan(grad(n, 3))) {
       if (grad.block<1, 3>(n, 0).squaredNorm() > 0.0)
         // clang-format off
-        throw Exception("Corrupt content in bvecs/bvals data"
-                        " (" + std::string(bvecs_path) + " & " + std::string(bvals_path) + ")"
-                        " (NaN present in bval but valid direction in bvec)");
+        throw Exception(fmt::format("Corrupt content in bvecs/bvals data\"\n                        \" ({} & {})\"\n                        \" (NaN present in bval but valid direction in bvec)", bvecs_path, bvals_path));
       // clang-format on
       nans_present_bvals = true;
       zero_row = true;
@@ -190,9 +182,7 @@ Eigen::MatrixXd load_bvecs_bvals(const Header &header, std::string_view bvecs_pa
     if (grad.block<1, 3>(n, 0).hasNaN()) {
       if (grad(n, 3) > 0.0)
         // clang-format off
-        throw Exception("Corrupt content in bvecs/bvals data"
-                        " (" + std::string(bvecs_path) + " & " + std::string(bvals_path) + ")"
-                        " (NaN bvec direction but non-zero value in bval)");
+        throw Exception(fmt::format("Corrupt content in bvecs/bvals data\"\n                        \" ({} & {})\"\n                        \" (NaN bvec direction but non-zero value in bval)", bvecs_path, bvals_path));
       // clang-format on
       nans_present_bvecs = true;
       zero_row = true;
@@ -203,10 +193,12 @@ Eigen::MatrixXd load_bvecs_bvals(const Header &header, std::string_view bvecs_pa
     }
   }
   if (nan_linecount > 0) {
-    WARN(str(nan_linecount) + " row" + (nan_linecount > 1 ? "s" : "") + " with NaN values detected in " +
-         (nans_present_bvecs ? "bvecs file " + std::string(bvecs_path) + (nans_present_bvals ? " and" : "") : "") +
-         (nans_present_bvals ? "bvals file " + std::string(bvals_path) : "") +
-         "; these have been interpreted as b=0 volumes by MRtrix");
+    WARN(fmt::format(
+        "{} row{} with NaN values detected in {}{}; these have been interpreted as b=0 volumes by MRtrix",
+        nan_linecount,
+        (nan_linecount > 1 ? "s" : ""),
+        (nans_present_bvecs ? "bvecs file " + std::string(bvecs_path) + (nans_present_bvals ? " and" : "") : ""),
+        (nans_present_bvals ? "bvals file " + std::string(bvals_path) : "")));
   }
 
   return grad;
@@ -234,11 +226,12 @@ void save_bvecs_bvals(const Header &header, std::string_view bvecs_path, std::st
     bvecs.row(0) = -bvecs.row(0);
 
   if (bval_zeroed_count) {
-    WARN("For image \"" + std::string(header.name()) + "\","                              //
-         + str(bval_zeroed_count) + " volumes had zero gradient direction vector,"        //
-         + " but 0.0 < b-value <= BZeroThreshold;"                                        //
-         + " these are clamped to zero in bvals file \"" + std::string(bvals_path) + "\"" //
-         + " for compatibility with external software");                                  //
+    WARN(fmt::format(
+        "For image \"{}\", {} volumes had zero gradient direction vector, but 0.0 < b-value <= BZeroThreshold; these "
+        "are clamped to zero in bvals file \"{}\" for compatibility with external software",
+        header.name(),
+        bval_zeroed_count,
+        bvals_path));
   }
 
   File::Matrix::save_matrix(bvecs, bvecs_path, KeyValues(), false);
@@ -301,9 +294,7 @@ Eigen::MatrixXd get_DW_scheme(const Header &header, BValueScalingBehaviour bvalu
     const bool requires_bvalue_scaling = max_log_scaling_factor > 0.01;
 
     // clang-format off
-    DEBUG("b-value scaling:"
-          " max scaling factor = exp(" + str(max_log_scaling_factor) + ")"
-          " = " + str(max_scaling_factor));
+    DEBUG(fmt::format("b-value scaling:\"\n          \" max scaling factor = exp({})\"\n          \" = {}", str(max_log_scaling_factor), str(max_scaling_factor)));
     // clang-format on
 
     if ((requires_bvalue_scaling && bvalue_scaling == BValueScalingBehaviour::Auto) ||
@@ -312,17 +303,19 @@ Eigen::MatrixXd get_DW_scheme(const Header &header, BValueScalingBehaviour bvalu
       if (warnambiguous)
         WARN("Ambiguous [ 0 0 0 non-zero ] entries found in DW gradient table. "
              "These will be interpreted as b=0 volumes unless -bvalue_scaling is disabled.");
-      INFO("b-values scaled by the square of DW gradient norm "
-           "(maximum scaling factor = " +
-           str(max_scaling_factor) + ")");
+      INFO(fmt::format(
+          "b-values scaled by the square of DW gradient norm \"\n           \"(maximum scaling factor = {})",
+          str(max_scaling_factor)));
     } else if (bvalue_scaling == BValueScalingBehaviour::UserOff) {
       if (requires_bvalue_scaling) {
-        CONSOLE(std::string("disabling b-value scaling during normalisation of DW vectors on user request") + //
-                " (maximum scaling factor would have been " + str(max_scaling_factor) + ")");                 //
+        CONSOLE(std::string("disabling b-value scaling during normalisation of DW vectors on user request") +
+                " (maximum scaling factor would have been " + str(max_scaling_factor) + ")");
       } else {
-        WARN(std::string("use of -bvalue_scaling option had no effect:") +   //
-             " gradient vector norms are all within tolerance" +             //
-             " (maximum scaling factor = " + str(max_scaling_factor) + ")"); //
+        WARN(fmt::format("{}{}{}{})",
+                         "use of -bvalue_scaling option had no effect:",    //
+                         " gradient vector norms are all within tolerance", //
+                         " (maximum scaling factor = ",
+                         str(max_scaling_factor))); //
       }
     }
     assert(grad.allFinite());
@@ -338,18 +331,18 @@ Eigen::MatrixXd get_DW_scheme(const Header &header, BValueScalingBehaviour bvalu
       set_DW_scheme(const_cast<Header &>(header), grad);
     }
 
-    INFO("found " + str(grad.rows()) + "x" + str(grad.cols()) + " diffusion gradient table");
+    INFO(fmt::format("found {}x{} diffusion gradient table", str(grad.rows()), str(grad.cols())));
     return grad;
   } catch (Exception &e) {
     clear_DW_scheme(const_cast<Header &>(header));
-    throw Exception(e, "error importing diffusion gradient table for image \"" + std::string(header.name()) + "\"");
+    throw Exception(e, fmt::format("error importing diffusion gradient table for image \"{}\"", header.name()));
   }
 }
 
 void export_grad_commandline(const Header &header) {
   auto check = [](const Header &h) -> const Header & {
     if (h.keyval().find("dw_scheme") == h.keyval().end())
-      throw Exception("no gradient information found within image \"" + std::string(h.name()) + "\"");
+      throw Exception(fmt::format("no gradient information found within image \"{}\"", h.name()));
     return h;
   };
 

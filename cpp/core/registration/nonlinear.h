@@ -18,6 +18,7 @@
 
 #include "image.h"
 #include "types.h"
+#include <fmt/format.h>
 
 #include "filter/resize.h"
 #include "filter/warp.h"
@@ -109,16 +110,16 @@ public:
     for (size_t level = 0; level < scale_factor.size(); level++) {
       if (is_initialised) {
         if (do_reorientation) {
-          CONSOLE("scale factor (init warp resolution), lmax " + str(fod_lmax[level]));
+          CONSOLE(fmt::format("scale factor (init warp resolution), lmax {}", fod_lmax[level]));
         } else {
           CONSOLE("scale factor (init warp resolution)");
         }
       } else {
         if (do_reorientation) {
-          CONSOLE("nonlinear stage " + str(level + 1) + ", scale factor " + str(scale_factor[level]) + ", lmax " +
-                  str(fod_lmax[level]));
+          CONSOLE("nonlinear stage " + fmt::format("{}, scale factor ", level + 1) +
+                  fmt::format("{}, lmax ", scale_factor[level]) + str(fod_lmax[level]));
         } else {
-          CONSOLE("nonlinear stage " + str(level + 1) + ", scale factor " + str(scale_factor[level]));
+          CONSOLE("nonlinear stage " + fmt::format("{}, scale factor ", level + 1) + str(scale_factor[level]));
         }
       }
 
@@ -338,11 +339,11 @@ public:
 
         } else {
           converged = true;
-          INFO("  converged. cost: " + str(cost) + " voxel count: " + str(voxel_count));
+          INFO("  converged. cost: " + fmt::format("{} voxel count: ", cost) + str(voxel_count));
         }
 
         if (!converged)
-          INFO("  iteration: " + str(iteration) + " cost: " + str(cost));
+          INFO("  iteration: " + fmt::format("{} cost: ", iteration) + str(cost));
 
         if (++iteration > max_iter[level])
           converged = true;
@@ -352,8 +353,8 @@ public:
           std::ostringstream oss;
           oss << diagnostics_image_prefix << "_stage-" << level + 1 << ".mif";
           // if (Path::exists(oss.str()) && !App::overwrite_files)
-          //   throw Exception ("diagnostics image file \"" + oss.str() + "\" already exists (use -force option to force
-          //   overwrite)");
+          //   throw Exception(fmt::format("diagnostics image file \"{}", oss.str()) + "\" already exists (use -force
+          //   option to force overwrite)");
           Header hc(warped_header);
           hc.ndim() = 4;
           hc.size(3) = 3;
@@ -510,7 +511,7 @@ public:
     if (radius < 1)
       throw Exception("CC radius needs to be larger than 1");
     use_cc = true;
-    INFO("Cross correlation radius: " + str(radius));
+    INFO(fmt::format("Cross correlation radius: {}", radius));
     cc_extent = std::vector<size_t>(3, radius * 2 + 1);
   }
 

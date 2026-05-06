@@ -30,6 +30,7 @@
 #include "misc/voxel2vector.h"
 #include "progressbar.h"
 
+#include <fmt/format.h>
 #include <limits>
 
 using namespace MR;
@@ -387,8 +388,8 @@ void run() {
     auto image_in = Header::open(argument[0]).get_image<value_type>().with_direct_io(axis);
 
     if (axis >= image_in.ndim())
-      throw Exception("Cannot perform operation along axis " + str(axis) + "; image only has " + str(image_in.ndim()) +
-                      " axes");
+      throw Exception(fmt::format(
+          "Cannot perform operation along axis {}; image only has {} axes", str(axis), str(image_in.ndim())));
 
     Header header_out(image_in);
 
@@ -408,8 +409,8 @@ void run() {
 
     auto image_out = Header::create(output_path, header_out).get_image<float>();
 
-    auto loop = ThreadedLoop(
-        std::string("computing ") + MR::Enum::lowercase_name(op) + " along axis " + str(axis) + "...", image_out);
+    auto loop = ThreadedLoop("computing " + MR::Enum::lowercase_name(op) + " along axis " + fmt::format("{}...", axis),
+                             image_out);
 
     switch (op) {
     case Operation::MEAN:
@@ -487,15 +488,16 @@ void run() {
       headers_in[i] = Header::open(path);
       const Header &temp(headers_in[i]);
       if (temp.ndim() < header.ndim())
-        throw Exception("Image " + path + " has fewer axes than first input image " + header.name());
+        throw Exception(fmt::format("Image {} has fewer axes than first input image {}", path, header.name()));
       for (size_t axis = 0; axis != header.ndim(); ++axis) {
         if (temp.size(axis) != header.size(axis))
-          throw Exception("Dimensions of image " + path + " do not match those of first input image " + header.name());
+          throw Exception(
+              fmt::format("Dimensions of image {} do not match those of first input image {}", path, header.name()));
       }
       for (size_t axis = header.ndim(); axis != temp.ndim(); ++axis) {
         if (temp.size(axis) != 1)
-          throw Exception("Image " + path + " has axis with non-unary dimension beyond first input image " +
-                          header.name());
+          throw Exception(fmt::format(
+              "Image {} has axis with non-unary dimension beyond first input image {}", path, header.name()));
       }
       header.merge_keyval(temp.keyval());
     }
@@ -554,8 +556,8 @@ void run() {
 
     // Feed the input images to the kernel one at a time
     {
-      ProgressBar progress(std::string("computing ") + MR::Enum::lowercase_name(op) + " across " +
-                               str(headers_in.size()) + " images",
+      ProgressBar progress("computing " + MR::Enum::lowercase_name(op) + fmt::format(" across {}", headers_in.size()) +
+                               " images",
                            num_inputs);
       for (size_t i = 0; i != headers_in.size(); ++i) {
         assert(headers_in[i].valid());

@@ -17,6 +17,7 @@
 #pragma once
 
 #include <Eigen/Dense>
+#include <fmt/format.h>
 
 #include "app.h"
 #include "exception.h"
@@ -37,14 +38,17 @@ extern const App::OptionGroup MatrixOutputOptions;
 
 template <class MatrixType> void check(const MatrixType &in, const node_t num_nodes = 0) {
   if (in.rows() != in.cols())
-    throw Exception("Connectome matrix is not square (" + str(in.rows()) + " x " + str(in.cols()) + ")");
+    throw Exception(fmt::format("Connectome matrix is not square ({}", str(in.rows())) +
+                    fmt::format(" x {}", in.cols()) + ")");
   if (num_nodes && (in.rows() != num_nodes))
-    throw Exception("Connectome matrix contains " + str(in.rows()) + " nodes; expected " + str(num_nodes));
+    throw Exception(fmt::format("Connectome matrix contains {}", str(in.rows())) +
+                    fmt::format(" nodes; expected {}", num_nodes));
 }
 
 template <class MatrixType> bool is_directed(MatrixType &in) {
   if (in.rows() != in.cols())
-    throw Exception("Connectome matrix is not square (" + str(in.rows()) + " x " + str(in.cols()) + ")");
+    throw Exception(fmt::format("Connectome matrix is not square ({}", str(in.rows())) +
+                    fmt::format(" x {}", in.cols()) + ")");
 
   for (node_t row = 0; row != in.rows(); ++row) {
     for (node_t col = row + 1; col != in.cols(); ++col) {

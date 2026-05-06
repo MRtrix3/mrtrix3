@@ -18,6 +18,7 @@
 
 #include "exception.h"
 #include "file/utils.h"
+#include <fmt/format.h>
 
 namespace MR::File {
 
@@ -29,7 +30,7 @@ void OFStream::open(std::string_view path, const std::ios_base::openmode mode) {
 
   std::ofstream::open(std::string(path).c_str(), mode);
   if (std::ofstream::operator!())
-    throw Exception("error opening output file \"" + std::string(path) + "\": " + std::strerror(errno));
+    throw Exception(fmt::format("error opening output file \"{}\": {}", path, std::strerror(errno)));
 }
 
 } // namespace MR::File

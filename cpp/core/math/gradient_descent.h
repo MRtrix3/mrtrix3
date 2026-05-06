@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <fmt/format.h>
 #include <limits>
 
 #include "math/math.h"
@@ -85,9 +86,9 @@ public:
     if (log_os) {
       log_os << "#iteration" << delim << "feval" << delim << "cost" << delim << "stepsize";
       for (ssize_t a = 0; a < x.size(); a++)
-        log_os << delim + "x_" + str(a + 1);
+        log_os << delim + fmt::format("x_{}", a + 1);
       for (ssize_t a = 0; a < x.size(); a++)
-        log_os << delim + "g_" + str(a + 1);
+        log_os << delim + fmt::format("g_{}", a + 1);
       log_os << "\n" << std::flush;
     }
     init(log_os);

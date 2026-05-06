@@ -199,7 +199,7 @@ void precompute_default_permutation(const std::unique_ptr<Math::Stats::GLM::Test
                                     matrix_type &output_enhanced) {
   assert(stats_calculator);
   ProgressBar progress(
-      std::string("Running GLM ") + (enhancer ? "and enhancement algorithm " : "") + "for default permutation", 4);
+      fmt::format("Running GLM {}for default permutation", enhancer ? "and enhancement algorithm " : ""), 4);
   output_statistics.resize(stats_calculator->num_elements(), stats_calculator->num_hypotheses());
   output_zstats.resize(stats_calculator->num_elements(), stats_calculator->num_hypotheses());
   output_enhanced.resize(stats_calculator->num_elements(), stats_calculator->num_hypotheses());

@@ -15,6 +15,7 @@
  */
 
 #include <cmath>
+#include <fmt/format.h>
 
 #include "algo/loop.h"
 #include "command.h"
@@ -39,7 +40,7 @@ void usage() {
 
   OPTIONS
   + Option ("tiles", "specify the number of tiles in any direction"
-                     " (default: " + str(default_number_tiles) + ")")
+                     " (default: " + fmt::format("{})", default_number_tiles))
     + Argument ("value").type_integer()
 
   + Option ("invert", "invert output binary mask.")

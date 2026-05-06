@@ -23,6 +23,7 @@
 #include "formats/list.h"
 #include "header.h"
 #include "image_io/default.h"
+#include <fmt/format.h>
 
 namespace MR::Formats {
 
@@ -38,7 +39,7 @@ std::unique_ptr<ImageIO::Base> XDS::read(Header &H) const {
 
   std::ifstream in(name.c_str());
   if (!in)
-    throw Exception("error reading header file \"" + name + "\": " + strerror(errno));
+    throw Exception(fmt::format("error reading header file \"{}\": {}", name, strerror(errno)));
   std::array<int, 3> dim{};
   in >> dim[0] >> dim[1] >> dim[2] >> BE;
   H.size(0) = dim[1];
@@ -79,12 +80,9 @@ bool XDS::check(Header &H, size_t num_axes) const {
 
   if (num_axes == 4 && H.size(2) > 1)
     throw Exception("cannot create multi-slice XDS image with a single file");
-
   if (num_axes < 2)
     throw Exception("cannot create XDS image with less than 2 dimensions");
-
   H.ndim() = 4;
-
   H.size(2) = 1;
   for (size_t n = 0; n < 4; ++n)
     if (H.size(n) < 1)

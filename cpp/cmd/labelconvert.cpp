@@ -30,9 +30,10 @@
 #include "connectome/lut.h"
 #include "connectome/validate.h"
 
+#include <fmt/format.h>
 #include <string>
 
-#define SPINE_NODE_NAME std::string("Spinal_column")
+constexpr std::string_view SPINE_NODE_NAME = "Spinal_column";
 
 using namespace MR;
 using namespace App;
@@ -137,9 +138,10 @@ void run() {
   if (!opt.empty()) {
 
     if (duplicates)
-      throw Exception("Cannot add spine node: \"" + SPINE_NODE_NAME + "\" appears multiple times in output LUT");
+      throw Exception(
+          fmt::format("Cannot add spine node: \"{}\" appears multiple times in output LUT", SPINE_NODE_NAME));
     if (!spine_index)
-      throw Exception("Cannot add spine node: \"" + SPINE_NODE_NAME + "\" not present in output LUT");
+      throw Exception(fmt::format("Cannot add spine node: \"{}\" not present in output LUT", SPINE_NODE_NAME));
 
     auto in_spine = Image<bool>::open(opt[0][0]);
     if (dimensions_match(in_spine, out)) {
@@ -166,7 +168,7 @@ void run() {
     }
 
   } else if (spine_index) {
-    WARN("Config file includes \"" + SPINE_NODE_NAME +
-         "\" node, but user has not provided the segmentation using -spine option");
+    WARN(fmt::format("Config file includes \"{}\" node, but user has not provided the segmentation using -spine option",
+                     SPINE_NODE_NAME));
   }
 }

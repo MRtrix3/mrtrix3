@@ -24,6 +24,7 @@
 
 #ifdef DYNAMIC_SEEDING_DEBUGGING
 #include "file/utils.h"
+#include <fmt/format.h>
 #endif
 namespace MR::DWI::Tractography::Seeding {
 
@@ -144,7 +145,7 @@ Dynamic::Dynamic(std::string_view in,
 
 Dynamic::~Dynamic() {
 
-  INFO("Dynamic seeeding required " + str(attempts) + " samples to draw " + str(seeds) + " seeds");
+  INFO(fmt::format("Dynamic seeeding required {} samples to draw {} seeds", str(attempts), str(seeds)));
 
 #ifdef DYNAMIC_SEED_DEBUGGING
 
@@ -280,13 +281,14 @@ void Dynamic::write_seed(const Eigen::Vector3f &p) {
 }
 
 void Dynamic::output_fixel_images(std::string_view prefix) {
-  Image<float> image_seedprobability(
-      Image<float>::create(Path::join(debugging_fixel_path, prefix + "_seedprobability.mif"), H_fixeldata));
+  Image<float> image_seedprobability(Image<float>::create(
+      Path::join(debugging_fixel_path, fmt::format("{}_seedprobability.mif", prefix)), H_fixeldata));
   Image<float> image_logseedprob(
-      Image<float>::create(Path::join(debugging_fixel_path, prefix + "_seedlogprob.mif"), H_fixeldata));
-  Image<float> image_TD(Image<float>::create(Path::join(debugging_fixel_path, prefix + "_TD.mif"), H_fixeldata));
+      Image<float>::create(Path::join(debugging_fixel_path, fmt::format("{}_seedlogprob.mif", prefix)), H_fixeldata));
+  Image<float> image_TD(
+      Image<float>::create(Path::join(debugging_fixel_path, fmt::format("{}_TD.mif", prefix)), H_fixeldata));
   Image<float> image_reconratio(
-      Image<float>::create(Path::join(debugging_fixel_path, prefix + "_reconratio.mif"), H_fixeldata));
+      Image<float>::create(Path::join(debugging_fixel_path, fmt::format("{}_reconratio.mif", prefix)), H_fixeldata));
   for (auto l = Loop(0)(image_seedprobability, image_logseedprob, image_TD, image_reconratio); l; ++l) {
     const size_t fixel_index = image_seedprobability.index(0);
     image_seedprobability.value() = fixels[fixel_index].get_old_prob();
@@ -297,7 +299,7 @@ void Dynamic::output_fixel_images(std::string_view prefix) {
   Header H_fixelmask(H_fixeldata);
   H_fixelmask.datatype() = DataType::Bit;
   Image<float> fixelmask_image(
-      Image<float>::create(Path::join(debugging_fixel_path, prefix + "_fixelmask.mif"), H_fixelmask));
+      Image<float>::create(Path::join(debugging_fixel_path, fmt::format("{}_fixelmask.mif", prefix)), H_fixelmask));
   for (auto l = Loop(0)(fixelmask_image); l; ++l)
     fixelmask_image.value() = fixels[fixelmask_image.index(0)].can_update();
 }

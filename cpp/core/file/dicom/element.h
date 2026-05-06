@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <fmt/format.h>
 #include <unordered_map>
 
 #include "file/dicom/definitions.h"
@@ -48,7 +49,7 @@ public:
       day = to<uint32_t>(entry.substr(6, 2));
     }
     if (year < 1000 || month > 12 || day > 31)
-      throw Exception("Error converting string \"" + entry + "\" to date");
+      throw Exception(fmt::format("Error converting string \"{}\" to date", entry));
   }
   uint32_t year, month, day;
   friend std::ostream &operator<<(std::ostream &stream, const Date &item);
@@ -58,7 +59,7 @@ class Time {
 public:
   Time(std::string_view entry) : Time() {
     if (entry.size() < 6)
-      throw Exception("field \"" + entry + "\" is too short to be interpreted as a time");
+      throw Exception(fmt::format("field \"{}\" is too short to be interpreted as a time", entry));
     hour = to<uint32_t>(entry.substr(0, 2));
     minute = to<uint32_t>(entry.substr(2, 2));
     second = to<uint32_t>(entry.substr(4, 2));

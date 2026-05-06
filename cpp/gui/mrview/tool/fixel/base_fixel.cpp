@@ -131,7 +131,7 @@ std::string BaseFixel::Shader::geometry_shader_source(const Displayable &object)
         source += "1.0 -";
       source += " scale * (v_colour[0] - offset), 0.0, 1.0);\n";
     }
-    source += std::string("  vec3 color;\n") + ColourMap::maps[colourmap].glsl_mapping + "  fColour = color;\n";
+    source += "  vec3 color;\n" + ColourMap::maps[colourmap].glsl_mapping + "  fColour = color;\n";
     break;
   case Direction:
     source += "  fColour = normalize (abs (v_dir[0]));\n";

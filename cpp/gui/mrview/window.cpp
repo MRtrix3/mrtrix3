@@ -21,6 +21,7 @@
 #include "dialog/opengl.h"
 #include "dialog/progress.h"
 #include "file/config.h"
+#include "fmt.h"
 #include "header.h"
 #include "mrview/mode/base.h"
 #include "mrview/mode/list.h"
@@ -31,6 +32,7 @@
 #include "opengl/lighting.h"
 #include "timer.h"
 #include <QDebug>
+#include <fmt/format.h>
 #include <unordered_map>
 
 namespace MR::GUI::MRView {
@@ -83,7 +85,7 @@ Qt::KeyboardModifiers get_modifier(std::string_view key, Qt::KeyboardModifiers d
     return Qt::MetaModifier;
 #endif
 
-  throw Exception("no such modifier \"" + value + "\" (parsed from config file)");
+  throw Exception(fmt::format("no such modifier \"{}\" (parsed from config file)", value));
   return Qt::NoModifier;
 }
 } // namespace
@@ -593,38 +595,35 @@ Window::Window()
 
   std::string modifier;
   action = toolbar->addAction(QIcon(":/select_contrast.svg"), tr("Change focus / contrast"));
-  action->setToolTip(qstr("Left-click: set focus\n"
-                          "Right-click: change brightness/constrast\n\n"
-                          "Shortcut: 1\n\n"
-                          "Hold down " +
-                          get_modifier(FocusModifier) +
-                          " key to use this mode\n"
-                          "regardless of currently selected mode"));
+  action->setToolTip(qstr(fmt::format("{}\n{}\n\n{}\n\n{}\n{}",
+                                      "Left-click: set focus",
+                                      "Right-click: change brightness/constrast"
+                                      "Shortcut: 1",
+                                      fmt::format("Hold down {} key to use this mode", get_modifier(FocusModifier)),
+                                      "regardless of currently selected mode")));
   action->setShortcut(tr("1"));
   action->setCheckable(true);
   action->setChecked(true);
   mode_action_group->addAction(action);
 
   action = toolbar->addAction(QIcon(":/move.svg"), tr("Move viewport"));
-  action->setToolTip(qstr("Left-click: move in-plane\n"
-                          "Right-click: move through-plane\n\n"
-                          "Shortcut: 2\n\n"
-                          "Hold down " +
-                          get_modifier(MoveModifier) +
-                          " key to use this mode\n"
-                          "regardless of currently selected mode"));
+  action->setToolTip(qstr(fmt::format("{}\n{}\n\n{}\n\n{}\n",
+                                      "Left-click: move in-plane",
+                                      "Right-click: move through-plane",
+                                      "Shortcut: 2",
+                                      fmt::format("Hold down {} key to use this mode", get_modifier(MoveModifier)),
+                                      "regardless of currently selected mode")));
   action->setShortcut(tr("2"));
   action->setCheckable(true);
   mode_action_group->addAction(action);
 
   action = toolbar->addAction(QIcon(":/rotate.svg"), tr("Move camera"));
-  action->setToolTip(qstr("Left-click: move camera in-plane\n"
-                          "Right-click: rotate camera about view axis\n\n"
-                          "Shortcut: 3\n\n"
-                          "Hold down " +
-                          get_modifier(RotateModifier) +
-                          " key to use this mode\n"
-                          "regardless of currently selected mode"));
+  action->setToolTip(qstr(fmt::format("{}\n{}\n\n{}\n\n{}\n",
+                                      "Left-click: move camera in-plane",
+                                      "Right-click: rotate camera about view axis",
+                                      "Shortcut: 3",
+                                      fmt::format("Hold down {} key to use this mode", get_modifier(RotateModifier)),
+                                      "regardless of currently selected mode")));
   action->setShortcut(tr("3"));
   action->setCheckable(true);
   mode_action_group->addAction(action);
@@ -705,8 +704,9 @@ Window::Window()
   // CONF Valid values are: bottomleft, bottomright, topleft, topright.
   std::string cbar_pos = lowercase(MR::File::Config::get("MRViewColourBarPosition", "bottomright"));
   colourbar_position = parse_colourmap_position_str(cbar_pos);
-  if (!colourbar_position)
-    WARN("invalid specifier \"" + cbar_pos + "\" for config file entry \"MRViewColourBarPosition\"");
+  if (!colourbar_position) {
+    WARN(fmt::format("invalid specifier \"{}\" for config file entry \"MRViewColourBarPosition\"", cbar_pos));
+  }
 
   // CONF option: MRViewToolsColourBarPosition
   // CONF default: topright
@@ -714,8 +714,9 @@ Window::Window()
   // CONF Valid values are: bottomleft, bottomright, topleft, topright.
   cbar_pos = lowercase(MR::File::Config::get("MRViewToolsColourBarPosition", "topright"));
   tools_colourbar_position = parse_colourmap_position_str(cbar_pos);
-  if (!tools_colourbar_position)
-    WARN("invalid specifier \"" + cbar_pos + "\" for config file entry \"MRViewToolsColourBarPosition\"");
+  if (!tools_colourbar_position) {
+    WARN(fmt::format("invalid specifier \"{}\" for config file entry \"MRViewToolsColourBarPosition\"", cbar_pos));
+  }
 }
 
 void Window::parse_arguments() {
@@ -1129,7 +1130,7 @@ void Window::image_previous_volume_slot() {
 
 void Window::image_goto_volume_slot() {
   size_t maxvol = image()->image.size(3) - 1;
-  auto label = std::string("volume (0...") + str(maxvol) + std::string(")");
+  const std::string label = fmt::format("volume (0...{})", maxvol);
   bool ok;
   ssize_t vol = QInputDialog::getInt(this, tr("Go to..."), qstr(label), image()->image.index(3), 0, maxvol, 1, &ok);
   if (ok)
@@ -1138,7 +1139,7 @@ void Window::image_goto_volume_slot() {
 
 void Window::image_goto_volume_group_slot() {
   size_t maxvolgroup = image()->image.size(4) - 1;
-  auto label = std::string("volume group (0...") + str(maxvolgroup) + std::string(")");
+  const std::string label = fmt::format("volume group (0...{})", maxvolgroup);
   bool ok;
   ssize_t grp =
       QInputDialog::getInt(this, tr("Go to..."), qstr(label), image()->image.index(4), 0, maxvolgroup, 1, &ok);
@@ -1341,22 +1342,15 @@ void Window::OpenGL_slot() {
 }
 
 void Window::about_slot() {
-  std::string message = std::string("<h1>MRView</h1>The MRtrix viewer, version ") + MR::App::mrtrix_version +
-                        "<br>"
-                        "<em>" +
-                        str(8 * sizeof(size_t)) +
-                        " bit "
+  std::string message = fmt::format("<h1>MRView</h1>The MRtrix viewer, version {}<br>", MR::App::mrtrix_version);
 #ifdef NDEBUG
-                        "release"
+  const std::string version = "release";
 #else
-                        "debug"
+  const std::string version = "debug";
 #endif
-                        " version, built " +
-                        MR::App::build_date +
-                        "</em><p>"
-                        "<h4>Authors:</h4>" +
-                        MR::join(MR::split(MR::App::AUTHOR, ",;&\n", true), "<br>") + "<p><em>" + MR::App::COPYRIGHT +
-                        "</em>";
+  message += fmt::format("<em>{} bit {} version, built {}</em><p>", 8 * sizeof(size_t), version, MR::App::build_date);
+  message += fmt::format("<h4>Authors:</h4>{}<p>", MR::join(MR::split(MR::App::AUTHOR, ",;&\n", true), "<br>"));
+  message += fmt::format("<em>{}</em>", MR::App::COPYRIGHT);
 
   QMessageBox::about(this, tr("About MRView"), qstr(message));
 }
@@ -1662,13 +1656,14 @@ void Window::process_commandline_option() {
     // see whether option is claimed by any tools:
     size_t tool_id = 0;
     std::string stub;
+#include "fmt.h"
 #include "mrview/tool/list.h"
 
     // process general options:
     if (opt.opt->is("mode")) {
       int n = int(opt[0]) - 1;
       if (n < 0 || n >= mode_group->actions().size())
-        throw Exception("invalid mode index \"" + str(n) + "\" in batch command");
+        throw Exception(fmt::format("invalid mode index \"{}\" in batch command", n));
       select_mode_slot(mode_group->actions()[n]);
       return;
     }
@@ -1676,7 +1671,7 @@ void Window::process_commandline_option() {
     if (opt.opt->is("size")) {
       std::vector<uint32_t> glsize = parse_ints<uint32_t>(opt[0]);
       if (glsize.size() != 2)
-        throw Exception("invalid argument \"" + std::string(opt.args[0]) + "\" to -size batch command");
+        throw Exception(fmt::format("invalid argument \"{}\" to -size batch command", opt.args[0]));
       if (glsize[0] < 1 || glsize[1] < 1)
         throw Exception("values provided to -size option must be positive");
       QSize oldsize = glarea->size();
@@ -1813,7 +1808,7 @@ void Window::process_commandline_option() {
     if (opt.opt->is("colourmap")) {
       int n = int(opt[0]) - 1;
       if (n < 0 || n >= static_cast<int>(colourmap_button->colourmap_actions.size()))
-        throw Exception("invalid image colourmap index \"" + str(n + 1) + "\" requested in batch command");
+        throw Exception(fmt::format("invalid image colourmap index \"{}\" requested in batch command", n + 1));
       colourmap_button->set_colourmap_index(n);
       return;
     }
@@ -1842,7 +1837,7 @@ void Window::process_commandline_option() {
     if (opt.opt->is("position")) {
       std::vector<int> pos = parse_ints<int>(opt[0]);
       if (pos.size() != 2)
-        throw Exception("invalid argument \"" + std::string(opt[0]) + "\" to -position option");
+        throw Exception(fmt::format("invalid argument \"{}\" to -position option", opt[0]));
       move(pos[0], pos[1]);
       return;
     }

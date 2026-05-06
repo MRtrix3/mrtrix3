@@ -22,11 +22,13 @@
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
 #include "file/matrix.h"
+#include "fmt.h"
 #include "header.h"
 #include "math/SH.h"
 #include "math/ZSH.h"
 #include "math/least_squares.h"
 #include "math/sphere.h"
+#include <fmt/format.h>
 
 namespace MR::DWI::SDeconv {
 
@@ -94,14 +96,14 @@ public:
     }
 
     void set_response(std::string_view path) {
-      INFO("loading response function from file \"" + path + "\"");
+      INFO(fmt::format("loading response function from file \"{}\"", path));
       set_response(File::Matrix::load_vector(path));
     }
 
     template <class Derived> void set_response(const Eigen::MatrixBase<Derived> &in) {
       response = in;
       lmax_response = Math::ZSH::LforN(response.size());
-      INFO("setting response function using even SH coefficients: " + str(response.transpose()));
+      INFO(fmt::format("setting response function using even SH coefficients: {}", response));
     }
 
     void init() {
@@ -120,7 +122,8 @@ public:
 
       assert(response.size());
       lmax_response = std::min(lmax_response, std::min(lmax_data, lmax));
-      INFO("calculating even spherical harmonic components up to order " + str(lmax_response) + " for initialisation");
+      INFO("calculating even spherical harmonic components up to order " +
+           fmt::format("{} for initialisation", lmax_response));
 
       if (!init_filter.size())
         init_filter = Eigen::VectorXd::Ones(3);
@@ -148,7 +151,7 @@ public:
 
       // forward sconv for iteration, using all response function
       // coefficients up to the requested lmax:
-      INFO("calculating even spherical harmonic components up to order " + str(lmax) + " for output");
+      INFO("calculating even spherical harmonic components up to order " + fmt::format("{} for output", lmax));
       fconv = init_transform(DW_dirs, lmax);
       l = 0;
       nl = 1;

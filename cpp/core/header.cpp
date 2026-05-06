@@ -36,6 +36,7 @@
 #include "transform.h"
 
 #include "dwi/gradient.h"
+#include <fmt/format.h>
 
 namespace MR {
 
@@ -43,28 +44,28 @@ bool Header::do_realign_transform = true;
 
 void Header::check(const Header &H) const {
   if (ndim() != H.ndim())
-    throw Exception("dimension mismatch between image files for \"" + name() + "\"");
+    throw Exception(fmt::format("dimension mismatch between image files for \"{}\"", name()));
 
   for (size_t n = 0; n < ndim(); ++n) {
     if (size(n) != H.size(n))
-      throw Exception("dimension mismatch between image files for \"" + name() + "\"");
+      throw Exception(fmt::format("dimension mismatch between image files for \"{}\"", name()));
 
     if (stride(n) != H.stride(n))
-      throw Exception("data strides differs image files for \"" + name() + "\"");
+      throw Exception(fmt::format("data strides differs image files for \"{}\"", name()));
 
     if (std::isfinite(spacing(n)) && std::isfinite(H.spacing(n)) && spacing(n) != H.spacing(n))
-      WARN("voxel dimensions differ between image files for \"" + name() + "\"");
+      WARN(fmt::format("voxel dimensions differ between image files for \"{}\"", name()));
   }
 
   if ((transform().matrix() - H.transform().matrix()).cwiseAbs().maxCoeff() > 1.0e-6)
-    WARN("transform matrices differ between image files for \"" + name() + "\"");
+    WARN(fmt::format("transform matrices differ between image files for \"{}\"", name()));
   ;
 
   if (datatype() != H.datatype())
-    throw Exception("data types differ between image files for \"" + name() + "\"");
+    throw Exception(fmt::format("data types differ between image files for \"{}\"", name()));
 
   if (intensity_offset() != H.intensity_offset() || intensity_scale() != H.intensity_scale())
-    throw Exception("scaling coefficients differ between image files for \"" + name() + "\"");
+    throw Exception(fmt::format("scaling coefficients differ between image files for \"{}\"", name()));
 }
 
 void Header::merge_keyval(const KeyValues &in) {
@@ -137,7 +138,7 @@ Header Header::open(std::string_view image_name) {
   Header H;
 
   try {
-    INFO("opening image \"" + image_name + "\"...");
+    INFO(fmt::format("opening image \"{}\"...", image_name));
 
     File::ParsedName::List list;
     const auto num = list.parse_scan_check(image_name);
@@ -152,7 +153,7 @@ Header Header::open(std::string_view image_name) {
     }
 
     if (!*format_handler)
-      throw Exception("unknown format for image \"" + H.name() + "\"");
+      throw Exception(fmt::format("unknown format for image \"{}\"", H.name()));
     assert(H.io);
 
     H.format_ = (*format_handler)->description;
@@ -237,10 +238,10 @@ Header Header::open(std::string_view image_name) {
   } catch (CancelException &e) {
     throw;
   } catch (Exception &E) {
-    throw Exception(E, "error opening image \"" + image_name + "\"");
+    throw Exception(E, fmt::format("error opening image \"{}\"", image_name));
   }
 
-  INFO("image \"" + H.name() + "\" opened" + short_description(H));
+  INFO(fmt::format("image \"{}\" opened{}", H.name(), short_description(H)));
 
   return H;
 }
@@ -270,7 +271,7 @@ Header Header::create(std::string_view image_name, const Header &template_header
   const auto previous_datatype = H.datatype();
 
   try {
-    INFO("creating image \"" + image_name + "\"...");
+    INFO(fmt::format("creating image \"{}\"...", image_name));
     if (add_to_command_history) {
       // Make sure the current command is not concatenated more than once
       const auto command_history = split_lines(H.keyval()["command_history"]);
@@ -304,17 +305,21 @@ Header Header::create(std::string_view image_name, const Header &template_header
       const std::string basename = Path::basename(image_name);
       const size_t extension_index = basename.find_last_of(".");
       if (extension_index == std::string::npos)
-        throw Exception("unknown format for image \"" + image_name + "\" (no file extension specified)");
+        throw Exception(fmt::format("unknown format for image \"{}\" (no file extension specified)", image_name));
       else
-        throw Exception("unknown format for image \"" + image_name +
-                        "\" (unsupported file extension: " + basename.substr(extension_index) + ")");
+        throw Exception(fmt::format("unknown format for image \"{}\" (unsupported file extension: {})",
+                                    image_name,
+                                    basename.substr(extension_index)));
     }
 
     const std::vector<ssize_t> strides_aftercheck(Stride::get_symbolic(H));
     if (!check_strides_match(strides, strides_aftercheck)) {
-      INFO("output strides for image " + image_name + " modified to " + str(strides_aftercheck) +
-           " - requested strides " + str(strides) + " are not supported in " + (*format_handler)->description +
-           " format");
+      INFO(fmt::format(
+          "output strides for image {} modified to {} - requested strides {} are not supported in {} format",
+          image_name,
+          str(strides_aftercheck),
+          str(strides),
+          (*format_handler)->description));
     }
 
     H.datatype().set_byte_order_native();
@@ -425,7 +430,7 @@ Header Header::create(std::string_view image_name, const Header &template_header
 
     H.sanitise();
   } catch (Exception &E) {
-    throw Exception(E, "error creating image \"" + image_name + "\"");
+    throw Exception(E, fmt::format("error creating image \"{}\"", image_name));
   }
 
   DataType new_datatype = H.datatype();
@@ -433,11 +438,13 @@ Header Header::create(std::string_view image_name, const Header &template_header
     new_datatype.unset_flag(DataType::BigEndian);
     new_datatype.unset_flag(DataType::LittleEndian);
     if (new_datatype != previous_datatype)
-      WARN(std::string("requested datatype (") + previous_datatype.specifier() +
-           ") not supported - substituting with " + H.datatype().specifier());
+      WARN(fmt::format("{}{}) not supported - substituting with {}",
+                       "requested datatype (",
+                       previous_datatype.specifier(),
+                       H.datatype().specifier()));
   }
 
-  INFO("image \"" + H.name() + "\" created" + short_description(H));
+  INFO(fmt::format("image \"{}\" created{}", H.name(), short_description(H)));
 
   return H;
 }
@@ -493,14 +500,14 @@ std::string Header::description(bool print_all) const {
   auto strides(Stride::get(*this));
   Stride::symbolise(strides);
   for (i = 0; i < ndim(); i++)
-    desc += stride(i) ? str(strides[i]) + " " : "? ";
+    desc += stride(i) ? fmt::format("{} ", strides[i]) : "? ";
   desc += "]\n";
 
   if (io) {
-    desc += std::string("  Format:            ") + (format().empty() ? "undefined" : format()) + "\n";
-    desc += std::string("  Data type:         ") + datatype().description() + "\n";
-    desc +=
-        "  Intensity scaling: offset = " + str(intensity_offset()) + ", multiplier = " + str(intensity_scale()) + "\n";
+    desc += "  Format:            " + (format().empty() ? "undefined" : format()) + "\n";
+    desc += "  Data type:         " + datatype().description() + "\n";
+    desc += fmt::format("  Intensity scaling: offset = {}", intensity_offset()) +
+            fmt::format(", multiplier = {}", intensity_scale()) + "\n";
   }
 
   desc += "  Transform:         ";
@@ -516,7 +523,7 @@ std::string Header::description(bool print_all) const {
   }
 
   for (const auto &p : keyval()) {
-    std::string key = "  " + p.first + ": ";
+    std::string key = fmt::format("  {}: ", p.first);
     if (key.size() < 21)
       key.resize(21, ' ');
     const auto entries = split_lines(p.second);
@@ -524,7 +531,7 @@ std::string Header::description(bool print_all) const {
       bool shorten = (!print_all && entries.size() > 5);
       desc += key + entries[0] + "\n";
       if (entries.size() > 5) {
-        key = "  [" + str(entries.size()) + " entries] ";
+        key = fmt::format("  [{}", entries.size()) + " entries] ";
         if (key.size() < 21)
           key.resize(21, ' ');
       } else
@@ -653,7 +660,7 @@ void Header::realign_transform() {
   axes_[1] = a[1];
   axes_[2] = a[2];
 
-  INFO("Axes and transform of image \"" + name() + "\" altered to approximate RAS coordinate system");
+  INFO(fmt::format("Axes and transform of image \"{}\" altered to approximate RAS coordinate system", name()));
 
   Metadata::PhaseEncoding::transform_for_image_load(keyval(), *this);
   Metadata::SliceEncoding::transform_for_image_load(keyval(), *this);
@@ -661,7 +668,8 @@ void Header::realign_transform() {
 
 Header
 concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, const bool permit_datatype_mismatch) {
-  Exception e("Unable to concatenate " + str(headers.size()) + " images along axis " + str(axis_to_concat) + ": ");
+  Exception e(fmt::format("Unable to concatenate {}", headers.size()) + " images along axis " +
+              fmt::format("{}: ", axis_to_concat));
 
   auto datatype_test = [&](const bool condition) {
     if (condition && !permit_datatype_mismatch) {
@@ -688,7 +696,7 @@ concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, con
   size_t global_max_nonunity_dim = 0;
   for (const auto &H : headers) {
     if (axis_to_concat > H.ndim() + 1) {
-      e.push_back("Image \"" + H.name() + "\" is only " + str(H.ndim()) + "D");
+      e.push_back("Image \"" + H.name() + fmt::format("\" is only {}", H.ndim()) + "D");
       throw e;
     }
     ssize_t this_max_nonunity_dim;
@@ -749,7 +757,8 @@ concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, con
     for (size_t axis = 0; axis <= global_max_nonunity_dim; ++axis) {
       if (axis != axis_to_concat && axis < H.ndim() && H.size(axis) != result.size(axis)) {
         e.push_back("Images \"" + result.name() + "\" and \"" + H.name() + "\" have inequal sizes along axis " +
-                    str(axis_to_concat) + " (" + str(result.size(axis)) + " vs " + str(H.size(axis)) + ")");
+                    fmt::format("{} (", axis_to_concat) + str(result.size(axis)) + fmt::format(" vs {}", H.size(axis)) +
+                    ")");
         throw e;
       }
     }

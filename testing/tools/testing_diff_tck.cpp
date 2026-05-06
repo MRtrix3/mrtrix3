@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <fmt/format.h>
 #include <limits>
 
 #include "command.h"
@@ -60,13 +61,15 @@ void usage() {
   + Argument ("tck2", "the reference track file").type_file_in();
 
   OPTIONS
-  + Option ("distance", "maximum permissible Hausdorff distance in mm"
-                        " (default: " + str(DEFAULT_HAUSDORFF) + "mm)")
+  + Option ("distance", fmt::format("maximum permissible Hausdorff distance in mm"
+                                    " (default: {}mm)",
+                                    DEFAULT_HAUSDORFF))
     + Argument ("value").type_float(0.0)
 
-  + Option ("maxfail", "the maximum number of streamlines permitted to exceed"
-                       " the Hausdorff distance before the unit test will fail"
-                       " (default: " + str(DEFAULT_MAXFAIL) + ")")
+  + Option ("maxfail", fmt::format("the maximum number of streamlines permitted to exceed"
+                                   " the Hausdorff distance before the unit test will fail"
+                                   " (default: {})",
+                                   DEFAULT_MAXFAIL))
 
   + Option ("unordered", "compare the streamlines in an unordered fashion;"
                          " i.e. compare every streamline in the first file"
@@ -136,7 +139,7 @@ void run() {
   }
 
   if (mismatch_count > maxfail)
-    throw Exception(str(mismatch_count) + " mismatched streamlines - test FAILED");
+    throw Exception(fmt::format("{} mismatched streamlines - test FAILED", mismatch_count));
 
-  CONSOLE(str(mismatch_count) + " mismatched streamlines - data checked OK");
+  CONSOLE(fmt::format("{} mismatched streamlines - data checked OK", mismatch_count));
 }

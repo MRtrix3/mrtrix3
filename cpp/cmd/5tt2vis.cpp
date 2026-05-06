@@ -15,6 +15,7 @@
  */
 
 #include "command.h"
+#include <fmt/format.h>
 
 #include "header.h"
 #include "image.h"
@@ -48,27 +49,27 @@ void usage() {
   OPTIONS
 
   + Option ("bg", "image intensity of background"
-                  " (default: " + str(default_value_background, 2) + ")")
+                  " (default: " + fmt::format("{})", default_value_background, 2))
     + Argument ("value").type_float (0.0, 1.0)
 
   + Option ("cgm", "image intensity of cortical grey matter"
-                   " (default: " + str(default_value_cgm, 2) + ")")
+                   " (default: " + fmt::format("{})", default_value_cgm, 2))
     + Argument ("value").type_float (0.0, 1.0)
 
   + Option ("sgm", "image intensity of sub-cortical grey matter"
-                   " (default: " + str(default_value_sgm, 2) + ")")
+                   " (default: " + fmt::format("{})", default_value_sgm, 2))
     + Argument ("value").type_float (0.0, 1.0)
 
   + Option ("wm", "image intensity of white matter"
-                  " (default: " + str(default_value_wm, 2) + ")")
+                  " (default: " + fmt::format("{})", default_value_wm, 2))
     + Argument ("value").type_float (0.0, 1.0)
 
   + Option ("csf", "image intensity of CSF"
-                   " (default: " + str(default_value_csf, 2) + ")")
+                   " (default: " + fmt::format("{})", default_value_csf, 2))
     + Argument ("value").type_float (0.0, 1.0)
 
   + Option ("path", "image intensity of pathological tissue"
-                    " (default: " + str(default_value_pathology, 2) + ")")
+                    " (default: " + fmt::format("{})", default_value_pathology, 2))
     + Argument ("value").type_float (0.0, 10.0);
 
 }

@@ -15,6 +15,7 @@
  */
 
 #include <array>
+#include <fmt/format.h>
 
 #include "algo/loop.h"
 #include "command.h"
@@ -59,7 +60,7 @@ void usage() {
 
   OPTIONS
   + Option ("num", "the number of peaks to extract"
-                   " (default: " + str(default_npeaks) + ").")
+                   " (default: " + fmt::format("{}).", default_npeaks))
     + Argument ("peaks").type_integer (0)
 
   + Option ("direction",

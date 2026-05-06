@@ -16,6 +16,7 @@
 
 #include "mrview/tool/connectome/shaders.h"
 #include "mrview/window.h"
+#include <fmt/format.h>
 
 #include "mrview/tool/connectome/connectome.h"
 
@@ -72,9 +73,8 @@ void NodeShader::update(const Connectome &parent) {
 
   vertex_shader_source = "layout (location = 0) in vec3 vertexPosition_modelspace;\n";
 
-  if (geometry == node_geometry_t::CUBE || geometry == node_geometry_t::MESH) {
+  if (geometry == node_geometry_t::CUBE || geometry == node_geometry_t::MESH)
     vertex_shader_source += "layout (location = 1) in vec3 vertexNormal_modelspace;\n";
-  }
 
   vertex_shader_source += "uniform mat4 MVP;\n"
                           "uniform mat4 MV;\n"
@@ -82,7 +82,7 @@ void NodeShader::update(const Connectome &parent) {
                           "uniform float node_size;\n";
 
   if (geometry == node_geometry_t::SPHERE || geometry == node_geometry_t::CUBE || geometry == node_geometry_t::MESH) {
-    vertex_shader_source += "out vec3 normal" + GS_in + ";\n";
+    vertex_shader_source += fmt::format("out vec3 normal{};\n", GS_in);
   }
 
   if (crop_to_slab) {
@@ -101,21 +101,18 @@ void NodeShader::update(const Connectome &parent) {
 
   switch (geometry) {
   case node_geometry_t::SPHERE:
-    vertex_shader_source += "  vec3 pos = node_centre + (vertexPosition_modelspace * node_size);\n"
-                            "  normal" +
-                            GS_in + " = normalize (mat3(MV) * vertexPosition_modelspace);\n";
+    vertex_shader_source += "  vec3 pos = node_centre + (vertexPosition_modelspace * node_size);\n";
+    vertex_shader_source += fmt::format("  normal{} = normalize (mat3(MV) * vertexPosition_modelspace);\n", GS_in);
     break;
   case node_geometry_t::CUBE:
-    vertex_shader_source += "  vec3 pos = node_centre + (vertexPosition_modelspace * node_size);\n"
-                            "  normal" +
-                            GS_in + " = normalize (mat3(MV) * vertexNormal_modelspace);\n";
+    vertex_shader_source += "  vec3 pos = node_centre + (vertexPosition_modelspace * node_size);\n";
+    vertex_shader_source += fmt::format("  normal{} = normalize (mat3(MV) * vertexNormal_modelspace);\n", GS_in);
     break;
   case node_geometry_t::OVERLAY:
     break;
   case node_geometry_t::MESH:
-    vertex_shader_source += "  vec3 pos = node_centre + (node_size * (vertexPosition_modelspace - node_centre));"
-                            "  normal" +
-                            GS_in + " = normalize (mat3(MV) * vertexNormal_modelspace);\n";
+    vertex_shader_source += "  vec3 pos = node_centre + (node_size * (vertexPosition_modelspace - node_centre));";
+    vertex_shader_source += fmt::format("  normal{} = normalize (mat3(MV) * vertexNormal_modelspace);\n", GS_in);
     break;
   }
 
@@ -133,7 +130,7 @@ void NodeShader::update(const Connectome &parent) {
 
   // =================================================================
 
-  geometry_shader_source = std::string("");
+  geometry_shader_source = "";
   if (!is_3D) {
 
     geometry_shader_source += "layout(triangles) in;\n"
@@ -141,10 +138,8 @@ void NodeShader::update(const Connectome &parent) {
                               "in float depth[3];\n"; // check_syntax off
 
     if (geometry == node_geometry_t::SPHERE || geometry == node_geometry_t::CUBE || geometry == node_geometry_t::MESH) {
-      geometry_shader_source += "in vec3 normal" + GS_in +
-                                "[3];\n"
-                                "out vec3 normal" +
-                                GS_out + ";\n";
+      geometry_shader_source += fmt::format("in vec3 normal{}[3];\n", GS_in);
+      geometry_shader_source += fmt::format("out vec3 normal{};\n", GS_out);
     }
 
     // Need to detect whether or not this triangle intersects the viewing plane
@@ -158,15 +153,14 @@ void NodeShader::update(const Connectome &parent) {
         "    int v2 = (v1 == 2) ? 0 : v1+1;\n"
         "    float mu = depth[v1] / (depth[v1] - depth[v2]);\n"
         "    if (mu >= 0.0 && mu <= 1.0) {\n"
-        "      gl_Position = gl_in[v1].gl_Position + (mu * (gl_in[v2].gl_Position - gl_in[v1].gl_Position));\n"
-        "      normal" +
-        GS_out + " = normalize(((1.0 - mu) * normal" + GS_in + "[v1]) + (mu * normal" + GS_in +
-        "[v2]));\n"
-        "      EmitVertex();\n"
-        "    }\n"
-        "  }\n"
-        "  EndPrimitive();\n"
-        "}\n";
+        "      gl_Position = gl_in[v1].gl_Position + (mu * (gl_in[v2].gl_Position - gl_in[v1].gl_Position));\n";
+    geometry_shader_source +=
+        fmt::format("      normal{} = normalize(((1.0 - mu) * normal[v1]) + (mu * normal{}[v2]));\n", GS_out, GS_in);
+    geometry_shader_source += "      EmitVertex();\n"
+                              "    }\n"
+                              "  }\n"
+                              "  EndPrimitive();\n"
+                              "}\n";
   }
 
   // =================================================================
@@ -186,7 +180,7 @@ void NodeShader::update(const Connectome &parent) {
                               "uniform vec3 light_pos;\n";
 
     if (geometry == node_geometry_t::SPHERE || geometry == node_geometry_t::CUBE || geometry == node_geometry_t::MESH) {
-      fragment_shader_source += "in vec3 normal" + GS_out + ";\n";
+      fragment_shader_source += fmt::format("in vec3 normal{};\n", GS_out);
     }
   }
 
@@ -207,10 +201,11 @@ void NodeShader::update(const Connectome &parent) {
   }
 
   if (use_lighting) {
-    fragment_shader_source += "  color *= ambient + diffuse * clamp (dot (normal" + GS_out +
-                              ", light_pos), 0, 1);\n"
-                              "  color += specular * pow (clamp (dot (reflect (-light_pos, normal" +
-                              GS_out + "), vec3(0.0,0.0,1.0)), 0, 1), shine);\n";
+    fragment_shader_source +=
+        fmt::format("  color *= ambient + diffuse * clamp (dot (normal{}, light_pos), 0, 1);\n", GS_out);
+    fragment_shader_source += fmt::format(
+        "  color += specular * pow (clamp (dot (reflect (-light_pos, normal{}), vec3(0.0,0.0,1.0)), 0, 1), shine);\n",
+        GS_out);
   }
 
   if (use_alpha) {
@@ -258,7 +253,7 @@ void EdgeShader::update(const Connectome &parent) {
   if (geometry == edge_geometry_t::LINE) {
     vertex_shader_source += "layout (location = 1) in vec3 vertexTangent_modelspace;\n";
     if (use_lighting) {
-      vertex_shader_source += "out vec3 tangent" + GS_in + ";\n";
+      vertex_shader_source += fmt::format("out vec3 tangent{};\n", GS_in);
     }
   }
 
@@ -268,14 +263,14 @@ void EdgeShader::update(const Connectome &parent) {
                             "uniform mat3 rot_matrix;\n"
                             "uniform float radius;\n";
     if (use_lighting) {
-      vertex_shader_source += "out vec3 normal" + GS_in + ";\n";
+      vertex_shader_source += fmt::format("out vec3 normal{};\n", GS_in);
     }
   }
 
   if (geometry == edge_geometry_t::STREAMLINE) {
     vertex_shader_source += "layout (location = 1) in vec3 vertexTangent_modelspace;\n";
     if (use_lighting) {
-      vertex_shader_source += "out vec3 tangent" + GS_in + ";\n";
+      vertex_shader_source += fmt::format("out vec3 tangent{};\n", GS_in);
     }
   }
 
@@ -284,13 +279,13 @@ void EdgeShader::update(const Connectome &parent) {
                             "layout (location = 2) in vec3 vertexNormal_modelspace;\n"
                             "uniform float radius;\n";
     if (use_lighting) {
-      vertex_shader_source += "out vec3 normal" + GS_in + ";\n";
+      vertex_shader_source += fmt::format("out vec3 normal{};\n", GS_in);
     }
   }
 
   if (colour == edge_colour_t::DIRECTION &&
       (geometry == edge_geometry_t::STREAMLINE || geometry == edge_geometry_t::STREAMTUBE)) {
-    vertex_shader_source += "out vec3 dir" + GS_in + ";\n";
+    vertex_shader_source += fmt::format("out vec3 dir{};\n", GS_in);
   }
 
   if (crop_to_slab) {
@@ -311,7 +306,7 @@ void EdgeShader::update(const Connectome &parent) {
   case edge_geometry_t::LINE:
     vertex_shader_source += "  vec3 pos = vertexPosition_modelspace;\n";
     if (use_lighting) {
-      vertex_shader_source += "  tangent" + GS_in + " = normalize (mat3(MV) * vertexTangent_modelspace);\n";
+      vertex_shader_source += fmt::format("  tangent{} = normalize (mat3(MV) * vertexTangent_modelspace);\n", GS_in);
     }
     break;
   case edge_geometry_t::CYLINDER:
@@ -325,25 +320,25 @@ void EdgeShader::update(const Connectome &parent) {
                             "  vec3 pos = centre + (radius * offset);\n";
     if (use_lighting) {
       vertex_shader_source +=
-          "  normal" + GS_in + " = normalize (mat3(MV) * (vertexNormal_modelspace * rot_matrix));\n";
+          fmt::format("  normal{} = normalize (mat3(MV) * (vertexNormal_modelspace * rot_matrix));\n", GS_in);
     }
     break;
   case edge_geometry_t::STREAMLINE:
     vertex_shader_source += "  vec3 pos = vertexPosition_modelspace;\n";
     if (use_lighting) {
-      vertex_shader_source += "  tangent" + GS_in + " = normalize (mat3(MV) * vertexTangent_modelspace);\n";
+      vertex_shader_source += fmt::format("  tangent{} = normalize (mat3(MV) * vertexTangent_modelspace);\n", GS_in);
     }
     if (colour == edge_colour_t::DIRECTION) {
-      vertex_shader_source += "  dir" + GS_in + " = vertexTangent_modelspace;\n";
+      vertex_shader_source += fmt::format("  dir{} = vertexTangent_modelspace;\n", GS_in);
     }
     break;
   case edge_geometry_t::STREAMTUBE:
     vertex_shader_source += "  vec3 pos = vertexPosition_modelspace + (radius * vertexNormal_modelspace);\n";
     if (use_lighting) {
-      vertex_shader_source += "  normal" + GS_in + " = normalize (mat3(MV) * vertexNormal_modelspace);\n";
+      vertex_shader_source += fmt::format("  normal{} = normalize (mat3(MV) * vertexNormal_modelspace);\n", GS_in);
     }
     if (colour == edge_colour_t::DIRECTION) {
-      vertex_shader_source += "  dir" + GS_in + " = vertexTangent_modelspace;\n";
+      vertex_shader_source += fmt::format("  dir{} = vertexTangent_modelspace;\n", GS_in);
     }
     break;
   }
@@ -362,7 +357,7 @@ void EdgeShader::update(const Connectome &parent) {
 
   // =================================================================
 
-  geometry_shader_source = std::string("");
+  geometry_shader_source = "";
   if (!is_3D) {
 
     switch (geometry) {
@@ -372,10 +367,8 @@ void EdgeShader::update(const Connectome &parent) {
                                 "layout(points, max_vertices=1) out;\n"
                                 "in float depth[2];\n"; // check_syntax off
       if (use_lighting) {
-        geometry_shader_source += "in vec3 tangent" + GS_in +
-                                  "[2];\n"
-                                  "out vec3 tangent" +
-                                  GS_out + ";\n";
+        geometry_shader_source += fmt::format("in vec3 tangent{}[2];\n", GS_in);
+        geometry_shader_source += fmt::format("out vec3 tangent{};\n", GS_out);
       }
       break;
     case edge_geometry_t::CYLINDER:
@@ -384,20 +377,16 @@ void EdgeShader::update(const Connectome &parent) {
                                 "layout(line_strip, max_vertices=2) out;\n"
                                 "in float depth[3];\n"; // check_syntax off
       if (use_lighting) {
-        geometry_shader_source += "in vec3 normal" + GS_in +
-                                  "[3];\n"
-                                  "out vec3 normal" +
-                                  GS_out + ";\n";
+        geometry_shader_source += fmt::format("in vec3 normal{}[3];\n", GS_in);
+        geometry_shader_source += fmt::format("out vec3 normal{};\n", GS_out);
       }
       break;
     }
 
     if (colour == edge_colour_t::DIRECTION &&
         (geometry == edge_geometry_t::STREAMLINE || geometry == edge_geometry_t::STREAMTUBE)) {
-      geometry_shader_source += "in vec3 dir" + GS_in +
-                                "[3];\n"
-                                "out vec3 dir" +
-                                GS_out + ";\n";
+      geometry_shader_source += fmt::format("in vec3 dir{}[3];\n", GS_in);
+      geometry_shader_source += fmt::format("out vec3 dir{};\n", GS_out);
     }
 
     geometry_shader_source += "void main() {\n";
@@ -410,12 +399,12 @@ void EdgeShader::update(const Connectome &parent) {
           "  if (mu >= 0.0 && mu <= 1.0) {\n"
           "    gl_Position = gl_in[0].gl_Position + (mu * (gl_in[1].gl_Position - gl_in[0].gl_Position));\n";
       if (use_lighting) {
-        geometry_shader_source += "    tangent" + GS_out + " = normalize(((1.0 - mu) * tangent" + GS_in +
-                                  "[1]) + (mu * tangent" + GS_in + "[0]));\n";
+        geometry_shader_source += fmt::format(
+            "    tangent{} = normalize(((1.0 - mu) * tangent{}[1]) + (mu * tangent{}[0]));\n", GS_out, GS_in, GS_in);
       }
       if (colour == edge_colour_t::DIRECTION && geometry == edge_geometry_t::STREAMLINE) {
-        geometry_shader_source +=
-            "      dir" + GS_out + " = normalize(((1.0 - mu) * dir" + GS_in + "[v1]) + (mu * dir" + GS_in + "[v2]));\n";
+        geometry_shader_source += fmt::format(
+            "      dir{} = normalize(((1.0 - mu) * dir{}[v1]) + (mu * dir{}[v2]));\n", GS_out, GS_in, GS_in);
       }
       geometry_shader_source += "    EmitVertex();\n"
                                 "  }\n"
@@ -430,12 +419,12 @@ void EdgeShader::update(const Connectome &parent) {
           "    if (mu >= 0.0 && mu <= 1.0) {\n"
           "      gl_Position = gl_in[v1].gl_Position + (mu * (gl_in[v2].gl_Position - gl_in[v1].gl_Position));\n";
       if (use_lighting) {
-        geometry_shader_source += "      normal" + GS_out + " = normalize(((1.0 - mu) * normal" + GS_in +
-                                  "[v1]) + (mu * normal" + GS_in + "[v2]));\n";
+        geometry_shader_source += fmt::format(
+            "      normal{} = normalize(((1.0 - mu) * normal{}[v1]) + (mu * normal{}[v2]));\n", GS_out, GS_in, GS_in);
       }
       if (colour == edge_colour_t::DIRECTION && geometry == edge_geometry_t::STREAMTUBE) {
-        geometry_shader_source +=
-            "      dir" + GS_out + " = normalize(((1.0 - mu) * dir" + GS_in + "[v1]) + (mu * dir" + GS_in + "[v2]));\n";
+        geometry_shader_source += fmt::format(
+            "      dir{} = normalize(((1.0 - mu) * dir{}[v1]) + (mu * dir{}[v2]));\n", GS_out, GS_in, GS_in);
       }
       geometry_shader_source += "      EmitVertex();\n"
                                 "    }\n"
@@ -462,14 +451,14 @@ void EdgeShader::update(const Connectome &parent) {
     fragment_shader_source += "uniform float ambient, diffuse, specular, shine;\n"
                               "uniform vec3 light_pos;\n";
     if (geometry == edge_geometry_t::CYLINDER || geometry == edge_geometry_t::STREAMTUBE) {
-      fragment_shader_source += "in vec3 normal" + GS_out + ";\n";
+      fragment_shader_source += fmt::format("in vec3 normal{};\n", GS_out);
     } else { // Line and streamline
-      fragment_shader_source += "in vec3 tangent" + GS_out + ";\n";
+      fragment_shader_source += fmt::format("in vec3 tangent{};\n", GS_out);
     }
   }
   if (colour == edge_colour_t::DIRECTION &&
       (geometry == edge_geometry_t::STREAMLINE || geometry == edge_geometry_t::STREAMTUBE)) {
-    fragment_shader_source += "in vec3 dir" + GS_out + ";\n";
+    fragment_shader_source += fmt::format("in vec3 dir{};\n", GS_out);
   }
 
   if (crop_to_slab && is_3D) {
@@ -484,34 +473,25 @@ void EdgeShader::update(const Connectome &parent) {
 
   if (colour == edge_colour_t::DIRECTION &&
       (geometry == edge_geometry_t::STREAMLINE || geometry == edge_geometry_t::STREAMTUBE)) {
-
-    if (use_alpha) {
-      fragment_shader_source +=
-          "  color.rgb = vec3 (abs(dir" + GS_out + "[0]), abs(dir" + GS_out + "[1]), abs(dir" + GS_out + "[2]));\n";
-    } else {
-      fragment_shader_source +=
-          "  color = vec3 (abs(dir" + GS_out + "[0]), abs(dir" + GS_out + "[1]), abs(dir" + GS_out + "[2]));\n";
-    }
-
+    fragment_shader_source += fmt::format("  color{} = vec3 (abs(dir{}[0]), abs(dir{}[1]), abs(dir{}[2]));\n",
+                                          use_alpha ? ".rgb" : "",
+                                          GS_out,
+                                          GS_out,
+                                          GS_out);
   } else {
-
-    if (use_alpha) {
-      fragment_shader_source += "  color.rgb = edge_colour;\n";
-    } else {
-      fragment_shader_source += "  color = edge_colour;\n";
-    }
+    fragment_shader_source += fmt::format("  color{} = edge_colour;\n", use_alpha ? ".rgb" : "");
   }
 
   if (use_lighting) {
     if (geometry == edge_geometry_t::CYLINDER || geometry == edge_geometry_t::STREAMTUBE) {
-      fragment_shader_source += "  color *= ambient + diffuse * clamp (dot (normal" + GS_out +
-                                ", light_pos), 0, 1);\n"
-                                "  color += specular * pow (clamp (dot (reflect (-light_pos, normal" +
-                                GS_out + "), vec3(0.0,0.0,1.0)), 0, 1), shine);\n";
+      fragment_shader_source +=
+          fmt::format("  color *= ambient + diffuse * clamp (dot (normal{}, light_pos), 0, 1);\n", GS_out);
+      fragment_shader_source += fmt::format(
+          "  color += specular * pow (clamp (dot (reflect (-light_pos, normal{}), vec3(0.0,0.0,1.0)), 0, 1), shine);\n",
+          GS_out);
     } else { // Line and streamline
-      fragment_shader_source += "  vec3 t = normalize (tangent" + GS_out +
-                                ");\n"
-                                "  float l_dot_t = dot(light_pos, t);\n"
+      fragment_shader_source += fmt::format("  vec3 t = normalize (tangent{});\n", GS_out);
+      fragment_shader_source += "  float l_dot_t = dot(light_pos, t);\n"
                                 "  vec3 l_perp = light_pos - l_dot_t * t;\n"
                                 "  vec3 l_perp_norm = normalize (l_perp);\n"
                                 "  float n_dot_t = t.z;\n"
@@ -524,9 +504,8 @@ void EdgeShader::update(const Connectome &parent) {
     }
   }
 
-  if (use_alpha) {
+  if (use_alpha)
     fragment_shader_source += "  color.a = edge_alpha;\n";
-  }
 
   fragment_shader_source += "}\n";
 }

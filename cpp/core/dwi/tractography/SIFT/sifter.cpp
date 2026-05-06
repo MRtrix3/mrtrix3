@@ -34,6 +34,7 @@
 #include "file/ofstream.h"
 
 #include "math/rng.h"
+#include <fmt/format.h>
 
 namespace MR::DWI::Tractography::SIFT {
 
@@ -145,7 +146,7 @@ void SIFTer::perform_filtering() {
         output_filtered_tracks(tck_file_path, prefix + "_tracks.tck");
         if (!debug_dir.empty())
           output_all_debug_images(debug_dir, prefix);
-        INFO("\nProportionality coefficient at " + str(tracks_remaining) + " streamlines is " + str(mu()));
+        INFO(fmt::format("\\nProportionality coefficient at {} streamlines is {}", str(tracks_remaining), str(mu())));
         output_at_counts.pop_back();
       }
 
@@ -341,7 +342,7 @@ void SIFTer::perform_filtering() {
       (recalculate == NONLINEARITY || recalculate == QUANTISATION || recalculate == POS_GRADIENT))
     WARN("algorithm terminated before any user-specified termination criterion was met");
 
-  INFO("Proportionality coefficient at end of filtering is " + str(mu()));
+  INFO(fmt::format("Proportionality coefficient at end of filtering is {}", str(mu())));
 }
 
 void SIFTer::output_filtered_tracks(std::string_view input_path, std::string_view output_path) const {

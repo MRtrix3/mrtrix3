@@ -15,6 +15,7 @@
  */
 
 #include "dwi/sdeconv/msmt_csd.h"
+#include <fmt/format.h>
 
 namespace MR::DWI::SDeconv {
 
@@ -25,13 +26,13 @@ const OptionGroup MSMT_CSD_options =
     + Option("norm_lambda",
              "the regularisation parameter lambda that controls the strength "
              "of the constraint on the norm of the solution"
-             " (default = " + str(default_msmt_normlambda, 2) + ").")
+             " (default = " + fmt::format("{}).", default_msmt_normlambda, 2))
       + Argument("value").type_float(0.0)
 
     + Option("neg_lambda",
              "the regularisation parameter lambda that controls the strength "
              "of the non-negativity constraint"
-             " (default = " + str(default_msmt_neglambda, 2) + ").")
+             " (default = " + fmt::format("{}).", default_msmt_neglambda, 2))
       + Argument("value").type_float(0.0)
 
     + Option("predicted_signal",

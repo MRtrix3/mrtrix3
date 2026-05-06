@@ -20,9 +20,11 @@
 #include "file/key_value.h"
 #include "file/matrix.h"
 #include "file/nifti_utils.h"
+#include "fmt.h"
 #include "image.h"
 #include "transform.h"
 #include <algorithm>
+#include <fmt/format.h>
 #include <unsupported/Eigen/MatrixFunctions>
 
 using namespace MR;
@@ -117,17 +119,17 @@ transform_type get_flirt_transform(const Header &header) {
 //     if (stream.bad())
 //       throw Exception (strerror (errno));
 //     if (!V.size())
-//       throw Exception ("no data in file");
+//       throw Exception(fmt::format("no data in file{}{}{}", );
 
 //     transform_type M;
-//     for (ssize_t i = 0; i < 3; i++)
-//       for (ssize_t j = 0; j < 4; j++)
+//     for (ssize_t i = 0; i < 3; i, )
+//       for (ssize_t j = 0; j < 4; j, )
 //         M(i,j) = V[i][j];
 //     return M;
 //   }
 
 // template <typename T> int sgn(T val) {
-//     return (T(0) < val) - (val < T(0));
+//     return (T(0)) < val) - (val < T(0));
 // }
 
 template <typename TransformationType>
@@ -151,13 +153,14 @@ void parse_itk_trafo(std::string_view itk_file,
     if (file.key() == "Transform") {
       if (std::find(supported_transformations.begin(), supported_transformations.end(), file.value()) ==
           supported_transformations.end())
-        throw Exception("The " + file.value() + " transform type is currenly not supported or tested");
+        throw Exception(fmt::format("The {} transform type is currenly not supported or tested", file.value()));
     } else if (file.key() == "Parameters") {
       line = file.value();
       std::replace(line.begin(), line.end(), ' ', ',');
       std::vector<default_type> parameters(parse_floats(line));
       if (parameters.size() != 12)
-        throw Exception("Expected itk file with 12 parameters but has " + str(parameters.size()) + " parameters.");
+        throw Exception(
+            fmt::format("Expected itk file with 12 parameters but has {} parameters.", str(parameters.size())));
       transformation.linear().row(0) << parameters[0], parameters[1], parameters[2];
       transformation.linear().row(1) << parameters[3], parameters[4], parameters[5];
       transformation.linear().row(2) << parameters[6], parameters[7], parameters[8];
@@ -205,12 +208,12 @@ void run() {
   }
   case Operation::ITK_IMPORT: {
     if (num_inputs != 1)
-      throw Exception("itk_import requires 1 input, " + str(num_inputs) + " provided.");
+      throw Exception(fmt::format("itk_import requires 1 input, {} provided.", str(num_inputs)));
 
     transform_type transform;
     Eigen::Vector3d centre_of_rotation(3);
     parse_itk_trafo(argument[0], transform, centre_of_rotation);
-    INFO("Centre of rotation:\n" + str(centre_of_rotation.transpose()));
+    INFO(fmt::format("Centre of rotation:\n{}", centre_of_rotation));
 
     // rejig translation to correct for centre of rotation
     transform.translation() = transform.translation() + centre_of_rotation - transform.linear() * centre_of_rotation;
@@ -219,8 +222,8 @@ void run() {
     transform.matrix().template block<2, 2>(0, 2) *= -1.0;
     transform.matrix().template block<1, 2>(2, 0) *= -1.0;
 
-    INFO("linear:\n" + str(transform.matrix()));
-    INFO("translation:\n" + str(transform.translation().transpose()));
+    INFO(fmt::format("linear:\\n{}", str(transform.matrix())));
+    INFO(fmt::format("translation:\n{}", transform.translation()));
     if (((transform.matrix().array() != transform.matrix().array())).any())
       WARN("NAN in transformation.");
 

@@ -23,6 +23,7 @@
 #include "header.h"
 #include "image.h"
 #include "image_helpers.h"
+#include <fmt/format.h>
 
 // #define FIVETTEDIT_DEBUG_PER_VOXEL
 
@@ -82,17 +83,17 @@ public:
 
   ~Modifier() {
     if (excess_volume_count > 0) {
-      WARN("A total of " + str(excess_volume_count) + " voxels" +                                  //
-           " had a sum of partial volume fractions across user-provided images greater than one" + //
-           " (these were auto-scaled to sum to one," +                                             //
-           " but there may have been an error in generation of input images)");                    //
+      WARN(fmt::format(
+          "A total of {} voxels had a sum of partial volume fractions across user-provided images greater than one "
+          "(these were auto-scaled to sum to one, but there may have been an error in generation of input images)",
+          str(excess_volume_count)));
     }
     if (inadequate_volume_count > 0) {
-      WARN("A total of " + str(inadequate_volume_count) + " voxels were outside the brain in the input image," + //
-           " the user provided non-zero partial volume fractions in at least one input volume," +                //
-           " but the sum of partial volume fractions across user-provided images was less than one" +            //
-           " (these were auto-scaled to sum to one," +                                                           //
-           " but there may have been an error in generation of input images)");                                  //
+      WARN(fmt::format("A total of {} voxels were outside the brain in the input image, the user provided non-zero "
+                       "partial volume fractions in at least one input volume, but the sum of partial volume fractions "
+                       "across user-provided images was less than one (these were auto-scaled to sum to one, but there "
+                       "may have been an error in generation of input images)",
+                       str(inadequate_volume_count)));
     }
   }
 
@@ -105,7 +106,7 @@ public:
   void set_none_mask(std::string_view path) {
     none = Image<bool>::open(path);
     if (!dimensions_match(v_in, none, 0, 3))
-      throw Exception("Image " + str(path) + " does not match 5TT image dimensions");
+      throw Exception(fmt::format("Image {} does not match 5TT image dimensions", str(path)));
   }
 
   bool operator()(const Iterator &pos);
@@ -121,7 +122,7 @@ private:
     assert(index <= 4);
     buffers[index] = Image<float>::open(path);
     if (!dimensions_match(v_in, buffers[index], 0, 3))
-      throw Exception("Image " + str(path) + " does not match 5TT image dimensions");
+      throw Exception(fmt::format("Image {} does not match 5TT image dimensions", str(path)));
   }
 };
 
@@ -143,9 +144,9 @@ bool Modifier::operator()(const Iterator &pos) {
         assign_pos_of(pos, 0, 3).to(buffers[tissue]);
         const float value = buffers[tissue].value();
         if (value < 0.0)
-          throw Exception("Invalid negative value found in image \"" + buffers[tissue].name() + "\"");
+          throw Exception(fmt::format("Invalid negative value found in image \"{}\"", buffers[tissue].name()));
         if (value > 1.0)
-          throw Exception("Invalid value greater than zero found in image \"" + buffers[tissue].name() + "\"");
+          throw Exception(fmt::format("Invalid value greater than zero found in image \"{}\"", buffers[tissue].name()));
         sum_user += value;
       }
     }

@@ -17,6 +17,7 @@
 #pragma once
 
 #include <array>
+#include <fmt/format.h>
 #include <map>
 
 #include "app.h"
@@ -83,7 +84,7 @@ public:
           if (tck.get_index() < static_cast<size_t>(weights.size())) {
             tck.weight = weights[tck.get_index()];
           } else {
-            WARN("Streamline weights file contains less entries (" + str(weights.size()) +
+            WARN(fmt::format("Streamline weights file contains less entries ({}", weights.size()) +
                  ") than .tck file; "
                  "ceasing reading of streamline data");
             in.close();
@@ -149,8 +150,8 @@ protected:
     if (!weights.size())
       return;
     if (static_cast<size_t>(weights.size()) > current_index) {
-      WARN("Streamline weights file contains more entries (" + str(weights.size()) + ") than .tck file (" +
-           str(current_index) + ")");
+      WARN(fmt::format("Streamline weights file contains more entries ({}", weights.size()) + ") than .tck file (" +
+           fmt::format("{})", current_index));
     }
   }
 
@@ -207,7 +208,7 @@ public:
     format_point(barrier(), x);
     out.write(reinterpret_cast<const char *>(&x[0]), sizeof(x));
     if (!out.good())
-      throw Exception("error writing tracks file \"" + name + "\": " + strerror(errno));
+      throw Exception(fmt::format("error writing tracks file \"{}\": {}", name, strerror(errno)));
     open_success = true;
 
     auto opt = App::get_options("tck_weights_out");
@@ -228,7 +229,7 @@ public:
     commit(buffer, tck.size() + 1);
 
     if (!weights_name.empty())
-      write_weights(str(tck.weight) + "\n");
+      write_weights(fmt::format("{}\n", tck.weight));
 
     ++count;
     ++total_count;
@@ -267,7 +268,7 @@ protected:
     File::OFStream out(weights_name, std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
     out << contents;
     if (!out.good())
-      throw Exception("error writing streamline weights file \"" + weights_name + "\": " + strerror(errno));
+      throw Exception(fmt::format("error writing streamline weights file \"{}\": {}", weights_name, strerror(errno)));
   }
 
   //! write track point data to file

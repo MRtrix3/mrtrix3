@@ -30,6 +30,7 @@
 #include "mrtrix_version.h"
 #include "progressbar.h"
 #include "signal_handler.h"
+#include <fmt/format.h>
 
 namespace MR::App {
 
@@ -193,15 +194,16 @@ std::string underline(std::string_view text, bool ignore_whitespace = false) {
 
 std::string help_head(const bool format) {
   if (!format) {
-    return std::string(NAME) + ": " +
-           (project_version.empty() ? ("part of the MRtrix3 package, version " + mrtrix_version)
-                                    : "external MRtrix3 project, version " + project_version +
-                                          "\nbuilt against MRtrix3 version " + mrtrix_version) +
+    return NAME + ": " +
+           (project_version.empty()
+                ? ("part of the MRtrix3 package, version " + mrtrix_version)
+                : fmt::format("external MRtrix3 project, version {}\nbuilt against MRtrix3 version ", project_version) +
+                      mrtrix_version) +
            "\n\n";
   }
 
   const std::string version_string =
-      project_version.empty() ? (std::string("MRtrix ") + mrtrix_version) : ("Version " + project_version);
+      project_version.empty() ? ("MRtrix " + mrtrix_version) : ("Version " + project_version);
 
   const std::string date(project_version.empty() ? build_date : project_build_date);
 
@@ -223,7 +225,7 @@ std::string help_head(const bool format) {
   topline += std::string(safe_padding(requested_padding2), ' ') + date;
 
   if (!project_version.empty())
-    topline += std::string("\nusing MRtrix3 ") + mrtrix_version;
+    topline += "\nusing MRtrix3 " + mrtrix_version;
 
   return topline + "\n\n     " + bold(NAME) + ": " +
          (project_version.empty() ? "part of the MRtrix3 package" : "external MRtrix3 project") + "\n\n";
@@ -262,11 +264,11 @@ std::string usage_syntax(const bool format) {
 
     if (ARGUMENTS[i].flags.optional())
       s += " [";
-    s += std::string(" ") + ARGUMENTS[i].id;
+    s += " " + ARGUMENTS[i].id;
 
     if (ARGUMENTS[i].flags.allow_multiple()) {
       if (ARGUMENTS[i].flags.required())
-        s += std::string(" [ ") + ARGUMENTS[i].id;
+        s += " [ " + ARGUMENTS[i].id;
       s += " ...";
     }
     if (ARGUMENTS[i].flags.any())
@@ -305,11 +307,11 @@ std::string Description::syntax(const bool format) const {
 Example::Example(std::string_view title, std::string_view code, std::string_view description)
     : title(title), code(code), description(description) {}
 
-Example::operator std::string() const { return title + ": $ " + code + "  " + description; }
+Example::operator std::string() const { return title + fmt::format(": $ {}  ", code) + description; }
 
 std::string Example::syntax(const bool format) const {
   std::string s = paragraph("", format ? underline(title + ":") + "\n" : title + ": ", help_formatting.purpose_indents);
-  s += std::string(help_formatting.example_indent, ' ') + "$ " + code + "\n";
+  s += std::string(help_formatting.example_indent, ' ') + fmt::format("$ {}\n", code);
   if (!description.empty())
     s += paragraph("", description, help_formatting.purpose_indents);
   if (format)
@@ -360,13 +362,13 @@ std::string Option::syntax(const bool format) const {
     opt = underline(opt);
 
   for (size_t i = 0; i < size(); ++i)
-    opt += std::string(" ") + (*this)[i].id;
+    opt += " " + (*this)[i].id;
 
   if (format && flags.allow_multiple())
     opt += "  (multiple uses permitted)";
 
   if (format)
-    opt = "  " + opt + "\n" + paragraph("", desc, help_formatting.purpose_indents) + "\n";
+    opt = fmt::format("  {}\n", opt) + paragraph("", desc, help_formatting.purpose_indents) + "\n";
   else
     opt = paragraph(opt, desc, help_formatting.option_indents);
   return opt;
@@ -510,15 +512,15 @@ void print_help() {
     std::string help_string = get_help_string(1);
     FILE *file = popen(help_display_command.c_str(), "w");
     if (!file) {
-      INFO("error launching help display command \"" + help_display_command + "\": " + strerror(errno));
+      INFO(fmt::format("error launching help display command \"{}\": {}", help_display_command, strerror(errno)));
     } else if (fwrite(help_string.c_str(), 1, help_string.size(), file) != help_string.size()) {
-      INFO("error sending help page to display command \"" + help_display_command + "\": " + strerror(errno));
+      INFO(fmt::format("error sending help page to display command \"{}\": {}", help_display_command, strerror(errno)));
     }
 
     if (pclose(file) == 0)
       return;
 
-    INFO("error launching help display command \"" + help_display_command + "\"");
+    INFO(fmt::format("error launching help display command \"{}\"", help_display_command));
   }
 
   if (!help_display_command.empty())
@@ -532,27 +534,31 @@ void print_help() {
 #endif
 
 std::string version_string() {
-  std::string version = "== " + App::NAME + " " + (project_version.empty() ? mrtrix_version : project_version) +
-                        " ==\n" + str(8 * sizeof(size_t)) + " bit " + MRTRIX_BUILD_TYPE + ", built " + build_date +
-                        (project_version.empty() ? std::string("") : " against MRtrix " + mrtrix_version) +
-                        ", using Eigen " + str(EIGEN_WORLD_VERSION) + "." + str(EIGEN_MAJOR_VERSION) + "." +
-                        str(EIGEN_MINOR_VERSION) +
-                        "\n"
-                        "Author(s): " +
-                        AUTHOR + "\n" + COPYRIGHT + "\n";
+  std::string version = fmt::format("== {} {} ==\n{} bit {}, built {}{}, using Eigen {}.{}.{}\nAuthor(s): {}\n{}\n",
+                                    App::NAME,
+                                    (project_version.empty() ? mrtrix_version : project_version),
+                                    8 * sizeof(size_t),
+                                    MRTRIX_BUILD_TYPE,
+                                    build_date,
+                                    (project_version.empty() ? std::string("") : " against MRtrix " + mrtrix_version),
+                                    EIGEN_WORLD_VERSION,
+                                    EIGEN_MAJOR_VERSION,
+                                    EIGEN_MINOR_VERSION,
+                                    AUTHOR,
+                                    COPYRIGHT);
 
   return version;
 }
 
 std::string full_usage() {
   std::string s;
-  s += SYNOPSIS + std::string("\n");
+  s += SYNOPSIS + "\n";
 
   for (size_t i = 0; i < DESCRIPTION.size(); ++i)
-    s += DESCRIPTION[i] + std::string("\n");
+    s += DESCRIPTION[i] + "\n";
 
   for (size_t i = 0; i < EXAMPLES.size(); ++i)
-    s += std::string(EXAMPLES[i]) + std::string("\n");
+    s += std::string(EXAMPLES[i]) + "\n";
 
   for (size_t i = 0; i < ARGUMENTS.size(); ++i)
     s += ARGUMENTS[i].usage();
@@ -581,20 +587,20 @@ std::string markdown_usage() {
      + __standard_options.footer (format)
      + help_tail (format);
      */
-  std::string s = std::string("## Synopsis\n\n") + SYNOPSIS + "\n\n";
+  std::string s = fmt::format("## Synopsis\n\n{}\n\n", SYNOPSIS);
 
-  s += "## Usage\n\n    " + std::string(NAME) + " [ options ] ";
+  s += fmt::format("## Usage\n\n    {} [ options ] ", NAME);
 
   // Syntax line:
   for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
 
     if (ARGUMENTS[i].flags.optional())
       s += "[";
-    s += std::string(" ") + ARGUMENTS[i].id;
+    s += " " + ARGUMENTS[i].id;
 
     if (ARGUMENTS[i].flags.allow_multiple()) {
       if (ARGUMENTS[i].flags.required())
-        s += std::string(" [ ") + ARGUMENTS[i].id;
+        s += " [ " + ARGUMENTS[i].id;
       s += " ...";
     }
     if (ARGUMENTS[i].flags.any())
@@ -604,7 +610,7 @@ std::string markdown_usage() {
 
   // Argument description:
   for (size_t i = 0; i < ARGUMENTS.size(); ++i)
-    s += std::string("- *") + ARGUMENTS[i].id + "*: " + ARGUMENTS[i].desc + "\n";
+    s += fmt::format("- *{}*: ", ARGUMENTS[i].id) + ARGUMENTS[i].desc + "\n";
 
   if (!DESCRIPTION.empty()) {
     s += "\n## Description\n\n";
@@ -615,8 +621,8 @@ std::string markdown_usage() {
   if (!EXAMPLES.empty()) {
     s += "\n## Example usages\n\n";
     for (size_t i = 0; i < EXAMPLES.size(); ++i) {
-      s += std::string("__") + EXAMPLES[i].title + ":__\n";
-      s += std::string("`$ ") + EXAMPLES[i].code + "`\n";
+      s += fmt::format("__{}:__\n", EXAMPLES[i].title);
+      s += fmt::format("`$ {}`\n", EXAMPLES[i].code);
       if (!EXAMPLES[i].description.empty())
         s += EXAMPLES[i].description + "\n";
       s += "\n";
@@ -630,13 +636,13 @@ std::string markdown_usage() {
   }
 
   auto format_option = [&](const Option &opt) {
-    std::string f = std::string("+ **-") + opt.id;
+    std::string f = "+ **-" + opt.id;
     for (size_t a = 0; a < opt.size(); ++a)
-      f += std::string(" ") + opt[a].id;
+      f += " " + opt[a].id;
     f += "**";
     if (opt.flags.allow_multiple())
       f += "  *(multiple uses permitted)*";
-    f += std::string("<br>") + opt.desc + "\n\n";
+    f += fmt::format("<br>{}\n\n", opt.desc);
     return f;
   };
 
@@ -645,8 +651,8 @@ std::string markdown_usage() {
     size_t n = i;
     while (OPTIONS[n].name != group_names[i])
       ++n;
-    if (OPTIONS[n].name != std::string("OPTIONS"))
-      s += std::string("#### ") + OPTIONS[n].name + "\n\n";
+    if (OPTIONS[n].name != "OPTIONS")
+      s += fmt::format("#### {}\n\n", OPTIONS[n].name);
     while (n < OPTIONS.size()) {
       if (OPTIONS[n].name == group_names[i]) {
         for (size_t o = 0; o < OPTIONS[n].size(); ++o)
@@ -660,13 +666,13 @@ std::string markdown_usage() {
   for (size_t i = 0; i < __standard_options.size(); ++i)
     s += format_option(__standard_options[i]);
 
-  s += std::string("## References\n\n");
+  s += "## References\n\n";
   for (size_t i = 0; i < REFERENCES.size(); ++i)
     s += std::string(REFERENCES[i]) + "\n\n";
   s += core_reference + "\n\n";
 
-  s += std::string("**Author:** ") + AUTHOR + "\n\n";
-  s += std::string("**Copyright:** ") + COPYRIGHT + "\n\n";
+  s += fmt::format("**Author:** {}\n\n", AUTHOR);
+  s += fmt::format("**Copyright:** {}\n\n", COPYRIGHT);
 
   return s;
 }
@@ -686,20 +692,20 @@ std::string restructured_text_usage() {
      + help_tail (format);
      */
 
-  std::string s = std::string("Synopsis\n--------\n\n") + SYNOPSIS + "\n\n";
+  std::string s = fmt::format("Synopsis\n--------\n\n{}\n\n", SYNOPSIS);
 
-  s += "Usage\n--------\n\n::\n\n    " + std::string(NAME) + " [ options ] ";
+  s += fmt::format("Usage\n--------\n\n::\n\n    {} [ options ] ", NAME);
 
   // Syntax line:
   for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
 
     if (ARGUMENTS[i].flags.optional())
       s += "[";
-    s += std::string(" ") + ARGUMENTS[i].id;
+    s += " " + ARGUMENTS[i].id;
 
     if (ARGUMENTS[i].flags.allow_multiple()) {
       if (ARGUMENTS[i].flags.required())
-        s += std::string(" [ ") + ARGUMENTS[i].id;
+        s += " [ " + ARGUMENTS[i].id;
       s += " ...";
     }
     if (ARGUMENTS[i].flags.any())
@@ -721,7 +727,7 @@ std::string restructured_text_usage() {
   // Argument description:
   for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
     auto desc = split_lines(escape_special(ARGUMENTS[i].desc), false);
-    s += std::string("-  *") + ARGUMENTS[i].id + "*: " + desc[0];
+    s += fmt::format("-  *{}*: ", ARGUMENTS[i].id) + desc[0];
     for (size_t n = 1; n < desc.size(); ++n)
       s += " |br|\n   " + desc[n];
     s += "\n";
@@ -742,10 +748,10 @@ std::string restructured_text_usage() {
   if (!EXAMPLES.empty()) {
     s += "Example usages\n--------------\n\n";
     for (size_t i = 0; i < EXAMPLES.size(); ++i) {
-      s += std::string("-   *") + EXAMPLES[i].title + "*::\n\n";
-      s += std::string("        $ ") + EXAMPLES[i].code + "\n\n";
+      s += fmt::format("-   *{}*::\n\n", EXAMPLES[i].title);
+      s += fmt::format("        $ {}\n\n", EXAMPLES[i].code);
       if (!EXAMPLES[i].description.empty())
-        s += std::string("    ") + EXAMPLES[i].description + "\n\n";
+        s += fmt::format("    {}\n\n", EXAMPLES[i].description);
     }
   }
 
@@ -756,10 +762,10 @@ std::string restructured_text_usage() {
   }
 
   auto format_option = [&](const Option &opt) {
-    std::string f = std::string("-  **-") + opt.id;
+    std::string f = "-  **-" + opt.id;
     for (size_t a = 0; a < opt.size(); ++a)
-      f += std::string(" ") + opt[a].id;
-    f += std::string("** ");
+      f += " " + opt[a].id;
+    f += "** ";
     if (opt.flags.allow_multiple())
       f += "*(multiple uses permitted)* ";
     auto desc = split_lines(opt.desc, false);
@@ -775,8 +781,8 @@ std::string restructured_text_usage() {
     size_t n = i;
     while (OPTIONS[n].name != group_names[i])
       ++n;
-    if (OPTIONS[n].name != std::string("OPTIONS"))
-      s += OPTIONS[n].name + std::string("\n") + std::string(OPTIONS[n].name.size(), '^') + "\n\n";
+    if (OPTIONS[n].name != "OPTIONS")
+      s += OPTIONS[n].name + "\n" + std::string(OPTIONS[n].name.size(), '^') + "\n\n";
     while (n < OPTIONS.size()) {
       if (OPTIONS[n].name == group_names[i]) {
         for (size_t o = 0; o < OPTIONS[n].size(); ++o)
@@ -790,7 +796,7 @@ std::string restructured_text_usage() {
   for (size_t i = 0; i < __standard_options.size(); ++i)
     s += format_option(__standard_options[i]);
 
-  s += std::string("References\n^^^^^^^^^^\n\n");
+  s += "References\n^^^^^^^^^^\n\n";
   for (size_t i = 0; i < REFERENCES.size(); ++i) {
     auto refs = split_lines(REFERENCES[i], false);
     s += refs[0];
@@ -800,7 +806,7 @@ std::string restructured_text_usage() {
   }
   s += core_reference + "\n\n";
 
-  s += std::string("--------------\n\n") + "\n\n**Author:** " + AUTHOR + "\n\n**Copyright:** " + COPYRIGHT + "\n\n";
+  s += "--------------\n\n" + fmt::format("\n\n**Author:** {}\n\n**Copyright:** ", AUTHOR) + COPYRIGHT + "\n\n";
 
   return s;
 }
@@ -821,7 +827,7 @@ const Option *match_option(std::string_view arg) {
 
   // no matches
   if (candidates.empty())
-    throw Exception(std::string("unknown option \"-") + root + "\"");
+    throw Exception(fmt::format("{}{}\"", "unknown option \"-", root));
 
   // return match if unique:
   if (candidates.size() == 1)
@@ -838,10 +844,10 @@ const Option *match_option(std::string_view arg) {
     return candidates[0];
 
   // report something useful:
-  root = "several matches possible for option \"-" + root + "\": \"-" + candidates[0]->id;
+  root = fmt::format("several matches possible for option \"-{}\": \"-", root) + candidates[0]->id;
 
   for (size_t i = 1; i < candidates.size(); ++i)
-    root += std::string("\", \"-") + candidates[i]->id + "\"";
+    root += "\", \"-" + candidates[i]->id + "\"";
 
   throw Exception(root);
 }
@@ -853,7 +859,7 @@ void sort_arguments(const std::vector<std::string> &arguments) {
     const Option *opt = match_option(*it);
     if (opt != nullptr) {
       if (it + opt->size() >= arguments.end()) {
-        throw Exception(std::string("not enough parameters to option \"-") + opt->id + "\"");
+        throw Exception(fmt::format("{}{}\"", "not enough parameters to option \"-", opt->id));
       }
 
       std::vector<std::string> option_args;
@@ -882,9 +888,9 @@ void parse_standard_options() {
 
 void verify_usage() {
   if (AUTHOR.empty())
-    throw Exception("No author specified for command " + std::string(NAME));
+    throw Exception(fmt::format("No author specified for command {}", NAME));
   if (SYNOPSIS.empty())
-    throw Exception("No synopsis specified for command " + std::string(NAME));
+    throw Exception(fmt::format("No synopsis specified for command {}", NAME));
 }
 
 void parse_special_options() {
@@ -948,11 +954,12 @@ void parse() {
   }
 
   if (num_optional_arguments && num_args_required > argument.size())
-    throw Exception("Expected at least " + str(num_args_required) + " arguments (" + str(argument.size()) +
-                    " supplied)");
+    throw Exception(
+        fmt::format("Expected at least {} arguments ({} supplied)", str(num_args_required), str(argument.size())));
 
   if (num_optional_arguments == 0 && num_args_required != argument.size()) {
-    Exception e("Expected exactly " + str(num_args_required) + " arguments (" + str(argument.size()) + " supplied)");
+    Exception e("Expected exactly " + fmt::format("{} arguments (", num_args_required) + str(argument.size()) +
+                " supplied)");
     std::string s = "Usage: " + NAME;
     for (const auto &a : ARGUMENTS)
       s += " " + std::string(a.id);
@@ -1006,10 +1013,10 @@ void parse() {
           count++;
 
       if (count < 1 && OPTIONS[i][j].flags.required())
-        throw Exception(std::string("mandatory option \"-") + OPTIONS[i][j].id + "\" must be specified");
+        throw Exception(fmt::format("{}{}\" must be specified", "mandatory option \"-", OPTIONS[i][j].id));
 
       if (count > 1 && !OPTIONS[i][j].flags.allow_multiple())
-        throw Exception(std::string("multiple instances of option \"-") + OPTIONS[i][j].id + "\" are not allowed");
+        throw Exception(fmt::format("{}{}\" are not allowed", "multiple instances of option \"-", OPTIONS[i][j].id));
     }
   }
 
@@ -1041,9 +1048,9 @@ void parse() {
       types_not_input_file.reset(ArgTypeFlags::TracksIn);
       if (!types_not_input_file.any()) {
         if (!Path::exists(text))
-          throw Exception("required input file \"" + text + "\" not found");
+          throw Exception(fmt::format("required input file \"{}\" not found", text));
         if (!Path::is_file(text))
-          throw Exception("required input \"" + text + "\" is not a file");
+          throw Exception(fmt::format("required input \"{}\" is not a file", text));
       }
     }
     {
@@ -1051,9 +1058,9 @@ void parse() {
       types_not_input_directory.reset(ArgTypeFlags::DirectoryIn);
       if (!types_not_input_directory.any()) {
         if (!Path::exists(text))
-          throw Exception("required input directory \"" + text + "\" not found");
+          throw Exception(fmt::format("required input directory \"{}\" not found", text));
         if (!Path::is_dir(text))
-          throw Exception("required input \"" + text + "\" is not a directory");
+          throw Exception(fmt::format("required input \"{}\" is not a directory", text));
       }
     }
     {
@@ -1062,8 +1069,8 @@ void parse() {
       types_not_output_file.reset(ArgTypeFlags::TracksOut);
       if (!types_not_output_file.any()) {
         if (text.find_last_of(PATH_SEPARATORS) == text.size() - 1)
-          throw Exception("output path \"" + std::string(i) + "\" is not a valid file path" +
-                          " (ends with directory path separator)");
+          throw Exception(fmt::format(
+              "output path \"{}\" is not a valid file path (ends with directory path separator)", std::string(i)));
       }
     }
     {
@@ -1079,7 +1086,7 @@ void parse() {
       types_not_input_tractogram.reset(ArgTypeFlags::TracksIn);
       if (!types_not_input_tractogram.any()) {
         if (!Path::has_suffix(text, ".tck"))
-          throw Exception("input file \"" + text + "\" is not a valid track file");
+          throw Exception(fmt::format("input file \"{}\" is not a valid track file", text));
       }
     }
     {
@@ -1087,7 +1094,7 @@ void parse() {
       types_not_output_tractogram.reset(ArgTypeFlags::TracksOut);
       if (!types_not_output_tractogram.any()) {
         if (!Path::has_suffix(text, ".tck"))
-          throw Exception("output track file \"" + text + "\" must use the .tck suffix");
+          throw Exception(fmt::format("output track file \"{}\" must use the .tck suffix", text));
       }
     }
   }
@@ -1102,9 +1109,9 @@ void parse() {
         types_not_input_file.reset(ArgTypeFlags::TracksIn);
         if (!types_not_input_file.any()) {
           if (!Path::exists(text))
-            throw Exception("input file \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" not found");
+            throw Exception(fmt::format("input file \"{}\" for option \"-{}\" not found", text, i.opt->id));
           if (!Path::is_file(text))
-            throw Exception("input \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" is not a file");
+            throw Exception(fmt::format("input \"{}\" for option \"-{}\" is not a file", text, i.opt->id));
         }
       }
       {
@@ -1112,11 +1119,9 @@ void parse() {
         types_not_input_directory.reset(ArgTypeFlags::DirectoryIn);
         if (!types_not_input_directory.any()) {
           if (!Path::exists(text))
-            throw Exception("input directory \"" + text + "\"" + " for option \"-" + std::string(i.opt->id) +
-                            "\" not found");
+            throw Exception(fmt::format("input directory \"{}\" for option \"-{}\" not found", text, i.opt->id));
           if (!Path::is_dir(text))
-            throw Exception("input \"" + text + "\"" + " for option \"-" + std::string(i.opt->id) +
-                            "\" is not a directory");
+            throw Exception(fmt::format("input \"{}\" for option \"-{}\" is not a directory", text, i.opt->id));
         }
       }
       {
@@ -1125,8 +1130,10 @@ void parse() {
         types_not_output_file.reset(ArgTypeFlags::TracksOut);
         if (!types_not_output_file.any()) {
           if (text.find_last_of(PATH_SEPARATORS) == text.size() - 1)
-            throw Exception("output path \"" + text + "\"" + " for option \"-" + std::string(i.opt->id) + "\"" +
-                            " is not a valid file path (ends with directory path separator)");
+            throw Exception(fmt::format(
+                "output path \"{}\" for option \"-{}\" is not a valid file path (ends with directory path separator)",
+                text,
+                i.opt->id));
         }
       }
       {
@@ -1142,8 +1149,8 @@ void parse() {
         types_not_input_tractogram.reset(ArgTypeFlags::TracksIn);
         if (!types_not_input_tractogram.any()) {
           if (!Path::has_suffix(text, ".tck"))
-            throw Exception("input file \"" + text + "\"" + " for option \"-" + std::string(i.opt->id) + "\"" +
-                            " is not a valid track file");
+            throw Exception(
+                fmt::format("input file \"{}\" for option \"-{}\" is not a valid track file", text, i.opt->id));
         }
       }
       {
@@ -1151,8 +1158,8 @@ void parse() {
         types_not_output_tractogram.reset(ArgTypeFlags::TracksOut);
         if (!types_not_output_tractogram.any()) {
           if (!Path::has_suffix(text, ".tck"))
-            throw Exception("output track file \"" + text + "\"" + " for option \"-" + std::string(i.opt->id) + "\"" +
-                            " must use the .tck suffix");
+            throw Exception(
+                fmt::format("output track file \"{}\" for option \"-{}\" must use the .tck suffix", text, i.opt->id));
         }
       }
     }
@@ -1204,10 +1211,10 @@ void init(int cmdline_argc, const char *const *cmdline_argv) { // check_syntax o
   };
   command_history_string = cmdline_argv[0];
   for (const auto &a : raw_arguments_list)
-    command_history_string += std::string(" ") + argv_quoted(a);
-  command_history_string += std::string("  (version=") + mrtrix_version;
+    command_history_string += " " + argv_quoted(a);
+  command_history_string += "  (version=" + mrtrix_version;
   if (!project_version.empty())
-    command_history_string += std::string(", project=") + project_version;
+    command_history_string += ", project=" + project_version;
   command_history_string += ")";
 
   std::locale::global(std::locale::classic());
@@ -1236,15 +1243,15 @@ int64_t App::ParsedArgument::as_int() const {
     const std::string selection = lowercase(p);
     auto it = std::find(arg->choices.begin(), arg->choices.end(), selection);
     if (it == arg->choices.end()) {
-      std::string msg = std::string("unexpected value supplied for ");
+      std::string msg = "unexpected value supplied for ";
       if (opt != nullptr)
-        msg += std::string("option \"") + opt->id;
+        msg += "option \"" + opt->id;
       else
-        msg += std::string("argument \"") + arg->id;
-      msg += std::string("\" ");
+        msg += "argument \"" + arg->id;
+      msg += "\" ";
       as_choice_msg = std::string("received \"" + std::string(p) + "\"; ");
-      as_choice_msg += std::string("valid choices are: ") + join(arg->choices, ", ");
-      msg += "(" + as_choice_msg + ")";
+      as_choice_msg += "valid choices are: " + join(arg->choices, ", ");
+      msg += fmt::format("({})", as_choice_msg);
       if (!arg->types[ArgTypeFlags::Integer])
         throw Exception(msg);
     } else {
@@ -1303,7 +1310,7 @@ int64_t App::ParsedArgument::as_int() const {
           multiplier = 1000000000000;
           break;
         default:
-          throw Exception(std::string("unexpected postfix \'") + postfix + "\'");
+          throw Exception(fmt::format("{}{}\\'", "unexpected postfix \'", postfix));
         }
         if (contains_dotpoint) {
           const default_type prefix = to<default_type>(num);
@@ -1322,21 +1329,23 @@ int64_t App::ParsedArgument::as_int() const {
     }
 
     if (retval < arg->int_limits.min() || retval > arg->int_limits.max())
-      throw Exception(std::string("out of bounds")                     //
-                      + " (valid range: " + str(arg->int_limits.min()) //
-                      + " to " + str(arg->int_limits.max()) + ";"      //
-                      + " value supplied: " + str(retval) + ")");      //
+      throw Exception(fmt::format("out of bounds (valid range: {} to {}; value supplied: {})",
+                                  arg->int_limits.min(),
+                                  arg->int_limits.max(),
+                                  retval));
     return retval;
   } catch (Exception &e_int) {
     as_int_msg = e_int[0];
     if (!arg->types[ArgTypeFlags::Choice])
-      throw Exception("unable to parse string " + str(p) + " supplied for " +
-                      (opt == nullptr ? std::string("argument \"") + arg->id : std::string("option \"") + opt->id) +
-                      " as integer: " + as_int_msg);
+      throw Exception(
+          fmt::format("unable to parse string {} supplied for {} as integer: {}",
+                      p,
+                      (opt == nullptr ? std::string("argument \"") + arg->id : std::string("option \"") + opt->id),
+                      as_int_msg));
   }
 
-  Exception full_msg(std::string("Unable to interpret value supplied for ") +
-                     (opt == nullptr ? std::string("argument \"") + arg->id : std::string("option \"") + opt->id) +
+  Exception full_msg("Unable to interpret value supplied for " +
+                     (opt == nullptr ? "argument \"" + arg->id : "option \"" + opt->id) +
                      " as either integer or choice selection");
   full_msg.push_back("Error when interpreted as choice selection:");
   full_msg.push_back(as_choice_msg);
@@ -1353,9 +1362,8 @@ bool App::ParsedArgument::as_bool() const {
 uint64_t App::ParsedArgument::as_uint() const {
   const int64_t signed_value = as_int();
   if (signed_value < 0)
-    throw Exception("Attempting to interpret negative user-specified value (" //
-                    + str(signed_value)                                       //
-                    + " as unsigned integer");                                //
+    throw Exception(
+        fmt::format("Attempting to interpret negative user-specified value ({}) as unsigned integer", signed_value));
   return static_cast<uint64_t>(signed_value);
 }
 
@@ -1365,12 +1373,13 @@ default_type App::ParsedArgument::as_float() const {
   if (retval < arg->float_limits.min() || retval > arg->float_limits.max()) {
     std::string msg("value supplied for ");
     if (opt)
-      msg += std::string("option \"") + opt->id;
+      msg += "option \"" + opt->id;
     else
-      msg += std::string("argument \"") + arg->id;
+      msg += "argument \"" + arg->id;
     msg += "\" is out of bounds";
-    msg += " (valid range: " + str(arg->float_limits.min()) + " to " + str(arg->float_limits.max()) + ";";
-    msg += " value supplied: " + str(retval) + ")";
+    msg += fmt::format(" (valid range: {}", arg->float_limits.min()) + fmt::format(" to {}", arg->float_limits.max()) +
+           ";";
+    msg += " value supplied: " + fmt::format("{})", retval);
     throw Exception(msg);
   }
 
@@ -1416,9 +1425,9 @@ void ParsedArgument::error(Exception &e) const {
   std::string msg("error parsing token \"");
   msg += p;
   if (opt != nullptr)
-    msg += std::string("\" for option \"") + opt->id + "\"";
+    msg += "\" for option \"" + opt->id + "\"";
   else
-    msg += std::string("\" for argument \"") + arg->id + "\"";
+    msg += "\" for argument \"" + arg->id + "\"";
   throw Exception(e, msg);
 }
 
@@ -1427,8 +1436,7 @@ void check_overwrite(std::string_view name) {
     if (check_overwrite_files_func != nullptr)
       check_overwrite_files_func(name);
     else
-      throw Exception("output path \"" + std::string(name) +
-                      "\" already exists (use -force option to force overwrite)");
+      throw Exception(fmt::format("output path \"{}\" already exists (use -force option to force overwrite)", name));
   }
 }
 
@@ -1442,12 +1450,16 @@ ParsedOption::ParsedOption(const Option *option, const std::vector<std::string> 
         (*option)[i].types[ArgTypeFlags::Integer] || (*option)[i].types[ArgTypeFlags::Float] ||
         (*option)[i].types[ArgTypeFlags::IntSeq] || (*option)[i].types[ArgTypeFlags::FloatSeq])
       continue;
-    WARN(std::string("Value \"") + arguments[i] + "\" is being used as " +
-         ((option->size() == 1) ? "the expected argument "
-                                : ("one of the " + str(option->size()) + " expected arguments ")) +
-         "for option \"-" + option->id + "\"," + " yet this itself looks like a separate command-line option; " +
-         "the requisite input" + ((option->size() == 1) ? " " : "s ") + "to command-line option \"-" + option->id +
-         "\" may have been erroneously omitted, which may cause other command-line parsing errors");
+    WARN(fmt::format("{}{}\" is being used as {}for option \"-{}\", yet this itself looks like a separate command-line "
+                     "option; the requisite input{}to command-line option \"-{}\" may have been erroneously omitted, "
+                     "which may cause other command-line parsing errors",
+                     "Value \"",
+                     arguments[i],
+                     ((option->size() == 1) ? "the expected argument "
+                                            : (fmt::format("one of the {}", option->size()) + " expected arguments ")),
+                     option->id,
+                     ((option->size() == 1) ? " " : "s "),
+                     option->id));
   }
 }
 

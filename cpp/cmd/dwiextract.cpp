@@ -22,6 +22,7 @@
 #include "image.h"
 #include "metadata/phase_encoding.h"
 #include "progressbar.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -87,7 +88,7 @@ void run() {
     DWI::Shells shells(grad);
     shells.select_shells(singleshell, bzero_only, !get_options("no_bzero").empty());
     for (size_t s = 0; s != shells.count(); ++s) {
-      DEBUG("Including data from shell b=" + str(shells[s].get_mean()) + " +- " + str(shells[s].get_stdev()));
+      DEBUG(fmt::format("Including data from shell b={} +- {}", str(shells[s].get_mean()), str(shells[s].get_stdev())));
       for (const auto v : shells[s].get_volumes())
         volumes.push_back(v);
     }
@@ -137,7 +138,7 @@ void run() {
 
   if (volumes.empty()) {
     const std::string type = bzero_only ? "b=0" : "dwi";
-    throw Exception("No " + str(type) + " volumes present");
+    throw Exception(fmt::format("No {} volumes present", str(type)));
   }
 
   std::sort(volumes.begin(), volumes.end());

@@ -17,6 +17,7 @@
 #pragma once
 
 #include <algorithm>
+#include <fmt/format.h>
 
 #include "dwi/tractography/ACT/act.h"
 #include "dwi/tractography/algorithms/calibrator.h"
@@ -82,7 +83,7 @@ public:
 
       // num_samples is number of samples excluding first point
       --num_samples;
-      INFO("iFOD2 generating " + str(num_samples) + " vertices per " + str(step_size) + " mm step");
+      INFO("iFOD2 generating " + fmt::format("{} vertices per ", num_samples) + fmt::format("{} mm step", step_size));
 
       // iFOD2 by default downsamples after track propagation back to the desired 'step size'
       //   i.e. the sub-step detail is removed from the output
@@ -105,10 +106,10 @@ public:
     ~Shared() {
       mean_samples /= static_cast<double>(num_proc);
       mean_truncations /= static_cast<double>(num_proc);
-      INFO("mean number of samples per step = " + str(mean_samples));
+      INFO(fmt::format("mean number of samples per step = {}", mean_samples));
       if (mean_truncations) {
-        INFO("mean number of steps between rejection sampling truncations = " + str(1.0 / mean_truncations));
-        INFO("maximum truncation error = " + str(max_max_truncation));
+        INFO(fmt::format("mean number of steps between rejection sampling truncations = {}", 1.0 / mean_truncations));
+        INFO(fmt::format("maximum truncation error = {}", max_max_truncation));
       } else {
         INFO("no rejection sampling truncations occurred");
       }
@@ -235,7 +236,7 @@ public:
       float val = rand_path_prob();
 
       if (val > max_val) {
-        DEBUG("max_val exceeded!!! (val = " + str(val) + ", max_val = " + str(max_val) + ")");
+        DEBUG("max_val exceeded!!! (val = " + fmt::format("{}, max_val = ", val) + fmt::format("{})", max_val));
         ++num_truncations;
         if (val / max_val > max_truncation)
           max_truncation = val / max_val;

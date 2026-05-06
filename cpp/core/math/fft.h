@@ -17,6 +17,7 @@
 
 #include "image.h"
 #include <fftw3.h>
+#include <fmt/format.h>
 
 namespace MR::Math {
 

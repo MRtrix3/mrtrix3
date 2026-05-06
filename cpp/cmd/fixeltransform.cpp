@@ -29,6 +29,7 @@
 #include "progressbar.h"
 #include "registration/warp/helpers.h"
 #include "registration/warp/validate.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -144,7 +145,7 @@ void run() {
     }
   }
   const index_type nfixels_out = rotated_directions.size();
-  INFO("Number of input vs. output fixels: " + str(nfixels_in) + " -> " + str(nfixels_out));
+  INFO(fmt::format("Number of input vs. output fixels: {} -> {}", str(nfixels_in), str(nfixels_out)));
 
   // Collect statistics on frequency of input fixels mapping to output fixels
   std::vector<index_type> usage_frequencies;
@@ -155,7 +156,7 @@ void run() {
   }
   INFO("Frequency distribution of utilisation of input fixels:");
   for (index_type count = 0; count != usage_frequencies.size(); ++count) {
-    INFO("  " + str(count) + ": " + str(usage_frequencies[count]));
+    INFO(fmt::format("  {}: {}", str(count), str(usage_frequencies[count])));
   }
 
   // Ready to construct output images

@@ -24,6 +24,7 @@
 #include "image.h"
 #include "math/sphere.h"
 #include "transform.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -238,11 +239,12 @@ void FixelData::set_input_transforms(const Header &H) {
   in_fsl_flipi = in_ijk2xyz.determinant() > 0.0;
   in_fsl_imultiplier = in_fsl_flipi ? -1.0 : 1.0;
   in_fsl2ijk = {in_fsl_imultiplier, 1.0, 1.0};
-  DEBUG("Input transform configured based on image \"" + H.name() + "\":");
-  DEBUG("IJK-to-XYZ transform:\n" + str(in_ijk2xyz));
-  DEBUG("FSL: flip " + str(in_fsl_flipi) + ", "                       //
-        + "i component multiplier " + str(in_fsl_imultiplier) + ", "  //
-        + "vector multiplier [" + str(in_fsl2ijk.transpose()) + "]"); //
+  DEBUG(fmt::format("Input transform configured based on image \"{}\":", H.name()));
+  DEBUG(fmt::format("IJK-to-XYZ transform:\n{}", str(in_ijk2xyz)));
+  DEBUG(fmt::format("FSL: flip {}, i component multiplier {}, vector multiplier [{}]",
+                    str(in_fsl_flipi),
+                    str(in_fsl_imultiplier),
+                    str(in_fsl2ijk.transpose())));
 }
 
 void FixelData::set_output_transforms(const Header &H) {
@@ -251,12 +253,13 @@ void FixelData::set_output_transforms(const Header &H) {
   out_fsl_flipi = out_ijk2xyz.determinant() > 0.0;
   out_fsl_imultiplier = out_fsl_flipi ? -1.0 : 1.0;
   out_ijk2fsl = {out_fsl_imultiplier, 1.0, 1.0};
-  DEBUG("Output transform configured based on image \"" + H.name() + "\":");
-  DEBUG("IJK-to-XYZ transform:\n" + str(out_ijk2xyz));
-  DEBUG("XYZ-to-IJK transform:\n" + str(out_xyz2ijk));
-  DEBUG("FSL: flip " + str(out_fsl_flipi) + ", "                       //
-        + "i component multiplier " + str(out_fsl_imultiplier) + ", "  //
-        + "vector multiplier [" + str(out_ijk2fsl.transpose()) + "]"); //
+  DEBUG(fmt::format("Output transform configured based on image \"{}\":", H.name()));
+  DEBUG(fmt::format("IJK-to-XYZ transform:\\n{}", str(out_ijk2xyz)));
+  DEBUG(fmt::format("XYZ-to-IJK transform:\\n{}", str(out_xyz2ijk)));
+  DEBUG(fmt::format("FSL: flip {}, i component multiplier {}, vector multiplier [{}]",
+                    str(out_fsl_flipi),
+                    str(out_fsl_imultiplier),
+                    str(out_ijk2fsl.transpose())));
 }
 
 template <> FixelData FixelData::from<UnitSpherical, reference_t::XYZ>(const UnitSpherical &in) {
@@ -564,8 +567,9 @@ void run() {
   const size_t in_volumes_per_fixel(volumes_per_fixel(in_format));
   const size_t num_fixels = H_in.size(3) / in_volumes_per_fixel;
   if (num_fixels * in_volumes_per_fixel != H_in.size(3))
-    throw Exception("Number of volumes in input image (" + str(H_in.size(3)) + ")" + " incompatible with " +
-                    str(volumes_per_fixel) + " volumes per orientation");
+    throw Exception(fmt::format("Number of volumes in input image ({}) incompatible with {} volumes per orientation",
+                                str(H_in.size(3)),
+                                str(volumes_per_fixel)));
   const reference_t in_reference(get_option_choice<reference_t>("in_reference", reference_t::XYZ));
 
   const format_t out_format(get_option_choice<format_t>("out_format", format_t::CARTESIAN));

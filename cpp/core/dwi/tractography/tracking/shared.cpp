@@ -15,6 +15,7 @@
  */
 
 #include "dwi/tractography/tracking/shared.h"
+#include <fmt/format.h>
 
 namespace MR::DWI::Tractography::Tracking {
 
@@ -72,7 +73,7 @@ SharedBase::SharedBase(std::string_view diff_path, Properties &property_set)
   if (properties.find("init_direction") != properties.end()) {
     auto V = parse_floats(properties["init_direction"]);
     if (V.size() != 3)
-      throw Exception(std::string("invalid initial direction \"") + properties["init_direction"] + "\"");
+      throw Exception(fmt::format("{}{}\"", "invalid initial direction \"", properties["init_direction"]));
     init_dir[0] = V[0];
     init_dir[1] = V[1];
     init_dir[2] = V[2];
@@ -97,7 +98,7 @@ SharedBase::SharedBase(std::string_view diff_path, Properties &property_set)
   debug_header.datatype() = DataType::UInt32;
   for (const auto &i : termination_info)
     debug_images.emplace_back(
-        new Image<uint32_t>(Image<uint32_t>::create("terms_" + i.second.name + ".mif", debug_header)));
+        new Image<uint32_t>(Image<uint32_t>::create(fmt::format("terms_{}.mif", i.second.name), debug_header)));
 #endif
 }
 
@@ -105,21 +106,21 @@ SharedBase::~SharedBase() {
   size_t sum_terminations = 0;
   for (const auto &i : terminations)
     sum_terminations += i;
-  INFO("Total number of track terminations: " + str(sum_terminations));
+  INFO(fmt::format("Total number of track terminations: {}", str(sum_terminations)));
   INFO("Termination reason probabilities:");
   for (const auto &i : termination_info) {
     if (termination_relevant(i.first))
-      INFO("  " + i.second.description + ": " +
-           str(100.0 * static_cast<default_type>(terminations[static_cast<ssize_t>(i.first)]) /
-                   static_cast<default_type>(sum_terminations),
-               3) +
-           "\%");
+      INFO(fmt::format("  {}: {}\\%",
+                       i.second.description,
+                       str(100.0 * static_cast<default_type>(terminations[static_cast<ssize_t>(i.first)]) /
+                               static_cast<default_type>(sum_terminations),
+                           3)));
   }
 
   INFO("Track rejection counts:");
   for (const auto &i : rejection_strings) {
     if (rejection_relevant(i.first))
-      INFO("  " + i.second + ": " + str(rejections[static_cast<ssize_t>(i.first)]));
+      INFO(fmt::format("  {}: {}", i.second, str(rejections[static_cast<ssize_t>(i.first)])));
   }
 }
 
@@ -129,7 +130,7 @@ void SharedBase::set_step_and_angle(const float voxel_frac,
                                     const curvature_constraint_t curvature_constraint_type) {
   step_size = voxel_frac * vox();
   properties.set(step_size, "step_size");
-  INFO("step size = " + str(step_size) + " mm");
+  INFO(fmt::format("step size = {} mm", str(step_size)));
 
   max_dist = Defaults::maxlength_voxels * vox();
   properties.set(max_dist, "max_dist");
@@ -148,11 +149,11 @@ void SharedBase::set_step_and_angle(const float voxel_frac,
     angle_msg = "maximum angular change in fibre orientation per step";
     break;
   }
-  INFO(angle_msg + " = " + str(max_angle_1o) + " deg");
+  INFO(fmt::format("{} = {} deg", angle_msg, str(max_angle_1o)));
   max_angle_1o *= Math::pi / 180.0;
   cos_max_angle_1o = std::cos(max_angle_1o);
   min_radius = step_size / (2.0f * std::sin(0.5f * max_angle_1o));
-  INFO("Minimum radius of curvature = " + str(min_radius) + "mm");
+  INFO(fmt::format("Minimum radius of curvature = {}mm", str(min_radius)));
 
   if (intrinsic_integration_order == intrinsic_integration_order_t::HIGHER) {
     max_angle_ho = max_angle_1o;
@@ -214,17 +215,23 @@ void SharedBase::set_num_points(const float angle_minradius_preds, const float m
   //         need to quantify its length precisely and compare against the maximum)
   max_num_points_postds = 1 + std::floor(max_dist / max_step_postds);
 
-  DEBUG("For tracking step size " + str(step_size) + "mm, " +
-        (std::isfinite(max_angle_ho)
-             ? ("max change in fibre orientation angle per step " + str(max_angle_ho * 180.0 / Math::pi, 6) +
-                " deg (using RK4)")
-             : ("max angle deviation per step " + str(max_angle_1o * 180.0 / Math::pi, 6) + "deg")) +
-        ", minimum radius of curvature " + str(min_radius, 6) + "mm, downsampling ratio " +
-        str(downsampler.get_ratio()) + ": " + "minimum length of " + str(min_dist) + "mm requires at least " +
-        str(min_num_points_preds) + " vertices pre-DS, is tested explicitly for " + str(min_num_points_postds) +
-        " vertices or less post-DS; " + "maximum length of " + str(max_dist) + "mm will stop tracking after " +
-        str(max_num_points_preds) + " vertices pre-DS, is tested explicitly for " + str(max_num_points_postds) +
-        " or more vertices post-DS");
+  DEBUG(fmt::format(
+      "For tracking step size {}mm, {}, minimum radius of curvature {}mm, downsampling ratio {}: minimum length of "
+      "{}mm requires at least {} vertices pre-DS, is tested explicitly for {} vertices or less post-DS; maximum length "
+      "of {}mm will stop tracking after {} vertices pre-DS, is tested explicitly for {} or more vertices post-DS",
+      str(step_size),
+      (std::isfinite(max_angle_ho)
+           ? ("max change in fibre orientation angle per step " +
+              fmt::format("{} deg (using RK4)", max_angle_ho * 180.0 / Math::pi, 6))
+           : ("max angle deviation per step " + fmt::format("{}deg", max_angle_1o * 180.0 / Math::pi, 6))),
+      str(min_radius, 6),
+      str(downsampler.get_ratio()),
+      str(min_dist),
+      str(min_num_points_preds),
+      str(min_num_points_postds),
+      str(max_dist),
+      str(max_num_points_preds),
+      str(max_num_points_postds)));
 }
 
 void SharedBase::set_cutoff(float cutoff) {

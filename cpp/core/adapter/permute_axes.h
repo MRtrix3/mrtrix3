@@ -17,6 +17,7 @@
 #pragma once
 
 #include "adapter/base.h"
+#include <fmt/format.h>
 
 namespace MR::Adapter {
 
@@ -32,12 +33,12 @@ public:
     for (int i = 0; i < static_cast<int>(parent().ndim()); ++i) {
       for (size_t a = 0; a < axes_.size(); ++a) {
         if (axes_[a] >= static_cast<int>(parent().ndim()))
-          throw Exception("axis " + str(axes_[a]) + " exceeds image dimensionality");
+          throw Exception(fmt::format("axis {}", str(axes_[a])) + " exceeds image dimensionality");
         if (axes_[a] == i)
           goto next_axis;
       }
       if (parent().size(i) != 1)
-        throw Exception("omitted axis \"" + str(i) + "\" has dimension greater than 1");
+        throw Exception(fmt::format("omitted axis \"{}", str(i)) + "\" has dimension greater than 1");
     next_axis:
       continue;
     }

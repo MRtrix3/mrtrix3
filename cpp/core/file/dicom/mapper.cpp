@@ -28,6 +28,7 @@
 #include "image_io/null.h"
 #include "image_io/variable_scaling.h"
 #include "metadata/phase_encoding.h"
+#include <fmt/format.h>
 
 namespace MR::File::Dicom {
 
@@ -54,9 +55,9 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
   std::string sbuf = (!patient->name.empty() ? patient->name : "unnamed");
   sbuf += " " + format_ID(patient->ID);
   if (!series[0]->modality.empty())
-    sbuf += std::string(" [") + series[0]->modality + "]";
+    sbuf += " [" + series[0]->modality + "]";
   if (!series[0]->name.empty())
-    sbuf += std::string(" ") + series[0]->name;
+    sbuf += " " + series[0]->name;
   add_line(H.keyval()["comments"], sbuf);
   H.name() = sbuf;
 
@@ -71,7 +72,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
       series_it->read();
     } catch (Exception &E) {
       E.display();
-      throw Exception("error reading series " + str(series_it->number) + " of DICOM image \"" + H.name() + "\"");
+      throw Exception(fmt::format("error reading series {} of DICOM image \"{}\"", str(series_it->number), H.name()));
     }
 
     std::sort(series_it->begin(), series_it->end(), compare_ptr_contents());
@@ -103,7 +104,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
     throw Exception("dimensions mismatch in DICOM series");
 
   if (dim[0] * dim[1] * dim[2] > frames.size())
-    throw Exception("missing image frames for DICOM image \"" + H.name() + "\"");
+    throw Exception(fmt::format("missing image frames for DICOM image \"{}\"", H.name()));
 
   if (dim[0] > 1) { // switch axes so slice dim is inner-most:
     std::vector<Frame *> list(frames);
@@ -172,7 +173,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
         H.keyval()["DiffusionScheme"] = "Monopolar";
         break;
       default:
-        WARN("Unsupported DWI polarity scheme flag (" + str(frame.bipolar_flag) + ")");
+        WARN(fmt::format("Unsupported DWI polarity scheme flag ({})", str(frame.bipolar_flag)));
       }
     } else if (frame.readoutmode_flag) {
       switch (frame.readoutmode_flag) {
@@ -183,7 +184,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
         H.keyval()["DiffusionScheme"] = "Bipolar";
         break;
       default:
-        WARN("Unsupported DWI readout mode flag (" + str(frame.readoutmode_flag) + ")");
+        WARN(fmt::format("Unsupported DWI readout mode flag ({})", str(frame.readoutmode_flag)));
       }
     }
   }
@@ -247,8 +248,8 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
     else
       H.datatype() = DataType::UInt16 | DataType::LittleEndian;
   } else
-    throw Exception("unexpected number of allocated bits per pixel (" + str(frame.bits_alloc) + ") in file \"" +
-                    H.name() + "\"");
+    throw Exception(fmt::format(
+        "unexpected number of allocated bits per pixel ({}) in file \"{}\"", str(frame.bits_alloc), H.name()));
 
   H.set_intensity_scaling(frame.scale_slope, frame.scale_intercept);
 
@@ -304,8 +305,10 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
   std::vector<float> slices_timing_float;
   if (image.images_in_mosaic) {
     if (image.mosaic_slices_timing.size() < image.images_in_mosaic) {
-      WARN("Number of entries in mosaic slice timing (" + str(image.mosaic_slices_timing.size()) +
-           ") is smaller than number of images in mosaic (" + str(image.images_in_mosaic) + "); omitting");
+      WARN(fmt::format(
+          "Number of entries in mosaic slice timing ({}) is smaller than number of images in mosaic ({}); omitting",
+          str(image.mosaic_slices_timing.size()),
+          str(image.images_in_mosaic)));
     } else {
       DEBUG("Taking slice timing information from CSA mosaic info");
       // CSA mosaic defines these in ms; we want them in s
@@ -367,9 +370,9 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
 
   if (image.images_in_mosaic) {
 
-    INFO("DICOM image \"" + H.name() + "\" is in mosaic format");
+    INFO(fmt::format("DICOM image \"{}\" is in mosaic format", H.name()));
     if (H.size(2) != 1)
-      throw Exception("DICOM mosaic contains multiple slices in image \"" + H.name() + "\"");
+      throw Exception(fmt::format("DICOM mosaic contains multiple slices in image \"{}\"", H.name()));
 
     size_t mosaic_size = std::ceil(std::sqrt(image.images_in_mosaic));
     H.size(0) = std::floor(frame.dim[0] / mosaic_size);
@@ -377,23 +380,34 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
     H.size(2) = image.images_in_mosaic;
 
     if (frame.acq_dim[0] > static_cast<size_t>(H.size(0)) || frame.acq_dim[1] > static_cast<size_t>(H.size(1))) {
-      WARN("acquisition matrix [ " + str(frame.acq_dim[0]) + " " + str(frame.acq_dim[1]) +
-           " ] is smaller than expected [ " + str(H.size(0)) + " " + str(H.size(1)) + " ] in DICOM mosaic");
+      WARN(fmt::format("acquisition matrix [ {} {} ] is smaller than expected [ {} {} ] in DICOM mosaic",
+                       str(frame.acq_dim[0]),
+                       str(frame.acq_dim[1]),
+                       str(H.size(0)),
+                       str(H.size(1))));
       WARN("  image may be incorrectly reformatted");
     }
 
     if (H.size(0) * mosaic_size != frame.dim[0] || H.size(1) * mosaic_size != frame.dim[1]) {
-      WARN("dimensions of DICOM mosaic [ " + str(frame.dim[0]) + " " + str(frame.dim[1]) +
-           " ] do not match expected size [ " + str(H.size(0) * mosaic_size) + " " + str(H.size(0) * mosaic_size) +
-           " ]");
-      WARN("  assuming data are stored as " + str(mosaic_size) + "x" + str(mosaic_size) + " mosaic of " +
-           str(H.size(0)) + "x" + str(H.size(1)) + " slices.");
+      WARN(fmt::format("dimensions of DICOM mosaic [ {} {} ] do not match expected size [ {} {} ]",
+                       str(frame.dim[0]),
+                       str(frame.dim[1]),
+                       str(H.size(0) * mosaic_size),
+                       str(H.size(0) * mosaic_size)));
+      WARN(fmt::format("  assuming data are stored as {}x{} mosaic of {}x{} slices.",
+                       str(mosaic_size),
+                       str(mosaic_size),
+                       str(H.size(0)),
+                       str(H.size(1))));
       WARN("  image may be incorrectly reformatted");
     }
 
     if (frame.acq_dim[0] != static_cast<size_t>(H.size(0)) || frame.acq_dim[1] != static_cast<size_t>(H.size(1)))
-      INFO("note: acquisition matrix [ " + str(frame.acq_dim[0]) + " " + str(frame.acq_dim[1]) +
-           " ] differs from reconstructed matrix [ " + str(H.size(0)) + " " + str(H.size(1)) + " ]");
+      INFO(fmt::format("note: acquisition matrix [ {} {} ] differs from reconstructed matrix [ {} {} ]",
+                       str(frame.acq_dim[0]),
+                       str(frame.acq_dim[1]),
+                       str(H.size(0)),
+                       str(H.size(1))));
 
     float xinc = H.spacing(0) * (frame.dim[0] - H.size(0)) / 2.0;
     float yinc = H.spacing(1) * (frame.dim[1] - H.size(1)) / 2.0;

@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <fmt/format.h>
 #include <set>
 
 #include "command.h"
@@ -145,7 +146,7 @@ void usage() {
 
   OPTIONS
   + Option ("angle", "the max angle threshold for assigning streamline tangents to fixels"
-                     " (default: " + str(DWI::Tractography::Mapping::default_streamline2fixel_angle, 2) + " degrees)")
+                     " (default: " + fmt::format("{} degrees)", DWI::Tractography::Mapping::default_streamline2fixel_angle, 2))
     + Argument ("value").type_float(0.0, 90.0)
 
   + Option ("precise", "utilise the precise length of streamline-voxel intersections"

@@ -15,6 +15,7 @@
  */
 
 #include "stats/tfce.h"
+#include <fmt/format.h>
 
 namespace MR::Stats::TFCE {
 
@@ -25,15 +26,15 @@ const OptionGroup Options(const default_type default_dh, const default_type defa
       OptionGroup("Options for controlling TFCE behaviour")
 
       + Option("tfce_dh", "the height increment used in the tfce integration"
-                          " (default: " + str(default_dh, 2) + ")")
+                          " (default: " + fmt::format("{})", default_dh, 2))
         + Argument("value").type_float(1e-6)
 
       + Option("tfce_e", "tfce extent exponent"
-                         " (default: " + str(default_e, 2) + ")")
+                         " (default: " + fmt::format("{})", default_e, 2))
         + Argument("value").type_float(0.0)
 
       + Option("tfce_h", "tfce height exponent"
-                         " (default: " + str(default_h, 2) + ")")
+                         " (default: " + fmt::format("{})", default_h, 2))
         + Argument("value").type_float(0.0);
   // clang-format on
   return result;

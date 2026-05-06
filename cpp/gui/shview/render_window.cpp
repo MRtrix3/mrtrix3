@@ -24,6 +24,7 @@
 #include "lighting_dock.h"
 #include "math/SH.h"
 #include "math/math.h"
+#include <fmt/format.h>
 
 namespace MR::GUI::DWI {
 
@@ -334,8 +335,8 @@ void Window::set_values(int row) {
     if (is_response)
       title += " (response)";
     if (values.rows() > 1) {
-      title += " [ " + str(current + 1) + "/" + str(values.rows()) + " ]";
-      render_frame->set_text("row " + str(current + 1) + " of " + str(values.rows()));
+      title += " [ " + fmt::format("{}/", current + 1) + str(values.rows()) + " ]";
+      render_frame->set_text("row " + fmt::format("{} of ", current + 1) + str(values.rows()));
     } else {
       render_frame->set_text("");
     }

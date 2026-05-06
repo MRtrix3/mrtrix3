@@ -20,6 +20,7 @@
 
 #include "file/config.h"
 #include "file/path.h"
+#include <fmt/format.h>
 
 namespace MR::File {
 
@@ -41,7 +42,7 @@ void Config::init() {
                                                                      : std::string(sysconf_location_env));
 
   if (Path::is_file(sysconf_location)) {
-    INFO("reading config file \"" + sysconf_location + "\"...");
+    INFO(fmt::format("reading config file \"{}\"...", sysconf_location));
     try {
       KeyValue::Reader kv(sysconf_location);
       while (kv.next()) {
@@ -50,12 +51,12 @@ void Config::init() {
     } catch (...) {
     }
   } else {
-    DEBUG("No config file found at \"" + sysconf_location + "\"");
+    DEBUG(fmt::format("No config file found at \"{}\"", sysconf_location));
   }
 
   const std::string path = Path::join(Path::home(), "." + file_basename);
   if (Path::is_file(path)) {
-    INFO("reading config file \"" + path + "\"...");
+    INFO(fmt::format("reading config file \"{}\"...", path));
     try {
       KeyValue::Reader kv(path);
       while (kv.next()) {
@@ -64,7 +65,7 @@ void Config::init() {
     } catch (...) {
     }
   } else {
-    DEBUG("No config file found at \"" + path + "\"");
+    DEBUG(fmt::format("No config file found at \"{}\"", path));
   }
 
   auto opt = App::get_options("config");
@@ -95,7 +96,7 @@ bool Config::get_bool(std::string_view key, bool default_value) {
   try {
     return to<bool>(value);
   } catch (...) {
-    WARN("malformed boolean entry \"" + value + "\" for key \"" + key + "\" in configuration file - ignored");
+    WARN(fmt::format("malformed boolean entry \"{}\" for key \"{}\" in configuration file - ignored", value, key));
     return default_value;
   }
 }
@@ -107,7 +108,7 @@ int Config::get_int(std::string_view key, int default_value) {
   try {
     return to<int>(value);
   } catch (...) {
-    WARN("malformed integer entry \"" + value + "\" for key \"" + key + "\" in configuration file - ignored");
+    WARN(fmt::format("malformed integer entry \"{}\" for key \"{}\" in configuration file - ignored", value, key));
     return default_value;
   }
 }
@@ -119,7 +120,8 @@ float Config::get_float(std::string_view key, float default_value) {
   try {
     return to<float>(value);
   } catch (...) {
-    WARN("malformed floating-point entry \"" + value + "\" for key \"" + key + "\" in configuration file - ignored");
+    WARN(fmt::format(
+        "malformed floating-point entry \"{}\" for key \"{}\" in configuration file - ignored", value, key));
     return default_value;
   }
 }
@@ -130,8 +132,8 @@ Eigen::Array3f Config::get_RGB(std::string_view key, const Eigen::Array3f &defau
     try {
       std::vector<default_type> V(parse_floats(value));
       if (V.size() < 3)
-        throw Exception("malformed RGB entry \"" + value + "\" for key \"" + key +
-                        "\" in configuration file - ignored");
+        throw Exception(
+            fmt::format("malformed RGB entry \"{}\" for key \"{}\" in configuration file - ignored", value, key));
       return {static_cast<float>(V[0]), static_cast<float>(V[1]), static_cast<float>(V[2])};
     } catch (Exception) {
       return default_value;

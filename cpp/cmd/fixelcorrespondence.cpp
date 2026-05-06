@@ -21,6 +21,7 @@
 #include "fixel/validate.h"
 #include "image.h"
 #include "progressbar.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;

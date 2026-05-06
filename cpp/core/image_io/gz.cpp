@@ -21,23 +21,24 @@
 #include "header.h"
 #include "image_io/gz.h"
 #include "progressbar.h"
+#include <fmt/format.h>
 
 namespace MR::ImageIO {
 
 void GZ::load(const Header &header, size_t) {
   if (files.empty())
-    throw Exception("no files specified in header for image \"" + header.name() + "\"");
+    throw Exception(fmt::format("no files specified in header for image \"{}\"", header.name()));
 
   segsize /= files.size();
   bytes_per_segment = (header.datatype().bits() * segsize + 7) / 8;
   if (files.size() * bytes_per_segment > std::numeric_limits<size_t>::max())
-    throw Exception("image \"" + header.name() + "\" is larger than maximum accessible memory");
+    throw Exception(fmt::format("image \"{}\" is larger than maximum accessible memory", header.name()));
 
-  DEBUG("loading image \"" + header.name() + "\"...");
+  DEBUG(fmt::format("loading image \"{}\"...", header.name()));
   addresses.resize(header.datatype().bits() == 1 && files.size() > 1 ? files.size() : 1);
   addresses[0].reset(new uint8_t[files.size() * bytes_per_segment]);
   if (!addresses[0])
-    throw Exception("failed to allocate memory for image \"" + header.name() + "\"");
+    throw Exception(fmt::format("failed to allocate memory for image \"{}\"", header.name()));
 
   if (is_new)
     memset(addresses[0].get(), 0, files.size() * bytes_per_segment);

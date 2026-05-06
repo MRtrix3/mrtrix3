@@ -27,6 +27,7 @@
 #include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/mapping/voxel.h"
 #include "dwi/tractography/streamline.h"
+#include <fmt/format.h>
 
 namespace MR::Fixel::Matrix {
 
@@ -246,15 +247,15 @@ template <class MatrixType> void Writer<MatrixType>::save(std::string_view path)
       if (!App::overwrite_files &&
           (Path::is_file(Path::join(path, "index.mif")) || Path::is_file(Path::join(path, "fixels.mif")) ||
            Path::is_file(Path::join(path, "values.mif"))))
-        throw Exception("Cannot create fixel-fixel connectivity matrix \"" + path +
-                        "\": "
-                        "one or more files already exists (use -force to override)");
+        throw Exception(fmt::format("Cannot create fixel-fixel connectivity matrix \"{}\": one or more files already "
+                                    "exists (use -force to override)",
+                                    path));
     } else {
       if (App::overwrite_files) {
         File::remove(path);
       } else {
-        throw Exception("Cannot create fixel-fixel connectivity matrix directory \"" + path +
-                        "\": Already exists as file");
+        throw Exception(fmt::format(
+            "Cannot create fixel-fixel connectivity matrix directory \"{}\": Already exists as file", path));
       }
     }
   } else {
@@ -324,7 +325,7 @@ template <class MatrixType> void Writer<MatrixType>::save(std::string_view path)
     throw Exception(e, "Unable to allocate space on filesystem for fixel-fixel connectivity matrix data");
   }
 
-  ProgressBar progress("Normalising and writing fixel-fixel connectivity matrix to directory \"" + path + "\"",
+  ProgressBar progress(fmt::format("Normalising and writing fixel-fixel connectivity matrix to directory \"{}\"", path),
                        matrix.size());
   for (size_t fixel_index = 0; fixel_index != matrix.size(); ++fixel_index) {
 
@@ -379,13 +380,18 @@ Reader::Reader(std::string_view path, const Image<bool> &mask) : directory(path)
     fixel_image = Image<fixel_index_type>::open(Path::join(directory, "fixels.mif"));
     value_image = Image<connectivity_value_type>::open(Path::join(directory, "values.mif"));
     if (value_image.size(0) != fixel_image.size(0))
-      throw Exception("Number of fixels in value image (" + str(value_image.size(0)) +
-                      ") does not match number of fixels in fixel image (" + str(fixel_image.size(0)) + ")");
+      throw Exception(
+          fmt::format("Number of fixels in value image ({}) does not match number of fixels in fixel image ({})",
+                      value_image.size(0),
+                      fixel_image.size(0)));
     if (mask_image.valid() && static_cast<size_t>(mask_image.size(0)) != size())
-      throw Exception("Fixel image \"" + mask_image.name() + "\" has different number of fixels (" +
-                      str(mask_image.size(0)) + ") to fixel-fixel connectivity matrix (" + str(size()) + ")");
+      throw Exception(
+          fmt::format("Fixel image \"{}\" has different number of fixels ({}) to fixel-fixel connectivity matrix ({})",
+                      mask_image.name(),
+                      mask_image.size(0),
+                      size()));
   } catch (Exception &e) {
-    throw Exception(e, "Unable to load path \"" + directory + "\" as fixel-fixel connectivity data");
+    throw Exception(e, fmt::format("Unable to load path \"{}\" as fixel-fixel connectivity data", directory));
   }
 }
 

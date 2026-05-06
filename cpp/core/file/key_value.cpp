@@ -17,22 +17,24 @@
 #include "file/key_value.h"
 #include "app.h"
 #include "file/ofstream.h"
+#include <fmt/format.h>
 #include <fstream>
 
 namespace MR::File::KeyValue {
 
 void Reader::open(std::string_view file, std::string_view first_line) {
   filename = std::string(file);
-  DEBUG("reading key/value file \"" + filename + "\"...");
+  DEBUG(fmt::format("reading key/value file \"{}\"...", filename));
   in.open(filename.c_str(), std::ios::in | std::ios::binary);
   if (!in)
-    throw Exception("failed to open key/value file \"" + filename + "\": " + strerror(errno));
+    throw Exception(fmt::format("failed to open key/value file \"{}\": {}", filename, strerror(errno)));
   if (!first_line.empty()) {
     std::string sbuf;
     getline(in, sbuf);
     if (sbuf.compare(0, first_line.size(), first_line)) {
       in.close();
-      throw Exception("invalid first line for key/value file \"" + filename + "\" (expected \"" + first_line + "\")");
+      throw Exception(
+          fmt::format("invalid first line for key/value file \"{}\" (expected \"{}\")", filename, first_line));
     }
   }
 }
@@ -42,7 +44,7 @@ bool Reader::next() {
     std::string sbuf;
     getline(in, sbuf);
     if (in.bad())
-      throw Exception("error reading key/value file \"" + filename + "\": " + strerror(errno));
+      throw Exception(fmt::format("error reading key/value file \"{}\": {}", filename, strerror(errno)));
 
     sbuf = strip(sbuf.substr(0, sbuf.find_first_of('#')));
     if (sbuf == "END") {
@@ -53,12 +55,12 @@ bool Reader::next() {
     if (!sbuf.empty()) {
       size_t colon = sbuf.find_first_of(':');
       if (colon == std::string::npos) {
-        INFO("malformed key/value entry (\"" + sbuf + "\") in file \"" + filename + "\" - ignored");
+        INFO(fmt::format("malformed key/value entry (\"{}\") in file \"{}\" - ignored", sbuf, filename));
       } else {
         K = strip(sbuf.substr(0, colon));
         V = strip(sbuf.substr(colon + 1));
         if (K.empty()) {
-          INFO("malformed key/value entry (\"" + sbuf + "\") in file \"" + filename + "\" - ignored");
+          INFO(fmt::format("malformed key/value entry (\"{}\") in file \"{}\" - ignored", sbuf, filename));
         } else
           return true;
       }

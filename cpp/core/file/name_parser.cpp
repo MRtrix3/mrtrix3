@@ -17,6 +17,7 @@
 #include <algorithm>
 
 #include "file/name_parser.h"
+#include <fmt/format.h>
 
 namespace MR::File {
 
@@ -52,7 +53,7 @@ void NameParser::parse(std::string_view imagename, size_t max_num_sequences) {
       insert_str(basename.substr(pos + 1));
       basename = basename.substr(0, pos);
       if ((pos = basename.find_last_of('[')) == std::string::npos)
-        throw Exception("malformed image sequence specifier for image \"" + specification + "\"");
+        throw Exception(fmt::format("malformed image sequence specifier for image \"{}\"", specification));
 
       insert_seq(basename.substr(pos + 1));
       num++;
@@ -67,8 +68,8 @@ void NameParser::parse(std::string_view imagename, size_t max_num_sequences) {
           for (size_t n = 0; n < array[i].sequence().size() - 1; n++)
             for (size_t m = n + 1; m < array[i].sequence().size(); m++)
               if (array[i].sequence()[n] == array[i].sequence()[m])
-                throw Exception("malformed image sequence specifier for image \"" + specification +
-                                "\" (duplicate indices)");
+                throw Exception(fmt::format("malformed image sequence specifier for image \"{}\" (duplicate indices)",
+                                            specification));
   } catch (...) {
     array.resize(1);
     array[0].set_str(imagename);
@@ -132,8 +133,9 @@ void NameParser::calculate_padding(const std::vector<uint32_t> &maxvals) {
     if (!item.sequence().empty()) {
       if (maxvals[m])
         if (item.sequence().size() != static_cast<size_t>(maxvals[m]))
-          throw Exception("dimensions requested in image specifier \"" + specification +
-                          "\" do not match supplied header information");
+          throw Exception(
+              fmt::format("dimensions requested in image specifier \"{}\" do not match supplied header information",
+                          specification));
     } else {
       item.sequence().resize(maxvals[m]);
       for (size_t i = 0; i < item.sequence().size(); i++)
@@ -218,7 +220,7 @@ std::vector<uint32_t> ParsedName::List::parse_scan_check(std::string_view specif
   for (size_t n = 0; n < dim.size(); n++)
     if (!parser.sequence(n).empty())
       if (dim[n] != parser.sequence(n).size())
-        throw Exception("number of files found does not match specification \"" + specifier + "\"");
+        throw Exception(fmt::format("number of files found does not match specification \"{}\"", specifier));
 
   return dim;
 }
@@ -236,7 +238,7 @@ void ParsedName::List::scan(NameParser &parser) {
     list.push_back(std::shared_ptr<ParsedName>(new ParsedName(entry, index)));
 
   if (!size())
-    throw Exception("no matching files found for image specifier \"" + parser.spec() + "\"");
+    throw Exception(fmt::format("no matching files found for image specifier \"{}\"", parser.spec()));
 }
 
 std::vector<uint32_t> ParsedName::List::count() const {

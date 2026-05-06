@@ -24,6 +24,7 @@
 #include "adapter/subset.h"
 #include "algo/loop.h"
 #include "filter/optimal_threshold.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -230,9 +231,11 @@ default_type calculate(Image<value_type> &in,
     auto data = get_data(in, mask, max_axis, ignore_zero);
     const ssize_t index(bottom >= 0 ? bottom - 1 : (static_cast<ssize_t>(data.size()) - top));
     if (index < 0 || index >= static_cast<ssize_t>(data.size()))
-      throw Exception("Number of valid input image values (" + str(data.size()) +
-                      ") less than number of voxels requested via -" + (bottom >= 0 ? "bottom" : "top") + " option (" +
-                      str(bottom >= 0 ? bottom : top) + ")");
+      throw Exception(fmt::format(
+          "Number of valid input image values ({}) less than number of voxels requested via -{} option ({})",
+          str(data.size()),
+          (bottom >= 0 ? "bottom" : "top"),
+          str(bottom >= 0 ? bottom : top)));
     std::nth_element(data.begin(), data.begin() + index, data.end());
     const value_type threshold_float = data[index];
     if (index) {

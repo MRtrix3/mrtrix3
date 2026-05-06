@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <fmt/format.h>
 #include <fstream>
 #include <memory>
 #include <string>
@@ -118,7 +119,7 @@ void CohortDataImport::initialise(std::string_view listpath, std::string_view ex
   {
     std::ifstream ifs(std::string(listpath).c_str());
     if (!ifs)
-      throw Exception("Unable to open subject file list \"" + std::string(listpath) + "\"");
+      throw Exception(fmt::format("Unable to open subject file list \"{}", std::string(listpath)) + "\"");
     std::string line;
     while (getline(ifs, line)) {
       const size_t p = line.find_last_not_of(" \t");
@@ -137,7 +138,7 @@ void CohortDataImport::initialise(std::string_view listpath, std::string_view ex
   if (!explicit_from_directory.empty())
     directories.insert(directories.begin(), std::string(explicit_from_directory));
 
-  Exception e_nosuccess("Unable to load all input data from file \"" + listpath + "\"");
+  Exception e_nosuccess(fmt::format("Unable to load all input data from file \"{}\"", listpath));
   std::string load_from_dir;
   for (const auto &directory : directories) {
     try {

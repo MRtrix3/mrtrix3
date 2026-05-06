@@ -18,6 +18,7 @@
 #include "dialog/list.h"
 #include "file/dicom/tree.h"
 #include "gui.h"
+#include <fmt/format.h>
 
 namespace MR::GUI::Dialog {
 
@@ -27,17 +28,24 @@ class Item {
 public:
   Item() : parentItem(nullptr) {}
   Item(Item *parent, const std::shared_ptr<Patient> &p) : parentItem(parent) {
-    itemData = qstr(p->name + " " + format_ID(p->ID) + " " + format_date(p->DOB));
+    itemData = qstr(fmt::format("{} {} {}", p->name, format_ID(p->ID), format_date(p->DOB)));
   }
   Item(Item *parent, const std::shared_ptr<Study> &p) : parentItem(parent) {
-    itemData = qstr((!p->name.empty() ? p->name : std::string("unnamed")) + " " + format_ID(p->ID) + " " +
-                    format_date(p->date) + " " + format_time(p->time));
+    itemData = qstr(fmt::format("{} {} {} {}",
+                                (!p->name.empty() ? p->name : "unnamed"),
+                                format_ID(p->ID),
+                                format_date(p->date),
+                                format_time(p->time)));
   }
   Item(Item *parent, const std::shared_ptr<Series> &p) : parentItem(parent), dicom_series(p) {
-    itemData = qstr(str(p->size()) + " " + (!p->modality.empty() ? p->modality : std::string()) + " images " +
-                    format_time(p->time) + " " + (!p->name.empty() ? p->name : std::string("unnamed")) + " (" +
-                    (!(*p)[0]->sequence_name.empty() ? (*p)[0]->sequence_name : std::string("?")) + ") [" +
-                    str(p->number) + "] " + p->image_type);
+    itemData = qstr(fmt::format("{} {} images {} {} ({}) [{}]{}",
+                                p->size(),
+                                (!p->modality.empty() ? p->modality : std::string()),
+                                format_time(p->time),
+                                (p->name.empty() ? "unnamed" : p->name),
+                                ((*p)[0]->sequence_name.empty() ? "?" : (*p)[0]->sequence_name),
+                                p->number,
+                                p->image_type));
   }
   ~Item() { qDeleteAll(childItems); }
   void appendChild(Item *child) { childItems.append(child); }

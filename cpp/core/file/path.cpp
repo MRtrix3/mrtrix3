@@ -15,6 +15,7 @@
  */
 
 #include "file/path.h"
+#include <fmt/format.h>
 
 namespace MR::Path {
 
@@ -27,8 +28,7 @@ std::string basename(std::string_view name) {
 
 std::string dirname(std::string_view name) {
   size_t i = name.find_last_of(PATH_SEPARATORS);
-  return (i == std::string::npos ? std::string("")
-                                 : (i > 0 ? std::string(name.substr(0, i)) : std::string(1, PATH_SEPARATORS[0])));
+  return (i == std::string::npos ? "" : (i > 0 ? std::string(name.substr(0, i)) : std::string(1, PATH_SEPARATORS[0])));
 }
 
 std::string join(std::string_view first, std::string_view second) {
@@ -39,8 +39,8 @@ std::string join(std::string_view first, std::string_view second) {
       && first[first.size() - 1] != PATH_SEPARATORS[1]
 #endif
   )
-    return std::string(first) + PATH_SEPARATORS[0] + second;
-  return std::string(first) + second;
+    return fmt::format("{}{}{}", first, PATH_SEPARATORS[0], second);
+  return fmt::format("{}{}", first, second);
 }
 
 bool exists(std::string_view path) {
@@ -124,13 +124,13 @@ std::string cwd() {
 std::string home() {
   const char *home = getenv(home_env.c_str()); // check_syntax off
   if (home == nullptr)
-    throw Exception(home_env + " environment variable is not set!");
+    throw Exception(fmt::format("{} environment variable is not set!", home_env));
   return home;
 }
 
 Dir::Dir(std::string_view name) : p(opendir(!name.empty() ? std::string(name).c_str() : ".")) {
   if (p == nullptr)
-    throw Exception("error opening folder " + name + ": " + strerror(errno));
+    throw Exception(fmt::format("error opening folder {}: {}", name, strerror(errno)));
 }
 Dir::~Dir() {
   if (p != nullptr)

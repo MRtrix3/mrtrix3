@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <fmt/format.h>
 #include <future>
 #include <mutex>
 #include <thread>
@@ -105,7 +106,7 @@ protected:
 class __single_thread : public __thread_base {
 public:
   template <class Functor> __single_thread(Functor &&functor, std::string_view name = "unnamed") : __thread_base(name) {
-    const std::string msg = std::string("launching thread \"") + name + "\"...";
+    const std::string msg = fmt::format("launching thread \"{}\"...", name);
     DEBUG(msg);
     using F = typename std::remove_reference<Functor>::type;
     thread = std::async(std::launch::async, &F::execute, &functor);
@@ -116,9 +117,9 @@ public:
   bool finished() const { return thread.wait_for(std::chrono::microseconds(0)) == std::future_status::ready; }
 
   void wait() noexcept(false) {
-    DEBUG("waiting for completion of thread \"" + name + "\"...");
+    DEBUG(fmt::format("waiting for completion of thread \"{}\"...", name));
     thread.get();
-    DEBUG("thread \"" + name + "\" completed OK");
+    DEBUG(fmt::format("thread \"{}\" completed OK", name));
   }
 
   ~__single_thread() {
@@ -139,7 +140,7 @@ template <class Functor> class __multi_thread : public __thread_base {
 public:
   __multi_thread(Functor &functor, size_t nthreads, std::string_view name = "unnamed")
       : __thread_base(name), functors((nthreads > 0 ? nthreads - 1 : 0), functor) {
-    DEBUG("launching " + str(nthreads) + " threads \"" + name + "\"...");
+    DEBUG(fmt::format("launching {} threads \"{}\"...", nthreads, name));
     using F = typename std::remove_reference<Functor>::type;
     threads.reserve(nthreads);
     for (auto &f : functors)
@@ -151,7 +152,7 @@ public:
   __multi_thread(__multi_thread &&) = default;
 
   void wait() noexcept(false) {
-    DEBUG("waiting for completion of threads \"" + name + "\"...");
+    DEBUG(fmt::format("waiting for completion of threads \"{}\"...", name));
     bool exception_thrown = false;
     for (auto &t : threads) {
       if (!t.valid())
@@ -164,8 +165,8 @@ public:
       }
     }
     if (exception_thrown)
-      throw Exception("exception thrown from one or more threads \"" + name + "\"");
-    DEBUG("threads \"" + name + "\" completed OK");
+      throw Exception(fmt::format("exception thrown from one or more threads \"{}\"", name));
+    DEBUG(fmt::format("threads \"{}\" completed OK", name));
   }
 
   bool finished() const {

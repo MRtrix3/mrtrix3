@@ -18,6 +18,7 @@
 #include "header.h"
 #include "image.h"
 #include "mrtrix.h"
+#include <fmt/format.h>
 
 #include "fixel/validate.h"
 
@@ -77,7 +78,7 @@ void run() {
   const Peaks::PeaksValidation result = Peaks::validate_image(image);
 
   const ssize_t n_peaks = H.size(3) / 3;
-  CONSOLE("Image \"" + H.name() + "\": " + str(n_peaks) + " peak slot(s) per voxel");
+  CONSOLE("Image \"" + H.name() + "\": " + fmt::format("{} peak slot(s) per voxel", n_peaks));
 
   // Report fill-value convention.
   if (!result.fill_value.has_value()) {
@@ -99,7 +100,7 @@ void run() {
   if (unit_norm) {
     CONSOLE("Peak norms: all peaks are unit-norm (directions image; no quantitative amplitude)");
   } else {
-    CONSOLE("Peak norms: range [" + str(result.norm_min) + ", " + str(result.norm_max) + "]" + //
-            " (quantitative amplitudes encoded in vector norm)");                              //
+    CONSOLE("Peak norms: range [" + fmt::format("{}, ", result.norm_min) + fmt::format("{}]", result.norm_max) + //
+            " (quantitative amplitudes encoded in vector norm)");                                                //
   }
 }

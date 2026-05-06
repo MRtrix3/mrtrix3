@@ -20,6 +20,7 @@
 #include "fixel/helpers.h"
 #include "fixel/validate.h"
 #include "image.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -80,19 +81,23 @@ void run() {
         all_unit_norm = false;
     }
   }
-  INFO("Number of fixels in input peaks image: " + str(nfixels));
+  INFO(fmt::format("Number of fixels in input peaks image: {}", str(nfixels)));
   if (all_unit_norm) {
     if (!dataname.empty()) {
-      WARN(std::string("Input peaks image appears to not include amplitude information;") + //
-           " requested data file \"" + dataname + "\" will likely contain only ones");
+      WARN(fmt::format("{}{}{}\" will likely contain only ones",
+                       "Input peaks image appears to not include amplitude information;", //
+                       " requested data file \"",
+                       dataname));
     } else {
       INFO("All peaks have unit norm;"
            " no need to create amplitudes fixel data file");
     }
   } else if (dataname.empty()) {
     dataname = "amplitudes.mif";
-    INFO(std::string("Peaks have variable amplitudes;") +                 //
-         " will create additional fixel data file \"" + dataname + "\""); //
+    INFO(fmt::format("{}{}{}\"",
+                     "Peaks have variable amplitudes;", //
+                     " will create additional fixel data file \"",
+                     dataname)); //
   }
 
   Fixel::check_fixel_directory(argument[1], true, true);

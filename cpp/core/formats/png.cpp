@@ -24,6 +24,7 @@
 #include "header.h"
 #include "image_io/base.h"
 #include "image_io/png.h"
+#include <fmt/format.h>
 
 namespace MR::Formats {
 
@@ -51,7 +52,7 @@ std::unique_ptr<ImageIO::Base> PNG::read(Header &H) const {
     H.size(3) = 4;
     break;
   default:
-    throw Exception("Unsupported color type in PNG image \"" + H.name() + "\" (" + str(png.get_colortype()) + ")");
+    throw Exception(fmt::format("Unsupported color type in PNG image \"{}\" ({})", H.name(), str(png.get_colortype())));
   }
   if (png.has_transparency()) {
     if (H.ndim() == 3) {
@@ -102,7 +103,7 @@ std::unique_ptr<ImageIO::Base> PNG::read(Header &H) const {
     H.datatype() = DataType::UInt16BE;
     break;
   default:
-    throw Exception("Unexpected bit depth (" + str(png.get_bitdepth()) + ") in PNG image \"" + H.name() + "\"");
+    throw Exception(fmt::format("Unexpected bit depth ({}) in PNG image \"{}\"", str(png.get_bitdepth()), H.name()));
   }
 
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::PNG(H));
@@ -119,8 +120,8 @@ bool PNG::check(Header &H, size_t num_axes) const {
     throw Exception("PNG format does not support complex data");
 
   if (H.ndim() == 4 && H.size(3) > 4)
-    throw Exception("A 4D image written to PNG must have between one and four volumes (requested: " + str(H.size(3)) +
-                    ")");
+    throw Exception(fmt::format("A 4D image written to PNG must have between one and four volumes (requested: {})",
+                                str(H.size(3))));
 
   // After looping over axes via square-bracket notation,
   //   there needs to be at least two axes with size greater than one

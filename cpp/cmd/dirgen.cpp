@@ -21,6 +21,7 @@
 #include "math/rng.h"
 #include "progressbar.h"
 #include "thread.h"
+#include <fmt/format.h>
 
 constexpr ssize_t default_power = 1;
 constexpr ssize_t default_number_iterations = 10000;
@@ -180,13 +181,13 @@ public:
   void execute() {
     size_t this_start = 0;
     while ((this_start = current_start++) < restarts) {
-      DEBUG("launching start " + str(this_start));
+      DEBUG(fmt::format("launching start {}", str(this_start)));
       double E = 0.0;
 
       for (power = 1; power <= target_power; power *= 2) {
         Math::GradientDescent<Energy, ProjectedUpdate> optim(*this, ProjectedUpdate());
 
-        DEBUG("start " + str(this_start) + ": setting power = " + str(power));
+        DEBUG(fmt::format("start {}: setting power = {}", str(this_start), str(power)));
         optim.init();
 
         size_t iter = 0;
@@ -194,8 +195,12 @@ public:
           if (!optim.iterate())
             break;
 
-          DEBUG("start " + str(this_start) + ": [ " + str(iter) + " ] (pow = " + str(power) +
-                ") E = " + str(optim.value(), 8) + ", grad = " + str(optim.gradient_norm(), 8));
+          DEBUG(fmt::format("start {}: [ {} ] (pow = {}) E = {}, grad = {}",
+                            str(this_start),
+                            str(iter),
+                            str(power),
+                            str(optim.value(), 8),
+                            str(optim.gradient_norm(), 8)));
 
           std::lock_guard<std::mutex> lock(mutex);
           ++progress;

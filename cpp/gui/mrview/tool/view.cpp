@@ -15,6 +15,7 @@
  */
 
 #include "mrview/tool/view.h"
+#include <fmt/format.h>
 
 #include "math/math.h"
 #include "mrtrix.h"
@@ -518,7 +519,7 @@ void View::onImageChanged() {
   for (size_t d = 3; d < image->image.ndim(); ++d) {
     SpinBox *vol_index = new SpinBox(this);
     vol_index->setMinimum(0);
-    vol_index->setPrefix(qstr(str(d + 1) + ": "));
+    vol_index->setPrefix(qstr(fmt::format("{}: ", d + 1)));
     vol_index->setValue(image->image.index(d));
     vol_index->setMaximum(image->image.size(d) - 1);
     vol_index->setEnabled(image->image.size(d) > 1);

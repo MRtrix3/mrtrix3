@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <fmt/format.h>
 #include <string_view>
 
 #include "algo/loop.h"
@@ -50,8 +51,8 @@ template <class HeaderType> FORCE_INLINE bool is_index_image(const HeaderType &i
 
 template <class HeaderType> FORCE_INLINE void check_index_image(const HeaderType &index) {
   if (!is_index_image(index))
-    throw InvalidImageException(
-        index.name() + " is not a valid fixel index image. Image must be 4D with 2 volumes in the 4th dimension");
+    throw InvalidImageException(fmt::format(
+        "{} is not a valid fixel index image. Image must be 4D with 2 volumes in the 4th dimension", index.name()));
 }
 
 template <class HeaderType> FORCE_INLINE bool is_data_file(const HeaderType &in) {
@@ -74,8 +75,8 @@ template <class HeaderType> FORCE_INLINE bool is_directions_file(const HeaderTyp
 
 template <class HeaderType> FORCE_INLINE void check_data_file(const HeaderType &in) {
   if (!is_data_file(in))
-    throw InvalidImageException(in.name() +
-                                " is not a valid fixel data file. Expected a 3-dimensional image of size n x m x 1");
+    throw InvalidImageException(
+        fmt::format("{} is not a valid fixel data file. Expected a 3-dimensional image of size n x m x 1", in.name()));
 }
 
 FORCE_INLINE std::string get_fixel_directory(std::string_view fixel_file) {
@@ -140,8 +141,8 @@ FORCE_INLINE void check_fixel_size(const Header &index_h, const Header &data_h) 
   check_data_file(data_h);
 
   if (!fixels_match(index_h, data_h))
-    throw InvalidImageException("Fixel number mismatch between index image " + index_h.name() + " and data image " +
-                                data_h.name());
+    throw InvalidImageException(
+        fmt::format("Fixel number mismatch between index image {} and data image {}", index_h.name(), data_h.name()));
 }
 
 FORCE_INLINE void
@@ -157,15 +158,17 @@ check_fixel_directory(std::string_view path, bool create_if_missing = false, boo
     if (create_if_missing)
       File::mkdir(path_temp);
     else
-      throw Exception("Fixel directory (" + str(path_temp) + ") does not exist");
+      throw Exception(fmt::format("Fixel directory ({}) does not exist", path_temp));
   } else if (!Path::is_dir(path_temp))
-    throw Exception(str(path_temp) + " is not a directory");
+    throw Exception(fmt::format("{} is not a directory", path_temp));
 
   if (check_if_empty && !Path::Dir(path_temp).read_name().empty())
-    throw Exception("Output fixel directory \"" + path_temp + "\" is not empty" +
+    throw Exception(
+        fmt::format("Output fixel directory \"{}\" is not empty{}",
+                    path_temp,
                     (App::overwrite_files
                          ? " (-force option cannot safely be applied on directories; please erase manually instead)"
-                         : ""));
+                         : "")));
 }
 
 FORCE_INLINE Header find_index_header(std::string_view fixel_directory_path) {
@@ -178,12 +181,13 @@ FORCE_INLINE Header find_index_header(std::string_view fixel_directory_path) {
     std::string full_path = Path::join(fixel_directory_path, "index" + *it);
     if (Path::exists(full_path)) {
       if (header.valid())
-        throw InvalidDirectoryException("Multiple index images found in directory " + fixel_directory_path);
+        throw InvalidDirectoryException(
+            fmt::format("Multiple index images found in directory {}", fixel_directory_path));
       header = Header::open(full_path);
     }
   }
   if (!header.valid())
-    throw InvalidDirectoryException("Could not find index image in directory " + fixel_directory_path);
+    throw InvalidDirectoryException(fmt::format("Could not find index image in directory {}", fixel_directory_path));
 
   check_index_image(header);
   return header;
@@ -212,12 +216,12 @@ FORCE_INLINE std::vector<Header> find_data_headers(std::string_view fixel_direct
             if (!is_directions_file(H) || include_directions)
               data_headers.emplace_back(std::move(H));
           } else {
-            WARN("fixel data file (" + fname + ")" +                                           //
+            WARN(fmt::format("fixel data file ({})", fname) +                                  //
                  " does not contain the same number of elements as fixels in the index file"); //
           }
         }
       } catch (...) {
-        WARN("unable to open file \"" + fname + "\" as potential fixel data file");
+        WARN(fmt::format("unable to open file \"{}\" as potential fixel data file", fname));
       }
     }
   }
@@ -239,12 +243,12 @@ FORCE_INLINE Header find_directions_header(std::string_view fixel_directory_path
       if (is_directions_file(tmp_header)) {
         if (fixels_match(index_header, tmp_header)) {
           if (directions_found == true)
-            throw Exception("multiple directions files found in fixel image directory: " +
-                            std::string(fixel_directory_path));
+            throw Exception(fmt::format("multiple directions files found in fixel image directory: {}",
+                                        std::string(fixel_directory_path)));
           directions_found = true;
           header = std::move(tmp_header);
         } else {
-          WARN("fixel directions file (" + fname + ")" +                                     //
+          WARN(fmt::format("fixel directions file ({})", fname) +                            //
                " does not contain the same number of elements as fixels in the index file"); //
         }
       }
@@ -252,8 +256,8 @@ FORCE_INLINE Header find_directions_header(std::string_view fixel_directory_path
   }
 
   if (!directions_found)
-    throw InvalidDirectoryException("Could not find directions image in directory " +
-                                    std::string(fixel_directory_path));
+    throw InvalidDirectoryException(
+        fmt::format("Could not find directions image in directory {}", fixel_directory_path));
 
   return header;
 }
@@ -326,11 +330,12 @@ FORCE_INLINE void copy_index_file(std::string_view input_directory, std::string_
     auto input_image = input_header.get_image<index_type>();
     auto output_image = Image<index_type>::open(output_path);
     if (!images_match_abs(input_image, output_image))
-      throw Exception("output fixel directory \"" + output_directory + "\" already contains index file, " +
-                      "which is not the same as the expected output" +
-                      (App::overwrite_files
-                           ? " (-force option cannot safely be applied on directories; please erase manually instead)"
-                           : ""));
+      throw Exception(fmt::format(
+          "output fixel directory \"{}\" already contains index file, which is not the same as the expected output{}",
+          output_directory,
+          (App::overwrite_files
+               ? " (-force option cannot safely be applied on directories; please erase manually instead)"
+               : "")));
   } else {
     auto output_image =
         Image<index_type>::create(Path::join(output_directory, Path::basename(input_header.name())), input_header);
@@ -349,11 +354,13 @@ FORCE_INLINE void copy_directions_file(std::string_view input_directory, std::st
     auto input_image = input_header.get_image<float>();
     auto output_image = Image<float>::open(output_path);
     if (!images_match_abs(input_image, output_image))
-      throw Exception("output fixel directory \"" + output_directory + "\" already contains directions file, " +
-                      "which is not the same as the expected output" +
+      throw Exception(
+          fmt::format("output fixel directory \"{}\" already contains directions file, which is not the same as the "
+                      "expected output{}",
+                      output_directory,
                       (App::overwrite_files
                            ? " (-force option cannot safely be applied on directories; please erase manually instead)"
-                           : ""));
+                           : "")));
   } else {
     auto output_image =
         Image<float>::create(Path::join(output_directory, Path::basename(input_header.name())), input_header);

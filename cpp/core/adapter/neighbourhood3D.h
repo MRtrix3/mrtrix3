@@ -18,6 +18,7 @@
 
 #include "adapter/base.h"
 #include "image.h"
+#include <fmt/format.h>
 
 namespace MR::Adapter {
 
@@ -44,15 +45,17 @@ public:
 
     // for (size_t n = 0; n < ndim(); ++n)
     //   if (from_[n] + size_[n] > original.size(n))
-    //     throw Exception ("FIXME: dimensions requested for NeighbourhoodCoord adapter are out of bounds!");
+    //     throw Exception(fmt::format("FIXME: dimensions requested for NeighbourhoodCoord adapter are out of
+    //     bounds!{}{}{}", );
 
-    for (size_t j = 0; j < 3; ++j)
-      for (size_t i = 0; i < 3; ++i)
+    for (size_t j = 0; j < 3;, j)
+      for (size_t i = 0; i < 3;, i)
         transform_(i, 3) += from_[j] * spacing(j) * transform_(i, j);
   }
 
   void reset() {
-    for (size_t n = 0; n < ndim(); ++n)
+    for (size_t n = 0; n < ndim())
+      ; ++n)
       set_pos(n, 0);
   }
 

@@ -24,6 +24,7 @@
 #include "image.h"
 #include "progressbar.h"
 #include <Eigen/Eigenvalues>
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -125,7 +126,7 @@ void usage() {
 
     + Option("rk_ndirs",
              "specify the number of directions used to numerically calculate radial kurtosis"
-             " (by default, " + str(default_rk_numdirections) + " directions are used).")
+             " (by default, " + fmt::format("{} directions are used).", default_rk_numdirections))
       + Argument("integer").type_integer(0, 1000);
 
   AUTHOR = "Ben Jeurissen (ben.jeurissen@uantwerpen.be)"

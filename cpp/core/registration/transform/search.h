@@ -18,9 +18,11 @@
 
 #include <Eigen/Eigen>
 #include <Eigen/Geometry>
+#include <fmt/format.h>
 #include <iostream>
 
 #include "debug.h"
+#include "fmt.h"
 #include "image.h"
 #include "progressbar.h"
 #include "types.h"
@@ -131,7 +133,7 @@ public:
   void run(bool debug = false) {
     std::string what = global_search ? "global" : "local";
     size_t iterations = global_search ? global_search_iterations : (rot_angles.size() * local_search_directions);
-    ProgressBar progress("performing " + what + " search for best rotation", iterations);
+    ProgressBar progress(fmt::format("performing {} search for best rotation", what), iterations);
     overlap_it.resize(iterations);
     cost_it.resize(iterations);
     trafo_it.reserve(iterations);
@@ -170,7 +172,7 @@ public:
         if (translation_extent != 0) {
           gen_random_quaternion(); // overwrites quat
           R0.translation() = rndn() * (quat * extent);
-          DEBUG("translation: " + str(R0.translation().transpose()));
+          DEBUG(fmt::format("translation: {}", R0.translation()));
         }
 
         T = Tc2 * To * R0 * Tc2.inverse();
@@ -178,16 +180,18 @@ public:
       }
 
       ParamType parameters = get_parameters();
-      // parameters.make_diagnostics_image ("/tmp/debugme"+str(iteration)+".mif", true); // REMOVEME
+      // parameters.make_diagnostics_image ("/tmp/debugme"+fmt::format("{}.mif", iteration), true); // REMOVEME
       cost.fill(0);
       cnt = 0;
       Metric::ThreadKernel<MetricType, ParamType> kernel(metric, parameters, cost, gradient, &cnt);
       ThreadedLoop(parameters.midway_image, 0, 3).run(kernel);
-      DEBUG("rotation search: iteration " + str(iteration) + " cost: " + str(cost) + " cnt: " + str(cnt));
+      DEBUG(fmt::format("rotation search: iteration {} cost: {} cnt: {}", iteration, cost, cnt));
       if (debug)
-        std::cout << str(iteration) + " " + str(cost) + " " + str(cnt) << " " << T.matrix().row(0) << " "
-                  << T.matrix().row(1) << " " << T.matrix().row(2) << std::endl;
-      // write_images ( "im1_" + str(iteration) + ".mif", "im2_" + str(iteration) + ".mif");
+        std::cout
+            << fmt::format(
+                   "{} {} {} [{} {} {}]", iteration, cost, cnt, T.matrix().row(0), T.matrix().row(1), T.matrix().row(2))
+            << std::endl;
+      // write_images ( "im1_" + fmt::format("{}.mif", iteration), "im2_" + fmt::format("{}.mif", iteration));
       if (cnt == 0) {
         if (iteration == 0)
           throw Exception("zero voxel overlap at initialisation. input matrix wrong?");

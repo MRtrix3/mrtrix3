@@ -27,6 +27,7 @@
 #include "math/stats/typedefs.h"
 
 #include "stats/permtest.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -126,8 +127,11 @@ void run() {
     num_elements = importer[0]->size();
     for (index_type i = 0; i != importer.size(); ++i) {
       if (importer[i]->size() != num_elements)
-        throw Exception("Subject file \"" + importer[i]->name() + "\" contains incorrect number of elements" + //
-                        " (" + str(importer[i]) + "; expected " + str(num_elements) + ")");                    //
+        throw Exception(fmt::format("Subject file \"{}\" contains incorrect number of elements{}{}; expected {})",
+                                    importer[i]->name(), //
+                                    " (",
+                                    str(importer[i]),
+                                    str(num_elements))); //
     }
     data.resize(num_inputs, num_elements);
     for (index_type subject = 0; subject != num_inputs; subject++)
@@ -146,8 +150,8 @@ void run() {
       throw e;
     }
   }
-  CONSOLE("Number of subjects: " + str(num_inputs));
-  CONSOLE("Number of elements: " + str(num_elements));
+  CONSOLE(fmt::format("Number of subjects: {}", num_inputs));
+  CONSOLE(fmt::format("Number of elements: {}", num_elements));
 
   // Load analysis mask
   element_mask_type mask(element_mask_type::Ones(num_elements));
@@ -155,16 +159,18 @@ void run() {
   if (!opt.empty()) {
     mask = File::Matrix::load_vector<bool>(opt[0][0]);
     if (static_cast<index_type>(mask.size()) != num_elements)
-      throw Exception("Length of mask (" + str(mask.size()) + ")" +
-                      " does not match number of elements in data matrix (" + str(num_elements) + ")");
-    CONSOLE("Number of elements included in mask: " + str(mask.count()));
+      throw Exception(fmt::format("Length of mask ({}) does not match number of elements in data matrix ({})",
+                                  str(mask.size()),
+                                  str(num_elements)));
+    CONSOLE(fmt::format("Number of elements included in mask: {}", mask.count()));
   }
 
   // Load design matrix
   const matrix_type design = File::Matrix::load_matrix(argument[1]);
   if (static_cast<index_type>(design.rows()) != num_inputs)
-    throw Exception("Number of subjects (" + str(num_inputs) + ")" +
-                    " does not match number of rows in design matrix (" + str(design.rows()) + ")");
+    throw Exception(fmt::format("Number of subjects ({}) does not match number of rows in design matrix ({})",
+                                str(num_inputs),
+                                str(design.rows())));
 
   // Before validating the contrast matrix, we first need to see if there are any
   //   additional design matrix columns coming from element-wise subject data
@@ -179,9 +185,9 @@ void run() {
   }
   const bool have_extra_columns = !extra_columns.empty();
   const index_type num_factors = design.cols() + extra_columns.size();
-  CONSOLE("Number of factors: " + str(num_factors));
+  CONSOLE(fmt::format("Number of factors: {}", num_factors));
   if (have_extra_columns) {
-    CONSOLE("Number of element-wise design matrix columns: " + str(extra_columns.size()));
+    CONSOLE(fmt::format("Number of element-wise design matrix columns: {}", extra_columns.size()));
     if (nans_in_columns)
       CONSOLE("Non-finite values detected in element-wise design matrix columns;"
               " individual rows will be removed from voxel-wise design matrices accordingly");
@@ -192,17 +198,25 @@ void run() {
   auto variance_groups = GLM::load_variance_groups(num_inputs);
   const index_type num_vgs = variance_groups.size() == 0 ? 1 : (variance_groups.maxCoeff() + 1);
   if (num_vgs > 1)
-    CONSOLE("Number of variance groups: " + str(num_vgs));
+    CONSOLE(fmt::format("Number of variance groups: {}", num_vgs));
 
   // Load hypotheses
   const std::vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses(num_factors);
   const index_type num_hypotheses = hypotheses.size();
   if (hypotheses[0].cols() != num_factors)
-    throw Exception(
-        "The number of columns in the contrast matrix (" + str(hypotheses[0].cols()) + ")" +
-        " does not equal the number of columns in the design matrix (" + str(design.cols()) + ")" +
-        (have_extra_columns ? " (taking into account the " + str(extra_columns.size()) + " uses of -column)" : ""));
-  CONSOLE("Number of hypotheses: " + str(num_hypotheses));
+    throw Exception(fmt::format(
+        "{}",
+        fmt::format(
+            "{}",
+            fmt::format("The number of columns in the contrast matrix ({}) does not equal the number of columns in the "
+                        "design matrix "
+                        "({}){}",
+                        str(hypotheses[0].cols()),
+                        str(design.cols()),
+                        (have_extra_columns
+                             ? fmt::format(" (taking into account the {}", extra_columns.size()) + " uses of -column)"
+                             : "")))));
+  CONSOLE(fmt::format("Number of hypotheses: {}", num_hypotheses));
 
   const std::string output_prefix = argument[2];
 

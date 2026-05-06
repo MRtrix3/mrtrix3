@@ -30,6 +30,7 @@
 #include "dwi/tractography/GT/internalenergy.h"
 #include "dwi/tractography/GT/mhsampler.h"
 #include "dwi/tractography/GT/particlegrid.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -116,38 +117,38 @@ void usage() {
   + OptionGroup("Parameters")
 
   + Option ("lmax", "set the maximum harmonic order for the output series."
-                    " (default = " + str(default_lmax) + ")")
+                    " (default = " + fmt::format("{})", default_lmax))
     + Argument ("order").type_integer(2, 30)
 
   + Option ("length", "set the length of the particles (fibre segments)."
-                      " (default = " + str(default_length, 2) + "mm)")
+                      " (default = " + fmt::format("{}mm)", default_length, 2))
     + Argument ("size").type_float(1e-6)
 
   + Option ("weight", "set the weight by which particles contribute to the model."
-                      " (default = " + str(default_weight, 2) + ")")
+                      " (default = " + fmt::format("{})", default_weight, 2))
     + Argument ("w").type_float(1e-6, 1.0)
 
   + Option ("ppot", "set the particle potential,"
                     " i.e., the cost of adding one segment,"
                     " relative to the particle weight."
-                    " (default = " + str(default_ppot, 2) + ")")
+                    " (default = " + fmt::format("{})", default_ppot, 2))
     + Argument ("u").type_float(0.0, 1.0)
 
   + Option ("cpot", "set the connection potential,"
                     " i.e., the energy term that drives two segments together."
-                    " (default = " + str(default_cpot, 2) + ")")
+                    " (default = " + fmt::format("{})", default_cpot, 2))
     + Argument ("v").type_float(0.0)
 
   + Option ("t0", "set the initial temperature of the metropolis hastings optimizer."
-                  " (default = " + str(default_t0, 2) + ")")
+                  " (default = " + fmt::format("{})", default_t0, 2))
     + Argument ("start").type_float(1e-6, 1e6)
 
   + Option ("t1", "set the final temperature of the metropolis hastings optimizer."
-                  " (default = " + str(default_t1, 2) + ")")
+                  " (default = " + fmt::format("{})", default_t1, 2))
     + Argument ("end").type_float(1e-6, 1e6)
 
   + Option ("niter", "set the number of iterations of the metropolis hastings optimizer."
-                     " (default = " + str(default_niter/1000000) + "M)")
+                     " (default = " + fmt::format("{}M)", default_niter/1000000))
     + Argument ("n").type_integer(0)
 
 
@@ -331,9 +332,9 @@ void run() {
 
   Thread::run(Thread::multi(mhs), "MH sampler");
 
-  INFO("Final no. particles: " + std::to_string(pgrid.getTotalCount()));
-  INFO("Final external energy: " + std::to_string(stats.getEextTotal()));
-  INFO("Final internal energy: " + std::to_string(stats.getEintTotal()));
+  INFO(fmt::format("Final no. particles: {}", std::to_string(pgrid.getTotalCount())));
+  INFO(fmt::format("Final external energy: {}", std::to_string(stats.getEextTotal())));
+  INFO(fmt::format("Final internal energy: {}", std::to_string(stats.getEintTotal())));
 
   // Copy results to output buffers -----------------------------------------------------
 
@@ -376,7 +377,8 @@ void run() {
       auto Fiso = Image<float>::create(opt[0][0], header_out);
       threaded_copy(Eext->getFiso(), Fiso);
     } else {
-      WARN("Ignore saving file " + std::string(opt[0][0]) + ", because no isotropic response functions were provided.");
+      WARN(fmt::format("Ignore saving file {}, because no isotropic response functions were provided.",
+                       std::string(opt[0][0])));
     }
   }
 

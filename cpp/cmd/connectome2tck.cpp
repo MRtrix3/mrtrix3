@@ -33,6 +33,7 @@
 #include "dwi/tractography/mapping/loader.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/weights.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -201,12 +202,13 @@ void run() {
       ++progress;
     }
   }
-  INFO("Maximum node index in assignments file is " + str(max_node_index));
+  INFO(fmt::format("Maximum node index in assignments file is {}", str(max_node_index)));
 
   const size_t count = to<size_t>(properties["count"]);
   if (assignments_lists.size() != count)
-    throw Exception("Assignments file contains " + str(assignments_lists.size()) + " entries; track file contains " +
-                    str(count) + " tracks");
+    throw Exception(fmt::format("Assignments file contains {} entries; track file contains {} tracks",
+                                str(assignments_lists.size()),
+                                str(count)));
 
   // If the node assignments have been performed in such a way that each streamline is
   //   assigned to precisely two nodes, use the assignments_pairs class which is
@@ -236,7 +238,8 @@ void run() {
     bool zero_in_list = false;
     for (auto i : data) {
       if (i > max_node_index) {
-        WARN("Node of interest " + str(i) + " is above the maximum detected node index of " + str(max_node_index));
+        WARN(fmt::format(
+            "Node of interest {} is above the maximum detected node index of {}", str(i), str(max_node_index)));
       } else {
         nodes.push_back(i);
         if (!i)
@@ -281,16 +284,18 @@ void run() {
         missing_nodes.push_back(n);
     }
     if (!missing_nodes.empty())
-      throw Exception(str(missing_nodes.size()) + " node" +                      //
-                      (missing_nodes.size() > 1 ? "s" : "") + " of interest" +   //
-                      " are absent from the parcellation image," +               //
-                      " precluding exemplar generation: " + str(missing_nodes)); //
+      throw Exception(fmt::format("{} node{} of interest{}{}{}",
+                                  str(missing_nodes.size()),                  //
+                                  (missing_nodes.size() > 1 ? "s" : ""),      //
+                                  " are absent from the parcellation image,", //
+                                  " precluding exemplar generation: ",
+                                  str(missing_nodes))); //
 
     if (lv.disconnected_components > 0) {
-      WARN(str(lv.disconnected_components) + " parcel" + //
-           (lv.disconnected_components > 0 ? "s are" : " is") +
-           " not spatially contiguous;"
-           " this may result in unusual exemplar trajectories");
+      WARN(fmt::format(
+          "{} parcel{} not spatially contiguous;\"\n           \" this may result in unusual exemplar trajectories",
+          str(lv.disconnected_components), //
+          (lv.disconnected_components > 0 ? "s are" : " is")));
     }
     std::vector<Eigen::Vector3d> COMs(max_node_index + 1, Eigen::Vector3d::Constant(0.0));
     std::vector<size_t> volumes(max_node_index + 1, 0);
@@ -308,10 +313,14 @@ void run() {
       }
     }
     if (COMs.size() > max_node_index + 1) {
-      WARN("Parcellation image \"" + std::string(opt[0][0]) + "\" provided via -exemplars option" + //
-           " contains more nodes (" + str(COMs.size() - 1) + ")" +                                  //
-           " than are present in input assignments file \"" + std::string(argument[1]) + "\"" +     //
-           " (" + str(max_node_index) + ")");                                                       //
+      WARN(fmt::format("Parcellation image \"{}\" provided via -exemplars option{}{}){}{}\"{}{})",
+                       std::string(opt[0][0]), //
+                       " contains more nodes (",
+                       str(COMs.size() - 1), //
+                       " than are present in input assignments file \"",
+                       std::string(argument[1]), //
+                       " (",
+                       str(max_node_index))); //
       max_node_index = COMs.size() - 1;
     }
     Transform transform(image);
@@ -371,10 +380,11 @@ void run() {
           const node_t one = nodes[i];
           for (size_t j = i + 1; j != nodes.size(); ++j) {
             const node_t two = nodes[j];
-            generator.write(one,
-                            two,
-                            prefix + str(one) + "-" + str(two) + ".tck",
-                            !weights_prefix.empty() ? (weights_prefix + str(one) + "-" + str(two) + ".csv") : "");
+            generator.write(
+                one,
+                two,
+                prefix + fmt::format("{}-", one) + fmt::format("{}.tck", two),
+                !weights_prefix.empty() ? (weights_prefix + fmt::format("{}-", one) + fmt::format("{}.csv", two)) : "");
             ++progress;
           }
         }
@@ -383,10 +393,11 @@ void run() {
         ProgressBar progress("writing exemplars to files", nodes.size() * COMs.size());
         for (std::vector<node_t>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
           for (size_t i = first_node; i != COMs.size(); ++i) {
-            generator.write(*n,
-                            i,
-                            prefix + str(*n) + "-" + str(i) + ".tck",
-                            !weights_prefix.empty() ? (weights_prefix + str(*n) + "-" + str(i) + ".csv") : "");
+            generator.write(
+                *n,
+                i,
+                prefix + fmt::format("{}-", *n) + fmt::format("{}.tck", i),
+                !weights_prefix.empty() ? (weights_prefix + fmt::format("{}-", *n) + fmt::format("{}.csv", i)) : "");
             ++progress;
           }
         }
@@ -394,8 +405,9 @@ void run() {
     } else if (file_format == FileOutput::PER_NODE) { // One file per node
       ProgressBar progress("writing exemplars to files", nodes.size());
       for (std::vector<node_t>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
-        generator.write(
-            *n, prefix + str(*n) + ".tck", !weights_prefix.empty() ? (weights_prefix + str(*n) + ".csv") : "");
+        generator.write(*n,
+                        prefix + fmt::format("{}.tck", *n),
+                        !weights_prefix.empty() ? (weights_prefix + fmt::format("{}.csv", *n)) : "");
         ++progress;
       }
     } else if (file_format == FileOutput::SINGLE) { // Single file
@@ -421,24 +433,30 @@ void run() {
             const node_t two = nodes[j];
             writer.add(one,
                        two,
-                       prefix + str(one) + "-" + str(two) + ".tck",
-                       !weights_prefix.empty() ? (weights_prefix + str(one) + "-" + str(two) + ".csv") : "");
+                       prefix + fmt::format("{}-", one) + fmt::format("{}.tck", two),
+                       !weights_prefix.empty() ? (weights_prefix + fmt::format("{}-", one) + fmt::format("{}.csv", two))
+                                               : "");
           }
         } else {
           // Allow duplication of edges; want to have an exhaustive set of files for each node
           for (node_t two = first_node; two <= max_node_index; ++two)
             writer.add(one,
                        two,
-                       prefix + str(one) + "-" + str(two) + ".tck",
-                       !weights_prefix.empty() ? (weights_prefix + str(one) + "-" + str(two) + ".csv") : "");
+                       prefix + fmt::format("{}-", one) + fmt::format("{}.tck", two),
+                       !weights_prefix.empty() ? (weights_prefix + fmt::format("{}-", one) + fmt::format("{}.csv", two))
+                                               : "");
         }
       }
-      INFO("A total of " + str(writer.file_count()) + " output track files will be generated (one for each edge)");
+      INFO(fmt::format("A total of {} output track files will be generated (one for each edge)",
+                       str(writer.file_count())));
       break;
     case FileOutput::PER_NODE: // One file per node
       for (std::vector<node_t>::const_iterator i = nodes.begin(); i != nodes.end(); ++i)
-        writer.add(*i, prefix + str(*i) + ".tck", !weights_prefix.empty() ? (weights_prefix + str(*i) + ".csv") : "");
-      INFO("A total of " + str(writer.file_count()) + " output track files will be generated (one for each node)");
+        writer.add(*i,
+                   prefix + fmt::format("{}.tck", *i),
+                   !weights_prefix.empty() ? (weights_prefix + fmt::format("{}.csv", *i)) : "");
+      INFO(fmt::format("A total of {} output track files will be generated (one for each node)",
+                       str(writer.file_count())));
       break;
     case FileOutput::SINGLE: // Single file
       std::string path = prefix;

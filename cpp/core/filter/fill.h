@@ -20,6 +20,7 @@
 #include "filter/base.h"
 #include "filter/connected_components.h"
 #include "image.h"
+#include <fmt/format.h>
 
 namespace MR::Filter {
 
@@ -53,8 +54,8 @@ public:
   void set_axes(const std::vector<int> &i) {
     const size_t max_axis = *std::max_element(i.begin(), i.end());
     if (max_axis >= ndim())
-      throw Exception("Requested axis for interior-filling filter (" + str(max_axis) +
-                      " is beyond the dimensionality of the image (" + str(ndim()) + "D)");
+      throw Exception(fmt::format("Requested axis for interior-filling filter ({}", str(max_axis)) +
+                      fmt::format(" is beyond the dimensionality of the image ({}", ndim()) + "D)");
     enabled_axes = axis_mask_type::Zero(std::max(max_axis + 1, static_cast<size_t>(ndim())));
     for (const auto &axis : i) {
       if (axis < 0)

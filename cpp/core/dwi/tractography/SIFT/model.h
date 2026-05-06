@@ -19,6 +19,7 @@
 #include "app.h"
 #include "thread_queue.h"
 #include "types.h"
+#include <fmt/format.h>
 
 #include "dwi/fixel_map.h"
 
@@ -139,7 +140,7 @@ template <class Fixel> void Model<Fixel>::map_streamlines(std::string_view path)
 
   const track_t count = (properties.find("count") == properties.end()) ? 0 : to<track_t>(properties["count"]);
   if (!count)
-    throw Exception("Cannot map streamlines: track file " + Path::basename(path) + " is empty");
+    throw Exception(fmt::format("Cannot map streamlines: track file {}", Path::basename(path)) + " is empty");
 
   contributions.assign(count, nullptr);
 
@@ -156,15 +157,15 @@ template <class Fixel> void Model<Fixel>::map_streamlines(std::string_view path)
         ++num_tracks;
         max_index = std::max(max_index, i);
       }
-      WARN("Only " + str(num_tracks) + " tracks read from input track file;" + //
-           " expected " + str(contributions.size()));
+      WARN("Only " + fmt::format("{} tracks read from input track file;", num_tracks) + //
+           fmt::format(" expected {}", contributions.size()));
       contributions.resize(max_index + 1);
     }
   }
 
   tck_file_path = path;
 
-  INFO("Proportionality coefficient after streamline mapping is " + str(mu()));
+  INFO(fmt::format("Proportionality coefficient after streamline mapping is {}", mu()));
 }
 
 template <class Fixel> void Model<Fixel>::remove_excluded_fixels() {
@@ -203,8 +204,8 @@ template <class Fixel> void Model<Fixel>::remove_excluded_fixels() {
     }
   }
 
-  INFO(str(fixels.size() - new_fixels.size()) + " out of " + str(fixels.size()) +
-       " fixels removed from reconstruction (" + str(new_fixels.size()) + ") remaining)");
+  INFO(str(fixels.size() - new_fixels.size()) + fmt::format(" out of {}", fixels.size()) +
+       fmt::format(" fixels removed from reconstruction ({}", new_fixels.size()) + ") remaining)");
 
   fixels.swap(new_fixels);
 
@@ -216,7 +217,7 @@ template <class Fixel> void Model<Fixel>::remove_excluded_fixels() {
   for (typename std::vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i)
     TD_sum += i->get_weight() * i->get_TD();
 
-  INFO("After fixel exclusion, the proportionality coefficient is " + str(mu()));
+  INFO(fmt::format("After fixel exclusion, the proportionality coefficient is {}", mu()));
 }
 
 template <class Fixel> void Model<Fixel>::check_TD() {

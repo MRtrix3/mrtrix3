@@ -22,6 +22,7 @@
 #include "math/ZSH.h"
 #include "memory.h"
 #include "progressbar.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;

@@ -25,6 +25,7 @@
 #include "math/constrained_least_squares.h"
 #include "metadata/phase_encoding.h"
 #include "progressbar.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;

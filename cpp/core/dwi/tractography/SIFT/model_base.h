@@ -23,6 +23,7 @@
 #include "fixel/helpers.h"
 #include "image.h"
 #include "thread_queue.h"
+#include <fmt/format.h>
 
 #include "dwi/fixel_map.h"
 #include "dwi/fmls.h"
@@ -187,7 +188,7 @@ template <class Fixel> void ModelBase<Fixel>::map_streamlines(std::string_view p
 
   const track_t count = (properties.find("count") == properties.end()) ? 0 : to<track_t>(properties["count"]);
   if (!count)
-    throw Exception("Cannot map streamlines: track file " + Path::basename(path) + " is empty");
+    throw Exception(fmt::format("Cannot map streamlines: track file {}", Path::basename(path)) + " is empty");
 
   Mapping::TrackLoader loader(file, count);
   Mapping::TrackMapperBase mapper(Fixel_map<Fixel>::header(), dirs);
@@ -199,7 +200,7 @@ template <class Fixel> void ModelBase<Fixel>::map_streamlines(std::string_view p
                     Thread::batch(Mapping::SetDixel()),
                     *this);
 
-  INFO("Proportionality coefficient after streamline mapping is " + str(mu()));
+  INFO(fmt::format("Proportionality coefficient after streamline mapping is {}", mu()));
 }
 
 template <class Fixel> bool ModelBase<Fixel>::operator()(const FMLS::FOD_lobes &in) {
@@ -298,22 +299,24 @@ template <class Fixel> void ModelBase<Fixel>::initialise_debug_image_output(std:
 
 template <class Fixel>
 void ModelBase<Fixel>::output_all_debug_images(std::string_view dirpath, std::string_view prefix) const {
-  output_tdi_voxel(Path::join(dirpath, prefix + "_tdi_voxel.mif"));
+  output_tdi_voxel(Path::join(dirpath, fmt::format("{}_tdi_voxel.mif", prefix)));
   if (have_null_lobes)
-    output_tdi_null_lobes(Path::join(dirpath, prefix + "_tdi_nulllobes.mif"));
+    output_tdi_null_lobes(Path::join(dirpath, fmt::format("{}_tdi_nulllobes.mif", prefix)));
 #ifdef SIFT_MODEL_OUTPUT_SH_IMAGES
-  output_tdi_sh(Path::join(dirpath, prefix + "_tdi_sh.mif"));
+  output_tdi_sh(Path::join(dirpath, fmt::format("{}_tdi_sh.mif", prefix)));
 #endif
 #ifdef SIFT_MODEL_OUTPUT_FIXEL_IMAGES
-  output_tdi_fixel(Path::join(dirpath, prefix + "_tdi_fixel.mif"));
+  output_tdi_fixel(Path::join(dirpath, fmt::format("{}_tdi_fixel.mif", prefix)));
 #endif
 
-  output_errors_voxel(
-      dirpath, prefix + "_maxabsdiff_voxel.mif", prefix + "_diff_voxel.mif", prefix + "_cost_voxel.mif");
+  output_errors_voxel(dirpath,
+                      fmt::format("{}_maxabsdiff_voxel.mif", prefix),
+                      fmt::format("{}_diff_voxel.mif", prefix),
+                      fmt::format("{}_cost_voxel.mif", prefix));
 #ifdef SIFT_MODEL_OUTPUT_FIXEL_IMAGES
-  output_errors_fixel(dirpath, prefix + "_diff_fixel.mif", prefix + "_cost_fixel.mif");
+  output_errors_fixel(dirpath, fmt::format("{}_diff_fixel.mif", prefix), fmt::format("{}_cost_fixel.mif", prefix));
 #endif
-  output_scatterplot(Path::join(dirpath, prefix + "_scatterplot.csv"));
+  output_scatterplot(Path::join(dirpath, fmt::format("{}_scatterplot.csv", prefix)));
 }
 
 } // namespace MR::DWI::Tractography::SIFT

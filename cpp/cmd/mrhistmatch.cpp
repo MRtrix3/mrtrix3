@@ -26,6 +26,7 @@
 #include "adapter/replicate.h"
 #include "algo/histogram.h"
 #include "algo/loop.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -132,7 +133,7 @@ void match_linear(Image<float> &input,
   H.datatype().set_byte_order_native();
   H.keyval()["mrhistmatch_scale"] = str<float>(parameters[0]);
   if (estimate_intercept) {
-    CONSOLE("Estimated linear transform is: " + str(parameters[0]) + "x + " + str(parameters[1]));
+    CONSOLE("Estimated linear transform is: " + fmt::format("{}x + ", parameters[0]) + str(parameters[1]));
     H.keyval()["mrhistmatch_offset"] = str<float>(parameters[1]);
     auto output = Image<float>::create(argument[3], H);
     for (auto l = Loop("Writing output image data", input)(input, output); l; ++l) {
@@ -143,7 +144,7 @@ void match_linear(Image<float> &input,
       }
     }
   } else {
-    CONSOLE("Estimated scale factor is " + str(parameters[0]));
+    CONSOLE(fmt::format("Estimated scale factor is {}", parameters[0]));
     auto output = Image<float>::create(argument[3], H);
     for (auto l = Loop("Writing output image data", input)(input, output); l; ++l) {
       if (std::isfinite(static_cast<float>(input.value()))) {
@@ -159,14 +160,18 @@ void match_nonlinear(
     Image<float> &input, Image<float> &target, Image<bool> &mask_input, Image<bool> &mask_target, const size_t nbins) {
   Algo::Histogram::Calibrator calib_input(nbins, true);
   Algo::Histogram::calibrate(calib_input, input, mask_input);
-  INFO("Input histogram ranges from " + str(calib_input.get_min()) + " to " + str(calib_input.get_max()) + "; using " +
-       str(calib_input.get_num_bins()) + " bins");
+  INFO(fmt::format("Input histogram ranges from {} to {}; using {} bins",
+                   str(calib_input.get_min()),
+                   str(calib_input.get_max()),
+                   str(calib_input.get_num_bins())));
   Algo::Histogram::Data hist_input = Algo::Histogram::generate(calib_input, input, mask_input);
 
   Algo::Histogram::Calibrator calib_target(nbins, true);
   Algo::Histogram::calibrate(calib_target, target, mask_target);
-  INFO("Target histogram ranges from " + str(calib_target.get_min()) + " to " + str(calib_target.get_max()) +
-       "; using " + str(calib_target.get_num_bins()) + " bins");
+  INFO(fmt::format("Target histogram ranges from {} to {}; using {} bins",
+                   str(calib_target.get_min()),
+                   str(calib_target.get_max()),
+                   str(calib_target.get_num_bins())));
   Algo::Histogram::Data hist_target = Algo::Histogram::generate(calib_target, target, mask_target);
 
   // Non-linear intensity mapping determined within this class

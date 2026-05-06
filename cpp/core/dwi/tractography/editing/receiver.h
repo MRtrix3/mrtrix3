@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cinttypes>
+#include <fmt/format.h>
 #include <string>
 
 #include "progressbar.h"
@@ -46,7 +47,8 @@ public:
     progress.set_text(std::string(printf("%8" PRIu64 " read, %8" PRIu64 " written", total_count, count)) +
                       (crop ? printf(", %8" PRIu64 " segments", segments) : ""));
     if (number && (count != number))
-      WARN("User requested " + str(number) + " streamlines, but only " + str(count) + " were written to file");
+      WARN("User requested " + fmt::format("{} streamlines, but only ", number) +
+           fmt::format("{} were written to file", count));
   }
 
   bool operator()(const Streamline<> &);

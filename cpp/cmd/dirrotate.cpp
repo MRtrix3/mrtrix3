@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <fmt/format.h>
 #include <memory>
 
 #include "command.h"
@@ -55,7 +56,7 @@ void usage() {
 
   OPTIONS
     + Option ("number", "number of rotations to try"
-                        " (default: " + str(default_number) + ")")
+                        " (default: " + fmt::format("{})", default_number))
     +   Argument ("num").type_integer(1)
 
     + DWI::Directions::cartesian_option;
@@ -107,8 +108,8 @@ private:
         best_rotation = rotation;
         progress.set_text(std::string(total_num_rotations == 1 ? "randomising direction set orientation"
                                                                : "optimising directions for peak gradient load") +
-                          " (original = " + str(original_peak, 6) + "; " +
-                          (total_num_rotations == 1 ? "rotated" : "best") + " = " + str(min_peak, 6) + ")");
+                          " (original = " + fmt::format("{}; ", original_peak, 6) +
+                          (total_num_rotations == 1 ? "rotated" : "best") + " = " + fmt::format("{})", min_peak, 6));
       }
       ++count;
       ++progress;

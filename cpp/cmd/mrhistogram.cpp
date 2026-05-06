@@ -18,6 +18,7 @@
 #include "command.h"
 #include "header.h"
 #include "image.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -122,9 +123,9 @@ void run() {
   }
   const size_t nbins_data = calibrator.get_num_bins();
   if (nbins_data == 0)
-    throw Exception(
-        std::string("No histogram bins constructed") +
-        ((ignorezero || nbins_user > 1) ? "." : "; you might want to use the -ignorezero or -bins option."));
+    throw Exception(fmt::format(
+        "No histogram bins constructed{}",
+        ((ignorezero || nbins_user > 1) ? "." : "; you might want to use the -ignorezero or -bins option.")));
 
   for (size_t i = 0; i != nbins_data; ++i)
     output << (calibrator.get_min() + ((i + 0.5) * calibrator.get_bin_width())) << ",";

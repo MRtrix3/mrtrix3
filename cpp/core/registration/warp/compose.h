@@ -23,6 +23,7 @@
 #include "interp/linear.h"
 #include "registration/warp/helpers.h"
 #include "transform.h"
+#include <fmt/format.h>
 
 namespace MR::Registration::Warp {
 
@@ -194,14 +195,14 @@ FORCE_INLINE void update_displacement_scaling_and_squaring(Image<default_type> &
         update,
         *scaled_update);
 
-    //          CONSOLE ("composing " + str(std::log2 (scale_factor)) + "times");
+    //          CONSOLE (fmt::format("composing {}", std::log2 (scale_factor)) + "times");
 
     // Squaring
     for (size_t i = 0; i < std::log2(scale_factor); ++i) {
       update_displacement(*scaled_update, *scaled_update, *composed);
       std::swap(scaled_update, composed);
     }
-    //          save (*scaled_update, std::string("composed_update.mif"), false);
+    //          save (*scaled_update, "composed_update.mif", false);
     //          Adapter::Jacobian<Image<default_type> > jacobian (*scaled_update);
     //          Header header (*scaled_update);
     //          header.ndim() = 3;
@@ -214,7 +215,7 @@ FORCE_INLINE void update_displacement_scaling_and_squaring(Image<default_type> &
     //            if (jacobian_det.value() < 0.0)
     //              is_neg = true;
     //          }
-    //          save (jacobian_det, std::string("jacobian.mif"), false);
+    //          save (jacobian_det, "jacobian.mif", false);
     //          if (is_neg)
     //            throw Exception ("negative jacobians in update");
 

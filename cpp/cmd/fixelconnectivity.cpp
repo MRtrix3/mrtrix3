@@ -17,6 +17,7 @@
 #include "command.h"
 #include "fixel/fixel.h"
 #include "fixel/helpers.h"
+#include <fmt/format.h>
 
 #include "dwi/tractography/mapping/mapping.h"
 #include "dwi/tractography/weights.h"
@@ -58,12 +59,12 @@ void usage() {
 
     + Option("threshold",
              "a threshold to define the required fraction of shared connections to be included in the neighbourhood"
-              " (default: " + str(default_connectivity_threshold, 2) + ")")
+              " (default: " + fmt::format("{})", default_connectivity_threshold, 2))
       + Argument("value").type_float(0.0, 1.0)
 
     + Option("angle",
              "the max angle threshold for assigning streamline tangents to fixels"
-             " (Default: " + str(DWI::Tractography::Mapping::default_streamline2fixel_angle, 2) + " degrees)")
+             " (Default: " + fmt::format("{} degrees)", DWI::Tractography::Mapping::default_streamline2fixel_angle, 2))
       + Argument("value").type_float(0.0, 90.0)
 
     + Option("mask",

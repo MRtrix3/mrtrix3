@@ -32,6 +32,7 @@
 #include "dwi/tractography/mapping/mapping.h"
 #include "dwi/tractography/mapping/voxel.h"
 #include "dwi/tractography/mapping/writer.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -243,7 +244,6 @@ void run() {
     const ssize_t centre = (window_width - 1) / 2; // Element at centre of the window
 
     switch (window_shape) {
-
     case WindowShape::RECTANGLE:
       window.assign(window_width, 1.0);
       break;
@@ -306,8 +306,10 @@ void run() {
         "voxel size must either be a single isotropic value, or a list of 3 comma-separated voxel dimensions");
 
   if (!voxel_size.empty())
-    INFO("creating image with voxel dimensions [ " + str(voxel_size[0]) + " " + str(voxel_size[1]) + " " +
-         str(voxel_size[2]) + " ]");
+    INFO(fmt::format("creating image with voxel dimensions [ {} {} {} ]",
+                     str(voxel_size[0]),
+                     str(voxel_size[1]),
+                     str(voxel_size[2])));
 
   Header header;
   opt = get_options("template");
@@ -336,11 +338,11 @@ void run() {
   opt = get_options("upsample");
   if (!opt.empty()) {
     upsample_ratio = opt[0][0];
-    INFO("track interpolation factor manually set to " + str(upsample_ratio));
+    INFO(fmt::format("track interpolation factor manually set to {}", str(upsample_ratio)));
   } else {
     try {
       upsample_ratio = determine_upsample_ratio(header, properties, maximum_ratio_stepsize_voxelsize);
-      INFO("track interpolation factor automatically set to " + str(upsample_ratio));
+      INFO(fmt::format("track interpolation factor automatically set to {}", str(upsample_ratio)));
     } catch (Exception &e) {
       e.push_back("Try using -upsample option to explicitly set the streamline upsampling ratio;");
       e.push_back("generally recommend a value of around (3 x step_size / voxel_size)");

@@ -16,6 +16,7 @@
 
 #include "surface/filter/vertex_transform.h"
 #include "file/nifti_utils.h"
+#include <fmt/format.h>
 
 #include "axes.h"
 #include "exception.h"

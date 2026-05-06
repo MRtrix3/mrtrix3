@@ -19,6 +19,7 @@
 #include "file/dicom/image.h"
 #include "memory.h"
 #include "progressbar.h"
+#include <fmt/format.h>
 
 namespace MR::File::Dicom {
 
@@ -52,7 +53,7 @@ public:
   std::string time;
 
   void read() {
-    ProgressBar progress("reading DICOM series \"" + name + "\"", size());
+    ProgressBar progress(fmt::format("reading DICOM series \"{}\"", name), size());
     for (size_t i = 0; i < size(); i++) {
       (*this)[i]->read();
       ++progress;

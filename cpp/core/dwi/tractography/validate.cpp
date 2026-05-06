@@ -27,6 +27,7 @@
 #include "exception.h"
 #include "mrtrix.h"
 #include "progressbar.h"
+#include <fmt/format.h>
 
 namespace MR::DWI::Tractography {
 
@@ -94,17 +95,19 @@ TckValidation validate_tck(std::string_view path) {
     if (!reader.read_triplet(p, at_eof)) {
       // The data section ended before a barrier was seen — the file is truncated.
       if (!seen_eof_barrier)
-        throw Exception("Tractogram \"" + std::string(path) + "\": " +                        //
-                        " binary data section ends without an end-of-file barrier triplet;" + //
-                        " file may be truncated or corrupt");                                 //
+        throw Exception(fmt::format("Tractogram \"{}\": {}{}",
+                                    path,                                                                //
+                                    " binary data section ends without an end-of-file barrier triplet;", //
+                                    " file may be truncated or corrupt"));                               //
       // Reached EOF cleanly after the barrier.
       break;
     }
 
     // Any triplet arriving after the barrier is a format violation.
     if (seen_eof_barrier)
-      throw Exception("Tractogram \"" + std::string(path) + "\":" +                  //
-                      " vertex data present after the end-of-file barrier triplet"); //
+      throw Exception(fmt::format("Tractogram \"{}\":{}",
+                                  path,                                                           //
+                                  " vertex data present after the end-of-file barrier triplet")); //
 
     const bool all_nan = std::isnan(p[0]) && std::isnan(p[1]) && std::isnan(p[2]);
     const bool all_inf = std::isinf(p[0]) && std::isinf(p[1]) && std::isinf(p[2]);
@@ -140,10 +143,12 @@ TckValidation validate_tck(std::string_view path) {
       // missing terminator for the last streamline.
       // ---------------------------------------------------------------
       if (current_vertices > 0)
-        throw Exception("Tractogram \"" + std::string(path) + "\": " +                             //
-                        str(current_vertices) + (current_vertices > 1 ? " vertices" : " vertex") + //
-                        " in the last streamline," +                                               //
-                        " which has no terminating NaN delimiter before the end-of-file barrier"); //
+        throw Exception(fmt::format("Tractogram \"{}\": {}{}{}{}",
+                                    path, //
+                                    str(current_vertices),
+                                    (current_vertices > 1 ? " vertices" : " vertex"),                           //
+                                    " in the last streamline,",                                                 //
+                                    " which has no terminating NaN delimiter before the end-of-file barrier")); //
       seen_eof_barrier = true;
 
     } else {
@@ -151,10 +156,11 @@ TckValidation validate_tck(std::string_view path) {
       // Invalid triplet: partially non-finite, which is neither a valid
       // vertex, a valid delimiter, nor a valid end-of-file marker.
       // ---------------------------------------------------------------
-      throw Exception("Tractogram \"" + std::string(path) + "\":" +                   //
-                      " invalid partially-finite triplet detected;" +                 //
-                      " triplets must be all-finite (vertex), all-NaN (delimiter)," + //
-                      " or all-infinity (end-of-file marker)");                       //
+      throw Exception(fmt::format("Tractogram \"{}\":{}{}{}",
+                                  path,                                                          //
+                                  " invalid partially-finite triplet detected;",                 //
+                                  " triplets must be all-finite (vertex), all-NaN (delimiter),", //
+                                  " or all-infinity (end-of-file marker)"));                     //
     }
   }
 
@@ -162,9 +168,12 @@ TckValidation validate_tck(std::string_view path) {
   // Post-scan checks on header metadata.
   // ---------------------------------------------------------------
   if (result.header_count.has_value() && result.n_streamlines != *result.header_count)
-    throw Exception("Tractogram \"" + std::string(path) + "\":" +                                          //
-                    " header count (" + str(*result.header_count) + ")" +                                  //
-                    " does not match the number of streamlines read (" + str(result.n_streamlines) + ")"); //
+    throw Exception(fmt::format("Tractogram \"{}\":{}{}){}{})",
+                                path, //
+                                " header count (",
+                                str(*result.header_count), //
+                                " does not match the number of streamlines read (",
+                                str(result.n_streamlines))); //
 
   return result;
 }
@@ -173,19 +182,20 @@ void validate_tsf_properties(const Properties &a, const Properties &b, std::stri
   const Properties::const_iterator stamp_a = a.find("timestamp");
   const Properties::const_iterator stamp_b = b.find("timestamp");
   if (stamp_a == a.end() || stamp_b == b.end())
-    throw Exception("Unable to verify " + file_types + ": missing timestamp");
+    throw Exception(fmt::format("Unable to verify {}: missing timestamp", file_types));
   if (stamp_a->second != stamp_b->second) {
-    throw Exception("Invalid " + file_types + ":" +                     //
-                    " timestamps do not match," +                       //
-                    " suggesting differing originating tractogram(s)"); //
+    throw Exception(fmt::format("Invalid {}:{}{}",
+                                file_types,                                          //
+                                " timestamps do not match,",                         //
+                                " suggesting differing originating tractogram(s)")); //
   }
 
   const Properties::const_iterator count_a = a.find("count");
   const Properties::const_iterator count_b = b.find("count");
   if ((count_a == a.end()) || (count_b == b.end()))
-    throw Exception("Unable to validate " + file_types + ": missing count field");
+    throw Exception(fmt::format("Unable to validate {}: missing count field", file_types));
   if (to<size_t>(count_a->second) != to<size_t>(count_b->second))
-    throw Exception(file_types + " does not contain same number of streamlines");
+    throw Exception(fmt::format("{} does not contain same number of streamlines", file_types));
 }
 
 void validate_tsf(std::string_view tsf_path, std::string_view tck_path) {
@@ -239,26 +249,35 @@ void validate_tsf(std::string_view tsf_path, std::string_view tck_path) {
   // Check 3: TSF header count must match actual TSF streamline count.
   // ---------------------------------------------------------------
   if (tsf_count != header_count)
-    throw Exception("Track scalar file \"" + std::string(tsf_path) + "\":" +                         //
-                    " header \"count\" (" + str(header_count) + ")" +                                //
-                    " does not match the number of scalar sequences read (" + str(tsf_count) + ")"); //
+    throw Exception(fmt::format("Track scalar file \"{}\":{}{}){}{})",
+                                tsf_path, //
+                                " header \"count\" (",
+                                str(header_count), //
+                                " does not match the number of scalar sequences read (",
+                                str(tsf_count))); //
 
   // ---------------------------------------------------------------
   // Check 4: TSF streamline count must match tck streamline count.
   // ---------------------------------------------------------------
   if (tsf_count != tck_count)
-    throw Exception("Track scalar file \"" + std::string(tsf_path) + "\"" +  //
-                    " contains " + str(tsf_count) + " scalar sequence(s)," + //
-                    " but tractogram \"" + std::string(tck_path) + "\"" +    //
-                    " contains " + str(tck_count) + " streamline(s)");       //
+    throw Exception(fmt::format("Track scalar file \"{}\"{}{} scalar sequence(s),{}{}\"{}{} streamline(s)",
+                                tsf_path, //
+                                " contains ",
+                                str(tsf_count), //
+                                " but tractogram \"",
+                                std::string(tck_path), //
+                                " contains ",
+                                str(tck_count))); //
 
   // ---------------------------------------------------------------
   // Check 5: per-streamline vertex counts must match.
   // ---------------------------------------------------------------
   if (n_length_mismatch > 0)
-    throw Exception("Track scalar file \"" + std::string(tsf_path) + "\": " +                           //
-                    str(n_length_mismatch) + " of " + str(tck_count) + " streamlines" +                 //
-                    " have a different number of vertices between the scalar file and the tractogram"); //
+    throw Exception(fmt::format("Track scalar file \"{}\": {} of {} streamlines{}",
+                                tsf_path, //
+                                str(n_length_mismatch),
+                                str(tck_count),                                                                      //
+                                " have a different number of vertices between the scalar file and the tractogram")); //
 }
 
 } // namespace MR::DWI::Tractography

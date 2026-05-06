@@ -28,6 +28,7 @@
 #include "math/math.h"
 #include "math/sphere.h"
 #include "types.h"
+#include <fmt/format.h>
 
 namespace MR::DWI::SDeconv {
 
@@ -97,8 +98,8 @@ public:
         }
       } else {
         if (lmax.size() != num_tissues())
-          throw Exception("Number of lmaxes specified (" + str(lmax.size()) + ") does not match number of tissues (" +
-                          str(num_tissues()) + ")");
+          throw Exception(fmt::format("Number of lmaxes specified ({}", str(lmax.size())) +
+                          fmt::format(") does not match number of tissues ({}", num_tissues()) + ")");
         for (const auto i : lmax) {
           if (i % 2)
             throw Exception("Each value of lmax must be a non-negative even integer");
@@ -107,10 +108,11 @@ public:
 
       for (size_t t = 0; t != num_tissues(); ++t) {
         if (static_cast<size_t>(responses[t].rows()) != num_shells())
-          throw Exception("number of rows in response functions must match number of b-value shells; "
-                          "number of shells is " +
-                          str(num_shells()) + ", but file \"" + response_files[t] + "\" contains " +
-                          str(responses[t].rows()) + " rows");
+          throw Exception(
+              fmt::format(
+                  "number of rows in response functions must match number of b-value shells; number of shells is {}",
+                  str(num_shells())) +
+              ", but file \"" + response_files[t] + fmt::format("\" contains {}", responses[t].rows()) + " rows");
         // Pad response functions out to the requested lmax for this tissue
         responses[t].conservativeResizeLike(Eigen::MatrixXd::Zero(num_shells(), Math::ZSH::NforL(lmax[t])));
       }
@@ -126,8 +128,8 @@ public:
         maxlmax = std::max(maxlmax, lmax[i]);
       }
 
-      INFO("initialising multi-tissue CSD for " + str(num_tissues()) + " tissue types, with " + str(nparams) +
-           " parameters");
+      INFO(fmt::format("initialising multi-tissue CSD for {}", num_tissues()) + " tissue types, with " +
+           fmt::format("{} parameters", nparams));
 
       Eigen::MatrixXd C = Eigen::MatrixXd::Zero(grad.rows(), nparams);
 

@@ -15,6 +15,7 @@
  */
 
 #include "dwi/sdeconv/csd.h"
+#include <fmt/format.h>
 
 namespace MR::DWI::SDeconv {
 
@@ -33,19 +34,19 @@ const OptionGroup CSD_options =
     + Option("neg_lambda",
              "the regularisation parameter lambda that controls the strength"
              " of the non-negativity constraint"
-             " (default = " + str(default_csd_neglambda, 2) + ").")
+             " (default = " + fmt::format("{}).", default_csd_neglambda, 2))
       + Argument("value").type_float(0.0)
 
     + Option("norm_lambda",
              "the regularisation parameter lambda that controls the strength "
              "of the constraint on the norm of the solution"
-             " (default = " + str(default_csd_normlambda, 2) + ").")
+             " (default = " + fmt::format("{}).", default_csd_normlambda, 2))
       + Argument("value").type_float(0.0)
 
     + Option("threshold",
              "the threshold below which the amplitude of the FOD is assumed to be zero,"
              " expressed as an absolute amplitude"
-             " (default = " + str(default_csd_threshold, 2) + ").")
+             " (default = " + fmt::format("{}).", default_csd_threshold, 2))
       + Argument("value").type_float(-1.0, 10.0)
 
     + Option("niter",

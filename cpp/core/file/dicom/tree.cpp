@@ -22,6 +22,7 @@
 #include "file/dicom/series.h"
 #include "file/dicom/study.h"
 #include "file/path.h"
+#include <fmt/format.h>
 
 namespace MR::File::Dicom {
 
@@ -61,19 +62,19 @@ void Tree::read_dir(std::string_view filename, ProgressBar &progress) {
       ++progress;
     }
   } catch (Exception &E) {
-    throw Exception(E, "error opening DICOM folder \"" + filename + "\": " + strerror(errno));
+    throw Exception(E, fmt::format("error opening DICOM folder \"{}\": {}", filename, strerror(errno)));
   }
 }
 
 void Tree::read_file(std::string_view filename) {
   QuickScan reader;
   if (reader.read(filename)) {
-    INFO("error reading file \"" + filename + "\" - ignored");
+    INFO(fmt::format("error reading file \"{}\" - ignored", filename));
     return;
   }
 
   if (!(reader.dim[0] && reader.dim[1] && reader.bits_alloc && reader.data)) {
-    INFO("DICOM file \"" + filename + "\" does not seem to contain image data - ignored");
+    INFO(fmt::format("DICOM file \"{}\" does not seem to contain image data - ignored", filename));
     return;
   }
 
@@ -112,7 +113,7 @@ void Tree::read(std::string_view filename) {
   }
 
   if (empty())
-    throw Exception("no DICOM images found in \"" + filename + "\"");
+    throw Exception(fmt::format("no DICOM images found in \"{}\"", filename));
 }
 
 std::ostream &operator<<(std::ostream &stream, const Tree &item) {

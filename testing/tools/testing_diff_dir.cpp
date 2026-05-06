@@ -17,7 +17,9 @@
 #include "command.h"
 #include "datatype.h"
 #include "file/matrix.h"
+#include "fmt.h"
 #include "progressbar.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -52,9 +54,13 @@ void run() {
   for (ssize_t i = 0; i < dir1.cols(); ++i) {
     for (ssize_t j = 0; j < dir1.rows(); ++j) {
       if (abs(dir1(i, j) - dir2(i, j)) > tol)
-        throw Exception("direction files \"" + str(argument[0]) + "\" and \"" + str(argument[1]) +
-                        "\" do not match within specified precision of " + str(tol) + " (" + str(dir1(i, j)) + " vs " +
-                        str(dir2(i, j)) + ")");
+        throw Exception(fmt::format("direction files \"{}\" and \"{}\""
+                                    " do not match within specified precision of {} ({} vs {})",
+                                    argument[0],
+                                    argument[1],
+                                    tol,
+                                    dir1(i, j),
+                                    dir2(i, j)));
     }
   }
 

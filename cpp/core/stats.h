@@ -17,6 +17,7 @@
 #pragma once
 
 #include "math/median.h"
+#include <fmt/format.h>
 
 #include <iomanip>
 #include <vector>

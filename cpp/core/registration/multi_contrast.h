@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <fmt/format.h>
 #include <vector>
 
 #include "adapter/base.h"
@@ -36,7 +37,8 @@ FORCE_INLINE void check_image_output(std::string_view image_name, const Header &
   if (image_name.empty())
     throw Exception("image output path is empty");
   if (Path::exists(image_name) && !App::overwrite_files)
-    throw Exception("output image \"" + image_name + "\" already exists (use -force option to force overwrite)");
+    throw Exception(
+        fmt::format("output image \"{}\" already exists (use -force option to force overwrite)", image_name));
 
   Header H = reference;
   File::NameParser parser;
@@ -54,10 +56,11 @@ FORCE_INLINE void check_image_output(std::string_view image_name, const Header &
     const std::string basename = Path::basename(image_name);
     const size_t extension_index = basename.find_last_of(".");
     if (extension_index == std::string::npos)
-      throw Exception("unknown format for image \"" + image_name + "\" (no file extension specified)");
+      throw Exception(fmt::format("unknown format for image \"{}\" (no file extension specified)", image_name));
     else
-      throw Exception("unknown format for image \"" + image_name +
-                      "\" (unsupported file extension: " + basename.substr(extension_index) + ")");
+      throw Exception(fmt::format("unknown format for image \"{}\" (unsupported file extension: {})",
+                                  image_name,
+                                  basename.substr(extension_index)));
   }
 }
 

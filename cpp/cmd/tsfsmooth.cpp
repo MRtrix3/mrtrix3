@@ -19,6 +19,7 @@
 #include "dwi/tractography/scalar_file.h"
 #include "dwi/tractography/streamline.h"
 #include "math/median.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -39,7 +40,7 @@ void usage() {
   OPTIONS
   + Option ("stdev", "apply Gaussian smoothing with the specified standard deviation."
                      " The standard deviation is defined in units of track points"
-                     " (default: " + str(default_smoothing, 2) + ")")
+                     " (default: " + fmt::format("{})", default_smoothing, 2))
     + Argument ("sigma").type_float(1e-6);
 
 }

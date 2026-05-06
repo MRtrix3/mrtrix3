@@ -39,23 +39,24 @@
 #include "file/path.h"
 
 #include "debug.h"
+#include <fmt/format.h>
 
 namespace MR::File {
 
 MMap::MMap(const Entry &entry, bool readwrite, bool preload, int64_t mapped_size)
     : Entry(entry), addr(nullptr), first(nullptr), msize(mapped_size), readwrite(readwrite) {
-  DEBUG("memory-mapping file \"" + Entry::name + "\"...");
+  DEBUG(fmt::format("memory-mapping file \"{}\"...", Entry::name));
 
   struct stat sbuf;
   if (stat(Entry::name.c_str(), &sbuf))
-    throw Exception("cannot stat file \"" + Entry::name + "\": " + strerror(errno));
+    throw Exception(fmt::format("cannot stat file \"{}\": {}", Entry::name, strerror(errno)));
 
   mtime = sbuf.st_mtime;
 
   if (msize < 0)
     msize = sbuf.st_size - start;
   else if (start + msize > sbuf.st_size)
-    throw Exception("file \"" + Entry::name + "\" is smaller than expected");
+    throw Exception(fmt::format("file \"{}\" is smaller than expected", Entry::name));
 
   bool delayed_writeback = false;
   if (readwrite) {
@@ -68,42 +69,42 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, int64_t mapped_size
       const unsigned int code = GetDriveType(root_path.data());
       switch (code) {
       case 0: // DRIVE_UNKNOWN
-        DEBUG("cannot get filesystem information on file \"" + Entry::name + "\": " + strerror(errno));
+        DEBUG(fmt::format("cannot get filesystem information on file \"{}\": {}", Entry::name, strerror(errno)));
         DEBUG("  defaulting to delayed write-back");
         delayed_writeback = true;
         break;
       case 1: // DRIVE_NO_ROOT_DIR:
-        DEBUG("erroneous root path derived for file \"" + Entry::name + "\": " + strerror(errno));
+        DEBUG(fmt::format("erroneous root path derived for file \"{}\": {}", Entry::name, strerror(errno)));
         DEBUG("  defaulting to delayed write-back");
         delayed_writeback = true;
         break;
       case 2: // DRIVE_REMOVABLE
-        DEBUG("Drive for file \"" + Entry::name + "\" detected as removable; using memory-mapping");
+        DEBUG(fmt::format("Drive for file \"{}\" detected as removable; using memory-mapping", Entry::name));
         break;
       case 3: // DRIVE_FIXED
-        DEBUG("Drive for file \"" + Entry::name + "\" detected as fixed; using memory-mapping");
+        DEBUG(fmt::format("Drive for file \"{}\" detected as fixed; using memory-mapping", Entry::name));
         break;
       case 4: // DRIVE_REMOTE
-        DEBUG("Drive for file \"" + Entry::name + "\" detected as network - using delayed write-back");
+        DEBUG(fmt::format("Drive for file \"{}\" detected as network - using delayed write-back", Entry::name));
         delayed_writeback = true;
         break;
       case 5: // DRIVE_CDROM
-        DEBUG("Drive for file \"" + Entry::name + "\" detected as CD-ROM - using delayed write-back");
+        DEBUG(fmt::format("Drive for file \"{}\" detected as CD-ROM - using delayed write-back", Entry::name));
         delayed_writeback = true;
         break;
       case 6: // DRIVE_RAMDISK
-        DEBUG("Drive for file \"" + Entry::name + "\" detected as RAM - using memory-mapping");
+        DEBUG(fmt::format("Drive for file \"{}\" detected as RAM - using memory-mapping", Entry::name));
         break;
       }
 
     } else {
-      DEBUG("unable to query root drive path for file \"" + Entry::name + "\"; using delayed write-back");
+      DEBUG(fmt::format("unable to query root drive path for file \"{}\"; using delayed write-back", Entry::name));
       delayed_writeback = true;
     }
 #else
     struct statfs fsbuf;
     if (statfs(Entry::name.c_str(), &fsbuf)) {
-      DEBUG("cannot get filesystem information on file \"" + Entry::name + "\": " + strerror(errno));
+      DEBUG(fmt::format("cannot get filesystem information on file \"{}\": {}", Entry::name, strerror(errno)));
       DEBUG("  defaulting to delayed write-back");
       delayed_writeback = true;
     }
@@ -116,7 +117,7 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, int64_t mapped_size
         || fsbuf.f_type == 0x0017 /* OSXFUSE */                                            //
 #endif
     ) {                                                                                    //
-      DEBUG("\"" + Entry::name + "\" appears to reside on a networked filesystem - using delayed write-back");
+      DEBUG(fmt::format("\"{}\" appears to reside on a networked filesystem - using delayed write-back", Entry::name));
       delayed_writeback = true;
     }
 #endif
@@ -141,8 +142,8 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, int64_t mapped_size
           throw Exception("error preloading contents of file \"" + Entry::name + "\": " + strerror(errno));
       } else
         memset(first, 0, msize);
-      DEBUG("file \"" + Entry::name + "\" held in RAM at " + str(reinterpret_cast<void *>(first)) + ", size " +
-            str(msize));
+      DEBUG(fmt::format(
+          "file \"{}\" held in RAM at {}, size {}", Entry::name, str(reinterpret_cast<void *>(first)), str(msize)));
 
       return;
     }
@@ -151,7 +152,7 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, int64_t mapped_size
   // use regular memory-mapping:
 
   if ((fd = open(Entry::name.c_str(), (readwrite ? O_RDWR : O_RDONLY), 0666)) < 0)
-    throw Exception("error opening file \"" + Entry::name + "\": " + strerror(errno));
+    throw Exception(fmt::format("error opening file \"{}\": {}", Entry::name, strerror(errno)));
 
   try {
 #ifdef MRTRIX_WINDOWS
@@ -173,29 +174,32 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, int64_t mapped_size
   } catch (...) {
     close(fd);
     addr = nullptr;
-    throw Exception("memory-mapping failed for file \"" + Entry::name + "\": " + strerror(errno));
+    throw Exception(fmt::format("memory-mapping failed for file \"{}\": {}", Entry::name, strerror(errno)));
   }
   first = addr + start;
 
-  DEBUG("file \"" + Entry::name + "\" mapped at " + str(reinterpret_cast<void *>(addr)) + ", size " + str(msize) +
-        " (read-" + (readwrite ? "write" : "only") + ")");
+  DEBUG(fmt::format("file \"{}\" mapped at {}, size {} (read-{})",
+                    Entry::name,
+                    str(reinterpret_cast<void *>(addr)),
+                    str(msize),
+                    (readwrite ? "write" : "only")));
 }
 
 MMap::~MMap() {
   if (!first)
     return;
   if (addr) {
-    DEBUG("unmapping file \"" + Entry::name + "\"");
+    DEBUG(fmt::format("unmapping file \"{}\"", Entry::name));
 #ifdef MRTRIX_WINDOWS
     if (!UnmapViewOfFile(static_cast<LPVOID>(addr)))
 #else
     if (munmap(addr, msize))
 #endif
-      WARN("error unmapping file \"" + Entry::name + "\": " + strerror(errno));
+      WARN(fmt::format("error unmapping file \"{}\": {}", Entry::name, strerror(errno)));
     close(fd);
   } else {
     if (readwrite) {
-      INFO("writing back contents of mapped file \"" + Entry::name + "\"...");
+      INFO(fmt::format("writing back contents of mapped file \"{}\"...", Entry::name));
       try {
         File::OFStream out(Entry::name, std::ios::in | std::ios::out | std::ios::binary);
         out.seekp(start, out.beg);

@@ -32,6 +32,7 @@
 
 #include "dwi/tractography/SIFT/track_index_range.h"
 #include "dwi/tractography/SIFT/types.h"
+#include <fmt/format.h>
 
 namespace MR::DWI::Tractography::SIFT2 {
 
@@ -42,7 +43,7 @@ void TckFactor::set_reg_lambdas(const double lambda_tikhonov, const double lambd
     A += fixels[i].get_weight() * Math::pow2(fixels[i].get_FOD());
 
   A /= static_cast<double>(num_tracks());
-  INFO("Constant A scaling regularisation terms to match data term is " + str(A));
+  INFO(fmt::format("Constant A scaling regularisation terms to match data term is {}", str(A)));
   reg_multiplier_tikhonov = lambda_tikhonov * A;
   reg_multiplier_tv = lambda_tv * A;
 }
@@ -75,12 +76,15 @@ void TckFactor::remove_excluded_fixels(const float min_td_frac) {
       excluded_cf_sum += i->get_cost(fixed_mu);
     }
   }
-  INFO(str(zero_TD_count) + " fixels have no attributed streamlines; these account for " +
-       str(100.0 * zero_TD_cf_sum / cf) + "\% of the initial cost function");
+  INFO(fmt::format("{} fixels have no attributed streamlines; these account for {}\\% of the initial cost function",
+                   str(zero_TD_count),
+                   str(100.0 * zero_TD_cf_sum / cf)));
   if (excluded_count) {
-    INFO(str(excluded_count) + " of " + str(fixels.size()) +
-         " fixels were tracked, but have been excluded from optimisation due to inadequate reconstruction;");
-    INFO("these contribute " + str(100.0 * excluded_cf_sum / cf) + "\% of the initial cost function");
+    INFO(fmt::format(
+        "{} of {} fixels were tracked, but have been excluded from optimisation due to inadequate reconstruction;",
+        str(excluded_count),
+        str(fixels.size())));
+    INFO(fmt::format("these contribute {}\\% of the initial cost function", str(100.0 * excluded_cf_sum / cf)));
   } else if (min_td_frac) {
     INFO("No fixels were excluded from optimisation due to poor reconstruction");
   }
@@ -122,7 +126,7 @@ void TckFactor::test_streamline_length_scaling() {
 
 void TckFactor::calc_afcsa() {
 
-  CONSOLE("Cost function before linear optimisation is " + str(calc_cost_function()) + ")");
+  CONSOLE(fmt::format("Cost function before linear optimisation is {}", calc_cost_function()) + ")");
 
   try {
     coefficients = decltype(coefficients)::Zero(num_tracks());
@@ -174,7 +178,7 @@ void TckFactor::calc_afcsa() {
     Thread::run_queue(writer, SIFT::TrackIndexRange(), Thread::multi(worker));
   }
 
-  CONSOLE("Cost function after linear optimisation is " + str(calc_cost_function()) + ")");
+  CONSOLE(fmt::format("Cost function after linear optimisation is {}", calc_cost_function()) + ")");
 }
 
 void TckFactor::estimate_factors() {
@@ -264,7 +268,7 @@ void TckFactor::estimate_factors() {
     // Perform fixel exclusion
     const size_t excluded_count = fixels_to_exclude.count();
     if (excluded_count) {
-      DEBUG(str(excluded_count) + " fixels excluded this iteration");
+      DEBUG(fmt::format("{} fixels excluded this iteration", str(excluded_count)));
       for (size_t f = 0; f != fixels.size(); ++f) {
         if (fixels_to_exclude[f])
           fixels[f].exclude();
@@ -335,8 +339,10 @@ void TckFactor::report_entropy() const {
   // After SIFT2:
   const default_type H_after = Math::Entropy::shannons(coefficients.exp());
   const size_t equiv_N = std::round(std::pow(2.0, H_after));
-  INFO("Entropy decreased from " + str(H_before, 6) + " to " + str(H_after, 6) + "; " + "this is equivalent to " +
-       str(equiv_N) + " equally-weighted streamlines");
+  INFO(fmt::format("Entropy decreased from {} to {}; this is equivalent to {} equally-weighted streamlines",
+                   str(H_before, 6),
+                   str(H_after, 6),
+                   str(equiv_N)));
 }
 
 void TckFactor::output_factors(std::string_view path) const {
@@ -346,7 +352,7 @@ void TckFactor::output_factors(std::string_view path) const {
   try {
     weights.resize(coefficients.size());
   } catch (...) {
-    WARN("Unable to assign memory for output factor file: \"" + Path::basename(path) + "\" not created");
+    WARN(fmt::format("Unable to assign memory for output factor file: \"{}\" not created", Path::basename(path)));
     return;
   }
   for (SIFT::track_t i = 0; i != num_tracks(); ++i)
@@ -416,12 +422,13 @@ void TckFactor::output_all_debug_images(std::string_view dirpath, std::string_vi
   Header H(MR::Fixel::data_header_from_nfixels(fixels.size()));
   Header H_excluded(H);
   H_excluded.datatype() = DataType::Bit;
-  Image<float> min_image(Image<float>::create(Path::join(dirpath, prefix + "_coeff_min.mif"), H));
-  Image<float> mean_image(Image<float>::create(Path::join(dirpath, prefix + "_coeff_mean.mif"), H));
-  Image<float> stdev_image(Image<float>::create(Path::join(dirpath, prefix + "_coeff_stdev.mif"), H));
-  Image<float> max_image(Image<float>::create(Path::join(dirpath, prefix + "_coeff_max.mif"), H));
-  Image<float> zeroed_image(Image<float>::create(Path::join(dirpath, prefix + "_coeff_zeroed.mif"), H));
-  Image<bool> excluded_image(Image<bool>::create(Path::join(dirpath, prefix + "_excludedfixels.mif"), H_excluded));
+  Image<float> min_image(Image<float>::create(Path::join(dirpath, fmt::format("{}_coeff_min.mif", prefix)), H));
+  Image<float> mean_image(Image<float>::create(Path::join(dirpath, fmt::format("{}_coeff_mean.mif", prefix)), H));
+  Image<float> stdev_image(Image<float>::create(Path::join(dirpath, fmt::format("{}_coeff_stdev.mif", prefix)), H));
+  Image<float> max_image(Image<float>::create(Path::join(dirpath, fmt::format("{}_coeff_max.mif", prefix)), H));
+  Image<float> zeroed_image(Image<float>::create(Path::join(dirpath, fmt::format("{}_coeff_zeroed.mif", prefix)), H));
+  Image<bool> excluded_image(
+      Image<bool>::create(Path::join(dirpath, fmt::format("{}_excludedfixels.mif", prefix)), H_excluded));
 
   for (auto l = Loop(0)(min_image, mean_image, stdev_image, max_image, zeroed_image, excluded_image); l; ++l) {
     const size_t index = min_image.index(0);

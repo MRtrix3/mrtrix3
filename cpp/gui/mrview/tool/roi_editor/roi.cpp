@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <fmt/format.h>
 #include <string>
 
 #include "mrview/qthelpers.h"
@@ -249,10 +250,11 @@ ROI::~ROI() {
     QModelIndex index = list_model->index(i, 0);
     ROI_Item *roi = list_model->get(index);
     if (!roi->saved) {
-      if (QMessageBox::question(&window(),
-                                tr("ROI not saved"),
-                                qstr("Image " + roi->get_filename() + " has been modified. Do you want to save it?"),
-                                QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes)
+      if (QMessageBox::question(
+              &window(),
+              tr("ROI not saved"),
+              qstr(fmt::format("Image {} has been modified. Do you want to save it?", roi->get_filename())),
+              QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes)
         save(roi);
     }
   }
@@ -363,12 +365,12 @@ void ROI::close_slot() {
   assert(indices.size() == 1);
   ROI_Item *roi = dynamic_cast<ROI_Item *>(list_model->get(indices[0]));
   if (!roi->saved) {
-    size_t ret =
-        QMessageBox::warning(this,
-                             tr("ROI not saved"),
-                             qstr("ROI " + roi->get_filename() + " has been modified. Do you want to save it?"),
-                             QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel,
-                             QMessageBox::Save);
+    size_t ret = QMessageBox::warning(
+        this,
+        tr("ROI not saved"),
+        qstr(fmt::format("ROI {} has been modified. Do you want to save it?", roi->get_filename())),
+        QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel,
+        QMessageBox::Save);
     if (ret == QMessageBox::Cancel)
       return;
     else if (ret == QMessageBox::Save)

@@ -19,12 +19,13 @@
 #include "exception.h"
 #include "file/mmap.h"
 #include "file/utils.h"
+#include <fmt/format.h>
 
 namespace MR::File {
 
 inline void copy(std::string_view source, std::string_view destination) {
   {
-    DEBUG("copying file \"" + source + "\" to \"" + destination + "\"...");
+    DEBUG(fmt::format("copying file \"{}\" to \"", source) + destination + "\"...");
     MMap input(source);
     create(destination, input.size());
     MMap output(destination, true);

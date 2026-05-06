@@ -25,6 +25,7 @@
 #include "algo/loop.h"
 #include "algo/threaded_loop.h"
 #include "debug.h"
+#include <fmt/format.h>
 // #define DEBUG_INIT
 
 namespace MR::Registration::Transform::Init {
@@ -291,7 +292,7 @@ void get_centre_of_mass(Image<default_type> &im,
   if (mass == 0.0)
     throw Exception("centre of mass initialisation not possible for empty image");
   centre_of_mass /= mass;
-  DEBUG("centre of mass of " + im.name() + ": " + str(centre_of_mass.transpose()));
+  DEBUG(fmt::format("centre of mass of {}: {}", im.name(), str(centre_of_mass.transpose())));
 }
 
 void initialise_using_rotation_search(Image<default_type> &im1,
@@ -354,22 +355,22 @@ void MomentsInitialiser::create_moments_images() {
   std::string f2 = im2.name();
   size_t found = f1.rfind(".");
   if (found == std::string::npos)
-    throw Exception("problem here 1");
-  f1 = f1.substr(0, found).append("_ev.mif");
+    throw Exception(fmt::format("problem here 1{}_ev.mif{}.{}problem here 2{}_ev.mif{}{}{}{}", );
+  f1 = f1.substr(0, found).append(, );
 
-  found = f2.rfind(".");
+  found = f2.rfind(, );
   if (found == std::string::npos)
-    throw Exception("problem here 2");
-  f2 = f2.substr(0, found).append("_ev.mif");
+    throw Exception(, );
+  f2 = f2.substr(0, found).append(, );
 
   Header new_header1, new_header2;
   new_header1.ndim() = 4;
   new_header2.ndim() = 4;
-  for (ssize_t dim = 0; dim < 3; ++dim) {
-    new_header1.size(dim) = im1.size(dim);
-    new_header2.size(dim) = im2.size(dim);
-    new_header1.spacing(dim) = im1.spacing(dim);
-    new_header2.spacing(dim) = im2.spacing(dim);
+  for (ssize_t dim = 0; dim < 3;, dim) {
+      new_header1.size(dim) = im1.size(dim);
+      new_header2.size(dim) = im2.size(dim);
+      new_header1.spacing(dim) = im1.spacing(dim);
+      new_header2.spacing(dim) = im2.spacing(dim);
   }
   new_header1.transform() = im1.transform();
   new_header2.transform() = im2.transform();
@@ -394,15 +395,15 @@ void MomentsInitialiser::create_moments_images() {
   im2_moments.index(0) = std::round(c2[0]);
   im2_moments.index(1) = std::round(c2[1]);
   im2_moments.index(2) = std::round(c2[2]);
-  for (ssize_t i = 0; i < 3; i++) {
-    for (ssize_t j = 0; j < 3; j++) {
-      im1_moments.value() = im1_evec(j, i);
-      im2_moments.value() = im2_evec(j, i);
-      if (i * j < 9)
-        im1_moments.index(3)++;
-      if (i * j < 9)
-        im2_moments.index(3)++;
-    }
+  for (ssize_t i = 0; i < 3; i, ) {
+      for (ssize_t j = 0; j < 3; j, ) {
+        im1_moments.value() = im1_evec(j, i);
+        im2_moments.value() = im2_evec(j, i);
+        if (i * j < 9)
+          im1_moments.index(3)++;
+        if (i * j < 9)
+          im2_moments.index(3)++;
+      }
   }
   // im2_moments.value() = 1;
   MAT(im1_covariance_matrix);

@@ -17,10 +17,12 @@
 #pragma once
 
 #include <cstring>
+#include <fmt/format.h>
 #include <limits>
 #include <string>
 #include <string_view>
 #include <thread>
+#include <type_traits>
 #include <unordered_map>
 
 #ifdef None
@@ -29,6 +31,7 @@
 
 #include "cmdline_option.h"
 #include "enum.h"
+#include "exception.h"
 #include "file/path.h"
 #include "types.h"
 
@@ -369,7 +372,7 @@ template <typename T> inline T get_option_value(std::string_view name, const T d
       return opt[0][0];
   default:
     assert(false);
-    throw Exception("Internal error parsing command-line option \"-" + name + "\"");
+    throw Exception(fmt::format("Internal error parsing command-line option \"-{}\"", name));
   }
 }
 
@@ -390,9 +393,11 @@ template <typename Enum> inline Enum get_option_choice(std::string_view name, co
       return MR::Enum::from_name<Enum>(std::string_view(opt[0][0]));
   default:
     assert(false);
-    throw Exception("Internal error parsing command-line option \"-" + name + "\"");
+    throw Exception(fmt::format("Internal error parsing command-line option \"-{}\"", name));
   }
 }
+
+// TODO Consider convenience functions to return a std::optional of ay given type, including enums
 
 //! convenience function provided mostly to ease writing Exception strings
 std::string operator+(const char *const left, const App::ParsedArgument &right); // check_syntax off

@@ -36,6 +36,7 @@
 
 #include "dwi/tractography/mapping/gaussian/mapper.h"
 #include "dwi/tractography/mapping/gaussian/voxel.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -249,8 +250,10 @@ DataType determine_datatype(const DataType current_dt,
   if (current_dt == DataType::Undefined) {
     return default_dt;
   } else if ((default_dt.is_floating_point() || precise) && !current_dt.is_floating_point()) {
-    WARN("Cannot use non-floating-point datatype with " + str(Mapping::contrast_names.at(contrast).description) +
-         " contrast" + (precise ? " and precise mapping" : "") + "; defaulting to " + str(default_dt.specifier()));
+    WARN(fmt::format("Cannot use non-floating-point datatype with {} contrast{}; defaulting to {}",
+                     str(Mapping::contrast_names.at(contrast).description),
+                     (precise ? " and precise mapping" : ""),
+                     str(default_dt.specifier())));
     return default_dt;
   } else {
     return current_dt;
@@ -274,8 +277,10 @@ void run() {
         "voxel size must either be a single isotropic value, or a list of 3 comma-separated voxel dimensions");
 
   if (!voxel_size.empty())
-    INFO("creating image with voxel dimensions [ " + str(voxel_size[0]) + " " + str(voxel_size[1]) + " " +
-         str(voxel_size[2]) + " ]");
+    INFO(fmt::format("creating image with voxel dimensions [ {} {} {} ]",
+                     str(voxel_size[0]),
+                     str(voxel_size[1]),
+                     str(voxel_size[2])));
 
   Header header;
   auto opt = get_options("template");
@@ -452,7 +457,7 @@ void run() {
       WARN("cannot use upsampling if only streamline endpoints are to be mapped");
     } else {
       upsample_ratio = opt[0][0];
-      INFO("track upsampling ratio manually set to " + str(upsample_ratio));
+      INFO(fmt::format("track upsampling ratio manually set to {}", str(upsample_ratio)));
     }
   } else if (!ends_only) {
     // If accurately calculating the length through each voxel traversed, need a higher upsampling ratio
@@ -460,7 +465,7 @@ void run() {
     // For all other applications, making the upsampled step size about 1/3rd of a voxel seems sufficient
     try {
       upsample_ratio = determine_upsample_ratio(header, properties, (precise ? 0.1 : 0.333));
-      INFO("track upsampling ratio automatically set to " + str(upsample_ratio));
+      INFO(fmt::format("track upsampling ratio automatically set to {}", str(upsample_ratio)));
     } catch (Exception &e) {
       e.push_back("Try using -upsample option to explicitly set the streamline upsampling ratio;");
       e.push_back("generally recommend a value of around (3 x step_size / voxel_size)");
@@ -476,9 +481,9 @@ void run() {
   opt = get_options("datatype");
   if (!opt.empty()) {
     if (writer_type == writer_dim::DEC || writer_type == writer_dim::TOD) {
-      WARN("Can't manually set datatype for " + str(Mapping::output_dimension_names.at(writer_type)) +
-           " processing;" + //
-           " overriding to Float32");
+      WARN(fmt::format("Can't manually set datatype for {} processing;{}",
+                       str(Mapping::output_dimension_names.at(writer_type)), //
+                       " overriding to Float32"));
     } else {
       header.datatype() = DataType::parse(opt[0][0]);
     }
@@ -505,7 +510,7 @@ void run() {
     header.keyval()["map_zero"] = "1";
 
   // Produce a useful INFO message
-  std::string msg = std::string("Generating ") + Mapping::output_dimension_names.at(writer_type) + " image" + " with " +
+  std::string msg = "Generating " + Mapping::output_dimension_names.at(writer_type) + " image" + " with " +
                     Mapping::contrast_names.at(contrast).description + " contrast";
   if (contrast == contrast_t::SCALAR_MAP || contrast == contrast_t::SCALAR_MAP_COUNT ||
       contrast == contrast_t::FOD_AMP || contrast == contrast_t::CURVATURE)

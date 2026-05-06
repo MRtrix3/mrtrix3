@@ -24,6 +24,7 @@
 #include "math/sphere.h"
 #include "progressbar.h"
 
+#include <fmt/format.h>
 #include <functional>
 #include <random>
 

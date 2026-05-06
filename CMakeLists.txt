@@ -29,6 +29,7 @@ option(MRTRIX_ENABLE_GPU "Enable GPU computing features" ON)
 option(MRTRIX_IGNORE_VERSION_MISMATCH "Ignore version mismatch between git tag and MRtrix base version" OFF)
 
 option(MRTRIX_USE_SYSTEM_EIGEN "Use system-installed Eigen3 library" OFF)
+option(MRTRIX_USE_SYSTEM_FMT "Use system-installed fmt library" OFF)
 option(MRTRIX_USE_SYSTEM_JSON "Use system-installed Json for Modern C++ library" OFF)
 option(MRTRIX_USE_SYSTEM_NIFTI "Use system-installed NIfTI C headers" OFF)
 option(MRTRIX_USE_SYSTEM_GTEST "Use system-installed Google Test library" OFF)

@@ -21,6 +21,7 @@
 #include "file/matrix.h"
 #include "file/nifti_utils.h"
 #include "filter/reslice.h"
+#include "fmt.h"
 #include "image.h"
 #include "image_helpers.h"
 #include "interp/cubic.h"
@@ -38,6 +39,7 @@
 #include "registration/transform/rigid.h"
 #include "registration/warp/validate.h"
 #include "transform.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -156,8 +158,8 @@ void run() {
     if (n_images * 2 != argument.size()) {
       std::string err;
       for (const auto &a : argument)
-        err += " " + str(a);
-      throw Exception("unexpected number of input images. arguments:" + err);
+        err += fmt::format(" {}", a);
+      throw Exception(fmt::format("unexpected number of input images. arguments:{}", err));
     }
 
     bool is1 = true;
@@ -234,14 +236,16 @@ void run() {
   Eigen::MatrixXd trafo = MR::Transform(input1[0]).scanner2voxel.linear();
   for (size_t i = 1; i < n_images; i++) {
     if (!trafo.isApprox(MR::Transform(input1[i]).scanner2voxel.linear(), 1e-5))
-      WARN("Multi contrast image has different header transformation from first image. Ignoring transformation of " +
-           str(input1[i].name()));
+      WARN(fmt::format(
+          "Multi contrast image has different header transformation from first image. Ignoring transformation of {}",
+          input1[i].name()));
   }
   trafo = MR::Transform(input2[0]).scanner2voxel.linear();
   for (size_t i = 1; i < n_images; i++) {
     if (!trafo.isApprox(MR::Transform(input2[i]).scanner2voxel.linear(), 1e-5))
-      WARN("Multi contrast image has different header transformation from first image. Ignoring transformation of " +
-           str(input2[i].name()));
+      WARN(fmt::format(
+          "Multi contrast image has different header transformation from first image. Ignoring transformation of {}",
+          input2[i].name()));
   }
 
   // multi-contrast settings
@@ -257,14 +261,17 @@ void run() {
     if (i > 0)
       check_dimensions(input2[i], input2[i - 1], 0, 3);
     if ((input1[i].ndim() != 3) and (input1[i].ndim() != 4))
-      throw Exception("image dimensionality other than 3 or 4 are not supported. image " + str(input1[i].name()) +
-                      " is " + str(input1[i].ndim()) + " dimensional");
+      throw Exception(
+          fmt::format("image dimensionality other than 3 or 4 are not supported. image {} is {} dimensional",
+                      str(input1[i].name()),
+                      str(input1[i].ndim())));
 
     const size_t nvols1 = input1[i].ndim() == 3 ? 1 : input1[i].size(3);
     const size_t nvols2 = input2[i].ndim() == 3 ? 1 : input2[i].size(3);
     if (nvols1 != nvols2)
-      throw Exception("input images do not have the same number of volumes: " + str(input2[i].name()) + " and " +
-                      str(input1[i].name()));
+      throw Exception(fmt::format("input images do not have the same number of volumes: {} and {}",
+                                  str(input2[i].name()),
+                                  str(input1[i].name())));
 
     // set do_reorientation and image_lmax
     if (nvols1 == 1) { // 3D or one volume
@@ -306,7 +313,7 @@ void run() {
   if (!do_reorientation and directions_cartesian.cols())
     WARN("-directions option ignored since no FOD reorientation is being performed");
 
-  INFO("maximum input lmax: " + str(max_mc_image_lmax));
+  INFO(fmt::format("maximum input lmax: {}", str(max_mc_image_lmax)));
 
   opt = get_options("transformed");
   std::vector<std::string> im1_transformed_paths;
@@ -318,7 +325,8 @@ void run() {
     for (size_t c = 0; c < opt.size(); c++) {
       Registration::check_image_output(opt[c][0], input2[c]);
       im1_transformed_paths.push_back(opt[c][0]);
-      INFO(input1[c].name() + ", transformed to space of image2, will be written to " + im1_transformed_paths[c]);
+      INFO(fmt::format(
+          "{}, transformed to space of image2, will be written to {}", input1[c].name(), im1_transformed_paths[c]));
     }
   }
 
@@ -333,12 +341,14 @@ void run() {
     for (size_t c = 0; c < opt.size(); c++) {
       Registration::check_image_output(opt[c][0], input2[c]);
       input1_midway_transformed_paths.push_back(opt[c][0]);
-      INFO(input1[c].name() + ", transformed to midway space, will be written to " +
-           input1_midway_transformed_paths[c]);
+      INFO(fmt::format("{}, transformed to midway space, will be written to {}",
+                       input1[c].name(),
+                       input1_midway_transformed_paths[c]));
       Registration::check_image_output(opt[c][1], input1[c]);
       input2_midway_transformed_paths.push_back(opt[c][1]);
-      INFO(input2[c].name() + ", transformed to midway space, will be written to " +
-           input2_midway_transformed_paths[c]);
+      INFO(fmt::format("{}, transformed to midway space, will be written to {}",
+                       input2[c].name(),
+                       input2_midway_transformed_paths[c]));
     }
   }
 
@@ -477,7 +487,8 @@ void run() {
     rigid_lmax = parse_ints<uint32_t>(opt[0][0]);
     for (size_t i = 0; i < rigid_lmax.size(); ++i)
       if (rigid_lmax[i] > max_mc_image_lmax) {
-        WARN("the requested -rigid_lmax exceeds the lmax of the input images, setting it to " + str(max_mc_image_lmax));
+        WARN(fmt::format("the requested -rigid_lmax exceeds the lmax of the input images, setting it to {}",
+                         str(max_mc_image_lmax)));
         rigid_lmax[i] = max_mc_image_lmax;
       }
     rigid_registration.set_lmax(rigid_lmax);
@@ -616,8 +627,8 @@ void run() {
     affine_lmax = parse_ints<uint32_t>(opt[0][0]);
     for (size_t i = 0; i < affine_lmax.size(); ++i)
       if (affine_lmax[i] > max_mc_image_lmax) {
-        WARN("the requested -affine_lmax exceeds the lmax of the input images, setting it to " +
-             str(max_mc_image_lmax));
+        WARN(fmt::format("the requested -affine_lmax exceeds the lmax of the input images, setting it to {}",
+                         max_mc_image_lmax));
         affine_lmax[i] = max_mc_image_lmax;
       }
     affine_registration.set_lmax(affine_lmax);
@@ -683,10 +694,9 @@ void run() {
   opt = get_options("nl_init");
   const bool nonlinear_init = !opt.empty();
   if (nonlinear_init) {
-
     if (!do_nonlinear)
-      throw Exception(
-          "the non linear initialisation option -nl_init cannot be used when no non-linear registration is requested");
+      throw Exception("the non linear initialisation option -nl_init cannot be used when no non-linear registration "
+                      "is requested");
 
     if (!Path::is_mrtrix_image(opt[0][0]) &&                    //
         !(Path::has_suffix(opt[0][0], {".nii", ".nii.gz"}) &&   //
@@ -824,7 +834,7 @@ void run() {
         max_requested_lmax = std::max(max_requested_lmax, affine_registration.get_lmax());
       if (do_nonlinear)
         max_requested_lmax = std::max(max_requested_lmax, nl_registration.get_lmax());
-      INFO("maximum used lmax: " + str(max_requested_lmax));
+      INFO(fmt::format("maximum used lmax: {}", str(max_requested_lmax)));
     }
 
     for (size_t idx = 0; idx < n_images; ++idx) {

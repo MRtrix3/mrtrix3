@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <fmt/format.h>
 #include <unordered_map>
 
 #include "algo/loop.h"
@@ -87,7 +88,7 @@ public:
             const vox_stat_t voxel_statistic = vox_stat_t::SUM,
             const writer_dim type = writer_dim::GREYSCALE)
       : MapWriterBase(header, name, voxel_statistic, type),
-        buffer(Image<value_type>::scratch(header, "TWI " + str(output_dimension_names.at(type)) + " buffer")) {
+        buffer(Image<value_type>::scratch(header, fmt::format("TWI {}", output_dimension_names.at(type)) + " buffer")) {
     auto loop = Loop(buffer);
     if (type == writer_dim::DEC || type == writer_dim::TOD) {
 

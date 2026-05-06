@@ -24,6 +24,7 @@
 #include "progressbar.h"
 
 #include "dwi/directions/file.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -124,7 +125,8 @@ void run() {
     if (get_options("shells").empty() && shells.has_bzero() && shells.count() > 1) {
       n_start = 1;
       if (get_options("output").empty())
-        print(std::string(argument[0]) + " (b=0) [ " + str(shells.smallest().count(), precision) + " volumes ]\n\n");
+        print(fmt::format(
+            "{} (b=0) [ {} volumes ]\\n\\n", std::string(argument[0]), str(shells.smallest().count(), precision)));
     }
 
     Eigen::MatrixXd dirs;
@@ -134,7 +136,7 @@ void run() {
       for (size_t idx = 0; idx < shells[n].count(); ++idx)
         dirs.row(idx) = directions.row(shells[n].get_volumes()[idx]).head(3);
 
-      report(std::string(argument[0]) + " (b=" + str(shells[n].get_mean()) + ")", dirs);
+      report(std::string(argument[0]) + fmt::format(" (b={}", shells[n].get_mean()) + ")", dirs);
     }
 
   } else
@@ -178,7 +180,7 @@ public:
 
 Metrics compute(Eigen::MatrixXd &directions) {
   if (directions.cols() < 3)
-    throw Exception("unexpected matrix size for scheme \"" + str(argument[0]) + "\"");
+    throw Exception(fmt::format("unexpected matrix size for scheme \"{}\"", str(argument[0])));
   Math::Sphere::normalise_cartesian(directions);
 
   std::vector<double> NN_bipolar(directions.rows(), -1.0);
@@ -269,7 +271,7 @@ void output_selected(const Metrics &metrics, std::string_view selection) {
         throw Exception("spherical harmonic order requested is too large given number of directions");
       std::cout << metrics.SH[order] << " ";
     } else
-      throw Exception("unknown output specifier \"" + x + "\"");
+      throw Exception(fmt::format("unknown output specifier \"{}\"", x));
   }
 
   std::cout << "\n";
@@ -284,13 +286,14 @@ void report(std::string_view title, Eigen::MatrixXd &directions) {
     return;
   }
 
-  std::string output = title + " [ " + str(metrics.ndirs, precision) + " directions ]\n";
+  std::string output = fmt::format("{} [ {} directions ]\n", title, metrics.ndirs);
 
   output += "\n  Bipolar electrostatic repulsion model:\n";
-  output += "    nearest-neighbour angles: mean = " + str(metrics.BN[0], precision) + ", range [ " +
-            str(metrics.BN[1], precision) + " - " + str(metrics.BN[2], precision) + " ]\n";
-  output += "    energy: total = " + str(metrics.BE[0], precision) + ", mean = " + str(metrics.BE[1], precision) +
-            ", range [ " + str(metrics.BE[2], precision) + " - " + str(metrics.BE[3], precision) + " ]\n";
+  output += "    nearest-neighbour angles: mean = " + fmt::format("{}, range [ ", metrics.BN[0], precision) +
+            fmt::format("{} - ", metrics.BN[1], precision) + fmt::format("{} ]\n", metrics.BN[2], precision);
+  output += "    energy: total = " + fmt::format("{}, mean = ", metrics.BE[0], precision) +
+            fmt::format("{}, range [ ", metrics.BE[1], precision) + fmt::format("{} - ", metrics.BE[2], precision) +
+            fmt::format("{} ]\n", metrics.BE[3], precision);
 
   output += "\n  Unipolar electrostatic repulsion model:\n";
   output += "    nearest-neighbour angles: mean = " + str(metrics.UN[0], precision) + ", range [ " +

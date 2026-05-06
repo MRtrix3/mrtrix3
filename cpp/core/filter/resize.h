@@ -26,6 +26,7 @@
 #include "interp/linear.h"
 #include "interp/nearest.h"
 #include "interp/sinc.h"
+#include <fmt/format.h>
 
 namespace MR::Filter {
 /** \addtogroup Filters
@@ -120,8 +121,9 @@ public:
     if (oversample.size() == 1)
       oversample.resize(3, oversample[0]);
     else if (oversample.size() != 3 and !oversample.empty())
-      throw Exception("FIXME oversample requires either a vector of a 0 (auto), 1 integer, or 3 integers; got " +
-                      str(oversample.size()));
+      throw Exception(
+          fmt::format("FIXME oversample requires either a vector of a 0 (auto), 1 integer, or 3 integers; got {}",
+                      str(oversample.size())));
     for (auto f : oversample) {
       if (f < 1)
         throw Exception("oversample factors must be positive integers");

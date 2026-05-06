@@ -26,6 +26,7 @@
 #include "math/median.h"
 #include "memory.h"
 #include "progressbar.h"
+#include <fmt/format.h>
 
 namespace MR::Filter {
 
@@ -69,9 +70,9 @@ public:
     ssize_t cnt_upper = std::floor(fov_max * input.size(0) * input.size(1) * input.size(2));
     float mad, median, previous_mad, previous_median;
     calculate_median_mad<Image<float>, Image<bool>>(input, int_roi, cnt, median, mad);
-    INFO("median: " + str(median));
-    INFO("mad: " + str(mad));
-    INFO("lower: " + str(median - zlower * mad) + " upper: " + str(median + zupper * mad));
+    INFO(fmt::format("median: {}", median));
+    INFO(fmt::format("mad: {}", mad));
+    INFO("lower: " + fmt::format("{} upper: ", median - zlower * mad) + str(median + zupper * mad));
 
     INFO("eroding intensity mask");
     while (cnt >= cnt_lower) {
@@ -90,12 +91,13 @@ public:
       calculate_median_mad<Image<float>, Image<bool>>(input, int_roi, cnt, median, mad);
       upper = median + zupper * mad;
       lower = median - zlower * mad;
-      INFO("median: " + str(median) + ", changed: " + str((median - previous_median) / previous_median));
-      INFO("mad: " + str(mad) + ", changed: " + str((mad - previous_mad) / previous_mad));
-      INFO("FOV: " + str(static_cast<default_type>(cnt) /
-                         static_cast<default_type>(input.size(0) * input.size(1) * input.size(2))));
-      INFO("lower: " + str(lower) + " upper: " + str(upper));
-      INFO("cnt_upper - cnt: " + str(cnt_upper - cnt));
+      INFO(fmt::format("median: {}, changed: {}", median, (median - previous_median) / previous_median));
+      INFO(fmt::format("mad: {}, changed: {}", mad, (mad - previous_mad) / previous_mad));
+      INFO(fmt::format("FOV: {}",
+                       static_cast<default_type>(cnt) /
+                           static_cast<default_type>(input.size(0) * input.size(1) * input.size(2))));
+      INFO(fmt::format("lower: {} upper: {}", lower, upper));
+      INFO(fmt::format("cnt_upper - cnt: {}", cnt_upper - cnt));
       if (lower > 0.0 && ((median + 2.5 * mad) - (previous_median + 2.5 * previous_mad)) < 0.0 && (cnt < cnt_upper))
         break;
     }
@@ -145,11 +147,11 @@ public:
         calculate_median_mad<Image<float>, Image<bool>>(input, int_roi, cnt, median, mad);
         upper = median + zupper * mad;
         lower = median - zlower * mad;
-        INFO("median: " + str(median) + ", changed: " + str((median - previous_median)));
-        INFO("mad: " + str(mad) + ", changed: " + str((mad - previous_mad)));
-        INFO("lower: " + str(lower) + " upper: " + str(upper));
+        INFO("median: " + fmt::format("{}, changed: ", median) + str((median - previous_median)));
+        INFO("mad: " + fmt::format("{}, changed: ", mad) + str((mad - previous_mad)));
+        INFO("lower: " + fmt::format("{} upper: ", lower) + str(upper));
         float change = MR::abs(median - previous_median) / previous_mad;
-        INFO("convergence: " + str(change));
+        INFO(fmt::format("convergence: {}", change));
         if (change < 1e-2)
           break;
       }
@@ -163,9 +165,9 @@ public:
       lower = 0.0;
     }
 
-    INFO("lower: " + str(lower));
-    INFO("upper: " + str(upper));
-    INFO("bridge: " + str(bridge));
+    INFO(fmt::format("lower: {}", lower));
+    INFO(fmt::format("upper: {}", upper));
+    INFO(fmt::format("bridge: {}", bridge));
 
     mask = Image<bool>::scratch(Header(spatial_prior), "temporary mask");
     if (progress)

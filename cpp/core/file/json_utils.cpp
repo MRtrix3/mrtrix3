@@ -32,18 +32,19 @@
 #include "metadata/slice_encoding.h"
 #include "mrtrix.h"
 #include "types.h"
+#include <fmt/format.h>
 
 namespace MR::File::JSON {
 
 void load(Header &H, std::string_view path) {
-  std::ifstream in({std::string(path)});
+  std::ifstream in{std::string(path)};
   if (!in)
-    throw Exception("Error opening JSON file \"" + std::string(path) + "\"");
+    throw Exception(fmt::format("Error opening JSON file \"{}\"", path));
   nlohmann::json json;
   try {
     in >> json;
   } catch (std::logic_error &e) {
-    throw Exception("Error parsing JSON file \"" + std::string(path) + "\": " + e.what());
+    throw Exception(fmt::format("Error parsing JSON file \"{}\": {}", path, e.what()));
   }
   read(json, H);
 }
@@ -90,7 +91,7 @@ KeyValues read(const nlohmann::json &json) {
             line.push_back(str(k));
           result.insert(std::make_pair(i.key(), join(line, ",")));
         } else {
-          throw Exception("JSON entry \"" + i.key() + "\" is array but contains mixed data types");
+          throw Exception(fmt::format("JSON entry \"{}\" is array but contains mixed data types", i.key()));
         }
       } else if (num_subarrays == i->size()) {
         std::vector<std::string> s;
@@ -102,7 +103,7 @@ KeyValues read(const nlohmann::json &json) {
         }
         result.insert(std::make_pair(i.key(), join(s, "\n")));
       } else
-        throw Exception("JSON entry \"" + i.key() + "\" contains mixture of elements and arrays");
+        throw Exception(fmt::format("JSON entry \"{}\" contains mixture of elements and arrays", i.key()));
     }
   }
   return result;

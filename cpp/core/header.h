@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <fmt/format.h>
 #include <functional>
 #include <map>
 
@@ -337,7 +338,7 @@ public:
   //! replace existing intensity offset & scale with values supplied
   void set_intensity_scaling(default_type scaling = 1.0, default_type bias = 0.0) {
     if (!std::isfinite(scaling) || !std::isfinite(bias) || scaling == 0.0)
-      WARN("invalid scaling parameters (offset: " + str(bias) + ", scale: " + str(scaling) + ")");
+      WARN("invalid scaling parameters (offset: " + fmt::format("{}, scale: ", bias) + fmt::format("{})", scaling));
     scale_ = scaling;
     offset_ = bias;
   }
@@ -443,3 +444,11 @@ inline ssize_t &Header::stride(size_t axis) { return axes_[axis].stride; }
 
 //! @}
 } // namespace MR
+
+// Formatters for types that can't be formatted by default
+template <> struct fmt::formatter<MR::Header::NDimProxy> {
+  constexpr auto parse(fmt::format_parse_context &ctx) { return ctx.begin(); }
+  template <typename FormatContext> auto format(const MR::Header::NDimProxy &ndim, FormatContext &ctx) const {
+    return fmt::format_to(ctx.out(), "{}", static_cast<size_t>(ndim));
+  }
+};

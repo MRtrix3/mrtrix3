@@ -19,6 +19,7 @@
 #include "math/betainc.h"
 
 #include "mrtrix.h"
+#include <fmt/format.h>
 
 namespace MR::Math {
 
@@ -67,7 +68,7 @@ default_type betaincreg(const default_type a, const default_type b, const defaul
   static const default_type tiny_threshold = 1.0e-30;
 
   if (a <= 0.0 || b <= 0.0 || x < 0.0 || x > 1.0)
-    throw Exception("Invalid inputs: MR::Math::betaincreg(" + str(a) + ", " + str(b) + ", " + str(x) + ")");
+    throw Exception(fmt::format("Invalid inputs: MR::Math::betaincreg({}, {}, {})", str(a), str(b), str(x)));
 
   // The continued fraction converges nicely for x < (a+1)/(a+b+2)
   if (x > (a + 1.0) / (a + b + 2.0)) {

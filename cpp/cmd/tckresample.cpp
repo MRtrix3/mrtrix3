@@ -28,6 +28,7 @@
 #include "math/math.h"
 #include "ordered_thread_queue.h"
 #include "thread.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -91,8 +92,8 @@ public:
 
   bool operator()(const Streamline<value_type> &tck) {
     auto progress_message = [&]() {
-      return "resampling streamlines (count: " + str(writer.count) +
-             ", skipped: " + str(writer.total_count - writer.count) + ")";
+      return "resampling streamlines (count: " + fmt::format("{}, skipped: ", writer.count) +
+             fmt::format("{})", writer.total_count - writer.count);
     };
     writer(tck);
     progress.set_text(progress_message());

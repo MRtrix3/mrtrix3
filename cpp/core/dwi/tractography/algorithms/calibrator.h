@@ -20,6 +20,7 @@
 #include "dwi/tractography/tracking/types.h"
 #include "math/SH.h"
 #include "types.h"
+#include <fmt/format.h>
 
 constexpr float sqrt_3_over_2 = 0.866025403784439;
 
@@ -91,9 +92,9 @@ template <class Method> void calibrate(Method &method) {
   method.calibrate_list = direction_grid(max_angle + theta_min, sqrt3 * theta_min);
   method.calibrate_ratio = ratio;
 
-  INFO("rejection sampling will use " + str(method.calibrate_list.size()) + " directions" + //
-       " with a ratio of " + str(method.calibrate_ratio) +                                  //
-       " (predicted number of samples per step = " + str(N_min) + ")");                     //
+  INFO(fmt::format("rejection sampling will use {}", method.calibrate_list.size()) + " directions" + //
+       fmt::format(" with a ratio of {}", method.calibrate_ratio) +                                  //
+       " (predicted number of samples per step = " + fmt::format("{})", N_min));                     //
 }
 
 } // namespace MR::DWI::Tractography::Algorithms

@@ -15,6 +15,7 @@
  */
 
 #include "mrview/tool/fixel/fixel.h"
+#include <fmt/format.h>
 
 #include "app.h"
 #include "dialog/file.h"
@@ -44,18 +45,18 @@ public:
         MR::Fixel::debug_validate_directory(filenames[i]);
         fixel_image = new Directory(filenames[i], fixel_tool);
       } catch (MR::Fixel::InvalidDirectoryException &error) {
-        error.push_back("Couldn't open \"" + filenames[i] + "\" as a Directory fixel dataset");
+        error.push_back(fmt::format("Couldn't open \"{}\" as a Directory fixel dataset", filenames[i]));
         try {
           if (MR::App::log_level >= 3)
             MR::Peaks::debug_validate_image(MR::Image<float>::open(filenames[i]));
           fixel_image = new Image4D(filenames[i], fixel_tool);
         } catch (InvalidImageException &e) {
           error.push_back(e);
-          error.push_back("Couldn't open \"" + filenames[i] + "\" as a 4D vector image");
+          error.push_back(fmt::format("Couldn't open \"{}\" as a 4D vector image", filenames[i]));
           throw error;
         }
       } catch (Exception &e) {
-        e.push_back("Error loading \"" + filenames[i] + "\" as a fixel dataset");
+        e.push_back(fmt::format("Error loading \"{}\" as a fixel dataset", filenames[i]));
         e.display();
         continue;
       }

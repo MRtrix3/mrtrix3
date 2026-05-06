@@ -16,9 +16,11 @@
 
 #pragma once
 
+#include <fmt/format.h>
 #include <mutex>
 
 #include "adapter/gradient3D.h"
+#include "fmt.h"
 #include "image_helpers.h"
 #include "registration/multi_contrast.h"
 
@@ -61,7 +63,7 @@ public:
         weight.segment(mc.start, mc.nvols).fill(mc.weight);
     } else
       weight.fill(1.0);
-    DEBUG("Demons4D weights: " + str(weight.transpose()));
+    DEBUG(fmt::format("Demons4D weights: {}", weight));
   }
 
   ~Demons4D() {

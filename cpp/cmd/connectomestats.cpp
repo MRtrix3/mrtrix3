@@ -31,6 +31,7 @@
 #include "connectome/mat2vec.h"
 
 #include "stats/permtest.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -146,7 +147,7 @@ public:
     auto M = File::Matrix::load_matrix<measurements_value_type>(path);
     Connectome::check(M);
     if (Connectome::is_directed(M))
-      throw Exception("Connectome from file \"" + Path::basename(path) + "\" is a directed matrix");
+      throw Exception(fmt::format("Connectome from file \"{}\" is a directed matrix", Path::basename(path)));
     Connectome::to_upper(M);
     Connectome::Mat2Vec mat2vec(M.rows());
     mat2vec.M2V(M, data);
@@ -173,13 +174,15 @@ void run() {
   // Read file names and check files exist
   CohortDataImport importer;
   importer.initialise<SubjectConnectomeImport>(argument[0]);
-  CONSOLE("Number of inputs: " + str(importer.size()));
+  CONSOLE(fmt::format("Number of inputs: {}", importer.size()));
   const index_type num_edges = importer[0]->size();
 
   for (index_type i = 1; i < importer.size(); ++i) {
     if (importer[i]->size() != importer[0]->size())
-      throw Exception("Size of connectome for subject " + str(i) + " (file \"" + importer[i]->name() + "\"" + //
-                      " does not match that of first subject");                                               //
+      throw Exception(fmt::format("Size of connectome for subject {} (file \"{}\"{}",
+                                  str(i),
+                                  importer[i]->name(),                       //
+                                  " does not match that of first subject")); //
   }
 
   // TODO Could determine this from the vector length with the right equation
@@ -201,8 +204,9 @@ void run() {
     enhancer.reset(new Stats::TFCE::Wrapper(base));
     load_tfce_parameters(*(dynamic_cast<Stats::TFCE::Wrapper *>(enhancer.get())));
     if (!get_options("threshold").empty())
-      WARN(MR::Enum::lowercase_name(Algorithm::TFNBS) + " is a threshold-free algorithm;" + //
-           " -threshold option ignored");                                                   //
+      WARN(fmt::format("{} is a threshold-free algorithm;{}",
+                       MR::Enum::lowercase_name(Algorithm::TFNBS), //
+                       " -threshold option ignored"));             //
   } break;
   case Algorithm::None: {
     enhancer.reset(new MR::Connectome::Enhance::PassThrough());
@@ -224,14 +228,17 @@ void run() {
         File::Matrix::load_matrix<bool>(opt[0][0]));
     Connectome::check(mask_inference_matrix, num_nodes);
     mat2vec.M2V(mask_inference_matrix, mask_inference);
-    CONSOLE("Number of edges in posthoc analysis mask: " + str(mask_inference.count()) + " / " + str(num_edges));
+    CONSOLE(fmt::format("Number of edges in posthoc analysis mask: {}", mask_inference.count()) +
+            fmt::format(" / {}", num_edges));
   }
 
   // Load design matrix
   const matrix_type design = File::Matrix::load_matrix(argument[2]);
   if (static_cast<index_type>(design.rows()) != importer.size())
-    throw Exception("number of subjects (" + str(importer.size()) + ")" +                            //
-                    " does not match number of rows in design matrix (" + str(design.rows()) + ")"); //
+    throw Exception(fmt::format("number of subjects ({}){}{})",
+                                str(importer.size()), //
+                                " does not match number of rows in design matrix (",
+                                str(design.rows()))); //
 
   // Before validating the contrast matrix, we first need to see if there are any
   //   additional design matrix columns coming from edge-wise subject data
@@ -245,9 +252,9 @@ void run() {
       nans_in_columns = true;
   }
   const index_type num_factors = design.cols() + extra_columns.size();
-  CONSOLE("Number of factors: " + str(num_factors));
+  CONSOLE(fmt::format("Number of factors: {}", num_factors));
   if (!extra_columns.empty()) {
-    CONSOLE("Number of element-wise design matrix columns: " + str(extra_columns.size()));
+    CONSOLE(fmt::format("Number of element-wise design matrix columns: {}", extra_columns.size()));
     if (nans_in_columns)
       CONSOLE("Non-finite values detected in element-wise design matrix columns;"             //
               " individual rows will be removed from edge-wise design matrices accordingly"); //
@@ -258,12 +265,12 @@ void run() {
   auto variance_groups = GLM::load_variance_groups(design.rows());
   const index_type num_vgs = variance_groups.size() == 0 ? 1 : (variance_groups.maxCoeff() + 1);
   if (num_vgs > 1)
-    CONSOLE("Number of variance groups: " + str(num_vgs));
+    CONSOLE(fmt::format("Number of variance groups: {}", num_vgs));
 
   // Load hypotheses
   const std::vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses(num_factors);
   const index_type num_hypotheses = hypotheses.size();
-  CONSOLE("Number of hypotheses: " + str(num_hypotheses));
+  CONSOLE(fmt::format("Number of hypotheses: {}", num_hypotheses));
 
   const std::string output_prefix = argument[3];
 
@@ -301,7 +308,7 @@ void run() {
     ProgressBar progress("outputting beta coefficients, effect size and standard deviation",
                          num_factors + (2 * num_hypotheses) + num_vgs + (variable_design_matrix ? 1 : 0));
     for (index_type i = 0; i != num_factors; ++i) {
-      File::Matrix::save_matrix(mat2vec.V2M(betas.row(i)), output_prefix + "beta_" + str(i) + ".csv");
+      File::Matrix::save_matrix(mat2vec.V2M(betas.row(i)), output_prefix + "beta_" + fmt::format("{}.csv", i));
       ++progress;
     }
     for (index_type i = 0; i != num_hypotheses; ++i) {
@@ -325,7 +332,7 @@ void run() {
       File::Matrix::save_matrix(mat2vec.V2M(stdev.row(0)), output_prefix + "std_dev.csv");
     } else {
       for (index_type i = 0; i != num_vgs; ++i) {
-        File::Matrix::save_matrix(mat2vec.V2M(stdev.row(i)), output_prefix + "std_dev" + str(i) + ".csv");
+        File::Matrix::save_matrix(mat2vec.V2M(stdev.row(i)), output_prefix + "std_dev" + fmt::format("{}.csv", i));
         ++progress;
       }
     }

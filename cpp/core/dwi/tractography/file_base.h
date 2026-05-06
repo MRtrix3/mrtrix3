@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <fmt/format.h>
 #include <iomanip>
 #include <map>
 #include <set>
@@ -69,7 +70,7 @@ public:
   }
 
   void create(File::OFStream &out, const Properties &properties, std::string_view type) {
-    out << "mrtrix " + type + "\nEND\n";
+    out << fmt::format("mrtrix {}\nEND\n", type);
 
     for (const auto &i : properties) {
       if ((i.first != "count") && (i.first != "total_count")) {
@@ -101,7 +102,7 @@ public:
     count_offset = out.tellp();
     out << "0\nEND\n";
     out.seekp(0);
-    out << "mrtrix " + type + "    ";
+    out << fmt::format("mrtrix {}    ", type);
     out.seekp(data_offset);
   }
 
@@ -117,7 +118,7 @@ protected:
 
   void verify_stream(const File::OFStream &out) {
     if (!out.good())
-      throw Exception("error writing file \"" + name + "\": " + strerror(errno));
+      throw Exception(fmt::format("error writing file \"{}\": {}", name, strerror(errno)));
   }
 
   void update_counts(File::OFStream &out) {

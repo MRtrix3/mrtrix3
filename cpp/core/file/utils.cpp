@@ -24,6 +24,7 @@
 #include "exception.h"
 #include "file/config.h"
 #include "file/path.h"
+#include <fmt/format.h>
 
 namespace MR::File {
 
@@ -117,13 +118,16 @@ std::string tmpfile_prefix() {
 void remove(std::string_view filename) {
   const std::string temp(filename);
   if (std::remove(temp.c_str()) != 0)
-    throw Exception("error deleting file \"" + temp + "\": " + strerror(errno));
+    throw Exception(fmt::format("error deleting file \"{}\": {}", temp, strerror(errno)));
 }
 
 void create(std::string_view filename, int64_t size) {
   const std::string temp(filename);
-  DEBUG(std::string("creating ") + (size ? "" : "empty ") + "file \"" + temp + "\"" +
-        (size == 0 ? "" : (" with size " + str(size))));
+  DEBUG(fmt::format("{}{}file \"{}\"{}",
+                    "creating ",
+                    (size ? "" : "empty "),
+                    temp,
+                    (size == 0 ? "" : (fmt::format(" with size {}", size)))));
 
   int fid(0);
   while ((fid = open(temp.c_str(),                                              //
@@ -132,13 +136,13 @@ void create(std::string_view filename, int64_t size) {
           ) < 0) {                                                              //
     if (errno == EEXIST) {
       App::check_overwrite(filename);
-      INFO("file \"" + temp + "\" already exists - removing");
+      INFO(fmt::format("file \"{}\" already exists - removing", temp));
       remove(filename);
     } else
-      throw Exception("error creating output file \"" + temp + "\": " + std::strerror(errno));
+      throw Exception(fmt::format("error creating output file \"{}\": {}", temp, std::strerror(errno)));
   }
   if (fid < 0) {
-    std::string mesg("error creating file \"" + temp + "\": " + strerror(errno));
+    std::string mesg(fmt::format("error creating file \"{}\": ", temp) + strerror(errno));
     if (errno == EEXIST)
       mesg += " (use -force option to force overwrite)";
     throw Exception(mesg);
@@ -149,20 +153,20 @@ void create(std::string_view filename, int64_t size) {
   close(fid);
 
   if (size != 0)
-    throw Exception("cannot resize file \"" + filename + "\": " + strerror(errno));
+    throw Exception(fmt::format("cannot resize file \"{}\": {}", filename, strerror(errno)));
 }
 
 void resize(std::string_view filename, int64_t size) {
   const std::string temp(filename);
-  DEBUG("resizing file \"" + temp + "\" to " + str(size));
+  DEBUG(fmt::format("resizing file \"{}\" to {}", temp, str(size)));
 
   const int fd = open(temp.c_str(), O_RDWR, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
   if (fd < 0)
-    throw Exception("error opening file \"" + temp + "\" for resizing: " + strerror(errno));
+    throw Exception(fmt::format("error opening file \"{}\" for resizing: {}", temp, strerror(errno)));
   const int status = ftruncate(fd, size);
   close(fd);
   if (status != 0)
-    throw Exception("cannot resize file \"" + temp + "\": " + strerror(errno));
+    throw Exception(fmt::format("cannot resize file \"{}\": {}", temp, strerror(errno)));
 }
 
 bool is_tempfile(std::string_view name, std::string_view suffix) {
@@ -174,7 +178,7 @@ bool is_tempfile(std::string_view name, std::string_view suffix) {
 }
 
 std::string create_tempfile(int64_t size, std::string_view suffix) {
-  DEBUG("creating temporary file of size " + str(size));
+  DEBUG(fmt::format("creating temporary file of size {}", str(size)));
 
   std::string filename(Path::join(tmpfile_dir(), tmpfile_prefix()) + "XXXXXX.");
   const int rand_index = filename.size() - 7;
@@ -188,13 +192,16 @@ std::string create_tempfile(int64_t size, std::string_view suffix) {
   } while (fid < 0 && errno == EEXIST);
 
   if (fid < 0)
-    throw Exception(std::string("error creating temporary file in directory \"" + tmpfile_dir() + "\": ") +
-                    strerror(errno));
+    throw Exception(
+        fmt::format(
+            "{}",
+            fmt::format("{}", std::string("error creating temporary file in directory \"" + tmpfile_dir() + "\": "))) +
+        strerror(errno));
 
   const int status = size == 0 ? 0 : ftruncate(fid, size);
   close(fid);
   if (status)
-    throw Exception("cannot resize file \"" + filename + "\": " + strerror(errno));
+    throw Exception(fmt::format("cannot resize file \"{}\": {}", filename, strerror(errno)));
 
   return filename;
 }
@@ -207,7 +214,7 @@ void mkdir(std::string_view folder) {
               0777
 #endif
               ) != 0)
-    throw Exception("error creating folder \"" + temp + "\": " + strerror(errno));
+    throw Exception(fmt::format("error creating folder \"{}\": {}", temp, strerror(errno)));
 }
 
 void rmdir(std::string_view folder, bool recursive) {
@@ -223,9 +230,9 @@ void rmdir(std::string_view folder, bool recursive) {
     }
   }
   const std::string temp(folder);
-  DEBUG("deleting folder \"" + temp + "\"...");
+  DEBUG(fmt::format("deleting folder \"{}\"...", temp));
   if (::rmdir(temp.c_str()) != 0)
-    throw Exception("error deleting folder \"" + temp + "\": " + strerror(errno));
+    throw Exception(fmt::format("error deleting folder \"{}\": {}", temp, strerror(errno)));
 }
 
 } // namespace MR::File

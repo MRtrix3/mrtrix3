@@ -31,6 +31,7 @@
 #include "dwi/tractography/editing/loader.h"
 #include "dwi/tractography/editing/receiver.h"
 #include "dwi/tractography/editing/worker.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -139,7 +140,6 @@ void run() {
   std::vector<std::string> input_file_list;
 
   for (size_t file_index = 0; file_index != num_inputs; ++file_index) {
-
     input_file_list.push_back(argument[file_index]);
 
     Properties p;
@@ -180,7 +180,7 @@ void run() {
     count += this_count;
   }
 
-  DEBUG("estimated number of input tracks: " + str(count));
+  DEBUG(fmt::format("estimated number of input tracks: {}", str(count)));
 
   // Remove keyval "total_count", as there is ambiguity about what _should_ be
   //   contained in that field upon editing one or more existing tractograms

@@ -17,6 +17,7 @@
 #pragma once
 
 #include <deque>
+#include <fmt/format.h>
 
 #include "dwi/directions/set.h"
 #include "dwi/tractography/rng.h"
@@ -189,7 +190,8 @@ private:
           return true;
         }
       }
-      FAIL("Failed to find suitable seed point after " + str(failed_seed_attempts_to_abort) + " attempts - aborting");
+      FAIL("Failed to find suitable seed point after " +
+           fmt::format("{} attempts - aborting", failed_seed_attempts_to_abort));
       return false;
     }
   }

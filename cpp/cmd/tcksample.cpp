@@ -37,6 +37,7 @@
 #include "ordered_thread_queue.h"
 #include "thread.h"
 
+#include <fmt/format.h>
 #include <optional>
 #include <tcb/span.hpp>
 
@@ -618,7 +619,7 @@ public:
 
   virtual ~ReceiverBase() {
     if (received != expected)
-      WARN("Track file reports " + str(expected) + " tracks, but contains " + str(received));
+      WARN(fmt::format("Track file reports {} tracks, but contains {}", str(expected), str(received)));
   }
 
   bool ordered() const { return process_ordered; }

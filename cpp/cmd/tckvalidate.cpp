@@ -18,6 +18,7 @@
 #include "mrtrix.h"
 
 #include "dwi/tractography/validate.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -67,14 +68,14 @@ void run() {
   const TckValidation result = validate_tck(argument[0]);
 
   CONSOLE("Tractogram \"" + std::string(argument[0]) + "\" is valid: " + //
-          str(result.n_streamlines) + " streamline(s)");                 //
+          fmt::format("{} streamline(s)", result.n_streamlines));        //
 
   if (result.n_empty > 0) {
-    WARN(str(result.n_empty) + " empty streamline(s) (0 vertices) found");
+    WARN(fmt::format("{} empty streamline(s) (0 vertices) found", str(result.n_empty)));
   }
 
   if (result.n_single_vertex > 0) {
-    WARN(str(result.n_single_vertex) + " single-vertex streamline(s) found");
+    WARN(fmt::format("{} single-vertex streamline(s) found", str(result.n_single_vertex)));
   }
 
   if (result.n_empty == 0 && result.n_single_vertex == 0) {

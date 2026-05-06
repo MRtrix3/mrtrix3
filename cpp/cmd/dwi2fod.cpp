@@ -26,6 +26,7 @@
 
 #include "dwi/sdeconv/csd.h"
 #include "dwi/sdeconv/msmt_csd.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -153,8 +154,10 @@ public:
         break;
 
     if (sdeconv.shared.niter && n >= sdeconv.shared.niter)
-      INFO("voxel [ " + str(dwi.index(0)) + " " + str(dwi.index(1)) + " " + str(dwi.index(2)) +
-           " ] did not reach full convergence");
+      INFO(fmt::format("voxel [ {} {} {} ] did not reach full convergence",
+                       str(dwi.index(0)),
+                       str(dwi.index(1)),
+                       str(dwi.index(2))));
 
     fod.row(3) = sdeconv.FOD();
 
@@ -222,8 +225,10 @@ public:
 
     sdeconv(dwi_data, output_data);
     if (sdeconv.niter >= sdeconv.shared.problem.max_niter) {
-      INFO("voxel [ " + str(dwi_image.index(0)) + " " + str(dwi_image.index(1)) + " " + str(dwi_image.index(2)) +
-           " ] did not reach full convergence");
+      INFO(fmt::format("voxel [ {} {} {} ] did not reach full convergence",
+                       str(dwi_image.index(0)),
+                       str(dwi_image.index(1)),
+                       str(dwi_image.index(2))));
     }
 
     size_t j = 0;

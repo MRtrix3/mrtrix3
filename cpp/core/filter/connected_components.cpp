@@ -15,6 +15,7 @@
  */
 
 #include "filter/connected_components.h"
+#include <fmt/format.h>
 
 namespace MR::Filter {
 
@@ -82,7 +83,7 @@ void Connector::Adjacency::initialise(const Header &header, const Voxel2Vector &
     }
     data.push_back(indices);
   }
-  DEBUG("Adjacency data for " + str(data.size()) + " voxels initialised");
+  DEBUG(fmt::format("Adjacency data for {} voxels initialised", str(data.size())));
 }
 
 void Connector::run(std::vector<Cluster> &clusters, std::vector<uint32_t> &labels) const {

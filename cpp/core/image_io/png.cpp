@@ -21,13 +21,12 @@
 #include "file/png.h"
 #include "header.h"
 #include "image_helpers.h"
+#include <fmt/format.h>
 
 namespace MR::ImageIO {
 
 void PNG::load(const Header &header, size_t) {
-  DEBUG(std::string("loading PNG ")               //
-        + (files.size() > 1 ? "images" : "image") //
-        + " \"" + header.name() + "\"");          //
+  DEBUG(fmt::format("loading PNG {} \"{}\"", (files.size() > 1 ? "images" : "image"), header.name()));
   segsize = (header.datatype().bits() * voxel_count(header) + 7) / 8;
   addresses.resize(1);
   addresses[0].reset(new uint8_t[segsize]);
@@ -47,12 +46,13 @@ void PNG::load(const Header &header, size_t) {
           ((header.ndim() > 3 && png.get_channels() != header.size(3)) ||
            (header.ndim() <= 3 && png.get_channels() > 1))) {
         Exception e("Inconsistent image properties within series \"" + header.name() + "\"");
-        e.push_back("Series: " + str(header.size(0)) + "x" + str(header.size(1)) + " x " +
-                    str(header.datatype().bits()) + " bits, " + (header.ndim() > 3 ? str(header.size(3)) : "1") +
-                    " volumes");
-        e.push_back("File \"" + files[i].name + ": " + str(png.get_width()) + "x" + str(png.get_height()) + " x " +
-                    str(png.get_bitdepth()) + "(->" + str(png.get_output_bitdepth()) + ") bits, " +
-                    str(png.get_channels()) + " channels");
+        e.push_back(fmt::format("Series: {}", header.size(0)) + fmt::format("x{}", header.size(1)) +
+                    fmt::format(" x {}", header.datatype().bits()) + " bits, " +
+                    (header.ndim() > 3 ? str(header.size(3)) : "1") + " volumes");
+        e.push_back("File \"" + files[i].name + fmt::format(": {}", png.get_width()) +
+                    fmt::format("x{}", png.get_height()) + fmt::format(" x {}", png.get_bitdepth()) +
+                    fmt::format("(->{}", png.get_output_bitdepth()) + fmt::format(") bits, {}", png.get_channels()) +
+                    " channels");
         throw e;
       }
       png.load(addresses[0].get() + (i * slice_bytes));

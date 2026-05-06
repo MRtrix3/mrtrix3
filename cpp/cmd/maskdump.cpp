@@ -18,6 +18,7 @@
 #include "command.h"
 #include "file/matrix.h"
 #include "image.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -57,7 +58,7 @@ void run() {
   Eigen::ArrayXXi prettyprint(locations.size(), in.ndim());
   for (size_t row = 0; row != locations.size(); ++row)
     prettyprint.row(row) = std::move(locations[row]);
-  INFO("Printing locations of " + str(prettyprint.rows()) + " non-zero voxels");
+  INFO(fmt::format("Printing locations of {} non-zero voxels", str(prettyprint.rows())));
   if (argument.size() == 2)
     File::Matrix::save_matrix(prettyprint, argument[1]);
   else

@@ -23,6 +23,7 @@
 #include "dwi/tractography/tracking/tractography.h"
 #include "dwi/tractography/tracking/types.h"
 #include "math/SH.h"
+#include <fmt/format.h>
 
 namespace MR::DWI::Tractography::Algorithms {
 
@@ -85,10 +86,10 @@ public:
     ~Shared() {
       mean_samples /= static_cast<double>(num_proc);
       mean_truncations /= static_cast<double>(num_proc);
-      INFO("mean number of samples per step = " + str(mean_samples));
+      INFO(fmt::format("mean number of samples per step = {}", mean_samples));
       if (mean_truncations) {
-        INFO("mean number of steps between rejection sampling truncations = " + str(1.0 / mean_truncations));
-        INFO("maximum truncation error = " + str(max_max_truncation));
+        INFO(fmt::format("mean number of steps between rejection sampling truncations = {}", 1.0 / mean_truncations));
+        INFO(fmt::format("maximum truncation error = {}", max_max_truncation));
       } else {
         INFO("no rejection sampling truncations occurred");
       }
@@ -184,7 +185,7 @@ public:
 
         val = std::pow(val, S.fod_power);
         if (val > max_val) {
-          DEBUG("max_val exceeded!!! (val = " + str(val) + ", max_val = " + str(max_val) + ")");
+          DEBUG("max_val exceeded!!! (val = " + fmt::format("{}, max_val = ", val) + fmt::format("{})", max_val));
           ++num_truncations;
           if (val / max_val > max_truncation)
             max_truncation = val / max_val;

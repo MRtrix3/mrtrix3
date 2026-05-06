@@ -16,6 +16,7 @@
 
 #include "stride.h"
 #include "header.h"
+#include <fmt/format.h>
 
 namespace MR::Stride {
 
@@ -87,8 +88,8 @@ List __from_command_line(const List &current) {
         strides.push_back(x);
     } catch (Exception &E) {
       E.display(3);
-      throw Exception("argument \"" + std::string(opt[0][0]) +
-                      "\" to option \"-strides\" is not a list of strides or an image");
+      throw Exception(fmt::format("argument \"{}\" to option \"-strides\" is not a list of strides or an image",
+                                  std::string(opt[0][0])));
     }
   }
 
@@ -98,15 +99,16 @@ List __from_command_line(const List &current) {
 
   for (const auto x : strides)
     if (MR::abs(x) > static_cast<int>(current.size()))
-      throw Exception("strides specified exceed image dimensions: got " + str(opt[0][0]) + ", but image has " +
-                      str(current.size()) + " axes");
+      throw Exception(fmt::format("strides specified exceed image dimensions: got {}, but image has {} axes",
+                                  str(opt[0][0]),
+                                  str(current.size())));
 
   for (size_t i = 0; i < strides.size() - 1; ++i) {
     if (!strides[1])
       continue;
     for (size_t j = i + 1; j < strides.size(); ++j)
       if (MR::abs(strides[i]) == MR::abs(strides[j]))
-        throw Exception("duplicate entries provided to \"-strides\" option: " + str(opt[0][0]));
+        throw Exception(fmt::format("duplicate entries provided to \"-strides\" option: {}", str(opt[0][0])));
   }
 
   List prev = get_symbolic(current);

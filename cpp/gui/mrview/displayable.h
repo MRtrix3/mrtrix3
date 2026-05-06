@@ -17,6 +17,7 @@
 #pragma once
 
 #include "math/math.h"
+#include <fmt/format.h>
 
 #include "colourmap.h"
 #include "opengl/glutils.h"
@@ -205,25 +206,19 @@ public:
   };
 
   std::string declare_shader_variables(std::string_view with_prefix = "") const {
-    std::string source = "uniform float " + with_prefix +
-                         "offset;\n"
-                         "uniform float " +
-                         with_prefix + "scale;\n";
+    std::string source =
+        fmt::format("uniform float {}offset;\n", with_prefix) + fmt::format("uniform float {}scale;\n", with_prefix);
     if (use_discard_lower())
-      source += "uniform float " + with_prefix + "lower;\n";
+      source += fmt::format("uniform float {}lower;\n", with_prefix);
     if (use_discard_upper())
-      source += "uniform float " + with_prefix + "upper;\n";
+      source += fmt::format("uniform float {}upper;\n", with_prefix);
     if (use_transparency()) {
-      source += "uniform float " + with_prefix +
-                "alpha_scale;\n"
-                "uniform float " +
-                with_prefix +
-                "alpha_offset;\n"
-                "uniform float " +
-                with_prefix + "alpha;\n";
+      source += fmt::format("uniform float {}alpha_scale;\n", with_prefix) +
+                fmt::format("uniform float {}alpha_offset;\n", with_prefix) +
+                fmt::format("uniform float {}alpha;\n", with_prefix);
     }
     if (ColourMap::maps[colourmap].is_colour)
-      source += "uniform vec3 " + with_prefix + "colourmap_colour;\n";
+      source += fmt::format("uniform vec3 {}colourmap_colour;\n", with_prefix);
     return source;
   }
 
@@ -233,22 +228,23 @@ public:
   }
 
   void set_shader_variables(Shader &shader_program, float scaling = 1.0, std::string_view with_prefix = "") {
-    gl::Uniform1f(gl::GetUniformLocation(shader_program, (with_prefix + "offset").c_str()),
+    const std::string p(with_prefix);
+    gl::Uniform1f(gl::GetUniformLocation(shader_program, (p + "offset").c_str()),
                   (display_midpoint - 0.5f * display_range) / scaling);
-    gl::Uniform1f(gl::GetUniformLocation(shader_program, (with_prefix + "scale").c_str()), scaling / display_range);
+    gl::Uniform1f(gl::GetUniformLocation(shader_program, (p + "scale").c_str()), scaling / display_range);
     if (use_discard_lower())
-      gl::Uniform1f(gl::GetUniformLocation(shader_program, (with_prefix + "lower").c_str()), lessthan / scaling);
+      gl::Uniform1f(gl::GetUniformLocation(shader_program, (p + "lower").c_str()), lessthan / scaling);
     if (use_discard_upper())
-      gl::Uniform1f(gl::GetUniformLocation(shader_program, (with_prefix + "upper").c_str()), greaterthan / scaling);
+      gl::Uniform1f(gl::GetUniformLocation(shader_program, (p + "upper").c_str()), greaterthan / scaling);
     if (use_transparency()) {
-      gl::Uniform1f(gl::GetUniformLocation(shader_program, (with_prefix + "alpha_scale").c_str()),
+      gl::Uniform1f(gl::GetUniformLocation(shader_program, (p + "alpha_scale").c_str()),
                     scaling / (opaque_intensity - transparent_intensity));
-      gl::Uniform1f(gl::GetUniformLocation(shader_program, (with_prefix + "alpha_offset").c_str()),
+      gl::Uniform1f(gl::GetUniformLocation(shader_program, (p + "alpha_offset").c_str()),
                     transparent_intensity / scaling);
-      gl::Uniform1f(gl::GetUniformLocation(shader_program, (with_prefix + "alpha").c_str()), alpha);
+      gl::Uniform1f(gl::GetUniformLocation(shader_program, (p + "alpha").c_str()), alpha);
     }
     if (ColourMap::maps[colourmap].is_colour)
-      gl::Uniform3f(gl::GetUniformLocation(shader_program, (with_prefix + "colourmap_colour").c_str()),
+      gl::Uniform3f(gl::GetUniformLocation(shader_program, (p + "colourmap_colour").c_str()),
                     colour[0] / 255.0,
                     colour[1] / 255.0,
                     colour[2] / 255.0);

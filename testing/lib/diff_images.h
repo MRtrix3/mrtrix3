@@ -17,6 +17,7 @@
 #pragma once
 
 #include "datatype.h"
+#include "fmt.h"
 #include "progressbar.h"
 
 #include "image.h"

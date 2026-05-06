@@ -49,7 +49,7 @@ struct CompiledKernelWGSL {
 
 struct SlangCodeGenException : public Exception {
   explicit SlangCodeGenException(std::string_view message)
-      : Exception(std::string("Slang codegen error: ") + message.data()) {}
+      : Exception("Slang codegen error: " + std::string(message)) {}
 };
 
 // Request a Slang global session asynchronously.

@@ -19,6 +19,7 @@
 #include "file/dicom/element.h"
 #include "file/dicom/quick_scan.h"
 #include "file/path.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -94,7 +95,7 @@ void run() {
     print(File::Dicom::Element::print_header());
 
   if (reader.read(argument[0], all, csa, phoenix, true))
-    throw Exception("error reading file \"" + reader.filename + "\"");
+    throw Exception(fmt::format("error reading file \"{}\"", reader.filename));
 
   if (!all && !csa && !phoenix)
     std::cout << reader;

@@ -21,6 +21,7 @@
 #include "file/matrix.h"
 #include "header.h"
 #include "stride.h"
+#include <fmt/format.h>
 
 namespace MR::GUI::Dialog {
 
@@ -55,12 +56,12 @@ ImageProperties::ImageProperties(QWidget *parent, const MR::Header &header)
   std::string text;
   text = str(H.size(0));
   for (size_t n = 1; n < H.ndim(); ++n)
-    text += " x " + str(H.size(n));
+    text += fmt::format(" x {}", H.size(n));
   root->appendChild(new TreeItem("Dimensions", text, root));
 
   text = str(H.spacing(0));
   for (size_t n = 1; n < H.ndim(); ++n)
-    text += " x " + str(H.spacing(n));
+    text += fmt::format(" x {}", H.spacing(n));
   root->appendChild(new TreeItem("Voxel size", text, root));
 
   root->appendChild(new TreeItem("Data type", H.datatype().description(), root));
@@ -68,11 +69,13 @@ ImageProperties::ImageProperties(QWidget *parent, const MR::Header &header)
   MR::Stride::List strides = MR::Stride::get_symbolic(H);
   text = str(strides[0]);
   for (size_t n = 1; n != strides.size(); ++n)
-    text += ", " + str(strides[n]);
+    text += fmt::format(", {}", strides[n]);
   root->appendChild(new TreeItem("Strides", text, root));
 
-  root->appendChild(new TreeItem(
-      "Data scaling", "offset: " + str(H.intensity_offset()) + ", multiplier = " + str(H.intensity_scale()), root));
+  root->appendChild(new TreeItem("Data scaling",
+                                 fmt::format("offset: {}", H.intensity_offset()) +
+                                     fmt::format(", multiplier = {}", H.intensity_scale()),
+                                 root));
 
   Eigen::IOFormat Fmt(6, 0, ", ", "\n", "[", "]");
   TreeItem *transform = new TreeItem("Transform", std::string(), root);

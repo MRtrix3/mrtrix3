@@ -23,6 +23,7 @@
 #include "header.h"
 #include "image_io/default.h"
 #include "raw.h"
+#include <fmt/format.h>
 
 /*
    MRI format:
@@ -151,13 +152,13 @@ std::unique_ptr<ImageIO::Base> MRI::read(Header &H) const {
   File::MMap fmap(MR::File::Entry(H.name()));
 
   if (memcmp(fmap.address(), "MRI#", 4))
-    throw Exception("file \"" + H.name() + "\" is not in MRI format (unrecognised magic number)");
+    throw Exception(fmt::format("file \"{}\" is not in MRI format (unrecognised magic number)", H.name()));
 
   bool is_BE = false;
   if (Raw::fetch_<uint16_t>(fmap.address() + sizeof(int32_t), is_BE) == 0x0100U)
     is_BE = true;
   else if (Raw::fetch_<uint16_t>(fmap.address() + sizeof(uint32_t), is_BE) != 0x0001U)
-    throw Exception("MRI file \"" + H.name() + "\" is badly formed (invalid byte order specifier)");
+    throw Exception(fmt::format("MRI file \"{}\" is badly formed (invalid byte order specifier)", H.name()));
 
   H.ndim() = 4;
 
@@ -182,7 +183,7 @@ std::unique_ptr<ImageIO::Base> MRI::read(Header &H) const {
         bool forward = true;
         const size_t ax = char2order(*(reinterpret_cast<const char *>(data(current) + n)), forward);
         if (ax == std::numeric_limits<size_t>::max())
-          throw Exception("invalid order specifier in MRI image \"" + H.name() + "\"");
+          throw Exception(fmt::format("invalid order specifier in MRI image \"{}\"", H.name()));
         H.stride(ax) = n + 1;
         if (!forward)
           H.stride(ax) = -H.stride(ax);
@@ -206,16 +207,20 @@ std::unique_ptr<ImageIO::Base> MRI::read(Header &H) const {
       std::string dw_scheme;
       const size_t nrows = size(current, is_BE) / (4 * sizeof(float32));
       for (size_t i = 0; i < nrows; ++i)
-        dw_scheme += str(Raw::fetch_<float32>(data(current) + (i * 4 + 0) * sizeof(float32), is_BE)) + "," +
-                     str(Raw::fetch_<float32>(data(current) + (i * 4 + 1) * sizeof(float32), is_BE)) + "," +
-                     str(Raw::fetch_<float32>(data(current) + (i * 4 + 2) * sizeof(float32), is_BE)) + "," +
-                     str(Raw::fetch_<float32>(data(current) + (i * 4 + 3) * sizeof(float32), is_BE)) + "\n";
+        dw_scheme += str(Raw::fetch_<float32>(data(current) + (i * 4 + 0) * sizeof(float32), is_BE)) +
+                     fmt::format(",{}", Raw::fetch_<float32>(data(current) + (i * 4 + 1) * sizeof(float32), is_BE)) +
+                     fmt::format(",{}", Raw::fetch_<float32>(data(current) + (i * 4 + 2) * sizeof(float32), is_BE)) +
+                     fmt::format(",{}", Raw::fetch_<float32>(data(current) + (i * 4 + 3) * sizeof(float32), is_BE)) +
+                     "\n";
       H.keyval()["dw_scheme"] = dw_scheme;
     } break;
     default:
-      WARN("unknown header entity (" + str(static_cast<uint32_t>(type(current, is_BE))) + "," + //
-           " offset " + str(current - fmap.address()) + ")" +                                   //
-           " in image \"" + H.name() + "\" - ignored");                                         //
+      WARN(fmt::format("unknown header entity ({},{}{}){}{}\" - ignored",
+                       str(static_cast<uint32_t>(type(current, is_BE))), //
+                       " offset ",
+                       str(current - fmap.address()), //
+                       " in image \"",
+                       H.name())); //
       break;
     }
 
@@ -226,7 +231,7 @@ std::unique_ptr<ImageIO::Base> MRI::read(Header &H) const {
   }
 
   if (!data_offset)
-    throw Exception("no data field found in MRI image \"" + H.name() + "\"");
+    throw Exception(fmt::format("no data field found in MRI image \"{}\"", H.name()));
 
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));
   io_handler->files.push_back(File::Entry(H.name(), data_offset));

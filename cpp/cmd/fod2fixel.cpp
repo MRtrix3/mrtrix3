@@ -26,6 +26,7 @@
 #include "math/SH.h"
 #include "progressbar.h"
 #include "thread_queue.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace MR::DWI;
@@ -314,7 +315,8 @@ void run() {
   if (!opt.empty()) {
     mask = Image<float>::open(std::string(opt[0][0]));
     if (!dimensions_match(fod_data, mask, 0, 3))
-      throw Exception("Cannot use image \"" + str(opt[0][0]) + "\" as mask image; dimensions do not match FOD image");
+      throw Exception(
+          fmt::format("Cannot use image \"{}\" as mask image; dimensions do not match FOD image", str(opt[0][0])));
   }
 
   Fixel::check_fixel_directory(fixel_directory_path, true, true);

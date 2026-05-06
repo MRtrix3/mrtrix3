@@ -18,6 +18,7 @@
 #include "enum.h"
 #include "progressbar.h"
 #include "thread_queue.h"
+#include <fmt/format.h>
 
 #include "surface/filter/base.h"
 #include "surface/filter/smooth.h"
@@ -35,10 +36,10 @@ const std::vector<std::string> filters = MR::Enum::lower_case_names<FilterType>(
 // clang-format off
 const OptionGroup smooth_option = OptionGroup ("Options for mesh smoothing filter")
   + Option ("smooth_spatial", "spatial extent of smoothing"
-                              " (default: " + str(Filter::default_smoothing_spatial_factor, 2) + "mm)")
+                              " (default: " + fmt::format("{}mm)", Filter::default_smoothing_spatial_factor, 2))
     + Argument ("value").type_float (0.0)
   + Option ("smooth_influence", "influence factor for smoothing"
-                                " (default: " + str(Filter::default_smoothing_influence_factor, 2) + ")")
+                                " (default: " + fmt::format("{})", Filter::default_smoothing_influence_factor, 2))
     + Argument ("value").type_float (0.0);
 
 

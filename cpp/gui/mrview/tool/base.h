@@ -17,6 +17,7 @@
 #pragma once
 
 #include "file/config.h"
+#include <fmt/format.h>
 
 #include "mrview/window.h"
 #include "projection.h"
@@ -161,7 +162,7 @@ public:
   __Action__(QActionGroup *parent, std::string_view name, std::string_view description, int index)
       : QAction(std::string(name).c_str(), parent), dock(nullptr) {
     setCheckable(true);
-    setShortcut(tr(std::string("Ctrl+F" + str(index)).c_str()));
+    setShortcut(tr(std::string(fmt::format("Ctrl+F{}", index)).c_str()));
     setStatusTip(tr(std::string(description).c_str()));
   }
 
