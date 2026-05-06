@@ -14,15 +14,15 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <fmt/format.h>
 #include <numeric>
 
 #include "command.h"
 #include "degibbs/degibbs.h"
 #include "degibbs/unring2d.h"
 #include "degibbs/unring3d.h"
-#include "fmt.h"
+#include "eigen_plugins/fmt.h"
 #include "metadata/bids.h"
-#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -193,10 +193,10 @@ void run() {
                  "axes as being within-slice");
           } else {
             slice_axes = auto_slice_axes;
-            CONSOLE(
-                "Using axes { " + fmt::format("{}, ", slice_axes[0]) +
-                fmt::format("{} } for Gibbs ringing removal based on \"SliceEncodingDirection\" field in image header",
-                            slice_axes[1]));
+            CONSOLE(fmt::format("Using axes {{ {}, {} }} for Gibbs ringing removal based on"
+                                " \"SliceEncodingDirection\" field in image header",
+                                slice_axes[0],
+                                slice_axes[1]));
           }
         }
       } catch (...) {

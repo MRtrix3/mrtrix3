@@ -58,13 +58,13 @@ void usage() {
   + OptionGroup("Options that influence generation of the connectivity matrix / matrices")
 
     + Option("threshold",
-             "a threshold to define the required fraction of shared connections to be included in the neighbourhood"
-              " (default: " + fmt::format("{})", default_connectivity_threshold, 2))
+             fmt::format("a threshold to define the required fraction of shared connections to be included in the neighbourhood"
+                         " (default: {:.2g})", default_connectivity_threshold))
       + Argument("value").type_float(0.0, 1.0)
 
     + Option("angle",
-             "the max angle threshold for assigning streamline tangents to fixels"
-             " (Default: " + fmt::format("{} degrees)", DWI::Tractography::Mapping::default_streamline2fixel_angle, 2))
+             fmt::format("the max angle threshold for assigning streamline tangents to fixels"
+                         " (Default: {:.2g} degrees)", DWI::Tractography::Mapping::default_streamline2fixel_angle))
       + Argument("value").type_float(0.0, 90.0)
 
     + Option("mask",

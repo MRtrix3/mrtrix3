@@ -2496,7 +2496,7 @@ void Connectome::initialise(std::string_view path) {
           dim[axis] = node_upper_corners[node_index][axis] - node_lower_corners[node_index][axis] + 1;
         }
         MR::Adapter::Subset<MR::Image<node_t>> subset(*buffer, from, dim);
-        MR::Image<bool> node_mask(MR::Image<bool>::scratch(subset, "Node " + fmt::format("{} mask", node_index)));
+        MR::Image<bool> node_mask(MR::Image<bool>::scratch(subset, fmt::format("Node {} mask", node_index)));
 
         auto copy_func = [&](const decltype(subset) &in, decltype(node_mask) &out) {
           out.value() = (in.value() == node_index);
@@ -4016,7 +4016,7 @@ void Connectome::get_meshes() {
   Surface::MeshMulti meshes;
   meshes.load(path);
   if (meshes.size() != nodes.size())
-    throw Exception(fmt::format("Mesh file contains {} objects; expected {}", str(meshes.size()), str(nodes.size())));
+    throw Exception(fmt::format("Mesh file contains {} objects; expected {}", meshes.size(), nodes.size()));
   Surface::debug_validate(meshes);
   have_meshes = false;
   GL::Context::Grab context;

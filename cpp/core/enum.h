@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <fmt/format.h>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -81,9 +82,9 @@ template <typename EnumType> inline std::string lowercase_name(EnumType value) {
 template <typename EnumType> inline EnumType from_name(std::string_view enum_name) {
   const auto value = magic_enum::enum_cast<EnumType>(enum_name, magic_enum::case_insensitive);
   if (!value.has_value()) {
-    const std::string error = "Unsupported value '" + std::string(enum_name) +
-                              "'. Supported values are: " + detail::join(lower_case_names<EnumType>(), ", ");
-    throw Exception(error);
+    throw Exception(fmt::format("Unsupported value '{}'. Supported values are: {}",
+                                enum_name,
+                                detail::join(lower_case_names<EnumType>(), ", ")));
   }
   return value.value();
 }

@@ -28,11 +28,7 @@ The following checks are performed on each input image:
 
 2. For every brain voxel (identified by a non-zero partial-volume sum), each of the five tissue PVFs must lie within [0.0, 1.0]. Voxels that violate this constraint contain non-physical values and the image is rejected as a hard error.
 
-3. For every brain voxel, the sum of all five tissue PVFs must equal 1.0 to within a tolerance of 
-
-0.001
-
-. Voxels that violate this constraint are reported as a soft warning: the image may still be usable for ACT but does not perfectly conform to the format.
+3. For every brain voxel, the sum of all five tissue PVFs must equal 1.0 to within a tolerance of 0.001. Voxels that violate this constraint are reported as a soft warning: the image may still be usable for ACT but does not perfectly conform to the format.
 
 Options
 -------

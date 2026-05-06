@@ -14,6 +14,9 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <fmt/format.h>
+#include <optional>
+
 #include "adapter/jacobian.h"
 #include "algo/copy.h"
 #include "algo/loop.h"
@@ -41,10 +44,6 @@
 #include "registration/warp/compose.h"
 #include "registration/warp/helpers.h"
 #include "registration/warp/validate.h"
-#include <fmt/format.h>
-
-#include "fmt.h"
-#include <optional>
 
 using namespace MR;
 using namespace App;
@@ -155,9 +154,8 @@ void usage() {
         " (i.e. half way between image1 and image2)")
 
     + Option ("interp",
-        std::string("set the interpolation method to use when reslicing")
-        + " (choices: " + join(MR::Interp::interp_choices, ", ") + ";"
-        + " default: " + MR::Interp::interp_choices[static_cast<ssize_t>(default_interp)] + ").")
+        fmt::format("set the interpolation method to use when reslicing"
+                    " (choices: {}; default: {}).", join(MR::Interp::interp_choices, ", "), MR::Interp::interp_choices[static_cast<ssize_t>(default_interp)]))
       + Argument ("method").type_choice(MR::Interp::interp_choices)
 
     + Option ("oversample",
@@ -278,7 +276,7 @@ void apply_warp(Image<float> &input,
 
 void apply_linear_jacobian(Image<float> &image, transform_type trafo) {
   const float det = trafo.linear().topLeftCorner<3, 3>().determinant();
-  INFO(fmt::format("global intensity modulation with scale factor {}", str(det)));
+  INFO(fmt::format("global intensity modulation with scale factor {}", det));
   for (auto i = Loop("applying global intensity modulation", image, 0, image.ndim())(image); i; ++i) {
     image.value() *= det;
   }
@@ -311,7 +309,7 @@ void run() {
       try {
         linear_transform = File::Matrix::load_transform(opt[0][0]);
       } catch (...) {
-        throw Exception(fmt::format("Unable to extract transform matrix from -replace file \"{}\"", str(opt[0][0])));
+        throw Exception(fmt::format("Unable to extract transform matrix from -replace file \"{}\"", opt[0][0]));
       }
     }
   }
@@ -477,7 +475,7 @@ void run() {
   const bool modulate_fod = modulation.has_value() && *modulation == Modulation::FOD;
   const bool modulate_jac = modulation.has_value() && *modulation == Modulation::JAC;
 
-  const std::string reorient_msg = str("reorienting") + str((modulate_fod ? " with FOD modulation" : ""));
+  const std::string reorient_msg = fmt::format("reorienting{}", (modulate_fod ? " with FOD modulation" : ""));
   if (modulate_fod)
     add_line(output_header.keyval()["comments"], "FOD modulation applied");
   if (modulate_jac)

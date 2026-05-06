@@ -145,7 +145,7 @@ Dynamic::Dynamic(std::string_view in,
 
 Dynamic::~Dynamic() {
 
-  INFO(fmt::format("Dynamic seeeding required {} samples to draw {} seeds", str(attempts), str(seeds)));
+  INFO(fmt::format("Dynamic seeeding required {} samples to draw {} seeds", attempts, seeds));
 
 #ifdef DYNAMIC_SEED_DEBUGGING
 

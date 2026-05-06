@@ -308,8 +308,8 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
           } else {
             Exception e("Internal error: fundamental ambiguity in voxel-based segmentation of surface");
             e.push_back(fmt::format("Fill region size: {}", to_fill.size()));
-            e.push_back("Preliminary classifications: " + fmt::format("{} inside, ", prelim_inside_count) +
-                        fmt::format("{} outside", prelim_outside_count));
+            e.push_back(fmt::format(
+                "Preliminary classifications: {} inside, {} outside", prelim_inside_count, prelim_outside_count));
             e.push_back(fmt::format("FoV corners: {}", corner_count));
             throw e;
           }

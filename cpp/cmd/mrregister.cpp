@@ -14,6 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <fmt/format.h>
+
 #include "command.h"
 #include "dwi/directions/predefined.h"
 #include "dwi/directions/validate.h"
@@ -21,7 +23,6 @@
 #include "file/matrix.h"
 #include "file/nifti_utils.h"
 #include "filter/reslice.h"
-#include "fmt.h"
 #include "image.h"
 #include "image_helpers.h"
 #include "interp/cubic.h"
@@ -39,7 +40,6 @@
 #include "registration/transform/rigid.h"
 #include "registration/warp/validate.h"
 #include "transform.h"
-#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -112,10 +112,9 @@ void usage() {
         " contrastX and imageX must share the same coordinate system.").type_image_in().optional().allow_multiple();
 
   OPTIONS
-  + Option ("type", std::string("the registration type.") +
-                    " Valid choices are: "
-                    + MR::Enum::join<transformation_t>()
-                    + " (default: " + MR::Enum::lowercase_name(default_transformation_type) + ")")
+  + Option ("type", fmt::format("the registration type. Valid choices are: {} (default: {})",
+                                MR::Enum::join<transformation_t>(),
+                                MR::Enum::lowercase_name(default_transformation_type)))
     + Argument ("choice").type_choice<transformation_t>()
 
   + Option ("transformed", "image1 after registration transformed and regridded to the space of image2."
@@ -177,8 +176,8 @@ void run() {
 
   for (size_t i = 0; i < n_images; i++) {
     if (input1[i].ndim() != input2[i].ndim())
-      throw Exception("input images " + input1[i].name() + " and " + input2[i].name() +
-                      " do not have the same number of dimensions");
+      throw Exception(fmt::format(
+          "input images {} and {} do not have the same number of dimensions", input1[i].name(), input2[i].name()));
     check_3D_nonunity(input1[i]);
     check_3D_nonunity(input2[i]);
   }
@@ -263,31 +262,30 @@ void run() {
     if ((input1[i].ndim() != 3) and (input1[i].ndim() != 4))
       throw Exception(
           fmt::format("image dimensionality other than 3 or 4 are not supported. image {} is {} dimensional",
-                      str(input1[i].name()),
-                      str(input1[i].ndim())));
+                      input1[i].name(),
+                      input1[i].ndim()));
 
     const size_t nvols1 = input1[i].ndim() == 3 ? 1 : input1[i].size(3);
     const size_t nvols2 = input2[i].ndim() == 3 ? 1 : input2[i].size(3);
     if (nvols1 != nvols2)
-      throw Exception(fmt::format("input images do not have the same number of volumes: {} and {}",
-                                  str(input2[i].name()),
-                                  str(input1[i].name())));
+      throw Exception(fmt::format(
+          "input images do not have the same number of volumes: {} and {}", input2[i].name(), input1[i].name()));
 
     // set do_reorientation and image_lmax
     if (nvols1 == 1) { // 3D or one volume
       mc_params[i].do_reorientation = false;
       mc_params[i].image_lmax = 0;
-      CONSOLE("3D input pair " + input1[i].name() + ", " + input2[i].name());
+      CONSOLE(fmt::format("3D input pair {}, {}", input1[i].name(), input2[i].name()));
     } else { // more than one volume
       if (do_reorientation && nvols1 > 1 && SH::NforL(SH::LforN(nvols1)) == nvols1) {
-        CONSOLE("SH image input pair " + input1[i].name() + ", " + input2[i].name());
+        CONSOLE(fmt::format("SH image input pair {}, {}", input1[i].name(), input2[i].name()));
         mc_params[i].do_reorientation = true;
         mc_params[i].image_lmax = Math::SH::LforN(nvols1);
         if (!directions_cartesian.cols())
           directions_cartesian =
               Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_60()).transpose();
       } else {
-        CONSOLE("4D scalar input pair " + input1[i].name() + ", " + input2[i].name());
+        CONSOLE(fmt::format("4D scalar input pair {}, {}", input1[i].name(), input2[i].name()));
         mc_params[i].do_reorientation = false;
         mc_params[i].image_lmax = 0;
       }
@@ -313,7 +311,7 @@ void run() {
   if (!do_reorientation and directions_cartesian.cols())
     WARN("-directions option ignored since no FOD reorientation is being performed");
 
-  INFO(fmt::format("maximum input lmax: {}", str(max_mc_image_lmax)));
+  INFO(fmt::format("maximum input lmax: {}", max_mc_image_lmax));
 
   opt = get_options("transformed");
   std::vector<std::string> im1_transformed_paths;
@@ -488,7 +486,7 @@ void run() {
     for (size_t i = 0; i < rigid_lmax.size(); ++i)
       if (rigid_lmax[i] > max_mc_image_lmax) {
         WARN(fmt::format("the requested -rigid_lmax exceeds the lmax of the input images, setting it to {}",
-                         str(max_mc_image_lmax)));
+                         max_mc_image_lmax));
         rigid_lmax[i] = max_mc_image_lmax;
       }
     rigid_registration.set_lmax(rigid_lmax);
@@ -834,7 +832,7 @@ void run() {
         max_requested_lmax = std::max(max_requested_lmax, affine_registration.get_lmax());
       if (do_nonlinear)
         max_requested_lmax = std::max(max_requested_lmax, nl_registration.get_lmax());
-      INFO(fmt::format("maximum used lmax: {}", str(max_requested_lmax)));
+      INFO(fmt::format("maximum used lmax: {}", max_requested_lmax));
     }
 
     for (size_t idx = 0; idx < n_images; ++idx) {
@@ -1088,7 +1086,7 @@ void run() {
     }
 
     for (size_t idx = 0; idx < im1_transformed_paths.size(); idx++) {
-      CONSOLE("... " + im1_transformed_paths[idx]);
+      CONSOLE(fmt::format("... {}", im1_transformed_paths[idx]));
       {
         // LogLevelLatch log_level (0);
         Image<value_type> im1_image = Image<value_type>::open(input1[idx].name());
@@ -1156,7 +1154,7 @@ void run() {
     }
 
     for (size_t idx = 0; idx < input1_midway_transformed_paths.size(); idx++) {
-      CONSOLE("... " + input1_midway_transformed_paths[idx]);
+      CONSOLE(fmt::format("... {}", input1_midway_transformed_paths[idx]));
       {
         // LogLevelLatch log_level (0);
         Image<value_type> im1_image = Image<value_type>::open(input1[idx].name());
@@ -1210,7 +1208,7 @@ void run() {
     }
 
     for (size_t idx = 0; idx < input2_midway_transformed_paths.size(); idx++) {
-      CONSOLE("... " + input2_midway_transformed_paths[idx]);
+      CONSOLE(fmt::format("... {}", input2_midway_transformed_paths[idx]));
       {
         // LogLevelLatch log_level (0);
         Image<value_type> im2_image = Image<value_type>::open(input2[idx].name());

@@ -14,6 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <fmt/format.h>
+
 #include "command.h"
 #include "header.h"
 #include "image.h"
@@ -21,7 +23,6 @@
 
 #include "connectome/connectome.h"
 #include "connectome/validate.h"
-#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -71,9 +72,10 @@ void run() {
   // Report datatype
   // ---------------------------------------------------------------
   if (H.datatype().is_integer() && !H.datatype().is_signed()) {
-    CONSOLE("Datatype: " + H.datatype().description() + " - image conforms to hard segmentation requirements");
+    CONSOLE(fmt::format("Datatype: {} - image conforms to hard segmentation requirements", H.datatype().description()));
   } else {
-    CONSOLE("Datatype: " + H.datatype().description() + " - image values verified to be non-negative integers");
+    CONSOLE(
+        fmt::format("Datatype: {} - image values verified to be non-negative integers", H.datatype().description()));
   }
 
   // Deeper analysis of image contents
@@ -87,21 +89,21 @@ void run() {
     throw Exception("No non-background labels found (image contains only zeros)");
 
   const node_t max_label = *result.labels.rbegin();
-  CONSOLE(str(result.labels.size()) + " unique non-background label(s) found;" + //
-          fmt::format(" index range: 1 to {}", max_label));                      //
+  CONSOLE(
+      fmt::format("{} unique non-background label(s) found; index range: 1 to {}", result.labels.size(), max_label));
 
   // ---------------------------------------------------------------
   // Report index contiguity
   // ---------------------------------------------------------------
   if (result.indices_contiguous) {
-    CONSOLE("Label indices: contiguous (all values 1 through " + fmt::format("{} are present)", max_label));
+    CONSOLE(fmt::format("Label indices: contiguous (all values 1 through {} are present)", max_label));
   } else {
     const size_t ngaps = result.missing_indices.size();
     WARN(fmt::format("{}{}{} value(s) missing from the range [1, {}])",
                      "Label indices: non-contiguous", //
                      " (",
-                     str(ngaps),
-                     str(max_label))); //
+                     ngaps,
+                     max_label)); //
     // List the missing indices, abbreviated if there are many.
     constexpr size_t max_listed = 20;
     std::string missing_str;
@@ -111,7 +113,7 @@ void run() {
       missing_str += str(result.missing_indices[i]);
     }
     if (ngaps > max_listed)
-      missing_str += ", ... (and " + fmt::format("{} more)", ngaps - max_listed);
+      missing_str += fmt::format(", ... (and {} more)", ngaps - max_listed);
     CONSOLE("  Missing indices: " + missing_str);
   }
 
@@ -119,15 +121,15 @@ void run() {
   // Report number of labels without spatial contiguity
   // ---------------------------------------------------------------
   if (result.disconnected_components == 0) {
-    CONSOLE(fmt::format("All {}", result.labels.size()) + " labels are spatially contiguous");
+    CONSOLE(fmt::format("All {} labels are spatially contiguous", result.labels.size()));
   } else {
-    const std::string msg(fmt::format("{} of ", result.disconnected_components) + str(result.labels.size()) + //
-                          " labels are spatially disconnected: ");                                            //
+    const std::string msg(fmt::format(
+        "{} of {} labels are spatially disconnected: ", result.disconnected_components, result.labels.size()));
     std::vector<node_t> disconnected_labels;
     for (auto label : result.labels) {
       if (result.component_counts.at(label) > 1)
         disconnected_labels.push_back(label);
     }
-    WARN(msg + str(disconnected_labels));
+    WARN(fmt::format("{}{}", msg, disconnected_labels));
   }
 }

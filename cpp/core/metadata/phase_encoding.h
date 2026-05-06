@@ -97,7 +97,7 @@ void save_table(const scheme_type &PE, std::string_view path, bool write_command
 template <class HeaderType> void save_table(const HeaderType &header, std::string_view path) {
   const scheme_type scheme = get_scheme(header);
   if (scheme.rows() == 0)
-    throw Exception(fmt::format("No phase encoding scheme in header of image \"{}", header.name()) + "\" to save");
+    throw Exception(fmt::format("No phase encoding scheme in header of image \"{}\" to save", header.name()));
   save(scheme, header, path);
 }
 

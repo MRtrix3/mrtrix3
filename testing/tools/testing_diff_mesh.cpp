@@ -14,11 +14,10 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "command.h"
-#include "fmt.h"
-#include "progressbar.h"
 #include <fmt/format.h>
 
+#include "command.h"
+#include "progressbar.h"
 #include "surface/mesh.h"
 #include "surface/mesh_multi.h"
 #include "types.h"

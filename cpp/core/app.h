@@ -397,13 +397,19 @@ template <typename Enum> inline Enum get_option_choice(std::string_view name, co
   }
 }
 
-// TODO Consider convenience functions to return a std::optional of ay given type, including enums
-
-//! convenience function provided mostly to ease writing Exception strings
-std::string operator+(const char *const left, const App::ParsedArgument &right); // check_syntax off
+// TODO Consider convenience functions to return a std::optional of any given type, including enums
 
 std::ostream &operator<<(std::ostream &stream, const App::ParsedArgument &arg);
 
 } // namespace MR::App
+
+namespace fmt {
+template <> struct formatter<MR::App::ParsedArgument> {
+  constexpr auto parse(format_parse_context &ctx) { return ctx.begin(); }
+  template <typename FormatContext> auto format(const MR::App::ParsedArgument &a, FormatContext &ctx) const {
+    return format_to(ctx.out(), "{}", static_cast<std::string_view>(a));
+  }
+};
+} // namespace fmt
 
 //! @}

@@ -636,3 +636,18 @@ public:
 };
 
 } // namespace MR
+
+namespace fmt {
+template <typename ImageType> struct formatter<MR::Helper::Index<ImageType>> {
+  constexpr auto parse(format_parse_context &ctx) { return ctx.begin(); }
+  template <typename FormatContext> auto format(const MR::Helper::Index<ImageType> &index, FormatContext &ctx) const {
+    return format_to(ctx.out(), MR::str(static_cast<ssize_t>(index)));
+  }
+};
+template <typename ImageType> struct formatter<MR::Helper::Value<ImageType>> {
+  constexpr auto parse(format_parse_context &ctx) { return ctx.begin(); }
+  template <typename FormatContext> auto format(const MR::Helper::Value<ImageType> &value, FormatContext &ctx) const {
+    return format_to(ctx.out(), MR::str(static_cast<typename ImageType::value_type>(value)));
+  }
+};
+} // namespace fmt

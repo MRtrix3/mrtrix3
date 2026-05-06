@@ -185,7 +185,7 @@ public:
 
         val = std::pow(val, S.fod_power);
         if (val > max_val) {
-          DEBUG("max_val exceeded!!! (val = " + fmt::format("{}, max_val = ", val) + fmt::format("{})", max_val));
+          DEBUG(fmt::format("max_val exceeded!!! (val = {}, max_val = {})", val, max_val));
           ++num_truncations;
           if (val / max_val > max_truncation)
             max_truncation = val / max_val;

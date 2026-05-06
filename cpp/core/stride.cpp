@@ -14,9 +14,10 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "stride.h"
-#include "header.h"
 #include <fmt/format.h>
+
+#include "header.h"
+#include "stride.h"
 
 namespace MR::Stride {
 
@@ -108,7 +109,7 @@ List __from_command_line(const List &current) {
       continue;
     for (size_t j = i + 1; j < strides.size(); ++j)
       if (MR::abs(strides[i]) == MR::abs(strides[j]))
-        throw Exception(fmt::format("duplicate entries provided to \"-strides\" option: {}", str(opt[0][0])));
+        throw Exception(fmt::format("duplicate entries provided to \"-strides\" option: {}", opt[0][0]));
   }
 
   List prev = get_symbolic(current);

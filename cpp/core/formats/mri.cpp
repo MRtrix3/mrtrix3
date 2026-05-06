@@ -207,18 +207,18 @@ std::unique_ptr<ImageIO::Base> MRI::read(Header &H) const {
       std::string dw_scheme;
       const size_t nrows = size(current, is_BE) / (4 * sizeof(float32));
       for (size_t i = 0; i < nrows; ++i)
-        dw_scheme += str(Raw::fetch_<float32>(data(current) + (i * 4 + 0) * sizeof(float32), is_BE)) +
-                     fmt::format(",{}", Raw::fetch_<float32>(data(current) + (i * 4 + 1) * sizeof(float32), is_BE)) +
-                     fmt::format(",{}", Raw::fetch_<float32>(data(current) + (i * 4 + 2) * sizeof(float32), is_BE)) +
-                     fmt::format(",{}", Raw::fetch_<float32>(data(current) + (i * 4 + 3) * sizeof(float32), is_BE)) +
-                     "\n";
+        dw_scheme += fmt::format("{},{},{},{}\n",
+                                 Raw::fetch_<float32>(data(current) + (i * 4 + 0) * sizeof(float32), is_BE),
+                                 Raw::fetch_<float32>(data(current) + (i * 4 + 1) * sizeof(float32), is_BE),
+                                 Raw::fetch_<float32>(data(current) + (i * 4 + 2) * sizeof(float32), is_BE),
+                                 Raw::fetch_<float32>(data(current) + (i * 4 + 3) * sizeof(float32), is_BE));
       H.keyval()["dw_scheme"] = dw_scheme;
     } break;
     default:
       WARN(fmt::format("unknown header entity ({},{}{}){}{}\" - ignored",
-                       str(static_cast<uint32_t>(type(current, is_BE))), //
+                       static_cast<uint32_t>(type(current, is_BE)), //
                        " offset ",
-                       str(current - fmap.address()), //
+                       current - fmap.address(), //
                        " in image \"",
                        H.name())); //
       break;

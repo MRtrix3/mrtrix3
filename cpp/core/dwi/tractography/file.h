@@ -150,8 +150,8 @@ protected:
     if (!weights.size())
       return;
     if (static_cast<size_t>(weights.size()) > current_index) {
-      WARN(fmt::format("Streamline weights file contains more entries ({}", weights.size()) + ") than .tck file (" +
-           fmt::format("{})", current_index));
+      WARN(fmt::format(
+          "Streamline weights file contains more entries ({}) than .tck file ({})", weights.size(), current_index));
     }
   }
 
@@ -358,7 +358,7 @@ public:
     add_point(delimiter());
 
     if (weights_name.size())
-      weights_buffer += str(tck.weight) + ' ';
+      weights_buffer += fmt::format("{} ", tck.weight);
 
     ++count;
     ++total_count;

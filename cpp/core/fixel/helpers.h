@@ -216,8 +216,9 @@ FORCE_INLINE std::vector<Header> find_data_headers(std::string_view fixel_direct
             if (!is_directions_file(H) || include_directions)
               data_headers.emplace_back(std::move(H));
           } else {
-            WARN(fmt::format("fixel data file ({})", fname) +                                  //
-                 " does not contain the same number of elements as fixels in the index file"); //
+            WARN(fmt::format(
+                "fixel data file ({}) does not contain the same number of elements as fixels in the index file",
+                fname));
           }
         }
       } catch (...) {
@@ -248,8 +249,9 @@ FORCE_INLINE Header find_directions_header(std::string_view fixel_directory_path
           directions_found = true;
           header = std::move(tmp_header);
         } else {
-          WARN(fmt::format("fixel directions file ({})", fname) +                            //
-               " does not contain the same number of elements as fixels in the index file"); //
+          WARN(fmt::format(
+              "fixel directions file ({}) does not contain the same number of elements as fixels in the index file",
+              fname));
         }
       }
     }

@@ -16,19 +16,19 @@
 
 #pragma once
 
+#include <fmt/format.h>
+
 #include "app.h"
 #include "dwi/directions/predefined.h"
 #include "dwi/directions/validate.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
 #include "file/matrix.h"
-#include "fmt.h"
 #include "header.h"
 #include "math/SH.h"
 #include "math/ZSH.h"
 #include "math/least_squares.h"
 #include "math/sphere.h"
-#include <fmt/format.h>
 
 namespace MR::DWI::SDeconv {
 
@@ -151,7 +151,7 @@ public:
 
       // forward sconv for iteration, using all response function
       // coefficients up to the requested lmax:
-      INFO("calculating even spherical harmonic components up to order " + fmt::format("{} for output", lmax));
+      INFO(fmt::format("calculating even spherical harmonic components up to order {} for output", lmax));
       fconv = init_transform(DW_dirs, lmax);
       l = 0;
       nl = 1;

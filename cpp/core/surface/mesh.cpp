@@ -393,7 +393,7 @@ void Mesh::load_stl(std::string_view path) {
             throw Exception("facet ending without start");
           inside_facet = false;
           if (vertex_index != 3)
-            throw Exception(fmt::format("facet ended with {} vertices", str(vertex_index)));
+            throw Exception(fmt::format("facet ended with {} vertices", vertex_index));
           triangles.push_back(std::vector<vertex_index_type>{static_cast<vertex_index_type>(vertices.size() - 3),
                                                              static_cast<vertex_index_type>(vertices.size() - 2),
                                                              static_cast<vertex_index_type>(vertices.size() - 1)});
@@ -533,8 +533,7 @@ void Mesh::load_obj(std::string_view path) {
         quads.emplace_back(Quad({face_data[0].vertex, face_data[1].vertex, face_data[2].vertex, face_data[3].vertex}));
         break;
       default:
-        throw Exception(
-            fmt::format("Invalid number of vertices ({}) for a face; line {}", str(face_data.size()), str(counter)));
+        throw Exception(fmt::format("Invalid number of vertices ({}) for a face; line {}", face_data.size(), counter));
       }
       // The OBJ format allows defining different vertex-based normals for different faces that reference the same
       // vertex This isn't consistent with the internal storage mechanism used in the Mesh class, and isn't really a
@@ -584,21 +583,19 @@ void Mesh::load_fs(std::string_view path) {
     auto load_triangles = [&]() {
       const int32_t num_vertices = FreeSurfer::get_BE<int32_t>(in);
       if (num_vertices <= 0)
-        throw Exception(
-            fmt::format("Error reading FreeSurfer file: Non-positive vertex count ({})", str(num_vertices)));
+        throw Exception(fmt::format("Error reading FreeSurfer file: Non-positive vertex count ({})", num_vertices));
       const int32_t num_polygons = FreeSurfer::get_BE<int32_t>(in);
       if (num_polygons <= 0)
-        throw Exception(
-            fmt::format("Error reading FreeSurfer file: Non-positive polygon count ({})", str(num_polygons)));
+        throw Exception(fmt::format("Error reading FreeSurfer file: Non-positive polygon count ({})", num_polygons));
       if (num_polygons > 3 * num_vertices)
         throw Exception(
             fmt::format("Error reading FreeSurfer file: More polygons ({}) than triple the number of vertices ({})",
-                        str(num_polygons),
-                        str(num_vertices)));
+                        num_polygons,
+                        num_vertices));
       if (num_polygons < num_vertices / 3)
         throw Exception(fmt::format("Error reading FreeSurfer file: Not enough polygons ({}) to use all vertices ({})",
-                                    str(num_polygons),
-                                    str(num_vertices)));
+                                    num_polygons,
+                                    num_vertices));
       try {
         vertices.reserve(num_vertices);
         triangles.reserve(num_polygons);
@@ -698,7 +695,7 @@ void Mesh::save_vtk(std::string_view path, const bool binary) const {
 
     out.close();
     out.open(path, std::ios_base::out | std::ios_base::app | std::ios_base::binary);
-    const std::string points_header(fmt::format("POINTS {}", vertices.size()) + " float\n");
+    const std::string points_header(fmt::format("POINTS {} float\n", vertices.size()));
     out.write(points_header.c_str(), points_header.size());
     std::array<float, 3> temp_vertex;
     for (const auto &v : vertices) {
@@ -708,8 +705,8 @@ void Mesh::save_vtk(std::string_view path, const bool binary) const {
       out.write(reinterpret_cast<const char *>(&temp_vertex), 3 * sizeof(float));
       ++progress;
     }
-    const std::string polygons_header(fmt::format("POLYGONS {}", triangles.size() + quads.size()) +
-                                      fmt::format(" {}", 4 * triangles.size() + 5 * quads.size()) + "\n");
+    const std::string polygons_header(
+        fmt::format("POLYGONS {} {}\n", triangles.size() + quads.size(), 4 * triangles.size() + 5 * quads.size()));
     out.write(polygons_header.c_str(), polygons_header.size());
     const uint32_t num_points_triangle = ByteOrder::BE(uint32_t(3));
     std::array<uint32_t, 3> temp_triangle;
@@ -735,8 +732,7 @@ void Mesh::save_vtk(std::string_view path, const bool binary) const {
       out << str<float>(v[0]) << " " << str<float>(v[1]) << " " << str<float>(v[2]) << "\n";
       ++progress;
     }
-    out << fmt::format("POLYGONS {}", triangles.size() + quads.size()) +
-               fmt::format(" {}", 4 * triangles.size() + 5 * quads.size()) + "\n";
+    out << fmt::format("POLYGONS {} {}\n", triangles.size() + quads.size(), 4 * triangles.size() + 5 * quads.size());
     for (const auto &t : triangles) {
       out << "3 " << str(t[0]) << " " << str(t[1]) << " " << str(t[2]) << "\n";
       ++progress;

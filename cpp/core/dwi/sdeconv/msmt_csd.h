@@ -77,7 +77,7 @@ public:
         try {
           r = File::Matrix::load_matrix(s);
         } catch (Exception &e) {
-          throw Exception(e, "File \"" + s + "\" is not a valid response function file");
+          throw Exception(e, fmt::format("File \"{}\" is not a valid response function file", s));
         }
         responses.push_back(std::move(r));
       }
@@ -98,8 +98,8 @@ public:
         }
       } else {
         if (lmax.size() != num_tissues())
-          throw Exception(fmt::format("Number of lmaxes specified ({}", str(lmax.size())) +
-                          fmt::format(") does not match number of tissues ({}", num_tissues()) + ")");
+          throw Exception(fmt::format(
+              "Number of lmaxes specified ({}) does not match number of tissues ({})", lmax.size(), num_tissues()));
         for (const auto i : lmax) {
           if (i % 2)
             throw Exception("Each value of lmax must be a non-negative even integer");
@@ -108,11 +108,12 @@ public:
 
       for (size_t t = 0; t != num_tissues(); ++t) {
         if (static_cast<size_t>(responses[t].rows()) != num_shells())
-          throw Exception(
-              fmt::format(
-                  "number of rows in response functions must match number of b-value shells; number of shells is {}",
-                  str(num_shells())) +
-              ", but file \"" + response_files[t] + fmt::format("\" contains {}", responses[t].rows()) + " rows");
+          throw Exception(fmt::format("number of rows in response functions must match number of b-value shells;"
+                                      " number of shells is {},"
+                                      " but file \"{}\" contains {} rows",
+                                      num_shells(),
+                                      response_files[t],
+                                      responses[t].rows()));
         // Pad response functions out to the requested lmax for this tissue
         responses[t].conservativeResizeLike(Eigen::MatrixXd::Zero(num_shells(), Math::ZSH::NforL(lmax[t])));
       }
@@ -128,8 +129,8 @@ public:
         maxlmax = std::max(maxlmax, lmax[i]);
       }
 
-      INFO(fmt::format("initialising multi-tissue CSD for {}", num_tissues()) + " tissue types, with " +
-           fmt::format("{} parameters", nparams));
+      INFO(
+          fmt::format("initialising multi-tissue CSD for {} tissue types, with {} parameters", num_tissues(), nparams));
 
       Eigen::MatrixXd C = Eigen::MatrixXd::Zero(grad.rows(), nparams);
 

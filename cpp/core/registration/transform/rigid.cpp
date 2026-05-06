@@ -132,7 +132,7 @@ bool RigidLinearNonSymmetricUpdate::operator()(Eigen::Matrix<default_type, Eigen
       break;
     }
     if (orig_step_size != step_size) {
-      DEBUG(fmt::format("step size changed from {} to {}", str(orig_step_size), str(step_size)));
+      DEBUG(fmt::format("step size changed from {} to {}", orig_step_size, step_size));
     }
   } else {
     // reduce step size if determinant of matrix becomes negative (happens rarely at first few iterations)
@@ -143,12 +143,12 @@ bool RigidLinearNonSymmetricUpdate::operator()(Eigen::Matrix<default_type, Eigen
       Registration::Transform::param_vec2mat(delta, Delta);
       if (Delta.block(0, 0, 3, 3).array().abs().maxCoeff() > 0.1) {
         step_size = 0.09 / G.block(0, 0, 3, 3).array().abs().maxCoeff();
-        INFO(fmt::format("{} {}", str(step_size), str(g * step_size)));
+        INFO(fmt::format("{} {}", step_size, g * step_size));
         continue;
       }
       if (Delta.block(0, 3, 3, 1).array().abs().maxCoeff() > 10.0) {
         step_size = 9.0 / G.block(0, 3, 3, 1).array().abs().maxCoeff();
-        INFO(fmt::format("{} {}", str(step_size), str(g * step_size)));
+        INFO(fmt::format("{} {}", step_size, g * step_size));
         continue;
       }
       A = X - Delta;

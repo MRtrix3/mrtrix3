@@ -15,11 +15,12 @@
  */
 
 #include "math/stats/glm.h"
+
 #include <fmt/format.h>
 
 #include "debug.h"
+#include "eigen_plugins/fmt.h"
 #include "file/matrix.h"
-#include "fmt.h"
 #include "math/betainc.h"
 #include "math/erfinv.h"
 #include "math/welch_satterthwaite.h"
@@ -115,8 +116,11 @@ void check_design(const matrix_type &design, const bool extra_factors) {
 void check_design(const vector_type &cond) {
   const auto mv = MR::Math::welford(cond.array());
   const default_type max = cond.array().maxCoeff();
-  CONSOLE("Condition number distribution: " + fmt::format("{} +/- ", mv.mean) + str(std::sqrt(mv.std())) + //
-          fmt::format(" [{}", cond.array().minCoeff()) + " -- " + fmt::format("{}]", max));                         //
+  CONSOLE(fmt::format("Condition number distribution: {} +/- {} [{} -- {}]", //
+                      mv.mean,
+                      std::sqrt(mv.std()),
+                      cond.array().minCoeff(),
+                      max)); //
   if (std::min(max, mv.mean + 2.0 * mv.std()) > condnumber_warning_threshold) {
     WARN("Design matrix condition number high even with inclusion of element-wise design matrix columns;"
           " check condition number map and restrict analysis if necessary");
@@ -130,7 +134,11 @@ index_array_type load_variance_groups(const index_type num_inputs) {
   try {
     auto data = File::Matrix::load_vector<index_type>(opt[0][0]);
     if (static_cast<index_type>(data.size()) != num_inputs)
-      throw Exception(fmt::format("Number of entries in variance group file \"{}\" ({}) does not match number of inputs ({})", opt[0][0], str(data.size()), str(num_inputs)));
+      throw Exception(fmt::format(
+          "Number of entries in variance group file \"{}\" ({}) does not match number of inputs ({})",
+          opt[0][0],
+          data.size(),
+          num_inputs));
     const index_type min_coeff = data.minCoeff();
     const index_type max_coeff = data.maxCoeff();
     if (min_coeff > 1)
@@ -144,7 +152,7 @@ index_array_type load_variance_groups(const index_type num_inputs) {
       count_per_group[data[i]]++;
     for (Eigen::Index vg_index = min_coeff; vg_index <= max_coeff; ++vg_index) {
       if (!count_per_group[vg_index])
-        throw Exception(fmt::format("No entries found for variance group {}", str(vg_index)));
+        throw Exception(fmt::format("No entries found for variance group {}", vg_index));
     }
     if (min_coeff)
       data.array() -= 1;
@@ -530,10 +538,10 @@ matrix_type Hypothesis::check_rank(const matrix_type &in, const index_type index
   Eigen::FullPivLU<matrix_type> decomp(in.transpose());
   if (decomp.rank() == in.rows())
     return in;
-  WARN(fmt::format("F-test {} is rank-deficient; row-space matrix decomposition will instead be used", str(index + 1)));
-  INFO(fmt::format("Original matrix: {}", str(in)));
+  WARN(fmt::format("F-test {} is rank-deficient; row-space matrix decomposition will instead be used", index + 1));
+  INFO(fmt::format("Original matrix: {}", in));
   const matrix_type result = decomp.image(in.transpose()).transpose();
-  INFO(fmt::format("Decomposed matrix: {}", str(result)));
+  INFO(fmt::format("Decomposed matrix: {}", result));
   return result;
 }
 

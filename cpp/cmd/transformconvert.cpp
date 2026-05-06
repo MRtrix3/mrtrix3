@@ -14,18 +14,19 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <algorithm>
+#include <fmt/format.h>
+#include <unsupported/Eigen/MatrixFunctions>
+
 #include "axes.h"
 #include "command.h"
+#include "eigen_plugins/fmt.h"
 #include "enum.h"
 #include "file/key_value.h"
 #include "file/matrix.h"
 #include "file/nifti_utils.h"
-#include "fmt.h"
 #include "image.h"
 #include "transform.h"
-#include <algorithm>
-#include <fmt/format.h>
-#include <unsupported/Eigen/MatrixFunctions>
 
 using namespace MR;
 using namespace App;
@@ -60,8 +61,7 @@ void usage() {
 
   ARGUMENTS
   + Argument ("input", "the input(s) for the specified operation").type_file_in().type_image_in().allow_multiple()
-  + Argument ("operation", "the operation to perform;"
-                           " one of: " + MR::Enum::join<Operation>()).type_choice<Operation>()
+  + Argument ("operation", fmt::format("the operation to perform; one of: {}", MR::Enum::join<Operation>())).type_choice<Operation>()
   + Argument ("output", "the output transformation matrix.").type_file_out ();
 
 }
@@ -159,8 +159,7 @@ void parse_itk_trafo(std::string_view itk_file,
       std::replace(line.begin(), line.end(), ' ', ',');
       std::vector<default_type> parameters(parse_floats(line));
       if (parameters.size() != 12)
-        throw Exception(
-            fmt::format("Expected itk file with 12 parameters but has {} parameters.", str(parameters.size())));
+        throw Exception(fmt::format("Expected itk file with 12 parameters but has {} parameters.", parameters.size()));
       transformation.linear().row(0) << parameters[0], parameters[1], parameters[2];
       transformation.linear().row(1) << parameters[3], parameters[4], parameters[5];
       transformation.linear().row(2) << parameters[6], parameters[7], parameters[8];
@@ -208,7 +207,7 @@ void run() {
   }
   case Operation::ITK_IMPORT: {
     if (num_inputs != 1)
-      throw Exception(fmt::format("itk_import requires 1 input, {} provided.", str(num_inputs)));
+      throw Exception(fmt::format("itk_import requires 1 input, {} provided.", num_inputs));
 
     transform_type transform;
     Eigen::Vector3d centre_of_rotation(3);
@@ -222,7 +221,7 @@ void run() {
     transform.matrix().template block<2, 2>(0, 2) *= -1.0;
     transform.matrix().template block<1, 2>(2, 0) *= -1.0;
 
-    INFO(fmt::format("linear:\\n{}", str(transform.matrix())));
+    INFO(fmt::format("linear:\\n{}", transform.matrix()));
     INFO(fmt::format("translation:\n{}", transform.translation()));
     if (((transform.matrix().array() != transform.matrix().array())).any())
       WARN("NAN in transformation.");

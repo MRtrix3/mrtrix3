@@ -27,7 +27,7 @@ namespace MR::File {
 KeyValues Config::config;
 
 const std::string Config::file_basename("mrtrix.conf");
-const std::string Config::default_sys_config_file("/etc/" + file_basename);
+const std::string Config::default_sys_config_file(fmt::format("/etc/{}", file_basename));
 
 // ENVVAR name: MRTRIX_CONFIGFILE
 // ENVVAR This can be used to set the location of the system-wide
@@ -54,7 +54,7 @@ void Config::init() {
     DEBUG(fmt::format("No config file found at \"{}\"", sysconf_location));
   }
 
-  const std::string path = Path::join(Path::home(), "." + file_basename);
+  const std::string path = Path::join(Path::home(), fmt::format(".{}", file_basename));
   if (Path::is_file(path)) {
     INFO(fmt::format("reading config file \"{}\"...", path));
     try {

@@ -14,14 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "command.h"
-#include "datatype.h"
-#include "fmt.h"
-#include "progressbar.h"
 #include <fmt/format.h>
 
 #include "algo/threaded_loop.h"
+#include "command.h"
+#include "datatype.h"
+#include "eigen_plugins/fmt.h"
 #include "image.h"
+#include "progressbar.h"
 
 using namespace MR;
 using namespace App;

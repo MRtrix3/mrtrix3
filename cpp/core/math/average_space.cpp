@@ -176,7 +176,7 @@ void compute_average_voxel2scanner(
     const std::vector<Eigen::Transform<default_type, 3, Eigen::Projective>> &transform_header_with,
     const avgspace_voxspacing_t voxel_spacing_calculation) {
   const size_t num_images = input_headers.size();
-  DEBUG(fmt::format("compute_average_voxel2scanner num_images:{}", str(num_images)));
+  DEBUG(fmt::format("compute_average_voxel2scanner num_images:{}", num_images));
   std::vector<Eigen::Transform<default_type, 3, Eigen::Projective>> transformation_matrices;
   Eigen::MatrixXd bounding_box_corners = Eigen::MatrixXd::Zero(8 * num_images, 4);
 
@@ -308,13 +308,12 @@ Header compute_minimum_average_header(
   for (size_t i = 0; i < 3; i++) {
     header_out.size(i) = std::ceil(average_space_voxel_extent(i));
     if (header_out.size(i) < 1)
-      throw Exception(
-          fmt::format("average space header has zero voxels in dimension {}. Increase resolution?", str(i)));
+      throw Exception(fmt::format("average space header has zero voxels in dimension {}. Increase resolution?", i));
   }
   DEBUG(fmt::format("compute_minimum_average_header header_out.size: {}, {}, {}",
-                    str(header_out.size(0)),
-                    str(header_out.size(1)),
-                    str(header_out.size(2))));
+                    header_out.size(0),
+                    header_out.size(1),
+                    header_out.size(2)));
 
   return header_out;
 }

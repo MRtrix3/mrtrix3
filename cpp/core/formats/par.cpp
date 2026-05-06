@@ -49,7 +49,7 @@ inline const ParCols get_column_indices(const float version) {
   } else if (version == 4.2f) {
     return {0, 1, 2, 3, 4, 5, 16, 19, 33, 45, 48, 11, 12, 13, 7, 9, 28, 22, 23};
   } else
-    throw Exception(fmt::format("unsupported version of PAR/REC: V{}", str(version)));
+    throw Exception(fmt::format("unsupported version of PAR/REC: V{}", version));
 }
 
 typedef struct {
@@ -117,7 +117,7 @@ std::unique_ptr<ImageIO::Base> PAR::read(Header &H) const {
   WARN("PAR/REC import is currently experimental - please verify the integrity of your data");
   WARN("  If your data does not import correctly, please report it to the MRtrix3 team");
 
-  std::string rec_file = H.name().substr(0, H.name().size() - 4) + ".REC";
+  std::string rec_file = fmt::format("{}.REC", H.name().substr(0, H.name().size() - 4));
 
   std::ifstream in(H.name(), std::ios::binary);
   if (!in)
@@ -147,13 +147,13 @@ std::unique_ptr<ImageIO::Base> PAR::read(Header &H) const {
       keyval[0] = strip(keyval[0]);
 
       if (keyval[0] == "Patient name")
-        add_line(H.keyval()["comments"], "Name: " + strip(keyval[1]));
+        add_line(H.keyval()["comments"], fmt::format("Name: {}", strip(keyval[1])));
       else if (keyval[0] == "Examination name")
-        add_line(H.keyval()["comments"], "Exam: " + strip(keyval[1]));
+        add_line(H.keyval()["comments"], fmt::format("Exam: {}", strip(keyval[1])));
       else if (keyval[0] == "Protocol name")
-        add_line(H.keyval()["comments"], "Protocol: " + strip(keyval[1]));
+        add_line(H.keyval()["comments"], fmt::format("Protocol: {}", strip(keyval[1])));
       else if (keyval[0] == "Examination date/time")
-        add_line(H.keyval()["comments"], "date: " + strip(keyval[1]));
+        add_line(H.keyval()["comments"], fmt::format("date: {}", strip(keyval[1])));
 
     } else { // per-slice info
       if (std::isnan(version))

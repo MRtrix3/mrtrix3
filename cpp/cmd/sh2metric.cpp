@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <fmt/format.h>
 #include <string>
 #include <vector>
 
@@ -21,13 +22,11 @@
 #include "command.h"
 #include "dwi/directions/set.h"
 #include "enum.h"
-#include "fmt.h"
 #include "image.h"
 #include "image_helpers.h"
 #include "math/SH.h"
 #include "math/entropy.h"
 #include "mrtrix.h"
-#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -69,7 +68,7 @@ void usage() {
 
   ARGUMENTS
     + Argument ("SH", "the input spherical harmonics coefficients image(s)").type_image_in().allow_multiple()
-    + Argument ("metric", "the metrc to compute; one of: " + Enum::join<metrics>()).type_choice<metrics>()
+    + Argument ("metric", fmt::format("the metrc to compute; one of: {}", Enum::join<metrics>())).type_choice<metrics>()
     + Argument ("output", "the output metric image").type_image_out();
 
   OPTIONS
@@ -271,7 +270,7 @@ void run_power() {
   const bool spectrum = !get_options("spectrum").empty();
 
   const size_t lmax = Math::SH::LforN(static_cast<int>(SH_data.size(3)));
-  INFO(fmt::format("calculating spherical harmonic power up to degree {}", str(lmax)));
+  INFO(fmt::format("calculating spherical harmonic power up to degree {}", lmax));
 
   if (spectrum)
     power_header.size(3) = static_cast<ssize_t>(1 + lmax / 2);

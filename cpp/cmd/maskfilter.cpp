@@ -37,9 +37,9 @@ enum class FilterType { CLEAN, CONNECT, DILATE, ERODE, FILL, MEDIAN };
 const OptionGroup CleanOption =
     OptionGroup("Options for mask cleaning filter")
       + Option("scale",
-               "the maximum scale used to cut bridges."
-               " A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale."
-               " (Default: " + str(default_clean_scale, 2) + ")")
+               fmt::format("the maximum scale used to cut bridges."
+                           " A certain maximum scale cuts bridges up to a width (in voxels) of 2x the provided scale."
+                           " (Default: {})", default_clean_scale))
         + Argument("value").type_integer(1, 1e6);
 
 const OptionGroup ConnectOption =
@@ -98,8 +98,7 @@ void usage() {
 
   ARGUMENTS
   + Argument("input", "the input mask.").type_image_in()
-  + Argument("filter", "the name of the filter to be applied;"
-                       " options are: " + MR::Enum::join<FilterType>() + ".").type_choice<FilterType>()
+  + Argument("filter", fmt::format("the name of the filter to be applied; options are: {}.", MR::Enum::join<FilterType>())).type_choice<FilterType>()
   + Argument("output", "the output mask.").type_image_out();
 
   OPTIONS
@@ -124,7 +123,8 @@ void run() {
 
   switch (filter_index) {
   case FilterType::CLEAN: {
-    Filter::MaskClean filter(input_image, "applying mask cleaning filter to image " + Path::basename(argument[0]));
+    Filter::MaskClean filter(input_image,
+                             fmt::format("applying mask cleaning filter to image {}", Path::basename(argument[0])));
     filter.set_scale(get_option_value("scale", default_clean_scale));
 
     Stride::set_from_command_line(filter);
@@ -135,8 +135,8 @@ void run() {
   }
 
   case FilterType::CONNECT: {
-    Filter::ConnectedComponents filter(input_image,
-                                       "applying connected-component filter to image " + Path::basename(argument[0]));
+    Filter::ConnectedComponents filter(
+        input_image, fmt::format("applying connected-component filter to image {}", Path::basename(argument[0])));
     auto opt = get_options("axes");
     if (!opt.empty()) {
       const std::vector<int> axes = opt[0][0];
@@ -171,7 +171,7 @@ void run() {
   }
 
   case FilterType::DILATE: {
-    Filter::Dilate filter(input_image, "applying dilate filter to image " + Path::basename(argument[0]));
+    Filter::Dilate filter(input_image, fmt::format("applying dilate filter to image {}", Path::basename(argument[0])));
     auto opt = get_options("npass");
     if (!opt.empty())
       filter.set_npass(static_cast<unsigned int>(opt[0][0]));
@@ -185,7 +185,7 @@ void run() {
   }
 
   case FilterType::ERODE: {
-    Filter::Erode filter(input_image, "applying erode filter to image " + Path::basename(argument[0]));
+    Filter::Erode filter(input_image, fmt::format("applying erode filter to image {}", Path::basename(argument[0])));
     auto opt = get_options("npass");
     if (!opt.empty())
       filter.set_npass(static_cast<unsigned int>(opt[0][0]));
@@ -199,7 +199,7 @@ void run() {
   }
 
   case FilterType::FILL: {
-    Filter::Fill filter(input_image, "filling interior of image " + Path::basename(argument[0]));
+    Filter::Fill filter(input_image, fmt::format("filling interior of image {}", Path::basename(argument[0])));
     auto opt = get_options("axes");
     if (!opt.empty()) {
       const std::vector<int> axes = opt[0][0];
@@ -215,7 +215,7 @@ void run() {
   }
 
   case FilterType::MEDIAN: {
-    Filter::Median filter(input_image, "applying median filter to image " + Path::basename(argument[0]));
+    Filter::Median filter(input_image, fmt::format("applying median filter to image {}", Path::basename(argument[0])));
     auto opt = get_options("extent");
     if (!opt.empty())
       filter.set_extent(parse_ints<uint32_t>(opt[0][0]));

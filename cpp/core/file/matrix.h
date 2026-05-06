@@ -37,8 +37,7 @@ void save_matrix_text(const MatrixType &M,
                       std::string_view filename,
                       const KeyValues &keyvals = KeyValues(),
                       const bool add_to_command_history = true) {
-  DEBUG(fmt::format("saving {}", M.rows()) + fmt::format("x{}", M.cols()) +
-        fmt::format(" matrix to text file \"{}\"...", filename));
+  DEBUG(fmt::format("saving {}x{} matrix to text file \"{}\"...", M.rows(), M.cols(), filename));
   File::OFStream out(filename);
   File::KeyValue::write(out, keyvals, "# ", add_to_command_history);
   Eigen::IOFormat fmt(
@@ -85,8 +84,11 @@ std::vector<std::vector<ValueType>> load_matrix_2D_vector(std::string_view filen
     if (V.size() > 1)
       if (V.back().size() != V[0].size())
         throw Exception(
-            fmt::format("uneven rows in matrix text file \"{}\" (first row: {}", filename, str(V[0].size())) +
-            fmt::format(" columns; row {}", V.size()) + fmt::format(": {}", V.back().size()) + " columns)");
+            fmt::format("uneven rows in matrix text file \"{}\" (first row: {} columns; row {}: {} columns)",
+                        filename,
+                        V[0].size(),
+                        V.size(),
+                        V.back().size()));
   }
   if (stream.bad())
     throw Exception(strerror(errno));
@@ -118,7 +120,7 @@ void save_vector_text(const VectorType &V,
                       std::string_view filename,
                       const KeyValues &keyvals,
                       const bool add_to_command_history) {
-  DEBUG(fmt::format("saving vector of size {}", V.size()) + fmt::format(" to text file \"{}\"...", filename));
+  DEBUG(fmt::format("saving vector of size {} to text file \"{}\"...", V.size(), filename));
   File::OFStream out(filename);
   File::KeyValue::write(out, keyvals, "# ", add_to_command_history);
   const char d(Path::delimiter(filename));

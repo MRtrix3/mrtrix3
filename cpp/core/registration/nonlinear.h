@@ -116,10 +116,10 @@ public:
         }
       } else {
         if (do_reorientation) {
-          CONSOLE("nonlinear stage " + fmt::format("{}, scale factor ", level + 1) +
-                  fmt::format("{}, lmax ", scale_factor[level]) + str(fod_lmax[level]));
+          CONSOLE(fmt::format(
+              "nonlinear stage {}, scale factor {}, lmax {}", level + 1, scale_factor[level], fod_lmax[level]));
         } else {
-          CONSOLE("nonlinear stage " + fmt::format("{}, scale factor ", level + 1) + str(scale_factor[level]));
+          CONSOLE(fmt::format("nonlinear stage {}, scale factor {}", level + 1, scale_factor[level]));
         }
       }
 
@@ -339,11 +339,11 @@ public:
 
         } else {
           converged = true;
-          INFO("  converged. cost: " + fmt::format("{} voxel count: ", cost) + str(voxel_count));
+          INFO(fmt::format("  converged. cost: {} voxel count: {}", cost, voxel_count));
         }
 
         if (!converged)
-          INFO("  iteration: " + fmt::format("{} cost: ", iteration) + str(cost));
+          INFO(fmt::format("  iteration: {} cost: {}", iteration, cost));
 
         if (++iteration > max_iter[level])
           converged = true;
@@ -358,7 +358,7 @@ public:
           Header hc(warped_header);
           hc.ndim() = 4;
           hc.size(3) = 3;
-          INFO("writing debug image: " + oss.str());
+          INFO(fmt::format("writing debug image: {}", oss.str()));
           auto check = Image<default_type>::create(oss.str(), hc);
           for (auto i = Loop(check, 0, 3)(check, im1_warped, im2_warped); i; ++i) {
             check.value() = im1_warped.value();

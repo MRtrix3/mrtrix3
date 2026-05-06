@@ -70,8 +70,8 @@ extern "C" void R_usage(char **output) { // check_syntax off
 int main(int cmdline_argc, char **cmdline_argv) { // check_syntax off
   if (MR::App::mrtrix_version != MR::App::mrtrix_executable_version) {
     MR::Exception E("executable was compiled for a different version of the MRtrix3 library!");
-    E.push_back("  " + MR::App::NAME + " version: " + MR::App::mrtrix_executable_version);
-    E.push_back("  library version: " + MR::App::mrtrix_version);
+    E.push_back(fmt::format("  {} version: {}", MR::App::NAME, MR::App::mrtrix_executable_version));
+    E.push_back(fmt::format("  library version: {}", MR::App::mrtrix_version));
     E.push_back("You may need to erase files left over from prior MRtrix3 versions;");
     E.push_back("eg. core/version.cpp; src/exec_version.cpp");
     E.push_back(", and re-configure cmake");

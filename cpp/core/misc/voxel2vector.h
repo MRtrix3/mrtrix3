@@ -49,8 +49,10 @@ public:
       forward.value() = counter++;
       reverse.push_back(pos());
     }
-    DEBUG("Voxel2vector class for image \"" + header.name() + "\" of size " + join(pos(), "x") +
-          fmt::format(" initialised with {}", reverse.size()) + " elements");
+    DEBUG(fmt::format("Voxel2vector class for image \"{}\" of size {} initialised with {} elements",
+                      header.name(),
+                      join(pos(), "x"),
+                      reverse.size()));
   }
 
   size_t size() const { return reverse.size(); }
@@ -99,8 +101,10 @@ Voxel2Vector::Voxel2Vector(MaskType &mask, const Header &data)
       forward.value() = invalid;
     }
   }
-  DEBUG("Voxel2vector class for image \"" + data.name() + "\" of size " + join(pos(), "x") +
-        fmt::format(" initialised with {}", reverse.size()) + " elements");
+  DEBUG(fmt::format("Voxel2vector class for image \"{}\" of size {} initialised with {} elements",
+                    data.name(),
+                    join(pos(), "x"),
+                    reverse.size()));
 }
 
 } // namespace MR

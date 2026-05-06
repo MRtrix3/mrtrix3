@@ -15,13 +15,12 @@
  */
 
 #include "math/stats/shuffle.h"
-#include <fmt/format.h>
 
 #include <algorithm>
+#include <fmt/format.h>
 #include <random>
 
 #include "file/matrix.h"
-#include "fmt.h"
 #include "math/factorial.h"
 #include "math/rng.h"
 
@@ -54,8 +53,8 @@ App::OptionGroup shuffle_options(const bool include_nonstationarity, const defau
   + Option("strong", "use strong familywise error control across multiple hypotheses")
 
   + Option("nshuffles",
-           "the number of shuffles"
-           " (default: " + fmt::format("{})", default_numshuffles_nulldist))
+           fmt::format("the number of shuffles"
+                       " (default: {})", default_numshuffles_nulldist))
     + Argument("number").type_integer(1)
 
   + Option("permutations",
@@ -72,13 +71,13 @@ App::OptionGroup shuffle_options(const bool include_nonstationarity, const defau
     + Option("nonstationarity", "perform empirical non-stationarity correction")
 
     + Option("skew_nonstationarity",
-             "specify the skew parameter for empirical statistic calculation"
-             " (default for this command is " + fmt::format("{})", default_skew))
+             fmt::format("specify the skew parameter for empirical statistic calculation"
+                         " (default for this command is {})", default_skew))
       + Argument("value").type_float(0.0)
 
     + Option("nshuffles_nonstationarity",
-             "the number of shuffles to use when precomputing the empirical statistic image for non-stationarity correction"
-             " (default: " + fmt::format("{})", default_numshuffles_nonstationarity))
+             fmt::format("the number of shuffles to use when precomputing the empirical statistic image for non-stationarity correction"
+                         " (default: {})", default_numshuffles_nonstationarity))
       + Argument("number").type_integer(1)
 
     + Option("permutations_nonstationarity",
@@ -590,7 +589,7 @@ void Shuffler::generate_all_permutations(const index_type num_rows,
 void Shuffler::load_permutations(std::string_view filename) {
   std::vector<std::vector<index_type>> temp = File::Matrix::load_matrix_2D_vector<index_type>(filename);
   if (temp.empty())
-    throw Exception(fmt::format("no data found in permutations file: {}", str(filename)));
+    throw Exception(fmt::format("no data found in permutations file: {}", filename));
 
   const index_type min_value = *std::min_element(std::begin(temp[0]), std::end(temp[0]));
   if (min_value > 1)

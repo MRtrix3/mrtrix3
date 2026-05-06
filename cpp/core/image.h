@@ -427,7 +427,7 @@ std::string Image<ValueType>::dump_to_mrtrix_file(std::string_view nominated_fil
     offset += ((4 - (offset % 4)) % 4);
     out << ". " << offset << "\nEND\n";
   } else {
-    data_filename = output_filename.substr(0, output_filename.size() - 4) + ".dat";
+    data_filename = fmt::format("{}.dat", output_filename.substr(0, output_filename.size() - 4));
     out << Path::basename(data_filename) << "\n";
     out.close();
     out.open(data_filename, std::ios::out | std::ios::binary);

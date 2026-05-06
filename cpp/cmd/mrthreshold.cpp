@@ -126,9 +126,8 @@ void usage() {
 
   + OptionGroup ("Threshold application modifiers")
 
-  + Option ("comparison", "comparison operator to use when applying the threshold; "
-                          "options are: " + MR::Enum::join<operator_type>()
-                          + " (default = \"le\" for -bottom; \"ge\" otherwise)")
+  + Option ("comparison", fmt::format("comparison operator to use when applying the threshold;"
+                                      " options are: {} (default = \"le\" for -bottom; \"ge\" otherwise)", MR::Enum::join<operator_type>()))
     + Argument ("choice").type_choice<operator_type>()
 
   + Option ("invert", "invert the output binary mask "

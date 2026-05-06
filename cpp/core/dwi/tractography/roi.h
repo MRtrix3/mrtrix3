@@ -78,8 +78,7 @@ public:
   std::string shape() const { return (mask ? "image" : "sphere"); }
 
   std::string parameters() const {
-    return mask ? std::string(mask->name())
-                : fmt::format("{},", pos[0]) + fmt::format("{},", pos[1]) + fmt::format("{},", pos[2]) + str(radius);
+    return mask ? std::string(mask->name()) : fmt::format("{},{},{},{}", pos[0], pos[1], pos[2], radius);
   }
 
   float min_featurelength() const {

@@ -20,7 +20,7 @@
 #include <mutex>
 
 #include "adapter/gradient3D.h"
-#include "fmt.h"
+#include "eigen_plugins/fmt.h"
 #include "image_helpers.h"
 #include "registration/multi_contrast.h"
 

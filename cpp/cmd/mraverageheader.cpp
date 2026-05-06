@@ -14,15 +14,16 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <fmt/format.h>
+
 #include "algo/loop.h"
 #include "command.h"
 #include "debug.h"
-#include "fmt.h"
+#include "eigen_plugins/fmt.h"
 #include "image.h"
 #include "interp/nearest.h"
 #include "math/average_space.h"
 #include "registration/transform/initialiser_helpers.h"
-#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -55,15 +56,17 @@ void usage() {
 
   OPTIONS
   + Option ("padding",
-            "boundary box padding in voxels."
-            " Default: " + str(PADDING_DEFAULT))
+            fmt::format("boundary box padding in voxels."
+                        " Default: {}", PADDING_DEFAULT))
     + Argument ("value").type_float(0.0)
   + Option ("spacing",
-            "Method for determination of voxel spacings based on"
-            " the set of input images and the average header axes"
-            " (see Description)."
-            " Valid options are: " + join(avgspace_voxspacing_choices, ",") + ";"
-            " default = " + SPACING_DEFAULT_STRING)
+            fmt::format("Method for determination of voxel spacings based on"
+                        " the set of input images and the average header axes"
+                        " (see Description)."
+                        " Valid options are: {};"
+                        " default = {}",
+                        join(avgspace_voxspacing_choices, ","),
+                        SPACING_DEFAULT_STRING))
     + Argument("type").type_choice(avgspace_voxspacing_choices)
   + Option ("fill", "set the intensity in the first volume of the average space to 1")
   + DataType::options();

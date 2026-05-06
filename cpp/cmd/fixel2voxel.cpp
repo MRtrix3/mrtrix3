@@ -95,7 +95,7 @@ void usage() {
 
   ARGUMENTS
   + Argument ("fixel_in", "the input fixel data file").type_image_in()
-  + Argument ("operation", "the operation to apply, one of: " + MR::Enum::join<Operation>() + ".").type_choice<Operation>()
+  + Argument ("operation", fmt::format("the operation to apply, one of: {}.", MR::Enum::join<Operation>())).type_choice<Operation>()
   + Argument ("image_out", "the output scalar image.").type_image_out();
 
   OPTIONS

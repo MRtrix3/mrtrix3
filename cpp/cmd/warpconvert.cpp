@@ -54,8 +54,7 @@ void usage() {
 
   ARGUMENTS
   + Argument ("in", "the input warp image.").type_image_in()
-  + Argument ("type", "the conversion type required;"
-                      " valid choices are: " + MR::Enum::join<ConversionType>()).type_choice<ConversionType>()
+  + Argument ("type", fmt::format("the conversion type required; valid choices are: {}", MR::Enum::join<ConversionType>())).type_choice<ConversionType>()
   + Argument ("out", "the output warp image.").type_image_out();
 
   OPTIONS

@@ -51,7 +51,7 @@ Reader::Reader(std::string_view filename)
       s << str(static_cast<int>(sig[i])) << " ";
     }
     Exception e(fmt::format("Bad PNG signature in file \"{}\"", filename));
-    e.push_back("File signature: " + s.str());
+    e.push_back(fmt::format("File signature: {}", s.str()));
     throw e;
   }
   if (!(png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr))) {
@@ -81,7 +81,7 @@ Reader::Reader(std::string_view filename)
   case PNG_COLOR_TYPE_RGB_ALPHA:
     break;
   default:
-    throw Exception(fmt::format("Invalid color type ({}) in PNG file \"{}\"", str(color_type), filename));
+    throw Exception(fmt::format("Invalid color type ({}) in PNG file \"{}\"", color_type, filename));
   }
   switch (bit_depth) {
   case 1:
@@ -196,13 +196,13 @@ Writer::Writer(const Header &H, std::string_view filename)
     default:
       png_destroy_write_struct(&png_ptr, &info_ptr);
       throw Exception(
-          fmt::format("Unsupported number of volumes ({}) in image \"{}\" for PNG writer", str(H.size(3)), filename));
+          fmt::format("Unsupported number of volumes ({}) in image \"{}\" for PNG writer", H.size(3), filename));
     }
     break;
   default:
     png_destroy_write_struct(&png_ptr, &info_ptr);
     throw Exception(
-        fmt::format("Unsupported image dimensionality ({}) in image \"{}\" for PNG writer", str(H.ndim()), filename));
+        fmt::format("Unsupported image dimensionality ({}) in image \"{}\" for PNG writer", H.ndim(), filename));
   }
   if (data_type.is_complex()) {
     png_destroy_write_struct(&png_ptr, &info_ptr);

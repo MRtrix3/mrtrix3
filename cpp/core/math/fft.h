@@ -116,7 +116,7 @@ inline void FFT(ImageTypeIn &in, ImageTypeOut &out, size_t axis, int direction, 
   outer_axes.erase(std::find(outer_axes.begin(), outer_axes.end(), axis));
   outer_axes.insert(outer_axes.begin(), axis);
 
-  ThreadedLoop("performing " + direction_str(direction) + " FFT along axis " + str(axis), in, outer_axes, 1)
+  ThreadedLoop(fmt::format("performing {} FFT along axis {}", direction_str(direction), axis), in, outer_axes, 1)
       .run_outer(FFTFunctor(in, out, axis, direction, centre_FFT));
 }
 

@@ -41,8 +41,7 @@ void usage() {
   SYNOPSIS = "Modify the intensities of one image to match the histogram of another";
 
   ARGUMENTS
-    + Argument ("type", "type of histogram matching to perform;"
-                        " options are: " + MR::Enum::join<MatchType>() + ".").type_choice<MatchType>()
+    + Argument ("type", fmt::format("type of histogram matching to perform; options are: {}.", MR::Enum::join<MatchType>())).type_choice<MatchType>()
     + Argument ("input", "the input image to be modified").type_image_in ()
     + Argument ("target", "the input image from which to derive the target histogram").type_image_in()
     + Argument ("output", "the output image").type_image_out();
@@ -133,7 +132,7 @@ void match_linear(Image<float> &input,
   H.datatype().set_byte_order_native();
   H.keyval()["mrhistmatch_scale"] = str<float>(parameters[0]);
   if (estimate_intercept) {
-    CONSOLE("Estimated linear transform is: " + fmt::format("{}x + ", parameters[0]) + str(parameters[1]));
+    CONSOLE(fmt::format("Estimated linear transform is: {}x + {}", parameters[0], parameters[1]));
     H.keyval()["mrhistmatch_offset"] = str<float>(parameters[1]);
     auto output = Image<float>::create(argument[3], H);
     for (auto l = Loop("Writing output image data", input)(input, output); l; ++l) {

@@ -83,7 +83,7 @@ public:
 
       // num_samples is number of samples excluding first point
       --num_samples;
-      INFO("iFOD2 generating " + fmt::format("{} vertices per ", num_samples) + fmt::format("{} mm step", step_size));
+      INFO(fmt::format("iFOD2 generating {} vertices per {} mm step", num_samples, step_size));
 
       // iFOD2 by default downsamples after track propagation back to the desired 'step size'
       //   i.e. the sub-step detail is removed from the output
@@ -236,7 +236,7 @@ public:
       float val = rand_path_prob();
 
       if (val > max_val) {
-        DEBUG("max_val exceeded!!! (val = " + fmt::format("{}, max_val = ", val) + fmt::format("{})", max_val));
+        DEBUG(fmt::format("max_val exceeded!!! (val = {}, max_val = {})", val, max_val));
         ++num_truncations;
         if (val / max_val > max_truncation)
           max_truncation = val / max_val;

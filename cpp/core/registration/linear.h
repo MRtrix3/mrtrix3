@@ -161,8 +161,7 @@ public:
         stages[i].stage_iterations = it[0];
     } else
       throw Exception(
-          fmt::format("the number of stage iterations must be defined for all stages (1 or {}", str(stages.size())) +
-          ")");
+          fmt::format("the number of stage iterations must be defined for all stages (1 or {})", stages.size()));
     for (auto &stage : stages) {
       stage.optimisers.resize(stage.stage_iterations, stage.optimiser_default);
       stage.optimisers[0] = stage.optimiser_first;
@@ -179,9 +178,8 @@ public:
       for (size_t i = 0; i < stages.size(); ++i)
         stages[i].gd_max_iter = maxiter[0];
     } else
-      throw Exception(fmt::format("the number of gradient descent iterations must be defined for all stages (1 or {}",
-                                  str(stages.size())) +
-                      ")");
+      throw Exception(fmt::format("the number of gradient descent iterations must be defined for all stages (1 or {})",
+                                  stages.size()));
   }
 
   // needs to be set before set_lmax
@@ -201,7 +199,7 @@ public:
       for (size_t i = 0; i < stages.size(); ++i)
         stages[i].fod_lmax = lmax[0];
     } else
-      throw Exception(fmt::format("the lmax must be defined for all stages (1 or {}", str(stages.size())) + ")");
+      throw Exception(fmt::format("the lmax must be defined for all stages (1 or {})", stages.size()));
   }
 
   // needs to be set after set_lmax
@@ -218,7 +216,7 @@ public:
       for (size_t i = 0; i < stages.size(); ++i)
         stages[i].loop_density = loop_density_[0];
     } else
-      throw Exception(fmt::format("the lmax must be defined for all stages (1 or {}", str(stages.size())) + ")");
+      throw Exception(fmt::format("the lmax must be defined for all stages (1 or {})", stages.size()));
   }
 
   void set_diagnostics_image_prefix(const std::basic_string<char> &diagnostics_image_prefix) {
@@ -228,8 +226,8 @@ public:
         std::ostringstream oss;
         oss << diagnostics_image_prefix << "_stage-" << level + 1 << "_iter-" << iter << ".mif";
         if (Path::exists(oss.str()) && !App::overwrite_files)
-          throw Exception(fmt::format("diagnostics image file \"{}", oss.str()) +
-                          "\" already exists (use -force option to force overwrite)");
+          throw Exception(fmt::format(
+              "diagnostics image file \"{}\" already exists (use -force option to force overwrite)", oss.str()));
         stage.diagnostics_images.push_back(oss.str());
       }
     }
@@ -393,8 +391,7 @@ public:
     for (size_t istage = 0; istage < stages.size(); istage++) {
       auto &stage = stages[istage];
 
-      CONSOLE("linear stage " + fmt::format("{}/", istage + 1) + str(stages.size()) + ", " +
-              stage.info(do_reorientation));
+      CONSOLE(fmt::format("linear stage {}/{}, {}", istage + 1, stages.size(), stage.info(do_reorientation)));
       // define or adjust tissue contrast lmax, nvols for this stage
       stage_contrasts = contrasts;
       if (!stage_contrasts.empty()) {
@@ -507,9 +504,12 @@ public:
           optim.precondition(optimiser_weights);
           optim.run(stage.gd_max_iter, grad_tolerance, analyse_descent ? std::cout.rdbuf() : log_stream);
           parameters.optimiser_update(optim, evaluate.overlap());
-          INFO("    iteration: " + fmt::format("{}/", stage_iter) +
-               fmt::format("{} GD iterations: ", stage.stage_iterations) + str(optim.function_evaluations()) +
-               fmt::format(" cost: {}", optim.value()) + fmt::format(" overlap: {}", evaluate.overlap()));
+          INFO(fmt::format("    iteration: {}/{} GD iterations: {} cost: {} overlap: {}",
+                           stage_iter,
+                           stage.stage_iterations,
+                           optim.function_evaluations(),
+                           optim.value(),
+                           evaluate.overlap()));
         } else if (stage.gd_max_iter > 0) {
           Math::GradientDescent<Metric::Evaluate<MetricType, ParamType>, typename TransformType::UpdateType> optim(
               evaluate, *transform.get_gradient_descent_updator());
@@ -517,9 +517,12 @@ public:
           optim.precondition(optimiser_weights);
           optim.run(stage.gd_max_iter, grad_tolerance, analyse_descent ? std::cout.rdbuf() : log_stream);
           parameters.optimiser_update(optim, evaluate.overlap());
-          INFO("    iteration: " + fmt::format("{}/", stage_iter) +
-               fmt::format("{} GD iterations: ", stage.stage_iterations) + str(optim.function_evaluations()) +
-               fmt::format(" cost: {}", optim.value()) + fmt::format(" overlap: {}", evaluate.overlap()));
+          INFO(fmt::format("    iteration: {}/{} GD iterations: {} cost: {} overlap: {}",
+                           stage_iter,
+                           stage.stage_iterations,
+                           optim.function_evaluations(),
+                           optim.value(),
+                           evaluate.overlap()));
         }
 
         if (log_stream) {

@@ -158,7 +158,7 @@ void create(std::string_view filename, int64_t size) {
 
 void resize(std::string_view filename, int64_t size) {
   const std::string temp(filename);
-  DEBUG(fmt::format("resizing file \"{}\" to {}", temp, str(size)));
+  DEBUG(fmt::format("resizing file \"{}\" to {}", temp, size));
 
   const int fd = open(temp.c_str(), O_RDWR, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
   if (fd < 0)
@@ -178,9 +178,9 @@ bool is_tempfile(std::string_view name, std::string_view suffix) {
 }
 
 std::string create_tempfile(int64_t size, std::string_view suffix) {
-  DEBUG(fmt::format("creating temporary file of size {}", str(size)));
+  DEBUG(fmt::format("creating temporary file of size {}", size));
 
-  std::string filename(Path::join(tmpfile_dir(), tmpfile_prefix()) + "XXXXXX.");
+  std::string filename(fmt::format("{}XXXXXX.", Path::join(tmpfile_dir(), tmpfile_prefix())));
   const int rand_index = filename.size() - 7;
   filename += suffix;
 
@@ -193,10 +193,7 @@ std::string create_tempfile(int64_t size, std::string_view suffix) {
 
   if (fid < 0)
     throw Exception(
-        fmt::format(
-            "{}",
-            fmt::format("{}", std::string("error creating temporary file in directory \"" + tmpfile_dir() + "\": "))) +
-        strerror(errno));
+        fmt::format("error creating temporary file in directory \"{}\": {}", tmpfile_dir(), strerror(errno)));
 
   const int status = size == 0 ? 0 : ftruncate(fid, size);
   close(fid);

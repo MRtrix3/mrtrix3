@@ -14,6 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <fmt/format.h>
+
 #include "command.h"
 #include "dwi/directions/file.h"
 #include "dwi/directions/validate.h"
@@ -21,7 +23,6 @@
 #include "math/rng.h"
 #include "progressbar.h"
 #include "thread.h"
-#include <fmt/format.h>
 
 constexpr size_t default_number = 1e8;
 
@@ -42,8 +43,7 @@ ARGUMENTS
   + Argument ("out", "the output partitioned directions").type_file_out().allow_multiple();
 
 OPTIONS
-  + Option ("number", "number of permutations to try"
-                      " (default: " + fmt::format("{})", default_number))
+  + Option ("number", fmt::format("number of permutations to try (default: {})", default_number))
     + Argument ("num").type_integer (1)
 
   + DWI::Directions::cartesian_option;
@@ -68,12 +68,12 @@ public:
       if (s >= num_subsets)
         s = 0;
     }
-    INFO(fmt::format("split {} directions into subsets with {} volumes", str(directions.rows()), str([&] {
-                       std::vector<size_t> c;
-                       for (auto &x : subset)
-                         c.push_back(x.size());
-                       return c;
-                     }())));
+    INFO(fmt::format("split {} directions into subsets with {} volumes", directions.rows(), [&] {
+      std::vector<size_t> c;
+      for (auto &x : subset)
+        c.push_back(x.size());
+      return c;
+    }()));
   }
 
   bool update(value_type energy, const std::vector<std::vector<size_t>> &set) {
@@ -83,8 +83,7 @@ public:
     if (energy < best_energy) {
       best_energy = energy;
       best_subset = set;
-      progress->set_text("distributing directions (current best configuration: energy = " +
-                         fmt::format("{})", best_energy));
+      progress->set_text(fmt::format("distributing directions (current best configuration: energy = {})", best_energy));
     }
     ++num_permutations;
     ++(*progress);

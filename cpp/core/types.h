@@ -20,6 +20,7 @@
 #include <complex>
 #include <cstddef>
 #include <deque>
+#include <fmt/format.h>
 #include <iostream>
 #include <map>
 #include <memory>
@@ -218,3 +219,24 @@ template <class T, std::size_t N> inline ostream &operator<<(ostream &stream, co
 }
 
 } // namespace std
+
+namespace fmt {
+template <class T> struct formatter<std::vector<T>> {
+  constexpr auto parse(format_parse_context &ctx) { return ctx.begin(); }
+  template <typename FormatContext> auto format(const std::vector<T> &v, FormatContext &ctx) const {
+    format_to(ctx.out(), "[ ");
+    for (size_t i = 0; i != v.size(); ++i)
+      format_to(ctx.out(), "{} ", v[i]);
+    return format_to(ctx.out(), "]");
+  }
+};
+template <class T, std::size_t N> struct formatter<std::array<T, N>> {
+  constexpr auto parse(format_parse_context &ctx) { return ctx.begin(); }
+  template <typename FormatContext> auto format(const std::array<T, N> &v, FormatContext &ctx) const {
+    format_to(ctx.out(), "[ ");
+    for (size_t i = 0; i != N; ++i)
+      format_to(ctx.out(), "{} ", v[i]);
+    return format_to(ctx.out(), "]");
+  }
+};
+} // namespace fmt

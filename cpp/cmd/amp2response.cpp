@@ -22,7 +22,6 @@
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
 #include "file/matrix.h"
-#include "fmt.h"
 #include "header.h"
 #include "image.h"
 #include "image_helpers.h"
@@ -213,12 +212,11 @@ void run() {
     auto dirs = File::Matrix::load_matrix(opt[0][0]);
     auto dv = DWI::Directions::validate(dirs, opt[0][0], false);
     if (dv.n_non_unit > 0) {
-      WARN(fmt::format("Input directions file \"{}\"{}{} direction{} not of unit norm;{}",
-                       opt[0][0], //
-                       " contains ",
-                       str(dv.n_non_unit),                                           //
-                       (dv.n_non_unit > 1 ? "s that are" : " that is"),              //
-                       " all directions will be interpreted agnostically of norm")); //
+      WARN(fmt::format("Input directions file \"{}\" contains {} direction{} not of unit norm;"
+                       " all directions will be interpreted agnostically of norm",
+                       opt[0][0],                                         //
+                       dv.n_non_unit,                                     //
+                       (dv.n_non_unit > 1 ? "s that are" : " that is"))); //
     }
     dirs_azin.push_back(Math::Sphere::as_spherical(dirs));
     volumes.push_back(all_volumes(dirs_azin.size()));
@@ -259,18 +257,19 @@ void run() {
     lmax = parse_ints<uint32_t>(opt[0][0]);
     if (lmax.size() != dirs_azin.size())
       throw Exception(fmt::format("Number of lmax\\'s specified ({}) does not match number of b-value shells ({})",
-                                  str(lmax.size()),
-                                  str(dirs_azin.size())));
+                                  lmax.size(),
+                                  dirs_azin.size()));
     for (auto i : lmax) {
       if (i % 2)
         throw Exception("Values specified for lmax must be even");
       max_lmax = std::max(max_lmax, i);
     }
     if ((*shells)[0].is_bzero() && lmax.front()) {
-      WARN(fmt::format("Non-zero lmax requested for {}",
-                       ((*shells)[0].get_mean() ? fmt::format("first shell (mean b={}", (*shells)[0].get_mean()) +
-                                                      "), which MRtrix3 has classified as b=0;"
-                                                : "b=0 shell;")));
+      WARN(fmt::format(
+          "Non-zero lmax requested for {}",
+          ((*shells)[0].get_mean()
+               ? fmt::format("first shell (mean b={}), which MRtrix3 has classified as b=0;", (*shells)[0].get_mean())
+               : "b=0 shell;")));
       WARN("  unless intended, this is likely to fail, as b=0 contains no orientation contrast");
     }
   } else {
@@ -308,8 +307,9 @@ void run() {
 
   const bool use_ols = !get_options("noconstraint").empty();
 
-  CONSOLE(std::string("estimating response function using ") + (use_ols ? "ordinary" : "constrained") +
-          " least-squares from " + str(num_voxels) + " voxels");
+  CONSOLE(fmt::format("estimating response function using {} least-squares from {} voxels",
+                      (use_ols ? "ordinary" : "constrained"),
+                      num_voxels));
 
   Eigen::MatrixXd responses(dirs_azin.size(), Math::ZSH::NforL(max_lmax));
 
@@ -318,10 +318,9 @@ void run() {
     {
       auto transform = Math::ZSH::init_amp_transform<default_type>(dirs_azin[shell_index].col(1), lmax[shell_index]);
       if (!transform.allFinite()) {
-        Exception e(fmt::format("Unable to construct A2SH transformation for shell b={}",
-                                static_cast<ssize_t>(std::round((*shells)[shell_index].get_mean()))) +
-                    ";");
-        e.push_back("  lmax (" + fmt::format("{}) may be too large for this shell", lmax[shell_index]));
+        Exception e(fmt::format("Unable to construct A2SH transformation for shell b={};",
+                                static_cast<ssize_t>(std::round((*shells)[shell_index].get_mean()))));
+        e.push_back(fmt::format("  lmax ({}) may be too large for this shell", lmax[shell_index]));
         if (!shell_index && (*shells)[0].is_bzero())
           e.push_back("  (this appears to be a b=0 shell, and therefore lmax should be set to 0 for this shell)");
         throw e;
@@ -363,10 +362,10 @@ void run() {
 
       // Estimate the solution
       const size_t niter = solver(rf, shared.b);
-      INFO(fmt::format("constrained least-squares solver completed in {} iterations", str(niter)));
+      INFO(fmt::format("constrained least-squares solver completed in {} iterations", niter));
     }
 
-    CONSOLE(fmt::format("  b={}: {}", str((*shells)[shell_index].get_mean(), 4), rf.cast<float>()));
+    CONSOLE(fmt::format("  b={:.4g}: {}", (*shells)[shell_index].get_mean(), rf.cast<float>()));
 
     rf.conservativeResizeLike(Eigen::VectorXd::Zero(Math::ZSH::NforL(max_lmax)));
     responses.row(shell_index) = rf;
@@ -376,7 +375,7 @@ void run() {
   if (shells) {
     std::string line = str<int>((*shells)[0].get_mean());
     for (size_t i = 1; i != (*shells).count(); ++i)
-      line += "," + str<int>((*shells)[i].get_mean());
+      line += fmt::format(",{}", (*shells)[i].get_mean());
     keyvals["Shells"] = line;
   }
   File::Matrix::save_matrix(responses, argument[3], keyvals);

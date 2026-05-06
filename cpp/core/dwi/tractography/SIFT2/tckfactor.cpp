@@ -43,7 +43,7 @@ void TckFactor::set_reg_lambdas(const double lambda_tikhonov, const double lambd
     A += fixels[i].get_weight() * Math::pow2(fixels[i].get_FOD());
 
   A /= static_cast<double>(num_tracks());
-  INFO(fmt::format("Constant A scaling regularisation terms to match data term is {}", str(A)));
+  INFO(fmt::format("Constant A scaling regularisation terms to match data term is {}", A));
   reg_multiplier_tikhonov = lambda_tikhonov * A;
   reg_multiplier_tv = lambda_tv * A;
 }
@@ -82,9 +82,9 @@ void TckFactor::remove_excluded_fixels(const float min_td_frac) {
   if (excluded_count) {
     INFO(fmt::format(
         "{} of {} fixels were tracked, but have been excluded from optimisation due to inadequate reconstruction;",
-        str(excluded_count),
-        str(fixels.size())));
-    INFO(fmt::format("these contribute {}\\% of the initial cost function", str(100.0 * excluded_cf_sum / cf)));
+        excluded_count,
+        fixels.size()));
+    INFO(fmt::format("these contribute {}\\% of the initial cost function", 100.0 * excluded_cf_sum / cf));
   } else if (min_td_frac) {
     INFO("No fixels were excluded from optimisation due to poor reconstruction");
   }
@@ -126,7 +126,7 @@ void TckFactor::test_streamline_length_scaling() {
 
 void TckFactor::calc_afcsa() {
 
-  CONSOLE(fmt::format("Cost function before linear optimisation is {}", calc_cost_function()) + ")");
+  CONSOLE(fmt::format("Cost function before linear optimisation is {})", calc_cost_function()));
 
   try {
     coefficients = decltype(coefficients)::Zero(num_tracks());
@@ -178,7 +178,7 @@ void TckFactor::calc_afcsa() {
     Thread::run_queue(writer, SIFT::TrackIndexRange(), Thread::multi(worker));
   }
 
-  CONSOLE(fmt::format("Cost function after linear optimisation is {}", calc_cost_function()) + ")");
+  CONSOLE(fmt::format("Cost function after linear optimisation is {})", calc_cost_function()));
 }
 
 void TckFactor::estimate_factors() {
@@ -268,7 +268,7 @@ void TckFactor::estimate_factors() {
     // Perform fixel exclusion
     const size_t excluded_count = fixels_to_exclude.count();
     if (excluded_count) {
-      DEBUG(fmt::format("{} fixels excluded this iteration", str(excluded_count)));
+      DEBUG(fmt::format("{} fixels excluded this iteration", excluded_count));
       for (size_t f = 0; f != fixels.size(); ++f) {
         if (fixels_to_exclude[f])
           fixels[f].exclude();

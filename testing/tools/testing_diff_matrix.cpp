@@ -20,7 +20,6 @@
 
 #include "command.h"
 #include "file/matrix.h"
-#include "fmt.h"
 #include "types.h"
 
 using namespace MR;

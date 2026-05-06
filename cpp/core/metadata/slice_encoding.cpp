@@ -128,7 +128,7 @@ std::string resolve_slice_timing(std::string_view one, std::string_view two) {
     }
     const default_type diff = std::fabs(f_two - f_one);
     if (diff > 0.00375) {
-      DEBUG(fmt::format("Supra-threshold difference of {}s in slice times", str(diff)));
+      DEBUG(fmt::format("Supra-threshold difference of {}s in slice times", diff));
       return "variable";
     }
   }

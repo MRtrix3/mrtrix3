@@ -196,10 +196,11 @@ void run() {
     dirs = File::Matrix::load_matrix(opt[0][0]);
     auto dv = DWI::Directions::validate(dirs, opt[0][0], false);
     if (dv.n_non_unit > 0) {
-      WARN("Input directions file \"" + opt[0][0] + "\"" +                          //
-           " contains " + str(dv.n_non_unit) + " direction" +                       //
-           (dv.n_non_unit > 1 ? "s that are" : " that is") + " not of unit norm;" + //
-           " all directions will be interpreted agnostically of norm");             //
+      WARN(fmt::format("Input directions file \"{}\" contains {} direction{} not of unit norm;"
+                       " all directions will be interpreted agnostically of norm",
+                       opt[0][0],
+                       dv.n_non_unit,
+                       dv.n_non_unit > 1 ? "s that are" : " that is"));
     }
     if (dirs.cols() == 3)
       dirs = Math::Sphere::cartesian2spherical(dirs);

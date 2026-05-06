@@ -163,7 +163,7 @@ bool AffineUpdate::operator()(Eigen::Matrix<default_type, Eigen::Dynamic, 1> &ne
       break;
     }
     if (orig_step_size != step_size) {
-      DEBUG(fmt::format("step size changed from {} to {}", str(orig_step_size), str(step_size)));
+      DEBUG(fmt::format("step size changed from {} to {}", orig_step_size, step_size));
     }
   } else {
     throw Exception("no control points defined. deactivated as we cannot regularise the update properly!");

@@ -80,11 +80,11 @@ std::vector<ssize_t> parse_axes(size_t ndim, std::string_view specifier) {
 
   for (size_t n = 0; n < parsed.size(); n++) {
     if (!parsed[n] || static_cast<size_t>(MR::abs(parsed[n])) > ndim)
-      throw Exception(fmt::format("axis ordering {} out of range", str(parsed[n])));
+      throw Exception(fmt::format("axis ordering {} out of range", parsed[n]));
 
     for (size_t i = 0; i < n; i++)
       if (MR::abs(parsed[i]) == MR::abs(parsed[n]))
-        throw Exception(fmt::format("duplicate axis ordering ({})", str(MR::abs(parsed[n]))));
+        throw Exception(fmt::format("duplicate axis ordering ({})", MR::abs(parsed[n])));
   }
 
   return parsed;

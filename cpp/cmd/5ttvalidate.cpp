@@ -14,13 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <fmt/format.h>
+
 #include "app.h"
 #include "command.h"
 #include "datatype.h"
 #include "image.h"
 #include "image_helpers.h"
 #include "mrtrix.h"
-#include <fmt/format.h>
 
 #include "algo/copy.h"
 #include "algo/loop.h"
@@ -28,7 +29,6 @@
 #include "formats/list.h"
 
 #include "dwi/tractography/ACT/validate.h"
-#include "fmt.h"
 
 using namespace MR;
 using namespace App;
@@ -60,11 +60,11 @@ void usage() {
     " Voxels that violate this constraint contain non-physical values"
     " and the image is rejected as a hard error."
 
-  + "3. For every brain voxel, the sum of all five tissue PVFs must equal 1.0"
-    " to within a tolerance of " + str(max_sum_deviation) + "."
-    " Voxels that violate this constraint are reported as a soft warning:"
-    " the image may still be usable for ACT but does not perfectly conform"
-    " to the format.";
+  + fmt::format("3. For every brain voxel, the sum of all five tissue PVFs must equal 1.0"
+               " to within a tolerance of {}."
+               " Voxels that violate this constraint are reported as a soft warning:"
+               " the image may still be usable for ACT but does not perfectly conform"
+               " to the format.", max_sum_deviation);
 
   ARGUMENTS
   + Argument ("input", "the 5TT image(s) to be validated").type_image_in().allow_multiple();

@@ -19,6 +19,7 @@
 #include <fmt/format.h>
 #include <limits>
 
+#include "eigen_plugins/fmt.h"
 #include "math/math.h"
 
 namespace MR::Math {
@@ -95,19 +96,19 @@ public:
 
     const value_type gradient_tolerance(grad_tolerance * normg);
 
-    DEBUG("Gradient descent iteration: init; cost: " + str(f));
+    DEBUG(fmt::format("Gradient descent iteration: init; cost: {}", f));
 
     while (niter < max_iterations) {
       bool retval = iterate(log_os);
-      DEBUG("Gradient descent iteration: " + str(niter) + "; cost: " + str(f));
+      DEBUG(fmt::format("Gradient descent iteration: {}; cost: {}", niter, f));
       if (verbose) {
-        CONSOLE("iteration " + str(niter) + ": f = " + str(f) + ", |g| = " + str(normg) + ":");
-        CONSOLE("  x = [ " + str(x.transpose()) + "]");
+        CONSOLE(fmt::format("iteration {}: f = {}, |g| = {}:", niter, f, normg));
+        CONSOLE(fmt::format("  x = [ {}]", x));
       }
 
       if (normg < gradient_tolerance) {
         if (verbose)
-          CONSOLE("normg (" + str(normg) + ") < gradient tolerance (" + str(gradient_tolerance) + ")");
+          CONSOLE(fmt::format("normg ({}) < gradient tolerance ({})", normg, gradient_tolerance));
         return;
       }
 
@@ -134,8 +135,8 @@ public:
     assert(!std::isnan(normg));
     dt /= normg;
     if (verbose) {
-      CONSOLE("initialise: f = " + str(f) + ", |g| = " + str(normg) + ":");
-      CONSOLE("  x = [ " + str(x.transpose()) + "]");
+      CONSOLE(fmt::format("initialise: f = {}, |g| = {}:", f, normg));
+      CONSOLE(fmt::format("  x = {}", x));
     }
     if (normg == 0.0)
       return;

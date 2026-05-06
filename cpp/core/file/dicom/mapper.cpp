@@ -53,11 +53,11 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
 
   Patient *patient(series[0]->study->patient);
   std::string sbuf = (!patient->name.empty() ? patient->name : "unnamed");
-  sbuf += " " + format_ID(patient->ID);
+  sbuf += fmt::format(" {}", format_ID(patient->ID));
   if (!series[0]->modality.empty())
-    sbuf += " [" + series[0]->modality + "]";
+    sbuf += fmt::format(" [{}]", series[0]->modality);
   if (!series[0]->name.empty())
-    sbuf += " " + series[0]->name;
+    sbuf += fmt::format(" {}", series[0]->name);
   add_line(H.keyval()["comments"], sbuf);
   H.name() = sbuf;
 
@@ -72,7 +72,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
       series_it->read();
     } catch (Exception &E) {
       E.display();
-      throw Exception(fmt::format("error reading series {} of DICOM image \"{}\"", str(series_it->number), H.name()));
+      throw Exception(fmt::format("error reading series {} of DICOM image \"{}\"", series_it->number, H.name()));
     }
 
     std::sort(series_it->begin(), series_it->end(), compare_ptr_contents());
@@ -118,16 +118,15 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
   default_type slice_separation = Frame::get_slice_separation(frames, dim[1]);
 
   if (!series[0]->study->name.empty())
-    add_line(H.keyval()["comments"],
-             std::string("study: " + series[0]->study->name + " [ " + series[0]->image_type + " ]"));
+    add_line(H.keyval()["comments"], fmt::format("study: {} [ {} ]", series[0]->study->name, series[0]->image_type));
 
   if (!patient->DOB.empty())
-    add_line(H.keyval()["comments"], std::string("DOB: " + format_date(patient->DOB)));
+    add_line(H.keyval()["comments"], fmt::format("DOB: {}", format_date(patient->DOB)));
 
   if (!series[0]->date.empty()) {
-    sbuf = "DOS: " + format_date(series[0]->date);
+    sbuf = fmt::format("DOS: {}", format_date(series[0]->date));
     if (!series[0]->time.empty())
-      sbuf += " " + format_time(series[0]->time);
+      sbuf += fmt::format(" {}", format_time(series[0]->time));
     add_line(H.keyval()["comments"], sbuf);
   }
 
@@ -173,7 +172,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
         H.keyval()["DiffusionScheme"] = "Monopolar";
         break;
       default:
-        WARN(fmt::format("Unsupported DWI polarity scheme flag ({})", str(frame.bipolar_flag)));
+        WARN(fmt::format("Unsupported DWI polarity scheme flag ({})", frame.bipolar_flag));
       }
     } else if (frame.readoutmode_flag) {
       switch (frame.readoutmode_flag) {
@@ -184,7 +183,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
         H.keyval()["DiffusionScheme"] = "Bipolar";
         break;
       default:
-        WARN(fmt::format("Unsupported DWI readout mode flag ({})", str(frame.readoutmode_flag)));
+        WARN(fmt::format("Unsupported DWI readout mode flag ({})", frame.readoutmode_flag));
       }
     }
   }

@@ -140,7 +140,7 @@ template <class Fixel> void Model<Fixel>::map_streamlines(std::string_view path)
 
   const track_t count = (properties.find("count") == properties.end()) ? 0 : to<track_t>(properties["count"]);
   if (!count)
-    throw Exception(fmt::format("Cannot map streamlines: track file {}", Path::basename(path)) + " is empty");
+    throw Exception(fmt::format("Cannot map streamlines: track file {} is empty", Path::basename(path)));
 
   contributions.assign(count, nullptr);
 
@@ -157,8 +157,7 @@ template <class Fixel> void Model<Fixel>::map_streamlines(std::string_view path)
         ++num_tracks;
         max_index = std::max(max_index, i);
       }
-      WARN("Only " + fmt::format("{} tracks read from input track file;", num_tracks) + //
-           fmt::format(" expected {}", contributions.size()));
+      WARN(fmt::format("Only {} tracks read from input track file; expected {}", num_tracks, contributions.size()));
       contributions.resize(max_index + 1);
     }
   }
@@ -204,8 +203,10 @@ template <class Fixel> void Model<Fixel>::remove_excluded_fixels() {
     }
   }
 
-  INFO(str(fixels.size() - new_fixels.size()) + fmt::format(" out of {}", fixels.size()) +
-       fmt::format(" fixels removed from reconstruction ({}", new_fixels.size()) + ") remaining)");
+  INFO(fmt::format("{} out of {} fixels removed from reconstruction ({} remaining)",
+                   fixels.size() - new_fixels.size(),
+                   fixels.size(),
+                   new_fixels.size()));
 
   fixels.swap(new_fixels);
 

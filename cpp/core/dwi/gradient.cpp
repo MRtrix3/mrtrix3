@@ -133,7 +133,7 @@ Eigen::MatrixXd load_bvecs_bvals(const Header &header, std::string_view bvecs_pa
       bvals.transposeInPlace(); // transpose if file contains column vector
     else
       // clang-format off
-      throw Exception(fmt::format("bvals file must contain 1 row or column only; file \"{}\" has {}", bvals_path, str(bvals.rows())));
+      throw Exception(fmt::format("bvals file must contain 1 row or column only; file \"{}\" has {}", bvals_path, bvals.rows()));
     // clang-format on
   }
   if (bvecs.rows() != 3) {
@@ -141,19 +141,19 @@ Eigen::MatrixXd load_bvecs_bvals(const Header &header, std::string_view bvecs_pa
       bvecs.transposeInPlace();
     else
       // clang-format off
-      throw Exception(fmt::format("bvecs file must contain exactly 3 rows or columns; file \"{}\" has {}", bvecs_path, str(bvecs.rows())));
+      throw Exception(fmt::format("bvecs file must contain exactly 3 rows or columns; file \"{}\" has {}", bvecs_path, bvecs.rows()));
     // clang-format on
   }
 
   if (bvals.cols() != bvecs.cols())
     // clang-format off
-    throw Exception(fmt::format("bvecs and bvals files must have same number of diffusion directions; file \"{}\" has {}, file \"{}\" has {}", bvecs_path, str(bvecs.cols()), bvals_path, str(bvals.cols())));
+    throw Exception(fmt::format("bvecs and bvals files must have same number of diffusion directions; file \"{}\" has {}, file \"{}\" has {}", bvecs_path, bvecs.cols(), bvals_path, bvals.cols()));
   // clang-format on
 
   const size_t num_volumes = header.ndim() < 4 ? 1 : header.size(3);
   if (static_cast<size_t>(bvals.cols()) != num_volumes)
     // clang-format off
-    throw Exception(fmt::format("bvecs and bvals files do not have same number of diffusion directions as DW-image: gradients: {}, image: {}", str(bvecs.cols()), str(num_volumes)));
+    throw Exception(fmt::format("bvecs and bvals files do not have same number of diffusion directions as DW-image: gradients: {}, image: {}", bvecs.cols(), num_volumes));
   // clang-format on
 
   // bvecs format actually assumes a LHS coordinate system even if image is
@@ -294,7 +294,7 @@ Eigen::MatrixXd get_DW_scheme(const Header &header, BValueScalingBehaviour bvalu
     const bool requires_bvalue_scaling = max_log_scaling_factor > 0.01;
 
     // clang-format off
-    DEBUG(fmt::format("b-value scaling:\"\n          \" max scaling factor = exp({})\"\n          \" = {}", str(max_log_scaling_factor), str(max_scaling_factor)));
+    DEBUG(fmt::format("b-value scaling:\"\n          \" max scaling factor = exp({})\"\n          \" = {}", max_log_scaling_factor, max_scaling_factor));
     // clang-format on
 
     if ((requires_bvalue_scaling && bvalue_scaling == BValueScalingBehaviour::Auto) ||
@@ -305,17 +305,17 @@ Eigen::MatrixXd get_DW_scheme(const Header &header, BValueScalingBehaviour bvalu
              "These will be interpreted as b=0 volumes unless -bvalue_scaling is disabled.");
       INFO(fmt::format(
           "b-values scaled by the square of DW gradient norm \"\n           \"(maximum scaling factor = {})",
-          str(max_scaling_factor)));
+          max_scaling_factor));
     } else if (bvalue_scaling == BValueScalingBehaviour::UserOff) {
       if (requires_bvalue_scaling) {
-        CONSOLE(std::string("disabling b-value scaling during normalisation of DW vectors on user request") +
-                " (maximum scaling factor would have been " + str(max_scaling_factor) + ")");
+        CONSOLE(fmt::format("disabling b-value scaling during normalisation of DW vectors on user request"
+                            " (maximum scaling factor would have been {})",
+                            max_scaling_factor));
       } else {
-        WARN(fmt::format("{}{}{}{})",
-                         "use of -bvalue_scaling option had no effect:",    //
-                         " gradient vector norms are all within tolerance", //
-                         " (maximum scaling factor = ",
-                         str(max_scaling_factor))); //
+        WARN(fmt::format("use of -bvalue_scaling option had no effect:"
+                         " gradient vector norms are all within tolerance"
+                         " (maximum scaling factor = {})",
+                         max_scaling_factor));
       }
     }
     assert(grad.allFinite());
@@ -331,7 +331,7 @@ Eigen::MatrixXd get_DW_scheme(const Header &header, BValueScalingBehaviour bvalu
       set_DW_scheme(const_cast<Header &>(header), grad);
     }
 
-    INFO(fmt::format("found {}x{} diffusion gradient table", str(grad.rows()), str(grad.cols())));
+    INFO(fmt::format("found {}x{} diffusion gradient table", grad.rows(), grad.cols()));
     return grad;
   } catch (Exception &e) {
     clear_DW_scheme(const_cast<Header &>(header));

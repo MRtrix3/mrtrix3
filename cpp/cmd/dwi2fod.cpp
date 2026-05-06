@@ -114,8 +114,7 @@ void usage() {
     "NeuroImage, 2004, 23, 1176-1185";
 
   ARGUMENTS
-    + Argument ("algorithm", "the algorithm to use for FOD estimation. "
-                             "(options are: " + MR::Enum::join<Algorithm>() + ")").type_choice<Algorithm>()
+    + Argument ("algorithm", fmt::format("the algorithm to use for FOD estimation. (options are: {})", MR::Enum::join<Algorithm>())).type_choice<Algorithm>()
     + Argument ("dwi", "the input diffusion-weighted image").type_image_in()
     + Argument ("response odf", "pairs of input tissue response and output ODF images").type_file_in().type_image_out().allow_multiple();
 
@@ -337,8 +336,11 @@ void run() {
 
     MSMT_Processor processor(shared, mask, odfs, dwi_modelled);
     auto dwi = header_in.get_image<float>().with_direct_io(3);
-    ThreadedLoop("performing MSMT CSD (" + str(shared.num_shells()) + " shell" + (shared.num_shells() > 1 ? "s" : "") +
-                     ", " + str(num_tissues) + " tissue" + (num_tissues > 1 ? "s" : "") + ")",
+    ThreadedLoop(fmt::format("performing MSMT CSD ({} shell{}, {} tissue{})",
+                             shared.num_shells(),
+                             shared.num_shells() > 1 ? "s" : "",
+                             num_tissues,
+                             num_tissues > 1 ? "s" : ""),
                  dwi,
                  0,
                  3)

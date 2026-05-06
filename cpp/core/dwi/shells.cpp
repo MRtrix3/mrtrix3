@@ -230,7 +230,7 @@ Shells::select_shells(const bool force_singleshell, const bool force_with_bzero,
               for (size_t s = 0; s != count(); ++s) {
                 if (!bvalues.empty())
                   bvalues += ", ";
-                bvalues += str(shells[s].get_mean()) + fmt::format(" +- {}", shells[s].get_stdev());
+                bvalues += fmt::format("{} +- {}", shells[s].get_mean(), shells[s].get_stdev());
               }
               throw Exception(fmt::format(
                   "Unable to robustly select desired shell b={} (detected shells are: {})", str(*b), bvalues));
@@ -345,7 +345,7 @@ Shells::Shells(const Eigen::MatrixXd &grad) {
       for (size_t i = 0; i != volumes.size(); ++i) {
         if (!unassigned.empty())
           unassigned += ", ";
-        unassigned += fmt::format("{} (", volumes[i]) + fmt::format("{})", bvals[volumes[i]]);
+        unassigned += fmt::format("{} ({})", volumes[i], bvals[volumes[i]]);
       }
       WARN("The following image volumes were not successfully assigned to a b-value shell:");
       WARN(unassigned);
@@ -356,17 +356,17 @@ Shells::Shells(const Eigen::MatrixXd &grad) {
 
   if (smallest().is_bzero()) {
     INFO(fmt::format("Diffusion gradient encoding data clustered into {} non-zero shells and {} b=0 volumes",
-                     str(num_shells - 1),
-                     str(smallest().count())));
+                     num_shells - 1,
+                     smallest().count()));
   } else {
-    INFO(fmt::format("Diffusion gradient encoding data clustered into {} shells (no b=0 volumes)", str(num_shells)));
+    INFO(fmt::format("Diffusion gradient encoding data clustered into {} shells (no b=0 volumes)", num_shells));
   }
-  DEBUG(fmt::format("Shells: b = { {}}", str([&] {
-                      std::string m;
-                      for (auto &s : shells)
-                        m += str(s.get_mean()) + fmt::format("({}", s.count()) + ") ";
-                      return m;
-                    }())));
+  DEBUG(fmt::format("Shells: b = { {}}", [&] {
+    std::string m;
+    for (auto &s : shells)
+      m += fmt::format("{}({}) ", s.get_mean(), s.count());
+    return m;
+  }()));
 }
 
 size_t Shells::clusterBvalues(const BValueList &bvals, std::vector<size_t> &clusters) const {

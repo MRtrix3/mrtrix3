@@ -16,34 +16,12 @@
 
 #pragma once
 
+#include <Eigen/Core>
 #include <fmt/format.h>
 
-#include "app.h"
-#include "exception.h"
 #include "math/math.h"
-#include "types.h"
 
 namespace fmt {
-
-template <> struct formatter<MR::App::ParsedArgument> {
-  constexpr auto parse(format_parse_context &ctx) { return ctx.begin(); }
-  template <typename FormatContext> auto format(const MR::App::ParsedArgument &a, FormatContext &ctx) const {
-    return format_to(ctx.out(), "{}", static_cast<std::string_view>(a));
-  }
-};
-
-template <typename T> struct formatter<std::vector<T>> {
-  constexpr auto parse(format_parse_context &ctx) { return ctx.begin(); }
-  template <typename FormatContext> auto format(const std::vector<T> &v, FormatContext &ctx) const {
-    format_to(ctx.out(), "[");
-    for (size_t i = 0; i != v.size(); ++i) {
-      if (i > 0)
-        format_to(ctx.out(), ", ");
-      format_to(ctx.out(), "{}", v[i]);
-    }
-    return format_to(ctx.out(), "]");
-  }
-};
 
 // Formatter for all Eigen dense expressions (Matrix, Array, Transpose, Block, Map, etc.)
 // Uses is_eigen_type (has ::Scalar) plus XprKind to cover all dense Eigen expression templates,
@@ -62,32 +40,23 @@ struct formatter<
     auto out = ctx.out();
     if (m.rows() == 1) {
       format_to(out, "[ ");
-      for (Eigen::Index i = 0; i < m.cols(); ++i) {
-        if (i > 0)
-          format_to(out, " ");
-        format_to(out, "{}", m.coeff(0, i));
-      }
-      return format_to(out, " ]");
+      for (Eigen::Index i = 0; i < m.cols(); ++i)
+        format_to(out, "{} ", m.coeff(0, i));
+      return format_to(out, "]");
     } else if (m.cols() == 1) {
       format_to(out, "[ ");
-      for (Eigen::Index i = 0; i < m.rows(); ++i) {
-        if (i > 0)
-          format_to(out, " ");
-        format_to(out, "{}", m.coeff(i, 0));
-      }
-      return format_to(out, " ]^T");
+      for (Eigen::Index i = 0; i < m.rows(); ++i)
+        format_to(out, "{} ", m.coeff(i, 0));
+      return format_to(out, "]^T");
     } else {
       format_to(out, "\n[ ");
       for (Eigen::Index i = 0; i < m.rows(); ++i) {
         if (i > 0)
           format_to(out, "\n");
-        for (Eigen::Index j = 0; j < m.cols(); ++j) {
-          if (j > 0)
-            format_to(out, " ");
-          format_to(out, "{}", m.coeff(i, j));
-        }
+        for (Eigen::Index j = 0; j < m.cols(); ++j)
+          format_to(out, "{} ", m.coeff(i, j));
       }
-      return format_to(out, " ]");
+      return format_to(out, "]");
     }
   }
 };
@@ -98,20 +67,6 @@ template <typename T> struct formatter<Eigen::Transform<T, 3, Eigen::AffineCompa
   template <typename FormatContext>
   auto format(const Eigen::Transform<T, 3, Eigen::AffineCompact> &t, FormatContext &ctx) const {
     return matrix_formatter.format(t.matrix(), ctx);
-  }
-};
-
-template <typename RealType> struct formatter<std::complex<RealType>> {
-  constexpr auto parse(format_parse_context &ctx) { return ctx.begin(); }
-  template <typename FormatContext> auto format(const std::complex<RealType> &value, FormatContext &ctx) const {
-    // TODO Need to query precision
-    std::ostringstream stream;
-    stream << value.real();
-    if (value.imag() != RealType(0))
-      stream << std::showpos << value.imag() << "i";
-    if (stream.fail())
-      throw MR::Exception("error converting complex floating-point value to string");
-    return format_to(ctx.out(), stream.str());
   }
 };
 

@@ -14,6 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <fmt/format.h>
+
 #include "command.h"
 #include "enum.h"
 #include "file/path.h"
@@ -24,14 +26,12 @@
 #include "header.h"
 #include "image.h"
 #include "progressbar.h"
-#include <fmt/format.h>
 
 #include "fixel/filter/base.h"
 #include "fixel/filter/cfe.h"
 #include "fixel/filter/connect.h"
 #include "fixel/filter/smooth.h"
 #include "fixel/matrix.h"
-#include "fmt.h"
 #include "stats/cfe.h"
 
 using namespace MR;
@@ -58,8 +58,7 @@ void usage() {
 
   ARGUMENTS
   + Argument ("input", "the input: either a fixel data file, or a fixel directory (see Description)").type_image_in().type_directory_in()
-  + Argument ("filter", "the filtering operation to perform;"
-                        " options are: " + MR::Enum::join<FilterType>() + ".").type_choice<FilterType>()
+  + Argument ("filter", fmt::format("the filtering operation to perform; options are: {}.", MR::Enum::join<FilterType>())).type_choice<FilterType>()
   + Argument ("output", "the output: either a fixel data file, or a fixel directory (see Description)").type_image_out().type_directory_out();
 
   OPTIONS
@@ -73,19 +72,19 @@ void usage() {
   + Fixel::Filter::cfe_options
 
   + OptionGroup ("Options specific to the \"connect\" filter")
-  + Option ("threshold_value", "specify a threshold for the input fixel data file values"
-                               " (default = " + fmt::format("{})", Fixel::Filter::Connect::default_value_threshold))
+  + Option ("threshold_value", fmt::format("specify a threshold for the input fixel data file values"
+                                           " (default = {})", Fixel::Filter::Connect::default_value_threshold))
     + Argument ("value").type_float ()
-  + Option ("threshold_connectivity", "specify a fixel-fixel connectivity threshold for connected-component analysis"
-                                      " (default = " + fmt::format("{})", Fixel::Filter::Connect::default_connectivity_threshold, 2))
+  + Option ("threshold_connectivity", fmt::format("specify a fixel-fixel connectivity threshold for connected-component analysis"
+                                                  " (default = {:.2g})", Fixel::Filter::Connect::default_connectivity_threshold))
     + Argument ("value").type_float (0.0)
 
   + OptionGroup ("Options specific to the \"smooth\" filter")
-  + Option ("fwhm", "the full-width half-maximum (FWHM) of the spatial component of the smoothing filter"
-                    " (default = " + fmt::format("{}mm)", Fixel::Filter::Smooth::default_fwhm))
+  + Option ("fwhm", fmt::format("the full-width half-maximum (FWHM) of the spatial component of the smoothing filter"
+                                " (default = {}mm)", Fixel::Filter::Smooth::default_fwhm))
     + Argument ("value").type_float (0.0)
-  + Option ("minweight", "apply a minimum threshold to smoothing weights"
-                         " (default = " + fmt::format("{})", Fixel::Filter::Smooth::default_threshold, 2))
+  + Option ("minweight", fmt::format("apply a minimum threshold to smoothing weights"
+                                     " (default = {:.2g})", Fixel::Filter::Smooth::default_threshold))
     + Argument ("value").type_float (0.0);
 
 }

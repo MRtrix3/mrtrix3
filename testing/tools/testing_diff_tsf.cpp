@@ -14,12 +14,12 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <fmt/format.h>
+
 #include "command.h"
 #include "dwi/tractography/scalar_file.h"
 #include "dwi/tractography/streamline.h"
 #include "dwi/tractography/validate.h"
-#include "fmt.h"
-#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;

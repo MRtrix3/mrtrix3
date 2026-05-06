@@ -112,8 +112,7 @@ void usage() {
 
   ARGUMENTS
   + Argument ("input", "the input image(s).").type_image_in ().allow_multiple()
-  + Argument ("operation", "the operation to apply;"
-                           " options are: " + MR::Enum::join<Operation>() + ".").type_choice<Operation>()
+  + Argument ("operation", fmt::format("the operation to apply; options are: {}.", MR::Enum::join<Operation>())).type_choice<Operation>()
   + Argument ("output", "the output image.").type_image_out ();
 
   OPTIONS
@@ -409,8 +408,8 @@ void run() {
 
     auto image_out = Header::create(output_path, header_out).get_image<float>();
 
-    auto loop = ThreadedLoop("computing " + MR::Enum::lowercase_name(op) + " along axis " + fmt::format("{}...", axis),
-                             image_out);
+    auto loop =
+        ThreadedLoop(fmt::format("computing {} along axis {}...", MR::Enum::lowercase_name(op), axis), image_out);
 
     switch (op) {
     case Operation::MEAN:
@@ -556,9 +555,8 @@ void run() {
 
     // Feed the input images to the kernel one at a time
     {
-      ProgressBar progress("computing " + MR::Enum::lowercase_name(op) + fmt::format(" across {}", headers_in.size()) +
-                               " images",
-                           num_inputs);
+      ProgressBar progress(
+          fmt::format("computing {} across {} images", MR::Enum::lowercase_name(op), headers_in.size()), num_inputs);
       for (size_t i = 0; i != headers_in.size(); ++i) {
         assert(headers_in[i].valid());
         assert(headers_in[i].is_file_backed());

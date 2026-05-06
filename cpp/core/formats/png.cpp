@@ -52,7 +52,7 @@ std::unique_ptr<ImageIO::Base> PNG::read(Header &H) const {
     H.size(3) = 4;
     break;
   default:
-    throw Exception(fmt::format("Unsupported color type in PNG image \"{}\" ({})", H.name(), str(png.get_colortype())));
+    throw Exception(fmt::format("Unsupported color type in PNG image \"{}\" ({})", H.name(), png.get_colortype()));
   }
   if (png.has_transparency()) {
     if (H.ndim() == 3) {
@@ -103,7 +103,7 @@ std::unique_ptr<ImageIO::Base> PNG::read(Header &H) const {
     H.datatype() = DataType::UInt16BE;
     break;
   default:
-    throw Exception(fmt::format("Unexpected bit depth ({}) in PNG image \"{}\"", str(png.get_bitdepth()), H.name()));
+    throw Exception(fmt::format("Unexpected bit depth ({}) in PNG image \"{}\"", png.get_bitdepth(), H.name()));
   }
 
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::PNG(H));

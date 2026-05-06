@@ -18,7 +18,6 @@
 #include <fmt/format.h>
 
 #include "dialog/file.h"
-#include "fmt.h"
 #include "mrtrix.h"
 #include "mrview/gui_image.h"
 #include "mrview/mode/slice.h"

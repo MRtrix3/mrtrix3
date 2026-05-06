@@ -14,6 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <fmt/format.h>
+
 #include "command.h"
 #include "progressbar.h"
 #include "types.h"
@@ -27,7 +29,6 @@
 #include "math/stats/typedefs.h"
 
 #include "stats/permtest.h"
-#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -127,11 +128,10 @@ void run() {
     num_elements = importer[0]->size();
     for (index_type i = 0; i != importer.size(); ++i) {
       if (importer[i]->size() != num_elements)
-        throw Exception(fmt::format("Subject file \"{}\" contains incorrect number of elements{}{}; expected {})",
-                                    importer[i]->name(), //
-                                    " (",
-                                    str(importer[i]),
-                                    str(num_elements))); //
+        throw Exception(fmt::format("Subject file \"{}\" contains incorrect number of elements ({}; expected {})",
+                                    importer[i]->name(),
+                                    importer[i]->size(),
+                                    num_elements));
     }
     data.resize(num_inputs, num_elements);
     for (index_type subject = 0; subject != num_inputs; subject++)
@@ -142,7 +142,7 @@ void run() {
       num_inputs = data.rows();
       num_elements = data.cols();
     } catch (Exception &e_asmatrix) {
-      Exception e("Unable to load input data from file \"" + std::string(argument[0]) + '"');
+      Exception e(fmt::format("Unable to load input data from file \"{}\"", argument[0]));
       e.push_back("Error when interpreted as containing list of file names: ");
       e.push_back(e_asfilelist);
       e.push_back("Error when interpreted as numerical matrix data: ");
@@ -159,18 +159,16 @@ void run() {
   if (!opt.empty()) {
     mask = File::Matrix::load_vector<bool>(opt[0][0]);
     if (static_cast<index_type>(mask.size()) != num_elements)
-      throw Exception(fmt::format("Length of mask ({}) does not match number of elements in data matrix ({})",
-                                  str(mask.size()),
-                                  str(num_elements)));
+      throw Exception(fmt::format(
+          "Length of mask ({}) does not match number of elements in data matrix ({})", mask.size(), num_elements));
     CONSOLE(fmt::format("Number of elements included in mask: {}", mask.count()));
   }
 
   // Load design matrix
   const matrix_type design = File::Matrix::load_matrix(argument[1]);
   if (static_cast<index_type>(design.rows()) != num_inputs)
-    throw Exception(fmt::format("Number of subjects ({}) does not match number of rows in design matrix ({})",
-                                str(num_inputs),
-                                str(design.rows())));
+    throw Exception(fmt::format(
+        "Number of subjects ({}) does not match number of rows in design matrix ({})", num_inputs, design.rows()));
 
   // Before validating the contrast matrix, we first need to see if there are any
   //   additional design matrix columns coming from element-wise subject data
@@ -211,8 +209,8 @@ void run() {
             fmt::format("The number of columns in the contrast matrix ({}) does not equal the number of columns in the "
                         "design matrix "
                         "({}){}",
-                        str(hypotheses[0].cols()),
-                        str(design.cols()),
+                        hypotheses[0].cols(),
+                        design.cols(),
                         (have_extra_columns
                              ? fmt::format(" (taking into account the {}", extra_columns.size()) + " uses of -column)"
                              : "")))));
@@ -230,7 +228,9 @@ void run() {
   const bool variable_design_matrix = nans_in_data || have_extra_columns;
 
   // Only add contrast matrix row number to image outputs if there's more than one hypothesis
-  auto postfix = [&](const index_type i) { return (num_hypotheses > 1) ? ("_" + hypotheses[i].name()) : ""; };
+  auto postfix = [&](const index_type i) -> std::string {
+    return (num_hypotheses > 1) ? fmt::format("_{}", hypotheses[i].name()) : "";
+  };
 
   {
     matrix_type betas(num_factors, num_elements);
@@ -247,31 +247,31 @@ void run() {
 
     ProgressBar progress("Outputting beta coefficients, effect size and standard deviation",
                          2 + (2 * num_hypotheses) + (variable_design_matrix ? 1 : 0));
-    File::Matrix::save_matrix(betas, output_prefix + "betas.csv");
+    File::Matrix::save_matrix(betas, fmt::format("{}betas.csv", output_prefix));
     ++progress;
     for (index_type i = 0; i != num_hypotheses; ++i) {
       if (!hypotheses[i].is_F()) {
         File::Matrix::save_vector(abs_effect_size.array().col(i) * mask.cast<matrix_type::Scalar>(),
-                                  output_prefix + "abs_effect" + postfix(i) + ".csv");
+                                  fmt::format("{}abs_effect{}.csv", output_prefix, postfix(i)));
         ++progress;
         if (num_vgs == 1)
           File::Matrix::save_vector(std_effect_size.array().col(i) * mask.cast<matrix_type::Scalar>(),
-                                    output_prefix + "std_effect" + postfix(i) + ".csv");
+                                    fmt::format("{}std_effect{}.csv", output_prefix, postfix(i)));
       } else {
         ++progress;
       }
       ++progress;
     }
     if (variable_design_matrix) {
-      File::Matrix::save_vector(cond * mask.cast<matrix_type::Scalar>(), output_prefix + "cond.csv");
+      File::Matrix::save_vector(cond * mask.cast<matrix_type::Scalar>(), fmt::format("{}cond.csv", output_prefix));
       ++progress;
     }
     if (num_vgs == 1) {
       File::Matrix::save_vector(stdev.array().row(0) * mask.transpose().cast<matrix_type::Scalar>(),
-                                output_prefix + "std_dev.csv");
+                                fmt::format("{}std_dev.csv", output_prefix));
     } else {
       stdev = stdev.array().colwise() * mask.cast<matrix_type::Scalar>();
-      File::Matrix::save_matrix(stdev, output_prefix + "std_dev.csv");
+      File::Matrix::save_matrix(stdev, fmt::format("{}std_dev.csv", output_prefix));
     }
   }
 
@@ -299,10 +299,11 @@ void run() {
   matrix_type default_statistic, default_zstat;
   (*glm_test)(default_shuffle, default_statistic, default_zstat);
   for (index_type i = 0; i != num_hypotheses; ++i) {
-    File::Matrix::save_vector(default_statistic.array().col(i) * mask.cast<matrix_type::Scalar>(),
-                              output_prefix + (hypotheses[i].is_F() ? "F" : "t") + "value" + postfix(i) + ".csv");
+    File::Matrix::save_vector(
+        default_statistic.array().col(i) * mask.cast<matrix_type::Scalar>(),
+        fmt::format("{}{}value{}.csv", output_prefix, hypotheses[i].is_F() ? "F" : "t", postfix(i)));
     File::Matrix::save_vector(default_zstat.array().col(i) * mask.cast<matrix_type::Scalar>(),
-                              output_prefix + "Zstat" + postfix(i) + ".csv");
+                              fmt::format("{}Zstat{}.csv", output_prefix, postfix(i)));
   }
 
   // Perform permutation testing
@@ -326,17 +327,19 @@ void run() {
                                       null_contributions,
                                       uncorrected_pvalues);
     if (fwe_strong) {
-      File::Matrix::save_vector(null_distribution.col(0), output_prefix + "null_dist.csv");
+      File::Matrix::save_vector(null_distribution.col(0), fmt::format("{}null_dist.csv", output_prefix));
     } else {
       for (index_type i = 0; i != num_hypotheses; ++i)
-        File::Matrix::save_vector(null_distribution.col(i), output_prefix + "null_dist" + postfix(i) + ".csv");
+        File::Matrix::save_vector(null_distribution.col(i),
+                                  fmt::format("{}null_dist{}.csv", output_prefix, postfix(i)));
     }
     const matrix_type fwe_pvalues = MR::Math::Stats::fwe_pvalue(null_distribution, default_zstat, mask);
     for (index_type i = 0; i != num_hypotheses; ++i) {
-      File::Matrix::save_vector(fwe_pvalues.col(i), output_prefix + "fwe_1mpvalue" + postfix(i) + ".csv");
+      File::Matrix::save_vector(fwe_pvalues.col(i), fmt::format("{}fwe_1mpvalue{}.csv", output_prefix, postfix(i)));
       File::Matrix::save_vector(uncorrected_pvalues.col(i),
-                                output_prefix + "uncorrected_1mpvalue" + postfix(i) + ".csv");
-      File::Matrix::save_vector(null_contributions.col(i), output_prefix + "null_contributions" + postfix(i) + ".csv");
+                                fmt::format("{}uncorrected_1mpvalue{}.csv", output_prefix, postfix(i)));
+      File::Matrix::save_vector(null_contributions.col(i),
+                                fmt::format("{}null_contributions{}.csv", output_prefix, postfix(i)));
     }
   }
 }

@@ -51,8 +51,8 @@ void usage() {
 
 
   OPTIONS
-    + Option ("number", "number of shuffles to try"
-                        " (default: " + fmt::format("{})", default_number))
+    + Option ("number", fmt::format("number of shuffles to try"
+                                    " (default: {})", default_number))
       + Argument ("num").type_integer (1)
 
     + Option ("preserve", "preserve the sign of some number of directions at the start of the set")

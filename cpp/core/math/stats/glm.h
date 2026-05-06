@@ -85,7 +85,7 @@ public:
   index_type cols() const { return c.cols(); }
   index_type rank() const { return r; }
   bool is_F() const { return F; }
-  std::string name() const { return std::string(F ? "F" : "t") + str(i + 1); }
+  std::string name() const { return fmt::format("{}{}", F ? "F" : "t", i + 1); }
 
 private:
   const matrix_type c;

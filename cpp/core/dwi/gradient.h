@@ -20,9 +20,9 @@
 #include <string>
 
 #include "app.h"
+#include "eigen_plugins/fmt.h"
 #include "file/config.h"
 #include "file/path.h"
-#include "fmt.h"
 #include "header.h"
 #include "math/SH.h"
 #include "math/condition_number.h"
@@ -59,9 +59,10 @@ template <class MatrixType> inline void check_DW_scheme(const Header &header, co
 
   if (header.ndim() >= 4) {
     if (header.size(3) != static_cast<ssize_t>(grad.rows()))
-      throw Exception(fmt::format("number of studies in base image ({}", str(header.size(3))) +
-                      fmt::format(") does not match number of rows in diffusion gradient table ({}", grad.rows()) +
-                      ")");
+      throw Exception(fmt::format(
+          "number of studies in base image ({}) does not match number of rows in diffusion gradient table ({})",
+          header.size(3),
+          grad.rows()));
   } else if (grad.rows() != 1)
     throw Exception("For images with less than four dimensions, gradient table can have one row only");
 }
@@ -318,15 +319,14 @@ compute_SH2amp_mapping(const MatrixType &directions, bool lmax_from_command_line
     const default_type cond = Math::condition_number(mapping);
     if (cond < 10.0)
       break;
-    WARN("directions are poorly distributed for lmax = " + fmt::format("{} (condition number = ", lmax) +
-         fmt::format("{})", cond));
+    WARN(fmt::format("directions are poorly distributed for lmax = {} (condition number = {})", lmax, cond));
     if (cond < 100.0 || lmax_set_from_commandline)
       break;
     lmax -= 2;
   } while (lmax >= 0);
 
   if (lmax_prev != lmax)
-    WARN("reducing lmax to " + fmt::format("{} to improve conditioning", lmax));
+    WARN(fmt::format("reducing lmax to {} to improve conditioning", lmax));
 
   return mapping;
 }

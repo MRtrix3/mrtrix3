@@ -91,9 +91,11 @@ void run() {
   auto image = H.get_image<float>();
   const auto result = Registration::Warp::validate_image(image);
 
-  CONSOLE("Warp image \"" + H.name() + "\": valid " + //
-          (result.format == WarpFormat::Simple ? "simple (displacement or deformation) field" : "full warp field"));
+  CONSOLE(fmt::format("Warp image \"{}\": valid {}", //
+                      H.name(),
+                      result.format == WarpFormat::Simple ? "simple (displacement or deformation) field"
+                                                          : "full warp field"));
 
-  CONSOLE("Fill value: " +
-          (result.fill_value.has_value() ? str(*result.fill_value) : "not auto-detected from input data"));
+  CONSOLE(fmt::format("Fill value: {}",
+                      result.fill_value.has_value() ? str(*result.fill_value) : "not auto-detected from input data"));
 }

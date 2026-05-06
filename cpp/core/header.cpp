@@ -126,8 +126,8 @@ std::string short_description(const Header &H) {
   for (size_t n = 0; n < H.ndim(); ++n)
     vox.push_back(str(H.spacing(n)));
 
-  return " with dimensions " + join(dims, "x") + ", voxel spacing " + join(vox, "x") + ", datatype " +
-         H.datatype().specifier();
+  return fmt::format(
+      " with dimensions {}, voxel spacing {}, datatype {}", join(dims, "x"), join(vox, "x"), H.datatype().specifier());
 }
 } // namespace
 
@@ -504,10 +504,9 @@ std::string Header::description(bool print_all) const {
   desc += "]\n";
 
   if (io) {
-    desc += "  Format:            " + (format().empty() ? "undefined" : format()) + "\n";
-    desc += "  Data type:         " + datatype().description() + "\n";
-    desc += fmt::format("  Intensity scaling: offset = {}", intensity_offset()) +
-            fmt::format(", multiplier = {}", intensity_scale()) + "\n";
+    desc += fmt::format("  Format:            {}\n", format().empty() ? "undefined" : format());
+    desc += fmt::format("  Data type:         {}\n", datatype().description());
+    desc += fmt::format("  Intensity scaling: offset = {}, multiplier = {}\n", intensity_offset(), intensity_scale());
   }
 
   desc += "  Transform:         ";
@@ -531,7 +530,7 @@ std::string Header::description(bool print_all) const {
       bool shorten = (!print_all && entries.size() > 5);
       desc += key + entries[0] + "\n";
       if (entries.size() > 5) {
-        key = fmt::format("  [{}", entries.size()) + " entries] ";
+        key = fmt::format("  [{} entries] ", entries.size());
         if (key.size() < 21)
           key.resize(21, ' ');
       } else
@@ -668,8 +667,7 @@ void Header::realign_transform() {
 
 Header
 concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, const bool permit_datatype_mismatch) {
-  Exception e(fmt::format("Unable to concatenate {}", headers.size()) + " images along axis " +
-              fmt::format("{}: ", axis_to_concat));
+  Exception e(fmt::format("Unable to concatenate {} images along axis {}: ", headers.size(), axis_to_concat));
 
   auto datatype_test = [&](const bool condition) {
     if (condition && !permit_datatype_mismatch) {
@@ -696,7 +694,7 @@ concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, con
   size_t global_max_nonunity_dim = 0;
   for (const auto &H : headers) {
     if (axis_to_concat > H.ndim() + 1) {
-      e.push_back("Image \"" + H.name() + fmt::format("\" is only {}", H.ndim()) + "D");
+      e.push_back(fmt::format("Image \"{}\" is only {}D", H.name(), H.ndim()));
       throw e;
     }
     ssize_t this_max_nonunity_dim;
@@ -756,9 +754,12 @@ concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, con
     // Check that dimensions of image are compatible with concatenation
     for (size_t axis = 0; axis <= global_max_nonunity_dim; ++axis) {
       if (axis != axis_to_concat && axis < H.ndim() && H.size(axis) != result.size(axis)) {
-        e.push_back("Images \"" + result.name() + "\" and \"" + H.name() + "\" have inequal sizes along axis " +
-                    fmt::format("{} (", axis_to_concat) + str(result.size(axis)) + fmt::format(" vs {}", H.size(axis)) +
-                    ")");
+        e.push_back(fmt::format("Images \"{}\" and \"{}\" have inequal sizes along axis {} ({} vs {})",
+                                result.name(),
+                                H.name(),
+                                axis_to_concat,
+                                result.size(axis),
+                                H.size(axis)));
         throw e;
       }
     }

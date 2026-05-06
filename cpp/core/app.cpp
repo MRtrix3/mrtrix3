@@ -18,6 +18,7 @@
 #include <clocale>
 #include <cstddef>
 #include <fcntl.h>
+#include <fmt/format.h>
 #include <locale>
 #include <unistd.h>
 
@@ -30,7 +31,6 @@
 #include "mrtrix_version.h"
 #include "progressbar.h"
 #include "signal_handler.h"
-#include <fmt/format.h>
 
 namespace MR::App {
 
@@ -145,7 +145,7 @@ inline void resize(std::string &text, size_t new_size, char fill) {
 
 std::string paragraph(std::string_view header, std::string_view text, const HelpFormatting::Indents indents) {
   std::string out;
-  std::string line = std::string(indents.header, ' ') + std::string(header) + " ";
+  std::string line = fmt::format("{}{} ", std::string(indents.header, ' '), header);
   if (characters_ignoring_emphasis(line) < indents.main)
     resize(line, indents.main, ' ');
 
@@ -156,11 +156,11 @@ std::string paragraph(std::string_view header, std::string_view text, const Help
     std::vector<std::string> words = split(paragraphs[n]);
     while (i < words.size()) {
       do {
-        line += " " + words[i++];
+        line += fmt::format(" {}", words[i++]);
         if (i >= words.size())
           break;
       } while (characters_ignoring_emphasis(line) + 1 + characters_ignoring_emphasis(words[i]) < help_formatting.width);
-      out += line + "\n";
+      out += fmt::format("{}\n", line);
       line = std::string(indents.main, ' ');
     }
   }
@@ -194,16 +194,17 @@ std::string underline(std::string_view text, bool ignore_whitespace = false) {
 
 std::string help_head(const bool format) {
   if (!format) {
-    return NAME + ": " +
-           (project_version.empty()
-                ? ("part of the MRtrix3 package, version " + mrtrix_version)
-                : fmt::format("external MRtrix3 project, version {}\nbuilt against MRtrix3 version ", project_version) +
-                      mrtrix_version) +
-           "\n\n";
+    return fmt::format("{}: {}\n\n",
+                       NAME,
+                       project_version.empty()
+                           ? fmt::format("part of the MRtrix3 package, version {}", mrtrix_version)
+                           : fmt::format("external MRtrix3 project, version {}\nbuilt against MRtrix3 version {}",
+                                         project_version,
+                                         mrtrix_version));
   }
 
   const std::string version_string =
-      project_version.empty() ? ("MRtrix " + mrtrix_version) : ("Version " + project_version);
+      project_version.empty() ? fmt::format("MRtrix {}", mrtrix_version) : fmt::format("Version {}", project_version);
 
   const std::string date(project_version.empty() ? build_date : project_build_date);
 
@@ -225,16 +226,18 @@ std::string help_head(const bool format) {
   topline += std::string(safe_padding(requested_padding2), ' ') + date;
 
   if (!project_version.empty())
-    topline += "\nusing MRtrix3 " + mrtrix_version;
+    topline += fmt::format("\nusing MRtrix3 {}", mrtrix_version);
 
-  return topline + "\n\n     " + bold(NAME) + ": " +
-         (project_version.empty() ? "part of the MRtrix3 package" : "external MRtrix3 project") + "\n\n";
+  return fmt::format("{}\n\n     {}: {}\n\n",
+                     topline,
+                     bold(NAME),
+                     project_version.empty() ? "part of the MRtrix3 package" : "external MRtrix3 project");
 }
 
 std::string help_synopsis(const bool format) {
   if (!format)
     return SYNOPSIS;
-  return bold("SYNOPSIS") + "\n\n" + paragraph("", SYNOPSIS, help_formatting.purpose_indents) + "\n";
+  return fmt::format("{}\n\n{}\n", bold("SYNOPSIS"), paragraph("", SYNOPSIS, help_formatting.purpose_indents));
 }
 
 std::string help_tail(const bool format) {
@@ -242,39 +245,41 @@ std::string help_tail(const bool format) {
   if (!format)
     return retval;
 
-  return bold("AUTHOR") + "\n" + paragraph("", AUTHOR, help_formatting.purpose_indents) + "\n" + bold("COPYRIGHT") +
-         "\n" + paragraph("", COPYRIGHT, help_formatting.purpose_indents) + "\n" + [&]() {
-           std::string s = bold("REFERENCES") + "\n";
-           for (size_t n = 0; n < REFERENCES.size(); ++n)
-             s += paragraph("", REFERENCES[n], help_formatting.purpose_indents) + "\n";
-           s += paragraph("", core_reference, help_formatting.purpose_indents) + "\n";
-           return s;
-         }();
+  retval = fmt::format("{}\n{}\n{}\n{}\n",
+                       bold("AUTHOR"),
+                       paragraph("", AUTHOR, help_formatting.purpose_indents),
+                       bold("COPYRIGHT"),
+                       paragraph("", COPYRIGHT, help_formatting.purpose_indents));
+  retval += fmt::format("{}\n", bold("REFERENCES"));
+  for (size_t n = 0; n < REFERENCES.size(); ++n)
+    retval += fmt::format("{}\n", paragraph("", REFERENCES[n], help_formatting.purpose_indents));
+  retval += fmt::format("{}\n", paragraph("", core_reference, help_formatting.purpose_indents));
+  return retval;
 }
 
 std::string usage_syntax(const bool format) {
   std::string s = "USAGE";
   if (format)
-    s = bold(s) + "\n\n     ";
+    s = fmt::format("{}\n\n     ", bold(s));
   else
     s += ": ";
-  s += (format ? underline(NAME, true) : NAME) + " [ options ]";
+  s += fmt::format("{} [ options ]", format ? underline(NAME, true) : NAME);
 
   for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
 
     if (ARGUMENTS[i].flags.optional())
       s += " [";
-    s += " " + ARGUMENTS[i].id;
+    s += fmt::format(" {}", ARGUMENTS[i].id);
 
     if (ARGUMENTS[i].flags.allow_multiple()) {
       if (ARGUMENTS[i].flags.required())
-        s += " [ " + ARGUMENTS[i].id;
+        s += fmt::format(" [ {}", ARGUMENTS[i].id);
       s += " ...";
     }
     if (ARGUMENTS[i].flags.any())
       s += " ]";
   }
-  return s + "\n\n";
+  return fmt::format("{}\n\n", s);
 }
 
 Description &Description::operator+(const char *text) { // check_syntax off
@@ -298,20 +303,23 @@ std::string Description::syntax(const bool format) const {
     return std::string();
   std::string s;
   if (format)
-    s += bold("DESCRIPTION") + "\n\n";
+    s += fmt::format("{}\n\n", bold("DESCRIPTION"));
   for (size_t i = 0; i < size(); ++i)
-    s += paragraph("", (*this)[i], help_formatting.purpose_indents) + "\n";
+    s += fmt::format("{}\n", paragraph("", (*this)[i], help_formatting.purpose_indents));
   return s;
 }
 
 Example::Example(std::string_view title, std::string_view code, std::string_view description)
     : title(title), code(code), description(description) {}
 
-Example::operator std::string() const { return title + fmt::format(": $ {}  ", code) + description; }
+Example::operator std::string() const { return fmt::format("{}: $ {}  {}", title, code, description); }
 
 std::string Example::syntax(const bool format) const {
-  std::string s = paragraph("", format ? underline(title + ":") + "\n" : title + ": ", help_formatting.purpose_indents);
-  s += std::string(help_formatting.example_indent, ' ') + fmt::format("$ {}\n", code);
+  std::string s =
+      paragraph("",
+                format ? fmt::format("{}\n", underline(fmt::format("{}:", title))) : fmt::format("{}: ", title),
+                help_formatting.purpose_indents);
+  s += fmt::format("{:{}}$ {}\n", "", help_formatting.example_indent, code);
   if (!description.empty())
     s += paragraph("", description, help_formatting.purpose_indents);
   if (format)
@@ -329,7 +337,7 @@ std::string ExampleList::syntax(const bool format) const {
     return std::string();
   std::string s;
   if (format)
-    s += bold("EXAMPLE USAGES") + "\n\n";
+    s += fmt::format("{}\n\n", bold("EXAMPLE USAGES"));
   for (size_t i = 0; i < size(); ++i)
     s += (*this)[i].syntax(format);
   return s;
@@ -351,7 +359,7 @@ std::string ArgumentList::syntax(const bool format) const {
   std::string s;
   for (size_t i = 0; i < size(); ++i)
     s += (*this)[i].syntax(format);
-  return s + "\n";
+  return fmt::format("{}\n", s);
 }
 
 std::string Option::syntax(const bool format) const {
@@ -362,20 +370,20 @@ std::string Option::syntax(const bool format) const {
     opt = underline(opt);
 
   for (size_t i = 0; i < size(); ++i)
-    opt += " " + (*this)[i].id;
+    opt += fmt::format(" {}", (*this)[i].id);
 
   if (format && flags.allow_multiple())
     opt += "  (multiple uses permitted)";
 
   if (format)
-    opt = fmt::format("  {}\n", opt) + paragraph("", desc, help_formatting.purpose_indents) + "\n";
+    opt = fmt::format("  {}\n{}\n", opt, paragraph("", desc, help_formatting.purpose_indents));
   else
     opt = paragraph(opt, desc, help_formatting.option_indents);
   return opt;
 }
 
 std::string OptionGroup::header(const bool format) const {
-  return format ? bold(name) + "\n\n" : std::string(name) + ":\n";
+  return format ? fmt::format("{}\n\n", bold(name)) : fmt::format("{}:\n", name);
 }
 
 std::string OptionGroup::contents(const bool format) const {
@@ -534,31 +542,32 @@ void print_help() {
 #endif
 
 std::string version_string() {
-  std::string version = fmt::format("== {} {} ==\n{} bit {}, built {}{}, using Eigen {}.{}.{}\nAuthor(s): {}\n{}\n",
-                                    App::NAME,
-                                    (project_version.empty() ? mrtrix_version : project_version),
-                                    8 * sizeof(size_t),
-                                    MRTRIX_BUILD_TYPE,
-                                    build_date,
-                                    (project_version.empty() ? std::string("") : " against MRtrix " + mrtrix_version),
-                                    EIGEN_WORLD_VERSION,
-                                    EIGEN_MAJOR_VERSION,
-                                    EIGEN_MINOR_VERSION,
-                                    AUTHOR,
-                                    COPYRIGHT);
+  std::string version =
+      fmt::format("== {} {} ==\n{} bit {}, built {}{}, using Eigen {}.{}.{}\nAuthor(s): {}\n{}\n",
+                  App::NAME,
+                  (project_version.empty() ? mrtrix_version : project_version),
+                  8 * sizeof(size_t),
+                  MRTRIX_BUILD_TYPE,
+                  build_date,
+                  (project_version.empty() ? std::string("") : fmt::format(" against MRtrix {}", mrtrix_version)),
+                  EIGEN_WORLD_VERSION,
+                  EIGEN_MAJOR_VERSION,
+                  EIGEN_MINOR_VERSION,
+                  AUTHOR,
+                  COPYRIGHT);
 
   return version;
 }
 
 std::string full_usage() {
   std::string s;
-  s += SYNOPSIS + "\n";
+  s += fmt::format("{}\n", SYNOPSIS);
 
   for (size_t i = 0; i < DESCRIPTION.size(); ++i)
-    s += DESCRIPTION[i] + "\n";
+    s += fmt::format("{}\n", DESCRIPTION[i]);
 
   for (size_t i = 0; i < EXAMPLES.size(); ++i)
-    s += std::string(EXAMPLES[i]) + "\n";
+    s += fmt::format("{}\n", std::string(EXAMPLES[i]));
 
   for (size_t i = 0; i < ARGUMENTS.size(); ++i)
     s += ARGUMENTS[i].usage();
@@ -596,11 +605,11 @@ std::string markdown_usage() {
 
     if (ARGUMENTS[i].flags.optional())
       s += "[";
-    s += " " + ARGUMENTS[i].id;
+    s += fmt::format(" {}", ARGUMENTS[i].id);
 
     if (ARGUMENTS[i].flags.allow_multiple()) {
       if (ARGUMENTS[i].flags.required())
-        s += " [ " + ARGUMENTS[i].id;
+        s += fmt::format(" [ {}", ARGUMENTS[i].id);
       s += " ...";
     }
     if (ARGUMENTS[i].flags.any())
@@ -610,12 +619,12 @@ std::string markdown_usage() {
 
   // Argument description:
   for (size_t i = 0; i < ARGUMENTS.size(); ++i)
-    s += fmt::format("- *{}*: ", ARGUMENTS[i].id) + ARGUMENTS[i].desc + "\n";
+    s += fmt::format("- *{}*: {}\n", ARGUMENTS[i].id, ARGUMENTS[i].desc);
 
   if (!DESCRIPTION.empty()) {
     s += "\n## Description\n\n";
     for (size_t i = 0; i < DESCRIPTION.size(); ++i)
-      s += std::string(DESCRIPTION[i]) + "\n\n";
+      s += fmt::format("{}\n\n", std::string(DESCRIPTION[i]));
   }
 
   if (!EXAMPLES.empty()) {
@@ -624,7 +633,7 @@ std::string markdown_usage() {
       s += fmt::format("__{}:__\n", EXAMPLES[i].title);
       s += fmt::format("`$ {}`\n", EXAMPLES[i].code);
       if (!EXAMPLES[i].description.empty())
-        s += EXAMPLES[i].description + "\n";
+        s += fmt::format("{}\n", EXAMPLES[i].description);
       s += "\n";
     }
   }
@@ -636,9 +645,9 @@ std::string markdown_usage() {
   }
 
   auto format_option = [&](const Option &opt) {
-    std::string f = "+ **-" + opt.id;
+    std::string f = fmt::format("+ **-{}", opt.id);
     for (size_t a = 0; a < opt.size(); ++a)
-      f += " " + opt[a].id;
+      f += fmt::format(" {}", opt[a].id);
     f += "**";
     if (opt.flags.allow_multiple())
       f += "  *(multiple uses permitted)*";
@@ -668,8 +677,8 @@ std::string markdown_usage() {
 
   s += "## References\n\n";
   for (size_t i = 0; i < REFERENCES.size(); ++i)
-    s += std::string(REFERENCES[i]) + "\n\n";
-  s += core_reference + "\n\n";
+    s += fmt::format("{}\n\n", std::string(REFERENCES[i]));
+  s += fmt::format("{}\n\n", core_reference);
 
   s += fmt::format("**Author:** {}\n\n", AUTHOR);
   s += fmt::format("**Copyright:** {}\n\n", COPYRIGHT);
@@ -701,11 +710,11 @@ std::string restructured_text_usage() {
 
     if (ARGUMENTS[i].flags.optional())
       s += "[";
-    s += " " + ARGUMENTS[i].id;
+    s += fmt::format(" {}", ARGUMENTS[i].id);
 
     if (ARGUMENTS[i].flags.allow_multiple()) {
       if (ARGUMENTS[i].flags.required())
-        s += " [ " + ARGUMENTS[i].id;
+        s += fmt::format(" [ {}", ARGUMENTS[i].id);
       s += " ...";
     }
     if (ARGUMENTS[i].flags.any())
@@ -727,9 +736,9 @@ std::string restructured_text_usage() {
   // Argument description:
   for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
     auto desc = split_lines(escape_special(ARGUMENTS[i].desc), false);
-    s += fmt::format("-  *{}*: ", ARGUMENTS[i].id) + desc[0];
+    s += fmt::format("-  *{}*: {}", ARGUMENTS[i].id, desc[0]);
     for (size_t n = 1; n < desc.size(); ++n)
-      s += " |br|\n   " + desc[n];
+      s += fmt::format(" |br|\n   {}", desc[n]);
     s += "\n";
   }
   s += "\n";
@@ -740,7 +749,7 @@ std::string restructured_text_usage() {
       auto desc = split_lines(DESCRIPTION[i], false);
       s += desc[0];
       for (size_t n = 1; n < desc.size(); ++n)
-        s += " |br|\n" + desc[n];
+        s += fmt::format(" |br|\n{}", desc[n]);
       s += "\n\n";
     }
   }
@@ -762,16 +771,16 @@ std::string restructured_text_usage() {
   }
 
   auto format_option = [&](const Option &opt) {
-    std::string f = "-  **-" + opt.id;
+    std::string f = fmt::format("-  **-{}", opt.id);
     for (size_t a = 0; a < opt.size(); ++a)
-      f += " " + opt[a].id;
+      f += fmt::format(" {}", opt[a].id);
     f += "** ";
     if (opt.flags.allow_multiple())
       f += "*(multiple uses permitted)* ";
     auto desc = split_lines(opt.desc, false);
     f += escape_special(desc[0]);
     for (size_t n = 1; n < desc.size(); ++n)
-      f += " |br|\n   " + escape_special(desc[n]);
+      f += fmt::format(" |br|\n   {}", escape_special(desc[n]));
     f += "\n\n";
     return f;
   };
@@ -782,7 +791,7 @@ std::string restructured_text_usage() {
     while (OPTIONS[n].name != group_names[i])
       ++n;
     if (OPTIONS[n].name != "OPTIONS")
-      s += OPTIONS[n].name + "\n" + std::string(OPTIONS[n].name.size(), '^') + "\n\n";
+      s += fmt::format("{}\n{}\n\n", OPTIONS[n].name, std::string(OPTIONS[n].name.size(), '^'));
     while (n < OPTIONS.size()) {
       if (OPTIONS[n].name == group_names[i]) {
         for (size_t o = 0; o < OPTIONS[n].size(); ++o)
@@ -801,12 +810,12 @@ std::string restructured_text_usage() {
     auto refs = split_lines(REFERENCES[i], false);
     s += refs[0];
     for (size_t n = 1; n < refs.size(); ++n)
-      s += " |br|\n  " + refs[n];
+      s += fmt::format(" |br|\n  {}", refs[n]);
     s += "\n\n";
   }
-  s += core_reference + "\n\n";
+  s += fmt::format("{}\n\n", core_reference);
 
-  s += "--------------\n\n" + fmt::format("\n\n**Author:** {}\n\n**Copyright:** ", AUTHOR) + COPYRIGHT + "\n\n";
+  s += fmt::format("--------------\n\n\n\n**Author:** {}\n\n**Copyright:** {}\n\n", AUTHOR, COPYRIGHT);
 
   return s;
 }
@@ -827,7 +836,7 @@ const Option *match_option(std::string_view arg) {
 
   // no matches
   if (candidates.empty())
-    throw Exception(fmt::format("{}{}\"", "unknown option \"-", root));
+    throw Exception(fmt::format("unknown option \"-{}\"", root));
 
   // return match if unique:
   if (candidates.size() == 1)
@@ -844,10 +853,10 @@ const Option *match_option(std::string_view arg) {
     return candidates[0];
 
   // report something useful:
-  root = fmt::format("several matches possible for option \"-{}\": \"-", root) + candidates[0]->id;
+  root = fmt::format("several matches possible for option \"-{}\": \"-{}", root, candidates[0]->id);
 
   for (size_t i = 1; i < candidates.size(); ++i)
-    root += "\", \"-" + candidates[i]->id + "\"";
+    root += fmt::format("\", \"-{}\"", candidates[i]->id);
 
   throw Exception(root);
 }
@@ -859,7 +868,7 @@ void sort_arguments(const std::vector<std::string> &arguments) {
     const Option *opt = match_option(*it);
     if (opt != nullptr) {
       if (it + opt->size() >= arguments.end()) {
-        throw Exception(fmt::format("{}{}\"", "not enough parameters to option \"-", opt->id));
+        throw Exception(fmt::format("not enough parameters to option \"-{}\"", opt->id));
       }
 
       std::vector<std::string> option_args;
@@ -954,19 +963,17 @@ void parse() {
   }
 
   if (num_optional_arguments && num_args_required > argument.size())
-    throw Exception(
-        fmt::format("Expected at least {} arguments ({} supplied)", str(num_args_required), str(argument.size())));
+    throw Exception(fmt::format("Expected at least {} arguments ({} supplied)", num_args_required, argument.size()));
 
   if (num_optional_arguments == 0 && num_args_required != argument.size()) {
-    Exception e("Expected exactly " + fmt::format("{} arguments (", num_args_required) + str(argument.size()) +
-                " supplied)");
-    std::string s = "Usage: " + NAME;
+    Exception e(fmt::format("Expected exactly {} arguments ({} supplied)", num_args_required, argument.size()));
+    std::string s = fmt::format("Usage: {}", NAME);
     for (const auto &a : ARGUMENTS)
-      s += " " + std::string(a.id);
+      s += fmt::format(" {}", a.id);
     e.push_back(s);
-    s = "Yours: " + NAME;
+    s = fmt::format("Yours: {}", NAME);
     for (const auto &a : argument)
-      s += " " + std::string(a);
+      s += fmt::format(" {}", a);
     e.push_back(s);
     if (argument.size() > num_args_required) {
       std::vector<std::string> potential_options;
@@ -974,12 +981,12 @@ void parse() {
         for (const auto &og : OPTIONS) {
           for (const auto &o : og) {
             if (std::string(a) == std::string(o.id))
-              potential_options.push_back("'-" + std::string(a) + "'");
+              potential_options.push_back(fmt::format("'-{}'", a));
           }
         }
       }
       if (!potential_options.empty())
-        e.push_back("(Did you mean " + join(potential_options, " or ") + "?)");
+        e.push_back(fmt::format("(Did you mean {}?)", join(potential_options, " or ")));
     }
     throw e;
   }
@@ -1211,10 +1218,10 @@ void init(int cmdline_argc, const char *const *cmdline_argv) { // check_syntax o
   };
   command_history_string = cmdline_argv[0];
   for (const auto &a : raw_arguments_list)
-    command_history_string += " " + argv_quoted(a);
-  command_history_string += "  (version=" + mrtrix_version;
+    command_history_string += fmt::format(" {}", argv_quoted(a));
+  command_history_string += fmt::format("  (version={}", mrtrix_version);
   if (!project_version.empty())
-    command_history_string += ", project=" + project_version;
+    command_history_string += fmt::format(", project={}", project_version);
   command_history_string += ")";
 
   std::locale::global(std::locale::classic());
@@ -1245,12 +1252,12 @@ int64_t App::ParsedArgument::as_int() const {
     if (it == arg->choices.end()) {
       std::string msg = "unexpected value supplied for ";
       if (opt != nullptr)
-        msg += "option \"" + opt->id;
+        msg += fmt::format("option \"{}", opt->id);
       else
-        msg += "argument \"" + arg->id;
+        msg += fmt::format("argument \"{}", arg->id);
       msg += "\" ";
-      as_choice_msg = std::string("received \"" + std::string(p) + "\"; ");
-      as_choice_msg += "valid choices are: " + join(arg->choices, ", ");
+      as_choice_msg = fmt::format("received \"{}\"; ", p);
+      as_choice_msg += fmt::format("valid choices are: {}", join(arg->choices, ", "));
       msg += fmt::format("({})", as_choice_msg);
       if (!arg->types[ArgTypeFlags::Integer])
         throw Exception(msg);
@@ -1310,7 +1317,7 @@ int64_t App::ParsedArgument::as_int() const {
           multiplier = 1000000000000;
           break;
         default:
-          throw Exception(fmt::format("{}{}\\'", "unexpected postfix \'", postfix));
+          throw Exception(fmt::format("unexpected postfix \'{}\'", postfix));
         }
         if (contains_dotpoint) {
           const default_type prefix = to<default_type>(num);
@@ -1340,13 +1347,13 @@ int64_t App::ParsedArgument::as_int() const {
       throw Exception(
           fmt::format("unable to parse string {} supplied for {} as integer: {}",
                       p,
-                      (opt == nullptr ? std::string("argument \"") + arg->id : std::string("option \"") + opt->id),
+                      (opt == nullptr ? fmt::format("argument \"{}", arg->id) : fmt::format("option \"{}", opt->id)),
                       as_int_msg));
   }
 
-  Exception full_msg("Unable to interpret value supplied for " +
-                     (opt == nullptr ? "argument \"" + arg->id : "option \"" + opt->id) +
-                     " as either integer or choice selection");
+  Exception full_msg(
+      fmt::format("Unable to interpret value supplied for {} as either integer or choice selection",
+                  opt == nullptr ? fmt::format("argument \"{}", arg->id) : fmt::format("option \"{}", opt->id)));
   full_msg.push_back("Error when interpreted as choice selection:");
   full_msg.push_back(as_choice_msg);
   full_msg.push_back("Error when interpreted as integer:");
@@ -1373,13 +1380,12 @@ default_type App::ParsedArgument::as_float() const {
   if (retval < arg->float_limits.min() || retval > arg->float_limits.max()) {
     std::string msg("value supplied for ");
     if (opt)
-      msg += "option \"" + opt->id;
+      msg += fmt::format("option \"{}", opt->id);
     else
-      msg += "argument \"" + arg->id;
+      msg += fmt::format("argument \"{}", arg->id);
     msg += "\" is out of bounds";
-    msg += fmt::format(" (valid range: {}", arg->float_limits.min()) + fmt::format(" to {}", arg->float_limits.max()) +
-           ";";
-    msg += " value supplied: " + fmt::format("{})", retval);
+    msg += fmt::format(" (valid range: {} to {};", arg->float_limits.min(), arg->float_limits.max());
+    msg += fmt::format(" value supplied: {})", retval);
     throw Exception(msg);
   }
 
@@ -1425,9 +1431,9 @@ void ParsedArgument::error(Exception &e) const {
   std::string msg("error parsing token \"");
   msg += p;
   if (opt != nullptr)
-    msg += "\" for option \"" + opt->id + "\"";
+    msg += fmt::format("\" for option \"{}\"", opt->id);
   else
-    msg += "\" for argument \"" + arg->id + "\"";
+    msg += fmt::format("\" for argument \"{}\"", arg->id);
   throw Exception(e, msg);
 }
 
@@ -1456,7 +1462,7 @@ ParsedOption::ParsedOption(const Option *option, const std::vector<std::string> 
                      "Value \"",
                      arguments[i],
                      ((option->size() == 1) ? "the expected argument "
-                                            : (fmt::format("one of the {}", option->size()) + " expected arguments ")),
+                                            : fmt::format("one of the {} expected arguments ", option->size())),
                      option->id,
                      ((option->size() == 1) ? " " : "s "),
                      option->id));
@@ -1471,12 +1477,6 @@ ParsedArgument ParsedOption::operator[](size_t num) const {
 bool ParsedOption::operator==(std::string_view match) const {
   const std::string name = lowercase(match);
   return name == opt->id;
-}
-
-std::string operator+(const char *const left, const ParsedArgument &right) { // check_syntax off
-  std::string retval(left);
-  retval += std::string(right);
-  return retval;
 }
 
 std::ostream &operator<<(std::ostream &stream, const ParsedArgument &arg) {

@@ -23,7 +23,6 @@
 #include "file/dicom/series.h"
 #include "file/dicom/study.h"
 #include "file/path.h"
-#include "fmt.h"
 
 namespace MR::File::Dicom {
 
@@ -332,7 +331,7 @@ void phoenix_scalar(const KeyValues &keyval, std::string_view key, const Functor
 template <typename T> void phoenix_vector(const KeyValues &keyval, std::string_view key, std::vector<T> &data) {
   data.clear();
   for (size_t index = 0;; ++index) {
-    const auto it = keyval.find(std::string(key) + "[" + fmt::format("{}]", index));
+    const auto it = keyval.find(fmt::format("{}[{}]", key, index));
     if (it == keyval.end())
       return;
     data.push_back(to<T>(it->second));
@@ -470,7 +469,7 @@ std::ostream &operator<<(std::ostream &stream, const Image &item) {
   stream << (!item.filename.empty() ? item.filename : "file not set") << ":\n"
          << (!item.sequence_name.empty() ? item.sequence_name : "sequence not set") << " ["
          << (!item.manufacturer.empty() ? item.manufacturer : "unknown manufacturer") << "] "
-         << (!item.frames.empty() ? str(item.frames.size()) + fmt::format(" frames with dim {}", item.frame_dim)
+         << (!item.frames.empty() ? fmt::format("{} frames with dim {}", item.frames.size(), item.frame_dim)
                                   : std::string());
   if (!item.frames.empty()) {
     for (size_t n = 0; n < item.frames.size(); ++n)
@@ -543,10 +542,9 @@ default_type Frame::get_slice_separation(const std::vector<Frame *> &frames, siz
   }
 
   if (max_gap > 1e-4)
-    WARN(fmt::format("slice gap detected (maximum gap: {}mm)", str(max_gap, 3)));
+    WARN(fmt::format("slice gap detected (maximum gap: {:.3g}mm)", max_gap));
   if (max_separation - min_separation > 2e-4)
-    WARN(fmt::format(
-        "slice separation is not constant (from {} to {}mm)", str(min_separation, 8), str(max_separation, 8)));
+    WARN(fmt::format("slice separation is not constant (from {:.8g} to {:.8g}mm)", min_separation, max_separation));
 
   return (sum_separation / static_cast<default_type>(nslices - 1));
 }

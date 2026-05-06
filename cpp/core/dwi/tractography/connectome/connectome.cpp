@@ -31,28 +31,29 @@ const std::vector<std::string> assignment_options{"assignment_end_voxels",
 
 // clang-format off
 const std::string tck2nodes_description
-  = "The default mechanism by which streamlines are ascribed to connectome parcels"
-    " is the \"radial search\" algorithm as described in reference (Smith et al., 2015),"
-    " with a default maximal search distance of " + str(default_tck2nodes_radial_distance, 2) + "mm."
-    " For each streamline endpoint,"
-    " if there is no voxel with a non-zero parcel index"
-    " whose centre is closer to the streamline endpoint than the maximal search distance,"
-    " then that streamline endpoint will not be assigned to any parcel,"
-    " and the streamline will be omitted from the connectome matrix"
-    " (unless the -keep_unassigned option is specified)."
-    " The maximal search distance can be modified using the -assignment_radial_search option,"
-    " or an alternative algorithm can be activated using one of the other -assignment_* options.";
+  = fmt::format("The default mechanism by which streamlines are ascribed to connectome parcels"
+                " is the \"radial search\" algorithm as described in reference (Smith et al., 2015),"
+                " with a default maximal search distance of {:.2g}mm."
+                " For each streamline endpoint,"
+                " if there is no voxel with a non-zero parcel index"
+                " whose centre is closer to the streamline endpoint than the maximal search distance,"
+                " then that streamline endpoint will not be assigned to any parcel,"
+                " and the streamline will be omitted from the connectome matrix"
+                " (unless the -keep_unassigned option is specified)."
+                " The maximal search distance can be modified using the -assignment_radial_search option,"
+                " or an alternative algorithm can be activated using one of the other -assignment_* options.",
+                default_tck2nodes_radial_distance);
 
 const OptionGroup AssignmentOptions =
     OptionGroup("Structural connectome streamline assignment options (can only specify one)")
     + Option("assignment_end_voxels",
              "use a simple voxel lookup value at each streamline endpoint")
     + Option("assignment_radial_search",
-             "perform a radial search from each streamline endpoint to locate the nearest node."
-             " Argument is the maximum radius in mm;"
-             " if no node is found within this radius,"
-             " the streamline endpoint is not assigned to any node."
-             " Default search distance is " + fmt::format("{}mm.", default_tck2nodes_radial_distance, 2))
+             fmt::format("perform a radial search from each streamline endpoint to locate the nearest node."
+                         " Argument is the maximum radius in mm;"
+                         " if no node is found within this radius,"
+                         " the streamline endpoint is not assigned to any node."
+                         " Default search distance is {:.2g}mm.", default_tck2nodes_radial_distance))
       + Argument("radius").type_float(0.0)
     + Option("assignment_reverse_search",
              "traverse from each streamline endpoint inwards along the streamline,"

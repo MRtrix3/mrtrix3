@@ -357,19 +357,16 @@ ReadInfo read_header(std::string_view path) {
     num_elements *= info.shape[1];
   const size_t predicted_data_size = num_elements * info.data_type.bytes();
   if (info.data_offset + predicted_data_size != file_size)
-    throw Exception(fmt::format(
-        "{}",
-        fmt::format("{}",
-                    fmt::format("Size of NumPy file \"{}\" ({}) does not meet expectations given total header size "
+    throw Exception(fmt::format("Size of NumPy file \"{}\" ({}) does not meet expectations given total header size "
                                 "({}) and predicted data size (({}{} = {}) values x {} bytes per value = {} bytes)",
                                 path,
-                                str(file_size),
-                                str(info.data_offset),
-                                str(info.shape[0]),
+                                file_size,
+                                info.data_offset,
+                                info.shape[0],
                                 (info.shape.size() == 2 ? fmt::format("x{}", info.shape[1]) : ""),
-                                str(num_elements),
-                                str(info.data_type.bytes()),
-                                str(num_elements * info.data_type.bytes())))));
+                                num_elements,
+                                info.data_type.bytes(),
+                                num_elements * info.data_type.bytes()));
 
   return info;
 }
@@ -385,8 +382,8 @@ WriteInfo prepare_ND_write(std::string_view path, const DataType data_type, cons
     if (max_precision < info.data_type.bits()) {
       INFO(fmt::format("Precision of floating-point NumPy file \"{}\" decreased from native {} bits to {}",
                        path,
-                       str(info.data_type.bits()),
-                       str(max_precision)));
+                       info.data_type.bits(),
+                       max_precision));
       if (max_precision == 16)
         info.data_type = DataType::native(DataType::Float16);
       else

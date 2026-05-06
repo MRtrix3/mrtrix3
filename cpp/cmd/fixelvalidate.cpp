@@ -14,8 +14,9 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "command.h"
+#include <fmt/format.h>
 
+#include "command.h"
 #include "fixel/fixel.h"
 #include "fixel/validate.h"
 
@@ -46,5 +47,5 @@ void usage() {
 
 void run() {
   Fixel::validate_directory(argument[0]);
-  CONSOLE("fixel directory \"" + std::string(argument[0]) + "\" is valid");
+  CONSOLE(fmt::format("fixel directory \"{}\" is valid", argument[0]));
 }

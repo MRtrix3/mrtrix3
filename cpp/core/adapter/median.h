@@ -20,7 +20,6 @@
 #include <fmt/format.h>
 
 #include "adapter/base.h"
-#include "fmt.h"
 #include "math/median.h"
 
 namespace MR::Adapter {

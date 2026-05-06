@@ -79,8 +79,9 @@ void usage ()
   + Argument ("values", "the output sampled values").type_file_out();
 
   OPTIONS
-  + Option ("stat_tck", "compute some statistic from the values along each streamline;"
-                        " options are: " + MR::Enum::join<Statistic>())
+  + Option ("stat_tck", fmt::format("compute some statistic from the values along each streamline;"
+                                    " options are: {}",
+                                    MR::Enum::join<Statistic>()))
     + Argument ("statistic").type_choice<Statistic>()
 
   + Option ("nointerp", "do not use trilinear interpolation when sampling image values")
@@ -619,7 +620,7 @@ public:
 
   virtual ~ReceiverBase() {
     if (received != expected)
-      WARN(fmt::format("Track file reports {} tracks, but contains {}", str(expected), str(received)));
+      WARN(fmt::format("Track file reports {} tracks, but contains {}", expected, received));
   }
 
   bool ordered() const { return process_ordered; }

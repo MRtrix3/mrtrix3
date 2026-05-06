@@ -14,15 +14,16 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <fmt/format.h>
+
 #include "adapter/replicate.h"
 #include "algo/loop.h"
 #include "algo/threaded_copy.h"
 #include "command.h"
-#include "fmt.h"
+#include "eigen_plugins/fmt.h"
 #include "image.h"
 #include "math/least_squares.h"
 #include "transform.h"
-#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -83,20 +84,19 @@ void usage() {
                     " used to fit the normalisation field in the log-domain."
                     " An order of 0 is equivalent to not allowing spatial variance"
                     " of the intensity normalisation factor."
-                    " (default: " + fmt::format("{})", default_polynormial_order))
+                    + fmt::format(" (default: {})", default_polynormial_order))
     + Argument("number").type_integer(0, 3)
 
   + Option("niter", "set the number of iterations."
                     " The first (and potentially only) entry applies to the main loop."
                     " If supplied as a comma-separated list of integers,"
                     " the second entry applies to the inner loop to update the balance factors."
-                    " (default: " + fmt::format("{},", default_main_iterations) + fmt::format("{}).", default_balance_maxiterations))
+                    + fmt::format(" (default: {},{}).", default_main_iterations, default_balance_maxiterations))
     + Argument("number").type_sequence_int()
 
   + Option("reference", "specify the (positive) reference value"
                         " to which the summed tissue compartments will be normalised."
-                        " (default: " + fmt::format("{:.6g},", default_reference_value)
-                        + " SH DC term for unit angular integral)")
+                        + fmt::format(" (default: {:.6g}, SH DC term for unit angular integral)", default_reference_value))
     + Argument("number").type_float(std::numeric_limits<default_type>::min())
 
   + Option("balanced", "incorporate the per-tissue balancing factors"
@@ -219,7 +219,7 @@ IndexType index_mask_voxels(size_t &num_voxels) {
   if (!num_voxels)
     throw Exception("Mask contains no valid voxels.");
 
-  INFO(fmt::format("mask image contains {} voxels", str(num_voxels)));
+  INFO(fmt::format("mask image contains {} voxels", num_voxels));
 
   return index;
 }
@@ -307,7 +307,7 @@ size_t detect_outliers(double outlier_range,
                    lessthan_NaN);
   double upper_quartile = summed_log_sorted[upper_quartile_idx];
 
-  INFO(fmt::format("  outlier rejection quartiles: [ {} {} ]", str(lower_quartile), str(upper_quartile)));
+  INFO(fmt::format("  outlier rejection quartiles: [ {} {} ]", lower_quartile, upper_quartile));
 
   double lower_outlier_threshold = lower_quartile - outlier_range * (upper_quartile - lower_quartile);
   double upper_outlier_threshold = upper_quartile + outlier_range * (upper_quartile - lower_quartile);
@@ -499,17 +499,14 @@ void run() {
   Eigen::MatrixXd data(num_voxels, n_tissue_types);
   for (size_t n = 0; n < n_tissue_types; ++n) {
     if (Path::exists(argument[2 * n + 1]) && !App::overwrite_files)
-      throw Exception(fmt::format(
-          "{}",
-          fmt::format("{}",
-                      fmt::format("Output file \"{}\" already exists. (use -force option to force overwrite)",
-                                  std::string(argument[2 * n + 1])))));
+      throw Exception(fmt::format("Output file \"{}\" already exists. (use -force option to force overwrite)",
+                                  std::string(argument[2 * n + 1])));
     load_data(data, argument[2 * n], index);
   }
 
   size_t num_non_finite = (!data.array().isFinite()).count();
   if (num_non_finite > 0) {
-    WARN(fmt::format("Input data contain {} non-finite voxel{}", str(num_non_finite), (num_non_finite > 1 ? "s" : "")));
+    WARN(fmt::format("Input data contain {} non-finite voxel{}", num_non_finite, (num_non_finite > 1 ? "s" : "")));
     WARN("  Results may be affected if the data contain many non-finite values");
     WARN("  Please refine your mask to avoid non-finite values if this is a problem");
   }
@@ -532,18 +529,18 @@ void run() {
     size_t outliers_changed = detect_outliers(3.0, data, field, balance_factors, weights);
 
     while (++iter <= max_iter) {
-      INFO(fmt::format("Iteration: {}", str(iter)));
+      INFO(fmt::format("Iteration: {}", iter));
 
       size_t balance_iter = 1;
 
       // Iteratively compute tissue balance factors with outlier rejection
       do {
 
-        DEBUG(fmt::format("Balance and outlier rejection iteration {} starts.", str(balance_iter)));
+        DEBUG(fmt::format("Balance and outlier rejection iteration {} starts.", balance_iter));
 
         if (n_tissue_types > 1) {
           compute_balance_factors(data, field, weights, balance_factors);
-          INFO(fmt::format("  balance factors ({}): {}", str(balance_iter), balance_factors));
+          INFO(fmt::format("  balance factors ({}): {}", balance_iter, balance_factors));
         }
 
         outliers_changed = detect_outliers(1.5, data, field, balance_factors, weights);

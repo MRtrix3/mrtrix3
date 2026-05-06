@@ -54,12 +54,12 @@ void run() {
       WARN(fmt::format("No more track scalars left in input file \"{}\" after {} streamlines; but more data are "
                        "present in input file \"{}\"",
                        std::string(argument[1]),
-                       str(tck_scalar1.get_index() + 1),
+                       tck_scalar1.get_index() + 1,
                        std::string(argument[0])));
       break;
     }
     if (tck_scalar1.size() != tck_scalar2.size())
-      throw Exception(fmt::format("track scalar length mismatch at streamline index {}", str(tck_scalar1.get_index())));
+      throw Exception(fmt::format("track scalar length mismatch at streamline index {}", tck_scalar1.get_index()));
 
     tck_scalar_output.set_index(tck_scalar1.get_index());
     tck_scalar_output.resize(tck_scalar1.size());
@@ -72,7 +72,7 @@ void run() {
     WARN(fmt::format("No more track scalars left in input file \"{}\" after {} streamlines; but more data are present "
                      "in input file \"{}\"",
                      std::string(argument[0]),
-                     str(tck_scalar1.get_index() + 1),
+                     tck_scalar1.get_index() + 1,
                      std::string(argument[1])));
   }
 }

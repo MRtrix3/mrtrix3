@@ -38,9 +38,9 @@ void usage() {
   + Argument ("output", "the output track scalar file").type_file_out();
 
   OPTIONS
-  + Option ("stdev", "apply Gaussian smoothing with the specified standard deviation."
-                     " The standard deviation is defined in units of track points"
-                     " (default: " + fmt::format("{})", default_smoothing, 2))
+  + Option ("stdev", fmt::format("apply Gaussian smoothing with the specified standard deviation."
+                                 " The standard deviation is defined in units of track points"
+                                 " (default: {:.2g})", default_smoothing))
     + Argument ("sigma").type_float(1e-6);
 
 }

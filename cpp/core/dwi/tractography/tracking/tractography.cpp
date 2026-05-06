@@ -71,7 +71,7 @@ const OptionGroup TrackOption =
 
     + Option("maxlength",
              fmt::format("set the maximum length of any track in mm"
-                         " (default: {:.2g} x voxelsize).",
+                         " (default: {} x voxelsize).",
                          Defaults::maxlength_voxels))
       + Argument("value").type_float(0.0)
 

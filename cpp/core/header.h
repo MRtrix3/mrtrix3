@@ -338,7 +338,7 @@ public:
   //! replace existing intensity offset & scale with values supplied
   void set_intensity_scaling(default_type scaling = 1.0, default_type bias = 0.0) {
     if (!std::isfinite(scaling) || !std::isfinite(bias) || scaling == 0.0)
-      WARN("invalid scaling parameters (offset: " + fmt::format("{}, scale: ", bias) + fmt::format("{})", scaling));
+      WARN(fmt::format("invalid scaling parameters (offset: {}, scale: {})", bias, scaling));
     scale_ = scaling;
     offset_ = bias;
   }

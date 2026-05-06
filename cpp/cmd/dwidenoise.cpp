@@ -338,7 +338,7 @@ void run() {
               std::min(e, static_cast<uint32_t>(dwi.size(1))),
               std::min(e, static_cast<uint32_t>(dwi.size(2)))};
   }
-  INFO(fmt::format("selected patch size: {} x {} x {}.", str(extent[0]), str(extent[1]), str(extent[2])));
+  INFO(fmt::format("selected patch size: {} x {} x {}.", extent[0], extent[1], extent[2]));
 
   const Estimator estimator =
       get_option_choice<Estimator>("estimator", Estimator::EXP2); // default: Exp2 (unbiased estimator)

@@ -84,7 +84,7 @@ std::unique_ptr<ImageIO::Base> MRtrix::create(Header &H) const {
     offset += ((4 - (offset % 4)) % 4);
     out << ". " << offset << "\nEND\n";
   } else
-    out << Path::basename(H.name().substr(0, H.name().size() - 4) + ".dat") << "\n";
+    out << Path::basename(fmt::format("{}.dat", H.name().substr(0, H.name().size() - 4))) << "\n";
 
   out.close();
 
@@ -93,7 +93,7 @@ std::unique_ptr<ImageIO::Base> MRtrix::create(Header &H) const {
     File::resize(H.name(), offset + footprint(H));
     io_handler->files.push_back(File::Entry(H.name(), offset));
   } else {
-    std::string data_file(H.name().substr(0, H.name().size() - 4) + ".dat");
+    std::string data_file(fmt::format("{}.dat", H.name().substr(0, H.name().size() - 4)));
     File::create(data_file, footprint(H));
     io_handler->files.push_back(File::Entry(data_file));
   }

@@ -14,12 +14,12 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "file/dicom/element.h"
-#include "debug.h"
-#include "file/path.h"
-
 #include <fmt/format.h>
 #include <iomanip>
+
+#include "debug.h"
+#include "file/dicom/element.h"
+#include "file/path.h"
 
 namespace MR::File::Dicom {
 
@@ -119,7 +119,7 @@ bool Element::read_GR_EL() {
 
   if (group == group_byte_order_swapped) {
     if (!is_BE)
-      throw Exception(fmt::format("invalid DICOM group ID {} in file \"{}\"", str(group), fmap->name()));
+      throw Exception(fmt::format("invalid DICOM group ID {} in file \"{}\"", group, fmap->name()));
 
     is_BE = false;
     group = group_byte_order;
@@ -182,12 +182,12 @@ bool Element::read() {
   else {
     if (size % 2)
       DEBUG(fmt::format("WARNING: odd length ({}){}{}{}{}, {}){}{}",
-                        str(size),                                         //
+                        size,                                              //
                         " used for DICOM tag ",                            //
                         (!tag_name().empty() ? tag_name().substr(2) : ""), //
                         " (",
-                        str(group),
-                        str(element), //
+                        group,
+                        element, //
                         " in file \"",
                         fmap->name()));
     if (VR != VR_SQ) {
@@ -393,7 +393,7 @@ std::string Element::as_string() const {
     case Element::TIME:
       return str(get_time());
     case Element::DATETIME:
-      return str(get_datetime().first) + " " + str(get_datetime().second);
+      return fmt::format("{} {}", get_datetime().first, get_datetime().second);
     case Element::STRING:
       if (group == group_data && element == element_data) {
         return "(data)";
@@ -409,7 +409,7 @@ std::string Element::as_string() const {
         return "unknown data type";
     }
   } catch (Exception &e) {
-    DEBUG(fmt::format("Error converting data at offset {} to {} type: ", str(offset(start)), type_as_str.at(type())));
+    DEBUG(fmt::format("Error converting data at offset {} to {} type: ", offset(start), type_as_str.at(type())));
     for (auto &s : e.description)
       DEBUG(s);
     return "invalid entry";
@@ -430,7 +430,7 @@ void Element::error_in_get(size_t idx) const {
                     printf("%04X %04X ", group, element),        //
                     (name.empty() ? "unknown" : name.substr(2)), //
                     " (at index ",
-                    str(idx))); //
+                    idx)); //
 }
 
 void Element::error_in_check_size(size_t min_size, size_t actual_size) const {
@@ -439,8 +439,8 @@ void Element::error_in_check_size(size_t min_size, size_t actual_size) const {
                               printf("%04X %04X ", group, element),                  //
                               (name.empty() ? "unknown" : name.substr(2)),           //
                               " (expected ",
-                              str(min_size),
-                              str(actual_size))); //
+                              min_size,
+                              actual_size)); //
 }
 
 void Element::report_unknown_tag_with_implicit_syntax() const {

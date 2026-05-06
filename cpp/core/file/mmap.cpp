@@ -132,14 +132,14 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, int64_t mapped_size
       }
 
       if (preload) {
-        CONSOLE("preloading contents of mapped file \"" + Entry::name + "\"...");
+        CONSOLE(fmt::format("preloading contents of mapped file \"{}\"...", Entry::name));
         std::ifstream in(Entry::name.c_str(), std::ios::in | std::ios::binary);
         if (!in)
-          throw Exception("failed to open file \"" + Entry::name + "\": " + strerror(errno));
+          throw Exception(fmt::format("failed to open file \"{}\": {}", Entry::name, strerror(errno)));
         in.seekg(start, in.beg);
         in.read(reinterpret_cast<char *>(first), msize);
         if (!in.good())
-          throw Exception("error preloading contents of file \"" + Entry::name + "\": " + strerror(errno));
+          throw Exception(fmt::format("error preloading contents of file \"{}\": {}", Entry::name, strerror(errno)));
       } else
         memset(first, 0, msize);
       DEBUG(fmt::format(
@@ -207,7 +207,7 @@ MMap::~MMap() {
         if (!out.good())
           throw 1;
       } catch (...) {
-        FAIL("error writing back contents of file \"" + Entry::name + "\": " + strerror(errno));
+        FAIL(fmt::format("error writing back contents of file \"{}\": {}", Entry::name, strerror(errno)));
         App::exit_error_code = 1;
       }
     }

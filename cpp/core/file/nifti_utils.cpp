@@ -84,7 +84,7 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
     is_BE = true;
     if (Raw::fetch_<int32_t>(&NH.sizeof_hdr, is_BE) != sizeof(NH))
       throw Exception(
-          fmt::format("image \"{}\" is not in {} format (sizeof_hdr != {})", H.name(), version, str(sizeof(NH))));
+          fmt::format("image \"{}\" is not in {} format (sizeof_hdr != {})", H.name(), version, sizeof(NH)));
   }
 
   bool is_nifti = true;
@@ -478,9 +478,9 @@ template <class NiftiHeader> void store(NiftiHeader &NH, const Header &H, const 
   Raw::store<float_type>(H.intensity_scale(), &NH.scl_slope, is_BE);
   Raw::store<float_type>(H.intensity_offset(), &NH.scl_inter, is_BE);
 
-  std::string version_string = "MRtrix version: " + App::mrtrix_version;
+  std::string version_string = fmt::format("MRtrix version: {}", App::mrtrix_version);
   if (!App::project_version.empty())
-    version_string += ", project version: " + App::project_version;
+    version_string += fmt::format(", project version: {}", App::project_version);
   strncpy((char *)&NH.descrip, version_string.c_str(), 79); // check_syntax off
   NH.descrip[79] = '\0';
 
@@ -659,7 +659,8 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> read(Header &H) {
     return std::unique_ptr<ImageIO::Base>();
 
   const bool single_file = Path::has_suffix(H.name(), ".nii");
-  const std::string header_path = single_file ? H.name() : H.name().substr(0, H.name().size() - 4) + ".hdr";
+  const std::string header_path =
+      single_file ? H.name() : fmt::format("{}.hdr", H.name().substr(0, H.name().size() - 4));
 
   try {
     File::MMap fmap{MR::File::Entry(header_path)};
@@ -704,7 +705,8 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> create(Header &H) {
     throw Exception(fmt::format("{} format cannot support more than 7 dimensions for image \"{}\"", version, H.name()));
 
   const bool single_file = Path::has_suffix(H.name(), ".nii");
-  const std::string header_path = single_file ? H.name() : H.name().substr(0, H.name().size() - 4) + ".hdr";
+  const std::string header_path =
+      single_file ? H.name() : fmt::format("{}.hdr", H.name().substr(0, H.name().size() - 4));
 
   nifti_header NH;
   store(NH, H, single_file);
@@ -788,7 +790,7 @@ std::string get_json_path(std::string_view nifti_path) {
     json_path = nifti_path.substr(0, nifti_path.size() - 4);
   else
     assert(0);
-  return json_path + ".json";
+  return fmt::format("{}.json", json_path);
 }
 
 } // namespace MR::File::NIfTI

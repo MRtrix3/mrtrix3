@@ -74,9 +74,8 @@ const OptionGroup OutputDimOption = OptionGroup ("Options for the dimensionality
 
 const OptionGroup TWIOption = OptionGroup ("Options for the TWI image contrast properties")
   + Option ("contrast",
-      "define the desired form of contrast for the output image;"
-      " options are: " + join(contrasts, ", ") +
-      " (default: tdi)")
+      fmt::format("define the desired form of contrast for the output image;"
+                  " options are: {} (default: tdi)", join(contrasts, ", ")))
     + Argument ("type").type_choice(contrasts)
   + Option ("image",
       "provide the scalar image map for generating images with 'scalar_map' / 'scalar_map_count' contrast,"
@@ -86,17 +85,15 @@ const OptionGroup TWIOption = OptionGroup ("Options for the TWI image contrast p
       "provide the vector data file for generating images with 'vector_file' contrast")
     + Argument ("path").type_file_in()
   + Option ("stat_vox",
-      "define the statistic for choosing the final voxel intensities for a given contrast type"
-      " given the individual values from the tracks passing through each voxel."
-      " Options are: " + join(voxel_statistics, ", ") +
-      " (default: sum)")
+      fmt::format("define the statistic for choosing the final voxel intensities for a given contrast type"
+                  " given the individual values from the tracks passing through each voxel."
+                  " Options are: {} (default: sum)", join(voxel_statistics, ", ")))
     + Argument ("type").type_choice(voxel_statistics)
   + Option ("stat_tck",
-      "define the statistic for choosing the contribution to be made by each streamline"
-      " as a function of the samples taken along their lengths."
-      " Only has an effect for 'scalar_map', 'fod_amp' and 'curvature' contrast types."
-      " Options are: " + join(track_statistics, ", ") +
-      " (default: mean)")
+      fmt::format("define the statistic for choosing the contribution to be made by each streamline"
+                  " as a function of the samples taken along their lengths."
+                  " Only has an effect for 'scalar_map', 'fod_amp' and 'curvature' contrast types."
+                  " Options are: {} (default: mean)", join(track_statistics, ", ")))
     + Argument ("type").type_choice(track_statistics)
   + Option ("fwhm_tck",
       "when using gaussian-smoothed per-track statistic,"
@@ -251,9 +248,9 @@ DataType determine_datatype(const DataType current_dt,
     return default_dt;
   } else if ((default_dt.is_floating_point() || precise) && !current_dt.is_floating_point()) {
     WARN(fmt::format("Cannot use non-floating-point datatype with {} contrast{}; defaulting to {}",
-                     str(Mapping::contrast_names.at(contrast).description),
+                     Mapping::contrast_names.at(contrast).description,
                      (precise ? " and precise mapping" : ""),
-                     str(default_dt.specifier())));
+                     default_dt.specifier()));
     return default_dt;
   } else {
     return current_dt;
@@ -277,10 +274,7 @@ void run() {
         "voxel size must either be a single isotropic value, or a list of 3 comma-separated voxel dimensions");
 
   if (!voxel_size.empty())
-    INFO(fmt::format("creating image with voxel dimensions [ {} {} {} ]",
-                     str(voxel_size[0]),
-                     str(voxel_size[1]),
-                     str(voxel_size[2])));
+    INFO(fmt::format("creating image with voxel dimensions [ {} {} {} ]", voxel_size[0], voxel_size[1], voxel_size[2]));
 
   Header header;
   auto opt = get_options("template");
@@ -457,7 +451,7 @@ void run() {
       WARN("cannot use upsampling if only streamline endpoints are to be mapped");
     } else {
       upsample_ratio = opt[0][0];
-      INFO(fmt::format("track upsampling ratio manually set to {}", str(upsample_ratio)));
+      INFO(fmt::format("track upsampling ratio manually set to {}", upsample_ratio));
     }
   } else if (!ends_only) {
     // If accurately calculating the length through each voxel traversed, need a higher upsampling ratio
@@ -465,7 +459,7 @@ void run() {
     // For all other applications, making the upsampled step size about 1/3rd of a voxel seems sufficient
     try {
       upsample_ratio = determine_upsample_ratio(header, properties, (precise ? 0.1 : 0.333));
-      INFO(fmt::format("track upsampling ratio automatically set to {}", str(upsample_ratio)));
+      INFO(fmt::format("track upsampling ratio automatically set to {}", upsample_ratio));
     } catch (Exception &e) {
       e.push_back("Try using -upsample option to explicitly set the streamline upsampling ratio;");
       e.push_back("generally recommend a value of around (3 x step_size / voxel_size)");
@@ -481,9 +475,8 @@ void run() {
   opt = get_options("datatype");
   if (!opt.empty()) {
     if (writer_type == writer_dim::DEC || writer_type == writer_dim::TOD) {
-      WARN(fmt::format("Can't manually set datatype for {} processing;{}",
-                       str(Mapping::output_dimension_names.at(writer_type)), //
-                       " overriding to Float32"));
+      WARN(fmt::format("Can't manually set datatype for {} processing; overriding to Float32",
+                       Mapping::output_dimension_names.at(writer_type)));
     } else {
       header.datatype() = DataType::parse(opt[0][0]);
     }
@@ -510,16 +503,17 @@ void run() {
     header.keyval()["map_zero"] = "1";
 
   // Produce a useful INFO message
-  std::string msg = "Generating " + Mapping::output_dimension_names.at(writer_type) + " image" + " with " +
-                    Mapping::contrast_names.at(contrast).description + " contrast";
+  std::string msg = fmt::format("Generating {} image with {} contrast",
+                                Mapping::output_dimension_names.at(writer_type),
+                                Mapping::contrast_names.at(contrast).description);
   if (contrast == contrast_t::SCALAR_MAP || contrast == contrast_t::SCALAR_MAP_COUNT ||
       contrast == contrast_t::FOD_AMP || contrast == contrast_t::CURVATURE)
     msg += ", ";
   else
-    msg += " and " + Mapping::voxel_statistic_names.at(stat_vox) + " per-voxel statistic";
+    msg += fmt::format(" and {} per-voxel statistic", Mapping::voxel_statistic_names.at(stat_vox));
   if (contrast == contrast_t::SCALAR_MAP || contrast == contrast_t::SCALAR_MAP_COUNT ||
       contrast == contrast_t::FOD_AMP || contrast == contrast_t::CURVATURE) {
-    msg += " and " + Mapping::track_statistic_names.at(stat_tck).description + " per-track statistic";
+    msg += fmt::format(" and {} per-track statistic", Mapping::track_statistic_names.at(stat_tck).description);
   }
   INFO(msg);
 

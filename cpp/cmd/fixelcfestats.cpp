@@ -241,9 +241,9 @@ void run() {
     }
     CONSOLE(fmt::format("Number of fixels in post-hoc analysis mask: {}", mask_infer_fixels));
     if (mask_mismatch_count > Fixel::index_type(0)) {
-      WARN("There are " + str(mask_mismatch_count) +
-           " fixels in the post-hoc mask that are absent from the processing mask; "
-           "post-hoc inference cannot and will not be performed in those fixels");
+      WARN(fmt::format("There are {} fixels in the post-hoc mask that are absent from the processing mask; "
+                       "post-hoc inference cannot and will not be performed in those fixels",
+                       mask_mismatch_count));
     }
   } else {
     mask_inference_image = Image<bool>::scratch(mask_header, "scratch fixel inference mask");
@@ -338,11 +338,11 @@ void run() {
       ++num_unconnected_fixels;
   }
   if (num_unconnected_fixels) {
-    WARN("A total of " + str(num_unconnected_fixels) + " fixels " +
-         (mask_proc_fixels == num_fixels ? "" : "in the provided mask ") +
-         "do not possess any streamlines-based connectivity; "
-         "these will not be enhanced by CFE, and hence cannot be "
-         "tested for statistical significance");
+    WARN(fmt::format("A total of {} fixels {}do not possess any streamlines-based connectivity; "
+                     "these will not be enhanced by CFE, and hence cannot be "
+                     "tested for statistical significance",
+                     num_unconnected_fixels,
+                     mask_proc_fixels == num_fixels ? "" : "in the provided mask "));
   }
 
   Header output_header(dynamic_cast<SubjectFixelImport *>(importer[0].get())->header());
@@ -380,7 +380,7 @@ void run() {
 
   // Only add contrast matrix row number to image outputs if there's more than one hypothesis
   auto postfix = [&](const Math::Stats::index_type i) -> std::string {
-    return (num_hypotheses > 1) ? ("_" + hypotheses[i].name()) : "";
+    return (num_hypotheses > 1) ? fmt::format("_{}", hypotheses[i].name()) : "";
   };
 
   {
@@ -400,7 +400,7 @@ void run() {
                          num_factors + (2 * num_hypotheses) + num_vgs + (variable_design_matrix ? 1 : 0));
 
     for (Math::Stats::index_type i = 0; i != num_factors; ++i) {
-      write_fixel_output(Path::join(output_fixel_directory, "beta" + str(i) + ".mif"),
+      write_fixel_output(Path::join(output_fixel_directory, fmt::format("beta{}.mif", i)),
                          betas.row(i),
                          mask_processing_image,
                          output_header);
@@ -408,13 +408,13 @@ void run() {
     }
     for (Math::Stats::index_type i = 0; i != num_hypotheses; ++i) {
       if (!hypotheses[i].is_F()) {
-        write_fixel_output(Path::join(output_fixel_directory, "abs_effect" + postfix(i) + ".mif"),
+        write_fixel_output(Path::join(output_fixel_directory, fmt::format("abs_effect{}.mif", postfix(i))),
                            abs_effect_size.col(i),
                            mask_processing_image,
                            output_header);
         ++progress;
         if (num_vgs == 1)
-          write_fixel_output(Path::join(output_fixel_directory, "std_effect" + postfix(i) + ".mif"),
+          write_fixel_output(Path::join(output_fixel_directory, fmt::format("std_effect{}.mif", postfix(i))),
                              std_effect_size.col(i),
                              mask_processing_image,
                              output_header);
@@ -432,7 +432,7 @@ void run() {
           Path::join(output_fixel_directory, "std_dev.mif"), stdev.row(0), mask_processing_image, output_header);
     } else {
       for (Math::Stats::index_type i = 0; i != num_vgs; ++i) {
-        write_fixel_output(Path::join(output_fixel_directory, "std_dev" + str(i) + ".mif"),
+        write_fixel_output(Path::join(output_fixel_directory, fmt::format("std_dev{}.mif", i)),
                            stdev.row(i),
                            mask_processing_image,
                            output_header);
@@ -468,7 +468,7 @@ void run() {
     Stats::PermTest::precompute_empirical_stat(glm_test, cfe_integrator, empirical_skew, empirical_cfe_statistic);
     output_header.keyval()["nonstationarity_adjustment"] = str(true);
     for (Math::Stats::index_type i = 0; i != num_hypotheses; ++i)
-      write_fixel_output(Path::join(output_fixel_directory, "cfe_empirical" + postfix(i) + ".mif"),
+      write_fixel_output(Path::join(output_fixel_directory, fmt::format("cfe_empirical{}.mif", postfix(i))),
                          empirical_cfe_statistic.col(i),
                          mask_processing_image,
                          output_header);
@@ -482,16 +482,15 @@ void run() {
       glm_test, cfe_integrator, empirical_cfe_statistic, default_statistic, default_zstat, default_enhanced);
   for (Math::Stats::index_type i = 0; i != num_hypotheses; ++i) {
     write_fixel_output(
-        Path::join(output_fixel_directory,
-                   (hypotheses[i].is_F() ? std::string("F") : std::string("t")) + "value" + postfix(i) + ".mif"),
+        Path::join(output_fixel_directory, fmt::format("{}value{}.mif", hypotheses[i].is_F() ? "F" : "t", postfix(i))),
         default_statistic.col(i),
         mask_processing_image,
         output_header);
-    write_fixel_output(Path::join(output_fixel_directory, "Zstat" + postfix(i) + ".mif"),
+    write_fixel_output(Path::join(output_fixel_directory, fmt::format("Zstat{}.mif", postfix(i))),
                        default_zstat.col(i),
                        mask_processing_image,
                        output_header);
-    write_fixel_output(Path::join(output_fixel_directory, "cfe" + postfix(i) + ".mif"),
+    write_fixel_output(Path::join(output_fixel_directory, fmt::format("cfe{}.mif", postfix(i))),
                        default_enhanced.col(i),
                        mask_processing_image,
                        output_header);
@@ -536,7 +535,7 @@ void run() {
     } else {
       for (Math::Stats::index_type i = 0; i != num_hypotheses; ++i) {
         File::Matrix::save_vector(null_distribution.col(i),
-                                  Path::join(output_fixel_directory, "null_dist" + postfix(i) + ".txt"));
+                                  Path::join(output_fixel_directory, fmt::format("null_dist{}.txt", postfix(i))));
         ++progress;
       }
     }
@@ -544,17 +543,17 @@ void run() {
     const matrix_type pvalue_output = MR::Math::Stats::fwe_pvalue(null_distribution, default_enhanced, mask_inference);
     ++progress;
     for (Math::Stats::index_type i = 0; i != num_hypotheses; ++i) {
-      write_fixel_output(Path::join(output_fixel_directory, "fwe_1mpvalue" + postfix(i) + ".mif"),
+      write_fixel_output(Path::join(output_fixel_directory, fmt::format("fwe_1mpvalue{}.mif", postfix(i))),
                          pvalue_output.col(i),
                          mask_inference_image,
                          output_header);
       ++progress;
-      write_fixel_output(Path::join(output_fixel_directory, "uncorrected_1mpvalue" + postfix(i) + ".mif"),
+      write_fixel_output(Path::join(output_fixel_directory, fmt::format("uncorrected_1mpvalue{}.mif", postfix(i))),
                          uncorrected_pvalues.col(i),
                          mask_inference_image,
                          output_header);
       ++progress;
-      write_fixel_output(Path::join(output_fixel_directory, "null_contributions" + postfix(i) + ".mif"),
+      write_fixel_output(Path::join(output_fixel_directory, fmt::format("null_contributions{}.mif", postfix(i))),
                          null_contributions.col(i),
                          mask_inference_image,
                          output_header);

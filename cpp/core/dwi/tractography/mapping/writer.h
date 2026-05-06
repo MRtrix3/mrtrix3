@@ -88,7 +88,7 @@ public:
             const vox_stat_t voxel_statistic = vox_stat_t::SUM,
             const writer_dim type = writer_dim::GREYSCALE)
       : MapWriterBase(header, name, voxel_statistic, type),
-        buffer(Image<value_type>::scratch(header, fmt::format("TWI {}", output_dimension_names.at(type)) + " buffer")) {
+        buffer(Image<value_type>::scratch(header, fmt::format("TWI {} buffer", output_dimension_names.at(type)))) {
     auto loop = Loop(buffer);
     if (type == writer_dim::DEC || type == writer_dim::TOD) {
 

@@ -15,10 +15,11 @@
  */
 
 #include "registration/transform/convergence_check.h"
-#include "debug.h"
-#include "fmt.h"
+
 #include <fmt/format.h>
 
+#include "debug.h"
+#include "eigen_plugins/fmt.h"
 namespace MR {
 using namespace MR::Math;
 
@@ -45,8 +46,8 @@ bool DoubleExpSmoothSlopeCheck::go_on(const Eigen::Matrix<default_type, Eigen::D
   // add smoothed elements
   ds.emplace_back(alpha * element + (1.0 - alpha) * (ds.back() + db.back()));
   db.emplace_back(beta * (ds.at(len) - ds.at(len - 1)) + (1.0 - beta) * db.at(len - 1));
-  DEBUG(fmt::format("Smooth check b: {}", str(db.back().transpose())));
-  DEBUG(fmt::format("Smooth check t: {}", str(thresh.transpose())));
+  DEBUG(fmt::format("Smooth check b: {}", db.back()));
+  DEBUG(fmt::format("Smooth check t: {}", thresh));
   if (check_all(db.back()))
     ++stop_cnt;
   else
@@ -108,7 +109,7 @@ void DoubleExpSmoothSlopeCheck::debug(const Eigen::Matrix<default_type, Eigen::D
 
   std::cout << fmt::format("#b {}", db.back()) << std::endl;
   std::cout << fmt::format("#s {}", ds.back()) << std::endl;
-  DEBUG(fmt::format("bmax : {}", str(db.back().array().abs().maxCoeff())));
+  DEBUG(fmt::format("bmax : {}", db.back().array().abs().maxCoeff()));
 }
 //! @}
 } // namespace Registration::Transform

@@ -116,11 +116,10 @@ void usage () {
     + Argument ("size").type_sequence_float()
 
   + Option ("stat_vox",
-      "define the statistic for choosing the final voxel intensities"
-      " for a given contrast type given the individual values"
-      " from the tracks passing through each voxel;"
-      " options are: " + join(voxel_statistics, ", ") +
-      " (default: mean)")
+      fmt::format("define the statistic for choosing the final voxel intensities"
+                  " for a given contrast type given the individual values"
+                  " from the tracks passing through each voxel;"
+                  " options are: {} (default: mean)", join(voxel_statistics, ", ")))
     + Argument ("type").type_choice(voxel_statistics)
 
   + OptionGroup ("Other options for affecting the streamline sampling & mapping behaviour")
@@ -338,11 +337,11 @@ void run() {
   opt = get_options("upsample");
   if (!opt.empty()) {
     upsample_ratio = opt[0][0];
-    INFO(fmt::format("track interpolation factor manually set to {}", str(upsample_ratio)));
+    INFO(fmt::format("track interpolation factor manually set to {}", upsample_ratio));
   } else {
     try {
       upsample_ratio = determine_upsample_ratio(header, properties, maximum_ratio_stepsize_voxelsize);
-      INFO(fmt::format("track interpolation factor automatically set to {}", str(upsample_ratio)));
+      INFO(fmt::format("track interpolation factor automatically set to {}", upsample_ratio));
     } catch (Exception &e) {
       e.push_back("Try using -upsample option to explicitly set the streamline upsampling ratio;");
       e.push_back("generally recommend a value of around (3 x step_size / voxel_size)");

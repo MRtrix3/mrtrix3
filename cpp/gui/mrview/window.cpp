@@ -21,7 +21,6 @@
 #include "dialog/opengl.h"
 #include "dialog/progress.h"
 #include "file/config.h"
-#include "fmt.h"
 #include "header.h"
 #include "mrview/mode/base.h"
 #include "mrview/mode/list.h"
@@ -1656,7 +1655,6 @@ void Window::process_commandline_option() {
     // see whether option is claimed by any tools:
     size_t tool_id = 0;
     std::string stub;
-#include "fmt.h"
 #include "mrview/tool/list.h"
 
     // process general options:

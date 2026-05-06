@@ -42,7 +42,7 @@ public:
     try {
       close();
     } catch (...) {
-      FAIL(fmt::format("error closing GZ file \"{}\": ", filename) + error());
+      FAIL(fmt::format("error closing GZ file \"{}\": {}", filename, error()));
       App::exit_error_code = 1;
     }
   }

@@ -335,8 +335,8 @@ void Window::set_values(int row) {
     if (is_response)
       title += " (response)";
     if (values.rows() > 1) {
-      title += " [ " + fmt::format("{}/", current + 1) + str(values.rows()) + " ]";
-      render_frame->set_text("row " + fmt::format("{} of ", current + 1) + str(values.rows()));
+      title += fmt::format(" [ {}/{} ]", current + 1, values.rows());
+      render_frame->set_text(fmt::format("row {} of {}", current + 1, values.rows()));
     } else {
       render_frame->set_text("");
     }

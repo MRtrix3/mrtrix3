@@ -119,7 +119,7 @@ void CohortDataImport::initialise(std::string_view listpath, std::string_view ex
   {
     std::ifstream ifs(std::string(listpath).c_str());
     if (!ifs)
-      throw Exception(fmt::format("Unable to open subject file list \"{}", std::string(listpath)) + "\"");
+      throw Exception(fmt::format("Unable to open subject file list \"{}\"", listpath));
     std::string line;
     while (getline(ifs, line)) {
       const size_t p = line.find_last_not_of(" \t");
@@ -145,12 +145,12 @@ void CohortDataImport::initialise(std::string_view listpath, std::string_view ex
       for (const auto &line : lines) {
         const std::string full_path = Path::join(directory, line);
         if (!Path::is_file(full_path))
-          throw Exception("File \"" + full_path + "\" not found");
+          throw Exception(fmt::format("File \"{}\" not found", full_path));
       }
       load_from_dir = directory;
       break;
     } catch (Exception &e) {
-      e_nosuccess.push_back("If loading relative to directory \"" + directory + "\": ");
+      e_nosuccess.push_back(fmt::format("If loading relative to directory \"{}\": ", directory));
       e_nosuccess.push_back(e);
     }
   }
@@ -158,8 +158,10 @@ void CohortDataImport::initialise(std::string_view listpath, std::string_view ex
   if (load_from_dir.empty())
     throw e_nosuccess;
 
-  ProgressBar progress("Configuring data import from files listed in \"" + Path::basename(listpath) +
-                       "\" as found relative to directory \"" + load_from_dir + "\"");
+  ProgressBar progress(fmt::format("Configuring data import from files listed in \"{}\""
+                                   " as found relative to directory \"{}\"",
+                                   Path::basename(listpath),
+                                   load_from_dir));
 
   for (const auto &line : lines) {
     try {

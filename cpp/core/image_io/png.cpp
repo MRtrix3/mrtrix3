@@ -45,14 +45,19 @@ void PNG::load(const Header &header, size_t) {
           png.get_output_bitdepth() != static_cast<int>(header.datatype().bits()) ||
           ((header.ndim() > 3 && png.get_channels() != header.size(3)) ||
            (header.ndim() <= 3 && png.get_channels() > 1))) {
-        Exception e("Inconsistent image properties within series \"" + header.name() + "\"");
-        e.push_back(fmt::format("Series: {}", header.size(0)) + fmt::format("x{}", header.size(1)) +
-                    fmt::format(" x {}", header.datatype().bits()) + " bits, " +
-                    (header.ndim() > 3 ? str(header.size(3)) : "1") + " volumes");
-        e.push_back("File \"" + files[i].name + fmt::format(": {}", png.get_width()) +
-                    fmt::format("x{}", png.get_height()) + fmt::format(" x {}", png.get_bitdepth()) +
-                    fmt::format("(->{}", png.get_output_bitdepth()) + fmt::format(") bits, {}", png.get_channels()) +
-                    " channels");
+        Exception e(fmt::format("Inconsistent image properties within series \"{}\"", header.name()));
+        e.push_back(fmt::format("Series: {}x{} x {} bits, {} volumes",
+                                header.size(0),
+                                header.size(1),
+                                header.datatype().bits(),
+                                header.ndim() > 3 ? header.size(3) : 1));
+        e.push_back(fmt::format("File \"{}: {}x{} x {}(->{}) bits, {} channels",
+                                files[i].name,
+                                png.get_width(),
+                                png.get_height(),
+                                png.get_bitdepth(),
+                                png.get_output_bitdepth(),
+                                png.get_channels()));
         throw e;
       }
       png.load(addresses[0].get() + (i * slice_bytes));

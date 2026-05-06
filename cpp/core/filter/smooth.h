@@ -150,7 +150,7 @@ public:
             continue;
           axes[axdim++] = stride_order[i];
         }
-        DEBUG("smoothing dimension " + fmt::format("{} in place with stride order: ", dim) + str(axes));
+        DEBUG(fmt::format("smoothing dimension {} in place with stride order: {}", dim, axes));
         SmoothFunctor1D<ImageType> smooth(in_and_output, stdev[dim], dim, extent[dim], zero_boundary);
         ThreadedLoop(in_and_output, axes, std::min<size_t>(2, axes.size())).run(smooth, in_and_output);
         if (progress)

@@ -22,7 +22,6 @@
 #include <iostream>
 
 #include "debug.h"
-#include "fmt.h"
 #include "image.h"
 #include "progressbar.h"
 #include "types.h"

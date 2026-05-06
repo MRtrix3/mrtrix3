@@ -72,7 +72,7 @@ public:
     calculate_median_mad<Image<float>, Image<bool>>(input, int_roi, cnt, median, mad);
     INFO(fmt::format("median: {}", median));
     INFO(fmt::format("mad: {}", mad));
-    INFO("lower: " + fmt::format("{} upper: ", median - zlower * mad) + str(median + zupper * mad));
+    INFO(fmt::format("lower: {} upper: {}", median - zlower * mad, median + zupper * mad));
 
     INFO("eroding intensity mask");
     while (cnt >= cnt_lower) {
@@ -147,9 +147,9 @@ public:
         calculate_median_mad<Image<float>, Image<bool>>(input, int_roi, cnt, median, mad);
         upper = median + zupper * mad;
         lower = median - zlower * mad;
-        INFO("median: " + fmt::format("{}, changed: ", median) + str((median - previous_median)));
-        INFO("mad: " + fmt::format("{}, changed: ", mad) + str((mad - previous_mad)));
-        INFO("lower: " + fmt::format("{} upper: ", lower) + str(upper));
+        INFO(fmt::format("median: {}, changed: {}", median, median - previous_median));
+        INFO(fmt::format("mad: {}, changed: {}", mad, mad - previous_mad));
+        INFO(fmt::format("lower: {} upper: {}", lower, upper));
         float change = MR::abs(median - previous_median) / previous_mad;
         INFO(fmt::format("convergence: {}", change));
         if (change < 1e-2)

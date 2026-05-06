@@ -18,7 +18,7 @@
 
 #include <fmt/format.h>
 
-#include "fmt.h"
+#include "eigen_plugins/fmt.h"
 
 namespace MR::Registration::Transform {
 

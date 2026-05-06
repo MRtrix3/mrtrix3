@@ -55,7 +55,7 @@ void MeshMulti::load(std::string_view path) {
     std::string data(line.substr(divider + 1, line.npos));
     if (prefix == "v") {
       if (index < 0)
-        throw Exception(fmt::format("Malformed OBJ file: vertex outside object (line {})", str(counter)));
+        throw Exception(fmt::format("Malformed OBJ file: vertex outside object (line {})", counter));
       std::array<float, 4> values{};
       sscanf(data.c_str(), "%f %f %f %f", &values[0], &values[1], &values[2], &values[3]);
       vertices.push_back(Vertex(values[0], values[1], values[2]));
@@ -69,7 +69,7 @@ void MeshMulti::load(std::string_view path) {
     } else if (prefix == "vp") {
     } else if (prefix == "f") {
       if (index < 0)
-        throw Exception(fmt::format("Malformed OBJ file: face outside object (line {})", str(counter)));
+        throw Exception(fmt::format("Malformed OBJ file: face outside object (line {})", counter));
       std::vector<std::string> elements;
       do {
         const size_t first_space = data.find_first_of(' ');

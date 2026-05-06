@@ -391,3 +391,28 @@ template <typename T> inline std::string join(const std::vector<T> &V, std::stri
 std::string join(const char *const *null_terminated_array, std::string_view delimiter); // check_syntax off
 
 } // namespace MR
+
+namespace fmt {
+template <typename RealType> struct formatter<std::complex<RealType>> {
+  constexpr auto parse(format_parse_context &ctx) { return ctx.begin(); }
+  template <typename FormatContext> auto format(const std::complex<RealType> &value, FormatContext &ctx) const {
+    // TODO Need to query precision
+    // TODO If all commands were better templated between real and complex types,
+    //   would no longer need to obscure zeroed imaginary components from complex data
+    std::ostringstream stream;
+    stream << value.real();
+    if (value.imag() != RealType(0))
+      stream << std::showpos << value.imag() << "i";
+    if (stream.fail())
+      throw MR::Exception("error converting complex floating-point value to string");
+    return format_to(ctx.out(), stream.str());
+  }
+};
+template <typename ValueType> struct formatter<std::atomic<ValueType>> {
+  constexpr auto parse(format_parse_context &ctx) { return ctx.begin(); }
+  template <typename FormatContext> auto format(const std::atomic<ValueType> &value, FormatContext &ctx) const {
+    // TODO Extract and propagate precision
+    return format_to(ctx.out(), MR::str(value.load(std::memory_order_seq_cst)));
+  }
+};
+} // namespace fmt

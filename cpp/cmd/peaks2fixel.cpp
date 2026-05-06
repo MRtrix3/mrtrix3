@@ -81,12 +81,11 @@ void run() {
         all_unit_norm = false;
     }
   }
-  INFO(fmt::format("Number of fixels in input peaks image: {}", str(nfixels)));
+  INFO(fmt::format("Number of fixels in input peaks image: {}", nfixels));
   if (all_unit_norm) {
     if (!dataname.empty()) {
-      WARN(fmt::format("{}{}{}\" will likely contain only ones",
-                       "Input peaks image appears to not include amplitude information;", //
-                       " requested data file \"",
+      WARN(fmt::format("Input peaks image appears to not include amplitude information;"
+                       " requested data file \"{}\" will likely contain only ones",
                        dataname));
     } else {
       INFO("All peaks have unit norm;"
@@ -94,10 +93,9 @@ void run() {
     }
   } else if (dataname.empty()) {
     dataname = "amplitudes.mif";
-    INFO(fmt::format("{}{}{}\"",
-                     "Peaks have variable amplitudes;", //
-                     " will create additional fixel data file \"",
-                     dataname)); //
+    INFO(fmt::format("Peaks have variable amplitudes;"
+                     " will create additional fixel data file \"{}\"",
+                     dataname));
   }
 
   Fixel::check_fixel_directory(argument[1], true, true);

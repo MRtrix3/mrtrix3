@@ -17,7 +17,6 @@
 #include "command.h"
 #include "datatype.h"
 #include "file/matrix.h"
-#include "fmt.h"
 #include "progressbar.h"
 #include <fmt/format.h>
 

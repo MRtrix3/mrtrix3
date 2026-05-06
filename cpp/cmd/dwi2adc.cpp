@@ -72,8 +72,7 @@ void usage ()
       + Argument("fraction").type_image_out()
       + Argument("diffusivity").type_image_out()
 
-    + Option ("cutoff", "minimum b-value for ADC estimation in IVIM fit "
-                        "(default = " + fmt::format("{} s/mm^2).", ivim_cutoff_default))
+    + Option ("cutoff", fmt::format("minimum b-value for ADC estimation in IVIM fit (default = {} s/mm^2).", ivim_cutoff_default))
     +   Argument ("bval").type_float (0.0, 1000.0)
 
     + DWI::GradImportOptions();
@@ -188,7 +187,7 @@ void run() {
   size_t dwi_axis = 3;
   while (H_in.size(dwi_axis) < 2)
     ++dwi_axis;
-  INFO(fmt::format("assuming DW images are stored along axis {}", str(dwi_axis)));
+  INFO(fmt::format("assuming DW images are stored along axis {}", dwi_axis));
 
   Header H_out(H_in);
   H_out.datatype() = DataType::Float32;

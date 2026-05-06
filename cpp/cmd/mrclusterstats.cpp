@@ -327,7 +327,9 @@ void run() {
   const std::string prefix(argument[3]);
 
   // Only add contrast matrix row number to image outputs if there's more than one hypothesis
-  auto postfix = [&](const index_type i) { return (num_hypotheses > 1) ? ("_" + hypotheses[i].name()) : ""; };
+  auto postfix = [&](const index_type i) -> std::string {
+    return (num_hypotheses > 1) ? fmt::format("_{}", hypotheses[i].name()) : "";
+  };
 
   {
     matrix_type betas(num_factors, num_voxels);
@@ -345,29 +347,31 @@ void run() {
     ProgressBar progress("Outputting beta coefficients, effect size and standard deviation",
                          num_factors + (2 * num_hypotheses) + num_vgs + (variable_design_matrix ? 1 : 0));
     for (index_type i = 0; i != num_factors; ++i) {
-      write_output(betas.row(i), *v2v, prefix + "beta" + fmt::format("{}.mif", i), output_header);
+      write_output(betas.row(i), *v2v, fmt::format("{}beta{}.mif", prefix, i), output_header);
       ++progress;
     }
     for (index_type i = 0; i != num_hypotheses; ++i) {
       if (!hypotheses[i].is_F()) {
-        write_output(abs_effect_size.col(i), *v2v, prefix + "abs_effect" + postfix(i) + ".mif", output_header);
+        write_output(
+            abs_effect_size.col(i), *v2v, fmt::format("{}abs_effect{}.mif", prefix, postfix(i)), output_header);
         ++progress;
         if (num_vgs == 1)
-          write_output(std_effect_size.col(i), *v2v, prefix + "std_effect" + postfix(i) + ".mif", output_header);
+          write_output(
+              std_effect_size.col(i), *v2v, fmt::format("{}std_effect{}.mif", prefix, postfix(i)), output_header);
       } else {
         ++progress;
       }
       ++progress;
     }
     if (variable_design_matrix) {
-      write_output(cond, *v2v, prefix + "cond.mif", output_header);
+      write_output(cond, *v2v, fmt::format("{}cond.mif", prefix), output_header);
       ++progress;
     }
     if (num_vgs == 1) {
-      write_output(stdev.row(0), *v2v, prefix + "std_dev.mif", output_header);
+      write_output(stdev.row(0), *v2v, fmt::format("{}std_dev.mif", prefix), output_header);
     } else {
       for (index_type i = 0; i != num_vgs; ++i) {
-        write_output(stdev.row(i), *v2v, prefix + "std_dev" + fmt::format("{}.mif", i), output_header);
+        write_output(stdev.row(i), *v2v, fmt::format("{}std_dev{}.mif", prefix, i), output_header);
         ++progress;
       }
     }
@@ -404,8 +408,10 @@ void run() {
       throw Exception("Nonstationarity adjustment is not currently implemented for threshold-based cluster analysis");
     Stats::PermTest::precompute_empirical_stat(glm_test, enhancer, empirical_skew, empirical_enhanced_statistic);
     for (index_type i = 0; i != num_hypotheses; ++i)
-      write_output(
-          empirical_enhanced_statistic.col(i), *v2v, prefix + "empirical" + postfix(i) + ".mif", output_header);
+      write_output(empirical_enhanced_statistic.col(i),
+                   *v2v,
+                   fmt::format("{}empirical{}.mif", prefix, postfix(i)),
+                   output_header);
   }
 
   // Precompute statistic value and enhanced statistic for the default permutation
@@ -415,12 +421,12 @@ void run() {
   for (index_type i = 0; i != num_hypotheses; ++i) {
     write_output(default_statistic.col(i),
                  *v2v,
-                 prefix + (hypotheses[i].is_F() ? "F" : "t") + "value" + postfix(i) + ".mif",
+                 fmt::format("{}{}value{}.mif", prefix, hypotheses[i].is_F() ? "F" : "t", postfix(i)),
                  output_header);
-    write_output(default_zstat.col(i), *v2v, prefix + "Zstat" + postfix(i) + ".mif", output_header);
+    write_output(default_zstat.col(i), *v2v, fmt::format("{}Zstat{}.mif", prefix, postfix(i)), output_header);
     write_output(default_enhanced.col(i),
                  *v2v,
-                 prefix + (use_tfce ? "tfce" : "clustersize") + postfix(i) + ".mif",
+                 fmt::format("{}{}{}.mif", prefix, use_tfce ? "tfce" : "clustersize", postfix(i)),
                  output_header);
   }
 
@@ -447,11 +453,11 @@ void run() {
     ProgressBar progress("Outputting final results", (fwe_strong ? 1 : num_hypotheses) + 1 + 3 * num_hypotheses);
 
     if (fwe_strong) {
-      File::Matrix::save_vector(null_distribution.col(0), prefix + "null_dist.txt");
+      File::Matrix::save_vector(null_distribution.col(0), fmt::format("{}null_dist.txt", prefix));
       ++progress;
     } else {
       for (index_type i = 0; i != num_hypotheses; ++i) {
-        File::Matrix::save_vector(null_distribution.col(i), prefix + "null_dist" + postfix(i) + ".txt");
+        File::Matrix::save_vector(null_distribution.col(i), fmt::format("{}null_dist{}.txt", prefix, postfix(i)));
         ++progress;
       }
     }
@@ -463,19 +469,19 @@ void run() {
       write_output(fwe_pvalue_output.col(i),
                    *v2v,
                    mask_inference_image,
-                   prefix + "fwe_1mpvalue" + postfix(i) + ".mif",
+                   fmt::format("{}fwe_1mpvalue{}.mif", prefix, postfix(i)),
                    output_header);
       ++progress;
       write_output(uncorrected_pvalue.col(i),
                    *v2v,
                    mask_inference_image,
-                   prefix + "uncorrected_1mpvalue" + postfix(i) + ".mif",
+                   fmt::format("{}uncorrected_1mpvalue{}.mif", prefix, postfix(i)),
                    output_header);
       ++progress;
       write_output(null_contributions.col(i),
                    *v2v,
                    mask_inference_image,
-                   prefix + "null_contributions" + postfix(i) + ".mif",
+                   fmt::format("{}null_contributions{}.mif", prefix, postfix(i)),
                    output_header);
       ++progress;
     }

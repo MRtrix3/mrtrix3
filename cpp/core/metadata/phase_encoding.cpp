@@ -211,7 +211,7 @@ scheme_type get_scheme(const Header &header) {
   if (result.cols() < 3)
     throw Exception("unexpected phase encoding table matrix dimensions");
 
-  INFO(fmt::format("found {}x{} phase encoding table", str(result.rows()), str(result.cols())));
+  INFO(fmt::format("found {}x{} phase encoding table", result.rows(), result.cols()));
 
   return result;
 }

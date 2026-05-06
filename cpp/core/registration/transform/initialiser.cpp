@@ -14,10 +14,12 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "registration/transform/initialiser.h"
-#include "registration/multi_contrast.h"
-#include "registration/transform/initialiser_helpers.h"
 #include <fmt/format.h>
+
+#include "eigen_plugins/fmt.h"
+#include "registration/multi_contrast.h"
+#include "registration/transform/initialiser.h"
+#include "registration/transform/initialiser_helpers.h"
 
 namespace MR::Registration::Transform::Init {
 void set_centre_via_mass(Image<default_type> &im1,
@@ -40,8 +42,8 @@ void set_centre_via_mass(Image<default_type> &im1,
   transform.transform_half_inverse(im1_centre_mass_transformed, im1_centre_mass);
   transform.transform_half(im2_centre_mass_transformed, im2_centre_mass);
 
-  Eigen::Vector3d centre = (im1_centre_mass + im2_centre_mass) * 0.5;
-  DEBUG(fmt::format("centre: {}", str(centre.transpose())));
+  const Eigen::Vector3d centre = (im1_centre_mass + im2_centre_mass) * 0.5;
+  DEBUG(fmt::format("centre: {}", centre));
   transform.set_centre_without_transform_update(centre);
 }
 
@@ -60,7 +62,7 @@ void set_centre_via_image_centres(const Image<default_type> &im1,
   get_geometric_centre(im2, im2_centre_scanner);
 
   Eigen::Vector3d centre = (im1_centre_scanner + im2_centre_scanner) / 2.0;
-  DEBUG(fmt::format("centre: {}", str(centre.transpose())));
+  DEBUG(fmt::format("centre: {}", centre.transpose()));
   transform.set_centre_without_transform_update(centre);
 }
 

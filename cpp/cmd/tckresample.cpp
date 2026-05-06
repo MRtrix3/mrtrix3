@@ -92,8 +92,8 @@ public:
 
   bool operator()(const Streamline<value_type> &tck) {
     auto progress_message = [&]() {
-      return "resampling streamlines (count: " + fmt::format("{}, skipped: ", writer.count) +
-             fmt::format("{})", writer.total_count - writer.count);
+      return fmt::format(
+          "resampling streamlines (count: {}, skipped: {})", writer.count, writer.total_count - writer.count);
     };
     writer(tck);
     progress.set_text(progress_message());

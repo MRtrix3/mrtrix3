@@ -42,7 +42,7 @@ public:
       num = Raw::fetch_LE<uint32_t>(start + 8);
       const uint32_t unused2 = Raw::fetch_LE<uint32_t>(start + 12);
       if (unused2 != 77)
-        DEBUG("CSA2 \'unused2\' integer field contains " + fmt::format("{}; expected 77", unused2));
+        DEBUG(fmt::format("CSA2 'unused2' integer field contains {}; expected 77", unused2));
       next = start + 16;
     }
   }
@@ -63,7 +63,7 @@ public:
     nitems = Raw::fetch_LE<uint32_t>(start + 76);
     const int32_t xx = Raw::fetch_LE<int32_t>(start + 80);
     if (!(xx == 77 || xx == 205))
-      DEBUG("CSA tag \'xx\' integer field contains " + fmt::format("{}; expected 77 or 205", xx));
+      DEBUG(fmt::format("CSA tag 'xx' integer field contains {}; expected 77 or 205", xx));
     if (print)
       fprintf(stdout, "    [CSA] %s: ", name.c_str());
     next = start + 84;
@@ -140,7 +140,7 @@ public:
   }
 
   friend std::ostream &operator<<(std::ostream &stream, const CSAEntry &item) {
-    stream << "[CSA] " << item.name << " (" + fmt::format("{} items):", item.nitems);
+    stream << "[CSA] " << item.name << " " << fmt::format("({} items):", item.nitems);
     const uint8_t *next = item.start + 84;
 
     for (uint32_t m = 0; m < item.nitems; m++) {

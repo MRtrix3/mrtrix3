@@ -61,6 +61,7 @@ void usage() {
 void run() {
   // validate_tsf() throws an Exception with a descriptive message on any failure.
   validate_tsf(argument[0], argument[1]);
-  CONSOLE("Track scalar file \"" + std::string(argument[0]) + "\"" +                    //
-          " is valid with respect to tractogram \"" + std::string(argument[1]) + "\""); //
+  CONSOLE(fmt::format("Track scalar file \"{}\" is valid with respect to tractogram \"{}\"", //
+                      std::string(argument[0]),
+                      std::string(argument[1])));
 }

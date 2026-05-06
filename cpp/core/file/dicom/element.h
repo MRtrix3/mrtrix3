@@ -212,3 +212,22 @@ protected:
 };
 
 } // namespace MR::File::Dicom
+
+namespace fmt {
+template <> struct formatter<MR::File::Dicom::Date> {
+  constexpr auto parse(format_parse_context &ctx) { return ctx.begin(); }
+  template <typename FormatContext> auto format(const MR::File::Dicom::Date &date, FormatContext &ctx) const {
+    std::ostringstream oss;
+    oss << date;
+    return format_to(ctx.out(), oss.str());
+  }
+};
+template <> struct formatter<MR::File::Dicom::Time> {
+  constexpr auto parse(format_parse_context &ctx) { return ctx.begin(); }
+  template <typename FormatContext> auto format(const MR::File::Dicom::Time &time, FormatContext &ctx) const {
+    std::ostringstream oss;
+    oss << time;
+    return format_to(ctx.out(), oss.str());
+  }
+};
+} // namespace fmt

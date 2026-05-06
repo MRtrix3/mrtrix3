@@ -155,9 +155,11 @@ LUT::file_format LUT::guess_file_format(std::string_view path) {
       }
       if (!entries.empty()) {
         if (!columns.empty() && entries.size() != columns.size()) {
-          Exception E("Inconsistent number of columns in LUT file \"" + Path::basename(path) + "\"");
-          E.push_back(fmt::format("Initial file contents contain {}", columns.size()) + " columns," + //
-                      " but line " + fmt::format("{} contains ", line_counter) + str(entries.size()) + " entries:");
+          Exception E(fmt::format("Inconsistent number of columns in LUT file \"{}\"", Path::basename(path)));
+          E.push_back(fmt::format("Initial file contents contain {} columns, but line {} contains {} entries:",
+                                  columns.size(),
+                                  line_counter,
+                                  entries.size()));
           E.push_back(fmt::format("\"{}\"", line));
           throw E;
         }
@@ -208,9 +210,9 @@ LUT::file_format LUT::guess_file_format(std::string_view path) {
   std::string format_string;
   format_string += "[ ";
   for (auto c : columns)
-    format_string += std::string(c) + " ";
+    format_string += fmt::format("{} ", std::string(c));
   format_string += "]";
-  Exception e("LUT file \"" + Path::basename(path) + "\" in unrecognized format:");
+  Exception e(fmt::format("LUT file \"{}\" in unrecognized format:", Path::basename(path)));
   e.push_back(format_string);
   throw e;
   return LUT_NONE;

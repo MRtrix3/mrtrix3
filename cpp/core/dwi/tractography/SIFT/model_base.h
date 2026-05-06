@@ -188,7 +188,7 @@ template <class Fixel> void ModelBase<Fixel>::map_streamlines(std::string_view p
 
   const track_t count = (properties.find("count") == properties.end()) ? 0 : to<track_t>(properties["count"]);
   if (!count)
-    throw Exception(fmt::format("Cannot map streamlines: track file {}", Path::basename(path)) + " is empty");
+    throw Exception(fmt::format("Cannot map streamlines: track file {} is empty", Path::basename(path)));
 
   Mapping::TrackLoader loader(file, count);
   Mapping::TrackMapperBase mapper(Fixel_map<Fixel>::header(), dirs);

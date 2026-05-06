@@ -32,28 +32,29 @@ const OptionGroup CSD_options =
       + Argument("spec").type_file_in()
 
     + Option("neg_lambda",
-             "the regularisation parameter lambda that controls the strength"
-             " of the non-negativity constraint"
-             " (default = " + fmt::format("{}).", default_csd_neglambda, 2))
+             fmt::format("the regularisation parameter lambda that controls the strength"
+                         " of the non-negativity constraint"
+                         " (default = {:.2g}).", default_csd_neglambda))
       + Argument("value").type_float(0.0)
 
     + Option("norm_lambda",
-             "the regularisation parameter lambda that controls the strength "
-             "of the constraint on the norm of the solution"
-             " (default = " + fmt::format("{}).", default_csd_normlambda, 2))
+             fmt::format("the regularisation parameter lambda that controls the strength "
+                         "of the constraint on the norm of the solution"
+                         " (default = {:.2g}).", default_csd_normlambda))
       + Argument("value").type_float(0.0)
 
     + Option("threshold",
-             "the threshold below which the amplitude of the FOD is assumed to be zero,"
-             " expressed as an absolute amplitude"
-             " (default = " + fmt::format("{}).", default_csd_threshold, 2))
+             fmt::format("the threshold below which the amplitude of the FOD is assumed to be zero,"
+                         " expressed as an absolute amplitude"
+                         " (default = {:.2g}).", default_csd_threshold))
       + Argument("value").type_float(-1.0, 10.0)
 
     + Option("niter",
-             "the maximum number of iterations to perform for each voxel"
-             " (default = " + str(default_csd_maxiterations) + ")."
-             // TODO Explicit SD algorithm?
-             " Use '-niter 0' for a linear unconstrained spherical deconvolution.")
+             fmt::format("the maximum number of iterations to perform for each voxel"
+                         " (default = {})."
+                         // TODO Explicit SD algorithm?
+                         " Use '-niter 0' for a linear unconstrained spherical deconvolution.",
+                         default_csd_maxiterations))
       + Argument("number").type_integer(0, 1000);
 // clang-format on
 

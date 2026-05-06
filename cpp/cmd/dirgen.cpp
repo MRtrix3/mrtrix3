@@ -14,6 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <fmt/format.h>
+
 #include "command.h"
 #include "dwi/directions/file.h"
 #include "math/check_gradient.h"
@@ -21,7 +23,6 @@
 #include "math/rng.h"
 #include "progressbar.h"
 #include "thread.h"
-#include <fmt/format.h>
 
 constexpr ssize_t default_power = 1;
 constexpr ssize_t default_number_iterations = 10000;
@@ -63,17 +64,17 @@ void usage() {
     + Argument ("dirs", "the text file to write the directions to, as [ az in ] pairs.").type_file_out();
 
   OPTIONS
-    + Option ("power", "specify exponent to use for repulsion power law"
-                       " (default: " + str(default_power) + ")."
-                       " This must be a power of 2 (i.e. 1, 2, 4, 8, 16, ...).")
+    + Option ("power", fmt::format("specify exponent to use for repulsion power law"
+                       " (default: {})."
+                       " This must be a power of 2 (i.e. 1, 2, 4, 8, 16, ...).", default_power))
       + Argument ("exp").type_integer(1, std::numeric_limits<int>::max())
 
-    + Option ("niter", "specify the maximum number of iterations to perform"
-                       " (default: " + str(default_number_iterations) + ").")
+    + Option ("niter", fmt::format("specify the maximum number of iterations to perform"
+                       " (default: {}).", default_number_iterations))
       + Argument ("num").type_integer(1, std::numeric_limits<int>::max())
 
-    + Option ("restarts", "specify the number of restarts to perform"
-                          " (default: " + str(default_number_restarts) + ").")
+    + Option ("restarts", fmt::format("specify the number of restarts to perform"
+                          " (default: {}).", default_number_restarts))
       + Argument ("num").type_integer (1, std::numeric_limits<int>::max())
 
     + Option ("fixed", "specify a fixed direction (comm-separateed floats)"
@@ -181,13 +182,13 @@ public:
   void execute() {
     size_t this_start = 0;
     while ((this_start = current_start++) < restarts) {
-      DEBUG(fmt::format("launching start {}", str(this_start)));
+      DEBUG(fmt::format("launching start {}", this_start));
       double E = 0.0;
 
       for (power = 1; power <= target_power; power *= 2) {
         Math::GradientDescent<Energy, ProjectedUpdate> optim(*this, ProjectedUpdate());
 
-        DEBUG(fmt::format("start {}: setting power = {}", str(this_start), str(power)));
+        DEBUG(fmt::format("start {}: setting power = {}", this_start, power));
         optim.init();
 
         size_t iter = 0;
@@ -195,12 +196,12 @@ public:
           if (!optim.iterate())
             break;
 
-          DEBUG(fmt::format("start {}: [ {} ] (pow = {}) E = {}, grad = {}",
-                            str(this_start),
-                            str(iter),
-                            str(power),
-                            str(optim.value(), 8),
-                            str(optim.gradient_norm(), 8)));
+          DEBUG(fmt::format("start {}: [ {} ] (pow = {}) E = {:.8g}, grad = {:.8g}",
+                            this_start,
+                            iter,
+                            power,
+                            optim.value(),
+                            optim.gradient_norm()));
 
           std::lock_guard<std::mutex> lock(mutex);
           ++progress;
@@ -273,13 +274,13 @@ void run() {
     throw Exception("No directions left to optimise after fixed directions specified");
 
   {
-    ProgressBar progress("Optimising directions up to power " + str(Energy::target_power) + " (" +
-                         str(Energy::restarts) + " restarts)");
+    ProgressBar progress(
+        fmt::format("Optimising directions up to power {} ({} restarts)", Energy::target_power, Energy::restarts));
     Energy energy_functor(progress, ndirs);
     auto threads = Thread::run(Thread::multi(energy_functor), "energy function");
   }
 
-  CONSOLE("final energy = " + str(Energy::best_E));
+  CONSOLE(fmt::format("final energy = {}", Energy::best_E));
   Eigen::MatrixXd directions_matrix(ndirs, 3);
   for (size_t n = 0; n < ndirs; ++n)
     directions_matrix.row(n) = Energy::best_directions.segment(3 * n, 3);

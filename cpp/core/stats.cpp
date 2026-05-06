@@ -26,14 +26,15 @@ const std::vector<std::string> field_choices{"mean", "median", "std", "std_rv", 
 const OptionGroup Options =
     OptionGroup("Statistics options")
     + Option("output",
-             "output only the field specified."
-             " Multiple such options can be supplied if required."
-             " Choices are: " + join(field_choices, ", ") + "."
-             " Useful for use in scripts."
-             " Both std options refer to the unbiased (sample) standard deviation."
-             " For complex data, min, max and std are calculated separately for real and imaginary parts,"
-             " std_rv is based on the real valued variance"
-             " (equals sqrt of sum of variances of imaginary and real parts).").allow_multiple()
+             fmt::format("output only the field specified."
+                         " Multiple such options can be supplied if required."
+                         " Choices are: {}."
+                         " Useful for use in scripts."
+                         " Both std options refer to the unbiased (sample) standard deviation."
+                         " For complex data, min, max and std are calculated separately for real and imaginary parts,"
+                         " std_rv is based on the real valued variance"
+                         " (equals sqrt of sum of variances of imaginary and real parts).",
+                         join(field_choices, ", "))).allow_multiple()
       + Argument("field").type_choice(field_choices)
     + Option("mask",
              "only perform computation within the specified binary mask image.")

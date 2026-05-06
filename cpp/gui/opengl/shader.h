@@ -48,7 +48,7 @@ public:
 
   void clear() {
     if (index_) {
-      GL_DEBUG(fmt::format("deleting OpenGL shader ID {}", str(index_)));
+      GL_DEBUG(fmt::format("deleting OpenGL shader ID {}", index_));
       gl::DeleteShader(index_);
     }
     index_ = 0;
@@ -61,7 +61,7 @@ public:
     DEBUG(fmt::format("compiling OpenGL {} shader:\\n{}", this->type(), code));
     if (!index_) {
       index_ = gl::CreateShader(TYPE);
-      GL_DEBUG(fmt::format("created OpenGL {} shader ID {}", this->type(), str(index_)));
+      GL_DEBUG(fmt::format("created OpenGL {} shader ID {}", this->type(), index_));
     }
     std::array<const char *const, 1> p{code.c_str()}; // check_syntax off
     gl::ShaderSource(index_, 1, p.data(), nullptr);
@@ -70,7 +70,7 @@ public:
     gl::GetShaderiv(index_, gl::COMPILE_STATUS, &status);
     if (status == gl::FALSE_) {
       debug();
-      throw Exception(fmt::format("error compiling OpenGL {} shader ID {}", this->type(), str(index_)));
+      throw Exception(fmt::format("error compiling OpenGL {} shader ID {}", this->type(), index_));
     }
   }
   static const std::string type() {
@@ -107,7 +107,7 @@ public:
 
   void clear() {
     if (index_) {
-      GL_DEBUG(fmt::format("deleting OpenGL shader program {}", str(index_)));
+      GL_DEBUG(fmt::format("deleting OpenGL shader program {}", index_));
       gl::DeleteProgram(index_);
     }
     index_ = 0;
@@ -116,21 +116,21 @@ public:
   template <GLint TYPE> void attach(const Object<TYPE> &object) {
     if (!index_) {
       index_ = gl::CreateProgram();
-      GL_DEBUG(fmt::format("created OpenGL shader program ID {}", str(index_)));
+      GL_DEBUG(fmt::format("created OpenGL shader program ID {}", index_));
     }
     gl::AttachShader(index_, object.index_);
-    GL_DEBUG(fmt::format(
-        "attached OpenGL {} shader ID {} to program ID {}", Object<TYPE>::type(), str(object.index_), str(index_)));
+    GL_DEBUG(
+        fmt::format("attached OpenGL {} shader ID {} to program ID {}", Object<TYPE>::type(), object.index_, index_));
   }
   template <GLint TYPE> void detach(const Object<TYPE> &object) {
     assert(index_);
     assert(object.index_);
     gl::DetachShader(index_, object.index_);
-    GL_DEBUG(fmt::format(
-        "detached OpenGL {} shader ID {} from program ID {}", Object<TYPE>::type(), str(object.index_), str(index_)));
+    GL_DEBUG(
+        fmt::format("detached OpenGL {} shader ID {} from program ID {}", Object<TYPE>::type(), object.index_, index_));
   }
   void link() {
-    GL_DEBUG(fmt::format("linking OpenGL shader program ID {}...", str(index_)));
+    GL_DEBUG(fmt::format("linking OpenGL shader program ID {}...", index_));
     assert(index_);
     gl::LinkProgram(index_);
     GLint status;
@@ -144,7 +144,7 @@ public:
   void start() const {
     assert(index_);
     gl::UseProgram(index_);
-    GL_DEBUG(fmt::format("using OpenGL shader program ID {}", str(index_)));
+    GL_DEBUG(fmt::format("using OpenGL shader program ID {}", index_));
   }
   static void stop() {
     gl::UseProgram(0);

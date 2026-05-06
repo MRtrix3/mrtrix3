@@ -103,7 +103,7 @@ void Tree::read_file(std::string_view filename) {
 void Tree::read(std::string_view filename) {
   description = filename;
   if (Path::is_dir(filename)) {
-    ProgressBar progress("scanning folder \"" + shorten(filename) + "\" for DICOM data", 0);
+    ProgressBar progress(fmt::format("scanning folder \"{}\" for DICOM data", shorten(filename)), 0);
     read_dir(filename, progress);
   } else {
     try {

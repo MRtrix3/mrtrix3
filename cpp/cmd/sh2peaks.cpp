@@ -59,8 +59,8 @@ void usage() {
   + Argument ("output", "the output peaks image").type_image_out();
 
   OPTIONS
-  + Option ("num", "the number of peaks to extract"
-                   " (default: " + fmt::format("{}).", default_npeaks))
+  + Option ("num", fmt::format("the number of peaks to extract"
+                               " (default: {}).", default_npeaks))
     + Argument ("peaks").type_integer (0)
 
   + Option ("direction",

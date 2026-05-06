@@ -406,8 +406,7 @@ void Volume::paint(Projection &projection) {
     gl::Uniform4fv(gl::GetUniformLocation(volume_shader, (fmt::format("clip{}", n)).c_str()),
                    1,
                    clip_real2tex(T2S, S2T, ray_real_space, clip[n].first));
-    gl::Uniform1i(gl::GetUniformLocation(volume_shader, ("clip" + fmt::format("{}_selected", n)).c_str()),
-                  clip[n].second);
+    gl::Uniform1i(gl::GetUniformLocation(volume_shader, fmt::format("clip{}_selected", n).c_str()), clip[n].second);
   }
   GL_CHECK_ERROR;
 
@@ -425,7 +424,7 @@ void Volume::paint(Projection &projection) {
     gl::Uniform3fv(gl::GetUniformLocation(volume_shader, (fmt::format("overlay_ray{}", n)).c_str()), 1, overlay_ray);
 
     overlays_for_3D[n]->set_shader_variables(
-        volume_shader, overlays_for_3D[n]->scale_factor(), "overlay" + fmt::format("{}_", n));
+        volume_shader, overlays_for_3D[n]->scale_factor(), fmt::format("overlay{}_", n));
   }
 
   GL_CHECK_ERROR;

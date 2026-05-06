@@ -19,7 +19,6 @@
 #include <vector>
 
 #include "command.h"
-#include "fmt.h"
 
 using namespace MR;
 using namespace App;

@@ -20,7 +20,6 @@
 #include "dwi/shells.h"
 #include "exception.h"
 #include "file/matrix.h"
-#include "fmt.h"
 #include "image.h"
 #include "math/SH.h"
 #include "math/ZSH.h"

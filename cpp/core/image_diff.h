@@ -18,8 +18,6 @@
 
 #include <set>
 
-#include "fmt.h"
-
 #include "algo/loop.h"
 #include "image_helpers.h"
 
@@ -28,27 +26,7 @@ namespace MR {
 //! check image headers are the same (dimensions, spacing & transform)
 template <class HeaderType1, class HeaderType2> inline void check_headers(HeaderType1 &in1, HeaderType2 &in2) {
   check_dimensions(in1, in2);
-  for (size_t i = 0; i < in1.ndim(); ++i) {
-    if (std::isfinite(in1.spacing(i)))
-      if (std::fabs((in1.spacing(i) - in2.spacing(i)) / (in1.spacing(i) + in2.spacing(i))) > 1e-4)
-        throw Exception(
-            fmt::format("images \"{}\" and \"{}\" do not have matching voxel spacings on axis {} ({} vs {})",
-                        in1.name(),
-                        in2.name(),
-                        i,
-                        in1.spacing(i),
-                        in2.spacing(i)));
-  }
-  for (size_t i = 0; i < 3; ++i) {
-    for (size_t j = 0; j < 4; ++j) {
-      if (std::fabs(in1.transform().matrix()(i, j) - in2.transform().matrix()(i, j)) > 0.001)
-        throw Exception(fmt::format("images \"{}\" and \"{}\" do not have matching header transforms:\n{}\nvs:\n {})",
-                                    in1.name(),
-                                    in2.name(),
-                                    in1.transform().matrix(),
-                                    in2.transform().matrix()));
-    }
-  }
+  check_voxel_grids_match_in_scanner_space(in1, in2);
 }
 
 //! check images are the same within a absolute tolerance
@@ -63,8 +41,8 @@ inline void check_images_abs(ImageType1 &in1, ImageType2 &in2, const double tol 
                           a.name(),
                           b.name(),
                           tol,
-                          static_cast<cdouble>(a.value()),
-                          static_cast<cdouble>(b.value())));
+                          a.value(),
+                          b.value()));
       },
       in1,
       in2);
@@ -84,8 +62,8 @@ inline void check_images_frac(ImageType1 &in1, ImageType2 &in2, const double tol
                           a.name(),
                           b.name(),
                           tol,
-                          static_cast<cdouble>(a.value()),
-                          static_cast<cdouble>(b.value())));
+                          a.value(),
+                          b.value()));
       },
       in1,
       in2);
@@ -105,8 +83,8 @@ inline void check_images_tolimage(ImageType1 &in1, ImageType2 &in2, ImageTypeTol
                           a.name(),
                           b.name(),
                           t.name(),
-                          static_cast<cdouble>(a.value()),
-                          static_cast<cdouble>(b.value()),
+                          a.value(),
+                          b.value(),
                           t.value()));
       },
       in1,
@@ -130,8 +108,8 @@ inline void check_images_voxel(ImageType1 &in1, ImageType2 &in2, const double to
                                     a.name(),
                                     b.name(),
                                     tol,
-                                    static_cast<cdouble>(a.value()),
-                                    static_cast<cdouble>(b.value())));
+                                    a.value(),
+                                    b.value()));
     }
   };
 

@@ -26,7 +26,6 @@
 #include "dwi/shells.h"
 #include "enum.h"
 #include "filter/smooth.h"
-#include "fmt.h"
 #include "header.h"
 #include "image.h"
 #include "image_helpers.h"
@@ -127,8 +126,7 @@ void usage() {
 
   ARGUMENTS
     + Argument ("input", "the input DWI series").type_image_in()
-    + Argument ("operation", "the way in which output DWIs will be reconstructed;"
-                " one of: " + MR::Enum::join<Operation>()).type_choice<Operation>()
+    + Argument ("operation", fmt::format("the way in which output DWIs will be reconstructed; one of: {}", MR::Enum::join<Operation>())).type_choice<Operation>()
     + Argument ("output", "the output DWI series").type_image_out();
 
   OPTIONS
@@ -232,9 +230,9 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
   // The FSL topup / eddy format indexes from one;
   //   change to starting from zero for internal array indexing
   pe_indices -= 1;
-  DEBUG("pe_in:\n" + str(pe_in));
+  DEBUG(fmt::format("pe_in:\n{}", pe_in));
   DEBUG(fmt::format("pe_indices:\n{}", pe_indices));
-  DEBUG("pe_config:\n" + str(pe_config));
+  DEBUG(fmt::format("pe_config:\n{}", pe_config));
 
   // Ensure that for each line in pe_config,
   //   there is a corresponding line with the same total readout time
@@ -270,7 +268,7 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
 
   const DWI::Shells shells(grad_in);
   const std::vector<int> vol2shell = get_vol2shell(shells, grad_in.rows());
-  DEBUG("grad_in:\n" + str(grad_in));
+  DEBUG(fmt::format("grad_in:\n{}", grad_in));
   std::stringstream ss_vol2shell;
   for (const auto si : vol2shell)
     ss_vol2shell << str(si) << " ";
@@ -312,7 +310,7 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
           if (second_index == shell.size())
             throw Exception(fmt::format("Unbalanced distribution of b=0 volumes across reversed phase encoding "
                                         "directions (no match found for volume {})",
-                                        str(first_volume)));
+                                        first_volume));
         }
         assert(used.all());
       } else {
@@ -344,28 +342,29 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
           decltype(dp_matrix)::Index row(-1);
           const default_type this_closest_dp = dp_matrix.col(col).maxCoeff(&row);
           if (this_closest_dp < 0.0)
-            throw Exception(std::string("No reversed phase encoding volume found") + //
-                            " for volume " + str(shell.get_volumes()[col]));         //
+            throw Exception(
+                fmt::format("No reversed phase encoding volume found for volume {}", shell.get_volumes()[col]));
           if (col > row)
             continue;
           decltype(dp_matrix)::Index min_col(-1);
           dp_matrix.col(row).maxCoeff(&min_col);
           if (min_col != col) {
-            DEBUG("Debugging information for reversed phase encoding volume pairing" +           //
-                  fmt::format(" for b={}", static_cast<ssize_t>(std::round(shell.get_mean())))); //
+            DEBUG(fmt::format("Debugging information for reversed phase encoding volume pairing for b={}",
+                              static_cast<ssize_t>(std::round(shell.get_mean()))));
             DEBUG("Dot product matrix:");
-            DEBUG("\n" + str(dp_matrix.cast<float>()));
+            DEBUG(fmt::format("\n{}", dp_matrix.cast<float>()));
             DEBUG(fmt::format("Column {} {} closest to row {} {}",
-                              str(col),
-                              str(grad_in.block<1, 3>(shell.get_volumes()[col], 0)),
-                              str(row),
-                              str(grad_in.block<1, 3>(shell.get_volumes()[row], 0))));
+                              col,
+                              grad_in.block<1, 3>(shell.get_volumes()[col], 0),
+                              row,
+                              grad_in.block<1, 3>(shell.get_volumes()[row], 0)));
             DEBUG(fmt::format("Row {} is however closest to column {} {}",
-                              str(row),
-                              str(min_col),
-                              str(grad_in.block<1, 3>(shell.get_volumes()[min_col], 0))));
-            throw Exception(std::string("Ambiguity in establishing reversed phase encoding volume pairs") + //
-                            " for shell b=" + str(static_cast<ssize_t>(std::round(shell.get_mean()))));     //
+                              row,
+                              min_col,
+                              grad_in.block<1, 3>(shell.get_volumes()[min_col], 0)));
+            throw Exception(fmt::format("Ambiguity in establishing reversed phase encoding volume pairs"
+                                        " for shell b={}",
+                                        static_cast<ssize_t>(std::round(shell.get_mean()))));
           }
           volume_pairs.push_back(std::make_pair(shell.get_volumes()[col], shell.get_volumes()[row]));
           min_closest_dp = std::min(min_closest_dp, this_closest_dp);
@@ -461,11 +460,11 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
   std::stringstream ss_volpairs;
   for (const auto p : volume_pairs)
     ss_volpairs << "[" << str(p.first) << "," << str(p.second) << "] ";
-  DEBUG("Volume pairs:\n" + ss_volpairs.str());
+  DEBUG(fmt::format("Volume pairs:\n{}", ss_volpairs.str()));
   std::stringstream ss_in2out;
   for (const auto i : in2outindex)
     ss_in2out << str(i) << " ";
-  DEBUG("Input to output index:\n" + ss_in2out.str());
+  DEBUG(fmt::format("Input to output index:\n{}", ss_in2out.str()));
 
   header_out.size(3) = dwi_in.size(3) / 2;
   DWI::set_DW_scheme(header_out, grad_out);
@@ -596,14 +595,12 @@ void run_combine_predicted(Image<float> &dwi_in,
       // Technically this is a weak constraint:
       //   user-requested lmax may not be possible once excluding a phase encoding group
       if (lmax_user[shell_index] > Math::SH::NforL(shells[shell_index].count()))
-        throw Exception(fmt::format("Requested lmax={}{}{}{}{} volumes,{}{}",
-                                    str(lmax_user[shell_index]), //
-                                    " for shell b=",
-                                    str(static_cast<ssize_t>(std::round(shells[shell_index].get_mean()))), //
-                                    ", but only ",
-                                    str(shells[shell_index].count()), //
-                                    " which only supports lmax=",
-                                    str(Math::SH::NforL(shells[shell_index].count())))); //
+        throw Exception(fmt::format("Requested lmax={} for shell b={}, but only {} volumes,"
+                                    " which only supports lmax={}",
+                                    lmax_user[shell_index],
+                                    static_cast<ssize_t>(std::round(shells[shell_index].get_mean())),
+                                    shells[shell_index].count(),
+                                    Math::SH::NforL(shells[shell_index].count())));
     }
   }
 
@@ -683,12 +680,9 @@ void run_combine_predicted(Image<float> &dwi_in,
     // Loop over shells
     for (size_t shell_index = 0; shell_index != shells.count(); ++shell_index) {
 
-      DEBUG(fmt::format("{}{}{},{}{}",
-                        "Commencing reconstruction", //
-                        " for PE group ",
-                        str(pe_config.row(pe_index)), //
-                        " shell b=",
-                        str(shells[shell_index].get_mean()))); //
+      DEBUG(fmt::format("Commencing reconstruction for PE group {}, shell b={}",
+                        pe_config.row(pe_index),
+                        shells[shell_index].get_mean()));
 
       // Obtain volumes that belong both to this shell and:
       // - To the source phase encoding group; or
@@ -711,20 +705,18 @@ void run_combine_predicted(Image<float> &dwi_in,
       //   if there isn't at least one volume belonging to the same shell
       //   that was acquired with some other phase encoding direction
       if (source_volumes.empty())
-        throw Exception(fmt::format("For PE group {},{}{},{}{}",
-                                    str(pe_config.row(pe_index)), //
-                                    "shell b=",
-                                    str(shells[shell_index].get_mean()),                //
-                                    " no volumes from other phase encoding directions", //
-                                    " with which to generate predictions"));            //
+        throw Exception(fmt::format("For PE group {}, shell b={}, no volumes from other phase encoding directions"
+                                    " with which to generate predictions",
+                                    pe_config.row(pe_index),
+                                    shells[shell_index].get_mean()));
       std::stringstream ss_sources;
       std::stringstream ss_targets;
       for (const auto i : source_volumes)
         ss_sources << str(i) << " ";
       for (const auto i : target_volumes)
         ss_targets << str(i) << " ";
-      DEBUG(fmt::format("{} source volumes for this reconstruction: {}", str(source_volumes.size()), ss_sources.str()));
-      DEBUG(fmt::format("{} target volumes for this reconstruction: {}", str(target_volumes.size()), ss_targets.str()));
+      DEBUG(fmt::format("{} source volumes for this reconstruction: {}", source_volumes.size(), ss_sources.str()));
+      DEBUG(fmt::format("{} target volumes for this reconstruction: {}", target_volumes.size(), ss_targets.str()));
       const size_t lmax_data = shells[shell_index].is_bzero() ? 0 : Math::SH::LforN(source_volumes.size());
       size_t lmax(0);
       if (lmax_user.empty()) {
@@ -734,8 +726,8 @@ void run_combine_predicted(Image<float> &dwi_in,
         if (lmax > lmax_data)
           throw Exception(fmt::format("User-requested lmax={} for shell b={} exceeds what can be predicted from data "
                                       "after phase encoding group exclusion",
-                                      str(lmax),
-                                      str<int>(shells[shell_index].get_mean())));
+                                      lmax,
+                                      static_cast<int>(shells[shell_index].get_mean())));
       }
 
       // Generate the direction set for the target data
@@ -745,15 +737,13 @@ void run_combine_predicted(Image<float> &dwi_in,
                                           target_dirset.row(target_index));
       // Generate the transformation from SH to the target data
       sh_transform_type SH2target = Math::SH::init_transform(target_dirset, lmax);
-      DEBUG(fmt::format("PE index {}, shell index {}:{}{}{}x{}{}{}",
-                        str(pe_index),
-                        str(shell_index),                      //
-                        " SH to target transform initialised", //
-                        " of size ",
-                        str(SH2target.rows()),
-                        str(SH2target.cols()), //
-                        " with condition number ",
-                        str(Math::condition_number(SH2target)))); //
+      DEBUG(fmt::format("PE index {}, shell index {}: SH to target transform initialised"
+                        " of size {}x{} with condition number {}",
+                        pe_index,
+                        shell_index,
+                        SH2target.rows(),
+                        SH2target.cols(),
+                        Math::condition_number(SH2target)));
 
       spherical_scheme_type source_dirset(source_volumes.size(), 2);
       data_vector_type source_data(source_volumes.size());
@@ -783,49 +773,41 @@ void run_combine_predicted(Image<float> &dwi_in,
               source2SH = Math::pinv(Math::SH::init_transform(source_dirset, lmax));
               condition_number_product = Math::condition_number(SH2target) * Math::condition_number(source2SH);
             } while (condition_number_product > condition_number_product_threshold);
-            WARN(fmt::format("lmax of predictor for phase encoding group {},{}{}{}{} to {}{}",
-                             str(pe_index), //
-                             " shell b=",
-                             str(shells[shell_index].get_mean()), //
-                             " decreased from ",
-                             str(lmax_data),
-                             str(lmax),                            //
-                             " to improve problem conditioning")); //
-            DEBUG(fmt::format("PE index {}, shell index {}:{}{}{}x{}{}{}",
-                              str(pe_index),
-                              str(shell_index),                         //
-                              " SH to target transform RE-initialised", //
-                              " of size ",
-                              str(SH2target.rows()),
-                              str(SH2target.cols()), //
-                              " with condition number ",
-                              str(Math::condition_number(SH2target)))); //
+            WARN(fmt::format("lmax of predictor for phase encoding group {}, shell b={}"
+                             " decreased from {} to {} to improve problem conditioning",
+                             pe_index,
+                             shells[shell_index].get_mean(),
+                             lmax_data,
+                             lmax));
+            DEBUG(fmt::format("PE index {}, shell index {}: SH to target transform RE-initialised"
+                              " of size {}x{} with condition number {}",
+                              pe_index,
+                              shell_index,
+                              SH2target.rows(),
+                              SH2target.cols(),
+                              Math::condition_number(SH2target)));
           } else {
-            WARN(fmt::format("Conditioning of predictor for phase encoding group {},{}{} is poor;{}",
-                             str(pe_index), //
-                             " shell b=",
-                             str(shells[shell_index].get_mean()),                  //
-                             " combined image may be noisy in expanded regions")); //
+            WARN(fmt::format("Conditioning of predictor for phase encoding group {}, shell b={} is poor;"
+                             " combined image may be noisy in expanded regions",
+                             pe_index,
+                             shells[shell_index].get_mean()));
           }
         }
-        DEBUG(fmt::format("PE index {}, shell index {}:{}{}{}x{}{}{}",
-                          str(pe_index),
-                          str(shell_index),                           //
-                          " source data to SH transform initialised", //
-                          " of size ",
-                          str(source2SH.rows()),
-                          str(source2SH.cols()), //
-                          " with condition number ",
-                          str(Math::condition_number(source2SH)))); //
+        DEBUG(fmt::format("PE index {}, shell index {}: source data to SH transform initialised"
+                          " of size {}x{} with condition number {}",
+                          pe_index,
+                          shell_index,
+                          source2SH.rows(),
+                          source2SH.cols(),
+                          Math::condition_number(source2SH)));
         // Compose transformation from source data to target data
         source2target = SH2target * source2SH;
-        DEBUG(fmt::format("PE index {}, shell index {}:{}{}{}x{}",
-                          str(pe_index),
-                          str(shell_index),                                    //
-                          " source data to target data transform initialised", //
-                          " of size ",
-                          str(source2target.rows()),
-                          str(source2target.cols()))); //
+        DEBUG(fmt::format("PE index {}, shell index {}: source data to target data transform initialised"
+                          " of size {}x{}",
+                          pe_index,
+                          shell_index,
+                          source2target.rows(),
+                          source2target.cols()));
 
         // Now we are ready to loop over the image
         Image<float> jacdet(jacdet_images[pe_index]);

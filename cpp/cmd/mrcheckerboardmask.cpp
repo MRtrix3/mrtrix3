@@ -39,8 +39,8 @@ void usage() {
   + Argument ("output", "the output binary image mask.").type_image_out ();
 
   OPTIONS
-  + Option ("tiles", "specify the number of tiles in any direction"
-                     " (default: " + fmt::format("{})", default_number_tiles))
+  + Option ("tiles", fmt::format("specify the number of tiles in any direction"
+                                 " (default: {})", default_number_tiles))
     + Argument ("value").type_integer()
 
   + Option ("invert", "invert output binary mask.")

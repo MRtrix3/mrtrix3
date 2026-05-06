@@ -125,8 +125,7 @@ public:
         ThreadedLoop(params.processed_image, 0, 3).run(kernel);
       }
     }
-    DEBUG("Metric evaluate iteration: " + fmt::format("{}, cost: ", iteration++) +
-          str(overall_cost_function.transpose()));
+    DEBUG(fmt::format("Metric evaluate iteration: {}, cost: {}", iteration++, overall_cost_function.transpose()));
     DEBUG(fmt::format("  x: {}", x.transpose()));
     DEBUG(fmt::format("  gradient: {}", gradient.transpose()));
     DEBUG(fmt::format("  norm(gradient): {}", gradient.norm()));
@@ -246,8 +245,7 @@ public:
       }
     }
 
-    DEBUG("Metric evaluate iteration: " + fmt::format("{}, cost: ", iteration++) +
-          str(overall_cost_function.transpose()));
+    DEBUG(fmt::format("Metric evaluate iteration: {}, cost: {}", iteration++, overall_cost_function.transpose()));
     DEBUG(fmt::format("  x: {}", x.transpose()));
     DEBUG(fmt::format("  gradient: {}", gradient.transpose()));
     DEBUG(fmt::format("  norm(gradient): {}", gradient.norm()));

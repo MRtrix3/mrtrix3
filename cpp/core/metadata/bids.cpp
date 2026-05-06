@@ -16,9 +16,11 @@
 
 #include "metadata/bids.h"
 
+#include <fmt/format.h>
+
+#include "eigen_plugins/fmt.h"
 #include "exception.h"
 #include "mrtrix.h"
-#include <fmt/format.h>
 
 namespace MR::Metadata::BIDS {
 
@@ -48,7 +50,7 @@ std::string vector2axisid(const axis_vector_type &dir) {
     assert(!dir[1]);
     return "k";
   } else {
-    throw Exception(fmt::format("Malformed image axis vector: \"{}\"", str(dir.transpose())));
+    throw Exception(fmt::format("Malformed image axis vector: \"{}\"", dir));
   }
 }
 

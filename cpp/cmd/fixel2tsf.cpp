@@ -58,9 +58,10 @@ void usage() {
 
 
   OPTIONS
-  + Option ("angle", "the max anglular threshold for computing correspondence"
-                     " between a fixel direction and track tangent"
-                     " (default = " + fmt::format("{} degrees)", DWI::Tractography::Mapping::default_streamline2fixel_angle, 2))
+  + Option ("angle",
+            fmt::format("the max anglular threshold for computing correspondence"
+                        " between a fixel direction and track tangent"
+                        " (default = {:.2g} degrees)", DWI::Tractography::Mapping::default_streamline2fixel_angle))
   + Argument ("value").type_float (0.001, 90.0);
 
 }
@@ -83,8 +84,8 @@ void run() {
   DWI::Tractography::Properties properties;
   DWI::Tractography::Reader<float> reader(argument[1], properties);
   properties.comments.push_back("Created using fixel2tsf");
-  properties.comments.push_back("Source fixel image: " + Path::basename(argument[0]));
-  properties.comments.push_back("Source track file: " + Path::basename(argument[1]));
+  properties.comments.push_back(fmt::format("Source fixel image: {}", Path::basename(argument[0])));
+  properties.comments.push_back(fmt::format("Source track file: {}", Path::basename(argument[1])));
 
   DWI::Tractography::ScalarWriter<float> tsf_writer(argument[2], properties);
 
