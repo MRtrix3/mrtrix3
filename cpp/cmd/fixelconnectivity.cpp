@@ -43,6 +43,8 @@ void usage() {
     " which encodes the fixel-fixel connectivity matrix."
     " Documentation regarding this format and how to use it will come in the future."
 
+  // TODO Add description RE: normalisation
+
   + Fixel::format_description;
 
   ARGUMENTS
@@ -70,6 +72,11 @@ void usage() {
              "provide a fixel data file containing a mask of those fixels to be computed;"
              " fixels outside the mask will be empty in the output matrix")
       + Argument("file").type_image_in()
+
+    + Option("normalise",
+             "controls whether the matrix elements are row-normalised (see Description)"
+             " (default: yes)")
+      + Argument("value").type_bool()
 
   + DWI::Tractography::TrackWeightsInOption
 
@@ -100,6 +107,7 @@ void run() {
   const value_type connectivity_threshold = get_option_value("connectivity", default_connectivity_threshold);
   const value_type angular_threshold =
       get_option_value("angle", static_cast<value_type>(DWI::Tractography::Mapping::default_streamline2fixel_angle));
+  const bool normalise = get_option_value<bool>("normalise", true);
 
   const std::string input_fixel_directory = argument[0];
   Header index_header = Fixel::find_index_header(input_fixel_directory);
@@ -129,12 +137,12 @@ void run() {
         Fixel::Matrix::generate_unweighted(argument[1], index_image, fixel_mask, angular_threshold);
     Fixel::Matrix::Writer<Fixel::Matrix::InitMatrixUnweighted> writer(connectivity_matrix, connectivity_threshold);
     set_optional_outputs(writer);
-    writer.save(argument[2]);
+    writer.save(argument[2], normalise);
   } else {
     auto connectivity_matrix =
         Fixel::Matrix::generate_weighted(argument[1], index_image, fixel_mask, angular_threshold);
     Fixel::Matrix::Writer<Fixel::Matrix::InitMatrixWeighted> writer(connectivity_matrix, connectivity_threshold);
     set_optional_outputs(writer);
-    writer.save(argument[2]);
+    writer.save(argument[2], normalise);
   }
 }
