@@ -17,9 +17,9 @@
 #include "fixel/correspondence/algorithms/combinatorial.h"
 
 #include "app.h"
-#include "fixel/correspondence/algorithms/in2023.h"
 #include "fixel/correspondence/algorithms/ismrm2018.h"
 #include "fixel/correspondence/algorithms/pot.h"
+#include "fixel/correspondence/algorithms/rs2023.h"
 
 namespace MR::Fixel::Correspondence::Algorithms {
 
@@ -346,8 +346,8 @@ template <class CostFunctor> uint64_t Combinatorial<CostFunctor>::max_computed_c
 #endif
 
 template class Combinatorial<ISMRM2018>;
-template class Combinatorial<IN2023>;
 template class Combinatorial<POT>;
+template class Combinatorial<RS2023>;
 
 // clang-format off
 OptionGroup CombinatorialOptions = OptionGroup("Options applicable to all combinatorial-based algorithms")

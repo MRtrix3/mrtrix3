@@ -22,10 +22,10 @@
 
 #include "fixel/correspondence/algorithms/all2all.h"
 #include "fixel/correspondence/algorithms/base.h"
-#include "fixel/correspondence/algorithms/in2023.h"
 #include "fixel/correspondence/algorithms/ismrm2018.h"
 #include "fixel/correspondence/algorithms/legacy.h"
 #include "fixel/correspondence/algorithms/pot.h"
+#include "fixel/correspondence/algorithms/rs2023.h"
 #include "fixel/correspondence/correspondence.h"
 #include "fixel/correspondence/matcher.h"
 
@@ -87,8 +87,8 @@ enum class algorithm_t {
 #endif
   LEGACY,
   ISMRM2018,
-  IN2023,
-  POT
+  POT,
+  RS2023
 };
 constexpr algorithm_t default_algorithm = algorithm_t::POT;
 
@@ -155,12 +155,12 @@ void usage() {
 
   + Algorithms::CombinatorialOptions
 
-  + Algorithms::IN2023Options
+  + Algorithms::POTOptions
 
-  + Algorithms::POTOptions;
+  + Algorithms::RS2023Options;
 
   REFERENCES
-  + "* If using -algorithm ismrm2018 or -algorithm in2023: " // Internal
+  + "* If using -algorithm ismrm2018 or -algorithm rs2023: " // Internal
     "Smith, R.E.; Connelly, A. "
     "Mitigating the effects of imperfect fixel correspondence in Fixel-Based Analysis. "
     "In Proc ISMRM 2018: 456.";
@@ -188,16 +188,6 @@ void run() {
                                               get_option_value("max_objectives", default_max_objectives_per_source),
                                               H_cost));
     break;
-  case algorithm_t::IN2023:
-    algorithm.reset(new Algorithms::IN2023(get_option_value("max_origins", default_max_origins_per_target),
-                                           get_option_value("max_objectives", default_max_objectives_per_source),
-                                           H_cost));
-    {
-      auto opt = get_options("in2023_constants");
-      if (opt.size())
-        dynamic_cast<Algorithms::IN2023 *>(algorithm.get())->set_constants(opt[0][0], opt[0][1]);
-    }
-    break;
   case algorithm_t::POT:
     algorithm.reset(new Algorithms::POT(get_option_value("max_origins", default_max_origins_per_target),
                                         get_option_value("max_objectives", default_max_objectives_per_source),
@@ -205,6 +195,16 @@ void run() {
     dynamic_cast<Algorithms::POT *>(algorithm.get())
         ->set_constants(get_option_value("pot_steepness", default_pot_p),
                         get_option_value("pot_complexity", default_pot_gamma));
+    break;
+  case algorithm_t::RS2023:
+    algorithm.reset(new Algorithms::RS2023(get_option_value("max_origins", default_max_origins_per_target),
+                                           get_option_value("max_objectives", default_max_objectives_per_source),
+                                           H_cost));
+    {
+      auto opt = get_options("rs2023_constants");
+      if (opt.size())
+        dynamic_cast<Algorithms::RS2023 *>(algorithm.get())->set_constants(opt[0][0], opt[0][1]);
+    }
     break;
   default:
     assert(0);

@@ -1,6 +1,6 @@
 #!/bin/bash
 # Verify fixel2fixel command under usage:
-# - IN2023 fixel-fixel correspondence algorithm
+# - RS2023 fixel-fixel correspondence algorithm
 # - Metric is cosine angle between template fixel and reconstructed subject fixel
 #   (the FD metric is additionally provided via the -weighted option
 #   to better inform the reconstruction of fixels from multiple input subject fixels with different volumes)
@@ -14,10 +14,10 @@ mkdir tmp/
 cp fixel2fixel/directions.mif tmp/
 cp fixel2fixel/index.mif tmp/
 
-fixel2fixel fixelcorrespondence/session1/fd.mif fixelcorrespondence/mapping_in2023_s1.npz angle tmp/ angle_s1.mif \
+fixel2fixel fixelcorrespondence/session1/fd.mif fixelcorrespondence/mapping_rs2023_s1.npz angle tmp/ angle_s1.mif \
     -weighted fixelcorrespondence/session1/fd.mif
-fixel2fixel fixelcorrespondence/session3/fd.mif fixelcorrespondence/mapping_in2023_s3.npz angle tmp/ angle_s3.mif \
+fixel2fixel fixelcorrespondence/session3/fd.mif fixelcorrespondence/mapping_rs2023_s3.npz angle tmp/ angle_s3.mif \
     -weighted fixelcorrespondence/session3/fd.mif
 
-testing_diff_image tmp/angle_s1.mif fixel2fixel/angle_in2023_s1.mif -abs 1e-5
-testing_diff_image tmp/angle_s3.mif fixel2fixel/angle_in2023_s3.mif -abs 1e-5
+testing_diff_image tmp/angle_s1.mif fixel2fixel/angle_rs2023_s1.mif -abs 1e-5
+testing_diff_image tmp/angle_s3.mif fixel2fixel/angle_rs2023_s3.mif -abs 1e-5

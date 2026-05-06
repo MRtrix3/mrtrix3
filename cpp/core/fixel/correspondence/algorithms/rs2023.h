@@ -28,11 +28,11 @@ class OptionGroup;
 
 namespace MR::Fixel::Correspondence::Algorithms {
 
-extern App::OptionGroup IN2023Options;
+extern App::OptionGroup RS2023Options;
 
-class IN2023 : public Combinatorial<IN2023> {
+class RS2023 : public Combinatorial<RS2023> {
 public:
-  IN2023(const index_type max_origins_per_target, const index_type max_objectives_per_source, const Header &H_cost)
+  RS2023(const index_type max_origins_per_target, const index_type max_objectives_per_source, const Header &H_cost)
       : Combinatorial(max_origins_per_target, max_objectives_per_source, H_cost) {}
 
   static float calculate(const std::vector<Correspondence::Fixel> &s,

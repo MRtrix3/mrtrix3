@@ -14,7 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "fixel/correspondence/algorithms/in2023.h"
+#include "fixel/correspondence/algorithms/rs2023.h"
 
 #include "app.h"
 
@@ -23,18 +23,18 @@ namespace MR::Fixel::Correspondence::Algorithms {
 using namespace App;
 
 // clang-format off
-OptionGroup IN2023Options = OptionGroup("Options specific to algorithm \"in2023\"")
-  + Option("in2023_constants",
+OptionGroup RS2023Options = OptionGroup("Options specific to algorithm \"rs2023\"")
+  + Option("rs2023_constants",
            "set values for the two constants"
-           " that modulate the influence of different cost function terms in the IN2023 expression")
+           " that modulate the influence of different cost function terms in the RS2023 expression")
     + Argument("alpha").type_float(0.0)
     + Argument("beta").type_float(0.0);
 // clang-format off
 
-float IN2023::a = default_in2023_alpha;
-float IN2023::b = default_in2023_beta;
+float RS2023::a = default_in2023_alpha;
+float RS2023::b = default_in2023_beta;
 
-float IN2023::calculate(const std::vector<Correspondence::Fixel> &s,
+float RS2023::calculate(const std::vector<Correspondence::Fixel> &s,
                         const std::vector<Correspondence::Fixel> &rs,
                         const std::vector<Correspondence::Fixel> &t,
                         const std::vector<std::vector<index_type>> &inv_mapping,
@@ -64,7 +64,7 @@ float IN2023::calculate(const std::vector<Correspondence::Fixel> &s,
   return result;
 }
 
-void IN2023::set_constants(const float alpha, const float beta) {
+void RS2023::set_constants(const float alpha, const float beta) {
   a = alpha;
   b = beta;
 }
