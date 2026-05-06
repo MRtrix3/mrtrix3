@@ -121,7 +121,7 @@ std::unique_ptr<ImageIO::Base> PAR::read(Header &H) const {
 
   std::ifstream in(hpath, std::ios::binary);
   if (!in)
-    throw Exception("error opening PAR/REC header \"" + H.name() + "\": " + strerror(errno));
+    throw Exception("error opening PAR/REC header \"" + H.path().string() + "\": " + strerror(errno));
 
   float version = NaN;
   ParCols cols;
@@ -157,7 +157,7 @@ std::unique_ptr<ImageIO::Base> PAR::read(Header &H) const {
 
     } else { // per-slice info
       if (std::isnan(version))
-        throw Exception("no version information found in file \"" + H.name() + "\"");
+        throw Exception("no version information found in file \"" + H.path().string() + "\"");
 
       slices.push_back(parse_line(line, cols));
     }
@@ -169,25 +169,25 @@ std::unique_ptr<ImageIO::Base> PAR::read(Header &H) const {
   int nvols = 0;
   for (const auto &slice : slices) {
     if (slice.seq != slices[0].seq)
-      throw Exception("non-matching orientations in PAR/REC file \"" + H.name() + "\"");
+      throw Exception("non-matching orientations in PAR/REC file \"" + H.path().string() + "\"");
 
     if (slice.pix != slices[0].pix)
-      throw Exception("non-matching bit depths in PAR/REC file \"" + H.name() + "\"");
+      throw Exception("non-matching bit depths in PAR/REC file \"" + H.path().string() + "\"");
 
     if (slice.size[0] != slices[0].size[0] || slice.size[1] != slices[0].size[1])
-      throw Exception("non-matching matrix sizes in PAR/REC file \"" + H.name() + "\"");
+      throw Exception("non-matching matrix sizes in PAR/REC file \"" + H.path().string() + "\"");
 
     if (slice.rs != slices[0].rs || slice.ri != slices[0].ri || slice.ss != slices[0].ss)
-      throw Exception("non-matching rescale coefficients in PAR/REC file \"" + H.name() + "\"");
+      throw Exception("non-matching rescale coefficients in PAR/REC file \"" + H.path().string() + "\"");
 
     if (slice.thick != slices[0].thick)
-      throw Exception("non-matching slice thicknesses in PAR/REC file \"" + H.name() + "\"");
+      throw Exception("non-matching slice thicknesses in PAR/REC file \"" + H.path().string() + "\"");
 
     if (slice.gap != slices[0].gap)
-      throw Exception("non-matching slice gaps in PAR/REC file \"" + H.name() + "\"");
+      throw Exception("non-matching slice gaps in PAR/REC file \"" + H.path().string() + "\"");
 
     if (slice.vox[0] != slices[0].vox[0] && slice.vox[1] != slices[0].vox[1])
-      throw Exception("non-matching voxel sizes in PAR/REC file \"" + H.name() + "\"");
+      throw Exception("non-matching voxel sizes in PAR/REC file \"" + H.path().string() + "\"");
 
     if (slice.sl == 1) {
       nvols++;
@@ -200,7 +200,7 @@ std::unique_ptr<ImageIO::Base> PAR::read(Header &H) const {
   }
 
   if (size_t(nvols * nslices) != slices.size())
-    throw Exception("mismatch in dimensions when reading PAR/REC file \"" + H.name() + "\"");
+    throw Exception("mismatch in dimensions when reading PAR/REC file \"" + H.path().string() + "\"");
 
   if (nvols > 1) {
     H.ndim() = 4;
@@ -218,7 +218,7 @@ std::unique_ptr<ImageIO::Base> PAR::read(Header &H) const {
   H.spacing(2) = slices[0].thick + slices[0].gap;
 
   if (slices[0].gap > 0.0)
-    WARN("slice gap detected in PAR/REC file \"" + H.name() + "\"");
+    WARN("slice gap detected in PAR/REC file \"" + H.path().string() + "\"");
 
   H.stride(0) = -1;
   H.stride(1) = -2;
@@ -258,7 +258,8 @@ std::unique_ptr<ImageIO::Base> PAR::read(Header &H) const {
 
   if (!G.empty()) {
     if (G.size() != size_t(nvols))
-      throw Exception("mismatch between number of volumes and number of b-values in PAR/REC file \"" + H.name() + "\"");
+      throw Exception("mismatch between number of volumes and number of b-values in PAR/REC file \"" +
+                      H.path().string() + "\"");
 
     Eigen::MatrixXd grad(G.size(), 4);
     for (size_t n = 0; n < G.size(); ++n) {

@@ -383,7 +383,7 @@ Reader::Reader(const std::filesystem::path &path, const Image<bool> &mask) : dir
       throw Exception("Number of fixels in value image (" + str(value_image.size(0)) +
                       ") does not match number of fixels in fixel image (" + str(fixel_image.size(0)) + ")");
     if (mask_image.valid() && size_t(mask_image.size(0)) != size())
-      throw Exception("Fixel image \"" + mask_image.name() + "\" has different number of fixels (" +
+      throw Exception("Fixel image \"" + mask_image.path().string() + "\" has different number of fixels (" +
                       str(mask_image.size(0)) + ") to fixel-fixel connectivity matrix (" + str(size()) + ")");
   } catch (Exception &e) {
     throw Exception(e, "Unable to load path \"" + directory.string() + "\" as fixel-fixel connectivity data");

@@ -30,7 +30,7 @@ ImageProperties::ImageProperties(QWidget *parent, const MR::Header &header)
 
   TreeItem *root = model->rootItem;
 
-  root->appendChild(new TreeItem("File", H.name(), root));
+  root->appendChild(new TreeItem("File", H.path().string(), root));
   assert(H.format());
   root->appendChild(new TreeItem("Format", H.format(), root));
 

@@ -121,7 +121,7 @@ void run() {
   out_header.datatype() = DataType::Float32;
   out_header.datatype().set_byte_order_native();
   out_header.size(3) = 3 * max_fixel_count;
-  out_header.name() = output_path.string();
+  out_header.path() = output_path;
   Image<float> out_image(Image<float>::create(output_path, out_header));
 
   const float fill = !get_options("nan").empty() ? NaN : 0.0F;

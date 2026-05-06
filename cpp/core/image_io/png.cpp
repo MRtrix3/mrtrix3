@@ -27,7 +27,7 @@ namespace MR::ImageIO {
 void PNG::load(const Header &header, size_t) {
   DEBUG(std::string("loading PNG ")               //
         + (files.size() > 1 ? "images" : "image") //
-        + " \"" + header.name() + "\"");          //
+        + " \"" + header.path().string() + "\""); //
   segsize = (header.datatype().bits() * voxel_count(header) + 7) / 8;
   addresses.resize(1);
   addresses[0].reset(new uint8_t[segsize]);
@@ -46,7 +46,7 @@ void PNG::load(const Header &header, size_t) {
           png.get_output_bitdepth() != int(header.datatype().bits()) ||
           ((header.ndim() > 3 && png.get_channels() != header.size(3)) ||
            (header.ndim() <= 3 && png.get_channels() > 1))) {
-        Exception e("Inconsistent image properties within series \"" + header.name() + "\"");
+        Exception e("Inconsistent image properties within series \"" + header.path().string() + "\"");
         e.push_back("Series: " + str(header.size(0)) + "x" + str(header.size(1)) + " x " +
                     str(header.datatype().bits()) + " bits, " + (header.ndim() > 3 ? str(header.size(3)) : "1") +
                     " volumes");

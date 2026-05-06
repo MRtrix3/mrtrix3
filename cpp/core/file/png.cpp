@@ -198,7 +198,7 @@ Writer::Writer(const Header &H, const std::filesystem::path &path)
   }
   if (data_type.is_complex()) {
     png_destroy_write_struct(&png_ptr, &info_ptr);
-    throw Exception("Complex datatype from image \"" + H.name() + "\" not supported by PNG format");
+    throw Exception("Complex datatype from image \"" + H.path().string() + "\" not supported by PNG format");
   }
   if (data_type.is_floating_point()) {
     INFO("Data to be converted to PNG is floating-point; "
@@ -207,7 +207,7 @@ Writer::Writer(const Header &H, const std::filesystem::path &path)
   switch (data_type() & DataType::Type) {
   case DataType::Undefined:
     png_destroy_write_struct(&png_ptr, &info_ptr);
-    throw Exception("Undefined data type in image \"" + H.name() + "\" for PNG writer");
+    throw Exception("Undefined data type in image \"" + H.path().string() + "\" for PNG writer");
   case DataType::Bit:
     assert(false);
     break;

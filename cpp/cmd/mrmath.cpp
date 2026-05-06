@@ -438,16 +438,16 @@ void run() {
       headers_in[i] = Header::open(path);
       const Header &temp(headers_in[i]);
       if (temp.ndim() < header.ndim())
-        throw Exception("Image " + path.string() + " has fewer axes than first imput image " + header.name());
+        throw Exception("Image " + path.string() + " has fewer axes than first imput image " + header.path().string());
       for (size_t axis = 0; axis != header.ndim(); ++axis) {
         if (temp.size(axis) != header.size(axis))
           throw Exception("Dimensions of image " + path.string() + " do not match those of first input image " +
-                          header.name());
+                          header.path().string());
       }
       for (size_t axis = header.ndim(); axis != temp.ndim(); ++axis) {
         if (temp.size(axis) != 1)
           throw Exception("Image " + path.string() + " has axis with non-unary dimension beyond first input image " +
-                          header.name());
+                          header.path().string());
       }
       header.merge_keyval(temp);
     }

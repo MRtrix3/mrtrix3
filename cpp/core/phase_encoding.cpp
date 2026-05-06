@@ -64,10 +64,10 @@ Eigen::MatrixXd parse_scheme(const Header &header) {
     try {
       PE = MR::parse_matrix(it->second);
     } catch (Exception &e) {
-      throw Exception(e, "malformed PE scheme in image \"" + header.name() + "\"");
+      throw Exception(e, "malformed PE scheme in image \"" + header.path().string() + "\"");
     }
     if (ssize_t(PE.rows()) != ((header.ndim() > 3) ? header.size(3) : 1))
-      throw Exception("malformed PE scheme in image \"" + header.name() + "\":" + //
+      throw Exception("malformed PE scheme in image \"" + header.path().string() + "\":" + //
                       " number of rows does not equal number of volumes");
   } else {
     const auto it_dir = header.keyval().find("PhaseEncodingDirection");
@@ -105,7 +105,7 @@ Eigen::MatrixXd get_scheme(const Header &header) {
     if (opt_table.empty() && opt_eddy.empty())
       result = parse_scheme(header);
   } catch (Exception &e) {
-    throw Exception(e, "error importing phase encoding table for image \"" + header.name() + "\"");
+    throw Exception(e, "error importing phase encoding table for image \"" + header.path().string() + "\"");
   }
 
   if (!result.rows())
@@ -135,7 +135,7 @@ Eigen::MatrixXd eddy2scheme(const Eigen::MatrixXd &config, const Eigen::Array<in
 void export_commandline(const Header &header) {
   auto check = [&](const Eigen::MatrixXd &m) -> const Eigen::MatrixXd & {
     if (!m.rows())
-      throw Exception("no phase-encoding information found within image \"" + header.name() + "\"");
+      throw Exception("no phase-encoding information found within image \"" + header.path().string() + "\"");
     return m;
   };
 

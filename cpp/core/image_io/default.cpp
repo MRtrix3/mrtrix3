@@ -25,7 +25,7 @@ namespace MR::ImageIO {
 
 void Default::load(const Header &header, size_t) {
   if (files.empty())
-    throw Exception("no files specified in header for image \"" + header.name() + "\"");
+    throw Exception("no files specified in header for image \"" + header.path().string() + "\"");
 
   segsize /= files.size();
 
@@ -37,7 +37,7 @@ void Default::load(const Header &header, size_t) {
     bytes_per_segment = header.datatype().bytes() * segsize;
 
   if (files.size() * double(bytes_per_segment) >= double(std::numeric_limits<size_t>::max()))
-    throw Exception("image \"" + header.name() + "\" is larger than maximum accessible memory");
+    throw Exception("image \"" + header.path().string() + "\" is larger than maximum accessible memory");
 
   if (files.size() > MAX_FILES_PER_IMAGE)
     copy_to_mem(header);
@@ -75,12 +75,12 @@ void Default::map_files(const Header &header) {
 }
 
 void Default::copy_to_mem(const Header &header) {
-  DEBUG("loading image \"" + header.name() + "\"...");
+  DEBUG("loading image \"" + header.path().string() + "\"...");
   addresses.resize(
       files.size() > 1 && header.datatype().bits() * segsize != 8 * size_t(bytes_per_segment) ? files.size() : 1);
   addresses[0].reset(new uint8_t[files.size() * bytes_per_segment]);
   if (!addresses[0])
-    throw Exception("failed to allocate memory for image \"" + header.name() + "\"");
+    throw Exception("failed to allocate memory for image \"" + header.path().string() + "\"");
 
   if (is_new)
     memset(addresses[0].get(), 0, files.size() * bytes_per_segment);

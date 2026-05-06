@@ -288,7 +288,7 @@ void run() {
     auto template_header = Header::open(opt[0][0]);
     header = template_header;
     header.keyval().clear();
-    header.keyval()["twi_template"] = str(opt[0][0]);
+    header.keyval()["twi_template"] = opt[0][0].as_text();
     if (!voxel_size.empty())
       oversample_header(header, voxel_size);
   } else {

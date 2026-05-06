@@ -75,30 +75,30 @@ template <class SourceType> void read_mrtrix_header(Header &H, SourceType &kv) {
   }
 
   if (dim.empty())
-    throw Exception("missing \"dim\" specification for MRtrix image \"" + H.name() + "\"");
+    throw Exception("missing \"dim\" specification for MRtrix image \"" + H.path().string() + "\"");
   H.ndim() = dim.size();
   for (size_t n = 0; n < dim.size(); n++) {
     if (dim[n] < 1)
-      throw Exception("invalid dimensions for MRtrix image \"" + H.name() + "\"");
+      throw Exception("invalid dimensions for MRtrix image \"" + H.path().string() + "\"");
     H.size(n) = dim[n];
   }
 
   if (vox.empty())
-    throw Exception("missing \"vox\" specification for MRtrix image \"" + H.name() + "\"");
+    throw Exception("missing \"vox\" specification for MRtrix image \"" + H.path().string() + "\"");
   if (vox.size() < std::min(size_t(3), dim.size()))
-    throw Exception("too few entries in \"vox\" specification for MRtrix image \"" + H.name() + "\"");
+    throw Exception("too few entries in \"vox\" specification for MRtrix image \"" + H.path().string() + "\"");
   for (size_t n = 0; n < std::min<size_t>(vox.size(), H.ndim()); n++) {
     if (vox[n] < 0.0)
-      throw Exception("invalid voxel size for MRtrix image \"" + H.name() + "\"");
+      throw Exception("invalid voxel size for MRtrix image \"" + H.path().string() + "\"");
     H.spacing(n) = vox[n];
   }
 
   if (dtype.empty())
-    throw Exception("missing \"datatype\" specification for MRtrix image \"" + H.name() + "\"");
+    throw Exception("missing \"datatype\" specification for MRtrix image \"" + H.path().string() + "\"");
   H.datatype() = DataType::parse(dtype);
 
   if (layout.empty())
-    throw Exception("missing \"layout\" specification for MRtrix image \"" + H.name() + "\"");
+    throw Exception("missing \"layout\" specification for MRtrix image \"" + H.path().string() + "\"");
   auto ax = parse_axes(H.ndim(), layout);
   for (size_t i = 0; i < ax.size(); ++i)
     H.stride(i) = ax[i];
@@ -114,7 +114,7 @@ template <class SourceType> void read_mrtrix_header(Header &H, SourceType &kv) {
       return true;
     };
     if (!check_transform())
-      throw Exception("invalid \"transform\" specification for MRtrix image \"" + H.name() + "\"");
+      throw Exception("invalid \"transform\" specification for MRtrix image \"" + H.path().string() + "\"");
 
     for (int row = 0; row < 3; ++row)
       for (int col = 0; col < 4; ++col)
@@ -123,7 +123,7 @@ template <class SourceType> void read_mrtrix_header(Header &H, SourceType &kv) {
 
   if (!scaling.empty()) {
     if (scaling.size() != 2)
-      throw Exception("invalid \"scaling\" specification for MRtrix image \"" + H.name() + "\"");
+      throw Exception("invalid \"scaling\" specification for MRtrix image \"" + H.path().string() + "\"");
     H.set_intensity_scaling(scaling[1], scaling[0]);
   }
 }

@@ -59,7 +59,7 @@ std::unique_ptr<ImageIO::Base> MRtrix::read(Header &H) const {
 }
 
 bool MRtrix::check(Header &H, size_t num_axes) const {
-  if (!Path::has_suffix(H.path(), ".mih") && !Path::has_suffix(H.path(), ".mif"))
+  if (!Path::has_suffix(H.path(), {".mih", ".mif"}))
     return false;
 
   H.ndim() = num_axes;

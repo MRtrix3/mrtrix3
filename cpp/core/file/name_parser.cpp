@@ -45,7 +45,7 @@ void NameParser::parse(const std::filesystem::path &imagename, size_t max_num_se
 
   try {
     std::string::size_type pos;
-    std::string basename = specification_path.filename().string();
+    std::string basename = imagename.filename().string();
     size_t num = 0;
 
     while ((pos = basename.find_last_of(']')) < std::string::npos && num < max_num_sequences) {

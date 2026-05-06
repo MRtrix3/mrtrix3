@@ -234,7 +234,7 @@ void run() {
       if (template_header.ndim() < 3)
         throw Exception("the template image requires at least 3 spatial dimensions");
       add_line(regrid_filter.keyval()["comments"],
-               std::string("regridded to template image \"" + template_header.name() + "\""));
+               std::string("regridded to template image \"" + template_header.path().string() + "\""));
       for (auto i = 0; i < 3; ++i) {
         regrid_filter.spacing(i) = template_header.spacing(i);
         regrid_filter.size(i) = template_header.size(i);

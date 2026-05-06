@@ -177,7 +177,8 @@ void run() {
   const std::filesystem::path design_matrix_path{argument[1]};
   const std::filesystem::path contrast_matrix_path{argument[2]};
   const std::filesystem::path mask_path{argument[3]};
-  const std::filesystem::path output_path{argument[4]};
+  // TODO Remove explicit cast if output argument is changed to .type_directory_out()
+  const std::filesystem::path output_path(argument[4].as_text());
 
   const value_type cluster_forming_threshold = get_option_value("threshold", NaN);
   const value_type tfce_dh = get_option_value("tfce_dh", DEFAULT_TFCE_DH);

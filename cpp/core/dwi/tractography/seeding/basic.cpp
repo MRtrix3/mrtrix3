@@ -112,7 +112,7 @@ bool Grid_per_voxel::get_seed(Eigen::Vector3f &p) const {
   return true;
 }
 
-Rejection::Rejection(const std::string &in)
+Rejection::Rejection(const std::filesystem::path &in)
     : Base(in, "rejection sampling", MAX_TRACKING_SEED_ATTEMPTS_RANDOM),
 #ifdef REJECTION_SAMPLING_USE_INTERPOLATION
       interp(in),
@@ -147,7 +147,7 @@ Rejection::Rejection(const std::string &in)
   }
 
   if (!max)
-    throw Exception("Cannot use image " + in + " for rejection sampling - image is empty");
+    throw Exception("Cannot use image " + in.string() + " for rejection sampling - image is empty");
 
   if (bottom[0])
     --bottom[0];

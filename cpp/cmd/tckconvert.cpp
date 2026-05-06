@@ -335,8 +335,8 @@ public:
             float radius = DEFAULT_PLY_RADIUS,
             int sides = DEFAULT_PLY_SIDES)
       : out(path), increment(increment), radius(radius), sides(sides) {
-    vertexFilename = File::create_tempfile(0, "vertex");
-    faceFilename = File::create_tempfile(0, "face");
+    vertexFilename = File::create_tempfile(0, ".vertex");
+    faceFilename = File::create_tempfile(0, ".face");
 
     vertexOF.open(vertexFilename);
     faceOF.open(faceFilename);
@@ -589,10 +589,10 @@ class RibWriter : public WriterInterface<float> {
 public:
   RibWriter(const std::filesystem::path &path, float radius = 0.1, bool dec = false)
       : out(path), writeDEC(dec), radius(radius), hasPoints(false), wroteHeader(false) {
-    pointsFilename = File::create_tempfile(0, "points");
+    pointsFilename = File::create_tempfile(0, ".points");
     pointsOF.open(pointsFilename);
     pointsOF << "\"P\" [";
-    decFilename = File::create_tempfile(0, "dec");
+    decFilename = File::create_tempfile(0, ".dec");
     decOF.open(decFilename);
     decOF << "\"varying color dec\" [";
     // Header

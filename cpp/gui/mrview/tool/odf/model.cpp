@@ -29,7 +29,7 @@ size_t ODF_Model::add_items(const std::vector<std::string> &list,
   for (size_t i = 0; i < list.size(); ++i) {
     try {
       auto header = std::make_unique<MR::Header>(MR::Header::open(list[i]));
-      const auto header_basename = std::filesystem::path{header->name()}.filename().string();
+      const auto header_basename = header->path().filename().string();
       switch (type) {
       case odf_type_t::SH:
         Math::SH::check(*header);

@@ -28,7 +28,7 @@
 namespace MR::Formats {
 
 std::unique_ptr<ImageIO::Base> PNG::read(Header &H) const {
-  if (!(Path::has_suffix(H.path(), ".png") || Path::has_suffix(H.path(), ".PNG")))
+  if (!Path::has_suffix(H.path(), {".png", ".PNG"}))
     return std::unique_ptr<ImageIO::Base>();
 
   const std::filesystem::path &hpath = static_cast<const Header &>(H).path();
@@ -52,7 +52,8 @@ std::unique_ptr<ImageIO::Base> PNG::read(Header &H) const {
     H.size(3) = 4;
     break;
   default:
-    throw Exception("Unsupported color type in PNG image \"" + H.name() + "\" (" + str(png.get_colortype()) + ")");
+    throw Exception("Unsupported color type in PNG image \"" + H.path().string() + "\" (" + str(png.get_colortype()) +
+                    ")");
   }
   if (png.has_transparency()) {
     if (H.ndim() == 3) {
@@ -103,7 +104,8 @@ std::unique_ptr<ImageIO::Base> PNG::read(Header &H) const {
     H.datatype() = DataType::UInt16BE;
     break;
   default:
-    throw Exception("Unexpected bit depth (" + str(png.get_bitdepth()) + ") in PNG image \"" + H.name() + "\"");
+    throw Exception("Unexpected bit depth (" + str(png.get_bitdepth()) + ") in PNG image \"" + H.path().string() +
+                    "\"");
   }
 
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::PNG(H));
@@ -113,7 +115,7 @@ std::unique_ptr<ImageIO::Base> PNG::read(Header &H) const {
 }
 
 bool PNG::check(Header &H, size_t num_axes) const {
-  if (!(Path::has_suffix(H.path(), ".png") || Path::has_suffix(H.path(), ".PNG")))
+  if (!Path::has_suffix(H.path(), {".png", ".PNG"}))
     return false;
 
   if (H.datatype().is_complex())

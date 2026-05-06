@@ -152,13 +152,13 @@ std::unique_ptr<ImageIO::Base> MRI::read(Header &H) const {
   File::MMap fmap(hpath);
 
   if (memcmp(fmap.address(), "MRI#", 4))
-    throw Exception("file \"" + H.name() + "\" is not in MRI format (unrecognised magic number)");
+    throw Exception("file \"" + H.path().string() + "\" is not in MRI format (unrecognised magic number)");
 
   bool is_BE = false;
   if (Raw::fetch_<uint16_t>(fmap.address() + sizeof(int32_t), is_BE) == 0x0100U)
     is_BE = true;
   else if (Raw::fetch_<uint16_t>(fmap.address() + sizeof(uint32_t), is_BE) != 0x0001U)
-    throw Exception("MRI file \"" + H.name() + "\" is badly formed (invalid byte order specifier)");
+    throw Exception("MRI file \"" + H.path().string() + "\" is badly formed (invalid byte order specifier)");
 
   H.ndim() = 4;
 
@@ -185,7 +185,7 @@ std::unique_ptr<ImageIO::Base> MRI::read(Header &H) const {
         bool forward = true;
         size_t ax = char2order(c[n], forward);
         if (ax == std::numeric_limits<size_t>::max())
-          throw Exception("invalid order specifier in MRI image \"" + H.name() + "\"");
+          throw Exception("invalid order specifier in MRI image \"" + H.path().string() + "\"");
         H.stride(ax) = n + 1;
         if (!forward)
           H.stride(ax) = -H.stride(ax);
@@ -217,7 +217,7 @@ std::unique_ptr<ImageIO::Base> MRI::read(Header &H) const {
     } break;
     default:
       WARN("unknown header entity (" + str(type(current, is_BE)) + ", offset " + str(current - fmap.address()) +
-           ") in image \"" + H.name() + "\" - ignored");
+           ") in image \"" + H.path().string() + "\" - ignored");
       break;
     }
 
@@ -228,7 +228,7 @@ std::unique_ptr<ImageIO::Base> MRI::read(Header &H) const {
   }
 
   if (!data_offset)
-    throw Exception("no data field found in MRI image \"" + H.name() + "\"");
+    throw Exception("no data field found in MRI image \"" + H.path().string() + "\"");
 
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));
   io_handler->files.push_back(File::Entry(hpath, data_offset));

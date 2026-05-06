@@ -98,7 +98,7 @@ Eigen::MatrixXd parse_DW_scheme(const Header &header) {
     try {
       G = MR::parse_matrix(it->second);
     } catch (Exception &e) {
-      throw Exception(e, "malformed DW scheme in image \"" + header.name() + "\"");
+      throw Exception(e, "malformed DW scheme in image \"" + header.path().string() + "\"");
     }
   }
   return G;
@@ -293,14 +293,14 @@ Eigen::MatrixXd get_DW_scheme(const Header &header, BValueScalingBehaviour bvalu
     return grad;
   } catch (Exception &e) {
     clear_DW_scheme(const_cast<Header &>(header));
-    throw Exception(e, "error importing diffusion gradient table for image \"" + header.name() + "\"");
+    throw Exception(e, "error importing diffusion gradient table for image \"" + header.path().string() + "\"");
   }
 }
 
 void export_grad_commandline(const Header &header) {
   auto check = [](const Header &h) -> const Header & {
     if (h.keyval().find("dw_scheme") == h.keyval().end())
-      throw Exception("no gradient information found within image \"" + h.name() + "\"");
+      throw Exception("no gradient information found within image \"" + h.path().string() + "\"");
     return h;
   };
 

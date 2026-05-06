@@ -17,6 +17,7 @@
 #pragma once
 
 #include <filesystem>
+#include <optional>
 
 #include "image.h"
 #include "types.h"
@@ -60,7 +61,7 @@ public:
   void set_term_mu(const float i) { term_mu = i; }
   void set_csv_path(const std::filesystem::path &i) { csv_path = i; }
 
-  void set_regular_outputs(const std::vector<uint32_t> &, const std::filesystem::path &);
+  void set_regular_outputs(const std::vector<uint32_t> &, const std::optional<std::filesystem::path> &);
 
   // DEBUGGING
   void test_sorting_block_size(const size_t) const;
@@ -76,7 +77,7 @@ protected:
 
   // User-controllable settings
   std::vector<track_t> output_at_counts;
-  std::filesystem::path debug_dir;
+  std::optional<std::filesystem::path> debug_dir;
   track_t term_number;
   float term_ratio;
   double term_mu;

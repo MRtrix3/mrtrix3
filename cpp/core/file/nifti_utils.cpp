@@ -81,23 +81,23 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
   if (Raw::fetch_<int32_t>(&NH.sizeof_hdr, is_BE) != sizeof(NH)) {
     is_BE = true;
     if (Raw::fetch_<int32_t>(&NH.sizeof_hdr, is_BE) != sizeof(NH))
-      throw Exception("image \"" + H.name() + "\" is not in " + version + " format (sizeof_hdr != " + str(sizeof(NH)) +
-                      ")");
+      throw Exception("image \"" + H.path().string() + "\" is not in " + version +
+                      " format (sizeof_hdr != " + str(sizeof(NH)) + ")");
   }
 
   bool is_nifti = true;
   if (memcmp(NH.magic, Type<NiftiHeader>::magic1(), 4) && memcmp(NH.magic, Type<NiftiHeader>::magic2(), 4)) {
     if (Type<NiftiHeader>::is_version2) {
-      throw Exception("image \"" + H.name() + "\" is not in " + version + " format (invalid magic signature)");
+      throw Exception("image \"" + H.path().string() + "\" is not in " + version + " format (invalid magic signature)");
     } else {
       is_nifti = false;
-      DEBUG("assuming image \"" + H.name() + "\" is in AnalyseAVW format.");
+      DEBUG("assuming image \"" + H.path().string() + "\" is in AnalyseAVW format.");
     }
   }
 
   if (Type<NiftiHeader>::is_version2) {
     if (memcmp(NH.magic + 4, Type<NiftiHeader>::signature_extra(), 4))
-      WARN("possible file transfer corruption of file \"" + H.name() + "\" (invalid magic signature)");
+      WARN("possible file transfer corruption of file \"" + H.path().string() + "\" (invalid magic signature)");
   } else {
     char db_name[19];
     strncpy(db_name, Type<NiftiHeader>::db_name(NH), 18);
@@ -149,7 +149,7 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
     dtype = DataType::CFloat64;
     break;
   default:
-    throw Exception("unknown data type for " + version + " image \"" + H.name() + "\"");
+    throw Exception("unknown data type for " + version + " image \"" + H.path().string() + "\"");
   }
 
   if (!(dtype.is(DataType::Bit) || dtype.is(DataType::UInt8) || dtype.is(DataType::Int8))) {
@@ -160,20 +160,20 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
   }
 
   if (Raw::fetch_<int16_t>(&NH.bitpix, is_BE) != (int16_t)dtype.bits())
-    WARN("bitpix field does not match data type in " + version + " image \"" + H.name() + "\" - ignored");
+    WARN("bitpix field does not match data type in " + version + " image \"" + H.path().string() + "\" - ignored");
 
   H.datatype() = dtype;
 
   const int ndim = Raw::fetch_<dim_type>(&NH.dim, is_BE);
   if (ndim < 1)
-    throw Exception("too few dimensions specified in NIfTI image \"" + H.name() + "\"");
+    throw Exception("too few dimensions specified in NIfTI image \"" + H.path().string() + "\"");
   if (ndim > 7)
-    throw Exception("too many dimensions specified in NIfTI image \"" + H.name() + "\"");
+    throw Exception("too many dimensions specified in NIfTI image \"" + H.path().string() + "\"");
   H.ndim() = ndim;
   for (int i = 0; i != ndim; i++) {
     H.size(i) = Raw::fetch_<dim_type>(&NH.dim[i + 1], is_BE);
     if (H.size(i) < 0) {
-      INFO("dimension along axis " + str(i) + " specified as negative in NIfTI image \"" + H.name() +
+      INFO("dimension along axis " + str(i) + " specified as negative in NIfTI image \"" + H.path().string() +
            "\" - taking absolute value");
       H.size(i) = abs(H.size(i));
     }
@@ -187,7 +187,7 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
   for (int i = 0; i < ndim; i++) {
     pixdim[i] = Raw::fetch_<float_type>(&NH.pixdim[i + 1], is_BE);
     if (pixdim[i] < 0.0) {
-      INFO("voxel size along axis " + str(i) + " specified as negative in NIfTI image \"" + H.name() +
+      INFO("voxel size along axis " + str(i) + " specified as negative in NIfTI image \"" + H.path().string() +
            "\" - taking absolute value");
       pixdim[i] = abs(pixdim[i]);
     }
@@ -301,7 +301,7 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
         Header header2(H);
         header2.transform() = M_qform;
         if (!voxel_grids_match_in_scanner_space(H, header2, 0.1))
-          WARN("qform and sform are inconsistent in NIfTI image \"" + H.name() + "\" - using " +
+          WARN("qform and sform are inconsistent in NIfTI image \"" + H.path().string() + "\" - using " +
                (use_sform ? "sform" : "qform"));
       }
 
@@ -355,7 +355,7 @@ template <class NiftiHeader> void store(NiftiHeader &NH, const Header &H, const 
   using float_type = typename Type<NiftiHeader>::float_type;
 
   if (H.ndim() > 7)
-    throw Exception(version + " format cannot support more than 7 dimensions for image \"" + H.name() + "\"");
+    throw Exception(version + " format cannot support more than 7 dimensions for image \"" + H.path().string() + "\"");
 
   bool is_BE = H.datatype().is_big_endian();
 
@@ -435,7 +435,7 @@ template <class NiftiHeader> void store(NiftiHeader &NH, const Header &H, const 
     dt = DT_COMPLEX128;
     break;
   default:
-    throw Exception("unknown data type for " + version + " image \"" + H.name() + "\"");
+    throw Exception("unknown data type for " + version + " image \"" + H.path().string() + "\"");
   }
   Raw::store<int16_t>(dt, &NH.datatype, is_BE);
 
@@ -498,7 +498,7 @@ template <class NiftiHeader> void store(NiftiHeader &NH, const Header &H, const 
     Raw::store<float_type>(M(1, 3), &NH.qoffset_y, is_BE);
     Raw::store<float_type>(M(2, 3), &NH.qoffset_z, is_BE);
   } else {
-    WARN("image \"" + H.name() + "\" contains non-rigid transform - qform will not be stored.");
+    WARN("image \"" + H.path().string() + "\" contains non-rigid transform - qform will not be stored.");
     Raw::store<code_type>(NIFTI_XFORM_UNKNOWN, &NH.qform_code, is_BE);
   }
 
@@ -542,7 +542,7 @@ template <class NiftiHeader> void store(NiftiHeader &NH, const Header &H, const 
     else
       assert(0);
     json_path.replace_extension(".json");
-    File::JSON::save(H, json_path, H.name());
+    File::JSON::save(H, json_path, H.path());
   }
 }
 
@@ -688,7 +688,7 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> create(Header &H) {
   const std::string &version = Type<nifti_header>::version();
 
   if (H.ndim() > 7)
-    throw Exception(version + " format cannot support more than 7 dimensions for image \"" + H.name() + "\"");
+    throw Exception(version + " format cannot support more than 7 dimensions for image \"" + H.path().string() + "\"");
 
   const std::filesystem::path &hpath = static_cast<const Header &>(H).path();
   const bool single_file = Path::has_suffix(hpath, ".nii");
@@ -724,7 +724,7 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> create_gz(Header &H) {
   const std::string &version = Type<nifti_header>::version();
 
   if (H.ndim() > 7)
-    throw Exception(version + " format cannot support more than 7 dimensions for image \"" + H.name() + "\"");
+    throw Exception(version + " format cannot support more than 7 dimensions for image \"" + H.path().string() + "\"");
 
   std::unique_ptr<ImageIO::GZ> io_handler(new ImageIO::GZ(H, sizeof(nifti_header) + 4));
   nifti_header &NH = *reinterpret_cast<nifti_header *>(io_handler->header());
@@ -765,7 +765,7 @@ int version(Header &H) {
 
   for (size_t axis = 0; axis != H.ndim(); ++axis) {
     if (H.size(axis) > std::numeric_limits<int16_t>::max()) {
-      INFO("Forcing file \"" + H.name() + "\" to use NIfTI version 2 due to image dimensions");
+      INFO("Forcing file \"" + H.path().string() + "\" to use NIfTI version 2 due to image dimensions");
       return 2;
     }
   }

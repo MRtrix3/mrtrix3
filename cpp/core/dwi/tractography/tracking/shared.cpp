@@ -54,7 +54,7 @@ SharedBase::SharedBase(const std::filesystem::path &diff_path, Properties &prope
   properties.set(rk4, "rk4");
   properties.set(stop_on_all_include, "stop_on_all_include");
 
-  properties["source"] = source.name();
+  properties["source"] = source.path().string();
 
   max_num_seeds = Defaults::seed_to_select_ratio * max_num_tracks;
   properties.set(max_num_seeds, "max_num_seeds");

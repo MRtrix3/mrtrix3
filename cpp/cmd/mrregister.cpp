@@ -167,7 +167,7 @@ void run() {
 
   for (size_t i = 0; i < n_images; i++) {
     if (input1[i].ndim() != input2[i].ndim())
-      throw Exception("input images " + input1[i].name() + " and " + input2[i].name() +
+      throw Exception("input images " + input1[i].path().string() + " and " + input2[i].path().string() +
                       " do not have the same number of dimensions");
     check_3D_nonunity(input1[i]);
     check_3D_nonunity(input2[i]);
@@ -226,13 +226,13 @@ void run() {
   for (size_t i = 1; i < n_images; i++) {
     if (!trafo.isApprox(MR::Transform(input1[i]).scanner2voxel.linear(), 1e-5))
       WARN("Multi contrast image has different header transformation from first image. Ignoring transformation of " +
-           str(input1[i].name()));
+           input1[i].path().string());
   }
   trafo = MR::Transform(input2[0]).scanner2voxel.linear();
   for (size_t i = 1; i < n_images; i++) {
     if (!trafo.isApprox(MR::Transform(input2[i]).scanner2voxel.linear(), 1e-5))
       WARN("Multi contrast image has different header transformation from first image. Ignoring transformation of " +
-           str(input2[i].name()));
+           input2[i].path().string());
   }
 
   // multi-contrast settings
@@ -248,30 +248,30 @@ void run() {
     if (i > 0)
       check_dimensions(input2[i], input2[i - 1], 0, 3);
     if ((input1[i].ndim() != 3) and (input1[i].ndim() != 4))
-      throw Exception("image dimensionality other than 3 or 4 are not supported. image " + str(input1[i].name()) +
+      throw Exception("image dimensionality other than 3 or 4 are not supported. image " + input1[i].path().string() +
                       " is " + str(input1[i].ndim()) + " dimensional");
 
     const size_t nvols1 = input1[i].ndim() == 3 ? 1 : input1[i].size(3);
     const size_t nvols2 = input2[i].ndim() == 3 ? 1 : input2[i].size(3);
     if (nvols1 != nvols2)
-      throw Exception("input images do not have the same number of volumes: " + str(input2[i].name()) + " and " +
-                      str(input1[i].name()));
+      throw Exception("input images do not have the same number of volumes: " + input2[i].path().string() + " and " +
+                      input1[i].path().string());
 
     // set do_reorientation and image_lmax
     if (nvols1 == 1) { // 3D or one volume
       mc_params[i].do_reorientation = false;
       mc_params[i].image_lmax = 0;
-      CONSOLE("3D input pair " + input1[i].name() + ", " + input2[i].name());
+      CONSOLE("3D input pair " + input1[i].path().string() + ", " + input2[i].path().string());
     } else { // more than one volume
       if (do_reorientation && nvols1 > 1 && SH::NforL(SH::LforN(nvols1)) == nvols1) {
-        CONSOLE("SH image input pair " + input1[i].name() + ", " + input2[i].name());
+        CONSOLE("SH image input pair " + input1[i].path().string() + ", " + input2[i].path().string());
         mc_params[i].do_reorientation = true;
         mc_params[i].image_lmax = Math::SH::LforN(nvols1);
         if (!directions_cartesian.cols())
           directions_cartesian =
               Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_60()).transpose();
       } else {
-        CONSOLE("4D scalar input pair " + input1[i].name() + ", " + input2[i].name());
+        CONSOLE("4D scalar input pair " + input1[i].path().string() + ", " + input2[i].path().string());
         mc_params[i].do_reorientation = false;
         mc_params[i].image_lmax = 0;
       }
@@ -310,7 +310,7 @@ void run() {
       const std::filesystem::path output_path{opt[c][0]};
       Registration::check_image_output(output_path, input2[c]);
       im1_transformed_paths.push_back(output_path);
-      INFO(input1[c].name() + ", transformed to space of image2, will be written to " +
+      INFO(input1[c].path().string() + ", transformed to space of image2, will be written to " +
            im1_transformed_paths[c].string());
     }
   }
@@ -328,11 +328,11 @@ void run() {
       const std::filesystem::path second_output_path{opt[c][1]};
       Registration::check_image_output(first_output_path, input2[c]);
       input1_midway_transformed_paths.push_back(first_output_path);
-      INFO(input1[c].name() + ", transformed to midway space, will be written to " +
+      INFO(input1[c].path().string() + ", transformed to midway space, will be written to " +
            input1_midway_transformed_paths[c].string());
       Registration::check_image_output(second_output_path, input1[c]);
       input2_midway_transformed_paths.push_back(second_output_path);
-      INFO(input2[c].name() + ", transformed to midway space, will be written to " +
+      INFO(input2[c].path().string() + ", transformed to midway space, will be written to " +
            input2_midway_transformed_paths[c].string());
     }
   }
@@ -1092,7 +1092,7 @@ void run() {
       CONSOLE("... " + im1_transformed_paths[idx].string());
       {
         // LogLevelLatch log_level (0);
-        Image<value_type> im1_image = Image<value_type>::open(input1[idx].name());
+        Image<value_type> im1_image = Image<value_type>::open(input1[idx].path());
 
         Header transformed_header(input2[idx]);
         transformed_header.datatype() = DataType::from_command_line(DataType::Float32);
@@ -1160,7 +1160,7 @@ void run() {
       CONSOLE("... " + input1_midway_transformed_paths[idx].string());
       {
         // LogLevelLatch log_level (0);
-        Image<value_type> im1_image = Image<value_type>::open(input1[idx].name());
+        Image<value_type> im1_image = Image<value_type>::open(input1[idx].path());
         midway_header.ndim() = im1_image.ndim();
         if (midway_header.ndim() == 4)
           midway_header.size(3) = im1_image.size(3);
@@ -1214,7 +1214,7 @@ void run() {
       CONSOLE("... " + input2_midway_transformed_paths[idx].string());
       {
         // LogLevelLatch log_level (0);
-        Image<value_type> im2_image = Image<value_type>::open(input2[idx].name());
+        Image<value_type> im2_image = Image<value_type>::open(input2[idx].path());
         midway_header.ndim() = im2_image.ndim();
         if (midway_header.ndim() == 4)
           midway_header.size(3) = im2_image.size(3);

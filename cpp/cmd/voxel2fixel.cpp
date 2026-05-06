@@ -57,7 +57,8 @@ void usage() {
 void run() {
   const std::filesystem::path input_image_path{argument[0]};
   const std::filesystem::path input_fixel_directory{argument[1]};
-  const std::filesystem::path output_fixel_directory{argument[2]};
+  // TODO Remove explicit cast if output arguments are collased to a single entry
+  const std::filesystem::path output_fixel_directory(argument[2].as_text());
 
   auto scalar = Image<float>::open(input_image_path);
   Fixel::check_fixel_directory(input_fixel_directory);
@@ -71,7 +72,7 @@ void run() {
     progress++;
   }
 
-  auto output_fixel_data = Image<float>::create((output_fixel_directory / std::filesystem::path(argument[3])),
+  auto output_fixel_data = Image<float>::create(output_fixel_directory / std::filesystem::path(argument[3]),
                                                 Fixel::data_header_from_index(input_fixel_index));
 
   for (auto v = Loop("mapping voxel scalar values to fixels", 0, 3)(scalar, input_fixel_index); v; ++v) {

@@ -21,7 +21,7 @@
 
 namespace MR::File {
 
-bool is_tempfile(const std::filesystem::path &name, const char *suffix = NULL);
-std::filesystem::path create_tempfile(int64_t size = 0, const char *suffix = NULL);
+bool is_tempfile(const std::filesystem::path &name, const std::string &suffix = "");
+std::filesystem::path create_tempfile(int64_t size = 0, const std::string &suffix = "");
 
 } // namespace MR::File

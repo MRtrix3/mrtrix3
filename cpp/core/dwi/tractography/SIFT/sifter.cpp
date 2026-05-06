@@ -142,8 +142,8 @@ void SIFTer::perform_filtering() {
         if (App::log_level)
           fprintf(stderr, "\n");
         output_filtered_tracks(tck_file_path, prefix + "_tracks.tck");
-        if (!debug_dir.empty())
-          output_all_debug_images(debug_dir, prefix);
+        if (debug_dir.has_value())
+          output_all_debug_images(debug_dir.value(), prefix);
         INFO("\nProportionality coefficient at " + str(tracks_remaining) + " streamlines is " + str(mu()));
         output_at_counts.pop_back();
       }
@@ -372,7 +372,7 @@ void SIFTer::output_selection(const std::filesystem::path &path) const {
   }
 }
 
-void SIFTer::set_regular_outputs(const std::vector<uint32_t> &in, const std::filesystem::path &dirpath) {
+void SIFTer::set_regular_outputs(const std::vector<uint32_t> &in, const std::optional<std::filesystem::path> &dirpath) {
   for (auto i : in) {
     if (i > 0 && i <= contributions.size())
       output_at_counts.push_back(i);

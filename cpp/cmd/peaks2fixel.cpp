@@ -103,7 +103,7 @@ void run() {
   // Easiest if we first make the index image
   const std::filesystem::path index_path = (output_path / "index.mif");
   Header index_header(input_header);
-  index_header.name() = index_path.string();
+  index_header.path() = index_path;
   index_header.datatype() = DataType::UInt32;
   index_header.datatype().set_byte_order_native();
   index_header.size(3) = 2;

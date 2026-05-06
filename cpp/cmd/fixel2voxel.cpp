@@ -484,7 +484,7 @@ void run() {
 
   if (op == 10 || op == 11) // dec
     in_directions =
-        Fixel::find_directions_header(Fixel::get_fixel_directory(in_data.name())).get_image<float>().with_direct_io();
+        Fixel::find_directions_header(Fixel::get_fixel_directory(in_data.path())).get_image<float>().with_direct_io();
 
   FixelDataType in_vol;
   auto opt = get_options("weighted");

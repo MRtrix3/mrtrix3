@@ -210,7 +210,7 @@ void print_properties(const Header &header, const std::string &key, const size_t
         std::cout << lines[i] << "\n";
       }
     } else {
-      WARN("no \"" + key + "\" entries found in \"" + header.name() + "\"");
+      WARN("no \"" + key + "\" entries found in \"" + header.path().string() + "\"");
     }
   }
 }
@@ -218,6 +218,7 @@ void print_properties(const Header &header, const std::string &key, const size_t
 void header2json(const Header &header, nlohmann::json &json) {
   // Capture _all_ header fields, not just the optional key-value pairs
   json["name"] = header.name();
+  json["path"] = header.path().string();
   std::vector<size_t> size(header.ndim());
   std::vector<default_type> spacing(header.ndim());
   for (size_t axis = 0; axis != header.ndim(); ++axis) {
@@ -239,7 +240,7 @@ void header2json(const Header &header, nlohmann::json &json) {
                        {T(2, 0), T(2, 1), T(2, 2), T(2, 3)},
                        {0.0, 0.0, 0.0, 1.0}};
   // Load key-value entries into a nested keyval.* member
-  File::JSON::write(header, json["keyval"], header.name());
+  File::JSON::write(header, json["keyval"], header.path());
 }
 
 void run() {
@@ -294,7 +295,7 @@ void run() {
     const auto header = Header::open(argument[i]);
 
     if (name)
-      std::cout << header.name() << "\n";
+      std::cout << header.path().string() << "\n";
     if (format)
       std::cout << header.format() << "\n";
     if (ndim)

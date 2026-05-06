@@ -25,7 +25,7 @@ namespace MR::ImageIO {
 
 void VariableScaling::load(const Header &header, size_t) {
   if (files.empty())
-    throw Exception("no files specified in header for image \"" + header.name() + "\"");
+    throw Exception("no files specified in header for image \"" + header.path().string() + "\"");
 
   assert(header.datatype().is_floating_point() && header.datatype().bits() == 32 &&
          header.datatype().is_byte_order_native());
@@ -34,11 +34,11 @@ void VariableScaling::load(const Header &header, size_t) {
 
   size_t voxels_per_segment = segsize / files.size();
 
-  DEBUG("loading variable-scaling DICOM image \"" + header.name() + "\"...");
+  DEBUG("loading variable-scaling DICOM image \"" + header.path().string() + "\"...");
   addresses.resize(1);
   addresses[0].reset(new uint8_t[segsize * sizeof(float32)]);
   if (!addresses[0])
-    throw Exception("failed to allocate memory for image \"" + header.name() + "\"");
+    throw Exception("failed to allocate memory for image \"" + header.path().string() + "\"");
 
   ProgressBar progress("rescaling DICOM images", files.size());
   float32 *data = reinterpret_cast<float32 *>(addresses[0].get());

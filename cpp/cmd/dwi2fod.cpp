@@ -113,7 +113,7 @@ void usage() {
     + Argument ("algorithm", "the algorithm to use for FOD estimation. "
                              "(options are: " + join(algorithms, ",") + ")").type_choice (algorithms)
     + Argument ("dwi", "the input diffusion-weighted image").type_image_in()
-    + Argument ("response odf", "pairs of input tissue response and output ODF images").allow_multiple();
+    + Argument ("response odf", "pairs of input tissue response and output ODF images").type_various().allow_multiple();
 
   OPTIONS
     + DWI::GradImportOptions()
@@ -253,7 +253,7 @@ void run() {
     DWI::SDeconv::CSD::Shared shared(header_in);
     shared.parse_cmdline_options();
     try {
-      shared.set_response(std::filesystem::path(argument[2]));
+      shared.set_response(argument[2]);
     } catch (Exception &e) {
       throw Exception(e, "CSD algorithm expects second argument to be the input response function file");
     }
@@ -284,7 +284,7 @@ void run() {
     std::vector<std::filesystem::path> odf_paths;
     for (size_t i = 0; i < num_tissues; ++i) {
       response_paths_str.push_back(argument[i * 2 + 2]);
-      odf_paths.push_back(std::filesystem::path(argument[i * 2 + 3]));
+      odf_paths.push_back(argument[i * 2 + 3]);
     }
 
     try {

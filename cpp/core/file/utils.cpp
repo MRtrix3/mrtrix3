@@ -105,27 +105,25 @@ const std::string &tmpfile_prefix() {
 
 } // namespace
 
-bool is_tempfile(const std::filesystem::path &name, const char *suffix) {
-  if (name.filename().string().compare(0, tmpfile_prefix().size(), tmpfile_prefix()) != 0)
+bool is_tempfile(const std::filesystem::path &path, const std::string &suffix) {
+  if (path.filename().string().compare(0, tmpfile_prefix().size(), tmpfile_prefix()) != 0)
     return false;
-  if (suffix != nullptr)
-    if (!Path::has_suffix(std::filesystem::path(name), suffix))
+  if (!suffix.empty())
+    if (!Path::has_suffix(path, suffix))
       return false;
   return true;
 }
 
-std::filesystem::path create_tempfile(int64_t size, const char *suffix) {
+std::filesystem::path create_tempfile(int64_t size, const std::string &suffix) {
   DEBUG("creating temporary file of size " + str(size));
 
-  std::filesystem::path filepath(tmpfile_dir() / (tmpfile_prefix() + "XXXXXX."));
-  const int rand_index = filepath.stem().string().size() - 7;
-  if (suffix != nullptr)
-    filepath.stem() += suffix;
-
   int fid(0);
+  std::filesystem::path filepath;
+  std::string random_chars(6, '\0');
   do {
     for (int n = 0; n < 6; n++)
-      filepath.stem().string()[rand_index + n] = random_char();
+      random_chars[n] = random_char();
+    filepath = (tmpfile_dir() / (tmpfile_prefix() + random_chars + suffix));
     fid = open(filepath.string().c_str(),
                O_CREAT | O_RDWR | O_EXCL,
                S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);

@@ -14,6 +14,9 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <filesystem>
+#include <optional>
+
 #include "command.h"
 #include "exception.h"
 #include "header.h"
@@ -29,8 +32,6 @@
 #include "dwi/tractography/SIFT/sift.h"
 
 #include "dwi/tractography/SIFT2/tckfactor.h"
-
-#include <filesystem>
 
 using namespace MR;
 using namespace App;
@@ -165,10 +166,12 @@ void run() {
   tckfactor.perform_FOD_segmentation(in_dwi);
   tckfactor.scale_FDs_by_GM();
 
-  std::filesystem::path debug_path(get_option_value<std::string>("output_debug", ""));
-  if (!debug_path.empty()) {
-    tckfactor.initialise_debug_image_output(debug_path.string());
-    tckfactor.output_proc_mask((debug_path / "proc_mask.mif"));
+  std::optional<std::filesystem::path> debug_path;
+  auto opt = get_options("output_debug");
+  if (!opt.empty()) {
+    debug_path.emplace(opt[0][0]);
+    tckfactor.initialise_debug_image_output(debug_path.value());
+    tckfactor.output_proc_mask(debug_path.value() / "proc_mask.mif");
   }
 
   tckfactor.map_streamlines(input_tracks_path);
@@ -176,9 +179,9 @@ void run() {
 
   tckfactor.remove_excluded_fixels(get_option_value("min_td_frac", SIFT2_MIN_TD_FRAC_DEFAULT));
 
-  if (!debug_path.empty()) {
-    tckfactor.output_TD_images(debug_path.string(), "origTD_fixel.mif", "trackcount_fixel.mif");
-    tckfactor.output_all_debug_images(debug_path.string(), "before");
+  if (debug_path.has_value()) {
+    tckfactor.output_TD_images(debug_path.value(), "origTD_fixel.mif", "trackcount_fixel.mif");
+    tckfactor.output_all_debug_images(debug_path.value(), "before");
   }
 
   if (!get_options("linear").empty()) {
@@ -227,12 +230,12 @@ void run() {
 
   tckfactor.output_factors(output_weights_path);
 
-  auto opt = get_options("out_coeffs");
+  opt = get_options("out_coeffs");
   if (!opt.empty())
     tckfactor.output_coefficients(std::filesystem::path(opt[0][0]));
 
-  if (!debug_path.empty())
-    tckfactor.output_all_debug_images(debug_path.string(), "after");
+  if (debug_path.has_value())
+    tckfactor.output_all_debug_images(debug_path.value(), "after");
 
   opt = get_options("out_mu");
   if (!opt.empty()) {

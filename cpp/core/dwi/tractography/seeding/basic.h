@@ -50,7 +50,8 @@ private:
 class SeedMask : public Base {
 
 public:
-  SeedMask(const std::string &in) : Base(in, "random seeding mask", MAX_TRACKING_SEED_ATTEMPTS_RANDOM), mask(in) {
+  SeedMask(const std::filesystem::path &in)
+      : Base(in, "random seeding mask", MAX_TRACKING_SEED_ATTEMPTS_RANDOM), mask(in) {
     volume = get_count(mask) * mask.spacing(0) * mask.spacing(1) * mask.spacing(2);
   }
 
@@ -63,7 +64,7 @@ private:
 class Random_per_voxel : public Base {
 
 public:
-  Random_per_voxel(const std::string &in, const size_t num_per_voxel)
+  Random_per_voxel(const std::filesystem::path &in, const size_t num_per_voxel)
       : Base(in, "random per voxel", MAX_TRACKING_SEED_ATTEMPTS_FIXED),
         mask(in),
         num(num_per_voxel),
@@ -89,7 +90,7 @@ private:
 class Grid_per_voxel : public Base {
 
 public:
-  Grid_per_voxel(const std::string &in, const size_t os_factor)
+  Grid_per_voxel(const std::filesystem::path &in, const size_t os_factor)
       : Base(in, "grid per voxel", MAX_TRACKING_SEED_ATTEMPTS_FIXED),
         mask(in),
         os(os_factor),
@@ -114,7 +115,7 @@ private:
 class Rejection : public Base {
 public:
   using transform_type = Eigen::Transform<float, 3, Eigen::AffineCompact>;
-  Rejection(const std::string &);
+  Rejection(const std::filesystem::path &);
 
   virtual bool get_seed(Eigen::Vector3f &p) const override;
 

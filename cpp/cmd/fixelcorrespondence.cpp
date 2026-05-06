@@ -63,8 +63,9 @@ void usage() {
 void run() {
   const std::filesystem::path input_data_path{argument[0]};
   const std::filesystem::path template_directory{argument[1]};
-  const std::filesystem::path output_directory{argument[2]};
-  const std::filesystem::path output_data_path{argument[3]};
+  // TODO If output argument is changed to filepath, remove explicit casts
+  const std::filesystem::path output_directory(argument[2].as_text());
+  const std::filesystem::path output_data_path(argument[3].as_text());
 
   const float angular_threshold = get_option_value("angle", DEFAULT_ANGLE_THRESHOLD);
   const float angular_threshold_dp = cos(angular_threshold * (Math::pi / 180.0));
@@ -78,7 +79,7 @@ void run() {
   auto subject_directions =
       Fixel::find_directions_header(Fixel::get_fixel_directory(input_file)).get_image<float>().with_direct_io();
 
-  if (input_file == subject_directions.name())
+  if (input_file == subject_directions.path())
     throw Exception("input fixel data file cannot be the directions file");
 
   auto subject_data = Image<float>::open(input_file);

@@ -222,7 +222,7 @@ void convert_new2old() {
   size_t size_index = H_data.size(), value_index = H_data.size();
 
   for (size_t i = 0; i != H_data.size(); ++i) {
-    const std::filesystem::path path{H_data[i].name()};
+    const std::filesystem::path &path = H_data[i].path();
     if (path.filename() == value_path.filename())
       value_index = i;
     if (path.filename() == size_path.filename())

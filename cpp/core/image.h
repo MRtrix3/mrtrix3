@@ -103,7 +103,8 @@ public:
 
   //! use for debugging
   friend std::ostream &operator<<(std::ostream &stream, const Image &V) {
-    stream << "\"" << V.name() << "\", datatype " << DataType::from<Image::value_type>().specifier() << ", index [ ";
+    stream << "\"" << V.path().string() << "\", datatype " << DataType::from<Image::value_type>().specifier()
+           << ", index [ ";
     for (size_t n = 0; n < V.ndim(); ++n)
       stream << V.index(n) << " ";
     stream << "], current offset = " << V.offset() << ", ";
@@ -409,7 +410,7 @@ std::filesystem::path Image<ValueType>::dump_to_mrtrix_file(const std::filesyste
   // try to dump file to mrtrix format if possible (direct IO)
   std::filesystem::path resolved_path(filepath);
   if (is_dash(filepath.string()))
-    resolved_path = File::create_tempfile(0, "mif");
+    resolved_path = File::create_tempfile(0, ".mif");
 
   DEBUG("dumping image \"" + name() + "\" to file \"" + resolved_path.string() + "\"...");
 

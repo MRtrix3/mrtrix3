@@ -53,7 +53,7 @@ void Directory::load_image_buffer() {
   }
 
   // Load fixel direction images
-  const auto filepath = std::filesystem::path{fixel_data->name()};
+  const auto &filepath = fixel_data->path();
   auto directions_image = MR::Fixel::find_directions_header(filepath.parent_path()).get_image<float>().with_direct_io();
   directions_image.index(1) = 0;
   for (auto l = Loop(0, 3)(*fixel_data); l; ++l) {
@@ -69,14 +69,14 @@ void Directory::load_image_buffer() {
 
   // Load fixel data images keys
   // We will load the actual fixel data lazily upon request
-  const auto fixel_dir_path = std::filesystem::path{fixel_data->name()}.parent_path();
+  const auto fixel_dir_path = fixel_data->path().parent_path();
   auto data_headers = MR::Fixel::find_data_headers(fixel_dir_path, *fixel_data);
   for (auto &header : data_headers) {
 
     if (header.size(1) != 1)
       continue;
 
-    const auto data_key = std::filesystem::path(header.name()).filename().string();
+    const auto data_key = header.path().filename().string();
     fixel_values[data_key];
     value_types.push_back(data_key);
     colour_types.push_back(data_key);
@@ -87,7 +87,7 @@ void Directory::load_image_buffer() {
 void Directory::lazy_load_fixel_value_file(const std::string &key) const {
 
   // We're assuming the key corresponds to the fixel data filename
-  const auto fixel_dir_path = std::filesystem::path{fixel_data->name()}.parent_path();
+  const auto fixel_dir_path = fixel_data->path().parent_path();
   const auto data_filepath = (fixel_dir_path / key);
   fixel_values[key].loaded = true;
 

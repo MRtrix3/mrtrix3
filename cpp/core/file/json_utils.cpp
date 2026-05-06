@@ -133,7 +133,7 @@ void read(const nlohmann::json &json, Header &header, const bool realign) {
       PhaseEncoding::set_scheme(header, PhaseEncoding::transform_for_image_load(pe_scheme, header));
       INFO("Phase encoding information read from JSON file modified to conform to prior MRtrix3 internal transform "
            "realignment of image \"" +
-           header.name() + "\"");
+           header.path().string() + "\"");
     } else {
       INFO("Phase encoding information read from JSON file not modified");
     }
@@ -246,7 +246,7 @@ void write(const KeyValues &keyval, nlohmann::json &json) {
 
 void write(const Header &header, nlohmann::json &json, const std::filesystem::path &image_path) {
   Header H_adj(header);
-  H_adj.name() = image_path;
+  H_adj.path() = image_path;
   if (!Path::has_suffix(image_path, {".nii", ".nii.gz", ".img"})) {
     write(H_adj.keyval(), json);
     return;

@@ -1365,14 +1365,15 @@ ParsedArgument::ParsedArgument(const Option *option, const Argument *argument, s
 }
 
 bool ParsedArgument::includes_filesystem_arg_type() const noexcept {
-  return arg != nullptr &&
-         (arg->type == ArgFileIn || arg->type == ArgFileOut || arg->type == ArgDirectoryIn ||
-          arg->type == ArgDirectoryOut || arg->type == ImageIn || arg->type == ImageOut || arg->type == Various);
+  return arg != nullptr && (arg->type == ArgFileIn || arg->type == ArgFileOut || arg->type == ArgDirectoryIn ||
+                            arg->type == ArgDirectoryOut || arg->type == ImageIn || arg->type == ImageOut ||
+                            arg->type == TracksIn || arg->type == TracksOut || arg->type == Various);
 }
 
 bool ParsedArgument::not_filesystem_arg_type() const noexcept {
   return arg == nullptr || (arg->type != ArgFileIn && arg->type != ArgFileOut && arg->type != ArgDirectoryIn &&
-                            arg->type != ArgDirectoryOut && arg->type != ImageIn && arg->type != ImageOut);
+                            arg->type != ArgDirectoryOut && arg->type != ImageIn && arg->type != ImageOut &&
+                            arg->type != TracksIn && arg->type != TracksOut);
 }
 
 ParsedArgument::operator std::string() const {

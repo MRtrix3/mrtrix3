@@ -56,16 +56,16 @@ std::unique_ptr<ImageIO::Base> MRtrix_sparse::read(Header &H) const {
   const DataType dt = DataType::UInt64LE;
 #endif
   if (H.datatype() != dt)
-    throw Exception("Cannot open sparse image file " + H.name() + " due to type mismatch; expect " + dt.description() +
-                    ", file is " + H.datatype().description());
+    throw Exception("Cannot open sparse image file " + H.path().string() + " due to type mismatch; expect " +
+                    dt.description() + ", file is " + H.datatype().description());
 
   const auto name_it = H.keyval().find(Fixel::Legacy::name_key);
   if (name_it == H.keyval().end())
-    throw Exception("sparse data class name not specified in sparse image header " + H.name());
+    throw Exception("sparse data class name not specified in sparse image header " + H.path().string());
 
   const auto size_it = H.keyval().find(Fixel::Legacy::size_key);
   if (size_it == H.keyval().end())
-    throw Exception("sparse data class size not specified in sparse image header " + H.name());
+    throw Exception("sparse data class size not specified in sparse image header " + H.path().string());
 
   std::filesystem::path image_fname, sparse_fname;
   size_t image_offset, sparse_offset;
@@ -105,11 +105,11 @@ std::unique_ptr<ImageIO::Base> MRtrix_sparse::create(Header &H) const {
 
   const auto name_it = H.keyval().find(Fixel::Legacy::name_key);
   if (name_it == H.keyval().end())
-    throw Exception("Cannot create sparse image " + H.name() + "; no knowledge of underlying data class type");
+    throw Exception("Cannot create sparse image " + H.path().string() + "; no knowledge of underlying data class type");
 
   const auto size_it = H.keyval().find(Fixel::Legacy::size_key);
   if (size_it == H.keyval().end())
-    throw Exception("Cannot create sparse image " + H.name() + "; no knowledge of underlying data class size");
+    throw Exception("Cannot create sparse image " + H.path().string() + "; no knowledge of underlying data class size");
 
   H.datatype() = DataType::UInt64;
   H.datatype().set_byte_order_native();

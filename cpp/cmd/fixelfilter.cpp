@@ -169,7 +169,7 @@ void run() {
   if (single_file.valid()) {
     auto output_image = Image<float>::create(output_path, single_file);
     CONSOLE(std::string("Applying \"") + filters[argument[1]] + "\" operation to fixel data file \"" +
-            single_file.name() + "\"");
+            single_file.path().string() + "\"");
     (*filter)(single_file, output_image);
   } else {
     Fixel::copy_index_and_directions_file(input_path, output_path);
@@ -178,8 +178,7 @@ void run() {
                          multiple_files.size());
     for (auto &H : multiple_files) {
       auto input_image = H.get_image<float>();
-      const std::filesystem::path header_name{H.name()};
-      auto output_image = Image<float>::create((output_path / header_name.filename()), H);
+      auto output_image = Image<float>::create((output_path / H.path().filename()), H);
       (*filter)(input_image, output_image);
       ++progress;
     }

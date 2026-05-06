@@ -62,7 +62,7 @@ void usage() {
 // clang-format on
 
 template <typename value_type> void write(std::vector<Header> &in, const size_t axis, Header &header_out) {
-  auto image_out = Image<value_type>::create(header_out.name(), header_out);
+  auto image_out = Image<value_type>::create(header_out.path(), header_out);
   size_t axis_offset = 0;
 
   for (size_t i = 0; i != in.size(); i++) {
@@ -73,8 +73,10 @@ template <typename value_type> void write(std::vector<Header> &in, const size_t 
       out.value() = in.value();
     };
 
-    ThreadedLoop(
-        "concatenating \"" + image_in.name() + "\"", image_in, 0, std::min<size_t>(image_in.ndim(), image_out.ndim()))
+    ThreadedLoop("concatenating \"" + image_in.path().string() + "\"",
+                 image_in,
+                 0,
+                 std::min<size_t>(image_in.ndim(), image_out.ndim()))
         .run(copy_func, image_in, image_out);
     if (axis < image_in.ndim())
       axis_offset += image_in.size(axis);
@@ -107,7 +109,7 @@ void run() {
   const size_t axis = get_option_value("axis", std::max(size_t(3), size_t(std::max(ssize_t(0), max_axis_nonunity))));
 
   Header header_out = concatenate(headers, axis, true);
-  header_out.name() = output_path.string();
+  header_out.path() = output_path;
   header_out.datatype() = DataType::from_command_line(header_out.datatype());
 
   if (header_out.intensity_offset() == 0.0 && header_out.intensity_scale() == 1.0 &&

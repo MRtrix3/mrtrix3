@@ -57,7 +57,7 @@ bool Pipe::check(Header &H, size_t num_axes) const {
     throw Exception("cannot create output piped image: "                                //
                     "no command connected at other end of pipe to receive that image"); //
 
-  H.path() = File::create_tempfile(0, "mif");
+  H.path() = File::create_tempfile(0, ".mif");
 
   SignalHandler::mark_file_for_deletion(H.path());
 

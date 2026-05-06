@@ -124,7 +124,7 @@ void usage() {
   + Argument ("connectivity", "the fixel-fixel connectivity matrix").type_various ()
 
   + Argument ("out_fixel_directory", "the output directory where results will be saved."
-                                     " Will be created if it does not exist").type_text();
+                                     " Will be created if it does not exist").type_directory_out();
 
 
   OPTIONS

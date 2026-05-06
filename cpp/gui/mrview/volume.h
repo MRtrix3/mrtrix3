@@ -33,7 +33,7 @@ class Window;
 class Volume : public Displayable {
 public:
   Volume(MR::Header &&header)
-      : Displayable(header.name()),
+      : Displayable(header.path()),
         _header(std::move(header)),
         // CONF option: ImageInterpolation
         // CONF default: true

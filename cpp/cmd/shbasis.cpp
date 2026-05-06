@@ -129,7 +129,7 @@ template <typename value_type> void check_and_update(Header &H, const conv_t con
   // volumes independently, and report ratio for each harmonic order
   std::unique_ptr<ProgressBar> progress;
   if (App::log_level > 0 && App::log_level < 2)
-    progress.reset(new ProgressBar("Evaluating SH basis of image \"" + H.name() + "\"", N - 1));
+    progress.reset(new ProgressBar("Evaluating SH basis of image \"" + H.path().string() + "\"", N - 1));
 
   std::vector<float> ratios;
 
@@ -221,7 +221,7 @@ template <typename value_type> void check_and_update(Header &H, const conv_t con
   value_type multiplier = 1.0;
   if ((power_ratio > (5.0 / 3.0)) && (power_ratio < (7.0 / 3.0))) {
 
-    CONSOLE("Image \"" + str(H.name()) + "\" appears to be in the old non-orthonormal basis");
+    CONSOLE("Image \"" + H.path().string() + "\" appears to be in the old non-orthonormal basis");
     switch (conversion) {
     case NONE:
       break;
@@ -234,7 +234,7 @@ template <typename value_type> void check_and_update(Header &H, const conv_t con
       multiplier = Math::sqrt1_2;
       break;
     case FORCE_NEWTOOLD:
-      WARN("Refusing to convert image \"" + H.name() +
+      WARN("Refusing to convert image \"" + H.path().string() +
            "\" from new to old basis, as data appear to already be in the old non-orthonormal basis");
       return;
     }
@@ -242,7 +242,7 @@ template <typename value_type> void check_and_update(Header &H, const conv_t con
 
   } else if ((power_ratio > (2.0 / 3.0)) && (power_ratio < (4.0 / 3.0))) {
 
-    CONSOLE("Image \"" + str(H.name()) + "\" appears to be in the new orthonormal basis");
+    CONSOLE("Image \"" + H.path().string() + "\" appears to be in the new orthonormal basis");
     switch (conversion) {
     case NONE:
       break;
@@ -252,7 +252,7 @@ template <typename value_type> void check_and_update(Header &H, const conv_t con
     case NEW:
       break;
     case FORCE_OLDTONEW:
-      WARN("Refusing to convert image \"" + H.name() +
+      WARN("Refusing to convert image \"" + H.path().string() +
            "\" from old to new basis, as data appear to already be in the new orthonormal basis");
       return;
     case FORCE_NEWTOOLD:
@@ -263,16 +263,16 @@ template <typename value_type> void check_and_update(Header &H, const conv_t con
   } else {
 
     multiplier = 0.0;
-    WARN("Cannot make unambiguous decision on SH basis of image \"" + H.name() + "\" (power ratio " +
+    WARN("Cannot make unambiguous decision on SH basis of image \"" + H.path().string() + "\" (power ratio " +
          (lmax < 8 ? "in" : "regressed to") + " " + str(l_for_decision) + " is " + str(power_ratio) + ")");
 
     if (conversion == FORCE_OLDTONEW) {
-      WARN("Forcing conversion of image \"" + H.name() +
+      WARN("Forcing conversion of image \"" + H.path().string() +
            "\" from old to new SH basis on user request; however NO GUARANTEE IS PROVIDED on appropriateness of this "
            "conversion!");
       multiplier = Math::sqrt1_2;
     } else if (conversion == FORCE_NEWTOOLD) {
-      WARN("Forcing conversion of image \"" + H.name() +
+      WARN("Forcing conversion of image \"" + H.path().string() +
            "\" from new to old SH basis on user request; however NO GUARANTEE IS PROVIDED on appropriateness of this "
            "conversion!");
       multiplier = Math::sqrt2;
@@ -283,7 +283,7 @@ template <typename value_type> void check_and_update(Header &H, const conv_t con
   if (regression.second)
     DEBUG("Gradient of regression is " + str(regression.second) + "; threshold is " + str(grad_threshold));
   if (abs(regression.second) > grad_threshold) {
-    WARN("Image \"" + H.name() +
+    WARN("Image \"" + H.path().string() +
          "\" may have been derived from poor directional encoding, or have some other underlying data problem");
     WARN("(m!=0 to m==0 power ratio changing by " + str(2.0 * regression.second) + " per even order)");
   }
@@ -291,7 +291,7 @@ template <typename value_type> void check_and_update(Header &H, const conv_t con
   // Adjust the image data in-place if necessary
   if (multiplier && (multiplier != 1.0)) {
 
-    ProgressBar progress("Modifying SH basis of image \"" + H.name() + "\"", N - 1);
+    ProgressBar progress("Modifying SH basis of image \"" + H.path().string() + "\"", N - 1);
     for (image.index(3) = 1; image.index(3) != ssize_t(N); ++image.index(3)) {
       if (!mzero_terms[image.index(3)]) {
         for (auto i = Loop(image, 0, 3)(image); i; ++i)
@@ -301,7 +301,7 @@ template <typename value_type> void check_and_update(Header &H, const conv_t con
     }
 
   } else if (multiplier && (conversion != NONE)) {
-    INFO("Image \"" + H.name() + "\" already in desired basis; nothing to do");
+    INFO("Image \"" + H.path().string() + "\" already in desired basis; nothing to do");
   }
 }
 

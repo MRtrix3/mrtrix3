@@ -263,6 +263,7 @@ public:
 
     void clear() { path.clear(); }
     bool empty() const { return path.string().empty(); }
+    std::filesystem::path filename() const { return path.filename(); }
     std::string string() const { return path.string(); }
 
   private:
@@ -397,7 +398,7 @@ public:
   //! merge key/value entries from another header
   void merge_keyval(const Header &H);
 
-  static Header open(const std::filesystem::path &image_name);
+  static Header open(const std::filesystem::path &image_path);
   static Header
   create(const std::filesystem::path &image_name, const Header &template_header, bool add_to_command_history = true);
   static Header scratch(const Header &template_header, const std::string &label = "scratch image");

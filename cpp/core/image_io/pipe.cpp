@@ -31,7 +31,7 @@ void Pipe::load(const Header &header, size_t) {
   int64_t bytes_per_segment = (header.datatype().bits() * segsize + 7) / 8;
 
   if (double(bytes_per_segment) >= double(std::numeric_limits<size_t>::max()))
-    throw Exception("image \"" + header.name() + "\" is larger than maximum accessible memory");
+    throw Exception("image \"" + header.path().string() + "\" is larger than maximum accessible memory");
 
   mmap.reset(new File::MMap(files[0], writable, !is_new, bytes_per_segment));
   addresses.resize(1);
