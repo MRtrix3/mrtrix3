@@ -89,7 +89,7 @@ void run() {
   if (!opt.empty())
     debug_path.emplace(opt[0][0]);
 
-  auto in_dwi = Image<float>::open(input_tracks_path);
+  auto in_dwi = Image<float>::open(input_fod_path);
   Math::SH::check(in_dwi);
   DWI::Directions::FastLookupSet dirs(1281);
 
@@ -97,9 +97,9 @@ void run() {
 
   if (debug_path.has_value()) {
     sifter.initialise_debug_image_output(debug_path.value());
-    sifter.output_proc_mask((debug_path.value() / "proc_mask.mif"));
+    sifter.output_proc_mask(debug_path.value() / "proc_mask.mif");
     if (!get_options("act").empty())
-      sifter.output_5tt_image((debug_path.value() / "5tt.mif"));
+      sifter.output_5tt_image(debug_path.value() / "5tt.mif");
   }
 
   sifter.perform_FOD_segmentation(in_dwi);
@@ -125,7 +125,7 @@ void run() {
       sifter.set_term_mu(float(opt[0][0]));
     opt = get_options("csv");
     if (!opt.empty())
-      sifter.set_csv_path(std::filesystem::path(opt[0][0]));
+      sifter.set_csv_path(opt[0][0]);
     opt = get_options("output_at_counts");
     if (!opt.empty()) {
       std::vector<uint32_t> counts = parse_ints<uint32_t>(opt[0][0]);

@@ -350,7 +350,7 @@ void execute(Image<value_type> &in,
              const operator_type op,
              const bool mask_out) {
   Image<T> out;
-  if (!out_path.has_value()) {
+  if (out_path.has_value()) {
     Header header_out(in);
     header_out.datatype() = DataType::from<T>();
     header_out.datatype().set_byte_order_native();
@@ -417,7 +417,7 @@ void run() {
 
   std::optional<std::filesystem::path> output_path;
   if (argument.size() == 2)
-    output_path = static_cast<std::filesystem::path>(argument[1]);
+    output_path.emplace(argument[1]);
   const bool all_volumes = !get_options("allvolumes").empty();
   const bool ignore_zero = !get_options("ignorezero").empty();
   const bool use_nan = !get_options("nan").empty();
@@ -447,7 +447,7 @@ void run() {
     }
   }
 
-  if (output_path.has_value()) {
+  if (!output_path.has_value()) {
     if (use_nan) {
       WARN("Option -nan ignored: has no influence when no output image is specified");
     }

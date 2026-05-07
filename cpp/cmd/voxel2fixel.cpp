@@ -72,7 +72,7 @@ void run() {
     progress++;
   }
 
-  auto output_fixel_data = Image<float>::create(output_fixel_directory / std::filesystem::path(argument[3]),
+  auto output_fixel_data = Image<float>::create(output_fixel_directory / argument[3].as_text(),
                                                 Fixel::data_header_from_index(input_fixel_index));
 
   for (auto v = Loop("mapping voxel scalar values to fixels", 0, 3)(scalar, input_fixel_index); v; ++v) {

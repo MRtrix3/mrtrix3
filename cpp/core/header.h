@@ -264,7 +264,7 @@ public:
     void clear() { path.clear(); }
     bool empty() const { return path.string().empty(); }
     std::filesystem::path filename() const { return path.filename(); }
-    std::string string() const { return path.string(); }
+    std::string string() const { return empty() ? name : path.string(); }
 
   private:
     std::string &name;

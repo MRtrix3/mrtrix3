@@ -75,7 +75,8 @@ void run() {
     throw Exception("please input the specific fixel data file to be converted"
                     " (not the fixel directory)");
 
-  auto subject_index = Fixel::find_index_header(Fixel::get_fixel_directory(input_file)).get_image<index_type>();
+  auto subject_index_header = Fixel::find_index_header(Fixel::get_fixel_directory(input_file));
+  auto subject_index = subject_index_header.get_image<index_type>();
   auto subject_directions =
       Fixel::find_directions_header(Fixel::get_fixel_directory(input_file)).get_image<float>().with_direct_io();
 
@@ -83,12 +84,12 @@ void run() {
     throw Exception("input fixel data file cannot be the directions file");
 
   auto subject_data = Image<float>::open(input_file);
-  Fixel::check_fixel_size(subject_index, subject_data);
+  Fixel::check_fixel_size(subject_index_header, subject_data);
 
   auto template_index = Fixel::find_index_header(template_directory).get_image<index_type>();
   auto template_directions = Fixel::find_directions_header(template_directory).get_image<float>().with_direct_io();
 
-  check_dimensions(subject_index, template_index);
+  check_dimensions(subject_index_header, template_index);
   std::string output_fixel_directory = output_directory;
   Fixel::copy_index_and_directions_file(template_directory, output_fixel_directory);
 

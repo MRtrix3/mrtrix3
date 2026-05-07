@@ -53,7 +53,7 @@ void usage() {
   + Math::SH::encoding_description;
 
   ARGUMENTS
-    + Argument ("odf response", "pairs of input ODF image and corresponding responses").allow_multiple()
+    + Argument ("odf response", "pairs of input ODF image and corresponding responses").type_various().allow_multiple()
     + Argument ("SH_out", "the output spherical harmonics coefficients image.").type_image_out();
 
   OPTIONS
@@ -92,7 +92,7 @@ protected:
 };
 
 void run() {
-  if (argument.size() % 2 != 0)
+  if (argument.size() % 2 != 1)
     throw Exception("unexpected number of arguments");
 
   std::vector<Image<value_type>> inputs((argument.size() - 1) / 2);
@@ -100,13 +100,13 @@ void run() {
 
   size_t lmax = 0;
   for (size_t n = 0; n < inputs.size(); ++n) {
-    const std::filesystem::path input_path(argument[2 * n]);
+    const std::filesystem::path input_path(argument[2 * n].as_text());
     inputs[n] = Image<value_type>::open(input_path);
     Math::SH::check(inputs[n]);
     if (inputs[n].ndim() > 4 && inputs[n].size(4) > 1)
       throw Exception("input ODF contains more than 4 dimensions");
 
-    const std::filesystem::path response_path(argument[2 * n + 1]);
+    const std::filesystem::path response_path(argument[2 * n + 1].as_text());
     responses[n] = File::Matrix::load_matrix(response_path);
     responses[n].conservativeResizeLike(
         Eigen::MatrixXd::Zero(responses[n].rows(), Math::ZSH::NforL(Math::SH::LforN(inputs[n].size(3)))));

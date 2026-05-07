@@ -158,7 +158,7 @@ Header Header::open(const std::filesystem::path &image_path) {
 
     const Formats::Base **format_handler = Formats::handlers;
     size_t item_index = 0;
-    H.path() = image_path;
+    H.path() = std::filesystem::path(list[item_index].name());
 
     for (; *format_handler; format_handler++) {
       if ((H.io = (*format_handler)->read(H)))

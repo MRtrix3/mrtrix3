@@ -178,7 +178,7 @@ std::string NameParser::name(const std::vector<uint32_t> &indices) {
 
 std::string NameParser::get_next_match(std::vector<uint32_t> &indices, bool return_seq_index) {
   if (!folder)
-    folder.emplace(std::filesystem::directory_iterator(folder_path));
+    folder.emplace(folder_path.empty() ? std::filesystem::current_path() : folder_path);
 
   while (*folder != std::filesystem::directory_iterator()) {
     std::string fname = folder->operator*().path().filename().string();

@@ -37,7 +37,7 @@ void load_act_properties(Properties &properties) {
   auto opt = App::get_options("act");
   if (!opt.empty()) {
 
-    properties["act"] = std::string(opt[0][0]);
+    properties["act"] = opt[0][0].as_text();
     opt = get_options("backtrack");
     if (!opt.empty())
       properties["backtrack"] = "1";

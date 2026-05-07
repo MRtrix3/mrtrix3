@@ -62,14 +62,13 @@ FORCE_INLINE bool is_index_filename(const std::filesystem::path &path) {
 }
 
 template <class HeaderType> FORCE_INLINE bool is_index_image(const HeaderType &in) {
-  return is_index_filename(in.path()) && in.ndim() == 4 && in.size(3) == 2;
+  return is_index_filename(in.name()) && in.ndim() == 4 && in.size(3) == 2;
 }
 
 template <class HeaderType> FORCE_INLINE void check_index_image(const HeaderType &index) {
   if (!is_index_image(index))
     throw InvalidImageException(
-        index.path().string() +
-        " is not a valid fixel index image. Image must be 4D with 2 volumes in the 4th dimension");
+        index.name() + " is not a valid fixel index image. Image must be 4D with 2 volumes in the 4th dimension");
 }
 
 template <class HeaderType> FORCE_INLINE bool is_data_file(const HeaderType &in) {
@@ -87,13 +86,13 @@ FORCE_INLINE bool is_directions_filename(const std::filesystem::path &path) {
 }
 
 template <class HeaderType> FORCE_INLINE bool is_directions_file(const HeaderType &in) {
-  return is_directions_filename(in.path()) && in.ndim() == 3 && in.size(1) == 3 && in.size(2) == 1;
+  return is_directions_filename(in.name()) && in.ndim() == 3 && in.size(1) == 3 && in.size(2) == 1;
 }
 
 template <class HeaderType> FORCE_INLINE void check_data_file(const HeaderType &in) {
   if (!is_data_file(in))
-    throw InvalidImageException(in.path().string() + " is not a valid fixel data file;" + //
-                                " expected a 3-dimensional image of size n x m x 1");     //
+    throw InvalidImageException(in.name() + " is not a valid fixel data file;" +      //
+                                " expected a 3-dimensional image of size n x m x 1"); //
 }
 
 FORCE_INLINE std::filesystem::path get_fixel_directory(const std::filesystem::path &fixel_file) {
@@ -104,7 +103,7 @@ FORCE_INLINE std::filesystem::path get_fixel_directory(const std::filesystem::pa
   return fixel_directory;
 }
 
-template <class IndexHeaderType> FORCE_INLINE index_type get_number_of_fixels(IndexHeaderType &index_header) {
+FORCE_INLINE index_type get_number_of_fixels(const Header &index_header) {
   check_index_image(index_header);
   if (index_header.keyval().count(n_fixels_key)) {
     return std::stoul(index_header.keyval().at(n_fixels_key));
@@ -125,31 +124,9 @@ template <class IndexHeaderType> FORCE_INLINE index_type get_number_of_fixels(In
   }
 }
 
-template <class IndexHeaderType, class DataHeaderType>
-FORCE_INLINE bool fixels_match(const IndexHeaderType &index_header, const DataHeaderType &data_header) {
-  bool fixels_match(false);
-
-  if (is_index_image(index_header)) {
-    if (index_header.keyval().count(n_fixels_key)) {
-      fixels_match = std::stoul(index_header.keyval().at(n_fixels_key)) == (index_type)data_header.size(0);
-    } else {
-      auto index_image = Image<index_type>::open(index_header.path());
-      index_image.index(3) = 1;
-      index_type num_fixels = 0;
-      index_type max_offset = 0;
-      for (auto i = MR::Loop(index_image, 0, 3)(index_image); i; ++i) {
-        if (index_image.value() > max_offset) {
-          max_offset = index_image.value();
-          index_image.index(3) = 0;
-          num_fixels = index_image.value();
-          index_image.index(3) = 1;
-        }
-      }
-      fixels_match = (max_offset + num_fixels) == (index_type)data_header.size(0);
-    }
-  }
-
-  return fixels_match;
+template <class DataHeaderType>
+FORCE_INLINE bool fixels_match(const Header &index_header, const DataHeaderType &data_header) {
+  return data_header.size(0) == get_number_of_fixels(index_header);
 }
 
 FORCE_INLINE void check_fixel_size(const Header &index_h, const Header &data_h) {
@@ -157,8 +134,15 @@ FORCE_INLINE void check_fixel_size(const Header &index_h, const Header &data_h) 
   check_data_file(data_h);
 
   if (!fixels_match(index_h, data_h))
-    throw InvalidImageException("Fixel number mismatch between index image " + index_h.path().string() +
-                                " and data image " + data_h.path().string());
+    throw InvalidImageException("Fixel number mismatch between index image " + index_h.path().string() + //
+                                " and data image " + data_h.path().string());                            //
+}
+
+FORCE_INLINE void check_fixel_size(const Header &H, const index_type nfixels) {
+  check_data_file(H);
+  if (H.size(0) != nfixels)
+    throw InvalidImageException("Data image " + H.path().string() + " fixel count (" + str(H.size(0)) + ")" + //
+                                " does not match expected number of fixels (" + str(nfixels) + ")");          //
 }
 
 FORCE_INLINE void

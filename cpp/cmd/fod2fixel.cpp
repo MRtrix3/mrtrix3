@@ -195,34 +195,30 @@ void Segmented_FOD_receiver::commit() {
   if (!dir_path.empty()) {
     auto dir_header(fixel_data_header);
     dir_header.size(1) = 3;
-    dir_image = std::make_unique<DataImage>(DataImage::create((fixel_directory_path / dir_path), dir_header));
+    dir_image = std::make_unique<DataImage>(DataImage::create(fixel_directory_path / dir_path, dir_header));
     dir_image->index(1) = 0;
-    Fixel::check_fixel_size(*index_image, *dir_image);
   }
 
   if (!afd_path.empty()) {
     auto afd_header(fixel_data_header);
     afd_header.size(1) = 1;
-    afd_image = std::make_unique<DataImage>(DataImage::create((fixel_directory_path / afd_path), afd_header));
+    afd_image = std::make_unique<DataImage>(DataImage::create(fixel_directory_path / afd_path, afd_header));
     afd_image->index(1) = 0;
-    Fixel::check_fixel_size(*index_image, *afd_image);
   }
 
   if (!peak_amp_path.empty()) {
     auto peak_amp_header(fixel_data_header);
     peak_amp_header.size(1) = 1;
     peak_amp_image =
-        std::make_unique<DataImage>(DataImage::create((fixel_directory_path / peak_amp_path), peak_amp_header));
+        std::make_unique<DataImage>(DataImage::create(fixel_directory_path / peak_amp_path, peak_amp_header));
     peak_amp_image->index(1) = 0;
-    Fixel::check_fixel_size(*index_image, *peak_amp_image);
   }
 
   if (!disp_path.empty()) {
     auto disp_header(fixel_data_header);
     disp_header.size(1) = 1;
-    disp_image = std::make_unique<DataImage>(DataImage::create((fixel_directory_path / disp_path), disp_header));
+    disp_image = std::make_unique<DataImage>(DataImage::create(fixel_directory_path / disp_path, disp_header));
     disp_image->index(1) = 0;
-    Fixel::check_fixel_size(*index_image, *disp_image);
   }
 
   size_t offset(0);
@@ -310,7 +306,7 @@ void run() {
   Image<float> mask;
   if (!opt.empty()) {
     mask = Image<float>::open(opt[0][0]);
-    if (!dimensions_match(fod_data, mask, 0, 3))
+    if (!dimensions_match(H, mask, 0, 3))
       throw Exception("Cannot use image \"" + str(opt[0][0]) + "\" as mask image; dimensions do not match FOD image");
   }
 
