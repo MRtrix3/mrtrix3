@@ -221,7 +221,7 @@ void run() {
     transform.matrix().template block<2, 2>(0, 2) *= -1.0;
     transform.matrix().template block<1, 2>(2, 0) *= -1.0;
 
-    INFO(fmt::format("linear:\\n{}", transform.matrix()));
+    INFO(fmt::format("linear:\n{}", transform.matrix()));
     INFO(fmt::format("translation:\n{}", transform.translation()));
     if (((transform.matrix().array() != transform.matrix().array())).any())
       WARN("NAN in transformation.");

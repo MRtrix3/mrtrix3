@@ -243,7 +243,7 @@ CompiledKernelWGSL compile_kernel_code_to_wgsl(const MR::GPU::KernelSpec &kernel
       const std::string diag_string =
           std::string(static_cast<const char *>(diagnostics->getBufferPointer()), diagnostics->getBufferSize());
       if (!diag_string.empty()) {
-        DEBUG(fmt::format("Slang diagnostics:\\n{}", diag_string));
+        DEBUG(fmt::format("Slang diagnostics:\n{}", diag_string));
       }
     }
   };
@@ -376,7 +376,7 @@ CompiledKernelWGSL compile_kernel_code_to_wgsl(const MR::GPU::KernelSpec &kernel
     shader_cache.insert(hash_key, wgsl_code);
   }
 
-  DEBUG(fmt::format("{} WGSL code:\\n{}", kernel_spec.compute_shader.name, wgsl_code));
+  DEBUG(fmt::format("{} WGSL code:\n{}", kernel_spec.compute_shader.name, wgsl_code));
   return CompiledKernelWGSL{
       .wgsl_source = wgsl_code, .linked_program = linked_slang_program, .entry_point_name = entry_point_selection.name};
 }

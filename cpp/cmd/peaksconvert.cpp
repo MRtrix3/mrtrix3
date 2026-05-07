@@ -255,8 +255,8 @@ void FixelData::set_output_transforms(const Header &H) {
   out_fsl_imultiplier = out_fsl_flipi ? -1.0 : 1.0;
   out_ijk2fsl = {out_fsl_imultiplier, 1.0, 1.0};
   DEBUG(fmt::format("Output transform configured based on image \"{}\":", H.name()));
-  DEBUG(fmt::format("IJK-to-XYZ transform:\\n{}", out_ijk2xyz));
-  DEBUG(fmt::format("XYZ-to-IJK transform:\\n{}", out_xyz2ijk));
+  DEBUG(fmt::format("IJK-to-XYZ transform:\n{}", out_ijk2xyz));
+  DEBUG(fmt::format("XYZ-to-IJK transform:\n{}", out_xyz2ijk));
   DEBUG(fmt::format("FSL: flip {}, i component multiplier {}, vector multiplier [{}]",
                     out_fsl_flipi,
                     out_fsl_imultiplier,

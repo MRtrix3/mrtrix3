@@ -85,11 +85,11 @@ std::shared_ptr<Series> Study::find(std::string_view series_name,
 }
 
 std::ostream &operator<<(std::ostream &stream, const Study &item) {
-  stream << MR::printf("    %-30s %-16s %10s %8s\n",
-                       item.name.c_str(),
-                       format_ID(item.ID).c_str(),
-                       format_date(item.date).c_str(),
-                       format_time(item.time).c_str());
+  stream << fmt::format("    {:<30} {:<16} {:>10} {:>8}\n",
+                        item.name,
+                        format_ID(item.ID),
+                        format_date(item.date),
+                        format_time(item.time));
 
   for (size_t n = 0; n < item.size(); n++)
     stream << *item[n];

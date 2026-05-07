@@ -74,7 +74,7 @@ SharedBase::SharedBase(std::string_view diff_path, Properties &property_set)
   if (properties.find("init_direction") != properties.end()) {
     auto V = parse_floats(properties["init_direction"]);
     if (V.size() != 3)
-      throw Exception(fmt::format("{}{}\"", "invalid initial direction \"", properties["init_direction"]));
+      throw Exception(fmt::format("invalid initial direction \"{}\"", properties["init_direction"]));
     init_dir[0] = V[0];
     init_dir[1] = V[1];
     init_dir[2] = V[2];
@@ -221,9 +221,10 @@ void SharedBase::set_num_points(const float angle_minradius_preds, const float m
       "of {}mm will stop tracking after {} vertices pre-DS, is tested explicitly for {} or more vertices post-DS",
       step_size,
       (std::isfinite(max_angle_ho)
-           ? ("max change in fibre orientation angle per step " +
-              fmt::format("{} deg (using RK4)", max_angle_ho * 180.0 / Math::pi, 6))
-           : ("max angle deviation per step " + fmt::format("{}deg", max_angle_1o * 180.0 / Math::pi, 6))),
+           ? fmt::format("max change in fibre orientation angle per step {} deg (using RK4)",
+                         max_angle_ho * 180.0 / Math::pi,
+                         6)
+           : fmt::format("max angle deviation per step {}deg", max_angle_1o * 180.0 / Math::pi, 6)),
       min_radius,
       downsampler.get_ratio(),
       min_dist,

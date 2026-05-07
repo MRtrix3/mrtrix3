@@ -79,7 +79,7 @@ void run() {
     while (item.read()) {
       for (size_t n = 0; n < opt.size(); ++n)
         if (item.is(tags[n].group, tags[n].element))
-          std::cout << MR::printf("[%04X,%04X] ", tags[n].group, tags[n].element) << item.as_string() << "\n";
+          std::cout << fmt::format("[{:04X},{:04X}] ", tags[n].group, tags[n].element) << item.as_string() << "\n";
     }
 
     return;

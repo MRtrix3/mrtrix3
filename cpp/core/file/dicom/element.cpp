@@ -172,23 +172,20 @@ bool Element::read() {
 
   if (size == undefined_length) {
     if (VR != VR_SQ && !(group == group_sequence && element == element_sequence_item))
-      INFO(fmt::format("undefined length used for DICOM tag {}{}{}{}\"",  //
-                       (!tag_name().empty() ? tag_name().substr(2) : ""), //
-                       MR::printf("(%04X, %04X)", group, element),        //
-                       " in file \"",
+      INFO(fmt::format("undefined length used for DICOM tag {}({:04X}, {:04X}) in file \"{}\"",
+                       (!tag_name().empty() ? tag_name().substr(2) : ""),
+                       group,
+                       element,
                        fmap->name()));
   } else if (next + size > fmap->address() + fmap->size())
     throw Exception(fmt::format("file \"{}\" is too small to contain DICOM elements specified", fmap->name()));
   else {
     if (size % 2)
-      DEBUG(fmt::format("WARNING: odd length ({}){}{}{}{}, {}){}{}",
-                        size,                                              //
-                        " used for DICOM tag ",                            //
-                        (!tag_name().empty() ? tag_name().substr(2) : ""), //
-                        " (",
+      DEBUG(fmt::format("WARNING: odd length ({}) used for DICOM tag {} ({}, {}) in file \"{}\"",
+                        size,
+                        (!tag_name().empty() ? tag_name().substr(2) : ""),
                         group,
-                        element, //
-                        " in file \"",
+                        element,
                         fmap->name()));
     if (VR != VR_SQ) {
       if (group == group_sequence && element == element_sequence_item) {
@@ -444,10 +441,10 @@ void Element::error_in_check_size(size_t min_size, size_t actual_size) const {
 }
 
 void Element::report_unknown_tag_with_implicit_syntax() const {
-  DEBUG(MR::printf("attempt to read data of unknown value representation "
-                   "in DICOM implicit syntax for tag (%04X %04X); ignored",
-                   group,
-                   element));
+  DEBUG(fmt::format(
+      "attempt to read data of unknown value representation in DICOM implicit syntax for tag ({:04X} {:04X}); ignored",
+      group,
+      element));
 }
 
 std::ostream &operator<<(std::ostream &stream, const Element &item) {

@@ -264,11 +264,16 @@ void run() {
   // write-out:
 
   File::OFStream out(argument[argument.size() - 1]);
-  for (auto &d : merged)
-    out << MR::printf(num_subsets > 1 ? "%#20.15f %#20.15f %#20.15f %5d %3d\n" : "%#20.15f %#20.15f %#20.15f %5d\n",
-                      d.d[0],
-                      d.d[1],
-                      d.d[2],
-                      static_cast<int>(bvalue[d.b]),
-                      d.pe + 1);
+  for (auto &d : merged) {
+    if (num_subsets > 1)
+      out << fmt::format("{:#20.15f} {:#20.15f} {:#20.15f} {:5d} {:3d}\n",
+                         d.d[0],
+                         d.d[1],
+                         d.d[2],
+                         static_cast<int>(bvalue[d.b]),
+                         d.pe + 1);
+    else
+      out << fmt::format(
+          "{:#20.15f} {:#20.15f} {:#20.15f} {:5d}\n", d.d[0], d.d[1], d.d[2], static_cast<int>(bvalue[d.b]));
+  }
 }

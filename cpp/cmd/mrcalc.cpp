@@ -502,7 +502,7 @@ public:
       return;
     auto search = image_list.find(arg);
     if (search != image_list.end()) {
-      DEBUG(fmt::format("{}{}\" already loaded - re-using exising image", "image \"", arg));
+      DEBUG(fmt::format("image \"{}\" already loaded - re-using exising image", arg));
       image = search->second.image;
       image_is_complex = search->second.image_is_complex;
     } else {
@@ -1007,7 +1007,7 @@ void run() {
 #include <fmt/format.h>
 
       else
-        throw Exception(fmt::format("{}{}\" not yet implemented!", "operation \"", opt->id));
+        throw Exception(fmt::format("operation \"{}\" not yet implemented!", opt->id));
 
     } else {
       stack.push_back(argument);

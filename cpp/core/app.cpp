@@ -1020,10 +1020,10 @@ void parse() {
           count++;
 
       if (count < 1 && OPTIONS[i][j].flags.required())
-        throw Exception(fmt::format("{}{}\" must be specified", "mandatory option \"-", OPTIONS[i][j].id));
+        throw Exception(fmt::format("mandatory option \"-{}\" must be specified", OPTIONS[i][j].id));
 
       if (count > 1 && !OPTIONS[i][j].flags.allow_multiple())
-        throw Exception(fmt::format("{}{}\" are not allowed", "multiple instances of option \"-", OPTIONS[i][j].id));
+        throw Exception(fmt::format("multiple instances of option \"-{}\" are not allowed", OPTIONS[i][j].id));
     }
   }
 

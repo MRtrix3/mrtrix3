@@ -212,7 +212,7 @@ void run() {
                         hypotheses[0].cols(),
                         design.cols(),
                         (have_extra_columns
-                             ? fmt::format(" (taking into account the {}", extra_columns.size()) + " uses of -column)"
+                             ? fmt::format(" (taking into account the {} uses of -column)", extra_columns.size())
                              : "")))));
   CONSOLE(fmt::format("Number of hypotheses: {}", num_hypotheses));
 

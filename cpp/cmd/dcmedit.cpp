@@ -117,7 +117,7 @@ void run() {
       char c[2]; // check_syntax off
     } VR;
     VR.i = VRs[n];
-    INFO(fmt::format("{}{}{}\"", "clearing entries with VR \"", VR.c[1], VR.c[0]));
+    INFO(fmt::format("clearing entries with VR \"{}{}\"", VR.c[1], VR.c[0]));
   }
   for (size_t n = 0; n < tags.size(); ++n)
     INFO(fmt::format(

@@ -175,12 +175,12 @@ void run() {
     CONSOLE(fmt::format("-any: {}", opt[0][0]));
   opt = get_options("nargs_two");
   if (!opt.empty())
-    CONSOLE("-nargs_two: [" + fmt::format("{} ", opt[0][0]) + fmt::format("{}]", opt[0][1]));
+    CONSOLE(fmt::format("-nargs_two: [{} {}]", opt[0][0], opt[0][1]));
   opt = get_options("multiple");
   if (!opt.empty()) {
     std::vector<std::string> specs;
     for (size_t i = 0; i != opt.size(); ++i)
-      specs.push_back(std::string("\"") + fmt::format("{}\"", opt[i][0]));
+      specs.push_back(fmt::format("\"{}\"", opt[i][0]));
     CONSOLE("-multiple: [" + join(specs, " ") + "]");
   }
 }

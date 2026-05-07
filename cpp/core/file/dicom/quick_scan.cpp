@@ -123,7 +123,7 @@ bool QuickScan::read(
                     print(entry);
                 }
               } else if (print_CSA_fields && is_phoenix) {
-                print(fmt::format("{}{} ({} items): <", "[CSA] ", entry.key(), entry.num_items()));
+                print(fmt::format("[CSA] {} ({} items): <", entry.key(), entry.num_items()));
                 const auto data = entry.get_string();
                 size_t line_count = 0;
                 for (const auto &entry : data) {
@@ -131,7 +131,7 @@ bool QuickScan::read(
                     line_count += 1;
                   line_count += std::count(entry.begin(), entry.end(), '\n');
                 }
-                print(fmt::format("{} text lines>\\n", line_count));
+                print(fmt::format("{} text lines>\n", line_count));
               }
             }
           }

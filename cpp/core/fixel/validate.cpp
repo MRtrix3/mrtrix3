@@ -297,12 +297,14 @@ void debug_validate_image(const Image<float> &image) {
                                                 : " no fill triplets detected (all voxels fully populated)")));
     if (std::isfinite(v.norm_min)) {
       constexpr float unit_tol = 1e-4F;
-      DEBUG(fmt::format("Peaks image \"{}\": {}",
-                        image.name(),
-                        ((std::fabs(v.norm_min - 1.0F) <= unit_tol && std::fabs(v.norm_max - 1.0F) <= unit_tol)
-                             ? "all peaks are unit-norm"
-                             : ("peak norms range from " + fmt::format("{} to ", v.norm_min) +
-                                fmt::format("{} (ie. image encodes a quantitative value per peak)", v.norm_max)))));
+      DEBUG(fmt::format(
+          "Peaks image \"{}\": {}",
+          image.name(),
+          ((std::fabs(v.norm_min - 1.0F) <= unit_tol && std::fabs(v.norm_max - 1.0F) <= unit_tol)
+               ? "all peaks are unit-norm"
+               : fmt::format("peak norms range from {} to {} (ie. image encodes a quantitative value per peak)",
+                             v.norm_min,
+                             v.norm_max))));
     } else {
       WARN(fmt::format("Peaks image \"{}\": no peaks data present", image.name()));
     }

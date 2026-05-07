@@ -125,7 +125,7 @@ void run() {
     if (get_options("shells").empty() && shells.has_bzero() && shells.count() > 1) {
       n_start = 1;
       if (get_options("output").empty())
-        print(fmt::format("{} (b=0) [ {} volumes ]\\n\\n", argument[0], shells.smallest().count()));
+        print(fmt::format("{} (b=0) [ {} volumes ]\n\n", argument[0], shells.smallest().count()));
     }
 
     Eigen::MatrixXd dirs;

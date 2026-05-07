@@ -392,9 +392,11 @@ WriteInfo prepare_ND_write(std::string_view path, const DataType data_type, cons
   }
 
   // Need to construct the header string in order to discover its length
-  std::string header("{'descr': '" + datatype2descr(info.data_type) +
-                     "', 'fortran_order': " + (shape.size() == 2 ? "True" : "False") + ", 'shape': (" +
-                     fmt::format("{},", shape[0]) + (shape.size() == 2 ? (fmt::format(" {}", shape[1])) : "") + "), }");
+  std::string header = fmt::format("{{'descr': '{}', 'fortran_order': {}, 'shape': ({},{}), }}",
+                                   datatype2descr(info.data_type),
+                                   shape.size() == 2 ? "True" : "False",
+                                   shape[0],
+                                   shape.size() == 2 ? fmt::format(" {}", shape[1]) : "");
   // Pad with spaces so that, for version 1, upon adding a newline at the end, the file size (i.e. eventual offset to
   // the data) is a multiple of alignment (16)
   uint32_t space_count =

@@ -58,7 +58,7 @@ public:
 
   void compile(std::string_view source) {
     std::string code = fmt::format("#version 330 core\n{}", source);
-    DEBUG(fmt::format("compiling OpenGL {} shader:\\n{}", this->type(), code));
+    DEBUG(fmt::format("compiling OpenGL {} shader:\n{}", this->type(), code));
     if (!index_) {
       index_ = gl::CreateShader(TYPE);
       GL_DEBUG(fmt::format("created OpenGL {} shader ID {}", this->type(), index_));
