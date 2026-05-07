@@ -15,6 +15,7 @@
  */
 
 #include <array>
+#include <cstddef>
 #include <fcntl.h>
 #include <unistd.h>
 #include <zlib.h>
@@ -123,7 +124,7 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, int64_t mapped_size
 
     if (delayed_writeback) {
       try {
-        first = new uint8_t[msize];
+        first = new std::byte[msize];
         if (!first)
           throw 1;
       } catch (...) {
@@ -159,13 +160,13 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, int64_t mapped_size
         (HANDLE)_get_osfhandle(fd), nullptr, (readwrite ? PAGE_READWRITE : PAGE_READONLY), 0, start + msize, nullptr);
     if (!handle)
       throw 0;
-    addr = static_cast<uint8_t *>(
+    addr = static_cast<std::byte *>(
         MapViewOfFile(handle, (readwrite ? FILE_MAP_ALL_ACCESS : FILE_MAP_READ), 0, 0, start + msize));
     if (!addr)
       throw 0;
     CloseHandle(handle);
 #else
-    addr = static_cast<uint8_t *>(
+    addr = static_cast<std::byte *>(
         mmap(nullptr, start + msize, (readwrite ? PROT_WRITE | PROT_READ : PROT_READ), MAP_SHARED, fd, 0));
     if (addr == MAP_FAILED)
       throw 0;
