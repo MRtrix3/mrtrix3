@@ -251,7 +251,8 @@ namespace MR
         tool_has_focus (nullptr),
         best_FPS (NAN),
         show_FPS (false),
-        current_option (0) {
+        current_option (0),
+        processing_commandline_option (false) {
           main = this;
           GUI::App::set_main_window (this, glarea);
           GUI::Dialog::init();
@@ -1844,8 +1845,19 @@ namespace MR
         if (current_option >= MR::App::option.size())
           return;
 
+        // Guard against re-entrancy:
+        // a long-running ProgressBar (e.g. while uploading a large overlay texture during paint)
+        // may call qApp->processEvents(), which can dispatch this queued slot recursively while
+        // the outer invocation is still inside paintGL with an active GL context.
+        // Defer instead; the timer chain will retry shortly.
+        if (processing_commandline_option) {
+          QTimer::singleShot(10, this, SLOT(process_commandline_option_slot()));
+          return;
+        }
+        processing_commandline_option = true;
         process_commandline_option();
         ++current_option;
+        processing_commandline_option = false;
 
         QTimer::singleShot (10, this, SLOT(process_commandline_option_slot()));
         glarea->update();

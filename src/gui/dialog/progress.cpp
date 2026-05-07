@@ -29,6 +29,12 @@ namespace MR
 
         namespace {
           QProgressDialog* progress_dialog = nullptr;
+          // Guard against re-entrancy:
+          // qApp->processEvents() below can dispatch queued events (e.g. paint events or
+          // QTimer-driven callbacks) that themselves create a ProgressBar, recursively
+          // re-entering display() while a partial GL upload or the outer dialog is still
+          // in flight. Skip the inner pump in that case.
+          bool inside_process_events = false;
         }
 
 
@@ -48,10 +54,18 @@ namespace MR
                   0, p.show_percent() ? 100 : 0, GUI::App::main_window);
               progress_dialog->setWindowModality (Qt::ApplicationModal);
               progress_dialog->show();
-              qApp->processEvents();
+              if (!inside_process_events) {
+                inside_process_events = true;
+                qApp->processEvents();
+                inside_process_events = false;
+              }
             }
             progress_dialog->setValue (p.value());
-            qApp->processEvents();
+            if (!inside_process_events) {
+              inside_process_events = true;
+              qApp->processEvents();
+              inside_process_events = false;
+            }
           }
         }
 
