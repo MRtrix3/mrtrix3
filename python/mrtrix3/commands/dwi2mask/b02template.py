@@ -144,7 +144,7 @@ def execute_ants(mode):
 
   ants_options_split = ants_options.split()
   ants_nthreads_opt = ''
-  if app.ARGS.nthreads is not None:
+  if app.ARGS.nthreads is not None and mode == 'quick':
     external_nthreads = 1 if app.ARGS.nthreads <= 1 else app.ARGS.nthreads
     n_flag_indices = [i for i, t in enumerate(ants_options_split) if t == '-n']
     if n_flag_indices:
