@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <unordered_map>
 
 #include "file/dicom/definitions.h"
@@ -28,9 +29,9 @@ namespace MR::File::Dicom {
 
 class Sequence {
 public:
-  Sequence(uint16_t group, uint16_t element, uint8_t *end) : group(group), element(element), end(end) {}
+  Sequence(uint16_t group, uint16_t element, std::byte *end) : group(group), element(element), end(end) {}
   uint16_t group, element;
-  uint8_t *end;
+  std::byte *end;
 
   bool is(uint16_t Group, uint16_t Element) const {
     if (group != Group)
@@ -91,7 +92,7 @@ public:
 
   uint16_t group, element, VR;
   uint32_t size;
-  uint8_t *data;
+  std::byte *data;
   std::vector<Sequence> parents;
   bool transfer_syntax_supported;
 
@@ -125,7 +126,7 @@ public:
     return val.i;
   }
 
-  size_t offset(uint8_t *address) const { return address - fmap->address(); }
+  size_t offset(std::byte *address) const { return address - fmap->address(); }
   bool is_big_endian() const { return is_BE; }
   bool is_new_sequence() const {
     return VR == VR_SQ || (group == group_data && element == element_data && size == undefined_length);
@@ -181,11 +182,11 @@ protected:
   void set_explicit_encoding();
   bool read_GR_EL();
 
-  uint8_t *next;
-  uint8_t *start;
+  std::byte *next;
+  std::byte *start;
   bool is_explicit, is_BE, is_transfer_syntax_BE;
 
-  std::vector<uint8_t *> end_seq;
+  std::vector<std::byte *> end_seq;
 
   static uint16_t get_VR_from_tag_name(std::string_view name) {
     union {

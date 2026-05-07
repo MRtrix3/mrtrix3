@@ -337,7 +337,7 @@ template <typename T> void phoenix_vector(const KeyValues &keyval, std::string_v
 }
 } // namespace
 
-void Image::decode_csa(const uint8_t *start, const uint8_t *end) {
+void Image::decode_csa(const std::byte *start, const std::byte *end) {
   CSAEntry entry(start, end);
 
   while (entry.parse()) {

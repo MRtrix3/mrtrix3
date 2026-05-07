@@ -87,9 +87,9 @@ template <class ContType> void save_vector(const ContType &data, std::string_vie
   using ValueType = typename container_value_type<ContType>::type;
   const WriteInfo info = prepare_ND_write(path, DataType::from<ValueType>(), {static_cast<size_t>(data.size())});
   if (info.data_type == DataType::Bit) {
-    uint8_t *const out = reinterpret_cast<uint8_t *const>(info.mmap->address());
+    std::byte *const out = info.mmap->address();
     for (ssize_t i = 0; i != static_cast<ssize_t>(data.size()); ++i)
-      out[i] = data[i] ? uint8_t(1) : uint8_t(0);
+      out[i] = std::byte(data[i] ? 1 : 0);
     return;
   }
   auto store_func = __set_store_function<ValueType>(info.data_type);
@@ -102,11 +102,11 @@ template <class ContType> void save_matrix(const ContType &data, std::string_vie
   const WriteInfo info = prepare_ND_write(
       path, DataType::from<ValueType>(), {static_cast<size_t>(data.rows()), static_cast<size_t>(data.cols())});
   if (info.data_type == DataType::Bit) {
-    uint8_t *const out = reinterpret_cast<uint8_t *const>(info.mmap->address());
+    std::byte *const out = info.mmap->address();
     size_t i = 0;
     for (ssize_t col = 0; col != data.cols(); ++col)
       for (ssize_t row = 0; row != data.rows(); ++row) {
-        out[i++] = data(row, col) ? uint8_t(1) : uint8_t(0);
+        out[i++] = std::byte(data(row, col) ? 1 : 0);
       }
     return;
   }

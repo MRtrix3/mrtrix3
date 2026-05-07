@@ -150,7 +150,7 @@ public:
 
   void read();
   void parse_item(Element &item);
-  void decode_csa(const uint8_t *start, const uint8_t *end);
+  void decode_csa(const std::byte *start, const std::byte *end);
   KeyValues read_csa_ascii(const std::vector<std::string> &data);
 
   bool operator<(const Image &ima) const { return Frame::operator<(ima); }

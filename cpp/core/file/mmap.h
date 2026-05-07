@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
 #include <iostream>
 
@@ -53,8 +54,8 @@ public:
 
   std::string name() const { return Entry::name; }
   int64_t size() const { return msize; }
-  uint8_t *address() { return first; }
-  const uint8_t *address() const { return first; }
+  std::byte *address() { return first; }
+  const std::byte *address() const { return first; }
 
   bool is_read_write() const { return readwrite; }
   bool changed() const;
@@ -68,10 +69,10 @@ public:
 
 protected:
   int fd;
-  uint8_t *addr;  /**< The address in memory where the file has been mapped. */
-  uint8_t *first; /**< The address in memory to the start of the region of interest. */
-  int64_t msize;  /**< The size of the file. */
-  time_t mtime;   /**< The modification time of the file at the last check. */
+  std::byte *addr;  /**< The address in memory where the file has been mapped. */
+  std::byte *first; /**< The address in memory to the start of the region of interest. */
+  int64_t msize;    /**< The size of the file. */
+  time_t mtime;     /**< The modification time of the file at the last check. */
   bool readwrite;
 
   void map();
