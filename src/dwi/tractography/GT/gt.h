@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -108,6 +108,7 @@ namespace MR {
           }
 
           double getTint() const {
+            std::lock_guard<std::mutex> lock (mutex);
             return Tint;
           }
 
@@ -118,10 +119,12 @@ namespace MR {
 
 
           double getEextTotal() const {
+            std::lock_guard<std::mutex> lock (mutex);
             return EextTot;
           }
 
           double getEintTotal() const {
+            std::lock_guard<std::mutex> lock (mutex);
             return EintTot;
           }
 
@@ -197,7 +200,7 @@ namespace MR {
 
 
         protected:
-          std::mutex mutex;
+          mutable std::mutex mutex;
           double Text, Tint;
           double EextTot, EintTot;
           double alpha;

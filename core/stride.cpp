@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -110,7 +110,7 @@ namespace MR
           throw Exception ("strides specified exceed image dimensions: got " + str(opt[0][0]) + ", but image has " + str(current.size()) + " axes");
 
       for (size_t i = 0; i < strides.size()-1; ++i) {
-        if (!strides[1]) continue;
+        if (!strides[i]) continue;
         for (size_t j = i+1; j < strides.size(); ++j)
           if (abs (strides[i]) == abs (strides[j]))
             throw Exception ("duplicate entries provided to \"-strides\" option: " + str(opt[0][0]));

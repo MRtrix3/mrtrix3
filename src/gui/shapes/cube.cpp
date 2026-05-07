@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -108,8 +108,8 @@ namespace MR
 
       index_buffer.gen();
       index_buffer.bind();
-      num_indices = 3 * NUM_POLYGONS * sizeof(GLuint);
-      gl::BufferData (gl::ELEMENT_ARRAY_BUFFER, num_indices, &polygons[0], gl::STATIC_DRAW);
+      num_indices = 3 * NUM_POLYGONS;
+      gl::BufferData (gl::ELEMENT_ARRAY_BUFFER, num_indices * sizeof(GLuint), &polygons[0], gl::STATIC_DRAW);
     }
 
 

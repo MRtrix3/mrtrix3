@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -349,13 +349,13 @@ namespace MR
 
             struct PerThread { MEMALIGN(PerThread)
               Shared& shared;
+              Iterator pos;
               typename std::remove_reference<Functor>::type func;
               void execute () {
-                Iterator pos = shared.iterator;
                 while (shared.next (pos))
                   func (pos);
               }
-            } loop_thread = { shared, functor };
+            } loop_thread = { shared, shared.iterator, functor };
 
             auto threads = Thread::run (Thread::multi (loop_thread), "loop threads");
 

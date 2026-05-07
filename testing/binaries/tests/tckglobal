@@ -1,0 +1,3 @@
+dwiextract dwi.mif - | tckglobal - response.txt tmp.tck -fod tmp_fod.mif -eext tmp_eext.mif -etrend tmp_etrend.txt -niter 100000 -force
+dwiextract dwi.mif - | tckglobal - response.txt tmp.tck -mask mask.mif -niter 100000 -force
+tckglobal dwi2fod/msmt/dwi.mif dwi2fod/msmt/wm.txt tmp.tck -riso dwi2fod/msmt/gm.txt -riso dwi2fod/msmt/csf.txt -fiso tmp_fiso.mif -eext tmp_eext.mif -niter 100000 -force

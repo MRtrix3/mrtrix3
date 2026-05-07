@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -144,6 +144,9 @@ namespace MR
             vector<vector<GLint> > original_track_sizes;
             vector<vector<GLint> > original_track_starts;
             vector<size_t> num_tracks_per_buffer;
+            // EBOs and indices for chunks of tracks
+            vector<GLuint> element_buffers;
+            vector<GLsizei> element_counts;
             GLint sample_stride;
             bool vao_dirty;
 

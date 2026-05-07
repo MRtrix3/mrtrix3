@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -73,6 +73,7 @@ namespace MR {
            * @brief Return number of Particles in the pool.
            */
           inline size_t size() const {
+            std::lock_guard<std::mutex> lock (mutex);
             return pool.size() - avail.size();
           }
           
@@ -104,7 +105,7 @@ namespace MR {
           }
           
         protected:
-          std::mutex mutex;
+          mutable std::mutex mutex;
           deque<Particle> pool;
           std::stack<Particle*, deque<Particle*> > avail;
           Math::RNG rng;

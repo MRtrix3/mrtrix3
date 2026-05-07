@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2024 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -60,7 +60,7 @@ namespace MR {
         
         void MHSampler::birth()
         {
-          //TRACE;
+          //std::cerr << 'b';
           stats.incN('b');
           
           Point_t pos;
@@ -85,7 +85,7 @@ namespace MR {
         
         void MHSampler::death()
         {
-          //TRACE;
+          //std::cerr << 'd';
           stats.incN('d');
           
           Particle* par;
@@ -111,7 +111,7 @@ namespace MR {
         
         void MHSampler::randshift()
         {
-          //TRACE;
+          //std::cerr << 'r';
           stats.incN('r');
           
           Particle* par;
@@ -143,7 +143,7 @@ namespace MR {
         
         void MHSampler::optshift()
         {
-          //TRACE;
+          //std::cerr << 'o';
           stats.incN('o');
           
           Particle* par;
@@ -176,7 +176,7 @@ namespace MR {
         
         void MHSampler::connect()       // TODO Current implementation does not prevent loops.
         {
-          //TRACE;
+          //std::cerr << 'c';
           stats.incN('c');
           
           Particle* par;
