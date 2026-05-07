@@ -69,7 +69,7 @@ Rigid registration options
 
 -  **-rigid_metric type** valid choices are: diff (intensity differences), Default: diff
 
--  **-rigid_metric.diff.estimator type** Valid choices are: l1 (least absolute: \|x\|), l2 (ordinary least squares), lp (least powers: \|x\|^1.2), Default: l2
+-  **-rigid_metric.diff.estimator type** Valid choices are: l1 (least absolute: \|x\|), l2 (ordinary least squares), lp (least powers: \|x\|^1.2), none (no robust estimator; ordinary least squares via mean squared difference, mathematically equivalent to l2). Default: none
 
 -  **-rigid_lmax num** explicitly set the lmax to be used per scale factor in rigid FOD registration. By default FOD registration will use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0.
 
@@ -102,7 +102,7 @@ Affine registration options
 
 -  **-affine_metric type** valid choices are: diff (intensity differences), Default: diff
 
--  **-affine_metric.diff.estimator type** Valid choices are: l1 (least absolute: \|x\|), l2 (ordinary least squares), lp (least powers: \|x\|^1.2), Default: l2
+-  **-affine_metric.diff.estimator type** Valid choices are: l1 (least absolute: \|x\|), l2 (ordinary least squares), lp (least powers: \|x\|^1.2), none (no robust estimator; ordinary least squares via mean squared difference, mathematically equivalent to l2). Default: none
 
 -  **-affine_lmax num** explicitly set the lmax to be used per scale factor in affine FOD registration. By default FOD registration will use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0.
 

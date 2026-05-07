@@ -27,7 +27,7 @@ namespace MR
     const char* initialisation_rotation_choices[] = { "search", "moments", "none", nullptr };
 
     const char* linear_metric_choices[] = { "diff", "ncc", nullptr };
-    const char* linear_robust_estimator_choices[] = { "l1", "l2", "lp", nullptr };
+    const char* linear_robust_estimator_choices[] = { "l1", "l2", "lp", "none", nullptr };
     const char* linear_optimisation_algo_choices[] = { "bbgd", "gd", nullptr };
     const char* optim_algo_names[] = { "BBGD", "GD", nullptr };
 
@@ -260,7 +260,10 @@ namespace MR
                                   "l1 (least absolute: |x|), "
                                   "l2 (ordinary least squares), "
                                   "lp (least powers: |x|^1.2), "
-                                  "Default: l2")
+                                  "none (no robust estimator; "
+                                  "ordinary least squares via mean squared difference, "
+                                  "mathematically equivalent to l2). "
+                                  "Default: none")
         + Argument ("type").type_choice (linear_robust_estimator_choices)
 
       // + Option ("rigid_loop_density", "density of gradient descent 1 (batch) to 0.0 (max stochastic) (Default: 1.0)")
@@ -328,7 +331,10 @@ namespace MR
                                   "l1 (least absolute: |x|), "
                                   "l2 (ordinary least squares), "
                                   "lp (least powers: |x|^1.2), "
-                                  "Default: l2")
+                                  "none (no robust estimator; "
+                                  "ordinary least squares via mean squared difference, "
+                                  "mathematically equivalent to l2). "
+                                  "Default: none")
         + Argument ("type").type_choice (linear_robust_estimator_choices)
 
       // + Option ("affine_loop_density", "density of gradient descent 1 (batch) to 0.0 (max stochastic) (Default: 1.0)")

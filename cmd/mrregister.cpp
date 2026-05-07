@@ -445,6 +445,9 @@ void run () {
       case 2:
         rigid_estimator = Registration::LP;
         break;
+      case 3:
+        rigid_estimator = Registration::None;
+        break;
       default:
         break;
     }
@@ -589,6 +592,9 @@ void run () {
         break;
       case 2:
         affine_estimator = Registration::LP;
+        break;
+      case 3:
+        affine_estimator = Registration::None;
         break;
       default:
         break;
