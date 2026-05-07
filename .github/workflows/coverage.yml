@@ -8,7 +8,7 @@ on:
     - cron: "0 0 * * 0"
   # IMPORTANT: remove this before merging
   pull_request:
-    
+
 jobs:
   linux-clang-build:
     runs-on: ubuntu-latest
@@ -26,18 +26,21 @@ jobs:
     - name: install dependencies
       run: |
          sudo apt-get update
-         sudo apt-get install gcovr qt6-base-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev ninja-build
+         sudo apt-get install gcovr libeigen3-dev zlib1g-dev libfftw3-dev ninja-build
 
     - name: Run sccache-cache
-      uses: mozilla-actions/sccache-action@v0.0.3
+      uses: mozilla-actions/sccache-action@v0.0.9
 
     - name: Get CMake
       uses: lukka/get-cmake@latest
       with:
-        cmakeVersion: '3.16.3'
+        cmakeVersion: '3.22.1'
 
-    - name: Print CMake version
-      run: cmake --version
+    - name: Print software versions
+      run: >
+        cmake --version
+        g++ --version
+        gcovr --version
 
     - name: configure
       run: >
@@ -46,23 +49,24 @@ jobs:
         -G Ninja
         -D CMAKE_BUILD_TYPE=Debug
         -D MRTRIX_BUILD_TESTS=ON
+        -D MRTRIX_BUILD_GUI=OFF
         -D CMAKE_CXX_FLAGS="--coverage"
 
     - name: build
       run: cmake --build build
 
     - name: Unit tests
-      run: cd build && ctest -R unit --output-on-failure
+      run: cd build && ctest -L unittest --output-on-failure
 
     - name: Binary tests
-      run: cd build && ctest -R bin --output-on-failure
+      run: cd build && ctest -L binary --output-on-failure
 
     - name: Report coverage
       run: >
         gcovr ${{ github.workspace }}/build
         --root ${{ github.workspace }}
         --exclude ${{ github.workspace }}/build
-    
+
     - name: Generate html report
       run: >
         mkdir report &&
@@ -71,9 +75,9 @@ jobs:
         --exclude ${{ github.workspace }}/build
         --html --html-details
         -o report/coverage.html
-    
+
     - name: Upload html report
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: mrtrix3-coverage-report
         path: ${{ github.workspace }}/report
