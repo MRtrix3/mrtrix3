@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,6 +21,7 @@
 #include <cstring>
 #include <fcntl.h>
 #include <filesystem>
+#include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <zlib.h>
@@ -35,8 +36,8 @@ namespace MR::File {
 
 class GZ {
 public:
-  GZ() : gz(NULL) {}
-  GZ(const std::filesystem::path &fname, const char *mode) : gz(NULL) { open(fname, mode); }
+  GZ() : gz(nullptr) {}
+  GZ(const std::filesystem::path &fname, std::string_view mode) : gz(nullptr) { open(fname, mode); }
   ~GZ() {
     try {
       close();
@@ -47,14 +48,13 @@ public:
   }
 
   const std::filesystem::path &name() const { return filepath; }
-
-  void open(const std::filesystem::path &fname, const char *mode) {
+  void open(const std::filesystem::path &fname, std::string_view mode) {
     close();
     filepath = fname;
     if (!std::filesystem::exists(filepath))
       throw Exception("cannot access file \"" + filepath.string() + "\": No such file or directory");
 
-    gz = gzopen(filepath.c_str(), mode);
+    gz = gzopen(filepath.string().c_str(), std::string(mode).c_str());
     if (!gz)
       throw Exception("error opening file \"" + filepath.string() + "\": " + strerror(errno));
   }
@@ -64,7 +64,7 @@ public:
       if (gzclose(gz))
         throw Exception("error closing GZ file \"" + filepath.string() + "\": " + error());
       filepath.clear();
-      gz = NULL;
+      gz = nullptr;
     }
   }
 
@@ -86,7 +86,7 @@ public:
       throw Exception("error seeking in GZ file \"" + filepath.string() + "\": " + error());
   }
 
-  int read(char *s, size_t n) {
+  int read(void *const s, size_t n) {
     assert(gz);
     int n_read = gzread(gz, s, n);
     if (n_read < 0)
@@ -94,15 +94,15 @@ public:
     return n_read;
   }
 
-  void write(const char *s, size_t n) {
+  void write(const void *const s, size_t n) {
     assert(gz);
     if (gzwrite(gz, s, n) <= 0)
       throw Exception("error writing to GZ file \"" + filepath.string() + "\": " + error());
   }
 
-  void write(const std::string &s) {
+  void write(std::string_view s) {
     assert(gz);
-    if (gzputs(gz, s.c_str()) < 0)
+    if (gzputs(gz, std::string(s).c_str()) < 0)
       throw Exception("error writing to GZ file \"" + filepath.string() + "\": " + error());
   }
 
@@ -151,12 +151,12 @@ protected:
   gzFile gz;
   std::filesystem::path filepath;
 
-  const char *error() {
+  const std::string error() {
     int error_number;
-    const char *s = gzerror(gz, &error_number);
+    const char *s = gzerror(gz, &error_number); // check_syntax off
     if (error_number == Z_ERRNO)
       s = strerror(errno);
-    return s;
+    return std::string(s);
   }
 };
 

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -326,7 +326,7 @@ void Window::set_values(int row) {
 
     if (is_response) {
       val = decltype(val)::Zero(Math::SH::NforL(2 * (values.cols() - 1)));
-      for (size_t n = 0; n < size_t(values.cols()); n++)
+      for (size_t n = 0; n < static_cast<size_t>(values.cols()); n++)
         val[Math::SH::index(2 * n, 0)] = values(current, n);
     } else
       val = values.row(current);

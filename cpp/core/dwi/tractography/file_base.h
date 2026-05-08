@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -40,7 +40,7 @@ public:
       in.close();
   }
 
-  void open(const std::filesystem::path &file, const std::string &firstline, Properties &properties);
+  void open(const std::filesystem::path &file, std::string_view type, Properties &properties);
 
   void close() { in.close(); }
 
@@ -71,7 +71,7 @@ public:
     }
   }
 
-  void create(File::OFStream &out, const Properties &properties, const std::string &type) {
+  void create(File::OFStream &out, const Properties &properties, std::string_view type) {
     out << "mrtrix " + type + "\nEND\n";
 
     for (const auto &i : properties) {
@@ -97,7 +97,7 @@ public:
       out << "prior_roi: " << it.first << " " << it.second << "\n";
 
     out << "datatype: " << dtype.specifier() << "\n";
-    int64_t data_offset = int64_t(out.tellp()) + 65;
+    int64_t data_offset = static_cast<int64_t>(out.tellp()) + 65;
     data_offset += (4 - (data_offset % 4)) % 4;
     out << "file: . " << data_offset << "\n";
     out << "count: ";

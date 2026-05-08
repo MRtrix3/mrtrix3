@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,7 +14,9 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include "axes.h"
 #include "command.h"
+#include "enum.h"
 #include "file/key_value.h"
 #include "file/matrix.h"
 #include "file/nifti_utils.h"
@@ -27,7 +29,7 @@
 using namespace MR;
 using namespace App;
 
-const std::vector<std::string> operations = {"flirt_import", "itk_import"};
+enum class Operation { FLIRT_IMPORT, ITK_IMPORT };
 
 // clang-format off
 void usage() {
@@ -56,24 +58,23 @@ void usage() {
              "");
 
   ARGUMENTS
-  + Argument ("input", "the input(s) for the specified operation").type_various().allow_multiple()
+  + Argument ("input", "the input(s) for the specified operation").type_file_in().type_image_in().allow_multiple()
   + Argument ("operation", "the operation to perform;"
-                           " one of: " + join(operations, ", ")).type_choice (operations)
+                           " one of: " + MR::Enum::join<Operation>()).type_choice<Operation>()
   + Argument ("output", "the output transformation matrix.").type_file_out ();
 
 }
 // clang-format on
 
 transform_type get_flirt_transform(const Header &header) {
-  std::vector<size_t> axes;
-  transform_type nifti_transform = File::NIfTI::adjust_transform(header, axes);
-  if (nifti_transform.matrix().topLeftCorner<3, 3>().determinant() < 0.0)
-    return nifti_transform;
-  transform_type coord_switch;
-  coord_switch.setIdentity();
+  const transform_type ondisk_transform = header.realignment().orig_transform();
+  if (ondisk_transform.matrix().topLeftCorner<3, 3>().determinant() < 0.0)
+    return ondisk_transform;
+  transform_type coord_switch(transform_type::Identity());
   coord_switch(0, 0) = -1.0f;
-  coord_switch(0, 3) = (header.size(axes[0]) - 1) * header.spacing(axes[0]);
-  return nifti_transform * coord_switch;
+  coord_switch(0, 3) =
+      (header.size(header.realignment().permutation(0)) - 1) * header.spacing(header.realignment().permutation(0));
+  return ondisk_transform * coord_switch;
 }
 
 // transform_type parse_surfer_transform (const Header& header) {
@@ -83,7 +84,7 @@ transform_type get_flirt_transform(const Header &header) {
 
 // //! read matrix data into a 2D vector \a filename
 // template <class ValueType = default_type>
-//   transform_type parse_surfer_transform (const std::string& filename) {
+//   transform_type parse_surfer_transform (const std::string filename) {
 //     std::ifstream stream (filename, std::ios_base::in | std::ios_base::binary);
 //     std::vector<std::vector<ValueType>> V;
 //     std::string sbuf;
@@ -179,24 +180,20 @@ void parse_itk_trafo(const std::filesystem::path &itk_path,
 void run() {
   const std::filesystem::path output_path{argument.back()};
   const size_t num_inputs = argument.size() - 2;
-  const int op = argument[num_inputs];
+  const Operation op = MR::Enum::from_name<Operation>(argument[num_inputs]);
 
   switch (op) {
-  case 0: { // flirt_import
+  case Operation::FLIRT_IMPORT: {
     if (num_inputs != 3)
       throw Exception("flirt_import requires 3 inputs");
-    const std::filesystem::path first_input_path{argument[0]};
-    const std::filesystem::path second_input_path{argument[1]};
-    const std::filesystem::path third_input_path{argument[2]};
 
-    transform_type transform = File::Matrix::load_transform(first_input_path);
+    transform_type transform = File::Matrix::load_transform(argument[0]);
+    auto src_header = Header::open(argument[1]);  // -in
+    auto dest_header = Header::open(argument[2]); // -ref
 
-    auto src_header = Header::open(second_input_path); // -in
-    auto dest_header = Header::open(third_input_path); // -ref
-
-    if (transform.matrix().topLeftCorner<3, 3>().determinant() == float(0.0))
+    if (transform.matrix().topLeftCorner<3, 3>().determinant() == 0.0)
       WARN("Transformation matrix determinant is zero.");
-    if (transform.matrix().topLeftCorner<3, 3>().determinant() < 0)
+    if (transform.matrix().topLeftCorner<3, 3>().determinant() < 0.0)
       INFO("Transformation matrix determinant is negative.");
 
     transform_type src_flirt_to_scanner = get_flirt_transform(src_header);
@@ -208,7 +205,7 @@ void run() {
     File::Matrix::save_transform(forward_transform.inverse(), output_path);
     break;
   }
-  case 1: { // ITK import
+  case Operation::ITK_IMPORT: {
     if (num_inputs != 1)
       throw Exception("itk_import requires 1 input, " + str(num_inputs) + " provided.");
     const std::filesystem::path input_path{argument[0]};

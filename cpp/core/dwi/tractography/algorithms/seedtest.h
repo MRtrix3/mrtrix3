@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -33,7 +33,7 @@ public:
   public:
     Shared(const std::filesystem::path &diff_path, DWI::Tractography::Properties &property_set)
         : SharedBase(diff_path, property_set) {
-      set_step_and_angle(1.0f, 90.0f, false);
+      set_step_and_angle(1.0F, 90.0F, intrinsic_integration_order_t::FIRST, curvature_constraint_t::POSTHOC_THRESHOLD);
       min_num_points_preds = min_num_points_postds = 1;
       max_num_points_preds = max_num_points_postds = 2;
       set_cutoff(0.0f);
@@ -45,8 +45,10 @@ public:
   Seedtest(const Shared &shared) : MethodBase(shared), S(shared) {}
 
   bool init() override { return true; }
-  term_t next() override { return EXIT_IMAGE; }
-  float get_metric(const Eigen::Vector3f &position, const Eigen::Vector3f &direction) override { return 1.0f; }
+  term_t next() override { return term_t::EXIT_IMAGE; }
+  float get_metric(const Eigen::Vector3f & /*position*/, const Eigen::Vector3f & /*direction*/) override {
+    return 1.0F;
+  }
 
 protected:
   const Shared &S;

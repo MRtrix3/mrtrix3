@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,6 +14,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <array>
+#include <cstdio>
+#include <filesystem>
+#include <sstream>
+
 #include "command.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
@@ -21,9 +26,6 @@
 #include "file/name_parser.h"
 #include "file/ofstream.h"
 #include "raw.h"
-#include <cstdio>
-#include <filesystem>
-#include <sstream>
 
 using namespace MR;
 using namespace App;
@@ -31,9 +33,9 @@ using namespace MR::DWI::Tractography;
 using namespace MR::Raw;
 using namespace MR::ByteOrder;
 
-#define DEFAULT_PLY_INCREMENT 1
-#define DEFAULT_PLY_RADIUS 0.1F
-#define DEFAULT_PLY_SIDES 5
+constexpr int default_ply_increment = 1;
+constexpr float default_ply_radius = 0.1F;
+constexpr int default_ply_sides = 5;
 
 // clang-format off
 void usage() {
@@ -61,8 +63,8 @@ void usage() {
               " output-0000.txt, output-0001.txt, output-0002.txt, ...");
 
   ARGUMENTS
-    + Argument ("input", "the input track file.").type_various()
-    + Argument ("output", "the output track file.").type_file_out();
+    + Argument ("input", "the input track file.").type_tracks_in().type_file_in().type_text()
+    + Argument ("output", "the output track file.").type_tracks_out().type_file_out();
 
   OPTIONS
     + Option ("scanner2voxel",
@@ -143,11 +145,11 @@ public:
         VTKout << pos[0] << " " << pos[1] << " " << pos[2] << "\n";
       }
     } else {
-      float p[3];
+      std::array<float, 3> p{};
       for (const auto &pos : tck) {
         for (auto i = 0; i < 3; ++i)
-          Raw::store_BE(pos[i], p, i);
-        VTKout.write((char *)p, 3 * sizeof(float));
+          Raw::store_BE(pos[i], p.data(), i);
+        VTKout.write(reinterpret_cast<char *>(p.data()), sizeof(p));
       }
     }
     return true;
@@ -170,14 +172,14 @@ public:
         } else {
           int32_t buffer;
           buffer = ByteOrder::BE<int32_t>(track.second - track.first);
-          VTKout.write((char *)&buffer, 1 * sizeof(int32_t));
+          VTKout.write(reinterpret_cast<char *>(&buffer), sizeof(int32_t));
 
           buffer = ByteOrder::BE<int32_t>(track.first);
-          VTKout.write((char *)&buffer, 1 * sizeof(int32_t));
+          VTKout.write(reinterpret_cast<char *>(&buffer), sizeof(int32_t));
 
           for (size_t i = track.first + 1; i < track.second; ++i) {
             buffer = ByteOrder::BE<int32_t>(i);
-            VTKout.write((char *)&buffer, 1 * sizeof(int32_t));
+            VTKout.write(reinterpret_cast<char *>(&buffer), sizeof(int32_t));
           }
         }
       }
@@ -209,11 +211,11 @@ private:
 
 template <class T> void loadLines(std::vector<int64_t> &lines, std::ifstream &input, int number_of_line_indices) {
   std::vector<T> buffer(number_of_line_indices);
-  input.read((char *)&buffer[0], number_of_line_indices * sizeof(T));
+  input.read(reinterpret_cast<char *>(buffer.data()), number_of_line_indices * sizeof(T));
   lines.resize(number_of_line_indices);
   // swap from big endian
   for (int i = 0; i < number_of_line_indices; i++)
-    lines[i] = int64_t(ByteOrder::BE(buffer[i]));
+    lines[i] = static_cast<int64_t>(ByteOrder::BE(buffer[i]));
 }
 
 class VTKReader : public ReaderInterface<float> {
@@ -231,7 +233,8 @@ public:
 
       if (sscanf(line.c_str(), "POINTS %d float", &number_of_points) == 1) {
         points.resize(3 * number_of_points);
-        input.read((char *)points.data(), 3 * number_of_points * sizeof(float));
+        input.read(reinterpret_cast<char *>(points.data()),
+                   3UL * static_cast<unsigned long>(number_of_points) * sizeof(float));
 
         // swap
         for (int i = 0; i < 3 * number_of_points; i++)
@@ -286,7 +289,7 @@ public:
     tck.clear();
     if (item < list.size()) {
       auto t = File::Matrix::load_matrix<float>(list[item].name());
-      for (size_t i = 0; i < size_t(t.rows()); i++)
+      for (decltype(t)::Index i = 0; i < t.rows(); i++)
         tck.push_back(Eigen::Vector3f(t.row(i)));
       item++;
       return true;
@@ -331,9 +334,9 @@ private:
 class PLYWriter : public WriterInterface<float> {
 public:
   PLYWriter(const std::filesystem::path &path,
-            int increment = DEFAULT_PLY_INCREMENT,
-            float radius = DEFAULT_PLY_RADIUS,
-            int sides = DEFAULT_PLY_SIDES)
+            int increment = default_ply_increment,
+            float radius = default_ply_radius,
+            int sides = default_ply_sides)
       : out(path), increment(increment), radius(radius), sides(sides) {
     vertexFilename = File::create_tempfile(0, ".vertex");
     faceFilename = File::create_tempfile(0, ".face");
@@ -426,17 +429,17 @@ public:
 
   bool operator()(const Streamline<float> &intck) {
     // Need at least 5 points, silently ignore...
-    if (intck.size() < size_t(increment * 3)) {
+    if (intck.size() < static_cast<size_t>(increment * 3)) {
       return true;
     }
 
     auto nSides = sides;
     Eigen::MatrixXf coords(nSides, 2);
     Eigen::MatrixXi faces(nSides, 6);
-    auto theta = 2.0 * Math::pi / float(nSides);
+    auto theta = 2.0 * Math::pi / static_cast<default_type>(nSides);
     for (auto i = 0; i < nSides; i++) {
-      coords(i, 0) = cos((double)i * theta);
-      coords(i, 1) = sin((double)i * theta);
+      coords(i, 0) = cos(static_cast<default_type>(i) * theta);
+      coords(i, 1) = sin(static_cast<default_type>(i) * theta);
       // Face offsets
       faces(i, 0) = i;
       faces(i, 1) = (i + 1) % nSides;
@@ -679,38 +682,35 @@ private:
 };
 
 void run() {
-  const std::filesystem::path input_track_path{argument[0]};
-  const std::filesystem::path output_track_path{argument[1]};
-
   // Reader
   Properties properties;
   std::unique_ptr<ReaderInterface<float>> reader;
-  if (Path::has_suffix(std::filesystem::path(input_track_path), ".tck")) {
-    reader.reset(new Reader<float>(input_track_path, properties));
-  } else if (Path::has_suffix(std::filesystem::path(input_track_path), ".txt")) {
-    reader.reset(new ASCIIReader(input_track_path));
-  } else if (Path::has_suffix(std::filesystem::path(input_track_path), ".vtk")) {
-    reader.reset(new VTKReader(input_track_path));
+  if (argument[0].extension() == ".tck") {
+    reader.reset(new Reader<float>(iargument[0], properties));
+  } else if (argument[0].extension() == ".txt") {
+    reader.reset(new ASCIIReader(argument[0]));
+  } else if (argument[0].extension() == ".vtk") {
+    reader.reset(new VTKReader(argument[0]));
   } else {
     throw Exception("Unsupported input file type.");
   }
 
   // Writer
   std::unique_ptr<WriterInterface<float>> writer;
-  if (Path::has_suffix(std::filesystem::path(output_track_path), ".tck")) {
-    writer.reset(new Writer<float>(output_track_path, properties));
-  } else if (Path::has_suffix(std::filesystem::path(output_track_path), ".vtk")) {
+  if (argument[1].extension() == ".tck") {
+    writer.reset(new Writer<float>(argument[1], properties));
+  } else if (argument[1].extension() == ".vtk") {
     auto write_ascii = get_options("ascii").size();
-    writer.reset(new VTKWriter(output_track_path, write_ascii));
-  } else if (Path::has_suffix(std::filesystem::path(output_track_path), ".ply")) {
-    const int increment = get_option_value("increment", DEFAULT_PLY_INCREMENT);
-    const float radius = get_option_value("radius", DEFAULT_PLY_RADIUS);
-    const int sides = get_option_value("sides", DEFAULT_PLY_SIDES);
-    writer.reset(new PLYWriter(output_track_path, increment, radius, sides));
-  } else if (Path::has_suffix(std::filesystem::path(output_track_path), ".rib")) {
-    writer.reset(new RibWriter(output_track_path));
-  } else if (Path::has_suffix(std::filesystem::path(output_track_path), ".txt")) {
-    writer.reset(new ASCIIWriter(output_track_path));
+    writer.reset(new VTKWriter(argument[1], write_ascii));
+  } else if (argument[1].extension() == ".ply") {
+    const int increment = get_option_value("increment", default_ply_increment);
+    const float radius = get_option_value("radius", default_ply_radius);
+    const int sides = get_option_value("sides", default_ply_sides);
+    writer.reset(new PLYWriter(argument[1], increment, radius, sides));
+  } else if (argument[1].extension() == ".rib") {
+    writer.reset(new RibWriter(argument[1]));
+  } else if (argument[1].extension() == ".txt") {
+    writer.reset(new ASCIIWriter(argument[1]));
   } else {
     throw Exception("Unsupported output file type.");
   }

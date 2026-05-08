@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,10 +22,7 @@
 #include "dwi/tractography/algorithms/tensor_det.h"
 #include "dwi/tractography/rng.h"
 
-namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Algorithms {
+namespace MR::DWI::Tractography::Algorithms {
 
 using namespace MR::DWI::Tractography::Tracking;
 
@@ -36,8 +33,11 @@ public:
     Shared(const std::filesystem::path &diff_path, DWI::Tractography::Properties &property_set)
         : Tensor_Det::Shared(diff_path, property_set) {
 
-      if (is_act() && act().backtrack())
-        throw Exception("Sorry, backtracking not currently enabled for TensorProb algorithm");
+      if (is_act()) {
+        if (act().backtrack())
+          throw Exception("Sorry, backtracking not currently enabled for TensorProb algorithm");
+        act().set_default_sgm_trunc(ACT::sgm_trunc_t::ROULETTE);
+      }
 
       properties["method"] = "TensorProb";
 
@@ -62,7 +62,7 @@ public:
 
   term_t next() override {
     if (!source.get(pos, values))
-      return EXIT_IMAGE;
+      return term_t::EXIT_IMAGE;
     return Tensor_Det::do_next();
   }
 
@@ -106,7 +106,7 @@ protected:
 
     bool get(const Eigen::Vector3f &pos, Eigen::VectorXf &data) {
       if (!scanner(pos)) {
-        data.fill(NaN);
+        data.fill(NaNF);
         return false;
       }
 
@@ -136,7 +136,4 @@ protected:
   Interp source;
 };
 
-} // namespace Algorithms
-} // namespace Tractography
-} // namespace DWI
-} // namespace MR
+} // namespace MR::DWI::Tractography::Algorithms

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -26,6 +26,7 @@
 
 #include "dwi/gradient.h"
 #include "dwi/tensor.h"
+#include "dwi/tractography/ACT/act.h"
 #include "dwi/tractography/tracking/method.h"
 #include "dwi/tractography/tracking/shared.h"
 #include "dwi/tractography/tracking/tractography.h"
@@ -43,19 +44,23 @@ public:
     Shared(const std::filesystem::path &diff_path, DWI::Tractography::Properties &property_set)
         : SharedBase(diff_path, property_set) {
 
-      if (is_act() && act().backtrack())
-        throw Exception("Backtracking not valid for deterministic algorithms");
+      if (is_act()) {
+        if (act().backtrack())
+          throw Exception("Backtracking not valid for deterministic algorithms");
+        act().set_default_sgm_trunc(ACT::sgm_trunc_t::MINIMUM);
+      }
 
       set_step_and_angle(rk4 ? Defaults::stepsize_voxels_rk4 : Defaults::stepsize_voxels_firstorder,
                          Defaults::angle_deterministic,
-                         rk4);
+                         rk4 ? intrinsic_integration_order_t::HIGHER : intrinsic_integration_order_t::FIRST,
+                         curvature_constraint_t::POSTHOC_THRESHOLD);
       set_num_points();
       set_cutoff(Defaults::cutoff_fa * (is_act() ? Defaults::cutoff_act_multiplier : 1.0));
 
       properties["method"] = "TensorDet";
 
       try {
-        auto grad = DWI::get_DW_scheme(source);
+        auto grad = DWI::get_DW_scheme(source_header);
         auto bmat_double = grad2bmatrix<double>(grad);
         binv = Math::pinv(bmat_double).cast<float>();
         bmat = bmat_double.cast<float>();
@@ -84,7 +89,7 @@ public:
 
   term_t next() override {
     if (!get_data(source))
-      return EXIT_IMAGE;
+      return term_t::EXIT_IMAGE;
     return do_next();
   }
 
@@ -130,22 +135,22 @@ protected:
     dwi2tensor(dt, S.binv, values);
 
     if (tensor2FA(dt) < S.threshold)
-      return MODEL;
+      return term_t::MODEL;
 
     Eigen::Vector3f prev_dir = dir;
 
     get_EV();
 
     float dot = prev_dir.dot(dir);
-    if (abs(dot) < S.cos_max_angle_1o)
-      return HIGH_CURVATURE;
+    if (std::fabs(dot) < S.cos_max_angle_1o)
+      return term_t::HIGH_CURVATURE;
 
     if (dot < 0.0)
       dir = -dir;
 
     pos += dir * S.step_size;
 
-    return CONTINUE;
+    return term_t::CONTINUE;
   }
 };
 

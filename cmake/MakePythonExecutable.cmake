@@ -17,21 +17,13 @@ set(BINPATH_CONTENTS
     "\n"
 )
 
-# Three possible interfaces:
+# Two possible interfaces:
 #   1. Standalone file residing in commands/
 #   2. File stored in location commands/<cmdname>/<cmdname>.py, which will contain usage() and execute() functions
-#   3. Two files stored at commands/<cmdname>/usage.py and commands/<cmdname>/execute.py, defining the two corresponding functions
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${CMDNAME}/__init__.py")
-    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${CMDNAME}/usage.py" AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${CMDNAME}/execute.py")
-        string(APPEND BINPATH_CONTENTS
-            "module_usage = importlib.import_module('.usage', 'mrtrix3.commands.${CMDNAME}')\n"
-            "module_execute = importlib.import_module('.execute', 'mrtrix3.commands.${CMDNAME}')\n"
-            "_execute(module_usage.usage, module_execute.execute)\n"
-        )
-    elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${CMDNAME}/${CMDNAME}.py")
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${CMDNAME}/${CMDNAME}.py")
         string(APPEND BINPATH_CONTENTS
             "module = importlib.import_module('.${CMDNAME}', 'mrtrix3.commands.${CMDNAME}')\n"
-            "_execute(module.usage, module.execute)\n"
         )
     else()
         message(FATAL_ERROR "Malformed filesystem structure for Python command ${CMDNAME}")
@@ -39,24 +31,16 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${CMDNAME}/__init__.py")
 elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${CMDNAME}.py")
     string(APPEND BINPATH_CONTENTS
         "module = importlib.import_module('.${CMDNAME}', 'mrtrix3.commands')\n"
-        "_execute(module.usage, module.execute)\n"
     )
 else()
     message(FATAL_ERROR "Malformed filesystem structure for Python command ${CMDNAME}")
 endif()
+string(APPEND BINPATH_CONTENTS
+    "_execute(module.usage, module.execute)\n"
+)
 
-if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.19)
-    file(WRITE ${OUTPUT_DIR}/${CMDNAME} ${BINPATH_CONTENTS})
-    file(CHMOD ${OUTPUT_DIR}/${CMDNAME} FILE_PERMISSIONS
-        OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ
-    )
-else()
-    set(tmp_output_file "${CMAKE_CURRENT_BINARY_DIR}/tmp_${CMDNAME}")
-    file(WRITE ${tmp_output_file} ${BINPATH_CONTENTS})
-    file(COPY ${tmp_output_file} DESTINATION ${OUTPUT_DIR}
-        FILE_PERMISSIONS
-            OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ
-    )
-    file(RENAME ${OUTPUT_DIR}/tmp_${CMDNAME} ${OUTPUT_DIR}/${CMDNAME})
-    file(REMOVE ${tmp_output_file})
-endif()
+
+file(WRITE ${OUTPUT_DIR}/${CMDNAME} ${BINPATH_CONTENTS})
+file(CHMOD ${OUTPUT_DIR}/${CMDNAME} FILE_PERMISSIONS
+    OWNER_EXECUTE OWNER_WRITE OWNER_READ GROUP_EXECUTE GROUP_READ WORLD_EXECUTE WORLD_READ
+)

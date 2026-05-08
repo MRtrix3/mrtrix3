@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,7 +18,6 @@
 #include "command.h"
 #include "dwi/gradient.h"
 #include "image.h"
-#include "phase_encoding.h"
 #include "progressbar.h"
 
 #include <filesystem>
@@ -101,12 +100,13 @@ void run() {
     const std::filesystem::path input_path{argument[i]};
     Header H = Header::open(input_path);
     ssize_t a;
-    for (a = ssize_t(H.ndim()) - 1; a >= 0 && H.size(a) <= 1; a--)
+    for (a = static_cast<ssize_t>(H.ndim()) - 1; a >= 0 && H.size(a) <= 1; a--)
       ;
     max_axis_nonunity = std::max(max_axis_nonunity, a);
     headers.push_back(std::move(H));
   }
-  const size_t axis = get_option_value("axis", std::max(size_t(3), size_t(std::max(ssize_t(0), max_axis_nonunity))));
+  const size_t axis =
+      get_option_value("axis", std::max(size_t(3), static_cast<size_t>(std::max(ssize_t(0), max_axis_nonunity))));
 
   Header header_out = concatenate(headers, axis, true);
   header_out.path() = output_path;

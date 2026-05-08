@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -69,7 +69,7 @@ public:
       return false;
     if (S.stride(b) == 0)
       return true;
-    return abs(S.stride(a)) < abs(S.stride(b));
+    return MR::abs(S.stride(a)) < MR::abs(S.stride(b));
   }
 
 private:
@@ -161,15 +161,14 @@ template <class HeaderType> void sanitise(HeaderType &header) {
     for (size_t j = i + 1; j < header.ndim(); ++j) {
       if (!header.stride(j))
         continue;
-      if (abs(header.stride(i)) == abs(header.stride(j)))
+      if (MR::abs(header.stride(i)) == MR::abs(header.stride(j)))
         header.stride(j) = 0;
     }
   }
 
   size_t max = 0;
   for (size_t i = 0; i < header.ndim(); ++i)
-    if (size_t(abs(header.stride(i))) > max)
-      max = abs(header.stride(i));
+    max = std::max(max, static_cast<size_t>(MR::abs(header.stride(i))));
 
   for (size_t i = 0; i < header.ndim(); ++i) {
     if (header.stride(i))
@@ -231,7 +230,7 @@ template <class HeaderType> inline List get_actual(const List &strides, const He
 //! convert strides from actual to symbolic strides
 template <class HeaderType> void symbolise(HeaderType &header) {
   std::vector<size_t> p(order(header));
-  for (ssize_t i = 0; i < ssize_t(p.size()); ++i)
+  for (size_t i = 0; i < p.size(); ++i)
     if (header.stride(p[i]) != 0)
       header.stride(p[i]) = header.stride(p[i]) < 0 ? -(i + 1) : i + 1;
 }
@@ -262,7 +261,7 @@ template <class HeaderType> size_t offset(const HeaderType &header) {
   size_t offset = 0;
   for (size_t i = 0; i < header.ndim(); ++i)
     if (header.stride(i) < 0)
-      offset += size_t(-header.stride(i)) * (header.size(i) - 1);
+      offset += static_cast<size_t>(-header.stride(i)) * (header.size(i) - 1);
   return offset;
 }
 
@@ -307,7 +306,7 @@ template <class HeaderType> List get_nearest_match(const HeaderType &current, co
 
   for (size_t i = 0; i < out.size(); ++i)
     if (out[i])
-      if (abs(out[i]) != abs(in[i]))
+      if (MR::abs(out[i]) != MR::abs(in[i]))
         return sanitise(in, out, dims);
 
   sanitise(in, current);

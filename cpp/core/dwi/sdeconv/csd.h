@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,22 +20,24 @@
 
 #include "app.h"
 #include "dwi/directions/predefined.h"
+#include "dwi/directions/validate.h"
 #include "dwi/gradient.h"
+#include "dwi/shells.h"
 #include "file/matrix.h"
 #include "header.h"
 #include "math/SH.h"
 #include "math/ZSH.h"
 #include "math/least_squares.h"
-
-#define NORM_LAMBDA_MULTIPLIER 0.0002
-
-#define DEFAULT_CSD_LMAX 8
-#define DEFAULT_CSD_NEG_LAMBDA 1.0
-#define DEFAULT_CSD_NORM_LAMBDA 1.0
-#define DEFAULT_CSD_THRESHOLD 0.0
-#define DEFAULT_CSD_NITER 50
+#include "math/sphere.h"
 
 namespace MR::DWI::SDeconv {
+
+constexpr uint32_t default_csd_lmax = 8;
+constexpr default_type csd_normlambda_multiplier = 0.0002;
+constexpr default_type default_csd_neglambda = 1.0;
+constexpr default_type default_csd_normlambda = 1.0;
+constexpr default_type default_csd_threshold = 0.0;
+constexpr ssize_t default_csd_maxiterations = 50;
 
 extern const App::OptionGroup CSD_options;
 
@@ -45,13 +47,13 @@ public:
   public:
     Shared(const Header &dwi_header)
         : HR_dirs(Directions::electrostatic_repulsion_300()),
-          neg_lambda(DEFAULT_CSD_NEG_LAMBDA),
-          norm_lambda(DEFAULT_CSD_NORM_LAMBDA),
-          threshold(DEFAULT_CSD_THRESHOLD),
+          neg_lambda(default_csd_neglambda),
+          norm_lambda(default_csd_normlambda),
+          threshold(default_csd_threshold),
           lmax_response(0),
           lmax_cmdline(0),
           lmax(0),
-          niter(DEFAULT_CSD_NITER) {
+          niter(default_csd_maxiterations) {
       grad = DWI::get_DW_scheme(dwi_header);
       // Discard b=0 (b=0 normalisation not supported in this version)
       // Only allow selection of one non-zero shell from command line
@@ -74,8 +76,11 @@ public:
       if (!opt.empty())
         init_filter = File::Matrix::load_vector(std::filesystem::path(opt[0][0]));
       opt = get_options("directions");
-      if (!opt.empty())
-        HR_dirs = File::Matrix::load_matrix(std::filesystem::path(opt[0][0]));
+      if (!opt.empty()) {
+        const Eigen::MatrixXd directions = File::Matrix::load_matrix(opt[0][0]);
+        DWI::Directions::validate(directions, opt[0][0], false);
+        HR_dirs = Math::Sphere::as_spherical(directions);
+      }
       opt = get_options("neg_lambda");
       if (!opt.empty())
         neg_lambda = opt[0][0];
@@ -92,7 +97,7 @@ public:
 
     void set_response(const std::filesystem::path &path) {
       INFO("loading response function from file \"" + path.string() + "\"");
-      set_response(File::Matrix::load_vector(path.string()));
+      set_response(File::Matrix::load_vector(path));
     }
 
     template <class Derived> void set_response(const Eigen::MatrixBase<Derived> &in) {
@@ -110,7 +115,7 @@ public:
       if (lmax_response <= 0)
         throw Exception("response function does not contain anisotropic terms");
 
-      lmax = (lmax_cmdline ? lmax_cmdline : std::min(lmax_response, uint32_t(DEFAULT_CSD_LMAX)));
+      lmax = lmax_cmdline > 0 ? lmax_cmdline : std::min(lmax_response, default_csd_lmax);
 
       if (lmax <= 0 || lmax % 2)
         throw Exception("lmax must be a positive even integer");
@@ -123,12 +128,12 @@ public:
         init_filter = Eigen::VectorXd::Ones(3);
       init_filter.conservativeResizeLike(Eigen::VectorXd::Zero(Math::ZSH::NforL(lmax_response)));
 
-      auto RH = Math::ZSH::ZSH2RH(response);
-      if (size_t(RH.size()) < Math::ZSH::NforL(lmax))
+      RH = Math::ZSH::ZSH2RH(response);
+      if (static_cast<size_t>(RH.size()) < Math::ZSH::NforL(lmax))
         RH.conservativeResizeLike(Eigen::VectorXd::Zero(Math::ZSH::NforL(lmax)));
 
       // inverse sdeconv for initialisation:
-      auto fconv = init_transform(DW_dirs, lmax_response);
+      fconv = init_transform(DW_dirs, lmax_response);
       rconv.resize(fconv.cols(), fconv.rows());
       fconv.diagonal().array() += 1.0e-2;
       // fconv.save ("fconv.txt");
@@ -159,7 +164,7 @@ public:
 
       // high-res sampling to apply constraint:
       HR_trans = init_transform(HR_dirs, lmax);
-      default_type constraint_multiplier = neg_lambda * 50.0 * response[0] / default_type(HR_trans.rows());
+      default_type constraint_multiplier = neg_lambda * 50.0 * response[0] / static_cast<default_type>(HR_trans.rows());
       HR_trans.array() *= constraint_multiplier;
 
       // adjust threshold accordingly:
@@ -175,7 +180,7 @@ public:
 
       // min-norm constraint:
       if (norm_lambda) {
-        norm_lambda *= NORM_LAMBDA_MULTIPLIER * Mt_M(0, 0);
+        norm_lambda *= csd_normlambda_multiplier * Mt_M(0, 0);
         Mt_M.diagonal().array() += norm_lambda;
       }
 
@@ -185,8 +190,8 @@ public:
     size_t nSH() const { return HR_trans.cols(); }
 
     Eigen::MatrixXd grad;
-    Eigen::VectorXd response, init_filter;
-    Eigen::MatrixXd DW_dirs, HR_dirs;
+    Eigen::VectorXd response, init_filter, RH;
+    Eigen::MatrixXd fconv, DW_dirs, HR_dirs;
     Eigen::MatrixXd rconv, HR_trans, M, Mt_M;
     default_type neg_lambda, norm_lambda, threshold;
     std::vector<size_t> dwis;

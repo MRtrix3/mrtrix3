@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -27,6 +27,7 @@
 
 #include "connectome/connectome.h"
 #include "connectome/lut.h"
+#include "connectome/validate.h"
 
 using namespace MR;
 using namespace App;
@@ -60,9 +61,10 @@ void run() {
   const std::filesystem::path input_node_path{argument[0]};
   const std::filesystem::path output_colour_path{argument[1]};
 
-  auto H = Header::open(input_node_path);
-  Connectome::check(H);
+  auto H = Header::open(argument[0]);
+  Connectome::validate_label_header(H);
   auto nodes = H.get_image<node_t>();
+  Connectome::debug_validate_label_image(nodes);
 
   std::optional<std::filesystem::path> lut_path;
   auto opt = get_options("lut");
@@ -91,7 +93,7 @@ void run() {
         colour[0] = dist(rng);
         colour[1] = dist(rng);
         colour[2] = dist(rng);
-      } while (int(colour[0]) + int(colour[1]) + int(colour[2]) < 100);
+      } while (colour.sum() < 100);
       lut.insert(std::make_pair(i, LUT_node(str(i), colour)));
     }
   }

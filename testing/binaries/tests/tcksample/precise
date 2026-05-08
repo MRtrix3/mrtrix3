@@ -1,5 +1,0 @@
-#!/bin/bash
-# Verify command operation when using the "precise" mechamism of mapping streamlines to voxels
-# This option can only be used in conjunction with some track-wise statistic
-tcksample tracks.tck tcksample/fa.mif tmp.csv -stat_tck mean -precise -force
-testing_diff_matrix tmp.csv tcksample/precise.csv -frac 1e-5

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <array>
 #include <fcntl.h>
 #include <unistd.h>
 #include <zlib.h>
@@ -42,7 +43,7 @@
 namespace MR::File {
 
 MMap::MMap(const Entry &entry, bool readwrite, bool preload, int64_t mapped_size)
-    : Entry(entry), addr(NULL), first(NULL), msize(mapped_size), readwrite(readwrite) {
+    : Entry(entry), addr(nullptr), first(nullptr), msize(mapped_size), readwrite(readwrite) {
   DEBUG("memory-mapping file \"" + Entry::name.string() + "\"...");
 
   const std::filesystem::path &file_path = Entry::name;
@@ -65,10 +66,10 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, int64_t mapped_size
 
 #ifdef MRTRIX_WINDOWS
     const unsigned int length = 255;
-    char root_path[length];
-    if (GetVolumePathName(Entry::name.c_str(), root_path, length)) { // Returns non-zero on success
+    std::array<char, length> root_path;
+    if (GetVolumePathName(Entry::name.c_str(), root_path.data(), length)) { // Returns non-zero on success
 
-      const unsigned int code = GetDriveType(root_path);
+      const unsigned int code = GetDriveType(root_path.data());
       switch (code) {
       case 0: // DRIVE_UNKNOWN
         DEBUG("cannot get filesystem information on file \"" + Entry::name.string() + "\": " + strerror(errno));
@@ -139,12 +140,13 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, int64_t mapped_size
         if (!in)
           throw Exception("failed to open file \"" + Entry::name.string() + "\": " + strerror(errno));
         in.seekg(start, in.beg);
-        in.read((char *)first, msize);
+        in.read(reinterpret_cast<char *>(first), msize);
         if (!in.good())
           throw Exception("error preloading contents of file \"" + Entry::name.string() + "\": " + strerror(errno));
       } else
         memset(first, 0, msize);
-      DEBUG("file \"" + Entry::name.string() + "\" held in RAM at " + str((void *)first) + ", size " + str(msize));
+      DEBUG("file \"" + Entry::name.string() + "\" held in RAM at " + str(reinterpret_cast<void *>(first)) + "," + //
+            " size " + str(msize));                                                                                //
 
       return;
     }
@@ -158,7 +160,7 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, int64_t mapped_size
   try {
 #ifdef MRTRIX_WINDOWS
     HANDLE handle = CreateFileMapping(
-        (HANDLE)_get_osfhandle(fd), NULL, (readwrite ? PAGE_READWRITE : PAGE_READONLY), 0, start + msize, NULL);
+        (HANDLE)_get_osfhandle(fd), nullptr, (readwrite ? PAGE_READWRITE : PAGE_READONLY), 0, start + msize, nullptr);
     if (!handle)
       throw 0;
     addr = static_cast<uint8_t *>(
@@ -168,19 +170,18 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, int64_t mapped_size
     CloseHandle(handle);
 #else
     addr = static_cast<uint8_t *>(
-        mmap((char *)0, start + msize, (readwrite ? PROT_WRITE | PROT_READ : PROT_READ), MAP_SHARED, fd, 0));
+        mmap(nullptr, start + msize, (readwrite ? PROT_WRITE | PROT_READ : PROT_READ), MAP_SHARED, fd, 0));
     if (addr == MAP_FAILED)
       throw 0;
 #endif
   } catch (...) {
     close(fd);
-    addr = NULL;
+    addr = nullptr;
     throw Exception("memory-mapping failed for file \"" + Entry::name.string() + "\": " + strerror(errno));
   }
   first = addr + start;
-
-  DEBUG("file \"" + Entry::name.string() + "\" mapped at " + str((void *)addr) + ", size " + str(msize) + " (read-" +
-        (readwrite ? "write" : "only") + ")");
+  DEBUG("file \"" + Entry::name.string() + "\" mapped at " + str(reinterpret_cast<void *>(addr)) + "," + //
+        " size " + str(msize) + " (read-" + (readwrite ? "write" : "only") + ")");                       //
 }
 
 MMap::~MMap() {
@@ -189,7 +190,7 @@ MMap::~MMap() {
   if (addr) {
     DEBUG("unmapping file \"" + Entry::name.string() + "\"");
 #ifdef MRTRIX_WINDOWS
-    if (!UnmapViewOfFile((LPVOID)addr))
+    if (!UnmapViewOfFile(static_cast<LPVOID>(addr)))
 #else
     if (munmap(addr, msize))
 #endif
@@ -201,7 +202,7 @@ MMap::~MMap() {
       try {
         File::OFStream out(Entry::name, std::ios::in | std::ios::out | std::ios::binary);
         out.seekp(start, out.beg);
-        out.write((char *)first, msize);
+        out.write(reinterpret_cast<const char *>(first), msize);
         if (!out.good())
           throw 1;
       } catch (...) {
@@ -217,13 +218,13 @@ bool MMap::changed() const {
   assert(fd >= 0);
   try {
     const std::filesystem::path &file_path = Entry::name;
-    int64_t file_size = std::filesystem::file_size(file_path);
-    if (int64_t(msize) != file_size)
+    const int64_t file_size = std::filesystem::file_size(file_path);
+    if (static_cast<int64_t>(msize) != file_size)
       return true;
     auto last_write = std::filesystem::last_write_time(file_path);
     auto sctp = std::chrono::time_point_cast<std::chrono::system_clock::duration>(
         last_write - std::filesystem::file_time_type::clock::now() + std::chrono::system_clock::now());
-    time_t current_mtime = std::chrono::system_clock::to_time_t(sctp);
+    const time_t current_mtime = std::chrono::system_clock::to_time_t(sctp);
     if (mtime != current_mtime)
       return true;
     return false;

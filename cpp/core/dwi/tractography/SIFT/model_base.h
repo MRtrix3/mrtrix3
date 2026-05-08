@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -52,9 +52,9 @@ namespace MR::DWI::Tractography::SIFT {
 class FixelBase {
 
 public:
-  FixelBase() : FOD(0.0), TD(0.0), weight(0.0), dir({NaN, NaN, NaN}) {}
+  FixelBase() : FOD(0.0), TD(0.0), weight(0.0), dir(decltype(dir)::Constant(NaN)) {}
 
-  FixelBase(const default_type amp) : FOD(amp), TD(0.0), weight(1.0), dir({NaN, NaN, NaN}) {}
+  FixelBase(const default_type amp) : FOD(amp), TD(0.0), weight(1.0), dir(decltype(dir)::Constant(NaN)) {}
 
   FixelBase(const default_type amp, const Eigen::Vector3d &d) : FOD(amp), TD(0.0), weight(1.0), dir(d) {}
 
@@ -114,18 +114,18 @@ public:
 
   void map_streamlines(const std::filesystem::path &);
 
-  virtual bool operator()(const FMLS::FOD_lobes &in);
-  virtual bool operator()(const Mapping::SetDixel &in);
+  virtual bool operator()(const FMLS::FOD_lobes & /*in*/);
+  virtual bool operator()(const Mapping::SetDixel & /*in*/);
 
   default_type calc_cost_function() const;
 
   default_type mu() const { return FOD_sum / TD_sum; }
   bool have_act_data() const { return act_5tt.valid(); }
 
-  void output_proc_mask(const std::filesystem::path &);
-  void output_5tt_image(const std::filesystem::path &);
-  void initialise_debug_image_output(const std::filesystem::path &) const;
-  void output_all_debug_images(const std::filesystem::path &, const std::string &) const;
+  void output_proc_mask(const std::filesystem::path & /*path*/);
+  void output_5tt_image(const std::filesystem::path & /*path*/);
+  void initialise_debug_image_output(const std::filesystem::path & /*dirpath*/) const;
+  void output_all_debug_images(const std::filesystem::path & /*dirpath*/, std::string_view /*prefix*/) const;
 
   using Mapping::Fixel_TD_map<Fixel>::begin;
 
@@ -307,8 +307,8 @@ void ModelBase<Fixel>::initialise_debug_image_output(const std::filesystem::path
 }
 
 template <class Fixel>
-void ModelBase<Fixel>::output_all_debug_images(const std::filesystem::path &dirpath, const std::string &prefix) const {
-  output_tdi_voxel((dirpath / (prefix + "_tdi_voxel.mif")));
+void ModelBase<Fixel>::output_all_debug_images(const std::filesystem::path &dirpath, std::string_view &prefix) const {
+  output_tdi_voxel(dirpath / (prefix + "_tdi_voxel.mif"));
   if (have_null_lobes)
     output_tdi_null_lobes((dirpath / (prefix + "_tdi_nulllobes.mif")));
 #ifdef SIFT_MODEL_OUTPUT_SH_IMAGES

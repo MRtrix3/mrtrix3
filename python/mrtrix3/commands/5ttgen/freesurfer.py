@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2025 the MRtrix3 contributors.
+# Copyright (c) 2008-2026 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -41,6 +41,8 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
 def execute(): #pylint: disable=unused-variable
   run.command(['mrconvert', app.ARGS.input, 'input.mif'],
               preserve_pipes=True)
+  if app.VERBOSITY >= 3:
+    run.command('labelvalidate input.mif')
   lut_input_path = 'LUT.txt'
   if app.ARGS.lut:
     run.function(shutil.copyfile, app.ARGS.lut, lut_input_path)

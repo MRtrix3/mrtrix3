@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -72,7 +72,8 @@ public:
     else if (scale_by_invlength)
       result = (tck.size() > 1 ? (result / Tractography::length(tck)) : 0.0);
     if (scale_by_file) {
-      if (file_values.has_value() && tck.get_index() >= size_t(file_values->size()))
+      assert(file_values.has_value());
+      if (tck.get_index() >= static_cast<size_t>(file_values->size()))
         throw Exception("File " + file_path->string() + " does not contain enough entries for this tractogram");
       result *= (*file_values)[tck.get_index()];
     }

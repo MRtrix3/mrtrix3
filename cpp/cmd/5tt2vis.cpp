@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,18 +21,19 @@
 
 #include "dwi/tractography/ACT/act.h"
 #include "dwi/tractography/ACT/tissues.h"
+#include "dwi/tractography/ACT/validate.h"
 
 #include <filesystem>
 
 using namespace MR;
 using namespace App;
 
-#define VALUE_DEFAULT_BG 0.0
-#define VALUE_DEFAULT_CGM 0.5
-#define VALUE_DEFAULT_SGM 0.75
-#define VALUE_DEFAULT_WM 1.0
-#define VALUE_DEFAULT_CSF 0.15
-#define VALUE_DEFAULT_PATH 2.0
+constexpr default_type default_value_background = 0.0;
+constexpr default_type default_value_cgm = 0.5;
+constexpr default_type default_value_sgm = 0.75;
+constexpr default_type default_value_wm = 1.0;
+constexpr default_type default_value_csf = 0.15;
+constexpr default_type default_value_pathology = 2.0;
 
 // clang-format off
 void usage() {
@@ -49,50 +50,49 @@ void usage() {
   OPTIONS
 
   + Option ("bg", "image intensity of background"
-                  " (default: " + str(VALUE_DEFAULT_BG, 2) + ")")
+                  " (default: " + str(default_value_background, 2) + ")")
     + Argument ("value").type_float (0.0, 1.0)
 
   + Option ("cgm", "image intensity of cortical grey matter"
-                   " (default: " + str(VALUE_DEFAULT_CGM, 2) + ")")
+                   " (default: " + str(default_value_cgm, 2) + ")")
     + Argument ("value").type_float (0.0, 1.0)
 
   + Option ("sgm", "image intensity of sub-cortical grey matter"
-                   " (default: " + str(VALUE_DEFAULT_SGM, 2) + ")")
+                   " (default: " + str(default_value_sgm, 2) + ")")
     + Argument ("value").type_float (0.0, 1.0)
 
   + Option ("wm", "image intensity of white matter"
-                  " (default: " + str(VALUE_DEFAULT_WM, 2) + ")")
+                  " (default: " + str(default_value_wm, 2) + ")")
     + Argument ("value").type_float (0.0, 1.0)
 
   + Option ("csf", "image intensity of CSF"
-                   " (default: " + str(VALUE_DEFAULT_CSF, 2) + ")")
+                   " (default: " + str(default_value_csf, 2) + ")")
     + Argument ("value").type_float (0.0, 1.0)
 
   + Option ("path", "image intensity of pathological tissue"
-                    " (default: " + str(VALUE_DEFAULT_PATH, 2) + ")")
+                    " (default: " + str(default_value_pathology, 2) + ")")
     + Argument ("value").type_float (0.0, 10.0);
 
 }
 // clang-format on
 
 void run() {
-  const std::filesystem::path input_path{argument.front()};
-  const std::filesystem::path output_path{argument.begin()[1]};
+  Header H_in = Header::open(argument[0]);
+  DWI::Tractography::ACT::validate_5TT_header(H_in);
+  auto input = H_in.get_image<float>();
+  DWI::Tractography::ACT::debug_validate_5TT_image(input);
 
-  auto input = Image<float>::open(input_path);
-  DWI::Tractography::ACT::verify_5TT_image(input);
+  Header H_out(H_in);
+  H_out.ndim() = 3;
 
-  Header H(input);
-  H.ndim() = 3;
+  const float bg_multiplier = get_option_value("bg", default_value_background);
+  const float cgm_multiplier = get_option_value("cgm", default_value_cgm);
+  const float sgm_multiplier = get_option_value("sgm", default_value_sgm);
+  const float wm_multiplier = get_option_value("wm", default_value_wm);
+  const float csf_multiplier = get_option_value("csf", default_value_csf);
+  const float path_multiplier = get_option_value("path", default_value_pathology);
 
-  const float bg_multiplier = get_option_value("bg", VALUE_DEFAULT_BG);
-  const float cgm_multiplier = get_option_value("cgm", VALUE_DEFAULT_CGM);
-  const float sgm_multiplier = get_option_value("sgm", VALUE_DEFAULT_SGM);
-  const float wm_multiplier = get_option_value("wm", VALUE_DEFAULT_WM);
-  const float csf_multiplier = get_option_value("csf", VALUE_DEFAULT_CSF);
-  const float path_multiplier = get_option_value("path", VALUE_DEFAULT_PATH);
-
-  auto output = Image<float>::create(output_path, H);
+  auto output = Image<float>::create(argument[1], H_out);
 
   auto f = [&](decltype(input) &in, decltype(output) &out) {
     const DWI::Tractography::ACT::Tissues t(in);

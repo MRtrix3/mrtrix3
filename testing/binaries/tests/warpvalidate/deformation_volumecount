@@ -1,0 +1,9 @@
+#!/bin/bash
+# Verify that if one attempts to provide a 4D warp field image with the wrong number of volumes,
+#   a suitable error message is produced.
+
+rm -f tmp.txt
+! ( mrconvert warp.mif -coord 3 0,1 - | \
+    warpvalidate - > tmp.txt 2>&1 )
+cat tmp.txt
+grep -E "a 4D warp image \\(displacement or deformation field\\) must have exactly 3 volumes in the 4th dimension" tmp.txt

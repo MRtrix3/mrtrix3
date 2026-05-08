@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,18 +18,18 @@
 
 #include <chrono>
 #include <condition_variable>
+#include <cstddef>
 #include <memory>
 #include <mutex>
 #include <string>
 #include <thread>
+#include <utility>
 
 #include "app.h"
 #include "debug.h"
 #include "mrtrix.h"
 #include "timer.h"
 #include "types.h"
-
-#define BUSY_INTERVAL 0.1
 
 namespace MR {
 
@@ -53,11 +53,15 @@ namespace MR {
  * done_func() static functions. These functions will then be used throughout
  * the application.  */
 class ProgressBar {
+  static const default_type busy_interval;
+
 public:
   //! Create an unusable ProgressBar.
-  ProgressBar() : show(false) {}
+  explicit ProgressBar() = default;
   ProgressBar(const ProgressBar &p) = delete;
-  ProgressBar(ProgressBar &&p) = default;
+  ProgressBar &operator=(const ProgressBar &p) = delete;
+  ProgressBar(ProgressBar &&other) noexcept;
+  ProgressBar &operator=(ProgressBar &&other) noexcept;
 
   FORCE_INLINE ~ProgressBar() { done(); }
 
@@ -67,7 +71,7 @@ public:
    * Otherwise, the ProgressBar will display the percentage completed,
    * computed from the number of times the ProgressBar::operator++()
    * function was called relative to the value specified with \a target. */
-  ProgressBar(const std::string &text, size_t target = 0, int log_level = 1);
+  ProgressBar(std::string_view text, size_t target = 0, int log_level = 1);
 
   //! returns whether the progress will be shown
   /*! The progress may not be shown if the -quiet option has been supplied
@@ -85,8 +89,10 @@ public:
   FORCE_INLINE size_t count() const { return current_val; }
   FORCE_INLINE bool show_percent() const { return _multiplier; }
   FORCE_INLINE bool text_has_been_modified() const { return _text_has_been_modified; }
-  FORCE_INLINE const std::string &text() const { return _text; }
-  FORCE_INLINE const std::string &ellipsis() const { return _ellipsis; }
+  FORCE_INLINE std::string_view text() const { return _text; }
+  FORCE_INLINE std::string_view ellipsis() const { return _ellipsis; }
+  FORCE_INLINE const char *const text_cstr() const { return _text.c_str(); }         // check_syntax off
+  FORCE_INLINE const char *const ellipsis_cstr() const { return _ellipsis.c_str(); } // check_syntax off
 
   //! set the maximum target value of the ProgressBar
   /*! This function should only be called if the ProgressBar has been
@@ -95,12 +101,12 @@ public:
    * indicator. */
   FORCE_INLINE void set_max(size_t new_target);
 
-  FORCE_INLINE void set_text(const std::string &new_text);
+  FORCE_INLINE void set_text(std::string_view new_text);
 
   //! update text displayed and optionally increment counter
   /*! This expects a function, functor or lambda function that should
    * return a std::string to replace the text. This functor will only be
-   * called when necessary, i.e. when BUSY_INTERVAL time has elapsed, or if
+   * called when necessary, i.e. when busy_interval time has elapsed, or if
    * the percentage value to display has changed. The reason for passing a
    * functor rather than the text itself is to minimise the overhead of
    * forming the string in cases where this is sufficiently expensive to
@@ -149,41 +155,22 @@ public:
   ;
   static void *data;
 
-  mutable bool first_time;
-  mutable size_t last_value;
+  mutable bool first_time = false;
+  mutable size_t last_value = 0;
 
 private:
-  const bool show;
+  bool show = false;
   std::string _text, _ellipsis;
-  size_t _value, current_val, next_percent;
-  double next_time;
-  float _multiplier;
+  size_t _value = 0, current_val = 0, next_percent = 0;
+  double next_time = 0.0;
+  float _multiplier = 0.0F;
   Timer timer;
-  bool _text_has_been_modified;
+  bool _text_has_been_modified = false;
 
   FORCE_INLINE void display_now() { display_func(*this); }
 
   static bool progressbar_active;
 };
-
-FORCE_INLINE ProgressBar::ProgressBar(const std::string &text, size_t target, int log_level)
-    : first_time(true),
-      last_value(0),
-      show(std::this_thread::get_id() == ::MR::App::main_thread_ID && !progressbar_active &&
-           App::log_level >= log_level),
-      _text(text),
-      _ellipsis("..."),
-      _value(0),
-      current_val(0),
-      next_percent(0),
-      next_time(0.0),
-      _multiplier(0.0),
-      _text_has_been_modified(false) {
-  if (show) {
-    set_max(target);
-    progressbar_active = true;
-  }
-}
 
 inline void ProgressBar::set_max(size_t target) {
   if (!show)
@@ -196,7 +183,7 @@ inline void ProgressBar::set_max(size_t target) {
   }
 }
 
-FORCE_INLINE void ProgressBar::set_text(const std::string &new_text) {
+FORCE_INLINE void ProgressBar::set_text(std::string_view new_text) {
   if (!show)
     return;
   _text_has_been_modified = true;
@@ -230,11 +217,11 @@ template <class TextFunc> FORCE_INLINE void ProgressBar::update(TextFunc &&text_
     set_text(text_func());
     _ellipsis.clear();
     if (_multiplier)
-      next_time = time + BUSY_INTERVAL;
+      next_time = time + busy_interval;
     else {
-      _value = time / BUSY_INTERVAL;
+      _value = time / busy_interval;
       do {
-        next_time += BUSY_INTERVAL;
+        next_time += busy_interval;
       } while (next_time <= time);
     }
     display_now();
@@ -254,9 +241,9 @@ FORCE_INLINE void ProgressBar::operator++() {
   } else {
     double time = timer.elapsed();
     if (time >= next_time) {
-      _value = time / BUSY_INTERVAL;
+      _value = time / busy_interval;
       do {
-        next_time += BUSY_INTERVAL;
+        next_time += busy_interval;
       } while (next_time <= time);
       display_now();
     }

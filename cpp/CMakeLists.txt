@@ -2,6 +2,7 @@ add_library(mrtrix-common INTERFACE)
 add_library(mrtrix::common ALIAS mrtrix-common)
 target_compile_definitions(mrtrix-common INTERFACE
     MRTRIX_BUILD_TYPE="${CMAKE_BUILD_TYPE}"
+    $<$<PLATFORM_ID:Linux>:MRTRIX_LINUX>
     $<$<PLATFORM_ID:Windows>:MRTRIX_WINDOWS>
     $<$<PLATFORM_ID:Darwin>:MRTRIX_MACOSX>
     $<$<PLATFORM_ID:FreeBSD>:MRTRIX_FREEBSD>

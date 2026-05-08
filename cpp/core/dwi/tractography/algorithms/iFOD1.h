@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,6 +18,7 @@
 
 #include <filesystem>
 
+#include "dwi/tractography/ACT/act.h"
 #include "dwi/tractography/algorithms/calibrator.h"
 #include "dwi/tractography/tracking/method.h"
 #include "dwi/tractography/tracking/shared.h"
@@ -54,8 +55,10 @@ public:
         throw Exception("Algorithm iFOD1 expects as input a spherical harmonic (SH) image");
       }
 
-      set_step_and_angle(
-          rk4 ? Defaults::stepsize_voxels_rk4 : Defaults::stepsize_voxels_firstorder, Defaults::angle_ifod1, rk4);
+      set_step_and_angle(rk4 ? Defaults::stepsize_voxels_rk4 : Defaults::stepsize_voxels_firstorder,
+                         Defaults::angle_ifod1,
+                         rk4 ? intrinsic_integration_order_t::HIGHER : intrinsic_integration_order_t::FIRST,
+                         curvature_constraint_t::LIMITED_SEARCH);
 
       // max_angle_1o needs to be set because it influences the cone in which FOD amplitudes are sampled
       if (rk4) {
@@ -68,6 +71,9 @@ public:
       set_num_points();
       set_cutoff(Defaults::cutoff_fod * (is_act() ? Defaults::cutoff_act_multiplier : 1.0));
 
+      if (is_act())
+        act().set_default_sgm_trunc(ACT::sgm_trunc_t::ROULETTE);
+
       properties["method"] = "iFOD1";
       properties.set(lmax, "lmax");
       properties.set(max_trials, "max_trials");
@@ -79,8 +85,8 @@ public:
     }
 
     ~Shared() {
-      mean_samples /= double(num_proc);
-      mean_truncations /= double(num_proc);
+      mean_samples /= static_cast<double>(num_proc);
+      mean_truncations /= static_cast<double>(num_proc);
       INFO("mean number of samples per step = " + str(mean_samples));
       if (mean_truncations) {
         INFO("mean number of steps between rejection sampling truncations = " + str(1.0 / mean_truncations));
@@ -119,8 +125,9 @@ public:
   }
 
   ~iFOD1() {
-    S.update_stats(calibrate_list.size() + float(mean_sample_num) / float(num_sample_runs),
-                   float(num_truncations) / float(num_sample_runs),
+    S.update_stats(calibrate_list.size() +
+                       (static_cast<double>(mean_sample_num) / static_cast<double>(num_sample_runs)),
+                   static_cast<double>(num_truncations) / static_cast<double>(num_sample_runs),
                    max_truncation);
   }
 
@@ -153,19 +160,19 @@ public:
 
   term_t next() override {
     if (!get_data(source))
-      return EXIT_IMAGE;
+      return term_t::EXIT_IMAGE;
 
     float max_val = 0.0;
     for (size_t i = 0; i < calibrate_list.size(); ++i) {
       float val = FOD(rotate_direction(dir, calibrate_list[i]));
       if (std::isnan(val))
-        return EXIT_IMAGE;
+        return term_t::EXIT_IMAGE;
       else if (val > max_val)
         max_val = val;
     }
 
     if (max_val <= 0.0)
-      return CALIBRATOR;
+      return term_t::CALIBRATOR;
 
     max_val = std::pow(max_val, S.fod_power) * calibrate_ratio;
 
@@ -190,12 +197,12 @@ public:
           dir.normalize();
           pos += S.step_size * dir;
           mean_sample_num += n;
-          return CONTINUE;
+          return term_t::CONTINUE;
         }
       }
     }
 
-    return MODEL;
+    return term_t::MODEL;
   }
 
   float get_metric(const Eigen::Vector3f &position, const Eigen::Vector3f &direction) override {
@@ -226,9 +233,10 @@ protected:
       Math::SH::delta(fod, Eigen::Vector3f(0.0, 0.0, 1.0), P.S.lmax);
     }
 
-    float operator()(float el) {
-      return std::pow(Math::SH::value(P.values, Eigen::Vector3f(std::sin(el), 0.0, std::cos(el)), P.S.lmax),
-                      P.S.fod_power);
+    float operator()(float inclination) {
+      return std::pow(
+          Math::SH::value(P.values, Eigen::Vector3f(std::sin(inclination), 0.0, std::cos(inclination)), P.S.lmax),
+          P.S.fod_power);
     }
 
   private:

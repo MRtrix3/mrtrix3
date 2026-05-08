@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2025 the MRtrix3 contributors.
+# Copyright (c) 2008-2026 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,7 +14,7 @@
 # For more details, see http://www.mrtrix.org/.
 
 
-import os, re, sys, threading
+import os, re, stat, sys, threading
 
 
 
@@ -203,6 +203,13 @@ def execute(): #pylint: disable=unused-variable
   from mrtrix3 import ANSI, MRtrixError #pylint: disable=no-name-in-module, import-outside-toplevel
   from mrtrix3 import app, run #pylint: disable=no-name-in-module, import-outside-toplevel
 
+  mode = os.fstat(sys.stdout.fileno()).st_mode
+  if stat.S_ISFIFO(mode):
+    app.warn('for_each command output is connected to a pipe;'
+             ' if the command you intend for_each to execute itself includes piping,'
+             ' make sure that pipe symbols are quote-escaped'
+             ' (see example usages)')
+
   inputs = app.ARGS.inputs
   app.debug(f'All inputs: {inputs}')
   app.debug(f'Command: {app.ARGS.command}')
@@ -304,11 +311,13 @@ def execute(): #pylint: disable=unused-variable
   parallel = app.NUM_THREADS is not None and app.NUM_THREADS > 1
 
   def progress_string():
-    success_count = sum(1 if job.returncode is not None else 0 for job in jobs)
-    fail_count = sum(bool(job.returncode) for job in jobs)
     threading_message = f'across {app.NUM_THREADS} threads' if parallel else 'sequentially'
-    fail_message = f' ({fail_count} errors)' if fail_count else ''
-    return f'{success_count}/{len(jobs)} jobs completed {threading_message}{fail_message}'
+    if sys.stderr.isatty():
+      success_count = sum(1 if job.returncode is not None else 0 for job in jobs)
+      fail_count = sum(bool(job.returncode) for job in jobs)
+      fail_message = f' ({fail_count} errors)' if fail_count else ''
+      return f'{success_count}/{len(jobs)} jobs completed {threading_message}{fail_message}'
+    return f'Running {len(jobs)} jobs {threading_message}'
 
   progress = app.ProgressBar(progress_string(), len(jobs))
 
@@ -379,7 +388,7 @@ def execute(): #pylint: disable=unused-variable
 
   if app.VERBOSITY > 1:
     if any(job.outputtext for job in jobs):
-      sys.stderr.write('{app.EXE_NAME}:\n')
+      sys.stderr.write(f'{app.EXEC_NAME}:\n')
       for job in jobs:
         if job.outputtext:
           app.console(f'Output of command for input "{job.sub_in}":')
@@ -387,7 +396,7 @@ def execute(): #pylint: disable=unused-variable
             sys.stderr.write(f'{" " * (len(app.EXEC_NAME)+2)}{line}\n')
         else:
           app.console(f'No output from command for input "{job.sub_in}"')
-        sys.stderr.write('{app.EXE_NAME}:\n')
+        sys.stderr.write(f'{app.EXEC_NAME}:\n')
     else:
       app.console('No output from command for any inputs')
 

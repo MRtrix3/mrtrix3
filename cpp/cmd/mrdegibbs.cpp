@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,15 +17,15 @@
 #include <numeric>
 
 #include "command.h"
+#include "degibbs/degibbs.h"
 #include "degibbs/unring2d.h"
 #include "degibbs/unring3d.h"
+#include "metadata/bids.h"
 
 #include <filesystem>
 
 using namespace MR;
 using namespace App;
-
-const std::vector<std::string> modes = {"2d", "3d"};
 
 // clang-format off
 void usage() {
@@ -41,7 +41,7 @@ void usage() {
       " (see reference below for details)."
 
     + "By default, the original 2D slice-wise version is used."
-      " If the -mode 3d option is provided,"
+      " If the -dimensionality option is set greater than 2,"
       " the program will run the 3D version as proposed by Bautista et al."
       " (also in the reference list below)."
 
@@ -49,9 +49,9 @@ void usage() {
       " before any interpolation of any kind has taken place."
       " You should not run this command after any form of motion correction"
       " (e.g. not after dwifslpreproc)."
-      " Similarly, if you intend running dwidenoise,"
-      " you should run denoising before this command to not alter the noise structure,"
-      " which would impact on dwidenoise's performance."
+      " If however you intend to run a thermal denoising step (eg. dwidenoise),"
+      " you should do so before this command to not alter the noise structure,"
+      " which would impact on denoising performance."
 
     + "For best results, any form of filtering performed by the scanner should be disabled,"
       " whether performed in the image domain or k-space."
@@ -65,7 +65,11 @@ void usage() {
       " it may not fully remove all ringing artifacts,"
       " and you may observe residuals of the original artifact in the partial Fourier direction."
       " Nonetheless, application of the method is still considered safe and worthwhile."
-      " Users are however encouraged to acquired full-Fourier data where possible.";
+      " Users are however encouraged to acquired full-Fourier data where possible."
+
+    + "As this method is based on utilisation of the Fourier shift theorem,"
+      " it operates best if it can be provided with complex-valued image data;"
+      " in this use case the output image will also be complex-valued.";
 
 
   ARGUMENTS
@@ -74,14 +78,14 @@ void usage() {
 
 
   OPTIONS
-  + Option ("mode",
-            "specify the mode of operation."
-            " Valid choices are: 2d, 3d (default: 2d)."
-            " The 2d mode corresponds to the original slice-wise approach as propoosed by Kellner et al.,"
+  + Option ("dimensionality",
+            "specify the dimensionality of operation."
+            " Valid choices are: 2, 3 (default: 2)."
+            " A value of 2 corresponds to the original slice-wise approach as proposed by Kellner et al.,"
             " appropriate for images acquired using 2D stack-of-slices approaches."
-            " The 3d mode corresponds to the 3D volume-wise extension proposed by Bautista et al.,"
+            " Values greater than 2 select the 3D volume-wise extension proposed by Bautista et al.,"
             " which is appropriate for images acquired using 3D Fourier encoding.")
-    + Argument ("type").type_choice(modes)
+    + Argument ("value").type_integer(2, 3)
 
   + Option ("axes",
             "select the slice axes"
@@ -115,10 +119,10 @@ void usage() {
 }
 // clang-format on
 
-void run() {
-  const std::filesystem::path input_path{argument[0]};
-  const std::filesystem::path output_path{argument[1]};
+using MR::Degibbs::complex_type;
+using MR::Degibbs::real_type;
 
+void run() {
   const int nshifts = App::get_option_value("nshifts", 20);
   const int minW = App::get_option_value("minW", 1);
   const int maxW = App::get_option_value("maxW", 3);
@@ -126,14 +130,14 @@ void run() {
   if (minW >= maxW)
     throw Exception("minW must be smaller than maxW");
 
-  auto header = Header::open(input_path);
-  auto in = header.get_image<Degibbs::value_type>();
+  auto header = Header::open(argument[0]);
+  auto in = header.get_image<complex_type>();
 
   header.datatype() =
       DataType::from_command_line(header.datatype().is_complex() ? DataType::CFloat32 : DataType::Float32);
-  auto out = Image<Degibbs::value_type>::create(output_path, header);
+  auto out = Image<complex_type>::create(argument[1], header);
 
-  int mode = get_option_value("mode", 0);
+  int dimensionality = get_option_value("dimensionality", 2);
 
   std::vector<size_t> slice_axes = {0, 1};
   auto opt = get_options("axes");
@@ -141,26 +145,29 @@ void run() {
   if (!opt.empty()) {
     std::vector<uint32_t> axes = parse_ints<uint32_t>(opt[0][0]);
     if (axes == std::vector<uint32_t>({0, 1, 2})) {
-      mode = 1;
+      dimensionality = 3;
     } else {
       if (axes.size() != 2)
         throw Exception("slice axes must be specified as a comma-separated 2-vector");
-      if (size_t(std::max(axes[0], axes[1])) >= header.ndim())
+      slice_axes = {static_cast<size_t>(axes[0]), static_cast<size_t>(axes[1])};
+      if (std::max(slice_axes[0], slice_axes[1]) >= static_cast<size_t>(header.ndim()))
         throw Exception("slice axes must be within the dimensionality of the image");
       if (axes[0] == axes[1])
         throw Exception("two independent slice axes must be specified");
-      slice_axes = {size_t(axes[0]), size_t(axes[1])};
     }
   }
 
   auto slice_encoding_it = header.keyval().find("SliceEncodingDirection");
   if (slice_encoding_it != header.keyval().end()) {
-    if (mode == 1) {
-      WARN("running 3D volume-wise unringing, but image header contains \"SliceEncodingDirection\" field");
-      WARN("If data were acquired using multi-slice encoding, run in default 2D mode.");
+    if (dimensionality > 2) {
+      WARN("running 3D volume-wise unringing,"                            //
+           " but image header contains \"SliceEncodingDirection\" field;" //
+           " if data were acquired using multi-slice encoding,"           //
+           " run in default 2D mode.");                                   //
     } else {
       try {
-        const Eigen::Vector3d slice_encoding_axis_onehot = Axes::id2dir(slice_encoding_it->second);
+        const Metadata::BIDS::axis_vector_type slice_encoding_axis_onehot =
+            Metadata::BIDS::axisid2vector(slice_encoding_it->second);
         std::vector<size_t> auto_slice_axes = {0, 0};
         if (slice_encoding_axis_onehot[0])
           auto_slice_axes = {1, 2};
@@ -197,7 +204,7 @@ void run() {
     }
   }
 
-  if (mode == 1) {
+  if (dimensionality > 2) {
     Degibbs::unring3D(in, out, minW, maxW, nshifts);
     return;
   }

@@ -1,0 +1,12 @@
+#!/bin/bash
+# Basic test of operation with input as Cartesian directions
+
+rm -f tmp_cartesian.txt
+cat dirvalidate/grad.b | \
+cut -d" " -f1-3 > tmp_cartesian.txt
+
+rm -f tmp.txt
+dirvalidate tmp_cartesian.txt 2>&1 | tee tmp.txt
+grep "in Cartesian directions format" tmp.txt
+grep "All directions are of unit norm" tmp.txt
+! ( grep -E "\\bWARNING\\b" tmp.txt )

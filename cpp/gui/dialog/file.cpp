@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -31,7 +31,7 @@ namespace MR::GUI::Dialog::File {
 
 const std::string image_filter_string = "Medical Images (*" + join(MR::Formats::known_extensions, " *") + ")";
 
-std::filesystem::path get_folder(QWidget *parent, const std::string &caption, std::string *folder) {
+std::filesystem::path get_folder(QWidget *parent, std::string_view caption, std::string *folder) {
   QString qstring = QFileDialog::getExistingDirectory(
       parent, qstr(caption), folder ? qstr(*folder) : QString(), QFileDialog::ShowDirsOnly | FILE_DIALOG_OPTIONS);
 
@@ -45,7 +45,7 @@ std::filesystem::path get_folder(QWidget *parent, const std::string &caption, st
 }
 
 std::filesystem::path
-get_file(QWidget *parent, const std::string &caption, const std::string &filter, std::string *folder) {
+get_file(QWidget *parent, std::string_view caption, std::string_view filter, std::string *folder) {
   QString qstring = QFileDialog::getOpenFileName(
       parent, qstr(caption), folder ? qstr(*folder) : QString(), qstr(filter), 0, FILE_DIALOG_OPTIONS);
 
@@ -60,7 +60,7 @@ get_file(QWidget *parent, const std::string &caption, const std::string &filter,
 }
 
 std::vector<std::string>
-get_files(QWidget *parent, const std::string &caption, const std::string &filter, std::string *folder) {
+get_files(QWidget *parent, std::string_view caption, std::string_view filter, std::string *folder) {
   QStringList qlist = QFileDialog::getOpenFileNames(
       parent, qstr(caption), folder ? qstr(*folder) : QString(), qstr(filter), 0, FILE_DIALOG_OPTIONS);
 
@@ -94,9 +94,9 @@ void check_overwrite_files_func(const std::filesystem::path &name) {
 }
 
 std::filesystem::path get_save_path(QWidget *parent,
-                                    const std::string &caption,
+                                    std::string_view caption,
                                     const std::filesystem::path &suggested_name,
-                                    const std::string &filter,
+                                    std::string_view filter,
                                     std::string *folder) {
   overwrite_files = false;
 

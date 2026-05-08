@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -34,8 +34,6 @@
 #include "file/ofstream.h"
 
 #include "math/rng.h"
-
-#include "fixel/legacy/image.h"
 
 namespace MR::DWI::Tractography::SIFT {
 
@@ -110,7 +108,7 @@ void SIFTer::perform_filtering() {
     const double current_cf = calc_cost_function();
     const double current_roc_cf = calc_roc_cost_function();
 
-    TrackIndexRangeWriter range_writer(SIFT_TRACK_INDEX_BUFFER_SIZE, num_tracks());
+    TrackIndexRangeWriter range_writer(TrackIndexRangeWriter::default_batch_size, num_tracks());
     TrackGradientCalculator gradient_calculator(*this, gradient_vector, current_mu, current_roc_cf);
     Thread::run_queue(range_writer, TrackIndexRange(), Thread::multi(gradient_calculator));
 
@@ -128,8 +126,11 @@ void SIFTer::perform_filtering() {
     // Trying a heuristic for now; go for a sort size of 1000 following initial sort, assuming half of all
     //   remaining streamlines have a negative gradient
 
-    const track_t sort_size = std::min(std::ceil(num_tracks() / double(Thread::number_of_threads())),
-                                       std::round(2000.0 * double(num_tracks()) / double(tracks_remaining)));
+    const track_t sort_size =
+        std::min(static_cast<track_t>(std::ceil(static_cast<default_type>(num_tracks()) /
+                                                static_cast<default_type>(Thread::number_of_threads()))),
+                 static_cast<track_t>(std::round(2000.0 * static_cast<default_type>(num_tracks()) /
+                                                 static_cast<default_type>(tracks_remaining))));
     MT_gradient_vector_sorter sorter(gradient_vector, sort_size);
 
     // Remove candidate streamlines one at a time, and correspondingly modify the fixels to which they were attributed

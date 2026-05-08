@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,12 +17,13 @@
 #include "algo/threaded_copy.h"
 #include "command.h"
 #include "dwi/directions/predefined.h"
+#include "dwi/directions/validate.h"
 #include "dwi/gradient.h"
 #include "dwi/tensor.h"
 #include "file/matrix.h"
 #include "image.h"
 #include "math/constrained_least_squares.h"
-#include "phase_encoding.h"
+#include "metadata/phase_encoding.h"
 #include "progressbar.h"
 
 #include <filesystem>
@@ -31,17 +32,7 @@ using namespace App;
 
 using value_type = float;
 
-#define DEFAULT_NITER 2
-
-const char *const encoding_description[] = {
-    "The tensor coefficients are stored in the output image as follows:\n"
-    "volumes 0-5: D11, D22, D33, D12, D13, D23",
-    "If diffusion kurtosis is estimated using the -dkt option, these are stored as follows:\n"
-    "volumes 0-2: W1111, W2222, W3333\n"
-    "volumes 3-8: W1112, W1113, W1222, W1333, W2223, W2333\n"
-    "volumes 9-11: W1122, W1133, W2233\n"
-    "volumes 12-14: W1123, W1223, W1233",
-    nullptr};
+constexpr ssize_t default_iterations = 2;
 
 // clang-format off
 void usage() {
@@ -87,7 +78,13 @@ void usage() {
   + "* Monotonic signal decay in the b = [0 b_max] range"
     " (when the -dkt option is provided)."
 
-  + encoding_description;
+  + "The tensor coefficients are stored in the output image as follows:\n"
+    "volumes 0-5: D11, D22, D33, D12, D13, D23;\n"
+    "if diffusion kurtosis is estimated using the -dkt option, these are stored as follows:\n"
+    "volumes 0-2: W1111, W2222, W3333\n"
+    "volumes 3-8: W1112, W1113, W1222, W1333, W2223, W2333\n"
+    "volumes 9-11: W1122, W1133, W2233\n"
+    "volumes 12-14: W1123, W1223, W1233";
 
   ARGUMENTS
   + Argument("dwi", "the input dwi image.").type_image_in()
@@ -101,7 +98,7 @@ void usage() {
 
   + Option("iter",
            "number of iterative reweightings for IWLS algorithm"
-           " (default: " + str(DEFAULT_NITER) +")"
+           " (default: " + str(default_iterations) +")"
            " (see Description).")
     + Argument("integer").type_integer(0, 10)
 
@@ -113,7 +110,7 @@ void usage() {
   + Option("directions",
            "specify the directions along which to apply the constraints"
             " (by default, the built-in 300 direction set is used)."
-            " These should be supplied as a text file containing [ az el ] pairs for the directions.")
+            " These should be supplied as a text file containing [ az in ] pairs for the directions.")
     + Argument("file").type_file_in()
 
   + Option("mask",
@@ -278,54 +275,50 @@ inline Processor<MASKType, B0Type, DTType, DKTType, PredictType> processor(const
 }
 
 void run() {
-  const std::filesystem::path input_path{argument[0]};
-  const std::filesystem::path output_path{argument[1]};
-
-  auto dwi = Header::open(input_path).get_image<value_type>();
-  auto grad = DWI::get_DW_scheme(dwi);
+  auto header_in = Header::open(argument[0]);
+  auto grad = DWI::get_DW_scheme(header_in);
 
   Image<bool> mask;
   auto opt = get_options("mask");
   if (!opt.empty()) {
     mask = Image<bool>::open(opt[0][0]);
-    check_dimensions(dwi, mask, 0, 3);
+    check_dimensions(header_in, mask, 0, 3);
   }
 
   const bool ols = !get_options("ols").empty();
 
   // depending on whether first (initialisation) loop should be considered an iteration
-  auto iter = get_option_value("iter", DEFAULT_NITER);
+  auto iter = get_option_value("iter", default_iterations);
 
-  Header header(dwi);
-  header.datatype() = DataType::Float32;
-  header.ndim() = 4;
-  PhaseEncoding::clear_scheme(header);
+  Header header_out(header_in);
+  header_out.datatype() = DataType::Float32;
+  header_out.ndim() = 4;
+  DWI::stash_DW_scheme(header_out, grad);
+  Metadata::PhaseEncoding::clear_scheme(header_out.keyval());
 
   Image<value_type> predict;
   opt = get_options("predicted_signal");
   if (!opt.empty())
-    predict = Image<value_type>::create(opt[0][0], header);
+    predict = Image<value_type>::create(opt[0][0], header_out);
 
-  DWI::stash_DW_scheme(header, grad);
-  header.size(3) = 6;
-  auto dt = Image<value_type>::create(output_path, header);
+  DWI::stash_DW_scheme(header_out, grad);
+  header_out.size(3) = 6;
+  auto dt = Image<value_type>::create(argument[1], header_out);
 
   Image<value_type> b0;
   opt = get_options("b0");
   if (!opt.empty()) {
-    header.ndim() = 3;
-    const std::filesystem::path b0_path{opt[0][0]};
-    b0 = Image<value_type>::create(b0_path, header);
+    header_out.ndim() = 3;
+    b0 = Image<value_type>::create(opt[0][0], header_out);
   }
 
   Image<value_type> dkt;
   opt = get_options("dkt");
   const bool dki = !opt.empty();
   if (dki) {
-    header.ndim() = 4;
-    header.size(3) = 15;
-    const std::filesystem::path dkt_path{opt[0][0]};
-    dkt = Image<value_type>::create(dkt_path, header);
+    header_out.ndim() = 4;
+    header_out.size(3) = 15;
+    dkt = Image<value_type>::create(opt[0][0], header_out);
   }
 
   Eigen::MatrixXd A = -DWI::grad2bmatrix<double>(grad, dki);
@@ -334,9 +327,14 @@ void run() {
   Eigen::MatrixXd Aneq;
   if (constrain) {
     opt = get_options("directions");
-    const Eigen::MatrixXd constr_dirs =
-        !opt.empty() ? File::Matrix::load_matrix(std::filesystem::path(opt[0][0]))
-                     : Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300());
+    Eigen::MatrixXd constr_dirs;
+    if (opt.empty()) {
+      constr_dirs = Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300());
+    } else {
+      constr_dirs = File::Matrix::load_matrix(opt[0][0]);
+      DWI::Directions::validate(constr_dirs, opt[0][0], false);
+      constr_dirs = Math::Sphere::as_cartesian(constr_dirs);
+    }
     Eigen::MatrixXd tmp = DWI::grad2bmatrix<double>(constr_dirs, dki);
     if (dki) {
       auto maxb = grad.col(3).maxCoeff();
@@ -352,5 +350,6 @@ void run() {
     }
   }
 
+  auto dwi = header_in.get_image<value_type>();
   ThreadedLoop("computing tensors", dwi, 0, 3).run(processor(A, Aneq, ols, iter, mask, b0, dt, dkt, predict), dwi);
 }

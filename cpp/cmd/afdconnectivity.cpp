@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -78,7 +78,7 @@ void usage() {
   REFERENCES
   + "Smith, R. E.; Raffelt, D.; Tournier, J.-D.; Connelly, A. " // Internal
     "Quantitative Streamlines Tractography: Methods and Inter-Subject Normalisation. "
-    "Open Science Framework, https://doi.org/10.31219/osf.io/c67kn.";
+    "OHBM Aperture, 10.52294/ApertureNeuro.2022.2.NEOD9565.";
 
 
   ARGUMENTS
@@ -257,7 +257,7 @@ value_type AFDConnectivity::get(const std::filesystem::path &path) {
 
     // sum_contributions currently stores sum of streamline lengths;
     //   turn into a mean length, then combine with volume to get a connectivity value
-    const double mean_length = sum_contributions / double(count);
+    const double mean_length = sum_contributions / static_cast<double>(count);
     sum_contributions = sum_volumes / mean_length;
   }
 

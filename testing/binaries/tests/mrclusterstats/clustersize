@@ -6,8 +6,9 @@
 rm -rf tmp/
 mkdir tmp/
 
-mrclusterstats mrclusterstats/subjects.txt mrclusterstats/design.txt mrclusterstats/contrast.txt SIFT_phantom/mask.mif tmp/ \
--threshold 3.5
+mrclusterstats mrclusterstats/subjects.txt mrclusterstats/design.txt SIFT_phantom/mask.mif tmp/ \
+    -ttests mrclusterstats/contrast.txt \
+    -threshold 3.5
 
 testing_diff_image tmp/clustersize.mif mrclusterstats/threshold/cluster_sizes.mif
 

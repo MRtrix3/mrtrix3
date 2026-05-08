@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,6 +17,7 @@
 #include "algo/loop.h"
 #include "command.h"
 #include "fixel/helpers.h"
+#include "fixel/validate.h"
 #include "image.h"
 
 #include <filesystem>
@@ -42,17 +43,15 @@ void usage() {
 // clang-format on
 
 void run() {
-  const std::filesystem::path input_path{argument[0]};
-  const std::filesystem::path output_path{argument[1]};
-
-  Header H_in = Header::open(input_path);
-  Peaks::check(H_in);
+  Header H_in = Header::open(argument[0]);
+  Peaks::validate_header(H_in);
   auto dir = H_in.get_image<float>();
+  Peaks::debug_validate_image(dir);
 
   Header header(dir);
   header.size(3) = header.size(3) / 3;
 
-  auto amp = Image<float>::create(output_path, header);
+  auto amp = Image<float>::create(argument[1], header);
 
   auto loop = Loop("converting directions to amplitudes", 0, 3);
 

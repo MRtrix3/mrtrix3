@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,11 +17,11 @@
 #pragma once
 
 #include <filesystem>
-#include <string>
+#include <string_view>
 
 namespace MR::File {
 
-bool is_tempfile(const std::filesystem::path &name, const std::string &suffix = "");
-std::filesystem::path create_tempfile(int64_t size = 0, const std::string &suffix = "");
+bool is_tempfile(const std::filesystem::path &name, std::string_view suffix = "");
+std::filesystem::path create_tempfile(int64_t size = 0, std::string_view suffix = "");
 
 } // namespace MR::File

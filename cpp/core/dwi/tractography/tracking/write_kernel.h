@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,6 +18,8 @@
 
 #include <cinttypes>
 #include <string>
+
+#include <nlohmann/json.hpp>
 
 #include "file/ofstream.h"
 #include "timer.h"
@@ -70,6 +72,24 @@ public:
     if (output_seeds) {
       (*output_seeds) << "\n";
       output_seeds->close();
+    }
+    auto opt = App::get_options("output_stats");
+    if (!opt.empty()) {
+      nlohmann::json data;
+      data["Command"] = MR::App::command_history_string;
+      data["Generation"]["Seeds"] = seeds;
+      data["Generation"]["Streamlines"] = streamlines;
+      data["Generation"]["Selected"] = selected;
+      for (const auto &i : termination_info) {
+        if (S.termination_relevant(i.first))
+          data["Terminations"][i.second.name] = S.termination_count(i.first);
+      }
+      for (const auto &i : rejection_strings) {
+        if (S.rejection_relevant(i.first))
+          data["Rejections"][i.second] = S.rejection_count(i.first);
+      }
+      File::OFStream outfile(opt[0][0]);
+      outfile << data.dump(4);
     }
   }
 

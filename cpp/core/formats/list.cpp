@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -36,7 +36,27 @@ MGZ mgz_handler;
 #ifdef MRTRIX_PNG_SUPPORT
 PNG png_handler;
 #endif
-MRtrix_sparse mrtrix_sparse_handler;
+
+const std::vector<std::string> known_extensions{
+    ".mih",
+    ".mif",
+    ".mif.gz",
+    ".img",
+    ".nii",
+    ".nii.gz",
+    ".bfloat",
+    ".bshort",
+    ".mri",
+    ".par",
+    ".mgh",
+    ".mgz",
+    ".mgh.gz",
+    ".dcm",
+#ifdef MRTRIX_PNG_SUPPORT
+    ".png",
+    ".PNG",
+#endif
+};
 
 const Base *handlers[] = {&RAM_handler,
                           &pipe_handler,
@@ -55,29 +75,6 @@ const Base *handlers[] = {&RAM_handler,
 #ifdef MRTRIX_PNG_SUPPORT
                           &png_handler,
 #endif
-                          &mrtrix_sparse_handler,
                           nullptr};
-
-const char *known_extensions[] = {".mih",
-                                  ".mif",
-                                  ".mif.gz",
-                                  ".img",
-                                  ".nii",
-                                  ".nii.gz",
-                                  ".bfloat",
-                                  ".bshort",
-                                  ".mri",
-                                  ".par",
-                                  ".mgh",
-                                  ".mgz",
-                                  ".mgh.gz",
-                                  ".msf",
-                                  ".msh",
-                                  ".dcm",
-#ifdef MRTRIX_PNG_SUPPORT
-                                  ".png",
-                                  ".PNG",
-#endif
-                                  nullptr};
 
 } // namespace MR::Formats

@@ -148,7 +148,7 @@ Tractography tool options
 
 -  **-tractography.tsf_range RangeMin,RangeMax** *(multiple uses permitted)* Set range for the tractography scalar file. Requires -tractography.tsf_load already provided.
 
--  **-tractography.tsf_thresh ThresholdMin,ThesholdMax** *(multiple uses permitted)* Set thresholds for the tractography scalar file. Requires -tractography.tsf_load already provided.
+-  **-tractography.tsf_thresh ThresholdMin,ThresholdMax** *(multiple uses permitted)* Set thresholds for the tractography scalar file. Requires -tractography.tsf_load already provided.
 
 -  **-tractography.tsf_colourmap index** *(multiple uses permitted)* Sets the colourmap of the .tsf file as indexed in the tsf colourmap dropdown menu. Requires -tractography.tsf_load already.
 
@@ -164,7 +164,7 @@ ODF tool options
 Fixel plot tool options
 ^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-fixel.load image** *(multiple uses permitted)* Load a fixel file (any file inside a fixel directory, or an old .msf / .msh legacy format file) into the fixel tool.
+-  **-fixel.load image** *(multiple uses permitted)* Load a fixel data file inside a fixel directory into the fixel tool.
 
 Connectome tool options
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -189,7 +189,7 @@ Standard options
 
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
--  **-debug** display debugging messages.
+-  **-debug** display debugging messages & debug input data.
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
@@ -214,7 +214,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** J-Donald Tournier (jdtournier@gmail.com) and Dave Raffelt (david.raffelt@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au) and Rami Tabbara (rami.tabbara@florey.edu.au) and Max Pietsch (maximilian.pietsch@kcl.ac.uk) and Thijs Dhollander (thijs.dhollander@gmail.com)
 
-**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2026 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -30,8 +30,6 @@
 #include "mrtrix.h"
 #include "types.h"
 
-#define HOME_ENV "HOME"
-
 /*! \def PATH_SEPARATORS
  *  \brief symbols used for separating directories in filesystem paths
  *
@@ -45,53 +43,21 @@
  *  either one or two characters depending on the target system. */
 #ifdef MRTRIX_WINDOWS
 // Preferentially use forward-slash when inserting via PATH_SEPARATORS[0]
-#define PATH_SEPARATORS "/\\"
+#define PATH_SEPARATORS "/\\" // check_syntax off
 #else
-#define PATH_SEPARATORS "/"
+#define PATH_SEPARATORS "/" // check_syntax off
 #endif
 
 #include <filesystem>
 
 namespace MR::Path {
 
-inline bool has_suffix(const std::filesystem::path &name, const std::string &suffix) {
-  if (suffix.find('.') == 0 && suffix.find('.', 1) == std::string::npos) {
-    if (name.extension() == suffix)
-      return true;
-  }
-  std::string name_str = name.string();
-  return name_str.size() >= suffix.size() &&
-         name_str.compare(name_str.size() - suffix.size(), suffix.size(), suffix) == 0;
-}
+bool has_suffix(const std::filesystem::path &name, std::string_view suffix);
+bool has_suffix(const std::filesystem::path &name, const std::initializer_list<const std::string> &suffix_list);
+bool has_suffix(const std::filesystem::path &name, const std::vector<std::string> &suffix_list);
 
-inline bool has_suffix(const std::filesystem::path &name, const std::initializer_list<const std::string> &suffix_list) {
-  return std::any_of(
-      suffix_list.begin(), suffix_list.end(), [&](const std::string &suffix) { return has_suffix(name, suffix); });
-}
+bool is_mrtrix_image(const std::filesystem::path &path);
 
-inline bool has_suffix(const std::filesystem::path &name, const std::vector<std::string> &suffix_list) {
-  return std::any_of(
-      suffix_list.begin(), suffix_list.end(), [&](const std::string &suffix) { return has_suffix(name, suffix); });
-}
-
-inline bool is_mrtrix_image(const std::filesystem::path &path) {
-  return path.native() == "-" || Path::has_suffix(path, {".mif", ".mih", ".mif.gz"});
-}
-
-inline std::string home() {
-  const char *home = getenv(HOME_ENV);
-  if (!home)
-    throw Exception(HOME_ENV " environment variable is not set!");
-  return home;
-}
-
-inline char delimiter(const std::filesystem::path &path) {
-  if (Path::has_suffix(path, ".tsv"))
-    return '\t';
-  else if (Path::has_suffix(path, ".csv"))
-    return ',';
-  else
-    return ' ';
-}
+std::string home();
 
 } // namespace MR::Path

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,15 +14,15 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <vector>
+
 #include "header.h"
 #include "image.h"
 
 #include "file/matrix.h"
-#include "misc/bitset.h"
-
-#include "fixel/legacy/fixel_metric.h"
-#include "fixel/legacy/image.h"
-#include "fixel/legacy/keys.h"
+#include "fixel/helpers.h"
+#include "math/entropy.h"
+#include "math/math.h"
 
 #include "dwi/tractography/SIFT2/coeff_optimiser.h"
 #include "dwi/tractography/SIFT2/fixel_updater.h"
@@ -31,6 +31,7 @@
 #include "dwi/tractography/SIFT2/tckfactor.h"
 
 #include "dwi/tractography/SIFT/track_index_range.h"
+#include "dwi/tractography/SIFT/types.h"
 
 namespace MR::DWI::Tractography::SIFT2 {
 
@@ -40,7 +41,7 @@ void TckFactor::set_reg_lambdas(const double lambda_tikhonov, const double lambd
   for (size_t i = 1; i != fixels.size(); ++i)
     A += fixels[i].get_weight() * Math::pow2(fixels[i].get_FOD());
 
-  A /= double(num_tracks());
+  A /= static_cast<double>(num_tracks());
   INFO("Constant A scaling regularisation terms to match data term is " + str(A));
   reg_multiplier_tikhonov = lambda_tikhonov * A;
   reg_multiplier_tv = lambda_tv * A;
@@ -63,7 +64,8 @@ void TckFactor::remove_excluded_fixels(const float min_td_frac) {
   const double cf = calc_cost_function();
   SIFT::track_t excluded_count = 0, zero_TD_count = 0;
   double zero_TD_cf_sum = 0.0, excluded_cf_sum = 0.0;
-  for (std::vector<Fixel>::iterator i = fixels.begin(); i != fixels.end(); ++i) {
+  std::vector<Fixel>::iterator i = fixels.begin(); // SKip first fixel, which is an intentional null in DWI::Fixel_map<>
+  for (++i; i != fixels.end(); ++i) {
     if (!i->get_orig_TD()) {
       ++zero_TD_count;
       zero_TD_cf_sum += i->get_cost(fixed_mu);
@@ -108,7 +110,7 @@ void TckFactor::test_streamline_length_scaling() {
   const double actual_TD_sum = TD_sum;
   std::ofstream out("mu.csv", std::ios_base::trunc);
   for (int i = -1000; i != 1000; ++i) {
-    const double factor = std::pow(10.0, double(i) / 1000.0);
+    const double factor = std::pow(10.0, static_cast<double>(i) / 1000.0);
     TD_sum = factor * actual_TD_sum;
     out << str(factor) << "," << str(calc_cost_function()) << "\n";
   }
@@ -157,7 +159,7 @@ void TckFactor::calc_afcsa() {
     const double fixed_mu;
   };
   {
-    SIFT::TrackIndexRangeWriter writer(SIFT_TRACK_INDEX_BUFFER_SIZE, num_tracks());
+    SIFT::TrackIndexRangeWriter writer(SIFT::TrackIndexRangeWriter::default_batch_size, num_tracks());
     Functor functor(*this);
     Thread::run_queue(writer, SIFT::TrackIndexRange(), Thread::multi(functor));
   }
@@ -167,7 +169,7 @@ void TckFactor::calc_afcsa() {
     i->clear_mean_coeff();
   }
   {
-    SIFT::TrackIndexRangeWriter writer(SIFT_TRACK_INDEX_BUFFER_SIZE, num_tracks());
+    SIFT::TrackIndexRangeWriter writer(SIFT::TrackIndexRangeWriter::default_batch_size, num_tracks());
     FixelUpdater worker(*this);
     Thread::run_queue(writer, SIFT::TrackIndexRange(), Thread::multi(worker));
   }
@@ -234,7 +236,7 @@ void TckFactor::estimate_factors() {
 
   // Logging which fixels need to be excluded from optimisation in subsequent iterations,
   //   due to driving streamlines to unwanted high weights
-  BitSet fixels_to_exclude(fixels.size());
+  fixel_mask_type fixels_to_exclude(fixel_mask_type::Zero(fixels.size()));
 
   do {
 
@@ -244,10 +246,10 @@ void TckFactor::estimate_factors() {
     // Line search to optimise each coefficient
     StreamlineStats step_stats, coefficient_stats;
     nonzero_streamlines = 0;
-    fixels_to_exclude.clear();
+    fixels_to_exclude.setZero();
     double sum_costs = 0.0;
     {
-      SIFT::TrackIndexRangeWriter writer(SIFT_TRACK_INDEX_BUFFER_SIZE, num_tracks());
+      SIFT::TrackIndexRangeWriter writer(SIFT::TrackIndexRangeWriter::default_batch_size, num_tracks());
       // CoefficientOptimiserGSS worker (*this, /*projected_steps,*/ step_stats, coefficient_stats, nonzero_streamlines,
       // fixels_to_exclude, sum_costs); CoefficientOptimiserQLS worker (*this, /*projected_steps,*/ step_stats,
       // coefficient_stats, nonzero_streamlines, fixels_to_exclude, sum_costs);
@@ -276,7 +278,7 @@ void TckFactor::estimate_factors() {
       i->clear_mean_coeff();
     }
     {
-      SIFT::TrackIndexRangeWriter writer(SIFT_TRACK_INDEX_BUFFER_SIZE, num_tracks());
+      SIFT::TrackIndexRangeWriter writer(SIFT::TrackIndexRangeWriter::default_batch_size, num_tracks());
       FixelUpdater worker(*this);
       Thread::run_queue(writer, SIFT::TrackIndexRange(), Thread::multi(worker));
     }
@@ -292,7 +294,7 @@ void TckFactor::estimate_factors() {
     // Log different regularisation costs separately
     double cf_reg_tik = 0.0, cf_reg_tv = 0.0;
     {
-      SIFT::TrackIndexRangeWriter writer(SIFT_TRACK_INDEX_BUFFER_SIZE, num_tracks());
+      SIFT::TrackIndexRangeWriter writer(SIFT::TrackIndexRangeWriter::default_batch_size, num_tracks());
       RegularisationCalculator worker(*this, cf_reg_tik, cf_reg_tv);
       Thread::run_queue(writer, SIFT::TrackIndexRange(), Thread::multi(worker));
     }
@@ -331,26 +333,14 @@ void TckFactor::report_entropy() const {
   const default_type logP_before = std::log2(P_before);
   const default_type H_before = -coefficients.size() * (P_before * logP_before);
   // After SIFT2:
-  // - First, need normalising factor, which is the reciprocal sum of all streamline weights
-  //   (as opposed to the reciprocal number of streamlines)
-  default_type sum_weights = 0.0;
-  for (ssize_t i = 0; i != coefficients.size(); ++i)
-    sum_weights += std::exp(coefficients[i]);
-  const default_type inv_sum_weights = 1.0 / sum_weights;
-  default_type H_after = 0.0;
-  for (ssize_t i = 0; i != coefficients.size(); ++i) {
-    const default_type P_after = std::exp(coefficients[i]) * inv_sum_weights;
-    const default_type logP_after = std::log2(P_after);
-    H_after += P_after * logP_after;
-  }
-  H_after *= -1.0;
+  const default_type H_after = Math::Entropy::shannons(coefficients.exp());
   const size_t equiv_N = std::round(std::pow(2.0, H_after));
   INFO("Entropy decreased from " + str(H_before, 6) + " to " + str(H_after, 6) + "; " + "this is equivalent to " +
        str(equiv_N) + " equally-weighted streamlines");
 }
 
 void TckFactor::output_factors(const std::filesystem::path &path) const {
-  if (size_t(coefficients.size()) != contributions.size())
+  if (static_cast<size_t>(coefficients.size()) != contributions.size())
     throw Exception("Cannot output weighting factors if they have not first been estimated!");
   decltype(coefficients) weights;
   try {
@@ -383,8 +373,7 @@ void TckFactor::output_TD_images(const std::filesystem::path &dirpath,
   }
 }
 
-void TckFactor::output_all_debug_images(const std::filesystem::path &dirpath,
-                                        const std::filesystem::path &prefix) const {
+void TckFactor::output_all_debug_images(const std::filesystem::path &dirpath, std::string_view prefix) const {
 
   Model<Fixel>::output_all_debug_images(dirpath, prefix);
 
@@ -420,7 +409,8 @@ void TckFactor::output_all_debug_images(const std::filesystem::path &dirpath,
   for (size_t i = 1; i != fixels.size(); ++i) {
     if (!std::isfinite(mins[i]))
       mins[i] = std::numeric_limits<double>::quiet_NaN();
-    stdevs[i] = (fixels[i].get_count() > 1) ? (std::sqrt(stdevs[i] / float(fixels[i].get_count() - 1))) : 0.0;
+    stdevs[i] =
+        (fixels[i].get_count() > 1) ? (std::sqrt(stdevs[i] / static_cast<float>(fixels[i].get_count() - 1))) : 0.0;
     if (!std::isfinite(maxs[i]))
       maxs[i] = std::numeric_limits<double>::quiet_NaN();
   }

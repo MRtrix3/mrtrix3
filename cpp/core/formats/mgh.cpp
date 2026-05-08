@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -29,19 +29,18 @@ std::unique_ptr<ImageIO::Base> MGH::read(Header &H) const {
   if (!Path::has_suffix(H.path(), ".mgh"))
     return std::unique_ptr<ImageIO::Base>();
 
-  const std::filesystem::path &hpath = static_cast<const Header &>(H).path();
-  std::ifstream in(hpath, std::ios_base::binary);
+  std::ifstream in(H.path(), std::ios_base::binary);
   File::MGH::read_header(H, in);
 
   // Remaining header items appear AFTER the data
   // It's possible that these data may not even be there; need to make sure that we don't go over the file size
-  in.seekg(MGH_DATA_OFFSET + footprint(H));
+  in.seekg(File::MGH::data_offset + footprint(H));
   File::MGH::read_other(H, in);
 
   in.close();
 
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));
-  io_handler->files.push_back(File::Entry(hpath, MGH_DATA_OFFSET));
+  io_handler->files.push_back(File::Entry(H.path(), File::MGH::data_offset));
 
   return io_handler;
 }
@@ -56,11 +55,11 @@ std::unique_ptr<ImageIO::Base> MGH::create(Header &H) const {
   const std::filesystem::path &hpath = static_cast<const Header &>(H).path();
   File::OFStream out(hpath, std::ios_base::binary);
   File::MGH::write_header(H, out);
-  out.seekp(MGH_DATA_OFFSET + footprint(H));
+  out.seekp(File::MGH::data_offset + footprint(H));
   File::MGH::write_other(H, out);
 
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));
-  io_handler->files.push_back(File::Entry(hpath, MGH_DATA_OFFSET));
+  io_handler->files.push_back(File::Entry(hpath, File::MGH::data_offset));
 
   return io_handler;
 }

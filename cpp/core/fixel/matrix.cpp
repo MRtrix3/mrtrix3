@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -141,10 +141,10 @@ public:
         //   however this will not be permitted to contribute to the matrix
         index_type closest_fixel_index = last_index;
         default_type largest_dp = 0.0;
-        const direction_type dir(i.get_dir().normalized());
+        const direction_type dir(i.get_dir().cast<default_type>().normalized());
         for (index_type j = first_index; j < last_index; ++j) {
           fixel_directions.index(0) = j;
-          const default_type dp = abs(dir.dot(direction_type(fixel_directions.row(1))));
+          const default_type dp = std::fabs(dir.dot(direction_type(fixel_directions.row(1))));
           if (dp > largest_dp) {
             largest_dp = dp;
             fixel_mask.index(0) = j;
@@ -245,9 +245,9 @@ template <class MatrixType> void Writer<MatrixType>::set_extent_path(const std::
 template <class MatrixType> void Writer<MatrixType>::save(const std::filesystem::path &path) const {
   if (std::filesystem::exists(path)) {
     if (std::filesystem::is_directory(path)) {
-      if (!App::overwrite_files && (std::filesystem::is_regular_file((path / "index.mif")) ||
-                                    std::filesystem::is_regular_file((path / "fixels.mif")) ||
-                                    std::filesystem::is_regular_file((path / "values.mif"))))
+      if (!App::overwrite_files && (std::filesystem::is_regular_file(path / "index.mif") ||
+                                    std::filesystem::is_regular_file(path / "fixels.mif") ||
+                                    std::filesystem::is_regular_file(path / "values.mif")))
         throw Exception("Cannot create fixel-fixel connectivity matrix \"" + path.string() + "\":" + //
                         " one or more files already exists (use -force to override)");               //
     } else {
@@ -347,7 +347,7 @@ template <class MatrixType> void Writer<MatrixType>::save(const std::filesystem:
 
     index_image.index(0) = fixel_index;
     index_image.index(3) = 0;
-    index_image.value() = uint64_t(connection_count);
+    index_image.value() = static_cast<uint64_t>(connection_count);
     index_image.index(3) = 1;
     index_image.value() = connection_count ? connection_offset : uint64_t(0);
 
@@ -382,9 +382,10 @@ Reader::Reader(const std::filesystem::path &path, const Image<bool> &mask) : dir
     if (value_image.size(0) != fixel_image.size(0))
       throw Exception("Number of fixels in value image (" + str(value_image.size(0)) +
                       ") does not match number of fixels in fixel image (" + str(fixel_image.size(0)) + ")");
-    if (mask_image.valid() && size_t(mask_image.size(0)) != size())
-      throw Exception("Fixel image \"" + mask_image.path().string() + "\" has different number of fixels (" +
-                      str(mask_image.size(0)) + ") to fixel-fixel connectivity matrix (" + str(size()) + ")");
+    if (mask_image.valid() && static_cast<size_t>(mask_image.size(0)) != size())
+      throw Exception("Fixel image \"" + mask_image.path().string() + "\"" +                //
+                      " has different number of fixels (" + str(mask_image.size(0)) + ")" + //
+                      " to fixel-fixel connectivity matrix (" + str(size()) + ")");         //
   } catch (Exception &e) {
     throw Exception(e, "Unable to load path \"" + directory.string() + "\" as fixel-fixel connectivity data");
   }

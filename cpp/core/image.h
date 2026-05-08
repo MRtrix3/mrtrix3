@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -26,6 +26,8 @@
 #include "algo/threaded_copy.h"
 #include "debug.h"
 #include "fetch_store.h"
+#include "file/ofstream.h"
+#include "file/utils.h"
 #include "formats/mrtrix_utils.h"
 #include "half.h"
 #include "header.h"
@@ -56,7 +58,7 @@ public:
   //! get generic key/value text attributes
   FORCE_INLINE const KeyValues &keyval() const { return buffer->keyval(); }
 
-  FORCE_INLINE const std::string &name() const { return buffer->name(); }
+  FORCE_INLINE std::string name() const { return buffer->name(); }
   FORCE_INLINE const std::filesystem::path &path() const {
     static const std::filesystem::path empty;
     return valid() ? static_cast<const Header &>(*buffer).path() : empty;
@@ -204,7 +206,7 @@ public:
   create(const std::filesystem::path &image_name, const Header &template_header, bool add_to_command_history = true) {
     return Header::create(image_name, template_header, add_to_command_history).get_image<ValueType>();
   }
-  static Image scratch(const Header &template_header, const std::string &label = "scratch image") {
+  static Image scratch(const Header &template_header, std::string_view label = "scratch image") {
     return Header::scratch(template_header, label).get_image<ValueType>();
   }
 
@@ -348,7 +350,7 @@ Image<ValueType>::Image(const std::shared_ptr<Image<ValueType>::Buffer> &buffer_
 
 template <typename ValueType> Image<ValueType>::~Image() {
   if (buffer.unique()) {
-    // was image preloaded and read/write? If so,need to write back:
+    // was image preloaded and read/write? If so, need to write back:
     if (buffer->get_io()) {
       if (buffer->get_io()->is_image_readwrite() && buffer->data_buffer) {
         auto data_buffer = std::move(buffer->data_buffer);
@@ -424,7 +426,7 @@ std::filesystem::path Image<ValueType>::dump_to_mrtrix_file(const std::filesyste
   out << "file: ";
   std::filesystem::path data_path = resolved_path;
   if (single_file) {
-    offset = int64_t(out.tellp()) + int64_t(18);
+    offset = static_cast<int64_t>(out.tellp()) + int64_t(18);
     offset += ((4 - (offset % 4)) % 4);
     out << ". " << offset << "\nEND\n";
   } else {
@@ -474,7 +476,7 @@ typename std::enable_if<is_pure_image<typename std::remove_reference<ImageType>:
                         std::filesystem::path>::type
 save(ImageType &&x, const std::filesystem::path &filepath, bool use_multi_threading = true) {
   try {
-    return x.dump_to_mrtrix_file(filepath.string(), use_multi_threading);
+    return x.dump_to_mrtrix_file(filepath, use_multi_threading);
   } catch (...) {
   }
   return __save_generic(x, filepath, use_multi_threading);
@@ -497,7 +499,7 @@ extern template MR::Image<int32_t>::~Image();
 extern template MR::Image<uint32_t>::~Image();
 extern template MR::Image<int64_t>::~Image();
 extern template MR::Image<uint64_t>::~Image();
-extern template MR::Image<half_float::half>::~Image();
+extern template MR::Image<Eigen::half>::~Image();
 extern template MR::Image<float>::~Image();
 extern template MR::Image<double>::~Image();
 extern template MR::Image<cfloat>::~Image();

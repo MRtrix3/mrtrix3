@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,13 +16,14 @@
 
 #pragma once
 
+#include <array>
+
 #include "interp/base.h"
 #include "math/cubic_spline.h"
 #include "math/least_squares.h"
 #include "types.h"
 
-namespace MR {
-namespace Interp {
+namespace MR::Interp {
 
 //! \addtogroup interp
 // @{
@@ -75,7 +76,7 @@ public:
       : Base<ImageType>(parent, value_when_out_of_bounds), H{SplineType(PType), SplineType(PType), SplineType(PType)} {}
 
 protected:
-  SplineType H[3];
+  std::array<SplineType, 3> H;
   Eigen::Vector3d P;
 
   ssize_t clamp(ssize_t x, ssize_t dim) const {
@@ -150,7 +151,7 @@ public:
     if (Base<ImageType>::out_of_bounds)
       return Base<ImageType>::out_of_bounds_value;
 
-    ssize_t c[] = {ssize_t(std::floor(P[0]) - 1), ssize_t(std::floor(P[1]) - 1), ssize_t(std::floor(P[2]) - 1)};
+    const Eigen::Array<ssize_t, 3, 1> c = P.array().floor().template cast<ssize_t>() - 1;
 
     Eigen::Matrix<value_type, 64, 1> coeff_vec;
 
@@ -179,7 +180,7 @@ public:
       return out_of_bounds_row;
     }
 
-    ssize_t c[] = {ssize_t(std::floor(P[0]) - 1), ssize_t(std::floor(P[1]) - 1), ssize_t(std::floor(P[2]) - 1)};
+    const Eigen::Array<ssize_t, 3, 1> c(P.array().floor().template cast<ssize_t>() - 1);
 
     Eigen::Matrix<value_type, Eigen::Dynamic, 64> coeff_matrix(ImageType::size(3), 64);
 
@@ -274,7 +275,7 @@ public:
     if (Base<ImageType>::out_of_bounds)
       return out_of_bounds_vec;
 
-    ssize_t c[] = {ssize_t(std::floor(P[0]) - 1), ssize_t(std::floor(P[1]) - 1), ssize_t(std::floor(P[2]) - 1)};
+    const Eigen::Array<ssize_t, 3, 1> c(P.array().floor().template cast<ssize_t>() - 1);
 
     Eigen::Matrix<value_type, 1, 64> coeff_vec;
 
@@ -307,7 +308,7 @@ public:
 
     assert(ImageType::ndim() == 4);
 
-    ssize_t c[] = {ssize_t(std::floor(P[0]) - 1), ssize_t(std::floor(P[1]) - 1), ssize_t(std::floor(P[2]) - 1)};
+    const Eigen::Array<ssize_t, 3, 1> c(P.array().floor().template cast<ssize_t>() - 1);
 
     Eigen::Matrix<value_type, Eigen::Dynamic, 64> coeff_matrix(ImageType::size(3), 64);
 
@@ -421,7 +422,7 @@ public:
       return;
     }
 
-    ssize_t c[] = {ssize_t(std::floor(P[0]) - 1), ssize_t(std::floor(P[1]) - 1), ssize_t(std::floor(P[2]) - 1)};
+    const Eigen::Array<ssize_t, 3, 1> c(P.array().floor().template cast<ssize_t>() - 1);
 
     Eigen::Matrix<value_type, 1, 64> coeff_vec;
 
@@ -460,7 +461,7 @@ public:
 
     assert(ImageType::ndim() == 4);
 
-    ssize_t c[] = {ssize_t(std::floor(P[0]) - 1), ssize_t(std::floor(P[1]) - 1), ssize_t(std::floor(P[2]) - 1)};
+    const Eigen::Array<ssize_t, 3, 1> c(P.array().floor().template cast<ssize_t>() - 1);
 
     Eigen::Matrix<value_type, Eigen::Dynamic, 64> coeff_matrix(ImageType::size(3), 64);
 
@@ -513,5 +514,4 @@ inline Cubic<ImageType> make_cubic(const ImageType &parent, Args &&...args) {
 
 //! @}
 
-} // namespace Interp
-} // namespace MR
+} // namespace MR::Interp

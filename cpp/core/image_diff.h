@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -28,14 +28,14 @@ template <class HeaderType1, class HeaderType2> inline void check_headers(Header
   check_dimensions(in1, in2);
   for (size_t i = 0; i < in1.ndim(); ++i) {
     if (std::isfinite(in1.spacing(i)))
-      if (abs((in1.spacing(i) - in2.spacing(i)) / (in1.spacing(i) + in2.spacing(i))) > 1e-4)
+      if (std::fabs((in1.spacing(i) - in2.spacing(i)) / (in1.spacing(i) + in2.spacing(i))) > 1e-4)
         throw Exception("images \"" + in1.name() + "\" and \"" + in2.name() +
                         "\" do not have matching voxel spacings on axis " + str(i) + " (" + str(in1.spacing(i)) +
                         " vs " + str(in2.spacing(i)) + ")");
   }
   for (size_t i = 0; i < 3; ++i) {
     for (size_t j = 0; j < 4; ++j) {
-      if (abs(in1.transform().matrix()(i, j) - in2.transform().matrix()(i, j)) > 0.001)
+      if (std::fabs(in1.transform().matrix()(i, j) - in2.transform().matrix()(i, j)) > 0.001)
         throw Exception("images \"" + in1.name() + "\" and \"" + in2.name() +
                         "\" do not have matching header transforms:\n" + str(in1.transform().matrix()) + "\nvs:\n " +
                         str(in2.transform().matrix()) + ")");
@@ -49,10 +49,10 @@ inline void check_images_abs(ImageType1 &in1, ImageType2 &in2, const double tol 
   check_headers(in1, in2);
   ThreadedLoop(in1).run(
       [&tol](const ImageType1 &a, const ImageType2 &b) {
-        if (abs(cdouble(a.value()) - cdouble(b.value())) > tol)
+        if (MR::abs(static_cast<cdouble>(a.value()) - static_cast<cdouble>(b.value())) > tol)
           throw Exception("images \"" + a.name() + "\" and \"" + b.name() +
-                          "\" do not match within absolute precision of " + str(tol) + " (" + str(cdouble(a.value())) +
-                          " vs " + str(cdouble(b.value())) + ")");
+                          "\" do not match within absolute precision of " + str(tol) + " (" +
+                          str(static_cast<cdouble>(a.value())) + " vs " + str(static_cast<cdouble>(b.value())) + ")");
       },
       in1,
       in2);
@@ -65,10 +65,11 @@ inline void check_images_frac(ImageType1 &in1, ImageType2 &in2, const double tol
   check_headers(in1, in2);
   ThreadedLoop(in1).run(
       [&tol](const ImageType1 &a, const ImageType2 &b) {
-        if (abs((cdouble(a.value()) - cdouble(b.value())) / (0.5 * (cdouble(a.value()) + cdouble(b.value())))) > tol)
+        if (MR::abs((static_cast<cdouble>(a.value()) - static_cast<cdouble>(b.value())) /
+                    (0.5 * (static_cast<cdouble>(a.value()) + static_cast<cdouble>(b.value())))) > tol)
           throw Exception("images \"" + a.name() + "\" and \"" + b.name() +
                           "\" do not match within fractional precision of " + str(tol) + " (" +
-                          str(cdouble(a.value())) + " vs " + str(cdouble(b.value())) + ")");
+                          str(static_cast<cdouble>(a.value())) + " vs " + str(static_cast<cdouble>(b.value())) + ")");
       },
       in1,
       in2);
@@ -82,10 +83,10 @@ inline void check_images_tolimage(ImageType1 &in1, ImageType2 &in2, ImageTypeTol
   check_headers(in1, tol);
   ThreadedLoop(in1).run(
       [](const ImageType1 &a, const ImageType2 &b, const ImageTypeTol &t) {
-        if (abs(cdouble(a.value()) - cdouble(b.value())) > t.value())
+        if (MR::abs(static_cast<cdouble>(a.value()) - static_cast<cdouble>(b.value())) > t.value())
           throw Exception("images \"" + a.name() + "\" and \"" + b.name() + "\" do not match within precision of \"" +
-                          t.name() + "\"" + " (" + str(cdouble(a.value())) + " vs " + str(cdouble(b.value())) +
-                          ", tolerance " + str(t.value()) + ")");
+                          t.name() + "\"" + " (" + str(static_cast<cdouble>(a.value())) + " vs " +
+                          str(static_cast<cdouble>(b.value())) + ", tolerance " + str(t.value()) + ")");
       },
       in1,
       in2,
@@ -98,15 +99,15 @@ inline void check_images_voxel(ImageType1 &in1, ImageType2 &in2, const double to
   auto func = [&tol](decltype(in1) &a, decltype(in2) &b) {
     double maxa = 0.0, maxb = 0.0;
     for (auto l = Loop(3)(a, b); l; ++l) {
-      maxa = std::max(maxa, abs(cdouble(a.value())));
-      maxb = std::max(maxb, abs(cdouble(b.value())));
+      maxa = std::max(maxa, MR::abs(static_cast<cdouble>(a.value())));
+      maxb = std::max(maxb, MR::abs(static_cast<cdouble>(b.value())));
     }
     const double threshold = tol * 0.5 * (maxa + maxb);
     for (auto l = Loop(3)(a, b); l; ++l) {
-      if (abs(cdouble(a.value()) - cdouble(b.value())) > threshold)
+      if (MR::abs(static_cast<cdouble>(a.value()) - static_cast<cdouble>(b.value())) > threshold)
         throw Exception("images \"" + a.name() + "\" and \"" + b.name() + "\" do not match within " + str(tol) +
-                        " of maximal voxel value" + " (" + str(cdouble(a.value())) + " vs " + str(cdouble(b.value())) +
-                        ")");
+                        " of maximal voxel value" + " (" + str(static_cast<cdouble>(a.value())) + " vs " +
+                        str(static_cast<cdouble>(b.value())) + ")");
     }
   };
 
@@ -175,7 +176,7 @@ inline bool images_match_abs(ImageType1 &in1, ImageType2 &in2, const double tol 
   if (!headers_match(in1, in2))
     return false;
   for (auto i = Loop(in1)(in1, in2); i; ++i)
-    if (abs(cdouble(in1.value()) - cdouble(in2.value())) > tol)
+    if (MR::abs(static_cast<cdouble>(in1.value()) - static_cast<cdouble>(in2.value())) > tol)
       return false;
   return true;
 }

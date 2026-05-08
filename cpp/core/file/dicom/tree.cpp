@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -26,7 +26,7 @@
 namespace MR::File::Dicom {
 
 std::shared_ptr<Patient>
-Tree::find(const std::string &patient_name, const std::string &patient_ID, const std::string &patient_DOB) {
+Tree::find(std::string_view patient_name, std::string_view patient_ID, std::string_view patient_DOB) {
   for (size_t n = 0; n < size(); n++) {
     bool match = true;
     if (patient_name == (*this)[n]->name) {
@@ -101,7 +101,7 @@ void Tree::read(const std::filesystem::path &path) {
   description = path.string();
   if (std::filesystem::is_directory(path)) {
     ProgressBar progress("scanning folder \"" + shorten(path.string()) + "\" for DICOM data", 0);
-    read_dir(path.string(), progress);
+    read_dir(path, progress);
   } else {
     try {
       read_file(path.string());

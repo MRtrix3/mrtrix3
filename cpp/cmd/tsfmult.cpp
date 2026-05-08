@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,6 +18,7 @@
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/scalar_file.h"
 #include "dwi/tractography/streamline.h"
+#include "dwi/tractography/validate.h"
 
 #include <filesystem>
 
@@ -49,15 +50,15 @@ void run() {
   DWI::Tractography::Properties properties1, properties2;
   DWI::Tractography::ScalarReader<value_type> reader1(first_input_path, properties1);
   DWI::Tractography::ScalarReader<value_type> reader2(second_input_path, properties2);
-  DWI::Tractography::check_properties_match(properties1, properties2, "scalar", false);
+  DWI::Tractography::validate_tsf_properties(properties1, properties2, "scalar file pair");
 
   DWI::Tractography::ScalarWriter<value_type> writer(output_path, properties1);
   DWI::Tractography::TrackScalar<> tck_scalar1, tck_scalar2, tck_scalar_output;
   while (reader1(tck_scalar1)) {
     if (!reader2(tck_scalar2)) {
-      WARN("No more track scalars left in input file \"" + second_input_path.string() + "\" after " +
-           str(tck_scalar1.get_index() + 1) + " streamlines; " + "but more data are present in input file \"" +
-           first_input_path.string() + "\"");
+      WARN("No more track scalars left in input file \"" + second_input_path.string() + "\"" + //
+           " after " + str(tck_scalar1.get_index() + 1) + " streamlines;" +                    //
+           " but more data are present in input file \"" + first_input_path.string() + "\"");  //
       break;
     }
     if (tck_scalar1.size() != tck_scalar2.size())
@@ -71,8 +72,8 @@ void run() {
     writer(tck_scalar_output);
   }
   if (reader2(tck_scalar2)) {
-    WARN("No more track scalars left in input file \"" + first_input_path.string() + "\" after " +
-         str(tck_scalar1.get_index() + 1) + " streamlines; " + "but more data are present in input file \"" +
-         second_input_path.string() + "\"");
+    WARN("No more track scalars left in input file \"" + first_input_path.string() + "\"" +  //
+         " after " + str(tck_scalar1.get_index() + 1) + " streamlines;" +                    //
+         " but more data are present in input file \"" + second_input_path.string() + "\""); //
   }
 }

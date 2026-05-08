@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -80,7 +80,7 @@ template <typename DiskType>
 inline
     typename std::enable_if<std::is_same<std::complex<typename DiskType::value_type>, DiskType>::value, DiskType>::type
     scale_from_storage(DiskType val, default_type offset, default_type scale) {
-  return typename DiskType::value_type(offset) + typename DiskType::value_type(scale) * val;
+  return static_cast<typename DiskType::value_type>(offset) + static_cast<typename DiskType::value_type>(scale) * val;
 }
 
 // apply scaling to storage:
@@ -94,7 +94,7 @@ template <typename DiskType>
 inline
     typename std::enable_if<std::is_same<std::complex<typename DiskType::value_type>, DiskType>::value, DiskType>::type
     scale_to_storage(DiskType val, default_type offset, default_type scale) {
-  return (val - typename DiskType::value_type(offset)) / typename DiskType::value_type(scale);
+  return (val - static_cast<typename DiskType::value_type>(offset)) / static_cast<typename DiskType::value_type>(scale);
 }
 
 // for single-byte types:
@@ -194,9 +194,9 @@ __set_fetch_function(const DataType datatype) {
   case DataType::UInt64BE:
     return __fetch_BE<ValueType, uint64_t>;
   case DataType::Float16LE:
-    return __fetch_LE<ValueType, half_float::half>;
+    return __fetch_LE<ValueType, Eigen::half>;
   case DataType::Float16BE:
-    return __fetch_BE<ValueType, half_float::half>;
+    return __fetch_BE<ValueType, Eigen::half>;
   case DataType::Float32LE:
     return __fetch_LE<ValueType, float>;
   case DataType::Float32BE:
@@ -253,9 +253,9 @@ __set_store_function(const DataType datatype) {
   case DataType::UInt64BE:
     return __store_BE<ValueType, uint64_t>;
   case DataType::Float16LE:
-    return __store_LE<ValueType, half_float::half>;
+    return __store_LE<ValueType, Eigen::half>;
   case DataType::Float16BE:
-    return __store_BE<ValueType, half_float::half>;
+    return __store_BE<ValueType, Eigen::half>;
   case DataType::Float32LE:
     return __store_LE<ValueType, float>;
   case DataType::Float32BE:
@@ -345,12 +345,12 @@ typename std::enable_if<is_data_type<ValueType>::value, void>::type __set_fetch_
     store_func = __scale_store_BE<ValueType, uint64_t>;
     return;
   case DataType::Float16LE:
-    fetch_func = __fetch_scale_LE<ValueType, half_float::half>;
-    store_func = __scale_store_LE<ValueType, half_float::half>;
+    fetch_func = __fetch_scale_LE<ValueType, Eigen::half>;
+    store_func = __scale_store_LE<ValueType, Eigen::half>;
     return;
   case DataType::Float16BE:
-    fetch_func = __fetch_scale_BE<ValueType, half_float::half>;
-    store_func = __scale_store_BE<ValueType, half_float::half>;
+    fetch_func = __fetch_scale_BE<ValueType, Eigen::half>;
+    store_func = __scale_store_BE<ValueType, Eigen::half>;
     return;
   case DataType::Float32LE:
     fetch_func = __fetch_scale_LE<ValueType, float>;
@@ -407,7 +407,7 @@ __DEFINE_FETCH_STORE_FUNCTIONS_FOR_TYPE(uint32_t);
 __DEFINE_FETCH_STORE_FUNCTIONS_FOR_TYPE(int32_t);
 __DEFINE_FETCH_STORE_FUNCTIONS_FOR_TYPE(uint64_t);
 __DEFINE_FETCH_STORE_FUNCTIONS_FOR_TYPE(int64_t);
-__DEFINE_FETCH_STORE_FUNCTIONS_FOR_TYPE(half_float::half);
+__DEFINE_FETCH_STORE_FUNCTIONS_FOR_TYPE(Eigen::half);
 __DEFINE_FETCH_STORE_FUNCTIONS_FOR_TYPE(float);
 __DEFINE_FETCH_STORE_FUNCTIONS_FOR_TYPE(double);
 __DEFINE_FETCH_STORE_FUNCTIONS_FOR_TYPE(cfloat);

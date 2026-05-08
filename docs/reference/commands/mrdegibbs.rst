@@ -23,18 +23,20 @@ Description
 
 This application attempts to remove Gibbs ringing artefacts from MRI images using the method of local subvoxel-shifts proposed by Kellner et al. (see reference below for details).
 
-By default, the original 2D slice-wise version is used. If the -mode 3d option is provided, the program will run the 3D version as proposed by Bautista et al. (also in the reference list below).
+By default, the original 2D slice-wise version is used. If the -dimensionality option is set greater than 2, the program will run the 3D version as proposed by Bautista et al. (also in the reference list below).
 
-This command is designed to run on data directly after it has been reconstructed by the scanner, before any interpolation of any kind has taken place. You should not run this command after any form of motion correction (e.g. not after dwifslpreproc). Similarly, if you intend running dwidenoise, you should run denoising before this command to not alter the noise structure, which would impact on dwidenoise's performance.
+This command is designed to run on data directly after it has been reconstructed by the scanner, before any interpolation of any kind has taken place. You should not run this command after any form of motion correction (e.g. not after dwifslpreproc). If however you intend to run a thermal denoising step (eg. dwidenoise), you should do so before this command to not alter the noise structure, which would impact on denoising performance.
 
 For best results, any form of filtering performed by the scanner should be disabled, whether performed in the image domain or k-space. This includes elliptic filtering and other filters  that are often applied to reduce Gibbs ringing artifacts. While this method can still safely be applied to such data, some residual ringing artefacts may still be present in the output.
 
 Note that this method is designed to work on images acquired with full k-space coverage. If this method is executed on data acquired with partial Fourier (eg. "half-scan") acceleration, it may not fully remove all ringing artifacts, and you may observe residuals of the original artifact in the partial Fourier direction. Nonetheless, application of the method is still considered safe and worthwhile. Users are however encouraged to acquired full-Fourier data where possible.
 
+As this method is based on utilisation of the Fourier shift theorem, it operates best if it can be provided with complex-valued image data; in this use case the output image will also be complex-valued.
+
 Options
 -------
 
--  **-mode type** specify the mode of operation. Valid choices are: 2d, 3d (default: 2d). The 2d mode corresponds to the original slice-wise approach as propoosed by Kellner et al., appropriate for images acquired using 2D stack-of-slices approaches. The 3d mode corresponds to the 3D volume-wise extension proposed by Bautista et al., which is appropriate for images acquired using 3D Fourier encoding.
+-  **-dimensionality value** specify the dimensionality of operation. Valid choices are: 2, 3 (default: 2). A value of 2 corresponds to the original slice-wise approach as proposed by Kellner et al., appropriate for images acquired using 2D stack-of-slices approaches. Values greater than 2 select the 3D volume-wise extension proposed by Bautista et al., which is appropriate for images acquired using 3D Fourier encoding.
 
 -  **-axes list** select the slice axes (default: 0,1 - i.e. x-y).
 
@@ -56,7 +58,7 @@ Standard options
 
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
--  **-debug** display debugging messages.
+-  **-debug** display debugging messages & debug input data.
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
@@ -83,7 +85,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** Ben Jeurissen (ben.jeurissen@uantwerpen.be) and J-Donald Tournier (jdtournier@gmail.com)
 
-**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2026 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

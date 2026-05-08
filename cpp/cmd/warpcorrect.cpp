@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,16 +13,21 @@
  *
  * For more details, see http://www.mrtrix.org/.
  */
+
+#include <filesystem>
+#include <limits>
+#include <mutex>
+
 #include "algo/threaded_loop.h"
 #include "command.h"
 #include "image.h"
 #include "registration/warp/helpers.h"
-#include <filesystem>
+#include "registration/warp/validate.h"
 
 using namespace MR;
 using namespace App;
 
-const float PRECISION = Eigen::NumTraits<float>::dummy_precision();
+constexpr float precision = Eigen::NumTraits<float>::dummy_precision();
 
 // clang-format off
 void usage() {
@@ -31,7 +36,7 @@ void usage() {
            " and Max Pietsch (mail@maxpietsch.com)";
 
   SYNOPSIS = "Replaces voxels in a deformation field that point"
-             " to a specific out of bounds location with nan,nan,nan";
+             " to a specific out-of-bounds location with nan,nan,nan";
 
   DESCRIPTION
   + "This can be used in conjunction with the warpinit command"
@@ -43,13 +48,13 @@ void usage() {
   + Argument ("out", "the output warp image.").type_image_out();
 
   OPTIONS
-  + Option ("marker", "single value or a comma separated list of values"
-                      " that define out of bounds voxels in the input warp image."
+  + Option ("marker", "single value or a comma-separated list of three values"
+                      " that define out-of-bounds voxels in the input warp image."
                       " Default: (0,0,0).")
     + Argument ("coordinates").type_sequence_float()
   + Option ("tolerance", "numerical precision used for L2 matrix norm comparison."
-                         " Default: " + str(PRECISION) + ".")
-    + Argument ("value").type_float(PRECISION);
+                         " Default: " + str(precision) + ".")
+    + Argument ("value").type_float(precision);
 }
 // clang-format on
 
@@ -58,21 +63,24 @@ using value_type = float;
 class BoundsCheck {
 public:
   BoundsCheck(value_type tolerance, const Eigen::Matrix<value_type, 3, 1> &marker, size_t &total_count)
-      : precision(tolerance), vec(marker), counter(total_count), count(0), val({NaN, NaN, NaN}) {}
+      : precision(tolerance), vec(marker), counter(total_count), count(0), val(decltype(val)::Constant(NaNF)) {}
   BoundsCheck(const BoundsCheck &that)
-      : precision(that.precision), vec(that.vec), counter(that.counter), count(0), val({NaN, NaN, NaN}) {}
+      : precision(that.precision), vec(that.vec), counter(that.counter), count(0), val(decltype(val)::Constant(NaNF)) {}
   template <class ImageTypeIn, class ImageTypeOut> void operator()(ImageTypeIn &in, ImageTypeOut &out) {
     val = Eigen::Matrix<value_type, 3, 1>(in.row(3));
     if ((vec - val).isMuchSmallerThan(precision) || (vec.hasNaN() && val.hasNaN())) {
       count++;
       for (auto l = Loop(3)(out); l; ++l)
-        out.value() = NaN;
+        out.value() = std::numeric_limits<typename ImageTypeOut::value_type>::quiet_NaN();
     } else {
       for (auto l = Loop(3)(in, out); l; ++l)
         out.value() = in.value();
     }
   }
-  virtual ~BoundsCheck() { counter += count; }
+  virtual ~BoundsCheck() {
+    const std::lock_guard<std::mutex> lock(mutex);
+    counter += count;
+  }
 
 protected:
   const value_type precision;
@@ -80,35 +88,56 @@ protected:
   size_t &counter;
   size_t count;
   Eigen::Matrix<value_type, 3, 1> val;
+
+  static std::mutex mutex;
 };
+std::mutex BoundsCheck::mutex;
 
 void run() {
-  const std::filesystem::path input_path{argument[0]};
-  const std::filesystem::path output_path{argument[1]};
-
-  auto input = Image<value_type>::open(input_path).with_direct_io(3);
-  Registration::Warp::check_warp(input);
-
-  auto output = Image<value_type>::create(output_path, input);
+  Header H_input = Header::open(argument[0]);
+  Registration::Warp::validate_header(H_input);
+  auto input = H_input.get_image<value_type>().with_direct_io(3);
 
   Eigen::Matrix<value_type, 3, 1> oob_vector = Eigen::Matrix<value_type, 3, 1>::Zero();
+
   auto opt = get_options("marker");
-  if (opt.size() == 1) {
+  if (opt.empty()) {
+    try {
+      auto vw = Registration::Warp::validate_image(input);
+      if (vw.fill_value.has_value()) {
+        oob_vector = Eigen::Matrix<value_type, 3, 1>::Constant(*vw.fill_value);
+        CONSOLE("Inferred out-of-bounds fill value " + str(*vw.fill_value) + " from input data");
+      } else {
+        throw Exception("No out-of-bounds marker found in input image data");
+      }
+    } catch (Exception &e) {
+      WARN("No reliable out-of-bounds marker found in input image data;"
+           " default value of [0.0, 0.0, 0.0] will be used");
+    }
+  } else {
+    // If user has manually specified an out-of-bounds marker,
+    //   only perform a check of the input image data regardless if -debug was specified
+    Registration::Warp::debug_validate_image(input);
     const auto loc = parse_floats(opt[0][0]);
-    if (loc.size() == 1) {
+    switch (loc.size()) {
+    case 1:
       oob_vector.fill(loc[0]);
-    } else if (loc.size() == 3) {
+      break;
+    case 3:
       for (auto i = 0; i < 3; i++)
         oob_vector[i] = loc[i];
-    } else
+      break;
+    default:
       throw Exception("location option requires either single value or list of 3 values");
+    }
   }
 
-  const value_type precision = get_option_value("tolerance", PRECISION);
+  const value_type precision = get_option_value("tolerance", precision);
 
   size_t count(0);
   auto func = BoundsCheck(precision, oob_vector, count);
 
+  auto output = Image<value_type>::create(argument[1], H_input);
   ThreadedLoop("correcting warp", input, 0, 3).run(func, input, output);
 
   if (count == 0)

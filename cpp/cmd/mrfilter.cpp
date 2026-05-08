@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,7 +17,9 @@
 #include <complex>
 
 #include "command.h"
+#include "enum.h"
 #include "filter/base.h"
+#include "filter/demodulate.h"
 #include "filter/gradient.h"
 #include "filter/median.h"
 #include "filter/normalise.h"
@@ -25,15 +27,25 @@
 #include "filter/zclean.h"
 #include "image.h"
 #include "math/fft.h"
+#include "metadata/bids.h"
 
 #include <filesystem>
 
 using namespace MR;
 using namespace App;
 
-const std::vector<std::string> filters = {"fft", "gradient", "median", "smooth", "normalise", "zclean"};
+enum class FilterType { DEMODULATE, FFT, GRADIENT, MEDIAN, SMOOTH, NORMALISE, ZCLEAN };
 
 // clang-format off
+const OptionGroup DemodulateOption = OptionGroup ("Options for demodulate filter")
+  + Option ("axes", "the axes along which to demodulate;"
+                    " by default, this will be chosen based on the presence / content"
+                    " of header field SliceEncodingDirection:"
+                    " two spatial axes if present, three spatial axes if absent")
+    + Argument ("list").type_sequence_int()
+  + Option ("linear", "demodulate using only a linear phase ramp,"
+                      " rather than the default non-linear phase map");
+
 const OptionGroup FFTOption = OptionGroup ("Options for FFT filter")
   + Option ("axes", "the axes along which to apply the Fourier Transform."
                     " By default, the transform is applied along the three spatial axes."
@@ -117,17 +129,17 @@ void usage() {
   SYNOPSIS = "Perform filtering operations on 3D / 4D MR images";
 
   DESCRIPTION
-  + "The available filters are:"
-    " fft, gradient, median, smooth, normalise, zclean."
+  + "The available filters are: " + MR::Enum::join<FilterType>() + "."
   + "Each filter has its own unique set of optional parameters."
   + "For 4D images, each 3D volume is processed independently.";
 
   ARGUMENTS
   + Argument ("input",  "the input image.").type_image_in ()
-  + Argument ("filter", "the type of filter to be applied").type_choice (filters)
+  + Argument ("filter", "the type of filter to be applied").type_choice<FilterType>()
   + Argument ("output", "the output image.").type_image_out ();
 
   OPTIONS
+  + DemodulateOption
   + FFTOption
   + GradientOption
   + MedianOption
@@ -140,15 +152,50 @@ void usage() {
 // clang-format on
 
 void run() {
-  const std::filesystem::path input_path{argument[0]};
-  const std::filesystem::path output_path{argument[2]};
-
-  const size_t filter_index = argument[1];
+  const FilterType filter_index = MR::Enum::from_name<FilterType>(argument[1]);
+  const std::string filter_name = MR::Enum::lowercase_name(filter_index);
 
   switch (filter_index) {
 
+  // Phase demodulation
+  case FilterType::DEMODULATE: {
+
+    Header H = Header::open(argument[0]);
+    if (!H.datatype().is_complex())
+      throw Exception("Phase demodulation filter applicable to complex images only");
+
+    std::vector<size_t> axes;
+    auto opt = get_options("axes");
+    if (!opt.empty()) {
+      axes = parse_ints<size_t>(opt[0][0]);
+      for (const auto axis : axes)
+        if (axis >= H.ndim())
+          throw Exception("axis provided with -axes option is out of range");
+    } else {
+      auto slice_encoding_direction_it = H.keyval().find("SliceEncodingDirection");
+      if (slice_encoding_direction_it == H.keyval().end()) {
+        axes = {0, 1, 2};
+      } else {
+        auto slice_encoding_direction_onehot = Metadata::BIDS::axisid2vector(slice_encoding_direction_it->second);
+        axes.reserve(2);
+        for (size_t axis = 0; axis != 3; ++axis) {
+          if (slice_encoding_direction_onehot[axis] == 0)
+            axes.push_back(axis);
+        }
+      }
+    }
+    INFO("Selected axes for demodulation: " + join(axes, ","));
+
+    auto input = H.get_image<cdouble>();
+    Filter::Demodulate filter(input, axes, !get_options("linear").empty());
+    auto output = Image<cdouble>::create(argument[2], H);
+    filter(input, output, false);
+
+    break;
+  }
+
   // FFT
-  case 0: {
+  case FilterType::FFT: {
     // FIXME Had to use cdouble throughout; seems to fail at compile time even trying to
     //   convert between cfloat and cdouble...
     auto input = Image<cdouble>::open(input_path);
@@ -188,7 +235,9 @@ void run() {
 
     if (magnitude) {
       ThreadedLoop(out).run(
-          [](decltype(out) &a, decltype(output) &b) { a.value() = abs(cdouble(b.value())); }, output, out);
+          [](decltype(out) &a, decltype(output) &b) { a.value() = MR::abs(static_cast<cdouble>(b.value())); },
+          output,
+          out);
     }
     if (!get_options("rescale").empty()) {
       scale = std::sqrt(scale);
@@ -199,8 +248,8 @@ void run() {
   }
 
   // Gradient
-  case 1: {
-    auto input = Image<float>::open(input_path);
+  case FilterType::GRADIENT: {
+    auto input = Image<float>::open(argument[0]);
     Filter::Gradient filter(input, !get_options("magnitude").empty());
 
     std::vector<default_type> stdev;
@@ -218,8 +267,8 @@ void run() {
         stdev[dim] = filter.spacing(dim);
     }
     filter.compute_wrt_scanner(!get_options("scanner").empty());
-    filter.set_message(std::string("applying ") + std::string(argument[1]) + " filter" + //
-                       " to image " + input_path.string());
+    filter.set_message(std::string("applying ") + filter_name + " filter" + //
+                       " to image " + input.name());                        //
     Stride::set_from_command_line(filter);
     filter.set_stdev(stdev);
     auto output = Image<float>::create(output_path, filter);
@@ -228,15 +277,15 @@ void run() {
   }
 
   // Median
-  case 2: {
-    auto input = Image<float>::open(input_path);
+  case FilterType::MEDIAN: {
+    auto input = Image<float>::open(argument[0]);
     Filter::Median filter(input);
 
     auto opt = get_options("extent");
     if (!opt.empty())
       filter.set_extent(parse_ints<uint32_t>(opt[0][0]));
-    filter.set_message(std::string("applying ") + std::string(argument[1]) + " filter" + //
-                       " to image " + input_path.string());
+    filter.set_message(std::string("applying ") + filter_name + " filter" + //
+                       " to image " + input.name());                        //
     Stride::set_from_command_line(filter);
 
     auto output = Image<float>::create(output_path, filter);
@@ -245,8 +294,8 @@ void run() {
   }
 
   // Smooth
-  case 3: {
-    auto input = Image<float>::open(input_path);
+  case FilterType::SMOOTH: {
+    auto input = Image<float>::open(argument[0]);
     Filter::Smooth filter(input);
 
     auto opt = get_options("stdev");
@@ -265,8 +314,8 @@ void run() {
     opt = get_options("extent");
     if (!opt.empty())
       filter.set_extent(parse_ints<uint32_t>(opt[0][0]));
-    filter.set_message(std::string("applying ") + std::string(argument[1]) + " filter" + //
-                       " to image " + input_path.string());
+    filter.set_message(std::string("applying ") + filter_name + " filter" + //
+                       " to image " + input.name());                        //
     Stride::set_from_command_line(filter);
 
     auto output = Image<float>::create(output_path, filter);
@@ -276,15 +325,15 @@ void run() {
   }
 
   // Normalisation
-  case 4: {
-    auto input = Image<float>::open(input_path);
+  case FilterType::NORMALISE: {
+    auto input = Image<float>::open(argument[0]);
     Filter::Normalise filter(input);
 
     auto opt = get_options("extent");
     if (!opt.empty())
       filter.set_extent(parse_ints<uint32_t>(opt[0][0]));
-    filter.set_message(std::string("applying ") + std::string(argument[1]) + " filter" + //
-                       " to image " + input_path.string());
+    filter.set_message(std::string("applying ") + filter_name + " filter" + //
+                       " to image " + input.name());                        //
     Stride::set_from_command_line(filter);
 
     auto output = Image<float>::create(output_path, filter);
@@ -293,18 +342,18 @@ void run() {
   }
 
   // Zclean
-  case 5: {
-    auto input = Image<float>::open(input_path);
+  case FilterType::ZCLEAN: {
+    auto input = Image<float>::open(argument[0]);
     Filter::ZClean filter(input);
 
     auto opt = get_options("maskin");
     if (opt.empty())
-      throw Exception(std::string(argument[1]) + " filter requires initial mask");
+      throw Exception(filter_name + " filter requires initial mask");
     Image<float> maskin = Image<float>::open(opt[0][0]);
     check_dimensions(maskin, input, 0, 3);
 
-    filter.set_message(std::string("applying ") + std::string(argument[1]) + " filter" + //
-                       " to image " + input_path.string());
+    filter.set_message(std::string("applying ") + filter_name + " filter" + //
+                       " to image " + input.name());                        //
     Stride::set_from_command_line(filter);
 
     filter.set_voxels_to_bridge(get_option_value("bridge", 4));

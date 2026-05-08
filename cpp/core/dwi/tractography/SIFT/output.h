@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,6 +17,7 @@
 #pragma once
 
 #include <filesystem>
+#include <vector>
 
 #include "header.h"
 #include "image.h"
@@ -29,10 +30,6 @@
 #include "file/ofstream.h"
 
 #include "math/SH.h"
-
-#include "fixel/legacy/fixel_metric.h"
-#include "fixel/legacy/image.h"
-#include "fixel/legacy/keys.h"
 
 namespace MR::DWI::Tractography::SIFT {
 
@@ -47,7 +44,7 @@ template <class Fixel> void ModelBase<Fixel>::output_target_voxel(const std::fil
         value += i().get_FOD();
       out.value() = value;
     } else {
-      out.value() = NAN;
+      out.value() = NaNF;
     }
   }
 }
@@ -77,7 +74,7 @@ template <class Fixel> void ModelBase<Fixel>::output_target_sh(const std::filesy
         out.value() = sum[out.index(3)];
     } else {
       for (auto l = Loop(3)(out); l; ++l)
-        out.value() = NAN;
+        out.value() = NaNF;
     }
   }
 }
@@ -100,7 +97,7 @@ template <class Fixel> void ModelBase<Fixel>::output_tdi_voxel(const std::filesy
         value += i().get_TD();
       out.value() = value * current_mu;
     } else {
-      out.value() = NaN;
+      out.value() = NaNF;
     }
   }
 }
@@ -118,7 +115,7 @@ template <class Fixel> void ModelBase<Fixel>::output_tdi_null_lobes(const std::f
       }
       out.value() = value * current_mu;
     } else {
-      out.value() = NaN;
+      out.value() = NaNF;
     }
   }
 }
@@ -149,7 +146,7 @@ template <class Fixel> void ModelBase<Fixel>::output_tdi_sh(const std::filesyste
       }
     } else {
       for (auto l = Loop(3)(out); l; ++l)
-        out.value() = NaN;
+        out.value() = NaNF;
     }
   }
 }
@@ -176,7 +173,7 @@ void ModelBase<Fixel>::output_errors_voxel(const std::filesystem::path &dirpath,
       default_type max_abs_diff = 0.0, diff = 0.0, cost = 0.0;
       for (typename Fixel_map<Fixel>::ConstIterator i = begin(v); i; ++i) {
         const default_type this_diff = i().get_diff(current_mu);
-        max_abs_diff = std::max(max_abs_diff, abs(this_diff));
+        max_abs_diff = std::max(max_abs_diff, std::fabs(this_diff));
         diff += this_diff;
         cost += i().get_cost(current_mu) * i().get_weight();
       }
@@ -184,9 +181,9 @@ void ModelBase<Fixel>::output_errors_voxel(const std::filesystem::path &dirpath,
       out_diff.value() = diff;
       out_cost.value() = cost;
     } else {
-      out_max_abs_diff.value() = NaN;
-      out_diff.value() = NaN;
-      out_cost.value() = NaN;
+      out_max_abs_diff.value() = NaNF;
+      out_diff.value() = NaNF;
+      out_cost.value() = NaNF;
     }
   }
 }
@@ -210,7 +207,8 @@ template <class Fixel> void ModelBase<Fixel>::output_scatterplot(const std::file
   out << "# " << App::command_history_string << "\n";
   const default_type current_mu = mu();
   out << "#Fibre density,Track density (unscaled),Track density (scaled),Weight,\n";
-  for (typename std::vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i)
+  typename std::vector<Fixel>::const_iterator i = fixels.begin(); // Skip first null fixel in DWI::Fixel_map<>
+  for (++i; i != fixels.end(); ++i)
     out << str(i->get_FOD()) << "," << str(i->get_TD()) << "," << str(i->get_TD() * current_mu) << ","
         << str(i->get_weight()) << ",\n";
   out.close();

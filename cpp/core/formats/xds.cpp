@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -13,6 +13,8 @@
  *
  * For more details, see http://www.mrtrix.org/.
  */
+
+#include <array>
 
 #include "file/entry.h"
 #include "file/ofstream.h"
@@ -37,7 +39,7 @@ std::unique_ptr<ImageIO::Base> XDS::read(Header &H) const {
   std::ifstream in(hdr_path);
   if (!in)
     throw Exception("error reading header file \"" + hdr_path.string() + "\": " + strerror(errno));
-  int dim[3];
+  std::array<int, 3> dim{};
   in >> dim[0] >> dim[1] >> dim[2] >> BE;
   H.size(0) = dim[1];
   H.size(1) = dim[0];
@@ -109,18 +111,17 @@ bool XDS::check(Header &H, size_t num_axes) const {
 }
 
 std::unique_ptr<ImageIO::Base> XDS::create(Header &H) const {
-  const std::filesystem::path &hpath = static_cast<const Header &>(H).path();
-  const std::filesystem::path hdr_path = std::filesystem::path(hpath).replace_extension("hdr");
+  const std::filesystem::path hdr_path = H.path().replace_extension(".hdr");
 
   File::OFStream out(hdr_path);
   out << H.size(1) << " " << H.size(0) << " " << H.size(3) << " " << (H.datatype().is_little_endian() ? 1 : 0) << "\n";
   out.close();
 
   std::unique_ptr<ImageIO::Default> io_handler(new ImageIO::Default(H));
-  File::OFStream out_dat(hpath);
+  File::OFStream out_dat(H.path());
   out_dat.close();
-  std::filesystem::resize_file(hpath, footprint(H, "11 1"));
-  io_handler->files.push_back(File::Entry(hpath));
+  std::filesystem::resize_file(H.path(), footprint(H, "11 1"));
+  io_handler->files.push_back(File::Entry(H.path()));
 
   return io_handler;
 }

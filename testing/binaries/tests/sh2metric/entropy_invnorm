@@ -1,0 +1,8 @@
+#!/bin/bash
+# Evaluation of the operation of the "entropy" operation for the sh2metric command
+#   when using the `-invnorm` option,
+#   which both normalises to the [0.0, 1.0] range
+#   and computes the complement of that value
+sh2metric amp2sh/out.mif entropy - -invnorm | \
+    mrcalc 1 - -sub - | \
+    testing_diff_image - sh2metric/entropy_normalised.mif -frac 0.1

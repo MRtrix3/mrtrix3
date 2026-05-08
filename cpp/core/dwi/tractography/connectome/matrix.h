@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -64,7 +64,7 @@ public:
 
   void finalize();
 
-  void error_check(const std::set<node_t> &);
+  void error_check(const std::vector<node_t> &);
 
   void write_assignments(const std::filesystem::path &) const;
 

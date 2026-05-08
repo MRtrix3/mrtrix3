@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -188,7 +188,7 @@ template <class Fixel> void Model<Fixel>::remove_excluded_fixels() {
 
       for (typename Fixel_map<Fixel>::Iterator i = begin(v); i; ++i) {
         if ((!remove_untracked_fixels || i().get_TD()) && (i().get_FOD() > min_fibre_density)) {
-          fixel_index_mapping[size_t(i)] = new_fixels.size();
+          fixel_index_mapping[static_cast<size_t>(i)] = new_fixels.size();
           new_fixels.push_back(i());
           FOD_sum += i().get_weight() * i().get_FOD();
         }
@@ -208,7 +208,7 @@ template <class Fixel> void Model<Fixel>::remove_excluded_fixels() {
 
   fixels.swap(new_fixels);
 
-  TrackIndexRangeWriter writer(SIFT_TRACK_INDEX_BUFFER_SIZE, num_tracks(), "Removing excluded fixels");
+  TrackIndexRangeWriter writer(TrackIndexRangeWriter::default_batch_size, num_tracks(), "Removing excluded fixels");
   FixelRemapper remapper(*this, fixel_index_mapping);
   Thread::run_queue(writer, TrackIndexRange(), Thread::multi(remapper));
 

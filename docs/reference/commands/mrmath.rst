@@ -16,7 +16,7 @@ Usage
     mrmath [ options ]  input [ input ... ] operation output
 
 -  *input*: the input image(s).
--  *operation*: the operation to apply; one of: mean, median, sum, product, rms, norm, var, std, min, max, absmax, magmax.
+-  *operation*: the operation to apply; options are: mean, median, sum, product, rms, norm, var, std, min, max, absmax, magmax, shannons, nats, hartleys.
 -  *output*: the output image.
 
 Description
@@ -24,7 +24,9 @@ Description
 
 Supported operations are:
 
-mean, median, sum, product, rms (root-mean-square value), norm (vector 2-norm), var (unbiased variance), std (unbiased standard deviation), min, max, absmax (maximum absolute value), magmax (value with maximum absolute value, preserving its sign).
+mean, median, sum, product, rms (root-mean-square value), norm (vector 2-norm), var (unbiased variance), std (unbiased standard deviation), min, max, absmax (maximum absolute value), magmax (value with maximum absolute value, preserving its sign), shannons (Shannon entropy in bits, using log base 2), nats (Shannon entropy in nats, using natural logarithm), hartleys (Shannon entropy in hartleys, using log base 10).
+
+For entropy operations, the input values are first normalised to form a probability distribution (non-finite and negative values are treated as zero), and the Shannon entropy of this distribution is then computed using the specified logarithmic base.
 
 This command is used to traverse either along an image axis, or across a set of input images, calculating some statistic from the values along each traversal. If you are seeking to instead perform mathematical calculations that are done independently for each voxel, pleaase see the 'mrcalc' command.
 
@@ -62,7 +64,7 @@ Standard options
 
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
--  **-debug** display debugging messages.
+-  **-debug** display debugging messages & debug input data.
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
@@ -85,7 +87,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** J-Donald Tournier (jdtournier@gmail.com)
 
-**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2026 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

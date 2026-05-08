@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,6 +15,7 @@
  */
 
 #include "command.h"
+#include "enum.h"
 #include "header.h"
 #include "image.h"
 #include "image_helpers.h"
@@ -22,6 +23,7 @@
 #include "types.h"
 
 #include "connectome/connectome.h"
+#include "connectome/validate.h"
 
 #include <filesystem>
 #include <iomanip>
@@ -29,7 +31,7 @@
 using namespace MR;
 using namespace App;
 
-const std::vector<std::string> field_choices = {"mass", "centre"};
+enum class FieldChoice { MASS, CENTRE };
 
 // clang-format off
 void usage() {
@@ -43,8 +45,8 @@ void usage() {
 
   OPTIONS
   + Option ("output", "output only the field specified;"
-                      " options are: " + join(field_choices, ","))
-    + Argument ("choice").type_choice (field_choices)
+                      " options are: " + MR::Enum::join<FieldChoice>() + ".")
+    + Argument ("choice").type_choice<FieldChoice>()
 
   + Option ("voxelspace", "report parcel centres of mass in voxel space"
                           " rather than scanner space");
@@ -57,13 +59,12 @@ using vector_type = Eigen::Array<default_type, Eigen::Dynamic, 1>;
 using matrix_type = Eigen::Matrix<default_type, Eigen::Dynamic, 3>;
 
 void run() {
-  const std::filesystem::path input_path{argument[0]};
-
-  Header H = Header::open(input_path);
+  Header H = Header::open(argument[0]);
   if (H.ndim() > 3)
     throw Exception("Command does not accept images with more than 3 dimensions");
-  Connectome::check(H);
+  Connectome::validate_label_header(H);
   Image<node_t> image = H.get_image<node_t>();
+  Connectome::debug_validate_label_image(image);
 
   matrix_type coms;
   vector_type masses;
@@ -87,11 +88,11 @@ void run() {
 
   auto opt = get_options("output");
   if (!opt.empty()) {
-    switch (int(opt[0][0])) {
-    case 0:
+    switch (MR::Enum::from_name<FieldChoice>(opt[0][0])) {
+    case FieldChoice::MASS:
       std::cout << masses;
       break;
-    case 1:
+    case FieldChoice::CENTRE:
       std::cout << coms;
       break;
     default:
@@ -105,7 +106,7 @@ void run() {
   std::stringstream com_stringstream;
   com_stringstream << coms.format(fmt);
   const std::vector<std::string> com_strings = split(com_stringstream.str(), "\n");
-  assert(com_strings.size() == size_t(masses.size()));
+  assert(com_strings.size() == static_cast<size_t>(masses.size()));
 
   // Find width of first non-empty string, in order to centralise header label
   size_t com_width = 0;

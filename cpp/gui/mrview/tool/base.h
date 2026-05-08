@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,19 +21,18 @@
 #include "mrview/window.h"
 #include "projection.h"
 
-#define LAYOUT_SPACING 3
-
 #define __STR__(x) #x
 #define __STR(x) __STR__(x)
 
-namespace MR {
-namespace App {
+namespace MR::App {
 class OptionList;
 class Options;
-} // namespace App
+} // namespace MR::App
 
-namespace GUI::MRView::Tool {
+namespace MR::GUI::MRView::Tool {
 class Base;
+
+constexpr ssize_t layout_spacing = 3;
 
 class CameraInteractor {
 public:
@@ -94,8 +93,8 @@ public:
 
   protected:
     void init() {
-      setSpacing(LAYOUT_SPACING);
-      setContentsMargins(LAYOUT_SPACING, LAYOUT_SPACING, LAYOUT_SPACING, LAYOUT_SPACING);
+      setSpacing(layout_spacing);
+      setContentsMargins(layout_spacing, layout_spacing, layout_spacing, layout_spacing);
     }
   };
 
@@ -106,8 +105,8 @@ public:
 
   protected:
     void init() {
-      setSpacing(LAYOUT_SPACING);
-      setContentsMargins(LAYOUT_SPACING, LAYOUT_SPACING, LAYOUT_SPACING, LAYOUT_SPACING);
+      setSpacing(layout_spacing);
+      setContentsMargins(layout_spacing, layout_spacing, layout_spacing, layout_spacing);
     }
   };
 
@@ -118,8 +117,8 @@ public:
 
   protected:
     void init() {
-      setSpacing(LAYOUT_SPACING);
-      setContentsMargins(LAYOUT_SPACING, LAYOUT_SPACING, LAYOUT_SPACING, LAYOUT_SPACING);
+      setSpacing(layout_spacing);
+      setContentsMargins(layout_spacing, layout_spacing, layout_spacing, layout_spacing);
     }
   };
 
@@ -130,8 +129,8 @@ public:
 
   protected:
     void init() {
-      setSpacing(LAYOUT_SPACING);
-      setContentsMargins(LAYOUT_SPACING, LAYOUT_SPACING, LAYOUT_SPACING, LAYOUT_SPACING);
+      setSpacing(layout_spacing);
+      setContentsMargins(layout_spacing, layout_spacing, layout_spacing, layout_spacing);
     }
   };
 
@@ -159,11 +158,11 @@ inline Dock::~Dock() { delete tool; }
 class __Action__ : public QAction {
   Q_OBJECT
 public:
-  __Action__(QActionGroup *parent, const char *const name, const char *const description, int index)
-      : QAction(name, parent), dock(nullptr) {
+  __Action__(QActionGroup *parent, std::string_view name, std::string_view description, int index)
+      : QAction(std::string(name).c_str(), parent), dock(nullptr) {
     setCheckable(true);
     setShortcut(tr(std::string("Ctrl+F" + str(index)).c_str()));
-    setStatusTip(tr(description));
+    setStatusTip(tr(std::string(description).c_str()));
   }
 
   virtual ~__Action__() { delete dock; }
@@ -186,8 +185,8 @@ template <class T> Dock *create(const QString &text, bool floating) {
 
 template <class T> class Action : public __Action__ {
 public:
-  Action(QActionGroup *parent, const char *const name, const char *const description, int index)
-      : __Action__(parent, name, description, index) {}
+  Action(QActionGroup *parent, std::string_view name, std::string_view description, int index)
+      : __Action__(parent, std::string(name).c_str(), std::string(description).c_str(), index) {}
 
   virtual Dock *create(bool floating) {
     dock = Tool::create<T>(this->text(), floating);
@@ -195,6 +194,4 @@ public:
   }
 };
 
-} // namespace GUI::MRView::Tool
-
-} // namespace MR
+} // namespace MR::GUI::MRView::Tool

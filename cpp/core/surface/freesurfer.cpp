@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -118,8 +118,8 @@ void read_label(const std::filesystem::path &path, VertexList &vertices, Scalar 
   std::string line;
   std::getline(in, line);
   if (line.substr(0, 13) != "#!ascii label")
-    throw Exception("Error parsing FreeSurfer label file \"" + path.filename().string() +
-                    "\": Bad first line identifier");
+    throw Exception("Error parsing FreeSurfer label file \"" + path.filename().string() + "\":" + //
+                    " bad first line identifier");                                                //
   std::getline(in, line);
   uint32_t num_vertices = 0;
   try {
@@ -132,7 +132,10 @@ void read_label(const std::filesystem::path &path, VertexList &vertices, Scalar 
   for (size_t i = 0; i != num_vertices; ++i) {
     std::getline(in, line);
     uint32_t index = std::numeric_limits<uint32_t>::max();
-    default_type x = NaN, y = NaN, z = NaN, value = NaN;
+    default_type x = NaN;
+    default_type y = NaN;
+    default_type z = NaN;
+    default_type value = NaN;
     sscanf(line.c_str(), "%u %lf %lf %lf %lf", &index, &x, &y, &z, &value);
     if (index == std::numeric_limits<uint32_t>::max())
       throw Exception("Error parsing FreeSurfer label file \"" + path.filename().string() + "\": Malformed line");
@@ -141,14 +144,14 @@ void read_label(const std::filesystem::path &path, VertexList &vertices, Scalar 
       vertices.resize(index + 1, Vertex(NaN, NaN, NaN));
     }
     if (std::isfinite(scalar[index]))
-      throw Exception("Error parsing FreeSurfer label file \"" + path.filename().string() + "\": Duplicated index (" +
-                      str(scalar[index]) + ")");
+      throw Exception("Error parsing FreeSurfer label file \"" + path.filename().string() + "\":" + //
+                      " duplicated index (" + str(scalar[index]) + ")");                            //
     scalar[index] = value;
     vertices[index] = Vertex(x, y, z);
   }
 
   if (!in.good())
-    throw Exception("Error parsing FreeSurfer label file \"" + path.filename().string() + "\": End of file reached");
+    throw Exception("Error parsing FreeSurfer label file \"" + path.filename().string() + "\": end of file reached");
   scalar.set_name(path);
 }
 

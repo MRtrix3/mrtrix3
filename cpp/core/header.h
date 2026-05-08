@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,6 +21,7 @@
 #include <map>
 
 #include "app.h"
+#include "axes.h"
 #include "datatype.h"
 #include "debug.h"
 #include "file/mmap.h"
@@ -54,12 +55,9 @@ public:
   };
 
   Header()
-      : transform_(Eigen::Matrix<default_type, 3, 4>::Constant(NaN)),
-        format_(nullptr),
-        offset_(0.0),
-        scale_(1.0),
-        realign_perm_{{0, 1, 2}},
-        realign_flip_{{false, false, false}} {}
+      : transform_(Eigen::Matrix<default_type, 3, 4>::Constant(NaN)), //
+        offset_(0.0),                                                 //
+        scale_(1.0) {}                                                //
 
   explicit Header(Header &&H) noexcept
       : axes_(std::move(H.axes_)),
@@ -72,8 +70,7 @@ public:
         datatype_(std::move(H.datatype_)),
         offset_(H.offset_),
         scale_(H.scale_),
-        realign_perm_{{0, 1, 2}},
-        realign_flip_{{false, false, false}} {}
+        realignment_(H.realignment_) {}
 
   Header &operator=(Header &&H) noexcept {
     axes_ = std::move(H.axes_);
@@ -86,8 +83,7 @@ public:
     datatype_ = std::move(H.datatype_);
     offset_ = H.offset_;
     scale_ = H.scale_;
-    realign_perm_ = H.realign_perm_;
-    realign_flip_ = H.realign_flip_;
+    realignment_ = H.realignment_;
     return *this;
   }
 
@@ -104,8 +100,7 @@ public:
         datatype_(H.datatype_),
         offset_(datatype().is_integer() ? H.offset_ : 0.0),
         scale_(datatype().is_integer() ? H.scale_ : 1.0),
-        realign_perm_(H.realign_perm_),
-        realign_flip_(H.realign_flip_) {}
+        realignment_(H.realignment_) {}
 
   //! copy constructor from type of class derived from Header
   /*! This invokes the standard Header(const Header&) copy-constructor. */
@@ -114,19 +109,18 @@ public:
   Header(const HeaderType &original) : Header(static_cast<const Header &>(original)) {}
 
   //! copy constructor from type of class other than Header
-  /*! This copies all relevant parameters over from \a original. */
+  /*! This copies all relevant parameters over from \a original.
+   * Note that information about transform realignment on image load will not be available.
+   */
   template <class HeaderType,
             typename std::enable_if<!std::is_base_of<Header, HeaderType>::value, void *>::type = nullptr>
   Header(const HeaderType &original)
       : transform_(original.transform()),
         name_(original.name()),
         keyval_(original.keyval()),
-        format_(nullptr),
         datatype_(DataType::from<typename HeaderType::value_type>()),
         offset_(0.0),
-        scale_(1.0),
-        realign_perm_{{0, 1, 2}},
-        realign_flip_{{false, false, false}} {
+        scale_(1.0) {
     axes_.resize(original.ndim());
     for (size_t n = 0; n < original.ndim(); ++n) {
       size(n) = original.size(n);
@@ -148,8 +142,7 @@ public:
     datatype_ = H.datatype_;
     offset_ = datatype().is_integer() ? H.offset_ : 0.0;
     scale_ = datatype().is_integer() ? H.scale_ : 1.0;
-    realign_perm_ = H.realign_perm_;
-    realign_flip_ = H.realign_flip_;
+    realignment_ = H.realignment_;
     io.reset();
     return *this;
   }
@@ -177,12 +170,11 @@ public:
     name_ = original.name();
     path_.clear();
     keyval_ = original.keyval();
-    format_ = nullptr;
+    format_.clear();
     datatype_ = DataType::from<typename HeaderType::value_type>();
     offset_ = 0.0;
     scale_ = 1.0;
-    realign_perm_ = {{0, 1, 2}};
-    realign_flip_ = {{false, false, false}};
+    realignment_ = Realignment();
     io.reset();
     return *this;
   }
@@ -201,23 +193,54 @@ public:
   bool operator!() const { return !valid(); }
 
   //! get the name of the image
-  const std::string &name() const { return name_; }
+  std::string name() const { return name_; }
   //! get/set the name of the image
   std::string &name() { return name_; }
 
   //! return the format of the image
-  const char *format() const { return format_; }
+  std::string format() const { return format_; }
 
   //! get the 4x4 affine transformation matrix mapping image to world coordinates
   const transform_type &transform() const { return transform_; }
   //! get/set the 4x4 affine transformation matrix mapping image to world coordinates
   transform_type &transform() { return transform_; }
 
+  // Class to store all information relating to internal transform realignment
+  class Realignment {
+  public:
+    // From one image space to another image space;
+    //   linear component is permutations & flips only,
+    //   transformation is in voxel count,
+    //   therefore can store as integer
+    using applied_transform_type = Eigen::Matrix<int, 3, 3>;
+    Realignment();
+    Realignment(Header &);
+    bool is_identity() const { return shuffle_.is_identity(); }
+    bool valid() const { return shuffle_.valid(); }
+    const Axes::permutations_type &permutations() const { return shuffle_.permutations; }
+    size_t permutation(const size_t axis) const {
+      assert(axis < 3);
+      return shuffle_.permutations[axis];
+    }
+    const Axes::flips_type &flips() const { return shuffle_.flips; }
+    bool flip(const size_t axis) const {
+      assert(axis < 3);
+      return shuffle_.flips[axis];
+    }
+    const transform_type &orig_transform() const { return orig_transform_; }
+    const applied_transform_type &applied_transform() const { return applied_transform_; }
+    KeyValues &orig_keyval() { return orig_keyval_; }
+
+  private:
+    Axes::Shuffle shuffle_;
+    transform_type orig_transform_;
+    Stride::List orig_strides_;
+    applied_transform_type applied_transform_;
+    KeyValues orig_keyval_;
+    friend class Header;
+  };
   //! get information on how the transform was modified on image load
-  void realignment(std::array<size_t, 3> &perm, std::array<bool, 3> &flip) const {
-    perm = realign_perm_;
-    flip = realign_flip_;
-  }
+  const Realignment &realignment() const { return realignment_; }
 
   class NDimProxy {
   public:
@@ -395,13 +418,14 @@ public:
   const KeyValues &keyval() const { return keyval_; }
   //! get/set generic key/value text attributes
   KeyValues &keyval() { return keyval_; }
-  //! merge key/value entries from another header
-  void merge_keyval(const Header &H);
+  //! merge key/value entries from another dictionary
+  void merge_keyval(const KeyValues &);
 
   static Header open(const std::filesystem::path &image_path);
-  static Header
-  create(const std::filesystem::path &image_name, const Header &template_header, bool add_to_command_history = true);
-  static Header scratch(const Header &template_header, const std::string &label = "scratch image");
+  static Header create(const std::filesystem::path &image_name, //
+                       const Header &template_header,           //
+                       bool add_to_command_history = true);     //
+  static Header scratch(const Header &template_header, std::string_view label = "scratch image");
 
   /*! use to prevent automatic realignment of transform matrix into
    * near-standard (RAS) coordinate system. */
@@ -418,7 +442,7 @@ protected:
   std::string name_;
   std::filesystem::path path_;
   KeyValues keyval_;
-  const char *format_;
+  std::string format_;
 
   //! additional information relevant for images stored on file
   std::unique_ptr<ImageIO::Base> io;
@@ -434,8 +458,7 @@ protected:
   void realign_transform();
   /*! store information about how image was
    * realigned via realign_transform(). */
-  std::array<size_t, 3> realign_perm_;
-  std::array<bool, 3> realign_flip_;
+  Realignment realignment_;
 
   void sanitise_voxel_sizes();
   void sanitise_transform();

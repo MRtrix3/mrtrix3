@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -18,6 +18,7 @@
 #include "command.h"
 #include "fixel/fixel.h"
 #include "fixel/helpers.h"
+#include "fixel/validate.h"
 #include "image.h"
 
 #include <filesystem>
@@ -65,14 +66,12 @@ std::vector<Eigen::Vector3d> get(Image<float> &data) {
 }
 
 void run() {
-  const std::filesystem::path input_path{argument[0]};
-  const std::filesystem::path output_path{argument[1]};
-
   std::string dataname = get_option_value<std::string>("dataname", "");
 
-  auto input_header = Header::open(input_path);
-  Peaks::check(input_header);
+  auto input_header = Header::open(argument[0]);
+  Peaks::validate_header(input_header);
   auto input_directions = input_header.get_image<float>();
+  Peaks::debug_validate_image(input_directions);
   uint32_t nfixels = 0;
   bool all_unit_norm = true;
   for (auto l = Loop("counting fixels in input image", 0, 3)(input_directions); l; ++l) {
@@ -98,7 +97,7 @@ void run() {
          " will create additional fixel data file \"" + dataname + "\""); //
   }
 
-  Fixel::check_fixel_directory(output_path, true, true);
+  Fixel::check_fixel_directory(argument[1], true, true);
 
   // Easiest if we first make the index image
   const std::filesystem::path index_path = (output_path / "index.mif");
@@ -113,12 +112,12 @@ void run() {
   Header directions_header = Fixel::directions_header_from_index(index_header);
   directions_header.datatype() = DataType::Float32;
   directions_header.datatype().set_byte_order_native();
-  auto directions_image = Image<float>::create((output_path / "directions.mif"), directions_header);
+  auto directions_image = Image<float>::create(argument[1] / "directions.mif", directions_header);
 
   Image<float> amplitudes_image;
   if (!dataname.empty()) {
     Header amplitudes_header = Fixel::data_header_from_index(index_header);
-    amplitudes_image = Image<float>::create((output_path / dataname), amplitudes_header);
+    amplitudes_image = Image<float>::create(argument[1] / dataname, amplitudes_header);
   }
 
   uint32_t output_index = 0;

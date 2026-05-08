@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,6 +17,7 @@
 #include <sstream>
 
 #include "command.h"
+#include "dwi/directions/validate.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
 #include "file/matrix.h"
@@ -48,7 +49,7 @@ void usage() {
       " If 5D, each set of coefficients along the 5th dimension is understood"
       " to correspond to a different shell."
     + "The directions can be provided as:\n"
-      "- a 2-column ASCII text file containing azimuth / elevation pairs"
+      "- a 2-column ASCII text file containing azimuth / inclination pairs"
       " (eg. as produced by dirgen)\n"
       "- a 3-column ASCII text file containing x, y, z Cartesian direction vectors"
       " (eg. as produced by dirgen -cart)\n"
@@ -142,16 +143,13 @@ void run() {
 
   Eigen::MatrixXd directions;
   try {
-    directions = DWI::Directions::load_spherical(directions_path);
+    directions = File::Matrix::load_matrix(argument[1]);
+    DWI::Directions::validate(directions, argument[1], true);
+    if (directions.cols() == 3)
+      directions = Math::Sphere::cartesian2spherical(directions);
   } catch (Exception &E) {
-    try {
-      directions = File::Matrix::load_matrix<double>(directions_path);
-      if (directions.cols() < 4)
-        throw("unable to interpret file \"" + directions_path.string() + "\" as a directions or gradient file");
-    } catch (Exception &E) {
-      auto header = Header::open(directions_path);
-      directions = DWI::get_DW_scheme(header);
-    }
+    auto header = Header::open(argument[1]);
+    directions = DWI::get_DW_scheme(header);
   }
 
   if (!directions.size())
@@ -196,7 +194,7 @@ void run() {
     if (shells.count() > 1) {
       if (sh_data.ndim() < 5)
         throw Exception("multiple shells detected in gradient scheme, but only one shell in input data");
-      if (sh_data.size(4) != ssize_t(shells.count()))
+      if (sh_data.size(4) != static_cast<ssize_t>(shells.count()))
         throw Exception("number of shells differs between gradient scheme and input data");
     } else if (!(sh_data.ndim() == 4 || (sh_data.ndim() > 4 && (sh_data.size(4) != 1))))
       throw Exception("number of shells differs between gradient scheme and input data");

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -55,7 +55,7 @@ public:
                   const std::vector<node_t> &,
                   const bool,
                   const node_t,
-                  const std::vector<Eigen::Vector3f> &);
+                  const std::vector<Eigen::Vector3d> &);
 
   bool operator()(const Tractography::Connectome::Streamline_nodepair &);
   bool operator()(const Tractography::Connectome::Streamline_nodelist &);

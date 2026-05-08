@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -25,6 +25,7 @@
 #include "fixel/fixel.h"
 #include "fixel/helpers.h"
 #include "fixel/loop.h"
+#include "fixel/validate.h"
 
 #include <filesystem>
 
@@ -39,7 +40,7 @@ void usage() {
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)"
            " and David Raffelt (david.raffelt@florey.edu.au)";
 
-  SYNOPSIS = "Convert a fixel-based sparse-data image into an spherical harmonic image";
+  SYNOPSIS = "Generate spherical harmonics decompositions that mimic the content of a fixel data file";
 
   DESCRIPTION
   + "This command generates spherical harmonic data from fixels"
@@ -63,13 +64,11 @@ void usage() {
 // clang-format on
 
 void run() {
-  const std::filesystem::path fixel_input_path{argument[0]};
-  const std::filesystem::path sh_output_path{argument[1]};
-
-  auto in_data_image = Fixel::open_fixel_data_file<float>(fixel_input_path);
-
-  Header in_index_header = Fixel::find_index_header(Fixel::get_fixel_directory(fixel_input_path));
+  auto in_data_image = Fixel::open_fixel_data_file<float>(argument[0]);
+  Header in_index_header = Fixel::find_index_header(Fixel::get_fixel_directory(argument[0]));
+  Fixel::check_fixel_size(in_index_header, in_data_image);
   auto in_index_image = in_index_header.get_image<index_type>();
+  Fixel::debug_validate_index_image(in_index_image);
   auto in_directions_image =
       Fixel::find_directions_header(Fixel::get_fixel_directory(fixel_input_path)).get_image<float>().with_direct_io();
 

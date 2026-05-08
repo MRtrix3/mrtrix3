@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,8 +15,6 @@
  */
 
 #include "dwi/tractography/connectome/extract.h"
-
-#include "misc/bitset.h"
 
 namespace MR::DWI::Tractography::Connectome {
 
@@ -47,23 +45,20 @@ bool Selector::operator()(const NodePair &nodes) const {
 }
 
 bool Selector::operator()(const std::vector<node_t> &nodes) const {
-  BitSet found(list.size());
+  Eigen::Array<bool, Eigen::Dynamic, 1> found(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(list.size()));
   for (std::vector<node_t>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
     for (size_t i = 0; i != list.size(); ++i)
       if (*n == list[i])
         found[i] = true;
   }
-  if (exact_match)
-    return found.full();
-  else
-    return !found.empty();
+  return exact_match ? found.all() : found.any();
 }
 
 WriterExemplars::WriterExemplars(const Tractography::Properties &properties,
                                  const std::vector<node_t> &nodes,
                                  const bool exclusive,
                                  const node_t first_node,
-                                 const std::vector<Eigen::Vector3f> &COMs)
+                                 const std::vector<Eigen::Vector3d> &COMs)
     : step_size(properties.get_stepsize()) {
   if (!std::isfinite(step_size))
     step_size = 1.0f;
@@ -83,7 +78,10 @@ WriterExemplars::WriterExemplars(const Tractography::Properties &properties,
       for (size_t j = i; j != nodes.size(); ++j) {
         const node_t two = nodes[j];
         selectors.push_back(Selector(one, two));
-        exemplars.push_back(Exemplar(index++, length, std::make_pair(one, two), std::make_pair(COMs[one], COMs[two])));
+        exemplars.push_back(Exemplar(index++,
+                                     length,
+                                     std::make_pair(one, two),
+                                     std::make_pair(COMs[one].cast<float>(), COMs[two].cast<float>())));
       }
     }
   } else {
@@ -94,8 +92,10 @@ WriterExemplars::WriterExemplars(const Tractography::Properties &properties,
         if (std::find(nodes.begin(), nodes.end(), one) != nodes.end() ||
             std::find(nodes.begin(), nodes.end(), two) != nodes.end()) {
           selectors.push_back(Selector(one, two));
-          exemplars.push_back(
-              Exemplar(index++, length, std::make_pair(one, two), std::make_pair(COMs[one], COMs[two])));
+          exemplars.push_back(Exemplar(index++,
+                                       length,
+                                       std::make_pair(one, two),
+                                       std::make_pair(COMs[one].cast<float>(), COMs[two].cast<float>())));
         }
       }
     }
@@ -254,13 +254,13 @@ bool WriterExtraction::operator()(const Connectome::Streamline_nodelist &in) con
   if (exclusive) {
     // Make sure _all_ nodes are within the list of nodes of interest;
     //   if not, don't pass to any of the selectors
-    BitSet in_list(in.get_nodes().size());
+    Eigen::Array<bool, Eigen::Dynamic, 1> in_list(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(in.get_nodes().size()));
     for (std::vector<node_t>::const_iterator i = node_list.begin(); i != node_list.end(); ++i) {
       for (size_t n = 0; n != in.get_nodes().size(); ++n)
         if (*i == in.get_nodes()[n])
           in_list[n] = true;
     }
-    if (!in_list.full()) {
+    if (!in_list.all()) {
       for (size_t i = 0; i != file_count(); ++i)
         writers[i]->skip();
       return true;

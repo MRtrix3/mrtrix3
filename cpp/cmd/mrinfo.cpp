@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,10 +20,11 @@
 
 #include "command.h"
 #include "dwi/gradient.h"
+#include "dwi/shells.h"
 #include "file/json_utils.h"
 #include "header.h"
 #include "image_io/pipe.h"
-#include "phase_encoding.h"
+#include "metadata/phase_encoding.h"
 #include "types.h"
 
 #include <nlohmann/json.hpp>
@@ -80,14 +81,27 @@ void usage() {
       " includes appropriate diffusion gradient vector reorientation)"
 
     + "The -dwgrad, -export_* and -shell_* options"
-    " provide (information about) the diffusion weighting gradient table"
-    " after it has been processed by the MRtrix3 back-end"
-    " (vectors normalised,"
-    " b-values scaled by the square of the vector norm,"
-    " depending on the -bvalue_scaling option)."
-    " To see the raw gradient table information as stored in the image header,"
-    " i.e. without MRtrix3 back-end processing,"
-    " use \"-property dw_scheme\"."
+      " provide (information about) the diffusion weighting gradient table"
+      " after it has been processed by the MRtrix3 back-end"
+      " (vectors normalised,"
+      " b-values scaled by the square of the vector norm,"
+      " depending on the -bvalue_scaling option)."
+      " To see the raw gradient table information as stored in the image header,"
+      " i.e. without MRtrix3 back-end processing,"
+      " use \"-property dw_scheme\"."
+
+    + "The -petable option exports the MRtrix3 internal representation"
+      " of the phase encoding table,"
+      " regardless of whether the relevant metadata are stored"
+      " in the BIDS fields \"PhaseEncodingDirection\""
+      " and \"TotalReadoutTime\" or the MRtrix3-specific \"pe_scheme\"."
+      " The contents of this query should however *not* be provided to FSL tools:"
+      " despite the contents being of the same format,"
+      " the phase encoding directions may be erroneously interpreted."
+      " If extracting phase encoding information to interface with FSL tools,"
+      " use the -export_pe_topup or -export_pe_eddy options."
+      " More information can be found on this issue at:"
+      " https://mrtrix.readthedocs.io/en/" MRTRIX_BASE_VERSION "/concepts/pe_scheme.html"
 
     + DWI::bvalue_scaling_description;
 
@@ -121,8 +135,10 @@ void usage() {
       + Option ("shell_sizes", "list the number of volumes in each shell")
       + Option ("shell_indices", "list the image volumes attributed to each b-value shell")
 
-    + PhaseEncoding::ExportOptions
-      + Option ("petable", "print the phase encoding table")
+    + Metadata::PhaseEncoding::ExportOptions
+      + Option ("petable", "print the MRtrix internal representation"
+                           " of the phase encoding table"
+                           " (see Description)")
 
     + OptionGroup ("Handling of piped images")
       + Option ("nodelete", "don't delete temporary images"
@@ -193,24 +209,24 @@ void print_transform(const Header &header) {
   std::cout << matrix.format(fmt);
 }
 
-void print_properties(const Header &header, const std::string &key, const size_t indent = 0) {
+void print_properties(const Header &header, std::string_view key, const size_t indent = 0) {
   if (lowercase(key) == "all") {
     for (const auto &it : header.keyval()) {
       std::cout << it.first << ": ";
       print_properties(header, it.first, it.first.size() + 2);
     }
   } else {
-    const auto values = header.keyval().find(key);
+    const auto values = header.keyval().find(std::string(key));
     if (values != header.keyval().end()) {
       auto lines = split(values->second, "\n");
-      INFO("showing property " + key + ":");
+      INFO("showing property " + std::string(key) + ":");
       std::cout << lines[0] << "\n";
       for (size_t i = 1; i != lines.size(); ++i) {
         lines[i].insert(0, indent, ' ');
         std::cout << lines[i] << "\n";
       }
     } else {
-      WARN("no \"" + key + "\" entries found in \"" + header.path().string() + "\"");
+      WARN("no \"" + std::string(key) + "\" entries found in \"" + header.name() + "\"");
     }
   }
 }
@@ -257,7 +273,7 @@ void run() {
     ImageIO::Pipe::delete_piped_images = false;
 
   const bool export_grad = check_option_group(GradExportOptions);
-  const bool export_pe = check_option_group(PhaseEncoding::ExportOptions);
+  const bool export_pe = check_option_group(Metadata::PhaseEncoding::ExportOptions);
 
   if (export_grad && argument.size() > 1)
     throw Exception("can only export DW gradient table to file if a single input image is provided");
@@ -305,7 +321,7 @@ void run() {
     if (spacing)
       print_spacing(header);
     if (datatype)
-      std::cout << (header.datatype().specifier() ? header.datatype().specifier() : "invalid") << "\n";
+      std::cout << header.datatype().specifier() << "\n";
     if (strides)
       print_strides(header);
     if (offset)
@@ -315,7 +331,7 @@ void run() {
     if (transform)
       print_transform(header);
     if (petable)
-      std::cout << PhaseEncoding::get_scheme(header) << "\n";
+      std::cout << Metadata::PhaseEncoding::get_scheme(header) << "\n";
 
     for (size_t n = 0; n < properties.size(); ++n)
       print_properties(header, properties[n][0]);
@@ -334,7 +350,7 @@ void run() {
     }
 
     DWI::export_grad_commandline(header);
-    PhaseEncoding::export_commandline(header);
+    Metadata::PhaseEncoding::export_commandline(header);
 
     if (json_keyval)
       File::JSON::write(header, *json_keyval, (argument.size() > 1 ? std::string("") : input_path.string()));

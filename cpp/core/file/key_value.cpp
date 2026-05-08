@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,17 +21,16 @@
 
 namespace MR::File::KeyValue {
 
-void Reader::open(const std::filesystem::path &file, const char *first_line) {
+void Reader::open(const std::filesystem::path &file, std::string_view first_line) {
   filepath.clear();
   DEBUG("reading key/value file \"" + file.string() + "\"...");
-
   in.open(file, std::ios::in | std::ios::binary);
   if (!in)
     throw Exception("failed to open key/value file \"" + file.string() + "\": " + strerror(errno));
-  if (first_line) {
+  if (!first_line.empty()) {
     std::string sbuf;
     getline(in, sbuf);
-    if (sbuf.compare(0, strlen(first_line), first_line)) {
+    if (sbuf.compare(0, first_line.size(), first_line)) {
       in.close();
       throw Exception("invalid first line for key/value file \"" + file.string() + "\"" + //
                       " (expected \"" + first_line + "\")");
@@ -70,10 +69,7 @@ bool Reader::next() {
   return false;
 }
 
-void write(File::OFStream &out,
-           const KeyValues &keyvals,
-           const std::string &prefix,
-           const bool add_to_command_history) {
+void write(File::OFStream &out, const KeyValues &keyvals, std::string_view prefix, const bool add_to_command_history) {
   bool command_history_appended = false;
   for (const auto &keyval : keyvals) {
     const auto lines = split_lines(keyval.second);

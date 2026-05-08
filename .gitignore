@@ -32,7 +32,7 @@
 .__tmp.log
 .check_syntax.tmp
 .check_syntax2.tmp
-build*
+build*/
 CMakeLists.txt.user
 CMakeUserPresets.json
 testing/data/tmp*

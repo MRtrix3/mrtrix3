@@ -1,0 +1,11 @@
+#!/bin/bash
+# Verify basic operation of command
+# Input dataset has been constrained to the positive Z hemisphere;
+#   after dirflip it should be reasonably homogeneously distributed:
+# - Original set is around 0.2
+# - Hemispherically aligned set input here is 0.5
+# - 0.0 is ideal
+
+dirflip dirflip/hemisphere.txt -cartesian tmp.txt -number 100000 -force
+
+(( $(echo $(dirstat tmp.txt -output ASYM) "< 0.1" | bc) ))

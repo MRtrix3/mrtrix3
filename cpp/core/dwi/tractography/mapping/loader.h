@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -27,7 +27,7 @@ namespace MR::DWI::Tractography::Mapping {
 class TrackLoader {
 
 public:
-  TrackLoader(Reader<> &file, const size_t to_load = 0, const std::string &msg = "mapping tracks to image")
+  TrackLoader(Reader<> &file, const size_t to_load = 0, std::string_view msg = "mapping tracks to image")
       : reader(file),
         tracks_to_load(to_load),
         progress(!msg.empty() ? new ProgressBar(msg, tracks_to_load) : nullptr) {}

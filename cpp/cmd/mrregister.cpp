@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -19,6 +19,8 @@
 
 #include "command.h"
 #include "dwi/directions/predefined.h"
+#include "dwi/directions/validate.h"
+#include "enum.h"
 #include "file/matrix.h"
 #include "file/nifti_utils.h"
 #include "filter/reslice.h"
@@ -37,21 +39,29 @@
 #include "registration/nonlinear.h"
 #include "registration/transform/affine.h"
 #include "registration/transform/rigid.h"
+#include "registration/warp/validate.h"
 #include "transform.h"
 
 using namespace MR;
 using namespace App;
 
-#define DEFAULT_TRANSFORMATION_TYPE 5 // affine_nonlinear
-const std::vector<std::string> transformation_choices = {
-    "rigid", "affine", "nonlinear", "rigid_affine", "rigid_nonlinear", "affine_nonlinear", "rigid_affine_nonlinear"};
+enum class transformation_t {
+  RIGID,
+  AFFINE,
+  NONLINEAR,
+  RIGID_AFFINE,
+  RIGID_NONLINEAR,
+  AFFINE_NONLINEAR,
+  RIGID_AFFINE_NONLINEAR
+};
+constexpr transformation_t default_transformation_type = transformation_t::AFFINE_NONLINEAR;
 
 // clang-format off
 const OptionGroup multiContrastOptions =
   OptionGroup ("Multi-contrast options")
   + Option ("mc_weights", "relative weight of images used for multi-contrast registration."
                           " Default: 1.0 (equal weighting)")
-    + Argument ("weights").type_sequence_float ();
+    + Argument ("weights").type_sequence_float();
 
 
 void usage() {
@@ -104,10 +114,10 @@ void usage() {
 
   OPTIONS
   + Option ("type", std::string("the registration type.") +
-                    " Valid choices are:"
-                    " rigid, affine, nonlinear, rigid_affine, rigid_nonlinear, affine_nonlinear, rigid_affine_nonlinear"
-                    " (Default: " + transformation_choices[DEFAULT_TRANSFORMATION_TYPE] + ")")
-    + Argument ("choice").type_choice (transformation_choices)
+                    " Valid choices are: "
+                    + MR::Enum::join<transformation_t>()
+                    + " (default: " + MR::Enum::lowercase_name(default_transformation_type) + ")")
+    + Argument ("choice").type_choice<transformation_t>()
 
   + Option ("transformed", "image1 after registration transformed and regridded to the space of image2."
                            " Note that -transformed needs to be repeated for each contrast"
@@ -173,33 +183,33 @@ void run() {
     check_3D_nonunity(input2[i]);
   }
 
-  const int registration_type = get_option_value("type", DEFAULT_TRANSFORMATION_TYPE);
+  const transformation_t registration_type = get_option_choice<transformation_t>("type", default_transformation_type);
   bool do_rigid = false;
   bool do_affine = false;
   bool do_nonlinear = false;
   switch (registration_type) {
-  case 0:
+  case transformation_t::RIGID:
     do_rigid = true;
     break;
-  case 1:
+  case transformation_t::AFFINE:
     do_affine = true;
     break;
-  case 2:
+  case transformation_t::NONLINEAR:
     do_nonlinear = true;
     break;
-  case 3:
+  case transformation_t::RIGID_AFFINE:
     do_rigid = true;
     do_affine = true;
     break;
-  case 4:
+  case transformation_t::RIGID_NONLINEAR:
     do_rigid = true;
     do_nonlinear = true;
     break;
-  case 5:
+  case transformation_t::AFFINE_NONLINEAR:
     do_affine = true;
     do_nonlinear = true;
     break;
-  case 6:
+  case transformation_t::RIGID_AFFINE_NONLINEAR:
     do_rigid = true;
     do_affine = true;
     do_nonlinear = true;
@@ -217,8 +227,9 @@ void run() {
   Eigen::MatrixXd directions_cartesian;
   auto opt = get_options("directions");
   if (!opt.empty()) {
-    const std::filesystem::path directions_path{opt[0][0]};
-    directions_cartesian = Math::Sphere::spherical2cartesian(File::Matrix::load_matrix(directions_path)).transpose();
+    const Eigen::MatrixXd directions = File::Matrix::load_matrix(opt[0][0]);
+    DWI::Directions::validate(directions, opt[0][0], false);
+    directions_cartesian = Math::Sphere::as_cartesian(directions).transpose();
   }
 
   // check header transformations for equality
@@ -357,7 +368,7 @@ void run() {
   value_type out_of_bounds_value = 0.0;
   opt = get_options("nan");
   if (!opt.empty())
-    out_of_bounds_value = NAN;
+    out_of_bounds_value = std::numeric_limits<value_type>::quiet_NaN();
 
   // ****** RIGID REGISTRATION OPTIONS *******
   Registration::Linear rigid_registration;
@@ -403,12 +414,12 @@ void run() {
   if (!opt.empty()) {
     if (init_rigid_matrix_set)
       throw Exception("options -rigid_init_matrix and -rigid_init_translation are mutually exclusive");
-    Registration::set_init_translation_model_from_option(rigid_registration, (int)opt[0][0]);
+    Registration::set_init_translation_model_from_option(rigid_registration, static_cast<int>(opt[0][0]));
   }
 
   opt = get_options("rigid_init_rotation");
   if (!opt.empty())
-    Registration::set_init_rotation_model_from_option(rigid_registration, (int)opt[0][0]);
+    Registration::set_init_rotation_model_from_option(rigid_registration, static_cast<int>(opt[0][0]));
 
   opt = get_options("rigid_scale");
   if (!opt.empty()) {
@@ -434,7 +445,7 @@ void run() {
   opt = get_options("rigid_metric");
   Registration::LinearMetricType rigid_metric = Registration::Diff;
   if (!opt.empty()) {
-    switch ((int)opt[0][0]) {
+    switch (static_cast<int>(opt[0][0])) {
     case 0:
       rigid_metric = Registration::Diff;
       break;
@@ -454,7 +465,7 @@ void run() {
   if (!opt.empty()) {
     if (rigid_metric != Registration::Diff)
       throw Exception("rigid_metric.diff.estimator set but cost function is not diff.");
-    switch ((int)opt[0][0]) {
+    switch (static_cast<int>(opt[0][0])) {
     case 0:
       rigid_estimator = Registration::L1;
       break;
@@ -546,14 +557,14 @@ void run() {
   if (!opt.empty()) {
     if (init_affine_matrix_set)
       throw Exception("options -affine_init_matrix and -affine_init_translation are mutually exclusive");
-    Registration::set_init_translation_model_from_option(affine_registration, (int)opt[0][0]);
+    Registration::set_init_translation_model_from_option(affine_registration, static_cast<int>(opt[0][0]));
   }
 
   opt = get_options("affine_init_rotation");
   if (!opt.empty()) {
     if (init_affine_matrix_set)
       throw Exception("options -affine_init_matrix and -affine_init_rotation are mutually exclusive");
-    Registration::set_init_rotation_model_from_option(affine_registration, (int)opt[0][0]);
+    Registration::set_init_rotation_model_from_option(affine_registration, static_cast<int>(opt[0][0]));
   }
 
   opt = get_options("affine_scale");
@@ -573,7 +584,7 @@ void run() {
   opt = get_options("affine_metric");
   Registration::LinearMetricType affine_metric = Registration::Diff;
   if (!opt.empty()) {
-    switch ((int)opt[0][0]) {
+    switch (static_cast<int>(opt[0][0])) {
     case 0:
       affine_metric = Registration::Diff;
       break;
@@ -593,7 +604,7 @@ void run() {
   if (!opt.empty()) {
     if (affine_metric != Registration::Diff)
       throw Exception("affine_metric.diff.estimator set but cost function is not diff.");
-    switch ((int)opt[0][0]) {
+    switch (static_cast<int>(opt[0][0])) {
     case 0:
       affine_estimator = Registration::L1;
       break;
@@ -699,7 +710,7 @@ void run() {
     const std::filesystem::path nl_init_path{opt[0][0]};
     if (!do_nonlinear)
       throw Exception(
-          "the non linear initialisation option -nl_init cannot be used when no non linear registration is requested");
+          "the non linear initialisation option -nl_init cannot be used when no non-linear registration is requested");
 
     if (!Path::is_mrtrix_image(nl_init_path) &&                                         //
         !(Path::has_suffix(std::filesystem::path(nl_init_path), {".nii", ".nii.gz"}) && //
@@ -710,10 +721,14 @@ void run() {
            " Converting to other file formats may remove linear transformations stored in the image header.");
     }
 
-    Image<default_type> input_warps = Image<default_type>::open(nl_init_path);
-    if (input_warps.ndim() != 5)
-      throw Exception("non-linear initialisation input is not 5D."
-                      " Input must be from previous non-linear output");
+    Header H_warps = Header::open(opt[0][0]);
+    auto warp_format = Registration::Warp::validate_header(H_warps);
+    if (warp_format != Registration::Warp::WarpFormat::Full)
+      throw Exception("Warp image for non-linear initialisation"
+                      " must be of the full warp format"
+                      " rather than a simple displacement / deformation field.");
+    Image<default_type> input_warps = H_warps.get_image<default_type>();
+    Registration::Warp::debug_validate_image(input_warps);
 
     nl_registration.initialise(input_warps);
 
@@ -1220,8 +1235,7 @@ void run() {
           midway_header.size(3) = im2_image.size(3);
 
         const size_t nvols = im2_image.ndim() == 3 ? 1 : im2_image.size(3);
-        const value_type val = (std::sqrt(float(1 + 8 * nvols)) - 3.0) / 4.0;
-        const bool reorient_output = !reorientation_forbidden && (nvols > 1) && !(val - (int)val);
+        const bool reorient_output = !reorientation_forbidden && (nvols > 1) && Math::SH::feasible_N(nvols);
 
         if (do_nonlinear) {
           auto im2_midway = Image<default_type>::create(input2_midway_transformed_paths[idx], midway_header);

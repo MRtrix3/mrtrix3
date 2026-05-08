@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -24,31 +24,31 @@ namespace MR::GUI::Dialog::File {
 extern const std::string image_filter_string;
 void check_overwrite_files_func(const std::filesystem::path &name);
 
-std::filesystem::path get_folder(QWidget *parent, const std::string &caption, std::string *folder = nullptr);
-std::filesystem::path get_path(QWidget *parent,
-                               const std::string &caption,
-                               const std::string &filter = std::string(),
-                               std::string *folder = nullptr);
+std::filesystem::path get_folder(QWidget *parent, std::string_view caption, std::string *folder = nullptr);
+std::filesystem::path get_path(QWidget *parent,                //
+                               std::string_view caption,       //
+                               std::string_view filter = "",   //
+                               std::string *folder = nullptr); //
 std::vector<std::string> get_files(QWidget *parent,
-                                   const std::string &caption,
-                                   const std::string &filter = std::string(),
+                                   std::string_view caption,
+                                   std::string_view filter = std::string(),
                                    std::string *folder = nullptr);
 std::filesystem::path get_save_path(QWidget *parent,
-                                    const std::string &caption,
+                                    std::string_view caption,
                                     const std::filesystem::path &suggested_name = std::filesystem::path(),
-                                    const std::string &filter = std::string(),
+                                    std::string_view filter = "",
                                     std::string *folder = nullptr);
 
-inline std::string get_image(QWidget *parent, const std::string &caption, std::string *folder = nullptr) {
+inline std::string get_image(QWidget *parent, std::string_view caption, std::string *folder = nullptr) {
   return get_file(parent, caption, image_filter_string, folder);
 }
 
-inline std::vector<std::string> get_images(QWidget *parent, const std::string &caption, std::string *folder = nullptr) {
+inline std::vector<std::string> get_images(QWidget *parent, std::string_view caption, std::string *folder = nullptr) {
   return get_files(parent, caption, image_filter_string, folder);
 }
 
 inline std::filesystem::path get_save_image_name(QWidget *parent,
-                                                 const std::string &caption,
+                                                 std::string_view caption,
                                                  const std::filesystem::path &suggested_name = std::filesystem::path(),
                                                  std::string *folder = nullptr) {
   return get_save_path(parent, caption, suggested_name, image_filter_string, folder);

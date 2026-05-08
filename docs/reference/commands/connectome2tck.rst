@@ -73,7 +73,7 @@ Options for determining the content / format of output files
 
 -  **-exclusive** only select tracks that exclusively connect nodes from within the list of nodes of interest
 
--  **-files option** select how the resulting streamlines will be grouped in output files. Options are: per_edge, per_node, single (default: per_edge)
+-  **-files option** select how the resulting streamlines will be grouped in output files. Options are: per_edge, per_node, single. Default: per_edge.
 
 -  **-exemplars image** generate a mean connection exemplar per edge, rather than keeping all streamlines (the parcellation node image must be provided in order to constrain the exemplar endpoints)
 
@@ -95,7 +95,7 @@ Standard options
 
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
--  **-debug** display debugging messages.
+-  **-debug** display debugging messages & debug input data.
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
@@ -118,7 +118,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2026 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

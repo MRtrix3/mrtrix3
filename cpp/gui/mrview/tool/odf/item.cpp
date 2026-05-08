@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -76,7 +76,7 @@ ODF_Item::DixelPlugin::DixelPlugin(const MR::Header &H) : dir_type(dir_t::NONE),
   if (entry != H.keyval().end()) {
     try {
       const auto lines = split_lines(entry->second);
-      if (lines.size() != size_t(H.size(3)))
+      if (lines.size() != static_cast<size_t>(H.size(3)))
         throw Exception("malformed directions field in image \"" + H.path().string() + "\" - incorrect number of rows");
       for (size_t row = 0; row < lines.size(); ++row) {
         const auto values = parse_floats(lines[row]);
@@ -85,7 +85,7 @@ ODF_Item::DixelPlugin::DixelPlugin(const MR::Header &H) : dir_type(dir_t::NONE),
             throw Exception("malformed directions field in image \"" + H.path().string() +
                             "\" - should have 2 or 3 columns");
           header_dirs.resize(lines.size(), values.size());
-        } else if (values.size() != size_t(header_dirs.cols())) {
+        } else if (values.size() != static_cast<size_t>(header_dirs.cols())) {
           header_dirs.resize(0, 0);
           throw Exception("malformed directions field in image \"" + H.path().string() +
                           "\" - variable number of columns");
@@ -135,7 +135,7 @@ void ODF_Item::DixelPlugin::set_none() {
   dir_type = DixelPlugin::dir_t::NONE;
 }
 
-void ODF_Item::DixelPlugin::set_from_file(const std::string &path) {
+void ODF_Item::DixelPlugin::set_from_file(std::string_view path) {
   auto new_dirs = std::make_unique<MR::DWI::Directions::Set>(path);
   std::swap(dirs, new_dirs);
   dir_type = DixelPlugin::dir_t::FILE;

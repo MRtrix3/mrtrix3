@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -17,6 +17,7 @@
 #include "file/utils.h"
 
 #include <fcntl.h>
+#include <string>
 #include <unistd.h>
 
 #include "app.h"
@@ -57,22 +58,23 @@ inline char random_char() {
 // ENVVAR temporary files (as used in Unix pipes) for a single session,
 // ENVVAR within a single script, or for a single command without
 // ENVVAR modifying the configuration  file.
-const std::string __get_tmpfile_dir() {
-  const char *from_env_mrtrix = getenv("MRTRIX_TMPFILE_DIR");
+std::filesystem::path __get_tmpfile_dir() {
+  const char *from_env_mrtrix = getenv("MRTRIX_TMPFILE_DIR"); // check_syntax off
   if (from_env_mrtrix != nullptr)
-    return from_env_mrtrix;
+    return std::string(from_env_mrtrix);
 
-  std::string default_tmpdir = std::filesystem::temp_directory_path().string();
+  std::filesystem::path default_tmpdir = std::filesystem::temp_directory_path();
 
-  const char *from_env_general = getenv("TMPDIR");
+  const char *from_env_general = getenv("TMPDIR"); // check_syntax off
   if (from_env_general != nullptr)
-    default_tmpdir = from_env_general;
+    default_tmpdir = std::filesystem::path(from_env_general);
 
-  return File::Config::get("TmpFileDir", default_tmpdir);
+  const std::string from_config = File::Config::get("TmpFileDir");
+  return from_config.empty() ? default_tmpdir : std::filesystem::path(from_config);
 }
 
 const std::filesystem::path &tmpfile_dir() {
-  static const std::filesystem::path __tmpfile_dir = static_cast<std::filesystem::path>(__get_tmpfile_dir());
+  static const std::filesystem::path __tmpfile_dir{__get_tmpfile_dir()};
   return __tmpfile_dir;
 }
 
@@ -91,21 +93,21 @@ const std::filesystem::path &tmpfile_dir() {
 // ENVVAR the name  of temporary files (as used in Unix pipes) for a
 // ENVVAR single session, within a single script, or for a single command
 // ENVVAR without modifying the configuration file.
-const std::string __get_tmpfile_prefix() {
-  const char *from_env = getenv("MRTRIX_TMPFILE_PREFIX");
+std::string __get_tmpfile_prefix() {
+  const char *from_env = getenv("MRTRIX_TMPFILE_PREFIX"); // check_syntax off
   if (from_env != nullptr)
     return from_env;
   return File::Config::get("TmpFilePrefix", "mrtrix-tmp-");
 }
 
-const std::string &tmpfile_prefix() {
+std::string tmpfile_prefix() {
   static const std::string __tmpfile_prefix = __get_tmpfile_prefix();
   return __tmpfile_prefix;
 }
 
 } // namespace
 
-bool is_tempfile(const std::filesystem::path &path, const std::string &suffix) {
+bool is_tempfile(const std::filesystem::path &path, std::string_view suffix) {
   if (path.filename().string().compare(0, tmpfile_prefix().size(), tmpfile_prefix()) != 0)
     return false;
   if (!suffix.empty())
@@ -114,7 +116,7 @@ bool is_tempfile(const std::filesystem::path &path, const std::string &suffix) {
   return true;
 }
 
-std::filesystem::path create_tempfile(int64_t size, const std::string &suffix) {
+std::filesystem::path create_tempfile(int64_t size, std::string_view suffix) {
   DEBUG("creating temporary file of size " + str(size));
 
   int fid(0);

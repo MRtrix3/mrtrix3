@@ -1,4 +1,4 @@
-# Copyright (c) 2008-2025 the MRtrix3 contributors.
+# Copyright (c) 2008-2026 the MRtrix3 contributors.
 #
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -54,9 +54,9 @@ WORKING_DIR = os.getcwd()
 CMDLINE = None
 
 
-
+# This is auto-populated by script "update_copyright"
 _DEFAULT_COPYRIGHT = \
-'''Copyright (c) 2008-2025 the MRtrix3 contributors.
+'''Copyright (c) 2008-2026 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -847,16 +847,6 @@ class Parser(argparse.ArgumentParser):
     def _metavar():
       return 'trackfile'
 
-  class Various(CustomTypeBase):
-    def __call__(self, input_value):
-      return input_value
-    @staticmethod
-    def _legacytypestring():
-      return 'VARIOUS'
-    @staticmethod
-    def _metavar():
-      return 'spec'
-
 
 
 
@@ -891,7 +881,7 @@ class Parser(argparse.ArgumentParser):
       standard_options.add_argument('-debug',
                                     action='store_true',
                                     default=None,
-                                    help='display debugging messages.')
+                                    help='display debugging messages & debug input data.')
       self.flag_mutually_exclusive_options( [ 'info', 'quiet', 'debug' ] )
       standard_options.add_argument('-force',
                                     action='store_true',
@@ -927,7 +917,6 @@ class Parser(argparse.ArgumentParser):
                                   metavar='/path/to/scratch/',
                                   help='manually specify an existing directory in which to generate the scratch directory.')
       script_options.add_argument('-continue',
-                                  type=Parser.Various(),
                                   nargs=2,
                                   dest='cont',
                                   metavar=('ScratchDir', 'LastFile'),
@@ -1024,7 +1013,8 @@ class Parser(argparse.ArgumentParser):
             ' from neuroimaging software other than MRtrix3.')
     console('PLEASE ENSURE that any non-MRtrix3 software,'
             ' as well as any research methods they provide,'
-            ' are recognised and cited appropriately.')
+            ' are recognised and cited appropriately,'
+            ' and that any relevant software usage licenses are not violated.')
     console('Consult the help page (-help option) for more information.')
     console('')
 

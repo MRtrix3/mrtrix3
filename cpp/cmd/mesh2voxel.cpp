@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,6 +22,7 @@
 
 #include "surface/algo/mesh2image.h"
 #include "surface/mesh.h"
+#include "surface/validate.h"
 
 #include <filesystem>
 
@@ -51,16 +52,13 @@ void usage() {
 // clang-format on
 
 void run() {
-  const std::filesystem::path source_path{argument[0]};
-  const std::filesystem::path template_path{argument[1]};
-  const std::filesystem::path output_path{argument[2]};
-
   // Read in the mesh data
-  Surface::Mesh mesh(source_path);
+  Surface::Mesh mesh(argument[0]);
+  Surface::debug_validate(mesh);
 
   // Get the template image
-  Header template_header = Header::open(template_path);
-  check_3D_nonunity(template_header);
+  Header template_header = Header::open(argument[1]);
+  template_header.ndim() = 3;
 
   // Ensure that a floating-point representation is used for the output image,
   //   as is required for representing partial volumes
@@ -68,7 +66,7 @@ void run() {
   template_header.datatype().set_byte_order_native();
 
   // Create the output image
-  Image<float> output = Image<float>::create(output_path, template_header);
+  Image<float> output = Image<float>::create(argument[2], template_header);
 
   // Perform the partial volume estimation
   Surface::Algo::mesh2image(mesh, output);

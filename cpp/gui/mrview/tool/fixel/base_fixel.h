@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,7 +16,9 @@
 
 #pragma once
 
+#include <cstdint>
 #include <unordered_map>
+#include <vector>
 
 #include "header.h"
 #include "image.h"
@@ -24,8 +26,6 @@
 
 #include "algo/loop.h"
 #include "fixel/helpers.h"
-#include "fixel/legacy/fixel_metric.h"
-#include "fixel/legacy/image.h"
 
 #include "mrview/displayable.h"
 #include "mrview/tool/fixel/fixel.h"
@@ -37,7 +37,7 @@ namespace MR::GUI::MRView::Tool {
 
 class BaseFixel : public Displayable {
 public:
-  BaseFixel(const std::string &, Fixel &);
+  BaseFixel(const std::filesystem::path &, Fixel &);
   ~BaseFixel();
 
   class Shader : public Displayable::Shader {
@@ -209,7 +209,7 @@ protected:
 
   inline FixelValue &current_fixel_colour_state() const { return get_fixel_value(colour_types[colour_type_index]); }
 
-  virtual FixelValue &get_fixel_value(const std::string &key) const { return fixel_values[key]; }
+  virtual FixelValue &get_fixel_value(std::string_view key) const { return fixel_values[std::string(key)]; }
 
   MR::Header header;
   std::vector<std::string> colour_types;
@@ -227,6 +227,7 @@ protected:
   std::vector<float> regular_grid_buffer_val;
   std::vector<float> regular_grid_buffer_threshold;
 
+  // If slice_fixel* are modified, rebuild_element_index_buffer() must be called
   std::vector<std::vector<std::vector<GLint>>> slice_fixel_indices;
   std::vector<std::vector<std::vector<GLsizei>>> slice_fixel_sizes;
   std::vector<std::vector<GLsizei>> slice_fixel_counts;
@@ -245,6 +246,8 @@ protected:
   bool value_buffer_dirty;
   bool threshold_buffer_dirty;
   bool dir_buffer_dirty;
+  bool element_indices_dirty = false;
+  void rebuild_element_index_buffer();
 
 private:
   Fixel &fixel_tool;
@@ -253,6 +256,7 @@ private:
   GL::VertexBuffer colour_buffer;
   GL::VertexBuffer value_buffer;
   GL::VertexBuffer threshold_buffer;
+  GL::VertexBuffer element_index_buffer;
   GL::VertexArrayObject vertex_array_object;
 
   GL::VertexArrayObject regular_grid_vao;
@@ -262,16 +266,19 @@ private:
   GL::VertexBuffer regular_grid_val_buffer;
   GL::VertexBuffer regular_grid_threshold_buffer;
 
+  // Index buffer for rendering slabs
+  std::vector<uint32_t> element_indices;
+
   float voxel_size_length_multipler;
   float user_line_length_multiplier;
   float line_thickness;
 };
 
 // Wrapper to generically store fixel data
-
 template <typename ImageType> class FixelType : public BaseFixel {
 public:
-  FixelType(const std::string &filepath, Fixel &fixel_tool) : BaseFixel(filepath, fixel_tool), transform(header) {}
+  FixelType(const std::filesystem::path &filepath, Fixel &fixel_tool)
+      : BaseFixel(filepath, fixel_tool), transform(header) {}
 
 protected:
   std::unique_ptr<ImageType> fixel_data;
@@ -282,7 +289,7 @@ protected:
   }
 };
 
-using FixelLegacyType = MR::Fixel::Legacy::Image<MR::Fixel::Legacy::FixelMetric>;
 using FixelImage4DType = MR::Image<float>;
 using FixelIndexImageType = MR::Image<uint32_t>;
+
 } // namespace MR::GUI::MRView::Tool

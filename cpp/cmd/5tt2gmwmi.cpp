@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -24,6 +24,7 @@
 
 #include "dwi/tractography/ACT/act.h"
 #include "dwi/tractography/ACT/tissues.h"
+#include "dwi/tractography/ACT/validate.h"
 
 #include <filesystem>
 
@@ -93,8 +94,8 @@ public:
           input.index(axis) = output.index(axis) + 1;
         }
         const DWI::Tractography::ACT::Tissues pos(input);
-        gradient +=
-            Math::pow2(multiplier * std::min(abs(pos.get_gm() - neg.get_gm()), abs(pos.get_wm() - neg.get_wm())));
+        gradient += Math::pow2(
+            multiplier * std::min(std::fabs(pos.get_gm() - neg.get_gm()), std::fabs(pos.get_wm() - neg.get_wm())));
       }
       output.value() = std::max(0.0, std::sqrt(gradient));
       assign_pos_of(output, 0, 3).to(input);
@@ -109,13 +110,10 @@ private:
 };
 
 void run() {
-  const std::filesystem::path input_path{argument.front()};
-  const std::filesystem::path output_path{argument.begin()[1]};
-
-  auto input = Image<float>::open(input_path);
-
-  DWI::Tractography::ACT::verify_5TT_image(input);
-  check_3D_nonunity(input);
+  Header H_in = Header::open(argument[0]);
+  DWI::Tractography::ACT::validate_5TT_header(H_in);
+  auto input = H_in.get_image<float>();
+  DWI::Tractography::ACT::debug_validate_5TT_image(input);
 
   // TODO It would be nice to have the capability to define this mask based on another image
   // This will however require the use of interpolators
@@ -124,20 +122,20 @@ void run() {
   auto opt = get_options("mask_in");
   if (!opt.empty()) {
     mask = Image<bool>::open(opt[0][0]);
-    if (!dimensions_match(input, mask, 0, 3))
+    if (!dimensions_match(H_in, mask, 0, 3))
       throw Exception("Mask image provided using the -mask option must match the input 5TT image");
   }
 
-  Header H;
+  Header H_out;
   if (mask.valid()) {
-    H = mask;
-    H.datatype() = DataType::Float32;
-    H.datatype().set_byte_order_native();
+    H_out = Header(mask);
+    H_out.datatype() = DataType::Float32;
+    H_out.datatype().set_byte_order_native();
   } else {
-    H = input;
-    H.ndim() = 3;
+    H_out = H_in;
+    H_out.ndim() = 3;
   }
-  auto output = Image<float>::create(output_path, H);
+  auto output = Image<float>::create(argument[1], H_out);
 
-  ThreadedLoop("Generating GMWMI seed mask", input, 0, 3).run(Processor(mask), input, output);
+  ThreadedLoop("Generating GMWMI seed image", input, 0, 3).run(Processor(mask), input, output);
 }

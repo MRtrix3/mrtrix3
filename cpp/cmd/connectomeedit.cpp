@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,7 @@
 
 #include "command.h"
 #include "connectome/enhance.h"
+#include "enum.h"
 #include "file/matrix.h"
 
 #include <filesystem>
@@ -25,8 +26,8 @@ using namespace MR::Connectome;
 using namespace MR::Math;
 using namespace App;
 
-const std::vector<std::string> operations = {
-    "to_symmetric", "upper_triangular", "lower_triangular", "transpose", "zero_diagonal"};
+enum class Operation { TO_SYMMETRIC, UPPER_TRIANGULAR, LOWER_TRIANGULAR, TRANSPOSE, ZERO_DIAGONAL };
+const std::vector<std::string> operations = MR::Enum::lower_case_names<Operation>();
 
 // clang-format off
 void usage() {
@@ -39,7 +40,7 @@ void usage() {
   + Argument ("input", "the input connectome.").type_file_in()
 
   + Argument ("operation", "the operation to apply,"
-                           " one of: " + join(operations, ", ") + ".").type_choice (operations)
+                           " one of: " + MR::Enum::join<Operation>() + ".").type_choice<Operation>()
 
   + Argument ("output", "the output connectome.").type_file_out();
 
@@ -47,35 +48,32 @@ void usage() {
 // clang-format on
 
 void run() {
-  const std::filesystem::path input_path{argument[0]};
-  const int op = argument[1];
-  const std::filesystem::path output_path{argument[2]};
-
-  MR::Connectome::matrix_type connectome = File::Matrix::load_matrix(input_path);
+  MR::Connectome::matrix_type connectome = File::Matrix::load_matrix(argument[0]);
   MR::Connectome::check(connectome);
+  const Operation op = MR::Enum::from_name<Operation>(argument[1]);
 
-  INFO("Applying \'" + str(operations[op]) + "\' transformation to the input connectome.");
+  INFO("Applying \'" + MR::Enum::lowercase_name(op) + "\' transformation to the input connectome.");
 
   switch (op) {
-  case 0:
+  case Operation::TO_SYMMETRIC:
     MR::Connectome::to_symmetric(connectome);
     break;
-  case 1:
+  case Operation::UPPER_TRIANGULAR:
     MR::Connectome::to_upper(connectome);
     break;
-  case 2:
+  case Operation::LOWER_TRIANGULAR:
     MR::Connectome::to_upper(connectome);
     connectome.transposeInPlace();
     break;
-  case 3:
+  case Operation::TRANSPOSE:
     connectome.transposeInPlace();
     break;
-  case 4:
+  case Operation::ZERO_DIAGONAL:
     connectome.matrix().diagonal().setZero();
     break;
   default:
     assert(0);
   }
 
-  File::Matrix::save_matrix(connectome, output_path);
+  File::Matrix::save_matrix(connectome, argument[2]);
 }

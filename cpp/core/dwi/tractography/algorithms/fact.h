@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,6 +21,7 @@
 #include "interp/masked.h"
 #include "interp/nearest.h"
 
+#include "dwi/tractography/ACT/act.h"
 #include "dwi/tractography/tracking/method.h"
 #include "dwi/tractography/tracking/shared.h"
 #include "dwi/tractography/tracking/tractography.h"
@@ -40,13 +41,19 @@ public:
       if (source.size(3) % 3)
         throw Exception("Number of volumes in FACT algorithm input image should be a multiple of 3");
 
-      if (is_act() && act().backtrack())
-        throw Exception("Backtracking not valid for deterministic algorithms");
+      if (is_act()) {
+        if (act().backtrack())
+          throw Exception("Backtracking not valid for deterministic algorithms");
+        act().set_default_sgm_trunc(ACT::sgm_trunc_t::MINIMUM);
+      }
 
       if (rk4)
         throw Exception("4th-order Runge-Kutta integration not valid for FACT algorithm");
 
-      set_step_and_angle(Defaults::stepsize_voxels_firstorder, Defaults::angle_deterministic, false);
+      set_step_and_angle(Defaults::stepsize_voxels_firstorder,
+                         Defaults::angle_deterministic,
+                         intrinsic_integration_order_t::FIRST,
+                         curvature_constraint_t::POSTHOC_THRESHOLD);
       set_num_points();
       set_cutoff(Defaults::cutoff_fixel * (is_act() ? Defaults::cutoff_act_multiplier : 1.0));
       dot_threshold = std::cos(max_angle_1o);
@@ -78,15 +85,15 @@ public:
 
   term_t next() override {
     if (!get_data(source))
-      return EXIT_IMAGE;
+      return term_t::EXIT_IMAGE;
 
     const float max_norm = select_fixel(dir);
 
     if (max_norm < S.threshold)
-      return MODEL;
+      return term_t::MODEL;
 
     pos += S.step_size * dir;
-    return CONTINUE;
+    return term_t::CONTINUE;
   }
 
   float get_metric(const Eigen::Vector3f &position, const Eigen::Vector3f &direction) override {
@@ -109,7 +116,7 @@ protected:
       Eigen::Vector3f v(values[3 * n], values[3 * n + 1], values[3 * n + 2]);
       float norm = v.norm();
       float dot = v.dot(d) / norm;
-      float abs_dot = abs(dot);
+      float abs_dot = std::fabs(dot);
       if (abs_dot < S.dot_threshold)
         continue;
       if (max_abs_dot < abs_dot) {

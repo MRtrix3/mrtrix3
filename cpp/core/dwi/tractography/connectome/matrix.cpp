@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,7 +20,6 @@
 
 #include "file/matrix.h"
 #include "file/path.h"
-#include "misc/bitset.h"
 
 namespace MR::DWI::Tractography::Connectome {
 
@@ -36,8 +35,6 @@ const App::Option EdgeStatisticOption
       App::Argument("statistic").type_choice(statistics);
 
 template <typename T> bool Matrix<T>::operator()(const Mapped_track_nodepair &in) {
-  assert(in.get_first_node() < mat2vec->mat_size());
-  assert(in.get_second_node() < mat2vec->mat_size());
   assert(assignments_lists.empty());
   if (is_vector()) {
     assert(assignments_pairs.empty());
@@ -54,6 +51,8 @@ template <typename T> bool Matrix<T>::operator()(const Mapped_track_nodepair &in
       }
     }
   } else {
+    assert(in.get_first_node() < mat2vec->mat_size());
+    assert(in.get_second_node() < mat2vec->mat_size());
     assert(assignments_single.empty());
     apply_data(in.get_first_node(), in.get_second_node(), in.get_factor(), in.get_weight());
     inc_count(in.get_first_node(), in.get_second_node(), in.get_weight());
@@ -143,14 +142,14 @@ template <typename T> void Matrix<T>::finalize() {
   }
 }
 
-template <typename T> void Matrix<T>::error_check(const std::set<node_t> &missing_nodes) {
+template <typename T> void Matrix<T>::error_check(const std::vector<node_t> &missing_nodes) {
   // Don't bother looking for empty nodes if we're generating a
   //   connectivity vector from a seed region rather than a
   //   connectome from a whole-brain tractogram
   if (vector_output)
     return;
   assert(mat2vec);
-  BitSet visited(mat2vec->mat_size());
+  Eigen::Array<bool, Eigen::Dynamic, 1> visited(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(mat2vec->mat_size()));
   for (ssize_t i = 0; i != data.size(); ++i) {
     if (std::isfinite(data[i]) && data[i]) {
       auto nodes = (*mat2vec)(i);
@@ -160,11 +159,11 @@ template <typename T> void Matrix<T>::error_check(const std::set<node_t> &missin
   }
   std::vector<std::string> empty_nodes;
   for (node_t i = 1; i != visited.size(); ++i) {
-    if (!visited[i] && missing_nodes.find(i) == missing_nodes.end())
+    if (!visited[i] && std::find(missing_nodes.begin(), missing_nodes.end(), i) == missing_nodes.end())
       empty_nodes.push_back(str(i));
   }
   if (!empty_nodes.empty()) {
-    WARN("The following nodes do not have any streamlines assigned:");
+    WARN("The following nodes present in the parcellation do not have any streamlines assigned:");
     WARN(join(empty_nodes, ", "));
     WARN("(This may indicate a poor registration)");
   }

@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,7 @@
 
 #include <filesystem>
 #include <string>
+#include <string_view>
 
 #include "command.h"
 #include "datatype.h"
@@ -46,12 +47,12 @@ const Eigen::Array<bool, 3, 1> reference_1d_bool{false, true, true};
 const Eigen::Array<default_type, 3, 2> reference_2d{{0.0, 1.0}, {10.0, 11.0}, {20.0, 21.0}};
 const Eigen::Array<bool, 3, 2> reference_2d_bool{{false, true}, {true, true}, {true, true}};
 
-template <typename T> void save_1d(const std::string &path) {
-  File::Matrix::save_vector(reference_1d.cast<T>(), std::filesystem::path(std::string(argument[0])) / path);
+template <typename T> void save_1d(const std::filesystem::path &path) {
+  File::Matrix::save_vector(reference_1d.cast<T>(), argument[0] / path);
 }
 
-template <typename T> void save_2d(const std::string &path) {
-  File::Matrix::save_matrix(reference_2d.cast<T>(), std::filesystem::path(std::string(argument[0])) / path);
+template <typename T> void save_2d(const std::filesystem::path &path) {
+  File::Matrix::save_matrix(reference_2d.cast<T>(), argument[0] / path);
 }
 
 void run() {
@@ -62,7 +63,7 @@ void run() {
   save_1d<uint8_t>("1D3_u1.npy");
   save_1d<int16_t>("1D3_i2.npy");
   save_1d<uint16_t>("1D3_u2.npy");
-  save_1d<half_float::half>("1D3_f2.npy");
+  save_1d<Eigen::half>("1D3_f2.npy");
   save_1d<int32_t>("1D3_i4.npy");
   save_1d<uint32_t>("1D3_u4.npy");
   save_1d<float>("1D3_f4.npy");
@@ -75,7 +76,7 @@ void run() {
   save_2d<uint8_t>("2D3x2_u1.npy");
   save_2d<int16_t>("2D3x2_i2.npy");
   save_2d<uint16_t>("2D3x2_u2.npy");
-  save_2d<half_float::half>("2D3x2_f2.npy");
+  save_2d<Eigen::half>("2D3x2_f2.npy");
   save_2d<int32_t>("2D3x2_i4.npy");
   save_2d<uint32_t>("2D3x2_u4.npy");
   save_2d<float>("2D3x2_f4.npy");

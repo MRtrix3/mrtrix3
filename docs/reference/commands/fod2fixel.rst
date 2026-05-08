@@ -21,14 +21,16 @@ Usage
 Options
 -------
 
-Metric values for fixel-based sparse output images
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Metric values for output fixel data files
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-afd image** output the total Apparent Fibre Density per fixel (integral of FOD lobe)
 
 -  **-peak_amp image** output the amplitude of the FOD at the maximal peak per fixel
 
 -  **-disp image** output a measure of dispersion per fixel as the ratio between FOD lobe integral and maximal peak amplitude
+
+-  **-skew image** output a measure of FOD lobe skew as the angle between peak and weighted mean directions
 
 FOD FMLS segmenter options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -59,7 +61,7 @@ Standard options
 
 -  **-quiet** do not display information messages or progress status; alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable to a non-empty string.
 
--  **-debug** display debugging messages.
+-  **-debug** display debugging messages & debug input data.
 
 -  **-force** force overwrite of output files (caution: using the same file as input and output might cause unexpected behaviour).
 
@@ -88,7 +90,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** Robert E. Smith (robert.smith@florey.edu.au)
 
-**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2026 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

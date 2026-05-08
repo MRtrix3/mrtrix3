@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -24,6 +24,7 @@
 #include "file/npy.h"
 #include "file/ofstream.h"
 #include "file/path.h"
+#include "mrtrix.h"
 #include "types.h"
 
 namespace MR::File::Matrix {
@@ -40,7 +41,7 @@ void save_matrix_text(const MatrixType &M,
   File::OFStream out(filename);
   File::KeyValue::write(out, keyvals, "# ", add_to_command_history);
   Eigen::IOFormat fmt(
-      Eigen::FullPrecision, Eigen::DontAlignCols, std::string(1, Path::delimiter(filename)), "\n", "", "", "", "");
+      Eigen::FullPrecision, Eigen::DontAlignCols, std::string(1, delimiter(filename)), "\n", "", "", "", "");
   out << M.format(fmt);
   out << "\n";
 }
@@ -49,7 +50,7 @@ void save_matrix_text(const MatrixType &M,
 template <class ValueType = default_type>
 std::vector<std::vector<ValueType>> load_matrix_2D_vector(const std::filesystem::path &filename,
                                                           std::vector<std::string> *comments = nullptr) {
-  std::ifstream stream(filename, std::ios_base::in | std::ios_base::binary);
+  std::ifstream stream(std::string(filename).c_str(), std::ios_base::in | std::ios_base::binary);
   if (!stream)
     throw Exception("Unable to open numerical data text file \"" + filename.string() + "\": " + strerror(errno));
   std::vector<std::vector<ValueType>> V;
@@ -119,7 +120,7 @@ void save_vector_text(const VectorType &V,
   DEBUG("saving vector of size " + str(V.size()) + " to text file \"" + filename.string() + "\"...");
   File::OFStream out(filename);
   File::KeyValue::write(out, keyvals, "# ", add_to_command_history);
-  const char d(Path::delimiter(filename));
+  const const char d(delimiter(filename));
   for (decltype(V.size()) i = 0; i < V.size() - 1; i++)
     out << str(V[i], 10) << d;
   out << str(V[V.size() - 1], 10) << "\n";
@@ -178,9 +179,9 @@ inline transform_type load_transform(const std::filesystem::path &filename, Vect
     centre[2] = NaN;
     std::vector<std::string> elements;
     for (auto &line : comments) {
-      if (strncmp(line.c_str(), key.c_str(), key.size()) == 0)
+      if (line.substr(0, key.size()) == key)
         elements = split(strip(line.substr(key.size())), " ,;\t", true);
-      else if (strncmp(line.c_str(), key_legacy.c_str(), key_legacy.size()) == 0)
+      else if (line.substr(0, key_legacy.size()) == key_legacy)
         elements = split(strip(line.substr(key_legacy.size())), " ,;\t", true);
       if (!elements.empty()) {
         if (elements.size() != 3)
@@ -215,7 +216,7 @@ inline void save_transform(const transform_type &M,
   DEBUG("saving transform to file \"" + filename.string() + "\"...");
   File::OFStream out(filename);
   File::KeyValue::write(out, keyvals, "# ", add_to_command_history);
-  const char d(Path::delimiter(filename));
+  const char d(delimiter(filename));
   Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, std::string(1, d), "\n", "", "", "", "");
   out << M.matrix().format(fmt);
   out << "\n0" << d << "0" << d << "0" << d << "1\n";
@@ -258,6 +259,15 @@ Eigen::Matrix<ValueType, Eigen::Dynamic, 1> load_vector(const std::filesystem::p
   if (vec.rows() > 1)
     throw Exception("file \"" + filename.string() + "\" contains 2D matrix, not 1D vector");
   return vec.row(0);
+}
+
+inline char delimiter(const std::filesystem::path &path) {
+  if (Path::has_suffix(path, ".tsv"))
+    return '\t';
+  else if (Path::has_suffix(path, ".csv"))
+    return ',';
+  else
+    return ' ';
 }
 
 } // namespace MR::File::Matrix

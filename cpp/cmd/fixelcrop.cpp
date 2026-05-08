@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -22,6 +22,7 @@
 
 #include "fixel/fixel.h"
 #include "fixel/helpers.h"
+#include "fixel/validate.h"
 
 #include <filesystem>
 
@@ -55,22 +56,19 @@ void usage() {
 // clang-format on
 
 void run() {
-  const std::filesystem::path input_directory{argument[0]};
-  const std::filesystem::path input_mask_file{argument[1]};
-  const std::filesystem::path output_directory{argument[2]};
-
-  Fixel::check_fixel_directory(input_directory);
-  Header in_index_header = Fixel::find_index_header(input_directory);
+  Fixel::check_fixel_directory(argument[0]);
+  Fixel::debug_validate_directory(argument[0]);
+  Header in_index_header = Fixel::find_index_header(argument[0]);
   index_type total_nfixels = Fixel::get_number_of_fixels(in_index_header);
   auto in_index_image = in_index_header.get_image<index_type>();
 
-  auto mask_image = Image<bool>::open(input_mask_file);
+  auto mask_image = Image<bool>::open(argument[1]);
   Fixel::check_fixel_size(mask_image, total_nfixels);
 
   const auto out_fixel_directory = output_directory;
   Fixel::check_fixel_directory(out_fixel_directory, true, true);
 
-  Header out_header = Header(in_index_image);
+  Header out_index_header = Header(in_index_header);
 
   // We need to do a first pass of the mask image to determine the number of cropped fixels
   for (auto l = Loop(0)(mask_image); l; ++l) {
@@ -78,21 +76,22 @@ void run() {
       total_nfixels--;
   }
 
-  out_header.keyval()[Fixel::n_fixels_key] = str(total_nfixels);
-  auto out_index_image = Image<index_type>::create(out_fixel_directory / in_index_header.path().filename(), out_header);
+  out_index_header.keyval()[Fixel::n_fixels_key] = str(total_nfixels);
+  auto out_index_image =
+      Image<index_type>::create(out_fixel_directory / in_index_header.path().filename(), out_index_header);
 
   // Open all data images and create output date images with size equal to expected number of fixels
   std::vector<Header> in_headers = Fixel::find_data_headers(input_directory, in_index_header, true);
   std::vector<Image<float>> in_data_images;
   std::vector<Image<float>> out_data_images;
   for (auto &in_data_header : in_headers) {
-    in_data_images.push_back(in_data_header.get_image<float>().with_direct_io());
+    in_data_images.push_back(in_data_header.get_image<float>());
     check_dimensions(in_data_images.back(), mask_image, {0, 2});
 
     Header out_data_header(in_data_header);
     out_data_header.size(0) = total_nfixels;
     out_data_images.push_back(
-        Image<float>::create(out_fixel_directory / in_data_header.path().filename(), out_data_header).with_direct_io());
+        Image<float>::create(out_fixel_directory / in_data_header.path().filename(), out_data_header));
   }
 
   mask_image.index(1) = 0;

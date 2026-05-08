@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,12 +14,16 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <filesystem>
+#include <optional>
+
 #include "adapter/jacobian.h"
 #include "algo/copy.h"
 #include "algo/loop.h"
 #include "algo/threaded_copy.h"
 #include "command.h"
 #include "dwi/directions/predefined.h"
+#include "dwi/directions/validate.h"
 #include "dwi/gradient.h"
 #include "file/matrix.h"
 #include "file/nifti_utils.h"
@@ -27,6 +31,7 @@
 #include "filter/warp.h"
 #include "image.h"
 #include "interp/cubic.h"
+#include "interp/interp.h"
 #include "interp/linear.h"
 #include "interp/nearest.h"
 #include "interp/sinc.h"
@@ -38,14 +43,13 @@
 #include "registration/transform/reorient.h"
 #include "registration/warp/compose.h"
 #include "registration/warp/helpers.h"
-#include <filesystem>
+#include "registration/warp/validate.h"
 
 using namespace MR;
 using namespace App;
 
-#define DEFAULT_INTERP 2 // cubic
-const std::vector<std::string> interp_choices = {"nearest", "linear", "cubic", "sinc"};
-const std::vector<std::string> modulation_choices = {"fod", "jac"};
+constexpr MR::Interp::interp_type default_interp = MR::Interp::interp_type::CUBIC;
+enum class Modulation { FOD, JAC };
 
 // clang-format off
 void usage() {
@@ -150,10 +154,10 @@ void usage() {
         " (i.e. half way between image1 and image2)")
 
     + Option ("interp",
-        std::string("set the interpolation method to use when reslicing") +
-        " (choices: nearest, linear, cubic, sinc."
-        " Default: " + interp_choices[DEFAULT_INTERP] + ").")
-      + Argument ("method").type_choice(interp_choices)
+        std::string("set the interpolation method to use when reslicing")
+        + " (choices: " + join(MR::Interp::interp_choices, ", ") + ";"
+        + " default: " + MR::Interp::interp_choices[static_cast<ssize_t>(default_interp)] + ").")
+      + Argument ("method").type_choice(MR::Interp::interp_choices)
 
     + Option ("oversample",
         "set the amount of over-sampling (in the target space) to perform when regridding."
@@ -203,7 +207,7 @@ void usage() {
     + OptionGroup ("Fibre orientation distribution handling options")
 
     + Option ("modulate",
-        "Valid choices are:"
+        "Valid choices are: "
         " fod:"
         " modulate FODs during reorientation"
         " to preserve the apparent fibre density across fibre bundle widths"
@@ -212,13 +216,13 @@ void usage() {
         " modulate the image intensity with the determinant of the Jacobian"
         " of the warp of linear transformation "
         " to preserve the total intensity before and after the transformation.")
-      + Argument ("method").type_choice(modulation_choices)
+      + Argument ("method").type_choice<Modulation>()
 
     + Option ("directions",
         "directions defining the number and orientation of the apodised point spread functions"
         " used in FOD reorientation"
         " (Default: 300 directions)")
-    + Argument ("file", "a list of directions [az el] generated using the dirgen command.").type_file_in()
+    + Argument ("file", "a list of directions as [az in] or [x y z] rows.").type_file_in()
 
     + Option ("reorient_fod",
         "specify whether to perform FOD reorientation."
@@ -248,21 +252,21 @@ void usage() {
 void apply_warp(Image<float> &input,
                 Image<float> &output,
                 Image<default_type> &warp,
-                const int interp,
+                const MR::Interp::interp_type interp,
                 const float out_of_bounds_value,
                 const std::vector<uint32_t> &oversample,
                 const bool jacobian_modulate = false) {
   switch (interp) {
-  case 0:
+  case MR::Interp::interp_type::NEAREST:
     Filter::warp<Interp::Nearest>(input, output, warp, out_of_bounds_value, oversample, jacobian_modulate);
     break;
-  case 1:
+  case MR::Interp::interp_type::LINEAR:
     Filter::warp<Interp::Linear>(input, output, warp, out_of_bounds_value, oversample, jacobian_modulate);
     break;
-  case 2:
+  case MR::Interp::interp_type::CUBIC:
     Filter::warp<Interp::Cubic>(input, output, warp, out_of_bounds_value, oversample, jacobian_modulate);
     break;
-  case 3:
+  case MR::Interp::interp_type::SINC:
     Filter::warp<Interp::Sinc>(input, output, warp, out_of_bounds_value, oversample, jacobian_modulate);
     break;
   default:
@@ -340,18 +344,23 @@ void run() {
   opt = get_options("warp_full");
   Image<default_type> warp;
   if (!opt.empty()) {
-    if (!Path::is_mrtrix_image(std::filesystem::path(opt[0][0])) &&                  //
-        !(Path::has_suffix(std::filesystem::path(opt[0][0]), {".nii", ".nii.gz"}) && //
-          File::Config::get_bool("NIfTIAutoLoadJSON", false) &&                      //
-          std::filesystem::exists(File::NIfTI::get_json_path(std::filesystem::path(opt[0][0]))))) {
-      WARN("warp_full image is not in original .mif/.mih file format or in NIfTI file format with associated JSON.  "
-           "Converting to other file formats may remove linear transformations stored in the image header.");
-    }
-    warp = Image<default_type>::open(opt[0][0]).with_direct_io();
-    Registration::Warp::check_warp_full(warp);
     if (linear)
       throw Exception("the -warp_full option cannot be applied in combination with -linear"
                       " since the linear transform is already included in the warp header");
+    if (!Path::is_mrtrix_image(opt[0][0]) &&                                 //
+        !(Path::has_suffix(opt[0][0], {".nii", ".nii.gz"}) &&                //
+          File::Config::get_bool("NIfTIAutoLoadJSON", false) &&              //
+          std::filesystem::exists(File::NIfTI::get_json_path(opt[0][0])))) { //
+      WARN("warp_full image is not in original .mif/.mih file format or in NIfTI file format with associated JSON;"
+           " converting to other file formats may remove linear transformations stored in the image header.");
+    }
+    Header H_warp = Header::open(opt[0][0]);
+    auto warp_format = Registration::Warp::validate_header(H_warp);
+    if (warp_format != Registration::Warp::WarpFormat::Full)
+      throw Exception("Input to -warp_full option must be a 5D \"full\" warp series,"
+                      " not a 4D deformation warp (see -warp option)");
+    warp = H_warp.get_image<default_type>().with_direct_io();
+    Registration::Warp::debug_validate_image(warp);
   }
 
   // Warp from image1 or image2
@@ -368,11 +377,13 @@ void run() {
   if (!opt.empty()) {
     if (warp.valid())
       throw Exception("only one warp field can be input with either -warp or -warp_mid");
-    warp = Image<default_type>::open(opt[0][0]).with_direct_io(Stride::contiguous_along_axis(3));
-    if (warp.ndim() != 4)
-      throw Exception("the input -warp file must be a 4D deformation field");
-    if (warp.size(3) != 3)
-      throw Exception("the input -warp file must have 3 volumes in the 4th dimension (x,y,z positions)");
+    Header H_warp = Header::open(opt[0][0]);
+    auto warp_format = Registration::Warp::validate_header(H_warp);
+    if (warp_format != Registration::Warp::WarpFormat::Simple)
+      throw Exception("Input to -warp option must be a 4D deformation field,"
+                      " not a \"full\" warp (see -warp_full option)");
+    warp = H_warp.get_image<default_type>().with_direct_io(Stride::contiguous_along_axis(3));
+    Registration::Warp::debug_validate_image(warp);
   }
 
   // Inverse
@@ -430,7 +441,7 @@ void run() {
   const bool is_possible_fod_image =
       input_header.ndim() == 4 &&  //
       input_header.size(3) >= 6 && //
-      input_header.size(3) == (int)Math::SH::NforL(Math::SH::LforN(input_header.size(3)));
+      input_header.size(3) == static_cast<ssize_t>(Math::SH::NforL(Math::SH::LforN(input_header.size(3))));
 
   // reorientation
   if (!get_options("no_reorientation").empty())
@@ -447,11 +458,14 @@ void run() {
   if (fod_reorientation && (linear || warp.valid() || template_header.valid()) && is_possible_fod_image) {
     CONSOLE("performing apodised PSF reorientation");
 
-    Eigen::MatrixXd directions_az_el;
     opt = get_options("directions");
-    directions_az_el = opt.empty() ? DWI::Directions::electrostatic_repulsion_300()
-                                   : File::Matrix::load_matrix(std::filesystem::path(opt[0][0]));
-    Math::Sphere::spherical2cartesian(directions_az_el, directions_cartesian);
+    if (opt.empty()) {
+      directions_cartesian = Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300());
+    } else {
+      const Eigen::MatrixXd directions = File::Matrix::load_matrix(opt[0][0]);
+      DWI::Directions::validate(directions, opt[0][0], false);
+      directions_cartesian = Math::Sphere::as_cartesian(directions);
+    }
 
     // load with SH coeffients contiguous in RAM
     stride = Stride::contiguous_along_axis(3, input_header);
@@ -459,8 +473,11 @@ void run() {
 
   // Intensity / FOD modulation
   opt = get_options("modulate");
-  const bool modulate_fod = !opt.empty() && (int)opt[0][0] == 0;
-  const bool modulate_jac = !opt.empty() && (int)opt[0][0] == 1;
+  const std::optional<Modulation> modulation =
+      opt.empty() ? std::nullopt
+                  : std::optional<Modulation>(get_option_choice<Modulation>("modulate", Modulation::FOD));
+  const bool modulate_fod = modulation.has_value() && *modulation == Modulation::FOD;
+  const bool modulate_jac = modulation.has_value() && *modulation == Modulation::JAC;
 
   const std::string reorient_msg = str("reorienting") + str((modulate_fod ? " with FOD modulation" : ""));
   if (modulate_fod)
@@ -502,7 +519,7 @@ void run() {
     }
     if (grad.rows()) {
       try {
-        if (input_header.size(3) != (ssize_t)grad.rows()) {
+        if (input_header.size(3) != static_cast<ssize_t>(grad.rows())) {
           throw Exception("DW gradient table of different length (" + str(grad.rows()) + ")" +
                           " to number of image volumes (" + str(input_header.size(3)) + ")");
         }
@@ -532,7 +549,7 @@ void run() {
       }
       try {
         const auto lines = split_lines(hit->second);
-        if (lines.size() != size_t(input_header.size(3)))
+        if (lines.size() != static_cast<size_t>(input_header.size(3)))
           throw Exception("Number of lines in header entry \"directions\" (" + str(lines.size()) + ")" +
                           " does not match number of volumes in image (" + str(input_header.size(3)) + ")");
         Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> result;
@@ -544,16 +561,16 @@ void run() {
                               " (expected matrix with 2 or 3 columns;" +      //
                               " data has " + str(v.size()) + " columns)");
             result.resize(lines.size(), v.size());
-          } else if (v.size() != size_t(result.cols())) {
+          } else if (v.size() != static_cast<size_t>(result.cols())) {
             throw Exception("Inconsistent number of columns in \"directions\" field");
           }
           if (result.cols() == 2) {
-            Eigen::Matrix<default_type, 2, 1> azel(v.data());
+            Eigen::Matrix<default_type, 2, 1> azin(v.data());
             Eigen::Vector3d dir;
-            Math::Sphere::spherical2cartesian(azel, dir);
+            Math::Sphere::spherical2cartesian(azin, dir);
             dir = rotation * dir;
-            Math::Sphere::cartesian2spherical(dir, azel);
-            result.row(l) = azel;
+            Math::Sphere::cartesian2spherical(dir, azin);
+            result.row(l) = azin;
           } else {
             const Eigen::Vector3d dir = rotation * Eigen::Vector3d(v.data());
             result.row(l) = dir;
@@ -571,10 +588,10 @@ void run() {
   }
 
   // Interpolator
-  int interp = DEFAULT_INTERP; // cubic
+  MR::Interp::interp_type interp = default_interp;
   opt = get_options("interp");
   if (!opt.empty()) {
-    interp = opt[0][0];
+    interp = MR::Interp::interp_type(static_cast<MR::App::ParsedArgument::IntType>(opt[0][0]));
     if (!warp && !template_header)
       WARN("interpolator choice ignored since the input image will not be regridded");
   }
@@ -595,7 +612,7 @@ void run() {
     for (const auto x : oversample)
       if (x < 1)
         throw Exception("-oversample factors must be positive integers");
-  } else if (interp == 0) {
+  } else if (interp == MR::Interp::interp_type::NEAREST) {
     // default for nearest-neighbour is no oversampling
     oversample = {1, 1, 1};
   }
@@ -632,21 +649,21 @@ void run() {
       output_header.transform() = midway_header.transform();
     }
 
-    if (interp == 0) // nearest
+    if (interp == MR::Interp::interp_type::NEAREST) // nearest
       output_header.datatype() = DataType::from_command_line(input_header.datatype());
-    auto output = Image<float>::create(output_path, output_header).with_direct_io();
+    auto output = Image<float>::create(argument[1], output_header);
 
     switch (interp) {
-    case 0:
+    case MR::Interp::interp_type::NEAREST:
       Filter::reslice<Interp::Nearest>(input, output, linear_transform, oversample, out_of_bounds_value);
       break;
-    case 1:
+    case MR::Interp::interp_type::LINEAR:
       Filter::reslice<Interp::Linear>(input, output, linear_transform, oversample, out_of_bounds_value);
       break;
-    case 2:
+    case MR::Interp::interp_type::CUBIC:
       Filter::reslice<Interp::Cubic>(input, output, linear_transform, oversample, out_of_bounds_value);
       break;
-    case 3:
+    case MR::Interp::interp_type::SINC:
       Filter::reslice<Interp::Sinc>(input, output, linear_transform, oversample, out_of_bounds_value);
       break;
     default:
@@ -676,7 +693,7 @@ void run() {
       output_header.transform() = warp.transform();
     }
 
-    auto output = Image<float>::create(output_path, output_header).with_direct_io();
+    auto output = Image<float>::create(argument[1], output_header);
 
     if (warp.ndim() == 5) {
       Image<default_type> warp_deform;
@@ -731,7 +748,7 @@ void run() {
       output_header.transform() = linear_transform;
     else
       output_header.transform() = linear_transform.inverse() * output_header.transform();
-    auto output = Image<float>::create(output_path, output_header).with_direct_io();
+    auto output = Image<float>::create(argument[1], output_header);
     copy_with_progress(input, output);
 
     if (fod_reorientation || modulate_jac) {

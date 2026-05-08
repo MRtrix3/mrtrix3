@@ -1,4 +1,4 @@
-/* Copyright (c) 2008-2025 the MRtrix3 contributors.
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,6 +16,9 @@
 
 #pragma once
 
+#include <filesystem>
+#include <string_view>
+
 #include "algo/loop.h"
 #include "app.h"
 #include "fixel/fixel.h"
@@ -24,36 +27,17 @@
 #include "image_diff.h"
 #include "image_helpers.h"
 
-#include <filesystem>
-
-namespace MR {
-class InvalidFixelDirectoryException : public Exception {
+namespace MR::Fixel {
+class InvalidDirectoryException : public Exception {
 public:
-  InvalidFixelDirectoryException(const std::string &msg) : Exception(msg) {}
-  InvalidFixelDirectoryException(const Exception &previous_exception, const std::string &msg)
+  InvalidDirectoryException(std::string msg) : Exception(msg) {}
+  InvalidDirectoryException(const Exception &previous_exception, std::string msg)
       : Exception(previous_exception, msg) {}
 };
 
-namespace Peaks {
-FORCE_INLINE void check(const Header &in) {
-  if (!in.datatype().is_floating_point())
-    throw Exception("Image \"" + in.path().string() +
-                    "\" is not a valid peaks image: Does not contain floating-point data");
-  try {
-    check_effective_dimensionality(in, 4);
-  } catch (Exception &e) {
-    throw Exception(e, "Image \"" + in.path().string() + "\" is not a valid peaks image: Expect 4 dimensions");
-  }
-  if (in.size(3) % 3)
-    throw Exception("Image \"" + in.path().string() +
-                    "\" is not a valid peaks image: Number of volumes must be a multiple of 3");
-}
-} // namespace Peaks
-
-namespace Fixel {
-FORCE_INLINE bool is_index_filename(const std::filesystem::path &path) {
-  for (std::initializer_list<const std::string>::iterator it = supported_sparse_formats.begin();
-       it != supported_sparse_formats.end();
+FORCE_INLINE bool is_index_filename(std::string_view path) {
+  for (std::initializer_list<const std::string>::iterator it = supported_image_formats.begin();
+       it != supported_image_formats.end();
        ++it) {
     if (path.filename().string() == "index" + *it)
       return true;
@@ -76,8 +60,8 @@ template <class HeaderType> FORCE_INLINE bool is_data_file(const HeaderType &in)
 }
 
 FORCE_INLINE bool is_directions_filename(const std::filesystem::path &path) {
-  for (std::initializer_list<const std::string>::iterator it = supported_sparse_formats.begin();
-       it != supported_sparse_formats.end();
+  for (std::initializer_list<const std::string>::iterator it = supported_image_formats.begin();
+       it != supported_image_formats.end();
        ++it) {
     if (path.filename().string() == "directions" + *it)
       return true;
@@ -147,23 +131,20 @@ FORCE_INLINE void check_fixel_size(const Header &H, const index_type nfixels) {
 
 FORCE_INLINE void
 check_fixel_directory(const std::filesystem::path &path, bool create_if_missing = false, bool check_if_empty = false) {
-  std::filesystem::path path_temp = path;
   // handle the use case when a fixel command is run from inside a fixel directory
-  if (path.empty())
-    path_temp = std::filesystem::current_path();
+  std::filesystem::path fixel_dir = path.empty() ? std::filesystem::current_path() : path;
 
   bool exists(true);
-
-  if (!(exists = std::filesystem::exists(path_temp))) {
+  if (!(exists = std::filesystem::exists(fixel_dir))) {
     if (create_if_missing)
-      std::filesystem::create_directory(path_temp);
+      std::filesystem::create_directory(fixel_dir);
     else
-      throw Exception("Fixel directory (" + str(path_temp) + ") does not exist");
-  } else if (!std::filesystem::is_directory(path_temp))
-    throw Exception(str(path_temp) + " is not a directory");
+      throw Exception("Fixel directory (" + str(fixel_dir) + ") does not exist");
+  } else if (!std::filesystem::is_directory(fixel_dir))
+    throw Exception(str(fixel_dir) + " is not a directory");
 
-  if (check_if_empty && std::filesystem::directory_iterator(path_temp) != std::filesystem::directory_iterator())
-    throw Exception("Output fixel directory \"" + path_temp.string() + "\" is not empty" +
+  if (check_if_empty && std::filesystem::directory_iterator(fixel_dir) != std::filesystem::directory_iterator())
+    throw Exception("Output fixel directory \"" + fixel_dir.string() + "\" is not empty" +
                     (App::overwrite_files
                          ? " (-force option cannot safely be applied on directories; please erase manually instead)"
                          : ""));
@@ -173,8 +154,8 @@ FORCE_INLINE Header find_index_header(const std::filesystem::path &fixel_directo
   Header header;
   check_fixel_directory(fixel_directory_path);
 
-  for (std::initializer_list<const std::string>::iterator it = supported_sparse_formats.begin();
-       it != supported_sparse_formats.end();
+  for (std::initializer_list<const std::string>::iterator it = supported_image_formats.begin();
+       it != supported_image_formats.end();
        ++it) {
     std::filesystem::path full_path = (fixel_directory_path / ("index" + *it));
     if (std::filesystem::exists(full_path)) {
@@ -204,7 +185,7 @@ FORCE_INLINE std::vector<Header> find_data_headers(const std::filesystem::path &
 
   std::vector<Header> data_headers;
   for (auto fname : file_names) {
-    if (Path::has_suffix(std::filesystem::path(fname), supported_sparse_formats)) {
+    if (Path::has_suffix(std::filesystem::path(fname), supported_image_formats)) {
       try {
         auto H = Header::open(fixel_directory_path / fname);
         if (is_data_file(H)) {
@@ -212,8 +193,8 @@ FORCE_INLINE std::vector<Header> find_data_headers(const std::filesystem::path &
             if (!is_directions_file(H) || include_directions)
               data_headers.emplace_back(std::move(H));
           } else {
-            WARN("fixel data file (" + fname +
-                 ") does not contain the same number of elements as fixels in the index file");
+            WARN("fixel data file (" + fname + ")" +                                           //
+                 " does not contain the same number of elements as fixels in the index file"); //
           }
         }
       } catch (...) {
@@ -243,8 +224,8 @@ FORCE_INLINE Header find_directions_header(const std::filesystem::path &fixel_di
           directions_found = true;
           header = std::move(tmp_header);
         } else {
-          WARN("fixel directions file (" + fname +
-               ") does not contain the same number of elements as fixels in the index file");
+          WARN("fixel directions file (" + fname + ")" +                                     //
+               " does not contain the same number of elements as fixels in the index file"); //
         }
       }
     }
@@ -257,7 +238,7 @@ FORCE_INLINE Header find_directions_header(const std::filesystem::path &fixel_di
   return header;
 }
 
-//! Generate a header for a sparse data file (Nx1x1)
+//! Generate a header for a fixel data file (Nx1x1)
 FORCE_INLINE Header data_header_from_nfixels(const size_t nfixels) {
   Header header;
   header.ndim() = 3;
@@ -274,7 +255,7 @@ FORCE_INLINE Header data_header_from_nfixels(const size_t nfixels) {
   return header;
 }
 
-//! Generate a header for a sparse data file (Nx1x1) using an index image as a template
+//! Generate a header for a fixel data file (Nx1x1) using an index image as a template
 template <class IndexHeaderType> FORCE_INLINE Header data_header_from_index(IndexHeaderType &index) {
   Header header(data_header_from_nfixels(get_number_of_fixels(index)));
   for (size_t axis = 0; axis != 3; ++axis)
@@ -394,5 +375,5 @@ template <class ValueType> Image<ValueType> open_fixel_data_file(const std::file
 
   return in_data_image;
 }
-} // namespace Fixel
-} // namespace MR
+
+} // namespace MR::Fixel

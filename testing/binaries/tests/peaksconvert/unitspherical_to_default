@@ -1,0 +1,33 @@
+#!/bin/bash
+# Evaluation of command operation for conversion:
+#   - From:
+#     - Unit Spherical format, ie. no quantitative information per fixel
+#     - The "xyz" reference axes
+#   - To the default
+#     (xyz reference, but vectors must be of unit norm as there's no data to the contrary)
+
+# First, produce the unit-normalised version of the original peaks image
+mrconvert peaks.mif -coord 3 0,1,2 - | \
+    mrmath - norm -axis 3 tmp_norm1.mif -force
+mrconvert peaks.mif -coord 3 3,4,5 - | \
+    mrmath - norm -axis 3 tmp_norm2.mif -force
+mrconvert peaks.mif -coord 3 6,7,8 - | \
+    mrmath - norm -axis 3 tmp_norm3.mif -force
+mrcat \
+    tmp_norm1.mif tmp_norm1.mif tmp_norm1.mif \
+    tmp_norm2.mif tmp_norm2.mif tmp_norm2.mif \
+    tmp_norm3.mif tmp_norm3.mif tmp_norm3.mif \
+    -axis 3 \
+    - | \
+mrcalc peaks.mif - -div tmp_unitpeaks.mif -force
+
+# Extract the azimuth & inclination volumes from the non-unit spherical format
+mrconvert peaksconvert/xyzspherical.mif \
+    -coord 3 1,2,4,5,7,8 \
+    - | \
+# Do the conversion to unit 3-vector
+peaksconvert - \
+    -in_format unitspherical \
+    - | \
+# Compare to reference
+testing_diff_peaks - tmp_unitpeaks.mif 1e-13
