@@ -21,7 +21,9 @@ Usage
 Description
 -----------
 
-The program currently supports MRtrix .tck files (input/output), ascii text files (input/output), VTK polydata files (input/output), and RenderMan RIB (export only).
+The program currently supports MRtrix .tck files (input/output), TRX .trx files (input/output), ascii text files (input/output), VTK polydata files (input/output), and RenderMan RIB (export only).
+
+TRX files can include data per streamline (dps), data per vertex (dpv), data per group (dpg), and group membership. tckconvert only operates on streamline geometry: these fields are preserved only for TRX->TRX conversion and are discarded when converting to other formats that do not support them. When applying a coordinate transform, only the streamline positions are modified; any TRX metadata values are left unchanged.
 
 Example usages
 --------------
@@ -64,6 +66,15 @@ Options specific to VTK writer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-ascii** write an ASCII VTK file (binary by default)
+
+Options specific to TRX writer
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-trxdirectory** write an uncompressed TRX directory instead of a .trx file
+
+-  **-dps name datatype path** add data-per-streamline values from a text file (datatype: float16/float32/float64)
+
+-  **-dpv name datatype path** add data-per-vertex values from a TSF file (datatype: float16/float32/float64)
 
 Standard options
 ^^^^^^^^^^^^^^^^
