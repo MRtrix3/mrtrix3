@@ -19,6 +19,7 @@
 #include <cassert>
 #include <cstdint>
 #include <iostream>
+#include <optional>
 
 #include "file/entry.h"
 #include "types.h"
@@ -44,11 +45,14 @@ public:
    * the file has just been created, \a preload should be set to \c false to
    * prevent this, in which case the contents will set to zero.
    *
-   * By default, the whole file is mapped. If \a mapped_size is
-   * non-zero, then only the region of size \a mapped_size starting from
-   * the byte offset specified in \a entry will be mapped.
+   * By default, the whole file is mapped. If \a mapped_size is set,
+   * then only the region of that size starting from the byte offset
+   * specified in \a entry will be mapped.
    */
-  MMap(const Entry &entry, bool readwrite = false, bool preload = true, int64_t mapped_size = -1);
+  MMap(const Entry &entry,
+       bool readwrite = false,
+       bool preload = true,
+       std::optional<int64_t> mapped_size = std::nullopt);
   ~MMap();
 
   std::string name() const { return Entry::name; }
