@@ -43,8 +43,8 @@
 
 namespace MR::File {
 
-MMap::MMap(const Entry &entry, bool readwrite, bool preload, int64_t mapped_size)
-    : Entry(entry), addr(nullptr), first(nullptr), msize(mapped_size), readwrite(readwrite) {
+MMap::MMap(const Entry &entry, bool readwrite, bool preload, std::optional<int64_t> mapped_size)
+    : Entry(entry), addr(nullptr), first(nullptr), msize(0), readwrite(readwrite) {
   DEBUG("memory-mapping file \"" + Entry::name + "\"...");
 
   struct stat sbuf;
@@ -53,10 +53,12 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, int64_t mapped_size
 
   mtime = sbuf.st_mtime;
 
-  if (msize < 0)
+  if (!mapped_size.has_value())
     msize = sbuf.st_size - start;
-  else if (start + msize > sbuf.st_size)
+  else if (start + *mapped_size > sbuf.st_size)
     throw Exception("file \"" + Entry::name + "\" is smaller than expected");
+  else
+    msize = *mapped_size;
 
   bool delayed_writeback = false;
   if (readwrite) {
