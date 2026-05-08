@@ -240,7 +240,7 @@ template <class MatrixType> void Writer<MatrixType>::set_extent_path(std::string
   extent_image = Image<connectivity_value_type>::create(path, MR::Fixel::data_header_from_nfixels(matrix.size()));
 }
 
-template <class MatrixType> void Writer<MatrixType>::save(std::string_view path) const {
+template <class MatrixType> void Writer<MatrixType>::save(std::string_view path, const bool normalise) const {
   if (Path::exists(path)) {
     if (Path::is_dir(path)) {
       if (!App::overwrite_files &&
@@ -283,9 +283,15 @@ template <class MatrixType> void Writer<MatrixType>::save(std::string_view path)
     ProgressBar progress("Computing number of supra-threshold fixel-fixel connections", matrix.size());
 
     for (size_t fixel_index = 0; fixel_index != matrix.size(); ++fixel_index) {
-      const connectivity_value_type normalisation_factor = matrix[fixel_index].norm_factor();
+      const default_type normalisation_factor = matrix[fixel_index].norm_factor();
       for (auto &it : matrix[fixel_index]) {
-        const connectivity_value_type connectivity = normalisation_factor * it.value();
+        // If normalising, then each _directed_ connection can be thresholded individually.
+        // However for non-normalised matrices, want to preserve matrix symmetry.
+        // In that case, check whether the connection survives the threhsold in either direction
+        //   (so that low-density / poorly reconstructed fixels have the best chance to preserve connectivity)
+        const connectivity_value_type connectivity = static_cast<connectivity_value_type>(
+            it.value() *
+            (normalise ? normalisation_factor : std::max(normalisation_factor, matrix[it.index()].norm_factor())));
         if (connectivity >= threshold)
           ++num_connections;
       }
@@ -324,22 +330,25 @@ template <class MatrixType> void Writer<MatrixType>::save(std::string_view path)
     throw Exception(e, "Unable to allocate space on filesystem for fixel-fixel connectivity matrix data");
   }
 
-  ProgressBar progress("Normalising and writing fixel-fixel connectivity matrix to directory \"" + path + "\"",
-                       matrix.size());
+  ProgressBar progress(std::string(normalise ? "Normalising and writing" : "Writing un-normalised") + //
+                           " fixel-fixel connectivity matrix to directory \"" + path + "\"",          //
+                       matrix.size());                                                                //
   for (size_t fixel_index = 0; fixel_index != matrix.size(); ++fixel_index) {
 
     const ssize_t connection_offset = fixel_image.index(0);
     index_type connection_count = 0;
     connectivity_value_type sum_connectivity = connectivity_value_type(0.0);
-    const connectivity_value_type normalisation_factor = matrix[fixel_index].norm_factor();
+    const default_type normalisation_factor = matrix[fixel_index].norm_factor();
     for (auto &it : matrix[fixel_index]) {
-      const connectivity_value_type connectivity = normalisation_factor * it.value();
+      const connectivity_value_type connectivity = static_cast<connectivity_value_type>(
+          it.value() *
+          (normalise ? normalisation_factor : std::max(normalisation_factor, matrix[it.index()].norm_factor())));
       if (connectivity >= threshold) {
         ++connection_count;
         sum_connectivity += connectivity;
         fixel_image.value() = it.index();
         ++fixel_image.index(0);
-        value_image.value() = connectivity;
+        value_image.value() = normalise ? connectivity : it.value();
         ++value_image.index(0);
       }
     }

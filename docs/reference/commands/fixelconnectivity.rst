@@ -39,6 +39,8 @@ Options that influence generation of the connectivity matrix / matrices
 
 -  **-mask file** provide a fixel data file containing a mask of those fixels to be computed; fixels outside the mask will be empty in the output matrix
 
+-  **-normalise value** controls whether the matrix elements are row-normalised (see Description) (default: yes)
+
 -  **-tck_weights_in path** specify a text scalar file containing the streamline weights
 
 Options for additional outputs to be generated

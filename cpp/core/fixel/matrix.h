@@ -199,7 +199,7 @@ public:
   void set_keyvals(KeyValues &kv) { keyvals = kv; }
   void set_count_path(std::string_view path);
   void set_extent_path(std::string_view path);
-  void save(std::string_view path) const;
+  void save(std::string_view path, const bool normalise) const;
 
 private:
   MatrixType &matrix;
