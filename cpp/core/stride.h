@@ -21,6 +21,7 @@
 #include "debug.h"
 #include "math/math.h"
 #include "types.h"
+#include <numeric>
 
 //! Functions to handle the memory layout of images
 /*! Strides are typically supplied as a symbolic list of increments,
@@ -311,6 +312,25 @@ template <class HeaderType> List get_nearest_match(const HeaderType &current, co
 
   sanitise(in, current);
   return in;
+}
+
+//! returns a symbolic stride list for a canonical axes order layout.
+/*!
+ * A Stride::List representing symbolic strides [1, 2, ..., ndim].
+ * This layout specifies that MRtrix axis 0 should be the most
+ * contiguous (assigned symbolic rank 1), axis 1 the next most
+ * contiguous (rank 2), and so on, up to the highest dimension.
+ * All generated symbolic ranks are positive. This is a common
+ * "row-major-like" packed layout often required for
+ * interoperability with GPU texture APIs or external libraries,
+ * where axis 0 typically maps to width, axis 1 to height, etc.
+ */
+inline List canonical_axes_order_symbolic(size_t ndim) {
+  List strides(ndim);
+  if (ndim > 0) {
+    std::iota(strides.begin(), strides.end(), static_cast<ssize_t>(1));
+  }
+  return strides;
 }
 
 //! convenience function to get volume-contiguous strides
