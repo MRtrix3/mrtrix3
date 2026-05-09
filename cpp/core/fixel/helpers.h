@@ -175,29 +175,29 @@ FORCE_INLINE std::vector<Header> find_data_headers(const std::filesystem::path &
                                                    const Header &index_header,
                                                    const bool include_directions = false) {
   check_index_image(index_header);
-  std::vector<std::string> file_names;
+  std::vector<std::filesystem::path> file_paths;
   {
     for (const auto &entry : std::filesystem::directory_iterator(fixel_directory_path))
-      file_names.push_back(entry.path().filename().string());
+      file_paths.push_back(entry.path());
   }
-  std::sort(file_names.begin(), file_names.end());
+  std::sort(file_paths.begin(), file_paths.end());
 
   std::vector<Header> data_headers;
-  for (auto fname : file_names) {
-    if (Path::has_suffix(std::filesystem::path(fname), supported_image_formats)) {
+  for (auto fpath : file_paths) {
+    if (Path::has_suffix(fpath.filename(), supported_image_formats)) {
       try {
-        auto H = Header::open(fixel_directory_path / fname);
+        auto H = Header::open(fpath);
         if (is_data_file(H)) {
           if (fixels_match(index_header, H)) {
             if (!is_directions_file(H) || include_directions)
               data_headers.emplace_back(std::move(H));
           } else {
-            WARN("fixel data file (" + fname + ")" +                                           //
+            WARN("fixel data file (" + fpath.string() + ")" +                                  //
                  " does not contain the same number of elements as fixels in the index file"); //
           }
         }
       } catch (...) {
-        WARN("unable to open file \"" + fname + "\" as potential fixel data file");
+        WARN("unable to open file \"" + fpath.string() + "\" as potential fixel data file");
       }
     }
   }
@@ -212,9 +212,8 @@ FORCE_INLINE Header find_directions_header(const std::filesystem::path &fixel_di
   Header index_header = Fixel::find_index_header(fixel_directory_path);
 
   for (const auto &entry : std::filesystem::directory_iterator(fixel_directory_path)) {
-    std::string fname = entry.path().filename().string();
-    if (is_directions_filename(fname)) {
-      Header tmp_header = Header::open((fixel_directory_path / fname));
+    if (is_directions_filename(entry.path().filename())) {
+      Header tmp_header = Header::open(entry.path());
       if (is_directions_file(tmp_header)) {
         if (fixels_match(index_header, tmp_header)) {
           if (directions_found == true)
@@ -223,7 +222,7 @@ FORCE_INLINE Header find_directions_header(const std::filesystem::path &fixel_di
           directions_found = true;
           header = std::move(tmp_header);
         } else {
-          WARN("fixel directions file (" + fname + ")" +                                     //
+          WARN("fixel directions file (" + entry.path().string() + ")" +                     //
                " does not contain the same number of elements as fixels in the index file"); //
         }
       }

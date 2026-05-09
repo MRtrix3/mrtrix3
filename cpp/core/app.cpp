@@ -1037,7 +1037,6 @@ void parse() {
   //   (if the output is e.g. given as a prefix, the argument should be flagged as type_text())
   // note that if an argument has multiple possible types, some checks can't be enforced
   for (const auto &i : argument) {
-    const std::string text = std::string(i);
     assert(i.arg->types.any());
     {
       ArgTypeFlags types_not_input_file(i.arg->types);

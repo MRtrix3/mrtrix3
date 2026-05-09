@@ -74,11 +74,11 @@ public:
     std::vector<uint32_t> seq;
   };
 
-  void parse(const std::filesystem::path &imagename, size_t max_num_sequences = std::numeric_limits<size_t>::max());
+  void parse(std::string_view specifier, size_t max_num_sequences = std::numeric_limits<size_t>::max());
 
   size_t num() const { return (array.size()); }
 
-  std::string spec() const { return (specification_path); }
+  std::string spec() const { return specification; }
 
   const Item &operator[](size_t i) const { return (array[i]); }
 
@@ -90,15 +90,16 @@ public:
 
   bool match(std::string_view file_name, std::vector<uint32_t> &indices) const;
   void calculate_padding(const std::vector<uint32_t> &maxvals);
-  std::string name(const std::vector<uint32_t> &indices);
-  std::string get_next_match(std::vector<uint32_t> &indices, bool return_seq_index = false);
+  std::filesystem::path name(const std::vector<uint32_t> &indices);
+  std::filesystem::path get_next_match(std::vector<uint32_t> &indices, bool return_seq_index = false);
 
   friend std::ostream &operator<<(std::ostream &stream, const NameParser &parser);
 
 private:
   std::vector<Item> array;
   std::vector<size_t> seq_index;
-  std::filesystem::path folder_path, specification_path, current_path;
+  std::string specification;
+  std::filesystem::path folder_path;
   std::optional<std::filesystem::directory_iterator> folder;
 
   void insert_str(std::string_view str) {
@@ -118,7 +119,7 @@ private:
 //! a class to hold a parsed image filename
 class ParsedName {
 public:
-  ParsedName(std::string_view name, const std::vector<uint32_t> &index) : indices(index), filename(name) {}
+  ParsedName(const std::filesystem::path &path, const std::vector<uint32_t> &index) : indices(index), filename(path) {}
 
   //! a class to hold a set of parsed image filenames
   class List {
@@ -143,7 +144,7 @@ public:
     size_t max_name_size;
   };
 
-  std::string name() const { return filename; }
+  const std::filesystem::path &name() const { return filename; }
   size_t ndim() const { return indices.size(); }
   uint32_t index(size_t num) const { return indices[num]; }
 
@@ -152,7 +153,7 @@ public:
 
 protected:
   std::vector<uint32_t> indices;
-  std::string filename;
+  std::filesystem::path filename;
 };
 
 } // namespace MR::File

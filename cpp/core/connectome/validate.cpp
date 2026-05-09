@@ -64,7 +64,7 @@ void validate_label_header(const Header &H) {
   } else if (H.datatype().is_signed()) {
     CONSOLE("Image \"" + H.name() + "\" stored with signed integer type;" + //
             " need to check for negative values");                          //
-    auto test = Image<int64_t>::open(H.name());
+    auto test = Image<int64_t>::open(H.path());
     for (auto l = Loop("Verifying parcellation image", test)(test); l; ++l) {
       if (static_cast<int64_t>(test.value()) < int64_t(0))
         throw Exception("Negative value detected in image \"" + H.name() + "\";" + //

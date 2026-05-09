@@ -183,13 +183,6 @@ private:
 std::shared_ptr<Voxel2Vector> SubjectVoxelImport::v2v = nullptr;
 
 void run() {
-  const std::filesystem::path input_path{argument[0]};
-  const std::filesystem::path design_matrix_path{argument[1]};
-  const std::filesystem::path contrast_matrix_path{argument[2]};
-  const std::filesystem::path mask_path{argument[3]};
-  // TODO Remove explicit cast if output argument is changed to .type_directory_out()
-  const std::filesystem::path output_path(argument[4].as_text());
-
   const value_type cluster_forming_threshold =
       get_option_value("threshold", std::numeric_limits<value_type>::quiet_NaN());
   const value_type tfce_dh = get_option_value("tfce_dh", default_tfce_dh);
@@ -218,12 +211,11 @@ void run() {
   size_t mask_infer_voxels = 0;
   auto opt = get_options("posthoc");
   if (!opt.empty()) {
-    const std::string posthoc_path = opt[0][0];
-    mask_inference_image = Image<bool>::open(posthoc_path);
+    mask_inference_image = Image<bool>::open(opt[0][0]);
     if (!(mask_inference_image.ndim() == 3 || (mask_inference_image.ndim() == 4 && mask_inference_image.size(3) == 1)))
-      throw Exception("Post-hoc mask image \"" + posthoc_path + "\" is not 3D");
+      throw Exception("Post-hoc mask image \"" + opt[0][0].as_text() + "\" is not 3D");
     if (!dimensions_match(mask_header, mask_inference_image, 0, 3))
-      throw Exception("Post-hoc image \"" + posthoc_path + "\" does not match mask image");
+      throw Exception("Post-hoc image \"" + opt[0][0].as_text() + "\" does not match mask image");
     mask_inference.setZero();
     size_t mask_mismatch_count = 0;
     for (auto l = Loop(mask_header)(mask_inference_image); l; ++l) {
@@ -256,7 +248,7 @@ void run() {
 
   // Read file names and check files exist
   CohortDataImport importer;
-  importer.initialise<SubjectVoxelImport>(input_path);
+  importer.initialise<SubjectVoxelImport>(argument[0]);
   for (index_type i = 0; i != importer.size(); ++i) {
     if (!dimensions_match(dynamic_cast<SubjectVoxelImport *>(importer[i].get())->header(), mask_header))
       throw Exception("Image file \"" + importer[i]->name().string() + "\" does not match analysis mask");
@@ -335,6 +327,7 @@ void run() {
     output_header.keyval()["threshold"] = str(cluster_forming_threshold);
   }
 
+  // TODO Cnahge type if output argument is changed to .type_directory_out() (#3160)
   const std::string prefix(argument[3]);
 
   // Only add contrast matrix row number to image outputs if there's more than one hypothesis

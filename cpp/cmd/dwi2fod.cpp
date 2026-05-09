@@ -309,15 +309,15 @@ void run() {
     shared.parse_cmdline_options();
 
     const size_t num_tissues = (argument.size() - 2) / 2;
-    std::vector<std::string> response_paths_str;
+    std::vector<std::filesystem::path> response_paths;
     std::vector<std::filesystem::path> odf_paths;
     for (size_t i = 0; i < num_tissues; ++i) {
-      response_paths_str.push_back(argument[i * 2 + 2]);
+      response_paths.push_back(argument[i * 2 + 2]);
       odf_paths.push_back(argument[i * 2 + 3]);
     }
 
     try {
-      shared.set_responses(response_paths_str);
+      shared.set_responses(response_paths);
     } catch (Exception &e) {
       throw Exception(
           e, "MSMT_CSD algorithm expects the first file in each argument pair to be an input response function file");

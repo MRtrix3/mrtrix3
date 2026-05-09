@@ -114,10 +114,6 @@ private:
 };
 
 void run() {
-  const std::filesystem::path input_subject_path{argument[0]};
-  const std::filesystem::path input_design_path{argument[1]};
-  const std::filesystem::path input_contrast_path{argument[2]};
-
   // Unlike other statistical inference commands, don't delay actual
   //   loading of input data: feasible for the input itself to be
   //   a text file containing raw numerical matrix data, rather than
@@ -126,7 +122,7 @@ void run() {
   measurements_matrix_type data;
   index_type num_inputs = 0, num_elements = 0;
   try {
-    importer.initialise<SubjectVectorImport>(input_subject_path);
+    importer.initialise<SubjectVectorImport>(argument[0]);
     num_inputs = importer.size();
     num_elements = importer[0]->size();
     for (index_type i = 0; i != importer.size(); ++i) {
@@ -140,11 +136,11 @@ void run() {
       (*importer[subject])(data.row(subject));
   } catch (Exception &e_asfilelist) {
     try {
-      data = File::Matrix::load_matrix<measurements_matrix_type::Scalar>(input_subject_path);
+      data = File::Matrix::load_matrix<measurements_matrix_type::Scalar>(argument[0]);
       num_inputs = data.rows();
       num_elements = data.cols();
     } catch (Exception &e_asmatrix) {
-      Exception e("Unable to load input data from file \"" + input_subject_path.string() + '"');
+      Exception e("Unable to load input data from file \"" + argument[0].as_text() + '"');
       e.push_back("Error when interpreted as containing list of file names: ");
       e.push_back(e_asfilelist);
       e.push_back("Error when interpreted as numerical matrix data: ");
@@ -167,7 +163,7 @@ void run() {
   }
 
   // Load design matrix
-  const matrix_type design = File::Matrix::load_matrix(input_design_path);
+  const matrix_type design = File::Matrix::load_matrix(argument[1]);
   if (static_cast<index_type>(design.rows()) != num_inputs)
     throw Exception("Number of subjects (" + str(num_inputs) + ")" +
                     " does not match number of rows in design matrix (" + str(design.rows()) + ")");

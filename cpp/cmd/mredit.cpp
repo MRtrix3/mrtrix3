@@ -101,8 +101,12 @@ void run() {
   if (inplace) {
     out = Image<float>(in);
   } else {
-    if (std::filesystem::equivalent(argument[0], argument[1]))
-      throw Exception("Do not provide same image as input and output; instad specify image to be edited in-place");
+    if (static_cast<std::filesystem::path>(argument[0])
+                .lexically_normal()
+                .compare(static_cast<std::filesystem::path>(argument[1]).lexically_normal()) == 0 &&
+        !is_dash(argument[0].as_text()))
+      throw Exception("Do not provide same image as input and output;"
+                      " instead specify image just once and it will be edited in-place");
     out = Image<float>::create(argument[1], H);
     copy(in, out);
   }

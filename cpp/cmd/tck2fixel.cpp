@@ -199,7 +199,8 @@ void run() {
   const float angular_threshold = get_option_value("angle", DWI::Tractography::Mapping::default_streamline2fixel_angle);
   const bool precise = !get_options("precise").empty();
 
-  Fixel::copy_index_and_directions_file(argument[1], argument[2]);
+  // TODO Repair type clumsiness if interface is changed (#3160)
+  Fixel::copy_index_and_directions_file(std::filesystem::path(argument[1].as_text()), argument[2].as_text());
 
   DWI::Tractography::Properties properties;
   DWI::Tractography::Reader<float> track_file(argument[0], properties);
@@ -210,7 +211,8 @@ void run() {
       DWI::Tractography::Mapping::determine_upsample_ratio(index_header, properties, precise ? 0.1F : (1.0F / 3.0F));
 
   DWI::Tractography::Mapping::TrackLoader loader(track_file, num_tracks, "mapping tracks to fixels");
-  const std::filesystem::path output_path = static_cast<std::filesystem::path>(argument[2]) / argument[3];
+  // TODO Repair type clumsiness if interface is changed (#3160)
+  const std::filesystem::path output_path = std::filesystem::path(argument[2].as_text()) / argument[3].as_text();
 
   if (get_options("tck_weights_in").empty() && !precise) {
     run<uint32_t>(

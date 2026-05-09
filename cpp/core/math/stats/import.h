@@ -18,6 +18,7 @@
 
 #include <fstream>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -80,7 +81,8 @@ public:
   // Needs to be its own function rather than the constructor
   //   so that the correct template type can be invoked explicitly
   template <class SubjectDataImport>
-  void initialise(const std::filesystem::path &listpath, std::string_view explicit_from_directory = "");
+  void initialise(const std::filesystem::path &listpath,
+                  const std::optional<std::filesystem::path> &explicit_from_directory = std::nullopt);
 
   /*!
    * @param index for a particular element being tested (data will be acquired for
@@ -103,7 +105,8 @@ protected:
 };
 
 template <class SubjectDataImport>
-void CohortDataImport::initialise(const std::filesystem::path &listpath, std::string_view explicit_from_directory) {
+void CohortDataImport::initialise(const std::filesystem::path &listpath,
+                                  const std::optional<std::filesystem::path> &explicit_from_directory) {
   // Read the provided text file one at a time
   // For each file, create an instance of SubjectDataImport
   //   (which must derive from SubjectDataImportBase)
@@ -136,8 +139,8 @@ void CohortDataImport::initialise(const std::filesystem::path &listpath, std::st
     directories[0] = ".";
   else if (directories[0] != ".")
     directories.push_back(".");
-  if (!explicit_from_directory.empty())
-    directories.insert(directories.begin(), std::string(explicit_from_directory));
+  if (explicit_from_directory.has_value())
+    directories.insert(directories.begin(), explicit_from_directory.value());
 
   Exception e_nosuccess("Unable to load all input data from file \"" + listpath.string() + "\"");
   std::filesystem::path load_from_dir;

@@ -144,7 +144,7 @@ Header Header::open(const std::filesystem::path &image_path) {
 
     const Formats::Base **format_handler = Formats::handlers;
     size_t item_index = 0;
-    H.path() = std::filesystem::path(list[item_index].name());
+    H.path() = list[item_index].name();
 
     for (; *format_handler; format_handler++) {
       if ((H.io = (*format_handler)->read(H)))
@@ -287,7 +287,7 @@ Header Header::create(const std::filesystem::path &image_name, //
     H.sanitise();
 
     File::NameParser parser;
-    parser.parse(image_name);
+    parser.parse(image_name.string());
     std::vector<uint32_t> Pdim(parser.ndim());
 
     std::vector<int> Hdim(H.ndim());

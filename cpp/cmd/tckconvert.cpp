@@ -283,14 +283,12 @@ private:
 
 class ASCIIReader : public ReaderInterface<float> {
 public:
-  ASCIIReader(const std::filesystem::path &path) : parent(path.parent_path()) {
-    auto num = list.parse_scan_check(path.filename().string());
-  }
+  ASCIIReader(std::string_view file) { auto num = list.parse_scan_check(file); }
 
   bool operator()(Streamline<float> &tck) {
     tck.clear();
     if (item < list.size()) {
-      auto t = File::Matrix::load_matrix<float>(parent / list[item].name());
+      auto t = File::Matrix::load_matrix<float>(list[item].name());
       for (decltype(t)::Index i = 0; i < t.rows(); i++)
         tck.push_back(Eigen::Vector3f(t.row(i)));
       item++;
@@ -302,24 +300,22 @@ public:
   ~ASCIIReader() {}
 
 private:
-  std::filesystem::path parent;
   File::ParsedName::List list;
   size_t item = 0;
 };
 
 class ASCIIWriter : public WriterInterface<float> {
 public:
-  ASCIIWriter(const std::filesystem::path &path) : parent(path.parent_path()) {
+  ASCIIWriter(std::string_view file) {
     count.push_back(0);
-    parser.parse(path.filename().string());
+    parser.parse(file);
     if (parser.ndim() != 1)
       throw Exception("output file specifier should contain one placeholder for numbering (e.g. output-[].txt)");
     parser.calculate_padding({1000000});
   }
 
   bool operator()(const Streamline<float> &tck) {
-    std::string name = parser.name(count);
-    File::OFStream out(parent / name);
+    File::OFStream out(parser.name(count));
     for (auto i = tck.begin(); i != tck.end(); ++i)
       out << (*i)[0] << " " << (*i)[1] << " " << (*i)[2] << "\n";
     out.close();
@@ -330,7 +326,6 @@ public:
   ~ASCIIWriter() {}
 
 private:
-  std::filesystem::path parent;
   File::NameParser parser;
   std::vector<uint32_t> count;
 };
@@ -694,7 +689,7 @@ void run() {
   if (input_path.extension() == ".tck") {
     reader.reset(new Reader<float>(input_path, properties));
   } else if (input_path.extension() == ".txt") {
-    reader.reset(new ASCIIReader(input_path));
+    reader.reset(new ASCIIReader(input_path.string()));
   } else if (input_path.extension() == ".vtk") {
     reader.reset(new VTKReader(input_path));
   } else {
@@ -716,7 +711,7 @@ void run() {
   } else if (output_path.extension() == ".rib") {
     writer.reset(new RibWriter(output_path));
   } else if (output_path.extension() == ".txt") {
-    writer.reset(new ASCIIWriter(output_path));
+    writer.reset(new ASCIIWriter(output_path.string()));
   } else {
     throw Exception("Unsupported output file type.");
   }

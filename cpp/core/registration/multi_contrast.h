@@ -43,7 +43,7 @@ FORCE_INLINE void check_image_output(const std::filesystem::path &image_path, co
 
   Header H = reference;
   File::NameParser parser;
-  parser.parse(image_path);
+  parser.parse(image_path.string());
   std::vector<int> Pdim(parser.ndim());
 
   H.path() = image_path;

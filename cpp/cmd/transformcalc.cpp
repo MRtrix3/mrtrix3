@@ -51,7 +51,7 @@ void usage() {
   SYNOPSIS = "Perform calculations on linear transformation matrices";
 
   ARGUMENTS
-  + Argument ("inputs", "the input(s) for the specified operation").type_image_in().type_file_in().allow_multiple()
+  + Argument ("inputs", "the input(s) for the specified operation").type_image_in().type_file_in().type_float(0.0, 1.0).allow_multiple()
   + Argument ("operation", "the operation to perform;"
                            " one of: " + MR::Enum::join<Operation>(", ") +
                            " (see description section for details).").type_choice<Operation>()
@@ -247,7 +247,7 @@ void run() {
       throw Exception("interpolation requires 3 inputs");
     transform_type transform1 = File::Matrix::load_transform(argument[0]);
     transform_type transform2 = File::Matrix::load_transform(argument[1]);
-    default_type t = parse_floats(argument[2])[0];
+    default_type t = argument[2];
 
     transform_type transform_out;
 
