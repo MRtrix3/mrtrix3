@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <optional>
+
 #include "dwi/bootstrap.h"
 #include "dwi/tractography/algorithms/tensor_det.h"
 #include "dwi/tractography/rng.h"
@@ -58,7 +60,7 @@ public:
     return Tensor_Det::do_init();
   }
 
-  term_t next() override {
+  std::optional<term_t> next() override {
     if (!source.get(pos, values))
       return term_t::EXIT_IMAGE;
     return Tensor_Det::do_next();

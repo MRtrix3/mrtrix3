@@ -17,9 +17,14 @@
 #pragma once
 
 #include <algorithm>
+#include <array>
+#include <atomic>
 #include <cctype>
+#include <cstddef>
 #include <string>
 #include <string_view>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 #include <magic_enum/magic_enum.hpp>
@@ -75,6 +80,54 @@ template <typename EnumType> inline std::string name(EnumType value) {
 template <typename EnumType> inline std::string lowercase_name(EnumType value) {
   return detail::lowercase(magic_enum::enum_name(value));
 }
+
+// Atomic counter array indexed by enum value.
+// Provides thread-safe accumulation of per-enumerator counts without manual
+// cardinality tracking or explicit atomic_init loops.
+template <typename EnumType> class AtomicCounters {
+  static_assert(std::is_enum_v<EnumType>, "AtomicCounters requires an enum type");
+
+  // std::atomic is not copy- or move-constructible, so a std::array of
+  // std::atomic cannot be value-initialised through aggregate brace init.
+  // Wrapping it gives a default constructor that zero-initialises the value.
+  // The atomic is marked mutable so that thread-safe accumulation can be
+  // exposed through const member functions of the enclosing helper.
+  struct Counter {
+    mutable std::atomic<std::size_t> value;
+    Counter() noexcept : value(0) {}
+  };
+
+  static constexpr std::size_t N = magic_enum::enum_count<EnumType>();
+  std::array<Counter, N> counters;
+
+public:
+  AtomicCounters() = default;
+  AtomicCounters(const AtomicCounters &) = delete;
+  AtomicCounters &operator=(const AtomicCounters &) = delete;
+
+  static constexpr std::size_t size() noexcept { return N; }
+
+  void add(EnumType value, std::size_t increment = 1) const noexcept {
+    counters[*magic_enum::enum_index(value)].value.fetch_add(increment, std::memory_order_relaxed);
+  }
+
+  std::size_t get(EnumType value) const noexcept {
+    return counters[*magic_enum::enum_index(value)].value.load(std::memory_order_seq_cst);
+  }
+
+  std::size_t total() const noexcept {
+    std::size_t sum = 0;
+    for (const auto &counter : counters)
+      sum += counter.value.load(std::memory_order_seq_cst);
+    return sum;
+  }
+
+  template <typename Callable> void for_each(Callable &&callable) const {
+    constexpr auto values = magic_enum::enum_values<EnumType>();
+    for (std::size_t i = 0; i != N; ++i)
+      std::forward<Callable>(callable)(values[i], counters[i].value.load(std::memory_order_seq_cst));
+  }
+};
 
 // Converts a string to the corresponding enum value, ignoring case.
 // If no matching enum value is found, throws an exception.

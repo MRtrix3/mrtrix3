@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <optional>
+
 #include "interp/masked.h"
 #include "interp/nearest.h"
 
@@ -81,7 +83,7 @@ public:
     return select_fixel(dir) >= S.threshold;
   }
 
-  term_t next() override {
+  std::optional<term_t> next() override {
     if (!get_data(source))
       return term_t::EXIT_IMAGE;
 
@@ -91,7 +93,7 @@ public:
       return term_t::MODEL;
 
     pos += S.step_size * dir;
-    return term_t::CONTINUE;
+    return std::nullopt;
   }
 
   float get_metric(const Eigen::Vector3f &position, const Eigen::Vector3f &direction) override {

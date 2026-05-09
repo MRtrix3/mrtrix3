@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <optional>
+
 #include "dwi/tractography/algorithms/iFOD2.h"
 #include "dwi/tractography/tracking/method.h"
 #include "dwi/tractography/tracking/shared.h"
@@ -54,13 +56,13 @@ public:
     return true;
   }
 
-  term_t next() override {
+  std::optional<term_t> next() override {
     if (!get_data(source))
       return term_t::EXIT_IMAGE;
     dir = rand_dir(dir);
     dir.normalize();
     pos += S.step_size * dir;
-    return term_t::CONTINUE;
+    return std::nullopt;
   }
 
   float get_metric(const Eigen::Vector3f &, const Eigen::Vector3f &) override { return uniform(rng); }
@@ -111,12 +113,12 @@ public:
     return true;
   }
 
-  term_t next() override {
+  std::optional<term_t> next() override {
 
     if (++sample_idx < S.num_samples) {
       pos = positions[sample_idx];
       dir = tangents[sample_idx];
-      return term_t::CONTINUE;
+      return std::nullopt;
     }
 
     iFOD2::get_path(positions, tangents, iFOD2::rand_dir(dir));
@@ -127,7 +129,7 @@ public:
     pos = positions[0];
     dir = tangents[0];
     sample_idx = 0;
-    return term_t::CONTINUE;
+    return std::nullopt;
   }
 
   void reverse_track() override {

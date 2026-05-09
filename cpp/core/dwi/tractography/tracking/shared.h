@@ -16,14 +16,13 @@
 
 #pragma once
 
-#include <atomic>
-
 #include "dwi/tractography/ACT/shared.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/resampling/downsampler.h"
 #include "dwi/tractography/roi.h"
 #include "dwi/tractography/tracking/tractography.h"
 #include "dwi/tractography/tracking/types.h"
+#include "enum.h"
 #include "header.h"
 #include "image.h"
 #include "memory.h"
@@ -31,7 +30,7 @@
 
 // If this is enabled, images will be output in the current directory showing the density of streamline terminations due
 // to different termination mechanisms throughout the brain
-// #define DEBUG_TERMINATIONS
+#define DEBUG_TERMINATIONS
 
 namespace MR::DWI::Tractography::Tracking {
 
@@ -79,36 +78,28 @@ public:
   // (Only utilised for Exec::satisfy_wm_requirement())
   virtual float internal_step_size() const { return step_size; }
 
-  void add_termination(const term_t i) const {
-    terminations[static_cast<ssize_t>(i)].fetch_add(1, std::memory_order_relaxed);
-  }
-  void add_rejection(const reject_t i) const {
-    rejections[static_cast<ssize_t>(i)].fetch_add(1, std::memory_order_relaxed);
-  }
+  void add_termination(const term_t i) const { terminations.add(i); }
+  void add_rejection(const reject_t i) const { rejections.add(i); }
 
 #ifdef DEBUG_TERMINATIONS
   void add_termination(const term_t i, const Eigen::Vector3f &p) const;
 #endif
 
-  size_t termination_count(const term_t i) const {
-    return terminations[static_cast<ssize_t>(i)].load(std::memory_order_seq_cst);
-  }
-  size_t rejection_count(const reject_t i) const {
-    return rejections[static_cast<ssize_t>(i)].load(std::memory_order_seq_cst);
-  }
+  size_t termination_count(const term_t i) const { return terminations.get(i); }
+  size_t rejection_count(const reject_t i) const { return rejections.get(i); }
 
   bool termination_relevant(const term_t i) const;
   bool rejection_relevant(const reject_t i) const;
 
 private:
-  mutable std::array<std::atomic<size_t>, termination_reason_count> terminations;
-  mutable std::array<std::atomic<size_t>, rejection_reason_count> rejections;
+  Enum::AtomicCounters<term_t> terminations;
+  Enum::AtomicCounters<reject_t> rejections;
 
   std::unique_ptr<ACT::ACT_Shared_additions> act_shared_additions;
 
 #ifdef DEBUG_TERMINATIONS
   Header debug_header;
-  std::vector<std::unique_ptr<Image<uint32_t>>> debug_images;
+  std::vector<Image<uint32_t>> debug_images;
   const Transform transform;
 #endif
 };

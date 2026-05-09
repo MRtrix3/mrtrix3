@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <optional>
+
 #include "dwi/tractography/ACT/act.h"
 #include "dwi/tractography/algorithms/calibrator.h"
 #include "dwi/tractography/tracking/method.h"
@@ -156,7 +158,7 @@ public:
     return false;
   }
 
-  term_t next() override {
+  std::optional<term_t> next() override {
     if (!get_data(source))
       return term_t::EXIT_IMAGE;
 
@@ -195,7 +197,7 @@ public:
           dir.normalize();
           pos += S.step_size * dir;
           mean_sample_num += n;
-          return term_t::CONTINUE;
+          return std::nullopt;
         }
       }
     }

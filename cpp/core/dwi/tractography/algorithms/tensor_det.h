@@ -22,6 +22,8 @@
 #include <Eigen/Eigenvalues>
 #pragma GCC diagnostic pop
 
+#include <optional>
+
 #include "dwi/gradient.h"
 #include "dwi/tensor.h"
 #include "dwi/tractography/ACT/act.h"
@@ -85,7 +87,7 @@ public:
     return true;
   }
 
-  term_t next() override {
+  std::optional<term_t> next() override {
     if (!get_data(source))
       return term_t::EXIT_IMAGE;
     return do_next();
@@ -128,7 +130,7 @@ protected:
     return true;
   }
 
-  term_t do_next() {
+  std::optional<term_t> do_next() {
 
     dwi2tensor(dt, S.binv, values);
 
@@ -148,7 +150,7 @@ protected:
 
     pos += dir * S.step_size;
 
-    return term_t::CONTINUE;
+    return std::nullopt;
   }
 };
 

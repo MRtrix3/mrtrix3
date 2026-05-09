@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <optional>
+
 #include "dwi/tractography/ACT/act.h"
 #include "dwi/tractography/ACT/tissues.h"
 
@@ -44,7 +46,7 @@ public:
 
   const Tissues &tissues() const { return tissue_values; }
 
-  term_t check_structural(const Eigen::Vector3f &pos) {
+  std::optional<term_t> check_structural(const Eigen::Vector3f &pos) {
     if (!fetch_tissue_data(pos))
       return term_t::EXIT_IMAGE;
 
@@ -59,12 +61,12 @@ public:
       if (seed_in_sgm && !sgm_seed_to_wm) {
         sgm_seed_to_wm = true;
         sgm_depth = 0;
-        return term_t::CONTINUE;
+        return std::nullopt;
       }
       return term_t::EXIT_SGM;
     }
 
-    return term_t::CONTINUE;
+    return std::nullopt;
   }
 
   bool check_seed(const Eigen::Vector3f &pos) {

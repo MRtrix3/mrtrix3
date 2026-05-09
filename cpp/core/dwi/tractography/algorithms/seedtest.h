@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <optional>
+
 #include "dwi/tractography/tracking/method.h"
 #include "dwi/tractography/tracking/shared.h"
 #include "dwi/tractography/tracking/types.h"
@@ -43,7 +45,7 @@ public:
   Seedtest(const Shared &shared) : MethodBase(shared), S(shared) {}
 
   bool init() override { return true; }
-  term_t next() override { return term_t::EXIT_IMAGE; }
+  std::optional<term_t> next() override { return term_t::EXIT_IMAGE; }
   float get_metric(const Eigen::Vector3f & /*position*/, const Eigen::Vector3f & /*direction*/) override {
     return 1.0F;
   }
