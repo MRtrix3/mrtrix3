@@ -22,12 +22,12 @@
 namespace MR::DWI::Tractography::Seeding {
 
 GMWMI::GMWMI(const std::filesystem::path &in, const std::filesystem::path &anat_path)
-    : Base(in, "GM-WM interface", attempts_per_seed.at(seed_attempt_t::GMWMI)),
+    : Base(in.string(), "GM-WM interface", attempts_per_seed.at(seed_attempt_t::GMWMI)),
       GMWMI_5TT_Wrapper(anat_path),
       ACT::GMWMI_finder(anat_data),
       init_seeder(in),
-      perturb_max_step(4.0f *
-                       std::pow(anat_data.spacing(0) * anat_data.spacing(1) * anat_data.spacing(2), (1.0f / 3.0f))) {
+      perturb_max_step(4.0F *
+                       std::pow(anat_data.spacing(0) * anat_data.spacing(1) * anat_data.spacing(2), (1.0 / 3.0))) {
   volume = init_seeder.vol();
 }
 

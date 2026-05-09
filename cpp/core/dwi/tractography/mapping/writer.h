@@ -41,7 +41,7 @@ class MapWriterBase {
 public:
   MapWriterBase(const Header &header,
                 const std::filesystem::path &name,
-                const vox_stat_t s = vox_stat_t::V_SUM,
+                const vox_stat_t s = vox_stat_t::SUM,
                 const writer_dim t = writer_dim::GREYSCALE)
       : H(header), output_image_name(name), voxel_statistic(s), type(t) {
     assert(type != writer_dim::UNDEFINED);
@@ -84,7 +84,7 @@ template <typename value_type> class MapWriter : public MapWriterBase {
 public:
   MapWriter(const Header &header,
             const std::filesystem::path &name,
-            const vox_stat_t voxel_statistic = vox_stat_t::V_SUM,
+            const vox_stat_t voxel_statistic = vox_stat_t::SUM,
             const writer_dim type = writer_dim::GREYSCALE)
       : MapWriterBase(header, name, voxel_statistic, type),
         buffer(Image<value_type>::scratch(header, "TWI " + str(output_dimension_names.at(type)) + " buffer")) {

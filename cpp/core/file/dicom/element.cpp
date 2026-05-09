@@ -222,7 +222,7 @@ bool Element::read() {
         throw Exception("DICOM deflated explicit VR little endian transfer syntax not supported");
       } else {
         transfer_syntax_supported = false;
-        INFO("unsupported DICOM transfer syntax: \"" + data_as_string + "\" in file \"" + fmap->name() + "\"");
+        INFO("unsupported DICOM transfer syntax: \"" + data_as_string + "\" in file \"" + fmap->name().string() + "\"");
       }
     } break;
     }

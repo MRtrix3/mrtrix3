@@ -16,17 +16,21 @@
 
 #pragma once
 
-#include <array>
 #include <filesystem>
+#include <memory>
+#include <string>
+#include <vector>
 
-#include "file/config.h"
-#include "header.h"
-#include "raw.h"
-#include "types.h"
+#include "image_io/base.h"
 
 namespace MR {
 class Header;
-}
+} // namespace MR
+
+namespace MR::Axes {
+class Shuffle;
+class permutations_type;
+} // namespace MR::Axes
 
 namespace MR::File::NIfTI {
 extern bool right_left_warning_issued;

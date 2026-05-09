@@ -111,7 +111,7 @@ void save_table(const scheme_type &PE, const HeaderType &header, const std::file
   try {
     check(PE, header);
   } catch (Exception &e) {
-    throw Exception(e, "Cannot export phase-encoding table to file \"" + path + "\"");
+    throw Exception(e, "Cannot export phase-encoding table to file \"" + path.string() + "\"");
   }
 
   if (Path::has_suffix(header.path(), {".mgh", ".mgz", ".nii", ".nii.gz", ".img"})) {
@@ -136,7 +136,7 @@ void save_topup(const scheme_type &PE, const HeaderType &header, const std::file
   try {
     check(PE, header);
   } catch (Exception &e) {
-    throw Exception(e, "Cannot export phase-encoding table to file \"" + path + "\"");
+    throw Exception(e, "Cannot export phase-encoding table to file \"" + path.string() + "\"");
   }
 
   if (!Path::has_suffix(header.path(), {".mgh", ".mgz", ".nii", ".nii.gz", ".img"})) {

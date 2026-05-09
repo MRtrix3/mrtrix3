@@ -45,7 +45,7 @@ Mesh::Mesh(const std::filesystem::path &path) : name(path.filename()) {
       throw Exception("Input surface mesh file not in supported format");
     }
   }
-  set_name(path.filename());
+  set_name(path.filename().string());
 }
 
 void Mesh::save(const std::filesystem::path &path, const bool binary) const {
@@ -306,7 +306,7 @@ void Mesh::load_stl(const std::filesystem::path &path) {
     in.close();
     in.open(path, std::ios_base::in | std::ios_base::binary);
     std::string header(80, '\0');
-    in.read(header, 80);
+    in.read(header.data(), 80);
 
     uint32_t count;
     in.read(reinterpret_cast<char *>(&count), sizeof(uint32_t));

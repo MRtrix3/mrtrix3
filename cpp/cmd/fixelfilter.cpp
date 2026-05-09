@@ -94,7 +94,9 @@ void usage() {
 using value_type = float;
 
 void run() {
+  const std::filesystem::path input_path{argument[0]};
   const FilterType filter_type = MR::Enum::from_name<FilterType>(argument[1]);
+  const std::filesystem::path output_path{argument[2]};
 
   std::set<std::string> option_list{"cfe_dh",
                                     "cfe_e",
@@ -114,11 +116,11 @@ void run() {
     Header index_header;
     Header output_header;
     try {
-      index_header = Fixel::find_index_header(argument[0]);
-      multiple_files = Fixel::find_data_headers(argument[0], index_header);
-      Fixel::debug_validate_directory(argument[0]);
+      index_header = Fixel::find_index_header(input_path);
+      multiple_files = Fixel::find_data_headers(input_path, index_header);
+      Fixel::debug_validate_directory(input_path);
       if (multiple_files.empty())
-        throw Exception("No fixel data files found in directory \"" + argument[0].as_text() + "\"");
+        throw Exception("No fixel data files found in directory \"" + input_path.string() + "\"");
       output_header = Header(multiple_files[0]);
     } catch (...) {
       try {
@@ -127,14 +129,14 @@ void run() {
         Fixel::check_data_file(single_file);
         output_header = Header(single_file);
       } catch (...) {
-        throw Exception("Could not interpret first argument \"" + argument[0].as_text() + "\"" + //
-                        " as either a fixel data file, or a fixel directory");                   //
+        throw Exception("Could not interpret first argument \"" + input_path.string() + "\"" + //
+                        " as either a fixel data file, or a fixel directory");                 //
       }
     }
 
     if (single_file.valid() && !Fixel::fixels_match(index_header, single_file))
-      throw Exception("File \"" + argument[0].as_text() + "\" is not a valid fixel data file" + //
-                      " (does not match corresponding index image)");                           //
+      throw Exception("File \"" + input_path.string() + "\" is not a valid fixel data file" + //
+                      " (does not match corresponding index image)");                         //
 
     Image<index_type> index_image = index_header.get_image<index_type>();
     if (multiple_files.empty())
@@ -210,18 +212,18 @@ void run() {
   }
 
   if (single_file.valid()) {
-    auto output_image = Image<float>::create(argument[2], single_file);
+    auto output_image = Image<float>::create(output_path, single_file);
     CONSOLE(std::string("Applying \"") + MR::Enum::lowercase_name(filter_type) + "\" operation to fixel data file \"" +
             single_file.path().string() + "\"");
     (*filter)(single_file, output_image);
   } else {
-    Fixel::copy_index_and_directions_file(argument[0], argument[2]);
+    Fixel::copy_index_and_directions_file(input_path, output_path);
     ProgressBar progress(std::string("Applying \"") + MR::Enum::lowercase_name(filter_type) + "\" operation" + //
                              " to " + str(multiple_files.size()) + " fixel data files",                        //
                          multiple_files.size());                                                               //
     for (auto &H : multiple_files) {
       auto input_image = H.get_image<float>();
-      auto output_image = Image<float>::create((output_path / H.path().filename()), H);
+      auto output_image = Image<float>::create(output_path / H.path().filename(), H);
       (*filter)(input_image, output_image);
       ++progress;
     }

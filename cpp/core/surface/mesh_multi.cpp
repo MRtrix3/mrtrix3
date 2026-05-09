@@ -147,7 +147,7 @@ void MeshMulti::load(const std::filesystem::path &path) {
 }
 
 void MeshMulti::save(const std::filesystem::path &path) const {
-  if (!path.extension() == ".obj" && !path.extension() == ".OBJ")
+  if (path.extension() != ".obj" && path.extension() != ".OBJ")
     throw Exception("Multiple meshes only supported by OBJ file format");
   File::OFStream out(path);
   size_t offset = 1;

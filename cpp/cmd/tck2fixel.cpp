@@ -210,7 +210,7 @@ void run() {
       DWI::Tractography::Mapping::determine_upsample_ratio(index_header, properties, precise ? 0.1F : (1.0F / 3.0F));
 
   DWI::Tractography::Mapping::TrackLoader loader(track_file, num_tracks, "mapping tracks to fixels");
-  const std::string output_path = Path::join(output_fixel_folder, argument[3]);
+  const std::filesystem::path output_path = static_cast<std::filesystem::path>(argument[2]) / argument[3];
 
   if (get_options("tck_weights_in").empty() && !precise) {
     run<uint32_t>(

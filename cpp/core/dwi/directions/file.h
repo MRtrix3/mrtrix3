@@ -25,6 +25,8 @@ class Option;
 
 namespace MR::DWI::Directions {
 
+extern App::Option cartesian_option;
+
 Eigen::MatrixXd load_spherical(const std::filesystem::path &filename);
 Eigen::MatrixXd load_cartesian(const std::filesystem::path &filename);
 

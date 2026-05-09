@@ -29,6 +29,15 @@
 
 namespace MR::File::Matrix {
 
+inline char delimiter(const std::filesystem::path &path) {
+  if (Path::has_suffix(path, ".tsv"))
+    return '\t';
+  else if (Path::has_suffix(path, ".csv"))
+    return ',';
+  else
+    return ' ';
+}
+
 namespace {
 
 //! write the matrix \a M to text file
@@ -120,7 +129,7 @@ void save_vector_text(const VectorType &V,
   DEBUG("saving vector of size " + str(V.size()) + " to text file \"" + filename.string() + "\"...");
   File::OFStream out(filename);
   File::KeyValue::write(out, keyvals, "# ", add_to_command_history);
-  const const char d(delimiter(filename));
+  const char d(delimiter(filename));
   for (decltype(V.size()) i = 0; i < V.size() - 1; i++)
     out << str(V[i], 10) << d;
   out << str(V[V.size() - 1], 10) << "\n";
@@ -259,15 +268,6 @@ Eigen::Matrix<ValueType, Eigen::Dynamic, 1> load_vector(const std::filesystem::p
   if (vec.rows() > 1)
     throw Exception("file \"" + filename.string() + "\" contains 2D matrix, not 1D vector");
   return vec.row(0);
-}
-
-inline char delimiter(const std::filesystem::path &path) {
-  if (Path::has_suffix(path, ".tsv"))
-    return '\t';
-  else if (Path::has_suffix(path, ".csv"))
-    return ',';
-  else
-    return ' ';
 }
 
 } // namespace MR::File::Matrix

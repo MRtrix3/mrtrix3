@@ -152,15 +152,17 @@ void usage() {
 // clang-format on
 
 void run() {
+  const std::filesystem::path input_path{argument[0]};
   const FilterType filter_index = MR::Enum::from_name<FilterType>(argument[1]);
   const std::string filter_name = MR::Enum::lowercase_name(filter_index);
+  const std::filesystem::path output_path{argument[2]};
 
   switch (filter_index) {
 
   // Phase demodulation
   case FilterType::DEMODULATE: {
 
-    Header H = Header::open(argument[0]);
+    Header H = Header::open(input_path);
     if (!H.datatype().is_complex())
       throw Exception("Phase demodulation filter applicable to complex images only");
 
@@ -188,7 +190,7 @@ void run() {
 
     auto input = H.get_image<cdouble>();
     Filter::Demodulate filter(input, axes, !get_options("linear").empty());
-    auto output = Image<cdouble>::create(argument[2], H);
+    auto output = Image<cdouble>::create(output_path, H);
     filter(input, output, false);
 
     break;
@@ -249,7 +251,7 @@ void run() {
 
   // Gradient
   case FilterType::GRADIENT: {
-    auto input = Image<float>::open(argument[0]);
+    auto input = Image<float>::open(input_path);
     Filter::Gradient filter(input, !get_options("magnitude").empty());
 
     std::vector<default_type> stdev;
@@ -278,7 +280,7 @@ void run() {
 
   // Median
   case FilterType::MEDIAN: {
-    auto input = Image<float>::open(argument[0]);
+    auto input = Image<float>::open(input_path);
     Filter::Median filter(input);
 
     auto opt = get_options("extent");
@@ -295,7 +297,7 @@ void run() {
 
   // Smooth
   case FilterType::SMOOTH: {
-    auto input = Image<float>::open(argument[0]);
+    auto input = Image<float>::open(input_path);
     Filter::Smooth filter(input);
 
     auto opt = get_options("stdev");
@@ -326,7 +328,7 @@ void run() {
 
   // Normalisation
   case FilterType::NORMALISE: {
-    auto input = Image<float>::open(argument[0]);
+    auto input = Image<float>::open(input_path);
     Filter::Normalise filter(input);
 
     auto opt = get_options("extent");
@@ -343,7 +345,7 @@ void run() {
 
   // Zclean
   case FilterType::ZCLEAN: {
-    auto input = Image<float>::open(argument[0]);
+    auto input = Image<float>::open(input_path);
     Filter::ZClean filter(input);
 
     auto opt = get_options("maskin");

@@ -82,12 +82,12 @@ public:
   Modifier(Image<float> &input_image, Image<float> &output_image)
       : v_in(input_image), v_out(output_image), excess_volume_count(0), inadequate_volume_count(0) {}
 
-  void set_cgm_mask(const std::filesystem::path &path) { load(path, 0); }
-  void set_sgm_mask(const std::filesystem::path &path) { load(path, 1); }
-  void set_wm_mask(const std::filesystem::path &path) { load(path, 2); }
-  void set_csf_mask(const std::filesystem::path &path) { load(path, 3); }
-  void set_path_mask(const std::filesystem::path &path) { load(path, 4); }
-  void set_none_mask(const std::filesystem::path &path) { load(path, 5); }
+  void set_cgm_input(const std::filesystem::path &path) { load(path, 0); }
+  void set_sgm_input(const std::filesystem::path &path) { load(path, 1); }
+  void set_wm_input(const std::filesystem::path &path) { load(path, 2); }
+  void set_csf_input(const std::filesystem::path &path) { load(path, 3); }
+  void set_path_input(const std::filesystem::path &path) { load(path, 4); }
+  void set_none_input(const std::filesystem::path &path) { load(path, 5); }
 
   ~Modifier() {
     if (excess_volume_count > 0) {

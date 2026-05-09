@@ -73,17 +73,19 @@ void usage() {
 using dir_type = Eigen::Vector3f;
 
 void run() {
-  Fixel::check_fixel_directory(argument[0]);
-  Fixel::debug_validate_directory(argument[0]);
-  Header input_index_header(Fixel::find_index_header(argument[0]));
+  const std::filesystem::path input_dir{argument[0]};
+  const std::filesystem::path output_dir{argument[2]};
+  Fixel::check_fixel_directory(input_dir);
+  Fixel::debug_validate_directory(input_dir);
+  Header input_index_header(Fixel::find_index_header(input_dir));
   Interp::Nearest<Image<index_type>> input_index_image(input_index_header.get_image<index_type>());
   const index_type nfixels_in = Fixel::get_number_of_fixels(input_index_image);
-  Header input_directions_header(Fixel::find_directions_header(argument[0]));
+  Header input_directions_header(Fixel::find_directions_header(input_dir));
   auto input_directions_image = input_directions_header.get_image<float>();
 
   // Find fixel data files to be transformed
   // Note that any voxel images will need to be handled separately
-  auto fixel_data_headers = Fixel::find_data_headers(argument[0], input_index_header, false);
+  auto fixel_data_headers = Fixel::find_data_headers(input_dir, input_index_header, false);
   // TODO Would be preferable to capture images using their native data type
   std::vector<Image<float>> fixel_data_images;
   for (auto &H : fixel_data_headers) {
@@ -155,21 +157,20 @@ void run() {
     INFO("  " + str(count) + ": " + str(usage_frequencies[count]));
   }
 
-  std::filesystem::create_directory(argument[2]);
+  std::filesystem::create_directory(output_dir);
 
   // Ready to construct output images
   Header output_index_header(warp_header);
   output_index_header.size(3) = 2;
   output_index_header.keyval()[Fixel::n_fixels_key] = str(nfixels_out);
-  File::mkdir(output_fixel_directory);
-  Image<index_type> output_index_image =                   //
-      Image<index_type>::create(argument[2] / "index.mif", //
-                                output_index_header);      //
+  Image<index_type> output_index_image =                  //
+      Image<index_type>::create(output_dir / "index.mif", //
+                                output_index_header);     //
   Header output_directions_header(input_directions_header);
   output_directions_header.size(0) = nfixels_out;
-  Image<float> output_directions_image =                   //
-      Image<float>::create(argument[2] / "directions.mif", //
-                           output_directions_header);      //
+  Image<float> output_directions_image =                  //
+      Image<float>::create(output_dir / "directions.mif", //
+                           output_directions_header);     //
 
   ProgressBar progress("Writing output fixel data", 2 + fixel_data_images.size());
   for (auto l = Loop(count_header)(count_buffer, offset_buffer, output_index_image); l; ++l) {
@@ -189,7 +190,7 @@ void run() {
     Header H(fixel_data_headers[fixel_datafile_index]);
     H.size(0) = nfixels_out;
     Image<float> output_datafile_image =
-        Image<float>::create(argument[2] / fixel_data_headers[fixel_datafile_index].path().filename(), H);
+        Image<float>::create(output_dir / fixel_data_headers[fixel_datafile_index].path().filename(), H);
     const auto &data = transformed_fixel_data[fixel_datafile_index];
     for (auto l = Loop(0)(output_datafile_image); l; ++l)
       output_datafile_image.value() = data[output_datafile_image.index(0)];

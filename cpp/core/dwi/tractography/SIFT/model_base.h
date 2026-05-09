@@ -307,7 +307,7 @@ void ModelBase<Fixel>::initialise_debug_image_output(const std::filesystem::path
 }
 
 template <class Fixel>
-void ModelBase<Fixel>::output_all_debug_images(const std::filesystem::path &dirpath, std::string_view &prefix) const {
+void ModelBase<Fixel>::output_all_debug_images(const std::filesystem::path &dirpath, std::string_view prefix) const {
   output_tdi_voxel(dirpath / (prefix + "_tdi_voxel.mif"));
   if (have_null_lobes)
     output_tdi_null_lobes((dirpath / (prefix + "_tdi_nulllobes.mif")));

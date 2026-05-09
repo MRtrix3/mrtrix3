@@ -418,13 +418,12 @@ void TckFactor::output_all_debug_images(const std::filesystem::path &dirpath, st
   Header H(MR::Fixel::data_header_from_nfixels(fixels.size()));
   Header H_excluded(H);
   H_excluded.datatype() = DataType::Bit;
-  Image<float> min_image(Image<float>::create((dirpath / std::string(prefix.string() + "_coeff_min.mif")), H));
-  Image<float> mean_image(Image<float>::create((dirpath / std::string(prefix.string() + "_coeff_mean.mif")), H));
-  Image<float> stdev_image(Image<float>::create((dirpath / std::string(prefix.string() + "_coeff_stdev.mif")), H));
-  Image<float> max_image(Image<float>::create((dirpath / std::string(prefix.string() + "_coeff_max.mif")), H));
-  Image<float> zeroed_image(Image<float>::create((dirpath / std::string(prefix.string() + "_coeff_zeroed.mif")), H));
-  Image<bool> excluded_image(
-      Image<bool>::create((dirpath / std::string(prefix.string() + "_excludedfixels.mif")), H_excluded));
+  Image<float> min_image(Image<float>::create(dirpath / (prefix + "_coeff_min.mif"), H));
+  Image<float> mean_image(Image<float>::create(dirpath / (prefix + "_coeff_mean.mif"), H));
+  Image<float> stdev_image(Image<float>::create(dirpath / (prefix + "_coeff_stdev.mif"), H));
+  Image<float> max_image(Image<float>::create(dirpath / (prefix + "_coeff_max.mif"), H));
+  Image<float> zeroed_image(Image<float>::create(dirpath / (prefix + "_coeff_zeroed.mif"), H));
+  Image<bool> excluded_image(Image<bool>::create(dirpath / (prefix + "_excludedfixels.mif"), H_excluded));
 
   for (auto l = Loop(0)(min_image, mean_image, stdev_image, max_image, zeroed_image, excluded_image); l; ++l) {
     const size_t index = min_image.index(0);

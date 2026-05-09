@@ -148,7 +148,7 @@ std::unique_ptr<ImageIO::Base> MRI::read(Header &H) const {
   if (!Path::has_suffix(H.path(), ".mri"))
     return std::unique_ptr<ImageIO::Base>();
 
-  File::MMap fmap(H.path());
+  File::MMap fmap(const_cast<const Header &>(H).path());
 
   if (memcmp(fmap.address(), "MRI#", 4))
     throw Exception("file \"" + H.path().string() + "\" is not in MRI format (unrecognised magic number)");

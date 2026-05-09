@@ -29,7 +29,7 @@ std::unique_ptr<ImageIO::Base> MGH::read(Header &H) const {
   if (!Path::has_suffix(H.path(), ".mgh"))
     return std::unique_ptr<ImageIO::Base>();
 
-  std::ifstream in(H.path(), std::ios_base::binary);
+  std::ifstream in(const_cast<const Header &>(H).path(), std::ios_base::binary);
   File::MGH::read_header(H, in);
 
   // Remaining header items appear AFTER the data

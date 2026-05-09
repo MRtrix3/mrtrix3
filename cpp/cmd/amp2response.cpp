@@ -259,10 +259,10 @@ void run() {
       lmax.push_back(0);
     max_lmax = 0;
   } else if (!opt.empty()) {
-    lmax = parse_ints<uint32_t>(opt[0][0]);
+    lmax = MR::container_cast<decltype(lmax)>(opt[0][0].as_sequence_uint());
     if (lmax.size() != dirs_azin.size())
-      throw Exception("Number of lmax\'s specified (" + str(lmax.size()) +
-                      ") does not match number of b-value shells (" + str(dirs_azin.size()) + ")");
+      throw Exception("Number of lmax\'s specified (" + str(lmax.size()) + ")" +                   //
+                      " does not match number of b-value shells (" + str(dirs_azin.size()) + ")"); //
     for (auto i : lmax) {
       if (i % 2)
         throw Exception("Values specified for lmax must be even");

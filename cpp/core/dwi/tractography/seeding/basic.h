@@ -80,7 +80,7 @@ private:
 class Rejection_per_voxel : public Base {
 public:
   using transform_type = Eigen::Transform<float, 3, Eigen::AffineCompact>;
-  Rejection(const std::filesystem::path &);
+  Rejection_per_voxel(const std::filesystem::path &);
   virtual bool get_seed(Eigen::Vector3f &p) const override;
 
 private:

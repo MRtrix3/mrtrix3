@@ -35,7 +35,7 @@ public:
       : Exception(previous_exception, msg) {}
 };
 
-FORCE_INLINE bool is_index_filename(std::string_view path) {
+FORCE_INLINE bool is_index_filename(const std::filesystem::path &path) {
   for (std::initializer_list<const std::string>::iterator it = supported_image_formats.begin();
        it != supported_image_formats.end();
        ++it) {
@@ -160,13 +160,12 @@ FORCE_INLINE Header find_index_header(const std::filesystem::path &fixel_directo
     std::filesystem::path full_path = (fixel_directory_path / ("index" + *it));
     if (std::filesystem::exists(full_path)) {
       if (header.valid())
-        throw InvalidFixelDirectoryException("Multiple index images found in directory " +
-                                             fixel_directory_path.string());
+        throw InvalidDirectoryException("Multiple index images found in directory " + fixel_directory_path.string());
       header = Header::open(full_path);
     }
   }
   if (!header.valid())
-    throw InvalidFixelDirectoryException("Could not find index image in directory " + fixel_directory_path.string());
+    throw InvalidDirectoryException("Could not find index image in directory " + fixel_directory_path.string());
 
   check_index_image(header);
   return header;
@@ -232,8 +231,7 @@ FORCE_INLINE Header find_directions_header(const std::filesystem::path &fixel_di
   }
 
   if (!directions_found)
-    throw InvalidFixelDirectoryException("Could not find directions image in directory " +
-                                         fixel_directory_path.string());
+    throw InvalidDirectoryException("Could not find directions image in directory " + fixel_directory_path.string());
 
   return header;
 }

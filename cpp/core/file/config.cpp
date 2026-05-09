@@ -53,18 +53,18 @@ void Config::init() {
   } else {
     DEBUG(std::string("No config file found at \"") + sysconf_path.string() + "\"");
   }
-  path = Path::home() / ("." + file_basename);
-  if (std::filesystem::is_regular_file(path)) {
-    INFO("reading config file \"" + path.string() + "\"...");
+  std::filesystem::path home_path = Path::home() / ("." + file_basename);
+  if (std::filesystem::is_regular_file(home_path)) {
+    INFO("reading config file \"" + home_path.string() + "\"...");
     try {
-      KeyValue::Reader kv(path);
+      KeyValue::Reader kv(home_path);
       while (kv.next()) {
         config[std::string(kv.key())] = std::string(kv.value());
       }
     } catch (...) {
     }
   } else {
-    DEBUG("No config file found at \"" + path.string() + "\"");
+    DEBUG("No config file found at \"" + home_path.string() + "\"");
   }
 
   auto opt = App::get_options("config");

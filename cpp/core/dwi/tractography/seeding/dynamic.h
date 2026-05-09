@@ -181,7 +181,7 @@ private:
   using VoxelAccessor = Fixel_map<Fixel>::VoxelAccessor;
 
 public:
-  Dynamic(std::string_view, Image<float> &, const size_t, const DWI::Directions::FastLookupSet &);
+  Dynamic(const std::filesystem::path &, Image<float> &, const size_t, const DWI::Directions::FastLookupSet &);
   ~Dynamic();
 
   Dynamic(const Dynamic &) = delete;

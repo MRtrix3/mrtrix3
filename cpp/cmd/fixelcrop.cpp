@@ -56,16 +56,17 @@ void usage() {
 // clang-format on
 
 void run() {
-  Fixel::check_fixel_directory(argument[0]);
-  Fixel::debug_validate_directory(argument[0]);
-  Header in_index_header = Fixel::find_index_header(argument[0]);
+  const std::filesystem::path input_directory{argument[0]};
+  Fixel::check_fixel_directory(input_directory);
+  Fixel::debug_validate_directory(input_directory);
+  Header in_index_header = Fixel::find_index_header(input_directory);
   index_type total_nfixels = Fixel::get_number_of_fixels(in_index_header);
   auto in_index_image = in_index_header.get_image<index_type>();
 
   auto mask_image = Image<bool>::open(argument[1]);
   Fixel::check_fixel_size(mask_image, total_nfixels);
 
-  const auto out_fixel_directory = output_directory;
+  const std::filesystem::path out_fixel_directory = argument[2];
   Fixel::check_fixel_directory(out_fixel_directory, true, true);
 
   Header out_index_header = Header(in_index_header);

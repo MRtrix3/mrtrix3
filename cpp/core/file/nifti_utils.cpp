@@ -14,15 +14,15 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include "file/nifti_utils.h"
+
 #include <array>
-#include <filesystem>
 #include <nifti1.h>
 #include <nifti2.h>
 
 #include "file/config.h"
 #include "file/gz.h"
 #include "file/json_utils.h"
-#include "file/nifti_utils.h"
 #include "file/ofstream.h"
 #include "file/path.h"
 #include "file/utils.h"

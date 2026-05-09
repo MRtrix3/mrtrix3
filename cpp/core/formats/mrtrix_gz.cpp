@@ -15,6 +15,7 @@
  */
 
 #include "file/gz.h"
+#include "file/ofstream.h"
 #include "file/path.h"
 #include "file/utils.h"
 #include "formats/list.h"
@@ -86,7 +87,7 @@ std::unique_ptr<ImageIO::Base> MRtrix_GZ::create(Header &H) const {
   std::unique_ptr<ImageIO::GZ> io_handler(new ImageIO::GZ(H, offset));
   memcpy(io_handler->header(), header.str().c_str(), offset);
 
-  const std::filesystem::path &hpath = static_cast<const Header &>(H).path();
+  const std::filesystem::path &hpath = const_cast<const Header &>(H).path();
   File::OFStream data_file(hpath);
   data_file.close();
   io_handler->files.push_back(File::Entry(hpath, offset));

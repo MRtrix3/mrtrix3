@@ -430,8 +430,8 @@ void write_weights(const Eigen::VectorXd &data, IndexType &index, const std::fil
   ThreadedLoop(index, 0, 3).run(write, out, index);
 }
 
-void write_output(std::string_view original,
-                  std::string_view corrected,
+void write_output(const std::filesystem::path &original,
+                  const std::filesystem::path &corrected,
                   bool output_balanced,
                   double balance_factor,
                   ImageType &field,
@@ -465,7 +465,7 @@ void write_output(std::string_view original,
 }
 
 void run() {
-  if (argument.size() % 2)
+  if (argument.size() % 2 != 0)
     throw Exception(
         "The number of arguments must be even, provided as pairs of each input and its corresponding output file.");
   if (argument.size() == 2)

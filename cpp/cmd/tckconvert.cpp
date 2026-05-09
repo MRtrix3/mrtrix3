@@ -283,12 +283,14 @@ private:
 
 class ASCIIReader : public ReaderInterface<float> {
 public:
-  ASCIIReader(const std::filesystem::path &path) { auto num = list.parse_scan_check(path); }
+  ASCIIReader(const std::filesystem::path &path) : parent(path.parent_path()) {
+    auto num = list.parse_scan_check(path.filename().string());
+  }
 
   bool operator()(Streamline<float> &tck) {
     tck.clear();
     if (item < list.size()) {
-      auto t = File::Matrix::load_matrix<float>(list[item].name());
+      auto t = File::Matrix::load_matrix<float>(parent / list[item].name());
       for (decltype(t)::Index i = 0; i < t.rows(); i++)
         tck.push_back(Eigen::Vector3f(t.row(i)));
       item++;
@@ -300,15 +302,16 @@ public:
   ~ASCIIReader() {}
 
 private:
+  std::filesystem::path parent;
   File::ParsedName::List list;
   size_t item = 0;
 };
 
 class ASCIIWriter : public WriterInterface<float> {
 public:
-  ASCIIWriter(const std::filesystem::path &path) {
+  ASCIIWriter(const std::filesystem::path &path) : parent(path.parent_path()) {
     count.push_back(0);
-    parser.parse(path);
+    parser.parse(path.filename().string());
     if (parser.ndim() != 1)
       throw Exception("output file specifier should contain one placeholder for numbering (e.g. output-[].txt)");
     parser.calculate_padding({1000000});
@@ -316,7 +319,7 @@ public:
 
   bool operator()(const Streamline<float> &tck) {
     std::string name = parser.name(count);
-    File::OFStream out(name);
+    File::OFStream out(parent / name);
     for (auto i = tck.begin(); i != tck.end(); ++i)
       out << (*i)[0] << " " << (*i)[1] << " " << (*i)[2] << "\n";
     out.close();
@@ -327,6 +330,7 @@ public:
   ~ASCIIWriter() {}
 
 private:
+  std::filesystem::path parent;
   File::NameParser parser;
   std::vector<uint32_t> count;
 };
@@ -682,35 +686,37 @@ private:
 };
 
 void run() {
+  std::filesystem::path input_path{argument[0]};
+  std::filesystem::path output_path{argument[1]};
   // Reader
   Properties properties;
   std::unique_ptr<ReaderInterface<float>> reader;
-  if (argument[0].extension() == ".tck") {
-    reader.reset(new Reader<float>(iargument[0], properties));
-  } else if (argument[0].extension() == ".txt") {
-    reader.reset(new ASCIIReader(argument[0]));
-  } else if (argument[0].extension() == ".vtk") {
-    reader.reset(new VTKReader(argument[0]));
+  if (input_path.extension() == ".tck") {
+    reader.reset(new Reader<float>(input_path, properties));
+  } else if (input_path.extension() == ".txt") {
+    reader.reset(new ASCIIReader(input_path));
+  } else if (input_path.extension() == ".vtk") {
+    reader.reset(new VTKReader(input_path));
   } else {
     throw Exception("Unsupported input file type.");
   }
 
   // Writer
   std::unique_ptr<WriterInterface<float>> writer;
-  if (argument[1].extension() == ".tck") {
-    writer.reset(new Writer<float>(argument[1], properties));
-  } else if (argument[1].extension() == ".vtk") {
+  if (output_path.extension() == ".tck") {
+    writer.reset(new Writer<float>(output_path, properties));
+  } else if (output_path.extension() == ".vtk") {
     auto write_ascii = get_options("ascii").size();
-    writer.reset(new VTKWriter(argument[1], write_ascii));
-  } else if (argument[1].extension() == ".ply") {
+    writer.reset(new VTKWriter(output_path, write_ascii));
+  } else if (output_path.extension() == ".ply") {
     const int increment = get_option_value("increment", default_ply_increment);
     const float radius = get_option_value("radius", default_ply_radius);
     const int sides = get_option_value("sides", default_ply_sides);
-    writer.reset(new PLYWriter(argument[1], increment, radius, sides));
-  } else if (argument[1].extension() == ".rib") {
-    writer.reset(new RibWriter(argument[1]));
-  } else if (argument[1].extension() == ".txt") {
-    writer.reset(new ASCIIWriter(argument[1]));
+    writer.reset(new PLYWriter(output_path, increment, radius, sides));
+  } else if (output_path.extension() == ".rib") {
+    writer.reset(new RibWriter(output_path));
+  } else if (output_path.extension() == ".txt") {
+    writer.reset(new ASCIIWriter(output_path));
   } else {
     throw Exception("Unsupported output file type.");
   }

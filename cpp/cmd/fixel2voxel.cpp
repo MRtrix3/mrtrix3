@@ -551,7 +551,7 @@ void run() {
     }
   }
 
-  auto out = Image<float>::create(output_path, H_out);
+  auto out = Image<float>::create(argument[2], H_out);
 
   auto loop = ThreadedLoop("converting sparse fixel data to scalar image", in_index_image, 0, 3);
 

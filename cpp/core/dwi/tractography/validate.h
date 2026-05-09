@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cstddef>
+#include <filesystem>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -60,7 +61,7 @@ struct TckValidation {
 //!
 //! The returned TckValidation struct reports n_empty and n_single_vertex for
 //! downstream reporting; these are not treated as hard errors.
-TckValidation validate_tck(std::filesystem::path &path);
+TckValidation validate_tck(const std::filesystem::path &path);
 
 void validate_tsf_properties(const Properties &, const Properties &, std::string_view file_types);
 
@@ -76,6 +77,6 @@ void validate_tsf_properties(const Properties &, const Properties &, std::string
 //!      streamlines in the tractogram.
 //!   5. One or more streamlines have a different number of vertices in the TSF
 //!      and in the tractogram.
-void validate_tsf(std::filesystem::path &tsf_path, std::filesystem::path &tck_path);
+void validate_tsf(const std::filesystem::path &tsf_path, const std::filesystem::path &tck_path);
 
 } // namespace MR::DWI::Tractography

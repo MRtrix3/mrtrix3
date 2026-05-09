@@ -198,9 +198,8 @@ void run() {
   const bool do_nonstationarity_adjustment = !get_options("nonstationarity").empty();
   const default_type empirical_skew = get_option_value("skew_nonstationarity", default_empirical_skew);
 
-  const std::string input_fixel_directory = argument[0];
-  Fixel::debug_validate_directory(input_fixel_directory);
-  Header index_header = Fixel::find_index_header(input_fixel_directory);
+  Fixel::debug_validate_directory(argument[0]);
+  Header index_header = Fixel::find_index_header(argument[0]);
 
   const Fixel::index_type num_fixels = Fixel::get_number_of_fixels(index_header);
   CONSOLE("Number of fixels in template: " + str(num_fixels));
@@ -259,7 +258,7 @@ void run() {
   // Read file names and check files exist
   // Preference for finding files relative to input template fixel directory
   Math::Stats::CohortDataImport importer;
-  importer.initialise<SubjectFixelImport>(subjects_path, input_fixel_directory);
+  importer.initialise<SubjectFixelImport>(argument[1], argument[0]);
   for (Math::Stats::index_type i = 0; i != importer.size(); ++i) {
     if (!Fixel::fixels_match(index_header, dynamic_cast<SubjectFixelImport *>(importer[i].get())->header()))
       throw Exception("Fixel data file \"" + importer[i]->name().string() + "\" does not match template fixel image");
@@ -324,8 +323,8 @@ void run() {
   // This is based on the processing mask, *not* the inference mask
   const Fixel::Matrix::Reader matrix(argument[3], mask_processing_image);
 
-  const std::string output_fixel_directory = argument[4];
-  Fixel::copy_index_and_directions_file(input_fixel_directory, output_fixel_directory);
+  const std::filesystem::path output_fixel_directory = argument[4];
+  Fixel::copy_index_and_directions_file(argument[0], output_fixel_directory);
 
   // Do we still want to check whether or not there are any disconnected fixels?
   // With the current derivation, disconnected fixels will not possess any self-connectivity,

@@ -164,5 +164,5 @@ void run() {
   for (ssize_t n = 0; n < directions.rows(); ++n)
     output.row(n) = directions.row(best_order[n]);
 
-  DWI::Directions::save(output, output_path, !get_options("cartesian").empty());
+  DWI::Directions::save(output, argument[1], !get_options("cartesian").empty());
 }

@@ -19,6 +19,7 @@
 #include "adapter/extract.h"
 #include "command.h"
 #include "enum.h"
+#include "file/config.h"
 #include "file/nifti_utils.h"
 #include "image.h"
 #include "registration/warp/compose.h"

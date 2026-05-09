@@ -152,7 +152,7 @@ void read_label(const std::filesystem::path &path, VertexList &vertices, Scalar 
 
   if (!in.good())
     throw Exception("Error parsing FreeSurfer label file \"" + path.filename().string() + "\": end of file reached");
-  scalar.set_name(path);
+  scalar.set_name(path.filename().string());
 }
 
 } // namespace MR::Surface::FreeSurfer

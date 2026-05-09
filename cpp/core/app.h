@@ -159,7 +159,10 @@ std::string full_usage();
 class ParsedArgument {
 public:
   using IntType = int64_t; // Native single-integer parsed type before conversion
+  using UIntType = std::make_unsigned_t<IntType>;
+
   operator std::string() const;
+  operator std::string_view() const;
   operator std::filesystem::path() const;
 
   // This particular function is permissive of reading the argument in this form
@@ -170,15 +173,13 @@ public:
   std::string as_text() const { return p; }
 
   std::filesystem::path as_path() const;
-  bool as_bool() const { return to<bool>(p); }
-  int64_t as_int() const;
-  uint64_t as_uint() const;
+  bool as_bool() const;
+  IntType as_int() const;
+  UIntType as_uint() const;
   default_type as_float() const;
 
-  std::vector<int32_t> as_sequence_int() const;
-
-  std::vector<uint32_t> as_sequence_uint() const;
-
+  std::vector<IntType> as_sequence_int() const;
+  std::vector<UIntType> as_sequence_uint() const;
   std::vector<default_type> as_sequence_float() const;
 
   operator bool() const { return as_bool(); }
@@ -190,8 +191,8 @@ public:
   operator long long unsigned int() const { return as_uint(); }
   operator float() const { return as_float(); }
   operator double() const { return as_float(); }
-  operator std::vector<int32_t>() const { return as_sequence_int(); }
-  operator std::vector<uint32_t>() const { return as_sequence_uint(); }
+  operator std::vector<IntType>() const { return as_sequence_int(); }
+  operator std::vector<UIntType>() const { return as_sequence_uint(); }
   operator std::vector<default_type>() const { return as_sequence_float(); }
 
   const char *c_str() const { return p.c_str(); } // check_syntax off
@@ -205,9 +206,8 @@ private:
   std::string p;
   size_t index_;
 
-  // TODO This will need to be updated once merged with #3074
-  bool includes_filesystem_arg_type() const noexcept;
-  bool not_filesystem_arg_type() const noexcept;
+  bool includes_filesystem_arg_types() const noexcept;
+  bool only_filesystem_arg_types() const noexcept;
 
   ParsedArgument(const Option *option, const Argument *argument, std::string text, size_t index);
 

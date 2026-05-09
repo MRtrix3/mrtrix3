@@ -141,7 +141,7 @@ void run() {
     }
 
   } else
-    report(dirs_input_path, directions);
+    report(dirs_input_path.string(), directions);
 }
 
 std::vector<default_type> summarise_NN(const std::vector<double> &NN) {

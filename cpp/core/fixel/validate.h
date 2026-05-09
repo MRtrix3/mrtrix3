@@ -37,7 +37,7 @@ namespace MR::Fixel {
 //!   - a valid directions image is present;
 //!   - all fixel data files contain the same number of fixels as the index image.
 //! Throws InvalidDirectoryException on any failure.
-void validate_directory(std::filesystem::path &fixel_directory_path);
+void validate_directory(const std::filesystem::path &fixel_directory_path);
 
 //! Perform validation of a fixel index image.
 //! Checks that:
@@ -48,7 +48,7 @@ index_type validate_index_image(Image<index_type> index_image);
 
 //! Call validate() only when running in debug mode (log_level >= 3).
 //! Intended for use in other fixel commands to add lightweight validation in debug builds.
-void debug_validate_directory(std::filesystem::path &fixel_directory_path);
+void debug_validate_directory(const std::filesystem::path &fixel_directory_path);
 
 //! Call validate_debug_index_image() only when running in debug mode (log_level >= 3).
 //! Intended for use in other fixel commands to add lightweight validation in debug builds.

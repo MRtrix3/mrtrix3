@@ -182,7 +182,7 @@ void load_seed_mechanisms(Properties &properties) {
 
   opt = get_options("seed_per_coordinate");
   for (size_t i = 0; i < opt.size(); ++i) {
-    Count_per_coord *seed = new Count_per_coord(str(opt[i][0]), opt[i][1]);
+    Count_per_coord *seed = new Count_per_coord(opt[i][0], opt[i][1]);
     list.add(seed);
   }
 
@@ -202,7 +202,7 @@ void load_seed_mechanisms(Properties &properties) {
     if (!list.empty())
       throw Exception("If performing rejection seeding from pre-specified coordinates,"
                       " cannot specify any other type of seed!");
-    Rejection_per_coord *seed = new Rejection_per_coord(str(opt[0][0]));
+    Rejection_per_coord *seed = new Rejection_per_coord(opt[0][0]);
     list.add(seed);
   }
 

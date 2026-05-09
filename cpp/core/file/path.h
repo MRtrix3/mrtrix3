@@ -16,17 +16,12 @@
 
 #pragma once
 
-#include <algorithm>
-#include <cerrno>
-#include <cstdlib>
-#include <cstring>
-#include <dirent.h>
+#include <filesystem>
+#include <stdlib.h>
 #include <string>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
+#include <string_view>
+#include <vector>
 
-#include "exception.h"
 #include "mrtrix.h"
 #include "types.h"
 
@@ -58,6 +53,6 @@ bool has_suffix(const std::filesystem::path &name, const std::vector<std::string
 
 bool is_mrtrix_image(const std::filesystem::path &path);
 
-std::string home();
+const std::filesystem::path &home();
 
 } // namespace MR::Path

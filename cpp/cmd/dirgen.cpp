@@ -281,5 +281,5 @@ void run() {
   for (size_t n = 0; n < ndirs; ++n)
     directions_matrix.row(n) = Energy::best_directions.segment(3 * n, 3);
 
-  DWI::Directions::save(directions_matrix, dirs_input_path, !get_options("cartesian").empty());
+  DWI::Directions::save(directions_matrix, argument[1], !get_options("cartesian").empty());
 }

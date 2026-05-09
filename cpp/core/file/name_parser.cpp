@@ -37,7 +37,7 @@ void NameParser::parse(const std::filesystem::path &imagename, size_t max_num_se
   specification_path = imagename;
   if (std::filesystem::is_directory(imagename)) {
     array.resize(1);
-    array[0].set_str(imagename);
+    array[0].set_str(imagename.string());
     return;
   }
 
@@ -71,7 +71,7 @@ void NameParser::parse(const std::filesystem::path &imagename, size_t max_num_se
                                 "\" (duplicate indices)");
   } catch (...) {
     array.resize(1);
-    array[0].set_str(imagename);
+    array[0].set_str(imagename.string());
     throw;
   }
 }

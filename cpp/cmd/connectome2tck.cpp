@@ -236,8 +236,7 @@ void run() {
   bool manual_node_list = false;
   if (!opt.empty()) {
     manual_node_list = true;
-    const std::filesystem::path nodes_input_path{opt[0][0]};
-    const auto data = parse_ints<node_t>(nodes_input_path);
+    const auto data = opt[0][0].as_sequence_uint();
     bool zero_in_list = false;
     for (auto i : data) {
       if (i > max_node_index) {

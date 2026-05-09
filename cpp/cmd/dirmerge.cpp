@@ -41,7 +41,7 @@ void usage() {
 
   ARGUMENTS
   + Argument ("subsets", "the number of subsets (eg. phase encoding directions) per b-value").type_integer(1,10000)
-  + Argument ("bvalue files", "the b-value and sets of corresponding files, in order").type_various().allow_multiple()
+  + Argument ("bvalue files", "the b-value and sets of corresponding files, in order").type_integer().type_file_out().allow_multiple()
   + Argument ("out", "the output directions file,"
                      " with each row listing the X Y Z gradient directions,"
                      " the b-value,"
@@ -91,11 +91,10 @@ void run() {
   // read them in:
   size_t current = 1, nb = 0;
   while (current < argument.size() - 1) {
-    std::filesystem::path path(argument[current++]);
-    bvalue[nb] = to<value_type>(path);
+    bvalue[nb] = to<value_type>(argument[current++]);
     std::vector<DirectionSet> d;
     for (size_t i = 0; i < num_subsets; ++i) {
-      path = static_cast<std::filesystem::path>(argument[current++]);
+      auto path = static_cast<std::filesystem::path>(argument[current++]);
       auto m = File::Matrix::load_matrix(path);
       DWI::Directions::validate(m, path, false);
       m = Math::Sphere::as_cartesian(m);

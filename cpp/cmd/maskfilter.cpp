@@ -143,7 +143,7 @@ void run() {
                                            input_image_path.filename().string());
     auto opt = get_options("axes");
     if (!opt.empty()) {
-      const std::vector<int> axes = opt[0][0];
+      const std::vector<int> axes = MR::container_cast<std::vector<int>>(opt[0][0].as_sequence_int());
       filter.set_axes(axes);
     }
     bool largest_only = false;
@@ -207,7 +207,7 @@ void run() {
     Filter::Fill filter(input_image, std::string("filling interior of image ") + input_image_path.string());
     auto opt = get_options("axes");
     if (!opt.empty()) {
-      const std::vector<int> axes = opt[0][0];
+      const std::vector<int> axes = MR::container_cast<std::vector<int>>(opt[0][0].as_sequence_int());
       filter.set_axes(axes);
     }
     opt = get_options("connectivity");
@@ -223,7 +223,7 @@ void run() {
     Filter::Median filter(input_image, std::string("applying median filter to image ") + input_image_path.string());
     auto opt = get_options("extent");
     if (!opt.empty())
-      filter.set_extent(parse_ints<uint32_t>(opt[0][0]));
+      filter.set_extent(MR::container_cast<std::vector<uint32_t>>(opt[0][0].as_sequence_uint()));
 
     Stride::set_from_command_line(filter);
     filter.datatype() = DataType::Bit;

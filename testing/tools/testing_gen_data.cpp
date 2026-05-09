@@ -44,7 +44,7 @@ void usage() {
 // clang-format on
 
 void run() {
-  std::vector<int> dim = argument[0];
+  const auto dim = argument[0].as_sequence_uint();
 
   Header header;
 

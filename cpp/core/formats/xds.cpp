@@ -111,7 +111,8 @@ bool XDS::check(Header &H, size_t num_axes) const {
 }
 
 std::unique_ptr<ImageIO::Base> XDS::create(Header &H) const {
-  const std::filesystem::path hdr_path = H.path().replace_extension(".hdr");
+  std::filesystem::path hdr_path = const_cast<const Header &>(H).path();
+  hdr_path.replace_extension(".hdr");
 
   File::OFStream out(hdr_path);
   out << H.size(1) << " " << H.size(0) << " " << H.size(3) << " " << (H.datatype().is_little_endian() ? 1 : 0) << "\n";
@@ -120,7 +121,7 @@ std::unique_ptr<ImageIO::Base> XDS::create(Header &H) const {
   std::unique_ptr<ImageIO::Default> io_handler(new ImageIO::Default(H));
   File::OFStream out_dat(H.path());
   out_dat.close();
-  std::filesystem::resize_file(H.path(), footprint(H, "11 1"));
+  std::filesystem::resize_file(H.path(), footprint(H, {0, 1, 3}));
   io_handler->files.push_back(File::Entry(H.path()));
 
   return io_handler;

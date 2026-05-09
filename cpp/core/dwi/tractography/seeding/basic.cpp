@@ -157,7 +157,7 @@ bool Grid_per_voxel::get_seed(Eigen::Vector3f &p) const {
   return true;
 }
 
-Rejection::Rejection(const std::filesystem::path &in)
+Rejection_per_voxel::Rejection_per_voxel(const std::filesystem::path &in)
     : Base(in.filename().string(), "rejection sampling", attempts_per_seed.at(seed_attempt_t::RANDOM)),
 #ifdef REJECTION_SAMPLING_USE_INTERPOLATION
       interp(in),
@@ -266,7 +266,8 @@ CoordinatesLoader::CoordinatesLoader(const std::filesystem::path &cds_path) //
     weights *= 1.0F / max_coeff;
   } break;
   default:
-    throw Exception("Invalid number of columns (" + str(coords.cols()) + ") in seed coordinates file " + cds_path);
+    throw Exception("Invalid number of columns (" + str(coords.cols()) + ")" + //
+                    " in seed coordinates file " + cds_path.string());
   }
 }
 
@@ -301,11 +302,11 @@ bool Count_per_coord::get_seed(Eigen::Vector3f &p) const {
   return true;
 }
 
-Random_coordinates::Random_coordinates(const std::filesystem::path path) //
-    : Base(path.filename().string(),                                     //
-           "random coordinate selection seeding",                        //
-           attempts_per_seed.at(seed_attempt_t::RANDOM)),                //
-      CoordinatesLoader(path) {                                          //
+Random_coordinates::Random_coordinates(const std::filesystem::path &path) //
+    : Base(path.filename().string(),                                      //
+           "random coordinate selection seeding",                         //
+           attempts_per_seed.at(seed_attempt_t::RANDOM)),                 //
+      CoordinatesLoader(path) {                                           //
   if (have_weights())
     throw Exception("Seeding fixed # streamlines per coordinates" //
                     " cannot also specify per-coordinate weights" //
@@ -318,7 +319,7 @@ bool Random_coordinates::get_seed(Eigen::Vector3f &p) const {
 }
 
 Rejection_per_coord::Rejection_per_coord(const std::filesystem::path &in) //
-    : Base(path.filename().string(),                                      //
+    : Base(in.filename().string(),                                        //
            "rejection sampling from coordinates",                         //
            attempts_per_seed.at(seed_attempt_t::RANDOM)),                 //
       CoordinatesLoader(in) {                                             //

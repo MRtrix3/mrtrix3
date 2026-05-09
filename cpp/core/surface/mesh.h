@@ -136,7 +136,7 @@ public:
   void calculate_normals();
 
   std::string get_name() const { return name; }
-  void set_name(std::string_view &n) { name = n; }
+  void set_name(std::string_view n) { name = n; }
 
   const Vertex &vert(const vertex_index_type i) const {
     assert(i < vertices.size());

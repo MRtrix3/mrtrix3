@@ -70,9 +70,9 @@ void run() {
     const float threshold = opt.empty() ? Filter::estimate_optimal_threshold(input) : static_cast<float>(opt[0][0]);
     Surface::Algo::image2mesh_mc(input, mesh, threshold);
   } else {
-    auto input = Image<bool>::open(output_path);
+    auto input = Image<bool>::open(argument[0]);
     Surface::Algo::image2mesh_blocky(input, mesh);
   }
 
-  mesh.save(output_path);
+  mesh.save(argument[1]);
 }

@@ -280,8 +280,9 @@ void export_grad_commandline(const Header &header);
  * Note that this uses get_valid_DW_scheme() to get the DW_scheme, so will
  * check for the -grad option as required. */
 template <class MatrixType>
-Eigen::MatrixXd
-compute_SH2amp_mapping(const MatrixType &directions, bool lmax_from_command_line = true, int default_lmax = 8) {
+Eigen::MatrixXd compute_SH2amp_mapping(const MatrixType &directions,       //
+                                       bool lmax_from_command_line = true, //
+                                       int default_lmax = 8) {             //
   int lmax = -1;
   int lmax_from_ndir = Math::SH::LforN(directions.rows());
   bool lmax_set_from_commandline = false;
@@ -289,7 +290,7 @@ compute_SH2amp_mapping(const MatrixType &directions, bool lmax_from_command_line
     auto opt = App::get_options("lmax");
     if (!opt.empty()) {
       lmax_set_from_commandline = true;
-      lmax = to<int>(opt[0][0]);
+      lmax = static_cast<int>(opt[0][0].as_int());
       if (lmax % 2)
         throw Exception("lmax must be an even number");
       if (lmax < 0)

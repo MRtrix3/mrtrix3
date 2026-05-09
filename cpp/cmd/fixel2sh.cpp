@@ -70,7 +70,7 @@ void run() {
   auto in_index_image = in_index_header.get_image<index_type>();
   Fixel::debug_validate_index_image(in_index_image);
   auto in_directions_image =
-      Fixel::find_directions_header(Fixel::get_fixel_directory(fixel_input_path)).get_image<float>().with_direct_io();
+      Fixel::find_directions_header(Fixel::get_fixel_directory(argument[0])).get_image<float>().with_direct_io(1);
 
   size_t lmax = 8;
   auto opt = get_options("lmax");
@@ -85,7 +85,7 @@ void run() {
   out_header.ndim() = 4;
   out_header.size(3) = n_sh_coeff;
 
-  auto sh_image = Image<float>::create(sh_output_path, out_header);
+  auto sh_image = Image<float>::create(argument[1], out_header);
   std::vector<default_type> sh_values;
   Eigen::Matrix<default_type, Eigen::Dynamic, 1> apsf_values;
 

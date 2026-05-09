@@ -607,7 +607,7 @@ private:
 
 class ReceiverBase {
 public:
-  ReceiverBase(const size_t num_tracks, const bool ordered, std::string_view path)
+  ReceiverBase(const size_t num_tracks, const bool ordered, const std::filesystem::path &path)
       : received(0),
         path(path),
         expected(num_tracks),
@@ -630,7 +630,7 @@ protected:
   }
 
   size_t received;
-  const std::string path;
+  const std::filesystem::path path;
 
 private:
   const size_t expected;
@@ -641,7 +641,7 @@ private:
 class Receiver_OnePerStreamline : public ReceiverBase {
 public:
   using InputType = OnePerStreamline;
-  Receiver_OnePerStreamline(const size_t num_tracks, std::string_view path)
+  Receiver_OnePerStreamline(const size_t num_tracks, const std::filesystem::path &path)
       : ReceiverBase(num_tracks, false, path), data(vector_type::Zero(num_tracks)) {}
   Receiver_OnePerStreamline(const Receiver_OnePerStreamline &) = delete;
   ~Receiver_OnePerStreamline() { File::Matrix::save_vector(data, path); }
@@ -654,7 +654,7 @@ public:
     return true;
   }
 
-  void save(const std::filesystem::path &path) { File::Matrix::save_vector(vector_data, path); }
+  void save(const std::filesystem::path &path) { File::Matrix::save_vector(data, path); }
 
 private:
   vector_type data;

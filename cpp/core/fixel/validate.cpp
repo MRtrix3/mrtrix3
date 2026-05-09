@@ -27,7 +27,7 @@
 
 namespace MR::Fixel {
 
-void validate_directory(std::filesystem::path &fixel_directory_path) {
+void validate_directory(const std::filesystem::path &fixel_directory_path) {
 
   // Verify that a valid index image and a valid directions image are present.
   // Both functions throw InvalidFixelDirectoryException on failure.
@@ -39,7 +39,7 @@ void validate_directory(std::filesystem::path &fixel_directory_path) {
   try {
     total_nfixels = validate_index_image(index_header.get_image<index_type>());
   } catch (Exception &e) {
-    throw Exception(e, "Error in index image of fixel directory " + fixel_directory_path);
+    throw Exception(e, "Error in index image of fixel directory " + fixel_directory_path.string());
   }
 
   // Verify that every fixel data file in the directory contains
@@ -55,7 +55,7 @@ void validate_directory(std::filesystem::path &fixel_directory_path) {
       if (!is_data_file(H))
         continue;
       if (static_cast<index_type>(H.size(0)) != total_nfixels)
-        throw InvalidDirectoryException("Fixel data file \"" + fname + "\"" +                       //
+        throw InvalidDirectoryException("Fixel data file \"" + fname.path().string() + "\"" +       //
                                         " in directory \"" + fixel_directory_path.string() + "\"" + //
                                         " contains " + str(H.size(0)) + " fixels," +                //
                                         " but the index image contains " + str(total_nfixels));     //
@@ -122,7 +122,7 @@ index_type validate_index_image(Image<index_type> index_image) {
   return total_nfixels;
 }
 
-void debug_validate_directory(std::string_view fixel_directory_path) {
+void debug_validate_directory(const std::filesystem::path &fixel_directory_path) {
   if (App::log_level >= 3)
     validate_directory(fixel_directory_path);
 }

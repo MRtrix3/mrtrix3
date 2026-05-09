@@ -1056,7 +1056,7 @@ void parse() {
       if (!types_not_input_directory.any()) {
         if (!std::filesystem::exists(i))
           throw Exception("required input directory \"" + i.as_text() + "\" not found");
-        if (!std::filesysstem::is_directory(i))
+        if (!std::filesystem::is_directory(i))
           throw Exception("required input \"" + i.as_text() + "\" is not a directory");
       }
     }
@@ -1082,7 +1082,7 @@ void parse() {
       ArgTypeFlags types_not_input_tractogram(i.arg->types);
       types_not_input_tractogram.reset(ArgTypeFlags::TracksIn);
       if (!types_not_input_tractogram.any()) {
-        if (i.extension() != ".tck")
+        if (static_cast<std::filesystem::path>(i).extension() != ".tck")
           throw Exception("input file \"" + i.as_text() + "\" is not a valid track file");
       }
     }
@@ -1090,13 +1090,14 @@ void parse() {
       ArgTypeFlags types_not_output_tractogram(i.arg->types);
       types_not_output_tractogram.reset(ArgTypeFlags::TracksOut);
       if (!types_not_output_tractogram.any()) {
-        if (i.extension() != ".tck")
+        if (static_cast<std::filesystem::path>(i).extension() != ".tck")
           throw Exception("output track file \"" + i.as_text() + "\" must use the .tck suffix");
       }
     }
   }
   for (const auto &i : option) {
     for (size_t j = 0; j != i.opt->size(); ++j) {
+      const ParsedArgument parg = i[j];
       const Argument &arg = i.opt->operator[](j);
       assert(arg.types.any());
       {
@@ -1104,11 +1105,11 @@ void parse() {
         types_not_input_file.reset(ArgTypeFlags::FileIn);
         types_not_input_file.reset(ArgTypeFlags::TracksIn);
         if (!types_not_input_file.any()) {
-          if (!std::filesystem::exists(i.args[j]))
-            throw Exception("input file \"" + i.args[j].to_text() + "\"" +                //
+          if (!std::filesystem::exists(parg))
+            throw Exception("input file \"" + parg.as_text() + "\"" +                     //
                             " for option \"-" + std::string(i.opt->id) + "\" not found"); //
-          if (!std::filesystem::is_regular_file(i.args[j]))
-            throw Exception("input \"" + i.args[j].as_text() + "\"" +                         //
+          if (!std::filesystem::is_regular_file(parg))
+            throw Exception("input \"" + parg.as_text() + "\"" +                              //
                             " for option \"-" + std::string(i.opt->id) + "\" is not a file"); //
         }
       }
@@ -1116,11 +1117,11 @@ void parse() {
         ArgTypeFlags types_not_input_directory(arg.types);
         types_not_input_directory.reset(ArgTypeFlags::DirectoryIn);
         if (!types_not_input_directory.any()) {
-          if (!std::filesystem::exists(i.args[j]))
-            throw Exception("input directory \"" + i.args[j].to_text() + "\"" +           //
+          if (!std::filesystem::exists(parg))
+            throw Exception("input directory \"" + parg.as_text() + "\"" +                //
                             " for option \"-" + std::string(i.opt->id) + "\" not found"); //
-          if (!std::filesystem::is_directory(i.args[j]))
-            throw Exception("input \"" + i.args[j].to_text() + "\"" +                              //
+          if (!std::filesystem::is_directory(parg))
+            throw Exception("input \"" + parg.as_text() + "\"" +                                   //
                             " for option \"-" + std::string(i.opt->id) + "\" is not a directory"); //
         }
       }
@@ -1129,8 +1130,9 @@ void parse() {
         types_not_output_file.reset(ArgTypeFlags::FileOut);
         types_not_output_file.reset(ArgTypeFlags::TracksOut);
         if (!types_not_output_file.any()) {
-          if (i.args[j].filename().string().find_last_of(PATH_SEPARATORS) == text.size() - 1)
-            throw Exception("output path \"" + i.args[j].as_text() + "\"" +                    //
+          const std::string filename = static_cast<std::filesystem::path>(parg).filename().string();
+          if (filename.find_last_of(PATH_SEPARATORS) == filename.size() - 1)
+            throw Exception("output path \"" + parg.as_text() + "\"" +                         //
                             " for option \"-" + std::string(i.opt->id) + "\"" +                //
                             " is not a valid file path (ends with directory path separator)"); //
         }
@@ -1141,14 +1143,14 @@ void parse() {
         types_not_output_filesystem.reset(ArgTypeFlags::DirectoryOut);
         types_not_output_filesystem.reset(ArgTypeFlags::TracksOut);
         if (!types_not_output_filesystem.any())
-          check_overwrite(text);
+          check_overwrite(parg);
       }
       {
         ArgTypeFlags types_not_input_tractogram(arg.types);
         types_not_input_tractogram.reset(ArgTypeFlags::TracksIn);
         if (!types_not_input_tractogram.any()) {
-          if (i.args[j].extension() != ".tck")
-            throw Exception("input file \"" + i.args[j].as_text() + "\"" +      //
+          if (static_cast<std::filesystem::path>(parg).extension() != ".tck")
+            throw Exception("input file \"" + parg.as_text() + "\"" +           //
                             " for option \"-" + std::string(i.opt->id) + "\"" + //
                             " is not a valid track file");                      //
         }
@@ -1157,10 +1159,10 @@ void parse() {
         ArgTypeFlags types_not_output_tractogram(arg.types);
         types_not_output_tractogram.reset(ArgTypeFlags::TracksOut);
         if (!types_not_output_tractogram.any()) {
-          if (i.args[j].extension() != ".tck")
-            throw Exception("output track file \"" + i.args[j].as_text() + "\"" + //
-                            " for option \"-" + std::string(i.opt->id) + "\"" +   //
-                            " must use the .tck suffix");                         //
+          if (static_cast<std::filesystem::path>(parg).extension() != ".tck")
+            throw Exception("output track file \"" + parg.as_text() + "\"" +    //
+                            " for option \"-" + std::string(i.opt->id) + "\"" + //
+                            " must use the .tck suffix");                       //
         }
       }
     }
@@ -1385,19 +1387,19 @@ default_type App::ParsedArgument::as_float() const {
   return retval;
 }
 
-std::vector<int32_t> ParsedArgument::as_sequence_int() const {
+std::vector<ParsedArgument::IntType> ParsedArgument::as_sequence_int() const {
   assert(arg->types[ArgTypeFlags::IntSeq]);
   try {
-    return parse_ints<int32_t>(p);
+    return parse_ints<IntType>(p);
   } catch (Exception &e) {
     throw Exception(e, "Unable to interpret command-line input \"" + as_text() + "\" as sequence of integers");
   }
 }
 
-std::vector<uint32_t> ParsedArgument::as_sequence_uint() const {
+std::vector<ParsedArgument::UIntType> ParsedArgument::as_sequence_uint() const {
   assert(arg->types[ArgTypeFlags::IntSeq]);
   try {
-    return parse_ints<uint32_t>(p);
+    return parse_ints<UIntType>(p);
   } catch (Exception &e) {
     throw Exception(e, "Unable to interpret command-line input \"" + as_text() + "\" as sequence of integers");
   }
@@ -1418,30 +1420,42 @@ ParsedArgument::ParsedArgument(const Option *option, const Argument *argument, s
   assert(!p.empty());
 }
 
-bool ParsedArgument::includes_filesystem_arg_type() const noexcept {
-  return arg != nullptr && (arg->type == ArgFileIn || arg->type == ArgFileOut || arg->type == ArgDirectoryIn ||
-                            arg->type == ArgDirectoryOut || arg->type == ImageIn || arg->type == ImageOut ||
-                            arg->type == TracksIn || arg->type == TracksOut || arg->type == Various);
+bool ParsedArgument::includes_filesystem_arg_types() const noexcept {
+  if (arg == nullptr)
+    return false;
+  return (arg->types[ArgTypeFlags::FileIn] || arg->types[ArgTypeFlags::FileOut] ||
+          arg->types[ArgTypeFlags::DirectoryIn] || arg->types[ArgTypeFlags::DirectoryOut] ||
+          arg->types[ArgTypeFlags::ImageIn] || arg->types[ArgTypeFlags::ImageOut] ||
+          arg->types[ArgTypeFlags::TracksIn] || arg->types[ArgTypeFlags::TracksOut]);
 }
 
-bool ParsedArgument::not_filesystem_arg_type() const noexcept {
-  return arg == nullptr || (arg->type != ArgFileIn && arg->type != ArgFileOut && arg->type != ArgDirectoryIn &&
-                            arg->type != ArgDirectoryOut && arg->type != ImageIn && arg->type != ImageOut &&
-                            arg->type != TracksIn && arg->type != TracksOut);
+bool ParsedArgument::only_filesystem_arg_types() const noexcept {
+  if (arg == nullptr)
+    return false;
+  ArgTypeFlags flags(arg->types);
+  flags[ArgTypeFlags::FileIn] = flags[ArgTypeFlags::FileOut] = flags[ArgTypeFlags::DirectoryIn] =
+      flags[ArgTypeFlags::DirectoryOut] = flags[ArgTypeFlags::ImageIn] = flags[ArgTypeFlags::ImageOut] =
+          flags[ArgTypeFlags::TracksIn] = flags[ArgTypeFlags::TracksOut] = false;
+  return !flags.any();
 }
 
 ParsedArgument::operator std::string() const {
-  assert(not_filesystem_arg_type());
+  assert(!only_filesystem_arg_types());
+  return p;
+}
+
+ParsedArgument::operator std::string_view() const {
+  assert(!only_filesystem_arg_types());
   return p;
 }
 
 ParsedArgument::operator std::filesystem::path() const {
-  assert(includes_filesystem_arg_type());
+  assert(includes_filesystem_arg_types());
   return std::filesystem::path(p);
 }
 
 std::filesystem::path ParsedArgument::as_path() const {
-  assert(includes_filesystem_arg_type());
+  assert(includes_filesystem_arg_types());
   return std::filesystem::path(p);
 }
 

@@ -115,11 +115,11 @@ void run() {
       H_out.datatype() = DataType::Bit;
       H_out.name() = voxels_prefix;
       if (argument.size() > 1) {
-        H_out.name() += Path::basename(argument[i]);
+        H_out.name() += static_cast<std::filesystem::path>(argument[i]).filename();
       } else {
         bool has_extension = false;
         for (const auto &p : MR::Formats::known_extensions) {
-          if (Path::has_suffix(H_out.name(), p)) {
+          if (static_cast<const Header &>(H_out).path().extension() == p) {
             has_extension = true;
             break;
           }
