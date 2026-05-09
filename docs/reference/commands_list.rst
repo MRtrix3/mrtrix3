@@ -225,7 +225,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`mrclusterstats`, "Voxel-based analysis using permutation testing and threshold-free cluster enhancement"
     |cpp.png|, :ref:`mrcolour`, "Apply a colour map to an image"
     |cpp.png|, :ref:`mrconvert`, "Perform conversion between different file types and optionally extract a subset of the input image"
-    |cpp.png|, :ref:`mrdegibbs`, "Remove Gibbs Ringing Artifacts"
+    |cpp.png|, :ref:`mrdegibbs`, "Remove Gibbs ringing artefacts"
     |cpp.png|, :ref:`mrdump`, "Print out the values within an image"
     |cpp.png|, :ref:`mredit`, "Directly edit the intensities within an image from the command-line"
     |cpp.png|, :ref:`mrfilter`, "Perform filtering operations on 3D / 4D MR images"
