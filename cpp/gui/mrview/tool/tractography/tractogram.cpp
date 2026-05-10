@@ -657,7 +657,7 @@ void Tractogram::load_intensity_track_scalars(const std::filesystem::path &filep
   if (filepath.extension() == ".tsf") {
     DWI::Tractography::Properties scalar_properties;
     DWI::Tractography::ScalarReader<float> file(filepath, scalar_properties);
-    DWI::Tractography::check_properties_match(properties, scalar_properties, ".tck / .tsf pair");
+    DWI::Tractography::validate_tsf_properties(properties, scalar_properties, ".tck / .tsf pair");
     size_t tck_count = 0;
     while (file(tck_scalar)) {
 
@@ -749,7 +749,7 @@ void Tractogram::load_threshold_track_scalars(const std::filesystem::path &filep
   if (filepath.extension() == ".tsf") {
     DWI::Tractography::Properties scalar_properties;
     DWI::Tractography::ScalarReader<float> file(filepath, scalar_properties);
-    DWI::Tractography::check_properties_match(properties, scalar_properties, ".tck / .tsf pair");
+    DWI::Tractography::validate_tsf_properties(properties, scalar_properties, ".tck / .tsf pair");
     size_t tck_count = 0;
     while (file(tck_scalar)) {
 

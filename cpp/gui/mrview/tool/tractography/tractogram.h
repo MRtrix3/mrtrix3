@@ -35,7 +35,7 @@ class Tractogram : public Displayable {
   Q_OBJECT
 
 public:
-  Tractogram(Tractography &tool, std::string_view file_path);
+  Tractogram(Tractography &tool, const std::filesystem::path &file_path);
 
   ~Tractogram();
 
@@ -120,7 +120,7 @@ private:
   static const int track_padding = 6;
   Tractography &tractography_tool;
 
-  const std::string filename;
+  const std::filesystem::path filepath;
 
   TrackColourType color_type;
   TrackThresholdType threshold_type;

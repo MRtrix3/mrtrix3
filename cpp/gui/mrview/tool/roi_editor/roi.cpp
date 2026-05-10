@@ -252,7 +252,7 @@ ROI::~ROI() {
       if (QMessageBox::question(
               &window(),
               tr("ROI not saved"),
-              qstr("Image " + roi->get_filename().string() + " has been modified. Do you want to save it?"),
+              qstr("Image " + roi->get_filepath().string() + " has been modified. Do you want to save it?"),
               QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes)
         save(roi);
     }
@@ -271,13 +271,13 @@ void ROI::new_slot() {
 }
 
 void ROI::open_slot() {
-  std::vector<std::string> names = Dialog::File::get_images(this, "Select ROI images to open", &current_folder);
-  if (names.empty())
+  auto load_paths = Dialog::File::input_imagepaths(this, "Select ROI images to open", current_folder);
+  if (load_paths.empty())
     return;
+  current_folder = load_paths.last_directory;
   std::vector<std::unique_ptr<MR::Header>> list;
-  for (size_t n = 0; n < names.size(); ++n)
-    list.push_back(std::make_unique<MR::Header>(MR::Header::open(names[n])));
-
+  for (const auto &path : load_paths.multi_selection)
+    list.push_back(std::make_unique<MR::Header>(MR::Header::open(path)));
   load(list);
   in_insert_mode = false;
 }
@@ -291,7 +291,7 @@ void ROI::dropEvent(QDropEvent *event) {
     QList<QUrl> urlList = mimeData->urls();
     for (int i = 0; i < urlList.size() && i < max_files; ++i) {
       try {
-        list.push_back(std::make_unique<MR::Header>(MR::Header::open(QtHelpers::url_to_std_string(urlList.at(i)))));
+        list.push_back(std::make_unique<MR::Header>(MR::Header::open(QtHelpers::url_to_fspath(urlList.at(i)))));
       } catch (Exception &e) {
         e.display();
       }
@@ -319,10 +319,11 @@ void ROI::save(ROI_Item *roi) {
     MR::Header header(roi->header());
     header.ndim() = 3;
     header.datatype() = DataType::Bit;
-    const std::filesystem::path name = GUI::Dialog::File::get_save_image_name(
-        &window(), "Select name of ROI to save", roi->get_filename(), &current_folder);
-    if (!name.empty()) {
-      auto out = MR::Image<bool>::create(name, header);
+    auto save_paths = GUI::Dialog::File::output_imagepath(
+        &window(), "Select name of ROI to save", roi->get_filepath().filename().string(), current_folder);
+    if (!save_paths.empty()) {
+      current_folder = save_paths.last_directory;
+      auto out = MR::Image<bool>::create(save_paths.single_selection, header);
       roi->save(out, data.data());
     }
   } catch (Exception &E) {
@@ -367,7 +368,7 @@ void ROI::close_slot() {
     size_t ret = QMessageBox::warning(
         this,
         tr("ROI not saved"),
-        qstr("ROI " + roi->get_filename().string() + " has been modified. Do you want to save it?"),
+        qstr("ROI " + roi->get_filepath().string() + " has been modified. Do you want to save it?"),
         QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel,
         QMessageBox::Save);
     if (ret == QMessageBox::Cancel)

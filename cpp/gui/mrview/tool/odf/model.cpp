@@ -20,7 +20,7 @@
 
 namespace MR::GUI::MRView::Tool {
 
-size_t ODF_Model::add_items(const std::vector<std::string> &list,
+size_t ODF_Model::add_items(const std::vector<std::filesystem::path> &list,
                             const odf_type_t type,
                             const bool colour_by_direction,
                             const bool hide_negative_lobes,

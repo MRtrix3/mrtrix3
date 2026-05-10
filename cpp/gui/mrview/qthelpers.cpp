@@ -16,18 +16,15 @@
 
 #include "mrview/qthelpers.h"
 
-#include <QString>
 #include <QUrl>
-
 #include <string>
 
 namespace MR::GUI::MRView::QtHelpers {
 
-std::string url_to_std_string(const QUrl &url) {
-  const bool isLocal = url.isLocalFile();
-  const std::string str = isLocal ? url.toLocalFile().toStdString() : url.toString().toStdString();
-
-  return str;
+std::filesystem::path url_to_fspath(const QUrl &url) {
+  if (!url.isLocalFile())
+    throw Exception("Currently unable to accept drag-and-drop events not from local filesystem");
+  return {url.toLocalFile().toStdString()};
 }
 
 } // namespace MR::GUI::MRView::QtHelpers

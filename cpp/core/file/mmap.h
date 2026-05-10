@@ -75,7 +75,7 @@ protected:
   int fd;
   std::byte *addr;  /**< The address in memory where the file has been mapped. */
   std::byte *first; /**< The address in memory to the start of the region of interest. */
-  int64_t msize;    /**< The size of the file. */
+  int64_t msize;    /**< The size of the mapped portion of the file. */
   time_t mtime;     /**< The modification time of the file at the last check. */
   bool readwrite;
 

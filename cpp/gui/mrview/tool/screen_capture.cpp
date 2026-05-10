@@ -324,7 +324,7 @@ void Capture::run(bool with_capture) {
       break;
 
     if (with_capture)
-      win.captureGL((current_folder / prefix + printf("%04d.png", i)));
+      win.captureGL(current_folder / (prefix + printf("%04d.png", i)));
 
     // Rotation
     Eigen::Quaternionf orientation(win.orientation());
@@ -407,11 +407,12 @@ void Capture::run(bool with_capture) {
 }
 
 void Capture::select_output_folder_slot() {
-  const std::string path = Dialog::File::get_folder(this, "Directory", &current_folder);
-  if (path.empty())
+  auto load_paths = Dialog::File::input_dirpath(this, "Directory", current_folder);
+  if (load_paths.empty())
     return;
-  folder_button->setText(qstr(shorten(current_folder, 20, 0)));
-  folder_button->setToolTip(qstr(current_folder));
+  current_folder = load_paths.last_directory;
+  folder_button->setText(qstr(shorten(load_paths.single_selection.filename().string(), 20, 0)));
+  folder_button->setToolTip(qstr(load_paths.single_selection.string()));
   on_output_update();
 }
 
@@ -438,9 +439,9 @@ void Capture::add_commandline_options(MR::App::OptionList &options) {
 bool Capture::process_commandline_option(const MR::App::ParsedOption &opt) {
   if (opt.opt->is("capture.folder")) {
     current_folder = std::string(opt[0]);
-    QString path(qstr(shorten(current_folder, 20, 0)));
+    QString path(qstr(shorten(current_folder.filename().string(), 20, 0)));
     folder_button->setText(path);
-    folder_button->setToolTip(qstr(current_folder));
+    folder_button->setToolTip(qstr(current_folder.string()));
     on_output_update();
     return true;
   }

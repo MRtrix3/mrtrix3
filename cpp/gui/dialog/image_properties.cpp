@@ -148,9 +148,9 @@ void ImageProperties::context_menu(const QPoint &point) {
 
 void ImageProperties::write_to_file() {
   assert(save_data.rows());
-  const std::filesystem::path path = File::get_save_path(this, "Save as...", "dwgrad.txt");
-  if (!path.empty())
-    MR::File::Matrix::save_matrix(save_data, path);
+  auto save_paths = File::output_filepath(this, "Save as...", "dwgrad.txt");
+  if (!save_paths.single_selection.empty())
+    MR::File::Matrix::save_matrix(save_data, save_paths.single_selection);
 }
 
 } // namespace MR::GUI::Dialog

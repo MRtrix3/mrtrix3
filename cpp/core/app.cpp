@@ -1180,7 +1180,7 @@ void init(int cmdline_argc, const char *const *cmdline_argv) { // check_syntax o
   terminal_use_colour = !ProgressBar::set_update_method();
 
   raw_arguments_list = std::vector<std::string>(cmdline_argv, cmdline_argv + cmdline_argc);
-  NAME = std::filesystem::path(raw_arguments_list.front()).filename();
+  NAME = std::filesystem::path(raw_arguments_list.front()).filename().string();
   raw_arguments_list.erase(raw_arguments_list.begin());
 
 #ifdef MRTRIX_WINDOWS

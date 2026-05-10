@@ -59,7 +59,7 @@ void save_matrix_text(const MatrixType &M,
 template <class ValueType = default_type>
 std::vector<std::vector<ValueType>> load_matrix_2D_vector(const std::filesystem::path &filename,
                                                           std::vector<std::string> *comments = nullptr) {
-  std::ifstream stream(std::string(filename).c_str(), std::ios_base::in | std::ios_base::binary);
+  std::ifstream stream(filename.string().c_str(), std::ios_base::in | std::ios_base::binary);
   if (!stream)
     throw Exception("Unable to open numerical data text file \"" + filename.string() + "\": " + strerror(errno));
   std::vector<std::vector<ValueType>> V;

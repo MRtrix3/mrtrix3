@@ -16,11 +16,11 @@
 
 #include "mrview/tool/connectome/file_data_vector.h"
 
+#include <filesystem>
 #include <limits>
 
 #include "file/matrix.h"
-
-#include <filesystem>
+#include "gui.h"
 
 namespace MR::GUI::MRView::Tool {
 
@@ -38,7 +38,7 @@ FileDataVector::FileDataVector(FileDataVector &&V)
 FileDataVector::FileDataVector(const size_t nelements) : base_t(nelements), min(NaNF), mean(NaNF), max(NaNF) {}
 
 FileDataVector::FileDataVector(const std::filesystem::path &file)
-    : base_t(), name(qstr(file.filename())), min(NaNF), mean(NaNF), max(NaNF) {
+    : base_t(), name(qstr(file.filename().string())), min(NaNF), mean(NaNF), max(NaNF) {
   base_t temp = File::Matrix::load_vector<float>(file);
   base_t::operator=(temp);
   calc_stats();
@@ -68,7 +68,7 @@ FileDataVector &FileDataVector::operator=(FileDataVector &&that) {
 FileDataVector &FileDataVector::load(const std::filesystem::path &filePath) {
   base_t temp = File::Matrix::load_vector<float>(filePath);
   base_t::operator=(temp);
-  name = qstr(filePath.filename());
+  name = qstr(filePath.filename().string());
   calc_stats();
   return *this;
 }

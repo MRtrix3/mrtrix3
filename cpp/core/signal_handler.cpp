@@ -20,6 +20,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <signal.h>
+#include <unistd.h>
 #include <vector>
 
 #include "app.h"
@@ -27,6 +28,8 @@
 
 #ifdef MRTRIX_WINDOWS
 #define STDERR_FILENO 2 // check_syntax off
+// #include <stdio.h>
+// constexpr int STDERR_FILENO = GetStdHandle(STD_ERROR_HANDLE);
 #endif
 
 namespace MR::SignalHandler {
