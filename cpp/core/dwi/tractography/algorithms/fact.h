@@ -18,6 +18,8 @@
 
 #include <optional>
 
+#include "fixel/validate.h"
+
 #include "interp/masked.h"
 #include "interp/nearest.h"
 
@@ -41,8 +43,8 @@ public:
                      {ZeroExclusion::Enabled, NonFiniteExclusion::All, HoleFilling::EnabledExcludeNonFinite}),
           num_vec(source.size(3) / 3) {
 
-      if (source.size(3) % 3)
-        throw Exception("Number of volumes in FACT algorithm input image should be a multiple of 3");
+      Peaks::validate_header(source_header);
+      Peaks::debug_validate_image(source);
 
       if (is_act()) {
         if (act().backtrack())
