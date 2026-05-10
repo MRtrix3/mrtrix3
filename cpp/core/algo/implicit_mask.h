@@ -126,12 +126,8 @@ template <class ImageType> Image<bool> make_implicit_mask(const ImageType &sourc
     Filter::ConnectedComponents cc_filter(mask);
     cc_filter.set_largest_only(true);
     cc_filter(mask, mask);
-    for (auto l = Loop(mask)(mask); l; ++l)
-      mask.value() = !mask.value();
-    for (auto l = Loop(mask)(mask, reexclude); l; ++l) {
-      if (reexclude.value())
-        mask.value() = false;
-    }
+    for (auto l = Loop(mask)(mask, reexclude); l; ++l)
+      mask.value() = reexclude.value() ? false : !mask.value();
   } else {
     for (auto l = Loop(mask)(mask); l; ++l) {
       img.index(0) = mask.index(0);

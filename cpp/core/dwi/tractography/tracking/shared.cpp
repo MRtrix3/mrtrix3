@@ -163,6 +163,12 @@ void SharedBase::set_step_and_angle(const float voxel_frac,
   //   then it is impossible for a streamline to be terminated specifically due to a curvature constraint;
   //   this should therefore be omitted from reporting of termination statistics
   curvature_constraint = curvature_constraint_type;
+#ifdef DEBUG_TERMINATIONS
+  if (curvature_constraint == curvature_constraint_t::POSTHOC_THRESHOLD) {
+    debug_images[*magic_enum::enum_index(term_t::HIGH_CURVATURE)] =
+        Image<uint32_t>::create("terms_" + Enum::lowercase_name(term_t::HIGH_CURVATURE) + ".mif", debug_header);
+  }
+#endif
 }
 
 void SharedBase::set_num_points() {
