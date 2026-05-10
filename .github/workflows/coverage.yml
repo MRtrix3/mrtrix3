@@ -26,7 +26,7 @@ jobs:
     - name: install dependencies
       run: |
          sudo apt-get update
-         sudo apt-get install gcovr libeigen3-dev zlib1g-dev libfftw3-dev ninja-build
+         sudo apt-get install gcovr libeigen3-dev zlib1g-dev libfftw3-dev libpng-dev ninja-build
 
     - name: Run sccache-cache
       uses: mozilla-actions/sccache-action@v0.0.9
