@@ -18,6 +18,7 @@
 
 #include <atomic>
 #include <cstdlib>
+#include <filesystem>
 #include <iostream>
 #include <signal.h>
 #include <unistd.h>
@@ -37,12 +38,14 @@ namespace MR::SignalHandler {
 namespace {
 std::vector<cleanup_function_type> cleanup_operations;
 
-std::vector<std::string> marked_files;
+std::vector<std::filesystem::path> marked_files;
 std::atomic_flag flag = ATOMIC_FLAG_INIT;
 
-void delete_temporary_files() {
+void delete_temporary_files() noexcept {
+  // Use non-throwing version of std::filesystem::remove()
+  std::error_code ec;
   for (const auto &i : marked_files)
-    std::filesystem::remove(i);
+    std::filesystem::remove(i, ec);
   marked_files.clear();
 }
 
@@ -50,8 +53,6 @@ void handler(int i) noexcept {
   // Only process this once if using multi-threading:
   if (!flag.test_and_set()) {
 
-    // Try to do a tempfile cleanup before printing the error, since the latter's not guaranteed to work...
-    // Don't use std::filesystem::remove directly: may throw an exception
     for (auto func : cleanup_operations)
       func();
 
