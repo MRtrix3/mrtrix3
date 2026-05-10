@@ -35,7 +35,7 @@ void GZ::load(const Header &header, size_t) {
 
   DEBUG("loading image \"" + header.path().string() + "\"...");
   addresses.resize(header.datatype().bits() == 1 && files.size() > 1 ? files.size() : 1);
-  addresses[0].reset(new uint8_t[files.size() * bytes_per_segment]);
+  addresses[0].reset(new std::byte[files.size() * bytes_per_segment]);
   if (!addresses[0])
     throw Exception("failed to allocate memory for image \"" + header.path().string() + "\"");
 
@@ -47,8 +47,8 @@ void GZ::load(const Header &header, size_t) {
     for (size_t n = 0; n < files.size(); n++) {
       File::GZ zf(files[n].name, "rb");
       zf.seek(files[n].start);
-      uint8_t *address = addresses[0].get() + n * bytes_per_segment;
-      uint8_t *last = address + bytes_per_segment - bytes_per_zcall;
+      std::byte *address = addresses[0].get() + n * bytes_per_segment;
+      std::byte *last = address + bytes_per_segment - bytes_per_zcall;
       while (address < last) {
         zf.read(reinterpret_cast<char *>(address), bytes_per_zcall);
         address += bytes_per_zcall;
@@ -79,8 +79,8 @@ void GZ::unload(const Header &header) {
         File::GZ zf(files[n].name, "wb");
         if (lead_in)
           zf.write(reinterpret_cast<const char *>(lead_in.get()), lead_in_size);
-        uint8_t *address = addresses[0].get() + n * bytes_per_segment;
-        uint8_t *last = address + bytes_per_segment - bytes_per_zcall;
+        std::byte *address = addresses[0].get() + n * bytes_per_segment;
+        std::byte *last = address + bytes_per_segment - bytes_per_zcall;
         while (address < last) {
           zf.write(reinterpret_cast<const char *>(address), bytes_per_zcall);
           address += bytes_per_zcall;

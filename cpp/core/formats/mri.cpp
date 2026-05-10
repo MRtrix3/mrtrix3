@@ -14,6 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <cstddef>
+
 #include "file/config.h"
 #include "file/mmap.h"
 #include "file/ofstream.h"
@@ -105,11 +107,11 @@ inline char order2char(size_t axis, bool forward) {
   return ('\0');
 }
 
-inline uint32_t type(const uint8_t *pos, bool is_BE) { return Raw::fetch_<uint32_t>(pos, is_BE); }
-inline size_t size(const uint8_t *pos, bool is_BE) { return (Raw::fetch_<uint32_t>(pos + sizeof(uint32_t), is_BE)); }
-inline const uint8_t *data(const uint8_t *pos) { return (pos + 2 * sizeof(uint32_t)); }
+inline uint32_t type(const std::byte *pos, bool is_BE) { return Raw::fetch_<uint32_t>(pos, is_BE); }
+inline size_t size(const std::byte *pos, bool is_BE) { return (Raw::fetch_<uint32_t>(pos + sizeof(uint32_t), is_BE)); }
+inline const std::byte *data(const std::byte *pos) { return (pos + 2 * sizeof(uint32_t)); }
 
-inline const uint8_t *next(const uint8_t *current_pos, bool is_BE) {
+inline const std::byte *next(const std::byte *current_pos, bool is_BE) {
   return (current_pos + 2 * sizeof(uint32_t) + size(current_pos, is_BE));
 }
 
@@ -162,13 +164,13 @@ std::unique_ptr<ImageIO::Base> MRI::read(Header &H) const {
   H.ndim() = 4;
 
   size_t data_offset = 0;
-  const uint8_t *current = fmap.address() + sizeof(int32_t) + sizeof(uint16_t);
-  const uint8_t *last = fmap.address() + fmap.size() - 2 * sizeof(uint32_t);
+  const std::byte *current = fmap.address() + sizeof(int32_t) + sizeof(uint16_t);
+  const std::byte *last = fmap.address() + fmap.size() - 2 * sizeof(uint32_t);
 
   while (current <= last) {
     switch (type(current, is_BE)) {
     case mriformat_index_data:
-      H.datatype() = fetch_datatype(data(current)[-4]);
+      H.datatype() = fetch_datatype(std::to_integer<uint8_t>(data(current)[-4]));
       data_offset = current + 5 - fmap.address();
       break;
     case mriformat_index_dimensions:

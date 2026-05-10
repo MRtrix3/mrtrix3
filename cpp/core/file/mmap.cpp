@@ -15,6 +15,7 @@
  */
 
 #include <array>
+#include <cstddef>
 #include <fcntl.h>
 #include <unistd.h>
 #include <zlib.h>
@@ -42,21 +43,25 @@
 
 namespace MR::File {
 
-MMap::MMap(const Entry &entry, bool readwrite, bool preload, int64_t mapped_size)
-    : Entry(entry), addr(nullptr), first(nullptr), msize(mapped_size), readwrite(readwrite) {
-  DEBUG("memory-mapping file \"" + Entry::name.string() + "\"...");
+MMap::MMap(const Entry &entry, bool readwrite, bool preload, std::optional<int64_t> mapped_size)
+    : Entry(entry), addr(nullptr), first(nullptr), msize(0), readwrite(readwrite) {
 
   const std::filesystem::path &file_path = Entry::name;
+  DEBUG("memory-mapping file \"" + file_path.string() + "\"...");
+
   try {
     auto last_write = std::filesystem::last_write_time(file_path);
     auto sctp = std::chrono::time_point_cast<std::chrono::system_clock::duration>(
         last_write - std::filesystem::file_time_type::clock::now() + std::chrono::system_clock::now());
     mtime = std::chrono::system_clock::to_time_t(sctp);
-    int64_t file_size = std::filesystem::file_size(file_path);
-    if (msize < 0)
+    const int64_t file_size = std::filesystem::file_size(file_path);
+    if (!mapped_size.has_value()) {
       msize = file_size - start;
-    else if (start + msize > file_size)
-      throw Exception("file \"" + Entry::name.string() + "\" is smaller than expected");
+    } else {
+      msize = mapped_size.value();
+      if (start + msize > file_size)
+        throw Exception("file \"" + Entry::name.string() + "\" is smaller than expected");
+    }
   } catch (const std::exception &e) {
     throw Exception("cannot stat file \"" + Entry::name.string() + "\": " + e.what());
   }
@@ -127,7 +132,7 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, int64_t mapped_size
 
     if (delayed_writeback) {
       try {
-        first = new uint8_t[msize];
+        first = new std::byte[msize];
         if (!first)
           throw 1;
       } catch (...) {
@@ -163,13 +168,13 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, int64_t mapped_size
         (HANDLE)_get_osfhandle(fd), nullptr, (readwrite ? PAGE_READWRITE : PAGE_READONLY), 0, start + msize, nullptr);
     if (!handle)
       throw 0;
-    addr = static_cast<uint8_t *>(
+    addr = static_cast<std::byte *>(
         MapViewOfFile(handle, (readwrite ? FILE_MAP_ALL_ACCESS : FILE_MAP_READ), 0, 0, start + msize));
     if (!addr)
       throw 0;
     CloseHandle(handle);
 #else
-    addr = static_cast<uint8_t *>(
+    addr = static_cast<std::byte *>(
         mmap(nullptr, start + msize, (readwrite ? PROT_WRITE | PROT_READ : PROT_READ), MAP_SHARED, fd, 0));
     if (addr == MAP_FAILED)
       throw 0;

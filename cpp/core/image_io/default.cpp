@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <cstddef>
 #include <limits>
 
 #include "app.h"
@@ -54,7 +55,7 @@ void Default::unload(const Header &header) {
       for (size_t n = 0; n < files.size(); n++) {
         File::OFStream out(files[n].name, std::ios::in | std::ios::out | std::ios::binary);
         out.seekp(files[n].start, out.beg);
-        out.write((char *)(addresses[0].get() + n * bytes_per_segment), bytes_per_segment);
+        out.write(reinterpret_cast<const char *>(addresses[0].get() + n * bytes_per_segment), bytes_per_segment);
         if (!out.good())
           throw Exception("error writing back contents of file \"" + files[n].name.string() + "\": " + strerror(errno));
       }
@@ -80,7 +81,7 @@ void Default::copy_to_mem(const Header &header) {
   addresses.resize(files.size() > 1 && header.datatype().bits() * segsize != 8 * static_cast<size_t>(bytes_per_segment)
                        ? files.size()
                        : 1);
-  addresses[0].reset(new uint8_t[files.size() * bytes_per_segment]);
+  addresses[0].reset(new std::byte[files.size() * bytes_per_segment]);
   if (!addresses[0])
     throw Exception("failed to allocate memory for image \"" + header.path().string() + "\"");
 
