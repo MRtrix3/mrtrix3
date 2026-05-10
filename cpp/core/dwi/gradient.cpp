@@ -174,7 +174,7 @@ Eigen::MatrixXd load_bvecs_bvals(const Header &header,
       if (grad.block<1, 3>(n, 0).squaredNorm() > 0.0)
         // clang-format off
         throw Exception("Corrupt content in bvecs/bvals data"
-                        " (" + std::string(bvecs_path) + " & " + std::string(bvals_path) + ")"
+                        " (" + bvecs_path.string() + " & " + bvals_path.string() + ")"
                         " (NaN present in bval but valid direction in bvec)");
       // clang-format on
       nans_present_bvals = true;
@@ -184,7 +184,7 @@ Eigen::MatrixXd load_bvecs_bvals(const Header &header,
       if (grad(n, 3) > 0.0)
         // clang-format off
         throw Exception("Corrupt content in bvecs/bvals data"
-                        " (" + std::string(bvecs_path) + " & " + std::string(bvals_path) + ")"
+                        " (" + bvecs_path.string() + " & " + bvals_path.string() + ")"
                         " (NaN bvec direction but non-zero value in bval)");
       // clang-format on
       nans_present_bvecs = true;
@@ -197,8 +197,8 @@ Eigen::MatrixXd load_bvecs_bvals(const Header &header,
   }
   if (nan_linecount > 0) {
     WARN(str(nan_linecount) + " row" + (nan_linecount > 1 ? "s" : "") + " with NaN values detected in " +
-         (nans_present_bvecs ? "bvecs file " + std::string(bvecs_path) + (nans_present_bvals ? " and" : "") : "") +
-         (nans_present_bvals ? "bvals file " + std::string(bvals_path) : "") +
+         (nans_present_bvecs ? "bvecs file " + bvecs_path.string() + (nans_present_bvals ? " and" : "") : "") +
+         (nans_present_bvals ? "bvals file " + bvals_path.string() : "") +
          "; these have been interpreted as b=0 volumes by MRtrix");
   }
 
@@ -229,11 +229,11 @@ void save_bvecs_bvals(const Header &header,
     bvecs.row(0) = -bvecs.row(0);
 
   if (bval_zeroed_count) {
-    WARN("For image \"" + std::string(header.name()) + "\","                              //
-         + str(bval_zeroed_count) + " volumes had zero gradient direction vector,"        //
-         + " but 0.0 < b-value <= BZeroThreshold;"                                        //
-         + " these are clamped to zero in bvals file \"" + std::string(bvals_path) + "\"" //
-         + " for compatibility with external software");                                  //
+    WARN("For image \"" + header.name() + "\","                                       //
+         + str(bval_zeroed_count) + " volumes had zero gradient direction vector,"    //
+         + " but 0.0 < b-value <= BZeroThreshold;"                                    //
+         + " these are clamped to zero in bvals file \"" + bvals_path.string() + "\"" //
+         + " for compatibility with external software");                              //
   }
 
   File::Matrix::save_matrix(bvecs, bvecs_path, KeyValues(), false);
@@ -255,14 +255,14 @@ Eigen::MatrixXd get_raw_DW_scheme(const Header &header) {
   // check whether the DW scheme has been provided via the command-line:
   const auto opt_mrtrix = get_options("grad");
   if (!opt_mrtrix.empty())
-    grad = File::Matrix::load_matrix<>(std::filesystem::path(opt_mrtrix[0][0]));
+    grad = File::Matrix::load_matrix<>(opt_mrtrix[0][0]);
 
   const auto opt_fsl = get_options("fslgrad");
   if (!opt_fsl.empty()) {
     if (!opt_mrtrix.empty())
       throw Exception("Diffusion gradient table can be provided using either -grad or -fslgrad option,"
                       " but NOT both");
-    grad = load_bvecs_bvals(header, std::filesystem::path(opt_fsl[0][0]), std::filesystem::path(opt_fsl[0][1]));
+    grad = load_bvecs_bvals(header, opt_fsl[0][0], opt_fsl[0][1]);
   }
 
   // otherwise use the information from the header:
@@ -350,11 +350,11 @@ void export_grad_commandline(const Header &header) {
 
   auto opt = get_options("export_grad_mrtrix");
   if (!opt.empty())
-    File::Matrix::save_matrix(parse_DW_scheme(check(header)), std::filesystem::path(opt[0][0]));
+    File::Matrix::save_matrix(parse_DW_scheme(check(header)), opt[0][0]);
 
   opt = get_options("export_grad_fsl");
   if (!opt.empty())
-    save_bvecs_bvals(check(header), std::filesystem::path(opt[0][0]), std::filesystem::path(opt[0][1]));
+    save_bvecs_bvals(check(header), opt[0][0], opt[0][1]);
 }
 
 } // namespace MR::DWI

@@ -31,7 +31,7 @@ void LUT::load(const std::filesystem::path &path) {
   } catch (Exception &e) {
     throw e;
   }
-  std::ifstream in_lut(std::string(path).c_str(), std::ios_base::in);
+  std::ifstream in_lut(path, std::ios_base::in);
   if (!in_lut)
     throw Exception("Unable to open lookup table file");
   std::string line;
@@ -115,7 +115,7 @@ LUT::file_format LUT::guess_file_format(const std::filesystem::path &path) {
     size_t sum_lengths, count;
   };
 
-  std::ifstream in_lut(std::string(path).c_str(), std::ios_base::in);
+  std::ifstream in_lut(path, std::ios_base::in);
   if (!in_lut)
     throw Exception("Unable to open lookup table file");
   std::vector<Column> columns;

@@ -72,7 +72,7 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, std::optional<int64
 #ifdef MRTRIX_WINDOWS
     const unsigned int length = 255;
     std::array<char, length> root_path;
-    if (GetVolumePathName(Entry::name.c_str(), root_path.data(), length)) { // Returns non-zero on success
+    if (GetVolumePathName(Entry::name.string().c_str(), root_path.data(), length)) { // Returns non-zero on success
 
       const unsigned int code = GetDriveType(root_path.data());
       switch (code) {
@@ -111,7 +111,7 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, std::optional<int64
     }
 #else
     struct statfs fsbuf;
-    if (statfs(Entry::name.c_str(), &fsbuf)) {
+    if (statfs(Entry::name.string().c_str(), &fsbuf)) {
       DEBUG("cannot get filesystem information on file \"" + Entry::name.string() + "\": " + strerror(errno));
       DEBUG("  defaulting to delayed write-back");
       delayed_writeback = true;
@@ -159,7 +159,7 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, std::optional<int64
 
   // use regular memory-mapping:
 
-  if ((fd = open(Entry::name.c_str(), (readwrite ? O_RDWR : O_RDONLY), 0666)) < 0)
+  if ((fd = open(Entry::name.string().c_str(), (readwrite ? O_RDWR : O_RDONLY), 0666)) < 0)
     throw Exception("error opening file \"" + Entry::name.string() + "\": " + strerror(errno));
 
   try {

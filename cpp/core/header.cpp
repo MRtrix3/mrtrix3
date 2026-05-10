@@ -362,7 +362,7 @@ Header Header::create(const std::filesystem::path &image_name, //
     Header header(H);
     std::vector<uint32_t> num(Pdim.size());
 
-    if (!is_dash(image_name.native()))
+    if (!is_dash(image_name.string()))
       H.path() = parser.name(num);
 
     H.io = (*format_handler)->create(H);

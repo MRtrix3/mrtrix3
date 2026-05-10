@@ -19,6 +19,8 @@
 #include <QUrl>
 #include <string>
 
+#include "exception.h"
+
 namespace MR::GUI::MRView::QtHelpers {
 
 std::filesystem::path url_to_fspath(const QUrl &url) {

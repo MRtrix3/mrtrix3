@@ -47,7 +47,7 @@ bool has_suffix(const std::filesystem::path &name, const std::vector<std::string
 }
 
 bool is_mrtrix_image(const std::filesystem::path &path) {
-  return path.native() == "-" || Path::has_suffix(path, {".mif", ".mih", ".mif.gz"});
+  return is_dash(path.string()) || Path::has_suffix(path, {".mif", ".mih", ".mif.gz"});
 }
 
 const std::filesystem::path &home() {
