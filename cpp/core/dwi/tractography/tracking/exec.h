@@ -288,6 +288,8 @@ private:
       case term_t::ENTER_EXCLUDE:
         S.add_rejection(reject_t::ENTER_EXCLUDE_REGION);
         break;
+      default:
+        assert(false);
       }
     }
 
