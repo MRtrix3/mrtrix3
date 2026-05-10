@@ -71,7 +71,9 @@ struct ImplicitMaskConfig {
  * re-removed; for Enabled, all filled voxels are admitted without further removal.
  */
 template <class ImageType> Image<bool> make_implicit_mask(const ImageType &source, const ImplicitMaskConfig &config) {
-  const auto &[zero_excl, nonfinite_excl, hole_filling] = config;
+  const ZeroExclusion zero_excl = config.zero_excl;
+  const NonFiniteExclusion nonfinite_excl = config.nonfinite_excl;
+  const HoleFilling hole_filling = config.hole_filling;
   Header header3d(source);
   header3d.ndim() = 3;
   auto mask = Image<bool>::scratch(header3d, "scratch implicit mask from \"" + source.name() + "\"");
