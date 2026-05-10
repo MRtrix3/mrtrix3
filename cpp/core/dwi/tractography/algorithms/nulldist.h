@@ -32,7 +32,9 @@ public:
   class Shared : public SharedBase {
   public:
     Shared(std::string_view diff_path, DWI::Tractography::Properties &property_set)
-        : SharedBase(diff_path, property_set) {
+        : SharedBase(diff_path,
+                     property_set,
+                     {ZeroExclusion::Enabled, NonFiniteExclusion::Any, HoleFilling::EnabledExcludeNonFinite}) {
       set_step_and_angle(rk4 ? Defaults::stepsize_voxels_rk4 : Defaults::stepsize_voxels_firstorder,
                          Defaults::angle_ifod1,
                          rk4 ? intrinsic_integration_order_t::HIGHER : intrinsic_integration_order_t::FIRST,
@@ -47,7 +49,7 @@ public:
     float sin_max_angle_1o;
   };
 
-  NullDist1(const Shared &shared) : MethodBase(shared), S(shared), source(S.source) {}
+  NullDist1(const Shared &shared) : MethodBase(shared), S(shared), source(S.source, S.source_mask) {}
 
   bool init() override {
     if (!get_data(source))
@@ -92,7 +94,7 @@ public:
   NullDist2(const Shared &shared)
       : iFOD2(shared),
         S(shared),
-        source(S.source),
+        source(S.source, S.source_mask),
         positions(S.num_samples),
         tangents(S.num_samples),
         sample_idx(S.num_samples) {}
@@ -100,7 +102,7 @@ public:
   NullDist2(const NullDist2 &that)
       : iFOD2(that),
         S(that.S),
-        source(S.source),
+        source(S.source, S.source_mask),
         positions(S.num_samples),
         tangents(S.num_samples),
         sample_idx(S.num_samples) {}

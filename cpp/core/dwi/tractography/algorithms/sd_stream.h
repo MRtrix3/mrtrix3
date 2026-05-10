@@ -34,7 +34,10 @@ public:
   class Shared : public SharedBase {
   public:
     Shared(std::string_view diff_path, DWI::Tractography::Properties &property_set)
-        : SharedBase(diff_path, property_set), lmax(Math::SH::LforN(source.size(3))) {
+        : SharedBase(diff_path,
+                     property_set,
+                     {ZeroExclusion::Enabled, NonFiniteExclusion::Any, HoleFilling::EnabledExcludeNonFinite}),
+          lmax(Math::SH::LforN(source.size(3))) {
       try {
         Math::SH::check(source);
       } catch (Exception &e) {
@@ -74,9 +77,9 @@ public:
     Math::SH::PrecomputedAL<float> *precomputer;
   };
 
-  SDStream(const Shared &shared) : MethodBase(shared), S(shared), source(S.source) {}
+  SDStream(const Shared &shared) : MethodBase(shared), S(shared), source(S.source, S.source_mask) {}
 
-  SDStream(const SDStream &that) : MethodBase(that.S), S(that.S), source(S.source) {}
+  SDStream(const SDStream &that) : MethodBase(that.S), S(that.S), source(S.source, S.source_mask) {}
 
   ~SDStream() {}
 

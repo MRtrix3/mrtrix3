@@ -36,7 +36,10 @@ public:
   class Shared : public SharedBase {
   public:
     Shared(std::string_view diff_path, DWI::Tractography::Properties &property_set)
-        : SharedBase(diff_path, property_set), num_vec(source.size(3) / 3) {
+        : SharedBase(diff_path,
+                     property_set,
+                     {ZeroExclusion::Enabled, NonFiniteExclusion::All, HoleFilling::EnabledExcludeNonFinite}),
+          num_vec(source.size(3) / 3) {
 
       if (source.size(3) % 3)
         throw Exception("Number of volumes in FACT algorithm input image should be a multiple of 3");
@@ -67,9 +70,9 @@ public:
     float dot_threshold;
   };
 
-  FACT(const Shared &shared) : MethodBase(shared), S(shared), source(S.source) {}
+  FACT(const Shared &shared) : MethodBase(shared), S(shared), source(S.source, S.source_mask) {}
 
-  FACT(const FACT &that) : MethodBase(that.S), S(that.S), source(S.source) {}
+  FACT(const FACT &that) : MethodBase(that.S), S(that.S), source(S.source, S.source_mask) {}
 
   ~FACT() {}
 

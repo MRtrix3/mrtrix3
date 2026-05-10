@@ -41,7 +41,9 @@ public:
   class Shared : public SharedBase {
   public:
     Shared(std::string_view diff_path, DWI::Tractography::Properties &property_set)
-        : SharedBase(diff_path, property_set),
+        : SharedBase(diff_path,
+                     property_set,
+                     {ZeroExclusion::Enabled, NonFiniteExclusion::Any, HoleFilling::EnabledExcludeNonFinite}),
           lmax(Math::SH::LforN(source.size(3))),
           num_samples(Defaults::ifod2_nsamples),
           max_trials(Defaults::max_trials_per_step),
@@ -137,7 +139,7 @@ public:
   iFOD2(const Shared &shared)
       : MethodBase(shared),
         S(shared),
-        source(S.source),
+        source(S.source, S.source_mask),
         mean_sample_num(0),
         num_sample_runs(0),
         num_truncations(0),
@@ -153,7 +155,7 @@ public:
   iFOD2(const iFOD2 &that)
       : MethodBase(that.S),
         S(that.S),
-        source(S.source),
+        source(S.source, S.source_mask),
         calibrate_ratio(that.calibrate_ratio),
         mean_sample_num(0),
         num_sample_runs(0),

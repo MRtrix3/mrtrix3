@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "algo/implicit_mask.h"
 #include "dwi/tractography/ACT/shared.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/resampling/downsampler.h"
@@ -37,12 +38,13 @@ namespace MR::DWI::Tractography::Tracking {
 class SharedBase {
 
 public:
-  SharedBase(std::string_view diff_path, Properties &property_set);
+  SharedBase(std::string_view diff_path, Properties &property_set, ImplicitMaskConfig source_mask_config);
 
   virtual ~SharedBase();
 
   Header source_header;
   Image<float> source;
+  Image<bool> source_mask;
   Properties &properties;
   Eigen::Vector3f init_dir;
   size_t max_num_tracks, max_num_seeds;

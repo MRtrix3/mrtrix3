@@ -15,12 +15,14 @@
  */
 
 #include "dwi/tractography/tracking/shared.h"
+#include "algo/implicit_mask.h"
 
 namespace MR::DWI::Tractography::Tracking {
 
-SharedBase::SharedBase(std::string_view diff_path, Properties &property_set)
+SharedBase::SharedBase(std::string_view diff_path, Properties &property_set, ImplicitMaskConfig source_mask_config)
     : source_header(Header::open(diff_path)),
       source(source_header.get_image<float>().with_direct_io(3)),
+      source_mask(make_implicit_mask(source, source_mask_config)),
       properties(property_set),
       init_dir(Eigen::Vector3f::Constant(NaN)),
       min_num_points_preds(0),

@@ -37,7 +37,10 @@ class ACT_Method_additions {
 
 public:
   ACT_Method_additions(const SharedBase &shared)
-      : sgm_depth(0), seed_in_sgm(false), sgm_seed_to_wm(false), act_image(shared.act().voxel) {}
+      : sgm_depth(0),
+        seed_in_sgm(false),
+        sgm_seed_to_wm(false),
+        act_image(shared.act().voxel, shared.act().voxel_mask) {}
 
   ACT_Method_additions(const ACT_Method_additions &that)
       : sgm_depth(0), seed_in_sgm(false), sgm_seed_to_wm(false), act_image(that.act_image) {}

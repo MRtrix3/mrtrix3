@@ -41,11 +41,18 @@ enum class NonFiniteExclusion {
 };
 
 //! Controls whether interior holes in the mask are filled using connected-components analysis,
-//! and whether exclusion criteria are re-applied to voxels admitted by that operation
+//! and whether the non-finite exclusion criterion is re-applied to voxels admitted by that operation
 enum class HoleFilling {
-  Disabled,            //!< No hole-filling is performed
-  Enabled,             //!< Fill interior holes; re-apply NonFiniteExclusion only (zero-filled holes are admitted)
-  EnabledWithReRemoval //!< Fill interior holes; re-apply both ZeroExclusion and NonFiniteExclusion
+  Disabled,               //!< No hole-filling is performed
+  Enabled,                //!< Fill interior holes; all filled voxels are admitted
+  EnabledExcludeNonFinite //!< Fill interior holes; re-apply NonFiniteExclusion (zero-filled holes remain admitted)
+};
+
+//! Encapsulates the three settings that control implicit mask construction
+struct ImplicitMaskConfig {
+  ZeroExclusion zero_excl;
+  NonFiniteExclusion nonfinite_excl;
+  HoleFilling hole_filling;
 };
 
 //! @}
@@ -60,18 +67,14 @@ enum class HoleFilling {
  *
  * If HoleFilling is not Disabled, the mask is inverted, the largest connected component
  * (the exterior background) is retained, and the mask is inverted back — filling interior
- * holes.  Excluded voxels are then selectively re-removed according to the HoleFilling mode:
- * Enabled re-removes only those that failed the non-finite test; EnabledWithReRemoval
- * re-removes all originally-excluded voxels.
+ * holes.  For EnabledExcludeNonFinite, voxels that failed the non-finite test are then
+ * re-removed; for Enabled, all filled voxels are admitted without further removal.
  */
-template <class ImageType>
-Image<bool> make_implicit_mask(const ImageType &source,
-                               ZeroExclusion zero_excl,
-                               NonFiniteExclusion nonfinite_excl,
-                               HoleFilling hole_filling) {
+template <class ImageType> Image<bool> make_implicit_mask(const ImageType &source, const ImplicitMaskConfig &config) {
+  const auto &[zero_excl, nonfinite_excl, hole_filling] = config;
   Header header3d(source);
   header3d.ndim() = 3;
-  auto mask = Image<bool>::scratch(header3d, "implicit mask");
+  auto mask = Image<bool>::scratch(header3d, "scratch implicit mask from \"" + source.name() + "\"");
 
   auto img = source;
   const bool has_volumes = img.ndim() > 3;
@@ -105,7 +108,7 @@ Image<bool> make_implicit_mask(const ImageType &source,
     const bool nonfinite_failed = (nonfinite_excl == NonFiniteExclusion::Any && has_nonfinite) ||
                                   (nonfinite_excl == NonFiniteExclusion::All && !has_finite);
     return {!(zero_failed || nonfinite_failed),
-            (hole_filling == HoleFilling::EnabledWithReRemoval) ? (zero_failed || nonfinite_failed) : nonfinite_failed};
+            hole_filling == HoleFilling::EnabledExcludeNonFinite && nonfinite_failed};
   };
 
   if (do_hole_fill) {
