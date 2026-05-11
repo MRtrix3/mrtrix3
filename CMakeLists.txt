@@ -135,7 +135,7 @@ add_custom_target(Github SOURCES
     .github/workflows/package-macos-anaconda.yml
     .github/workflows/package-macos-native.yml
     .github/workflows/package-windows-msys2.yml
-    .github/workflows/clang-tidy.yml
+    .github/workflows/clang-tidy-review.yml
     .github/workflows/clang-tidy-enforce.yml
     .clang-tidy-enforce
 )
