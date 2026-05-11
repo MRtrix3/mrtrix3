@@ -27,8 +27,6 @@
 #include "file/path.h"
 #include "types.h"
 
-#include <filesystem>
-
 namespace MR::DWI::Tractography {
 
 //! \cond skip

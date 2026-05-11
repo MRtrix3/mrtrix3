@@ -198,8 +198,9 @@ void run() {
   const bool do_nonstationarity_adjustment = !get_options("nonstationarity").empty();
   const default_type empirical_skew = get_option_value("skew_nonstationarity", default_empirical_skew);
 
-  Fixel::debug_validate_directory(argument[0]);
-  Header index_header = Fixel::find_index_header(argument[0]);
+  const std::filesystem::path input_fixel_directory = argument[0];
+  Fixel::debug_validate_directory(input_fixel_directory);
+  Header index_header = Fixel::find_index_header(input_fixel_directory);
 
   const Fixel::index_type num_fixels = Fixel::get_number_of_fixels(index_header);
   CONSOLE("Number of fixels in template: " + str(num_fixels));
@@ -258,7 +259,7 @@ void run() {
   // Read file names and check files exist
   // Preference for finding files relative to input template fixel directory
   Math::Stats::CohortDataImport importer;
-  importer.initialise<SubjectFixelImport>(argument[1], argument[0]);
+  importer.initialise<SubjectFixelImport>(argument[1], input_fixel_directory);
   for (Math::Stats::index_type i = 0; i != importer.size(); ++i) {
     if (!Fixel::fixels_match(index_header, dynamic_cast<SubjectFixelImport *>(importer[i].get())->header()))
       throw Exception("Fixel data file \"" + importer[i]->name().string() + "\" does not match template fixel image");
@@ -324,7 +325,7 @@ void run() {
   const Fixel::Matrix::Reader matrix(argument[3], mask_processing_image);
 
   const std::filesystem::path output_fixel_directory = argument[4];
-  Fixel::copy_index_and_directions_file(argument[0], output_fixel_directory);
+  Fixel::copy_index_and_directions_file(input_fixel_directory, output_fixel_directory);
 
   // Do we still want to check whether or not there are any disconnected fixels?
   // With the current derivation, disconnected fixels will not possess any self-connectivity,
@@ -404,18 +405,18 @@ void run() {
 
     for (Math::Stats::index_type i = 0; i != num_factors; ++i) {
       write_fixel_output(
-          (output_fixel_directory / ("beta" + str(i) + ".mif")), betas.row(i), mask_processing_image, output_header);
+          output_fixel_directory / ("beta" + str(i) + ".mif"), betas.row(i), mask_processing_image, output_header);
       ++progress;
     }
     for (Math::Stats::index_type i = 0; i != num_hypotheses; ++i) {
       if (!hypotheses[i].is_F()) {
-        write_fixel_output((output_fixel_directory / ("abs_effect" + postfix(i) + ".mif")),
+        write_fixel_output(output_fixel_directory / ("abs_effect" + postfix(i) + ".mif"),
                            abs_effect_size.col(i),
                            mask_processing_image,
                            output_header);
         ++progress;
         if (num_vgs == 1)
-          write_fixel_output((output_fixel_directory / ("std_effect" + postfix(i) + ".mif")),
+          write_fixel_output(output_fixel_directory / ("std_effect" + postfix(i) + ".mif"),
                              std_effect_size.col(i),
                              mask_processing_image,
                              output_header);
@@ -466,7 +467,7 @@ void run() {
     Stats::PermTest::precompute_empirical_stat(glm_test, cfe_integrator, empirical_skew, empirical_cfe_statistic);
     output_header.keyval()["nonstationarity_adjustment"] = str(true);
     for (Math::Stats::index_type i = 0; i != num_hypotheses; ++i)
-      write_fixel_output((output_fixel_directory / ("cfe_empirical" + postfix(i) + ".mif")),
+      write_fixel_output(output_fixel_directory / ("cfe_empirical" + postfix(i) + ".mif"),
                          empirical_cfe_statistic.col(i),
                          mask_processing_image,
                          output_header);
@@ -479,8 +480,8 @@ void run() {
   Stats::PermTest::precompute_default_permutation(
       glm_test, cfe_integrator, empirical_cfe_statistic, default_statistic, default_zstat, default_enhanced);
   for (Math::Stats::index_type i = 0; i != num_hypotheses; ++i) {
-    write_fixel_output((output_fixel_directory /
-                        ((hypotheses[i].is_F() ? std::string("F") : std::string("t")) + "value" + postfix(i) + ".mif")),
+    write_fixel_output(output_fixel_directory / ((hypotheses[i].is_F() ? std::string("F") : std::string("t")) +
+                                                 "value" + postfix(i) + ".mif"),
                        default_statistic.col(i),
                        mask_processing_image,
                        output_header);
@@ -543,7 +544,7 @@ void run() {
     for (Math::Stats::index_type i = 0; i != num_hypotheses; ++i) {
       write_fixel_output(output_fixel_directory / ("fwe_1mpvalue" + postfix(i) + ".mif"),
                          pvalue_output.col(i),
-                         mask_processing_image,
+                         mask_inference_image,
                          output_header);
       ++progress;
       write_fixel_output((output_fixel_directory / ("uncorrected_1mpvalue" + postfix(i) + ".mif")),

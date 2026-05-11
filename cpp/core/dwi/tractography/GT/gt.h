@@ -78,7 +78,7 @@ public:
 
   void open_stream(const std::filesystem::path &path) {
     out.close();
-    out.open(path.string().c_str(), std::ofstream::out);
+    out.open(path, std::ofstream::out);
   }
 
   bool next() {

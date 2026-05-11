@@ -318,9 +318,9 @@ template <class MatrixType> void Writer<MatrixType>::save(const std::filesystem:
   Image<connectivity_value_type> value_image;
 
   try {
-    index_image = Image<index_image_type>::create((path / "index.mif"), index_header);
-    fixel_image = Image<index_type>::create((path / "fixels.mif"), fixel_header);
-    value_image = Image<connectivity_value_type>::create((path / "values.mif"), value_header);
+    index_image = Image<index_image_type>::create(path / "index.mif", index_header);
+    fixel_image = Image<index_type>::create(path / "fixels.mif", fixel_header);
+    value_image = Image<connectivity_value_type>::create(path / "values.mif", value_header);
   } catch (Exception &e) {
     throw Exception(e, "Unable to allocate space on filesystem for fixel-fixel connectivity matrix data");
   }
@@ -372,13 +372,13 @@ template class Writer<InitMatrixWeighted>;
 
 Reader::Reader(const std::filesystem::path &path, const Image<bool> &mask) : directory(path), mask_image(mask) {
   try {
-    index_image = Image<index_image_type>::open((directory / "index.mif"));
+    index_image = Image<index_image_type>::open(directory / "index.mif");
     if (index_image.ndim() != 4)
       throw Exception("Fixel-fixel connectivity matrix index image must be 4D");
     if (index_image.size(1) != 1 || index_image.size(2) != 1 || index_image.size(3) != 2)
       throw Exception("Fixel-fixel connectivity matrix index image must have size Nx1x1x2");
-    fixel_image = Image<fixel_index_type>::open((directory / "fixels.mif"));
-    value_image = Image<connectivity_value_type>::open((directory / "values.mif"));
+    fixel_image = Image<fixel_index_type>::open(directory / "fixels.mif");
+    value_image = Image<connectivity_value_type>::open(directory / "values.mif");
     if (value_image.size(0) != fixel_image.size(0))
       throw Exception("Number of fixels in value image (" + str(value_image.size(0)) +
                       ") does not match number of fixels in fixel image (" + str(fixel_image.size(0)) + ")");

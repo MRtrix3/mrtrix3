@@ -1184,7 +1184,7 @@ void init(int cmdline_argc, const char *const *cmdline_argv) { // check_syntax o
   raw_arguments_list.erase(raw_arguments_list.begin());
 
 #ifdef MRTRIX_WINDOWS
-  if (Path::has_suffix(std::filesystem::path(NAME), ".exe"))
+  if (std::filesystem::path(NAME).extension() == ".exe")
     NAME.erase(NAME.size() - 4);
 #endif
 
@@ -1458,12 +1458,12 @@ std::filesystem::path ParsedArgument::as_path() const {
   return std::filesystem::path(p);
 }
 
-void check_overwrite(const std::filesystem::path &name) {
-  if (std::filesystem::exists(name) && !overwrite_files) {
+void check_overwrite(const std::filesystem::path &path) {
+  if (std::filesystem::exists(path) && !overwrite_files) {
     if (check_overwrite_files_func != nullptr)
-      check_overwrite_files_func(name);
+      check_overwrite_files_func(path);
     else
-      throw Exception("output path \"" + name.string() + "\" already exists (use -force option to force overwrite)");
+      throw Exception("output path \"" + path.string() + "\" already exists (use -force option to force overwrite)");
   }
 }
 

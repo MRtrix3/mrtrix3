@@ -867,8 +867,7 @@ bool Connectome::process_commandline_option(const MR::App::ParsedOption &opt) {
   if (opt.opt->is("connectome.init")) {
     try {
       initialise(opt[0]);
-      const std::filesystem::path path{opt[0]};
-      image_button->setText(QString::fromStdString(path.filename()));
+      image_button->setText(QString::fromStdString(static_cast<std::filesystem::path>(opt[0]).filename().string()));
       load_properties();
       enable_all(true);
     } catch (Exception &e) {

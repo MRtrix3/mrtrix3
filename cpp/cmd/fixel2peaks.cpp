@@ -65,20 +65,20 @@ void usage() {
 void run() {
   Header index_header, directions_header, data_header;
   const std::filesystem::path input_path(argument[0]);
-  const auto input_dirname = input_path.parent_path();
+  const auto input_dirpath = input_path.parent_path();
   const std::filesystem::path output_path(argument[1]);
 
   try {
     Header input_header = Header::open(input_path);
     if (Fixel::is_index_image(input_header)) {
       index_header = std::move(input_header);
-      directions_header = Fixel::find_directions_header(input_dirname);
+      directions_header = Fixel::find_directions_header(input_dirpath);
     } else if (Fixel::is_directions_file(input_header)) {
-      index_header = Fixel::find_index_header(input_dirname);
+      index_header = Fixel::find_index_header(input_dirpath);
       directions_header = std::move(input_header);
     } else if (Fixel::is_data_file(input_header)) {
-      index_header = Fixel::find_index_header(input_dirname);
-      directions_header = Fixel::find_directions_header(input_dirname);
+      index_header = Fixel::find_index_header(input_dirpath);
+      directions_header = Fixel::find_directions_header(input_dirpath);
       data_header = std::move(input_header);
       Fixel::check_fixel_size(index_header, data_header);
     } else {

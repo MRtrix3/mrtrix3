@@ -58,7 +58,7 @@ template <typename T> void save_2d(const std::filesystem::path &path) {
 void run() {
   std::filesystem::create_directory(argument[0]);
 
-  File::Matrix::save_vector(reference_1d_bool, std::filesystem::path(std::string(argument[0])) / "1D3_BOOL.npy");
+  File::Matrix::save_vector(reference_1d_bool, static_cast<std::filesystem::path>(argument[0]) / "1D3_BOOL.npy");
   save_1d<int8_t>("1D3_i1.npy");
   save_1d<uint8_t>("1D3_u1.npy");
   save_1d<int16_t>("1D3_i2.npy");
@@ -71,7 +71,7 @@ void run() {
   save_1d<uint64_t>("1D3_u8.npy");
   save_1d<double>("1D3_f8.npy");
 
-  File::Matrix::save_matrix(reference_2d_bool, std::filesystem::path(std::string(argument[0])) / "2D3x2_BOOL.npy");
+  File::Matrix::save_matrix(reference_2d_bool, static_cast<std::filesystem::path>(argument[0]) / "2D3x2_BOOL.npy");
   save_2d<int8_t>("2D3x2_i1.npy");
   save_2d<uint8_t>("2D3x2_u1.npy");
   save_2d<int16_t>("2D3x2_i2.npy");

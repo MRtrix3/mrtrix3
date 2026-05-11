@@ -37,7 +37,7 @@ namespace MR::Formats {
 // mif: MRtrix Image File
 
 std::unique_ptr<ImageIO::Base> MRtrix::read(Header &H) const {
-  if (!Path::has_suffix(H.path(), ".mih") && !Path::has_suffix(H.path(), ".mif"))
+  if (!Path::has_suffix(H.path(), {".mih", ".mif"}))
     return std::unique_ptr<ImageIO::Base>();
 
   File::KeyValue::Reader kv(static_cast<const Header &>(H).path(), "mrtrix image");
@@ -78,7 +78,7 @@ std::unique_ptr<ImageIO::Base> MRtrix::create(Header &H) const {
 
   write_mrtrix_header(H, out);
 
-  const bool single_file = Path::has_suffix(H.path(), ".mif");
+  const bool single_file = const_cast<const Header &>(H).path().extension() == ".mif";
 
   int64_t offset = 0;
   out << "file: ";
@@ -86,8 +86,9 @@ std::unique_ptr<ImageIO::Base> MRtrix::create(Header &H) const {
     offset = static_cast<int64_t>(out.tellp()) + int64_t(18);
     offset += ((4 - (offset % 4)) % 4);
     out << ". " << offset << "\nEND\n";
-  } else
+  } else {
     out << static_cast<const Header &>(H).path().filename().replace_extension(".dat").string() << "\n";
+  }
 
   out.close();
 

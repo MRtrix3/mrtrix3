@@ -110,7 +110,7 @@ inline const SliceData parse_line(std::string_view line, const ParCols &cols) {
 }
 
 std::unique_ptr<ImageIO::Base> PAR::read(Header &H) const {
-  if (!Path::has_suffix(H.path(), ".PAR") && !Path::has_suffix(H.path(), ".par"))
+  if (!Path::has_suffix(H.path(), {".PAR", ".par"}))
     return std::unique_ptr<ImageIO::Base>();
 
   WARN("PAR/REC import is currently experimental - please verify the integrity of your data");

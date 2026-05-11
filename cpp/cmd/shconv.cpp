@@ -97,14 +97,12 @@ void run() {
 
   size_t lmax = 0;
   for (size_t n = 0; n < inputs.size(); ++n) {
-    const std::filesystem::path input_path(argument[2 * n].as_text());
-    inputs[n] = Image<value_type>::open(input_path);
+    inputs[n] = Image<value_type>::open(argument[2 * n]);
     Math::SH::check(inputs[n]);
     if (inputs[n].ndim() > 4 && inputs[n].size(4) > 1)
       throw Exception("input ODF contains more than 4 dimensions");
 
-    const std::filesystem::path response_path(argument[2 * n + 1].as_text());
-    responses[n] = File::Matrix::load_matrix(response_path);
+    responses[n] = File::Matrix::load_matrix(argument[2 * n + 1]);
     responses[n].conservativeResizeLike(
         Eigen::MatrixXd::Zero(responses[n].rows(), Math::ZSH::NforL(Math::SH::LforN(inputs[n].size(3)))));
     lmax = std::max(Math::ZSH::LforN(responses[n].cols()), lmax);
@@ -129,8 +127,7 @@ void run() {
   Stride::set_from_command_line(header, Stride::contiguous_along_axis(3, header));
   header.datatype() = DataType::from_command_line(DataType::Float32);
 
-  const std::filesystem::path output_path(argument[argument.size() - 1]);
-  auto output = Image<value_type>::create(output_path, header);
+  auto output = Image<value_type>::create(argument.back(), header);
 
   SConvFunctor sconv(responses, inputs);
   ThreadedLoop("performing spherical convolution", inputs[0], 0, 3).run(sconv, output);

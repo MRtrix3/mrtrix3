@@ -130,7 +130,7 @@ public:
   std::string syntax(const bool format) const;
 };
 
-void check_overwrite(const std::filesystem::path &name);
+void check_overwrite(const std::filesystem::path &path);
 
 //! initialise MRtrix and parse command-line arguments
 /*! this function must be called from within main(), immediately after the
@@ -395,6 +395,34 @@ template <typename Enum> inline Enum get_option_choice(std::string_view name, co
   case 1:
     if (opt[0].opt->size() == 1)
       return MR::Enum::from_name<Enum>(std::string_view(opt[0][0]));
+  default:
+    assert(false);
+    throw Exception("Internal error parsing command-line option \"-" + name + "\"");
+  }
+}
+
+//! Returns the user-specified choice in a std::optional<> if present, std::nullopt otherwise.
+template <typename T>
+typename std::enable_if<!std::is_enum_v<T>, std::optional<T>>::type get_optional(std::string_view name) {
+  auto opt = get_options(name);
+  switch (opt.size()) {
+  case 0:
+    return std::nullopt;
+  case 1:
+    return static_cast<T>(opt[0][0]);
+  default:
+    assert(false);
+    throw Exception("Internal error parsing command-line option \"-" + name + "\"");
+  }
+}
+template <typename Enum>
+typename std::enable_if<std::is_enum_v<Enum>, std::optional<Enum>>::type get_optional(std::string_view name) {
+  auto opt = get_options(name);
+  switch (opt.size()) {
+  case 0:
+    return std::nullopt;
+  case 1:
+    return MR::Enum::from_name<Enum>(std::string_view(opt[0][0]));
   default:
     assert(false);
     throw Exception("Internal error parsing command-line option \"-" + name + "\"");

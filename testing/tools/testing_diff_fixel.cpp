@@ -55,21 +55,23 @@ void run() {
     throw Exception("Input fixel directories are the same");
 
   for (const auto &dir_entry : std::filesystem::directory_iterator(fixel_directory1)) {
-    const std::string fname = dir_entry.path().filename().string();
+    const auto fname = dir_entry.path().filename();
     auto in1 = Image<cdouble>::open(fixel_directory1 / fname);
     const std::filesystem::path filename2 = fixel_directory2 / fname;
     if (!std::filesystem::exists(filename2))
-      throw Exception("File (" + fname + ") exists in fixel directory (" + fixel_directory1.string() +
-                      ") but not in fixel directory (" + fixel_directory2.string() + ") ");
+      throw Exception("File (" + fname.string() + ")" +                                    //
+                      " exists in fixel directory (" + fixel_directory1.string() + ")" +   //
+                      " but not in fixel directory (" + fixel_directory2.string() + ") "); //
     auto in2 = Image<cdouble>::open(filename2);
     Testing::diff_images(in1, in2);
   }
   for (const auto &dir_entry : std::filesystem::directory_iterator(fixel_directory2)) {
-    const std::string fname = dir_entry.path().filename().string();
+    const auto fname = dir_entry.path().filename();
     const std::filesystem::path filename1 = fixel_directory1 / fname;
     if (!std::filesystem::exists(filename1))
-      throw Exception("File (" + fname + ") exists in fixel directory (" + fixel_directory2.string() +
-                      ") but not in fixel directory (" + fixel_directory1.string() + ") ");
+      throw Exception("File (" + fname.string() + ")" +                                    //
+                      " exists in fixel directory (" + fixel_directory2.string() + ")" +   //
+                      " but not in fixel directory (" + fixel_directory1.string() + ") "); //
   }
   CONSOLE("data checked OK");
 }

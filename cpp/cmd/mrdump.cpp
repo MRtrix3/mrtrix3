@@ -21,8 +21,6 @@
 #include "file/ofstream.h"
 #include "image.h"
 
-#include <filesystem>
-
 using namespace MR;
 using namespace App;
 
@@ -103,8 +101,7 @@ template <class StreamType> void write(Header &header, Image<bool> &mask, Stream
 }
 
 void run() {
-  const std::filesystem::path input_path{argument[0]};
-  auto H = Header::open(input_path);
+  auto H = Header::open(argument[0]);
 
   Image<bool> mask;
   auto opt = get_options("mask");
@@ -112,8 +109,7 @@ void run() {
     mask = Image<bool>::open(opt[0][0]);
 
   if (argument.size() == 2) {
-    const std::filesystem::path output_path{argument[1]};
-    File::OFStream out(output_path);
+    File::OFStream out(argument[1]);
     write(H, mask, out);
   } else {
     write(H, mask, std::cout);

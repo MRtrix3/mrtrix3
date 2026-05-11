@@ -74,7 +74,7 @@ void __ReaderBase__::open(const std::filesystem::path &file, std::string_view ty
 
   std::filesystem::path fname;
   if (fname_str != ".")
-    fname = (file.parent_path() / fname_str);
+    fname = file.parent_path() / fname_str;
   else
     fname = file;
 

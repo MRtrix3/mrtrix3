@@ -29,7 +29,7 @@ void MeshMulti::load(const std::filesystem::path &path) {
     uint32_t vertex, texture, normal;
   };
 
-  if (!Path::has_suffix(std::filesystem::path(path), "obj") && !Path::has_suffix(std::filesystem::path(path), "OBJ"))
+  if (!Path::has_suffix(std::filesystem::path(path), {".obj", ".OBJ"}))
     throw Exception("Multiple meshes only supported by OBJ file format");
 
   std::ifstream in(path, std::ios_base::in);
@@ -147,7 +147,7 @@ void MeshMulti::load(const std::filesystem::path &path) {
 }
 
 void MeshMulti::save(const std::filesystem::path &path) const {
-  if (path.extension() != ".obj" && path.extension() != ".OBJ")
+  if (!Path::has_suffix(path, {".obj", ".OBJ"}))
     throw Exception("Multiple meshes only supported by OBJ file format");
   File::OFStream out(path);
   size_t offset = 1;

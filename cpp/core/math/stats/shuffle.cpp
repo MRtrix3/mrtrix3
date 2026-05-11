@@ -126,14 +126,14 @@ Shuffler::Shuffler(const index_type num_rows, const bool is_nonstationarity, std
   opt = get_options(is_nonstationarity ? "permutations_nonstationarity" : "permutations");
   if (!opt.empty()) {
     if (error_types == error_t::EE || error_types == error_t::BOTH) {
-      load_permutations(std::filesystem::path{std::string(opt[0][0])});
+      load_permutations(opt[0][0]);
       if (permutations[0].size() != rows)
-        throw Exception("Number of entries per shuffle in file \"" + std::string(opt[0][0]) + "\"" + //
-                        " does not match number of rows in design matrix (" + str(rows) + ")");      //
+        throw Exception("Number of entries per shuffle in file \"" + opt[0][0].as_text() + "\"" + //
+                        " does not match number of rows in design matrix (" + str(rows) + ")");   //
       if (nshuffles_explicit && nshuffles != permutations.size())
-        throw Exception("Number of shuffles explicitly requested (" + str(nshuffles) + ")" +              //
-                        " does not match number of shuffles in file \"" + std::string(opt[0][0]) + "\"" + //
-                        " (" + str(permutations.size()) + ")");                                           //
+        throw Exception("Number of shuffles explicitly requested (" + str(nshuffles) + ")" +           //
+                        " does not match number of shuffles in file \"" + opt[0][0].as_text() + "\"" + //
+                        " (" + str(permutations.size()) + ")");                                        //
       nshuffles = permutations.size();
     } else {
       throw Exception("Cannot manually provide permutations if errors are not exchangeable");
@@ -144,9 +144,9 @@ Shuffler::Shuffler(const index_type num_rows, const bool is_nonstationarity, std
   index_array_type eb_within;
   if (!opt.empty()) {
     try {
-      eb_within = load_blocks(std::filesystem::path{std::string(opt[0][0])}, false);
+      eb_within = load_blocks(opt[0][0], false);
     } catch (Exception &e) {
-      throw Exception(e, "Unable to read file \"" + std::string(opt[0][0]) + "\" as within-block exchangeability");
+      throw Exception(e, "Unable to read file \"" + opt[0][0].as_text() + "\" as within-block exchangeability");
     }
   }
 
@@ -156,9 +156,9 @@ Shuffler::Shuffler(const index_type num_rows, const bool is_nonstationarity, std
     if (eb_within.size())
       throw Exception("Cannot specify both \"within\" and \"whole\" exchangeability block data");
     try {
-      eb_whole = load_blocks(std::filesystem::path{std::string(opt[0][0])}, true);
+      eb_whole = load_blocks(opt[0][0], true);
     } catch (Exception &e) {
-      throw Exception(e, "Unable to read file \"" + std::string(opt[0][0]) + "\" as whole-block exchangeability");
+      throw Exception(e, "Unable to read file \"" + opt[0][0].as_text() + "\" as whole-block exchangeability");
     }
   }
 

@@ -385,10 +385,7 @@ void extract(Header &header_in,
 }
 
 void run() {
-  const std::filesystem::path input_path{argument[0]};
-  const std::filesystem::path output_path{argument[1]};
-
-  Header header_in = Header::open(input_path);
+  Header header_in = Header::open(argument[0]);
   Eigen::MatrixXd dw_scheme;
   try {
     dw_scheme = DWI::get_DW_scheme(header_in, DWI::get_cmdline_bvalue_scaling_behaviour());
@@ -529,6 +526,8 @@ void run() {
       WARN("-scaling option has no effect for floating-point or binary images");
   }
 
+  const std::filesystem::path output_path{argument[1]};
+
   if (header_out.intensity_offset() == 0.0 && header_out.intensity_scale() == 1.0 &&
       !header_out.datatype().is_floating_point()) {
     switch (header_out.datatype()() & DataType::Type) {
@@ -560,5 +559,5 @@ void run() {
 
   opt = get_options("json_export");
   if (!opt.empty())
-    File::JSON::save(header_out, std::filesystem::path(opt[0][0]), output_path);
+    File::JSON::save(header_out, opt[0][0], output_path);
 }

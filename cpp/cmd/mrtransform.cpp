@@ -284,10 +284,7 @@ void apply_linear_jacobian(Image<float> &image, transform_type trafo) {
 }
 
 void run() {
-  const std::filesystem::path input_path{argument[0]};
-  const std::filesystem::path output_path{argument[1]};
-
-  auto input_header = Header::open(input_path);
+  auto input_header = Header::open(argument[0]);
   Header output_header(input_header);
   output_header.datatype() = DataType::from_command_line(DataType::from<float>());
   Stride::set_from_command_line(output_header);
@@ -298,7 +295,7 @@ void run() {
   auto opt = get_options("linear");
   if (!opt.empty()) {
     linear = true;
-    linear_transform = File::Matrix::load_transform(std::filesystem::path(opt[0][0]));
+    linear_transform = File::Matrix::load_transform(opt[0][0]);
   }
 
   // Replace
@@ -311,9 +308,9 @@ void run() {
       linear_transform = template_header.transform();
     } catch (...) {
       try {
-        linear_transform = File::Matrix::load_transform(std::filesystem::path(opt[0][0]));
+        linear_transform = File::Matrix::load_transform(opt[0][0]);
       } catch (...) {
-        throw Exception("Unable to extract transform matrix from -replace file \"" + str(opt[0][0]) + "\"");
+        throw Exception("Unable to extract transform matrix from -replace file \"" + opt[0][0].as_text() + "\"");
       }
     }
   }
@@ -472,10 +469,7 @@ void run() {
   }
 
   // Intensity / FOD modulation
-  opt = get_options("modulate");
-  const std::optional<Modulation> modulation =
-      opt.empty() ? std::nullopt
-                  : std::optional<Modulation>(get_option_choice<Modulation>("modulate", Modulation::FOD));
+  auto modulation = get_optional<Modulation>("modulate");
   const bool modulate_fod = modulation.has_value() && *modulation == Modulation::FOD;
   const bool modulate_jac = modulation.has_value() && *modulation == Modulation::JAC;
 

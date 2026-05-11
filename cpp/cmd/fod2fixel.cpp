@@ -275,10 +275,9 @@ void Segmented_FOD_receiver::commit() {
 }
 
 void run() {
-  const std::filesystem::path input_image_path{argument[0]};
   const std::filesystem::path output_directory{argument[1]};
 
-  Header H = Header::open(input_image_path);
+  Header H = Header::open(argument[0]);
   Math::SH::check(H);
   auto fod_data = H.get_image<float>();
 
@@ -287,8 +286,7 @@ void run() {
 
   Segmented_FOD_receiver receiver(H, maxnum, dir_as_peak);
 
-  auto &fixel_directory_path = output_directory;
-  receiver.set_fixel_directory_output(fixel_directory_path);
+  receiver.set_fixel_directory_output(output_directory);
 
   std::string file_extension(".mif");
   if (!get_options("nii").empty())
@@ -320,7 +318,7 @@ void run() {
       throw Exception("Cannot use image \"" + str(opt[0][0]) + "\" as mask image; dimensions do not match FOD image");
   }
 
-  Fixel::check_fixel_directory(fixel_directory_path, true, true);
+  Fixel::check_fixel_directory(output_directory, true, true);
 
   FMLS::FODQueueWriter writer(fod_data, mask);
 

@@ -28,8 +28,6 @@
 #include "algo/histogram.h"
 #include "algo/loop.h"
 
-#include <filesystem>
-
 using namespace MR;
 using namespace App;
 
@@ -191,11 +189,8 @@ void match_nonlinear(
 }
 
 void run() {
-  const std::filesystem::path input_path{argument[1]};
-  const std::filesystem::path target_path{argument[2]};
-
-  auto input = Image<float>::open(input_path);
-  auto target = Image<float>::open(target_path);
+  auto input = Image<float>::open(argument[1]);
+  auto target = Image<float>::open(argument[2]);
 
   Image<bool> mask_input, mask_target;
   auto opt = get_options("mask_input");
@@ -207,8 +202,7 @@ void run() {
   }
   opt = get_options("mask_target");
   if (!opt.empty()) {
-    const std::filesystem::path mask_target_path{opt[0][0]};
-    mask_target = Image<bool>::open(mask_target_path);
+    mask_target = Image<bool>::open(opt[0][0]);
     check_dimensions(target, mask_target, 0, 3);
   }
 

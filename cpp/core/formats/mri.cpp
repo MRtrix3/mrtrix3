@@ -147,7 +147,7 @@ uint8_t store_datatype(const DataType &dt) {
 } // namespace
 
 std::unique_ptr<ImageIO::Base> MRI::read(Header &H) const {
-  if (!Path::has_suffix(H.path(), ".mri"))
+  if (const_cast<const Header &>(H).path().extension() != ".mri")
     return std::unique_ptr<ImageIO::Base>();
 
   File::MMap fmap(const_cast<const Header &>(H).path());
@@ -237,7 +237,7 @@ std::unique_ptr<ImageIO::Base> MRI::read(Header &H) const {
 }
 
 bool MRI::check(Header &H, size_t num_axes) const {
-  if (!Path::has_suffix(H.path(), ".mri"))
+  if (const_cast<const Header &>(H).path().extension() != ".mri")
     return false;
 
   if (H.ndim() > num_axes && num_axes != 4)

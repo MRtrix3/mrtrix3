@@ -45,7 +45,7 @@ void GZ::load(const Header &header, size_t) {
     ProgressBar progress("uncompressing image \"" + header.path().string() + "\"",
                          files.size() * bytes_per_segment / bytes_per_zcall);
     for (size_t n = 0; n < files.size(); n++) {
-      File::GZ zf(files[n].name, "rb");
+      File::GZ zf(files[n].path, "rb");
       zf.seek(files[n].start);
       std::byte *address = addresses[0].get() + n * bytes_per_segment;
       std::byte *last = address + bytes_per_segment - bytes_per_zcall;
@@ -76,7 +76,7 @@ void GZ::unload(const Header &header) {
                            files.size() * bytes_per_segment / bytes_per_zcall);
       for (size_t n = 0; n < files.size(); n++) {
         assert(files[n].start == static_cast<int64_t>(lead_in_size));
-        File::GZ zf(files[n].name, "wb");
+        File::GZ zf(files[n].path, "wb");
         if (lead_in)
           zf.write(reinterpret_cast<const char *>(lead_in.get()), lead_in_size);
         std::byte *address = addresses[0].get() + n * bytes_per_segment;

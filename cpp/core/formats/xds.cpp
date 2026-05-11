@@ -27,7 +27,7 @@
 namespace MR::Formats {
 
 std::unique_ptr<ImageIO::Base> XDS::read(Header &H) const {
-  if (!Path::has_suffix(H.path(), ".bfloat") && !Path::has_suffix(H.path(), ".bshort"))
+  if (!Path::has_suffix(H.path(), {".bfloat", ".bshort"}))
     return std::unique_ptr<ImageIO::Base>();
 
   H.ndim() = 4;
@@ -71,7 +71,7 @@ std::unique_ptr<ImageIO::Base> XDS::read(Header &H) const {
 }
 
 bool XDS::check(Header &H, size_t num_axes) const {
-  if (!Path::has_suffix(H.path(), ".bfloat") && !Path::has_suffix(H.path(), ".bshort"))
+  if (!Path::has_suffix(H.path(), {".bfloat", ".bshort"}))
     return false;
 
   if (num_axes > 4)

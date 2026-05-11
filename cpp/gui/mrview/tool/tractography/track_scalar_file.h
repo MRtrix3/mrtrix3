@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <filesystem>
+
 #include "mrview/adjust_button.h"
 #include "mrview/colourmap_button.h"
 #include "mrview/displayable.h"

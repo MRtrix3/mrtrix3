@@ -139,8 +139,8 @@ void get_mrtrix_file_path(Header &H, std::string_view flag, std::filesystem::pat
     try {
       file_stream >> offset;
     } catch (...) {
-      throw Exception("invalid offset specified for file \"" + filepath.string() + "\"" + //
-                      " in MRtrix image header \"" + H.path().string() + "\"");           //
+      throw Exception("invalid offset specified for file \"" + filepath_str + "\"" + //
+                      " in MRtrix image header \"" + H.path().string() + "\"");      //
     }
   }
 
@@ -150,7 +150,7 @@ void get_mrtrix_file_path(Header &H, std::string_view flag, std::filesystem::pat
     filepath = H.path();
   } else {
     if (!filepath.is_absolute())
-      filepath = (static_cast<const Header &>(H).path().parent_path() / filepath_str);
+      filepath = static_cast<const Header &>(H).path().parent_path() / filepath_str;
   }
 }
 

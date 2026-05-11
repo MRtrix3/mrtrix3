@@ -351,16 +351,14 @@ void run() {
   opt = get_options("mask1");
   Image<value_type> im1_mask;
   if (!opt.empty()) {
-    const std::filesystem::path mask_path1{opt[0][0]};
-    im1_mask = Image<value_type>::open(mask_path1);
+    im1_mask = Image<value_type>::open(opt[0][0]);
     check_dimensions(input1[0], im1_mask, 0, 3);
   }
 
   opt = get_options("mask2");
   Image<value_type> im2_mask;
   if (!opt.empty()) {
-    const std::filesystem::path mask_path2{opt[0][0]};
-    im2_mask = Image<value_type>::open(mask_path2);
+    im2_mask = Image<value_type>::open(opt[0][0]);
     check_dimensions(input2[0], im2_mask, 0, 3);
   }
 
@@ -372,24 +370,15 @@ void run() {
 
   // ****** RIGID REGISTRATION OPTIONS *******
   Registration::Linear rigid_registration;
-  std::optional<std::filesystem::path> rigid_filepath;
-  opt = get_options("rigid");
-  if (!opt.empty())
-    rigid_filepath.emplace(static_cast<std::filesystem::path>(opt[0][0]));
+  auto rigid_filepath = get_optional<std::filesystem::path>("rigid");
   if (rigid_filepath.has_value() && !do_rigid)
     throw Exception("rigid transformation output requested when no rigid registration is requested");
 
-  std::optional<std::filesystem::path> rigid_1tomid_filepath;
-  opt = get_options("rigid_1tomidway");
-  if (!opt.empty())
-    rigid_1tomid_filepath.emplace(static_cast<std::filesystem::path>(opt[0][0]));
+  auto rigid_1tomid_filepath = get_optional<std::filesystem::path>("rigid_1tomidway");
   if (rigid_1tomid_filepath.has_value() && !do_rigid)
     throw Exception("midway rigid transformation output requested when no rigid registration is requested");
 
-  std::optional<std::filesystem::path> rigid_2tomid_filepath;
-  opt = get_options("rigid_2tomidway");
-  if (!opt.empty())
-    rigid_2tomid_filepath.emplace(static_cast<std::filesystem::path>(opt[0][0]));
+  auto rigid_2tomid_filepath = get_optional<std::filesystem::path>("rigid_2tomidway");
   if (rigid_2tomid_filepath.has_value() && !do_rigid)
     throw Exception("midway rigid transformation output requested when no rigid registration is requested");
 
@@ -399,8 +388,7 @@ void run() {
   if (!opt.empty()) {
     init_rigid_matrix_set = true;
     Eigen::Vector3d centre;
-    const std::filesystem::path rigid_init_matrix_path{opt[0][0]};
-    transform_type rigid_transform = File::Matrix::load_transform(rigid_init_matrix_path, centre);
+    transform_type rigid_transform = File::Matrix::load_transform(opt[0][0], centre);
     rigid.set_transform(rigid_transform);
     if (!std::isfinite(centre(0))) {
       rigid_registration.set_init_translation_type(Registration::Transform::Init::set_centre_mass);
@@ -503,31 +491,21 @@ void run() {
   if (!opt.empty()) {
     if (!do_rigid)
       throw Exception("the -rigid_log option has been set when no rigid registration is requested");
-    const std::filesystem::path log_path{opt[0][0]};
-    linear_logstream.open(log_path);
+    linear_logstream.open(opt[0][0]);
     rigid_registration.set_log_stream(linear_logstream.rdbuf());
   }
 
   // ****** AFFINE REGISTRATION OPTIONS *******
   Registration::Linear affine_registration;
-  std::optional<std::filesystem::path> affine_filepath;
-  opt = get_options("affine");
-  if (!opt.empty())
-    affine_filepath.emplace(static_cast<std::filesystem::path>(opt[0][0]));
+  auto affine_filepath = get_optional<std::filesystem::path>("affine");
   if (affine_filepath.has_value() && !do_affine)
     throw Exception("affine transformation output requested when no affine registration is requested");
 
-  std::optional<std::filesystem::path> affine_1tomid_filepath;
-  opt = get_options("affine_1tomidway");
-  if (!opt.empty())
-    affine_1tomid_filepath.emplace(static_cast<std::filesystem::path>(opt[0][0]));
+  auto affine_1tomid_filepath = get_optional<std::filesystem::path>("affine_1tomidway");
   if (affine_1tomid_filepath.has_value() && !do_affine)
     throw Exception("midway affine transformation output requested when no affine registration is requested");
 
-  std::optional<std::filesystem::path> affine_2tomid_filepath;
-  opt = get_options("affine_2tomidway");
-  if (!opt.empty())
-    affine_2tomid_filepath.emplace(static_cast<std::filesystem::path>(opt[0][0]));
+  auto affine_2tomid_filepath = get_optional<std::filesystem::path>("affine_2tomidway");
   if (affine_2tomid_filepath.has_value() && !do_affine)
     throw Exception("midway affine transformation output requested when no affine registration is requested");
 
@@ -542,8 +520,7 @@ void run() {
 
     init_affine_matrix_set = true;
     Eigen::Vector3d centre;
-    const std::filesystem::path affine_matrix_path{opt[0][0]};
-    transform_type affine_transform = File::Matrix::load_transform(affine_matrix_path, centre);
+    transform_type affine_transform = File::Matrix::load_transform(opt[0][0], centre);
     affine.set_transform(affine_transform);
     if (!std::isfinite(centre(0))) {
       affine_registration.set_init_translation_type(Registration::Transform::Init::set_centre_mass);
@@ -650,8 +627,7 @@ void run() {
   if (!opt.empty()) {
     if (!do_affine)
       throw Exception("the -affine_log option has been set when no rigid registration is requested");
-    const std::filesystem::path log_path{opt[0][0]};
-    linear_logstream.open(log_path);
+    linear_logstream.open(opt[0][0]);
     affine_registration.set_log_stream(linear_logstream.rdbuf());
   }
 
@@ -686,16 +662,14 @@ void run() {
   if (!opt.empty()) {
     if (!do_nonlinear)
       throw Exception("Non-linear warp output requested when no non-linear registration is requested");
-    warp1_filepath.emplace(static_cast<std::filesystem::path>(opt[0][0]));
-    warp2_filepath.emplace(static_cast<std::filesystem::path>(opt[0][1]));
+    warp1_filepath.emplace(opt[0][0]);
+    warp2_filepath.emplace(opt[0][1]);
   }
 
-  opt = get_options("nl_warp_full");
-  std::optional<std::filesystem::path> warp_full_path;
-  if (!opt.empty()) {
+  auto warp_full_path = get_optional<std::filesystem::path>("nl_warp_full");
+  if (warp_full_path.has_value()) {
     if (!do_nonlinear)
       throw Exception("Non-linear warp output requested when no non-linear registration is requested");
-    warp_full_path.emplace(static_cast<std::filesystem::path>(opt[0][0]));
     if (!Path::is_mrtrix_image(warp_full_path.value()) && //
         !(Path::has_suffix(warp_full_path.value(), {".nii", ".nii.gz"}) &&
           File::Config::get_bool("NIfTIAutoSaveJSON", false))) {

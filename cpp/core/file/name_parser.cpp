@@ -34,11 +34,10 @@ inline bool in_seq(const std::vector<uint32_t> &seq, uint32_t val) {
 } // namespace
 
 void NameParser::parse(std::string_view specifier, size_t max_num_sequences) {
-  specification = std::string(specifier);
   const std::filesystem::path spec_path(specifier);
   if (std::filesystem::is_directory(spec_path)) {
     array.resize(1);
-    array[0].set_str(specification);
+    array[0].set_str(specifier);
     return;
   }
 
@@ -53,7 +52,7 @@ void NameParser::parse(std::string_view specifier, size_t max_num_sequences) {
       insert_str(basename.substr(pos + 1));
       basename = basename.substr(0, pos);
       if ((pos = basename.find_last_of('[')) == std::string::npos)
-        throw Exception("malformed image sequence specifier for image \"" + specification + "\"");
+        throw Exception("malformed image sequence specifier for image \"" + specifier + "\"");
 
       insert_seq(basename.substr(pos + 1));
       num++;
@@ -68,11 +67,11 @@ void NameParser::parse(std::string_view specifier, size_t max_num_sequences) {
           for (size_t n = 0; n < array[i].sequence().size() - 1; n++)
             for (size_t m = n + 1; m < array[i].sequence().size(); m++)
               if (array[i].sequence()[n] == array[i].sequence()[m])
-                throw Exception("malformed image sequence specifier for image \"" + specification +
-                                "\" (duplicate indices)");
+                throw Exception("malformed image sequence specifier for image \"" + specifier + "\"" + //
+                                " (duplicate indices)");
   } catch (...) {
     array.resize(1);
-    array[0].set_str(specification);
+    array[0].set_str(specifier);
     throw;
   }
 }
@@ -221,7 +220,7 @@ std::vector<uint32_t> ParsedName::List::parse_scan_check(std::string_view specif
   for (size_t n = 0; n < dim.size(); n++)
     if (!parser.sequence(n).empty())
       if (dim[n] != parser.sequence(n).size())
-        throw Exception("number of files found does not match specification_path \"" + specifier + "\"");
+        throw Exception("number of files found does not match specification \"" + specifier + "\"");
 
   return dim;
 }

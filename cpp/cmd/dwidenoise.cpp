@@ -316,8 +316,7 @@ void run() {
   Image<bool> mask;
   auto opt = get_options("mask");
   if (!opt.empty()) {
-    const std::filesystem::path mask_path(opt[0][0]);
-    mask = Image<bool>::open(mask_path);
+    mask = Image<bool>::open(opt[0][0]);
     check_dimensions(mask, dwi, 0, 3);
   }
 

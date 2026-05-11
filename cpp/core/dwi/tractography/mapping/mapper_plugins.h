@@ -92,7 +92,7 @@ protected:
 
 class TWIScalarImagePlugin : public TWIImagePluginBase {
 public:
-  TWIScalarImagePlugin(std::string_view input_image, const tck_stat_t track_statistic)
+  TWIScalarImagePlugin(const std::filesystem::path &input_image, const tck_stat_t track_statistic)
       : TWIImagePluginBase(input_image, track_statistic) {
     assert(statistic != tck_stat_t::ENDS_CORR);
     if (!((interp.ndim() == 3) || (interp.ndim() == 4 && interp.size(3) == 1)))

@@ -139,7 +139,7 @@ void run() {
   size_t check_count = 0;
   size_t wrong_endianness_count = 0;
   size_t advanced_boolean_count = 0;
-  for (const auto &dir_entry : std::filesystem::directory_iterator(std::string(argument[0]))) {
+  for (const auto &dir_entry : std::filesystem::directory_iterator(argument[0])) {
 
     // TODO Do two reads:
     // - One with type tailored to what is known about the input file

@@ -186,7 +186,7 @@ public:
   //! create a new track file with the specified properties
   WriterUnbuffered(const std::filesystem::path &path, const Properties &properties) : __WriterBase__<ValueType>(path) {
 
-    if (!Path::has_suffix(path, ".tck"))
+    if (path.extension() != ".tck")
       throw Exception("output track files must use the .tck suffix");
 
     File::OFStream out;

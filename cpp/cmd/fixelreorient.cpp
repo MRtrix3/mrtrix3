@@ -94,7 +94,7 @@ void run() {
 
   // scratch buffer so inplace reorientation can be performed if desired
   Image<float> input_directions_image;
-  std::string output_directions_filename;
+  std::filesystem::path output_directions_filename;
   {
     auto tmp = Fixel::find_directions_header(input_fixel_directory).get_image<float>();
     input_directions_image = Image<float>::scratch(tmp);

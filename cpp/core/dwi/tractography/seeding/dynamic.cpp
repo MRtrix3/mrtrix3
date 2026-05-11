@@ -51,7 +51,7 @@ Dynamic::Dynamic(const std::filesystem::path &in,
                  Image<float> &fod_data,
                  const size_t num,
                  const DWI::Directions::FastLookupSet &dirs)
-    : Base(in.string(), "dynamic", attempts_per_seed.at(seed_attempt_t::DYNAMIC)),
+    : Base(in.filename().string(), "dynamic", attempts_per_seed.at(seed_attempt_t::DYNAMIC)),
       SIFT::ModelBase<Fixel_TD_seed>(fod_data, dirs),
       target_trackcount(num),
       track_count(0),

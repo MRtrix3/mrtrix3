@@ -19,8 +19,6 @@
 #include "enum.h"
 #include "file/matrix.h"
 
-#include <filesystem>
-
 using namespace MR;
 using namespace MR::Connectome;
 using namespace MR::Math;

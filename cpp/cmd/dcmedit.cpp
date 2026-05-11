@@ -21,8 +21,6 @@
 #include "file/dicom/quick_scan.h"
 #include "file/path.h"
 
-#include <filesystem>
-
 using namespace MR;
 using namespace App;
 
@@ -92,8 +90,6 @@ inline uint16_t read_hex(const std::string m) {
 }
 
 void run() {
-  const std::filesystem::path input_path{argument[0]};
-
   std::vector<Tag> tags;
   std::vector<uint16_t> VRs;
 
@@ -127,7 +123,7 @@ void run() {
          "\"");
 
   File::Dicom::Element item;
-  item.set(input_path, true, true);
+  item.set(argument[0], true, true);
   while (item.read()) {
     for (size_t n = 0; n < VRs.size(); ++n) {
       if (item.VR == VRs[n]) {

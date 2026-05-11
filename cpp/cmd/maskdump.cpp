@@ -19,8 +19,6 @@
 #include "file/matrix.h"
 #include "image.h"
 
-#include <filesystem>
-
 using namespace MR;
 using namespace App;
 
@@ -43,8 +41,6 @@ void usage() {
 // clang-format on
 
 void run() {
-  const std::filesystem::path input_path{argument[0]};
-
   auto H = Header::open(argument[0]);
   if (H.datatype() != DataType::Bit)
     WARN("Input is not a genuine boolean mask image");

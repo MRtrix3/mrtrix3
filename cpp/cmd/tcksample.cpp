@@ -842,10 +842,7 @@ void run() {
          "as input image could not be interpreted as spherical harmonics functions");
   }
 
-  const std::optional<Statistic> statistic =
-      get_options("stat_tck").empty()
-          ? std::nullopt
-          : std::optional<Statistic>(get_option_choice<Statistic>("stat_tck", Statistic::MEAN));
+  const auto statistic = get_optional<Statistic>("stat_tck");
 
   if (H.ndim() == 4 && H.size(3) > 1 && contrast == contrast_type::SCALAR) {
     if (!statistic.has_value())

@@ -143,12 +143,12 @@ void run() {
 
   Eigen::MatrixXd directions;
   try {
-    directions = File::Matrix::load_matrix(argument[1]);
-    DWI::Directions::validate(directions, argument[1], true);
+    directions = File::Matrix::load_matrix(directions_path);
+    DWI::Directions::validate(directions, directions_path, true);
     if (directions.cols() == 3)
       directions = Math::Sphere::cartesian2spherical(directions);
   } catch (Exception &E) {
-    auto header = Header::open(argument[1]);
+    auto header = Header::open(directions_path);
     directions = DWI::get_DW_scheme(header);
   }
 

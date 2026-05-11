@@ -86,12 +86,14 @@ void run() {
   const bool fill = !get_options("fill").empty();
 
   std::vector<Header> headers_in;
-  size_t dim(Header::open(first_input_path).ndim());
+  Header first_header(Header::open(first_input_path));
+  const size_t dim(first_header.ndim());
   if (dim < 3 or dim > 4)
     throw Exception("Please provide 3D or 4D images");
-  ssize_t volumes(dim == 3 ? 1 : Header::open(first_input_path).size(3));
+  const ssize_t volumes(dim == 3 ? 1 : first_header.size(3));
 
-  for (size_t i = 0; i != num_inputs; ++i) {
+  headers_in.push_back(std::move(first_header));
+  for (size_t i = 1; i != num_inputs; ++i) {
     const std::filesystem::path input_path(argument[i]);
     headers_in.push_back(Header::open(input_path));
     if (fill) {

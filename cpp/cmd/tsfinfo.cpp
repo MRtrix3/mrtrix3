@@ -21,8 +21,6 @@
 #include "file/ofstream.h"
 #include "progressbar.h"
 
-#include <filesystem>
-
 using namespace MR;
 using namespace MR::DWI;
 using namespace App;
@@ -51,13 +49,11 @@ void run() {
   bool actual_count = !get_options("count").empty();
 
   for (size_t i = 0; i < argument.size(); ++i) {
-    const std::filesystem::path input_path{argument[i]};
-
     Tractography::Properties properties;
-    Tractography::ScalarReader<float> file(input_path, properties);
+    Tractography::ScalarReader<float> file(argument[i], properties);
 
     std::cout << "***********************************\n";
-    std::cout << "  Track scalar file: \"" << argument[i] << "\"\n";
+    std::cout << "  Track scalar file: \"" << argument[i].as_text() << "\"\n";
 
     for (Tractography::Properties::iterator i = properties.begin(); i != properties.end(); ++i) {
       std::string S(i->first + ':');

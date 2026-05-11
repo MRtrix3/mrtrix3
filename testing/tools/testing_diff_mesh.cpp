@@ -21,8 +21,6 @@
 #include "surface/mesh_multi.h"
 #include "types.h"
 
-#include <filesystem>
-
 using namespace MR;
 using namespace App;
 

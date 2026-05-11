@@ -184,6 +184,5 @@ void run() {
   const cartesian_matrix_type result =
       (rotation_transform_type(rotation).linear() * directions->transpose()).transpose();
 
-  const std::filesystem::path output_path{argument[1]};
-  DWI::Directions::save(result, output_path, !get_options("cartesian").empty());
+  DWI::Directions::save(result, argument[1], !get_options("cartesian").empty());
 }

@@ -107,16 +107,13 @@ private:
 };
 
 void run() {
-  const std::filesystem::path input_path{argument[0]};
-  const std::filesystem::path output_path{argument[1]};
-
   Properties properties;
-  Reader<value_type> read(input_path, properties);
+  Reader<value_type> read(argument[0], properties);
 
   const std::unique_ptr<Resampling::Base> resampler(Resampling::get_resampler());
 
   Worker worker(resampler);
-  Receiver receiver(output_path, properties);
+  Receiver receiver(argument[1], properties);
   Thread::run_ordered_queue(read,
                             Thread::batch(Streamline<value_type>()),
                             Thread::multi(worker),

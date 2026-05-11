@@ -92,13 +92,14 @@ void run() {
   const std::filesystem::path output_image_path{argument[3]};
 
   // Open the input file
-  auto H = Header::open(argument[0]);
+  auto H = Header::open(input_image_path);
   Connectome::validate_label_header(H);
   auto in = H.get_image<node_t>();
   Connectome::debug_validate_label_image(in);
 
   // Load the lookup tables
-  LUT lut_in{input_lut_path}, lut_out{std::filesystem::path(argument[2])};
+  LUT lut_in{input_lut_path};
+  LUT lut_out{output_lut_path};
 
   // Build the mapping from input to output indices
   const auto mapping = get_lut_mapping(lut_in, lut_out);
@@ -111,7 +112,7 @@ void run() {
   add_line(H.keyval()["comments"], "LUT: " + output_lut_path.filename().string());
 
   // Create the output file
-  auto out = Image<node_t>::create(argument[3], H);
+  auto out = Image<node_t>::create(output_image_path, H);
 
   // Fill the output image with data
   bool user_warn = false;

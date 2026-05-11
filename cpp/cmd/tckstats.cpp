@@ -28,8 +28,6 @@
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/weights.h"
 
-#include <filesystem>
-
 using namespace MR;
 using namespace App;
 using namespace MR::DWI;
@@ -94,8 +92,6 @@ LW operator+(const LW &one, const LW &two) {
 LW operator/(const LW &lw, const double div) { return LW(lw.get_length() / div, lw.get_weight() / div); }
 
 void run() {
-  const std::filesystem::path input_tracks_path{argument[0]};
-
   const bool weights_provided = !get_options("tck_weights_in").empty();
 
   float step_size = NaNF;
@@ -110,7 +106,7 @@ void run() {
 
   {
     Tractography::Properties properties;
-    Tractography::Reader<float> reader(input_tracks_path, properties);
+    Tractography::Reader<float> reader(argument[0], properties);
 
     if (properties.find("count") != properties.end())
       header_count = to<size_t>(properties["count"]);
@@ -150,7 +146,7 @@ void run() {
 
     auto opt = get_options("dump");
     if (!opt.empty())
-      File::Matrix::save_vector(dump, std::filesystem::path(opt[0][0]));
+      File::Matrix::save_vector(dump, opt[0][0]);
   }
 
   if (get_options("ignorezero").empty() && (empty_streamlines || zero_length_streamlines)) {
@@ -238,7 +234,7 @@ void run() {
 
   opt = get_options("histogram");
   if (!opt.empty()) {
-    File::OFStream out{std::filesystem::path(opt[0][0]), std::ios_base::out | std::ios_base::trunc};
+    File::OFStream out{opt[0][0], std::ios_base::out | std::ios_base::trunc};
     out << "# " << App::command_history_string << "\n";
     if (!std::isfinite(step_size))
       step_size = 1.0F;

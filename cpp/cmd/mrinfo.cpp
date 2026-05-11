@@ -260,8 +260,6 @@ void header2json(const Header &header, nlohmann::json &json) {
 }
 
 void run() {
-  const std::filesystem::path input_path{argument[0]};
-
   auto check_option_group = [](const App::OptionGroup &g) {
     for (auto o : g)
       if (!get_options(o.id).empty())
@@ -353,7 +351,7 @@ void run() {
     Metadata::PhaseEncoding::export_commandline(header);
 
     if (json_keyval)
-      File::JSON::write(header, *json_keyval, (argument.size() > 1 ? std::string("") : input_path.string()));
+      File::JSON::write(header, *json_keyval, (argument.size() > 1 ? std::filesystem::path{""} : argument[i]));
 
     if (json_all)
       header2json(header, *json_all);
@@ -365,14 +363,14 @@ void run() {
   if (json_keyval) {
     auto opt = get_options("json_keyval");
     assert(opt.size());
-    File::OFStream out{std::filesystem::path(opt[0][0])};
+    File::OFStream out{opt[0][0]};
     out << json_keyval->dump(4) << "\n";
   }
 
   if (json_all) {
     auto opt = get_options("json_all");
     assert(opt.size());
-    File::OFStream out{std::filesystem::path(opt[0][0])};
+    File::OFStream out{opt[0][0]};
     out << json_all->dump(4) << "\n";
   }
 }

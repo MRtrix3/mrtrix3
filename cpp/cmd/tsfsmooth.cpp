@@ -14,8 +14,6 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include <filesystem>
-
 #include "command.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/scalar_file.h"

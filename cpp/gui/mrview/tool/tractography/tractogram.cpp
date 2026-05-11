@@ -317,8 +317,6 @@ Tractogram::Tractogram(Tractography &tool, const std::filesystem::path &filepath
       show_colour_bar(true),
       original_fov(NaNF),
       line_thickness(0.f),
-      intensity_scalar_path(std::string()),
-      threshold_scalar_path(std::string()),
       tractography_tool(tool),
       filepath(filepath),
       color_type(TrackColourType::Direction),

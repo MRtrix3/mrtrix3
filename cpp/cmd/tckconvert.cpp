@@ -337,11 +337,11 @@ public:
             float radius = default_ply_radius,
             int sides = default_ply_sides)
       : out(path), increment(increment), radius(radius), sides(sides) {
-    vertexFilename = File::create_tempfile(0, ".vertex");
-    faceFilename = File::create_tempfile(0, ".face");
+    vertexFilepath = File::create_tempfile(0, ".vertex");
+    faceFilepath = File::create_tempfile(0, ".face");
 
-    vertexOF.open(vertexFilename);
-    faceOF.open(faceFilename);
+    vertexOF.open(vertexFilepath);
+    faceOF.open(faceFilepath);
     num_faces = 0;
     num_vertices = 0;
   }
@@ -557,15 +557,15 @@ public:
              "property list uint8 int32 vertex_indices\n"
              "end_header\n";
 
-      std::ifstream vertexIF(vertexFilename);
+      std::ifstream vertexIF(vertexFilepath);
       out << vertexIF.rdbuf();
       vertexIF.close();
-      std::filesystem::remove(std::filesystem::path(vertexFilename));
+      std::filesystem::remove(vertexFilepath);
 
-      std::ifstream faceIF(faceFilename);
+      std::ifstream faceIF(faceFilepath);
       out << faceIF.rdbuf();
       faceIF.close();
-      std::filesystem::remove(std::filesystem::path(faceFilename));
+      std::filesystem::remove(faceFilepath);
 
       out.close();
     } catch (Exception &e) {
@@ -575,8 +575,8 @@ public:
   }
 
 private:
-  std::string vertexFilename;
-  std::string faceFilename;
+  std::filesystem::path vertexFilepath;
+  std::filesystem::path faceFilepath;
   File::OFStream out;
   File::OFStream vertexOF;
   File::OFStream faceOF;
@@ -591,11 +591,11 @@ class RibWriter : public WriterInterface<float> {
 public:
   RibWriter(const std::filesystem::path &path, float radius = 0.1, bool dec = false)
       : out(path), writeDEC(dec), radius(radius), hasPoints(false), wroteHeader(false) {
-    pointsFilename = File::create_tempfile(0, ".points");
-    pointsOF.open(pointsFilename);
+    pointsFilepath = File::create_tempfile(0, ".points");
+    pointsOF.open(pointsFilepath);
     pointsOF << "\"P\" [";
-    decFilename = File::create_tempfile(0, ".dec");
-    decOF.open(decFilename);
+    decFilepath = File::create_tempfile(0, ".dec");
+    decOF.open(decFilepath);
     decOF << "\"varying color dec\" [";
     // Header
     out << "##RenderMan RIB\n"
@@ -645,11 +645,11 @@ public:
       if (hasPoints) {
         out << "] \"nonperiodic\" ";
 
-        std::ifstream pointsIF(pointsFilename);
+        std::ifstream pointsIF(pointsFilepath);
         out << pointsIF.rdbuf();
 
         if (writeDEC) {
-          std::ifstream decIF(decFilename);
+          std::ifstream decIF(decFilepath);
           out << decIF.rdbuf();
           decIF.close();
         }
@@ -659,8 +659,8 @@ public:
 
       out.close();
 
-      std::filesystem::remove(std::filesystem::path(pointsFilename));
-      std::filesystem::remove(std::filesystem::path(decFilename));
+      std::filesystem::remove(pointsFilepath);
+      std::filesystem::remove(decFilepath);
 
     } catch (Exception &e) {
       e.display();
@@ -669,8 +669,8 @@ public:
   }
 
 private:
-  std::string pointsFilename;
-  std::string decFilename;
+  std::filesystem::path pointsFilepath;
+  std::filesystem::path decFilepath;
   File::OFStream out;
   File::OFStream pointsOF;
   File::OFStream decOF;

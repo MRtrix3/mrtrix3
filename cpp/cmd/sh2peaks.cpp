@@ -15,7 +15,6 @@
  */
 
 #include <array>
-#include <filesystem>
 
 #include "algo/loop.h"
 #include "command.h"

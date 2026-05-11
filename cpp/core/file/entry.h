@@ -25,22 +25,22 @@ namespace MR::File {
 
 class Entry {
 public:
-  Entry(const std::filesystem::path &fname, int64_t offset = 0) : name(fname), start(offset) {}
+  Entry(const std::filesystem::path &fpath, int64_t offset = 0) : path(fpath), start(offset) {}
 
   Entry(const Entry &) = default;
   Entry(Entry &&) noexcept = default;
   Entry &operator=(Entry &&E) noexcept {
-    name = std::move(E.name);
+    path = std::move(E.path);
     start = E.start;
     return *this;
   }
 
-  std::filesystem::path name;
+  std::filesystem::path path;
   int64_t start;
 };
 
 inline std::ostream &operator<<(std::ostream &stream, const Entry &e) {
-  stream << "File::Entry { \"" << e.name.string() << "\", offset " << e.start << " }";
+  stream << "File::Entry { \"" << e.path.string() << "\", offset " << e.start << " }";
   return stream;
 }
 } // namespace MR::File

@@ -15,6 +15,7 @@
  */
 
 #include <filesystem>
+#include <optional>
 
 #include "adapter/extract.h"
 #include "command.h"
@@ -90,7 +91,7 @@ void usage() {
 void run() {
   const ConversionType type = MR::Enum::from_name<ConversionType>(argument[1]);
   const bool midway_space = !get_options("midway_space").empty();
-  const std::filesystem::path template_filepath = get_option_value<std::filesystem::path>("template", "");
+  auto template_filepath = get_optional<std::filesystem::path>("template");
   const int from = get_option_value("from", 1);
 
   Header H_in = Header::open(argument[0]);
@@ -100,7 +101,7 @@ void run() {
   case ConversionType::Deformation2Displacement: {
     if (midway_space)
       WARN("-midway_space option ignored with deformation2displacement conversion type");
-    if (!get_options("template").empty())
+    if (template_filepath.has_value())
       WARN("-template option ignored with deformation2displacement conversion type");
     if (!get_options("from").empty())
       WARN("-from option ignored with deformation2displacement conversion type");
@@ -121,7 +122,7 @@ void run() {
   case ConversionType::Displacement2Deformation: {
     if (midway_space)
       WARN("-midway_space option ignored with displacement2deformation conversion type");
-    if (!get_options("template").empty())
+    if (template_filepath.has_value())
       WARN("-template option ignored with displacement2deformation conversion type");
     if (!get_options("from").empty())
       WARN("-from option ignored with displacement2deformation conversion type");
@@ -159,9 +160,9 @@ void run() {
     if (midway_space) {
       warp_output = Registration::Warp::compute_midway_deformation(warp, from);
     } else {
-      if (get_options("template").empty())
+      if (!template_filepath.has_value())
         throw Exception("-template option required with warpfull2deformation or warpfull2displacement conversion type");
-      auto template_header = Header::open(template_filepath);
+      auto template_header = Header::open(template_filepath.value());
       warp_output = Registration::Warp::compute_full_deformation(warp, template_header, from);
     }
 

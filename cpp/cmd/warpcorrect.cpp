@@ -14,7 +14,6 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include <filesystem>
 #include <limits>
 #include <mutex>
 

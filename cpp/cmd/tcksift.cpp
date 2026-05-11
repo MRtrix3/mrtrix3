@@ -84,10 +84,7 @@ void run() {
   const std::filesystem::path input_fod_path{argument[1]};
   const std::filesystem::path output_tracks_path{argument[2]};
 
-  std::optional<std::filesystem::path> debug_path;
-  auto opt = get_options("output_debug");
-  if (!opt.empty())
-    debug_path.emplace(opt[0][0]);
+  auto debug_path = get_optional<std::filesystem::path>("output_debug");
 
   auto in_dwi = Image<float>::open(input_fod_path);
   Math::SH::check(in_dwi);
@@ -144,7 +141,7 @@ void run() {
       sifter.output_selection(opt[0][0]);
   }
 
-  opt = get_options("out_mu");
+  auto opt = get_options("out_mu");
   if (!opt.empty()) {
     File::OFStream out_mu(opt[0][0]);
     out_mu << sifter.mu();

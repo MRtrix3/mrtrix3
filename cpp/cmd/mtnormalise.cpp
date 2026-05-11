@@ -254,10 +254,10 @@ Eigen::MatrixXd initialise_basis(IndexType &index, size_t num_voxels, int order)
   return basis;
 }
 
-void load_data(Eigen::MatrixXd &data, const std::filesystem::path &image_name, IndexType &index) {
+void load_data(Eigen::MatrixXd &data, const std::filesystem::path &image_path, IndexType &index) {
   static int num = 0;
 
-  auto in = ImageType::open(image_name.string());
+  auto in = ImageType::open(image_path.string());
   check_dimensions(index, in, 0, 3);
 
   struct Loader {
@@ -570,7 +570,7 @@ void run() {
 
   opt = get_options("check_factors");
   if (!opt.empty()) {
-    File::OFStream factors_output{std::filesystem::path(opt[0][0])};
+    File::OFStream factors_output{opt[0][0]};
     factors_output << balance_factors.transpose() << "\n";
   }
 

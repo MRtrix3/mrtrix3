@@ -14,7 +14,6 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include <filesystem>
 #include <iomanip>
 
 #include "command.h"
@@ -28,8 +27,6 @@
 #include "algo/histogram.h"
 #include "algo/loop.h"
 #include "file/ofstream.h"
-
-#include <filesystem>
 
 using namespace MR;
 using namespace App;
@@ -97,9 +94,7 @@ void run_volume(Stats::Stats &stats, Image<complex_type> &data, Image<bool> &mas
 }
 
 void run() {
-  const std::filesystem::path input_path{argument[0]};
-
-  auto header = Header::open(input_path);
+  auto header = Header::open(argument[0]);
   if (header.ndim() > 4)
     throw Exception("mrstats is not designed to handle images greater than 4D");
   const bool is_complex = header.datatype().is_complex();
@@ -109,8 +104,7 @@ void run() {
   auto opt = get_options("mask");
   Image<bool> mask;
   if (!opt.empty()) {
-    const std::filesystem::path mask_path{opt[0][0]};
-    mask = Image<bool>::open(mask_path);
+    mask = Image<bool>::open(opt[0][0]);
     check_dimensions(mask, header, 0, 3);
   }
 

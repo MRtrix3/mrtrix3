@@ -229,7 +229,7 @@ void load_seed_parameters(Properties &properties) {
 
   opt = get_options("seed_cutoff");
   if (!opt.empty())
-    properties["init_threshold"] = static_cast<std::string>(opt[0][0]);
+    properties["init_threshold"] = opt[0][0].as_text();
 
   opt = get_options("seed_unidirectional");
   if (!opt.empty())
@@ -237,7 +237,7 @@ void load_seed_parameters(Properties &properties) {
 
   opt = get_options("seed_direction");
   if (!opt.empty())
-    properties["init_direction"] = static_cast<std::string>(opt[0][0]);
+    properties["init_direction"] = opt[0][0].as_text();
 
   opt = get_options("output_seeds");
   if (!opt.empty())

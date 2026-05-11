@@ -147,7 +147,7 @@ void CohortDataImport::initialise(const std::filesystem::path &listpath,
   for (const auto &directory : directories) {
     try {
       for (const auto &line : lines) {
-        const std::filesystem::path full_path = (directory / line);
+        const std::filesystem::path full_path = directory / line;
         if (!std::filesystem::is_regular_file(full_path))
           throw Exception("File \"" + full_path.string() + "\" not found");
       }

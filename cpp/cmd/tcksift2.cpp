@@ -155,7 +155,7 @@ void run() {
   if (!get_options("max_factor").empty() && !get_options("max_coeff").empty())
     throw Exception("Options -max_factor and -max_coeff are mutually exclusive");
 
-  if (Path::has_suffix(std::filesystem::path(output_weights_path), ".tck"))
+  if (output_weights_path.extension() == ".tck")
     throw Exception("Output of tcksift2 command should be a text file, not a tracks file");
 
   auto in_dwi = Image<float>::open(input_fod_path);
@@ -167,10 +167,8 @@ void run() {
   tckfactor.perform_FOD_segmentation(in_dwi);
   tckfactor.scale_FDs_by_GM();
 
-  std::optional<std::filesystem::path> debug_path;
-  auto opt = get_options("output_debug");
-  if (!opt.empty()) {
-    debug_path.emplace(opt[0][0]);
+  auto debug_path = get_optional<std::filesystem::path>("output_debug");
+  if (debug_path.has_value()) {
     tckfactor.initialise_debug_image_output(debug_path.value());
     tckfactor.output_proc_mask(debug_path.value() / "proc_mask.mif");
   }
@@ -193,7 +191,7 @@ void run() {
 
     auto opt = get_options("csv");
     if (!opt.empty())
-      tckfactor.set_csv_path(std::filesystem::path(opt[0][0]));
+      tckfactor.set_csv_path(opt[0][0]);
 
     const float reg_tikhonov =
         static_cast<float>(get_option_value("reg_tikhonov", SIFT2::default_regularisation_tikhonov));
@@ -232,16 +230,16 @@ void run() {
 
   tckfactor.output_factors(output_weights_path);
 
-  opt = get_options("out_coeffs");
+  auto opt = get_options("out_coeffs");
   if (!opt.empty())
-    tckfactor.output_coefficients(std::filesystem::path(opt[0][0]));
+    tckfactor.output_coefficients(opt[0][0]);
 
   if (debug_path.has_value())
     tckfactor.output_all_debug_images(debug_path.value(), "after");
 
   opt = get_options("out_mu");
   if (!opt.empty()) {
-    File::OFStream out_mu{std::filesystem::path(opt[0][0])};
+    File::OFStream out_mu{opt[0][0]};
     out_mu << tckfactor.mu();
   }
 }

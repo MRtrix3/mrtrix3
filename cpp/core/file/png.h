@@ -30,7 +30,7 @@ namespace MR::File::PNG {
 
 class Reader {
 public:
-  Reader(const std::filesystem::path &filename);
+  Reader(const std::filesystem::path &filepath);
   ~Reader();
 
   uint32_t get_width() const { return width; }
@@ -72,7 +72,7 @@ private:
   png_infop info_ptr;
   uint32_t width, height;
   int color_type, bit_depth;
-  std::string filename;
+  std::filesystem::path filepath;
   DataType data_type;
   default_type multiplier;
   FILE *outfile;

@@ -398,7 +398,6 @@ void execute(Image<value_type> &in,
 }
 
 void run() {
-  const std::filesystem::path input_path{argument[0]};
   const default_type abs = get_option_value("abs", NaN);
   const default_type percentile = get_option_value("percentile", NaN);
   const ssize_t bottom = get_option_value("bottom", -1);
@@ -408,7 +407,7 @@ void run() {
   if (num_explicit_mechanisms > 1)
     throw Exception("Cannot specify more than one mechanism for threshold selection");
 
-  auto header_in = Header::open(input_path);
+  auto header_in = Header::open(argument[0]);
   if (header_in.datatype().is_complex())
     throw Exception("Cannot perform thresholding directly on complex image data");
   auto in = header_in.get_image<value_type>();

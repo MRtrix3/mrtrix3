@@ -20,8 +20,6 @@
 #include "fixel/validate.h"
 #include "image.h"
 
-#include <filesystem>
-
 using namespace MR;
 using namespace App;
 

@@ -91,10 +91,10 @@ void usage() {
 template <class WriterType> void set_optional_outputs(WriterType &writer) {
   auto opt = get_options("count");
   if (!opt.empty())
-    writer.set_count_path(std::filesystem::path(opt[0][0]));
+    writer.set_count_path(opt[0][0]);
   opt = get_options("extent");
   if (!opt.empty())
-    writer.set_extent_path(std::filesystem::path(opt[0][0]));
+    writer.set_extent_path(opt[0][0]);
 }
 
 void run() {
@@ -113,8 +113,7 @@ void run() {
   auto opt = get_options("mask");
   Image<bool> fixel_mask;
   if (!opt.empty()) {
-    const std::filesystem::path mask_path{opt[0][0]};
-    fixel_mask = Image<bool>::open(mask_path);
+    fixel_mask = Image<bool>::open(opt[0][0]);
     Fixel::check_data_file(fixel_mask);
     if (!Fixel::fixels_match(index_header, fixel_mask))
       throw Exception("Mask image provided using -mask option does not match input fixel directory");

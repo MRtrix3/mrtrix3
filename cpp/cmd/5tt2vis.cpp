@@ -23,8 +23,6 @@
 #include "dwi/tractography/ACT/tissues.h"
 #include "dwi/tractography/ACT/validate.h"
 
-#include <filesystem>
-
 using namespace MR;
 using namespace App;
 

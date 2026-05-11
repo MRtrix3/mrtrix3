@@ -26,7 +26,7 @@
 namespace MR::Formats {
 
 std::unique_ptr<ImageIO::Base> MGH::read(Header &H) const {
-  if (!Path::has_suffix(H.path(), ".mgh"))
+  if (const_cast<const Header &>(H).path().extension() != ".mgh")
     return std::unique_ptr<ImageIO::Base>();
 
   std::ifstream in(const_cast<const Header &>(H).path(), std::ios_base::binary);
@@ -46,7 +46,7 @@ std::unique_ptr<ImageIO::Base> MGH::read(Header &H) const {
 }
 
 bool MGH::check(Header &H, size_t num_axes) const {
-  if (!Path::has_suffix(H.path(), ".mgh"))
+  if (const_cast<const Header &>(H).path().extension() != ".mgh")
     return (false);
   return File::MGH::check(H, num_axes);
 }

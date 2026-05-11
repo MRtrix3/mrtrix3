@@ -23,7 +23,6 @@
 #include "metadata/phase_encoding.h"
 #include "progressbar.h"
 
-#include <filesystem>
 using namespace MR;
 using namespace App;
 

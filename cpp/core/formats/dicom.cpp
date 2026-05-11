@@ -29,7 +29,7 @@ namespace MR::Formats {
 std::unique_ptr<ImageIO::Base> DICOM::read(Header &H) const {
   if (std::filesystem::is_directory(H.path())) {
     INFO("Image path \"" + H.path().string() + "\" is a directory; will attempt to parse as DICOM series");
-  } else if (!Path::has_suffix(H.path(), ".dcm")) {
+  } else if (const_cast<const Header &>(H).path().extension() != ".dcm") {
     return std::unique_ptr<ImageIO::Base>();
   }
 

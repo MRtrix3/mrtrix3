@@ -64,7 +64,7 @@ void run() {
     meshes.push_back(mesh);
   } catch (Exception &e) {
     try {
-      meshes.load(output_path);
+      meshes.load(input_path);
     } catch (...) {
       throw e;
     }

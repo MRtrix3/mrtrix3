@@ -14,11 +14,10 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "command.h"
-
 #include <limits>
 
 #include "algo/threaded_copy.h"
+#include "command.h"
 #include "file/matrix.h"
 #include "image.h"
 #include "math/SH.h"
@@ -30,8 +29,6 @@
 #include "dwi/tractography/GT/internalenergy.h"
 #include "dwi/tractography/GT/mhsampler.h"
 #include "dwi/tractography/GT/particlegrid.h"
-
-#include <filesystem>
 
 using namespace MR;
 using namespace App;

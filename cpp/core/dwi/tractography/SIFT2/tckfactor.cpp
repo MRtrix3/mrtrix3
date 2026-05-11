@@ -364,8 +364,8 @@ void TckFactor::output_TD_images(const std::filesystem::path &dirpath,
   Header H(MR::Fixel::data_header_from_nfixels(fixels.size()));
   Header H_count;
   H_count.datatype() = DataType::native(DataType::UInt32);
-  Image<float> origTD_image(Image<float>::create((dirpath / origTD_path), H));
-  Image<uint32_t> count_image(Image<uint32_t>::create((dirpath / count_path), H));
+  Image<float> origTD_image(Image<float>::create(dirpath / origTD_path, H));
+  Image<uint32_t> count_image(Image<uint32_t>::create(dirpath / count_path, H));
   for (auto l = Loop(0)(origTD_image, count_image); l; ++l) {
     const size_t index = count_image.index(0);
     origTD_image.value() = fixels[index].get_orig_TD();

@@ -288,7 +288,7 @@ void run() {
     auto template_header = Header::open(opt[0][0]);
     header = template_header;
     header.keyval().clear();
-    header.keyval()["twi_template"] = opt[0][0].as_text();
+    header.keyval()["twi_template"] = static_cast<std::filesystem::path>(opt[0][0]).filename().string();
     if (!voxel_size.empty())
       oversample_header(header, voxel_size);
   } else {
@@ -303,7 +303,7 @@ void run() {
   }
 
   add_line(header.keyval()["comments"], "track-weighted image");
-  header.keyval()["tck_source"] = std::string(input_tracks_path);
+  header.keyval()["tck_source"] = input_tracks_path.filename().string();
 
   opt = get_options("contrast");
   const contrast_t contrast =
@@ -358,7 +358,7 @@ void run() {
       throw Exception("Options for setting output image dimensionality are mutually exclusive");
     writer_type = writer_dim::DIXEL;
     if (std::filesystem::exists(opt[0][0]))
-      dirs.reset(new Directions::FastLookupSet(str(opt[0][0])));
+      dirs.reset(new Directions::FastLookupSet(static_cast<std::filesystem::path>(opt[0][0])));
     else
       dirs.reset(new Directions::FastLookupSet(to<size_t>(opt[0][0])));
     header.ndim() = 4;
@@ -556,7 +556,7 @@ void run() {
     } else {
       mapper->add_fod_image(assoc_image);
     }
-    header.keyval()["twi_assoc_image"] = assoc_image.filename();
+    header.keyval()["twi_assoc_image"] = assoc_image.filename().string();
   } else if (contrast == contrast_t::VECTOR_FILE) {
     opt = get_options("vector_file");
     if (opt.empty())
@@ -564,7 +564,7 @@ void run() {
           "If using 'vector_file' contrast, must provide the relevant data file using the -vector_file option");
     const std::filesystem::path path(opt[0][0]);
     mapper->add_vector_data(path);
-    header.keyval()["twi_vector_file"] = path.filename();
+    header.keyval()["twi_vector_file"] = path.filename().string();
   }
 
   std::unique_ptr<MapWriterBase> writer;

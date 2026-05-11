@@ -33,8 +33,6 @@
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/weights.h"
 
-#include <filesystem>
-
 using namespace MR;
 using namespace App;
 using namespace MR::DWI;
@@ -161,9 +159,8 @@ void execute(Image<node_t> &node_image, const node_t max_node_index, const std::
       !opt.empty() ? stat_edge(static_cast<MR::App::ParsedArgument::IntType>(opt[0][0])) : stat_edge::SUM;
 
   // Prepare for reading the track data
-  const std::filesystem::path input_tracks_path{argument[0]};
   Tractography::Properties properties;
-  Tractography::Reader<float> reader(input_tracks_path, properties);
+  Tractography::Reader<float> reader(argument[0], properties);
 
   // Initialise classes in preparation for multi-threading
   Mapping::TrackLoader loader(
@@ -189,16 +186,14 @@ void execute(Image<node_t> &node_image, const node_t max_node_index, const std::
   connectome.finalize();
   connectome.error_check(missing_nodes);
 
-  const std::filesystem::path output_connectome_path{argument[2]};
-
-  connectome.save(output_connectome_path,
+  connectome.save(argument[2],
                   get_options("keep_unassigned").size(),
                   get_options("symmetric").size(),
                   get_options("zero_diagonal").size());
 
   opt = get_options("out_assignments");
   if (!opt.empty())
-    connectome.write_assignments(std::filesystem::path(opt[0][0]));
+    connectome.write_assignments(opt[0][0]);
 }
 
 void run() {

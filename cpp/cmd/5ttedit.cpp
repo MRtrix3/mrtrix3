@@ -87,7 +87,6 @@ public:
   void set_wm_input(const std::filesystem::path &path) { load(path, 2); }
   void set_csf_input(const std::filesystem::path &path) { load(path, 3); }
   void set_path_input(const std::filesystem::path &path) { load(path, 4); }
-  void set_none_input(const std::filesystem::path &path) { load(path, 5); }
 
   ~Modifier() {
     if (excess_volume_count > 0) {
@@ -105,7 +104,7 @@ public:
     }
   }
 
-  void set_none_mask(std::filesystem::path path) {
+  void set_none_mask(const std::filesystem::path &path) {
     none = Image<bool>::open(path);
     if (!dimensions_match(v_in, none, 0, 3))
       throw Exception("Image " + path.string() + " does not match 5TT image dimensions");
@@ -121,7 +120,7 @@ private:
   size_t inadequate_volume_count;
 
   void load(const std::filesystem::path &path, const size_t index) {
-    assert(index <= 5);
+    assert(index < 5);
     buffers[index] = Image<float>::open(path);
     if (!dimensions_match(v_in, buffers[index], 0, 3))
       throw Exception("Image " + path.string() + " does not match 5TT image dimensions");

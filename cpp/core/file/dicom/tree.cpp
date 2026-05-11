@@ -46,12 +46,11 @@ Tree::find(std::string_view patient_name, std::string_view patient_ID, std::stri
 void Tree::read_dir(const std::filesystem::path &dirpath, ProgressBar &progress) {
   try {
     for (const auto &entry : std::filesystem::directory_iterator(dirpath)) {
-      std::string name = entry.path().string();
       if (std::filesystem::is_directory(entry.path()))
-        read_dir(name, progress);
+        read_dir(entry.path(), progress);
       else {
         try {
-          read_file(name);
+          read_file(entry.path());
         } catch (Exception &E) {
           E.display(3);
         }
@@ -104,7 +103,7 @@ void Tree::read(const std::filesystem::path &path) {
     read_dir(path, progress);
   } else {
     try {
-      read_file(path.string());
+      read_file(path);
     } catch (Exception) {
     }
   }

@@ -134,14 +134,13 @@ check_fixel_directory(const std::filesystem::path &path, bool create_if_missing 
   // handle the use case when a fixel command is run from inside a fixel directory
   std::filesystem::path fixel_dir = path.empty() ? std::filesystem::current_path() : path;
 
-  bool exists(true);
-  if (!(exists = std::filesystem::exists(fixel_dir))) {
+  if (!std::filesystem::exists(fixel_dir)) {
     if (create_if_missing)
       std::filesystem::create_directory(fixel_dir);
     else
-      throw Exception("Fixel directory (" + str(fixel_dir) + ") does not exist");
+      throw Exception("Fixel directory (" + fixel_dir.string() + ") does not exist");
   } else if (!std::filesystem::is_directory(fixel_dir))
-    throw Exception(str(fixel_dir) + " is not a directory");
+    throw Exception(fixel_dir.string() + " is not a directory");
 
   if (check_if_empty && std::filesystem::directory_iterator(fixel_dir) != std::filesystem::directory_iterator())
     throw Exception("Output fixel directory \"" + fixel_dir.string() + "\" is not empty" +
@@ -157,7 +156,7 @@ FORCE_INLINE Header find_index_header(const std::filesystem::path &fixel_directo
   for (std::initializer_list<const std::string>::iterator it = supported_image_formats.begin();
        it != supported_image_formats.end();
        ++it) {
-    std::filesystem::path full_path = (fixel_directory_path / ("index" + *it));
+    std::filesystem::path full_path = fixel_directory_path / ("index" + *it);
     if (std::filesystem::exists(full_path)) {
       if (header.valid())
         throw InvalidDirectoryException("Multiple index images found in directory " + fixel_directory_path.string());
@@ -285,7 +284,7 @@ template <class IndexHeaderType> FORCE_INLINE Header directions_header_from_inde
 FORCE_INLINE void copy_fixel_file(const std::filesystem::path &input_file_path,
                                   const std::filesystem::path &output_directory) {
   check_fixel_directory(output_directory, true);
-  std::filesystem::path output_path = (output_directory / input_file_path.filename().string());
+  std::filesystem::path output_path = output_directory / input_file_path.filename().string();
   Header input_header = Header::open(input_file_path);
   auto input_image = input_header.get_image<float>();
   auto output_image = Image<float>::create(output_path, input_header);
@@ -298,11 +297,11 @@ FORCE_INLINE void copy_index_file(const std::filesystem::path &input_directory,
   Header input_header = Fixel::find_index_header(input_directory);
   check_fixel_directory(output_directory, true);
 
-  namespace fs = std::filesystem;
-  fs::path output_path = output_directory / static_cast<fs::path>(input_header.path()).filename();
+  std::filesystem::path output_path =
+      output_directory / static_cast<std::filesystem::path>(input_header.path()).filename();
 
   // If the index file already exists check it is the same as the input index file
-  if (fs::exists(output_path)) {
+  if (std::filesystem::exists(output_path)) {
     auto input_image = input_header.get_image<index_type>();
     auto output_image = Image<index_type>::open(output_path);
     if (!images_match_abs(input_image, output_image))
@@ -313,7 +312,7 @@ FORCE_INLINE void copy_index_file(const std::filesystem::path &input_directory,
                            : ""));
   } else {
     auto output_image = Image<index_type>::create(
-        output_directory / static_cast<fs::path>(input_header.path()).filename(), input_header);
+        output_directory / static_cast<std::filesystem::path>(input_header.path()).filename(), input_header);
     auto input_image = input_header.get_image<index_type>();
     threaded_copy(input_image, output_image);
   }
@@ -331,11 +330,13 @@ FORCE_INLINE void copy_directions_file(const std::filesystem::path &input_direct
     auto input_image = input_header.get_image<float>();
     auto output_image = Image<float>::open(output_path);
     if (!images_match_abs(input_image, output_image))
-      throw Exception("output fixel directory \"" + output_directory.string() +
-                      "\" already contains directions file, " + "which is not the same as the expected output" +
-                      (App::overwrite_files
-                           ? " (-force option cannot safely be applied on directories; please erase manually instead)"
-                           : ""));
+      throw Exception("output fixel directory \"" + output_directory.string() + "\"" +  //
+                      " already contains directions file, " +                           //
+                      "which is not the same as the expected output" +                  //
+                      (App::overwrite_files                                             //
+                           ? " (-force option cannot safely be applied on directories;" //
+                             " please erase manually instead)"                          //
+                           : ""));                                                      //
   } else {
     auto output_image = Image<float>::create(output_directory / input_header.path().filename(), input_header);
     auto input_image = input_header.get_image<float>();

@@ -25,7 +25,6 @@
 #include "connectome/connectome.h"
 #include "connectome/validate.h"
 
-#include <filesystem>
 #include <iomanip>
 
 using namespace MR;

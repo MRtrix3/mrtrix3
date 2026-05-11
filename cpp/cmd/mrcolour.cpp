@@ -26,8 +26,6 @@
 #include "algo/min_max.h"
 #include "colourmap.h"
 
-#include <filesystem>
-
 using namespace MR;
 using namespace App;
 
@@ -80,10 +78,7 @@ void usage() {
 // clang-format on
 
 void run() {
-  const std::filesystem::path input_path{argument[0]};
-  const std::filesystem::path output_path{argument[2]};
-
-  Header H_in = Header::open(input_path);
+  Header H_in = Header::open(argument[0]);
   const ColourMap::Entry colourmap = ColourMap::maps[argument[1]];
   Eigen::Vector3d fixed_colour(Eigen::Vector3d::Constant(NaN));
   if (colourmap.is_colour) {
@@ -143,7 +138,7 @@ void run() {
   Stride::set(H_out, Stride::contiguous_along_axis(3, H_out));
   H_out.datatype() = DataType::Float32;
   H_out.datatype().set_byte_order_native();
-  auto out = Image<float>::create(output_path, H_out);
+  auto out = Image<float>::create(argument[2], H_out);
 
   if (colourmap.is_colour) {
     assert(fixed_colour.allFinite());

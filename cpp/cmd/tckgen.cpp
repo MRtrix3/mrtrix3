@@ -38,8 +38,6 @@
 
 #include "dwi/tractography/seeding/seeding.h"
 
-#include <filesystem>
-
 using namespace MR;
 using namespace App;
 

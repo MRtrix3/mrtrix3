@@ -36,8 +36,6 @@
 #include "registration/transform/rigid.h"
 #include "transform.h"
 
-#include <filesystem>
-
 using namespace MR;
 using namespace App;
 

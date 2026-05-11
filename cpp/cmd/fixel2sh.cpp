@@ -27,8 +27,6 @@
 #include "fixel/loop.h"
 #include "fixel/validate.h"
 
-#include <filesystem>
-
 using namespace MR;
 using namespace App;
 

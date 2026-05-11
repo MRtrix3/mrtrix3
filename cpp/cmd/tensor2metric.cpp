@@ -14,6 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <Eigen/Eigenvalues>
+
 #include "algo/threaded_copy.h"
 #include "command.h"
 #include "dwi/directions/predefined.h"
@@ -23,8 +25,6 @@
 #include "file/matrix.h"
 #include "image.h"
 #include "progressbar.h"
-#include <Eigen/Eigenvalues>
-#include <filesystem>
 
 using namespace MR;
 using namespace App;
@@ -421,9 +421,7 @@ private:
 };
 
 void run() {
-  const std::filesystem::path input_image_path{argument[0]};
-
-  auto dt_img = Image<value_type>::open(input_image_path);
+  auto dt_img = Image<value_type>::open(argument[0]);
   Header header(dt_img);
   if (header.ndim() != 4 || header.size(3) != 6) {
     throw Exception("input tensor image is not a valid tensor.");
@@ -582,7 +580,7 @@ void run() {
   opt = get_options("mk_dirs");
   const Eigen::MatrixXd mk_dirs =
       opt.empty() ? Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_300())
-                  : File::Matrix::load_matrix(std::filesystem::path(opt[0][0]));
+                  : File::Matrix::load_matrix(opt[0][0]);
 
   auto rk_ndirs = get_option_value("rk_ndirs", default_rk_numdirections);
 

@@ -24,8 +24,6 @@
 #include "surface/mesh.h"
 #include "surface/validate.h"
 
-#include <filesystem>
-
 using namespace MR;
 using namespace App;
 
@@ -52,12 +50,14 @@ void usage() {
 // clang-format on
 
 void run() {
+
   // Read in the mesh data
   Surface::Mesh mesh(argument[0]);
   Surface::debug_validate(mesh);
 
   // Get the template image
   Header template_header = Header::open(argument[1]);
+
   template_header.ndim() = 3;
 
   // Ensure that a floating-point representation is used for the output image,

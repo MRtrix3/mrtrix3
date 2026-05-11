@@ -336,10 +336,10 @@ void Mesh::load_stl(const std::filesystem::path &path) {
         warn_nonstandard_normals = true;
     }
     if (triangles.size() != count)
-      WARN("Number of triangles indicated in file " + name + " (" + str(count) + ")" + //
-           " does not match number actually read (" + str(triangles.size()) + ")");    //
+      WARN("Number of triangles indicated in file " + path.string() + " (" + str(count) + ")" + //
+           " does not match number actually read (" + str(triangles.size()) + ")");             //
     if (warn_attribute)
-      WARN("Some facets in file " + name + " have extended attributes; ignoring");
+      WARN("Some facets in file " + path.string() + " have extended attributes; ignoring");
 
   } else {
 
@@ -661,7 +661,7 @@ void Mesh::load_fs(const std::filesystem::path &path) {
     }
 
   } else {
-    throw Exception("File " + name + " is not a FreeSurfer surface file");
+    throw Exception("File " + path.string() + " is not a FreeSurfer surface file");
   }
 
   try {

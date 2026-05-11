@@ -52,7 +52,7 @@ void run() {
     Tractography::Reader<float> file(input_path, properties);
 
     std::cout << "***********************************\n";
-    std::cout << "  Tracks file: \"" << input_path << "\"\n";
+    std::cout << "  Tracks file: \"" << input_path.string() << "\"\n";
 
     for (Tractography::Properties::iterator i = properties.begin(); i != properties.end(); ++i) {
       std::string S(i->first + ':');

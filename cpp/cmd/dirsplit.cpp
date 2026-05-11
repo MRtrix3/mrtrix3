@@ -22,9 +22,6 @@
 #include "progressbar.h"
 #include "thread.h"
 
-#include <filesystem>
-
-constexpr size_t default_number = 1e8;
 constexpr size_t default_permutations = 1e8;
 
 using namespace MR;
@@ -45,7 +42,7 @@ ARGUMENTS
 
 OPTIONS
   + Option ("number", "number of permutations to try"
-                      " (default: " + str(default_number) + ")")
+                      " (default: " + str(default_permutations) + ")")
     + Argument ("num").type_integer (1)
 
   + DWI::Directions::cartesian_option;
@@ -165,7 +162,7 @@ void run() {
   if (num_subsets == 1)
     throw Exception("Directions must be split across two or more output files");
 
-  const size_t num_permutations = get_option_value<size_t>("number", default_number);
+  const size_t num_permutations = get_option_value<size_t>("number", default_permutations);
 
   std::vector<std::vector<size_t>> best;
   {
@@ -176,10 +173,9 @@ void run() {
 
   const bool cartesian = !get_options("cartesian").empty();
   for (size_t i = 0; i < best.size(); ++i) {
-    const std::filesystem::path output_path{argument[i + 1]};
     Eigen::MatrixXd output(best[i].size(), 3);
     for (size_t n = 0; n < best[i].size(); ++n)
       output.row(n) = directions.row(best[i][n]);
-    DWI::Directions::save(output, output_path, cartesian);
+    DWI::Directions::save(output, argument[i + 1], cartesian);
   }
 }

@@ -165,8 +165,8 @@ void ModelBase<Fixel>::output_errors_voxel(const std::filesystem::path &dirpath,
                                            const std::filesystem::path &cost_path) const {
   const default_type current_mu = mu();
   auto out_max_abs_diff = Image<float>::create((dirpath / max_abs_diff_path), Fixel_map<Fixel>::header());
-  auto out_diff = Image<float>::create((dirpath / diff_path), Fixel_map<Fixel>::header());
-  auto out_cost = Image<float>::create((dirpath / cost_path), Fixel_map<Fixel>::header());
+  auto out_diff = Image<float>::create(dirpath / diff_path, Fixel_map<Fixel>::header());
+  auto out_cost = Image<float>::create(dirpath / cost_path, Fixel_map<Fixel>::header());
   VoxelAccessor v(accessor());
   for (auto l = Loop(v)(v, out_max_abs_diff, out_diff, out_cost); l; ++l) {
     if (v.value()) {

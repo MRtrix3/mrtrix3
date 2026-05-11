@@ -172,7 +172,7 @@ template <typename T> void Matrix<T>::error_check(const std::vector<node_t> &mis
 template <typename T> void Matrix<T>::write_assignments(const std::filesystem::path &path) const {
   if (!track_assignments)
     throw Exception("Cannot write streamline assignments to file as they were not stored during processing");
-  File::OFStream stream(path.string());
+  File::OFStream stream(path);
   stream << "# " << App::command_history_string << "\n";
   for (auto i = assignments_single.begin(); i != assignments_single.end(); ++i)
     stream << str(*i) << "\n";
@@ -201,15 +201,15 @@ void Matrix<T>::save(const std::filesystem::path &path,
     if (zero_diagonal)
       WARN("Option -zero_diagonal not applicable when generating connectivity vector; ignored");
     if (keep_unassigned)
-      File::Matrix::save_vector(data, path.string());
+      File::Matrix::save_vector(data, path);
     else
-      File::Matrix::save_vector(data.tail(data.size() - 1), path.string());
+      File::Matrix::save_vector(data.tail(data.size() - 1), path);
     return;
   }
 
   assert(mat2vec);
 
-  File::OFStream out(path.string());
+  File::OFStream out(path);
   Eigen::IOFormat fmt(
       Eigen::FullPrecision, Eigen::DontAlignCols, std::string(1, File::Matrix::delimiter(path)), "\n", "", "", "", "");
   for (node_t row = 0; row != mat2vec->mat_size(); ++row) {

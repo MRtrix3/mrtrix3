@@ -101,7 +101,7 @@ void run() {
   Fixel::check_fixel_directory(output_path, true, true);
 
   // Easiest if we first make the index image
-  const std::filesystem::path index_path = (output_path / "index.mif");
+  const std::filesystem::path index_path = output_path / "index.mif";
   Header index_header(input_header);
   index_header.path() = index_path;
   index_header.datatype() = DataType::UInt32;

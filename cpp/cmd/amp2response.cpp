@@ -297,8 +297,8 @@ void run() {
     throw Exception("input mask must be a 3D image");
   auto dir_image = Image<float>::open(directions_input_path);
   if (dir_image.ndim() < 4 || dir_image.size(3) < 3)
-    throw Exception("input direction image \"" + directions_input_path.string() +
-                    "\" does not have expected dimensions");
+    throw Exception("input direction image \"" + directions_input_path.string() + "\"" + //
+                    " does not have expected dimensions");                               //
   check_dimensions(image, dir_image, 0, 3);
 
   size_t num_voxels = 0;

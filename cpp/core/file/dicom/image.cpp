@@ -464,7 +464,7 @@ std::ostream &operator<<(std::ostream &stream, const Frame &item) {
 }
 
 std::ostream &operator<<(std::ostream &stream, const Image &item) {
-  stream << (!item.filepath.string().empty() ? item.filepath.string() : "file not set") << ":\n"
+  stream << (!item.filepath.empty() ? item.filepath.string() : "file not set") << ":\n"
          << (!item.sequence_name.empty() ? item.sequence_name : "sequence not set") << " ["
          << (!item.manufacturer.empty() ? item.manufacturer : std::string("unknown manufacturer")) << "] "
          << (!item.frames.empty() ? str(item.frames.size()) + " frames with dim " + str(item.frame_dim)

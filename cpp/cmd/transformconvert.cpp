@@ -208,10 +208,9 @@ void run() {
   case Operation::ITK_IMPORT: {
     if (num_inputs != 1)
       throw Exception("itk_import requires 1 input, " + str(num_inputs) + " provided.");
-    const std::filesystem::path input_path{argument[0]};
     transform_type transform;
     Eigen::Vector3d centre_of_rotation(3);
-    parse_itk_trafo(input_path, transform, centre_of_rotation);
+    parse_itk_trafo(argument[0], transform, centre_of_rotation);
     INFO("Centre of rotation:\n" + str(centre_of_rotation.transpose()));
 
     // rejig translation to correct for centre of rotation

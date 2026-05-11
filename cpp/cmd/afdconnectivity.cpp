@@ -14,6 +14,9 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <filesystem>
+#include <optional>
+
 #include "command.h"
 #include "dwi/fmls.h"
 #include "dwi/tractography/SIFT/model_base.h"
@@ -24,8 +27,6 @@
 #include "dwi/tractography/properties.h"
 #include "memory.h"
 #include "mrtrix_version.h"
-
-#include <filesystem>
 
 using namespace MR;
 using namespace MR::DWI;
@@ -131,19 +132,19 @@ public:
   AFDConnectivity(Image<value_type> &fod_buffer,
                   const DWI::Directions::FastLookupSet &dirs,
                   const std::filesystem::path &tck_path,
-                  const std::filesystem::path &wbft_path)
+                  const std::optional<std::filesystem::path> &wbft_path)
       : DWI::Tractography::SIFT::ModelBase<AFDConnFixel>(fod_buffer, dirs),
-        have_wbft(!wbft_path.empty()),
+        have_wbft(wbft_path.has_value()),
         all_fixels(false),
         mapper(fod_buffer, dirs),
         v_fod(fod_buffer) {
     if (have_wbft) {
       perform_FOD_segmentation(fod_buffer);
-      map_streamlines(wbft_path.string());
+      map_streamlines(wbft_path.value());
     } else {
       fmls.reset(new DWI::FMLS::Segmenter(dirs, Math::SH::LforN(fod_buffer.size(3))));
     }
-    mapper.set_upsample_ratio(DWI::Tractography::Mapping::determine_upsample_ratio(fod_buffer, tck_path.string(), 0.1));
+    mapper.set_upsample_ratio(DWI::Tractography::Mapping::determine_upsample_ratio(fod_buffer, tck_path, 0.1));
     mapper.set_use_precise_mapping(true);
   }
 
@@ -165,7 +166,7 @@ private:
 value_type AFDConnectivity::get(const std::filesystem::path &path) {
 
   Tractography::Properties properties;
-  Tractography::Reader<value_type> reader(path.string(), properties);
+  Tractography::Reader<value_type> reader(path, properties);
   const size_t track_count = (properties.find("count") == properties.end() ? 0 : to<size_t>(properties["count"]));
   DWI::Tractography::Mapping::TrackLoader loader(reader, track_count, "summing apparent fibre density within track");
 
@@ -291,7 +292,7 @@ void AFDConnectivity::save(const std::filesystem::path &path) {
 void run() {
   const std::filesystem::path input_image_path{argument[0]};
   const std::filesystem::path input_tracks_path{argument[1]};
-  const std::filesystem::path wbft_path{get_option_value<std::string>("wbft", "")};
+  auto wbft_path = get_optional<std::filesystem::path>("wbft");
 
   DWI::Directions::FastLookupSet dirs(1281);
   auto fod = Image<value_type>::open(input_image_path);

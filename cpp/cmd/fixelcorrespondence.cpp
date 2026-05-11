@@ -65,20 +65,21 @@ void run() {
   const float angular_threshold = get_option_value("angle", default_angle_threshold);
   const float angular_threshold_dp = cos(angular_threshold * (Math::pi / 180.0));
 
-  if (std::filesystem::is_directory(argument[0]))
+  const std::filesystem::path input_filepath(argument[0]);
+  if (std::filesystem::is_directory(input_filepath))
     throw Exception("please input the specific fixel data file to be converted"
                     " (not the fixel directory)");
 
-  const std::filesystem::path subject_fixel_directory = Fixel::get_fixel_directory(argument[0]);
+  const std::filesystem::path subject_fixel_directory = Fixel::get_fixel_directory(input_filepath);
   auto subject_index_header = Fixel::find_index_header(subject_fixel_directory);
   auto subject_index = subject_index_header.get_image<index_type>();
   Fixel::debug_validate_index_image(subject_index);
   auto subject_directions = Fixel::find_directions_header(subject_fixel_directory).get_image<float>().with_direct_io(1);
 
-  if (std::filesystem::equivalent(argument[0], subject_directions.path()))
+  if (std::filesystem::equivalent(input_filepath, subject_directions.path()))
     throw Exception("input fixel data file cannot be the directions file");
 
-  auto subject_data = Image<float>::open(argument[0]);
+  auto subject_data = Image<float>::open(input_filepath);
   Fixel::check_fixel_size(subject_index_header, subject_data);
 
   auto template_index = Fixel::find_index_header(argument[1]).get_image<index_type>();

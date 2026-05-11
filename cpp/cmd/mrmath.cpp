@@ -14,6 +14,9 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <filesystem>
+#include <limits>
+
 #include "algo/threaded_loop.h"
 #include "command.h"
 #include "dwi/gradient.h"
@@ -27,9 +30,6 @@
 #include "metadata/phase_encoding.h"
 #include "misc/voxel2vector.h"
 #include "progressbar.h"
-
-#include <filesystem>
-#include <limits>
 
 using namespace MR;
 using namespace App;

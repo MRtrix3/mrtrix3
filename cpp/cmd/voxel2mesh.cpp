@@ -21,8 +21,6 @@
 #include "surface/algo/image2mesh.h"
 #include "surface/mesh.h"
 
-#include <filesystem>
-
 using namespace MR;
 using namespace App;
 
@@ -62,6 +60,7 @@ void usage() {
 // clang-format on
 
 void run() {
+
   Surface::Mesh mesh;
 
   if (get_options("blocky").empty()) {

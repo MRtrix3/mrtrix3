@@ -31,8 +31,8 @@
 
 namespace MR::File::PNG {
 
-Reader::Reader(const std::filesystem::path &filename)
-    : infile(fopen(filename.string().c_str(), "rb")),
+Reader::Reader(const std::filesystem::path &filepath)
+    : infile(fopen(filepath.string().c_str(), "rb")),
       png_ptr(nullptr),
       info_ptr(nullptr),
       width(0),
@@ -42,7 +42,7 @@ Reader::Reader(const std::filesystem::path &filename)
       channels(0) {
   std::array<unsigned char, 8> sig;
   if (fread(sig.data(), 1, 8, infile) < 8)
-    throw Exception("error reading from PNG file \"" + filename.string() + "\"");
+    throw Exception("error reading from PNG file \"" + filepath.string() + "\"");
   const int sigcmp = png_sig_cmp(sig.data(), 0, 8);
   if (sigcmp) {
     fclose(infile);
@@ -50,23 +50,23 @@ Reader::Reader(const std::filesystem::path &filename)
     for (size_t i = 0; i != 8; ++i) {
       s << str(static_cast<int>(sig[i])) << " ";
     }
-    Exception e("Bad PNG signature in file \"" + filename.string() + "\"");
+    Exception e("Bad PNG signature in file \"" + filepath.string() + "\"");
     e.push_back("File signature: " + s.str());
     throw e;
   }
   if (!(png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr))) {
     fclose(infile);
-    throw Exception("Unable to allocate memory for PNG read structure for image \"" + filename.string() + "\"");
+    throw Exception("Unable to allocate memory for PNG read structure for image \"" + filepath.string() + "\"");
   }
   if (!(info_ptr = png_create_info_struct(png_ptr))) {
     fclose(infile);
     png_destroy_read_struct(&png_ptr, nullptr, nullptr);
-    throw Exception("Unable to allocate memory for PNG info structure for image \"" + filename.string() + "\"");
+    throw Exception("Unable to allocate memory for PNG info structure for image \"" + filepath.string() + "\"");
   }
   if (setjmp(png_jmpbuf(png_ptr))) {
     fclose(infile);
     png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
-    throw Exception("Fatal error reading PNG image \"" + filename.string() + "\"");
+    throw Exception("Fatal error reading PNG image \"" + filepath.string() + "\"");
   }
   png_init_io(png_ptr, infile);
   png_set_sig_bytes(png_ptr, 8);
@@ -81,7 +81,7 @@ Reader::Reader(const std::filesystem::path &filename)
   case PNG_COLOR_TYPE_RGB_ALPHA:
     break;
   default:
-    throw Exception("Invalid color type (" + str(color_type) + ") in PNG file \"" + filename.string() + "\"");
+    throw Exception("Invalid color type (" + str(color_type) + ") in PNG file \"" + filepath.string() + "\"");
   }
   switch (bit_depth) {
   case 1:
@@ -91,7 +91,7 @@ Reader::Reader(const std::filesystem::path &filename)
   case 16:
     break;
   default:
-    throw Exception("Invalid bit depth (" + str<int>(bit_depth) + ") in PNG file \"" + filename.string() + "\"");
+    throw Exception("Invalid bit depth (" + str<int>(bit_depth) + ") in PNG file \"" + filepath.string() + "\"");
   }
 
   output_bitdepth = bit_depth;
@@ -104,7 +104,7 @@ Reader::Reader(const std::filesystem::path &filename)
   png_set_interlace_handling(png_ptr);
   png_read_update_info(png_ptr, info_ptr);
   channels = png_get_channels(png_ptr, info_ptr);
-  DEBUG("PNG image \"" + filename.string() + "\":  " + str(width) + "x" + str(height) + "; " +
+  DEBUG("PNG image \"" + filepath.string() + "\":  " + str(width) + "x" + str(height) + "; " +
         "bitdepth = " + str(bit_depth) + "; " + "colortype: " + str(color_type) + "; " +
         "channels = " + str<int>(channels) + "; " + "bytes per row = " + str(png_get_rowbytes(png_ptr, info_ptr)) +
         "; " + "output bitdepth = " + str(output_bitdepth) + "; " + "total bytes = " + str(get_size()));
@@ -148,7 +148,7 @@ Writer::Writer(const Header &H, const std::filesystem::path &path)
       info_ptr(nullptr),
       color_type(0),
       bit_depth(0),
-      filename(path.string()),
+      filepath(path),
       data_type(H.datatype()),
       multiplier(1.0),
       outfile(nullptr) {
@@ -162,10 +162,10 @@ Writer::Writer(const Header &H, const std::filesystem::path &path)
     png_destroy_write_struct(&png_ptr, &info_ptr);
     throw Exception("Unable to set jump buffer for PNG structure for image \"" + path.string() + "\"");
   }
-  outfile = fopen(Writer::filename.c_str(), "wb");
+  outfile = fopen(Writer::filepath.c_str(), "wb");
   if (!outfile)
-    throw Exception("Unable to open PNG file for writing for image \"" + filename + "\": " //
-                    + strerror(errno));                                                    //
+    throw Exception("Unable to open PNG file for writing for image \"" + path.string() + "\": " //
+                    + strerror(errno));                                                         //
   png_init_io(png_ptr, outfile);
   png_set_compression_level(png_ptr, Z_DEFAULT_COMPRESSION);
   switch (H.ndim()) {
@@ -189,14 +189,14 @@ Writer::Writer(const Header &H, const std::filesystem::path &path)
       break;
     default:
       png_destroy_write_struct(&png_ptr, &info_ptr);
-      throw Exception("Unsupported number of volumes (" + str(H.size(3)) + ") in image \"" + filename +
-                      "\" for PNG writer");
+      throw Exception("Unsupported number of volumes (" + str(H.size(3)) + ")" + //
+                      " in image \"" + H.path().string() + "\" for PNG writer"); //
     }
     break;
   default:
     png_destroy_write_struct(&png_ptr, &info_ptr);
-    throw Exception("Unsupported image dimensionality (" + str(H.ndim()) + ") in image \"" + filename +
-                    "\" for PNG writer");
+    throw Exception("Unsupported image dimensionality (" + str(H.ndim()) + ")" + //
+                    " in image \"" + H.path().string() + "\" for PNG writer");   //
   }
   if (data_type.is_complex()) {
     png_destroy_write_struct(&png_ptr, &info_ptr);
@@ -261,7 +261,7 @@ Writer::Writer(const Header &H, const std::filesystem::path &path)
   png_set_tIME(png_ptr, info_ptr, &modtime);
   std::array<png_text, 4> text;
   const std::string title_key("Title");
-  const std::string title_text(filename);
+  const std::string title_text(filepath.filename().string());
   const std::string software_key("Software");
   const std::string software_text("MRtrix3");
   const std::string source_key("Source");
@@ -303,7 +303,7 @@ void Writer::save(std::byte *data) {
     png_destroy_write_struct(&png_ptr, &info_ptr);
     png_ptr = nullptr;
     info_ptr = nullptr;
-    throw Exception("Unable to set jump buffer for PNG structure for image \"" + filename + "\"");
+    throw Exception("Unable to set jump buffer for PNG structure for image \"" + filepath.string() + "\"");
   }
   const size_t row_bytes = png_get_rowbytes(png_ptr, info_ptr);
 

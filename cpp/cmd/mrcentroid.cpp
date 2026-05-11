@@ -20,8 +20,6 @@
 #include "transform.h"
 #include "types.h"
 
-#include <filesystem>
-
 using namespace MR;
 using namespace App;
 
@@ -47,17 +45,14 @@ void usage() {
 typedef float value_type;
 
 void run() {
-  const std::filesystem::path input_path{argument[0]};
-
-  Image<value_type> image = Image<value_type>::open(input_path);
+  Image<value_type> image = Image<value_type>::open(argument[0]);
   if (image.ndim() > 3)
     throw Exception("Command does not accept images with more than 3 dimensions");
 
   Image<bool> mask;
   auto opt = get_options("mask");
   if (!opt.empty()) {
-    const std::filesystem::path mask_path{opt[0][0]};
-    mask = Image<bool>::open(mask_path);
+    mask = Image<bool>::open(opt[0][0]);
     check_dimensions(image, mask);
   }
 

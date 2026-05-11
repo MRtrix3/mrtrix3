@@ -53,11 +53,11 @@ void Default::unload(const Header &header) {
 
     if (writable) {
       for (size_t n = 0; n < files.size(); n++) {
-        File::OFStream out(files[n].name, std::ios::in | std::ios::out | std::ios::binary);
+        File::OFStream out(files[n].path, std::ios::in | std::ios::out | std::ios::binary);
         out.seekp(files[n].start, out.beg);
         out.write(reinterpret_cast<const char *>(addresses[0].get() + n * bytes_per_segment), bytes_per_segment);
         if (!out.good())
-          throw Exception("error writing back contents of file \"" + files[n].name.string() + "\": " + strerror(errno));
+          throw Exception("error writing back contents of file \"" + files[n].path.string() + "\": " + strerror(errno));
       }
     }
   } else {

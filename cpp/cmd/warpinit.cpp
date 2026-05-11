@@ -20,8 +20,6 @@
 #include "stride.h"
 #include "transform.h"
 
-#include <filesystem>
-
 using namespace MR;
 using namespace App;
 
@@ -56,17 +54,14 @@ void usage() {
 // clang-format on
 
 void run() {
-  const std::filesystem::path input_image_path{argument[0]};
-  const std::filesystem::path output_image_path{argument[1]};
-
-  auto header = Header::open(input_image_path);
+  auto header = Header::open(argument[0]);
 
   header.datatype() = DataType::Float32;
   header.ndim() = 4;
   header.size(3) = 3;
   Stride::set(header, Stride::contiguous_along_axis(3, header));
 
-  auto warp = Image<float>::create(output_image_path, header);
+  auto warp = Image<float>::create(argument[1], header);
 
   Transform transform(header);
 
