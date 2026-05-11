@@ -20,8 +20,8 @@ jobs:
       id: review
       with:
         apt_packages: g++,qt6-base-dev,libqt6opengl6-dev,libglvnd-dev,zlib1g-dev,libfftw3-dev,ninja-build
-        config_file: .clang-tidy
-        clang_tidy_version: 16
+        config_file: .clang-tidy-review
+        clang_tidy_version: 19
 
     - uses: ZedThree/clang-tidy-review/upload@v0.21.0
       id: upload-review

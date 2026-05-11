@@ -15,4 +15,4 @@ Checks: >
   -readability-identifier-length,
   -readability-function-cognitive-complexity,
   -readability-magic-numbers,
-HeaderFilterRegex: '*.(h|hpp)'
+HeaderFilterRegex: '(cpp\/|testing\/(lib\/|tools\/|unit_tests\/)).*\.(h|hpp)'

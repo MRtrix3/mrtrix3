@@ -5,4 +5,5 @@ Checks: >
   concurrency-*,
   -bugprone-easily-swappable-parameters,
 WarningsAsErrors: '*'
-HeaderFilterRegex: '*.(h|hpp)'
+HeaderFilterRegex: '(cpp\/|testing\/(lib\/|tools\/|unit_tests\/)).*\.(h|hpp)'
+ExcludeHeaderFilterRegex: '(_deps\/|cpp\/core\/eigen_plugins\/|cpp\/gui\/opengl\/gl_core_3_3).*'
