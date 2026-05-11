@@ -16,6 +16,11 @@
 
 #pragma once
 
+#include <Eigen/Dense>
+
+#include "image.h"
+#include "types.h"
+
 namespace MR::Registration::Metric {
 
 class LinearBase {
