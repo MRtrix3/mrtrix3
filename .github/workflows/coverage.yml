@@ -6,8 +6,6 @@ on:
   # Run this every Sunday at midnight
   schedule:
     - cron: "0 0 * * 0"
-  # IMPORTANT: remove this before merging
-  pull_request:
 
 jobs:
   linux-clang-build:
