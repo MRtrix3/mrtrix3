@@ -294,7 +294,7 @@ void run() {
 
     CSD_Processor processor(shared, mask, dwi_modelled);
     auto dwi = header_in.get_image<float>().with_direct_io(3);
-    ThreadedLoop("performing constrained spherical deconvolution", dwi, 0, 3).run(processor, dwi, fod);
+    ThreadedLoop("performing constrained spherical deconvolution", dwi, 0, 3, 1).run(processor, dwi, fod);
     break;
   }
   case Algorithm::MSMT_CSD: {
@@ -336,7 +336,8 @@ void run() {
                      ", " + str(num_tissues) + " tissue" + (num_tissues > 1 ? "s" : "") + ")",
                  dwi,
                  0,
-                 3)
+                 3,
+                 1)
         .run(processor, dwi);
     break;
   }

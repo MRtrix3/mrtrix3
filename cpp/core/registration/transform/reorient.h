@@ -155,13 +155,13 @@ void reorient(FODImageType &input_fod_image,
 
   if (!start_nvols.empty()) {
     assert(max_n_SH > 1);
-    ThreadedLoop(input_fod_image, 0, 3)
+    ThreadedLoop(input_fod_image, 0, 3, 1)
         .run(LinearKernelMultiContrast<FODImageType>(
                  input_fod_image.size(3), max_n_SH, transform, directions, start_nvols, modulate),
              input_fod_image,
              output_fod_image);
   } else {
-    ThreadedLoop(input_fod_image, 0, 3)
+    ThreadedLoop(input_fod_image, 0, 3, 1)
         .run(LinearKernel<FODImageType>(input_fod_image.size(3), transform, directions, modulate),
              input_fod_image,
              output_fod_image);
@@ -188,13 +188,13 @@ void reorient(const std::string progress_message,
 
   if (!start_nvols.empty()) {
     assert(max_n_SH > 1);
-    ThreadedLoop(progress_message, input_fod_image, 0, 3)
+    ThreadedLoop(progress_message, input_fod_image, 0, 3, 1)
         .run(LinearKernelMultiContrast<FODImageType>(
                  input_fod_image.size(3), max_n_SH, transform, directions, start_nvols, modulate),
              input_fod_image,
              output_fod_image);
   } else {
-    ThreadedLoop(progress_message, input_fod_image, 0, 3)
+    ThreadedLoop(progress_message, input_fod_image, 0, 3, 1)
         .run(LinearKernel<FODImageType>(input_fod_image.size(3), transform, directions, modulate),
              input_fod_image,
              output_fod_image);
@@ -347,13 +347,13 @@ void reorient_warp(const std::string progress_message,
     start_nvols = multiContrastSetting2start_nvols(multi_contrast_settings, max_n_SH);
   if (!start_nvols.empty()) {
     DEBUG("reorienting warp using MultiContrast NonLinearKernel");
-    ThreadedLoop(progress_message, fod_image, 0, 3)
+    ThreadedLoop(progress_message, fod_image, 0, 3, 1)
         .run(NonLinearKernelMultiContrast<FODImageType>(
                  fod_image.size(3), max_n_SH, warp, directions, start_nvols, modulate),
              fod_image);
   } else {
     DEBUG("reorienting warp using NonLinearKernel");
-    ThreadedLoop(progress_message, fod_image, 0, 3)
+    ThreadedLoop(progress_message, fod_image, 0, 3, 1)
         .run(NonLinearKernel<FODImageType>(fod_image.size(3), warp, directions, modulate), fod_image);
   }
 }
@@ -373,13 +373,13 @@ void reorient_warp(FODImageType &fod_image,
 
   if (!start_nvols.empty()) {
     DEBUG("reorienting warp using MultiContrast NonLinearKernel");
-    ThreadedLoop(fod_image, 0, 3)
+    ThreadedLoop(fod_image, 0, 3, 1)
         .run(NonLinearKernelMultiContrast<FODImageType>(
                  fod_image.size(3), max_n_SH, warp, directions, start_nvols, modulate),
              fod_image);
   } else {
     DEBUG("reorienting warp using NonLinearKernel");
-    ThreadedLoop(fod_image, 0, 3)
+    ThreadedLoop(fod_image, 0, 3, 1)
         .run(NonLinearKernel<FODImageType>(fod_image.size(3), warp, directions, modulate), fod_image);
   }
 }

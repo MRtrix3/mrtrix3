@@ -248,7 +248,7 @@ Eigen::MatrixXd initialise_basis(IndexType &index, size_t num_voxels, int order)
   Transform transform(index);
   Eigen::MatrixXd basis(num_voxels, num_basis_vec_for_order(order));
 
-  ThreadedLoop(index, 0, 3, 2).run(BasisInitialiser(transform, basis_function, basis), index);
+  ThreadedLoop(index, 0, 3).run(BasisInitialiser(transform, basis_function, basis), index);
   return basis;
 }
 
@@ -271,7 +271,7 @@ void load_data(Eigen::MatrixXd &data, std::string_view image_name, IndexType &in
     const int num;
   };
 
-  ThreadedLoop(in, 0, 3, 2).run(Loader(data, num), in, index);
+  ThreadedLoop(in, 0, 3).run(Loader(data, num), in, index);
   ++num;
 }
 
