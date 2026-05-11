@@ -113,9 +113,8 @@ void run() {
       Header H_out(in);
       H_out.ndim() = 3;
       H_out.datatype() = DataType::Bit;
-      H_out.name() = voxels_prefix;
       if (argument.size() > 1) {
-        H_out.name() += static_cast<std::filesystem::path>(argument[i]).filename();
+        H_out.path() = voxels_prefix + static_cast<std::filesystem::path>(argument[i]).filename().string();
       } else {
         bool has_extension = false;
         for (const auto &p : MR::Formats::known_extensions) {
@@ -124,8 +123,7 @@ void run() {
             break;
           }
         }
-        if (!has_extension)
-          H_out.name() += ".mif";
+        H_out.path() = voxels_prefix + (has_extension ? "" : ".mif");
       }
       auto voxels = Image<bool>::create(H_out.name(), H_out);
 

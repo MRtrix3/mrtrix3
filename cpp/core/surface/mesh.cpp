@@ -28,7 +28,7 @@
 
 namespace MR::Surface {
 
-Mesh::Mesh(const std::filesystem::path &path) : name(path.filename()) {
+Mesh::Mesh(const std::filesystem::path &path) : name(path.filename().string()) {
   const std::string extension = path.extension().string();
 
   if (extension == ".vtk" || extension == ".VTK") {

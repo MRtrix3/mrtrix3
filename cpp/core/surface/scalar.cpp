@@ -46,7 +46,7 @@ Scalar::Scalar(const std::filesystem::path &path, const Mesh &mesh) {
     throw Exception("Input surface scalar file \"" + path.string() + "\"" +     //
                     " has incorrect number of vertices (" + str(size()) + "," + //
                     " mesh has " + str(mesh.num_vertices()) + ")");             //
-  name = path.filename();
+  name = path.filename().string();
 }
 
 void Scalar::save(const std::filesystem::path &path) const { File::Matrix::save_vector(*this, path); }
