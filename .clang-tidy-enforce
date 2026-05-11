@@ -1,0 +1,8 @@
+Checks: >
+  -*,
+  bugprone-*,
+  clang-analyzer-*,
+  concurrency-*,
+  -bugprone-easily-swappable-parameters,
+WarningsAsErrors: '*'
+HeaderFilterRegex: '*.(h|hpp)'
