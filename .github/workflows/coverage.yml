@@ -66,6 +66,7 @@ jobs:
         gcovr ${{ github.workspace }}/build
         --root ${{ github.workspace }}
         --exclude ${{ github.workspace }}/build
+        --gcov-ignore-parse-errors=negative_hits.warn
 
     - name: Generate html report
       run: >
@@ -73,6 +74,7 @@ jobs:
         gcovr ${{ github.workspace }}/build
         --root ${{ github.workspace }}
         --exclude ${{ github.workspace }}/build
+        --gcov-ignore-parse-errors=negative_hits.warn
         --html --html-details
         -o report/coverage.html
 
