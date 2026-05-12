@@ -162,7 +162,7 @@ Writer::Writer(const Header &H, const std::filesystem::path &path)
     png_destroy_write_struct(&png_ptr, &info_ptr);
     throw Exception("Unable to set jump buffer for PNG structure for image \"" + path.string() + "\"");
   }
-  outfile = fopen(Writer::filepath.c_str(), "wb");
+  outfile = fopen(Writer::filepath.string().c_str(), "wb");
   if (!outfile)
     throw Exception("Unable to open PNG file for writing for image \"" + path.string() + "\": " //
                     + strerror(errno));                                                         //

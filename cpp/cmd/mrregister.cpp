@@ -491,7 +491,7 @@ void run() {
   if (!opt.empty()) {
     if (!do_rigid)
       throw Exception("the -rigid_log option has been set when no rigid registration is requested");
-    linear_logstream.open(opt[0][0]);
+    linear_logstream.open(static_cast<std::filesystem::path>(opt[0][0]));
     rigid_registration.set_log_stream(linear_logstream.rdbuf());
   }
 
@@ -627,7 +627,7 @@ void run() {
   if (!opt.empty()) {
     if (!do_affine)
       throw Exception("the -affine_log option has been set when no rigid registration is requested");
-    linear_logstream.open(opt[0][0]);
+    linear_logstream.open(static_cast<std::filesystem::path>(opt[0][0]));
     affine_registration.set_log_stream(linear_logstream.rdbuf());
   }
 
