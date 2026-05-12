@@ -30,28 +30,8 @@ jobs:
       with:
         cmakeVersion: '3.22.1'
 
-    - name: Set up neuroimaging dependencies
-      uses: mamba-org/setup-micromamba@v2
-      with:
-        micromamba-version: latest
-        environment-name: neuro
-        create-args: >-
-          -c conda-forge
-          python>=3.8
-          fsl
-          fsl-eddy-cpu
-          ants
-        cache-environment: true
-        init-shell: bash
-
-    - name: Configure external tool environment
-      run: |
-        echo "FSLDIR=$CONDA_PREFIX" >> $GITHUB_ENV
-        echo "FSLOUTPUTTYPE=NIFTI_GZ" >> $GITHUB_ENV
-        echo "ANTSPATH=$CONDA_PREFIX/bin" >> $GITHUB_ENV
-
     - name: Install Python coverage tools
-      run: pip install coverage deepatropos
+      run: pip install coverage
 
     - name: Configure
       run: |
@@ -91,7 +71,7 @@ jobs:
         echo "COVERAGE_PYTHONPATH=/tmp/pycov${PYTHONPATH:+:$PYTHONPATH}" >> $GITHUB_ENV
 
     - name: Run Python script tests
-      # Tests requiring AFNI (3dautomask), HD-BET, or SynthStrip will fail;
+      # Tests requiring any external neuroimaging software will fail;
       # their partial execution still contributes coverage for reached code paths.
       # All tests share the same working directory (script_test_data root) and
       # write to overlapping tmp* paths, so parallelism is explicitly disabled.
