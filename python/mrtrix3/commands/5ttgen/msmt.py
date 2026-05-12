@@ -13,7 +13,9 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-from mrtrix3 import app, image, run
+import glob, os
+from mrtrix3 import MRtrixError
+from mrtrix3 import app, image, path, run
 
 
 def usage(base_parser, subparsers):  # pylint: disable=unused-variable
@@ -27,18 +29,30 @@ def usage(base_parser, subparsers):  # pylint: disable=unused-variable
                          ' of what is expected from a voxel that contains a DWI signal'
                          ' that exactly matches one of the response functions.')
 
-  parser.add_argument('odf_wm', type=app.Parser.ImageIn(), help='The input white matter ODF')
-  parser.add_argument('odf_gm', type=app.Parser.ImageIn(), help='The input grey matter ODF')
-  parser.add_argument('odf_csf', type=app.Parser.ImageIn(), help='The input cerebrospinal fluid ODF')
-  parser.add_argument('output', type=app.Parser.ImageOut(), help='The output 5TT image')
+  parser.add_argument('odf_wm', help='The input white matter ODF')
+  parser.add_argument('odf_gm', help='The input grey matter ODF')
+  parser.add_argument('odf_csf', help='The input cerebrospinal fluid ODF')
+  parser.add_argument('output', help='The output 5TT image')
 
   options = parser.add_argument_group('Options specific to the \'msmt\' algorithm')
-  options.add_argument('-mask', type=app.Parser.ImageIn(), help='An input binary brain mask image')
+  options.add_argument('-mask', help='An input binary brain mask image')
+
+
+def check_output_paths(): # pylint: disable=unused-variable
+  app.check_output_path(app.ARGS.output)
+
+
+def get_inputs(): # pylint: disable=unused-variable
+  run.command('mrconvert ' + path.from_user(app.ARGS.odf_wm)  + ' ' + path.to_scratch('odf_wm.mif'))
+  run.command('mrconvert ' + path.from_user(app.ARGS.odf_gm)  + ' ' + path.to_scratch('odf_gm.mif'))
+  run.command('mrconvert ' + path.from_user(app.ARGS.odf_csf) + ' ' + path.to_scratch('odf_csf.mif'))
+  if app.ARGS.mask:
+    run.command('mrconvert ' + path.from_user(app.ARGS.mask) + ' ' + path.to_scratch('mask.mif') + ' -datatype bit')
 
 
 def execute(): # pylint: disable=unused-variable
 
-  target_voxel_grid = image.Header(app.ARGS.odf_wm)
+  target_voxel_grid = image.Header('odf_wm.mif')
 
   class Tissue:
     def __init__(self, inpath, name, expect_anisotropic):
@@ -56,7 +70,7 @@ def execute(): # pylint: disable=unused-variable
                  f' but expected {"anisotropic" if expect_anisotropic else "isotropic"};'
                  ' check order of input ODF images if this was not intentional')
       self.lzeropath = f'{name}_lzero.mif'
-      command = ['mrgrid', inpath, 'regrid', '-template', app.ARGS.odf_wm, '-', '|'] \
+      command = ['mrgrid', inpath, 'regrid', '-template', 'odf_wm.mif', '-', '|'] \
                 if do_regrid                                                         \
                 else []
       if is_anisotropic:
@@ -70,11 +84,11 @@ def execute(): # pylint: disable=unused-variable
       self.normpath = f'{self.name}_fraction.mif'
       run.command(f'mrcalc {self.lzeropath} {volsum_image} -divide {self.normpath}')
 
-  # End definitiion of class Tissues
+  # End definition of class Tissue
 
-  tissues = [Tissue(app.ARGS.odf_wm,  'WM',  True),
-             Tissue(app.ARGS.odf_gm,  'GM',  False),
-             Tissue(app.ARGS.odf_csf, 'CSF', False)]
+  tissues = [Tissue('odf_wm.mif',  'WM',  True),
+             Tissue('odf_gm.mif',  'GM',  False),
+             Tissue('odf_csf.mif', 'CSF', False)]
 
   # Compute volume sum in each voxel
   volsum_image = 'totalvol.mif'
@@ -97,31 +111,155 @@ def execute(): # pylint: disable=unused-variable
 
   # Tidy image by masking
   result_masked = '5TT_masked.mif'
-  # If mask is provided, use it; if not, create one
   if app.ARGS.mask:
-    # Case 1: Using provided brainmask
-    # Check if brainmask is on same voxel grid; if not, regrid
-    mask_header = image.Header(app.ARGS.mask)
+    mask_header = image.Header('mask.mif')
     if image.match(target_voxel_grid, mask_header, up_to_dim=3):
       app.debug('Mask matches ODF voxel grid; no regridding of mask required')
-      run.command(f'mrcalc {result_unmasked} {app.ARGS.mask} -mult {result_masked}')
+      run.command(f'mrcalc {result_unmasked} mask.mif -mult {result_masked}')
     else:
       app.warn('Mask has different voxel grid to WM ODF image; regridding')
-      run.command(f'mrgrid {app.ARGS.mask} -template {empty_volume} regrid - |'
+      run.command(f'mrgrid mask.mif -template {empty_volume} regrid - |'
                   ' mrcalc - 0.5 -gt - |'
                   f' mrcalc - {result_unmasked} -mult {result_masked}')
   else:
-    # Case 2: Generate a mask that contains only those voxels where the sum of ODF l=0 terms exceeds 0.5/sqrt(4pi);
-    #   then select the largest component and fill any holes.
-    # 0.5/sqrt(4pi) = 0.1410473959
+    # Generate mask from ODF l=0 sum: threshold at 0.5/sqrt(4pi) = 0.1410473959,
+    #   then clean and close holes via dilate/erode
     app.console('No 5TT mask provided; generating from input ODFs')
     run.command(f'mrcalc {volsum_image} 0.1410473959 -gt - |'
                 ' maskfilter - clean - |'
-                ' maskfilter - fill - |'
+                ' maskfilter - dilate -npass 3 - |'
+                ' maskfilter - erode -npass 3 - |'
                 f' mrcalc - {result_unmasked} -mult {result_masked}')
 
-  run.command(['mrconvert', result_masked, app.ARGS.output],
-    force=app.FORCE_OVERWRITE,
-    preserve_pipes=True)
+  # Brain mask derived from the masked 5TT — needed for CSF fill in both code paths
+  run.command('mrmath ' + result_masked + ' sum - -axis 3 | mrcalc - 0.0 -gt brain_mask_derived.mif')
 
-  return result_masked
+  if app.ARGS.sgm_amyg_hipp:
+    # --- vis image: grayscale rendering used as T1-surrogate for FIRST and FAST ---
+    from mrtrix3 import fsl
+    app.console('Generating vis image from initial 5TT for FSL FIRST and FAST')
+    run.command('5tt2vis ' + result_masked + ' - | mrconvert - vis.nii -strides -1,+2,+3')
+
+    # --- FSL availability check ---
+    have_first = False
+    have_fast  = False
+    first_cmd  = None
+    fast_cmd   = None
+
+    fsl_path = os.environ.get('FSLDIR', '')
+    if not fsl_path:
+      app.warn('FSLDIR not set; FSL FIRST and FAST will be skipped')
+    else:
+      try:
+        first_cmd = fsl.exe_name('run_first_all')
+        first_atlas_path = os.path.join(fsl_path, 'data', 'first', 'models_336_bin')
+        have_first = os.path.isdir(first_atlas_path)
+        if not have_first:
+          app.warn('FSL FIRST atlas not found; sub-cortical GM will be empty')
+      except MRtrixError:
+        app.warn('FSL run_first_all not found; sub-cortical GM will be empty')
+      try:
+        fast_cmd = fsl.exe_name('fast')
+        have_fast = True
+      except MRtrixError:
+        app.warn('FSL fast not found; intensity-guided tissue segmentation will be skipped')
+
+    # --- FIRST: sub-cortical GM segmentation ---
+    SGM_FIRST_MAP = {
+      'L_Accu': 'Left-Accumbens-area',  'R_Accu': 'Right-Accumbens-area',
+      'L_Caud': 'Left-Caudate',         'R_Caud': 'Right-Caudate',
+      'L_Pall': 'Left-Pallidum',        'R_Pall': 'Right-Pallidum',
+      'L_Puta': 'Left-Putamen',         'R_Puta': 'Right-Putamen',
+      'L_Thal': 'Left-Thalamus-Proper', 'R_Thal': 'Right-Thalamus-Proper'
+    }
+
+    if have_first:
+      app.console('Running FSL FIRST to segment sub-cortical grey matter structures')
+      first_stdout = run.command(
+        first_cmd + ' -m none -s ' + ','.join(SGM_FIRST_MAP.keys()) + ' -i vis.nii -b -o first'
+      ).stdout
+      fsl.check_first('first', structures=SGM_FIRST_MAP.keys(), first_stdout=first_stdout)
+
+      sgm_images = []
+      for key, value in SGM_FIRST_MAP.items():
+        vtk_in  = 'first-' + key + '_first.vtk'
+        vtk_out = 'first-' + key + '_transformed.vtk'
+        sgm_img = value + '.mif'
+        run.command('meshconvert ' + vtk_in + ' ' + vtk_out + ' -transform first2real vis.nii')
+        run.command('mesh2voxel ' + vtk_out + ' odf_wm.mif ' + sgm_img)
+        sgm_images.append(sgm_img)
+
+      run.command(['mrmath', sgm_images, 'sum', 'sgm_sum.mif'])
+      run.command('mrcalc sgm_sum.mif 0.5 -gt sgm.mif -datatype float32')
+      run.command('mrcalc sgm.mif brain_mask_derived.mif -mult sgm_masked.mif')
+      app.cleanup(glob.glob('first*'))
+      sgm_volume = 'sgm_masked.mif'
+    else:
+      sgm_volume = empty_volume
+
+    # --- FAST: intensity-guided tissue segmentation using vis image ---
+    # vis.nii (derived from 5TT_masked via 5tt2vis) has WM bright, CSF dark,
+    #   giving FAST three classes: pve_0=CSF, pve_1=GM, pve_2=WM
+    if have_fast:
+      app.console('Running FSL FAST on vis image for intensity-guided tissue segmentation')
+      run.command('mrcalc vis.nii brain_mask_derived.mif -mult vis_brain.nii')
+      run.command(fast_cmd + ' -N vis_brain.nii')
+      app.cleanup('vis_brain.nii')
+      app.cleanup([e for e in glob.glob('vis_brain*') if '_pve_' not in e])
+
+      fast_pve_prefix = 'vis_brain_pve_'
+      run.command('mrconvert ' + fsl.find_image(fast_pve_prefix + '1') + ' fast_cgm.mif')
+      run.command('mrconvert ' + fsl.find_image(fast_pve_prefix + '2') + ' fast_wm.mif')
+      run.command('mrconvert ' + fsl.find_image(fast_pve_prefix + '0') + ' fast_csf.mif')
+      app.cleanup(glob.glob(fast_pve_prefix + '*'))
+
+      cgm_vol = 'fast_cgm.mif'
+      wm_vol  = 'fast_wm.mif'
+      csf_vol = 'fast_csf.mif'
+    else:
+      # Fall back to ODF-derived fractions from the initial masked 5TT
+      run.command('mrconvert ' + result_masked + ' -coord 3 0 -axes 0,1,2 cgm_masked.mif')
+      run.command('mrconvert ' + result_masked + ' -coord 3 2 -axes 0,1,2 wm_masked.mif')
+      run.command('mrconvert ' + result_masked + ' -coord 3 3 -axes 0,1,2 csf_masked.mif')
+      cgm_vol = 'cgm_masked.mif'
+      wm_vol  = 'wm_masked.mif'
+      csf_vol = 'csf_masked.mif'
+
+    app.cleanup('vis.nii')
+
+    # Zero out CGM, WM, CSF in SGM voxels so FIRST structures take priority
+    if have_first:
+      run.command('mrcalc ' + sgm_volume + ' 0 ' + cgm_vol + ' -if cgm_nosgm.mif')
+      run.command('mrcalc ' + sgm_volume + ' 0 ' + wm_vol  + ' -if wm_nosgm.mif')
+      run.command('mrcalc ' + sgm_volume + ' 0 ' + csf_vol + ' -if csf_nosgm.mif')
+      cgm_vol = 'cgm_nosgm.mif'
+      wm_vol  = 'wm_nosgm.mif'
+      csf_vol = 'csf_nosgm.mif'
+
+  else:
+    # Default: use ODF-derived fractions directly from the masked 5TT
+    run.command('mrconvert ' + result_masked + ' -coord 3 0 -axes 0,1,2 cgm_masked.mif')
+    run.command('mrconvert ' + result_masked + ' -coord 3 2 -axes 0,1,2 wm_masked.mif')
+    run.command('mrconvert ' + result_masked + ' -coord 3 3 -axes 0,1,2 csf_masked.mif')
+    cgm_vol = 'cgm_masked.mif'
+    wm_vol  = 'wm_masked.mif'
+    csf_vol = 'csf_masked.mif'
+    sgm_volume = empty_volume
+
+  # CSF fill: add any deficit below 1.0 (within brain mask) into CSF,
+  #   ensuring tissue fractions sum to exactly 1.0 in all brain voxels
+  run.command('mrmath ' + cgm_vol + ' ' + sgm_volume + ' ' + wm_vol + ' ' + csf_vol + ' ' + empty_volume
+              + ' sum tissuesum_prefill.mif')
+  run.command('mrcalc 1.0 tissuesum_prefill.mif -sub '
+              'tissuesum_prefill.mif 0.0 -gt brain_mask_derived.mif -add 1.0 -min -mult '
+              '0.0 -max csf_fill.mif')
+  run.command('mrcalc ' + csf_vol + ' csf_fill.mif -add csf_filled.mif')
+  csf_vol = 'csf_filled.mif'
+  app.cleanup('brain_mask_derived.mif')
+
+  # Final assembly
+  run.command('mrcat ' + cgm_vol + ' ' + sgm_volume + ' ' + wm_vol + ' ' + csf_vol + ' ' + empty_volume
+              + ' result.mif -datatype float32')
+
+  run.command('mrconvert result.mif ' + path.from_user(app.ARGS.output),
+    force=app.FORCE_OVERWRITE)
