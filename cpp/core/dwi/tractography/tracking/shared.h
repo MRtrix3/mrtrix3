@@ -16,14 +16,14 @@
 
 #pragma once
 
-#include <atomic>
-
+#include "algo/implicit_mask.h"
 #include "dwi/tractography/ACT/shared.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/resampling/downsampler.h"
 #include "dwi/tractography/roi.h"
 #include "dwi/tractography/tracking/tractography.h"
 #include "dwi/tractography/tracking/types.h"
+#include "enum.h"
 #include "header.h"
 #include "image.h"
 #include "memory.h"
@@ -38,12 +38,13 @@ namespace MR::DWI::Tractography::Tracking {
 class SharedBase {
 
 public:
-  SharedBase(std::string_view diff_path, Properties &property_set);
+  SharedBase(std::string_view diff_path, Properties &property_set, ImplicitMaskConfig source_mask_config);
 
   virtual ~SharedBase();
 
   Header source_header;
   Image<float> source;
+  Image<bool> source_mask;
   Properties &properties;
   Eigen::Vector3f init_dir;
   size_t max_num_tracks, max_num_seeds;
@@ -79,36 +80,28 @@ public:
   // (Only utilised for Exec::satisfy_wm_requirement())
   virtual float internal_step_size() const { return step_size; }
 
-  void add_termination(const term_t i) const {
-    terminations[static_cast<ssize_t>(i)].fetch_add(1, std::memory_order_relaxed);
-  }
-  void add_rejection(const reject_t i) const {
-    rejections[static_cast<ssize_t>(i)].fetch_add(1, std::memory_order_relaxed);
-  }
+  void add_termination(const term_t i) const { terminations.add(i); }
+  void add_rejection(const reject_t i) const { rejections.add(i); }
 
 #ifdef DEBUG_TERMINATIONS
   void add_termination(const term_t i, const Eigen::Vector3f &p) const;
 #endif
 
-  size_t termination_count(const term_t i) const {
-    return terminations[static_cast<ssize_t>(i)].load(std::memory_order_seq_cst);
-  }
-  size_t rejection_count(const reject_t i) const {
-    return rejections[static_cast<ssize_t>(i)].load(std::memory_order_seq_cst);
-  }
+  size_t termination_count(const term_t i) const { return terminations.get(i); }
+  size_t rejection_count(const reject_t i) const { return rejections.get(i); }
 
   bool termination_relevant(const term_t i) const;
   bool rejection_relevant(const reject_t i) const;
 
 private:
-  mutable std::array<std::atomic<size_t>, termination_reason_count> terminations;
-  mutable std::array<std::atomic<size_t>, rejection_reason_count> rejections;
+  Enum::AtomicCounters<term_t> terminations;
+  Enum::AtomicCounters<reject_t> rejections;
 
   std::unique_ptr<ACT::ACT_Shared_additions> act_shared_additions;
 
 #ifdef DEBUG_TERMINATIONS
   Header debug_header;
-  std::vector<std::unique_ptr<Image<uint32_t>>> debug_images;
+  std::vector<Image<uint32_t>> debug_images;
   const Transform transform;
 #endif
 };

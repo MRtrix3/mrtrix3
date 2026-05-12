@@ -17,6 +17,7 @@
 #pragma once
 
 #include <algorithm>
+#include <optional>
 
 #include "dwi/tractography/ACT/act.h"
 #include "dwi/tractography/algorithms/calibrator.h"
@@ -40,7 +41,9 @@ public:
   class Shared : public SharedBase {
   public:
     Shared(std::string_view diff_path, DWI::Tractography::Properties &property_set)
-        : SharedBase(diff_path, property_set),
+        : SharedBase(diff_path,
+                     property_set,
+                     {ZeroExclusion::Enabled, NonFiniteExclusion::Any, HoleFilling::EnabledExcludeNonFinite}),
           lmax(Math::SH::LforN(source.size(3))),
           num_samples(Defaults::ifod2_nsamples),
           max_trials(Defaults::max_trials_per_step),
@@ -136,7 +139,7 @@ public:
   iFOD2(const Shared &shared)
       : MethodBase(shared),
         S(shared),
-        source(S.source),
+        source(S.source, S.source_mask),
         mean_sample_num(0),
         num_sample_runs(0),
         num_truncations(0),
@@ -152,7 +155,7 @@ public:
   iFOD2(const iFOD2 &that)
       : MethodBase(that.S),
         S(that.S),
-        source(S.source),
+        source(S.source, S.source_mask),
         calibrate_ratio(that.calibrate_ratio),
         mean_sample_num(0),
         num_sample_runs(0),
@@ -204,12 +207,12 @@ public:
     return true;
   }
 
-  term_t next() override {
+  std::optional<term_t> next() override {
 
     if (++sample_idx < S.num_samples) {
       pos = positions[sample_idx];
       dir = tangents[sample_idx];
-      return term_t::CONTINUE;
+      return std::nullopt;
     }
 
     Eigen::Vector3f next_pos, next_dir;
@@ -247,7 +250,7 @@ public:
         pos = positions[0];
         dir = tangents[0];
         sample_idx = 0;
-        return term_t::CONTINUE;
+        return std::nullopt;
       }
     }
 
@@ -282,16 +285,24 @@ public:
       return;
     }
     const size_t new_size = length_to_revert_from - points_to_remove;
-    if (tck.size() == 2 || new_size == 1)
-      dir = (tck[1] - tck[0]).normalized();
-    else if (new_size != tck.size())
-      dir = (tck[new_size] - tck[new_size - 2]).normalized();
+    dir = Tractography::tangent(tck, new_size);
     tck.resize(new_size);
 
     // Need to get the path probability contribution from the FOD at this point
+    // If FOD amplitude sample is non-positive
+    //   (possible even if the streamline passed through this vertex previously
+    //   since the tangent direction may not be exactly the same),
+    //   can't re-track from this point as the path probability will not be finite
     pos = tck.back();
     get_data(source);
-    half_log_prob0 = 0.5 * std::log(FOD(dir));
+    const float fod_amp = FOD(dir);
+    if (fod_amp <= 0.0F) {
+      tck.clear();
+      pos.setConstant(NaNF);
+      dir.setConstant(NaNF);
+      return;
+    }
+    half_log_prob0 = 0.5F * std::log(fod_amp);
 
     // Make sure that arc is re-calculated when next() is called
     sample_idx = S.num_samples;

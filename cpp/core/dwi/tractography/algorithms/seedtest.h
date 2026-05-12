@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <optional>
+
 #include "dwi/tractography/tracking/method.h"
 #include "dwi/tractography/tracking/shared.h"
 #include "dwi/tractography/tracking/types.h"
@@ -30,7 +32,9 @@ public:
   class Shared : public SharedBase {
   public:
     Shared(std::string_view diff_path, DWI::Tractography::Properties &property_set)
-        : SharedBase(diff_path, property_set) {
+        : SharedBase(diff_path,
+                     property_set,
+                     {ZeroExclusion::Enabled, NonFiniteExclusion::Any, HoleFilling::EnabledExcludeNonFinite}) {
       set_step_and_angle(1.0F, 90.0F, intrinsic_integration_order_t::FIRST, curvature_constraint_t::POSTHOC_THRESHOLD);
       min_num_points_preds = min_num_points_postds = 1;
       max_num_points_preds = max_num_points_postds = 2;
@@ -43,7 +47,7 @@ public:
   Seedtest(const Shared &shared) : MethodBase(shared), S(shared) {}
 
   bool init() override { return true; }
-  term_t next() override { return term_t::EXIT_IMAGE; }
+  std::optional<term_t> next() override { return term_t::EXIT_IMAGE; }
   float get_metric(const Eigen::Vector3f & /*position*/, const Eigen::Vector3f & /*direction*/) override {
     return 1.0F;
   }

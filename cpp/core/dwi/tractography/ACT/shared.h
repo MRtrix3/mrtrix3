@@ -18,6 +18,7 @@
 
 #include <memory>
 
+#include "algo/implicit_mask.h"
 #include "dwi/tractography/ACT/gmwmi.h"
 #include "dwi/tractography/ACT/validate.h"
 #include "dwi/tractography/properties.h"
@@ -29,7 +30,11 @@ class ACT_Shared_additions {
 
 public:
   ACT_Shared_additions(std::string_view path, Properties &property_set)
-      : voxel(Image<float>::open(path)), bt(false), trunc(sgm_trunc_t::DEFAULT) {
+      : voxel(Image<float>::open(path)),
+        voxel_mask(make_implicit_mask(
+            voxel, {ZeroExclusion::Enabled, NonFiniteExclusion::Any, HoleFilling::EnabledExcludeNonFinite})),
+        bt(false),
+        trunc(sgm_trunc_t::DEFAULT) {
     debug_validate_5TT_image(voxel);
     property_set.set(bt, "backtrack");
     if (property_set.find("crop_at_gmwmi") != property_set.end())
@@ -56,6 +61,7 @@ public:
 
 private:
   Image<float> voxel;
+  Image<bool> voxel_mask;
   bool bt;
   sgm_trunc_t trunc;
 
