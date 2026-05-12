@@ -32,7 +32,7 @@ public:
   ACT_Shared_additions(std::string_view path, Properties &property_set)
       : voxel(Image<float>::open(path)),
         voxel_mask(make_implicit_mask(
-            voxel, {ZeroExclusion::Enabled, NonFiniteExclusion::All, HoleFilling::EnabledExcludeNonFinite})),
+            voxel, {ZeroExclusion::Enabled, NonFiniteExclusion::Any, HoleFilling::EnabledExcludeNonFinite})),
         bt(false),
         trunc(sgm_trunc_t::DEFAULT) {
     debug_validate_5TT_image(voxel);

@@ -93,11 +93,11 @@ template <typename EnumType> class AtomicCounters {
   // The atomic is marked mutable so that thread-safe accumulation can be
   // exposed through const member functions of the enclosing helper.
   struct Counter {
-    mutable std::atomic<std::size_t> value;
+    mutable std::atomic<size_t> value;
     Counter() noexcept : value(0) {}
   };
 
-  static constexpr std::size_t N = magic_enum::enum_count<EnumType>();
+  static constexpr size_t N = magic_enum::enum_count<EnumType>();
   std::array<Counter, N> counters;
 
 public:
@@ -105,18 +105,18 @@ public:
   AtomicCounters(const AtomicCounters &) = delete;
   AtomicCounters &operator=(const AtomicCounters &) = delete;
 
-  static constexpr std::size_t size() noexcept { return N; }
+  static constexpr size_t size() noexcept { return N; }
 
-  void add(EnumType value, std::size_t increment = 1) const noexcept {
+  void add(EnumType value, size_t increment = 1) const noexcept {
     counters[*magic_enum::enum_index(value)].value.fetch_add(increment, std::memory_order_relaxed);
   }
 
-  std::size_t get(EnumType value) const noexcept {
+  size_t get(EnumType value) const noexcept {
     return counters[*magic_enum::enum_index(value)].value.load(std::memory_order_seq_cst);
   }
 
-  std::size_t total() const noexcept {
-    std::size_t sum = 0;
+  size_t total() const noexcept {
+    size_t sum = 0;
     for (const auto &counter : counters)
       sum += counter.value.load(std::memory_order_seq_cst);
     return sum;
@@ -124,7 +124,7 @@ public:
 
   template <typename Callable> void for_each(Callable &&callable) const {
     constexpr auto values = magic_enum::enum_values<EnumType>();
-    for (std::size_t i = 0; i != N; ++i)
+    for (size_t i = 0; i != N; ++i)
       std::forward<Callable>(callable)(values[i], counters[i].value.load(std::memory_order_seq_cst));
   }
 };
@@ -134,8 +134,8 @@ public:
 template <typename EnumType> inline EnumType from_name(std::string_view enum_name) {
   const auto value = magic_enum::enum_cast<EnumType>(enum_name, magic_enum::case_insensitive);
   if (!value.has_value()) {
-    const std::string error = "Unsupported value '" + std::string(enum_name) +
-                              "'. Supported values are: " + detail::join(lower_case_names<EnumType>(), ", ");
+    const std::string error = "Unsupported value '" + std::string(enum_name) + "';" + //
+                              " supported values are: " + detail::join(lower_case_names<EnumType>(), ", ");
     throw Exception(error);
   }
   return value.value();
