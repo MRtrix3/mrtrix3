@@ -25,7 +25,6 @@
 #include "file/config.h"
 #include "file/mmap.h"
 #include "file/ofstream.h"
-#include "file/utils.h"
 #include "math/math.h"
 #include "raw.h"
 #include "types.h"

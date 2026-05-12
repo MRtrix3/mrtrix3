@@ -17,7 +17,7 @@
 #include <unistd.h>
 
 #include "file/path.h"
-#include "file/utils.h"
+#include "file/temp.h"
 #include "formats/list.h"
 #include "header.h"
 #include "image_io/pipe.h"

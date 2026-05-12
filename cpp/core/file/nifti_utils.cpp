@@ -25,7 +25,6 @@
 #include "file/json_utils.h"
 #include "file/ofstream.h"
 #include "file/path.h"
-#include "file/utils.h"
 #include "header.h"
 #include "image_io/default.h"
 #include "image_io/gz.h"

@@ -18,7 +18,6 @@
 
 #include "file/ofstream.h"
 #include "file/path.h"
-#include "file/utils.h"
 #include "mrtrix.h"
 #include "types.h"
 

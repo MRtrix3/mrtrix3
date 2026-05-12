@@ -17,7 +17,6 @@
 #include "command.h"
 #include "enum.h"
 #include "file/path.h"
-#include "file/utils.h"
 #include "fixel/fixel.h"
 #include "fixel/helpers.h"
 #include "fixel/validate.h"

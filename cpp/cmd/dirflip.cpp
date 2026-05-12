@@ -18,7 +18,6 @@
 #include "dwi/directions/file.h"
 #include "dwi/directions/validate.h"
 #include "file/matrix.h"
-#include "file/utils.h"
 #include "math/SH.h"
 #include "math/rng.h"
 #include "math/sphere.h"

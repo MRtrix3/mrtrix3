@@ -28,7 +28,7 @@
 #include "debug.h"
 #include "fetch_store.h"
 #include "file/ofstream.h"
-#include "file/utils.h"
+#include "file/temp.h"
 #include "formats/mrtrix_utils.h"
 #include "half.h"
 #include "header.h"

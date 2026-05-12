@@ -20,7 +20,6 @@
 
 #include "app.h"
 #include "file/path.h"
-#include "file/utils.h"
 #include "fixel/helpers.h"
 #include "thread_queue.h"
 #include "types.h"

@@ -21,7 +21,6 @@
 #include "algo/copy.h"
 #include "app.h"
 #include "file/path.h"
-#include "file/utils.h"
 #include "fixel/helpers.h"
 #include "image.h"
 #include "thread_queue.h"

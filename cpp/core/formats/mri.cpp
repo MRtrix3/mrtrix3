@@ -20,7 +20,6 @@
 #include "file/mmap.h"
 #include "file/ofstream.h"
 #include "file/path.h"
-#include "file/utils.h"
 #include "formats/list.h"
 #include "header.h"
 #include "image_io/default.h"

@@ -19,7 +19,6 @@
 #include "adapter/jacobian.h"
 #include "algo/loop.h"
 #include "command.h"
-#include "file/utils.h"
 #include "fixel/fixel.h"
 #include "fixel/helpers.h"
 #include "fixel/loop.h"

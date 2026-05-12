@@ -14,7 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "file/utils.h"
+#include "file/temp.h"
 
 #include <fcntl.h>
 #include <string>

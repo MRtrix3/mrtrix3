@@ -23,7 +23,6 @@
 
 #include "algo/loop.h"
 #include "file/path.h"
-#include "file/utils.h"
 #include "interp/nearest.h"
 
 #include "connectome/connectome.h"
