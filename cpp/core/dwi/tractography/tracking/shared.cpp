@@ -38,10 +38,12 @@ SharedBase::SharedBase(std::string_view diff_path, Properties &property_set, Imp
       step_size(NaNF),
       min_radius(NaNF),
       threshold(NaNF),
+      init_threshold(NaNF),
       unidirectional(false),
       rk4(false),
       stop_on_all_include(false),
       implicit_max_num_seeds(properties.find("max_num_seeds") == properties.end()),
+      curvature_constraint(curvature_constraint_t::POSTHOC_THRESHOLD),
       downsampler(1)
 #ifdef DEBUG_TERMINATIONS
       ,

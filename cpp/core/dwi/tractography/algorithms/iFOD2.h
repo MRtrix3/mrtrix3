@@ -302,7 +302,7 @@ public:
       dir.setConstant(NaNF);
       return;
     }
-    half_log_prob0 = 0.5 * std::log(fod_amp);
+    half_log_prob0 = 0.5F * std::log(fod_amp);
 
     // Make sure that arc is re-calculated when next() is called
     sample_idx = S.num_samples;

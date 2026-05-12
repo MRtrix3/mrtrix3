@@ -37,7 +37,7 @@ public:
         : SharedBase(diff_path,
                      property_set,
                      {ZeroExclusion::Enabled, NonFiniteExclusion::Any, HoleFilling::EnabledExcludeNonFinite}),
-          lmax(Math::SH::LforN(source.size(3))) {
+          lmax(static_cast<int>(Math::SH::LforN(static_cast<int>(source.size(3))))) {
       try {
         Math::SH::check(source);
       } catch (Exception &e) {
