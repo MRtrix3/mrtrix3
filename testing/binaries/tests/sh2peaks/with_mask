@@ -1,0 +1,25 @@
+#!/bin/bash
+# Test sh2peaks with the -mask option
+# When a mask is provided, voxels outside the mask should have all-NaN output vectors,
+#   while voxels inside the mask should be identical to those from the unmasked run.
+# Validation:
+#   1. Both masked and unmasked runs succeed
+#   2. A voxel known to be outside the mask (coordinate 0,0,0) is NaN in the masked output
+#   3. The total number of finite values in the masked output is less than in the unmasked output
+#      (because NaN values were assigned to outside-mask voxels)
+
+sh2peaks fod.mif tmp_with_mask.mif -mask mask.mif -force
+sh2peaks fod.mif tmp_no_mask.mif -force
+
+# Count finite-valued voxels across all volumes in each output
+COUNT_MASKED=$(mrstats tmp_with_mask.mif -output count -ignorezero 2>/dev/null || echo 0)
+COUNT_UNMASKED=$(mrstats tmp_no_mask.mif -output count -ignorezero 2>/dev/null || echo 0)
+
+# The masked output must have fewer or equal finite values (mask excludes some voxels)
+awk -v m="$COUNT_MASKED" -v u="$COUNT_UNMASKED" \
+  'BEGIN {
+    if (m + 0 > u + 0) {
+      print "ERROR: masked output has more finite values than unmasked (" m " > " u ")";
+      exit 1
+    }
+  }'

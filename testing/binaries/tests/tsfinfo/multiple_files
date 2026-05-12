@@ -1,0 +1,8 @@
+#!/bin/bash
+# Verify that "tsfinfo" correctly handles multiple input track scalar files,
+#   producing a separate information block for each.
+# Both inputs are the same file; the test checks that two blocks are produced.
+
+rm -f tmp.txt
+tsfinfo afd.tsf afd.tsf 2>&1 | tee tmp.txt
+[ "$(grep -c "Track scalar file:" tmp.txt)" -eq 2 ]

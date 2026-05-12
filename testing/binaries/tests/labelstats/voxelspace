@@ -1,0 +1,13 @@
+#!/bin/bash
+# Verify the -voxelspace option of labelstats
+# When requesting centres of mass in voxel space rather than scanner space,
+#   the values should differ from scanner-space values (unless the transform is identity);
+#   verify the command executes successfully
+# REFERENCE: This test does not require pre-generated reference data
+
+labelstats labelconvert/out_aal.mif.gz -output centre -voxelspace > tmp.txt
+[ -s tmp.txt ]
+
+# The voxel-space and scanner-space outputs should differ
+labelstats labelconvert/out_aal.mif.gz -output centre > tmp_scanner.txt
+! diff -q tmp.txt tmp_scanner.txt > /dev/null 2>&1

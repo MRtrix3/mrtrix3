@@ -1,0 +1,20 @@
+#!/bin/bash
+# Test default operation of afdconnectivity:
+#   compute AFD connectivity for the SIFT_phantom track bundle
+#   using the SIFT_phantom FOD image, without whole-brain fibre-tracking.
+# The output is a scalar value printed to stdout.
+# The test verifies that the command produces a positive numeric result.
+#
+# REFERENCE DATA NOTE: No reference output value exists for this test.
+#   To generate a reference value, run:
+#     afdconnectivity SIFT_phantom/fods.mif SIFT_phantom/tracks.tck
+#   and store the result for future regression testing.
+result=$(afdconnectivity SIFT_phantom/fods.mif SIFT_phantom/tracks.tck -quiet)
+
+# Verify that the result is a finite positive number
+python3 -c "
+import sys
+val = float('${result}')
+assert val > 0.0, f'Expected positive AFD connectivity value, got {val}'
+sys.exit(0)
+"

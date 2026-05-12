@@ -1,0 +1,8 @@
+#!/bin/bash
+# Verify smooth filter with custom spatial extent
+# Apply smoothing with a non-default spatial extent;
+#   since no reference data exists, verify only that the command executes successfully
+# REFERENCE: This test does not require pre-generated reference data
+
+meshfilter meshconvert/in_ascii.vtk smooth tmp.vtk -smooth_spatial 2.0 -force
+[ -s tmp.vtk ]

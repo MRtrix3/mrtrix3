@@ -1,0 +1,18 @@
+#!/bin/bash
+# Verify writing of streamlines to PLY format
+# The PLY writer requires streamlines with at least 3 points per track
+# A minimal streamline set is constructed from single-line text input
+# to ensure the PLY writer code path is exercised
+
+# Create a simple streamline with enough points for PLY output (need at least 3 * increment)
+printf "0 0 0\n1 0 0\n2 0 0\n3 0 0\n4 0 0\n" > tmp_tck_ascii.txt
+tckconvert tmp_tck_ascii.txt tmp_single.tck -force -quiet
+
+# Write to PLY format; verify the command completes without error
+tckconvert tmp_single.tck tmp_out.ply -force -quiet
+
+# Verify the PLY file was created and is non-empty
+[ -s tmp_out.ply ] || { echo "Expected non-empty PLY output file"; exit 1; }
+
+# Verify the PLY header is present
+head -1 tmp_out.ply | grep -qi "ply" || { echo "Expected PLY header in output file"; exit 1; }

@@ -1,0 +1,14 @@
+#!/bin/bash
+# Test extracting streamlines grouped by node
+#   using the -files per_node option for a limited set of nodes.
+# The assignments file is the reference output from the tck2connectome test.
+# The test verifies that at least one output track file is produced per requested node.
+rm -f tmp1.tck tmp2.tck
+
+connectome2tck SIFT_phantom/tracks.tck tck2connectome/assignments.csv tmp \
+    -nodes 1,2 \
+    -files per_node \
+    -force
+
+tckvalidate tmp1.tck
+tckvalidate tmp2.tck

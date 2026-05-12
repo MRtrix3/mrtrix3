@@ -1,0 +1,8 @@
+#!/bin/bash
+# Verify that "maskdump" produces identical output whether writing to stdout
+#   or to a specified output file.
+
+rm -f tmp_stdout.txt tmp_file.txt
+maskdump mask.mif > tmp_stdout.txt
+maskdump mask.mif tmp_file.txt
+testing_diff_matrix tmp_stdout.txt tmp_file.txt

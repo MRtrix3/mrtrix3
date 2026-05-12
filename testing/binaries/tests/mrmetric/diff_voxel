@@ -1,0 +1,7 @@
+#!/bin/bash
+# Verify the default (diff) metric computed in voxel space
+# Comparing an image with itself should yield a mean squared difference of zero;
+#   verify that the output is 0
+
+RESULT=$(mrmetric dwi_mean.mif dwi_mean.mif)
+(( $(echo "$RESULT == 0" | bc) ))

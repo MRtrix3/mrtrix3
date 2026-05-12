@@ -1,0 +1,7 @@
+#!/bin/bash
+# Verify the -nan option of "mrcheckerboardmask",
+#   which uses NaN as the zero value instead of 0 in a Float32 output image.
+
+mrcheckerboardmask mask.mif tmp_nan.mif -nan -force
+# The output datatype should be Float32 (not Bit)
+mrinfo tmp_nan.mif -datatype | grep -i "Float32"

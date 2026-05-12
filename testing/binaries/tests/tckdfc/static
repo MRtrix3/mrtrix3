@@ -1,0 +1,17 @@
+#!/bin/bash
+# Test tckdfc static mode:
+#   use SIFT_phantom FODs as a substitute 4D "fMRI" image
+#   (the FOD image is 4D and shares the same spatial grid as the tracks),
+#   with a template image to define the output voxel grid.
+# Since no reference output exists yet, the test verifies that the command
+#   runs successfully and produces a 3D output image.
+#
+# REFERENCE DATA NOTE: No reference output file exists for this test.
+#   To generate reference data, run:
+#     tckdfc SIFT_phantom/tracks.tck SIFT_phantom/fods.mif tckdfc/static_out.mif \
+#         -static -template SIFT_phantom/mask.mif -force
+#   then add a testing_diff_image comparison against tckdfc/static_out.mif.
+tckdfc SIFT_phantom/tracks.tck SIFT_phantom/fods.mif tmp.mif \
+    -static \
+    -template SIFT_phantom/mask.mif \
+    -force

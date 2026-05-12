@@ -1,0 +1,7 @@
+#!/bin/bash
+# REFERENCE: generate with: mrmath dwi.mif mean -axis 0 mrmath/out_axis_spatial.mif -force
+# Verify the -axis option when used to reduce along a spatial axis (axis 0)
+# Collapses along the x-axis of the 4D DWI image
+# Outcome is compared against that calculated using a prior software version
+mrmath dwi.mif mean -axis 0 - | \
+testing_diff_image - mrmath/out_axis_spatial.mif -frac 1e-5

@@ -1,0 +1,10 @@
+#!/bin/bash
+# Verify conversion from displacement field to deformation field
+# Convert the warp.mif deformation field to a displacement field first,
+#   then convert back to deformation; the result should match the original
+# Ensure that round-trip conversion matches the input to floating-point precision
+# REFERENCE: This test does not require pre-generated reference data
+
+warpconvert warp.mif deformation2displacement tmp_disp.mif -force
+warpconvert tmp_disp.mif displacement2deformation - | \
+testing_diff_image - warp.mif -abs 1e-4

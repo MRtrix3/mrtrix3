@@ -1,0 +1,6 @@
+#!/bin/bash
+# REFERENCE: generate with: mrmath dwi.mif std -axis 3 mrmath/out_std.mif -force
+# Verify "std" (unbiased standard deviation) operator when applied along the axis of a single image
+# Outcome is compared against that calculated using a prior software version
+mrmath dwi.mif std -axis 3 - | \
+testing_diff_image - mrmath/out_std.mif -frac 1e-5

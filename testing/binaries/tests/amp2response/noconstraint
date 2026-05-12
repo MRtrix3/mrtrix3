@@ -1,0 +1,8 @@
+#!/bin/bash
+# Test amp2response with the -noconstraint option:
+#   estimate a response function using ordinary least-squares
+#   (without the non-negativity and monotonicity constraints).
+# The test verifies that the command runs successfully.
+amp2response dwi.mif sh2response/sf.mif sh2response/ev.mif tmp.txt \
+    -noconstraint \
+    -force

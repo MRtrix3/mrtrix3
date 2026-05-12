@@ -1,0 +1,24 @@
+#!/bin/bash
+# Verify several individual field-printing options of mrinfo
+# Each option should produce output without error;
+# basic sanity checks are performed on the output values
+
+# -ndim should report 4 for dwi.mif
+ndim=$(mrinfo dwi.mif -ndim)
+[ "$ndim" = "4" ] || { echo "Expected ndim=4, got: $ndim"; exit 1; }
+
+# -size should report 4 space-separated integers for dwi.mif
+size=$(mrinfo dwi.mif -size)
+[ $(echo "$size" | wc -w) -eq 4 ] || { echo "Expected 4 values for -size, got: $size"; exit 1; }
+
+# -spacing should report 4 space-separated floats for dwi.mif
+spacing=$(mrinfo dwi.mif -spacing)
+[ $(echo "$spacing" | wc -w) -eq 4 ] || { echo "Expected 4 values for -spacing, got: $spacing"; exit 1; }
+
+# -format should produce a non-empty string
+format=$(mrinfo dwi.mif -format)
+[ -n "$format" ] || { echo "Expected non-empty output for -format"; exit 1; }
+
+# -datatype should produce a non-empty string
+datatype=$(mrinfo dwi.mif -datatype)
+[ -n "$datatype" ] || { echo "Expected non-empty output for -datatype"; exit 1; }

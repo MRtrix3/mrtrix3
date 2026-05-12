@@ -1,0 +1,32 @@
+#!/bin/bash
+# Verify "decompose" operation
+# The command decomposes a transform into translation, rotation and stretch components,
+#   writing a key-value text file.
+# REFERENCE: generate reference output with:
+#   transformcalc moving2template.txt decompose transformcalc/decompose.txt
+# Validations:
+#   1. The command completes without error and writes a key-value text file
+#   2. All expected keys are present in the output
+#   3. The Jacobian determinant is positive (physically meaningful decomposition)
+#   4. The double-decompose round-trip: re-decomposing the original
+#      should yield the same decomposition values
+
+transformcalc moving2template.txt decompose tmp_decompose.txt -force
+
+# Verify all expected keys are present in the output
+grep "^scaling:" tmp_decompose.txt
+grep "^shear:" tmp_decompose.txt
+grep "^angles:" tmp_decompose.txt
+grep "^angle_axis:" tmp_decompose.txt
+grep "^translation:" tmp_decompose.txt
+grep "^R:" tmp_decompose.txt
+grep "^S:" tmp_decompose.txt
+grep "^jacobian_det:" tmp_decompose.txt
+
+# Verify the Jacobian determinant is positive (physically meaningful decomposition)
+JAC=$(grep "^jacobian_det:" tmp_decompose.txt | awk '{print $2}')
+awk -v v="$JAC" 'BEGIN { if (v + 0 <= 0) { print "ERROR: jacobian_det is non-positive: " v; exit 1 } }'
+
+# Running decompose twice on the same transform must produce consistent output
+transformcalc moving2template.txt decompose tmp_decompose2.txt -force
+diff <(grep -v "^#" tmp_decompose.txt) <(grep -v "^#" tmp_decompose2.txt)

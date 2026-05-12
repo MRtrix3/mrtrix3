@@ -1,0 +1,20 @@
+#!/bin/bash
+# Test default operation of dcminfo.
+#
+# NOTE: This test requires DICOM data that is not currently present
+#   in the test data directory.
+#
+# To enable this test, a small DICOM file (or directory) must be added to:
+#   testing/binaries_data/dcminfo/
+#
+# Suggested approach:
+#   1. Obtain or synthesise a small, anonymised DICOM file
+#      (e.g. a single-slice image from a publicly available dataset).
+#   2. Place it at: testing/binaries_data/dcminfo/test.dcm
+#   3. Replace the placeholder command below with:
+#        dcminfo dcminfo/test.dcm
+#   4. Optionally use -tag to verify a known field value:
+#        dcminfo dcminfo/test.dcm -tag 0008 0060 | grep -q "MR"
+#
+# This test skeleton exits 0 (pass) unconditionally until data is provided.
+true

@@ -1,0 +1,6 @@
+#!/bin/bash
+# Test afdconnectivity with the -afd_map option:
+#   verify that the per-voxel AFD map output image is produced successfully.
+afdconnectivity SIFT_phantom/fods.mif SIFT_phantom/tracks.tck \
+    -afd_map tmp.mif \
+    -force

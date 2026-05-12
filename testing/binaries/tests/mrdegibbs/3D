@@ -1,0 +1,12 @@
+#!/bin/bash
+# Test mrdegibbs in 3D volume-wise unringing mode via the -dimensionality 3 option.
+# The 3D mode (proposed by Bautista et al.) processes the entire volume at once
+#   rather than slice-by-slice, and is invoked by setting -dimensionality 3
+#   or equivalently by specifying -axes 0,1,2.
+# Both invocation methods are tested and verified to be equivalent.
+
+mrdegibbs b0.nii.gz tmp_3D_dim.mif -dimensionality 3 -force
+mrdegibbs b0.nii.gz tmp_3D_axes.mif -axes 0,1,2 -force
+
+# Both methods of invoking 3D mode must yield identical results
+testing_diff_image tmp_3D_dim.mif tmp_3D_axes.mif -abs 1e-5

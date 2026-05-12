@@ -1,0 +1,8 @@
+#!/bin/bash
+# Verify smooth filter with OBJ format output
+# Apply smoothing to a VTK input mesh and write the result as an OBJ file;
+#   verify that the output is a non-empty file
+# REFERENCE: This test does not require pre-generated reference data
+
+meshfilter meshconvert/in_ascii.vtk smooth tmp.obj -force
+[ -s tmp.obj ]

@@ -1,0 +1,10 @@
+#!/bin/bash
+# Verify the -json_keyval option to export header key-value entries to a JSON file
+# The output JSON file should be valid and non-empty
+
+mrinfo dwi.mif -json_keyval tmp_keyval.json
+[ -s tmp_keyval.json ] || { echo "Expected non-empty JSON output file"; exit 1; }
+
+# Verify the output is parseable JSON by checking for opening brace
+head -1 tmp_keyval.json | grep -q '{' || \
+  { echo "Expected JSON output to start with '{' character"; exit 1; }

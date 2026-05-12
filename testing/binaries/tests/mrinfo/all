@@ -1,0 +1,14 @@
+#!/bin/bash
+# Verify the -all flag which prints all header key-value pairs
+# rather than the default truncated list
+# Checks that the output is non-empty and that -all produces
+# at least as many lines as the default output
+
+default_lines=$(mrinfo dwi.mif | wc -l)
+all_lines=$(mrinfo dwi.mif -all | wc -l)
+
+[ "$all_lines" -ge "$default_lines" ] || \
+  { echo "Expected -all output to have at least as many lines as default output"; exit 1; }
+
+# Also verify -all output is non-empty
+[ "$all_lines" -gt 0 ] || { echo "Expected non-empty output with -all flag"; exit 1; }

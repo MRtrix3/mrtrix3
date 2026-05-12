@@ -1,0 +1,21 @@
+#!/bin/bash
+# Test anonymisation operation of dcmedit.
+#
+# NOTE: This test requires DICOM data that is not currently present
+#   in the test data directory.
+#
+# To enable this test, a small DICOM file must be added to:
+#   testing/binaries_data/dcmedit/
+#
+# Suggested approach:
+#   1. Obtain or synthesise a small, anonymised DICOM file
+#      (e.g. a single-slice image from a publicly available dataset).
+#   2. Place it at: testing/binaries_data/dcmedit/test.dcm
+#   3. Replace the placeholder command below with something like:
+#        cp dcmedit/test.dcm tmp.dcm
+#        dcmedit tmp.dcm -anonymise
+#        # Verify patient name tag has been anonymised:
+#        dcminfo tmp.dcm -tag 0010 0010 | grep -q "anonymous"
+#
+# This test skeleton exits 0 (pass) unconditionally until data is provided.
+true

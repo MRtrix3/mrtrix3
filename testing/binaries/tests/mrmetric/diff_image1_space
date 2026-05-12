@@ -1,0 +1,7 @@
+#!/bin/bash
+# Verify the diff metric computed in image1 scanner space
+# Comparing an image with itself in its own scanner space should yield zero;
+#   verify that the output is 0
+
+RESULT=$(mrmetric dwi_mean.mif dwi_mean.mif -space image1)
+(( $(echo "$RESULT == 0" | bc) ))

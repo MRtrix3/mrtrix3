@@ -1,0 +1,12 @@
+#!/bin/bash
+# Test extracting streamlines for a single specific edge
+#   using the -nodes, -exclusive, and -files single options.
+# The assignments file is the reference output from the tck2connectome test.
+# The test verifies that the command runs successfully and produces a non-empty track file.
+connectome2tck SIFT_phantom/tracks.tck tck2connectome/assignments.csv tmp.tck \
+    -nodes 1,2 \
+    -exclusive \
+    -files single \
+    -force
+
+tckvalidate tmp.tck

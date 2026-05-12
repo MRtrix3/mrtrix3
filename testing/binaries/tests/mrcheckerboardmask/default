@@ -1,0 +1,9 @@
+#!/bin/bash
+# Verify default operation of "mrcheckerboardmask",
+#   producing a binary checkerboard mask from a template image.
+# The output is compared against reference data generated using a prior software version.
+# NOTE: Reference data must be generated using a stable version of the software:
+#   mrcheckerboardmask mask.mif mrcheckerboardmask/default.mif
+
+mrcheckerboardmask mask.mif tmp.mif -force
+testing_diff_image tmp.mif mrcheckerboardmask/default.mif

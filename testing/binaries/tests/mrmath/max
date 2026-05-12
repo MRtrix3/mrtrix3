@@ -1,0 +1,6 @@
+#!/bin/bash
+# REFERENCE: generate with: mrmath dwi.mif max -axis 3 mrmath/out_max.mif -force
+# Verify "max" operator when applied along the axis of a single image
+# Outcome is compared against that calculated using a prior software version
+mrmath dwi.mif max -axis 3 - | \
+testing_diff_image - mrmath/out_max.mif -frac 1e-5
