@@ -39,12 +39,14 @@ inline char random_char() {
 }
 
 // CONF option: TmpFileDir
-// CONF default: System temporary directory (determined by std::filesystem::temp_directory_path())
+// CONF default: System temporary directory (typically /tmp).
 // CONF The prefix for temporary files (as used in pipelines). By default,
 // CONF these files get written to the system temporary directory, which is
 // CONF typically a RAM file system on Unix machines and should therefore
 // CONF be fast; but may cause issues on machines with little RAM capacity
 // CONF or where write-access to this location is not permitted.
+// CONF On Windows MSYS2 this is likely /tmp relative to the MSYS2
+// CONF installation directory (eg. C:\msys64\tmp\).
 // CONF
 // CONF Note that this location can also be manipulated using the
 // CONF :envvar:`MRTRIX_TMPFILE_DIR` environment variable, without editing the
