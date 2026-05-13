@@ -24,6 +24,7 @@
 
 #include "app.h"
 #include "debug.h"
+#include "env.h"
 #include "executable_version.h"
 #include "file/config.h"
 #include "file/path.h"
@@ -110,7 +111,7 @@ std::vector<ParsedOption> option;
 // ENVVAR Set the default terminal verbosity. Default terminal verbosity
 // ENVVAR is 1. This has the same effect as the ``-quiet`` (0),
 // ENVVAR ``-info`` (2) or ``-debug`` (3) comand-line options.
-int log_level = getenv("MRTRIX_QUIET") ? 0 : (getenv("MRTRIX_LOGLEVEL") ? to<int>(getenv("MRTRIX_LOGLEVEL")) : 1);
+int log_level = MR::get_env("MRTRIX_QUIET").has_value() ? 0 : MR::get_env("MRTRIX_LOGLEVEL", 1);
 
 int exit_error_code = 0;
 bool fail_on_warn = false;
@@ -514,9 +515,9 @@ void print_help() {
     std::string help_string = get_help_string(1);
     FILE *file = popen(help_display_command.c_str(), "w");
     if (!file) {
-      INFO("error launching help display command \"" + help_display_command + "\": " + strerror(errno));
+      INFO("error launching help display command \"" + help_display_command + "\": " + MR::C_strerror(errno));
     } else if (fwrite(help_string.c_str(), 1, help_string.size(), file) != help_string.size()) {
-      INFO("error sending help page to display command \"" + help_display_command + "\": " + strerror(errno));
+      INFO("error sending help page to display command \"" + help_display_command + "\": " + MR::C_strerror(errno));
     }
 
     if (pclose(file) == 0)
@@ -1271,9 +1272,7 @@ void init(int cmdline_argc, const char *const *cmdline_argv) { // check_syntax o
   command_history_string += ")";
 
   std::locale::global(std::locale::classic());
-  std::setlocale(LC_ALL, "C");
-
-  srand(time(nullptr));
+  std::setlocale(LC_ALL, "C"); // NOLINT(concurrency-mt-unsafe)
 }
 
 std::vector<ParsedOption> get_options(std::string_view name) {

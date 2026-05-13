@@ -207,7 +207,7 @@ public:
     format_point(barrier(), x);
     out.write(reinterpret_cast<const char *>(&x[0]), sizeof(x)); // check_syntax off
     if (!out.good())
-      throw Exception("error writing tracks file \"" + path.string() + "\": " + strerror(errno));
+      throw Exception("error writing tracks file \"" + path.string() + "\": " + MR::C_strerror(errno));
     open_success = true;
 
     auto opt = App::get_options("tck_weights_out");
@@ -267,7 +267,7 @@ protected:
     File::OFStream out(weights_path, std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
     out << contents;
     if (!out.good())
-      throw Exception("error writing streamline weights file \"" + weights_path.string() + "\": " + strerror(errno));
+      throw Exception("error writing streamline weights file \"" + weights_path.string() + "\": " + MR::C_strerror(errno));
   }
 
   //! write track point data to file

@@ -25,6 +25,7 @@
 #include <vector>
 
 #include "app.h"
+#include "env.h"
 #include "file/path.h"
 
 #ifdef MRTRIX_WINDOWS
@@ -97,7 +98,7 @@ void init() {
   // ENVVAR Note however that this prevents the
   // ENVVAR deletion of temporary files when the command terminates
   // ENVVAR abnormally.
-  if (getenv("MRTRIX_NOSIGNALS"))
+  if (MR::get_env("MRTRIX_NOSIGNALS").has_value())
     return;
 
 #ifdef MRTRIX_WINDOWS

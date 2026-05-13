@@ -26,7 +26,7 @@ void Reader::open(const std::filesystem::path &file, std::string_view first_line
   DEBUG("reading key/value file \"" + file.string() + "\"...");
   in.open(file, std::ios::in | std::ios::binary);
   if (!in)
-    throw Exception("failed to open key/value file \"" + file.string() + "\": " + strerror(errno));
+    throw Exception("failed to open key/value file \"" + file.string() + "\": " + MR::C_strerror(errno));
   if (!first_line.empty()) {
     std::string sbuf;
     getline(in, sbuf);
@@ -44,7 +44,7 @@ bool Reader::next() {
     std::string sbuf;
     getline(in, sbuf);
     if (in.bad())
-      throw Exception("error reading key/value file \"" + filepath.string() + "\": " + strerror(errno));
+      throw Exception("error reading key/value file \"" + filepath.string() + "\": " + MR::C_strerror(errno));
 
     sbuf = strip(sbuf.substr(0, sbuf.find_first_of('#')));
     if (sbuf == "END") {

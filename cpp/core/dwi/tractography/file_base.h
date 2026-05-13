@@ -118,7 +118,7 @@ protected:
 
   void verify_stream(const File::OFStream &out) {
     if (!out.good())
-      throw Exception("error writing file \"" + path.string() + "\": " + strerror(errno));
+      throw Exception("error writing file \"" + path.string() + "\": " + MR::C_strerror(errno));
   }
 
   void update_counts(File::OFStream &out) {

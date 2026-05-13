@@ -120,7 +120,7 @@ std::unique_ptr<ImageIO::Base> PAR::read(Header &H) const {
 
   std::ifstream in(hpath, std::ios::binary);
   if (!in)
-    throw Exception("error opening PAR/REC header \"" + H.path().string() + "\": " + strerror(errno));
+    throw Exception("error opening PAR/REC header \"" + H.path().string() + "\": " + MR::C_strerror(errno));
 
   float version = NaNF;
   ParCols cols;

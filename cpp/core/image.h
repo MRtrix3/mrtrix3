@@ -427,7 +427,7 @@ std::filesystem::path Image<ValueType>::dump_to_mrtrix_file(const std::filesyste
   out.seekp(offset, out.beg);
   out.write((const char *)data_pointer, data_size);
   if (!out.good())
-    throw Exception("error writing back contents of file \"" + data_path.string() + "\": " + strerror(errno));
+    throw Exception("error writing back contents of file \"" + data_path.string() + "\": " + MR::C_strerror(errno));
   out.close();
 
   // If data_size exceeds some threshold, ostream artificially increases the file size beyond that required at close()
@@ -474,7 +474,7 @@ template <class ImageType> typename enable_if_image_type<ImageType, void>::type 
   const std::filesystem::path filepath = save(x, "-");
   CONSOLE("displaying image \"" + filepath.string() + "\"");
   if (system(("bash -c \"mrview " + filepath.string() + "\"").c_str()))
-    WARN(std::string("error invoking viewer: ") + strerror(errno));
+    WARN(std::string("error invoking viewer: ") + MR::C_strerror(errno));
 }
 // Explicit instantiations in image.cpp:
 extern template MR::Image<bool>::Buffer::~Buffer();

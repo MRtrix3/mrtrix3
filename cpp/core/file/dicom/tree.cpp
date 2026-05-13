@@ -58,7 +58,7 @@ void Tree::read_dir(const std::filesystem::path &dirpath, ProgressBar &progress)
       ++progress;
     }
   } catch (Exception &E) {
-    throw Exception(E, "error opening DICOM folder \"" + dirpath.string() + "\": " + strerror(errno));
+    throw Exception(E, "error opening DICOM folder \"" + dirpath.string() + "\": " + MR::C_strerror(errno));
   }
 }
 

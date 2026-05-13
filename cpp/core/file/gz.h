@@ -56,7 +56,7 @@ public:
 
     gz = gzopen(filepath.string().c_str(), std::string(mode).c_str());
     if (!gz)
-      throw Exception("error opening file \"" + filepath.string() + "\": " + strerror(errno));
+      throw Exception("error opening file \"" + filepath.string() + "\": " + MR::C_strerror(errno));
   }
 
   void close() {
@@ -153,9 +153,9 @@ protected:
 
   const std::string error() {
     int error_number;
-    const char *s = gzerror(gz, &error_number); // check_syntax off
+    const char *const s = gzerror(gz, &error_number); // check_syntax off
     if (error_number == Z_ERRNO)
-      s = strerror(errno);
+      return MR::C_strerror(errno);
     return std::string(s);
   }
 };

@@ -80,7 +80,7 @@ void __ReaderBase__::open(const std::filesystem::path &file, std::string_view ty
 
   in.open(fname, std::ios::in | std::ios::binary);
   if (!in)
-    throw Exception("error opening " + type + " data file \"" + fname.string() + "\": " + strerror(errno));
+    throw Exception("error opening " + type + " data file \"" + fname.string() + "\": " + MR::C_strerror(errno));
   in.seekg(offset);
 }
 
