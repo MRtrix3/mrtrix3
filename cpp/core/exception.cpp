@@ -15,6 +15,8 @@
  */
 
 #include <array>
+#include <cstring>
+#include <mutex>
 #include <string_view>
 #include <unordered_map>
 
@@ -25,6 +27,17 @@
 
 #ifdef MRTRIX_AS_R_LIBRARY
 #include "wrap_r.h"
+#endif
+
+#ifdef MRTRIX_HAVE_STRERROR_R
+namespace {
+// Overloads resolve POSIX strerror_r (int return, fills buf) vs
+// GNU strerror_r (char* return, may point to a static string).
+std::string strerror_r_result(int /*errcode*/, const char *buf) { return std::string(buf); } // check_syntax off
+std::string strerror_r_result(const char *result, const char * /*buf*/) {                    // check_syntax off
+  return std::string(result);
+}
+} // namespace
 #endif
 
 namespace MR {
@@ -87,6 +100,21 @@ void (*Exception::display_func)(const Exception &E, int log_level) = display_exc
 void check_app_exit_code() {
   if (App::exit_error_code)
     throw Exception("Command performing delayed termination due to prior critical error");
+}
+
+std::string C_strerror(int errnum) {
+#if defined(MRTRIX_HAVE_STRERROR_R)
+  std::array<char, 256> buf = {};
+  return strerror_r_result(strerror_r(errnum, buf.data(), buf.size()), buf.data()); // check_syntax off
+#elif defined(MRTRIX_WINDOWS)
+  std::array<char, 256> buf = {};
+  strerror_s(buf.data(), buf.size(), errnum);
+  return std::string(buf.data()); // check_syntax off
+#else
+  static std::mutex mutex;
+  const std::lock_guard<std::mutex> lock(mutex);
+  return std::string(std::strerror(errnum)); // NOLINT(concurrency-mt-unsafe) check_syntax off
+#endif
 }
 
 } // namespace MR

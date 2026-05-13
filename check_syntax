@@ -128,11 +128,17 @@ run_checks() {
     $grep -Po '(const\s+|)char(\s?\*([\s]*const|)\s?(?![>\(\)])|\s+[a-zA-Z_][a-zA-Z0-9_]*\[(\d*\]|))'
   )
 
-# - Detect any instances of C-style string manipulation functions
-#   (need to permit strerror() for interfacing with external libraries)
+# - Detect any instances of C-style string manipulation functions,
+#   including direct strerror() calls (use MR::C_strerror() instead)
   res="$res"$(
     cat .check_syntax4.tmp | \
-    $grep -Po '\b(strcpy|strncpy|strcat|strncat|strxfrm|strlen|strcmp|strncmp|strcoll|strchr|strrchr|strspn|strcspn|strpbrk|strstr|strtok|wcscpy|wcsncpy|wcscat|wcsncat|wcsxfrm|wcslen|wcscmp|wcsncmp|wcscoll|wcschr|wcsrchr|wcsspn|wcscspn|wcspbrk|wcsstr|wcstok)\s*\('
+    $grep -Po '\b(strcpy|strncpy|strcat|strncat|strxfrm|strlen|strcmp|strncmp|strcoll|strchr|strrchr|strspn|strcspn|strpbrk|strstr|strtok|wcscpy|wcsncpy|wcscat|wcsncat|wcsxfrm|wcslen|wcscmp|wcsncmp|wcscoll|wcschr|wcsrchr|wcsspn|wcscspn|wcspbrk|wcsstr|wcstok|strerror)\s*\('
+  )
+
+# - Detect direct calls to std::getenv() or getenv() (use MR::get_env() instead)
+  res="$res"$(
+    cat .check_syntax4.tmp | \
+    $grep -Po '\bgetenv\s*\('
   )
 
 # - Detect instances of const std::string &
@@ -248,6 +254,8 @@ else
   - Replace all instances of %zu in print() calls with PRI_SIZET;
   - Use nullptr rather than NULL macro;
   - Use std::numeric_limits<> or MR::NaN(F) / MR::Inf(F) rather than macros NAN / INFINITY;
-  - Do not use C-style arrays (replace with eg. std::array<>)." >> $LOG
+  - Do not use C-style arrays (replace with eg. std::array<>);
+  - Replace all instances of strerror() with MR::C_strerror() (declared in exception.h);
+  - Replace all instances of std::getenv() or getenv() with MR::get_env() (declared in env.h)." >> $LOG
   exit 1
 fi

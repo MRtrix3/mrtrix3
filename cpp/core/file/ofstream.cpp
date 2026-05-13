@@ -29,7 +29,7 @@ void OFStream::open(std::string_view path, const std::ios_base::openmode mode) {
 
   std::ofstream::open(std::string(path).c_str(), mode);
   if (std::ofstream::operator!())
-    throw Exception("error opening output file \"" + std::string(path) + "\": " + std::strerror(errno));
+    throw Exception("error opening output file \"" + std::string(path) + "\": " + MR::C_strerror(errno));
 }
 
 } // namespace MR::File

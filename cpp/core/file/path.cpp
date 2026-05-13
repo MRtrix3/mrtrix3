@@ -56,7 +56,7 @@ bool exists(std::string_view path) {
     return true;
   if (errno == ENOENT)
     return false;
-  throw Exception(strerror(errno));
+  throw Exception(MR::C_strerror(errno));
   return false;
 }
 
@@ -71,7 +71,7 @@ bool is_dir(std::string_view path) {
     return S_ISDIR(buf.st_mode);
   if (errno == ENOENT)
     return false;
-  throw Exception(strerror(errno));
+  throw Exception(MR::C_strerror(errno));
   return false;
 }
 
@@ -81,7 +81,7 @@ bool is_file(std::string_view path) {
     return S_ISREG(buf.st_mode);
   if (errno == ENOENT)
     return false;
-  throw Exception(strerror(errno));
+  throw Exception(MR::C_strerror(errno));
   return false;
 }
 
@@ -132,7 +132,7 @@ std::string home() {
 
 Dir::Dir(std::string_view name) : p(opendir(!name.empty() ? std::string(name).c_str() : ".")) {
   if (p == nullptr)
-    throw Exception("error opening folder " + name + ": " + strerror(errno));
+    throw Exception("error opening folder " + name + ": " + MR::C_strerror(errno));
 }
 Dir::~Dir() {
   if (p != nullptr)

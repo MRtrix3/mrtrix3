@@ -511,11 +511,9 @@ void print_help() {
     std::string help_string = get_help_string(1);
     FILE *file = popen(help_display_command.c_str(), "w");
     if (!file) {
-      // NOLINTNEXTLINE(concurrency-mt-unsafe)
-      INFO("error launching help display command \"" + help_display_command + "\": " + strerror(errno));
+      INFO("error launching help display command \"" + help_display_command + "\": " + MR::C_strerror(errno));
     } else if (fwrite(help_string.c_str(), 1, help_string.size(), file) != help_string.size()) {
-      // NOLINTNEXTLINE(concurrency-mt-unsafe)
-      INFO("error sending help page to display command \"" + help_display_command + "\": " + strerror(errno));
+      INFO("error sending help page to display command \"" + help_display_command + "\": " + MR::C_strerror(errno));
     }
 
     if (pclose(file) == 0)

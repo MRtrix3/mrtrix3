@@ -19,6 +19,12 @@ if(NOT MRTRIX_HAVE_LGAMMA_R)
     message(STATUS "No lgamma_r() function found; statistical inference may have poorer multi-threading performance")
 endif()
 
+# Check for re-entrant strerror_r() for thread-safe errno string conversion
+check_symbol_exists(strerror_r "string.h" MRTRIX_HAVE_STRERROR_R)
+if(NOT MRTRIX_HAVE_STRERROR_R)
+    message(STATUS "No strerror_r() function found; falling back to mutex-protected strerror()")
+endif()
+
 file(GLOB_RECURSE HEADLESS_SOURCES *.h *.cpp)
 
 
@@ -96,6 +102,7 @@ endif()
 target_compile_definitions(mrtrix-core PUBLIC
     MRTRIX_BASE_VERSION="${MRTRIX_BASE_VERSION}"
     $<$<BOOL:${MRTRIX_HAVE_LGAMMA_R}>:MRTRIX_HAVE_LGAMMA_R>
+    $<$<BOOL:${MRTRIX_HAVE_STRERROR_R}>:MRTRIX_HAVE_STRERROR_R>
 )
 
 if(APPLE AND MRTRIX_HAVE_LGAMMA_R)

@@ -48,7 +48,7 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, int64_t mapped_size
 
   struct stat sbuf;
   if (stat(Entry::name.c_str(), &sbuf))
-    throw Exception("cannot stat file \"" + Entry::name + "\": " + strerror(errno));
+    throw Exception("cannot stat file \"" + Entry::name + "\": " + MR::C_strerror(errno));
 
   mtime = sbuf.st_mtime;
 
@@ -68,12 +68,12 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, int64_t mapped_size
       const unsigned int code = GetDriveType(root_path.data());
       switch (code) {
       case 0: // DRIVE_UNKNOWN
-        DEBUG("cannot get filesystem information on file \"" + Entry::name + "\": " + strerror(errno));
+        DEBUG("cannot get filesystem information on file \"" + Entry::name + "\": " + MR::C_strerror(errno));
         DEBUG("  defaulting to delayed write-back");
         delayed_writeback = true;
         break;
       case 1: // DRIVE_NO_ROOT_DIR:
-        DEBUG("erroneous root path derived for file \"" + Entry::name + "\": " + strerror(errno));
+        DEBUG("erroneous root path derived for file \"" + Entry::name + "\": " + MR::C_strerror(errno));
         DEBUG("  defaulting to delayed write-back");
         delayed_writeback = true;
         break;
@@ -103,7 +103,7 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, int64_t mapped_size
 #else
     struct statfs fsbuf;
     if (statfs(Entry::name.c_str(), &fsbuf)) {
-      DEBUG("cannot get filesystem information on file \"" + Entry::name + "\": " + strerror(errno));
+      DEBUG("cannot get filesystem information on file \"" + Entry::name + "\": " + MR::C_strerror(errno));
       DEBUG("  defaulting to delayed write-back");
       delayed_writeback = true;
     }
@@ -134,11 +134,11 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, int64_t mapped_size
         CONSOLE("preloading contents of mapped file \"" + Entry::name + "\"...");
         std::ifstream in(Entry::name.c_str(), std::ios::in | std::ios::binary);
         if (!in)
-          throw Exception("failed to open file \"" + Entry::name + "\": " + strerror(errno));
+          throw Exception("failed to open file \"" + Entry::name + "\": " + MR::C_strerror(errno));
         in.seekg(start, in.beg);
         in.read(reinterpret_cast<char *>(first), msize);
         if (!in.good())
-          throw Exception("error preloading contents of file \"" + Entry::name + "\": " + strerror(errno));
+          throw Exception("error preloading contents of file \"" + Entry::name + "\": " + MR::C_strerror(errno));
       } else
         memset(first, 0, msize);
       DEBUG("file \"" + Entry::name + "\" held in RAM at " + str(reinterpret_cast<void *>(first)) + ", size " +
@@ -151,7 +151,7 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, int64_t mapped_size
   // use regular memory-mapping:
   fd = open(Entry::name.c_str(), (readwrite ? O_RDWR : O_RDONLY), 0666);
   if (fd < 0)
-    throw Exception("error opening file \"" + Entry::name + "\": " + strerror(errno));
+    throw Exception("error opening file \"" + Entry::name + "\": " + MR::C_strerror(errno));
 
   try {
 #ifdef MRTRIX_WINDOWS
@@ -173,7 +173,7 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, int64_t mapped_size
   } catch (...) {
     close(fd);
     addr = nullptr;
-    throw Exception("memory-mapping failed for file \"" + Entry::name + "\": " + strerror(errno));
+    throw Exception("memory-mapping failed for file \"" + Entry::name + "\": " + MR::C_strerror(errno));
   }
   first = addr + start;
 
@@ -191,7 +191,7 @@ MMap::~MMap() {
 #else
     if (munmap(addr, msize))
 #endif
-      WARN("error unmapping file \"" + Entry::name + "\": " + strerror(errno));
+      WARN("error unmapping file \"" + Entry::name + "\": " + MR::C_strerror(errno));
     close(fd);
   } else {
     if (readwrite) {
@@ -203,7 +203,7 @@ MMap::~MMap() {
         if (!out.good())
           throw 1;
       } catch (...) {
-        FAIL("error writing back contents of file \"" + Entry::name + "\": " + strerror(errno));
+        FAIL("error writing back contents of file \"" + Entry::name + "\": " + MR::C_strerror(errno));
         App::exit_error_code = 1;
       }
     }

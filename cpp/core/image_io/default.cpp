@@ -55,7 +55,7 @@ void Default::unload(const Header &header) {
         out.seekp(files[n].start, out.beg);
         out.write((char *)(addresses[0].get() + n * bytes_per_segment), bytes_per_segment);
         if (!out.good())
-          throw Exception("error writing back contents of file \"" + files[n].name + "\": " + strerror(errno));
+          throw Exception("error writing back contents of file \"" + files[n].name + "\": " + MR::C_strerror(errno));
       }
     }
   } else {

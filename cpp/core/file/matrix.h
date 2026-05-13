@@ -51,7 +51,7 @@ std::vector<std::vector<ValueType>> load_matrix_2D_vector(std::string_view filen
                                                           std::vector<std::string> *comments = nullptr) {
   std::ifstream stream(std::string(filename).c_str(), std::ios_base::in | std::ios_base::binary);
   if (!stream)
-    throw Exception("Unable to open numerical data text file \"" + filename + "\": " + strerror(errno));
+    throw Exception("Unable to open numerical data text file \"" + filename + "\": " + MR::C_strerror(errno));
   std::vector<std::vector<ValueType>> V;
   std::string sbuf, cbuf;
   size_t hash;
@@ -86,7 +86,7 @@ std::vector<std::vector<ValueType>> load_matrix_2D_vector(std::string_view filen
                         " columns; row " + str(V.size()) + ": " + str(V.back().size()) + " columns)");
   }
   if (stream.bad())
-    throw Exception(strerror(errno));
+    throw Exception(MR::C_strerror(errno));
 
   if (!V.size())
     throw Exception("no data in matrix text file \"" + filename + "\"");

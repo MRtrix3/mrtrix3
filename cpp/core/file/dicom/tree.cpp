@@ -61,7 +61,7 @@ void Tree::read_dir(std::string_view filename, ProgressBar &progress) {
       ++progress;
     }
   } catch (Exception &E) {
-    throw Exception(E, "error opening DICOM folder \"" + filename + "\": " + strerror(errno));
+    throw Exception(E, "error opening DICOM folder \"" + filename + "\": " + MR::C_strerror(errno));
   }
 }
 

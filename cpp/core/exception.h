@@ -123,6 +123,11 @@ void display_exception_cmdline(const Exception &E, int log_level);
 void cmdline_print_func(std::string_view msg);
 void cmdline_report_to_user_func(std::string_view msg, int type);
 
+//! thread-safe alternative to strerror()
+/*! Uses strerror_r() when available; otherwise acquires a mutex before
+ * calling strerror(). Always returns the message as a std::string. */
+std::string C_strerror(int errnum);
+
 class LogLevelLatch {
 public:
   LogLevelLatch(const int new_level) : prev_level(App::log_level) { App::log_level = new_level; }

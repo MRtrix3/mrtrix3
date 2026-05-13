@@ -164,7 +164,7 @@ Writer::Writer(const Header &H, std::string_view filename)
   outfile = fopen(Writer::filename.c_str(), "wb");
   if (!outfile)
     throw Exception("Unable to open PNG file for writing for image \"" + filename + "\": " //
-                    + strerror(errno));                                                    //
+                    + MR::C_strerror(errno));                                              //
   png_init_io(png_ptr, outfile);
   png_set_compression_level(png_ptr, Z_DEFAULT_COMPRESSION);
   switch (H.ndim()) {

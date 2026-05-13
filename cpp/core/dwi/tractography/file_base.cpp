@@ -78,7 +78,7 @@ void ReaderBase::open(std::string_view file, std::string_view type, Properties &
 
   in.open(fname.c_str(), std::ios::in | std::ios::binary);
   if (!in)
-    throw Exception("error opening " + type + " data file \"" + fname + "\": " + strerror(errno));
+    throw Exception("error opening " + type + " data file \"" + fname + "\": " + MR::C_strerror(errno));
   in.seekg(offset);
 }
 

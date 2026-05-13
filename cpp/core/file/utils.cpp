@@ -111,7 +111,7 @@ std::string tmpfile_prefix() {
 void remove(std::string_view filename) {
   const std::string temp(filename);
   if (std::remove(temp.c_str()) != 0)
-    throw Exception("error deleting file \"" + temp + "\": " + strerror(errno));
+    throw Exception("error deleting file \"" + temp + "\": " + MR::C_strerror(errno));
 }
 
 void create(std::string_view filename, int64_t size) {
@@ -129,10 +129,10 @@ void create(std::string_view filename, int64_t size) {
       INFO("file \"" + temp + "\" already exists - removing");
       remove(filename);
     } else
-      throw Exception("error creating output file \"" + temp + "\": " + std::strerror(errno));
+      throw Exception("error creating output file \"" + temp + "\": " + MR::C_strerror(errno));
   }
   if (fid < 0) {
-    std::string mesg("error creating file \"" + temp + "\": " + strerror(errno));
+    std::string mesg("error creating file \"" + temp + "\": " + MR::C_strerror(errno));
     if (errno == EEXIST)
       mesg += " (use -force option to force overwrite)";
     throw Exception(mesg);
@@ -143,7 +143,7 @@ void create(std::string_view filename, int64_t size) {
   close(fid);
 
   if (size != 0)
-    throw Exception("cannot resize file \"" + filename + "\": " + strerror(errno));
+    throw Exception("cannot resize file \"" + filename + "\": " + MR::C_strerror(errno));
 }
 
 void resize(std::string_view filename, int64_t size) {
@@ -152,11 +152,11 @@ void resize(std::string_view filename, int64_t size) {
 
   const int fd = open(temp.c_str(), O_RDWR, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
   if (fd < 0)
-    throw Exception("error opening file \"" + temp + "\" for resizing: " + strerror(errno));
+    throw Exception("error opening file \"" + temp + "\" for resizing: " + MR::C_strerror(errno));
   const int status = ftruncate(fd, size);
   close(fd);
   if (status != 0)
-    throw Exception("cannot resize file \"" + temp + "\": " + strerror(errno));
+    throw Exception("cannot resize file \"" + temp + "\": " + MR::C_strerror(errno));
 }
 
 bool is_tempfile(std::string_view name, std::string_view suffix) {
@@ -183,12 +183,12 @@ std::string create_tempfile(int64_t size, std::string_view suffix) {
 
   if (fid < 0)
     throw Exception(std::string("error creating temporary file in directory \"" + tmpfile_dir() + "\": ") +
-                    strerror(errno));
+                    MR::C_strerror(errno));
 
   const int status = size == 0 ? 0 : ftruncate(fid, size);
   close(fid);
   if (status)
-    throw Exception("cannot resize file \"" + filename + "\": " + strerror(errno));
+    throw Exception("cannot resize file \"" + filename + "\": " + MR::C_strerror(errno));
 
   return filename;
 }
@@ -201,7 +201,7 @@ void mkdir(std::string_view folder) {
               0777
 #endif
               ) != 0)
-    throw Exception("error creating folder \"" + temp + "\": " + strerror(errno));
+    throw Exception("error creating folder \"" + temp + "\": " + MR::C_strerror(errno));
 }
 
 void rmdir(std::string_view folder, bool recursive) {
@@ -219,7 +219,7 @@ void rmdir(std::string_view folder, bool recursive) {
   const std::string temp(folder);
   DEBUG("deleting folder \"" + temp + "\"...");
   if (::rmdir(temp.c_str()) != 0)
-    throw Exception("error deleting folder \"" + temp + "\": " + strerror(errno));
+    throw Exception("error deleting folder \"" + temp + "\": " + MR::C_strerror(errno));
 }
 
 } // namespace MR::File
