@@ -21,9 +21,6 @@
 #include "mrview/window.h"
 #include "projection.h"
 
-#define __STR__(x) #x
-#define __STR(x) __STR__(x)
-
 namespace MR::App {
 class OptionList;
 class Options;

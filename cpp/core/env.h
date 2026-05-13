@@ -32,6 +32,7 @@ namespace MR {
 inline std::optional<std::string> get_env(std::string_view name) {
   static std::mutex mutex;
   const std::lock_guard<std::mutex> lock(mutex);
+  // NOLINTNEXTLINE(concurrency-mt-unsafe)
   const char *const value = std::getenv(std::string(name).c_str()); // check_syntax off
   if (value == nullptr)
     return std::nullopt;
