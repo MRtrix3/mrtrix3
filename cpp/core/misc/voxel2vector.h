@@ -52,6 +52,7 @@ public:
           str(reverse.size()) + " elements");
   }
 
+  bool empty() const { return reverse.empty(); }
   size_t size() const { return reverse.size(); }
 
   const std::vector<index_t> &operator[](const size_t index) const {

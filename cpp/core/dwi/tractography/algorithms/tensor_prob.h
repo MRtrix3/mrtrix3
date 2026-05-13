@@ -17,6 +17,7 @@
 #pragma once
 
 #include <filesystem>
+#include <optional>
 
 #include "dwi/bootstrap.h"
 #include "dwi/tractography/algorithms/tensor_det.h"
@@ -48,10 +49,14 @@ public:
   };
 
   Tensor_Prob(const Shared &shared)
-      : Tensor_Det(shared), S(shared), source(Bootstrap<Image<float>, WildBootstrap>(S.source, WildBootstrap(S.Hat))) {}
+      : Tensor_Det(shared),
+        S(shared),
+        source(Bootstrap<Image<float>, WildBootstrap>(S.source, WildBootstrap(S.Hat)), S.source_mask) {}
 
   Tensor_Prob(const Tensor_Prob &F)
-      : Tensor_Det(F.S), S(F.S), source(Bootstrap<Image<float>, WildBootstrap>(S.source, WildBootstrap(S.Hat))) {}
+      : Tensor_Det(F.S),
+        S(F.S),
+        source(Bootstrap<Image<float>, WildBootstrap>(S.source, WildBootstrap(S.Hat)), S.source_mask) {}
 
   bool init() override {
     source.clear();
@@ -60,7 +65,7 @@ public:
     return Tensor_Det::do_init();
   }
 
-  term_t next() override {
+  std::optional<term_t> next() override {
     if (!source.get(pos, values))
       return term_t::EXIT_IMAGE;
     return Tensor_Det::do_next();
@@ -96,8 +101,8 @@ protected:
 
   class Interp : public Interpolator<Bootstrap<Image<float>, WildBootstrap>>::type {
   public:
-    Interp(const Bootstrap<Image<float>, WildBootstrap> &bootstrap_vox)
-        : Interpolator<Bootstrap<Image<float>, WildBootstrap>>::type(bootstrap_vox) {
+    Interp(const Bootstrap<Image<float>, WildBootstrap> &bootstrap_vox, Image<bool> mask)
+        : Interpolator<Bootstrap<Image<float>, WildBootstrap>>::type(bootstrap_vox, std::move(mask)) {
       for (size_t i = 0; i < 8; ++i)
         raw_signals.push_back(Eigen::VectorXf(size(3)));
     }

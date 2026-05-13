@@ -17,6 +17,7 @@
 #pragma once
 
 #include <filesystem>
+#include <optional>
 
 #include "dwi/tractography/ACT/act.h"
 #include "dwi/tractography/algorithms/calibrator.h"
@@ -38,7 +39,9 @@ public:
   class Shared : public SharedBase {
   public:
     Shared(const std::filesystem::path &diff_path, DWI::Tractography::Properties &property_set)
-        : SharedBase(diff_path, property_set),
+        : SharedBase(diff_path,
+                     property_set,
+                     {ZeroExclusion::Enabled, NonFiniteExclusion::Any, HoleFilling::EnabledExcludeNonFinite}),
           lmax(Math::SH::LforN(source.size(3))),
           max_trials(Defaults::max_trials_per_step),
           sin_max_angle_1o(std::sin(max_angle_1o)),
@@ -116,7 +119,7 @@ public:
   iFOD1(const Shared &shared)
       : MethodBase(shared),
         S(shared),
-        source(S.source),
+        source(S.source, S.source_mask),
         mean_sample_num(0),
         num_sample_runs(0),
         num_truncations(0),
@@ -158,7 +161,7 @@ public:
     return false;
   }
 
-  term_t next() override {
+  std::optional<term_t> next() override {
     if (!get_data(source))
       return term_t::EXIT_IMAGE;
 
@@ -197,7 +200,7 @@ public:
           dir.normalize();
           pos += S.step_size * dir;
           mean_sample_num += n;
-          return term_t::CONTINUE;
+          return std::nullopt;
         }
       }
     }

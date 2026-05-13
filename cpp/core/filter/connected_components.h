@@ -43,7 +43,7 @@ public:
     using index_t = Voxel2Vector::index_t;
     using axis_mask_type = Eigen::Array<bool, Eigen::Dynamic, 1>;
 
-    Adjacency() : use_26_neighbours(false), enabled_axes(axis_mask_type::Ones(3)) {}
+    Adjacency() : use_26_neighbours(false), enabled_axes(axis_mask_type::Ones(3)), is_initialised(false) {}
 
     void toggle_axis(const size_t axis, const bool value) {
       if (axis > enabled_axes.size())
@@ -71,11 +71,14 @@ public:
     }
 
     size_t size() const { return data.size(); }
+    bool empty() const { return data.empty(); }
+    bool valid() const { return is_initialised; }
 
   private:
     bool use_26_neighbours;
     axis_mask_type enabled_axes;
     std::vector<std::vector<index_t>> data;
+    bool is_initialised;
   } adjacency;
 
   class Cluster {
@@ -253,8 +256,8 @@ public:
   void set_axes(const std::vector<int> &i) {
     const size_t max_axis = *std::max_element(i.begin(), i.end());
     if (max_axis >= ndim())
-      throw Exception("Requested axis for connected-component filter (" + str(max_axis) +
-                      " is beyond the dimensionality of the image (" + str(ndim()) + "D)");
+      throw Exception("Requested axis for connected-component filter (" + str(max_axis) + ")" + //
+                      " is beyond the dimensionality of the image (" + str(ndim()) + "D)");     //
     enabled_axes = axis_mask_type::Zero(std::max(max_axis + 1, static_cast<size_t>(ndim())));
     for (const auto &axis : i) {
       if (axis < 0)
@@ -265,8 +268,8 @@ public:
 
   void set_axes(const axis_mask_type &i) {
     if (i.size() != ndim())
-      throw Exception("Length of axis selection flag vector (" + str(i.size()) +
-                      ") does not match dimensionality of connected-component filter (" + str(ndim()) + "D)");
+      throw Exception("Length of axis selection flag vector (" + str(i.size()) + ")" +                        //
+                      " does not match dimensionality of connected-component filter (" + str(ndim()) + "D)"); //
     enabled_axes = i;
   }
 

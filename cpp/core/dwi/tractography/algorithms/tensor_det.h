@@ -16,13 +16,14 @@
 
 #pragma once
 
-#include <filesystem>
-
 // These lines are to silence deprecation warnings with Eigen & GCC v5
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include <Eigen/Eigenvalues>
 #pragma GCC diagnostic pop
+
+#include <filesystem>
+#include <optional>
 
 #include "dwi/gradient.h"
 #include "dwi/tensor.h"
@@ -42,7 +43,9 @@ public:
   class Shared : public SharedBase {
   public:
     Shared(const std::filesystem::path &diff_path, DWI::Tractography::Properties &property_set)
-        : SharedBase(diff_path, property_set) {
+        : SharedBase(diff_path,
+                     property_set,
+                     {ZeroExclusion::Enabled, NonFiniteExclusion::Any, HoleFilling::EnabledExcludeNonFinite}) {
 
       if (is_act()) {
         if (act().backtrack())
@@ -73,7 +76,8 @@ public:
     Eigen::MatrixXf bmat, binv;
   };
 
-  Tensor_Det(const Shared &shared) : MethodBase(shared), S(shared), source(S.source), eig(3), M(3, 3), dt(6) {}
+  Tensor_Det(const Shared &shared)
+      : MethodBase(shared), S(shared), source(S.source, S.source_mask), eig(3), M(3, 3), dt(6) {}
 
   bool init() override {
     if (!get_data(source))
@@ -87,7 +91,7 @@ public:
     return true;
   }
 
-  term_t next() override {
+  std::optional<term_t> next() override {
     if (!get_data(source))
       return term_t::EXIT_IMAGE;
     return do_next();
@@ -130,7 +134,7 @@ protected:
     return true;
   }
 
-  term_t do_next() {
+  std::optional<term_t> do_next() {
 
     dwi2tensor(dt, S.binv, values);
 
@@ -150,7 +154,7 @@ protected:
 
     pos += dir * S.step_size;
 
-    return term_t::CONTINUE;
+    return std::nullopt;
   }
 };
 

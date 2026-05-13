@@ -32,6 +32,7 @@
 #include "dwi/tractography/tracking/generated_track.h"
 #include "dwi/tractography/tracking/shared.h"
 #include "dwi/tractography/tracking/types.h"
+#include "enum.h"
 
 namespace MR::DWI::Tractography::Tracking {
 
@@ -82,7 +83,7 @@ public:
       data["Generation"]["Selected"] = selected;
       for (const auto &i : termination_info) {
         if (S.termination_relevant(i.first))
-          data["Terminations"][i.second.name] = S.termination_count(i.first);
+          data["Terminations"][Enum::lowercase_name(i.first)] = S.termination_count(i.first);
       }
       for (const auto &i : rejection_strings) {
         if (S.rejection_relevant(i.first))
