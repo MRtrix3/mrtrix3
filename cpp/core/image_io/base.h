@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
 #include <unistd.h>
 
@@ -65,7 +66,7 @@ public:
       writable = readwrite;
   }
 
-  uint8_t *segment(size_t n) const {
+  std::byte *segment(size_t n) const {
     assert(n < addresses.size());
     return addresses[n].get();
   }
@@ -92,7 +93,7 @@ public:
 
 protected:
   size_t segsize;
-  std::vector<std::unique_ptr<uint8_t[]>> addresses;
+  std::vector<std::unique_ptr<std::byte[]>> addresses;
   bool is_new, writable;
 
   void check() const { assert(addresses.size()); }

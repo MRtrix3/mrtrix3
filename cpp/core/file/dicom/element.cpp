@@ -288,10 +288,10 @@ Element::Type Element::type() const {
 std::vector<int32_t> Element::get_int() const {
   std::vector<int32_t> V;
   if (VR == VR_SL)
-    for (const uint8_t *p = data; p < data + size; p += sizeof(int32_t))
+    for (const std::byte *p = data; p < data + size; p += sizeof(int32_t))
       V.push_back(Raw::fetch_<int32_t>(p, is_BE));
   else if (VR == VR_SS)
-    for (const uint8_t *p = data; p < data + size; p += sizeof(int16_t))
+    for (const std::byte *p = data; p < data + size; p += sizeof(int16_t))
       V.push_back(Raw::fetch_<int16_t>(p, is_BE));
   else if (VR == VR_IS) {
     auto strings = split(std::string(reinterpret_cast<const char *>(data), size), "\\", false);
@@ -307,10 +307,10 @@ std::vector<int32_t> Element::get_int() const {
 std::vector<uint32_t> Element::get_uint() const {
   std::vector<uint32_t> V;
   if (VR == VR_UL)
-    for (const uint8_t *p = data; p < data + size; p += sizeof(uint32_t))
+    for (const std::byte *p = data; p < data + size; p += sizeof(uint32_t))
       V.push_back(Raw::fetch_<uint32_t>(p, is_BE));
   else if (VR == VR_US)
-    for (const uint8_t *p = data; p < data + size; p += sizeof(uint16_t))
+    for (const std::byte *p = data; p < data + size; p += sizeof(uint16_t))
       V.push_back(Raw::fetch_<uint16_t>(p, is_BE));
   else if (VR == VR_IS) {
     auto strings = split(std::string(reinterpret_cast<const char *>(data), size), "\\", false);
@@ -325,10 +325,10 @@ std::vector<uint32_t> Element::get_uint() const {
 std::vector<default_type> Element::get_float() const {
   std::vector<default_type> V;
   if (VR == VR_FD)
-    for (const uint8_t *p = data; p < data + size; p += sizeof(float64))
+    for (const std::byte *p = data; p < data + size; p += sizeof(float64))
       V.push_back(Raw::fetch_<float64>(p, is_BE));
   else if (VR == VR_FL)
-    for (const uint8_t *p = data; p < data + size; p += sizeof(float32))
+    for (const std::byte *p = data; p < data + size; p += sizeof(float32))
       V.push_back(Raw::fetch_<float32>(p, is_BE));
   else if (VR == VR_DS || VR == VR_IS) {
     auto strings = split(std::string(reinterpret_cast<const char *>(data), size), "\\", false);

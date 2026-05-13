@@ -18,6 +18,7 @@
 
 #define IMAGE_H
 
+#include <cstddef>
 #include <functional>
 #include <tuple>
 #include <type_traits>
@@ -237,7 +238,7 @@ public:
     store_func(val, io->segment(nseg), offset - nseg * io->segment_size(), intensity_offset(), intensity_scale());
   }
 
-  std::unique_ptr<uint8_t[]> data_buffer;
+  std::unique_ptr<std::byte[]> data_buffer;
   void *get_data_pointer();
 
   FORCE_INLINE ImageIO::Base *get_io() const { return io.get(); }
@@ -379,7 +380,7 @@ template <typename ValueType> Image<ValueType> Image<ValueType>::with_direct_io(
 
   // the buffer into which to copy the data:
   const auto buffer_size = footprint<ValueType>(voxel_count(*this));
-  buffer->data_buffer = std::unique_ptr<uint8_t[]>(new uint8_t[buffer_size]);
+  buffer->data_buffer = std::unique_ptr<std::byte[]>(new std::byte[buffer_size]);
 
   if (buffer->get_io()->is_image_new()) {
     // no need to preload if data is zero anyway:

@@ -35,12 +35,12 @@ void Mosaic::load(const Header &header, size_t) {
 
   DEBUG("loading mosaic image \"" + header.name() + "\"...");
   addresses.resize(1);
-  addresses[0].reset(new uint8_t[files.size() * bytes_per_segment]);
+  addresses[0].reset(new std::byte[files.size() * bytes_per_segment]);
   if (!addresses[0])
     throw Exception("failed to allocate memory for image \"" + header.name() + "\"");
 
   ProgressBar progress("reformatting DICOM mosaic images", slices * files.size());
-  uint8_t *data = addresses[0].get();
+  std::byte *data = addresses[0].get();
   for (size_t n = 0; n < files.size(); n++) {
     File::MMap file(files[n], false, false, m_xdim * m_ydim * header.datatype().bytes());
     size_t nx = 0, ny = 0;

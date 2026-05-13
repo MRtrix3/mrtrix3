@@ -18,6 +18,7 @@
 
 #ifdef MRTRIX_PNG_SUPPORT
 
+#include <cstddef>
 #include <png.h>
 
 #include "fetch_store.h"
@@ -44,7 +45,7 @@ public:
 
   void set_expand();
 
-  void load(uint8_t *);
+  void load(std::byte *);
 
 private:
   FILE *infile;
@@ -64,7 +65,7 @@ public:
 
   size_t get_size() const { return png_get_rowbytes(png_ptr, info_ptr) * height; }
 
-  void save(uint8_t *);
+  void save(std::byte *);
 
 private:
   png_structp png_ptr;
@@ -80,11 +81,11 @@ private:
   static jmp_buf jmpbuf;
 
   template <typename T>
-  void fill(uint8_t *in_ptr, uint8_t *out_ptr, const DataType data_type, const size_t num_elements);
+  void fill(std::byte *in_ptr, std::byte *out_ptr, const DataType data_type, const size_t num_elements);
 };
 
 template <typename T>
-void Writer::fill(uint8_t *in_ptr, uint8_t *out_ptr, const DataType data_type, const size_t num_elements) {
+void Writer::fill(std::byte *in_ptr, std::byte *out_ptr, const DataType data_type, const size_t num_elements) {
   std::function<default_type(const void *, size_t, default_type, default_type)> fetch_func;
   std::function<void(default_type, void *, size_t, default_type, default_type)> store_func;
   _set_fetch_store_scale_functions<default_type>(fetch_func, store_func, data_type);

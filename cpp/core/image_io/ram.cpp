@@ -27,7 +27,7 @@ void RAM::load(const Header &header, size_t) {
   DEBUG("allocating RAM buffer for image \"" + header.name() + "\"...");
   int64_t bytes_per_segment = (header.datatype().bits() * segsize + 7) / 8;
   addresses.resize(1);
-  addresses[0].reset(new uint8_t[bytes_per_segment]);
+  addresses[0].reset(new std::byte[bytes_per_segment]);
 }
 
 } // namespace MR::ImageIO

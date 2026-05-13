@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <optional>
+
 #include "dwi/tractography/algorithms/iFOD2.h"
 #include "dwi/tractography/tracking/method.h"
 #include "dwi/tractography/tracking/shared.h"
@@ -30,7 +32,9 @@ public:
   class Shared : public SharedBase {
   public:
     Shared(std::string_view diff_path, DWI::Tractography::Properties &property_set)
-        : SharedBase(diff_path, property_set) {
+        : SharedBase(diff_path,
+                     property_set,
+                     {ZeroExclusion::Enabled, NonFiniteExclusion::Any, HoleFilling::EnabledExcludeNonFinite}) {
       set_step_and_angle(rk4 ? Defaults::stepsize_voxels_rk4 : Defaults::stepsize_voxels_firstorder,
                          Defaults::angle_ifod1,
                          rk4 ? intrinsic_integration_order_t::HIGHER : intrinsic_integration_order_t::FIRST,
@@ -45,7 +49,7 @@ public:
     float sin_max_angle_1o;
   };
 
-  NullDist1(const Shared &shared) : MethodBase(shared), S(shared), source(S.source) {}
+  NullDist1(const Shared &shared) : MethodBase(shared), S(shared), source(S.source, S.source_mask) {}
 
   bool init() override {
     if (!get_data(source))
@@ -54,13 +58,13 @@ public:
     return true;
   }
 
-  term_t next() override {
+  std::optional<term_t> next() override {
     if (!get_data(source))
       return term_t::EXIT_IMAGE;
     dir = rand_dir(dir);
     dir.normalize();
     pos += S.step_size * dir;
-    return term_t::CONTINUE;
+    return std::nullopt;
   }
 
   float get_metric(const Eigen::Vector3f &, const Eigen::Vector3f &) override { return uniform(rng); }
@@ -90,7 +94,7 @@ public:
   NullDist2(const Shared &shared)
       : iFOD2(shared),
         S(shared),
-        source(S.source),
+        source(S.source, S.source_mask),
         positions(S.num_samples),
         tangents(S.num_samples),
         sample_idx(S.num_samples) {}
@@ -98,7 +102,7 @@ public:
   NullDist2(const NullDist2 &that)
       : iFOD2(that),
         S(that.S),
-        source(S.source),
+        source(S.source, S.source_mask),
         positions(S.num_samples),
         tangents(S.num_samples),
         sample_idx(S.num_samples) {}
@@ -111,12 +115,12 @@ public:
     return true;
   }
 
-  term_t next() override {
+  std::optional<term_t> next() override {
 
     if (++sample_idx < S.num_samples) {
       pos = positions[sample_idx];
       dir = tangents[sample_idx];
-      return term_t::CONTINUE;
+      return std::nullopt;
     }
 
     iFOD2::get_path(positions, tangents, iFOD2::rand_dir(dir));
@@ -127,7 +131,7 @@ public:
     pos = positions[0];
     dir = tangents[0];
     sample_idx = 0;
-    return term_t::CONTINUE;
+    return std::nullopt;
   }
 
   void reverse_track() override {

@@ -20,6 +20,7 @@
 
 #include <array>
 #include <chrono>
+#include <cstddef>
 #include <zlib.h>
 
 #include "app.h"
@@ -126,7 +127,7 @@ void Reader::set_expand() {
   output_bitdepth = std::max(8, bit_depth);
 }
 
-void Reader::load(uint8_t *image_data) {
+void Reader::load(std::byte *image_data) {
   if (setjmp(png_jmpbuf(png_ptr))) {
     png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
     throw Exception("Fatal error reading PNG image");
@@ -134,7 +135,7 @@ void Reader::load(uint8_t *image_data) {
   const int row_bytes = png_get_rowbytes(png_ptr, info_ptr);
   png_bytepp row_pointers = new png_bytep[height];
   for (png_uint_32 i = 0; i != height; ++i)
-    row_pointers[i] = image_data + i * row_bytes;
+    row_pointers[i] = reinterpret_cast<png_bytep>(image_data + i * row_bytes);
   png_read_image(png_ptr, row_pointers);
   delete[] row_pointers;
   row_pointers = nullptr;
@@ -297,7 +298,7 @@ Writer::~Writer() {
   }
 }
 
-void Writer::save(uint8_t *data) {
+void Writer::save(std::byte *data) {
   if (setjmp(jmpbuf)) {
     png_destroy_write_struct(&png_ptr, &info_ptr);
     png_ptr = nullptr;
@@ -306,10 +307,10 @@ void Writer::save(uint8_t *data) {
   }
   const size_t row_bytes = png_get_rowbytes(png_ptr, info_ptr);
 
-  auto finish = [&](uint8_t *to_write) {
+  auto finish = [&](std::byte *to_write) {
     std::unique_ptr<png_bytep[]> row_pointers(new png_bytep[height]);
     for (size_t row = 0; row != height; ++row)
-      row_pointers[row] = to_write + row * row_bytes;
+      row_pointers[row] = reinterpret_cast<png_bytep>(to_write + row * row_bytes);
     png_write_image(png_ptr, row_pointers.get());
     png_write_end(png_ptr, info_ptr);
   };
@@ -317,10 +318,9 @@ void Writer::save(uint8_t *data) {
   if (data_type == DataType::UInt8 || data_type == DataType::UInt16BE) {
     finish(data);
   } else {
-    uint8_t scratch[row_bytes * height];
-    // Convert from "data" into "scratch"
-    // This may include changes to fundamental type, changes to bit depth, changes to endianness
-    uint8_t *in_ptr = data, *out_ptr = scratch;
+    std::byte scratch[row_bytes * height];
+    std::byte *in_ptr = data;
+    std::byte *out_ptr = scratch;
     const uint8_t channels = png_get_channels(png_ptr, info_ptr);
     const size_t num_elements = channels * width * height;
     switch (bit_depth) {

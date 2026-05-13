@@ -22,6 +22,7 @@
 #include <cstring>
 #include <iostream>
 #include <limits>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -100,10 +101,10 @@ void replace(std::string &str, std::string_view from, std::string_view to);
 std::vector<std::string> split(std::string_view string,
                                std::string_view delimiters = " \t\n",
                                bool ignore_empty_fields = false,
-                               size_t num = std::numeric_limits<size_t>::max());
+                               std::optional<size_t> num = std::nullopt);
 
 std::vector<std::string>
-split_lines(std::string_view string, bool ignore_empty_fields = true, size_t num = std::numeric_limits<size_t>::max());
+split_lines(std::string_view string, bool ignore_empty_fields = true, std::optional<size_t> num = std::nullopt);
 
 /*
 inline int round (default_type x)
