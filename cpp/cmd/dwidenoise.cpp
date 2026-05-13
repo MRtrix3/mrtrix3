@@ -388,5 +388,8 @@ void run() {
     INFO("select complex float64 for processing");
     process_image<cdouble>(dwi, mask, noise, rank, argument[1], extent, exp1);
     break;
+  default:
+    assert(false);
+    break;
   }
 }

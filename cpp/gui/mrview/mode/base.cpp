@@ -72,7 +72,7 @@ void Base::paintGL() {
       // Draw additional labels from tools
       QList<QAction *> tools = window().tools()->actions();
       for (size_t i = 0, line_num = 4, N = tools.size(); i < N; ++i) {
-        Tool::Dock *dock = dynamic_cast<Tool::__Action__ *>(tools[i])->dock;
+        Tool::Dock *dock = dynamic_cast<Tool::ActionWrapper *>(tools[i])->dock;
         if (dock)
           line_num += dock->tool->draw_tool_labels(LeftEdge | BottomEdge, line_num, projection);
       }
@@ -98,7 +98,7 @@ void Base::paintGL() {
       QList<QAction *> tools = window().tools()->actions();
       size_t num_tool_colourbars = 0;
       for (size_t i = 0, N = tools.size(); i < N; ++i) {
-        Tool::Dock *dock = dynamic_cast<Tool::__Action__ *>(tools[i])->dock;
+        Tool::Dock *dock = dynamic_cast<Tool::ActionWrapper *>(tools[i])->dock;
         if (dock)
           num_tool_colourbars += dock->tool->visible_number_colourbars();
       }
@@ -106,7 +106,7 @@ void Base::paintGL() {
       colourbar_renderer.begin(&projection, window().tools_colourbar_position, num_tool_colourbars);
 
       for (size_t i = 0, N = tools.size(); i < N; ++i) {
-        Tool::Dock *dock = dynamic_cast<Tool::__Action__ *>(tools[i])->dock;
+        Tool::Dock *dock = dynamic_cast<Tool::ActionWrapper *>(tools[i])->dock;
         if (dock)
           dock->tool->draw_colourbars();
       }

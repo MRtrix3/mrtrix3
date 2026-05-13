@@ -147,7 +147,8 @@ Header Header::open(std::string_view image_name) {
     H.name() = list[item_index].name();
 
     for (; *format_handler; format_handler++) {
-      if ((H.io = (*format_handler)->read(H)))
+      H.io = (*format_handler)->read(H);
+      if (static_cast<bool>(H.io))
         break;
     }
 
@@ -768,11 +769,11 @@ concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, con
       Eigen::MatrixXd extra_pe;
       try {
         extra_dw = DWI::parse_DW_scheme(H);
-      } catch (Exception &) {
+      } catch (Exception &) { // NOLINT(bugprone-empty-catch)
       }
       try {
         extra_pe = Metadata::PhaseEncoding::get_scheme(H);
-      } catch (Exception &) {
+      } catch (Exception &) { // NOLINT(bugprone-empty-catch)
       }
 
       switch (dwscheme_manip) {

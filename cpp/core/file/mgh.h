@@ -17,6 +17,7 @@
 #pragma once
 
 #include <array>
+#include <cstddef>
 #include <iomanip>
 #include <sstream>
 
@@ -34,7 +35,7 @@ namespace MR::File::MGH {
 constexpr size_t header_size = 90;
 constexpr size_t data_offset = 284;
 constexpr size_t strlen = 1024;
-constexpr size_t matrix_strlen = 4 * 4 * 100;
+constexpr size_t matrix_strlen = static_cast<const size_t>(4 * 4 * 100);
 
 using tag_type = int32_t;
 constexpr tag_type tag_old_colortable = 1;
@@ -544,6 +545,7 @@ template <class Input> void read_other(Header &H, Input &in) {
     } while (!in.eof());
 
   } catch (int) {
+    DEBUG("No MGH \"other\" data found");
   }
 }
 
@@ -601,6 +603,9 @@ template <class Output> void write_header(const Header &H, Output &out) {
       break;
     case 2:
       c[2] = offset;
+      break;
+    default:
+      assert(false);
       break;
     }
   }

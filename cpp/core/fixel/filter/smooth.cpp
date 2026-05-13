@@ -72,7 +72,8 @@ void Smooth::operator()(Image<float> &input, Image<float> &output) const {
   public:
     Source(const size_t N) : number(N), counter(0) {}
     bool operator()(size_t &fixel) {
-      if ((fixel = counter) == number)
+      fixel = counter;
+      if (fixel == number)
         return false;
       ++counter;
       return true;

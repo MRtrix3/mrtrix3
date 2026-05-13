@@ -202,6 +202,9 @@ public:
     case 'c':
       n_acc[4] += i;
       break;
+    default:
+      assert(false);
+      break;
     }
   }
 

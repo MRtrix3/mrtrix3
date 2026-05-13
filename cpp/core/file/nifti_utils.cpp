@@ -686,8 +686,8 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> read_gz(Header &H) {
     memset(io_handler.get()->header() + sizeof(NH), 0, sizeof(nifti1_extender));
     io_handler->files.push_back(File::Entry(H.name(), data_offset));
     return io_handler;
-  } catch (...) {
-    return std::unique_ptr<ImageIO::Base>();
+  } catch (Exception &e) {
+    throw Exception(e, "Error reading compressed NIfTI image \"" + H.name() + "\"");
   }
 }
 

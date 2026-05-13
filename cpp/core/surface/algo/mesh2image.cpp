@@ -302,8 +302,8 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
             fill_value = vox_mesh_t::OUTSIDE;
           } else if (!corner_count) {
             fill_value = vox_mesh_t::INSIDE;
-          } else if (sum_sum_distances) {
-            fill_value = sum_sum_distances < 0.0f ? vox_mesh_t::INSIDE : vox_mesh_t::OUTSIDE;
+          } else if (sum_sum_distances != 0.0F) {
+            fill_value = sum_sum_distances < 0.0F ? vox_mesh_t::INSIDE : vox_mesh_t::OUTSIDE;
           } else {
             Exception e("Internal error: fundamental ambiguity in voxel-based segmentation of surface");
             e.push_back("Fill region size: " + str(to_fill.size()));

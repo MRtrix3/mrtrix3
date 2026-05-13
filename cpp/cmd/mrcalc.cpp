@@ -421,7 +421,7 @@ ARGUMENTS
 OPTIONS
 
 #define SECTION 1 // check_syntax off
-#include "mrcalc.cpp"
+#include "mrcalc.cpp" //NOLINT(bugprone-suspicious-include)
 
   + DataType::options();
 }
@@ -980,8 +980,8 @@ public:
         EXPAND OPERATIONS:
 **********************************************************************/
 
-#define SECTION 2 // check_syntax off
-#include "mrcalc.cpp"
+#define SECTION 2     // check_syntax off
+#include "mrcalc.cpp" // NOLINT(bugprone-suspicious-include)
 
 /**********************************************************************
   MAIN BODY OF COMMAND:
@@ -1002,8 +1002,8 @@ void run() {
       else if (opt->is("config"))
         n += 2;
 
-#define SECTION 3 // check_syntax off
-#include "mrcalc.cpp"
+#define SECTION 3     // check_syntax off
+#include "mrcalc.cpp" // NOLINT(bugprone-suspicious-include)
 
       else
         throw Exception(std::string("operation \"") + opt->id + "\" not yet implemented!");

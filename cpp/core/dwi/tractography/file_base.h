@@ -29,10 +29,10 @@
 namespace MR::DWI::Tractography {
 
 //! \cond skip
-class __ReaderBase__ {
+class ReaderBase {
 public:
-  __ReaderBase__() : current_index(0) {}
-  ~__ReaderBase__() {
+  ReaderBase() : current_index(0) {}
+  ~ReaderBase() {
     if (in.is_open())
       in.close();
   }
@@ -47,11 +47,11 @@ protected:
   uint64_t current_index;
 };
 
-template <typename ValueType = float> class __WriterBase__ {
+template <typename ValueType = float> class WriterBase {
 public:
   using value_type = ValueType;
 
-  __WriterBase__(std::string_view name)
+  WriterBase(std::string_view name)
       : count(0), total_count(0), name(name), dtype(DataType::from<ValueType>()), count_offset(0), open_success(false) {
     dtype.set_byte_order_native();
     if (dtype != DataType::Float32LE && dtype != DataType::Float32BE && dtype != DataType::Float64LE &&
@@ -61,7 +61,7 @@ public:
     App::check_overwrite(name);
   }
 
-  ~__WriterBase__() {
+  ~WriterBase() {
     if (open_success) {
       File::OFStream out(name, std::ios::in | std::ios::out | std::ios::binary);
       update_counts(out);

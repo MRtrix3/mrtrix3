@@ -327,7 +327,7 @@ extern std::string SYNOPSIS;
 extern Description REFERENCES;
 
 //! the group of standard options for all commands
-extern OptionGroup __standard_options;
+extern OptionGroup _standard_options;
 
 //! return all command-line options matching \c name
 /*! This returns a vector of vectors, where each top-level entry

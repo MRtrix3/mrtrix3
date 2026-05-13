@@ -26,20 +26,20 @@ namespace MR::Thread {
 
 namespace {
 
-size_t __number_of_threads = 0;
-nthreads_t __nthreads_type = nthreads_t::UNINITIALISED;
+size_t _number_of_threads = 0;
+nthreads_t _nthreads_type = nthreads_t::UNINITIALISED;
 
 } // namespace
 
 size_t number_of_threads() {
-  if (__nthreads_type != nthreads_t::UNINITIALISED)
-    return __number_of_threads;
+  if (_nthreads_type != nthreads_t::UNINITIALISED)
+    return _number_of_threads;
 
   auto opt = App::get_options("nthreads");
   if (!opt.empty()) {
-    __number_of_threads = opt[0][0];
-    __nthreads_type = nthreads_t::EXPLICIT;
-    return __number_of_threads;
+    _number_of_threads = opt[0][0];
+    _nthreads_type = nthreads_t::EXPLICIT;
+    return _number_of_threads;
   }
 
   // ENVVAR name: MRTRIX_NTHREADS
@@ -60,24 +60,24 @@ size_t number_of_threads() {
   if (!File::Config::get("NumberOfThreads").empty()) {
     const int i = File::Config::get_int("NumberOfThreads", -1);
     if (i >= 0) {
-      __number_of_threads = i;
-      __nthreads_type = nthreads_t::EXPLICIT;
-      return __number_of_threads;
+      _number_of_threads = i;
+      _nthreads_type = nthreads_t::EXPLICIT;
+      return _number_of_threads;
     }
   }
-  __number_of_threads = std::thread::hardware_concurrency();
-  __nthreads_type = nthreads_t::IMPLICIT;
-  return __number_of_threads;
+  _number_of_threads = std::thread::hardware_concurrency();
+  _nthreads_type = nthreads_t::IMPLICIT;
+  return _number_of_threads;
 }
 
-nthreads_t type_nthreads() { return __nthreads_type; }
+nthreads_t type_nthreads() { return _nthreads_type; }
 
-size_t threads_to_execute() { return (__Backend::valid() ? 0 : number_of_threads()); }
+size_t threads_to_execute() { return (Backend::valid() ? 0 : number_of_threads()); }
 
-void (*__Backend::previous_print_func)(std::string_view msg) = nullptr;
-void (*__Backend::previous_report_to_user_func)(std::string_view msg, int type) = nullptr;
+void (*Backend::previous_print_func)(std::string_view msg) = nullptr;
+void (*Backend::previous_report_to_user_func)(std::string_view msg, int type) = nullptr;
 
-__Backend::__Backend() : refcount(0) {
+Backend::Backend() : refcount(0) {
   DEBUG("initialising threads...");
 
   std::atomic<uint8_t> a;
@@ -94,22 +94,22 @@ __Backend::__Backend() : refcount(0) {
   report_to_user_func = thread_report_to_user_func;
 }
 
-__Backend::~__Backend() {
+Backend::~Backend() {
   print = previous_print_func;
   report_to_user_func = previous_report_to_user_func;
 }
 
-void __Backend::thread_print_func(std::string_view msg) {
+void Backend::thread_print_func(std::string_view msg) {
   std::lock_guard<std::mutex> lock(mutex);
   previous_print_func(msg);
 }
 
-void __Backend::thread_report_to_user_func(std::string_view msg, int type) {
+void Backend::thread_report_to_user_func(std::string_view msg, int type) {
   std::lock_guard<std::mutex> lock(mutex);
   previous_report_to_user_func(msg, type);
 }
 
-__Backend *__Backend::backend = nullptr;
-std::mutex __Backend::mutex;
+Backend *Backend::backend = nullptr;
+std::mutex Backend::mutex;
 
 } // namespace MR::Thread

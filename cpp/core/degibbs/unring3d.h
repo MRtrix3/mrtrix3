@@ -173,8 +173,10 @@ inline std::vector<size_t> strides_for_axis(int axis) {
     return {1, 2, 0};
   case 2:
     return {2, 0, 1};
+  default:
+    assert(false);
+    return {};
   }
-  return {};
 }
 
 } // namespace

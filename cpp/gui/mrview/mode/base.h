@@ -147,7 +147,7 @@ public:
   void render_tools(const Projection &projection, bool is_3D = false, int axis = 0, int slice = 0) {
     QList<QAction *> tools = window().tools()->actions();
     for (int i = 0; i < tools.size(); ++i) {
-      Tool::Dock *dock = dynamic_cast<Tool::__Action__ *>(tools[i])->dock;
+      Tool::Dock *dock = dynamic_cast<Tool::ActionWrapper *>(tools[i])->dock;
       if (dock) {
         GL::assert_context_is_current();
         dock->tool->draw(projection, is_3D, axis, slice);
@@ -202,9 +202,12 @@ protected:
 };
 
 //! \cond skip
-class __Action__ : public QAction {
+class ActionWrapper : public QAction {
 public:
-  __Action__(QActionGroup *parent, const char *const name, const char *const description, int index) // check_syntax off
+  ActionWrapper(QActionGroup *parent,
+                const char *const name,        // check_syntax off
+                const char *const description, // check_syntax off
+                int index)
       : QAction(name, parent) {
     setCheckable(true);
     setShortcut(tr(std::string("F" + str(index)).c_str()));
@@ -215,10 +218,10 @@ public:
 };
 //! \endcond
 
-template <class T> class Action : public __Action__ {
+template <class T> class Action : public ActionWrapper {
 public:
   Action(QActionGroup *parent, const char *const name, const char *const description, int index) // check_syntax off
-      : __Action__(parent, name, description, index) {}
+      : ActionWrapper(parent, name, description, index) {}
 
   virtual Base *create() const { return new T; }
 };

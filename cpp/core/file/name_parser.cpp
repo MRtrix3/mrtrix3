@@ -51,7 +51,8 @@ void NameParser::parse(std::string_view imagename, size_t max_num_sequences) {
     while ((pos = basename.find_last_of(']')) < std::string::npos && num < max_num_sequences) {
       insert_str(basename.substr(pos + 1));
       basename = basename.substr(0, pos);
-      if ((pos = basename.find_last_of('[')) == std::string::npos)
+      pos = basename.find_last_of('[');
+      if (pos == std::string::npos)
         throw Exception("malformed image sequence specifier for image \"" + specification + "\"");
 
       insert_seq(basename.substr(pos + 1));

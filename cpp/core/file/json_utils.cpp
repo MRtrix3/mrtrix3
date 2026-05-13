@@ -123,7 +123,7 @@ template <typename T> bool attempt_scalar(const std::pair<std::string, std::stri
     const T temp = to<T>(kv.second);
     json[kv.first] = temp;
     return true;
-  } catch (...) {
+  } catch (Exception &) { // NOLINT(bugprone-empty-catch)
   }
   return false;
 }

@@ -87,7 +87,7 @@ public:
 
   FORCE_INLINE size_t value() const { return _value; }
   FORCE_INLINE size_t count() const { return current_val; }
-  FORCE_INLINE bool show_percent() const { return _multiplier; }
+  FORCE_INLINE bool show_percent() const { return _multiplier != 0.0F; }
   FORCE_INLINE bool text_has_been_modified() const { return _text_has_been_modified; }
   FORCE_INLINE std::string_view text() const { return _text; }
   FORCE_INLINE std::string_view ellipsis() const { return _ellipsis; }
@@ -204,7 +204,7 @@ template <class TextFunc> FORCE_INLINE void ProgressBar::update(TextFunc &&text_
     return;
   const std::unique_lock<std::mutex> lock(mutex);
   const double time = timer.elapsed();
-  if (increment && _multiplier && ++current_val >= next_percent) {
+  if (increment && _multiplier != 0.0F && ++current_val >= next_percent) {
     set_text(text_func());
     _ellipsis.clear();
     _value = std::round(current_val / _multiplier);
@@ -216,7 +216,7 @@ template <class TextFunc> FORCE_INLINE void ProgressBar::update(TextFunc &&text_
   if (time >= next_time) {
     set_text(text_func());
     _ellipsis.clear();
-    if (_multiplier)
+    if (_multiplier != 0.0F)
       next_time = time + busy_interval;
     else {
       _value = time / busy_interval;
@@ -232,19 +232,19 @@ FORCE_INLINE void ProgressBar::operator++() {
   if (!show)
     return;
   const std::unique_lock<std::mutex> lock(mutex);
-  if (_multiplier) {
-    if (++current_val >= next_percent) {
-      _value = std::round(current_val / _multiplier);
-      next_percent = std::ceil((_value + 1) * _multiplier);
-      display_now();
-    }
-  } else {
+  if (_multiplier == 0.0F) {
     double time = timer.elapsed();
     if (time >= next_time) {
       _value = time / busy_interval;
       do {
         next_time += busy_interval;
       } while (next_time <= time);
+      display_now();
+    }
+  } else {
+    if (++current_val >= next_percent) {
+      _value = std::round(current_val / _multiplier);
+      next_percent = std::ceil((_value + 1) * _multiplier);
       display_now();
     }
   }

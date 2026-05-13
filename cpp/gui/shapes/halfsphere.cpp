@@ -120,8 +120,8 @@ void HalfSphere::LOD(const size_t level_of_detail) {
       GLuint index1, index2, index3;
 
       Edge E(indices[n][0], indices[n][1]);
-      std::map<Edge, GLuint>::const_iterator iter;
-      if ((iter = edges.find(E)) == edges.end()) {
+      std::map<Edge, GLuint>::const_iterator iter = edges.find(E);
+      if (iter == edges.end()) {
         index1 = vertices.size();
         edges.insert(std::make_pair(E, index1));
         vertices.push_back(Vertex(vertices, indices[n][0], indices[n][1]));
@@ -129,7 +129,8 @@ void HalfSphere::LOD(const size_t level_of_detail) {
         index1 = iter->second;
 
       E.set(indices[n][1], indices[n][2]);
-      if ((iter = edges.find(E)) == edges.end()) {
+      iter = edges.find(E);
+      if (iter == edges.end()) {
         index2 = vertices.size();
         edges.insert(std::make_pair(E, index2));
         vertices.push_back(Vertex(vertices, indices[n][1], indices[n][2]));
@@ -137,7 +138,8 @@ void HalfSphere::LOD(const size_t level_of_detail) {
         index2 = iter->second;
 
       E.set(indices[n][2], indices[n][0]);
-      if ((iter = edges.find(E)) == edges.end()) {
+      iter = edges.find(E);
+      if (iter == edges.end()) {
         index3 = vertices.size();
         edges.insert(std::make_pair(E, index3));
         vertices.push_back(Vertex(vertices, indices[n][2], indices[n][0]));

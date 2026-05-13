@@ -31,7 +31,7 @@ std::ostream &operator<<(std::ostream &stream, const Date &item) {
 std::ostream &operator<<(std::ostream &stream, const Time &item) {
   stream << std::setfill('0') << std::setw(2) << item.hour << ":" << std::setfill('0') << std::setw(2) << item.minute
          << ":" << std::setfill('0') << std::setw(2) << item.second;
-  if (item.fraction)
+  if (item.fraction != 0.0)
     stream << str(item.fraction, 6).substr(1);
   return stream;
 }
@@ -61,7 +61,7 @@ void Element::set(std::string_view filename, bool force_read, bool read_write) {
 
   next = fmap->address();
 
-  if (memcmp(next + 128, "DICM", 4)) {
+  if (memcmp(next + 128, "DICM", 4) != 0) {
     is_explicit = false;
     DEBUG("DICOM magic number not found in file \"" + fmap->name() + "\" - trying truncated format");
     if (!force_read)
@@ -73,9 +73,9 @@ void Element::set(std::string_view filename, bool force_read, bool read_write) {
 
   try {
     set_explicit_encoding();
-  } catch (Exception) {
-    throw Exception("\"" + fmap->name() + "\" is not a valid DICOM file");
+  } catch (Exception &e) {
     fmap.reset();
+    throw Exception(e, "\"" + fmap->name() + "\" is not a valid DICOM file");
   }
 }
 
@@ -225,8 +225,12 @@ bool Element::read() {
         INFO("unsupported DICOM transfer syntax: \"" + data_as_string + "\" in file \"" + fmap->name() + "\"");
       }
     } break;
+    default:
+      break;
     }
 
+    break;
+  default:
     break;
   }
 

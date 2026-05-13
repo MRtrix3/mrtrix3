@@ -16,6 +16,7 @@
 
 #include "mrview/tool/tractography/tractogram.h"
 
+#include <cstddef>
 #include <cstdint>
 
 #include "dwi/tractography/file.h"
@@ -465,8 +466,8 @@ inline void Tractogram::render_streamlines() {
                                 3,
                                 gl::FLOAT,
                                 gl::FALSE_,
-                                3 * sample_stride * sizeof(float),
-                                (void *)(3 * sample_stride * sizeof(float)));
+                                static_cast<unsigned long>(3 * sample_stride) * sizeof(float),
+                                (void *)(static_cast<unsigned long>(3 * sample_stride) * sizeof(float)));
         break;
       case TrackColourType::ScalarFile:
         gl::BindBuffer(gl::ARRAY_BUFFER, intensity_scalar_buffers[buf]);
@@ -487,13 +488,22 @@ inline void Tractogram::render_streamlines() {
 
       gl::BindBuffer(gl::ARRAY_BUFFER, vertex_buffers[buf]);
       gl::EnableVertexAttribArray(0);
-      gl::VertexAttribPointer(
-          0, 3, gl::FLOAT, gl::FALSE_, 3 * sample_stride * sizeof(float), (void *)(3 * sample_stride * sizeof(float)));
+      gl::VertexAttribPointer(0,
+                              3,
+                              gl::FLOAT,
+                              gl::FALSE_,
+                              static_cast<unsigned long>(3 * sample_stride) * sizeof(float),
+                              (void *)(static_cast<unsigned long>(3 * sample_stride) * sizeof(float)));
       gl::EnableVertexAttribArray(1);
-      gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE_, 3 * sample_stride * sizeof(float), (void *)0);
-      gl::EnableVertexAttribArray(2);
       gl::VertexAttribPointer(
-          2, 3, gl::FLOAT, gl::FALSE_, 3 * sample_stride * sizeof(float), (void *)(6 * sample_stride * sizeof(float)));
+          1, 3, gl::FLOAT, gl::FALSE_, static_cast<unsigned long>(3 * sample_stride) * sizeof(float), (void *)0);
+      gl::EnableVertexAttribArray(2);
+      gl::VertexAttribPointer(2,
+                              3,
+                              gl::FLOAT,
+                              gl::FALSE_,
+                              static_cast<unsigned long>(3 * sample_stride) * sizeof(float),
+                              (void *)(static_cast<unsigned long>(6 * sample_stride) * sizeof(float)));
 
       for (size_t j = 0, M = track_sizes[buf].size(); j < M; ++j) {
         track_sizes[buf][j] = static_cast<GLint>(
@@ -631,7 +641,7 @@ void Tractogram::load_end_colours() {
       const size_t tck_length = original_track_sizes[buffer_index][buffer_tck_counter];
 
       // Includes pre- and post-padding to coincide with tracks buffer
-      for (size_t i = 0; i != tck_length + (2 * track_padding); ++i)
+      for (size_t i = 0; i != tck_length + static_cast<size_t>(2 * track_padding); ++i)
         buffer.push_back(colour);
     }
     load_end_colours_onto_GPU(buffer);

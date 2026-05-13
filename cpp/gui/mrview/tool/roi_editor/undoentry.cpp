@@ -421,6 +421,9 @@ void ROI_UndoEntry::draw_fill(ROI_Item &roi, const Eigen::Vector3f &pos, const b
       case 3:
         adj[slice_axes[1]] += 1;
         break;
+      default:
+        assert(false);
+        break;
       }
       if (adj[0] >= 0 && adj[0] < static_cast<int>(roi.header().size(0)) && adj[1] >= 0 &&
           adj[1] < static_cast<int>(roi.header().size(1)) && adj[2] >= 0 &&

@@ -1,8 +1,11 @@
 Checks: >
   -*,
+  -cpp/core/eigen_plugins/*,
+  -cpp/gui/opengl/gl_core_3_3.*,
   bugprone-*,
   clang-analyzer-*,
   concurrency-*,
   -bugprone-easily-swappable-parameters,
+  -bugprone-narrowing-conversions,
 WarningsAsErrors: '*'
 HeaderFilterRegex: '*.(h|hpp)'

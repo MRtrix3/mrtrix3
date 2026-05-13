@@ -591,7 +591,6 @@ Window::Window()
   mode_action_group->setExclusive(true);
   connect(mode_action_group, SIGNAL(triggered(QAction *)), this, SLOT(select_mouse_mode_slot(QAction *)));
 
-  std::string modifier;
   action = toolbar->addAction(QIcon(":/select_contrast.svg"), tr("Change focus / contrast"));
   action->setToolTip(qstr("Left-click: set focus\n"
                           "Right-click: change brightness/constrast\n\n"
@@ -728,8 +727,8 @@ void Window::parse_arguments() {
       const auto last_arg_pos = MR::App::argument.back().index();
 
       const auto is_non_standard_option = [](const MR::App::ParsedOption &option) {
-        return std::none_of(MR::App::__standard_options.begin(),
-                            MR::App::__standard_options.end(),
+        return std::none_of(MR::App::_standard_options.begin(),
+                            MR::App::_standard_options.end(),
                             [&option](const auto &standard_option) { return option.opt == &standard_option; });
       };
 
@@ -747,8 +746,9 @@ void Window::parse_arguments() {
       try {
         list.push_back(std::make_unique<MR::Header>(MR::Header::open(MR::App::argument[n])));
       } catch (CancelException &e) {
-        for (const auto &msg : e.description)
+        for (const auto &msg : e.description) {
           CONSOLE(msg);
+        }
       } catch (Exception &e) {
         e.display();
       }
@@ -898,7 +898,7 @@ void Window::image_properties_slot() {
 
 void Window::select_mode_slot(QAction *action) {
   glarea->makeCurrent();
-  mode.reset(dynamic_cast<GUI::MRView::Mode::__Action__ *>(action)->create());
+  mode.reset(dynamic_cast<GUI::MRView::Mode::ActionWrapper *>(action)->create());
   mode->set_visible(!image_hide_action->isChecked());
   set_mode_features();
   emit modeChanged();
@@ -914,7 +914,7 @@ void Window::select_mouse_mode_slot(QAction *action) {
 }
 
 void Window::select_tool_slot(QAction *action) {
-  Tool::Dock *tool = dynamic_cast<Tool::__Action__ *>(action)->dock;
+  Tool::Dock *tool = dynamic_cast<Tool::ActionWrapper *>(action)->dock;
   if (!tool) {
     create_tool(action, true);
     return;
@@ -930,16 +930,16 @@ void Window::select_tool_slot(QAction *action) {
 }
 
 void Window::create_tool(QAction *action, bool show) {
-  if (dynamic_cast<Tool::__Action__ *>(action)->dock)
+  if (dynamic_cast<Tool::ActionWrapper *>(action)->dock)
     return;
 
-  Tool::Dock *tool = dynamic_cast<Tool::__Action__ *>(action)->create(tools_floating);
+  Tool::Dock *tool = dynamic_cast<Tool::ActionWrapper *>(action)->create(tools_floating);
   connect(tool, SIGNAL(visibilityChanged(bool)), action, SLOT(visibility_slot(bool)));
 
   if (!tools_floating) {
 
     for (int i = 0; i < tool_group->actions().size(); ++i) {
-      Tool::Dock *other_tool = dynamic_cast<Tool::__Action__ *>(tool_group->actions()[i])->dock;
+      Tool::Dock *other_tool = dynamic_cast<Tool::ActionWrapper *>(tool_group->actions()[i])->dock;
       if (other_tool && other_tool != tool) {
         QList<QDockWidget *> list = QMainWindow::tabifiedDockWidgets(other_tool);
         if (!list.empty())
@@ -1047,7 +1047,7 @@ void Window::reset_view_slot() {
     mode->reset_event();
     QList<QAction *> tools = tool_group->actions();
     for (QAction *action : tools) {
-      Tool::Dock *dock = dynamic_cast<Tool::__Action__ *>(action)->dock;
+      Tool::Dock *dock = dynamic_cast<Tool::ActionWrapper *>(action)->dock;
       if (dock)
         dock->tool->reset_event();
     }
@@ -1194,7 +1194,7 @@ void Window::toggle_annotations_slot() {
     show_colourbar_action->setChecked(false);
   } else {
     if (!annotations)
-      annotations = 0xFFFFFFFF;
+      annotations = 0xFFFFFFFFU;
     show_crosshairs_action->setChecked(annotations & 0x00000001);
     show_comments_action->setChecked(annotations & 0x00000002);
     show_voxel_info_action->setChecked(annotations & 0x00000004);
@@ -1427,7 +1427,7 @@ void Window::initGL() {
   // CONF The default image background colour in the main MRView window.
   background_colour = File::Config::get_RGB("MRViewImageBackgroundColour", {0.0F, 0.0F, 0.0F});
   gl::ClearColor(background_colour[0], background_colour[1], background_colour[2], 1.0);
-  mode.reset(dynamic_cast<Mode::__Action__ *>(mode_group->actions()[0])->create());
+  mode.reset(dynamic_cast<Mode::ActionWrapper *>(mode_group->actions()[0])->create());
   set_mode_features();
 
   GL::assert_context_is_current();
@@ -1652,7 +1652,8 @@ void Window::process_commandline_option() {
   stub = lowercase(#classname ".");                                                                                    \
   if (stub.compare(0, stub.size(), std::string(opt.opt->id), 0, stub.size()) == 0) {                                   \
     create_tool(tool_group->actions()[tool_id], false);                                                                \
-    if (dynamic_cast<Tool::__Action__ *>(tool_group->actions()[tool_id])->dock->tool->process_commandline_option(opt)) \
+    if (dynamic_cast<Tool::ActionWrapper *>(tool_group->actions()[tool_id])                                            \
+            ->dock->tool->process_commandline_option(opt))                                                             \
       return;                                                                                                          \
   }                                                                                                                    \
   ++tool_id;

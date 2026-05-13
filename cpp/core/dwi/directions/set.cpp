@@ -441,6 +441,9 @@ void FastLookupSet::initialise() {
       case 3:
         el += el_grid_step;
         break;
+      default:
+        assert(false);
+        break;
       }
 
       const Eigen::Vector3d p(cos(az) * sin(el), sin(az) * sin(el), cos(el));

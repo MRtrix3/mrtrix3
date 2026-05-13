@@ -47,7 +47,8 @@ void Config::init() {
       while (kv.next()) {
         config[std::string(kv.key())] = std::string(kv.value());
       }
-    } catch (...) {
+    } catch (Exception &e) {
+      WARN("Error reading key-values from system config file \"" + sysconf_location + "\": " + e[0]);
     }
   } else {
     DEBUG("No config file found at \"" + sysconf_location + "\"");
@@ -61,7 +62,8 @@ void Config::init() {
       while (kv.next()) {
         config[std::string(kv.key())] = std::string(kv.value());
       }
-    } catch (...) {
+    } catch (Exception &e) {
+      WARN("Error reading key-values from user config file \"" + path + "\": " + e[0]);
     }
   } else {
     DEBUG("No config file found at \"" + path + "\"");

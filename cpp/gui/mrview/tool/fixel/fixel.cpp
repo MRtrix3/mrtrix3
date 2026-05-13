@@ -433,12 +433,12 @@ void Fixel::update_gui_colour_controls(bool reload_colour_types) {
   const FixelColourType colour_type = first_fixel->get_colour_type();
 
   colour_combobox->setCurrentIndex(first_fixel->get_colour_type_index());
-  colourmap_option_group->setEnabled(colour_type == CValue);
+  colourmap_option_group->setEnabled(colour_type == FixelColourType::Value);
 
-  max_value->setEnabled(colour_type == CValue);
-  min_value->setEnabled(colour_type == CValue);
+  max_value->setEnabled(colour_type == FixelColourType::Value);
+  min_value->setEnabled(colour_type == FixelColourType::Value);
 
-  if (colour_type == CValue) {
+  if (colour_type == FixelColourType::Value) {
     min_value->setRate(first_fixel->scaling_rate());
     max_value->setRate(first_fixel->scaling_rate());
     min_value->setValue(first_fixel->scaling_min());

@@ -115,20 +115,22 @@ bool Worker::operator()(Streamline<> &in, Streamline<> &out) const {
 
 Worker::Thresholds::Thresholds(Tractography::Properties &properties)
     : max_length(std::numeric_limits<float>::infinity()),
-      min_length(0.0f),
+      min_length(0.0F),
       max_weight(std::numeric_limits<float>::infinity()),
-      min_weight(0.0f),
+      min_weight(0.0F),
       step_size(properties.get_stepsize()) {
   if (properties.find("max_dist") != properties.end()) {
     try {
       max_length = to<float>(properties["max_dist"]);
-    } catch (...) {
+    } catch (Exception &) {
+      WARN("Ignoring corrupt key-value \"max_dist\"");
     }
   }
   if (properties.find("min_dist") != properties.end()) {
     try {
       min_length = to<float>(properties["min_dist"]);
-    } catch (...) {
+    } catch (Exception &) {
+      WARN("Ignoring corrupt key-value \"min_dist\"");
     }
   }
 

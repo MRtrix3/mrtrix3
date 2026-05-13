@@ -16,6 +16,9 @@
 
 #pragma once
 
+#include <Eigen/Core>
+#include <type_traits>
+
 namespace std {
 template <> struct is_fundamental<Eigen::half> : std::true_type {};
 template <> struct is_floating_point<Eigen::half> : std::true_type {};

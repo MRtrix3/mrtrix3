@@ -246,7 +246,7 @@ protected:
   std::function<ValueType(const void *, size_t, default_type, default_type)> fetch_func;
   std::function<void(ValueType, void *, size_t, default_type, default_type)> store_func;
 
-  void set_fetch_store_functions() { __set_fetch_store_scale_functions(fetch_func, store_func, datatype()); }
+  void set_fetch_store_functions() { _set_fetch_store_scale_functions(fetch_func, store_func, datatype()); }
 };
 
 //! \cond skip
@@ -468,9 +468,9 @@ typename std::enable_if<is_pure_image<typename std::remove_reference<ImageType>:
 save(ImageType &&x, std::string_view filename, bool use_multi_threading = true) {
   try {
     return x.dump_to_mrtrix_file(filename);
-  } catch (...) {
+  } catch (Exception &) {
+    return _save_generic(x, filename, use_multi_threading);
   }
-  return _save_generic(x, filename, use_multi_threading);
 }
 
 //! display the contents of an image in MRView (for debugging only)

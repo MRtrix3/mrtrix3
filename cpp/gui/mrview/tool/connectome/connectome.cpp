@@ -1116,7 +1116,8 @@ void Connectome::node_visibility_selection_slot(int index) {
                                     node_values_from_file_visibility.get_mean(),
                                     node_values_from_file_visibility.get_max());
     break;
-  case 6:
+  default:
+    assert(false);
     return;
   }
   calculate_node_visibility();
@@ -1213,6 +1214,9 @@ void Connectome::node_geometry_selection_slot(int index) {
       node_geometry_overlay_interp_checkbox->setVisible(false);
     }
     break;
+  default:
+    assert(false);
+    return;
   }
   if (node_visibility == node_visibility_t::NONE)
     node_visibility_warning_icon->setVisible(true);
@@ -1392,7 +1396,8 @@ void Connectome::node_colour_selection_slot(int index) {
                                 node_values_from_file_colour.get_mean(),
                                 node_values_from_file_colour.get_max());
     break;
-  case 6:
+  default:
+    assert(false);
     return;
   }
   if (node_visibility == node_visibility_t::NONE)
@@ -1553,7 +1558,8 @@ void Connectome::node_size_selection_slot(int index) {
                               node_values_from_file_size.get_max());
     node_size_invert_checkbox->setChecked(false);
     break;
-  case 5:
+  default:
+    assert(false);
     return;
   }
   if (node_visibility == node_visibility_t::NONE)
@@ -1713,7 +1719,8 @@ void Connectome::node_alpha_selection_slot(int index) {
                                node_values_from_file_alpha.get_max());
     node_alpha_invert_checkbox->setChecked(false);
     break;
-  case 5:
+  default:
+    assert(false);
     return;
   }
   if (node_visibility == node_visibility_t::NONE)
@@ -2070,7 +2077,8 @@ void Connectome::edge_colour_selection_slot(int index) {
                                 edge_values_from_file_colour.get_mean(),
                                 edge_values_from_file_colour.get_max());
     break;
-  case 4:
+  default:
+    assert(false);
     return;
   }
   if (edge_visibility == edge_visibility_t::NONE)
@@ -2132,7 +2140,8 @@ void Connectome::edge_size_selection_slot(int index) {
                               edge_values_from_file_size.get_mean(),
                               edge_values_from_file_size.get_max());
     break;
-  case 3:
+  default:
+    assert(false);
     return;
   }
   if (edge_visibility == edge_visibility_t::NONE)
@@ -2195,7 +2204,8 @@ void Connectome::edge_alpha_selection_slot(int index) {
                                edge_values_from_file_alpha.get_max());
     edge_alpha_invert_checkbox->setChecked(false);
     break;
-  case 3:
+  default:
+    assert(false);
     return;
   }
   if (edge_visibility == edge_visibility_t::NONE)

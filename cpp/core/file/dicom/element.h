@@ -86,7 +86,7 @@ public:
 
 class Element {
 public:
-  typedef enum _Type { INVALID, INT, UINT, FLOAT, DATE, TIME, DATETIME, STRING, SEQ, OTHER } Type;
+  typedef enum Type { INVALID, INT, UINT, FLOAT, DATE, TIME, DATETIME, STRING, SEQ, OTHER } Type;
   static const std::unordered_map<Type, std::string> type_as_str;
 
   uint16_t group, element, VR;
@@ -112,7 +112,7 @@ public:
   }
 
   uint32_t tag() const {
-    union __DICOM_group_element_pair__ {
+    union {
       uint16_t s[2]; // check_syntax off
       uint32_t i;
     } val = {{

@@ -54,15 +54,15 @@
 
 namespace MR::Thread {
 
-class __Backend {
+class Backend {
 public:
-  __Backend();
-  ~__Backend();
+  Backend();
+  ~Backend();
 
   static void register_thread() {
     std::lock_guard<std::mutex> lock(mutex);
     if (!backend)
-      backend = new __Backend;
+      backend = new Backend;
     ++backend->refcount;
   }
   static void unregister_thread() {
@@ -85,33 +85,33 @@ public:
 protected:
   size_t refcount;
 
-  static __Backend *backend;
+  static Backend *backend;
   static std::mutex mutex;
 };
 
 namespace {
 
-class __thread_base {
+class _thread_base {
 public:
-  __thread_base(std::string_view name = "unnamed") : name(name) { __Backend::register_thread(); }
-  __thread_base(const __thread_base &) = delete;
-  __thread_base(__thread_base &&) = default;
-  ~__thread_base() { __Backend::unregister_thread(); }
+  _thread_base(std::string_view name = "unnamed") : name(name) { Backend::register_thread(); }
+  _thread_base(const _thread_base &) = delete;
+  _thread_base(_thread_base &&) = default;
+  ~_thread_base() { Backend::unregister_thread(); }
 
 protected:
   const std::string name;
 };
 
-class __single_thread : public __thread_base {
+class _single_thread : public _thread_base {
 public:
-  template <class Functor> __single_thread(Functor &&functor, std::string_view name = "unnamed") : __thread_base(name) {
+  _single_thread(const _single_thread &) = delete;
+  _single_thread(_single_thread &&) = default;
+  template <class Functor> _single_thread(Functor &&functor, std::string_view name = "unnamed") : _thread_base(name) {
     const std::string msg = std::string("launching thread \"") + name + "\"...";
     DEBUG(msg);
     using F = typename std::remove_reference<Functor>::type;
     thread = std::async(std::launch::async, &F::execute, &functor);
   }
-  __single_thread(const __single_thread &) = delete;
-  __single_thread(__single_thread &&) = default;
 
   bool finished() const { return thread.wait_for(std::chrono::microseconds(0)) == std::future_status::ready; }
 
@@ -121,7 +121,7 @@ public:
     DEBUG("thread \"" + name + "\" completed OK");
   }
 
-  ~__single_thread() {
+  ~_single_thread() {
     if (thread.valid()) {
       try {
         wait();
@@ -135,10 +135,10 @@ protected:
   std::future<void> thread;
 };
 
-template <class Functor> class __multi_thread : public __thread_base {
+template <class Functor> class _multi_thread : public _thread_base {
 public:
-  __multi_thread(Functor &functor, size_t nthreads, std::string_view name = "unnamed")
-      : __thread_base(name), functors((nthreads > 0 ? nthreads - 1 : 0), functor) {
+  _multi_thread(Functor &functor, size_t nthreads, std::string_view name = "unnamed")
+      : _thread_base(name), functors((nthreads > 0 ? nthreads - 1 : 0), functor) {
     DEBUG("launching " + str(nthreads) + " threads \"" + name + "\"...");
     using F = typename std::remove_reference<Functor>::type;
     threads.reserve(nthreads);
@@ -147,8 +147,8 @@ public:
     threads.push_back(std::async(std::launch::async, &F::execute, &functor));
   }
 
-  __multi_thread(const __multi_thread &) = delete;
-  __multi_thread(__multi_thread &&) = default;
+  _multi_thread(const _multi_thread &) = delete;
+  _multi_thread(_multi_thread &&) = default;
 
   void wait() noexcept(false) {
     DEBUG("waiting for completion of threads \"" + name + "\"...");
@@ -182,7 +182,7 @@ public:
     return false;
   }
 
-  ~__multi_thread() {
+  ~_multi_thread() {
     if (any_valid()) {
       try {
         wait();
@@ -197,10 +197,10 @@ protected:
   std::vector<typename std::remove_reference<Functor>::type> functors;
 };
 
-template <class Functor> class __Multi {
+template <class Functor> class Multi {
 public:
-  __Multi(Functor &object, size_t number) : functor(object), num(number) {}
-  __Multi(__Multi &&m) = default;
+  Multi(Functor &object, size_t number) : functor(object), num(number) {}
+  Multi(Multi &&m) = default;
   template <class X> bool operator()(const X &) {
     assert(0);
     return false;
@@ -217,16 +217,16 @@ public:
   size_t num;
 };
 
-template <class Functor> class __run {
+template <class Functor> class _run {
 public:
-  using type = __single_thread;
+  using type = _single_thread;
   type operator()(Functor &functor, std::string_view name) { return {functor, name}; }
 };
 
-template <class Functor> class __run<__Multi<Functor>> {
+template <class Functor> class _run<Multi<Functor>> {
 public:
-  using type = __multi_thread<Functor>;
-  type operator()(__Multi<Functor> &functor, std::string_view name) { return {functor.functor, functor.num, name}; }
+  using type = _multi_thread<Functor>;
+  type operator()(Multi<Functor> &functor, std::string_view name) { return {functor.functor, functor.num, name}; }
 };
 
 } // namespace
@@ -272,8 +272,8 @@ size_t threads_to_execute();
  * \sa Thread::run()
  * \sa Thread::run_queue() */
 template <class Functor>
-inline __Multi<typename std::remove_reference<Functor>::type> multi(Functor &&functor,
-                                                                    size_t nthreads = threads_to_execute()) {
+inline Multi<typename std::remove_reference<Functor>::type> multi(Functor &&functor,
+                                                                  size_t nthreads = threads_to_execute()) {
   return {functor, nthreads};
 }
 
@@ -357,9 +357,8 @@ inline __Multi<typename std::remove_reference<Functor>::type> multi(Functor &&fu
  *
  * \sa Thread::multi()
  */
-template <class Functor>
-inline typename __run<Functor>::type run(Functor &&functor, std::string_view name = "unnamed") {
-  return __run<typename std::remove_reference<Functor>::type>()(functor, name);
+template <class Functor> inline typename _run<Functor>::type run(Functor &&functor, std::string_view name = "unnamed") {
+  return _run<typename std::remove_reference<Functor>::type>()(functor, name);
 }
 
 /** @} */

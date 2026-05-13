@@ -396,7 +396,8 @@ void run() {
       try {
         const auto DW_scheme = DWI::parse_DW_scheme(header_out);
         DWI::stash_DW_scheme(header_out, DW_scheme);
-      } catch (...) {
+      } catch (Exception &) {
+        DEBUG("No diffusion gradient table to stash");
       }
       DWI::clear_DW_scheme(header_out);
       Metadata::PhaseEncoding::clear_scheme(header_out.keyval());

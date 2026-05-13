@@ -149,8 +149,8 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, int64_t mapped_size
   }
 
   // use regular memory-mapping:
-
-  if ((fd = open(Entry::name.c_str(), (readwrite ? O_RDWR : O_RDONLY), 0666)) < 0)
+  fd = open(Entry::name.c_str(), (readwrite ? O_RDWR : O_RDONLY), 0666);
+  if (fd < 0)
     throw Exception("error opening file \"" + Entry::name + "\": " + strerror(errno));
 
   try {

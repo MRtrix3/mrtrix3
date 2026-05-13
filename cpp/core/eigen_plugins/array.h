@@ -14,12 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <cstdint>
+
 #define MRTRIX_OP(ARG)                                                                                                 \
   template <class ImageType> inline Array &operator ARG(const MR::Helper::ConstRow<ImageType> &row) {                  \
     this->resize(row.image.size(row.axis), 1);                                                                         \
     for (row.image.index(row.axis) = 0; row.image.index(row.axis) < row.image.size(row.axis);                          \
          ++row.image.index(row.axis))                                                                                  \
-      this->operator()(row.image.index(row.axis), 0) ARG row.image.value();                                            \
+      this->operator()(static_cast<ssize_t>(row.image.index(row.axis)), 0) ARG row.image.value();                      \
     return *this;                                                                                                      \
   }
 

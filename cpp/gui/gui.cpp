@@ -31,7 +31,7 @@ App::App(int &cmdline_argc, char **cmdline_argv) : QApplication(cmdline_argc, cm
 
   QLocale::setDefault(QLocale::c());
   std::locale::global(std::locale::classic());
-  std::setlocale(LC_ALL, "C");
+  std::setlocale(LC_ALL, "C"); // NOLINT(concurrency-mt-unsafe)
 
   setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
 

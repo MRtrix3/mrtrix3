@@ -45,7 +45,7 @@ public:
 };
 
 //! A class to read streamlines data
-template <class ValueType = float> class Reader : public __ReaderBase__, public ReaderInterface<ValueType> {
+template <class ValueType = float> class Reader : public ReaderBase, public ReaderInterface<ValueType> {
 public:
   //! open the \c file for reading and load header into \c properties
   Reader(std::string_view file, Properties &properties) {
@@ -106,9 +106,9 @@ public:
   }
 
 protected:
-  using __ReaderBase__::current_index;
-  using __ReaderBase__::dtype;
-  using __ReaderBase__::in;
+  using ReaderBase::current_index;
+  using ReaderBase::dtype;
+  using ReaderBase::in;
 
   Eigen::Matrix<ValueType, Eigen::Dynamic, 1> weights;
 
@@ -170,21 +170,21 @@ protected:
  * written at a time), the Writer class is more appropriate.
  * */
 template <class ValueType = float>
-class WriterUnbuffered : public __WriterBase__<ValueType>, public WriterInterface<ValueType> {
+class WriterUnbuffered : public WriterBase<ValueType>, public WriterInterface<ValueType> {
 public:
-  using __WriterBase__<ValueType>::count;
-  using __WriterBase__<ValueType>::total_count;
-  using __WriterBase__<ValueType>::name;
-  using __WriterBase__<ValueType>::dtype;
-  using __WriterBase__<ValueType>::create;
-  using __WriterBase__<ValueType>::verify_stream;
-  using __WriterBase__<ValueType>::update_counts;
-  using __WriterBase__<ValueType>::open_success;
+  using WriterBase<ValueType>::count;
+  using WriterBase<ValueType>::total_count;
+  using WriterBase<ValueType>::name;
+  using WriterBase<ValueType>::dtype;
+  using WriterBase<ValueType>::create;
+  using WriterBase<ValueType>::verify_stream;
+  using WriterBase<ValueType>::update_counts;
+  using WriterBase<ValueType>::open_success;
 
   using vector_type = Eigen::Matrix<ValueType, 3, 1>;
 
   //! create a new track file with the specified properties
-  WriterUnbuffered(std::string_view file, const Properties &properties) : __WriterBase__<ValueType>(file) {
+  WriterUnbuffered(std::string_view file, const Properties &properties) : WriterBase<ValueType>(file) {
 
     if (!Path::has_suffix(name, ".tck"))
       throw Exception("output track files must use the .tck suffix");
@@ -310,8 +310,8 @@ protected:
  * */
 template <typename ValueType = float> class Writer : public WriterUnbuffered<ValueType> {
 public:
-  using __WriterBase__<ValueType>::count;
-  using __WriterBase__<ValueType>::total_count;
+  using WriterBase<ValueType>::count;
+  using WriterBase<ValueType>::total_count;
   using WriterUnbuffered<ValueType>::delimiter;
   using WriterUnbuffered<ValueType>::format_point;
   using WriterUnbuffered<ValueType>::weights_name;

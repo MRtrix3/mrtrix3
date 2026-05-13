@@ -75,8 +75,9 @@ inline size_t char2order(char item, bool &forward) {
   case 'E':
     forward = false;
     return (3);
+  default:
+    return (std::numeric_limits<size_t>::max());
   }
-  return (std::numeric_limits<size_t>::max());
 }
 
 inline char order2char(size_t axis, bool forward) {
@@ -101,8 +102,9 @@ inline char order2char(size_t axis, bool forward) {
       return ('B');
     else
       return ('E');
+  default:
+    return ('\0');
   }
-  return ('\0');
 }
 
 inline uint32_t type(const uint8_t *pos, bool is_BE) { return Raw::fetch_<uint32_t>(pos, is_BE); }
@@ -150,7 +152,7 @@ std::unique_ptr<ImageIO::Base> MRI::read(Header &H) const {
 
   File::MMap fmap(MR::File::Entry(H.name()));
 
-  if (memcmp(fmap.address(), "MRI#", 4))
+  if (memcmp(fmap.address(), "MRI#", 4) != 0)
     throw Exception("file \"" + H.name() + "\" is not in MRI format (unrecognised magic number)");
 
   bool is_BE = false;

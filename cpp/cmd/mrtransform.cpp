@@ -512,6 +512,7 @@ void run() {
     try {
       grad = DWI::get_DW_scheme(input_header);
     } catch (Exception &) {
+      DEBUG("No valid diffusion gradient table found");
     }
     if (grad.rows()) {
       try {

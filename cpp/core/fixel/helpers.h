@@ -151,9 +151,7 @@ check_fixel_directory(std::string_view path, bool create_if_missing = false, boo
   if (path.empty())
     path_temp = Path::cwd();
 
-  bool exists(true);
-
-  if (!(exists = Path::exists(path_temp))) {
+  if (!Path::exists(path_temp)) {
     if (create_if_missing)
       File::mkdir(path_temp);
     else

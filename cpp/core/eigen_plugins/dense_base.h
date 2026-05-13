@@ -14,6 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <cstdint>
+
 #define MRTRIX_OP(ARG)                                                                                                 \
   template <class ImageType> inline Derived &operator ARG(const MR::Helper::ConstRow<ImageType> &row) {                \
     this->resize(row.image.size(row.axis), 1);                                                                         \

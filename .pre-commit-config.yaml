@@ -16,10 +16,3 @@ repos:
         name: clang-format
         types_or: [c++]
         language: python
-#  - repo: local
-#    hooks:
-#      - id: clang-tidy-enforce
-#        name: clang-tidy (enforce)
-#        entry: clang-tidy --config-file=.clang-tidy-enforce -p build_debug
-#        language: system
-#        types_or: [c++]

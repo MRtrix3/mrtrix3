@@ -107,7 +107,8 @@ void Tree::read(std::string_view filename) {
   } else {
     try {
       read_file(filename);
-    } catch (Exception) {
+    } catch (Exception &e) {
+      DEBUG("Error reading DICOM file \"" + filename + "\" (\"" + e[0] + "\"); ignored");
     }
   }
 

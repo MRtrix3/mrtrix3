@@ -56,13 +56,13 @@ void handler(int i) noexcept {
     const char *msg = nullptr; // check_syntax off
     switch (i) {
 
-#define __SIGNAL(SIG, MSG)                                                                                             \
+#define MRTRIX_MANIP_SIGNAL(SIG, MSG)                                                                                  \
   case SIG:                                                                                                            \
     sig = #SIG;                                                                                                        \
     msg = MSG;                                                                                                         \
     break;
 #include "signals.h"
-#undef __SIGNAL
+#undef MRTRIX_MANIP_SIGNAL
 
     default:
       sig = "UNKNOWN";
@@ -98,7 +98,7 @@ void init() {
 
 #ifdef MRTRIX_WINDOWS
     // Use signal() rather than sigaction() for Windows, as the latter is not supported
-#define __SIGNAL(SIG, MSG) signal(SIG, handler)
+#define MRTRIX_MANIP_SIGNAL(SIG, MSG) signal(SIG, handler)
 #else
   // Construct the signal structure
   struct sigaction act;
@@ -106,10 +106,10 @@ void init() {
   // Since we're _Exit()-ing for any of these signals, block them all
   sigfillset(&act.sa_mask);
   act.sa_flags = 0;
-#define __SIGNAL(SIG, MSG) sigaction(SIG, &act, nullptr)
+#define MRTRIX_MANIP_SIGNAL(SIG, MSG) sigaction(SIG, &act, nullptr)
 #endif
-
 #include "signals.h"
+#undef MRTRIX_MANIP_SIGNAL
 }
 
 void on_signal(cleanup_function_type func) {

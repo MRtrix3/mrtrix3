@@ -123,6 +123,9 @@ void run() {
       else
         write<uint64_t>(headers, axis, header_out);
       break;
+    default:
+      assert(false);
+      break;
     }
   } else {
     if (header_out.datatype().is_complex())

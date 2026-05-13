@@ -212,7 +212,7 @@ template <> inline cfloat to<cfloat>(std::string_view string) {
       second.push_back('1');
     try {
       candidates.push_back(cfloat{to<float>(first), to<float>(second)});
-    } catch (Exception &) {
+    } catch (Exception &) { // NOLINT(bugprone-empty-catch)
     }
   }
 
@@ -269,7 +269,7 @@ template <> inline cdouble to<cdouble>(std::string_view string) {
       second.push_back('1');
     try {
       candidates.push_back(cdouble{to<double>(first), to<double>(second)});
-    } catch (Exception &) {
+    } catch (Exception &) { // NOLINT(bugprone-empty-catch)
     }
   }
 

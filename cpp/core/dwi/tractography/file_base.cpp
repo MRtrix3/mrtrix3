@@ -19,7 +19,7 @@
 
 namespace MR::DWI::Tractography {
 
-void __ReaderBase__::open(std::string_view file, std::string_view type, Properties &properties) {
+void ReaderBase::open(std::string_view file, std::string_view type, Properties &properties) {
   properties.clear();
   dtype = DataType::Undefined;
 

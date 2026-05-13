@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <limits>
 #include <optional>
 #include <string_view>
 

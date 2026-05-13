@@ -570,29 +570,34 @@ private:
     term_t termination = term_t::CONTINUE;
     const Eigen::Vector3f init_pos(method.pos);
     const Eigen::Vector3f init_dir(method.dir);
-    if ((termination = method.next()) != term_t::CONTINUE)
+    termination = method.next();
+    if (termination != term_t::CONTINUE)
       return termination;
     const Eigen::Vector3f dir_rk1(method.dir);
     method.pos = init_pos + (dir_rk1 * (0.5 * S.step_size));
     method.dir = init_dir;
-    if ((termination = method.next()) != term_t::CONTINUE)
+    termination = method.next();
+    if (termination != term_t::CONTINUE)
       return termination;
     const Eigen::Vector3f dir_rk2(method.dir);
     method.pos = init_pos + (dir_rk2 * (0.5 * S.step_size));
     method.dir = init_dir;
-    if ((termination = method.next()) != term_t::CONTINUE)
+    termination = method.next();
+    if (termination != term_t::CONTINUE)
       return termination;
     const Eigen::Vector3f dir_rk3(method.dir);
     method.pos = init_pos + (dir_rk3 * S.step_size);
     method.dir = (dir_rk2 + dir_rk3).normalized();
-    if ((termination = method.next()) != term_t::CONTINUE)
+    termination = method.next();
+    if (termination != term_t::CONTINUE)
       return termination;
     const Eigen::Vector3f dir_rk4(method.dir);
     method.dir = (dir_rk1 + (dir_rk2 * 2.0) + (dir_rk3 * 2.0) + dir_rk4).normalized();
     method.pos = init_pos + (method.dir * S.step_size);
     const Eigen::Vector3f final_pos(method.pos);
     const Eigen::Vector3f final_dir(method.dir);
-    if ((termination = method.next()) != term_t::CONTINUE)
+    termination = method.next();
+    if (termination != term_t::CONTINUE)
       return termination;
     if (dir_rk1.dot(method.dir) < S.cos_max_angle_ho)
       return term_t::HIGH_CURVATURE;

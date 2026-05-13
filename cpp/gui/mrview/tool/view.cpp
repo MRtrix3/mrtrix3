@@ -589,7 +589,8 @@ void View::onSetFocus() {
   try {
     window().set_focus(Eigen::Vector3f{focus_x->value(), focus_y->value(), focus_z->value()});
     window().updateGL();
-  } catch (Exception) {
+  } catch (Exception &e) {
+    WARN("Error parsing requested focus point: " + e[0]);
   }
 }
 
@@ -599,7 +600,8 @@ void View::onSetVoxel() {
     focus = window().image()->voxel2scanner() * focus;
     window().set_focus(focus);
     window().updateGL();
-  } catch (Exception) {
+  } catch (Exception &e) {
+    WARN("Error parsing requested voxel position: " + e[0]);
   }
 }
 

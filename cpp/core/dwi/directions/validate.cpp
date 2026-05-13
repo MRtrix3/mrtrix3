@@ -162,12 +162,14 @@ const DirectionsValidation validate(const MatrixType &M, std::string_view path, 
     throw Exception(e, "Direction file \"" + std::string(path) + "\" validation failed");
   }
 
+  // NOLINTNEXTLINE(bugprone-unused-local-non-trivial-variable)
   const std::string fmt = result.format == DirectionsFormat::Spherical   ? "spherical"
                           : result.format == DirectionsFormat::Cartesian ? "Cartesian"
                                                                          : "gradient table";
   DEBUG("Direction file \"" + std::string(path) + "\": " +                 //
         str(result.n_directions) + " direction(s) in " + fmt + " format"); //
   if (result.n_non_unit) {
+    // NOLINTNEXTLINE(bugprone-unused-local-non-trivial-variable)
     const std::string msg = "Direction file \"" + std::string(path) + "\": " +             //
                             str(result.n_non_unit) + " direction(s) are not of unit norm"; //
     if (result.format == DirectionsFormat::Cartesian) {
