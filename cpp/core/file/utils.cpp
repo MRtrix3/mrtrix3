@@ -17,6 +17,7 @@
 #include "file/utils.h"
 
 #include <fcntl.h>
+#include <random>
 #include <string>
 #include <unistd.h>
 
@@ -30,7 +31,9 @@ namespace MR::File {
 
 namespace {
 inline char random_char() {
-  const char c = rand() % 62;
+  thread_local std::mt19937 rng{std::random_device{}()};
+  thread_local std::uniform_int_distribution<int> dist{0, 61};
+  const char c = dist(rng);
   if (c < 10)
     return c + 48;
   if (c < 36)

@@ -1213,8 +1213,6 @@ void init(int cmdline_argc, const char *const *cmdline_argv) { // check_syntax o
 
   std::locale::global(std::locale::classic());
   std::setlocale(LC_ALL, "C"); // NOLINT(concurrency-mt-unsafe)
-
-  srand(time(nullptr));
 }
 
 std::vector<ParsedOption> get_options(std::string_view name) {

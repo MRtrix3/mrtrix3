@@ -141,6 +141,12 @@ run_checks() {
     $grep -Po '\bgetenv\s*\('
   )
 
+# - Detect any instances of C rand() or srand() (use <random> STL instead)
+  res="$res"$(
+    cat .check_syntax4.tmp | \
+    $grep -Po '\b(srand|rand)\s*\('
+  )
+
 # - Detect instances of const std::string &
 #   most can be changed to std::string_view,
 #   others would be safer to return a copy
@@ -256,6 +262,7 @@ else
   - Use std::numeric_limits<> or MR::NaN(F) / MR::Inf(F) rather than macros NAN / INFINITY;
   - Do not use C-style arrays (replace with eg. std::array<>);
   - Replace all instances of strerror() with MR::C_strerror() (declared in exception.h);
-  - Replace all instances of std::getenv() or getenv() with MR::get_env() (declared in env.h)." >> $LOG
+  - Replace all instances of std::getenv() or getenv() with MR::get_env() (declared in env.h);
+  - Replace all instances of rand() and srand() with C++ <random> equivalents (e.g. std::mt19937 + std::uniform_int_distribution); use thread_local engines or per-instance member engines to ensure thread-safety." >> $LOG
   exit 1
 fi
