@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include "env.h"
 #include "file/dicom/image.h"
 #include "file/dicom/patient.h"
 #include "file/dicom/series.h"
@@ -31,26 +32,22 @@ std::vector<std::shared_ptr<Series>> select_cmdline(const Tree &tree) {
   // ENVVAR name: DICOM_PATIENT
   // ENVVAR when reading DICOM data, match the PatientName entry against
   // ENVVAR the string provided
-  const char *patient_env = getenv("DICOM_PATIENT"); // check_syntax off
-  const std::string patient_from_env(patient_env == nullptr ? "" : std::string(patient_env));
+  const std::string patient_from_env = MR::get_env("DICOM_PATIENT"), "");
 
   // ENVVAR name: DICOM_ID
   // ENVVAR when reading DICOM data, match the PatientID entry against
   // ENVVAR the string provided
-  const char *patid_env = getenv("DICOM_ID"); // check_syntax off
-  const std::string patid_from_env(patid_env == nullptr ? "" : std::string(patid_env));
+  const std::string patid_from_env = MR::get_env("DICOM_ID"), "");
 
   // ENVVAR name: DICOM_STUDY
   // ENVVAR when reading DICOM data, match the StudyName entry against
   // ENVVAR the string provided
-  const char *study_env = getenv("DICOM_STUDY"); // check_syntax off
-  const std::string study_from_env(study_env == nullptr ? "" : std::string(study_env));
+  const std::string study_from_env = MR::get_env("DICOM_STUDY"), "");
 
   // ENVVAR name: DICOM_SERIES
   // ENVVAR when reading DICOM data, match the SeriesName entry against
   // ENVVAR the string provided
-  const char *series_env = getenv("DICOM_SERIES"); // check_syntax off
-  const std::string series_from_env(series_env == nullptr ? "" : std::string(series_env));
+  const std::string series_from_env = MR::get_env("DICOM_SERIES"), "");
 
   if (!patient_from_env.empty() || !patid_from_env.empty() || !study_from_env.empty() || !series_from_env.empty()) {
 

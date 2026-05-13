@@ -21,6 +21,7 @@
 #include <unistd.h>
 
 #include "app.h"
+#include "env.h"
 #include "exception.h"
 #include "file/config.h"
 #include "file/path.h"
@@ -60,10 +61,10 @@ inline char random_char() {
 // ENVVAR temporary files (as used in Unix pipes) for a single session,
 // ENVVAR within a single script, or for a single command without
 // ENVVAR modifying the configuration  file.
-  const char *from_env_mrtrix = getenv("MRTRIX_TMPFILE_DIR"); // check_syntax off
-  if (from_env_mrtrix != nullptr)
-    return std::string(from_env_mrtrix);
 std::string _get_tmpfile_dir() {
+  const std::optional<std::string> from_env_mrtrix = MR::get_env("MRTRIX_TMPFILE_DIR");
+  if (from_env_mrtrix.has_value())
+    return *from_env_mrtrix;
 
   const std::string default_tmpdir =
 #ifdef MRTRIX_WINDOWS
@@ -73,11 +74,7 @@ std::string _get_tmpfile_dir() {
 #endif
       ;
 
-  const char *from_env_general = getenv("TMPDIR"); // check_syntax off
-  if (from_env_general != nullptr)
-    default_tmpdir = std::string(from_env_general);
-
-  return File::Config::get("TmpFileDir", default_tmpdir);
+  return File::Config::get("TmpFileDir", MR::get_env("TMPDIR", default_tmpdir));
 }
 
 std::string tmpfile_dir() {
@@ -100,11 +97,8 @@ std::string tmpfile_dir() {
 // ENVVAR the name  of temporary files (as used in Unix pipes) for a
 // ENVVAR single session, within a single script, or for a single command
 // ENVVAR without modifying the configuration file.
-  const char *from_env = getenv("MRTRIX_TMPFILE_PREFIX"); // check_syntax off
-  if (from_env != nullptr)
-    return from_env;
-  return File::Config::get("TmpFilePrefix", "mrtrix-tmp-");
 std::string _get_tmpfile_prefix() {
+  return MR::get_env("MRTRIX_TMPFILE_PREFIX", File::Config::get("TmpFilePrefix", "mrtrix-tmp-"));
 }
 
 std::string tmpfile_prefix() {

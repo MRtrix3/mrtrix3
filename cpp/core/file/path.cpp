@@ -16,6 +16,8 @@
 
 #include "file/path.h"
 
+#include "env.h"
+
 namespace MR::Path {
 
 const std::string home_env("HOME");
@@ -122,10 +124,10 @@ std::string cwd() {
 }
 
 std::string home() {
-  const char *home = getenv(home_env.c_str()); // check_syntax off
-  if (home == nullptr)
+  const std::optional<std::string> home = MR::get_env(home_env);
+  if (!home.has_value())
     throw Exception(home_env + " environment variable is not set!");
-  return home;
+  return *home;
 }
 
 Dir::Dir(std::string_view name) : p(opendir(!name.empty() ? std::string(name).c_str() : ".")) {

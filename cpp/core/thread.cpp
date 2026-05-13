@@ -18,6 +18,7 @@
 #include <thread>
 
 #include "app.h"
+#include "env.h"
 #include "file/config.h"
 #include "thread.h"
 #include "thread_queue.h"
@@ -47,11 +48,11 @@ size_t number_of_threads() {
   // ENVVAR This overrides the automatically determined number, or the
   // ENVVAR :option:`NumberOfThreads` setting in the configuration file, but
   // ENVVAR will be overridden by the ENVVAR ``-nthreads`` command-line option.
-  const char *from_env = getenv("MRTRIX_NTHREADS"); // check_syntax off
-  if (from_env) {
-    __number_of_threads = to<size_t>(from_env);
-    __nthreads_type = nthreads_t::EXPLICIT;
-    return __number_of_threads;
+  const std::optional<std::string> from_env = MR::get_env("MRTRIX_NTHREADS");
+  if (from_env.has_value()) {
+    _number_of_threads = to<size_t>(*from_env);
+    _nthreads_type = nthreads_t::EXPLICIT;
+    return _number_of_threads;
   }
 
   // CONF option: NumberOfThreads

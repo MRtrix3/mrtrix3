@@ -17,6 +17,7 @@
 #include <limits>
 #include <unistd.h>
 
+#include "env.h"
 #include "header.h"
 #include "image_io/pipe.h"
 #include "signal_handler.h"
@@ -53,10 +54,7 @@ void Pipe::unload(const Header &) {
 // ENVVAR it is necessary to retain the temp files until all
 // ENVVAR the piped commands are executed.
 namespace {
-bool preserve_tmpfile() {
-  const char *const MRTRIX_PRESERVE_TMPFILE = getenv("MRTRIX_PRESERVE_TMPFILE"); // check_syntax off
-  return (MRTRIX_PRESERVE_TMPFILE != nullptr && to<bool>(std::string(MRTRIX_PRESERVE_TMPFILE)));
-}
+bool preserve_tmpfile() { return MR::get_env("MRTRIX_PRESERVE_TMPFILE", false); }
 } // namespace
 bool Pipe::delete_piped_images = !preserve_tmpfile();
 

@@ -23,6 +23,7 @@
 
 #include "app.h"
 #include "debug.h"
+#include "env.h"
 #include "executable_version.h"
 #include "file/config.h"
 #include "file/path.h"
@@ -110,7 +111,7 @@ std::vector<ParsedOption> option;
 // ENVVAR Set the default terminal verbosity. Default terminal verbosity
 // ENVVAR is 1. This has the same effect as the ``-quiet`` (0),
 // ENVVAR ``-info`` (2) or ``-debug`` (3) comand-line options.
-int log_level = getenv("MRTRIX_QUIET") ? 0 : (getenv("MRTRIX_LOGLEVEL") ? to<int>(getenv("MRTRIX_LOGLEVEL")) : 1);
+int log_level = MR::get_env("MRTRIX_QUIET").has_value() ? 0 : MR::get_env("MRTRIX_LOGLEVEL", 1);
 
 int exit_error_code = 0;
 bool fail_on_warn = false;

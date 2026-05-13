@@ -16,6 +16,7 @@
 
 #include "app.h"
 #include "debug.h"
+#include "env.h"
 #include "header.h"
 
 #include "file/config.h"
@@ -36,9 +37,7 @@ const std::string Config::default_sys_config_file("/etc/" + file_basename);
 // ENVVAR the software to have different configurations, etc.
 
 void Config::init() {
-  const char *sysconf_location_env = getenv("MRTRIX_CONFIGFILE"); // check_syntax off
-  const std::string sysconf_location(sysconf_location_env == nullptr ? default_sys_config_file
-                                                                     : std::string(sysconf_location_env));
+  const std::string sysconf_location = MR::get_env("MRTRIX_CONFIGFILE", default_sys_config_file);
 
   if (Path::is_file(sysconf_location)) {
     INFO("reading config file \"" + sysconf_location + "\"...");
