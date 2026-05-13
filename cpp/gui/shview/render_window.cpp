@@ -306,7 +306,7 @@ void Window::set_values(const std::filesystem::path &file_path) {
     render_frame->set_lmax(is_response ? (values.cols() - 1) * 2 : Math::SH::LforN(values.cols()));
     lmax_group->actions()[render_frame->get_lmax() / 2]->setChecked(true);
 
-    name = file_path.filename();
+    name = file_path.filename().string();
     set_values(0);
   } catch (Exception &E) {
     E.display();

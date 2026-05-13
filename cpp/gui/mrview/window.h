@@ -256,7 +256,7 @@ private:
   int anatomical_plane, annotations;
   ColourBars::Position colourbar_position, tools_colourbar_position;
   bool snap_to_image_axes_and_voxel;
-  std::string current_folder;
+  std::filesystem::path current_folder;
 
   Eigen::Array3f background_colour;
 

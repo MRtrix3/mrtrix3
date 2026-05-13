@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <filesystem>
 #include <string>
 
 #include "command.h"
@@ -31,8 +32,6 @@
 #include "dwi/tractography/editing/loader.h"
 #include "dwi/tractography/editing/receiver.h"
 #include "dwi/tractography/editing/worker.h"
-
-#include <filesystem>
 
 using namespace MR;
 using namespace App;
@@ -137,7 +136,7 @@ void run() {
   // Get the consensus streamline properties from among the multiple input files
   Tractography::Properties properties;
   size_t count = 0;
-  std::vector<std::string> input_file_list;
+  std::vector<std::filesystem::path> input_file_list;
 
   for (size_t file_index = 0; file_index != num_inputs; ++file_index) {
     const std::filesystem::path input_path{argument[file_index]};
