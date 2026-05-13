@@ -244,6 +244,7 @@ else()
         tcb_span
         GIT_REPOSITORY https://github.com/tcbrindle/span.git
         GIT_TAG        836dc6a0efd9849cb194e88e4aa2387436bb079b
+        SOURCE_SUBDIR  non_existent_dir
     )
     FetchContent_MakeAvailable(tcb_span)
 
