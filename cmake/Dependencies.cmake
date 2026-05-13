@@ -240,13 +240,13 @@ if(MRTRIX_USE_SYSTEM_TCB_SPAN)
     target_include_directories(tcb_span INTERFACE ${TCB_SPAN_INCLUDE_DIR})
     add_library(tcb::span ALIAS tcb_span)
 else()
-    message(STATUS "Downloading tcb::span...")
-
-    FetchContent_Populate(
+    FetchContent_Declare(
         tcb_span
         GIT_REPOSITORY https://github.com/tcbrindle/span.git
         GIT_TAG        836dc6a0efd9849cb194e88e4aa2387436bb079b
+        SOURCE_SUBDIR  non_existent_dir
     )
+    FetchContent_MakeAvailable(tcb_span)
 
     add_library(tcb_span INTERFACE)
     target_include_directories(tcb_span INTERFACE ${tcb_span_SOURCE_DIR}/include)
