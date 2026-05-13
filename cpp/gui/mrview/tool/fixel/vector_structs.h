@@ -16,10 +16,15 @@
 
 #pragma once
 
+#include <algorithm>
+#include <cstdint>
+#include <limits>
+#include <vector>
+
 namespace MR::GUI::MRView::Tool {
 
-enum FixelColourType { Direction, CValue };
-enum FixelScaleType { Unity, Value };
+enum class FixelColourType { Direction, Value };
+enum class FixelScaleType { Unity, Value };
 
 struct FixelValue {
   bool loaded = false;

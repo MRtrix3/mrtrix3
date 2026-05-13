@@ -118,7 +118,7 @@ template <typename ValueType> inline ValueType fetch_(const void *address, bool 
   return ByteOrder::swap(*as<ValueType>(address), is_big_endian);
 }
 
-template <typename ValueType> inline ValueType fetch__native(const void *address) { return *as<ValueType>(address); }
+template <typename ValueType> inline ValueType fetch_native(const void *address) { return *as<ValueType>(address); }
 
 // PUT at pointer:
 template <typename ValueType> inline void store_LE(const ValueType value, void *address) {

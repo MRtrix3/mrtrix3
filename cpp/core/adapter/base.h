@@ -31,10 +31,12 @@ inline AdapterType<ImageType> make(const ImageType &parent, Args &&...args) {
 
 template <class AdapterType, class ImageType>
 class Base : public ImageBase<AdapterType, typename ImageType::value_type> {
+protected:
+  // NOLINTNEXTLINE(bugprone-crtp-constructor-accessibility)
+  Base(const ImageType &parent) : parent_(parent) {}
+
 public:
   using value_type = typename ImageType::value_type;
-
-  Base(const ImageType &parent) : parent_(parent) {}
 
   template <class U> const Base &operator=(const U &V) { return parent_ = V; }
 

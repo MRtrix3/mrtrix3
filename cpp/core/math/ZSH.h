@@ -17,6 +17,7 @@
 #pragma once
 
 #include <Eigen/Dense>
+#include <cstddef>
 
 #include "math/SH.h"
 #include "math/least_squares.h"
@@ -38,7 +39,7 @@ inline size_t NforL(int lmax) { return (1 + lmax / 2); }
 inline size_t index(int l) { return (l / 2); }
 
 //! returns the largest \e lmax given \a N parameters
-inline size_t LforN(int N) { return (2 * (N - 1)); }
+inline size_t LforN(int N) { return (static_cast<size_t>(2 * (N - 1))); }
 
 //! form the ZSH->amplitudes matrix for a set of inclination angles
 /*! This computes the matrix \a ZSHT mapping zonal spherical harmonic

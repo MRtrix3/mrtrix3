@@ -102,7 +102,8 @@ node_t Tck2nodes_revsearch::select_node(const Tractography::Streamline<> &tck, I
       if (this_node)
         return this_node;
     }
-    if (max_dist && ((dist += (tck[index] - tck[index + step]).norm()) > max_dist))
+    dist += (tck[index] - tck[index + step]).norm();
+    if (max_dist != 0.0 && dist > max_dist)
       return 0;
   }
 

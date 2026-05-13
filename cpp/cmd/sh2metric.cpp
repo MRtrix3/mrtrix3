@@ -95,6 +95,7 @@ const DWI::Directions::Set get_directions() {
     try {
       return DWI::Directions::Set(static_cast<std::string>(opt[0][0]));
     } catch (Exception &) {
+      DEBUG("Unable to import direction set interpreting \"" + opt[0][0] + "\" as filesystem path");
     }
     try {
       return DWI::Directions::Set(static_cast<size_t>(opt[0][0]));
@@ -168,7 +169,7 @@ void run_entropy() {
       assign_pos_of(pos).to(out);
       try {
         out.value() = static_cast<float>(shared->normalise(Math::Entropy::nats(concat_amps)));
-      } catch (Exception &) {
+      } catch (Exception &) { // NOLINT(bugprone-empty-catch)
         out.value() = std::numeric_limits<float>::quiet_NaN();
       }
       return true;

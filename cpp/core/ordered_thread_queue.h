@@ -23,26 +23,26 @@ namespace MR::Thread {
 
 namespace {
 
-template <class Item> class __Ordered {
+template <class Item> class Ordered {
 public:
-  __Ordered() = default;
-  __Ordered(const Item &item) : item(item) {}
+  Ordered() : index(-1) {}
+  Ordered(const Item &item) : item(item), index(-1) {}
 
   Item item;
-  size_t index;
+  ssize_t index;
 };
 
 struct CompareItems {
-  template <class Item> bool operator()(const __Ordered<Item> *a, const __Ordered<Item> *b) const {
+  template <class Item> bool operator()(const Ordered<Item> *a, const Ordered<Item> *b) const {
     return a->index < b->index;
   }
 };
 
 template <class JobType> struct job_is_single_threaded : std::true_type {};
-template <class JobType> struct job_is_single_threaded<__Multi<JobType>> : std::false_type {};
+template <class JobType> struct job_is_single_threaded<Multi<JobType>> : std::false_type {};
 
-template <class Item> struct __batch_size<__Ordered<__Batch<Item>>> {
-  __batch_size(const __Ordered<__Batch<Item>> &item) : n(item.item.num) {}
+template <class Item> struct _batch_size<Ordered<Batch<Item>>> {
+  _batch_size(const Ordered<Batch<Item>> &item) : n(item.item.num) {}
   operator size_t() const { return n; }
   const size_t n;
 };
@@ -51,28 +51,28 @@ template <class Item> struct __batch_size<__Ordered<__Batch<Item>>> {
  *        Source/Pipe/Sink for UNBATCHED ordered queue                 *
  ***********************************************************************/
 
-template <class Item> struct Type<__Ordered<Item>> {
+template <class Item> struct Type<Ordered<Item>> {
   using item = Item;
-  using queue = Queue<__Ordered<Item>>;
+  using queue = Queue<Ordered<Item>>;
   using reader = typename queue::Reader;
   using writer = typename queue::Writer;
   using read_item = typename reader::Item;
   using write_item = typename writer::Item;
 };
 
-template <class Item, class Functor> struct __Source<__Ordered<Item>, Functor> {
+template <class Item, class Functor> struct SourceWrapper<Ordered<Item>, Functor> {
 
-  using queued_t = __Ordered<Item>;
+  using queued_t = Ordered<Item>;
   using queue_t = typename Type<queued_t>::queue;
   using writer_t = typename Type<queued_t>::writer;
-  using functor_t = typename __job<Functor>::member_type;
+  using functor_t = typename _job<Functor>::member_type;
 
   writer_t writer;
   functor_t func;
   size_t batch_size;
 
-  __Source(queue_t &queue, Functor &functor, const queued_t &item)
-      : writer(queue), func(__job<Functor>::functor(functor)), batch_size(__batch_size<queued_t>(item)) {}
+  SourceWrapper(queue_t &queue, Functor &functor, const queued_t &item)
+      : writer(queue), func(_job<Functor>::functor(functor)), batch_size(_batch_size<queued_t>(item)) {}
 
   void execute() {
     size_t count = 0;
@@ -85,26 +85,26 @@ template <class Item, class Functor> struct __Source<__Ordered<Item>, Functor> {
   }
 };
 
-template <class Item1, class Functor, class Item2> struct __Pipe<__Ordered<Item1>, Functor, __Ordered<Item2>> {
+template <class Item1, class Functor, class Item2> struct PipeWrapper<Ordered<Item1>, Functor, Ordered<Item2>> {
 
-  using queued1_t = __Ordered<Item1>;
-  using queued2_t = __Ordered<Item2>;
+  using queued1_t = Ordered<Item1>;
+  using queued2_t = Ordered<Item2>;
   using queue1_t = typename Type<queued1_t>::queue;
   using queue2_t = typename Type<queued2_t>::queue;
   using reader_t = typename Type<queued1_t>::reader;
   using writer_t = typename Type<queued2_t>::writer;
-  using functor_t = typename __job<Functor>::member_type;
+  using functor_t = typename _job<Functor>::member_type;
 
   reader_t reader;
   writer_t writer;
   functor_t func;
   const size_t batch_size;
 
-  __Pipe(queue1_t &queue_in, Functor &functor, queue2_t &queue_out, const queued2_t &item2)
+  PipeWrapper(queue1_t &queue_in, Functor &functor, queue2_t &queue_out, const queued2_t &item2)
       : reader(queue_in),
         writer(queue_out),
-        func(__job<Functor>::functor(functor)),
-        batch_size(__batch_size<queued2_t>(item2)) {}
+        func(_job<Functor>::functor(functor)),
+        batch_size(_batch_size<queued2_t>(item2)) {}
 
   void execute() {
     auto in = reader.placeholder();
@@ -112,29 +112,31 @@ template <class Item1, class Functor, class Item2> struct __Pipe<__Ordered<Item1
     while (in.read()) {
       if (!func(in->item, out->item))
         break;
+      assert(in->index >= 0);
       out->index = in->index;
       out.write();
     }
   }
 };
 
-template <class Item, class Functor> struct __Sink<__Ordered<Item>, Functor> {
+template <class Item, class Functor> struct SinkWrapper<Ordered<Item>, Functor> {
 
-  using queued_t = __Ordered<Item>;
+  using queued_t = Ordered<Item>;
   using queue_t = typename Type<queued_t>::queue;
   using reader_t = typename Type<queued_t>::reader;
-  using functor_t = typename __job<Functor>::member_type;
+  using functor_t = typename _job<Functor>::member_type;
 
   reader_t reader;
   functor_t func;
 
-  __Sink(queue_t &queue, Functor &functor) : reader(queue), func(__job<Functor>::functor(functor)) {}
+  SinkWrapper(queue_t &queue, Functor &functor) : reader(queue), func(_job<Functor>::functor(functor)) {}
 
   void execute() {
     size_t expected = 0;
     auto in = reader.placeholder();
     std::set<queued_t *, CompareItems> buffer;
     while (in.read()) {
+      assert(in->index >= 0);
       if (in->index > expected) {
         buffer.emplace(in.stash());
         continue;
@@ -157,29 +159,29 @@ template <class Item, class Functor> struct __Sink<__Ordered<Item>, Functor> {
  *        Source/Pipe/Sink for BATCHED ordered queue                 *
  ***********************************************************************/
 
-template <class Item> struct Type<__Ordered<__Batch<Item>>> {
+template <class Item> struct Type<Ordered<Batch<Item>>> {
   using item = Item;
-  using queue = Queue<__Ordered<std::vector<Item>>>;
+  using queue = Queue<Ordered<std::vector<Item>>>;
   using reader = typename queue::Reader;
   using writer = typename queue::Writer;
   using read_item = typename reader::Item;
   using write_item = typename writer::Item;
 };
 
-template <class Item, class Functor> struct __Source<__Ordered<__Batch<Item>>, Functor> {
+template <class Item, class Functor> struct SourceWrapper<Ordered<Batch<Item>>, Functor> {
 
-  using queued_t = __Ordered<std::vector<Item>>;
-  using passed_t = __Ordered<__Batch<Item>>;
+  using queued_t = Ordered<std::vector<Item>>;
+  using passed_t = Ordered<Batch<Item>>;
   using queue_t = typename Type<queued_t>::queue;
   using writer_t = typename Type<queued_t>::writer;
-  using functor_t = typename __job<Functor>::member_type;
+  using functor_t = typename _job<Functor>::member_type;
 
   writer_t writer;
   functor_t func;
   size_t batch_size;
 
-  __Source(queue_t &queue, Functor &functor, const passed_t &item)
-      : writer(queue), func(__job<Functor>::functor(functor)), batch_size(__batch_size<passed_t>(item)) {}
+  SourceWrapper(queue_t &queue, Functor &functor, const passed_t &item)
+      : writer(queue), func(_job<Functor>::functor(functor)), batch_size(_batch_size<passed_t>(item)) {}
 
   void execute() {
     size_t count = 0;
@@ -200,27 +202,27 @@ template <class Item, class Functor> struct __Source<__Ordered<__Batch<Item>>, F
 };
 
 template <class Item1, class Functor, class Item2>
-struct __Pipe<__Ordered<__Batch<Item1>>, Functor, __Ordered<__Batch<Item2>>> {
+struct PipeWrapper<Ordered<Batch<Item1>>, Functor, Ordered<Batch<Item2>>> {
 
-  using queued1_t = __Ordered<std::vector<Item1>>;
-  using queued2_t = __Ordered<std::vector<Item2>>;
-  using passed2_t = __Ordered<__Batch<Item2>>;
+  using queued1_t = Ordered<std::vector<Item1>>;
+  using queued2_t = Ordered<std::vector<Item2>>;
+  using passed2_t = Ordered<Batch<Item2>>;
   using queue1_t = typename Type<queued1_t>::queue;
   using queue2_t = typename Type<queued2_t>::queue;
   using reader_t = typename Type<queued1_t>::reader;
   using writer_t = typename Type<queued2_t>::writer;
-  using functor_t = typename __job<Functor>::member_type;
+  using functor_t = typename _job<Functor>::member_type;
 
   reader_t reader;
   writer_t writer;
   functor_t func;
   const size_t batch_size;
 
-  __Pipe(queue1_t &queue_in, Functor &functor, queue2_t &queue_out, const passed2_t &item2)
+  PipeWrapper(queue1_t &queue_in, Functor &functor, queue2_t &queue_out, const passed2_t &item2)
       : reader(queue_in),
         writer(queue_out),
-        func(__job<Functor>::functor(functor)),
-        batch_size(__batch_size<passed2_t>(item2)) {}
+        func(_job<Functor>::functor(functor)),
+        batch_size(_batch_size<passed2_t>(item2)) {}
 
   void execute() {
     auto in = reader.placeholder();
@@ -233,6 +235,7 @@ struct __Pipe<__Ordered<__Batch<Item1>>, Functor, __Ordered<__Batch<Item2>>> {
           ++k;
       }
       out->item.resize(k);
+      assert(in->index >= 0);
       out->index = in->index;
       if (!out.write())
         return;
@@ -240,23 +243,24 @@ struct __Pipe<__Ordered<__Batch<Item1>>, Functor, __Ordered<__Batch<Item2>>> {
   }
 };
 
-template <class Item, class Functor> struct __Sink<__Ordered<__Batch<Item>>, Functor> {
+template <class Item, class Functor> struct SinkWrapper<Ordered<Batch<Item>>, Functor> {
 
-  using queued_t = __Ordered<std::vector<Item>>;
+  using queued_t = Ordered<std::vector<Item>>;
   using queue_t = typename Type<queued_t>::queue;
   using reader_t = typename Type<queued_t>::reader;
-  using functor_t = typename __job<Functor>::member_type;
+  using functor_t = typename _job<Functor>::member_type;
 
   reader_t reader;
   functor_t func;
 
-  __Sink(queue_t &queue, Functor &functor) : reader(queue), func(__job<Functor>::functor(functor)) {}
+  SinkWrapper(queue_t &queue, Functor &functor) : reader(queue), func(_job<Functor>::functor(functor)) {}
 
   void execute() {
     size_t expected = 0;
     auto in = reader.placeholder();
     std::set<queued_t *, CompareItems> buffer;
     while (in.read()) {
+      assert(in->index >= 0);
       if (in->index > expected) {
         buffer.emplace(in.stash());
         continue;
@@ -289,11 +293,15 @@ inline void run_ordered_queue(Source &&source,
   static_assert(job_is_single_threaded<Source>::value && job_is_single_threaded<Sink>::value,
                 "run_ordered_queue can only run with single-threaded source & sink");
 
-  if (__batch_size<Item1>(item1) != __batch_size<Item2>(item2))
+  if (_batch_size<Item1>(item1) != _batch_size<Item2>(item2))
     throw Exception("Thread::run_ordered_queue must be run with matching batch sizes across all stages");
 
-  run_queue(
-      std::move(source), __Ordered<Item1>(item1), std::move(pipe), __Ordered<Item2>(item2), std::move(sink), capacity);
+  run_queue(std::forward<Source>(source),
+            Ordered<Item1>(item1),
+            std::forward<Pipe>(pipe),
+            Ordered<Item2>(item2),
+            std::forward<Sink>(sink),
+            capacity);
 }
 
 template <class Source, class Item1, class Pipe1, class Item2, class Pipe2, class Item3, class Sink>
@@ -308,17 +316,16 @@ inline void run_ordered_queue(Source &&source,
   static_assert(job_is_single_threaded<Source>::value && job_is_single_threaded<Sink>::value,
                 "run_ordered_queue can only run with single-threaded source & sink");
 
-  if (__batch_size<Item1>(item1) != __batch_size<Item2>(item2) ||
-      __batch_size<Item1>(item1) != __batch_size<Item3>(item3))
+  if (_batch_size<Item1>(item1) != _batch_size<Item2>(item2) || _batch_size<Item1>(item1) != _batch_size<Item3>(item3))
     throw Exception("Thread::run_ordered_queue must be run with matching batch sizes across all stages");
 
-  run_queue(std::move(source),
-            __Ordered<Item1>(item1),
-            std::move(pipe1),
-            __Ordered<Item2>(item2),
-            std::move(pipe2),
-            __Ordered<Item3>(item3),
-            std::move(sink),
+  run_queue(std::forward<Source>(source),
+            Ordered<Item1>(item1),
+            std::forward<Pipe1>(pipe1),
+            Ordered<Item2>(item2),
+            std::forward<Pipe2>(pipe2),
+            Ordered<Item3>(item3),
+            std::forward<Sink>(sink),
             capacity);
 }
 

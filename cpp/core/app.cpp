@@ -59,7 +59,7 @@ const std::string core_reference =
     "NeuroImage, 2019, 202, 116137";                                                                          //
 
 // clang-format off
-OptionGroup __standard_options = OptionGroup("Standard options")
+OptionGroup _standard_options = OptionGroup("Standard options")
   + Option("info", "display information messages.")
   + Option("quiet",
            "do not display information messages or progress status; "
@@ -498,7 +498,7 @@ std::string Option::usage() const {
 std::string get_help_string(const bool format) {
   return help_head(format) + help_synopsis(format) + usage_syntax(format) + ARGUMENTS.syntax(format) +
          DESCRIPTION.syntax(format) + EXAMPLES.syntax(format) + OPTIONS.syntax(format) +
-         __standard_options.header(format) + __standard_options.contents(format) + __standard_options.footer(format) +
+         _standard_options.header(format) + _standard_options.contents(format) + _standard_options.footer(format) +
          help_tail(format);
 }
 
@@ -566,25 +566,25 @@ std::string full_usage() {
     for (size_t j = 0; j < OPTIONS[i].size(); ++j)
       s += OPTIONS[i][j].usage();
 
-  for (size_t i = 0; i < __standard_options.size(); ++i)
-    s += __standard_options[i].usage();
+  for (size_t i = 0; i < _standard_options.size(); ++i)
+    s += _standard_options[i].usage();
 
   return s;
 }
 
 std::string markdown_usage() {
   /*
-  help_head (format)
-  + help_synopsis (format)
-  + usage_syntax (format)
-  + ARGUMENTS.syntax (format)
-  + DESCRIPTION.syntax (format)
-  + EXAMPLES.syntax (format)
-  + OPTIONS.syntax (format)
-  + __standard_options.header (format)
-  + __standard_options.contents (format)
-  + __standard_options.footer (format)
-  + help_tail (format);
+    help_head (format)
+    + help_synopsis (format)
+    + usage_syntax (format)
+    + ARGUMENTS.syntax (format)
+    + DESCRIPTION.syntax (format)
+    + EXAMPLES.syntax (format)
+    + OPTIONS.syntax (format)
+    + _standard_options.header (format)
+    + _standard_options.contents (format)
+    + _standard_options.footer (format)
+    + help_tail (format);
   */
   std::string s = std::string("## Synopsis\n\n") + SYNOPSIS + "\n\n";
 
@@ -662,8 +662,8 @@ std::string markdown_usage() {
   }
 
   s += "#### Standard options\n\n";
-  for (size_t i = 0; i < __standard_options.size(); ++i)
-    s += format_option(__standard_options[i]);
+  for (size_t i = 0; i < _standard_options.size(); ++i)
+    s += format_option(_standard_options[i]);
 
   s += std::string("## References\n\n");
   for (size_t i = 0; i < REFERENCES.size(); ++i)
@@ -678,17 +678,17 @@ std::string markdown_usage() {
 
 std::string restructured_text_usage() {
   /*
-  help_head (format)
-  + help_synopsis (format)
-  + usage_syntax (format)
-  + ARGUMENTS.syntax (format)
-  + DESCRIPTION.syntax (format)
-  + EXAMPLES.syntax (format)
-  + OPTIONS.syntax (format)
-  + __standard_options.header (format)
-  + __standard_options.contents (format)
-  + __standard_options.footer (format)
-  + help_tail (format);
+    help_head (format)
+    + help_synopsis (format)
+    + usage_syntax (format)
+    + ARGUMENTS.syntax (format)
+    + DESCRIPTION.syntax (format)
+    + EXAMPLES.syntax (format)
+    + OPTIONS.syntax (format)
+    + _standard_options.header (format)
+    + _standard_options.contents (format)
+    + _standard_options.footer (format)
+    + help_tail (format);
   */
 
   std::string s = std::string("Synopsis\n--------\n\n") + SYNOPSIS + "\n\n";
@@ -792,8 +792,8 @@ std::string restructured_text_usage() {
   }
 
   s += "Standard options\n^^^^^^^^^^^^^^^^\n\n";
-  for (size_t i = 0; i < __standard_options.size(); ++i)
-    s += format_option(__standard_options[i]);
+  for (size_t i = 0; i < _standard_options.size(); ++i)
+    s += format_option(_standard_options[i]);
 
   s += std::string("References\n^^^^^^^^^^\n\n");
   for (size_t i = 0; i < REFERENCES.size(); ++i) {
@@ -822,7 +822,7 @@ const Option *match_option(std::string_view arg) {
 
   for (size_t i = 0; i < OPTIONS.size(); ++i)
     get_matches(candidates, OPTIONS[i], root);
-  get_matches(candidates, __standard_options, root);
+  get_matches(candidates, _standard_options, root);
 
   // no matches
   if (candidates.empty())

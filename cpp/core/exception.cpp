@@ -48,7 +48,7 @@ void display_exception_cmdline(const Exception &E, int log_level) {
       report_to_user_func(E.description[n], log_level);
 }
 
-bool __need_newline = false;
+bool _need_newline = false;
 
 void cmdline_report_to_user_func(std::string_view msg, int type) {
 
@@ -61,9 +61,9 @@ void cmdline_report_to_user_func(std::string_view msg, int type) {
   static const std::unordered_map<int, std::string> console_prefixes{
       {-1, ""}, {0, "[ERROR] "}, {1, "[WARNING] "}, {2, "[INFO] "}, {3, "[DEBUG] "}};
 
-  if (__need_newline) {
-    __print_stderr("\n");
-    __need_newline = false;
+  if (_need_newline) {
+    _print_stderr("\n");
+    _need_newline = false;
   }
 
   auto clamp = [](int t) {
@@ -72,10 +72,10 @@ void cmdline_report_to_user_func(std::string_view msg, int type) {
     return t + 1;
   };
 
-  __print_stderr(printf(colour_format_strings.at(App::terminal_use_colour ? type : -1).c_str(),
-                        App::NAME.c_str(),
-                        console_prefixes.at(type).c_str(),
-                        std::string(msg).c_str()));
+  _print_stderr(printf(colour_format_strings.at(App::terminal_use_colour ? type : -1).c_str(),
+                       App::NAME.c_str(),
+                       console_prefixes.at(type).c_str(),
+                       std::string(msg).c_str()));
   if (type == 1 && App::fail_on_warn)
     throw Exception("terminating due to request to fail on warning");
 }

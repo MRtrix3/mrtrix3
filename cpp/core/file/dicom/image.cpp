@@ -125,8 +125,9 @@ void Image::parse_item(Element &item) {
         G[2] = item.get_float(2, G[2]);
       }
     }
+    default:
+      return;
     }
-    return;
   case 0x0019U:
     switch (item.element) { // GE DW encoding info:
     case 0x10BBU:
@@ -150,8 +151,9 @@ void Image::parse_item(Element &item) {
       }
     }
       return;
+    default:
+      return;
     }
-    return;
   case 0x0020U:
     for (const auto &p : item.parents)
       if (p.group == 0x2005)
@@ -198,8 +200,9 @@ void Image::parse_item(Element &item) {
         if (frame_dim[n] < index[n])
           frame_dim[n] = index[n];
       return;
+    default:
+      return;
     }
-    return;
   case 0x0028U:
     switch (item.element) {
     case 0x0002U:
@@ -227,8 +230,9 @@ void Image::parse_item(Element &item) {
     case 0x1053U:
       scale_slope = item.get_float(0, scale_slope);
       return;
+    default:
+      return;
     }
-    return;
   case 0x0029U: // Siemens CSA entry
     if (item.element == 0x1010U || item.element == 0x1020U || item.element == 0x1110U || item.element == 0x1120U ||
         item.element == 0x1210U || item.element == 0x1220U) {
@@ -247,10 +251,12 @@ void Image::parse_item(Element &item) {
       bvalue = item.get_float(0, bvalue);
       return;
     case 0x1004:
+      // NOLINTNEXTLINE(bugprone-string-literal-with-embedded-nul)
       philips_orientation = item.get_string(0, "\0")[0];
       return;
+    default:
+      return;
     }
-    return;
   case 0x2005U: // Philips DW encoding info:
     switch (item.element) {
     case 0x10B0U:
@@ -265,8 +271,9 @@ void Image::parse_item(Element &item) {
     case 0x1413:
       grad_number = item.get_int()[0];
       return;
+    default:
+      return;
     }
-    return;
   case 0x7FE0U:
     if (item.element == 0x0010U) {
       data = item.offset(item.data);
@@ -288,7 +295,10 @@ void Image::parse_item(Element &item) {
           in_frames = true;
       }
       return;
+    default:
+      return;
     }
+  default:
     return;
   }
 }
@@ -563,10 +573,10 @@ Frame::get_DW_scheme(const std::vector<Frame *> &frames, const size_t nslices, c
     Eigen::Vector3d g = Eigen::Vector3d::Zero();
     double bvalue = frame.bvalue;
     if (bvalue < 0) {
-      bvalue = 0;
+      bvalue = 0.0;
       report_negative_bvalues = true;
     }
-    if (bvalue) {
+    if (bvalue != 0.0) {
       if (frame.G.allFinite()) {
         g[0] = -frame.G[0];
         g[1] = -frame.G[1];

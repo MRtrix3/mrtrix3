@@ -487,7 +487,7 @@ void Volume::paint(Projection &projection) {
 }
 
 inline Tool::View *Volume::get_view_tool() const {
-  Tool::Dock *dock = dynamic_cast<Tool::__Action__ *>(window().tools()->actions()[0])->dock;
+  Tool::Dock *dock = dynamic_cast<Tool::ActionWrapper *>(window().tools()->actions()[0])->dock;
   if (!dock)
     return nullptr;
   return dynamic_cast<Tool::View *>(dock->tool);

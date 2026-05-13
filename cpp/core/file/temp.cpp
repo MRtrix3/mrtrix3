@@ -30,7 +30,9 @@ namespace MR::File {
 
 namespace {
 inline char random_char() {
-  const char c = rand() % 62;
+  thread_local std::mt19937 rng{std::random_device{}()};
+  thread_local std::uniform_int_distribution<int> dist{0, 61};
+  const char c = static_cast<const char>(dist(rng));
   if (c < 10)
     return c + 48;
   if (c < 36)
@@ -61,19 +63,11 @@ inline char random_char() {
 // ENVVAR temporary files (as used in Unix pipes) for a single session,
 // ENVVAR within a single script, or for a single command without
 // ENVVAR modifying the configuration  file.
-std::filesystem::path __get_tmpfile_dir() {
-  const char *from_env_mrtrix = getenv("MRTRIX_TMPFILE_DIR"); // check_syntax off
-  if (from_env_mrtrix != nullptr)
-    return std::string(from_env_mrtrix);
-
-  std::filesystem::path default_tmpdir = std::filesystem::temp_directory_path();
-
-  const char *from_env_general = getenv("TMPDIR"); // check_syntax off
-  if (from_env_general != nullptr)
-    default_tmpdir = std::filesystem::path(from_env_general);
-
-  const std::string from_config = File::Config::get("TmpFileDir");
-  return from_config.empty() ? default_tmpdir : std::filesystem::path(from_config);
+std::filesystem::path _get_tmpfile_dir() {
+  const std::optional<std::filesystem::path> from_env_mrtrix = MR::get_env("MRTRIX_TMPFILE_DIR");
+  if (from_env_mrtrix.has_value())
+    return from_env_mrtrix.value();
+  return {File::Config::get("TmpFileDir", MR::get_env("TMPDIR", std::filesystem::temp_directory_path().string()))};
 }
 
 const std::filesystem::path &tmpfile_dir() {

@@ -72,7 +72,7 @@ void Base::paintGL() {
       // Draw additional labels from tools
       QList<QAction *> tools = window().tools()->actions();
       for (size_t i = 0, line_num = 4, N = tools.size(); i < N; ++i) {
-        Tool::Dock *dock = dynamic_cast<Tool::__Action__ *>(tools[i])->dock;
+        Tool::Dock *dock = dynamic_cast<Tool::ActionWrapper *>(tools[i])->dock;
         if (dock)
           line_num += dock->tool->draw_tool_labels(LeftEdge | BottomEdge, line_num, projection);
       }
@@ -98,7 +98,7 @@ void Base::paintGL() {
       QList<QAction *> tools = window().tools()->actions();
       size_t num_tool_colourbars = 0;
       for (size_t i = 0, N = tools.size(); i < N; ++i) {
-        Tool::Dock *dock = dynamic_cast<Tool::__Action__ *>(tools[i])->dock;
+        Tool::Dock *dock = dynamic_cast<Tool::ActionWrapper *>(tools[i])->dock;
         if (dock)
           num_tool_colourbars += dock->tool->visible_number_colourbars();
       }
@@ -106,7 +106,7 @@ void Base::paintGL() {
       colourbar_renderer.begin(&projection, window().tools_colourbar_position, num_tool_colourbars);
 
       for (size_t i = 0, N = tools.size(); i < N; ++i) {
-        Tool::Dock *dock = dynamic_cast<Tool::__Action__ *>(tools[i])->dock;
+        Tool::Dock *dock = dynamic_cast<Tool::ActionWrapper *>(tools[i])->dock;
         if (dock)
           dock->tool->draw_colourbars();
       }
@@ -245,14 +245,16 @@ Eigen::Quaternionf Base::get_rotate_rotation(const ModelViewProjection &proj) co
   if (dpos.x() == 0 && dpos.y() == 0)
     return Eigen::Quaternionf(NaNF, NaNF, NaNF, NaNF);
 
-  Eigen::Vector3f x1(window().mouse_position().x() - proj.x_position() - proj.width() / 2,
-                     window().mouse_position().y() - proj.y_position() - proj.height() / 2,
-                     0.0);
+  Eigen::Vector3f x1(static_cast<float>(window().mouse_position().x() - proj.x_position()) -
+                         (0.5F * static_cast<float>(proj.width())),
+                     static_cast<float>(window().mouse_position().y() - proj.y_position()) -
+                         (0.5F * static_cast<float>(proj.height())),
+                     0.0F);
 
   if (x1.norm() < 16.0f)
     return Eigen::Quaternionf(NaNF, NaNF, NaNF, NaNF);
 
-  Eigen::Vector3f x0(dpos.x() - x1[0], dpos.y() - x1[1], 0.0);
+  Eigen::Vector3f x0(static_cast<float>(dpos.x()) - x1[0], static_cast<float>(dpos.y()) - x1[1], 0.0F);
 
   x1.normalize();
   x0.normalize();

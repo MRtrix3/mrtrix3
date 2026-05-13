@@ -270,6 +270,9 @@ void Set::initialise_adjacency() {
           case 2:
             edge = std::make_pair(p->indices[2], p->indices[0]);
             break;
+          default:
+            assert(false);
+            break;
           }
           bool found = false;
           for (auto h = horizon.begin(); h != horizon.end(); ++h) {
@@ -331,6 +334,9 @@ void Set::initialise_adjacency() {
       case 5:
         from = vertices[current.indices[2]].index;
         to = vertices[current.indices[0]].index;
+        break;
+      default:
+        assert(false);
         break;
       }
       bool found = false;
@@ -440,6 +446,9 @@ void FastLookupSet::initialise() {
         break;
       case 3:
         el += el_grid_step;
+        break;
+      default:
+        assert(false);
         break;
       }
 

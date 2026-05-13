@@ -86,7 +86,8 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
   }
 
   bool is_nifti = true;
-  if (memcmp(NH.magic, Type<NiftiHeader>::magic1.data(), 4) && memcmp(NH.magic, Type<NiftiHeader>::magic2.data(), 4)) {
+  if (memcmp(NH.magic, Type<NiftiHeader>::magic1.data(), 4) != 0 &&
+      memcmp(NH.magic, Type<NiftiHeader>::magic2.data(), 4) != 0) {
     if (Type<NiftiHeader>::is_version2) {
       throw Exception("image \"" + H.path().string() + "\" is not in " + version + " format (invalid magic signature)");
     } else {
@@ -96,7 +97,7 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
   }
 
   if (Type<NiftiHeader>::is_version2) {
-    if (memcmp(NH.magic + 4, Type<NiftiHeader>::signature_extra.data(), 4))
+    if (memcmp(NH.magic + 4, Type<NiftiHeader>::signature_extra.data(), 4) != 0)
       WARN("possible file transfer corruption of file \"" + H.path().string() + "\" (invalid magic signature)");
   } else {
     std::string db_name(19, '\0');
@@ -672,8 +673,8 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> read_gz(Header &H) {
     memset(io_handler.get()->header() + sizeof(NH), 0, sizeof(nifti1_extender));
     io_handler->files.push_back(File::Entry(static_cast<const Header &>(H).path(), data_offset));
     return io_handler;
-  } catch (...) {
-    return std::unique_ptr<ImageIO::Base>();
+  } catch (Exception &e) {
+    throw Exception(e, "Error reading compressed NIfTI image \"" + H.name() + "\"");
   }
 }
 

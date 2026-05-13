@@ -24,7 +24,7 @@ void Dock::closeEvent(QCloseEvent *) {
   tool->close_event();
 }
 
-void __Action__::visibility_slot(bool) { setChecked(dock->isVisible()); }
+void ActionWrapper::visibility_slot(bool) { setChecked(dock->isVisible()); }
 
 Base::Base(Dock *parent) : QFrame(parent) {
   QFont f = font();

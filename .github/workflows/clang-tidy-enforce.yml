@@ -26,16 +26,16 @@ jobs:
         sudo apt install clang-tidy-19 qt6-base-dev libqt6opengl6-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev ninja-build
 
     - name: Run CMake
-      run: cmake . -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+      run: cmake . -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DMRTRIX_USE_PCH=OFF
 
     - name: Run clang-tidy on changed C++ files
       run: |
         BASE=${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
-        CHANGED=$(git diff --name-only "${BASE}...HEAD" | grep -E '\.(cpp|cxx|cc|h|hpp|hxx)$' || true)
+        CHANGED=$(git diff --name-only "${BASE}...HEAD" | grep -E '\.(cpp|cxx|cc|h|hpp|hxx)$' | grep -vE 'cpp/core/eigen_plugins/|cpp/gui/opengl/gl_core_3_3' || true)
         if [ -z "${CHANGED}" ]; then
           echo "No C++ files changed; nothing to check."
           exit 0
         fi
         echo "Files to check:"
         echo "${CHANGED}"
-        echo "${CHANGED}" | xargs clang-tidy-19 --config-file=.clang-tidy-enforce --header-filter='(cpp\\/|testing\\/(lib\\/|tools\\/|unit_tests\\/)).*' --exclude-header-filter='(_deps\\/|cpp\\/core\\/eigen_plugins\\/|cpp\\/gui\\/opengl\\/gl_core_3_3).*' -p=.
+        echo "${CHANGED}" | xargs clang-tidy-19 --config-file=.clang-tidy-enforce --header-filter='(cpp\/|testing\/(lib\/|tools\/|unit_tests\/)).*' --exclude-header-filter='(_deps\/|cpp\/core\/eigen_plugins\/|cpp\/gui\/opengl\/gl_core_3_3).*' -p=.

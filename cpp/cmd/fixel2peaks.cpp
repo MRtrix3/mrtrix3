@@ -14,6 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <cstddef>
+
 #include "command.h"
 #include "image.h"
 #include "progressbar.h"
@@ -122,7 +124,7 @@ void run() {
   Header out_header(index_header);
   out_header.datatype() = DataType::Float32;
   out_header.datatype().set_byte_order_native();
-  out_header.size(3) = 3 * max_fixel_count;
+  out_header.size(3) = 3 * static_cast<ssize_t>(max_fixel_count);
   out_header.path() = output_path;
   Image<float> out_image(Image<float>::create(output_path, out_header));
 

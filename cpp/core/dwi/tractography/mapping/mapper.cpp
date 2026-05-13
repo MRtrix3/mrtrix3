@@ -158,7 +158,7 @@ void TrackMapperTWI::set_factor(const Streamline<> &tck, SetVoxelExtras &out) co
   }
 
   if (contrast == contrast_t::SCALAR_MAP_COUNT)
-    out.factor = (out.factor ? 1.0 : 0.0);
+    out.factor = (out.factor != 0.0 ? 1.0 : 0.0);
 
   if (!std::isfinite(out.factor))
     out.factor = 0.0;

@@ -34,8 +34,10 @@ using point_type = typename Streamline<>::point_type;
 constexpr value_type hermite_tension = value_type(0.1);
 
 class Base {
-public:
+protected:
   Base() {}
+
+public:
   virtual ~Base() {}
 
   virtual Base *clone() const = 0;
@@ -44,6 +46,10 @@ public:
 };
 
 template <class Derived> class BaseCRTP : public Base {
+protected:
+  // NOLINTNEXTLINE(bugprone-crtp-constructor-accessibility)
+  BaseCRTP() = default;
+
 public:
   virtual Base *clone() const { return new Derived(static_cast<Derived const &>(*this)); }
 };

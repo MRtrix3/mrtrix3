@@ -41,15 +41,15 @@ ODF_Item::ODF_Item(
       throw Exception("No shell data");
     dixel->set_shell(dixel->shells->count() - 1);
     DEBUG("Image " + image.header().path().string() + " initialised as dixel ODF using DW scheme");
-  } catch (...) {
+  } catch (Exception &) {
     try {
       dixel->set_header();
       DEBUG("Image " + image.header().path().string() + " initialised as dixel ODF using header directions field");
-    } catch (...) {
+    } catch (Exception &) {
       try {
         dixel->set_internal(image.header().size(3));
         DEBUG("Image " + image.header().path().string() + " initialised as dixel ODF using internal direction set");
-      } catch (...) {
+      } catch (Exception &) {
         DEBUG("Image " + image.header().path().string() + " left uninitialised in ODF tool");
       }
     }
@@ -70,7 +70,7 @@ ODF_Item::DixelPlugin::DixelPlugin(const MR::Header &H) : dir_type(dir_t::NONE),
     grad = MR::DWI::get_DW_scheme(H);
     shells.reset(new MR::DWI::Shells(grad));
     shell_index = shells->count() - 1;
-  } catch (...) {
+  } catch (Exception &) { // NOLINT(bugprone-empty-catch)
   }
   auto entry = H.keyval().find("directions");
   if (entry != H.keyval().end()) {

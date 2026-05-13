@@ -104,7 +104,8 @@ void Tree::read(const std::filesystem::path &path) {
   } else {
     try {
       read_file(path);
-    } catch (Exception) {
+    } catch (Exception &e) {
+      DEBUG("Error reading DICOM file \"" + path.string() + "\" (\"" + e[0] + "\"); ignored");
     }
   }
 

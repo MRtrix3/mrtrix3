@@ -547,6 +547,7 @@ void run() {
         extract<uint64_t>(header_in, header_out, pos, output_path);
       break;
     case DataType::Undefined:
+    default:
       throw Exception("invalid output image data type");
       break;
     }

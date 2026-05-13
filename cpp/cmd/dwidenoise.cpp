@@ -160,7 +160,7 @@ public:
                    bool exp1)
       : extent{{extent[0] / 2, extent[1] / 2, extent[2] / 2}},
         m(ndwi),
-        n(extent[0] * extent[1] * extent[2]),
+        n(static_cast<ssize_t>(extent[0]) * static_cast<ssize_t>(extent[1]) * static_cast<ssize_t>(extent[2])),
         r(std::min(m, n)),
         q(std::max(m, n)),
         exp1(exp1),
@@ -335,12 +335,12 @@ void run() {
         throw Exception("-extent must not exceed the image dimensions");
     }
   } else {
-    uint32_t e = 1;
+    ssize_t e = 1;
     while (e * e * e < dwi.size(3))
       e += 2;
-    extent = {std::min(e, static_cast<uint32_t>(dwi.size(0))),
-              std::min(e, static_cast<uint32_t>(dwi.size(1))),
-              std::min(e, static_cast<uint32_t>(dwi.size(2)))};
+    extent = {std::min(static_cast<uint32_t>(e), static_cast<uint32_t>(dwi.size(0))),
+              std::min(static_cast<uint32_t>(e), static_cast<uint32_t>(dwi.size(1))),
+              std::min(static_cast<uint32_t>(e), static_cast<uint32_t>(dwi.size(2)))};
   }
   INFO("selected patch size: " + str(extent[0]) + " x " + str(extent[1]) + " x " + str(extent[2]) + ".");
 
@@ -392,6 +392,9 @@ void run() {
   case 3:
     INFO("select complex float64 for processing");
     process_image<cdouble>(dwi, mask, noise, rank, output_path, extent, exp1);
+    break;
+  default:
+    assert(false);
     break;
   }
 }

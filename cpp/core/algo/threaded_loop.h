@@ -296,9 +296,9 @@ template <class Functor, class... ImageType> struct ThreadedLoopRunInner<0, Func
   }
 };
 
-inline void __manage_progress(...) {}
+inline void _manage_progress(...) {}
 template <class LoopType, class ThreadType>
-inline auto __manage_progress(const LoopType *loop, const ThreadType *threads)
+inline auto _manage_progress(const LoopType *loop, const ThreadType *threads)
     -> decltype((void)(&loop->progress), void()) {
   loop->progress.run_update_thread(*threads);
 }
@@ -359,7 +359,7 @@ template <class OuterLoopType> struct ThreadedLoopRunOuter {
     auto threads = Thread::run(Thread::multi(loop_thread), "loop threads");
 
     auto *loop = &(shared.lock()->loop);
-    __manage_progress(loop, &threads);
+    _manage_progress(loop, &threads);
     threads.wait();
   }
 

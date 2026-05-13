@@ -231,7 +231,7 @@ protected:
   std::function<ValueType(const void *, size_t, default_type, default_type)> fetch_func;
   std::function<void(ValueType, void *, size_t, default_type, default_type)> store_func;
 
-  void set_fetch_store_functions() { __set_fetch_store_scale_functions(fetch_func, store_func, datatype()); }
+  void set_fetch_store_functions() { _set_fetch_store_scale_functions(fetch_func, store_func, datatype()); }
 };
 
 //! \cond skip
@@ -351,9 +351,8 @@ Image<ValueType> Header::get_image(std::optional<DirectIO> direct_io, bool read_
   // direct-IO preload completes before the shared_ptr is published. After this
   // point, Buffer::ram is immutable until destruction (writeback).
   auto raw = std::make_unique<typename Image<ValueType>::Buffer>(*this, read_write_if_existing, std::move(direct_io));
-  Stride::List image_strides;
-  if (raw->ram.has_value())
-    image_strides = raw->ram->strides;
+  // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+  const Stride::List image_strides = raw->ram.has_value() ? raw->ram->strides : Stride::List();
   std::shared_ptr<typename Image<ValueType>::Buffer> buffer(std::move(raw));
   return Image<ValueType>(buffer, image_strides);
 }
@@ -438,7 +437,7 @@ std::filesystem::path Image<ValueType>::dump_to_mrtrix_file(const std::filesyste
 }
 
 template <class ImageType>
-std::filesystem::path __save_generic(ImageType &x, const std::filesystem::path &filepath, bool use_multi_threading) {
+std::filesystem::path _save_generic(ImageType &x, const std::filesystem::path &filepath, bool use_multi_threading) {
   auto out = Image<typename ImageType::value_type>::create(filepath, x);
   if (use_multi_threading)
     threaded_copy(x, out);
@@ -454,7 +453,7 @@ template <class ImageType>
 typename std::enable_if<is_adapter_type<typename std::remove_reference<ImageType>::type>::value,
                         std::filesystem::path>::type
 save(ImageType &&x, const std::filesystem::path &filepath, bool use_multi_threading = true) {
-  return __save_generic(x, filepath, use_multi_threading);
+  return _save_generic(x, filepath, use_multi_threading);
 }
 
 //! save contents of an existing image to file (for debugging only)
@@ -464,15 +463,16 @@ typename std::enable_if<is_pure_image<typename std::remove_reference<ImageType>:
 save(ImageType &&x, const std::filesystem::path &filepath, bool use_multi_threading = true) {
   try {
     return x.dump_to_mrtrix_file(filepath);
-  } catch (...) {
+  } catch (Exception &) {
+    return _save_generic(x, filename, use_multi_threading);
   }
-  return __save_generic(x, filepath, use_multi_threading);
 }
 
 //! display the contents of an image in MRView (for debugging only)
 template <class ImageType> typename enable_if_image_type<ImageType, void>::type display(ImageType &x) {
   const std::filesystem::path filepath = save(x, "-");
   CONSOLE("displaying image \"" + filepath.string() + "\"");
+  // NOLINTNEXTLINE(concurrency-mt-unsafe)
   if (system(("bash -c \"mrview " + filepath.string() + "\"").c_str()))
     WARN(std::string("error invoking viewer: ") + MR::C_strerror(errno));
 }

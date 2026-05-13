@@ -68,8 +68,6 @@ void run() {
   const std::filesystem::path input_path{argument[0]};
   auto opt = get_options("tag");
   if (!opt.empty()) {
-    std::istringstream hex;
-
     std::vector<Tag> tags(opt.size());
     for (size_t n = 0; n < opt.size(); ++n) {
       tags[n].group = read_hex(opt[n][0]);

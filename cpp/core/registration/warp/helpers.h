@@ -16,11 +16,19 @@
 
 #pragma once
 
+#include <string>
+#include <string_view>
+
+#include "exception.h"
+#include "mrtrix.h"
+#include "types.h"
+
 namespace MR::Registration::Warp {
 
-template <class InputWarpType> transform_type parse_linear_transform(InputWarpType &input_warps, std::string name) {
+template <class InputWarpType>
+transform_type parse_linear_transform(InputWarpType &input_warps, std::string_view name) {
   transform_type linear;
-  const auto it = input_warps.keyval().find(name);
+  const auto it = input_warps.keyval().find(std::string(name));
   if (it != input_warps.keyval().end()) {
     const auto lines = split_lines(it->second);
     if (lines.size() != 3)
