@@ -1033,8 +1033,7 @@ void parse() {
   terminal_use_colour = File::Config::get_bool("TerminalColor", terminal_use_colour);
 
   // check for the existence of all specified input files (including optional ones that have been provided)
-  // if necessary, also check for pre-existence of any output files with known paths
-  //   (if the output is e.g. given as a prefix, the argument should be flagged as type_text())
+  // if necessary, also check for pre-existence of any output files or directories with known paths
   // note that if an argument has multiple possible types, some checks can't be enforced
   for (const auto &i : argument) {
     assert(i.arg->types.any());

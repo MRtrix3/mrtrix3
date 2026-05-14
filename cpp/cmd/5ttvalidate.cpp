@@ -14,17 +14,19 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <filesystem>
+
 #include "app.h"
 #include "command.h"
 #include "datatype.h"
+#include "file/path.h"
+#include "formats/list.h"
 #include "image.h"
 #include "image_helpers.h"
 #include "mrtrix.h"
 
 #include "algo/copy.h"
 #include "algo/loop.h"
-#include "file/path.h"
-#include "formats/list.h"
 
 #include "dwi/tractography/ACT/validate.h"
 
@@ -68,14 +70,43 @@ void usage() {
   + Argument ("input", "the 5TT image(s) to be validated").type_image_in().allow_multiple();
 
   OPTIONS
-  + Option ("voxels", "output mask images highlighting voxels"
-                      " where the input does not conform to 5TT requirements")
-    + Argument ("prefix").type_text();
+  + Option ("voxels", "output mask image(s) highlighting voxels"
+                      " where the input does not conform to 5TT requirements;"
+                      " when a single input image is provided,"
+                      " this should be the path for the output image;"
+                      " when multiple input images are provided,"
+                      " this should be the path for an output directory,"
+                      " within which a separate image will be created for each input,"
+                      " each named after the corresponding input image")
+    + Argument ("image_or_dir").type_image_out().type_directory_out();
 }
 // clang-format on
 
 void run() {
-  const std::string voxels_prefix = get_option_value<std::string>("voxels", "");
+  const auto opt_voxels = get_options("voxels");
+  const bool use_voxels = !opt_voxels.empty();
+  const bool single_input = (argument.size() == 1);
+  std::filesystem::path voxels_path;
+
+  if (use_voxels) {
+    voxels_path = std::filesystem::path(opt_voxels[0][0].as_text());
+    if (single_input) {
+      if (!Path::has_suffix(voxels_path, MR::Formats::known_extensions))
+        WARN("\"-voxels\" argument \"" + voxels_path.string() +
+             "\""
+             " does not have a recognised image file extension;"
+             " with a single input image, \"-voxels\" expects an output image path");
+      check_overwrite(voxels_path);
+    } else {
+      if (Path::has_suffix(voxels_path, MR::Formats::known_extensions))
+        WARN("\"-voxels\" argument \"" + voxels_path.string() +
+             "\""
+             " has a recognised image file extension;"
+             " with multiple input images, \"-voxels\" expects an output directory path");
+      check_overwrite(voxels_path);
+      std::filesystem::create_directories(voxels_path);
+    }
+  }
 
   size_t major_error_count = 0;
   size_t minor_error_count = 0;
@@ -109,23 +140,13 @@ void run() {
     // A second pass is performed only when -voxels is requested and at
     // least one content violation was detected in phase 1.
     // ---------------------------------------------------------------
-    if (!voxels_prefix.empty() && (result.n_voxels_abs_error > 0 || result.n_voxels_sum_error > 0)) {
+    if (use_voxels && (result.n_voxels_abs_error > 0 || result.n_voxels_sum_error > 0)) {
       Header H_out(in);
       H_out.ndim() = 3;
       H_out.datatype() = DataType::Bit;
-      if (argument.size() > 1) {
-        H_out.path() = voxels_prefix + static_cast<std::filesystem::path>(argument[i]).filename().string();
-      } else {
-        bool has_extension = false;
-        for (const auto &p : MR::Formats::known_extensions) {
-          if (static_cast<const Header &>(H_out).path().extension() == p) {
-            has_extension = true;
-            break;
-          }
-        }
-        H_out.path() = voxels_prefix + (has_extension ? "" : ".mif");
-      }
-      auto voxels = Image<bool>::create(H_out.name(), H_out);
+      const std::filesystem::path voxels_out =
+          single_input ? voxels_path : voxels_path / static_cast<std::filesystem::path>(argument[i]).filename();
+      auto voxels = Image<bool>::create(voxels_out, H_out);
 
       for (auto outer = Loop(in, 0, 3)(in); outer; ++outer) {
         default_type sum = 0.0;
@@ -169,10 +190,10 @@ void run() {
   }
 
   const std::string vox_option_suggestion =
-      voxels_prefix.empty() ? " (suggest re-running using the -voxels option"
-                              " to see voxels with non-conformant tissue fractions)"
-                            : (" (suggest checking " +
-                               std::string(major_error_count > 1 ? "outputs from" : "output of") + " -voxels option)");
+      !use_voxels ? " (suggest re-running using the -voxels option"
+                    " to see voxels with non-conformant tissue fractions)"
+                  : (" (suggest checking " + std::string(major_error_count > 1 ? "outputs from" : "output of") +
+                     " -voxels option)");
 
   if (major_error_count) {
     throw Exception((argument.size() > 1

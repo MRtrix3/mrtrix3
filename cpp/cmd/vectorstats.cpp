@@ -64,7 +64,7 @@ void usage() {
   ARGUMENTS
   + Argument("input", "a text file listing the file names of the input subject data").type_file_in()
   + Argument("design", "the design matrix").type_file_in()
-  + Argument("output", "the filename prefix for all output").type_text();
+  + Argument("output_dir", "the output directory (will be created by the command)").type_directory_out();
 
   OPTIONS
   + OptionGroup("Options for constraining analysis to specific elements")
@@ -206,7 +206,8 @@ void run() {
         (have_extra_columns ? " (taking into account the " + str(extra_columns.size()) + " uses of -column)" : ""));
   CONSOLE("Number of hypotheses: " + str(num_hypotheses));
 
-  const std::string output_prefix = argument[2];
+  const std::filesystem::path output_dir = argument[2];
+  std::filesystem::create_directories(output_dir);
 
   const bool nans_in_data = !data.allFinite();
   if (nans_in_data) {
@@ -235,31 +236,31 @@ void run() {
 
     ProgressBar progress("Outputting beta coefficients, effect size and standard deviation",
                          2 + (2 * num_hypotheses) + (variable_design_matrix ? 1 : 0));
-    File::Matrix::save_matrix(betas, output_prefix + "betas.csv");
+    File::Matrix::save_matrix(betas, output_dir / "betas.csv");
     ++progress;
     for (index_type i = 0; i != num_hypotheses; ++i) {
       if (!hypotheses[i].is_F()) {
         File::Matrix::save_vector(abs_effect_size.array().col(i) * mask.cast<matrix_type::Scalar>(),
-                                  output_prefix + "abs_effect" + postfix(i) + ".csv");
+                                  output_dir / ("abs_effect" + postfix(i) + ".csv"));
         ++progress;
         if (num_vgs == 1)
           File::Matrix::save_vector(std_effect_size.array().col(i) * mask.cast<matrix_type::Scalar>(),
-                                    output_prefix + "std_effect" + postfix(i) + ".csv");
+                                    output_dir / ("std_effect" + postfix(i) + ".csv"));
       } else {
         ++progress;
       }
       ++progress;
     }
     if (variable_design_matrix) {
-      File::Matrix::save_vector(cond * mask.cast<matrix_type::Scalar>(), output_prefix + "cond.csv");
+      File::Matrix::save_vector(cond * mask.cast<matrix_type::Scalar>(), output_dir / "cond.csv");
       ++progress;
     }
     if (num_vgs == 1) {
       File::Matrix::save_vector(stdev.array().row(0) * mask.transpose().cast<matrix_type::Scalar>(),
-                                output_prefix + "std_dev.csv");
+                                output_dir / "std_dev.csv");
     } else {
       stdev = stdev.array().colwise() * mask.cast<matrix_type::Scalar>();
-      File::Matrix::save_matrix(stdev, output_prefix + "std_dev.csv");
+      File::Matrix::save_matrix(stdev, output_dir / "std_dev.csv");
     }
   }
 
@@ -287,10 +288,11 @@ void run() {
   matrix_type default_statistic, default_zstat;
   (*glm_test)(default_shuffle, default_statistic, default_zstat);
   for (index_type i = 0; i != num_hypotheses; ++i) {
-    File::Matrix::save_vector(default_statistic.array().col(i) * mask.cast<matrix_type::Scalar>(),
-                              output_prefix + (hypotheses[i].is_F() ? "F" : "t") + "value" + postfix(i) + ".csv");
+    File::Matrix::save_vector(
+        default_statistic.array().col(i) * mask.cast<matrix_type::Scalar>(),
+        output_dir / ((hypotheses[i].is_F() ? std::string("F") : std::string("t")) + "value" + postfix(i) + ".csv"));
     File::Matrix::save_vector(default_zstat.array().col(i) * mask.cast<matrix_type::Scalar>(),
-                              output_prefix + "Zstat" + postfix(i) + ".csv");
+                              output_dir / ("Zstat" + postfix(i) + ".csv"));
   }
 
   // Perform permutation testing
@@ -314,17 +316,17 @@ void run() {
                                       null_contributions,
                                       uncorrected_pvalues);
     if (fwe_strong) {
-      File::Matrix::save_vector(null_distribution.col(0), output_prefix + "null_dist.csv");
+      File::Matrix::save_vector(null_distribution.col(0), output_dir / "null_dist.csv");
     } else {
       for (index_type i = 0; i != num_hypotheses; ++i)
-        File::Matrix::save_vector(null_distribution.col(i), output_prefix + "null_dist" + postfix(i) + ".csv");
+        File::Matrix::save_vector(null_distribution.col(i), output_dir / ("null_dist" + postfix(i) + ".csv"));
     }
     const matrix_type fwe_pvalues = MR::Math::Stats::fwe_pvalue(null_distribution, default_zstat, mask);
     for (index_type i = 0; i != num_hypotheses; ++i) {
-      File::Matrix::save_vector(fwe_pvalues.col(i), output_prefix + "fwe_1mpvalue" + postfix(i) + ".csv");
+      File::Matrix::save_vector(fwe_pvalues.col(i), output_dir / ("fwe_1mpvalue" + postfix(i) + ".csv"));
       File::Matrix::save_vector(uncorrected_pvalues.col(i),
-                                output_prefix + "uncorrected_1mpvalue" + postfix(i) + ".csv");
-      File::Matrix::save_vector(null_contributions.col(i), output_prefix + "null_contributions" + postfix(i) + ".csv");
+                                output_dir / ("uncorrected_1mpvalue" + postfix(i) + ".csv"));
+      File::Matrix::save_vector(null_contributions.col(i), output_dir / ("null_contributions" + postfix(i) + ".csv"));
     }
   }
 }

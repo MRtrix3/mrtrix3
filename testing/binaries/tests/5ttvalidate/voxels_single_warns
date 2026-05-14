@@ -1,0 +1,6 @@
+#!/bin/bash
+# With a single input image, -voxels should warn if the path has no recognised image file extension
+
+rm -f tmp_voxels tmp.txt
+5ttvalidate 5ttedit/in.mif -voxels tmp_voxels 2>&1 | tee tmp.txt
+grep "does not have a recognised image file extension" tmp.txt
