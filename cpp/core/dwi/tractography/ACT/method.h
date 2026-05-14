@@ -128,7 +128,7 @@ public:
     return tissue_values.set(act_image);
   }
 
-  bool in_pathology() const { return (tissue_values.valid() && tissue_values.is_path()); }
+  bool in_other() const { return (tissue_values.valid() && tissue_values.is_other()); }
 
   void reverse_track() { sgm_depth = 0; }
 

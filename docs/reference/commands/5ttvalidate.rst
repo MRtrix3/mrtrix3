@@ -20,7 +20,7 @@ Usage
 Description
 -----------
 
-A 5TT image encodes the partial volume fractions of five tissue types in every voxel: cortical grey matter, sub-cortical grey matter, white matter, CSF, and pathological tissue. Each tissue partial volume fraction (PVF) must be a value in [0.0, 1.0], and for any brain voxel the five PVFs must sum to 1.0.
+A 5TT image encodes the partial volume fractions of five tissue types in every voxel: cortical grey matter, sub-cortical grey matter, white matter, CSF, and other tissue. Each tissue partial volume fraction (PVF) must be a value in [0.0, 1.0], and for any brain voxel the five PVFs must sum to 1.0.
 
 The following checks are performed on each input image:
 

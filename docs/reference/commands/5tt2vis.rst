@@ -31,7 +31,7 @@ Options
 
 -  **-csf value** image intensity of CSF (default: 0.15)
 
--  **-path value** image intensity of pathological tissue (default: 2)
+-  **-other value** image intensity of other tissue (default: 2)
 
 Standard options
 ^^^^^^^^^^^^^^^^

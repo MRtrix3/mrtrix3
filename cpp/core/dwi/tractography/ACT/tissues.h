@@ -23,35 +23,35 @@ namespace MR::DWI::Tractography::ACT {
 class Tissues {
 
 public:
-  Tissues() : cgm(0.0), sgm(0.0), wm(0.0), csf(0.0), path(0.0), is_valid(false) {}
+  Tissues() : cgm(0.0), sgm(0.0), wm(0.0), csf(0.0), other(0.0), is_valid(false) {}
 
   Tissues(const float cg, const float sg, const float w, const float c, const float p)
-      : cgm(0.0), sgm(0.0), wm(0.0), csf(0.0), path(0.0) {
+      : cgm(0.0), sgm(0.0), wm(0.0), csf(0.0), other(0.0) {
     set(cg, sg, w, c, p);
   }
 
   template <class ImageType>
-  Tissues(ImageType &data) : cgm(0.0), sgm(0.0), wm(0.0), csf(0.0), path(0.0), is_valid(false) {
+  Tissues(ImageType &data) : cgm(0.0), sgm(0.0), wm(0.0), csf(0.0), other(0.0), is_valid(false) {
     set<ImageType>(data);
   }
 
   Tissues(const Tissues &that)
-      : cgm(that.cgm), sgm(that.sgm), wm(that.wm), csf(that.csf), path(that.path), is_valid(that.is_valid) {}
+      : cgm(that.cgm), sgm(that.sgm), wm(that.wm), csf(that.csf), other(that.other), is_valid(that.is_valid) {}
 
   Tissues(Tissues &that)
-      : cgm(that.cgm), sgm(that.sgm), wm(that.wm), csf(that.csf), path(that.path), is_valid(that.is_valid) {}
+      : cgm(that.cgm), sgm(that.sgm), wm(that.wm), csf(that.csf), other(that.other), is_valid(that.is_valid) {}
 
   bool set(const float cg, const float sg, const float w, const float c, const float p) {
     if (std::isnan(cg) || std::isnan(sg) || std::isnan(w) || std::isnan(c) || std::isnan(p)) {
-      cgm = sgm = wm = csf = path = 0.0;
+      cgm = sgm = wm = csf = other = 0.0;
       return ((is_valid = false));
     }
     cgm = (cg < 0.0) ? 0.0 : ((cg > 1.0) ? 1.0 : cg);
     sgm = (sg < 0.0) ? 0.0 : ((sg > 1.0) ? 1.0 : sg);
     wm = (w < 0.0) ? 0.0 : ((w > 1.0) ? 1.0 : w);
     csf = (c < 0.0) ? 0.0 : ((c > 1.0) ? 1.0 : c);
-    path = (p < 0.0) ? 0.0 : ((p > 1.0) ? 1.0 : p);
-    return ((is_valid = ((cgm + sgm + wm + csf + path) >= tissuesum_threshold)));
+    other = (p < 0.0) ? 0.0 : ((p > 1.0) ? 1.0 : p);
+    return ((is_valid = ((cgm + sgm + wm + csf + other) >= tissuesum_threshold)));
   }
 
   template <class ImageType> bool set(ImageType &data) {
@@ -69,7 +69,7 @@ public:
   }
 
   void reset() {
-    cgm = sgm = wm = csf = path = 0.0;
+    cgm = sgm = wm = csf = other = 0.0;
     is_valid = false;
   }
 
@@ -79,25 +79,25 @@ public:
   float get_sgm() const { return sgm; }
   float get_wm() const { return wm; }
   float get_csf() const { return csf; }
-  float get_path() const { return path; }
+  float get_other() const { return other; }
 
   float get_gm() const { return (cgm + sgm); }
 
-  bool is_cgm() const { return ((cgm >= sgm) && (cgm >= wm) && (cgm > csf) && (cgm > path)); }
-  bool is_sgm() const { return ((sgm > cgm) && (sgm >= wm) && (sgm > csf) && (sgm > path)); }
-  bool is_wm() const { return ((wm > cgm) && (wm > sgm) && (wm > csf) && (wm > path)); }
-  bool is_csf() const { return ((csf >= cgm) && (csf >= sgm) && (csf >= wm) && (csf >= path)); }
-  bool is_path() const { return ((path >= cgm) && (path >= sgm) && (path >= wm) && (path > csf)); }
+  bool is_cgm() const { return ((cgm >= sgm) && (cgm >= wm) && (cgm > csf) && (cgm > other)); }
+  bool is_sgm() const { return ((sgm > cgm) && (sgm >= wm) && (sgm > csf) && (sgm > other)); }
+  bool is_wm() const { return ((wm > cgm) && (wm > sgm) && (wm > csf) && (wm > other)); }
+  bool is_csf() const { return ((csf >= cgm) && (csf >= sgm) && (csf >= wm) && (csf >= other)); }
+  bool is_other() const { return ((other >= cgm) && (other >= sgm) && (other >= wm) && (other > csf)); }
 
-  bool is_gm() const { return ((get_gm() >= wm) && (get_gm() > csf) && (get_gm() > path)); }
+  bool is_gm() const { return ((get_gm() >= wm) && (get_gm() > csf) && (get_gm() > other)); }
 
 private:
-  float cgm, sgm, wm, csf, path;
+  float cgm, sgm, wm, csf, other;
   bool is_valid;
 };
 
 inline std::ostream &operator<<(std::ostream &stream, const Tissues &t) {
-  stream << "[ " << t.get_cgm() << " " << t.get_sgm() << " " << t.get_wm() << " " << t.get_csf() << " " << t.get_path()
+  stream << "[ " << t.get_cgm() << " " << t.get_sgm() << " " << t.get_wm() << " " << t.get_csf() << " " << t.get_other()
          << " ]";
   return (stream);
 }

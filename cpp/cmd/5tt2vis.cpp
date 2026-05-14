@@ -31,7 +31,7 @@ constexpr default_type default_value_cgm = 0.5;
 constexpr default_type default_value_sgm = 0.75;
 constexpr default_type default_value_wm = 1.0;
 constexpr default_type default_value_csf = 0.15;
-constexpr default_type default_value_pathology = 2.0;
+constexpr default_type default_value_other = 2.0;
 
 // clang-format off
 void usage() {
@@ -67,8 +67,8 @@ void usage() {
                    " (default: " + str(default_value_csf, 2) + ")")
     + Argument ("value").type_float (0.0, 1.0)
 
-  + Option ("path", "image intensity of pathological tissue"
-                    " (default: " + str(default_value_pathology, 2) + ")")
+  + Option ("other", "image intensity of other tissue"
+                    " (default: " + str(default_value_other, 2) + ")")
     + Argument ("value").type_float (0.0, 10.0);
 
 }
@@ -89,15 +89,15 @@ void run() {
   const float sgm_multiplier = get_option_value("sgm", default_value_sgm);
   const float wm_multiplier = get_option_value("wm", default_value_wm);
   const float csf_multiplier = get_option_value("csf", default_value_csf);
-  const float path_multiplier = get_option_value("path", default_value_pathology);
+  const float other_multiplier = get_option_value("other", default_value_other);
 
   auto output = Image<float>::create(argument[1], H_out);
 
   auto f = [&](decltype(input) &in, decltype(output) &out) {
     const DWI::Tractography::ACT::Tissues t(in);
-    const float bg = 1.0 - (t.get_cgm() + t.get_sgm() + t.get_wm() + t.get_csf() + t.get_path());
+    const float bg = 1.0 - (t.get_cgm() + t.get_sgm() + t.get_wm() + t.get_csf() + t.get_other());
     out.value() = (bg_multiplier * bg) + (cgm_multiplier * t.get_cgm()) + (sgm_multiplier * t.get_sgm()) +
-                  (wm_multiplier * t.get_wm()) + (csf_multiplier * t.get_csf()) + (path_multiplier * t.get_path());
+                  (wm_multiplier * t.get_wm()) + (csf_multiplier * t.get_csf()) + (other_multiplier * t.get_other());
   };
   ThreadedLoop(output).run(f, input, output);
 }

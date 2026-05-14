@@ -27,7 +27,7 @@
 # 2: Sub-cortical grey matter
 # 3: White matter
 # 4: CSF
-# 5: Pathological tissue
+# 5: Other tissue
 # (0 is skipped, and reserved for non-bran voxels & tissues for which no
 #   tissue type has been specified)
 
