@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cstddef>
+#include <filesystem>
 #include <string_view>
 
 namespace MR::DWI::Directions {
@@ -65,7 +66,8 @@ struct DirectionsValidation {
 //! Any other column count is a hard error.
 //! Throws Exception on the first hard violation.
 template <class MatrixType>
-const DirectionsValidation validate(const MatrixType &M, std::string_view path, const bool permit_gradtable);
+const DirectionsValidation
+validate(const MatrixType &M, const std::filesystem::path &path, const bool permit_gradtable);
 
 //! Unlike validation functions for other data formats,
 //! here validation is always run due to its cheap computational expense;

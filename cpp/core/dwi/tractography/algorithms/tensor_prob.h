@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <filesystem>
 #include <optional>
 
 #include "dwi/bootstrap.h"
@@ -30,7 +31,7 @@ class Tensor_Prob : public Tensor_Det {
 public:
   class Shared : public Tensor_Det::Shared {
   public:
-    Shared(std::string_view diff_path, DWI::Tractography::Properties &property_set)
+    Shared(const std::filesystem::path &diff_path, DWI::Tractography::Properties &property_set)
         : Tensor_Det::Shared(diff_path, property_set) {
 
       if (is_act()) {

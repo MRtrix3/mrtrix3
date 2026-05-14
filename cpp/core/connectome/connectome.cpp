@@ -16,11 +16,6 @@
 
 #include "connectome/connectome.h"
 
-#include "algo/loop.h"
-#include "header.h"
-#include "image.h"
-#include "mrtrix.h"
-
 namespace MR::Connectome {
 
 using namespace App;
@@ -30,5 +25,4 @@ const OptionGroup MatrixOutputOptions =
     + Option("symmetric", "Make matrices symmetric on output")
     + Option("zero_diagonal", "Set matrix diagonal to zero on output");
 // clang-format on
-
 } // namespace MR::Connectome

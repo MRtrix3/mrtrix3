@@ -27,6 +27,8 @@
 
 #include "dwi/directions/file.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -130,19 +132,23 @@ private:
 };
 
 void run() {
-  auto sh_data = Image<value_type>::open(argument[0]);
+  const std::filesystem::path input_path{argument[0]};
+  const std::filesystem::path directions_path{argument[1]};
+  const std::filesystem::path output_path{argument[2]};
+
+  auto sh_data = Image<value_type>::open(input_path);
   Math::SH::check(sh_data);
   const size_t lmax = Math::SH::LforN(sh_data.size(3));
   const bool nonnegative = !get_options("nonnegative").empty();
 
   Eigen::MatrixXd directions;
   try {
-    directions = File::Matrix::load_matrix(argument[1]);
-    DWI::Directions::validate(directions, argument[1], true);
+    directions = File::Matrix::load_matrix(directions_path);
+    DWI::Directions::validate(directions, directions_path, true);
     if (directions.cols() == 3)
       directions = Math::Sphere::cartesian2spherical(directions);
   } catch (Exception &E) {
-    auto header = Header::open(argument[1]);
+    auto header = Header::open(directions_path);
     directions = DWI::get_DW_scheme(header);
   }
 
@@ -171,7 +177,7 @@ void run() {
     dir_stream << directions(directions.rows() - 1, 0) << "," << directions(directions.rows() - 1, 1);
     amp_header.keyval()["directions"] = dir_stream.str();
 
-    auto amp_data = Image<value_type>::create(argument[2], amp_header);
+    auto amp_data = Image<value_type>::create(output_path, amp_header);
     auto transform = Math::SH::init_transform(directions, lmax);
 
     SH2Amp sh2amp(transform, nonnegative);
@@ -206,7 +212,7 @@ void run() {
       transforms.push_back(Math::SH::init_transform(dirs, lmax));
     }
 
-    auto amp_data = Image<value_type>::create(argument[2], amp_header);
+    auto amp_data = Image<value_type>::create(output_path, amp_header);
 
     SH2AmpMultiShell sh2amp(transforms, shells, nonnegative);
     ThreadedLoop("computing amplitudes", sh_data, 0, 3).run(sh2amp, sh_data, amp_data);

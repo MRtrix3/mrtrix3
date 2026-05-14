@@ -99,7 +99,7 @@ void run() {
       result = validate_5TT_image(in);
     } catch (Exception &e) {
       e.display();
-      WARN("Image \"" + std::string(argument[i]) + "\" does not conform to fundamental 5TT format requirements");
+      WARN("Image \"" + argument[i].as_text() + "\" does not conform to fundamental 5TT format requirements");
       ++major_error_count;
       continue;
     }
@@ -113,19 +113,17 @@ void run() {
       Header H_out(in);
       H_out.ndim() = 3;
       H_out.datatype() = DataType::Bit;
-      H_out.name() = voxels_prefix;
       if (argument.size() > 1) {
-        H_out.name() += Path::basename(argument[i]);
+        H_out.path() = voxels_prefix + static_cast<std::filesystem::path>(argument[i]).filename().string();
       } else {
         bool has_extension = false;
         for (const auto &p : MR::Formats::known_extensions) {
-          if (Path::has_suffix(H_out.name(), p)) {
+          if (static_cast<const Header &>(H_out).path().extension() == p) {
             has_extension = true;
             break;
           }
         }
-        if (!has_extension)
-          H_out.name() += ".mif";
+        H_out.path() = voxels_prefix + (has_extension ? "" : ".mif");
       }
       auto voxels = Image<bool>::create(H_out.name(), H_out);
 
@@ -152,19 +150,19 @@ void run() {
     // Phase 4: report findings and accumulate error counts.
     // ---------------------------------------------------------------
     if (result.n_voxels_sum_error > 1) {
-      WARN("Image \"" + std::string(argument[i]) + "\" contains " + //
-           (result.n_voxels_sum_error > 1                           //
-                ? str(result.n_voxels_sum_error) + " brain voxels"  //
-                : "one isolated voxel") +                           //
-           " with non-unity sum of partial volume fractions");      //
+      WARN("Image \"" + argument[i].as_text() + "\" contains " +   //
+           (result.n_voxels_sum_error > 1                          //
+                ? str(result.n_voxels_sum_error) + " brain voxels" //
+                : "one isolated voxel") +                          //
+           " with non-unity sum of partial volume fractions");     //
     }
     if (result.n_voxels_abs_error == 0 && result.n_voxels_sum_error == 0) {
-      INFO("Image \"" + std::string(argument[i]) + "\" conforms to 5TT format");
+      INFO("Image \"" + argument[i].as_text() + "\" conforms to 5TT format");
     }
     if (result.n_voxels_sum_error > 0 && result.n_voxels_abs_error == 0)
       ++minor_error_count;
     if (result.n_voxels_abs_error > 0) {
-      WARN("Image \"" + std::string(argument[i]) + "\" contains " + str(result.n_voxels_abs_error) +
+      WARN("Image \"" + argument[i].as_text() + "\" contains " + str(result.n_voxels_abs_error) +
            " brain voxels with a non-physical partial volume fraction");
       ++major_error_count;
     }

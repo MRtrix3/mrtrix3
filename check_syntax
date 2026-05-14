@@ -125,7 +125,7 @@ run_checks() {
 #   which does not look like a cast for compatibility with external code
   res="$res"$(
     cat .check_syntax4.tmp | \
-    $grep -Po '(const\s+|)char(\s?\*([\s]*const|)\s?(?![>\(\)])|\s+[a-zA-Z_][a-zA-Z0-9_]*\[(\d*\]|))'
+    $grep -Po '(const\s+|)char(\s?\*(\s?const|)\s?(?![>\(\)])|\s+[a-zA-Z_][a-zA-Z0-9_]*\[(\d*\]|))'
   )
 
 # - Detect any instances of C-style string manipulation functions

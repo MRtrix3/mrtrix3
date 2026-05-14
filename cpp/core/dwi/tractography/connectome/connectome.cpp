@@ -137,9 +137,9 @@ void setup_metric(Metric &metric, Image<node_t> &nodes_data) {
       metric.set_scale_file(opt[0][0]);
     } catch (Exception &e) {
       throw Exception(e,
-                      "-scale_file option expects a file containing a list of numbers (one for each streamline); "
-                      "file \"" +
-                          std::string(opt[0][0]) + "\" does not appear to contain this");
+                      std::string("-scale_file option expects a file containing a list of numbers") + //
+                          " (one for each streamline);" +                                             //
+                          " file \"" + opt[0][0].as_text() + "\" does not appear to contain this");   //
     }
   }
 }

@@ -40,11 +40,11 @@ bool Sphere::get_seed(Eigen::Vector3f &p) const {
   return true;
 }
 
-SeedMask::SeedMask(std::string_view in)                                                   //
-    : Base(in, "random seeding mask", attempts_per_seed.at(seed_attempt_t::RANDOM)),      //
-      mask(in) {                                                                          //
-  Base::volume = static_cast<float>(static_cast<default_type>(get_count(mask)) *          //
-                                    mask.spacing(0) * mask.spacing(1) * mask.spacing(2)); //
+SeedMask::SeedMask(const std::filesystem::path &in)                                                      //
+    : Base(in.filename().string(), "random seeding mask", attempts_per_seed.at(seed_attempt_t::RANDOM)), //
+      mask(in) {                                                                                         //
+  Base::volume = static_cast<float>(static_cast<default_type>(get_count(mask)) *                         //
+                                    mask.spacing(0) * mask.spacing(1) * mask.spacing(2));                //
 }
 
 bool SeedMask::get_seed(Eigen::Vector3f &p) const {
@@ -62,8 +62,8 @@ bool SeedMask::get_seed(Eigen::Vector3f &p) const {
   return true;
 }
 
-Random_per_voxel::Random_per_voxel(std::string_view in, const size_t num_per_voxel)
-    : Base(in, "random per voxel", attempts_per_seed.at(seed_attempt_t::FIXED)),
+Random_per_voxel::Random_per_voxel(const std::filesystem::path &in, const size_t num_per_voxel)
+    : Base(in.filename().string(), "random per voxel", attempts_per_seed.at(seed_attempt_t::FIXED)),
       mask(in),
       num(num_per_voxel),
       inc(0),
@@ -108,8 +108,8 @@ bool Random_per_voxel::get_seed(Eigen::Vector3f &p) const {
   return true;
 }
 
-Grid_per_voxel::Grid_per_voxel(std::string_view in, const size_t os_factor)
-    : Base(in, "grid per voxel", attempts_per_seed.at(seed_attempt_t::FIXED)),
+Grid_per_voxel::Grid_per_voxel(const std::filesystem::path &in, const size_t os_factor)
+    : Base(in.filename().string(), "grid per voxel", attempts_per_seed.at(seed_attempt_t::FIXED)),
       mask(in),
       os(os_factor),
       pos(os, os, os),
@@ -157,8 +157,8 @@ bool Grid_per_voxel::get_seed(Eigen::Vector3f &p) const {
   return true;
 }
 
-Rejection_per_voxel::Rejection_per_voxel(std::string_view in)
-    : Base(in, "rejection sampling", attempts_per_seed.at(seed_attempt_t::RANDOM)),
+Rejection_per_voxel::Rejection_per_voxel(const std::filesystem::path &in)
+    : Base(in.filename().string(), "rejection sampling", attempts_per_seed.at(seed_attempt_t::RANDOM)),
 #ifdef REJECTION_SAMPLING_USE_INTERPOLATION
       interp(in),
 #endif
@@ -192,7 +192,7 @@ Rejection_per_voxel::Rejection_per_voxel(std::string_view in)
   }
 
   if (!max)
-    throw Exception("Cannot use image " + in + " for rejection sampling - image is empty");
+    throw Exception("Cannot use image " + in.string() + " for rejection sampling - image is empty");
 
   if (bottom[0])
     --bottom[0];
@@ -249,8 +249,8 @@ bool Rejection_per_voxel::get_seed(Eigen::Vector3f &p) const {
   return true;
 }
 
-CoordinatesLoader::CoordinatesLoader(std::string_view cds_path) //
-    : coords(File::Matrix::load_matrix<float>(cds_path)) {      //
+CoordinatesLoader::CoordinatesLoader(const std::filesystem::path &cds_path) //
+    : coords(File::Matrix::load_matrix<float>(cds_path)) {                  //
   switch (coords.cols()) {
   case 3:
     break;
@@ -266,13 +266,14 @@ CoordinatesLoader::CoordinatesLoader(std::string_view cds_path) //
     weights *= 1.0F / max_coeff;
   } break;
   default:
-    throw Exception("Invalid number of columns (" + str(coords.cols()) + ") in seed coordinates file " + cds_path);
+    throw Exception("Invalid number of columns (" + str(coords.cols()) + ")" + //
+                    " in seed coordinates file " + cds_path.string());
   }
 }
 
-Count_per_coord::Count_per_coord(std::string_view in, const size_t streamlines_per_coord)
-    : Base(in, "fixed streamlines per coordinate", attempts_per_seed.at(seed_attempt_t::FIXED)),
-      CoordinatesLoader(in),
+Count_per_coord::Count_per_coord(const std::filesystem::path &path, const size_t streamlines_per_coord)
+    : Base(path.filename().string(), "fixed streamlines per coordinate", attempts_per_seed.at(seed_attempt_t::FIXED)),
+      CoordinatesLoader(path),
       current_coord(0),
       num_at_coord(0),
       expired(false),
@@ -301,9 +302,11 @@ bool Count_per_coord::get_seed(Eigen::Vector3f &p) const {
   return true;
 }
 
-Random_coordinates::Random_coordinates(std::string_view in)                                          //
-    : Base(in, "random coordinate selection seeding", attempts_per_seed.at(seed_attempt_t::RANDOM)), //
-      CoordinatesLoader(in) {                                                                        //
+Random_coordinates::Random_coordinates(const std::filesystem::path &path) //
+    : Base(path.filename().string(),                                      //
+           "random coordinate selection seeding",                         //
+           attempts_per_seed.at(seed_attempt_t::RANDOM)),                 //
+      CoordinatesLoader(path) {                                           //
   if (have_weights())
     throw Exception("Seeding fixed # streamlines per coordinates" //
                     " cannot also specify per-coordinate weights" //
@@ -315,9 +318,11 @@ bool Random_coordinates::get_seed(Eigen::Vector3f &p) const {
   return true;
 }
 
-Rejection_per_coord::Rejection_per_coord(std::string_view in)                                        //
-    : Base(in, "rejection sampling from coordinates", attempts_per_seed.at(seed_attempt_t::RANDOM)), //
-      CoordinatesLoader(in) {                                                                        //
+Rejection_per_coord::Rejection_per_coord(const std::filesystem::path &in) //
+    : Base(in.filename().string(),                                        //
+           "rejection sampling from coordinates",                         //
+           attempts_per_seed.at(seed_attempt_t::RANDOM)),                 //
+      CoordinatesLoader(in) {                                             //
   if (!have_weights())
     throw Exception("Rejection seeding from user-specified coordinates" //
                     " must also specify per-coordinate weights"         //

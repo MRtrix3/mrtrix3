@@ -26,7 +26,7 @@ namespace MR::ImageIO {
 
 void Default::load(const Header &header, size_t) {
   if (files.empty())
-    throw Exception("no files specified in header for image \"" + header.name() + "\"");
+    throw Exception("no files specified in header for image \"" + header.path().string() + "\"");
 
   segsize /= files.size();
 
@@ -34,11 +34,12 @@ void Default::load(const Header &header, size_t) {
     bytes_per_segment = segsize / 8;
     if (bytes_per_segment * 8 < static_cast<int64_t>(segsize))
       ++bytes_per_segment;
-  } else
+  } else {
     bytes_per_segment = header.datatype().bytes() * segsize;
+  }
 
-  if (files.size() > std::numeric_limits<size_t>::max() / bytes_per_segment)
-    throw Exception("image \"" + header.name() + "\" is larger than maximum addressable memory");
+  if (bytes_per_segment > std::numeric_limits<size_t>::max() / files.size())
+    throw Exception("image \"" + header.path().string() + "\" is larger than maximum accessible memory");
 
   if (files.size() > max_files_per_image)
     copy_to_mem(header);
@@ -52,11 +53,11 @@ void Default::unload(const Header &header) {
 
     if (writable) {
       for (size_t n = 0; n < files.size(); n++) {
-        File::OFStream out(files[n].name, std::ios::in | std::ios::out | std::ios::binary);
+        File::OFStream out(files[n].path, std::ios::in | std::ios::out | std::ios::binary);
         out.seekp(files[n].start, out.beg);
         out.write(reinterpret_cast<const char *>(addresses[0].get() + n * bytes_per_segment), bytes_per_segment);
         if (!out.good())
-          throw Exception("error writing back contents of file \"" + files[n].name + "\": " + strerror(errno));
+          throw Exception("error writing back contents of file \"" + files[n].path.string() + "\": " + strerror(errno));
       }
     }
   } else {
@@ -76,13 +77,13 @@ void Default::map_files(const Header &header) {
 }
 
 void Default::copy_to_mem(const Header &header) {
-  DEBUG("loading image \"" + header.name() + "\"...");
+  DEBUG("loading image \"" + header.path().string() + "\"...");
   addresses.resize(files.size() > 1 && header.datatype().bits() * segsize != 8 * static_cast<size_t>(bytes_per_segment)
                        ? files.size()
                        : 1);
   addresses[0].reset(new std::byte[files.size() * bytes_per_segment]);
   if (!addresses[0])
-    throw Exception("failed to allocate memory for image \"" + header.name() + "\"");
+    throw Exception("failed to allocate memory for image \"" + header.path().string() + "\"");
 
   if (is_new)
     memset(addresses[0].get(), 0, files.size() * bytes_per_segment);

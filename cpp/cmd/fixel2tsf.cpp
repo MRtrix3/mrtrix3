@@ -31,6 +31,8 @@
 #include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/mapping/mapping.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -68,7 +70,11 @@ void usage() {
 using SetVoxelDir = DWI::Tractography::Mapping::SetVoxelDir;
 
 void run() {
-  auto in_data_image = Fixel::open_fixel_data_file<float>(argument[0]);
+  const std::filesystem::path input_fixel_path{argument[0]};
+  const std::filesystem::path input_tracks_path{argument[1]};
+  const std::filesystem::path output_tsf_path{argument[2]};
+
+  auto in_data_image = Fixel::open_fixel_data_file<float>(input_fixel_path);
   if (in_data_image.size(2) != 1)
     throw Exception("Only a single scalar value for each fixel can be output as a track scalar file, "
                     "therefore the input fixel data file must have dimension Nx1x1");
@@ -77,15 +83,12 @@ void run() {
   auto in_index_image = in_index_header.get_image<index_type>();
   Fixel::debug_validate_index_image(in_index_image);
   auto in_directions_image =
-      Fixel::find_directions_header(Fixel::get_fixel_directory(argument[0])).get_image<float>().with_direct_io();
+      Fixel::find_directions_header(Fixel::get_fixel_directory(input_fixel_path)).get_image<float>().with_direct_io();
 
   DWI::Tractography::Properties properties;
-  DWI::Tractography::Reader<float> reader(argument[1], properties);
-  properties.comments.push_back("Created using fixel2tsf");
-  properties.comments.push_back("Source fixel image: " + Path::basename(argument[0]));
-  properties.comments.push_back("Source track file: " + Path::basename(argument[1]));
+  DWI::Tractography::Reader<float> reader(input_tracks_path, properties);
 
-  DWI::Tractography::ScalarWriter<float> tsf_writer(argument[2], properties);
+  DWI::Tractography::ScalarWriter<float> tsf_writer(output_tsf_path, properties);
 
   const float angular_threshold = get_option_value("angle", DWI::Tractography::Mapping::default_streamline2fixel_angle);
   const float angular_threshold_dp = cos(angular_threshold * (Math::pi / 180.0));

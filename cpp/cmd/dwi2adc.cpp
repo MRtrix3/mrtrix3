@@ -22,6 +22,8 @@
 #include "metadata/phase_encoding.h"
 #include "progressbar.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -107,9 +109,11 @@ public:
     binv = Math::pinv(b);
   }
 
-  void set_bzero_path(std::string_view path) { szero_image = Image<value_type>::create(path, H); }
+  void set_bzero_path(const std::filesystem::path &path) { szero_image = Image<value_type>::create(path, H); }
 
-  void initialise_ivim(std::string_view ivimfrac_path, std::string_view ivimdiff_path, const value_type cutoff) {
+  void initialise_ivim(const std::filesystem::path &ivimfrac_path,
+                       const std::filesystem::path &ivimdiff_path,
+                       const value_type cutoff) {
     ivimfrac_image = Image<value_type>::create(ivimfrac_path, H);
     ivimdiff_image = Image<value_type>::create(ivimdiff_path, H);
     ivim_cutoff = cutoff;

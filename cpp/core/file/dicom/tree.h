@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <filesystem>
+
 #include "file/dicom/patient.h"
 #include "memory.h"
 
@@ -27,7 +29,7 @@ class Patient;
 class Tree : public std::vector<std::shared_ptr<Patient>> {
 public:
   std::string description;
-  void read(std::string_view filename);
+  void read(const std::filesystem::path &path);
   std::shared_ptr<Patient>
   find(std::string_view patient_name, std::string_view patient_ID, std::string_view patient_DOB);
 
@@ -41,8 +43,8 @@ public:
   }
 
 protected:
-  void read_dir(std::string_view filename, ProgressBar &progress);
-  void read_file(std::string_view filename);
+  void read_dir(const std::filesystem::path &dirpath, ProgressBar &progress);
+  void read_file(const std::filesystem::path &filepath);
 };
 
 std::ostream &operator<<(std::ostream &stream, const Tree &item);

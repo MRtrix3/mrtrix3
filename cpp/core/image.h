@@ -28,7 +28,7 @@
 #include "debug.h"
 #include "fetch_store.h"
 #include "file/ofstream.h"
-#include "file/utils.h"
+#include "file/temp.h"
 #include "formats/mrtrix_utils.h"
 #include "half.h"
 #include "header.h"
@@ -59,7 +59,11 @@ public:
   //! get generic key/value text attributes
   FORCE_INLINE const KeyValues &keyval() const { return buffer->keyval(); }
 
-  FORCE_INLINE std::string_view name() const { return buffer->name(); }
+  FORCE_INLINE std::string name() const { return buffer->name(); }
+  FORCE_INLINE const std::filesystem::path &path() const {
+    static const std::filesystem::path empty;
+    return valid() ? static_cast<const Header &>(*buffer).path() : empty;
+  }
   FORCE_INLINE const transform_type &transform() const { return buffer->transform(); }
 
   FORCE_INLINE size_t ndim() const { return buffer->ndim(); }
@@ -102,7 +106,8 @@ public:
 
   //! use for debugging
   friend std::ostream &operator<<(std::ostream &stream, const Image &V) {
-    stream << "\"" << V.name() << "\", datatype " << DataType::from<Image::value_type>().specifier() << ", index [ ";
+    stream << "\"" << V.path().string() << "\", datatype " << DataType::from<Image::value_type>().specifier()
+           << ", index [ ";
     for (size_t n = 0; n < V.ndim(); ++n)
       stream << V.index(n) << " ";
     stream << "], current offset = " << V.offset() << ", ";
@@ -135,7 +140,8 @@ public:
    * possibility that this image might use indirect IO, you should use
    * the save() function instead (and even then, it should only be used
    * for debugging purposes). */
-  std::string dump_to_mrtrix_file(std::string_view nominated_filename) const;
+  std::filesystem::path dump_to_mrtrix_file(const std::filesystem::path &filepath,
+                                            bool use_multi_threading = true) const;
 
   //! return a new Image using direct IO
   /*!
@@ -194,10 +200,11 @@ public:
     return data_pointer ? static_cast<ValueType *>(data_pointer) + data_offset : nullptr;
   }
 
-  static Image open(std::string_view image_name, bool read_write_if_existing = false) {
+  static Image open(const std::filesystem::path &image_name, bool read_write_if_existing = false) {
     return Header::open(image_name).get_image<ValueType>(read_write_if_existing);
   }
-  static Image create(std::string_view image_name, const Header &template_header, bool add_to_command_history = true) {
+  static Image
+  create(const std::filesystem::path &image_name, const Header &template_header, bool add_to_command_history = true) {
     return Header::create(image_name, template_header, add_to_command_history).get_image<ValueType>();
   }
   static Image scratch(const Header &template_header, std::string_view label = "scratch image") {
@@ -399,86 +406,88 @@ template <typename ValueType> Image<ValueType> Image<ValueType>::with_direct_io(
 }
 
 template <typename ValueType>
-std::string Image<ValueType>::dump_to_mrtrix_file(std::string_view nominated_filename) const {
-  if (data_pointer == nullptr ||
-      (!Path::has_suffix(nominated_filename, ".mih") && !Path::has_suffix(nominated_filename, ".mif")))
+std::filesystem::path Image<ValueType>::dump_to_mrtrix_file(const std::filesystem::path &filepath, bool) const {
+  if (!data_pointer || !Path::has_suffix(filepath, {".mih", ".mif"}))
     throw Exception("FIXME: image not suitable for use with 'Image::dump_to_mrtrix_file()'");
 
   // try to dump file to mrtrix format if possible (direct IO)
-  std::string output_filename =
-      is_dash(nominated_filename) ? File::create_tempfile(0, "mif") : std::string(nominated_filename);
+  std::filesystem::path resolved_path(filepath);
+  if (is_dash(filepath.string()))
+    resolved_path = File::create_tempfile(0, ".mif");
 
-  DEBUG("dumping image \"" + name() + "\" to file \"" + output_filename + "\"...");
+  DEBUG("dumping image \"" + name() + "\" to file \"" + resolved_path.string() + "\"...");
 
-  File::OFStream out(output_filename, std::ios::out | std::ios::binary);
+  File::OFStream out(resolved_path, std::ios::out | std::ios::binary);
   out << "mrtrix image\n";
   Formats::write_mrtrix_header(*buffer, out);
 
-  const bool single_file = Path::has_suffix(output_filename, ".mif");
-  std::string data_filename = output_filename;
+  const bool single_file = resolved_path.extension() == ".mif";
 
   int64_t offset = 0;
   out << "file: ";
+  std::filesystem::path data_path = resolved_path;
   if (single_file) {
     offset = static_cast<int64_t>(out.tellp()) + int64_t(18);
     offset += ((4 - (offset % 4)) % 4);
     out << ". " << offset << "\nEND\n";
   } else {
-    data_filename = output_filename.substr(0, output_filename.size() - 4) + ".dat";
-    out << Path::basename(data_filename) << "\n";
+    data_path.replace_extension(".dat");
+    out << data_path.filename().string() << "\n";
     out.close();
-    out.open(data_filename, std::ios::out | std::ios::binary);
+    out.open(data_path, std::ios::out | std::ios::binary);
   }
 
   const int64_t data_size = footprint(*buffer);
   out.seekp(offset, out.beg);
   out.write((const char *)data_pointer, data_size);
   if (!out.good())
-    throw Exception("error writing back contents of file \"" + data_filename + "\": " + strerror(errno));
+    throw Exception("error writing back contents of file \"" + data_path.string() + "\": " + strerror(errno));
   out.close();
 
   // If data_size exceeds some threshold, ostream artificially increases the file size beyond that required at close()
   // TODO check whether this is still needed...?
-  File::resize(data_filename, offset + data_size);
+  std::filesystem::resize_file(data_path, offset + data_size);
 
-  return output_filename;
+  return resolved_path;
 }
 
 template <class ImageType>
-std::string _save_generic(ImageType &x, std::string_view filename, bool use_multi_threading) {
-  auto out = Image<typename ImageType::value_type>::create(filename, x);
+std::filesystem::path __save_generic(ImageType &x, const std::filesystem::path &filepath, bool use_multi_threading) {
+  auto out = Image<typename ImageType::value_type>::create(filepath, x);
   if (use_multi_threading)
     threaded_copy(x, out);
   else
     copy(x, out);
-  return std::string(out.name());
+  return out.path();
 }
 
 //! \endcond
 
 //! save contents of an existing image to file (for debugging only)
 template <class ImageType>
-typename std::enable_if<is_adapter_type<typename std::remove_reference<ImageType>::type>::value, std::string>::type
-save(ImageType &&x, std::string_view filename, bool use_multi_threading = true) {
-  return _save_generic(x, filename, use_multi_threading);
+typename std::enable_if<is_adapter_type<typename std::remove_reference<ImageType>::type>::value,
+                        std::filesystem::path>::type
+save(ImageType &&x, const std::filesystem::path &filepath, bool use_multi_threading = true) {
+  return __save_generic(x, filepath, use_multi_threading);
 }
 
 //! save contents of an existing image to file (for debugging only)
 template <class ImageType>
-typename std::enable_if<is_pure_image<typename std::remove_reference<ImageType>::type>::value, std::string>::type
-save(ImageType &&x, std::string_view filename, bool use_multi_threading = true) {
+typename std::enable_if<is_pure_image<typename std::remove_reference<ImageType>::type>::value,
+                        std::filesystem::path>::type
+save(ImageType &&x, const std::filesystem::path &filepath, bool use_multi_threading = true) {
   try {
-    return x.dump_to_mrtrix_file(filename);
+    return x.dump_to_mrtrix_file(filepath, use_multi_threading);
   } catch (...) {
   }
-  return _save_generic(x, filename, use_multi_threading);
+  return __save_generic(x, filepath, use_multi_threading);
 }
 
 //! display the contents of an image in MRView (for debugging only)
 template <class ImageType> typename enable_if_image_type<ImageType, void>::type display(ImageType &x) {
-  std::string filename = save(x, "-");
-  CONSOLE("displaying image \"" + filename + "\"");
-  if (system(("bash -c \"mrview " + filename + "\"").c_str()))
+  const std::filesystem::path filepath = save(x, "-");
+  CONSOLE("displaying image \"" + filepath.string() + "\"");
+  if (system(("bash -c \"mrview " + filepath.string() + "\"").c_str()))
     WARN(std::string("error invoking viewer: ") + strerror(errno));
 }
 // Explicit instantiations in image.cpp:

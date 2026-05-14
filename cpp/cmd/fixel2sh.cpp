@@ -68,7 +68,7 @@ void run() {
   auto in_index_image = in_index_header.get_image<index_type>();
   Fixel::debug_validate_index_image(in_index_image);
   auto in_directions_image =
-      Fixel::find_directions_header(Fixel::get_fixel_directory(argument[0])).get_image<float>().with_direct_io();
+      Fixel::find_directions_header(Fixel::get_fixel_directory(argument[0])).get_image<float>().with_direct_io(1);
 
   size_t lmax = 8;
   auto opt = get_options("lmax");

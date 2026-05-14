@@ -27,7 +27,7 @@ namespace MR::ImageIO {
 void PNG::load(const Header &header, size_t) {
   DEBUG(std::string("loading PNG ")               //
         + (files.size() > 1 ? "images" : "image") //
-        + " \"" + header.name() + "\"");          //
+        + " \"" + header.path().string() + "\""); //
   segsize = (header.datatype().bits() * voxel_count(header) + 7) / 8;
   addresses.resize(1);
   addresses[0].reset(new std::byte[segsize]);
@@ -41,17 +41,17 @@ void PNG::load(const Header &header, size_t) {
                                 + 7)                                          //
                                / 8;                                           //
     for (size_t i = 0; i != files.size(); ++i) {
-      File::PNG::Reader png(files[i].name);
+      File::PNG::Reader png(files[i].path);
       if (png.get_width() != header.size(0) || png.get_height() != header.size(1) ||
           png.get_output_bitdepth() != static_cast<int>(header.datatype().bits()) ||
           ((header.ndim() > 3 && png.get_channels() != header.size(3)) ||
            (header.ndim() <= 3 && png.get_channels() > 1))) {
-        Exception e("Inconsistent image properties within series \"" + header.name() + "\"");
+        Exception e("Inconsistent image properties within series \"" + header.path().string() + "\"");
         e.push_back("Series: " + str(header.size(0)) + "x" + str(header.size(1)) + " x " +
                     str(header.datatype().bits()) + " bits, " + (header.ndim() > 3 ? str(header.size(3)) : "1") +
                     " volumes");
-        e.push_back("File \"" + files[i].name + ": " + str(png.get_width()) + "x" + str(png.get_height()) + " x " +
-                    str(png.get_bitdepth()) + "(->" + str(png.get_output_bitdepth()) + ") bits, " +
+        e.push_back("File \"" + files[i].path.string() + ": " + str(png.get_width()) + "x" + str(png.get_height()) +
+                    " x " + str(png.get_bitdepth()) + "(->" + str(png.get_output_bitdepth()) + ") bits, " +
                     str(png.get_channels()) + " channels");
         throw e;
       }
@@ -70,7 +70,7 @@ void PNG::unload(const Header &header) {
                                 + 7)                                          //
                                / 8;                                           //
     for (size_t i = 0; i != files.size(); i++) {
-      File::PNG::Writer png(header, files[i].name);
+      File::PNG::Writer png(header, files[i].path);
       png.save(addresses[0].get() + (i * slice_bytes));
     }
   }

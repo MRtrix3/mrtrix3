@@ -20,6 +20,8 @@
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -289,21 +291,24 @@ void process_image(Header &data,
                    Image<bool> &mask,
                    Image<real_type> &noise,
                    Image<uint16_t> &rank,
-                   std::string_view output_name,
+                   const std::filesystem::path &output_path,
                    const std::vector<uint32_t> &extent,
                    bool exp1) {
   auto input = data.get_image<T>().with_direct_io(3);
   // create output
   Header header(data);
   header.datatype() = DataType::from<T>();
-  auto output = Image<T>::create(output_name, header);
+  auto output = Image<T>::create(output_path, header);
   // run
   DenoisingFunctor<T> func(data.size(3), extent, mask, noise, rank, exp1);
   ThreadedLoop("running MP-PCA denoising", data, 0, 3).run(func, input, output);
 }
 
 void run() {
-  auto dwi = Header::open(argument[0]);
+  const std::filesystem::path input_path(argument[0]);
+  const std::filesystem::path output_path(argument[1]);
+
+  auto dwi = Header::open(input_path);
 
   if (dwi.ndim() != 4 || dwi.size(3) <= 1)
     throw Exception("input image must be 4-dimensional");
@@ -374,19 +379,19 @@ void run() {
   switch (prec) {
   case static_cast<int>(DType::FLOAT32):
     INFO("select real float32 for processing");
-    process_image<float>(dwi, mask, noise, rank, argument[1], extent, exp1);
+    process_image<float>(dwi, mask, noise, rank, output_path, extent, exp1);
     break;
   case static_cast<int>(DType::FLOAT64):
     INFO("select real float64 for processing");
-    process_image<double>(dwi, mask, noise, rank, argument[1], extent, exp1);
+    process_image<double>(dwi, mask, noise, rank, output_path, extent, exp1);
     break;
   case 2:
     INFO("select complex float32 for processing");
-    process_image<cfloat>(dwi, mask, noise, rank, argument[1], extent, exp1);
+    process_image<cfloat>(dwi, mask, noise, rank, output_path, extent, exp1);
     break;
   case 3:
     INFO("select complex float64 for processing");
-    process_image<cdouble>(dwi, mask, noise, rank, argument[1], extent, exp1);
+    process_image<cdouble>(dwi, mask, noise, rank, output_path, extent, exp1);
     break;
   }
 }

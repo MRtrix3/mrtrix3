@@ -175,14 +175,14 @@ void load_seed_mechanisms(Properties &properties) {
     if (opt_act.empty())
       throw Exception("Cannot perform GM-WM Interface seeding without ACT segmented tissue image");
     for (size_t i = 0; i < opt.size(); ++i) {
-      GMWMI *seed = new GMWMI(opt[i][0], str(opt_act[0][0]));
+      GMWMI *seed = new GMWMI(opt[i][0], opt_act[0][0]);
       list.add(seed);
     }
   }
 
   opt = get_options("seed_per_coordinate");
   for (size_t i = 0; i < opt.size(); ++i) {
-    Count_per_coord *seed = new Count_per_coord(str(opt[i][0]), opt[i][1]);
+    Count_per_coord *seed = new Count_per_coord(opt[i][0], opt[i][1]);
     list.add(seed);
   }
 
@@ -202,7 +202,7 @@ void load_seed_mechanisms(Properties &properties) {
     if (!list.empty())
       throw Exception("If performing rejection seeding from pre-specified coordinates,"
                       " cannot specify any other type of seed!");
-    Rejection_per_coord *seed = new Rejection_per_coord(str(opt[0][0]));
+    Rejection_per_coord *seed = new Rejection_per_coord(opt[0][0]);
     list.add(seed);
   }
 
@@ -212,7 +212,7 @@ void load_seed_mechanisms(Properties &properties) {
   if (!opt.empty()) {
     if (!list.empty())
       throw Exception("If performing dynamic streamline seeding, cannot specify any other type of seed!");
-    properties["seed_dynamic"] = str(opt[0][0]);
+    properties["seed_dynamic"] = opt[0][0].as_text();
   } else if (list.empty()) {
     throw Exception("Must provide at least one source of streamline seeds!");
   }
@@ -229,7 +229,7 @@ void load_seed_parameters(Properties &properties) {
 
   opt = get_options("seed_cutoff");
   if (!opt.empty())
-    properties["init_threshold"] = std::string(opt[0][0]);
+    properties["init_threshold"] = opt[0][0].as_text();
 
   opt = get_options("seed_unidirectional");
   if (!opt.empty())
@@ -237,7 +237,11 @@ void load_seed_parameters(Properties &properties) {
 
   opt = get_options("seed_direction");
   if (!opt.empty())
-    properties["init_direction"] = std::string(opt[0][0]);
+    properties["init_direction"] = opt[0][0].as_text();
+
+  opt = get_options("output_seeds");
+  if (!opt.empty())
+    properties["seed_output"] = opt[0][0].as_text();
 }
 
 } // namespace MR::DWI::Tractography::Seeding

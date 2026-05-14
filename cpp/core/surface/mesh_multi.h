@@ -20,6 +20,8 @@
 
 #include "surface/mesh.h"
 
+#include <filesystem>
+
 namespace MR::Surface {
 
 // Class to handle multiple meshes per file
@@ -32,8 +34,8 @@ class MeshMulti : public std::vector<Mesh> {
 public:
   using std::vector<Mesh>::vector;
 
-  void load(std::string_view);
-  void save(std::string_view) const;
+  void load(const std::filesystem::path &);
+  void save(const std::filesystem::path &) const;
 };
 
 } // namespace MR::Surface

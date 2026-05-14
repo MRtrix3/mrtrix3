@@ -20,7 +20,6 @@
 
 #include "algo/loop.h"
 #include "file/path.h"
-#include "file/utils.h"
 #include "image.h"
 #include "memory.h"
 #include "thread_queue.h"
@@ -40,7 +39,7 @@ class MapWriterBase {
 
 public:
   MapWriterBase(const Header &header,
-                std::string_view name,
+                const std::filesystem::path &name,
                 const vox_stat_t s = vox_stat_t::SUM,
                 const writer_dim t = writer_dim::GREYSCALE)
       : H(header), output_image_name(name), voxel_statistic(s), type(t) {
@@ -68,7 +67,7 @@ public:
 
 protected:
   const Header &H;
-  const std::string output_image_name;
+  const std::filesystem::path output_image_name;
   const vox_stat_t voxel_statistic;
   const writer_dim type;
 
@@ -83,7 +82,7 @@ template <typename value_type> class MapWriter : public MapWriterBase {
 
 public:
   MapWriter(const Header &header,
-            std::string_view name,
+            const std::filesystem::path &name,
             const vox_stat_t voxel_statistic = vox_stat_t::SUM,
             const writer_dim type = writer_dim::GREYSCALE)
       : MapWriterBase(header, name, voxel_statistic, type),

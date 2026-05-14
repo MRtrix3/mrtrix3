@@ -75,7 +75,6 @@ void usage() {
 // clang-format on
 
 void run() {
-
   Header H_in = Header::open(argument[0]);
   DWI::Tractography::ACT::validate_5TT_header(H_in);
   auto input = H_in.get_image<float>();

@@ -17,6 +17,7 @@
 #pragma once
 
 #include <deque>
+#include <filesystem>
 #include <optional>
 
 #include "dwi/directions/set.h"
@@ -48,7 +49,9 @@ constexpr ssize_t streamline_generation_batch_size = 10;
 template <class Method> class Exec {
 
 public:
-  static void run(std::string_view diff_path, std::string_view destination, DWI::Tractography::Properties &properties) {
+  static void run(const std::filesystem::path &diff_path,
+                  const std::filesystem::path &destination,
+                  DWI::Tractography::Properties &properties) {
 
     if (properties.find("seed_dynamic") == properties.end()) {
 
