@@ -86,7 +86,7 @@ jobs:
         cd "$GITHUB_WORKSPACE"
         coverage combine
         coverage html -d coverage-report
-        coverage report | tee coverage-summary.txt
+        coverage report --branch -m | tee coverage-summary.txt
         {
           echo '### Python Coverage Summary'
           echo '```'
