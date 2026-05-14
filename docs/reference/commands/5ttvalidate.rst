@@ -37,7 +37,7 @@ The following checks are performed on each input image:
 Options
 -------
 
--  **-voxels prefix** output mask images highlighting voxels where the input does not conform to 5TT requirements
+-  **-voxels image_or_dir** output mask image(s) highlighting voxels where the input does not conform to 5TT requirements; when a single input image is provided, this should be the path for the output image; when multiple input images are provided, this should be the path for an output directory, within which a separate image will be created for each input, each named after the corresponding input image
 
 Standard options
 ^^^^^^^^^^^^^^^^

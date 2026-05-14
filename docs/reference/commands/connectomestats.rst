@@ -13,12 +13,12 @@ Usage
 
 ::
 
-    connectomestats [ options ]  input algorithm design output
+    connectomestats [ options ]  input algorithm design output_dir
 
 -  *input*: a text file listing the file names of the input connectomes
 -  *algorithm*: the algorithm to use in network-based clustering/enhancement. Options are: nbs, tfnbs, none.
 -  *design*: the design matrix
--  *output*: the filename prefix for all output.
+-  *output_dir*: the output directory (will be created by the command).
 
 Description
 -----------

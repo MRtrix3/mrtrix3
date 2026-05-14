@@ -13,11 +13,11 @@ Usage
 
 ::
 
-    connectome2tck [ options ]  tracks_in assignments_in prefix_out
+    connectome2tck [ options ]  tracks_in assignments_in output_dir
 
 -  *tracks_in*: the input track file
 -  *assignments_in*: input text file containing the node assignments for each streamline
--  *prefix_out*: the output file / prefix
+-  *output_dir*: the output directory (will be created by the command)
 
 Description
 -----------
@@ -29,39 +29,39 @@ Example usages
 
 -   *Default usage*::
 
-        $ connectome2tck tracks.tck assignments.txt edge-
+        $ connectome2tck tracks.tck assignments.txt edges/
 
-    The command will generate one track file for every edge in the connectome, with the name of each file indicating the nodes connected via that edge; for instance, all streamlines connecting nodes 23 and 49 will be written to file "edge-23-49.tck".
+    The command will generate one track file for every edge in the connectome within the output directory "edges/"; the name of each file indicates the nodes connected via that edge. For instance, all streamlines connecting nodes 23 and 49 will be written to file "edges/23-49.tck".
 
 -   *Extract only the streamlines between nodes 1 and 2*::
 
-        $ connectome2tck tracks.tck assignments.txt tracks_1_2.tck -nodes 1,2 -exclusive -files single
+        $ connectome2tck tracks.tck assignments.txt node12/ -nodes 1,2 -exclusive -files single
 
-    Since only a single edge is of interest, this example provides only the two nodes involved in that edge to the -nodes option, adds the -exclusive option so that only streamlines for which both assigned nodes are in the list of nodes of interest are extracted (i.e. only streamlines connecting nodes 1 and 2 in this example), and writes the result to a single output track file.
+    Since only a single edge is of interest, this example provides only the two nodes involved in that edge to the -nodes option, adds the -exclusive option so that only streamlines for which both assigned nodes are in the list of nodes of interest are extracted (i.e. only streamlines connecting nodes 1 and 2 in this example), and writes the result to a single output track file "node12/tracks.tck".
 
 -   *Extract the streamlines connecting node 15 to all other nodes in the parcellation, with one track file for each edge*::
 
-        $ connectome2tck tracks.tck assignments.txt from_15_to_ -nodes 15 -keep_self
+        $ connectome2tck tracks.tck assignments.txt from_node15/ -nodes 15 -keep_self
 
-    The command will generate the same number of track files as there are nodes in the parcellation: one each for the streamlines connecting node 15 to every other node; i.e. "from_15_to_1.tck", "from_15_to_2.tck", "from_15_to_3.tck", etc.. Because the -keep_self option is specified, file "from_15_to_15.tck" will also be generated, containing those streamlines that connect to node 15 at both endpoints.
+    The command will generate the same number of track files as there are nodes in the parcellation: one each for the streamlines connecting node 15 to every other node; i.e. "from_node15/15-1.tck", "from_node15/15-2.tck", "from_node15/15-3.tck", etc.. Because the -keep_self option is specified, file "from_node15/15-15.tck" will also be generated, containing those streamlines that connect to node 15 at both endpoints.
 
 -   *For every node, generate a file containing all streamlines connected to that node*::
 
-        $ connectome2tck tracks.tck assignments.txt node -files per_node
+        $ connectome2tck tracks.tck assignments.txt nodes/ -files per_node
 
-    Here the command will generate one track file for every node in the connectome: "node1.tck", "node2.tck", "node3.tck", etc.. Each of these files will contain all streamlines that connect the node of that index to another node in the connectome (it does not select all tracks connecting a particular node, since the -keep_self option was omitted and therefore e.g. a streamline that is assigned to node 41 will not be present in file "node41.tck"). Each streamline in the input tractogram will in fact appear in two different output track files; e.g. a streamline connecting nodes 8 and 56 will be present both in file "node8.tck" and file "node56.tck".
+    Here the command will generate one track file for every node in the connectome: "nodes/1.tck", "nodes/2.tck", "nodes/3.tck", etc.. Each of these files will contain all streamlines that connect the node of that index to another node in the connectome (it does not select all tracks connecting a particular node, since the -keep_self option was omitted and therefore e.g. a streamline that is assigned to node 41 will not be present in file "nodes/41.tck"). Each streamline in the input tractogram will in fact appear in two different output track files; e.g. a streamline connecting nodes 8 and 56 will be present both in file "nodes/8.tck" and file "nodes/56.tck".
 
 -   *Get all streamlines that were not successfully assigned to a node pair*::
 
-        $ connectome2tck tracks.tck assignments.txt unassigned.tck -nodes 0 -keep_self -files single
+        $ connectome2tck tracks.tck assignments.txt unassigned/ -nodes 0 -keep_self -files single
 
-    Node index 0 corresponds to streamline endpoints that were not successfully assigned to a node. As such, by selecting all streamlines that are assigned to "node 0" (including those streamlines for which neither endpoint is assigned to a node due to use of the -keep_self option), the single output track file will contain all streamlines for which at least one of the two endpoints was not successfully assigned to a node.
+    Node index 0 corresponds to streamline endpoints that were not successfully assigned to a node. As such, by selecting all streamlines that are assigned to "node 0" (including those streamlines for which neither endpoint is assigned to a node due to use of the -keep_self option), the single output track file "unassigned/tracks.tck" will contain all streamlines for which at least one of the two endpoints was not successfully assigned to a node.
 
 -   *Generate a single track file containing edge exemplar trajectories*::
 
-        $ connectome2tck tracks.tck assignments.txt exemplars.tck -files single -exemplars nodes.mif
+        $ connectome2tck tracks.tck assignments.txt exemplars/ -files single -exemplars nodes.mif
 
-    This produces the track file that is required as input when attempting to display connectome edges using the streamlines or streamtubes geometries within the mrview connectome tool.
+    This produces the track file "exemplars/tracks.tck" that is required as input when attempting to display connectome edges using the streamlines or streamtubes geometries within the mrview connectome tool.
 
 Options
 -------
@@ -86,7 +86,7 @@ Options for importing / exporting streamline weights
 
 -  **-tck_weights_in path** specify a text scalar file containing the streamline weights
 
--  **-prefix_tck_weights_out prefix** provide a prefix for outputting a text file corresponding to each output file, each containing only the streamline weights relevant for that track file
+-  **-tck_weights_out_dir dir** provide an output directory for text files, each corresponding to an output track file and containing only the streamline weights relevant for that file
 
 Standard options
 ^^^^^^^^^^^^^^^^
