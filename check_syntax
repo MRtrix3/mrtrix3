@@ -146,7 +146,7 @@ run_checks() {
 # - Detect namespaces that could have been nested
   res="$res"$(
     cat .check_syntax4.tmp | \
-    $grep -Po '\bnamespace [\w\:]+\s*\{(namespace [\w\:]+\s*\{)+'
+    $grep -Po '\bnamespace [\w\:]+\s*\{(\s*namespace [\w\:]+\s*\{)+'
   )
 
 # - Detect any instances of "using namespace std;":
