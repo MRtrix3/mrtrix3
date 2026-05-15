@@ -93,9 +93,9 @@ const OptionGroup nonlinear_options =
     // + Option("cc", "use cc metric with radius")
     // + Argument ("radius").type_integer (1,100)
 
-    + Option("diagnostics_image",
+    + Option("nl_diagnostics_dir",
              "write intermediate images for diagnostics purposes")
-      + Argument("path");
+      + Argument("dir").type_directory_out();
 // clang-format on
 
 template void NonLinear::run<Transform::Affine, Image<double>>(

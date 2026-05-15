@@ -787,6 +787,16 @@ void run() {
         throw Exception("the requested -nl_lmax exceeds the lmax of the input images");
   }
 
+  opt = get_options("nl_diagnostics_dir");
+  if (!opt.empty()) {
+    if (!do_nonlinear)
+      throw Exception("the -nl_diagnostics_dir option was specified"
+                      " when no non-linear registration is requested");
+    const std::filesystem::path diag_dir{opt[0][0]};
+    std::filesystem::create_directories(diag_dir);
+    nl_registration.set_diagnostics_image_dir(diag_dir);
+  }
+
   // ******  MC options  *******
   // TODO: set tissue specific lmax?
 

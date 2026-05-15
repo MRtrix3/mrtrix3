@@ -423,6 +423,7 @@ void Capture::add_commandline_options(MR::App::OptionList &options) {
   // clang-format off
   options + OptionGroup("Screen Capture tool options")
 
+  // TODO Change to .type_directory_out()
       + Option("capture.folder",
                "Set the output folder for the screen capture tool.").allow_multiple()
         + Argument("path").type_text()

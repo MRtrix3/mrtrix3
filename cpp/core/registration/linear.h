@@ -89,7 +89,7 @@ struct StageSetting {
   OptimiserAlgoType optimiser_default, optimiser_first, optimiser_last;
   default_type loop_density;
   ssize_t fod_lmax;
-  std::vector<std::string> diagnostics_images;
+  std::vector<std::string> diagnostics_image_paths;
 };
 
 class Linear {
@@ -218,16 +218,16 @@ public:
       throw Exception("the lmax must be defined for all stages (1 or " + str(stages.size()) + ")");
   }
 
-  void set_diagnostics_image_prefix(const std::basic_string<char> &diagnostics_image_prefix) {
+  void set_diagnostics_image_dir(const std::filesystem::path &diagnostics_image_dir) {
     for (size_t level = 0; level < stages.size(); ++level) {
       auto &stage = stages[level];
       for (size_t iter = 1; iter <= stage.stage_iterations; ++iter) {
-        std::ostringstream oss;
-        oss << diagnostics_image_prefix << "_stage-" << level + 1 << "_iter-" << iter << ".mif";
-        if (std::filesystem::exists(oss.str()) && !App::overwrite_files)
-          throw Exception("diagnostics image file \"" + oss.str() + "\"" +           //
+        const std::filesystem::path image_path =
+            diagnostics_image_dir / ("stage-" + str(level + 1) + "_iter-" + str(iter) + ".mif");
+        if (std::filesystem::exists(image_path) && !App::overwrite_files)
+          throw Exception("diagnostics image file \"" + image_path.string() + "\"" + //
                           " already exists (use -force option to force overwrite)"); //
-        stage.diagnostics_images.push_back(oss.str());
+        stage.diagnostics_image_paths.push_back(image_path.string());
       }
     }
   }
@@ -526,9 +526,9 @@ public:
         // auto params = optim.state();
         // VAR(optim.function_evaluations());
         // Math::check_function_gradient (evaluate, params, 0.0001, true, optimiser_weights);
-        if (!stage.diagnostics_images.empty()) {
-          CONSOLE("    creating diagnostics image: " + stage.diagnostics_images[stage_iter - 1]);
-          parameters.make_diagnostics_image(stage.diagnostics_images[stage_iter - 1],
+        if (!stage.diagnostics_image_paths.empty()) {
+          CONSOLE("    creating diagnostics image: " + stage.diagnostics_image_paths[stage_iter - 1]);
+          parameters.make_diagnostics_image(stage.diagnostics_image_paths[stage_iter - 1],
                                             File::Config::get_bool("RegLinregDiagnosticsImageMasked", false));
         }
       }

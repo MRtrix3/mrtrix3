@@ -14,6 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <filesystem>
+
 #include "registration/linear.h"
 
 namespace MR::Registration {
@@ -126,9 +128,11 @@ void parse_general_options(Registration::Linear &registration) {
     registration.set_stage_iterations(std::vector<uint32_t>{1});
   }
 
-  opt = get_options("linstage.diagnostics.prefix");
+  opt = get_options("linstage.diagnostics.dir");
   if (!opt.empty()) {
-    registration.set_diagnostics_image_prefix(opt[0][0]);
+    const std::filesystem::path diag_dir{opt[0][0]};
+    std::filesystem::create_directories(diag_dir);
+    registration.set_diagnostics_image_dir(diag_dir);
   }
 }
 
@@ -210,7 +214,7 @@ const OptionGroup lin_stage_options =
              "number of iterations for each registration stage."
              " Not to be confused with -rigid_niter or -affine_niter."
              " This can be used to generate intermediate diagnostics images"
-             " (-linstage.diagnostics.prefix)"
+             " (-linstage.diagnostics.dir)"
              " or to change the cost function optimiser during registration"
              " (without the need to repeatedly resize the images)."
              " (Default: 1 == no repetition)")
@@ -245,9 +249,9 @@ const OptionGroup lin_stage_options =
              " (Default: bbgd)")
       + Argument("algorithm").type_choice(linear_optimisation_algo_choices)
 
-    + Option("linstage.diagnostics.prefix",
+    + Option("linstage.diagnostics.dir",
              "generate diagnostics images after every registration stage")
-      + Argument("prefix").type_text();
+      + Argument("dir").type_directory_out();
 
 const OptionGroup rigid_options =
     OptionGroup("Rigid registration options")
