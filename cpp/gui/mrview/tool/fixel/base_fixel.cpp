@@ -17,9 +17,9 @@
 #include "mrview/tool/fixel/base_fixel.h"
 
 namespace MR::GUI::MRView::Tool {
-BaseFixel::BaseFixel(std::string_view filename, Fixel &fixel_tool)
-    : Displayable(filename),
-      header(MR::Header::open(filename)),
+BaseFixel::BaseFixel(const std::filesystem::path &filepath, Fixel &fixel_tool)
+    : Displayable(filepath),
+      header(MR::Header::open(filepath)),
       slice_fixel_indices(3),
       slice_fixel_sizes(3),
       slice_fixel_counts(3),
@@ -407,7 +407,7 @@ void BaseFixel::update_interp_image_buffer(const Projection &projection,
   GL::assert_context_is_current();
 }
 
-void BaseFixel::load_image(std::string_view filename) {
+void BaseFixel::load_image(const std::filesystem::path &filepath) {
   // Make sure to set graphics context!
   // We're setting up vertex array objects
   GL::Context::Grab context;
@@ -422,7 +422,7 @@ void BaseFixel::load_image(std::string_view filename) {
   set_threshold_type_index(0);
 
   size_t colour_index(0);
-  const auto initial_col_key = std::find(colour_types.begin(), colour_types.end(), Path::basename(filename));
+  const auto initial_col_key = std::find(colour_types.begin(), colour_types.end(), filepath.filename().string());
   if (initial_col_key != colour_types.end())
     colour_index = std::distance(colour_types.begin(), initial_col_key);
 

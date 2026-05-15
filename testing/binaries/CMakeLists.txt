@@ -180,6 +180,7 @@ add_bash_binary_test(fixelvalidate/duplicated_fixel)
 add_bash_binary_test(fixelvalidate/malformed_datafile)
 add_bash_binary_test(fixelvalidate/malformed_directions)
 add_bash_binary_test(fixelvalidate/malformed_index)
+add_bash_binary_test(fixelvalidate/missing_directions)
 add_bash_binary_test(fixelvalidate/wrong_nfixels)
 
 add_bash_binary_test(fod2dec/anat_combo)

@@ -15,9 +15,13 @@
  */
 
 #include "progressbar.h"
-#include "app.h"
+
+#include <sys/stat.h>
 #include <thread>
+#include <unistd.h>
 #include <utility>
+
+#include "app.h"
 
 // MSYS2 supports VT100, and file redirection is handled explicitly so this can be used globally
 #define CLEAR_LINE_CODE "\033[0K" // check_syntax off

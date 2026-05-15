@@ -55,7 +55,7 @@ void run() {
     try {
       multi_in1.load(argument[0]);
     } catch (Exception &e_multi) {
-      Exception e("Unable to load input \"" + std::string(argument[0]) + "\" as mesh file");
+      Exception e("Unable to load input \"" + argument[0].as_text() + "\" as mesh file");
       e.push_back("  As individual mesh:");
       for (size_t line_index = 0; line_index != e_single.num(); ++line_index)
         e.push_back("    " + e_single[line_index]);
@@ -73,7 +73,7 @@ void run() {
     try {
       multi_in2.load(argument[1]);
     } catch (Exception &e_multi) {
-      Exception e("Unable to load input \"" + std::string(argument[1]) + "\" as mesh file");
+      Exception e("Unable to load input \"" + argument[1].as_text() + "\" as mesh file");
       e.push_back("  As individual mesh:");
       for (size_t line_index = 0; line_index != e_single.num(); ++line_index)
         e.push_back("    " + e_single[line_index]);

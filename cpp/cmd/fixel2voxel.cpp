@@ -511,7 +511,7 @@ void run() {
   Image<float> in_directions;
   if (op == Operation::DEC_UNIT || op == Operation::DEC_SCALED) // dec
     in_directions =
-        Fixel::find_directions_header(Fixel::get_fixel_directory(in_data.name())).get_image<float>().with_direct_io();
+        Fixel::find_directions_header(Fixel::get_fixel_directory(in_data.path())).get_image<float>().with_direct_io(1);
 
   FixelDataType in_vol;
   auto opt = get_options("weighted");

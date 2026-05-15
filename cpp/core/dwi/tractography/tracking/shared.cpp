@@ -19,7 +19,9 @@
 
 namespace MR::DWI::Tractography::Tracking {
 
-SharedBase::SharedBase(std::string_view diff_path, Properties &property_set, ImplicitMaskConfig source_mask_config)
+SharedBase::SharedBase(const std::filesystem::path &diff_path,
+                       Properties &property_set,
+                       ImplicitMaskConfig source_mask_config)
     : source_header(Header::open(diff_path)),
       source(source_header.get_image<float>().with_direct_io(3)),
       source_mask(make_implicit_mask(source, source_mask_config)),
@@ -59,7 +61,7 @@ SharedBase::SharedBase(std::string_view diff_path, Properties &property_set, Imp
   properties.set(rk4, "rk4");
   properties.set(stop_on_all_include, "stop_on_all_include");
 
-  properties["source"] = source_header.name();
+  properties["source"] = diff_path.string();
 
   max_num_seeds = Defaults::seed_to_select_ratio * max_num_tracks;
   properties.set(max_num_seeds, "max_num_seeds");

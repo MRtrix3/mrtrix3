@@ -15,9 +15,8 @@
  */
 
 #include "command.h"
-#include "mrtrix.h"
-
 #include "dwi/tractography/validate.h"
+#include "mrtrix.h"
 
 using namespace MR;
 using namespace App;
@@ -59,8 +58,7 @@ void usage() {
 // clang-format on
 
 void run() {
-  // validate_tsf() throws an Exception with a descriptive message on any failure.
   validate_tsf(argument[0], argument[1]);
-  CONSOLE("Track scalar file \"" + std::string(argument[0]) + "\"" +                    //
-          " is valid with respect to tractogram \"" + std::string(argument[1]) + "\""); //
+  CONSOLE("Track scalar file \"" + argument[0].as_text() + "\"" +                    //
+          " is valid with respect to tractogram \"" + argument[1].as_text() + "\""); //
 }

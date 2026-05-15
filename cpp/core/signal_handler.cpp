@@ -18,8 +18,10 @@
 
 #include <atomic>
 #include <cstdlib>
+#include <filesystem>
 #include <iostream>
 #include <signal.h>
+#include <unistd.h>
 #include <vector>
 
 #include "app.h"
@@ -28,6 +30,8 @@
 
 #ifdef MRTRIX_WINDOWS
 #define STDERR_FILENO 2 // check_syntax off
+// #include <stdio.h>
+// constexpr int STDERR_FILENO = GetStdHandle(STD_ERROR_HANDLE);
 #endif
 
 namespace MR::SignalHandler {
@@ -35,12 +39,14 @@ namespace MR::SignalHandler {
 namespace {
 std::vector<cleanup_function_type> cleanup_operations;
 
-std::vector<std::string> marked_files;
+std::vector<std::filesystem::path> marked_files;
 std::atomic_flag flag = ATOMIC_FLAG_INIT;
 
-void delete_temporary_files() {
+void delete_temporary_files() noexcept {
+  // Use non-throwing version of std::filesystem::remove()
+  std::error_code ec;
   for (const auto &i : marked_files)
-    std::remove(i.c_str());
+    std::filesystem::remove(i, ec);
   marked_files.clear();
 }
 
@@ -48,8 +54,6 @@ void handler(int i) noexcept {
   // Only process this once if using multi-threading:
   if (!flag.test_and_set()) {
 
-    // Try to do a tempfile cleanup before printing the error, since the latter's not guaranteed to work...
-    // Don't use File::remove: may throw an exception
     for (auto func : cleanup_operations)
       func();
 
@@ -118,19 +122,19 @@ void on_signal(cleanup_function_type func) {
   std::atexit(func);
 }
 
-void mark_file_for_deletion(std::string_view filename) {
+void mark_file_for_deletion(const std::filesystem::path &filepath) {
   while (!flag.test_and_set())
     ;
-  marked_files.push_back(std::string(filename));
+  marked_files.push_back(filepath);
   flag.clear();
 }
 
-void unmark_file_for_deletion(std::string_view filename) {
+void unmark_file_for_deletion(const std::filesystem::path &filepath) {
   while (!flag.test_and_set())
     ;
   auto i = marked_files.begin();
   while (i != marked_files.end()) {
-    if (*i == filename)
+    if (*i == filepath)
       i = marked_files.erase(i);
     else
       ++i;

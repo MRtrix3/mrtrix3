@@ -28,6 +28,8 @@
 #include "transform.h"
 #include "types.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -359,9 +361,9 @@ template <class ImageType> inline std::vector<int> set_header(Header &header, co
 }
 
 template <typename T, class InputType>
-void copy_permute(const InputType &in, Header &header_out, std::string_view output_filename) {
+void copy_permute(const InputType &in, Header &header_out, const std::filesystem::path &output_filepath) {
   const auto axes = set_header(header_out, in);
-  auto out = Image<T>::create(output_filename, header_out, add_to_command_history);
+  auto out = Image<T>::create(output_filepath, header_out, add_to_command_history);
   DWI::export_grad_commandline(out);
   Metadata::PhaseEncoding::export_commandline(out);
   auto perm = Adapter::make<Adapter::PermuteAxes>(in, axes);
@@ -372,13 +374,13 @@ template <typename T>
 void extract(Header &header_in,
              Header &header_out,
              const std::vector<std::vector<uint32_t>> &pos,
-             std::string_view output_filename) {
+             const std::filesystem::path &output_filepath) {
   auto in = header_in.get_image<T>();
   if (pos.empty()) {
-    copy_permute<T, decltype(in)>(in, header_out, output_filename);
+    copy_permute<T, decltype(in)>(in, header_out, output_filepath);
   } else {
     auto extract = Adapter::make<Adapter::Extract>(in, pos);
-    copy_permute<T, decltype(extract)>(extract, header_out, output_filename);
+    copy_permute<T, decltype(extract)>(extract, header_out, output_filepath);
   }
 }
 
@@ -414,7 +416,7 @@ void run() {
         header_out.keyval() = source.keyval();
       } catch (...) {
         try {
-          File::JSON::load(header_out, opt[0][0]);
+          File::JSON::load(header_out, std::filesystem::path(opt[0][0]));
         } catch (...) {
           throw Exception("Unable to obtain header key-value entries from spec \"" + str(opt[0][0]) + "\"");
         }
@@ -524,6 +526,8 @@ void run() {
       WARN("-scaling option has no effect for floating-point or binary images");
   }
 
+  const std::filesystem::path output_path{argument[1]};
+
   if (header_out.intensity_offset() == 0.0 && header_out.intensity_scale() == 1.0 &&
       !header_out.datatype().is_floating_point()) {
     switch (header_out.datatype()() & DataType::Type) {
@@ -532,15 +536,15 @@ void run() {
     case DataType::UInt16:
     case DataType::UInt32:
       if (header_out.datatype().is_signed())
-        extract<int32_t>(header_in, header_out, pos, argument[1]);
+        extract<int32_t>(header_in, header_out, pos, output_path);
       else
-        extract<uint32_t>(header_in, header_out, pos, argument[1]);
+        extract<uint32_t>(header_in, header_out, pos, output_path);
       break;
     case DataType::UInt64:
       if (header_out.datatype().is_signed())
-        extract<int64_t>(header_in, header_out, pos, argument[1]);
+        extract<int64_t>(header_in, header_out, pos, output_path);
       else
-        extract<uint64_t>(header_in, header_out, pos, argument[1]);
+        extract<uint64_t>(header_in, header_out, pos, output_path);
       break;
     case DataType::Undefined:
     default:
@@ -549,12 +553,12 @@ void run() {
     }
   } else {
     if (header_out.datatype().is_complex())
-      extract<cdouble>(header_in, header_out, pos, argument[1]);
+      extract<cdouble>(header_in, header_out, pos, output_path);
     else
-      extract<double>(header_in, header_out, pos, argument[1]);
+      extract<double>(header_in, header_out, pos, output_path);
   }
 
   opt = get_options("json_export");
   if (!opt.empty())
-    File::JSON::save(header_out, opt[0][0], argument[1]);
+    File::JSON::save(header_out, opt[0][0], output_path);
 }

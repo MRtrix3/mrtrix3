@@ -32,7 +32,7 @@ template <typename T = float> class ScalarReader : public ReaderBase {
 public:
   using value_type = T;
 
-  ScalarReader(std::string_view file, Properties &properties) { open(file, "track scalars", properties); }
+  ScalarReader(const std::filesystem::path &path, Properties &properties) { open(path, "track scalars", properties); }
 
   bool operator()(TrackScalar<T> &tck_scalar) {
     tck_scalar.clear();
@@ -119,21 +119,21 @@ public:
   using WriterBase<T>::count;
   using WriterBase<T>::count_offset;
   using WriterBase<T>::total_count;
-  using WriterBase<T>::name;
+  using WriterBase<T>::path;
   using WriterBase<T>::dtype;
   using WriterBase<T>::create;
   using WriterBase<T>::update_counts;
   using WriterBase<T>::verify_stream;
   using WriterBase<T>::open_success;
 
-  ScalarWriter(std::string_view file, const Properties &properties)
-      : WriterBase<T>(file),
+  ScalarWriter(const std::filesystem::path &path, const Properties &properties)
+      : WriterBase<T>(path),
         buffer_capacity(File::Config::get_int("TrackWriterBufferSize", 16777216) / sizeof(value_type)),
         buffer(new value_type[buffer_capacity + 1]),
         buffer_size(0) {
     File::OFStream out;
     try {
-      out.open(name, std::ios::out | std::ios::binary | std::ios::trunc);
+      out.open(path, std::ios::out | std::ios::binary | std::ios::trunc);
     } catch (Exception &e) {
       throw Exception(e, "Unable to create output track scalar file");
     }
@@ -183,7 +183,7 @@ protected:
   void commit() {
     if (buffer_size == 0 || !open_success)
       return;
-    File::OFStream out(name, std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
+    File::OFStream out(path, std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
     out.seekp(current_offset, out.beg);
     out.write(reinterpret_cast<char *>(buffer.get()), sizeof(value_type) * buffer_size);
     current_offset = static_cast<int64_t>(out.tellp());

@@ -17,16 +17,12 @@
 #pragma once
 
 #include <cstdint>
+#include <filesystem>
 #include <string_view>
 
 namespace MR::File {
 
-void remove(std::string_view filename);
-void create(std::string_view filename, int64_t size = 0);
-void resize(std::string_view filename, int64_t size);
-bool is_tempfile(std::string_view name, std::string_view suffix = "");
-std::string create_tempfile(int64_t size = 0, std::string_view suffix = "");
-void mkdir(std::string_view folder);
-void rmdir(std::string_view folder, bool recursive = false);
+bool is_tempfile(const std::filesystem::path &name, std::string_view suffix = "");
+std::filesystem::path create_tempfile(int64_t size = 0, std::string_view suffix = "");
 
 } // namespace MR::File

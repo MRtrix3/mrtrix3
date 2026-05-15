@@ -31,6 +31,8 @@
 #include "math/sphere.h"
 #include "types.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -199,7 +201,12 @@ protected:
 void run() {
 
   // Get directions from either selecting a b-value shell, or the header, or external file
-  auto header = Header::open(argument[0]);
+  const std::filesystem::path amps_input_path{argument[0]};
+  const std::filesystem::path mask_input_path{argument[1]};
+  const std::filesystem::path directions_input_path{argument[2]};
+  const std::filesystem::path response_output_path{argument[3]};
+
+  auto header = Header::open(amps_input_path);
 
   // May be dealing with multiple shells
   std::vector<Eigen::MatrixXd> dirs_azin;
@@ -211,7 +218,7 @@ void run() {
     auto dirs = File::Matrix::load_matrix(opt[0][0]);
     auto dv = DWI::Directions::validate(dirs, opt[0][0], false);
     if (dv.n_non_unit > 0) {
-      WARN("Input directions file \"" + opt[0][0] + "\"" +                          //
+      WARN("Input directions file \"" + opt[0][0].as_text() + "\"" +                //
            " contains " + str(dv.n_non_unit) + " direction" +                       //
            (dv.n_non_unit > 1 ? "s that are" : " that is") + " not of unit norm;" + //
            " all directions will be interpreted agnostically of norm");             //
@@ -252,10 +259,10 @@ void run() {
       lmax.push_back(0);
     max_lmax = 0;
   } else if (!opt.empty()) {
-    lmax = parse_ints<uint32_t>(opt[0][0]);
+    lmax = MR::container_cast<decltype(lmax)>(opt[0][0].as_sequence_uint());
     if (lmax.size() != dirs_azin.size())
-      throw Exception("Number of lmax\'s specified (" + str(lmax.size()) +
-                      ") does not match number of b-value shells (" + str(dirs_azin.size()) + ")");
+      throw Exception("Number of lmax\'s specified (" + str(lmax.size()) + ")" +                   //
+                      " does not match number of b-value shells (" + str(dirs_azin.size()) + ")"); //
     for (auto i : lmax) {
       if (i % 2)
         throw Exception("Values specified for lmax must be even");
@@ -284,13 +291,14 @@ void run() {
   }
 
   auto image = header.get_image<float>();
-  auto mask = Image<bool>::open(argument[1]);
+  auto mask = Image<bool>::open(mask_input_path);
   check_dimensions(image, mask, 0, 3);
   if (!(mask.ndim() == 3 || (mask.ndim() == 4 && mask.size(3) == 1)))
     throw Exception("input mask must be a 3D image");
-  auto dir_image = Image<float>::open(argument[2]);
+  auto dir_image = Image<float>::open(directions_input_path);
   if (dir_image.ndim() < 4 || dir_image.size(3) < 3)
-    throw Exception("input direction image \"" + std::string(argument[2]) + "\" does not have expected dimensions");
+    throw Exception("input direction image \"" + directions_input_path.string() + "\"" + //
+                    " does not have expected dimensions");                               //
   check_dimensions(image, dir_image, 0, 3);
 
   size_t num_voxels = 0;
@@ -374,5 +382,5 @@ void run() {
       line += "," + str<int>((*shells)[i].get_mean());
     keyvals["Shells"] = line;
   }
-  File::Matrix::save_matrix(responses, argument[3], keyvals);
+  File::Matrix::save_matrix(responses, response_output_path, keyvals);
 }

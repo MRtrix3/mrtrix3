@@ -31,11 +31,13 @@
 #include "mrview/tool/fixel/fixel.h"
 #include "mrview/tool/fixel/vector_structs.h"
 
+#include <filesystem>
+
 namespace MR::GUI::MRView::Tool {
 
 class BaseFixel : public Displayable {
 public:
-  BaseFixel(std::string_view, Fixel &);
+  BaseFixel(const std::filesystem::path &, Fixel &);
   ~BaseFixel();
 
   class Shader : public Displayable::Shader {
@@ -64,7 +66,7 @@ public:
       visitor.render_fixel_colourbar(*this);
   }
 
-  void load_image(std::string_view filename);
+  void load_image(const std::filesystem::path &filepath);
 
   void reload_directions_buffer();
 
@@ -279,8 +281,8 @@ private:
 // Wrapper to generically store fixel data
 template <typename ImageType> class FixelType : public BaseFixel {
 public:
-  FixelType(std::string_view filename, Fixel &fixel_tool)
-      : BaseFixel(filename, fixel_tool), fixel_data(nullptr), transform(header) {}
+  FixelType(const std::filesystem::path &filepath, Fixel &fixel_tool)
+      : BaseFixel(filepath, fixel_tool), transform(header) {}
 
 protected:
   std::unique_ptr<ImageType> fixel_data;

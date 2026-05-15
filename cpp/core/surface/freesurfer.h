@@ -47,7 +47,7 @@ template <typename T> inline T get_BE(std::ifstream &stream) {
   return Raw::fetch_BE<T>(&temp);
 }
 
-void read_annot(std::string_view, label_vector_type &, Connectome::LUT &);
-void read_label(std::string_view, VertexList &, Scalar &);
+void read_annot(const std::filesystem::path &, label_vector_type &, Connectome::LUT &);
+void read_label(const std::filesystem::path &, VertexList &, Scalar &);
 
 } // namespace MR::Surface::FreeSurfer

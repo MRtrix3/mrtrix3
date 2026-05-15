@@ -50,9 +50,9 @@ void run() {
   DWI::Tractography::TrackScalar<> tck_scalar1, tck_scalar2, tck_scalar_output;
   while (reader1(tck_scalar1)) {
     if (!reader2(tck_scalar2)) {
-      WARN("No more track scalars left in input file \"" + std::string(argument[1]) + "\" after " +
-           str(tck_scalar1.get_index() + 1) + " streamlines; " + "but more data are present in input file \"" +
-           std::string(argument[0]) + "\"");
+      WARN("No more track scalars left in input file \"" + argument[1].as_text() + "\"" + //
+           " after " + str(tck_scalar1.get_index() + 1) + " streamlines;" +               //
+           " but more data are present in input file \"" + argument[0].as_text() + "\""); //
       break;
     }
     if (tck_scalar1.size() != tck_scalar2.size())
@@ -66,8 +66,8 @@ void run() {
     writer(tck_scalar_output);
   }
   if (reader2(tck_scalar2)) {
-    WARN("No more track scalars left in input file \"" + std::string(argument[0]) + "\" after " +
-         str(tck_scalar1.get_index() + 1) + " streamlines; " + "but more data are present in input file \"" +
-         std::string(argument[1]) + "\"");
+    WARN("No more track scalars left in input file \"" + argument[0].as_text() + "\"" + //
+         " after " + str(tck_scalar1.get_index() + 1) + " streamlines;" +               //
+         " but more data are present in input file \"" + argument[1].as_text() + "\""); //
   }
 }

@@ -22,6 +22,8 @@
 #include "mrview/displayable.h"
 #include "mrview/tool/tractography/tractography.h"
 
+#include <filesystem>
+
 namespace MR::GUI {
 class Projection;
 
@@ -33,7 +35,7 @@ class Tractogram : public Displayable {
   Q_OBJECT
 
 public:
-  Tractogram(Tractography &tool, std::string_view file_path);
+  Tractogram(Tractography &tool, const std::filesystem::path &file_path);
 
   ~Tractogram();
 
@@ -49,8 +51,8 @@ public:
   void load_tracks();
 
   void load_end_colours();
-  void load_intensity_track_scalars(std::string_view);
-  void load_threshold_track_scalars(std::string_view);
+  void load_intensity_track_scalars(const std::filesystem::path &);
+  void load_threshold_track_scalars(const std::filesystem::path &);
   void erase_colour_data();
   void erase_intensity_scalar_data();
   void erase_threshold_scalar_data();
@@ -86,8 +88,8 @@ public:
   bool should_update_stride;
   float original_fov;
   float line_thickness;
-  std::string intensity_scalar_filename;
-  std::string threshold_scalar_filename;
+  std::filesystem::path intensity_scalar_path;
+  std::filesystem::path threshold_scalar_path;
 
   class Shader : public Displayable::Shader {
   public:
@@ -118,7 +120,7 @@ private:
   static const int track_padding = 6;
   Tractography &tractography_tool;
 
-  const std::string filename;
+  const std::filesystem::path filepath;
 
   TrackColourType color_type;
   TrackThresholdType threshold_type;

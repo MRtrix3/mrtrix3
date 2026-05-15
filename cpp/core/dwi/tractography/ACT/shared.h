@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <filesystem>
 #include <memory>
 
 #include "algo/implicit_mask.h"
@@ -29,7 +30,7 @@ namespace MR::DWI::Tractography::ACT {
 class ACT_Shared_additions {
 
 public:
-  ACT_Shared_additions(std::string_view path, Properties &property_set)
+  ACT_Shared_additions(const std::filesystem::path &path, Properties &property_set)
       : voxel(Image<float>::open(path)),
         voxel_mask(make_implicit_mask(
             voxel, {ZeroExclusion::Enabled, NonFiniteExclusion::Any, HoleFilling::EnabledExcludeNonFinite})),
