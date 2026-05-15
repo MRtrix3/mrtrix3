@@ -444,7 +444,7 @@ void ODF::setup_ODFtype_UI(const ODF_Item *image) {
     preview->set_lod_enabled(image->odf_type != odf_type_t::DIXEL);
 }
 
-void ODF::add_images(std::vector<std::string> &list, const odf_type_t mode) {
+void ODF::add_images(std::vector<std::filesystem::path> &list, const odf_type_t mode) {
   size_t previous_size = image_list_model->rowCount();
   if (!image_list_model->add_items(
           list, mode, colour_by_direction_box->isChecked(), hide_negative_values_box->isChecked(), scale->value()))
@@ -467,29 +467,27 @@ void ODF::closeEvent(QCloseEvent *) { window().disconnect(this); }
 void ODF::onPreviewClosed() { show_preview_button->setChecked(false); }
 
 void ODF::sh_open_slot() {
-  std::vector<std::string> list =
-      Dialog::File::get_images(&window(), "Select SH-based ODF images to open", &current_folder);
-  if (list.empty())
+  auto load_paths = Dialog::File::input_imagepaths(&window(), "Select SH-based ODF images to open", current_folder);
+  if (load_paths.empty())
     return;
-
-  add_images(list, odf_type_t::SH);
+  current_folder = load_paths.last_directory;
+  add_images(load_paths.multi_selection, odf_type_t::SH);
 }
 
 void ODF::tensor_open_slot() {
-  std::vector<std::string> list = Dialog::File::get_images(&window(), "Select tensor images to open", &current_folder);
-  if (list.empty())
+  auto load_paths = Dialog::File::input_imagepaths(&window(), "Select tensor images to open", current_folder);
+  if (load_paths.empty())
     return;
-
-  add_images(list, odf_type_t::TENSOR);
+  current_folder = load_paths.last_directory;
+  add_images(load_paths.multi_selection, odf_type_t::TENSOR);
 }
 
 void ODF::dixel_open_slot() {
-  std::vector<std::string> list =
-      Dialog::File::get_images(&window(), "Select dixel-based ODF images to open", &current_folder);
-  if (list.empty())
+  auto load_paths = Dialog::File::input_imagepaths(&window(), "Select dixel-based ODF images to open", current_folder);
+  if (load_paths.empty())
     return;
-
-  add_images(list, odf_type_t::DIXEL);
+  current_folder = load_paths.last_directory;
+  add_images(load_paths.multi_selection, odf_type_t::DIXEL);
 }
 
 void ODF::image_close_slot() {
@@ -606,13 +604,14 @@ void ODF::dirs_slot() {
         preview->render_frame->clear_dixels();
       break;
     case 4: { // From file
-      const std::string path =
-          Dialog::File::get_file(this, "Select directions file", "Text files (*.txt)", &current_folder);
-      if (path.empty()) {
+      auto load_paths =
+          Dialog::File::input_filepath(this, "Select directions file", "Text files (*.txt)", current_folder);
+      if (load_paths.empty()) {
         dirs_selector->setCurrentIndex(settings->dixel->dir_type);
         return;
       }
-      settings->dixel->set_from_file(path);
+      current_folder = load_paths.last_directory;
+      settings->dixel->set_from_file(load_paths.single_selection);
     } break;
     default:
       assert(false);
@@ -787,7 +786,7 @@ void ODF::add_commandline_options(MR::App::OptionList &options) {
 bool ODF::process_commandline_option(const MR::App::ParsedOption &opt) {
   if (opt.opt->is("odf.load_sh")) {
     try {
-      std::vector<std::string> list(1, opt[0]);
+      std::vector<std::filesystem::path> list(1, opt[0]);
       add_images(list, odf_type_t::SH);
     } catch (Exception &e) {
       e.display();
@@ -797,7 +796,7 @@ bool ODF::process_commandline_option(const MR::App::ParsedOption &opt) {
 
   if (opt.opt->is("odf.load_tensor")) {
     try {
-      std::vector<std::string> list(1, opt[0]);
+      std::vector<std::filesystem::path> list(1, opt[0]);
       add_images(list, odf_type_t::TENSOR);
     } catch (Exception &e) {
       e.display();
@@ -807,7 +806,7 @@ bool ODF::process_commandline_option(const MR::App::ParsedOption &opt) {
 
   if (opt.opt->is("odf.load_dixel")) {
     try {
-      std::vector<std::string> list(1, opt[0]);
+      std::vector<std::filesystem::path> list(1, opt[0]);
       add_images(list, odf_type_t::DIXEL);
     } catch (Exception &e) {
       e.display();

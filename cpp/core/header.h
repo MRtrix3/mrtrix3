@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <filesystem>
 #include <functional>
 #include <map>
 
@@ -62,6 +63,7 @@ public:
       : axes_(std::move(H.axes_)),
         transform_(std::move(H.transform_)),
         name_(std::move(H.name_)),
+        path_(std::move(H.path_)),
         keyval_(std::move(H.keyval_)),
         format_(H.format_),
         io(std::move(H.io)),
@@ -74,6 +76,7 @@ public:
     axes_ = std::move(H.axes_);
     transform_ = std::move(H.transform_);
     name_ = std::move(H.name_);
+    path_ = std::move(H.path_);
     keyval_ = std::move(H.keyval_);
     format_ = H.format_;
     io = std::move(H.io);
@@ -91,6 +94,7 @@ public:
       : axes_(H.axes_),
         transform_(H.transform_),
         name_(H.name_),
+        path_(H.path_),
         keyval_(H.keyval_),
         format_(H.format_),
         datatype_(H.datatype_),
@@ -132,6 +136,7 @@ public:
     axes_ = H.axes_;
     transform_ = H.transform_;
     name_ = H.name_;
+    path_ = H.path_;
     keyval_ = H.keyval_;
     format_ = H.format_;
     datatype_ = H.datatype_;
@@ -163,6 +168,7 @@ public:
     }
     transform_ = original.transform();
     name_ = original.name();
+    path_.clear();
     keyval_ = original.keyval();
     format_.clear();
     datatype_ = DataType::from<typename HeaderType::value_type>();
@@ -262,6 +268,36 @@ public:
   size_t ndim() const { return axes_.size(); }
   //! set the number of dimensions (axes) of image
   NDimProxy ndim() { return {axes_}; }
+
+  class PathProxy {
+  public:
+    PathProxy(std::string &name, std::filesystem::path &path) : name(name), path(path) {}
+    PathProxy(PathProxy &&) = default;
+    PathProxy(const PathProxy &) = delete;
+    PathProxy &operator=(PathProxy &&) = delete;
+    PathProxy &operator=(const PathProxy &) = delete;
+
+    operator const std::filesystem::path &() const { return path; }
+    const std::filesystem::path &operator=(const std::filesystem::path &new_path) {
+      path = new_path;
+      name = path.filename().string();
+      return path;
+    }
+
+    void clear() { path.clear(); }
+    bool empty() const { return path.string().empty(); }
+    std::filesystem::path filename() const { return path.filename(); }
+    std::string string() const { return empty() ? name : path.string(); }
+
+  private:
+    std::string &name;
+    std::filesystem::path &path;
+  };
+
+  //! get the path of the image
+  const std::filesystem::path &path() const { return path_; }
+  //! get/set the path of the image
+  PathProxy path() { return {name_, path_}; }
 
   //! get the number of voxels across axis
   const ssize_t &size(size_t axis) const;
@@ -385,8 +421,10 @@ public:
   //! merge key/value entries from another dictionary
   void merge_keyval(const KeyValues &);
 
-  static Header open(std::string_view image_name);
-  static Header create(std::string_view image_name, const Header &template_header, bool add_to_command_history = true);
+  static Header open(const std::filesystem::path &image_path);
+  static Header create(const std::filesystem::path &image_name, //
+                       const Header &template_header,           //
+                       bool add_to_command_history = true);     //
   static Header scratch(const Header &template_header, std::string_view label = "scratch image");
 
   /*! use to prevent automatic realignment of transform matrix into
@@ -402,6 +440,7 @@ protected:
   std::vector<Axis> axes_;
   transform_type transform_;
   std::string name_;
+  std::filesystem::path path_;
   KeyValues keyval_;
   std::string format_;
 

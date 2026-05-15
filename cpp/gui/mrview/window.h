@@ -155,9 +155,9 @@ public:
 
   bool sync_focus_on() const { return sync_focus_action->isChecked(); }
 
-  void captureGL(std::string filename) {
+  void captureGL(const std::filesystem::path &filepath) {
     QImage image(glarea->grabFramebuffer());
-    image.save(qstr(filename));
+    image.save(qstr(filepath.string()));
   }
 
   GL::Area *glwidget() const { return glarea; }
@@ -255,7 +255,7 @@ private:
   int anatomical_plane, annotations;
   ColourBars::Position colourbar_position, tools_colourbar_position;
   bool snap_to_image_axes_and_voxel;
-  std::string current_folder;
+  std::filesystem::path current_folder;
 
   Eigen::Array3f background_colour;
 

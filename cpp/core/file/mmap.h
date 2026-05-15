@@ -19,11 +19,11 @@
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <iostream>
 #include <optional>
 
 #include "file/entry.h"
-#include "types.h"
 
 namespace MR::File {
 
@@ -56,7 +56,7 @@ public:
        std::optional<int64_t> mapped_size = std::nullopt);
   ~MMap();
 
-  std::string name() const { return Entry::name; }
+  std::filesystem::path path() const { return Entry::path; }
   int64_t size() const { return msize; }
   std::byte *address() { return first; }
   const std::byte *address() const { return first; }
@@ -65,7 +65,7 @@ public:
   bool changed() const;
 
   friend std::ostream &operator<<(std::ostream &stream, const MMap &m) {
-    stream << "File::MMap { " << m.name() << " [" << m.fd << "], size: " << m.size() << ", mapped "
+    stream << "File::MMap { " << m.path().string() << " [" << m.fd << "], size: " << m.size() << ", mapped "
            << (m.readwrite ? "RW" : "RO") << " at " << reinterpret_cast<const void *>(m.address()) << ", offset "
            << m.start << " }";
     return stream;
@@ -75,7 +75,7 @@ protected:
   int fd;
   std::byte *addr;  /**< The address in memory where the file has been mapped. */
   std::byte *first; /**< The address in memory to the start of the region of interest. */
-  int64_t msize;    /**< The size of the file. */
+  int64_t msize;    /**< The size of the mapped portion of the file. */
   time_t mtime;     /**< The modification time of the file at the last check. */
   bool readwrite;
 

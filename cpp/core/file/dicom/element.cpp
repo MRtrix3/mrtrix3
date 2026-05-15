@@ -46,7 +46,7 @@ const std::unordered_map<Element::Type, std::string> Element::type_as_str{{INVAL
                                                                           {SEQ, "sequence"},
                                                                           {OTHER, "other"}};
 
-void Element::set(std::string_view filename, bool force_read, bool read_write) {
+void Element::set(const std::filesystem::path &filepath, bool force_read, bool read_write) {
   group = element = VR = 0;
   size = 0;
   start = data = next = nullptr;
@@ -54,20 +54,20 @@ void Element::set(std::string_view filename, bool force_read, bool read_write) {
   transfer_syntax_supported = true;
   parents.clear();
 
-  fmap.reset(new File::MMap(filename, read_write));
+  fmap.reset(new File::MMap(filepath, read_write));
 
   if (fmap->size() < 256)
-    throw Exception("\"" + fmap->name() + "\" is too small to be a valid DICOM file");
+    throw Exception("\"" + fmap->path().string() + "\" is too small to be a valid DICOM file");
 
   next = fmap->address();
 
   if (memcmp(next + 128, "DICM", 4) != 0) {
     is_explicit = false;
-    DEBUG("DICOM magic number not found in file \"" + fmap->name() + "\" - trying truncated format");
+    DEBUG("DICOM magic number not found in file \"" + fmap->path().string() + "\" - trying truncated format");
     if (!force_read)
-      if (!Path::has_suffix(fmap->name(), ".dcm"))
-        throw Exception("file \"" + fmap->name() +
-                        "\" does not have the DICOM magic number or the .dcm extension - assuming not DICOM");
+      if (fmap->path().extension() != ".dcm")
+        throw Exception("file \"" + fmap->path().string() + "\"" + //
+                        " does not have the DICOM magic number or the .dcm extension - assuming not DICOM");
   } else
     next += 132;
 
@@ -75,14 +75,14 @@ void Element::set(std::string_view filename, bool force_read, bool read_write) {
     set_explicit_encoding();
   } catch (Exception &e) {
     fmap.reset();
-    throw Exception(e, "\"" + fmap->name() + "\" is not a valid DICOM file");
+    throw Exception(e, "\"" + fmap->path().string() + "\" is not a valid DICOM file");
   }
 }
 
 void Element::set_explicit_encoding() {
   assert(fmap);
   if (read_GR_EL())
-    throw Exception("\"" + fmap->name() + "\" is too small to be DICOM");
+    throw Exception("\"" + fmap->path().string() + "\" is too small to be DICOM");
 
   is_explicit = true;
   next = start;
@@ -117,7 +117,7 @@ bool Element::read_GR_EL() {
 
   if (group == group_byte_order_swapped) {
     if (!is_BE)
-      throw Exception("invalid DICOM group ID " + str(group) + " in file \"" + fmap->name() + "\"");
+      throw Exception("invalid DICOM group ID " + str(group) + " in file \"" + fmap->path().string() + "\"");
 
     is_BE = false;
     group = group_byte_order;
@@ -158,7 +158,7 @@ bool Element::read() {
                    "with implicit encoding in file \"",
                    group,
                    element) +
-            fmap->name() + "\"");
+            fmap->path().string() + "\"");
       VR = VR_UN;
     } else
       VR = get_VR_from_tag_name(name);
@@ -172,16 +172,16 @@ bool Element::read() {
       INFO("undefined length used for DICOM tag " +            //
            (!tag_name().empty() ? tag_name().substr(2) : "") + //
            MR::printf("(%04X, %04X)", group, element) +        //
-           " in file \"" + fmap->name() + "\"");
+           " in file \"" + fmap->path().string() + "\"");
   } else if (next + size > fmap->address() + fmap->size())
-    throw Exception("file \"" + fmap->name() + "\" is too small to contain DICOM elements specified");
+    throw Exception("file \"" + fmap->path().string() + "\" is too small to contain DICOM elements specified");
   else {
     if (size % 2)
       DEBUG("WARNING: odd length (" + str(size) + ")" +         //
             " used for DICOM tag " +                            //
             (!tag_name().empty() ? tag_name().substr(2) : "") + //
             " (" + str(group) + ", " + str(element) + ")" +     //
-            " in file \"" + fmap->name() + "");
+            " in file \"" + fmap->path().string() + "");
     if (VR != VR_SQ) {
       if (group == group_sequence && element == element_sequence_item) {
         if (!parents.empty() && parents.back().group == group_data && parents.back().element == element_data)
@@ -222,7 +222,7 @@ bool Element::read() {
         throw Exception("DICOM deflated explicit VR little endian transfer syntax not supported");
       } else {
         transfer_syntax_supported = false;
-        INFO("unsupported DICOM transfer syntax: \"" + data_as_string + "\" in file \"" + fmap->name() + "\"");
+        INFO("unsupported DICOM transfer syntax: \"" + data_as_string + "\" in file \"" + fmap->path().string() + "\"");
       }
     } break;
     default:

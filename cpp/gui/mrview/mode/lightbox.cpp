@@ -25,13 +25,13 @@ ssize_t LightBox::n_cols = 5;
 ssize_t LightBox::volume_increment = 1;
 float LightBox::slice_focus_increment = 1.0f;
 float LightBox::slice_focus_inc_adjust_rate = 0.2f;
-std::string LightBox::prev_image_name;
+std::filesystem::path LightBox::prev_image_path;
 ssize_t LightBox::current_slice_index = 0;
 
 LightBox::LightBox() : frames_dirty(true) {
   Image *img = image();
 
-  if (!img || prev_image_name != img->header().name())
+  if (!img || prev_image_path != img->header().path())
     image_changed_event();
   else {
     set_volume_increment(volume_increment);
@@ -335,7 +335,7 @@ void LightBox::image_changed_event() {
 
   if (image()) {
     const auto &header = image()->header();
-    if (prev_image_name.empty()) {
+    if (prev_image_path.empty()) {
       float slice_inc = std::pow(header.spacing(0) * header.spacing(1) * header.spacing(2), 1.f / 3.f);
       slice_focus_inc_adjust_rate = slice_inc / 5.f;
 
@@ -343,9 +343,9 @@ void LightBox::image_changed_event() {
       emit slice_increment_reset();
     }
 
-    prev_image_name = image()->header().name();
+    prev_image_path = image()->header().path();
   } else
-    prev_image_name.clear();
+    prev_image_path.clear();
 }
 
 } // namespace MR::GUI::MRView::Mode

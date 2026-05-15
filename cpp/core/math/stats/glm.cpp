@@ -16,6 +16,8 @@
 
 #include "math/stats/glm.h"
 
+#include <filesystem>
+
 #include "debug.h"
 #include "file/matrix.h"
 #include "math/betainc.h"
@@ -131,8 +133,10 @@ index_array_type load_variance_groups(const index_type num_inputs) {
   try {
     auto data = File::Matrix::load_vector<index_type>(opt[0][0]);
     if (static_cast<index_type>(data.size()) != num_inputs)
-      throw Exception("Number of entries in variance group file \"" + std::string(opt[0][0]) + "\" (" +
-                      str(data.size()) + ") does not match number of inputs (" + str(num_inputs) + ")");
+      throw Exception("Number of entries in variance group file \"" + opt[0][0].as_text() + "\"" + //
+                      " (" + str(data.size()) + ")" +                                              //
+                      " does not match number of inputs" +                                         //
+                      " (" + str(num_inputs) + ")");                                               //
     const index_type min_coeff = data.minCoeff();
     const index_type max_coeff = data.maxCoeff();
     if (min_coeff > 1)
@@ -162,9 +166,9 @@ std::vector<Hypothesis> load_hypotheses(const ssize_t num_factors) {
   if (!opt.empty()) {
     const matrix_type contrast_matrix = File::Matrix::load_matrix(opt[0][0]);
     if (contrast_matrix.cols() != num_factors)
-      throw Exception("Number of columns in T-test matrix file \"" + opt[0][0] + "\"" +      //
-                      " (" + str(contrast_matrix.cols()) + ")" +                             //
-                      " does not match number of model factors (" + str(num_factors) + ")"); //
+      throw Exception("Number of columns in T-test matrix file \"" + opt[0][0].as_text() + "\"" + //
+                      " (" + str(contrast_matrix.cols()) + ")" +                                  //
+                      " does not match number of model factors (" + str(num_factors) + ")");      //
     for (Eigen::Index row = 0; row != contrast_matrix.rows(); ++row)
       hypotheses.emplace_back(Hypothesis(contrast_matrix.row(row), static_cast<index_type>(row)));
   }

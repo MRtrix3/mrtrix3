@@ -41,7 +41,7 @@ void validate_5TT_header(const Header &H) {
       throw Exception(e, "Needs to be non-unity in all three spatial dimensions");
     }
   } catch (Exception &e) {
-    throw Exception(e, "Image " + std::string(H.name()) + " is not a valid ACT 5TT image");
+    throw Exception(e, "Image " + H.name() + " is not a valid ACT 5TT image");
   }
 }
 

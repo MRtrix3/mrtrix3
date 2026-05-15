@@ -409,10 +409,9 @@ ComputeContext::ComputeContext() : m_slang_session_info(std::make_unique<SlangSe
   const slang::TargetDesc target_desc{.format = SLANG_WGSL};
 
   const auto executable_path = MR::Platform::get_executable_path();
-  const std::string executable_dir_string = (std::filesystem::path(executable_path).parent_path() / "shaders").string();
+  const std::string executable_dir_string = (executable_path.parent_path() / "shaders").string();
   // TODO: this is a hack to find the modules in shader registration code. We'll find a better way to do this later.
-  const std::string registration_dir_string =
-      (std::filesystem::path(executable_path).parent_path() / "shaders/registration").string();
+  const std::string registration_dir_string = (executable_path.parent_path() / "shaders/registration").string();
   const char *executable_dir_cstr = executable_dir_string.c_str();                         // check_syntax off
   const char *registration_dir_cstr = registration_dir_string.c_str();                     // check_syntax off
   std::array<const char *, 2> search_paths = {executable_dir_cstr, registration_dir_cstr}; // check_syntax off

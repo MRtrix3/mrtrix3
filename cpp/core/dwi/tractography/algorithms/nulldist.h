@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <filesystem>
 #include <optional>
 
 #include "dwi/tractography/algorithms/iFOD2.h"
@@ -31,7 +32,7 @@ class NullDist1 : public MethodBase {
 public:
   class Shared : public SharedBase {
   public:
-    Shared(std::string_view diff_path, DWI::Tractography::Properties &property_set)
+    Shared(const std::filesystem::path &diff_path, DWI::Tractography::Properties &property_set)
         : SharedBase(diff_path,
                      property_set,
                      {ZeroExclusion::Enabled, NonFiniteExclusion::Any, HoleFilling::EnabledExcludeNonFinite}) {
@@ -82,7 +83,7 @@ class NullDist2 : public iFOD2 {
 public:
   class Shared : public iFOD2::Shared {
   public:
-    Shared(std::string_view diff_path, DWI::Tractography::Properties &property_set)
+    Shared(const std::filesystem::path &diff_path, DWI::Tractography::Properties &property_set)
         : iFOD2::Shared(diff_path, property_set) {
       set_cutoff(0.0f);
       if (is_act())

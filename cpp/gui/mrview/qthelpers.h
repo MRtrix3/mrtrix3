@@ -15,12 +15,18 @@
  */
 
 #pragma once
-#include <string>
+#include <filesystem>
 
 class QUrl;
 
 namespace MR::GUI::MRView::QtHelpers {
 
-std::string url_to_std_string(const QUrl &url);
+// TODO Address loss of non-local URL functionality:
+// - Define MRtrix3 custom "URL" class that just stores a std::string
+//   Any function that mrview may call on a drag-and-drop path,
+//   either:
+//   - Define a second version of that function that takes as input a URL
+//   - Modify all such functions to instead take std::variant
+std::filesystem::path url_to_fspath(const QUrl &url);
 
 } // namespace MR::GUI::MRView::QtHelpers

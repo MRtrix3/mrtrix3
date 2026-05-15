@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <filesystem>
 #include <string>
 
 namespace MR::SignalHandler {
@@ -28,7 +29,7 @@ void init();
 void on_signal(cleanup_function_type func);
 
 //! mark the file for deletion when a signal is received or at program exit
-void mark_file_for_deletion(std::string_view filename);
+void mark_file_for_deletion(const std::filesystem::path &filepath);
 //! unmark the file from deletion
-void unmark_file_for_deletion(std::string_view filename);
+void unmark_file_for_deletion(const std::filesystem::path &filepath);
 } // namespace MR::SignalHandler

@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <filesystem>
+
 #include "algo/implicit_mask.h"
 #include "dwi/tractography/ACT/shared.h"
 #include "dwi/tractography/properties.h"
@@ -38,7 +40,7 @@ namespace MR::DWI::Tractography::Tracking {
 class SharedBase {
 
 public:
-  SharedBase(std::string_view diff_path, Properties &property_set, ImplicitMaskConfig source_mask_config);
+  SharedBase(const std::filesystem::path &diff_path, Properties &property_set, ImplicitMaskConfig source_mask_config);
 
   virtual ~SharedBase();
 

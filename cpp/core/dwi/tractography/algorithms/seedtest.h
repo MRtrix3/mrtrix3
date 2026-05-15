@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <filesystem>
 #include <optional>
 
 #include "dwi/tractography/tracking/method.h"
@@ -31,7 +32,7 @@ class Seedtest : public MethodBase {
 public:
   class Shared : public SharedBase {
   public:
-    Shared(std::string_view diff_path, DWI::Tractography::Properties &property_set)
+    Shared(const std::filesystem::path &diff_path, DWI::Tractography::Properties &property_set)
         : SharedBase(diff_path,
                      property_set,
                      {ZeroExclusion::Enabled, NonFiniteExclusion::Any, HoleFilling::EnabledExcludeNonFinite}) {

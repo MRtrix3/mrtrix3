@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <filesystem>
+
 #include "app.h"
 #include "dwi/directions/predefined.h"
 #include "dwi/directions/validate.h"
@@ -93,8 +95,8 @@ public:
         niter = opt[0][0];
     }
 
-    void set_response(std::string_view path) {
-      INFO("loading response function from file \"" + path + "\"");
+    void set_response(const std::filesystem::path &path) {
+      INFO("loading response function from file \"" + path.string() + "\"");
       set_response(File::Matrix::load_vector(path));
     }
 

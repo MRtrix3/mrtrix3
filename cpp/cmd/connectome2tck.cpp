@@ -34,6 +34,8 @@
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/weights.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 using namespace MR::Connectome;
@@ -168,9 +170,12 @@ void usage() {
 // clang-format on
 
 void run() {
+  const std::filesystem::path tracks_input_path{argument[0]};
+  const std::filesystem::path assignments_input_path{argument[1]};
+  const std::string output_prefix(argument[2]);
 
   Tractography::Properties properties;
-  Tractography::Reader<float> reader(argument[0], properties);
+  Tractography::Reader<float> reader(tracks_input_path, properties);
 
   std::vector<std::vector<node_t>> assignments_lists;
   assignments_lists.reserve(to<size_t>(properties["count"]));
@@ -178,7 +183,7 @@ void run() {
   bool nonpair_found = false;
   node_t max_node_index = 0;
   {
-    std::ifstream stream(argument[1]);
+    std::ifstream stream(assignments_input_path);
     std::string line;
     ProgressBar progress("reading streamline assignments file");
     while (std::getline(stream, line)) {
@@ -221,7 +226,6 @@ void run() {
     assignments_lists.clear();
   }
 
-  const std::string prefix(argument[2]);
   const std::string weights_prefix = get_option_value<std::string>("prefix_tck_weights_out", "");
   const node_t first_node = get_options("keep_unassigned").empty() ? 1 : 0;
   const bool keep_self = !get_options("keep_self").empty();
@@ -232,7 +236,7 @@ void run() {
   bool manual_node_list = false;
   if (!opt.empty()) {
     manual_node_list = true;
-    const auto data = parse_ints<node_t>(opt[0][0]);
+    const auto data = opt[0][0].as_sequence_uint();
     bool zero_in_list = false;
     for (auto i : data) {
       if (i > max_node_index) {
@@ -260,13 +264,13 @@ void run() {
 
   opt = get_options("exemplars");
   if (!opt.empty()) {
-
     if (keep_self)
       WARN("Exemplars cannot be calculated for node self-connections; -keep_self option ignored");
 
     // Load the node image, get the centres of mass
     // Generate exemplars - these can _only_ be done per edge, and requires a mutex per edge to multi-thread
     auto image = Image<node_t>::open(opt[0][0]);
+
     auto lv = MR::Connectome::validate_label_image(image);
     if (lv.labels.back() != max_node_index) {
       WARN("Highest-valued parcels in label image \"" + opt[0][0] + "\"" +        //
@@ -308,10 +312,10 @@ void run() {
       }
     }
     if (COMs.size() > max_node_index + 1) {
-      WARN("Parcellation image \"" + std::string(opt[0][0]) + "\" provided via -exemplars option" + //
-           " contains more nodes (" + str(COMs.size() - 1) + ")" +                                  //
-           " than are present in input assignments file \"" + std::string(argument[1]) + "\"" +     //
-           " (" + str(max_node_index) + ")");                                                       //
+      WARN("Parcellation image \"" + opt[0][0].as_text() + "\" provided via -exemplars option" + //
+           " contains more nodes (" + str(COMs.size() - 1) + ")" +                               //
+           " than are present in input assignments file \"" + argument[1].as_text() + "\"" +     //
+           " (" + str(max_node_index) + ")");                                                    //
       max_node_index = COMs.size() - 1;
     }
     Transform transform(image);
@@ -373,7 +377,7 @@ void run() {
             const node_t two = nodes[j];
             generator.write(one,
                             two,
-                            prefix + str(one) + "-" + str(two) + ".tck",
+                            output_prefix + str(one) + "-" + str(two) + ".tck",
                             !weights_prefix.empty() ? (weights_prefix + str(one) + "-" + str(two) + ".csv") : "");
             ++progress;
           }
@@ -385,7 +389,7 @@ void run() {
           for (size_t i = first_node; i != COMs.size(); ++i) {
             generator.write(*n,
                             i,
-                            prefix + str(*n) + "-" + str(i) + ".tck",
+                            output_prefix + str(*n) + "-" + str(i) + ".tck",
                             !weights_prefix.empty() ? (weights_prefix + str(*n) + "-" + str(i) + ".csv") : "");
             ++progress;
           }
@@ -395,16 +399,16 @@ void run() {
       ProgressBar progress("writing exemplars to files", nodes.size());
       for (std::vector<node_t>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
         generator.write(
-            *n, prefix + str(*n) + ".tck", !weights_prefix.empty() ? (weights_prefix + str(*n) + ".csv") : "");
+            *n, output_prefix + str(*n) + ".tck", !weights_prefix.empty() ? (weights_prefix + str(*n) + ".csv") : "");
         ++progress;
       }
     } else if (file_format == FileOutput::SINGLE) { // Single file
-      std::string path = prefix;
-      if (path.rfind(".tck") != path.size() - 4)
-        path += ".tck";
-      std::string weights_path = weights_prefix;
-      if (!weights_prefix.empty() && weights_path.rfind(".tck") != weights_path.size() - 4)
-        weights_path += ".csv";
+      std::filesystem::path path = output_prefix;
+      if (path.extension() != ".tck")
+        path.replace_extension(".tck");
+      std::filesystem::path weights_path = weights_prefix;
+      if (!weights_prefix.empty() && weights_path.extension() != ".csv")
+        weights_path.replace_extension(".csv");
       generator.write(path, weights_path);
     }
 
@@ -421,7 +425,7 @@ void run() {
             const node_t two = nodes[j];
             writer.add(one,
                        two,
-                       prefix + str(one) + "-" + str(two) + ".tck",
+                       output_prefix + str(one) + "-" + str(two) + ".tck",
                        !weights_prefix.empty() ? (weights_prefix + str(one) + "-" + str(two) + ".csv") : "");
           }
         } else {
@@ -429,7 +433,7 @@ void run() {
           for (node_t two = first_node; two <= max_node_index; ++two)
             writer.add(one,
                        two,
-                       prefix + str(one) + "-" + str(two) + ".tck",
+                       output_prefix + str(one) + "-" + str(two) + ".tck",
                        !weights_prefix.empty() ? (weights_prefix + str(one) + "-" + str(two) + ".csv") : "");
         }
       }
@@ -437,16 +441,17 @@ void run() {
       break;
     case FileOutput::PER_NODE: // One file per node
       for (std::vector<node_t>::const_iterator i = nodes.begin(); i != nodes.end(); ++i)
-        writer.add(*i, prefix + str(*i) + ".tck", !weights_prefix.empty() ? (weights_prefix + str(*i) + ".csv") : "");
+        writer.add(
+            *i, output_prefix + str(*i) + ".tck", !weights_prefix.empty() ? (weights_prefix + str(*i) + ".csv") : "");
       INFO("A total of " + str(writer.file_count()) + " output track files will be generated (one for each node)");
       break;
     case FileOutput::SINGLE: // Single file
-      std::string path = prefix;
-      if (path.rfind(".tck") != path.size() - 4)
-        path += ".tck";
-      std::string weights_path = weights_prefix;
-      if (!weights_prefix.empty() && weights_path.rfind(".tck") != weights_path.size() - 4)
-        weights_path += ".csv";
+      std::filesystem::path path{output_prefix};
+      if (path.extension() != ".tck")
+        path.replace_extension(".tck");
+      std::filesystem::path weights_path{weights_prefix};
+      if (weights_path.extension() != ".csv")
+        weights_path.replace_extension(".csv");
       writer.add(nodes, path, weights_path);
       break;
     }

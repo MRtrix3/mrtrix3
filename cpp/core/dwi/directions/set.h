@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cstdint>
+#include <filesystem>
 
 #include "dwi/directions/directions.h"
 #include "dwi/directions/predefined.h"
@@ -30,12 +31,13 @@ namespace MR::DWI::Directions {
 class Set {
 
 public:
-  explicit Set(std::string_view path) : dir_mask_bytes(0), dir_mask_excess_bits(0), dir_mask_excess_bits_mask(0) {
+  explicit Set(const std::filesystem::path &path)
+      : dir_mask_bytes(0), dir_mask_excess_bits(0), dir_mask_excess_bits_mask(0) {
     auto matrix = File::Matrix::load_matrix(path);
 
     if (matrix.cols() != 2 && matrix.cols() != 3)
-      throw Exception("Text file \"" + path +
-                      "\"does not contain directions as either azimuth-inclination pairs or XYZ triplets");
+      throw Exception("Text file \"" + path.string() + "\" does not contain directions" + //
+                      " as either azimuth-elevation pairs or XYZ triplets");
 
     initialise(matrix);
   }
@@ -132,7 +134,7 @@ template <class MatrixType> void Set::initialise(const Eigen::Matrix<MatrixType,
 class FastLookupSet : public Set {
 
 public:
-  FastLookupSet(std::string_view path) : Set(path) { initialise(); }
+  FastLookupSet(const std::filesystem::path &path) : Set(path) { initialise(); }
 
   FastLookupSet(const size_t d) : Set(d) { initialise(); }
 

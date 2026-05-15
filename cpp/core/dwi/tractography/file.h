@@ -48,8 +48,8 @@ public:
 template <class ValueType = float> class Reader : public ReaderBase, public ReaderInterface<ValueType> {
 public:
   //! open the \c file for reading and load header into \c properties
-  Reader(std::string_view file, Properties &properties) {
-    open(file, "tracks", properties);
+  Reader(const std::filesystem::path &path, Properties &properties) {
+    open(path, "tracks", properties);
     auto opt = App::get_options("tck_weights_in");
     if (!opt.empty())
       weights = File::Matrix::load_vector<ValueType>(opt[0][0]);
@@ -174,7 +174,7 @@ class WriterUnbuffered : public WriterBase<ValueType>, public WriterInterface<Va
 public:
   using WriterBase<ValueType>::count;
   using WriterBase<ValueType>::total_count;
-  using WriterBase<ValueType>::name;
+  using WriterBase<ValueType>::path;
   using WriterBase<ValueType>::dtype;
   using WriterBase<ValueType>::create;
   using WriterBase<ValueType>::verify_stream;
@@ -184,14 +184,14 @@ public:
   using vector_type = Eigen::Matrix<ValueType, 3, 1>;
 
   //! create a new track file with the specified properties
-  WriterUnbuffered(std::string_view file, const Properties &properties) : WriterBase<ValueType>(file) {
+  WriterUnbuffered(const std::filesystem::path &path, const Properties &properties) : WriterBase<ValueType>(file) {
 
-    if (!Path::has_suffix(name, ".tck"))
+    if (path.extension() != ".tck")
       throw Exception("output track files must use the .tck suffix");
 
     File::OFStream out;
     try {
-      out.open(name, std::ios::out | std::ios::binary | std::ios::trunc);
+      out.open(path, std::ios::out | std::ios::binary | std::ios::trunc);
     } catch (Exception &e) {
       throw Exception(e, "Unable to create output track file");
     }
@@ -205,9 +205,9 @@ public:
 
     vector_type x;
     format_point(barrier(), x);
-    out.write(reinterpret_cast<const char *>(&x[0]), sizeof(x));
+    out.write(reinterpret_cast<const char *>(&x[0]), sizeof(x)); // check_syntax off
     if (!out.good())
-      throw Exception("error writing tracks file \"" + name + "\": " + MR::C_strerror(errno));
+      throw Exception("error writing tracks file \"" + path.string() + "\": " + MR::C_strerror(errno));
     open_success = true;
 
     auto opt = App::get_options("tck_weights_out");
@@ -227,7 +227,7 @@ public:
 
     commit(buffer, tck.size() + 1);
 
-    if (!weights_name.empty())
+    if (!weights_path.empty())
       write_weights(str(tck.weight) + "\n");
 
     ++count;
@@ -236,16 +236,16 @@ public:
   }
 
   //! set the path to the track weights
-  void set_weights_path(std::string_view path) {
-    if (!weights_name.empty())
+  void set_weights_path(const std::filesystem::path &path) {
+    if (!weights_path.empty())
       throw Exception("Cannot change output streamline weights file path");
-    weights_name = path;
-    App::check_overwrite(weights_name);
-    File::OFStream out(weights_name, std::ios::out | std::ios::binary | std::ios::trunc);
+    weights_path = path;
+    App::check_overwrite(weights_path);
+    File::OFStream out(weights_path, std::ios::out | std::ios::binary | std::ios::trunc);
   }
 
 protected:
-  std::string weights_name;
+  std::filesystem::path weights_path;
   int64_t barrier_addr;
 
   //! indicates end of track and start of new track
@@ -264,10 +264,11 @@ protected:
 
   //! write track weights data to file
   void write_weights(std::string_view contents) {
-    File::OFStream out(weights_name, std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
+    File::OFStream out(weights_path, std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
     out << contents;
     if (!out.good())
-      throw Exception("error writing streamline weights file \"" + weights_name + "\": " + MR::C_strerror(errno));
+      throw Exception("error writing streamline weights file \"" + weights_path.string() + "\": " + //
+                      MR::C_strerror(errno));                                                       //
   }
 
   //! write track point data to file
@@ -280,7 +281,7 @@ protected:
     int64_t prev_barrier_addr = barrier_addr;
 
     format_point(barrier(), data[num_points]);
-    File::OFStream out(name, std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
+    File::OFStream out(path, std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
     out.write(reinterpret_cast<const char *>(data + 1), sizeof(vector_type) * num_points);
     verify_stream(out);
     barrier_addr = static_cast<int64_t>(out.tellp()) - sizeof(vector_type);
@@ -314,7 +315,7 @@ public:
   using WriterBase<ValueType>::total_count;
   using WriterUnbuffered<ValueType>::delimiter;
   using WriterUnbuffered<ValueType>::format_point;
-  using WriterUnbuffered<ValueType>::weights_name;
+  using WriterUnbuffered<ValueType>::weights_path;
   using WriterUnbuffered<ValueType>::write_weights;
   using vector_type = typename WriterUnbuffered<ValueType>::vector_type;
 
@@ -329,8 +330,8 @@ public:
   // CONF writing track files. MRtrix will store the output tracks in a
   // CONF relatively large buffer to limit the number of write() calls,
   // CONF avoid associated issues such as file fragmentation.
-  Writer(std::string_view file, const Properties &properties, size_t default_buffer_capacity = 16777216)
-      : WriterUnbuffered<ValueType>(file, properties),
+  Writer(const std::filesystem::path &path, const Properties &properties, size_t default_buffer_capacity = 16777216)
+      : WriterUnbuffered<ValueType>(path, properties),
         buffer_capacity(File::Config::get_int("TrackWriterBufferSize", default_buffer_capacity) / sizeof(vector_type)),
         buffer(new vector_type[buffer_capacity]),
         buffer_size(0) {}
@@ -356,7 +357,7 @@ public:
     }
     add_point(delimiter());
 
-    if (weights_name.size())
+    if (!weights_path.empty())
       weights_buffer += str(tck.weight) + ' ';
 
     ++count;
@@ -377,7 +378,7 @@ protected:
     WriterUnbuffered<ValueType>::commit(buffer.get(), buffer_size);
     buffer_size = 0;
 
-    if (weights_name.size()) {
+    if (!weights_path.empty()) {
       write_weights(weights_buffer);
       weights_buffer.clear();
     }

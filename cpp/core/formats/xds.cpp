@@ -19,7 +19,6 @@
 #include "file/entry.h"
 #include "file/ofstream.h"
 #include "file/path.h"
-#include "file/utils.h"
 #include "formats/list.h"
 #include "header.h"
 #include "image_io/default.h"
@@ -27,18 +26,18 @@
 namespace MR::Formats {
 
 std::unique_ptr<ImageIO::Base> XDS::read(Header &H) const {
-  if (!Path::has_suffix(H.name(), ".bfloat") && !Path::has_suffix(H.name(), ".bshort"))
+  if (!Path::has_suffix(H.path(), {".bfloat", ".bshort"}))
     return std::unique_ptr<ImageIO::Base>();
 
   H.ndim() = 4;
   int BE;
 
-  std::string name(H.name());
-  name.replace(name.size() - 6, 6, "hdr");
+  const std::filesystem::path &hpath = static_cast<const Header &>(H).path();
+  const std::filesystem::path hdr_path = std::filesystem::path(hpath).replace_extension("hdr");
 
-  std::ifstream in(name.c_str());
+  std::ifstream in(hdr_path);
   if (!in)
-    throw Exception("error reading header file \"" + name + "\": " + MR::C_strerror(errno));
+    throw Exception("error reading header file \"" + hdr_path.string() + "\": " + MR::C_strerror(errno));
   std::array<int, 3> dim{};
   in >> dim[0] >> dim[1] >> dim[2] >> BE;
   H.size(0) = dim[1];
@@ -46,7 +45,7 @@ std::unique_ptr<ImageIO::Base> XDS::read(Header &H) const {
   H.size(2) = dim[2];
   in.close();
 
-  H.datatype() = (Path::has_suffix(H.name(), ".bfloat") ? DataType::Float32 : DataType::UInt16);
+  H.datatype() = (Path::has_suffix(H.path(), ".bfloat") ? DataType::Float32 : DataType::UInt16);
   if (BE)
     H.datatype().set_flag(DataType::LittleEndian);
   else
@@ -65,13 +64,13 @@ std::unique_ptr<ImageIO::Base> XDS::read(Header &H) const {
   H.stride(3) = 3;
 
   std::unique_ptr<ImageIO::Default> io_handler(new ImageIO::Default(H));
-  io_handler->files.push_back(File::Entry(H.name()));
+  io_handler->files.push_back(File::Entry(hpath));
 
   return io_handler;
 }
 
 bool XDS::check(Header &H, size_t num_axes) const {
-  if (!Path::has_suffix(H.name(), ".bfloat") && !Path::has_suffix(H.name(), ".bshort"))
+  if (!Path::has_suffix(H.path(), {".bfloat", ".bshort"}))
     return false;
 
   if (num_axes > 4)
@@ -100,7 +99,7 @@ bool XDS::check(Header &H, size_t num_axes) const {
   H.stride(2) = 0;
   H.stride(3) = 3;
 
-  DataType dtype(Path::has_suffix(H.name(), ".bfloat") ? DataType::Float32 : DataType::UInt16);
+  DataType dtype(Path::has_suffix(H.path(), ".bfloat") ? DataType::Float32 : DataType::UInt16);
   if (H.datatype().is_big_endian())
     dtype.set_flag(DataType::LittleEndian);
   else
@@ -111,16 +110,18 @@ bool XDS::check(Header &H, size_t num_axes) const {
 }
 
 std::unique_ptr<ImageIO::Base> XDS::create(Header &H) const {
-  std::string header_name(H.name());
-  header_name.replace(header_name.size() - 6, 6, "hdr");
+  std::filesystem::path hdr_path = const_cast<const Header &>(H).path();
+  hdr_path.replace_extension(".hdr");
 
-  File::OFStream out(header_name);
+  File::OFStream out(hdr_path);
   out << H.size(1) << " " << H.size(0) << " " << H.size(3) << " " << (H.datatype().is_little_endian() ? 1 : 0) << "\n";
   out.close();
 
   std::unique_ptr<ImageIO::Default> io_handler(new ImageIO::Default(H));
-  File::create(H.name(), footprint(H, {0, 1, 3}));
-  io_handler->files.push_back(File::Entry(H.name()));
+  File::OFStream out_dat(H.path());
+  out_dat.close();
+  std::filesystem::resize_file(H.path(), footprint(H, {0, 1, 3}));
+  io_handler->files.push_back(File::Entry(H.path()));
 
   return io_handler;
 }

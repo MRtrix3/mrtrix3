@@ -23,6 +23,8 @@
 #include "progressbar.h"
 #include "registration/warp/validate.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace MR::DWI;
 using namespace App;
@@ -59,7 +61,7 @@ using TrackType = Tractography::Streamline<value_type>;
 
 class Loader {
 public:
-  Loader(std::string_view file) : reader(file, properties) {}
+  Loader(const std::filesystem::path &path) : reader(path, properties) {}
 
   bool operator()(TrackType &item) { return reader(item); }
 
@@ -104,10 +106,10 @@ protected:
 
 class Writer {
 public:
-  Writer(std::string_view file, const Tractography::Properties &properties)
+  Writer(const std::filesystem::path &path, const Tractography::Properties &properties)
       : progress("applying spatial transformation to tracks",
                  properties.find("count") == properties.end() ? 0 : to<size_t>(properties.find("count")->second)),
-        writer(file, properties) {}
+        writer(path, properties) {}
 
   bool operator()(const TrackType &item) {
     writer(item);
@@ -122,8 +124,6 @@ protected:
 };
 
 void run() {
-  Loader loader(argument[0]);
-
   Header H_warp = Header::open(argument[1]);
   auto warp_format = Registration::Warp::validate_header(H_warp);
   if (warp_format != Registration::Warp::WarpFormat::Simple)
@@ -132,8 +132,9 @@ void run() {
                     " (see eg. command \"warpconvert\")");
   auto data = H_warp.get_image<value_type>().with_direct_io(3);
   Registration::Warp::debug_validate_image(data);
-  Warper warper(data);
 
+  Loader loader(argument[0]);
+  Warper warper(data);
   Writer writer(argument[2], loader.properties);
 
   Thread::run_ordered_queue(

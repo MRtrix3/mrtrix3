@@ -16,6 +16,9 @@
 
 #pragma once
 
+#include <filesystem>
+#include <optional>
+
 #include "image.h"
 #include "types.h"
 
@@ -49,16 +52,16 @@ public:
 
   // CORE OPERATIONS
   void perform_filtering();
-  void output_filtered_tracks(std::string_view, std::string_view) const;
-  void output_selection(std::string_view) const;
+  void output_filtered_tracks(const std::filesystem::path &, const std::filesystem::path &) const;
+  void output_selection(const std::filesystem::path &) const;
 
   // CONFIGURATION OPTIONS
   void set_term_number(const track_t i) { term_number = i; }
   void set_term_ratio(const float i) { term_ratio = i; }
   void set_term_mu(const float i) { term_mu = i; }
-  void set_csv_path(std::string_view i) { csv_path = i; }
+  void set_csv_path(const std::filesystem::path &i) { csv_path = i; }
 
-  void set_regular_outputs(const std::vector<uint32_t> &, std::string_view);
+  void set_regular_outputs(const std::vector<uint32_t> &, const std::optional<std::filesystem::path> &);
 
   // DEBUGGING
   void test_sorting_block_size(const size_t) const;
@@ -74,12 +77,12 @@ protected:
 
   // User-controllable settings
   std::vector<track_t> output_at_counts;
-  std::string debug_dir;
+  std::optional<std::filesystem::path> debug_dir;
   track_t term_number;
   float term_ratio;
   double term_mu;
   bool enforce_quantisation;
-  std::string csv_path;
+  std::filesystem::path csv_path;
 
   // Convenience functions
   double calc_roc_cost_function() const;

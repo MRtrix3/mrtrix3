@@ -14,11 +14,10 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "command.h"
-
 #include <limits>
 
 #include "algo/threaded_copy.h"
+#include "command.h"
 #include "file/matrix.h"
 #include "image.h"
 #include "math/SH.h"
@@ -378,7 +377,7 @@ void run() {
       auto Fiso = Image<float>::create(opt[0][0], header_out);
       threaded_copy(Eext->getFiso(), Fiso);
     } else {
-      WARN("Ignore saving file " + std::string(opt[0][0]) + ", because no isotropic response functions were provided.");
+      WARN("Ignore saving file " + opt[0][0].as_text() + ", because no isotropic response functions were provided.");
     }
   }
 

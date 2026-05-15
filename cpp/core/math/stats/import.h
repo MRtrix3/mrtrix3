@@ -18,6 +18,7 @@
 
 #include <fstream>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -26,6 +27,8 @@
 #include "file/path.h"
 
 #include "math/stats/typedefs.h"
+
+#include <filesystem>
 
 namespace MR::Math::Stats {
 
@@ -41,7 +44,7 @@ namespace MR::Math::Stats {
  */
 class SubjectDataImportBase {
 public:
-  SubjectDataImportBase(std::string_view path) : path(path) {}
+  SubjectDataImportBase(const std::filesystem::path &path) : path(path) {}
   virtual ~SubjectDataImportBase() {}
 
   /*!
@@ -56,12 +59,12 @@ public:
    */
   virtual measurements_value_type operator[](const index_type index) const = 0;
 
-  std::string name() const { return path; }
+  const std::filesystem::path &name() const { return path; }
 
   virtual index_type size() const = 0;
 
 protected:
-  const std::string path;
+  const std::filesystem::path path;
 };
 //! @}
 
@@ -78,7 +81,8 @@ public:
   // Needs to be its own function rather than the constructor
   //   so that the correct template type can be invoked explicitly
   template <class SubjectDataImport>
-  void initialise(std::string_view listpath, std::string_view explicit_from_directory = "");
+  void initialise(const std::filesystem::path &listpath,
+                  const std::optional<std::filesystem::path> &explicit_from_directory = std::nullopt);
 
   /*!
    * @param index for a particular element being tested (data will be acquired for
@@ -101,7 +105,8 @@ protected:
 };
 
 template <class SubjectDataImport>
-void CohortDataImport::initialise(std::string_view listpath, std::string_view explicit_from_directory) {
+void CohortDataImport::initialise(const std::filesystem::path &listpath,
+                                  const std::optional<std::filesystem::path> &explicit_from_directory) {
   // Read the provided text file one at a time
   // For each file, create an instance of SubjectDataImport
   //   (which must derive from SubjectDataImportBase)
@@ -116,9 +121,9 @@ void CohortDataImport::initialise(std::string_view listpath, std::string_view ex
   //   text file is an attempt made to load all of those files
   std::vector<std::string> lines;
   {
-    std::ifstream ifs(std::string(listpath).c_str());
+    std::ifstream ifs(listpath);
     if (!ifs)
-      throw Exception("Unable to open subject file list \"" + std::string(listpath) + "\"");
+      throw Exception("Unable to open subject file list \"" + listpath.string() + "\"");
     std::string line;
     while (getline(ifs, line)) {
       const size_t p = line.find_last_not_of(" \t");
@@ -129,27 +134,27 @@ void CohortDataImport::initialise(std::string_view listpath, std::string_view ex
     }
   }
 
-  std::vector<std::string> directories{Path::dirname(listpath)};
+  std::vector<std::filesystem::path> directories{listpath.parent_path()};
   if (directories[0].empty())
     directories[0] = ".";
   else if (directories[0] != ".")
     directories.push_back(".");
-  if (!explicit_from_directory.empty())
-    directories.insert(directories.begin(), std::string(explicit_from_directory));
+  if (explicit_from_directory.has_value())
+    directories.insert(directories.begin(), explicit_from_directory.value());
 
-  Exception e_nosuccess("Unable to load all input data from file \"" + listpath + "\"");
-  std::string load_from_dir;
+  Exception e_nosuccess("Unable to load all input data from file \"" + listpath.string() + "\"");
+  std::filesystem::path load_from_dir;
   for (const auto &directory : directories) {
     try {
       for (const auto &line : lines) {
-        const std::string full_path = Path::join(directory, line);
-        if (!Path::is_file(full_path))
-          throw Exception("File \"" + full_path + "\" not found");
+        const std::filesystem::path full_path = directory / line;
+        if (!std::filesystem::is_regular_file(full_path))
+          throw Exception("File \"" + full_path.string() + "\" not found");
       }
       load_from_dir = directory;
       break;
     } catch (Exception &e) {
-      e_nosuccess.push_back("If loading relative to directory \"" + directory + "\": ");
+      e_nosuccess.push_back("If loading relative to directory \"" + directory.string() + "\": ");
       e_nosuccess.push_back(e);
     }
   }
@@ -157,12 +162,13 @@ void CohortDataImport::initialise(std::string_view listpath, std::string_view ex
   if (load_from_dir.empty())
     throw e_nosuccess;
 
-  ProgressBar progress("Configuring data import from files listed in \"" + Path::basename(listpath) +
-                       "\" as found relative to directory \"" + load_from_dir + "\"");
+  ProgressBar progress("Configuring data import from files listed in \"" +
+                       std::filesystem::path(listpath).filename().string() + "\" as found relative to directory \"" +
+                       load_from_dir.string() + "\"");
 
   for (const auto &line : lines) {
     try {
-      std::shared_ptr<SubjectDataImport> subject(new SubjectDataImport(Path::join(load_from_dir, line)));
+      std::shared_ptr<SubjectDataImport> subject(new SubjectDataImport((load_from_dir / line)));
       files.emplace_back(subject);
     } catch (Exception &e) {
       throw Exception(e, "Input data not successfully configured for load: \"" + line + "\"");

@@ -31,9 +31,7 @@
 
 #include "exception.h"
 
-namespace MR::Enum {
-
-namespace detail {
+namespace MR::Enum::detail {
 
 inline std::string lowercase(std::string_view string) {
   std::string result(string);
@@ -53,7 +51,9 @@ inline std::string join(const std::vector<std::string> &values, std::string_view
   return result;
 }
 
-} // namespace detail
+} // namespace MR::Enum::detail
+
+namespace MR::Enum {
 
 // Returns a vector of the lowercase names of the enum values, in the order they are defined in the enum.
 template <typename EnumType> inline std::vector<std::string> lower_case_names() {

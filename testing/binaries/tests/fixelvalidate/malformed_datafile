@@ -10,4 +10,4 @@ mrconvert fixel_image/afd.mif -coord 0 0:999 tmp/afd.mif
 rm -f tmp.txt
 ! ( fixelvalidate tmp/ > tmp.txt 2>&1 )
 cat tmp.txt
-grep -E "Fixel data file \".+\" in directory \".+\" contains .+ fixels, but the index image contains .+" tmp.txt
+grep -E "Fixel data file \".+\" contains .+ fixels, but the index image contains .+" tmp.txt
