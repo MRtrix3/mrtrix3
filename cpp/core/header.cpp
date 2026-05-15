@@ -479,7 +479,8 @@ std::string Header::description(bool print_all) const {
                    "\"\n"
                    "************************************************\n");
 
-  const bool realigned = !realignment().is_identity();
+  const bool applied = realignment().applied();
+  const bool disabled = realignment().state() == Realignment::State::Disabled;
 
   desc += "  Dimensions:        ";
   size_t i;
@@ -507,8 +508,9 @@ std::string Header::description(bool print_all) const {
     return out;
   };
 
-  desc += "  Data strides:      " + format_symbolic_strides(Stride::get(*this));
-  if (realigned)
+  desc += disabled ? "  On-disk strides:   " : "  Data strides:      ";
+  desc += format_symbolic_strides(Stride::get(*this));
+  if (applied)
     desc += "    (on-disk: " + format_symbolic_strides(realignment().orig_strides()) + ")";
   desc += "\n";
 
@@ -536,13 +538,13 @@ std::string Header::description(bool print_all) const {
     }
   };
 
-  append_transform_block(transform(), "Transform:");
-  if (realigned) {
+  append_transform_block(transform(), disabled ? "On-disk transform:" : "Transform:");
+  if (applied) {
     append_transform_block(realignment().orig_transform(), "On-disk transform:");
     desc += "  Axes realignment:\n";
     for (const auto &line : realignment().describe_axis_mapping())
       desc += "                     " + line + "\n";
-    desc += "                     (disable with -config RealignTransform false)\n";
+    desc += "                     (disable with -config RealignTransform false or mrinfo -ondisk)\n";
   }
 
   for (const auto &p : keyval()) {
@@ -557,7 +559,7 @@ std::string Header::description(bool print_all) const {
     //   axis-dependent.
     std::vector<std::string> ondisk_entries;
     bool annotate = false;
-    if (realigned) {
+    if (applied) {
       const auto orig_it = realignment().orig_keyval().find(p.first);
       if (orig_it != realignment().orig_keyval().end() && orig_it->second != p.second) {
         ondisk_entries = split_lines(orig_it->second);
@@ -653,15 +655,19 @@ void Header::realign_transform() {
   realignment_.orig_strides_ = Stride::get(*this);
   realignment_.orig_keyval_ = keyval();
 
-  if (!do_realign_transform)
+  if (!do_realign_transform) {
+    realignment_.state_ = Realignment::State::Disabled;
     return;
+  }
 
   // find which row of the transform is closest to each scanner axis:
   realignment_.shuffle_ = Axes::get_shuffle_to_make_RAS(transform());
 
   // check if image is already near-axial, return if true:
-  if (realignment_.is_identity())
+  if (realignment_.is_identity()) {
+    realignment_.state_ = Realignment::State::Identity;
     return;
+  }
 
   auto M(transform());
   auto translation = M.translation();
@@ -705,6 +711,8 @@ void Header::realign_transform() {
   axes_[0] = a[0];
   axes_[1] = a[1];
   axes_[2] = a[2];
+
+  realignment_.state_ = Realignment::State::Applied;
 
   INFO("Axes and transform of image \"" + name() + "\" altered to approximate RAS coordinate system");
 

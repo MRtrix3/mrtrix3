@@ -208,13 +208,32 @@ public:
   // Class to store all information relating to internal transform realignment
   class Realignment {
   public:
+    //! state of axis realignment for an image header
+    /*! Used to distinguish:
+     *  - Unknown: the Realignment object was default-constructed
+     *    (e.g. for a scratch image or for a Header copy-constructed
+     *    from a non-Header source); realign_transform() was never run,
+     *    so orig_* members carry no meaningful "on-disk" view.
+     *  - Disabled: realign_transform() ran but Header::do_realign_transform
+     *    was false (e.g. RealignTransform: false in the configuration
+     *    file, or -config RealignTransform false on the command line);
+     *    the live header values *are* the on-disk values.
+     *  - Identity: realign_transform() ran and the computed shuffle was
+     *    identity (image was already approximately RAS); the live
+     *    header values match the on-disk values.
+     *  - Applied: realign_transform() ran and a non-identity shuffle was
+     *    applied; the live header diverges from the on-disk view, and
+     *    orig_* members capture the latter.
+     */
+    enum class State : uint8_t { Unknown, Disabled, Identity, Applied };
     // From one image space to another image space;
     //   linear component is permutations & flips only,
     //   transformation is in voxel count,
     //   therefore can store as integer
     using applied_transform_type = Eigen::Matrix<int, 3, 3>;
     Realignment();
-    Realignment(Header &);
+    State state() const { return state_; }
+    bool applied() const { return state_ == State::Applied; }
     bool is_identity() const { return shuffle_.is_identity(); }
     bool valid() const { return shuffle_.valid(); }
     const Axes::permutations_type &permutations() const { return shuffle_.permutations; }
@@ -250,6 +269,7 @@ public:
     std::vector<std::string> describe_axis_mapping() const;
 
   private:
+    State state_{State::Unknown};
     Axes::Shuffle shuffle_;
     transform_type orig_transform_;
     Stride::List orig_strides_;

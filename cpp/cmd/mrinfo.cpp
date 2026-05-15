@@ -111,8 +111,8 @@ void usage() {
       " may therefore differ from the values stored on disk."
       " The default human-readable output annotates any such differences inline."
       " Use the -realignment option to summarise the applied shuffle,"
-      " and -ondisk to make -transform / -strides / -petable / -property queries"
-      " report the pre-realignment (on-disk) values."
+      " or -ondisk to bypass realignment entirely (equivalent to"
+      " -config RealignTransform false) so that every query reports the on-disk view."
       " See: https://mrtrix.readthedocs.io/en/" MRTRIX_BASE_VERSION "/concepts/axis_realignment.html"
 
     + DWI::bvalue_scaling_description;
@@ -134,14 +134,12 @@ void usage() {
     + Option ("multiplier", "image intensity multiplier")
     + Option ("transform", "the transformation from image coordinates [mm]"
                            " to scanner / real world coordinates [mm]")
-    + Option ("realignment", "if MRtrix3 realigned the image axes to approximate RAS"
-                             " at load time, print a per-output-axis summary of the"
-                             " shuffle; print nothing otherwise")
-    + Option ("ondisk", "report the on-disk view rather than the realigned (interpreted) view"
-                        " for -transform, -strides, -petable, and -property queries of"
-                        " axis-dependent metadata (PhaseEncodingDirection, pe_scheme,"
-                        " SliceEncodingDirection, SliceTiming). No effect for images that"
-                        " were not realigned at load time.")
+    + Option ("realignment", "print a per-output-axis summary of the realignment applied"
+                              " by MRtrix3 at load time; prints nothing if no realignment"
+                              " was applied")
+    + Option ("ondisk", "report the on-disk view rather than the realigned (interpreted) view;"
+                        " equivalent to -config RealignTransform false (mutually exclusive"
+                        " with -realignment)")
 
     + FieldExportOptions
 
@@ -187,11 +185,9 @@ void print_spacing(const Header &header) {
   std::cout << buffer << "\n";
 }
 
-void print_strides(const Header &header, const bool ondisk) {
+void print_strides(const Header &header) {
   std::string buffer;
-  std::vector<ssize_t> strides = ondisk ? std::vector<ssize_t>(header.realignment().orig_strides().begin(),
-                                                               header.realignment().orig_strides().end())
-                                        : Stride::get(header);
+  std::vector<ssize_t> strides = Stride::get(header);
   Stride::symbolise(strides);
   for (size_t i = 0; i < header.ndim(); ++i) {
     if (i)
@@ -223,11 +219,10 @@ void print_shells(const Eigen::MatrixXd &grad,
   }
 }
 
-void print_transform(const Header &header, const bool ondisk) {
+void print_transform(const Header &header) {
   Eigen::IOFormat fmt(Eigen::FullPrecision, 0, " ", "\n", "", "", "", "\n");
   Eigen::Matrix<default_type, 4, 4> matrix;
-  const auto &source = ondisk ? header.realignment().orig_transform() : header.transform();
-  matrix.topLeftCorner<3, 4>() = source.matrix();
+  matrix.topLeftCorner<3, 4>() = header.transform().matrix();
   matrix.row(3) << 0.0, 0.0, 0.0, 1.0;
   std::cout << matrix.format(fmt);
 }
@@ -237,12 +232,12 @@ void print_realignment(const Header &header) {
     std::cout << line << "\n";
 }
 
-void print_properties(const Header &header, std::string_view key, const bool ondisk, const size_t indent = 0) {
-  const KeyValues &source = ondisk ? header.realignment().orig_keyval() : header.keyval();
+void print_properties(const Header &header, std::string_view key, const size_t indent = 0) {
+  const KeyValues &source = header.keyval();
   if (lowercase(key) == "all") {
     for (const auto &it : source) {
       std::cout << it.first << ": ";
-      print_properties(header, it.first, ondisk, it.first.size() + 2);
+      print_properties(header, it.first, it.first.size() + 2);
     }
   } else {
     const auto values = source.find(std::string(key));
@@ -255,8 +250,7 @@ void print_properties(const Header &header, std::string_view key, const bool ond
         std::cout << lines[i] << "\n";
       }
     } else {
-      WARN("no \"" + std::string(key) + "\" entries found in \"" + header.name() + "\"" +
-           (ondisk ? " (on-disk view)" : ""));
+      WARN("no \"" + std::string(key) + "\" entries found in \"" + header.name() + "\"");
     }
   }
 }
@@ -285,7 +279,7 @@ void header2json(const Header &header, nlohmann::json &json) {
                        {T(1, 0), T(1, 1), T(1, 2), T(1, 3)},
                        {T(2, 0), T(2, 1), T(2, 2), T(2, 3)},
                        {0.0, 0.0, 0.0, 1.0}};
-  if (!header.realignment().is_identity()) {
+  if (header.realignment().applied()) {
     nlohmann::json realignment;
     const auto &perm = header.realignment().permutations();
     const auto &flip = header.realignment().flips();
@@ -325,6 +319,21 @@ void run() {
   if (!get_options("nodelete").empty())
     ImageIO::Pipe::delete_piped_images = false;
 
+  const bool ondisk = !get_options("ondisk").empty();
+  const bool realignment_flag = !get_options("realignment").empty();
+  if (ondisk && realignment_flag)
+    throw Exception("options -ondisk and -realignment are mutually exclusive:" //
+                    " when -ondisk is specified the image is never realigned,"
+                    " so there is no realignment to summarise");
+  // Make -ondisk fully equivalent to -config RealignTransform false:
+  //   suppress MRtrix3's load-time axis realignment globally for this
+  //   invocation so that every downstream output path (the default
+  //   pretty printout, -transform / -strides / -petable, -property,
+  //   -json_keyval / -json_all) reports the on-disk view through a
+  //   single mechanism.
+  if (ondisk)
+    Header::do_realign_transform = false;
+
   const bool export_grad = check_option_group(GradExportOptions);
   const bool export_pe = check_option_group(Metadata::PhaseEncoding::ExportOptions);
 
@@ -350,8 +359,6 @@ void run() {
   const bool multiplier = !get_options("multiplier").empty();
   const auto properties = get_options("property");
   const bool transform = !get_options("transform").empty();
-  const bool realignment_flag = !get_options("realignment").empty();
-  const bool ondisk = !get_options("ondisk").empty();
   const bool dwgrad = !get_options("dwgrad").empty();
   const bool shell_bvalues = !get_options("shell_bvalues").empty();
   const bool shell_sizes = !get_options("shell_sizes").empty();
@@ -379,24 +386,20 @@ void run() {
     if (datatype)
       std::cout << header.datatype().specifier() << "\n";
     if (strides)
-      print_strides(header, ondisk);
+      print_strides(header);
     if (offset)
       std::cout << header.intensity_offset() << "\n";
     if (multiplier)
       std::cout << header.intensity_scale() << "\n";
     if (transform)
-      print_transform(header, ondisk);
+      print_transform(header);
     if (realignment_flag)
       print_realignment(header);
-    if (petable) {
-      if (ondisk)
-        std::cout << Metadata::PhaseEncoding::parse_scheme(header.realignment().orig_keyval(), header) << "\n";
-      else
-        std::cout << Metadata::PhaseEncoding::get_scheme(header) << "\n";
-    }
+    if (petable)
+      std::cout << Metadata::PhaseEncoding::get_scheme(header) << "\n";
 
     for (size_t n = 0; n < properties.size(); ++n)
-      print_properties(header, properties[n][0], ondisk);
+      print_properties(header, properties[n][0]);
 
     Eigen::MatrixXd grad;
     if (export_grad || check_option_group(GradImportOptions) || dwgrad || shell_bvalues || shell_sizes ||

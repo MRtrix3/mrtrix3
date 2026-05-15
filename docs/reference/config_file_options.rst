@@ -625,6 +625,19 @@ List of MRtrix3 configuration file options
      A boolean value to indicate whether all images should be realigned
      to an approximately axial orientation at load.
 
+.. option:: RealignmentVerbosity
+
+    *default: auto*
+
+     Controls the on-load console notification emitted when MRtrix3
+     realigns an image's axes to approximate RAS at load time.
+     Value "auto" (default) emits a single console line per affected
+     image, summarising the shuffle and any reoriented metadata fields.
+     Value "quiet" suppresses the notification; the realignment itself
+     still occurs (use RealignTransform: false to disable the realignment
+     itself). The -info / -debug command-line flags emit additional
+     detail independently of this setting.
+
 .. option:: RegAnalyseDescent
 
     *default: 0 (false)*

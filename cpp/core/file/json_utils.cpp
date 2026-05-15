@@ -132,7 +132,7 @@ void read(const nlohmann::json &json, Header &header) {
   //   prominently — it is a common source of confusion when a downstream
   //   tool sees a PhaseEncodingDirection that differs from the JSON
   //   file on disk.
-  if (!header.realignment().is_identity()) {
+  if (header.realignment().applied()) {
     std::vector<std::string> modified_fields;
     for (const auto &kv : keyval) {
       const auto pre = pre_transform.find(kv.first);
