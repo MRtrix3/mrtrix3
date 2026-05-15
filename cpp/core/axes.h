@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <array>
 #include <limits>
 #include <set>
@@ -40,7 +41,9 @@ using flips_type = std::array<bool, 3>;
 class Shuffle {
 public:
   Shuffle() : permutations(), flips({false, false, false}) {}
-  bool is_identity() const { return (permutations.is_identity() && !std::max(flips.begin(), flips.end())); }
+  bool is_identity() const {
+    return permutations.is_identity() && std::none_of(flips.begin(), flips.end(), [](bool b) { return b; });
+  }
   bool valid() const { return permutations.valid(); }
   permutations_type permutations;
   flips_type flips;

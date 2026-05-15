@@ -17,6 +17,7 @@
 #include <array>
 #include <fstream>
 #include <sstream>
+#include <string_view>
 
 #include "file/json_utils.h"
 #include "file/nifti_utils.h"
@@ -110,10 +111,46 @@ KeyValues read(const nlohmann::json &json) {
 
 void read(const nlohmann::json &json, Header &header) {
   KeyValues keyval = read(json);
+  // Stash the full on-import (pre-transformation) snapshot of every
+  //   JSON-imported field into Realignment::orig_keyval, so that
+  //   mrinfo's -ondisk queries and the default annotated description
+  //   can recover the original values after realignment has been
+  //   applied below. We deliberately do *not* restrict this to a
+  //   hard-coded list of axis-dependent keys: any field added to
+  //   transform_for_image_load() in the future is then handled with
+  //   no further plumbing.
+  const KeyValues pre_transform = keyval;
+  KeyValues &orig = header.realignment().orig_keyval();
+  for (const auto &kv : pre_transform)
+    orig[kv.first] = kv.second;
   // Reorientation based on image load should be applied
   //   exclusively to metadata loaded via JSON; not anything pre-existing
   Metadata::PhaseEncoding::transform_for_image_load(keyval, header);
   Metadata::SliceEncoding::transform_for_image_load(keyval, header);
+  // If the host image was realigned on load AND any JSON-imported field
+  //   was actually modified by transform_for_image_load, surface this
+  //   prominently — it is a common source of confusion when a downstream
+  //   tool sees a PhaseEncodingDirection that differs from the JSON
+  //   file on disk.
+  if (!header.realignment().is_identity()) {
+    std::vector<std::string> modified_fields;
+    for (const auto &kv : keyval) {
+      const auto pre = pre_transform.find(kv.first);
+      if (pre == pre_transform.end() || pre->second != kv.second)
+        modified_fields.emplace_back(kv.first);
+    }
+    for (const auto &kv : pre_transform) {
+      if (keyval.find(kv.first) == keyval.end())
+        modified_fields.emplace_back(kv.first);
+    }
+    if (!modified_fields.empty())
+      WARN("JSON metadata for image \"" + header.name() +
+           "\""                                                           //
+           " was reoriented on import to match MRtrix3's realignment"     //
+           " of the image axes; affected fields: "                        //
+           + join(modified_fields, ", ") +                                //
+           " (mrinfo -property <field> -ondisk to recover JSON values)"); //
+  }
   header.merge_keyval(keyval);
 }
 

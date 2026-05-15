@@ -340,8 +340,11 @@ It is important to bear this in mind when interpreting for output of
 :ref:`mrinfo` for example, since this produces the strides and transform *as
 interpreted by MRtrix3*, rather than those actually stored on file - although
 the two representations should be strictly equivalent. If you need to inspect
-the information as stored on file, use :ref:`mrinfo`'s ``-config
-RealignTransform false`` option.
+the information as stored on file, use :ref:`mrinfo`'s ``-ondisk`` modifier
+together with ``-transform`` / ``-strides`` / ``-property``, or use ``-config
+RealignTransform false`` to disable the realignment entirely. See
+:ref:`axis_realignment` for an end-to-end description of the mechanism, the
+metadata it reorients, and how to disable it.
 
 
 .. _supported_image_formats:

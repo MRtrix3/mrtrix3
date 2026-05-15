@@ -135,9 +135,10 @@ correspond to RAS convention (i.e. first axis increases from left to right, seco
 axis increases from posterior to anterior, third axis increases from inferior to
 superior), *MRtrix3* will automatically alter the axis :ref:`strides` & transform
 in order to make the image *appear* as close to an axial acquisition as possible.
-This is briefly mentioned in :ref:`transform` section. The behaviour may
-also be observed by running ``mrinfo`` with and without the
-``-config RealignTransform false`` option, which temporarily disables this behaviour.
+This is briefly mentioned in :ref:`transform` section, and described in detail
+under :ref:`axis_realignment`. The behaviour may also be observed by running
+``mrinfo`` with and without the ``-config RealignTransform false`` option, which
+temporarily disables this behaviour.
 
 Because phase encoding is defined with respect to the image axes, any
 transformation of image axes must correspondingly be applied to the phase encoding

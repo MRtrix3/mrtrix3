@@ -60,9 +60,10 @@ void transform_for_image_load(KeyValues &keyval, const Header &header) {
       std::reverse(slice_timing.begin(), slice_timing.end());
       slice_timing_it->second = join(slice_timing, ",");
       // clang-format off
-      INFO("Slice timing vector reversed"
+      WARN("Slice timing vector reversed"
            " to conform to MRtrix3 internal transform realignment"
-           " of image \"" + header.name() + "\"");
+           " of image \"" + header.name() + "\""
+           " (mrinfo -property SliceTiming -ondisk to see the original)");
       // clang-format on
     } else {
       keyval["SliceEncodingDirection"] = Metadata::BIDS::vector2axisid(new_dir);

@@ -76,6 +76,17 @@ void Config::init() {
   // CONF A boolean value to indicate whether all images should be realigned
   // CONF to an approximately axial orientation at load.
   Header::do_realign_transform = get_bool("RealignTransform", true);
+
+  // CONF option: RealignmentVerbosity
+  // CONF default: auto
+  // CONF Controls the on-load console notification emitted when MRtrix3
+  // CONF realigns an image's axes to approximate RAS at load time.
+  // CONF Value "auto" (default) emits a single console line per affected
+  // CONF image, summarising the shuffle and any reoriented metadata fields.
+  // CONF Value "quiet" suppresses the notification; the realignment itself
+  // CONF still occurs (use RealignTransform: false to disable the realignment
+  // CONF itself). The -info / -debug command-line flags emit additional
+  // CONF detail independently of this setting.
 }
 
 std::string Config::get(std::string_view key) {

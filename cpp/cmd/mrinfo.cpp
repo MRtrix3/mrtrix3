@@ -103,6 +103,18 @@ void usage() {
       " More information can be found on this issue at:"
       " https://mrtrix.readthedocs.io/en/" MRTRIX_BASE_VERSION "/concepts/pe_scheme.html"
 
+    + "By default, mrinfo reports the image *as interpreted by MRtrix3*."
+      " If the image's on-disk axes do not approximately conform to the RAS convention,"
+      " MRtrix3 permutes and flips them at load time so the loaded image appears axial;"
+      " the reported transform, strides, and axis-dependent metadata"
+      " (e.g. PhaseEncodingDirection, pe_scheme, SliceEncodingDirection, SliceTiming)"
+      " may therefore differ from the values stored on disk."
+      " The default human-readable output annotates any such differences inline."
+      " Use the -realignment option to summarise the applied shuffle,"
+      " and -ondisk to make -transform / -strides / -petable / -property queries"
+      " report the pre-realignment (on-disk) values."
+      " See: https://mrtrix.readthedocs.io/en/" MRTRIX_BASE_VERSION "/concepts/axis_realignment.html"
+
     + DWI::bvalue_scaling_description;
 
   ARGUMENTS
@@ -122,6 +134,14 @@ void usage() {
     + Option ("multiplier", "image intensity multiplier")
     + Option ("transform", "the transformation from image coordinates [mm]"
                            " to scanner / real world coordinates [mm]")
+    + Option ("realignment", "if MRtrix3 realigned the image axes to approximate RAS"
+                             " at load time, print a per-output-axis summary of the"
+                             " shuffle; print nothing otherwise")
+    + Option ("ondisk", "report the on-disk view rather than the realigned (interpreted) view"
+                        " for -transform, -strides, -petable, and -property queries of"
+                        " axis-dependent metadata (PhaseEncodingDirection, pe_scheme,"
+                        " SliceEncodingDirection, SliceTiming). No effect for images that"
+                        " were not realigned at load time.")
 
     + FieldExportOptions
 
@@ -167,14 +187,16 @@ void print_spacing(const Header &header) {
   std::cout << buffer << "\n";
 }
 
-void print_strides(const Header &header) {
+void print_strides(const Header &header, const bool ondisk) {
   std::string buffer;
-  std::vector<ssize_t> strides(Stride::get(header));
+  std::vector<ssize_t> strides = ondisk ? std::vector<ssize_t>(header.realignment().orig_strides().begin(),
+                                                               header.realignment().orig_strides().end())
+                                        : Stride::get(header);
   Stride::symbolise(strides);
   for (size_t i = 0; i < header.ndim(); ++i) {
     if (i)
       buffer += " ";
-    buffer += header.stride(i) ? str(strides[i]) : "?";
+    buffer += strides[i] ? str(strides[i]) : "?";
   }
   std::cout << buffer << "\n";
 }
@@ -201,23 +223,30 @@ void print_shells(const Eigen::MatrixXd &grad,
   }
 }
 
-void print_transform(const Header &header) {
+void print_transform(const Header &header, const bool ondisk) {
   Eigen::IOFormat fmt(Eigen::FullPrecision, 0, " ", "\n", "", "", "", "\n");
   Eigen::Matrix<default_type, 4, 4> matrix;
-  matrix.topLeftCorner<3, 4>() = header.transform().matrix();
+  const auto &source = ondisk ? header.realignment().orig_transform() : header.transform();
+  matrix.topLeftCorner<3, 4>() = source.matrix();
   matrix.row(3) << 0.0, 0.0, 0.0, 1.0;
   std::cout << matrix.format(fmt);
 }
 
-void print_properties(const Header &header, std::string_view key, const size_t indent = 0) {
+void print_realignment(const Header &header) {
+  for (const auto &line : header.realignment().describe_axis_mapping())
+    std::cout << line << "\n";
+}
+
+void print_properties(const Header &header, std::string_view key, const bool ondisk, const size_t indent = 0) {
+  const KeyValues &source = ondisk ? header.realignment().orig_keyval() : header.keyval();
   if (lowercase(key) == "all") {
-    for (const auto &it : header.keyval()) {
+    for (const auto &it : source) {
       std::cout << it.first << ": ";
-      print_properties(header, it.first, it.first.size() + 2);
+      print_properties(header, it.first, ondisk, it.first.size() + 2);
     }
   } else {
-    const auto values = header.keyval().find(std::string(key));
-    if (values != header.keyval().end()) {
+    const auto values = source.find(std::string(key));
+    if (values != source.end()) {
       auto lines = split(values->second, "\n");
       INFO("showing property " + std::string(key) + ":");
       std::cout << lines[0] << "\n";
@@ -226,7 +255,8 @@ void print_properties(const Header &header, std::string_view key, const size_t i
         std::cout << lines[i] << "\n";
       }
     } else {
-      WARN("no \"" + std::string(key) + "\" entries found in \"" + header.name() + "\"");
+      WARN("no \"" + std::string(key) + "\" entries found in \"" + header.name() + "\"" +
+           (ondisk ? " (on-disk view)" : ""));
     }
   }
 }
@@ -255,6 +285,31 @@ void header2json(const Header &header, nlohmann::json &json) {
                        {T(1, 0), T(1, 1), T(1, 2), T(1, 3)},
                        {T(2, 0), T(2, 1), T(2, 2), T(2, 3)},
                        {0.0, 0.0, 0.0, 1.0}};
+  if (!header.realignment().is_identity()) {
+    nlohmann::json realignment;
+    const auto &perm = header.realignment().permutations();
+    const auto &flip = header.realignment().flips();
+    realignment["permutations"] = {perm[0], perm[1], perm[2]};
+    realignment["flips"] = {flip[0], flip[1], flip[2]};
+    realignment["axis_mapping"] = header.realignment().describe_axis_mapping();
+    const transform_type &To(header.realignment().orig_transform());
+    realignment["transform_on_disk"] = {{To(0, 0), To(0, 1), To(0, 2), To(0, 3)},
+                                        {To(1, 0), To(1, 1), To(1, 2), To(1, 3)},
+                                        {To(2, 0), To(2, 1), To(2, 2), To(2, 3)},
+                                        {0.0, 0.0, 0.0, 1.0}};
+    std::vector<ssize_t> orig_strides(header.realignment().orig_strides().begin(),
+                                      header.realignment().orig_strides().end());
+    Stride::symbolise(orig_strides);
+    realignment["strides_on_disk"] = orig_strides;
+    nlohmann::json keyval_on_disk = nlohmann::json::object();
+    for (const auto &kv : header.realignment().orig_keyval()) {
+      const auto live = header.keyval().find(kv.first);
+      if (live == header.keyval().end() || live->second != kv.second)
+        keyval_on_disk[kv.first] = kv.second;
+    }
+    realignment["keyval_on_disk"] = keyval_on_disk;
+    json["realignment"] = realignment;
+  }
   // Load key-value entries into a nested keyval.* member
   File::JSON::write(header, json["keyval"], header.path());
 }
@@ -295,15 +350,18 @@ void run() {
   const bool multiplier = !get_options("multiplier").empty();
   const auto properties = get_options("property");
   const bool transform = !get_options("transform").empty();
+  const bool realignment_flag = !get_options("realignment").empty();
+  const bool ondisk = !get_options("ondisk").empty();
   const bool dwgrad = !get_options("dwgrad").empty();
   const bool shell_bvalues = !get_options("shell_bvalues").empty();
   const bool shell_sizes = !get_options("shell_sizes").empty();
   const bool shell_indices = !get_options("shell_indices").empty();
   const bool petable = !get_options("petable").empty();
 
-  const bool print_full_header = !(format || ndim || size || spacing || datatype || strides || offset || multiplier ||
-                                   !properties.empty() || transform || dwgrad || export_grad || shell_bvalues ||
-                                   shell_sizes || shell_indices || export_pe || petable || json_keyval || json_all);
+  const bool print_full_header =
+      !(format || ndim || size || spacing || datatype || strides || offset || multiplier || !properties.empty() ||
+        transform || realignment_flag || dwgrad || export_grad || shell_bvalues || shell_sizes || shell_indices ||
+        export_pe || petable || json_keyval || json_all);
 
   for (size_t i = 0; i < argument.size(); ++i) {
     const auto header = Header::open(argument[i]);
@@ -321,18 +379,24 @@ void run() {
     if (datatype)
       std::cout << header.datatype().specifier() << "\n";
     if (strides)
-      print_strides(header);
+      print_strides(header, ondisk);
     if (offset)
       std::cout << header.intensity_offset() << "\n";
     if (multiplier)
       std::cout << header.intensity_scale() << "\n";
     if (transform)
-      print_transform(header);
-    if (petable)
-      std::cout << Metadata::PhaseEncoding::get_scheme(header) << "\n";
+      print_transform(header, ondisk);
+    if (realignment_flag)
+      print_realignment(header);
+    if (petable) {
+      if (ondisk)
+        std::cout << Metadata::PhaseEncoding::parse_scheme(header.realignment().orig_keyval(), header) << "\n";
+      else
+        std::cout << Metadata::PhaseEncoding::get_scheme(header) << "\n";
+    }
 
     for (size_t n = 0; n < properties.size(); ++n)
-      print_properties(header, properties[n][0]);
+      print_properties(header, properties[n][0], ondisk);
 
     Eigen::MatrixXd grad;
     if (export_grad || check_option_group(GradImportOptions) || dwgrad || shell_bvalues || shell_sizes ||
