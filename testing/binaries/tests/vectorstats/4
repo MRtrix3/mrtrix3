@@ -6,16 +6,16 @@
 # vectorstats tmpsubjects.txt tmpdesign.csv tmpcontrast.csv tmpout/ -errors ise
 # vectorstats/test4.py
 rm -rf tmpout/
-vectorstats vectorstats/4/subjects.txt vectorstats/4/design.csv tmpout/ \
-    -ttests vectorstats/4/contrast.csv \
+vectorstats vectorstats/4_in/subjects.txt vectorstats/4_in/design.csv tmpout/ \
+    -ttests vectorstats/4_in/contrast.csv \
     -errors ise
 
-testing_diff_matrix tmpout/Zstat.csv vectorstats/4/outZstat.csv -frac 1e-6
-testing_diff_matrix tmpout/abs_effect.csv vectorstats/4/outabs_effect.csv -frac 1e-6
-testing_diff_matrix tmpout/betas.csv vectorstats/4/outbetas.csv -frac 1e-6
-testing_diff_matrix tmpout/cond.csv vectorstats/4/outcond.csv -frac 1e-6
-testing_diff_matrix tmpout/std_dev.csv vectorstats/4/outstd_dev.csv -frac 1e-6
-testing_diff_matrix tmpout/std_effect.csv vectorstats/4/outstd_effect.csv -frac 1e-6
-testing_diff_matrix tmpout/tvalue.csv vectorstats/4/outtvalue.csv -frac 1e-6
+testing_diff_matrix tmpout/Zstat.csv vectorstats/4_out/Zstat.csv -frac 1e-6
+testing_diff_matrix tmpout/abs_effect.csv vectorstats/4_out/abs_effect.csv -frac 1e-6
+testing_diff_matrix tmpout/betas.csv vectorstats/4_out/betas.csv -frac 1e-6
+testing_diff_matrix tmpout/cond.csv vectorstats/4_out/cond.csv -frac 1e-6
+testing_diff_matrix tmpout/std_dev.csv vectorstats/4_out/std_dev.csv -frac 1e-6
+testing_diff_matrix tmpout/std_effect.csv vectorstats/4_out/std_effect.csv -frac 1e-6
+testing_diff_matrix tmpout/tvalue.csv vectorstats/4_out/tvalue.csv -frac 1e-6
 
-vectorstats/test4.py
+vectorstats/test4.py tmpout/

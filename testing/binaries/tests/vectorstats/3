@@ -7,19 +7,19 @@
 # vectorstats/test3.py
 # This is no longer used in order to prevent random CI failures
 rm -rf tmpout/
-vectorstats vectorstats/3/subjects.txt vectorstats/3/design.csv tmpout/ \
-    -ttests vectorstats/3/contrast.csv \
+vectorstats vectorstats/3_in/subjects.txt vectorstats/3_in/design.csv tmpout/ \
+    -ttests vectorstats/3_in/contrast.csv \
     -errors ise
 
-testing_diff_matrix tmpout/Zstat_t1.csv vectorstats/3/outZstat_t1.csv -frac 1e-5
-testing_diff_matrix tmpout/Zstat_t2.csv vectorstats/3/outZstat_t2.csv -frac 1e-6
-testing_diff_matrix tmpout/abs_effect_t1.csv vectorstats/3/outabs_effect_t1.csv -frac 1e-5
-testing_diff_matrix tmpout/abs_effect_t2.csv vectorstats/3/outabs_effect_t2.csv -frac 1e-6
-testing_diff_matrix tmpout/betas.csv vectorstats/3/outbetas.csv -frac 1e-5
-testing_diff_matrix tmpout/std_dev.csv vectorstats/3/outstd_dev.csv -frac 1e-6
-testing_diff_matrix tmpout/std_effect_t1.csv vectorstats/3/outstd_effect_t1.csv -frac 1e-5
-testing_diff_matrix tmpout/std_effect_t2.csv vectorstats/3/outstd_effect_t2.csv -frac 1e-6
-testing_diff_matrix tmpout/tvalue_t1.csv vectorstats/3/outtvalue_t1.csv -frac 1e-5
-testing_diff_matrix tmpout/tvalue_t2.csv vectorstats/3/outtvalue_t2.csv -frac 1e-6
+testing_diff_matrix tmpout/Zstat_t1.csv vectorstats/3_out/Zstat_t1.csv -frac 1e-5
+testing_diff_matrix tmpout/Zstat_t2.csv vectorstats/3_out/Zstat_t2.csv -frac 1e-6
+testing_diff_matrix tmpout/abs_effect_t1.csv vectorstats/3_out/abs_effect_t1.csv -frac 1e-5
+testing_diff_matrix tmpout/abs_effect_t2.csv vectorstats/3_out/abs_effect_t2.csv -frac 1e-6
+testing_diff_matrix tmpout/betas.csv vectorstats/3_out/betas.csv -frac 1e-5
+testing_diff_matrix tmpout/std_dev.csv vectorstats/3_out/std_dev.csv -frac 1e-6
+testing_diff_matrix tmpout/std_effect_t1.csv vectorstats/3_out/std_effect_t1.csv -frac 1e-5
+testing_diff_matrix tmpout/std_effect_t2.csv vectorstats/3_out/std_effect_t2.csv -frac 1e-6
+testing_diff_matrix tmpout/tvalue_t1.csv vectorstats/3_out/tvalue_t1.csv -frac 1e-5
+testing_diff_matrix tmpout/tvalue_t2.csv vectorstats/3_out/tvalue_t2.csv -frac 1e-6
 
-vectorstats/test3.py
+vectorstats/test3.py tmpout/

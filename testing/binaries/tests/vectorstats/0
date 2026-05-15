@@ -7,28 +7,28 @@
 # vectorstats/test0.py
 # This is no longer used in order to avoid random failures
 rm -rf tmpout/
-vectorstats vectorstats/0/subjects.txt vectorstats/0/design.csv tmpout/ \
-    -ttests vectorstats/0/contrast.csv \
-    -ftest vectorstats/0/ftest0.csv \
-    -ftest vectorstats/0/ftest1.csv
+vectorstats vectorstats/0_in/subjects.txt vectorstats/0_in/design.csv tmpout/ \
+    -ttests vectorstats/0_in/contrast.csv \
+    -ftest vectorstats/0_in/ftest0.csv \
+    -ftest vectorstats/0_in/ftest1.csv
 
-testing_diff_matrix tmpout/Fvalue_F1.csv vectorstats/0/outFvalue_F1.csv -frac 1e-6
-testing_diff_matrix tmpout/Fvalue_F2.csv vectorstats/0/outFvalue_F2.csv -frac 1e-6
-testing_diff_matrix tmpout/Zstat_F1.csv vectorstats/0/outZstat_F1.csv -frac 1e-6
-testing_diff_matrix tmpout/Zstat_F2.csv vectorstats/0/outZstat_F2.csv -frac 1e-6
-testing_diff_matrix tmpout/Zstat_t1.csv vectorstats/0/outZstat_t1.csv -frac 1e-6
-testing_diff_matrix tmpout/Zstat_t2.csv vectorstats/0/outZstat_t2.csv -frac 1e-6
-testing_diff_matrix tmpout/Zstat_t3.csv vectorstats/0/outZstat_t3.csv -frac 1e-6
-testing_diff_matrix tmpout/abs_effect_t1.csv vectorstats/0/outabs_effect_t1.csv -frac 1e-6
-testing_diff_matrix tmpout/abs_effect_t2.csv vectorstats/0/outabs_effect_t2.csv -frac 1e-6
-testing_diff_matrix tmpout/abs_effect_t3.csv vectorstats/0/outabs_effect_t3.csv -frac 1e-6
-testing_diff_matrix tmpout/betas.csv vectorstats/0/outbetas.csv -frac 1e-5
-testing_diff_matrix tmpout/std_dev.csv vectorstats/0/outstd_dev.csv -frac 1e-6
-testing_diff_matrix tmpout/std_effect_t1.csv vectorstats/0/outstd_effect_t1.csv -frac 1e-6
-testing_diff_matrix tmpout/std_effect_t2.csv vectorstats/0/outstd_effect_t2.csv -frac 1e-6
-testing_diff_matrix tmpout/std_effect_t3.csv vectorstats/0/outstd_effect_t3.csv -frac 1e-6
-testing_diff_matrix tmpout/tvalue_t1.csv vectorstats/0/outtvalue_t1.csv -frac 1e-6
-testing_diff_matrix tmpout/tvalue_t2.csv vectorstats/0/outtvalue_t2.csv -frac 1e-6
-testing_diff_matrix tmpout/tvalue_t3.csv vectorstats/0/outtvalue_t3.csv -frac 1e-6
+testing_diff_matrix tmpout/Fvalue_F1.csv vectorstats/0_out/Fvalue_F1.csv -frac 1e-6
+testing_diff_matrix tmpout/Fvalue_F2.csv vectorstats/0_out/Fvalue_F2.csv -frac 1e-6
+testing_diff_matrix tmpout/Zstat_F1.csv vectorstats/0_out/Zstat_F1.csv -frac 1e-6
+testing_diff_matrix tmpout/Zstat_F2.csv vectorstats/0_out/Zstat_F2.csv -frac 1e-6
+testing_diff_matrix tmpout/Zstat_t1.csv vectorstats/0_out/Zstat_t1.csv -frac 1e-6
+testing_diff_matrix tmpout/Zstat_t2.csv vectorstats/0_out/Zstat_t2.csv -frac 1e-6
+testing_diff_matrix tmpout/Zstat_t3.csv vectorstats/0_out/Zstat_t3.csv -frac 1e-6
+testing_diff_matrix tmpout/abs_effect_t1.csv vectorstats/0_out/abs_effect_t1.csv -frac 1e-6
+testing_diff_matrix tmpout/abs_effect_t2.csv vectorstats/0_out/abs_effect_t2.csv -frac 1e-6
+testing_diff_matrix tmpout/abs_effect_t3.csv vectorstats/0_out/abs_effect_t3.csv -frac 1e-6
+testing_diff_matrix tmpout/betas.csv vectorstats/0_out/betas.csv -frac 1e-5
+testing_diff_matrix tmpout/std_dev.csv vectorstats/0_out/std_dev.csv -frac 1e-6
+testing_diff_matrix tmpout/std_effect_t1.csv vectorstats/0_out/std_effect_t1.csv -frac 1e-6
+testing_diff_matrix tmpout/std_effect_t2.csv vectorstats/0_out/std_effect_t2.csv -frac 1e-6
+testing_diff_matrix tmpout/std_effect_t3.csv vectorstats/0_out/std_effect_t3.csv -frac 1e-6
+testing_diff_matrix tmpout/tvalue_t1.csv vectorstats/0_out/tvalue_t1.csv -frac 1e-6
+testing_diff_matrix tmpout/tvalue_t2.csv vectorstats/0_out/tvalue_t2.csv -frac 1e-6
+testing_diff_matrix tmpout/tvalue_t3.csv vectorstats/0_out/tvalue_t3.csv -frac 1e-6
 
-vectorstats/test0.py
+vectorstats/test0.py tmpout/
