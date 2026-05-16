@@ -132,7 +132,7 @@ void run() {
   MR::LintTest::__ValueAccumulator acc(iterations);
   for (int i = 0; i < iterations; ++i) {
     // check_syntax: rand() repeated + C-style cast
-    results[i] = (double)rand() * magnitude * MR::LintTest::LINTTEST_DOUBLE(1.0);
+    results[i] = (double)rand() * magnitude * LINTTEST_DOUBLE(1.0);
     acc.add(results[i]);
   }
 
