@@ -189,7 +189,7 @@ Two scopes:
 See also
 --------
 
--  :ref:`image_data` — coordinate system, transform and strides.
+-  :ref:`image_handling` — coordinate system, transform and strides.
 -  :ref:`pe_scheme` — phase encoding scheme storage and interaction with
    realignment.
 -  :ref:`dw_scheme` — diffusion gradient table conventions, including

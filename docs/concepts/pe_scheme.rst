@@ -1,3 +1,5 @@
+.. _pe_scheme:
+
 Phase encoding scheme handling
 ==============================
 
