@@ -59,7 +59,7 @@ const std::string core_reference =
     "NeuroImage, 2019, 202, 116137";                                                                          //
 
 // clang-format off
-OptionGroup __standard_options = OptionGroup("Standard options")
+OptionGroup _standard_options = OptionGroup("Standard options")
   + Option("info", "display information messages.")
   + Option("quiet",
            "do not display information messages or progress status; "
@@ -581,9 +581,9 @@ std::string markdown_usage() {
     + DESCRIPTION.syntax (format)
     + EXAMPLES.syntax (format)
     + OPTIONS.syntax (format)
-    + __standard_options.header (format)
-    + __standard_options.contents (format)
-    + __standard_options.footer (format)
+    + _standard_options.header (format)
+    + _standard_options.contents (format)
+    + _standard_options.footer (format)
     + help_tail (format);
   */
   std::string s = std::string("## Synopsis\n\n") + SYNOPSIS + "\n\n";
@@ -685,9 +685,9 @@ std::string restructured_text_usage() {
     + DESCRIPTION.syntax (format)
     + EXAMPLES.syntax (format)
     + OPTIONS.syntax (format)
-    + __standard_options.header (format)
-    + __standard_options.contents (format)
-    + __standard_options.footer (format)
+    + _standard_options.header (format)
+    + _standard_options.contents (format)
+    + _standard_options.footer (format)
     + help_tail (format);
   */
 

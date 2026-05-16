@@ -243,8 +243,8 @@ FORCE_INLINE void ProgressBar::operator++() {
     }
   } else {
     if (++current_val >= next_percent) {
-      _value = std::round(current_val / _multiplier);
-      next_percent = std::ceil((_value + 1) * _multiplier);
+      _value = static_cast<size_t>(std::round(current_val / _multiplier));
+      next_percent = static_cast<size_t>(std::ceil((_value + 1) * _multiplier));
       display_now();
     }
   }

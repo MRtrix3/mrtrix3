@@ -62,7 +62,7 @@ void Config::init() {
         config[std::string(kv.key())] = std::string(kv.value());
       }
     } catch (Exception &e) {
-      WARN("Error reading key-values from user config file \"" + path + "\": " + e[0]);
+      WARN("Error reading key-values from user config file \"" + home_path.string() + "\": " + e[0]);
     }
   } else {
     DEBUG("No config file found at \"" + home_path.string() + "\"");

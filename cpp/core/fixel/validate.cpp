@@ -68,7 +68,7 @@ void validate_directory(const std::filesystem::path &fixel_directory_path) {
     } catch (InvalidDirectoryException &) {
       throw;
     } catch (Exception &e) {
-      DEBUG("Unable to open \"" + full_path + "\" as image; ignoring");
+      DEBUG("Unable to open \"" + entry.path().string() + "\" as image; ignoring");
     }
   }
   if (!directions_found)

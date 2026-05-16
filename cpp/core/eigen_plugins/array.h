@@ -16,6 +16,8 @@
 
 #include <cstdint>
 
+// NOLINTBEGIN
+
 #define MRTRIX_OP(ARG)                                                                                                 \
   template <class ImageType> inline Array &operator ARG(const MR::Helper::ConstRow<ImageType> &row) {                  \
     this->resize(row.image.size(row.axis), 1);                                                                         \
@@ -28,3 +30,5 @@
 MRTRIX_OP(=)
 
 #undef MRTRIX_OP
+
+// NOLINTEND

@@ -62,10 +62,14 @@ public:
     App::check_overwrite(path);
   }
 
-  ~WriterBase() {
+  ~WriterBase() noexcept {
     if (open_success) {
-      File::OFStream out(path, std::ios::in | std::ios::out | std::ios::binary);
-      update_counts(out);
+      try {
+        File::OFStream out(path, std::ios::in | std::ios::out | std::ios::binary);
+        update_counts(out);
+      } catch (Exception &e) {
+        e.display();
+      }
     }
   }
 

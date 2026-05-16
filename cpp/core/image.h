@@ -452,7 +452,7 @@ std::filesystem::path Image<ValueType>::dump_to_mrtrix_file(const std::filesyste
 }
 
 template <class ImageType>
-std::filesystem::path __save_generic(ImageType &x, const std::filesystem::path &filepath, bool use_multi_threading) {
+std::filesystem::path _save_generic(ImageType &x, const std::filesystem::path &filepath, bool use_multi_threading) {
   auto out = Image<typename ImageType::value_type>::create(filepath, x);
   if (use_multi_threading)
     threaded_copy(x, out);
@@ -468,7 +468,7 @@ template <class ImageType>
 typename std::enable_if<is_adapter_type<typename std::remove_reference<ImageType>::type>::value,
                         std::filesystem::path>::type
 save(ImageType &&x, const std::filesystem::path &filepath, bool use_multi_threading = true) {
-  return __save_generic(x, filepath, use_multi_threading);
+  return _save_generic(x, filepath, use_multi_threading);
 }
 
 //! save contents of an existing image to file (for debugging only)

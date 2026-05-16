@@ -137,7 +137,6 @@ add_custom_target(Github SOURCES
     .github/workflows/package-windows-msys2.yml
     .github/workflows/clang-tidy-review.yml
     .github/workflows/clang-tidy-enforce.yml
-    .clang-tidy-enforce
 )
 
 mrtrix_print_build_instructions()
