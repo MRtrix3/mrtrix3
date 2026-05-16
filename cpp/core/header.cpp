@@ -192,7 +192,8 @@ Header Header::open(const std::filesystem::path &image_path) {
             std::unique_ptr<ImageIO::Base> io_handler;
             header.path() = list[++item_index].name();
             header.keyval().clear();
-            if (!(io_handler = (*format_handler)->read(header)))
+            io_handler = (*format_handler)->read(header);
+            if (io_handler == nullptr)
               throw Exception("image specifier contains mixed format files");
             assert(io_handler);
             template_header.check(header);

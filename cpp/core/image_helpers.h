@@ -577,6 +577,7 @@ public:
       image.value() = other.image.value();
   }
 
+// NOLINTNEXTLINE(bugprone-macro-parentheses)
 #define MRTRIX_OP(ARG)                                                                                                 \
   template <class OtherImageType> FORCE_INLINE void operator ARG(ConstRow<OtherImageType> &&other) {                   \
     assert(image.size(axis) == other.image.size(other.axis));                                                          \

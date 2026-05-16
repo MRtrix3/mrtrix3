@@ -245,8 +245,7 @@ std::string Tractogram::Shader::fragment_shader_source(const Displayable &displa
     source += using_geom ? "  colour = abs (normalize (g_tangent));\n" : "  colour = abs (normalize (v_tangent));\n";
     break;
   case TrackColourType::ScalarFile:
-    source += using_geom ? "  colour = fColour;\n" : "  colour = v_colour;\n";
-    break;
+    [[fallthrough]];
   case TrackColourType::Ends:
     source += using_geom ? "  colour = fColour;\n" : "  colour = v_colour;\n";
     break;

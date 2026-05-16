@@ -145,7 +145,7 @@ ROI_UndoEntry::ROI_UndoEntry(ROI_Item &roi, int current_axis, int current_slice)
   GL_CHECK_ERROR;
 
   // retrieve texture contents to main memory:
-  before.resize(tex_size[0] * tex_size[1]);
+  before.resize(static_cast<size_t>(tex_size[0]) * static_cast<size_t>(tex_size[1]));
   tex.bind();
   gl::PixelStorei(gl::PACK_ALIGNMENT, 1);
 
