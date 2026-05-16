@@ -442,7 +442,7 @@ void Capture::add_commandline_options(MR::App::OptionList &options) {
 
 bool Capture::process_commandline_option(const MR::App::ParsedOption &opt) {
   if (opt.opt->is("capture.folder")) {
-    current_folder = opt[0];
+    current_folder = static_cast<std::filesystem::path>(opt[0]);
     QString path(qstr(shorten(current_folder.filename().string(), 20, 0)));
     folder_button->setText(path);
     folder_button->setToolTip(qstr(current_folder.string()));
