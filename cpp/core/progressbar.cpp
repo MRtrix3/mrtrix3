@@ -52,7 +52,7 @@ void display_func_terminal(const ProgressBar &p) {
   else
     _print_stderr(printf(WRAP_OFF_CODE "\r%s: [%s] %s%s" CLEAR_LINE_CODE WRAP_ON_CODE,
                          App::NAME.c_str(),
-                         busy[p.value() % busy.size()].c_str(),
+                         busy.at(p.value() % busy.size()).c_str(),
                          p.text_cstr(),
                          p.ellipsis_cstr()));
 }
@@ -81,7 +81,7 @@ void display_func_redirect(const ProgressBar &p) {
       } else {
         _print_stderr(printf("%s: [%s] %s%s\n",
                              App::NAME.c_str(),
-                             busy[p.value() % busy.size()].c_str(),
+                             busy.at(p.value() % busy.size()).c_str(),
                              p.text_cstr(),
                              p.ellipsis_cstr()));
       }

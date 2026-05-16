@@ -34,7 +34,7 @@ namespace {
 inline char random_char() {
   thread_local std::mt19937 rng{std::random_device{}()};
   thread_local std::uniform_int_distribution<int> dist{0, 61};
-  const char c = dist(rng);
+  const char c = static_cast<const char>(dist(rng));
   if (c < 10)
     return c + 48;
   if (c < 36)
@@ -69,7 +69,7 @@ std::filesystem::path _get_tmpfile_dir() {
   const std::optional<std::filesystem::path> from_env_mrtrix = MR::get_env("MRTRIX_TMPFILE_DIR");
   if (from_env_mrtrix.has_value())
     return from_env_mrtrix.value();
-  return File::Config::get("TmpFileDir", MR::get_env("TMPDIR", std::filesystem::temp_directory_path()));
+  return {File::Config::get("TmpFileDir", MR::get_env("TMPDIR", std::filesystem::temp_directory_path().string()))};
 }
 
 const std::filesystem::path &tmpfile_dir() {

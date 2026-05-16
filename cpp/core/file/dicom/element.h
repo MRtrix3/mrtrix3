@@ -114,7 +114,7 @@ public:
   }
 
   uint32_t tag() const {
-    union {
+    const union {
       uint16_t s[2]; // check_syntax off
       uint32_t i;
     } val = {{

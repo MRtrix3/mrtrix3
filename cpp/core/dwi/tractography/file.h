@@ -184,7 +184,7 @@ public:
   using vector_type = Eigen::Matrix<ValueType, 3, 1>;
 
   //! create a new track file with the specified properties
-  WriterUnbuffered(const std::filesystem::path &path, const Properties &properties) : WriterBase<ValueType>(file) {
+  WriterUnbuffered(const std::filesystem::path &path, const Properties &properties) : WriterBase<ValueType>(path) {
 
     if (path.extension() != ".tck")
       throw Exception("output track files must use the .tck suffix");

@@ -25,11 +25,11 @@ namespace {
 
 template <class Item> class Ordered {
 public:
-  Ordered() = default;
-  Ordered(const Item &item) : item(item) {}
+  Ordered() : index(-1) {}
+  Ordered(const Item &item) : item(item), index(-1) {}
 
   Item item;
-  size_t index;
+  ssize_t index;
 };
 
 struct CompareItems {
@@ -112,6 +112,7 @@ template <class Item1, class Functor, class Item2> struct PipeWrapper<Ordered<It
     while (in.read()) {
       if (!func(in->item, out->item))
         break;
+      assert(in->index >= 0);
       out->index = in->index;
       out.write();
     }
@@ -135,6 +136,7 @@ template <class Item, class Functor> struct SinkWrapper<Ordered<Item>, Functor> 
     auto in = reader.placeholder();
     std::set<queued_t *, CompareItems> buffer;
     while (in.read()) {
+      assert(in->index >= 0);
       if (in->index > expected) {
         buffer.emplace(in.stash());
         continue;
@@ -233,6 +235,7 @@ struct PipeWrapper<Ordered<Batch<Item1>>, Functor, Ordered<Batch<Item2>>> {
           ++k;
       }
       out->item.resize(k);
+      assert(in->index >= 0);
       out->index = in->index;
       if (!out.write())
         return;
@@ -257,6 +260,7 @@ template <class Item, class Functor> struct SinkWrapper<Ordered<Batch<Item>>, Fu
     auto in = reader.placeholder();
     std::set<queued_t *, CompareItems> buffer;
     while (in.read()) {
+      assert(in->index >= 0);
       if (in->index > expected) {
         buffer.emplace(in.stash());
         continue;

@@ -99,6 +99,7 @@ namespace {
 
 // from https://www.geeksforgeeks.org/wildcard-character-matching/
 
+// NOLINTNEXTLINE(misc-no-recursion)
 inline bool _match(std::string_view first, std::string_view second) {
   // If we reach at the end of both strings, we are done
   if (first.empty() && second.empty())

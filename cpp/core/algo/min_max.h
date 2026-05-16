@@ -66,6 +66,7 @@ public:
   value_type &overall_max;
   value_type min, max;
 
+private:
   static std::mutex mutex;
 };
 template <class ImageType> std::mutex MinMax<ImageType>::mutex;

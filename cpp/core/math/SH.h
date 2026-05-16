@@ -44,7 +44,7 @@ inline size_t NforL(int lmax) { return (lmax + 1) * (lmax + 2) / 2; }
 inline size_t index(int l, int m) { return l * (l + 1) / 2 + m; }
 
 //! same as NforL(), but consider only non-negative orders \e m
-inline size_t NforL_mpos(int lmax) { return static_cast<size_t>((lmax / 2 + 1) * (lmax / 2 + 1)); }
+inline size_t NforL_mpos(int lmax) { return (static_cast<size_t>(lmax) / 2 + 1) * (static_cast<size_t>(lmax) / 2 + 1); }
 
 //! same as index(), but consider only non-negative orders \e m
 inline size_t index_mpos(int l, int m) { return l * l / 4 + m; }
