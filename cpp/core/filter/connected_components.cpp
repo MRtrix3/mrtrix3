@@ -82,11 +82,12 @@ void Connector::Adjacency::initialise(const Header &header, const Voxel2Vector &
     }
     data.push_back(indices);
   }
+  is_initialised = true;
   DEBUG("Adjacency data for " + str(data.size()) + " voxels initialised");
 }
 
 void Connector::run(std::vector<Cluster> &clusters, std::vector<uint32_t> &labels) const {
-  assert(adjacency.size());
+  assert(adjacency.valid());
   labels.resize(adjacency.size(), 0);
   uint32_t current_label = 0;
   for (uint32_t i = 0; i < labels.size(); i++) {

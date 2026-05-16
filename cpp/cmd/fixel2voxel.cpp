@@ -469,7 +469,8 @@ void run() {
   if (in_data.size(2) != 1)
     throw Exception("Input fixel data file must have a single scalar value per fixel (i.e. have dimensions Nx1x1)");
 
-  Header in_index_header = Fixel::find_index_header(Fixel::get_fixel_directory(argument[0]));
+  const std::filesystem::path in_fixel_directory = Fixel::get_fixel_directory(argument[0]);
+  Header in_index_header = Fixel::find_index_header(in_fixel_directory);
   Fixel::check_fixel_size(in_index_header, in_data);
   auto in_index_image = in_index_header.get_image<typename FixelIndexType::value_type>();
   Fixel::debug_validate_index_image(in_index_image);
@@ -510,8 +511,7 @@ void run() {
 
   Image<float> in_directions;
   if (op == Operation::DEC_UNIT || op == Operation::DEC_SCALED) // dec
-    in_directions =
-        Fixel::find_directions_header(Fixel::get_fixel_directory(in_data.name())).get_image<float>(DirectIO(1));
+    in_directions = Fixel::find_directions_header(in_fixel_directory).get_image<float>(DirectIO(1));
 
   FixelDataType in_vol;
   auto opt = get_options("weighted");

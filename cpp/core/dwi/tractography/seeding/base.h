@@ -57,7 +57,7 @@ class Base {
 
 public:
   Base(std::string_view in, std::string_view desc, const size_t attempts)
-      : volume(0.0), count(0), type(desc), name(Path::exists(in) ? Path::basename(in) : in), max_attempts(attempts) {}
+      : volume(0.0), count(0), type(desc), name(in), max_attempts(attempts) {}
 
   virtual ~Base() {}
 

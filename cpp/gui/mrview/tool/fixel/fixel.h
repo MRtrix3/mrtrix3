@@ -96,7 +96,7 @@ protected:
   QSlider *line_thickness_slider;
   QSlider *opacity_slider;
 
-  void add_images(std::vector<std::string> &list);
+  void add_images(const std::vector<std::filesystem::path> &list);
   void dropEvent(QDropEvent *event) override;
 
 private:

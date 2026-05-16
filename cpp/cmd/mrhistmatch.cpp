@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <filesystem>
 
 #include "command.h"
 #include "datatype.h"
@@ -74,6 +75,7 @@ void match_linear(Image<float> &input,
                   Image<bool> &mask_target,
                   const bool estimate_intercept) {
   std::vector<float> input_data, target_data;
+  const std::filesystem::path output_path{argument[3]};
   {
     ProgressBar progress("Loading & sorting image data", 4);
 
@@ -134,7 +136,7 @@ void match_linear(Image<float> &input,
   if (estimate_intercept) {
     CONSOLE("Estimated linear transform is: " + str(parameters[0]) + "x + " + str(parameters[1]));
     H.keyval()["mrhistmatch_offset"] = str<float>(parameters[1]);
-    auto output = Image<float>::create(argument[3], H);
+    auto output = Image<float>::create(output_path, H);
     for (auto l = Loop("Writing output image data", input)(input, output); l; ++l) {
       if (std::isfinite(static_cast<float>(input.value()))) {
         output.value() = parameters[0] * input.value() + parameters[1];
@@ -144,7 +146,7 @@ void match_linear(Image<float> &input,
     }
   } else {
     CONSOLE("Estimated scale factor is " + str(parameters[0]));
-    auto output = Image<float>::create(argument[3], H);
+    auto output = Image<float>::create(output_path, H);
     for (auto l = Loop("Writing output image data", input)(input, output); l; ++l) {
       if (std::isfinite(static_cast<float>(input.value()))) {
         output.value() = input.value() * parameters[0];
@@ -157,6 +159,7 @@ void match_linear(Image<float> &input,
 
 void match_nonlinear(
     Image<float> &input, Image<float> &target, Image<bool> &mask_input, Image<bool> &mask_target, const size_t nbins) {
+  const std::filesystem::path output_path{argument[3]};
   Algo::Histogram::Calibrator calib_input(nbins, true);
   Algo::Histogram::calibrate(calib_input, input, mask_input);
   INFO("Input histogram ranges from " + str(calib_input.get_min()) + " to " + str(calib_input.get_max()) + "; using " +
@@ -175,7 +178,7 @@ void match_nonlinear(
   Header H(input);
   H.datatype() = DataType::Float32;
   H.datatype().set_byte_order_native();
-  auto output = Image<float>::create(argument[3], H);
+  auto output = Image<float>::create(output_path, H);
   for (auto l = Loop("Writing output data", input)(input, output); l; ++l) {
     if (std::isfinite(static_cast<float>(input.value()))) {
       output.value() = matcher(input.value());
@@ -192,7 +195,9 @@ void run() {
   Image<bool> mask_input, mask_target;
   auto opt = get_options("mask_input");
   if (!opt.empty()) {
-    mask_input = Image<bool>::open(opt[0][0]);
+    const std::filesystem::path mask_input_path{opt[0][0]};
+
+    mask_input = Image<bool>::open(mask_input_path);
     check_dimensions(input, mask_input, 0, 3);
   }
   opt = get_options("mask_target");

@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <filesystem>
 #include <set>
 
 #include "types.h"
@@ -65,11 +66,11 @@ public:
 
   void error_check(const std::vector<node_t> &);
 
-  void write_assignments(std::string_view) const;
+  void write_assignments(const std::filesystem::path &) const;
 
   bool is_vector() const { return (vector_output); }
 
-  void save(std::string_view, const bool, const bool, const bool) const;
+  void save(const std::filesystem::path &, const bool, const bool, const bool) const;
 
 private:
   const stat_edge statistic;

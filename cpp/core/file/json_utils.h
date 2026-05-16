@@ -16,8 +16,10 @@
 
 #pragma once
 
-#include "file/key_value.h"
+#include <filesystem>
 #include <nlohmann/json.hpp>
+
+#include "file/key_value.h"
 
 namespace MR {
 class Header;
@@ -25,13 +27,13 @@ class Header;
 
 namespace MR::File::JSON {
 
-void load(Header &H, std::string_view path);
-void save(const Header &H, std::string_view json_path, std::string_view image_path);
+void load(Header &H, const std::filesystem::path &path);
+void save(const Header &H, const std::filesystem::path &json_path, const std::filesystem::path &image_path);
 
 KeyValues read(const nlohmann::json &json);
 void read(const nlohmann::json &json, Header &header);
 
 void write(const KeyValues &keyval, nlohmann::json &json);
-void write(const Header &header, nlohmann::json &json, std::string_view image_path);
+void write(const Header &header, nlohmann::json &json, const std::filesystem::path &image_path);
 
 } // namespace MR::File::JSON

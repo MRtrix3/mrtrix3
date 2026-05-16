@@ -65,7 +65,7 @@ template <class ImageType> void ROI_Item::save(ImageType &&out, GLubyte *data) {
   for (auto l = Loop(out)(out); l; ++l)
     out.value() = data[out.index(0) + out.size(0) * (out.index(1) + out.size(1) * out.index(2))];
   saved = true;
-  filename = out.name();
+  filepath = out.path();
 }
 
 } // namespace MR::GUI::MRView::Tool

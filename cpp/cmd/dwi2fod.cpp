@@ -27,6 +27,8 @@
 #include "dwi/sdeconv/csd.h"
 #include "dwi/sdeconv/msmt_csd.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -250,8 +252,9 @@ private:
 };
 
 void run() {
+  const std::filesystem::path input_path{argument[1]};
+  auto header_in = Header::open(input_path);
 
-  auto header_in = Header::open(argument[1]);
   Header header_out(header_in);
   header_out.ndim() = 4;
   header_out.datatype() = DataType::Float32;
@@ -306,8 +309,8 @@ void run() {
     shared.parse_cmdline_options();
 
     const size_t num_tissues = (argument.size() - 2) / 2;
-    std::vector<std::string> response_paths;
-    std::vector<std::string> odf_paths;
+    std::vector<std::filesystem::path> response_paths;
+    std::vector<std::filesystem::path> odf_paths;
     for (size_t i = 0; i < num_tissues; ++i) {
       response_paths.push_back(argument[i * 2 + 2]);
       odf_paths.push_back(argument[i * 2 + 3]);

@@ -21,6 +21,8 @@
 #include "interp/linear.h"
 #include "registration/warp/validate.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -105,6 +107,8 @@ void usage() {
 using value_type = float;
 
 void run() {
+  const std::filesystem::path output_path{argument.back()};
+
   std::vector<std::unique_ptr<TransformBase>> transform_list;
   std::unique_ptr<Header> template_header;
 
@@ -122,9 +126,8 @@ void run() {
       try {
         transform_list.emplace_back(std::make_unique<Linear>(File::Matrix::load_transform(argument[i])));
       } catch (Exception &E) {
-        throw Exception("error reading input file " + str(argument[i]) +
-                        ":"
-                        " does not appear to be a 4D warp image or 4x4 linear transform");
+        throw Exception("error reading input file: " + argument[i].as_text() + ":" +       //
+                        " does not appear to be a 4D warp image or 4x4 linear transform"); //
       }
     }
   }
@@ -153,7 +156,7 @@ void run() {
       index--;
       progress++;
     }
-    File::Matrix::save_transform(composed, argument[argument.size() - 1]);
+    File::Matrix::save_transform(composed, output_path);
 
   } else {
     Header output_header(*template_header);
@@ -161,7 +164,7 @@ void run() {
     output_header.size(3) = 3;
     output_header.datatype() = DataType::Float32;
 
-    Image<float> output = Image<value_type>::create(argument[argument.size() - 1], output_header);
+    Image<float> output = Image<value_type>::create(output_path, output_header);
 
     Transform template_transform(output);
     for (auto i = Loop("composing transformations", output, 0, 3)(output); i; ++i) {

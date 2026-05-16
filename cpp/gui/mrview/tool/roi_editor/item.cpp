@@ -62,7 +62,7 @@ ROI_Item::ROI_Item(MR::Header &&src) : Volume(std::move(src)), saved(true), curr
 
   std::stringstream name;
   name << "ROI" << std::setfill('0') << std::setw(5) << new_roi_counter++ << ".mif";
-  filename = name.str();
+  filepath = name.str();
 
   GL::Context::Grab context;
   GL::assert_context_is_current();
@@ -87,7 +87,7 @@ void ROI_Item::load() {
   bind();
   auto image = header().get_image<bool>();
   std::vector<GLubyte> data(image.size(0) * image.size(1));
-  ProgressBar progress("loading ROI image \"" + header().name() + "\"");
+  ProgressBar progress("loading ROI image \"" + header().path().string() + "\"");
   for (auto outer = MR::Loop(2)(image); outer; ++outer) {
     auto p = data.begin();
     for (auto inner = MR::Loop(0, 2)(image); inner; ++inner)
@@ -95,7 +95,7 @@ void ROI_Item::load() {
     upload_data({{0, 0, image.index(2)}}, {{image.size(0), image.size(1), 1}}, reinterpret_cast<void *>(&data[0]));
     ++progress;
   }
-  filename = header().name();
+  filepath = header().path();
   GL::assert_context_is_current();
 }
 

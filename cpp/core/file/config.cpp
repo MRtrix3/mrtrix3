@@ -40,31 +40,31 @@ void Config::init() {
   const std::string sysconf_location(sysconf_location_env == nullptr ? default_sys_config_file
                                                                      : std::string(sysconf_location_env));
 
-  if (Path::is_file(sysconf_location)) {
-    INFO("reading config file \"" + sysconf_location + "\"...");
+  std::filesystem::path sysconf_path(sysconf_location);
+  if (std::filesystem::is_regular_file(sysconf_path)) {
+    INFO("reading config file \"" + sysconf_path.string() + "\"...");
     try {
-      KeyValue::Reader kv(sysconf_location);
+      KeyValue::Reader kv(sysconf_path);
       while (kv.next()) {
         config[std::string(kv.key())] = std::string(kv.value());
       }
     } catch (...) {
     }
   } else {
-    DEBUG("No config file found at \"" + sysconf_location + "\"");
+    DEBUG(std::string("No config file found at \"") + sysconf_path.string() + "\"");
   }
-
-  const std::string path = Path::join(Path::home(), "." + file_basename);
-  if (Path::is_file(path)) {
-    INFO("reading config file \"" + path + "\"...");
+  std::filesystem::path home_path = Path::home() / ("." + file_basename);
+  if (std::filesystem::is_regular_file(home_path)) {
+    INFO("reading config file \"" + home_path.string() + "\"...");
     try {
-      KeyValue::Reader kv(path);
+      KeyValue::Reader kv(home_path);
       while (kv.next()) {
         config[std::string(kv.key())] = std::string(kv.value());
       }
     } catch (...) {
     }
   } else {
-    DEBUG("No config file found at \"" + path + "\"");
+    DEBUG("No config file found at \"" + home_path.string() + "\"");
   }
 
   auto opt = App::get_options("config");

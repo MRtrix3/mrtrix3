@@ -220,7 +220,6 @@ public:
 };
 
 void run() {
-
   auto fod_hdr = Header::open(argument[0]);
   Math::SH::check(fod_hdr);
 

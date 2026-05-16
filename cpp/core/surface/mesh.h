@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cstdint>
+#include <filesystem>
 #include <fstream>
 
 #include "header.h"
@@ -37,7 +38,7 @@ namespace MR::Surface {
 class Mesh {
 
 public:
-  Mesh(std::string_view);
+  Mesh(const std::filesystem::path &);
 
   Mesh(const Mesh &that) = default;
 
@@ -124,7 +125,7 @@ public:
     quads.clear();
   }
 
-  void save(std::string_view, const bool binary = false) const;
+  void save(const std::filesystem::path &, const bool binary = false) const;
 
   vertex_index_type num_vertices() const { return vertices.size(); }
   size_t num_triangles() const { return triangles.size(); }
@@ -135,7 +136,7 @@ public:
   void calculate_normals();
 
   std::string get_name() const { return name; }
-  void set_name(std::string_view s) { name = s; }
+  void set_name(std::string_view n) { name = n; }
 
   const Vertex &vert(const vertex_index_type i) const {
     assert(i < vertices.size());
@@ -171,13 +172,13 @@ protected:
 private:
   std::string name;
 
-  void load_vtk(std::string_view);
-  void load_stl(std::string_view);
-  void load_obj(std::string_view);
-  void load_fs(std::string_view);
-  void save_vtk(std::string_view, const bool) const;
-  void save_stl(std::string_view, const bool) const;
-  void save_obj(std::string_view) const;
+  void load_vtk(const std::filesystem::path &);
+  void load_stl(const std::filesystem::path &);
+  void load_obj(const std::filesystem::path &);
+  void load_fs(const std::filesystem::path &);
+  void save_vtk(const std::filesystem::path &, const bool) const;
+  void save_stl(const std::filesystem::path &, const bool) const;
+  void save_obj(const std::filesystem::path &) const;
 
   void verify_data() const;
 

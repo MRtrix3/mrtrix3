@@ -27,6 +27,8 @@
 #include "interp/nearest.h"
 #include "interp/sinc.h"
 #include "progressbar.h"
+
+#include <filesystem>
 #include <set>
 
 using namespace MR;
@@ -202,7 +204,10 @@ void usage() {
 // clang-format on
 
 void run() {
-  auto input_header = Header::open(argument[0]);
+  const std::filesystem::path input_path{argument[0]};
+  const std::filesystem::path output_path{argument[2]};
+
+  auto input_header = Header::open(input_path);
 
   const Operation op = MR::Enum::from_name<Operation>(argument[1]);
   const std::string operation_name = MR::Enum::lowercase_name(op);
@@ -232,7 +237,7 @@ void run() {
       if (template_header.ndim() < 3)
         throw Exception("the template image requires at least 3 spatial dimensions");
       add_line(regrid_filter.keyval()["comments"],
-               std::string("regridded to template image \"" + template_header.name() + "\""));
+               std::string("regridded to template image \"" + template_header.path().string() + "\""));
       for (auto i = 0; i < 3; ++i) {
         regrid_filter.spacing(i) = template_header.spacing(i);
         regrid_filter.size(i) = template_header.size(i);
@@ -479,7 +484,7 @@ void run() {
     output_header.datatype() = DataType::from_command_line(DataType::from<float>());
     Stride::set_from_command_line(output_header);
 
-    auto output = Image<float>::create(argument[2], output_header);
+    auto output = Image<float>::create(output_path, output_header);
     threaded_copy_with_progress_message(message.c_str(), regridded, output);
   }
 }

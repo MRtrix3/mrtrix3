@@ -33,6 +33,8 @@
 #include "dwi/tractography/mapping/writer.h"
 #include "dwi/tractography/weights.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -163,7 +165,7 @@ void run(DWI::Tractography::Mapping::TrackLoader &loader,
          const size_t upsample_ratio,
          const bool precise,
          const float angular_threshold,
-         std::string_view output_path) {
+         const std::filesystem::path &output_path) {
   if constexpr (std::is_integral_v<ValueType>) {
     assert(!precise);
   }
@@ -187,30 +189,29 @@ void run(DWI::Tractography::Mapping::TrackLoader &loader,
 }
 
 void run() {
-  const std::string input_fixel_folder = argument[1];
-  Header index_header = Fixel::find_index_header(input_fixel_folder);
+  const Header index_header = Fixel::find_index_header(argument[1]);
   auto index_image = index_header.get_image<index_type>();
   Fixel::debug_validate_index_image(index_image);
-  auto directions_image = Fixel::find_directions_header(input_fixel_folder).get_image<float>(DirectIO{1});
+  auto directions_image = Fixel::find_directions_header(argument[1]).get_image<float>(DirectIO{1});
   const index_type num_fixels = Fixel::get_number_of_fixels(index_header);
 
   const float angular_threshold = get_option_value("angle", DWI::Tractography::Mapping::default_streamline2fixel_angle);
   const bool precise = !get_options("precise").empty();
 
-  const std::string output_fixel_folder = argument[2];
-  Fixel::copy_index_and_directions_file(input_fixel_folder, output_fixel_folder);
+  // TODO Repair type clumsiness if interface is changed (#3160)
+  Fixel::copy_index_and_directions_file(std::filesystem::path(argument[1].as_text()), argument[2].as_text());
 
-  const std::string track_filename = argument[0];
   DWI::Tractography::Properties properties;
-  DWI::Tractography::Reader<float> track_file(track_filename, properties);
+  DWI::Tractography::Reader<float> track_file(argument[0], properties);
   const size_t num_tracks = properties["count"].empty() ? 0 : to<size_t>(properties["count"]);
-  if (!num_tracks)
+  if (num_tracks == 0)
     throw Exception("no tracks found in input file");
   const size_t upsample_ratio =
       DWI::Tractography::Mapping::determine_upsample_ratio(index_header, properties, precise ? 0.1F : (1.0F / 3.0F));
 
   DWI::Tractography::Mapping::TrackLoader loader(track_file, num_tracks, "mapping tracks to fixels");
-  const std::string output_path = Path::join(output_fixel_folder, argument[3]);
+  // TODO Repair type clumsiness if interface is changed (#3160)
+  const std::filesystem::path output_path = std::filesystem::path(argument[2].as_text()) / argument[3].as_text();
 
   if (get_options("tck_weights_in").empty() && !precise) {
     run<uint32_t>(

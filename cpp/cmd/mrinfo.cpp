@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <filesystem>
 #include <map>
 #include <string>
 
@@ -225,7 +226,7 @@ void print_properties(const Header &header, std::string_view key, const size_t i
         std::cout << lines[i] << "\n";
       }
     } else {
-      WARN("no \"" + std::string(key) + "\" entries found in \"" + std::string(header.name()) + "\"");
+      WARN("no \"" + std::string(key) + "\" entries found in \"" + header.name() + "\"");
     }
   }
 }
@@ -233,6 +234,7 @@ void print_properties(const Header &header, std::string_view key, const size_t i
 void header2json(const Header &header, nlohmann::json &json) {
   // Capture _all_ header fields, not just the optional key-value pairs
   json["name"] = header.name();
+  json["path"] = header.path().string();
   std::vector<size_t> size(header.ndim());
   std::vector<default_type> spacing(header.ndim());
   for (size_t axis = 0; axis != header.ndim(); ++axis) {
@@ -254,7 +256,7 @@ void header2json(const Header &header, nlohmann::json &json) {
                        {T(2, 0), T(2, 1), T(2, 2), T(2, 3)},
                        {0.0, 0.0, 0.0, 1.0}};
   // Load key-value entries into a nested keyval.* member
-  File::JSON::write(header, json["keyval"], header.name());
+  File::JSON::write(header, json["keyval"], header.path());
 }
 
 void run() {
@@ -307,7 +309,7 @@ void run() {
     const auto header = Header::open(argument[i]);
 
     if (name)
-      std::cout << header.name() << "\n";
+      std::cout << header.path().string() << "\n";
     if (format)
       std::cout << header.format() << "\n";
     if (ndim)
@@ -349,7 +351,7 @@ void run() {
     Metadata::PhaseEncoding::export_commandline(header);
 
     if (json_keyval)
-      File::JSON::write(header, *json_keyval, (argument.size() > 1 ? std::string("") : std::string(argument[0])));
+      File::JSON::write(header, *json_keyval, (argument.size() > 1 ? std::filesystem::path{""} : argument[i]));
 
     if (json_all)
       header2json(header, *json_all);
@@ -361,14 +363,14 @@ void run() {
   if (json_keyval) {
     auto opt = get_options("json_keyval");
     assert(opt.size());
-    File::OFStream out(opt[0][0]);
+    File::OFStream out{opt[0][0]};
     out << json_keyval->dump(4) << "\n";
   }
 
   if (json_all) {
     auto opt = get_options("json_all");
     assert(opt.size());
-    File::OFStream out(opt[0][0]);
+    File::OFStream out{opt[0][0]};
     out << json_all->dump(4) << "\n";
   }
 }

@@ -53,7 +53,7 @@ private:
 
 class TWIImagePluginBase {
 public:
-  TWIImagePluginBase(std::string_view input_image, const tck_stat_t track_statistic)
+  TWIImagePluginBase(const std::filesystem::path &input_image, const tck_stat_t track_statistic)
       : statistic(track_statistic), interp(Image<float>::open(input_image, DirectIO{})), backtrack(false) {}
 
   TWIImagePluginBase(Image<float> &input_image, const tck_stat_t track_statistic)
@@ -92,7 +92,7 @@ protected:
 
 class TWIScalarImagePlugin : public TWIImagePluginBase {
 public:
-  TWIScalarImagePlugin(std::string_view input_image, const tck_stat_t track_statistic)
+  TWIScalarImagePlugin(const std::filesystem::path &input_image, const tck_stat_t track_statistic)
       : TWIImagePluginBase(input_image, track_statistic) {
     assert(statistic != tck_stat_t::ENDS_CORR);
     if (!((interp.ndim() == 3) || (interp.ndim() == 4 && interp.size(3) == 1)))
@@ -113,7 +113,7 @@ public:
 
 class TWIFODImagePlugin : public TWIImagePluginBase {
 public:
-  TWIFODImagePlugin(std::string_view input_image, const tck_stat_t track_statistic)
+  TWIFODImagePlugin(const std::filesystem::path &input_image, const tck_stat_t track_statistic)
       : TWIImagePluginBase(input_image, track_statistic),
         sh_coeffs(interp.size(3)),
         precomputer(new Math::SH::PrecomputedAL<default_type>()) {

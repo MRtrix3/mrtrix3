@@ -30,7 +30,8 @@
 namespace MR::DWI::Directions {
 
 template <class MatrixType>
-const DirectionsValidation validate(const MatrixType &M, std::string_view path, const bool permit_gradtable) {
+const DirectionsValidation
+validate(const MatrixType &M, const std::filesystem::path &path, const bool permit_gradtable) {
   using value_type = typename MatrixType::Scalar;
   if (!M.rows())
     throw Exception("Direction set is empty");
@@ -159,16 +160,16 @@ const DirectionsValidation validate(const MatrixType &M, std::string_view path, 
     }
 
   } catch (Exception &e) {
-    throw Exception(e, "Direction file \"" + std::string(path) + "\" validation failed");
+    throw Exception(e, "Direction file \"" + path.string() + "\" validation failed");
   }
 
   const std::string fmt = result.format == DirectionsFormat::Spherical   ? "spherical"
                           : result.format == DirectionsFormat::Cartesian ? "Cartesian"
                                                                          : "gradient table";
-  DEBUG("Direction file \"" + std::string(path) + "\": " +                 //
+  DEBUG("Direction file \"" + path.string() + "\": " +                     //
         str(result.n_directions) + " direction(s) in " + fmt + " format"); //
   if (result.n_non_unit) {
-    const std::string msg = "Direction file \"" + std::string(path) + "\": " +             //
+    const std::string msg = "Direction file \"" + path.string() + "\": " +                 //
                             str(result.n_non_unit) + " direction(s) are not of unit norm"; //
     if (result.format == DirectionsFormat::Cartesian) {
       WARN(msg);
@@ -181,8 +182,8 @@ const DirectionsValidation validate(const MatrixType &M, std::string_view path, 
   return result;
 }
 template const DirectionsValidation
-validate<Eigen::MatrixXf>(const Eigen::MatrixXf &M, std::string_view path, const bool permit_gradtable);
+validate<Eigen::MatrixXf>(const Eigen::MatrixXf &M, const std::filesystem::path &path, const bool permit_gradtable);
 template const DirectionsValidation
-validate<Eigen::MatrixXd>(const Eigen::MatrixXd &M, std::string_view path, const bool permit_gradtable);
+validate<Eigen::MatrixXd>(const Eigen::MatrixXd &M, const std::filesystem::path &path, const bool permit_gradtable);
 
 } // namespace MR::DWI::Directions

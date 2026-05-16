@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <filesystem>
 #include <map>
 #include <string>
 
@@ -67,14 +68,14 @@ class LUT : public std::multimap<node_t, LUT_node> {
 public:
   using map_type = std::multimap<node_t, LUT_node>;
   LUT() : exclusive(true) {}
-  LUT(std::string_view);
-  void load(std::string_view);
+  LUT(const std::filesystem::path &);
+  void load(const std::filesystem::path &);
   bool is_exclusive() const { return exclusive; }
 
 private:
   bool exclusive;
 
-  file_format guess_file_format(std::string_view);
+  file_format guess_file_format(const std::filesystem::path &);
 
   void parse_line_basic(const std::string &);      // check_syntax off
   void parse_line_freesurfer(const std::string &); // check_syntax off

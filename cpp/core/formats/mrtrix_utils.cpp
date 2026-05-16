@@ -18,7 +18,6 @@
 
 #include "file/ofstream.h"
 #include "file/path.h"
-#include "file/utils.h"
 #include "mrtrix.h"
 #include "types.h"
 
@@ -109,12 +108,12 @@ bool next_keyvalue(File::GZ &gz, std::string &key, std::string &value) {
 
   size_t colon = line.find_first_of(':');
   if (colon == std::string::npos) {
-    INFO("malformed key/value entry (\"" + line + "\") in file \"" + gz.name() + "\" - ignored");
+    INFO("malformed key/value entry (\"" + line + "\") in file \"" + gz.name().string() + "\" - ignored");
   } else {
     key = strip(line.substr(0, colon));
     value = strip(line.substr(colon + 1));
     if (key.empty() || value.empty()) {
-      INFO("malformed key/value entry (\"" + line + "\") in file \"" + gz.name() + "\" - ignored");
+      INFO("malformed key/value entry (\"" + line + "\") in file \"" + gz.name().string() + "\" - ignored");
       key.clear();
       value.clear();
     }
@@ -122,37 +121,35 @@ bool next_keyvalue(File::GZ &gz, std::string &key, std::string &value) {
   return true;
 }
 
-void get_mrtrix_file_path(Header &H, std::string_view flag, std::string &fname, size_t &offset) {
+void get_mrtrix_file_path(Header &H, std::string_view flag, std::filesystem::path &filepath, size_t &offset) {
 
   auto i = H.keyval().find(std::string(flag));
   if (i == H.keyval().end())
-    throw Exception("missing \"" + std::string(flag) + "\" specification for MRtrix image \"" + H.name() + "\"");
+    throw Exception("missing \"" + flag + "\" specification for MRtrix image \"" + H.path().string() + "\"");
   const std::string path = i->second;
   H.keyval().erase(i);
 
   std::istringstream file_stream(path);
-  file_stream >> fname;
+  std::string filepath_str;
+  file_stream >> filepath_str;
+  filepath = std::filesystem::path(filepath_str);
   offset = 0;
   if (file_stream.good()) {
     try {
       file_stream >> offset;
     } catch (...) {
-      throw Exception("invalid offset specified for file \"" + fname + "\"" + //
-                      " in MRtrix image header \"" + H.name() + "\"");        //
+      throw Exception("invalid offset specified for file \"" + filepath_str + "\"" + //
+                      " in MRtrix image header \"" + H.path().string() + "\"");      //
     }
   }
 
-  if (fname == ".") {
+  if (filepath_str == ".") {
     if (offset == 0)
-      throw Exception("invalid offset specified for embedded MRtrix image \"" + H.name() + "\"");
-    fname = H.name();
+      throw Exception("invalid offset specified for embedded MRtrix image \"" + H.path().string() + "\"");
+    filepath = H.path();
   } else {
-    if (fname[0] != PATH_SEPARATORS[0]
-#ifdef MRTRIX_WINDOWS
-        && fname[0] != PATH_SEPARATORS[1]
-#endif
-    )
-      fname = Path::join(Path::dirname(H.name()), fname);
+    if (!filepath.is_absolute())
+      filepath = static_cast<const Header &>(H).path().parent_path() / filepath_str;
   }
 }
 

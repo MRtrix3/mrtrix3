@@ -43,17 +43,14 @@ Tree::find(std::string_view patient_name, std::string_view patient_ID, std::stri
   return back();
 }
 
-void Tree::read_dir(std::string_view filename, ProgressBar &progress) {
+void Tree::read_dir(const std::filesystem::path &dirpath, ProgressBar &progress) {
   try {
-    Path::Dir folder(filename);
-    std::string entry;
-    while (!(entry = folder.read_name()).empty()) {
-      std::string name(Path::join(filename, entry));
-      if (Path::is_dir(name))
-        read_dir(name, progress);
+    for (const auto &entry : std::filesystem::directory_iterator(dirpath)) {
+      if (std::filesystem::is_directory(entry.path()))
+        read_dir(entry.path(), progress);
       else {
         try {
-          read_file(name);
+          read_file(entry.path());
         } catch (Exception &E) {
           E.display(3);
         }
@@ -61,19 +58,19 @@ void Tree::read_dir(std::string_view filename, ProgressBar &progress) {
       ++progress;
     }
   } catch (Exception &E) {
-    throw Exception(E, "error opening DICOM folder \"" + filename + "\": " + strerror(errno));
+    throw Exception(E, "error opening DICOM folder \"" + dirpath.string() + "\": " + strerror(errno));
   }
 }
 
-void Tree::read_file(std::string_view filename) {
+void Tree::read_file(const std::filesystem::path &filepath) {
   QuickScan reader;
-  if (reader.read(filename)) {
-    INFO("error reading file \"" + filename + "\" - ignored");
+  if (reader.read(filepath)) {
+    INFO("error reading file \"" + filepath.string() + "\" - ignored");
     return;
   }
 
   if (!(reader.dim[0] && reader.dim[1] && reader.bits_alloc && reader.data)) {
-    INFO("DICOM file \"" + filename + "\" does not seem to contain image data - ignored");
+    INFO("DICOM file \"" + filepath.string() + "\" does not seem to contain image data - ignored");
     return;
   }
 
@@ -90,7 +87,7 @@ void Tree::read_file(std::string_view filename) {
                                                  reader.series_time);
 
     std::shared_ptr<Image> image(new Image);
-    image->filename = filename;
+    image->filepath = filepath;
     image->series = series.get();
     image->sequence_name = reader.sequence;
     image->image_type = image_type.first;
@@ -99,20 +96,20 @@ void Tree::read_file(std::string_view filename) {
   }
 }
 
-void Tree::read(std::string_view filename) {
-  description = filename;
-  if (Path::is_dir(filename)) {
-    ProgressBar progress("scanning folder \"" + shorten(filename) + "\" for DICOM data", 0);
-    read_dir(filename, progress);
+void Tree::read(const std::filesystem::path &path) {
+  description = path.string();
+  if (std::filesystem::is_directory(path)) {
+    ProgressBar progress("scanning folder \"" + shorten(path.string()) + "\" for DICOM data", 0);
+    read_dir(path, progress);
   } else {
     try {
-      read_file(filename);
+      read_file(path);
     } catch (Exception) {
     }
   }
 
   if (empty())
-    throw Exception("no DICOM images found in \"" + filename + "\"");
+    throw Exception("no DICOM images found in \"" + path.string() + "\"");
 }
 
 std::ostream &operator<<(std::ostream &stream, const Tree &item) {

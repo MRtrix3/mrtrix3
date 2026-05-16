@@ -40,17 +40,17 @@ ODF_Item::ODF_Item(
     if (!dixel->shells)
       throw Exception("No shell data");
     dixel->set_shell(dixel->shells->count() - 1);
-    DEBUG("Image " + image.header().name() + " initialised as dixel ODF using DW scheme");
+    DEBUG("Image " + image.header().path().string() + " initialised as dixel ODF using DW scheme");
   } catch (...) {
     try {
       dixel->set_header();
-      DEBUG("Image " + image.header().name() + " initialised as dixel ODF using header directions field");
+      DEBUG("Image " + image.header().path().string() + " initialised as dixel ODF using header directions field");
     } catch (...) {
       try {
         dixel->set_internal(image.header().size(3));
-        DEBUG("Image " + image.header().name() + " initialised as dixel ODF using internal direction set");
+        DEBUG("Image " + image.header().path().string() + " initialised as dixel ODF using internal direction set");
       } catch (...) {
-        DEBUG("Image " + image.header().name() + " left uninitialised in ODF tool");
+        DEBUG("Image " + image.header().path().string() + " left uninitialised in ODF tool");
       }
     }
   }
@@ -77,16 +77,18 @@ ODF_Item::DixelPlugin::DixelPlugin(const MR::Header &H) : dir_type(dir_t::NONE),
     try {
       const auto lines = split_lines(entry->second);
       if (lines.size() != static_cast<size_t>(H.size(3)))
-        throw Exception("malformed directions field in image \"" + H.name() + "\" - incorrect number of rows");
+        throw Exception("malformed directions field in image \"" + H.path().string() + "\" - incorrect number of rows");
       for (size_t row = 0; row < lines.size(); ++row) {
         const auto values = parse_floats(lines[row]);
         if (!header_dirs.rows()) {
           if (values.size() != 2 && values.size() != 3)
-            throw Exception("malformed directions field in image \"" + H.name() + "\" - should have 2 or 3 columns");
+            throw Exception("malformed directions field in image \"" + H.path().string() +
+                            "\" - should have 2 or 3 columns");
           header_dirs.resize(lines.size(), values.size());
         } else if (values.size() != static_cast<size_t>(header_dirs.cols())) {
           header_dirs.resize(0, 0);
-          throw Exception("malformed directions field in image \"" + H.name() + "\" - variable number of columns");
+          throw Exception("malformed directions field in image \"" + H.path().string() +
+                          "\" - variable number of columns");
         }
         for (size_t col = 0; col < values.size(); ++col)
           header_dirs(row, col) = values[col];
@@ -133,7 +135,7 @@ void ODF_Item::DixelPlugin::set_none() {
   dir_type = DixelPlugin::dir_t::NONE;
 }
 
-void ODF_Item::DixelPlugin::set_from_file(std::string_view path) {
+void ODF_Item::DixelPlugin::set_from_file(const std::filesystem::path &path) {
   auto new_dirs = std::make_unique<MR::DWI::Directions::Set>(path);
   std::swap(dirs, new_dirs);
   dir_type = DixelPlugin::dir_t::FILE;

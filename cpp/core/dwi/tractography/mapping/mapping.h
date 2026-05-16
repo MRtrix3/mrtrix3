@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <filesystem>
+
 #include "header.h"
 #include "progressbar.h"
 #include "types.h"
@@ -39,10 +41,10 @@ constexpr ssize_t streamlines_for_bounding_box = 1000000;
 
 // Convenience functions to figure out an appropriate upsampling ratio for streamline mapping
 size_t determine_upsample_ratio(const Header &, const float, const float);
-size_t determine_upsample_ratio(const Header &, std::string_view, const float);
+size_t determine_upsample_ratio(const Header &, const std::filesystem::path &, const float);
 size_t determine_upsample_ratio(const Header &, const Tractography::Properties &, const float);
 
-void generate_header(Header &, std::string_view, const std::vector<default_type> &);
+void generate_header(Header &, const std::filesystem::path &, const std::vector<default_type> &);
 
 void oversample_header(Header &, const std::vector<default_type> &);
 
