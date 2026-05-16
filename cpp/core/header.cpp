@@ -503,7 +503,7 @@ std::string Header::description(bool print_all) const {
     Stride::symbolise(sym);
     std::string out("[ ");
     for (size_t n = 0; n < ndim() && n < sym.size(); ++n)
-      out += sym[n] ? (str(sym[n]) + " ") : "? ";
+      out += sym[n] == 0 ? "? " : (str(sym[n]) + " ");
     out += "]";
     return out;
   };
@@ -526,10 +526,10 @@ std::string Header::description(bool print_all) const {
     const ssize_t pad = 21 - 2 - static_cast<ssize_t>(label.size());
     if (pad > 0)
       desc.append(pad, ' ');
-    for (size_t r = 0; r < 3; r++) {
-      if (r)
+    for (Eigen::Index r = 0; r < 3; r++) {
+      if (r > 0)
         desc += "                     ";
-      for (size_t c = 0; c < 4; c++) {
+      for (Eigen::Index c = 0; c < 4; c++) {
         std::ostringstream oss;
         oss << std::setprecision(4) << std::setw(12) << T(r, c);
         desc += oss.str();
@@ -970,9 +970,9 @@ std::vector<std::string> Header::Realignment::describe_axis_mapping() const {
   for (size_t output = 0; output != 3; ++output) {
     const size_t source = shuffle_.permutations[output];
     const bool flipped = shuffle_.flips[source];
-    lines.push_back("output axis " + str(output) + " (" + std::string(output_labels[output]) + ")" //
-                    + " <- source axis " + str(source)                                             //
-                    + ", sign " + (flipped ? "reversed" : "preserved"));                           //
+    lines.push_back("output axis " + str(output) + " (" + std::string(output_labels.at(output)) + ")" //
+                    + " <- source axis " + str(source)                                                //
+                    + ", sign " + (flipped ? "reversed" : "preserved"));                              //
   }
   return lines;
 }

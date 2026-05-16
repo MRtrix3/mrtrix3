@@ -192,7 +192,7 @@ void print_strides(const Header &header) {
   for (size_t i = 0; i < header.ndim(); ++i) {
     if (i)
       buffer += " ";
-    buffer += strides[i] ? str(strides[i]) : "?";
+    buffer += strides[i] == 0 ? "?" : str(strides[i]);
   }
   std::cout << buffer << "\n";
 }
@@ -232,6 +232,7 @@ void print_realignment(const Header &header) {
     std::cout << line << "\n";
 }
 
+// NOLINTNEXTLINE(misc-no-recursion)
 void print_properties(const Header &header, std::string_view key, const size_t indent = 0) {
   const KeyValues &source = header.keyval();
   if (lowercase(key) == "all") {
