@@ -41,7 +41,7 @@ void usage() {
                             " each volume corresponds to the x, y & z"
                             " component of each direction vector in turn.").type_image_in()
 
-  + Argument ("fixels", "the output fixel directory.").type_directory_out();
+  + Argument ("fixels", "the output fixel directory.").type_directory_out(DirOutMode::EmptyOrAbsent);
 
   OPTIONS
   + Option ("dataname", "the name of the output fixel data file encoding peak amplitudes")

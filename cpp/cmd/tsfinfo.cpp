@@ -45,7 +45,7 @@ void usage() {
   + Option ("ascii", "save values of each track scalar file in individual ascii files"
                      " within the specified output directory;"
                      " each file is named by the zero-padded track index")
-    + Argument ("dir").type_directory_out();
+    + Argument ("dir").type_directory_out(DirOutMode::MayExist);
 }
 // clang-format on
 

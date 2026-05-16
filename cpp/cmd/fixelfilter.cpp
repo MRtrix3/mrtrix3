@@ -59,7 +59,7 @@ void usage() {
   + Argument ("input", "the input: either a fixel data file, or a fixel directory (see Description)").type_image_in().type_directory_in()
   + Argument ("filter", "the filtering operation to perform;"
                         " options are: " + MR::Enum::join<FilterType>() + ".").type_choice<FilterType>()
-  + Argument ("output", "the output: either a fixel data file, or a fixel directory (see Description)").type_image_out().type_directory_out();
+  + Argument ("output", "the output: either a fixel data file, or a fixel directory (see Description)").type_image_out().type_directory_out(DirOutMode::MayExist);
 
   OPTIONS
   + Option ("matrix", "provide a fixel-fixel connectivity matrix"

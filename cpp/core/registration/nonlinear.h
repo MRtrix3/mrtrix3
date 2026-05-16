@@ -55,8 +55,7 @@ public:
         gradient_step(0.5),
         do_reorientation(false),
         fod_lmax(3),
-        use_cc(false),
-        diagnostics_image_dir{} {
+        use_cc(false) {
     scale_factor[0] = 0.25;
     scale_factor[1] = 0.5;
     scale_factor[2] = 1.0;

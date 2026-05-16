@@ -62,7 +62,7 @@ const OptionGroup SIFTOutputOption =
       + Argument("file").type_file_out()
     + Option("output_debug",
              "write to a directory various output images for assessing & debugging performance etc.")
-      + Argument("dirpath").type_directory_out();
+      + Argument("dirpath").type_directory_out(DirOutMode::MayExist);
 
 const OptionGroup SIFTTermOption =
     OptionGroup("Options to control when SIFT terminates filtering")

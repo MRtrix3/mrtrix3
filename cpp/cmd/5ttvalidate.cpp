@@ -78,7 +78,7 @@ void usage() {
                       " this should be the path for an output directory,"
                       " within which a separate image will be created for each input,"
                       " each named after the corresponding input image")
-    + Argument ("image_or_dir").type_image_out().type_directory_out();
+    + Argument ("image_or_dir").type_image_out().type_directory_out(DirOutMode::MayExist);
 }
 // clang-format on
 

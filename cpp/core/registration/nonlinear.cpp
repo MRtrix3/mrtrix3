@@ -95,7 +95,7 @@ const OptionGroup nonlinear_options =
 
     + Option("nl_diagnostics_dir",
              "write intermediate images for diagnostics purposes")
-      + Argument("dir").type_directory_out();
+      + Argument("dir").type_directory_out(DirOutMode::MayExist);
 // clang-format on
 
 template void NonLinear::run<Transform::Affine, Image<double>>(

@@ -251,7 +251,7 @@ const OptionGroup lin_stage_options =
 
     + Option("linstage.diagnostics.dir",
              "generate diagnostics images after every registration stage")
-      + Argument("dir").type_directory_out();
+      + Argument("dir").type_directory_out(DirOutMode::MayExist);
 
 const OptionGroup rigid_options =
     OptionGroup("Rigid registration options")

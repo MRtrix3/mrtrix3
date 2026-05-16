@@ -84,7 +84,7 @@ void usage() {
       + Option ("tck_weights_out", "provide the output path for streamline weight data;"
                                    " interpreted as a single file when -files single is specified,"
                                    " or as a directory of per-track-file weight text files otherwise")
-        + Argument ("path").type_directory_out().type_file_out();
+        + Argument ("path").type_directory_out(DirOutMode::MayExist).type_file_out();
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
@@ -169,7 +169,7 @@ void usage() {
   + Argument ("tracks_in",      "the input track file").type_file_in()
   + Argument ("assignments_in", "input text file containing the node assignments for each streamline").type_file_in()
   + Argument ("output",         "the output tractogram file (if -files single is specified)"
-                                " or the output directory (otherwise)").type_directory_out().type_file_out();
+                                " or the output directory (otherwise)").type_directory_out(DirOutMode::MayExist).type_file_out();
 
 
   OPTIONS
@@ -187,7 +187,8 @@ void run() {
   // Determine output file format first, as it affects interpretation of both output paths
   const FileOutput file_format = get_option_choice<FileOutput>("files", default_file_output);
 
-  std::filesystem::path output_dir, output_file;
+  std::filesystem::path output_dir;
+  std::filesystem::path output_file;
   if (file_format == FileOutput::SINGLE) {
     output_file = output_path;
     if (!output_path.has_filename())
@@ -256,7 +257,8 @@ void run() {
   }
 
   const auto opt_weights = get_options("tck_weights_out");
-  std::optional<std::filesystem::path> weights_dir, weights_file;
+  std::optional<std::filesystem::path> weights_dir;
+  std::optional<std::filesystem::path> weights_file;
   if (!opt_weights.empty()) {
     const std::filesystem::path weights_path{opt_weights[0][0]};
     if (file_format == FileOutput::SINGLE) {
