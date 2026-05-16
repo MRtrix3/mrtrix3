@@ -30,6 +30,9 @@ if(MINGW AND CMAKE_BUILD_TYPE MATCHES "Debug")
     target_compile_options(mrtrix-common INTERFACE -Wa,-mbig-obj)
 endif()
 
+# Add "#pragma once" to precompiled headers to stop clang-tidy confusion
+set(CMAKE_PCH_PROLOGUE "#pragma once")
+
 add_subdirectory(cmd)
 add_subdirectory(core)
 
