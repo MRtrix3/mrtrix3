@@ -189,7 +189,7 @@ void run(DWI::Tractography::Mapping::TrackLoader &loader,
 }
 
 void run() {
-  const Header index_header = Fixel::find_index_header(argument[1]);
+  Header index_header = Fixel::find_index_header(argument[1]);
   auto index_image = index_header.get_image<index_type>();
   Fixel::debug_validate_index_image(index_image);
   auto directions_image = Fixel::find_directions_header(argument[1]).get_image<float>(DirectIO{1});

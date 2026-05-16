@@ -82,9 +82,8 @@ void run() {
   auto subject_data = Image<float>::open(input_filepath);
   Fixel::check_fixel_size(subject_index_header, subject_data);
 
-  const std::filesystem::path template_directory = Fixel::get_fixel_directory(argument[1]);
-  auto template_index = Fixel::find_index_header(template_directory).get_image<index_type>();
-  auto template_directions = Fixel::find_directions_header(template_directory).get_image<float>(DirectIO(1));
+  auto template_index = Fixel::find_index_header(argument[1]).get_image<index_type>();
+  auto template_directions = Fixel::find_directions_header(argument[1]).get_image<float>(DirectIO(1));
 
   // TODO If output argument is changed to filepath, remove explicit casts
   const std::filesystem::path output_directory(argument[2].as_text());
