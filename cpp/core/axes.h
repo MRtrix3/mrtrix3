@@ -45,6 +45,7 @@ public:
     return permutations.is_identity() && std::none_of(flips.begin(), flips.end(), [](bool b) { return b; });
   }
   bool valid() const { return permutations.valid(); }
+  // Always interpret as application of flip then permutation
   permutations_type permutations;
   flips_type flips;
 };

@@ -292,8 +292,7 @@ void header2json(const Header &header, nlohmann::json &json) {
                                         {To(1, 0), To(1, 1), To(1, 2), To(1, 3)},
                                         {To(2, 0), To(2, 1), To(2, 2), To(2, 3)},
                                         {0.0, 0.0, 0.0, 1.0}};
-    std::vector<ssize_t> orig_strides(header.realignment().orig_strides().begin(),
-                                      header.realignment().orig_strides().end());
+    std::vector<ssize_t> orig_strides(header.realignment().orig_strides());
     Stride::symbolise(orig_strides);
     realignment["strides_on_disk"] = orig_strides;
     nlohmann::json keyval_on_disk = nlohmann::json::object();
@@ -322,16 +321,17 @@ void run() {
 
   const bool ondisk = !get_options("ondisk").empty();
   const bool realignment_flag = !get_options("realignment").empty();
-  if (ondisk && realignment_flag)
-    throw Exception("options -ondisk and -realignment are mutually exclusive:" //
-                    " when -ondisk is specified the image is never realigned,"
-                    " so there is no realignment to summarise");
+  if ((ondisk || !Header::do_realign_transform) && realignment_flag)
+    throw Exception("option -realignment is of no utility" //
+                    " in conjunction with either RealignTransform: false in configuration"
+                    " or the -ondisk option,"
+                    " as both disable realignment by definition");
   // Make -ondisk fully equivalent to -config RealignTransform false:
-  //   suppress MRtrix3's load-time axis realignment globally for this
-  //   invocation so that every downstream output path (the default
-  //   pretty printout, -transform / -strides / -petable, -property,
-  //   -json_keyval / -json_all) reports the on-disk view through a
-  //   single mechanism.
+  //   suppress MRtrix3's load-time axis realignment globally for this invocation
+  //   so that every downstream output path
+  //   (the default pretty printout,
+  //   -transform / -strides / -petable, -property, -json_keyval / -json_all)
+  //   reports the on-disk view through a single mechanism.
   if (ondisk)
     Header::do_realign_transform = false;
 

@@ -110,46 +110,55 @@ KeyValues read(const nlohmann::json &json) {
 }
 
 void read(const nlohmann::json &json, Header &header) {
-  KeyValues keyval = read(json);
   // Stash the full on-import (pre-transformation) snapshot of every
   //   JSON-imported field into Realignment::orig_keyval, so that
   //   mrinfo's -ondisk queries and the default annotated description
-  //   can recover the original values after realignment has been
-  //   applied below. We deliberately do *not* restrict this to a
-  //   hard-coded list of axis-dependent keys: any field added to
-  //   transform_for_image_load() in the future is then handled with
-  //   no further plumbing.
-  const KeyValues pre_transform = keyval;
-  KeyValues &orig = header.realignment().orig_keyval();
-  for (const auto &kv : pre_transform)
-    orig[kv.first] = kv.second;
+  //   can recover the original values after realignment has been applied.
+  header.realignment().orig_keyval() = read(json);
   // Reorientation based on image load should be applied
   //   exclusively to metadata loaded via JSON; not anything pre-existing
+  KeyValues keyval = header.realignment().orig_keyval();
   Metadata::PhaseEncoding::transform_for_image_load(keyval, header);
   Metadata::SliceEncoding::transform_for_image_load(keyval, header);
   // If the host image was realigned on load AND any JSON-imported field
-  //   was actually modified by transform_for_image_load, surface this
+  //   was actually modified by transform_for_image_load(), surface this
   //   prominently — it is a common source of confusion when a downstream
   //   tool sees a PhaseEncodingDirection that differs from the JSON
   //   file on disk.
   if (header.realignment().applied()) {
     std::vector<std::string> modified_fields;
     for (const auto &kv : keyval) {
-      const auto pre = pre_transform.find(kv.first);
-      if (pre == pre_transform.end() || pre->second != kv.second)
+      const auto pre = header.realignment().orig_keyval().find(kv.first);
+      if (pre == header.realignment().orig_keyval().end() || pre->second != kv.second)
         modified_fields.emplace_back(kv.first);
     }
-    for (const auto &kv : pre_transform) {
+    for (const auto &kv : header.realignment().orig_keyval()) {
       if (keyval.find(kv.first) == keyval.end())
         modified_fields.emplace_back(kv.first);
     }
-    if (!modified_fields.empty())
-      WARN("JSON metadata for image \"" + header.name() +
-           "\""                                                           //
-           " was reoriented on import to match MRtrix3's realignment"     //
-           " of the image axes; affected fields: "                        //
-           + join(modified_fields, ", ") +                                //
-           " (mrinfo -property <field> -ondisk to recover JSON values)"); //
+    if (!modified_fields.empty()) {
+      const std::string msg1 = "JSON metadata for image \"" + header.name() + "\"" +      //
+                               " was reoriented on import to match MRtrix3's realignment" //
+                               " of the corresponding image axes";                        //
+      const std::string msg2 = "  (affected fields: " + join(modified_fields, ", ") + ")";
+      if (File::Config::get_bool("RealignmentVerbose", true)) {
+        CONSOLE(msg1);
+        CONSOLE(msg2);
+      } else {
+        INFO(msg1);
+        INFO(msg2);
+      }
+      for (const auto &item : modified_fields) {
+        DEBUG("    \"" + item + "\": " +                                                                 //
+              (header.realignment().orig_keyval().find(item) == header.realignment().orig_keyval().end() //
+                   ? "<not present>"                                                                     //
+                   : ("\"" + header.realignment().orig_keyval().at(item) + "\"")) +                      //
+              " -> " +                                                                                   //
+              (keyval.find(item) == keyval.end()                                                         //
+                   ? "<not present>"                                                                     //
+                   : ("\"" + keyval.at(item) + "\"")));                                                  //
+      }
+    }
   }
   header.merge_keyval(keyval);
 }

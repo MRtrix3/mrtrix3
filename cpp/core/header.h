@@ -234,8 +234,10 @@ public:
     Realignment();
     State state() const { return state_; }
     bool applied() const { return state_ == State::Applied; }
-    bool is_identity() const { return shuffle_.is_identity(); }
-    bool valid() const { return shuffle_.valid(); }
+    bool valid() const {
+      assert((state_ != State::Unknown) == shuffle_.valid());
+      return state_ != State::Unknown;
+    }
     const Axes::permutations_type &permutations() const { return shuffle_.permutations; }
     size_t permutation(const size_t axis) const {
       assert(axis < 3);
@@ -252,20 +254,8 @@ public:
     KeyValues &orig_keyval() { return orig_keyval_; }
     const KeyValues &orig_keyval() const { return orig_keyval_; }
 
-    //! For each output spatial axis (0,1,2 ≡ R,A,S), the source axis index
-    //!   that was placed at that position.
-    size_t source_axis_for_output(size_t output_axis) const {
-      assert(output_axis < 3);
-      return shuffle_.permutations[output_axis];
-    }
-    //! Whether the source axis placed at the given output position had its
-    //!   sign reversed during realignment.
-    bool source_flipped_for_output(size_t output_axis) const {
-      assert(output_axis < 3);
-      return shuffle_.flips[shuffle_.permutations[output_axis]];
-    }
     //! Human-readable per-output-axis enumeration of the shuffle.
-    //!  Returns 3 lines (R, A, S); empty if is_identity().
+    //!  Returns 3 lines (~R, ~A, ~S); empty if is_identity().
     std::vector<std::string> describe_axis_mapping() const;
 
   private:
@@ -280,8 +270,8 @@ public:
   //! get information on how the transform was modified on image load
   const Realignment &realignment() const { return realignment_; }
   //! non-const accessor; used by external metadata importers (JSON, etc.)
-  //!   to seed Realignment::orig_keyval() with the pre-transformation view
-  //!   of axis-dependent fields.
+  //!   to populate Realignment::orig_keyval() with the pre-transformation
+  //!   view of axis-dependent fields.
   Realignment &realignment() { return realignment_; }
 
   class NDimProxy {
