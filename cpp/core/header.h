@@ -211,15 +211,36 @@ public:
   // Class to store all information relating to internal transform realignment
   class Realignment {
   public:
+    //! state of axis realignment for an image header
+    /*! Used to distinguish:
+     *  - Unknown: the Realignment object was default-constructed
+     *    (e.g. for a scratch image or for a Header copy-constructed
+     *    from a non-Header source); realign_transform() was never run,
+     *    so orig_* members carry no meaningful "on-disk" view.
+     *  - Disabled: realign_transform() ran but Header::do_realign_transform
+     *    was false (e.g. RealignTransform: false in the configuration
+     *    file, or -config RealignTransform false on the command line);
+     *    the live header values *are* the on-disk values.
+     *  - Identity: realign_transform() ran and the computed shuffle was
+     *    identity (image was already approximately RAS); the live
+     *    header values match the on-disk values.
+     *  - Applied: realign_transform() ran and a non-identity shuffle was
+     *    applied; the live header diverges from the on-disk view, and
+     *    orig_* members capture the latter.
+     */
+    enum class State : uint8_t { Unknown, Disabled, Identity, Applied };
     // From one image space to another image space;
     //   linear component is permutations & flips only,
     //   transformation is in voxel count,
     //   therefore can store as integer
     using applied_transform_type = Eigen::Matrix<int, 3, 3>;
     Realignment();
-    Realignment(Header &);
-    bool is_identity() const { return shuffle_.is_identity(); }
-    bool valid() const { return shuffle_.valid(); }
+    State state() const { return state_; }
+    bool applied() const { return state_ == State::Applied; }
+    bool valid() const {
+      assert((state_ != State::Unknown) == shuffle_.valid());
+      return state_ != State::Unknown;
+    }
     const Axes::permutations_type &permutations() const { return shuffle_.permutations; }
     size_t permutation(const size_t axis) const {
       assert(axis < 3);
@@ -231,10 +252,17 @@ public:
       return shuffle_.flips[axis];
     }
     const transform_type &orig_transform() const { return orig_transform_; }
+    const Stride::List &orig_strides() const { return orig_strides_; }
     const applied_transform_type &applied_transform() const { return applied_transform_; }
     KeyValues &orig_keyval() { return orig_keyval_; }
+    const KeyValues &orig_keyval() const { return orig_keyval_; }
+
+    //! Human-readable per-output-axis enumeration of the shuffle.
+    //!  Returns 3 lines (~R, ~A, ~S); empty if is_identity().
+    std::vector<std::string> describe_axis_mapping() const;
 
   private:
+    State state_{State::Unknown};
     Axes::Shuffle shuffle_;
     transform_type orig_transform_;
     Stride::List orig_strides_;
@@ -244,6 +272,10 @@ public:
   };
   //! get information on how the transform was modified on image load
   const Realignment &realignment() const { return realignment_; }
+  //! non-const accessor; used by external metadata importers (JSON, etc.)
+  //!   to populate Realignment::orig_keyval() with the pre-transformation
+  //!   view of axis-dependent fields.
+  Realignment &realignment() { return realignment_; }
 
   class NDimProxy {
   public:
