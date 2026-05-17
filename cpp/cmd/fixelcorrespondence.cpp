@@ -74,7 +74,7 @@ void run() {
   auto subject_index_header = Fixel::find_index_header(subject_fixel_directory);
   auto subject_index = subject_index_header.get_image<index_type>();
   Fixel::debug_validate_index_image(subject_index);
-  auto subject_directions = Fixel::find_directions_header(subject_fixel_directory).get_image<float>().with_direct_io(1);
+  auto subject_directions = Fixel::find_directions_header(subject_fixel_directory).get_image<float>(DirectIO(1));
 
   if (std::filesystem::equivalent(input_filepath, subject_directions.path()))
     throw Exception("input fixel data file cannot be the directions file");
@@ -83,8 +83,7 @@ void run() {
   Fixel::check_fixel_size(subject_index_header, subject_data);
 
   auto template_index = Fixel::find_index_header(argument[1]).get_image<index_type>();
-  auto template_directions = Fixel::find_directions_header(argument[1]).get_image<float>().with_direct_io();
-  check_dimensions(subject_index_header, template_index);
+  auto template_directions = Fixel::find_directions_header(argument[1]).get_image<float>(DirectIO(1));
 
   // TODO If output argument is changed to filepath, remove explicit casts
   const std::filesystem::path output_directory(argument[2].as_text());

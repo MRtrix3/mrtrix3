@@ -382,11 +382,11 @@ void run() {
       throw Exception("Option -axis only applies if a single input image is used");
 
     const size_t axis = opt[0][0];
-    auto image_in = Header::open(first_input_image_path).get_image<value_type>().with_direct_io(axis);
+    auto image_in = Header::open(first_input_image_path).get_image<value_type>(DirectIO{static_cast<int>(axis)});
 
     if (axis >= image_in.ndim())
-      throw Exception("Cannot perform operation along axis " + str(axis) + "; image only has " + str(image_in.ndim()) +
-                      " axes");
+      throw Exception("Cannot perform operation along axis " + str(axis) + ";" + //
+                      " image only has " + str(image_in.ndim()) + " axes");      //
 
     Header header_out(image_in);
 

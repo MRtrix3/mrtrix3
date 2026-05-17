@@ -110,12 +110,14 @@ void run() {
       throw Exception("Input to deformation2displacement operation"
                       " must be a 4D deformation field image,"
                       " not a 5D \"full\" warp format series");
-    auto deformation = H_in.get_image<default_type>().with_direct_io(3);
+
+    auto deformation = H_in.get_image<default_type>(DirectIO{3});
     Registration::Warp::debug_validate_image(deformation);
 
     Header H_out(H_in);
     H_out.datatype() = DataType::from_command_line(DataType::Float32);
-    Image<default_type> displacement = Image<default_type>::create(argument[2], H_out).with_direct_io(3);
+    Image<default_type> displacement = Image<default_type>::create(argument[2], H_out, DirectIO{3});
+
     Registration::Warp::deformation2displacement(deformation, displacement);
     break;
   }
@@ -131,12 +133,12 @@ void run() {
       throw Exception("Input to displacement2deformation operation"
                       " must be a 4D displacement field image,"
                       " not a 5D \"full\" warp format series");
-    auto displacement = H_in.get_image<default_type>().with_direct_io(3);
+    auto displacement = H_in.get_image<default_type>(DirectIO{3});
     Registration::Warp::debug_validate_image(displacement);
 
     Header H_out(displacement);
     H_out.datatype() = DataType::from_command_line(DataType::Float32);
-    Image<default_type> deformation = Image<default_type>::create(argument[2], H_out).with_direct_io(3);
+    Image<default_type> deformation = Image<default_type>::create(argument[2], H_out, DirectIO{3});
     Registration::Warp::displacement2deformation(displacement, deformation);
     break;
   }
@@ -153,7 +155,7 @@ void run() {
       throw Exception("Input to operation converting from a \"full\" warp format series"
                       " must be a 5D image that conforms to that format"
                       " rather than a simple 4D displacement / deformation field image");
-    auto warp = H_in.get_image<default_type>().with_direct_io(3);
+    auto warp = H_in.get_image<default_type>(DirectIO{3});
     Registration::Warp::debug_validate_image(warp);
 
     Image<default_type> warp_output;

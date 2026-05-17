@@ -297,7 +297,7 @@ void run() {
   }
   const size_t num_tracks = properties["count"].empty() ? 0 : to<size_t>(properties["count"]);
 
-  Image<float> fmri_image(Image<float>::open(input_fmri_path).with_direct_io(3));
+  Image<float> fmri_image(Image<float>::open(input_fmri_path, DirectIO{3}));
 
   std::vector<default_type> voxel_size;
   opt = get_options("vox");

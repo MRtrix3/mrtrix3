@@ -19,11 +19,13 @@
 #include <filesystem>
 #include <functional>
 #include <map>
+#include <optional>
 
 #include "app.h"
 #include "axes.h"
 #include "datatype.h"
 #include "debug.h"
+#include "directio.h"
 #include "file/mmap.h"
 #include "image_helpers.h"
 #include "image_io/base.h"
@@ -42,6 +44,7 @@ namespace MR {
 //! functions and classes related to image data input/output
 
 template <typename ValueType> class Image;
+class DirectIO;
 
 class Header {
 public:
@@ -412,7 +415,8 @@ public:
    * to access the data, and any mismatch in the information may cause
    * problems.
    */
-  template <typename ValueType> Image<ValueType> get_image(bool read_write_if_existing = false);
+  template <typename ValueType>
+  Image<ValueType> get_image(std::optional<DirectIO> direct_io = std::nullopt, bool read_write_if_existing = false);
 
   //! get generic key/value text attributes
   const KeyValues &keyval() const { return keyval_; }

@@ -23,7 +23,7 @@ SharedBase::SharedBase(const std::filesystem::path &diff_path,
                        Properties &property_set,
                        ImplicitMaskConfig source_mask_config)
     : source_header(Header::open(diff_path)),
-      source(source_header.get_image<float>().with_direct_io(3)),
+      source(source_header.get_image<float>(DirectIO{3})),
       source_mask(make_implicit_mask(source, source_mask_config)),
       properties(property_set),
       init_dir(Eigen::Vector3f::Constant(NaN)),

@@ -67,7 +67,7 @@ void run() {
   auto SH = Image<value_type>::open(sh_path);
   Math::SH::check(SH);
   auto mask = Image<bool>::open(mask_path);
-  auto dir = Image<value_type>::open(dir_path).with_direct_io();
+  auto dir = Image<value_type>::open(dir_path, DirectIO(3));
 
   int lmax = get_option_value("lmax", Math::SH::LforN(SH.size(3)));
 
