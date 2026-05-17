@@ -13,13 +13,13 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-import os, shutil, subprocess
+import os, pathlib, shutil, subprocess
 from mrtrix3 import MRtrixError
 
 
 
 
-_SUFFIX = ''
+_SUFFIX = None
 
 
 
@@ -170,18 +170,23 @@ def exe_name(name): #pylint: disable=unused-variable
 #   FSL commands will generate based on the suffix() function, the FSL binaries themselves
 #   ignore the FSLOUTPUTTYPE environment variable. Therefore, the safest approach is:
 # Whenever receiving an output image from an FSL command, explicitly search for the path
-def find_image(name): #pylint: disable=unused-variable
+def find_image(prefix): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=import-outside-toplevel
-  prefix = os.path.join(os.path.dirname(name), os.path.basename(name).split('.')[0])
-  if os.path.isfile(prefix + suffix()):
-    app.debug(f'Image at expected location: "{prefix}{suffix()}"')
-    return f'{prefix}{suffix()}'
-  for suf in ['.nii', '.nii.gz', '.img']:
-    if os.path.isfile(f'{prefix}{suf}'):
-      app.debug(f'Expected image at "{prefix}{suffix()}", '
-                f'but found at "{prefix}{suf}"')
-      return f'{prefix}{suf}'
-  raise MRtrixError(f'Unable to find FSL output file for path "{name}"')
+  if isinstance(prefix, str):
+    prefix = pathlib.Path(prefix)
+  while prefix.suffix:
+    prefix = prefix.with_suffix('')
+  expected = prefix.with_suffix(suffix())
+  if expected.is_file():
+    app.debug(f'Image at expected location: "{expected}"')
+    return expected
+  for alt_suffix in ['.nii', '.nii.gz', '.img']:
+    candidate = prefix.with_suffix(alt_suffix)
+    if candidate.is_file():
+      app.debug(f'Expected image at "{expected}", '
+                f'but found at "{candidate}"')
+      return candidate
+  raise MRtrixError(f'Unable to find FSL output file for path "{prefix}"')
 
 
 

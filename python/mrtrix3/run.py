@@ -262,28 +262,28 @@ def command(cmd, **kwargs): #pylint: disable=unused-variable
     cmdstring = ''
     cmdsplit = []
     for entry in cmd:
+      leading_space = ' ' if cmdstring else ''
       if isinstance(entry, str):
-        cmdstring += f'{" " if cmdstring else ""}{quote_nonpipe(entry)}'
+        cmdstring += f'{leading_space}{quote_nonpipe(entry)}'
         cmdsplit.append(entry)
-      elif isinstance(entry, list):
-        assert all(isinstance(item, str) for item in entry)
-        if len(entry) > 1:
-          common_prefix = os.path.commonprefix(entry)
-          common_suffix = os.path.commonprefix([i[::-1] for i in entry])[::-1]
-          if common_prefix == entry[0] and common_prefix == common_suffix:
-            cmdstring += f'{" " if cmdstring else ""}[{entry[0]} (x{len(entry)})]'
-          else:
-            cmdstring += f'{" " if cmdstring else ""}[{common_prefix}*{common_suffix} ({len(entry)} items)]'
-        else:
-          cmdstring += f'{" " if cmdstring else ""}{quote_nonpipe(entry[0])}'
-        cmdsplit.extend(entry)
       elif isinstance(entry, pathlib.Path):
-        cmdstring += f'{" " if cmdstring else ""}{shlex.quote(str(entry))}'
+        cmdstring += f'{leading_space}{shlex.quote(str(entry))}'
         cmdsplit.append(str(entry))
       else:
-        raise TypeError('When run.command() is provided with a list as input, '
-                        'entries in the list must be either strings or lists of strings; '
-                        f'received: {repr(cmd)}')
+        # TODO Test if this works on pathlib.Paths, lists, maps, generators, ...
+        entry_listofstrs = entry \
+            if isinstance(entry, list) and all(isinstance(item, str) for item in entry) \
+            else list(map(str, entry))
+        if len(entry_listofstrs) > 1:
+          common_prefix = os.path.commonprefix(entry_listofstrs)
+          common_suffix = os.path.commonprefix(list(str(i)[::-1] for i in entry_listofstrs))[::-1]
+          if common_prefix == entry_listofstrs[0] and common_prefix == common_suffix:
+            cmdstring += f'{leading_space}[{entry_listofstrs[0]} (x{len(entry)})]'
+          else:
+            cmdstring += f'{leading_space}[{common_prefix}*{common_suffix} ({len(entry)} items)]'
+        else:
+          cmdstring += f'{leading_space}{quote_nonpipe(entry_listofstrs[0])}'
+        cmdsplit.extend(entry_listofstrs)
   elif isinstance(cmd, str):
     cmdstring = cmd
     # Split the command string by spaces, preserving anything encased within quotation marks

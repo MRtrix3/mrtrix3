@@ -41,7 +41,7 @@ DO_CLEANUP = True
 EXEC_NAME = os.path.basename(sys.argv[0])
 FORCE_OVERWRITE = False #pylint: disable=unused-variable
 NUM_THREADS = None #pylint: disable=unused-variable
-SCRATCH_DIR = ''
+SCRATCH_DIR = None
 VERBOSITY = 0 if 'MRTRIX_QUIET' in os.environ else int(os.environ.get('MRTRIX_LOGLEVEL', '1'))
 WORKING_DIR = os.getcwd()
 
@@ -310,7 +310,7 @@ def _execute(usage_function, execute_function): #pylint: disable=unused-variable
           shutil.rmtree(SCRATCH_DIR)
         except OSError:
           pass
-        SCRATCH_DIR = ''
+        SCRATCH_DIR = None
       else:
         console(f'Scratch directory retained; location: {SCRATCH_DIR}')
     if _STDOUT_IMAGES:
@@ -1577,7 +1577,7 @@ def handler(signum, _frame):
         shutil.rmtree(SCRATCH_DIR)
       except OSError:
         pass
-      SCRATCH_DIR = ''
+      SCRATCH_DIR = None
     else:
       sys.stderr.write(f'{EXEC_NAME}: {ANSI.console}Scratch directory retained; location: {SCRATCH_DIR}{ANSI.clear}\n')
   for item in _STDIN_IMAGES:
