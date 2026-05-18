@@ -24,47 +24,47 @@ bool Worker::operator()(Streamline<> &in, Streamline<> &out) const {
   out.set_index(in.get_index());
   out.weight = in.weight;
 
-  // Need to track exclusion separately, since we may still need to apply
-  //   mask (or, more accurately, their inverse) afterwards if -inverse is specified
-  bool exclude = false;
+  // Need to track exclusion separately, since we may still need to apply mask
+  //   (or, more accurately, their inverse) afterwards if -inverse is specified
+  bool exclude = !thresholds(in);
 
-  if (!thresholds(in)) {
-    exclude = true;
-  } else if (include_visitation.size() || properties.exclude.size()) {
-
-    // Assign to ROIs
-    include_visitation.reset();
-
-    if (ends_only) {
-      for (size_t i = 0; i != 2; ++i) {
-        const Eigen::Vector3f &p(i ? in.back() : in.front());
-        include_visitation(p);
-        if (properties.exclude.contains(p)) {
-          exclude = true;
-          break;
-        }
-      }
-    } else {
-      for (const auto &p : in) {
-        include_visitation(p);
-        if (properties.exclude.contains(p)) {
-          exclude = true;
-          break;
-        }
-      }
-    }
-
-    // Make sure all of the include regions were visited
-    if (!include_visitation)
-      exclude = true;
-
-  } else if (inverse) {
-
+  if (!exclude) {
     // If no thresholds are specified, and no include / exclude ROIs are defined, then
     //   it's still possible that one or more masks have been provided;
     //   if this is the case, then we want to continue processing this streamline,
     //   regardless of whether or not -inverse has been specified
-    exclude = true;
+    if (include_visitation.empty() && properties.exclude.empty() && inverse) {
+
+      exclude = true;
+
+    } else if (include_visitation.size() || properties.exclude.size()) {
+
+      // Assign to ROIs
+      include_visitation.reset();
+
+      if (ends_only) {
+        for (size_t i = 0; i != 2; ++i) {
+          const Eigen::Vector3f &p(i ? in.back() : in.front());
+          include_visitation(p);
+          if (properties.exclude.contains(p)) {
+            exclude = true;
+            break;
+          }
+        }
+      } else {
+        for (const auto &p : in) {
+          include_visitation(p);
+          if (properties.exclude.contains(p)) {
+            exclude = true;
+            break;
+          }
+        }
+      }
+
+      // Make sure all of the include regions were visited
+      if (!include_visitation)
+        exclude = true;
+    }
   }
 
   // In default usage, pass the empty track down the queue if track is excluded

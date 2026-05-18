@@ -86,7 +86,8 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
   }
 
   bool is_nifti = true;
-  if (memcmp(NH.magic, Type<NiftiHeader>::magic1.data(), 4) && memcmp(NH.magic, Type<NiftiHeader>::magic2.data(), 4)) {
+  if (memcmp(NH.magic, Type<NiftiHeader>::magic1.data(), 4) != 0 &&
+      memcmp(NH.magic, Type<NiftiHeader>::magic2.data(), 4) != 0) {
     if (Type<NiftiHeader>::is_version2) {
       throw Exception("image \"" + H.path().string() + "\" is not in " + version + " format (invalid magic signature)");
     } else {

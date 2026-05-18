@@ -181,9 +181,10 @@ std::filesystem::path NameParser::get_next_match(std::vector<uint32_t> &indices,
   if (!folder)
     folder.emplace(folder_path.empty() ? std::filesystem::current_path() : folder_path);
 
-  while (*folder != std::filesystem::directory_iterator()) {
-    std::string fname = folder->operator*().path().filename().string();
-    ++(*folder);
+  assert(folder.has_value());
+  while (folder.value() != std::filesystem::directory_iterator()) {
+    const std::string fname = folder->operator*().path().filename().string();
+    ++folder.value();
 
     if (match(fname, indices)) {
       if (return_seq_index) {

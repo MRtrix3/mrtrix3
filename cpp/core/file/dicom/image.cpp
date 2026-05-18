@@ -251,6 +251,7 @@ void Image::parse_item(Element &item) {
       bvalue = item.get_float(0, bvalue);
       return;
     case 0x1004:
+      // NOLINTNEXTLINE(bugprone-string-literal-with-embedded-nul)
       philips_orientation = item.get_string(0, "\0")[0];
       return;
     default:

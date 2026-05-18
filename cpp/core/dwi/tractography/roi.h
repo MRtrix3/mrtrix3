@@ -205,6 +205,7 @@ public:
   IncludeROIVisitation(const IncludeROIVisitation &) = default;
   IncludeROIVisitation &operator=(const IncludeROIVisitation &) = delete;
 
+  bool empty() const { return unordered.empty() && ordered.empty(); }
   void reset() {
     visited.setZero();
     state.reset();
