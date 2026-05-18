@@ -1,5 +1,5 @@
 
-name: Weekly Coverage Analysis
+name: C++ Coverage Analysis
 
 on:
   workflow_dispatch:
@@ -79,5 +79,6 @@ jobs:
     - name: Upload html report
       uses: actions/upload-artifact@v4
       with:
-        name: mrtrix3-coverage-report
-        path: ${{ github.workspace }}/report
+        name: cpp-coverage-report
+        path: coverage_reports/
+        retrntion-days: 90
