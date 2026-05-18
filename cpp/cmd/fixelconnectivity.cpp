@@ -52,7 +52,7 @@ void usage() {
   + Argument("tracks",
              "the tracks used to determine fixel-fixel connectivity").type_tracks_in()
   + Argument("matrix",
-             "the output fixel-fixel connectivity matrix directory path").type_directory_out();
+             "the output fixel-fixel connectivity matrix directory path").type_directory_out(DirOutMode::MustNotExist);
 
   OPTIONS
   + OptionGroup("Options that influence generation of the connectivity matrix / matrices")

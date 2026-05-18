@@ -1,0 +1,21 @@
+#!/bin/bash
+# With a single input image, -voxels should be interpreted as an output image path
+
+# Build a 5TT image with a non-physical PVF (tissue 0 > 1.0) in one voxel
+mrconvert 5ttedit/in.mif -coord 3 0 -axes 0,1,2 tmp_t0.mif -force
+mrcalc tmp_t0.mif 0 -mult tmp_zero.mif -force
+mredit tmp_zero.mif tmp_mask.mif -voxel 34,51,46 1 -force
+mrcalc tmp_t0.mif tmp_mask.mif 2.0 -mult -add tmp_t0_error.mif -force
+mrcat tmp_t0_error.mif \
+    $(mrconvert 5ttedit/in.mif -coord 3 1 -axes 0,1,2 -) \
+    $(mrconvert 5ttedit/in.mif -coord 3 2 -axes 0,1,2 -) \
+    $(mrconvert 5ttedit/in.mif -coord 3 3 -axes 0,1,2 -) \
+    $(mrconvert 5ttedit/in.mif -coord 3 4 -axes 0,1,2 -) \
+    -axis 3 tmp_5tt_error.mif -force
+
+rm -f tmp_voxels.mif
+! ( 5ttvalidate tmp_5tt_error.mif -voxels tmp_voxels.mif > /dev/null 2>&1 )
+# -voxels path must have been created as a regular file, not a directory
+test -f tmp_voxels.mif
+test ! -d tmp_voxels.mif
+mrinfo tmp_voxels.mif > /dev/null

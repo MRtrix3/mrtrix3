@@ -122,7 +122,7 @@ void usage() {
 
   + Argument("out_fixel_directory",
              "the output directory where results will be saved. "
-             "Will be created if it does not exist").type_directory_out();
+             "Will be created if it does not exist").type_directory_out(DirOutMode::MayExist);
 
   OPTIONS
 

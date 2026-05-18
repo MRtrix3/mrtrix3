@@ -65,7 +65,7 @@ void usage() {
   ARGUMENTS
   + Argument("fixel_in", "the input fixel directory").type_directory_in()
   + Argument("warp", "the 4D deformation field").type_image_in()
-  + Argument("fixel_out", "the output fixel directory").type_directory_out();
+  + Argument("fixel_out", "the output fixel directory").type_directory_out(DirOutMode::EmptyOrAbsent);
 }
 // clang-format on
 

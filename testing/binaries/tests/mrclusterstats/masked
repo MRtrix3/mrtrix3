@@ -5,7 +5,6 @@
 #   all voxels in the analysis mask "SIFT_phantom/upper.mif"
 #   have a synthetically introduced effect
 rm -rf tmp/
-mkdir tmp/
 
 mrclusterstats mrclusterstats/subjects.txt mrclusterstats/design.txt SIFT_phantom/upper.mif tmp/ \
     -ttests mrclusterstats/contrast.txt

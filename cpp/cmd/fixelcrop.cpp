@@ -51,7 +51,7 @@ void usage() {
   + Argument ("input_fixel_mask", "the input fixel data file defining which fixels to crop."
                                   " Fixels with zero values will be removed").type_image_in ()
   + Argument ("output_fixel_directory", "the output directory to store the cropped directions"
-                                        " and data files").type_directory_out();
+                                        " and data files").type_directory_out(DirOutMode::EmptyOrAbsent);
 }
 // clang-format on
 

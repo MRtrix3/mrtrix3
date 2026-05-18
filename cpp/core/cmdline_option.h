@@ -93,6 +93,15 @@ template <typename T> typename std::enable_if<std::is_floating_point<T>::value, 
 //! \addtogroup CmdParse
 // @{
 
+//! Specifies how a directory output argument should be validated with respect to pre-existence
+/*! Used as the parameter to Argument::type_directory_out() to control what parse-time check
+ *  is applied when the specified path already exists. */
+enum class DirOutMode {
+  MustNotExist,  //!< Directory must not already exist; -force overrides
+  EmptyOrAbsent, //!< Directory must not exist, or exist but be empty; -force does not override
+  MayExist,      //!< No pre-existence check; the command is responsible for creation and access
+};
+
 //! A class to specify a command-line argument
 /*! Command-line arguments that are accepted by a particular command are
  * specified as a vector of Arguments objects. Please refer to \ref
@@ -141,6 +150,8 @@ public:
   ArgModifierFlags flags;
 
   std::vector<std::string> choices;
+  //! for DirectoryOut arguments, specifies behaviour with respect to pre-existing directories
+  DirOutMode dir_out_mode = DirOutMode::MustNotExist;
 
   template <typename T> class ScalarRange {
   public:
@@ -285,8 +296,10 @@ public:
   }
 
   //! specifies that the argument should be an output directory
-  Argument &type_directory_out() {
+  /*! \param mode controls how pre-existence of the path is handled at parse time. */
+  Argument &type_directory_out(DirOutMode mode) {
     types.set(ArgTypeFlags::DirectoryOut);
+    dir_out_mode = mode;
     return *this;
   }
 

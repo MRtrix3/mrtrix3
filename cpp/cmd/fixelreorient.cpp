@@ -69,7 +69,7 @@ void usage() {
                            " (providing the -force option is supplied)."
                            " If a new directory is supplied,"
                            " then the fixel directions and all other fixel data"
-                           " will be copied to the new directory.").type_directory_out();
+                           " will be copied to the new directory.").type_directory_out(DirOutMode::MayExist);
 }
 // clang-format on
 

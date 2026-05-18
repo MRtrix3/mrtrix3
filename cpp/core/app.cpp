@@ -1033,8 +1033,7 @@ void parse() {
   terminal_use_colour = File::Config::get_bool("TerminalColor", terminal_use_colour);
 
   // check for the existence of all specified input files (including optional ones that have been provided)
-  // if necessary, also check for pre-existence of any output files with known paths
-  //   (if the output is e.g. given as a prefix, the argument should be flagged as type_text())
+  // if necessary, also check for pre-existence of any output files or directories with known paths
   // note that if an argument has multiple possible types, some checks can't be enforced
   for (const auto &i : argument) {
     assert(i.arg->types.any());
@@ -1074,8 +1073,33 @@ void parse() {
       types_not_output_filesystem.reset(ArgTypeFlags::FileOut);
       types_not_output_filesystem.reset(ArgTypeFlags::DirectoryOut);
       types_not_output_filesystem.reset(ArgTypeFlags::TracksOut);
-      if (!types_not_output_filesystem.any())
-        check_overwrite(i);
+      if (!types_not_output_filesystem.any()) {
+        if (i.arg->types[ArgTypeFlags::DirectoryOut] && !i.arg->types[ArgTypeFlags::FileOut] &&
+            !i.arg->types[ArgTypeFlags::TracksOut]) {
+          switch (i.arg->dir_out_mode) {
+          case DirOutMode::MustNotExist:
+            check_overwrite(i);
+            break;
+          case DirOutMode::EmptyOrAbsent: {
+            const std::filesystem::path dir_path(i);
+            if (std::filesystem::exists(dir_path)) {
+              if (!std::filesystem::is_directory(dir_path))
+                throw Exception("output path \"" + i.as_text() + "\" already exists as a file");
+              if (std::filesystem::directory_iterator(dir_path) != std::filesystem::directory_iterator())
+                throw Exception("output directory \"" + i.as_text() + "\" is not empty" +
+                                (overwrite_files ? " (-force option cannot safely be applied on directories;"
+                                                   " please erase manually instead)"
+                                                 : ""));
+            }
+            break;
+          }
+          case DirOutMode::MayExist:
+            break;
+          }
+        } else {
+          check_overwrite(i);
+        }
+      }
     }
     {
       ArgTypeFlags types_not_input_tractogram(i.arg->types);
@@ -1141,8 +1165,35 @@ void parse() {
         types_not_output_filesystem.reset(ArgTypeFlags::FileOut);
         types_not_output_filesystem.reset(ArgTypeFlags::DirectoryOut);
         types_not_output_filesystem.reset(ArgTypeFlags::TracksOut);
-        if (!types_not_output_filesystem.any())
-          check_overwrite(parg);
+        if (!types_not_output_filesystem.any()) {
+          if (arg.types[ArgTypeFlags::DirectoryOut] && !arg.types[ArgTypeFlags::FileOut] &&
+              !arg.types[ArgTypeFlags::TracksOut]) {
+            switch (arg.dir_out_mode) {
+            case DirOutMode::MustNotExist:
+              check_overwrite(parg);
+              break;
+            case DirOutMode::EmptyOrAbsent: {
+              const std::filesystem::path dir_path(parg);
+              if (std::filesystem::exists(dir_path)) {
+                if (!std::filesystem::is_directory(dir_path))
+                  throw Exception("output path \"" + parg.as_text() + "\"" + " for option \"-" +
+                                  std::string(i.opt->id) + "\" already exists as a file");
+                if (std::filesystem::directory_iterator(dir_path) != std::filesystem::directory_iterator())
+                  throw Exception("output directory \"" + parg.as_text() + "\"" + " for option \"-" +
+                                  std::string(i.opt->id) + "\" is not empty" +
+                                  (overwrite_files ? " (-force option cannot safely be applied on directories;"
+                                                     " please erase manually instead)"
+                                                   : ""));
+              }
+              break;
+            }
+            case DirOutMode::MayExist:
+              break;
+            }
+          } else {
+            check_overwrite(parg);
+          }
+        }
       }
       {
         ArgTypeFlags types_not_input_tractogram(arg.types);

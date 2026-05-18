@@ -17,6 +17,7 @@
 #pragma once
 
 #include <filesystem>
+#include <optional>
 
 #include "file/ofstream.h"
 
@@ -62,9 +63,9 @@ public:
 
   void finalize();
 
-  void write(const node_t, const node_t, const std::filesystem::path &, const std::filesystem::path &);
-  void write(const node_t, const std::filesystem::path &, const std::filesystem::path &);
-  void write(const std::filesystem::path &, const std::filesystem::path &);
+  void write(const node_t, const node_t, const std::filesystem::path &, const std::optional<std::filesystem::path> &);
+  void write(const node_t, const std::filesystem::path &, const std::optional<std::filesystem::path> &);
+  void write(const std::filesystem::path &, const std::optional<std::filesystem::path> &);
 
 private:
   float step_size;
@@ -77,9 +78,9 @@ class WriterExtraction {
 public:
   WriterExtraction(const Tractography::Properties &, const std::vector<node_t> &, const bool, const bool);
 
-  void add(const node_t, const std::filesystem::path &, const std::filesystem::path);
-  void add(const node_t, const node_t, const std::filesystem::path &, const std::filesystem::path);
-  void add(const std::vector<node_t> &, const std::filesystem::path &, const std::filesystem::path);
+  void add(const node_t, const std::filesystem::path &, const std::optional<std::filesystem::path> &);
+  void add(const node_t, const node_t, const std::filesystem::path &, const std::optional<std::filesystem::path> &);
+  void add(const std::vector<node_t> &, const std::filesystem::path &, const std::optional<std::filesystem::path> &);
 
   void clear();
 

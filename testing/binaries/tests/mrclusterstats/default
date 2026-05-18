@@ -4,7 +4,6 @@
 # (verification that results match a much older version of the software
 #   is performed in a separate test)
 rm -rf tmp/
-mkdir tmp/
 
 mrclusterstats mrclusterstats/subjects.txt mrclusterstats/design.txt SIFT_phantom/mask.mif tmp/ \
     -ttests mrclusterstats/contrast.txt

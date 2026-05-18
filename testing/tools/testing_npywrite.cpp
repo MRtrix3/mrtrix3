@@ -37,7 +37,7 @@ void usage() {
   SYNOPSIS = "Test the writing of NPY files";
 
   ARGUMENTS
-  + Argument("out_dir", "Path to output directory in which test data will be generated").type_directory_out();
+  + Argument("out_dir", "Path to output directory in which test data will be generated").type_directory_out(DirOutMode::MayExist);
 }
 // clang-format on
 
