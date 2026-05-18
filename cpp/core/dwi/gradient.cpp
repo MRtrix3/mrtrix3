@@ -108,51 +108,44 @@ Eigen::MatrixXd parse_DW_scheme(const Header &header) {
     try {
       G = MR::parse_matrix(it->second);
     } catch (Exception &e) {
-      throw Exception(e, "malformed DW scheme in image \"" + std::string(header.name()) + "\"");
+      throw Exception(e, "malformed DW scheme in image \"" + header.path().string() + "\"");
     }
   }
   return G;
 }
 
-Eigen::MatrixXd load_bvecs_bvals(const Header &header, std::string_view bvecs_path, std::string_view bvals_path) {
+Eigen::MatrixXd load_bvecs_bvals(const Header &header,
+                                 const std::filesystem::path &bvecs_path,
+                                 const std::filesystem::path &bvals_path) {
   assert(header.realignment().orig_transform().matrix().allFinite());
-
   Eigen::MatrixXd bvals, bvecs;
   try {
     bvals = File::Matrix::load_matrix<>(bvals_path);
     bvecs = File::Matrix::load_matrix<>(bvecs_path);
   } catch (Exception &e) {
-    // clang-format off
-    throw Exception(e, "Unable to import files \"" + std::string(bvecs_path) + "\" and \"" + std::string(bvals_path) + "\""
-                       " as FSL bvecs/bvals pair");
-    // clang-format on
+    throw Exception(e,
+                    "Unable to import files \"" + bvecs_path.string() + "\" and \"" + bvals_path.string() + "\"" + //
+                        " as FSL bvecs/bvals pair");                                                               //
   }
 
   if (bvals.rows() != 1) {
     if (bvals.cols() == 1)
       bvals.transposeInPlace(); // transpose if file contains column vector
     else
-      // clang-format off
-      throw Exception("bvals file must contain 1 row or column only;"
-                      " file \"" + std::string(bvals_path) + "\" has " + str(bvals.rows()));
-    // clang-format on
+      throw Exception(std::string("bvals file must contain 1 row or column only") +             //
+                      " (file \"" + bvals_path.string() + "\" has " + str(bvals.rows()) + ")"); //
   }
   if (bvecs.rows() != 3) {
     if (bvecs.cols() == 3)
       bvecs.transposeInPlace();
     else
-      // clang-format off
-      throw Exception("bvecs file must contain exactly 3 rows or columns;"
-                      " file \"" + std::string(bvecs_path) + "\" has " + str(bvecs.rows()));
-    // clang-format on
+      throw Exception(std::string("bvecs file must contain exactly 3 rows or columns;") + //
+                      " file \"" + bvecs_path.string() + "\" has " + str(bvecs.rows()));  //
   }
-
   if (bvals.cols() != bvecs.cols())
-    // clang-format off
-    throw Exception("bvecs and bvals files must have same number of diffusion directions;"
-                    " file \"" + std::string(bvecs_path) + "\" has " + str(bvecs.cols()) + ","
-                    " file \"" + std::string(bvals_path) + "\" has " + str(bvals.cols()) + "");
-  // clang-format on
+    throw Exception(std::string("bvecs and bvals files must have same number of diffusion directions;") + //
+                    " file \"" + bvecs_path.string() + "\" has " + str(bvecs.cols()) + "," +              //
+                    " file \"" + bvals_path.string() + "\" has " + str(bvals.cols()) + "");               //
 
   const size_t num_volumes = header.ndim() < 4 ? 1 : header.size(3);
   if (static_cast<size_t>(bvals.cols()) != num_volumes)
@@ -181,7 +174,7 @@ Eigen::MatrixXd load_bvecs_bvals(const Header &header, std::string_view bvecs_pa
       if (grad.block<1, 3>(n, 0).squaredNorm() > 0.0)
         // clang-format off
         throw Exception("Corrupt content in bvecs/bvals data"
-                        " (" + std::string(bvecs_path) + " & " + std::string(bvals_path) + ")"
+                        " (" + bvecs_path.string() + " & " + bvals_path.string() + ")"
                         " (NaN present in bval but valid direction in bvec)");
       // clang-format on
       nans_present_bvals = true;
@@ -191,7 +184,7 @@ Eigen::MatrixXd load_bvecs_bvals(const Header &header, std::string_view bvecs_pa
       if (grad(n, 3) > 0.0)
         // clang-format off
         throw Exception("Corrupt content in bvecs/bvals data"
-                        " (" + std::string(bvecs_path) + " & " + std::string(bvals_path) + ")"
+                        " (" + bvecs_path.string() + " & " + bvals_path.string() + ")"
                         " (NaN bvec direction but non-zero value in bval)");
       // clang-format on
       nans_present_bvecs = true;
@@ -204,15 +197,17 @@ Eigen::MatrixXd load_bvecs_bvals(const Header &header, std::string_view bvecs_pa
   }
   if (nan_linecount > 0) {
     WARN(str(nan_linecount) + " row" + (nan_linecount > 1 ? "s" : "") + " with NaN values detected in " +
-         (nans_present_bvecs ? "bvecs file " + std::string(bvecs_path) + (nans_present_bvals ? " and" : "") : "") +
-         (nans_present_bvals ? "bvals file " + std::string(bvals_path) : "") +
+         (nans_present_bvecs ? "bvecs file " + bvecs_path.string() + (nans_present_bvals ? " and" : "") : "") +
+         (nans_present_bvals ? "bvals file " + bvals_path.string() : "") +
          "; these have been interpreted as b=0 volumes by MRtrix");
   }
 
   return grad;
 }
 
-void save_bvecs_bvals(const Header &header, std::string_view bvecs_path, std::string_view bvals_path) {
+void save_bvecs_bvals(const Header &header,
+                      const std::filesystem::path &bvecs_path,
+                      const std::filesystem::path &bvals_path) {
   const auto grad = parse_DW_scheme(header);
   Axes::permutations_type order;
   const auto adjusted_transform = File::NIfTI::adjust_transform(header, order);
@@ -234,11 +229,11 @@ void save_bvecs_bvals(const Header &header, std::string_view bvecs_path, std::st
     bvecs.row(0) = -bvecs.row(0);
 
   if (bval_zeroed_count) {
-    WARN("For image \"" + std::string(header.name()) + "\","                              //
-         + str(bval_zeroed_count) + " volumes had zero gradient direction vector,"        //
-         + " but 0.0 < b-value <= BZeroThreshold;"                                        //
-         + " these are clamped to zero in bvals file \"" + std::string(bvals_path) + "\"" //
-         + " for compatibility with external software");                                  //
+    WARN("For image \"" + header.name() + "\","                                       //
+         + str(bval_zeroed_count) + " volumes had zero gradient direction vector,"    //
+         + " but 0.0 < b-value <= BZeroThreshold;"                                    //
+         + " these are clamped to zero in bvals file \"" + bvals_path.string() + "\"" //
+         + " for compatibility with external software");                              //
   }
 
   File::Matrix::save_matrix(bvecs, bvecs_path, KeyValues(), false);
@@ -342,14 +337,14 @@ Eigen::MatrixXd get_DW_scheme(const Header &header, BValueScalingBehaviour bvalu
     return grad;
   } catch (Exception &e) {
     clear_DW_scheme(const_cast<Header &>(header));
-    throw Exception(e, "error importing diffusion gradient table for image \"" + std::string(header.name()) + "\"");
+    throw Exception(e, "error importing diffusion gradient table for image \"" + header.path().string() + "\"");
   }
 }
 
 void export_grad_commandline(const Header &header) {
   auto check = [](const Header &h) -> const Header & {
     if (h.keyval().find("dw_scheme") == h.keyval().end())
-      throw Exception("no gradient information found within image \"" + std::string(h.name()) + "\"");
+      throw Exception("no gradient information found within image \"" + h.path().string() + "\"");
     return h;
   };
 

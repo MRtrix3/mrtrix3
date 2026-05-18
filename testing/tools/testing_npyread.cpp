@@ -18,9 +18,10 @@
 
 #include "command.h"
 #include "datatype.h"
+#include <filesystem>
+
 #include "file/matrix.h"
 #include "file/npy.h"
-#include "file/path.h"
 #include "half.h"
 #include "types.h"
 
@@ -134,20 +135,19 @@ bool verify_advanced(std::string_view filepath, const File::NPY::ReadInfo &info)
 }
 
 void run() {
-  Path::Dir dir(argument[0]);
   std::vector<std::string> errors_basic, errors_advanced;
   size_t check_count = 0;
   size_t wrong_endianness_count = 0;
   size_t advanced_boolean_count = 0;
-  std::string entry;
-  while (!(entry = dir.read_name()).empty()) {
+  for (const auto &dir_entry : std::filesystem::directory_iterator(argument[0])) {
 
     // TODO Do two reads:
     // - One with type tailored to what is known about the input file
     // - One using a generic load_vector() / load_matrix()
     //
     // IN the former case, it would actually be nice to test using an Eigen::Map<>
-    const std::string fullpath(Path::join(argument[0], entry));
+    const std::string fullpath = dir_entry.path().string();
+    const std::string entry = dir_entry.path().filename().string();
     const std::string basename = entry.substr(0, entry.size() - 4);
     const auto basename_split = split(basename, "_");
     std::string datatype_string = basename_split.back();

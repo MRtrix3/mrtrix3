@@ -1,0 +1,16 @@
+#!/bin/bash
+# Verify that "dwi2mask b02template" runs successfully
+#   when ANTs software is used for registration
+#   and the number of threads is specified via -nthreads,
+#   which should cause option "-n" to be passed to the ANTs command
+dwi2mask b02template BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-software antsquick \
+-template dwi2mask/template_image.mif.gz dwi2mask/template_mask.mif.gz \
+-nthreads 2
+
+dwi2mask b02template BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-software antsfull \
+-template dwi2mask/template_image.mif.gz dwi2mask/template_mask.mif.gz \
+-nthreads 2

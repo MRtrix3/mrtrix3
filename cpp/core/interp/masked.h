@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "algo/loop.h"
 #include "datatype.h"
+#include "image.h"
 #include "interp/base.h"
 
 namespace MR::Interp {
@@ -26,14 +26,12 @@ namespace MR::Interp {
 // @{
 
 //! Implicit masking for interpolator class
-/*! Wrap a image interpolator in a way that returns false not only if
+/*! Wrap an image interpolator in a way that returns false not only if
  * the position is outside of the field of view of the image, but also
- * if the image is zero-filled or contains non-finite values at that
- * location.
+ * if the corresponding voxel in the supplied binary mask is false.
  *
- * (NaN values are permitted in order to be compatible with 3-vectors
- * images, i.e. sets of XYZ triplets; but there needs to be at least
- * one non-NaN & non-zero value in the voxel)
+ * The mask must share the spatial voxel grid of the parent image
+ * (same dimensions, spacing, and scanner-space transform).
  */
 template <class InterpType> class Masked : public InterpType {
 public:
@@ -41,29 +39,25 @@ public:
 
   Masked(
       const typename InterpType::image_type &parent,
+      Image<bool> mask,
       const value_type value_when_out_of_bounds = Base<typename InterpType::image_type>::default_out_of_bounds_value())
-      : InterpType(parent, value_when_out_of_bounds) {}
+      : InterpType(parent, value_when_out_of_bounds), voxel_mask(std::move(mask)) {
+    check_voxel_grids_match_in_scanner_space(parent, voxel_mask);
+  }
 
   //! Set the current position to <b>voxel space</b> position \a pos
-  /* Unlike other interpolators, this sets the .index() location of
-   * the parent image, and checks to see whether or not there is
-   * any finite & non-zero data present; if there is not, then the
-   * function returns false, as though the location is outside of the
-   * image FoV.
-   *
-   * See file interp/base.h for details. */
+  /*! See file interp/base.h for details. */
   template <class VectorType> bool voxel(const VectorType &pos) {
     if (InterpType::set_out_of_bounds(pos))
       return false;
-    InterpType::image_type::index(0) = std::round(pos[0]);
-    InterpType::image_type::index(1) = std::round(pos[1]);
-    InterpType::image_type::index(2) = std::round(pos[2]);
-    for (auto l_inner = Loop(*this, 3)(*this); l_inner; ++l_inner) {
-      if (InterpType::image_type::value())
-        return InterpType::voxel(pos);
+    voxel_mask.index(0) = static_cast<ssize_t>(std::round(pos[0]));
+    voxel_mask.index(1) = static_cast<ssize_t>(std::round(pos[1]));
+    voxel_mask.index(2) = static_cast<ssize_t>(std::round(pos[2]));
+    if (!voxel_mask.value()) {
+      InterpType::set_out_of_bounds(true);
+      return true;
     }
-    InterpType::set_out_of_bounds(true);
-    return true;
+    return InterpType::voxel(pos);
   }
 
   //! Set the current position to <b>image space</b> position \a pos
@@ -77,6 +71,9 @@ public:
   template <class VectorType> FORCE_INLINE bool scanner(const VectorType &pos) {
     return voxel(Transform::scanner2voxel * pos.template cast<default_type>());
   }
+
+private:
+  Image<bool> voxel_mask;
 };
 
 //! @}

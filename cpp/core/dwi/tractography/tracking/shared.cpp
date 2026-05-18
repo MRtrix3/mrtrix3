@@ -15,12 +15,16 @@
  */
 
 #include "dwi/tractography/tracking/shared.h"
+#include "algo/implicit_mask.h"
 
 namespace MR::DWI::Tractography::Tracking {
 
-SharedBase::SharedBase(std::string_view diff_path, Properties &property_set)
+SharedBase::SharedBase(const std::filesystem::path &diff_path,
+                       Properties &property_set,
+                       ImplicitMaskConfig source_mask_config)
     : source_header(Header::open(diff_path)),
-      source(source_header.get_image<float>().with_direct_io(3)),
+      source(source_header.get_image<float>(DirectIO{3})),
+      source_mask(make_implicit_mask(source, source_mask_config)),
       properties(property_set),
       init_dir(Eigen::Vector3f::Constant(NaN)),
       min_num_points_preds(0),
@@ -36,10 +40,12 @@ SharedBase::SharedBase(std::string_view diff_path, Properties &property_set)
       step_size(NaNF),
       min_radius(NaNF),
       threshold(NaNF),
+      init_threshold(NaNF),
       unidirectional(false),
       rk4(false),
       stop_on_all_include(false),
       implicit_max_num_seeds(properties.find("max_num_seeds") == properties.end()),
+      curvature_constraint(curvature_constraint_t::POSTHOC_THRESHOLD),
       downsampler(1)
 #ifdef DEBUG_TERMINATIONS
       ,
@@ -47,11 +53,6 @@ SharedBase::SharedBase(std::string_view diff_path, Properties &property_set)
       transform(debug_header)
 #endif
 {
-  for (size_t i = 0; i != termination_reason_count; ++i)
-    std::atomic_init(&terminations[i], 0);
-  for (size_t i = 0; i != rejection_reason_count; ++i)
-    std::atomic_init(&rejections[i], 0);
-
   if (properties.find("max_num_tracks") == properties.end())
     max_num_tracks = (properties.find("max_num_seeds") == properties.end()) ? Defaults::num_selected_tracks : 0;
   properties.set(max_num_tracks, "max_num_tracks");
@@ -60,7 +61,7 @@ SharedBase::SharedBase(std::string_view diff_path, Properties &property_set)
   properties.set(rk4, "rk4");
   properties.set(stop_on_all_include, "stop_on_all_include");
 
-  properties["source"] = source_header.name();
+  properties["source"] = diff_path.string();
 
   max_num_seeds = Defaults::seed_to_select_ratio * max_num_tracks;
   properties.set(max_num_seeds, "max_num_seeds");
@@ -88,29 +89,27 @@ SharedBase::SharedBase(std::string_view diff_path, Properties &property_set)
   if (properties.find("downsample_factor") != properties.end())
     downsampler.set_ratio(to<int>(properties["downsample_factor"]));
 
-  for (size_t i = 0; i != termination_reason_count; ++i)
-    std::atomic_init(&terminations[i], 0);
-  for (size_t i = 0; i != rejection_reason_count; ++i)
-    std::atomic_init(&rejections[i], 0);
 #ifdef DEBUG_TERMINATIONS
   debug_header.ndim() = 3;
   debug_header.datatype() = DataType::UInt32;
-  for (const auto &i : termination_info)
-    debug_images.emplace_back(
-        new Image<uint32_t>(Image<uint32_t>::create("terms_" + i.second.name + ".mif", debug_header)));
+  for (const auto &i : termination_info) {
+    if (termination_relevant(i.first))
+      debug_images.emplace_back(
+          Image<uint32_t>::create("terms_" + Enum::lowercase_name(i.first) + ".mif", debug_header));
+    else
+      debug_images.emplace_back(Image<uint32_t>());
+  }
 #endif
 }
 
 SharedBase::~SharedBase() {
-  size_t sum_terminations = 0;
-  for (const auto &i : terminations)
-    sum_terminations += i;
+  const size_t sum_terminations = terminations.total();
   INFO("Total number of track terminations: " + str(sum_terminations));
   INFO("Termination reason probabilities:");
   for (const auto &i : termination_info) {
     if (termination_relevant(i.first))
       INFO("  " + i.second.description + ": " +
-           str(100.0 * static_cast<default_type>(terminations[static_cast<ssize_t>(i.first)]) /
+           str(100.0 * static_cast<default_type>(terminations.get(i.first)) /
                    static_cast<default_type>(sum_terminations),
                3) +
            "\%");
@@ -119,7 +118,7 @@ SharedBase::~SharedBase() {
   INFO("Track rejection counts:");
   for (const auto &i : rejection_strings) {
     if (rejection_relevant(i.first))
-      INFO("  " + i.second + ": " + str(rejections[static_cast<ssize_t>(i.first)]));
+      INFO("  " + i.second + ": " + str(rejections.get(i.first)));
   }
 }
 
@@ -168,6 +167,12 @@ void SharedBase::set_step_and_angle(const float voxel_frac,
   //   then it is impossible for a streamline to be terminated specifically due to a curvature constraint;
   //   this should therefore be omitted from reporting of termination statistics
   curvature_constraint = curvature_constraint_type;
+#ifdef DEBUG_TERMINATIONS
+  if (curvature_constraint == curvature_constraint_t::POSTHOC_THRESHOLD) {
+    debug_images[*magic_enum::enum_index(term_t::HIGH_CURVATURE)] =
+        Image<uint32_t>::create("terms_" + Enum::lowercase_name(term_t::HIGH_CURVATURE) + ".mif", debug_header);
+  }
+#endif
 }
 
 void SharedBase::set_num_points() {
@@ -236,8 +241,9 @@ void SharedBase::set_cutoff(float cutoff) {
 
 #ifdef DEBUG_TERMINATIONS
 void SharedBase::add_termination(const term_t i, const Eigen::Vector3f &p) const {
-  terminations[i].fetch_add(1, std::memory_order_relaxed);
-  Image<uint32_t> image(*debug_images[i]);
+  terminations.add(i);
+  assert(debug_images[*magic_enum::enum_index(i)].valid());
+  Image<uint32_t> image(debug_images[*magic_enum::enum_index(i)]);
   const auto pv = (transform.scanner2voxel * p.cast<default_type>()).array().round().cast<ssize_t>();
   image.index(0) = pv[0];
   image.index(1) = pv[1];
@@ -249,8 +255,6 @@ void SharedBase::add_termination(const term_t i, const Eigen::Vector3f &p) const
 
 bool SharedBase::termination_relevant(const term_t i) const {
   switch (i) {
-  case term_t::CONTINUE:
-    return false;
   case term_t::ENTER_CGM:
     return is_act();
   case term_t::CALIBRATOR:

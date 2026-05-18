@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <filesystem>
 #include <limits>
 
 #include "algo/threaded_loop.h"
@@ -29,8 +30,6 @@
 #include "metadata/phase_encoding.h"
 #include "misc/voxel2vector.h"
 #include "progressbar.h"
-
-#include <limits>
 
 using namespace MR;
 using namespace App;
@@ -372,9 +371,9 @@ protected:
 };
 
 void run() {
+  const std::filesystem::path first_input_image_path{argument[0]};
   const size_t num_inputs = argument.size() - 2;
   const Operation op = MR::Enum::from_name<Operation>(argument[num_inputs]);
-  const std::string_view output_path = argument.back();
 
   auto opt = get_options("axis");
   if (!opt.empty()) {
@@ -383,12 +382,11 @@ void run() {
       throw Exception("Option -axis only applies if a single input image is used");
 
     const size_t axis = opt[0][0];
-
-    auto image_in = Header::open(argument[0]).get_image<value_type>().with_direct_io(axis);
+    auto image_in = Header::open(first_input_image_path).get_image<value_type>(DirectIO{static_cast<int>(axis)});
 
     if (axis >= image_in.ndim())
-      throw Exception("Cannot perform operation along axis " + str(axis) + "; image only has " + str(image_in.ndim()) +
-                      " axes");
+      throw Exception("Cannot perform operation along axis " + str(axis) + ";" + //
+                      " image only has " + str(image_in.ndim()) + " axes");      //
 
     Header header_out(image_in);
 
@@ -406,7 +404,7 @@ void run() {
     header_out.size(axis) = 1;
     squeeze_dim(header_out);
 
-    auto image_out = Header::create(output_path, header_out).get_image<float>();
+    auto image_out = Header::create(argument.back(), header_out).get_image<float>();
 
     auto loop = ThreadedLoop(
         std::string("computing ") + MR::Enum::lowercase_name(op) + " along axis " + str(axis) + "...", image_out);
@@ -470,7 +468,7 @@ void run() {
     std::vector<Header> headers_in(num_inputs);
 
     // Header of first input image is the template to which all other input images are compared
-    headers_in[0] = Header::open(argument[0]);
+    headers_in[0] = Header::open(first_input_image_path);
     Header header(headers_in[0]);
     header.datatype() = DataType::from_command_line(DataType::Float32);
 
@@ -482,20 +480,21 @@ void run() {
 
     // Verify that dimensions of all input images adequately match
     for (size_t i = 1; i != num_inputs; ++i) {
-      const std::string path = argument[i];
+      const std::filesystem::path path{argument[i]};
       // headers_in.push_back (std::unique_ptr<Header> (new Header (Header::open (path))));
       headers_in[i] = Header::open(path);
       const Header &temp(headers_in[i]);
       if (temp.ndim() < header.ndim())
-        throw Exception("Image " + path + " has fewer axes than first input image " + header.name());
+        throw Exception("Image " + path.string() + " has fewer axes than first imput image " + header.path().string());
       for (size_t axis = 0; axis != header.ndim(); ++axis) {
         if (temp.size(axis) != header.size(axis))
-          throw Exception("Dimensions of image " + path + " do not match those of first input image " + header.name());
+          throw Exception("Dimensions of image " + path.string() + " do not match those of first input image " +
+                          header.path().string());
       }
       for (size_t axis = header.ndim(); axis != temp.ndim(); ++axis) {
         if (temp.size(axis) != 1)
-          throw Exception("Image " + path + " has axis with non-unary dimension beyond first input image " +
-                          header.name());
+          throw Exception("Image " + path.string() + " has axis with non-unary dimension beyond first input image " +
+                          header.path().string());
       }
       header.merge_keyval(temp.keyval());
     }
@@ -565,7 +564,7 @@ void run() {
       }
     }
 
-    auto out = Header::create(output_path, header).get_image<value_type>();
+    auto out = Header::create(argument.back(), header).get_image<value_type>();
     kernel->write_back(out);
   }
 }

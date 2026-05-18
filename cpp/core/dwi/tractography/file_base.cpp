@@ -19,7 +19,7 @@
 
 namespace MR::DWI::Tractography {
 
-void __ReaderBase__::open(std::string_view file, std::string_view type, Properties &properties) {
+void __ReaderBase__::open(const std::filesystem::path &file, std::string_view type, Properties &properties) {
   properties.clear();
   dtype = DataType::Undefined;
 
@@ -36,7 +36,7 @@ void __ReaderBase__::open(std::string_view file, std::string_view type, Properti
           throw 1;
         properties.prior_rois.insert(std::pair<std::string, std::string>(V[0], V[1]));
       } catch (...) {
-        WARN("invalid ROI specification in " + type + " file \"" + file + "\" - ignored");
+        WARN("invalid ROI specification in " + type + " file \"" + file.string() + "\" - ignored");
       }
     } else if (key == "comment")
       properties.comments.emplace_back(std::string(kv.value()));
@@ -49,36 +49,38 @@ void __ReaderBase__::open(std::string_view file, std::string_view type, Properti
   }
 
   if (dtype == DataType::Undefined)
-    throw Exception("no datatype specified for tracks file \"" + file + "\"");
+    throw Exception("no datatype specified for tracks file \"" + file.string() + "\"");
   if (dtype != DataType::Float32LE && dtype != DataType::Float32BE && dtype != DataType::Float64LE &&
       dtype != DataType::Float64BE)
     throw Exception("only supported datatype for tracks file are "
                     "Float32LE, Float32BE, Float64LE & Float64BE (in " +
-                    type + " file \"" + file + "\")");
+                    type + " file \"" + file.string() + "\")");
 
   if (data_file.empty())
-    throw Exception("missing \"files\" specification for " + type + " file \"" + file + "\"");
+    throw Exception("missing \"files\" specification for " + type + " file \"" + file.string() + "\"");
 
   std::istringstream files_stream(data_file);
-  std::string fname;
-  files_stream >> fname;
+  std::string fname_str;
+  files_stream >> fname_str;
   int64_t offset = 0;
   if (files_stream.good()) {
     try {
       files_stream >> offset;
     } catch (...) {
-      throw Exception("invalid offset specified for file \"" + fname + "\" in " + type + " file \"" + file + "\"");
+      throw Exception("invalid offset specified for file \"" + fname_str + "\" in " + type + " file \"" +
+                      file.string() + "\"");
     }
   }
 
-  if (fname != ".")
-    fname = Path::join(Path::dirname(file), fname);
+  std::filesystem::path fname;
+  if (fname_str != ".")
+    fname = file.parent_path() / fname_str;
   else
     fname = file;
 
-  in.open(fname.c_str(), std::ios::in | std::ios::binary);
+  in.open(fname, std::ios::in | std::ios::binary);
   if (!in)
-    throw Exception("error opening " + type + " data file \"" + fname + "\": " + strerror(errno));
+    throw Exception("error opening " + type + " data file \"" + fname.string() + "\": " + strerror(errno));
   in.seekg(offset);
 }
 

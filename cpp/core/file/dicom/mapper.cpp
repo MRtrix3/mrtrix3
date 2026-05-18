@@ -420,7 +420,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
   }
 
   for (size_t n = 0; n < frames.size(); ++n)
-    io_handler->files.push_back(File::Entry(frames[n]->filename, frames[n]->data));
+    io_handler->files.push_back(File::Entry(frames[n]->filepath, frames[n]->data));
 
   return io_handler;
 }

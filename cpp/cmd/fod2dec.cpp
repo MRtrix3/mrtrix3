@@ -220,7 +220,6 @@ public:
 };
 
 void run() {
-
   auto fod_hdr = Header::open(argument[0]);
   Math::SH::check(fod_hdr);
 
@@ -274,7 +273,7 @@ void run() {
     auto dec_img = Image<value_type>();
 
     {
-      auto fod_img = fod_hdr.get_image<value_type>().with_direct_io(3);
+      auto fod_img = fod_hdr.get_image<value_type>(DirectIO{3});
 
       auto dec_hdr = Header(fod_img);
       dec_hdr.ndim() = 4;

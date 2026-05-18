@@ -19,6 +19,7 @@
 #include <memory>
 #include <string>
 
+#include "gui.h"
 #include "types.h"
 
 #include "mrview/tool/odf/item.h"
@@ -35,7 +36,7 @@ public:
       return {};
     if (role != Qt::DisplayRole && role != Qt::ToolTipRole)
       return {};
-    return qstr(items[index.row()]->image.get_filename());
+    return qstr(items[index.row()]->image.get_filepath().string());
   }
 
   bool setData(const QModelIndex &index, const QVariant &value, int role) {
@@ -60,7 +61,7 @@ public:
     return 1;
   }
 
-  size_t add_items(const std::vector<std::string> &list,
+  size_t add_items(const std::vector<std::filesystem::path> &list,
                    const odf_type_t type,
                    bool colour_by_direction,
                    bool hide_negative_lobes,

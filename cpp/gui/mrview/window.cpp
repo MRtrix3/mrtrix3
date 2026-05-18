@@ -156,9 +156,7 @@ void Window::GLArea::dropEvent(QDropEvent *event) {
     QList<QUrl> urlList = mimeData->urls();
     for (int i = 0; i < urlList.size() && i < 32; ++i) {
       try {
-        const auto &url = urlList.at(i);
-        const auto filePath = QtHelpers::url_to_std_string(url);
-        list.push_back(std::make_unique<MR::Header>(MR::Header::open(filePath)));
+        list.push_back(std::make_unique<MR::Header>(MR::Header::open(QtHelpers::url_to_fspath(urlList.at(i)))));
       } catch (Exception &e) {
         e.display();
       }
@@ -787,14 +785,14 @@ Window::~Window() {
 void Window::sync_slot() { emit syncChanged(); }
 
 void Window::image_open_slot() {
-  std::vector<std::string> image_list = Dialog::File::get_images(this, "Select images to open", &current_folder);
-  if (image_list.empty())
+  auto load_paths = Dialog::File::input_imagepaths(this, "Select images to open", current_folder);
+  if (load_paths.empty())
     return;
-
+  current_folder = load_paths.last_directory;
   std::vector<std::unique_ptr<MR::Header>> list;
-  for (size_t n = 0; n < image_list.size(); ++n) {
+  for (const auto &path : load_paths.multi_selection) {
     try {
-      list.push_back(std::make_unique<MR::Header>(MR::Header::open(image_list[n])));
+      list.push_back(std::make_unique<MR::Header>(MR::Header::open(path)));
     } catch (Exception &E) {
       E.display();
     }
@@ -803,13 +801,13 @@ void Window::image_open_slot() {
 }
 
 void Window::image_import_DICOM_slot() {
-  std::string folder = Dialog::File::get_folder(this, "Select DICOM folder to import", &current_folder);
-  if (folder.empty())
+  auto load_paths = Dialog::File::input_dirpath(this, "Select DICOM folder to import", current_folder);
+  if (load_paths.empty())
     return;
-
+  current_folder = load_paths.last_directory;
   try {
     std::vector<std::unique_ptr<MR::Header>> list;
-    list.push_back(std::make_unique<MR::Header>(MR::Header::open(folder)));
+    list.push_back(std::make_unique<MR::Header>(MR::Header::open(load_paths.single_selection)));
     add_images(list);
   } catch (CancelException &E) {
     E.display(-1);
@@ -861,12 +859,12 @@ void Window::add_images(std::vector<std::unique_ptr<MR::Header>> &list) {
 }
 
 void Window::image_save_slot() {
-  std::string image_name = Dialog::File::get_save_image_name(this, "Select image destination", "", &current_folder);
-  if (image_name.empty())
+  auto save_paths = Dialog::File::output_imagepath(this, "Select image destination", "", current_folder);
+  if (save_paths.empty())
     return;
-
+  current_folder = save_paths.last_directory;
   try {
-    auto dest = MR::Image<cfloat>::create(image_name, image()->header());
+    auto dest = MR::Image<cfloat>::create(save_paths.single_selection, image()->header());
     MR::copy_with_progress(image()->image, dest);
   } catch (Exception &E) {
     E.display();

@@ -22,6 +22,19 @@ set_target_properties(mrtrix-gui PROPERTIES
     LINK_DEPENDS_NO_SHARED ON
 )
 
+# Qt5's moc cannot parse libstdc++'s <filesystem>: the header's
+# "#pragma GCC system_header" stops moc following the include chain that defines
+# _GLIBCXX_VISIBILITY, so bits/fs_fwd.h fails to parse. moc only extracts the
+# meta-object and never compiles, so predefine the <filesystem> include guard
+# for moc only, making the header expand to nothing; std::filesystem::path then
+# survives merely as an unparsed type token in declarations. Qt6's moc does not
+# have this defect, so the workaround is scoped to the Qt5 path.
+if(MRTRIX_USE_QT5)
+    set_target_properties(mrtrix-gui PROPERTIES
+        AUTOMOC_MOC_OPTIONS "-D_GLIBCXX_FILESYSTEM"
+    )
+endif()
+
 if(MRTRIX_USE_PCH)
     target_precompile_headers(mrtrix-gui PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/gui_pch.h)
 endif()

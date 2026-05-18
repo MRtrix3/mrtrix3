@@ -54,7 +54,7 @@ void run() {
   GUI::DWI::Window window(!get_options("response").empty());
 
   if (!argument.empty())
-    window.set_values(std::string(argument[0]));
+    window.set_values(static_cast<std::filesystem::path>(argument[0]));
 
   window.show();
 

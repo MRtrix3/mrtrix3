@@ -16,6 +16,9 @@
 
 #pragma once
 
+#include <filesystem>
+#include <optional>
+
 #include "dwi/tractography/ACT/act.h"
 #include "dwi/tractography/tracking/method.h"
 #include "dwi/tractography/tracking/shared.h"
@@ -31,8 +34,11 @@ class SDStream : public MethodBase {
 public:
   class Shared : public SharedBase {
   public:
-    Shared(std::string_view diff_path, DWI::Tractography::Properties &property_set)
-        : SharedBase(diff_path, property_set), lmax(Math::SH::LforN(source.size(3))) {
+    Shared(const std::filesystem::path &diff_path, DWI::Tractography::Properties &property_set)
+        : SharedBase(diff_path,
+                     property_set,
+                     {ZeroExclusion::Enabled, NonFiniteExclusion::Any, HoleFilling::EnabledExcludeNonFinite}),
+          lmax(static_cast<int>(Math::SH::LforN(static_cast<int>(source.size(3))))) {
       try {
         Math::SH::check(source);
       } catch (Exception &e) {
@@ -72,9 +78,9 @@ public:
     Math::SH::PrecomputedAL<float> *precomputer;
   };
 
-  SDStream(const Shared &shared) : MethodBase(shared), S(shared), source(S.source) {}
+  SDStream(const Shared &shared) : MethodBase(shared), S(shared), source(S.source, S.source_mask) {}
 
-  SDStream(const SDStream &that) : MethodBase(that.S), S(that.S), source(S.source) {}
+  SDStream(const SDStream &that) : MethodBase(that.S), S(that.S), source(S.source, S.source_mask) {}
 
   ~SDStream() {}
 
@@ -95,7 +101,7 @@ public:
     return true;
   }
 
-  term_t next() override {
+  std::optional<term_t> next() override {
     if (!get_data(source))
       return term_t::EXIT_IMAGE;
 
@@ -108,7 +114,7 @@ public:
       return term_t::HIGH_CURVATURE;
 
     pos += dir * S.step_size;
-    return term_t::CONTINUE;
+    return std::nullopt;
   }
 
   float get_metric(const Eigen::Vector3f &position, const Eigen::Vector3f &direction) override {

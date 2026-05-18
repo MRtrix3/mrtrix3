@@ -16,6 +16,8 @@
 
 #include "dwi/tractography/connectome/matrix.h"
 
+#include <filesystem>
+
 #include "file/matrix.h"
 #include "file/path.h"
 
@@ -167,7 +169,7 @@ template <typename T> void Matrix<T>::error_check(const std::vector<node_t> &mis
   }
 }
 
-template <typename T> void Matrix<T>::write_assignments(std::string_view path) const {
+template <typename T> void Matrix<T>::write_assignments(const std::filesystem::path &path) const {
   if (!track_assignments)
     throw Exception("Cannot write streamline assignments to file as they were not stored during processing");
   File::OFStream stream(path);
@@ -186,7 +188,7 @@ template <typename T> void Matrix<T>::write_assignments(std::string_view path) c
 }
 
 template <typename T>
-void Matrix<T>::save(std::string_view path,
+void Matrix<T>::save(const std::filesystem::path &path,
                      const bool keep_unassigned,
                      const bool symmetric,
                      const bool zero_diagonal) const {
@@ -209,7 +211,7 @@ void Matrix<T>::save(std::string_view path,
 
   File::OFStream out(path);
   Eigen::IOFormat fmt(
-      Eigen::FullPrecision, Eigen::DontAlignCols, std::string(1, Path::delimiter(path)), "\n", "", "", "", "");
+      Eigen::FullPrecision, Eigen::DontAlignCols, std::string(1, File::Matrix::delimiter(path)), "\n", "", "", "", "");
   for (node_t row = 0; row != mat2vec->mat_size(); ++row) {
     if (!row && !keep_unassigned)
       continue;

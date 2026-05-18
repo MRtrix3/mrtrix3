@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <memory>
+
 #include "algo/loop.h"
 #include "dwi/fmls.h"
 #include "header.h"
@@ -79,18 +81,13 @@ private:
 template <class Fixel> class Fixel_map<Fixel>::MapVoxel {
 public:
   MapVoxel(const FMLS::FOD_lobes &in, const size_t first)
-      : first_fixel_index(first), count(in.size()), lookup_table(new uint8_t[in.lut.size()]) {
-    memcpy(lookup_table, &in.lut[0], in.lut.size() * sizeof(uint8_t));
+      : first_fixel_index(first), count(in.size()), lookup_table(std::make_unique<uint8_t[]>(in.lut.size())) {
+    memcpy(lookup_table.get(), &in.lut[0], in.lut.size());
   }
 
   MapVoxel(const size_t first, const size_t size) : first_fixel_index(first), count(size), lookup_table(nullptr) {}
 
-  ~MapVoxel() {
-    if (lookup_table) {
-      delete[] lookup_table;
-      lookup_table = nullptr;
-    }
-  }
+  ~MapVoxel() = default;
 
   size_t first_index() const { return first_fixel_index; }
   size_t num_fixels() const { return count; }
@@ -99,13 +96,13 @@ public:
   // Direction must have been assigned to a histogram bin first
   size_t dir2fixel(const size_t dir) const {
     assert(lookup_table);
-    const size_t offset = lookup_table[dir];
+    const size_t offset = static_cast<size_t>(lookup_table[dir]);
     return ((offset == count) ? 0 : (first_fixel_index + offset));
   }
 
 private:
   size_t first_fixel_index, count;
-  uint8_t *lookup_table;
+  std::unique_ptr<uint8_t[]> lookup_table;
 };
 
 template <class Fixel> class Fixel_map<Fixel>::Iterator {

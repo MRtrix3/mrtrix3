@@ -29,6 +29,8 @@
 #include "fixel/correspondence/correspondence.h"
 #include "fixel/correspondence/matcher.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 using namespace MR::Fixel::Correspondence;
@@ -168,7 +170,14 @@ void usage() {
 // clang-format on
 
 void run() {
-  Header H_cost = MR::Fixel::find_index_header(Path::dirname(argument[1]));
+  const std::filesystem::path input_filepath(argument[0]);
+  if (std::filesystem::is_directory(input_filepath))
+    throw Exception("Input the specific fixel data file to participate in matching,"
+                    " not the fixel directory");
+  const std::filesystem::path input_fixel_directory = Fixel::get_fixel_directory(input_filepath);
+  auto input_index_header = Fixel::find_index_header(input_fixel_directory);
+
+  Header H_cost(input_index_header);
   H_cost.ndim() = 3;
   H_cost.datatype() = DataType::Float32;
   H_cost.datatype().set_byte_order_native();
@@ -210,7 +219,7 @@ void run() {
     assert(0);
   }
 
-  Matcher matcher(argument[0], argument[1], algorithm);
+  Matcher matcher(input_filepath, argument[1], algorithm);
 
   auto image(matcher.get_template());
   ThreadedLoop("determining fixel correspondence", image, 0, 3).run(matcher, image);

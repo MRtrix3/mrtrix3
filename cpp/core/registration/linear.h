@@ -224,9 +224,9 @@ public:
       for (size_t iter = 1; iter <= stage.stage_iterations; ++iter) {
         std::ostringstream oss;
         oss << diagnostics_image_prefix << "_stage-" << level + 1 << "_iter-" << iter << ".mif";
-        if (Path::exists(oss.str()) && !App::overwrite_files)
-          throw Exception("diagnostics image file \"" + oss.str() +
-                          "\" already exists (use -force option to force overwrite)");
+        if (std::filesystem::exists(oss.str()) && !App::overwrite_files)
+          throw Exception("diagnostics image file \"" + oss.str() + "\"" +           //
+                          " already exists (use -force option to force overwrite)"); //
         stage.diagnostics_images.push_back(oss.str());
       }
     }
@@ -555,7 +555,7 @@ public:
   //     midway_header.spacing(dim) = input.spacing(dim);
   //     midway_header.size(dim) = input.size(dim);
   //   }
-  //   image_midway = Image<typename ImageType::value_type>::create (out_path, midway_header).with_direct_io();
+  //   image_midway = Image<typename ImageType::value_type>::create (out_path, midway_header, DirectIO{});
   //   if (input_is_one) {
   //     Filter::reslice<Interp::Cubic> (input, image_midway, transformation.get_transform_half(),
   //     Adapter::AutoOverSample, 0.0); if (do_reorientation)

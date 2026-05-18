@@ -142,17 +142,33 @@ def execute_ants(mode):
     elif mode == 'quick':
       ants_options = CONFIG.get('Dwi2maskTemplateANTsQuickOptions', ANTS_REGISTERQUICK_OPTIONS)
 
+  ants_options_split = ants_options.split()
+  ants_nthreads_opt = ''
+  if app.ARGS.nthreads is not None and mode == 'quick':
+    external_nthreads = 1 if app.ARGS.nthreads <= 1 else app.ARGS.nthreads
+    n_flag_indices = [i for i, t in enumerate(ants_options_split) if t == '-n']
+    if n_flag_indices:
+      n_flag_index = n_flag_indices[0]
+      try:
+        ants_n_value = int(ants_options_split[n_flag_index + 1])
+        if ants_n_value != external_nthreads:
+          app.warn(f'-nthreads {app.ARGS.nthreads} implies {external_nthreads} ANTs thread(s),'
+                   f' but -ants_options contains \'-n {ants_n_value}\';'
+                   f' the latter value will be used')
+      except (IndexError, ValueError):
+        pass
+    else:
+      ants_nthreads_opt = f' -n {external_nthreads}'
+
   if mode == 'full':
     # Use ANTs SyN for registration to template
-    run.command(f'{ANTS_REGISTERFULL_CMD} --dimensionality 3 --output ANTS {ants_options}')
-    ants_options_split = ants_options.split()
+    run.command(f'{ANTS_REGISTERFULL_CMD} --dimensionality 3 --output ANTS{ants_nthreads_opt} {ants_options}')
     nonlinear = any(i for i in range(0, len(ants_options_split)-1)
                     if ants_options_split[i] == '--transform'
                     and not any(item in ants_options_split[i+1] for item in ['Rigid', 'Affine', 'Translation']))
   else:
     # Use ANTs SyNQuick for registration to template
-    run.command(f'{ANTS_REGISTERQUICK_CMD} -d 3 -f template_image.nii -m bzero.nii -o ANTS {ants_options}')
-    ants_options_split = ants_options.split()
+    run.command(f'{ANTS_REGISTERQUICK_CMD} -d 3 -f template_image.nii -m bzero.nii -o ANTS{ants_nthreads_opt} {ants_options}')
     nonlinear = not [i for i in range(0, len(ants_options_split)-1)
                       if ants_options_split[i] == '-t'
                       and ants_options_split[i+1] in ['t', 'r', 'a']]

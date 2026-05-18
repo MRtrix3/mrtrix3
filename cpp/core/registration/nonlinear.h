@@ -351,7 +351,7 @@ public:
         if (converged && !diagnostics_image_prefix.empty()) {
           std::ostringstream oss;
           oss << diagnostics_image_prefix << "_stage-" << level + 1 << ".mif";
-          // if (Path::exists(oss.str()) && !App::overwrite_files)
+          // if (std::filesystem::exists(oss.str()) && !App::overwrite_files)
           //   throw Exception ("diagnostics image file \"" + oss.str() + "\" already exists (use -force option to force
           //   overwrite)");
           Header hc(warped_header);
