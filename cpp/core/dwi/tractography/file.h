@@ -339,7 +339,13 @@ public:
   Writer(const Writer &W) = delete;
 
   //! commits any remaining data to file
-  ~Writer() { commit(); }
+  ~Writer() {
+    try {
+      commit();
+    } catch (Exception &e) {
+      Exception(e, "Tractography file not properly finalised").display();
+    }
+  }
 
   //! append track to file
   bool operator()(const Streamline<ValueType> &tck) {

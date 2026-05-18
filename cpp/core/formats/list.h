@@ -18,6 +18,8 @@
 
 #include "header.h"
 
+// NOLINTBEGIN(bugprone-macro-parentheses)
+
 #define DECLARE_IMAGEFORMAT(format, desc)                                                                              \
   class format : public Base {                                                                                         \
   public:                                                                                                              \
@@ -26,6 +28,8 @@
     virtual bool check(Header &H, size_t num_axes) const;                                                              \
     virtual std::unique_ptr<ImageIO::Base> create(Header &H) const;                                                    \
   }
+
+// NOLINTEND(bugprone-macro-parentheses)
 
 //! Classes responsible for handling of specific image formats
 namespace MR::Formats {

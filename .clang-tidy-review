@@ -10,9 +10,10 @@ Checks: >
   portability-*,
   readability-*,
   -bugprone-easily-swappable-parameters,
+  -clang-analyzer-optin.core.EnumCastOutOfRange,
   -cppcoreguidelines-avoid-magic-numbers,
   -readability-braces-around-statements,
   -readability-identifier-length,
   -readability-function-cognitive-complexity,
   -readability-magic-numbers,
-HeaderFilterRegex: '*.(h|hpp)'
+HeaderFilterRegex: '(cpp/|testing/(lib/|tools/|unit_tests/))(?!core/eigen_plugins/|gui/opengl/gl_core_3_3).*\.(h|hpp)'

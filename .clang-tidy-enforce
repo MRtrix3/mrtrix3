@@ -7,5 +7,6 @@ Checks: >
   concurrency-*,
   -bugprone-easily-swappable-parameters,
   -bugprone-narrowing-conversions,
+  -clang-analyzer-optin.core.EnumCastOutOfRange,
 WarningsAsErrors: '*'
-HeaderFilterRegex: '*.(h|hpp)'
+HeaderFilterRegex: '(cpp/|testing/(lib/|tools/|unit_tests/))(?!core/eigen_plugins/|gui/opengl/gl_core_3_3).*\.(h|hpp)'
