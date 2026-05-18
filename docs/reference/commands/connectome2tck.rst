@@ -17,7 +17,7 @@ Usage
 
 -  *tracks_in*: the input track file
 -  *assignments_in*: input text file containing the node assignments for each streamline
--  *output*: the output tractogram file (if -files single is specified) or the output directory (otherwise)
+-  *output*: the output tractogram file / directory path (see Description)
 
 Description
 -----------
@@ -25,6 +25,8 @@ Description
 The compulsory input file "assignments_in" should contain a text file where there is one row for each streamline, and each row contains a list of numbers corresponding to the parcels to which that streamline was assigned (most typically there will be two entries per streamline, one for each endpoint; but this is not strictly a requirement). This file will most typically be generated using the tck2connectome command with the -out_assignments option.
 
 When -files single is specified, the third argument is interpreted as a tractogram file path; otherwise it is interpreted as a directory, into which individual output tractogram files will be written. The -tck_weights_out path is interpreted in the same manner, as either a single output file or a directory of per-tract-file weight text files.
+
+The -tck_weights_out option behaves similarity to the third argument as described above. If option "-files single" is specified, then the user-specified input to the -tck_weights_out option will be interpreted as the path to a file to be created. Otherwise, that path will instead be interpreted as a directory to be created, which will then be populated with files of the same name as the tractogram files written as the primary command output.
 
 Example usages
 --------------
@@ -37,9 +39,9 @@ Example usages
 
 -   *Extract only the streamlines between nodes 1 and 2*::
 
-        $ connectome2tck tracks.tck assignments.txt node12.tck -nodes 1,2 -exclusive -files single
+        $ connectome2tck tracks.tck assignments.txt edge_1_2.tck -nodes 1,2 -exclusive -files single
 
-    Since only a single edge is of interest, this example provides only the two nodes involved in that edge to the -nodes option, adds the -exclusive option so that only streamlines for which both assigned nodes are in the list of nodes of interest are extracted (i.e. only streamlines connecting nodes 1 and 2 in this example), and writes the result to output track file "node12.tck".
+    Since only a single edge is of interest, this example provides only the two nodes involved in that edge to the -nodes option, adds the -exclusive option so that only streamlines for which both assigned nodes are in the list of nodes of interest are extracted (i.e. only streamlines connecting nodes 1 and 2 in this example), and writes the result to output track file "edge_1_2.tck".
 
 -   *Extract the streamlines connecting node 15 to all other nodes in the parcellation, with one track file for each edge*::
 
@@ -88,7 +90,7 @@ Options for importing / exporting streamline weights
 
 -  **-tck_weights_in path** specify a text scalar file containing the streamline weights
 
--  **-tck_weights_out path** provide the output path for streamline weight data; interpreted as a single file when -files single is specified, or as a directory of per-track-file weight text files otherwise
+-  **-tck_weights_out path** provide the output path for streamline weight data (see Description)
 
 Standard options
 ^^^^^^^^^^^^^^^^

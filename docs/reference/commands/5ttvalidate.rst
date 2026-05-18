@@ -34,10 +34,12 @@ The following checks are performed on each input image:
 
 . Voxels that violate this constraint are reported as a soft warning: the image may still be usable for ACT but does not perfectly conform to the format.
 
+The path to be provided to the -voxels option depends on the image(s) provided as input to the command. if ony a single input image is provided, then the path provided to the -voxels option should be the path to an output image file that will be created if necessary. If however there are multiple input files provided to the command, then the path provided to the -voxels option should instead be a path to a directory that will be created and populated with an individual image per problematic input image.
+
 Options
 -------
 
--  **-voxels image_or_dir** output mask image(s) highlighting voxels where the input does not conform to 5TT requirements; when a single input image is provided, this should be the path for the output image; when multiple input images are provided, this should be the path for an output directory, within which a separate image will be created for each input, each named after the corresponding input image
+-  **-voxels image_or_dir** output path for mask image(s) highlighting voxels where the input(s) violate 5TT requirements (see Description)
 
 Standard options
 ^^^^^^^^^^^^^^^^
