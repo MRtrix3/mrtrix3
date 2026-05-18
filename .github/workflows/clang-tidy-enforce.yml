@@ -38,4 +38,4 @@ jobs:
         fi
         echo "Files to check:"
         echo "${CHANGED}"
-        echo "${CHANGED}" | xargs clang-tidy-18 --config-file=.clang-tidy-enforce -p=.
+        echo "${CHANGED}" | xargs clang-tidy-18 --config-file=.clang-tidy-enforce --header-filter='(cpp/|testing/(lib/|tools/|unit_tests/)).*' -p=.
