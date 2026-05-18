@@ -16,4 +16,4 @@ Checks: >
   -readability-identifier-length,
   -readability-function-cognitive-complexity,
   -readability-magic-numbers,
-HeaderFilterRegex: '(cpp/|testing/(lib/|tools/|unit_tests/))(?!core/eigen_plugins/|gui/opengl/gl_core_3_3).*\.(h|hpp)'
+HeaderFilterRegex: '(cpp\/|testing\/(lib\/|tools\/|unit_tests\/)).*\.(h|hpp)'
