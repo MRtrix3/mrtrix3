@@ -25,7 +25,7 @@
 namespace MR::File {
 
 void OFStream::open(const std::filesystem::path &path, const std::ios_base::openmode mode) {
-  if ((mode & std::ios_base::app == 0) && (mode & std::ios_base::ate == 0) && (mode & std::ios_base::in == 0)) {
+  if ((mode & std::ios_base::app) == 0 && (mode & std::ios_base::ate) == 0 && (mode & std::ios_base::in) == 0) {
     if (!File::is_tempfile(path)) {
       if (std::filesystem::exists(path)) {
         App::check_overwrite(path);
