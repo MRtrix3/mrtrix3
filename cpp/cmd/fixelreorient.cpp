@@ -103,8 +103,7 @@ void run() {
   }
 
   auto output_directions_image =
-      Image<float>::create(output_fixel_directory / output_directions_filename, input_directions_image)
-          .with_direct_io();
+      Image<float>::create(output_fixel_directory / output_directions_filename, input_directions_image, DirectIO(1));
 
   for (auto i = Loop("reorienting fixel directions", input_index_image, 0, 3)(input_index_image, jacobian); i; ++i) {
     input_index_image.index(3) = 0;

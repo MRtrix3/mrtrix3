@@ -556,7 +556,7 @@ public:
   //     midway_header.spacing(dim) = input.spacing(dim);
   //     midway_header.size(dim) = input.size(dim);
   //   }
-  //   image_midway = Image<typename ImageType::value_type>::create (out_path, midway_header).with_direct_io();
+  //   image_midway = Image<typename ImageType::value_type>::create (out_path, midway_header, DirectIO{});
   //   if (input_is_one) {
   //     Filter::reslice<Interp::Cubic> (input, image_midway, transformation.get_transform_half(),
   //     Adapter::AutoOverSample, 0.0); if (do_reorientation)

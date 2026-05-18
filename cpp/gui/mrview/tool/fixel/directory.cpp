@@ -57,8 +57,8 @@ void Directory::load_image_buffer() {
   }
 
   // Load fixel direction images
-  const auto &filepath = fixel_data->path();
-  auto directions_image = MR::Fixel::find_directions_header(filepath.parent_path()).get_image<float>().with_direct_io();
+  auto directions_image =
+      MR::Fixel::find_directions_header(fixel_data->path().parent_path()).get_image<float>(MR::DirectIO{1});
   directions_image.index(1) = 0;
   for (auto l = Loop(0, 3)(*fixel_data); l; ++l) {
     fixel_data->index(3) = 0;

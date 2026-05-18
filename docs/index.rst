@@ -207,6 +207,7 @@ Table of Contents
    :maxdepth: 1
    :caption: Concepts
 
+   concepts/axis_realignment
    concepts/dw_scheme
    concepts/pe_scheme
    concepts/global_intensity_normalisation
