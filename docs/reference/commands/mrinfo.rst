@@ -30,6 +30,8 @@ The -dwgrad, -export_* and -shell_* options provide (information about) the diff
 
 The -petable option exports the MRtrix3 internal representation of the phase encoding table, regardless of whether the relevant metadata are stored in the BIDS fields "PhaseEncodingDirection" and "TotalReadoutTime" or the MRtrix3-specific "pe_scheme". The contents of this query should however *not* be provided to FSL tools: despite the contents being of the same format, the phase encoding directions may be erroneously interpreted. If extracting phase encoding information to interface with FSL tools, use the -export_pe_topup or -export_pe_eddy options. More information can be found on this issue at: https://mrtrix.readthedocs.io/en/3.0.8/concepts/pe_scheme.html
 
+By default, mrinfo reports the image *as interpreted by MRtrix3*. If the image's on-disk axes do not approximately conform to the RAS convention, MRtrix3 permutes and flips them at load time so the loaded image appears axial; the reported transform, strides, and axis-dependent metadata (e.g. PhaseEncodingDirection, pe_scheme, SliceEncodingDirection, SliceTiming) may therefore differ from the values stored on disk. The default human-readable output annotates any such differences inline. Use the -realignment option to summarise the applied shuffle, or -ondisk to bypass realignment entirely (equivalent to -config RealignTransform false) so that every query reports the on-disk view. See: https://mrtrix.readthedocs.io/en/3.0.8/concepts/axis_realignment.html
+
 The -bvalue_scaling option controls an aspect of the import of diffusion gradient tables. When the input diffusion-weighting direction vectors have norms that differ substantially from unity, the b-values will be scaled by the square of their corresponding vector norm (this is how multi-shell acquisitions are frequently achieved on scanner platforms). However in some rare instances, the b-values may be correct, despite the vectors not being of unit norm (or conversely, the b-values may need to be rescaled even though the vectors are close to unit norm). This option allows the user to control this operation and override MRrtix3's automatic detection.
 
 Options
@@ -56,6 +58,10 @@ Options
 -  **-multiplier** image intensity multiplier
 
 -  **-transform** the transformation from image coordinates [mm] to scanner / real world coordinates [mm]
+
+-  **-realignment** print a per-output-axis summary of the realignment applied by MRtrix3 at load time; prints nothing if no realignment was applied
+
+-  **-ondisk** report the on-disk view rather than the realigned (interpreted) view; equivalent to -config RealignTransform false (mutually exclusive with -realignment)
 
 Options for exporting image header fields
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

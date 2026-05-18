@@ -237,16 +237,25 @@ void transform_for_image_load(KeyValues &keyval, const Header &H) {
           " with load of image \"" + H.name() + "\"");                            //
     return;
   }
-  if (H.realignment().is_identity()) {
-    INFO("No transformation of phase encoding data for load of image \"" + H.name() + "\" required");
+  switch (H.realignment().state()) {
+  case MR::Header::Realignment::State::Unknown:
+    assert(false);
+    return;
+  case MR::Header::Realignment::State::Disabled:
+    return;
+  case MR::Header::Realignment::State::Identity:
+    return;
+  case MR::Header::Realignment::State::Applied:
+    set_scheme(keyval, transform_for_image_load(pe_scheme, H));
+    return;
+  default:
+    assert(false);
     return;
   }
-  set_scheme(keyval, transform_for_image_load(pe_scheme, H));
-  INFO("Phase encoding data transformed to match RAS realignment of image \"" + H.name() + "\"");
 }
 
 scheme_type transform_for_image_load(const scheme_type &pe_scheme, const Header &H) {
-  if (H.realignment().is_identity())
+  if (H.realignment().state() != MR::Header::Realignment::State::Applied)
     return pe_scheme;
   scheme_type result(pe_scheme.rows(), pe_scheme.cols());
   for (ssize_t row = 0; row != pe_scheme.rows(); ++row) {

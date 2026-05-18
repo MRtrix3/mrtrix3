@@ -70,7 +70,7 @@ void preload_data(std::vector<Header> &input,
 
   {
     LogLevelLatch log_level(0);
-    images = Image<default_type>::scratch(h1).with_direct_io(Stride::contiguous_along_axis(3));
+    images = Image<default_type>::scratch(h1, "scratch preloaded multi-contrast data", DirectIO{3});
   }
 
   if (sumvols == 1) {

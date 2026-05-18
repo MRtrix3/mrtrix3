@@ -16,13 +16,16 @@
 
 #include "header.h"
 
+#include <array>
 #include <cctype>
 #include <iomanip>
 #include <set>
 #include <sstream>
+#include <string_view>
 
 #include "app.h"
 #include "axes.h"
+#include "file/config.h"
 #include "file/name_parser.h"
 #include "file/path.h"
 #include "formats/list.h"
@@ -494,12 +497,21 @@ std::string Header::description(bool print_all) const {
   }
   desc += "\n";
 
-  desc += "  Data strides:      [ ";
-  auto strides(Stride::get(*this));
-  Stride::symbolise(strides);
-  for (i = 0; i < ndim(); i++)
-    desc += stride(i) ? str(strides[i]) + " " : "? ";
-  desc += "]\n";
+  auto format_symbolic_strides = [&](const Stride::List &raw) -> std::string {
+    Stride::List sym(raw);
+    Stride::symbolise(sym);
+    std::string out("[ ");
+    for (size_t n = 0; n < ndim() && n < sym.size(); ++n)
+      out += sym[n] == 0 ? "? " : (str(sym[n]) + " ");
+    out += "]";
+    return out;
+  };
+
+  desc += (realignment().state() == Realignment::State::Disabled) ? "  On-disk strides:   " : "  Data strides:      ";
+  desc += format_symbolic_strides(Stride::get(*this));
+  if (realignment().applied())
+    desc += "    (on-disk: " + format_symbolic_strides(realignment().orig_strides()) + ")";
+  desc += "\n";
 
   if (io) {
     desc += std::string("  Format:            ") + (format().empty() ? "undefined" : format()) + "\n";
@@ -508,16 +520,32 @@ std::string Header::description(bool print_all) const {
         "  Intensity scaling: offset = " + str(intensity_offset()) + ", multiplier = " + str(intensity_scale()) + "\n";
   }
 
-  desc += "  Transform:         ";
-  for (size_t i = 0; i < 3; i++) {
-    if (i)
-      desc += "                     ";
-    for (size_t j = 0; j < 4; j++) {
-      std::ostringstream oss;
-      oss << std::setprecision(4) << std::setw(12) << transform()(i, j);
-      desc += oss.str();
+  auto append_transform_block = [&desc](const transform_type &T, std::string_view label) {
+    desc += "  " + std::string(label);
+    const ssize_t pad = 21 - 2 - static_cast<ssize_t>(label.size());
+    if (pad > 0)
+      desc.append(pad, ' ');
+    for (Eigen::Index r = 0; r < 3; r++) {
+      if (r > 0)
+        desc += "                     ";
+      for (Eigen::Index c = 0; c < 4; c++) {
+        std::ostringstream oss;
+        oss << std::setprecision(4) << std::setw(12) << T(r, c);
+        desc += oss.str();
+      }
+      desc += "\n";
     }
-    desc += "\n";
+  };
+
+  append_transform_block(transform(),
+                         (realignment().state() == Realignment::State::Disabled) ? "On-disk transform:" : "Transform:");
+  if (realignment().applied()) {
+    append_transform_block(realignment().orig_transform(), "On-disk transform:");
+    const auto axis_mapping = realignment().describe_axis_mapping();
+    desc += "  Axes realignment:  " + axis_mapping[0] + "\n";
+    desc += "                     " + axis_mapping[1] + "\n";
+    desc += "                     " + axis_mapping[2] + "\n";
+    desc += "                     (disable with -config RealignTransform false or mrinfo -ondisk)\n";
   }
 
   for (const auto &p : keyval()) {
@@ -525,23 +553,45 @@ std::string Header::description(bool print_all) const {
     if (key.size() < 21)
       key.resize(21, ' ');
     const auto entries = split_lines(p.second);
+    // Compute per-line on-disk annotations by directly comparing the live
+    //   value against the snapshot in Realignment::orig_keyval;
+    //   any field whose realigned value differs from its on-disk value gets annotated
+    std::vector<std::string> ondisk_entries;
+    bool annotate = false;
+    if (realignment().applied()) {
+      const auto orig_it = realignment().orig_keyval().find(p.first);
+      if (orig_it != realignment().orig_keyval().end() && orig_it->second != p.second) {
+        ondisk_entries = split_lines(orig_it->second);
+        annotate = true;
+      }
+    }
+    auto annotation_for = [&](size_t line_index) -> std::string {
+      if (!annotate)
+        return {};
+      if (line_index >= ondisk_entries.size())
+        return "    (on-disk: <missing>)";
+      if (line_index < entries.size() && ondisk_entries[line_index] == entries[line_index])
+        return {};
+      return "    (on-disk: " + ondisk_entries[line_index] + ")";
+    };
     if (!entries.empty()) {
       bool shorten = (!print_all && entries.size() > 5);
-      desc += key + entries[0] + "\n";
+      desc += key + entries[0] + annotation_for(0) + "\n";
       if (entries.size() > 5) {
         key = "  [" + str(entries.size()) + " entries] ";
         if (key.size() < 21)
           key.resize(21, ' ');
-      } else
+      } else {
         key = "                     ";
+      }
       for (size_t n = 1; n < (shorten ? size_t(2) : entries.size()); ++n) {
-        desc += key + entries[n] + "\n";
+        desc += key + entries[n] + annotation_for(n) + "\n";
         key = "                     ";
       }
       if (!print_all && entries.size() > 5) {
         desc += key + "...\n";
         for (size_t n = entries.size() - 2; n < entries.size(); ++n)
-          desc += key + entries[n] + "\n";
+          desc += key + entries[n] + annotation_for(n) + "\n";
       }
     } else {
       desc += key + "(empty)\n";
@@ -605,15 +655,19 @@ void Header::realign_transform() {
   realignment_.orig_strides_ = Stride::get(*this);
   realignment_.orig_keyval_ = keyval();
 
-  if (!do_realign_transform)
+  if (!do_realign_transform) {
+    realignment_.state_ = Realignment::State::Disabled;
     return;
+  }
 
   // find which row of the transform is closest to each scanner axis:
   realignment_.shuffle_ = Axes::get_shuffle_to_make_RAS(transform());
 
   // check if image is already near-axial, return if true:
-  if (realignment_.is_identity())
+  if (realignment_.shuffle_.is_identity()) {
+    realignment_.state_ = Realignment::State::Identity;
     return;
+  }
 
   auto M(transform());
   auto translation = M.translation();
@@ -658,10 +712,62 @@ void Header::realign_transform() {
   axes_[1] = a[1];
   axes_[2] = a[2];
 
+  realignment_.state_ = Realignment::State::Applied;
+
   INFO("Axes and transform of image \"" + name() + "\" altered to approximate RAS coordinate system");
 
   Metadata::PhaseEncoding::transform_for_image_load(keyval(), *this);
   Metadata::SliceEncoding::transform_for_image_load(keyval(), *this);
+
+  // CONF option: RealignmentVerbose
+  // CONF default: true
+  // CONF Controls the on-load console notification emitted when MRtrix3
+  // CONF realigns an image's axes to approximate RAS at load time.
+  // CONF True value (default) emits a single console line per affected
+  // CONF image, summarising the shuffle and any reoriented metadata fields.
+  // CONF False value suppresses the notification; the realignment itself
+  // CONF still occurs (use RealignTransform: false to disable the realignment
+  // CONF itself). The -info / -debug command-line flags emit additional
+  // CONF detail independently of this setting.
+
+  // Default-visible notification that a non-trivial axis realignment was
+  //   applied; users who do not want this in every pipeline can set
+  //   RealignmentVerbose: false in their config file or via
+  //   -config RealignmentVerbose false.
+
+  // Enumerate every keyval field whose value was actually modified by
+  //   transform_for_image_load() by comparing the live keyval against
+  //   the pre-transformation snapshot in orig_keyval
+  std::vector<std::string> modified_fields;
+  for (const auto &kv : keyval()) {
+    const auto orig = realignment_.orig_keyval_.find(kv.first);
+    if (orig == realignment_.orig_keyval_.end() || orig->second != kv.second)
+      modified_fields.emplace_back(kv.first);
+  }
+  for (const auto &kv : realignment_.orig_keyval_) {
+    if (keyval().find(kv.first) == keyval().end())
+      modified_fields.emplace_back(kv.first);
+  }
+  std::string msg = "Image \"" + name() + "\" axes realigned to approximate RAS";
+  if (!modified_fields.empty())
+    msg += "; reoriented metadata: " + join(modified_fields, ", ");
+  if (File::Config::get_bool("RealignmentVerbose", true)) {
+    CONSOLE(msg);
+    CONSOLE("  (mrinfo -realignment / -ondisk for details;"
+            " suppress with -config RealignmentVerbose false)");
+  } else {
+    INFO(msg);
+  }
+  for (const auto &item : modified_fields) {
+    DEBUG("    \"" + item + "\": " +                                                   //
+          (realignment().orig_keyval().find(item) == realignment().orig_keyval().end() //
+               ? "<not present>"                                                       //
+               : ("\"" + realignment().orig_keyval().at(item) + "\"")) +               //
+          " -> " +                                                                     //
+          (keyval().find(item) == keyval().end()                                       //
+               ? "<not present>"                                                       //
+               : ("\"" + keyval().at(item) + "\"")));                                  //
+  }
 }
 
 Header
@@ -873,8 +979,23 @@ concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, con
   return result;
 }
 
-Header::Realignment::Realignment() : applied_transform_(applied_transform_type::Identity()), orig_keyval_() {
+Header::Realignment::Realignment() : state_(State::Unknown), applied_transform_(applied_transform_type::Identity()) {
   orig_transform_.matrix().fill(std::numeric_limits<default_type>::quiet_NaN());
+}
+
+std::vector<std::string> Header::Realignment::describe_axis_mapping() const {
+  if (state_ == State::Identity)
+    return {};
+  static constexpr std::array<std::string_view, 3> output_labels{"R", "A", "S"};
+  std::vector<std::string> lines;
+  lines.reserve(3);
+  for (size_t output = 0; output != 3; ++output) {
+    const size_t source_axis = shuffle_.permutations[output];
+    lines.push_back("output axis " + str(output) + " (~" + std::string(output_labels.at(output)) + ")" //
+                    + " <- source axis " + str(source_axis)                                            //
+                    + ", sign " + (shuffle_.flips[source_axis] ? "reversed" : "preserved"));           //
+  }
+  return lines;
 }
 
 } // namespace MR

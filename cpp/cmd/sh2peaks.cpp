@@ -289,7 +289,7 @@ private:
 };
 
 void run() {
-  auto SH_data = Image<value_type>::open(argument[0]).with_direct_io(3);
+  auto SH_data = Image<value_type>::open(argument[0], DirectIO{3});
   Math::SH::check(SH_data);
 
   auto opt = get_options("mask");

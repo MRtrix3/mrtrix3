@@ -2456,7 +2456,7 @@ void Connectome::initialise(const std::filesystem::path &path) {
   {
     // Prevent progress dialog from appearing in a multi-threading context
     LogLevelLatch latch(0);
-    buffer.reset(new MR::Image<node_t>(H.get_image<node_t>().with_direct_io()));
+    buffer.reset(new MR::Image<node_t>(H.get_image<node_t>(MR::DirectIO{})));
     MR::Connectome::debug_validate_label_image(*buffer);
   }
   MR::Transform transform(H);
