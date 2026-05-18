@@ -92,6 +92,7 @@ List of MRtrix3 commands
     commands/mrgrid
     commands/mrhistmatch
     commands/mrhistogram
+    commands/mricc
     commands/mrinfo
     commands/mrmath
     commands/mrmetric
@@ -236,6 +237,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`mrgrid`, "Modify the grid of an image without interpolation (cropping or padding) or by regridding to an image grid with modified orientation, location and or resolution. The image content remains in place in real world coordinates."
     |cpp.png|, :ref:`mrhistmatch`, "Modify the intensities of one image to match the histogram of another"
     |cpp.png|, :ref:`mrhistogram`, "Generate a histogram of image intensities"
+    |cpp.png|, :ref:`mricc`, "Compute the Intraclass Correlation Coefficient (ICC) across an image dataset"
     |cpp.png|, :ref:`mrinfo`, "Display image header information, or extract specific information from the header"
     |cpp.png|, :ref:`mrmath`, "Compute summary statistic on image intensities either across images, or along a specified axis of a single image"
     |cpp.png|, :ref:`mrmetric`, "Computes a dissimilarity metric between two images"
