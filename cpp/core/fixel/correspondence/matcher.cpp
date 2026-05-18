@@ -26,8 +26,8 @@
 
 namespace MR::Fixel::Correspondence {
 
-Matcher::Matcher(std::string_view source_file,
-                 std::string_view target_file,
+Matcher::Matcher(const std::filesystem::path &source_file,
+                 const std::filesystem::path &target_file,
                  std::shared_ptr<Algorithms::Base> &algorithm)
     : algorithm(algorithm)
 #ifdef FIXELCORRESPONDENCE_TEST_COMBINATORICS
@@ -35,27 +35,27 @@ Matcher::Matcher(std::string_view source_file,
       mutex(new std::mutex)
 #endif
 {
-  if (Path::is_dir(source_file))
+  if (std::filesystem::is_directory(source_file))
     throw Exception(
         "Please input the source fixel data file to be used during fixel correspondence; not the fixel directory");
   Header source_header(Header::open(source_file));
   if (!MR::Fixel::is_data_file(source_header))
     throw Exception("Source input image is not a fixel data file");
 
-  const std::string source_directory = MR::Fixel::get_fixel_directory(source_file);
+  const std::filesystem::path source_directory = MR::Fixel::get_fixel_directory(source_file);
   source_index = MR::Fixel::find_index_header(source_directory).get_image<MR::Fixel::index_type>();
   source_directions = MR::Fixel::find_directions_header(source_directory).get_image<float>();
   source_data = source_header.get_image<float>();
   MR::Fixel::check_fixel_size(source_index, source_data);
 
-  if (Path::is_dir(target_file))
+  if (std::filesystem::is_directory(target_file))
     throw Exception(
         "Please input the target fixel data file to be used during fixel correspondence; not the fixel directory");
   Header target_header(Header::open(target_file));
   if (!MR::Fixel::is_data_file(target_header))
     throw Exception("Target input image is not a fixel data file");
 
-  const std::string target_directory = MR::Fixel::get_fixel_directory(target_file);
+  const std::filesystem::path target_directory = MR::Fixel::get_fixel_directory(target_file);
   target_index = MR::Fixel::find_index_header(target_directory).get_image<MR::Fixel::index_type>();
   target_directions = MR::Fixel::find_directions_header(target_directory).get_image<float>();
   target_data = target_header.get_image<float>();
@@ -133,14 +133,13 @@ void Matcher::operator()(Image<MR::Fixel::index_type> &voxel) {
   }
 }
 
-void Matcher::export_remapped(std::string_view dirname) {
+void Matcher::export_remapped(const std::filesystem::path &dirname) {
   MR::Fixel::check_fixel_directory(dirname, true, true);
-  Image<MR::Fixel::index_type> out_index(
-      Image<MR::Fixel::index_type>::create(Path::join(dirname, "index.mif"), target_index));
+  Image<MR::Fixel::index_type> out_index(Image<MR::Fixel::index_type>::create(dirname / "index.mif", target_index));
   copy(target_index, out_index);
-  Image<float> out_directions(Image<float>::create(Path::join(dirname, "directions.mif"), target_directions));
+  Image<float> out_directions(Image<float>::create(dirname / "directions.mif", target_directions));
   copy(remapped_directions, out_directions);
-  Image<float> out_data(Image<float>::create(Path::join(dirname, "fd.mif"), target_data));
+  Image<float> out_data(Image<float>::create(dirname / "fd.mif", target_data));
   copy(remapped_data, out_data);
 }
 

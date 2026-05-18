@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <filesystem>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -57,35 +59,39 @@ template <typename T> std::vector<uint8_t> build_1d_buffer(const T *data, const 
 }
 
 /// @brief Parse NPY header from a memory buffer; returns ReadInfo with data_offset as byte offset within buffer.
-NPY::ReadInfo parse_1d_header_from_buffer(const std::vector<uint8_t> &buffer, std::string_view context);
+NPY::ReadInfo parse_1d_header_from_buffer(const std::vector<uint8_t> &buffer,
+                                          const std::optional<std::filesystem::path> &context);
 
 /// @brief Read a named .npy entry from an open zip archive into a byte buffer.
-std::vector<uint8_t> read_entry(zip_t *archive, std::string_view entry_name, std::string_view npz_path);
+std::vector<uint8_t>
+read_entry(zip_t *archive, const std::filesystem::path &entry_filename, const std::filesystem::path &npz_path);
 
 /// @brief RAII writer for .npz files (uncompressed ZIP archive of .npy entries).
 class Writer {
 public:
-  explicit Writer(std::string_view path);
+  explicit Writer(const std::filesystem::path &path);
   ~Writer();
   Writer(const Writer &) = delete;
   Writer &operator=(const Writer &) = delete;
 
   /// @brief Add a 1D typed array as a named .npy entry (stored uncompressed).
-  template <typename T> void add_1d(std::string_view name, const T *data, const size_t count) {
+  template <typename T> void add_1d(const std::filesystem::path &filename, const T *data, const size_t count) {
+    assert(filename == filename.filename());
     buffers_.push_back(build_1d_buffer(data, count));
     const std::vector<uint8_t> &buf = buffers_.back();
     zip_source_t *source = zip_source_buffer(archive_, buf.data(), buf.size(), 0);
-    const std::string name_str(name);
     if (source == nullptr)
-      throw Exception("Failed to create zip source for entry \"" + name_str + "\" in \"" + path_ + "\"");
-    const zip_int64_t index = zip_file_add(archive_, name_str.c_str(), source, ZIP_FL_ENC_UTF_8);
+      throw Exception("Failed to create zip source for entry \"" + filename.string() + "\" in \"" + path_.string() +
+                      "\"");
+    const zip_int64_t index = zip_file_add(archive_, filename.string().c_str(), source, ZIP_FL_ENC_UTF_8);
     if (index < 0) {
       zip_source_free(source);
-      throw Exception("Failed to add entry \"" + name_str + "\" to \"" + path_ +
-                      "\": " + zip_error_strerror(zip_get_error(archive_)));
+      throw Exception("Failed to add entry \"" + filename.string() + "\" to \"" + path_.string() + "\": " + //
+                      zip_error_strerror(zip_get_error(archive_)));
     }
     if (zip_set_file_compression(archive_, static_cast<zip_uint64_t>(index), ZIP_CM_STORE, 0) != 0)
-      throw Exception("Failed to set compression for entry \"" + name_str + "\" in \"" + path_ + "\"");
+      throw Exception("Failed to set compression for entry \"" + filename.string() + "\" in \"" + path_.string() +
+                      "\"");
   }
 
   /// @brief Commit and close the archive; throws on failure. Called automatically by destructor if not already done.
@@ -93,7 +99,7 @@ public:
 
 private:
   zip_t *archive_;
-  std::string path_;
+  std::filesystem::path path_;
   bool closed_;
   std::vector<std::vector<uint8_t>> buffers_;
 };

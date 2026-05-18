@@ -35,7 +35,9 @@ namespace MR::Fixel::Correspondence {
 class Matcher {
 
 public:
-  Matcher(std::string_view source_file, std::string_view target_file, std::shared_ptr<Algorithms::Base> &algorithm);
+  Matcher(const std::filesystem::path &source_file,
+          const std::filesystem::path &target_file,
+          std::shared_ptr<Algorithms::Base> &algorithm);
 
   // Input is just a dummy iterator that provides the location
   void operator()(Image<index_type> &voxel);
@@ -51,7 +53,7 @@ public:
   size_t num_source_fixels() const { return source_data.size(0); }
   size_t num_target_fixels() const { return target_data.size(0); }
 
-  void export_remapped(std::string_view dirname);
+  void export_remapped(const std::filesystem::path &dirname);
 
 private:
   std::shared_ptr<Algorithms::Base> algorithm;

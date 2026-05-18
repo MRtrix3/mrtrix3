@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <filesystem>
 #include <string_view>
 
 #include "types.h"
@@ -33,9 +34,9 @@ public:
   };
 
   Mapping(const index_type source_fixels, const index_type target_fixels);
-  Mapping(std::string_view path);
+  Mapping(const std::filesystem::path &path);
 
-  void load(std::string_view path, const bool import_inverse = false);
+  void load(const std::filesystem::path &path, const bool import_inverse = false);
 
   // Save to CSR format as an uncompressed .npz archive containing six .npy entries:
   // - indptr_forward.npy: (Nt+1) npz_index_type vector, CSR index pointer array for forward mapping
@@ -45,7 +46,7 @@ public:
   // - indices_inverse.npy: C npz_index_type vector, target fixel indices to pull into source fixels
   // - data_inverse.npy: C npz_value_type vector, forward weights per (source, target) pair normalised to unity sum per
   // target
-  void save(std::string_view path) const;
+  void save(const std::filesystem::path &path) const;
 
   const std::vector<Entry> &operator[](const size_t index) const { return M[index]; }
 

@@ -21,14 +21,18 @@
 
 namespace MR::File::NPZ {
 
-NPY::ReadInfo parse_1d_header_from_buffer(const std::vector<uint8_t> &buffer, std::string_view context) {
+NPY::ReadInfo parse_1d_header_from_buffer(const std::vector<uint8_t> &buffer,
+                                          const std::optional<std::filesystem::path> &context) {
+  if (context.has_value()) {
+    assert(context.value() == context->filename());
+  }
   if (buffer.size() < 10)
     throw Exception("Buffer too small to be a valid NPY file" +
-                    std::string(context.empty() ? "" : " in " + std::string(context)));
+                    (context.has_value() ? "" : " in " + context->string()));
 
   for (size_t i = 0; i != 6; ++i) {
     if (buffer[i] != static_cast<uint8_t>(NPY::magic_string[i]))
-      throw Exception("Invalid NPY magic string" + std::string(context.empty() ? "" : " in " + std::string(context)));
+      throw Exception("Invalid NPY magic string" + (context.has_value() ? "" : " in " + context->string()));
   }
 
   const uint8_t major_version = buffer[6];
@@ -43,12 +47,12 @@ NPY::ReadInfo parse_1d_header_from_buffer(const std::vector<uint8_t> &buffer, st
     leadin_size = 12;
   } else {
     throw Exception("Incompatible NPY major version (" + str(major_version) + ")" +
-                    std::string(context.empty() ? "" : " in " + std::string(context)));
+                    (context.has_value() ? "" : " in " + context->string()));
   }
 
   if (buffer.size() < leadin_size + header_len)
     throw Exception("NPY buffer too small for stated header length" +
-                    std::string(context.empty() ? "" : " in " + std::string(context)));
+                    (context.has_value() ? "" : " in " + context->string()));
 
   const std::string header_str(reinterpret_cast<const char *>(buffer.data() + leadin_size), header_len);
 
@@ -58,77 +62,74 @@ NPY::ReadInfo parse_1d_header_from_buffer(const std::vector<uint8_t> &buffer, st
   try {
     info.keyval = NPY::parse_dict(header_str);
   } catch (Exception &e) {
-    throw Exception(e, "Error parsing NPY header" + std::string(context.empty() ? "" : " in " + std::string(context)));
+    throw Exception(e, "Error parsing NPY header" + (context.has_value() ? "" : " in " + context->string()));
   }
 
   const auto descr_ptr = info.keyval.find("descr");
   if (descr_ptr == info.keyval.end())
-    throw Exception("NPY header missing \"descr\" key" +
-                    std::string(context.empty() ? "" : " in " + std::string(context)));
+    throw Exception("NPY header missing \"descr\" key" + (context.has_value() ? "" : " in " + context->string()));
   try {
     info.data_type = NPY::descr2datatype(descr_ptr->second);
   } catch (Exception &e) {
-    throw Exception(e,
-                    "Error parsing NPY data type" + std::string(context.empty() ? "" : " in " + std::string(context)));
+    throw Exception(e, "Error parsing NPY data type" + (context.has_value() ? "" : " in " + context->string()));
   }
   info.keyval.erase(descr_ptr);
 
   const auto fortran_ptr = info.keyval.find("fortran_order");
   if (fortran_ptr == info.keyval.end())
     throw Exception("NPY header missing \"fortran_order\" key" +
-                    std::string(context.empty() ? "" : " in " + std::string(context)));
+                    (context.has_value() ? "" : " in " + context->string()));
   info.column_major = to<bool>(fortran_ptr->second);
   info.keyval.erase(fortran_ptr);
 
   const auto shape_ptr = info.keyval.find("shape");
   if (shape_ptr == info.keyval.end())
-    throw Exception("NPY header missing \"shape\" key" +
-                    std::string(context.empty() ? "" : " in " + std::string(context)));
+    throw Exception("NPY header missing \"shape\" key" + (context.has_value() ? "" : " in " + context->string()));
   const auto shape_parts = split(strip(strip(shape_ptr->second, "(", true, false), ")", false, true), ",", true);
   if (shape_parts.size() != 1)
-    throw Exception("Expected 1D shape in NPY entry" +
-                    std::string(context.empty() ? "" : " in " + std::string(context)));
+    throw Exception("Expected 1D shape in NPY entry" + (context.has_value() ? "" : " in " + context->string()));
   info.shape.push_back(to<ssize_t>(shape_parts[0]));
   info.keyval.erase(shape_ptr);
 
   return info;
 }
 
-std::vector<uint8_t> read_entry(zip_t *archive, std::string_view entry_name, std::string_view npz_path) {
-  const std::string entry_name_str(entry_name);
-  const zip_int64_t index = zip_name_locate(archive, entry_name_str.c_str(), 0);
+std::vector<uint8_t>
+read_entry(zip_t *archive, const std::filesystem::path &entry_filename, const std::filesystem::path &npz_path) {
+  assert(entry_filename == entry_filename.filename());
+  const zip_int64_t index = zip_name_locate(archive, entry_filename.string().c_str(), 0);
   if (index < 0)
-    throw Exception("Entry \"" + entry_name_str + "\" not found in \"" + std::string(npz_path) + "\"");
+    throw Exception("Entry \"" + entry_filename.string() + "\" not found in \"" + npz_path.string() + "\"");
 
   zip_stat_t stat;
   if (zip_stat_index(archive, static_cast<zip_uint64_t>(index), 0, &stat) != 0)
-    throw Exception("Failed to stat entry \"" + entry_name_str + "\" in \"" + std::string(npz_path) + "\"");
+    throw Exception("Failed to stat entry \"" + entry_filename.string() + "\" in \"" + npz_path.string() + "\"");
 
   std::vector<uint8_t> buffer(stat.size);
 
   zip_file_t *zf = zip_fopen_index(archive, static_cast<zip_uint64_t>(index), 0);
   if (zf == nullptr)
-    throw Exception("Failed to open entry \"" + entry_name_str + "\" in \"" + std::string(npz_path) +
+    throw Exception("Failed to open entry \"" + entry_filename.string() + "\" in \"" + npz_path.string() +
                     "\": " + zip_error_strerror(zip_get_error(archive)));
 
   const zip_int64_t bytes_read = zip_fread(zf, buffer.data(), stat.size);
   zip_fclose(zf);
 
   if (bytes_read < 0 || static_cast<zip_uint64_t>(bytes_read) != stat.size)
-    throw Exception("Failed to read entry \"" + entry_name_str + "\" in \"" + std::string(npz_path) + "\"");
+    throw Exception("Failed to read entry \"" + entry_filename.string() + "\" in \"" + npz_path.string() + "\"");
 
   return buffer;
 }
 
-Writer::Writer(std::string_view path) : path_(path), closed_(false) {
+Writer::Writer(const std::filesystem::path &path) : path_(path), closed_(false) {
   int errcode = 0;
-  archive_ = zip_open(path_.c_str(), ZIP_CREATE | (App::overwrite_files ? ZIP_TRUNCATE : ZIP_EXCL), &errcode);
+  archive_ = zip_open(path_.string().c_str(), ZIP_CREATE | (App::overwrite_files ? ZIP_TRUNCATE : ZIP_EXCL), &errcode);
   if (archive_ == nullptr) {
     zip_error_t error;
     zip_error_init_with_code(&error, errcode);
     const std::string message = zip_error_strerror(&error);
     zip_error_fini(&error);
-    throw Exception("Failed to create NPZ file \"" + path_ + "\": " + message);
+    throw Exception("Failed to create NPZ file \"" + path_.string() + "\": " + message);
   }
 }
 
@@ -149,7 +150,7 @@ void Writer::close() {
   if (zip_close(archive_) != 0) {
     const std::string message = zip_error_strerror(zip_get_error(archive_));
     zip_discard(archive_);
-    throw Exception("Failed to close NPZ file \"" + path_ + "\": " + message);
+    throw Exception("Failed to close NPZ file \"" + path_.string() + "\": " + message);
   }
 }
 

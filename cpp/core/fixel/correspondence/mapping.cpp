@@ -25,35 +25,38 @@ namespace MR::Fixel::Correspondence {
 Mapping::Mapping(const index_type source_fixels, const index_type target_fixels)
     : source_fixels(source_fixels), target_fixels(target_fixels), M(target_fixels, std::vector<Entry>()) {}
 
-Mapping::Mapping(std::string_view path) { load(path); }
+Mapping::Mapping(const std::filesystem::path &path) { load(path); }
 
 namespace {
 
 template <typename T>
-void validate_npy_1d(File::NPY::ReadInfo info, std::string_view entry_name, std::string_view npz_path) {
+void validate_npy_1d(File::NPY::ReadInfo info,
+                     const std::filesystem::path &entry_filename,
+                     const std::filesystem::path &npz_path) {
+  assert(entry_filename == entry_filename.filename());
   if (info.shape.size() != 1)
-    throw Exception("Expected 1D array in entry \"" + std::string(entry_name) + "\"" + //
-                    " in \"" + std::string(npz_path) + "\"");                          //
+    throw Exception("Expected 1D array in entry \"" + entry_filename.string() + "\"" + //
+                    " in \"" + npz_path.string() + "\"");                              //
   if (info.data_type != DataType::from<T>())
-    throw Exception("Unexpected data type in entry \"" + std::string(entry_name) + "\"" + //
-                    " in \"" + std::string(npz_path) + "\"");                             //
+    throw Exception("Unexpected data type in entry \"" + entry_filename.string() + "\"" + //
+                    " in \"" + npz_path.string() + "\"");                                 //
   if (!info.data_type.is_byte_order_native())
-    throw Exception("Non-native byte order in entry \"" + std::string(entry_name) + "\"" + //
-                    " in \"" + std::string(npz_path) + "\"");                              //
+    throw Exception("Non-native byte order in entry \"" + entry_filename.string() + "\"" + //
+                    " in \"" + npz_path.string() + "\"");                                  //
 }
 
 } // namespace
 
-void Mapping::load(std::string_view npz_path, const bool import_inverse) {
+void Mapping::load(const std::filesystem::path &npz_path, const bool import_inverse) {
   const std::string dir_string = import_inverse ? "inverse" : "forward";
   const std::string converse_string = import_inverse ? "forward" : "inverse";
-  const std::string indptr_name = "indptr_" + dir_string + ".npy";
-  const std::string indices_name = "indices_" + dir_string + ".npy";
-  const std::string data_name = "data_" + dir_string + ".npy";
-  const std::string converse_indptr_name = "indptr_" + converse_string + ".npy";
+  const std::filesystem::path indptr_name = "indptr_" + dir_string + ".npy";
+  const std::filesystem::path indices_name = "indices_" + dir_string + ".npy";
+  const std::filesystem::path data_name = "data_" + dir_string + ".npy";
+  const std::filesystem::path converse_indptr_name = "indptr_" + converse_string + ".npy";
 
   int errcode = 0;
-  zip_t *archive = zip_open(std::string(npz_path).c_str(),                                 //
+  zip_t *archive = zip_open(npz_path.string().c_str(),                                     //
                             App::log_level >= 3 ? ZIP_RDONLY | ZIP_CHECKCONS : ZIP_RDONLY, //
                             &errcode);                                                     //
   if (archive == nullptr) {
@@ -61,7 +64,7 @@ void Mapping::load(std::string_view npz_path, const bool import_inverse) {
     zip_error_init_with_code(&error, errcode);
     const std::string message = zip_error_strerror(&error);
     zip_error_fini(&error);
-    throw Exception("Failed to open NPZ file \"" + std::string(npz_path) + "\": " + message);
+    throw Exception("Failed to open NPZ file \"" + npz_path.string() + "\": " + message);
   }
 
   const std::vector<uint8_t> indptr_buf = File::NPZ::read_entry(archive, indptr_name, npz_path);
@@ -82,7 +85,7 @@ void Mapping::load(std::string_view npz_path, const bool import_inverse) {
   validate_npy_1d<npz_index_type>(converse_info, converse_indptr_name, npz_path);
 
   if (indices_info.shape[0] != data_info.shape[0])
-    throw Exception("Size mismatch between indices and data arrays in NPZ file \"" + std::string(npz_path) + "\"");
+    throw Exception("Size mismatch between indices and data arrays in NPZ file \"" + npz_path.string() + "\"");
 
   const index_type N = static_cast<index_type>(indptr_info.shape[0]) - 1;
   M.assign(N, std::vector<Entry>());
@@ -104,7 +107,7 @@ void Mapping::load(std::string_view npz_path, const bool import_inverse) {
   target_fixels = N;
 }
 
-void Mapping::save(std::string_view npz_path) const {
+void Mapping::save(const std::filesystem::path &npz_path) const {
   const Mapping inv = inverse();
 
   // Build CSR arrays for forward mapping

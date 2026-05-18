@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <filesystem>
 #include <string>
 #include <string_view>
 
@@ -157,18 +158,18 @@ private:
   // - Extract the relevant metric
   // Is a class needed here, or just deal with it in the functor?
 public:
-  Functor(std::string_view input_path,
+  Functor(const std::filesystem::path &input_path,
           const Mapping &correspondence,
           const metric_t metric,
           const FillSettings &fill_settings,
           Image<float> &explicit_weights,
-          std::string_view output_directory)
+          const std::filesystem::path &output_directory)
       : correspondence(correspondence),
         metric(metric),
         fill(fill_settings),
         ignore_weights(!get_options("ignore_weights").empty()),
         explicit_weights(explicit_weights) {
-    if (Path::is_dir(input_path))
+    if (std::filesystem::is_directory(input_path))
       throw Exception("Input must be a fixel data file to be mapped, not a fixel directory");
     Header input_header(Header::open(input_path));
     if (!MR::Fixel::is_data_file(input_header))
@@ -178,7 +179,7 @@ public:
                       " does not match number of fixels in fixel weights file" +             //
                       " (" + str(explicit_weights.size(0)) + ")");                           //
 
-    const std::string fixel_directory = MR::Fixel::get_fixel_directory(input_path);
+    const std::filesystem::path fixel_directory = MR::Fixel::get_fixel_directory(input_path);
     input_directions = MR::Fixel::find_directions_header(fixel_directory).get_image<float>();
     input_data = input_header.get_image<float>();
 
@@ -265,7 +266,7 @@ public:
     return true;
   }
 
-  void save(std::string_view path) {
+  void save(const std::filesystem::path &path) {
     Image<float> out = Image<float>::create(path, output_data);
     copy(output_data, out);
   }
@@ -303,13 +304,14 @@ void run() {
   fill_settings.nan_many2one = get_options("nan_many2one").size();
   fill_settings.nan_one2many = get_options("nan_one2many").size();
 
-  const std::string input_path(argument[0]);
-  const Mapping correspondence((std::string(argument[1])));
+  const std::filesystem::path input_path(argument[0]);
+  const Mapping correspondence(argument[1]);
   const metric_t metric = MR::Enum::from_name<metric_t>(argument[2]);
-  const std::string output_directory(argument[3]);
+  const std::filesystem::path output_directory(argument[3]);
+  const std::filesystem::path output_filename(argument[4]);
 
-  if (!Path::is_dir(output_directory))
-    throw Exception("Output fixel directory \"" + output_directory + "\" not found");
+  if (!std::filesystem::is_directory(output_directory))
+    throw Exception("Output fixel directory \"" + output_directory.string() + "\" not found");
 
   Image<float> explicit_weights;
   auto opt = get_options("weighted");
@@ -322,5 +324,5 @@ void run() {
   Source source(correspondence.size());
   Functor functor(input_path, correspondence, metric, fill_settings, explicit_weights, output_directory);
   Thread::run_queue(source, Thread::batch(size_t()), Thread::multi(functor));
-  functor.save(Path::join(output_directory, argument[4]));
+  functor.save(output_directory / output_filename);
 }
