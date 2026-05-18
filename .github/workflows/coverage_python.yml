@@ -1,10 +1,9 @@
-name: Python Coverage
+name: Python Coverage Analysis
 
 on:
+  workflow_dispatch:
   schedule:
     - cron: '0 0 * * 0'
-  # IMPORTANT: remove this before merging
-  pull_request:
 
 jobs:
   python-coverage:
@@ -98,5 +97,5 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: python-coverage-report
-        path: coverage-report/
+        path: coverage-reports/
         retention-days: 90
