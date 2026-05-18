@@ -651,6 +651,12 @@ List of MRtrix3 configuration file options
 
      Linear registration: estimated spatial coherence length in voxels.
 
+.. option:: RegGdConvergenceBufferLen
+
+    *default: 4*
+
+     Linear registration: gradient descent convergence buffer length.
+
 .. option:: RegGdConvergenceDataSmooth
 
     *default: 0.8*
