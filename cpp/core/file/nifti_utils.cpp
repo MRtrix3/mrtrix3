@@ -97,7 +97,7 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
   }
 
   if (Type<NiftiHeader>::is_version2) {
-    if (memcmp(NH.magic + 4, Type<NiftiHeader>::signature_extra.data(), 4))
+    if (memcmp(NH.magic + 4, Type<NiftiHeader>::signature_extra.data(), 4) != 0)
       WARN("possible file transfer corruption of file \"" + H.path().string() + "\" (invalid magic signature)");
   } else {
     std::string db_name(19, '\0');

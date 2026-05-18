@@ -16,8 +16,6 @@
 
 #include <cstdint>
 
-// NOLINTBEGIN
-
 template <class ImageType> Matrix(const MR::Helper::ConstRow<ImageType> &row) : Base() { operator=(row); }
 template <class ImageType> Matrix(const MR::Helper::Row<ImageType> &row) : Base() { operator=(row); }
 
@@ -33,5 +31,3 @@ template <class ImageType> Matrix(const MR::Helper::Row<ImageType> &row) : Base(
 MRTRIX_OP(=)
 
 #undef MRTRIX_OP
-
-// NOLINTEND

@@ -473,6 +473,7 @@ save(ImageType &&x, const std::filesystem::path &filepath, bool use_multi_thread
 template <class ImageType> typename enable_if_image_type<ImageType, void>::type display(ImageType &x) {
   const std::filesystem::path filepath = save(x, "-");
   CONSOLE("displaying image \"" + filepath.string() + "\"");
+  // NOLINTNEXTLINE(concurrency-mt-unsafe)
   if (system(("bash -c \"mrview " + filepath.string() + "\"").c_str()))
     WARN(std::string("error invoking viewer: ") + MR::C_strerror(errno));
 }

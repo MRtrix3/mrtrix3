@@ -25,6 +25,8 @@
 #undef BINARY_OP
 #undef TERNARY_OP
 
+// NOLINTBEGIN(bugprone-macro-parentheses)
+
 #if SECTION == 1 // usage section
 
 #define SECTION_TITLE(TITLE) +OptionGroup(TITLE)
@@ -311,6 +313,8 @@ UNARY_OP(
     atanh, "atanh (%1)", NORMAL, "inverse hyperbolic tangent", { return std::atanh(v); }, { return std::atanh(v); })
 
 #undef SECTION
+
+// NOLINTEND(bugprone-macro-parentheses)
 
 #else
 
