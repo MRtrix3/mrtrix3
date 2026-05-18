@@ -17,6 +17,7 @@
 #pragma once
 
 #include <filesystem>
+#include <optional>
 
 #include "image.h"
 #include "types.h"
@@ -349,13 +350,13 @@ public:
           converged = true;
 
         // write debug image
-        if (converged && !diagnostics_image_dir.empty()) {
-          const std::filesystem::path image_path = diagnostics_image_dir / ("stage-" + str(level + 1) + ".mif");
+        if (converged && diagnostics_image_dir.has_value()) {
+          const std::filesystem::path image_path = diagnostics_image_dir.value() / ("stage-" + str(level + 1) + ".mif");
           Header hc(warped_header);
           hc.ndim() = 4;
           hc.size(3) = 3;
           INFO("writing debug image: " + image_path.string());
-          auto check = Image<default_type>::create(image_path.string(), hc);
+          auto check = Image<default_type>::create(image_path, hc);
           for (auto i = Loop(check, 0, 3)(check, im1_warped, im2_warped); i; ++i) {
             check.value() = im1_warped.value();
             check.index(3) = 1;
@@ -511,7 +512,7 @@ public:
     cc_extent = std::vector<size_t>(3, radius * 2 + 1);
   }
 
-  void set_diagnostics_image_dir(const std::filesystem::path &dir) { diagnostics_image_dir = dir; }
+  void set_diagnostics_image_dir(const std::filesystem::path &dir) { diagnostics_image_dir.emplace(dir); }
 
 protected:
   std::shared_ptr<Image<default_type>> reslice(Image<default_type> &image, Header &header) {
@@ -540,7 +541,7 @@ protected:
   bool do_reorientation;
   std::vector<uint32_t> fod_lmax;
   bool use_cc;
-  std::filesystem::path diagnostics_image_dir;
+  std::optional<std::filesystem::path> diagnostics_image_dir;
 
   std::vector<size_t> cc_extent;
 

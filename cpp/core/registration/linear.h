@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <filesystem>
 #include <iostream>
 
 #include "adapter/reslice.h"
@@ -89,7 +90,7 @@ struct StageSetting {
   OptimiserAlgoType optimiser_default, optimiser_first, optimiser_last;
   default_type loop_density;
   ssize_t fod_lmax;
-  std::vector<std::string> diagnostics_image_paths;
+  std::vector<std::filesystem::path> diagnostics_image_paths;
 };
 
 class Linear {
@@ -227,7 +228,7 @@ public:
         if (std::filesystem::exists(image_path) && !App::overwrite_files)
           throw Exception("diagnostics image file \"" + image_path.string() + "\"" + //
                           " already exists (use -force option to force overwrite)"); //
-        stage.diagnostics_image_paths.push_back(image_path.string());
+        stage.diagnostics_image_paths.push_back(image_path);
       }
     }
   }
@@ -527,7 +528,7 @@ public:
         // VAR(optim.function_evaluations());
         // Math::check_function_gradient (evaluate, params, 0.0001, true, optimiser_weights);
         if (!stage.diagnostics_image_paths.empty()) {
-          CONSOLE("    creating diagnostics image: " + stage.diagnostics_image_paths[stage_iter - 1]);
+          CONSOLE("    creating diagnostics image: " + stage.diagnostics_image_paths[stage_iter - 1].string());
           parameters.make_diagnostics_image(stage.diagnostics_image_paths[stage_iter - 1],
                                             File::Config::get_bool("RegLinregDiagnosticsImageMasked", false));
         }

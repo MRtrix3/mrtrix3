@@ -64,7 +64,7 @@ void usage() {
   ARGUMENTS
   + Argument("input", "a text file listing the file names of the input subject data").type_file_in()
   + Argument("design", "the design matrix").type_file_in()
-  + Argument("output_dir", "the output directory (will be created by the command)").type_directory_out(DirOutMode::MayExist);
+  + Argument("output_dir", "the output directory (will be created by the command)").type_directory_out(DirOutMode::MustNotExist);
 
   OPTIONS
   + OptionGroup("Options for constraining analysis to specific elements")

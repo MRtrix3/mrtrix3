@@ -77,7 +77,7 @@ void usage() {
   + Argument("input", "a text file containing the file names of the input images, one file per line").type_file_in()
   + Argument("design", "the design matrix").type_file_in()
   + Argument("mask", "a mask used to define voxels included in the analysis.").type_image_in()
-  + Argument("output_dir", "the output directory (will be created by the command).").type_directory_out(DirOutMode::MayExist);
+  + Argument("output_dir", "the output directory (will be created by the command).").type_directory_out(DirOutMode::MustNotExist);
 
   OPTIONS
 

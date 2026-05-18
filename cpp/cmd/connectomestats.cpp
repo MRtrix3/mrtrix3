@@ -84,7 +84,7 @@ void usage() {
   + Argument("algorithm", "the algorithm to use in network-based clustering/enhancement."
                           " Options are: " + MR::Enum::join<Algorithm>() + ".").type_choice<Algorithm>()
   + Argument("design", "the design matrix").type_file_in()
-  + Argument("output_dir", "the output directory (will be created by the command).").type_directory_out(DirOutMode::MayExist);
+  + Argument("output_dir", "the output directory (will be created by the command).").type_directory_out(DirOutMode::EmptyOrAbsent);
 
   OPTIONS
 

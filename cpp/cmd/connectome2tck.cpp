@@ -81,9 +81,7 @@ void usage() {
   //   and must be constructed after the command is executed.
   const OptionGroup TrackWeightsOptions = OptionGroup ("Options for importing / exporting streamline weights")
       + Tractography::TrackWeightsInOption
-      + Option ("tck_weights_out", "provide the output path for streamline weight data;"
-                                   " interpreted as a single file when -files single is specified,"
-                                   " or as a directory of per-track-file weight text files otherwise")
+      + Option ("tck_weights_out", "provide the output path for streamline weight data (see Description)")
         + Argument ("path").type_directory_out(DirOutMode::MayExist).type_file_out();
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
@@ -103,7 +101,15 @@ void usage() {
     " otherwise it is interpreted as a directory,"
     " into which individual output tractogram files will be written."
     " The -tck_weights_out path is interpreted in the same manner,"
-    " as either a single output file or a directory of per-tract-file weight text files.";
+    " as either a single output file or a directory of per-tract-file weight text files."
+
+  + "The -tck_weights_out option behaves similarity to the third argument as described above."
+    " If option \"-files single\" is specified,"
+    " then the user-specified input to the -tck_weights_out option will be interpreted"
+    " as the path to a file to be created."
+    " Otherwise, that path will instead be interpreted as a directory to be created,"
+    " which will then be populated with files of the same name as the tractogram files"
+    " written as the primary command output.";
 
   EXAMPLES
   + Example ("Default usage",
@@ -115,13 +121,13 @@ void usage() {
              " will be written to file \"edges/23-49.tck\".")
 
   + Example ("Extract only the streamlines between nodes 1 and 2",
-             "connectome2tck tracks.tck assignments.txt node12.tck -nodes 1,2 -exclusive -files single",
+             "connectome2tck tracks.tck assignments.txt edge_1_2.tck -nodes 1,2 -exclusive -files single",
              "Since only a single edge is of interest,"
              " this example provides only the two nodes involved in that edge to the -nodes option,"
              " adds the -exclusive option so that only streamlines for which"
              " both assigned nodes are in the list of nodes of interest are extracted"
              " (i.e. only streamlines connecting nodes 1 and 2 in this example),"
-             " and writes the result to output track file \"node12.tck\".")
+             " and writes the result to output track file \"edge_1_2.tck\".")
 
   + Example ("Extract the streamlines connecting node 15 to all other nodes in the parcellation,"
              " with one track file for each edge",
@@ -168,9 +174,8 @@ void usage() {
   ARGUMENTS
   + Argument ("tracks_in",      "the input track file").type_file_in()
   + Argument ("assignments_in", "input text file containing the node assignments for each streamline").type_file_in()
-  + Argument ("output",         "the output tractogram file (if -files single is specified)"
-                                " or the output directory (otherwise)").type_directory_out(DirOutMode::MayExist).type_file_out();
-
+  + Argument ("output",         "the output tractogram file / directory path (see Description)")
+              .type_directory_out(DirOutMode::MayExist).type_file_out();
 
   OPTIONS
   + TrackOutputOptions
@@ -192,15 +197,13 @@ void run() {
   if (file_format == FileOutput::SINGLE) {
     output_file = output_path;
     if (!output_path.has_filename())
-      WARN("Output path \"" + argument[2].as_text() +
-           "\" ends with a path separator;"
-           " when -files single is specified, the output path is interpreted as a tractogram file path");
+      WARN("Output path \"" + argument[2].as_text() + "\" ends with a path separator;" +                  //
+           " when -files single is specified, the output path is interpreted as a tractogram file path"); //
   } else {
     output_dir = output_path;
     if (output_path.extension() == ".tck")
-      WARN("Output path \"" + argument[2].as_text() +
-           "\" has a .tck extension;"
-           " unless -files single is specified, the output path is interpreted as a directory");
+      WARN("Output path \"" + argument[2].as_text() + "\" has a .tck extension;" +               //
+           " unless -files single is specified, the output path is interpreted as a directory"); //
     std::filesystem::create_directories(output_dir);
   }
 
@@ -240,8 +243,8 @@ void run() {
 
   const size_t count = to<size_t>(properties["count"]);
   if (assignments_lists.size() != count)
-    throw Exception("Assignments file contains " + str(assignments_lists.size()) + " entries; track file contains " +
-                    str(count) + " tracks");
+    throw Exception("Assignments file contains " + str(assignments_lists.size()) + " entries;" + //
+                    " track file contains " + str(count) + " tracks");                           //
 
   // If the node assignments have been performed in such a way that each streamline is
   //   assigned to precisely two nodes, use the assignments_pairs class which is
@@ -262,18 +265,16 @@ void run() {
   if (!opt_weights.empty()) {
     const std::filesystem::path weights_path{opt_weights[0][0]};
     if (file_format == FileOutput::SINGLE) {
-      weights_file = weights_path;
+      weights_file.emplace(weights_path);
       if (!weights_path.has_filename())
-        WARN("Weights output path \"" + opt_weights[0][0].as_text() +
-             "\" ends with a path separator;"
-             " when -files single is specified, the -tck_weights_out path is interpreted as a file path");
+        WARN("Weights output path \"" + weights_path.string() + "\" ends with a path separator;" +         //
+             " when -files single is specified, the -tck_weights_out path is interpreted as a file path"); //
     } else {
-      weights_dir = weights_path;
+      weights_dir.emplace(weights_path);
       if (weights_path.has_extension())
-        WARN("Weights output path \"" + opt_weights[0][0].as_text() +
-             "\" has a file extension;"
-             " unless -files single is specified, the -tck_weights_out path is interpreted as a directory");
-      std::filesystem::create_directories(*weights_dir);
+        WARN("Weights output path \"" + weights_path.string() + "\" has a file extension;" +                 //
+             " unless -files single is specified, the -tck_weights_out path is interpreted as a directory"); //
+      std::filesystem::create_directories(weights_path);
     }
   }
   const auto weights_path_for = [&](const std::string_view filename) -> std::optional<std::filesystem::path> {

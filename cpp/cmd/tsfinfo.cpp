@@ -45,7 +45,7 @@ void usage() {
   + Option ("ascii", "save values of each track scalar file in individual ascii files"
                      " within the specified output directory;"
                      " each file is named by the zero-padded track index")
-    + Argument ("dir").type_directory_out(DirOutMode::MayExist);
+    + Argument ("dir").type_directory_out(DirOutMode::EmptyOrAbsent);
 }
 // clang-format on
 
@@ -92,7 +92,7 @@ void run() {
 
     auto opt = get_options("ascii");
     if (!opt.empty()) {
-      const std::filesystem::path ascii_dir(opt[0][0].as_text());
+      const std::filesystem::path ascii_dir(opt[0][0]);
       std::filesystem::create_directories(ascii_dir);
       ProgressBar progress("writing track scalar data to ascii files");
       DWI::Tractography::TrackScalar<> tck;
