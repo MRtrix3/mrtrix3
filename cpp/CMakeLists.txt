@@ -22,6 +22,7 @@ if(MRTRIX_WARNINGS_AS_ERRORS)
     target_compile_options(mrtrix-common INTERFACE
         $<$<CXX_COMPILER_ID:MSVC>:/WX>
         $<$<CXX_COMPILER_ID:GNU,Clang>:-Werror>
+        $<$<CXX_COMPILER_ID:GNU>:-Wno-ignored-attributes>
     )
 endif()
 
