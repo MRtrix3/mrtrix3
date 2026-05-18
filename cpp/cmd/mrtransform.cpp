@@ -356,7 +356,7 @@ void run() {
     if (warp_format != Registration::Warp::WarpFormat::Full)
       throw Exception("Input to -warp_full option must be a 5D \"full\" warp series,"
                       " not a 4D deformation warp (see -warp option)");
-    warp = H_warp.get_image<default_type>().with_direct_io();
+    warp = H_warp.get_image<default_type>(DirectIO(3));
     Registration::Warp::debug_validate_image(warp);
   }
 
@@ -379,7 +379,7 @@ void run() {
     if (warp_format != Registration::Warp::WarpFormat::Simple)
       throw Exception("Input to -warp option must be a 4D deformation field,"
                       " not a \"full\" warp (see -warp_full option)");
-    warp = H_warp.get_image<default_type>().with_direct_io(Stride::contiguous_along_axis(3));
+    warp = H_warp.get_image<default_type>(DirectIO(3));
     Registration::Warp::debug_validate_image(warp);
   }
 
@@ -621,7 +621,7 @@ void run() {
       WARN("Out of bounds value ignored since the input image will not be regridded");
   }
 
-  auto input = input_header.get_image<float>().with_direct_io(stride);
+  auto input = input_header.get_image<float>(DirectIO{stride});
 
   // Reslice the image onto template
   if (template_header.valid() && !warp) {

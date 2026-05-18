@@ -130,7 +130,7 @@ void run() {
     throw Exception("Command is only compatible with 4D deformation warp fields,"
                     " not the 5D \"full\" warp format"
                     " (see eg. command \"warpconvert\")");
-  auto data = H_warp.get_image<value_type>().with_direct_io(3);
+  auto data = H_warp.get_image<value_type>(DirectIO{3});
   Registration::Warp::debug_validate_image(data);
 
   Loader loader(argument[0]);

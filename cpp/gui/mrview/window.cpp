@@ -177,7 +177,7 @@ void Window::GLArea::wheelEvent(QWheelEvent *event) { main->wheelEventGL(event);
 bool Window::GLArea::event(QEvent *event) {
   if (event->type() == QEvent::Gesture)
     return main->gestureEventGL(static_cast<QGestureEvent *>(event));
-  return QWidget::event(event);
+  return QOpenGLWidget::event(event);
 }
 
 // CONF option: MRViewFocusModifierKey

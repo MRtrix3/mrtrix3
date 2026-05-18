@@ -190,8 +190,8 @@ private:
 
 #define FIXEL_MATRIX_GENERATE_SHARED                                                                                   \
   const auto fixel_dir_path = index_image.path().parent_path();                                                        \
-  auto directions_image =                                                                                              \
-      Fixel::find_directions_header(fixel_dir_path).template get_image<default_type>().with_direct_io({+2, +1});       \
+  auto directions_image = Fixel::find_directions_header(index_image.path().parent_path())                              \
+                              .template get_image<default_type>(DirectIO{Stride::List{+2, +1}});                       \
   DWI::Tractography::Properties properties;                                                                            \
   DWI::Tractography::Reader<float> track_file(track_filepath, properties);                                             \
   const uint32_t num_tracks = properties["count"].empty() ? 0 : to<uint32_t>(properties["count"]);                     \

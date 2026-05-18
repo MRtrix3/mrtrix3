@@ -245,14 +245,16 @@ Eigen::Quaternionf Base::get_rotate_rotation(const ModelViewProjection &proj) co
   if (dpos.x() == 0 && dpos.y() == 0)
     return Eigen::Quaternionf(NaNF, NaNF, NaNF, NaNF);
 
-  Eigen::Vector3f x1(window().mouse_position().x() - proj.x_position() - proj.width() / 2,
-                     window().mouse_position().y() - proj.y_position() - proj.height() / 2,
-                     0.0);
+  Eigen::Vector3f x1(static_cast<float>(window().mouse_position().x() - proj.x_position()) -
+                         (0.5F * static_cast<float>(proj.width())),
+                     static_cast<float>(window().mouse_position().y() - proj.y_position()) -
+                         (0.5F * static_cast<float>(proj.height())),
+                     0.0F);
 
   if (x1.norm() < 16.0f)
     return Eigen::Quaternionf(NaNF, NaNF, NaNF, NaNF);
 
-  Eigen::Vector3f x0(dpos.x() - x1[0], dpos.y() - x1[1], 0.0);
+  Eigen::Vector3f x0(static_cast<float>(dpos.x()) - x1[0], static_cast<float>(dpos.y()) - x1[1], 0.0F);
 
   x1.normalize();
   x0.normalize();

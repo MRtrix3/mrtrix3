@@ -187,6 +187,12 @@ run_checks() {
     )
   fi
 
+# detect use of std::visit with a lambda function
+  res="$res"$(
+    cat .check_syntax4.tmp | \
+    $grep -Po 'std::visit\s?\(\s?\[\s?(&?\w+(,\s?&?\w+)*)?\]\s?\('
+  )
+
   rm -f .check_syntax1.tmp .check_syntax2.tmp .check_syntax3.tmp .check_syntax4.tmp
 
 # if anything is left after that, show it:
@@ -263,6 +269,7 @@ else
   - Do not use C-style arrays (replace with eg. std::array<>);
   - Replace all instances of strerror() with MR::C_strerror() (declared in exception.h);
   - Replace all instances of std::getenv() or getenv() with MR::get_env() (declared in env.h);
-  - Replace all instances of rand() and srand() with C++ <random> equivalents (e.g. std::mt19937 + std::uniform_int_distribution); use thread_local engines or per-instance member engines to ensure thread-safety." >> $LOG
+  - Replace all instances of rand() and srand() with C++ <random> equivalents (e.g. std::mt19937 + std::uniform_int_distribution) - use thread_local engines or per-instance member engines to ensure thread-safety;
+  - Use MR::match_v() rather than std::visit() with a lambda function." >> $LOG
   exit 1
 fi

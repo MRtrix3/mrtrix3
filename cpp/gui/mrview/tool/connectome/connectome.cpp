@@ -1048,9 +1048,9 @@ void Connectome::node_visibility_selection_slot(int index) {
         node_visibility_combobox->setCurrentIndex(3);
         return;
       case node_visibility_t::VECTOR_FILE:
-        node_visibility_combobox->setCurrentIndex(6);
-        return;
+        [[fallthrough]];
       case node_visibility_t::MATRIX_FILE:
+        // Selects newly added element in combobox with name of imported file
         node_visibility_combobox->setCurrentIndex(6);
         return;
       }
@@ -1083,9 +1083,9 @@ void Connectome::node_visibility_selection_slot(int index) {
         node_visibility_combobox->setCurrentIndex(3);
         return;
       case node_visibility_t::VECTOR_FILE:
-        node_visibility_combobox->setCurrentIndex(6);
-        return;
+        [[fallthrough]];
       case node_visibility_t::MATRIX_FILE:
+        // Selects newly added element in combobox with name of imported file
         node_visibility_combobox->setCurrentIndex(6);
         return;
       }
@@ -1318,9 +1318,9 @@ void Connectome::node_colour_selection_slot(int index) {
         node_colour_combobox->setCurrentIndex(3);
         return;
       case node_colour_t::VECTOR_FILE:
-        node_colour_combobox->setCurrentIndex(6);
-        return;
+        [[fallthrough]];
       case node_colour_t::MATRIX_FILE:
+        // Selects newly added element in combobox with name of imported file
         node_colour_combobox->setCurrentIndex(6);
         return;
       }
@@ -1355,9 +1355,9 @@ void Connectome::node_colour_selection_slot(int index) {
         node_colour_combobox->setCurrentIndex(3);
         return;
       case node_colour_t::VECTOR_FILE:
-        node_colour_combobox->setCurrentIndex(6);
-        return;
+        [[fallthrough]];
       case node_colour_t::MATRIX_FILE:
+        // Selects newly added element in combobox with name of imported file
         node_colour_combobox->setCurrentIndex(6);
         return;
       }
@@ -1485,9 +1485,9 @@ void Connectome::node_size_selection_slot(int index) {
         node_size_combobox->setCurrentIndex(2);
         return;
       case node_size_t::VECTOR_FILE:
-        node_size_combobox->setCurrentIndex(5);
-        return;
+        [[fallthrough]];
       case node_size_t::MATRIX_FILE:
+        // Selects newly added element in combobox with name of imported file
         node_size_combobox->setCurrentIndex(5);
         return;
       }
@@ -1518,9 +1518,9 @@ void Connectome::node_size_selection_slot(int index) {
         node_size_combobox->setCurrentIndex(2);
         return;
       case node_size_t::VECTOR_FILE:
-        node_size_combobox->setCurrentIndex(5);
-        return;
+        [[fallthrough]];
       case node_size_t::MATRIX_FILE:
+        // Selects newly added element in combobox with name of imported file
         node_size_combobox->setCurrentIndex(5);
         return;
       }
@@ -1646,9 +1646,9 @@ void Connectome::node_alpha_selection_slot(int index) {
         node_alpha_combobox->setCurrentIndex(2);
         return;
       case node_alpha_t::VECTOR_FILE:
-        node_alpha_combobox->setCurrentIndex(5);
-        return;
+        [[fallthrough]];
       case node_alpha_t::MATRIX_FILE:
+        // Selects newly added element in combobox with name of imported file
         node_alpha_combobox->setCurrentIndex(5);
         return;
       }
@@ -1679,9 +1679,9 @@ void Connectome::node_alpha_selection_slot(int index) {
         node_alpha_combobox->setCurrentIndex(2);
         return;
       case node_alpha_t::VECTOR_FILE:
-        node_alpha_combobox->setCurrentIndex(5);
-        return;
+        [[fallthrough]];
       case node_alpha_t::MATRIX_FILE:
+        // Selects newly added element in combobox with name of imported file
         node_alpha_combobox->setCurrentIndex(5);
         return;
       }
@@ -1931,7 +1931,10 @@ void Connectome::edge_visibility_selection_slot(int index) {
                                     edge_values_from_file_visibility.get_mean(),
                                     edge_values_from_file_visibility.get_max());
     break;
-  case 5:
+  case 4:
+    return;
+  default:
+    assert(false);
     return;
   }
   calculate_edge_visibility();
@@ -2003,6 +2006,9 @@ void Connectome::edge_geometry_selection_slot(int index) {
       edge_geometry_line_smooth_checkbox->setVisible(true);
     }
     break;
+  default:
+    assert(false);
+    return;
   }
   if (edge_visibility == edge_visibility_t::NONE)
     edge_visibility_warning_icon->setVisible(true);
@@ -2450,7 +2456,7 @@ void Connectome::initialise(const std::filesystem::path &path) {
   {
     // Prevent progress dialog from appearing in a multi-threading context
     LogLevelLatch latch(0);
-    buffer.reset(new MR::Image<node_t>(H.get_image<node_t>().with_direct_io()));
+    buffer.reset(new MR::Image<node_t>(H.get_image<node_t>(MR::DirectIO{})));
     MR::Connectome::debug_validate_label_image(*buffer);
   }
   MR::Transform transform(H);

@@ -103,6 +103,18 @@ void usage() {
       " More information can be found on this issue at:"
       " https://mrtrix.readthedocs.io/en/" MRTRIX_BASE_VERSION "/concepts/pe_scheme.html"
 
+    + "By default, mrinfo reports the image *as interpreted by MRtrix3*."
+      " If the image's on-disk axes do not approximately conform to the RAS convention,"
+      " MRtrix3 permutes and flips them at load time so the loaded image appears axial;"
+      " the reported transform, strides, and axis-dependent metadata"
+      " (e.g. PhaseEncodingDirection, pe_scheme, SliceEncodingDirection, SliceTiming)"
+      " may therefore differ from the values stored on disk."
+      " The default human-readable output annotates any such differences inline."
+      " Use the -realignment option to summarise the applied shuffle,"
+      " or -ondisk to bypass realignment entirely (equivalent to"
+      " -config RealignTransform false) so that every query reports the on-disk view."
+      " See: https://mrtrix.readthedocs.io/en/" MRTRIX_BASE_VERSION "/concepts/axis_realignment.html"
+
     + DWI::bvalue_scaling_description;
 
   ARGUMENTS
@@ -122,6 +134,12 @@ void usage() {
     + Option ("multiplier", "image intensity multiplier")
     + Option ("transform", "the transformation from image coordinates [mm]"
                            " to scanner / real world coordinates [mm]")
+    + Option ("realignment", "print a per-output-axis summary of the realignment applied"
+                              " by MRtrix3 at load time; prints nothing if no realignment"
+                              " was applied")
+    + Option ("ondisk", "report the on-disk view rather than the realigned (interpreted) view;"
+                        " equivalent to -config RealignTransform false (mutually exclusive"
+                        " with -realignment)")
 
     + FieldExportOptions
 
@@ -169,12 +187,12 @@ void print_spacing(const Header &header) {
 
 void print_strides(const Header &header) {
   std::string buffer;
-  std::vector<ssize_t> strides(Stride::get(header));
+  std::vector<ssize_t> strides = Stride::get(header);
   Stride::symbolise(strides);
   for (size_t i = 0; i < header.ndim(); ++i) {
     if (i)
       buffer += " ";
-    buffer += header.stride(i) ? str(strides[i]) : "?";
+    buffer += strides[i] == 0 ? "?" : str(strides[i]);
   }
   std::cout << buffer << "\n";
 }
@@ -209,15 +227,22 @@ void print_transform(const Header &header) {
   std::cout << matrix.format(fmt);
 }
 
+void print_realignment(const Header &header) {
+  for (const auto &line : header.realignment().describe_axis_mapping())
+    std::cout << line << "\n";
+}
+
+// NOLINTNEXTLINE(misc-no-recursion)
 void print_properties(const Header &header, std::string_view key, const size_t indent = 0) {
+  const KeyValues &source = header.keyval();
   if (lowercase(key) == "all") {
-    for (const auto &it : header.keyval()) {
+    for (const auto &it : source) {
       std::cout << it.first << ": ";
       print_properties(header, it.first, it.first.size() + 2);
     }
   } else {
-    const auto values = header.keyval().find(std::string(key));
-    if (values != header.keyval().end()) {
+    const auto values = source.find(std::string(key));
+    if (values != source.end()) {
       auto lines = split(values->second, "\n");
       INFO("showing property " + std::string(key) + ":");
       std::cout << lines[0] << "\n";
@@ -255,6 +280,30 @@ void header2json(const Header &header, nlohmann::json &json) {
                        {T(1, 0), T(1, 1), T(1, 2), T(1, 3)},
                        {T(2, 0), T(2, 1), T(2, 2), T(2, 3)},
                        {0.0, 0.0, 0.0, 1.0}};
+  if (header.realignment().applied()) {
+    nlohmann::json realignment;
+    const auto &perm = header.realignment().permutations();
+    const auto &flip = header.realignment().flips();
+    realignment["permutations"] = {perm[0], perm[1], perm[2]};
+    realignment["flips"] = {flip[0], flip[1], flip[2]};
+    realignment["axis_mapping"] = header.realignment().describe_axis_mapping();
+    const transform_type &To(header.realignment().orig_transform());
+    realignment["transform_on_disk"] = {{To(0, 0), To(0, 1), To(0, 2), To(0, 3)},
+                                        {To(1, 0), To(1, 1), To(1, 2), To(1, 3)},
+                                        {To(2, 0), To(2, 1), To(2, 2), To(2, 3)},
+                                        {0.0, 0.0, 0.0, 1.0}};
+    std::vector<ssize_t> orig_strides(header.realignment().orig_strides());
+    Stride::symbolise(orig_strides);
+    realignment["strides_on_disk"] = orig_strides;
+    nlohmann::json keyval_on_disk = nlohmann::json::object();
+    for (const auto &kv : header.realignment().orig_keyval()) {
+      const auto live = header.keyval().find(kv.first);
+      if (live == header.keyval().end() || live->second != kv.second)
+        keyval_on_disk[kv.first] = kv.second;
+    }
+    realignment["keyval_on_disk"] = keyval_on_disk;
+    json["realignment"] = realignment;
+  }
   // Load key-value entries into a nested keyval.* member
   File::JSON::write(header, json["keyval"], header.path());
 }
@@ -269,6 +318,22 @@ void run() {
 
   if (!get_options("nodelete").empty())
     ImageIO::Pipe::delete_piped_images = false;
+
+  const bool ondisk = !get_options("ondisk").empty();
+  const bool realignment_flag = !get_options("realignment").empty();
+  if ((ondisk || !Header::do_realign_transform) && realignment_flag)
+    throw Exception("option -realignment is of no utility" //
+                    " in conjunction with either RealignTransform: false in configuration"
+                    " or the -ondisk option,"
+                    " as both disable realignment by definition");
+  // Make -ondisk fully equivalent to -config RealignTransform false:
+  //   suppress MRtrix3's load-time axis realignment globally for this invocation
+  //   so that every downstream output path
+  //   (the default pretty printout,
+  //   -transform / -strides / -petable, -property, -json_keyval / -json_all)
+  //   reports the on-disk view through a single mechanism.
+  if (ondisk)
+    Header::do_realign_transform = false;
 
   const bool export_grad = check_option_group(GradExportOptions);
   const bool export_pe = check_option_group(Metadata::PhaseEncoding::ExportOptions);
@@ -301,9 +366,10 @@ void run() {
   const bool shell_indices = !get_options("shell_indices").empty();
   const bool petable = !get_options("petable").empty();
 
-  const bool print_full_header = !(format || ndim || size || spacing || datatype || strides || offset || multiplier ||
-                                   !properties.empty() || transform || dwgrad || export_grad || shell_bvalues ||
-                                   shell_sizes || shell_indices || export_pe || petable || json_keyval || json_all);
+  const bool print_full_header =
+      !(format || ndim || size || spacing || datatype || strides || offset || multiplier || !properties.empty() ||
+        transform || realignment_flag || dwgrad || export_grad || shell_bvalues || shell_sizes || shell_indices ||
+        export_pe || petable || json_keyval || json_all);
 
   for (size_t i = 0; i < argument.size(); ++i) {
     const auto header = Header::open(argument[i]);
@@ -328,6 +394,8 @@ void run() {
       std::cout << header.intensity_scale() << "\n";
     if (transform)
       print_transform(header);
+    if (realignment_flag)
+      print_realignment(header);
     if (petable)
       std::cout << Metadata::PhaseEncoding::get_scheme(header) << "\n";
 

@@ -77,7 +77,7 @@ void run() {
   if (format != Registration::Warp::WarpFormat::Simple)
     throw Exception("Command only operates on 4D deformation fields,"
                     " not the 5D \"full\" warp field format");
-  auto input = H.get_image<value_type>().with_direct_io(3);
+  auto input = H.get_image<value_type>(DirectIO{3});
   Registration::Warp::debug_validate_image(input);
 
   Image<value_type> jmatrix_output;
@@ -92,7 +92,7 @@ void run() {
     const std::filesystem::path template_fixel_directory(opt[0][0]);
     fixel_template_index = Fixel::find_index_header(template_fixel_directory).get_image<uint32_t>();
     fixel_template_directions =
-        Fixel::find_directions_header(template_fixel_directory).get_image<value_type>().with_direct_io();
+        Fixel::find_directions_header(template_fixel_directory).get_image<value_type>(DirectIO(1));
 
     // TODO Remove explicit cast if interface is changed to make output path a single argument
     std::filesystem::path output_fixel_directory(opt[0][1].as_text());

@@ -1038,7 +1038,7 @@ void run() {
       output_header.size(3) = 3;
       nl_registration.write_params_to_header(output_header);
       output_header.datatype() = DataType::from_command_line(DataType::Float32);
-      auto warp1 = Image<default_type>::create(warp1_filepath.value(), output_header).with_direct_io();
+      auto warp1 = Image<default_type>::create(warp1_filepath.value(), output_header, DirectIO(3));
       Registration::Warp::compute_full_deformation(nl_registration.get_im2_to_mid_linear().inverse(),
                                                    *(nl_registration.get_mid_to_im2()),
                                                    *(nl_registration.get_im1_to_mid()),
@@ -1052,7 +1052,7 @@ void run() {
       output_header.size(3) = 3;
       nl_registration.write_params_to_header(output_header);
       output_header.datatype() = DataType::from_command_line(DataType::Float32);
-      auto warp2 = Image<default_type>::create(warp2_filepath.value(), output_header).with_direct_io();
+      auto warp2 = Image<default_type>::create(warp2_filepath.value(), output_header, DirectIO(3));
       Registration::Warp::compute_full_deformation(nl_registration.get_im1_to_mid_linear().inverse(),
                                                    *(nl_registration.get_mid_to_im1()),
                                                    *(nl_registration.get_im2_to_mid()),

@@ -698,7 +698,7 @@ Texture ComputeContext::new_texture_from_host_image(const MR::Image<float> &imag
   };
   const auto image_size = MR::voxel_count(image);
   // We need to pack the image data into a contiguous buffer in the layout expected by the GPU texture.
-  // TODO: we cannot rely on Image::with_direct_io() to do this packing for us
+  // TODO: we cannot rely on the Image factories' DirectIO request to do this packing for us
   // See discussion at https://github.com/MRtrix3/mrtrix3/pull/3108
   std::vector<float> contiguous_host_data(image_size, 0.0F);
   auto source = image;

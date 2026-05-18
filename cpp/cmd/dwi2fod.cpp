@@ -296,7 +296,7 @@ void run() {
     auto fod = Image<float>::create(argument[3], header_out);
 
     CSD_Processor processor(shared, mask, dwi_modelled);
-    auto dwi = header_in.get_image<float>().with_direct_io(3);
+    auto dwi = header_in.get_image<float>(DirectIO{3});
     ThreadedLoop("performing constrained spherical deconvolution", dwi, 0, 3).run(processor, dwi, fod);
     break;
   }
@@ -334,7 +334,7 @@ void run() {
     }
 
     MSMT_Processor processor(shared, mask, odfs, dwi_modelled);
-    auto dwi = header_in.get_image<float>().with_direct_io(3);
+    auto dwi = header_in.get_image<float>(DirectIO{3});
     ThreadedLoop("performing MSMT CSD (" + str(shared.num_shells()) + " shell" + (shared.num_shells() > 1 ? "s" : "") +
                      ", " + str(num_tissues) + " tissue" + (num_tissues > 1 ? "s" : "") + ")",
                  dwi,

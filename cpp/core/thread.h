@@ -106,7 +106,10 @@ class _single_thread : public _thread_base {
 public:
   _single_thread(const _single_thread &) = delete;
   _single_thread(_single_thread &&) = default;
-  template <class Functor> _single_thread(Functor &&functor, std::string_view name = "unnamed") : _thread_base(name) {
+  template <class Functor,
+            typename =
+                typename std::enable_if<!std::is_same<typename std::decay<Functor>::type, _single_thread>::value>::type>
+  _single_thread(Functor &&functor, std::string_view name = "unnamed") : _thread_base(name) {
     const std::string msg = std::string("launching thread \"") + name + "\"...";
     DEBUG(msg);
     using F = typename std::remove_reference<Functor>::type;
