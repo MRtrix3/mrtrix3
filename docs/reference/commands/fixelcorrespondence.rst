@@ -41,7 +41,7 @@ Multiple algorithms are provided; a brief description of each of these is provid
 Options
 -------
 
--  **-algorithm choice** the algorithm to use when establishing fixel correspondence; options are: all2all, legacy, ismrm2018, in2023, pot (default: pot)
+-  **-algorithm choice** the algorithm to use when establishing fixel correspondence; options are: all2all, legacy, ismrm2018, pot, rs2023 (default: pot)
 
 -  **-remapped path** export the remapped source fixels to a new fixel directory
 
@@ -59,17 +59,17 @@ Options applicable to all combinatorial-based algorithms
 
 -  **-cost path** export a 3D image containing the optimal value of the relevant cost function in each voxel
 
-Options specific to algorithm "in2023"
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
--  **-in2023_constants alpha beta** set values for the two constants that modulate the influence of different cost function terms in the IN2023 expression
-
 Options specific to algorithm "pot"
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-pot_steepness value** exponent "p" controlling the angular sensitivity of the directional misalignment cost (default: 1)
 
 -  **-pot_complexity value** weight "gamma" applied to the linear penalty for merging multiple subject fixels into one template fixel or splitting one subject fixel across multiple template fixels (default: 0.5)
+
+Options specific to algorithm "rs2023"
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-rs2023_constants alpha beta** set values for the two constants that modulate the influence of different cost function terms in the RS2023 expression
 
 Standard options
 ^^^^^^^^^^^^^^^^
@@ -93,7 +93,7 @@ Standard options
 References
 ^^^^^^^^^^
 
-* If using -algorithm ismrm2018 or -algorithm in2023: Smith, R.E.; Connelly, A. Mitigating the effects of imperfect fixel correspondence in Fixel-Based Analysis. In Proc ISMRM 2018: 456.
+* If using -algorithm ismrm2018 or -algorithm rs2023: Smith, R.E.; Connelly, A. Mitigating the effects of imperfect fixel correspondence in Fixel-Based Analysis. In Proc ISMRM 2018: 456.
 
 Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; Jeurissen, B.; Yeh, C.-H. & Connelly, A. MRtrix3: A fast, flexible and open software framework for medical image processing and visualisation. NeuroImage, 2019, 202, 116137
 
