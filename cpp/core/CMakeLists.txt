@@ -117,7 +117,7 @@ else()
 endif()
 
 target_link_libraries(mrtrix-core PUBLIC
-    Eigen3::Eigen
+    mrtrix::eigen
     ZLIB::ZLIB
     fftw3::fftw
     mrtrix::common
