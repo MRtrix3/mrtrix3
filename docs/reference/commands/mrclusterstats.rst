@@ -13,12 +13,12 @@ Usage
 
 ::
 
-    mrclusterstats [ options ]  input design mask output
+    mrclusterstats [ options ]  input design mask output_dir
 
 -  *input*: a text file containing the file names of the input images, one file per line
 -  *design*: the design matrix
 -  *mask*: a mask used to define voxels included in the analysis.
--  *output*: the filename prefix for all output.
+-  *output_dir*: the output directory (will be created by the command).
 
 Description
 -----------

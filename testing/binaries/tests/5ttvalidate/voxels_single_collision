@@ -1,0 +1,8 @@
+#!/bin/bash
+# With a single input image, -voxels should error if a file already exists at the output path
+
+touch tmp_voxels.mif
+rm -f tmp.txt
+! ( 5ttvalidate 5ttedit/in.mif -voxels tmp_voxels.mif > tmp.txt 2>&1 )
+cat tmp.txt
+grep "already exists" tmp.txt

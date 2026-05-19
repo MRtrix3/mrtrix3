@@ -79,7 +79,7 @@ void usage() {
     + Argument("input").type_directory_in()
 
   + Option("dir_out", "an output directory")
-    + Argument("output").type_directory_out()
+    + Argument("output").type_directory_out(DirOutMode::MayExist)
 
   + Option("tracks_in", "an input tractogram")
     + Argument("input").type_tracks_in()
@@ -98,7 +98,7 @@ void usage() {
                       .type_file_in()
                       .type_file_out()
                       .type_directory_in()
-                      .type_directory_out()
+                      .type_directory_out(DirOutMode::MayExist)
                       .type_tracks_in()
                       .type_tracks_out()
 

@@ -14,6 +14,10 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <filesystem>
+#include <iomanip>
+#include <sstream>
+
 #include "command.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/scalar_file.h"
@@ -38,9 +42,10 @@ void usage() {
   OPTIONS
   + Option ("count", "count number of tracks in file explicitly, ignoring the header")
 
-  + Option ("ascii", "save values of each track scalar file in individual ascii files,"
-                     " with the specified prefix.")
-    + Argument ("prefix").type_text();
+  + Option ("ascii", "save values of each track scalar file in individual ascii files"
+                     " within the specified output directory;"
+                     " each file is named by the zero-padded track index")
+    + Argument ("dir").type_directory_out(DirOutMode::EmptyOrAbsent);
 }
 // clang-format on
 
@@ -87,20 +92,17 @@ void run() {
 
     auto opt = get_options("ascii");
     if (!opt.empty()) {
+      const std::filesystem::path ascii_dir(opt[0][0]);
+      std::filesystem::create_directories(ascii_dir);
       ProgressBar progress("writing track scalar data to ascii files");
       DWI::Tractography::TrackScalar<> tck;
       while (file(tck)) {
-        // TODO Refactor to use std::filesystem::path if changing CLI to provide output directory path (#3160)
-        std::string filename(opt[0][0]);
-        filename += "-000000.txt";
-        std::string num(str(tck.get_index()));
-        filename.replace(filename.size() - 4 - num.size(), num.size(), num);
-
-        File::OFStream out(filename);
+        std::ostringstream index_str;
+        index_str << std::setfill('0') << std::setw(6) << tck.get_index();
+        File::OFStream out(ascii_dir / (index_str.str() + ".txt"));
         for (std::vector<float>::iterator i = tck.begin(); i != tck.end(); ++i)
           out << (*i) << "\n";
         out.close();
-
         ++progress;
       }
     }
