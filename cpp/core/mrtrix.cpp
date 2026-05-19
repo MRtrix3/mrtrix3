@@ -230,7 +230,7 @@ bool is_dash(std::string_view arg) {
   return nbytes != 0 && nbytes == arg.size();
 }
 
-bool starts_with_dash(std::string_view arg) { return dash_bytes(arg.data()) != 0U; }
+bool starts_with_dash(std::string_view arg) { return dash_bytes(arg) != 0U; }
 
 std::string without_leading_dash(std::string_view arg) {
   std::string result(arg);

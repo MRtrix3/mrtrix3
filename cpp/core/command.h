@@ -76,7 +76,8 @@ int main(int cmdline_argc, char **cmdline_argv) { // check_syntax off
     E.push_back("You may need to erase files left over from prior MRtrix3 versions;");
     E.push_back("eg. core/version.cpp; src/exec_version.cpp");
     E.push_back(", and re-configure cmake");
-    throw E;
+    E.display();
+    return 1;
   }
 
 #ifdef FLUSH_TO_ZERO
