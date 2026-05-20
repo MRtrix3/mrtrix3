@@ -24,7 +24,9 @@
 #include "filter/mask_clean.h"
 #include "filter/median.h"
 #include "image.h"
-#include <fmt/format.h>
+#include <fmt/std.h>
+
+#include <filesystem>
 
 using namespace MR;
 using namespace App;
@@ -116,30 +118,33 @@ void usage() {
 using value_type = bool;
 
 void run() {
+  const std::filesystem::path input_image_path{argument[0]};
+  const std::filesystem::path output_image_path{argument[2]};
 
-  auto input_image = Image<value_type>::open(argument[0]);
+  auto input_image = Image<value_type>::open(input_image_path);
 
   const FilterType filter_index = MR::Enum::from_name<FilterType>(argument[1]);
 
   switch (filter_index) {
   case FilterType::CLEAN: {
     Filter::MaskClean filter(input_image,
-                             fmt::format("applying mask cleaning filter to image {}", Path::basename(argument[0])));
+                             fmt::format("applying mask cleaning filter to image {}",
+                                         std::filesystem::path(argument[0].as_text()).filename()));
     filter.set_scale(get_option_value("scale", default_clean_scale));
-
     Stride::set_from_command_line(filter);
 
-    auto output_image = Image<value_type>::create(argument[2], filter);
+    auto output_image = Image<value_type>::create(output_image_path, filter);
     filter(input_image, output_image);
     return;
   }
 
   case FilterType::CONNECT: {
-    Filter::ConnectedComponents filter(
-        input_image, fmt::format("applying connected-component filter to image {}", Path::basename(argument[0])));
+    Filter::ConnectedComponents filter(input_image,
+                                       fmt::format("applying connected-component filter to image {}",
+                                                   std::filesystem::path(argument[0].as_text()).filename()));
     auto opt = get_options("axes");
     if (!opt.empty()) {
-      const std::vector<int> axes = opt[0][0];
+      const std::vector<int> axes = MR::container_cast<std::vector<int>>(opt[0][0].as_sequence_int());
       filter.set_axes(axes);
     }
     bool largest_only = false;
@@ -159,19 +164,21 @@ void run() {
 
     if (largest_only) {
       filter.datatype() = DataType::UInt8;
-      auto output_image = Image<value_type>::create(argument[2], filter);
+      auto output_image = Image<value_type>::create(output_image_path, filter);
       filter(input_image, output_image);
     } else {
       filter.datatype() = DataType::UInt32;
       filter.datatype().set_byte_order_native();
-      auto output_image = Image<uint32_t>::create(argument[2], filter);
+      auto output_image = Image<uint32_t>::create(output_image_path, filter);
       filter(input_image, output_image);
     }
     return;
   }
 
   case FilterType::DILATE: {
-    Filter::Dilate filter(input_image, fmt::format("applying dilate filter to image {}", Path::basename(argument[0])));
+    Filter::Dilate filter(
+        input_image,
+        fmt::format("applying dilate filter to image {}", std::filesystem::path(argument[0].as_text()).filename()));
     auto opt = get_options("npass");
     if (!opt.empty())
       filter.set_npass(static_cast<unsigned int>(opt[0][0]));
@@ -179,13 +186,15 @@ void run() {
     Stride::set_from_command_line(filter);
     filter.datatype() = DataType::Bit;
 
-    auto output_image = Image<value_type>::create(argument[2], filter);
+    auto output_image = Image<value_type>::create(output_image_path, filter);
     filter(input_image, output_image);
     return;
   }
 
   case FilterType::ERODE: {
-    Filter::Erode filter(input_image, fmt::format("applying erode filter to image {}", Path::basename(argument[0])));
+    Filter::Erode filter(
+        input_image,
+        fmt::format("applying erode filter to image {}", std::filesystem::path(argument[0].as_text()).filename()));
     auto opt = get_options("npass");
     if (!opt.empty())
       filter.set_npass(static_cast<unsigned int>(opt[0][0]));
@@ -193,37 +202,41 @@ void run() {
     Stride::set_from_command_line(filter);
     filter.datatype() = DataType::Bit;
 
-    auto output_image = Image<value_type>::create(argument[2], filter);
+    auto output_image = Image<value_type>::create(output_image_path, filter);
     filter(input_image, output_image);
     return;
   }
 
   case FilterType::FILL: {
-    Filter::Fill filter(input_image, fmt::format("filling interior of image {}", Path::basename(argument[0])));
+    Filter::Fill filter(
+        input_image,
+        fmt::format("filling interior of image {}", std::filesystem::path(argument[0].as_text()).filename()));
     auto opt = get_options("axes");
     if (!opt.empty()) {
-      const std::vector<int> axes = opt[0][0];
+      const std::vector<int> axes = MR::container_cast<std::vector<int>>(opt[0][0].as_sequence_int());
       filter.set_axes(axes);
     }
     opt = get_options("connectivity");
     if (!opt.empty())
       filter.set_26_connectivity(true);
     Stride::set_from_command_line(filter);
-    auto output_image = Image<value_type>::create(argument[2], filter);
+    auto output_image = Image<value_type>::create(output_image_path, filter);
     filter(input_image, output_image);
     return;
   }
 
   case FilterType::MEDIAN: {
-    Filter::Median filter(input_image, fmt::format("applying median filter to image {}", Path::basename(argument[0])));
+    Filter::Median filter(
+        input_image,
+        fmt::format("applying median filter to image {}", std::filesystem::path(argument[0].as_text()).filename()));
     auto opt = get_options("extent");
     if (!opt.empty())
-      filter.set_extent(parse_ints<uint32_t>(opt[0][0]));
+      filter.set_extent(MR::container_cast<std::vector<uint32_t>>(opt[0][0].as_sequence_uint()));
 
     Stride::set_from_command_line(filter);
     filter.datatype() = DataType::Bit;
 
-    auto output_image = Image<value_type>::create(argument[2], filter);
+    auto output_image = Image<value_type>::create(output_image_path, filter);
     filter(input_image, output_image);
     return;
   }

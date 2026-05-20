@@ -87,7 +87,7 @@ void Connector::Adjacency::initialise(const Header &header, const Voxel2Vector &
 }
 
 void Connector::run(std::vector<Cluster> &clusters, std::vector<uint32_t> &labels) const {
-  assert(adjacency.size());
+  assert(adjacency.valid());
   labels.resize(adjacency.size(), 0);
   uint32_t current_label = 0;
   for (uint32_t i = 0; i < labels.size(); i++) {

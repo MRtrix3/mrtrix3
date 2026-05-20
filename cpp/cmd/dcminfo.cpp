@@ -21,6 +21,8 @@
 #include "file/path.h"
 #include <fmt/format.h>
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -64,6 +66,7 @@ inline uint16_t read_hex(const std::string m) {
 }
 
 void run() {
+  const std::filesystem::path input_path{argument[0]};
   auto opt = get_options("tag");
   if (!opt.empty()) {
     std::istringstream hex;
@@ -75,7 +78,7 @@ void run() {
     }
 
     File::Dicom::Element item;
-    item.set(argument[0], true);
+    item.set(input_path, true);
     while (item.read()) {
       for (size_t n = 0; n < opt.size(); ++n)
         if (item.is(tags[n].group, tags[n].element))
@@ -95,7 +98,7 @@ void run() {
     print(File::Dicom::Element::print_header());
 
   if (reader.read(argument[0], all, csa, phoenix, true))
-    throw Exception(fmt::format("error reading file \"{}\"", reader.filename));
+    throw Exception(fmt::format("error reading file \"{}\"", reader.filepath));
 
   if (!all && !csa && !phoenix)
     std::cout << reader;

@@ -49,7 +49,6 @@ void run() {
   MR::Connectome::matrix_type connectome = File::Matrix::load_matrix(argument[0]);
   MR::Connectome::check(connectome);
   const Operation op = MR::Enum::from_name<Operation>(argument[1]);
-  const std::string_view output_path = argument[2];
 
   INFO(fmt::format("Applying \\'{}\\' transformation to the input connectome.", MR::Enum::lowercase_name(op)));
 
@@ -74,5 +73,5 @@ void run() {
     assert(0);
   }
 
-  File::Matrix::save_matrix(connectome, output_path);
+  File::Matrix::save_matrix(connectome, argument[2]);
 }

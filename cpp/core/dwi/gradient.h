@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <filesystem>
 #include <fmt/format.h>
 #include <string>
 
@@ -102,7 +103,9 @@ template <class MatrixType> default_type condition_number_for_lmax(const MatrixT
  * vectors into the scanner frame of reference, and may also involve
  * re-ordering and/or inverting of the vector elements to match the
  * re-ordering performed by MRtrix for non-axial scans. */
-Eigen::MatrixXd load_bvecs_bvals(const Header &header, std::string_view bvecs_path, std::string_view bvals_path);
+Eigen::MatrixXd load_bvecs_bvals(const Header &header,
+                                 const std::filesystem::path &bvecs_path,
+                                 const std::filesystem::path &bvals_path);
 
 //! export gradient table in FSL format (bvecs/bvals)
 /*! This will take the gradient table information from a header and export it
@@ -111,7 +114,7 @@ Eigen::MatrixXd load_bvecs_bvals(const Header &header, std::string_view bvecs_pa
  * image space, and then to compensate for the fact that FSL defines its vectors
  * with regards to the data strides in the image file.
  */
-void save_bvecs_bvals(const Header &, std::string_view, std::string_view);
+void save_bvecs_bvals(const Header &, const std::filesystem::path &, const std::filesystem::path &);
 
 namespace {
 template <class MatrixType> std::string scheme2str(const MatrixType &G) {
@@ -283,8 +286,9 @@ void export_grad_commandline(const Header &header);
  * Note that this uses get_valid_DW_scheme() to get the DW_scheme, so will
  * check for the -grad option as required. */
 template <class MatrixType>
-Eigen::MatrixXd
-compute_SH2amp_mapping(const MatrixType &directions, bool lmax_from_command_line = true, int default_lmax = 8) {
+Eigen::MatrixXd compute_SH2amp_mapping(const MatrixType &directions,       //
+                                       bool lmax_from_command_line = true, //
+                                       int default_lmax = 8) {             //
   int lmax = -1;
   int lmax_from_ndir = Math::SH::LforN(directions.rows());
   bool lmax_set_from_commandline = false;
@@ -292,7 +296,7 @@ compute_SH2amp_mapping(const MatrixType &directions, bool lmax_from_command_line
     auto opt = App::get_options("lmax");
     if (!opt.empty()) {
       lmax_set_from_commandline = true;
-      lmax = to<int>(opt[0][0]);
+      lmax = static_cast<int>(opt[0][0].as_int());
       if (lmax % 2)
         throw Exception("lmax must be an even number");
       if (lmax < 0)

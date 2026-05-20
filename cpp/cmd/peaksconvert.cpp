@@ -581,7 +581,7 @@ void run() {
   const reference_t out_reference(get_option_choice<reference_t>("out_reference", reference_t::XYZ));
 
   Header H_out(H_in);
-  H_out.name() = std::string(argument[1]);
+  H_out.path() = argument[1];
   H_out.size(3) = num_fixels * volumes_per_fixel(out_format);
   Stride::set_from_command_line(H_out);
 

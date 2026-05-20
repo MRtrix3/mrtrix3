@@ -16,6 +16,7 @@
 
 #include "math/stats/glm.h"
 
+#include <filesystem>
 #include <fmt/format.h>
 
 #include "debug.h"

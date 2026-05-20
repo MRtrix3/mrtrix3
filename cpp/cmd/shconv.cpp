@@ -24,6 +24,8 @@
 #include "progressbar.h"
 #include <fmt/format.h>
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -126,7 +128,7 @@ void run() {
   Stride::set_from_command_line(header, Stride::contiguous_along_axis(3, header));
   header.datatype() = DataType::from_command_line(DataType::Float32);
 
-  auto output = Image<value_type>::create(argument[argument.size() - 1], header);
+  auto output = Image<value_type>::create(argument.back(), header);
 
   SConvFunctor sconv(responses, inputs);
   ThreadedLoop("performing spherical convolution", inputs[0], 0, 3).run(sconv, output);

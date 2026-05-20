@@ -34,7 +34,7 @@ const OptionGroup Options =
     + Option("ignorezero", "ignore zero-valued data during histogram construction.");
 // clang-format on
 
-void Calibrator::from_file(std::string_view path) {
+void Calibrator::from_file(const std::filesystem::path &path) {
   Eigen::MatrixXd M;
   try {
     M = File::Matrix::load_matrix(path);

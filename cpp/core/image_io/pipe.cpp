@@ -20,13 +20,13 @@
 #include "header.h"
 #include "image_io/pipe.h"
 #include "signal_handler.h"
-#include <fmt/format.h>
+#include <fmt/std.h>
 
 namespace MR::ImageIO {
 
 void Pipe::load(const Header &header, size_t) {
   assert(files.size() == 1);
-  DEBUG(fmt::format("mapping piped image \"{}\"...", files[0].name));
+  DEBUG(fmt::format("mapping piped image \"{}\"...", files[0].path));
 
   int64_t bytes_per_segment = (header.datatype().bits() * segsize + 7) / 8;
 
@@ -39,8 +39,8 @@ void Pipe::unload(const Header &) {
   if (mmap) {
     mmap.reset();
     if (is_new) {
-      std::cout << files[0].name << "\n";
-      SignalHandler::unmark_file_for_deletion(files[0].name);
+      std::cout << files[0].path.string() << "\n";
+      SignalHandler::unmark_file_for_deletion(files[0].path);
     }
     addresses[0].release();
   }

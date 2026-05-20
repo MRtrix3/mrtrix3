@@ -13,11 +13,11 @@ Usage
 
 ::
 
-    vectorstats [ options ]  input design output
+    vectorstats [ options ]  input design output_dir
 
 -  *input*: a text file listing the file names of the input subject data
 -  *design*: the design matrix
--  *output*: the filename prefix for all output
+-  *output_dir*: the output directory (will be created by the command)
 
 Description
 -----------

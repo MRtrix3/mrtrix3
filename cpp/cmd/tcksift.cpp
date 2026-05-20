@@ -14,6 +14,9 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <filesystem>
+#include <optional>
+
 #include "command.h"
 #include "image.h"
 #include "types.h"
@@ -77,29 +80,32 @@ void usage() {
 // clang-format on
 
 void run() {
+  const std::filesystem::path input_tracks_path{argument[0]};
+  const std::filesystem::path input_fod_path{argument[1]};
+  const std::filesystem::path output_tracks_path{argument[2]};
 
-  const std::string debug_path = get_option_value<std::string>("output_debug", "");
+  auto debug_path = get_optional<std::filesystem::path>("output_debug");
 
-  auto in_dwi = Image<float>::open(argument[1]);
+  auto in_dwi = Image<float>::open(input_fod_path);
   Math::SH::check(in_dwi);
   DWI::Directions::FastLookupSet dirs(1281);
 
   SIFTer sifter(in_dwi, dirs);
 
-  if (!debug_path.empty()) {
-    sifter.initialise_debug_image_output(debug_path);
-    sifter.output_proc_mask(Path::join(debug_path, "proc_mask.mif"));
+  if (debug_path.has_value()) {
+    sifter.initialise_debug_image_output(debug_path.value());
+    sifter.output_proc_mask(debug_path.value() / "proc_mask.mif");
     if (!get_options("act").empty())
-      sifter.output_5tt_image(Path::join(debug_path, "5tt.mif"));
+      sifter.output_5tt_image(debug_path.value() / "5tt.mif");
   }
 
   sifter.perform_FOD_segmentation(in_dwi);
   sifter.scale_FDs_by_GM();
 
-  sifter.map_streamlines(argument[0]);
+  sifter.map_streamlines(input_tracks_path);
 
-  if (!debug_path.empty())
-    sifter.output_all_debug_images(debug_path, "before");
+  if (debug_path.has_value())
+    sifter.output_all_debug_images(debug_path.value(), "before");
 
   sifter.remove_excluded_fixels();
 
@@ -120,15 +126,15 @@ void run() {
     opt = get_options("output_at_counts");
     if (!opt.empty()) {
       std::vector<uint32_t> counts = parse_ints<uint32_t>(opt[0][0]);
-      sifter.set_regular_outputs(counts, debug_path);
+      sifter.set_regular_outputs(counts, debug_path.value());
     }
 
     sifter.perform_filtering();
 
-    if (!debug_path.empty())
-      sifter.output_all_debug_images(debug_path, "after");
+    if (debug_path.has_value())
+      sifter.output_all_debug_images(debug_path.value(), "after");
 
-    sifter.output_filtered_tracks(argument[0], argument[2]);
+    sifter.output_filtered_tracks(input_tracks_path, output_tracks_path);
 
     opt = get_options("out_selection");
     if (!opt.empty())

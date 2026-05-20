@@ -120,7 +120,7 @@ Advanced linear transformation initialisation options
 Advanced linear registration stage options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-linstage.iterations value(s)** number of iterations for each registration stage. Not to be confused with -rigid_niter or -affine_niter. This can be used to generate intermediate diagnostics images (-linstage.diagnostics.prefix) or to change the cost function optimiser during registration (without the need to repeatedly resize the images). (Default: 1 == no repetition)
+-  **-linstage.iterations value(s)** number of iterations for each registration stage. Not to be confused with -rigid_niter or -affine_niter. This can be used to generate intermediate diagnostics images (-linstage.diagnostics.dir) or to change the cost function optimiser during registration (without the need to repeatedly resize the images). (Default: 1 == no repetition)
 
 -  **-linstage.optimiser.first algorithm** Cost function optimisation algorithm to use at first iteration of all stages. Valid choices: bbgd (Barzilai-Borwein gradient descent); gd (simple gradient descent). (Default: bbgd)
 
@@ -128,7 +128,7 @@ Advanced linear registration stage options
 
 -  **-linstage.optimiser.default algorithm** Cost function optimisation algorithm to use at any stage iteration other than first or last iteration. Valid choices: bbgd (Barzilai-Borwein gradient descent); gd (simple gradient descent). (Default: bbgd)
 
--  **-linstage.diagnostics.prefix prefix** generate diagnostics images after every registration stage
+-  **-linstage.diagnostics.dir dir** generate diagnostics images after every registration stage
 
 Non-linear registration options
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -151,7 +151,7 @@ Non-linear registration options
 
 -  **-nl_lmax num** explicitly set the lmax to be used per scale factor in non-linear FOD registration. By default, FOD registration will use lmax 0,2,4 with default scale factors 0.25,0.5,1.0 respectively. Note that no reorientation will be performed with lmax = 0.
 
--  **-diagnostics_image path** write intermediate images for diagnostics purposes
+-  **-nl_diagnostics_dir dir** write intermediate images for diagnostics purposes
 
 FOD registration options
 ^^^^^^^^^^^^^^^^^^^^^^^^

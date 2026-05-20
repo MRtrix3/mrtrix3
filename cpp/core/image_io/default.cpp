@@ -14,13 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <cstddef>
 #include <limits>
 
 #include "app.h"
 #include "file/ofstream.h"
 #include "header.h"
 #include "image_io/default.h"
-#include <fmt/format.h>
+#include <fmt/std.h>
 
 namespace MR::ImageIO {
 
@@ -34,8 +35,9 @@ void Default::load(const Header &header, size_t) {
     bytes_per_segment = segsize / 8;
     if (bytes_per_segment * 8 < static_cast<int64_t>(segsize))
       ++bytes_per_segment;
-  } else
+  } else {
     bytes_per_segment = header.datatype().bytes() * segsize;
+  }
 
   if (files.size() > std::numeric_limits<size_t>::max() / bytes_per_segment)
     throw Exception(fmt::format("image \"{}\" is larger than maximum addressable memory", header.name()));
@@ -52,12 +54,12 @@ void Default::unload(const Header &header) {
 
     if (writable) {
       for (size_t n = 0; n < files.size(); n++) {
-        File::OFStream out(files[n].name, std::ios::in | std::ios::out | std::ios::binary);
+        File::OFStream out(files[n].path, std::ios::in | std::ios::out | std::ios::binary);
         out.seekp(files[n].start, out.beg);
-        out.write((char *)(addresses[0].get() + n * bytes_per_segment), bytes_per_segment);
+        out.write(reinterpret_cast<const char *>(addresses[0].get() + n * bytes_per_segment), bytes_per_segment);
         if (!out.good())
           throw Exception(
-              fmt::format("error writing back contents of file \"{}\": {}", files[n].name, strerror(errno)));
+              fmt::format("error writing back contents of file \"{}\": {}", files[n].path, strerror(errno)));
       }
     }
   } else {
@@ -81,7 +83,7 @@ void Default::copy_to_mem(const Header &header) {
   addresses.resize(files.size() > 1 && header.datatype().bits() * segsize != 8 * static_cast<size_t>(bytes_per_segment)
                        ? files.size()
                        : 1);
-  addresses[0].reset(new uint8_t[files.size() * bytes_per_segment]);
+  addresses[0].reset(new std::byte[files.size() * bytes_per_segment]);
   if (!addresses[0])
     throw Exception(fmt::format("failed to allocate memory for image \"{}\"", header.name()));
 

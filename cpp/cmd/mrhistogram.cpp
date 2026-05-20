@@ -20,6 +20,8 @@
 #include "image.h"
 #include <fmt/format.h>
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -85,7 +87,6 @@ template <class Functor> void run_volume(Functor &functor, Image<float> &data, I
 }
 
 void run() {
-
   auto header = Header::open(argument[0]);
   if (header.ndim() > 4)
     throw Exception("mrhistogram is not designed to handle images greater than 4D");

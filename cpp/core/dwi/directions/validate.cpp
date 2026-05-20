@@ -31,7 +31,8 @@
 namespace MR::DWI::Directions {
 
 template <class MatrixType>
-const DirectionsValidation validate(const MatrixType &M, std::string_view path, const bool permit_gradtable) {
+const DirectionsValidation
+validate(const MatrixType &M, const std::filesystem::path &path, const bool permit_gradtable) {
   using value_type = typename MatrixType::Scalar;
   if (!M.rows())
     throw Exception("Direction set is empty");
@@ -221,8 +222,8 @@ const DirectionsValidation validate(const MatrixType &M, std::string_view path, 
   return result;
 }
 template const DirectionsValidation
-validate<Eigen::MatrixXf>(const Eigen::MatrixXf &M, std::string_view path, const bool permit_gradtable);
+validate<Eigen::MatrixXf>(const Eigen::MatrixXf &M, const std::filesystem::path &path, const bool permit_gradtable);
 template const DirectionsValidation
-validate<Eigen::MatrixXd>(const Eigen::MatrixXd &M, std::string_view path, const bool permit_gradtable);
+validate<Eigen::MatrixXd>(const Eigen::MatrixXd &M, const std::filesystem::path &path, const bool permit_gradtable);
 
 } // namespace MR::DWI::Directions

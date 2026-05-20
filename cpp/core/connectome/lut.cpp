@@ -19,20 +19,20 @@
 #include <fstream>
 
 #include "mrtrix.h"
-#include <fmt/format.h> // For strip()
+#include <fmt/std.h>
 
 namespace MR::Connectome {
 
-LUT::LUT(std::string_view path) : exclusive(true) { load(path); }
+LUT::LUT(const std::filesystem::path &path) : exclusive(true) { load(path); }
 
-void LUT::load(std::string_view path) {
+void LUT::load(const std::filesystem::path &path) {
   file_format format = LUT_NONE;
   try {
     format = guess_file_format(path);
   } catch (Exception &e) {
     throw e;
   }
-  std::ifstream in_lut(std::string(path).c_str(), std::ios_base::in);
+  std::ifstream in_lut(path, std::ios_base::in);
   if (!in_lut)
     throw Exception("Unable to open lookup table file");
   std::string line;
@@ -62,7 +62,7 @@ void LUT::load(std::string_view path) {
   }
 }
 
-LUT::file_format LUT::guess_file_format(std::string_view path) {
+LUT::file_format LUT::guess_file_format(const std::filesystem::path &path) {
 
   class Column {
   public:
@@ -116,7 +116,7 @@ LUT::file_format LUT::guess_file_format(std::string_view path) {
     size_t sum_lengths, count;
   };
 
-  std::ifstream in_lut(std::string(path).c_str(), std::ios_base::in);
+  std::ifstream in_lut(path, std::ios_base::in);
   if (!in_lut)
     throw Exception("Unable to open lookup table file");
   std::vector<Column> columns;
@@ -133,7 +133,7 @@ LUT::file_format LUT::guess_file_format(std::string_view path) {
         throw Exception(fmt::format("Line {}{}{}\"{}{}",
                                     str(line_counter), //
                                     " of LUT file \"",
-                                    Path::basename(path),                          //
+                                    path.filename(),                               //
                                     " contains an odd number of quotation marks,", //
                                     " and hence cannot be properly split up according to quotation marks"));
       decltype(split_by_quotes) entries;
@@ -155,7 +155,7 @@ LUT::file_format LUT::guess_file_format(std::string_view path) {
       }
       if (!entries.empty()) {
         if (!columns.empty() && entries.size() != columns.size()) {
-          Exception E(fmt::format("Inconsistent number of columns in LUT file \"{}\"", Path::basename(path)));
+          Exception E(fmt::format("Inconsistent number of columns in LUT file \"{}\"", path.filename()));
           E.push_back(fmt::format("Initial file contents contain {} columns, but line {} contains {} entries:",
                                   columns.size(),
                                   line_counter,
@@ -174,21 +174,21 @@ LUT::file_format LUT::guess_file_format(std::string_view path) {
   // Make an assessment of the LUT format
   if (columns.size() == 2 && columns[0].is_integer() && !columns[1].is_numeric()) {
     DEBUG(fmt::format("LUT file \"{}\" contains 1 integer, 1 string per line:\"\n          \" Basic format",
-                      Path::basename(path)));
+                      path.filename()));
     return LUT_BASIC;
   }
   if (columns.size() == 6 && columns[0].is_integer() && !columns[1].is_numeric() && columns[2].is_8bit() &&
       columns[3].is_8bit() && columns[4].is_8bit() && columns[5].is_8bit()) {
     DEBUG(fmt::format("LUT file \"{}\" contains 1 integer, 1 string, then 4 8-bit integers per line:\"\n          \" "
                       "Freesurfer format",
-                      Path::basename(path)));
+                      path.filename()));
     return LUT_FREESURFER;
   }
   if (columns.size() == 3 && !columns[0].is_numeric() && !columns[1].is_numeric() &&
       columns[0].mean_length() < columns[1].mean_length() && columns[2].is_integer()) {
     DEBUG(fmt::format(
         "LUT file \"{}\" contains 2 strings (shorter first), then an integer per line:\"\n          \" AAL format",
-        Path::basename(path)));
+        path.filename()));
     return LUT_AAL;
   }
   if (columns.size() == 8 && columns[0].is_integer() && columns[1].is_8bit() && columns[2].is_8bit() &&
@@ -196,7 +196,7 @@ LUT::file_format LUT::guess_file_format(std::string_view path) {
       !columns[7].is_numeric()) {
     DEBUG(fmt::format("LUT file \"{}\" contains an integer, 3 8-bit integers, a float, two integers, and a string per "
                       "line:\"\n          \" ITKSNAP format",
-                      Path::basename(path)));
+                      path.filename()));
     return LUT_ITKSNAP;
   }
   if (columns.size() == 7 && columns[0].is_integer() && !columns[1].is_numeric() && !columns[2].is_numeric() &&
@@ -204,7 +204,7 @@ LUT::file_format LUT::guess_file_format(std::string_view path) {
       columns[5].is_8bit() && columns[6].is_8bit()) {
     DEBUG(fmt::format("LUT file \"{}\" contains 1 integer, 2 strings (shortest first), then 4 8-bit integers per "
                       "line:\"\n          \" MRtrix format",
-                      Path::basename(path)));
+                      path.filename()));
     return LUT_MRTRIX;
   }
   std::string format_string;
@@ -212,7 +212,7 @@ LUT::file_format LUT::guess_file_format(std::string_view path) {
   for (auto c : columns)
     format_string += fmt::format("{} ", std::string(c));
   format_string += "]";
-  Exception e(fmt::format("LUT file \"{}\" in unrecognized format:", Path::basename(path)));
+  Exception e(fmt::format("LUT file \"{}\" in unrecognized format:", path.filename()));
   e.push_back(format_string);
   throw e;
   return LUT_NONE;

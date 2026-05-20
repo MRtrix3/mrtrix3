@@ -26,7 +26,6 @@
 #include "file/mmap.h"
 #include "file/ofstream.h"
 #include "file/path.h"
-#include "file/utils.h"
 #include "formats/list.h"
 #include "header.h"
 #include "image_helpers.h"
@@ -111,7 +110,7 @@ inline const SliceData parse_line(std::string_view line, const ParCols &cols) {
 }
 
 std::unique_ptr<ImageIO::Base> PAR::read(Header &H) const {
-  if (!Path::has_suffix(H.name(), ".PAR") && !Path::has_suffix(H.name(), ".par"))
+  if (!Path::has_suffix(H.path(), {".PAR", ".par"}))
     return std::unique_ptr<ImageIO::Base>();
 
   WARN("PAR/REC import is currently experimental - please verify the integrity of your data");

@@ -233,22 +233,28 @@ void transform_for_image_load(KeyValues &keyval, const Header &H) {
     return;
   }
   if (pe_scheme.rows() == 0) {
-    DEBUG(fmt::format("{}{}{}\"",
-                      "No phase encoding information found for transformation", //
-                      " with load of image \"",
-                      H.name())); //
+    DEBUG(fmt::format("No phase encoding information found for transformation with load of image \"{}\"", H.name()));
     return;
   }
-  if (H.realignment().is_identity()) {
-    INFO(fmt::format("No transformation of phase encoding data for load of image \"{}\" required", H.name()));
+  switch (H.realignment().state()) {
+  case MR::Header::Realignment::State::Unknown:
+    assert(false);
+    return;
+  case MR::Header::Realignment::State::Disabled:
+    return;
+  case MR::Header::Realignment::State::Identity:
+    return;
+  case MR::Header::Realignment::State::Applied:
+    set_scheme(keyval, transform_for_image_load(pe_scheme, H));
+    return;
+  default:
+    assert(false);
     return;
   }
-  set_scheme(keyval, transform_for_image_load(pe_scheme, H));
-  INFO(fmt::format("Phase encoding data transformed to match RAS realignment of image \"{}\"", H.name()));
 }
 
 scheme_type transform_for_image_load(const scheme_type &pe_scheme, const Header &H) {
-  if (H.realignment().is_identity())
+  if (H.realignment().state() != MR::Header::Realignment::State::Applied)
     return pe_scheme;
   scheme_type result(pe_scheme.rows(), pe_scheme.cols());
   for (ssize_t row = 0; row != pe_scheme.rows(); ++row) {
@@ -358,10 +364,17 @@ void export_commandline(const Header &header) {
     save_eddy(check(scheme), header, opt[0][0], opt[0][1]);
 }
 
-scheme_type load_table(std::string_view path, const Header &header) {
-  if (Path::has_suffix(header.name(), {".nii", ".nii.gz", ".img", ".mgh", "mgz"})) {
+scheme_type load_table(const std::filesystem::path &path, const Header &header) {
+  if (Path::has_suffix(header.path(), {".nii", ".nii.gz", ".img", ".mgh", "mgz"})) {
     // clang-format off
-    WARN(fmt::format("Note use of -import_pe_table\"\n         \" in conjunction with MGH / NIfTI image \"{}\"\"\n         \" interprets phase encoding directions as being strictly with respect to image axes,\"\n         \" not with respect to the FSL internal convention;\"\n         \" consider if -import_pe_topup is more appropriate for your use case\"\n         \" (see: mrtrix.readthedocs.org/en/\"\n         MRTRIX_BASE_VERSION\n         \"/concepts/pe_scheme.html#reference-axes-for-phase-encoding-directions)", header.name()));
+    WARN(fmt::format("Note use of -import_pe_table"
+                     " in conjunction with MGH / NIfTI image \"{}\""
+                     " interprets phase encoding directions as being strictly with respect to image axes,"
+                     " not with respect to the FSL internal convention;"
+                     " consider if -import_pe_topup is more appropriate for your use case"
+                     " (see: mrtrix.readthedocs.org/en/" MRTRIX_BASE_VERSION
+                     "/concepts/pe_scheme.html#reference-axes-for-phase-encoding-directions)",
+                     header.name()));
     // clang-format on
   }
   const scheme_type PE = File::Matrix::load_matrix(path);
@@ -373,10 +386,16 @@ scheme_type load_table(std::string_view path, const Header &header) {
   return transform_for_image_load(PE, header);
 }
 
-scheme_type load_topup(std::string_view path, const Header &header) {
-  if (!Path::has_suffix(header.name(), {".nii", ".nii.gz", ".img", ".mgh", "mgz"})) {
+scheme_type load_topup(const std::filesystem::path &path, const Header &header) {
+  if (!Path::has_suffix(header.path(), {".nii", ".nii.gz", ".img", ".mgh", "mgz"})) {
     // clang-format off
-    WARN(fmt::format("Loading FSL topup format phase encoding information\"\n         \" accompanying image \"{}\"\"\n         \" that is not MGH / NIfTI format\"\n         \" may be erroneous due to possible flipping of first image axis\"\n         \" (see: mrtrix.readthedocs.org/en/\"\n         MRTRIX_BASE_VERSION\n         \"/concepts/pe_scheme.html#reference-axes-for-phase-encoding-directions)", header.name()));
+    WARN(fmt::format("Loading FSL topup format phase encoding information"
+                     " accompanying image \"{}\""
+                     " that is not MGH / NIfTI format"
+                     " may be erroneous due to possible flipping of first image axis"
+                     " (see: mrtrix.readthedocs.org/en/" MRTRIX_BASE_VERSION
+                     "/concepts/pe_scheme.html#reference-axes-for-phase-encoding-directions)",
+                     header.name()));
     // clang-format on
   }
   scheme_type PE = File::Matrix::load_matrix(path);
@@ -389,17 +408,16 @@ scheme_type load_topup(std::string_view path, const Header &header) {
   return transform_for_image_load(PE, header);
 }
 
-scheme_type load_eddy(std::string_view config_path, std::string_view index_path, const Header &header) {
-  if (!Path::has_suffix(header.name(), {".nii", ".nii.gz", ".img", ".mgh", "mgz"})) {
-    WARN(fmt::format("{}{}{}\"{}",
-                     "Loading FSL eddy format phase encoding information", //
-                     " accompanying image \"",
-                     header.name(),                                                              //
-                     " that is not MGH / NIfTI format"                                           //
-                     " may be erroneous due to possible flipping of first image axis"            //
-                     " (see: mrtrix.readthedocs.org/en/"                                         //
-                     MRTRIX_BASE_VERSION                                                         //
-                     "/concepts/pe_scheme.html#reference-axes-for-phase-encoding-directions)")); //
+scheme_type
+load_eddy(const std::filesystem::path &config_path, const std::filesystem::path &index_path, const Header &header) {
+  if (!Path::has_suffix(header.path(), {".nii", ".nii.gz", ".img", ".mgh", "mgz"})) {
+    WARN(fmt::format("Loading FSL eddy format phase encoding information"
+                     " accompanying image \"{}\""
+                     " that is not MGH / NIfTI format"
+                     " may be erroneous due to possible flipping of first image axis"
+                     " (see: mrtrix.readthedocs.org/en/" MRTRIX_BASE_VERSION
+                     "/concepts/pe_scheme.html#reference-axes-for-phase-encoding-directions)",
+                     header.name()));
   }
   const Eigen::MatrixXd config = File::Matrix::load_matrix(config_path);
   const Eigen::Array<int, Eigen::Dynamic, 1> indices = File::Matrix::load_vector<int>(index_path);
@@ -410,7 +428,7 @@ scheme_type load_eddy(std::string_view config_path, std::string_view index_path,
   return transform_for_image_load(PE, header);
 }
 
-void save_table(const scheme_type &PE, std::string_view path, const bool write_command_history) {
+void save_table(const scheme_type &PE, const std::filesystem::path &path, const bool write_command_history) {
   File::OFStream out(path);
   if (write_command_history)
     out << "# " << App::command_history_string << "\n";

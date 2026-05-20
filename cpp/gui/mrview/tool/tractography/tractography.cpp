@@ -65,10 +65,10 @@ class Tractography::Model : public ListModelBase {
 public:
   Model(QObject *parent) : ListModelBase(parent) {}
 
-  void add_items(std::vector<std::string> &filenames, Tractography &tractography_tool) {
+  void add_items(const std::vector<std::filesystem::path> &filepaths, Tractography &tractography_tool) {
 
-    for (size_t i = 0; i < filenames.size(); ++i) {
-      Tractogram *tractogram = new Tractogram(tractography_tool, filenames[i]);
+    for (size_t i = 0; i < filepaths.size(); ++i) {
+      Tractogram *tractogram = new Tractogram(tractography_tool, filepaths[i]);
       try {
         tractogram->load_tracks();
         beginInsertRows(QModelIndex(), items.size(), items.size() + 1);
@@ -327,7 +327,7 @@ void Tractography::draw_colourbars() {
   for (int i = 0; i < tractogram_list_model->rowCount(); ++i) {
     Tractogram *tractogram = dynamic_cast<Tractogram *>(tractogram_list_model->items[i].get());
     if (tractogram->show && tractogram->get_color_type() == TrackColourType::ScalarFile &&
-        tractogram->intensity_scalar_filename.length())
+        !tractogram->intensity_scalar_path.empty())
       tractogram->request_render_colourbar(*scalar_file_options);
   }
 }
@@ -339,7 +339,7 @@ size_t Tractography::visible_number_colourbars() {
     for (size_t i = 0, N = tractogram_list_model->rowCount(); i < N; ++i) {
       Tractogram *tractogram = dynamic_cast<Tractogram *>(tractogram_list_model->items[i].get());
       if (tractogram->show && tractogram->get_color_type() == TrackColourType::ScalarFile &&
-          tractogram->intensity_scalar_filename.length())
+          !tractogram->intensity_scalar_path.empty())
         total_visible += 1;
     }
   }
@@ -348,16 +348,16 @@ size_t Tractography::visible_number_colourbars() {
 }
 
 void Tractography::tractogram_open_slot() {
-
-  std::vector<std::string> list =
-      Dialog::File::get_files(this, "Select tractograms to open", "Tractograms (*.tck)", &current_folder);
-  add_tractogram(list);
+  auto load_paths =
+      Dialog::File::input_filepaths(this, "Select tractograms to open", "Tractograms (*.tck)", current_folder);
+  if (!load_paths.empty())
+    current_folder = load_paths.last_directory;
+  add_tractogram(load_paths.multi_selection);
 }
 
-void Tractography::add_tractogram(std::vector<std::string> &list) {
-  if (list.empty()) {
+void Tractography::add_tractogram(const std::vector<std::filesystem::path> &list) {
+  if (list.empty())
     return;
-  }
   try {
     tractogram_list_model->add_items(list, *this);
     select_last_added_tractogram();
@@ -371,10 +371,10 @@ void Tractography::dropEvent(QDropEvent *event) {
 
   const QMimeData *mimeData = event->mimeData();
   if (mimeData->hasUrls()) {
-    std::vector<std::string> list;
+    std::vector<std::filesystem::path> list;
     QList<QUrl> urlList = mimeData->urls();
     for (int i = 0; i < urlList.size() && i < max_files; ++i) {
-      list.push_back(QtHelpers::url_to_std_string(urlList.at(i)));
+      list.push_back(QtHelpers::url_to_fspath(urlList.at(i)));
     }
     try {
       tractogram_list_model->add_items(list, *this);
@@ -568,7 +568,7 @@ void Tractography::colour_by_scalar_file_slot() {
 
   Tractogram *tractogram = tractogram_list_model->get_tractogram(indices[0]);
   scalar_file_options->set_tractogram(tractogram);
-  if (tractogram->intensity_scalar_filename.empty()) {
+  if (tractogram->intensity_scalar_path.empty()) {
     if (!scalar_file_options->open_intensity_track_scalar_file_slot()) {
       colour_combobox->blockSignals(true);
       switch (tractogram->get_color_type()) {
@@ -844,7 +844,7 @@ void Tractography::select_last_added_tractogram() {
 bool Tractography::process_commandline_option(const MR::App::ParsedOption &opt) {
 
   if (opt.opt->is("tractography.load")) {
-    std::vector<std::string> list(1, std::string(opt[0]));
+    std::vector<std::filesystem::path> list(1, opt[0]);
     add_tractogram(list);
     return true;
   }

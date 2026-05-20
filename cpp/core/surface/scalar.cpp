@@ -19,11 +19,13 @@
 #include "file/matrix.h"
 
 #include "surface/freesurfer.h"
-#include <fmt/format.h>
+#include <fmt/std.h>
+
+#include <filesystem>
 
 namespace MR::Surface {
 
-Scalar::Scalar(std::string_view path, const Mesh &mesh) {
+Scalar::Scalar(const std::filesystem::path &path, const Mesh &mesh) {
   DEBUG(fmt::format("Attempting to load surface scalar file \"{}\"...", path));
   try {
     File::Matrix::load_vector(path);
@@ -46,13 +48,13 @@ Scalar::Scalar(std::string_view path, const Mesh &mesh) {
                                 path,
                                 str(size()),
                                 str(mesh.num_vertices())));
-  name = Path::basename(path);
+  name = path.filename().string();
 }
 
-void Scalar::save(std::string_view path) const { File::Matrix::save_vector(*this, path); }
+void Scalar::save(const std::filesystem::path &path) const { File::Matrix::save_vector(*this, path); }
 
-void Scalar::load_fs_w(std::string_view path, const Mesh &mesh) {
-  std::ifstream in(std::string(path).c_str(), std::ios_base::in | std::ios_base::binary);
+void Scalar::load_fs_w(const std::filesystem::path &path, const Mesh &mesh) {
+  std::ifstream in(path, std::ios_base::in | std::ios_base::binary);
   if (!in)
     throw Exception(fmt::format("Error opening surface scalar file \"{}\"", path));
 
@@ -75,8 +77,8 @@ void Scalar::load_fs_w(std::string_view path, const Mesh &mesh) {
   }
 }
 
-void Scalar::load_fs_curv(std::string_view path, const Mesh &mesh) {
-  std::ifstream in(std::string(path).c_str(), std::ios_base::in | std::ios_base::binary);
+void Scalar::load_fs_curv(const std::filesystem::path &path, const Mesh &mesh) {
+  std::ifstream in(path, std::ios_base::in | std::ios_base::binary);
   if (!in)
     throw Exception(fmt::format("Error opening surface scalar file \"{}\"", path));
 

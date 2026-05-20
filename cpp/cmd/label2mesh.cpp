@@ -56,7 +56,6 @@ void usage() {
 // clang-format on
 
 void run() {
-
   Header labels_header = Header::open(argument[0]);
   Connectome::validate_label_header(labels_header);
   check_3D_nonunity(labels_header);

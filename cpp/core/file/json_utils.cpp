@@ -17,6 +17,7 @@
 #include <array>
 #include <fstream>
 #include <sstream>
+#include <string_view>
 
 #include "file/json_utils.h"
 #include "file/nifti_utils.h"
@@ -36,8 +37,8 @@
 
 namespace MR::File::JSON {
 
-void load(Header &H, std::string_view path) {
-  std::ifstream in{std::string(path)};
+void load(Header &H, const std::filesystem::path &path) {
+  std::ifstream in{path};
   if (!in)
     throw Exception(fmt::format("Error opening JSON file \"{}\"", path));
   nlohmann::json json;
@@ -49,7 +50,7 @@ void load(Header &H, std::string_view path) {
   read(json, H);
 }
 
-void save(const Header &H, std::string_view json_path, std::string_view image_path) {
+void save(const Header &H, const std::filesystem::path &json_path, const std::filesystem::path &image_path) {
   nlohmann::json json;
   write(H, json, image_path);
   File::OFStream out(json_path);
@@ -110,11 +111,56 @@ KeyValues read(const nlohmann::json &json) {
 }
 
 void read(const nlohmann::json &json, Header &header) {
-  KeyValues keyval = read(json);
+  // Stash the full on-import (pre-transformation) snapshot of every
+  //   JSON-imported field into Realignment::orig_keyval, so that
+  //   mrinfo's -ondisk queries and the default annotated description
+  //   can recover the original values after realignment has been applied.
+  header.realignment().orig_keyval() = read(json);
   // Reorientation based on image load should be applied
   //   exclusively to metadata loaded via JSON; not anything pre-existing
+  KeyValues keyval = header.realignment().orig_keyval();
   Metadata::PhaseEncoding::transform_for_image_load(keyval, header);
   Metadata::SliceEncoding::transform_for_image_load(keyval, header);
+  // If the host image was realigned on load AND any JSON-imported field
+  //   was actually modified by transform_for_image_load(), surface this
+  //   prominently — it is a common source of confusion when a downstream
+  //   tool sees a PhaseEncodingDirection that differs from the JSON
+  //   file on disk.
+  if (header.realignment().applied()) {
+    std::vector<std::string> modified_fields;
+    for (const auto &kv : keyval) {
+      const auto pre = header.realignment().orig_keyval().find(kv.first);
+      if (pre == header.realignment().orig_keyval().end() || pre->second != kv.second)
+        modified_fields.emplace_back(kv.first);
+    }
+    for (const auto &kv : header.realignment().orig_keyval()) {
+      if (keyval.find(kv.first) == keyval.end())
+        modified_fields.emplace_back(kv.first);
+    }
+    if (!modified_fields.empty()) {
+      const std::string msg1 = "JSON metadata for image \"" + header.name() + "\"" +      //
+                               " was reoriented on import to match MRtrix3's realignment" //
+                               " of the corresponding image axes";                        //
+      const std::string msg2 = "  (affected fields: " + join(modified_fields, ", ") + ")";
+      if (File::Config::get_bool("RealignmentVerbose", true)) {
+        CONSOLE(msg1);
+        CONSOLE(msg2);
+      } else {
+        INFO(msg1);
+        INFO(msg2);
+      }
+      for (const auto &item : modified_fields) {
+        DEBUG("    \"" + item + "\": " +                                                                 //
+              (header.realignment().orig_keyval().find(item) == header.realignment().orig_keyval().end() //
+                   ? "<not present>"                                                                     //
+                   : ("\"" + header.realignment().orig_keyval().at(item) + "\"")) +                      //
+              " -> " +                                                                                   //
+              (keyval.find(item) == keyval.end()                                                         //
+                   ? "<not present>"                                                                     //
+                   : ("\"" + keyval.at(item) + "\"")));                                                  //
+      }
+    }
+  }
   header.merge_keyval(keyval);
 }
 
@@ -207,9 +253,9 @@ void write(const KeyValues &keyval, nlohmann::json &json) {
   }
 }
 
-void write(const Header &header, nlohmann::json &json, std::string_view image_path) {
+void write(const Header &header, nlohmann::json &json, const std::filesystem::path &image_path) {
   Header H_adj(header);
-  H_adj.name() = image_path;
+  H_adj.path() = image_path;
   if (!App::get_options("export_grad_fsl").empty() || !App::get_options("export_grad_mrtrix").empty())
     DWI::clear_DW_scheme(H_adj);
   if (!Path::has_suffix(image_path, {".nii", ".nii.gz", ".img"})) {

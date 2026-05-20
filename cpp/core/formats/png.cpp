@@ -29,10 +29,11 @@
 namespace MR::Formats {
 
 std::unique_ptr<ImageIO::Base> PNG::read(Header &H) const {
-  if (!(Path::has_suffix(H.name(), ".png") || Path::has_suffix(H.name(), ".PNG")))
+  if (!Path::has_suffix(H.path(), {".png", ".PNG"}))
     return std::unique_ptr<ImageIO::Base>();
 
-  File::PNG::Reader png(H.name());
+  const std::filesystem::path &hpath = static_cast<const Header &>(H).path();
+  File::PNG::Reader png(hpath);
 
   switch (png.get_colortype()) {
   case PNG_COLOR_TYPE_GRAY:
@@ -107,13 +108,13 @@ std::unique_ptr<ImageIO::Base> PNG::read(Header &H) const {
   }
 
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::PNG(H));
-  io_handler->files.push_back(File::Entry(H.name(), 0));
+  io_handler->files.push_back(File::Entry(hpath, 0));
 
   return io_handler;
 }
 
 bool PNG::check(Header &H, size_t num_axes) const {
-  if (!(Path::has_suffix(H.name(), ".png") || Path::has_suffix(H.name(), ".PNG")))
+  if (!Path::has_suffix(H.path(), {".png", ".PNG"}))
     return false;
 
   if (H.datatype().is_complex())
@@ -224,7 +225,7 @@ bool PNG::check(Header &H, size_t num_axes) const {
 
 std::unique_ptr<ImageIO::Base> PNG::create(Header &H) const {
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::PNG(H));
-  io_handler->files.push_back(File::Entry(H.name(), 0));
+  io_handler->files.push_back(File::Entry(static_cast<const Header &>(H).path(), 0));
   return io_handler;
 }
 

@@ -70,19 +70,19 @@ public:
         constraint_min_norm_regularisation = opt[0][0];
     }
 
-    void set_responses(const std::vector<std::string> &files) {
+    void set_responses(const std::vector<std::filesystem::path> &paths) {
       lmax_response.clear();
-      for (const auto &s : files) {
+      for (const auto &p : paths) {
         Eigen::MatrixXd r;
         try {
-          r = File::Matrix::load_matrix(s);
+          r = File::Matrix::load_matrix(p);
         } catch (Exception &e) {
-          throw Exception(e, fmt::format("File \"{}\" is not a valid response function file", s));
+          throw Exception(e, fmt::format("File \"{}\" is not a valid response function file", p));
         }
         responses.push_back(std::move(r));
       }
       prepare_responses();
-      response_files = files;
+      response_files = paths;
     }
 
     void set_responses(const std::vector<Eigen::MatrixXd> &matrices) {
@@ -226,7 +226,7 @@ public:
     Eigen::MatrixXd HR_dirs;
     std::vector<uint32_t> lmax, lmax_response;
     std::vector<Eigen::MatrixXd> responses;
-    std::vector<std::string> response_files;
+    std::vector<std::filesystem::path> response_files;
     Math::ICLS::Problem<double> problem;
     double solution_min_norm_regularisation, constraint_min_norm_regularisation;
 

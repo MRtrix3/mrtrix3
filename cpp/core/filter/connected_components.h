@@ -44,7 +44,7 @@ public:
     using index_t = Voxel2Vector::index_t;
     using axis_mask_type = Eigen::Array<bool, Eigen::Dynamic, 1>;
 
-    Adjacency() : use_26_neighbours(false), enabled_axes(axis_mask_type::Ones(3)) {}
+    Adjacency() : use_26_neighbours(false), enabled_axes(axis_mask_type::Ones(3)), is_initialised(false) {}
 
     void toggle_axis(const size_t axis, const bool value) {
       if (axis > enabled_axes.size())
@@ -72,11 +72,14 @@ public:
     }
 
     size_t size() const { return data.size(); }
+    bool empty() const { return data.empty(); }
+    bool valid() const { return is_initialised; }
 
   private:
     bool use_26_neighbours;
     axis_mask_type enabled_axes;
     std::vector<std::vector<index_t>> data;
+    bool is_initialised;
   } adjacency;
 
   class Cluster {

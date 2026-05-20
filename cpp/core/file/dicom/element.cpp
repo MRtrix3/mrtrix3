@@ -14,7 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include <fmt/format.h>
+#include <fmt/std.h>
 #include <iomanip>
 
 #include "debug.h"
@@ -47,7 +47,7 @@ const std::unordered_map<Element::Type, std::string> Element::type_as_str{{INVAL
                                                                           {SEQ, "sequence"},
                                                                           {OTHER, "other"}};
 
-void Element::set(std::string_view filename, bool force_read, bool read_write) {
+void Element::set(const std::filesystem::path &filepath, bool force_read, bool read_write) {
   group = element = VR = 0;
   size = 0;
   start = data = next = nullptr;
@@ -55,28 +55,28 @@ void Element::set(std::string_view filename, bool force_read, bool read_write) {
   transfer_syntax_supported = true;
   parents.clear();
 
-  fmap.reset(new File::MMap(filename, read_write));
+  fmap.reset(new File::MMap(filepath, read_write));
 
   if (fmap->size() < 256)
-    throw Exception(fmt::format("\"{}\" is too small to be a valid DICOM file", fmap->name()));
+    throw Exception(fmt::format("\"{}\" is too small to be a valid DICOM file", fmap->path()));
 
   next = fmap->address();
 
   if (memcmp(next + 128, "DICM", 4)) {
     is_explicit = false;
-    DEBUG(fmt::format("DICOM magic number not found in file \"{}\" - trying truncated format", fmap->name()));
+    DEBUG(fmt::format("DICOM magic number not found in file \"{}\" - trying truncated format", fmap->path()));
     if (!force_read)
-      if (!Path::has_suffix(fmap->name(), ".dcm"))
+      if (!Path::has_suffix(fmap->path(), ".dcm"))
         throw Exception(
             fmt::format("file \"{}\" does not have the DICOM magic number or the .dcm extension - assuming not DICOM",
-                        fmap->name()));
+                        fmap->path()));
   } else
     next += 132;
 
   try {
     set_explicit_encoding();
   } catch (Exception) {
-    throw Exception(fmt::format("\"{}\" is not a valid DICOM file", fmap->name()));
+    throw Exception(fmt::format("\"{}\" is not a valid DICOM file", fmap->path()));
     fmap.reset();
   }
 }
@@ -84,7 +84,7 @@ void Element::set(std::string_view filename, bool force_read, bool read_write) {
 void Element::set_explicit_encoding() {
   assert(fmap);
   if (read_GR_EL())
-    throw Exception(fmt::format("\"{}\" is too small to be DICOM", fmap->name()));
+    throw Exception(fmt::format("\"{}\" is too small to be DICOM", fmap->path()));
 
   is_explicit = true;
   next = start;
@@ -119,7 +119,7 @@ bool Element::read_GR_EL() {
 
   if (group == group_byte_order_swapped) {
     if (!is_BE)
-      throw Exception(fmt::format("invalid DICOM group ID {} in file \"{}\"", group, fmap->name()));
+      throw Exception(fmt::format("invalid DICOM group ID {} in file \"{}\"", group, fmap->path()));
 
     is_BE = false;
     group = group_byte_order;
@@ -161,7 +161,7 @@ bool Element::read() {
                                "with implicit encoding in file \"",
                                group,
                                element),
-                        fmap->name()));
+                        fmap->path()));
       VR = VR_UN;
     } else
       VR = get_VR_from_tag_name(name);
@@ -176,9 +176,9 @@ bool Element::read() {
                        (!tag_name().empty() ? tag_name().substr(2) : ""),
                        group,
                        element,
-                       fmap->name()));
+                       fmap->path()));
   } else if (next + size > fmap->address() + fmap->size())
-    throw Exception(fmt::format("file \"{}\" is too small to contain DICOM elements specified", fmap->name()));
+    throw Exception(fmt::format("file \"{}\" is too small to contain DICOM elements specified", fmap->path()));
   else {
     if (size % 2)
       DEBUG(fmt::format("WARNING: odd length ({}) used for DICOM tag {} ({}, {}) in file \"{}\"",
@@ -186,7 +186,7 @@ bool Element::read() {
                         (!tag_name().empty() ? tag_name().substr(2) : ""),
                         group,
                         element,
-                        fmap->name()));
+                        fmap->path()));
     if (VR != VR_SQ) {
       if (group == group_sequence && element == element_sequence_item) {
         if (!parents.empty() && parents.back().group == group_data && parents.back().element == element_data)
@@ -227,7 +227,7 @@ bool Element::read() {
         throw Exception("DICOM deflated explicit VR little endian transfer syntax not supported");
       } else {
         transfer_syntax_supported = false;
-        INFO(fmt::format("unsupported DICOM transfer syntax: \"{}\" in file \"{}\"", data_as_string, fmap->name()));
+        INFO(fmt::format("unsupported DICOM transfer syntax: \"{}\" in file \"{}\"", data_as_string, fmap->path()));
       }
     } break;
     }
@@ -289,10 +289,10 @@ Element::Type Element::type() const {
 std::vector<int32_t> Element::get_int() const {
   std::vector<int32_t> V;
   if (VR == VR_SL)
-    for (const uint8_t *p = data; p < data + size; p += sizeof(int32_t))
+    for (const std::byte *p = data; p < data + size; p += sizeof(int32_t))
       V.push_back(Raw::fetch_<int32_t>(p, is_BE));
   else if (VR == VR_SS)
-    for (const uint8_t *p = data; p < data + size; p += sizeof(int16_t))
+    for (const std::byte *p = data; p < data + size; p += sizeof(int16_t))
       V.push_back(Raw::fetch_<int16_t>(p, is_BE));
   else if (VR == VR_IS) {
     auto strings = split(std::string(reinterpret_cast<const char *>(data), size), "\\", false);
@@ -308,10 +308,10 @@ std::vector<int32_t> Element::get_int() const {
 std::vector<uint32_t> Element::get_uint() const {
   std::vector<uint32_t> V;
   if (VR == VR_UL)
-    for (const uint8_t *p = data; p < data + size; p += sizeof(uint32_t))
+    for (const std::byte *p = data; p < data + size; p += sizeof(uint32_t))
       V.push_back(Raw::fetch_<uint32_t>(p, is_BE));
   else if (VR == VR_US)
-    for (const uint8_t *p = data; p < data + size; p += sizeof(uint16_t))
+    for (const std::byte *p = data; p < data + size; p += sizeof(uint16_t))
       V.push_back(Raw::fetch_<uint16_t>(p, is_BE));
   else if (VR == VR_IS) {
     auto strings = split(std::string(reinterpret_cast<const char *>(data), size), "\\", false);
@@ -326,10 +326,10 @@ std::vector<uint32_t> Element::get_uint() const {
 std::vector<default_type> Element::get_float() const {
   std::vector<default_type> V;
   if (VR == VR_FD)
-    for (const uint8_t *p = data; p < data + size; p += sizeof(float64))
+    for (const std::byte *p = data; p < data + size; p += sizeof(float64))
       V.push_back(Raw::fetch_<float64>(p, is_BE));
   else if (VR == VR_FL)
-    for (const uint8_t *p = data; p < data + size; p += sizeof(float32))
+    for (const std::byte *p = data; p < data + size; p += sizeof(float32))
       V.push_back(Raw::fetch_<float32>(p, is_BE));
   else if (VR == VR_DS || VR == VR_IS) {
     auto strings = split(std::string(reinterpret_cast<const char *>(data), size), "\\", false);

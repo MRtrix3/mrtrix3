@@ -149,7 +149,7 @@ Shuffler::Shuffler(const index_type num_rows, const bool is_nonstationarity, std
   index_array_type eb_within;
   if (!opt.empty()) {
     try {
-      eb_within = load_blocks(std::string(opt[0][0]), false);
+      eb_within = load_blocks(opt[0][0], false);
     } catch (Exception &e) {
       throw Exception(e, fmt::format("Unable to read file \"{}\" as within-block exchangeability", opt[0][0]));
     }
@@ -161,7 +161,7 @@ Shuffler::Shuffler(const index_type num_rows, const bool is_nonstationarity, std
     if (eb_within.size())
       throw Exception("Cannot specify both \"within\" and \"whole\" exchangeability block data");
     try {
-      eb_whole = load_blocks(std::string(opt[0][0]), true);
+      eb_whole = load_blocks(opt[0][0], true);
     } catch (Exception &e) {
       throw Exception(e, fmt::format("Unable to read file \"{}\" as whole-block exchangeability", opt[0][0]));
     }
@@ -384,7 +384,7 @@ void Shuffler::initialise(const error_t error_types,
     nshuffles = max_shuffles;
 }
 
-index_array_type Shuffler::load_blocks(std::string_view filename, const bool equal_sizes) {
+index_array_type Shuffler::load_blocks(const std::filesystem::path &filename, const bool equal_sizes) {
   index_array_type data = File::Matrix::load_vector<index_type>(filename).array();
   if (static_cast<index_type>(data.size()) != rows)
     throw Exception(fmt::format("Number of entries in file \"{}\" ({}) does not match number of inputs ({})",
@@ -586,7 +586,7 @@ void Shuffler::generate_all_permutations(const index_type num_rows,
     write(indices);
 }
 
-void Shuffler::load_permutations(std::string_view filename) {
+void Shuffler::load_permutations(const std::filesystem::path &filename) {
   std::vector<std::vector<index_type>> temp = File::Matrix::load_matrix_2D_vector<index_type>(filename);
   if (temp.empty())
     throw Exception(fmt::format("no data found in permutations file: {}", filename));

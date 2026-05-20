@@ -32,6 +32,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <fmt/format.h>
+#include <fmt/std.h>
 #include <fstream>
 #include <future>
 #include <ios>
@@ -51,14 +52,14 @@ enum ReadFileMode : uint8_t { Text, Binary };
 std::string read_file(const std::filesystem::path &filePath, ReadFileMode mode = ReadFileMode::Text) {
   using namespace std::string_literals;
   if (!std::filesystem::exists(filePath)) {
-    throw std::runtime_error(fmt::format("File not found: {}", filePath.string()));
+    throw std::runtime_error(fmt::format("File not found: {}", filePath));
   }
 
   const auto openMode = (mode == ReadFileMode::Binary) ? std::ios::in | std::ios::binary : std::ios::in;
   std::ifstream f(filePath, std::ios::in | openMode);
   const auto fileSize64 = std::filesystem::file_size(filePath);
   if (fileSize64 > static_cast<uintmax_t>(std::numeric_limits<std::streamsize>::max())) {
-    throw std::runtime_error(fmt::format("File too large to read into memory: {}", filePath.string()));
+    throw std::runtime_error(fmt::format("File too large to read into memory: {}", filePath));
   }
   const std::streamsize fileSize = static_cast<std::streamsize>(fileSize64);
   std::string result(static_cast<std::string::size_type>(fileSize), '\0');

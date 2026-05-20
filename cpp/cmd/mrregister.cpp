@@ -14,7 +14,9 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <filesystem>
 #include <fmt/format.h>
+#include <optional>
 
 #include "command.h"
 #include "dwi/directions/predefined.h"
@@ -150,7 +152,6 @@ void usage() {
 using value_type = double;
 
 void run() {
-
   std::vector<Header> input1, input2;
   const size_t n_images = argument.size() / 2;
   { // parse arguments and load input headers
@@ -161,15 +162,15 @@ void run() {
       throw Exception(fmt::format("unexpected number of input images. arguments:{}", err));
     }
 
-    bool is1 = true;
-    for (const auto &arg : argument) {
-      if (is1)
-        input1.push_back(Header::open(str(arg)));
+    for (auto i = 0; i < argument.size(); ++i) {
+      const std::filesystem::path input_path{argument[i]};
+      if (i % 2 == 0)
+        input1.push_back(Header::open(input_path));
       else
-        input2.push_back(Header::open(str(arg)));
-      is1 = !is1;
+        input2.push_back(Header::open(input_path));
     }
   }
+
   assert(input1.size() == n_images);
   if (input1.size() != input2.size())
     throw Exception("require same number of input images for image 1 and image 2");
@@ -314,7 +315,7 @@ void run() {
   INFO(fmt::format("maximum input lmax: {}", max_mc_image_lmax));
 
   opt = get_options("transformed");
-  std::vector<std::string> im1_transformed_paths;
+  std::vector<std::filesystem::path> im1_transformed_paths;
   if (!opt.empty()) {
     if (opt.size() > n_images)
       throw Exception("number of -transformed images exceeds number of contrasts");
@@ -328,8 +329,8 @@ void run() {
     }
   }
 
-  std::vector<std::string> input1_midway_transformed_paths;
-  std::vector<std::string> input2_midway_transformed_paths;
+  std::vector<std::filesystem::path> input1_midway_transformed_paths;
+  std::vector<std::filesystem::path> input2_midway_transformed_paths;
   opt = get_options("transformed_midway");
   if (!opt.empty()) {
     if (opt.size() > n_images)
@@ -372,19 +373,16 @@ void run() {
 
   // ****** RIGID REGISTRATION OPTIONS *******
   Registration::Linear rigid_registration;
-  const std::string rigid_filename = get_option_value<std::string>("rigid", "");
-  const bool output_rigid = !rigid_filename.empty();
-  if (output_rigid && !do_rigid)
+  auto rigid_filepath = get_optional<std::filesystem::path>("rigid");
+  if (rigid_filepath.has_value() && !do_rigid)
     throw Exception("rigid transformation output requested when no rigid registration is requested");
 
-  const std::string rigid_1tomid_filename = get_option_value<std::string>("rigid_1tomidway", "");
-  const bool output_rigid_1tomid = !rigid_1tomid_filename.empty();
-  if (output_rigid_1tomid && !do_rigid)
+  auto rigid_1tomid_filepath = get_optional<std::filesystem::path>("rigid_1tomidway");
+  if (rigid_1tomid_filepath.has_value() && !do_rigid)
     throw Exception("midway rigid transformation output requested when no rigid registration is requested");
 
-  const std::string rigid_2tomid_filename = get_option_value<std::string>("rigid_2tomidway", "");
-  const bool output_rigid_2tomid = !rigid_2tomid_filename.empty();
-  if (output_rigid_2tomid && !do_rigid)
+  auto rigid_2tomid_filepath = get_optional<std::filesystem::path>("rigid_2tomidway");
+  if (rigid_2tomid_filepath.has_value() && !do_rigid)
     throw Exception("midway rigid transformation output requested when no rigid registration is requested");
 
   Registration::Transform::Rigid rigid;
@@ -497,25 +495,22 @@ void run() {
   if (!opt.empty()) {
     if (!do_rigid)
       throw Exception("the -rigid_log option has been set when no rigid registration is requested");
-    linear_logstream.open(opt[0][0]);
+    linear_logstream.open(static_cast<std::filesystem::path>(opt[0][0]));
     rigid_registration.set_log_stream(linear_logstream.rdbuf());
   }
 
   // ****** AFFINE REGISTRATION OPTIONS *******
   Registration::Linear affine_registration;
-  const std::string affine_filename = get_option_value<std::string>("affine", "");
-  const bool output_affine = !affine_filename.empty();
-  if (output_affine && !do_affine)
+  auto affine_filepath = get_optional<std::filesystem::path>("affine");
+  if (affine_filepath.has_value() && !do_affine)
     throw Exception("affine transformation output requested when no affine registration is requested");
 
-  const std::string affine_1tomid_filename = get_option_value<std::string>("affine_1tomidway", "");
-  const bool output_affine_1tomid = !affine_1tomid_filename.empty();
-  if (output_affine_1tomid && !do_affine)
+  auto affine_1tomid_filepath = get_optional<std::filesystem::path>("affine_1tomidway");
+  if (affine_1tomid_filepath.has_value() && !do_affine)
     throw Exception("midway affine transformation output requested when no affine registration is requested");
 
-  const std::string affine_2tomid_filename = get_option_value<std::string>("affine_2tomidway", "");
-  const bool output_affine_2tomid = !affine_2tomid_filename.empty();
-  if (output_affine_2tomid && !do_affine)
+  auto affine_2tomid_filepath = get_optional<std::filesystem::path>("affine_2tomidway");
+  if (affine_2tomid_filepath.has_value() && !do_affine)
     throw Exception("midway affine transformation output requested when no affine registration is requested");
 
   Registration::Transform::Affine affine;
@@ -636,7 +631,7 @@ void run() {
   if (!opt.empty()) {
     if (!do_affine)
       throw Exception("the -affine_log option has been set when no rigid registration is requested");
-    linear_logstream.open(opt[0][0]);
+    linear_logstream.open(static_cast<std::filesystem::path>(opt[0][0]));
     affine_registration.set_log_stream(linear_logstream.rdbuf());
   }
 
@@ -666,23 +661,21 @@ void run() {
   // ****** NON-LINEAR REGISTRATION OPTIONS *******
   Registration::NonLinear nl_registration;
   opt = get_options("nl_warp");
-  std::string warp1_filename;
-  std::string warp2_filename;
+  std::optional<std::filesystem::path> warp1_filepath;
+  std::optional<std::filesystem::path> warp2_filepath;
   if (!opt.empty()) {
     if (!do_nonlinear)
       throw Exception("Non-linear warp output requested when no non-linear registration is requested");
-    warp1_filename = std::string(opt[0][0]);
-    warp2_filename = std::string(opt[0][1]);
+    warp1_filepath.emplace(opt[0][0]);
+    warp2_filepath.emplace(opt[0][1]);
   }
 
-  opt = get_options("nl_warp_full");
-  std::string warp_full_filename;
-  if (!opt.empty()) {
+  auto warp_full_path = get_optional<std::filesystem::path>("nl_warp_full");
+  if (warp_full_path.has_value()) {
     if (!do_nonlinear)
       throw Exception("Non-linear warp output requested when no non-linear registration is requested");
-    warp_full_filename = std::string(opt[0][0]);
-    if (!Path::is_mrtrix_image(warp_full_filename) && //
-        !(Path::has_suffix(warp_full_filename, {".nii", ".nii.gz"}) &&
+    if (!Path::is_mrtrix_image(warp_full_path.value()) && //
+        !(Path::has_suffix(warp_full_path.value(), {".nii", ".nii.gz"}) &&
           File::Config::get_bool("NIfTIAutoSaveJSON", false))) {
       throw Exception("nl_warp_full output requires .mif/.mih or NIfTI file format"
                       " with NIfTIAutoSaveJSON config option set.");
@@ -692,14 +685,15 @@ void run() {
   opt = get_options("nl_init");
   const bool nonlinear_init = !opt.empty();
   if (nonlinear_init) {
+    const std::filesystem::path nl_init_path{opt[0][0]};
     if (!do_nonlinear)
       throw Exception("the non linear initialisation option -nl_init cannot be used when no non-linear registration "
                       "is requested");
 
-    if (!Path::is_mrtrix_image(opt[0][0]) &&                    //
-        !(Path::has_suffix(opt[0][0], {".nii", ".nii.gz"}) &&   //
-          File::Config::get_bool("NIfTIAutoLoadJSON", false) && //
-          Path::exists(File::NIfTI::get_json_path(opt[0][0])))) {
+    if (!Path::is_mrtrix_image(nl_init_path) &&                                         //
+        !(Path::has_suffix(std::filesystem::path(nl_init_path), {".nii", ".nii.gz"}) && //
+          File::Config::get_bool("NIfTIAutoLoadJSON", false) &&                         //
+          std::filesystem::exists(File::NIfTI::get_json_path(std::filesystem::path(opt[0][0]))))) {
       WARN("nl_init input requires warp_full in original .mif/.mih file format"
            " or in NIfTI file format with associated JSON."
            " Converting to other file formats may remove linear transformations stored in the image header.");
@@ -795,6 +789,16 @@ void run() {
     for (size_t i = 0; i < (nl_lmax).size(); ++i)
       if ((nl_lmax)[i] > max_mc_image_lmax)
         throw Exception("the requested -nl_lmax exceeds the lmax of the input images");
+  }
+
+  opt = get_options("nl_diagnostics_dir");
+  if (!opt.empty()) {
+    if (!do_nonlinear)
+      throw Exception("the -nl_diagnostics_dir option was specified"
+                      " when no non-linear registration is requested");
+    const std::filesystem::path diag_dir{opt[0][0]};
+    std::filesystem::create_directories(diag_dir);
+    nl_registration.set_diagnostics_image_dir(diag_dir);
   }
 
   // ******  MC options  *******
@@ -931,14 +935,15 @@ void run() {
         throw Exception("FIXME: metric selection");
     }
 
-    if (output_rigid_1tomid)
-      File::Matrix::save_transform(rigid.get_transform_half(), rigid.get_centre(), rigid_1tomid_filename);
+    if (rigid_1tomid_filepath.has_value())
+      File::Matrix::save_transform(rigid.get_transform_half(), rigid.get_centre(), rigid_1tomid_filepath.value());
 
-    if (output_rigid_2tomid)
-      File::Matrix::save_transform(rigid.get_transform_half_inverse(), rigid.get_centre(), rigid_2tomid_filename);
+    if (rigid_2tomid_filepath.has_value())
+      File::Matrix::save_transform(
+          rigid.get_transform_half_inverse(), rigid.get_centre(), rigid_2tomid_filepath.value());
 
-    if (output_rigid)
-      File::Matrix::save_transform(rigid.get_transform(), rigid.get_centre(), rigid_filename);
+    if (rigid_filepath.has_value())
+      File::Matrix::save_transform(rigid.get_transform(), rigid.get_centre(), rigid_filepath.value());
   }
 
   // ****** RUN AFFINE REGISTRATION *******
@@ -1005,14 +1010,15 @@ void run() {
       } else
         throw Exception("FIXME: metric selection");
     }
-    if (output_affine_1tomid)
-      File::Matrix::save_transform(affine.get_transform_half(), affine.get_centre(), affine_1tomid_filename);
+    if (affine_1tomid_filepath.has_value())
+      File::Matrix::save_transform(affine.get_transform_half(), affine.get_centre(), affine_1tomid_filepath.value());
 
-    if (output_affine_2tomid)
-      File::Matrix::save_transform(affine.get_transform_half_inverse(), affine.get_centre(), affine_2tomid_filename);
+    if (affine_2tomid_filepath.has_value())
+      File::Matrix::save_transform(
+          affine.get_transform_half_inverse(), affine.get_centre(), affine_2tomid_filepath.value());
 
-    if (output_affine)
-      File::Matrix::save_transform(affine.get_transform(), affine.get_centre(), affine_filename);
+    if (affine_filepath.has_value())
+      File::Matrix::save_transform(affine.get_transform(), affine.get_centre(), affine_filepath.value());
   }
 
   // ****** RUN NON-LINEAR REGISTRATION *******
@@ -1030,23 +1036,23 @@ void run() {
       Registration::Transform::Affine identity_transform;
       nl_registration.run(identity_transform, images1, images2, im1_mask, im2_mask);
     }
-    if (!warp_full_filename.empty()) {
+    if (warp_full_path.has_value()) {
       // TODO add affine parameters to comments too?
       Header output_header = nl_registration.get_output_warps_header();
       nl_registration.write_params_to_header(output_header);
       nl_registration.write_linear_to_header(output_header);
       output_header.datatype() = DataType::from_command_line(DataType::Float32);
-      auto output_warps = Image<float>::create(warp_full_filename, output_header);
+      auto output_warps = Image<float>::create(warp_full_path.value(), output_header);
       nl_registration.get_output_warps(output_warps);
     }
 
-    if (!warp1_filename.empty()) {
+    if (warp1_filepath.has_value()) {
       Header output_header(images2);
       output_header.ndim() = 4;
       output_header.size(3) = 3;
       nl_registration.write_params_to_header(output_header);
       output_header.datatype() = DataType::from_command_line(DataType::Float32);
-      auto warp1 = Image<default_type>::create(warp1_filename, output_header).with_direct_io();
+      auto warp1 = Image<default_type>::create(warp1_filepath.value(), output_header, DirectIO(3));
       Registration::Warp::compute_full_deformation(nl_registration.get_im2_to_mid_linear().inverse(),
                                                    *(nl_registration.get_mid_to_im2()),
                                                    *(nl_registration.get_im1_to_mid()),
@@ -1054,13 +1060,13 @@ void run() {
                                                    warp1);
     }
 
-    if (!warp2_filename.empty()) {
+    if (warp2_filepath.has_value()) {
       Header output_header(images1);
       output_header.ndim() = 4;
       output_header.size(3) = 3;
       nl_registration.write_params_to_header(output_header);
       output_header.datatype() = DataType::from_command_line(DataType::Float32);
-      auto warp2 = Image<default_type>::create(warp2_filename, output_header).with_direct_io();
+      auto warp2 = Image<default_type>::create(warp2_filepath.value(), output_header, DirectIO(3));
       Registration::Warp::compute_full_deformation(nl_registration.get_im1_to_mid_linear().inverse(),
                                                    *(nl_registration.get_mid_to_im1()),
                                                    *(nl_registration.get_im2_to_mid()),
@@ -1089,7 +1095,7 @@ void run() {
       CONSOLE(fmt::format("... {}", im1_transformed_paths[idx]));
       {
         // LogLevelLatch log_level (0);
-        Image<value_type> im1_image = Image<value_type>::open(input1[idx].name());
+        Image<value_type> im1_image = Image<value_type>::open(input1[idx].path());
 
         Header transformed_header(input2[idx]);
         transformed_header.datatype() = DataType::from_command_line(DataType::Float32);
@@ -1157,7 +1163,7 @@ void run() {
       CONSOLE(fmt::format("... {}", input1_midway_transformed_paths[idx]));
       {
         // LogLevelLatch log_level (0);
-        Image<value_type> im1_image = Image<value_type>::open(input1[idx].name());
+        Image<value_type> im1_image = Image<value_type>::open(input1[idx].path());
         midway_header.ndim() = im1_image.ndim();
         if (midway_header.ndim() == 4)
           midway_header.size(3) = im1_image.size(3);
@@ -1211,7 +1217,7 @@ void run() {
       CONSOLE(fmt::format("... {}", input2_midway_transformed_paths[idx]));
       {
         // LogLevelLatch log_level (0);
-        Image<value_type> im2_image = Image<value_type>::open(input2[idx].name());
+        Image<value_type> im2_image = Image<value_type>::open(input2[idx].path());
         midway_header.ndim() = im2_image.ndim();
         if (midway_header.ndim() == 4)
           midway_header.size(3) = im2_image.size(3);

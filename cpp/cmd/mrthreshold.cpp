@@ -14,6 +14,9 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <filesystem>
+#include <optional>
+
 #include "command.h"
 #include "enum.h"
 #include "exception.h"
@@ -337,7 +340,7 @@ void apply(Image<value_type> &in,
 template <typename T>
 void execute(Image<value_type> &in,
              Image<bool> &mask,
-             std::string_view out_path,
+             const std::optional<std::filesystem::path> &out_path,
              const default_type abs,
              const default_type percentile,
              const ssize_t bottom,
@@ -346,13 +349,12 @@ void execute(Image<value_type> &in,
              const bool all_volumes,
              const operator_type op,
              const bool mask_out) {
-  const bool to_cout = out_path.empty();
   Image<T> out;
-  if (!to_cout) {
+  if (out_path.has_value()) {
     Header header_out(in);
     header_out.datatype() = DataType::from<T>();
     header_out.datatype().set_byte_order_native();
-    out = Image<T>::create(out_path, header_out);
+    out = Image<T>::create(out_path.value(), header_out);
   }
 
   // Branch based on whether or not we need to process each image volume individually
@@ -360,7 +362,17 @@ void execute(Image<value_type> &in,
 
     // Do one volume at a time
     // If writing to cout, also add a newline between each volume
-    if (to_cout) {
+    if (out.valid()) {
+
+      for (auto l = Loop("Determining and applying per-volume thresholds", 3, in.ndim())(in); l; ++l) {
+        LogLevelLatch latch(App::log_level - 1);
+        const default_type threshold = calculate(in, mask, 3, abs, percentile, bottom, top, ignore_zero);
+        assign_pos_of(in, 3).to(out);
+        apply(in, mask, out, 3, static_cast<value_type>(threshold), op, mask_out);
+      }
+
+    } else {
+
       LogLevelLatch latch(App::log_level - 1);
       bool is_first_loop = true;
       for (auto l = Loop(3, in.ndim())(in); l; ++l) {
@@ -370,15 +382,6 @@ void execute(Image<value_type> &in,
           std::cout << "\n";
         const default_type threshold = calculate(in, mask, 3, abs, percentile, bottom, top, ignore_zero);
         std::cout << threshold;
-      }
-
-    } else {
-
-      for (auto l = Loop("Determining and applying per-volume thresholds", 3, in.ndim())(in); l; ++l) {
-        LogLevelLatch latch(App::log_level - 1);
-        const default_type threshold = calculate(in, mask, 3, abs, percentile, bottom, top, ignore_zero);
-        assign_pos_of(in, 3).to(out);
-        apply(in, mask, out, 3, static_cast<value_type>(threshold), op, mask_out);
       }
     }
 
@@ -390,10 +393,10 @@ void execute(Image<value_type> &in,
 
   // Process whole input image as a single block
   const default_type threshold = calculate(in, mask, in.ndim(), abs, percentile, bottom, top, ignore_zero);
-  if (to_cout)
-    std::cout << threshold;
-  else
+  if (out.valid())
     apply(in, mask, out, in.ndim(), static_cast<value_type>(threshold), op, mask_out);
+  else
+    std::cout << threshold;
 }
 
 void run() {
@@ -411,8 +414,9 @@ void run() {
     throw Exception("Cannot perform thresholding directly on complex image data");
   auto in = header_in.get_image<value_type>();
 
-  const bool to_cout = argument.size() == 1;
-  const std::string output_path = to_cout ? std::string("") : argument[1];
+  std::optional<std::filesystem::path> output_path;
+  if (argument.size() == 2)
+    output_path.emplace(argument[1]);
   const bool all_volumes = !get_options("allvolumes").empty();
   const bool ignore_zero = !get_options("ignorezero").empty();
   const bool use_nan = !get_options("nan").empty();
@@ -440,7 +444,7 @@ void run() {
     }
   }
 
-  if (to_cout) {
+  if (!output_path.has_value()) {
     if (use_nan) {
       WARN("Option -nan ignored: has no influence when no output image is specified");
     }

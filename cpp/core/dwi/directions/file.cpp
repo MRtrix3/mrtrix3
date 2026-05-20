@@ -26,7 +26,7 @@ App::Option cartesian_option = App::Option("cartesian",
                                            "Output directions in Cartesian coordinates [x y z]"
                                            " instead of spherical angles [az in].");
 
-Eigen::MatrixXd load_spherical(std::string_view filename) {
+Eigen::MatrixXd load_spherical(const std::filesystem::path &filename) {
   auto directions = File::Matrix::load_matrix<>(filename);
   if (directions.cols() == 2)
     return directions;
@@ -36,7 +36,7 @@ Eigen::MatrixXd load_spherical(std::string_view filename) {
   return Math::Sphere::cartesian2spherical(directions);
 }
 
-Eigen::MatrixXd load_cartesian(std::string_view filename) {
+Eigen::MatrixXd load_cartesian(const std::filesystem::path &filename) {
   auto directions = File::Matrix::load_matrix<>(filename);
   if (directions.cols() == 2)
     directions = Math::Sphere::spherical2cartesian(directions);

@@ -18,7 +18,6 @@
 #include "dwi/directions/file.h"
 #include "dwi/directions/validate.h"
 #include "file/matrix.h"
-#include "file/utils.h"
 #include "math/SH.h"
 #include "math/rng.h"
 #include "math/sphere.h"
@@ -26,7 +25,7 @@
 #include "thread.h"
 #include <fmt/format.h>
 
-constexpr size_t default_number = 1e8;
+constexpr size_t default_permutations = 1e8;
 
 using namespace MR;
 using namespace App;
@@ -52,7 +51,7 @@ void usage() {
 
   OPTIONS
     + Option ("number", fmt::format("number of shuffles to try"
-                                    " (default: {})", default_number))
+                                    " (default: {})", default_permutations))
       + Argument ("num").type_integer (1)
 
     + Option ("preserve", "preserve the sign of some number of directions at the start of the set")
@@ -151,7 +150,7 @@ void run() {
   DWI::Directions::validate(directions, argument[0], false);
   directions = Math::Sphere::as_cartesian(directions);
 
-  const size_t num_shuffles = get_option_value<size_t>("number", default_number);
+  const size_t num_shuffles = get_option_value<size_t>("number", default_permutations);
   const size_t preserve = get_option_value<size_t>("preserve", 0);
 
   std::vector<int> signs;

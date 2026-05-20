@@ -19,7 +19,6 @@
 #include "command.h"
 #include "enum.h"
 #include "file/path.h"
-#include "file/utils.h"
 #include "fixel/fixel.h"
 #include "fixel/helpers.h"
 #include "fixel/validate.h"
@@ -33,6 +32,8 @@
 #include "fixel/filter/smooth.h"
 #include "fixel/matrix.h"
 #include "stats/cfe.h"
+
+#include <filesystem>
 
 using namespace MR;
 using namespace App;
@@ -59,7 +60,7 @@ void usage() {
   ARGUMENTS
   + Argument ("input", "the input: either a fixel data file, or a fixel directory (see Description)").type_image_in().type_directory_in()
   + Argument ("filter", fmt::format("the filtering operation to perform; options are: {}.", MR::Enum::join<FilterType>())).type_choice<FilterType>()
-  + Argument ("output", "the output: either a fixel data file, or a fixel directory (see Description)").type_image_out().type_directory_out();
+  + Argument ("output", "the output: either a fixel data file, or a fixel directory (see Description)").type_image_out().type_directory_out(DirOutMode::MustNotExist);
 
   OPTIONS
   + Option ("matrix", "provide a fixel-fixel connectivity matrix"
@@ -93,7 +94,9 @@ void usage() {
 using value_type = float;
 
 void run() {
+  const std::filesystem::path input_path{argument[0]};
   const FilterType filter_type = MR::Enum::from_name<FilterType>(argument[1]);
+  const std::filesystem::path output_path{argument[2]};
 
   std::set<std::string> option_list{"cfe_dh",
                                     "cfe_e",
@@ -113,16 +116,16 @@ void run() {
     Header index_header;
     Header output_header;
     try {
-      index_header = Fixel::find_index_header(argument[0]);
-      multiple_files = Fixel::find_data_headers(argument[0], index_header);
-      Fixel::debug_validate_directory(argument[0]);
+      index_header = Fixel::find_index_header(input_path);
+      multiple_files = Fixel::find_data_headers(input_path, index_header);
+      Fixel::debug_validate_directory(input_path);
       if (multiple_files.empty())
         throw Exception(fmt::format("No fixel data files found in directory \"{}\"", argument[0]));
       output_header = Header(multiple_files[0]);
     } catch (...) {
       try {
-        index_header = Fixel::find_index_header(Fixel::get_fixel_directory(argument[0]));
-        single_file = Image<float>::open(argument[0]);
+        index_header = Fixel::find_index_header(Fixel::get_fixel_directory(input_path));
+        single_file = Image<float>::open(input_path);
         Fixel::check_data_file(single_file);
         output_header = Header(single_file);
       } catch (...) {
@@ -228,7 +231,7 @@ void run() {
                          multiple_files.size());
     for (auto &H : multiple_files) {
       auto input_image = H.get_image<float>();
-      auto output_image = Image<float>::create(Path::join(argument[2], Path::basename(H.name())), H);
+      auto output_image = Image<float>::create(output_path / H.path().filename(), H);
       (*filter)(input_image, output_image);
       ++progress;
     }

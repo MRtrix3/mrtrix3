@@ -19,7 +19,7 @@
 #include "app.h"
 #include "thread_queue.h"
 #include "types.h"
-#include <fmt/format.h>
+#include <fmt/std.h>
 
 #include "dwi/fixel_map.h"
 
@@ -56,7 +56,7 @@ public:
   virtual ~Model();
 
   // Over-rides the function defined in ModelBase; need to build contributions member also
-  void map_streamlines(std::string_view /*path*/);
+  void map_streamlines(const std::filesystem::path &);
 
   void remove_excluded_fixels();
 
@@ -65,12 +65,12 @@ public:
 
   track_t num_tracks() const { return contributions.size(); }
 
-  void output_non_contributing_streamlines(std::string_view /*output_path*/) const;
+  void output_non_contributing_streamlines(const std::filesystem::path &) const;
 
   using ModelBase<Fixel>::mu;
 
 protected:
-  std::string tck_file_path;
+  std::filesystem::path tck_file_path;
   std::vector<TrackContribution *> contributions;
 
   using Fixel_map<Fixel>::accessor;
@@ -134,13 +134,13 @@ template <class Fixel> Model<Fixel>::~Model() {
   }
 }
 
-template <class Fixel> void Model<Fixel>::map_streamlines(std::string_view path) {
+template <class Fixel> void Model<Fixel>::map_streamlines(const std::filesystem::path &path) {
   Tractography::Properties properties;
   Tractography::Reader<> file(path, properties);
 
   const track_t count = (properties.find("count") == properties.end()) ? 0 : to<track_t>(properties["count"]);
   if (!count)
-    throw Exception(fmt::format("Cannot map streamlines: track file {} is empty", Path::basename(path)));
+    throw Exception(fmt::format("Cannot map streamlines: track file {} is empty", path.filename()));
 
   contributions.assign(count, nullptr);
 
@@ -238,7 +238,8 @@ template <class Fixel> void Model<Fixel>::check_TD() {
   VAR(sum_from_tracks);
 }
 
-template <class Fixel> void Model<Fixel>::output_non_contributing_streamlines(std::string_view output_path) const {
+template <class Fixel>
+void Model<Fixel>::output_non_contributing_streamlines(const std::filesystem::path &output_path) const {
   Tractography::Properties p;
   Tractography::Reader<float> reader(tck_file_path, p);
   Tractography::Writer<float> writer(output_path, p);

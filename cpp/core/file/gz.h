@@ -20,7 +20,8 @@
 #include <cstdio>
 #include <cstring>
 #include <fcntl.h>
-#include <fmt/format.h>
+#include <filesystem>
+#include <fmt/std.h>
 #include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -37,34 +38,33 @@ namespace MR::File {
 class GZ {
 public:
   GZ() : gz(nullptr) {}
-  GZ(std::string_view fname, std::string_view mode) : gz(nullptr) { open(fname, mode); }
+  GZ(const std::filesystem::path &fname, std::string_view mode) : gz(nullptr) { open(fname, mode); }
   ~GZ() {
     try {
       close();
     } catch (...) {
-      FAIL(fmt::format("error closing GZ file \"{}\": {}", filename, error()));
+      FAIL(fmt::format("error closing GZ file \"{}\": {}", filepath, error()));
       App::exit_error_code = 1;
     }
   }
 
-  std::string name() const { return filename; }
-
-  void open(std::string_view fname, std::string_view mode) {
+  const std::filesystem::path &name() const { return filepath; }
+  void open(const std::filesystem::path &fname, std::string_view mode) {
     close();
-    filename = fname;
-    if (!MR::Path::exists(filename))
-      throw Exception(fmt::format("cannot access file \"{}\": No such file or directory", filename));
+    filepath = fname;
+    if (!std::filesystem::exists(filepath))
+      throw Exception(fmt::format("cannot access file \"{}\": No such file or directory", filepath));
 
-    gz = gzopen(filename.c_str(), std::string(mode).c_str());
+    gz = gzopen(filepath.string().c_str(), std::string(mode).c_str());
     if (!gz)
-      throw Exception(fmt::format("error opening file \"{}\": {}", filename, strerror(errno)));
+      throw Exception(fmt::format("error opening file \"{}\": {}", filepath, strerror(errno)));
   }
 
   void close() {
     if (gz) {
       if (gzclose(gz))
-        throw Exception(fmt::format("error closing GZ file \"{}\": {}", filename, error()));
-      filename.clear();
+        throw Exception(fmt::format("error closing GZ file \"{}\": {}", filepath, error()));
+      filepath.clear();
       gz = nullptr;
     }
   }
@@ -84,27 +84,27 @@ public:
     assert(gz);
     z_off_t pos = gzseek(gz, offset, SEEK_SET);
     if (pos < 0)
-      throw Exception(fmt::format("error seeking in GZ file \"{}\": {}", filename, error()));
+      throw Exception(fmt::format("error seeking in GZ file \"{}\": {}", filepath, error()));
   }
 
   int read(void *const s, size_t n) {
     assert(gz);
     int n_read = gzread(gz, s, n);
     if (n_read < 0)
-      throw Exception(fmt::format("error uncompressing GZ file \"{}\": {}", filename, error()));
+      throw Exception(fmt::format("error uncompressing GZ file \"{}\": {}", filepath, error()));
     return n_read;
   }
 
   void write(const void *const s, size_t n) {
     assert(gz);
     if (gzwrite(gz, s, n) <= 0)
-      throw Exception(fmt::format("error writing to GZ file \"{}\": {}", filename, error()));
+      throw Exception(fmt::format("error writing to GZ file \"{}\": {}", filepath, error()));
   }
 
   void write(std::string_view s) {
     assert(gz);
     if (gzputs(gz, std::string(s).c_str()) < 0)
-      throw Exception(fmt::format("error writing to GZ file \"{}\": {}", filename, error()));
+      throw Exception(fmt::format("error writing to GZ file \"{}\": {}", filepath, error()));
   }
 
   std::string getline() {
@@ -116,7 +116,7 @@ public:
       if (c < 0) {
         if (eof())
           break;
-        throw Exception(fmt::format("error uncompressing GZ file \"{}\": {}", filename, error()));
+        throw Exception(fmt::format("error uncompressing GZ file \"{}\": {}", filepath, error()));
       }
       string += char(c);
     } while (c != '\n');
@@ -128,7 +128,7 @@ public:
   template <typename T> T get() {
     T val;
     if (read(&val, sizeof(T)) != sizeof(T))
-      throw Exception(fmt::format("error uncompressing GZ file \"{}\": {}", filename, error()));
+      throw Exception(fmt::format("error uncompressing GZ file \"{}\": {}", filepath, error()));
     return val;
   }
 
@@ -139,7 +139,7 @@ public:
 
   template <typename T> T *get(T *buf, size_t n) {
     if (read(buf, n * sizeof(T)) != n * sizeof(T))
-      throw Exception(fmt::format("error uncompressing GZ file \"{}\": {}", filename, error()));
+      throw Exception(fmt::format("error uncompressing GZ file \"{}\": {}", filepath, error()));
     return buf;
   }
 
@@ -150,7 +150,7 @@ public:
 
 protected:
   gzFile gz;
-  std::string filename;
+  std::filesystem::path filepath;
 
   const std::string error() {
     int error_number;

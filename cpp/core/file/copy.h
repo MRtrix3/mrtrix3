@@ -19,11 +19,12 @@
 #include "exception.h"
 #include "file/mmap.h"
 #include "file/utils.h"
-#include <fmt/format.h>
+#include <filesystem>
+#include <fmt/std.h>
 
 namespace MR::File {
 
-inline void copy(std::string_view source, std::string_view destination) {
+inline void copy(const std::filesystem::path &source, const std::filesystem::path &destination) {
   {
     DEBUG(fmt::format("copying file \"{}\" to \"{}\"...", source, destination));
     MMap input(source);

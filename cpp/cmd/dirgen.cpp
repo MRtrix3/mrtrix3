@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <filesystem>
 #include <fmt/format.h>
 
 #include "command.h"

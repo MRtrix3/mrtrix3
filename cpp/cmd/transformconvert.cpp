@@ -27,6 +27,7 @@
 #include "file/nifti_utils.h"
 #include "image.h"
 #include "transform.h"
+#include <filesystem>
 
 using namespace MR;
 using namespace App;
@@ -133,7 +134,7 @@ transform_type get_flirt_transform(const Header &header) {
 // }
 
 template <typename TransformationType>
-void parse_itk_trafo(std::string_view itk_file,
+void parse_itk_trafo(const std::filesystem::path &itk_path,
                      TransformationType &transformation,
                      Eigen::Vector3d &centre_of_rotation) {
   const std::string first_line = "#Insight Transform File V1.0";
@@ -146,7 +147,7 @@ void parse_itk_trafo(std::string_view itk_file,
   // QuaternionRigidTransform_double_3_3?
   // QuaternionRigidTransform_float_3_3?
 
-  File::KeyValue::Reader file(itk_file, first_line.c_str());
+  File::KeyValue::Reader file(itk_path, first_line.c_str());
   std::string line;
   size_t invalid(2);
   while (file.next()) {
@@ -179,21 +180,22 @@ void parse_itk_trafo(std::string_view itk_file,
 }
 
 void run() {
+  const std::filesystem::path output_path{argument.back()};
   const size_t num_inputs = argument.size() - 2;
   const Operation op = MR::Enum::from_name<Operation>(argument[num_inputs]);
-  const std::string_view output_path = argument.back();
 
   switch (op) {
   case Operation::FLIRT_IMPORT: {
     if (num_inputs != 3)
       throw Exception("flirt_import requires 3 inputs");
+
     transform_type transform = File::Matrix::load_transform(argument[0]);
     auto src_header = Header::open(argument[1]);  // -in
     auto dest_header = Header::open(argument[2]); // -ref
 
-    if (transform.matrix().topLeftCorner<3, 3>().determinant() == float(0.0))
+    if (transform.matrix().topLeftCorner<3, 3>().determinant() == 0.0)
       WARN("Transformation matrix determinant is zero.");
-    if (transform.matrix().topLeftCorner<3, 3>().determinant() < 0)
+    if (transform.matrix().topLeftCorner<3, 3>().determinant() < 0.0)
       INFO("Transformation matrix determinant is negative.");
 
     transform_type src_flirt_to_scanner = get_flirt_transform(src_header);

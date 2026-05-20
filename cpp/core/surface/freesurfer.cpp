@@ -17,12 +17,12 @@
 #include "surface/freesurfer.h"
 
 #include "debug.h"
-#include <fmt/format.h>
+#include <fmt/std.h>
 
 namespace MR::Surface::FreeSurfer {
 
-void read_annot(std::string_view path, label_vector_type &labels, Connectome::LUT &lut) {
-  std::ifstream in(std::string(path).c_str(), std::ios_base::in | std::ios_base::binary);
+void read_annot(const std::filesystem::path &path, label_vector_type &labels, Connectome::LUT &lut) {
+  std::ifstream in(path, std::ios_base::in | std::ios_base::binary);
   if (!in)
     throw Exception("Error opening input file!");
 
@@ -37,16 +37,15 @@ void read_annot(std::string_view path, label_vector_type &labels, Connectome::LU
 
   const int32_t colortable_present = get_BE<int32_t>(in);
   if (!in.good()) {
-    WARN(
-        fmt::format("FreeSurfer annotation file \"{}\" does not contain colortable information", Path::basename(path)));
+    WARN(fmt::format("FreeSurfer annotation file \"{}\" does not contain colortable information", path.filename()));
     labels = label_vector_type::Zero(num_vertices);
     for (size_t i = 0; i != vertices.size(); ++i)
       labels[vertices[i]] = vertex_labels[i];
     return;
   }
   if (!colortable_present)
-    throw Exception(fmt::format("Error reading FreeSurfer annotation file \"{}\": Unexpected colortable flag",
-                                Path::basename(path)));
+    throw Exception(
+        fmt::format("Error reading FreeSurfer annotation file \"{}\": Unexpected colortable flag", path.filename()));
 
   // Structure that will map from the colour-based structure identifier to a more sensible index
   std::map<int32_t, Connectome::node_t> rgb2index;
@@ -73,7 +72,7 @@ void read_annot(std::string_view path, label_vector_type &labels, Connectome::LU
     const int32_t version = -num_entries;
     if (version != 2)
       throw Exception(fmt::format("Error reading FreeSurfer annotation file \"{}\": Unsupported file version ({})",
-                                  Path::basename(path),
+                                  path.filename(),
                                   str(version)));
 
     num_entries = get_BE<int32_t>(in);
@@ -85,11 +84,11 @@ void read_annot(std::string_view path, label_vector_type &labels, Connectome::LU
     for (int32_t i = 0; i != num_entries_to_read; ++i) {
       const int32_t structure = get_BE<int32_t>(in) + 1;
       if (structure < 0)
-        throw Exception(fmt::format("Error reading FreeSurfer annotation file \"{}\": Negative structure index",
-                                    Path::basename(path)));
+        throw Exception(
+            fmt::format("Error reading FreeSurfer annotation file \"{}\": Negative structure index", path.filename()));
       if (lut.find(structure) != lut.end())
-        throw Exception(fmt::format("Error reading FreeSurfer annotation file \"{}\": Duplicate structure index",
-                                    Path::basename(path)));
+        throw Exception(
+            fmt::format("Error reading FreeSurfer annotation file \"{}\": Duplicate structure index", path.filename()));
       const int32_t struct_name_length = get_BE<int32_t>(in);
       std::unique_ptr<char[]> struct_name(new char[struct_name_length]);
       in.read(struct_name.get(), struct_name_length);
@@ -108,11 +107,11 @@ void read_annot(std::string_view path, label_vector_type &labels, Connectome::LU
     labels[vertices[i]] = rgb2index[vertex_labels[i]];
 }
 
-void read_label(std::string_view path, VertexList &vertices, Scalar &scalar) {
+void read_label(const std::filesystem::path &path, VertexList &vertices, Scalar &scalar) {
   vertices.clear();
   scalar.resize(0);
 
-  std::ifstream in(std::string(path).c_str(), std::ios_base::in);
+  std::ifstream in(path, std::ios_base::in);
   if (!in)
     throw Exception("Error opening input file!");
 
@@ -120,7 +119,7 @@ void read_label(std::string_view path, VertexList &vertices, Scalar &scalar) {
   std::getline(in, line);
   if (line.substr(0, 13) != "#!ascii label")
     throw Exception(fmt::format("Error parsing FreeSurfer label file \"{}\":{}",
-                                Path::basename(path),           //
+                                path.filename(),                //
                                 " Bad first line identifier")); //
   std::getline(in, line);
   uint32_t num_vertices = 0;
@@ -128,8 +127,7 @@ void read_label(std::string_view path, VertexList &vertices, Scalar &scalar) {
     num_vertices = to<size_t>(line);
   } catch (Exception &e) {
     throw Exception(
-        e,
-        fmt::format("Error parsing FreeSurfer label file \"{}\":  Bad second line vertex count", Path::basename(path)));
+        e, fmt::format("Error parsing FreeSurfer label file \"{}\":  Bad second line vertex count", path.filename()));
   }
 
   for (size_t i = 0; i != num_vertices; ++i) {
@@ -142,15 +140,15 @@ void read_label(std::string_view path, VertexList &vertices, Scalar &scalar) {
     sscanf(line.c_str(), "%u %lf %lf %lf %lf", &index, &x, &y, &z, &value);
     if (index == std::numeric_limits<uint32_t>::max())
       throw Exception(fmt::format("Error parsing FreeSurfer label file \"{}\":{}",
-                                  Path::basename(path), //
-                                  " Malformed line"));  //
+                                  path.filename(),     //
+                                  " Malformed line")); //
     if (index >= scalar.size()) {
       scalar.conservativeResizeLike(Scalar::Base::Constant(index + 1, NaN));
       vertices.resize(index + 1, Vertex(NaN, NaN, NaN));
     }
     if (std::isfinite(scalar[index]))
       throw Exception(fmt::format("Error parsing FreeSurfer label file \"{}\":{}{})",
-                                  Path::basename(path), //
+                                  path.filename(), //
                                   " Duplicated index (",
                                   str(scalar[index]))); //
     scalar[index] = value;
@@ -159,9 +157,9 @@ void read_label(std::string_view path, VertexList &vertices, Scalar &scalar) {
 
   if (!in.good())
     throw Exception(fmt::format("Error parsing FreeSurfer label file \"{}\":{}",
-                                Path::basename(path),     //
+                                path.filename(),          //
                                 " End of file reached")); //
-  scalar.set_name(path);
+  scalar.set_name(path.string());
 }
 
 } // namespace MR::Surface::FreeSurfer

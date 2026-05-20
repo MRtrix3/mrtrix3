@@ -30,6 +30,8 @@
 
 #include "stats/permtest.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 using namespace MR::Math::Stats;
@@ -64,7 +66,7 @@ void usage() {
   ARGUMENTS
   + Argument("input", "a text file listing the file names of the input subject data").type_file_in()
   + Argument("design", "the design matrix").type_file_in()
-  + Argument("output", "the filename prefix for all output").type_text();
+  + Argument("output_dir", "the output directory (will be created by the command)").type_directory_out(DirOutMode::MustNotExist);
 
   OPTIONS
   + OptionGroup("Options for constraining analysis to specific elements")
@@ -94,7 +96,7 @@ using Stats::PermTest::count_matrix_type;
 
 class SubjectVectorImport : public SubjectDataImportBase {
 public:
-  SubjectVectorImport(std::string_view path)
+  SubjectVectorImport(const std::filesystem::path &path)
       : SubjectDataImportBase(path), data(File::Matrix::load_vector<measurements_value_type>(path)) {}
 
   void operator()(measurements_matrix_type::RowXpr row) const override {
@@ -114,7 +116,6 @@ private:
 };
 
 void run() {
-
   // Unlike other statistical inference commands, don't delay actual
   //   loading of input data: feasible for the input itself to be
   //   a text file containing raw numerical matrix data, rather than
@@ -216,7 +217,8 @@ void run() {
                              : "")))));
   CONSOLE(fmt::format("Number of hypotheses: {}", num_hypotheses));
 
-  const std::string output_prefix = argument[2];
+  const std::filesystem::path output_dir = argument[2];
+  std::filesystem::create_directories(output_dir);
 
   const bool nans_in_data = !data.allFinite();
   if (nans_in_data) {
@@ -247,31 +249,31 @@ void run() {
 
     ProgressBar progress("Outputting beta coefficients, effect size and standard deviation",
                          2 + (2 * num_hypotheses) + (variable_design_matrix ? 1 : 0));
-    File::Matrix::save_matrix(betas, fmt::format("{}betas.csv", output_prefix));
+    File::Matrix::save_matrix(betas, output_dir / "betas.csv");
     ++progress;
     for (index_type i = 0; i != num_hypotheses; ++i) {
       if (!hypotheses[i].is_F()) {
         File::Matrix::save_vector(abs_effect_size.array().col(i) * mask.cast<matrix_type::Scalar>(),
-                                  fmt::format("{}abs_effect{}.csv", output_prefix, postfix(i)));
+                                  output_dir / fmt::format("abs_effect{}.csv", postfix(i)));
         ++progress;
         if (num_vgs == 1)
           File::Matrix::save_vector(std_effect_size.array().col(i) * mask.cast<matrix_type::Scalar>(),
-                                    fmt::format("{}std_effect{}.csv", output_prefix, postfix(i)));
+                                    output_dir / fmt::format("std_effect{}.csv", postfix(i)));
       } else {
         ++progress;
       }
       ++progress;
     }
     if (variable_design_matrix) {
-      File::Matrix::save_vector(cond * mask.cast<matrix_type::Scalar>(), fmt::format("{}cond.csv", output_prefix));
+      File::Matrix::save_vector(cond * mask.cast<matrix_type::Scalar>(), output_dir / "cond.csv");
       ++progress;
     }
     if (num_vgs == 1) {
       File::Matrix::save_vector(stdev.array().row(0) * mask.transpose().cast<matrix_type::Scalar>(),
-                                fmt::format("{}std_dev.csv", output_prefix));
+                                output_dir / "std_dev.csv");
     } else {
       stdev = stdev.array().colwise() * mask.cast<matrix_type::Scalar>();
-      File::Matrix::save_matrix(stdev, fmt::format("{}std_dev.csv", output_prefix));
+      File::Matrix::save_matrix(stdev, output_dir / "std_dev.csv");
     }
   }
 
@@ -299,11 +301,10 @@ void run() {
   matrix_type default_statistic, default_zstat;
   (*glm_test)(default_shuffle, default_statistic, default_zstat);
   for (index_type i = 0; i != num_hypotheses; ++i) {
-    File::Matrix::save_vector(
-        default_statistic.array().col(i) * mask.cast<matrix_type::Scalar>(),
-        fmt::format("{}{}value{}.csv", output_prefix, hypotheses[i].is_F() ? "F" : "t", postfix(i)));
+    File::Matrix::save_vector(default_statistic.array().col(i) * mask.cast<matrix_type::Scalar>(),
+                              output_dir / fmt::format("{}value{}.csv", hypotheses[i].is_F() ? "F" : "t", postfix(i)));
     File::Matrix::save_vector(default_zstat.array().col(i) * mask.cast<matrix_type::Scalar>(),
-                              fmt::format("{}Zstat{}.csv", output_prefix, postfix(i)));
+                              output_dir / fmt::format("Zstat{}.csv", postfix(i)));
   }
 
   // Perform permutation testing
@@ -327,19 +328,18 @@ void run() {
                                       null_contributions,
                                       uncorrected_pvalues);
     if (fwe_strong) {
-      File::Matrix::save_vector(null_distribution.col(0), fmt::format("{}null_dist.csv", output_prefix));
+      File::Matrix::save_vector(null_distribution.col(0), output_dir / "null_dist.csv");
     } else {
       for (index_type i = 0; i != num_hypotheses; ++i)
-        File::Matrix::save_vector(null_distribution.col(i),
-                                  fmt::format("{}null_dist{}.csv", output_prefix, postfix(i)));
+        File::Matrix::save_vector(null_distribution.col(i), output_dir / fmt::format("null_dist{}.csv", postfix(i)));
     }
     const matrix_type fwe_pvalues = MR::Math::Stats::fwe_pvalue(null_distribution, default_zstat, mask);
     for (index_type i = 0; i != num_hypotheses; ++i) {
-      File::Matrix::save_vector(fwe_pvalues.col(i), fmt::format("{}fwe_1mpvalue{}.csv", output_prefix, postfix(i)));
+      File::Matrix::save_vector(fwe_pvalues.col(i), output_dir / fmt::format("fwe_1mpvalue{}.csv", postfix(i)));
       File::Matrix::save_vector(uncorrected_pvalues.col(i),
-                                fmt::format("{}uncorrected_1mpvalue{}.csv", output_prefix, postfix(i)));
+                                output_dir / fmt::format("uncorrected_1mpvalue{}.csv", postfix(i)));
       File::Matrix::save_vector(null_contributions.col(i),
-                                fmt::format("{}null_contributions{}.csv", output_prefix, postfix(i)));
+                                output_dir / fmt::format("null_contributions{}.csv", postfix(i)));
     }
   }
 }

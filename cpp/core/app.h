@@ -47,7 +47,7 @@ extern int exit_error_code;
 extern std::string NAME;
 extern std::string command_history_string;
 extern bool overwrite_files;
-extern void (*check_overwrite_files_func)(std::string_view name);
+extern void (*check_overwrite_files_func)(const std::filesystem::path &name);
 extern bool fail_on_warn;
 extern bool terminal_use_colour;
 extern const std::thread::id main_thread_ID;
@@ -133,7 +133,7 @@ public:
   std::string syntax(const bool format) const;
 };
 
-void check_overwrite(std::string_view name);
+void check_overwrite(const std::filesystem::path &path);
 
 //! initialise MRtrix and parse command-line arguments
 /*! this function must be called from within main(), immediately after the
@@ -162,21 +162,27 @@ std::string full_usage();
 class ParsedArgument {
 public:
   using IntType = int64_t; // Native single-integer parsed type before conversion
+  using UIntType = std::make_unsigned_t<IntType>;
 
-  // Note that these are permissive of reading the argument in this form
-  //   even if the argument is not explicitly flagged as being of text type
-  operator std::string() const { return p; }
-  operator std::string_view() const { return std::string_view(p.data(), p.size()); }
+  operator std::string() const;
+  operator std::string_view() const;
+  operator std::filesystem::path() const;
 
+  // This particular function is permissive of reading the argument in this form
+  //   even if the argument is not explicitly flagged as being of text type;
+  //   in particular, attempting to implicitly convert to std::string
+  //   for an argument that is a filesystem path type will fail,
+  //   whereas this function can be used
+  std::string as_text() const { return p; }
+
+  std::filesystem::path as_path() const;
   bool as_bool() const;
-  int64_t as_int() const;
-  uint64_t as_uint() const;
+  IntType as_int() const;
+  UIntType as_uint() const;
   default_type as_float() const;
 
-  std::vector<int32_t> as_sequence_int() const;
-
-  std::vector<uint32_t> as_sequence_uint() const;
-
+  std::vector<IntType> as_sequence_int() const;
+  std::vector<UIntType> as_sequence_uint() const;
   std::vector<default_type> as_sequence_float() const;
 
   operator bool() const { return as_bool(); }
@@ -188,8 +194,8 @@ public:
   operator long long unsigned int() const { return as_uint(); }
   operator float() const { return as_float(); }
   operator double() const { return as_float(); }
-  operator std::vector<int32_t>() const { return as_sequence_int(); }
-  operator std::vector<uint32_t>() const { return as_sequence_uint(); }
+  operator std::vector<IntType>() const { return as_sequence_int(); }
+  operator std::vector<UIntType>() const { return as_sequence_uint(); }
   operator std::vector<default_type>() const { return as_sequence_float(); }
 
   const char *c_str() const { return p.c_str(); } // check_syntax off
@@ -203,9 +209,10 @@ private:
   std::string p;
   size_t index_;
 
-  ParsedArgument(const Option *option, const Argument *argument, std::string text, size_t index);
+  bool includes_filesystem_arg_types() const noexcept;
+  bool only_filesystem_arg_types() const noexcept;
 
-  void error(Exception &e) const;
+  ParsedArgument(const Option *option, const Argument *argument, std::string text, size_t index);
 
   friend class ParsedOption;
   friend class Options;
@@ -397,7 +404,33 @@ template <typename Enum> inline Enum get_option_choice(std::string_view name, co
   }
 }
 
-// TODO Consider convenience functions to return a std::optional of any given type, including enums
+//! Returns the user-specified choice in a std::optional<> if present, std::nullopt otherwise.
+template <typename T>
+typename std::enable_if<!std::is_enum_v<T>, std::optional<T>>::type get_optional(std::string_view name) {
+  auto opt = get_options(name);
+  switch (opt.size()) {
+  case 0:
+    return std::nullopt;
+  case 1:
+    return static_cast<T>(opt[0][0]);
+  default:
+    assert(false);
+    throw Exception(fmt::format("Internal error parsing command-line option \"-{}\"", name));
+  }
+}
+template <typename Enum>
+typename std::enable_if<std::is_enum_v<Enum>, std::optional<Enum>>::type get_optional(std::string_view name) {
+  auto opt = get_options(name);
+  switch (opt.size()) {
+  case 0:
+    return std::nullopt;
+  case 1:
+    return MR::Enum::from_name<Enum>(std::string_view(opt[0][0]));
+  default:
+    assert(false);
+    throw Exception(fmt::format("Internal error parsing command-line option \"-{}\"", name));
+  }
+}
 
 std::ostream &operator<<(std::ostream &stream, const App::ParsedArgument &arg);
 
@@ -407,7 +440,7 @@ namespace fmt {
 template <> struct formatter<MR::App::ParsedArgument> {
   constexpr auto parse(format_parse_context &ctx) { return ctx.begin(); }
   template <typename FormatContext> auto format(const MR::App::ParsedArgument &a, FormatContext &ctx) const {
-    return format_to(ctx.out(), "{}", static_cast<std::string_view>(a));
+    return format_to(ctx.out(), "{}", a.as_text());
   }
 };
 } // namespace fmt

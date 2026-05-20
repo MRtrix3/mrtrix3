@@ -94,7 +94,6 @@ LW operator+(const LW &one, const LW &two) {
 LW operator/(const LW &lw, const double div) { return LW(lw.get_length() / div, lw.get_weight() / div); }
 
 void run() {
-
   const bool weights_provided = !get_options("tck_weights_in").empty();
 
   float step_size = NaNF;
@@ -237,7 +236,7 @@ void run() {
 
   opt = get_options("histogram");
   if (!opt.empty()) {
-    File::OFStream out(opt[0][0], std::ios_base::out | std::ios_base::trunc);
+    File::OFStream out{opt[0][0], std::ios_base::out | std::ios_base::trunc};
     out << "# " << App::command_history_string << "\n";
     if (!std::isfinite(step_size))
       step_size = 1.0F;

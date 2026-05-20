@@ -406,7 +406,7 @@ template <class Input> void read_other(Header &H, Input &in) {
         throw Exception(
             fmt::format("Error reading colour table from file \"{}\": Invalid structure name length", H.name()));
       std::string structurename(structurename_length + 1, '\0');
-      in.read(&structurename[0], structurename_length);
+      in.read(const_cast<char *>(structurename.data()), structurename_length);
       structurename.resize(structurename.find('\0'));
       const int32_t r = fetch<int32_t>(in);
       const int32_t g = fetch<int32_t>(in);
@@ -445,7 +445,7 @@ template <class Input> void read_other(Header &H, Input &in) {
         throw Exception(
             fmt::format("Error reading colour table from file \"{}\": Invalid structure name length", H.name()));
       std::string structurename(structurename_length + 1, '\0');
-      in.read(&structurename[0], structurename_length);
+      in.read(const_cast<char *>(structurename.data()), structurename_length);
       structurename.resize(structurename.find('\0'));
       const int32_t r = fetch<int32_t>(in);
       const int32_t g = fetch<int32_t>(in);
@@ -832,7 +832,7 @@ template <class Output> void write_other(const Header &H, Output &out) {
       return;
     store<int32_t>(tag_old_colortable, out);
     store<int32_t>(lines.size(), out);
-    const std::string filename = "INTERNAL";
+    static const std::string filename = "INTERNAL";
     store<int32_t>(filename.size() + 1, out);
     out.write(filename.c_str(), filename.size() + 1);
     for (const auto &line : lines) {
@@ -865,7 +865,7 @@ template <class Output> void write_other(const Header &H, Output &out) {
       max_index = std::max(max_index, index);
     }
     store<int32_t>(max_index + 1, out);
-    const std::string filename = "INTERNAL";
+    static const std::string filename = "INTERNAL";
     store<int32_t>(filename.size() + 1, out);
     out.write(filename.c_str(), filename.size() + 1);
     // Actual number of entries in the table

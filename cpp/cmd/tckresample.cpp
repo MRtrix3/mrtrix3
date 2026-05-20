@@ -30,6 +30,8 @@
 #include "thread.h"
 #include <fmt/format.h>
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 using namespace DWI::Tractography;
@@ -87,7 +89,7 @@ private:
 
 class Receiver {
 public:
-  Receiver(std::string_view path, const Properties &properties)
+  Receiver(const std::filesystem::path &path, const Properties &properties)
       : writer(path, properties), progress("resampling streamlines") {}
 
   bool operator()(const Streamline<value_type> &tck) {

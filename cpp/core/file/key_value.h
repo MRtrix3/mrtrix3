@@ -16,10 +16,12 @@
 
 #pragma once
 
-#include "mrtrix.h"
-#include "types.h"
+#include <filesystem>
 #include <fstream>
 #include <string>
+
+#include "mrtrix.h"
+#include "types.h"
 
 namespace MR::File {
 
@@ -30,18 +32,19 @@ namespace KeyValue {
 class Reader {
 public:
   Reader() {}
-  Reader(std::string_view file, std::string_view first_line = "") { open(file, first_line); }
+  Reader(const std::filesystem::path &file, std::string_view first_line = "") { open(file, first_line); }
+  void open(const std::filesystem::path &file, std::string_view first_line = "");
 
-  void open(std::string_view file, std::string_view first_line = "");
   bool next();
   void close() { in.close(); }
 
   std::string key() const throw() { return (K); }
   std::string value() const throw() { return (V); }
-  std::string name() const throw() { return (filename); }
+  const std::filesystem::path &path() const throw() { return (filepath); }
 
 protected:
-  std::string K, V, filename;
+  std::string K, V;
+  std::filesystem::path filepath;
   std::ifstream in;
 };
 

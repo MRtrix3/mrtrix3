@@ -14,6 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <Eigen/Eigenvalues>
+
 #include "algo/threaded_copy.h"
 #include "command.h"
 #include "dwi/directions/predefined.h"

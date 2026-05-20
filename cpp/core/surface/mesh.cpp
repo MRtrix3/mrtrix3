@@ -25,16 +25,18 @@
 
 #include "surface/freesurfer.h"
 #include "surface/utils.h"
-#include <fmt/format.h>
+#include <fmt/std.h>
 
 namespace MR::Surface {
 
-Mesh::Mesh(std::string_view path) {
-  if (path.substr(path.size() - 4) == ".vtk" || path.substr(path.size() - 4) == ".VTK") {
+Mesh::Mesh(const std::filesystem::path &path) : name(path.filename().string()) {
+  const std::string extension = path.extension().string();
+
+  if (extension == ".vtk" || extension == ".VTK") {
     load_vtk(path);
-  } else if (path.substr(path.size() - 4) == ".stl" || path.substr(path.size() - 4) == ".STL") {
+  } else if (extension == ".stl" || extension == ".STL") {
     load_stl(path);
-  } else if (path.substr(path.size() - 4) == ".obj" || path.substr(path.size() - 4) == ".OBJ") {
+  } else if (extension == ".obj" || extension == ".OBJ") {
     load_obj(path);
   } else {
     try {
@@ -44,15 +46,16 @@ Mesh::Mesh(std::string_view path) {
       throw Exception("Input surface mesh file not in supported format");
     }
   }
-  name = Path::basename(path);
+  set_name(path.filename().string());
 }
 
-void Mesh::save(std::string_view path, const bool binary) const {
-  if (path.substr(path.size() - 4) == ".vtk")
+void Mesh::save(const std::filesystem::path &path, const bool binary) const {
+  const std::string extension = path.extension().string();
+  if (extension == ".vtk" || extension == ".VTK")
     save_vtk(path, binary);
-  else if (path.substr(path.size() - 4) == ".stl")
+  else if (extension == ".stl" || extension == ".STL")
     save_stl(path, binary);
-  else if (path.substr(path.size() - 4) == ".obj")
+  else if (extension == ".obj" || extension == ".OBJ")
     save_obj(path);
   else
     throw Exception("Output mesh file format not supported");
@@ -89,9 +92,9 @@ void load_vtk_points_binary(std::ifstream &in,
 }
 } // namespace
 
-void Mesh::load_vtk(std::string_view path) {
+void Mesh::load_vtk(const std::filesystem::path &path) {
 
-  std::ifstream in(std::string(path).c_str(), std::ios_base::binary);
+  std::ifstream in(path, std::ios_base::binary);
   if (!in)
     throw Exception("Error opening input file!");
 
@@ -289,8 +292,8 @@ void Mesh::load_vtk(std::string_view path) {
   }
 }
 
-void Mesh::load_stl(std::string_view path) {
-  std::ifstream in(std::string(path).c_str(), std::ios_base::in);
+void Mesh::load_stl(const std::filesystem::path &path) {
+  std::ifstream in(path, std::ios_base::in);
   if (!in)
     throw Exception("Error opening input file!");
 
@@ -303,9 +306,9 @@ void Mesh::load_stl(std::string_view path) {
 
     // File is stored as binary
     in.close();
-    in.open(std::string(path).c_str(), std::ios_base::in | std::ios_base::binary);
+    in.open(path, std::ios_base::in | std::ios_base::binary);
     std::string header(80, '\0');
-    in.read(&header[0], 80);
+    in.read(header.data(), 80);
 
     uint32_t count;
     in.read(reinterpret_cast<char *>(&count), sizeof(uint32_t));
@@ -336,11 +339,11 @@ void Mesh::load_stl(std::string_view path) {
     }
     if (triangles.size() != count)
       WARN(fmt::format("Number of triangles indicated in file {} ({}) does not match number actually read ({})",
-                       Path::basename(path),
+                       path.filename(),
                        str(count),
                        str(triangles.size())));
     if (warn_attribute)
-      WARN(fmt::format("Some facets in file {} have extended attributes; ignoring", Path::basename(path)));
+      WARN(fmt::format("Some facets in file {} have extended attributes; ignoring", path.filename()));
 
   } else {
 
@@ -422,14 +425,14 @@ void Mesh::load_stl(std::string_view path) {
       if (vertex_index)
         throw Exception("failed to complete triangle");
     } catch (Exception &e) {
-      throw Exception(fmt::format("Error parsing STL file {}: {}", Path::basename(path), e[0]));
+      throw Exception(fmt::format("Error parsing STL file {}: {}", path.filename(), e[0]));
     }
   }
 
   if (warn_right_hand_rule)
-    WARN(fmt::format("File {} does not strictly conform to the right-hand rule", Path::basename(path)));
+    WARN(fmt::format("File {} does not strictly conform to the right-hand rule", path.filename()));
   if (warn_nonstandard_normals)
-    WARN(fmt::format("File {} contains non-standard normals, which will be ignored", Path::basename(path)));
+    WARN(fmt::format("File {} contains non-standard normals, which will be ignored", path.filename()));
 
   try {
     verify_data();
@@ -438,14 +441,14 @@ void Mesh::load_stl(std::string_view path) {
   }
 }
 
-void Mesh::load_obj(std::string_view path) {
+void Mesh::load_obj(const std::filesystem::path &path) {
 
   struct FaceData {
     vertex_index_type vertex;
     uint32_t texture, normal;
   };
 
-  std::ifstream in(std::string(path).c_str(), std::ios_base::in);
+  std::ifstream in(path, std::ios_base::in);
   if (!in)
     throw Exception("Error opening input file!");
   std::string line;
@@ -564,9 +567,9 @@ void Mesh::load_obj(std::string_view path) {
   }
 }
 
-void Mesh::load_fs(std::string_view path) {
+void Mesh::load_fs(const std::filesystem::path &path) {
 
-  std::ifstream in(std::string(path).c_str(), std::ios_base::in | std::ios_base::binary);
+  std::ifstream in(path, std::ios_base::in | std::ios_base::binary);
   if (!in)
     throw Exception("Error opening input file!");
 
@@ -670,7 +673,7 @@ void Mesh::load_fs(std::string_view path) {
     }
 
   } else {
-    throw Exception(fmt::format("File {} is not a FreeSurfer surface file", Path::basename(path)));
+    throw Exception(fmt::format("File {} is not a FreeSurfer surface file", path.filename()));
   }
 
   try {
@@ -680,7 +683,7 @@ void Mesh::load_fs(std::string_view path) {
   }
 }
 
-void Mesh::save_vtk(std::string_view path, const bool binary) const {
+void Mesh::save_vtk(const std::filesystem::path &path, const bool binary) const {
   File::OFStream out(path, std::ios_base::out);
   out << "# vtk DataFile Version 1.0\n";
   out << "\n";
@@ -744,7 +747,7 @@ void Mesh::save_vtk(std::string_view path, const bool binary) const {
   }
 }
 
-void Mesh::save_stl(std::string_view path, const bool binary) const {
+void Mesh::save_stl(const std::filesystem::path &path, const bool binary) const {
   if (!quads.empty())
     throw Exception("STL binary file format does not support quads; only triangles");
 
@@ -793,7 +796,7 @@ void Mesh::save_stl(std::string_view path, const bool binary) const {
   }
 }
 
-void Mesh::save_obj(std::string_view path) const {
+void Mesh::save_obj(const std::filesystem::path &path) const {
   File::OFStream out(path);
   out << "# " << App::command_history_string << "\n";
   out << "o " << name << "\n";

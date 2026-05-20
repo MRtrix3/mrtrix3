@@ -28,7 +28,7 @@ void Scratch::load(const Header &header, size_t buffer_size) {
   assert(buffer_size);
   DEBUG(fmt::format("allocating scratch buffer for image \"{}\"...", header.name()));
   try {
-    addresses.push_back(std::unique_ptr<uint8_t[]>(new uint8_t[buffer_size]));
+    addresses.push_back(std::unique_ptr<std::byte[]>(new std::byte[buffer_size]));
     memset(addresses[0].get(), 0, buffer_size);
   } catch (...) {
     throw Exception("Error allocating memory for scratch buffer");

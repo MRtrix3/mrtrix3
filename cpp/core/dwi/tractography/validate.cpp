@@ -39,7 +39,7 @@ namespace {
 // This allows inspection of delimiter and barrier triplets directly.
 class RawTckReader : public Reader<float> {
 public:
-  RawTckReader(std::string_view file, Properties &props) : Reader<float>(file, props) {}
+  RawTckReader(const std::filesystem::path &file, Properties &props) : Reader<float>(file, props) {}
 
   // Read one raw 3-float triplet from the binary data section.
   // Returns true if a complete triplet was successfully read, and fills p.
@@ -61,7 +61,7 @@ public:
 
 } // namespace
 
-TckValidation validate_tck(std::string_view path) {
+TckValidation validate_tck(const std::filesystem::path &path) {
   Properties props;
   RawTckReader reader(path, props);
 
@@ -198,7 +198,7 @@ void validate_tsf_properties(const Properties &a, const Properties &b, std::stri
     throw Exception(fmt::format("{} does not contain same number of streamlines", file_types));
 }
 
-void validate_tsf(std::string_view tsf_path, std::string_view tck_path) {
+void validate_tsf(const std::filesystem::path &tsf_path, const std::filesystem::path &tck_path) {
   Properties tsf_props;
   Properties tck_props;
   ScalarReader<float> tsf_reader(tsf_path, tsf_props);

@@ -16,17 +16,12 @@
 
 #pragma once
 
-#include <algorithm>
-#include <cerrno>
-#include <cstdlib>
-#include <cstring>
-#include <dirent.h>
+#include <filesystem>
+#include <stdlib.h>
 #include <string>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
+#include <string_view>
+#include <vector>
 
-#include "exception.h"
 #include "mrtrix.h"
 #include "types.h"
 
@@ -48,35 +43,16 @@
 #define PATH_SEPARATORS "/" // check_syntax off
 #endif
 
+#include <filesystem>
+
 namespace MR::Path {
 
-extern const std::string home_env;
+bool has_suffix(const std::filesystem::path &name, std::string_view suffix);
+bool has_suffix(const std::filesystem::path &name, const std::initializer_list<const std::string> &suffix_list);
+bool has_suffix(const std::filesystem::path &name, const std::vector<std::string> &suffix_list);
 
-std::string basename(std::string_view name);
-std::string dirname(std::string_view name);
-std::string join(std::string_view first, std::string_view second);
-bool exists(std::string_view path);
-bool is_dir(std::string_view path);
-bool is_file(std::string_view path);
-bool has_suffix(std::string_view name, std::string_view suffix);
-bool has_suffix(std::string_view name, const std::initializer_list<const std::string> &suffix_list);
-bool has_suffix(std::string_view name, const std::vector<std::string> &suffix_list);
-bool is_mrtrix_image(std::string_view name);
-char delimiter(std::string_view filename);
-std::string cwd();
-std::string home();
+bool is_mrtrix_image(const std::filesystem::path &path);
 
-class Dir {
-public:
-  Dir(std::string_view name);
-  ~Dir();
-
-  std::string read_name();
-  void rewind() { rewinddir(p); }
-  void close();
-
-protected:
-  DIR *p;
-};
+const std::filesystem::path &home();
 
 } // namespace MR::Path

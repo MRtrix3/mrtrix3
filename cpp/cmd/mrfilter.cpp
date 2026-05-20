@@ -30,6 +30,8 @@
 #include "metadata/bids.h"
 #include <fmt/format.h>
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -151,16 +153,17 @@ void usage() {
 // clang-format on
 
 void run() {
-
+  const std::filesystem::path input_path{argument[0]};
   const FilterType filter_index = MR::Enum::from_name<FilterType>(argument[1]);
   const std::string filter_name = MR::Enum::lowercase_name(filter_index);
+  const std::filesystem::path output_path{argument[2]};
 
   switch (filter_index) {
 
   // Phase demodulation
   case FilterType::DEMODULATE: {
 
-    Header H = Header::open(argument[0]);
+    Header H = Header::open(input_path);
     if (!H.datatype().is_complex())
       throw Exception("Phase demodulation filter applicable to complex images only");
 
@@ -188,7 +191,7 @@ void run() {
 
     auto input = H.get_image<cdouble>();
     Filter::Demodulate filter(input, axes, !get_options("linear").empty());
-    auto output = Image<cdouble>::create(argument[2], H);
+    auto output = Image<cdouble>::create(output_path, H);
     filter(input, output, false);
 
     break;
@@ -198,7 +201,7 @@ void run() {
   case FilterType::FFT: {
     // FIXME Had to use cdouble throughout; seems to fail at compile time even trying to
     //   convert between cfloat and cdouble...
-    auto input = Image<cdouble>::open(argument[0]);
+    auto input = Image<cdouble>::open(input_path);
 
     std::vector<size_t> axes = {0, 1, 2};
     auto opt = get_options("axes");
@@ -215,7 +218,7 @@ void run() {
     Header header = input;
     Stride::set_from_command_line(header);
     header.datatype() = magnitude ? DataType::Float32 : DataType::CFloat64;
-    auto output = Image<cdouble>::create(argument[2], header);
+    auto output = Image<cdouble>::create(output_path, header);
     double scale = 1.0;
 
     Image<cdouble> in(input), out;
@@ -249,7 +252,7 @@ void run() {
 
   // Gradient
   case FilterType::GRADIENT: {
-    auto input = Image<float>::open(argument[0]);
+    auto input = Image<float>::open(input_path);
     Filter::Gradient filter(input, !get_options("magnitude").empty());
 
     std::vector<default_type> stdev;
@@ -270,14 +273,14 @@ void run() {
     filter.set_message(fmt::format("applying {} filter to image {}", filter_name, argument[0]));
     Stride::set_from_command_line(filter);
     filter.set_stdev(stdev);
-    auto output = Image<float>::create(argument[2], filter);
+    auto output = Image<float>::create(output_path, filter);
     filter(input, output);
     break;
   }
 
   // Median
   case FilterType::MEDIAN: {
-    auto input = Image<float>::open(argument[0]);
+    auto input = Image<float>::open(input_path);
     Filter::Median filter(input);
 
     auto opt = get_options("extent");
@@ -286,14 +289,14 @@ void run() {
     filter.set_message(fmt::format("applying {} filter to image {}", filter_name, argument[0]));
     Stride::set_from_command_line(filter);
 
-    auto output = Image<float>::create(argument[2], filter);
+    auto output = Image<float>::create(output_path, filter);
     filter(input, output);
     break;
   }
 
   // Smooth
   case FilterType::SMOOTH: {
-    auto input = Image<float>::open(argument[0]);
+    auto input = Image<float>::open(input_path);
     Filter::Smooth filter(input);
 
     auto opt = get_options("stdev");
@@ -315,7 +318,7 @@ void run() {
     filter.set_message(fmt::format("applying {} filter to image {}", filter_name, argument[0]));
     Stride::set_from_command_line(filter);
 
-    auto output = Image<float>::create(argument[2], filter);
+    auto output = Image<float>::create(output_path, filter);
     threaded_copy(input, output);
     filter(output);
     break;
@@ -323,7 +326,7 @@ void run() {
 
   // Normalisation
   case FilterType::NORMALISE: {
-    auto input = Image<float>::open(argument[0]);
+    auto input = Image<float>::open(input_path);
     Filter::Normalise filter(input);
 
     auto opt = get_options("extent");
@@ -332,14 +335,14 @@ void run() {
     filter.set_message(fmt::format("applying {} filter to image {}", filter_name, argument[0]));
     Stride::set_from_command_line(filter);
 
-    auto output = Image<float>::create(argument[2], filter);
+    auto output = Image<float>::create(output_path, filter);
     filter(input, output);
     break;
   }
 
   // Zclean
   case FilterType::ZCLEAN: {
-    auto input = Image<float>::open(argument[0]);
+    auto input = Image<float>::open(input_path);
     Filter::ZClean filter(input);
 
     auto opt = get_options("maskin");
@@ -356,7 +359,7 @@ void run() {
     float zupper = get_option_value("zupper", 2.5);
     filter.set_zlim(zlower, zupper);
 
-    auto output = Image<float>::create(argument[2], filter);
+    auto output = Image<float>::create(output_path, filter);
     filter(input, maskin, output);
 
     opt = get_options("maskout");

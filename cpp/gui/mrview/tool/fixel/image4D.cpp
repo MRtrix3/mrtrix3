@@ -15,7 +15,7 @@
  */
 
 #include "mrview/tool/fixel/image4D.h"
-#include <fmt/format.h>
+#include <fmt/std.h>
 
 namespace MR::GUI::MRView::Tool {
 
@@ -24,14 +24,14 @@ void Image4D::load_image_buffer() {
 
   if (ndim < 4)
     throw InvalidImageException(
-        fmt::format("Vector image {} should contain 4 dimensions. Instead {} found.", filename, ndim));
+        fmt::format("Vector image {} should contain 4 dimensions. Instead {} found.", get_filepath(), ndim));
 
   const size_t dim4_len = fixel_data->size(3);
 
   if (dim4_len % 3)
     throw InvalidImageException(
         fmt::format("Expecting 4th-dimension size of vector image {} to be a multiple of 3. Instead {} entries found.",
-                    filename,
+                    get_filepath(),
                     dim4_len));
 
   for (size_t axis = 0; axis < 3; ++axis) {

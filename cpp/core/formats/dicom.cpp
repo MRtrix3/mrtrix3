@@ -28,15 +28,15 @@
 namespace MR::Formats {
 
 std::unique_ptr<ImageIO::Base> DICOM::read(Header &H) const {
-  if (Path::is_dir(H.name())) {
+  if (std::filesystem::is_directory(H.path())) {
     INFO(fmt::format("Image path \"{}\" is a directory; will attempt to parse as DICOM series", H.name()));
-  } else if (!Path::has_suffix(H.name(), ".dcm")) {
+  } else if (!Path::has_suffix(H.path(), ".dcm")) {
     return std::unique_ptr<ImageIO::Base>();
   }
 
   File::Dicom::Tree dicom;
 
-  dicom.read(H.name());
+  dicom.read(H.path());
   dicom.sort();
 
   auto series = File::Dicom::select_func(dicom);

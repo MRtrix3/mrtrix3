@@ -16,7 +16,7 @@
 
 #include "file/npy.h"
 
-#include <fmt/format.h>
+#include <fmt/std.h>
 #include <sys/stat.h>
 
 namespace MR::File::NPY {
@@ -273,9 +273,9 @@ KeyValues parse_dict(std::string s) {
   return keyval;
 }
 
-ReadInfo read_header(std::string_view path) {
+ReadInfo read_header(const std::filesystem::path &path) {
   ReadInfo info;
-  std::ifstream in(std::string(path).c_str(), std::ios_base::in | std::ios_base::binary);
+  std::ifstream in(path, std::ios_base::in | std::ios_base::binary);
   if (!in)
     throw Exception(fmt::format("Unable to load file \"{}\"", path));
 
@@ -371,7 +371,8 @@ ReadInfo read_header(std::string_view path) {
   return info;
 }
 
-WriteInfo prepare_ND_write(std::string_view path, const DataType data_type, const std::vector<size_t> &shape) {
+WriteInfo
+prepare_ND_write(const std::filesystem::path &path, const DataType data_type, const std::vector<size_t> &shape) {
   assert(shape.size() == 1 || shape.size() == 2);
   WriteInfo info;
   info.data_type = data_type;
@@ -433,7 +434,7 @@ WriteInfo prepare_ND_write(std::string_view path, const DataType data_type, cons
   out.close();
   const size_t num_elements = shape[0] * (shape.size() == 2 ? shape[1] : 1);
   const size_t data_size = num_elements * info.data_type.bytes();
-  File::resize(path, leadin_size + data_size);
+  std::filesystem::resize_file(path, leadin_size + data_size);
   info.mmap.reset(new File::MMap({path, leadin_size}, true, false));
   return info;
 }

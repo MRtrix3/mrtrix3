@@ -69,7 +69,7 @@ std::vector<default_type> parse_floats(std::string_view spec) {
 }
 
 std::vector<std::string>
-split(std::string_view string, std::string_view delimiters, bool ignore_empty_fields, size_t num) {
+split(std::string_view string, std::string_view delimiters, bool ignore_empty_fields, std::optional<size_t> num) {
   std::vector<std::string> V;
   if (string.empty())
     return V;
@@ -85,7 +85,7 @@ split(std::string_view string, std::string_view delimiters, bool ignore_empty_fi
       start = ignore_empty_fields ? string.find_first_not_of(delimiters, end + 1) : end + 1;
       if (start > string.size())
         break;
-      if (V.size() + 1 >= num) {
+      if (num.has_value() && V.size() + 1 >= *num) {
         V.emplace_back(std::string(string.substr(start)));
         break;
       }
@@ -153,6 +153,10 @@ std::string shorten(std::string_view text, size_t longest, size_t prefix) {
     return std::string(text);
 }
 
+std::string shorten(const std::filesystem::path &path, size_t longest, size_t prefix) {
+  return shorten(path.native(), longest, prefix);
+}
+
 std::string lowercase(std::string_view string) {
   std::string ret;
   ret.resize(string.size());
@@ -202,7 +206,7 @@ void replace(std::string &str, std::string_view from, std::string_view to) {
   }
 }
 
-std::vector<std::string> split_lines(std::string_view string, bool ignore_empty_fields, size_t num) {
+std::vector<std::string> split_lines(std::string_view string, bool ignore_empty_fields, std::optional<size_t> num) {
   return split(string, "\n", ignore_empty_fields, num);
 }
 

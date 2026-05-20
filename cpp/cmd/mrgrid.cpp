@@ -27,6 +27,7 @@
 #include "interp/nearest.h"
 #include "interp/sinc.h"
 #include "progressbar.h"
+#include <filesystem>
 #include <fmt/format.h>
 #include <set>
 
@@ -201,7 +202,10 @@ void usage() {
 // clang-format on
 
 void run() {
-  auto input_header = Header::open(argument[0]);
+  const std::filesystem::path input_path{argument[0]};
+  const std::filesystem::path output_path{argument[2]};
+
+  auto input_header = Header::open(input_path);
 
   const Operation op = MR::Enum::from_name<Operation>(argument[1]);
   const std::string operation_name = MR::Enum::lowercase_name(op);
@@ -486,7 +490,7 @@ void run() {
     output_header.datatype() = DataType::from_command_line(DataType::from<float>());
     Stride::set_from_command_line(output_header);
 
-    auto output = Image<float>::create(argument[2], output_header);
+    auto output = Image<float>::create(output_path, output_header);
     threaded_copy_with_progress_message(message.c_str(), regridded, output);
   }
 }

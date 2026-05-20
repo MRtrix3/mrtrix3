@@ -115,9 +115,10 @@ Eigen::MatrixXd parse_DW_scheme(const Header &header) {
   return G;
 }
 
-Eigen::MatrixXd load_bvecs_bvals(const Header &header, std::string_view bvecs_path, std::string_view bvals_path) {
+Eigen::MatrixXd load_bvecs_bvals(const Header &header,
+                                 const std::filesystem::path &bvecs_path,
+                                 const std::filesystem::path &bvals_path) {
   assert(header.realignment().orig_transform().matrix().allFinite());
-
   Eigen::MatrixXd bvals, bvecs;
   try {
     bvals = File::Matrix::load_matrix<>(bvals_path);
@@ -144,7 +145,6 @@ Eigen::MatrixXd load_bvecs_bvals(const Header &header, std::string_view bvecs_pa
       throw Exception(fmt::format("bvecs file must contain exactly 3 rows or columns; file \"{}\" has {}", bvecs_path, bvecs.rows()));
     // clang-format on
   }
-
   if (bvals.cols() != bvecs.cols())
     // clang-format off
     throw Exception(fmt::format("bvecs and bvals files must have same number of diffusion directions; file \"{}\" has {}, file \"{}\" has {}", bvecs_path, bvecs.cols(), bvals_path, bvals.cols()));
@@ -204,7 +204,9 @@ Eigen::MatrixXd load_bvecs_bvals(const Header &header, std::string_view bvecs_pa
   return grad;
 }
 
-void save_bvecs_bvals(const Header &header, std::string_view bvecs_path, std::string_view bvals_path) {
+void save_bvecs_bvals(const Header &header,
+                      const std::filesystem::path &bvecs_path,
+                      const std::filesystem::path &bvals_path) {
   const auto grad = parse_DW_scheme(header);
   Axes::permutations_type order;
   const auto adjusted_transform = File::NIfTI::adjust_transform(header, order);

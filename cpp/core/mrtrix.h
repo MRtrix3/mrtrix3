@@ -20,9 +20,11 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
 #include <fmt/format.h>
 #include <iostream>
 #include <limits>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -63,6 +65,8 @@ std::string &add_line(std::string &original, std::string_view new_line);
 
 //! convert a long string to 'beginningofstring...endofstring' for display
 std::string shorten(std::string_view text, size_t longest = 40, size_t prefix = 10);
+//! convert a filesystem path to 'beginningofpath...endofpath' for display
+std::string shorten(const std::filesystem::path &path, size_t longest = 40, size_t prefix = 10);
 
 //! return lowercase version of string
 std::string lowercase(std::string_view string);
@@ -92,10 +96,10 @@ void replace(std::string &str, std::string_view from, std::string_view to);
 std::vector<std::string> split(std::string_view string,
                                std::string_view delimiters = " \t\n",
                                bool ignore_empty_fields = false,
-                               size_t num = std::numeric_limits<size_t>::max());
+                               std::optional<size_t> num = std::nullopt);
 
 std::vector<std::string>
-split_lines(std::string_view string, bool ignore_empty_fields = true, size_t num = std::numeric_limits<size_t>::max());
+split_lines(std::string_view string, bool ignore_empty_fields = true, std::optional<size_t> num = std::nullopt);
 
 /*
 inline int round (default_type x)

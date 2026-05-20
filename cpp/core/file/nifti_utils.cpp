@@ -14,24 +14,23 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include "file/nifti_utils.h"
+
 #include <array>
+#include <nifti1.h>
+#include <nifti2.h>
 
 #include "file/config.h"
 #include "file/gz.h"
 #include "file/json_utils.h"
-#include "file/nifti_utils.h"
 #include "file/ofstream.h"
 #include "file/path.h"
-#include "file/utils.h"
 #include "header.h"
 #include "image_io/default.h"
 #include "image_io/gz.h"
 #include "raw.h"
 
 #include <fmt/format.h>
-#include <nifti1.h>
-#include <nifti2.h>
-
 namespace MR::File::NIfTI {
 
 namespace {
@@ -321,15 +320,8 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
     // CONF A boolean value to indicate whether, when opening NIfTI images,
     // CONF any corresponding JSON file should be automatically loaded.
     if (File::Config::get_bool("NIfTIAutoLoadJSON", false)) {
-      std::string json_path = H.name();
-      if (Path::has_suffix(json_path, ".nii.gz"))
-        json_path = json_path.substr(0, json_path.size() - 7);
-      else if (Path::has_suffix(json_path, ".nii"))
-        json_path = json_path.substr(0, json_path.size() - 4);
-      else
-        assert(0);
-      json_path += ".json";
-      if (Path::exists(json_path))
+      std::filesystem::path json_path = get_json_path(static_cast<const Header &>(H).path());
+      if (std::filesystem::exists(json_path))
         File::JSON::load(H, json_path);
     }
   } else {
@@ -544,15 +536,8 @@ template <class NiftiHeader> void store(NiftiHeader &NH, const Header &H, const 
   // CONF to save any header entries that cannot be stored in the NIfTI
   // CONF header.
   if (single_file && File::Config::get_bool("NIfTIAutoSaveJSON", false)) {
-    std::string json_path(H.name());
-    if (Path::has_suffix(json_path, ".nii.gz"))
-      json_path = json_path.substr(0, json_path.size() - 7);
-    else if (Path::has_suffix(json_path, ".nii"))
-      json_path = json_path.substr(0, json_path.size() - 4);
-    else
-      assert(0);
-    json_path += ".json";
-    File::JSON::save(H, json_path, H.name());
+    std::filesystem::path json_path = get_json_path(H.path());
+    File::JSON::save(H, json_path, H.path());
   }
 }
 
@@ -595,7 +580,7 @@ transform_type adjust_transform(const Header &H, Axes::permutations_type &axes) 
 }
 
 bool check(int VERSION, Header &H, const size_t num_axes, const std::vector<std::string> &suffixes) {
-  if (!Path::has_suffix(H.name(), suffixes))
+  if (!Path::has_suffix(H.path(), suffixes))
     return false;
 
   if (version(H) != VERSION)
@@ -655,18 +640,18 @@ template <> struct Get<2> {
 template <int VERSION> std::unique_ptr<ImageIO::Base> read(Header &H) {
   using nifti_header = typename Get<VERSION>::type;
 
-  if (!Path::has_suffix(H.name(), ".nii") && !Path::has_suffix(H.name(), ".img"))
+  const std::filesystem::path &header_path = static_cast<const Header &>(H).path();
+  if (!Path::has_suffix(header_path, ".nii") && !Path::has_suffix(header_path, ".img"))
     return std::unique_ptr<ImageIO::Base>();
 
   const bool single_file = Path::has_suffix(H.name(), ".nii");
-  const std::string header_path =
-      single_file ? H.name() : fmt::format("{}.hdr", H.name().substr(0, H.name().size() - 4));
+  const std::string hdr_path = single_file ? H.name() : fmt::format("{}.hdr", H.name().substr(0, H.name().size() - 4));
 
   try {
-    File::MMap fmap{MR::File::Entry(header_path)};
+    File::MMap fmap{MR::File::Entry(hdr_path)};
     const size_t data_offset = fetch(H, *((const nifti_header *)fmap.address()));
     std::unique_ptr<ImageIO::Default> handler(new ImageIO::Default(H));
-    handler->files.push_back(File::Entry(H.name(), (single_file ? data_offset : 0)));
+    handler->files.push_back(File::Entry(hdr_path, (single_file ? data_offset : 0)));
     return handler;
   } catch (Exception &e) {
     e.display();
@@ -677,11 +662,11 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> read(Header &H) {
 template <int VERSION> std::unique_ptr<ImageIO::Base> read_gz(Header &H) {
   using nifti_header = typename Get<VERSION>::type;
 
-  if (!Path::has_suffix(H.name(), ".nii.gz"))
+  if (!Path::has_suffix(H.path(), ".nii.gz"))
     return std::unique_ptr<ImageIO::Base>();
 
   nifti_header NH;
-  File::GZ zf(H.name(), "rb");
+  File::GZ zf(H.path(), "rb");
   zf.read(reinterpret_cast<void *>(&NH), sizeof(NH));
   zf.close();
 
@@ -690,7 +675,7 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> read_gz(Header &H) {
     std::unique_ptr<ImageIO::GZ> io_handler(new ImageIO::GZ(H, data_offset));
     memcpy(io_handler.get()->header(), &NH, sizeof(NH));
     memset(io_handler.get()->header() + sizeof(NH), 0, sizeof(nifti1_extender));
-    io_handler->files.push_back(File::Entry(H.name(), data_offset));
+    io_handler->files.push_back(File::Entry(static_cast<const Header &>(H).path(), data_offset));
     return io_handler;
   } catch (...) {
     return std::unique_ptr<ImageIO::Base>();
@@ -720,12 +705,15 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> create(Header &H) {
   const size_t data_offset = single_file ? sizeof(NH) + 4 : 0;
 
   if (single_file)
-    File::resize(H.name(), data_offset + footprint(H));
-  else
-    File::create(H.name(), footprint(H));
+    std::filesystem::resize_file(header_path, data_offset + footprint(H));
+  else {
+    File::OFStream data_file(header_path);
+    data_file.close();
+    std::filesystem::resize_file(header_path, footprint(H));
+  }
 
   std::unique_ptr<ImageIO::Default> handler(new ImageIO::Default(H));
-  handler->files.push_back(File::Entry(H.name(), data_offset));
+  handler->files.push_back(File::Entry(header_path, data_offset));
 
   return handler;
 }
@@ -743,8 +731,10 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> create_gz(Header &H) {
   store(NH, H, true);
   memset(io_handler->header() + sizeof(nifti_header), 0, sizeof(nifti1_extender));
 
-  File::create(H.name());
-  io_handler->files.push_back(File::Entry(H.name(), sizeof(nifti_header) + 4));
+  const std::filesystem::path &header_path = static_cast<const Header &>(H).path();
+  File::OFStream data_file(header_path);
+  data_file.close();
+  io_handler->files.push_back(File::Entry(header_path, sizeof(nifti_header) + 4));
 
   return io_handler;
 }
@@ -782,12 +772,12 @@ int version(Header &H) {
   return 1;
 }
 
-std::string get_json_path(std::string_view nifti_path) {
-  std::string json_path;
-  if (Path::has_suffix(nifti_path, ".nii.gz"))
-    json_path = nifti_path.substr(0, nifti_path.size() - 7);
-  else if (Path::has_suffix(nifti_path, ".nii"))
-    json_path = nifti_path.substr(0, nifti_path.size() - 4);
+std::filesystem::path get_json_path(const std::filesystem::path &nifti_path) {
+  std::filesystem::path json_path = nifti_path;
+  if (Path::has_suffix(json_path, ".nii.gz"))
+    json_path.replace_filename(json_path.stem().stem());
+  else if (Path::has_suffix(json_path, ".nii"))
+    json_path.replace_filename(json_path.stem());
   else
     assert(0);
   return fmt::format("{}.json", json_path);

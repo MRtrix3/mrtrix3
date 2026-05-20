@@ -24,7 +24,7 @@
 #include "progressbar.h"
 #include "thread.h"
 
-constexpr size_t default_number = 1e8;
+constexpr size_t default_permutations = 1e8;
 
 using namespace MR;
 using namespace App;
@@ -43,7 +43,7 @@ ARGUMENTS
   + Argument ("out", "the output partitioned directions").type_file_out().allow_multiple();
 
 OPTIONS
-  + Option ("number", fmt::format("number of permutations to try (default: {})", default_number))
+  + Option ("number", fmt::format("number of permutations to try (default: {})", default_permutations))
     + Argument ("num").type_integer (1)
 
   + DWI::Directions::cartesian_option;
@@ -162,7 +162,7 @@ void run() {
   if (num_subsets == 1)
     throw Exception("Directions must be split across two or more output files");
 
-  const size_t num_permutations = get_option_value<size_t>("number", default_number);
+  const size_t num_permutations = get_option_value<size_t>("number", default_permutations);
 
   std::vector<std::vector<size_t>> best;
   {

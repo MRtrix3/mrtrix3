@@ -34,6 +34,8 @@
 #include "stats/tfce.h"
 #include <fmt/format.h>
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 using namespace MR::Math::Stats;
@@ -76,7 +78,7 @@ void usage() {
   + Argument("input", "a text file containing the file names of the input images, one file per line").type_file_in()
   + Argument("design", "the design matrix").type_file_in()
   + Argument("mask", "a mask used to define voxels included in the analysis.").type_image_in()
-  + Argument("output", "the filename prefix for all output.").type_text();
+  + Argument("output_dir", "the output directory (will be created by the command).").type_directory_out(DirOutMode::MustNotExist);
 
   OPTIONS
 
@@ -104,7 +106,10 @@ void usage() {
 using value_type = Stats::TFCE::value_type;
 
 template <class VectorType>
-void write_output(const VectorType &data, const Voxel2Vector &v2v, std::string_view path, const Header &header) {
+void write_output(const VectorType &data,
+                  const Voxel2Vector &v2v,
+                  const std::filesystem::path &path,
+                  const Header &header) {
   auto image = Image<float>::create(path, header);
   for (index_type i = 0; i != v2v.size(); i++) {
     assign_pos_of(v2v[i]).to(image);
@@ -113,8 +118,11 @@ void write_output(const VectorType &data, const Voxel2Vector &v2v, std::string_v
 }
 
 template <class VectorType>
-void write_output(
-    const VectorType &data, const Voxel2Vector &v2v, Image<bool> mask, std::string_view path, const Header &header) {
+void write_output(const VectorType &data,
+                  const Voxel2Vector &v2v,
+                  Image<bool> mask,
+                  const std::filesystem::path &path,
+                  const Header &header) {
   auto image = Image<float>::create(path, header);
   for (size_t i = 0; i != v2v.size(); i++) {
     assign_pos_of(v2v[i]).to(image, mask);
@@ -139,7 +147,7 @@ void write_output(
 class SubjectVoxelImport : public SubjectDataImportBase {
 public:
   using image_type = Image<measurements_value_type>;
-  SubjectVoxelImport(std::string_view path)
+  SubjectVoxelImport(const std::filesystem::path &path)
       : SubjectDataImportBase(path), H(Header::open(path)), data(H.get_image<measurements_value_type>()) {}
 
   virtual ~SubjectVoxelImport() {}
@@ -179,7 +187,6 @@ private:
 std::shared_ptr<Voxel2Vector> SubjectVoxelImport::v2v = nullptr;
 
 void run() {
-
   const value_type cluster_forming_threshold =
       get_option_value("threshold", std::numeric_limits<value_type>::quiet_NaN());
   const value_type tfce_dh = get_option_value("tfce_dh", default_tfce_dh);
@@ -208,12 +215,11 @@ void run() {
   size_t mask_infer_voxels = 0;
   auto opt = get_options("posthoc");
   if (!opt.empty()) {
-    const std::string posthoc_path = opt[0][0];
-    mask_inference_image = Image<bool>::open(posthoc_path);
+    mask_inference_image = Image<bool>::open(opt[0][0]);
     if (!(mask_inference_image.ndim() == 3 || (mask_inference_image.ndim() == 4 && mask_inference_image.size(3) == 1)))
-      throw Exception(fmt::format("Post-hoc mask image \"{}\" is not 3D", posthoc_path));
+      throw Exception(fmt::format("Post-hoc mask image \"{}\" is not 3D", opt[0][0].as_text()));
     if (!dimensions_match(mask_header, mask_inference_image, 0, 3))
-      throw Exception(fmt::format("Post-hoc image \"{}\" does not match mask image", posthoc_path));
+      throw Exception(fmt::format("Post-hoc image \"{}\" does not match mask image", opt[0][0].as_text()));
     mask_inference.setZero();
     size_t mask_mismatch_count = 0;
     for (auto l = Loop(mask_header)(mask_inference_image); l; ++l) {
@@ -324,7 +330,8 @@ void run() {
     output_header.keyval()["threshold"] = str(cluster_forming_threshold);
   }
 
-  const std::string prefix(argument[3]);
+  const std::filesystem::path output_dir = argument[3];
+  std::filesystem::create_directories(output_dir);
 
   // Only add contrast matrix row number to image outputs if there's more than one hypothesis
   auto postfix = [&](const index_type i) -> std::string {
@@ -347,31 +354,31 @@ void run() {
     ProgressBar progress("Outputting beta coefficients, effect size and standard deviation",
                          num_factors + (2 * num_hypotheses) + num_vgs + (variable_design_matrix ? 1 : 0));
     for (index_type i = 0; i != num_factors; ++i) {
-      write_output(betas.row(i), *v2v, fmt::format("{}beta{}.mif", prefix, i), output_header);
+      write_output(betas.row(i), *v2v, output_dir / fmt::format("beta{}.mif", i), output_header);
       ++progress;
     }
     for (index_type i = 0; i != num_hypotheses; ++i) {
       if (!hypotheses[i].is_F()) {
         write_output(
-            abs_effect_size.col(i), *v2v, fmt::format("{}abs_effect{}.mif", prefix, postfix(i)), output_header);
+            abs_effect_size.col(i), *v2v, output_dir / fmt::format("abs_effect{}.mif", postfix(i)), output_header);
         ++progress;
         if (num_vgs == 1)
           write_output(
-              std_effect_size.col(i), *v2v, fmt::format("{}std_effect{}.mif", prefix, postfix(i)), output_header);
+              std_effect_size.col(i), *v2v, output_dir / fmt::format("std_effect{}.mif", postfix(i)), output_header);
       } else {
         ++progress;
       }
       ++progress;
     }
     if (variable_design_matrix) {
-      write_output(cond, *v2v, fmt::format("{}cond.mif", prefix), output_header);
+      write_output(cond, *v2v, output_dir / "cond.mif", output_header);
       ++progress;
     }
     if (num_vgs == 1) {
-      write_output(stdev.row(0), *v2v, fmt::format("{}std_dev.mif", prefix), output_header);
+      write_output(stdev.row(0), *v2v, output_dir / "std_dev.mif", output_header);
     } else {
       for (index_type i = 0; i != num_vgs; ++i) {
-        write_output(stdev.row(i), *v2v, fmt::format("{}std_dev{}.mif", prefix, i), output_header);
+        write_output(stdev.row(i), *v2v, output_dir / fmt::format("std_dev{}.mif", i), output_header);
         ++progress;
       }
     }
@@ -410,7 +417,7 @@ void run() {
     for (index_type i = 0; i != num_hypotheses; ++i)
       write_output(empirical_enhanced_statistic.col(i),
                    *v2v,
-                   fmt::format("{}empirical{}.mif", prefix, postfix(i)),
+                   output_dir / fmt::format("empirical{}.mif", postfix(i)),
                    output_header);
   }
 
@@ -421,12 +428,12 @@ void run() {
   for (index_type i = 0; i != num_hypotheses; ++i) {
     write_output(default_statistic.col(i),
                  *v2v,
-                 fmt::format("{}{}value{}.mif", prefix, hypotheses[i].is_F() ? "F" : "t", postfix(i)),
+                 output_dir / fmt::format("{}value{}.mif", hypotheses[i].is_F() ? "F" : "t", postfix(i)),
                  output_header);
-    write_output(default_zstat.col(i), *v2v, fmt::format("{}Zstat{}.mif", prefix, postfix(i)), output_header);
+    write_output(default_zstat.col(i), *v2v, output_dir / fmt::format("Zstat{}.mif", postfix(i)), output_header);
     write_output(default_enhanced.col(i),
                  *v2v,
-                 fmt::format("{}{}{}.mif", prefix, use_tfce ? "tfce" : "clustersize", postfix(i)),
+                 output_dir / fmt::format("{}{}.mif", use_tfce ? "tfce" : "clustersize", postfix(i)),
                  output_header);
   }
 
@@ -453,11 +460,11 @@ void run() {
     ProgressBar progress("Outputting final results", (fwe_strong ? 1 : num_hypotheses) + 1 + 3 * num_hypotheses);
 
     if (fwe_strong) {
-      File::Matrix::save_vector(null_distribution.col(0), fmt::format("{}null_dist.txt", prefix));
+      File::Matrix::save_vector(null_distribution.col(0), output_dir / "null_dist.txt");
       ++progress;
     } else {
       for (index_type i = 0; i != num_hypotheses; ++i) {
-        File::Matrix::save_vector(null_distribution.col(i), fmt::format("{}null_dist{}.txt", prefix, postfix(i)));
+        File::Matrix::save_vector(null_distribution.col(i), output_dir / fmt::format("null_dist{}.txt", postfix(i)));
         ++progress;
       }
     }
@@ -469,19 +476,19 @@ void run() {
       write_output(fwe_pvalue_output.col(i),
                    *v2v,
                    mask_inference_image,
-                   fmt::format("{}fwe_1mpvalue{}.mif", prefix, postfix(i)),
+                   output_dir / fmt::format("fwe_1mpvalue{}.mif", postfix(i)),
                    output_header);
       ++progress;
       write_output(uncorrected_pvalue.col(i),
                    *v2v,
                    mask_inference_image,
-                   fmt::format("{}uncorrected_1mpvalue{}.mif", prefix, postfix(i)),
+                   output_dir / fmt::format("uncorrected_1mpvalue{}.mif", postfix(i)),
                    output_header);
       ++progress;
       write_output(null_contributions.col(i),
                    *v2v,
                    mask_inference_image,
-                   fmt::format("{}null_contributions{}.mif", prefix, postfix(i)),
+                   output_dir / fmt::format("null_contributions{}.mif", postfix(i)),
                    output_header);
       ++progress;
     }

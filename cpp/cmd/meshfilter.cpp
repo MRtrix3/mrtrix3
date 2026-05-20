@@ -26,6 +26,8 @@
 #include "surface/mesh_multi.h"
 #include "surface/validate.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 using namespace MR::Surface;
@@ -74,15 +76,17 @@ void usage() {
 // clang-format on
 
 void run() {
+  const std::filesystem::path input_path{argument[0]};
+  const std::filesystem::path output_path{argument[2]};
 
   MeshMulti in;
 
   // Read in the mesh data
   try {
-    Mesh mesh(argument[0]);
+    Mesh mesh(input_path);
     in.push_back(mesh);
   } catch (...) {
-    in.load(argument[0]);
+    in.load(input_path);
   }
   debug_validate(in);
 
@@ -105,7 +109,7 @@ void run() {
 
   // Create the output file
   if (out.size() == 1)
-    out.front().save(argument[2]);
+    out.front().save(output_path);
   else
-    out.save(argument[2]);
+    out.save(output_path);
 }

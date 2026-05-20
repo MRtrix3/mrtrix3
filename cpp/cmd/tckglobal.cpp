@@ -14,11 +14,10 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "command.h"
-
 #include <limits>
 
 #include "algo/threaded_copy.h"
+#include "command.h"
 #include "file/matrix.h"
 #include "image.h"
 #include "math/SH.h"

@@ -16,11 +16,11 @@
 
 #include "dwi/tractography/file_base.h"
 #include "file/path.h"
-#include <fmt/format.h>
+#include <fmt/std.h>
 
 namespace MR::DWI::Tractography {
 
-void __ReaderBase__::open(std::string_view file, std::string_view type, Properties &properties) {
+void __ReaderBase__::open(const std::filesystem::path &file, std::string_view type, Properties &properties) {
   properties.clear();
   dtype = DataType::Undefined;
 
@@ -62,23 +62,24 @@ void __ReaderBase__::open(std::string_view file, std::string_view type, Properti
     throw Exception(fmt::format("missing \"files\" specification for {} file \"{}\"", type, file));
 
   std::istringstream files_stream(data_file);
-  std::string fname;
-  files_stream >> fname;
+  std::string fname_str;
+  files_stream >> fname_str;
   int64_t offset = 0;
   if (files_stream.good()) {
     try {
       files_stream >> offset;
     } catch (...) {
-      throw Exception(fmt::format("invalid offset specified for file \"{}\" in {} file \"{}\"", fname, type, file));
+      throw Exception(fmt::format("invalid offset specified for file \"{}\" in {} file \"{}\"", fname_str, type, file));
     }
   }
 
-  if (fname != ".")
-    fname = Path::join(Path::dirname(file), fname);
+  std::filesystem::path fname;
+  if (fname_str != ".")
+    fname = file.parent_path() / fname_str;
   else
     fname = file;
 
-  in.open(fname.c_str(), std::ios::in | std::ios::binary);
+  in.open(fname, std::ios::in | std::ios::binary);
   if (!in)
     throw Exception(fmt::format("error opening {} data file \"{}\": {}", type, fname, strerror(errno)));
   in.seekg(offset);

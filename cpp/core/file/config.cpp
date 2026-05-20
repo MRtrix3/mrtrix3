@@ -20,7 +20,7 @@
 
 #include "file/config.h"
 #include "file/path.h"
-#include <fmt/format.h>
+#include <fmt/std.h>
 
 namespace MR::File {
 
@@ -41,7 +41,7 @@ void Config::init() {
   const std::string sysconf_location(sysconf_location_env == nullptr ? default_sys_config_file
                                                                      : std::string(sysconf_location_env));
 
-  if (Path::is_file(sysconf_location)) {
+  if (std::filesystem::is_regular_file(sysconf_location)) {
     INFO(fmt::format("reading config file \"{}\"...", sysconf_location));
     try {
       KeyValue::Reader kv(sysconf_location);
@@ -54,18 +54,18 @@ void Config::init() {
     DEBUG(fmt::format("No config file found at \"{}\"", sysconf_location));
   }
 
-  const std::string path = Path::join(Path::home(), fmt::format(".{}", file_basename));
-  if (Path::is_file(path)) {
-    INFO(fmt::format("reading config file \"{}\"...", path));
+  const std::filesystem::path home_config_path = Path::home() / fmt::format(".{}", file_basename);
+  if (std::filesystem::is_regular_file(home_config_path)) {
+    INFO(fmt::format("reading config file \"{}\"...", home_config_path));
     try {
-      KeyValue::Reader kv(path);
+      KeyValue::Reader kv(home_config_path);
       while (kv.next()) {
         config[std::string(kv.key())] = std::string(kv.value());
       }
     } catch (...) {
     }
   } else {
-    DEBUG(fmt::format("No config file found at \"{}\"", path));
+    DEBUG(fmt::format("No config file found at \"{}\"", home_config_path));
   }
 
   auto opt = App::get_options("config");

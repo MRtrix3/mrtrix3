@@ -18,7 +18,6 @@
 
 #include "file/ofstream.h"
 #include "file/path.h"
-#include "file/utils.h"
 #include "mrtrix.h"
 #include "types.h"
 #include <fmt/format.h>
@@ -123,7 +122,7 @@ bool next_keyvalue(File::GZ &gz, std::string &key, std::string &value) {
   return true;
 }
 
-void get_mrtrix_file_path(Header &H, std::string_view flag, std::string &fname, size_t &offset) {
+void get_mrtrix_file_path(Header &H, std::string_view flag, std::filesystem::path &filepath, size_t &offset) {
 
   auto i = H.keyval().find(std::string(flag));
   if (i == H.keyval().end())
@@ -132,30 +131,28 @@ void get_mrtrix_file_path(Header &H, std::string_view flag, std::string &fname, 
   H.keyval().erase(i);
 
   std::istringstream file_stream(path);
-  file_stream >> fname;
+  std::string filepath_str;
+  file_stream >> filepath_str;
+  filepath = std::filesystem::path(filepath_str);
   offset = 0;
   if (file_stream.good()) {
     try {
       file_stream >> offset;
     } catch (...) {
       throw Exception(fmt::format("invalid offset specified for file \"{}\"{}{}\"",
-                                  fname, //
+                                  filepath_str, //
                                   " in MRtrix image header \"",
                                   H.name())); //
     }
   }
 
-  if (fname == ".") {
+  if (filepath_str == ".") {
     if (offset == 0)
       throw Exception(fmt::format("invalid offset specified for embedded MRtrix image \"{}\"", H.name()));
-    fname = H.name();
+    filepath = H.path();
   } else {
-    if (fname[0] != PATH_SEPARATORS[0]
-#ifdef MRTRIX_WINDOWS
-        && fname[0] != PATH_SEPARATORS[1]
-#endif
-    )
-      fname = Path::join(Path::dirname(H.name()), fname);
+    if (!filepath.is_absolute())
+      filepath = static_cast<const Header &>(H).path().parent_path() / filepath_str;
   }
 }
 

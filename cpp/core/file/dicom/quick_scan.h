@@ -16,21 +16,24 @@
 
 #pragma once
 
-#include "mrtrix.h"
+#include <filesystem>
 #include <map>
+
+#include "mrtrix.h"
 
 namespace MR::File::Dicom {
 
 class QuickScan {
 
 public:
-  bool read(std::string_view file_name,
+  bool read(const std::filesystem::path &file_path,
             bool print_DICOM_fields = false,
             bool print_CSA_fields = false,
             bool print_Phoenix = false,
             bool force_read = false);
 
-  std::string filename, modality;
+  std::filesystem::path filepath;
+  std::string modality;
   std::string patient, patient_ID, patient_DOB;
   std::string study, study_ID, study_UID, study_date, study_time;
   std::string series, series_ref_UID, series_date, series_time, sequence;

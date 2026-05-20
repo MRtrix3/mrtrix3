@@ -27,6 +27,8 @@
 
 // #define FIVETTEDIT_DEBUG_PER_VOXEL
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -81,6 +83,12 @@ public:
   Modifier(Image<float> &input_image, Image<float> &output_image)
       : v_in(input_image), v_out(output_image), excess_volume_count(0), inadequate_volume_count(0) {}
 
+  void set_cgm_input(const std::filesystem::path &path) { load(path, 0); }
+  void set_sgm_input(const std::filesystem::path &path) { load(path, 1); }
+  void set_wm_input(const std::filesystem::path &path) { load(path, 2); }
+  void set_csf_input(const std::filesystem::path &path) { load(path, 3); }
+  void set_path_input(const std::filesystem::path &path) { load(path, 4); }
+
   ~Modifier() {
     if (excess_volume_count > 0) {
       WARN(fmt::format(
@@ -97,13 +105,7 @@ public:
     }
   }
 
-  void set_cgm_input(std::string_view path) { load(path, 0); }
-  void set_sgm_input(std::string_view path) { load(path, 1); }
-  void set_wm_input(std::string_view path) { load(path, 2); }
-  void set_csf_input(std::string_view path) { load(path, 3); }
-  void set_path_input(std::string_view path) { load(path, 4); }
-
-  void set_none_mask(std::string_view path) {
+  void set_none_mask(const std::filesystem::path &path) {
     none = Image<bool>::open(path);
     if (!dimensions_match(v_in, none, 0, 3))
       throw Exception(fmt::format("Image {} does not match 5TT image dimensions", path));
@@ -118,8 +120,8 @@ private:
   size_t excess_volume_count;
   size_t inadequate_volume_count;
 
-  void load(std::string_view path, const size_t index) {
-    assert(index <= 4);
+  void load(const std::filesystem::path &path, const size_t index) {
+    assert(index < 5);
     buffers[index] = Image<float>::open(path);
     if (!dimensions_match(v_in, buffers[index], 0, 3))
       throw Exception(fmt::format("Image {} does not match 5TT image dimensions", path));
@@ -222,7 +224,6 @@ bool Modifier::operator()(const Iterator &pos) {
 }
 
 void run() {
-
   Header H = Header::open(argument[0]);
   DWI::Tractography::ACT::validate_5TT_header(H);
   auto in = H.get_image<float>();

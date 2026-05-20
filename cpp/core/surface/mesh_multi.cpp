@@ -17,22 +17,23 @@
 #include "surface/mesh_multi.h"
 
 #include <array>
+#include <filesystem>
 #include <fmt/format.h>
 #include <ios>
 #include <iostream>
 
 namespace MR::Surface {
 
-void MeshMulti::load(std::string_view path) {
+void MeshMulti::load(const std::filesystem::path &path) {
 
   struct FaceData {
     uint32_t vertex, texture, normal;
   };
 
-  if (!Path::has_suffix(path, "obj") && !Path::has_suffix(path, "OBJ"))
+  if (!Path::has_suffix(std::filesystem::path(path), {".obj", ".OBJ"}))
     throw Exception("Multiple meshes only supported by OBJ file format");
 
-  std::ifstream in(std::string(path).c_str(), std::ios_base::in);
+  std::ifstream in(path, std::ios_base::in);
   if (!in)
     throw Exception("Error opening input file!");
   std::string line;
@@ -149,8 +150,8 @@ void MeshMulti::load(std::string_view path) {
   }
 }
 
-void MeshMulti::save(std::string_view path) const {
-  if (!Path::has_suffix(path, {"obj", "OBJ"}))
+void MeshMulti::save(const std::filesystem::path &path) const {
+  if (!Path::has_suffix(path, {".obj", ".OBJ"}))
     throw Exception("Multiple meshes only supported by OBJ file format");
   File::OFStream out(path);
   size_t offset = 1;

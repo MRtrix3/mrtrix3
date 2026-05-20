@@ -24,6 +24,7 @@
 #include "progressbar.h"
 
 #include "dwi/directions/file.h"
+#include <filesystem>
 #include <fmt/format.h>
 
 using namespace MR;
@@ -107,6 +108,8 @@ int precision = 6;
 void report(std::string_view title, Eigen::MatrixXd &directions);
 
 void run() {
+  const std::filesystem::path dirs_input_path{argument[0]};
+
   Eigen::MatrixXd directions;
 
   try {
@@ -139,7 +142,7 @@ void run() {
     }
 
   } else
-    report(argument[0], directions);
+    report(dirs_input_path.string(), directions);
 }
 
 std::vector<default_type> summarise_NN(const std::vector<double> &NN) {

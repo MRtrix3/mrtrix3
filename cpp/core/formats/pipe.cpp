@@ -17,7 +17,7 @@
 #include <unistd.h>
 
 #include "file/path.h"
-#include "file/utils.h"
+#include "file/temp.h"
 #include "formats/list.h"
 #include "header.h"
 #include "image_io/pipe.h"
@@ -26,22 +26,22 @@
 namespace MR::Formats {
 
 std::unique_ptr<ImageIO::Base> Pipe::read(Header &H) const {
-  if (is_dash(H.name())) {
-    std::string name;
-    getline(std::cin, name);
-    H.name() = name;
+  if (is_dash(H.path().string())) {
+    std::string path;
+    getline(std::cin, path);
+    H.path() = path;
   } else {
-    if (!File::is_tempfile(H.name()))
+    if (!File::is_tempfile(H.path()))
       return {};
   }
 
-  if (H.name().empty())
+  if (H.path().empty())
     throw Exception("no filename supplied to standard input (broken pipe?)");
 
   if (ImageIO::Pipe::delete_piped_images)
-    SignalHandler::mark_file_for_deletion(H.name());
+    SignalHandler::mark_file_for_deletion(H.path());
 
-  if (!Path::has_suffix(H.name(), ".mif"))
+  if (const_cast<const Header &>(H).path().extension() != ".mif")
     throw Exception("MRtrix only supports the .mif format for command-line piping");
 
   std::unique_ptr<ImageIO::Base> original_handler(mrtrix_handler.read(H));
@@ -50,16 +50,16 @@ std::unique_ptr<ImageIO::Base> Pipe::read(Header &H) const {
 }
 
 bool Pipe::check(Header &H, size_t num_axes) const {
-  if (!is_dash(H.name()))
+  if (!is_dash(H.path().string()))
     return false;
 
   if (isatty(STDOUT_FILENO))
     throw Exception("cannot create output piped image: "                                //
                     "no command connected at other end of pipe to receive that image"); //
 
-  H.name() = File::create_tempfile(0, "mif");
+  H.path() = File::create_tempfile(0, ".mif");
 
-  SignalHandler::mark_file_for_deletion(H.name());
+  SignalHandler::mark_file_for_deletion(H.path());
 
   return mrtrix_handler.check(H, num_axes);
 }

@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <fmt/format.h>
+#include <fmt/std.h>
 #include <vector>
 
 #include "adapter/base.h"
@@ -30,22 +30,24 @@
 #include "math/SH.h"
 #include "types.h"
 
+#include <filesystem>
+
 namespace MR::Registration {
 
-FORCE_INLINE void check_image_output(std::string_view image_name, const Header &reference) {
+FORCE_INLINE void check_image_output(const std::filesystem::path &image_path, const Header &reference) {
   std::vector<std::string> V;
-  if (image_name.empty())
+  if (image_path.empty())
     throw Exception("image output path is empty");
-  if (Path::exists(image_name) && !App::overwrite_files)
+  if (std::filesystem::exists(image_path) && !App::overwrite_files)
     throw Exception(
-        fmt::format("output image \"{}\" already exists (use -force option to force overwrite)", image_name));
+        fmt::format("output image \"{}\" already exists (use -force option to force overwrite)", image_path));
 
   Header H = reference;
   File::NameParser parser;
-  parser.parse(image_name);
+  parser.parse(image_path.string());
   std::vector<int> Pdim(parser.ndim());
 
-  H.name() = image_name;
+  H.path() = image_path;
 
   const Formats::Base **format_handler = Formats::handlers;
   for (; *format_handler; format_handler++)
@@ -53,13 +55,13 @@ FORCE_INLINE void check_image_output(std::string_view image_name, const Header &
       break;
 
   if (!*format_handler) {
-    const std::string basename = Path::basename(image_name);
+    const std::string basename = image_path.filename().string();
     const size_t extension_index = basename.find_last_of(".");
     if (extension_index == std::string::npos)
-      throw Exception(fmt::format("unknown format for image \"{}\" (no file extension specified)", image_name));
+      throw Exception(fmt::format("unknown format for image \"{}\" (no file extension specified)", image_path));
     else
       throw Exception(fmt::format("unknown format for image \"{}\" (unsupported file extension: {})",
-                                  image_name,
+                                  image_path,
                                   basename.substr(extension_index)));
   }
 }

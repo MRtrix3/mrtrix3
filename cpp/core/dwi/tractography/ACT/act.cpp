@@ -16,6 +16,7 @@
 
 #include "dwi/tractography/ACT/act.h"
 
+#include <filesystem>
 #include <string>
 
 #include "app.h"
@@ -52,7 +53,7 @@ void load_act_properties(Properties &properties) {
   auto opt = App::get_options("act");
   if (!opt.empty()) {
 
-    properties["act"] = std::string(opt[0][0]);
+    properties["act"] = opt[0][0].as_text();
     opt = get_options("backtrack");
     if (!opt.empty())
       properties["backtrack"] = "1";
@@ -61,7 +62,7 @@ void load_act_properties(Properties &properties) {
       properties["crop_at_gmwmi"] = "1";
     opt = get_options("sgm_truncation");
     if (!opt.empty())
-      properties["sgm_truncation"] = std::string(opt[0][0]);
+      properties["sgm_truncation"] = opt[0][0].as_text();
 
   } else {
 

@@ -26,6 +26,8 @@
 #include "mrtrix.h"
 #include "progressbar.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -57,10 +59,15 @@ void usage() {
 using value_type = double;
 
 void run() {
-  auto SH = Image<value_type>::open(argument[0]);
+  const std::filesystem::path sh_path{argument[0]};
+  const std::filesystem::path mask_path{argument[1]};
+  const std::filesystem::path dir_path{argument[2]};
+  const std::filesystem::path response_path{argument[3]};
+
+  auto SH = Image<value_type>::open(sh_path);
   Math::SH::check(SH);
-  auto mask = Image<bool>::open(argument[1]);
-  auto dir = Image<value_type>::open(argument[2]).with_direct_io();
+  auto mask = Image<bool>::open(mask_path);
+  auto dir = Image<value_type>::open(dir_path, DirectIO(3));
 
   int lmax = get_option_value("lmax", Math::SH::LforN(SH.size(3)));
 
@@ -132,11 +139,11 @@ void run() {
 
   response /= count;
 
-  if (std::string(argument[3]) == "-") {
+  if (is_dash(response_path.string())) {
     for (ssize_t n = 0; n < response.size(); ++n)
       std::cout << response[n] << " ";
     std::cout << "\n";
   } else {
-    File::Matrix::save_vector(response, argument[3]);
+    File::Matrix::save_vector(response, response_path);
   }
 }

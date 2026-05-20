@@ -17,219 +17,83 @@
 #include "file/utils.h"
 
 #include <fcntl.h>
-#include <string>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include "app.h"
 #include "exception.h"
-#include "file/config.h"
-#include "file/path.h"
-#include <fmt/format.h>
+#include <fmt/std.h>
 
 namespace MR::File {
 
-namespace {
-inline char random_char() {
-  const char c = rand() % 62;
-  if (c < 10)
-    return c + 48;
-  if (c < 36)
-    return c + 55;
-  return c + 61;
+void remove(const std::filesystem::path &path) {
+  if (std::remove(path.string().c_str()) != 0)
+    throw Exception(fmt::format("error deleting file \"{}\": {}", path, strerror(errno)));
 }
 
-// CONF option: TmpFileDir
-// CONF default: `/tmp` (on Unix), `.` (on Windows)
-// CONF The prefix for temporary files (as used in pipelines). By default,
-// CONF these files get written to the current folder on Windows machines,
-// CONF which may cause performance issues, particularly when operating
-// CONF over distributed file systems. On Unix machines, the default is
-// CONF /tmp/, which is typically a RAM file system and should therefore
-// CONF be fast; but may cause issues on machines with little RAM
-// CONF capacity or where write-access to this location is not permitted.
-// CONF
-// CONF Note that this location can also be manipulated using the
-// CONF :envvar:`MRTRIX_TMPFILE_DIR` environment variable, without editing the
-// CONF config file. Note also that this setting does not influence the
-// CONF location in which Python scripts construct their scratch
-// CONF directories; that is determined based on config file option
-// CONF ScriptScratchDir.
-
-// ENVVAR name: MRTRIX_TMPFILE_DIR
-// ENVVAR This has the same effect as the :option:`TmpFileDir`
-// ENVVAR configuration file entry, and can be used to set the location of
-// ENVVAR temporary files (as used in Unix pipes) for a single session,
-// ENVVAR within a single script, or for a single command without
-// ENVVAR modifying the configuration  file.
-std::string __get_tmpfile_dir() {
-  const char *from_env_mrtrix = getenv("MRTRIX_TMPFILE_DIR"); // check_syntax off
-  if (from_env_mrtrix != nullptr)
-    return std::string(from_env_mrtrix);
-
-  std::string default_tmpdir =
-#ifdef MRTRIX_WINDOWS
-      "."
-#else
-      "/tmp"
-#endif
-      ;
-
-  const char *from_env_general = getenv("TMPDIR"); // check_syntax off
-  if (from_env_general != nullptr)
-    default_tmpdir = std::string(from_env_general);
-
-  return File::Config::get("TmpFileDir", default_tmpdir);
-}
-
-std::string tmpfile_dir() {
-  static const std::string __tmpfile_dir = __get_tmpfile_dir();
-  return __tmpfile_dir;
-}
-
-// CONF option: TmpFilePrefix
-// CONF default: `mrtrix-tmp-`
-// CONF The prefix to use for the basename of temporary files. This will
-// CONF be used to generate a unique filename for the temporary file, by
-// CONF adding random characters to this prefix, followed by a suitable
-// CONF suffix (depending on file type). Note that this prefix can also be
-// CONF manipulated using the `MRTRIX_TMPFILE_PREFIX` environment
-// CONF variable, without editing the config file.
-
-// ENVVAR name: MRTRIX_TMPFILE_PREFIX
-// ENVVAR This has the same effect as the :option:`TmpFilePrefix`
-// ENVVAR configuration file entry, and can be used to set the prefix for
-// ENVVAR the name  of temporary files (as used in Unix pipes) for a
-// ENVVAR single session, within a single script, or for a single command
-// ENVVAR without modifying the configuration file.
-std::string __get_tmpfile_prefix() {
-  const char *from_env = getenv("MRTRIX_TMPFILE_PREFIX"); // check_syntax off
-  if (from_env != nullptr)
-    return from_env;
-  return File::Config::get("TmpFilePrefix", "mrtrix-tmp-");
-}
-
-std::string tmpfile_prefix() {
-  static const std::string __tmpfile_prefix = __get_tmpfile_prefix();
-  return __tmpfile_prefix;
-}
-
-} // namespace
-
-void remove(std::string_view filename) {
-  const std::string temp(filename);
-  if (std::remove(temp.c_str()) != 0)
-    throw Exception(fmt::format("error deleting file \"{}\": {}", temp, strerror(errno)));
-}
-
-void create(std::string_view filename, int64_t size) {
-  const std::string temp(filename);
+void create(const std::filesystem::path &path, int64_t size) {
   DEBUG(fmt::format("{}{}file \"{}\"{}",
                     "creating ",
-                    (size ? "" : "empty "),
-                    temp,
-                    (size == 0 ? "" : (fmt::format(" with size {}", size)))));
+                    (size != 0 ? "" : "empty "),
+                    path,
+                    (size == 0 ? "" : fmt::format(" with size {}", size))));
 
   int fid(0);
-  while ((fid = open(temp.c_str(),                                              //
+  while ((fid = open(path.string().c_str(),                                     //
                      O_CREAT | O_RDWR | O_EXCL,                                 //
                      S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH) //
           ) < 0) {                                                              //
     if (errno == EEXIST) {
-      App::check_overwrite(filename);
-      INFO(fmt::format("file \"{}\" already exists - removing", temp));
-      remove(filename);
+      App::check_overwrite(path);
+      INFO(fmt::format("file \"{}\" already exists - removing", path));
+      MR::File::remove(path);
     } else
-      throw Exception(fmt::format("error creating output file \"{}\": {}", temp, std::strerror(errno)));
-  }
-  if (fid < 0) {
-    std::string mesg(fmt::format("error creating file \"{}\": ", temp) + strerror(errno));
-    if (errno == EEXIST)
-      mesg += " (use -force option to force overwrite)";
-    throw Exception(mesg);
+      throw Exception(fmt::format("error creating output file \"{}\": {}", path, strerror(errno)));
   }
 
-  if (size != 0)
-    size = ftruncate(fid, size);
-  close(fid);
-
-  if (size != 0)
-    throw Exception(fmt::format("cannot resize file \"{}\": {}", filename, strerror(errno)));
+  if (size != 0) {
+    const int status = ftruncate(fid, size);
+    close(fid);
+    if (status != 0)
+      throw Exception(fmt::format("cannot resize file \"{}\": {}", path, strerror(errno)));
+  } else {
+    close(fid);
+  }
 }
 
-void resize(std::string_view filename, int64_t size) {
-  const std::string temp(filename);
-  DEBUG(fmt::format("resizing file \"{}\" to {}", temp, size));
+void resize(const std::filesystem::path &path, int64_t size) {
+  DEBUG(fmt::format("resizing file \"{}\" to {}", path, size));
 
-  const int fd = open(temp.c_str(), O_RDWR, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+  const int fd = open(path.string().c_str(), O_RDWR, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
   if (fd < 0)
-    throw Exception(fmt::format("error opening file \"{}\" for resizing: {}", temp, strerror(errno)));
+    throw Exception(fmt::format("error opening file \"{}\" for resizing: {}", path, strerror(errno)));
   const int status = ftruncate(fd, size);
   close(fd);
   if (status != 0)
-    throw Exception(fmt::format("cannot resize file \"{}\": {}", temp, strerror(errno)));
+    throw Exception(fmt::format("cannot resize file \"{}\": {}", path, strerror(errno)));
 }
 
-bool is_tempfile(std::string_view name, std::string_view suffix) {
-  if (Path::basename(name).compare(0, tmpfile_prefix().size(), tmpfile_prefix()) != 0)
-    return false;
-  if (!suffix.empty() && !Path::has_suffix(name, suffix))
-    return false;
-  return true;
+void mkdir(const std::filesystem::path &folder) {
+  std::error_code ec;
+  std::filesystem::create_directory(folder, ec);
+  if (ec)
+    throw Exception(fmt::format("error creating folder \"{}\": {}", folder, ec.message()));
 }
 
-std::string create_tempfile(int64_t size, std::string_view suffix) {
-  DEBUG(fmt::format("creating temporary file of size {}", size));
-
-  std::string filename(fmt::format("{}XXXXXX.", Path::join(tmpfile_dir(), tmpfile_prefix())));
-  const int rand_index = filename.size() - 7;
-  filename += suffix;
-
-  int fid(0);
-  do {
-    for (int n = 0; n < 6; n++)
-      filename[rand_index + n] = random_char();
-    fid = open(filename.c_str(), O_CREAT | O_RDWR | O_EXCL, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
-  } while (fid < 0 && errno == EEXIST);
-
-  if (fid < 0)
-    throw Exception(
-        fmt::format("error creating temporary file in directory \"{}\": {}", tmpfile_dir(), strerror(errno)));
-
-  const int status = size == 0 ? 0 : ftruncate(fid, size);
-  close(fid);
-  if (status)
-    throw Exception(fmt::format("cannot resize file \"{}\": {}", filename, strerror(errno)));
-
-  return filename;
-}
-
-void mkdir(std::string_view folder) {
-  const std::string temp(folder);
-  if (::mkdir(temp.c_str()
-#ifndef MRTRIX_WINDOWS
-                  ,
-              0777
-#endif
-              ) != 0)
-    throw Exception(fmt::format("error creating folder \"{}\": {}", temp, strerror(errno)));
-}
-
-void rmdir(std::string_view folder, bool recursive) {
+void rmdir(const std::filesystem::path &folder, bool recursive) {
   if (recursive) {
-    Path::Dir dir(folder);
-    std::string entry;
-    while (!(entry = dir.read_name()).empty()) {
-      std::string path = Path::join(folder, entry);
-      if (Path::is_dir(path))
-        rmdir(path, true);
+    for (const auto &entry : std::filesystem::directory_iterator(folder)) {
+      if (std::filesystem::is_directory(entry.path()))
+        rmdir(entry.path(), true);
       else
-        remove(path);
+        MR::File::remove(entry.path());
     }
   }
-  const std::string temp(folder);
-  DEBUG(fmt::format("deleting folder \"{}\"...", temp));
-  if (::rmdir(temp.c_str()) != 0)
-    throw Exception(fmt::format("error deleting folder \"{}\": {}", temp, strerror(errno)));
+  DEBUG(fmt::format("deleting folder \"{}\"...", folder));
+  std::error_code ec;
+  std::filesystem::remove(folder, ec);
+  if (ec)
+    throw Exception(fmt::format("error deleting folder \"{}\": {}", folder, ec.message()));
 }
 
 } // namespace MR::File

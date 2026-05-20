@@ -23,7 +23,7 @@ namespace MR::Formats {
 
 std::unique_ptr<ImageIO::Base> RAM::read(Header &H) const {
 #ifdef MRTRIX_AS_R_LIBRARY
-  if (!Path::has_suffix(H.name(), ".R"))
+  if (const_cast<const Header &>(H).path().extension() != ".R")
     return std::unique_ptr<ImageIO::Base>();
 
   Header *R_header = reinterpret_cast<Header *>(to<size_t>(H.name().substr(0, H.name().size() - 2)));
@@ -37,7 +37,7 @@ std::unique_ptr<ImageIO::Base> RAM::read(Header &H) const {
 bool RAM::check(Header &H, size_t num_axes) const {
   return H.name() == "NULL"
 #ifdef MRTRIX_AS_R_LIBRARY
-         || Path::has_suffix(H.name(), ".R")
+         || const_cast<const Header &>(H).path().extension() == ".R"
 #endif
       ;
 }

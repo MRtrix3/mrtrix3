@@ -58,6 +58,8 @@ using matrix_type = Eigen::Matrix<default_type, Eigen::Dynamic, 3>;
 
 void run() {
   Header H = Header::open(argument[0]);
+  if (H.ndim() > 3)
+    throw Exception("Command does not accept images with more than 3 dimensions");
   Connectome::validate_label_header(H);
   Image<node_t> image = H.get_image<node_t>();
   Connectome::debug_validate_label_image(image);

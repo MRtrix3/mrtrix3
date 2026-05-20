@@ -14,9 +14,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <filesystem>
+
 #include "command.h"
 #include "datatype.h"
-#include <fmt/format.h>
+#include <fmt/std.h>
 
 #include "fixel/helpers.h"
 #include "image.h"
@@ -45,20 +47,19 @@ void usage() {
 // clang-format on
 
 void run() {
-  std::string fixel_directory1 = argument[0];
+  std::filesystem::path fixel_directory1{argument[0]};
   Fixel::check_fixel_directory(fixel_directory1);
-  std::string fixel_directory2 = argument[1];
+  std::filesystem::path fixel_directory2{argument[1]};
   Fixel::check_fixel_directory(fixel_directory2);
 
   if (fixel_directory1 == fixel_directory2)
     throw Exception("Input fixel directories are the same");
 
-  auto dir_walker1 = Path::Dir(fixel_directory1);
-  std::string fname;
-  while (!(fname = dir_walker1.read_name()).empty()) {
-    auto in1 = Image<cdouble>::open(Path::join(fixel_directory1, fname));
-    std::string filename2 = Path::join(fixel_directory2, fname);
-    if (!Path::exists(filename2))
+  for (const auto &entry1 : std::filesystem::directory_iterator(fixel_directory1)) {
+    const std::string fname = entry1.path().filename().string();
+    auto in1 = Image<cdouble>::open(entry1.path());
+    const std::filesystem::path filename2 = fixel_directory2 / fname;
+    if (!std::filesystem::exists(filename2))
       throw Exception(fmt::format("File {} exists in fixel directory {} but not in fixel directory {}",
                                   fname,
                                   fixel_directory1,
@@ -66,10 +67,10 @@ void run() {
     auto in2 = Image<cdouble>::open(filename2);
     Testing::diff_images(in1, in2);
   }
-  auto dir_walker2 = Path::Dir(fixel_directory2);
-  while (!(fname = dir_walker2.read_name()).empty()) {
-    std::string filename1 = Path::join(fixel_directory1, fname);
-    if (!Path::exists(filename1))
+  for (const auto &entry2 : std::filesystem::directory_iterator(fixel_directory2)) {
+    const std::string fname = entry2.path().filename().string();
+    const std::filesystem::path filename1 = fixel_directory1 / fname;
+    if (!std::filesystem::exists(filename1))
       throw Exception(fmt::format("File {} exists in fixel directory {} but not in fixel directory {}",
                                   fname,
                                   fixel_directory2,

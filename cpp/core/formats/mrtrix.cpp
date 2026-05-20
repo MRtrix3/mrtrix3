@@ -28,6 +28,8 @@
 #include "header.h"
 #include "image_io/default.h"
 
+#include <filesystem>
+
 namespace MR::Formats {
 
 // extensions are:
@@ -35,19 +37,19 @@ namespace MR::Formats {
 // mif: MRtrix Image File
 
 std::unique_ptr<ImageIO::Base> MRtrix::read(Header &H) const {
-  if (!Path::has_suffix(H.name(), ".mih") && !Path::has_suffix(H.name(), ".mif"))
+  if (!Path::has_suffix(H.path(), {".mih", ".mif"}))
     return std::unique_ptr<ImageIO::Base>();
 
-  File::KeyValue::Reader kv(H.name(), "mrtrix image");
+  File::KeyValue::Reader kv(static_cast<const Header &>(H).path(), "mrtrix image");
 
   read_mrtrix_header(H, kv);
 
-  std::string fname;
+  std::filesystem::path filepath;
   size_t offset;
-  get_mrtrix_file_path(H, "file", fname, offset);
+  get_mrtrix_file_path(H, "file", filepath, offset);
 
   File::ParsedName::List list;
-  auto num = list.parse_scan_check(fname);
+  auto num = list.parse_scan_check(filepath.string());
 
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));
   for (size_t n = 0; n < list.size(); ++n)
@@ -57,7 +59,7 @@ std::unique_ptr<ImageIO::Base> MRtrix::read(Header &H) const {
 }
 
 bool MRtrix::check(Header &H, size_t num_axes) const {
-  if (!Path::has_suffix(H.name(), ".mih") && !Path::has_suffix(H.name(), ".mif"))
+  if (!Path::has_suffix(H.path(), {".mih", ".mif"}))
     return false;
 
   H.ndim() = num_axes;
@@ -69,13 +71,14 @@ bool MRtrix::check(Header &H, size_t num_axes) const {
 }
 
 std::unique_ptr<ImageIO::Base> MRtrix::create(Header &H) const {
-  File::OFStream out(H.name(), std::ios::out | std::ios::binary);
+  const std::filesystem::path &hpath = static_cast<const Header &>(H).path();
+  File::OFStream out(hpath, std::ios::out | std::ios::binary);
 
   out << "mrtrix image\n";
 
   write_mrtrix_header(H, out);
 
-  bool single_file = Path::has_suffix(H.name(), ".mif");
+  const bool single_file = const_cast<const Header &>(H).path().extension() == ".mif";
 
   int64_t offset = 0;
   out << "file: ";
@@ -84,14 +87,15 @@ std::unique_ptr<ImageIO::Base> MRtrix::create(Header &H) const {
     offset += ((4 - (offset % 4)) % 4);
     out << ". " << offset << "\nEND\n";
   } else
-    out << Path::basename(fmt::format("{}.dat", H.name().substr(0, H.name().size() - 4))) << "\n";
+    out << std::filesystem::path(fmt::format("{}.dat", H.name().substr(0, H.name().size() - 4))).filename().string()
+        << "\n";
 
   out.close();
 
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));
   if (single_file) {
-    File::resize(H.name(), offset + footprint(H));
-    io_handler->files.push_back(File::Entry(H.name(), offset));
+    std::filesystem::resize_file(hpath, offset + footprint(H));
+    io_handler->files.push_back(File::Entry(hpath, offset));
   } else {
     std::string data_file(fmt::format("{}.dat", H.name().substr(0, H.name().size() - 4)));
     File::create(data_file, footprint(H));

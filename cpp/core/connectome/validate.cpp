@@ -52,7 +52,7 @@ void validate_label_header(const Header &H) {
     // Need to open the image WITHOUT using the IO handler stored in H;
     //   creating an image from this "claims" the handler from the header, and
     //   therefore once this check has completed the image can no longer be opened
-    auto test = Image<float>::open(H.name());
+    auto test = Image<float>::open(H.path());
     for (auto l = Loop("Verifying parcellation image", test)(test); l; ++l) {
       if (std::round(static_cast<float>(test.value())) != test.value())
         throw Exception(fmt::format("Floating-point number detected in image \"{}\";{}",

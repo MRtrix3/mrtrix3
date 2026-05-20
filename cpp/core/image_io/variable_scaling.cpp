@@ -37,7 +37,7 @@ void VariableScaling::load(const Header &header, size_t) {
 
   DEBUG(fmt::format("loading variable-scaling DICOM image \"{}\"...", header.name()));
   addresses.resize(1);
-  addresses[0].reset(new uint8_t[segsize * sizeof(float32)]);
+  addresses[0].reset(new std::byte[segsize * sizeof(float32)]);
   if (!addresses[0])
     throw Exception(fmt::format("failed to allocate memory for image \"{}\"", header.name()));
 

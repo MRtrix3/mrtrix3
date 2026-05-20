@@ -17,7 +17,7 @@
 #include "dwi/tractography/roi.h"
 #include "adapter/subset.h"
 #include "dwi/tractography/properties.h"
-#include <fmt/format.h>
+#include <fmt/std.h>
 
 namespace MR::DWI::Tractography {
 
@@ -71,8 +71,8 @@ void load_rois(Properties &properties) {
     properties.mask.add(ROI(opt[i][0]));
 }
 
-Image<bool> Mask::get_mask(std::string_view name) {
-  auto data = Image<bool>::open(name);
+Image<bool> Mask::get_mask(const std::filesystem::path &path) {
+  auto data = Image<bool>::open(path);
   std::vector<size_t> bottom(3, 0);
   std::vector<size_t> top(3, 0);
   std::fill_n(bottom.begin(), 3, std::numeric_limits<size_t>::max());
@@ -98,7 +98,7 @@ Image<bool> Mask::get_mask(std::string_view name) {
   }
 
   if (!sum)
-    throw Exception(fmt::format("Cannot use image {} as ROI - image is empty", name));
+    throw Exception(fmt::format("Cannot use image {} as ROI - image is empty", path));
 
   if (bottom[0])
     --bottom[0];

@@ -21,7 +21,7 @@
 #include "file/png.h"
 #include "header.h"
 #include "image_helpers.h"
-#include <fmt/format.h>
+#include <fmt/std.h>
 
 namespace MR::ImageIO {
 
@@ -29,7 +29,7 @@ void PNG::load(const Header &header, size_t) {
   DEBUG(fmt::format("loading PNG {} \"{}\"", (files.size() > 1 ? "images" : "image"), header.name()));
   segsize = (header.datatype().bits() * voxel_count(header) + 7) / 8;
   addresses.resize(1);
-  addresses[0].reset(new uint8_t[segsize]);
+  addresses[0].reset(new std::byte[segsize]);
   if (is_new) {
     memset(addresses[0].get(), 0x00, segsize);
   } else {
@@ -40,7 +40,7 @@ void PNG::load(const Header &header, size_t) {
                                 + 7)                                          //
                                / 8;                                           //
     for (size_t i = 0; i != files.size(); ++i) {
-      File::PNG::Reader png(files[i].name);
+      File::PNG::Reader png(files[i].path);
       if (png.get_width() != header.size(0) || png.get_height() != header.size(1) ||
           png.get_output_bitdepth() != static_cast<int>(header.datatype().bits()) ||
           ((header.ndim() > 3 && png.get_channels() != header.size(3)) ||
@@ -52,7 +52,7 @@ void PNG::load(const Header &header, size_t) {
                                 header.datatype().bits(),
                                 header.ndim() > 3 ? header.size(3) : 1));
         e.push_back(fmt::format("File \"{}: {}x{} x {}(->{}) bits, {} channels",
-                                files[i].name,
+                                files[i].path,
                                 png.get_width(),
                                 png.get_height(),
                                 png.get_bitdepth(),
@@ -75,7 +75,7 @@ void PNG::unload(const Header &header) {
                                 + 7)                                          //
                                / 8;                                           //
     for (size_t i = 0; i != files.size(); i++) {
-      File::PNG::Writer png(header, files[i].name);
+      File::PNG::Writer png(header, files[i].path);
       png.save(addresses[0].get() + (i * slice_bytes));
     }
   }

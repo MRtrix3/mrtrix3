@@ -32,7 +32,7 @@
 
 #include "dwi/tractography/SIFT/track_index_range.h"
 #include "dwi/tractography/SIFT/types.h"
-#include <fmt/format.h>
+#include <fmt/std.h>
 
 namespace MR::DWI::Tractography::SIFT2 {
 
@@ -224,7 +224,7 @@ void TckFactor::estimate_factors() {
   std::unique_ptr<std::ofstream> csv_out;
   if (!csv_path.empty()) {
     csv_out.reset(new std::ofstream());
-    csv_out->open(csv_path.c_str(), std::ios_base::trunc);
+    csv_out->open(csv_path, std::ios_base::trunc);
     (*csv_out)
         << "Iteration,Cost_data,Cost_reg_tik,Cost_reg_tv,Cost_reg,Cost_total,Streamlines,Fixels_excluded,Step_min,Step_"
            "mean,Step_mean_abs,Step_var,Step_max,Coeff_min,Coeff_mean,Coeff_mean_abs,Coeff_var,Coeff_max,Coeff_norm,\n";
@@ -345,14 +345,14 @@ void TckFactor::report_entropy() const {
                    str(equiv_N)));
 }
 
-void TckFactor::output_factors(std::string_view path) const {
+void TckFactor::output_factors(const std::filesystem::path &path) const {
   if (static_cast<size_t>(coefficients.size()) != contributions.size())
     throw Exception("Cannot output weighting factors if they have not first been estimated!");
   decltype(coefficients) weights;
   try {
     weights.resize(coefficients.size());
   } catch (...) {
-    WARN(fmt::format("Unable to assign memory for output factor file: \"{}\" not created", Path::basename(path)));
+    WARN(fmt::format("Unable to assign memory for output factor file: \"{}\" not created", path.filename()));
     return;
   }
   for (SIFT::track_t i = 0; i != num_tracks(); ++i)
@@ -360,16 +360,18 @@ void TckFactor::output_factors(std::string_view path) const {
   File::Matrix::save_vector(weights, path);
 }
 
-void TckFactor::output_coefficients(std::string_view path) const { File::Matrix::save_vector(coefficients, path); }
+void TckFactor::output_coefficients(const std::filesystem::path &path) const {
+  File::Matrix::save_vector(coefficients, path);
+}
 
-void TckFactor::output_TD_images(std::string_view dirpath,
-                                 std::string_view origTD_path,
-                                 std::string_view count_path) const {
+void TckFactor::output_TD_images(const std::filesystem::path &dirpath,
+                                 const std::filesystem::path &origTD_path,
+                                 const std::filesystem::path &count_path) const {
   Header H(MR::Fixel::data_header_from_nfixels(fixels.size()));
   Header H_count;
   H_count.datatype() = DataType::native(DataType::UInt32);
-  Image<float> origTD_image(Image<float>::create(Path::join(dirpath, origTD_path), H));
-  Image<uint32_t> count_image(Image<uint32_t>::create(Path::join(dirpath, count_path), H));
+  Image<float> origTD_image(Image<float>::create(dirpath / origTD_path, H));
+  Image<uint32_t> count_image(Image<uint32_t>::create(dirpath / count_path, H));
   for (auto l = Loop(0)(origTD_image, count_image); l; ++l) {
     const size_t index = count_image.index(0);
     origTD_image.value() = fixels[index].get_orig_TD();
@@ -377,7 +379,7 @@ void TckFactor::output_TD_images(std::string_view dirpath,
   }
 }
 
-void TckFactor::output_all_debug_images(std::string_view dirpath, std::string_view prefix) const {
+void TckFactor::output_all_debug_images(const std::filesystem::path &dirpath, std::string_view prefix) const {
 
   Model<Fixel>::output_all_debug_images(dirpath, prefix);
 
@@ -422,13 +424,12 @@ void TckFactor::output_all_debug_images(std::string_view dirpath, std::string_vi
   Header H(MR::Fixel::data_header_from_nfixels(fixels.size()));
   Header H_excluded(H);
   H_excluded.datatype() = DataType::Bit;
-  Image<float> min_image(Image<float>::create(Path::join(dirpath, fmt::format("{}_coeff_min.mif", prefix)), H));
-  Image<float> mean_image(Image<float>::create(Path::join(dirpath, fmt::format("{}_coeff_mean.mif", prefix)), H));
-  Image<float> stdev_image(Image<float>::create(Path::join(dirpath, fmt::format("{}_coeff_stdev.mif", prefix)), H));
-  Image<float> max_image(Image<float>::create(Path::join(dirpath, fmt::format("{}_coeff_max.mif", prefix)), H));
-  Image<float> zeroed_image(Image<float>::create(Path::join(dirpath, fmt::format("{}_coeff_zeroed.mif", prefix)), H));
-  Image<bool> excluded_image(
-      Image<bool>::create(Path::join(dirpath, fmt::format("{}_excludedfixels.mif", prefix)), H_excluded));
+  Image<float> min_image(Image<float>::create(dirpath / fmt::format("{}_coeff_min.mif", prefix), H));
+  Image<float> mean_image(Image<float>::create(dirpath / fmt::format("{}_coeff_mean.mif", prefix), H));
+  Image<float> stdev_image(Image<float>::create(dirpath / fmt::format("{}_coeff_stdev.mif", prefix), H));
+  Image<float> max_image(Image<float>::create(dirpath / fmt::format("{}_coeff_max.mif", prefix), H));
+  Image<float> zeroed_image(Image<float>::create(dirpath / fmt::format("{}_coeff_zeroed.mif", prefix), H));
+  Image<bool> excluded_image(Image<bool>::create(dirpath / fmt::format("{}_excludedfixels.mif", prefix), H_excluded));
 
   for (auto l = Loop(0)(min_image, mean_image, stdev_image, max_image, zeroed_image, excluded_image); l; ++l) {
     const size_t index = min_image.index(0);

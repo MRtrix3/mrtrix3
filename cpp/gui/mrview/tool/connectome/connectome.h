@@ -322,8 +322,8 @@ private:
   // Helper functions
   void clear_all();
   void enable_all(const bool);
-  void initialise(std::string_view);
-  void add_matrices(const std::vector<std::string> &);
+  void initialise(const std::filesystem::path &);
+  void add_matrices(const std::vector<std::filesystem::path> &);
 
   void draw_nodes(const Projection &);
   void draw_edges(const Projection &);

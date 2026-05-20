@@ -31,7 +31,7 @@ ImageProperties::ImageProperties(QWidget *parent, const MR::Header &header)
 
   TreeItem *root = model->rootItem;
 
-  root->appendChild(new TreeItem("File", H.name(), root));
+  root->appendChild(new TreeItem("File", H.path().string(), root));
   assert(!H.format().empty());
   root->appendChild(new TreeItem("Format", H.format(), root));
 
@@ -151,9 +151,9 @@ void ImageProperties::context_menu(const QPoint &point) {
 
 void ImageProperties::write_to_file() {
   assert(save_data.rows());
-  std::string name = File::get_save_name(this, "Save as...", "dwgrad.txt");
-  if (!name.empty())
-    MR::File::Matrix::save_matrix(save_data, name);
+  auto save_paths = File::output_filepath(this, "Save as...", "dwgrad.txt");
+  if (!save_paths.single_selection.empty())
+    MR::File::Matrix::save_matrix(save_data, save_paths.single_selection);
 }
 
 } // namespace MR::GUI::Dialog

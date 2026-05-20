@@ -67,7 +67,7 @@ void run() {
   // validate_tck() throws on any hard format or metadata violation.
   const TckValidation result = validate_tck(argument[0]);
 
-  CONSOLE(fmt::format("Tractogram \"{}\" is valid: {} streamline(s)", std::string(argument[0]), result.n_streamlines));
+  CONSOLE(fmt::format("Tractogram \"{}\" is valid: {} streamline(s)", argument[0], result.n_streamlines));
 
   if (result.n_empty > 0) {
     WARN(fmt::format("{} empty streamline(s) (0 vertices) found", result.n_empty));

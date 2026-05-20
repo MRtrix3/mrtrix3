@@ -34,19 +34,19 @@ inline bool in_seq(const std::vector<uint32_t> &seq, uint32_t val) {
 
 } // namespace
 
-void NameParser::parse(std::string_view imagename, size_t max_num_sequences) {
-  specification = imagename;
-  if (Path::is_dir(imagename)) {
+void NameParser::parse(std::string_view specifier, size_t max_num_sequences) {
+  const std::filesystem::path spec_path(specifier);
+  if (std::filesystem::is_directory(spec_path)) {
     array.resize(1);
-    array[0].set_str(imagename);
+    array[0].set_str(specifier);
     return;
   }
 
-  folder_name = Path::dirname(specification);
+  folder_path = spec_path.parent_path();
 
   try {
     std::string::size_type pos;
-    std::string basename = Path::basename(specification);
+    std::string basename = spec_path.filename().string();
     size_t num = 0;
 
     while ((pos = basename.find_last_of(']')) < std::string::npos && num < max_num_sequences) {
@@ -72,7 +72,7 @@ void NameParser::parse(std::string_view imagename, size_t max_num_sequences) {
                                             specification));
   } catch (...) {
     array.resize(1);
-    array[0].set_str(imagename);
+    array[0].set_str(specifier);
     throw;
   }
 }
@@ -158,9 +158,9 @@ void NameParser::Item::calc_padding(size_t maxval) {
     seq_length += 1;
 }
 
-std::string NameParser::name(const std::vector<uint32_t> &indices) {
+std::filesystem::path NameParser::name(const std::vector<uint32_t> &indices) {
   if (seq_index.empty())
-    return Path::join(folder_name, array[0].string());
+    return folder_path / array[0].string();
 
   assert(indices.size() == seq_index.size());
 
@@ -175,15 +175,17 @@ std::string NameParser::name(const std::vector<uint32_t> &indices) {
     }
   }
 
-  return Path::join(folder_name, str);
+  return folder_path / str;
 }
 
-std::string NameParser::get_next_match(std::vector<uint32_t> &indices, bool return_seq_index) {
+std::filesystem::path NameParser::get_next_match(std::vector<uint32_t> &indices, bool return_seq_index) {
   if (!folder)
-    folder.reset(new Path::Dir(folder_name));
+    folder.emplace(folder_path.empty() ? std::filesystem::current_path() : folder_path);
 
-  std::string fname;
-  while (!(fname = folder->read_name()).empty()) {
+  while (*folder != std::filesystem::directory_iterator()) {
+    std::string fname = folder->operator*().path().filename().string();
+    ++(*folder);
+
     if (match(fname, indices)) {
       if (return_seq_index) {
         for (size_t i = 0; i < ndim(); i++) {
@@ -195,11 +197,11 @@ std::string NameParser::get_next_match(std::vector<uint32_t> &indices, bool retu
           }
         }
       }
-      return Path::join(folder_name, fname);
+      return folder_path / fname;
     }
   }
 
-  return "";
+  return {};
 }
 
 bool ParsedName::operator<(const ParsedName &pn) const {
@@ -232,7 +234,7 @@ void ParsedName::List::scan(NameParser &parser) {
     return;
   }
 
-  std::string entry;
+  std::filesystem::path entry;
 
   while (!(entry = parser.get_next_match(index, true)).empty())
     list.push_back(std::shared_ptr<ParsedName>(new ParsedName(entry, index)));
@@ -292,7 +294,7 @@ std::ostream &operator<<(std::ostream &stream, const ParsedName &pin) {
   stream << "[ ";
   for (size_t n = 0; n < pin.ndim(); n++)
     stream << pin.index(n) << " ";
-  stream << "] " << pin.name();
+  stream << "] " << pin.name().string();
   return (stream);
 }
 

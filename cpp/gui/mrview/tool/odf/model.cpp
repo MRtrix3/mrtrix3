@@ -17,11 +17,11 @@
 #include "mrview/tool/odf/model.h"
 
 #include "header.h"
-#include <fmt/format.h>
+#include <fmt/std.h>
 
 namespace MR::GUI::MRView::Tool {
 
-size_t ODF_Model::add_items(const std::vector<std::string> &list,
+size_t ODF_Model::add_items(const std::vector<std::filesystem::path> &list,
                             const odf_type_t type,
                             const bool colour_by_direction,
                             const bool hide_negative_lobes,
@@ -30,21 +30,22 @@ size_t ODF_Model::add_items(const std::vector<std::string> &list,
   for (size_t i = 0; i < list.size(); ++i) {
     try {
       auto header = std::make_unique<MR::Header>(MR::Header::open(list[i]));
+      const auto header_basename = header->path().filename().string();
       switch (type) {
       case odf_type_t::SH:
         Math::SH::check(*header);
         break;
       case odf_type_t::TENSOR:
         if (header->ndim() != 4)
-          throw Exception(fmt::format("Image \"{}\" is not 4D; not a tensor image", Path::basename(header->name())));
+          throw Exception(fmt::format("Image \"{}\" is not 4D; not a tensor image", header->path().filename()));
         if (header->size(3) != 6)
-          throw Exception(fmt::format("Image \"{}\" does not contain 6 volumes; not a tensor image",
-                                      Path::basename(header->name())));
+          throw Exception(
+              fmt::format("Image \"{}\" does not contain 6 volumes; not a tensor image", header->path().filename()));
         break;
       case odf_type_t::DIXEL:
         if (header->ndim() != 4)
-          throw Exception(fmt::format("Image \"{}\" is not 4D; cannot contain direction amplitudes",
-                                      Path::basename(header->name())));
+          throw Exception(
+              fmt::format("Image \"{}\" is not 4D; cannot contain direction amplitudes", header->path().filename()));
         break;
       }
       hlist.push_back(std::move(header));

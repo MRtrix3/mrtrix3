@@ -298,7 +298,7 @@ void Image::parse_item(Element &item) {
 void Image::read() {
   {
     Element item;
-    item.set(filename);
+    item.set(filepath);
 
     while (item.read()) {
       try {
@@ -339,7 +339,7 @@ template <typename T> void phoenix_vector(const KeyValues &keyval, std::string_v
 }
 } // namespace
 
-void Image::decode_csa(const uint8_t *start, const uint8_t *end) {
+void Image::decode_csa(const std::byte *start, const std::byte *end) {
   CSAEntry entry(start, end);
 
   while (entry.parse()) {
@@ -460,13 +460,13 @@ std::ostream &operator<<(std::ostream &stream, const Frame &item) {
     if (item.bvalue > 0.0)
       stream << ", G = [ " << item.G[0] << " " << item.G[1] << " " << item.G[2] << " ]";
   }
-  stream << " (\"" << item.filename << "\", " << item.data << ")";
+  stream << " (\"" << item.filepath.string() << "\", " << item.data << ")";
 
   return stream;
 }
 
 std::ostream &operator<<(std::ostream &stream, const Image &item) {
-  stream << (!item.filename.empty() ? item.filename : "file not set") << ":\n"
+  stream << (!item.filepath.empty() ? item.filepath.string() : "file not set") << ":\n"
          << (!item.sequence_name.empty() ? item.sequence_name : "sequence not set") << " ["
          << (!item.manufacturer.empty() ? item.manufacturer : "unknown manufacturer") << "] "
          << (!item.frames.empty() ? fmt::format("{} frames with dim {}", item.frames.size(), item.frame_dim)

@@ -24,11 +24,11 @@
 #include "algo/loop.h"
 #include "fixel/helpers.h"
 #include "image.h"
-#include <fmt/format.h>
+#include <fmt/std.h>
 
 namespace MR::Fixel {
 
-void validate_directory(std::string_view fixel_directory_path) {
+void validate_directory(const std::filesystem::path &fixel_directory_path) {
 
   // Verify that a valid index image and a valid directions image are present.
   // Both functions throw InvalidFixelDirectoryException on failure.
@@ -45,21 +45,26 @@ void validate_directory(std::string_view fixel_directory_path) {
 
   // Verify that every fixel data file in the directory contains
   // the same number of fixels as implied by the index image.
-  auto dir_walker = Path::Dir(fixel_directory_path);
-  std::string fname;
-  while (!(fname = dir_walker.read_name()).empty()) {
-    if (!Path::has_suffix(fname, supported_image_formats))
+  bool directions_found = false;
+  for (auto const &entry : std::filesystem::directory_iterator{fixel_directory_path}) {
+    if (!Path::has_suffix(entry, supported_image_formats))
       continue;
-    if (is_index_filename(fname))
+    if (is_index_filename(entry.path().filename()))
       continue;
-    const std::string full_path = Path::join(fixel_directory_path, fname);
+    if (is_directions_filename(entry.path().filename())) {
+      if (directions_found)
+        throw Exception("Multiple possible fixel directions files"
+                        " found in directory" +
+                        fixel_directory_path.string());
+      directions_found = true;
+    }
     try {
-      const Header H = Header::open(full_path);
+      const Header H = Header::open(entry);
       if (!is_data_file(H))
         continue;
       if (static_cast<index_type>(H.size(0)) != total_nfixels)
         throw InvalidDirectoryException(fmt::format("Fixel data file \"{}\"{}{}\"{}{} fixels,{}{}",
-                                                    fname, //
+                                                    entry.path(), //
                                                     " in directory \"",
                                                     std::string(fixel_directory_path), //
                                                     " contains ",
@@ -71,6 +76,8 @@ void validate_directory(std::string_view fixel_directory_path) {
     } catch (...) {
     }
   }
+  if (!directions_found)
+    throw Exception("No fixel directions image found in directory " + fixel_directory_path.string());
 }
 
 index_type validate_index_image(Image<index_type> index_image) {
@@ -138,7 +145,7 @@ index_type validate_index_image(Image<index_type> index_image) {
   return total_nfixels;
 }
 
-void debug_validate_directory(std::string_view fixel_directory_path) {
+void debug_validate_directory(const std::filesystem::path &fixel_directory_path) {
   if (App::log_level >= 3)
     validate_directory(fixel_directory_path);
 }

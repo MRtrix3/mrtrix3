@@ -21,14 +21,14 @@
 namespace MR::GUI::MRView::Tool {
 class Image4D : public FixelType<FixelImage4DType> {
 public:
-  Image4D(std::string_view filename, Fixel &fixel_tool) : FixelType(filename, fixel_tool), tracking(false) {
+  Image4D(const std::filesystem::path &filepath, Fixel &fixel_tool) : FixelType(filepath, fixel_tool), tracking(false) {
     value_types = {"Unity", "Length"};
     colour_types = {"Direction", "Length"};
     threshold_types = {"Length"};
     fixel_values[value_types[1]];
     fixel_data.reset(new FixelImage4DType(header.get_image<float>()));
 
-    load_image(filename);
+    load_image(filepath);
   }
 
   void load_image_buffer() override;

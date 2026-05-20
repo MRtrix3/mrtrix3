@@ -15,7 +15,7 @@
  */
 
 #include "mrview/tool/fixel/fixel.h"
-#include <fmt/format.h>
+#include <fmt/std.h>
 
 #include "app.h"
 #include "dialog/file.h"
@@ -36,27 +36,36 @@ class Fixel::Model : public ListModelBase {
 public:
   Model(QObject *parent) : ListModelBase(parent) {}
 
-  void add_items(std::vector<std::string> &filenames, Fixel &fixel_tool) {
+  void add_items(const std::vector<std::filesystem::path> &paths, Fixel &fixel_tool) {
 
     size_t old_size = items.size();
-    for (size_t i = 0, N = filenames.size(); i < N; ++i) {
+    for (size_t i = 0, N = paths.size(); i < N; ++i) {
       BaseFixel *fixel_image(nullptr);
       try {
-        MR::Fixel::debug_validate_directory(filenames[i]);
-        fixel_image = new Directory(filenames[i], fixel_tool);
+        MR::Fixel::debug_validate_directory(paths[i]);
+        fixel_image = new Directory(paths[i], fixel_tool);
       } catch (MR::Fixel::InvalidDirectoryException &error) {
-        error.push_back(fmt::format("Couldn't open \"{}\" as a Directory fixel dataset", filenames[i]));
+        error.push_back(fmt::format("Couldn't open \"{}\" as a Directory fixel dataset", paths[i]));
         try {
+          fixel_image = new Directory(paths[i], fixel_tool);
+        } catch (MR::Fixel::InvalidDirectoryException &error) {
+          error.push_back(fmt::format("Couldn't open \"{}\" as a Directory fixel dataset", paths[i]));
+          try {
+            fixel_image = new Image4D(paths[i], fixel_tool);
+          } catch (InvalidImageException &e) {
+            error.push_back(e);
+            error.push_back(fmt::format("Couldn't open \"{}\" as a 4D vector image", paths[i]));
+            throw error;
+          }
           if (MR::App::log_level >= 3)
-            MR::Peaks::debug_validate_image(MR::Image<float>::open(filenames[i]));
-          fixel_image = new Image4D(filenames[i], fixel_tool);
+            MR::Peaks::debug_validate_image(MR::Image<float>::open(paths[i]));
         } catch (InvalidImageException &e) {
           error.push_back(e);
-          error.push_back(fmt::format("Couldn't open \"{}\" as a 4D vector image", filenames[i]));
+          error.push_back(fmt::format("Couldn't open \"{}\" as a 4D vector image", paths[i]));
           throw error;
         }
       } catch (Exception &e) {
-        e.push_back(fmt::format("Error loading \"{}\" as a fixel dataset", filenames[i]));
+        e.push_back(fmt::format("Error loading \"{}\" as a fixel dataset", paths[i]));
         e.display();
         continue;
       }
@@ -304,12 +313,13 @@ void Fixel::render_fixel_colourbar(const Tool::BaseFixel &fixel) {
 }
 
 void Fixel::fixel_open_slot() {
-  std::vector<std::string> list = Dialog::File::get_files(
-      this, "Select fixel images to open", GUI::Dialog::File::image_filter_string, &current_folder);
-  add_images(list);
+  auto load_paths = Dialog::File::input_filepaths(
+      this, "Select fixel images to open", GUI::Dialog::File::image_filter_string, current_folder);
+  current_folder = load_paths.last_directory;
+  add_images(load_paths.multi_selection);
 }
 
-void Fixel::add_images(std::vector<std::string> &list) {
+void Fixel::add_images(const std::vector<std::filesystem::path> &list) {
   if (list.empty())
     return;
   size_t previous_size = fixel_list_model->rowCount();
@@ -332,10 +342,10 @@ void Fixel::dropEvent(QDropEvent *event) {
 
   const QMimeData *mimeData = event->mimeData();
   if (mimeData->hasUrls()) {
-    std::vector<std::string> list;
+    std::vector<std::filesystem::path> list;
     QList<QUrl> urlList = mimeData->urls();
     for (int i = 0; i < urlList.size() && i < max_files; ++i) {
-      list.push_back(QtHelpers::url_to_std_string(urlList.at(i)));
+      list.push_back(QtHelpers::url_to_fspath(urlList.at(i)));
     }
     try {
       add_images(list);
@@ -743,7 +753,7 @@ void Fixel::add_commandline_options(MR::App::OptionList &options) {
 
 bool Fixel::process_commandline_option(const MR::App::ParsedOption &opt) {
   if (opt.opt->is("fixel.load")) {
-    std::vector<std::string> list(1, std::string(opt[0]));
+    std::vector<std::filesystem::path> list(1, opt[0]);
     try {
       fixel_list_model->add_items(list, *this);
     } catch (Exception &E) {

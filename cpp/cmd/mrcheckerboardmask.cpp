@@ -51,7 +51,6 @@ void usage() {
 // clang-format on
 
 void run() {
-
   const size_t ntiles = get_option_value("tiles", default_number_tiles);
   const bool invert = !get_options("invert").empty();
   const bool use_NaN = !get_options("nan").empty();

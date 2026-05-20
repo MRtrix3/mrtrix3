@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <filesystem>
 #include <fmt/format.h>
 
 #include "app.h"

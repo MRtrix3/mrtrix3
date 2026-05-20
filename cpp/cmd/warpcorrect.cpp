@@ -96,7 +96,7 @@ std::mutex BoundsCheck::mutex;
 void run() {
   Header H_input = Header::open(argument[0]);
   Registration::Warp::validate_header(H_input);
-  auto input = H_input.get_image<value_type>().with_direct_io(3);
+  auto input = H_input.get_image<value_type>(DirectIO{3});
 
   Eigen::Matrix<value_type, 3, 1> oob_vector = Eigen::Matrix<value_type, 3, 1>::Zero();
 

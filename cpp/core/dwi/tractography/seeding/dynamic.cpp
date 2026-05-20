@@ -48,11 +48,11 @@ bool Dynamic_ACT_additions::check_seed(Eigen::Vector3f &p) {
 
 const default_type Dynamic::initial_td_sum = 1e-6;
 
-Dynamic::Dynamic(std::string_view in,
+Dynamic::Dynamic(const std::filesystem::path &in,
                  Image<float> &fod_data,
                  const size_t num,
                  const DWI::Directions::FastLookupSet &dirs)
-    : Base(in, "dynamic", attempts_per_seed.at(seed_attempt_t::DYNAMIC)),
+    : Base(in.filename().string(), "dynamic", attempts_per_seed.at(seed_attempt_t::DYNAMIC)),
       SIFT::ModelBase<Fixel_TD_seed>(fod_data, dirs),
       target_trackcount(num),
       track_count(0),
@@ -145,7 +145,9 @@ Dynamic::Dynamic(std::string_view in,
 
 Dynamic::~Dynamic() {
 
-  INFO(fmt::format("Dynamic seeeding required {} samples to draw {} seeds", attempts, seeds));
+  INFO(fmt::format("Dynamic seeeding required {} samples to draw {} seeds",
+                   attempts.load(std::memory_order_relaxed),
+                   seeds.load(std::memory_order_relaxed)));
 
 #ifdef DYNAMIC_SEED_DEBUGGING
 

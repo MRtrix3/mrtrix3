@@ -141,6 +141,7 @@ if(WIN32)
         RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin
     )
 
+if(MRTRIX_ENABLE_GPU)
     add_custom_command(TARGET mrtrix-core POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             $<TARGET_FILE:dawn::webgpu_dawn>
@@ -148,7 +149,7 @@ if(WIN32)
             $<TARGET_FILE_DIR:mrtrix-core>
         COMMENT "Copying imported dependencies to output directory"
     )
-
+endif()
 endif()
 
 
