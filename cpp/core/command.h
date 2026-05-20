@@ -20,6 +20,8 @@
 #include <xmmintrin.h>
 #endif
 
+#include <cstdio>
+
 #include "app.h"
 #include "env.h"
 #include "executable_version.h"
@@ -36,22 +38,51 @@ void set_project_version();
 #ifdef MRTRIX_AS_R_LIBRARY
 
 extern "C" void R_main(int *cmdline_argc, char **cmdline_argv) { // check_syntax off
-#ifdef MRTRIX_PROJECT
-  ::MR::App::set_project_version();
-#endif
-  ::MR::App::DESCRIPTION.clear();
-  ::MR::App::ARGUMENTS.clear();
-  ::MR::App::OPTIONS.clear();
+  // Non-throwing [ERROR] line writer for the R-hosted entry point; routes via
+  // REprintf (R's stderr-equivalent channel) and mirrors the "<name>: [colour][ERROR]
+  // <msg>[reset]" layout produced by MR::cmdline_report_to_user_func. Uses only
+  // noexcept primitives so it is safe inside catch handlers
+  // (see bugprone-exception-escape). The "<name>: " prefix appears only once
+  // ::MR::App::init() has populated ::MR::App::NAME.
+  const auto fail = [](std::initializer_list<const char *> parts) noexcept { // check_syntax off
+    if (!::MR::App::NAME.empty())
+      REprintf("%s: ", ::MR::App::NAME.c_str());
+    if (::MR::App::terminal_use_colour)
+      REprintf("%s", "\033[01;31m");
+    REprintf("%s", "[ERROR] ");
+    for (const char *const p : parts) // check_syntax off
+      REprintf("%s", p);
+    if (::MR::App::terminal_use_colour)
+      REprintf("%s", "\033[0m");
+    REprintf("%s", "\n");
+  };
+
   try {
+#ifdef MRTRIX_PROJECT
+    ::MR::App::set_project_version();
+#endif
+    ::MR::App::DESCRIPTION.clear();
+    ::MR::App::ARGUMENTS.clear();
+    ::MR::App::OPTIONS.clear();
     usage();
     ::MR::App::verify_usage();
     ::MR::App::init(*cmdline_argc, cmdline_argv);
     ::MR::App::parse();
     run();
-  } catch (MR::Exception &E) {
-    E.display();
-    return;
   } catch (int retval) {
+    return;
+  } catch (MR::Exception &E) {
+    try {
+      E.display();
+    } catch (...) {
+      fail({"additional exception raised while displaying MR::Exception"});
+    }
+    return;
+  } catch (const std::exception &E) {
+    fail({"unhandled std::exception escaped from R_main: ", E.what()});
+    return;
+  } catch (...) { // NOLINT(bugprone-empty-catch)
+    fail({"unhandled non-std::exception escaped from R_main"});
     return;
   }
 }
@@ -69,14 +100,35 @@ extern "C" void R_usage(char **output) { // check_syntax off
 #else
 
 int main(int cmdline_argc, char **cmdline_argv) { // check_syntax off
+  // Non-throwing [ERROR] line writer; mirrors the "<name>: [colour][ERROR] <msg>[reset]"
+  // layout produced by MR::cmdline_report_to_user_func, but uses only noexcept
+  // primitives so it is safe to call from outside the main try block and from
+  // catch handlers (see bugprone-exception-escape). The "<name>: " prefix appears
+  // only once ::MR::App::init() has populated ::MR::App::NAME.
+  const auto fail = [](std::initializer_list<const char *> parts) noexcept { // check_syntax off
+    if (!::MR::App::NAME.empty()) {
+      std::fputs(::MR::App::NAME.c_str(), stderr);
+      std::fputs(": ", stderr);
+    }
+    if (::MR::App::terminal_use_colour)
+      std::fputs("\033[01;31m", stderr);
+    std::fputs("[ERROR] ", stderr);
+    for (const char *const p : parts) // check_syntax off
+      std::fputs(p, stderr);
+    if (::MR::App::terminal_use_colour)
+      std::fputs("\033[0m", stderr);
+    std::fputc('\n', stderr);
+  };
+
+  // Version mismatch is reported via the noexcept "fail" helper so the check
+  // can safely run before the main try block (see bugprone-exception-escape).
   if (MR::App::mrtrix_version != MR::App::mrtrix_executable_version) {
-    MR::Exception E("executable was compiled for a different version of the MRtrix3 library!");
-    E.push_back(std::string("  ") + MR::App::NAME + " version: " + MR::App::mrtrix_executable_version);
-    E.push_back(std::string("  library version: ") + MR::App::mrtrix_version);
-    E.push_back("You may need to erase files left over from prior MRtrix3 versions;");
-    E.push_back("eg. core/version.cpp; src/exec_version.cpp");
-    E.push_back(", and re-configure cmake");
-    E.display();
+    fail({"executable was compiled for a different version of the MRtrix3 library!"});
+    fail({"  executable version: ", MR::App::mrtrix_executable_version.c_str()});
+    fail({"  library version: ", MR::App::mrtrix_version.c_str()});
+    fail({"You may need to erase files left over from prior MRtrix3 versions;"});
+    fail({"eg. core/version.cpp; src/exec_version.cpp,"});
+    fail({"and re-configure cmake"});
     return 1;
   }
 
@@ -89,10 +141,10 @@ int main(int cmdline_argc, char **cmdline_argv) { // check_syntax off
   mxcsr |= (1 << 6); // denormals-are-zero
   _mm_setcsr(mxcsr);
 #endif
-#ifdef MRTRIX_PROJECT
-  ::MR::App::set_project_version();
-#endif
   try {
+#ifdef MRTRIX_PROJECT
+    ::MR::App::set_project_version();
+#endif
     ::MR::App::init(cmdline_argc, cmdline_argv);
     usage();
     ::MR::App::verify_usage();
@@ -114,11 +166,21 @@ int main(int cmdline_argc, char **cmdline_argv) { // check_syntax off
       return 0;
     }
     run();
-  } catch (::MR::Exception &E) {
-    E.display();
-    return 1;
   } catch (int retval) {
     return retval;
+  } catch (::MR::Exception &E) {
+    try {
+      E.display();
+    } catch (...) {
+      fail({"additional exception raised while displaying MR::Exception"});
+    }
+    return 1;
+  } catch (const std::exception &E) {
+    fail({"unhandled std::exception escaped from main: ", E.what()});
+    return 1;
+  } catch (...) { // NOLINT(bugprone-empty-catch)
+    fail({"unhandled non-std::exception escaped from main"});
+    return 1;
   }
   return ::MR::App::exit_error_code;
 }
