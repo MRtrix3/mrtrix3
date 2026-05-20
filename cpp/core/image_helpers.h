@@ -595,6 +595,9 @@ public:
 } // namespace Helper
 
 template <class Derived, typename ValueType> class ImageBase {
+protected:
+  ImageBase() = default;
+
 public:
   using value_type = ValueType;
 
