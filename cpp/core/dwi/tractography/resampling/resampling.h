@@ -47,6 +47,7 @@ public:
 
 template <class Derived> class BaseCRTP : public Base {
 protected:
+  // NOLINTNEXTLINE(bugprone-crtp-constructor-accessibility)
   BaseCRTP() = default;
 
 public:

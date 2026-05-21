@@ -596,6 +596,7 @@ public:
 
 template <class Derived, typename ValueType> class ImageBase {
 protected:
+  // NOLINTNEXTLINE(bugprone-crtp-constructor-accessibility)
   ImageBase() = default;
 
 public:

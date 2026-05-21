@@ -351,6 +351,7 @@ Image<ValueType> Header::get_image(std::optional<DirectIO> direct_io, bool read_
   // direct-IO preload completes before the shared_ptr is published. After this
   // point, Buffer::ram is immutable until destruction (writeback).
   auto raw = std::make_unique<typename Image<ValueType>::Buffer>(*this, read_write_if_existing, std::move(direct_io));
+  // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
   const Stride::List image_strides = raw->ram.has_value() ? raw->ram->strides : Stride::List();
   std::shared_ptr<typename Image<ValueType>::Buffer> buffer(std::move(raw));
   return Image<ValueType>(buffer, image_strides);
