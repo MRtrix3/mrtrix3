@@ -146,15 +146,54 @@ std::string &add_line(std::string &original, std::string_view new_line) {
   return original.empty() ? (original = new_line) : (original += '\n', original += new_line, original);
 }
 
+std::string shorten(const std::filesystem::path &path, size_t longest) {
+  if (path.filename().string().size() > longest)
+    return shorten(path.filename());
+  if (path.filename().string().size() + 5 > longest)
+    return path.filename().string();
+  if (path.string().size() < longest)
+    return path.string();
+  std::string result_prefix = path.has_root_name() ? path.root_name().string() : "";
+  std::string result_suffix = path.filename().string();
+  if (result_prefix.size() + 5 + result_suffix.size() > longest)
+    return result_suffix;
+  auto elide_inter = [](std::string_view prefix, std::string_view suffix) {
+    return fmt::format("{}{}...{}{}",
+                       prefix,
+                       std::filesystem::path::preferred_separator,
+                       std::filesystem::path::preferred_separator,
+                       suffix);
+  };
+  std::filesystem::path cropped_path = path.parent_path().relative_path();
+  size_t counter = result_prefix.empty() ? 1 : 0;
+  do {
+    if (++counter % 2 == 1) {
+      const std::string new_suffix = (cropped_path.filename() / result_suffix).string();
+      if (result_prefix.size() + 5 + new_suffix.size() > longest)
+        return elide_inter(result_prefix, result_suffix);
+      result_suffix = new_suffix;
+      cropped_path = cropped_path.parent_path();
+    } else {
+      const std::string new_prefix = (std::filesystem::path(result_prefix) / *cropped_path.begin()).string();
+      if (new_prefix.size() + 5 + result_suffix.size() > longest)
+        return elide_inter(result_prefix, result_suffix);
+      result_prefix = new_prefix;
+      auto parent_iterator = cropped_path.begin();
+      std::filesystem::path new_cropped_path;
+      for (++parent_iterator; parent_iterator != cropped_path.end(); ++parent_iterator)
+        new_cropped_path /= *parent_iterator;
+      cropped_path = new_cropped_path;
+    }
+  } while (!cropped_path.empty());
+  assert(false);
+  return elide_inter(result_prefix, result_suffix);
+}
+
 std::string shorten(std::string_view text, size_t longest, size_t prefix) {
   if (text.size() > longest)
     return fmt::format("{}...{}", text.substr(0, prefix), text.substr(text.size() - longest + prefix + 3));
   else
     return std::string(text);
-}
-
-std::string shorten(const std::filesystem::path &path, size_t longest, size_t prefix) {
-  return shorten(path.native(), longest, prefix);
 }
 
 std::string lowercase(std::string_view string) {

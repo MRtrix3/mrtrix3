@@ -78,7 +78,7 @@ inline void min_max(ImageType &in,
                     typename ImageType::value_type &max,
                     size_t from_axis = 0,
                     size_t to_axis = std::numeric_limits<size_t>::max()) {
-  ThreadedLoop("finding min/max of \"" + shorten(in.name()) + "\"", in, from_axis, to_axis)
+  ThreadedLoop(fmt::format("finding min/max of \"{}\"", in.name()), in, from_axis, to_axis)
       .run(__MinMax<ImageType>(min, max), in);
 }
 
@@ -89,7 +89,7 @@ inline void min_max(ImageType &in,
                     typename ImageType::value_type &max,
                     size_t from_axis = 0,
                     size_t to_axis = std::numeric_limits<size_t>::max()) {
-  ThreadedLoop("finding min/max of \"" + shorten(in.name()) + "\"", in, from_axis, to_axis)
+  ThreadedLoop(fmt::format("finding min/max of \"{}\"", in.name()), in, from_axis, to_axis)
       .run(__MinMax<ImageType>(min, max), in, mask);
 }
 

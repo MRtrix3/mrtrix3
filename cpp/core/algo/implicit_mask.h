@@ -76,7 +76,7 @@ template <class ImageType> Image<bool> make_implicit_mask(const ImageType &sourc
   const HoleFilling hole_filling = config.hole_filling;
   Header header3d(source);
   header3d.ndim() = 3;
-  auto mask = Image<bool>::scratch(header3d, "scratch implicit mask from \"" + source.name() + "\"");
+  auto mask = Image<bool>::scratch(header3d, fmt::format("scratch implicit mask from \"{}\"", source.name()));
 
   auto img = source;
   const bool has_volumes = img.ndim() > 3;

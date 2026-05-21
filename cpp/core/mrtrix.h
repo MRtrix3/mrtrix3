@@ -63,10 +63,11 @@ struct max_digits<X,
 //! add a line to a string, taking care of inserting a newline if needed
 std::string &add_line(std::string &original, std::string_view new_line);
 
+//! convert a filesystem path to 'beginningofpath...endofpath' for display
+std::string shorten(const std::filesystem::path &path, size_t longest = 40);
+
 //! convert a long string to 'beginningofstring...endofstring' for display
 std::string shorten(std::string_view text, size_t longest = 40, size_t prefix = 10);
-//! convert a filesystem path to 'beginningofpath...endofpath' for display
-std::string shorten(const std::filesystem::path &path, size_t longest = 40, size_t prefix = 10);
 
 //! return lowercase version of string
 std::string lowercase(std::string_view string);
