@@ -464,7 +464,7 @@ save(ImageType &&x, const std::filesystem::path &filepath, bool use_multi_thread
   try {
     return x.dump_to_mrtrix_file(filepath);
   } catch (Exception &) {
-    return _save_generic(x, filename, use_multi_threading);
+    return _save_generic(x, filepath, use_multi_threading);
   }
 }
 

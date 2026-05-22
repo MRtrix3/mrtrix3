@@ -612,7 +612,7 @@ void ODF::dirs_slot() {
       }
       settings->dixel->set_from_file(load_paths.single_selection);
       current_folder = load_paths.last_directory;
-      break;
+    } break;
     default:
       assert(false);
       return;
