@@ -1,0 +1,20 @@
+#!/bin/bash
+# Ensure that the dwigradcheck script completes successfully
+#   when the -notranspose option is specified
+# Output should contain 48 lines in this use case:
+#   - 24 possible combinations of axis permutations and flips
+#     when permuting the real / scanner space gradient table
+#   - 24 possible combinations of axis permutations and flips
+#     when permuting the bvecs representation
+#   - Minus one because the no-shuffling variant is redundant between the two
+#   - Plus one for the header fields
+
+dwigradcheck BIDS/sub-01/dwi/sub-01_dwi.nii.gz -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-notranspose \
+-out tmp.csv
+
+LINECOUNT=$(wc -l tmp.csv)
+if [ "$LINECOUNT" -neq "48" ]]; then
+    exit 1
+fi

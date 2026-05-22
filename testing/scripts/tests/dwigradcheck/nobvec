@@ -1,0 +1,19 @@
+#!/bin/bash
+# Ensure that the dwigradcheck script completes successfully
+#   when testing exclusively shuffling in one basis
+# This means both restricting the basis for shuffling using the -shuffle option,
+#   and excluding any transposition between bases
+# Output should contain 25 lines in this use case:
+#   - Header fields
+#   - 24 possible combinations of axis shuffles and flips
+
+dwigradcheck BIDS/sub-01/dwi/sub-01_dwi.nii.gz -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-shuffle real \
+-notranspose \
+-out tmp.csv
+
+LINECOUNT=$(wc -l tmp.csv)
+if [ "$LINECOUNT" -neq "25" ]]; then
+    exit 1
+fi
