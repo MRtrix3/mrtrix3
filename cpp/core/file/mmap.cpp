@@ -147,7 +147,8 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, std::optional<int64
         in.seekg(start, in.beg);
         in.read(reinterpret_cast<char *>(first), msize);
         if (!in.good())
-          throw Exception("error preloading contents of file \"" + Entry::path.string() + "\": " + MR::C_strerror(errno));
+          throw Exception("error preloading contents of file \"" + Entry::path.string() + "\": " + //
+                          MR::C_strerror(errno));                                                  //
       } else
         memset(first, 0, msize);
       DEBUG("file \"" + Entry::path.string() + "\" held in RAM at " + str(reinterpret_cast<void *>(first)) + "," + //
