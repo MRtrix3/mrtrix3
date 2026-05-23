@@ -20,7 +20,6 @@
 #include "algo/loop.h"
 #include "algo/threaded_copy.h"
 #include "command.h"
-#include "eigen_plugins/fmt.h"
 #include "image.h"
 #include "math/least_squares.h"
 #include "transform.h"

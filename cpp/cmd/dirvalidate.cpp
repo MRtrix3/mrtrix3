@@ -68,8 +68,7 @@ void run() {
                           : result.format == DirectionsFormat::Cartesian ? "Cartesian directions"
                                                                          : "diffusion gradient table";
 
-  CONSOLE(fmt::format(
-      "Direction file \"{}\": {} direction(s) in {} format", std::string_view(argument[0]), result.n_directions, fmt));
+  CONSOLE(fmt::format("Direction file \"{}\": {} direction(s) in {} format", argument[0], result.n_directions, fmt));
 
   if (result.format == DirectionsFormat::Cartesian || result.format == DirectionsFormat::GradientTable) {
     if (result.n_non_unit > 0U) {

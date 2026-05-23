@@ -23,6 +23,7 @@
 #include "math/average_space.h"
 #include "math/math.h"
 #include "transform.h"
+#include "types.h"
 #include <Eigen/Geometry>
 #include <algorithm>
 #include <filesystem>
@@ -52,7 +53,7 @@ void usage() {
   SYNOPSIS = "Perform calculations on linear transformation matrices";
 
   ARGUMENTS
-  + Argument ("inputs", "the input(s) for the specified operation").type_image_in().type_file_in().allow_multiple()
+  + Argument ("inputs", "the input(s) for the specified operation").type_image_in().type_file_in().type_float(0.0, 1.0).allow_multiple()
   + Argument ("operation", fmt::format("the operation to perform; one of: {} (see description section for details).", MR::Enum::join<Operation>(", "))).type_choice<Operation>()
   + Argument ("output", "the output transformation matrix.").type_file_out ();
 
@@ -251,7 +252,7 @@ void run() {
     transform_type transform_out;
 
     if (t < 0.0 || t > 1.0)
-      throw Exception("t has to be in the interval [0,1]");
+      throw Exception("t has to be in the interval [0.0,1.0]");
 
     Eigen::MatrixXd M1 = transform1.linear();
     Eigen::MatrixXd M2 = transform2.linear();
@@ -275,9 +276,7 @@ void run() {
     transform_out.translation() = ((1.0 - t) * transform1.translation() + t * transform2.translation());
     Qout = Q1.slerp(t, Q2);
     transform_out.linear() = Qout * ((1 - t) * S1 + t * S2);
-    INFO(fmt::format(
-        "\n{}",
-        str(transform_out.matrix().format(Eigen::IOFormat(Eigen::FullPrecision, 0, ", ", ",\n", "[", "]", "[", "]")))));
+    INFO(fmt::format("Interpolated transform: {}", transform_out));
     File::Matrix::save_transform(transform_out, output_path);
     break;
   }

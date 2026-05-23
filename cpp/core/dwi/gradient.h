@@ -21,7 +21,6 @@
 #include <string>
 
 #include "app.h"
-#include "eigen_plugins/fmt.h"
 #include "file/config.h"
 #include "file/path.h"
 #include "header.h"

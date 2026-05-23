@@ -14,12 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <fmt/format.h>
 #include <limits>
 
 #include "algo/threaded_copy.h"
 #include "command.h"
 #include "file/matrix.h"
 #include "image.h"
+#include "image_helpers.h"
 #include "math/SH.h"
 #include "mrtrix_version.h"
 #include "thread.h"
@@ -29,7 +31,6 @@
 #include "dwi/tractography/GT/internalenergy.h"
 #include "dwi/tractography/GT/mhsampler.h"
 #include "dwi/tractography/GT/particlegrid.h"
-#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -377,8 +378,7 @@ void run() {
       auto Fiso = Image<float>::create(opt[0][0], header_out);
       threaded_copy(Eext->getFiso(), Fiso);
     } else {
-      WARN(fmt::format("Ignore saving file {}, because no isotropic response functions were provided.",
-                       std::string(opt[0][0])));
+      WARN(fmt::format("Ignore saving file {}, because no isotropic response functions were provided.", opt[0][0]));
     }
   }
 

@@ -19,7 +19,6 @@
 #include <fmt/format.h>
 #include <limits>
 
-#include "eigen_plugins/fmt.h"
 #include "math/math.h"
 
 namespace MR::Math {

@@ -74,7 +74,7 @@ void run() {
   Surface::validate(mesh);
 
   CONSOLE(fmt::format("Mesh \"{}\" is valid: {} vertices, {} polygon(s) ({} triangle(s), {} quad(s))",
-                      std::string_view(argument[0]),
+                      argument[0],
                       mesh.num_vertices(),
                       mesh.num_polygons(),
                       mesh.num_triangles(),

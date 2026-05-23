@@ -15,19 +15,18 @@
  */
 
 #include <algorithm>
+#include <filesystem>
 #include <fmt/format.h>
 #include <unsupported/Eigen/MatrixFunctions>
 
 #include "axes.h"
 #include "command.h"
-#include "eigen_plugins/fmt.h"
 #include "enum.h"
 #include "file/key_value.h"
 #include "file/matrix.h"
 #include "file/nifti_utils.h"
 #include "image.h"
 #include "transform.h"
-#include <filesystem>
 
 using namespace MR;
 using namespace App;

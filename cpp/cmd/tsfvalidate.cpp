@@ -60,6 +60,6 @@ void usage() {
 void run() {
   validate_tsf(argument[0], argument[1]);
   CONSOLE(fmt::format("Track scalar file \"{}\" is valid with respect to tractogram \"{}\"", //
-                      std::string(argument[0]),
-                      std::string(argument[1])));
+                      argument[0],
+                      argument[1]));
 }

@@ -69,27 +69,3 @@ template <typename I, typename T> inline constexpr I ceil(const T x) throw() { r
 
 /** @} */
 } // namespace MR::Math
-
-namespace MR {
-
-//! convenience functions for SFINAE on std:: / Eigen containers
-template <class Cont> class is_eigen_type {
-  typedef char yes[1], no[2]; // check_syntax off
-  template <typename C> static yes &test(typename C::Scalar);
-  template <typename C> static no &test(...);
-
-public:
-  static const bool value = sizeof(test<Cont>(0)) == sizeof(yes);
-};
-
-//! Get the underlying scalar value type for both std:: containers and Eigen
-template <class Cont, typename ReturnType = int> class container_value_type {
-public:
-  using type = typename Cont::value_type;
-};
-template <class Cont> class container_value_type<Cont, typename std::enable_if<is_eigen_type<Cont>::value, int>::type> {
-public:
-  using type = typename Cont::Scalar;
-};
-
-} // namespace MR

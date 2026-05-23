@@ -16,7 +16,6 @@
 
 #include <fmt/format.h>
 
-#include "eigen_plugins/fmt.h"
 #include "registration/multi_contrast.h"
 #include "registration/transform/initialiser.h"
 #include "registration/transform/initialiser_helpers.h"

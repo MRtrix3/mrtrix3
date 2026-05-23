@@ -19,7 +19,6 @@
 #include "algo/threaded_loop.h"
 #include "command.h"
 #include "datatype.h"
-#include "eigen_plugins/fmt.h"
 #include "image.h"
 #include "progressbar.h"
 
@@ -69,7 +68,7 @@ void run() {
           const double dp = abs(veca.dot(vecb));
           if (norma && normb && (1.0 - dp > tol))
             throw Exception(fmt::format("images \"{}\" and \"{}\" do not match within specified precision of {}"
-                                        " ( {} vs {}, norms [{} {}], dot product = {})",
+                                        " ({} vs {}, norms [{} {}], dot product = {})",
                                         a.name(),
                                         b.name(),
                                         tol,

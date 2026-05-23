@@ -21,7 +21,6 @@
 #include "degibbs/degibbs.h"
 #include "degibbs/unring2d.h"
 #include "degibbs/unring3d.h"
-#include "eigen_plugins/fmt.h"
 #include "metadata/bids.h"
 
 using namespace MR;

@@ -1,4 +1,3 @@
-#include <fmt/format.h>
 /* Copyright (c) 2008-2026 the MRtrix3 contributors.
  *
  * This Source Code Form is subject to the terms of the Mozilla Public
@@ -16,6 +15,13 @@
  */
 
 #pragma once
+
+#include <cstddef>
+#include <fmt/format.h>
+#include <string>
+
+#include "mrtrix.h"
+#include "types.h"
 
 namespace MR::Registration::Warp {
 

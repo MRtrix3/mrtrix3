@@ -18,7 +18,6 @@
 
 #include <fmt/format.h>
 
-#include "eigen_plugins/fmt.h"
 #include "exception.h"
 #include "mrtrix.h"
 

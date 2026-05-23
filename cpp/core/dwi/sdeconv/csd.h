@@ -96,7 +96,7 @@ public:
         niter = opt[0][0];
     }
 
-    void set_response(std::string_view path) {
+    void set_response(const std::filesystem::path &path) {
       INFO(fmt::format("loading response function from file \"{}\"", path));
       set_response(File::Matrix::load_vector(path));
     }

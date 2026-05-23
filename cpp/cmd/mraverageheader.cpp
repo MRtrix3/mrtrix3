@@ -19,7 +19,6 @@
 #include "algo/loop.h"
 #include "command.h"
 #include "debug.h"
-#include "eigen_plugins/fmt.h"
 #include "image.h"
 #include "interp/nearest.h"
 #include "math/average_space.h"

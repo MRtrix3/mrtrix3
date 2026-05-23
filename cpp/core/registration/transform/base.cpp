@@ -18,8 +18,6 @@
 
 #include <fmt/format.h>
 
-#include "eigen_plugins/fmt.h"
-
 namespace MR::Registration::Transform {
 
 Base::Base(size_t number_of_parameters)

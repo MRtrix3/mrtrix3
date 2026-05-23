@@ -20,7 +20,6 @@
 #include "adapter/base.h"
 #include "algo/loop.h"
 #include "command.h"
-#include "eigen_plugins/fmt.h"
 #include "fixel/validate.h"
 #include "header.h"
 #include "image.h"

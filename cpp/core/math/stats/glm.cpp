@@ -20,7 +20,6 @@
 #include <fmt/format.h>
 
 #include "debug.h"
-#include "eigen_plugins/fmt.h"
 #include "file/matrix.h"
 #include "math/betainc.h"
 #include "math/erfinv.h"

@@ -19,7 +19,7 @@
 #include <fmt/format.h>
 
 #include "debug.h"
-#include "eigen_plugins/fmt.h"
+
 namespace MR {
 using namespace MR::Math;
 

@@ -19,7 +19,7 @@
 #include "file/dicom/element.h"
 #include "file/dicom/quick_scan.h"
 #include "file/path.h"
-#include <fmt/format.h>
+#include <fmt/std.h>
 
 #include <filesystem>
 
