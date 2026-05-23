@@ -14,6 +14,9 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <cstdint>
+
+#include "datatype.h"
 #include "fetch_store.h"
 #include "types.h"
 

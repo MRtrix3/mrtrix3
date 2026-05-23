@@ -20,6 +20,7 @@
 #include <iomanip>
 #include <map>
 #include <set>
+#include <string_view>
 
 #include "dwi/tractography/properties.h"
 #include "file/key_value.h"

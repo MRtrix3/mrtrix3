@@ -579,7 +579,7 @@ template <class Item> struct Batch {
 };
 
 template <class Item> struct _batch_size {
-  _batch_size(const Item &) {}
+  _batch_size(const Item & /*unused*/) {}
   operator size_t() const { return 0; }
 };
 template <class Item> struct _batch_size<Batch<Item>> {
@@ -754,7 +754,7 @@ template <class Item, class Functor> struct SinkWrapper {
  * that the items \a object be processed in batches of \a number items
  * (defaults to default_batchsize).
  * \sa Thread::run_queue() */
-template <class Item> inline Batch<Item> batch(const Item &, size_t number = default_batchsize) {
+template <class Item> inline Batch<Item> batch(const Item & /*unused*/, size_t number = default_batchsize) {
   return Batch<Item>(number);
 }
 

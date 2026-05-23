@@ -19,6 +19,7 @@
 
 #include "algo/threaded_loop.h"
 #include "command.h"
+#include "debug.h"
 #include "dwi/gradient.h"
 #include "enum.h"
 #include "image.h"

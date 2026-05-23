@@ -16,6 +16,9 @@
 
 #include "mrview/tool/view.h"
 
+#include <cstdint>
+
+#include "exception.h"
 #include "math/math.h"
 #include "mrtrix.h"
 #include "mrview/adjust_button.h"
@@ -484,7 +487,8 @@ void View::onVolumeIndexChanged() {
 
   for (int i = 0; i < volume_index_layout->count(); ++i) {
     auto *box = dynamic_cast<SpinBox *>(volume_index_layout->itemAt(i)->widget());
-    box->setValue(image.ndim() > static_cast<size_t>(i) + 3 ? image.index(static_cast<ssize_t>(i) + 3) : 0);
+    box->setValue(image.ndim() > static_cast<size_t>(i) + 3 ? static_cast<int>(image.index(static_cast<ssize_t>(i) + 3))
+                                                            : int(0));
   }
 }
 

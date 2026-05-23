@@ -110,7 +110,7 @@ void Backend::thread_report_to_user_func(std::string_view msg, int type) {
   previous_report_to_user_func(msg, type);
 }
 
-Backend *Backend::backend = nullptr;
+std::unique_ptr<Backend> Backend::backend = nullptr;
 std::mutex Backend::mutex;
 
 } // namespace MR::Thread

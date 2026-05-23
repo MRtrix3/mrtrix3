@@ -23,8 +23,8 @@
 
 namespace MR::GUI::MRView::Tool {
 
-enum class FixelColourType { Direction, Value };
-enum class FixelScaleType { Unity, Value };
+enum class FixelColourType : uint8_t { Direction, Value };
+enum class FixelScaleType : uint8_t { Unity, Value };
 
 struct FixelValue {
   bool loaded = false;

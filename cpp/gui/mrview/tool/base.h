@@ -162,7 +162,10 @@ public:
     setStatusTip(tr(std::string(description).c_str()));
   }
 
-  virtual ~ActionWrapper() { delete dock; }
+  ~ActionWrapper() override {
+    delete dock;
+    dock = nullptr;
+  }
 
   virtual Dock *create(bool floating) = 0;
   Dock *dock;

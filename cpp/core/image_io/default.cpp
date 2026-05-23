@@ -18,6 +18,7 @@
 #include <limits>
 
 #include "app.h"
+#include "exception.h"
 #include "file/ofstream.h"
 #include "header.h"
 #include "image_io/default.h"

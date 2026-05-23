@@ -17,6 +17,7 @@
 #pragma once
 
 #include <future>
+#include <memory>
 #include <mutex>
 #include <thread>
 
@@ -62,19 +63,17 @@ public:
   static void register_thread() {
     std::lock_guard<std::mutex> lock(mutex);
     if (!backend)
-      backend = new Backend;
+      backend = std::make_unique<Backend>();
     ++backend->refcount;
   }
   static void unregister_thread() {
     assert(backend);
     std::lock_guard<std::mutex> lock(mutex);
-    if (!(--backend->refcount)) {
-      delete backend;
-      backend = nullptr;
-    }
+    if (--backend->refcount == 0)
+      backend.reset();
   }
 
-  static bool valid() { return backend; }
+  static bool valid() { return backend != nullptr; }
 
   static void thread_print_func(std::string_view msg);
   static void thread_report_to_user_func(std::string_view msg, int type);
@@ -85,7 +84,7 @@ public:
 protected:
   size_t refcount;
 
-  static Backend *backend;
+  static std::unique_ptr<Backend> backend;
   static std::mutex mutex;
 };
 
@@ -110,8 +109,7 @@ public:
             typename =
                 typename std::enable_if<!std::is_same<typename std::decay<Functor>::type, _single_thread>::value>::type>
   _single_thread(Functor &&functor, std::string_view name = "unnamed") : _thread_base(name) {
-    const std::string msg = std::string("launching thread \"") + name + "\"...";
-    DEBUG(msg);
+    DEBUG(std::string("launching thread \"") + name + "\"...");
     using F = typename std::remove_reference<Functor>::type;
     thread = std::async(std::launch::async, &F::execute, &functor);
   }

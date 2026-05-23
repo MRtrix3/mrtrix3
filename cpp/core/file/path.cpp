@@ -17,6 +17,7 @@
 #include "file/path.h"
 
 #include <algorithm>
+#include <optional>
 
 #include "env.h"
 #include "exception.h"

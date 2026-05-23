@@ -427,7 +427,7 @@ ARGUMENTS
 OPTIONS
 
 #define SECTION 1 // check_syntax off
-#include "mrcalc.cpp" //NOLINT(bugprone-suspicious-include)
+#include "mrcalc.cpp" //NOLINT(bugprone-suspicious-include,misc-header-include-cycle)
 
   + DataType::options();
 }
@@ -987,7 +987,7 @@ public:
 **********************************************************************/
 
 #define SECTION 2     // check_syntax off
-#include "mrcalc.cpp" // NOLINT(bugprone-suspicious-include)
+#include "mrcalc.cpp" // NOLINT(bugprone-suspicious-include,misc-header-include-cycle)
 
 /**********************************************************************
   MAIN BODY OF COMMAND:
@@ -1009,7 +1009,7 @@ void run() {
         n += 2;
 
 #define SECTION 3     // check_syntax off
-#include "mrcalc.cpp" // NOLINT(bugprone-suspicious-include)
+#include "mrcalc.cpp" // NOLINT(bugprone-suspicious-include,misc-header-include-cycle)
 
       else
         throw Exception(std::string("operation \"") + opt->id + "\" not yet implemented!");

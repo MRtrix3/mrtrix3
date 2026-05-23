@@ -22,6 +22,7 @@
 #include <tuple>
 
 #include "dwi/gradient.h"
+#include "exception.h"
 #include "file/config.h"
 #include "file/mmap.h"
 #include "file/ofstream.h"

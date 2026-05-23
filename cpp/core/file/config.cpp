@@ -17,6 +17,7 @@
 #include "app.h"
 #include "debug.h"
 #include "env.h"
+#include "exception.h"
 #include "header.h"
 
 #include "file/config.h"

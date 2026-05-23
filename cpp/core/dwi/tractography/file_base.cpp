@@ -15,6 +15,8 @@
  */
 
 #include "dwi/tractography/file_base.h"
+
+#include "exception.h"
 #include "file/path.h"
 
 namespace MR::DWI::Tractography {
