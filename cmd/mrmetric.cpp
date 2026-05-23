@@ -283,7 +283,7 @@ void run ()
   Eigen::Matrix<value_type, Eigen::Dynamic, 1> sos = Eigen::Matrix<value_type, Eigen::Dynamic, 1>::Zero (volumes, 1);
   if (space==0) {
     INFO ("per-voxel");
-    check_dimensions (input1, input2);
+    check_voxel_grids_match_in_scanner_space (input1, input2);
     if (!use_mask1 and !use_mask2)
       n_voxels = input1.size(0) * input1.size(1) * input1.size(2);
     evaluate_voxelwise_msq (input1, input2, mask1, mask2, dimensions, use_mask1, use_mask2, n_voxels, sos);
