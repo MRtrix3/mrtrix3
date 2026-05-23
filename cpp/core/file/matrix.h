@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <cerrno>
 #include <filesystem>
 #include <string>
 

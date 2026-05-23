@@ -18,6 +18,7 @@
 
 #include <cstdint>
 #include <filesystem>
+#include <utility>
 
 #include "dwi/directions/directions.h"
 #include "dwi/directions/predefined.h"

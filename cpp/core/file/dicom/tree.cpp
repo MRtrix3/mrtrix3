@@ -15,6 +15,10 @@
  */
 
 #include "file/dicom/tree.h"
+
+#include <cerrno>
+
+#include "exception.h"
 #include "file/dicom/element.h"
 #include "file/dicom/image.h"
 #include "file/dicom/patient.h"

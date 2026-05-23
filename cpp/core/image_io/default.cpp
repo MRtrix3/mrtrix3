@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <cerrno>
 #include <cstddef>
 #include <limits>
 

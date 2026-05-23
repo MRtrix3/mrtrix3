@@ -459,18 +459,23 @@ inline void Tractogram::render_streamlines() {
       case TrackColourType::Ends:
         gl::BindBuffer(gl::ARRAY_BUFFER, colour_buffers[buf]);
         gl::EnableVertexAttribArray(3);
-        gl::VertexAttribPointer(3,
-                                3,
-                                gl::FLOAT,
-                                gl::FALSE_,
-                                static_cast<unsigned long>(3 * sample_stride) * sizeof(float),
-                                (void *)(static_cast<unsigned long>(3 * sample_stride) * sizeof(float)));
+        gl::VertexAttribPointer(
+            3,
+            3,
+            gl::FLOAT,
+            gl::FALSE_,
+            static_cast<GLsizei>(3 * static_cast<unsigned long>(sample_stride) * sizeof(float)),
+            reinterpret_cast<void *>(3 * static_cast<unsigned long>(sample_stride) * sizeof(float)));
         break;
       case TrackColourType::ScalarFile:
         gl::BindBuffer(gl::ARRAY_BUFFER, intensity_scalar_buffers[buf]);
         gl::EnableVertexAttribArray(3);
-        gl::VertexAttribPointer(
-            3, 1, gl::FLOAT, gl::FALSE_, sample_stride * sizeof(float), (void *)(sample_stride * sizeof(float)));
+        gl::VertexAttribPointer(3,
+                                1,
+                                gl::FLOAT,
+                                gl::FALSE_,
+                                static_cast<GLsizei>(sample_stride * sizeof(float)),
+                                reinterpret_cast<void *>(sample_stride * sizeof(float)));
         break;
       default:
         break;
@@ -479,8 +484,12 @@ inline void Tractogram::render_streamlines() {
       if (threshold_type == TrackThresholdType::SeparateFile) {
         gl::BindBuffer(gl::ARRAY_BUFFER, threshold_scalar_buffers[buf]);
         gl::EnableVertexAttribArray(4);
-        gl::VertexAttribPointer(
-            4, 1, gl::FLOAT, gl::FALSE_, sample_stride * sizeof(float), (void *)(sample_stride * sizeof(float)));
+        gl::VertexAttribPointer(4,
+                                1,
+                                gl::FLOAT,
+                                gl::FALSE_,
+                                static_cast<GLsizei>(sample_stride * sizeof(float)),
+                                reinterpret_cast<void *>(sample_stride * sizeof(float)));
       }
 
       gl::BindBuffer(gl::ARRAY_BUFFER, vertex_buffers[buf]);
@@ -489,18 +498,22 @@ inline void Tractogram::render_streamlines() {
                               3,
                               gl::FLOAT,
                               gl::FALSE_,
-                              static_cast<unsigned long>(3 * sample_stride) * sizeof(float),
-                              (void *)(static_cast<unsigned long>(3 * sample_stride) * sizeof(float)));
+                              static_cast<GLsizei>(3 * static_cast<unsigned long>(sample_stride) * sizeof(float)),
+                              reinterpret_cast<void *>(3 * static_cast<unsigned long>(sample_stride) * sizeof(float)));
       gl::EnableVertexAttribArray(1);
-      gl::VertexAttribPointer(
-          1, 3, gl::FLOAT, gl::FALSE_, static_cast<unsigned long>(3 * sample_stride) * sizeof(float), (void *)0);
+      gl::VertexAttribPointer(1,
+                              3,
+                              gl::FLOAT,
+                              gl::FALSE_,
+                              static_cast<GLsizei>(3 * static_cast<unsigned long>(sample_stride) * sizeof(float)),
+                              nullptr);
       gl::EnableVertexAttribArray(2);
       gl::VertexAttribPointer(2,
                               3,
                               gl::FLOAT,
                               gl::FALSE_,
-                              static_cast<unsigned long>(3 * sample_stride) * sizeof(float),
-                              (void *)(static_cast<unsigned long>(6 * sample_stride) * sizeof(float)));
+                              static_cast<GLsizei>(3 * static_cast<unsigned long>(sample_stride) * sizeof(float)),
+                              reinterpret_cast<void *>(6 * static_cast<unsigned long>(sample_stride) * sizeof(float)));
 
       for (size_t j = 0, M = track_sizes[buf].size(); j < M; ++j) {
         track_sizes[buf][j] = static_cast<GLint>(

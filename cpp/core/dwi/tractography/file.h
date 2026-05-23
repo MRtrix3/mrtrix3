@@ -17,12 +17,14 @@
 #pragma once
 
 #include <array>
+#include <cerrno>
 #include <map>
 
 #include "app.h"
 #include "dwi/tractography/file_base.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/streamline.h"
+#include "exception.h"
 #include "file/config.h"
 #include "file/key_value.h"
 #include "file/matrix.h"

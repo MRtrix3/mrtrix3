@@ -15,8 +15,10 @@
  */
 
 #include <array>
+#include <cerrno>
 #include <cstddef>
 #include <fcntl.h>
+#include <filesystem>
 #include <unistd.h>
 #include <zlib.h>
 
@@ -34,12 +36,11 @@
 #endif
 
 #include "app.h"
+#include "exception.h"
 #include "file/config.h"
 #include "file/mmap.h"
 #include "file/ofstream.h"
 #include "file/path.h"
-
-#include "debug.h"
 
 namespace MR::File {
 

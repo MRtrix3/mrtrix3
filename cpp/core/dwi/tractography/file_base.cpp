@@ -16,6 +16,11 @@
 
 #include "dwi/tractography/file_base.h"
 
+#include <cerrno>
+#include <filesystem>
+#include <string_view>
+
+#include "dwi/tractography/properties.h"
 #include "exception.h"
 #include "file/path.h"
 

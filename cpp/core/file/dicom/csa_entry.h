@@ -22,6 +22,7 @@
 
 #include "datatype.h"
 #include "file/dicom/element.h"
+#include "mrtrix.h"
 #include "raw.h"
 #include "types.h"
 

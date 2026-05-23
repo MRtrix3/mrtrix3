@@ -13,6 +13,12 @@
  *
  * For more details, see http://www.mrtrix.org/.
  */
+
+#include <QDebug>
+#include <algorithm>
+#include <qopenglwidget.h>
+#include <unordered_map>
+
 #include "algo/copy.h"
 #include "app.h"
 #include "dialog/dialog.h"
@@ -30,8 +36,6 @@
 #include "opengl/glutils.h"
 #include "opengl/lighting.h"
 #include "timer.h"
-#include <QDebug>
-#include <unordered_map>
 
 namespace MR::GUI::MRView {
 using namespace App;
@@ -928,7 +932,7 @@ void Window::select_tool_slot(QAction *action) {
 }
 
 void Window::create_tool(QAction *action, bool show) {
-  if (dynamic_cast<Tool::ActionWrapper *>(action)->dock)
+  if (dynamic_cast<Tool::ActionWrapper *>(action)->dock != nullptr)
     return;
 
   Tool::Dock *tool = dynamic_cast<Tool::ActionWrapper *>(action)->create(tools_floating);
@@ -1192,7 +1196,7 @@ void Window::toggle_annotations_slot() {
     show_colourbar_action->setChecked(false);
   } else {
     if (!annotations)
-      annotations = 0xFFFFFFFFU;
+      annotations = 0xFFFFFFFF;
     show_crosshairs_action->setChecked(annotations & 0x00000001);
     show_comments_action->setChecked(annotations & 0x00000002);
     show_voxel_info_action->setChecked(annotations & 0x00000004);

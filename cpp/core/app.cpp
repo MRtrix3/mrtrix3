@@ -15,6 +15,7 @@
  */
 
 #include <algorithm>
+#include <cerrno>
 #include <clocale>
 #include <cstddef>
 #include <fcntl.h>
@@ -23,8 +24,10 @@
 #include <unistd.h>
 
 #include "app.h"
+#include "cmdline_option.h"
 #include "debug.h"
 #include "env.h"
+#include "exception.h"
 #include "executable_version.h"
 #include "file/config.h"
 #include "file/path.h"
@@ -59,7 +62,7 @@ const std::string core_reference =
     "NeuroImage, 2019, 202, 116137";                                                                          //
 
 // clang-format off
-OptionGroup _standard_options = OptionGroup("Standard options")
+const OptionGroup _standard_options = OptionGroup("Standard options")
   + Option("info", "display information messages.")
   + Option("quiet",
            "do not display information messages or progress status; "
@@ -498,7 +501,7 @@ std::string Option::usage() const {
 std::string get_help_string(const bool format) {
   return help_head(format) + help_synopsis(format) + usage_syntax(format) + ARGUMENTS.syntax(format) +
          DESCRIPTION.syntax(format) + EXAMPLES.syntax(format) + OPTIONS.syntax(format) +
-         _standard_options.header(format) + _standard_options.contents(format) + _standard_options.footer(format) +
+         _standard_options.header(format) + _standard_options.contents(format) + MR::App::OptionGroup::footer(format) +
          help_tail(format);
 }
 

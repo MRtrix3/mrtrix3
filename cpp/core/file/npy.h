@@ -18,6 +18,7 @@
 
 #include <array>
 #include <filesystem>
+#include <functional>
 #include <sstream>
 
 #include "datatype.h"

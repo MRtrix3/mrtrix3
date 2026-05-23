@@ -20,6 +20,7 @@
 #include "file/dicom/series.h"
 #include "file/dicom/study.h"
 #include "file/dicom/tree.h"
+#include "mrtrix.h"
 
 namespace MR::File::Dicom {
 

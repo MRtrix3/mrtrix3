@@ -16,6 +16,11 @@
 
 #include "dwi/tractography/editing/worker.h"
 
+#include <Eigen/Dense>
+#include <cstddef>
+
+#include "exception.h"
+
 namespace MR::DWI::Tractography::Editing {
 
 bool Worker::operator()(Streamline<> &in, Streamline<> &out) const {
@@ -37,7 +42,7 @@ bool Worker::operator()(Streamline<> &in, Streamline<> &out) const {
 
       exclude = true;
 
-    } else if (include_visitation.size() || properties.exclude.size()) {
+    } else if (!include_visitation.empty() || !properties.exclude.empty()) {
 
       // Assign to ROIs
       include_visitation.reset();

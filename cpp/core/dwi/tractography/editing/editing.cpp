@@ -16,6 +16,8 @@
 
 #include "dwi/tractography/editing/editing.h"
 
+#include "exception.h"
+
 namespace MR::DWI::Tractography::Editing {
 
 using namespace App;

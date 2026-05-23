@@ -22,6 +22,8 @@
 #include <utility>
 
 #include "app.h"
+#include "exception.h"
+#include "mrtrix.h"
 
 // MSYS2 supports VT100, and file redirection is handled explicitly so this can be used globally
 #define CLEAR_LINE_CODE "\033[0K" // check_syntax off

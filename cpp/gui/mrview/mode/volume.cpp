@@ -346,7 +346,7 @@ void Volume::paint(Projection &projection) {
     volume_VI.bind(gl::ELEMENT_ARRAY_BUFFER);
 
     gl::EnableVertexAttribArray(0);
-    gl::VertexAttribPointer(0, 3, gl::BYTE, gl::FALSE_, 4 * sizeof(GLbyte), (void *)0);
+    gl::VertexAttribPointer(0, 3, gl::BYTE, gl::FALSE_, 4 * sizeof(GLbyte), nullptr);
 
     static const std::array<GLbyte, 32> vertices = {                                                 //
                                                     0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0,  //

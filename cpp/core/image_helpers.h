@@ -16,9 +16,13 @@
 
 #pragma once
 
+#include <sys/types.h>
+#include <tuple>
+
 #include "apply.h"
 #include "datatype.h"
 #include "debug.h"
+#include "types.h"
 
 namespace MR {
 

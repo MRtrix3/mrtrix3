@@ -16,12 +16,13 @@
 
 #pragma once
 
+#include <mutex>
+#include <optional>
 #include <random>
+#include <string>
 #ifdef MRTRIX_WINDOWS
 #include <sys/time.h>
 #endif
-
-#include <mutex>
 
 #include "env.h"
 #include "mrtrix.h"

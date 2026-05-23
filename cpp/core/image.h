@@ -18,6 +18,7 @@
 
 #define IMAGE_H
 
+#include <cerrno>
 #include <cstddef>
 #include <functional>
 #include <optional>
@@ -28,6 +29,7 @@
 #include "algo/threaded_copy.h"
 #include "debug.h"
 #include "directio.h"
+#include "exception.h"
 #include "fetch_store.h"
 #include "file/ofstream.h"
 #include "file/temp.h"

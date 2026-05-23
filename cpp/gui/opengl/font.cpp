@@ -156,11 +156,11 @@ void Font::initGL(bool with_shadow) {
 
   vertex_buffer[0].bind(gl::ARRAY_BUFFER);
   gl::EnableVertexAttribArray(0);
-  gl::VertexAttribPointer(0, 2, gl::FLOAT, gl::FALSE_, 0, (void *)0);
+  gl::VertexAttribPointer(0, 2, gl::FLOAT, gl::FALSE_, 0, nullptr);
 
   vertex_buffer[1].bind(gl::ARRAY_BUFFER);
   gl::EnableVertexAttribArray(1);
-  gl::VertexAttribPointer(1, 2, gl::FLOAT, gl::FALSE_, 0, (void *)0);
+  gl::VertexAttribPointer(1, 2, gl::FLOAT, gl::FALSE_, 0, nullptr);
 
   GL::Shader::Vertex vertex_shader(vertex_shader_source.c_str());
   GL::Shader::Fragment fragment_shader(fragment_shader_source.c_str());

@@ -15,6 +15,7 @@
  */
 
 #include <cstddef>
+#include <cstdint>
 
 #include "command.h"
 #include "image.h"

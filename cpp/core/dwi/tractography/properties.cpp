@@ -16,6 +16,10 @@
 
 #include "dwi/tractography/properties.h"
 
+#include <cmath>
+
+#include "exception.h"
+
 namespace MR::DWI::Tractography {
 
 void Properties::set_timestamp() { (*this)["timestamp"] = str(Timer::current_time(), file_timestamp_precision); }

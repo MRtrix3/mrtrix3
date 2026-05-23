@@ -18,11 +18,13 @@
 
 #include <filesystem>
 #include <iomanip>
+#include <ios>
 #include <map>
 #include <set>
 #include <string_view>
 
 #include "dwi/tractography/properties.h"
+#include "exception.h"
 #include "file/key_value.h"
 #include "file/ofstream.h"
 #include "file/path.h"
@@ -66,7 +68,7 @@ public:
   ~WriterBase() noexcept {
     if (open_success) {
       try {
-        File::OFStream out(path, std::ios::in | std::ios::out | std::ios::binary);
+        File::OFStream out(path, std::ios_base::in | std::ios_base::out | std::ios_base::binary);
         update_counts(out);
       } catch (Exception &e) {
         e.display();

@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <Eigen/Dense>
+
 #include "dwi/directions/predefined.h"
 #include "dwi/directions/validate.h"
 #include "dwi/gradient.h"

@@ -17,6 +17,8 @@
 #include "file/temp.h"
 
 #include <fcntl.h>
+#include <filesystem>
+#include <optional>
 #include <random>
 #include <string>
 #include <sys/stat.h>

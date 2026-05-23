@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <cassert>
+
 #include "algo/threaded_loop.h"
 #include "axes.h"
 #include "degibbs/degibbs.h"

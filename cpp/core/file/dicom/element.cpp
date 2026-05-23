@@ -15,10 +15,12 @@
  */
 
 #include "file/dicom/element.h"
-#include "debug.h"
-#include "file/path.h"
 
 #include <iomanip>
+#include <string.h>
+
+#include "debug.h"
+#include "file/path.h"
 
 namespace MR::File::Dicom {
 

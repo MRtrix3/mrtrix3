@@ -16,9 +16,11 @@
 
 #pragma once
 
+#include <cstdlib>
 #include <mutex>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <type_traits>
 
 #include "mrtrix.h"

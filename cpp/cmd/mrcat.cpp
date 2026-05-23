@@ -14,13 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <cassert>
+#include <filesystem>
+
 #include "algo/loop.h"
 #include "command.h"
 #include "dwi/gradient.h"
 #include "image.h"
 #include "progressbar.h"
-
-#include <filesystem>
 
 using namespace MR;
 using namespace App;

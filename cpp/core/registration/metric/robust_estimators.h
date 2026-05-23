@@ -18,7 +18,6 @@
 
 #include <Eigen/Dense>
 #include <cmath>
-#include <cstdint>
 
 #include "types.h"
 

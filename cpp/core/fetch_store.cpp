@@ -14,6 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <Eigen/src/Core/arch/Default/Half.h>
+#include <cstddef>
 #include <cstdint>
 
 #include "datatype.h"

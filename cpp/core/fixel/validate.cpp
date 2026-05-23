@@ -17,13 +17,16 @@
 #include "fixel/validate.h"
 
 #include <limits>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "algo/loop.h"
+#include "exception.h"
 #include "fixel/helpers.h"
 #include "image.h"
+#include "mrtrix.h"
 
 namespace MR::Fixel {
 

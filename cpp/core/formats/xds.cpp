@@ -15,7 +15,9 @@
  */
 
 #include <array>
+#include <cerrno>
 
+#include "exception.h"
 #include "file/entry.h"
 #include "file/ofstream.h"
 #include "file/path.h"

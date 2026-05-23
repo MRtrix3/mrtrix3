@@ -742,27 +742,27 @@ Connectome::Connectome(Dock *parent)
   cube_VAO.bind();
   cube.vertex_buffer.bind(gl::ARRAY_BUFFER);
   gl::EnableVertexAttribArray(0);
-  gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 0, (void *)(0));
+  gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 0, nullptr);
   cube.normals_buffer.bind(gl::ARRAY_BUFFER);
   gl::EnableVertexAttribArray(1);
-  gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE_, 0, (void *)(0));
+  gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE_, 0, nullptr);
 
   cylinder.LOD(4);
   cylinder_VAO.gen();
   cylinder_VAO.bind();
   cylinder.vertex_buffer.bind(gl::ARRAY_BUFFER);
   gl::EnableVertexAttribArray(0);
-  gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 0, (void *)(0));
+  gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 0, nullptr);
   cylinder.normal_buffer.bind(gl::ARRAY_BUFFER);
   gl::EnableVertexAttribArray(1);
-  gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE_, 0, (void *)(0));
+  gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE_, 0, nullptr);
 
   sphere.LOD(4);
   sphere_VAO.gen();
   sphere_VAO.bind();
   sphere.vertex_buffer.bind(gl::ARRAY_BUFFER);
   gl::EnableVertexAttribArray(0);
-  gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 0, (void *)(0));
+  gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 0, nullptr);
 
   Edge::set_streamtube_LOD(3);
 
@@ -2729,22 +2729,22 @@ void Connectome::draw_nodes(const Projection &projection) {
               gl::CullFace(gl::FRONT);
               gl::Uniform1f(specular_ID,
                             (1.0 - node_alpha_given_selection(it->second) * node_fixed_alpha) * lighting.specular);
-              gl::DrawElements(gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, (void *)0);
+              gl::DrawElements(gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, nullptr);
               gl::CullFace(gl::BACK);
               gl::Uniform1f(specular_ID, lighting.specular);
             }
-            gl::DrawElements(gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, (void *)0);
+            gl::DrawElements(gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, nullptr);
             break;
           case node_geometry_t::CUBE:
             if (alpha) {
               gl::CullFace(gl::FRONT);
               gl::Uniform1f(specular_ID,
                             (1.0 - node_alpha_given_selection(it->second) * node_fixed_alpha) * lighting.specular);
-              gl::DrawElements(gl::TRIANGLES, cube.num_indices, gl::UNSIGNED_INT, (void *)0);
+              gl::DrawElements(gl::TRIANGLES, cube.num_indices, gl::UNSIGNED_INT, nullptr);
               gl::CullFace(gl::BACK);
               gl::Uniform1f(specular_ID, lighting.specular);
             }
-            gl::DrawElements(gl::TRIANGLES, cube.num_indices, gl::UNSIGNED_INT, (void *)0);
+            gl::DrawElements(gl::TRIANGLES, cube.num_indices, gl::UNSIGNED_INT, nullptr);
             break;
           case node_geometry_t::OVERLAY:
             assert(0);
@@ -2879,11 +2879,11 @@ void Connectome::draw_edges(const Projection &projection) {
           if (alpha) {
             gl::CullFace(gl::FRONT);
             gl::Uniform1f(specular_ID, (1.0 - edge_alpha_given_selection(edge) * edge_fixed_alpha) * lighting.specular);
-            gl::DrawElements(gl::TRIANGLES, cylinder.num_indices, gl::UNSIGNED_INT, (void *)0);
+            gl::DrawElements(gl::TRIANGLES, cylinder.num_indices, gl::UNSIGNED_INT, nullptr);
             gl::CullFace(gl::BACK);
             gl::Uniform1f(specular_ID, lighting.specular);
           }
-          gl::DrawElements(gl::TRIANGLES, cylinder.num_indices, gl::UNSIGNED_INT, (void *)0);
+          gl::DrawElements(gl::TRIANGLES, cylinder.num_indices, gl::UNSIGNED_INT, nullptr);
           break;
         case edge_geometry_t::STREAMLINE:
           gl::LineWidth(calc_line_width(edge_size_given_selection(edge) * edge_size_scale_factor,

@@ -73,10 +73,10 @@ Node::Mesh::Mesh(MR::Surface::Mesh &in) : count(3 * in.num_triangles()) {
   vertex_array_object.bind();
   vertex_buffer.bind(gl::ARRAY_BUFFER);
   gl::EnableVertexAttribArray(0);
-  gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 0, (void *)(0));
+  gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 0, nullptr);
   normal_buffer.bind(gl::ARRAY_BUFFER);
   gl::EnableVertexAttribArray(1);
-  gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE_, 0, (void *)(0));
+  gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE_, 0, nullptr);
 
   std::vector<unsigned int> indices;
   indices.reserve(3 * in.num_triangles());
@@ -125,7 +125,7 @@ void Node::Mesh::render() const {
   normal_buffer.bind(gl::ARRAY_BUFFER);
   vertex_array_object.bind();
   index_buffer.bind();
-  gl::DrawElements(gl::TRIANGLES, count, gl::UNSIGNED_INT, (void *)0);
+  gl::DrawElements(gl::TRIANGLES, count, gl::UNSIGNED_INT, nullptr);
   GL::assert_context_is_current();
 }
 

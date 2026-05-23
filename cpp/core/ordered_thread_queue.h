@@ -16,8 +16,13 @@
 
 #pragma once
 
-#include "thread_queue.h"
+#include <cassert>
 #include <set>
+#include <sys/types.h>
+#include <type_traits>
+#include <vector>
+
+#include "thread_queue.h"
 
 namespace MR::Thread {
 

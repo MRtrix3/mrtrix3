@@ -15,11 +15,16 @@
  */
 
 #include <atomic>
+#include <memory>
+#include <optional>
+#include <stddef.h>
+#include <string>
 #include <thread>
 
 #include "app.h"
 #include "env.h"
 #include "file/config.h"
+#include "mrtrix.h"
 #include "thread.h"
 #include "thread_queue.h"
 

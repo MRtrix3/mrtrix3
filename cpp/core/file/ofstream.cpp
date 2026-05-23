@@ -16,6 +16,7 @@
 
 #include "file/ofstream.h"
 
+#include <cerrno>
 #include <filesystem>
 
 #include "app.h"

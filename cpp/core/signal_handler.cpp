@@ -81,7 +81,7 @@ void handler(int i) noexcept {
     char str[256]; // check_syntax off
     str[255] = '\0';
     snprintf(str, 255, "\n%s: [SYSTEM FATAL CODE: %s (%d)] %s\n", App::NAME.c_str(), sig, i, msg);
-    std::ignore = write(STDERR_FILENO, str, strnlen(str, 256));
+    std::ignore = write(STDERR_FILENO, &str[0], strnlen(&str[0], 256));
     std::_Exit(i);
   }
 }

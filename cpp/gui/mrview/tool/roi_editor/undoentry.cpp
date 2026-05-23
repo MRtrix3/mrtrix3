@@ -15,6 +15,7 @@
  */
 
 #include <limits>
+#include <stddef.h>
 
 #include "mrview/tool/roi_editor/item.h"
 #include "mrview/tool/roi_editor/undoentry.h"
@@ -53,7 +54,7 @@ ROI_UndoEntry::Shared::Shared() : count(1) {
   vertex_array_object.bind();
 
   gl::EnableVertexAttribArray(0);
-  gl::VertexAttribIPointer(0, 3, gl::INT, 3 * sizeof(GLint), (void *)0);
+  gl::VertexAttribIPointer(0, 3, gl::INT, 3 * sizeof(GLint), nullptr);
 
   static const std::array<GLint, 12> vertices = {
       -1,
@@ -149,7 +150,7 @@ ROI_UndoEntry::ROI_UndoEntry(ROI_Item &roi, int current_axis, int current_slice)
   tex.bind();
   gl::PixelStorei(gl::PACK_ALIGNMENT, 1);
 
-  gl::GetTexImage(gl::TEXTURE_2D, 0, gl::RED, gl::UNSIGNED_BYTE, (void *)(&before[0]));
+  gl::GetTexImage(gl::TEXTURE_2D, 0, gl::RED, gl::UNSIGNED_BYTE, static_cast<void *>(&before[0]));
   after = before;
   GL_CHECK_ERROR;
   GL::assert_context_is_current();
@@ -229,7 +230,7 @@ void ROI_UndoEntry::draw_line(ROI_Item &roi,
                     size[2],
                     gl::RED_INTEGER,
                     gl::UNSIGNED_BYTE,
-                    (void *)(&after[0]));
+                    static_cast<void *>(&after[0]));
   GL::assert_context_is_current();
 }
 
@@ -293,7 +294,7 @@ void ROI_UndoEntry::draw_thick_line(ROI_Item &roi,
                     size[2],
                     gl::RED_INTEGER,
                     gl::UNSIGNED_BYTE,
-                    (void *)(&after[0]));
+                    static_cast<void *>(&after[0]));
   GL::assert_context_is_current();
 }
 
@@ -338,7 +339,7 @@ void ROI_UndoEntry::draw_circle(ROI_Item &roi,
                     size[2],
                     gl::RED_INTEGER,
                     gl::UNSIGNED_BYTE,
-                    (void *)(&after[0]));
+                    static_cast<void *>(&after[0]));
   GL::assert_context_is_current();
 }
 
@@ -383,7 +384,7 @@ void ROI_UndoEntry::draw_rectangle(ROI_Item &roi,
                     size[2],
                     gl::RED_INTEGER,
                     gl::UNSIGNED_BYTE,
-                    (void *)(&after[0]));
+                    static_cast<void *>(&after[0]));
   GL::assert_context_is_current();
 }
 
@@ -450,7 +451,7 @@ void ROI_UndoEntry::draw_fill(ROI_Item &roi, const Eigen::Vector3f &pos, const b
                     size[2],
                     gl::RED_INTEGER,
                     gl::UNSIGNED_BYTE,
-                    (void *)(&after[0]));
+                    static_cast<void *>(&after[0]));
   GL::assert_context_is_current();
 }
 
@@ -468,7 +469,7 @@ void ROI_UndoEntry::undo(ROI_Item &roi) {
                     size[2],
                     gl::RED_INTEGER,
                     gl::UNSIGNED_BYTE,
-                    (void *)(&before[0]));
+                    static_cast<void *>(&before[0]));
   GL::assert_context_is_current();
 }
 
@@ -486,7 +487,7 @@ void ROI_UndoEntry::redo(ROI_Item &roi) {
                     size[2],
                     gl::RED_INTEGER,
                     gl::UNSIGNED_BYTE,
-                    (void *)(&after[0]));
+                    static_cast<void *>(&after[0]));
   GL::assert_context_is_current();
 }
 
@@ -505,7 +506,7 @@ void ROI_UndoEntry::copy(ROI_Item &roi, ROI_UndoEntry &source) {
                     size[2],
                     gl::RED_INTEGER,
                     gl::UNSIGNED_BYTE,
-                    (void *)(&after[0]));
+                    static_cast<void *>(&after[0]));
   GL::assert_context_is_current();
 }
 

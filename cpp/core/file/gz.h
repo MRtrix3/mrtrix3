@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cassert>
+#include <cerrno>
 #include <cstdio>
 #include <cstring>
 #include <fcntl.h>
@@ -56,7 +57,7 @@ public:
 
     gz = gzopen(filepath.string().c_str(), std::string(mode).c_str());
     if (!gz)
-      throw Exception("error opening file \"" + filepath.string() + "\": " + MR::C_strerror(errno));
+      throw Exception("error opening file \"" + filepath.string() + "\": " + error());
   }
 
   void close() {

@@ -21,9 +21,12 @@
 #endif
 
 #include <cstdio>
+#include <initializer_list>
+#include <optional>
 
 #include "app.h"
 #include "env.h"
+#include "exception.h"
 #include "executable_version.h"
 #include "mrtrix.h"
 #include "mrtrix_version.h"

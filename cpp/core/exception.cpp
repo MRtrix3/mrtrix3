@@ -26,6 +26,7 @@
 #include "debug.h"
 #include "exception.h"
 #include "file/config.h"
+#include "mrtrix.h"
 
 #ifdef MRTRIX_AS_R_LIBRARY
 #include "wrap_r.h"
@@ -74,7 +75,7 @@ void cmdline_report_to_user_func(std::string_view msg, int type) {
     return t + 1;
   };
 
-  _print_stderr(printf(colour_format_strings.at(App::terminal_use_colour ? type : -1).c_str(),
+  _print_stderr(printf(colour_format_strings.at(App::terminal_use_colour ? type : -1),
                        App::NAME.c_str(),
                        console_prefixes.at(type).c_str(),
                        std::string(msg).c_str()));

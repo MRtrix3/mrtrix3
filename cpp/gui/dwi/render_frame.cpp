@@ -103,10 +103,11 @@ void RenderFrame::initializeGL() {
   axes_VB.bind(gl::ARRAY_BUFFER);
   axes_VAO.bind();
   gl::EnableVertexAttribArray(0);
-  gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 6 * sizeof(GLfloat), (void *)0);
+  gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 6 * sizeof(GLfloat), nullptr);
 
   gl::EnableVertexAttribArray(1);
-  gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE_, 6 * sizeof(GLfloat), (void *)(3 * sizeof(GLfloat)));
+  gl::VertexAttribPointer(
+      1, 3, gl::FLOAT, gl::FALSE_, 6 * sizeof(GLfloat), reinterpret_cast<void *>(3 * sizeof(GLfloat)));
 
   const std::array<GLfloat, 36> axis_data = {-1.0, -1.0, -1.0, 1.0, 0.0, 0.0, 1.0,  -1.0, -1.0, 1.0, 0.0, 0.0,  //
                                              -1.0, -1.0, -1.0, 0.0, 1.0, 0.0, -1.0, 1.0,  -1.0, 0.0, 1.0, 0.0,  //

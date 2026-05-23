@@ -15,9 +15,13 @@
  */
 
 #include "file/key_value.h"
-#include "app.h"
-#include "file/ofstream.h"
+
+#include <cerrno>
 #include <fstream>
+
+#include "app.h"
+#include "exception.h"
+#include "file/ofstream.h"
 
 namespace MR::File::KeyValue {
 

@@ -17,10 +17,12 @@
 #pragma once
 
 #include <array>
+#include <cassert>
 #include <cstddef>
 #include <iomanip>
 #include <sstream>
 
+#include "exception.h"
 #include "file/gz.h"
 #include "file/nifti_utils.h"
 #include "header.h"

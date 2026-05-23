@@ -16,8 +16,11 @@
 
 #pragma once
 
-#include "file/config.h"
+#include <qaction.h>
+#include <qactiongroup.h>
+#include <string_view>
 
+#include "file/config.h"
 #include "mrview/window.h"
 #include "projection.h"
 
@@ -186,7 +189,7 @@ template <class T> Dock *create(const QString &text, bool floating) {
 template <class T> class Action : public ActionWrapper {
 public:
   Action(QActionGroup *parent, std::string_view name, std::string_view description, int index)
-      : ActionWrapper(parent, std::string(name).c_str(), std::string(description).c_str(), index) {}
+      : ActionWrapper(parent, name, description, index) {}
 
   virtual Dock *create(bool floating) {
     dock = Tool::create<T>(this->text(), floating);

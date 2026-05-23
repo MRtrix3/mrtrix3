@@ -15,6 +15,8 @@
  */
 
 #include <cstddef>
+#include <cstring>
+#include <limits>
 
 #include "file/config.h"
 #include "file/mmap.h"

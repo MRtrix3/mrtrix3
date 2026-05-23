@@ -193,7 +193,7 @@ void LightBox::draw_grid() {
     frame_VAO.bind();
 
     gl::EnableVertexAttribArray(0);
-    gl::VertexAttribPointer(0, 2, gl::FLOAT, gl::FALSE_, 0, (void *)0);
+    gl::VertexAttribPointer(0, 2, gl::FLOAT, gl::FALSE_, 0, nullptr);
 
     GLfloat data[num_points];
 

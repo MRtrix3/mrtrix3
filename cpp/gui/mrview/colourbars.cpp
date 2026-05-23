@@ -131,7 +131,7 @@ void ColourBars::render(size_t colourmap,
     VAO.bind();
 
     gl::EnableVertexAttribArray(0);
-    gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 0, (void *)0);
+    gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 0, nullptr);
   } else {
     VB.bind(gl::ARRAY_BUFFER);
     VAO.bind();
