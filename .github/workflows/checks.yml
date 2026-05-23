@@ -55,7 +55,7 @@ jobs:
         -D CMAKE_CXX_COMPILER=clang++
 
     - name: build
-      run: cmake --build build
+      run: cmake --build build -k 0
 
     - name: interface tests
       run: cd build && ctest -L cli --output-on-failure
@@ -120,7 +120,7 @@ jobs:
         -D MRTRIX_WARNINGS_AS_ERRORS=ON
 
     - name: build
-      run: cmake --build build
+      run: cmake --build build -k 0
 
     - name: interface tests
       run: cd build && ctest -L cli --output-on-failure
@@ -181,7 +181,7 @@ jobs:
         -D MRTRIX_WARNINGS_AS_ERRORS=ON
 
     - name: build
-      run: cmake --build build
+      run: cmake --build build -k 0
 
     - name: interface tests
       run: cd build && ctest -L cli --output-on-failure
@@ -260,7 +260,7 @@ jobs:
             -D CMAKE_CXX_COMPILER_LAUNCHER=${{env.SCCACHE_UNIX_PATH}} .
 
       - name: build
-        run: cmake --build build
+        run: cmake --build build -k 0
 
       - name: interface tests
         run: cd build && ctest -L cli --output-on-failure
