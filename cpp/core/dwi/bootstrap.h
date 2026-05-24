@@ -101,7 +101,7 @@ protected:
     if (existing != voxels.end())
       return existing->second;
     value_type *const data = allocate_voxel();
-    ssize_t pos = index(3);
+    ssize_t const pos = index(3);
     for (auto l = Loop(3)(*this); l; ++l)
       data[index(3)] = base_type::value();
     index(3) = pos;

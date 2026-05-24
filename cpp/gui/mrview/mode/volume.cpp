@@ -47,9 +47,9 @@ std::string Volume::Shader::vertex_shader_source(const Displayable &) {
 }
 
 std::string Volume::Shader::fragment_shader_source(const Displayable &object) {
-  std::vector<std::pair<GL::vec4, bool>> clip = mode.get_active_clip_planes();
+  std::vector<std::pair<GL::vec4, bool>> const clip = mode.get_active_clip_planes();
   const bool AND = mode.get_clipintersectionmodestate();
-  std::string clip_color_spec = File::Config::get("MRViewClipPlaneColour");
+  std::string const clip_color_spec = File::Config::get("MRViewClipPlaneColour");
   std::vector<float> clip_color = {1.0, 0.0, 0.0, 0.1};
   if (!clip_color_spec.empty()) {
     auto colour = parse_floats(clip_color_spec);
@@ -252,7 +252,7 @@ clip_real2tex(const GL::mat4 &T2S, const GL::mat4 &S2T, const Eigen::Vector3f &r
   GL::vec4 normal = T2S * GL::vec4(plane[0], plane[1], plane[2], 0.0);
   GL::vec4 on_plane = S2T * GL::vec4(plane[3] * plane[0], plane[3] * plane[1], plane[3] * plane[2], 1.0);
   normal[3] = on_plane[0] * normal[0] + on_plane[1] * normal[1] + on_plane[2] * normal[2];
-  float off_axis_thickness = std::fabs(ray[0] * plane[0] + ray[1] * plane[1] + ray[2] * plane[2]);
+  float const off_axis_thickness = std::fabs(ray[0] * plane[0] + ray[1] * plane[1] + ray[2] * plane[2]);
   normal[0] /= off_axis_thickness;
   normal[1] /= off_axis_thickness;
   normal[2] /= off_axis_thickness;
@@ -322,15 +322,15 @@ void Volume::paint(Projection &projection) {
   }
 
   GL_CHECK_ERROR;
-  GL::mat4 T2S = get_tex_to_scanner_matrix(*image());
+  GL::mat4 const T2S = get_tex_to_scanner_matrix(*image());
   GL::mat4 M = projection.modelview_projection() * T2S;
-  GL::mat4 S2T = GL::inv(T2S);
+  GL::mat4 const S2T = GL::inv(T2S);
 
-  float step_size =
+  float const step_size =
       0.5F * static_cast<float>(
                  std::min({image()->header().spacing(0), image()->header().spacing(1), image()->header().spacing(2)}));
   Eigen::Vector3f ray = image()->scanner2voxel().linear() * projection.screen_normal();
-  Eigen::Vector3f ray_real_space = ray;
+  Eigen::Vector3f const ray_real_space = ray;
   ray *= step_size;
   ray[0] /= image()->header().size(0);
   ray[1] /= image()->header().size(1);
@@ -425,7 +425,7 @@ void Volume::paint(Projection &projection) {
     depth_texture.bind();
 
   GL_CHECK_ERROR;
-  int m = window().windowHandle()->devicePixelRatio();
+  int const m = window().windowHandle()->devicePixelRatio();
   gl::CopyTexImage2D(gl::TEXTURE_2D, 0, gl::DEPTH_COMPONENT, 0, 0, m * projection.width(), m * projection.height(), 0);
 
   GL_CHECK_ERROR;

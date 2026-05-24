@@ -210,7 +210,7 @@ void Matrix<T>::save(const std::filesystem::path &path,
   assert(mat2vec);
 
   File::OFStream out(path);
-  Eigen::IOFormat fmt(
+  Eigen::IOFormat const fmt(
       Eigen::FullPrecision, Eigen::DontAlignCols, std::string(1, File::Matrix::delimiter(path)), "\n", "", "", "", "");
   for (node_t row = 0; row != mat2vec->mat_size(); ++row) {
     if (!row && !keep_unassigned)

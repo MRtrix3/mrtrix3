@@ -161,7 +161,7 @@ Connectome::Connectome(Dock *parent)
   hlayout = new HBoxLayout;
   hlayout->setContentsMargins(0, 0, 0, 0);
   hlayout->setSpacing(0);
-  QIcon warning_icon(":/warn.svg");
+  QIcon const warning_icon(":/warn.svg");
   node_visibility_matrix_operator_combobox = new QComboBox(this);
   node_visibility_matrix_operator_combobox->setToolTip(
       tr("If node visibility is determined from a matrix file, and multiple\n"
@@ -734,7 +734,7 @@ Connectome::Connectome(Dock *parent)
   edge_colour_fixedcolour_button->setFixedHeight(height);
   edge_colour_colourmap_button->setFixedHeight(height);
 
-  GL::Context::Grab context;
+  GL::Context::Grab const context;
   GL::assert_context_is_current();
 
   cube.generate();
@@ -878,7 +878,7 @@ bool Connectome::process_commandline_option(const MR::App::ParsedOption &opt) {
   }
   if (opt.opt->is("connectome.load")) {
     try {
-      std::vector<std::filesystem::path> list(1, opt[0]);
+      std::vector<std::filesystem::path> const list(1, opt[0]);
       add_matrices(list);
     } catch (Exception &e) {
       e.display();
@@ -1790,7 +1790,7 @@ void Connectome::node_colour_matrix_operator_slot(int value) {
   window().updateGL();
 }
 void Connectome::node_fixed_colour_change_slot() {
-  QColor c = node_colour_fixedcolour_button->color();
+  QColor const c = node_colour_fixedcolour_button->color();
   node_fixed_colour = {c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f};
   node_visibility_warning_icon->setVisible(node_visibility == node_visibility_t::NONE);
   calculate_node_colours();
@@ -2233,7 +2233,7 @@ void Connectome::cylinder_lod_slot(int index) {
   window().updateGL();
 }
 void Connectome::edge_colour_change_slot() {
-  QColor c = edge_colour_fixedcolour_button->color();
+  QColor const c = edge_colour_fixedcolour_button->color();
   edge_fixed_colour = {c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f};
   edge_visibility_warning_icon->setVisible(edge_visibility == edge_visibility_t::NONE);
   calculate_edge_colours();
@@ -2455,11 +2455,11 @@ void Connectome::initialise(const std::filesystem::path &path) {
   voxel_volume = H.spacing(0) * H.spacing(1) * H.spacing(2);
   {
     // Prevent progress dialog from appearing in a multi-threading context
-    LogLevelLatch latch(0);
+    LogLevelLatch const latch(0);
     buffer.reset(new MR::Image<node_t>(H.get_image<node_t>(MR::DirectIO{})));
     MR::Connectome::debug_validate_label_image(*buffer);
   }
-  MR::Transform transform(H);
+  MR::Transform const transform(H);
   std::vector<Eigen::Vector3f> node_coms;
   std::vector<size_t> node_volumes;
   std::vector<Eigen::Array3i> node_lower_corners, node_upper_corners;
@@ -2575,7 +2575,7 @@ void Connectome::add_matrices(const std::vector<std::filesystem::path> &list) {
   if (!data.empty()) {
     const size_t previous_size = matrix_list_model->rowCount();
     matrix_list_model->add_items(data);
-    QModelIndex first = matrix_list_model->index(previous_size, 0, QModelIndex());
+    QModelIndex const first = matrix_list_model->index(previous_size, 0, QModelIndex());
     matrix_list_view->selectionModel()->select(first, QItemSelectionModel::ClearAndSelect);
     // In the specific case where there was previously no connectome data,
     //   it is necessary to set the min/max/value of various controls
@@ -2784,7 +2784,7 @@ void Connectome::draw_edges(const Projection &projection) {
     edge_shader.start(*this);
     projection.set(edge_shader);
 
-    bool alpha = use_alpha_edges();
+    bool const alpha = use_alpha_edges();
 
     gl::Enable(gl::DEPTH_TEST);
     if (alpha) {
@@ -4038,7 +4038,7 @@ void Connectome::get_meshes() {
     throw Exception("Mesh file contains " + str(meshes.size()) + " objects; expected " + str(nodes.size()));
   Surface::debug_validate(meshes);
   have_meshes = false;
-  GL::Context::Grab context;
+  GL::Context::Grab const context;
   for (node_t i = 1; i <= num_nodes(); ++i)
     nodes[i].assign_mesh(meshes[i]);
   have_meshes = true;

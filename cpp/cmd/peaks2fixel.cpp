@@ -117,7 +117,7 @@ void run() {
 
   Image<float> amplitudes_image;
   if (!dataname.empty()) {
-    Header amplitudes_header = Fixel::data_header_from_index(index_header);
+    Header const amplitudes_header = Fixel::data_header_from_index(index_header);
     amplitudes_image = Image<float>::create(output_path / dataname, amplitudes_header);
   }
 

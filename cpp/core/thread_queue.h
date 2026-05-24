@@ -484,11 +484,11 @@ private:
   std::string name;
 
   void register_writer() {
-    std::lock_guard<std::mutex> lock(mutex);
+    std::lock_guard<std::mutex> const lock(mutex);
     ++writer_count;
   }
   void unregister_writer() {
-    std::lock_guard<std::mutex> lock(mutex);
+    std::lock_guard<std::mutex> const lock(mutex);
     assert(writer_count);
     --writer_count;
     if (!writer_count) {
@@ -497,11 +497,11 @@ private:
     }
   }
   void register_reader() {
-    std::lock_guard<std::mutex> lock(mutex);
+    std::lock_guard<std::mutex> const lock(mutex);
     ++reader_count;
   }
   void unregister_reader() {
-    std::lock_guard<std::mutex> lock(mutex);
+    std::lock_guard<std::mutex> const lock(mutex);
     assert(reader_count);
     --reader_count;
     if (!reader_count) {
@@ -515,7 +515,7 @@ private:
   FORCE_INLINE size_t size() const { return ((back < front ? back + capacity : back) - front); }
 
   FORCE_INLINE T *get_item() {
-    std::lock_guard<std::mutex> lock(mutex);
+    std::lock_guard<std::mutex> const lock(mutex);
     T *item(new T);
     items.push_back(std::unique_ptr<T>(item));
     return item;
@@ -554,7 +554,7 @@ private:
   }
 
   FORCE_INLINE void recycle(T *&item) {
-    std::unique_lock<std::mutex> lock(mutex);
+    std::unique_lock<std::mutex> const lock(mutex);
     if (item)
       item_stack.push(item);
   }

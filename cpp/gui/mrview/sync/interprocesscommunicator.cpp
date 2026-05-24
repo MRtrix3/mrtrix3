@@ -45,10 +45,10 @@ InterprocessCommunicator::InterprocessCommunicator() : QObject(0) {
     QLocalSocket *socket = new QLocalSocket(this);
     freeEntry = -1;
     for (int i = 0; i < maximum_instances; i++) {
-      QString serverName = "mrtrix_interprocesssyncer_" + QString::number(i);
+      QString const serverName = "mrtrix_interprocesssyncer_" + QString::number(i);
       socket->connectToServer(serverName);
       socket->waitForConnected();
-      QLocalSocket::LocalSocketState state = socket->state();
+      QLocalSocket::LocalSocketState const state = socket->state();
       socket->abort();
       if (state != QLocalSocket::ConnectedState) {
         // we found a free name
@@ -61,7 +61,7 @@ InterprocessCommunicator::InterprocessCommunicator() : QObject(0) {
       }
     }
     if (freeEntry == -1) {
-      std::string errMsg = "No free ids available";
+      std::string const errMsg = "No free ids available";
       throw std::runtime_error(errMsg);
     }
 
@@ -111,7 +111,7 @@ void InterprocessCommunicator::OnNewIncomingConnection() {
 void InterprocessCommunicator::TryConnectTo(int connectToId) {
   if (connectToId != id) // don't connect to ourself!
   {
-    QString serverName = "mrtrix_interprocesssyncer_" + QString::number(connectToId);
+    QString const serverName = "mrtrix_interprocesssyncer_" + QString::number(connectToId);
 
     // check we are not already connected
     for (unsigned int i = 0; i < senders.size(); i++) {
@@ -121,7 +121,7 @@ void InterprocessCommunicator::TryConnectTo(int connectToId) {
       }
     }
 
-    std::shared_ptr<GUI::MRView::Sync::Client> curCl =
+    std::shared_ptr<GUI::MRView::Sync::Client> const curCl =
         std::shared_ptr<GUI::MRView::Sync::Client>(new GUI::MRView::Sync::Client());
 
     curCl->SetServerName(serverName);
@@ -149,7 +149,7 @@ void InterprocessCommunicator::OnDataReceived(std::vector<std::shared_ptr<QByteA
   std::vector<std::shared_ptr<QByteArray>> toSync;
 
   for (size_t i = 0; i < allMessages.size(); i++) {
-    std::shared_ptr<QByteArray> dat = allMessages[i];
+    std::shared_ptr<QByteArray> const dat = allMessages[i];
     int dataLength = dat->size();
 
     if (dataLength < 4) {
@@ -168,7 +168,7 @@ void InterprocessCommunicator::OnDataReceived(std::vector<std::shared_ptr<QByteA
     }
     case static_cast<int32_t>(MessageKey::SyncData): {
       // The other process has sent information to sync with
-      std::shared_ptr<QByteArray> trimmed = std::shared_ptr<QByteArray>(new QByteArray());
+      std::shared_ptr<QByteArray> const trimmed = std::shared_ptr<QByteArray>(new QByteArray());
       trimmed->insert(0, dat->data() + 4, dataLength);
       toSync.emplace_back(trimmed);
       break;

@@ -81,9 +81,9 @@ optimise(const Eigen::MatrixXd &directions, const index_type preserve, const siz
 
     for (index_type n = 0; n < remaining.size(); ++n) {
       value_type E = 0.0;
-      index_type a = remaining[n];
+      index_type const a = remaining[n];
       for (index_type i = 0; i < indices.size(); ++i) {
-        index_type b = indices[i];
+        index_type const b = indices[i];
         E += 1.0 / (directions.row(a) - directions.row(b)).norm();
         E += 1.0 / (directions.row(a) + directions.row(b)).norm();
       }

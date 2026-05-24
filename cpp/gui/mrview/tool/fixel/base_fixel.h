@@ -134,7 +134,7 @@ public:
   FixelColourType get_colour_type() const { return colour_type; }
 
   float get_threshold_lower() const {
-    FixelValue &fixel_thresh = current_fixel_threshold_state();
+    FixelValue const &fixel_thresh = current_fixel_threshold_state();
     FixelValue &fixel_val = current_fixel_colour_state();
     return fixel_thresh.get_relative_threshold_lower(fixel_val);
   }
@@ -149,7 +149,7 @@ public:
   }
 
   float get_threshold_upper() const {
-    FixelValue &fixel_thresh = current_fixel_threshold_state();
+    FixelValue const &fixel_thresh = current_fixel_threshold_state();
     FixelValue &fixel_val = current_fixel_colour_state();
     return fixel_thresh.get_relative_threshold_upper(fixel_val);
   }
@@ -164,7 +164,7 @@ public:
   }
 
   float get_unscaled_threshold_rate() const {
-    FixelValue &fixel_threshold = current_fixel_threshold_state();
+    FixelValue const &fixel_threshold = current_fixel_threshold_state();
     return 1e-3 * (fixel_threshold.value_max - fixel_threshold.value_min);
   }
 

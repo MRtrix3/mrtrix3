@@ -202,12 +202,12 @@ public:
   ~Buffer();
 
   FORCE_INLINE ValueType get_value(size_t offset) const {
-    ssize_t nseg = offset / io->segment_size();
+    ssize_t const nseg = offset / io->segment_size();
     return fetch_func(io->segment(nseg), offset - nseg * io->segment_size(), intensity_offset(), intensity_scale());
   }
 
   FORCE_INLINE void set_value(size_t offset, ValueType val) const {
-    ssize_t nseg = offset / io->segment_size();
+    ssize_t const nseg = offset / io->segment_size();
     store_func(val, io->segment(nseg), offset - nseg * io->segment_size(), intensity_offset(), intensity_scale());
   }
 
@@ -318,7 +318,7 @@ Image<ValueType>::Buffer::Buffer(Header &H, bool read_write_if_existing, std::op
     // Wrap *this in a no-op-deleter shared_ptr purely to source-iterate.
     // Safe because no other shared_ptr<Buffer> exists yet (we are still in
     // construction and the unique_ptr in the factory has not been released).
-    std::shared_ptr<Buffer> self(this, [](Buffer *) {});
+    std::shared_ptr<Buffer> const self(this, [](Buffer *) {});
     Image<ValueType> src(self);
     TmpImage<ValueType> dest{
         *this, staging.data.get(), std::vector<ssize_t>(ndim(), 0), staging.strides, staging.offset};
@@ -356,7 +356,7 @@ Image<ValueType> Header::get_image(std::optional<DirectIO> direct_io, bool read_
   auto raw = std::make_unique<typename Image<ValueType>::Buffer>(*this, read_write_if_existing, std::move(direct_io));
   // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
   const Stride::List image_strides = raw->ram.has_value() ? raw->ram->strides : Stride::List();
-  std::shared_ptr<typename Image<ValueType>::Buffer> buffer(std::move(raw));
+  std::shared_ptr<typename Image<ValueType>::Buffer> const buffer(std::move(raw));
   return Image<ValueType>(buffer, image_strides);
 }
 
@@ -388,7 +388,7 @@ template <typename ValueType> Image<ValueType>::Buffer::~Buffer() {
     auto local_data = std::move(ram->data);
     // Construct a temporary shared_ptr with a no-op deleter so that Image can be
     // used as a write destination without triggering a second deletion of this.
-    std::shared_ptr<Buffer> self(this, [](Buffer *) {});
+    std::shared_ptr<Buffer> const self(this, [](Buffer *) {});
     TmpImage<ValueType> src = {*this, local_data.get(), std::vector<ssize_t>(ndim(), 0), ram->strides, ram->offset};
     Image<ValueType> dest(self);
     threaded_copy_with_progress_message("writing back direct IO buffer for \"" + name() + "\"", src, dest);

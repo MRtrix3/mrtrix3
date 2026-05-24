@@ -107,8 +107,8 @@ protected:
   bool moveOptimal(const Particle *par, Point_t &pos, Point_t &dir) const;
 
   inline double calcShiftProb(const Particle *par, const Point_t &pos, const Point_t &dir) const {
-    Point_t Dpos = par->getPosition() - pos;
-    Point_t Ddir = par->getDirection() - dir;
+    Point_t const Dpos = par->getPosition() - pos;
+    Point_t const Ddir = par->getDirection() - dir;
     return gaussian_pdf(Dpos, sigpos) * gaussian_pdf(Ddir, sigdir);
   }
 

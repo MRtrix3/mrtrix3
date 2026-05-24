@@ -157,7 +157,7 @@ public:
   }
 
   void set_viewport(const QWidget &frame) const {
-    int m = frame.window()->devicePixelRatio();
+    int const m = frame.window()->devicePixelRatio();
     gl::Viewport(m * viewport[0], m * viewport[1], m * viewport[2], m * viewport[3]);
   }
 
@@ -171,13 +171,13 @@ public:
   void render_text(int x, int y, std::string_view text) const { font.render(text, x, y); }
 
   void render_text_align(int x, int y, std::string_view text, int halign = 0, int valign = 0) const {
-    QString s(qstr(text));
+    QString const s(qstr(text));
 #if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
     int w = font.metric.width(s);
 #else
-    int w = font.metric.horizontalAdvance(s);
+    int const w = font.metric.horizontalAdvance(s);
 #endif
-    int h = font.metric.height();
+    int const h = font.metric.height();
     if (halign == 0)
       x -= w / 2;
     else if (halign > 0)
@@ -190,7 +190,7 @@ public:
   }
 
   void render_text_inset(int x, int y, std::string_view text, int inset = -1) const {
-    QString s(qstr(text));
+    QString const s(qstr(text));
     if (inset < 0)
       inset = font.metric.height() / 2;
     if (x < inset)
@@ -211,7 +211,7 @@ public:
   }
 
   void render_text(std::string_view text, int position, int line = 0) const {
-    QString s(qstr(text));
+    QString const s(qstr(text));
     int x, y;
 
 #if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)

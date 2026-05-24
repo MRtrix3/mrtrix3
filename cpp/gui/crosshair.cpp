@@ -38,14 +38,14 @@ void Crosshair::render(const Eigen::Vector3f &focus, const ModelViewProjection &
   }
 
   if (!program) {
-    GL::Shader::Vertex vertex_shader("layout(location=0) in vec2 pos;\n"
-                                     "void main () {\n"
-                                     "  gl_Position = vec4 (pos, 0.0, 1.0);\n"
-                                     "}\n");
-    GL::Shader::Fragment fragment_shader("out vec4 color;\n"
-                                         "void main () {\n"
-                                         "  color = vec4 (0.5, 0.5, 0.0, 1.0);\n"
-                                         "}\n");
+    GL::Shader::Vertex const vertex_shader("layout(location=0) in vec2 pos;\n"
+                                           "void main () {\n"
+                                           "  gl_Position = vec4 (pos, 0.0, 1.0);\n"
+                                           "}\n");
+    GL::Shader::Fragment const fragment_shader("out vec4 color;\n"
+                                               "void main () {\n"
+                                               "  color = vec4 (0.5, 0.5, 0.0, 1.0);\n"
+                                               "}\n");
     program.attach(vertex_shader);
     program.attach(fragment_shader);
     program.link();

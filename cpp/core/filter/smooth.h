@@ -230,7 +230,7 @@ protected:
       const ssize_t to = (pos + radius) >= image.size(axis) ? image.size(axis) - 1 : pos + radius;
 
       ssize_t c = (pos < radius) ? radius - pos : 0;
-      ssize_t kernel_size = to - from + 1;
+      ssize_t const kernel_size = to - from + 1;
 
       value_type result = kernel.segment(c, kernel_size).dot(buffer.segment(from, kernel_size));
 
@@ -238,7 +238,7 @@ protected:
         result = 0.0;
         value_type av_weights = 0.0;
         for (ssize_t k = from; k <= to; ++k, ++c) {
-          value_type neighbour_value = buffer(k);
+          value_type const neighbour_value = buffer(k);
           if (std::isfinite(neighbour_value)) {
             av_weights += kernel[c];
             result += neighbour_value * kernel[c];

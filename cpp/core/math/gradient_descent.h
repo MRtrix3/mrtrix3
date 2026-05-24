@@ -98,7 +98,7 @@ public:
     DEBUG("Gradient descent iteration: init; cost: " + str(f));
 
     while (niter < max_iterations) {
-      bool retval = iterate(log_os);
+      bool const retval = iterate(log_os);
       DEBUG("Gradient descent iteration: " + str(niter) + "; cost: " + str(f));
       if (verbose) {
         CONSOLE("iteration " + str(niter) + ": f = " + str(f) + ", |g| = " + str(normg) + ":");
@@ -168,11 +168,11 @@ public:
       if (!update_func(x2, x, g, dt))
         return false;
 
-      value_type f2 = evaluate_func(x2, g2, verbose);
+      value_type const f2 = evaluate_func(x2, g2, verbose);
 
       // quadratic minimum:
-      value_type step_length = step_unscaled * dt;
-      value_type denom = 2.0 * (normg * step_length + f2 - f);
+      value_type const step_length = step_unscaled * dt;
+      value_type const denom = 2.0 * (normg * step_length + f2 - f);
       value_type quadratic_minimum = denom > 0.0 ? normg * step_length / denom : step_up;
 
       if (quadratic_minimum < step_down)
@@ -225,7 +225,7 @@ protected:
                            Eigen::Matrix<value_type, Eigen::Dynamic, 1> &newg,
                            bool verbose = false) {
     nfeval++;
-    value_type cost = func(newx, newg);
+    value_type const cost = func(newx, newg);
     if (!std::isfinite(cost))
       throw Exception("cost function is NaN or Inf!");
     if (verbose)

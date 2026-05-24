@@ -42,7 +42,7 @@ bool SyncManager::GetInErrorState() { return ips == 0; }
  */
 void SyncManager::OnWindowFocusChanged() {
   if (Window::main->sync_focus_on()) {
-    Eigen::Vector3f foc = Window::main->focus();
+    Eigen::Vector3f const foc = Window::main->focus();
     SendData(DataKey::WindowFocus, ToQByteArray(foc));
   }
 }
@@ -70,7 +70,7 @@ void SyncManager::OnIPSDataReceived(std::vector<std::shared_ptr<QByteArray>> all
   std::shared_ptr<QByteArray> winFocus = 0;
 
   for (size_t i = 0; i < all_messages.size(); i++) {
-    std::shared_ptr<QByteArray> data = all_messages[i];
+    std::shared_ptr<QByteArray> const data = all_messages[i];
 
     if (data->size() < 4) {
       DEBUG("Bad data received to syncmanager: too short");
@@ -95,7 +95,7 @@ void SyncManager::OnIPSDataReceived(std::vector<std::shared_ptr<QByteArray>> all
   if (winFocus && Window::main->sync_focus_on()) {
     // We received 1+ signals to change our window focus
 
-    unsigned int offset = 4; // we have already read 4 bytes, above
+    unsigned int const offset = 4; // we have already read 4 bytes, above
     // Read three single point floats
     if (winFocus->size() != (int)(offset + 12)) // cast to int to avoid compiler warning
     {

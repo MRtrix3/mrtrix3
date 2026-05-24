@@ -194,9 +194,9 @@ public:
 
       update(object);
 
-      GL::Shader::Vertex vertex_shader(vertex_shader_source(object));
-      GL::Shader::Geometry geometry_shader(geometry_shader_source(object));
-      GL::Shader::Fragment fragment_shader(fragment_shader_source(object));
+      GL::Shader::Vertex const vertex_shader(vertex_shader_source(object));
+      GL::Shader::Geometry const geometry_shader(geometry_shader_source(object));
+      GL::Shader::Fragment const fragment_shader(fragment_shader_source(object));
 
       attach(vertex_shader);
       if (static_cast<GLuint>(geometry_shader))

@@ -100,7 +100,7 @@ Eigen::Matrix<typename MatrixType::Scalar, Eigen::Dynamic, Eigen::Dynamic> init_
   Matrix<value_type, Dynamic, Dynamic> SHT(dirs.rows(), NforL(lmax));
   Matrix<value_type, Dynamic, 1, 0, 64> AL(lmax + 1);
   for (ssize_t i = 0; i < dirs.rows(); i++) {
-    value_type z = dirs(i, 2);
+    value_type const z = dirs(i, 2);
     const value_type rxy = std::hypot(dirs(i, 0), dirs(i, 1));
     const value_type cp = (rxy == value_type(0)) ? value_type(1) : (dirs(i, 0) / rxy);
     const value_type sp = (rxy == value_type(0)) ? value_type(0) : (dirs(i, 1) / rxy);
@@ -110,8 +110,8 @@ Eigen::Matrix<typename MatrixType::Scalar, Eigen::Dynamic, Eigen::Dynamic> init_
     value_type c0(1.0), s0(0.0);
     for (int m = 1; m <= lmax; m++) {
       Legendre::Plm_sph(AL, lmax, m, z);
-      value_type c = c0 * cp - s0 * sp;
-      value_type s = s0 * cp + c0 * sp;
+      value_type const c = c0 * cp - s0 * sp;
+      value_type const s = s0 * cp + c0 * sp;
       for (int l = ((m & 1) ? m + 1 : m); l <= lmax; l += 2) {
         SHT(i, index(l, m)) = Math::sqrt2 * AL[l] * c;
         SHT(i, index(l, -m)) = Math::sqrt2 * AL[l] * s;
@@ -218,8 +218,8 @@ inline typename VectorType::Scalar value(const VectorType &coefs,
   value_type c0(1.0), s0(0.0);
   for (int m = 1; m <= lmax; m++) {
     Legendre::Plm_sph(AL, lmax, m, cos_inclination);
-    value_type c = c0 * cos_azimuth - s0 * sin_azimuth; // std::cos(m*azimuth)
-    value_type s = s0 * cos_azimuth + c0 * sin_azimuth; // std::sin(m*azimuth)
+    value_type const c = c0 * cos_azimuth - s0 * sin_azimuth; // std::cos(m*azimuth)
+    value_type const s = s0 * cos_azimuth + c0 * sin_azimuth; // std::sin(m*azimuth)
     for (int l = ((m & 1) ? m + 1 : m); l <= lmax; l += 2)
       amplitude += AL[l] * Math::sqrt2 * (c * coefs[index(l, m)] + s * coefs[index(l, -m)]);
     c0 = c;
@@ -259,8 +259,8 @@ inline VectorType1 &delta(VectorType1 &delta_vec, const VectorType2 &unit_dir, i
   value_type c0(1.0), s0(0.0);
   for (int m = 1; m <= lmax; m++) {
     Legendre::Plm_sph(AL, lmax, m, unit_dir[2]);
-    value_type c = c0 * cp - s0 * sp;
-    value_type s = s0 * cp + c0 * sp;
+    value_type const c = c0 * cp - s0 * sp;
+    value_type const s = s0 * cp + c0 * sp;
     for (int l = ((m & 1) ? m + 1 : m); l <= lmax; l += 2) {
       delta_vec[index(l, m)] = AL[l] * Math::sqrt2 * c;
       delta_vec[index(l, -m)] = AL[l] * Math::sqrt2 * s;
@@ -295,7 +295,7 @@ inline Eigen::Matrix<typename VectorType::Scalar, Eigen::Dynamic, 1> SH2RH(const
 template <class VectorType1, class VectorType2> inline VectorType1 &sconv(VectorType1 &sh, const VectorType2 &RH) {
   assert(static_cast<size_t>(sh.size()) >= NforL(2 * (RH.size() - 1)));
   for (ssize_t i = 0; i < RH.size(); ++i) {
-    int l = 2 * i;
+    int const l = 2 * i;
     for (int m = -l; m <= l; ++m)
       sh[index(l, m)] *= RH[i];
   }
@@ -310,7 +310,7 @@ inline VectorType1 &sconv(VectorType1 &C, const VectorType2 &RH, const VectorTyp
   assert(static_cast<size_t>(sh.size()) >= NforL(2 * (RH.size() - 1)));
   C.resize(NforL(2 * (RH.size() - 1)));
   for (ssize_t i = 0; i < RH.size(); ++i) {
-    int l = 2 * i;
+    int const l = 2 * i;
     for (int m = -l; m <= l; ++m)
       C[index(l, m)] = RH[i] * sh[index(l, m)];
   }
@@ -324,7 +324,7 @@ inline VectorType1 &sconv(VectorType1 &C, const VectorType2 &RH, const VectorTyp
 template <class MatrixType1, class VectorType2> inline MatrixType1 &sconv_mat(MatrixType1 &sh, const VectorType2 &RH) {
   assert(static_cast<size_t>(sh.cols()) >= NforL(2 * (RH.size() - 1)));
   for (ssize_t i = 0; i < RH.size(); ++i) {
-    int l = 2 * i;
+    int const l = 2 * i;
     for (int m = -l; m <= l; ++m)
       sh.col(index(l, m)) *= RH[i];
   }
@@ -365,8 +365,8 @@ public:
     Eigen::Matrix<value_type, Eigen::Dynamic, 1, 0, 64> buf(lmax + 1);
 
     for (int n = 0; n < ndir; n++) {
-      typename std::vector<value_type>::iterator p = AL.begin() + n * nAL;
-      value_type cos_el = std::cos(n * inc);
+      typename std::vector<value_type>::iterator const p = AL.begin() + n * nAL;
+      value_type const cos_el = std::cos(n * inc);
       for (int m = 0; m <= lmax; m++) {
         Legendre::Plm_sph(buf, lmax, m, cos_el);
         for (int l = ((m & 1) ? m + 1 : m); l <= lmax; l += 2)
@@ -406,7 +406,7 @@ public:
   void get(ValueType *dest, const PrecomputedFraction<ValueType> &f) const {
     for (int l = 0; l <= lmax; l += 2) {
       for (int m = 0; m <= l; m++) {
-        int i = index_mpos(l, m);
+        int const i = index_mpos(l, m);
         dest[i] = get(f, i);
       }
     }
@@ -456,8 +456,8 @@ inline typename VectorType::Scalar get_peak(const VectorType &sh,
   using value_type = typename VectorType::Scalar;
   assert(std::isfinite(unit_init_dir[0]));
   for (int i = 0; i < 50; i++) {
-    value_type az = std::atan2(unit_init_dir[1], unit_init_dir[0]);
-    value_type el = std::acos(unit_init_dir[2]);
+    value_type const az = std::atan2(unit_init_dir[1], unit_init_dir[0]);
+    value_type const el = std::acos(unit_init_dir[2]);
     value_type amplitude, dSH_del, dSH_daz, d2SH_del2, d2SH_deldaz, d2SH_daz2;
     derivatives(sh, lmax, el, az, amplitude, dSH_del, dSH_daz, d2SH_del2, d2SH_deldaz, d2SH_daz2, precomputer);
 
@@ -468,8 +468,8 @@ inline typename VectorType::Scalar get_peak(const VectorType &sh,
       del = dSH_del / del;
     }
 
-    value_type dSH_dt = daz * dSH_daz + del * dSH_del;
-    value_type d2SH_dt2 = daz * daz * d2SH_daz2 + 2.0 * daz * del * d2SH_deldaz + del * del * d2SH_del2;
+    value_type const dSH_dt = daz * dSH_daz + del * dSH_del;
+    value_type const d2SH_dt2 = daz * daz * d2SH_daz2 + 2.0 * daz * del * d2SH_deldaz + del * del * d2SH_del2;
     value_type dt = d2SH_dt2 ? (-dSH_dt / d2SH_dt2) : 0.0;
 
     if (dt < 0.0)
@@ -515,7 +515,7 @@ inline void derivatives(const VectorType &sh,
   using value_type = typename VectorType::Scalar;
   const value_type sin_incl = std::sin(inclination);
   const value_type cos_incl = std::cos(inclination);
-  bool atpole = sin_incl < 1e-4;
+  bool const atpole = sin_incl < 1e-4;
 
   dSH_del = dSH_daz = d2SH_del2 = d2SH_deldaz = d2SH_daz2 = 0.0;
   VLA_MAX(AL, value_type, NforL_mpos(lmax), 64);
@@ -545,8 +545,8 @@ inline void derivatives(const VectorType &sh,
   }
 
   for (int m = 1; m <= lmax; m++) {
-    value_type caz = Math::sqrt2 * std::cos(m * azimuth);
-    value_type saz = Math::sqrt2 * std::sin(m * azimuth);
+    value_type const caz = Math::sqrt2 * std::cos(m * azimuth);
+    value_type const saz = Math::sqrt2 * std::sin(m * azimuth);
     for (int l = ((m & 1) ? m + 1 : m); l <= lmax; l += 2) {
       const value_type &vp(sh[index(l, m)]);
       const value_type &vm(sh[index(l, -m)]);
@@ -682,7 +682,7 @@ public:
 template <class ImageType> void check(const ImageType &H) {
   if (H.ndim() < 4)
     throw Exception("image \"" + H.name() + "\" does not contain SH coefficients - not 4D");
-  size_t l = LforN(H.size(3));
+  size_t const l = LforN(H.size(3));
   if (l % 2 || NforL(l) != static_cast<size_t>(H.size(3)))
     throw Exception("image \"" + H.name() + "\" does not contain SH coefficients - unexpected number of coefficients");
 }

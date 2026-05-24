@@ -19,7 +19,7 @@
 namespace MR::GUI::MRView::Tool {
 
 void Image4D::load_image_buffer() {
-  size_t ndim = fixel_data->ndim();
+  size_t const ndim = fixel_data->ndim();
 
   if (ndim < 4)
     throw InvalidImageException("Vector image " + filepath.string() + " should contain 4 dimensions;" + //
@@ -84,7 +84,7 @@ void Image4D::reload_image_buffer() {
       dir_buffer_store.push_back(vector.normalized());
       fixel_val_store.add_value(length);
 
-      GLint point_index = pos_buffer_store.size() - 1;
+      GLint const point_index = pos_buffer_store.size() - 1;
 
       for (size_t axis = 0; axis < 3; ++axis) {
         slice_fixel_indices[axis][voxel[axis]].push_back(point_index);

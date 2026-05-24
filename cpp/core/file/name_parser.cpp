@@ -127,7 +127,7 @@ void NameParser::calculate_padding(const std::vector<uint32_t> &maxvals) {
     assert(maxvals[n] > 0);
 
   for (size_t n = 0; n < seq_index.size(); n++) {
-    size_t m = seq_index.size() - 1 - n;
+    size_t const m = seq_index.size() - 1 - n;
     Item &item(array[seq_index[n]]);
     if (!item.sequence().empty()) {
       if (maxvals[m])
@@ -261,7 +261,7 @@ std::vector<uint32_t> ParsedName::List::count() const {
 void ParsedName::List::count_dim(std::vector<uint32_t> &dim, size_t &current_entry, size_t current_dim) const {
   uint32_t n;
   bool stop = false;
-  std::shared_ptr<const ParsedName> first_entry(list[current_entry]);
+  std::shared_ptr<const ParsedName> const first_entry(list[current_entry]);
 
   for (n = 0; current_entry < size(); n++) {
     for (size_t d = 0; d < current_dim; d++)

@@ -288,7 +288,7 @@ void ROI::dropEvent(QDropEvent *event) {
   const QMimeData *mimeData = event->mimeData();
   if (mimeData->hasUrls()) {
     std::vector<std::unique_ptr<MR::Header>> list;
-    QList<QUrl> urlList = mimeData->urls();
+    QList<QUrl> const urlList = mimeData->urls();
     for (int i = 0; i < urlList.size() && i < max_files; ++i) {
       try {
         list.push_back(std::make_unique<MR::Header>(MR::Header::open(QtHelpers::url_to_fspath(urlList.at(i)))));
@@ -307,7 +307,7 @@ void ROI::dropEvent(QDropEvent *event) {
 void ROI::save(ROI_Item *roi) {
   std::vector<GLubyte> data(roi->header().size(0) * roi->header().size(1) * roi->header().size(2));
   {
-    GL::Context::Grab context;
+    GL::Context::Grab const context;
     GL::assert_context_is_current();
     roi->texture().bind();
     gl::PixelStorei(gl::PACK_ALIGNMENT, 1);
@@ -333,11 +333,11 @@ void ROI::save(ROI_Item *roi) {
 }
 
 int ROI::normal2axis(const Eigen::Vector3f &normal, const ROI_Item &roi) const {
-  float x_dot_n =
+  float const x_dot_n =
       std::fabs((roi.image2scanner().rotation().cast<float>() * Eigen::Vector3f{1.0f, 0.0f, 0.0f}).dot(normal));
-  float y_dot_n =
+  float const y_dot_n =
       std::fabs((roi.image2scanner().rotation().cast<float>() * Eigen::Vector3f{0.0f, 1.0f, 0.0f}).dot(normal));
-  float z_dot_n =
+  float const z_dot_n =
       std::fabs((roi.image2scanner().rotation().cast<float>() * Eigen::Vector3f{0.0f, 0.0f, 1.0f}).dot(normal));
   if (x_dot_n > y_dot_n)
     return x_dot_n > z_dot_n ? 0 : 2;
@@ -365,7 +365,7 @@ void ROI::close_slot() {
   assert(indices.size() == 1);
   ROI_Item *roi = dynamic_cast<ROI_Item *>(list_model->get(indices[0]));
   if (!roi->saved) {
-    size_t ret = QMessageBox::warning(
+    size_t const ret = QMessageBox::warning(
         this,
         tr("ROI not saved"),
         qstr("ROI " + roi->get_filepath().string() + " has been modified. Do you want to save it?"),
@@ -507,7 +507,7 @@ void ROI::colour_changed() {
   QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
   for (int i = 0; i < indices.size(); ++i) {
     ROI_Item *roi = dynamic_cast<ROI_Item *>(list_model->get(indices[i]));
-    QColor c = colour_button->color();
+    QColor const c = colour_button->color();
     roi->colour = {{GLubyte(c.red()), GLubyte(c.green()), GLubyte(c.blue())}};
   }
   updateGL();
@@ -546,7 +546,7 @@ void ROI::update_selection() {
     setEnabled(true);
 
   QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
-  bool enable = window().image() && !indices.empty();
+  bool const enable = window().image() && !indices.empty();
 
   opacity_slider->setEnabled(enable);
   save_button->setEnabled(enable);
@@ -650,11 +650,11 @@ bool ROI::mouse_move_event() {
   if (!proj)
     return false;
 
-  Eigen::Vector3f pos = proj->screen_to_model(window().mouse_position(), window().focus());
+  Eigen::Vector3f const pos = proj->screen_to_model(window().mouse_position(), window().focus());
   Eigen::Vector3f slice_axis(0.0, 0.0, 0.0);
   slice_axis[current_axis] = current_axis == 2 ? 1.0 : -1.0;
   slice_axis = roi->image2scanner().rotation().cast<float>() * slice_axis;
-  float l = (current_slice_loc - pos.dot(slice_axis)) / proj->screen_normal().dot(slice_axis);
+  float const l = (current_slice_loc - pos.dot(slice_axis)) / proj->screen_normal().dot(slice_axis);
   window().set_focus(window().focus() + l * proj->screen_normal());
   const Eigen::Vector3f pos_adj = pos + l * proj->screen_normal();
 
@@ -719,7 +719,7 @@ bool ROI::process_commandline_option(const MR::App::ParsedOption &opt) {
 
   if (opt.opt->is("roi.opacity")) {
     try {
-      float value = opt[0];
+      float const value = opt[0];
       opacity_slider->setSliderPosition(static_cast<int>(1.e3F * value));
     } catch (Exception &e) {
       e.display();
@@ -736,9 +736,9 @@ bool ROI::process_commandline_option(const MR::App::ParsedOption &opt) {
       if (std::min({values[0], values[1], values[2]}) < 0.0 || max_value > 255)
         throw Exception("values provided to -roi.colour must be either between 0.0 and 1.0, or between 0 and 255");
       const float multiplier = max_value <= 1.0 ? 255.0 : 1.0;
-      QColor colour(static_cast<int>(values[0] * multiplier),
-                    static_cast<int>(values[1] * multiplier),
-                    static_cast<int>(values[2] * multiplier));
+      QColor const colour(static_cast<int>(values[0] * multiplier),
+                          static_cast<int>(values[1] * multiplier),
+                          static_cast<int>(values[2] * multiplier));
       colour_button->setColor(colour);
       colour_changed();
     } catch (Exception &e) {

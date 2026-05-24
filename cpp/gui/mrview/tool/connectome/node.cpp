@@ -42,7 +42,7 @@ Node::Node()
 }
 
 Node::Mesh::Mesh(MR::Surface::Mesh &in) : count(3 * in.num_triangles()) {
-  GL::Context::Grab context;
+  GL::Context::Grab const context;
   GL::assert_context_is_current();
 
   std::vector<float> vertices;
@@ -101,7 +101,7 @@ Node::Mesh::Mesh(Mesh &&that) noexcept
 }
 
 Node::Mesh::~Mesh() {
-  GL::Context::Grab context;
+  GL::Context::Grab const context;
   vertex_buffer.clear();
   normal_buffer.clear();
   vertex_array_object.clear();

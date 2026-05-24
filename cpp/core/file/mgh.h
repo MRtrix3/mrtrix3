@@ -305,7 +305,7 @@ template <class Input> void read_other(Header &H, Input &in) {
     const int64_t fstart = in.tellg();
     const size_t nframes = H.ndim() == 4 ? H.size(3) : 1;
     std::ostringstream table;
-    Eigen::IOFormat format(Eigen::StreamPrecision, Eigen::DontAlignCols, " ", " ", "", "", "", "");
+    Eigen::IOFormat const format(Eigen::StreamPrecision, Eigen::DontAlignCols, " ", " ", "", "", "", "");
     for (size_t frame_index = 0; frame_index != nframes; ++frame_index) {
       mri_frame frame;
       frame.type = fetch<tag_type>(in);
@@ -518,7 +518,7 @@ template <class Input> void read_other(Header &H, Input &in) {
         break;
       case tag_auto_align: {
         // Imports data into a 4x4 matrix, and stores in header by converting to string
-        Eigen::IOFormat format(10, Eigen::DontAlignCols, ",", "\n", "", "", "", "");
+        Eigen::IOFormat const format(10, Eigen::DontAlignCols, ",", "\n", "", "", "", "");
         std::stringstream sstream;
         sstream << read_matrix(in).format(format);
         H.keyval()[tag_ID_to_string(id)] = sstream.str();
@@ -534,7 +534,7 @@ template <class Input> void read_other(Header &H, Input &in) {
         // As a consequence, this import will only work if the system that
         //   created the file, and the one reading the file, have the
         //   same endianness
-        float32 field_strength = fetch<float32>(in);
+        float32 const field_strength = fetch<float32>(in);
 #ifndef MRTRIX_IS_BIG_ENDIAN
         ByteOrder::swap(field_strength);
 #endif
@@ -889,7 +889,7 @@ template <class Output> void write_other(const Header &H, Output &out) {
   float32 flip_angle = 0.0F; /*!< radians */
   float32 te = 0.0F;         /*!< milliseconds */
   float32 ti = 0.0F;         /*!< milliseconds */
-  float32 fov = 0.0F;        /*!< IGNORE THIS FIELD (data is inconsistent) */
+  float32 const fov = 0.0F;  /*!< IGNORE THIS FIELD (data is inconsistent) */
   Tag transform_tag;
   std::vector<Tag> tags; /*!< variable length char strings */
   std::unique_ptr<Eigen::Matrix<default_type, 4, 4>> auto_align_matrix;

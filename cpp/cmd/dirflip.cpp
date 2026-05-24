@@ -75,7 +75,7 @@ public:
         best_eddy(std::numeric_limits<value_type>::max()) {}
 
   bool update(value_type eddy, const std::vector<int> &signs) {
-    std::lock_guard<std::mutex> lock(mutex);
+    std::lock_guard<std::mutex> const lock(mutex);
     if (eddy < best_eddy) {
       best_eddy = eddy;
       best_signs = signs;

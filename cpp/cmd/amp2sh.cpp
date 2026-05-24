@@ -239,7 +239,7 @@ void run() {
   header_out.size(3) = sh2amp.cols();
   Stride::set_from_command_line(header_out);
 
-  Amp2SHCommon common(sh2amp, bzeros, dwis, normalise);
+  Amp2SHCommon const common(sh2amp, bzeros, dwis, normalise);
   auto amp = header_in.get_image<value_type>(DirectIO{3});
   auto SH = Image<value_type>::create(argument[1], header_out);
 

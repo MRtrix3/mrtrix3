@@ -120,7 +120,7 @@ public:
       overlap_count = 0;
       ThreadKernel<MetricType, ParamType> kernel(metric, params, overall_cost_function, gradient, &overlap_count);
       {
-        LogLevelLatch log_level(0);
+        LogLevelLatch const log_level(0);
         ThreadedLoop(params.processed_image, 0, 3).run(kernel);
       }
     }
@@ -221,7 +221,7 @@ public:
       StochasticThreadKernel<MetricType, ParamType> functor(
           loop.inner_axes, params.loop_density, metric, params, overall_cost_function, gradient, rng, &overlap_count);
       {
-        LogLevelLatch log_level(0);
+        LogLevelLatch const log_level(0);
         loop.run_outer(functor);
       }
     } else {
@@ -232,14 +232,14 @@ public:
         assert(params.robust_estimate_subset_size.size() == 3);
         Adapter::Subset<decltype(params.processed_mask)> subset(
             params.processed_mask, params.robust_estimate_subset_from, params.robust_estimate_subset_size);
-        LogLevelLatch log_level(0);
+        LogLevelLatch const log_level(0);
         // single threaded as we loop over small VOIs. multi-threading of small VOIs is VERY slow compared to single
         // threading!
         for (auto i = Loop(0, 3)(subset); i; ++i) {
           kernel(subset);
         }
       } else {
-        LogLevelLatch log_level(0);
+        LogLevelLatch const log_level(0);
         ThreadedLoop(params.midway_image, 0, 3).run(kernel);
       }
     }

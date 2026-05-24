@@ -137,7 +137,7 @@ public:
 
   bool operator()(const Streamline<float> &tck) {
     // write out points, and build index of tracks:
-    size_t start_index = current_index;
+    size_t const start_index = current_index;
     current_index += tck.size();
     track_list.push_back(std::pair<size_t, size_t>(start_index, current_index));
     if (write_ascii) {
@@ -260,13 +260,13 @@ public:
   bool operator()(Streamline<float> &tck) {
     tck.clear();
     if (lineIdx < number_of_line_indices) {
-      int count = lines[lineIdx];
+      int const count = lines[lineIdx];
       lineIdx++;
       for (int i = 0; i < count; i++) {
-        int idx = lines[lineIdx];
-        Eigen::Vector3f f(points[static_cast<size_t>(idx) * 3],
-                          points[static_cast<size_t>(idx) * 3 + 1],
-                          points[static_cast<size_t>(idx) * 3 + 2]);
+        int const idx = lines[lineIdx];
+        Eigen::Vector3f const f(points[static_cast<size_t>(idx) * 3],
+                                points[static_cast<size_t>(idx) * 3 + 1],
+                                points[static_cast<size_t>(idx) * 3 + 2]);
         tck.push_back(f);
         lineIdx++;
       }
@@ -350,7 +350,7 @@ public:
 
   Eigen::Vector3f computeNormal(const Streamline<float> &tck) {
     // copy coordinates to  matrix in Eigen format
-    size_t num_atoms = tck.size();
+    size_t const num_atoms = tck.size();
     Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> coord(3, num_atoms);
     for (size_t i = 0; i < num_atoms; ++i) {
       coord.col(i) = tck[i];
@@ -471,11 +471,11 @@ public:
       auto isLast = idx == tck.size() - 2;
 
       // vtkTubeFilter.cxx:386
-      Eigen::Vector3f p = tck[idx];
-      Eigen::Vector3f pNext = tck[idx + 1];
-      Eigen::Vector3f sPrev = sNext;
+      Eigen::Vector3f const p = tck[idx];
+      Eigen::Vector3f const pNext = tck[idx + 1];
+      Eigen::Vector3f const sPrev = sNext;
       sNext = pNext - p;
-      Eigen::Vector3f n = normals[idx];
+      Eigen::Vector3f const n = normals[idx];
 
       sNext.normalize();
       if (sNext.norm() == 0.0) {
@@ -647,7 +647,7 @@ public:
       if (hasPoints) {
         out << "] \"nonperiodic\" ";
 
-        std::ifstream pointsIF(pointsFilepath);
+        std::ifstream const pointsIF(pointsFilepath);
         out << pointsIF.rdbuf();
 
         if (writeDEC) {
@@ -683,8 +683,8 @@ private:
 };
 
 void run() {
-  std::filesystem::path input_path{argument[0]};
-  std::filesystem::path output_path{argument[1]};
+  std::filesystem::path const input_path{argument[0]};
+  std::filesystem::path const output_path{argument[1]};
   // Reader
   Properties properties;
   std::unique_ptr<ReaderInterface<float>> reader;

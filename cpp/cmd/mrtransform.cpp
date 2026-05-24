@@ -525,7 +525,7 @@ void run() {
                " and therefore should not be used to reorient directions / diffusion gradients");
         }
         for (ssize_t n = 0; n < grad.rows(); ++n) {
-          Eigen::Vector3d grad_vector = grad.block<1, 3>(n, 0);
+          Eigen::Vector3d const grad_vector = grad.block<1, 3>(n, 0);
           grad.block<1, 3>(n, 0) = rotation * grad_vector;
         }
         DWI::set_DW_scheme(output_header, grad);
@@ -572,7 +572,7 @@ void run() {
             result.row(l) = dir;
           }
           std::stringstream s;
-          Eigen::IOFormat format(6, Eigen::DontAlignCols, ",", "\n", "", "", "", "");
+          Eigen::IOFormat const format(6, Eigen::DontAlignCols, ",", "\n", "", "", "", "");
           s << result.format(format);
           output_header.keyval()["directions"] = s.str();
         }
@@ -733,7 +733,7 @@ void run() {
 
     INFO("image will not be regridded");
     Eigen::MatrixXd rotation = linear_transform.linear();
-    Eigen::MatrixXd temp = rotation.transpose() * rotation;
+    Eigen::MatrixXd const temp = rotation.transpose() * rotation;
     if (!temp.isIdentity(0.001))
       WARN("The input linear transform is not orthonormal and therefore"
            " applying this without the -template option will mean"

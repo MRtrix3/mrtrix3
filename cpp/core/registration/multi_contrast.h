@@ -34,7 +34,7 @@
 namespace MR::Registration {
 
 FORCE_INLINE void check_image_output(const std::filesystem::path &image_path, const Header &reference) {
-  std::vector<std::string> V;
+  std::vector<std::string> const V;
   if (image_path.empty())
     throw Exception("image output path is empty");
   if (std::filesystem::exists(image_path) && !App::overwrite_files)
@@ -44,7 +44,7 @@ FORCE_INLINE void check_image_output(const std::filesystem::path &image_path, co
   Header H = reference;
   File::NameParser parser;
   parser.parse(image_path.string());
-  std::vector<int> Pdim(parser.ndim());
+  std::vector<int> const Pdim(parser.ndim());
 
   H.path() = image_path;
 

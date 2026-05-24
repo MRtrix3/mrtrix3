@@ -21,7 +21,7 @@
 namespace MR::GUI::MRView {
 
 Volume::~Volume() {
-  GL::Context::Grab context;
+  GL::Context::Grab const context;
   _texture.clear();
   vertex_buffer.clear();
   vertex_array_object.clear();

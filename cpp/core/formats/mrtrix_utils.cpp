@@ -28,7 +28,7 @@ std::vector<ssize_t> parse_axes(size_t ndim, std::string_view specifier) {
 
   size_t sub = 0;
   size_t lim = 0;
-  size_t end = specifier.size();
+  size_t const end = specifier.size();
   size_t current = 0;
 
   try {
@@ -106,7 +106,7 @@ bool next_keyvalue(File::GZ &gz, std::string &key, std::string &value) {
   if (line.empty() || line == "END")
     return false;
 
-  size_t colon = line.find_first_of(':');
+  size_t const colon = line.find_first_of(':');
   if (colon == std::string::npos) {
     INFO("malformed key/value entry (\"" + line + "\") in file \"" + gz.name().string() + "\" - ignored");
   } else {
@@ -254,7 +254,8 @@ template <class StreamType> void write_mrtrix_header(const Header &H, StreamType
   dt.set_byte_order_native();
   out << "\ndatatype: " << dt.specifier();
 
-  Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, ", ", "\ntransform: ", "", "", "\ntransform: ", "");
+  Eigen::IOFormat const fmt(
+      Eigen::FullPrecision, Eigen::DontAlignCols, ", ", "\ntransform: ", "", "", "\ntransform: ", "");
   out << H.transform().matrix().topLeftCorner(3, 4).format(fmt);
 
   if (H.intensity_offset() != 0.0 || H.intensity_scale() != 1.0)

@@ -105,7 +105,7 @@ void run() {
 
   opt = get_options("id");
   if (!opt.empty()) {
-    std::string newid = opt[0][0];
+    std::string const newid = opt[0][0];
     tags.push_back(Tag(0x0010U, 0x0020U, newid)); // PatientID
     tags.push_back(Tag(0x0010U, 0x1000U, newid)); // OtherPatientIDs
   }

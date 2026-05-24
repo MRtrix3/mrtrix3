@@ -316,7 +316,7 @@ template <class OuterLoopType> struct ThreadedLoopRunOuter {
       return;
     }
 
-    ProgressBar::SwitchToMultiThreaded progress_functions;
+    ProgressBar::SwitchToMultiThreaded const progress_functions;
 
     struct Shared {
       Shared(const Shared &) = delete;

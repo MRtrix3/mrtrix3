@@ -170,7 +170,7 @@ void ColourMapButton::select_colourmap_slot(QAction *action) {
 }
 
 void ColourMapButton::select_colour_slot() {
-  QColor colour = QColorDialog::getColor(Qt::red, this, "Select Color", QColorDialog::DontUseNativeDialog);
+  QColor const colour = QColorDialog::getColor(Qt::red, this, "Select Color", QColorDialog::DontUseNativeDialog);
 
   if (colour.isValid())
     observer.selected_custom_colour(colour, *this);

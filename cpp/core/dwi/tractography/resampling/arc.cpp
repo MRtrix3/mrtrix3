@@ -111,16 +111,16 @@ void Arc::init_arc() {
   a[1] = 0.5 * (end + mid).dot(end - mid);
   a[2] = start.dot(n);
 
-  point_type c = M.fullPivLu().solve(a);
+  point_type const c = M.fullPivLu().solve(a);
 
-  point_type x(start - c);
-  value_type R = x.norm();
+  point_type const x(start - c);
+  value_type const R = x.norm();
 
   point_type y(mid - c);
   y -= y.dot(x) / (x.norm() * y.norm()) * x;
   y *= R / y.norm();
 
-  point_type e(end - c);
+  point_type const e(end - c);
   value_type ex(x.dot(e)), ey(y.dot(e));
 
   value_type angle = std::atan2(ey, ex);

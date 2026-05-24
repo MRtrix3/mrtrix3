@@ -100,9 +100,9 @@ void run() {
   for (auto l = Loop("cropping fixel image", 0, 3)(in_index_image, out_index_image); l; ++l) {
 
     in_index_image.index(3) = 0;
-    index_type in_nfixels = in_index_image.value();
+    index_type const in_nfixels = in_index_image.value();
     in_index_image.index(3) = 1;
-    index_type in_offset = in_index_image.value();
+    index_type const in_offset = in_index_image.value();
 
     index_type out_nfixels = 0;
     for (index_type i = 0; i < in_nfixels; ++i) {

@@ -397,7 +397,7 @@ void run() {
 
   std::shared_ptr<Stats::EnhancerBase> enhancer;
   if (use_tfce) {
-    std::shared_ptr<Stats::TFCE::EnhancerBase> base(
+    std::shared_ptr<Stats::TFCE::EnhancerBase> const base(
         new Stats::Cluster::ClusterSize(connector, cluster_forming_threshold));
     enhancer.reset(new Stats::TFCE::Wrapper(base, tfce_dh, tfce_E, tfce_H));
   } else {

@@ -382,7 +382,7 @@ inline ODF_Item *ODF::get_image() {
 }
 
 void ODF::get_values(Eigen::VectorXf &values, ODF_Item &item, const Eigen::Vector3f &pos, const bool interp) {
-  MRView::Image &image(item.image);
+  MRView::Image const &image(item.image);
   values.setZero();
   if (interp) {
     auto linear_interp = Interp::make_linear(image.image);
@@ -445,11 +445,11 @@ void ODF::setup_ODFtype_UI(const ODF_Item *image) {
 }
 
 void ODF::add_images(std::vector<std::filesystem::path> &list, const odf_type_t mode) {
-  size_t previous_size = image_list_model->rowCount();
+  size_t const previous_size = image_list_model->rowCount();
   if (!image_list_model->add_items(
           list, mode, colour_by_direction_box->isChecked(), hide_negative_values_box->isChecked(), scale->value()))
     return;
-  QModelIndex first = image_list_model->index(previous_size, 0, QModelIndex());
+  QModelIndex const first = image_list_model->index(previous_size, 0, QModelIndex());
   image_list_view->selectionModel()->select(first, QItemSelectionModel::ClearAndSelect);
   ODF_Item *settings = get_image();
   setup_ODFtype_UI(settings);

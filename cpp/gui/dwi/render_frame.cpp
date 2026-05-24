@@ -76,7 +76,7 @@ RenderFrame::RenderFrame(QWidget *parent)
 }
 
 RenderFrame::~RenderFrame() {
-  GL::Context::Grab context(this);
+  GL::Context::Grab const context(this);
   axes_VB.clear();
   axes_VAO.clear();
 }
@@ -92,7 +92,7 @@ void RenderFrame::set_rotation(const GL::mat4 &rotation) {
 }
 
 void RenderFrame::initializeGL() {
-  GL::Context::Grab context(this);
+  GL::Context::Grab const context(this);
   GL::init();
   glfont.initGL(false);
   renderer.initGL();
@@ -114,21 +114,21 @@ void RenderFrame::initializeGL() {
                                              -1.0, -1.0, -1.0, 0.0, 0.0, 1.0, -1.0, -1.0, 1.0,  0.0, 0.0, 1.0}; //
   gl::BufferData(gl::ARRAY_BUFFER, sizeof(axis_data), axis_data.data(), gl::STATIC_DRAW);
 
-  GL::Shader::Vertex vertex_shader("layout(location = 0) in vec3 vertex_in;\n"
-                                   "layout(location = 1) in vec3 color_in;\n"
-                                   "uniform mat4 MVP;\n"
-                                   "uniform vec3 origin;\n"
-                                   "out vec3 color;\n"
-                                   "void main () {\n"
-                                   "  color = color_in;\n"
-                                   "  gl_Position = MVP * vec4(vertex_in + origin, 1.0);\n"
-                                   "}\n");
+  GL::Shader::Vertex const vertex_shader("layout(location = 0) in vec3 vertex_in;\n"
+                                         "layout(location = 1) in vec3 color_in;\n"
+                                         "uniform mat4 MVP;\n"
+                                         "uniform vec3 origin;\n"
+                                         "out vec3 color;\n"
+                                         "void main () {\n"
+                                         "  color = color_in;\n"
+                                         "  gl_Position = MVP * vec4(vertex_in + origin, 1.0);\n"
+                                         "}\n");
 
-  GL::Shader::Fragment fragment_shader("in vec3 color;\n"
-                                       "out vec4 color_out;\n"
-                                       "void main () {\n"
-                                       "  color_out = vec4 (color, 1.0);\n"
-                                       "}\n");
+  GL::Shader::Fragment const fragment_shader("in vec3 color;\n"
+                                             "out vec4 color_out;\n"
+                                             "void main () {\n"
+                                             "  color_out = vec4 (color, 1.0);\n"
+                                             "}\n");
 
   axes_shader.attach(vertex_shader);
   axes_shader.attach(fragment_shader);
@@ -138,27 +138,27 @@ void RenderFrame::initializeGL() {
 }
 
 void RenderFrame::resizeGL(int w, int h) {
-  GL::Context::Grab context(this);
+  GL::Context::Grab const context(this);
   projection.set_viewport(*this, 0, 0, w, h);
 }
 
 void RenderFrame::paintGL() {
-  GL::Context::Grab context(this);
+  GL::Context::Grab const context(this);
   gl::ColorMask(true, true, true, true);
   gl::ClearColor(lighting->background_color[0], lighting->background_color[1], lighting->background_color[2], 0.0);
   gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 
-  float dist(1.0f / (distance * view_angle * Degrees2radians));
-  float near_ = (dist - 3.0f > 0.001f ? dist - 3.0f : 0.001f);
-  float horizontal = 2.0f * near_ * tan(0.5f * view_angle * Degrees2radians) * static_cast<float>(width()) /
-                     static_cast<float>(width() + height());
-  float vertical = 2.0f * near_ * tan(0.5f * view_angle * Degrees2radians) * static_cast<float>(height()) /
-                   static_cast<float>(width() + height());
+  float const dist(1.0f / (distance * view_angle * Degrees2radians));
+  float const near_ = (dist - 3.0f > 0.001f ? dist - 3.0f : 0.001f);
+  float const horizontal = 2.0f * near_ * tan(0.5f * view_angle * Degrees2radians) * static_cast<float>(width()) /
+                           static_cast<float>(width() + height());
+  float const vertical = 2.0f * near_ * tan(0.5f * view_angle * Degrees2radians) * static_cast<float>(height()) /
+                         static_cast<float>(width() + height());
 
   GL::mat4 P;
   if (OS > 0) {
-    float incx = 2.0f * horizontal / static_cast<float>(OS);
-    float incy = 2.0f * vertical / static_cast<float>(OS);
+    float const incx = 2.0f * horizontal / static_cast<float>(OS);
+    float const incy = 2.0f * vertical / static_cast<float>(OS);
     P = GL::frustum(-horizontal + OS_x * incx,
                     -horizontal + (1 + OS_x) * incx,
                     -vertical + OS_y * incy,
@@ -174,7 +174,7 @@ void RenderFrame::paintGL() {
   M(0, 3) = M(1, 3) = M(2, 3) = M(3, 0) = M(3, 1) = M(3, 2) = 0.0f;
   M(3, 3) = 1.0f;
 
-  GL::mat4 MV = GL::translate(0.0, 0.0, -dist) * GL::mat4(M);
+  GL::mat4 const MV = GL::translate(0.0, 0.0, -dist) * GL::mat4(M);
   projection.set(MV, P);
 
   gl::Enable(gl::DEPTH_TEST);
@@ -289,8 +289,8 @@ void RenderFrame::mouseMoveEvent(QMouseEvent *event) {
   int dy = event->position().y() - last_pos.y();
   last_pos = event->position();
 #else
-  int dx = event->pos().x() - last_pos.x();
-  int dy = event->pos().y() - last_pos.y();
+  int const dx = event->pos().x() - last_pos.x();
+  int const dy = event->pos().y() - last_pos.y();
   last_pos = event->pos();
 #endif
   if (dx == 0 && dy == 0)
@@ -334,7 +334,7 @@ void RenderFrame::wheelEvent(QWheelEvent *event) {
 #else
   QPoint delta = event->orientation() == Qt::Vertical ? QPoint(0, event->delta()) : QPoint(event->delta(), 0);
 #endif
-  int scroll = delta.y() / 15;
+  int const scroll = delta.y() / 15;
   for (int n = 0; n < scroll; n++)
     scale *= ScaleInc;
   for (int n = 0; n > scroll; n--)
@@ -354,14 +354,14 @@ void RenderFrame::screenshot(int oversampling, const std::filesystem::path &imag
 }
 
 void RenderFrame::snapshot() {
-  GL::Context::Grab context(this);
+  GL::Context::Grab const context(this);
   gl::PixelStorei(gl::PACK_ALIGNMENT, 1);
   gl::ReadPixels(0, 0, projection.width(), projection.height(), gl::RGB, gl::UNSIGNED_BYTE, framebuffer.get());
 
-  int start_i = projection.width() * OS_x;
-  int start_j = projection.height() * (OS - OS_y - 1);
+  int const start_i = projection.width() * OS_x;
+  int const start_j = projection.height() * (OS - OS_y - 1);
   for (int j = 0; j < projection.height(); j++) {
-    int j2 = projection.height() - j - 1;
+    int const j2 = projection.height() - j - 1;
     for (int i = 0; i < projection.width(); i++) {
       GLubyte *p = framebuffer.get() +
                    3 * (static_cast<size_t>(i) + static_cast<size_t>(projection.width()) * static_cast<size_t>(j));

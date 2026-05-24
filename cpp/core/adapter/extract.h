@@ -55,7 +55,7 @@ public:
   ssize_t get_index(size_t axis) const { return (axis == extract_axis ? current_pos : parent().index(axis)); }
   void move_index(size_t axis, ssize_t increment) {
     if (axis == extract_axis) {
-      ssize_t prev_pos = current_pos < nsize ? indices[current_pos] : 0;
+      ssize_t const prev_pos = current_pos < nsize ? indices[current_pos] : 0;
       current_pos += increment;
       if (current_pos < nsize)
         parent().index(axis) += indices[current_pos] - prev_pos;

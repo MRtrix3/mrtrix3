@@ -257,7 +257,7 @@ void permute_DW_scheme(Header &H, const std::vector<int> &axes) {
   if (!in.rows())
     return;
 
-  Transform T(H);
+  Transform const T(H);
   Eigen::Matrix3d permute = Eigen::Matrix3d::Zero();
   for (size_t axis = 0; axis != 3; ++axis)
     permute(axes[axis], axis) = 1.0;
@@ -457,7 +457,7 @@ void run() {
   if (!opt.empty()) {
     pos.assign(header_in.ndim(), std::vector<uint32_t>());
     for (size_t n = 0; n < opt.size(); n++) {
-      size_t axis = opt[n][0];
+      size_t const axis = opt[n][0];
       if (axis >= header_in.ndim())
         throw Exception("axis " + str(axis) + " provided with -coord option is out of range of input image");
       if (!pos[axis].empty())

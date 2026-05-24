@@ -314,7 +314,7 @@ void Writer::save(std::byte *data) {
   const size_t row_bytes = png_get_rowbytes(png_ptr, info_ptr);
 
   auto finish = [&](std::byte *to_write) {
-    std::unique_ptr<png_bytep[]> row_pointers(new png_bytep[height]);
+    std::unique_ptr<png_bytep[]> const row_pointers(new png_bytep[height]);
     for (size_t row = 0; row != height; ++row)
       row_pointers[row] = reinterpret_cast<png_bytep>(to_write + row * row_bytes);
     png_write_image(png_ptr, row_pointers.get());

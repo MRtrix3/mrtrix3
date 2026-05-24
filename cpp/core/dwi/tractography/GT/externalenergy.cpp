@@ -55,7 +55,7 @@ ExternalEnergyComputer::ExternalEnergyComputer(Stats &stat, Header &dwiheader, c
   // Set kernel matrices --------------------------------------------------------
   auto grad = DWI::get_DW_scheme(dwiheader);
   nrows = grad.rows();
-  DWI::Shells shells(grad);
+  DWI::Shells const shells(grad);
 
   if (static_cast<size_t>(props.resp_WM.rows()) != shells.count())
     FAIL("WM kernel size does not match the no. b-values in the image.");
@@ -81,10 +81,10 @@ ExternalEnergyComputer::ExternalEnergyComputer(Stats &stat, Header &dwiheader, c
     wmr_rh = Math::ZSH::ZSH2RH(wmr_zsh);
     wmr0 = props.resp_WM(s, 0) / std::sqrt(M_4PI);
 
-    for (size_t r : shells[s].get_volumes()) {
+    for (size_t const r : shells[s].get_volumes()) {
       // K
       unit_dir << grad(r, 0), grad(r, 1), grad(r, 2);
-      double n = unit_dir.norm();
+      double const n = unit_dir.norm();
       if (n > 0.0)
         unit_dir /= n;
       Math::SH::delta(delta_vec, unit_dir, lmax);

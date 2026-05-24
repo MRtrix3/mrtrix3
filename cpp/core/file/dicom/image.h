@@ -106,7 +106,7 @@ public:
     else {
       if (!orientation_x.allFinite() || !orientation_y.allFinite())
         throw Exception("slice orientation information missing from DICOM header!");
-      Eigen::Vector3d normal = orientation_x.cross(orientation_y);
+      Eigen::Vector3d const normal = orientation_x.cross(orientation_y);
       if (normal.dot(orientation_z) < 0.0)
         orientation_z = -normal;
       else

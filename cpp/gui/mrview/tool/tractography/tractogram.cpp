@@ -194,8 +194,8 @@ std::string Tractogram::Shader::geometry_shader_source(const Displayable &) {
 
 std::string Tractogram::Shader::fragment_shader_source(const Displayable &displayable) {
   const Tractogram &tractogram = dynamic_cast<const Tractogram &>(displayable);
-  bool using_geom = geometry_type == TrackGeometryType::Pseudotubes;
-  bool using_points = geometry_type == TrackGeometryType::Points;
+  bool const using_geom = geometry_type == TrackGeometryType::Pseudotubes;
+  bool const using_points = geometry_type == TrackGeometryType::Points;
 
   std::string source = "uniform float lower, upper;\n"
                        "uniform vec3 colourmap_colour;\n"
@@ -401,16 +401,16 @@ void Tractogram::render(const Projection &transform) {
     original_fov = std::pow(dim[0] * dim[1] * dim[2], 1.0F / 3.0F);
   }
 
-  float line_thickness_screenspace = Tractogram::default_line_thickness * std::exp(2.0e-3f * line_thickness) *
-                                     original_fov * (transform.width() + transform.height()) /
-                                     (2.f * window().FOV() * transform.width() * transform.height());
+  float const line_thickness_screenspace = Tractogram::default_line_thickness * std::exp(2.0e-3f * line_thickness) *
+                                           original_fov * (transform.width() + transform.height()) /
+                                           (2.f * window().FOV() * transform.width() * transform.height());
 
   gl::Uniform1f(gl::GetUniformLocation(track_shader, "line_thickness"), line_thickness_screenspace);
   gl::Uniform1f(gl::GetUniformLocation(track_shader, "scale_x"), transform.width());
   gl::Uniform1f(gl::GetUniformLocation(track_shader, "scale_y"), transform.height());
 
-  float point_size_screenspace = Tractogram::default_point_size * std::exp(2.0e-3f * line_thickness) * original_fov *
-                                 (transform.width() + transform.height()) / (2.f * window().FOV());
+  float const point_size_screenspace = Tractogram::default_point_size * std::exp(2.0e-3f * line_thickness) *
+                                       original_fov * (transform.width() + transform.height()) / (2.f * window().FOV());
 
   glPointSize(point_size_screenspace);
 
@@ -527,8 +527,8 @@ inline void Tractogram::render_streamlines() {
           --track_starts[buf][j];
 
         // Ensure final vertex corresponds to track end
-        GLint offset = original_track_starts[buf][j] + original_track_sizes[buf][j] -
-                       (track_starts[buf][j] + track_sizes[buf][j] - 1) * sample_stride;
+        GLint const offset = original_track_starts[buf][j] + original_track_sizes[buf][j] -
+                             (track_starts[buf][j] + track_sizes[buf][j] - 1) * sample_stride;
 
         track_sizes[buf][j] +=
             static_cast<GLint>(std::floor(static_cast<float>(offset) / static_cast<float>(sample_stride)));
@@ -581,7 +581,7 @@ inline void Tractogram::update_stride() {
 void Tractogram::load_tracks() {
   // Make sure to set graphics context!
   // We're setting up vertex array objects
-  GL::Context::Grab context;
+  GL::Context::Grab const context;
   GL::assert_context_is_current();
 
   DWI::Tractography::Reader<float> file(filepath, properties);
@@ -635,7 +635,7 @@ void Tractogram::load_end_colours() {
 
   // Make sure to set graphics context!
   // We're setting up vertex array objects
-  GL::Context::Grab context;
+  GL::Context::Grab const context;
   GL::assert_context_is_current();
 
   erase_colour_data();
@@ -665,7 +665,7 @@ void Tractogram::load_end_colours() {
 void Tractogram::load_intensity_track_scalars(const std::filesystem::path &filepath) {
   // Make sure to set graphics context!
   // We're setting up vertex array objects
-  GL::Context::Grab context;
+  GL::Context::Grab const context;
   GL::assert_context_is_current();
 
   erase_intensity_scalar_data();
@@ -757,7 +757,7 @@ void Tractogram::load_intensity_track_scalars(const std::filesystem::path &filep
 void Tractogram::load_threshold_track_scalars(const std::filesystem::path &filepath) {
   // Make sure to set graphics context!
   // We're setting up vertex array objects
-  GL::Context::Grab context;
+  GL::Context::Grab const context;
   GL::assert_context_is_current();
 
   erase_threshold_scalar_data();
@@ -845,7 +845,7 @@ void Tractogram::load_threshold_track_scalars(const std::filesystem::path &filep
 }
 
 void Tractogram::erase_colour_data() {
-  GL::Context::Grab context;
+  GL::Context::Grab const context;
   GL::assert_context_is_current();
   if (!colour_buffers.empty()) {
     gl::DeleteBuffers(colour_buffers.size(), &colour_buffers[0]);
@@ -855,7 +855,7 @@ void Tractogram::erase_colour_data() {
 }
 
 void Tractogram::erase_intensity_scalar_data() {
-  GL::Context::Grab context;
+  GL::Context::Grab const context;
   GL::assert_context_is_current();
   if (!intensity_scalar_buffers.empty()) {
     gl::DeleteBuffers(intensity_scalar_buffers.size(), &intensity_scalar_buffers[0]);
@@ -866,7 +866,7 @@ void Tractogram::erase_intensity_scalar_data() {
 }
 
 void Tractogram::erase_threshold_scalar_data() {
-  GL::Context::Grab context;
+  GL::Context::Grab const context;
   GL::assert_context_is_current();
   if (!threshold_scalar_buffers.empty()) {
     gl::DeleteBuffers(threshold_scalar_buffers.size(), &threshold_scalar_buffers[0]);

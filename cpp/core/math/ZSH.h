@@ -208,7 +208,7 @@ inline VectorType &FA2ZSH(VectorType &zsh,
                           default_type bvalue,
                           const size_t lmax,
                           const size_t precision = 100) {
-  default_type a = FA / sqrt(3.0 - 2.0 * FA * FA);
+  default_type const a = FA / sqrt(3.0 - 2.0 * FA * FA);
   default_type ev1 = ADC * (1.0 + 2.0 * a), ev2 = ADC * (1.0 - a);
 
   Eigen::VectorXd sigs(precision);
@@ -216,7 +216,7 @@ inline VectorType &FA2ZSH(VectorType &zsh,
   Eigen::Matrix<default_type, Eigen::Dynamic, 1, 0, 64> AL;
 
   for (size_t i = 0; i < precision; i++) {
-    default_type el = i * Math::pi / (2.0 * (precision - 1));
+    default_type const el = i * Math::pi / (2.0 * (precision - 1));
     sigs[i] = exp(-bvalue * (ev1 * std::cos(el) * std::cos(el) + ev2 * std::sin(el) * std::sin(el)));
     Legendre::Plm_sph(AL, lmax, 0, std::cos(el));
     for (size_t l = 0; l <= lmax; l += 2)

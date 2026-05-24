@@ -125,9 +125,9 @@ void run() {
           int32_t closest_fixel_index = -1;
 
           in_index_image.index(3) = 0;
-          index_type num_fixels_in_voxel = in_index_image.value();
+          index_type const num_fixels_in_voxel = in_index_image.value();
           in_index_image.index(3) = 1;
-          index_type offset = in_index_image.value();
+          index_type const offset = in_index_image.value();
 
           for (size_t fixel = 0; fixel < num_fixels_in_voxel; ++fixel) {
             in_directions_image.index(0) = offset + fixel;

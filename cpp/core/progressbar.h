@@ -233,7 +233,7 @@ FORCE_INLINE void ProgressBar::operator++() {
     return;
   const std::unique_lock<std::mutex> lock(mutex);
   if (_multiplier == 0.0F) {
-    double time = timer.elapsed();
+    double const time = timer.elapsed();
     if (time >= next_time) {
       _value = time / busy_interval;
       do {

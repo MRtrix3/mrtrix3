@@ -156,7 +156,7 @@ public:
   bool sync_focus_on() const { return sync_focus_action->isChecked(); }
 
   void captureGL(const std::filesystem::path &filepath) {
-    QImage image(glarea->grabFramebuffer());
+    QImage const image(glarea->grabFramebuffer());
     image.save(qstr(filepath.string()));
   }
 

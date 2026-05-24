@@ -178,7 +178,7 @@ template <class Fixel> void ModelBase<Fixel>::scale_FDs_by_GM() {
   VoxelAccessor v(accessor());
   FOD_sum = 0.0;
   for (auto l = Loop(v)(v, act_5tt); l; ++l) {
-    Tractography::ACT::Tissues tissues(act_5tt);
+    Tractography::ACT::Tissues const tissues(act_5tt);
     const default_type multiplier = 1.0 - tissues.get_cgm() - (0.5 * tissues.get_sgm()); // Heuristic
     for (typename Fixel_map<Fixel>::Iterator i = begin(v); i; ++i) {
       i().scale_FOD(multiplier);

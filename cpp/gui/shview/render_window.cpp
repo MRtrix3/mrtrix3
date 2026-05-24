@@ -177,8 +177,8 @@ Window::Window(bool is_response_coefs) : lighting_dialog(nullptr), current(0), i
 
   lmax_group = new QActionGroup(this);
   for (int n = 0; n <= 8; n++) {
-    int num = 2 * n;
-    QString label = QString::number(num);
+    int const num = 2 * n;
+    QString const label = QString::number(num);
     QAction *lmax_action = new QAction(label, this);
     lmax_action->setCheckable(true);
     lmax_action->setData(num);
@@ -190,7 +190,7 @@ Window::Window(bool is_response_coefs) : lighting_dialog(nullptr), current(0), i
 
   lod_group = new QActionGroup(this);
   for (int n = 1; n < 8; n++) {
-    QString label = QString::number(n);
+    QString const label = QString::number(n);
     QAction *lod_action = new QAction(label, this);
     lod_action->setShortcut(label);
     lod_action->setCheckable(true);
@@ -203,8 +203,8 @@ Window::Window(bool is_response_coefs) : lighting_dialog(nullptr), current(0), i
 
   screenshot_OS_group = new QActionGroup(this);
   for (int n = 0; n < 4; n++) {
-    int num = n + 1;
-    QString label = QString::number(num);
+    int const num = n + 1;
+    QString const label = QString::number(num);
     QAction *screenshot_OS_action = new QAction(label, this);
     screenshot_OS_action->setCheckable(true);
     screenshot_OS_action->setData(num);
@@ -228,13 +228,13 @@ Window::Window(bool is_response_coefs) : lighting_dialog(nullptr), current(0), i
 
 Window::~Window() {
   render_frame->makeCurrent();
-  QList<QAction *> lmax = lmax_group->actions();
+  QList<QAction *> const lmax = lmax_group->actions();
   for (QAction *action : lmax)
     delete action;
-  QList<QAction *> lods = lod_group->actions();
+  QList<QAction *> const lods = lod_group->actions();
   for (QAction *action : lods)
     delete action;
-  QList<QAction *> screens = screenshot_OS_group->actions();
+  QList<QAction *> const screens = screenshot_OS_group->actions();
   for (QAction *action : screens)
     delete action;
 }
@@ -273,7 +273,7 @@ void Window::lod_slot() { render_frame->set_LOD(lod_group->checkedAction()->data
 
 void Window::lmax_inc_slot() {
   QList<QAction *> actions = lmax_group->actions();
-  int index = actions.indexOf(lmax_group->checkedAction());
+  int const index = actions.indexOf(lmax_group->checkedAction());
   if (index < 8) {
     actions[index + 1]->setChecked(true);
     lmax_slot();
@@ -282,7 +282,7 @@ void Window::lmax_inc_slot() {
 
 void Window::lmax_dec_slot() {
   QList<QAction *> actions = lmax_group->actions();
-  int index = actions.indexOf(lmax_group->checkedAction());
+  int const index = actions.indexOf(lmax_group->checkedAction());
   if (index > 0) {
     actions[index - 1]->setChecked(true);
     lmax_slot();

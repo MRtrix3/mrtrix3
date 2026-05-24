@@ -533,7 +533,7 @@ matrix_type Hypothesis::check_rank(const matrix_type &in, const index_type index
   //   here we want the row-space (since it's degeneracy in contrast matrix rows
   //   that has led to the rank-deficiency, whereas we can't exclude factor columns).
   //   Hence the transposing.
-  Eigen::FullPivLU<matrix_type> decomp(in.transpose());
+  Eigen::FullPivLU<matrix_type> const decomp(in.transpose());
   if (decomp.rank() == in.rows())
     return in;
   WARN("F-test " + str(index + 1) + " is rank-deficient; row-space matrix decomposition will instead be used");

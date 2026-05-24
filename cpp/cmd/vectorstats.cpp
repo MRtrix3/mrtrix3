@@ -302,10 +302,10 @@ void run() {
       WARN("Option -strong has no effect when testing a single hypothesis only");
     }
 
-    std::shared_ptr<Stats::EnhancerBase> enhancer;
+    std::shared_ptr<Stats::EnhancerBase> const enhancer;
     matrix_type null_distribution, uncorrected_pvalues;
     count_matrix_type null_contributions;
-    matrix_type empirical_distribution; // unused
+    matrix_type const empirical_distribution; // unused
     Stats::PermTest::run_permutations(glm_test,
                                       enhancer,
                                       empirical_distribution,

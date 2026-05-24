@@ -306,11 +306,11 @@ void Capture::run(bool with_capture) {
   if (window().snap_to_image() && degrees_button->value() > 0.0)
     window().set_snap_to_image(false);
 
-  size_t frames_value = frames->value();
+  size_t const frames_value = frames->value();
 
-  std::string prefix(prefix_textbox->text().toUtf8().constData());
-  float radians = degrees_button->value() * (Math::pi / 180.0) / frames_value;
-  size_t first_index = start_index->value();
+  std::string const prefix(prefix_textbox->text().toUtf8().constData());
+  float const radians = degrees_button->value() * (Math::pi / 180.0) / frames_value;
+  size_t const first_index = start_index->value();
 
   float volume = 0.0F, volume_inc = 0.0F;
   if (volume_axis->value() < static_cast<ssize_t>(image.ndim())) {
@@ -378,7 +378,7 @@ void Capture::run(bool with_capture) {
       break;
     }
 
-    Eigen::Vector3f focus_delta(trans_vec);
+    Eigen::Vector3f const focus_delta(trans_vec);
 
     // If rotating image we need to offset the translation so that the rotation is relative to
     // the center (i.e. target) of the image
@@ -443,7 +443,7 @@ void Capture::add_commandline_options(MR::App::OptionList &options) {
 bool Capture::process_commandline_option(const MR::App::ParsedOption &opt) {
   if (opt.opt->is("capture.folder")) {
     current_folder = static_cast<std::filesystem::path>(opt[0]);
-    QString path(qstr(shorten(current_folder.filename().string(), 20, 0)));
+    QString const path(qstr(shorten(current_folder.filename().string(), 20, 0)));
     folder_button->setText(path);
     folder_button->setToolTip(qstr(current_folder.string()));
     on_output_update();

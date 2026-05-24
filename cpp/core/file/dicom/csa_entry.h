@@ -73,8 +73,8 @@ public:
       return false;
 
     for (uint32_t m = 0; m < nitems; m++) {
-      uint32_t length = Raw::fetch_LE<uint32_t>(next);
-      size_t size = 16 + 4 * ((length + 3) / 4);
+      uint32_t const length = Raw::fetch_LE<uint32_t>(next);
+      size_t const size = 16 + 4 * ((length + 3) / 4);
       if (next + size > end)
         return false;
       if (print)
@@ -96,7 +96,7 @@ public:
   int get_int() const {
     const std::byte *p = start + 84;
     for (uint32_t m = 0; m < nitems; m++) {
-      uint32_t length = Raw::fetch_LE<uint32_t>(p);
+      uint32_t const length = Raw::fetch_LE<uint32_t>(p);
       if (length)
         return to<int>(
             std::string(reinterpret_cast<const char *>(p) + 16, static_cast<size_t>(4 * ((length + 3) / 4))));
@@ -108,7 +108,7 @@ public:
   default_type get_float() const {
     const std::byte *p = start + 84;
     for (uint32_t m = 0; m < nitems; m++) {
-      uint32_t length = Raw::fetch_LE<uint32_t>(p);
+      uint32_t const length = Raw::fetch_LE<uint32_t>(p);
       if (length)
         return to<default_type>(
             std::string(reinterpret_cast<const char *>(p) + 16, static_cast<size_t>(4 * ((length + 3) / 4))));
@@ -122,7 +122,7 @@ public:
     if (nitems < v.size())
       DEBUG("CSA entry contains fewer items than expected - trailing entries will be set to NaN");
     for (uint32_t m = 0; m < std::min<size_t>(nitems, v.size()); m++) {
-      uint32_t length = Raw::fetch_LE<uint32_t>(p);
+      uint32_t const length = Raw::fetch_LE<uint32_t>(p);
       v[m] = length ? to<default_type>(std::string(reinterpret_cast<const char *>(p) + 16,
                                                    static_cast<size_t>(4 * ((length + 3) / 4))))
                     : NaN;
@@ -150,7 +150,7 @@ public:
 
     for (uint32_t m = 0; m < item.nitems; m++) {
       uint32_t length = Raw::fetch_LE<uint32_t>(next);
-      size_t size = 16 + 4 * ((length + 3) / 4);
+      size_t const size = 16 + 4 * ((length + 3) / 4);
       while (length > 0 && next[16 + length - 1] == std::byte{0})
         length--;
       stream << " ";

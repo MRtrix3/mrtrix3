@@ -56,7 +56,7 @@ template <class ImageType> void image2mesh_blocky(const ImageType &input_image, 
   // Perform all initial calculations in voxel space;
   //   only once the final vertex position in voxel space is determined
   //   is it transformed to real space for the final output
-  Transform transform(input_image);
+  Transform const transform(input_image);
 
   // Also, for initial calculations, do this such that a voxel location actually
   //   refers to the lower corner of the voxel; that way searches for existing
@@ -428,7 +428,7 @@ template <class ImageType> void image2mesh_mc(const ImageType &input_image, Mesh
   VertexList vertices;
   TriangleList triangles;
 
-  Transform transform(input_image);
+  Transform const transform(input_image);
 
   ImageType voxel(input_image);
   std::array<float, 8> in_vertex_values{};

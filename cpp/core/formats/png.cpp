@@ -32,7 +32,7 @@ std::unique_ptr<ImageIO::Base> PNG::read(Header &H) const {
     return std::unique_ptr<ImageIO::Base>();
 
   const std::filesystem::path &hpath = static_cast<const Header &>(H).path();
-  File::PNG::Reader png(hpath);
+  File::PNG::Reader const png(hpath);
 
   switch (png.get_colortype()) {
   case PNG_COLOR_TYPE_GRAY:

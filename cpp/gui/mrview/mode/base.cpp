@@ -130,8 +130,9 @@ void Base::slice_move_event(const ModelViewProjection &proj, float x) {
     return;
 
   const auto &header = image()->header();
-  float increment = snap_to_image() ? x * header.spacing(plane())
-                                    : x * std::pow(header.spacing(0) * header.spacing(1) * header.spacing(2), 1 / 3.f);
+  float const increment = snap_to_image()
+                              ? x * header.spacing(plane())
+                              : x * std::pow(header.spacing(0) * header.spacing(1) * header.spacing(2), 1 / 3.f);
   auto move = get_through_plane_translation(increment, proj);
 
   set_focus(focus() + move);
@@ -227,7 +228,7 @@ void Base::setup_projection(const GL::mat4 &M, ModelViewProjection &with_project
 }
 
 Eigen::Quaternionf Base::get_tilt_rotation(const ModelViewProjection &proj) const {
-  QPoint dpos = window().mouse_displacement();
+  QPoint const dpos = window().mouse_displacement();
   if (dpos.x() == 0 && dpos.y() == 0)
     return Eigen::Quaternionf(NaNF, NaNF, NaNF, NaNF);
 
@@ -241,7 +242,7 @@ Eigen::Quaternionf Base::get_tilt_rotation(const ModelViewProjection &proj) cons
 }
 
 Eigen::Quaternionf Base::get_rotate_rotation(const ModelViewProjection &proj) const {
-  QPoint dpos = window().mouse_displacement();
+  QPoint const dpos = window().mouse_displacement();
   if (dpos.x() == 0 && dpos.y() == 0)
     return Eigen::Quaternionf(NaNF, NaNF, NaNF, NaNF);
 
@@ -261,7 +262,7 @@ Eigen::Quaternionf Base::get_rotate_rotation(const ModelViewProjection &proj) co
 
   const Eigen::Vector3f n = x1.cross(x0);
   const float angle = n[2];
-  Eigen::Vector3f v = (proj.screen_normal()).normalized();
+  Eigen::Vector3f const v = (proj.screen_normal()).normalized();
   return Eigen::Quaternionf(Eigen::AngleAxisf(angle, v));
 }
 
@@ -276,7 +277,7 @@ void Base::tilt_event(const ModelViewProjection &proj) {
   if (!rot.coeffs().allFinite())
     return;
 
-  Eigen::Quaternionf orient = rot * orientation();
+  Eigen::Quaternionf const orient = rot * orientation();
   set_orientation(orient);
   updateGL();
 }
@@ -299,7 +300,7 @@ void Base::rotate_event(const ModelViewProjection &proj) {
   if (!rot.coeffs().allFinite())
     return;
 
-  Eigen::Quaternionf orient = rot * orientation();
+  Eigen::Quaternionf const orient = rot * orientation();
   set_orientation(orient);
   updateGL();
 }

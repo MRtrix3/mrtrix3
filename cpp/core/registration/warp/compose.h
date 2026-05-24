@@ -47,7 +47,7 @@ public:
 
   template <class DisplacementFieldType, class DeformationFieldType>
   void operator()(DisplacementFieldType &disp_input, DeformationFieldType &deform_output) {
-    Eigen::Vector3d voxel(disp_input.index(0), disp_input.index(1), disp_input.index(2));
+    Eigen::Vector3d const voxel(disp_input.index(0), disp_input.index(1), disp_input.index(2));
     deform_output.row(3) =
         linear_transform * (image_transform.voxel2scanner * voxel + Eigen::Vector3d(disp_input.row(3)));
   }
@@ -163,12 +163,12 @@ FORCE_INLINE void update_displacement_scaling_and_squaring(Image<default_type> &
 
   default_type max_norm = 0.0;
   auto max_norm_func = [&max_norm](Image<default_type> &update) {
-    default_type norm = Eigen::Vector3d(update.row(3)).norm();
+    default_type const norm = Eigen::Vector3d(update.row(3)).norm();
     if (norm > max_norm)
       max_norm = norm;
   };
   ThreadedLoop(update).run(max_norm_func, update);
-  default_type min_vox_size =
+  default_type const min_vox_size =
       static_cast<default_type>(std::min(input.spacing(0), std::min(input.spacing(1), input.spacing(2))));
 
   // if the maximum update is larger than half a voxel, perform scaling and squaring to ensure the displacement field
@@ -229,7 +229,7 @@ FORCE_INLINE void compute_full_deformation(const transform_type &linear1,
                                            DeformationField2Type &deform2,
                                            const transform_type &linear2,
                                            OutputDeformationFieldType &deform_out) {
-  MR::Transform deform_header_transform(deform_out);
+  MR::Transform const deform_header_transform(deform_out);
   ComposeHalfwayKernel<DeformationField1Type, DeformationField2Type> compose_kernel(
       linear1 * deform_header_transform.voxel2scanner, deform1, deform2, linear2);
   ThreadedLoop(deform_out, 0, 3).run(compose_kernel, deform_out);
@@ -276,8 +276,8 @@ FORCE_INLINE WarpType compute_full_deformation(WarpType &warp, TemplateType &tem
   deform_header.size(3) = 3;
   WarpType deform = WarpType::scratch(deform_header);
 
-  transform_type linear1 = Registration::Warp::parse_linear_transform(warp, "linear1");
-  transform_type linear2 = Registration::Warp::parse_linear_transform(warp, "linear2");
+  transform_type const linear1 = Registration::Warp::parse_linear_transform(warp, "linear1");
+  transform_type const linear2 = Registration::Warp::parse_linear_transform(warp, "linear2");
 
   std::vector<uint32_t> index(1);
   if (from == 1) {

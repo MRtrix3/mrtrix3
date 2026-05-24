@@ -63,7 +63,7 @@ Eigen::Vector3f MethodBase::random_direction() {
 }
 
 Eigen::Vector3f MethodBase::random_direction(const float max_angle, const float sin_max_angle) {
-  float phi = 2.0 * Math::pi * uniform(rng);
+  float const phi = 2.0 * Math::pi * uniform(rng);
   float theta;
   do {
     theta = max_angle * uniform(rng);
@@ -72,7 +72,7 @@ Eigen::Vector3f MethodBase::random_direction(const float max_angle, const float 
 }
 
 Eigen::Vector3f MethodBase::rotate_direction(const Eigen::Vector3f &reference, const Eigen::Vector3f &direction) {
-  float n = std::sqrt(Math::pow2(reference[0]) + Math::pow2(reference[1]));
+  float const n = std::sqrt(Math::pow2(reference[0]) + Math::pow2(reference[1]));
   if (n == 0.0) {
     if (reference[2] < 0.0)
       return -direction;
@@ -83,8 +83,8 @@ Eigen::Vector3f MethodBase::rotate_direction(const Eigen::Vector3f &reference, c
   Eigen::Vector3f m(reference[0] / n, reference[1] / n, 0.0f);
   Eigen::Vector3f mp(reference[2] * m[0], reference[2] * m[1], -n);
 
-  float alpha = direction[2];
-  float beta = direction[0] * m[0] + direction[1] * m[1];
+  float const alpha = direction[2];
+  float const beta = direction[0] * m[0] + direction[1] * m[1];
 
   return {direction[0] + alpha * reference[0] + beta * (mp[0] - m[0]),
           direction[1] + alpha * reference[1] + beta * (mp[1] - m[1]),

@@ -160,7 +160,7 @@ void run() {
 
   auto in_dwi = Image<float>::open(input_fod_path);
 
-  DWI::Directions::FastLookupSet dirs(1281);
+  DWI::Directions::FastLookupSet const dirs(1281);
 
   TckFactor tckfactor(in_dwi, dirs);
 

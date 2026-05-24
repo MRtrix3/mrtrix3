@@ -187,7 +187,7 @@ public:
 
   inline void insert(const Eigen::Vector3i &v, const default_type l, const default_type f) {
     const Voxel temp(v, l, f);
-    iterator existing = std::set<Voxel>::find(temp);
+    iterator const existing = std::set<Voxel>::find(temp);
     if (existing == std::set<Voxel>::end())
       std::set<Voxel>::insert(temp);
     else
@@ -202,7 +202,7 @@ public:
   inline void
   insert(const Eigen::Vector3i &v, const Streamline<>::tangent_type &d, const default_type l, const default_type f) {
     const VoxelDEC temp(v, d, l, f);
-    iterator existing = std::set<VoxelDEC>::find(temp);
+    iterator const existing = std::set<VoxelDEC>::find(temp);
     if (existing == std::set<VoxelDEC>::end())
       std::set<VoxelDEC>::insert(temp);
     else
@@ -217,7 +217,7 @@ public:
 
   inline void insert(const Eigen::Vector3i &v, const dir_index_type d, const default_type l, const default_type f) {
     const Dixel temp(v, d, l, f);
-    iterator existing = std::set<Dixel>::find(temp);
+    iterator const existing = std::set<Dixel>::find(temp);
     if (existing == std::set<Dixel>::end())
       std::set<Dixel>::insert(temp);
     else
@@ -232,7 +232,7 @@ public:
 
   inline void insert(const Eigen::Vector3i &v, const vector_type &t, const default_type l, const default_type f) {
     const VoxelTOD temp(v, t, l, f);
-    iterator existing = std::set<VoxelTOD>::find(temp);
+    iterator const existing = std::set<VoxelTOD>::find(temp);
     if (existing == std::set<VoxelTOD>::end())
       std::set<VoxelTOD>::insert(temp);
     else

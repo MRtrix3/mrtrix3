@@ -37,7 +37,7 @@ public:
 
   void add_items(const std::vector<std::filesystem::path> &paths, Fixel &fixel_tool) {
 
-    size_t old_size = items.size();
+    size_t const old_size = items.size();
     for (size_t i = 0, N = paths.size(); i < N; ++i) {
       BaseFixel *fixel_image(nullptr);
       try {
@@ -296,9 +296,9 @@ size_t Fixel::visible_number_colourbars() {
 
 void Fixel::render_fixel_colourbar(const Tool::BaseFixel &fixel) {
   GL::assert_context_is_current();
-  float min_value = fixel.use_discard_lower() ? fixel.scaling_min_thresholded() : fixel.scaling_min();
+  float const min_value = fixel.use_discard_lower() ? fixel.scaling_min_thresholded() : fixel.scaling_min();
 
-  float max_value = fixel.use_discard_upper() ? fixel.scaling_max_thresholded() : fixel.scaling_max();
+  float const max_value = fixel.use_discard_upper() ? fixel.scaling_max_thresholded() : fixel.scaling_max();
 
   window().colourbar_renderer.render(
       fixel.colourmap,
@@ -321,14 +321,14 @@ void Fixel::fixel_open_slot() {
 void Fixel::add_images(const std::vector<std::filesystem::path> &list) {
   if (list.empty())
     return;
-  size_t previous_size = fixel_list_model->rowCount();
+  size_t const previous_size = fixel_list_model->rowCount();
   fixel_list_model->add_items(list, *this);
 
   // Some of the images may be invalid, so it could be the case that no images were added
-  size_t new_size = fixel_list_model->rowCount();
+  size_t const new_size = fixel_list_model->rowCount();
   if (previous_size < new_size) {
-    QModelIndex first = fixel_list_model->index(previous_size, 0, QModelIndex());
-    QModelIndex last = fixel_list_model->index(new_size - 1, 0, QModelIndex());
+    QModelIndex const first = fixel_list_model->index(previous_size, 0, QModelIndex());
+    QModelIndex const last = fixel_list_model->index(new_size - 1, 0, QModelIndex());
     fixel_list_view->selectionModel()->select(QItemSelection(first, last), QItemSelectionModel::Select);
     update_gui_controls();
   }
@@ -342,7 +342,7 @@ void Fixel::dropEvent(QDropEvent *event) {
   const QMimeData *mimeData = event->mimeData();
   if (mimeData->hasUrls()) {
     std::vector<std::filesystem::path> list;
-    QList<QUrl> urlList = mimeData->urls();
+    QList<QUrl> const urlList = mimeData->urls();
     for (int i = 0; i < urlList.size() && i < max_files; ++i) {
       list.push_back(QtHelpers::url_to_fspath(urlList.at(i)));
     }
@@ -389,7 +389,7 @@ void Fixel::update_gui_controls() {
 
 void Fixel::update_gui_colour_controls(bool reload_colour_types) {
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-  size_t n_images(indices.size());
+  size_t const n_images(indices.size());
 
   colour_combobox->setEnabled(n_images == 1);
   colourmap_button->setEnabled(n_images);
@@ -458,7 +458,7 @@ void Fixel::update_gui_colour_controls(bool reload_colour_types) {
 
 void Fixel::update_gui_scaling_controls(bool reload_scaling_types) {
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-  size_t n_images(indices.size());
+  size_t const n_images(indices.size());
 
   length_multiplier->setEnabled(n_images);
   length_combobox->setEnabled(n_images == 1);
@@ -481,7 +481,7 @@ void Fixel::update_gui_scaling_controls(bool reload_scaling_types) {
 
 void Fixel::update_gui_threshold_controls(bool reload_threshold_types) {
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-  size_t n_images(indices.size());
+  size_t const n_images(indices.size());
 
   threshold_lower->setEnabled(n_images);
   threshold_upper->setEnabled(n_images);
@@ -498,7 +498,7 @@ void Fixel::update_gui_threshold_controls(bool reload_threshold_types) {
 
   BaseFixel *first_fixel = dynamic_cast<BaseFixel *>(fixel_list_model->get_fixel_image(indices[0]));
 
-  bool has_val = first_fixel->has_values();
+  bool const has_val = first_fixel->has_values();
 
   if (n_images == 1 && reload_threshold_types && has_val)
     first_fixel->load_threshold_combobox_options(*threshold_combobox);
@@ -535,7 +535,7 @@ void Fixel::update_gui_threshold_controls(bool reload_threshold_types) {
 
 void Fixel::update_gui_tracking_controls() {
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-  size_t n_images(indices.size());
+  size_t const n_images(indices.size());
 
   if (!n_images) {
     track_main_volume->setEnabled(false);
@@ -629,7 +629,7 @@ void Fixel::selected_colourmap(size_t index, const ColourMapButton &) {
 void Fixel::selected_custom_colour(const QColor &colour, const ColourMapButton &) {
   if (colour.isValid()) {
     QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-    std::array<GLubyte, 3> c_colour{{GLubyte(colour.red()), GLubyte(colour.green()), GLubyte(colour.blue())}};
+    std::array<GLubyte, 3> const c_colour{{GLubyte(colour.red()), GLubyte(colour.green()), GLubyte(colour.blue())}};
     for (int i = 0; i < indices.size(); ++i) {
       fixel_list_model->get_fixel_image(indices[i])->set_colour(c_colour);
     }
@@ -752,7 +752,7 @@ void Fixel::add_commandline_options(MR::App::OptionList &options) {
 
 bool Fixel::process_commandline_option(const MR::App::ParsedOption &opt) {
   if (opt.opt->is("fixel.load")) {
-    std::vector<std::filesystem::path> list(1, opt[0]);
+    std::vector<std::filesystem::path> const list(1, opt[0]);
     try {
       fixel_list_model->add_items(list, *this);
     } catch (Exception &E) {

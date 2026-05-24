@@ -45,7 +45,7 @@ BaseFixel::BaseFixel(const std::filesystem::path &filepath, Fixel &fixel_tool)
 }
 
 BaseFixel::~BaseFixel() {
-  GL::Context::Grab context;
+  GL::Context::Grab const context;
   vertex_buffer.clear();
   direction_buffer.clear();
   vertex_array_object.clear();
@@ -203,7 +203,7 @@ void BaseFixel::render(const Projection &projection) {
 
   update_image_buffers();
 
-  FixelValue &fixel_threshold = current_fixel_threshold_state();
+  FixelValue const &fixel_threshold = current_fixel_threshold_state();
 
   gl::Uniform1f(gl::GetUniformLocation(fixel_shader, "length_mult"),
                 voxel_size_length_multipler * user_line_length_multiplier);
@@ -242,7 +242,7 @@ void BaseFixel::render(const Projection &projection) {
       gl::DrawElements(gl::POINTS, static_cast<GLsizei>(element_indices.size()), gl::UNSIGNED_INT, nullptr);
   } else {
     request_update_interp_image_buffer(projection);
-    if (GLsizei points_count = regular_grid_buffer_pos.size())
+    if (GLsizei const points_count = regular_grid_buffer_pos.size())
       gl::DrawArrays(gl::POINTS, 0, points_count);
   }
 
@@ -305,12 +305,12 @@ void BaseFixel::update_interp_image_buffer(const Projection &projection,
   y_dir[2] *= fixel_header.spacing(2);
   y_dir = transform.image2scanner.rotation().cast<float>() * y_dir;
 
-  Eigen::Vector3f x_width =
+  Eigen::Vector3f const x_width =
       projection.screen_to_model_direction(projection.width() / 2.0f, 0.0f, projection.depth_of(p));
-  int nx = std::ceil(x_width.norm() / x_dir.norm());
-  Eigen::Vector3f y_width =
+  int const nx = std::ceil(x_width.norm() / x_dir.norm());
+  Eigen::Vector3f const y_width =
       projection.screen_to_model_direction(0.0f, projection.height() / 2.0f, projection.depth_of(p));
-  int ny = std::ceil(y_width.norm() / y_dir.norm());
+  int const ny = std::ceil(y_width.norm() / y_dir.norm());
 
   regular_grid_buffer_pos.clear();
   regular_grid_buffer_dir.clear();
@@ -321,7 +321,7 @@ void BaseFixel::update_interp_image_buffer(const Projection &projection,
   const auto &val_buffer = current_fixel_value_state().buffer_store;
   const auto &col_buffer = current_fixel_colour_state().buffer_store;
   const auto &threshold_buffer = current_fixel_threshold_state().buffer_store;
-  bool has_val = has_values();
+  bool const has_val = has_values();
 
   for (int y = -ny; y <= ny; ++y) {
     for (int x = -nx; x <= nx; ++x) {
@@ -353,7 +353,7 @@ void BaseFixel::update_interp_image_buffer(const Projection &projection,
   if (regular_grid_buffer_pos.empty())
     return;
 
-  GL::Context::Grab context;
+  GL::Context::Grab const context;
 
   regular_grid_vao.bind();
   regular_grid_vertex_buffer.bind(gl::ARRAY_BUFFER);
@@ -412,7 +412,7 @@ void BaseFixel::update_interp_image_buffer(const Projection &projection,
 void BaseFixel::load_image(const std::filesystem::path &filepath) {
   // Make sure to set graphics context!
   // We're setting up vertex array objects
-  GL::Context::Grab context;
+  GL::Context::Grab const context;
   GL::assert_context_is_current();
 
   load_image_buffer();
@@ -469,7 +469,7 @@ void BaseFixel::load_image(const std::filesystem::path &filepath) {
 }
 
 void BaseFixel::rebuild_element_index_buffer() {
-  GL::Context::Grab context;
+  GL::Context::Grab const context;
   GL::assert_context_is_current();
 
   element_indices.clear();
@@ -505,7 +505,7 @@ void BaseFixel::rebuild_element_index_buffer() {
 }
 
 void BaseFixel::reload_directions_buffer() {
-  GL::Context::Grab context;
+  GL::Context::Grab const context;
   GL::assert_context_is_current();
 
   vertex_array_object.bind();
@@ -521,7 +521,7 @@ void BaseFixel::reload_directions_buffer() {
 }
 
 void BaseFixel::reload_values_buffer() {
-  GL::Context::Grab context;
+  GL::Context::Grab const context;
   GL::assert_context_is_current();
 
   if (scale_type == FixelScaleType::Unity)
@@ -542,7 +542,7 @@ void BaseFixel::reload_values_buffer() {
 }
 
 void BaseFixel::reload_colours_buffer() {
-  GL::Context::Grab context;
+  GL::Context::Grab const context;
   GL::assert_context_is_current();
 
   if (colour_type == FixelColourType::Direction)
@@ -563,7 +563,7 @@ void BaseFixel::reload_colours_buffer() {
 }
 
 void BaseFixel::reload_threshold_buffer() {
-  GL::Context::Grab context;
+  GL::Context::Grab const context;
   GL::assert_context_is_current();
 
   const auto &fixel_val = current_fixel_threshold_state();

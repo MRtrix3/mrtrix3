@@ -74,7 +74,7 @@ ImageProperties::ImageProperties(QWidget *parent, const MR::Header &header)
   root->appendChild(new TreeItem(
       "Data scaling", "offset: " + str(H.intensity_offset()) + ", multiplier = " + str(H.intensity_scale()), root));
 
-  Eigen::IOFormat Fmt(6, 0, ", ", "\n", "[", "]");
+  Eigen::IOFormat const Fmt(6, 0, ", ", "\n", "[", "]");
   TreeItem *transform = new TreeItem("Transform", std::string(), root);
   root->appendChild(transform);
   for (size_t n = 0; n < 3; ++n) {
@@ -127,7 +127,7 @@ void ImageProperties::context_menu(const QPoint &point) {
 
   while (k.parent().isValid())
     k = k.parent();
-  std::string text = k.data().toString().toUtf8().constData();
+  std::string const text = k.data().toString().toUtf8().constData();
 
   if (text == "Transform")
     save_data = H.transform().matrix();

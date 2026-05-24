@@ -144,7 +144,7 @@ public:
 
       for (size_t n = 0; n < S.max_seed_attempts; n++) {
         dir = init_dir.allFinite() ? rand_dir(init_dir) : random_direction();
-        float val = FOD(dir);
+        float const val = FOD(dir);
         if (std::isfinite(val))
           if (val > S.init_threshold)
             return true;
@@ -152,7 +152,7 @@ public:
 
     } else {
       dir = S.init_dir;
-      float val = FOD(dir);
+      float const val = FOD(dir);
       if (std::isfinite(val))
         if (val > S.init_threshold)
           return true;
@@ -167,7 +167,7 @@ public:
 
     float max_val = 0.0;
     for (size_t i = 0; i < calibrate_list.size(); ++i) {
-      float val = FOD(rotate_direction(dir, calibrate_list[i]));
+      float const val = FOD(rotate_direction(dir, calibrate_list[i]));
       if (std::isnan(val))
         return term_t::EXIT_IMAGE;
       else if (val > max_val)
@@ -182,7 +182,7 @@ public:
     num_sample_runs++;
 
     for (size_t n = 0; n < S.max_trials; n++) {
-      Eigen::Vector3f new_dir = rand_dir(dir);
+      Eigen::Vector3f const new_dir = rand_dir(dir);
       float val = FOD(new_dir);
 
       if (val > S.threshold) {

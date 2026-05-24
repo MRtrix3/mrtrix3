@@ -164,7 +164,8 @@ public:
 
       // high-res sampling to apply constraint:
       HR_trans = init_transform(HR_dirs, lmax);
-      default_type constraint_multiplier = neg_lambda * 50.0 * response[0] / static_cast<default_type>(HR_trans.rows());
+      default_type const constraint_multiplier =
+          neg_lambda * 50.0 * response[0] / static_cast<default_type>(HR_trans.rows());
       HR_trans.array() *= constraint_multiplier;
 
       // adjust threshold accordingly:

@@ -214,7 +214,7 @@ void SIFTer::perform_filtering() {
         for (size_t f = 0; f != candidate_contribution.dim(); ++f) {
           const Track_fixel_contribution &fixel_cont = candidate_contribution[f];
           const float length = fixel_cont.get_length();
-          Fixel &this_fixel = fixels[fixel_cont.get_fixel_index()];
+          Fixel const &this_fixel = fixels[fixel_cont.get_fixel_index()];
           quantisation += this_fixel.calc_quantisation(old_mu, length);
           const double undo_change_mu_only = this_fixel.get_d_cost_d_mu(old_mu) * mu_change;
           const double change_remove_tck = this_fixel.get_cost_wo_track(new_mu, length) - this_fixel.get_cost(old_mu);
@@ -405,7 +405,7 @@ void SIFTer::test_sorting_block_size(const size_t num_tracks) const {
     // Make a copy of the gradient vector, so the same data is sorted each time
     std::vector<Cost_fn_gradient_sort> temp_gv(gradient_vector);
 
-    Timer timer;
+    Timer const timer;
     // Simulate sorting and filtering
     try {
       MT_gradient_vector_sorter sorter(temp_gv, block_size);

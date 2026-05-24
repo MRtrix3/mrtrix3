@@ -240,7 +240,7 @@ void run() {
 
   Properties properties;
   properties.resp_WM = File::Matrix::load_matrix<float>(argument[1]);
-  double wmscale2 = (properties.resp_WM(0, 0) * properties.resp_WM(0, 0)) / M_4PI;
+  double const wmscale2 = (properties.resp_WM(0, 0) * properties.resp_WM(0, 0)) / M_4PI;
 
   Eigen::VectorXf riso;
   auto opt = get_options("riso");
@@ -275,8 +275,8 @@ void run() {
 
   opt = get_options("balance");
   if (!opt.empty()) {
-    double lam = opt[0][0];
-    double b = 1.0 / (1.0 + exp(-lam));
+    double const lam = opt[0][0];
+    double const b = 1.0 / (1.0 + exp(-lam));
     properties.lam_ext = 2 * b;
     properties.lam_int = 2 * (1 - b);
   }

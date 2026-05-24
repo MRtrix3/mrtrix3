@@ -64,10 +64,10 @@ void set_default_context() {
   f.setBlueBufferSize(8);
   f.setAlphaBufferSize(0);
 
-  int swap_interval = MR::File::Config::get_int("VSync", 0);
+  int const swap_interval = MR::File::Config::get_int("VSync", 0);
   f.setSwapInterval(swap_interval);
 
-  int nsamples = File::Config::get_int("MSAA", 0);
+  int const nsamples = File::Config::get_int("MSAA", 0);
   if (nsamples > 1)
     f.setSamples(nsamples);
 

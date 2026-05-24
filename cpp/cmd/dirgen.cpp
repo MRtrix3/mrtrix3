@@ -199,7 +199,7 @@ public:
           DEBUG("start " + str(this_start) + ": [ " + str(iter) + " ] (pow = " + str(power) +
                 ") E = " + str(optim.value(), 8) + ", grad = " + str(optim.gradient_norm(), 8));
 
-          std::lock_guard<std::mutex> lock(mutex);
+          std::lock_guard<std::mutex> const lock(mutex);
           ++progress;
         }
 
@@ -207,7 +207,7 @@ public:
         E = optim.value();
       }
 
-      std::lock_guard<std::mutex> lock(mutex);
+      std::lock_guard<std::mutex> const lock(mutex);
       if (E < best_E) {
         best_E = E;
         best_directions = directions;

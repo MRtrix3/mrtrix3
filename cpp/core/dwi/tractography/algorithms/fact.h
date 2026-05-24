@@ -119,10 +119,10 @@ protected:
     float max_abs_dot = 0.0, max_dot = 0.0, max_norm = 0.0;
 
     for (size_t n = 0; n < S.num_vec; ++n) {
-      Eigen::Vector3f v(values[3 * n], values[3 * n + 1], values[3 * n + 2]);
-      float norm = v.norm();
-      float dot = v.dot(d) / norm;
-      float abs_dot = std::fabs(dot);
+      Eigen::Vector3f const v(values[3 * n], values[3 * n + 1], values[3 * n + 2]);
+      float const norm = v.norm();
+      float const dot = v.dot(d) / norm;
+      float const abs_dot = std::fabs(dot);
       if (abs_dot < S.dot_threshold)
         continue;
       if (max_abs_dot < abs_dot) {

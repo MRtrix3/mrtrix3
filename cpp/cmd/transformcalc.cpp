@@ -142,16 +142,16 @@ align_corresponding_vertices(const Eigen::MatrixXd &src_vertices, const Eigen::M
   Eigen::VectorXd src_centre = src_vertices.colwise().mean();
   Eigen::MatrixXd trg_centred = trg_vertices.rowwise() - trg_centre.transpose();
   Eigen::MatrixXd src_centred = src_vertices.rowwise() - src_centre.transpose();
-  Eigen::MatrixXd cov = (src_centred.adjoint() * trg_centred) / static_cast<default_type>(n - 1);
+  Eigen::MatrixXd const cov = (src_centred.adjoint() * trg_centred) / static_cast<default_type>(n - 1);
 
-  Eigen::JacobiSVD<Eigen::Matrix3d> svd(cov, Eigen::ComputeFullU | Eigen::ComputeFullV);
+  Eigen::JacobiSVD<Eigen::Matrix3d> const svd(cov, Eigen::ComputeFullU | Eigen::ComputeFullV);
 
   // rotation matrix
   Eigen::Matrix3d R = svd.matrixV() * svd.matrixU().transpose();
 
   // calculate determinant of V*U^T to disambiguate rotation sign
-  default_type f_det = R.determinant();
-  Eigen::Vector3d e(1, 1, (f_det < 0) ? -1 : 1);
+  default_type const f_det = R.determinant();
+  Eigen::Vector3d const e(1, 1, (f_det < 0) ? -1 : 1);
 
   // recompute the rotation if the determinant was negative
   if (f_det < 0)
@@ -168,7 +168,7 @@ align_corresponding_vertices(const Eigen::MatrixXd &src_vertices, const Eigen::M
       fsq_s += src_centred.row(i).squaredNorm();
     }
     // calculate and apply the scale
-    default_type fscale = sqrt(fsq_t / fsq_s); // Umeyama: svd.singularValues().dot(e) / fsq;
+    default_type const fscale = sqrt(fsq_t / fsq_s); // Umeyama: svd.singularValues().dot(e) / fsq;
     DEBUG("scaling: " + str(fscale));
     R *= fscale;
   }
@@ -191,7 +191,7 @@ void run() {
   case Operation::INVERT: {
     if (num_inputs != 1)
       throw Exception("invert requires 1 input");
-    transform_type input = File::Matrix::load_transform(argument[0]);
+    transform_type const input = File::Matrix::load_transform(argument[0]);
     File::Matrix::save_transform(input.inverse(), output_path);
     break;
   }
@@ -208,7 +208,7 @@ void run() {
   case Operation::RIGID: {
     if (num_inputs != 1)
       throw Exception("rigid requires 1 input");
-    transform_type input = File::Matrix::load_transform(argument[0]);
+    transform_type const input = File::Matrix::load_transform(argument[0]);
     transform_type output(input);
     output.linear() = input.rotation();
     File::Matrix::save_transform(output, output_path);
@@ -219,7 +219,7 @@ void run() {
       throw Exception("header requires 2 inputs");
     auto orig_header = Header::open(argument[0]);
     auto modified_header = Header::open(argument[1]);
-    transform_type forward_transform =
+    transform_type const forward_transform =
         Transform(modified_header).voxel2scanner * Transform(orig_header).voxel2scanner.inverse();
     File::Matrix::save_transform(forward_transform.inverse(), output_path);
     break;
@@ -229,7 +229,7 @@ void run() {
       throw Exception("average requires at least 2 inputs");
     transform_type transform_out;
     Eigen::Transform<default_type, 3, Eigen::Projective> Tin;
-    Eigen::MatrixXd Min;
+    Eigen::MatrixXd const Min;
     std::vector<Eigen::MatrixXd> matrices;
     for (size_t i = 0; i < num_inputs; i++) {
       Tin = File::Matrix::load_transform(argument[i]);
@@ -247,27 +247,27 @@ void run() {
       throw Exception("interpolation requires 3 inputs");
     transform_type transform1 = File::Matrix::load_transform(argument[0]);
     transform_type transform2 = File::Matrix::load_transform(argument[1]);
-    default_type t = argument[2];
+    default_type const t = argument[2];
 
     transform_type transform_out;
 
     if (t < 0.0 || t > 1.0)
       throw Exception("t has to be in the interval [0,1]");
 
-    Eigen::MatrixXd M1 = transform1.linear();
-    Eigen::MatrixXd M2 = transform2.linear();
+    Eigen::MatrixXd const M1 = transform1.linear();
+    Eigen::MatrixXd const M2 = transform2.linear();
     if (sgn(M1.determinant()) != sgn(M2.determinant()))
       WARN("transformation determinants have different signs");
 
     Eigen::Matrix3d R1 = transform1.rotation();
     Eigen::Matrix3d R2 = transform2.rotation();
-    Eigen::Quaterniond Q1(R1);
-    Eigen::Quaterniond Q2(R2);
+    Eigen::Quaterniond const Q1(R1);
+    Eigen::Quaterniond const Q2(R2);
     Eigen::Quaterniond Qout;
 
     // stretch (shear becomes roation and stretch)
-    Eigen::MatrixXd S1 = R1.transpose() * M1;
-    Eigen::MatrixXd S2 = R2.transpose() * M2;
+    Eigen::MatrixXd const S1 = R1.transpose() * M1;
+    Eigen::MatrixXd const S2 = R2.transpose() * M2;
     if (!M1.isApprox(R1 * S1))
       WARN("M1 matrix decomposition might have failed");
     if (!M2.isApprox(R2 * S2))
@@ -286,7 +286,7 @@ void run() {
       throw Exception("decomposition requires 1 input");
     transform_type transform = File::Matrix::load_transform(argument[0]);
 
-    Eigen::MatrixXd M = transform.linear();
+    Eigen::MatrixXd const M = transform.linear();
     Eigen::Matrix3d R = transform.rotation();
     Eigen::MatrixXd S = R.transpose() * M;
     if (!M.isApprox(R * S))
@@ -307,7 +307,7 @@ void run() {
 
     File::OFStream out(output_path);
     out << "# " << App::command_history_string << "\n";
-    Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "\n");
+    Eigen::IOFormat const fmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "\n");
     out << "scaling: " << Eigen::RowVector3d(S(0, 0), S(1, 1), S(2, 2)).format(fmt);
     out << "shear: " << Eigen::RowVector3d(S(0, 1), S(0, 2), S(1, 2)).format(fmt);
     out << "angles: " << euler_angles.transpose().format(fmt);

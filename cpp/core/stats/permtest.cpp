@@ -59,7 +59,7 @@ PreProcessor::PreProcessor(const PreProcessor &that)
       mutex(that.mutex) {}
 
 PreProcessor::~PreProcessor() {
-  std::lock_guard<std::mutex> lock(*mutex);
+  std::lock_guard<std::mutex> const lock(*mutex);
   global_enhanced_sum.array() += enhanced_sum.array();
   global_enhanced_count += enhanced_count;
 }
@@ -126,7 +126,7 @@ Processor::Processor(const Processor &that)
       mutex(that.mutex) {}
 
 Processor::~Processor() {
-  std::lock_guard<std::mutex> lock(*mutex);
+  std::lock_guard<std::mutex> const lock(*mutex);
   global_uncorrected_pvalue_counter += local_uncorrected_pvalue_counter;
   global_nulldist_contributions += local_nulldist_contributions;
 }

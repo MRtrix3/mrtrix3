@@ -133,7 +133,7 @@ FORCE_INLINE void check_fixel_size(const Header &H, const index_type nfixels) {
 FORCE_INLINE void
 check_fixel_directory(const std::filesystem::path &path, bool create_if_missing = false, bool check_if_empty = false) {
   // handle the use case when a fixel command is run from inside a fixel directory
-  std::filesystem::path fixel_dir = path.empty() ? std::filesystem::current_path() : path;
+  std::filesystem::path const fixel_dir = path.empty() ? std::filesystem::current_path() : path;
 
   if (!std::filesystem::exists(fixel_dir)) {
     if (create_if_missing)
@@ -157,7 +157,7 @@ FORCE_INLINE Header find_index_header(const std::filesystem::path &fixel_directo
   for (std::initializer_list<const std::string>::iterator it = supported_image_formats.begin();
        it != supported_image_formats.end();
        ++it) {
-    std::filesystem::path full_path = fixel_directory_path / ("index" + *it);
+    std::filesystem::path const full_path = fixel_directory_path / ("index" + *it);
     if (std::filesystem::exists(full_path)) {
       if (header.valid())
         throw InvalidDirectoryException("Multiple index images found in directory " + fixel_directory_path.string());
@@ -209,7 +209,7 @@ FORCE_INLINE Header find_directions_header(const std::filesystem::path &fixel_di
   bool directions_found(false);
   Header header;
   check_fixel_directory(fixel_directory_path);
-  Header index_header = Fixel::find_index_header(fixel_directory_path);
+  Header const index_header = Fixel::find_index_header(fixel_directory_path);
 
   for (const auto &entry : std::filesystem::directory_iterator(fixel_directory_path)) {
     if (is_directions_filename(entry.path().filename())) {
@@ -285,7 +285,7 @@ template <class IndexHeaderType> FORCE_INLINE Header directions_header_from_inde
 FORCE_INLINE void copy_fixel_file(const std::filesystem::path &input_file_path,
                                   const std::filesystem::path &output_directory) {
   check_fixel_directory(output_directory, true);
-  std::filesystem::path output_path = output_directory / input_file_path.filename().string();
+  std::filesystem::path const output_path = output_directory / input_file_path.filename().string();
   Header input_header = Header::open(input_file_path);
   auto input_image = input_header.get_image<float>();
   auto output_image = Image<float>::create(output_path, input_header);
@@ -298,7 +298,7 @@ FORCE_INLINE void copy_index_file(const std::filesystem::path &input_directory,
   Header input_header = Fixel::find_index_header(input_directory);
   check_fixel_directory(output_directory, true);
 
-  std::filesystem::path output_path =
+  std::filesystem::path const output_path =
       output_directory / static_cast<std::filesystem::path>(input_header.path()).filename();
 
   // If the index file already exists check it is the same as the input index file
@@ -324,7 +324,7 @@ FORCE_INLINE void copy_directions_file(const std::filesystem::path &input_direct
                                        const std::filesystem::path &output_directory) {
   Header input_header = Fixel::find_directions_header(input_directory);
   namespace fs = std::filesystem;
-  fs::path output_path = output_directory / input_header.path().filename();
+  fs::path const output_path = output_directory / input_header.path().filename();
 
   // If the directions file already exists check it is the same as the input directions file
   if (std::filesystem::exists(output_path)) {

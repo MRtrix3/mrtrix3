@@ -187,7 +187,7 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
               //   (which involves deleting the existing entry then re-writing the concatenated list);
               // If it has not, we're adding a new entry to the list of voxels to be tested,
               //   with only one entry in the list for that voxel
-              Vox2Poly::const_iterator existing = voxel2poly.find(voxel);
+              Vox2Poly::const_iterator const existing = voxel2poly.find(voxel);
               if (existing != voxel2poly.end()) {
                 this_voxel_polys = existing->second;
                 voxel2poly.erase(existing);

@@ -30,7 +30,7 @@ size_t determine_upsample_ratio(const Header &header, const float step_size, con
 
 size_t determine_upsample_ratio(const Header &header, const std::filesystem::path &tck_path, const float ratio) {
   Properties properties;
-  Reader<> reader(tck_path, properties);
+  Reader<> const reader(tck_path, properties);
   return determine_upsample_ratio(header, properties, ratio);
 }
 

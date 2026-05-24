@@ -190,11 +190,11 @@ void Overlay::image_open_slot() {
 }
 
 void Overlay::add_images(std::vector<std::unique_ptr<MR::Header>> &list) {
-  size_t previous_size = image_list_model->rowCount();
+  size_t const previous_size = image_list_model->rowCount();
   image_list_model->add_items(list);
 
-  QModelIndex first = image_list_model->index(previous_size, 0, QModelIndex());
-  QModelIndex last = image_list_model->index(image_list_model->rowCount() - 1, 0, QModelIndex());
+  QModelIndex const first = image_list_model->index(previous_size, 0, QModelIndex());
+  QModelIndex const last = image_list_model->index(image_list_model->rowCount() - 1, 0, QModelIndex());
   image_list_view->selectionModel()->select(QItemSelection(first, last), QItemSelectionModel::ClearAndSelect);
 }
 
@@ -204,7 +204,7 @@ void Overlay::dropEvent(QDropEvent *event) {
   const QMimeData *mimeData = event->mimeData();
   if (mimeData->hasUrls()) {
     std::vector<std::unique_ptr<MR::Header>> list;
-    QList<QUrl> urlList = mimeData->urls();
+    QList<QUrl> const urlList = mimeData->urls();
     for (int i = 0; i < urlList.size() && i < max_files; ++i) {
       try {
         list.emplace_back(std::make_unique<MR::Header>(MR::Header::open(QtHelpers::url_to_fspath(urlList.at(i)))));
@@ -220,7 +220,7 @@ void Overlay::dropEvent(QDropEvent *event) {
 
 void Overlay::image_close_slot() {
   QModelIndexList indexes = image_list_view->selectionModel()->selectedIndexes();
-  GL::Context::Grab context;
+  GL::Context::Grab const context;
   GL::assert_context_is_current();
   while (!indexes.empty()) {
     GL::assert_context_is_current();
@@ -329,7 +329,7 @@ void Overlay::selected_custom_colour(const QColor &colour, const ColourMapButton
   QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
   for (size_t i = 0, N = indices.size(); i < N; ++i) {
     Image *overlay = dynamic_cast<Image *>(image_list_model->get_image(indices[i]));
-    std::array<GLubyte, 3> c_colour{{GLubyte(colour.red()), GLubyte(colour.green()), GLubyte(colour.blue())}};
+    std::array<GLubyte, 3> const c_colour{{GLubyte(colour.red()), GLubyte(colour.green()), GLubyte(colour.blue())}};
     overlay->set_colour(c_colour);
   }
   updateGL();
@@ -371,9 +371,9 @@ void Overlay::reset_colourmap(const ColourMapButton &) {
 }
 
 void Overlay::render_image_colourbar(const Image &image) {
-  float min_value = image.use_discard_lower() ? image.scaling_min_thresholded() : image.scaling_min();
+  float const min_value = image.use_discard_lower() ? image.scaling_min_thresholded() : image.scaling_min();
 
-  float max_value = image.use_discard_upper() ? image.scaling_max_thresholded() : image.scaling_max();
+  float const max_value = image.use_discard_upper() ? image.scaling_max_thresholded() : image.scaling_max();
 
   window().colourbar_renderer.render(
       image.colourmap,
@@ -494,9 +494,9 @@ void Overlay::interpolate_changed() {
 void Overlay::selection_changed_slot(const QItemSelection &, const QItemSelection &) { update_selection(); }
 
 void Overlay::right_click_menu_slot(const QPoint &pos) {
-  QModelIndex index = image_list_view->indexAt(pos);
+  QModelIndex const index = image_list_view->indexAt(pos);
   if (index.isValid()) {
-    QPoint globalPos = image_list_view->mapToGlobal(pos);
+    QPoint const globalPos = image_list_view->mapToGlobal(pos);
     image_list_view->selectionModel()->select(index, QItemSelectionModel::Select);
     colourmap_button->open_menu(globalPos);
   }
@@ -674,7 +674,7 @@ bool Overlay::process_commandline_option(const MR::App::ParsedOption &opt) {
 
   if (opt.opt->is("overlay.opacity")) {
     try {
-      float value = opt[0];
+      float const value = opt[0];
       opacity_slider->setSliderPosition(static_cast<int>(1.e3F * value));
     } catch (Exception &e) {
       e.display();
@@ -684,7 +684,7 @@ bool Overlay::process_commandline_option(const MR::App::ParsedOption &opt) {
 
   if (opt.opt->is("overlay.colourmap")) {
     try {
-      int n = opt[0];
+      int const n = opt[0];
       if (n < 0 || ColourMap::maps[n].name.empty())
         throw Exception("invalid overlay colourmap index \"" + std::string(opt[0]) +
                         "\" for -overlay.colourmap option");
@@ -704,9 +704,9 @@ bool Overlay::process_commandline_option(const MR::App::ParsedOption &opt) {
       if (std::min({values[0], values[1], values[2]}) < 0.0 || max_value > 255)
         throw Exception("values provided to -overlay.colour must be either between 0.0 and 1.0, or between 0 and 255");
       const float multiplier = max_value <= 1.0 ? 255.0 : 1.0;
-      QColor colour(static_cast<int>(values[0] * multiplier),
-                    static_cast<int>(values[1] * multiplier),
-                    static_cast<int>(values[2] * multiplier));
+      QColor const colour(static_cast<int>(values[0] * multiplier),
+                          static_cast<int>(values[1] * multiplier),
+                          static_cast<int>(values[2] * multiplier));
       selected_custom_colour(colour, *colourmap_button);
       colourmap_button->set_fixed_colour();
     } catch (Exception &e) {
@@ -731,7 +731,7 @@ bool Overlay::process_commandline_option(const MR::App::ParsedOption &opt) {
 
   if (opt.opt->is("overlay.threshold_min")) {
     try {
-      float value = opt[0];
+      float const value = opt[0];
       lower_threshold->setValue(value);
       lower_threshold_check_box->setChecked(true);
     } catch (Exception &e) {
@@ -742,7 +742,7 @@ bool Overlay::process_commandline_option(const MR::App::ParsedOption &opt) {
 
   if (opt.opt->is("overlay.threshold_max")) {
     try {
-      float value = opt[0];
+      float const value = opt[0];
       upper_threshold->setValue(value);
       upper_threshold_check_box->setChecked(true);
     } catch (Exception &e) {

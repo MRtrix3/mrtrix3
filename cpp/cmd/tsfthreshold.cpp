@@ -43,8 +43,8 @@ void usage() {
 using value_type = float;
 
 void run() {
-  bool invert = !get_options("invert").empty();
-  float threshold = argument[1];
+  bool const invert = !get_options("invert").empty();
+  float const threshold = argument[1];
 
   DWI::Tractography::Properties properties;
   DWI::Tractography::ScalarReader<value_type> reader(argument[0], properties);

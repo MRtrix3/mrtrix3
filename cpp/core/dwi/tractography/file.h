@@ -243,7 +243,7 @@ public:
       throw Exception("Cannot change output streamline weights file path");
     weights_path = path;
     App::check_overwrite(weights_path);
-    File::OFStream out(weights_path, std::ios::out | std::ios::binary | std::ios::trunc);
+    File::OFStream const out(weights_path, std::ios::out | std::ios::binary | std::ios::trunc);
   }
 
 protected:
@@ -280,7 +280,7 @@ protected:
     if (num_points == 0 || !open_success)
       return;
 
-    int64_t prev_barrier_addr = barrier_addr;
+    int64_t const prev_barrier_addr = barrier_addr;
 
     format_point(barrier(), data[num_points]);
     File::OFStream out(path, std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);

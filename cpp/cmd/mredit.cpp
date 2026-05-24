@@ -94,7 +94,7 @@ const std::array<Vox, 6> voxel_offsets = {
     Vox(0, 0, -1), Vox(0, 0, 1), Vox(0, -1, 0), Vox(0, 1, 0), Vox(-1, 0, 0), Vox(1, 0, 0)};
 
 void run() {
-  bool inplace = (argument.size() == 1);
+  bool const inplace = (argument.size() == 1);
   auto H = Header::open(argument[0]);
   auto in = H.get_image<float>(std::nullopt, inplace); // Need to set read/write flag
   Image<float> out;
@@ -111,7 +111,7 @@ void run() {
     copy(in, out);
   }
 
-  Transform transform(H);
+  Transform const transform(H);
   const bool scanner = !get_options("scanner").empty();
   if (scanner && H.ndim() < 3)
     throw Exception("Cannot specify scanner-space coordinates if image has less than 3 dimensions");

@@ -69,7 +69,7 @@ void preload_data(std::vector<Header> &input,
     h1.ndim() = 3;
 
   {
-    LogLevelLatch log_level(0);
+    LogLevelLatch const log_level(0);
     images = Image<default_type>::scratch(h1, "scratch preloaded multi-contrast data", DirectIO{3});
   }
 
@@ -78,8 +78,8 @@ void preload_data(std::vector<Header> &input,
     threaded_copy(image_in, images, 0, 3, 2);
   } else {
     for (size_t idx = 0; idx < n_images; idx++) {
-      size_t ndim = input[idx].ndim();
-      std::vector<size_t> from(ndim, 0);
+      size_t const ndim = input[idx].ndim();
+      std::vector<size_t> const from(ndim, 0);
       std::vector<size_t> size(ndim, 1);
       for (size_t dim = 0; dim < 3; ++dim)
         size[dim] = input[idx].size(dim);

@@ -75,7 +75,7 @@ void run() {
   if (!opt.empty())
     lmax = opt[0][0];
   const size_t n_sh_coeff = Math::SH::NforL(lmax);
-  Math::SH::aPSF<default_type> aPSF(lmax);
+  Math::SH::aPSF<default_type> const aPSF(lmax);
 
   Header out_header(in_index_header);
   out_header.datatype() = DataType::Float32;

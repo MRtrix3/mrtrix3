@@ -30,8 +30,8 @@ public:
   Hermite(value_type tension = 0.0) : t(T(0.5) * tension) {}
 
   void set(value_type position) {
-    value_type p2 = position * position;
-    value_type p3 = position * p2;
+    value_type const p2 = position * position;
+    value_type const p3 = position * p2;
     w[0] = (T(0.5) - t) * (T(2.0) * p2 - p3 - position);
     w[1] = T(1.0) + (T(1.5) + t) * p3 - (T(2.5) + t) * p2;
     w[2] = (T(2.0) + T(2.0) * t) * p2 + (T(0.5) - t) * position - (T(1.5) + t) * p3;

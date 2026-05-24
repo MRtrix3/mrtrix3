@@ -103,12 +103,12 @@ void TrackScalarFileOptions::set_tractogram(Tractogram *selected_tractogram) { t
 
 void TrackScalarFileOptions::render_tractogram_colourbar(const Tractogram &tractogram) {
 
-  float min_value =
+  float const min_value =
       (tractogram.get_threshold_type() == TrackThresholdType::UseColourFile && tractogram.use_discard_lower())
           ? tractogram.scaling_min_thresholded()
           : tractogram.scaling_min();
 
-  float max_value =
+  float const max_value =
       (tractogram.get_threshold_type() == TrackThresholdType::UseColourFile && tractogram.use_discard_upper())
           ? tractogram.scaling_max_thresholded()
           : tractogram.scaling_max();

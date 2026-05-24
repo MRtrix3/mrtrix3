@@ -72,7 +72,7 @@ CoefficientOptimiserBase::CoefficientOptimiserBase(const CoefficientOptimiserBas
 }
 
 CoefficientOptimiserBase::~CoefficientOptimiserBase() {
-  std::lock_guard<std::mutex> lock(master.mutex);
+  std::lock_guard<std::mutex> const lock(master.mutex);
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG
   fprintf(
       stderr,
@@ -268,7 +268,7 @@ double CoefficientOptimiserQLS::get_coeff_change(const SIFT::track_t track_index
                                       0.0,
                                       master.max_coeff_step,
                                       0.001 / (2.0 * master.max_coeff_step));
-    double cost = line_search_functor(dFs);
+    double const cost = line_search_functor(dFs);
     if (dFs > 0.99 * master.max_coeff_step && line_search_functor(master.max_coeff_step) < cost)
       dFs = master.max_coeff_step;
     else if (dFs < -0.99 * master.max_coeff_step && line_search_functor(-master.max_coeff_step) < cost)
@@ -314,7 +314,7 @@ CoefficientOptimiserIterative::~CoefficientOptimiserIterative() {
 
 double CoefficientOptimiserIterative::get_coeff_change(const SIFT::track_t track_index) const {
 
-  LineSearchFunctor line_search_functor(track_index, master);
+  LineSearchFunctor const line_search_functor(track_index, master);
 
   double dFs = 0.0;
   double change = 0.0;

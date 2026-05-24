@@ -103,8 +103,8 @@ template <class Functor, class... ImageType> struct RandomThreadedLoopRunInner<0
     assert(inner_axes.size() == 1);
     // VAR(inner_axes);
     // VAR(outer_axes);
-    Math::RNG rng;
-    typename std::default_random_engine::result_type seed = rng.get_seed();
+    Math::RNG const rng;
+    typename std::default_random_engine::result_type const seed = rng.get_seed();
     random_engine = std::default_random_engine{static_cast<std::default_random_engine::result_type>(seed)};
     idx = std::vector<size_t>(dims[inner_axes[0]]);
     std::iota(std::begin(idx), std::end(idx), 0);

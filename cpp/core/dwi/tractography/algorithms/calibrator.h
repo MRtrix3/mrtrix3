@@ -30,17 +30,17 @@ using namespace MR::DWI::Tractography::Tracking;
 FORCE_INLINE std::vector<Eigen::Vector3f> direction_grid(float max_angle, float spacing) {
   const float maxR = Math::pow2(max_angle / spacing);
   std::vector<Eigen::Vector3f> list;
-  ssize_t extent = std::ceil(max_angle / spacing);
+  ssize_t const extent = std::ceil(max_angle / spacing);
 
   for (ssize_t i = -extent; i <= extent; ++i) {
     for (ssize_t j = -extent; j <= extent; ++j) {
-      float x = i + 0.5 * j;
-      float y = sqrt_3_over_2 * j;
+      float const x = i + 0.5 * j;
+      float const y = sqrt_3_over_2 * j;
       float n = Math::pow2(x) + Math::pow2(y);
       if (n > maxR)
         continue;
       n = spacing * std::sqrt(n);
-      float z = std::cos(n);
+      float const z = std::cos(n);
       if (n)
         n = spacing * std::sin(n) / n;
       list.push_back({n * x, n * y, z});
@@ -72,14 +72,14 @@ template <class Method> void calibrate(Method &method) {
     if (!std::isfinite(amps.back().amp) || amps.back().amp <= 0.0F)
       break;
   }
-  float zero = amps.back().incl;
+  float const zero = amps.back().incl;
 
   float N_min = InfF;
   float theta_min = NaNF;
   float ratio = NaNF;
   for (size_t i = 1; i < amps.size(); ++i) {
     float N = Math::pow2(max_angle);
-    float Ns = N * (1.0 + amps[0].amp / amps[i].amp) / (2.0 * Math::pow2(zero));
+    float const Ns = N * (1.0 + amps[0].amp / amps[i].amp) / (2.0 * Math::pow2(zero));
     auto dirs = direction_grid(max_angle + amps[i].incl, sqrt3 * amps[i].incl);
     N = Ns + dirs.size();
     // std::cout << amps[i].incl << " " << amps[i].amp << " " << Ns << " " << dirs.size() << " " << Ns+dirs.size() <<

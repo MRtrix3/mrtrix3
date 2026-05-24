@@ -153,7 +153,7 @@ int main(int cmdline_argc, char **cmdline_argv) { // check_syntax off
     ::MR::App::verify_usage();
     ::MR::App::parse_special_options();
 #ifdef GUI_APP_H
-    ::MR::GUI::App app(cmdline_argc, cmdline_argv);
+    ::MR::GUI::App const app(cmdline_argc, cmdline_argv);
 #endif
     ::MR::App::parse();
 

@@ -40,7 +40,7 @@ public:
     if (!in.is_open())
       return false;
     do {
-      value_type val = get_next_scalar();
+      value_type const val = get_next_scalar();
       if (std::isinf(val)) {
         in.close();
         return false;

@@ -29,22 +29,22 @@ ParticleGrid::ParticleGrid(const Header &H) {
   grid.resize(dims[0] * dims[1] * dims[2]);
 
   // Initialise scanner-to-grid transform
-  Eigen::DiagonalMatrix<default_type, 3> newspacing(grid_spacing, grid_spacing, grid_spacing);
-  transform_type T_g2s = H.transform() * newspacing;
+  Eigen::DiagonalMatrix<default_type, 3> const newspacing(grid_spacing, grid_spacing, grid_spacing);
+  transform_type const T_g2s = H.transform() * newspacing;
   T_s2g = T_g2s.inverse();
 }
 
 void ParticleGrid::add(const Point_t &pos, const Point_t &dir) {
   Particle *p = pool.create(pos, dir);
-  size_t gidx = pos2idx(pos);
-  std::lock_guard<std::mutex> lock(mutex);
+  size_t const gidx = pos2idx(pos);
+  std::lock_guard<std::mutex> const lock(mutex);
   grid[gidx].push_back(p);
 }
 
 void ParticleGrid::shift(Particle *p, const Point_t &pos, const Point_t &dir) {
-  size_t gidx0 = pos2idx(p->getPosition());
-  size_t gidx1 = pos2idx(pos);
-  std::lock_guard<std::mutex> lock(mutex);
+  size_t const gidx0 = pos2idx(p->getPosition());
+  size_t const gidx1 = pos2idx(pos);
+  std::lock_guard<std::mutex> const lock(mutex);
   grid[gidx0].remove(p);
   p->setPosition(pos);
   p->setDirection(dir);
@@ -52,9 +52,9 @@ void ParticleGrid::shift(Particle *p, const Point_t &pos, const Point_t &dir) {
 }
 
 void ParticleGrid::remove(Particle *p) {
-  size_t gidx0 = pos2idx(p->getPosition());
+  size_t const gidx0 = pos2idx(p->getPosition());
   {
-    std::lock_guard<std::mutex> lock(mutex);
+    std::lock_guard<std::mutex> const lock(mutex);
     grid[gidx0].remove(p);
   }
   pool.destroy(p);
@@ -74,14 +74,14 @@ const ParticleGrid::ParticleContainer *ParticleGrid::at(const ssize_t x, const s
 }
 
 void ParticleGrid::exportTracks(Tractography::Writer<float> &writer) {
-  std::lock_guard<std::mutex> lock(mutex);
+  std::lock_guard<std::mutex> const lock(mutex);
   // Initialise
   Particle *par;
   Particle *nextpar;
   int alpha = 0;
   std::vector<Point_t> track;
   // Loop through all unvisited particles
-  for (ParticleContainer &gridvox : grid) {
+  for (ParticleContainer const &gridvox : grid) {
     for (Particle *par0 : gridvox) {
       par = par0;
       if (!par->isVisited()) {
@@ -116,7 +116,7 @@ void ParticleGrid::exportTracks(Tractography::Writer<float> &writer) {
     }
   }
   // Free all particle locks
-  for (ParticleContainer &gridvox : grid) {
+  for (ParticleContainer const &gridvox : grid) {
     for (Particle *par : gridvox) {
       par->setVisited(false);
     }

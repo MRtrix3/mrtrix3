@@ -247,7 +247,7 @@ public:
       return;
     }
     index.index(3) = 1;
-    index_type offset = index.value();
+    index_type const offset = index.value();
     data.index(0) = offset;
     out.value() = data.value();
     num_fixels = max_fixels ? std::min(max_fixels, num_fixels) : num_fixels;

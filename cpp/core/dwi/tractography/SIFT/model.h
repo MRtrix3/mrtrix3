@@ -184,7 +184,7 @@ template <class Fixel> void Model<Fixel>::remove_excluded_fixels() {
   for (auto l = Loop(v)(v); l; ++l) {
     if (v.value()) {
 
-      size_t new_start_index = new_fixels.size();
+      size_t const new_start_index = new_fixels.size();
 
       for (typename Fixel_map<Fixel>::Iterator i = begin(v); i; ++i) {
         if ((!remove_untracked_fixels || i().get_TD()) && (i().get_FOD() > min_fibre_density)) {
@@ -276,7 +276,7 @@ increment(FixelType &fixel, const double length, const track_t count) {
 } // namespace
 
 template <class Fixel> Model<Fixel>::TrackMappingWorker::~TrackMappingWorker() {
-  std::lock_guard<std::mutex> lock(*mutex);
+  std::lock_guard<std::mutex> const lock(*mutex);
   master.TD_sum += TD_sum;
   for (size_t i = 0; i != fixel_TDs.size(); ++i)
     increment(master.fixels[i], fixel_TDs[i], fixel_counts[i]);

@@ -35,13 +35,13 @@ public:
     overall_max = max;
   }
   ~MinMax() {
-    std::lock_guard<std::mutex> lock(mutex);
+    std::lock_guard<std::mutex> const lock(mutex);
     overall_min = std::min(overall_min, min);
     overall_max = std::max(overall_max, max);
   }
 
   void operator()(ImageType &vox) {
-    value_type val = vox.value();
+    value_type const val = vox.value();
     if (std::isfinite(val)) {
       if (val < min)
         min = val;
@@ -52,7 +52,7 @@ public:
 
   template <class MaskType> void operator()(ImageType &vox, MaskType &mask) {
     if (mask.value()) {
-      value_type val = vox.value();
+      value_type const val = vox.value();
       if (std::isfinite(val)) {
         if (val < min)
           min = val;

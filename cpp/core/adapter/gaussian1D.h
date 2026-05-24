@@ -63,7 +63,7 @@ public:
     ssize_t c = (pos < radius) ? radius - pos : 0;
     for (ssize_t k = from; k <= to; ++k, ++c) {
       index(axis) = k;
-      value_type neighbour_value = base_type::value();
+      value_type const neighbour_value = base_type::value();
       if (std::isfinite(neighbour_value)) {
         av_weights += kernel[c];
         result += static_cast<value_type>(base_type::value()) * kernel[c];

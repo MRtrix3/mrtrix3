@@ -147,14 +147,14 @@ bool Element::read() {
     // try figuring out VR from dictionary if vendors haven't bothered
     // filling it in...
     if (VR == VR_UN) {
-      std::string name = tag_name();
+      std::string const name = tag_name();
       if (!name.empty())
         VR = get_VR_from_tag_name(name);
     }
   } else {
 
     // implicit encoding:
-    std::string name = tag_name();
+    std::string const name = tag_name();
     if (name.empty()) {
       DEBUG(printf("WARNING: unknown DICOM tag (%04X %04X) "
                    "with implicit encoding in file \"",
@@ -458,7 +458,7 @@ std::ostream &operator<<(std::ostream &stream, const Element &item) {
                    item.offset(item.start));
 
   std::string tmp;
-  size_t indent = item.level() - (item.VR == VR_SQ ? 1 : 0);
+  size_t const indent = item.level() - (item.VR == VR_SQ ? 1 : 0);
   for (size_t i = 0; i < indent; i++)
     tmp += "  ";
   if (item.is_new_sequence())

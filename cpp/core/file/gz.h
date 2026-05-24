@@ -89,7 +89,7 @@ public:
 
   int read(void *const s, size_t n) {
     assert(gz);
-    int n_read = gzread(gz, s, n);
+    int const n_read = gzread(gz, s, n);
     if (n_read < 0)
       throw Exception("error uncompressing GZ file \"" + filepath.string() + "\": " + error());
     return n_read;

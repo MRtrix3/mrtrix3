@@ -41,7 +41,7 @@ default_type erfinv(const default_type p) {
     Eigen::Array<default_type, 10, 1> m_Q;
     const default_type m_Y;
   };
-  static Shared shared;
+  static Shared const shared;
 
   if (p >= 1.0)
     return std::numeric_limits<default_type>::infinity();

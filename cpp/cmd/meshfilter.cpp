@@ -83,7 +83,7 @@ void run() {
 
   // Read in the mesh data
   try {
-    Mesh mesh(input_path);
+    Mesh const mesh(input_path);
     in.push_back(mesh);
   } catch (...) {
     in.load(input_path);

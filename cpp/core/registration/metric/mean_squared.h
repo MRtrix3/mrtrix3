@@ -78,7 +78,7 @@ public:
     if (std::isnan(im2_value))
       return 0.0;
 
-    default_type diff = static_cast<default_type>(im1_value) - static_cast<default_type>(im2_value);
+    default_type const diff = static_cast<default_type>(im1_value) - static_cast<default_type>(im2_value);
 
     return diff * diff;
   }

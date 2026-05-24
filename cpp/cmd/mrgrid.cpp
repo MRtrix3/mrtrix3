@@ -294,7 +294,7 @@ void run() {
 
   } else { // crop or pad
     const bool do_crop = op == Operation::CROP;
-    std::string message = do_crop ? "cropping image" : "padding image";
+    std::string const message = do_crop ? "cropping image" : "padding image";
     INFO("operation: " + operation_name);
     const bool crop_unbound = !get_options("crop_unbound").empty();
     if (crop_unbound && !do_crop)
@@ -385,7 +385,7 @@ void run() {
     opt = get_options("uniform");
     if (!opt.empty()) {
       ++crop_pad_option_count;
-      ssize_t val = opt[0][0];
+      ssize_t const val = opt[0][0];
       INFO("uniformly " + str(do_crop ? "cropping" : "padding") + " by " + str(val) + " voxels");
       for (size_t axis = 0; axis < nd; axis++) {
         bounds[axis][0] += do_crop ? val : -val;
@@ -416,7 +416,7 @@ void run() {
       const size_t axis = opt[i][0];
       if (axis >= input_header.ndim())
         throw Exception("-axis " + str(axis) + " larger than image dimensions (" + str(input_header.ndim()) + ")");
-      std::string spec = str(opt[i][1]);
+      std::string const spec = str(opt[i][1]);
       std::string::size_type start = 0, end;
       end = spec.find_first_of(':', start);
       if (end == std::string::npos) { // spec = delta_lower,delta_upper

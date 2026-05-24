@@ -62,7 +62,7 @@ private:
 class Model : public QAbstractItemModel {
 public:
   Model(QObject *parent) : QAbstractItemModel(parent) {
-    QList<QVariant> rootData;
+    QList<QVariant> const rootData;
     rootItem = new Item;
   }
 
@@ -188,7 +188,7 @@ std::vector<std::shared_ptr<Series>> select_dicom(const Tree &tree) {
 
   DicomSelector selector(tree);
   if (selector.exec()) {
-    QModelIndexList indexes = selector.view->selectionModel()->selectedIndexes();
+    QModelIndexList const indexes = selector.view->selectionModel()->selectedIndexes();
     if (!indexes.empty()) {
       QModelIndex index;
       Q_FOREACH (index, indexes) {

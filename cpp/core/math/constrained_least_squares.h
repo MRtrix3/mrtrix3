@@ -133,7 +133,7 @@ public:
     B.noalias() = chol_HtH.template triangularView<Eigen::Lower>().transpose().template solve<Eigen::OnTheRight>(
         inequality_constraint_matrix);
     for (ssize_t n = 0; n < B.rows(); ++n) {
-      double norm = B.row(n).norm();
+      double const norm = B.row(n).norm();
       B.row(n) /= norm;
       if (t.size())
         t[n] /= norm;
@@ -283,7 +283,7 @@ public:
         for (size_t n = 0; n < num_ineq; ++n) {
           if (active[n]) {
             if (l_active[a] < 0.0) {
-              value_type s = lambda_prev[n] / (lambda_prev[n] - l_active[a]);
+              value_type const s = lambda_prev[n] / (lambda_prev[n] - l_active[a]);
               if (s < s_min) {
                 s_min = s;
                 s_min_index = n;

@@ -26,22 +26,22 @@ namespace MR::GUI::MRView::Tool {
 std::unique_ptr<ROI_UndoEntry::Shared> ROI_UndoEntry::shared;
 
 ROI_UndoEntry::Shared::Shared() : count(1) {
-  GL::Context::Grab context;
-  GL::Shader::Vertex vertex_shader("layout(location = 0) in ivec3 vertpos;\n"
-                                   "void main() {\n"
-                                   "  gl_Position = vec4 (vertpos,1);\n"
-                                   "}\n");
-  GL::Shader::Fragment fragment_shader("uniform usampler3D tex;\n"
-                                       "uniform ivec3 position;\n"
-                                       "uniform ivec2 axes;\n"
-                                       "layout (location = 0) out float color0;\n"
-                                       "void main() {\n"
-                                       "  ivec3 pos = position;\n"
-                                       "  pos[axes.x] = int(gl_FragCoord.x);\n"
-                                       "  pos[axes.y] = int(gl_FragCoord.y);\n"
-                                       "  uint v = texelFetch(tex, pos, 0).r;\n"
-                                       "  color0 = (v > 0u) ? 1.0 : 0.0;\n"
-                                       "}\n");
+  GL::Context::Grab const context;
+  GL::Shader::Vertex const vertex_shader("layout(location = 0) in ivec3 vertpos;\n"
+                                         "void main() {\n"
+                                         "  gl_Position = vec4 (vertpos,1);\n"
+                                         "}\n");
+  GL::Shader::Fragment const fragment_shader("uniform usampler3D tex;\n"
+                                             "uniform ivec3 position;\n"
+                                             "uniform ivec2 axes;\n"
+                                             "layout (location = 0) out float color0;\n"
+                                             "void main() {\n"
+                                             "  ivec3 pos = position;\n"
+                                             "  pos[axes.x] = int(gl_FragCoord.x);\n"
+                                             "  pos[axes.y] = int(gl_FragCoord.y);\n"
+                                             "  uint v = texelFetch(tex, pos, 0).r;\n"
+                                             "  color0 = (v > 0u) ? 1.0 : 0.0;\n"
+                                             "}\n");
 
   program.attach(vertex_shader);
   program.attach(fragment_shader);
@@ -75,7 +75,7 @@ ROI_UndoEntry::Shared::Shared() : count(1) {
 
 ROI_UndoEntry::Shared::~Shared() {
   assert(!count);
-  GL::Context::Grab context;
+  GL::Context::Grab const context;
   program.clear();
   vertex_buffer.clear();
   vertex_array_object.clear();
@@ -105,7 +105,7 @@ ROI_UndoEntry::ROI_UndoEntry(ROI_Item &roi, int current_axis, int current_slice)
   }
   tex_size = {{size[slice_axes[0]], size[slice_axes[1]]}};
 
-  GL::Context::Grab context;
+  GL::Context::Grab const context;
   GL::assert_context_is_current();
 
   if (!shared)
@@ -217,7 +217,7 @@ void ROI_UndoEntry::draw_line(ROI_Item &roi,
     }
   } while ((v - final_vox).abs().maxCoeff());
 
-  GL::Context::Grab context;
+  GL::Context::Grab const context;
   GL::assert_context_is_current();
   roi.texture().bind();
   gl::TexSubImage3D(gl::TEXTURE_3D,
@@ -281,7 +281,7 @@ void ROI_UndoEntry::draw_thick_line(ROI_Item &roi,
     }
   }
 
-  GL::Context::Grab context;
+  GL::Context::Grab const context;
   GL::assert_context_is_current();
   roi.texture().bind();
   gl::TexSubImage3D(gl::TEXTURE_3D,
@@ -326,7 +326,7 @@ void ROI_UndoEntry::draw_circle(ROI_Item &roi,
             radius_sq)
           after[i - from[0] + size[0] * (j - from[1] + size[1] * (k - from[2]))] = value;
 
-  GL::Context::Grab context;
+  GL::Context::Grab const context;
   GL::assert_context_is_current();
   roi.texture().bind();
   gl::TexSubImage3D(gl::TEXTURE_3D,
@@ -371,7 +371,7 @@ void ROI_UndoEntry::draw_rectangle(ROI_Item &roi,
       for (int i = a[0]; i <= b[0]; ++i)
         after[i - from[0] + size[0] * (j - from[1] + size[1] * (k - from[2]))] = value;
 
-  GL::Context::Grab context;
+  GL::Context::Grab const context;
   GL::assert_context_is_current();
   roi.texture().bind();
   gl::TexSubImage3D(gl::TEXTURE_3D,
@@ -438,7 +438,7 @@ void ROI_UndoEntry::draw_fill(ROI_Item &roi, const Eigen::Vector3f &pos, const b
       }
     }
   }
-  GL::Context::Grab context;
+  GL::Context::Grab const context;
   GL::assert_context_is_current();
   roi.texture().bind();
   gl::TexSubImage3D(gl::TEXTURE_3D,
@@ -456,7 +456,7 @@ void ROI_UndoEntry::draw_fill(ROI_Item &roi, const Eigen::Vector3f &pos, const b
 }
 
 void ROI_UndoEntry::undo(ROI_Item &roi) {
-  GL::Context::Grab context;
+  GL::Context::Grab const context;
   GL::assert_context_is_current();
   roi.texture().bind();
   gl::TexSubImage3D(gl::TEXTURE_3D,
@@ -474,7 +474,7 @@ void ROI_UndoEntry::undo(ROI_Item &roi) {
 }
 
 void ROI_UndoEntry::redo(ROI_Item &roi) {
-  GL::Context::Grab context;
+  GL::Context::Grab const context;
   GL::assert_context_is_current();
   roi.texture().bind();
   gl::TexSubImage3D(gl::TEXTURE_3D,
@@ -492,7 +492,7 @@ void ROI_UndoEntry::redo(ROI_Item &roi) {
 }
 
 void ROI_UndoEntry::copy(ROI_Item &roi, ROI_UndoEntry &source) {
-  GL::Context::Grab context;
+  GL::Context::Grab const context;
   GL::assert_context_is_current();
   after = source.before;
   roi.texture().bind();

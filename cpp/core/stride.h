@@ -132,7 +132,7 @@ order(const HeaderType &header, size_t from_axis = 0, size_t to_axis = std::nume
   std::vector<size_t> ret(to_axis - from_axis);
   for (size_t i = 0; i < ret.size(); ++i)
     ret[i] = from_axis + i;
-  Compare<HeaderType> compare(header);
+  Compare<HeaderType> const compare(header);
   std::sort(ret.begin(), ret.end(), compare);
   return ret;
 }
@@ -270,7 +270,7 @@ template <class HeaderType> size_t offset(const HeaderType &header) {
  * to the first voxel value (i.e. at voxel [ 0 0 0 ... ]), assuming the
  * strides in \a strides and HeaderType dimensions of \a header. */
 template <class HeaderType> size_t offset(List &strides, const HeaderType &header) {
-  InfoWrapper<HeaderType> wrapper(strides, header);
+  InfoWrapper<HeaderType> const wrapper(strides, header);
   return offset(wrapper);
 }
 

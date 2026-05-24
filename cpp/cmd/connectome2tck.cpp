@@ -368,7 +368,7 @@ void run() {
            " (" + str(max_node_index) + ")");                                                    //
       max_node_index = COMs.size() - 1;
     }
-    Transform transform(image);
+    Transform const transform(image);
     for (node_t index = 1; index <= max_node_index; ++index) {
       if (volumes[index])
         COMs[index] = transform.voxel2scanner * (COMs[index] * (1.0 / static_cast<default_type>(volumes[index])));
@@ -391,7 +391,7 @@ void run() {
         };
         auto worker = [&](const Tractography::Connectome::Streamline_nodepair &in) {
           generator(in);
-          std::lock_guard<std::mutex> lock(mutex);
+          std::lock_guard<std::mutex> const lock(mutex);
           ++progress;
           return true;
         };
@@ -406,7 +406,7 @@ void run() {
         };
         auto worker = [&](const Tractography::Connectome::Streamline_nodelist &in) {
           generator(in);
-          std::lock_guard<std::mutex> lock(mutex);
+          std::lock_guard<std::mutex> const lock(mutex);
           ++progress;
           return true;
         };

@@ -106,12 +106,12 @@ Backend::~Backend() {
 }
 
 void Backend::thread_print_func(std::string_view msg) {
-  std::lock_guard<std::mutex> lock(mutex);
+  std::lock_guard<std::mutex> const lock(mutex);
   previous_print_func(msg);
 }
 
 void Backend::thread_report_to_user_func(std::string_view msg, int type) {
-  std::lock_guard<std::mutex> lock(mutex);
+  std::lock_guard<std::mutex> const lock(mutex);
   previous_report_to_user_func(msg, type);
 }
 
