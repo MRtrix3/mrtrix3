@@ -74,9 +74,9 @@ void run() {
   check_dimensions(SH, mask, 0, 3);
   check_dimensions(SH, dir, 0, 3);
   if (dir.ndim() != 4)
-    throw Exception("input direction image \"" + dir_path.string() + "\" must be a 4D image");
+    throw Exception("input direction image \"{}\" must be a 4D image", argument[2]);
   if (dir.size(3) != 3)
-    throw Exception("input direction image \"" + dir_path.string() + "\" must contain precisely 3 volumes");
+    throw Exception("input direction image \"{}\" must contain precisely 3 volumes", argument[2]);
 
   Eigen::VectorXd delta;
   Eigen::VectorXd response = Eigen::VectorXd::Zero(Math::ZSH::NforL(lmax));
@@ -98,15 +98,13 @@ void run() {
 
     Eigen::Vector3d d = dir.row(3);
     if (!d.allFinite()) {
-      WARN("voxel with invalid direction [ " + str(dir.index(0)) + " " + str(dir.index(1)) + " " + str(dir.index(2)) +
-           " ]; skipping");
+      WARN("voxel with invalid direction [ {} {} {} ]; skipping", dir.index(0), dir.index(1), dir.index(2));
       continue;
     }
     d.normalize();
     // Uncertainty regarding Eigen's behaviour when normalizing a zero vector; may change behaviour between versions
     if (!d.allFinite() || !d.squaredNorm()) {
-      WARN("voxel with zero direction [ " + str(dir.index(0)) + " " + str(dir.index(1)) + " " + str(dir.index(2)) +
-           " ]; skipping");
+      WARN("voxel with zero direction [ {} {} {} ]; skipping", dir.index(0), dir.index(1), dir.index(2));
       continue;
     }
 

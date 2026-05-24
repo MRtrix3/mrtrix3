@@ -15,10 +15,12 @@
  */
 #include <QApplication>
 #include <QtNetwork>
+#include <fmt/format.h>
 
 #include <thread>
 
 #include "exception.h"
+#include "gui.h"
 #include "mrview/sync/enums.h"
 #include "mrview/sync/interprocesscommunicator.h"
 #include "mrview/sync/processlock.h"
@@ -45,7 +47,7 @@ InterprocessCommunicator::InterprocessCommunicator() : QObject(0) {
     QLocalSocket *socket = new QLocalSocket(this);
     freeEntry = -1;
     for (int i = 0; i < maximum_instances; i++) {
-      QString serverName = "mrtrix_interprocesssyncer_" + QString::number(i);
+      QString serverName = qstr(fmt::format("mrtrix_interprocesssyncer_{}", i));
       socket->connectToServer(serverName);
       socket->waitForConnected();
       QLocalSocket::LocalSocketState state = socket->state();
@@ -60,13 +62,11 @@ InterprocessCommunicator::InterprocessCommunicator() : QObject(0) {
         break;
       }
     }
-    if (freeEntry == -1) {
-      std::string errMsg = "No free ids available";
-      throw std::runtime_error(errMsg);
-    }
+    if (freeEntry == -1)
+      throw std::runtime_error("No free ids available");
 
     receiver = new QLocalServer(this);
-    listenerSetUp = receiver->listen("mrtrix_interprocesssyncer_" + QString::number(freeEntry));
+    listenerSetUp = receiver->listen(qstr(fmt::format("mrtrix_interprocesssyncer_{}", freeEntry)));
     if (listenerSetUp) {
       id = freeEntry;
       connect(receiver, SIGNAL(newConnection()), this, SLOT(OnNewIncomingConnection()));
@@ -81,8 +81,8 @@ InterprocessCommunicator::InterprocessCommunicator() : QObject(0) {
 
   if (!listenerSetUp) {
     // Do not allow creation of this object in a bad state
-    throw std::runtime_error("Could not find any free id to use for listening. Have you reached the maximum number of "
-                             "open windows allowed?");
+    throw std::runtime_error("Could not find any free id to use for listening."
+                             " Have you reached the maximum number of open windows allowed?");
   }
 
   // Set up outgoing connections
@@ -110,7 +110,7 @@ void InterprocessCommunicator::OnNewIncomingConnection() {
 void InterprocessCommunicator::TryConnectTo(int connectToId) {
   if (connectToId != id) // don't connect to ourself!
   {
-    QString serverName = "mrtrix_interprocesssyncer_" + QString::number(connectToId);
+    QString serverName = qstr(fmt::format("mrtrix_interprocesssyncer_{}", connectToId));
 
     // check we are not already connected
     for (unsigned int i = 0; i < senders.size(); i++) {

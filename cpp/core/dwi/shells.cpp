@@ -17,6 +17,7 @@
 #include "dwi/shells.h"
 
 #include "math/math.h"
+#include <fmt/format.h>
 
 namespace MR::DWI {
 
@@ -116,8 +117,11 @@ Shells::select_shells(const bool force_singleshell, const bool force_with_bzero,
           if (!bzero_selected) {
             to_retain[0] = true;
             bzero_selected = true;
-            DEBUG("User requested b-value " + str(*b) + "; got b=0 shell : " + str(smallest().get_mean()) + " +- " +
-                  str(smallest().get_stdev()) + " with " + str(smallest().count()) + " volumes");
+            DEBUG("User requested b-value {}; got b=0 shell : {} +- {} with {} volumes",
+                  *b,
+                  smallest().get_mean(),
+                  smallest().get_stdev(),
+                  smallest().count());
           } else {
             throw Exception("User selected b=0 shell more than once");
           }
@@ -141,11 +145,17 @@ Shells::select_shells(const bool force_singleshell, const bool force_with_bzero,
               to_retain[s] = true;
               nonbzero_selected_count++;
               shell_selected = true;
-              DEBUG("User requested b-value " + str(*b) + "; got shell " + str(s) + ": " + str(shells[s].get_mean()) +
-                    " +- " + str(shells[s].get_stdev()) + " with " + str(shells[s].count()) + " volumes");
+              DEBUG("User requested b-value {}; got shell {}: {} +- {} with {} volumes",
+                    *b,
+                    s,
+                    shells[s].get_mean(),
+                    shells[s].get_stdev(),
+                    shells[s].count());
             } else {
-              throw Exception("User selected a shell more than once: " + str(shells[s].get_mean()) + " +- " +
-                              str(shells[s].get_stdev()) + " with " + str(shells[s].count()) + " volumes");
+              throw Exception("User selected a shell more than once: {} +- {} with {} volumes",
+                              shells[s].get_mean(),
+                              shells[s].get_stdev(),
+                              shells[s].count());
             }
           }
         }
@@ -168,13 +178,17 @@ Shells::select_shells(const bool force_singleshell, const bool force_with_bzero,
             if (!to_retain[best_shell]) {
               to_retain[best_shell] = true;
               nonbzero_selected_count++;
-              DEBUG("User requested b-value " + str(*b) + "; got shell " + str(best_shell) + ": " +
-                    str(shells[best_shell].get_mean()) + " +- " + str(shells[best_shell].get_stdev()) + " with " +
-                    str(shells[best_shell].count()) + " volumes");
+              DEBUG("User requested b-value {}; got shell {}: {} +- {} with {} volumes",
+                    *b,
+                    best_shell,
+                    shells[best_shell].get_mean(),
+                    shells[best_shell].get_stdev(),
+                    shells[best_shell].count());
             } else {
-              throw Exception("User selected a shell more than once: " + str(shells[best_shell].get_mean()) + " +- " +
-                              str(shells[best_shell].get_stdev()) + " with " + str(shells[best_shell].count()) +
-                              " volumes");
+              throw Exception("User selected a shell more than once: {} +- {} with {} volumes",
+                              shells[best_shell].get_mean(),
+                              shells[best_shell].get_stdev(),
+                              shells[best_shell].count());
             }
           } else {
 
@@ -210,20 +224,22 @@ Shells::select_shells(const bool force_singleshell, const bool force_with_bzero,
               for (size_t s = 0; s != count(); ++s) {
                 if (!bvalues.empty())
                   bvalues += ", ";
-                bvalues += str(shells[s].get_mean()) + " +- " + str(shells[s].get_stdev());
+                bvalues += fmt::format("{} +- {}", shells[s].get_mean(), shells[s].get_stdev());
               }
-              throw Exception("Unable to robustly select desired shell b=" + str(*b) +
-                              " (detected shells are: " + bvalues + ")");
+              throw Exception("Unable to robustly select desired shell b={} (detected shells are: {})", *b, bvalues);
             } else {
-              WARN("User requested shell b=" + str(*b) + "; have selected nearby shell " +
-                   str(shells[best_shell].get_mean()) + " +- " + str(shells[best_shell].get_stdev()));
+              WARN("User requested shell b={}; have selected nearby shell {} +- {}",
+                   *b,
+                   shells[best_shell].get_mean(),
+                   shells[best_shell].get_stdev());
               if (!to_retain[best_shell]) {
                 to_retain[best_shell] = true;
                 nonbzero_selected_count++;
               } else {
-                throw Exception("User selected a shell more than once: " + str(shells[best_shell].get_mean()) + " +- " +
-                                str(shells[best_shell].get_stdev()) + " with " + str(shells[best_shell].count()) +
-                                " volumes");
+                throw Exception("User selected a shell more than once: {} +- {} with {} volumes",
+                                shells[best_shell].get_mean(),
+                                shells[best_shell].get_stdev(),
+                                shells[best_shell].count());
               }
             }
 
@@ -236,8 +252,8 @@ Shells::select_shells(const bool force_singleshell, const bool force_with_bzero,
     } // End looping over list of requested b-value shells
 
     if (force_singleshell && nonbzero_selected_count != 1)
-      throw Exception("User selected " + str(nonbzero_selected_count) +
-                      " non b=0 shells, but the command requires single-shell data");
+      throw Exception("User selected {} non b=0 shells, but the command requires single-shell data",
+                      nonbzero_selected_count);
 
     if (force_with_bzero && !bzero_selected)
       throw Exception("User did not select b=0 shell, but the command requires the presence of b=0 data");
@@ -250,8 +266,9 @@ Shells::select_shells(const bool force_singleshell, const bool force_with_bzero,
     if (force_singleshell && !is_single_shell()) {
       if (count() == 1 && has_bzero())
         throw Exception("No non b=0 data found, but the command requires a non b=0 shell");
-      WARN("Multiple non-zero b-value shells detected, automatically selecting largest b-value: b=" +
-           str(largest().get_mean()) + " with " + str(largest().count()) + " volumes");
+      WARN("Multiple non-zero b-value shells detected, automatically selecting largest b-value: b={} with {} volumes",
+           largest().get_mean(),
+           largest().count());
       to_retain[count() - 1] = true;
       if (has_bzero())
         to_retain[0] = true;
@@ -302,7 +319,7 @@ Shells::Shells(const Eigen::MatrixXd &grad) {
     throw Exception("DWI volumes could not be classified into b-value shells; gradient encoding may not represent a "
                     "HARDI sequence");
 
-  for (size_t shellIdx = 0; shellIdx <= num_shells; shellIdx++) {
+  for (size_t shellIdx = 0; shellIdx <= num_shells; ++shellIdx) {
 
     std::vector<size_t> volumes;
     for (size_t volumeIdx = 0; volumeIdx != clusters.size(); ++volumeIdx) {
@@ -317,7 +334,7 @@ Shells::Shells(const Eigen::MatrixXd &grad) {
       for (size_t i = 0; i != volumes.size(); ++i) {
         if (!unassigned.empty())
           unassigned += ", ";
-        unassigned += str(volumes[i]) + " (" + str(bvals[volumes[i]]) + ")";
+        unassigned += fmt::format("{} ({})", volumes[i], bvals[volumes[i]]);
       }
       WARN("The following image volumes were not successfully assigned to a b-value shell:");
       WARN(unassigned);
@@ -327,18 +344,18 @@ Shells::Shells(const Eigen::MatrixXd &grad) {
   std::sort(shells.begin(), shells.end());
 
   if (smallest().is_bzero()) {
-    INFO("Diffusion gradient encoding data clustered into " + str(num_shells - 1) + " non-zero shells and " +
-         str(smallest().count()) + " b=0 volumes");
+    INFO("Diffusion gradient encoding data clustered into {} non-zero shells and {} b=0 volumes",
+         num_shells - 1,
+         smallest().count());
   } else {
-    INFO("Diffusion gradient encoding data clustered into " + str(num_shells) + " shells (no b=0 volumes)");
+    INFO("Diffusion gradient encoding data clustered into {} shells (no b=0 volumes)", num_shells);
   }
-  DEBUG("Shells: b = { " + str([&] {
-          std::string m;
-          for (auto &s : shells)
-            m += str(s.get_mean()) + "(" + str(s.count()) + ") ";
-          return m;
-        }()) +
-        "}");
+  DEBUG("Shells: b = { {}}", [&] {
+    std::string m;
+    for (auto &s : shells)
+      m += fmt::format("{}({}) ", s.get_mean(), s.count());
+    return m;
+  }());
 }
 
 size_t Shells::clusterBvalues(const BValueList &bvals, std::vector<size_t> &clusters) const {

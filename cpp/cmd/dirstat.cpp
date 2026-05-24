@@ -25,6 +25,7 @@
 
 #include "dwi/directions/file.h"
 #include <filesystem>
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -127,7 +128,7 @@ void run() {
     if (get_options("shells").empty() && shells.has_bzero() && shells.count() > 1) {
       n_start = 1;
       if (get_options("output").empty())
-        print(dirs_input_path.string() + " (b=0) [ " + str(shells.smallest().count(), precision) + " volumes ]\n\n");
+        print(fmt::format("{} (b=0) [ {} volumes ]\n\n", argument[0], shells.smallest().count()));
     }
 
     Eigen::MatrixXd dirs;
@@ -137,7 +138,7 @@ void run() {
       for (size_t idx = 0; idx < shells[n].count(); ++idx)
         dirs.row(idx) = directions.row(shells[n].get_volumes()[idx]).head(3);
 
-      report(dirs_input_path.string() + " (b=" + str(shells[n].get_mean()) + ")", dirs);
+      report(fmt::format("{} (b={})", argument[0], shells[n].get_mean()), dirs);
     }
 
   } else
@@ -181,7 +182,7 @@ public:
 
 Metrics compute(Eigen::MatrixXd &directions) {
   if (directions.cols() < 3)
-    throw Exception("unexpected matrix size for scheme \"" + argument[0].as_text() + "\"");
+    throw Exception("unexpected matrix size for scheme \"{}\"", argument[0]);
   Math::Sphere::normalise_cartesian(directions);
 
   std::vector<double> NN_bipolar(directions.rows(), -1.0);
@@ -272,7 +273,7 @@ void output_selected(const Metrics &metrics, std::string_view selection) {
         throw Exception("spherical harmonic order requested is too large given number of directions");
       std::cout << metrics.SH[order] << " ";
     } else
-      throw Exception("unknown output specifier \"" + x + "\"");
+      throw Exception("unknown output specifier \"{}\"", x);
   }
 
   std::cout << "\n";
@@ -287,28 +288,36 @@ void report(std::string_view title, Eigen::MatrixXd &directions) {
     return;
   }
 
-  std::string output = title + " [ " + str(metrics.ndirs, precision) + " directions ]\n";
+  std::string output = fmt::format("{} [ {} directions ]\n", title, metrics.ndirs);
 
   output += "\n  Bipolar electrostatic repulsion model:\n";
-  output += "    nearest-neighbour angles: mean = " + str(metrics.BN[0], precision) + ", range [ " +
-            str(metrics.BN[1], precision) + " - " + str(metrics.BN[2], precision) + " ]\n";
-  output += "    energy: total = " + str(metrics.BE[0], precision) + ", mean = " + str(metrics.BE[1], precision) +
-            ", range [ " + str(metrics.BE[2], precision) + " - " + str(metrics.BE[3], precision) + " ]\n";
+  output += fmt::format(
+      "    nearest-neighbour angles: mean = {}, range [ {} - {} ]\n", metrics.BN[0], metrics.BN[1], metrics.BN[2]);
+  output += fmt::format("    energy: total = {}, mean = {}, range [ {} - {} ]\n",
+                        metrics.BE[0],
+                        metrics.BE[1],
+                        metrics.BE[2],
+                        metrics.BE[3]);
 
   output += "\n  Unipolar electrostatic repulsion model:\n";
-  output += "    nearest-neighbour angles: mean = " + str(metrics.UN[0], precision) + ", range [ " +
-            str(metrics.UN[1], precision) + " - " + str(metrics.UN[2], precision) + " ]\n";
-  output += "    energy: total = " + str(metrics.UE[0], precision) + ", mean = " + str(metrics.UE[1], precision) +
-            ", range [ " + str(metrics.UE[2], precision) + " - " + str(metrics.UE[3], precision) + " ]\n";
+  output += fmt::format("    nearest-neighbour angles: mean = {:.6g}, range [ {:.6g} - {:.6g} ]\n",
+                        metrics.UN[0],
+                        metrics.UN[1],
+                        metrics.UN[2]);
+  output += fmt::format("    energy: total = {:.6g}, mean = {:.6g}, range [ {:.6g} - {:.6g} ]\n",
+                        metrics.UE[0],
+                        metrics.UE[1],
+                        metrics.UE[2],
+                        metrics.UE[3]);
 
   output += "\n  Spherical Harmonic fit:\n";
   if (metrics.SH.size() > 1)
-    output += "    condition numbers for lmax = 2 -> " + str(metrics.SH.size() * 2) + ": " +
-              str(metrics.SH, precision) + "\n";
+    output += fmt::format(
+        "    condition numbers for lmax = 2 -> {}: {}\n", metrics.SH.size() * 2, str(metrics.SH, precision));
   else
-    output += "    condition number for lmax = 2: " + str(metrics.SH[0], precision) + "\n";
+    output += fmt::format("    condition number for lmax = 2: {:.6g}\n", metrics.SH[0]);
 
-  output += "\n  Asymmetry of sampling:\n    norm of mean direction vector = " + str(metrics.ASYM, precision) + "\n";
+  output += fmt::format("\n  Asymmetry of sampling:\n    norm of mean direction vector = {:.6g}\n", metrics.ASYM);
   if (metrics.ASYM >= 0.1)
     output += std::string("    WARNING: sampling is ") + (metrics.ASYM >= 0.4 ? "strongly" : "moderately") +
               " asymmetric - this may affect resiliance to eddy-current distortions\n";

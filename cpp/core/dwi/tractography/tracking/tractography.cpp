@@ -15,6 +15,7 @@
  */
 
 #include "dwi/tractography/tracking/tractography.h"
+#include <fmt/format.h>
 
 namespace MR::DWI::Tractography::Tracking {
 
@@ -24,59 +25,74 @@ const OptionGroup TrackOption =
     OptionGroup("Streamlines tractography options")
 
     + Option("select",
-             "set the desired number of streamlines to be selected by tckgen,"
-             " after all selection criteria have been applied"
-             " (i.e. inclusion/exclusion ROIs, min/max length, etc)."
-             " tckgen will keep seeding streamlines until this number of streamlines have been selected,"
-             " or the maximum allowed number of seeds has been exceeded"
-             " (see -seeds option)."
-             " By default, " + str(Defaults::num_selected_tracks) + " streamlines are to be selected."
-             " Set to zero to disable,"
-             " which will result in streamlines being seeded"
-             " until the number specified by -seeds has been reached.")
+             fmt::format("set the desired number of streamlines to be selected by tckgen,"
+                         " after all selection criteria have been applied"
+                         " (i.e. inclusion/exclusion ROIs, min/max length, etc)."
+                         " tckgen will keep seeding streamlines until this number of streamlines have been selected,"
+                         " or the maximum allowed number of seeds has been exceeded"
+                         " (see -seeds option)."
+                         " By default, {} streamlines are to be selected."
+                         " Set to zero to disable,"
+                         " which will result in streamlines being seeded"
+                         " until the number specified by -seeds has been reached.",
+                         Defaults::num_selected_tracks))
       + Argument("number").type_integer(0)
 
     + Option("step",
-             "set the step size of the algorithm in mm"
-             " (defaults:"
-             " for first-order algorithms, " + str(Defaults::stepsize_voxels_firstorder, 2) + " x voxelsize;"
-             " if using RK4, " + str(Defaults::stepsize_voxels_rk4, 2) + " x voxelsize;"
-             " for iFOD2: " + str(Defaults::stepsize_voxels_ifod2, 2) + " x voxelsize).")
+             fmt::format("set the step size of the algorithm in mm"
+                         " (defaults:"
+                         " for first-order algorithms, {:.2g} x voxelsize;"
+                         " if using RK4, {:.2g} x voxelsize;"
+                         " for iFOD2: {:.2g} x voxelsize).",
+                         Defaults::stepsize_voxels_firstorder,
+                         Defaults::stepsize_voxels_rk4,
+                         Defaults::stepsize_voxels_ifod2))
       + Argument("size").type_float(0.0)
 
     + Option("angle",
-             "set the maximum angle in degrees between successive steps"
-             " (defaults:"
-             " " + str(Defaults::angle_deterministic) + " for deterministic algorithms;"
-             " " + str(Defaults::angle_ifod1) + " for iFOD1 / nulldist1;"
-             " " + str(Defaults::angle_ifod2) + " for iFOD2 / nulldist2)")
+             fmt::format("set the maximum angle in degrees between successive steps"
+                         " (defaults:"
+                         " {} for deterministic algorithms;"
+                         " {} for iFOD1 / nulldist1;"
+                         " {} for iFOD2 / nulldist2)",
+                         Defaults::angle_deterministic,
+                         Defaults::angle_ifod1,
+                         Defaults::angle_ifod2))
       + Argument("theta").type_float(0.0)
 
     + Option("minlength",
-             "set the minimum length of any track in mm"
-             " (defaults:"
-             " without ACT, " + str(Defaults::minlength_voxels_noact) + " x voxelsize;"
-             " with ACT, " + str(Defaults::minlength_voxels_withact) + " x voxelsize).")
+             fmt::format("set the minimum length of any track in mm"
+                         " (defaults:"
+                         " without ACT, {:.2g} x voxelsize;"
+                         " with ACT, {:.2g} x voxelsize).",
+                         Defaults::minlength_voxels_noact,
+                         Defaults::minlength_voxels_withact))
       + Argument("value").type_float(0.0)
 
     + Option("maxlength",
-             "set the maximum length of any track in mm"
-             " (default: " + str(Defaults::maxlength_voxels) + " x voxelsize).")
+             fmt::format("set the maximum length of any track in mm"
+                         " (default: {} x voxelsize).",
+                         Defaults::maxlength_voxels))
       + Argument("value").type_float(0.0)
 
     + Option("cutoff",
-             "set the FOD amplitude / fixel size / tensor FA cutoff for terminating tracks"
-             " (defaults:"
-             " " + str(Defaults::cutoff_fod, 2) + " for FOD-based algorithms;"
-             " " + str(Defaults::cutoff_fixel, 2) +" for fixel-based algorithms;"
-             " " + str(Defaults::cutoff_fa, 2) + " for tensor-based algorithms;"
-             " threshold multiplied by " + str(Defaults::cutoff_act_multiplier) + " when using ACT).")
+             fmt::format("set the FOD amplitude / fixel size / tensor FA cutoff for terminating tracks"
+                         " (defaults:"
+                         " {:.2g} for FOD-based algorithms;"
+                         " {:.2g} for fixel-based algorithms;"
+                         " {:.2g} for tensor-based algorithms;"
+                         " threshold multiplied by {} when using ACT).",
+                         Defaults::cutoff_fod,
+                         Defaults::cutoff_fixel,
+                         Defaults::cutoff_fa,
+                         Defaults::cutoff_act_multiplier))
       + Argument("value").type_float(0.0)
 
     + Option("trials",
-             "set the maximum number of sampling trials at each point"
-             " (only used for iFOD1 / iFOD2)"
-             " (default: " + str(Defaults::max_trials_per_step) + ").")
+             fmt::format("set the maximum number of sampling trials at each point"
+                         " (only used for iFOD1 / iFOD2)"
+                         " (default: {}).",
+                         Defaults::max_trials_per_step))
       + Argument("number").type_integer(1)
 
     + Option("noprecomputed",

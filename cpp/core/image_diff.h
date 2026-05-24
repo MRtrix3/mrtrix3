@@ -26,21 +26,7 @@ namespace MR {
 //! check image headers are the same (dimensions, spacing & transform)
 template <class HeaderType1, class HeaderType2> inline void check_headers(HeaderType1 &in1, HeaderType2 &in2) {
   check_dimensions(in1, in2);
-  for (size_t i = 0; i < in1.ndim(); ++i) {
-    if (std::isfinite(in1.spacing(i)))
-      if (std::fabs((in1.spacing(i) - in2.spacing(i)) / (in1.spacing(i) + in2.spacing(i))) > 1e-4)
-        throw Exception("images \"" + in1.name() + "\" and \"" + in2.name() +
-                        "\" do not have matching voxel spacings on axis " + str(i) + " (" + str(in1.spacing(i)) +
-                        " vs " + str(in2.spacing(i)) + ")");
-  }
-  for (size_t i = 0; i < 3; ++i) {
-    for (size_t j = 0; j < 4; ++j) {
-      if (std::fabs(in1.transform().matrix()(i, j) - in2.transform().matrix()(i, j)) > 0.001)
-        throw Exception("images \"" + in1.name() + "\" and \"" + in2.name() +
-                        "\" do not have matching header transforms:\n" + str(in1.transform().matrix()) + "\nvs:\n " +
-                        str(in2.transform().matrix()) + ")");
-    }
-  }
+  check_voxel_grids_match_in_scanner_space(in1, in2);
 }
 
 //! check images are the same within a absolute tolerance
@@ -50,9 +36,12 @@ inline void check_images_abs(ImageType1 &in1, ImageType2 &in2, const double tol 
   ThreadedLoop(in1).run(
       [&tol](const ImageType1 &a, const ImageType2 &b) {
         if (MR::abs(static_cast<cdouble>(a.value()) - static_cast<cdouble>(b.value())) > tol)
-          throw Exception("images \"" + a.name() + "\" and \"" + b.name() +
-                          "\" do not match within absolute precision of " + str(tol) + " (" +
-                          str(static_cast<cdouble>(a.value())) + " vs " + str(static_cast<cdouble>(b.value())) + ")");
+          throw Exception("images \"{}\" and \"{}\" do not match within absolute precision of {} ({} vs {})",
+                          a.name(),
+                          b.name(),
+                          tol,
+                          a.value(),
+                          b.value());
       },
       in1,
       in2);
@@ -67,9 +56,12 @@ inline void check_images_frac(ImageType1 &in1, ImageType2 &in2, const double tol
       [&tol](const ImageType1 &a, const ImageType2 &b) {
         if (MR::abs((static_cast<cdouble>(a.value()) - static_cast<cdouble>(b.value())) /
                     (0.5 * (static_cast<cdouble>(a.value()) + static_cast<cdouble>(b.value())))) > tol)
-          throw Exception("images \"" + a.name() + "\" and \"" + b.name() +
-                          "\" do not match within fractional precision of " + str(tol) + " (" +
-                          str(static_cast<cdouble>(a.value())) + " vs " + str(static_cast<cdouble>(b.value())) + ")");
+          throw Exception("images \"{}\" and \"{}\" do not match within fractional precision of {} ({} vs {})",
+                          a.name(),
+                          b.name(),
+                          tol,
+                          a.value(),
+                          b.value());
       },
       in1,
       in2);
@@ -84,9 +76,13 @@ inline void check_images_tolimage(ImageType1 &in1, ImageType2 &in2, ImageTypeTol
   ThreadedLoop(in1).run(
       [](const ImageType1 &a, const ImageType2 &b, const ImageTypeTol &t) {
         if (MR::abs(static_cast<cdouble>(a.value()) - static_cast<cdouble>(b.value())) > t.value())
-          throw Exception("images \"" + a.name() + "\" and \"" + b.name() + "\" do not match within precision of \"" +
-                          t.name() + "\"" + " (" + str(static_cast<cdouble>(a.value())) + " vs " +
-                          str(static_cast<cdouble>(b.value())) + ", tolerance " + str(t.value()) + ")");
+          throw Exception("images \"{}\" and \"{}\" do not match within precision of \"{}\" ({} vs {}, tolerance {})",
+                          a.name(),
+                          b.name(),
+                          t.name(),
+                          a.value(),
+                          b.value(),
+                          t.value());
       },
       in1,
       in2,
@@ -105,9 +101,12 @@ inline void check_images_voxel(ImageType1 &in1, ImageType2 &in2, const double to
     const double threshold = tol * 0.5 * (maxa + maxb);
     for (auto l = Loop(3)(a, b); l; ++l) {
       if (MR::abs(static_cast<cdouble>(a.value()) - static_cast<cdouble>(b.value())) > threshold)
-        throw Exception("images \"" + a.name() + "\" and \"" + b.name() + "\" do not match within " + str(tol) +
-                        " of maximal voxel value" + " (" + str(static_cast<cdouble>(a.value())) + " vs " +
-                        str(static_cast<cdouble>(b.value())) + ")");
+        throw Exception("images \"{}\" and \"{}\" do not match within {} of maximal voxel value ({} vs {})",
+                        a.name(),
+                        b.name(),
+                        tol,
+                        a.value(),
+                        b.value());
     }
   };
 
@@ -131,24 +130,24 @@ inline void check_keyvals(const HeaderType1 &in1, const HeaderType2 &in2) {
       break;
 
     if (it1 == in1.keyval().end()) {
-      errors.push_back("Key \"" + it2->first + "\" in image \"" + in2.name() + "\" not present in \"" + in1.name() +
-                       "\"");
+      errors.push_back(
+          fmt::format("Key \"{}\" in image \"{}\" not present in \"{}\"", it2->first, in2.name(), in1.name()));
       ++it2;
     } else if (it2 == in2.keyval().end()) {
-      errors.push_back("Key \"" + it1->first + "\" in image \"" + in1.name() + "\" not present in \"" + in2.name() +
-                       "\"");
+      errors.push_back(
+          fmt::format("Key \"{}\" in image \"{}\" not present in \"{}\"", it1->first, in1.name(), in2.name()));
       ++it1;
     } else if (it1->first < it2->first) {
-      errors.push_back("Key \"" + it1->first + "\" in image \"" + in1.name() + "\" not present in \"" + in2.name() +
-                       "\"");
+      errors.push_back(
+          fmt::format("Key \"{}\" in image \"{}\" not present in \"{}\"", it1->first, in1.name(), in2.name()));
       ++it1;
     } else if (it1->first > it2->first) {
-      errors.push_back("Key \"" + it2->first + "\" in image \"" + in2.name() + "\" not present in \"" + in1.name() +
-                       "\"");
+      errors.push_back(
+          fmt::format("Key \"{}\" in image \"{}\" not present in \"{}\"", it2->first, in2.name(), in1.name()));
       ++it2;
     } else {
       if (it1->second != it2->second)
-        errors.push_back("Key \"" + it1->first + "\" has different values between images");
+        errors.push_back(fmt::format("Key \"{}\" has different values between images", it1->first));
       ++it1;
       ++it2;
     }

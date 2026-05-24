@@ -19,6 +19,7 @@
 #include "adapter/base.h"
 #include "header.h"
 #include "image_helpers.h"
+#include <fmt/format.h>
 
 namespace MR::Adapter {
 

@@ -14,12 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <fmt/format.h>
 #include <limits>
 
 #include "algo/threaded_copy.h"
 #include "command.h"
 #include "file/matrix.h"
 #include "image.h"
+#include "image_helpers.h"
 #include "math/SH.h"
 #include "mrtrix_version.h"
 #include "thread.h"
@@ -114,39 +116,39 @@ void usage() {
 
   + OptionGroup("Parameters")
 
-  + Option ("lmax", "set the maximum harmonic order for the output series."
-                    " (default = " + str(default_lmax) + ")")
+  + Option ("lmax", fmt::format("set the maximum harmonic order for the output series."
+                                " (default = {})", default_lmax))
     + Argument ("order").type_integer(2, 30)
 
-  + Option ("length", "set the length of the particles (fibre segments)."
-                      " (default = " + str(default_length, 2) + "mm)")
+  + Option ("length", fmt::format("set the length of the particles (fibre segments)."
+                                  " (default = {:.2g}mm)", default_length))
     + Argument ("size").type_float(1e-6)
 
-  + Option ("weight", "set the weight by which particles contribute to the model."
-                      " (default = " + str(default_weight, 2) + ")")
+  + Option ("weight", fmt::format("set the weight by which particles contribute to the model."
+                                  " (default = {:.2g})", default_weight))
     + Argument ("w").type_float(1e-6, 1.0)
 
-  + Option ("ppot", "set the particle potential,"
-                    " i.e., the cost of adding one segment,"
-                    " relative to the particle weight."
-                    " (default = " + str(default_ppot, 2) + ")")
+  + Option ("ppot", fmt::format("set the particle potential,"
+                                " i.e., the cost of adding one segment,"
+                                " relative to the particle weight."
+                                " (default = {:.2g})", default_ppot))
     + Argument ("u").type_float(0.0, 1.0)
 
-  + Option ("cpot", "set the connection potential,"
-                    " i.e., the energy term that drives two segments together."
-                    " (default = " + str(default_cpot, 2) + ")")
+  + Option ("cpot", fmt::format("set the connection potential,"
+                                " i.e., the energy term that drives two segments together."
+                                " (default = {:.2g})", default_cpot))
     + Argument ("v").type_float(0.0)
 
-  + Option ("t0", "set the initial temperature of the metropolis hastings optimizer."
-                  " (default = " + str(default_t0, 2) + ")")
+  + Option ("t0", fmt::format("set the initial temperature of the metropolis hastings optimizer."
+                              " (default = {:.2g})", default_t0))
     + Argument ("start").type_float(1e-6, 1e6)
 
-  + Option ("t1", "set the final temperature of the metropolis hastings optimizer."
-                  " (default = " + str(default_t1, 2) + ")")
+  + Option ("t1", fmt::format("set the final temperature of the metropolis hastings optimizer."
+                              " (default = {:.2g})", default_t1))
     + Argument ("end").type_float(1e-6, 1e6)
 
-  + Option ("niter", "set the number of iterations of the metropolis hastings optimizer."
-                     " (default = " + str(default_niter/1000000) + "M)")
+  + Option ("niter", fmt::format("set the number of iterations of the metropolis hastings optimizer."
+                                 " (default = {}M)", default_niter/1000000))
     + Argument ("n").type_integer(0)
 
 
@@ -178,35 +180,36 @@ void usage() {
 
   + OptionGroup("Advanced parameters, if you really know what you're doing")
 
-  + Option ("balance", "balance internal and external energy."
-                       " (default = " + str(default_balance, 2) + ")."
-                       " Negative values give more weight to the internal energy;"
-                       " positive to the external energy.")
+  + Option ("balance", fmt::format("balance internal and external energy."
+                                   " (default = {:.2g})."
+                                   " Negative values give more weight to the internal energy;"
+                                   " positive to the external energy.", default_balance))
     + Argument ("b").type_float(-100.0, 100.0)
 
-  + Option ("density", "set the desired density of the free Poisson process."
-                       " (default = " + str(default_density, 2) + ")")
+  + Option ("density", fmt::format("set the desired density of the free Poisson process."
+                                   " (default = {:.2g})", default_density))
     + Argument ("lambda").type_float(0.0)
 
-  + Option ("prob", "set the probabilities of generating"
-                    " birth, death, randshift, optshift and connect proposals respectively."
-                    " (default = "
-                    + str(default_prob_birth, 2) + ","
-                    + str(default_prob_death, 2) + ","
-                    + str(default_prob_randshift, 2) + ","
-                    + str(default_prob_optshift, 2) + ","
-                    + str(default_prob_connect, 2) + ")")
+  + Option ("prob", fmt::format("set the probabilities of generating"
+                                " birth, death, randshift, optshift and connect proposals respectively."
+                                " (default = {:.2g},{:.2g},{:.2g},{:.2g},{:.2g})",
+                                default_prob_birth,
+                                default_prob_death,
+                                default_prob_randshift,
+                                default_prob_optshift,
+                                default_prob_connect))
     + Argument ("prob").type_sequence_float()
 
-  + Option ("beta", "set the width of the Hanning interpolation window."
-                    " (in [0, 1], default = " + str(default_beta, 2) + "). "
-                    " If used, a mask is required,"
-                    " and this mask must keep at least one voxel distance to the image bounding box.")
+  + Option ("beta", fmt::format("set the width of the Hanning interpolation window."
+                                " (in [0, 1], default = {:.2g}). "
+                                " If used, a mask is required,"
+                                " and this mask must keep at least one voxel distance to the image bounding box.",
+                                default_beta))
     + Argument ("b").type_float(0.0, 1.0)
 
-  + Option ("lambda", "set the weight of the internal energy directly."
-                      " (default = " + str(default_lambda, 2) + ")."
-                      " If provided, any value of -balance will be ignored.")
+  + Option ("lambda", fmt::format("set the weight of the internal energy directly."
+                                  " (default = {:.2g})."
+                                  " If provided, any value of -balance will be ignored.", default_lambda))
     + Argument ("lam").type_float(0.0);
 
 }
@@ -330,9 +333,9 @@ void run() {
 
   Thread::run(Thread::multi(mhs), "MH sampler");
 
-  INFO("Final no. particles: " + std::to_string(pgrid.getTotalCount()));
-  INFO("Final external energy: " + std::to_string(stats.getEextTotal()));
-  INFO("Final internal energy: " + std::to_string(stats.getEintTotal()));
+  INFO("Final no. particles: {}", std::to_string(pgrid.getTotalCount()));
+  INFO("Final external energy: {}", std::to_string(stats.getEextTotal()));
+  INFO("Final internal energy: {}", std::to_string(stats.getEintTotal()));
 
   // Copy results to output buffers -----------------------------------------------------
 
@@ -341,15 +344,15 @@ void run() {
   MR::DWI::Tractography::Properties ftfileprops;
   ftfileprops.comments.push_back("global tractography");
   ftfileprops.comments.push_back("");
-  ftfileprops.comments.push_back("segment length = " + std::to_string((long double)Particle::L));
-  ftfileprops.comments.push_back("segment weight = " + std::to_string((long double)properties.weight));
+  ftfileprops.comments.push_back(fmt::format("segment length = {}", (long double)Particle::L));
+  ftfileprops.comments.push_back(fmt::format("segment weight = {}", (long double)properties.weight));
   ftfileprops.comments.push_back("");
-  ftfileprops.comments.push_back("connection potential = " + std::to_string((long double)cpot));
-  ftfileprops.comments.push_back("particle potential = " + std::to_string((long double)mu));
+  ftfileprops.comments.push_back(fmt::format("connection potential = {}", (long double)cpot));
+  ftfileprops.comments.push_back(fmt::format("particle potential = {}", (long double)mu));
   ftfileprops.comments.push_back("");
-  ftfileprops.comments.push_back("no. iterations = " + std::to_string((long long int)niter));
-  ftfileprops.comments.push_back("T0 = " + std::to_string((long double)t0));
-  ftfileprops.comments.push_back("T1 = " + std::to_string((long double)t1));
+  ftfileprops.comments.push_back(fmt::format("no. iterations = {}", (long long int)niter));
+  ftfileprops.comments.push_back(fmt::format("T0 = {}", (long double)t0));
+  ftfileprops.comments.push_back(fmt::format("T1 = {}", (long double)t1));
 
   MR::DWI::Tractography::Writer<float> writer(argument[2], ftfileprops);
   pgrid.exportTracks(writer);
@@ -375,7 +378,7 @@ void run() {
       auto Fiso = Image<float>::create(opt[0][0], header_out);
       threaded_copy(Eext->getFiso(), Fiso);
     } else {
-      WARN("Ignore saving file " + opt[0][0].as_text() + ", because no isotropic response functions were provided.");
+      WARN("Ignore saving file {}, because no isotropic response functions were provided.", opt[0][0]);
     }
   }
 

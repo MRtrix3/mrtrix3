@@ -34,6 +34,7 @@
 
 #include "surface/mesh_multi.h"
 #include "surface/validate.h"
+#include <fmt/std.h>
 
 #include <filesystem>
 
@@ -2498,7 +2499,7 @@ void Connectome::initialise(const std::filesystem::path &path) {
           dim[axis] = node_upper_corners[node_index][axis] - node_lower_corners[node_index][axis] + 1;
         }
         MR::Adapter::Subset<MR::Image<node_t>> subset(*buffer, from, dim);
-        MR::Image<bool> node_mask(MR::Image<bool>::scratch(subset, "Node " + str(node_index) + " mask"));
+        MR::Image<bool> node_mask(MR::Image<bool>::scratch(subset, fmt::format("Node {} mask", node_index)));
 
         auto copy_func = [&](const decltype(subset) &in, decltype(node_mask) &out) {
           out.value() = (in.value() == node_index);
@@ -2545,7 +2546,7 @@ void Connectome::add_matrices(const std::vector<std::filesystem::path> &list) {
       MR::Connectome::matrix_type matrix = File::Matrix::load_matrix<default_type>(list[i]);
       MR::Connectome::to_upper(matrix);
       if (matrix.rows() != num_nodes())
-        throw Exception("Matrix file \"" + list[i].filename().string() + "\" is incorrect size");
+        throw Exception("Matrix file \"{}\" is incorrect size", list[i].filename());
       FileDataVector temp;
       mat2vec->M2V(matrix, temp);
       temp.calc_stats();
@@ -2907,7 +2908,7 @@ void Connectome::draw_edges(const Projection &projection) {
 
 bool Connectome::import_vector_file(FileDataVector &data, std::string_view attribute) {
   auto load_paths = Dialog::File::input_filepath(
-      this, "Select vector file to determine " + attribute, "Data files (*.csv)", current_folder);
+      this, fmt::format("Select vector file to determine {}", attribute), "Data files (*.csv)", current_folder);
   if (load_paths.empty())
     return false;
   current_folder = load_paths.last_directory;
@@ -2917,11 +2918,11 @@ bool Connectome::import_vector_file(FileDataVector &data, std::string_view attri
     data.load(load_paths.single_selection);
     const size_t numel = data.size();
     if (data.size() != num_nodes()) {
-      // Restore data in case user is trying to change from one file to another
       data = std::move(prev_data);
-      throw Exception("File " + load_paths.single_selection.filename().string() + //
-                      " contains " + str(numel) + " elements," +                  //
-                      " but connectome has " + str(num_nodes()) + " nodes");      //
+      throw Exception("File {} contains {} elements, but connectome has {} nodes",
+                      load_paths.single_selection.filename(),
+                      numel,
+                      num_nodes());
     }
     data.set_name(load_paths.single_selection.filename().string());
     return true;
@@ -2934,7 +2935,7 @@ bool Connectome::import_vector_file(FileDataVector &data, std::string_view attri
 
 bool Connectome::import_matrix_file(FileDataVector &data, std::string_view attribute) {
   auto load_paths = Dialog::File::input_filepath(
-      this, "Select matrix file to determine " + attribute, "Data files (*.csv)", current_folder);
+      this, fmt::format("Select matrix file to determine {}", attribute), "Data files (*.csv)", current_folder);
   if (load_paths.empty())
     return false;
   current_folder = load_paths.last_directory;
@@ -2943,7 +2944,7 @@ bool Connectome::import_matrix_file(FileDataVector &data, std::string_view attri
     temp = File::Matrix::load_matrix<default_type>(load_paths.single_selection);
     MR::Connectome::to_upper(temp);
     if (temp.rows() != num_nodes())
-      throw Exception("Matrix file \"" + load_paths.single_selection.filename().string() + "\" is incorrect size");
+      throw Exception("Matrix file \"{}\" is incorrect size", load_paths.single_selection.filename());
   } catch (Exception &e) {
     e.display();
     return false;
@@ -2959,7 +2960,7 @@ void Connectome::load_properties() {
     // Create LUT entries for nodes with non-zero volume
     for (node_t node_index = 1; node_index <= num_nodes(); ++node_index) {
       if (nodes[node_index].get_volume()) {
-        const std::string name = "Node " + str(node_index);
+        const std::string name = fmt::format("Node {}", node_index);
         nodes[node_index].set_name(name);
         lut.insert(std::make_pair(node_index, MR::Connectome::LUT_node(name)));
       }
@@ -2990,22 +2991,23 @@ void Connectome::load_properties() {
       }
     }
     if (duplicate_entry_count > 2) {
-      WARN("Lookup table file contains " + str(duplicate_entry_count) +
-           " indices with duplicate entries; "
-           "file may be intended for use in conversion rather than visualisation");
+      WARN("Lookup table file contains {} indices with duplicate entries; \"\n           \"file may be "
+           "intended for use in conversion rather than visualisation",
+           duplicate_entry_count);
     }
     size_t absent_entry_count = 0;
     for (node_t node_index = 1; node_index <= num_nodes(); ++node_index) {
       if (nodes[node_index].get_volume() && nodes[node_index].get_name().empty()) {
-        const std::string name = "Node " + str(node_index);
+        const std::string name = fmt::format("Node {}", node_index);
         nodes[node_index].set_name(name);
         lut.insert(std::make_pair(node_index, MR::Connectome::LUT_node(name)));
         ++absent_entry_count;
       }
     }
     if (absent_entry_count) {
-      WARN(str(absent_entry_count) + " indices present in parcellation image with no entry in lookup table; "
-                                     "lookup table file and parcellation image may not match");
+      WARN("{} indices present in parcellation image with no entry in lookup table; \"\n                   "
+           "                  \"lookup table file and parcellation image may not match",
+           absent_entry_count);
     }
   }
 
@@ -4019,7 +4021,7 @@ void Connectome::get_meshes() {
   Surface::MeshMulti meshes;
   meshes.load(load_paths.single_selection);
   if (meshes.size() != nodes.size())
-    throw Exception("Mesh file contains " + str(meshes.size()) + " objects; expected " + str(nodes.size()));
+    throw Exception("Mesh file contains {} objects; expected {}", meshes.size(), nodes.size());
   Surface::debug_validate(meshes);
   have_meshes = false;
   GL::Context::Grab context;
@@ -4042,9 +4044,10 @@ void Connectome::get_exemplars() {
   MR::DWI::Tractography::Reader<float> reader(load_paths.single_selection, properties);
   const size_t num_tracks = to<size_t>(properties["count"]);
   if (num_tracks != num_edges())
-    throw Exception("Track file " + load_paths.single_selection.filename().string() + //
-                    " contains " + str(num_tracks) + " streamlines;" +                //
-                    " connectome expects " + str(num_edges()) + " exemplars");        //
+    throw Exception("Track file {} contains {} streamlines; connectome expects {} exemplars",
+                    load_paths.single_selection.filename(),
+                    num_tracks,
+                    num_edges());
   ProgressBar progress("Importing connection exemplars", num_edges());
   MR::DWI::Tractography::Streamline<float> tck;
   while (reader(tck)) {

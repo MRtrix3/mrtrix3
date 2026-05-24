@@ -28,11 +28,7 @@ The following checks are performed on each input image:
 
 2. For every brain voxel (identified by a non-zero partial-volume sum), each of the five tissue PVFs must lie within [0.0, 1.0]. Voxels that violate this constraint contain non-physical values and the image is rejected as a hard error.
 
-3. For every brain voxel, the sum of all five tissue PVFs must equal 1.0 to within a tolerance of 
-
-0.001
-
-. Voxels that violate this constraint are reported as a soft warning: the image may still be usable for ACT but does not perfectly conform to the format.
+3. For every brain voxel, the sum of all five tissue PVFs must equal 1.0 to within a tolerance of 0.001. Voxels that violate this constraint are reported as a soft warning: the image may still be usable for ACT but does not perfectly conform to the format.
 
 The path to be provided to the -voxels option depends on the image(s) provided as input to the command. if ony a single input image is provided, then the path provided to the -voxels option should be the path to an output image file that will be created if necessary. If however there are multiple input files provided to the command, then the path provided to the -voxels option should instead be a path to a directory that will be created and populated with an individual image per problematic input image.
 

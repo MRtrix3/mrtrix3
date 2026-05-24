@@ -21,6 +21,7 @@
 #include "interp/linear.h"
 #include "math/rng.h"
 #include "transform.h"
+#include <fmt/format.h>
 
 namespace MR::DWI::Tractography {
 class Properties;
@@ -62,7 +63,7 @@ public:
       try {
         mask.reset(new Mask(spec));
       } catch (Exception &e_asimage) {
-        Exception e("Unable to parse text \"" + spec + "\" as a ROI");
+        Exception e(fmt::format("Unable to parse text \"{}\" as a ROI", spec));
         e.push_back("If interpreted as sphere:");
         for (size_t i = 0; i != e_assphere.num(); ++i)
           e.push_back("  " + e_assphere[i]);
@@ -77,7 +78,7 @@ public:
   std::string shape() const { return (mask ? "image" : "sphere"); }
 
   std::string parameters() const {
-    return mask ? std::string(mask->name()) : (str(pos[0]) + "," + str(pos[1]) + "," + str(pos[2]) + "," + str(radius));
+    return mask ? std::string(mask->name()) : fmt::format("{},{},{},{}", pos[0], pos[1], pos[2], radius);
   }
 
   float min_featurelength() const {

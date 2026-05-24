@@ -18,6 +18,7 @@
 
 #include "math/check_gradient.h"
 #include <deque>
+#include <fmt/format.h>
 #include <fstream>
 #include <iostream>
 #include <limits>
@@ -78,28 +79,28 @@ public:
     if (log_os) {
       log_os << "#iteration" << delim << "feval" << delim << "cost" << delim << "stepsize";
       for (ssize_t a = 0; a < x1.size(); a++)
-        log_os << delim + "x_" + str(a + 1);
+        log_os << fmt::format("{}x_{}", delim, a + 1);
       for (ssize_t a = 0; a < x1.size(); a++)
-        log_os << delim + "g_" + str(a + 1);
+        log_os << fmt::format("{}g_{}", delim, a + 1);
       log_os << "\n" << std::flush;
     }
     init(log_os);
 
     const value_type gradient_tolerance(grad_tolerance * normg);
 
-    DEBUG("Gradient descent iteration: init; cost: " + str(f));
+    DEBUG("Gradient descent iteration: init; cost: {}", f);
 
     while (niter < max_iterations) {
       bool retval = iterate(log_os);
-      DEBUG("Gradient descent iteration: " + str(niter) + "; cost: " + str(f));
+      DEBUG("Gradient descent iteration: {}; cost: {}", niter, f);
       if (verbose) {
-        CONSOLE("iteration " + str(niter) + ": f = " + str(f) + ", |g| = " + str(normg) + ":");
-        CONSOLE("  x  = [ " + str(x2.transpose()) + "]");
+        CONSOLE("iteration {}: f = {}, |g| = {}:", niter, f, normg);
+        CONSOLE("  x  = [ {} ]", x2.transpose());
       }
 
       if (normg < gradient_tolerance) {
         if (verbose)
-          CONSOLE("normg (" + str(normg) + ") < gradient tolerance (" + str(gradient_tolerance) + ")");
+          CONSOLE("normg ({}) < gradient tolerance ({})", normg, gradient_tolerance);
         return;
       }
 
@@ -129,8 +130,8 @@ public:
     assert(!std::isnan(normg));
     dt /= normg;
     if (verbose) {
-      CONSOLE("initialise: f = " + str(f) + ", |g| = " + str(normg) + ", step = " + str(dt) + ":");
-      CONSOLE("            x = [ " + str(x1.transpose()) + "]");
+      CONSOLE("initialise: f = {}, |g| = {}, step = {}:", f, normg, dt);
+      CONSOLE("            x = [ {} ]", x1.transpose());
     }
     if (log_os) {
       log_os << niter << delim << nfeval << delim << str(f) << delim << str(dt);
@@ -170,8 +171,8 @@ public:
       log_os << std::endl;
     }
     if (verbose) {
-      CONSOLE("            f = " + str(f) + ", |g| = " + str(normg) + ", step = " + str(dt) + ":");
-      CONSOLE("            x = [ " + str(x2.transpose()) + "]");
+      CONSOLE("            f = {}, |g| = {}, step = {}:", f, normg, dt);
+      CONSOLE("            x = [ {} ]", x2.transpose());
     }
   }
 
@@ -221,11 +222,11 @@ protected:
     ++nfeval;
     value_type cost = func(newx, newg);
     if (!std::isfinite(cost))
-      throw Exception("cost function is NaN or Inf!");
+      throw Exception("cost function is NaN or Inf!\n      << eval {}", nfeval);
     if (verbose) {
-      CONSOLE("      << eval " + str(nfeval) + ", f = " + str(cost) + " >>");
-      CONSOLE("      << newx = [ " + str(newx.transpose()) + "]");
-      CONSOLE("      << newg = [ " + str(newg.transpose()) + "]");
+      CONSOLE("      << eval {}, f = {} >>", nfeval, cost);
+      CONSOLE("      << newx = [ {} ]", newx.transpose());
+      CONSOLE("      << newg = [ {} ]", newg.transpose());
     }
     return cost;
   }

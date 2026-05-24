@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <fmt/format.h>
+
 #include "algo/threaded_loop.h"
 #include "axes.h"
 #include "degibbs/degibbs.h"
@@ -202,7 +204,7 @@ public:
     for (int axis = 0; axis < 3; ++axis) {
 
       // filter along x:
-      INFO("filtering for axis " + str(axis) + "...");
+      INFO("filtering for axis {}...", axis);
       ThreadedLoop(vol_FT).run(Filter(axis), vol_FT, vol_filtered);
 
       // then inverse FT back to image domain:
@@ -212,7 +214,7 @@ public:
       Math::FFT(vol_filtered, vol_filtered, 2, FFTW_BACKWARD);
 
       // apply unringing operation on desired axis:
-      INFO("performing unringing along axis " + str(axis) + "...");
+      INFO("performing unringing along axis {}...", axis);
       ThreadedLoop(vol_filtered, strides_for_axis(axis))
           .run_outer(LineProcessor<VolumeOut>(axis, vol_filtered, output, minW, maxW, num_shifts));
 
@@ -252,9 +254,9 @@ void unring3D(ImageIn &input, ImageOut &output, const int minW = 1, const int ma
 
     std::string vol_idx;
     for (size_t n = 3; n < input.ndim(); ++n)
-      vol_idx += str(input.index(n)) + " ";
+      vol_idx += fmt::format("{} ", input.index(n));
     if (!vol_idx.empty())
-      INFO("processing volume [ " + vol_idx + "]");
+      INFO("processing volume [ {}]", vol_idx);
 
     Volume vol_in(input);
     unring(progress, vol_in, output);

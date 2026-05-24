@@ -16,6 +16,7 @@
 
 #include "algo/histogram.h"
 #include "file/matrix.h"
+#include <fmt/format.h>
 
 namespace MR::Algo::Histogram {
 
@@ -50,7 +51,7 @@ void Calibrator::from_file(const std::filesystem::path &path) {
         throw Exception("Non-equal spacing in histogram bin centres");
     }
   } catch (Exception &e) {
-    throw Exception(e, "Could not use file \"" + path.string() + "\" as histogram template");
+    throw Exception(e, "Could not use file \"{}\" as histogram template", path);
   }
 }
 

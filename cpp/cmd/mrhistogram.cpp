@@ -18,6 +18,7 @@
 #include "command.h"
 #include "header.h"
 #include "image.h"
+#include <fmt/format.h>
 
 #include <filesystem>
 
@@ -124,7 +125,7 @@ void run() {
   const size_t nbins_data = calibrator.get_num_bins();
   if (nbins_data == 0)
     throw Exception(
-        std::string("No histogram bins constructed") +
+        "No histogram bins constructed{}",
         ((ignorezero || nbins_user > 1) ? "." : "; you might want to use the -ignorezero or -bins option."));
 
   for (size_t i = 0; i != nbins_data; ++i)

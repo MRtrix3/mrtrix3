@@ -18,6 +18,7 @@
 
 #include <cstddef>
 #include <filesystem>
+#include <fmt/format.h>
 #include <unordered_map>
 
 #include "file/dicom/definitions.h"
@@ -50,7 +51,7 @@ public:
       day = to<uint32_t>(entry.substr(6, 2));
     }
     if (year < 1000 || month > 12 || day > 31)
-      throw Exception("Error converting string \"" + entry + "\" to date");
+      throw Exception("Error converting string \"{}\" to date", entry);
   }
   uint32_t year, month, day;
   friend std::ostream &operator<<(std::ostream &stream, const Date &item);
@@ -60,7 +61,7 @@ class Time {
 public:
   Time(std::string_view entry) : Time() {
     if (entry.size() < 6)
-      throw Exception("field \"" + entry + "\" is too short to be interpreted as a time");
+      throw Exception("field \"{}\" is too short to be interpreted as a time", entry);
     hour = to<uint32_t>(entry.substr(0, 2));
     minute = to<uint32_t>(entry.substr(2, 2));
     second = to<uint32_t>(entry.substr(4, 2));
@@ -213,3 +214,22 @@ protected:
 };
 
 } // namespace MR::File::Dicom
+
+namespace fmt {
+template <> struct formatter<MR::File::Dicom::Date> {
+  constexpr auto parse(format_parse_context &ctx) { return ctx.begin(); }
+  template <typename FormatContext> auto format(const MR::File::Dicom::Date &date, FormatContext &ctx) const {
+    std::ostringstream oss;
+    oss << date;
+    return format_to(ctx.out(), oss.str());
+  }
+};
+template <> struct formatter<MR::File::Dicom::Time> {
+  constexpr auto parse(format_parse_context &ctx) { return ctx.begin(); }
+  template <typename FormatContext> auto format(const MR::File::Dicom::Time &time, FormatContext &ctx) const {
+    std::ostringstream oss;
+    oss << time;
+    return format_to(ctx.out(), oss.str());
+  }
+};
+} // namespace fmt

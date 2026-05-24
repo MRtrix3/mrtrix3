@@ -19,6 +19,8 @@
 #include <stdint.h>
 #include <string>
 
+#include <fmt/format.h>
+
 namespace MR::File::Dicom {
 
 constexpr uint16_t VR_OB = 0x4F42U;
@@ -64,19 +66,19 @@ constexpr uint64_t undefined_length = 0xFFFFFFFFUL;
 inline std::string format_date(std::string_view date) {
   if (date.empty() || date.size() < 8)
     return std::string(date);
-  return std::string(date.substr(6, 2)) + "/" + std::string(date.substr(4, 2)) + "/" + std::string(date.substr(0, 4));
+  return fmt::format("{}/{}/{}", date.substr(6, 2), date.substr(4, 2), date.substr(0, 4));
 }
 
 inline std::string format_time(std::string_view time) {
   if (time.empty())
     return std::string(time);
-  return std::string(time.substr(0, 2)) + ":" + std::string(time.substr(2, 2)) + ":" + std::string(time.substr(4, 2));
+  return fmt::format("{}:{}:{}", time.substr(0, 2), time.substr(2, 2), time.substr(4, 2));
 }
 
 inline std::string format_ID(std::string_view ID) {
   if (ID.empty())
     return std::string(ID);
-  return "(" + std::string(ID) + ")";
+  return fmt::format("({})", ID);
 }
 
 } // namespace MR::File::Dicom

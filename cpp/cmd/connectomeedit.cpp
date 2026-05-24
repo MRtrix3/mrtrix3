@@ -18,6 +18,7 @@
 #include "connectome/enhance.h"
 #include "enum.h"
 #include "file/matrix.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace MR::Connectome;
@@ -37,8 +38,7 @@ void usage() {
   ARGUMENTS
   + Argument ("input", "the input connectome.").type_file_in()
 
-  + Argument ("operation", "the operation to apply,"
-                           " one of: " + MR::Enum::join<Operation>() + ".").type_choice<Operation>()
+  + Argument ("operation", fmt::format("the operation to apply, one of: {}.", MR::Enum::join<Operation>())).type_choice<Operation>()
 
   + Argument ("output", "the output connectome.").type_file_out();
 
@@ -50,7 +50,7 @@ void run() {
   MR::Connectome::check(connectome);
   const Operation op = MR::Enum::from_name<Operation>(argument[1]);
 
-  INFO("Applying \'" + MR::Enum::lowercase_name(op) + "\' transformation to the input connectome.");
+  INFO("Applying \\'{}\\' transformation to the input connectome.", MR::Enum::lowercase_name(op));
 
   switch (op) {
   case Operation::TO_SYMMETRIC:

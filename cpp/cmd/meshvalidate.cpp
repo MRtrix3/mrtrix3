@@ -16,6 +16,7 @@
 
 #include "command.h"
 #include "mrtrix.h"
+#include <fmt/format.h>
 
 #include "surface/mesh.h"
 #include "surface/validate.h"
@@ -72,9 +73,10 @@ void run() {
   // if any requirement is violated.
   Surface::validate(mesh);
 
-  CONSOLE("Mesh \"" + argument[0].as_text() + "\" is valid:" + //
-          " " + str(mesh.num_vertices()) + " vertices," +      //
-          " " + str(mesh.num_polygons()) + " polygon(s)" +     //
-          " (" + str(mesh.num_triangles()) + " triangle(s)," + //
-          " " + str(mesh.num_quads()) + " quad(s))");          //
+  CONSOLE("Mesh \"{}\" is valid: {} vertices, {} polygon(s) ({} triangle(s), {} quad(s))",
+          argument[0],
+          mesh.num_vertices(),
+          mesh.num_polygons(),
+          mesh.num_triangles(),
+          mesh.num_quads());
 }

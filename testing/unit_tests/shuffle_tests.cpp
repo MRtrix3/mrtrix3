@@ -19,6 +19,7 @@
 #include "math/stats/shuffle.h"
 #include "math/stats/typedefs.h"
 #include "types.h"
+#include <fmt/format.h>
 
 #include <Eigen/Core>
 #include <algorithm>
@@ -84,10 +85,11 @@ std::vector<ShufflerParams> GetShufflerTestParams() {
       const size_t max_num = (err_idx != 0) ? max_num_signflips : max_num_permutations;
 
       all_params.push_back(
-          {eb_string + "_" + error_string + "_LessThanMax", max_num / 2, error_type, exchange_type, true});
-      all_params.push_back({eb_string + "_" + error_string + "_ExactlyMax", max_num, error_type, exchange_type, true});
+          {eb_string + fmt::format("_{}_LessThanMax", error_string), max_num / 2, error_type, exchange_type, true});
       all_params.push_back(
-          {eb_string + "_" + error_string + "_MoreThanMax", 2 * max_num, error_type, exchange_type, true});
+          {eb_string + fmt::format("_{}_ExactlyMax", error_string), max_num, error_type, exchange_type, true});
+      all_params.push_back(
+          {eb_string + fmt::format("_{}_MoreThanMax", error_string), 2 * max_num, error_type, exchange_type, true});
     }
 
     // BOTH tests

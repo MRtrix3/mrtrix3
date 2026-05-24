@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <fmt/format.h>
 #include <limits>
 
 #include "math/math.h"
@@ -85,28 +86,28 @@ public:
     if (log_os) {
       log_os << "#iteration" << delim << "feval" << delim << "cost" << delim << "stepsize";
       for (ssize_t a = 0; a < x.size(); a++)
-        log_os << delim + "x_" + str(a + 1);
+        log_os << delim + fmt::format("x_{}", a + 1);
       for (ssize_t a = 0; a < x.size(); a++)
-        log_os << delim + "g_" + str(a + 1);
+        log_os << delim + fmt::format("g_{}", a + 1);
       log_os << "\n" << std::flush;
     }
     init(log_os);
 
     const value_type gradient_tolerance(grad_tolerance * normg);
 
-    DEBUG("Gradient descent iteration: init; cost: " + str(f));
+    DEBUG("Gradient descent iteration: init; cost: {}", f);
 
     while (niter < max_iterations) {
       bool retval = iterate(log_os);
-      DEBUG("Gradient descent iteration: " + str(niter) + "; cost: " + str(f));
+      DEBUG("Gradient descent iteration: {}; cost: {}", niter, f);
       if (verbose) {
-        CONSOLE("iteration " + str(niter) + ": f = " + str(f) + ", |g| = " + str(normg) + ":");
-        CONSOLE("  x = [ " + str(x.transpose()) + "]");
+        CONSOLE("iteration {}: f = {}, |g| = {}:", niter, f, normg);
+        CONSOLE("  x = [ {}]", x);
       }
 
       if (normg < gradient_tolerance) {
         if (verbose)
-          CONSOLE("normg (" + str(normg) + ") < gradient tolerance (" + str(gradient_tolerance) + ")");
+          CONSOLE("normg ({}) < gradient tolerance ({})", normg, gradient_tolerance);
         return;
       }
 
@@ -133,8 +134,8 @@ public:
     assert(!std::isnan(normg));
     dt /= normg;
     if (verbose) {
-      CONSOLE("initialise: f = " + str(f) + ", |g| = " + str(normg) + ":");
-      CONSOLE("  x = [ " + str(x.transpose()) + "]");
+      CONSOLE("initialise: f = {}, |g| = {}:", f, normg);
+      CONSOLE("  x = {}", x);
     }
     if (normg == 0.0)
       return;
@@ -228,7 +229,7 @@ protected:
     if (!std::isfinite(cost))
       throw Exception("cost function is NaN or Inf!");
     if (verbose)
-      CONSOLE("      << eval " + str(nfeval) + ", f = " + str(cost) + " >>");
+      CONSOLE("      << eval {}, f = {} >>", nfeval, cost);
     return cost;
   }
 

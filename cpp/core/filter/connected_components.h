@@ -19,6 +19,7 @@
 #include "image.h"
 #include "memory.h"
 #include "types.h"
+#include <fmt/format.h>
 
 #include "filter/base.h"
 #include "misc/voxel2vector.h"
@@ -256,8 +257,10 @@ public:
   void set_axes(const std::vector<int> &i) {
     const size_t max_axis = *std::max_element(i.begin(), i.end());
     if (max_axis >= ndim())
-      throw Exception("Requested axis for connected-component filter (" + str(max_axis) + ")" + //
-                      " is beyond the dimensionality of the image (" + str(ndim()) + "D)");     //
+      throw Exception("Requested axis for connected-component filter ({}"
+                      " is beyond the dimensionality of the image ({}D)",
+                      max_axis,
+                      ndim());
     enabled_axes = axis_mask_type::Zero(std::max(max_axis + 1, static_cast<size_t>(ndim())));
     for (const auto &axis : i) {
       if (axis < 0)
@@ -268,8 +271,10 @@ public:
 
   void set_axes(const axis_mask_type &i) {
     if (i.size() != ndim())
-      throw Exception("Length of axis selection flag vector (" + str(i.size()) + ")" +                        //
-                      " does not match dimensionality of connected-component filter (" + str(ndim()) + "D)"); //
+      throw Exception("Length of axis selection flag vector ({})"
+                      " does not match dimensionality of connected-component filter ({}D)",
+                      i.size(),
+                      ndim());
     enabled_axes = i;
   }
 

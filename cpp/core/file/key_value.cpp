@@ -17,26 +17,25 @@
 #include "file/key_value.h"
 #include "app.h"
 #include "file/ofstream.h"
+#include <fmt/std.h>
 #include <fstream>
 
 namespace MR::File::KeyValue {
 
 void Reader::open(const std::filesystem::path &file, std::string_view first_line) {
-  filepath.clear();
-  DEBUG("reading key/value file \"" + file.string() + "\"...");
-  in.open(file, std::ios::in | std::ios::binary);
+  filepath = file;
+  DEBUG("reading key/value file \"{}\"...", filepath);
+  in.open(filepath, std::ios::in | std::ios::binary);
   if (!in)
-    throw Exception("failed to open key/value file \"" + file.string() + "\": " + strerror(errno));
+    throw Exception("failed to open key/value file \"{}\": {}", filepath, strerror(errno));
   if (!first_line.empty()) {
     std::string sbuf;
     getline(in, sbuf);
     if (sbuf.compare(0, first_line.size(), first_line)) {
       in.close();
-      throw Exception("invalid first line for key/value file \"" + file.string() + "\"" + //
-                      " (expected \"" + first_line + "\")");
+      throw Exception("invalid first line for key/value file \"{}\" (expected \"{}\")", filepath, first_line);
     }
   }
-  filepath = file;
 }
 
 bool Reader::next() {
@@ -44,7 +43,7 @@ bool Reader::next() {
     std::string sbuf;
     getline(in, sbuf);
     if (in.bad())
-      throw Exception("error reading key/value file \"" + filepath.string() + "\": " + strerror(errno));
+      throw Exception("error reading key/value file \"{}\": {}", filepath, strerror(errno));
 
     sbuf = strip(sbuf.substr(0, sbuf.find_first_of('#')));
     if (sbuf == "END") {
@@ -55,12 +54,12 @@ bool Reader::next() {
     if (!sbuf.empty()) {
       size_t colon = sbuf.find_first_of(':');
       if (colon == std::string::npos) {
-        INFO("malformed key/value entry (\"" + sbuf + "\") in file \"" + filepath.string() + "\" - ignored");
+        INFO("malformed key/value entry (\"{}\") in file \"{}\" - ignored", sbuf, filepath);
       } else {
         K = strip(sbuf.substr(0, colon));
         V = strip(sbuf.substr(colon + 1));
         if (K.empty()) {
-          INFO("malformed key/value entry (\"" + sbuf + "\") in file \"" + filepath.string() + "\" - ignored");
+          INFO("malformed key/value entry (\"{}\") in file \"{}\" - ignored", sbuf, filepath);
         } else
           return true;
       }

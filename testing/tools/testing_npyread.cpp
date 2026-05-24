@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <fmt/format.h>
 #include <string>
 
 #include "command.h"
@@ -181,16 +182,17 @@ void run() {
   }
 
   if (check_count) {
-    CONSOLE(str(wrong_endianness_count) + " files skipped from advanced read due to possessing mismatched endianness");
-    CONSOLE(str(advanced_boolean_count) +
-            " files skipped from advanced read due to numpy not exporting packed boolean data");
+    CONSOLE(fmt::format("{} files skipped from advanced read due to possessing mismatched endianness",
+                        wrong_endianness_count));
+    CONSOLE(fmt::format("{} files skipped from advanced read due to numpy not exporting packed boolean data",
+                        advanced_boolean_count));
     if (!errors_basic.empty() || !errors_advanced.empty())
-      throw Exception("Errors on basic read in " + str(errors_basic.size()) + " files & advanced read in " +
-                      str(errors_advanced.size()) +
-                      " files: "
-                      "[" +
-                      join(errors_basic, ",") + "] [" + join(errors_advanced, ",") + "]");
-    CONSOLE(str(check_count) + " NPY format read checks OK");
+      throw Exception(fmt::format("Errors on basic read in {} files & advanced read in {} files: [{}] [{}]",
+                                  errors_basic.size(),
+                                  errors_advanced.size(),
+                                  join(errors_basic, ","),
+                                  join(errors_advanced, ",")));
+    CONSOLE(fmt::format("{} NPY format read checks OK", check_count));
   } else {
     WARN("NPY input directory empty; no checks performed");
   }

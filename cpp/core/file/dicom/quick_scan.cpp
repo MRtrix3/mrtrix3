@@ -19,6 +19,7 @@
 #include "file/dicom/csa_entry.h"
 #include "file/dicom/definitions.h"
 #include "file/dicom/element.h"
+#include <fmt/format.h>
 
 namespace MR::File::Dicom {
 
@@ -125,7 +126,7 @@ bool QuickScan::read(const std::filesystem::path &file_path,
                     print(entry);
                 }
               } else if (print_CSA_fields && is_phoenix) {
-                print(std::string("[CSA] ") + entry.key() + " (" + str(entry.num_items()) + " items): <");
+                print(fmt::format("[CSA] {} ({} items): <", entry.key(), entry.num_items()));
                 const auto data = entry.get_string();
                 size_t line_count = 0;
                 for (const auto &entry : data) {
@@ -133,7 +134,7 @@ bool QuickScan::read(const std::filesystem::path &file_path,
                     line_count += 1;
                   line_count += std::count(entry.begin(), entry.end(), '\n');
                 }
-                print(str(line_count) + " text lines>\n");
+                print(fmt::format("{} text lines>\n", line_count));
               }
             }
           }

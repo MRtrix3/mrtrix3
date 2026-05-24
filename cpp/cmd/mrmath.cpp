@@ -31,6 +31,7 @@
 #include "misc/voxel2vector.h"
 #include "progressbar.h"
 
+#include <fmt/format.h>
 using namespace MR;
 using namespace App;
 
@@ -110,8 +111,7 @@ void usage() {
 
   ARGUMENTS
   + Argument ("input", "the input image(s).").type_image_in ().allow_multiple()
-  + Argument ("operation", "the operation to apply;"
-                           " options are: " + MR::Enum::join<Operation>() + ".").type_choice<Operation>()
+  + Argument ("operation", fmt::format("the operation to apply; options are: {}.", MR::Enum::join<Operation>())).type_choice<Operation>()
   + Argument ("output", "the output image.").type_image_out ();
 
   OPTIONS
@@ -385,8 +385,7 @@ void run() {
     auto image_in = Header::open(first_input_image_path).get_image<value_type>(DirectIO{static_cast<int>(axis)});
 
     if (axis >= image_in.ndim())
-      throw Exception("Cannot perform operation along axis " + str(axis) + ";" + //
-                      " image only has " + str(image_in.ndim()) + " axes");      //
+      throw Exception("Cannot perform operation along axis {}; image only has {} axes", axis, image_in.ndim());
 
     Header header_out(image_in);
 
@@ -406,8 +405,8 @@ void run() {
 
     auto image_out = Header::create(argument.back(), header_out).get_image<float>();
 
-    auto loop = ThreadedLoop(
-        std::string("computing ") + MR::Enum::lowercase_name(op) + " along axis " + str(axis) + "...", image_out);
+    auto loop =
+        ThreadedLoop(fmt::format("computing {} along axis {}...", MR::Enum::lowercase_name(op), axis), image_out);
 
     switch (op) {
     case Operation::MEAN:
@@ -485,16 +484,15 @@ void run() {
       headers_in[i] = Header::open(path);
       const Header &temp(headers_in[i]);
       if (temp.ndim() < header.ndim())
-        throw Exception("Image " + path.string() + " has fewer axes than first imput image " + header.path().string());
+        throw Exception("Image {} has fewer axes than first input image {}", path, header.name());
       for (size_t axis = 0; axis != header.ndim(); ++axis) {
         if (temp.size(axis) != header.size(axis))
-          throw Exception("Dimensions of image " + path.string() + " do not match those of first input image " +
-                          header.path().string());
+          throw Exception("Dimensions of image {} do not match those of first input image {}", path, header.name());
       }
       for (size_t axis = header.ndim(); axis != temp.ndim(); ++axis) {
         if (temp.size(axis) != 1)
-          throw Exception("Image " + path.string() + " has axis with non-unary dimension beyond first input image " +
-                          header.path().string());
+          throw Exception(
+              "Image {} has axis with non-unary dimension beyond first input image {}", path, header.name());
       }
       header.merge_keyval(temp.keyval());
     }
@@ -553,9 +551,8 @@ void run() {
 
     // Feed the input images to the kernel one at a time
     {
-      ProgressBar progress(std::string("computing ") + MR::Enum::lowercase_name(op) + " across " +
-                               str(headers_in.size()) + " images",
-                           num_inputs);
+      ProgressBar progress(
+          fmt::format("computing {} across {} images", MR::Enum::lowercase_name(op), headers_in.size()), num_inputs);
       for (size_t i = 0; i != headers_in.size(); ++i) {
         assert(headers_in[i].valid());
         assert(headers_in[i].is_file_backed());

@@ -17,6 +17,7 @@
 #include "dialog/opengl.h"
 #include "dialog/list.h"
 #include "opengl/glutils.h"
+#include <fmt/format.h>
 
 namespace MR::GUI::Dialog {
 
@@ -27,7 +28,7 @@ OpenGL::OpenGL(QWidget *parent, const GL::Format &format) : QDialog(parent) {
 
   GLint i;
   gl::GetIntegerv(gl::MAJOR_VERSION, &i);
-  std::string text = str(i) + ".";
+  std::string text = fmt::format("{}.", i);
   gl::GetIntegerv(gl::MINOR_VERSION, &i);
   text += str(i);
 

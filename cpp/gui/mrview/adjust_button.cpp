@@ -16,6 +16,7 @@
 
 #include "mrview/adjust_button.h"
 #include "math/math.h"
+#include <fmt/format.h>
 
 namespace MR::GUI::MRView {
 
@@ -44,18 +45,18 @@ AdjustButton::AdjustButton(QWidget *parent, float change_rate)
                   fg.green() * (1.0 - r) + bg.green() * r,
                   fg.blue() * (1.0 - r) + bg.blue() * r,
                   255);
-  setStyleSheet(("QLineEdit { "
-                 "padding: 0.1em 20px 0.2em 0.3ex; "
-                 "background: url(:/adjustbutton.svg); "
-                 "background-position: right; "
-                 "background-repeat: no-repeat; "
-                 "font-size: " +
-                 str(font().pointSize()) +
-                 "pt; "
-                 "border: 1px solid rgb(" +
-                 str(hl.red()) + "," + str(hl.green()) + "," + str(hl.blue()) +
-                 "); "
-                 "border-radius: 0.3em }")
+  setStyleSheet(fmt::format("QLineEdit { "
+                            "padding: 0.1em 20px 0.2em 0.3ex; "
+                            "background: url(:/adjustbutton.svg); "
+                            "background-position: right; "
+                            "background-repeat: no-repeat; "
+                            "font-size: {}pt; "
+                            "border: 1px solid rgb({},{},{}); "
+                            "border-radius: 0.3em }",
+                            font().pointSize(),
+                            hl.red(),
+                            hl.green(),
+                            hl.blue())
                     .c_str());
 }
 

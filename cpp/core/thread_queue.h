@@ -17,6 +17,7 @@
 #pragma once
 
 #include <condition_variable>
+#include <fmt/format.h>
 #include <stack>
 
 #include "exception.h"
@@ -466,9 +467,9 @@ public:
   //! Print out a status report for debugging purposes
   void status() {
     std::lock_guard<std::mutex> lock(mutex);
-    std::cerr << "Thread::Queue \"" + name + "\": " << writer_count << " writer" << (writer_count > 1 ? "s" : "")
-              << ", " << reader_count << " reader" << (reader_count > 1 ? "s" : "") << ", items waiting: " << size()
-              << "\n";
+    std::cerr << fmt::format("Thread::Queue \"{}\": ", name) << writer_count << " writer"
+              << (writer_count > 1 ? "s" : "") << ", " << reader_count << " reader" << (reader_count > 1 ? "s" : "")
+              << ", items waiting: " << size() << "\n";
   }
 
 private:
@@ -492,7 +493,7 @@ private:
     assert(writer_count);
     --writer_count;
     if (!writer_count) {
-      DEBUG("no writers left on queue \"" + name + "\"");
+      DEBUG("no writers left on queue \"{}\"", name);
       more_data.notify_all();
     }
   }
@@ -505,7 +506,7 @@ private:
     assert(reader_count);
     --reader_count;
     if (!reader_count) {
-      DEBUG("no readers left on queue \"" + name + "\"");
+      DEBUG("no readers left on queue \"{}\"", name);
       more_space.notify_all();
     }
   }

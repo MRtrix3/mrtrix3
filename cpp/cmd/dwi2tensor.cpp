@@ -25,6 +25,7 @@
 #include "math/constrained_least_squares.h"
 #include "metadata/phase_encoding.h"
 #include "progressbar.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -96,9 +97,9 @@ void usage() {
            " (see Description).")
 
   + Option("iter",
-           "number of iterative reweightings for IWLS algorithm"
-           " (default: " + str(default_iterations) +")"
-           " (see Description).")
+           fmt::format("number of iterative reweightings for IWLS algorithm"
+                       " (default: {})"
+                       " (see Description).", default_iterations))
     + Argument("integer").type_integer(0, 10)
 
   + Option("constrain",

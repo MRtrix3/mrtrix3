@@ -120,7 +120,7 @@ bool is_tempfile(const std::filesystem::path &path, std::string_view suffix) {
 }
 
 std::filesystem::path create_tempfile(int64_t size, std::string_view suffix) {
-  DEBUG("creating temporary file of size " + str(size));
+  DEBUG("creating temporary file of size {}", size);
 
   int fid(0);
   std::filesystem::path filepath;
@@ -128,7 +128,7 @@ std::filesystem::path create_tempfile(int64_t size, std::string_view suffix) {
   do {
     for (int n = 0; n < 6; n++)
       random_chars[n] = random_char();
-    filepath = (tmpfile_dir() / (tmpfile_prefix() + random_chars + suffix));
+    filepath = (tmpfile_dir() / (tmpfile_prefix() + random_chars + std::string(suffix)));
     fid = open(filepath.string().c_str(),
                O_CREAT | O_RDWR | O_EXCL,
                S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);

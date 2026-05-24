@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <fmt/format.h>
 #include <mutex>
 
 #include "adapter/gradient3D.h"
@@ -61,7 +62,7 @@ public:
         weight.segment(mc.start, mc.nvols).fill(mc.weight);
     } else
       weight.fill(1.0);
-    DEBUG("Demons4D weights: " + str(weight.transpose()));
+    DEBUG("Demons4D weights: {}", weight);
   }
 
   ~Demons4D() {

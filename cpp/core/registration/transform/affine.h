@@ -20,6 +20,7 @@
 #include "math/math.h"
 #include "registration/transform/base.h"
 #include "types.h"
+#include <fmt/format.h>
 
 using namespace MR::Math;
 
@@ -41,7 +42,11 @@ public:
                           const Eigen::Vector3d &voxel_spacing);
 
   void set_projection_type(const TransformProjectionType &type) {
-    INFO("projection type set to: " + str(type));
+    INFO("projection type set to: {}",
+         type == rigid_nonsym    ? "rigid_nonsym"
+         : type == affine        ? "affine"
+         : type == affine_nonsym ? "affine_nonsym"
+                                 : "none");
     projection_type = type;
   }
 

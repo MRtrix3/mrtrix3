@@ -16,6 +16,13 @@
 
 #pragma once
 
+#include <cstddef>
+#include <fmt/format.h>
+#include <string>
+
+#include "mrtrix.h"
+#include "types.h"
+
 namespace MR::Registration::Warp {
 
 template <class InputWarpType> transform_type parse_linear_transform(InputWarpType &input_warps, std::string name) {

@@ -15,6 +15,7 @@
  */
 
 #include <filesystem>
+#include <fmt/format.h>
 
 #include "command.h"
 #include "dwi/directions/file.h"
@@ -64,17 +65,17 @@ void usage() {
     + Argument ("dirs", "the text file to write the directions to, as [ az in ] pairs.").type_file_out();
 
   OPTIONS
-    + Option ("power", "specify exponent to use for repulsion power law"
-                       " (default: " + str(default_power) + ")."
-                       " This must be a power of 2 (i.e. 1, 2, 4, 8, 16, ...).")
+    + Option ("power", fmt::format("specify exponent to use for repulsion power law"
+                       " (default: {})."
+                       " This must be a power of 2 (i.e. 1, 2, 4, 8, 16, ...).", default_power))
       + Argument ("exp").type_integer(1, std::numeric_limits<int>::max())
 
-    + Option ("niter", "specify the maximum number of iterations to perform"
-                       " (default: " + str(default_number_iterations) + ").")
+    + Option ("niter", fmt::format("specify the maximum number of iterations to perform"
+                       " (default: {}).", default_number_iterations))
       + Argument ("num").type_integer(1, std::numeric_limits<int>::max())
 
-    + Option ("restarts", "specify the number of restarts to perform"
-                          " (default: " + str(default_number_restarts) + ").")
+    + Option ("restarts", fmt::format("specify the number of restarts to perform"
+                          " (default: {}).", default_number_restarts))
       + Argument ("num").type_integer (1, std::numeric_limits<int>::max())
 
     + Option ("fixed", "specify a fixed direction (comm-separateed floats)"
@@ -182,13 +183,13 @@ public:
   void execute() {
     size_t this_start = 0;
     while ((this_start = current_start++) < restarts) {
-      DEBUG("launching start " + str(this_start));
+      DEBUG("launching start {}", this_start);
       double E = 0.0;
 
       for (power = 1; power <= target_power; power *= 2) {
         Math::GradientDescent<Energy, ProjectedUpdate> optim(*this, ProjectedUpdate());
 
-        DEBUG("start " + str(this_start) + ": setting power = " + str(power));
+        DEBUG("start {}: setting power = {}", this_start, power);
         optim.init();
 
         size_t iter = 0;
@@ -196,8 +197,12 @@ public:
           if (!optim.iterate())
             break;
 
-          DEBUG("start " + str(this_start) + ": [ " + str(iter) + " ] (pow = " + str(power) +
-                ") E = " + str(optim.value(), 8) + ", grad = " + str(optim.gradient_norm(), 8));
+          DEBUG("start {}: [ {} ] (pow = {}) E = {:.8g}, grad = {:.8g}",
+                this_start,
+                iter,
+                power,
+                optim.value(),
+                optim.gradient_norm());
 
           std::lock_guard<std::mutex> lock(mutex);
           ++progress;
@@ -270,13 +275,13 @@ void run() {
     throw Exception("No directions left to optimise after fixed directions specified");
 
   {
-    ProgressBar progress("Optimising directions up to power " + str(Energy::target_power) + " (" +
-                         str(Energy::restarts) + " restarts)");
+    ProgressBar progress(
+        fmt::format("Optimising directions up to power {} ({} restarts)", Energy::target_power, Energy::restarts));
     Energy energy_functor(progress, ndirs);
     auto threads = Thread::run(Thread::multi(energy_functor), "energy function");
   }
 
-  CONSOLE("final energy = " + str(Energy::best_E));
+  CONSOLE("final energy = {}", Energy::best_E);
   Eigen::MatrixXd directions_matrix(ndirs, 3);
   for (size_t n = 0; n < ndirs; ++n)
     directions_matrix.row(n) = Energy::best_directions.segment(3 * n, 3);

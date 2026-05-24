@@ -21,6 +21,7 @@
 #include "app.h"
 #include "exception.h"
 #include "file/temp.h"
+#include <fmt/std.h>
 
 namespace MR::File {
 
@@ -36,7 +37,7 @@ void OFStream::open(const std::filesystem::path &path, const std::ios_base::open
 
   std::ofstream::open(path, mode);
   if (std::ofstream::operator!())
-    throw Exception("error opening output file \"" + path.string() + "\": " + std::strerror(errno));
+    throw Exception("error opening output file \"{}\": {}", path, std::strerror(errno));
 }
 
 } // namespace MR::File

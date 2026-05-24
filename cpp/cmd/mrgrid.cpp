@@ -27,8 +27,8 @@
 #include "interp/nearest.h"
 #include "interp/sinc.h"
 #include "progressbar.h"
-
 #include <filesystem>
+#include <fmt/format.h>
 #include <set>
 
 using namespace MR;
@@ -102,8 +102,7 @@ void usage() {
 
   ARGUMENTS
   + Argument ("input", "input image to be regridded.").type_image_in ()
-  + Argument ("operation", "the operation to be performed;"
-                           " one of: " + MR::Enum::join<Operation>() + ".").type_choice<Operation>()
+  + Argument ("operation", fmt::format("the operation to be performed; one of: {}.", MR::Enum::join<Operation>())).type_choice<Operation>()
   + Argument ("output", "the output image.").type_image_out ();
 
   OPTIONS
@@ -130,9 +129,8 @@ void usage() {
                          " or as a comma-separated list of scale factors for each dimension.")
     + Argument ("factor").type_sequence_float()
 
-    + Option ("interp", std::string("set the interpolation method to use when reslicing")
-                        + " (choices: " + join(MR::Interp::interp_choices, ", ") + ";"
-                        " default: " + MR::Interp::interp_choices[static_cast<ssize_t>(default_interp)] + ").")
+    + Option ("interp", fmt::format("set the interpolation method to use when reslicing"
+                                    " (choices: {}; default: {}).", join(MR::Interp::interp_choices, ", "), MR::Interp::interp_choices[static_cast<ssize_t>(default_interp)]))
     + Argument ("method").type_choice (MR::Interp::interp_choices)
 
     + Option ("oversample",
@@ -216,7 +214,7 @@ void run() {
   const default_type out_of_bounds_value = get_option_value("fill", 0.0);
 
   if (op == Operation::REGRID) {
-    INFO("operation: " + operation_name);
+    INFO("operation: {}", operation_name);
     Filter::Resize regrid_filter(input_header);
     regrid_filter.set_out_of_bounds_value(out_of_bounds_value);
     size_t resize_option_count = 0;
@@ -237,7 +235,7 @@ void run() {
       if (template_header.ndim() < 3)
         throw Exception("the template image requires at least 3 spatial dimensions");
       add_line(regrid_filter.keyval()["comments"],
-               std::string("regridded to template image \"" + template_header.path().string() + "\""));
+               fmt::format("regridded to template image \"{}\"", template_header.name()));
       for (auto i = 0; i < 3; ++i) {
         regrid_filter.spacing(i) = template_header.spacing(i);
         regrid_filter.size(i) = template_header.size(i);
@@ -295,7 +293,7 @@ void run() {
   } else { // crop or pad
     const bool do_crop = op == Operation::CROP;
     std::string message = do_crop ? "cropping image" : "padding image";
-    INFO("operation: " + operation_name);
+    INFO("operation: {}", operation_name);
     const bool crop_unbound = !get_options("crop_unbound").empty();
     if (crop_unbound && !do_crop)
       throw Exception("-crop_unbound only applies only to the crop operation");
@@ -348,8 +346,11 @@ void run() {
       ThreadedLoop(mask).run(BoundsCheck(bounds), mask);
       for (size_t axis = 0; axis != 3; ++axis) {
         if ((input_header.size(axis) - 1) != bounds[axis][1] or bounds[axis][0] != 0)
-          INFO("cropping to mask changes axis " + str(axis) + " extent from 0:" + str(input_header.size(axis) - 1) +
-               " to " + str(bounds[axis][0]) + ":" + str(bounds[axis][1]));
+          INFO("cropping to mask changes axis {} extent from 0:{} to {}:{}",
+               axis,
+               input_header.size(axis) - 1,
+               bounds[axis][0],
+               bounds[axis][1]);
       }
       if (get_options("uniform").empty()) {
         INFO("uniformly padding around mask by 1 voxel");
@@ -364,7 +365,7 @@ void run() {
     opt = get_options("as");
     if (!opt.empty()) {
       if (crop_pad_option_count)
-        throw Exception(operation_name + " can be performed using either a mask or a template image");
+        throw Exception("{} can be performed using either a mask or a template image", operation_name);
       ++crop_pad_option_count;
 
       Header template_header = Header::open(opt[0][0]);
@@ -386,7 +387,7 @@ void run() {
     if (!opt.empty()) {
       ++crop_pad_option_count;
       ssize_t val = opt[0][0];
-      INFO("uniformly " + str(do_crop ? "cropping" : "padding") + " by " + str(val) + " voxels");
+      INFO("uniformly {} by {} voxels", do_crop ? "cropping" : "padding", val);
       for (size_t axis = 0; axis < nd; axis++) {
         bounds[axis][0] += do_crop ? val : -val;
         bounds[axis][1] += do_crop ? -val : val;
@@ -401,9 +402,10 @@ void run() {
       for (size_t axis = 0; axis != 3; ++axis) {
         if (bounds[axis][0] < 0 || bounds[axis][1] > input_header.size(axis) - 1) {
           if (ignore.find(axis) == ignore.end())
-            INFO("operation: crop without -crop_unbound: restricting padding on axis " + str(axis) + " to valid FOV " +
-                 str(std::max<ssize_t>(0, bounds[axis][0])) + ":" +
-                 str(std::min<ssize_t>(bounds[axis][1], input_header.size(axis) - 1)));
+            INFO("operation: crop without -crop_unbound: restricting padding on axis {} to valid FOV {}:{}",
+                 axis,
+                 std::max<ssize_t>(0, bounds[axis][0]),
+                 std::min<ssize_t>(bounds[axis][1], input_header.size(axis) - 1));
           bounds[axis][0] = std::max<ssize_t>(0, bounds[axis][0]);
           bounds[axis][1] = std::min<ssize_t>(bounds[axis][1], input_header.size(axis) - 1);
         }
@@ -415,7 +417,7 @@ void run() {
       ++crop_pad_option_count;
       const size_t axis = opt[i][0];
       if (axis >= input_header.ndim())
-        throw Exception("-axis " + str(axis) + " larger than image dimensions (" + str(input_header.ndim()) + ")");
+        throw Exception("-axis {} larger than image dimensions ({})", axis, input_header.ndim());
       std::string spec = str(opt[i][1]);
       std::string::size_type start = 0, end;
       end = spec.find_first_of(":", start);
@@ -424,10 +426,10 @@ void run() {
         try {
           delta = parse_ints<int>(opt[i][1]);
         } catch (Exception &E) {
-          Exception(E, "-axis " + str(axis) + ": can't parse delta specifier \"" + spec + "\"");
+          throw Exception(E, "-axis {}: can't parse delta specifier \"{}\"", axis, spec);
         }
         if (delta.size() != 2)
-          throw Exception("-axis " + str(axis) + ": can't parse delta specifier \"" + spec + "\"");
+          throw Exception("-axis {}: can't parse delta specifier \"{}\"", axis, spec);
         bounds[axis][0] = do_crop ? delta[0] : -delta[0];
         bounds[axis][1] = input_header.size(axis) - 1 + (do_crop ? -delta[1] : delta[1]);
       } else { // spec = delta_lower:delta_upper
@@ -435,7 +437,7 @@ void run() {
         try {
           bounds[axis][0] = std::stoi(token);
         } catch (Exception &E) {
-          throw Exception(E, "-axis " + str(axis) + ": can't parse integer sequence specifier \"" + spec + "\"");
+          throw Exception(E, "-axis {}: can't parse integer sequence specifier \"{}\"", axis, spec);
         }
         token = strip(spec.substr(end + 1));
         if (lowercase(token) == "end" || token.empty())
@@ -444,7 +446,7 @@ void run() {
           try {
             bounds[axis][1] = std::stoi(token);
           } catch (Exception &E) {
-            throw Exception(E, "-axis " + str(axis) + ": can't parse integer sequence specifier \"" + spec + "\"");
+            throw Exception(E, "-axis {}: can't parse integer sequence specifier \"{}\"", axis, spec);
           }
         }
       }
@@ -452,7 +454,7 @@ void run() {
 
     for (size_t axis = 0; axis != 3; ++axis) {
       if (bounds[axis][1] < bounds[axis][0])
-        throw Exception("axis " + str(axis) + " is empty: (" + str(bounds[axis][0]) + ":" + str(bounds[axis][1]) + ")");
+        throw Exception("axis {} is empty: ({}:{})", axis, bounds[axis][0], bounds[axis][1]);
     }
 
     if (crop_pad_option_count == 0)
@@ -469,9 +471,13 @@ void run() {
     for (size_t axis = 0; axis < nd; axis++) {
       if (bounds[axis][0] != 0 || input_header.size(axis) != size[axis]) {
         changed_axes++;
-        CONSOLE("changing axis " + str(axis) + " extent from 0:" + str(input_header.size(axis) - 1) +
-                " (n=" + str(input_header.size(axis)) + ") to " + str(bounds[axis][0]) + ":" + str(bounds[axis][1]) +
-                " (n=" + str(size[axis]) + ")");
+        CONSOLE("changing axis {} extent from 0:{} (n={}) to {}:{} (n={})",
+                axis,
+                input_header.size(axis) - 1,
+                input_header.size(axis),
+                bounds[axis][0],
+                bounds[axis][1],
+                size[axis]);
       }
     }
     if (!changed_axes)

@@ -21,6 +21,7 @@
 
 #include "image.h"
 #include "types.h"
+#include <fmt/std.h>
 
 #include "filter/resize.h"
 #include "filter/warp.h"
@@ -111,16 +112,15 @@ public:
     for (size_t level = 0; level < scale_factor.size(); level++) {
       if (is_initialised) {
         if (do_reorientation) {
-          CONSOLE("scale factor (init warp resolution), lmax " + str(fod_lmax[level]));
+          CONSOLE("scale factor (init warp resolution), lmax {}", fod_lmax[level]);
         } else {
           CONSOLE("scale factor (init warp resolution)");
         }
       } else {
         if (do_reorientation) {
-          CONSOLE("nonlinear stage " + str(level + 1) + ", scale factor " + str(scale_factor[level]) + ", lmax " +
-                  str(fod_lmax[level]));
+          CONSOLE("nonlinear stage {}, scale factor {}, lmax {}", level + 1, scale_factor[level], fod_lmax[level]);
         } else {
-          CONSOLE("nonlinear stage " + str(level + 1) + ", scale factor " + str(scale_factor[level]));
+          CONSOLE("nonlinear stage {}, scale factor {}", level + 1, scale_factor[level]);
         }
       }
 
@@ -154,7 +154,7 @@ public:
       }
 
       for (const auto &mc : stage_contrasts)
-        DEBUG(str(mc));
+        DEBUG("{}", mc);
 
       auto im1_smoothed =
           Registration::multi_resolution_lmax(im1_image, scale_factor[level], do_reorientation, stage_contrasts);
@@ -162,7 +162,7 @@ public:
           im2_image, scale_factor[level], do_reorientation, stage_contrasts, &stage_contrasts);
 
       for (const auto &mc : stage_contrasts)
-        INFO(str(mc));
+        INFO("{}", mc);
 
       DEBUG("Initialising scratch images");
       Header warped_header(midway_image_header_resized);
@@ -340,23 +340,24 @@ public:
 
         } else {
           converged = true;
-          INFO("  converged. cost: " + str(cost) + " voxel count: " + str(voxel_count));
+          INFO("  converged. cost: {} voxel count: {}", cost, voxel_count);
         }
 
         if (!converged)
-          INFO("  iteration: " + str(iteration) + " cost: " + str(cost));
+          INFO("  iteration: {} cost: {}", iteration, cost);
 
         if (++iteration > max_iter[level])
           converged = true;
 
         // write debug image
         if (converged && diagnostics_image_dir.has_value()) {
-          const std::filesystem::path image_path = diagnostics_image_dir.value() / ("stage-" + str(level + 1) + ".mif");
+          const std::filesystem::path diag_path =
+              diagnostics_image_dir.value() / fmt::format("stage-{}.mif", level + 1);
           Header hc(warped_header);
           hc.ndim() = 4;
           hc.size(3) = 3;
-          INFO("writing debug image: " + image_path.string());
-          auto check = Image<default_type>::create(image_path, hc);
+          INFO("writing debug image: {}", diag_path);
+          auto check = Image<default_type>::create(diag_path, hc);
           for (auto i = Loop(check, 0, 3)(check, im1_warped, im2_warped); i; ++i) {
             check.value() = im1_warped.value();
             check.index(3) = 1;
@@ -508,7 +509,7 @@ public:
     if (radius < 1)
       throw Exception("CC radius needs to be larger than 1");
     use_cc = true;
-    INFO("Cross correlation radius: " + str(radius));
+    INFO("Cross correlation radius: {}", radius);
     cc_extent = std::vector<size_t>(3, radius * 2 + 1);
   }
 

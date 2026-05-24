@@ -20,6 +20,7 @@
 #include "image_helpers.h"
 #include "thread_queue.h"
 #include "transform.h"
+#include <fmt/format.h>
 
 namespace MR::Fixel::Filter {
 
@@ -65,8 +66,10 @@ void Smooth::operator()(Image<float> &input, Image<float> &output) const {
   check_dimensions(input, output);
 
   if (static_cast<size_t>(input.size(0)) != matrix.size())
-    throw Exception("Size of fixel data file \"" + input.path().string() + "\" (" + str(input.size(0)) + ")" + //
-                    " does not match fixel connectivity matrix (" + str(matrix.size()) + ")");                 //
+    throw Exception("Size of fixel data file \"{}\" ({}) does not match fixel connectivity matrix ({})",
+                    input.name(),
+                    input.size(0),
+                    matrix.size());
 
   class Source {
   public:

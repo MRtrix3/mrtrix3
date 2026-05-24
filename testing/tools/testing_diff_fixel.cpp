@@ -18,6 +18,7 @@
 
 #include "command.h"
 #include "datatype.h"
+#include <fmt/std.h>
 
 #include "fixel/helpers.h"
 #include "image.h"
@@ -54,24 +55,26 @@ void run() {
   if (fixel_directory1 == fixel_directory2)
     throw Exception("Input fixel directories are the same");
 
-  for (const auto &dir_entry : std::filesystem::directory_iterator(fixel_directory1)) {
-    const auto fname = dir_entry.path().filename();
-    auto in1 = Image<cdouble>::open(fixel_directory1 / fname);
+  for (const auto &entry1 : std::filesystem::directory_iterator(fixel_directory1)) {
+    const std::string fname = entry1.path().filename().string();
+    auto in1 = Image<cdouble>::open(entry1.path());
     const std::filesystem::path filename2 = fixel_directory2 / fname;
     if (!std::filesystem::exists(filename2))
-      throw Exception("File (" + fname.string() + ")" +                                    //
-                      " exists in fixel directory (" + fixel_directory1.string() + ")" +   //
-                      " but not in fixel directory (" + fixel_directory2.string() + ") "); //
+      throw Exception(fmt::format("File {} exists in fixel directory {} but not in fixel directory {}",
+                                  fname,
+                                  fixel_directory1,
+                                  fixel_directory2));
     auto in2 = Image<cdouble>::open(filename2);
     Testing::diff_images(in1, in2);
   }
-  for (const auto &dir_entry : std::filesystem::directory_iterator(fixel_directory2)) {
-    const auto fname = dir_entry.path().filename();
+  for (const auto &entry2 : std::filesystem::directory_iterator(fixel_directory2)) {
+    const std::string fname = entry2.path().filename().string();
     const std::filesystem::path filename1 = fixel_directory1 / fname;
     if (!std::filesystem::exists(filename1))
-      throw Exception("File (" + fname.string() + ")" +                                    //
-                      " exists in fixel directory (" + fixel_directory2.string() + ")" +   //
-                      " but not in fixel directory (" + fixel_directory1.string() + ") "); //
+      throw Exception(fmt::format("File {} exists in fixel directory {} but not in fixel directory {}",
+                                  fname,
+                                  fixel_directory2,
+                                  fixel_directory1));
   }
   CONSOLE("data checked OK");
 }

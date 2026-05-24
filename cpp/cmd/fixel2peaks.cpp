@@ -25,6 +25,7 @@
 #include "fixel/helpers.h"
 #include "fixel/loop.h"
 #include "fixel/validate.h"
+#include <fmt/format.h>
 
 #include <filesystem>
 
@@ -91,13 +92,13 @@ void run() {
       index_header = Fixel::find_index_header(input_path);
       directions_header = Fixel::find_directions_header(input_path);
     } catch (Exception &e_asdir) {
-      Exception e("Could not locate fixel data based on input string \"" + argument[0].as_text() + "\"");
+      Exception e(fmt::format("Could not locate fixel data based on input string \"{}\"", argument[0]));
       e.push_back("Error when interpreting as image: ");
       for (size_t i = 0; i != e_asimage.num(); ++i)
-        e.push_back("  " + e_asimage[i]);
+        e.push_back(fmt::format("  {}", e_asimage[i]));
       e.push_back("Error when interpreting as fixel directory: ");
       for (size_t i = 0; i != e_asdir.num(); ++i)
-        e.push_back("  " + e_asdir[i]);
+        e.push_back(fmt::format("  {}", e_asdir[i]));
       throw e;
     }
   }
@@ -116,7 +117,7 @@ void run() {
   } else {
     for (auto l = Loop(index_image, 0, 3)(index_image); l; ++l)
       max_fixel_count = std::max(max_fixel_count, static_cast<index_type>(index_image.value()));
-    INFO("Maximum number of fixels in any given voxel: " + str(max_fixel_count));
+    INFO("Maximum number of fixels in any given voxel: {}", max_fixel_count);
   }
 
   Header out_header(index_header);

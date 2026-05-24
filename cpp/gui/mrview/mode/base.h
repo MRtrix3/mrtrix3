@@ -21,6 +21,7 @@
 #include "opengl/glutils.h"
 #include "opengl/transformation.h"
 #include "projection.h"
+#include <fmt/format.h>
 
 namespace MR::GUI::MRView {
 
@@ -207,7 +208,7 @@ public:
   __Action__(QActionGroup *parent, const char *const name, const char *const description, int index) // check_syntax off
       : QAction(name, parent) {
     setCheckable(true);
-    setShortcut(tr(std::string("F" + str(index)).c_str()));
+    setShortcut(tr(std::string(fmt::format("F{}", index)).c_str()));
     setStatusTip(tr(description));
   }
 

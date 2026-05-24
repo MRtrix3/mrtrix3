@@ -27,6 +27,7 @@
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/weights.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -50,10 +51,11 @@ void usage() {
 
   OPTIONS
 
-  + Option ("output", "output only the field specified."
-                      " Multiple such options can be supplied if required."
-                      " Choices are: " + MR::Enum::join<FieldChoice>() + "."
-                      " Useful for use in scripts.").allow_multiple()
+  + Option ("output", fmt::format("output only the field specified."
+                                  " Multiple such options can be supplied if required."
+                                  " Choices are: {}."
+                                  " Useful for use in scripts.",
+                                  MR::Enum::join<FieldChoice>())).allow_multiple()
     + Argument ("field").type_choice<FieldChoice>()
 
   + Option ("histogram", "output a histogram of streamline lengths")
@@ -152,16 +154,16 @@ void run() {
   if (get_options("ignorezero").empty() && (empty_streamlines || zero_length_streamlines)) {
     std::string s("read");
     if (empty_streamlines) {
-      s += " " + str(empty_streamlines) + " empty streamlines";
+      s += fmt::format(" {} empty streamlines", empty_streamlines);
       if (zero_length_streamlines)
         s += " and";
     }
     if (zero_length_streamlines)
-      s += " " + str(zero_length_streamlines) + " streamlines with zero length (one vertex only)";
+      s += fmt::format(" {} streamlines with zero length (one vertex only)", zero_length_streamlines);
     WARN(s);
   }
   if (count != header_count)
-    WARN("expected " + str(header_count) + " tracks according to header; read " + str(count));
+    WARN("expected {} tracks according to header; read {}", header_count, count);
   if (!std::isfinite(min_length))
     min_length = NaNF;
   if (!std::isfinite(max_length))

@@ -19,6 +19,7 @@
 
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
+#include <fmt/format.h>
 
 #include <filesystem>
 
@@ -342,7 +343,7 @@ void run() {
               std::min(e, static_cast<uint32_t>(dwi.size(1))),
               std::min(e, static_cast<uint32_t>(dwi.size(2)))};
   }
-  INFO("selected patch size: " + str(extent[0]) + " x " + str(extent[1]) + " x " + str(extent[2]) + ".");
+  INFO("selected patch size: {} x {} x {}.", extent[0], extent[1], extent[2]);
 
   const Estimator estimator =
       get_option_choice<Estimator>("estimator", Estimator::EXP2); // default: Exp2 (unbiased estimator)

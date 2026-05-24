@@ -29,11 +29,9 @@ set_target_properties(mrtrix-gui PROPERTIES
 # for moc only, making the header expand to nothing; std::filesystem::path then
 # survives merely as an unparsed type token in declarations. Qt6's moc does not
 # have this defect, so the workaround is scoped to the Qt5 path.
-if(MRTRIX_USE_QT5)
-    set_target_properties(mrtrix-gui PROPERTIES
-        AUTOMOC_MOC_OPTIONS "-D_GLIBCXX_FILESYSTEM"
-    )
-endif()
+set_target_properties(mrtrix-gui PROPERTIES
+    AUTOMOC_MOC_OPTIONS "-D_GLIBCXX_FILESYSTEM"
+)
 
 if(MRTRIX_USE_PCH)
     target_precompile_headers(mrtrix-gui PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/gui_pch.h)

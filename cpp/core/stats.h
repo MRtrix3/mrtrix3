@@ -16,10 +16,11 @@
 
 #pragma once
 
-#include "math/median.h"
-
+#include <fmt/format.h>
 #include <iomanip>
 #include <vector>
+
+#include "math/median.h"
 
 namespace MR::Stats {
 
@@ -82,7 +83,7 @@ public:
         else if (fields[n] == "count")
           std::cout << count << " ";
         else
-          throw Exception("stats type not supported: " + fields[n]);
+          throw Exception("stats type not supported: {}", fields[n]);
       }
       std::cout << "\n";
 
@@ -91,7 +92,7 @@ public:
       std::string s = "[ ";
       if (ima.ndim() > 3)
         for (size_t n = 3; n < ima.ndim(); n++)
-          s += str(ima.index(n)) + " ";
+          s += fmt::format("{} ", ima.index(n));
       else
         s += "0 ";
       s += "]";

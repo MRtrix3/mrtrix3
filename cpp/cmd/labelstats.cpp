@@ -43,8 +43,7 @@ void usage() {
   + Argument ("input", "the input label image").type_image_in();
 
   OPTIONS
-  + Option ("output", "output only the field specified;"
-                      " options are: " + MR::Enum::join<FieldChoice>() + ".")
+  + Option ("output", fmt::format("output only the field specified; options are: {}.", MR::Enum::join<FieldChoice>()))
     + Argument ("choice").type_choice<FieldChoice>()
 
   + Option ("voxelspace", "report parcel centres of mass in voxel space"

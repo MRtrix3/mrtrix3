@@ -17,6 +17,7 @@
 #pragma once
 
 #include "math/math.h"
+#include <fmt/format.h>
 #include <set>
 
 #include <Eigen/Cholesky>

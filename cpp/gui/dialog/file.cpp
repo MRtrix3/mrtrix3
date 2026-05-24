@@ -15,6 +15,7 @@
  */
 
 #include <QMessageBox>
+#include <fmt/std.h>
 
 #include "app.h"
 #include "dialog/file.h"
@@ -98,7 +99,7 @@ void check_overwrite_files_func(const std::filesystem::path &path) {
   QMessageBox::StandardButton response =
       QMessageBox::warning(QApplication::activeWindow(),
                            qstr("confirm file overwrite"),
-                           qstr("Action will overwrite file \"" + path.string() + "\" - proceed?"),
+                           qstr(fmt::format("Action will overwrite file \"{}\" - proceed?", path)),
                            QMessageBox::Yes | QMessageBox::YesToAll | QMessageBox::Cancel,
                            QMessageBox::Cancel);
   if (response == QMessageBox::Cancel)

@@ -15,6 +15,7 @@
  */
 
 #include "opengl/shader.h"
+#include <fmt/format.h>
 
 namespace MR::GUI::GL::Shader {
 
@@ -37,7 +38,7 @@ void print_log(bool is_program, std::string_view type_name, GLuint index) {
     log.resize(log.find('\0'));
 
     if (!log.empty())
-      FAIL("GLSL log [" + type_name + "]: " + log);
+      FAIL("GLSL log [{}]: {}", type_name, log);
   }
 }
 

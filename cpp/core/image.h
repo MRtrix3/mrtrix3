@@ -19,6 +19,7 @@
 #define IMAGE_H
 
 #include <cstddef>
+#include <fmt/std.h>
 #include <functional>
 #include <optional>
 #include <tuple>
@@ -369,8 +370,11 @@ Image<ValueType>::Image(const std::shared_ptr<Image<ValueType>::Buffer> &buffer_
       data_offset(Stride::offset(*this)) {
   assert(buffer);
   assert(data_pointer || buffer->get_io());
-  DEBUG("image \"" + name() + "\" initialised with strides = " + str(strides) + ", start = " + str(data_offset) +
-        ", using " + (is_direct_io() ? "" : "in") + "direct IO");
+  DEBUG("image \"{}\" initialised with strides = {}, start = {}, using {}direct IO",
+        name(),
+        strides,
+        data_offset,
+        is_direct_io() ? "" : "in");
 }
 
 template <typename ValueType> Image<ValueType>::~Image() {}
@@ -388,7 +392,7 @@ template <typename ValueType> Image<ValueType>::Buffer::~Buffer() {
   std::shared_ptr<Buffer> self(this, [](Buffer *) {});
   TmpImage<ValueType> src = {*this, local_data.get(), std::vector<ssize_t>(ndim(), 0), ram->strides, ram->offset};
   Image<ValueType> dest(self);
-  threaded_copy_with_progress_message("writing back direct IO buffer for \"" + name() + "\"", src, dest);
+  threaded_copy_with_progress_message(fmt::format("writing back direct IO buffer for \"{}\"", name()), src, dest);
 }
 
 template <typename ValueType>
@@ -401,7 +405,7 @@ std::filesystem::path Image<ValueType>::dump_to_mrtrix_file(const std::filesyste
   if (is_dash(filepath.string()))
     resolved_path = File::create_tempfile(0, ".mif");
 
-  DEBUG("dumping image \"" + name() + "\" to file \"" + resolved_path.string() + "\"...");
+  DEBUG("dumping image \"{}\" to file \"{}\"...", name(), resolved_path);
 
   File::OFStream out(resolved_path, std::ios::out | std::ios::binary);
   out << "mrtrix image\n";
@@ -427,7 +431,7 @@ std::filesystem::path Image<ValueType>::dump_to_mrtrix_file(const std::filesyste
   out.seekp(offset, out.beg);
   out.write((const char *)data_pointer, data_size);
   if (!out.good())
-    throw Exception("error writing back contents of file \"" + data_path.string() + "\": " + strerror(errno));
+    throw Exception("error writing back contents of file \"{}\": {}", data_path, strerror(errno));
   out.close();
 
   // If data_size exceeds some threshold, ostream artificially increases the file size beyond that required at close()
@@ -471,10 +475,10 @@ save(ImageType &&x, const std::filesystem::path &filepath, bool use_multi_thread
 
 //! display the contents of an image in MRView (for debugging only)
 template <class ImageType> typename enable_if_image_type<ImageType, void>::type display(ImageType &x) {
-  const std::filesystem::path filepath = save(x, "-");
-  CONSOLE("displaying image \"" + filepath.string() + "\"");
-  if (system(("bash -c \"mrview " + filepath.string() + "\"").c_str()))
-    WARN(std::string("error invoking viewer: ") + strerror(errno));
+  std::string filename = save(x, "-");
+  CONSOLE("displaying image \"{}\"", filename);
+  if (system((fmt::format("bash -c \"mrview {}\"", filename)).c_str()))
+    WARN("error invoking viewer: {}", strerror(errno));
 }
 // Explicit instantiations in image.cpp:
 extern template MR::Image<bool>::Buffer::~Buffer();

@@ -20,13 +20,14 @@
 
 #include "file/config.h"
 #include "file/path.h"
+#include <fmt/std.h>
 
 namespace MR::File {
 
 KeyValues Config::config;
 
 const std::string Config::file_basename("mrtrix.conf");
-const std::string Config::default_sys_config_file("/etc/" + file_basename);
+const std::string Config::default_sys_config_file(fmt::format("/etc/{}", file_basename));
 
 // ENVVAR name: MRTRIX_CONFIGFILE
 // ENVVAR This can be used to set the location of the system-wide
@@ -40,31 +41,31 @@ void Config::init() {
   const std::string sysconf_location(sysconf_location_env == nullptr ? default_sys_config_file
                                                                      : std::string(sysconf_location_env));
 
-  std::filesystem::path sysconf_path(sysconf_location);
-  if (std::filesystem::is_regular_file(sysconf_path)) {
-    INFO("reading config file \"" + sysconf_path.string() + "\"...");
+  if (std::filesystem::is_regular_file(sysconf_location)) {
+    INFO("reading config file \"{}\"...", sysconf_location);
     try {
-      KeyValue::Reader kv(sysconf_path);
+      KeyValue::Reader kv(sysconf_location);
       while (kv.next()) {
         config[std::string(kv.key())] = std::string(kv.value());
       }
     } catch (...) {
     }
   } else {
-    DEBUG(std::string("No config file found at \"") + sysconf_path.string() + "\"");
+    DEBUG("No config file found at \"{}\"", sysconf_location);
   }
-  std::filesystem::path home_path = Path::home() / ("." + file_basename);
-  if (std::filesystem::is_regular_file(home_path)) {
-    INFO("reading config file \"" + home_path.string() + "\"...");
+
+  const std::filesystem::path home_config_path = Path::home() / fmt::format(".{}", file_basename);
+  if (std::filesystem::is_regular_file(home_config_path)) {
+    INFO("reading config file \"{}\"...", home_config_path);
     try {
-      KeyValue::Reader kv(home_path);
+      KeyValue::Reader kv(home_config_path);
       while (kv.next()) {
         config[std::string(kv.key())] = std::string(kv.value());
       }
     } catch (...) {
     }
   } else {
-    DEBUG("No config file found at \"" + home_path.string() + "\"");
+    DEBUG("No config file found at \"{}\"", home_config_path);
   }
 
   auto opt = App::get_options("config");
@@ -95,7 +96,7 @@ bool Config::get_bool(std::string_view key, bool default_value) {
   try {
     return to<bool>(value);
   } catch (...) {
-    WARN("malformed boolean entry \"" + value + "\" for key \"" + key + "\" in configuration file - ignored");
+    WARN("malformed boolean entry \"{}\" for key \"{}\" in configuration file - ignored", value, key);
     return default_value;
   }
 }
@@ -107,7 +108,7 @@ int Config::get_int(std::string_view key, int default_value) {
   try {
     return to<int>(value);
   } catch (...) {
-    WARN("malformed integer entry \"" + value + "\" for key \"" + key + "\" in configuration file - ignored");
+    WARN("malformed integer entry \"{}\" for key \"{}\" in configuration file - ignored", value, key);
     return default_value;
   }
 }
@@ -119,7 +120,7 @@ float Config::get_float(std::string_view key, float default_value) {
   try {
     return to<float>(value);
   } catch (...) {
-    WARN("malformed floating-point entry \"" + value + "\" for key \"" + key + "\" in configuration file - ignored");
+    WARN("malformed floating-point entry \"{}\" for key \"{}\" in configuration file - ignored", value, key);
     return default_value;
   }
 }
@@ -130,8 +131,7 @@ Eigen::Array3f Config::get_RGB(std::string_view key, const Eigen::Array3f &defau
     try {
       std::vector<default_type> V(parse_floats(value));
       if (V.size() < 3)
-        throw Exception("malformed RGB entry \"" + value + "\" for key \"" + key +
-                        "\" in configuration file - ignored");
+        throw Exception("malformed RGB entry \"{}\" for key \"{}\" in configuration file - ignored", value, key);
       return {static_cast<float>(V[0]), static_cast<float>(V[1]), static_cast<float>(V[2])};
     } catch (Exception) {
       return default_value;

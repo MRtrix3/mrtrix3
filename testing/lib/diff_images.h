@@ -16,14 +16,12 @@
 
 #pragma once
 
+#include "adapter/replicate.h"
 #include "datatype.h"
-#include "progressbar.h"
-
 #include "image.h"
 #include "image_diff.h"
 #include "image_helpers.h"
-
-#include "adapter/replicate.h"
+#include "progressbar.h"
 
 namespace MR::Testing {
 

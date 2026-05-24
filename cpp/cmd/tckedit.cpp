@@ -32,6 +32,7 @@
 #include "dwi/tractography/editing/loader.h"
 #include "dwi/tractography/editing/receiver.h"
 #include "dwi/tractography/editing/worker.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -180,7 +181,7 @@ void run() {
     count += this_count;
   }
 
-  DEBUG("estimated number of input tracks: " + str(count));
+  DEBUG("estimated number of input tracks: {}", count);
 
   // Remove keyval "total_count", as there is ambiguity about what _should_ be
   //   contained in that field upon editing one or more existing tractograms

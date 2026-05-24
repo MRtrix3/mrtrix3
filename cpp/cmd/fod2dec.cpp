@@ -25,6 +25,7 @@
 #include "math/SH.h"
 #include "math/sphere.h"
 #include "progressbar.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -82,22 +83,27 @@ void usage() {
                           " subject to the same mask/threshold as used for DEC computation.")
       + Argument ("image").type_image_in()
 
-    + Option ("lum", "Correct for luminance/perception,"
-                     " using default values Cr,Cg,Cb = "
-                     + str(default_lum_cr, 2) + "," + str(default_lum_cg, 2) + "," + str(default_lum_cb, 2)
-                     + " and gamma = " + str(default_lum_gamma, 2)
-                     + " (*not* correcting is the theoretical equivalent of Cr,Cg,Cb = 1,1,1 and gamma = 2).")
+    + Option ("lum", fmt::format("Correct for luminance/perception,"
+                                 " using default values Cr,Cg,Cb = {:.2g},{:.2g},{:.2g}"
+                                 " and gamma = {:.2g}"
+                                 " (*not* correcting is the theoretical equivalent of Cr,Cg,Cb = 1,1,1 and gamma = 2).",
+                                 default_lum_cr,
+                                 default_lum_cg,
+                                 default_lum_cb,
+                                 default_lum_gamma))
 
-    + Option ("lum_coefs", "The coefficients Cr,Cg,Cb to correct for luminance/perception."
-                           " Note: this implicitly switches on luminance/perception correction,"
-                           " using a default gamma = " + str(default_lum_gamma, 2) + " unless specified otherwise.")
+    + Option ("lum_coefs", fmt::format("The coefficients Cr,Cg,Cb to correct for luminance/perception."
+                                       " Note: this implicitly switches on luminance/perception correction,"
+                                       " using a default gamma = {:.2g} unless specified otherwise.",
+                                       default_lum_gamma))
       + Argument ("values").type_sequence_float()
 
-    + Option ("lum_gamma", "The gamma value to correct for luminance/perception."
-                           " Note: this implicitly switches on luminance/perception correction,"
-                           " using a default Cr,Cg,Cb = "
-                           + str(default_lum_cr, 2) + "," + str(default_lum_cg, 2) + "," + str(default_lum_cb, 2)
-                           + " unless specified otherwise.")
+    + Option ("lum_gamma", fmt::format("The gamma value to correct for luminance/perception."
+                                       " Note: this implicitly switches on luminance/perception correction,"
+                                       " using a default Cr,Cg,Cb = {:.2g},{:.2g},{:.2g} unless specified otherwise.",
+                                       default_lum_cr,
+                                       default_lum_cg,
+                                       default_lum_cb))
     + Argument ("value").type_float()
 
     + Option ("threshold", "FOD amplitudes below the threshold value are considered zero.")
@@ -244,9 +250,11 @@ void run() {
     if (!optlc.empty()) {
       auto lc = parse_floats(optlc[0][0]);
       if (lc.size() != 3)
-        throw Exception("expecting exactly 3 coefficients for the lum_coefs option, provided as a comma-separated list "
-                        "Cr,Cg,Cb ; e.g., " +
-                        str(default_lum_cr, 2) + "," + str(default_lum_cg, 2) + "," + str(default_lum_cb, 2) + "");
+        throw Exception("expecting exactly 3 coefficients for the lum_coefs option,"
+                        " provided as a comma-separated list Cr,Cg,Cb ; e.g., {:.2g},{:.2g},{:.2g}",
+                        default_lum_cr,
+                        default_lum_cg,
+                        default_lum_cb);
       coefs(0) = lc[0];
       coefs(1) = lc[1];
       coefs(2) = lc[2];

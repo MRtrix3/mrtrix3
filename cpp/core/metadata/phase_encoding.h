@@ -19,6 +19,7 @@
 #include <Eigen/Dense>
 #include <array>
 #include <filesystem>
+#include <fmt/format.h>
 
 #include "app.h"
 #include "axes.h"
@@ -97,7 +98,7 @@ void save_table(const scheme_type &PE, const std::filesystem::path &path, bool w
 template <class HeaderType> void save_table(const HeaderType &header, const std::filesystem::path &path) {
   const scheme_type scheme = get_scheme(header);
   if (scheme.rows() == 0)
-    throw Exception("No phase encoding scheme in header of image \"" + header.name() + "\" to save");
+    throw Exception("No phase encoding scheme in header of image \"{}\" to save", header.name());
   save(scheme, header, path);
 }
 
@@ -111,19 +112,19 @@ void save_table(const scheme_type &PE, const HeaderType &header, const std::file
   try {
     check(PE, header);
   } catch (Exception &e) {
-    throw Exception(e, "Cannot export phase-encoding table to file \"" + path.string() + "\"");
+    throw Exception(e, "Cannot export phase-encoding table to file \"{}\"", path);
   }
 
   if (Path::has_suffix(header.path(), {".mgh", ".mgz", ".nii", ".nii.gz", ".img"})) {
     // clang-format off
-    WARN("External phase encoding table \"" + path.string() + "\""
-         " for image \"" + std::string(header.name()) + "\""
-         " may not be suitable for FSL topup;"
-         " consider use of -export_pe_topup instead"
-         " (see: mrtrix.readthedocs.org/en/"
-         MRTRIX_BASE_VERSION
-         "/concepts/pe_scheme.html"
-         "#reference-axes-for-phase-encoding-directions)");
+    WARN("External phase encoding table \"{}\" for image \"{}\""
+                     " may not be suitable for FSL topup;"
+                     " consider use of -export_pe_topup instead"
+                     " (see: mrtrix.readthedocs.org/en/"
+                     MRTRIX_BASE_VERSION
+                     "/concepts/pe_scheme.html"
+                     "#reference-axes-for-phase-encoding-directions)",
+                     path, header.name());
     // clang-format on
     save_table(transform_for_nifti_write(PE, header), path, true);
   } else {
@@ -136,7 +137,7 @@ void save_topup(const scheme_type &PE, const HeaderType &header, const std::file
   try {
     check(PE, header);
   } catch (Exception &e) {
-    throw Exception(e, "Cannot export phase-encoding table to file \"" + path.string() + "\"");
+    throw Exception(e, "Cannot export phase-encoding table to file \"{}\"", path);
   }
 
   if (!Path::has_suffix(header.path(), {".mgh", ".mgz", ".nii", ".nii.gz", ".img"})) {

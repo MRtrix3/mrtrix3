@@ -22,6 +22,7 @@
 #include "file/name_parser.h"
 #include "file/ofstream.h"
 #include "file/path.h"
+#include "file/utils.h"
 #include "formats/list.h"
 #include "formats/mrtrix_utils.h"
 #include "header.h"
@@ -85,9 +86,9 @@ std::unique_ptr<ImageIO::Base> MRtrix::create(Header &H) const {
     offset = static_cast<int64_t>(out.tellp()) + int64_t(18);
     offset += ((4 - (offset % 4)) % 4);
     out << ". " << offset << "\nEND\n";
-  } else {
-    out << static_cast<const Header &>(H).path().filename().replace_extension(".dat").string() << "\n";
-  }
+  } else
+    out << std::filesystem::path(fmt::format("{}.dat", H.name().substr(0, H.name().size() - 4))).filename().string()
+        << "\n";
 
   out.close();
 
@@ -96,10 +97,8 @@ std::unique_ptr<ImageIO::Base> MRtrix::create(Header &H) const {
     std::filesystem::resize_file(hpath, offset + footprint(H));
     io_handler->files.push_back(File::Entry(hpath, offset));
   } else {
-    std::filesystem::path data_file = std::filesystem::path(hpath).replace_extension(".dat");
-    File::OFStream out_dat(data_file);
-    out_dat.close();
-    std::filesystem::resize_file(data_file, footprint(H));
+    std::string data_file(fmt::format("{}.dat", H.name().substr(0, H.name().size() - 4)));
+    File::create(data_file, footprint(H));
     io_handler->files.push_back(File::Entry(data_file));
   }
 

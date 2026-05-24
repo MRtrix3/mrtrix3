@@ -22,6 +22,7 @@
 #include "file/dicom/series.h"
 #include "file/dicom/study.h"
 #include "file/path.h"
+#include <fmt/std.h>
 
 namespace MR::File::Dicom {
 
@@ -58,19 +59,19 @@ void Tree::read_dir(const std::filesystem::path &dirpath, ProgressBar &progress)
       ++progress;
     }
   } catch (Exception &E) {
-    throw Exception(E, "error opening DICOM folder \"" + dirpath.string() + "\": " + strerror(errno));
+    throw Exception(E, "error opening DICOM folder \"{}\": {}", dirpath, strerror(errno));
   }
 }
 
 void Tree::read_file(const std::filesystem::path &filepath) {
   QuickScan reader;
   if (reader.read(filepath)) {
-    INFO("error reading file \"" + filepath.string() + "\" - ignored");
+    INFO("error reading file \"{}\" - ignored", filepath);
     return;
   }
 
   if (!(reader.dim[0] && reader.dim[1] && reader.bits_alloc && reader.data)) {
-    INFO("DICOM file \"" + filepath.string() + "\" does not seem to contain image data - ignored");
+    INFO("DICOM file \"{}\" does not seem to contain image data - ignored", filepath);
     return;
   }
 
@@ -99,7 +100,7 @@ void Tree::read_file(const std::filesystem::path &filepath) {
 void Tree::read(const std::filesystem::path &path) {
   description = path.string();
   if (std::filesystem::is_directory(path)) {
-    ProgressBar progress("scanning folder \"" + shorten(path.string()) + "\" for DICOM data", 0);
+    ProgressBar progress(fmt::format("scanning folder \"{}\" for DICOM data", shorten(path)), 0);
     read_dir(path, progress);
   } else {
     try {
@@ -109,7 +110,7 @@ void Tree::read(const std::filesystem::path &path) {
   }
 
   if (empty())
-    throw Exception("no DICOM images found in \"" + path.string() + "\"");
+    throw Exception("no DICOM images found in \"{}\"", path);
 }
 
 std::ostream &operator<<(std::ostream &stream, const Tree &item) {

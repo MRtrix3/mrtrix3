@@ -16,6 +16,7 @@
 
 #include "mrtrix.h"
 
+#include <fmt/format.h>
 #include <string_view>
 
 namespace MR {
@@ -40,7 +41,7 @@ std::vector<default_type> parse_floats(std::string_view spec) {
       if (last_char == ':') {
         i++;
         if (i > 2)
-          throw Exception("invalid number range in number sequence \"" + spec + "\"");
+          throw Exception("invalid number range in number sequence \"{}\"", spec);
       } else {
         if (i) {
           if (i != 2)
@@ -62,7 +63,7 @@ std::vector<default_type> parse_floats(std::string_view spec) {
       start = end + 1;
     } while (end < spec.size());
   } catch (Exception &E) {
-    throw Exception(E, "can't parse floating-point sequence specifier \"" + spec + "\"");
+    throw Exception(E, "can't parse floating-point sequence specifier \"{}\"", spec);
   }
   return (V);
 }
@@ -90,7 +91,7 @@ split(std::string_view string, std::string_view delimiters, bool ignore_empty_fi
       }
     } while (true);
   } catch (...) {
-    throw Exception("can't split string \"" + string + "\"");
+    throw Exception("can't split string \"{}\"", string);
   }
   return V;
 }
@@ -142,12 +143,55 @@ std::istream &getline(std::istream &stream, std::string &string) {
 }
 
 std::string &add_line(std::string &original, std::string_view new_line) {
-  return original.empty() ? (original = new_line) : (original += "\n" + new_line);
+  return original.empty() ? (original = new_line) : (original += '\n', original += new_line, original);
+}
+
+std::string shorten(const std::filesystem::path &path, size_t longest) {
+  if (path.filename().string().size() > longest)
+    return shorten(path.filename());
+  if (path.filename().string().size() + 5 > longest)
+    return path.filename().string();
+  if (path.string().size() < longest)
+    return path.string();
+  std::string result_prefix = path.has_root_name() ? path.root_name().string() : "";
+  std::string result_suffix = path.filename().string();
+  if (result_prefix.size() + 5 + result_suffix.size() > longest)
+    return result_suffix;
+  auto elide_inter = [](std::string_view prefix, std::string_view suffix) {
+    return fmt::format("{}{}...{}{}",
+                       prefix,
+                       std::filesystem::path::preferred_separator,
+                       std::filesystem::path::preferred_separator,
+                       suffix);
+  };
+  std::filesystem::path cropped_path = path.parent_path().relative_path();
+  size_t counter = result_prefix.empty() ? 1 : 0;
+  do {
+    if (++counter % 2 == 1) {
+      const std::string new_suffix = (cropped_path.filename() / result_suffix).string();
+      if (result_prefix.size() + 5 + new_suffix.size() > longest)
+        return elide_inter(result_prefix, result_suffix);
+      result_suffix = new_suffix;
+      cropped_path = cropped_path.parent_path();
+    } else {
+      const std::string new_prefix = (std::filesystem::path(result_prefix) / *cropped_path.begin()).string();
+      if (new_prefix.size() + 5 + result_suffix.size() > longest)
+        return elide_inter(result_prefix, result_suffix);
+      result_prefix = new_prefix;
+      auto parent_iterator = cropped_path.begin();
+      std::filesystem::path new_cropped_path;
+      for (++parent_iterator; parent_iterator != cropped_path.end(); ++parent_iterator)
+        new_cropped_path /= *parent_iterator;
+      cropped_path = new_cropped_path;
+    }
+  } while (!cropped_path.empty());
+  assert(false);
+  return elide_inter(result_prefix, result_suffix);
 }
 
 std::string shorten(std::string_view text, size_t longest, size_t prefix) {
   if (text.size() > longest)
-    return (std::string(text.substr(0, prefix)) + "..." + text.substr(text.size() - longest + prefix + 3));
+    return fmt::format("{}...{}", text.substr(0, prefix), text.substr(text.size() - longest + prefix + 3));
   else
     return std::string(text);
 }
@@ -246,8 +290,10 @@ std::string join(const std::vector<std::string> &V, std::string_view delimiter) 
   if (V.empty())
     return ret;
   ret = V[0];
-  for (std::vector<std::string>::const_iterator i = V.begin() + 1; i != V.end(); ++i)
-    ret += delimiter + *i;
+  for (std::vector<std::string>::const_iterator i = V.begin() + 1; i != V.end(); ++i) {
+    ret += delimiter;
+    ret += *i;
+  }
   return ret;
 }
 
@@ -256,8 +302,10 @@ std::string join(const char *const *null_terminated_array, std::string_view deli
   if (!null_terminated_array)
     return ret;
   ret = null_terminated_array[0];
-  for (const char *const *p = null_terminated_array + 1; *p; ++p) // check_syntax off
-    ret += delimiter + *p;
+  for (const char *const *p = null_terminated_array + 1; *p; ++p) { // check_syntax off
+    ret += delimiter;
+    ret += *p;
+  }
   return ret;
 }
 

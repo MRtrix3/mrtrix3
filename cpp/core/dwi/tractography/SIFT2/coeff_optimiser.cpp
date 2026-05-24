@@ -220,7 +220,7 @@ CoefficientOptimiserGSS::CoefficientOptimiserGSS(const CoefficientOptimiserGSS &
 double CoefficientOptimiserGSS::get_coeff_change(const SIFT::track_t track_index) const {
   LineSearchFunctor line_search_functor(track_index, master);
   const double dFs = Math::golden_section_search(line_search_functor,
-                                                 std::string(""),
+                                                 "",
                                                  -master.max_coeff_step,
                                                  0.0,
                                                  master.max_coeff_step,
@@ -263,7 +263,7 @@ double CoefficientOptimiserQLS::get_coeff_change(const SIFT::track_t track_index
 #endif
   if (!std::isfinite(dFs)) {
     dFs = Math::golden_section_search(line_search_functor,
-                                      std::string(""),
+                                      "",
                                       -master.max_coeff_step,
                                       0.0,
                                       master.max_coeff_step,

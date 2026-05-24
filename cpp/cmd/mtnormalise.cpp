@@ -14,6 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <fmt/format.h>
+
 #include "adapter/replicate.h"
 #include "algo/loop.h"
 #include "algo/threaded_copy.h"
@@ -83,20 +85,19 @@ void usage() {
                     " used to fit the normalisation field in the log-domain."
                     " An order of 0 is equivalent to not allowing spatial variance"
                     " of the intensity normalisation factor."
-                    " (default: " + str(default_polynormial_order) + ")")
+                    + fmt::format(" (default: {})", default_polynormial_order))
     + Argument("number").type_integer(0, 3)
 
   + Option("niter", "set the number of iterations."
                     " The first (and potentially only) entry applies to the main loop."
                     " If supplied as a comma-separated list of integers,"
                     " the second entry applies to the inner loop to update the balance factors."
-                    " (default: " + str(default_main_iterations) + "," + str(default_balance_maxiterations) + ").")
+                    + fmt::format(" (default: {},{}).", default_main_iterations, default_balance_maxiterations))
     + Argument("number").type_sequence_int()
 
   + Option("reference", "specify the (positive) reference value"
                         " to which the summed tissue compartments will be normalised."
-                        " (default: " +str(default_reference_value, 6) + ","
-                        " SH DC term for unit angular integral)")
+                        + fmt::format(" (default: {:.6g}, SH DC term for unit angular integral)", default_reference_value))
     + Argument("number").type_float(std::numeric_limits<default_type>::min())
 
   + Option("balanced", "incorporate the per-tissue balancing factors"
@@ -219,7 +220,7 @@ IndexType index_mask_voxels(size_t &num_voxels) {
   if (!num_voxels)
     throw Exception("Mask contains no valid voxels.");
 
-  INFO("mask image contains " + str(num_voxels) + " voxels");
+  INFO("mask image contains {} voxels", num_voxels);
 
   return index;
 }
@@ -307,7 +308,7 @@ size_t detect_outliers(double outlier_range,
                    lessthan_NaN);
   double upper_quartile = summed_log_sorted[upper_quartile_idx];
 
-  INFO("  outlier rejection quartiles: [ " + str(lower_quartile) + " " + str(upper_quartile) + " ]");
+  INFO("  outlier rejection quartiles: [ {} {} ]", lower_quartile, upper_quartile);
 
   double lower_outlier_threshold = lower_quartile - outlier_range * (upper_quartile - lower_quartile);
   double upper_outlier_threshold = upper_quartile + outlier_range * (upper_quartile - lower_quartile);
@@ -348,9 +349,7 @@ void compute_balance_factors(const Eigen::MatrixXd &data,
 
   // Ensure our balance factors satisfy the condition that sum(log(balance_factors)) = 0
   if (!balance_factors.allFinite() || (balance_factors.array() <= 0.0).any())
-    throw Exception("Non-positive tissue balance factor was computed."
-                    " Balance factors: " +
-                    str(balance_factors.transpose()));
+    throw Exception("Non-positive tissue balance factor was computed. Balance factors: {}", balance_factors);
 
   balance_factors /= std::exp(balance_factors.array().log().sum() / data.cols());
 }
@@ -499,17 +498,15 @@ void run() {
 
   Eigen::MatrixXd data(num_voxels, n_tissue_types);
   for (size_t n = 0; n < n_tissue_types; ++n) {
-    const std::filesystem::path output_path{argument[2 * n + 1]};
-    if (std::filesystem::exists(output_path) && !App::overwrite_files)
-      throw Exception("Output file \"" + output_path.string() + "\" already exists." +
-                      " (use -force option to force overwrite)");
-    const std::filesystem::path input_path{argument[2 * n]};
-    load_data(data, input_path, index);
+    if (std::filesystem::exists(argument[2 * n + 1].as_path()) && !App::overwrite_files)
+      throw Exception("Output file \"{}\" already exists. (use -force option to force overwrite)",
+                      argument[2 * n + 1].as_text());
+    load_data(data, argument[2 * n], index);
   }
 
   size_t num_non_finite = (!data.array().isFinite()).count();
   if (num_non_finite > 0) {
-    WARN("Input data contain " + str(num_non_finite) + " non-finite voxel" + (num_non_finite > 1 ? "s" : ""));
+    WARN("Input data contain {} non-finite voxel{}", num_non_finite, (num_non_finite > 1 ? "s" : ""));
     WARN("  Results may be affected if the data contain many non-finite values");
     WARN("  Please refine your mask to avoid non-finite values if this is a problem");
   }
@@ -532,18 +529,18 @@ void run() {
     size_t outliers_changed = detect_outliers(3.0, data, field, balance_factors, weights);
 
     while (++iter <= max_iter) {
-      INFO("Iteration: " + str(iter));
+      INFO("Iteration: {}", iter);
 
       size_t balance_iter = 1;
 
       // Iteratively compute tissue balance factors with outlier rejection
       do {
 
-        DEBUG("Balance and outlier rejection iteration " + str(balance_iter) + " starts.");
+        DEBUG("Balance and outlier rejection iteration {} starts.", balance_iter);
 
         if (n_tissue_types > 1) {
           compute_balance_factors(data, field, weights, balance_factors);
-          INFO("  balance factors (" + str(balance_iter) + "): " + str(balance_factors.transpose()));
+          INFO("  balance factors ({}): {}", balance_iter, balance_factors);
         }
 
         outliers_changed = detect_outliers(1.5, data, field, balance_factors, weights);

@@ -27,6 +27,7 @@
 #include "adapter/replicate.h"
 #include "algo/histogram.h"
 #include "algo/loop.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -41,8 +42,7 @@ void usage() {
   SYNOPSIS = "Modify the intensities of one image to match the histogram of another";
 
   ARGUMENTS
-    + Argument ("type", "type of histogram matching to perform;"
-                        " options are: " + MR::Enum::join<MatchType>() + ".").type_choice<MatchType>()
+    + Argument ("type", fmt::format("type of histogram matching to perform; options are: {}.", MR::Enum::join<MatchType>())).type_choice<MatchType>()
     + Argument ("input", "the input image to be modified").type_image_in ()
     + Argument ("target", "the input image from which to derive the target histogram").type_image_in()
     + Argument ("output", "the output image").type_image_out();
@@ -134,7 +134,7 @@ void match_linear(Image<float> &input,
   H.datatype().set_byte_order_native();
   H.keyval()["mrhistmatch_scale"] = str<float>(parameters[0]);
   if (estimate_intercept) {
-    CONSOLE("Estimated linear transform is: " + str(parameters[0]) + "x + " + str(parameters[1]));
+    CONSOLE("Estimated linear transform is: {}x + {}", parameters[0], parameters[1]);
     H.keyval()["mrhistmatch_offset"] = str<float>(parameters[1]);
     auto output = Image<float>::create(output_path, H);
     for (auto l = Loop("Writing output image data", input)(input, output); l; ++l) {
@@ -145,8 +145,8 @@ void match_linear(Image<float> &input,
       }
     }
   } else {
-    CONSOLE("Estimated scale factor is " + str(parameters[0]));
-    auto output = Image<float>::create(output_path, H);
+    CONSOLE("Estimated scale factor is {}", parameters[0]);
+    auto output = Image<float>::create(argument[3], H);
     for (auto l = Loop("Writing output image data", input)(input, output); l; ++l) {
       if (std::isfinite(static_cast<float>(input.value()))) {
         output.value() = input.value() * parameters[0];
@@ -162,14 +162,18 @@ void match_nonlinear(
   const std::filesystem::path output_path{argument[3]};
   Algo::Histogram::Calibrator calib_input(nbins, true);
   Algo::Histogram::calibrate(calib_input, input, mask_input);
-  INFO("Input histogram ranges from " + str(calib_input.get_min()) + " to " + str(calib_input.get_max()) + "; using " +
-       str(calib_input.get_num_bins()) + " bins");
+  INFO("Input histogram ranges from {} to {}; using {} bins",
+       calib_input.get_min(),
+       calib_input.get_max(),
+       calib_input.get_num_bins());
   Algo::Histogram::Data hist_input = Algo::Histogram::generate(calib_input, input, mask_input);
 
   Algo::Histogram::Calibrator calib_target(nbins, true);
   Algo::Histogram::calibrate(calib_target, target, mask_target);
-  INFO("Target histogram ranges from " + str(calib_target.get_min()) + " to " + str(calib_target.get_max()) +
-       "; using " + str(calib_target.get_num_bins()) + " bins");
+  INFO("Target histogram ranges from {} to {}; using {} bins",
+       calib_target.get_min(),
+       calib_target.get_max(),
+       calib_target.get_num_bins());
   Algo::Histogram::Data hist_target = Algo::Histogram::generate(calib_target, target, mask_target);
 
   // Non-linear intensity mapping determined within this class

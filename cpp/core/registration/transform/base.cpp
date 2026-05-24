@@ -13,7 +13,10 @@
  *
  * For more details, see http://www.mrtrix.org/.
  */
+
 #include "registration/transform/base.h"
+
+#include <fmt/format.h>
 
 namespace MR::Registration::Transform {
 
@@ -51,12 +54,12 @@ void Base::set_translation(const Eigen::Matrix<ParameterType, 1, 3> &trans) {
 
 void Base::set_centre_without_transform_update(const Eigen::Vector3d &centre_in) {
   centre = centre_in;
-  DEBUG("centre: " + str(centre.transpose()));
+  DEBUG("centre: {}", centre);
 }
 
 void Base::set_centre(const Eigen::Vector3d &centre_in) {
   centre = centre_in;
-  DEBUG("centre: " + str(centre.transpose()));
+  DEBUG("centre: {}", centre);
   compute_offset();
   compute_halfspace_transformations();
 }
@@ -72,20 +75,19 @@ void Base::set_offset(const Eigen::Vector3d &offset_in) {
 }
 
 std::string Base::info() {
-  const Eigen::IOFormat fmt(Eigen::FullPrecision, 0, ", ", "\n", "", "", "", "");
-  INFO("transformation:\n" + str(trafo.matrix().format(fmt)));
-  DEBUG("transformation_half:\n" + str(trafo_half.matrix().format(fmt)));
-  DEBUG("transformation_half_inverse:\n" + str(trafo_half_inverse.matrix().format(fmt)));
-  return "centre: " + str(centre.transpose(), 12);
+  INFO("transformation: {}", trafo);
+  DEBUG("transformation_half: {}", trafo_half);
+  DEBUG("transformation_half_inverse: {}", trafo_half_inverse);
+  return fmt::format("centre: {}", centre);
 }
 
 std::string Base::debug() {
   const Eigen::IOFormat fmt(Eigen::FullPrecision, 0, ", ", "\n", "", "", "", "");
-  CONSOLE("trafo:\n" + str(trafo.matrix().format(fmt)));
-  CONSOLE("trafo_inverse:\n" + str(trafo.inverse().matrix().format(fmt)));
-  CONSOLE("trafo_half:\n" + str(trafo_half.matrix().format(fmt)));
-  CONSOLE("trafo_half_inverse:\n" + str(trafo_half_inverse.matrix().format(fmt)));
-  CONSOLE("centre: " + str(centre.transpose(), 12));
+  CONSOLE("trafo: {}", trafo);
+  CONSOLE("trafo_inverse: {}", trafo.inverse());
+  CONSOLE("trafo_half: {}", trafo_half);
+  CONSOLE("trafo_half_inverse: {}", trafo_half_inverse);
+  CONSOLE("centre: {}", centre);
   return "";
 }
 

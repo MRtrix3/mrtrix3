@@ -17,6 +17,7 @@
 #pragma once
 
 #include <array>
+#include <fmt/format.h>
 #include <iomanip>
 #include <sstream>
 
@@ -132,7 +133,7 @@ inline bool check(Header &H, size_t num_axes) {
     H.datatype() = DataType::Float32BE;
     break;
   default:
-    throw Exception("Unsupported data type for MGH format (" + std::string(H.datatype().specifier()) + ")");
+    throw Exception("Unsupported data type for MGH format ({})", std::string(H.datatype().specifier()));
   }
 
   return true;
@@ -190,7 +191,7 @@ typedef struct {
 template <class Input> void read_header(Header &H, Input &in) {
   auto version = fetch<int32_t>(in);
   if (version != 1)
-    throw Exception("image \"" + H.path().string() + "\" is not in MGH format (version != 1)");
+    throw Exception("image \"{}\" is not in MGH format (version != 1)", H.name());
 
   auto width = fetch<int32_t>(in);
   auto height = fetch<int32_t>(in);
@@ -231,7 +232,7 @@ template <class Input> void read_header(Header &H, Input &in) {
     dtype = DataType::Float32BE;
     break;
   default:
-    throw Exception("unknown data type for MGH image \"" + H.path().string() + "\" (" + str(type) + ")");
+    throw Exception("unknown data type for MGH image \"{}\" ({})", H.name(), type);
   }
   H.datatype() = dtype;
   H.reset_intensity_scaling();
@@ -393,7 +394,7 @@ template <class Input> void read_other(Header &H, Input &in) {
 
   auto read_colourtable_V1 = [&](Input &in, const int32_t nentries) {
     if (!nentries)
-      throw Exception("Error reading colour table from file \"" + H.path().string() + "\": No entries");
+      throw Exception("Error reading colour table from file \"{}\": No entries", H.name());
     std::ostringstream table;
     const int32_t filename_length = fetch<int32_t>(in);
     std::string filename(filename_length + 1, '\0');
@@ -402,8 +403,7 @@ template <class Input> void read_other(Header &H, Input &in) {
     for (int32_t structure = 0; structure != nentries; ++structure) {
       const int32_t structurename_length = fetch<int32_t>(in);
       if (structurename_length <= 0)
-        throw Exception("Error reading colour table from file \"" + H.path().string() + "\":" + //
-                        " invalid structure name length");                                      //
+        throw Exception("Error reading colour table from file \"{}\": Invalid structure name length", H.name());
       std::string structurename(structurename_length + 1, '\0');
       in.read(const_cast<char *>(structurename.data()), structurename_length);
       structurename.resize(structurename.find('\0'));
@@ -422,7 +422,7 @@ template <class Input> void read_other(Header &H, Input &in) {
   auto read_colourtable_V2 = [&](Input &in) {
     const int32_t nentries = fetch<int32_t>(in);
     if (!nentries)
-      throw Exception("Error reading colour table from file \"" + H.path().string() + "\": No entries");
+      throw Exception("Error reading colour table from file \"{}\": No entries", H.name());
     std::vector<std::string> table;
     const int32_t filename_length = fetch<int32_t>(in);
     std::string filename(filename_length + 1, '\0');
@@ -432,16 +432,16 @@ template <class Input> void read_other(Header &H, Input &in) {
     for (int32_t i = 0; i != num_entries_to_read; ++i) {
       const int32_t structure = fetch<int32_t>(in);
       if (structure < 0)
-        throw Exception("Error reading colour table from file \"" + H.path().string() + "\":" + //
-                        " Negative structure index (" + str(structure) + ")");                  //
+        throw Exception(
+            "Error reading colour table from file \"{}\": Negative structure index ({})", H.name(), structure);
       if (static_cast<size_t>(structure) < table.size() && !table[structure].empty())
-        throw Exception("Error reading colour table from file \"" + H.path().string() + "\":" + //
-                        " Duplicate structure index (" + str(structure) + ")");                 //
+        throw Exception(
+            "Error reading colour table from file \"{}\": Duplicate structure index ({})", H.name(), structure);
       else if (static_cast<size_t>(structure) >= table.size())
         table.resize(structure + 1, std::string());
       const int32_t structurename_length = fetch<int32_t>(in);
-      throw Exception("Error reading colour table from file \"" + H.path().string() + "\":" + //
-                      " Invalid structure name length");                                      //
+      if (structurename_length <= 0)
+        throw Exception("Error reading colour table from file \"{}\": Invalid structure name length", H.name());
       std::string structurename(structurename_length + 1, '\0');
       in.read(const_cast<char *>(structurename.data()), structurename_length);
       structurename.resize(structurename.find('\0'));
@@ -450,7 +450,7 @@ template <class Input> void read_other(Header &H, Input &in) {
       const int32_t b = fetch<int32_t>(in);
       const int32_t t = fetch<int32_t>(in);
       const int32_t a = 255 - t; // Alpha = 255 - transparency
-      table[structure] = structurename + "," + str(r) + "," + str(g) + "," + str(b) + "," + str(a);
+      table[structure] = fmt::format("{},{},{},{},{}", structurename, r, g, b, a);
     }
     std::ostringstream result;
     for (size_t index = 0; index != table.size(); ++index) {
@@ -480,7 +480,7 @@ template <class Input> void read_other(Header &H, Input &in) {
       else if (id == tag_old_surf_geom || id == tag_old_userealras || id == tag_old_colortable)
         size = 0;
       else if (id <= 0)
-        throw Exception("Invalid tag (" + str(id) + ") in MGH format \"other data\"");
+        throw Exception("Invalid tag ({}) in MGH format \"other data\"", id);
       else
         size = fetch<int64_t>(in);
       std::string content(size + 1, '\0');
@@ -496,8 +496,7 @@ template <class Input> void read_other(Header &H, Input &in) {
         } else if (version == -2) {
           H.keyval()[tag_ID_to_string(id)] = read_colourtable_V2(in);
         } else {
-          throw Exception("Error reading colour table from file \"" + H.path().string() + "\":" + //
-                          " Unknown version (" + str(version) + ")");                             //
+          throw Exception("Error reading colour table from file \"{}\": Unknown version ({})", H.name(), version);
         }
       } break;
       case tag_old_mgh_xform:
@@ -576,8 +575,8 @@ template <class Output> void write_header(const Header &H, Output &out) {
     type = datatype_float;
     break;
   default:
-    throw Exception(std::string("Error in MGH file format header write:") +               //
-                    " invalid datatype (" + std::string(H.datatype().specifier()) + ")"); //
+    throw Exception("Error in MGH file format header write: invalid datatype ({})",
+                    std::string(H.datatype().specifier()));
   }
   store<int32_t>(type, out); // type
   store<int32_t>(0, out);    // dof
@@ -656,20 +655,22 @@ template <class Output> void write_other(const Header &H, Output &out) {
     const size_t nframes = H.ndim() == 4 ? H.size(3) : 1;
     const auto lines = split_lines(table);
     if (lines.size() != nframes) {
-      WARN(std::string("Error writing MRI frame data to output image") + //
-           "(image has " + str(nframes) + " volumes," +                  //
-           " frame data tables has " + str(lines.size()) + " rows);" +   //
-           " omitting information from output image");                   //
+      WARN("Error writing MRI frame data to output image"
+           "(image has {} volumes, frame data tables has {} rows);"
+           " omitting information from output image",
+           nframes,
+           lines.size());
       return;
     }
     std::vector<mri_frame> frames(nframes);
     for (size_t frame_index = 0; frame_index != nframes; ++frame_index) {
       const auto entries = split(lines[frame_index], ",", false);
       if (entries.size() != 24 && entries.size() != 45) {
-        WARN(std::string("Error writing MRI frame data to output image") +             //
-             " (frame data table has line with " + str(entries.size()) + " entries," + //
-             " expected 24 or 45);" +                                                  //
-             " omitting information from output image");                               //
+        WARN("Error writing MRI frame data to output image"
+             " (frame data table has line with {} entries,"
+             " expected 24 or 45);"
+             " omitting information from output image",
+             entries.size());
         return;
       }
       mri_frame &frame(frames[frame_index]);
@@ -697,9 +698,10 @@ template <class Output> void write_other(const Header &H, Output &out) {
       frame.m_ras2vox = new Eigen::Matrix<default_type, 4, 4>(Eigen::Matrix<default_type, 4, 4>::Zero());
       const auto M = split(entries[21], " ");
       if (M.size() != 16) {
-        WARN(std::string("Error writing MRI frame data to output image") +               //
-             " (expected RAS2vox matrix with 16 entries, read " + str(M.size()) + ");" + //
-             " omitting information from output image");                                 //
+        WARN("Error writing MRI frame data to output image"
+             " (expected RAS2vox matrix with 16 entries, read {});"
+             " omitting information from output image",
+             M.size());
         return;
       }
       (*frame.m_ras2vox)(0, 0) = to<default_type>(M[0]);
@@ -724,9 +726,9 @@ template <class Output> void write_other(const Header &H, Output &out) {
 
       if (frame.type == frame_diffusion_augmented) {
         if (entries.size() != 45) {
-          WARN(std::string("Error writing MRI frame data to output image") +                     //
-               " (frame indicated as diffusion-augmented, but does not have sufficient data);" + //
-               " omitting information from output image");                                       //
+          WARN("Error writing MRI frame data to output image"
+               " (frame indicated as diffusion-augmented, but does not have sufficient data);"
+               " omitting information from output image");
           return;
         }
         frame.DX = to<float64>(entries[25]);
@@ -833,8 +835,7 @@ template <class Output> void write_other(const Header &H, Output &out) {
     for (const auto &line : lines) {
       const auto entries = split(line, ",", true);
       if (entries.size() != 5)
-        throw Exception(std::string("Error writing colour table to file:") +         //
-                        " Line has " + str(entries.size()) + " fields, expected 5"); //
+        throw Exception("Error writing colour table to file: Line has {} fields, expected 5", entries.size());
       // Name,Red,Green,Blue,Transparency
       store<int32_t>(entries[0].size() + 1, out);
       out.write(entries[0].c_str(), entries[0].size() + 1);
@@ -854,8 +855,7 @@ template <class Output> void write_other(const Header &H, Output &out) {
     for (auto line : lines) {
       const auto entries = split(line, ",", true);
       if (entries.size() != 6)
-        throw Exception(std::string("Error writing colour table to file:") +         //
-                        " Line has " + str(entries.size()) + " fields, expected 6"); //
+        throw Exception("Error writing colour table to file: Line has {} fields, expected 6", entries.size());
       const int32_t index = to<int32_t>(entries[0]);
       max_index = std::max(max_index, index);
     }
@@ -919,14 +919,16 @@ template <class Output> void write_other(const Header &H, Output &out) {
         auto_align_matrix.reset(new Eigen::Matrix<default_type, 4, 4>(Eigen::Matrix<default_type, 4, 4>::Zero()));
         const auto lines = split_lines(entry.second);
         if (lines.size() != 4)
-          throw Exception(std::string("Error parsing auto align header entry for MGH format:") + //
-                          "Invalid number of lines (" + str(lines.size()) + "; should be 4)");   //
+          throw Exception(
+              "Error parsing auto align header entry for MGH format: Invalid number of lines ({}; should be 4)",
+              lines.size());
         for (size_t row = 0; row != 4; ++row) {
           const auto entries = split(strip(lines[row]), ", ", true);
           if (entries.size() != 4)
-            throw Exception(std::string("Error parsing auto align header entry for MGH format:") +
-                            " Invalid number of entries on line " + str(row) + " (" + str(entries.size()) + ";" +
-                            " should be 4)");
+            throw Exception("Error parsing auto align header entry for MGH format: Invalid number of "
+                            "entries on line {} ({}; should be 4)",
+                            row,
+                            entries.size());
           for (size_t col = 0; col != 4; ++col)
             (*auto_align_matrix)(row, col) = to<default_type>(entries[col]);
         }

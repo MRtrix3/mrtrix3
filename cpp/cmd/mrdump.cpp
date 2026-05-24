@@ -20,6 +20,7 @@
 #include "datatype.h"
 #include "file/ofstream.h"
 #include "image.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -95,8 +96,9 @@ template <class StreamType> void write(Header &header, Image<bool> &mask, Stream
       write(header.get_image<double>(), mask, out);
     break;
   default:
-    throw Exception("Unknown data type: " + std::string(header.datatype().description()) + " (" +
-                    str(static_cast<uint32_t>(static_cast<uint8_t>(DataType(header.datatype())()))) + ")");
+    throw Exception("Unknown data type: {} ({})",
+                    std::string(header.datatype().description()),
+                    static_cast<uint32_t>(static_cast<uint8_t>(DataType(header.datatype())())));
   }
 }
 

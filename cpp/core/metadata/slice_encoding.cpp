@@ -21,6 +21,7 @@
 #include "file/nifti_utils.h"
 #include "header.h"
 #include "metadata/bids.h"
+#include <fmt/format.h>
 
 namespace MR::Metadata::SliceEncoding {
 
@@ -50,8 +51,9 @@ void transform_for_image_load(KeyValues &keyval, const Header &header) {
         orig_dir = Metadata::BIDS::axisid2vector(slice_encoding_it->second);
       } catch (Exception &e) {
         // clang-format off
-        WARN("Unable to conform slice encoding direction \"" + slice_encoding_it->second + "\""
-             " to image realignment for image \"" + header.name() + "\"; erasing");
+        WARN("Unable to conform slice encoding direction \"{}\""
+                         " to image realignment for image \"{}\"; erasing",
+                         slice_encoding_it->second, header.name());
         // clang-format on
         clear(keyval);
         return;
@@ -64,27 +66,29 @@ void transform_for_image_load(KeyValues &keyval, const Header &header) {
         return;
       slice_encoding_it->second = Metadata::BIDS::vector2axisid(new_dir);
       // clang-format off
-      msg = "Slice encoding direction has been modified"
-            " to conform to MRtrix3 internal header transform realignment"
-            " of image \"" + header.name() + "\"";
+      msg = fmt::format("Slice encoding direction has been modified"
+                        " to conform to MRtrix3 internal header transform realignment"
+                        " of image \"{}\"", header.name());
       // clang-format on
     } else if ((new_dir * -1).dot(orig_dir) == 1) {
       auto slice_timing = parse_floats(slice_timing_it->second);
       std::reverse(slice_timing.begin(), slice_timing.end());
       slice_timing_it->second = join(slice_timing, ",");
       // clang-format off
-      msg = "Slice timing vector reversed"
-            " to conform to MRtrix3 internal transform realignment"
-            " of image \"" + header.name() + "\""
-            " (mrinfo -property SliceTiming -ondisk to see the original)";
+      msg = fmt::format("Slice timing vector reversed"
+                        " to conform to MRtrix3 internal transform realignment"
+                        " of image \"{}\""
+                        " (mrinfo -property SliceTiming -ondisk to see the original)",
+                        header.name());
       // clang-format on
     } else {
       keyval["SliceEncodingDirection"] = Metadata::BIDS::vector2axisid(new_dir);
       // clang-format off
-      msg = "Slice encoding direction of image \"" + header.name() + "\""
-            " inferred to be \"k\""
-            " in order to preserve interpretation of existing \"SliceTiming\" field"
-            " after MRtrix3 internal transform realignment";
+      WARN("Slice encoding direction of image \"{}\""
+                       " inferred to be \"k\""
+                       " in order to preserve interpretation of existing \"SliceTiming\" field"
+                       " after MRtrix3 internal transform realignment",
+                       header.name());
       // clang-format on
     }
     INFO(msg);
@@ -150,7 +154,7 @@ std::string resolve_slice_timing(std::string_view one, std::string_view two) {
     }
     const default_type diff = std::fabs(f_two - f_one);
     if (diff > 0.00375) {
-      DEBUG("Supra-threshold difference of " + str(diff) + "s in slice times");
+      DEBUG("Supra-threshold difference of {}s in slice times", diff);
       return "variable";
     }
   }

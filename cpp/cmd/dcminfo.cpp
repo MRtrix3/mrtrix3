@@ -19,6 +19,7 @@
 #include "file/dicom/element.h"
 #include "file/dicom/quick_scan.h"
 #include "file/path.h"
+#include <fmt/std.h>
 
 #include <filesystem>
 
@@ -81,7 +82,7 @@ void run() {
     while (item.read()) {
       for (size_t n = 0; n < opt.size(); ++n)
         if (item.is(tags[n].group, tags[n].element))
-          std::cout << MR::printf("[%04X,%04X] ", tags[n].group, tags[n].element) << item.as_string() << "\n";
+          std::cout << fmt::format("[{:04X},{:04X}] ", tags[n].group, tags[n].element) << item.as_string() << "\n";
     }
 
     return;
@@ -96,8 +97,8 @@ void run() {
   if (all)
     print(File::Dicom::Element::print_header());
 
-  if (reader.read(input_path, all, csa, phoenix, true))
-    throw Exception("error reading file \"" + reader.filepath.string() + "\"");
+  if (reader.read(argument[0], all, csa, phoenix, true))
+    throw Exception("error reading file \"{}\"", reader.filepath);
 
   if (!all && !csa && !phoenix)
     std::cout << reader;

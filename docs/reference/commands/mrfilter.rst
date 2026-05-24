@@ -22,11 +22,7 @@ Usage
 Description
 -----------
 
-The available filters are: 
-
-demodulate, fft, gradient, median, smooth, normalise, zclean
-
-.
+The available filters are: demodulate, fft, gradient, median, smooth, normalise, zclean.
 
 Each filter has its own unique set of optional parameters.
 

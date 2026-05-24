@@ -40,6 +40,9 @@
 #include "ordered_thread_queue.h"
 #include "thread.h"
 
+#include <fmt/format.h>
+#include <optional>
+#include <tcb/span.hpp>
 using namespace MR;
 using namespace App;
 
@@ -78,8 +81,9 @@ void usage ()
   + Argument ("values", "the output sampled values").type_file_out();
 
   OPTIONS
-  + Option ("stat_tck", "compute some statistic from the values along each streamline;"
-                        " options are: " + MR::Enum::join<Statistic>())
+  + Option ("stat_tck", fmt::format("compute some statistic from the values along each streamline;"
+                                    " options are: {}",
+                                    MR::Enum::join<Statistic>()))
     + Argument ("statistic").type_choice<Statistic>()
 
   + Option ("nointerp", "do not use trilinear interpolation when sampling image values")
@@ -618,7 +622,7 @@ public:
 
   virtual ~ReceiverBase() {
     if (received != expected)
-      WARN("Track file reports " + str(expected) + " tracks, but contains " + str(received));
+      WARN("Track file reports {} tracks, but contains {}", expected, received);
   }
 
   bool ordered() const { return process_ordered; }

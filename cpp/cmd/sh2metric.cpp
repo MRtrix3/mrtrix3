@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <fmt/format.h>
 #include <string>
 #include <vector>
 
@@ -67,7 +68,7 @@ void usage() {
 
   ARGUMENTS
     + Argument ("SH", "the input spherical harmonics coefficients image(s)").type_image_in().allow_multiple()
-    + Argument ("metric", "the metrc to compute; one of: " + Enum::join<metrics>()).type_choice<metrics>()
+    + Argument ("metric", fmt::format("the metrc to compute; one of: {}", Enum::join<metrics>())).type_choice<metrics>()
     + Argument ("output", "the output metric image").type_image_out();
 
   OPTIONS
@@ -99,7 +100,7 @@ const DWI::Directions::Set get_directions() {
     try {
       return DWI::Directions::Set(static_cast<size_t>(opt[0][0]));
     } catch (Exception &) {
-      throw Exception("Unable to interpret user input \"" + opt[0][0] + "\" as a direction set");
+      throw Exception("Unable to interpret user input \"{}\" as a direction set", opt[0][0]);
     }
   }
   return DWI::Directions::Set(default_direction_set);
@@ -269,7 +270,7 @@ void run_power() {
   const bool spectrum = !get_options("spectrum").empty();
 
   const size_t lmax = Math::SH::LforN(static_cast<int>(SH_data.size(3)));
-  INFO("calculating spherical harmonic power up to degree " + str(lmax));
+  INFO("calculating spherical harmonic power up to degree {}", lmax);
 
   if (spectrum)
     power_header.size(3) = static_cast<ssize_t>(1 + lmax / 2);

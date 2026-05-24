@@ -14,9 +14,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "file/dicom/image.h"
+#include <fmt/format.h>
+
 #include "exception.h"
 #include "file/dicom/csa_entry.h"
+#include "file/dicom/image.h"
 #include "file/dicom/patient.h"
 #include "file/dicom/series.h"
 #include "file/dicom/study.h"
@@ -329,7 +331,7 @@ void phoenix_scalar(const KeyValues &keyval, std::string_view key, const Functor
 template <typename T> void phoenix_vector(const KeyValues &keyval, std::string_view key, std::vector<T> &data) {
   data.clear();
   for (size_t index = 0;; ++index) {
-    const auto it = keyval.find(std::string(key) + "[" + str(index) + "]");
+    const auto it = keyval.find(fmt::format("{}[{}]", key, index));
     if (it == keyval.end())
       return;
     data.push_back(to<T>(it->second));
@@ -449,10 +451,10 @@ std::ostream &operator<<(std::ostream &stream, const Frame &item) {
          << (item.sequence == UINT_MAX ? 0 : item.sequence) << " " << item.dim[0] << "x" << item.dim[1] << ", "
          << item.pixel_size[0] << "x" << item.pixel_size[1] << " x " << item.slice_thickness << " ("
          << item.slice_spacing << ") mm, z = " << item.distance
-         << (!item.index.empty() ? ", index = " + str(item.index) : std::string()) << ", [ " << item.position_vector[0]
-         << " " << item.position_vector[1] << " " << item.position_vector[2] << " ] [ " << item.orientation_x[0] << " "
-         << item.orientation_x[1] << " " << item.orientation_x[2] << " ] [ " << item.orientation_y[0] << " "
-         << item.orientation_y[1] << " " << item.orientation_y[2] << " ]";
+         << (!item.index.empty() ? fmt::format(", index = {}", item.index) : std::string()) << ", [ "
+         << item.position_vector[0] << " " << item.position_vector[1] << " " << item.position_vector[2] << " ] [ "
+         << item.orientation_x[0] << " " << item.orientation_x[1] << " " << item.orientation_x[2] << " ] [ "
+         << item.orientation_y[0] << " " << item.orientation_y[1] << " " << item.orientation_y[2] << " ]";
   if (std::isfinite(item.bvalue)) {
     stream << ", b = " << item.bvalue;
     if (item.bvalue > 0.0)
@@ -466,8 +468,8 @@ std::ostream &operator<<(std::ostream &stream, const Frame &item) {
 std::ostream &operator<<(std::ostream &stream, const Image &item) {
   stream << (!item.filepath.empty() ? item.filepath.string() : "file not set") << ":\n"
          << (!item.sequence_name.empty() ? item.sequence_name : "sequence not set") << " ["
-         << (!item.manufacturer.empty() ? item.manufacturer : std::string("unknown manufacturer")) << "] "
-         << (!item.frames.empty() ? str(item.frames.size()) + " frames with dim " + str(item.frame_dim)
+         << (!item.manufacturer.empty() ? item.manufacturer : "unknown manufacturer") << "] "
+         << (!item.frames.empty() ? fmt::format("{} frames with dim {}", item.frames.size(), item.frame_dim)
                                   : std::string());
   if (!item.frames.empty()) {
     for (size_t n = 0; n < item.frames.size(); ++n)
@@ -540,9 +542,9 @@ default_type Frame::get_slice_separation(const std::vector<Frame *> &frames, siz
   }
 
   if (max_gap > 1e-4)
-    WARN("slice gap detected (maximum gap: " + str(max_gap, 3) + "mm)");
+    WARN("slice gap detected (maximum gap: {:.3g}mm)", max_gap);
   if (max_separation - min_separation > 2e-4)
-    WARN("slice separation is not constant (from " + str(min_separation, 8) + " to " + str(max_separation, 8) + "mm)");
+    WARN("slice separation is not constant (from {:.8g} to {:.8g}mm)", min_separation, max_separation);
 
   return (sum_separation / static_cast<default_type>(nslices - 1));
 }
@@ -582,7 +584,7 @@ Frame::get_DW_scheme(const std::vector<Frame *> &frames, const size_t nslices, c
         g = T * frame.G_prs;
       }
     }
-    add_line(dw_scheme, str(g[0]) + "," + str(g[1]) + "," + str(g[2]) + "," + str(bvalue));
+    add_line(dw_scheme, fmt::format("{},{},{},{}", g[0], g[1], g[2], bvalue));
   }
 
   if (report_negative_bvalues)

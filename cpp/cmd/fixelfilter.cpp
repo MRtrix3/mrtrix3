@@ -14,6 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <fmt/format.h>
+
 #include "command.h"
 #include "enum.h"
 #include "file/path.h"
@@ -57,9 +59,8 @@ void usage() {
 
   ARGUMENTS
   + Argument ("input", "the input: either a fixel data file, or a fixel directory (see Description)").type_image_in().type_directory_in()
-  + Argument ("filter", "the filtering operation to perform;"
-                        " options are: " + MR::Enum::join<FilterType>() + ".").type_choice<FilterType>()
-  + Argument ("output", "the output: either a fixel data file, or a fixel directory (see Description)").type_image_out().type_directory_out(DirOutMode::MayExist);
+  + Argument ("filter", fmt::format("the filtering operation to perform; options are: {}.", MR::Enum::join<FilterType>())).type_choice<FilterType>()
+  + Argument ("output", "the output: either a fixel data file, or a fixel directory (see Description)").type_image_out().type_directory_out(DirOutMode::MustNotExist);
 
   OPTIONS
   + Option ("matrix", "provide a fixel-fixel connectivity matrix"
@@ -72,19 +73,19 @@ void usage() {
   + Fixel::Filter::cfe_options
 
   + OptionGroup ("Options specific to the \"connect\" filter")
-  + Option ("threshold_value", "specify a threshold for the input fixel data file values"
-                               " (default = " + str(Fixel::Filter::Connect::default_value_threshold) + ")")
+  + Option ("threshold_value", fmt::format("specify a threshold for the input fixel data file values"
+                                           " (default = {})", Fixel::Filter::Connect::default_value_threshold))
     + Argument ("value").type_float ()
-  + Option ("threshold_connectivity", "specify a fixel-fixel connectivity threshold for connected-component analysis"
-                                      " (default = " + str(Fixel::Filter::Connect::default_connectivity_threshold, 2) + ")")
+  + Option ("threshold_connectivity", fmt::format("specify a fixel-fixel connectivity threshold for connected-component analysis"
+                                                  " (default = {:.2g})", Fixel::Filter::Connect::default_connectivity_threshold))
     + Argument ("value").type_float (0.0)
 
   + OptionGroup ("Options specific to the \"smooth\" filter")
-  + Option ("fwhm", "the full-width half-maximum (FWHM) of the spatial component of the smoothing filter"
-                    " (default = " + str(Fixel::Filter::Smooth::default_fwhm) + "mm)")
+  + Option ("fwhm", fmt::format("the full-width half-maximum (FWHM) of the spatial component of the smoothing filter"
+                                " (default = {}mm)", Fixel::Filter::Smooth::default_fwhm))
     + Argument ("value").type_float (0.0)
-  + Option ("minweight", "apply a minimum threshold to smoothing weights"
-                         " (default = " + str(Fixel::Filter::Smooth::default_threshold, 2) + ")")
+  + Option ("minweight", fmt::format("apply a minimum threshold to smoothing weights"
+                                     " (default = {:.2g})", Fixel::Filter::Smooth::default_threshold))
     + Argument ("value").type_float (0.0);
 
 }
@@ -119,7 +120,7 @@ void run() {
       multiple_files = Fixel::find_data_headers(input_path, index_header);
       Fixel::debug_validate_directory(input_path);
       if (multiple_files.empty())
-        throw Exception("No fixel data files found in directory \"" + input_path.string() + "\"");
+        throw Exception("No fixel data files found in directory \"{}\"", argument[0]);
       output_header = Header(multiple_files[0]);
     } catch (...) {
       try {
@@ -128,14 +129,15 @@ void run() {
         Fixel::check_data_file(single_file);
         output_header = Header(single_file);
       } catch (...) {
-        throw Exception("Could not interpret first argument \"" + input_path.string() + "\"" + //
-                        " as either a fixel data file, or a fixel directory");                 //
+        throw Exception("Could not interpret first argument \"{}\" as either a fixel data file, or a fixel directory",
+                        argument[0]);
       }
     }
 
     if (single_file.valid() && !Fixel::fixels_match(index_header, single_file))
-      throw Exception("File \"" + input_path.string() + "\" is not a valid fixel data file" + //
-                      " (does not match corresponding index image)");                         //
+      throw Exception("File \"{}\" is not a valid fixel data file{}",
+                      argument[0],                                    //
+                      " (does not match corresponding index image)"); //
 
     Image<index_type> index_image = index_header.get_image<index_type>();
     if (multiple_files.empty())
@@ -155,18 +157,22 @@ void run() {
       if (mask.size(1) != 1)
         throw Exception("Fixel mask must be a 1D fixel data file");
       if (static_cast<size_t>(mask.size(0)) != nfixels)
-        throw Exception("Number of fixels in mask image (" + str(mask.size(0)) + ")" + //
-                        " does not match number of fixels in index image" +            //
-                        " (" + str(nfixels) + ")");                                    //
+        throw Exception("Number of fixels in mask image ({}){}{}{})",
+                        mask.size(0),                                      //
+                        " does not match number of fixels in index image", //
+                        " (",
+                        nfixels); //
     }
 
     opt = get_options("matrix");
     Fixel::Matrix::Reader matrix(opt[0][0], mask);
 
     if (nfixels != matrix.size())
-      throw Exception("Number of fixels in input (" + str(nfixels) + ")" +        //
-                      " does not match number of fixels in connectivity matrix" + //
-                      " (" + str(matrix.size()) + ")");                           //
+      throw Exception("Number of fixels in input ({}){}{}{})",
+                      nfixels,                                                   //
+                      " does not match number of fixels in connectivity matrix", //
+                      " (",
+                      matrix.size()); //
 
     switch (filter_type) {
     case FilterType::CFE: {
@@ -207,19 +213,21 @@ void run() {
 
   for (const auto &i : option_list) {
     if (!get_options(i).empty())
-      WARN("Option -" + i + " ignored:" + " not relevant to " + MR::Enum::lowercase_name(filter_type) + " filter");
+      WARN("Option -{} ignored: not relevant to {} filter", i, MR::Enum::lowercase_name(filter_type));
   }
 
   if (single_file.valid()) {
-    auto output_image = Image<float>::create(output_path, single_file);
-    CONSOLE(std::string("Applying \"") + MR::Enum::lowercase_name(filter_type) + "\" operation to fixel data file \"" +
-            single_file.path().string() + "\"");
+    auto output_image = Image<float>::create(argument[2], single_file);
+    CONSOLE("Applying \"{}\" operation to fixel data file \"{}\"",
+            MR::Enum::lowercase_name(filter_type),
+            single_file.name());
     (*filter)(single_file, output_image);
   } else {
-    Fixel::copy_index_and_directions_file(input_path, output_path);
-    ProgressBar progress(std::string("Applying \"") + MR::Enum::lowercase_name(filter_type) + "\" operation" + //
-                             " to " + str(multiple_files.size()) + " fixel data files",                        //
-                         multiple_files.size());                                                               //
+    Fixel::copy_index_and_directions_file(argument[0], argument[2]);
+    ProgressBar progress(fmt::format("Applying \"{}\" operation to {} fixel data files",
+                                     MR::Enum::lowercase_name(filter_type),
+                                     multiple_files.size()),
+                         multiple_files.size());
     for (auto &H : multiple_files) {
       auto input_image = H.get_image<float>();
       auto output_image = Image<float>::create(output_path / H.path().filename(), H);

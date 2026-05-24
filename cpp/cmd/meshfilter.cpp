@@ -18,6 +18,7 @@
 #include "enum.h"
 #include "progressbar.h"
 #include "thread_queue.h"
+#include <fmt/format.h>
 
 #include "surface/filter/base.h"
 #include "surface/filter/smooth.h"
@@ -36,11 +37,11 @@ const std::vector<std::string> filters = MR::Enum::lower_case_names<FilterType>(
 
 // clang-format off
 const OptionGroup smooth_option = OptionGroup ("Options for mesh smoothing filter")
-  + Option ("smooth_spatial", "spatial extent of smoothing"
-                              " (default: " + str(Filter::default_smoothing_spatial_factor, 2) + "mm)")
+  + Option ("smooth_spatial", fmt::format("spatial extent of smoothing"
+                                          " (default: {:.2g}mm)", Filter::default_smoothing_spatial_factor))
     + Argument ("value").type_float (0.0)
-  + Option ("smooth_influence", "influence factor for smoothing"
-                                " (default: " + str(Filter::default_smoothing_influence_factor, 2) + ")")
+  + Option ("smooth_influence", fmt::format("influence factor for smoothing"
+                                            " (default: {:.2g})", Filter::default_smoothing_influence_factor))
     + Argument ("value").type_float (0.0);
 
 
@@ -65,8 +66,7 @@ void usage() {
 
   ARGUMENTS
   + Argument ("input",  "the input mesh file").type_file_in()
-  + Argument ("filter", "the filter to apply;"
-                        " options are: " + MR::Enum::join<FilterType>() + ".").type_choice<FilterType>()
+  + Argument ("filter", fmt::format("the filter to apply; options are: {}.", MR::Enum::join<FilterType>())).type_choice<FilterType>()
   + Argument ("output", "the output mesh file").type_file_out();
 
   OPTIONS

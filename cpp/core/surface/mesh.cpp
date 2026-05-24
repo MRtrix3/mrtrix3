@@ -25,6 +25,7 @@
 
 #include "surface/freesurfer.h"
 #include "surface/utils.h"
+#include <fmt/std.h>
 
 namespace MR::Surface {
 
@@ -125,7 +126,7 @@ void Mesh::load_vtk(const std::filesystem::path &path) {
   line = line.substr(8);
   if (line == "STRUCTURED_POINTS" || line == "STRUCTURED_GRID" || line == "UNSTRUCTURED_GRID" ||
       line == "RECTILINEAR_GRID" || line == "FIELD")
-    throw Exception("Unsupported dataset type (" + line + ") in .vtk file");
+    throw Exception("Unsupported dataset type ({}) in .vtk file", line);
 
   // Won't know endianness of file when the vertex positions are read,
   //   only when the polygon information is encountered;
@@ -161,7 +162,7 @@ void Mesh::load_vtk(const std::filesystem::path &path) {
         if (line.substr(0, 6) == "double")
           is_double = true;
         else if (line.substr(0, 5) != "float")
-          throw Exception("Error in reading binary .vtk file: Unsupported datatype (\"" + line + "\"");
+          throw Exception("Error in reading binary .vtk file: Unsupported datatype (\"{}\")", line);
 
         vertices.reserve(num_vertices);
         if (!is_double)
@@ -208,7 +209,7 @@ void Mesh::load_vtk(const std::filesystem::path &path) {
             }
           }
           if (vertex_count != 3 && vertex_count != 4)
-            throw Exception("Could not parse file \"" + path.string() + "\": only support 3- and 4-vertex polygons");
+            throw Exception("Could not parse file \"{}\": only support 3- and 4-vertex polygons", path);
 
           std::vector<unsigned int> t(vertex_count, 0);
 
@@ -229,10 +230,10 @@ void Mesh::load_vtk(const std::filesystem::path &path) {
           element_count += 1 + vertex_count;
         }
         if (polygon_count != num_polygons || element_count != num_elements)
-          throw Exception("Incorrectly read polygon data from .vtk file \"" + path.string() + "\"");
+          throw Exception("Incorrectly read polygon data from .vtk file \"{}\"", path);
 
       } else {
-        throw Exception("Unsupported data \"" + line + "\" in .vtk file \"" + path.string() + "\"");
+        throw Exception("Unsupported data \"{}\" in .vtk file \"{}\"", line, path);
       }
     }
   }
@@ -240,20 +241,19 @@ void Mesh::load_vtk(const std::filesystem::path &path) {
   if (!is_ascii) {
 #if MRTRIX_IS_BIG_ENDIAN
     if (change_endianness) {
-      WARN("File \"" + path.string() +
-           "\" is little-endian, so is not format-compliant (may have been generated using an older MRtrix3 version); "
-           "imported contents will be converted to system big-endian");
+      WARN("File \"{}\" is little-endian, so is not format-compliant (may have been generated using an "
+           "older MRtrix3 version); imported contents will be converted to system big-endian",
+           path);
     } else {
-      INFO("File \"" + path.string() +
-           "\" is big-endian; no format conversion required as executing on big-endian system");
+      INFO("File \"{}\" is big-endian; no format conversion required as executing on big-endian system", path);
     }
 #else
     if (change_endianness) {
-      INFO("Converting imported contents of file \"" + path.string() + "\" to native little-endian");
+      INFO("Converting imported contents of file \"{}\" to native little-endian", path);
     } else {
-      WARN("File \"" + path.string() +
-           "\" already in native little-endian format, so no endianness conversion required; "
-           "but file is therefore not format-compliant (may have been generated using an older MRtrix3 version)");
+      WARN("File \"{}\" already in native little-endian format, so no endianness conversion required; but "
+           "file is therefore not format-compliant (may have been generated using an older MRtrix3 version)",
+           path);
     }
 #endif
   }
@@ -286,7 +286,7 @@ void Mesh::load_vtk(const std::filesystem::path &path) {
   try {
     verify_data();
   } catch (Exception &e) {
-    throw Exception(e, "Error verifying surface data from VTK file \"" + path.string() + "\"");
+    throw Exception(e, "Error verifying surface data from VTK file \"{}\"", path);
   }
 }
 
@@ -336,10 +336,12 @@ void Mesh::load_stl(const std::filesystem::path &path) {
         warn_nonstandard_normals = true;
     }
     if (triangles.size() != count)
-      WARN("Number of triangles indicated in file " + path.string() + " (" + str(count) + ")" + //
-           " does not match number actually read (" + str(triangles.size()) + ")");             //
+      WARN("Number of triangles indicated in file {} ({}) does not match number actually read ({})",
+           path.filename(),
+           count,
+           triangles.size());
     if (warn_attribute)
-      WARN("Some facets in file " + path.string() + " have extended attributes; ignoring");
+      WARN("Some facets in file {} have extended attributes; ignoring", path.filename());
 
   } else {
 
@@ -392,10 +394,10 @@ void Mesh::load_stl(const std::filesystem::path &path) {
             throw Exception("facet ending without start");
           inside_facet = false;
           if (vertex_index != 3)
-            throw Exception("facet ended with " + str(vertex_index) + " vertices");
-          triangles.push_back(std::vector<uint32_t>{static_cast<vertex_index_type>(vertices.size() - 3),
-                                                    static_cast<vertex_index_type>(vertices.size() - 2),
-                                                    static_cast<vertex_index_type>(vertices.size() - 1)});
+            throw Exception("facet ended with {} vertices", vertex_index);
+          triangles.push_back(std::vector<vertex_index_type>{static_cast<vertex_index_type>(vertices.size() - 3),
+                                                             static_cast<vertex_index_type>(vertices.size() - 2),
+                                                             static_cast<vertex_index_type>(vertices.size() - 1)});
           vertex_index = 0;
           const Eigen::Vector3d computed_normal = Surface::normal(*this, triangles.back());
           if (computed_normal.dot(normal) < 0.0)
@@ -409,7 +411,7 @@ void Mesh::load_stl(const std::filesystem::path &path) {
         } else if (line.substr(0, 5) == "solid") {
           throw Exception("multiple solids in file");
         } else {
-          throw Exception("unknown key (" + line + ")");
+          throw Exception("unknown key ({})", line);
         }
       }
       if (inside_solid)
@@ -421,19 +423,19 @@ void Mesh::load_stl(const std::filesystem::path &path) {
       if (vertex_index)
         throw Exception("failed to complete triangle");
     } catch (Exception &e) {
-      throw Exception("Error parsing STL file " + path.string() + ": " + e[0]);
+      throw Exception("Error parsing STL file {}: {}", path.filename(), e[0]);
     }
   }
 
   if (warn_right_hand_rule)
-    WARN("File " + path.string() + " does not strictly conform to the right-hand rule");
+    WARN("File {} does not strictly conform to the right-hand rule", path.filename());
   if (warn_nonstandard_normals)
-    WARN("File " + path.string() + " contains non-standard normals, which will be ignored");
+    WARN("File {} contains non-standard normals, which will be ignored", path.filename());
 
   try {
     verify_data();
   } catch (Exception &e) {
-    throw Exception(e, "Error verifying surface data from STL file \"" + path.string() + "\"");
+    throw Exception(e, "Error verifying surface data from STL file \"{}\"", path);
   }
 }
 
@@ -489,8 +491,8 @@ void Mesh::load_obj(const std::filesystem::path &path) {
         }
       } while (!data.empty());
       if (elements.size() != 3 && elements.size() != 4)
-        throw Exception("Malformed face information in input OBJ file (face with neither 3 nor 4 vertices; line " +
-                        str(counter) + ")");
+        throw Exception("Malformed face information in input OBJ file (face with neither 3 nor 4 vertices; line {})",
+                        counter);
       std::vector<FaceData> face_data;
       size_t values_per_element = 0;
       for (std::vector<std::string>::iterator i = elements.begin(); i != elements.end(); ++i) {
@@ -519,8 +521,8 @@ void Mesh::load_obj(const std::filesystem::path &path) {
           values_per_element = this_values_count;
         else if (values_per_element != this_values_count)
           throw Exception(
-              "Malformed face information in input OBJ file (inconsistent vertex / texture / normal detail); line " +
-              str(counter));
+              "Malformed face information in input OBJ file (inconsistent vertex / texture / normal detail); line {}",
+              counter);
         face_data.push_back(temp);
       }
       switch (face_data.size()) {
@@ -531,7 +533,7 @@ void Mesh::load_obj(const std::filesystem::path &path) {
         quads.emplace_back(Quad({face_data[0].vertex, face_data[1].vertex, face_data[2].vertex, face_data[3].vertex}));
         break;
       default:
-        throw Exception("Invalid number of vertices (" + str(face_data.size()) + ") for a face; line " + str(counter));
+        throw Exception("Invalid number of vertices ({}) for a face; line {}", face_data.size(), counter);
       }
       // The OBJ format allows defining different vertex-based normals for different faces that reference the same
       // vertex This isn't consistent with the internal storage mechanism used in the Mesh class, and isn't really a
@@ -558,7 +560,7 @@ void Mesh::load_obj(const std::filesystem::path &path) {
   try {
     verify_data();
   } catch (Exception &e) {
-    throw Exception(e, "Error verifying surface data from OBJ file \"" + path.string() + "\"");
+    throw Exception(e, "Error verifying surface data from OBJ file \"{}\"", path);
   }
 }
 
@@ -581,32 +583,35 @@ void Mesh::load_fs(const std::filesystem::path &path) {
     auto load_triangles = [&]() {
       const int32_t num_vertices = FreeSurfer::get_BE<int32_t>(in);
       if (num_vertices <= 0)
-        throw Exception("Error reading FreeSurfer file: Non-positive vertex count (" + str(num_vertices) + ")");
+        throw Exception("Error reading FreeSurfer file: Non-positive vertex count ({})", num_vertices);
       const int32_t num_polygons = FreeSurfer::get_BE<int32_t>(in);
       if (num_polygons <= 0)
-        throw Exception("Error reading FreeSurfer file: Non-positive polygon count (" + str(num_polygons) + ")");
+        throw Exception("Error reading FreeSurfer file: Non-positive polygon count ({})", num_polygons);
       if (num_polygons > 3 * num_vertices)
-        throw Exception("Error reading FreeSurfer file: More polygons (" + str(num_polygons) +
-                        ") than triple the number of vertices (" + str(num_vertices) + ")");
+        throw Exception("Error reading FreeSurfer file: More polygons ({}) than triple the number of vertices ({})",
+                        num_polygons,
+                        num_vertices);
       if (num_polygons < num_vertices / 3)
-        throw Exception("Error reading FreeSurfer file: Not enough polygons (" + str(num_polygons) +
-                        ") to use all vertices (" + str(num_vertices) + ")");
+        throw Exception("Error reading FreeSurfer file: Not enough polygons ({}) to use all vertices ({})",
+                        num_polygons,
+                        num_vertices);
       try {
         vertices.reserve(num_vertices);
         triangles.reserve(num_polygons);
       } catch (std::bad_alloc &) {
         vertices.shrink_to_fit();
         triangles.shrink_to_fit();
-        throw Exception("Error reading FreeSurfer file: Memory allocation (" + str(num_vertices) + " vertices, " +
-                        str(num_polygons) + " polygons = erroneous?)");
+        throw Exception("Error reading FreeSurfer file: Memory allocation ({} vertices, {} polygons = erroneous?)",
+                        num_vertices,
+                        num_polygons);
       }
       for (int32_t i = 0; i != num_vertices; ++i) {
         std::array<float, 3> temp;
         for (size_t axis = 0; axis != 3; ++axis)
           temp[axis] = FreeSurfer::get_BE<float>(in);
         if (!in.good())
-          throw Exception("Error reading FreeSurfer file: EOF reached after " + str(vertices.size()) + " of " +
-                          str(num_vertices) + " vertices");
+          throw Exception(
+              "Error reading FreeSurfer file: EOF reached after {} of {} vertices", vertices.size(), num_vertices);
         vertices.push_back(Vertex(temp[0], temp[1], temp[2]));
       }
       for (int32_t i = 0; i != num_polygons; ++i) {
@@ -614,8 +619,8 @@ void Mesh::load_fs(const std::filesystem::path &path) {
         for (size_t v = 0; v != 3; ++v)
           temp[v] = FreeSurfer::get_BE<int32_t>(in);
         if (!in.good())
-          throw Exception("Error reading FreeSurfer file: EOF reached after " + str(triangles.size()) + " of " +
-                          str(num_polygons) + " triangles");
+          throw Exception(
+              "Error reading FreeSurfer file: EOF reached after {} of {} triangles", triangles.size(), num_polygons);
         triangles.push_back(Triangle(temp));
       }
     };
@@ -632,7 +637,7 @@ void Mesh::load_fs(const std::filesystem::path &path) {
       try {
         load_triangles();
       } catch (Exception &e_twocomments) {
-        Exception e("Unable to read FreeSurfer file \"" + path.string() + "\"");
+        Exception e(fmt::format("Unable to read FreeSurfer file \"{}\"", path));
         e.push_back("Error if file header is one-line comment:");
         e.push_back(e_onecomment);
         e.push_back("Error if file header is two-line comment:");
@@ -661,13 +666,13 @@ void Mesh::load_fs(const std::filesystem::path &path) {
     }
 
   } else {
-    throw Exception("File " + path.string() + " is not a FreeSurfer surface file");
+    throw Exception("File {} is not a FreeSurfer surface file", path.filename());
   }
 
   try {
     verify_data();
   } catch (Exception &e) {
-    throw Exception(e, "Error verifying surface data from FreeSurfer file \"" + path.string() + "\"");
+    throw Exception(e, "Error verifying surface data from FreeSurfer file \"{}\"", path);
   }
 }
 
@@ -686,7 +691,7 @@ void Mesh::save_vtk(const std::filesystem::path &path, const bool binary) const 
 
     out.close();
     out.open(path, std::ios_base::out | std::ios_base::app | std::ios_base::binary);
-    const std::string points_header("POINTS " + str(vertices.size()) + " float\n");
+    const std::string points_header(fmt::format("POINTS {} float\n", vertices.size()));
     out.write(points_header.c_str(), points_header.size());
     std::array<float, 3> temp_vertex;
     for (const auto &v : vertices) {
@@ -696,8 +701,8 @@ void Mesh::save_vtk(const std::filesystem::path &path, const bool binary) const 
       out.write(reinterpret_cast<const char *>(&temp_vertex), 3 * sizeof(float));
       ++progress;
     }
-    const std::string polygons_header("POLYGONS " + str(triangles.size() + quads.size()) + " " +
-                                      str(4 * triangles.size() + 5 * quads.size()) + "\n");
+    const std::string polygons_header(
+        fmt::format("POLYGONS {} {}\n", triangles.size() + quads.size(), 4 * triangles.size() + 5 * quads.size()));
     out.write(polygons_header.c_str(), polygons_header.size());
     const uint32_t num_points_triangle = ByteOrder::BE(uint32_t(3));
     std::array<uint32_t, 3> temp_triangle;
@@ -723,8 +728,7 @@ void Mesh::save_vtk(const std::filesystem::path &path, const bool binary) const 
       out << str<float>(v[0]) << " " << str<float>(v[1]) << " " << str<float>(v[2]) << "\n";
       ++progress;
     }
-    out << "POLYGONS " + str(triangles.size() + quads.size()) + " " + str(4 * triangles.size() + 5 * quads.size()) +
-               "\n";
+    out << fmt::format("POLYGONS {} {}\n", triangles.size() + quads.size(), 4 * triangles.size() + 5 * quads.size());
     for (const auto &t : triangles) {
       out << "3 " << str(t[0]) << " " << str(t[1]) << " " << str(t[2]) << "\n";
       ++progress;
@@ -745,7 +749,7 @@ void Mesh::save_stl(const std::filesystem::path &path, const bool binary) const 
   if (binary) {
 
     File::OFStream out(path, std::ios_base::binary | std::ios_base::out);
-    const std::string string = std::string("mrtrix_version: ") + App::mrtrix_version;
+    const std::string string = "mrtrix_version: " + App::mrtrix_version;
     std::string header(80, '\0');
     header.substr(0, string.size()) = string;
     out.write(&header[0], 80);

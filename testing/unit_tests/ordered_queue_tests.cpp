@@ -15,6 +15,7 @@
  */
 
 #include "gtest/gtest.h"
+#include <fmt/format.h>
 
 #include "exception.h"
 #include "ordered_thread_queue.h"
@@ -47,7 +48,7 @@ struct SourceFunctor {
   SourceFunctor(SourceFunctor &&) = default;
   SourceFunctor &operator=(SourceFunctor &&) = default;
 
-  ~SourceFunctor() { DEBUG("SourceFunctor: Sent " + MR::str(count) + " items, last value: " + MR::str(value) + "."); }
+  ~SourceFunctor() { DEBUG(fmt::format("SourceFunctor: Sent {} items, last value: {}.", count, value)); }
 
   // Operator called by the queue to produce items.
   // Returns false when no more items can be produced.
@@ -83,8 +84,8 @@ struct SinkFunctor {
   SinkFunctor &operator=(SinkFunctor &&) = default;
 
   ~SinkFunctor() {
-    DEBUG("SinkFunctor: Received " + MR::str(items_received_count) + " items, " + MR::str(out_of_order_items_count) +
-          " out of order.");
+    DEBUG(fmt::format(
+        "SinkFunctor: Received {} items, {} out of order.", items_received_count, out_of_order_items_count));
   }
 
   bool operator()(const Item &item) {
@@ -115,7 +116,7 @@ protected:
       if (enforce_order == OrderEnforcement::Enforce) {
         GTEST_FAIL() << "Order mismatch (enforced). " << sink.out_of_order_items_count << " items out of order.";
       } else {
-        DEBUG("Order mismatch (not enforced). " + MR::str(sink.out_of_order_items_count) + " items out of order.");
+        DEBUG(fmt::format("Order mismatch (not enforced). {} items out of order.", sink.out_of_order_items_count));
       }
     }
 

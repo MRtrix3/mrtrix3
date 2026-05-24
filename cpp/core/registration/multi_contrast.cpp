@@ -15,6 +15,7 @@
  */
 
 #include "registration/multi_contrast.h"
+#include <fmt/format.h>
 
 namespace MR::Registration {
 
@@ -87,8 +88,7 @@ void preload_data(std::vector<Header> &input,
         size[3] = mc_params[idx].nvols;
 
       auto image_in = input[idx].get_image<default_type>();
-      INFO(str("index " + str(mc_params[idx].start)) + ": " + str(mc_params[idx].nvols) + " volumes from " +
-           image_in.name());
+      INFO("index {}: {} volumes from {}", mc_params[idx].start, mc_params[idx].nvols, image_in.name());
       if (ndim == 4) {
         Adapter::Subset<Image<default_type>> subset(image_in, from, size);
         auto loop = ThreadedLoop(subset, 0, 3);

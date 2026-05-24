@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <fmt/format.h>
 #include <string>
 
 #include "mrview/qthelpers.h"
@@ -252,7 +253,7 @@ ROI::~ROI() {
       if (QMessageBox::question(
               &window(),
               tr("ROI not saved"),
-              qstr("Image " + roi->get_filepath().string() + " has been modified. Do you want to save it?"),
+              qstr(fmt::format("Image {} has been modified. Do you want to save it?", roi->get_filepath())),
               QMessageBox::Yes | QMessageBox::No) == QMessageBox::Yes)
         save(roi);
     }
@@ -368,7 +369,7 @@ void ROI::close_slot() {
     size_t ret = QMessageBox::warning(
         this,
         tr("ROI not saved"),
-        qstr("ROI " + roi->get_filepath().string() + " has been modified. Do you want to save it?"),
+        qstr(fmt::format("ROI {} has been modified. Do you want to save it?", roi->get_filepath())),
         QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel,
         QMessageBox::Save);
     if (ret == QMessageBox::Cancel)

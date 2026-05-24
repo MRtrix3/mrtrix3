@@ -26,6 +26,7 @@
 #include "header.h"
 #include "image.h"
 #include "mrtrix.h"
+#include <fmt/format.h>
 
 namespace MR::Registration::Warp {
 
@@ -35,14 +36,11 @@ WarpFormat validate_header(const Header &H) {
   // Check 1: the image must be of real floating-point type.
   // ---------------------------------------------------------------
   if (!H.datatype().is_floating_point())
-    throw Exception("Warp image \"" + H.name() + "\":" +          //
-                    " expected a floating-point data type" +      //
-                    " (got " + H.datatype().description() + ")"); //
+    throw Exception(
+        "Warp image \"{}\": expected a floating-point data type (got {})", H.name(), H.datatype().description());
 
   if (H.datatype().is_complex())
-    throw Exception("Warp image \"" + H.name() + "\":" +          //
-                    " expected a real data type" +                //
-                    " (got " + H.datatype().description() + ")"); //
+    throw Exception("Warp image \"{}\": expected a real data type (got {})", H.name(), H.datatype().description());
 
   // ---------------------------------------------------------------
   // Check 2: structural dimensions.
@@ -52,38 +50,39 @@ WarpFormat validate_header(const Header &H) {
   // ---------------------------------------------------------------
   if (H.ndim() == 4) {
     if (H.size(3) != 3)
-      throw Exception("Warp image \"" + H.name() + "\":" +                     //
-                      " a 4D warp image (displacement or deformation field)" + //
-                      " must have exactly 3 volumes in the 4th dimension" +    //
-                      " (found " + str(H.size(3)) + ")");                      //
+      throw Exception("Warp image \"{}\": a 4D warp image (displacement or deformation field) must have "
+                      "exactly 3 volumes in the 4th dimension (found {})",
+                      H.name(),
+                      H.size(3));
     return WarpFormat::Simple;
   }
   if (H.ndim() == 5) {
     if (H.size(3) != 3)
-      throw Exception("Warp image \"" + H.name() + "\":" +                            //
-                      " a 5D full warp image must have exactly 3 volumes" +           //
-                      " in the 4th dimension (x/y/z components of each warp field)" + //
-                      " (found " + str(H.size(3)) + ")");                             //
+      throw Exception("Warp image \"{}\": a 5D full warp image must have exactly 3 volumes in the 4th "
+                      "dimension (x/y/z components of each warp field) (found {})",
+                      H.name(),
+                      H.size(3));
     if (H.size(4) != 4)
-      throw Exception("Warp image \"" + H.name() + "\":" +                        //
-                      " a 5D full warp image must have exactly 4 volume groups" + //
-                      " in the 5th dimension (found " + str(H.size(4)) + ")");    //
+      throw Exception(
+          "Warp image \"{}\": a 5D full warp image must have exactly 4 volume groups in the 5th dimension (found {})",
+          H.name(),
+          H.size(4));
     // ---------------------------------------------------------------
     // Check 3: for full warp images, the header must contain the
     // "linear1" and "linear2" linear transform keys.
     // ---------------------------------------------------------------
     if (H.keyval().find("linear1") == H.keyval().end() || //
         H.keyval().find("linear2") == H.keyval().end())
-      throw Exception("Warp image \"" + H.name() + "\":" +                                   //
-                      " full warp image header must have both \"linear1\" and \"linear2\"" + //
-                      " linear transform fields in the associated metadata");                //
+      throw Exception("Warp image \"{}\": full warp image header must have both \"linear1\" and "
+                      "\"linear2\" linear transform fields in the associated metadata",
+                      H.name());
 
     return WarpFormat::Full;
   }
-  throw Exception("Warp image \"" + H.name() + "\":" +                         //
-                  " expected a 4D image (displacement or deformation field)" + //
-                  " or a 5D image (full warp field)" +                         //
-                  " (found " + str(H.ndim()) + " dimensions)");                //
+  throw Exception("Warp image \"{}\": expected a 4D image (displacement or deformation field) or a 5D "
+                  "image (full warp field) (found {} dimensions)",
+                  H.name(),
+                  H.ndim());
 }
 
 // Enable accumulation of counts of NaN fill in image data
@@ -196,28 +195,30 @@ template <typename ValueType> WarpValidation validate_image(Image<ValueType> ima
         auto second_fill = sort_fills.begin();
         std::advance(second_fill, 1);
         if (sort_fills.begin()->first / second_fill->first < minratio_firstfill_to_secondfill)
-          throw Exception("Warp image \"" + image.name() + "\":" +                                 //
-                          " Unable to unambiguously determine fill value" +                        //
-                          " due to presence of different voxels with different constant values;" + //
-                          " a single fill convention must be used throughout");                    //
+          throw Exception("Warp image \"{}\": Unable to unambiguously determine fill value"
+                          " due to presence of different voxels with different constant values;"
+                          " a single fill convention must be used throughout",
+                          image.name());
       } else {
-        DEBUG("Warp image \"" + image.name() + "\": " +                //
-              "Fill value of " + str(*result.fill_value) + " chosen" + //
-              " despite detection of multiple potential fill values"); //
+        DEBUG("Warp image \"{}\": Fill value of {} chosen despite detection of multiple potential fill values",
+              image.name(),
+              *result.fill_value);
       }
     } else {
-      DEBUG("Warp image \"" + image.name() + "\":" +                               //
-            " No explicit fill value chosen" +                                     //
-            " due to too few voxels (" + str(sort_fills.begin()->first) + ")" +    //
-            "containing candidate fill value " + str(sort_fills.begin()->second)); //
+      DEBUG("Warp image \"{}\": No explicit fill value chosen due to too few voxels"
+            " ({} containing candidate fill value {})",
+            image.name(),
+            sort_fills.begin()->first,
+            sort_fills.begin()->second);
     }
   }
 
   if (finitemix_count > 0)
-    throw Exception("Warp image \"" + image.name() + "\": " +                                           //
-                    str(finitemix_count) + (finitemix_count > 1 ? " peaks contain" : "peak contains") + //
-                    " a mix of finite and non-finite values; " +                                        //
-                    " a warp triplet must be either all-finite, or an all-nonfinite fill");             //
+    throw Exception("Warp image \"{}\": {}{} a mix of finite and non-finite values;"       //
+                    " a warp triplet must be either all-finite, or an all-nonfinite fill", //
+                    image.name(),                                                          //
+                    finitemix_count,                                                       //
+                    (finitemix_count > 1 ? " voxels contain" : "voxel contains"));         //
 
   return result;
 }
@@ -231,11 +232,12 @@ template <typename ValueType> void debug_validate_image(Image<ValueType> image) 
   try {
     const WarpValidation v = validate_image(image);
     const std::string fmt = v.format == WarpFormat::Simple ? "simple (displacement or deformation field)" : "full warp";
-    DEBUG("Warp image \"" + image.name() + "\": " + fmt + " format");
-    DEBUG("Warp image \"" + image.name() + "\": " +                                                         //
-          (v.fill_value.has_value() ? "fill value is " + str(*v.fill_value) : "no fill value determined")); //
+    DEBUG("Warp image \"{}\": {} format", image.name(), fmt);
+    DEBUG("Warp image \"{}\": {}",                                                                                   //
+          image.name(),                                                                                              //
+          (v.fill_value.has_value() ? fmt::format("fill value is {}", *v.fill_value) : "no fill value determined")); //
   } catch (const Exception &e) {
-    throw Exception(e, "Warp image \"" + image.name() + "\" validation failed");
+    throw Exception(e, "Warp image \"{}\" validation failed", image.name());
   }
 }
 template void debug_validate_image<float>(Image<float>);

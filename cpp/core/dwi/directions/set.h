@@ -18,6 +18,7 @@
 
 #include <cstdint>
 #include <filesystem>
+#include <fmt/format.h>
 
 #include "dwi/directions/directions.h"
 #include "dwi/directions/predefined.h"
@@ -36,8 +37,8 @@ public:
     auto matrix = File::Matrix::load_matrix(path);
 
     if (matrix.cols() != 2 && matrix.cols() != 3)
-      throw Exception("Text file \"" + path.string() + "\" does not contain directions" + //
-                      " as either azimuth-elevation pairs or XYZ triplets");
+      throw Exception(
+          "Text file \"{}\" does not contain directions as either azimuth-inclination pairs or XYZ triplets", path);
 
     initialise(matrix);
   }

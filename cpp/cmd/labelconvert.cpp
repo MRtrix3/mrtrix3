@@ -29,11 +29,11 @@
 #include "connectome/lut.h"
 #include "connectome/validate.h"
 
+#include <filesystem>
+#include <fmt/std.h>
 #include <string>
 
-#include <filesystem>
-
-#define SPINE_NODE_NAME std::string("Spinal_column")
+constexpr std::string_view SPINE_NODE_NAME = "Spinal_column";
 
 using namespace MR;
 using namespace App;
@@ -108,7 +108,7 @@ void run() {
 
   // Modify the header for the output file
   H.datatype() = DataType::from<node_t>();
-  add_line(H.keyval()["comments"], "LUT: " + output_lut_path.filename().string());
+  add_line(H.keyval()["comments"], fmt::format("LUT: {}", std::filesystem::path(argument[2].as_text()).filename()));
 
   // Create the output file
   auto out = Image<node_t>::create(output_image_path, H);
@@ -143,9 +143,9 @@ void run() {
   if (!opt.empty()) {
 
     if (duplicates)
-      throw Exception("Cannot add spine node: \"" + SPINE_NODE_NAME + "\" appears multiple times in output LUT");
+      throw Exception("Cannot add spine node: \"{}\" appears multiple times in output LUT", SPINE_NODE_NAME);
     if (!spine_index)
-      throw Exception("Cannot add spine node: \"" + SPINE_NODE_NAME + "\" not present in output LUT");
+      throw Exception("Cannot add spine node: \"{}\" not present in output LUT", SPINE_NODE_NAME);
 
     auto in_spine = Image<bool>::open(opt[0][0]);
     if (dimensions_match(in_spine, out)) {
@@ -172,7 +172,7 @@ void run() {
     }
 
   } else if (spine_index) {
-    WARN("Config file includes \"" + SPINE_NODE_NAME +
-         "\" node, but user has not provided the segmentation using -spine option");
+    WARN("Config file includes \"{}\" node, but user has not provided the segmentation using -spine option",
+         SPINE_NODE_NAME);
   }
 }

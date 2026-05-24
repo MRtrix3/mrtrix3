@@ -32,6 +32,7 @@
 #include "stats/enhance.h"
 #include "stats/permtest.h"
 #include "stats/tfce.h"
+#include <fmt/format.h>
 
 #include <filesystem>
 
@@ -206,7 +207,7 @@ void run() {
   connector.adjacency.set_26_adjacency(do_26_connectivity);
   connector.adjacency.initialise(mask_header, *v2v);
   const Math::Stats::index_type num_voxels = v2v->size();
-  CONSOLE("Number of voxels in mask: " + str(num_voxels));
+  CONSOLE("Number of voxels in mask: {}", num_voxels);
 
   // Posthoc analysis mask
   Image<bool> mask_inference_image;
@@ -216,9 +217,9 @@ void run() {
   if (!opt.empty()) {
     mask_inference_image = Image<bool>::open(opt[0][0]);
     if (!(mask_inference_image.ndim() == 3 || (mask_inference_image.ndim() == 4 && mask_inference_image.size(3) == 1)))
-      throw Exception("Post-hoc mask image \"" + opt[0][0].as_text() + "\" is not 3D");
+      throw Exception("Post-hoc mask image \"{}\" is not 3D", opt[0][0].as_text());
     if (!dimensions_match(mask_header, mask_inference_image, 0, 3))
-      throw Exception("Post-hoc image \"" + opt[0][0].as_text() + "\" does not match mask image");
+      throw Exception("Post-hoc image \"{}\" does not match mask image", opt[0][0].as_text());
     mask_inference.setZero();
     size_t mask_mismatch_count = 0;
     for (auto l = Loop(mask_header)(mask_inference_image); l; ++l) {
@@ -234,11 +235,11 @@ void run() {
         }
       }
     }
-    CONSOLE("Number of voxels in post-hoc analysis mask: " + str(mask_infer_voxels));
+    CONSOLE("Number of voxels in post-hoc analysis mask: {}", mask_infer_voxels);
     if (mask_mismatch_count > size_t(0)) {
-      WARN("There are " + str(mask_mismatch_count) +
-           " voxels in the post-hoc mask that are absent from the processing mask; "
-           "post-hoc inference cannot and will not be performed in those voxels");
+      WARN("There are {} voxels in the post-hoc mask that are absent from the processing mask; \"\n        "
+           "   \"post-hoc inference cannot and will not be performed in those voxels",
+           mask_mismatch_count);
     }
   } else {
     mask_inference = element_mask_type::Ones(num_voxels);
@@ -254,9 +255,9 @@ void run() {
   importer.initialise<SubjectVoxelImport>(argument[0]);
   for (index_type i = 0; i != importer.size(); ++i) {
     if (!dimensions_match(dynamic_cast<SubjectVoxelImport *>(importer[i].get())->header(), mask_header))
-      throw Exception("Image file \"" + importer[i]->name().string() + "\" does not match analysis mask");
+      throw Exception("Image file \"{}\" does not match analysis mask", importer[i]->name());
   }
-  CONSOLE("Number of inputs: " + str(importer.size()));
+  CONSOLE("Number of inputs: {}", importer.size());
 
   // Load design matrix
   const matrix_type design = File::Matrix::load_matrix<value_type>(argument[1]);
@@ -277,9 +278,9 @@ void run() {
   }
   const bool have_extra_columns = !extra_columns.empty();
   const index_type num_factors = design.cols() + extra_columns.size();
-  CONSOLE("Number of factors: " + str(num_factors));
+  CONSOLE("Number of factors: {}", num_factors);
   if (have_extra_columns) {
-    CONSOLE("Number of element-wise design matrix columns: " + str(extra_columns.size()));
+    CONSOLE("Number of element-wise design matrix columns: {}", extra_columns.size());
     if (nans_in_columns)
       CONSOLE("Non-finite values detected in element-wise design matrix columns;"
               " individual rows will be removed from voxel-wise design matrices accordingly");
@@ -290,12 +291,12 @@ void run() {
   auto variance_groups = GLM::load_variance_groups(design.rows());
   const index_type num_vgs = variance_groups.size() == 0 ? 1 : (variance_groups.maxCoeff() + 1);
   if (num_vgs > 1)
-    CONSOLE("Number of variance groups: " + str(num_vgs));
+    CONSOLE("Number of variance groups: {}", num_vgs);
 
   // Load hypotheses
   const std::vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses(num_factors);
   const index_type num_hypotheses = hypotheses.size();
-  CONSOLE("Number of hypotheses: " + str(num_hypotheses));
+  CONSOLE("Number of hypotheses: {}", num_hypotheses);
 
   measurements_matrix_type data(importer.size(), num_voxels);
   {
@@ -333,7 +334,9 @@ void run() {
   std::filesystem::create_directories(output_dir);
 
   // Only add contrast matrix row number to image outputs if there's more than one hypothesis
-  auto postfix = [&](const index_type i) { return (num_hypotheses > 1) ? ("_" + hypotheses[i].name()) : ""; };
+  auto postfix = [&](const index_type i) -> std::string {
+    return (num_hypotheses > 1) ? fmt::format("_{}", hypotheses[i].name()) : "";
+  };
 
   {
     matrix_type betas(num_factors, num_voxels);
@@ -351,15 +354,17 @@ void run() {
     ProgressBar progress("Outputting beta coefficients, effect size and standard deviation",
                          num_factors + (2 * num_hypotheses) + num_vgs + (variable_design_matrix ? 1 : 0));
     for (index_type i = 0; i != num_factors; ++i) {
-      write_output(betas.row(i), *v2v, output_dir / ("beta" + str(i) + ".mif"), output_header);
+      write_output(betas.row(i), *v2v, output_dir / fmt::format("beta{}.mif", i), output_header);
       ++progress;
     }
     for (index_type i = 0; i != num_hypotheses; ++i) {
       if (!hypotheses[i].is_F()) {
-        write_output(abs_effect_size.col(i), *v2v, output_dir / ("abs_effect" + postfix(i) + ".mif"), output_header);
+        write_output(
+            abs_effect_size.col(i), *v2v, output_dir / fmt::format("abs_effect{}.mif", postfix(i)), output_header);
         ++progress;
         if (num_vgs == 1)
-          write_output(std_effect_size.col(i), *v2v, output_dir / ("std_effect" + postfix(i) + ".mif"), output_header);
+          write_output(
+              std_effect_size.col(i), *v2v, output_dir / fmt::format("std_effect{}.mif", postfix(i)), output_header);
       } else {
         ++progress;
       }
@@ -373,7 +378,7 @@ void run() {
       write_output(stdev.row(0), *v2v, output_dir / "std_dev.mif", output_header);
     } else {
       for (index_type i = 0; i != num_vgs; ++i) {
-        write_output(stdev.row(i), *v2v, output_dir / ("std_dev" + str(i) + ".mif"), output_header);
+        write_output(stdev.row(i), *v2v, output_dir / fmt::format("std_dev{}.mif", i), output_header);
         ++progress;
       }
     }
@@ -410,8 +415,10 @@ void run() {
       throw Exception("Nonstationarity adjustment is not currently implemented for threshold-based cluster analysis");
     Stats::PermTest::precompute_empirical_stat(glm_test, enhancer, empirical_skew, empirical_enhanced_statistic);
     for (index_type i = 0; i != num_hypotheses; ++i)
-      write_output(
-          empirical_enhanced_statistic.col(i), *v2v, output_dir / ("empirical" + postfix(i) + ".mif"), output_header);
+      write_output(empirical_enhanced_statistic.col(i),
+                   *v2v,
+                   output_dir / fmt::format("empirical{}.mif", postfix(i)),
+                   output_header);
   }
 
   // Precompute statistic value and enhanced statistic for the default permutation
@@ -421,13 +428,12 @@ void run() {
   for (index_type i = 0; i != num_hypotheses; ++i) {
     write_output(default_statistic.col(i),
                  *v2v,
-                 output_dir /
-                     ((hypotheses[i].is_F() ? std::string("F") : std::string("t")) + "value" + postfix(i) + ".mif"),
+                 output_dir / fmt::format("{}value{}.mif", hypotheses[i].is_F() ? "F" : "t", postfix(i)),
                  output_header);
-    write_output(default_zstat.col(i), *v2v, output_dir / ("Zstat" + postfix(i) + ".mif"), output_header);
+    write_output(default_zstat.col(i), *v2v, output_dir / fmt::format("Zstat{}.mif", postfix(i)), output_header);
     write_output(default_enhanced.col(i),
                  *v2v,
-                 output_dir / (std::string(use_tfce ? "tfce" : "clustersize") + postfix(i) + ".mif"),
+                 output_dir / fmt::format("{}{}.mif", use_tfce ? "tfce" : "clustersize", postfix(i)),
                  output_header);
   }
 
@@ -458,7 +464,7 @@ void run() {
       ++progress;
     } else {
       for (index_type i = 0; i != num_hypotheses; ++i) {
-        File::Matrix::save_vector(null_distribution.col(i), output_dir / ("null_dist" + postfix(i) + ".txt"));
+        File::Matrix::save_vector(null_distribution.col(i), output_dir / fmt::format("null_dist{}.txt", postfix(i)));
         ++progress;
       }
     }
@@ -470,19 +476,19 @@ void run() {
       write_output(fwe_pvalue_output.col(i),
                    *v2v,
                    mask_inference_image,
-                   output_dir / ("fwe_1mpvalue" + postfix(i) + ".mif"),
+                   output_dir / fmt::format("fwe_1mpvalue{}.mif", postfix(i)),
                    output_header);
       ++progress;
       write_output(uncorrected_pvalue.col(i),
                    *v2v,
                    mask_inference_image,
-                   output_dir / ("uncorrected_1mpvalue" + postfix(i) + ".mif"),
+                   output_dir / fmt::format("uncorrected_1mpvalue{}.mif", postfix(i)),
                    output_header);
       ++progress;
       write_output(null_contributions.col(i),
                    *v2v,
                    mask_inference_image,
-                   output_dir / ("null_contributions" + postfix(i) + ".mif"),
+                   output_dir / fmt::format("null_contributions{}.mif", postfix(i)),
                    output_header);
       ++progress;
     }

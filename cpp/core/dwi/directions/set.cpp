@@ -22,6 +22,7 @@
 #include <Eigen/Dense>
 
 #include "math/rng.h"
+#include <fmt/format.h>
 
 namespace MR::DWI::Directions {
 
@@ -80,7 +81,7 @@ void Set::load_predefined(Eigen::MatrixXd &az_in_pairs, const size_t i) {
     az_in_pairs = electrostatic_repulsion_5000();
     return;
   default:
-    throw Exception("No pre-defined data set of " + str(i) + " directions");
+    throw Exception("No pre-defined data set of {} directions", i);
   }
 }
 

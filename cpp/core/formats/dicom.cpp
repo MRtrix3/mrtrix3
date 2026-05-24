@@ -23,13 +23,14 @@
 #include "formats/list.h"
 #include "header.h"
 #include "image_io/base.h"
+#include <fmt/format.h>
 
 namespace MR::Formats {
 
 std::unique_ptr<ImageIO::Base> DICOM::read(Header &H) const {
   if (std::filesystem::is_directory(H.path())) {
-    INFO("Image path \"" + H.path().string() + "\" is a directory; will attempt to parse as DICOM series");
-  } else if (const_cast<const Header &>(H).path().extension() != ".dcm") {
+    INFO("Image path \"{}\" is a directory; will attempt to parse as DICOM series", H.name());
+  } else if (!Path::has_suffix(H.path(), ".dcm")) {
     return std::unique_ptr<ImageIO::Base>();
   }
 

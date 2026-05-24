@@ -16,6 +16,7 @@
 
 #include "mrview/sync/syncmanager.h"
 #include "mrview/window.h"
+#include <fmt/format.h>
 
 namespace MR::GUI::MRView::Sync {
 SyncManager::SyncManager() : QObject(0) {
@@ -86,7 +87,7 @@ void SyncManager::OnIPSDataReceived(std::vector<std::shared_ptr<QByteArray>> all
       break;
     }
     default: {
-      DEBUG("Unknown data key received: " + str(idOfDataEntry));
+      DEBUG("Unknown data key received: {}", idOfDataEntry);
       break;
     }
     }

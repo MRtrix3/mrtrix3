@@ -30,6 +30,7 @@
 #include "header.h"
 #include "image_helpers.h"
 #include "image_io/default.h"
+#include <fmt/format.h>
 
 namespace MR::Formats {
 
@@ -47,7 +48,7 @@ inline const ParCols get_column_indices(const float version) {
   } else if (version == 4.2f) {
     return {0, 1, 2, 3, 4, 5, 16, 19, 33, 45, 48, 11, 12, 13, 7, 9, 28, 22, 23};
   } else
-    throw Exception("unsupported version of PAR/REC: V" + str(version));
+    throw Exception("unsupported version of PAR/REC: V{}", version);
 }
 
 typedef struct {
@@ -115,12 +116,11 @@ std::unique_ptr<ImageIO::Base> PAR::read(Header &H) const {
   WARN("PAR/REC import is currently experimental - please verify the integrity of your data");
   WARN("  If your data does not import correctly, please report it to the MRtrix3 team");
 
-  const std::filesystem::path &hpath = static_cast<const Header &>(H).path();
-  const std::filesystem::path rec_file = std::filesystem::path(hpath).replace_extension(".REC");
+  std::string rec_file = fmt::format("{}.REC", H.name().substr(0, H.name().size() - 4));
 
-  std::ifstream in(hpath, std::ios::binary);
+  std::ifstream in(H.name(), std::ios::binary);
   if (!in)
-    throw Exception("error opening PAR/REC header \"" + H.path().string() + "\": " + strerror(errno));
+    throw Exception("error opening PAR/REC header \"{}\": {}", H.name(), strerror(errno));
 
   float version = NaNF;
   ParCols cols;
@@ -146,17 +146,17 @@ std::unique_ptr<ImageIO::Base> PAR::read(Header &H) const {
       keyval[0] = strip(keyval[0]);
 
       if (keyval[0] == "Patient name")
-        add_line(H.keyval()["comments"], "Name: " + strip(keyval[1]));
+        add_line(H.keyval()["comments"], fmt::format("Name: {}", strip(keyval[1])));
       else if (keyval[0] == "Examination name")
-        add_line(H.keyval()["comments"], "Exam: " + strip(keyval[1]));
+        add_line(H.keyval()["comments"], fmt::format("Exam: {}", strip(keyval[1])));
       else if (keyval[0] == "Protocol name")
-        add_line(H.keyval()["comments"], "Protocol: " + strip(keyval[1]));
+        add_line(H.keyval()["comments"], fmt::format("Protocol: {}", strip(keyval[1])));
       else if (keyval[0] == "Examination date/time")
-        add_line(H.keyval()["comments"], "date: " + strip(keyval[1]));
+        add_line(H.keyval()["comments"], fmt::format("date: {}", strip(keyval[1])));
 
     } else { // per-slice info
       if (std::isnan(version))
-        throw Exception("no version information found in file \"" + H.path().string() + "\"");
+        throw Exception("no version information found in file \"{}\"", H.name());
 
       slices.push_back(parse_line(line, cols));
     }
@@ -168,25 +168,25 @@ std::unique_ptr<ImageIO::Base> PAR::read(Header &H) const {
   size_t nvols = 0;
   for (const auto &slice : slices) {
     if (slice.seq != slices[0].seq)
-      throw Exception("non-matching orientations in PAR/REC file \"" + H.path().string() + "\"");
+      throw Exception("non-matching orientations in PAR/REC file \"{}\"", H.name());
 
     if (slice.pix != slices[0].pix)
-      throw Exception("non-matching bit depths in PAR/REC file \"" + H.path().string() + "\"");
+      throw Exception("non-matching bit depths in PAR/REC file \"{}\"", H.name());
 
     if (slice.size[0] != slices[0].size[0] || slice.size[1] != slices[0].size[1])
-      throw Exception("non-matching matrix sizes in PAR/REC file \"" + H.path().string() + "\"");
+      throw Exception("non-matching matrix sizes in PAR/REC file \"{}\"", H.name());
 
     if (slice.rs != slices[0].rs || slice.ri != slices[0].ri || slice.ss != slices[0].ss)
-      throw Exception("non-matching rescale coefficients in PAR/REC file \"" + H.path().string() + "\"");
+      throw Exception("non-matching rescale coefficients in PAR/REC file \"{}\"", H.name());
 
     if (slice.thick != slices[0].thick)
-      throw Exception("non-matching slice thicknesses in PAR/REC file \"" + H.path().string() + "\"");
+      throw Exception("non-matching slice thicknesses in PAR/REC file \"{}\"", H.name());
 
     if (slice.gap != slices[0].gap)
-      throw Exception("non-matching slice gaps in PAR/REC file \"" + H.path().string() + "\"");
+      throw Exception("non-matching slice gaps in PAR/REC file \"{}\"", H.name());
 
     if (slice.vox[0] != slices[0].vox[0] && slice.vox[1] != slices[0].vox[1])
-      throw Exception("non-matching voxel sizes in PAR/REC file \"" + H.path().string() + "\"");
+      throw Exception("non-matching voxel sizes in PAR/REC file \"{}\"", H.name());
 
     if (slice.sl == 1) {
       nvols++;
@@ -198,8 +198,8 @@ std::unique_ptr<ImageIO::Base> PAR::read(Header &H) const {
       nslices = slice.sl;
   }
 
-  if (static_cast<size_t>(nvols * nslices) != slices.size())
-    throw Exception("mismatch in dimensions when reading PAR/REC file \"" + H.path().string() + "\"");
+  if (nvols * nslices != slices.size())
+    throw Exception("mismatch in dimensions when reading PAR/REC file \"{}\"", H.name());
 
   if (nvols > 1) {
     H.ndim() = 4;
@@ -217,7 +217,7 @@ std::unique_ptr<ImageIO::Base> PAR::read(Header &H) const {
   H.spacing(2) = slices[0].thick + slices[0].gap;
 
   if (slices[0].gap > 0.0)
-    WARN("slice gap detected in PAR/REC file \"" + H.path().string() + "\"");
+    WARN("slice gap detected in PAR/REC file \"{}\"", H.name());
 
   H.stride(0) = -1;
   H.stride(1) = -2;
@@ -256,9 +256,8 @@ std::unique_ptr<ImageIO::Base> PAR::read(Header &H) const {
   }
 
   if (!G.empty()) {
-    if (G.size() != static_cast<size_t>(nvols))
-      throw Exception(std::string("mismatch between number of volumes and number of b-values") + //
-                      " in PAR/REC file \"" + H.path().string() + "\"");                         //
+    if (G.size() != nvols)
+      throw Exception("mismatch between number of volumes and number of b-values in PAR/REC file \"{}\"", H.name());
 
     Eigen::MatrixXd grad(G.size(), 4);
     for (size_t n = 0; n < G.size(); ++n) {

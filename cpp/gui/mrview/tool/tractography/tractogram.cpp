@@ -15,6 +15,7 @@
  */
 
 #include "mrview/tool/tractography/tractogram.h"
+#include <fmt/format.h>
 
 #include <cstdint>
 
@@ -100,7 +101,9 @@ std::string Tractogram::Shader::vertex_shader_source(const Displayable &displaya
         source += "1.0 -";
       source += " scale * (amp - offset), 0.0, 1.0);\n";
     }
-    source += std::string("  vec3 color;\n  ") + ColourMap::maps[colourmap].glsl_mapping + "  v_colour = color;\n";
+    source += "  vec3 color;\n";
+    source += fmt::format("  {}", ColourMap::maps[colourmap].glsl_mapping);
+    source += "  v_colour = color;\n";
   }
 
   source += "}\n";
@@ -136,10 +139,10 @@ std::string Tractogram::Shader::geometry_shader_source(const Displayable &) {
     source += "in vec3 v_colour[];\n" // check_syntax off
               "out vec3 fColour;\n";
 
-  if (use_lighting)
-    source += "const float PI = " + str(Math::pi) +
-              ";\n"
-              "out float g_height;\n";
+  if (use_lighting) {
+    source += fmt::format("const float PI = {};\n", Math::pi);
+    source += "out float g_height;\n";
+  }
 
   source += "void main() {\n";
 
@@ -202,12 +205,12 @@ std::string Tractogram::Shader::fragment_shader_source(const Displayable &displa
                        "out vec3 colour;\n";
 
   if (color_type == TrackColourType::ScalarFile || color_type == TrackColourType::Ends)
-    source += using_geom ? "in vec3 fColour;\n" : "in vec3 v_colour;\n";
+    source += fmt::format("in vec3 {};\n", using_geom ? "fColour" : "v_colour");
   if (use_lighting || color_type == TrackColourType::Direction)
-    source += using_geom ? "in vec3 g_tangent;\n" : "in vec3 v_tangent;\n";
+    source += fmt::format("in vec3 {};\n", using_geom ? "g_tangent" : "v_tangent");
 
   if (threshold_type != TrackThresholdType::None)
-    source += using_geom ? "in float g_amp;\n" : "in float v_amp;\n";
+    source += fmt::format("in float {};\n", using_geom ? "g_amp" : "v_amp");
 
   if (use_lighting && (using_geom || using_points)) {
     source += "uniform float ambient, diffuse, specular, shine;\n"
@@ -218,7 +221,7 @@ std::string Tractogram::Shader::fragment_shader_source(const Displayable &displa
   }
 
   if (do_crop_to_slab)
-    source += using_geom ? "in float g_include;\n" : "in float v_include;\n";
+    source += fmt::format("in float {};\n", using_geom ? "g_include" : "v_include");
 
   source += "void main() {\n";
 
@@ -229,25 +232,26 @@ std::string Tractogram::Shader::fragment_shader_source(const Displayable &displa
               "  discard;\n";
 
   if (do_crop_to_slab)
-    source += using_geom ? "  if (g_include < 0.0 || g_include > 1.0) discard;\n"
-                         : "  if (v_include < 0.0 || v_include > 1.0) discard;\n";
+    source += fmt::format("  if ({} < 0.0 || {} > 1.0) discard;\n",
+                          using_geom ? "g_include" : "v_include",
+                          using_geom ? "g_include" : "v_include");
 
   if (threshold_type != TrackThresholdType::None) {
     if (tractogram.use_discard_lower())
-      source += using_geom ? "  if (g_amp < lower) discard;\n" : "  if (v_amp < lower) discard;\n";
+      source += fmt::format("  if ({} < lower) discard;\n", using_geom ? "g_amp" : "v_amp");
     if (tractogram.use_discard_upper())
-      source += using_geom ? "  if (g_amp > upper) discard;\n" : "  if (v_amp > upper) discard;\n";
+      source += fmt::format("  if ({} > upper) discard;\n", using_geom ? "g_amp" : "v_amp");
   }
 
   switch (color_type) {
   case TrackColourType::Direction:
-    source += using_geom ? "  colour = abs (normalize (g_tangent));\n" : "  colour = abs (normalize (v_tangent));\n";
+    source += fmt::format("  colour = abs (normalize ({}));\n", using_geom ? "g_tangent" : "v_tangent");
     break;
   case TrackColourType::ScalarFile:
-    source += using_geom ? "  colour = fColour;\n" : "  colour = v_colour;\n";
+    source += fmt::format("  colour = {};\n", using_geom ? "fColour" : "v_colour");
     break;
   case TrackColourType::Ends:
-    source += using_geom ? "  colour = fColour;\n" : "  colour = v_colour;\n";
+    source += fmt::format("  colour = {};\n", using_geom ? "fColour" : "v_colour");
     break;
   case TrackColourType::Manual:
     source += "  colour = colourmap_colour;\n";
@@ -267,7 +271,7 @@ std::string Tractogram::Shader::fragment_shader_source(const Displayable &displa
           "  vec3 surface_normal = c*in_plane_x +  s*abs(tangent.z)*in_plane_y;\n"
           "  surface_normal.z -= s * sqrt(tangent.x*tangent.x + tangent.y*tangent.y);\n";
     } else if (using_points) {
-      source += "vec3 surface_normal = normalize(vec3(pos, sin((d_pos - 0.25) *" + str(Math::pi_2) + ")));\n";
+      source += fmt::format("vec3 surface_normal = normalize(vec3(pos, sin((d_pos - 0.25) *{})));\n", Math::pi_2);
     }
 
     source += "  float light_dot_surfaceN = -dot(light_pos, surface_normal);"

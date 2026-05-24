@@ -18,6 +18,7 @@
 #include "command.h"
 #include "image.h"
 #include "progressbar.h"
+#include <fmt/std.h>
 
 #include "fixel/fixel.h"
 #include "fixel/helpers.h"
@@ -59,9 +60,10 @@ void usage() {
 
 
   OPTIONS
-  + Option ("angle", "the max anglular threshold for computing correspondence"
-                     " between a fixel direction and track tangent"
-                     " (default = " + str(DWI::Tractography::Mapping::default_streamline2fixel_angle, 2) + " degrees)")
+  + Option ("angle",
+            fmt::format("the max anglular threshold for computing correspondence"
+                        " between a fixel direction and track tangent"
+                        " (default = {:.2g} degrees)", DWI::Tractography::Mapping::default_streamline2fixel_angle))
   + Argument ("value").type_float (0.001, 90.0);
 
 }
@@ -86,7 +88,12 @@ void run() {
   auto in_directions_image = Fixel::find_directions_header(input_fixel_directory).get_image<float>(DirectIO(1));
 
   DWI::Tractography::Properties properties;
-  DWI::Tractography::Reader<float> reader(input_tracks_path, properties);
+  DWI::Tractography::Reader<float> reader(argument[1], properties);
+  properties.comments.push_back("Created using fixel2tsf");
+  properties.comments.push_back(
+      fmt::format("Source fixel image: {}", std::filesystem::path(argument[0].as_text()).filename()));
+  properties.comments.push_back(
+      fmt::format("Source track file: {}", std::filesystem::path(argument[1].as_text()).filename()));
 
   DWI::Tractography::ScalarWriter<float> tsf_writer(output_tsf_path, properties);
 

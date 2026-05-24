@@ -35,6 +35,7 @@
 #include "registration/metric/thread_kernel.h"
 #include "registration/transform/rigid.h"
 #include "transform.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -188,19 +189,19 @@ void usage() {
   + Argument ("image2", "the second input image.").type_image_in ();
 
   OPTIONS
-  + Option ("space", std::string("Image \"space\" in which the metric will be computed.") +
-                     " Options are:"
-                     " voxel: per voxel;"
-                     " image1: scanner space of image 1;"
-                     " image2: scanner space of image 2;"
-                     " average: scanner space of the average affine transformation"
-                     " of image 1 and 2;"
-                     " default: " + MR::Enum::lowercase_name(default_space) + ".")
+  + Option ("space", fmt::format("Image \"space\" in which the metric will be computed."
+                                " Options are:"
+                                " voxel: per voxel;"
+                                " image1: scanner space of image 1;"
+                                " image2: scanner space of image 2;"
+                                " average: scanner space of the average affine transformation"
+                                " of image 1 and 2;"
+                                " default: {}.", MR::Enum::lowercase_name(default_space)))
     + Argument ("iteration method").type_choice<space_t>()
 
-  + Option ("interp", std::string("set the interpolation method to use when reslicing") +
-                      " (choices: nearest, linear, cubic, sinc."
-                      " Default: " + MR::Interp::interp_choices[static_cast<ssize_t>(default_interp)] + ").")
+  + Option ("interp", fmt::format("set the interpolation method to use when reslicing"
+                                 " (choices: nearest, linear, cubic, sinc."
+                                 " Default: {}).", MR::Interp::interp_choices[static_cast<ssize_t>(default_interp)]))
     + Argument ("method").type_choice(MR::Interp::interp_choices)
 
   + Option ("metric",
@@ -250,7 +251,7 @@ void run() {
   const size_t dimensions = input1.ndim();
   if (input1.ndim() != input2.ndim())
     throw Exception("both images have to have the same number of dimensions");
-  DEBUG("dimensions: " + str(dimensions));
+  DEBUG("dimensions: {}", dimensions);
   if (dimensions > 4)
     throw Exception("images have to be 3 or 4 dimensional");
 
@@ -264,7 +265,7 @@ void run() {
       throw Exception("both images have to have the same number of volumes");
     }
   }
-  INFO("volumes: " + str(volumes));
+  INFO("volumes: {}", volumes);
 
   MaskType mask1;
   bool use_mask1 = get_options("mask1").size() == 1;
@@ -477,7 +478,7 @@ void run() {
       }
     } // "average space"
   }
-  DEBUG("n_voxels:" + str(n_voxels));
+  DEBUG("n_voxels:{}", n_voxels);
   if (n_voxels == 0)
     WARN("number of overlapping voxels is zero");
 

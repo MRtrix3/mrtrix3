@@ -18,6 +18,7 @@
 #include "dwi/directions/validate.h"
 #include "file/matrix.h"
 #include "mrtrix.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -67,12 +68,11 @@ void run() {
                           : result.format == DirectionsFormat::Cartesian ? "Cartesian directions"
                                                                          : "diffusion gradient table";
 
-  CONSOLE("Direction file \"" + argument[0].as_text() + "\": " +             //
-          str(result.n_directions) + " direction(s) in " + fmt + " format"); //
+  CONSOLE("Direction file \"{}\": {} direction(s) in {} format", argument[0], result.n_directions, fmt);
 
   if (result.format == DirectionsFormat::Cartesian || result.format == DirectionsFormat::GradientTable) {
     if (result.n_non_unit > 0U) {
-      WARN(str(result.n_non_unit) + " of " + str(result.n_directions) + " direction(s) are not of unit norm");
+      WARN("{} of {} direction(s) are not of unit norm", result.n_non_unit, result.n_directions);
     } else {
       CONSOLE("All directions are of unit norm");
     }

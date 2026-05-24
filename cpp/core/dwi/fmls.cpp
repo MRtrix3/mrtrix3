@@ -15,6 +15,7 @@
  */
 
 #include "dwi/fmls.h"
+#include <fmt/format.h>
 
 namespace MR::DWI::FMLS {
 
@@ -22,15 +23,15 @@ namespace MR::DWI::FMLS {
 const App::OptionGroup FMLSSegmentOption =
     App::OptionGroup("FOD FMLS segmenter options")
     + App::Option("fmls_integral",
-                  "threshold absolute numerical integral of positive FOD lobes."
-                  " Any lobe for which the integral is smaller than this threshold will be discarded."
-                  " Default: " + str(default_integral_threshold, 2) + ".")
+                  fmt::format("threshold absolute numerical integral of positive FOD lobes."
+                              " Any lobe for which the integral is smaller than this threshold will be discarded."
+                              " Default: {:.2g}.", default_integral_threshold))
       + App::Argument("value").type_float(0.0)
 
     + App::Option("fmls_peak_value",
-                  "threshold peak amplitude of positive FOD lobes."
-                  " Any lobe for which the maximal peak amplitude is smaller than this threshold will be discarded."
-                  " Default: " + str(default_peakamp_threshold, 2) + ".")
+                  fmt::format("threshold peak amplitude of positive FOD lobes."
+                              " Any lobe for which the maximal peak amplitude is smaller than this threshold will be discarded."
+                              " Default: {:.2g}.", default_peakamp_threshold))
       + App::Argument("value").type_float(0.0)
 
     + App::Option("fmls_no_thresholds",
@@ -38,14 +39,14 @@ const App::OptionGroup FMLSSegmentOption =
                   " every lobe where the FOD is positive will be retained.")
 
     + App::Option("fmls_lobe_merge_ratio",
-                  "Specify the ratio between a given FOD amplitude sample between two lobes,"
-                  " and the smallest peak amplitude of the adjacent lobes,"
-                  " above which those lobes will be merged."
-                  " This is the amplitude of the FOD at the 'bridge' point between the two lobes,"
-                  " divided by the peak amplitude of the smaller of the two adjoining lobes."
-                  " A value of 1.0 will never merge two lobes into one;"
-                  " a value of 0.0 will always merge lobes unless they are bisected by a zero-valued crossing."
-                  " Default: " + str(default_mergeratio_bridgetopeak, 2) + ".")
+                  fmt::format("Specify the ratio between a given FOD amplitude sample between two lobes,"
+                              " and the smallest peak amplitude of the adjacent lobes,"
+                              " above which those lobes will be merged."
+                              " This is the amplitude of the FOD at the 'bridge' point between the two lobes,"
+                              " divided by the peak amplitude of the smaller of the two adjoining lobes."
+                              " A value of 1.0 will never merge two lobes into one;"
+                              " a value of 0.0 will always merge lobes unless they are bisected by a zero-valued crossing."
+                              " Default: {:.2g}.", default_mergeratio_bridgetopeak))
       + App::Argument("value").type_float(0.0, 1.0);
 // clang-format on
 

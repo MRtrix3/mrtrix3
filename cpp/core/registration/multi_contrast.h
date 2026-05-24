@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <fmt/ostream.h>
+#include <fmt/std.h>
 #include <vector>
 
 #include "adapter/base.h"
@@ -38,8 +40,7 @@ FORCE_INLINE void check_image_output(const std::filesystem::path &image_path, co
   if (image_path.empty())
     throw Exception("image output path is empty");
   if (std::filesystem::exists(image_path) && !App::overwrite_files)
-    throw Exception("output image \"" + image_path.string() + "\" already exists" + //
-                    " (use -force option to force overwrite)");                     //
+    throw Exception("output image \"{}\" already exists (use -force option to force overwrite)", image_path);
 
   Header H = reference;
   File::NameParser parser;
@@ -56,10 +57,12 @@ FORCE_INLINE void check_image_output(const std::filesystem::path &image_path, co
   if (!*format_handler) {
     const std::string basename = image_path.filename().string();
     const size_t extension_index = basename.find_last_of(".");
-    throw Exception("unknown format for image \"" + image_path.string() + "\"" + //
-                    (extension_index == std::string::npos
-                         ? "(no file extension specified)"
-                         : (" (unsupported file extension: " + basename.substr(extension_index) + ")")));
+    if (extension_index == std::string::npos)
+      throw Exception("unknown format for image \"{}\" (no file extension specified)", image_path);
+    else
+      throw Exception("unknown format for image \"{}\" (unsupported file extension: {})",
+                      image_path,
+                      basename.substr(extension_index));
   }
 }
 
@@ -111,3 +114,5 @@ void preload_data(std::vector<Header> &input,
                   const std::vector<MultiContrastSetting> &mc_params);
 
 } // namespace MR::Registration
+
+template <> struct fmt::formatter<MR::Registration::MultiContrastSetting> : fmt::ostream_formatter {};

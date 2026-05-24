@@ -15,6 +15,7 @@
  */
 
 #include "surface/algo/mesh2image.h"
+#include <fmt/format.h>
 
 #include <map>
 
@@ -306,10 +307,10 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
             fill_value = sum_sum_distances < 0.0f ? vox_mesh_t::INSIDE : vox_mesh_t::OUTSIDE;
           } else {
             Exception e("Internal error: fundamental ambiguity in voxel-based segmentation of surface");
-            e.push_back("Fill region size: " + str(to_fill.size()));
-            e.push_back("Preliminary classifications: " + str(prelim_inside_count) + " inside, " +
-                        str(prelim_outside_count) + " outside");
-            e.push_back("FoV corners: " + str(corner_count));
+            e.push_back(fmt::format("Fill region size: {}", to_fill.size()));
+            e.push_back(fmt::format(
+                "Preliminary classifications: {} inside, {} outside", prelim_inside_count, prelim_outside_count));
+            e.push_back(fmt::format("FoV corners: {}", corner_count));
             throw e;
           }
         }

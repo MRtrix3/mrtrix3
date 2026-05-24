@@ -15,6 +15,7 @@
  */
 
 #include "mrview/tool/fixel/fixel.h"
+#include <fmt/std.h>
 
 #include "app.h"
 #include "dialog/file.h"
@@ -44,27 +45,27 @@ public:
         MR::Fixel::debug_validate_directory(paths[i]);
         fixel_image = new Directory(paths[i], fixel_tool);
       } catch (MR::Fixel::InvalidDirectoryException &error) {
-        error.push_back("Couldn't open \"" + paths[i].string() + "\" as a Directory fixel dataset");
+        error.push_back(fmt::format("Couldn't open \"{}\" as a Directory fixel dataset", paths[i]));
         try {
           fixel_image = new Directory(paths[i], fixel_tool);
         } catch (MR::Fixel::InvalidDirectoryException &error) {
-          error.push_back("Couldn't open \"" + paths[i].string() + "\" as a Directory fixel dataset");
+          error.push_back(fmt::format("Couldn't open \"{}\" as a Directory fixel dataset", paths[i]));
           try {
             fixel_image = new Image4D(paths[i], fixel_tool);
           } catch (InvalidImageException &e) {
             error.push_back(e);
-            error.push_back("Couldn't open \"" + paths[i].string() + "\" as a 4D vector image");
+            error.push_back(fmt::format("Couldn't open \"{}\" as a 4D vector image", paths[i]));
             throw error;
           }
           if (MR::App::log_level >= 3)
             MR::Peaks::debug_validate_image(MR::Image<float>::open(paths[i]));
         } catch (InvalidImageException &e) {
           error.push_back(e);
-          error.push_back("Couldn't open \"" + paths[i].string() + "\" as a 4D vector image");
+          error.push_back(fmt::format("Couldn't open \"{}\" as a 4D vector image", paths[i]));
           throw error;
         }
       } catch (Exception &e) {
-        e.push_back("Error loading \"" + paths[i].string() + "\" as a fixel dataset");
+        e.push_back(fmt::format("Error loading \"{}\" as a fixel dataset", paths[i]));
         e.display();
         continue;
       }

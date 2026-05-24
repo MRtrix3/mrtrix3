@@ -27,6 +27,7 @@
 #include "adapter/subset.h"
 #include "algo/loop.h"
 #include "filter/optimal_threshold.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace App;
@@ -128,9 +129,8 @@ void usage() {
 
   + OptionGroup ("Threshold application modifiers")
 
-  + Option ("comparison", "comparison operator to use when applying the threshold; "
-                          "options are: " + MR::Enum::join<operator_type>()
-                          + " (default = \"le\" for -bottom; \"ge\" otherwise)")
+  + Option ("comparison", fmt::format("comparison operator to use when applying the threshold;"
+                                      " options are: {} (default = \"le\" for -bottom; \"ge\" otherwise)", MR::Enum::join<operator_type>()))
     + Argument ("choice").type_choice<operator_type>()
 
   + Option ("invert", "invert the output binary mask "
@@ -233,9 +233,11 @@ default_type calculate(Image<value_type> &in,
     auto data = get_data(in, mask, max_axis, ignore_zero);
     const ssize_t index(bottom >= 0 ? bottom - 1 : (static_cast<ssize_t>(data.size()) - top));
     if (index < 0 || index >= static_cast<ssize_t>(data.size()))
-      throw Exception("Number of valid input image values (" + str(data.size()) +
-                      ") less than number of voxels requested via -" + (bottom >= 0 ? "bottom" : "top") + " option (" +
-                      str(bottom >= 0 ? bottom : top) + ")");
+      throw Exception(
+          "Number of valid input image values ({}) less than number of voxels requested via -{} option ({})",
+          data.size(),
+          (bottom >= 0 ? "bottom" : "top"),
+          bottom >= 0 ? bottom : top);
     std::nth_element(data.begin(), data.begin() + index, data.end());
     const value_type threshold_float = data[index];
     if (index) {

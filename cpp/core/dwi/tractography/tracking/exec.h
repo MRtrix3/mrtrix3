@@ -18,6 +18,7 @@
 
 #include <deque>
 #include <filesystem>
+#include <fmt/format.h>
 #include <optional>
 
 #include "dwi/directions/set.h"
@@ -193,7 +194,7 @@ private:
           return true;
         }
       }
-      FAIL("Failed to find suitable seed point after " + str(failed_seed_attempts_to_abort) + " attempts - aborting");
+      FAIL("Failed to find suitable seed point after {} attempts - aborting", failed_seed_attempts_to_abort);
       return false;
     }
   }

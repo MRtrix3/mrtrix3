@@ -17,6 +17,7 @@
 #include "dwi/tractography/roi.h"
 #include "adapter/subset.h"
 #include "dwi/tractography/properties.h"
+#include <fmt/std.h>
 
 namespace MR::DWI::Tractography {
 
@@ -97,7 +98,7 @@ Image<bool> Mask::get_mask(const std::filesystem::path &path) {
   }
 
   if (!sum)
-    throw Exception("Cannot use image " + path.string() + " as ROI - image is empty");
+    throw Exception("Cannot use image {} as ROI - image is empty", path);
 
   if (bottom[0])
     --bottom[0];

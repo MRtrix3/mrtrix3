@@ -21,6 +21,7 @@
 #include <atomic>
 #include <cctype>
 #include <cstddef>
+#include <fmt/format.h>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -134,9 +135,9 @@ public:
 template <typename EnumType> inline EnumType from_name(std::string_view enum_name) {
   const auto value = magic_enum::enum_cast<EnumType>(enum_name, magic_enum::case_insensitive);
   if (!value.has_value()) {
-    const std::string error = "Unsupported value '" + std::string(enum_name) + "';" + //
-                              " supported values are: " + detail::join(lower_case_names<EnumType>(), ", ");
-    throw Exception(error);
+    throw Exception("Unsupported value '{}'. Supported values are: {}",
+                    enum_name,
+                    detail::join(lower_case_names<EnumType>(), ", "));
   }
   return value.value();
 }

@@ -202,8 +202,7 @@ void run() {
   auto node_image = node_header.get_image<node_t>();
   auto lv = MR::Connectome::validate_label_image(node_image);
   if (!lv.indices_contiguous) {
-    WARN("The following nodes are missing from the parcellation image:");
-    WARN(str(lv.missing_indices));
+    WARN("The following nodes are missing from the parcellation image: {}", lv.missing_indices);
     WARN("(This may be the result of poor parcellation image preparation,"              //
          " use of incorrect or incomplete LUT file(s) in MRtrix3 command labelconvert," //
          " or very poor registration)");                                                //

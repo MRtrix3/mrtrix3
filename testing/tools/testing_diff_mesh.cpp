@@ -14,9 +14,10 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <fmt/format.h>
+
 #include "command.h"
 #include "progressbar.h"
-
 #include "surface/mesh.h"
 #include "surface/mesh_multi.h"
 #include "types.h"
@@ -55,13 +56,13 @@ void run() {
     try {
       multi_in1.load(argument[0]);
     } catch (Exception &e_multi) {
-      Exception e("Unable to load input \"" + argument[0].as_text() + "\" as mesh file");
+      Exception e(fmt::format("Unable to load input \"{}\" as mesh file", argument[0]));
       e.push_back("  As individual mesh:");
       for (size_t line_index = 0; line_index != e_single.num(); ++line_index)
-        e.push_back("    " + e_single[line_index]);
+        e.push_back(fmt::format("    {}", e_single[line_index]));
       e.push_back("  As multi mesh:");
       for (size_t line_index = 0; line_index != e_multi.num(); ++line_index)
-        e.push_back("    " + e_multi[line_index]);
+        e.push_back(fmt::format("    {}", e_multi[line_index]));
       throw e;
     }
   }
@@ -73,20 +74,20 @@ void run() {
     try {
       multi_in2.load(argument[1]);
     } catch (Exception &e_multi) {
-      Exception e("Unable to load input \"" + argument[1].as_text() + "\" as mesh file");
+      Exception e(fmt::format("Unable to load input \"{}\" as mesh file", argument[1]));
       e.push_back("  As individual mesh:");
       for (size_t line_index = 0; line_index != e_single.num(); ++line_index)
-        e.push_back("    " + e_single[line_index]);
+        e.push_back(fmt::format("    {}", e_single[line_index]));
       e.push_back("  As multi mesh:");
       for (size_t line_index = 0; line_index != e_multi.num(); ++line_index)
-        e.push_back("    " + e_multi[line_index]);
+        e.push_back(fmt::format("    {}", e_multi[line_index]));
       throw e;
     }
   }
 
   if (multi_in1.size() != multi_in2.size())
-    throw Exception(std::string("Mismatched number of mesh objects") + " (" + str(multi_in1.size()) + " - " +
-                    str(multi_in2.size()) + ");" + " test FAILED");
+    throw Exception(
+        fmt::format("Mismatched number of mesh objects ({} - {}); test FAILED", multi_in1.size(), multi_in2.size()));
 
   for (size_t mesh_index = 0; mesh_index != multi_in1.size(); ++mesh_index) {
 
@@ -95,14 +96,13 @@ void run() {
 
     // Can't test this: Some formats have to duplicate the vertex positions
     // if (in1.num_vertices() != in2.num_vertices())
-    //  throw Exception ("Mismatched vertex count (" + str(in1.num_vertices()) + " - " + str(in2.num_vertices()) + ") -
-    //  test FAILED");
+    //  throw Exception(fmt::format("Mismatched vertex count ({}", str(in1.num_vertices())) + fmt::format(" - {}",
+    //  in2.num_vertices()) + ") - test FAILED");
     if (in1.num_triangles() != in2.num_triangles())
-      throw Exception("Mismatched triangle count (" + str(in1.num_triangles()) + " - " + str(in2.num_triangles()) +
-                      ") - test FAILED");
+      throw Exception(
+          fmt::format("Mismatched triangle count ({} - {}) - test FAILED", in1.num_triangles(), in2.num_triangles()));
     if (in1.num_quads() != in2.num_quads())
-      throw Exception("Mismatched quad count (" + str(in1.num_quads()) + " - " + str(in2.num_quads()) +
-                      ") - test FAILED");
+      throw Exception(fmt::format("Mismatched quad count ({} - {}) - test FAILED", in1.num_quads(), in2.num_quads()));
 
     // For every triangle and quad in one file, there must be a matching triangle/quad in the other
     // Can't rely on a preserved order; need to look through the entire list for a triangle/quad for

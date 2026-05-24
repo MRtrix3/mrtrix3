@@ -20,6 +20,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
+#include <fmt/format.h>
 #include <iostream>
 #include <limits>
 #include <optional>
@@ -29,15 +31,6 @@
 
 #include "exception.h"
 #include "types.h"
-
-template <typename StringTypeOne, typename StringTypeTwo>
-typename std::enable_if<MR::is_string_type<StringTypeOne>::value && MR::is_string_type<StringTypeTwo>::value,
-                        std::string>::type
-operator+(StringTypeOne left, StringTypeTwo right) {
-  std::string retval(left);
-  retval += right;
-  return retval;
-}
 
 namespace MR {
 
@@ -69,6 +62,9 @@ struct max_digits<X,
 
 //! add a line to a string, taking care of inserting a newline if needed
 std::string &add_line(std::string &original, std::string_view new_line);
+
+//! convert a filesystem path to 'beginningofpath...endofpath' for display
+std::string shorten(const std::filesystem::path &path, size_t longest = 40);
 
 //! convert a long string to 'beginningofstring...endofstring' for display
 std::string shorten(std::string_view text, size_t longest = 40, size_t prefix = 10);
@@ -137,7 +133,7 @@ template <class T> inline std::string str(const T &value, int precision = 0) {
     stream.precision(max_digits<T>::value());
   stream << value;
   if (stream.fail())
-    throw Exception(std::string("error converting type \"") + typeid(T).name() + "\" value to string");
+    throw Exception("error converting type \"{}\" value to string", typeid(T).name());
   return stream.str();
 }
 
@@ -158,9 +154,9 @@ template <class T> inline T to(std::string_view string) {
       else if (lstring == "-inf")
         return -std::numeric_limits<T>::infinity();
     }
-    throw Exception("error converting string \"" + string + "\" to type \"" + typeid(T).name() + "\"");
+    throw Exception("error converting string \"{}\" to type \"{}\"", string, typeid(T).name());
   } else if (!stream.eof()) {
-    throw Exception("incomplete use of string \"" + string + "\" in conversion to type \"" + typeid(T).name() + "\"");
+    throw Exception("incomplete use of string \"{}\" in conversion to type \"{}\"", string, typeid(T).name());
   }
   return value;
 }
@@ -218,15 +214,15 @@ template <> inline cfloat to<cfloat>(std::string_view string) {
   }
 
   if (candidates.empty())
-    throw Exception("error converting string \"" + string + "\" to complex float (no valid conversion)");
+    throw Exception("error converting string \"{}\" to complex float (no valid conversion)", string);
 
   for (size_t i = 1; i != candidates.size(); ++i) {
     if (!(candidates[i].real() == candidates[0].real() ||
           (std::isnan(candidates[i].real()) && std::isnan(candidates[0].real()))))
-      throw Exception("error converting string \"" + string + "\" to complex float (ambiguity in real component)");
+      throw Exception("error converting string \"{}\" to complex float (ambiguity in real component)", string);
     if (!(candidates[i].imag() == candidates[0].imag() ||
           (std::isnan(candidates[i].imag()) && std::isnan(candidates[0].imag()))))
-      throw Exception("error converting string \"" + string + "\" to complex float (ambiguity in imaginary component)");
+      throw Exception("error converting string \"{}\" to complex float (ambiguity in imaginary component)", string);
   }
   return candidates[0];
 }
@@ -236,7 +232,7 @@ template <> inline std::string str<cdouble>(const cdouble &value, int precision)
   if (precision > 0)
     stream.precision(precision);
   stream << value.real();
-  if (value.imag())
+  if (value.imag() != 0)
     stream << std::showpos << value.imag() << "i";
   if (stream.fail())
     throw Exception("error converting complex double value to string");
@@ -275,16 +271,15 @@ template <> inline cdouble to<cdouble>(std::string_view string) {
   }
 
   if (candidates.empty())
-    throw Exception("error converting string \"" + string + "\" to complex double (no valid conversion)");
+    throw Exception("error converting string \"{}\" to complex double (no valid conversion)", string);
 
   for (size_t i = 1; i != candidates.size(); ++i) {
     if (!(candidates[i].real() == candidates[0].real() ||
           (std::isnan(candidates[i].real()) && std::isnan(candidates[0].real()))))
-      throw Exception("error converting string \"" + string + "\" to complex double (ambiguity in real component)");
+      throw Exception("error converting string \"{}\" to complex double (ambiguity in real component)", string);
     if (!(candidates[i].imag() == candidates[0].imag() ||
           (std::isnan(candidates[i].imag()) && std::isnan(candidates[0].imag()))))
-      throw Exception("error converting string \"" + string +
-                      "\" to complex double (ambiguity in imaginary component)");
+      throw Exception("error converting string \"{}\" to complex double (ambiguity in imaginary component)", string);
   }
   return candidates[0];
 }
@@ -299,7 +294,7 @@ std::vector<IntType> parse_ints(std::string_view spec, const IntType last = std:
 
   auto to_unsigned = [&](const SignedIntType value) {
     if (std::is_unsigned<IntType>::value && value < 0)
-      throw Exception("Impermissible negative value present in sequence \"" + spec + "\"");
+      throw Exception("Impermissible negative value present in sequence \"{}\"", spec);
     return IntType(value);
   };
 
@@ -316,7 +311,7 @@ std::vector<IntType> parse_ints(std::string_view spec, const IntType last = std:
       std::string token(strip(spec.substr(start, end - start)));
       if (lowercase(token) == "end") {
         if (last == std::numeric_limits<IntType>::max())
-          throw Exception("value of \"end\" is not known in number sequence \"" + spec + "\"");
+          throw Exception("value of \"end\" is not known in number sequence \"{}\"", spec);
         num[i] = SignedIntType(last);
       } else
         num[i] = to<SignedIntType>(spec.substr(start, end - start));
@@ -327,7 +322,7 @@ std::vector<IntType> parse_ints(std::string_view spec, const IntType last = std:
         ++i;
         ++end;
         if (i > 2)
-          throw Exception("invalid number range in number sequence \"" + spec + "\"");
+          throw Exception("invalid number range in number sequence \"{}\"", spec);
       } else {
         if (i) {
           SignedIntType inc, last;
@@ -352,7 +347,7 @@ std::vector<IntType> parse_ints(std::string_view spec, const IntType last = std:
         ++start;
     } while (end < spec.size());
   } catch (Exception &E) {
-    throw Exception(E, "can't parse integer sequence specifier \"" + spec + "\"");
+    throw Exception(E, "can't parse integer sequence specifier \"{}\"", spec);
   }
 
   return (V);
@@ -386,11 +381,38 @@ template <typename T> inline std::string join(const std::vector<T> &V, std::stri
   if (V.empty())
     return ret;
   ret = str(V[0]);
-  for (typename std::vector<T>::const_iterator i = V.begin() + 1; i != V.end(); ++i)
-    ret += delimiter + str(*i);
+  for (typename std::vector<T>::const_iterator i = V.begin() + 1; i != V.end(); ++i) {
+    ret += delimiter;
+    ret += str(*i);
+  }
   return ret;
 }
 
 std::string join(const char *const *null_terminated_array, std::string_view delimiter); // check_syntax off
 
 } // namespace MR
+
+namespace fmt {
+template <typename RealType> struct formatter<std::complex<RealType>> {
+  constexpr auto parse(format_parse_context &ctx) { return ctx.begin(); }
+  template <typename FormatContext> auto format(const std::complex<RealType> &value, FormatContext &ctx) const {
+    // TODO Need to query precision
+    // TODO If all commands were better templated between real and complex types,
+    //   would no longer need to obscure zeroed imaginary components from complex data
+    std::ostringstream stream;
+    stream << value.real();
+    if (value.imag() != RealType(0))
+      stream << std::showpos << value.imag() << "i";
+    if (stream.fail())
+      throw MR::Exception("error converting complex floating-point value to string");
+    return format_to(ctx.out(), stream.str());
+  }
+};
+template <typename ValueType> struct formatter<std::atomic<ValueType>> {
+  constexpr auto parse(format_parse_context &ctx) { return ctx.begin(); }
+  template <typename FormatContext> auto format(const std::atomic<ValueType> &value, FormatContext &ctx) const {
+    // TODO Extract and propagate precision
+    return format_to(ctx.out(), MR::str(value.load(std::memory_order_seq_cst)));
+  }
+};
+} // namespace fmt

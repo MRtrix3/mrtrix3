@@ -2,6 +2,22 @@ include(FetchContent)
 include(MacOSUniversalSlang)
 
 
+# fmt library
+set(fmt_version 11.0.1)
+if(MRTRIX_USE_SYSTEM_FMT)
+    find_package(fmt ${fmt_version} CONFIG REQUIRED)
+else()
+    FetchContent_Declare(
+        fmt
+        DOWNLOAD_EXTRACT_TIMESTAMP ON
+        GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+        GIT_TAG ${fmt_version}
+    )
+    # Fetch and build fmt library
+    FetchContent_MakeAvailable(fmt)
+endif()
+
+
 # Eigen
 if(MRTRIX_USE_SYSTEM_EIGEN)
     find_package(Eigen3 3.4 CONFIG REQUIRED)

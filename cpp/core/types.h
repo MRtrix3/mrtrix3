@@ -20,6 +20,8 @@
 #include <complex>
 #include <cstddef>
 #include <deque>
+#include <fmt/format.h>
+#include <fmt/ostream.h>
 #include <iostream>
 #include <map>
 #include <memory>
@@ -197,6 +199,26 @@ template <> struct is_string_type<std::string_view> : std::true_type {};
 template <> struct is_string_type<const char *const> : std::true_type {}; // check_syntax off
 template <> struct is_string_type<const char *> : std::true_type {};      // check_syntax off
 
+//! convenience functions for SFINAE on std:: / Eigen containers
+template <class Cont> class is_eigen_type {
+  typedef char yes[1], no[2]; // check_syntax off
+  template <typename C> static yes &test(typename C::Scalar);
+  template <typename C> static no &test(...);
+
+public:
+  static const bool value = sizeof(test<Cont>(0)) == sizeof(yes);
+};
+
+//! Get the underlying scalar value type for both std:: containers and Eigen
+template <class Cont, typename ReturnType = int> class container_value_type {
+public:
+  using type = typename Cont::value_type;
+};
+template <class Cont> class container_value_type<Cont, typename std::enable_if<is_eigen_type<Cont>::value, int>::type> {
+public:
+  using type = typename Cont::Scalar;
+};
+
 } // namespace MR
 
 namespace std {
@@ -218,3 +240,68 @@ template <class T, std::size_t N> inline ostream &operator<<(ostream &stream, co
 }
 
 } // namespace std
+
+namespace fmt {
+template <class T> struct formatter<std::vector<T>> {
+  constexpr auto parse(format_parse_context &ctx) { return ctx.begin(); }
+  template <typename FormatContext> auto format(const std::vector<T> &v, FormatContext &ctx) const {
+    format_to(ctx.out(), "[ ");
+    for (size_t i = 0; i != v.size(); ++i)
+      format_to(ctx.out(), "{} ", v[i]);
+    return format_to(ctx.out(), "]");
+  }
+};
+template <class T, std::size_t N> struct formatter<std::array<T, N>> {
+  constexpr auto parse(format_parse_context &ctx) { return ctx.begin(); }
+  template <typename FormatContext> auto format(const std::array<T, N> &v, FormatContext &ctx) const {
+    format_to(ctx.out(), "[ ");
+    for (size_t i = 0; i != N; ++i)
+      format_to(ctx.out(), "{} ", v[i]);
+    return format_to(ctx.out(), "]");
+  }
+};
+template <typename Derived>
+struct formatter<
+    Derived,
+    char,
+    std::enable_if_t<
+        MR::is_eigen_type<std::remove_cv_t<Derived>>::value &&
+        (std::is_same_v<typename Eigen::internal::traits<std::remove_cv_t<Derived>>::XprKind, Eigen::MatrixXpr> ||
+         std::is_same_v<typename Eigen::internal::traits<std::remove_cv_t<Derived>>::XprKind, Eigen::ArrayXpr>)>> {
+  constexpr auto parse(format_parse_context &ctx) { return ctx.begin(); }
+  template <typename FormatContext> auto format(const Derived &m, FormatContext &ctx) const {
+    auto out = ctx.out();
+    if (m.rows() == 1) {
+      format_to(out, "[ ");
+      for (Eigen::Index i = 0; i < m.cols(); ++i)
+        format_to(out, "{} ", m.coeff(0, i));
+      return format_to(out, "]");
+    } else if (m.cols() == 1) {
+      format_to(out, "[ ");
+      for (Eigen::Index i = 0; i < m.rows(); ++i)
+        format_to(out, "{} ", m.coeff(i, 0));
+      return format_to(out, "]^T");
+    } else {
+      format_to(out, "\n[ ");
+      for (Eigen::Index i = 0; i < m.rows(); ++i) {
+        if (i > 0)
+          format_to(out, "\n");
+        for (Eigen::Index j = 0; j < m.cols(); ++j)
+          format_to(out, "{} ", m.coeff(i, j));
+      }
+      return format_to(out, "]");
+    }
+  }
+};
+template <typename T> struct formatter<Eigen::Transform<T, 3, Eigen::AffineCompact>> {
+  fmt::formatter<Eigen::Matrix<T, 3, 4>> matrix_formatter;
+  constexpr auto parse(format_parse_context &ctx) { return ctx.begin(); }
+  template <typename FormatContext>
+  auto format(const Eigen::Transform<T, 3, Eigen::AffineCompact> &t, FormatContext &ctx) const {
+    return matrix_formatter.format(t.matrix(), ctx);
+  }
+};
+//! Format an Eigen expression carrying a custom Eigen::IOFormat (e.g. matrix.format(iofmt))
+//! by delegating to its ostream insertion operator, preserving the requested formatting.
+template <typename T> struct formatter<Eigen::WithFormat<T>> : ostream_formatter {};
+} // namespace fmt

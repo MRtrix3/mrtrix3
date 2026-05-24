@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <fmt/std.h>
 #include <optional>
 #include <sstream>
 #include <string>
@@ -56,8 +57,8 @@ const OptionGroup TrackOutputOptions = OptionGroup ("Options for determining the
 
     + Option ("exclusive", "only select tracks that exclusively connect nodes from within the list of nodes of interest")
 
-    + Option ("files", "select how the resulting streamlines will be grouped in output files."
-                       " Options are: " + MR::Enum::join<FileOutput>(", ") + ". Default: " + MR::Enum::lowercase_name(default_file_output) + ".")
+    + Option ("files", fmt::format("select how the resulting streamlines will be grouped in output files."
+                                   " Options are: {}. Default: {}.", MR::Enum::join<FileOutput>(", "), MR::Enum::lowercase_name(default_file_output)))
       + Argument ("option").type_choice<FileOutput>()
 
     + Option ("exemplars", "generate a mean connection exemplar per edge,"
@@ -197,13 +198,15 @@ void run() {
   if (file_format == FileOutput::SINGLE) {
     output_file = output_path;
     if (!output_path.has_filename())
-      WARN("Output path \"" + argument[2].as_text() + "\" ends with a path separator;" +                  //
-           " when -files single is specified, the output path is interpreted as a tractogram file path"); //
+      WARN("Output path \"{}\" ends with a path separator;"
+           " when -files single is specified, the output path is interpreted as a tractogram file path",
+           argument[2]);
   } else {
     output_dir = output_path;
     if (output_path.extension() == ".tck")
-      WARN("Output path \"" + argument[2].as_text() + "\" has a .tck extension;" +               //
-           " unless -files single is specified, the output path is interpreted as a directory"); //
+      WARN("Output path \"{}\" has a .tck extension;"
+           " unless -files single is specified, the output path is interpreted as a directory",
+           argument[2]);
     std::filesystem::create_directories(output_dir);
   }
 
@@ -239,12 +242,12 @@ void run() {
       ++progress;
     }
   }
-  INFO("Maximum node index in assignments file is " + str(max_node_index));
+  INFO("Maximum node index in assignments file is {}", max_node_index);
 
   const size_t count = to<size_t>(properties["count"]);
   if (assignments_lists.size() != count)
-    throw Exception("Assignments file contains " + str(assignments_lists.size()) + " entries;" + //
-                    " track file contains " + str(count) + " tracks");                           //
+    throw Exception(
+        "Assignments file contains {} entries; track file contains {} tracks", assignments_lists.size(), count);
 
   // If the node assignments have been performed in such a way that each streamline is
   //   assigned to precisely two nodes, use the assignments_pairs class which is
@@ -267,13 +270,15 @@ void run() {
     if (file_format == FileOutput::SINGLE) {
       weights_file.emplace(weights_path);
       if (!weights_path.has_filename())
-        WARN("Weights output path \"" + weights_path.string() + "\" ends with a path separator;" +         //
-             " when -files single is specified, the -tck_weights_out path is interpreted as a file path"); //
+        WARN("Weights output path \"{}\" ends with a path separator;"
+             " when -files single is specified, the -tck_weights_out path is interpreted as a file path",
+             weights_path);
     } else {
       weights_dir.emplace(weights_path);
       if (weights_path.has_extension())
-        WARN("Weights output path \"" + weights_path.string() + "\" has a file extension;" +                 //
-             " unless -files single is specified, the -tck_weights_out path is interpreted as a directory"); //
+        WARN("Weights output path \"{}\" has a file extension;"
+             " unless -files single is specified, the -tck_weights_out path is interpreted as a directory",
+             weights_path);
       std::filesystem::create_directories(weights_path);
     }
   }
@@ -293,7 +298,7 @@ void run() {
     bool zero_in_list = false;
     for (auto i : data) {
       if (i > max_node_index) {
-        WARN("Node of interest " + str(i) + " is above the maximum detected node index of " + str(max_node_index));
+        WARN("Node of interest {} is above the maximum detected node index of {}", i, max_node_index);
       } else {
         nodes.push_back(i);
         if (!i)
@@ -323,11 +328,13 @@ void run() {
 
     auto lv = MR::Connectome::validate_label_image(image);
     if (lv.labels.back() != max_node_index) {
-      WARN("Highest-valued parcels in label image \"" + opt[0][0] + "\"" +        //
-           " (" + str(lv.labels.back()) + ")" +                                   //
-           " differs from highest-valued node in connectome assignments file (" + //
-           str(max_node_index) + ");" +                                           //
-           " this may lead to issues in exemplar generation");                    //
+      WARN("Highest-valued parcels in label image \"{}\""
+           " ({})"
+           " differs from highest-valued node in connectome assignments file ({});"
+           " this may lead to issues in exemplar generation",
+           std::string(opt[0][0]),
+           lv.labels.back(),
+           max_node_index);
     }
     std::vector<node_t> missing_nodes;
     for (const auto n : nodes) {
@@ -335,16 +342,16 @@ void run() {
         missing_nodes.push_back(n);
     }
     if (!missing_nodes.empty())
-      throw Exception(str(missing_nodes.size()) + " node" +                      //
-                      (missing_nodes.size() > 1 ? "s" : "") + " of interest" +   //
-                      " are absent from the parcellation image," +               //
-                      " precluding exemplar generation: " + str(missing_nodes)); //
+      throw Exception("{} node{} of interest are absent from the parcellation image," //
+                      " precluding exemplar generation: {}",                          //
+                      missing_nodes.size(),                                           //
+                      (missing_nodes.size() > 1 ? "s" : ""),                          //
+                      missing_nodes);                                                 //
 
     if (lv.disconnected_components > 0) {
-      WARN(str(lv.disconnected_components) + " parcel" + //
-           (lv.disconnected_components > 0 ? "s are" : " is") +
-           " not spatially contiguous;"
-           " this may result in unusual exemplar trajectories");
+      WARN("{} parcel{} not spatially contiguous; this may result in unusual exemplar trajectories",
+           lv.disconnected_components,
+           (lv.disconnected_components > 0 ? "s are" : " is"));
     }
     std::vector<Eigen::Vector3d> COMs(max_node_index + 1, Eigen::Vector3d::Constant(0.0));
     std::vector<size_t> volumes(max_node_index + 1, 0);
@@ -362,10 +369,14 @@ void run() {
       }
     }
     if (COMs.size() > max_node_index + 1) {
-      WARN("Parcellation image \"" + opt[0][0].as_text() + "\" provided via -exemplars option" + //
-           " contains more nodes (" + str(COMs.size() - 1) + ")" +                               //
-           " than are present in input assignments file \"" + argument[1].as_text() + "\"" +     //
-           " (" + str(max_node_index) + ")");                                                    //
+      WARN("Parcellation image \"{}\" provided via -exemplars option"
+           " contains more nodes ({})"
+           " than are present in input assignments file \"{}\""
+           " ({})",
+           std::string(opt[0][0]),
+           COMs.size() - 1,
+           std::string(argument[1]),
+           max_node_index);
       max_node_index = COMs.size() - 1;
     }
     Transform transform(image);
@@ -427,8 +438,8 @@ void run() {
             const node_t two = nodes[j];
             generator.write(one,
                             two,
-                            output_dir / (str(one) + "-" + str(two) + ".tck"),
-                            weights_path_for(str(one) + "-" + str(two) + ".csv"));
+                            output_dir / fmt::format("{}-{}.tck", one, two),
+                            weights_path_for(fmt::format("{}-{}.csv", one, two)));
             ++progress;
           }
         }
@@ -437,10 +448,8 @@ void run() {
         ProgressBar progress("writing exemplars to files", nodes.size() * COMs.size());
         for (std::vector<node_t>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
           for (size_t i = first_node; i != COMs.size(); ++i) {
-            generator.write(*n,
-                            i,
-                            output_dir / (str(*n) + "-" + str(i) + ".tck"),
-                            weights_path_for(str(*n) + "-" + str(i) + ".csv"));
+            generator.write(
+                *n, i, output_dir / fmt::format("{}-{}.tck", *n, i), weights_path_for(fmt::format("{}-{}.csv", *n, i)));
             ++progress;
           }
         }
@@ -448,7 +457,7 @@ void run() {
     } else if (file_format == FileOutput::PER_NODE) { // One file per node
       ProgressBar progress("writing exemplars to files", nodes.size());
       for (std::vector<node_t>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
-        generator.write(*n, output_dir / (str(*n) + ".tck"), weights_path_for(str(*n) + ".csv"));
+        generator.write(*n, output_dir / fmt::format("{}.tck", *n), weights_path_for(fmt::format("{}.csv", *n)));
         ++progress;
       }
     } else if (file_format == FileOutput::SINGLE) { // Single file
@@ -468,24 +477,24 @@ void run() {
             const node_t two = nodes[j];
             writer.add(one,
                        two,
-                       output_dir / (str(one) + "-" + str(two) + ".tck"),
-                       weights_path_for(str(one) + "-" + str(two) + ".csv"));
+                       output_dir / fmt::format("{}-{}.tck", one, two),
+                       weights_path_for(fmt::format("{}-{}.csv", one, two)));
           }
         } else {
           // Allow duplication of edges; want to have an exhaustive set of files for each node
           for (node_t two = first_node; two <= max_node_index; ++two)
             writer.add(one,
                        two,
-                       output_dir / (str(one) + "-" + str(two) + ".tck"),
-                       weights_path_for(str(one) + "-" + str(two) + ".csv"));
+                       output_dir / fmt::format("{}-{}.tck", one, two),
+                       weights_path_for(fmt::format("{}-{}.csv", one, two)));
         }
       }
-      INFO("A total of " + str(writer.file_count()) + " output track files will be generated (one for each edge)");
+      INFO("A total of {} output track files will be generated (one for each edge)", writer.file_count());
       break;
     case FileOutput::PER_NODE: // One file per node
       for (std::vector<node_t>::const_iterator i = nodes.begin(); i != nodes.end(); ++i)
-        writer.add(*i, output_dir / (str(*i) + ".tck"), weights_path_for(str(*i) + ".csv"));
-      INFO("A total of " + str(writer.file_count()) + " output track files will be generated (one for each node)");
+        writer.add(*i, output_dir / fmt::format("{}.tck", *i), weights_path_for(fmt::format("{}.csv", *i)));
+      INFO("A total of {} output track files will be generated (one for each node)", writer.file_count());
       break;
     case FileOutput::SINGLE: // Single file
       writer.add(nodes, output_file, weights_file);

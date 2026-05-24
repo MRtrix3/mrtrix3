@@ -15,6 +15,7 @@
  */
 
 #include "fixel/filter/cfe.h"
+#include <fmt/format.h>
 
 namespace MR::Fixel::Filter {
 
@@ -23,16 +24,16 @@ using namespace MR::App;
 // clang-format off
 const OptionGroup cfe_options = OptionGroup ("Parameters for the Connectivity-based Fixel Enhancement (CFE) algorithm")
 
-  + Option ("cfe_dh", "the height increment used in the cfe integration (default: " + str(cfe_default_dh, 2) + ")")
+  + Option ("cfe_dh", fmt::format("the height increment used in the cfe integration (default: {:.2g})", cfe_default_dh))
     + Argument ("value").type_float (0.001, 1.0)
 
-  + Option ("cfe_e", "cfe extent exponent (default: " + str(cfe_default_e, 2) + ")")
+  + Option ("cfe_e", fmt::format("cfe extent exponent (default: {:.2g})", cfe_default_e))
     + Argument ("value").type_float (0.0, 100.0)
 
-  + Option ("cfe_h", "cfe height exponent (default: " + str(cfe_default_h, 2) + ")")
+  + Option ("cfe_h", fmt::format("cfe height exponent (default: {:.2g})", cfe_default_h))
     + Argument ("value").type_float (0.0, 100.0)
 
-  + Option ("cfe_c", "cfe connectivity exponent (default: " + str(cfe_default_c, 2) + ")")
+  + Option ("cfe_c", fmt::format("cfe connectivity exponent (default: {:.2g})", cfe_default_c))
     + Argument ("value").type_float (0.0, 100.0)
 
   + Option ("cfe_legacy", "use the legacy (non-normalised) form of the cfe equation");

@@ -504,7 +504,7 @@ public:
       return;
     auto search = image_list.find(arg);
     if (search != image_list.end()) {
-      DEBUG(std::string("image \"") + arg + "\" already loaded - re-using exising image");
+      DEBUG("image \"{}\" already loaded - re-using exising image", arg);
       image = search->second.image;
       image_is_complex = search->second.image_is_complex;
     } else {
@@ -532,8 +532,8 @@ public:
             value = to<complex_type>(arg);
           }
         } catch (Exception &e_number) {
-          Exception e(std::string("Could not interpret string \"") + arg +
-                      "\" as either an image path or a numerical value");
+          Exception e(
+              fmt::format("Could not interpret string \"{}\" as either an image path or a numerical value", arg));
           e.push_back("As image: ");
           for (size_t i = 0; i != e_image.num(); ++i)
             e.push_back(e_image[i]);
@@ -585,15 +585,15 @@ public:
     return evaluate(in1, in2, in3);
   }
   virtual Chunk &evaluate(Chunk &in) const {
-    throw Exception("operation \"" + id + "\" not supported!");
+    throw Exception("operation \"{}\" not supported!", id);
     return in;
   }
   virtual Chunk &evaluate(Chunk &a, Chunk &b) const {
-    throw Exception("operation \"" + id + "\" not supported!");
+    throw Exception("operation \"{}\" not supported!", id);
     return a;
   }
   virtual Chunk &evaluate(Chunk &a, Chunk &b, Chunk &c) const {
-    throw Exception("operation \"" + id + "\" not supported!");
+    throw Exception("operation \"{}\" not supported!", id);
     return a;
   }
 
@@ -637,14 +637,14 @@ inline Chunk &StackEntry::evaluate(ThreadLocalStorage &storage) const {
 
 inline void replace(std::string &orig, size_t n, std::string_view value) {
   if (orig[0] == '(' && orig[orig.size() - 1] == ')') {
-    size_t pos = orig.find("(%" + str(n + 1) + ")");
+    size_t pos = orig.find(fmt::format("(%{})", n + 1));
     if (pos != orig.npos) {
       orig.replace(pos, 4, value);
       return;
     }
   }
 
-  size_t pos = orig.find("%" + str(n + 1));
+  size_t pos = orig.find(fmt::format("%{}", n + 1));
   if (pos != orig.npos)
     orig.replace(pos, 2, value);
 }
@@ -744,7 +744,7 @@ public:
 template <class Operation>
 void unary_operation(std::string_view operation_name, std::vector<StackEntry> &stack, Operation operation) {
   if (stack.empty())
-    throw Exception("no operand in stack for operation \"" + operation_name + "\"!");
+    throw Exception("no operand in stack for operation \"{}\"!", operation_name);
   StackEntry &a(stack[stack.size() - 1]);
   a.load();
   if (a.evaluator || a.image || a.rng) {
@@ -754,7 +754,7 @@ void unary_operation(std::string_view operation_name, std::vector<StackEntry> &s
     try {
       a.value = (a.value.imag() == 0.0 ? operation.R(a.value.real()) : operation.Z(a.value));
     } catch (...) {
-      throw Exception("operation \"" + operation_name + "\" not supported for data type supplied");
+      throw Exception("operation \"{}\" not supported for data type supplied", operation_name);
     }
   }
 }
@@ -762,7 +762,7 @@ void unary_operation(std::string_view operation_name, std::vector<StackEntry> &s
 template <class Operation>
 void binary_operation(std::string_view operation_name, std::vector<StackEntry> &stack, Operation operation) {
   if (stack.size() < 2)
-    throw Exception("not enough operands in stack for operation \"" + operation_name + "\"");
+    throw Exception("not enough operands in stack for operation \"{}\"", operation_name);
   StackEntry &a(stack[stack.size() - 2]);
   StackEntry &b(stack[stack.size() - 1]);
   a.load();
@@ -781,7 +781,7 @@ void binary_operation(std::string_view operation_name, std::vector<StackEntry> &
 template <class Operation>
 void ternary_operation(std::string_view operation_name, std::vector<StackEntry> &stack, Operation operation) {
   if (stack.size() < 3)
-    throw Exception("not enough operands in stack for operation \"" + operation_name + "\"");
+    throw Exception("not enough operands in stack for operation \"{}\"", operation_name);
   StackEntry &a(stack[stack.size() - 3]);
   StackEntry &b(stack[stack.size() - 2]);
   StackEntry &c(stack[stack.size() - 1]);
@@ -899,7 +899,7 @@ void run_operations(const std::vector<StackEntry> &stack) {
     assert(!stack[0].evaluator);
     assert(!stack[0].image);
 
-    print(str(stack[0].value) + "\n");
+    print(fmt::format("{}\n", stack[0].value));
     return;
   }
 
@@ -921,7 +921,7 @@ void run_operations(const std::vector<StackEntry> &stack) {
 
   auto output = Header::create(std::filesystem::path{stack[1].arg}, header).get_image<complex_type>();
 
-  auto loop = ThreadedLoop("computing: " + operation_string(stack[0]), output, 0, output.ndim(), 2);
+  auto loop = ThreadedLoop(fmt::format("computing: {}", operation_string(stack[0])), output, 0, output.ndim(), 2);
 
   ThreadFunctor functor(loop.inner_axes, stack[0], output);
   loop.run_outer(functor);
@@ -1006,9 +1006,10 @@ void run() {
 
 #define SECTION 3 // check_syntax off
 #include "mrcalc.cpp"
+#include <fmt/format.h>
 
       else
-        throw Exception(std::string("operation \"") + opt->id + "\" not yet implemented!");
+        throw Exception("operation \"{}\" not yet implemented!", opt->id);
 
     } else {
       stack.push_back(argument);

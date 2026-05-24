@@ -28,7 +28,7 @@ Options
 
 -  **-marker coordinates** single value or a comma-separated list of three values that define out-of-bounds voxels in the input warp image. Default: (0,0,0).
 
--  **-tolerance value** numerical precision used for L2 matrix norm comparison. Default: 9.99999975e-06.
+-  **-tolerance value** numerical precision used for L2 matrix norm comparison. Default: 1e-05.
 
 Standard options
 ^^^^^^^^^^^^^^^^

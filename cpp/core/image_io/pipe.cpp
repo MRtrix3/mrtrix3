@@ -20,12 +20,13 @@
 #include "header.h"
 #include "image_io/pipe.h"
 #include "signal_handler.h"
+#include <fmt/std.h>
 
 namespace MR::ImageIO {
 
 void Pipe::load(const Header &header, size_t) {
   assert(files.size() == 1);
-  DEBUG("mapping piped image \"" + files[0].path.string() + "\"...");
+  DEBUG("mapping piped image \"{}\"...", files[0].path);
 
   int64_t bytes_per_segment = (header.datatype().bits() * segsize + 7) / 8;
 

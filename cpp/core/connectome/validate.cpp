@@ -34,6 +34,7 @@
 #include "misc/voxel2vector.h"
 #include "mrtrix.h"
 #include "thread_queue.h"
+#include <fmt/format.h>
 
 namespace MR::Connectome {
 
@@ -42,36 +43,42 @@ void validate_label_header(const Header &H) {
   // Reproduces the previous Connectome::check().
   // Throws on any violation.
   if (!(H.ndim() == 3 || (H.ndim() == 4 && H.size(3) == 1)))
-    throw Exception("Image \"" + H.name() + "\" is not 3D," +             //
-                    " and hence is not a volume of node parcel indices"); //
+    throw Exception("Image \"{}\" is not 3D,"                            //
+                    " and hence is not a volume of node parcel indices", //
+                    H.name());                                           //
   if (H.datatype().is_floating_point()) {
-    CONSOLE("Image \"" + H.name() + "\" stored with floating-point type;" + //
-            " need to check for non-integer or negative values");           //
+    CONSOLE("Image \"{}\" stored with floating-point type;"      //
+            " need to check for non-integer or negative values", //
+            H.name());
     // Need to open the image WITHOUT using the IO handler stored in H;
     //   creating an image from this "claims" the handler from the header, and
     //   therefore once this check has completed the image can no longer be opened
     auto test = Image<float>::open(H.path());
     for (auto l = Loop("Verifying parcellation image", test)(test); l; ++l) {
       if (std::round(static_cast<float>(test.value())) != test.value())
-        throw Exception("Floating-point number detected in image \"" + H.name() + "\";" + //
-                        " label images should contain integers only");                    //
+        throw Exception("Floating-point number detected in image \"{}\";" //
+                        " label images should contain integers only",     //
+                        H.name());                                        //
       if (static_cast<float>(test.value()) < 0.0F)
-        throw Exception("Negative value detected in image \"" + H.name() + "\";" + //
-                        " label images must be strictly non-negative");            //
+        throw Exception("Negative value detected in image \"{}\";"     //
+                        " label images must be strictly non-negative", //
+                        H.name());                                     //
     }
-    // WARN ("Image \"" + H.name() + "\" stored as floating-point;"
-    //       " it is preferable to store label images using an unsigned integer type");
+    // WARN("Image \"{}\" stored as floating-point;\"\n    //       \" it is preferable to store label
+    // images using an unsigned integer type", H.name());
   } else if (H.datatype().is_signed()) {
-    CONSOLE("Image \"" + H.name() + "\" stored with signed integer type;" + //
-            " need to check for negative values");                          //
+    CONSOLE("Image \"{}\" stored with signed integer type;" //
+            " need to check for negative values",           //
+            H.name());
     auto test = Image<int64_t>::open(H.path());
     for (auto l = Loop("Verifying parcellation image", test)(test); l; ++l) {
       if (static_cast<int64_t>(test.value()) < int64_t(0))
-        throw Exception("Negative value detected in image \"" + H.name() + "\";" + //
-                        " label images must be strictly non-negative");            //
+        throw Exception("Negative value detected in image \"{}\";"     //
+                        " label images must be strictly non-negative", //
+                        H.name());                                     //
     }
-    // WARN ("Image \"" + H.name() + "\" stored as signed integer; it is preferable to store label images using an
-    // unsigned integer type");
+    // WARN("Image \"{}\" stored as signed integer; it is preferable to store label images using an\n //
+    // unsigned integer type", H.name());
   }
 }
 
@@ -95,8 +102,7 @@ const LabelValidation validate_label_image(Image<node_t> image) {
   // Guard against images too large for the uint32_t index space used below.
   if (static_cast<uint64_t>(X) * static_cast<uint64_t>(Y) * static_cast<uint64_t>(Z) >
       static_cast<uint64_t>(std::numeric_limits<uint32_t>::max()))
-    throw Exception("Image \"" + image.name() + "\"" +                     //
-                    " has too many voxels (> 2^32) for label validation"); //
+    throw Exception("Image \"{}\" has too many voxels (> 2^32) for label validation", image.name());
 
   const uint32_t total = X * Y * Z;
 
@@ -220,18 +226,19 @@ void debug_validate_label_image(const Image<node_t> &image) {
   try {
     result = validate_label_image(image);
   } catch (const Exception &e) {
-    throw Exception(e, "Label image \"" + image.name() + "\" validation failed");
+    throw Exception(e, "Label image \"{}\" validation failed", image.name());
   }
   if (!result.indices_contiguous) {
-    DEBUG("Label image \"" + image.name() + "\":" +                //
-          " indices are non-contiguous" +                          //
-          " (" + str(result.missing_indices.size()) + " gap(s)" +  //
-          " in range [1, " + str(*result.labels.rbegin()) + "])"); //
+    DEBUG("Label image \"{}\": {} indices are non-contiguous (gap(s) in range [1, {}])", //
+          image.name(),                                                                  //
+          result.missing_indices.size(),                                                 //
+          *result.labels.rbegin());                                                      //
   }
   if (result.disconnected_components > 0)
-    DEBUG("Label image \"" + image.name() + "\":" +                                            //
-          str(result.disconnected_components) + " label" +                                     //
-          (result.disconnected_components > 0 ? "s are" : " is") + " spatially disconnected"); //
+    DEBUG("Label image \"{}\":{} label{} spatially disconnected",  //
+          image.name(),                                            //
+          result.disconnected_components,                          //
+          (result.disconnected_components > 0 ? "s are" : " is")); //
 }
 
 } // namespace MR::Connectome

@@ -23,6 +23,7 @@
 #include "math/sphere.h"
 #include "progressbar.h"
 #include "thread.h"
+#include <fmt/format.h>
 
 constexpr size_t default_permutations = 1e8;
 
@@ -49,8 +50,8 @@ void usage() {
 
 
   OPTIONS
-    + Option ("number", "number of shuffles to try"
-                        " (default: " + str(default_permutations) + ")")
+    + Option ("number", fmt::format("number of shuffles to try"
+                                    " (default: {})", default_permutations))
       + Argument ("num").type_integer (1)
 
     + Option ("preserve", "preserve the sign of some number of directions at the start of the set")
@@ -79,8 +80,8 @@ public:
     if (eddy < best_eddy) {
       best_eddy = eddy;
       best_signs = signs;
-      progress.set_text(
-          "optimising directions for eddy-currents (current best configuration: energy = " + str(best_eddy) + ")");
+      progress.set_text("optimising directions for eddy-currents (current best configuration: energy = " +
+                        fmt::format("{})", best_eddy));
     }
     ++num_shuffles;
     ++progress;

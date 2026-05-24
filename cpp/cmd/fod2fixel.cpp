@@ -27,6 +27,7 @@
 #include "math/SH.h"
 #include "progressbar.h"
 #include "thread_queue.h"
+#include <fmt/format.h>
 
 using namespace MR;
 using namespace MR::DWI;
@@ -292,8 +293,8 @@ void run() {
   if (!get_options("nii").empty())
     file_extension = ".nii";
 
-  static const std::string default_index_filename("index" + file_extension);
-  static const std::string default_directions_filename("directions" + file_extension);
+  static const std::string default_index_filename(fmt::format("index{}", file_extension));
+  static const std::string default_directions_filename(fmt::format("directions{}", file_extension));
   receiver.set_index_output(default_index_filename);
   receiver.set_directions_output(default_directions_filename);
 
@@ -314,8 +315,8 @@ void run() {
   Image<float> mask;
   if (!opt.empty()) {
     mask = Image<float>::open(opt[0][0]);
-    if (!dimensions_match(H, mask, 0, 3))
-      throw Exception("Cannot use image \"" + str(opt[0][0]) + "\" as mask image; dimensions do not match FOD image");
+    if (!dimensions_match(fod_data, mask, 0, 3))
+      throw Exception("Cannot use image \"{}\" as mask image; dimensions do not match FOD image", opt[0][0]);
   }
 
   Fixel::check_fixel_directory(output_directory, true, true);

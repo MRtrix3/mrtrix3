@@ -15,6 +15,7 @@
  */
 
 #include <filesystem>
+#include <fmt/format.h>
 #include <optional>
 
 #include "adapter/jacobian.h"
@@ -154,9 +155,8 @@ void usage() {
         " (i.e. half way between image1 and image2)")
 
     + Option ("interp",
-        std::string("set the interpolation method to use when reslicing")
-        + " (choices: " + join(MR::Interp::interp_choices, ", ") + ";"
-        + " default: " + MR::Interp::interp_choices[static_cast<ssize_t>(default_interp)] + ").")
+        fmt::format("set the interpolation method to use when reslicing"
+                    " (choices: {}; default: {}).", join(MR::Interp::interp_choices, ", "), MR::Interp::interp_choices[static_cast<ssize_t>(default_interp)]))
       + Argument ("method").type_choice(MR::Interp::interp_choices)
 
     + Option ("oversample",
@@ -277,7 +277,7 @@ void apply_warp(Image<float> &input,
 
 void apply_linear_jacobian(Image<float> &image, transform_type trafo) {
   const float det = trafo.linear().topLeftCorner<3, 3>().determinant();
-  INFO("global intensity modulation with scale factor " + str(det));
+  INFO("global intensity modulation with scale factor {}", det);
   for (auto i = Loop("applying global intensity modulation", image, 0, image.ndim())(image); i; ++i) {
     image.value() *= det;
   }
@@ -310,7 +310,7 @@ void run() {
       try {
         linear_transform = File::Matrix::load_transform(opt[0][0]);
       } catch (...) {
-        throw Exception("Unable to extract transform matrix from -replace file \"" + opt[0][0].as_text() + "\"");
+        throw Exception("Unable to extract transform matrix from -replace file \"{}\"", opt[0][0]);
       }
     }
   }
@@ -418,7 +418,7 @@ void run() {
     flip.setIdentity();
     for (size_t i = 0; i < axes.size(); ++i) {
       if (axes[i] < 0 || axes[i] > 2)
-        throw Exception("axes supplied to -flip are out of bounds (" + std::string(opt[0][0]) + ")");
+        throw Exception("axes supplied to -flip are out of bounds ({})", opt[0][0]);
       flip(axes[i], 3) += flip(axes[i], axes[i]) * input_header.spacing(axes[i]) * (input_header.size(axes[i]) - 1);
       flip(axes[i], axes[i]) *= -1.0;
     }
@@ -446,8 +446,8 @@ void run() {
   opt = get_options("reorient_fod");
   const bool fod_reorientation = !opt.empty() && bool(opt[0][0]);
   if (is_possible_fod_image && opt.empty())
-    throw Exception("-reorient_fod yes/no needs to be explicitly specified for images with " +
-                    str(input_header.size(3)) + " volumes");
+    throw Exception("-reorient_fod yes/no needs to be explicitly specified for images with {} volumes",
+                    input_header.size(3));
   else if (!is_possible_fod_image && fod_reorientation)
     throw Exception("Apodised PSF reorientation requires SH series images");
 
@@ -473,11 +473,11 @@ void run() {
   const bool modulate_fod = modulation.has_value() && *modulation == Modulation::FOD;
   const bool modulate_jac = modulation.has_value() && *modulation == Modulation::JAC;
 
-  const std::string reorient_msg = str("reorienting") + str((modulate_fod ? " with FOD modulation" : ""));
+  const std::string reorient_msg = fmt::format("reorienting{}", (modulate_fod ? " with FOD modulation" : ""));
   if (modulate_fod)
-    add_line(output_header.keyval()["comments"], std::string("FOD modulation applied"));
+    add_line(output_header.keyval()["comments"], "FOD modulation applied");
   if (modulate_jac)
-    add_line(output_header.keyval()["comments"], std::string("Jacobian determinant modulation applied"));
+    add_line(output_header.keyval()["comments"], "Jacobian determinant modulation applied");
 
   if (modulate_fod) {
     if (!is_possible_fod_image)
@@ -514,8 +514,9 @@ void run() {
     if (grad.rows()) {
       try {
         if (input_header.size(3) != static_cast<ssize_t>(grad.rows())) {
-          throw Exception("DW gradient table of different length (" + str(grad.rows()) + ")" +
-                          " to number of image volumes (" + str(input_header.size(3)) + ")");
+          throw Exception("DW gradient table of different length ({}) to number of image volumes ({})",
+                          grad.rows(),
+                          input_header.size(3));
         }
         INFO("DW gradients detected and will be reoriented");
         if (!test.isIdentity(0.001)) {
@@ -544,16 +545,20 @@ void run() {
       try {
         const auto lines = split_lines(hit->second);
         if (lines.size() != static_cast<size_t>(input_header.size(3)))
-          throw Exception("Number of lines in header entry \"directions\" (" + str(lines.size()) + ")" +
-                          " does not match number of volumes in image (" + str(input_header.size(3)) + ")");
+          throw Exception(
+              "Number of lines in header entry \"directions\" ({}) does not match number of volumes in image ({})",
+              lines.size(),
+              input_header.size(3));
         Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> result;
         for (size_t l = 0; l != lines.size(); ++l) {
           const auto v = parse_floats(lines[l]);
           if (!result.cols()) {
             if (!(v.size() == 2 || v.size() == 3))
-              throw Exception(std::string("Malformed \"directions\" field") + //
-                              " (expected matrix with 2 or 3 columns;" +      //
-                              " data has " + str(v.size()) + " columns)");
+              throw Exception("{}{}{}{} columns)",
+                              "Malformed \"directions\" field",         //
+                              " (expected matrix with 2 or 3 columns;", //
+                              " data has ",
+                              v.size());
             result.resize(lines.size(), v.size());
           } else if (v.size() != static_cast<size_t>(result.cols())) {
             throw Exception("Inconsistent number of columns in \"directions\" field");
@@ -737,7 +742,7 @@ void run() {
            " applying this without the -template option will mean"
            " the output header transform will also be not orthonormal");
 
-    add_line(output_header.keyval()["comments"], std::string("transform modified"));
+    add_line(output_header.keyval()["comments"], "transform modified");
     if (replace)
       output_header.transform() = linear_transform;
     else

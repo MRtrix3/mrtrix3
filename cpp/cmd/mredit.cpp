@@ -24,6 +24,7 @@
 #include "types.h"
 
 #include "algo/copy.h"
+#include <fmt/format.h>
 
 #include <filesystem>
 
@@ -188,8 +189,10 @@ void run() {
     const auto position = parse_floats(v[0]);
     const float value = v[1];
     if (position.size() != H.ndim())
-      throw Exception("Image has " + str(H.ndim()) + " dimensions, but -voxel option position " + std::string(v[0]) +
-                      " provides only " + str(position.size()) + " coordinates");
+      throw Exception("Image has {} dimensions, but -voxel option position {} provides only {} coordinates",
+                      H.ndim(),
+                      std::string(v[0]),
+                      position.size());
     if (scanner) {
       Eigen::Vector3d p(position[0], position[1], position[2]);
       p = transform.scanner2voxel * p;

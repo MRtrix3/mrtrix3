@@ -35,8 +35,9 @@ void copy_with_progress(InputImageType &&source,
                         OutputImageType &&destination,
                         size_t from_axis = 0,
                         size_t to_axis = std::numeric_limits<size_t>::max()) {
-  copy_with_progress_message("copying from \"" + shorten(source.name()) + "\" to \"" + shorten(destination.name()) +
-                                 "\"...",
+  copy_with_progress_message(fmt::format("copying from \"{}\" to \"{}\"",
+                                         shorten(std::string_view(source.name())),
+                                         shorten(std::string_view(destination.name()))),
                              source,
                              destination,
                              from_axis,

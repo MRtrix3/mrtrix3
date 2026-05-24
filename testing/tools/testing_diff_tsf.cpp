@@ -14,6 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <fmt/format.h>
+
 #include "command.h"
 #include "dwi/tractography/scalar_file.h"
 #include "dwi/tractography/streamline.h"
@@ -68,9 +70,14 @@ void run() {
 
       for (size_t i = 0; i < tck_scalar1.size(); ++i) {
         if (abs((tck_scalar1[i] - tck_scalar2[i]) / (0.5 * (tck_scalar1[i] + tck_scalar2[i]))) > tol)
-          throw Exception("track scalar files \"" + str(argument[0]) + "\" and \"" + str(argument[1]) + "\"" + //
-                          " do not match within fractional precision of " + str(tol) +                         //
-                          " (" + str(cdouble(tck_scalar1[i])) + " vs " + str(cdouble(tck_scalar2[i])) + ")");
+          throw Exception(
+              fmt::format("track scalar files \"{}\" and \"{}\" do not match within fractional precision of {}"
+                          " ({} vs {})",
+                          argument[0],
+                          argument[1],
+                          tol,
+                          tck_scalar1[i],
+                          tck_scalar2[i]));
       }
     }
 
@@ -86,9 +93,14 @@ void run() {
 
       for (size_t i = 0; i < tck_scalar1.size(); ++i) {
         if (abs(tck_scalar1[i] - tck_scalar2[i]) > tol)
-          throw Exception("track scalar files \"" + str(argument[0]) + "\" and \"" + str(argument[1]) + "\"" + //
-                          " do not match within absolute precision of " + str(tol) +                           //
-                          " (" + str(cdouble(tck_scalar1[i])) + " vs " + str(cdouble(tck_scalar2[i])) + ")");
+          throw Exception(
+              fmt::format("track scalar files \"{}\" and \"{}\" do not match within absolute precision of {}"
+                          " ({} vs {})",
+                          argument[0],
+                          argument[1],
+                          tol,
+                          tck_scalar1[i],
+                          tck_scalar2[i]));
       }
     }
   }

@@ -22,6 +22,7 @@
 #include "filter/base.h"
 #include "image.h"
 #include "memory.h"
+#include <fmt/format.h>
 
 namespace MR::Filter {
 /** \addtogroup Filters
@@ -94,7 +95,7 @@ public:
       if (std_dev.size() != 3)
         throw Exception(
             "Please supply a single standard deviation value, or three values (one for each spatial dimension)");
-      for (unsigned int i = 0; i < 3; i++)
+      for (unsigned int i = 0; i < 3; ++i)
         stdev[i] = std_dev[i];
     }
   }
@@ -117,7 +118,7 @@ public:
 
     for (size_t dim = 0; dim < 3; dim++) {
       if (stdev[dim] > 0) {
-        DEBUG("creating scratch image for smoothing image along dimension " + str(dim));
+        DEBUG("creating scratch image for smoothing image along dimension {}", dim);
         out = std::make_shared<Image<ValueType>>(Image<ValueType>::scratch(input));
         Adapter::Gaussian1D<Image<ValueType>> gaussian(*in, stdev[dim], dim, extent[dim], zero_boundary);
         threaded_copy(gaussian, *out, 0, input.ndim(), 2);
@@ -149,7 +150,7 @@ public:
             continue;
           axes[axdim++] = stride_order[i];
         }
-        DEBUG("smoothing dimension " + str(dim) + " in place with stride order: " + str(axes));
+        DEBUG("smoothing dimension {} in place with stride order: {}", dim, axes);
         SmoothFunctor1D<ImageType> smooth(in_and_output, stdev[dim], dim, extent[dim], zero_boundary);
         ThreadedLoop(in_and_output, axes, std::min<size_t>(2, axes.size())).run(smooth, in_and_output);
         if (progress)

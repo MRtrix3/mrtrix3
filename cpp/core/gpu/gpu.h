@@ -150,7 +150,7 @@ struct ShaderEntry {
   std::string name = MR::match_v(
       shader_source,
       [](const ShaderFile &file) { return file.file_path.stem().string(); },
-      [](const InlineShaderText &) { return std::string("inline_shader"); });
+      [](const InlineShaderText &) -> std::string { return "inline_shader"; });
 
   // Convenience property to set the kWorkgroupSizeX, kWorkgroupSizeY, and
   // kWorkgroupSizeZ constants in the shader. These constant must be declared

@@ -15,6 +15,7 @@
  */
 
 #include "dwi/tractography/properties.h"
+#include <fmt/format.h>
 
 namespace MR::DWI::Tractography {
 
@@ -63,8 +64,10 @@ void Properties::compare_stepsize_rois() const {
   auto f = [](const ROISetBase &rois, std::string_view type, const float threshold) {
     for (size_t i = 0; i != rois.size(); ++i) {
       if (rois[i].min_featurelength() < threshold) {
-        WARN("Streamline step size is large compared to " + type + " ROI \"" + rois[i].parameters() + "; " +
-             "risk of streamlines passing through ROI without an intersecting vertex");
+        WARN("Streamline step size is large compared to {} ROI \"{}; risk of streamlines passing through "
+             "ROI without an intersecting vertex",
+             type,
+             rois[i].parameters());
       }
     }
   };

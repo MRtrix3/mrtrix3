@@ -24,6 +24,7 @@
 #include "algo/loop.h"
 #include "fixel/helpers.h"
 #include "image.h"
+#include <fmt/std.h>
 
 namespace MR::Fixel {
 
@@ -39,7 +40,7 @@ void validate_directory(const std::filesystem::path &fixel_directory_path) {
   try {
     total_nfixels = validate_index_image(index_header.get_image<index_type>());
   } catch (Exception &e) {
-    throw Exception(e, "Error in index image of fixel directory " + fixel_directory_path.string());
+    throw Exception(e, "Error in index image of fixel directory {}", fixel_directory_path);
   }
 
   // Verify that every fixel data file in the directory contains
@@ -53,8 +54,8 @@ void validate_directory(const std::filesystem::path &fixel_directory_path) {
     if (is_directions_filename(entry.path().filename())) {
       if (directions_found)
         throw Exception("Multiple possible fixel directions files"
-                        " found in directory" +
-                        fixel_directory_path.string());
+                        " found in directory {}",
+                        fixel_directory_path);
       directions_found = true;
     }
     try {
@@ -62,9 +63,12 @@ void validate_directory(const std::filesystem::path &fixel_directory_path) {
       if (!is_data_file(H))
         continue;
       if (static_cast<index_type>(H.size(0)) != total_nfixels)
-        throw InvalidDirectoryException("Fixel data file \"" + entry.path().string() + "\"" +   //
-                                        " contains " + str(H.size(0)) + " fixels," +            //
-                                        " but the index image contains " + str(total_nfixels)); //
+        throw InvalidDirectoryException("Fixel data file \"{}\" in directory \"{}\" contains {} fixels," //
+                                        " but the index image contains {}",                              //
+                                        entry.path(),                                                    //
+                                        fixel_directory_path,                                            //
+                                        H.size(0),                                                       //
+                                        total_nfixels);                                                  //
     } catch (InvalidDirectoryException &) {
       throw;
     } catch (...) {
@@ -94,10 +98,11 @@ index_type validate_index_image(Image<index_type> index_image) {
   index_type total_nfixels = 0;
   for (const auto &[offset, count] : entries) {
     if (offset > std::numeric_limits<index_type>::max() - count)
-      throw InvalidDirectoryException(                                                           //
-          "Fixel index image \"" + index_image.name() + "\"" +                                   //
-          " contains an entry where offset (" + str(offset) + ") + count (" + str(count) + ")" + //
-          " overflows the index type");                                                          //
+      throw InvalidDirectoryException("Fixel index image \"{}\" contains an entry"                //
+                                      " where offset ({}) + count ({}) overflows the index type", //
+                                      index_image.name(),                                         //
+                                      offset,                                                     //
+                                      count);                                                     //
     total_nfixels = std::max(total_nfixels, offset + count);
   }
 
@@ -105,10 +110,11 @@ index_type validate_index_image(Image<index_type> index_image) {
   try {
     const index_type nfixels_header = to<index_type>(index_image.keyval().at(n_fixels_key));
     if (to<index_type>(index_image.keyval().at(n_fixels_key)) != total_nfixels) {
-      WARN("Total number of fixels indicated in header of image \"" + index_image.name() + "\"" + //
-           " (" + str(nfixels_header) + ")" +                                                     //
-           " does not match that indicated in image data" +                                       //
-           " (" + str(total_nfixels) + ")");                                                      //
+      WARN("Total number of fixels indicated in header of image \"{}\" ({})" //
+           " does not match that indicated in image data ({})",              //
+           index_image.name(),                                               //
+           nfixels_header,                                                   //
+           total_nfixels);                                                   //
     }
   } catch (std::out_of_range &) {
   }
@@ -122,9 +128,11 @@ index_type validate_index_image(Image<index_type> index_image) {
   }
   for (index_type i = 0; i < total_nfixels; ++i) {
     if (fixel_counts[i] != 1)
-      throw InvalidDirectoryException("Fixel index " + str(i) + " in image \"" + index_image.name() + "\"" +      //
-                                      " is covered by " + str(fixel_counts[i]) + " voxel(s) in the index image" + //
-                                      " (expected exactly one)");                                                 //
+      throw InvalidDirectoryException("Fixel index {} in image \"{}\" is covered by {} voxel(s) in the index image" //
+                                      " (expected exactly one)",                                                    //
+                                      i,                                                                            //
+                                      index_image.name(),                                                           //
+                                      fixel_counts[i]);                                                             //
   }
 
   return total_nfixels;
@@ -158,7 +166,7 @@ void validate_header(const Header &H) {
     if (H.size(3) % 3 != 0U)
       throw Exception("Number of volumes must be a multiple of 3");
   } catch (Exception &e) {
-    throw Exception(e, "Image \"" + H.name() + "\" is not a valid peaks image");
+    throw Exception(e, "Image \"{}\" is not a valid peaks image", H.name());
   }
 }
 
@@ -212,10 +220,10 @@ const PeaksValidation validate_image(Image<float> image) {
           // First fill triplet seen — lock in the fill convention.
           result.fill_value = this_fill;
         } else if ((std::isnan(this_fill) ? 1 : 0) + (std::isnan(*result.fill_value) ? 1 : 0) == 1) {
-          throw Exception("Peaks image \"" + image.name() + "\":" +        //
-                          " mixed fill values detected" +                  //
-                          " (both zero and NaN triplets are present);" +   //
-                          " a single fill value must be used throughout"); //
+          throw Exception("Peaks image \"{}\":"                                                   //
+                          " mixed fill values detected (both zero and NaN triplets are present);" //
+                          " a single fill value must be used throughout",                         //
+                          image.name());                                                          //
         }
         continue; // no further checks needed for this triplet: not a fill value
       }
@@ -257,16 +265,16 @@ const PeaksValidation validate_image(Image<float> image) {
 
   Exception e;
   if (partial_nan_count > 0 || infinity_count > 0)
-    e.push_back("Peaks image \"" + image.name() + "\":");
+    e.push_back(fmt::format("Peaks image \"{}\":", image.name()));
 
   if (partial_nan_count > 0)
-    e.push_back(str(partial_nan_count) + " peak triplet" +                      //
+    e.push_back(fmt::format("{} peak triplet", partial_nan_count) +             //
                 (partial_nan_count > 1 ? "s that contain" : " that contains") + //
                 " a mixture of NaN and non-NaN values" +                        //
                 " (a peak triplet must be either all-finite or all-NaN)");      //
 
   if (infinity_count > 0)
-    e.push_back(str(infinity_count) + " peak triplet" +                      //
+    e.push_back(fmt::format("{} peak triplet", infinity_count) +             //
                 (infinity_count > 1 ? "s that contain" : " that contains") + //
                 " impermitted infinity values");                             //
 
@@ -282,21 +290,24 @@ void debug_validate_image(const Image<float> &image) {
     return;
   try {
     const PeaksValidation v = validate_image(image);
-    DEBUG("Peaks image \"" + image.name() + "\":" +
-          (v.fill_value.has_value() ? (" fill value is " + str(*v.fill_value))
-                                    : " no fill triplets detected (all voxels fully populated)"));
+    DEBUG("Peaks image \"{}\": {}",
+          image.name(),
+          (v.fill_value.has_value() ? (fmt::format("fill value is {}", *v.fill_value))
+                                    : "no fill triplets detected (all voxels fully populated)"));
     if (std::isfinite(v.norm_min)) {
       constexpr float unit_tol = 1e-4F;
-      DEBUG("Peaks image \"" + image.name() + "\": " +
-            ((std::fabs(v.norm_min - 1.0F) <= unit_tol && std::fabs(v.norm_max - 1.0F) <= unit_tol)
-                 ? "all peaks are unit-norm"
-                 : ("peak norms range from " + str(v.norm_min) + " to " + str(v.norm_max) +
-                    " (ie. image encodes a quantitative value per peak)")));
+      DEBUG("Peaks image \"{}\": {}",
+            image.name(),
+            (std::fabs(v.norm_min - 1.0F) <= unit_tol && std::fabs(v.norm_max - 1.0F) <= unit_tol)
+                ? "all peaks are unit-norm"
+                : fmt::format("peak norms range from {} to {} (ie. image encodes a quantitative value per peak)",
+                              v.norm_min,
+                              v.norm_max));
     } else {
-      WARN("Peaks image \"" + image.name() + "\": no peaks data present");
+      WARN("Peaks image \"{}\": no peaks data present", image.name());
     }
   } catch (const Exception &e) {
-    throw Exception(e, "Peaks image \"" + image.name() + "\" validation failed");
+    throw Exception(e, "Peaks image \"{}\" validation failed", image.name());
   }
 }
 

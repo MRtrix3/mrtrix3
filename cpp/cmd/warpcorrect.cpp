@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <fmt/format.h>
 #include <limits>
 #include <mutex>
 
@@ -51,8 +52,7 @@ void usage() {
                       " that define out-of-bounds voxels in the input warp image."
                       " Default: (0,0,0).")
     + Argument ("coordinates").type_sequence_float()
-  + Option ("tolerance", "numerical precision used for L2 matrix norm comparison."
-                         " Default: " + str(precision) + ".")
+  + Option ("tolerance", fmt::format("numerical precision used for L2 matrix norm comparison. Default: {}.", precision))
     + Argument ("value").type_float(precision);
 }
 // clang-format on
@@ -105,7 +105,7 @@ void run() {
       auto vw = Registration::Warp::validate_image(input);
       if (vw.fill_value.has_value()) {
         oob_vector = Eigen::Matrix<value_type, 3, 1>::Constant(*vw.fill_value);
-        CONSOLE("Inferred out-of-bounds fill value " + str(*vw.fill_value) + " from input data");
+        CONSOLE("Inferred out-of-bounds fill value {} from input data", *vw.fill_value);
       } else {
         throw Exception("No out-of-bounds marker found in input image data");
       }
@@ -140,6 +140,6 @@ void run() {
   ThreadedLoop("correcting warp", input, 0, 3).run(func, input, output);
 
   if (count == 0)
-    WARN("no out of bounds voxels found with value " + str(oob_vector.transpose()));
-  INFO("converted " + str(count) + " out of bounds values");
+    WARN("no out of bounds voxels found with value {}", oob_vector);
+  INFO("converted {} out of bounds values", count);
 }

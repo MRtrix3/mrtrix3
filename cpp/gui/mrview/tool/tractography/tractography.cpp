@@ -27,6 +27,7 @@
 #include "mrview/tool/tractography/tractogram.h"
 #include "mrview/window.h"
 #include "opengl/lighting.h"
+#include <fmt/format.h>
 
 namespace MR::GUI::MRView::Tool {
 const std::vector<std::string> tractogram_geometry_types = {"pseudotubes", "lines", "points"};
@@ -54,8 +55,8 @@ size_t geometry_string2index(std::string type_str) {
   if (it != list.end())
     return std::distance(list.begin(), it);
 
-  throw Exception("Unrecognised value for tractogram geometry \"" + type_str + "\" (options are: " + join(list, ", ") +
-                  "); ignoring");
+  throw Exception(
+      "Unrecognised value for tractogram geometry \"{}\" (options are: {}); ignoring", type_str, join(list, ", "));
   return 0;
 }
 
@@ -911,8 +912,8 @@ bool Tractography::process_commandline_option(const MR::App::ParsedOption &opt) 
     try {
       int n = opt[0];
       if (n < 0 || ColourMap::maps[n].name.empty())
-        throw Exception("invalid tsf colourmap index \"" + std::string(opt[0]) +
-                        "\" for -tractography.tsf_colourmap option");
+        throw Exception("invalid tsf colourmap index \"{}\" for -tractography.tsf_colourmap option",
+                        std::string(opt[0]));
       if (process_commandline_option_tsf_check_tracto_loaded()) {
         // get list of selected tractograms:
         QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();

@@ -19,6 +19,7 @@
 #include <chrono>
 #include <condition_variable>
 #include <cstddef>
+#include <fmt/format.h>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -116,7 +117,7 @@ public:
    * The simplest way to use this method is using C++11 lambda functions,
    * for example:
    * \code
-   * progress.update ([&](){ return "current energy = " + str(energy_value); });
+   * progress.update ([&](){ return fmt::format("current energy = {}", energy_value); });
    * \endcode
    *
    * \note due to this lazy update, the text is not guaranteed to be up to

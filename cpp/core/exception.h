@@ -24,9 +24,11 @@
 
 #include <cerrno>
 #include <exception>
+#include <fmt/format.h>
 #include <iostream>
 #include <string>
 #include <string_view>
+#include <utility>
 
 namespace MR::App {
 extern int log_level;
@@ -65,29 +67,50 @@ inline void __print_stderr(std::string_view text) {
  * debugging information; anything else: none. */
 extern void (*report_to_user_func)(std::string_view msg, int type);
 
-#define CONSOLE(msg)                                                                                                   \
+//! \cond skip
+// Helpers underpinning the reporting macros below.
+// The single-argument overload forwards a pre-formed message verbatim;
+// the variadic overload embeds fmt::format() so that call sites supply
+// a compile-time-checked format string followed by its substitution arguments.
+inline void __report_to_user(int type, std::string_view msg) { report_to_user_func(msg, type); }
+template <typename Arg0, typename... Args>
+inline void __report_to_user(int type, fmt::format_string<Arg0, Args...> format, Arg0 &&arg0, Args &&...args) {
+  report_to_user_func(fmt::format(format, std::forward<Arg0>(arg0), std::forward<Args>(args)...), type);
+}
+//! \endcond
+
+#define CONSOLE(...)                                                                                                   \
   if (MR::App::log_level >= 1)                                                                                         \
-  ::MR::report_to_user_func(msg, -1)
-#define FAIL(msg)                                                                                                      \
+  ::MR::__report_to_user(-1, __VA_ARGS__)
+#define FAIL(...)                                                                                                      \
   if (MR::App::log_level >= 0)                                                                                         \
-  ::MR::report_to_user_func(msg, 0)
-#define WARN(msg)                                                                                                      \
+  ::MR::__report_to_user(0, __VA_ARGS__)
+#define WARN(...)                                                                                                      \
   if (MR::App::log_level >= 1)                                                                                         \
-  ::MR::report_to_user_func(msg, 1)
-#define INFO(msg)                                                                                                      \
+  ::MR::__report_to_user(1, __VA_ARGS__)
+#define INFO(...)                                                                                                      \
   if (MR::App::log_level >= 2)                                                                                         \
-  ::MR::report_to_user_func(msg, 2)
-#define DEBUG(msg)                                                                                                     \
+  ::MR::__report_to_user(2, __VA_ARGS__)
+#define DEBUG(...)                                                                                                     \
   if (MR::App::log_level >= 3)                                                                                         \
-  ::MR::report_to_user_func(msg, 3)
+  ::MR::__report_to_user(3, __VA_ARGS__)
 
 class Exception : public std::exception {
 public:
   Exception() {}
 
   Exception(std::string msg) { description.push_back(std::move(msg)); }
+  template <typename Arg0, typename... Args>
+  Exception(fmt::format_string<Arg0, Args...> format, Arg0 &&arg0, Args &&...args) {
+    description.push_back(fmt::format(format, std::forward<Arg0>(arg0), std::forward<Args>(args)...));
+  }
   Exception(const Exception &previous_exception, std::string msg) : description(previous_exception.description) {
     description.push_back(std::move(msg));
+  }
+  template <typename Arg0, typename... Args>
+  Exception(const Exception &previous_exception, fmt::format_string<Arg0, Args...> format, Arg0 &&arg0, Args &&...args)
+      : description(previous_exception.description) {
+    description.push_back(fmt::format(format, std::forward<Arg0>(arg0), std::forward<Args>(args)...));
   }
 
   const char *what() const noexcept override; // check_syntax off
@@ -110,8 +133,17 @@ public:
 class InvalidImageException : public Exception {
 public:
   InvalidImageException(std::string msg) : Exception(std::move(msg)) {}
+  template <typename Arg0, typename... Args>
+  InvalidImageException(fmt::format_string<Arg0, Args...> format, Arg0 &&arg0, Args &&...args)
+      : Exception(format, std::forward<Arg0>(arg0), std::forward<Args>(args)...) {}
   InvalidImageException(const Exception &previous_exception, std::string msg)
       : Exception(previous_exception, std::move(msg)) {}
+  template <typename Arg0, typename... Args>
+  InvalidImageException(const Exception &previous_exception,
+                        fmt::format_string<Arg0, Args...> format,
+                        Arg0 &&arg0,
+                        Args &&...args)
+      : Exception(previous_exception, format, std::forward<Arg0>(arg0), std::forward<Args>(args)...) {}
 };
 
 class CancelException : public Exception {

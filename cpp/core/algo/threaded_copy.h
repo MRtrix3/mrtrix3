@@ -75,8 +75,9 @@ inline void threaded_copy_with_progress(InputImageType &source,
                                         OutputImageType &destination,
                                         const std::vector<size_t> &axes,
                                         size_t num_axes_in_thread = 1) {
-  threaded_copy_with_progress_message("copying from \"" + shorten(source.name()) + "\" to \"" +
-                                          shorten(destination.name()) + "\"",
+  threaded_copy_with_progress_message(fmt::format("copying from \"{}\" to \"{}\"",
+                                                  shorten(std::string_view(source.name())),
+                                                  shorten(std::string_view(destination.name()))),
                                       source,
                                       destination,
                                       axes,
@@ -89,8 +90,9 @@ inline void threaded_copy_with_progress(InputImageType &source,
                                         size_t from_axis = 0,
                                         size_t to_axis = std::numeric_limits<size_t>::max(),
                                         size_t num_axes_in_thread = 1) {
-  threaded_copy_with_progress_message("copying from \"" + shorten(source.name()) + "\" to \"" +
-                                          shorten(destination.name()) + "\"",
+  threaded_copy_with_progress_message(fmt::format("copying from \"{}\" to \"{}\"",
+                                                  shorten(std::string_view(source.name())),
+                                                  shorten(std::string_view(destination.name()))),
                                       source,
                                       destination,
                                       from_axis,

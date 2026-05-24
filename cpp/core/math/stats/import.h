@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <fmt/std.h>
 #include <fstream>
 #include <memory>
 #include <optional>
@@ -123,7 +124,7 @@ void CohortDataImport::initialise(const std::filesystem::path &listpath,
   {
     std::ifstream ifs(listpath);
     if (!ifs)
-      throw Exception("Unable to open subject file list \"" + listpath.string() + "\"");
+      throw Exception("Unable to open subject file list \"{}\"", listpath);
     std::string line;
     while (getline(ifs, line)) {
       const size_t p = line.find_last_not_of(" \t");
@@ -142,19 +143,19 @@ void CohortDataImport::initialise(const std::filesystem::path &listpath,
   if (explicit_from_directory.has_value())
     directories.insert(directories.begin(), explicit_from_directory.value());
 
-  Exception e_nosuccess("Unable to load all input data from file \"" + listpath.string() + "\"");
+  Exception e_nosuccess(fmt::format("Unable to load all input data from file \"{}\"", listpath));
   std::filesystem::path load_from_dir;
   for (const auto &directory : directories) {
     try {
       for (const auto &line : lines) {
         const std::filesystem::path full_path = directory / line;
         if (!std::filesystem::is_regular_file(full_path))
-          throw Exception("File \"" + full_path.string() + "\" not found");
+          throw Exception("File \"{}\" not found", full_path);
       }
       load_from_dir = directory;
       break;
     } catch (Exception &e) {
-      e_nosuccess.push_back("If loading relative to directory \"" + directory.string() + "\": ");
+      e_nosuccess.push_back(fmt::format("If loading relative to directory \"{}\": ", directory));
       e_nosuccess.push_back(e);
     }
   }
@@ -162,9 +163,10 @@ void CohortDataImport::initialise(const std::filesystem::path &listpath,
   if (load_from_dir.empty())
     throw e_nosuccess;
 
-  ProgressBar progress("Configuring data import from files listed in \"" +
-                       std::filesystem::path(listpath).filename().string() + "\" as found relative to directory \"" +
-                       load_from_dir.string() + "\"");
+  ProgressBar progress(fmt::format("Configuring data import from files listed in \"{}\""
+                                   " as found relative to directory \"{}\"",
+                                   listpath.filename(),
+                                   load_from_dir));
 
   for (const auto &line : lines) {
     try {

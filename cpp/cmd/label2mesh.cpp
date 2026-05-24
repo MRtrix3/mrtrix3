@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <fmt/format.h>
 #include <mutex>
 
 #include "command.h"
@@ -61,14 +62,16 @@ void run() {
   auto labels = labels_header.get_image<uint32_t>();
   auto lv = Connectome::validate_label_image(labels);
   if (!lv.indices_contiguous) {
-    WARN("Image \"" + argument[0] + "\" does not contain contiguous indices;" + //
-         " output mesh file will contain empty objects");                       //
+    WARN("Image \"{}\" does not contain contiguous indices;"
+         " output mesh file will contain empty objects",
+         argument[0]);
   }
   if (lv.disconnected_components > 0) {
-    WARN("Image \"" + argument[0] + "\" contains " +                                                 //
-         str(lv.disconnected_components) + "parcel" + (lv.disconnected_components > 0 ? "s" : "0") + //
-         " that are not spatially contiguous;" +                                                     //
-         " this may yield erroneous surfaces");                                                      //
+    WARN("Image \"{}\" contains {}parcel{} that are not spatially contiguous;"
+         " this may yield erroneous surfaces",
+         argument[0],
+         lv.disconnected_components,
+         lv.disconnected_components > 0 ? "s" : "0");
   }
 
   using voxel_corner_t = Eigen::Array<int, 3, 1>;
@@ -128,7 +131,7 @@ void run() {
 
       Adapter::Subset<Image<uint32_t>> subset(labels, from, dimensions);
 
-      auto scratch = Image<bool>::scratch(subset, "Node " + str(in) + " mask");
+      auto scratch = Image<bool>::scratch(subset, fmt::format("Node {} mask", in));
       for (auto i = Loop(subset)(subset, scratch); i; ++i)
         scratch.value() = (subset.value() == in);
 

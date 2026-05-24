@@ -15,6 +15,7 @@
  */
 
 #include <cctype>
+#include <fmt/format.h>
 
 #include "file/mgh.h"
 #include "file/ofstream.h"
@@ -26,7 +27,7 @@ std::string tag_ID_to_string(const tag_type tag) {
   try {
     return tag2str.at(tag);
   } catch (std::out_of_range &) {
-    return "MGH_TAG_" + str(tag);
+    return fmt::format("MGH_TAG_{}", tag);
   }
 }
 

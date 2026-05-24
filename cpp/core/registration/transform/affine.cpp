@@ -18,6 +18,7 @@
 #include "math/gradient_descent.h"
 #include "math/math.h"
 #include "math/median.h"
+#include <fmt/format.h>
 #include <iterator>
 
 namespace MR {
@@ -162,7 +163,7 @@ bool AffineUpdate::operator()(Eigen::Matrix<default_type, Eigen::Dynamic, 1> &ne
       break;
     }
     if (orig_step_size != step_size) {
-      DEBUG("step size changed from " + str(orig_step_size) + " to " + str(step_size));
+      DEBUG("step size changed from {} to {}", orig_step_size, step_size);
     }
   } else {
     throw Exception("no control points defined. deactivated as we cannot regularise the update properly!");
@@ -174,12 +175,12 @@ bool AffineUpdate::operator()(Eigen::Matrix<default_type, Eigen::Dynamic, 1> &ne
     //   Registration::Transform::param_vec2mat(delta, Delta);
     //   if (Delta.block(0,0,3,3).array().abs().maxCoeff() > 0.1) {
     //     step_size = 0.09 / G.block(0,0,3,3).array().abs().maxCoeff();
-    //     INFO(str(step_size) + " " + str(g * step_size));
+    //     INFO("{} {}", step_size, g * step_size);
     //     continue;
     //   }
     //   if (Delta.block(0,3,3,1).array().abs().maxCoeff() > 10.0){
     //     step_size = 9.0 / G.block(0,3,3,1).array().abs().maxCoeff();
-    //     INFO(str(step_size) + " " + str(g * step_size));
+    //     INFO("{} {}", step_size, g * step_size);
     //     continue;
     //   }
     //   A = X - Delta;
@@ -191,8 +192,9 @@ bool AffineUpdate::operator()(Eigen::Matrix<default_type, Eigen::Dynamic, 1> &ne
     //     break;
     //   }
     // }
-    // if (cnt > 0) INFO("affine: gradient descent step size was too large. Multiplied by factor "
-    //  + str(std::pow (factor, cnt), 4) + " (now: "+ str(step_size, 4) + ")");
+    // if (cnt > 0) INFO("{}{} (now: {})", "affine: gradient descent step size was too large. Multiplied by
+    // factor "
+    //, str(std::pow (factor, cnt), 4), str(step_size, 4));
 
     // B = X.inverse() + Delta;
     // B(3,3) = 1.0;
@@ -238,8 +240,7 @@ bool AffineUpdate::operator()(Eigen::Matrix<default_type, Eigen::Dynamic, 1> &ne
     Diff.row(2) *= recip_spacing(2);
     Diff.colwise() -= stop_len;
     if (Diff.template block<3, 4>(0, 0).maxCoeff() <= 0.0) {
-      DEBUG("max control point movement (" + str(Diff.template block<3, 4>(0, 0).maxCoeff()) +
-            ") smaller than tolerance");
+      DEBUG("max control point movement ({}) smaller than tolerance", Diff.template block<3, 4>(0, 0).maxCoeff());
       return false;
     }
   }

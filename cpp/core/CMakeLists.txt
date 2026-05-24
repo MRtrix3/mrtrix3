@@ -85,6 +85,14 @@ target_include_directories(mrtrix-core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+# Ensure fmt include directories are added
+if(TARGET fmt::fmt)
+    get_target_property(fmt_include_dirs fmt::fmt INTERFACE_INCLUDE_DIRECTORIES)
+    if(fmt_include_dirs)
+        target_include_directories(mrtrix-core PUBLIC ${fmt_include_dirs})
+    endif()
+endif()
+
 if(MRTRIX_USE_PCH)
     target_precompile_headers(mrtrix-core PRIVATE
         [["exception.h"]]
@@ -120,6 +128,7 @@ target_link_libraries(mrtrix-core PUBLIC
     nifti::nifti
     tcb::span
     magic_enum::magic_enum
+    fmt::fmt
 )
 
 if(MRTRIX_ENABLE_GPU)

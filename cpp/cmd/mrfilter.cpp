@@ -28,6 +28,7 @@
 #include "image.h"
 #include "math/fft.h"
 #include "metadata/bids.h"
+#include <fmt/format.h>
 
 #include <filesystem>
 
@@ -129,7 +130,7 @@ void usage() {
   SYNOPSIS = "Perform filtering operations on 3D / 4D MR images";
 
   DESCRIPTION
-  + "The available filters are: " + MR::Enum::join<FilterType>() + "."
+  + fmt::format("The available filters are: {}.", MR::Enum::join<FilterType>())
   + "Each filter has its own unique set of optional parameters."
   + "For 4D images, each 3D volume is processed independently.";
 
@@ -186,7 +187,7 @@ void run() {
         }
       }
     }
-    INFO("Selected axes for demodulation: " + join(axes, ","));
+    INFO("Selected axes for demodulation: {}", join(axes, ","));
 
     auto input = H.get_image<cdouble>();
     Filter::Demodulate filter(input, axes, !get_options("linear").empty());
@@ -269,8 +270,7 @@ void run() {
         stdev[dim] = filter.spacing(dim);
     }
     filter.compute_wrt_scanner(!get_options("scanner").empty());
-    filter.set_message(std::string("applying ") + filter_name + " filter" + //
-                       " to image " + input.name());                        //
+    filter.set_message(fmt::format("applying {} filter to image {}", filter_name, argument[0]));
     Stride::set_from_command_line(filter);
     filter.set_stdev(stdev);
     auto output = Image<float>::create(output_path, filter);
@@ -286,8 +286,7 @@ void run() {
     auto opt = get_options("extent");
     if (!opt.empty())
       filter.set_extent(parse_ints<uint32_t>(opt[0][0]));
-    filter.set_message(std::string("applying ") + filter_name + " filter" + //
-                       " to image " + input.name());                        //
+    filter.set_message(fmt::format("applying {} filter to image {}", filter_name, argument[0]));
     Stride::set_from_command_line(filter);
 
     auto output = Image<float>::create(output_path, filter);
@@ -316,8 +315,7 @@ void run() {
     opt = get_options("extent");
     if (!opt.empty())
       filter.set_extent(parse_ints<uint32_t>(opt[0][0]));
-    filter.set_message(std::string("applying ") + filter_name + " filter" + //
-                       " to image " + input.name());                        //
+    filter.set_message(fmt::format("applying {} filter to image {}", filter_name, argument[0]));
     Stride::set_from_command_line(filter);
 
     auto output = Image<float>::create(output_path, filter);
@@ -334,8 +332,7 @@ void run() {
     auto opt = get_options("extent");
     if (!opt.empty())
       filter.set_extent(parse_ints<uint32_t>(opt[0][0]));
-    filter.set_message(std::string("applying ") + filter_name + " filter" + //
-                       " to image " + input.name());                        //
+    filter.set_message(fmt::format("applying {} filter to image {}", filter_name, argument[0]));
     Stride::set_from_command_line(filter);
 
     auto output = Image<float>::create(output_path, filter);
@@ -350,12 +347,11 @@ void run() {
 
     auto opt = get_options("maskin");
     if (opt.empty())
-      throw Exception(filter_name + " filter requires initial mask");
+      throw Exception("{} filter requires initial mask", filter_name);
     Image<float> maskin = Image<float>::open(opt[0][0]);
     check_dimensions(maskin, input, 0, 3);
 
-    filter.set_message(std::string("applying ") + filter_name + " filter" + //
-                       " to image " + input.name());                        //
+    filter.set_message(fmt::format("applying {} filter to image {}", filter_name, argument[0]));
     Stride::set_from_command_line(filter);
 
     filter.set_voxels_to_bridge(get_option_value("bridge", 4));

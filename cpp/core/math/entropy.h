@@ -20,6 +20,7 @@
 #include "types.h"
 #include <Eigen/Dense>
 #include <cmath>
+#include <fmt/format.h>
 #include <type_traits>
 
 namespace MR::Math::Entropy {
