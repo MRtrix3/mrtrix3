@@ -201,9 +201,9 @@ Rejection_per_voxel::Rejection_per_voxel(const std::filesystem::path &in)
   if (bottom[2] != 0)
     --bottom[2];
 
-  top[0] = std::min(static_cast<ssize_t>(vox.size(0)) - bottom[0], top[0] + 2 - bottom[0]);
-  top[1] = std::min(static_cast<ssize_t>(vox.size(1)) - bottom[1], top[1] + 2 - bottom[1]);
-  top[2] = std::min(static_cast<ssize_t>(vox.size(2)) - bottom[2], top[2] + 2 - bottom[2]);
+  top[0] = std::min(vox.size(0) - bottom[0], top[0] + 2 - bottom[0]);
+  top[1] = std::min(vox.size(1) - bottom[1], top[1] + 2 - bottom[1]);
+  top[2] = std::min(vox.size(2) - bottom[2], top[2] + 2 - bottom[2]);
 
   auto sub = Adapter::make<Adapter::Subset>(vox, bottom, top);
   Header header = sub;

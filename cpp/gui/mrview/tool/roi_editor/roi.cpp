@@ -223,7 +223,7 @@ ROI::ROI(Dock *parent) : Base(parent), in_insert_mode(false) {
   opacity_slider = new QSlider(Qt::Horizontal);
   opacity_slider->setToolTip(tr("ROI opacity"));
   opacity_slider->setRange(1, 1000);
-  opacity_slider->setSliderPosition(int(1000));
+  opacity_slider->setSliderPosition(1000);
   connect(opacity_slider, SIGNAL(valueChanged(int)), this, SLOT(opacity_changed(int)));
   opacity_slider->setEnabled(false);
   layout->addWidget(opacity_slider, 1);
@@ -349,7 +349,7 @@ int ROI::normal2axis(const Eigen::Vector3f &normal, const ROI_Item &roi) const {
 void ROI::save_slot() {
   QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
   assert(indices.size() == 1);
-  ROI_Item *roi = dynamic_cast<ROI_Item *>(list_model->get(indices[0]));
+  ROI_Item *roi = list_model->get(indices[0]);
   save(roi);
 }
 
@@ -364,7 +364,7 @@ void ROI::load(std::vector<std::unique_ptr<MR::Header>> &list) {
 void ROI::close_slot() {
   QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
   assert(indices.size() == 1);
-  ROI_Item *roi = dynamic_cast<ROI_Item *>(list_model->get(indices[0]));
+  ROI_Item *roi = list_model->get(indices[0]);
   if (!roi->saved) {
     size_t const ret = QMessageBox::warning(
         this,
@@ -396,7 +396,7 @@ void ROI::undo_slot() {
     WARN("FIXME: shouldn't be here!");
     return;
   }
-  ROI_Item *roi = dynamic_cast<ROI_Item *>(list_model->get(indices[0]));
+  ROI_Item *roi = list_model->get(indices[0]);
 
   roi->undo();
   update_undo_redo();
@@ -410,7 +410,7 @@ void ROI::redo_slot() {
     WARN("FIXME: shouldn't be here!");
     return;
   }
-  ROI_Item *roi = dynamic_cast<ROI_Item *>(list_model->get(indices[0]));
+  ROI_Item *roi = list_model->get(indices[0]);
 
   roi->redo();
   update_undo_redo();
@@ -425,7 +425,7 @@ void ROI::slice_copy_slot(QAction *action) {
     return;
   }
 
-  ROI_Item *roi = dynamic_cast<ROI_Item *>(list_model->get(indices[0]));
+  ROI_Item *roi = list_model->get(indices[0]);
 
   const Projection *proj = window().get_current_mode()->get_current_projection();
   if (proj == nullptr)
@@ -507,7 +507,7 @@ void ROI::update_slot() { updateGL(); }
 void ROI::colour_changed() {
   QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
   for (int i = 0; i < indices.size(); ++i) {
-    ROI_Item *roi = dynamic_cast<ROI_Item *>(list_model->get(indices[i]));
+    ROI_Item *roi = list_model->get(indices[i]);
     QColor const c = colour_button->color();
     roi->colour = {{GLubyte(c.red()), GLubyte(c.green()), GLubyte(c.blue())}};
   }
@@ -517,7 +517,7 @@ void ROI::colour_changed() {
 void ROI::opacity_changed(int) {
   QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
   for (int i = 0; i < indices.size(); ++i) {
-    ROI_Item *roi = dynamic_cast<ROI_Item *>(list_model->get(indices[i]));
+    ROI_Item *roi = list_model->get(indices[i]);
     roi->alpha = opacity_slider->value() / 1.0e3f;
   }
   window().updateGL();
@@ -530,7 +530,7 @@ void ROI::update_undo_redo() {
   QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
 
   if (!indices.empty()) {
-    ROI_Item *roi = dynamic_cast<ROI_Item *>(list_model->get(indices[0]));
+    ROI_Item *roi = list_model->get(indices[0]);
     undo_button->defaultAction()->setEnabled(roi->has_undo());
     redo_button->defaultAction()->setEnabled(roi->has_redo());
   } else {
@@ -565,7 +565,7 @@ void ROI::update_selection() {
     return;
   }
 
-  ROI_Item *roi = dynamic_cast<ROI_Item *>(list_model->get(indices[0]));
+  ROI_Item *roi = list_model->get(indices[0]);
   colour_button->setColor(QColor(roi->colour[0], roi->colour[1], roi->colour[2]));
   opacity_slider->setValue(1.0e3f * roi->alpha);
 
@@ -600,7 +600,7 @@ bool ROI::mouse_press_event() {
   prev_pos = current_origin;
 
   // figure out the closest ROI axis, and lock to it:
-  ROI_Item *roi = dynamic_cast<ROI_Item *>(list_model->get(indices[0]));
+  ROI_Item *roi = list_model->get(indices[0]);
   current_axis = normal2axis(proj->screen_normal(), *roi);
 
   // figure out current slice in ROI:
@@ -645,7 +645,7 @@ bool ROI::mouse_move_event() {
     WARN("FIXME: shouldn't be here!");
     return false;
   }
-  ROI_Item *roi = dynamic_cast<ROI_Item *>(list_model->get(indices[0]));
+  ROI_Item *roi = list_model->get(indices[0]);
 
   const Projection *proj = window().get_current_mode()->get_current_projection();
   if (proj == nullptr)

@@ -119,7 +119,7 @@ inline const std::byte *next(const std::byte *current_pos, bool is_BE) {
 }
 
 inline void write_tag(std::ostream &out, uint32_t Type, uint32_t Size, bool is_BE) {
-  Type = ByteOrder::swap<uint32_t>(static_cast<uint32_t>(Type), is_BE);
+  Type = ByteOrder::swap<uint32_t>(Type, is_BE);
   out.write(reinterpret_cast<const char *>(&Type), sizeof(uint32_t));
   Size = ByteOrder::swap<uint32_t>(Size, is_BE);
   out.write(reinterpret_cast<const char *>(&Size), sizeof(uint32_t));

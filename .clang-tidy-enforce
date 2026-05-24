@@ -8,6 +8,7 @@ Checks: >
   performance-*,
   readability-implicit-bool-conversion,
   readability-container-size-empty,
+  readability-redundant-casting,
   # misc-const-correctness -- not enforced; conflicts with ThreadedLoop functor idiom (non-const operator()). See commit body.,
   -bugprone-easily-swappable-parameters,
   -bugprone-narrowing-conversions,

@@ -31,8 +31,7 @@
 namespace {
 
 inline float get_alpha_from_slider(float slider_value) {
-  return MR::GUI::MRView::Tool::min_opacity *
-         std::exp(MR::GUI::MRView::Tool::opacity_exponent * static_cast<float>(slider_value));
+  return MR::GUI::MRView::Tool::min_opacity * std::exp(MR::GUI::MRView::Tool::opacity_exponent * slider_value);
 }
 
 inline float get_slider_value_from_alpha(float alpha) {

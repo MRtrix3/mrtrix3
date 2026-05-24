@@ -229,7 +229,7 @@ void usage () {
 MapWriterBase *
 make_writer(Header &H, const std::filesystem::path &name, const vox_stat_t stat_vox, const writer_dim dim) {
   MapWriterBase *writer = nullptr;
-  const uint8_t dt = static_cast<uint8_t>(H.datatype()()) & DataType::Type;
+  const uint8_t dt = H.datatype()() & DataType::Type;
   if (dt == DataType::Bit)
     writer = new MapWriter<bool>(H, name, stat_vox, dim);
   else if (dt == DataType::UInt8)

@@ -150,7 +150,7 @@ Overlay::Overlay(Dock *parent) : Base(parent) {
 
   opacity_slider = new QSlider(Qt::Horizontal);
   opacity_slider->setRange(1, 1000);
-  opacity_slider->setSliderPosition(int(1000));
+  opacity_slider->setSliderPosition(1000);
   connect(opacity_slider, SIGNAL(valueChanged(int)), this, SLOT(opacity_changed(int)));
   main_box->addWidget(new QLabel("opacity"), 0);
   main_box->addWidget(opacity_slider, 0);

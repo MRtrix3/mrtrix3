@@ -219,7 +219,7 @@ Fixel::Fixel(Dock *parent) : Base(parent), not_3D(true), line_opacity(1.0) {
 
   opacity_slider = new QSlider(Qt::Horizontal);
   opacity_slider->setRange(1, 1000);
-  opacity_slider->setSliderPosition(int(1000));
+  opacity_slider->setSliderPosition(1000);
   connect(opacity_slider, SIGNAL(valueChanged(int)), this, SLOT(opacity_slot(int)));
   default_opt_grid->addWidget(new QLabel("opacity"), 1, 0);
   default_opt_grid->addWidget(opacity_slider, 1, 1);
@@ -409,7 +409,7 @@ void Fixel::update_gui_colour_controls(bool reload_colour_types) {
 
   int colourmap_index = -2;
   for (size_t i = 0; i < n_images; ++i) {
-    BaseFixel *fixel = dynamic_cast<BaseFixel *>(fixel_list_model->get_fixel_image(indices[i]));
+    BaseFixel *fixel = fixel_list_model->get_fixel_image(indices[i]);
     if (colourmap_index != int(fixel->colourmap)) {
       if (colourmap_index == -2)
         colourmap_index = fixel->colourmap;
@@ -435,7 +435,7 @@ void Fixel::update_gui_colour_controls(bool reload_colour_types) {
     colourmap_button->colourmap_actions[colourmap_index]->setChecked(true);
   }
 
-  BaseFixel *first_fixel = dynamic_cast<BaseFixel *>(fixel_list_model->get_fixel_image(indices[0]));
+  BaseFixel *first_fixel = fixel_list_model->get_fixel_image(indices[0]);
 
   if (n_images == 1 && reload_colour_types)
     first_fixel->load_colourby_combobox_options(*colour_combobox);
@@ -468,7 +468,7 @@ void Fixel::update_gui_scaling_controls(bool reload_scaling_types) {
     return;
   }
 
-  BaseFixel *first_fixel = dynamic_cast<BaseFixel *>(fixel_list_model->get_fixel_image(indices[0]));
+  BaseFixel *first_fixel = fixel_list_model->get_fixel_image(indices[0]);
 
   if (n_images == 1 && reload_scaling_types)
     first_fixel->load_scaleby_combobox_options(*length_combobox);
@@ -496,7 +496,7 @@ void Fixel::update_gui_threshold_controls(bool reload_threshold_types) {
     return;
   }
 
-  BaseFixel *first_fixel = dynamic_cast<BaseFixel *>(fixel_list_model->get_fixel_image(indices[0]));
+  BaseFixel *first_fixel = fixel_list_model->get_fixel_image(indices[0]);
 
   bool const has_val = first_fixel->has_values();
 

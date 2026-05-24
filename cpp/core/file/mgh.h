@@ -93,7 +93,7 @@ template <typename ValueType, class Input> inline ValueType fetch(Input &in) {
   ValueType value;
   in.read(reinterpret_cast<char *>(&value), sizeof(ValueType));
   if (in.eof())
-    throw int(1);
+    throw 1;
   value = ByteOrder::BE(value);
   return value;
 }

@@ -199,7 +199,7 @@ std::unique_ptr<ImageIO::Base> PAR::read(Header &H) const {
       nslices = slice.sl;
   }
 
-  if (static_cast<size_t>(nvols * nslices) != slices.size())
+  if ((nvols * nslices) != slices.size())
     throw Exception("mismatch in dimensions when reading PAR/REC file \"" + H.path().string() + "\"");
 
   if (nvols > 1) {
@@ -257,7 +257,7 @@ std::unique_ptr<ImageIO::Base> PAR::read(Header &H) const {
   }
 
   if (!G.empty()) {
-    if (G.size() != static_cast<size_t>(nvols))
+    if (G.size() != nvols)
       throw Exception(std::string("mismatch between number of volumes and number of b-values") + //
                       " in PAR/REC file \"" + H.path().string() + "\"");                         //
 
