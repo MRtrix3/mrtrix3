@@ -115,7 +115,7 @@ void Connector::run(std::vector<Cluster> &clusters,
                     std::vector<uint32_t> &labels,
                     const VectorType &data,
                     const float threshold) const {
-  assert(adjacency.size());
+  assert(!adjacency.empty());
   labels.resize(adjacency.size(), 0);
   uint32_t current_label = 0;
   for (uint32_t i = 0; i < labels.size(); i++) {

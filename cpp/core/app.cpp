@@ -296,7 +296,7 @@ Description &Description::operator+(const char *const text[]) { // check_syntax 
 }
 
 std::string Description::syntax(const bool format) const {
-  if (size() == 0u)
+  if (empty())
     return std::string();
   std::string s;
   if (format)
@@ -331,7 +331,7 @@ ExampleList &ExampleList::operator+(const Example &example) {
 }
 
 std::string ExampleList::syntax(const bool format) const {
-  if (size() == 0u)
+  if (empty())
     return std::string();
   std::string s;
   if (format)

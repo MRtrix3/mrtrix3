@@ -46,7 +46,7 @@ multiContrastSetting2start_nvols(const std::vector<MultiContrastSetting> &mcsett
     }
   }
   assert(max_n_SH > 1);
-  assert(start_nvols.size());
+  assert(!start_nvols.empty());
   return start_nvols;
 }
 
@@ -61,7 +61,7 @@ public:
                             const bool modulate)
       : fod(n_vol), max_n_SH(max_n_SH), start_nvols(vstart_nvols) {
     assert(n_vol > max_n_SH);
-    assert(start_nvols.size());
+    assert(!start_nvols.empty());
     Eigen::MatrixXd transformed_directions = linear_transform.linear().inverse() * directions;
     // precompute projection for maximum requested lmax
     if (modulate) {
@@ -220,7 +220,7 @@ public:
     for (auto const &sn : start_nvols)
       map_FOD_to_aPSF_transform[sn[1]] = Math::pinv(aPSF_weights_to_FOD_transform(sn[1], directions));
     assert(n_vol > 0);
-    assert(start_nvols.size());
+    assert(!start_nvols.empty());
   }
 
   void operator()(FODImageType &image) {

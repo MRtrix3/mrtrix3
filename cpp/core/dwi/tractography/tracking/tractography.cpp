@@ -148,7 +148,7 @@ void load_streamline_properties_and_rois(Properties &properties) {
 
   opt = get_options("stop");
   if (!opt.empty()) {
-    if ((properties.include.size() != 0u) || (properties.ordered_include.size() != 0u))
+    if ((!properties.include.empty()) || (!properties.ordered_include.empty()))
       properties["stop_on_all_include"] = "1";
     else
       WARN("-stop option ignored - no inclusion regions specified");

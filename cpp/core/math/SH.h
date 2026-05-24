@@ -354,7 +354,7 @@ public:
   PrecomputedAL(int up_to_lmax, int num_dir = 512) { init(up_to_lmax, num_dir); }
 
   bool operator!() const { return AL.empty(); }
-  operator bool() const { return AL.size(); }
+  operator bool() const { return !AL.empty(); }
 
   void init(int up_to_lmax, int num_dir = 512) {
     lmax = up_to_lmax;

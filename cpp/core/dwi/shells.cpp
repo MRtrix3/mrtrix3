@@ -49,7 +49,7 @@ FORCE_INLINE default_type bvalue_epsilon() {
 
 Shell::Shell(const Eigen::MatrixXd &grad, const std::vector<size_t> &indices)
     : volumes(indices), mean(0.0), stdev(0.0), min(std::numeric_limits<default_type>::max()), max(0.0) {
-  assert(volumes.size());
+  assert(!volumes.empty());
   for (std::vector<size_t>::const_iterator i = volumes.begin(); i != volumes.end(); i++) {
     const default_type b = grad(*i, 3);
     mean += b;

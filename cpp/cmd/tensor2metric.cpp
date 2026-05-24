@@ -495,7 +495,7 @@ void run() {
 
   auto mo_img = Image<value_type>();
   opt = get_options("mo");
-  if (opt.size() != 0u) {
+  if (!opt.empty()) {
     header.ndim() = 3;
     mo_img = Image<value_type>::create(opt[0][0], header);
     metric_count++;
@@ -503,7 +503,7 @@ void run() {
 
   auto na_img = Image<value_type>();
   opt = get_options("na");
-  if (opt.size() != 0u) {
+  if (!opt.empty()) {
     header.ndim() = 3;
     na_img = Image<value_type>::create(opt[0][0], header);
     metric_count++;

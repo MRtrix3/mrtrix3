@@ -74,7 +74,7 @@ public:
       }
     }
 
-    if (outer_axes.size()) {
+    if (!outer_axes.empty()) {
       Adapter::Replicate<Image<double>> replicating_window(window, in);
       for (auto l = Loop(in)(kspace, replicating_window); l; ++l)
         kspace.value() *= static_cast<double>(replicating_window.value());

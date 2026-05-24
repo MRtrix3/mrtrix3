@@ -179,7 +179,7 @@ template <typename T> void Matrix<T>::write_assignments(const std::filesystem::p
   for (auto i = assignments_pairs.begin(); i != assignments_pairs.end(); ++i)
     stream << str(i->first) << " " << str(i->second) << "\n";
   for (auto i = assignments_lists.begin(); i != assignments_lists.end(); ++i) {
-    assert(i->size());
+    assert(!i->empty());
     stream << str((*i)[0]);
     for (size_t j = 1; j != i->size(); ++j)
       stream << " " << str((*i)[j]);

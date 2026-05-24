@@ -83,7 +83,7 @@ void Calibrator::finalize(const size_t num_volumes, const bool is_integer) {
 }
 
 default_type Calibrator::get_iqr() {
-  assert(data.size());
+  assert(!data.empty());
   const size_t lower_index = std::round(0.25 * data.size());
   std::nth_element(data.begin(), data.begin() + lower_index, data.end());
   const default_type lower = data[data.size() / 4];

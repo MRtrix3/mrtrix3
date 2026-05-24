@@ -143,7 +143,7 @@ QSize Window::GLArea::sizeHint() const {
   // CONF default: 512,512
   std::string const init_size_string = lowercase(MR::File::Config::get("MRViewInitWindowSize"));
   std::vector<uint32_t> init_window_size;
-  if (init_size_string.length() != 0u)
+  if (!init_size_string.empty())
     init_window_size = parse_ints<uint32_t>(init_size_string);
   if (init_window_size.size() == 2)
     return QSize(init_window_size[0], init_window_size[1]);

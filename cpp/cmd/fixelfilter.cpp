@@ -174,7 +174,7 @@ void run() {
       const value_type cfe_e = get_option_value("cfe_e", Fixel::Filter::cfe_default_e);
       const value_type cfe_h = get_option_value("cfe_h", Fixel::Filter::cfe_default_h);
       const value_type cfe_c = get_option_value("cfe_c", Fixel::Filter::cfe_default_c);
-      const bool cfe_legacy = get_options("cfe_legacy").size() != 0u;
+      const bool cfe_legacy = !get_options("cfe_legacy").empty();
       filter.reset(new Fixel::Filter::CFE(matrix, cfe_dh, cfe_e, cfe_h, cfe_c, !cfe_legacy));
       option_list.erase("cfe_dh");
       option_list.erase("cfe_e");

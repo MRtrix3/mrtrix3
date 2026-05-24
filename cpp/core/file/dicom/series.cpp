@@ -28,7 +28,7 @@ std::vector<int> Series::count() const {
   dim[0] = dim[1] = dim[2] = 0;
   current_dim[0] = current_dim[1] = 1;
 
-  if (size() == 0u)
+  if (empty())
     return dim;
 
   std::array<Image *, 2> first = {(*this)[0].get(), (*this)[0].get()};

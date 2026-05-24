@@ -199,7 +199,7 @@ public:
     }; // End of gen_nonlinear_phase()
 
     if (linear) {
-      if (outer_axes.size()) {
+      if (!outer_axes.empty()) {
         for (auto l_outer = Loop(outer_axes)(kspace, phase); l_outer; ++l_outer)
           gen_linear_phase(kspace, phase, inner_axes);
       } else {

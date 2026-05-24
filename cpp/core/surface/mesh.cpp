@@ -278,7 +278,7 @@ void Mesh::load_vtk(const std::filesystem::path &path) {
   }
 
   if (!vertices_float.empty()) {
-    assert(!vertices.size());
+    assert(vertices.empty());
     for (const auto &v : vertices_float)
       vertices.emplace_back(Vertex(v.cast<double>()));
   }

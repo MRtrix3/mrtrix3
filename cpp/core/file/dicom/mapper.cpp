@@ -48,7 +48,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
   // ENVVAR b-value scaling.
   const bool preserve_philips_iso = MR::get_env("MRTRIX_PRESERVE_PHILIPS_ISO").has_value();
 
-  assert(series.size() > 0);
+  assert(!series.empty());
   std::unique_ptr<MR::ImageIO::Base> io_handler;
 
   Patient *patient(series[0]->study->patient);

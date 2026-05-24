@@ -96,7 +96,7 @@ protected:
   std::vector<std::unique_ptr<std::byte[]>> addresses;
   bool is_new, writable;
 
-  void check() const { assert(addresses.size()); }
+  void check() const { assert(!addresses.empty()); }
   virtual void load(const Header &header, size_t buffer_size) = 0;
   virtual void unload(const Header &header) = 0;
 };

@@ -100,7 +100,7 @@ std::vector<std::vector<ValueType>> load_matrix_2D_vector(const std::filesystem:
   if (stream.bad())
     throw Exception(MR::C_strerror(errno));
 
-  if (!V.size())
+  if (V.empty())
     throw Exception("no data in matrix text file \"" + filename.string() + "\"");
 
   return V;

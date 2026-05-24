@@ -271,7 +271,7 @@ void run() {
 
   Image<float> dwi_modelled;
   opt = get_options("predicted_signal");
-  if (opt.size() != 0u)
+  if (!opt.empty())
     dwi_modelled = Image<float>::create(opt[0][0], header_out);
 
   const Algorithm algorithm = MR::Enum::from_name<Algorithm>(argument[0]);
