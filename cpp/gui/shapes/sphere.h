@@ -50,7 +50,7 @@ public:
       p[1] = x[1];
       p[2] = x[2];
     }
-    Vertex(Eigen::Map<const Eigen::Matrix<float, 12, 3, Eigen::RowMajor>>::ConstRowXpr row) {
+    Vertex(Eigen::Map<const Eigen::Matrix<float, 12, 3, Eigen::RowMajor>>::ConstRowXpr &row) {
       p[0] = row[0];
       p[1] = row[1];
       p[2] = row[2];

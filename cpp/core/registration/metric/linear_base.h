@@ -17,6 +17,7 @@
 #pragma once
 
 #include <Eigen/Dense>
+#include <utility>
 
 #include "image.h"
 #include "types.h"
@@ -52,7 +53,7 @@ public:
 
   // set contrast weights for 4D metrics
   void set_weights(Eigen::VectorXd weights) {
-    mc_weights = weights;
+    mc_weights = std::move(weights);
     weighted = mc_weights.rows() > 0;
   }
 

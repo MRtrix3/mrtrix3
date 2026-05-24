@@ -472,7 +472,7 @@ public:
     return get();
   }
   FORCE_INLINE ssize_t operator=(ssize_t position) { return (*this += position - get()); }
-  FORCE_INLINE ssize_t operator=(Index &&position) { return (*this = position.get()); }
+  FORCE_INLINE ssize_t operator=(Index &&position) noexcept { return (*this = position.get()); }
   friend std::ostream &operator<<(std::ostream &stream, const Index &p) {
     stream << p.get();
     return stream;
@@ -574,7 +574,7 @@ public:
   MRTRIX_OP(/=);
 #undef MRTRIX_OP
 
-  FORCE_INLINE void operator=(Row &&other) {
+  FORCE_INLINE void operator=(Row &&other) noexcept {
     assert(image.size(axis) == other.image.size(other.axis));
     for (image.index(axis) = 0, other.image.index(other.axis) = 0; image.index(axis) < image.size(axis);
          ++image.index(axis), ++other.image.index(other.axis))

@@ -15,6 +15,7 @@
  */
 
 #include <array>
+#include <utility>
 
 #include "algo/loop.h"
 #include "command.h"
@@ -166,10 +167,10 @@ public:
         dirs(directions),
         lmax(lmax),
         npeaks(npeaks),
-        true_peaks(true_peaks),
+        true_peaks(std::move(true_peaks)),
         threshold(threshold),
         peaks_out(npeaks),
-        ipeaks_vox(ipeaks_data),
+        ipeaks_vox(std::move(ipeaks_data)),
         precomputer(use_precomputer ? std::make_shared<Math::SH::PrecomputedAL<value_type>>(lmax) : nullptr) {}
 
   bool operator()(const Item &item) {

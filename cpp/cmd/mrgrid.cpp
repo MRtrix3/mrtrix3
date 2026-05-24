@@ -418,7 +418,7 @@ void run() {
         throw Exception("-axis " + str(axis) + " larger than image dimensions (" + str(input_header.ndim()) + ")");
       std::string spec = str(opt[i][1]);
       std::string::size_type start = 0, end;
-      end = spec.find_first_of(":", start);
+      end = spec.find_first_of(':', start);
       if (end == std::string::npos) { // spec = delta_lower,delta_upper
         std::vector<int> delta;       // 0: not changed, > 0: pad, < 0: crop
         try {

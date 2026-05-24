@@ -119,8 +119,8 @@ void usage() {
 }
 // clang-format on
 
-void erase_if_present(Tractography::Properties &p, const std::string s) {
-  auto i = p.find(s);
+void erase_if_present(Tractography::Properties &p, std::string_view s) {
+  auto i = p.find(std::string(s));
   if (i != p.end())
     p.erase(i);
 }

@@ -126,7 +126,7 @@ void run() {
       throw Exception("-plane option cannot be used with scanner-space coordinates");
   }
   operation_count += opt.size();
-  for (auto p : opt) {
+  for (const auto &p : opt) {
     const size_t axis = p[0];
     const auto coords = parse_ints<uint32_t>(p[1]);
     const float value = p[2];
@@ -144,7 +144,7 @@ void run() {
   if (!opt.empty() && H.ndim() != 3)
     throw Exception("-sphere option only works for 3D images");
   operation_count += opt.size();
-  for (auto s : opt) {
+  for (const auto &s : opt) {
     const auto position = parse_floats(s[0]);
     Eigen::Vector3d centre_scannerspace(position[0], position[1], position[2]);
     const default_type radius = s[1];
@@ -184,7 +184,7 @@ void run() {
 
   opt = get_options("voxel");
   operation_count += opt.size();
-  for (auto v : opt) {
+  for (const auto &v : opt) {
     const auto position = parse_floats(v[0]);
     const float value = v[1];
     if (position.size() != H.ndim())

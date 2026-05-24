@@ -24,6 +24,7 @@
 #include <optional>
 #include <tuple>
 #include <type_traits>
+#include <utility>
 
 #include "algo/copy.h"
 #include "algo/threaded_copy.h"
@@ -249,7 +250,7 @@ template <typename ValueType> struct TmpImage : public ImageBase<TmpImage<ValueT
            std::vector<ssize_t> x,
            const Stride::List &strides,
            size_t offset)
-      : b(b), data(data), x(x), strides(strides), offset(offset) {}
+      : b(b), data(data), x(std::move(x)), strides(strides), offset(offset) {}
 
   const typename Image<ValueType>::Buffer &b;
   void *const data;

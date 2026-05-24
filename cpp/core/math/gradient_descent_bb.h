@@ -140,7 +140,7 @@ public:
       for (ssize_t i = 0; i < x2.size(); ++i) {
         log_os << delim << str(g1(i));
       }
-      log_os << std::endl;
+      log_os << '\n';
     }
 
     assert(std::isfinite(f));
@@ -167,7 +167,7 @@ public:
       for (ssize_t i = 0; i < x2.size(); ++i) {
         log_os << delim << str(g2(i));
       }
-      log_os << std::endl;
+      log_os << '\n';
     }
     if (verbose) {
       CONSOLE("            f = " + str(f) + ", |g| = " + str(normg) + ", step = " + str(dt) + ":");
@@ -199,7 +199,7 @@ public:
       for (ssize_t i = 0; i < x2.size(); ++i) {
         log_os << delim << str(g2(i));
       }
-      log_os << std::endl;
+      log_os << '\n';
     }
     compute_normg_and_step();
     return true;

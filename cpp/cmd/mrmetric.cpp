@@ -487,5 +487,5 @@ void run() {
 
   if (!get_options("overlap").empty())
     std::cout << " " << str(n_voxels);
-  std::cout << std::endl;
+  std::cout << '\n';
 }

@@ -89,7 +89,7 @@ public:
       if ((n_iter >= fraction_burnin * n_max) && (n_iter < n_max - fraction_phaseout * n_max))
         Tint *= alpha;
       progress++;
-      out << *this << std::endl;
+      out << *this << '\n';
     }
     return (n_iter < n_max);
   }

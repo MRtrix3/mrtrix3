@@ -29,12 +29,12 @@ public:
   using base_t = Eigen::VectorXf;
   FileDataVector();
   FileDataVector(const FileDataVector &);
-  FileDataVector(FileDataVector &&);
+  FileDataVector(FileDataVector &&) noexcept;
   FileDataVector(const size_t);
   FileDataVector(const std::filesystem::path &);
 
   FileDataVector &operator=(const FileDataVector &);
-  FileDataVector &operator=(FileDataVector &&);
+  FileDataVector &operator=(FileDataVector &&) noexcept;
 
   FileDataVector &load(const std::filesystem::path &filePath);
   FileDataVector &clear();

@@ -128,7 +128,7 @@ void run() {
     index_image.value() = dirs.size();
     index_image.index(3) = 1;
     index_image.value() = dirs.empty() ? 0 : output_index;
-    for (auto d : dirs) {
+    for (const auto &d : dirs) {
       directions_image.index(0) = output_index;
       if (amplitudes_image.valid()) {
         directions_image.row(1) = d.normalized();

@@ -42,7 +42,7 @@ public:
 
   Mesh(const Mesh &that) = default;
 
-  Mesh(Mesh &&that)
+  Mesh(Mesh &&that) noexcept
       : vertices(std::move(that.vertices)),
         normals(std::move(that.normals)),
         triangles(std::move(that.triangles)),
@@ -50,7 +50,7 @@ public:
 
   Mesh() {}
 
-  Mesh &operator=(Mesh &&that) {
+  Mesh &operator=(Mesh &&that) noexcept {
     vertices = std::move(that.vertices);
     normals = std::move(that.normals);
     triangles = std::move(that.triangles);

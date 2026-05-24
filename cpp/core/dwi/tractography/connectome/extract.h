@@ -38,7 +38,8 @@ public:
   Selector(const std::vector<node_t> &node_list, const bool both, const bool keep_self = false)
       : list(node_list), exact_match(both), keep_self(keep_self) {}
   Selector(const Selector &that) : list(that.list), exact_match(that.exact_match), keep_self(that.keep_self) {}
-  Selector(Selector &&that) : list(std::move(that.list)), exact_match(that.exact_match), keep_self(that.keep_self) {}
+  Selector(Selector &&that) noexcept
+      : list(std::move(that.list)), exact_match(that.exact_match), keep_self(that.keep_self) {}
 
   bool operator()(const node_t) const;
   bool operator()(const NodePair &) const;

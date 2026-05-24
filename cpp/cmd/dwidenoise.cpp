@@ -14,15 +14,15 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include "command.h"
+#include "image.h"
+
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
 #include <algorithm>
 #include <cassert>
+#include <cstddef>
 #include <filesystem>
-#include <stddef.h>
-
-#include "command.h"
-#include "image.h"
 
 using namespace MR;
 using namespace App;

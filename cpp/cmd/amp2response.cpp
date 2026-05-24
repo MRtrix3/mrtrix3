@@ -229,7 +229,7 @@ void run() {
     auto hit = header.keyval().find("directions");
     if (hit != header.keyval().end()) {
       std::vector<default_type> dir_vector;
-      for (auto line : split_lines(hit->second)) {
+      for (const auto &line : split_lines(hit->second)) {
         auto v = parse_floats(line);
         dir_vector.insert(dir_vector.end(), v.begin(), v.end());
       }

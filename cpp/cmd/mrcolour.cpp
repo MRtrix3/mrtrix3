@@ -79,7 +79,7 @@ void usage() {
 
 void run() {
   Header H_in = Header::open(argument[0]);
-  const ColourMap::Entry colourmap = ColourMap::maps[argument[1]];
+  const ColourMap::Entry &colourmap = ColourMap::maps[argument[1]];
   Eigen::Vector3d fixed_colour(Eigen::Vector3d::Constant(NaN));
   if (colourmap.is_colour) {
     if (!(H_in.ndim() == 3 || (H_in.ndim() == 4 && H_in.size(3) == 1)))

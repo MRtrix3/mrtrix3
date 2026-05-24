@@ -14,6 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <cmath>
+
 #include "command.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/scalar_file.h"
@@ -59,7 +61,7 @@ void run() {
   const float radius = (kernel.size() - 1.0) / 2.0;
   const int floor_radius = static_cast<int>(std::floor(radius));
   for (size_t c = 0; c < kernel.size(); ++c) {
-    kernel[c] = exp(-(c - radius) * (c - radius) / (2 * stdev * stdev));
+    kernel[c] = std::exp(-(c - radius) * (c - radius) / (2 * stdev * stdev));
     norm_factor += kernel[c];
   }
   for (size_t c = 0; c < kernel.size(); c++)

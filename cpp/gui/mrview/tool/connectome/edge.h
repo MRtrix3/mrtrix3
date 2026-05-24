@@ -35,7 +35,7 @@ class Edge {
 
 public:
   Edge(const node_t, const node_t, const Eigen::Vector3f &, const Eigen::Vector3f &);
-  Edge(Edge &&);
+  Edge(Edge &&) noexcept;
   Edge() = delete;
   ~Edge();
 
@@ -132,7 +132,7 @@ private:
   class Line {
   public:
     Line(const Edge &parent);
-    Line(Line &&that)
+    Line(Line &&that) noexcept
         : vertex_buffer(std::move(that.vertex_buffer)),
           tangent_buffer(std::move(that.tangent_buffer)),
           vertex_array_object(std::move(that.vertex_array_object)) {}
@@ -150,7 +150,7 @@ private:
   class Exemplar {
   public:
     Exemplar(const Edge &, const MR::DWI::Tractography::Streamline<float> &);
-    Exemplar(Exemplar &&that)
+    Exemplar(Exemplar &&that) noexcept
         : endpoints{that.endpoints[0], that.endpoints[1]},
           vertices(std::move(that.vertices)),
           tangents(std::move(that.tangents)),
@@ -170,7 +170,7 @@ private:
   class Streamline {
   public:
     Streamline(const Exemplar &exemplar);
-    Streamline(Streamline &&that)
+    Streamline(Streamline &&that) noexcept
         : count(that.count),
           vertex_buffer(std::move(that.vertex_buffer)),
           tangent_buffer(std::move(that.tangent_buffer)),
@@ -193,7 +193,7 @@ private:
   class Streamtube {
   public:
     Streamtube(const Exemplar &);
-    Streamtube(Streamtube &&that)
+    Streamtube(Streamtube &&that) noexcept
         : count(that.count),
           vertex_buffer(std::move(that.vertex_buffer)),
           tangent_buffer(std::move(that.tangent_buffer)),

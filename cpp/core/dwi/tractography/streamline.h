@@ -31,12 +31,12 @@ public:
   DataIndex() : index(invalid) {}
   DataIndex(const size_t i) : index(i) {}
   DataIndex(const DataIndex &i) : index(i.index) {}
-  DataIndex(DataIndex &&i) : index(i.index) { i.index = invalid; }
+  DataIndex(DataIndex &&i) noexcept : index(i.index) { i.index = invalid; }
   DataIndex &operator=(const DataIndex &i) {
     index = i.index;
     return *this;
   }
-  DataIndex &operator=(DataIndex &&i) {
+  DataIndex &operator=(DataIndex &&i) noexcept {
     index = i.index;
     i.index = invalid;
     return *this;
@@ -57,7 +57,7 @@ public:
   using std::vector<ValueType>::vector;
   TrackScalar() = default;
   TrackScalar(const TrackScalar &) = default;
-  TrackScalar(TrackScalar &&that) : std::vector<value_type>(std::move(that)), DataIndex(std::move(that)) {}
+  TrackScalar(TrackScalar &&that) noexcept : std::vector<value_type>(std::move(that)), DataIndex(std::move(that)) {}
   TrackScalar &operator=(const TrackScalar &that) = default;
   void clear() {
     std::vector<ValueType>::clear();
@@ -81,7 +81,7 @@ public:
   Streamline(const Streamline &) = default;
   Streamline &operator=(const Streamline &that) = default;
 
-  Streamline(Streamline &&that)
+  Streamline(Streamline &&that) noexcept
       : std::vector<point_type>(std::move(static_cast<std::vector<point_type> &&>(that))),
         DataIndex(std::move(static_cast<DataIndex &&>(that))),
         weight(that.weight) {
@@ -90,7 +90,7 @@ public:
 
   Streamline(const std::vector<point_type> &tck) : std::vector<point_type>(tck), DataIndex(), weight(1.0) {}
 
-  Streamline &operator=(Streamline &&that) {
+  Streamline &operator=(Streamline &&that) noexcept {
     std::vector<point_type>::operator=(std::move(static_cast<std::vector<point_type> &&>(that)));
     DataIndex::operator=(std::move(static_cast<DataIndex &&>(that)));
     weight = that.weight;

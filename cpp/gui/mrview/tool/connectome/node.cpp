@@ -91,7 +91,7 @@ Node::Mesh::Mesh(MR::Surface::Mesh &in) : count(3 * in.num_triangles()) {
   GL::assert_context_is_current();
 }
 
-Node::Mesh::Mesh(Mesh &&that)
+Node::Mesh::Mesh(Mesh &&that) noexcept
     : count(that.count),
       vertex_buffer(std::move(that.vertex_buffer)),
       normal_buffer(std::move(that.normal_buffer)),
@@ -108,7 +108,7 @@ Node::Mesh::~Mesh() {
   index_buffer.clear();
 }
 
-Node::Mesh &Node::Mesh::operator=(Node::Mesh &&that) {
+Node::Mesh &Node::Mesh::operator=(Node::Mesh &&that) noexcept {
   count = that.count;
   that.count = 0;
   vertex_buffer = std::move(that.vertex_buffer);

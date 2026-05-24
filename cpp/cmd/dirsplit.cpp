@@ -69,6 +69,7 @@ public:
     }
     INFO("split " + str(directions.rows()) + " directions into subsets with " + str([&] {
            std::vector<size_t> c;
+           c.reserve(subset.size());
            for (auto &x : subset)
              c.push_back(x.size());
            return c;

@@ -16,6 +16,7 @@
 
 #include <filesystem>
 #include <memory>
+#include <utility>
 
 #include "command.h"
 #include "dwi/directions/set.h"
@@ -129,7 +130,7 @@ private:
     float max_peak_amp;
     float skew;
     Primitive_FOD_lobe(Eigen::Vector3f dir, float integral, float max_peak_amp, float skew)
-        : dir(dir), integral(integral), max_peak_amp(max_peak_amp), skew(skew) {}
+        : dir(std::move(dir)), integral(integral), max_peak_amp(max_peak_amp), skew(skew) {}
   };
 
   class Primitive_FOD_lobes : public std::vector<Primitive_FOD_lobe> {

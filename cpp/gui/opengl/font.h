@@ -24,7 +24,7 @@ namespace MR::GUI::GL {
 
 class Font {
 public:
-  Font(const QFont font) : metric(font), font(font) {}
+  Font(const QFont &font) : metric(font), font(font) {}
 
   void initGL(bool with_shadow = true);
 

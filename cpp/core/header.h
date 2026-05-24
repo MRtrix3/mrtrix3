@@ -70,7 +70,7 @@ public:
         keyval_(std::move(H.keyval_)),
         format_(H.format_),
         io(std::move(H.io)),
-        datatype_(std::move(H.datatype_)),
+        datatype_(H.datatype_),
         offset_(H.offset_),
         scale_(H.scale_),
         realignment_(H.realignment_) {}
@@ -83,7 +83,7 @@ public:
     keyval_ = std::move(H.keyval_);
     format_ = H.format_;
     io = std::move(H.io);
-    datatype_ = std::move(H.datatype_);
+    datatype_ = H.datatype_;
     offset_ = H.offset_;
     scale_ = H.scale_;
     realignment_ = H.realignment_;

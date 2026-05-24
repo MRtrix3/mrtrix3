@@ -35,9 +35,9 @@ public:
       compile(source);
   }
   Object(const Object &) = delete;
-  Object(Object &&other) : index_(other.index_) { other.index_ = 0; }
+  Object(Object &&other) noexcept : index_(other.index_) { other.index_ = 0; }
   Object &operator=(const Object &) = delete;
-  Object &operator=(Object &&other) {
+  Object &operator=(Object &&other) noexcept {
     clear();
     index_ = other.index_;
     other.index_ = 0;
@@ -93,10 +93,10 @@ using Fragment = Object<gl::FRAGMENT_SHADER>;
 class Program {
 public:
   Program() : index_(0) {}
-  Program(Program &&other) : index_(other.index_) { other.index_ = 0; }
+  Program(Program &&other) noexcept : index_(other.index_) { other.index_ = 0; }
   Program(const Program &) = delete;
   Program &operator=(const Program &) = delete;
-  Program &operator=(Program &&other) {
+  Program &operator=(Program &&other) noexcept {
     clear();
     index_ = other.index_;
     other.index_ = 0;

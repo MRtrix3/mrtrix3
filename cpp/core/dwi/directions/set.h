@@ -51,7 +51,7 @@ public:
 
   Set(const Set &that) = default;
 
-  Set(Set &&that)
+  Set(Set &&that) noexcept
       : unit_vectors(std::move(that.unit_vectors)),
         adj_dirs(std::move(that.adj_dirs)),
         dir_mask_bytes(that.dir_mask_bytes),
@@ -139,7 +139,7 @@ public:
 
   FastLookupSet(const size_t d) : Set(d) { initialise(); }
 
-  FastLookupSet(FastLookupSet &&that)
+  FastLookupSet(FastLookupSet &&that) noexcept
       : Set(std::move(static_cast<Set &&>(that))),
         grid_lookup(std::move(that.grid_lookup)),
         num_az_grids(that.num_az_grids),

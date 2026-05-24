@@ -69,7 +69,7 @@ Edge::Edge(const node_t one, const node_t two, const Eigen::Vector3f &c_one, con
   }
 }
 
-Edge::Edge(Edge &&that)
+Edge::Edge(Edge &&that) noexcept
     : node_indices{that.node_indices[0], that.node_indices[1]},
       node_centres{that.node_centres[0], that.node_centres[1]},
       dir(that.dir),

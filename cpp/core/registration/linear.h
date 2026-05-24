@@ -233,7 +233,7 @@ public:
     }
   }
 
-  void set_extent(const std::vector<size_t> extent) {
+  void set_extent(const std::vector<size_t> &extent) {
     for (size_t d = 0; d < extent.size(); ++d) {
       if (extent[d] < 1)
         throw Exception("the neighborhood kernel extent must be at least 1 voxel");

@@ -158,9 +158,9 @@ public:
     auto v(get_float());
     return check_get(idx, v.size()) ? v[idx] : default_value;
   }
-  std::string get_string(size_t idx, std::string default_value = std::string()) const {
+  std::string get_string(size_t idx, std::string_view default_value = "") const {
     auto v(get_string());
-    return check_get(idx, v.size()) ? v[idx] : default_value;
+    return check_get(idx, v.size()) ? v[idx] : std::string(default_value);
   }
 
   std::string as_string() const;

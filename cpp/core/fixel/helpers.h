@@ -18,6 +18,7 @@
 
 #include <filesystem>
 #include <string_view>
+#include <utility>
 
 #include "algo/loop.h"
 #include "app.h"
@@ -30,9 +31,9 @@
 namespace MR::Fixel {
 class InvalidDirectoryException : public Exception {
 public:
-  InvalidDirectoryException(std::string msg) : Exception(msg) {}
+  InvalidDirectoryException(std::string msg) : Exception(std::move(msg)) {}
   InvalidDirectoryException(const Exception &previous_exception, std::string msg)
-      : Exception(previous_exception, msg) {}
+      : Exception(previous_exception, std::move(msg)) {}
 };
 
 FORCE_INLINE bool is_index_filename(const std::filesystem::path &path) {
@@ -182,7 +183,7 @@ FORCE_INLINE std::vector<Header> find_data_headers(const std::filesystem::path &
   std::sort(file_paths.begin(), file_paths.end());
 
   std::vector<Header> data_headers;
-  for (auto fpath : file_paths) {
+  for (const auto &fpath : file_paths) {
     if (Path::has_suffix(fpath.filename(), supported_image_formats)) {
       try {
         auto H = Header::open(fpath);

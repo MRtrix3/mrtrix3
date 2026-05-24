@@ -310,7 +310,7 @@ void header2json(const Header &header, nlohmann::json &json) {
 
 void run() {
   auto check_option_group = [](const App::OptionGroup &g) {
-    for (auto o : g)
+    for (const auto &o : g)
       if (!get_options(o.id).empty())
         return true;
     return false;

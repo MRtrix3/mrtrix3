@@ -105,6 +105,7 @@ void run() {
     }
     INFO("found b = " + str(bvalue[nb]) + ", " + str([&] {
            std::vector<size_t> s;
+           s.reserve(d.size());
            for (auto &n : d)
              s.push_back(n.size());
            return s;

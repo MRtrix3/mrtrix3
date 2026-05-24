@@ -151,7 +151,7 @@ public:
       for (ssize_t i = 0; i < x.size(); ++i) {
         log_os << delim << str(g(i));
       }
-      log_os << std::endl;
+      log_os << '\n';
     }
   }
 
@@ -194,7 +194,7 @@ public:
           for (ssize_t i = 0; i < x.size(); ++i) {
             log_os << delim << str(g(i));
           }
-          log_os << std::endl;
+          log_os << '\n';
         }
         compute_normg_and_step_unscaled();
         return true;

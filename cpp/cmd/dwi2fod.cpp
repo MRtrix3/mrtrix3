@@ -28,6 +28,7 @@
 #include "dwi/sdeconv/msmt_csd.h"
 
 #include <filesystem>
+#include <utility>
 
 using namespace MR;
 using namespace App;
@@ -133,7 +134,7 @@ void usage() {
 class CSD_Processor {
 public:
   CSD_Processor(const DWI::SDeconv::CSD::Shared &shared, Image<bool> &mask, Image<float> dwi_modelled = Image<float>())
-      : sdeconv(shared), data(shared.dwis.size()), mask(mask), modelled_image(dwi_modelled) {}
+      : sdeconv(shared), data(shared.dwis.size()), mask(mask), modelled_image(std::move(dwi_modelled)) {}
 
   void operator()(Image<float> &dwi, Image<float> &fod) {
     if (!load_data(dwi)) {
@@ -208,8 +209,8 @@ public:
                  Image<float> dwi_modelled = Image<float>())
       : sdeconv(shared),
         mask_image(mask_image),
-        odf_images(odf_images),
-        modelled_image(dwi_modelled),
+        odf_images(std::move(odf_images)),
+        modelled_image(std::move(dwi_modelled)),
         dwi_data(shared.grad.rows()),
         output_data(shared.problem.H.cols()) {}
 

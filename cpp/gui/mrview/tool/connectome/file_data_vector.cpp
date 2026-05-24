@@ -29,7 +29,7 @@ FileDataVector::FileDataVector() : base_t(), min(NaNF), mean(NaNF), max(NaNF) {}
 FileDataVector::FileDataVector(const FileDataVector &V)
     : base_t(V), name(V.name), min(V.min), mean(V.mean), max(V.max) {}
 
-FileDataVector::FileDataVector(FileDataVector &&V)
+FileDataVector::FileDataVector(FileDataVector &&V) noexcept
     : base_t(std::move(static_cast<base_t &&>(V))), name(V.name), min(V.min), mean(V.mean), max(V.max) {
   V.name.clear();
   V.min = V.mean = V.max = NaNF;
@@ -52,7 +52,7 @@ FileDataVector &FileDataVector::operator=(const FileDataVector &that) {
   max = that.max;
   return *this;
 }
-FileDataVector &FileDataVector::operator=(FileDataVector &&that) {
+FileDataVector &FileDataVector::operator=(FileDataVector &&that) noexcept {
   base_t::operator=(std::move(static_cast<base_t &&>(that)));
   name = that.name;
   min = that.min;

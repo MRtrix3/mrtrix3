@@ -244,7 +244,7 @@ void run() {
 
   Eigen::VectorXf riso;
   auto opt = get_options("riso");
-  for (auto popt : opt) {
+  for (const auto &popt : opt) {
     riso = File::Matrix::load_vector<float>(popt[0]);
     properties.resp_ISO.push_back(riso);
   }

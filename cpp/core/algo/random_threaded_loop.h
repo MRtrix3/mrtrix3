@@ -45,7 +45,7 @@ template <int N, class Functor, class... ImageType> struct RandomThreadedLoopRun
                              const std::vector<size_t> &inner_axes,
                              const Functor &functor,
                              const double voxel_density,
-                             const std::vector<size_t> dimensions,
+                             const std::vector<size_t> &dimensions,
                              ImageType &...voxels)
       : outer_axes(outer_axes),
         loop(Loop(inner_axes)),

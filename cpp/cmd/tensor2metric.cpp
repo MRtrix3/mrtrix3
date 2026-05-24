@@ -171,7 +171,7 @@ public:
             Image<value_type> &rk_img,
             std::vector<uint32_t> &vals,
             ModulateChoice modulate,
-            Eigen::MatrixXd mk_dirs,
+            const Eigen::MatrixXd &mk_dirs,
             int rk_ndirs)
       : mask_img(mask_img),
         adc_img(adc_img),

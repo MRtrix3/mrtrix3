@@ -156,7 +156,7 @@ ROI_UndoEntry::ROI_UndoEntry(ROI_Item &roi, int current_axis, int current_slice)
   GL::assert_context_is_current();
 }
 
-ROI_UndoEntry::ROI_UndoEntry(ROI_UndoEntry &&r)
+ROI_UndoEntry::ROI_UndoEntry(ROI_UndoEntry &&r) noexcept
     : from(r.from),
       size(r.size),
       tex_size(r.tex_size),
@@ -173,7 +173,7 @@ ROI_UndoEntry::~ROI_UndoEntry() {
     delete shared.release();
 }
 
-ROI_UndoEntry &ROI_UndoEntry::operator=(ROI_UndoEntry &&r) {
+ROI_UndoEntry &ROI_UndoEntry::operator=(ROI_UndoEntry &&r) noexcept {
   from = r.from;
   size = r.size;
   tex_size = r.tex_size;

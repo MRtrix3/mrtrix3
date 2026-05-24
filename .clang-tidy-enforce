@@ -5,6 +5,7 @@ Checks: >
   bugprone-*,
   clang-analyzer-*,
   concurrency-*,
+  performance-*,
   -bugprone-easily-swappable-parameters,
   -bugprone-narrowing-conversions,
   -clang-analyzer-optin.core.EnumCastOutOfRange,

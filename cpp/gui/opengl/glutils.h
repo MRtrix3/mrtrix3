@@ -148,8 +148,8 @@ public:
   Texture() : id(0), tex_type(0) {}
   ~Texture() { clear(); }
   Texture(const Texture &) : id(0), tex_type(0) {}
-  Texture(Texture &&t) : id(t.id), tex_type(t.tex_type) { t.id = t.tex_type = 0; }
-  Texture &operator=(Texture &&t) {
+  Texture(Texture &&t) noexcept : id(t.id), tex_type(t.tex_type) { t.id = t.tex_type = 0; }
+  Texture &operator=(Texture &&t) noexcept {
     clear();
     id = t.id;
     tex_type = t.tex_type;
@@ -212,8 +212,8 @@ public:
   VertexBuffer() : id(0) {}
   ~VertexBuffer() { clear(); }
   VertexBuffer(const VertexBuffer &) : id(0) {}
-  VertexBuffer(VertexBuffer &&t) : id(t.id) { t.id = 0; }
-  VertexBuffer &operator=(VertexBuffer &&t) {
+  VertexBuffer(VertexBuffer &&t) noexcept : id(t.id) { t.id = 0; }
+  VertexBuffer &operator=(VertexBuffer &&t) noexcept {
     clear();
     id = t.id;
     t.id = 0;
@@ -252,8 +252,8 @@ public:
   VertexArrayObject() : id(0) {}
   ~VertexArrayObject() { clear(); }
   VertexArrayObject(const VertexArrayObject &) : id(0) {}
-  VertexArrayObject(VertexArrayObject &&t) : id(t.id) { t.id = 0; }
-  VertexArrayObject &operator=(VertexArrayObject &&t) {
+  VertexArrayObject(VertexArrayObject &&t) noexcept : id(t.id) { t.id = 0; }
+  VertexArrayObject &operator=(VertexArrayObject &&t) noexcept {
     clear();
     id = t.id;
     t.id = 0;
@@ -292,8 +292,8 @@ public:
   IndexBuffer() : id(0) {}
   ~IndexBuffer() { clear(); }
   IndexBuffer(const IndexBuffer &) : id(0) {}
-  IndexBuffer(IndexBuffer &&t) : id(t.id) { t.id = 0; }
-  IndexBuffer &operator=(IndexBuffer &&t) {
+  IndexBuffer(IndexBuffer &&t) noexcept : id(t.id) { t.id = 0; }
+  IndexBuffer &operator=(IndexBuffer &&t) noexcept {
     clear();
     id = t.id;
     t.id = 0;
@@ -332,8 +332,8 @@ public:
   FrameBuffer() : id(0) {}
   ~FrameBuffer() { clear(); }
   FrameBuffer(const FrameBuffer &) : id(0) {}
-  FrameBuffer(FrameBuffer &&t) : id(t.id) { t.id = 0; }
-  FrameBuffer &operator=(FrameBuffer &&t) {
+  FrameBuffer(FrameBuffer &&t) noexcept : id(t.id) { t.id = 0; }
+  FrameBuffer &operator=(FrameBuffer &&t) noexcept {
     clear();
     id = t.id;
     t.id = 0;

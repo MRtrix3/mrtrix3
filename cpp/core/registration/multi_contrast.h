@@ -55,7 +55,7 @@ FORCE_INLINE void check_image_output(const std::filesystem::path &image_path, co
 
   if (!*format_handler) {
     const std::string basename = image_path.filename().string();
-    const size_t extension_index = basename.find_last_of(".");
+    const size_t extension_index = basename.find_last_of('.');
     throw Exception("unknown format for image \"" + image_path.string() + "\"" + //
                     (extension_index == std::string::npos
                          ? "(no file extension specified)"

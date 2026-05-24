@@ -98,7 +98,7 @@ public:
   std::string operator[](size_t n) const { return description[n]; }
   void push_back(std::string s) { description.push_back(std::move(s)); }
   void push_back(const Exception &e) {
-    for (auto s : e.description)
+    for (const auto &s : e.description)
       push_back(s);
   }
 

@@ -56,7 +56,7 @@ void run() {
   }
   Eigen::ArrayXXi prettyprint(locations.size(), in.ndim());
   for (size_t row = 0; row != locations.size(); ++row)
-    prettyprint.row(row) = std::move(locations[row]);
+    prettyprint.row(row) = locations[row];
   INFO("Printing locations of " + str(prettyprint.rows()) + " non-zero voxels");
   if (argument.size() == 2) {
     const std::filesystem::path output_path{argument[1]};

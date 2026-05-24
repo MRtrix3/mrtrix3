@@ -42,7 +42,7 @@ public:
     weight = 0.0F;
   }
 
-  Exemplar(Exemplar &&that)
+  Exemplar(Exemplar &&that) noexcept
       : Tractography::Streamline<float>(std::move(static_cast<Tractography::Streamline<float> &&>(that))),
         mutex(),
         nodes(that.nodes),

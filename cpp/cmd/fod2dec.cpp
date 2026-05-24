@@ -185,7 +185,7 @@ private:
   value_type grey;
 
 public:
-  DecWeighter(Eigen::Matrix<value_type, 3, 1> coefs, value_type gamma, Image<value_type> &w_img)
+  DecWeighter(const Eigen::Matrix<value_type, 3, 1> &coefs, value_type gamma, Image<value_type> &w_img)
       : coefs(coefs), gamma(gamma), w_img(w_img), grey(1.0 / std::pow(coefs.sum(), 1.0 / gamma)) {}
 
   void operator()(Image<value_type> &dec_img) {

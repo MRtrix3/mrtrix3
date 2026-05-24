@@ -108,9 +108,9 @@ public:
   bool has_bzero() const { return smallest().is_bzero(); }
 
   friend std::ostream &operator<<(std::ostream &stream, const Shells &S) {
-    stream << "Total of " << S.count() << " DWI shells:" << std::endl;
+    stream << "Total of " << S.count() << " DWI shells:" << '\n';
     for (const auto &it : S.shells)
-      stream << it << std::endl;
+      stream << it << '\n';
     return stream;
   }
 

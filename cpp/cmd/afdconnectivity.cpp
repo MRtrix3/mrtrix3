@@ -306,7 +306,7 @@ void run() {
   const value_type connectivity_value = model.get(input_tracks_path);
 
   // output the AFD sum using std::cout. This enables output to be redirected to a file without the console output.
-  std::cout << connectivity_value << std::endl;
+  std::cout << connectivity_value << '\n';
 
   opt = get_options("afd_map");
   if (!opt.empty())

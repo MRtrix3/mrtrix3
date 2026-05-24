@@ -68,7 +68,7 @@ using rotation_transform_type = Eigen::Transform<default_type, 3, Eigen::Isometr
 
 class Shared {
 public:
-  Shared(const std::shared_ptr<const cartesian_matrix_type> directions, size_t total_num_rotations)
+  Shared(const std::shared_ptr<const cartesian_matrix_type> &directions, size_t total_num_rotations)
       : directions(directions),                                                         //
         protected_content(total_num_rotations, directions->array().abs().maxCoeff()) {} //
 
@@ -128,7 +128,7 @@ private:
 
 class Processor {
 public:
-  Processor(const std::shared_ptr<Shared> shared)
+  Processor(const std::shared_ptr<Shared> &shared)
       : shared(shared),
         rotation(0.0, axis_type{0.0, 0.0, 0.0}),
         angle_distribution(-Math::pi, Math::pi),

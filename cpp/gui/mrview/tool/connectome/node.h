@@ -81,10 +81,10 @@ private:
   public:
     Mesh(MR::Surface::Mesh &);
     Mesh(const Mesh &) = delete;
-    Mesh(Mesh &&);
+    Mesh(Mesh &&) noexcept;
     Mesh() = delete;
     ~Mesh();
-    Mesh &operator=(Mesh &&);
+    Mesh &operator=(Mesh &&) noexcept;
     void render() const;
 
   private:
