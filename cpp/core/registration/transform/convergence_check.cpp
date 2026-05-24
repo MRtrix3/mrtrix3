@@ -98,14 +98,14 @@ void DoubleExpSmoothSlopeCheck::debug(const Eigen::Matrix<default_type, Eigen::D
     WARN("DoubleExpSmoothSlopeCheck not initialised");
     return;
   }
-  std::cout << str(control_points_vec.transpose()) << std::endl;
+  std::cout << str(control_points_vec.transpose()) << '\n';
   if (len == 0) {
     INFO("DoubleExpSmoothSlopeCheck did not run");
     return;
   }
 
-  std::cout << "#b " + str(db.back().transpose()) << std::endl;
-  std::cout << "#s " + str(ds.back().transpose()) << std::endl;
+  std::cout << "#b " + str(db.back().transpose()) << '\n';
+  std::cout << "#s " + str(ds.back().transpose()) << '\n';
   DEBUG("bmax : " + str(db.back().array().abs().maxCoeff()));
 }
 //! @}

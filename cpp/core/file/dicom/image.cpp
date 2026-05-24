@@ -423,7 +423,7 @@ void Image::decode_csa(const std::byte *start, const std::byte *end) {
 KeyValues Image::read_csa_ascii(const std::vector<std::string> &data) {
 
   auto split_keyval = [](std::string_view s) -> std::pair<std::string, std::string> {
-    const size_t delimiter = s.find_first_of("=");
+    const size_t delimiter = s.find_first_of('=');
     if (delimiter == std::string::npos)
       return std::make_pair(std::string(), std::string());
     return std::make_pair(strip(s.substr(0, delimiter)), strip(s.substr(delimiter + 1)));

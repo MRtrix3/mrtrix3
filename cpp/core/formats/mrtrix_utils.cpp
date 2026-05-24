@@ -212,7 +212,7 @@ template <class SourceType> void read_mrtrix_header(Header &H, SourceType &kv) {
     auto check_transform = [&transform]() {
       if (transform.size() < 3)
         return false;
-      for (auto row : transform)
+      for (const auto &row : transform)
         if (row.size() != 4)
           return false;
       return true;

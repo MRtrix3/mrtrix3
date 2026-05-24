@@ -78,13 +78,13 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
     std::sort(series_it->begin(), series_it->end(), compare_ptr_contents());
 
     // loop over images in each series:
-    for (auto image_it : *series_it) {
+    for (const auto &image_it : *series_it) {
       if (!image_it->transfer_syntax_supported)
         transfer_syntax_supported = false;
       // if multi-frame, loop over frames in image:
       if (!image_it->frames.empty()) {
         std::sort(image_it->frames.begin(), image_it->frames.end(), compare_ptr_contents());
-        for (auto frame_it : image_it->frames)
+        for (const auto &frame_it : image_it->frames)
           if (frame_it->image_type == series_it->image_type)
             if (!frame_it->is_philips_iso() || preserve_philips_iso)
               frames.push_back(frame_it.get());

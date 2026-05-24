@@ -276,6 +276,7 @@ void ROI::open_slot() {
     return;
   current_folder = load_paths.last_directory;
   std::vector<std::unique_ptr<MR::Header>> list;
+  list.reserve(load_paths.multi_selection.size());
   for (const auto &path : load_paths.multi_selection)
     list.push_back(std::make_unique<MR::Header>(MR::Header::open(path)));
   load(list);

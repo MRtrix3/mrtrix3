@@ -13,6 +13,13 @@ Checks: >
   -bugprone-narrowing-conversions,
   -clang-analyzer-optin.core.EnumCastOutOfRange,
   -clang-analyzer-unix.Malloc,
+  # performance-* sub-checks excluded: large residuals with no safe autofix or conflicts with house rules
+  -performance-enum-size,
+  -performance-unnecessary-value-param,
+  -performance-move-constructor-init,
+  -performance-no-int-to-ptr,
+  -performance-type-promotion-in-math-fn,
+  -performance-no-automatic-move,
 WarningsAsErrors: '*'
 HeaderFilterRegex: '(cpp\/|testing\/(lib\/|tools\/|unit_tests\/)).*\.(h|hpp)'
 #ExcludeHeaderFilterRegex: '(_deps\/|cpp\/core\/eigen_plugins\/|cpp\/gui\/opengl\/gl_core_3_3).*'

@@ -309,7 +309,7 @@ Header Header::create(const std::filesystem::path &image_name, //
 
     if (*format_handler == nullptr) {
       const std::string basename = image_name.filename().string();
-      const size_t extension_index = basename.find_last_of(".");
+      const size_t extension_index = basename.find_last_of('.');
       if (extension_index == std::string::npos)
         throw Exception("unknown format for image \"" + image_name.string() + "\" (no file extension specified)");
       else

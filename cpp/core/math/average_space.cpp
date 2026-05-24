@@ -45,7 +45,7 @@ double matrix_average(std::vector<Eigen::MatrixXd> const &mat_in, Eigen::MatrixX
     mat_s *= 1. / N;
     mat_avg *= mat_s.exp();
     if (verbose)
-      std::cerr << i << " mat_s.squaredNorm(): " << mat_s.squaredNorm() << std::endl;
+      std::cerr << i << " mat_s.squaredNorm(): " << mat_s.squaredNorm() << '\n';
     if (mat_s.squaredNorm() < 1E-20) {
       break;
     }

@@ -37,7 +37,7 @@ ImageProperties::ImageProperties(QWidget *parent, const MR::Header &header)
   if (!H.keyval().empty()) {
     TreeItem *keyvals = new TreeItem("Key/value pairs", std::string(), root);
     root->appendChild(keyvals);
-    for (auto n : H.keyval()) {
+    for (const auto &n : H.keyval()) {
       if (n.first != "dw_scheme") {
         if (n.second.find('\n') == n.second.npos) {
           keyvals->appendChild(new TreeItem(n.first, n.second, keyvals));
@@ -45,7 +45,7 @@ ImageProperties::ImageProperties(QWidget *parent, const MR::Header &header)
           const auto lines = split_lines(n.second);
           TreeItem *multi_line_keyval = new TreeItem(n.first, std::string(), keyvals);
           keyvals->appendChild(multi_line_keyval);
-          for (auto l : lines)
+          for (const auto &l : lines)
             multi_line_keyval->appendChild(new TreeItem(std::string(), l, multi_line_keyval));
         }
       }

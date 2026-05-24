@@ -42,7 +42,7 @@ bool SyncManager::GetInErrorState() { return ips == 0; }
  */
 void SyncManager::OnWindowFocusChanged() {
   if (Window::main->sync_focus_on()) {
-    Eigen::Vector3f const foc = Window::main->focus();
+    Eigen::Vector3f const &foc = Window::main->focus();
     SendData(DataKey::WindowFocus, ToQByteArray(foc));
   }
 }

@@ -719,7 +719,7 @@ std::string restructured_text_usage() {
   //   if they start popping up in argument / option descriptions
   auto escape_special = [](std::string text) {
     size_t index = 0;
-    while ((index = text.find("|", index)) != std::string::npos) {
+    while ((index = text.find('|', index)) != std::string::npos) {
       text.replace(index, 1, "\\|");
       index += 2;
     }
@@ -1067,7 +1067,7 @@ void parse() {
       types_not_output_file.reset(ArgTypeFlags::FileOut);
       types_not_output_file.reset(ArgTypeFlags::TracksOut);
       if (!types_not_output_file.any()) {
-        if (i.as_text().find_last_of(PATH_SEPARATORS) == i.as_text().size() - 1)
+        if (i.as_text().find_last_of('/') == i.as_text().size() - 1)
           throw Exception("output path \"" + i.as_text() + "\" is not a valid file path" +
                           " (ends with directory path separator)");
       }
@@ -1158,7 +1158,7 @@ void parse() {
         types_not_output_file.reset(ArgTypeFlags::TracksOut);
         if (!types_not_output_file.any()) {
           const std::string filename = static_cast<std::filesystem::path>(parg).filename().string();
-          if (filename.find_last_of(PATH_SEPARATORS) == filename.size() - 1)
+          if (filename.find_last_of('/') == filename.size() - 1)
             throw Exception("output path \"" + parg.as_text() + "\"" +                         //
                             " for option \"-" + std::string(i.opt->id) + "\"" +                //
                             " is not a valid file path (ends with directory path separator)"); //

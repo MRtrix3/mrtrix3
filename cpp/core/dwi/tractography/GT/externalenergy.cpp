@@ -59,7 +59,7 @@ ExternalEnergyComputer::ExternalEnergyComputer(Stats &stat, Header &dwiheader, c
 
   if (static_cast<size_t>(props.resp_WM.rows()) != shells.count())
     FAIL("WM kernel size does not match the no. b-values in the image.");
-  for (auto r : props.resp_ISO) {
+  for (const auto &r : props.resp_ISO) {
     if (static_cast<size_t>(r.size()) != shells.count())
       FAIL("Isotropic kernel size does not match the no. b-values in the image.");
   }

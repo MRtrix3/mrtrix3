@@ -35,9 +35,9 @@ public:
 
   void sort() {
     std::sort(begin(), end(), compare_ptr_contents());
-    for (auto patient : *this) {
+    for (const auto &patient : *this) {
       std::sort(patient->begin(), patient->end(), compare_ptr_contents());
-      for (auto study : *patient)
+      for (const auto &study : *patient)
         std::sort(study->begin(), study->end(), compare_ptr_contents());
     }
   }

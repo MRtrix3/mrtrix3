@@ -858,7 +858,7 @@ template <class Output> void write_other(const Header &H, Output &out) {
     // Need to find out the maximum node index
     const auto lines = split_lines(table);
     int32_t max_index = 0;
-    for (auto line : lines) {
+    for (const auto &line : lines) {
       const auto entries = split(line, ",", true);
       if (entries.size() != 6)
         throw Exception(std::string("Error writing colour table to file:") +         //
@@ -898,9 +898,9 @@ template <class Output> void write_other(const Header &H, Output &out) {
   std::string mri_frames, colour_table;
   std::vector<Tag> cmdline_tags;
 
-  for (auto entry : H.keyval()) {
+  for (const auto &entry : H.keyval()) {
     if (entry.first == "command_history") {
-      for (auto line : split_lines(entry.second))
+      for (const auto &line : split_lines(entry.second))
         cmdline_tags.push_back(Tag(tag_cmdline, line));
     } else if (entry.first.size() < 5 || entry.first.substr(0, 4) != "MGH_") {
       continue;

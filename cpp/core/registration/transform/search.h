@@ -186,7 +186,7 @@ public:
       DEBUG("rotation search: iteration " + str(iteration) + " cost: " + str(cost) + " cnt: " + str(cnt));
       if (debug)
         std::cout << str(iteration) + " " + str(cost) + " " + str(cnt) << " " << T.matrix().row(0) << " "
-                  << T.matrix().row(1) << " " << T.matrix().row(2) << std::endl;
+                  << T.matrix().row(1) << " " << T.matrix().row(2) << '\n';
       // write_images ( "im1_" + str(iteration) + ".mif", "im2_" + str(iteration) + ".mif");
       if (cnt == 0) {
         if (iteration == 0)
