@@ -495,7 +495,7 @@ void run() {
 
   auto mo_img = Image<value_type>();
   opt = get_options("mo");
-  if (opt.size()) {
+  if (opt.size() != 0u) {
     header.ndim() = 3;
     mo_img = Image<value_type>::create(opt[0][0], header);
     metric_count++;
@@ -503,7 +503,7 @@ void run() {
 
   auto na_img = Image<value_type>();
   opt = get_options("na");
-  if (opt.size()) {
+  if (opt.size() != 0u) {
     header.ndim() = 3;
     na_img = Image<value_type>::create(opt[0][0], header);
     metric_count++;
@@ -584,12 +584,12 @@ void run() {
 
   auto rk_ndirs = get_option_value("rk_ndirs", default_rk_numdirections);
 
-  if (dki_metric_count && !dkt_img.valid()) {
+  if ((dki_metric_count != 0u) && !dkt_img.valid()) {
     throw Exception(
         "Cannot calculate diffusion kurtosis metrics; must provide the kurtosis tensor using the -dkt input option");
   }
 
-  if (!metric_count)
+  if (metric_count == 0u)
     throw Exception(
         "No output specified; must request at least one metric of interest using the available command-line options");
 

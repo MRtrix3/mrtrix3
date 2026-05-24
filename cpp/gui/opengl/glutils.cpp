@@ -27,7 +27,7 @@ Area *glwidget = nullptr;
 #ifndef NDEBUG
 void _assert_context_is_current(QWidget *glarea) {
   auto _current_context = Context::current();
-  auto _expected_context = Context::get(glarea ? glarea : glwidget);
+  auto _expected_context = Context::get((glarea != nullptr) ? glarea : glwidget);
   assert(_current_context == _expected_context);
 }
 #endif

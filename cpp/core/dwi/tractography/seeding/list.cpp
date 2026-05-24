@@ -66,7 +66,7 @@ bool List::get_seed(Eigen::Vector3f &p, Eigen::Vector3f &d) {
           return i->get_seed(p, d);
       }
 
-    } while (1);
+    } while (true);
     return false;
   }
 }

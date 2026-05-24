@@ -192,7 +192,7 @@ template <class Fixel> void ModelBase<Fixel>::map_streamlines(const std::filesys
   Tractography::Reader<> file(path, properties);
 
   const track_t count = (properties.find("count") == properties.end()) ? 0 : to<track_t>(properties["count"]);
-  if (!count)
+  if (count == 0u)
     throw Exception("Cannot map streamlines: track file " + path.filename().string() + " is empty");
 
   Mapping::TrackLoader loader(file, count);
@@ -231,7 +231,7 @@ template <class Fixel> bool ModelBase<Fixel>::operator()(const Mapping::SetDixel
   default_type total_contribution = 0.0;
   for (Mapping::SetDixel::const_iterator i = in.begin(); i != in.end(); ++i) {
     const size_t fixel_index = Mapping::Fixel_TD_map<Fixel>::dixel2fixel(*i);
-    if (fixel_index) {
+    if (fixel_index != 0u) {
       fixels[fixel_index] += i->get_length();
       total_contribution += fixels[fixel_index].get_weight() * i->get_length();
     }

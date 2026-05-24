@@ -83,7 +83,7 @@ ROI_UndoEntry::Shared::~Shared() {
 
 void ROI_UndoEntry::Shared::operator++() { ++count; }
 
-bool ROI_UndoEntry::Shared::operator--() { return --count; }
+bool ROI_UndoEntry::Shared::operator--() { return (--count) != 0u; }
 
 ROI_UndoEntry::ROI_UndoEntry(ROI_Item &roi, int current_axis, int current_slice) {
   from = {{0, 0, 0}};
@@ -197,7 +197,7 @@ void ROI_UndoEntry::draw_line(ROI_Item &roi,
     if (v[0] >= 0 && v[0] < roi.header().size(0) && v[1] >= 0 && v[1] < roi.header().size(1) && v[2] >= 0 &&
         v[2] < roi.header().size(2))
       after[v[0] - from[0] + size[0] * (v[1] - from[1] + size[1] * (v[2] - from[2]))] = value;
-    if ((v - final_vox).abs().maxCoeff()) {
+    if ((v - final_vox).abs().maxCoeff() != 0) {
       Eigen::Array3i step(0, 0, 0);
       float min_multiplier = std::numeric_limits<float>::infinity();
       for (size_t axis = 0; axis != 3; ++axis) {
@@ -215,7 +215,7 @@ void ROI_UndoEntry::draw_line(ROI_Item &roi,
       v += step;
       p += dir * min_multiplier;
     }
-  } while ((v - final_vox).abs().maxCoeff());
+  } while ((v - final_vox).abs().maxCoeff() != 0);
 
   GL::Context::Grab const context;
   GL::assert_context_is_current();
@@ -399,7 +399,7 @@ void ROI_UndoEntry::draw_fill(ROI_Item &roi, const Eigen::Vector3f &pos, const b
   const GLubyte fill_value = insert_mode_value ? 1 : 0;
   const size_t seed_index =
       seed_voxel[0] - from[0] + size[0] * (seed_voxel[1] - from[1] + size[1] * (seed_voxel[2] - from[2]));
-  const bool existing_value = after[seed_index];
+  const bool existing_value = after[seed_index] != 0u;
   if (existing_value == insert_mode_value)
     return;
   after[seed_index] = fill_value;
@@ -430,7 +430,7 @@ void ROI_UndoEntry::draw_fill(ROI_Item &roi, const Eigen::Vector3f &pos, const b
           adj[1] < static_cast<int>(roi.header().size(1)) && adj[2] >= 0 &&
           adj[2] < static_cast<int>(roi.header().size(2))) {
         const size_t adj_index = adj[0] - from[0] + size[0] * (adj[1] - from[1] + size[1] * (adj[2] - from[2]));
-        const bool adj_value = after[adj_index];
+        const bool adj_value = after[adj_index] != 0u;
         if (adj_value != insert_mode_value) {
           after[adj_index] = fill_value;
           buffer.push_back(adj);

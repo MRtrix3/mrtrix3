@@ -130,10 +130,10 @@ public:
         assert(counts);
         for (auto l = loop(buffer, *counts); l; ++l) {
           const float total_weight = counts->value();
-          if (total_weight) {
+          if (total_weight != 0.0f) {
             auto value = get_dec();
             const default_type norm = value.norm();
-            if (norm)
+            if (norm != 0.0)
               value *= total_weight / norm;
             set_dec(value);
           }
@@ -152,7 +152,7 @@ public:
       if (type == writer_dim::GREYSCALE) {
         assert(counts);
         for (auto l = loop(buffer, *counts); l; ++l) {
-          if (counts->value())
+          if (counts->value() != 0.0f)
             buffer.value() /= static_cast<float>(counts->value());
         }
       } else if (type == writer_dim::DEC) {
@@ -164,7 +164,7 @@ public:
       } else if (type == writer_dim::TOD) {
         assert(counts);
         for (auto l = loop(buffer, *counts); l; ++l) {
-          if (counts->value()) {
+          if (counts->value() != 0.0f) {
             VoxelTOD::vector_type value;
             get_tod(value);
             value *= (1.0 / counts->value());
@@ -176,7 +176,7 @@ public:
         // TODO For dixels, should this be a voxel mean i.e. normalise each non-zero voxel to unit density,
         //   rather than a per-dixel mean?
         for (auto l = Loop(buffer)(buffer, *counts); l; ++l) {
-          if (counts->value())
+          if (counts->value() != 0.0f)
             buffer.value() /= static_cast<float>(counts->value());
         }
       }
@@ -420,7 +420,7 @@ template <typename value_type> template <class Cont> void MapWriter<value_type>:
 }
 
 template <> inline void MapWriter<bool>::add(const default_type weight, const default_type factor) {
-  if (weight && factor)
+  if ((weight != 0.0) && (factor != 0.0))
     buffer.value() = true;
 }
 

@@ -49,7 +49,7 @@ index_type Set::get_min_linkage(const index_type one, const index_type two) cons
       }
     }
     std::swap(to_expand, next_to_expand);
-  } while (1);
+  } while (true);
   return std::numeric_limits<index_type>::max();
 }
 

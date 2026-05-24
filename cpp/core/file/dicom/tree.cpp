@@ -73,7 +73,7 @@ void Tree::read_file(const std::filesystem::path &filepath) {
     return;
   }
 
-  if (!(reader.dim[0] && reader.dim[1] && reader.bits_alloc && reader.data)) {
+  if (!((reader.dim[0] != 0u) && (reader.dim[1] != 0u) && (reader.bits_alloc != 0u) && (reader.data != 0u))) {
     INFO("DICOM file \"" + filepath.string() + "\" does not seem to contain image data - ignored");
     return;
   }

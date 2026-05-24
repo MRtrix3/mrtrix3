@@ -61,7 +61,9 @@ public:
   void set_reg_lambdas(const double, const double);
   void set_min_iters(const int i) { min_iters = i; }
   void set_max_iters(const int i) { max_iters = i; }
-  void set_min_factor(const double i) { min_coeff = i ? std::log(i) : -std::numeric_limits<double>::infinity(); }
+  void set_min_factor(const double i) {
+    min_coeff = (i != 0.0) ? std::log(i) : -std::numeric_limits<double>::infinity();
+  }
   void set_min_coeff(const double i) { min_coeff = i; }
   void set_max_factor(const double i) { max_coeff = std::log(i); }
   void set_max_coeff(const double i) { max_coeff = i; }
@@ -117,7 +119,7 @@ private:
   std::mutex mutex;
 
   void indicate_progress() {
-    if (App::log_level)
+    if (App::log_level != 0)
       fprintf(stderr, ".");
   }
 };

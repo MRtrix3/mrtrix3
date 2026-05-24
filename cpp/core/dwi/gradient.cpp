@@ -165,8 +165,8 @@ Eigen::MatrixXd load_bvecs_bvals(const Header &header,
   grad.col(3) = bvals.row(0);
 
   // Substitute NaNs with b=0 volumes
-  ssize_t nans_present_bvecs = false;
-  ssize_t nans_present_bvals = false;
+  ssize_t nans_present_bvecs = 0;
+  ssize_t nans_present_bvals = 0;
   ssize_t nan_linecount = 0;
   for (ssize_t n = 0; n != grad.rows(); ++n) {
     bool zero_row = false;
@@ -177,7 +177,7 @@ Eigen::MatrixXd load_bvecs_bvals(const Header &header,
                         " (" + bvecs_path.string() + " & " + bvals_path.string() + ")"
                         " (NaN present in bval but valid direction in bvec)");
       // clang-format on
-      nans_present_bvals = true;
+      nans_present_bvals = 1;
       zero_row = true;
     }
     if (grad.block<1, 3>(n, 0).hasNaN()) {
@@ -187,7 +187,7 @@ Eigen::MatrixXd load_bvecs_bvals(const Header &header,
                         " (" + bvecs_path.string() + " & " + bvals_path.string() + ")"
                         " (NaN bvec direction but non-zero value in bval)");
       // clang-format on
-      nans_present_bvecs = true;
+      nans_present_bvecs = 1;
       zero_row = true;
     }
     if (zero_row) {
@@ -228,7 +228,7 @@ void save_bvecs_bvals(const Header &header,
   if (adjusted_transform.linear().determinant() > 0.0)
     bvecs.row(0) = -bvecs.row(0);
 
-  if (bval_zeroed_count) {
+  if (bval_zeroed_count != 0u) {
     WARN("For image \"" + header.name() + "\","                                       //
          + str(bval_zeroed_count) + " volumes had zero gradient direction vector,"    //
          + " but 0.0 < b-value <= BZeroThreshold;"                                    //
@@ -282,7 +282,7 @@ Eigen::MatrixXd get_DW_scheme(const Header &header, BValueScalingBehaviour bvalu
     // also make sure that directions of [0, 0, 0] don't affect subsequent calculations
     bool warnambiguous = false;
     for (ssize_t row = 0; row != grad.rows(); ++row) {
-      if (squared_norms[row])
+      if (squared_norms[row] != 0.0)
         grad.row(row).template head<3>().array() /= std::sqrt(squared_norms[row]);
       else
         warnambiguous = warnambiguous || (grad.row(row)[3] > bzero_threshold());

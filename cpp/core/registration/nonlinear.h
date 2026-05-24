@@ -439,7 +439,7 @@ public:
 
   void set_lmax(const std::vector<uint32_t> &lmax) {
     for (size_t i = 0; i < lmax.size(); ++i)
-      if (lmax[i] % 2)
+      if ((lmax[i] % 2) != 0u)
         throw Exception("the input nonlinear lmax must be even");
     fod_lmax = lmax;
   }

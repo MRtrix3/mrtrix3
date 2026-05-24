@@ -79,7 +79,7 @@ void TrackMapperTWI::set_factor(const Streamline<> &tck, SetVoxelExtras &out) co
           ++count;
         }
       }
-      out.factor = (count ? (out.factor / static_cast<default_type>(count)) : 0.0);
+      out.factor = ((count != 0u) ? (out.factor / static_cast<default_type>(count)) : 0.0);
       break;
 
     case tck_stat_t::MAX:
@@ -102,12 +102,12 @@ void TrackMapperTWI::set_factor(const Streamline<> &tck, SetVoxelExtras &out) co
     case tck_stat_t::MEAN_NONZERO:
       out.factor = 0.0;
       for (const auto &i : factors) {
-        if (std::isfinite(i) && i) {
+        if (std::isfinite(i) && (i != 0.0)) {
           out.factor += i;
           ++count;
         }
       }
-      out.factor = (count ? (out.factor / static_cast<default_type>(count)) : 0.0);
+      out.factor = ((count != 0u) ? (out.factor / static_cast<default_type>(count)) : 0.0);
       break;
 
     case tck_stat_t::GAUSSIAN:
@@ -258,7 +258,7 @@ void TrackMapperTWI::load_factors(const Streamline<> &tck) const {
       tangents.push_back(this_tangent);
     else
       tangents.push_back(Streamline<>::tangent_type::Zero());
-    if (i)
+    if (i != 0u)
       step_sizes.push_back((tck[i] - tck[i - 1]).norm());
   }
 
@@ -273,14 +273,14 @@ void TrackMapperTWI::load_factors(const Streamline<> &tck) const {
         tangents[i] = tangents[j];
       } else if (i == tangents.size() - 1) {
         size_t k;
-        for (k = i - 1; k && !tangents[k].isZero(); --k)
+        for (k = i - 1; (k != 0u) && !tangents[k].isZero(); --k)
           ;
         tangents[i] = tangents[k];
       } else {
         size_t j, k;
         for (j = 1; (j < tck.size() - 1) && !tangents[j].isZero(); ++j)
           ;
-        for (k = i - 1; k && !tangents[k].isZero(); --k)
+        for (k = i - 1; (k != 0u) && !tangents[k].isZero(); --k)
           ;
         tangents[i] = (tangents[j] + tangents[k]).normalized();
       }

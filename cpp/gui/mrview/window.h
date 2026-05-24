@@ -88,7 +88,7 @@ public:
   QActionGroup *tools() const { return tool_group; }
 
   int slice() const {
-    if (!image())
+    if (image() == nullptr)
       return -1;
     else
       return std::round((image()->image.transform().inverse().cast<float>() * focus())(anatomical_plane) /
@@ -126,7 +126,7 @@ public:
     emit orientationChanged();
   }
   void set_scaling(float min, float max) {
-    if (!image())
+    if (image() == nullptr)
       return;
     image()->set_windowing(min, max);
   }

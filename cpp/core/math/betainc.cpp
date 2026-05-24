@@ -96,9 +96,9 @@ default_type betaincreg(const default_type a, const default_type b, const defaul
     const size_t m = i / 2;
 
     default_type numerator;
-    if (!i) {
+    if (i == 0u) {
       numerator = 1.0; // First numerator is 1.0
-    } else if (i % 2) {
+    } else if ((i % 2) != 0u) {
       numerator = -((a + m) * (a + b + m) * x) / ((a + 2.0 * m) * (a + 2.0 * m + 1)); // Odd term
     } else {
       numerator = (m * (b - m) * x) / ((a + 2.0 * m - 1.0) * (a + 2.0 * m)); // Even term

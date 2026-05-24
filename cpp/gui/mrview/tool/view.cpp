@@ -295,7 +295,7 @@ View::View(Dock *parent) : Base(parent) {
   lower_threshold_check_box = new QCheckBox(this);
   hlayout->addWidget(lower_threshold_check_box);
   lower_threshold = new AdjustButton(this);
-  lower_threshold->setValue(window().image() ? window().image()->intensity_min() : 0.0);
+  lower_threshold->setValue((window().image() != nullptr) ? window().image()->intensity_min() : 0.0);
   connect(lower_threshold_check_box, SIGNAL(clicked(bool)), this, SLOT(onCheckThreshold(bool)));
   connect(lower_threshold, SIGNAL(valueChanged()), this, SLOT(onSetTransparency()));
   hlayout->addWidget(lower_threshold);
@@ -303,7 +303,7 @@ View::View(Dock *parent) : Base(parent) {
   upper_threshold_check_box = new QCheckBox(this);
   hlayout->addWidget(upper_threshold_check_box);
   upper_threshold = new AdjustButton(this);
-  upper_threshold->setValue(window().image() ? window().image()->intensity_max() : 1.0);
+  upper_threshold->setValue((window().image() != nullptr) ? window().image()->intensity_max() : 1.0);
   connect(upper_threshold_check_box, SIGNAL(clicked(bool)), this, SLOT(onCheckThreshold(bool)));
   connect(upper_threshold, SIGNAL(valueChanged()), this, SLOT(onSetTransparency()));
   hlayout->addWidget(upper_threshold);
@@ -497,11 +497,11 @@ void View::closeEvent(QCloseEvent *) { window().disconnect(this); }
 void View::onImageChanged() {
   const auto image = window().image();
 
-  setEnabled(image);
+  setEnabled(image != nullptr);
 
   reset_light_box_gui_controls();
 
-  if (!image)
+  if (image == nullptr)
     return;
 
   onScalingChanged();
@@ -516,7 +516,7 @@ void View::onImageChanged() {
   const int dim = image->image.ndim();
   volume_box->setVisible(dim > 3);
 
-  while (volume_index_layout->count())
+  while (volume_index_layout->count() != 0)
     delete volume_index_layout->takeAt(volume_index_layout->count() - 1)->widget();
 
   for (size_t d = 3; d < image->image.ndim(); ++d) {
@@ -537,14 +537,14 @@ void View::onImageChanged() {
 void View::onImageVisibilityChanged(bool visible) { hide_button->setChecked(!visible); }
 
 void View::hide_image_slot(bool flag) {
-  if (!window().image())
+  if (window().image() == nullptr)
     return;
 
   window().set_image_visibility(!flag);
 }
 
 void View::copy_focus_slot() {
-  if (!window().image())
+  if (window().image() == nullptr)
     return;
 
   Eigen::VectorXf focus(window().focus());
@@ -557,7 +557,7 @@ void View::copy_focus_slot() {
 }
 
 void View::copy_voxel_slot() {
-  if (!window().image())
+  if (window().image() == nullptr)
     return;
 
   Eigen::VectorXf focus = window().image()->scanner2voxel() * window().focus();
@@ -570,7 +570,7 @@ void View::copy_voxel_slot() {
 }
 
 void View::onFocusChanged() {
-  if (!window().image())
+  if (window().image() == nullptr)
     return;
 
   auto focus(window().focus());
@@ -610,7 +610,7 @@ void View::onSetVoxel() {
 }
 
 void View::onSetVolumeIndex() {
-  if (window().image()) {
+  if (window().image() != nullptr) {
     const auto &image(window().image()->image);
     assert(image.ndim() == static_cast<size_t>(volume_index_layout->count() + 3));
 
@@ -625,10 +625,10 @@ void View::onSetVolumeIndex() {
 
 void View::onModeChanged() {
   const Mode::Base *mode = window().get_current_mode();
-  transparency_box->setVisible(mode->features & Mode::ShaderTransparency);
-  threshold_box->setVisible(mode->features & Mode::ShaderTransparency);
-  clip_box->setVisible(mode->features & Mode::ShaderClipping);
-  if (mode->features & Mode::ShaderClipping)
+  transparency_box->setVisible((mode->features & Mode::ShaderTransparency) != 0);
+  threshold_box->setVisible((mode->features & Mode::ShaderTransparency) != 0);
+  clip_box->setVisible((mode->features & Mode::ShaderClipping) != 0);
+  if ((mode->features & Mode::ShaderClipping) != 0)
     clip_planes_selection_changed_slot();
   else
     window().register_camera_interactor();
@@ -695,7 +695,7 @@ void View::set_transparency_from_image() {
   lower_threshold_check_box->setChecked(window().image()->use_discard_lower());
   upper_threshold_check_box->setChecked(window().image()->use_discard_upper());
 
-  float const rate = window().image() ? window().image()->scaling_rate() : 0.0;
+  float const rate = (window().image() != nullptr) ? window().image()->scaling_rate() : 0.0;
   transparent_intensity->setRate(rate);
   opaque_intensity->setRate(rate);
   lower_threshold->setRate(rate);
@@ -703,14 +703,14 @@ void View::set_transparency_from_image() {
 }
 
 void View::onSetScaling() {
-  if (window().image()) {
+  if (window().image() != nullptr) {
     window().image()->set_windowing(min_entry->value(), max_entry->value());
     window().updateGL();
   }
 }
 
 void View::onSetFOV() {
-  if (window().image()) {
+  if (window().image() != nullptr) {
     window().set_FOV(fov->value());
     fov->setRate(fovrate_multipler * fov->value());
     window().updateGL();
@@ -718,7 +718,7 @@ void View::onSetFOV() {
 }
 
 void View::onScalingChanged() {
-  if (window().image()) {
+  if (window().image() != nullptr) {
     min_entry->setValue(window().image()->scaling_min());
     max_entry->setValue(window().image()->scaling_max());
     float const rate = window().image()->scaling_rate();
@@ -831,7 +831,7 @@ void View::clip_planes_selection_changed_slot() {
   clip_planes_reset_submenu->setEnabled(selected);
   clip_planes_invert_action->setEnabled(selected);
   clip_planes_remove_action->setEnabled(selected);
-  clip_planes_clear_action->setEnabled(clip_planes_model->rowCount());
+  clip_planes_clear_action->setEnabled(clip_planes_model->rowCount() != 0);
   window().register_camera_interactor(selected ? this : nullptr);
   window().updateGL();
 }
@@ -885,10 +885,10 @@ void View::init_lightbox_gui(QLayout *parent) {
 }
 
 void View::reset_light_box_gui_controls() {
-  if (!lightbox_box)
+  if (lightbox_box == nullptr)
     return;
 
-  bool const img_4d = window().image() && window().image()->image.ndim() == 4;
+  bool const img_4d = (window().image() != nullptr) && window().image()->image.ndim() == 4;
   bool const show_volumes = Mode::LightBox::get_show_volumes();
   bool const can_show_vol = img_4d && show_volumes;
 

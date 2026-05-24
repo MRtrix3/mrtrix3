@@ -171,7 +171,7 @@ template <> inline bool to<bool>(std::string_view string) {
     return true;
   if (value == "false" || value == "no")
     return false;
-  return to<int>(string);
+  return to<int>(string) != 0;
 }
 
 template <> inline std::string str<cfloat>(const cfloat &value, int precision) {
@@ -179,7 +179,7 @@ template <> inline std::string str<cfloat>(const cfloat &value, int precision) {
   if (precision > 0)
     stream.precision(precision);
   stream << value.real();
-  if (value.imag())
+  if (value.imag() != 0.0f)
     stream << std::showpos << value.imag() << "i";
   if (stream.fail())
     throw Exception("error converting complex float value to string");
@@ -236,7 +236,7 @@ template <> inline std::string str<cdouble>(const cdouble &value, int precision)
   if (precision > 0)
     stream.precision(precision);
   stream << value.real();
-  if (value.imag())
+  if (value.imag() != 0.0)
     stream << std::showpos << value.imag() << "i";
   if (stream.fail())
     throw Exception("error converting complex double value to string");

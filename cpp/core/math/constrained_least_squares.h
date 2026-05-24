@@ -90,7 +90,7 @@ public:
         t(inequality_constraint_vector),
         lambda_min_norm(constraint_min_norm_regularisation),
         tol(tolerance),
-        max_niter(max_iterations ? max_iterations : 10 * problem_matrix.cols()),
+        max_niter((max_iterations != 0u) ? max_iterations : 10 * problem_matrix.cols()),
         num_eq(num_equalities) {
 
     if (H.cols() != inequality_constraint_matrix.cols())
@@ -254,7 +254,7 @@ public:
       bool active_set_changed = !active[min_c_index];
       active[min_c_index] = true;
 
-      while (1) {
+      while (true) {
         // form submatrix of active constraints:
         size_t num_active = 0;
         for (size_t n = 0; n < active.size(); ++n) {

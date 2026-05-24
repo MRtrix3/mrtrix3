@@ -60,7 +60,7 @@ const FileDialogReturn input_filepath(QWidget *parent,
                                    FILE_DIALOG_OPTIONS);
 
   FileDialogReturn result;
-  if (qstring.size()) {
+  if (qstring.size() != 0) {
     result.single_selection = std::filesystem::path(qstring.toUtf8().data());
     result.last_directory = result.single_selection.parent_path();
   }

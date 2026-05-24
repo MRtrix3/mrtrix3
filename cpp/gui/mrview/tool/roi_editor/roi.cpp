@@ -427,7 +427,7 @@ void ROI::slice_copy_slot(QAction *action) {
   ROI_Item *roi = dynamic_cast<ROI_Item *>(list_model->get(indices[0]));
 
   const Projection *proj = window().get_current_mode()->get_current_projection();
-  if (!proj)
+  if (proj == nullptr)
     return;
   const Eigen::Vector3f current_origin = proj->screen_to_model(window().mouse_position(), window().focus());
   current_axis = normal2axis(proj->screen_normal(), *roi);
@@ -539,14 +539,14 @@ void ROI::update_undo_redo() {
 }
 
 void ROI::update_selection() {
-  if (!window().image()) {
+  if (window().image() == nullptr) {
     setEnabled(false);
     return;
   } else
     setEnabled(true);
 
   QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
-  bool const enable = window().image() && !indices.empty();
+  bool const enable = (window().image() != nullptr) && !indices.empty();
 
   opacity_slider->setEnabled(enable);
   save_button->setEnabled(enable);
@@ -592,7 +592,7 @@ bool ROI::mouse_press_event() {
   }
 
   const Projection *proj = window().get_current_mode()->get_current_projection();
-  if (!proj)
+  if (proj == nullptr)
     return false;
   current_origin = proj->screen_to_model(window().mouse_position(), window().focus());
   window().set_focus(current_origin);
@@ -647,7 +647,7 @@ bool ROI::mouse_move_event() {
   ROI_Item *roi = dynamic_cast<ROI_Item *>(list_model->get(indices[0]));
 
   const Projection *proj = window().get_current_mode()->get_current_projection();
-  if (!proj)
+  if (proj == nullptr)
     return false;
 
   Eigen::Vector3f const pos = proj->screen_to_model(window().mouse_position(), window().focus());

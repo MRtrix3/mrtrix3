@@ -27,7 +27,7 @@ void Image4D::load_image_buffer() {
 
   const size_t dim4_len = fixel_data->size(3);
 
-  if (dim4_len % 3)
+  if ((dim4_len % 3) != 0u)
     throw InvalidImageException("Expecting 4th-dimension size of vector image " + filepath.string() +
                                 " to be a multiple of 3; instead " + str(dim4_len) + " entries found");
 
@@ -106,7 +106,7 @@ void Image4D::update_image_buffers() {
   if (trackable()) {
     ssize_t target_volume = 0;
     if (tracking) {
-      if (Window::main->image()) {
+      if (Window::main->image() != nullptr) {
         const auto image = Window::main->image()->image;
         if (image.ndim() >= 4)
           target_volume = image.index(3);

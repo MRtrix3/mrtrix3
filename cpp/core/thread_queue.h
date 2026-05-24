@@ -491,7 +491,7 @@ private:
     std::lock_guard<std::mutex> const lock(mutex);
     assert(writer_count);
     --writer_count;
-    if (!writer_count) {
+    if (writer_count == 0u) {
       DEBUG("no writers left on queue \"" + name + "\"");
       more_data.notify_all();
     }
@@ -504,7 +504,7 @@ private:
     std::lock_guard<std::mutex> const lock(mutex);
     assert(reader_count);
     --reader_count;
-    if (!reader_count) {
+    if (reader_count == 0u) {
       DEBUG("no readers left on queue \"" + name + "\"");
       more_space.notify_all();
     }
@@ -524,7 +524,7 @@ private:
   FORCE_INLINE bool push(T *&item) {
     std::unique_lock<std::mutex> lock(mutex);
     more_space.wait(lock, [this] { return !(full() && reader_count); });
-    if (!reader_count)
+    if (reader_count == 0u)
       return false;
     *back = item;
     back = inc(back);
@@ -545,7 +545,7 @@ private:
       item_stack.push(item);
     item = nullptr;
     more_data.wait(lock, [this] { return !(empty() && writer_count); });
-    if (empty() && !writer_count)
+    if (empty() && (writer_count == 0u))
       return false;
     item = *front;
     front = inc(front);
@@ -659,7 +659,7 @@ template <class Item> struct StoreItem<Batch<Item>> {
   }
   Item &value() { return (*out)[n]; }
   void flush() {
-    if (n) {
+    if (n != 0u) {
       out->resize(n);
       out.write();
     }

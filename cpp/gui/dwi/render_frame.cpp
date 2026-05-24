@@ -144,7 +144,7 @@ void RenderFrame::resizeGL(int w, int h) {
 
 void RenderFrame::paintGL() {
   GL::Context::Grab const context(this);
-  gl::ColorMask(true, true, true, true);
+  gl::ColorMask(1u, 1u, 1u, 1u);
   gl::ClearColor(lighting->background_color[0], lighting->background_color[1], lighting->background_color[2], 0.0);
   gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 
@@ -180,7 +180,7 @@ void RenderFrame::paintGL() {
   gl::Enable(gl::DEPTH_TEST);
   gl::DepthMask(gl::TRUE_);
 
-  if (values.size()) {
+  if (values.size() != 0) {
     if (std::isfinite(values[0])) {
       gl::Disable(gl::BLEND);
 
@@ -260,7 +260,7 @@ void RenderFrame::paintGL() {
   // need to clear alpha channel when using QOpenGLWidget (Qt >= 5.4)
   // otherwise we get transparent windows...
   gl::ClearColor(0.0, 0.0, 0.0, 1.0);
-  gl::ColorMask(false, false, false, true);
+  gl::ColorMask(0u, 0u, 0u, 1u);
   gl::Clear(gl::COLOR_BUFFER_BIT);
 
   if (OS > 0)

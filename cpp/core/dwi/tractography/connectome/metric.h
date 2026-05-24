@@ -44,7 +44,7 @@ public:
       assert(nodes.first < node_volumes.size());
       assert(nodes.second < node_volumes.size());
       const double sum_volumes = (node_volumes[nodes.first] + node_volumes[nodes.second]);
-      if (!sum_volumes)
+      if (sum_volumes == 0.0)
         return 0.0;
       return (*this)(tck)*2.0 / sum_volumes;
     }
@@ -58,7 +58,7 @@ public:
         assert(*n < node_volumes.size());
         sum_volumes += node_volumes[*n];
       }
-      if (!sum_volumes)
+      if (sum_volumes == 0.0)
         return 0.0;
       return (*this)(tck)*nodes.size() / sum_volumes;
     }

@@ -27,7 +27,7 @@ measurements_vector_type CohortDataImport::operator()(const index_type element_i
 
 bool CohortDataImport::allFinite() const {
   // TESTME Should be possible to do this faster by populating matrix data
-  if (!size())
+  if (size() == 0u)
     return true;
   measurements_matrix_type data(size(), files[0]->size());
   for (index_type i = 0; i != size(); ++i)

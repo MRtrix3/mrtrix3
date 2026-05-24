@@ -559,7 +559,7 @@ void FODInitialiser::init(Image<default_type> &im,
   size_t cnt(0);
   if (mask.valid()) {
     for (auto i = Loop(0, 3)(im, mask); i; ++i) {
-      if (mask.value()) {
+      if (mask.value() != 0.0) {
         im_mass += im.value();
         voxel_pos << static_cast<default_type>(im.index(0)), static_cast<default_type>(im.index(1)),
             static_cast<default_type>(im.index(2));

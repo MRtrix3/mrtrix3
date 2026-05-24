@@ -336,7 +336,7 @@ void Volume::paint(Projection &projection) {
   ray[1] /= image()->header().size(1);
   ray[2] /= image()->header().size(2);
 
-  if (!volume_VB || !volume_VAO || !volume_VI) {
+  if ((volume_VB == 0u) || (volume_VAO == 0u) || (volume_VI == 0u)) {
     volume_VB.gen();
     volume_VI.gen();
     volume_VAO.gen();
@@ -417,7 +417,7 @@ void Volume::paint(Projection &projection) {
   gl::BindTexture(gl::TEXTURE_3D, image()->texture());
 
   gl::ActiveTexture(gl::TEXTURE1);
-  if (!depth_texture) {
+  if (depth_texture == 0u) {
     depth_texture.gen(gl::TEXTURE_2D);
     depth_texture.bind();
     depth_texture.set_interp(gl::NEAREST);
@@ -438,7 +438,8 @@ void Volume::paint(Projection &projection) {
     gl::Uniform4fv(gl::GetUniformLocation(volume_shader, ("clip" + str(n)).c_str()),
                    1,
                    clip_real2tex(T2S, S2T, ray_real_space, clip[n].first));
-    gl::Uniform1i(gl::GetUniformLocation(volume_shader, ("clip" + str(n) + "_selected").c_str()), clip[n].second);
+    gl::Uniform1i(gl::GetUniformLocation(volume_shader, ("clip" + str(n) + "_selected").c_str()),
+                  static_cast<GLint>(clip[n].second));
   }
   GL_CHECK_ERROR;
 
@@ -488,29 +489,29 @@ void Volume::paint(Projection &projection) {
 
 inline Tool::View *Volume::get_view_tool() const {
   Tool::Dock *dock = dynamic_cast<Tool::ActionWrapper *>(window().tools()->actions()[0])->dock;
-  if (!dock)
+  if (dock == nullptr)
     return nullptr;
   return dynamic_cast<Tool::View *>(dock->tool);
 }
 
 inline std::vector<std::pair<GL::vec4, bool>> Volume::get_active_clip_planes() const {
   Tool::View *view = get_view_tool();
-  return view ? view->get_active_clip_planes() : std::vector<std::pair<GL::vec4, bool>>();
+  return (view != nullptr) ? view->get_active_clip_planes() : std::vector<std::pair<GL::vec4, bool>>();
 }
 
 inline std::vector<GL::vec4 *> Volume::get_clip_planes_to_be_edited() const {
   Tool::View *view = get_view_tool();
-  return view ? view->get_clip_planes_to_be_edited() : std::vector<GL::vec4 *>();
+  return (view != nullptr) ? view->get_clip_planes_to_be_edited() : std::vector<GL::vec4 *>();
 }
 
 inline bool Volume::get_cliphighlightstate() const {
   Tool::View *view = get_view_tool();
-  return view ? view->get_cliphighlightstate() : true;
+  return (view != nullptr) ? view->get_cliphighlightstate() : true;
 }
 
 inline bool Volume::get_clipintersectionmodestate() const {
   Tool::View *view = get_view_tool();
-  return view ? view->get_clipintersectionmodestate() : false;
+  return (view != nullptr) ? view->get_clipintersectionmodestate() : false;
 }
 
 } // namespace MR::GUI::MRView::Mode

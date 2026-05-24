@@ -52,9 +52,9 @@ void Image::parse_item(Element &item) {
         return;
       {
         int c = sequence_name.size() - 1;
-        if (!isdigit(sequence_name[c]))
+        if (isdigit(sequence_name[c]) == 0)
           return;
-        while (c >= 0 && isdigit(sequence_name[c]))
+        while (c >= 0 && (isdigit(sequence_name[c]) != 0))
           --c;
         if (c >= 0 && sequence_name[c] != '#') {
           sequence = 0;
@@ -415,7 +415,7 @@ void Image::decode_csa(const std::byte *start, const std::byte *end) {
       time_after_start = entry.get_float();
   }
 
-  if (G[0] && bvalue)
+  if ((G[0] != 0.0) && (bvalue != 0.0))
     if (std::fabs(G[0]) > 1.0 && std::fabs(G[1]) > 1.0 && std::fabs(G[2]) > 1.0)
       bvalue = G[0] = G[1] = G[2] = 0.0;
 }
@@ -492,7 +492,7 @@ namespace {
 
 inline void update_count(size_t num, std::vector<size_t> &dim, std::vector<size_t> &index) {
   for (size_t n = 0; n < num; ++n) {
-    if (dim[n] && index[n] != dim[n])
+    if ((dim[n] != 0u) && index[n] != dim[n])
       throw Exception("dimensions mismatch in DICOM series");
     index[n] = 1;
   }
@@ -521,11 +521,11 @@ std::vector<size_t> Frame::count(const std::vector<Frame *> &frames) {
     previous = &frame;
   }
 
-  if (!dim[0])
+  if (dim[0] == 0u)
     dim[0] = 1;
-  if (!dim[1])
+  if (dim[1] == 0u)
     dim[1] = 1;
-  if (!dim[2])
+  if (dim[2] == 0u)
     dim[2] = 1;
 
   return dim;
@@ -607,7 +607,7 @@ Eigen::MatrixXd Frame::get_PE_scheme(const std::vector<Frame *> &frames, const s
 
   for (size_t n = 0; n != num_volumes; ++n) {
     const Frame &frame(*frames[n * nslices]);
-    if (frame.pe_axis == 3 || !frame.pe_sign) {
+    if (frame.pe_axis == 3 || (frame.pe_sign == 0)) {
       DEBUG("no phase-encoding information found in DICOM frames");
       return {};
     }
@@ -619,7 +619,7 @@ Eigen::MatrixXd Frame::get_PE_scheme(const std::vector<Frame *> &frames, const s
     }
   }
 
-  if (pe_scheme.col(3).sum())
+  if (pe_scheme.col(3).sum() != 0.0)
     return pe_scheme;
   return pe_scheme.leftCols(3);
 }

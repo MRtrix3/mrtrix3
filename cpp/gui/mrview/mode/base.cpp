@@ -35,7 +35,7 @@ void Base::paintGL() {
 
   GL_CHECK_ERROR;
   gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
-  if (!image()) {
+  if (image() == nullptr) {
     projection.setup_render_text();
     projection.render_text(10, 10, "No image loaded");
     projection.done_render_text();
@@ -73,7 +73,7 @@ void Base::paintGL() {
       QList<QAction *> tools = window().tools()->actions();
       for (size_t i = 0, line_num = 4, N = tools.size(); i < N; ++i) {
         Tool::Dock *dock = dynamic_cast<Tool::ActionWrapper *>(tools[i])->dock;
-        if (dock)
+        if (dock != nullptr)
           line_num += dock->tool->draw_tool_labels(LeftEdge | BottomEdge, line_num, projection);
       }
     }
@@ -99,7 +99,7 @@ void Base::paintGL() {
       size_t num_tool_colourbars = 0;
       for (size_t i = 0, N = tools.size(); i < N; ++i) {
         Tool::Dock *dock = dynamic_cast<Tool::ActionWrapper *>(tools[i])->dock;
-        if (dock)
+        if (dock != nullptr)
           num_tool_colourbars += dock->tool->visible_number_colourbars();
       }
 
@@ -107,7 +107,7 @@ void Base::paintGL() {
 
       for (size_t i = 0, N = tools.size(); i < N; ++i) {
         Tool::Dock *dock = dynamic_cast<Tool::ActionWrapper *>(tools[i])->dock;
-        if (dock)
+        if (dock != nullptr)
           dock->tool->draw_colourbars();
       }
 
@@ -126,7 +126,8 @@ void Base::mouse_press_event() {}
 void Base::mouse_release_event() {}
 
 void Base::slice_move_event(const ModelViewProjection &proj, float x) {
-  if (window().active_camera_interactor() && window().active_camera_interactor()->slice_move_event(proj, x))
+  if ((window().active_camera_interactor() != nullptr) &&
+      window().active_camera_interactor()->slice_move_event(proj, x))
     return;
 
   const auto &header = image()->header();
@@ -142,7 +143,7 @@ void Base::slice_move_event(const ModelViewProjection &proj, float x) {
 
 void Base::slice_move_event(float x) {
   const ModelViewProjection *proj = get_current_projection();
-  if (!proj)
+  if (proj == nullptr)
     return;
   slice_move_event(*proj, x);
 }
@@ -154,7 +155,7 @@ void Base::set_focus_event(const ModelViewProjection &proj) {
 
 void Base::set_focus_event() {
   const ModelViewProjection *proj = get_current_projection();
-  if (!proj)
+  if (proj == nullptr)
     return;
   set_focus_event(*proj);
 }
@@ -166,7 +167,7 @@ void Base::contrast_event() {
 }
 
 void Base::pan_event(const ModelViewProjection &proj) {
-  if (window().active_camera_interactor() && window().active_camera_interactor()->pan_event(proj))
+  if ((window().active_camera_interactor() != nullptr) && window().active_camera_interactor()->pan_event(proj))
     return;
   auto move = proj.screen_to_model_direction(window().mouse_displacement(), target());
   set_target(target() - move);
@@ -175,13 +176,13 @@ void Base::pan_event(const ModelViewProjection &proj) {
 
 void Base::pan_event() {
   const ModelViewProjection *proj = get_current_projection();
-  if (!proj)
+  if (proj == nullptr)
     return;
   pan_event(*proj);
 }
 
 void Base::panthrough_event(const ModelViewProjection &proj) {
-  if (window().active_camera_interactor() && window().active_camera_interactor()->panthrough_event(proj))
+  if ((window().active_camera_interactor() != nullptr) && window().active_camera_interactor()->panthrough_event(proj))
     return;
   auto move = get_through_plane_translation_FOV(window().mouse_displacement().y(), proj);
 
@@ -192,13 +193,13 @@ void Base::panthrough_event(const ModelViewProjection &proj) {
 
 void Base::panthrough_event() {
   const ModelViewProjection *proj = get_current_projection();
-  if (!proj)
+  if (proj == nullptr)
     return;
   panthrough_event(*proj);
 }
 
 void Base::reset_windowing() {
-  if (image()) {
+  if (image() != nullptr) {
     image()->reset_windowing(plane(), snap_to_image());
     emit window().on_scaling_changed();
     updateGL();
@@ -267,7 +268,7 @@ Eigen::Quaternionf Base::get_rotate_rotation(const ModelViewProjection &proj) co
 }
 
 void Base::tilt_event(const ModelViewProjection &proj) {
-  if (window().active_camera_interactor() && window().active_camera_interactor()->tilt_event(proj))
+  if ((window().active_camera_interactor() != nullptr) && window().active_camera_interactor()->tilt_event(proj))
     return;
 
   if (snap_to_image())
@@ -284,13 +285,13 @@ void Base::tilt_event(const ModelViewProjection &proj) {
 
 void Base::tilt_event() {
   const ModelViewProjection *proj = get_current_projection();
-  if (!proj)
+  if (proj == nullptr)
     return;
   tilt_event(*proj);
 }
 
 void Base::rotate_event(const ModelViewProjection &proj) {
-  if (window().active_camera_interactor() && window().active_camera_interactor()->rotate_event(proj))
+  if ((window().active_camera_interactor() != nullptr) && window().active_camera_interactor()->rotate_event(proj))
     return;
 
   if (snap_to_image())
@@ -307,7 +308,7 @@ void Base::rotate_event(const ModelViewProjection &proj) {
 
 void Base::rotate_event() {
   const ModelViewProjection *proj = get_current_projection();
-  if (!proj)
+  if (proj == nullptr)
     return;
   rotate_event(*proj);
 }
@@ -318,10 +319,10 @@ void Base::reset_event() {
 }
 
 void Base::reset_view() {
-  if (!image())
+  if (image() == nullptr)
     return;
   const ModelViewProjection *proj = get_current_projection();
-  if (!proj)
+  if (proj == nullptr)
     return;
 
   const Eigen::Vector3f dim{static_cast<float>(image()->header().size(0) * image()->header().spacing(0)),

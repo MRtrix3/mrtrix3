@@ -71,7 +71,7 @@ inline std::string direction_str(int direction) { return (direction == FFTW_FORW
 
 inline size_t shift(size_t pos, const size_t size, const bool centre_FFT, const bool inverse) {
   if (centre_FFT) {
-    pos += (size + 1 + (!inverse)) / 2;
+    pos += (size + 1 + static_cast<size_t>(!inverse)) / 2;
     if (pos >= size)
       pos -= size;
   }

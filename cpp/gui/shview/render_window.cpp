@@ -317,7 +317,7 @@ void Window::set_values(int row) {
   Eigen::Matrix<float, Eigen::Dynamic, 1> val;
   std::string title;
 
-  if (values.rows()) {
+  if (values.rows() != 0) {
     current = row;
     if (current < 0)
       current = 0;
@@ -362,7 +362,7 @@ void Window::manual_colour_slot() {
 }
 
 void Window::advanced_lighting_slot() {
-  if (!lighting_dialog) {
+  if (lighting_dialog == nullptr) {
     auto settings = new LightingSettings(this, *render_frame->lighting);
     QVBoxLayout *main_layout = new QVBoxLayout;
     main_layout->addWidget(settings);

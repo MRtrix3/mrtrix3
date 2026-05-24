@@ -60,7 +60,7 @@ public:
 
   void add_to_mean_coeff(const double i) { mean_coeff += i; }
   void normalise_mean_coeff() {
-    if (orig_TD)
+    if (orig_TD != 0.0)
       mean_coeff /= orig_TD;
     if (count < 2)
       mean_coeff = 0.0;

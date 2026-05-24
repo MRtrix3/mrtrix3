@@ -137,7 +137,7 @@ void run() {
     template_header.reset(new Header(Header::open(opt[0][0])));
     // no template is supplied and there are input warps, then make sure the last transform in the list is a warp
   } else if (template_header) {
-    if (!dynamic_cast<Warp *>(transform_list[transform_list.size() - 1].get()))
+    if (dynamic_cast<Warp *>(transform_list[transform_list.size() - 1].get()) == nullptr)
       throw Exception(
           "Output deformation field grid not defined;"
           " when composing warps either use the -template option to define the output deformation field grid,"

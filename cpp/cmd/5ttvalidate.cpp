@@ -199,7 +199,7 @@ void run() {
                               : " (suggest re-running using the -voxels option"
                                 " to see voxels with non-conformant tissue fractions)";
 
-  if (major_error_count) {
+  if (major_error_count != 0u) {
     throw Exception((argument.size() > 1
                          ? (str(major_error_count) + " input image" + (major_error_count > 1 ? "s do" : " does"))
                          : "Input image does") +

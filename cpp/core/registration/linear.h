@@ -151,7 +151,7 @@ public:
 
   void set_stage_iterations(const std::vector<uint32_t> &it) {
     for (size_t i = 0; i < it.size(); ++i)
-      if (!it[i])
+      if (it[i] == 0u)
         throw Exception("the number of stage iterations must be positive");
     if (it.size() == stages.size()) {
       for (size_t i = 0; i < stages.size(); ++i)
@@ -190,7 +190,7 @@ public:
 
   void set_lmax(const std::vector<uint32_t> &lmax) {
     for (size_t i = 0; i < lmax.size(); ++i)
-      if (lmax[i] % 2)
+      if ((lmax[i] % 2) != 0u)
         throw Exception("the input lmax must be even");
     if (lmax.size() == stages.size()) {
       for (size_t i = 0; i < stages.size(); ++i)

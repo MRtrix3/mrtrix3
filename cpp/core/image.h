@@ -91,17 +91,17 @@ public:
     x[axis] += increment;
   }
 
-  FORCE_INLINE bool is_direct_io() const { return data_pointer; }
+  FORCE_INLINE bool is_direct_io() const { return data_pointer != nullptr; }
 
   //! get voxel value at current location
   FORCE_INLINE ValueType get_value() const {
-    if (data_pointer)
+    if (data_pointer != nullptr)
       return Raw::fetch_native<ValueType>(data_pointer, data_offset);
     return buffer->get_value(data_offset);
   }
   //! set voxel value at current location
   FORCE_INLINE void set_value(ValueType val) {
-    if (data_pointer)
+    if (data_pointer != nullptr)
       Raw::store_native<ValueType>(val, data_pointer, data_offset);
     else
       buffer->set_value(data_offset, val);
@@ -151,7 +151,7 @@ public:
    * without scaling. */
   ValueType *address() const {
     assert(data_pointer != nullptr && "Image::address() can only be used when image access is via direct RAM access");
-    return data_pointer ? static_cast<ValueType *>(data_pointer) + data_offset : nullptr;
+    return data_pointer != nullptr ? static_cast<ValueType *>(data_pointer) + data_offset : nullptr;
   }
 
   //! open an existing image; pass \a direct_io to demand direct RAM access, see DirectIO.
@@ -401,7 +401,7 @@ template <typename ValueType> Image<ValueType>::Buffer::~Buffer() {
 
 template <typename ValueType>
 std::filesystem::path Image<ValueType>::dump_to_mrtrix_file(const std::filesystem::path &filepath) const {
-  if (!data_pointer || !Path::has_suffix(filepath, {".mih", ".mif"}))
+  if (data_pointer == nullptr || !Path::has_suffix(filepath, {".mih", ".mif"}))
     throw Exception("FIXME: image not suitable for use with 'Image::dump_to_mrtrix_file()'");
 
   // try to dump file to mrtrix format if possible (direct IO)

@@ -113,7 +113,7 @@ void run() {
   for (size_t n = 0; n < opt.size(); ++n)
     fields.push_back(opt[n][0]);
 
-  if (App::log_level && fields.empty())
+  if ((App::log_level != 0) && fields.empty())
     Stats::print_header(is_complex);
 
   if (get_options("allvolumes").empty()) {

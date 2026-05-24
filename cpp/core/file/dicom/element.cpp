@@ -178,7 +178,7 @@ bool Element::read() {
   } else if (next + size > fmap->address() + fmap->size())
     throw Exception("file \"" + fmap->path().string() + "\" is too small to contain DICOM elements specified");
   else {
-    if (size % 2)
+    if ((size % 2) != 0u)
       DEBUG("WARNING: odd length (" + str(size) + ")" +         //
             " used for DICOM tag " +                            //
             (!tag_name().empty() ? tag_name().substr(2) : "") + //
@@ -248,7 +248,7 @@ bool Element::ignore_when_parsing() const {
     if (seq.is(0x2005U, 0x140FU))
       continue;
     // ignore anything within sequences with unknown (private) group:
-    if (seq.group & 1U)
+    if ((seq.group & 1U) != 0u)
       return true;
   }
 
@@ -265,7 +265,7 @@ bool Element::is_in_series_ref_sequence() const {
 }
 
 Element::Type Element::type() const {
-  if (!VR)
+  if (VR == 0u)
     return INVALID;
   if (VR == VR_FD || VR == VR_FL)
     return FLOAT;

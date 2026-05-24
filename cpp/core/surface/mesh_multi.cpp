@@ -66,7 +66,7 @@ void MeshMulti::load(const std::filesystem::path &path) {
       do {
         const size_t first_space = data.find_first_of(' ');
         if (first_space == data.npos) {
-          if (std::isalnum(data[0]))
+          if (std::isalnum(data[0]) != 0)
             elements.push_back(data);
           data.clear();
         } else {
@@ -100,7 +100,7 @@ void MeshMulti::load(const std::filesystem::path &path) {
             this_values_count = 3;
           }
         }
-        if (!values_per_element)
+        if (values_per_element == 0u)
           values_per_element = this_values_count;
         else if (values_per_element != this_values_count)
           throw Exception(std::string("Malformed face information in input OBJ file:") +           //

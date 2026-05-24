@@ -105,12 +105,12 @@ std::vector<std::shared_ptr<Series>> select_cmdline(const Tree &tree) {
       std::cin >> buf;
       if (!std::cin || buf[0] == 'q' || buf[0] == 'Q')
         throw CancelException();
-      if (isdigit(buf[0])) {
+      if (isdigit(buf[0]) != 0) {
         const int n = to<int>(buf) - 1;
         if (n <= static_cast<int>(tree.size()))
           patient_p = tree[n].get();
       }
-      if (!patient_p)
+      if (patient_p == nullptr)
         fprintf(stderr, "invalid selection - try again\n");
     }
   } else
@@ -143,12 +143,12 @@ std::vector<std::shared_ptr<Series>> select_cmdline(const Tree &tree) {
       std::cin >> buf;
       if (!std::cin || buf[0] == 'q' || buf[0] == 'Q')
         throw CancelException();
-      if (isdigit(buf[0])) {
+      if (isdigit(buf[0]) != 0) {
         const int n = to<int>(buf) - 1;
         if (n <= static_cast<int>(patient.size()))
           study_p = patient[n].get();
       }
-      if (!study_p)
+      if (study_p == nullptr)
         fprintf(stderr, "invalid selection - try again\n");
     }
   } else
@@ -184,7 +184,7 @@ std::vector<std::shared_ptr<Series>> select_cmdline(const Tree &tree) {
       std::cin >> buf;
       if (!std::cin || buf[0] == 'q' || buf[0] == 'Q')
         throw CancelException();
-      if (isdigit(buf[0])) {
+      if (isdigit(buf[0]) != 0) {
         std::vector<uint32_t> seq;
         try {
           seq = parse_ints<uint32_t>(buf);

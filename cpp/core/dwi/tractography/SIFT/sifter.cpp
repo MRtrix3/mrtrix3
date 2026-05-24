@@ -46,8 +46,8 @@ void SIFTer::perform_filtering() {
   double sum_contributing_length = 0.0, sum_noncontributing_length = 0.0;
   std::vector<track_t> noncontributing_indices;
   for (track_t i = 0; i != contributions.size(); ++i) {
-    if (contributions[i]) {
-      if (contributions[i]->get_total_contribution()) {
+    if (contributions[i] != nullptr) {
+      if (contributions[i]->get_total_contribution() != 0.0f) {
         sum_contributing_length += contributions[i]->get_total_length();
       } else {
         sum_noncontributing_length += contributions[i]->get_total_length();
@@ -140,7 +140,7 @@ void SIFTer::perform_filtering() {
 
       if (!output_at_counts.empty() && (tracks_remaining == output_at_counts.back())) {
         const std::string prefix = str(tracks_remaining);
-        if (App::log_level)
+        if (App::log_level != 0)
           fprintf(stderr, "\n");
         output_filtered_tracks(tck_file_path, prefix + "_tracks.tck");
         if (debug_dir.has_value())
@@ -155,15 +155,15 @@ void SIFTer::perform_filtering() {
         goto end_iteration;
       }
 
-      if (term_mu && (mu() > term_mu)) {
+      if ((term_mu != 0.0) && (mu() > term_mu)) {
         another_iteration = false;
         recalculate = TERM_MU;
         goto end_iteration;
       }
 
       // Determine whether or not it is appropriate to remove a non-contributing streamline at this point
-      if (sum_noncontributing_length && ((contributing_length_removed / sum_contributing_length) >
-                                         (noncontributing_length_removed / sum_noncontributing_length))) {
+      if ((sum_noncontributing_length != 0.0) && ((contributing_length_removed / sum_contributing_length) >
+                                                  (noncontributing_length_removed / sum_noncontributing_length))) {
 
         // Select a non-contributing streamline at random
         const track_t to_remove = noncontributing_indices.back();
@@ -181,7 +181,7 @@ void SIFTer::perform_filtering() {
         const std::vector<Cost_fn_gradient_sort>::iterator candidate = sorter.get();
         if (candidate == gradient_vector.end()) {
           recalculate = POS_GRADIENT;
-          if (!removed_this_iteration)
+          if (removed_this_iteration == 0u)
             another_iteration = false;
           goto end_iteration;
         }
@@ -189,7 +189,7 @@ void SIFTer::perform_filtering() {
         const track_t candidate_index = candidate->get_tck_index();
         if (candidate->get_cost_gradient() >= 0.0) {
           recalculate = POS_GRADIENT;
-          if (!removed_this_iteration)
+          if (removed_this_iteration == 0u)
             another_iteration = false;
           goto end_iteration;
         }
@@ -245,16 +245,16 @@ void SIFTer::perform_filtering() {
 
           if (this_actual_cf_change >= this_nonlinearity)
             recalculate = NONLINEARITY;
-          else if (term_ratio && this_actual_cf_change >= required_cf_change_ratio)
+          else if ((term_ratio != 0.0f) && this_actual_cf_change >= required_cf_change_ratio)
             recalculate = TERM_RATIO;
           else
             recalculate = QUANTISATION;
-          if (!removed_this_iteration) {
+          if (removed_this_iteration == 0u) {
             // If filtering has been completed to convergence, but the user does not want to filter to convergence
             //   (i.e. they have defined a desired termination criterion but it has not yet been met), disable
             //   the quantisation check to give the algorithm a chance to meet the user's termination request
-            if (enforce_quantisation && (term_number || term_ratio || term_mu)) {
-              if (App::log_level)
+            if (enforce_quantisation && ((term_number != 0u) || (term_ratio != 0.0f) || (term_mu != 0.0))) {
+              if (App::log_level != 0)
                 fprintf(stderr, "\n");
               CONSOLE("filtering has reached quantisation error, but user's desired termination criterion has not yet "
                       "been met;");
@@ -272,7 +272,7 @@ void SIFTer::perform_filtering() {
 
       } // End switching between removal of zero-contribution or nonzero-contribution streamline
 
-    } while (!recalculate); // End removing streamlines in this iteration
+    } while (recalculate == 0u); // End removing streamlines in this iteration
 
   end_iteration:
 
@@ -337,7 +337,7 @@ void SIFTer::perform_filtering() {
     break;
   }
 
-  if ((term_number || term_ratio || term_mu) &&
+  if (((term_number != 0u) || (term_ratio != 0.0f) || (term_mu != 0.0)) &&
       (recalculate == NONLINEARITY || recalculate == QUANTISATION || recalculate == POS_GRADIENT))
     WARN("algorithm terminated before any user-specified termination criterion was met");
 
@@ -354,7 +354,7 @@ void SIFTer::output_filtered_tracks(const std::filesystem::path &input_path,
   Tractography::Streamline<> tck;
   ProgressBar progress("Writing filtered tracks output file", contributions.size());
   while (reader(tck) && tck_counter < contributions.size()) {
-    if (contributions[tck_counter++])
+    if (contributions[tck_counter++] != nullptr)
       writer(tck);
     else
       writer.skip();
@@ -366,7 +366,7 @@ void SIFTer::output_filtered_tracks(const std::filesystem::path &input_path,
 void SIFTer::output_selection(const std::filesystem::path &path) const {
   File::OFStream out(path, std::ios_base::out | std::ios_base::trunc);
   for (track_t i = 0; i != contributions.size(); ++i) {
-    if (contributions[i])
+    if (contributions[i] != nullptr)
       out << "1\n";
     else
       out << "0\n";
@@ -431,7 +431,7 @@ double SIFTer::calc_roc_cost_function() const {
 }
 
 double SIFTer::calc_gradient(const track_t index, const double current_mu, const double current_roc_cost) const {
-  if (!contributions[index])
+  if (contributions[index] == nullptr)
     return std::numeric_limits<double>::max();
   const TrackContribution &tck_cont = *contributions[index];
   const double TD_sum_if_removed = TD_sum - tck_cont.get_total_contribution();
@@ -450,9 +450,9 @@ double SIFTer::calc_gradient(const track_t index, const double current_mu, const
 
 bool SIFTer::TrackGradientCalculator::operator()(const TrackIndexRange &in) const {
   for (track_t track_index = in.first; track_index != in.second; ++track_index) {
-    if (master.contributions[track_index]) {
+    if (master.contributions[track_index] != nullptr) {
       const double gradient = master.calc_gradient(track_index, current_mu, current_roc_cost);
-      const double grad_per_unit_length = master.contributions[track_index]->get_total_contribution()
+      const double grad_per_unit_length = (master.contributions[track_index]->get_total_contribution() != 0.0f)
                                               ? (gradient / master.contributions[track_index]->get_total_contribution())
                                               : 0.0;
       gradient_vector[track_index].set(track_index, gradient, grad_per_unit_length);

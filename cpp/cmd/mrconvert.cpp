@@ -254,7 +254,7 @@ void usage() {
 
 void permute_DW_scheme(Header &H, const std::vector<int> &axes) {
   auto in = DWI::parse_DW_scheme(H);
-  if (!in.rows())
+  if (in.rows() == 0)
     return;
 
   Transform const T(H);
@@ -274,7 +274,7 @@ void permute_DW_scheme(Header &H, const std::vector<int> &axes) {
 
 void permute_PE_scheme(Header &H, const std::vector<int> &axes) {
   auto in = Metadata::PhaseEncoding::parse_scheme(H.keyval(), H);
-  if (!in.rows())
+  if (in.rows() == 0)
     return;
 
   Eigen::Matrix3d permute = Eigen::Matrix3d::Zero();
@@ -476,7 +476,7 @@ void run() {
       header_out.size(axis) = pos[axis].size();
       if (axis == 3) {
         const auto grad = DWI::parse_DW_scheme(header_out);
-        if (grad.rows()) {
+        if (grad.rows() != 0) {
           if (static_cast<ssize_t>(grad.rows()) != header_in.size(3)) {
             WARN("Diffusion encoding of input file does not match number of image volumes;" //
                  " omitting gradient information from output image");                       //
@@ -491,7 +491,7 @@ void run() {
         Eigen::MatrixXd pe_scheme;
         try {
           pe_scheme = Metadata::PhaseEncoding::get_scheme(header_in);
-          if (pe_scheme.rows()) {
+          if (pe_scheme.rows() != 0) {
             Eigen::MatrixXd extract_scheme(pos[3].size(), pe_scheme.cols());
             for (size_t vol = 0; vol != pos[3].size(); ++vol)
               extract_scheme.row(vol) = pe_scheme.row(pos[3][vol]);

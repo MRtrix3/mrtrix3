@@ -65,7 +65,7 @@ PreProcessor::~PreProcessor() {
 }
 
 bool PreProcessor::operator()(const Math::Stats::Shuffle &shuffle) {
-  if (!shuffle.data.rows())
+  if (shuffle.data.rows() == 0)
     return false;
   (*stats_calculator)(shuffle.data, stats, zstats);
   (*enhancer)(zstats, enhanced_stats);
@@ -138,7 +138,7 @@ bool Processor::operator()(const Math::Stats::Shuffle &shuffle) {
   else
     enhanced_statistics = zstatistics;
 
-  if (empirical_enhanced_statistics.size())
+  if (empirical_enhanced_statistics.size() != 0)
     enhanced_statistics.array() /= empirical_enhanced_statistics.array();
 
   if (null_dist.cols() == 1) { // strong fwe control
@@ -216,7 +216,7 @@ void precompute_default_permutation(const std::unique_ptr<Math::Stats::GLM::Test
     output_enhanced = output_statistics;
   ++progress;
 
-  if (empirical_enhanced.size())
+  if (empirical_enhanced.size() != 0)
     output_enhanced.array() /= empirical_enhanced.array();
 }
 

@@ -205,8 +205,9 @@ void SharedBase::set_num_points(const float angle_minradius_preds, const float m
   //         it will invariably be either truncated or rejected, no matter what
   //         happens during downsampling)
   max_num_points_preds =
-      min_step_postds ? (3 + static_cast<size_t>(std::ceil(downsampler.get_ratio() * max_dist / min_step_postds)))
-                      : std::numeric_limits<size_t>::max();
+      (min_step_postds != 0.0f)
+          ? (3 + static_cast<size_t>(std::ceil(downsampler.get_ratio() * max_dist / min_step_postds)))
+          : std::numeric_limits<size_t>::max();
   //   - After downsampling:
   //     - How many vertices must a streamline have (after downsampling) for it to be
   //         guaranteed to exceed the minimum length?

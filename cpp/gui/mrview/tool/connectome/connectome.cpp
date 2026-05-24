@@ -786,7 +786,7 @@ void Connectome::draw(const Projection &projection, bool /*is_3D*/, int /*axis*/
   //   triangle render order is not correctly set
   // If not using transparency, might as well enable it; potential performance gain
   //   since we guarantee correct surface normals
-  GLboolean current_cull_face = false;
+  GLboolean current_cull_face = 0u;
   gl::GetBooleanv(gl::CULL_FACE, &current_cull_face);
   if (crop_to_slab)
     gl::Disable(gl::CULL_FACE);
@@ -801,7 +801,7 @@ void Connectome::draw(const Projection &projection, bool /*is_3D*/, int /*axis*/
     draw_edges(projection);
   }
 
-  if (!current_cull_face)
+  if (current_cull_face == 0u)
     gl::Disable(gl::CULL_FACE);
   else
     gl::Enable(gl::CULL_FACE);
@@ -814,7 +814,7 @@ void Connectome::draw_colourbars() {
     return;
   if (hide_all_button->isChecked())
     return;
-  if (((node_colour == node_colour_t::CONNECTOME && matrix_list_model->rowCount()) ||
+  if (((node_colour == node_colour_t::CONNECTOME && (matrix_list_model->rowCount() != 0)) ||
        node_colour == node_colour_t::VECTOR_FILE || node_colour == node_colour_t::MATRIX_FILE) &&
       show_node_colour_bar)
     window().colourbar_renderer.render(node_colourmap_index,
@@ -824,7 +824,7 @@ void Connectome::draw_colourbars() {
                                        node_colour_lower_button->value(),
                                        node_colour_upper_button->value() - node_colour_lower_button->value(),
                                        node_fixed_colour);
-  if (((edge_colour == edge_colour_t::CONNECTOME && matrix_list_model->rowCount()) ||
+  if (((edge_colour == edge_colour_t::CONNECTOME && (matrix_list_model->rowCount() != 0)) ||
        edge_colour == edge_colour_t::MATRIX_FILE) &&
       show_edge_colour_bar)
     window().colourbar_renderer.render(edge_colourmap_index,
@@ -840,12 +840,12 @@ void Connectome::draw_colourbars() {
 size_t Connectome::visible_number_colourbars() {
   if (!buffer)
     return 0;
-  return (((((node_colour == node_colour_t::CONNECTOME && matrix_list_model->rowCount()) ||
+  return (((((node_colour == node_colour_t::CONNECTOME && (matrix_list_model->rowCount() != 0)) ||
              node_colour == node_colour_t::VECTOR_FILE || node_colour == node_colour_t::MATRIX_FILE) &&
             show_node_colour_bar)
                ? 1
                : 0) +
-          ((((edge_colour == edge_colour_t::CONNECTOME && matrix_list_model->rowCount()) ||
+          ((((edge_colour == edge_colour_t::CONNECTOME && (matrix_list_model->rowCount() != 0)) ||
              edge_colour == edge_colour_t::MATRIX_FILE) &&
             show_edge_colour_bar)
                ? 1
@@ -2295,7 +2295,7 @@ void Connectome::lighting_parameter_slot() {
 }
 void Connectome::crop_to_slab_toggle_slot(int /*value*/) {
   crop_to_slab = crop_to_slab_checkbox->isChecked();
-  is_3D = !(crop_to_slab && !slab_thickness);
+  is_3D = !(crop_to_slab && (slab_thickness == 0.0f));
   crop_to_slab_label->setEnabled(crop_to_slab);
   crop_to_slab_button->setEnabled(crop_to_slab);
   node_geometry_overlay_3D_warning_icon->setVisible(node_geometry == node_geometry_t::OVERLAY && is_3D);
@@ -2303,7 +2303,7 @@ void Connectome::crop_to_slab_toggle_slot(int /*value*/) {
 }
 void Connectome::crop_to_slab_parameter_slot() {
   slab_thickness = crop_to_slab_button->value();
-  is_3D = !(crop_to_slab && !slab_thickness);
+  is_3D = !(crop_to_slab && (slab_thickness == 0.0f));
   node_geometry_overlay_3D_warning_icon->setVisible(node_geometry == node_geometry_t::OVERLAY && is_3D);
   window().updateGL();
 }
@@ -2468,7 +2468,7 @@ void Connectome::initialise(const std::filesystem::path &path) {
   {
     for (auto loop = Loop(*buffer)(*buffer); loop; ++loop) {
       const node_t node_index = buffer->value();
-      if (node_index) {
+      if (node_index != 0u) {
 
         if (node_index >= max_index) {
           node_coms.resize(node_index + 1, Eigen::Vector3f{0.0f, 0.0f, 0.0f});
@@ -2506,7 +2506,7 @@ void Connectome::initialise(const std::filesystem::path &path) {
   {
     nodes.push_back(Node());
     for (size_t node_index = 1; node_index <= max_index; ++node_index) {
-      if (node_volumes[node_index]) {
+      if (node_volumes[node_index] != 0u) {
 
         std::vector<int> from(3), dim(3);
         for (size_t axis = 0; axis != 3; ++axis) {
@@ -2579,7 +2579,7 @@ void Connectome::add_matrices(const std::vector<std::filesystem::path> &list) {
     matrix_list_view->selectionModel()->select(first, QItemSelectionModel::ClearAndSelect);
     // In the specific case where there was previously no connectome data,
     //   it is necessary to set the min/max/value of various controls
-    if (!previous_size) {
+    if (previous_size == 0u) {
       const FileDataVector &data(matrix_list_model->get(previous_size));
       if (node_visibility == node_visibility_t::CONNECTOME)
         update_controls_node_visibility(data.get_min(), data.get_mean(), data.get_max());
@@ -2874,7 +2874,7 @@ void Connectome::draw_edges(const Projection &projection) {
         case edge_geometry_t::CYLINDER:
           gl::Uniform3fv(node_centre_one_ID, 1, edge.get_node_centre(0).data());
           gl::Uniform3fv(node_centre_two_ID, 1, edge.get_node_centre(1).data());
-          gl::UniformMatrix3fv(rot_matrix_ID, 1, false, edge.get_rot_matrix());
+          gl::UniformMatrix3fv(rot_matrix_ID, 1, 0u, edge.get_rot_matrix());
           gl::Uniform1f(radius_ID, std::sqrt(edge_size_given_selection(edge) * edge_size_scale_factor / Math::pi));
           if (alpha) {
             gl::CullFace(gl::FRONT);
@@ -2974,7 +2974,7 @@ void Connectome::load_properties() {
   if (lut.empty()) {
     // Create LUT entries for nodes with non-zero volume
     for (node_t node_index = 1; node_index <= num_nodes(); ++node_index) {
-      if (nodes[node_index].get_volume()) {
+      if (nodes[node_index].get_volume() != 0u) {
         const std::string name = "Node " + str(node_index);
         nodes[node_index].set_name(name);
         lut.insert(std::make_pair(node_index, MR::Connectome::LUT_node(name)));
@@ -3012,14 +3012,14 @@ void Connectome::load_properties() {
     }
     size_t absent_entry_count = 0;
     for (node_t node_index = 1; node_index <= num_nodes(); ++node_index) {
-      if (nodes[node_index].get_volume() && nodes[node_index].get_name().empty()) {
+      if ((nodes[node_index].get_volume() != 0u) && nodes[node_index].get_name().empty()) {
         const std::string name = "Node " + str(node_index);
         nodes[node_index].set_name(name);
         lut.insert(std::make_pair(node_index, MR::Connectome::LUT_node(name)));
         ++absent_entry_count;
       }
     }
-    if (absent_entry_count) {
+    if (absent_entry_count != 0u) {
       WARN(str(absent_entry_count) + " indices present in parcellation image with no entry in lookup table; "
                                      "lookup table file and parcellation image may not match");
     }
@@ -3061,7 +3061,7 @@ void Connectome::calculate_node_visibility() {
   } else if (node_visibility == node_visibility_t::CONNECTOME) {
 
     QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
-    if (!list.empty() && selected_node_count) {
+    if (!list.empty() && (selected_node_count != 0u)) {
 
       const FileDataVector &data(matrix_list_model->get(list[0]));
 
@@ -3107,7 +3107,7 @@ void Connectome::calculate_node_visibility() {
 
     assert(static_cast<size_t>(node_values_from_file_visibility.size()) == num_edges());
 
-    if (selected_node_count) {
+    if (selected_node_count != 0u) {
       const bool invert = node_visibility_threshold_invert_checkbox->isChecked();
       const float threshold = node_visibility_threshold_button->value();
       for (node_t i = 1; i <= num_nodes(); ++i) {
@@ -3173,7 +3173,7 @@ void Connectome::calculate_node_colours() {
   } else if (node_colour == node_colour_t::CONNECTOME) {
 
     QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
-    if (!list.empty() && selected_node_count) {
+    if (!list.empty() && (selected_node_count != 0u)) {
 
       const FileDataVector &data(matrix_list_model->get(list[0]));
       const float lower = node_colour_lower_button->value(), upper = node_colour_upper_button->value();
@@ -3238,7 +3238,7 @@ void Connectome::calculate_node_colours() {
   } else if (node_colour == node_colour_t::MATRIX_FILE) {
 
     assert(static_cast<size_t>(node_values_from_file_colour.size()) == num_edges());
-    if (selected_node_count) {
+    if (selected_node_count != 0u) {
       const float lower = node_colour_lower_button->value(), upper = node_colour_upper_button->value();
       for (node_t i = 1; i <= num_nodes(); ++i) {
         if (selected_nodes[i]) {
@@ -3302,7 +3302,7 @@ void Connectome::calculate_node_sizes() {
   } else if (node_size == node_size_t::CONNECTOME) {
 
     QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
-    if (!list.empty() && selected_node_count) {
+    if (!list.empty() && (selected_node_count != 0u)) {
 
       const FileDataVector &data(matrix_list_model->get(list[0]));
       const float lower = node_size_lower_button->value(), upper = node_size_upper_button->value();
@@ -3363,7 +3363,7 @@ void Connectome::calculate_node_sizes() {
   } else if (node_size == node_size_t::MATRIX_FILE) {
 
     assert(static_cast<size_t>(node_values_from_file_size.size()) == num_edges());
-    if (selected_node_count) {
+    if (selected_node_count != 0u) {
       const float lower = node_size_lower_button->value(), upper = node_size_upper_button->value();
       const bool invert = node_size_invert_checkbox->isChecked();
       for (node_t i = 1; i <= num_nodes(); ++i) {
@@ -3420,7 +3420,7 @@ void Connectome::calculate_node_alphas() {
   } else if (node_alpha == node_alpha_t::CONNECTOME) {
 
     QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
-    if (!list.empty() && selected_node_count) {
+    if (!list.empty() && (selected_node_count != 0u)) {
 
       const FileDataVector &data(matrix_list_model->get(list[0]));
       const float lower = node_alpha_lower_button->value(), upper = node_alpha_upper_button->value();
@@ -3496,7 +3496,7 @@ void Connectome::calculate_node_alphas() {
   } else if (node_alpha == node_alpha_t::MATRIX_FILE) {
 
     assert(static_cast<size_t>(node_values_from_file_alpha.size()) == num_edges());
-    if (selected_node_count) {
+    if (selected_node_count != 0u) {
       const float lower = node_alpha_lower_button->value(), upper = node_alpha_upper_button->value();
       const bool invert = node_alpha_invert_checkbox->isChecked();
       for (node_t i = 1; i <= num_nodes(); ++i) {
@@ -3549,7 +3549,7 @@ void Connectome::update_node_overlay() {
 
     auto functor = [&](decltype(*buffer) &in, decltype(node_overlay->data) &out) {
       const node_t node_index = in.value();
-      if (node_index) {
+      if (node_index != 0u) {
         assert(node_index <= num_nodes());
         const Eigen::Array3f &colour(nodes[node_index].get_colour());
         for (out.index(3) = 0; out.index(3) != 3; ++out.index(3))
@@ -3856,7 +3856,7 @@ void Connectome::node_selection_changed(const std::vector<node_t> &list) {
 }
 
 bool Connectome::node_visibility_given_selection(const node_t index) {
-  if (!selected_node_count)
+  if (selected_node_count == 0u)
     return nodes[index].is_visible();
   if (node_selection_settings.get_node_selected_visibility_override() && selected_nodes[index])
     return true;
@@ -3878,7 +3878,7 @@ Eigen::Array3f Connectome::node_colour_given_selection(const node_t index) {
   if (selected_nodes[index]) {
     const float fade = node_selection_settings.get_node_selected_colour_fade();
     return ((fade * node_selection_settings.get_node_selected_colour()) + ((1.0f - fade) * nodes[index].get_colour()));
-  } else if (selected_node_count) {
+  } else if (selected_node_count != 0u) {
     // Need to find out whether or not there is a visible connection to a selected node
     // TODO Needs to be a more efficient way of calculating this...
     for (auto e = edges.begin(); e != edges.end(); ++e) {
@@ -3898,7 +3898,7 @@ Eigen::Array3f Connectome::node_colour_given_selection(const node_t index) {
 float Connectome::node_size_given_selection(const node_t index) {
   if (selected_nodes[index]) {
     return (node_selection_settings.get_node_selected_size_multiplier() * nodes[index].get_size());
-  } else if (selected_node_count) {
+  } else if (selected_node_count != 0u) {
     for (auto e = edges.begin(); e != edges.end(); ++e) {
       if (e->is_visible() && (e->get_node_index(0) == index || e->get_node_index(1) == index) &&
           (selected_nodes[e->get_node_index(0)] || selected_nodes[e->get_node_index(1)])) {
@@ -3913,7 +3913,7 @@ float Connectome::node_size_given_selection(const node_t index) {
 float Connectome::node_alpha_given_selection(const node_t index) {
   if (selected_nodes[index]) {
     return (node_selection_settings.get_node_selected_alpha_multiplier() * nodes[index].get_alpha());
-  } else if (selected_node_count) {
+  } else if (selected_node_count != 0u) {
     for (auto e = edges.begin(); e != edges.end(); ++e) {
       if (e->is_visible() && (e->get_node_index(0) == index || e->get_node_index(1) == index) &&
           (selected_nodes[e->get_node_index(0)] || selected_nodes[e->get_node_index(1)])) {
@@ -3926,7 +3926,7 @@ float Connectome::node_alpha_given_selection(const node_t index) {
   }
 }
 bool Connectome::edge_visibility_given_selection(const Edge &edge) {
-  if (!selected_node_count)
+  if (selected_node_count == 0u)
     return edge.is_visible();
   if (!edge.is_visible())
     return false;
@@ -3936,7 +3936,7 @@ bool Connectome::edge_visibility_given_selection(const Edge &edge) {
   return true;
 }
 Eigen::Array3f Connectome::edge_colour_given_selection(const Edge &edge) {
-  if (!selected_node_count)
+  if (selected_node_count == 0u)
     return edge.get_colour();
   float fade = node_selection_settings.get_edge_other_colour_fade();
   Eigen::Array3f colour = node_selection_settings.get_edge_other_colour();
@@ -3951,7 +3951,7 @@ Eigen::Array3f Connectome::edge_colour_given_selection(const Edge &edge) {
   return ((fade * colour) + ((1.0f - fade) * edge.get_colour()));
 }
 float Connectome::edge_size_given_selection(const Edge &edge) {
-  if (!selected_node_count)
+  if (selected_node_count == 0u)
     return edge.get_size();
   float multiplier = node_selection_settings.get_edge_other_size_multiplier();
   if (selected_nodes[edge.get_node_index(0)] || selected_nodes[edge.get_node_index(1)])
@@ -3961,7 +3961,7 @@ float Connectome::edge_size_given_selection(const Edge &edge) {
   return (multiplier * edge.get_size());
 }
 float Connectome::edge_alpha_given_selection(const Edge &edge) {
-  if (!selected_node_count)
+  if (selected_node_count == 0u)
     return edge.get_alpha();
   float multiplier = node_selection_settings.get_edge_other_alpha_multiplier();
   if (selected_nodes[edge.get_node_index(0)] || selected_nodes[edge.get_node_index(1)])
@@ -4089,33 +4089,33 @@ bool Connectome::use_lighting() const { return lighting_checkbox->isChecked(); }
 
 bool Connectome::use_alpha_nodes() const {
   bool alpha = !(node_alpha == node_alpha_t::FIXED && node_fixed_alpha == 1.0f);
-  if (selected_node_count && (node_selection_settings.get_node_selected_alpha_multiplier() < 1.0f ||
-                              node_selection_settings.get_node_associated_alpha_multiplier() < 1.0f ||
-                              node_selection_settings.get_node_other_alpha_multiplier() < 1.0f))
+  if ((selected_node_count != 0u) && (node_selection_settings.get_node_selected_alpha_multiplier() < 1.0f ||
+                                      node_selection_settings.get_node_associated_alpha_multiplier() < 1.0f ||
+                                      node_selection_settings.get_node_other_alpha_multiplier() < 1.0f))
     alpha = true;
   return alpha;
 }
 
 bool Connectome::use_alpha_edges() const {
   bool alpha = !(edge_alpha == edge_alpha_t::FIXED && edge_fixed_alpha == 1.0f);
-  if (selected_node_count && (node_selection_settings.get_edge_selected_alpha_multiplier() < 1.0f ||
-                              node_selection_settings.get_edge_associated_alpha_multiplier() < 1.0f ||
-                              node_selection_settings.get_edge_other_alpha_multiplier() < 1.0f))
+  if ((selected_node_count != 0u) && (node_selection_settings.get_edge_selected_alpha_multiplier() < 1.0f ||
+                                      node_selection_settings.get_edge_associated_alpha_multiplier() < 1.0f ||
+                                      node_selection_settings.get_edge_other_alpha_multiplier() < 1.0f))
     alpha = true;
   return alpha;
 }
 
 float Connectome::calc_line_width(const float desired_width, const bool is_smooth) const {
   if (is_smooth) {
-    if (line_thickness_range_smooth[0] && std::round(desired_width) < line_thickness_range_smooth[0])
+    if ((line_thickness_range_smooth[0] != 0) && std::round(desired_width) < line_thickness_range_smooth[0])
       return line_thickness_range_smooth[0];
-    if (line_thickness_range_smooth[1] && std::round(desired_width) > line_thickness_range_smooth[1])
+    if ((line_thickness_range_smooth[1] != 0) && std::round(desired_width) > line_thickness_range_smooth[1])
       return line_thickness_range_smooth[1];
     return desired_width;
   } else {
-    if (line_thickness_range_aliased[0] && std::round(desired_width) < line_thickness_range_aliased[0])
+    if ((line_thickness_range_aliased[0] != 0) && std::round(desired_width) < line_thickness_range_aliased[0])
       return line_thickness_range_aliased[0];
-    if (line_thickness_range_aliased[1] && std::round(desired_width) > line_thickness_range_aliased[1])
+    if ((line_thickness_range_aliased[1] != 0) && std::round(desired_width) > line_thickness_range_aliased[1])
       return line_thickness_range_aliased[1];
     return desired_width;
   }

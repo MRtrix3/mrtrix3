@@ -97,7 +97,7 @@ public:
     const std::byte *p = start + 84;
     for (uint32_t m = 0; m < nitems; m++) {
       uint32_t const length = Raw::fetch_LE<uint32_t>(p);
-      if (length)
+      if (length != 0u)
         return to<int>(
             std::string(reinterpret_cast<const char *>(p) + 16, static_cast<size_t>(4 * ((length + 3) / 4))));
       p += 16 + 4 * ((length + 3) / 4);
@@ -109,7 +109,7 @@ public:
     const std::byte *p = start + 84;
     for (uint32_t m = 0; m < nitems; m++) {
       uint32_t const length = Raw::fetch_LE<uint32_t>(p);
-      if (length)
+      if (length != 0u)
         return to<default_type>(
             std::string(reinterpret_cast<const char *>(p) + 16, static_cast<size_t>(4 * ((length + 3) / 4))));
       p += 16 + 4 * ((length + 3) / 4);

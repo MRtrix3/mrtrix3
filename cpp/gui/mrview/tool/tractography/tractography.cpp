@@ -93,7 +93,7 @@ Tractography::Tractography(Dock *parent)
       lighting_dock(nullptr) {
 
   float voxel_size;
-  if (window().image()) {
+  if (window().image() != nullptr) {
     voxel_size = (window().image()->header().spacing(0) + window().image()->header().spacing(1) +
                   window().image()->header().spacing(2)) /
                  3.0f;
@@ -430,7 +430,7 @@ void Tractography::on_use_lighting_slot(bool is_checked) {
 }
 
 void Tractography::on_lighting_settings() {
-  if (!lighting_dock) {
+  if (lighting_dock == nullptr) {
     lighting_dock = new LightingDock("Tractogram lighting", *lighting);
     window().addDockWidget(Qt::RightDockWidgetArea, lighting_dock);
   }
@@ -518,7 +518,7 @@ void Tractography::randomise_track_colour_slot() {
     tractogram->set_colour(c);
     if (tractogram->get_threshold_type() == TrackThresholdType::UseColourFile)
       tractogram->set_threshold_type(TrackThresholdType::None);
-    if (!i)
+    if (i == 0)
       colour_button->setColor(c);
   }
   colour_combobox->blockSignals(true);

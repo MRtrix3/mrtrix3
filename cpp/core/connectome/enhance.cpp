@@ -28,7 +28,7 @@ void NBS::operator()(in_column_type in, const value_type T, out_column_type out)
   Eigen::Array<bool, Eigen::Dynamic, 1> visited(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(in.size()));
 
   for (ssize_t seed = 0; seed != in.size(); ++seed) {
-    if (std::isfinite(in[seed]) && in[seed] >= T && !out[seed]) {
+    if (std::isfinite(in[seed]) && in[seed] >= T && (out[seed] == 0.0)) {
 
       visited.setZero();
       visited[seed] = true;

@@ -56,7 +56,7 @@ public:
     speed.resize(nvols);
     speed_squared.resize(nvols);
 
-    if (contrast_settings and contrast_settings->size() > 1) {
+    if ((contrast_settings != nullptr) and contrast_settings->size() > 1) {
       for (const auto &mc : *contrast_settings)
         weight.segment(mc.start, mc.nvols).fill(mc.weight);
     } else

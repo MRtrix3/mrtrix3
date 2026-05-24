@@ -102,7 +102,7 @@ public:
     for (int f = 0; f < 2 * num_shifts + 1; f++) {
       for (int n = 0; n < lsize; ++n)
         ifft[f][n] = fft[n] * exp(j * 2.0 * indexshift(n, lsize) * Math::pi * shift_ind[f] / real_type(lsize));
-      if (!(lsize & 1))
+      if ((lsize & 1) == 0)
         ifft[f][lsize / 2] = real_type(0);
       ifft[f].run();
     }

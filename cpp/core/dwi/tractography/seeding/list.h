@@ -36,7 +36,7 @@ public:
   bool empty() const { return seeders.empty(); }
   size_t num_seeds() const { return seeders.size(); }
   const Base *operator[](const size_t n) const { return seeders[n].get(); }
-  bool is_finite() const { return total_count; }
+  bool is_finite() const { return total_count != 0u; }
   uint32_t get_total_count() const { return total_count; }
 
   friend inline std::ostream &operator<<(std::ostream &stream, const List &S) {

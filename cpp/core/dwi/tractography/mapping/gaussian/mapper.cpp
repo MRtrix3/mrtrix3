@@ -40,7 +40,7 @@ void TrackMapper::gaussian_smooth_factors(const Streamline<> &tck) const {
     }
 
     default_type distance = 0.0;
-    for (size_t j = i; j--;) { // Decrement AFTER null test, so loop runs with j = 0
+    for (size_t j = i; (j--) != 0u;) { // Decrement AFTER null test, so loop runs with j = 0
       distance += (tck[j] - tck[j + 1]).norm();
       if (std::isfinite(unsmoothed[j])) {
         const default_type this_weight = exp(-distance * distance / gaussian_denominator);
@@ -58,7 +58,7 @@ void TrackMapper::gaussian_smooth_factors(const Streamline<> &tck) const {
       }
     }
 
-    if (norm)
+    if (norm != 0.0)
       factors[i] = (sum / norm);
     else
       factors[i] = 0.0;

@@ -43,7 +43,7 @@ public:
               const DWI::Tractography::Properties &properties)
       : S(shared),
         writer(output_path, properties),
-        always_increment(S.properties.seeds.is_finite() || !S.max_num_tracks),
+        always_increment(S.properties.seeds.is_finite() || (S.max_num_tracks == 0u)),
         warn_on_max_seeds(S.implicit_max_num_seeds),
         seeds(0),
         streamlines(0),
@@ -66,7 +66,7 @@ public:
     // Use set_text() rather than update() here to force update of the text before progress goes out of scope
     progress.set_text(
         printf("%8" PRIu64 " seeds, %8" PRIu64 " streamlines, %8" PRIu64 " selected", seeds, streamlines, selected));
-    if (warn_on_max_seeds && writer.total_count == S.max_num_seeds && S.max_num_tracks &&
+    if (warn_on_max_seeds && writer.total_count == S.max_num_seeds && (S.max_num_tracks != 0u) &&
         writer.count < S.max_num_tracks) {
       WARN("less than desired streamline number due to implicit maximum number of seeds; set -seeds 0 to override");
     }
@@ -97,7 +97,8 @@ public:
   bool operator()(const GeneratedTrack &);
 
   bool complete() const {
-    return ((S.max_num_tracks && selected >= S.max_num_tracks) || (S.max_num_seeds && seeds >= S.max_num_seeds));
+    return (((S.max_num_tracks != 0u) && selected >= S.max_num_tracks) ||
+            ((S.max_num_seeds != 0u) && seeds >= S.max_num_seeds));
   }
 
 protected:

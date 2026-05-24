@@ -596,7 +596,7 @@ void Tractogram::load_tracks() {
   while (file(tck)) {
 
     const size_t N = tck.size();
-    if (!N)
+    if (N == 0u)
       continue;
 
     // Pre padding
@@ -684,7 +684,7 @@ void Tractogram::load_intensity_track_scalars(const std::filesystem::path &filep
       const size_t tck_size = tck_scalar.size();
       assert(tck_size == static_cast<size_t>(original_track_sizes[intensity_scalar_buffers.size()][tck_count]));
 
-      if (!tck_size)
+      if (tck_size == 0u)
         continue;
 
       // Pre padding to coincide with tracks buffer
@@ -776,7 +776,7 @@ void Tractogram::load_threshold_track_scalars(const std::filesystem::path &filep
       const size_t tck_size = tck_scalar.size();
       assert(tck_size == static_cast<size_t>(original_track_sizes[threshold_scalar_buffers.size()][tck_count]));
 
-      if (!tck_size)
+      if (tck_size == 0u)
         continue;
 
       // Pre padding to coincide with tracks buffer

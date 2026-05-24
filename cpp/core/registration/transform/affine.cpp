@@ -48,7 +48,7 @@ bool AffineUpdate::operator()(Eigen::Matrix<default_type, Eigen::Dynamic, 1> &ne
     step_size = 0.2 / G.block(0, 0, 3, 3).array().abs().maxCoeff();
   }
   // use control points and coherence length as regulariser for the step_size
-  if (control_points.size()) {
+  if (control_points.size() != 0) {
     P = control_points;
     const default_type orig_step_size(step_size);
     const default_type step_down_factor(0.5);
@@ -217,7 +217,7 @@ bool AffineUpdate::operator()(Eigen::Matrix<default_type, Eigen::Dynamic, 1> &ne
     return false;
   }
 
-  if (control_points.size()) {
+  if (control_points.size() != 0) {
     XnewP = (Xnew * P).eval();
 
     // stop criterion based on slope of smoothed control point trajectories

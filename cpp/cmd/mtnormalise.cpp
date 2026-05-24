@@ -216,7 +216,7 @@ IndexType index_mask_voxels(size_t &num_voxels) {
       index.value() = std::numeric_limits<uint32_t>::max();
   }
 
-  if (!num_voxels)
+  if (num_voxels == 0u)
     throw Exception("Mask contains no valid voxels.");
 
   INFO("mask image contains " + str(num_voxels) + " voxels");
@@ -317,7 +317,7 @@ size_t detect_outliers(double outlier_range,
     const double lower_outlier_threshold, upper_outlier_threshold;
 
     double operator()(double v, double w) const {
-      v = std::isfinite(v) && v >= lower_outlier_threshold && v <= upper_outlier_threshold;
+      v = static_cast<double>(std::isfinite(v) && v >= lower_outlier_threshold && v <= upper_outlier_threshold);
       if (v != w)
         ++changed;
       return v;
@@ -337,7 +337,7 @@ void compute_balance_factors(const Eigen::MatrixXd &data,
                              Eigen::VectorXd &balance_factors) {
   Eigen::MatrixXd scaled_data = data.transpose().array().rowwise() / field.transpose().array();
   for (ssize_t n = 0; n < scaled_data.cols(); ++n) {
-    if (!weights[n])
+    if (weights[n] == 0.0)
       scaled_data.col(n).array() = 0.0;
   }
   Eigen::MatrixXd HtH(data.cols(), data.cols());
@@ -483,7 +483,7 @@ void run() {
     if (num.empty() && num.size() > 2)
       throw Exception("unexpected number of entries provided to option \"-niter\"");
     for (auto n : num)
-      if (!n)
+      if (n == 0u)
         throw Exception("number of iterations must be nonzero");
 
     max_iter = num[0];
@@ -517,7 +517,7 @@ void run() {
   auto basis = initialise_basis(index, num_voxels, order);
 
   struct finite_and_positive {
-    double operator()(double v) const { return std::isfinite(v) && v > 0.0; }
+    double operator()(double v) const { return static_cast<double>(std::isfinite(v) && v > 0.0); }
   };
   Eigen::VectorXd weights = data.rowwise().sum().unaryExpr(finite_and_positive());
 
@@ -549,7 +549,7 @@ void run() {
 
         outliers_changed = detect_outliers(1.5, data, field, balance_factors, weights);
 
-      } while (outliers_changed && balance_iter++ < max_balance_iter);
+      } while ((outliers_changed != 0u) && balance_iter++ < max_balance_iter);
 
       update_field(log_ref_value, basis, data, balance_factors, weights, field_coeffs, field);
 

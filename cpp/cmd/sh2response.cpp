@@ -104,7 +104,7 @@ void run() {
     }
     d.normalize();
     // Uncertainty regarding Eigen's behaviour when normalizing a zero vector; may change behaviour between versions
-    if (!d.allFinite() || !d.squaredNorm()) {
+    if (!d.allFinite() || (d.squaredNorm() == 0.0)) {
       WARN("voxel with zero direction [ " + str(dir.index(0)) + " " + str(dir.index(1)) + " " + str(dir.index(2)) +
            " ]; skipping");
       continue;

@@ -111,7 +111,7 @@ void run() {
   auto opt = get_options("pe");
   const auto pe_scheme = Metadata::PhaseEncoding::get_scheme(header_in);
   if (!opt.empty()) {
-    if (!pe_scheme.rows())
+    if (pe_scheme.rows() == 0)
       throw Exception("Cannot filter volumes by phase-encoding: No such information present");
     const auto filter = parse_floats(opt[0][0]);
     if (!(filter.size() == 3 || filter.size() == 4))
@@ -151,7 +151,7 @@ void run() {
     new_grad.row(i) = grad.row(volumes[i]);
   DWI::set_DW_scheme(header_out, new_grad);
 
-  if (pe_scheme.rows()) {
+  if (pe_scheme.rows() != 0) {
     Eigen::MatrixXd new_scheme(volumes.size(), pe_scheme.cols());
     for (size_t i = 0; i != volumes.size(); ++i)
       new_scheme.row(i) = pe_scheme.row(volumes[i]);

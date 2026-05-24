@@ -38,7 +38,7 @@ public:
         // Need to use local counts instead of writer class members due to track cropping
         count(0),
         total_count(0),
-        crop(properties.mask.size()),
+        crop(properties.mask.size() != 0u),
         segments(0),
         progress(std::string("       0 read,        0 written") + (crop ? ",        0 segments" : "")) {}
 
@@ -46,7 +46,7 @@ public:
     // Use set_text() rather than update() here to force update of the text before progress goes out of scope
     progress.set_text(std::string(printf("%8" PRIu64 " read, %8" PRIu64 " written", total_count, count)) +
                       (crop ? printf(", %8" PRIu64 " segments", segments) : ""));
-    if (number && (count != number))
+    if ((number != 0u) && (count != number))
       WARN("User requested " + str(number) + " streamlines, but only " + str(count) + " were written to file");
   }
 

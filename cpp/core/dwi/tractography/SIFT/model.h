@@ -126,7 +126,7 @@ private:
 
 template <class Fixel> Model<Fixel>::~Model() {
   for (std::vector<TrackContribution *>::iterator i = contributions.begin(); i != contributions.end(); ++i) {
-    if (*i) {
+    if (*i != nullptr) {
       delete *i;
       *i = nullptr;
     }
@@ -138,7 +138,7 @@ template <class Fixel> void Model<Fixel>::map_streamlines(const std::filesystem:
   Tractography::Reader<> file(path, properties);
 
   const track_t count = (properties.find("count") == properties.end()) ? 0 : to<track_t>(properties["count"]);
-  if (!count)
+  if (count == 0u)
     throw Exception("Cannot map streamlines: track file " + path.filename().string() + " is empty");
 
   contributions.assign(count, nullptr);
@@ -149,10 +149,10 @@ template <class Fixel> void Model<Fixel>::map_streamlines(const std::filesystem:
     Thread::run_queue(loader, Thread::batch(Tractography::Streamline<>()), Thread::multi(worker));
   }
 
-  if (!contributions.back()) {
+  if (contributions.back() == nullptr) {
     track_t num_tracks = 0, max_index = 0;
     for (track_t i = 0; i != contributions.size(); ++i) {
-      if (contributions[i]) {
+      if (contributions[i] != nullptr) {
         ++num_tracks;
         max_index = std::max(max_index, i);
       }
@@ -171,7 +171,7 @@ template <class Fixel> void Model<Fixel>::remove_excluded_fixels() {
 
   const bool remove_untracked_fixels = !App::get_options("remove_untracked").empty();
   const float min_fibre_density = App::get_option_value<float>("fd_thresh", 0.0F);
-  if (!remove_untracked_fixels && !min_fibre_density)
+  if (!remove_untracked_fixels && (min_fibre_density == 0.0f))
     return;
 
   std::vector<size_t> fixel_index_mapping(fixels.size(), 0);
@@ -230,7 +230,7 @@ template <class Fixel> void Model<Fixel>::check_TD() {
   VAR(sum_from_fixels_weighted);
   double sum_from_tracks = 0.0;
   for (std::vector<TrackContribution *>::const_iterator i = contributions.begin(); i != contributions.end(); ++i) {
-    if (*i)
+    if (*i != nullptr)
       sum_from_tracks += (*i)->get_total_contribution();
   }
   VAR(sum_from_tracks);
@@ -245,7 +245,7 @@ void Model<Fixel>::output_non_contributing_streamlines(const std::filesystem::pa
   ProgressBar progress("Writing non-contributing streamlines output file", contributions.size());
   track_t tck_counter = 0;
   while (reader(tck) && tck_counter < contributions.size()) {
-    if (contributions[tck_counter] && !contributions[tck_counter]->get_total_contribution())
+    if ((contributions[tck_counter] != nullptr) && (contributions[tck_counter]->get_total_contribution() == 0.0f))
       writer(tck);
     else
       writer.skip();
@@ -297,7 +297,7 @@ template <class Fixel> bool Model<Fixel>::TrackMappingWorker::operator()(const T
     for (Mapping::SetDixel::const_iterator i = dixels.begin(); i != dixels.end(); ++i) {
       total_length += i->get_length();
       const size_t fixel_index = master.dixel2fixel(*i);
-      if (fixel_index && (i->get_length() > Track_fixel_contribution::min())) {
+      if ((fixel_index != 0u) && (i->get_length() > Track_fixel_contribution::min())) {
         total_contribution += i->get_length() * master.fixels[fixel_index].get_weight();
         bool incremented = false;
         for (std::vector<Track_fixel_contribution>::iterator c = masked_contributions.begin();
@@ -338,7 +338,7 @@ template <class Fixel> bool Model<Fixel>::FixelRemapper::operator()(const TrackI
       double total_contribution = 0.0;
       for (size_t i = 0; i != this_cont.dim(); ++i) {
         const size_t new_index = remapper[this_cont[i].get_fixel_index()];
-        if (new_index) {
+        if (new_index != 0u) {
           new_cont.push_back(Track_fixel_contribution(new_index, this_cont[i].get_length()));
           total_contribution += this_cont[i].get_length() * master[new_index].get_weight();
         }

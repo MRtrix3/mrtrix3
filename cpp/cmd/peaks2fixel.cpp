@@ -59,7 +59,7 @@ std::vector<Eigen::Vector3d> get(Image<float> &data) {
       direction[axis] = data.value();
       data.index(3)++;
     }
-    if (direction.allFinite() && direction.squaredNorm())
+    if (direction.allFinite() && (direction.squaredNorm() != 0.0))
       result.push_back(direction);
   }
   return result;

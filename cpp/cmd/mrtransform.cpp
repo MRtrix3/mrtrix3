@@ -513,7 +513,7 @@ void run() {
     } catch (Exception &) {
       DEBUG("No valid diffusion gradient table found");
     }
-    if (grad.rows()) {
+    if (grad.rows() != 0) {
       try {
         if (input_header.size(3) != static_cast<ssize_t>(grad.rows())) {
           throw Exception("DW gradient table of different length (" + str(grad.rows()) + ")" +
@@ -551,7 +551,7 @@ void run() {
         Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> result;
         for (size_t l = 0; l != lines.size(); ++l) {
           const auto v = parse_floats(lines[l]);
-          if (!result.cols()) {
+          if (result.cols() == 0) {
             if (!(v.size() == 2 || v.size() == 3))
               throw Exception(std::string("Malformed \"directions\" field") + //
                               " (expected matrix with 2 or 3 columns;" +      //

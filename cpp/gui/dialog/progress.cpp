@@ -25,14 +25,14 @@ QProgressDialog *progress_dialog = nullptr;
 }
 
 void display(const ::MR::ProgressBar &p) {
-  if (!p.data) {
+  if (p.data == nullptr) {
     INFO(MR::App::NAME + ": " + p.text());
     assert(GUI::App::main_window);
     GUI::App::main_window->setUpdatesEnabled(false);
     p.data = new Timer;
   } else if (reinterpret_cast<Timer *>(p.data)->elapsed() > 1.0) {
     GL::Context::Grab const context;
-    if (!progress_dialog) {
+    if (progress_dialog == nullptr) {
       progress_dialog = new QProgressDialog(
           qstr(p.text() + p.ellipsis()), QString(), 0, p.show_percent() ? 100 : 0, GUI::App::main_window);
       progress_dialog->setWindowModality(Qt::ApplicationModal);
@@ -46,9 +46,9 @@ void display(const ::MR::ProgressBar &p) {
 
 void done(const ::MR::ProgressBar &p) {
   INFO(MR::App::NAME + ": " + p.text() + " [done]");
-  if (p.data) {
+  if (p.data != nullptr) {
     assert(GUI::App::main_window);
-    if (progress_dialog) {
+    if (progress_dialog != nullptr) {
       GL::Context::Grab const context;
       delete progress_dialog;
       progress_dialog = nullptr;

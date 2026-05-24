@@ -48,7 +48,7 @@ void Overlay::Model::add_items(std::vector<std::unique_ptr<MR::Header>> &list) {
   for (size_t i = 0; i < list.size(); ++i) {
     Item *overlay = new Item(std::move(*list[i]));
     overlay->set_allowed_features(true, true, false);
-    if (!overlay->colourmap)
+    if (overlay->colourmap == 0u)
       overlay->colourmap = 1;
     overlay->alpha = 1.0f;
     overlay->set_use_transparency(true);
@@ -278,7 +278,7 @@ size_t Overlay::visible_number_colourbars() {
   if (!hide_all_button->isChecked()) {
     for (size_t i = 0, N = image_list_model->rowCount(); i < N; ++i) {
       Image *image = dynamic_cast<Image *>(image_list_model->items[i].get());
-      if (image && image->show && !ColourMap::maps[image->colourmap].special)
+      if ((image != nullptr) && image->show && !ColourMap::maps[image->colourmap].special)
         total_visible += 1;
     }
   }
@@ -305,7 +305,7 @@ int Overlay::draw_tool_labels(int position, int start_line_num, const Projection
   for (size_t i = 0, N = image_list_model->rowCount(); i < N; ++i) {
 
     Image *image = dynamic_cast<Image *>(image_list_model->items[i].get());
-    if (image && image->show) {
+    if ((image != nullptr) && image->show) {
       std::string value_str = image->get_filepath().filename().string() + " ";
       value_str += image->describe_value(window().focus());
       transform.render_text(value_str, position, start_line_num + num_of_new_lines);
@@ -362,7 +362,7 @@ void Overlay::reset_colourmap(const ColourMapButton &) {
   }
 
   // Reset the min/max adjust button fields of last selected overlay
-  if (overlay) {
+  if (overlay != nullptr) {
     min_value->setValue(overlay->intensity_min());
     max_value->setValue(overlay->intensity_max());
   }
@@ -504,7 +504,7 @@ void Overlay::right_click_menu_slot(const QPoint &pos) {
 
 void Overlay::update_selection() {
   QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
-  while (volume_index_layout->count())
+  while (volume_index_layout->count() != 0)
     delete volume_index_layout->takeAt(volume_index_layout->count() - 1)->widget();
   const bool enable_controls = !indices.empty();
   colourmap_button->setEnabled(enable_controls);
@@ -541,12 +541,12 @@ void Overlay::update_selection() {
       else
         colourmap_index = -1;
     }
-    num_inverted += overlay->scale_inverted();
+    num_inverted += static_cast<int>(overlay->scale_inverted());
     rate += overlay->scaling_rate();
     min_val += overlay->scaling_min();
     max_val += overlay->scaling_max();
-    num_lower_threshold += overlay->use_discard_lower();
-    num_upper_threshold += overlay->use_discard_upper();
+    num_lower_threshold += static_cast<int>(overlay->use_discard_lower());
+    num_upper_threshold += static_cast<int>(overlay->use_discard_upper());
     opacity += overlay->alpha;
     if (overlay->interpolate())
       ++num_interp;
@@ -604,14 +604,14 @@ void Overlay::update_selection() {
 
   lower_threshold->setValue(lower_threshold_val);
   lower_threshold_check_box->setCheckState(
-      num_lower_threshold ? (num_lower_threshold == indices.size() ? Qt::Checked : Qt::PartiallyChecked)
-                          : Qt::Unchecked);
+      (num_lower_threshold != 0) ? (num_lower_threshold == indices.size() ? Qt::Checked : Qt::PartiallyChecked)
+                                 : Qt::Unchecked);
   lower_threshold->setRate(rate);
 
   upper_threshold->setValue(upper_threshold_val);
   upper_threshold_check_box->setCheckState(
-      num_upper_threshold ? (num_upper_threshold == indices.size() ? Qt::Checked : Qt::PartiallyChecked)
-                          : Qt::Unchecked);
+      (num_upper_threshold != 0) ? (num_upper_threshold == indices.size() ? Qt::Checked : Qt::PartiallyChecked)
+                                 : Qt::Unchecked);
   upper_threshold->setRate(rate);
 }
 

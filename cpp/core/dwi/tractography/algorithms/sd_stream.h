@@ -69,7 +69,7 @@ public:
     }
 
     ~Shared() {
-      if (precomputer)
+      if (precomputer != nullptr)
         delete precomputer;
     }
 
@@ -95,7 +95,7 @@ public:
       dir = S.init_dir;
 
     dir.normalize();
-    if (!find_peak())
+    if (find_peak() == 0.0f)
       return false;
 
     return true;
@@ -107,7 +107,7 @@ public:
 
     const Eigen::Vector3f prev_dir(dir);
 
-    if (!find_peak())
+    if (find_peak() == 0.0f)
       return term_t::MODEL;
 
     if (prev_dir.dot(dir) < S.dot_threshold)
@@ -135,7 +135,7 @@ protected:
   }
 
   float FOD(const Eigen::Vector3f &d) const {
-    return (S.precomputer ? S.precomputer->value(values, d) : Math::SH::value(values, d, S.lmax));
+    return ((S.precomputer != nullptr) ? S.precomputer->value(values, d) : Math::SH::value(values, d, S.lmax));
   }
 };
 

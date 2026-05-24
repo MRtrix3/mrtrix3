@@ -30,7 +30,7 @@ ImageBase::ImageBase(MR::Header &&H) : Volume(std::move(H)), tex_positions(heade
 ImageBase::~ImageBase() {
   GL::Context::Grab const context;
   for (size_t axis = 0; axis != 3; ++axis) {
-    if (texture2D[axis])
+    if (texture2D[axis] != 0u)
       texture2D[axis].clear();
   }
 }
@@ -82,7 +82,7 @@ void ImageBase::render3D(Displayable::Shader &shader_program, const Projection &
 }
 
 void ImageBase::get_axes(const int plane, int &x, int &y) const {
-  if (plane) {
+  if (plane != 0) {
     if (plane == 1) {
       x = 0;
       y = 2;
@@ -125,7 +125,7 @@ size_t Image::guess_colourmap() const {
 }
 
 void Image::update_texture2D(int plane, int slice) {
-  if (!texture2D[plane]) { // allocate:
+  if (texture2D[plane] == 0u) { // allocate:
     texture2D[plane].gen(gl::TEXTURE_3D);
     texture2D[plane].bind();
   } else
@@ -294,7 +294,7 @@ void Image::update_texture3D() {
     type = gl::FLOAT;
   } else {
 
-    if (header().intensity_offset() || (header().intensity_scale() != 1.0)) {
+    if ((header().intensity_offset() != 0.0) || (header().intensity_scale() != 1.0)) {
       internal_format = (format == gl::RED ? gl::R32F : gl::RGB32F);
       type = gl::FLOAT;
       scale_to_float = true;

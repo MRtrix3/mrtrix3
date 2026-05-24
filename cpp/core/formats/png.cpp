@@ -84,7 +84,7 @@ std::unique_ptr<ImageIO::Base> PNG::read(Header &H) const {
   case 1:
     if (png.get_colortype() == PNG_COLOR_TYPE_PALETTE) {
       H.datatype() = DataType::UInt8;
-    } else if (png.get_width() % 8) {
+    } else if ((png.get_width() % 8) != 0u) {
       WARN("Bitwise PNG being read with width not a factor of 8; will be converted to UInt8 datatype");
       H.datatype() = DataType::UInt8;
     } else {

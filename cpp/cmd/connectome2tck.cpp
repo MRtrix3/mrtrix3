@@ -225,7 +225,7 @@ void run() {
         continue;
       std::stringstream line_stream(line);
       std::vector<node_t> nodes;
-      while (1) {
+      while (true) {
         node_t n;
         line_stream >> n;
         if (!line_stream)
@@ -296,11 +296,11 @@ void run() {
         WARN("Node of interest " + str(i) + " is above the maximum detected node index of " + str(max_node_index));
       } else {
         nodes.push_back(i);
-        if (!i)
+        if (i == 0u)
           zero_in_list = true;
       }
     }
-    if (!zero_in_list && !first_node)
+    if (!zero_in_list && (first_node == 0u))
       nodes.push_back(0);
     std::sort(nodes.begin(), nodes.end());
   } else {
@@ -350,7 +350,7 @@ void run() {
     std::vector<size_t> volumes(max_node_index + 1, 0);
     for (auto i = Loop()(image); i; ++i) {
       const node_t index = image.value();
-      if (index) {
+      if (index != 0u) {
         while (index >= COMs.size()) {
           COMs.push_back(Eigen::Vector3d::Zero());
           volumes.push_back(0);
@@ -370,7 +370,7 @@ void run() {
     }
     Transform const transform(image);
     for (node_t index = 1; index <= max_node_index; ++index) {
-      if (volumes[index])
+      if (volumes[index] != 0u)
         COMs[index] = transform.voxel2scanner * (COMs[index] * (1.0 / static_cast<default_type>(volumes[index])));
       else
         COMs[index].fill(NaN);

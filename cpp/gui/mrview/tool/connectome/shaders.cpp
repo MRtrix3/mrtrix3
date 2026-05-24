@@ -30,7 +30,7 @@ void ShaderBase::recompile(const Connectome &parent) {
   GL::Shader::Geometry const geometry_shader(geometry_shader_source);
   GL::Shader::Fragment const fragment_shader(fragment_shader_source);
   attach(vertex_shader);
-  if (static_cast<GLuint>(geometry_shader))
+  if (static_cast<GLuint>(geometry_shader) != 0u)
     attach(geometry_shader);
   attach(fragment_shader);
   link();

@@ -53,7 +53,7 @@ const OptionGroup ExportOptions =
 // clang-format on
 
 void check(const scheme_type &PE) {
-  if (!PE.rows())
+  if (PE.rows() == 0)
     throw Exception("No valid phase encoding table found");
 
   if (PE.cols() < 3)
@@ -85,7 +85,7 @@ void erase(KeyValues &keyval, std::string_view s) {
 };
 } // namespace
 void set_scheme(KeyValues &keyval, const scheme_type &PE) {
-  if (!PE.rows()) {
+  if (PE.rows() == 0) {
     erase(keyval, "pe_scheme");
     erase(keyval, "PhaseEncodingDirection");
     erase(keyval, "TotalReadoutTime");
@@ -288,10 +288,10 @@ scheme_type transform_for_nifti_write(const scheme_type &pe_scheme, const Header
   for (ssize_t row = 0; row != pe_scheme.rows(); ++row) {
     Eigen::VectorXd new_line = pe_scheme.row(row);
     for (ssize_t axis = 0; axis != 3; ++axis)
-      new_line[axis] =                                                      //
-          pe_scheme(row, shuffle.permutations[axis]) && shuffle.flips[axis] //
-              ? -pe_scheme(row, shuffle.permutations[axis])                 //
-              : pe_scheme(row, shuffle.permutations[axis]);                 //
+      new_line[axis] =                                                               //
+          (pe_scheme(row, shuffle.permutations[axis]) != 0.0) && shuffle.flips[axis] //
+              ? -pe_scheme(row, shuffle.permutations[axis])                          //
+              : pe_scheme(row, shuffle.permutations[axis]);                          //
     result.row(row) = new_line;
   }
   INFO("Phase encoding data transformed to match NIfTI / MGH image export prior to writing to file");

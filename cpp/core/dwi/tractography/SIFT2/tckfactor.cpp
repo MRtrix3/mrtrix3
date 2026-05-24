@@ -66,7 +66,7 @@ void TckFactor::remove_excluded_fixels(const float min_td_frac) {
   double zero_TD_cf_sum = 0.0, excluded_cf_sum = 0.0;
   std::vector<Fixel>::iterator i = fixels.begin(); // SKip first fixel, which is an intentional null in DWI::Fixel_map<>
   for (++i; i != fixels.end(); ++i) {
-    if (!i->get_orig_TD()) {
+    if (i->get_orig_TD() == 0.0) {
       ++zero_TD_count;
       zero_TD_cf_sum += i->get_cost(fixed_mu);
     } else if ((fixed_mu * i->get_orig_TD() < min_td_frac * i->get_FOD()) || (i->get_count() == 1)) {
@@ -77,11 +77,11 @@ void TckFactor::remove_excluded_fixels(const float min_td_frac) {
   }
   INFO(str(zero_TD_count) + " fixels have no attributed streamlines; these account for " +
        str(100.0 * zero_TD_cf_sum / cf) + "\% of the initial cost function");
-  if (excluded_count) {
+  if (excluded_count != 0u) {
     INFO(str(excluded_count) + " of " + str(fixels.size()) +
          " fixels were tracked, but have been excluded from optimisation due to inadequate reconstruction;");
     INFO("these contribute " + str(100.0 * excluded_cf_sum / cf) + "\% of the initial cost function");
-  } else if (min_td_frac) {
+  } else if (min_td_frac != 0.0f) {
     INFO("No fixels were excluded from optimisation due to poor reconstruction");
   }
 }
@@ -144,7 +144,7 @@ void TckFactor::calc_afcsa() {
           const float length = tckcont[f].get_length();
           sum_afd += fixel.get_weight() * fixel.get_FOD() * (length / fixel.get_orig_TD());
         }
-        if (sum_afd && tckcont.get_total_contribution()) {
+        if ((sum_afd != 0.0) && (tckcont.get_total_contribution() != 0.0f)) {
           const double afcsa = sum_afd / tckcont.get_total_contribution();
           master.coefficients[track_index] = std::max(master.min_coeff, std::log(afcsa / fixed_mu));
         } else {
@@ -194,7 +194,7 @@ void TckFactor::estimate_factors() {
 
   unsigned int nonzero_streamlines = 0;
   for (SIFT::track_t i = 0; i != num_tracks(); ++i) {
-    if (contributions[i] && contributions[i]->dim())
+    if ((contributions[i] != nullptr) && (contributions[i]->dim() != 0u))
       ++nonzero_streamlines;
   }
 
@@ -263,7 +263,7 @@ void TckFactor::estimate_factors() {
 
     // Perform fixel exclusion
     const size_t excluded_count = fixels_to_exclude.count();
-    if (excluded_count) {
+    if (excluded_count != 0u) {
       DEBUG(str(excluded_count) + " fixels excluded this iteration");
       for (size_t f = 0; f != fixels.size(); ++f) {
         if (fixels_to_exclude[f])
@@ -377,7 +377,7 @@ void TckFactor::output_all_debug_images(const std::filesystem::path &dirpath, st
 
   Model<Fixel>::output_all_debug_images(dirpath, prefix);
 
-  if (!coefficients.size())
+  if (coefficients.size() == 0)
     return;
 
   std::vector<double> mins(fixels.size(), std::numeric_limits<double>::infinity());

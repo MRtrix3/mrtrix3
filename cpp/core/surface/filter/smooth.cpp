@@ -29,10 +29,10 @@ void Smooth::operator()(const Mesh &in, Mesh &out) const {
   out.clear();
 
   const size_t V = in.num_vertices();
-  if (!V)
+  if (V == 0u)
     return;
 
-  if (in.num_quads())
+  if (in.num_quads() != 0u)
     throw Exception("For now, mesh smoothing is only supported for triangular meshes");
   const size_t T = in.num_triangles();
   if (V == 3 * T)

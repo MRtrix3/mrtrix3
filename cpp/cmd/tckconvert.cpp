@@ -704,7 +704,7 @@ void run() {
     writer.reset(new Writer<float>(output_path, properties));
   } else if (output_path.extension() == ".vtk") {
     auto write_ascii = get_options("ascii").size();
-    writer.reset(new VTKWriter(output_path, write_ascii));
+    writer.reset(new VTKWriter(output_path, write_ascii != 0u));
   } else if (output_path.extension() == ".ply") {
     const int increment = get_option_value("increment", default_ply_increment);
     const float radius = get_option_value("radius", default_ply_radius);

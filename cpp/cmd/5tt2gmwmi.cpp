@@ -81,7 +81,7 @@ public:
       for (size_t axis = 0; axis != 3; ++axis) {
         assign_pos_of(output, 0, 3).to(input);
         default_type multiplier = 0.5;
-        if (!output.index(axis)) {
+        if (output.index(axis) == 0) {
           multiplier = 1.0;
         } else {
           input.move_index(axis, -1);

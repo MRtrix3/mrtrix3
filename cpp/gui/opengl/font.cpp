@@ -111,7 +111,7 @@ void Font::initGL(bool with_shadow) {
           for (int x = -1; x <= 1; ++x)
             if (row + x >= 0 && row + x < font_height)
               val += std::exp(-x * x / 2.0) * tex_data[tex_idx + 2 * tex_width * x];
-          tex_data[tex_idx + 1] = pix_data[pix_idx] ? 1.0f : 0.005f * val;
+          tex_data[tex_idx + 1] = (pix_data[pix_idx] != 0u) ? 1.0f : 0.005f * val;
         }
       }
     }

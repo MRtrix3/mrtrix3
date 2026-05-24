@@ -149,10 +149,10 @@ index_array_type load_variance_groups(const index_type num_inputs) {
     for (Eigen::Index i = 0; i != data.size(); ++i)
       count_per_group[data[i]]++;
     for (Eigen::Index vg_index = min_coeff; vg_index <= max_coeff; ++vg_index) {
-      if (!count_per_group[vg_index])
+      if (count_per_group[vg_index] == 0u)
         throw Exception("No entries found for variance group " + str(vg_index));
     }
-    if (min_coeff)
+    if (min_coeff != 0u)
       data.array() -= 1;
     return data.array();
   } catch (Exception &e) {
@@ -217,7 +217,7 @@ matrix_type stdev(const measurements_matrix_type &measurements,
                   const matrix_type &design,
                   const index_array_type &variance_groups) {
   assert(measurements.rows() == design.rows());
-  if (!variance_groups.size())
+  if (variance_groups.size() == 0)
     return stdev(measurements, design);
   assert(measurements.rows() == variance_groups.rows());
   // Residual-forming matrix
@@ -316,7 +316,7 @@ void all_stats(const measurements_matrix_type &measurements,
   if (progress)
     ++*progress;
 #endif
-  if (variance_groups.size())
+  if (variance_groups.size() != 0)
     std_effect_size = matrix_type::Constant(
         measurements.cols(), hypotheses.size(), std::numeric_limits<matrix_type::Scalar>::quiet_NaN());
   else
@@ -388,7 +388,7 @@ void all_stats(const measurements_matrix_type &measurements,
           global_abs_effect_size(abs_effect_size),
           global_std_effect_size(std_effect_size),
           global_stdev(stdev),
-          num_vgs(variance_groups.size() ? variance_groups.maxCoeff() + 1 : 1) {
+          num_vgs((variance_groups.size() != 0) ? variance_groups.maxCoeff() + 1 : 1) {
       assert(design_fixed.cols() + extra_columns.size() == hypotheses[0].cols());
     }
     bool operator()(const index_type &element_index) {
@@ -425,13 +425,13 @@ void all_stats(const measurements_matrix_type &measurements,
         // Need to reduce the data and design matrices to contain only finite data
         measurements_matrix_type element_data_finite(valid_rows, 1);
         matrix_type element_design_finite(valid_rows, element_design.cols());
-        index_array_type variance_groups_finite(variance_groups.size() ? valid_rows : 0);
+        index_array_type variance_groups_finite((variance_groups.size() != 0) ? valid_rows : 0);
         index_type output_row = 0;
         for (Eigen::Index row = 0; row != data.rows(); ++row) {
           if (std::isfinite(element_data(row)) && element_design.row(row).allFinite()) {
             element_data_finite(output_row, 0) = element_data(row);
             element_design_finite.row(output_row) = element_design.row(row);
-            if (variance_groups.size())
+            if (variance_groups.size() != 0)
               variance_groups_finite[output_row] = variance_groups[row];
             ++output_row;
           }

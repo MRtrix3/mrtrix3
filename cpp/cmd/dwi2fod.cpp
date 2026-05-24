@@ -155,7 +155,7 @@ public:
       if (sdeconv.iterate())
         break;
 
-    if (sdeconv.shared.niter && n >= sdeconv.shared.niter)
+    if ((sdeconv.shared.niter != 0u) && n >= sdeconv.shared.niter)
       INFO("voxel [ " + str(dwi.index(0)) + " " + str(dwi.index(1)) + " " + str(dwi.index(2)) +
            " ] did not reach full convergence");
 
@@ -271,7 +271,7 @@ void run() {
 
   Image<float> dwi_modelled;
   opt = get_options("predicted_signal");
-  if (opt.size())
+  if (opt.size() != 0u)
     dwi_modelled = Image<float>::create(opt[0][0], header_out);
 
   const Algorithm algorithm = MR::Enum::from_name<Algorithm>(argument[0]);
@@ -302,7 +302,7 @@ void run() {
     break;
   }
   case Algorithm::MSMT_CSD: {
-    if (argument.size() % 2)
+    if ((argument.size() % 2) != 0u)
       throw Exception(
           "MSMT_CSD algorithm expects pairs of (input response function & output FOD image) to be provided");
 

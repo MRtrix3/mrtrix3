@@ -60,7 +60,7 @@ public:
 
   float depth_of(const Eigen::Vector3f &x) const {
     float d = MVP(2, 0) * x[0] + MVP(2, 1) * x[1] + MVP(2, 2) * x[2] + MVP(2, 3);
-    if (MVP(3, 2))
+    if (MVP(3, 2) != 0.0f)
       d /= MVP(3, 0) * x[0] + MVP(3, 1) * x[1] + MVP(3, 2) * x[2] + MVP(3, 3);
     return d;
   }
@@ -69,7 +69,7 @@ public:
     Eigen::Vector3f S(MVP(0, 0) * x[0] + MVP(0, 1) * x[1] + MVP(0, 2) * x[2] + MVP(0, 3),
                       MVP(1, 0) * x[0] + MVP(1, 1) * x[1] + MVP(1, 2) * x[2] + MVP(1, 3),
                       MVP(2, 0) * x[0] + MVP(2, 1) * x[1] + MVP(2, 2) * x[2] + MVP(2, 3));
-    if (MVP(3, 2))
+    if (MVP(3, 2) != 0.0f)
       S /= MVP(3, 0) * x[0] + MVP(3, 1) * x[1] + MVP(3, 2) * x[2] + MVP(3, 3);
     S[0] = viewport[0] + 0.5f * viewport[2] * (1.0f + S[0]);
     S[1] = viewport[1] + 0.5f * viewport[3] * (1.0f + S[1]);
@@ -91,7 +91,7 @@ public:
     Eigen::Vector3f S(iMVP(0, 0) * x + iMVP(0, 1) * y + iMVP(0, 2) * depth + iMVP(0, 3),
                       iMVP(1, 0) * x + iMVP(1, 1) * y + iMVP(1, 2) * depth + iMVP(1, 3),
                       iMVP(2, 0) * x + iMVP(2, 1) * y + iMVP(2, 2) * depth + iMVP(2, 3));
-    if (MVP(3, 2))
+    if (MVP(3, 2) != 0.0f)
       S /= iMVP(3, 0) * x + iMVP(3, 1) * y + iMVP(3, 2) * depth + iMVP(3, 3);
     return S;
   }
@@ -121,7 +121,7 @@ public:
     y *= 2.0f / viewport[3];
     Eigen::Vector3f S(
         iMVP(0, 0) * x + iMVP(0, 1) * y, iMVP(1, 0) * x + iMVP(1, 1) * y, iMVP(2, 0) * x + iMVP(2, 1) * y);
-    if (MVP(3, 2))
+    if (MVP(3, 2) != 0.0f)
       S /= iMVP(3, 2) * depth + iMVP(3, 3);
     return S;
   }
@@ -222,17 +222,17 @@ public:
     else
       x = (width() - font.metric.width(s)) / 2;
 #else
-    if (position & RightEdge)
+    if ((position & RightEdge) != 0)
       x = width() - font.metric.height() / 2 - font.metric.horizontalAdvance(s);
-    else if (position & LeftEdge)
+    else if ((position & LeftEdge) != 0)
       x = font.metric.height() / 2;
     else
       x = (width() - font.metric.horizontalAdvance(s)) / 2;
 #endif
 
-    if (position & TopEdge)
+    if ((position & TopEdge) != 0)
       y = height() - 1.5 * font.metric.height() - line * font.metric.lineSpacing();
-    else if (position & BottomEdge)
+    else if ((position & BottomEdge) != 0)
       y = font.metric.height() / 2 + line * font.metric.lineSpacing();
     else
       y = (height() - font.metric.height()) / 2 - line * font.metric.lineSpacing();

@@ -91,7 +91,7 @@ void ROI_Item::load() {
   for (auto outer = MR::Loop(2)(image); outer; ++outer) {
     auto p = data.begin();
     for (auto inner = MR::Loop(0, 2)(image); inner; ++inner)
-      *(p++) = image.value();
+      *(p++) = static_cast<unsigned char>(image.value());
     upload_data({{0, 0, image.index(2)}}, {{image.size(0), image.size(1), 1}}, reinterpret_cast<void *>(&data[0]));
     ++progress;
   }

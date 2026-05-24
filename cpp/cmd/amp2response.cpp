@@ -264,11 +264,11 @@ void run() {
       throw Exception("Number of lmax\'s specified (" + str(lmax.size()) + ")" +                   //
                       " does not match number of b-value shells (" + str(dirs_azin.size()) + ")"); //
     for (auto i : lmax) {
-      if (i % 2)
+      if ((i % 2) != 0u)
         throw Exception("Values specified for lmax must be even");
       max_lmax = std::max(max_lmax, i);
     }
-    if ((*shells)[0].is_bzero() && lmax.front()) {
+    if ((*shells)[0].is_bzero() && (lmax.front() != 0u)) {
       WARN("Non-zero lmax requested for " +
            ((*shells)[0].get_mean()
                 ? "first shell (mean b=" + str((*shells)[0].get_mean()) + "), which MRtrix3 has classified as b=0;"
@@ -282,7 +282,7 @@ void run() {
     //   lmax=10 regardless of number of input volumes.
     // - UNLESS it's b=0, in which case force lmax=0
     for (size_t i = 0; i != dirs_azin.size(); ++i) {
-      if (!i && shells && shells->smallest().is_bzero())
+      if ((i == 0u) && shells && shells->smallest().is_bzero())
         lmax.push_back(0);
       else
         lmax.push_back(10);
@@ -306,7 +306,7 @@ void run() {
     if (mask.value())
       ++num_voxels;
   }
-  if (!num_voxels)
+  if (num_voxels == 0u)
     throw Exception("input mask does not contain any voxels");
 
   const bool use_ols = !get_options("noconstraint").empty();
@@ -325,7 +325,7 @@ void run() {
         Exception e("Unable to construct A2SH transformation for shell b=" +
                     str(static_cast<ssize_t>(std::round((*shells)[shell_index].get_mean()))) + ";");
         e.push_back("  lmax (" + str(lmax[shell_index]) + ") may be too large for this shell");
-        if (!shell_index && (*shells)[0].is_bzero())
+        if ((shell_index == 0u) && (*shells)[0].is_bzero())
           e.push_back("  (this appears to be a b=0 shell, and therefore lmax should be set to 0 for this shell)");
         throw e;
       }
@@ -339,7 +339,7 @@ void run() {
     Eigen::VectorXd rf;
     // Is this anything other than an isotropic response?
 
-    if (!lmax[shell_index] || use_ols) {
+    if ((lmax[shell_index] == 0u) || use_ols) {
 
       rf = shared.M.llt().solve(shared.b);
 

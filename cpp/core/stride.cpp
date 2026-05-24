@@ -37,10 +37,10 @@ List &sanitise(List &current, const List &desired, const std::vector<ssize_t> &d
   for (size_t i = 0; i < current.size() - 1; ++i) {
     if (dims[i] == 1)
       current[i] = 0;
-    if (!current[i])
+    if (current[i] == 0)
       continue;
     for (size_t j = i + 1; j < current.size(); ++j) {
-      if (!current[j])
+      if (current[j] == 0)
         continue;
       if (MR::abs(current[i]) == MR::abs(current[j]))
         current[j] = 0;
@@ -59,9 +59,9 @@ List &sanitise(List &current, const List &desired, const std::vector<ssize_t> &d
   in_max += desired_max + 1;
 
   for (size_t i = 0; i < current.size(); ++i)
-    if (dims[i] > 1 && desired[i])
+    if (dims[i] > 1 && (desired[i] != 0))
       current[i] = desired[i];
-    else if (current[i])
+    else if (current[i] != 0)
       current[i] += current[i] < 0 ? -desired_max : desired_max;
     else
       current[i] = in_max++;
@@ -102,7 +102,7 @@ List _from_command_line(const List &current) {
                       str(current.size()) + " axes");
 
   for (size_t i = 0; i < strides.size() - 1; ++i) {
-    if (!strides[1])
+    if (strides[1] == 0)
       continue;
     for (size_t j = i + 1; j < strides.size(); ++j)
       if (MR::abs(strides[i]) == MR::abs(strides[j]))
@@ -132,7 +132,7 @@ List _from_command_line(const List &current) {
     auto p = std::find_if(prev.begin(), prev.end(), FindStride(next));
     assert(p != prev.end());
     List::value_type s;
-    while (1) {
+    while (true) {
       s = *p + (*p > 0 ? next_avail : -next_avail);
       if (std::find_if(strides.begin(), strides.end(), FindStride(s)) == strides.end())
         break;

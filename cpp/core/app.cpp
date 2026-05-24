@@ -296,7 +296,7 @@ Description &Description::operator+(const char *const text[]) { // check_syntax 
 }
 
 std::string Description::syntax(const bool format) const {
-  if (!size())
+  if (size() == 0u)
     return std::string();
   std::string s;
   if (format)
@@ -331,7 +331,7 @@ ExampleList &ExampleList::operator+(const Example &example) {
 }
 
 std::string ExampleList::syntax(const bool format) const {
-  if (!size())
+  if (size() == 0u)
     return std::string();
   std::string s;
   if (format)
@@ -515,9 +515,9 @@ void print_help() {
   const std::string help_display_command = File::Config::get("HelpCommand", help_command);
 
   if (!help_display_command.empty()) {
-    std::string const help_string = get_help_string(1);
+    std::string const help_string = get_help_string(true);
     FILE *file = popen(help_display_command.c_str(), "w");
-    if (!file) {
+    if (file == nullptr) {
       INFO("error launching help display command \"" + help_display_command + "\": " + MR::C_strerror(errno));
     } else if (fwrite(help_string.c_str(), 1, help_string.size(), file) != help_string.size()) {
       INFO("error sending help page to display command \"" + help_display_command + "\": " + MR::C_strerror(errno));
@@ -532,7 +532,7 @@ void print_help() {
   if (!help_display_command.empty())
     INFO("displaying help page using fail-safe output:\n");
 
-  print(get_help_string(0));
+  print(get_help_string(false));
 }
 
 #ifndef MRTRIX_BUILD_TYPE
@@ -955,7 +955,7 @@ void parse() {
     throw 0;
   }
 
-  if (num_optional_arguments && num_args_required > argument.size())
+  if ((num_optional_arguments != 0u) && num_args_required > argument.size())
     throw Exception("Expected at least " + str(num_args_required) + " arguments (" + str(argument.size()) +
                     " supplied)");
 
@@ -986,7 +986,7 @@ void parse() {
   }
 
   size_t const num_extra_arguments = argument.size() - num_args_required;
-  size_t num_arg_per_multi = num_optional_arguments ? num_extra_arguments / num_optional_arguments : 0;
+  size_t num_arg_per_multi = (num_optional_arguments != 0u) ? num_extra_arguments / num_optional_arguments : 0;
   if (num_arg_per_multi * num_optional_arguments != num_extra_arguments)
     throw Exception("number of optional arguments provided are not equal for all arguments");
   if (flags.required())
@@ -995,7 +995,7 @@ void parse() {
   // assign arguments to their corresponding definitions:
   for (size_t n = 0, index = 0, next = 0; n < argument.size(); ++n) {
     if (n == next) {
-      if (n)
+      if (n != 0u)
         ++index;
       if (ARGUMENTS[index].flags.any())
         next = n + num_arg_per_multi;
@@ -1245,7 +1245,7 @@ void init(int cmdline_argc, const char *const *cmdline_argv) { // check_syntax o
 
   auto argv_quoted = [](std::string_view s) -> std::string {
     for (size_t i = 0; i != s.size(); ++i) {
-      if (!(isalnum(s[i]) || s[i] == '.' || s[i] == '_' || s[i] == '-' || s[i] == '/')) {
+      if (!((isalnum(s[i]) != 0) || s[i] == '.' || s[i] == '_' || s[i] == '-' || s[i] == '/')) {
         std::string escaped_string("\'");
         for (auto c : s) {
           switch (c) {
@@ -1341,7 +1341,7 @@ int64_t App::ParsedArgument::as_int() const {
     if (alpha_count > 1)
       throw Exception("too many letters");
     int64_t retval = 0;
-    if (alpha_count) {
+    if (alpha_count != 0u) {
       if (alpha_is_last) {
         std::string num(p);
         const char postfix = num.back();
@@ -1426,7 +1426,7 @@ default_type App::ParsedArgument::as_float() const {
   const default_type retval = to<default_type>(p);
   if (retval < arg->float_limits.min() || retval > arg->float_limits.max()) {
     std::string msg("value supplied for ");
-    if (opt)
+    if (opt != nullptr)
       msg += std::string("option \"") + opt->id;
     else
       msg += std::string("argument \"") + arg->id;

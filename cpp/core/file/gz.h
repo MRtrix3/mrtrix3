@@ -56,23 +56,23 @@ public:
       throw Exception("cannot access file \"" + filepath.string() + "\": No such file or directory");
 
     gz = gzopen(filepath.string().c_str(), std::string(mode).c_str());
-    if (!gz)
+    if (gz == nullptr)
       throw Exception("error opening file \"" + filepath.string() + "\": " + error());
   }
 
   void close() {
-    if (gz) {
-      if (gzclose(gz))
+    if (gz != nullptr) {
+      if (gzclose(gz) != 0)
         throw Exception("error closing GZ file \"" + filepath.string() + "\": " + error());
       filepath.clear();
       gz = nullptr;
     }
   }
 
-  bool is_open() const { return gz; }
+  bool is_open() const { return gz != nullptr; }
   bool eof() const {
     assert(gz);
-    return gzeof(gz);
+    return gzeof(gz) != 0;
   }
   int64_t tell() const {
     assert(gz);

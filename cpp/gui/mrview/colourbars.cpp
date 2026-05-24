@@ -115,15 +115,16 @@ void ColourBars::render(size_t colourmap,
                         float global_min_value,
                         float global_range,
                         Eigen::Array3f colour) {
-  if (!current_position)
+  if (current_position == 0u)
     return;
   if (ColourMap::maps[colourmap].special)
     return;
 
-  if (!program || !frame_program || colourmap != current_colourmap_index || current_colourmap_inverted != inverted)
+  if ((program == 0u) || (frame_program == 0u) || colourmap != current_colourmap_index ||
+      current_colourmap_inverted != inverted)
     setup(colourmap, inverted);
 
-  if (!VB || !VAO) {
+  if ((VB == 0u) || (VAO == 0u)) {
     VB.gen();
     VAO.gen();
 
@@ -165,13 +166,13 @@ void ColourBars::render(size_t colourmap,
   float x_offset = 0.0f, y_offset = 0.0f;
   int halign = -1;
 
-  if (current_position & Position::Right) {
+  if ((current_position & Position::Right) != 0) {
     x_offset = current_projection->width() -
                (max_bars_per_row - column_index) * (scaled_width + inset + colourbar_padding) + colourbar_padding;
     halign = 1;
-  } else if (current_position & Position::Left)
+  } else if ((current_position & Position::Left) != 0)
     x_offset = column_index * (scaled_width + inset + colourbar_padding) + inset;
-  if (current_position & Position::Top)
+  if ((current_position & Position::Top) != 0)
     y_offset = current_projection->height() - (row_index + 1) * (scaled_height + inset * 2) + inset;
   else
     y_offset = row_index * (scaled_height + inset * 2) + inset;

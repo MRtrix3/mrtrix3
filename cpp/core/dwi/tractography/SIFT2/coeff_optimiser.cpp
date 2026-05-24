@@ -133,7 +133,7 @@ bool CoefficientOptimiserBase::operator()(const SIFT::TrackIndexRange &range) {
     // Update the stats
     local_stats_steps += dFs;
     local_stats_coefficients += new_coefficient;
-    if (master.contributions[track_index] && master.contributions[track_index]->dim() &&
+    if ((master.contributions[track_index] != nullptr) && (master.contributions[track_index]->dim() != 0u) &&
         new_coefficient > master.min_coeff)
       ++local_nonzero_count;
 
@@ -183,7 +183,7 @@ double CoefficientOptimiserBase::do_fixel_exclusion(const SIFT::track_t track_in
     }
   }
 
-  if (index_to_exclude)
+  if (index_to_exclude != 0u)
     local_to_exclude[index_to_exclude] = true;
   else
     return 0.0;
@@ -202,7 +202,7 @@ double CoefficientOptimiserBase::do_fixel_exclusion(const SIFT::track_t track_in
     }
   }
 
-  return (sum_weights ? (weighted_sum / sum_weights) : 0.0);
+  return ((sum_weights != 0.0) ? (weighted_sum / sum_weights) : 0.0);
 }
 
 CoefficientOptimiserGSS::CoefficientOptimiserGSS(TckFactor &tckfactor,
@@ -324,7 +324,7 @@ double CoefficientOptimiserIterative::get_coeff_change(const SIFT::track_t track
     const LineSearchFunctor::Result result = line_search_functor.get(dFs);
 
     // Newton update
-    change = result.second_deriv ? (-result.first_deriv / result.second_deriv) : 0.0;
+    change = (result.second_deriv != 0.0) ? (-result.first_deriv / result.second_deriv) : 0.0;
     if (result.second_deriv < 0.0)
       change = -change;
 

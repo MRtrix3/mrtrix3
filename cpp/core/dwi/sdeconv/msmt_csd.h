@@ -102,7 +102,7 @@ public:
           throw Exception("Number of lmaxes specified (" + str(lmax.size()) + ") does not match number of tissues (" +
                           str(num_tissues()) + ")");
         for (const auto i : lmax) {
-          if (i % 2)
+          if ((i % 2) != 0u)
             throw Exception("Each value of lmax must be a non-negative even integer");
         }
       }
@@ -235,7 +235,7 @@ public:
         size_t n = 0;
         for (Eigen::Index row = 0; row < r.rows(); row++) {
           for (Eigen::Index col = 0; col < r.cols(); col++) {
-            if (r(row, col))
+            if (r(row, col) != 0.0)
               n = std::max(n, static_cast<size_t>(col + 1));
           }
         }

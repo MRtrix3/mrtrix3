@@ -115,7 +115,7 @@ void run() {
   auto out = Image<bool>::create(output_path, H);
   if (fill) {
     for (auto l = Loop(0, 3)(out); l; ++l)
-      out.value() = 1;
+      out.value() = true;
     Eigen::Matrix<default_type, 3, 1> centre, vox;
     Registration::Transform::Init::get_geometric_centre(out, centre);
     vox = MR::Transform(out).scanner2voxel * centre;

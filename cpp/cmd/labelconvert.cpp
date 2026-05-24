@@ -131,7 +131,7 @@ void run() {
   bool duplicates = false;
   for (const auto &i : lut_out) {
     if (i.second.get_name() == SPINE_NODE_NAME) {
-      if (!spine_index)
+      if (spine_index == 0u)
         spine_index = i.first;
       else
         duplicates = true;
@@ -144,7 +144,7 @@ void run() {
 
     if (duplicates)
       throw Exception("Cannot add spine node: \"" + SPINE_NODE_NAME + "\" appears multiple times in output LUT");
-    if (!spine_index)
+    if (spine_index == 0u)
       throw Exception("Cannot add spine node: \"" + SPINE_NODE_NAME + "\" not present in output LUT");
 
     auto in_spine = Image<bool>::open(opt[0][0]);
@@ -171,7 +171,7 @@ void run() {
       }
     }
 
-  } else if (spine_index) {
+  } else if (spine_index != 0u) {
     WARN("Config file includes \"" + SPINE_NODE_NAME +
          "\" node, but user has not provided the segmentation using -spine option");
   }

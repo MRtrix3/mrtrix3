@@ -197,7 +197,7 @@ bool Receiver::operator()(const Mapping::SetVoxel &in) {
 void Receiver::scale_by_count(Image<uint32_t> &counts) {
   assert(dimensions_match(buffer, counts, 0, 3));
   for (auto l = Loop(buffer)(buffer, counts); l; ++l) {
-    if (counts.value())
+    if (counts.value() != 0u)
       buffer.value() /= static_cast<float>(counts.value());
     else
       buffer.value() = 0.0f;
@@ -241,7 +241,7 @@ void run() {
     // Generate the window filter
     const WindowShape window_shape = MR::Enum::from_name<WindowShape>(opt[0][0]);
     const ssize_t window_width = opt[0][1];
-    if (!(window_width % 2))
+    if ((window_width % 2) == 0)
       throw Exception("Width of sliding time window must be an odd integer");
 
     window.resize(window_width);
@@ -277,7 +277,7 @@ void run() {
     case WindowShape::LANCZOS:
       for (ssize_t i = 0; i != window_width; ++i) {
         const default_type v = 2.0 * Math::pi * std::fabs(i - centre) / static_cast<default_type>(window_width - 1);
-        window[i] = v ? std::max(0.0, (std::sin(v) / v)) : 1.0;
+        window[i] = (v != 0.0) ? std::max(0.0, (std::sin(v) / v)) : 1.0;
       }
       break;
 

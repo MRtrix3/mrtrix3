@@ -28,8 +28,8 @@ public:
       : Base(header),
         lead_in_size(file_header_size),
         lead_out_size(file_tailer_size),
-        lead_in(file_header_size ? new std::byte[file_header_size] : nullptr),
-        lead_out(file_tailer_size ? new std::byte[file_tailer_size] : nullptr) {}
+        lead_in((file_header_size != 0u) ? new std::byte[file_header_size] : nullptr),
+        lead_out((file_tailer_size != 0u) ? new std::byte[file_tailer_size] : nullptr) {}
 
   std::byte *header() { return lead_in.get(); }
 

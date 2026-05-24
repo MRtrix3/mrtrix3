@@ -382,7 +382,7 @@ void run() {
       throw Exception("Options for setting output image dimensionality are mutually exclusive");
     writer_type = writer_dim::TOD;
     const size_t lmax = opt[0][0];
-    if (lmax % 2)
+    if ((lmax % 2) != 0u)
       throw Exception("lmax for TODI must be an even number");
     header.ndim() = 4;
     header.size(3) = Math::SH::NforL(lmax);

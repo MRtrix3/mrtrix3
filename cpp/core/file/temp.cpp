@@ -138,7 +138,7 @@ std::filesystem::path create_tempfile(int64_t size, std::string_view suffix) {
 
   const int status = size == 0 ? 0 : ftruncate(fid, size);
   close(fid);
-  if (status)
+  if (status != 0)
     throw Exception("cannot resize file \"" + filepath.string() + "\": " + MR::C_strerror(errno));
 
   return filepath;

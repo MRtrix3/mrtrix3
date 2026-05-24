@@ -118,10 +118,12 @@ public:
   AFDConnFixel(const AFDConnFixel &that) : FixelBase(that), length(that.length) {}
 
   void add_to_selection(const value_type l) { length += l; }
-  value_type get_selected_volume(const value_type l) const { return get_TD() ? (get_FOD() * (l / get_TD())) : 0.0; }
-  value_type get_selected_volume() const { return get_TD() ? (get_FOD() * (length / get_TD())) : 0.0; }
+  value_type get_selected_volume(const value_type l) const {
+    return (get_TD() != 0.0) ? (get_FOD() * (l / get_TD())) : 0.0;
+  }
+  value_type get_selected_volume() const { return (get_TD() != 0.0) ? (get_FOD() * (length / get_TD())) : 0.0; }
   value_type get_selected_length() const { return length; }
-  bool is_selected() const { return length; }
+  bool is_selected() const { return length != 0.0f; }
 
 private:
   value_type length;
@@ -194,7 +196,7 @@ value_type AFDConnectivity::get(const std::filesystem::path &path) {
 
         VoxelAccessor v(accessor());
         assign_pos_of(*i, 0, 3).to(v);
-        if (!v.value()) {
+        if (v.value() == nullptr) {
 
           assign_pos_of(*i, 0, 3).to(v_fod);
           DWI::FMLS::SH_coefs fod_data;
@@ -243,7 +245,7 @@ value_type AFDConnectivity::get(const std::filesystem::path &path) {
       // Only allow one fixel per voxel to contribute to the result
       VoxelAccessor v(accessor());
       for (auto l = Loop(v)(v); l; ++l) {
-        if (v.value()) {
+        if (v.value() != nullptr) {
           value_type voxel_afd = 0.0, max_td = 0.0;
           for (Fixel_map<AFDConnFixel>::Iterator i = begin(v); i; ++i) {
             if (i().get_selected_length() > max_td) {

@@ -42,7 +42,7 @@ void read_annot(const std::filesystem::path &path, label_vector_type &labels, Co
       labels[vertices[i]] = vertex_labels[i];
     return;
   }
-  if (!colortable_present)
+  if (colortable_present == 0)
     throw Exception("Error reading FreeSurfer annotation file \"" + path.filename().string() +
                     "\": Unexpected colortable flag");
 

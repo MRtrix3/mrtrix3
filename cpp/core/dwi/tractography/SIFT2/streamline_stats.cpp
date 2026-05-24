@@ -43,7 +43,7 @@ StreamlineStats &StreamlineStats::operator+=(const double i) {
   mean_abs += std::fabs(i);
   var += Math::pow2(i);
   ++count;
-  if (i)
+  if (i != 0.0)
     ++nonzero;
   return *this;
 }

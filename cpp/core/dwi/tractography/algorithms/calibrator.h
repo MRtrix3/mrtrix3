@@ -41,7 +41,7 @@ FORCE_INLINE std::vector<Eigen::Vector3f> direction_grid(float max_angle, float 
         continue;
       n = spacing * std::sqrt(n);
       float const z = std::cos(n);
-      if (n)
+      if (n != 0.0f)
         n = spacing * std::sin(n) / n;
       list.push_back({n * x, n * y, z});
     }

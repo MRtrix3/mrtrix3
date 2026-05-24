@@ -109,7 +109,7 @@ void Exemplar::finalize(const float step_size) {
   }
 
   // No streamlines assigned; generate a straight line between the two nodes
-  if (!weight) {
+  if (weight == 0.0f) {
     clear();
     push_back(node_COMs.first);
     push_back(node_COMs.second);

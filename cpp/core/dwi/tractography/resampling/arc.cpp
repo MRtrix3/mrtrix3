@@ -35,7 +35,7 @@ bool Arc::operator()(const Streamline<> &in, Streamline<> &out) const {
   state_t prev_s = state_t::BEFORE_START;
   for (size_t i = 0; i < in.size(); ++i) {
     const state_t s = state(in[i]);
-    if (i) {
+    if (i != 0u) {
       if (prev_s == state_t::BEFORE_START && s == state_t::AFTER_START)
         a = i - 1;
       if (prev_s == state_t::AFTER_START && s == state_t::BEFORE_START)
@@ -56,7 +56,7 @@ bool Arc::operator()(const Streamline<> &in, Streamline<> &out) const {
     prev_s = s;
   }
 
-  if (!(idx_start && idx_end))
+  if (!((idx_start != 0u) && (idx_end != 0u)))
     return true;
 
   const bool reverse = idx_start > idx_end;

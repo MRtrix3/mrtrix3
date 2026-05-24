@@ -40,12 +40,12 @@ std::vector<ssize_t> parse_axes(size_t ndim, std::string_view specifier) {
       } else if (specifier[sub] == '-') {
         pos = false;
         sub++;
-      } else if (!isdigit(specifier[sub]))
+      } else if (isdigit(specifier[sub]) == 0)
         throw 0;
 
       lim = sub;
 
-      while (lim < end && std::isdigit(static_cast<unsigned char>(specifier[lim])))
+      while (lim < end && (std::isdigit(static_cast<unsigned char>(specifier[lim])) != 0))
         lim++;
 
       // we require at least one digit
@@ -77,7 +77,7 @@ std::vector<ssize_t> parse_axes(size_t ndim, std::string_view specifier) {
     throw Exception("incorrect number of dimensions for axes specifier");
 
   for (size_t n = 0; n < parsed.size(); n++) {
-    if (!parsed[n] || static_cast<size_t>(MR::abs(parsed[n])) > ndim)
+    if ((parsed[n] == 0) || static_cast<size_t>(MR::abs(parsed[n])) > ndim)
       throw Exception("axis ordering " + str(parsed[n]) + " out of range");
 
     for (size_t i = 0; i < n; i++)

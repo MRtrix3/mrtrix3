@@ -65,7 +65,7 @@ public:
     if (new_extent.size() != 1 && new_extent.size() != 3)
       throw Exception("Please supply a single kernel extent value, or three values (one for each spatial dimension)");
     for (size_t i = 0; i < new_extent.size(); ++i) {
-      if (!(new_extent[i] & uint32_t(1)))
+      if ((new_extent[i] & uint32_t(1)) == 0u)
         throw Exception("expected odd number for extent");
     }
     if (new_extent.size() == 1)
@@ -177,7 +177,7 @@ protected:
           spacing(image.spacing(axis_in)),
           buffer_size(image.size(axis_in)) {
       buffer.resize(buffer_size);
-      if (!extent)
+      if (extent == 0u)
         radius = std::ceil(2 * stdev / spacing);
       else if (extent == 1)
         radius = 0;
@@ -206,7 +206,7 @@ protected:
     // the inner loop axis has to be the dimension the smoothing is applied to and
     // the loop has to start with image.index (smooth_axis) == 0
     void operator()(ImageType &image) {
-      if (!kernel.size())
+      if (kernel.size() == 0)
         return;
 
       const ssize_t pos = image.index(axis);

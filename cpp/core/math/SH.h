@@ -51,7 +51,7 @@ inline size_t index_mpos(int l, int m) { return l * l / 4 + m; }
 
 //! returns the largest \e lmax given \a N parameters
 inline size_t LforN(int N) {
-  return N ? 2 * std::floor<size_t>((std::sqrt(static_cast<default_type>(1 + 8 * N)) - 3.0) / 4.0) : 0;
+  return (N != 0) ? 2 * std::floor<size_t>((std::sqrt(static_cast<default_type>(1 + 8 * N)) - 3.0) / 4.0) : 0;
 }
 
 //! returns whether a cardinality is commensurate with a set of SH coefficients
@@ -369,7 +369,7 @@ public:
       value_type const cos_el = std::cos(n * inc);
       for (int m = 0; m <= lmax; m++) {
         Legendre::Plm_sph(buf, lmax, m, cos_el);
-        for (int l = ((m & 1) ? m + 1 : m); l <= lmax; l += 2)
+        for (int l = (((m & 1) != 0) ? m + 1 : m); l <= lmax; l += 2)
           p[index_mpos(l, m)] = buf[l];
       }
     }

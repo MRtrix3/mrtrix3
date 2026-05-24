@@ -151,23 +151,23 @@ public:
 
   void set_invert_scale(bool yesno) { set_bit(InvertScale, yesno); }
 
-  bool scale_inverted() const { return flags_ & InvertScale; }
+  bool scale_inverted() const { return (flags_ & InvertScale) != 0u; }
 
-  bool discard_lower_enabled() const { return flags_ & DiscardLowerEnabled; }
+  bool discard_lower_enabled() const { return (flags_ & DiscardLowerEnabled) != 0u; }
 
-  bool discard_upper_enabled() const { return flags_ & DiscardUpperEnabled; }
+  bool discard_upper_enabled() const { return (flags_ & DiscardUpperEnabled) != 0u; }
 
-  bool transparency_enabled() const { return flags_ & TransparencyEnabled; }
+  bool transparency_enabled() const { return (flags_ & TransparencyEnabled) != 0u; }
 
-  bool lighting_enabled() const { return flags_ & LightingEnabled; }
+  bool lighting_enabled() const { return (flags_ & LightingEnabled) != 0u; }
 
-  bool use_discard_lower() const { return discard_lower_enabled() && (flags_ & DiscardLower); }
+  bool use_discard_lower() const { return discard_lower_enabled() && ((flags_ & DiscardLower) != 0u); }
 
-  bool use_discard_upper() const { return discard_upper_enabled() && (flags_ & DiscardUpper); }
+  bool use_discard_upper() const { return discard_upper_enabled() && ((flags_ & DiscardUpper) != 0u); }
 
-  bool use_transparency() const { return transparency_enabled() && (flags_ & Transparency); }
+  bool use_transparency() const { return transparency_enabled() && ((flags_ & Transparency) != 0u); }
 
-  bool use_lighting() const { return lighting_enabled() && (flags_ & Lighting); }
+  bool use_lighting() const { return lighting_enabled() && ((flags_ & Lighting) != 0u); }
 
   class Shader : public GL::Shader::Program {
   public:
@@ -199,7 +199,7 @@ public:
       GL::Shader::Fragment const fragment_shader(fragment_shader_source(object));
 
       attach(vertex_shader);
-      if (static_cast<GLuint>(geometry_shader))
+      if (static_cast<GLuint>(geometry_shader) != 0u)
         attach(geometry_shader);
       attach(fragment_shader);
       link();

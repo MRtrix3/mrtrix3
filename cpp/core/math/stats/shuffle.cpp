@@ -140,7 +140,7 @@ Shuffler::Shuffler(const index_type num_rows, const bool is_nonstationarity, std
   opt = get_options("exchange_whole");
   index_array_type eb_whole;
   if (!opt.empty()) {
-    if (eb_within.size())
+    if (eb_within.size() != 0)
       throw Exception("Cannot specify both \"within\" and \"whole\" exchangeability block data");
     try {
       eb_whole = load_blocks(opt[0][0], true);
@@ -194,7 +194,7 @@ bool Shuffler::operator()(Shuffle &output) {
     for (index_type r = 0; r != rows; ++r) {
       if (signflips[counter][r]) {
         for (index_type c = 0; c != rows; ++c) {
-          if (output.data(r, c))
+          if (output.data(r, c) != 0)
             output.data(r, c) *= -1;
         }
       }
@@ -217,11 +217,11 @@ void Shuffler::initialise(const error_t error_types,
                           const index_array_type &eb_within,
                           const index_array_type &eb_whole) {
   assert(!(eb_within.size() && eb_whole.size()));
-  if (eb_within.size()) {
+  if (eb_within.size() != 0) {
     assert(static_cast<index_type>(eb_within.size()) == rows);
     assert(!eb_within.minCoeff());
   }
-  if (eb_whole.size()) {
+  if (eb_whole.size() != 0) {
     assert(static_cast<index_type>(eb_whole.size()) == rows);
     assert(!eb_whole.minCoeff());
   }
@@ -230,7 +230,7 @@ void Shuffler::initialise(const error_t error_types,
   const bool ise = (error_types == error_t::ISE || error_types == error_t::BOTH);
 
   uint64_t max_num_permutations;
-  if (eb_within.size()) {
+  if (eb_within.size() != 0) {
     std::vector<index_type> counts(eb_within.maxCoeff() + 1, 0);
     for (index_type i = 0; i != eb_within.size(); ++i)
       counts[eb_within[i]]++;
@@ -244,7 +244,7 @@ void Shuffler::initialise(const error_t error_types,
         break;
       }
     }
-  } else if (eb_whole.size()) {
+  } else if (eb_whole.size() != 0) {
     max_num_permutations = factorial<uint64_t>(eb_whole.maxCoeff() + 1);
   } else {
     max_num_permutations = factorial<uint64_t>(rows);
@@ -253,7 +253,7 @@ void Shuffler::initialise(const error_t error_types,
   auto safe2pow = [](const uint64_t i) {
     return (i >= 8 * sizeof(uint64_t)) ? (std::numeric_limits<uint64_t>::max()) : ((uint64_t(1) << i));
   };
-  const uint64_t max_num_signflips = eb_whole.size() ? safe2pow(eb_whole.maxCoeff() + 1) : safe2pow(rows);
+  const uint64_t max_num_signflips = (eb_whole.size() != 0) ? safe2pow(eb_whole.maxCoeff() + 1) : safe2pow(rows);
 
   uint64_t max_shuffles;
   if (ee) {
@@ -369,7 +369,7 @@ index_array_type Shuffler::load_blocks(const std::filesystem::path &filename, co
   index_type max_coeff = data.maxCoeff();
   if (min_coeff > 1)
     throw Exception("Minimum index in file \"" + filename.string() + "\" must be either 0 or 1");
-  if (min_coeff) {
+  if (min_coeff != 0u) {
     data.array() -= 1;
     max_coeff--;
   }
@@ -430,7 +430,7 @@ void Shuffler::generate_random_permutations(const index_type num_perms,
   }
 
   // Unrestricted exchangeability
-  if (!eb_within.size() && !eb_whole.size()) {
+  if ((eb_within.size() == 0) && (eb_whole.size() == 0)) {
     for (; p != num_perms; ++p) {
       PermuteLabels permuted_labelling(default_labelling);
       do {
@@ -444,7 +444,7 @@ void Shuffler::generate_random_permutations(const index_type num_perms,
   std::vector<std::vector<index_type>> blocks;
 
   // Within-block exchangeability
-  if (eb_within.size()) {
+  if (eb_within.size() != 0) {
     blocks = indices2blocks(eb_within);
     PermuteLabels permuted_labelling(default_labelling);
     for (; p != num_perms; ++p) {
@@ -493,7 +493,7 @@ void Shuffler::generate_all_permutations(const index_type num_rows,
   permutations.clear();
 
   // Unrestricted exchangeability
-  if (!eb_within.size() && !eb_whole.size()) {
+  if ((eb_within.size() == 0) && (eb_whole.size() == 0)) {
     permutations.reserve(factorial(num_rows));
     PermuteLabels temp(num_rows);
     for (index_type i = 0; i < num_rows; ++i)
@@ -507,7 +507,7 @@ void Shuffler::generate_all_permutations(const index_type num_rows,
   std::vector<std::vector<index_type>> original;
 
   // Within-block exchangeability
-  if (eb_within.size()) {
+  if (eb_within.size() != 0) {
 
     original = indices2blocks(eb_within);
 
@@ -606,12 +606,12 @@ void Shuffler::generate_random_signflips(const index_type num_signflips,
   FlipSigns rows_to_flip(FlipSigns::Zero(num_rows));
 
   // Whole-block sign-flipping
-  if (block_indices.size()) {
+  if (block_indices.size() != 0) {
     const auto blocks = indices2blocks(block_indices);
     for (; s != num_signflips; ++s) {
       do {
         for (index_type ib = 0; ib != blocks.size(); ++ib) {
-          const bool value = distribution(generator);
+          const bool value = distribution(generator) != 0;
           for (const auto i : blocks[ib])
             rows_to_flip[i] = value;
         }
@@ -626,7 +626,7 @@ void Shuffler::generate_random_signflips(const index_type num_signflips,
     do {
       // TODO Should be a faster mechanism for generating / storing random bits
       for (index_type ir = 0; ir != num_rows; ++ir)
-        rows_to_flip[ir] = distribution(generator);
+        rows_to_flip[ir] = (distribution(generator) != 0);
     } while (!permit_duplicates && is_duplicate(rows_to_flip));
     signflips.push_back(rows_to_flip);
   }
@@ -636,7 +636,7 @@ void Shuffler::generate_all_signflips(const index_type num_rows, const index_arr
   signflips.clear();
 
   // Whole-block sign-flipping
-  if (block_indices.size()) {
+  if (block_indices.size() != 0) {
     const auto blocks = indices2blocks(block_indices);
 
     auto write = [&](const FlipSigns &data) {

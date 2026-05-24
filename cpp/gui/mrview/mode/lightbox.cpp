@@ -31,7 +31,7 @@ ssize_t LightBox::current_slice_index = 0;
 LightBox::LightBox() : frames_dirty(true) {
   Image *img = image();
 
-  if (!img || prev_image_path != img->header().path())
+  if ((img == nullptr) || prev_image_path != img->header().path())
     LightBox::image_changed_event();
   else {
     set_volume_increment(volume_increment);
@@ -71,7 +71,7 @@ void LightBox::set_show_volumes(bool show_vol) {
   updateGL();
 }
 
-inline bool LightBox::render_volumes() { return show_volumes && image() && image()->image.ndim() == 4; }
+inline bool LightBox::render_volumes() { return show_volumes && (image() != nullptr) && image()->image.ndim() == 4; }
 
 void LightBox::draw_plane_primitive(int axis, Displayable::Shader &shader_program, Projection &with_projection) {
   GL::assert_context_is_current();
@@ -226,7 +226,7 @@ void LightBox::draw_grid() {
   } else
     frame_VAO.bind();
 
-  if (!frame_program) {
+  if (frame_program == 0u) {
     GL::Shader::Vertex const vertex_shader("layout(location=0) in vec2 pos;\n"
                                            "void main () {\n"
                                            "  gl_Position = vec4 (pos, 0.0, 1.0);\n"
@@ -323,7 +323,7 @@ void LightBox::rotate_event() {
 }
 
 void LightBox::reset_windowing() {
-  if (image()) {
+  if (image() != nullptr) {
     image()->reset_windowing(plane(), false);
     emit window().on_scaling_changed();
     updateGL();
@@ -333,7 +333,7 @@ void LightBox::reset_windowing() {
 void LightBox::image_changed_event() {
   Base::image_changed_event();
 
-  if (image()) {
+  if (image() != nullptr) {
     const auto &header = image()->header();
     if (prev_image_path.empty()) {
       float const slice_inc = std::pow(header.spacing(0) * header.spacing(1) * header.spacing(2), 1.f / 3.f);

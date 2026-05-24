@@ -91,7 +91,7 @@ public:
 
   size_t first_index() const { return first_fixel_index; }
   size_t num_fixels() const { return count; }
-  bool empty() const { return !count; }
+  bool empty() const { return count == 0u; }
 
   // Direction must have been assigned to a histogram bin first
   size_t dir2fixel(const size_t dir) const {

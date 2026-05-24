@@ -42,7 +42,7 @@ bool MethodBase::check_seed() {
   if (!pos.allFinite())
     return false;
 
-  if ((S.properties.mask.size() && !S.properties.mask.contains(pos)) || (S.properties.exclude.contains(pos)) ||
+  if (((S.properties.mask.size() != 0u) && !S.properties.mask.contains(pos)) || (S.properties.exclude.contains(pos)) ||
       (S.is_act() && !act().check_seed(pos))) {
     pos.fill(NaNF);
     return false;

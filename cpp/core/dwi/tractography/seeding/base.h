@@ -63,7 +63,7 @@ public:
 
   default_type vol() const { return volume; }
   size_t num() const { return count; }
-  bool is_finite() const { return count; }
+  bool is_finite() const { return count != 0u; }
   std::string get_type() const { return type; }
   std::string get_name() const { return name; }
   size_t get_max_attempts() const { return max_attempts; }

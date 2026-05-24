@@ -94,7 +94,7 @@ public:
   int plane() const { return window().plane(); }
   Eigen::Quaternionf orientation() const {
     if (snap_to_image()) {
-      if (image())
+      if (image() != nullptr)
         return Eigen::Quaternionf(image()->header().transform().rotation().cast<float>());
       else
         return Eigen::Quaternionf::Identity();
@@ -125,7 +125,7 @@ public:
   void set_plane(int p) { window().set_plane(p); }
   void set_orientation(const Eigen::Quaternionf &V) { window().set_orientation(V); }
   void reset_orientation() {
-    if (image())
+    if (image() != nullptr)
       set_orientation(Eigen::Quaternionf(image()->header().transform().rotation().cast<float>()));
     else
       set_orientation(Eigen::Quaternionf::Identity());
@@ -148,7 +148,7 @@ public:
     QList<QAction *> tools = window().tools()->actions();
     for (int i = 0; i < tools.size(); ++i) {
       Tool::Dock *dock = dynamic_cast<Tool::ActionWrapper *>(tools[i])->dock;
-      if (dock) {
+      if (dock != nullptr) {
         GL::assert_context_is_current();
         dock->tool->draw(projection, is_3D, axis, slice);
         GL::assert_context_is_current();
@@ -164,7 +164,7 @@ public:
   Eigen::Quaternionf get_rotate_rotation(const ModelViewProjection &proj) const;
 
   Eigen::Vector3f voxel_at(const Eigen::Vector3f &pos) const {
-    if (!image())
+    if (image() == nullptr)
       return Eigen::Vector3f::Constant(NaNF);
     const Eigen::Vector3f result = image()->scanner2voxel().cast<float>() * pos;
     return result;

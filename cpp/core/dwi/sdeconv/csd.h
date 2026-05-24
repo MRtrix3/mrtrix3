@@ -117,14 +117,14 @@ public:
 
       lmax = lmax_cmdline > 0 ? lmax_cmdline : std::min(lmax_response, default_csd_lmax);
 
-      if (lmax <= 0 || lmax % 2)
+      if (lmax <= 0 || ((lmax % 2) != 0u))
         throw Exception("lmax must be a positive even integer");
 
       assert(response.size());
       lmax_response = std::min(lmax_response, std::min(lmax_data, lmax));
       INFO("calculating even spherical harmonic components up to order " + str(lmax_response) + " for initialisation");
 
-      if (!init_filter.size())
+      if (init_filter.size() == 0)
         init_filter = Eigen::VectorXd::Ones(3);
       init_filter.conservativeResizeLike(Eigen::VectorXd::Zero(Math::ZSH::NforL(lmax_response)));
 
@@ -180,7 +180,7 @@ public:
       Mt_M.triangularView<Eigen::Lower>() = M.transpose() * M;
 
       // min-norm constraint:
-      if (norm_lambda) {
+      if (norm_lambda != 0.0) {
         norm_lambda *= csd_normlambda_multiplier * Mt_M(0, 0);
         Mt_M.diagonal().array() += norm_lambda;
       }

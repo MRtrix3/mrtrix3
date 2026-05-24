@@ -67,7 +67,7 @@ bool GMWMI_finder::find_interface(Eigen::Vector3f &p, Interp &interp) const {
 
   // Make sure an appropriate cost function minimum has been found, and that
   //   this would be an acceptable termination point if it were processed by the tracking algorithm
-  if (!tissues.valid() || tissues.is_csf() || tissues.is_path() || !tissues.get_wm() ||
+  if (!tissues.valid() || tissues.is_csf() || tissues.is_path() || (tissues.get_wm() == 0.0f) ||
       (std::fabs(tissues.get_gm() - tissues.get_wm()) > gmwmi_accuracy)) {
 
     p.fill(NaNF);
@@ -80,7 +80,7 @@ bool GMWMI_finder::find_interface(Eigen::Vector3f &p, Interp &interp) const {
   step = get_cf_min_step(p, interp);
   if (!step.allFinite())
     return true;
-  if (!step.squaredNorm()) {
+  if (step.squaredNorm() == 0.0f) {
     p.fill(NaNF);
     return false;
   }
@@ -142,7 +142,7 @@ Eigen::Vector3f GMWMI_finder::get_cf_min_step(const Eigen::Vector3f &p, Interp &
 
   grad *= (1.0 / perturbation_mm);
 
-  if (!grad.squaredNorm())
+  if (grad.squaredNorm() == 0.0f)
     return Eigen::Vector3f::Zero();
 
   const Tissues local_tissue = get_tissues(p, interp);

@@ -310,7 +310,7 @@ Shells::Shells(const Eigen::MatrixXd &grad) {
         volumes.push_back(volumeIdx);
     }
 
-    if (shellIdx) {
+    if (shellIdx != 0u) {
       shells.push_back(Shell(grad, volumes));
     } else if (!volumes.empty()) {
       std::string unassigned;

@@ -51,7 +51,7 @@ void NodeOverlay::update_texture2D(const int plane, const int slice) {
   // 'overhauled' the main image, and the camera & focus plane were set based on the
   // parcellation image
   assert(0);
-  if (!texture2D[plane])
+  if (texture2D[plane] == 0u)
     texture2D[plane].gen(gl::TEXTURE_3D);
   texture2D[plane].bind();
   gl::PixelStorei(gl::UNPACK_ALIGNMENT, 1);

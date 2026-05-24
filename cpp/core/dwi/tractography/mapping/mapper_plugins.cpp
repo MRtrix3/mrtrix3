@@ -34,7 +34,7 @@ void TWIImagePluginBase::set_backtrack() {
   Image<float> data(interp);
   auto f = [](Image<float> &in, Image<bool> &mask) {
     for (in.index(3) = 0; in.index(3) != in.size(3); ++in.index(3)) {
-      if (std::isfinite(static_cast<float>(in.value())) && in.value()) {
+      if (std::isfinite(static_cast<float>(in.value())) && (in.value() != 0.0f)) {
         mask.value() = true;
         return true;
       }
@@ -94,7 +94,7 @@ void TWIScalarImagePlugin::load_factors(const Streamline<> &tck, std::vector<def
 
     // Only the track endpoints contribute
     for (size_t tck_end_index = 0; tck_end_index != 2; ++tck_end_index) {
-      const ssize_t index = get_end_index(tck, tck_end_index);
+      const ssize_t index = get_end_index(tck, tck_end_index != 0u);
       if (index >= 0) {
         if (interp.scanner(tck[index]))
           factors.push_back(interp.value());
@@ -123,7 +123,7 @@ void TWIFODImagePlugin::load_factors(const Streamline<> &tck, std::vector<defaul
       statistic == tck_stat_t::ENDS_PROD) {
 
     for (size_t tck_end_index = 0; tck_end_index != 2; ++tck_end_index) {
-      const ssize_t index = get_end_index(tck, tck_end_index);
+      const ssize_t index = get_end_index(tck, tck_end_index != 0u);
       if (index > 0) {
         if (interp.scanner(tck[index])) {
           for (interp.index(3) = 0; interp.index(3) != interp.size(3); ++interp.index(3))
@@ -189,7 +189,7 @@ void TWDFCStaticImagePlugin::load_factors(const Streamline<> &tck, std::vector<d
   const std::array<default_type, 2> stdevs = {std::sqrt(variances[0] / static_cast<default_type>(interp.size(3) - 1)),
                                               std::sqrt(variances[1] / static_cast<default_type>(interp.size(3) - 1))};
 
-  if (stdevs[0] && stdevs[1])
+  if ((stdevs[0] != 0.0) && (stdevs[1] != 0.0))
     factors[0] = product_expectation / (stdevs[0] * stdevs[1]);
 }
 
@@ -201,7 +201,7 @@ void TWDFCDynamicImagePlugin::load_factors(const Streamline<> &tck, std::vector<
   // Store values into local vectors, since it's a two-pass operation
   std::array<std::vector<default_type>, 2> values;
   for (size_t tck_end_index = 0; tck_end_index != 2; ++tck_end_index) {
-    const ssize_t index = get_end_index(tck, tck_end_index);
+    const ssize_t index = get_end_index(tck, tck_end_index != 0u);
     if (index < 0)
       return;
     if (!interp.scanner(tck[index]))

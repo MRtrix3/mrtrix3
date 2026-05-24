@@ -171,7 +171,7 @@ Rejection_per_voxel::Rejection_per_voxel(const std::filesystem::path &in)
 
   for (auto i = Loop(0, 3)(vox); i; ++i) {
     const float value = vox.value();
-    if (value) {
+    if (value != 0.0f) {
       if (value < 0.0)
         throw Exception("Cannot have negative values in an image used for rejection sampling!");
       max = std::max(max, value);
@@ -191,14 +191,14 @@ Rejection_per_voxel::Rejection_per_voxel(const std::filesystem::path &in)
     }
   }
 
-  if (!max)
+  if (max == 0.0f)
     throw Exception("Cannot use image " + in.string() + " for rejection sampling - image is empty");
 
-  if (bottom[0])
+  if (bottom[0] != 0)
     --bottom[0];
-  if (bottom[1])
+  if (bottom[1] != 0)
     --bottom[1];
-  if (bottom[2])
+  if (bottom[2] != 0)
     --bottom[2];
 
   top[0] = std::min(static_cast<ssize_t>(vox.size(0)) - bottom[0], top[0] + 2 - bottom[0]);

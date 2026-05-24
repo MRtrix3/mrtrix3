@@ -286,7 +286,7 @@ size_t Fixel::visible_number_colourbars() {
   if (!hide_all_button->isChecked()) {
     for (size_t i = 0, N = fixel_list_model->rowCount(); i < N; ++i) {
       BaseFixel *fixel = dynamic_cast<BaseFixel *>(fixel_list_model->items[i].get());
-      if (fixel && fixel->show && !ColourMap::maps[fixel->colourmap].special)
+      if ((fixel != nullptr) && fixel->show && !ColourMap::maps[fixel->colourmap].special)
         total_visible += 1;
     }
   }
@@ -392,19 +392,19 @@ void Fixel::update_gui_colour_controls(bool reload_colour_types) {
   size_t const n_images(indices.size());
 
   colour_combobox->setEnabled(n_images == 1);
-  colourmap_button->setEnabled(n_images);
+  colourmap_button->setEnabled(n_images != 0u);
 
-  max_value->setEnabled(n_images);
-  min_value->setEnabled(n_images);
+  max_value->setEnabled(n_images != 0u);
+  min_value->setEnabled(n_images != 0u);
 
-  if (!n_images) {
+  if (n_images == 0u) {
     max_value->setValue(NaNF);
     min_value->setValue(NaNF);
     length_multiplier->setValue(NaNF);
     return;
   }
 
-  if (!n_images)
+  if (n_images == 0u)
     return;
 
   int colourmap_index = -2;
@@ -421,7 +421,7 @@ void Fixel::update_gui_colour_controls(bool reload_colour_types) {
   // Not all colourmaps are added to this list; therefore need to find out
   // how many menu elements were actually created by ColourMap::create_menu()
   static size_t colourmap_count = 0;
-  if (!colourmap_count) {
+  if (colourmap_count == 0u) {
     for (const auto &map : ColourMap::maps) {
       if (!map.special)
         ++colourmap_count;
@@ -460,10 +460,10 @@ void Fixel::update_gui_scaling_controls(bool reload_scaling_types) {
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
   size_t const n_images(indices.size());
 
-  length_multiplier->setEnabled(n_images);
+  length_multiplier->setEnabled(n_images != 0u);
   length_combobox->setEnabled(n_images == 1);
 
-  if (!n_images) {
+  if (n_images == 0u) {
     length_multiplier->setValue(NaNF);
     return;
   }
@@ -483,14 +483,14 @@ void Fixel::update_gui_threshold_controls(bool reload_threshold_types) {
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
   size_t const n_images(indices.size());
 
-  threshold_lower->setEnabled(n_images);
-  threshold_upper->setEnabled(n_images);
-  threshold_upper_box->setEnabled(n_images);
-  threshold_lower_box->setEnabled(n_images);
+  threshold_lower->setEnabled(n_images != 0u);
+  threshold_upper->setEnabled(n_images != 0u);
+  threshold_upper_box->setEnabled(n_images != 0u);
+  threshold_lower_box->setEnabled(n_images != 0u);
 
   threshold_combobox->setEnabled(n_images == 1);
 
-  if (!n_images) {
+  if (n_images == 0u) {
     threshold_lower->setValue(NaNF);
     threshold_upper->setValue(NaNF);
     return;
@@ -537,7 +537,7 @@ void Fixel::update_gui_tracking_controls() {
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
   size_t const n_images(indices.size());
 
-  if (!n_images) {
+  if (n_images == 0u) {
     track_main_volume->setEnabled(false);
     return;
   }
@@ -545,7 +545,7 @@ void Fixel::update_gui_tracking_controls() {
   size_t num_checked = 0;
   for (size_t i = 0; i < n_images; ++i) {
     Image4D *fixel = dynamic_cast<Image4D *>(fixel_list_model->get_fixel_image(indices[i]));
-    if (!fixel) {
+    if (fixel == nullptr) {
       track_main_volume->setEnabled(false);
       return;
     }
@@ -558,8 +558,8 @@ void Fixel::update_gui_tracking_controls() {
   }
 
   track_main_volume->setEnabled(true);
-  track_main_volume->setCheckState(num_checked ? (num_checked == n_images ? Qt::Checked : Qt::PartiallyChecked)
-                                               : Qt::Unchecked);
+  track_main_volume->setCheckState((num_checked != 0u) ? (num_checked == n_images ? Qt::Checked : Qt::PartiallyChecked)
+                                                       : Qt::Unchecked);
 }
 
 void Fixel::opacity_slot(int opacity) {
@@ -670,7 +670,7 @@ void Fixel::on_set_tracking_slot(bool is_checked) {
   for (int i = 0; i < indices.size(); ++i) {
     Image4D *fixel = dynamic_cast<Image4D *>(fixel_list_model->get_fixel_image(indices[i]));
     assert(fixel != nullptr);
-    if (fixel)
+    if (fixel != nullptr)
       fixel->tracking = is_checked;
   }
   window().updateGL();

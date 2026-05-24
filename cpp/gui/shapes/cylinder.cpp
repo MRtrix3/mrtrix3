@@ -46,7 +46,7 @@ void Cylinder::LOD(const size_t level_of_detail) {
     normals.push_back(Eigen::Vector3f{0.0f, 0.0f, -1.0f});
     if (i == N - 1)
       indices.push_back(Eigen::Array3i{0, i, 1});
-    else if (i)
+    else if (i != 0)
       indices.push_back(Eigen::Array3i{0, i, i + 1});
   }
 
@@ -59,7 +59,7 @@ void Cylinder::LOD(const size_t level_of_detail) {
     normals.push_back(Eigen::Vector3f{0.0f, 0.0f, 1.0f});
     if (i == N - 1)
       indices.push_back(Eigen::Array3i{far_face_centre_index, far_face_centre_index + 1, far_face_centre_index + i});
-    else if (i)
+    else if (i != 0)
       indices.push_back(
           Eigen::Array3i{far_face_centre_index, far_face_centre_index + i + 1, far_face_centre_index + i});
   }

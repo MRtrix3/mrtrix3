@@ -224,13 +224,13 @@ std::unique_ptr<ImageIO::Base> MRI::read(Header &H) const {
       break;
     }
 
-    if (data_offset)
+    if (data_offset != 0u)
       break;
 
     current = next(current, is_BE);
   }
 
-  if (!data_offset)
+  if (data_offset == 0u)
     throw Exception("no data field found in MRI image \"" + H.path().string() + "\"");
 
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));
@@ -288,7 +288,7 @@ std::unique_ptr<ImageIO::Base> MRI::create(Header &H) const {
   if (comments != H.keyval().end()) {
     for (const auto &comment : split_lines(comments->second)) {
       size_t const l = comment.size();
-      if (l) {
+      if (l != 0u) {
         write_tag(out, mriformat_index_comment, l, is_BE);
         out.write(comment.c_str(), l);
       }

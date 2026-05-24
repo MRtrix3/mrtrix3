@@ -39,7 +39,7 @@ bool GMWMI::get_seed(Eigen::Vector3f &p) const {
       if (perturb(p, interp))
         return true;
     }
-  } while (1);
+  } while (true);
   return false;
 }
 

@@ -238,7 +238,7 @@ default_type calculate(Image<value_type> &in,
                       str(bottom >= 0 ? bottom : top) + ")");
     std::nth_element(data.begin(), data.begin() + index, data.end());
     const value_type threshold_float = data[index];
-    if (index) {
+    if (index != 0) {
       std::nth_element(data.begin(), data.begin() + index - 1, data.end());
       if (data[index - 1] == threshold_float)
         issue_degeneracy_warning = true;
@@ -471,7 +471,7 @@ void run() {
       WARN("-out_masked option ignored; no mask image provided via -mask");
       mask_out = false;
     }
-    if (!num_explicit_mechanisms) {
+    if (num_explicit_mechanisms == 0u) {
       if (ignore_zero) {
         WARN("Option -ignorezero ignored by automatic threshold calculation");
       }

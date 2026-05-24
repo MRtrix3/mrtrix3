@@ -60,7 +60,7 @@ public:
       if (tissues().get_cgm() >= tissues().get_sgm())
         return term_t::ENTER_CGM;
       ++sgm_depth;
-    } else if (sgm_depth) {
+    } else if (sgm_depth != 0u) {
       if (seed_in_sgm && !sgm_seed_to_wm) {
         sgm_seed_to_wm = true;
         sgm_depth = 0;

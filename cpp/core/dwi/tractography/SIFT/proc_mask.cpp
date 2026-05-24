@@ -84,7 +84,7 @@ void initialise_processing_mask(Image<float> &in_dwi, Image<float> &out_mask, Im
           out_mask.value() = 0.0f;
         }
       }
-      if (!integral)
+      if (integral == 0.0f)
         throw Exception("Processing mask is empty; check input images / registration");
 
     } else {

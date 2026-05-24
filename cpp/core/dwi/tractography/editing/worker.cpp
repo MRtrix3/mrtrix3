@@ -49,7 +49,7 @@ bool Worker::operator()(Streamline<> &in, Streamline<> &out) const {
 
       if (ends_only) {
         for (size_t i = 0; i != 2; ++i) {
-          const Eigen::Vector3f &p(i ? in.back() : in.front());
+          const Eigen::Vector3f &p((i != 0u) ? in.back() : in.front());
           include_visitation(p);
           if (properties.exclude.contains(p)) {
             exclude = true;
@@ -77,7 +77,7 @@ bool Worker::operator()(Streamline<> &in, Streamline<> &out) const {
   if (exclude != inverse)
     return true;
 
-  if (!properties.mask.size()) {
+  if (properties.mask.size() == 0u) {
     std::swap(in, out);
     return true;
   }

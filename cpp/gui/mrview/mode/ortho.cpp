@@ -78,7 +78,7 @@ void Ortho::paint(Projection &projection) {
 
   gl::Disable(gl::DEPTH_TEST);
 
-  if (!frame_VB || !frame_VAO) {
+  if ((frame_VB == 0u) || (frame_VAO == 0u)) {
     frame_VB.gen();
     frame_VAO.gen();
 
@@ -95,7 +95,7 @@ void Ortho::paint(Projection &projection) {
   } else
     frame_VAO.bind();
 
-  if (!frame_program) {
+  if (frame_program == 0u) {
     GL::Shader::Vertex const vertex_shader("layout(location=0) in vec2 pos;\n"
                                            "void main () {\n"
                                            "  gl_Position = vec4 (pos, 0.0, 1.0);\n"
@@ -147,10 +147,11 @@ void Ortho::mouse_press_event() {
 
 void Ortho::slice_move_event(float x) {
   const Projection *proj = get_current_projection();
-  if (!proj)
+  if (proj == nullptr)
     return;
 
-  if (window().active_camera_interactor() && window().active_camera_interactor()->slice_move_event(*proj, x))
+  if ((window().active_camera_interactor() != nullptr) &&
+      window().active_camera_interactor()->slice_move_event(*proj, x))
     return;
 
   const auto &header = image()->header();
@@ -165,10 +166,10 @@ void Ortho::slice_move_event(float x) {
 
 void Ortho::panthrough_event() {
   const Projection *proj = get_current_projection();
-  if (!proj)
+  if (proj == nullptr)
     return;
 
-  if (window().active_camera_interactor() && window().active_camera_interactor()->panthrough_event(*proj))
+  if ((window().active_camera_interactor() != nullptr) && window().active_camera_interactor()->panthrough_event(*proj))
     return;
 
   auto move = get_through_plane_translation_FOV(window().mouse_displacement().y(), *proj);

@@ -281,7 +281,7 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
           }
         } while (!to_expand.empty());
         vox_mesh_t fill_value = vox_mesh_t::UNDEFINED;
-        if (prelim_inside_count == prelim_outside_count && sum_sum_distances) {
+        if (prelim_inside_count == prelim_outside_count && (sum_sum_distances != 0.0f)) {
           fill_value = sum_sum_distances < 0.0f ? vox_mesh_t::INSIDE : vox_mesh_t::OUTSIDE;
         } else if (prelim_inside_count > 10 * prelim_outside_count) {
           fill_value = vox_mesh_t::INSIDE;
@@ -300,7 +300,7 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
           }
           if (corner_count == 8) {
             fill_value = vox_mesh_t::OUTSIDE;
-          } else if (!corner_count) {
+          } else if (corner_count == 0u) {
             fill_value = vox_mesh_t::INSIDE;
           } else if (sum_sum_distances != 0.0F) {
             fill_value = sum_sum_distances < 0.0F ? vox_mesh_t::INSIDE : vox_mesh_t::OUTSIDE;

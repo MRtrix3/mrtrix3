@@ -60,7 +60,7 @@ bool RigidLinearNonSymmetricUpdate::operator()(Eigen::Matrix<default_type, Eigen
     step_size = 0.2 / G.block(0, 0, 3, 3).array().abs().maxCoeff();
   }
   // use control points and coherence length as update criterion
-  if (control_points.size()) {
+  if (control_points.size() != 0) {
     P = control_points;
     const default_type orig_step_size(step_size);
     const default_type step_down_factor(0.5);
@@ -184,7 +184,7 @@ bool RigidLinearNonSymmetricUpdate::operator()(Eigen::Matrix<default_type, Eigen
   Eigen::Matrix<default_type, 3, 3> R;
   project_linear2rotation(L, R);
   Xnew.template block<3, 3>(0, 0) = R;
-  if (control_points.size()) {
+  if (control_points.size() != 0) {
     P = control_points;
     Eigen::Matrix<default_type, 3, 1> T_affine, T_new, centroid;
     T_affine = Xnew.block<3, 1>(0, 3);
@@ -200,7 +200,7 @@ bool RigidLinearNonSymmetricUpdate::operator()(Eigen::Matrix<default_type, Eigen
     return false;
   }
 
-  if (control_points.size()) {
+  if (control_points.size() != 0) {
     XnewP = (Xnew * P).eval();
 
     // stop criterion based on slope of smoothed control point trajectories

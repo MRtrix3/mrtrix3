@@ -45,8 +45,8 @@ public:
   bool operator!=(const DataType DT) const { return dt != DT.dt; }
 
   bool is(uint8_t type) const { return dt == type; }
-  bool is_complex() const { return dt & Complex; }
-  bool is_signed() const { return dt & Signed; }
+  bool is_complex() const { return (dt & Complex) != 0; }
+  bool is_signed() const { return (dt & Signed) != 0; }
   bool is_byte_order_native() {
     if (bits() <= 8)
       return true;
@@ -58,8 +58,8 @@ public:
     return is_little_endian();
 #endif
   }
-  bool is_little_endian() const { return dt & LittleEndian; }
-  bool is_big_endian() const { return dt & BigEndian; }
+  bool is_little_endian() const { return (dt & LittleEndian) != 0; }
+  bool is_big_endian() const { return (dt & BigEndian) != 0; }
   bool is_integer() const {
     const uint8_t type = dt & Type;
     return ((type == UInt8) || (type == UInt16) || (type == UInt32) || (type == UInt64));

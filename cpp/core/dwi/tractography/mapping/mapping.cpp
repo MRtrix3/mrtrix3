@@ -22,7 +22,7 @@ namespace MR::DWI::Tractography::Mapping {
 
 size_t determine_upsample_ratio(const Header &header, const float step_size, const float ratio) {
   size_t upsample_ratio = 1;
-  if (step_size && std::isfinite(step_size))
+  if ((step_size != 0.0f) && std::isfinite(step_size))
     upsample_ratio =
         std::ceil(step_size / (std::min(header.spacing(0), std::min(header.spacing(1), header.spacing(2))) * ratio));
   return upsample_ratio;

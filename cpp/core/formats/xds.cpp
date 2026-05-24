@@ -48,7 +48,7 @@ std::unique_ptr<ImageIO::Base> XDS::read(Header &H) const {
   in.close();
 
   H.datatype() = (Path::has_suffix(H.path(), ".bfloat") ? DataType::Float32 : DataType::UInt16);
-  if (BE)
+  if (BE != 0)
     H.datatype().set_flag(DataType::LittleEndian);
   else
     H.datatype().set_flag(DataType::BigEndian);

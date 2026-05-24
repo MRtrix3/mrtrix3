@@ -203,7 +203,7 @@ Capture::Capture(Dock *parent)
 void Capture::on_image_changed() {
   cached_state.clear();
   const auto image = window().image();
-  if (!image)
+  if (image == nullptr)
     return;
 
   const int max_axis = std::max(static_cast<int>(image->header().ndim() - 1), 0);
@@ -232,7 +232,7 @@ void Capture::on_screen_capture() {
 void Capture::on_screen_stop() { is_playing = false; }
 
 void Capture::cache_capture_state() {
-  if (!window().image())
+  if (window().image() == nullptr)
     return;
   auto &image(window().image()->image);
 
@@ -252,7 +252,7 @@ void Capture::cache_capture_state() {
 }
 
 void Capture::on_restore_capture_state() {
-  if (!window().image() || cached_state.empty())
+  if ((window().image() == nullptr) || cached_state.empty())
     return;
 
   const CaptureState &state = cached_state.back();
@@ -272,7 +272,7 @@ void Capture::run(bool with_capture) {
   Window &win(window());
   MRView::Image *img(win.image());
 
-  if (!img)
+  if (img == nullptr)
     return;
 
   is_playing = true;
@@ -363,7 +363,7 @@ void Capture::run(bool with_capture) {
       break;
     case TranslationType::Camera: {
       const Mode::Base *mode = window().get_current_mode();
-      if (mode) {
+      if (mode != nullptr) {
         const GL::vec4 trans_gl_vec = mode->get_current_projection()->modelview_inverse() *
                                       GL::vec4(trans_vec[0], trans_vec[1], trans_vec[2], 0.0f);
         trans_vec[0] = trans_gl_vec[0];

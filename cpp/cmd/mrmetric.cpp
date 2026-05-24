@@ -312,7 +312,7 @@ void run() {
         LogLevelLatch const log_level(0);
         reslice(interp, input2, output2, Adapter::NoTransform, Adapter::AutoOverSample, out_of_bounds_value);
         if (use_mask2)
-          Filter::reslice<Interp::Nearest>(mask2, output2mask, Adapter::NoTransform, Adapter::AutoOverSample, 0);
+          Filter::reslice<Interp::Nearest>(mask2, output2mask, Adapter::NoTransform, Adapter::AutoOverSample, false);
       }
       evaluate_voxelwise_msq(
           output1, output2, output1mask, output2mask, dimensions, use_mask1, use_mask2, n_voxels, sos);
@@ -328,7 +328,7 @@ void run() {
         LogLevelLatch const log_level(0);
         reslice(interp, input1, output1, Adapter::NoTransform, Adapter::AutoOverSample, out_of_bounds_value);
         if (use_mask1)
-          Filter::reslice<Interp::Nearest>(mask1, output1mask, Adapter::NoTransform, Adapter::AutoOverSample, 0);
+          Filter::reslice<Interp::Nearest>(mask1, output1mask, Adapter::NoTransform, Adapter::AutoOverSample, false);
       }
       n_voxels = input2.size(0) * input2.size(1) * input2.size(2);
       evaluate_voxelwise_msq(
@@ -467,9 +467,9 @@ void run() {
           reslice(interp, input1, output1, Adapter::NoTransform, Adapter::AutoOverSample, out_of_bounds_value);
           reslice(interp, input2, output2, Adapter::NoTransform, Adapter::AutoOverSample, out_of_bounds_value);
           if (use_mask1)
-            Filter::reslice<Interp::Nearest>(mask1, output1mask, Adapter::NoTransform, Adapter::AutoOverSample, 0);
+            Filter::reslice<Interp::Nearest>(mask1, output1mask, Adapter::NoTransform, Adapter::AutoOverSample, false);
           if (use_mask2)
-            Filter::reslice<Interp::Nearest>(mask2, output2mask, Adapter::NoTransform, Adapter::AutoOverSample, 0);
+            Filter::reslice<Interp::Nearest>(mask2, output2mask, Adapter::NoTransform, Adapter::AutoOverSample, false);
         }
         n_voxels = output1.size(0) * output1.size(1) * output1.size(2);
         evaluate_voxelwise_msq(

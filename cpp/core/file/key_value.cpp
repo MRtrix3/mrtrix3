@@ -34,7 +34,7 @@ void Reader::open(const std::filesystem::path &file, std::string_view first_line
   if (!first_line.empty()) {
     std::string sbuf;
     getline(in, sbuf);
-    if (sbuf.compare(0, first_line.size(), first_line)) {
+    if (sbuf.compare(0, first_line.size(), first_line) != 0) {
       in.close();
       throw Exception("invalid first line for key/value file \"" + file.string() + "\"" + //
                       " (expected \"" + first_line + "\")");

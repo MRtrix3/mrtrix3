@@ -195,7 +195,7 @@ public:
   bool operator()(const FMLS::FOD_lobes &) override;
 
   bool operator()(const Mapping::SetDixel &i) override {
-    if (!i.weight) // Flags that tracking should terminate
+    if (i.weight == 0.0) // Flags that tracking should terminate
       return false;
     if (!i.empty()) {
 #ifdef DYNAMIC_SEED_DEBUGGING

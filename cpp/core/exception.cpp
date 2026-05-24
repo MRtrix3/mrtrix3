@@ -101,7 +101,7 @@ void (*report_to_user_func)(std::string_view msg, int type) = cmdline_report_to_
 void (*Exception::display_func)(const Exception &E, int log_level) = display_exception_cmdline;
 
 void check_app_exit_code() {
-  if (App::exit_error_code)
+  if (App::exit_error_code != 0)
     throw Exception("Command performing delayed termination due to prior critical error");
 }
 

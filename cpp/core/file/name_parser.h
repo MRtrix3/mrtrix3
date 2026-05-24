@@ -62,7 +62,7 @@ public:
 
     bool is_sequence() const { return (seq_length != 0); }
 
-    size_t size() const { return (seq_length ? seq_length : str.size()); }
+    size_t size() const { return ((seq_length != 0u) ? seq_length : str.size()); }
 
     void calc_padding(size_t maxval = 0);
 

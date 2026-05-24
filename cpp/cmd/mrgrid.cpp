@@ -277,7 +277,7 @@ void run() {
       ++resize_option_count;
     }
 
-    if (!resize_option_count and !template_option_count)
+    if ((resize_option_count == 0u) and (template_option_count == 0u))
       throw Exception("please use either the -scale, -voxel, -resolution or -template option to regrid the image");
     if (resize_option_count > 1)
       throw Exception(
@@ -363,7 +363,7 @@ void run() {
 
     opt = get_options("as");
     if (!opt.empty()) {
-      if (crop_pad_option_count)
+      if (crop_pad_option_count != 0u)
         throw Exception(operation_name + " can be performed using either a mask or a template image");
       ++crop_pad_option_count;
 
@@ -474,7 +474,7 @@ void run() {
                 " (n=" + str(size[axis]) + ")");
       }
     }
-    if (!changed_axes)
+    if (changed_axes == 0u)
       WARN("no axes were changed");
 
     auto input = input_header.get_image<float>();

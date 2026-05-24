@@ -46,7 +46,7 @@ Eigen::MatrixXd load_cartesian(const std::filesystem::path &filename) {
       auto norm = directions.row(n).norm();
       if (std::fabs(default_type(1.0) - norm) > 1.0e-4)
         WARN("directions file \"" + filename.string() + "\" contains non-unit direction vectors");
-      directions.row(n).array() *= norm ? default_type(1.0) / norm : default_type(0.0);
+      directions.row(n).array() *= (norm != 0.0) ? default_type(1.0) / norm : default_type(0.0);
     }
   }
   return directions;

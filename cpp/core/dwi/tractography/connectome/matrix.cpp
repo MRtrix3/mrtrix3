@@ -213,7 +213,7 @@ void Matrix<T>::save(const std::filesystem::path &path,
   Eigen::IOFormat const fmt(
       Eigen::FullPrecision, Eigen::DontAlignCols, std::string(1, File::Matrix::delimiter(path)), "\n", "", "", "", "");
   for (node_t row = 0; row != mat2vec->mat_size(); ++row) {
-    if (!row && !keep_unassigned)
+    if ((row == 0u) && !keep_unassigned)
       continue;
     vector_type temp(vector_type::Zero(mat2vec->mat_size()));
     for (node_t col = 0; col != mat2vec->mat_size(); ++col) {

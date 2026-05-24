@@ -177,7 +177,7 @@ void MHSampler::connect() {
   double const R = exp(-dE);
   if (R > rng_uniform()) {
     E->acceptChanges();
-    if (pe2.par) {
+    if (pe2.par != nullptr) {
       if (alpha0 == -1)
         par->connectPredecessor(pe2.par, pe2.alpha);
       else

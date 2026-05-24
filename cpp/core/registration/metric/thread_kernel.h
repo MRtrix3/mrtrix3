@@ -102,7 +102,7 @@ public:
   ~ThreadKernel() {
     overall_cost_function += cost_function;
     overall_gradient += gradient;
-    if (overall_cnt)
+    if (overall_cnt != nullptr)
       (*overall_cnt) += cnt;
   }
 

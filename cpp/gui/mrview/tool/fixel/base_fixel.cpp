@@ -482,7 +482,7 @@ void BaseFixel::rebuild_element_index_buffer() {
       const auto &starts = starts_by_slice[s];
       const auto &sizes = sizes_by_slice[s];
       const GLsizei draw_count = counts_by_slice[s];
-      if (!draw_count)
+      if (draw_count == 0)
         continue;
       assert(starts.size() == sizes.size());
       assert(static_cast<size_t>(draw_count) <= starts.size());

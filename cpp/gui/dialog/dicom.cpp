@@ -45,7 +45,7 @@ public:
   int childCount() const { return childItems.count(); }
   QVariant data() const { return itemData; }
   int row() const {
-    if (parentItem)
+    if (parentItem != nullptr)
       return (parentItem->childItems.indexOf(const_cast<Item *>(this)));
     return (0);
   }
@@ -99,7 +99,7 @@ public:
     else
       parentItem = static_cast<Item *>(parent.internalPointer());
     Item *childItem = parentItem->child(row);
-    if (childItem)
+    if (childItem != nullptr)
       return createIndex(row, column, childItem);
     else
       return QModelIndex();
@@ -187,7 +187,7 @@ std::vector<std::shared_ptr<Series>> select_dicom(const Tree &tree) {
   }
 
   DicomSelector selector(tree);
-  if (selector.exec()) {
+  if (selector.exec() != 0) {
     QModelIndexList const indexes = selector.view->selectionModel()->selectedIndexes();
     if (!indexes.empty()) {
       QModelIndex index;

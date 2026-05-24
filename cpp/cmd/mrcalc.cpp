@@ -338,7 +338,7 @@ using real_type = float;
 using complex_type = cfloat;
 static bool transform_mis_match_reported(false);
 
-inline bool is_true(const complex_type &z) { return z.real() || z.imag(); }
+inline bool is_true(const complex_type &z) { return (z.real() != 0.0f) || (z.imag() != 0.0f); }
 
 // clang-format off
 void usage() {
@@ -999,7 +999,7 @@ void run() {
   for (size_t n = 0; n < raw_arguments_list.size(); ++n) {
     const auto &argument = raw_arguments_list[n];
     const Option *opt = match_option(argument);
-    if (opt) {
+    if (opt != nullptr) {
 
       if (opt->is("datatype") || opt->is("nthreads"))
         ++n;

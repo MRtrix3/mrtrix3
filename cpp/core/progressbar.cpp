@@ -87,7 +87,7 @@ void display_func_redirect(const ProgressBar &p) {
                              p.text_cstr(),
                              p.ellipsis_cstr()));
       }
-      if (next_update_at)
+      if (next_update_at != 0u)
         next_update_at *= 2;
       else
         next_update_at = 1;
@@ -110,7 +110,7 @@ void display_func_redirect(const ProgressBar &p) {
       if (p.value() == 0) {
         _print_stderr(printf("%s: %s%s ", App::NAME.c_str(), p.text_cstr(), p.ellipsis_cstr()));
         ;
-      } else if (!(p.value() & (p.value() - 1))) {
+      } else if ((p.value() & (p.value() - 1)) == 0u) {
         _print_stderr(".");
       }
     }
@@ -164,7 +164,7 @@ bool ProgressBar::set_update_method() {
   bool stderr_to_file = false;
 
   struct stat buf;
-  if (fstat(STDERR_FILENO, &buf))
+  if (fstat(STDERR_FILENO, &buf) != 0)
     // unable to determine nature of stderr; assuming socket
     stderr_to_file = false;
   else

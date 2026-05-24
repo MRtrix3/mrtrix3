@@ -34,7 +34,7 @@ public:
   int columnCount() const { return itemData.count(); }
   QVariant data(int column) const { return itemData.value(column); }
   int row() const {
-    if (parentItem)
+    if (parentItem != nullptr)
       return parentItem->childItems.indexOf(const_cast<TreeItem *>(this));
     return 0;
   }

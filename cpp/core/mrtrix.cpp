@@ -42,13 +42,13 @@ std::vector<default_type> parse_floats(std::string_view spec) {
         if (i > 2)
           throw Exception("invalid number range in number sequence \"" + spec + "\"");
       } else {
-        if (i) {
+        if (i != 0) {
           if (i != 2)
             throw Exception("For floating-point ranges, must specify three numbers (start:step:end)");
           const default_type first = range_spec[0];
           const default_type inc = range_spec[1];
           const default_type last = range_spec[2];
-          if (!inc || (inc * (last - first) < 0.0) || !std::isfinite(first) || !std::isfinite(inc) ||
+          if ((inc == 0.0) || (inc * (last - first) < 0.0) || !std::isfinite(first) || !std::isfinite(inc) ||
               !std::isfinite(last))
             throw Exception("Floating-point range does not form a finite set");
           default_type value = first;
@@ -254,10 +254,10 @@ std::string join(const std::vector<std::string> &V, std::string_view delimiter) 
 
 std::string join(const char *const *null_terminated_array, std::string_view delimiter) { // check_syntax off
   std::string ret;
-  if (!null_terminated_array)
+  if (null_terminated_array == nullptr)
     return ret;
   ret = null_terminated_array[0];
-  for (const char *const *p = null_terminated_array + 1; *p; ++p) // check_syntax off
+  for (const char *const *p = null_terminated_array + 1; *p != nullptr; ++p) // check_syntax off
     ret += delimiter + *p;
   return ret;
 }

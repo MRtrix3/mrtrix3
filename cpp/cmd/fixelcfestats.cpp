@@ -311,7 +311,7 @@ void run() {
 
   // Load variance groups
   auto variance_groups = Math::Stats::GLM::load_variance_groups(design.rows());
-  const Math::Stats::index_type num_vgs = variance_groups.size() ? variance_groups.maxCoeff() + 1 : 1;
+  const Math::Stats::index_type num_vgs = (variance_groups.size() != 0) ? variance_groups.maxCoeff() + 1 : 1;
   if (num_vgs > 1)
     CONSOLE("Number of variance groups: " + str(num_vgs));
 
@@ -341,7 +341,7 @@ void run() {
     if (mask_processing_image.value() && matrix.size(f) == 0U)
       ++num_unconnected_fixels;
   }
-  if (num_unconnected_fixels) {
+  if (num_unconnected_fixels != 0u) {
     WARN("A total of " + str(num_unconnected_fixels) + " fixels " +
          (mask_proc_fixels == num_fixels ? "" : "in the provided mask ") +
          "do not possess any streamlines-based connectivity; "
@@ -443,14 +443,14 @@ void run() {
   // Construct the class for performing the initial statistical tests
   std::unique_ptr<Math::Stats::GLM::TestBase> glm_test;
   if (variable_design_matrix) {
-    if (variance_groups.size())
+    if (variance_groups.size() != 0)
       glm_test = std::make_unique<Math::Stats::GLM::TestVariableHeteroscedastic>(
           data, design, hypotheses, variance_groups, extra_columns, nans_in_data, nans_in_columns);
     else
       glm_test = std::make_unique<Math::Stats::GLM::TestVariableHomoscedastic>(
           data, design, hypotheses, extra_columns, nans_in_data, nans_in_columns);
   } else {
-    if (variance_groups.size())
+    if (variance_groups.size() != 0)
       glm_test =
           std::make_unique<Math::Stats::GLM::TestFixedHeteroscedastic>(data, design, hypotheses, variance_groups);
     else

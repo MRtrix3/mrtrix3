@@ -38,7 +38,7 @@ public:
       progress.reset();
       return false;
     }
-    if (tracks_to_load && out.get_index() >= tracks_to_load) {
+    if ((tracks_to_load != 0u) && out.get_index() >= tracks_to_load) {
       out.clear();
       progress.reset();
       return false;

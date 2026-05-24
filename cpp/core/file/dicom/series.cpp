@@ -28,7 +28,7 @@ std::vector<int> Series::count() const {
   dim[0] = dim[1] = dim[2] = 0;
   current_dim[0] = current_dim[1] = 1;
 
-  if (!size())
+  if (size() == 0u)
     return dim;
 
   std::array<Image *, 2> first = {(*this)[0].get(), (*this)[0].get()};
@@ -36,10 +36,10 @@ std::vector<int> Series::count() const {
   for (size_t current_entry = 1; current_entry < size(); current_entry++) {
 
     if ((*this)[current_entry]->acq != first[1]->acq) {
-      if (dim[1] && dim[1] != current_dim[1])
+      if ((dim[1] != 0) && dim[1] != current_dim[1])
         throw Exception("mismatch between number of images along slice dimension");
 
-      if (dim[0] && dim[0] != current_dim[0])
+      if ((dim[0] != 0) && dim[0] != current_dim[0])
         throw Exception("mismatch between number of images along sequence dimension");
 
       first[0] = first[1] = (*this)[current_entry].get();
@@ -48,7 +48,7 @@ std::vector<int> Series::count() const {
       current_dim[0] = current_dim[1] = 1;
       dim[2]++;
     } else if ((*this)[current_entry]->distance != first[0]->distance) {
-      if (dim[0] && dim[0] != current_dim[0])
+      if ((dim[0] != 0) && dim[0] != current_dim[0])
         throw Exception("mismatch between number of images along sequence dimension");
 
       first[0] = (*this)[current_entry].get();
@@ -59,10 +59,10 @@ std::vector<int> Series::count() const {
       current_dim[0]++;
   }
 
-  if (dim[1] && dim[1] != current_dim[1])
+  if ((dim[1] != 0) && dim[1] != current_dim[1])
     throw Exception("mismatch between number of images along slice dimension");
 
-  if (dim[0] && dim[0] != current_dim[0])
+  if ((dim[0] != 0) && dim[0] != current_dim[0])
     throw Exception("mismatch between number of images along sequence dimension");
 
   dim[0] = current_dim[0];

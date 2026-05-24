@@ -112,7 +112,7 @@ void run() {
       header_count = to<size_t>(properties["count"]);
 
     step_size = properties.get_stepsize();
-    if ((!std::isfinite(step_size) || !step_size) && !get_options("histogram").empty()) {
+    if ((!std::isfinite(step_size) || (step_size == 0.0f)) && !get_options("histogram").empty()) {
       WARN("Do not have streamline step size with which to bin histogram; histogram will be generated using 1mm bin "
            "widths");
     }
@@ -135,7 +135,7 @@ void run() {
         while (histogram.size() <= index)
           histogram.push_back(0.0);
         histogram[index] += tck.weight;
-        if (!length)
+        if (length == 0.0f)
           ++zero_length_streamlines;
       } else {
         ++empty_streamlines;
@@ -149,14 +149,14 @@ void run() {
       File::Matrix::save_vector(dump, opt[0][0]);
   }
 
-  if (get_options("ignorezero").empty() && (empty_streamlines || zero_length_streamlines)) {
+  if (get_options("ignorezero").empty() && ((empty_streamlines != 0u) || (zero_length_streamlines != 0u))) {
     std::string s("read");
-    if (empty_streamlines) {
+    if (empty_streamlines != 0u) {
       s += " " + str(empty_streamlines) + " empty streamlines";
-      if (zero_length_streamlines)
+      if (zero_length_streamlines != 0u)
         s += " and";
     }
-    if (zero_length_streamlines)
+    if (zero_length_streamlines != 0u)
       s += " " + str(zero_length_streamlines) + " streamlines with zero length (one vertex only)";
     WARN(s);
   }
@@ -167,10 +167,10 @@ void run() {
   if (!std::isfinite(max_length))
     max_length = NaNF;
 
-  const float mean_length = sum_weights ? (sum_lengths / sum_weights) : NaNF;
+  const float mean_length = (sum_weights != 0.0) ? (sum_lengths / sum_weights) : NaNF;
 
   float median_length = 0.0f;
-  if (count) {
+  if (count != 0u) {
     if (weights_provided) {
       // Perform a weighted median calculation
       std::sort(all_lengths.begin(), all_lengths.end());
@@ -190,7 +190,7 @@ void run() {
   default_type ssd = 0.0;
   for (std::vector<LW>::const_iterator i = all_lengths.begin(); i != all_lengths.end(); ++i)
     ssd += i->get_weight() * Math::pow2(i->get_length() - mean_length);
-  const float stdev = sum_weights ? (std::sqrt(ssd / ((static_cast<default_type>(count - 1) / static_cast<default_type>(count)) * sum_weights))) : NaNF;
+  const float stdev = (sum_weights != 0.0) ? (std::sqrt(ssd / ((static_cast<default_type>(count - 1) / static_cast<default_type>(count)) * sum_weights))) : NaNF;
 
   std::vector<FieldChoice> fields;
   auto opt = get_options("output");

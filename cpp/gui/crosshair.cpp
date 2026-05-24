@@ -23,7 +23,7 @@
 namespace MR::GUI {
 
 void Crosshair::render(const Eigen::Vector3f &focus, const ModelViewProjection &MVP) const {
-  if (!VB || !VAO) {
+  if ((VB == 0u) || (VAO == 0u)) {
     VB.gen();
     VAO.gen();
 
@@ -37,7 +37,7 @@ void Crosshair::render(const Eigen::Vector3f &focus, const ModelViewProjection &
     VAO.bind();
   }
 
-  if (!program) {
+  if (program == 0u) {
     GL::Shader::Vertex const vertex_shader("layout(location=0) in vec2 pos;\n"
                                            "void main () {\n"
                                            "  gl_Position = vec4 (pos, 0.0, 1.0);\n"

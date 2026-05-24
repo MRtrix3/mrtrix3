@@ -168,7 +168,7 @@ void usage() {
 void print_dimensions(const Header &header) {
   std::string buffer;
   for (size_t i = 0; i < header.ndim(); ++i) {
-    if (i)
+    if (i != 0u)
       buffer += " ";
     buffer += str(header.size(i));
   }
@@ -178,7 +178,7 @@ void print_dimensions(const Header &header) {
 void print_spacing(const Header &header) {
   std::string buffer;
   for (size_t i = 0; i < header.ndim(); ++i) {
-    if (i)
+    if (i != 0u)
       buffer += " ";
     buffer += str(header.spacing(i));
   }
@@ -190,7 +190,7 @@ void print_strides(const Header &header) {
   std::vector<ssize_t> strides = Stride::get(header);
   Stride::symbolise(strides);
   for (size_t i = 0; i < header.ndim(); ++i) {
-    if (i)
+    if (i != 0u)
       buffer += " ";
     buffer += strides[i] == 0 ? "?" : str(strides[i]);
   }

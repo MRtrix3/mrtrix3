@@ -90,7 +90,7 @@ FORCE_INLINE std::filesystem::path get_fixel_directory(const std::filesystem::pa
 
 FORCE_INLINE index_type get_number_of_fixels(const Header &index_header) {
   check_index_image(index_header);
-  if (index_header.keyval().count(n_fixels_key)) {
+  if (index_header.keyval().count(n_fixels_key) != 0u) {
     return std::stoul(index_header.keyval().at(n_fixels_key));
   } else {
     auto index_image = Image<index_type>::open(index_header.path());

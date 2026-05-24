@@ -50,7 +50,7 @@ public:
 
   Renderer(QOpenGLWidget *);
 
-  bool ready() const { return shader; }
+  bool ready() const { return shader != 0u; }
 
   void initGL() {
     sh.initGL();
@@ -146,14 +146,14 @@ public:
     void update_mesh(const size_t, const int);
 
     void compute_r_del_daz(matrix_t &r_del_daz, const matrix_t &SH) const {
-      if (!SH.rows() || !SH.cols())
+      if ((SH.rows() == 0) || (SH.cols() == 0))
         return;
       assert(transform.rows());
       r_del_daz.noalias() = SH * transform.transpose();
     }
 
     void compute_r_del_daz(vector_t &r_del_daz, const vector_t &SH) const {
-      if (!SH.size())
+      if (SH.size() == 0)
         return;
       assert(transform.rows());
       r_del_daz.noalias() = transform * SH;

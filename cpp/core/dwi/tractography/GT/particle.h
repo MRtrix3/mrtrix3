@@ -56,9 +56,9 @@ public:
 
   inline void finalize() {
     const std::lock_guard<SpinLock> lock(spinlock);
-    if (predecessor)
+    if (predecessor != nullptr)
       removePredecessor_nolock();
-    if (successor)
+    if (successor != nullptr)
       removeSuccessor_nolock();
     alive = false;
   }
@@ -185,7 +185,7 @@ protected:
   void setPredecessor_nolock(Particle *p1) {
     if (predecessor == p1)
       return;
-    if (predecessor)
+    if (predecessor != nullptr)
       removePredecessor_nolock();
     predecessor = p1;
   }
@@ -193,7 +193,7 @@ protected:
   void setSuccessor_nolock(Particle *p1) {
     if (successor == p1)
       return;
-    if (successor)
+    if (successor != nullptr)
       removeSuccessor_nolock();
     successor = p1;
   }

@@ -278,7 +278,7 @@ void run() {
         CONSOLE("SH image input pair " + input1[i].path().string() + ", " + input2[i].path().string());
         mc_params[i].do_reorientation = true;
         mc_params[i].image_lmax = Math::SH::LforN(nvols1);
-        if (!directions_cartesian.cols())
+        if (directions_cartesian.cols() == 0)
           directions_cartesian =
               Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_60()).transpose();
       } else {
@@ -305,7 +305,7 @@ void run() {
   });
   if (do_reorientation)
     CONSOLE("performing FOD registration");
-  if (!do_reorientation and directions_cartesian.cols())
+  if (!do_reorientation and (directions_cartesian.cols() != 0))
     WARN("-directions option ignored since no FOD reorientation is being performed");
 
   INFO("maximum input lmax: " + str(max_mc_image_lmax));

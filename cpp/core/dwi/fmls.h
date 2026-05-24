@@ -90,7 +90,7 @@ public:
     assert(!neg);
     assert(index < num_peaks());
     peak_dirs[index] = revised_peak_dir;
-    if (!index)
+    if (index == 0u)
       max_peak_value = revised_peak_value;
   }
 
@@ -173,9 +173,9 @@ public:
     if (mask.valid()) {
       do {
         assign_pos_of(fod, 0, 3).to(mask);
-        if (!mask.value())
+        if (mask.value() == 0.0f)
           ++loop;
-      } while (loop && !mask.value());
+      } while (loop && (mask.value() == 0.0f));
     }
     assign_pos_of(fod).to(out.vox);
     out.resize(fod.size(3));

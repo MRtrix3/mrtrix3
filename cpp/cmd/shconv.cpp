@@ -89,7 +89,7 @@ protected:
 };
 
 void run() {
-  if (!(argument.size() & size_t(1)))
+  if ((argument.size() & size_t(1)) == 0u)
     throw Exception("unexpected number of arguments");
 
   std::vector<Image<value_type>> inputs((argument.size() - 1) / 2);
@@ -110,7 +110,7 @@ void run() {
     for (ssize_t k = 0; k < responses[n].rows(); ++k)
       responses[n].row(k) = Math::ZSH::ZSH2RH(responses[n].row(k));
 
-    if (n) {
+    if (n != 0u) {
       if (responses[n].rows() != responses[0].rows())
         throw Exception("number of shells differs between response files");
       check_dimensions(inputs[n], inputs[0], 0, 3);

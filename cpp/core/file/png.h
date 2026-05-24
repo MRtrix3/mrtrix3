@@ -41,7 +41,7 @@ public:
 
   size_t get_size() const { return png_get_rowbytes(png_ptr, info_ptr) * height; }
   int get_output_bitdepth() const { return output_bitdepth; }
-  bool has_transparency() const { return png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS); }
+  bool has_transparency() const { return png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS) != 0u; }
 
   void set_expand();
 

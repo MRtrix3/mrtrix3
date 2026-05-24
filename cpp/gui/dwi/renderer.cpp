@@ -56,11 +56,12 @@ void Renderer::start(const Projection &projection,
   if (mode == mode_t::TENSOR)
     scale *= 1000.0f;
 
-  shader.start(mode, use_lighting, colour_by_direction, hide_neg_values, orthographic, colour_relative_to_projection);
+  shader.start(
+      mode, use_lighting, colour_by_direction, hide_neg_values, orthographic, colour_relative_to_projection != nullptr);
 
   gl::UniformMatrix4fv(gl::GetUniformLocation(shader, "MV"), 1, gl::FALSE_, projection.modelview());
   gl::UniformMatrix4fv(gl::GetUniformLocation(shader, "MVP"), 1, gl::FALSE_, projection.modelview_projection());
-  if (colour_relative_to_projection)
+  if (colour_relative_to_projection != nullptr)
     gl::UniformMatrix4fv(gl::GetUniformLocation(shader, "rotation"), 1, gl::FALSE_, *colour_relative_to_projection);
   gl::Uniform3fv(gl::GetUniformLocation(shader, "light_pos"), 1, lighting.lightpos.data());
   gl::Uniform1f(gl::GetUniformLocation(shader, "ambient"), lighting.ambient);
@@ -88,22 +89,22 @@ void Renderer::Shader::start(mode_t mode,
                              bool orthographic,
                              bool colour_relative_to_projection) {
   GL_CHECK_ERROR;
-  if (!(*this) || mode != mode_ || use_lighting != use_lighting_ || colour_by_direction != colour_by_direction_ ||
-      hide_neg_values != hide_neg_values_ || orthographic != orthographic_ ||
-      colour_relative_to_projection != colour_relative_to_projection_) {
+  if (((*this) == 0u) || mode != mode_ || use_lighting != use_lighting_ ||
+      colour_by_direction != colour_by_direction_ || hide_neg_values != hide_neg_values_ ||
+      orthographic != orthographic_ || colour_relative_to_projection != colour_relative_to_projection_) {
     mode_ = mode;
     use_lighting_ = use_lighting;
     colour_by_direction_ = colour_by_direction;
     hide_neg_values_ = hide_neg_values;
     orthographic_ = orthographic;
     colour_relative_to_projection_ = colour_relative_to_projection;
-    if (*this)
+    if (*this != 0u)
       clear();
     GL::Shader::Vertex const vertex_shader(vertex_shader_source());
     GL::Shader::Geometry const geometry_shader(geometry_shader_source());
     GL::Shader::Fragment const fragment_shader(fragment_shader_source());
     attach(vertex_shader);
-    if (static_cast<GLuint>(geometry_shader))
+    if (static_cast<GLuint>(geometry_shader) != 0u)
       attach(geometry_shader);
     attach(fragment_shader);
     link();
@@ -356,7 +357,7 @@ void Renderer::SH::update_transform(const std::vector<Shapes::HalfSphere::Vertex
       for (int m = 0; m <= l; m++) {
         const int idx(Math::SH::index(l, m));
         transform(3 * n, idx) = transform(3 * n, idx - 2 * m) =
-            (m ? Math::sqrt2 : 1.0) * Math::Legendre::Plm_sph<float>(l, m, vertices[n][2]);
+            ((m != 0) ? Math::sqrt2 : 1.0) * Math::Legendre::Plm_sph<float>(l, m, vertices[n][2]);
       }
     }
 

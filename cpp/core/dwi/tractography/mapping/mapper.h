@@ -343,7 +343,7 @@ private:
   // Overload virtual function
   virtual bool preprocess(const Streamline<> &tck, SetVoxelExtras &out) const {
     set_factor(tck, out);
-    return out.factor;
+    return out.factor != 0.0;
   }
 };
 

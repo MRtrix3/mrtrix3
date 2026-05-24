@@ -25,7 +25,7 @@ double InternalEnergyComputer::stageConnect(const ParticleEnd &pe1, ParticleEnd 
   dEint = pe2.e_conn;
   // old
   Particle *par0 = (pe1.alpha == -1) ? pe1.par->getPredecessor() : pe1.par->getSuccessor();
-  if (par0) {
+  if (par0 != nullptr) {
     int const a = (par0->getPredecessor() == pe1.par) ? -1 : +1;
     dEint -= calcEnergy(pe1.par, pe1.alpha, par0, a);
   }

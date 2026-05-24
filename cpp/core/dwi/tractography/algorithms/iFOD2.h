@@ -110,7 +110,7 @@ public:
       mean_samples /= static_cast<double>(num_proc);
       mean_truncations /= static_cast<double>(num_proc);
       INFO("mean number of samples per step = " + str(mean_samples));
-      if (mean_truncations) {
+      if (mean_truncations != 0.0) {
         INFO("mean number of steps between rejection sampling truncations = " + str(1.0 / mean_truncations));
         INFO("maximum truncation error = " + str(max_max_truncation));
       } else {
@@ -170,7 +170,7 @@ public:
         sample_idx(S.num_samples) {}
 
   ~iFOD2() {
-    if (num_sample_runs)
+    if (num_sample_runs != 0u)
       S.update_stats(calibrate_list.size() +
                          (static_cast<double>(mean_sample_num) / static_cast<double>(num_sample_runs)),
                      static_cast<double>(num_truncations) / static_cast<double>(num_sample_runs),
@@ -276,7 +276,7 @@ public:
     size_t sample_idx_at_full_length = (length_to_revert_from - tck.get_seed_index()) % S.num_samples;
     // Unfortunately can't distinguish between sample_idx = 0 and sample_idx = S.num_samples
     // However the former would result in zero truncation with revert_step = 1...
-    if (!sample_idx_at_full_length)
+    if (sample_idx_at_full_length == 0u)
       sample_idx_at_full_length = S.num_samples;
     const size_t points_to_remove = sample_idx_at_full_length + ((revert_step - 1) * S.num_samples);
     if (tck.get_seed_index() + points_to_remove >= tck.size()) {
@@ -386,7 +386,7 @@ protected:
     cos_theta = std::min(cos_theta, 1.0F);
     float const theta = std::acos(cos_theta);
 
-    if (theta) {
+    if (theta != 0.0f) {
 
       Eigen::Vector3f curv = end_dir - cos_theta * dir;
       curv.normalize();

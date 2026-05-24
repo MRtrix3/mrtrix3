@@ -56,7 +56,7 @@ public:
   }
 
   bool operator()(const Streamline<> &, Streamline<> &) const override;
-  bool valid() const override { return nsamples; }
+  bool valid() const override { return nsamples != 0u; }
 
 private:
   const size_t nsamples;
