@@ -30,7 +30,7 @@ class LocalSocketReader : public QObject {
   Q_OBJECT
 
 public:
-  LocalSocketReader(QLocalSocket *mySocket);
+  LocalSocketReader(QLocalSocket *mySocket, QObject *parent = nullptr);
 
 signals:
   void DataReceived(std::vector<std::shared_ptr<QByteArray>> dat); // emits every message currently available

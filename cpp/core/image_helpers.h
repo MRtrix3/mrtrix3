@@ -271,6 +271,11 @@ template <class HeaderType> inline int64_t voxel_count(const HeaderType &in, con
   return fp;
 }
 
+// Disable warning:
+//   this presumably gets called on a pointer type
+//   due to DWI::Fixel_map<> providing a pointer as the image datatype;
+//   this will eventually get obviated (#2644 / #2657)
+// NOLINTNEXTLINE(bugprone-sizeof-expression)
 template <typename ValueType> inline int64_t footprint(int64_t count) { return count * sizeof(ValueType); }
 
 template <> inline int64_t footprint<bool>(int64_t count) { return (count + 7) / 8; }

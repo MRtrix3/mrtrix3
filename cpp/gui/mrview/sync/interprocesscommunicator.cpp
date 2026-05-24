@@ -96,8 +96,9 @@ InterprocessCommunicator::InterprocessCommunicator() : QObject(0) {
  * with our id as the argument
  */
 void InterprocessCommunicator::OnNewIncomingConnection() {
-  // TODO Possible memory leak here
-  LocalSocketReader *lsr = new LocalSocketReader(receiver->nextPendingConnection());
+  // Parent the reader to this communicator so that Qt's object-ownership model
+  // reclaims it when this object is destroyed, rather than leaking the allocation.
+  LocalSocketReader *lsr = new LocalSocketReader(receiver->nextPendingConnection(), this);
   connect(lsr,
           SIGNAL(DataReceived(std::vector<std::shared_ptr<QByteArray>>)),
           this,

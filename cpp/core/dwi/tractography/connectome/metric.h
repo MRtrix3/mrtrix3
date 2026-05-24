@@ -72,10 +72,10 @@ public:
     else if (scale_by_invlength)
       result = (tck.size() > 1 ? (result / Tractography::length(tck)) : 0.0);
     if (scale_by_file) {
-      if (file_values.has_value()) {
-        if (tck.get_index() >= static_cast<size_t>(file_values->size()))
-          throw Exception("File " + file_path->string() + " does not contain enough entries for this tractogram");
-        result *= (*file_values)[tck.get_index()];
+      if (by_file.has_value()) {
+        if (tck.get_index() >= static_cast<size_t>(by_file->values.size()))
+          throw Exception("File " + by_file->path.string() + " does not contain enough entries for this tractogram");
+        result *= by_file->values[tck.get_index()];
       } else {
         assert(false);
         result = std::numeric_limits<double>::signaling_NaN();
@@ -110,19 +110,22 @@ public:
   void set_scale_file(const std::filesystem::path &path, const bool i = true) {
     scale_by_file = i;
     if (!i) {
-      file_path.reset();
-      file_values.reset();
+      by_file.reset();
       return;
     }
-    file_path.emplace(path);
-    file_values.emplace(File::Matrix::load_vector(path));
+    by_file.emplace(path);
   }
 
 private:
   bool scale_by_length, scale_by_invlength, scale_by_invnodevol, scale_by_file;
   Eigen::VectorXd node_volumes;
-  std::optional<std::filesystem::path> file_path;
-  std::optional<Eigen::VectorXd> file_values;
+
+  struct ByFile {
+    std::filesystem::path path;
+    Eigen::VectorXd values;
+    ByFile(const std::filesystem::path &path) : path(path), values(File::Matrix::load_vector(path)) {}
+  };
+  std::optional<ByFile> by_file;
 };
 
 } // namespace MR::DWI::Tractography::Connectome

@@ -344,7 +344,7 @@ void export_commandline(const Header &header) {
   auto check = [&](const scheme_type &m) -> const scheme_type & {
     if (m.rows() == 0)
       throw Exception("no phase-encoding information found within image \"" + header.name() + "\"");
-    return m;
+    return m; // NOLINT(bugprone-return-const-ref-from-parameter)
   };
 
   auto scheme = parse_scheme(header.keyval(), header);
