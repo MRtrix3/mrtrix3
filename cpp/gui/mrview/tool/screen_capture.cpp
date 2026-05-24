@@ -373,7 +373,7 @@ void Capture::run(bool with_capture) {
       break;
     }
     case TranslationType::Scanner:
-      break;
+      [[fallthrough]];
     default:
       break;
     }

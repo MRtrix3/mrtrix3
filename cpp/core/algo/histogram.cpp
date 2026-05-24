@@ -64,6 +64,7 @@ void Calibrator::finalize(const size_t num_volumes, const bool is_integer) {
       //   histograms are generated for individual volumes
       // Need to adjust the bin width accordingly... kinda ugly hack
       // Will need to revisit if mrstats gets capability to compute statistics across all volumes rather than splitting
+      // NOLINTNEXTLINE(bugprone-integer-division)
       bin_width = 2.0 * get_iqr() * std::pow(static_cast<default_type>(data.size() / num_volumes), -1.0 / 3.0);
       std::vector<default_type>().swap(data); // No longer required; free the memory used
       // If the input data are integers, the bin width should also be an integer, to avoid getting

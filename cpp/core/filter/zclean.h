@@ -241,12 +241,8 @@ public:
         continue;
       float val = input.value();
       if (mask.value()) {
-        if (val < lo)
-          output.value() = val; // hack
-        else if (val > hi)
-          output.value() = hi;
-        else
-          output.value() = val;
+        // Includes hack for val < lo
+        output.value() = val > hi ? hi : val;
         continue;
       } else { // outside refined mask but inside initial mask
         if (keep_lower && val < lo)

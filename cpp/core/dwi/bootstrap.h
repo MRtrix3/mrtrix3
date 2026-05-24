@@ -16,7 +16,11 @@
 
 #pragma once
 
+#include <map>
+#include <vector>
+
 #include "adapter/base.h"
+#include "algo/loop.h"
 
 namespace MR::DWI {
 

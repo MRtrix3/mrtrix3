@@ -60,9 +60,11 @@ bool List::get_seed(Eigen::Vector3f &p, Eigen::Vector3f &d) {
     do {
       float incrementer = 0.0;
       const float sample = uniform(rng) * total_volume;
-      for (auto &i : seeders)
-        if ((incrementer += i->vol()) > sample)
+      for (auto &i : seeders) {
+        incrementer += i->vol();
+        if (incrementer > sample)
           return i->get_seed(p, d);
+      }
 
     } while (1);
     return false;

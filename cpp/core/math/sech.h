@@ -16,8 +16,9 @@
 
 #pragma once
 
+#include <vector>
+
 #include "math/math.h"
-#include "math/vector.h"
 
 namespace MR::Math::Sech {
 
@@ -76,7 +77,7 @@ template <typename T> inline T lnP(const int N, const T *measured, const T *actu
 }
 
 template <typename T>
-inline T lnP(const Math::Vector<T> &measured, const Math::Vector<T> &actual, const T one_over_noise_squared) {
+inline T lnP(const std::vector<T> &measured, const std::vector<T> &actual, const T one_over_noise_squared) {
   assert(one_over_noise_squared > 0.0);
   assert(measured.size() == actual.size());
 
@@ -126,10 +127,10 @@ inline T lnP(const int N, const T *measured, const T *actual, const T one_over_n
 }
 
 template <typename T>
-inline T lnP(const Math::Vector<T> &measured,
-             const Math::Vector<T> &actual,
+inline T lnP(const std::vector<T> &measured,
+             const std::vector<T> &actual,
              const T one_over_noise_squared,
-             Math::Vector<T> &dP_dactual,
+             std::vector<T> &dP_dactual,
              T &dP_dN) {
   assert(one_over_noise_squared > 0.0);
   assert(measured.size() == actual.size());

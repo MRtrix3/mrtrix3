@@ -64,9 +64,12 @@ template <class Method> void calibrate(Method &method) {
   const float max_angle = std::isfinite(method.S.max_angle_ho) ? method.S.max_angle_ho : method.S.max_angle_1o;
 
   std::vector<Pair> amps;
-  for (float incl = 0.0; incl < max_angle; incl += 0.001) {
+  // for (float incl = 0.0; incl < max_angle; incl += 0.001) {
+  const size_t incl_maxindex = static_cast<size_t>(std::floor(1000.0F * max_angle));
+  for (size_t incl_index = 0; incl_index <= incl_maxindex; ++incl_index) {
+    const float incl = 0.001F * incl_index;
     amps.push_back(Pair(incl, calibrate_func(incl)));
-    if (!std::isfinite(amps.back().amp) || amps.back().amp <= 0.0)
+    if (!std::isfinite(amps.back().amp) || amps.back().amp <= 0.0F)
       break;
   }
   float zero = amps.back().incl;

@@ -238,7 +238,10 @@ private:
 
   template <class VectorType>
   value_type compute_statistic(const VectorType &data, const std::vector<value_type> &weights) const {
-    assert(statistic().has_value());
+    if (!statistic().has_value()) {
+      assert(false);
+      return std::numeric_limits<value_type>::quiet_NaN();
+    }
     switch (statistic().value()) {
     case Statistic::MEAN: {
       value_type integral = value_type(0);
@@ -284,8 +287,6 @@ private:
       return cast_to_nan ? std::numeric_limits<value_type>::quiet_NaN() : value;
     } break;
     }
-    assert(false);
-    return std::numeric_limits<value_type>::quiet_NaN();
   }
 };
 
@@ -320,6 +321,10 @@ protected:
   };
 
   value_type compute_statistic(std::vector<ValueLength> &data) const {
+    if (!statistic().has_value()) {
+      assert(false);
+      return std::numeric_limits<value_type>::quiet_NaN();
+    }
     if (data.empty())
       return std::numeric_limits<value_type>::quiet_NaN();
     switch (statistic().value()) {
@@ -376,8 +381,6 @@ protected:
       return cast_to_nan ? std::numeric_limits<value_type>::quiet_NaN() : maxvalue;
     }
     }
-    assert(false);
-    return std::numeric_limits<value_type>::quiet_NaN();
   }
 };
 

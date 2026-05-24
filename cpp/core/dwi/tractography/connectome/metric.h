@@ -72,10 +72,14 @@ public:
     else if (scale_by_invlength)
       result = (tck.size() > 1 ? (result / Tractography::length(tck)) : 0.0);
     if (scale_by_file) {
-      assert(file_values.has_value());
-      if (tck.get_index() >= static_cast<size_t>(file_values->size()))
-        throw Exception("File " + file_path->string() + " does not contain enough entries for this tractogram");
-      result *= (*file_values)[tck.get_index()];
+      if (file_values.has_value()) {
+        if (tck.get_index() >= static_cast<size_t>(file_values->size()))
+          throw Exception("File " + file_path->string() + " does not contain enough entries for this tractogram");
+        result *= (*file_values)[tck.get_index()];
+      } else {
+        assert(false);
+        result = std::numeric_limits<double>::signaling_NaN();
+      }
     }
     return result;
   }

@@ -16,8 +16,9 @@
 
 #pragma once
 
+#include <vector>
+
 #include "math/math.h"
-#include "math/vector.h"
 
 namespace MR::Math::Gaussian {
 

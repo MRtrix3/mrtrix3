@@ -40,7 +40,6 @@ input_dirpath(QWidget *parent, std::string_view caption, std::optional<std::file
       QFileDialog::ShowDirsOnly | FILE_DIALOG_OPTIONS);
 
   FileDialogReturn result;
-  std::string new_folder;
   if (!qstring.isEmpty()) {
     result.single_selection = std::filesystem::path(qstring.toUtf8().data());
     result.last_directory = result.single_selection;
@@ -116,8 +115,8 @@ const FileDialogReturn output_filepath(QWidget *parent,
 
   QString selection;
   if (start_directory.has_value()) {
-    selection = suggested_name.has_value() ? qstr(start_directory.value().string())
-                                           : qstr((start_directory.value() / suggested_name.value()).string());
+    selection = suggested_name.has_value() ? qstr((start_directory.value() / suggested_name.value()).string())
+                                           : qstr(start_directory.value().string());
   } else if (suggested_name.has_value()) {
     selection = qstr(suggested_name->string());
   }

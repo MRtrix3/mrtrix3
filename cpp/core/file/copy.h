@@ -16,10 +16,11 @@
 
 #pragma once
 
+#include <filesystem>
+
 #include "exception.h"
 #include "file/mmap.h"
-#include "file/utils.h"
-#include <filesystem>
+#include "file/ofstream.h"
 
 namespace MR::File {
 
@@ -27,7 +28,8 @@ inline void copy(const std::filesystem::path &source, const std::filesystem::pat
   {
     DEBUG("copying file \"" + source.string() + "\" to \"" + destination.string() + "\"...");
     MMap input(source);
-    create(destination, input.size());
+    { File::OFStream out(destination); }
+    std::filesystem::resize_file(destination, input.size());
     MMap output(destination, true);
     ::memcpy(output.address(), input.address(), input.size());
   }

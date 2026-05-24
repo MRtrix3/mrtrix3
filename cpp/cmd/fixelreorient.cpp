@@ -83,7 +83,7 @@ void run() {
 
   auto input_index_image = Fixel::find_index_header(input_fixel_directory).get_image<index_type>();
 
-  Header warp_header = Header::open(argument[1]);
+  Header warp_header = Header::open(input_warp_file);
   Registration::Warp::validate_header(warp_header);
   check_dimensions(input_index_image, warp_header, 0, 3);
   auto warp_image = warp_header.get_image<float>();

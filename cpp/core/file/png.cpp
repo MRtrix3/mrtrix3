@@ -54,11 +54,13 @@ Reader::Reader(const std::filesystem::path &filepath)
     e.push_back("File signature: " + s.str());
     throw e;
   }
-  if (!(png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr))) {
+  png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
+  if (png_ptr == nullptr) {
     fclose(infile);
     throw Exception("Unable to allocate memory for PNG read structure for image \"" + filepath.string() + "\"");
   }
-  if (!(info_ptr = png_create_info_struct(png_ptr))) {
+  info_ptr = png_create_info_struct(png_ptr);
+  if (info_ptr == nullptr) {
     fclose(infile);
     png_destroy_read_struct(&png_ptr, nullptr, nullptr);
     throw Exception("Unable to allocate memory for PNG info structure for image \"" + filepath.string() + "\"");
@@ -132,9 +134,9 @@ void Reader::load(std::byte *image_data) {
     png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
     throw Exception("Fatal error reading PNG image");
   }
-  const int row_bytes = png_get_rowbytes(png_ptr, info_ptr);
+  const size_t row_bytes = static_cast<size_t>(png_get_rowbytes(png_ptr, info_ptr));
   png_bytepp row_pointers = new png_bytep[height];
-  for (png_uint_32 i = 0; i != height; ++i)
+  for (size_t i = 0; i != static_cast<size_t>(height); ++i)
     row_pointers[i] = reinterpret_cast<png_bytep>(image_data + i * row_bytes);
   png_read_image(png_ptr, row_pointers);
   delete[] row_pointers;
@@ -154,9 +156,11 @@ Writer::Writer(const Header &H, const std::filesystem::path &path)
       outfile(nullptr) {
   if (std::filesystem::exists(path) && !App::overwrite_files)
     throw Exception("output file \"" + path.string() + "\" already exists (use -force option to force overwrite)");
-  if (!(png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, this, &error_handler, nullptr)))
+  png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, this, &error_handler, nullptr);
+  if (png_ptr == nullptr)
     throw Exception("Unable to create PNG write structure for image \"" + path.string() + "\"");
-  if (!(info_ptr = png_create_info_struct(png_ptr)))
+  info_ptr = png_create_info_struct(png_ptr);
+  if (info_ptr == nullptr)
     throw Exception("Unable to create PNG info structure for image \"" + path.string() + "\"");
   if (setjmp(jmpbuf)) {
     png_destroy_write_struct(&png_ptr, &info_ptr);
@@ -207,9 +211,6 @@ Writer::Writer(const Header &H, const std::filesystem::path &path)
          "image will be scaled to integer representation assuming input data is in the range 0.0 - 1.0");
   }
   switch (data_type() & DataType::Type) {
-  case DataType::Undefined:
-    png_destroy_write_struct(&png_ptr, &info_ptr);
-    throw Exception("Undefined data type in image \"" + H.path().string() + "\" for PNG writer");
   case DataType::Bit:
     assert(false);
     break;
@@ -229,6 +230,11 @@ Writer::Writer(const Header &H, const std::filesystem::path &path)
     bit_depth = 16;
     multiplier = std::numeric_limits<uint16_t>::max();
     break;
+  case DataType::Undefined:
+    [[fallthrough]];
+  default:
+    png_destroy_write_struct(&png_ptr, &info_ptr);
+    throw Exception("Undefined data type in image \"" + H.path().string() + "\" for PNG writer");
   }
   // Detect cases where one axis has a size of 1, and hence represents the image plane
   //   being set via selection of a single slice rather than axis permutation
@@ -322,7 +328,8 @@ void Writer::save(std::byte *data) {
     std::byte *in_ptr = data;
     std::byte *out_ptr = scratch;
     const uint8_t channels = png_get_channels(png_ptr, info_ptr);
-    const size_t num_elements = channels * width * height;
+    const size_t num_elements =
+        static_cast<size_t>(channels) * static_cast<size_t>(width) * static_cast<size_t>(height);
     switch (bit_depth) {
     case 8:
       fill<uint8_t>(in_ptr, out_ptr, data_type, num_elements);

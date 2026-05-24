@@ -46,7 +46,7 @@ Node::Mesh::Mesh(MR::Surface::Mesh &in) : count(3 * in.num_triangles()) {
   GL::assert_context_is_current();
 
   std::vector<float> vertices;
-  vertices.reserve(3 * in.num_vertices());
+  vertices.reserve(3 * static_cast<size_t>(in.num_vertices()));
   for (size_t v = 0; v != in.num_vertices(); ++v) {
     for (size_t axis = 0; axis != 3; ++axis)
       vertices.push_back(in.vert(v)[axis]);
@@ -59,7 +59,7 @@ Node::Mesh::Mesh(MR::Surface::Mesh &in) : count(3 * in.num_triangles()) {
   if (!in.have_normals())
     in.calculate_normals();
   std::vector<float> normals;
-  normals.reserve(3 * in.num_vertices());
+  normals.reserve(3 * static_cast<size_t>(in.num_vertices()));
   for (size_t n = 0; n != in.num_vertices(); ++n) {
     for (size_t axis = 0; axis != 3; ++axis)
       normals.push_back(in.norm(n)[axis]);

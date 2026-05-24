@@ -143,13 +143,15 @@ void run() {
     input_file_list.push_back(input_path);
 
     Properties p;
-    Reader<float>(input_path, p);
+    { Reader<float> reader(input_path, p); }
 
     for (const auto &i : p.comments) {
       bool present = false;
-      for (const auto &j : properties.comments)
-        if ((present = (i == j)))
+      for (const auto &j : properties.comments) {
+        present = (i == j);
+        if (present)
           break;
+      }
       if (!present)
         properties.comments.push_back(i);
     }

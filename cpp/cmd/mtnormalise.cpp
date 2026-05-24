@@ -529,6 +529,7 @@ void run() {
     size_t iter = 0;
     ProgressBar progress("performing log-domain intensity normalisation", max_iter);
 
+    // NOLINTNEXTLINE(clang-analyzer-deadcode.DeadStores)
     size_t outliers_changed = detect_outliers(3.0, data, field, balance_factors, weights);
 
     while (++iter <= max_iter) {

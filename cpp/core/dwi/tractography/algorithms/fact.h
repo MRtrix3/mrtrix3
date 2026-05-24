@@ -136,7 +136,9 @@ protected:
     if (idx < 0)
       return (0.0);
 
-    d = {values[3 * idx], values[3 * idx + 1], values[3 * idx + 2]};
+    d = {values[3 * static_cast<size_t>(idx)],
+         values[3 * static_cast<size_t>(idx) + 1],
+         values[3 * static_cast<size_t>(idx) + 2]};
     d.normalize();
     if (max_dot < 0.0)
       d = -d;

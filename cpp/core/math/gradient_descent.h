@@ -19,6 +19,7 @@
 #include <limits>
 
 #include "math/math.h"
+#include "mrtrix.h"
 
 namespace MR::Math {
 

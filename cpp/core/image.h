@@ -383,13 +383,19 @@ template <typename ValueType> Image<ValueType>::Buffer::~Buffer() {
     return;
   if (!ram.has_value())
     return;
-  auto local_data = std::move(ram->data);
-  // Construct a temporary shared_ptr with a no-op deleter so that Image can be
-  // used as a write destination without triggering a second deletion of this.
-  std::shared_ptr<Buffer> self(this, [](Buffer *) {});
-  TmpImage<ValueType> src = {*this, local_data.get(), std::vector<ssize_t>(ndim(), 0), ram->strides, ram->offset};
-  Image<ValueType> dest(self);
-  threaded_copy_with_progress_message("writing back direct IO buffer for \"" + name() + "\"", src, dest);
+  try {
+    auto local_data = std::move(ram->data);
+    // Construct a temporary shared_ptr with a no-op deleter so that Image can be
+    // used as a write destination without triggering a second deletion of this.
+    std::shared_ptr<Buffer> self(this, [](Buffer *) {});
+    TmpImage<ValueType> src = {*this, local_data.get(), std::vector<ssize_t>(ndim(), 0), ram->strides, ram->offset};
+    Image<ValueType> dest(self);
+    threaded_copy_with_progress_message("writing back direct IO buffer for \"" + name() + "\"", src, dest);
+  } catch (Exception &e) {
+    Exception(e, "Error during writeback of image \"" + name() + "\"; image may be corrupt").display();
+  } catch (std::exception &e) {
+    WARN("Error during writeback of image \"" + name() + "\"---" + e.what() + "---image may be corrupt");
+  }
 }
 
 template <typename ValueType>

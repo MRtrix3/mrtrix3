@@ -146,7 +146,13 @@ public:
     current_offset = out.tellp();
   }
 
-  ~ScalarWriter() { commit(); }
+  ~ScalarWriter() {
+    try {
+      commit();
+    } catch (Exception &e) {
+      Exception(e, "Tractography scalar file not properly finalised").display();
+    }
+  }
 
   bool operator()(const TrackScalar<T> &tck_scalar) {
     if (buffer_size + tck_scalar.size() > buffer_capacity)

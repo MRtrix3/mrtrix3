@@ -206,10 +206,10 @@ public:
       ipeaks_vox.index(1) = item.pos[1];
       ipeaks_vox.index(2) = item.pos[2];
 
-      for (int i = 0; i < npeaks; i++) {
+      for (size_t i = 0; i < npeaks; i++) {
         Eigen::Vector3f p;
-        ipeaks_vox.index(3) = 3 * i;
-        for (int n = 0; n < 3; n++) {
+        ipeaks_vox.index(3) = static_cast<ssize_t>(3 * i);
+        for (size_t n = 0; n < 3; n++) {
           p[n] = ipeaks_vox.value();
           ipeaks_vox.index(3)++;
         }
@@ -239,9 +239,9 @@ public:
       std::partial_sort_copy(all_peaks.begin(), all_peaks.end(), peaks_out.begin(), peaks_out.end());
     }
 
-    int actual_npeaks = std::min(npeaks, static_cast<int>(all_peaks.size()));
+    const size_t actual_npeaks = std::min(npeaks, all_peaks.size());
     dirs_vox.index(3) = 0;
-    for (int n = 0; n < actual_npeaks; n++) {
+    for (size_t n = 0; n < actual_npeaks; n++) {
       dirs_vox.value() = peaks_out[n].a * peaks_out[n].v[0];
       dirs_vox.index(3)++;
       dirs_vox.value() = peaks_out[n].a * peaks_out[n].v[1];
@@ -249,7 +249,7 @@ public:
       dirs_vox.value() = peaks_out[n].a * peaks_out[n].v[2];
       dirs_vox.index(3)++;
     }
-    for (; dirs_vox.index(3) < 3 * npeaks; dirs_vox.index(3)++)
+    for (; dirs_vox.index(3) < static_cast<ssize_t>(3 * npeaks); dirs_vox.index(3)++)
       dirs_vox.value() = NaNF;
 
     return true;
@@ -258,7 +258,7 @@ public:
 private:
   Image<value_type> dirs_vox;
   Eigen::Matrix<value_type, Eigen::Dynamic, 2> dirs;
-  int lmax, npeaks;
+  size_t lmax, npeaks;
   std::vector<Direction> true_peaks;
   value_type threshold;
   std::vector<Direction> peaks_out;
@@ -306,7 +306,7 @@ void run() {
   if (dirs.cols() != 2)
     throw Exception("expecting 2 columns for search directions matrix");
 
-  int npeaks = get_option_value("num", default_npeaks);
+  size_t npeaks = get_option_value("num", default_npeaks);
 
   opt = get_options("direction");
   std::vector<Direction> true_peaks;
@@ -334,7 +334,7 @@ void run() {
     check_dimensions(SH_data, ipeaks_data, 0, 3);
     npeaks = ipeaks_data.size(3) / 3;
   }
-  header.size(3) = 3 * npeaks;
+  header.size(3) = static_cast<ssize_t>(3 * npeaks);
   auto peaks = Image<value_type>::create(argument[1], header);
 
   DataLoader loader(SH_data, mask_data);

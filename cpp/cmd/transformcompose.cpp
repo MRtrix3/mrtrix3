@@ -163,6 +163,7 @@ void run() {
     output_header.ndim() = 4;
     output_header.size(3) = 3;
     output_header.datatype() = DataType::Float32;
+    output_header.datatype().set_byte_order_native();
 
     Image<float> output = Image<value_type>::create(output_path, output_header);
 

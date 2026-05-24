@@ -32,7 +32,7 @@ LightBox::LightBox() : frames_dirty(true) {
   Image *img = image();
 
   if (!img || prev_image_path != img->header().path())
-    image_changed_event();
+    LightBox::image_changed_event();
   else {
     set_volume_increment(volume_increment);
     set_slice_increment(slice_focus_increment);

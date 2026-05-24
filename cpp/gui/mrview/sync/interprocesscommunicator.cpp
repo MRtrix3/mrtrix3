@@ -96,6 +96,7 @@ InterprocessCommunicator::InterprocessCommunicator() : QObject(0) {
  * with our id as the argument
  */
 void InterprocessCommunicator::OnNewIncomingConnection() {
+  // TODO Possible memory leak here
   LocalSocketReader *lsr = new LocalSocketReader(receiver->nextPendingConnection());
   connect(lsr,
           SIGNAL(DataReceived(std::vector<std::shared_ptr<QByteArray>>)),

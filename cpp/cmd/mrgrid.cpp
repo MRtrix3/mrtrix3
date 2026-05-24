@@ -424,7 +424,7 @@ void run() {
         try {
           delta = parse_ints<int>(opt[i][1]);
         } catch (Exception &E) {
-          Exception(E, "-axis " + str(axis) + ": can't parse delta specifier \"" + spec + "\"");
+          throw Exception(E, "-axis " + str(axis) + ": can't parse delta specifier \"" + spec + "\"");
         }
         if (delta.size() != 2)
           throw Exception("-axis " + str(axis) + ": can't parse delta specifier \"" + spec + "\"");

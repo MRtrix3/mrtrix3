@@ -65,7 +65,7 @@ void NBS::initialise(const node_t num_nodes) {
 
       const size_t index = mat2vec(row, column);
       std::vector<size_t> &vector = (*adjacency)[index];
-      vector.reserve(2 * (num_nodes - 1));
+      vector.reserve(2 * static_cast<size_t>(num_nodes - 1));
       // Should be able to expand from this edge to any other edge connected to either row or column
       for (node_t r = 0; r != num_nodes; ++r) {
         if (r != row)
