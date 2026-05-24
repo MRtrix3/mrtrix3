@@ -8,12 +8,12 @@ Checks: >
   performance-*,
   readability-implicit-bool-conversion,
   readability-container-size-empty,
-  # misc-const-correctness -- not enforced; conflicts with ThreadedLoop functor idiom (non-const operator()). See commit body.
+  # misc-const-correctness -- not enforced; conflicts with ThreadedLoop functor idiom (non-const operator()). See commit body.,
   -bugprone-easily-swappable-parameters,
   -bugprone-narrowing-conversions,
   -clang-analyzer-optin.core.EnumCastOutOfRange,
   -clang-analyzer-unix.Malloc,
-  # performance-* sub-checks excluded: large residuals with no safe autofix or conflicts with house rules
+  # performance-* sub-checks excluded: large residuals with no safe autofix or conflicts with house rules,
   -performance-enum-size,
   -performance-unnecessary-value-param,
   -performance-move-constructor-init,
