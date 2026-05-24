@@ -168,7 +168,7 @@ DataType DataType::parse(std::string_view spec) {
   if (str == "bit")
     return Bit;
 
-  throw Exception(fmt::format("invalid data type \"{}\"", spec));
+  throw Exception("invalid data type \"{}\"", spec);
 }
 
 size_t DataType::bits() const {

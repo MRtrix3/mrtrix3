@@ -119,7 +119,7 @@ protected:
 
   void verify_stream(const File::OFStream &out) {
     if (!out.good())
-      throw Exception(fmt::format("error writing file \"{}\": {}", path, strerror(errno)));
+      throw Exception("error writing file \"{}\": {}", path, strerror(errno));
   }
 
   void update_counts(File::OFStream &out) {

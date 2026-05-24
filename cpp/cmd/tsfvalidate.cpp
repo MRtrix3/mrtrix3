@@ -59,7 +59,7 @@ void usage() {
 
 void run() {
   validate_tsf(argument[0], argument[1]);
-  CONSOLE(fmt::format("Track scalar file \"{}\" is valid with respect to tractogram \"{}\"", //
-                      argument[0],
-                      argument[1]));
+  CONSOLE("Track scalar file \"{}\" is valid with respect to tractogram \"{}\"", //
+          argument[0],
+          argument[1]);
 }

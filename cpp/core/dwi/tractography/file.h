@@ -84,9 +84,9 @@ public:
           if (tck.get_index() < static_cast<size_t>(weights.size())) {
             tck.weight = weights[tck.get_index()];
           } else {
-            WARN(fmt::format("Streamline weights file contains less entries ({}", weights.size()) +
-                 ") than .tck file; "
-                 "ceasing reading of streamline data");
+            WARN("Streamline weights file contains less entries ({}) than .tck file; "
+                 "ceasing reading of streamline data",
+                 weights.size());
             in.close();
             tck.clear();
             return false;
@@ -150,8 +150,7 @@ protected:
     if (!weights.size())
       return;
     if (static_cast<size_t>(weights.size()) > current_index) {
-      WARN(fmt::format(
-          "Streamline weights file contains more entries ({}) than .tck file ({})", weights.size(), current_index));
+      WARN("Streamline weights file contains more entries ({}) than .tck file ({})", weights.size(), current_index);
     }
   }
 
@@ -208,7 +207,7 @@ public:
     format_point(barrier(), x);
     out.write(reinterpret_cast<const char *>(&x[0]), sizeof(x)); // check_syntax off
     if (!out.good())
-      throw Exception(fmt::format("error writing tracks file \"{}\": {}", path, strerror(errno)));
+      throw Exception("error writing tracks file \"{}\": {}", path, strerror(errno));
     open_success = true;
 
     auto opt = App::get_options("tck_weights_out");
@@ -268,7 +267,7 @@ protected:
     File::OFStream out(weights_path, std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
     out << contents;
     if (!out.good())
-      throw Exception(fmt::format("error writing streamline weights file \"{}\": {}", weights_path, strerror(errno)));
+      throw Exception("error writing streamline weights file \"{}\": {}", weights_path, strerror(errno));
   }
 
   //! write track point data to file

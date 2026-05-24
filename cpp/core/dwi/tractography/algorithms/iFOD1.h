@@ -91,10 +91,10 @@ public:
     ~Shared() {
       mean_samples /= static_cast<double>(num_proc);
       mean_truncations /= static_cast<double>(num_proc);
-      INFO(fmt::format("mean number of samples per step = {}", mean_samples));
+      INFO("mean number of samples per step = {}", mean_samples);
       if (mean_truncations) {
-        INFO(fmt::format("mean number of steps between rejection sampling truncations = {}", 1.0 / mean_truncations));
-        INFO(fmt::format("maximum truncation error = {}", max_max_truncation));
+        INFO("mean number of steps between rejection sampling truncations = {}", 1.0 / mean_truncations);
+        INFO("maximum truncation error = {}", max_max_truncation);
       } else {
         INFO("no rejection sampling truncations occurred");
       }
@@ -190,7 +190,7 @@ public:
 
         val = std::pow(val, S.fod_power);
         if (val > max_val) {
-          DEBUG(fmt::format("max_val exceeded!!! (val = {}, max_val = {})", val, max_val));
+          DEBUG("max_val exceeded!!! (val = {}, max_val = {})", val, max_val);
           ++num_truncations;
           if (val / max_val > max_truncation)
             max_truncation = val / max_val;

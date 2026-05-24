@@ -84,7 +84,7 @@ void Connector::Adjacency::initialise(const Header &header, const Voxel2Vector &
     data.push_back(indices);
   }
   is_initialised = true;
-  DEBUG(fmt::format("Adjacency data for {} voxels initialised", data.size()));
+  DEBUG("Adjacency data for {} voxels initialised", data.size());
 }
 
 void Connector::run(std::vector<Cluster> &clusters, std::vector<uint32_t> &labels) const {

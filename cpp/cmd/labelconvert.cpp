@@ -143,10 +143,9 @@ void run() {
   if (!opt.empty()) {
 
     if (duplicates)
-      throw Exception(
-          fmt::format("Cannot add spine node: \"{}\" appears multiple times in output LUT", SPINE_NODE_NAME));
+      throw Exception("Cannot add spine node: \"{}\" appears multiple times in output LUT", SPINE_NODE_NAME);
     if (!spine_index)
-      throw Exception(fmt::format("Cannot add spine node: \"{}\" not present in output LUT", SPINE_NODE_NAME));
+      throw Exception("Cannot add spine node: \"{}\" not present in output LUT", SPINE_NODE_NAME);
 
     auto in_spine = Image<bool>::open(opt[0][0]);
     if (dimensions_match(in_spine, out)) {
@@ -173,7 +172,7 @@ void run() {
     }
 
   } else if (spine_index) {
-    WARN(fmt::format("Config file includes \"{}\" node, but user has not provided the segmentation using -spine option",
-                     SPINE_NODE_NAME));
+    WARN("Config file includes \"{}\" node, but user has not provided the segmentation using -spine option",
+         SPINE_NODE_NAME);
   }
 }

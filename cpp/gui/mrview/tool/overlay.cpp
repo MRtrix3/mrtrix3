@@ -687,7 +687,7 @@ bool Overlay::process_commandline_option(const MR::App::ParsedOption &opt) {
     try {
       int n = opt[0];
       if (n < 0 || ColourMap::maps[n].name.empty())
-        throw Exception(fmt::format("invalid overlay colourmap index \"{}\" for -overlay.colourmap option", opt[0]));
+        throw Exception("invalid overlay colourmap index \"{}\" for -overlay.colourmap option", opt[0]);
       colourmap_button->set_colourmap_index(n);
     } catch (Exception &e) {
       e.display();

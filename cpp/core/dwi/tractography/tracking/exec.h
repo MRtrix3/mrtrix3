@@ -194,8 +194,7 @@ private:
           return true;
         }
       }
-      FAIL("Failed to find suitable seed point after " +
-           fmt::format("{} attempts - aborting", failed_seed_attempts_to_abort));
+      FAIL("Failed to find suitable seed point after {} attempts - aborting", failed_seed_attempts_to_abort);
       return false;
     }
   }

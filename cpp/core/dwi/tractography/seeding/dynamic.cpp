@@ -145,9 +145,9 @@ Dynamic::Dynamic(const std::filesystem::path &in,
 
 Dynamic::~Dynamic() {
 
-  INFO(fmt::format("Dynamic seeeding required {} samples to draw {} seeds",
-                   attempts.load(std::memory_order_relaxed),
-                   seeds.load(std::memory_order_relaxed)));
+  INFO("Dynamic seeeding required {} samples to draw {} seeds",
+       attempts.load(std::memory_order_relaxed),
+       seeds.load(std::memory_order_relaxed));
 
 #ifdef DYNAMIC_SEED_DEBUGGING
 

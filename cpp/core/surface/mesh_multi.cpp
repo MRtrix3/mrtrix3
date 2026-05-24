@@ -56,21 +56,21 @@ void MeshMulti::load(const std::filesystem::path &path) {
     std::string data(line.substr(divider + 1, line.npos));
     if (prefix == "v") {
       if (index < 0)
-        throw Exception(fmt::format("Malformed OBJ file: vertex outside object (line {})", counter));
+        throw Exception("Malformed OBJ file: vertex outside object (line {})", counter);
       std::array<float, 4> values{};
       sscanf(data.c_str(), "%f %f %f %f", &values[0], &values[1], &values[2], &values[3]);
       vertices.push_back(Vertex(values[0], values[1], values[2]));
     } else if (prefix == "vt") {
     } else if (prefix == "vn") {
       // if (index < 0)
-      //   throw Exception(fmt::format("Malformed OBJ file; vertex normal outside object (line {})", str(counter)));
+      //   throw Exception("Malformed OBJ file; vertex normal outside object (line {})", counter);
       // float values[3];
       // sscanf (data.c_str(), "%f %f %f", &values[0], &values[1], &values[2]);
       // normals.push_back (Vertex (values[0], values[1], values[2]));
     } else if (prefix == "vp") {
     } else if (prefix == "f") {
       if (index < 0)
-        throw Exception(fmt::format("Malformed OBJ file: face outside object (line {})", counter));
+        throw Exception("Malformed OBJ file: face outside object (line {})", counter);
       std::vector<std::string> elements;
       do {
         const size_t first_space = data.find_first_of(' ');
@@ -84,10 +84,10 @@ void MeshMulti::load(const std::filesystem::path &path) {
         }
       } while (!data.empty());
       if (elements.size() != 3 && elements.size() != 4)
-        throw Exception(fmt::format("{}{}{})",
-                                    "Malformed face information in input OBJ file", //
-                                    " (face with neither 3 nor 4 vertices; line ",
-                                    str(counter))); //
+        throw Exception("{}{}{})",
+                        "Malformed face information in input OBJ file", //
+                        " (face with neither 3 nor 4 vertices; line ",
+                        counter); //
       std::vector<FaceData> face_data;
       size_t values_per_element = 0;
       for (std::vector<std::string>::iterator i = elements.begin(); i != elements.end(); ++i) {
@@ -114,9 +114,9 @@ void MeshMulti::load(const std::filesystem::path &path) {
         if (!values_per_element)
           values_per_element = this_values_count;
         else if (values_per_element != this_values_count)
-          throw Exception(fmt::format(
+          throw Exception(
               "Malformed face information in input OBJ file: inconsistent vertex / texture / normal detail; line {}",
-              counter));
+              counter);
         face_data.push_back(temp);
       }
       if (face_data.size() == 3) {

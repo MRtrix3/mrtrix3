@@ -109,7 +109,7 @@ Eigen::MatrixXd parse_DW_scheme(const Header &header) {
     try {
       G = MR::parse_matrix(it->second);
     } catch (Exception &e) {
-      throw Exception(e, fmt::format("malformed DW scheme in image \"{}\"", header.name()));
+      throw Exception(e, "malformed DW scheme in image \"{}\"", header.name());
     }
   }
   return G;
@@ -125,41 +125,41 @@ Eigen::MatrixXd load_bvecs_bvals(const Header &header,
     bvecs = File::Matrix::load_matrix<>(bvecs_path);
   } catch (Exception &e) {
     throw Exception(e,
-                    fmt::format("Unable to import files \"{}\" and \"{}\" as FSL bvecs/bvals pair", //
-                                bvecs_path,                                                         //
-                                bvals_path));                                                       //
+                    "Unable to import files \"{}\" and \"{}\" as FSL bvecs/bvals pair", //
+                    bvecs_path,                                                         //
+                    bvals_path);                                                        //
   }
 
   if (bvals.rows() != 1) {
     if (bvals.cols() == 1)
       bvals.transposeInPlace(); // transpose if file contains column vector
     else
-      throw Exception(fmt::format("bvals file must contain 1 row or column only; file \"{}\" has {}", //
-                                  bvals_path,                                                         //
-                                  bvals.rows()));                                                     //
+      throw Exception("bvals file must contain 1 row or column only; file \"{}\" has {}", //
+                      bvals_path,                                                         //
+                      bvals.rows());                                                      //
   }
   if (bvecs.rows() != 3) {
     if (bvecs.cols() == 3)
       bvecs.transposeInPlace();
     else
-      throw Exception(fmt::format("bvecs file must contain exactly 3 rows or columns; file \"{}\" has {}", //
-                                  bvecs_path,                                                              //
-                                  bvecs.rows()));                                                          //
+      throw Exception("bvecs file must contain exactly 3 rows or columns; file \"{}\" has {}", //
+                      bvecs_path,                                                              //
+                      bvecs.rows());                                                           //
   }
   if (bvals.cols() != bvecs.cols())
-    throw Exception(fmt::format("bvecs and bvals files must have same number of diffusion directions;" //
-                                " file \"{}\" has {}, file \"{}\" has {}",                             //
-                                bvecs_path,                                                            //
-                                bvecs.cols(),                                                          //
-                                bvals_path,                                                            //
-                                bvals.cols()));                                                        //
+    throw Exception("bvecs and bvals files must have same number of diffusion directions;" //
+                    " file \"{}\" has {}, file \"{}\" has {}",                             //
+                    bvecs_path,                                                            //
+                    bvecs.cols(),                                                          //
+                    bvals_path,                                                            //
+                    bvals.cols());                                                         //
 
   const size_t num_volumes = header.ndim() < 4 ? 1 : header.size(3);
   if (static_cast<size_t>(bvals.cols()) != num_volumes)
-    throw Exception(fmt::format("bvecs and bvals files do not have same number of diffusion directions as DW-image:" //
-                                " gradients: {}, image: {}",                                                         //
-                                bvecs.cols(),                                                                        //
-                                num_volumes));                                                                       //
+    throw Exception("bvecs and bvals files do not have same number of diffusion directions as DW-image:" //
+                    " gradients: {}, image: {}",                                                         //
+                    bvecs.cols(),                                                                        //
+                    num_volumes);                                                                        //
 
   // bvecs format actually assumes a LHS coordinate system even if image is
   // stored using RHS; first axis is flipped to make linear 3x3 part of
@@ -178,20 +178,20 @@ Eigen::MatrixXd load_bvecs_bvals(const Header &header,
     bool zero_row = false;
     if (std::isnan(grad(n, 3))) {
       if (grad.block<1, 3>(n, 0).squaredNorm() > 0.0)
-        throw Exception(fmt::format("Corrupt content in bvecs/bvals data ({} & {})"       //
-                                    " (NaN present in bval but valid direction in bvec)", //
-                                    bvecs_path,                                           //
-                                    bvals_path));                                         //
+        throw Exception("Corrupt content in bvecs/bvals data ({} & {})"       //
+                        " (NaN present in bval but valid direction in bvec)", //
+                        bvecs_path,                                           //
+                        bvals_path);                                          //
       nans_present_bvals = true;
       zero_row = true;
     }
     if (grad.block<1, 3>(n, 0).hasNaN()) {
       if (grad(n, 3) > 0.0)
         // clang-format off
-        throw Exception(fmt::format("Corrupt content in bvecs/bvals data ({} & {})"     //
+        throw Exception("Corrupt content in bvecs/bvals data ({} & {})"     //
                                     " (NaN bvec direction but non-zero value in bval)", //
                                     bvecs_path,                                         //
-                                    bvals_path));                                       //
+                                    bvals_path);                                       //
       // clang-format on
       nans_present_bvecs = true;
       zero_row = true;
@@ -202,12 +202,11 @@ Eigen::MatrixXd load_bvecs_bvals(const Header &header,
     }
   }
   if (nan_linecount > 0) {
-    WARN(fmt::format(
-        "{} row{} with NaN values detected in {}{}; these have been interpreted as b=0 volumes by MRtrix",
-        nan_linecount,
-        (nan_linecount > 1 ? "s" : ""),
-        (nans_present_bvecs ? fmt::format("bvecs file {}{}", bvecs_path, nans_present_bvals ? " and" : "") : ""),
-        (nans_present_bvals ? fmt::format("bvals file {}", bvals_path) : "")));
+    WARN("{} row{} with NaN values detected in {}{}; these have been interpreted as b=0 volumes by MRtrix",
+         nan_linecount,
+         (nan_linecount > 1 ? "s" : ""),
+         (nans_present_bvecs ? fmt::format("bvecs file {}{}", bvecs_path, nans_present_bvals ? " and" : "") : ""),
+         (nans_present_bvals ? fmt::format("bvals file {}", bvals_path) : ""));
   }
 
   return grad;
@@ -237,12 +236,12 @@ void save_bvecs_bvals(const Header &header,
     bvecs.row(0) = -bvecs.row(0);
 
   if (bval_zeroed_count) {
-    WARN(fmt::format("For image \"{}\", {} volumes had zero gradient direction vector,"
-                     " but 0.0 < b-value <= BZeroThreshold;"
-                     " these are clamped to zero in bvals file \"{}\" for compatibility with external software",
-                     header.name(),
-                     bval_zeroed_count,
-                     bvals_path));
+    WARN("For image \"{}\", {} volumes had zero gradient direction vector,"
+         " but 0.0 < b-value <= BZeroThreshold;"
+         " these are clamped to zero in bvals file \"{}\" for compatibility with external software",
+         header.name(),
+         bval_zeroed_count,
+         bvals_path);
   }
 
   File::Matrix::save_matrix(bvecs, bvecs_path, KeyValues(), false);
@@ -304,8 +303,7 @@ Eigen::MatrixXd get_DW_scheme(const Header &header, BValueScalingBehaviour bvalu
     const bool exceeds_single_precision = max_log_scaling_factor > 1e-5;
     const bool requires_bvalue_scaling = max_log_scaling_factor > 0.01;
 
-    DEBUG(
-        fmt::format("b-value scaling: max scaling factor = exp({}) = {}", max_log_scaling_factor, max_scaling_factor));
+    DEBUG("b-value scaling: max scaling factor = exp({}) = {}", max_log_scaling_factor, max_scaling_factor);
 
     if ((requires_bvalue_scaling && bvalue_scaling == BValueScalingBehaviour::Auto) ||
         bvalue_scaling == BValueScalingBehaviour::UserOn) {
@@ -313,18 +311,17 @@ Eigen::MatrixXd get_DW_scheme(const Header &header, BValueScalingBehaviour bvalu
       if (warnambiguous)
         WARN("Ambiguous [ 0 0 0 non-zero ] entries found in DW gradient table. "
              "These will be interpreted as b=0 volumes unless -bvalue_scaling is disabled.");
-      INFO(fmt::format("b-values scaled by the square of DW gradient norm (maximum scaling factor = {})",
-                       max_scaling_factor));
+      INFO("b-values scaled by the square of DW gradient norm (maximum scaling factor = {})", max_scaling_factor);
     } else if (bvalue_scaling == BValueScalingBehaviour::UserOff) {
       if (requires_bvalue_scaling) {
-        CONSOLE(fmt::format("disabling b-value scaling during normalisation of DW vectors on user request"
-                            " (maximum scaling factor would have been {})",
-                            max_scaling_factor));
+        CONSOLE("disabling b-value scaling during normalisation of DW vectors on user request"
+                " (maximum scaling factor would have been {})",
+                max_scaling_factor);
       } else {
-        WARN(fmt::format("use of -bvalue_scaling option had no effect:"
-                         " gradient vector norms are all within tolerance"
-                         " (maximum scaling factor = {})",
-                         max_scaling_factor));
+        WARN("use of -bvalue_scaling option had no effect:"
+             " gradient vector norms are all within tolerance"
+             " (maximum scaling factor = {})",
+             max_scaling_factor);
       }
     }
     assert(grad.allFinite());
@@ -340,18 +337,18 @@ Eigen::MatrixXd get_DW_scheme(const Header &header, BValueScalingBehaviour bvalu
       set_DW_scheme(const_cast<Header &>(header), grad);
     }
 
-    INFO(fmt::format("found {}x{} diffusion gradient table", grad.rows(), grad.cols()));
+    INFO("found {}x{} diffusion gradient table", grad.rows(), grad.cols());
     return grad;
   } catch (Exception &e) {
     clear_DW_scheme(const_cast<Header &>(header));
-    throw Exception(e, fmt::format("error importing diffusion gradient table for image \"{}\"", header.name()));
+    throw Exception(e, "error importing diffusion gradient table for image \"{}\"", header.name());
   }
 }
 
 void export_grad_commandline(const Header &header) {
   auto check = [](const Header &h) -> const Header & {
     if (h.keyval().find("dw_scheme") == h.keyval().end())
-      throw Exception(fmt::format("no gradient information found within image \"{}\"", h.name()));
+      throw Exception("no gradient information found within image \"{}\"", h.name());
     return h;
   };
 

@@ -129,16 +129,16 @@ Shuffler::Shuffler(const index_type num_rows, const bool is_nonstationarity, std
     if (error_types == error_t::EE || error_types == error_t::BOTH) {
       load_permutations(opt[0][0]);
       if (permutations[0].size() != rows)
-        throw Exception(fmt::format(
+        throw Exception(
             "Number of entries per shuffle in file \"{}\" does not match number of rows in design matrix ({})",
             std::string(opt[0][0]),
-            str(rows)));
+            rows);
       if (nshuffles_explicit && nshuffles != permutations.size())
-        throw Exception(fmt::format(
+        throw Exception(
             "Number of shuffles explicitly requested ({}) does not match number of shuffles in file \"{}\" ({})",
-            str(nshuffles),
+            nshuffles,
             std::string(opt[0][0]),
-            str(permutations.size())));
+            permutations.size());
       nshuffles = permutations.size();
     } else {
       throw Exception("Cannot manually provide permutations if errors are not exchangeable");
@@ -151,7 +151,7 @@ Shuffler::Shuffler(const index_type num_rows, const bool is_nonstationarity, std
     try {
       eb_within = load_blocks(opt[0][0], false);
     } catch (Exception &e) {
-      throw Exception(e, fmt::format("Unable to read file \"{}\" as within-block exchangeability", opt[0][0]));
+      throw Exception(e, "Unable to read file \"{}\" as within-block exchangeability", opt[0][0]);
     }
   }
 
@@ -163,7 +163,7 @@ Shuffler::Shuffler(const index_type num_rows, const bool is_nonstationarity, std
     try {
       eb_whole = load_blocks(opt[0][0], true);
     } catch (Exception &e) {
-      throw Exception(e, fmt::format("Unable to read file \"{}\" as whole-block exchangeability", opt[0][0]));
+      throw Exception(e, "Unable to read file \"{}\" as whole-block exchangeability", opt[0][0]);
     }
   }
 
@@ -288,28 +288,28 @@ void Shuffler::initialise(const error_t error_types,
 
   if (max_shuffles < nshuffles) {
     if (nshuffles_explicit) {
-      WARN(fmt::format("User requested {} shuffles for {}, but only {} unique shuffles can be generated; \"\n          "
-                       " \"this will restrict the minimum achievable p-value to {}",
-                       str(nshuffles),
-                       (is_nonstationarity ? "non-stationarity correction" : "null distribution generation"),
-                       str(max_shuffles),
-                       str(1.0 / max_shuffles)));
+      WARN("User requested {} shuffles for {}, but only {} unique shuffles can be generated; \"\n          "
+           " \"this will restrict the minimum achievable p-value to {}",
+           nshuffles,
+           (is_nonstationarity ? "non-stationarity correction" : "null distribution generation"),
+           max_shuffles,
+           1.0 / max_shuffles);
     } else {
-      WARN(fmt::format("Only {} unique shuffles can be generated, which is less than the default number of {} for {}; "
-                       "\"\n           \"this will restrict the minimum achievable p-value to {}",
-                       str(max_shuffles),
-                       str(nshuffles),
-                       (is_nonstationarity ? "non-stationarity correction" : "null distribution generation"),
-                       str(1.0 / max_shuffles)));
+      WARN("Only {} unique shuffles can be generated, which is less than the default number of {} for {}; "
+           "\"\n           \"this will restrict the minimum achievable p-value to {}",
+           max_shuffles,
+           nshuffles,
+           (is_nonstationarity ? "non-stationarity correction" : "null distribution generation"),
+           1.0 / max_shuffles);
     }
     nshuffles = max_shuffles;
   } else if (max_shuffles == std::numeric_limits<uint64_t>::max()) {
     DEBUG("Maximum possible number of shuffles was not computable using 64-bit integers");
   } else {
-    DEBUG(fmt::format("Maximum possible number of shuffles was computed as {}; {} number of {} will be used",
-                      str(max_shuffles),
-                      (nshuffles_explicit ? "user-requested" : "default"),
-                      str(nshuffles)));
+    DEBUG("Maximum possible number of shuffles was computed as {}; {} number of {} will be used",
+          max_shuffles,
+          (nshuffles_explicit ? "user-requested" : "default"),
+          nshuffles);
   }
 
   // Need special handling of cases where both ee and ise are used
@@ -387,14 +387,12 @@ void Shuffler::initialise(const error_t error_types,
 index_array_type Shuffler::load_blocks(const std::filesystem::path &filename, const bool equal_sizes) {
   index_array_type data = File::Matrix::load_vector<index_type>(filename).array();
   if (static_cast<index_type>(data.size()) != rows)
-    throw Exception(fmt::format("Number of entries in file \"{}\" ({}) does not match number of inputs ({})",
-                                filename,
-                                str(data.size()),
-                                str(rows)));
+    throw Exception(
+        "Number of entries in file \"{}\" ({}) does not match number of inputs ({})", filename, data.size(), rows);
   const index_type min_coeff = data.minCoeff();
   index_type max_coeff = data.maxCoeff();
   if (min_coeff > 1)
-    throw Exception(fmt::format("Minimum index in file \"{}\" must be either 0 or 1", filename));
+    throw Exception("Minimum index in file \"{}\" must be either 0 or 1", filename);
   if (min_coeff) {
     data.array() -= 1;
     max_coeff--;
@@ -404,14 +402,12 @@ index_array_type Shuffler::load_blocks(const std::filesystem::path &filename, co
     counts[data[i]]++;
   for (Eigen::Index i = 0; i <= max_coeff; ++i) {
     if (counts[i] < 2)
-      throw Exception(
-          fmt::format("Sequential indices in file \"{}\" must contain at least two entries each", filename));
+      throw Exception("Sequential indices in file \"{}\" must contain at least two entries each", filename);
   }
   if (equal_sizes) {
     for (Eigen::Index i = 1; i <= max_coeff; ++i) {
       if (counts[i] != counts[0])
-        throw Exception(
-            fmt::format("Indices in file \"{}\" do not contain the same number of elements each", filename));
+        throw Exception("Indices in file \"{}\" do not contain the same number of elements each", filename);
     }
   }
   return data;
@@ -589,7 +585,7 @@ void Shuffler::generate_all_permutations(const index_type num_rows,
 void Shuffler::load_permutations(const std::filesystem::path &filename) {
   std::vector<std::vector<index_type>> temp = File::Matrix::load_matrix_2D_vector<index_type>(filename);
   if (temp.empty())
-    throw Exception(fmt::format("no data found in permutations file: {}", filename));
+    throw Exception("no data found in permutations file: {}", filename);
 
   const index_type min_value = *std::min_element(std::begin(temp[0]), std::end(temp[0]));
   if (min_value > 1)

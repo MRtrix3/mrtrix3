@@ -120,7 +120,7 @@ bool is_tempfile(const std::filesystem::path &path, std::string_view suffix) {
 }
 
 std::filesystem::path create_tempfile(int64_t size, std::string_view suffix) {
-  DEBUG("creating temporary file of size " + str(size));
+  DEBUG("creating temporary file of size {}", size);
 
   int fid(0);
   std::filesystem::path filepath;

@@ -219,11 +219,11 @@ void run() {
     auto dirs = File::Matrix::load_matrix(opt[0][0]);
     auto dv = DWI::Directions::validate(dirs, opt[0][0], false);
     if (dv.n_non_unit > 0) {
-      WARN(fmt::format("Input directions file \"{}\" contains {} direction{} not of unit norm;"
-                       " all directions will be interpreted agnostically of norm",
-                       opt[0][0],                                         //
-                       dv.n_non_unit,                                     //
-                       (dv.n_non_unit > 1 ? "s that are" : " that is"))); //
+      WARN("Input directions file \"{}\" contains {} direction{} not of unit norm;"
+           " all directions will be interpreted agnostically of norm",
+           opt[0][0],                                        //
+           dv.n_non_unit,                                    //
+           (dv.n_non_unit > 1 ? "s that are" : " that is")); //
     }
     dirs_azin.push_back(Math::Sphere::as_spherical(dirs));
     volumes.push_back(all_volumes(dirs_azin.size()));
@@ -263,20 +263,19 @@ void run() {
   } else if (!opt.empty()) {
     lmax = MR::container_cast<decltype(lmax)>(opt[0][0].as_sequence_uint());
     if (lmax.size() != dirs_azin.size())
-      throw Exception(fmt::format("Number of lmax\\'s specified ({}) does not match number of b-value shells ({})",
-                                  lmax.size(),
-                                  dirs_azin.size()));
+      throw Exception("Number of lmax\\'s specified ({}) does not match number of b-value shells ({})",
+                      lmax.size(),
+                      dirs_azin.size());
     for (auto i : lmax) {
       if (i % 2)
         throw Exception("Values specified for lmax must be even");
       max_lmax = std::max(max_lmax, i);
     }
     if ((*shells)[0].is_bzero() && lmax.front()) {
-      WARN(fmt::format(
-          "Non-zero lmax requested for {}",
-          ((*shells)[0].get_mean()
-               ? fmt::format("first shell (mean b={}), which MRtrix3 has classified as b=0;", (*shells)[0].get_mean())
-               : "b=0 shell;")));
+      WARN("Non-zero lmax requested for {}",
+           ((*shells)[0].get_mean()
+                ? fmt::format("first shell (mean b={}), which MRtrix3 has classified as b=0;", (*shells)[0].get_mean())
+                : "b=0 shell;"));
       WARN("  unless intended, this is likely to fail, as b=0 contains no orientation contrast");
     }
   } else {
@@ -301,7 +300,7 @@ void run() {
     throw Exception("input mask must be a 3D image");
   auto dir_image = Image<float>::open(directions_input_path);
   if (dir_image.ndim() < 4 || dir_image.size(3) < 3)
-    throw Exception(fmt::format("input direction image \"{}\" does not have expected dimensions", argument[2]));
+    throw Exception("input direction image \"{}\" does not have expected dimensions", argument[2]);
   check_dimensions(image, dir_image, 0, 3);
 
   size_t num_voxels = 0;
@@ -314,9 +313,9 @@ void run() {
 
   const bool use_ols = !get_options("noconstraint").empty();
 
-  CONSOLE(fmt::format("estimating response function using {} least-squares from {} voxels",
-                      (use_ols ? "ordinary" : "constrained"),
-                      num_voxels));
+  CONSOLE("estimating response function using {} least-squares from {} voxels",
+          (use_ols ? "ordinary" : "constrained"),
+          num_voxels);
 
   Eigen::MatrixXd responses(dirs_azin.size(), Math::ZSH::NforL(max_lmax));
 
@@ -369,10 +368,10 @@ void run() {
 
       // Estimate the solution
       const size_t niter = solver(rf, shared.b);
-      INFO(fmt::format("constrained least-squares solver completed in {} iterations", niter));
+      INFO("constrained least-squares solver completed in {} iterations", niter);
     }
 
-    CONSOLE(fmt::format("  b={:.4g}: {}", (*shells)[shell_index].get_mean(), rf.cast<float>()));
+    CONSOLE("  b={:.4g}: {}", (*shells)[shell_index].get_mean(), rf.cast<float>());
 
     rf.conservativeResizeLike(Eigen::VectorXd::Zero(Math::ZSH::NforL(max_lmax)));
     responses.row(shell_index) = rf;

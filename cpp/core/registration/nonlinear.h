@@ -112,16 +112,15 @@ public:
     for (size_t level = 0; level < scale_factor.size(); level++) {
       if (is_initialised) {
         if (do_reorientation) {
-          CONSOLE(fmt::format("scale factor (init warp resolution), lmax {}", fod_lmax[level]));
+          CONSOLE("scale factor (init warp resolution), lmax {}", fod_lmax[level]);
         } else {
           CONSOLE("scale factor (init warp resolution)");
         }
       } else {
         if (do_reorientation) {
-          CONSOLE(fmt::format(
-              "nonlinear stage {}, scale factor {}, lmax {}", level + 1, scale_factor[level], fod_lmax[level]));
+          CONSOLE("nonlinear stage {}, scale factor {}, lmax {}", level + 1, scale_factor[level], fod_lmax[level]);
         } else {
-          CONSOLE(fmt::format("nonlinear stage {}, scale factor {}", level + 1, scale_factor[level]));
+          CONSOLE("nonlinear stage {}, scale factor {}", level + 1, scale_factor[level]);
         }
       }
 
@@ -155,7 +154,7 @@ public:
       }
 
       for (const auto &mc : stage_contrasts)
-        DEBUG(str(mc));
+        DEBUG("{}", mc);
 
       auto im1_smoothed =
           Registration::multi_resolution_lmax(im1_image, scale_factor[level], do_reorientation, stage_contrasts);
@@ -163,7 +162,7 @@ public:
           im2_image, scale_factor[level], do_reorientation, stage_contrasts, &stage_contrasts);
 
       for (const auto &mc : stage_contrasts)
-        INFO(str(mc));
+        INFO("{}", mc);
 
       DEBUG("Initialising scratch images");
       Header warped_header(midway_image_header_resized);
@@ -341,11 +340,11 @@ public:
 
         } else {
           converged = true;
-          INFO(fmt::format("  converged. cost: {} voxel count: {}", cost, voxel_count));
+          INFO("  converged. cost: {} voxel count: {}", cost, voxel_count);
         }
 
         if (!converged)
-          INFO(fmt::format("  iteration: {} cost: {}", iteration, cost));
+          INFO("  iteration: {} cost: {}", iteration, cost);
 
         if (++iteration > max_iter[level])
           converged = true;
@@ -357,7 +356,7 @@ public:
           Header hc(warped_header);
           hc.ndim() = 4;
           hc.size(3) = 3;
-          INFO(fmt::format("writing debug image: {}", diag_path));
+          INFO("writing debug image: {}", diag_path);
           auto check = Image<default_type>::create(diag_path, hc);
           for (auto i = Loop(check, 0, 3)(check, im1_warped, im2_warped); i; ++i) {
             check.value() = im1_warped.value();
@@ -510,7 +509,7 @@ public:
     if (radius < 1)
       throw Exception("CC radius needs to be larger than 1");
     use_cc = true;
-    INFO(fmt::format("Cross correlation radius: {}", radius));
+    INFO("Cross correlation radius: {}", radius);
     cc_extent = std::vector<size_t>(3, radius * 2 + 1);
   }
 

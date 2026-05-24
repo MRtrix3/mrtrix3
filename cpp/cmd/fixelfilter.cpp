@@ -120,7 +120,7 @@ void run() {
       multiple_files = Fixel::find_data_headers(input_path, index_header);
       Fixel::debug_validate_directory(input_path);
       if (multiple_files.empty())
-        throw Exception(fmt::format("No fixel data files found in directory \"{}\"", argument[0]));
+        throw Exception("No fixel data files found in directory \"{}\"", argument[0]);
       output_header = Header(multiple_files[0]);
     } catch (...) {
       try {
@@ -129,16 +129,15 @@ void run() {
         Fixel::check_data_file(single_file);
         output_header = Header(single_file);
       } catch (...) {
-        throw Exception(
-            fmt::format("Could not interpret first argument \"{}\" as either a fixel data file, or a fixel directory",
-                        argument[0]));
+        throw Exception("Could not interpret first argument \"{}\" as either a fixel data file, or a fixel directory",
+                        argument[0]);
       }
     }
 
     if (single_file.valid() && !Fixel::fixels_match(index_header, single_file))
-      throw Exception(fmt::format("File \"{}\" is not a valid fixel data file{}",
-                                  argument[0],                                     //
-                                  " (does not match corresponding index image)")); //
+      throw Exception("File \"{}\" is not a valid fixel data file{}",
+                      argument[0],                                    //
+                      " (does not match corresponding index image)"); //
 
     Image<index_type> index_image = index_header.get_image<index_type>();
     if (multiple_files.empty())
@@ -158,22 +157,22 @@ void run() {
       if (mask.size(1) != 1)
         throw Exception("Fixel mask must be a 1D fixel data file");
       if (static_cast<size_t>(mask.size(0)) != nfixels)
-        throw Exception(fmt::format("Number of fixels in mask image ({}){}{}{})",
-                                    str(mask.size(0)),                                 //
-                                    " does not match number of fixels in index image", //
-                                    " (",
-                                    str(nfixels))); //
+        throw Exception("Number of fixels in mask image ({}){}{}{})",
+                        mask.size(0),                                      //
+                        " does not match number of fixels in index image", //
+                        " (",
+                        nfixels); //
     }
 
     opt = get_options("matrix");
     Fixel::Matrix::Reader matrix(opt[0][0], mask);
 
     if (nfixels != matrix.size())
-      throw Exception(fmt::format("Number of fixels in input ({}){}{}{})",
-                                  str(nfixels),                                              //
-                                  " does not match number of fixels in connectivity matrix", //
-                                  " (",
-                                  str(matrix.size()))); //
+      throw Exception("Number of fixels in input ({}){}{}{})",
+                      nfixels,                                                   //
+                      " does not match number of fixels in connectivity matrix", //
+                      " (",
+                      matrix.size()); //
 
     switch (filter_type) {
     case FilterType::CFE: {
@@ -214,14 +213,14 @@ void run() {
 
   for (const auto &i : option_list) {
     if (!get_options(i).empty())
-      WARN(fmt::format("Option -{} ignored: not relevant to {} filter", i, MR::Enum::lowercase_name(filter_type)));
+      WARN("Option -{} ignored: not relevant to {} filter", i, MR::Enum::lowercase_name(filter_type));
   }
 
   if (single_file.valid()) {
     auto output_image = Image<float>::create(argument[2], single_file);
-    CONSOLE(fmt::format("Applying \"{}\" operation to fixel data file \"{}\"",
-                        MR::Enum::lowercase_name(filter_type),
-                        single_file.name()));
+    CONSOLE("Applying \"{}\" operation to fixel data file \"{}\"",
+            MR::Enum::lowercase_name(filter_type),
+            single_file.name());
     (*filter)(single_file, output_image);
   } else {
     Fixel::copy_index_and_directions_file(argument[0], argument[2]);

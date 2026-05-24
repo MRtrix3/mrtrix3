@@ -83,21 +83,21 @@ void run() {
         all_unit_norm = false;
     }
   }
-  INFO(fmt::format("Number of fixels in input peaks image: {}", nfixels));
+  INFO("Number of fixels in input peaks image: {}", nfixels);
   if (all_unit_norm) {
     if (!dataname.empty()) {
-      WARN(fmt::format("Input peaks image appears to not include amplitude information;"
-                       " requested data file \"{}\" will likely contain only ones",
-                       dataname));
+      WARN("Input peaks image appears to not include amplitude information;"
+           " requested data file \"{}\" will likely contain only ones",
+           dataname);
     } else {
       INFO("All peaks have unit norm;"
            " no need to create amplitudes fixel data file");
     }
   } else if (dataname.empty()) {
     dataname = "amplitudes.mif";
-    INFO(fmt::format("Peaks have variable amplitudes;"
-                     " will create additional fixel data file \"{}\"",
-                     dataname));
+    INFO("Peaks have variable amplitudes;"
+         " will create additional fixel data file \"{}\"",
+         dataname);
   }
 
   const std::filesystem::path output_path{argument[1]};

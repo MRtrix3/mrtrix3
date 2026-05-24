@@ -132,7 +132,7 @@ bool RigidLinearNonSymmetricUpdate::operator()(Eigen::Matrix<default_type, Eigen
       break;
     }
     if (orig_step_size != step_size) {
-      DEBUG(fmt::format("step size changed from {} to {}", orig_step_size, step_size));
+      DEBUG("step size changed from {} to {}", orig_step_size, step_size);
     }
   } else {
     // reduce step size if determinant of matrix becomes negative (happens rarely at first few iterations)
@@ -143,12 +143,12 @@ bool RigidLinearNonSymmetricUpdate::operator()(Eigen::Matrix<default_type, Eigen
       Registration::Transform::param_vec2mat(delta, Delta);
       if (Delta.block(0, 0, 3, 3).array().abs().maxCoeff() > 0.1) {
         step_size = 0.09 / G.block(0, 0, 3, 3).array().abs().maxCoeff();
-        INFO(fmt::format("{} {}", step_size, g * step_size));
+        INFO("{} {}", step_size, g * step_size);
         continue;
       }
       if (Delta.block(0, 3, 3, 1).array().abs().maxCoeff() > 10.0) {
         step_size = 9.0 / G.block(0, 3, 3, 1).array().abs().maxCoeff();
-        INFO(fmt::format("{} {}", step_size, g * step_size));
+        INFO("{} {}", step_size, g * step_size);
         continue;
       }
       A = X - Delta;
@@ -161,9 +161,9 @@ bool RigidLinearNonSymmetricUpdate::operator()(Eigen::Matrix<default_type, Eigen
       }
     }
     if (cnt > 0)
-      INFO(fmt::format("rigid: gradient descent step size was too large. Multiplied by factor {} (now: {})",
-                       str(std::pow(factor, cnt), 4),
-                       str(step_size, 4)));
+      INFO("rigid: gradient descent step size was too large. Multiplied by factor {:.4g} (now: {:.4g})",
+           std::pow(factor, cnt),
+           step_size);
 
     B = X.inverse() + Delta;
     B(3, 3) = 1.0;
@@ -223,8 +223,7 @@ bool RigidLinearNonSymmetricUpdate::operator()(Eigen::Matrix<default_type, Eigen
     Diff.row(2) *= recip_spacing(2);
     Diff.colwise() -= stop_len;
     if (Diff.template block<3, 4>(0, 0).maxCoeff() <= 0.0) {
-      DEBUG(fmt::format("max control point movement ({}) smaller than tolerance",
-                        str(Diff.template block<3, 4>(0, 0).maxCoeff())));
+      DEBUG("max control point movement ({}) smaller than tolerance", Diff.template block<3, 4>(0, 0).maxCoeff());
       return false;
     }
   }

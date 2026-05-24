@@ -100,7 +100,7 @@ const DWI::Directions::Set get_directions() {
     try {
       return DWI::Directions::Set(static_cast<size_t>(opt[0][0]));
     } catch (Exception &) {
-      throw Exception(fmt::format("Unable to interpret user input \"{}\" as a direction set", opt[0][0]));
+      throw Exception("Unable to interpret user input \"{}\" as a direction set", opt[0][0]);
     }
   }
   return DWI::Directions::Set(default_direction_set);
@@ -270,7 +270,7 @@ void run_power() {
   const bool spectrum = !get_options("spectrum").empty();
 
   const size_t lmax = Math::SH::LforN(static_cast<int>(SH_data.size(3)));
-  INFO(fmt::format("calculating spherical harmonic power up to degree {}", lmax));
+  INFO("calculating spherical harmonic power up to degree {}", lmax);
 
   if (spectrum)
     power_header.size(3) = static_cast<ssize_t>(1 + lmax / 2);

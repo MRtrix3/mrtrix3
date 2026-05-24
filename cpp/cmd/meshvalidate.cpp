@@ -73,10 +73,10 @@ void run() {
   // if any requirement is violated.
   Surface::validate(mesh);
 
-  CONSOLE(fmt::format("Mesh \"{}\" is valid: {} vertices, {} polygon(s) ({} triangle(s), {} quad(s))",
-                      argument[0],
-                      mesh.num_vertices(),
-                      mesh.num_polygons(),
-                      mesh.num_triangles(),
-                      mesh.num_quads()));
+  CONSOLE("Mesh \"{}\" is valid: {} vertices, {} polygon(s) ({} triangle(s), {} quad(s))",
+          argument[0],
+          mesh.num_vertices(),
+          mesh.num_polygons(),
+          mesh.num_triangles(),
+          mesh.num_quads());
 }

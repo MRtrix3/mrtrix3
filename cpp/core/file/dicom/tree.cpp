@@ -59,19 +59,19 @@ void Tree::read_dir(const std::filesystem::path &dirpath, ProgressBar &progress)
       ++progress;
     }
   } catch (Exception &E) {
-    throw Exception(E, fmt::format("error opening DICOM folder \"{}\": {}", dirpath, strerror(errno)));
+    throw Exception(E, "error opening DICOM folder \"{}\": {}", dirpath, strerror(errno));
   }
 }
 
 void Tree::read_file(const std::filesystem::path &filepath) {
   QuickScan reader;
   if (reader.read(filepath)) {
-    INFO(fmt::format("error reading file \"{}\" - ignored", filepath));
+    INFO("error reading file \"{}\" - ignored", filepath);
     return;
   }
 
   if (!(reader.dim[0] && reader.dim[1] && reader.bits_alloc && reader.data)) {
-    INFO(fmt::format("DICOM file \"{}\" does not seem to contain image data - ignored", filepath));
+    INFO("DICOM file \"{}\" does not seem to contain image data - ignored", filepath);
     return;
   }
 
@@ -110,7 +110,7 @@ void Tree::read(const std::filesystem::path &path) {
   }
 
   if (empty())
-    throw Exception(fmt::format("no DICOM images found in \"{}\"", path));
+    throw Exception("no DICOM images found in \"{}\"", path);
 }
 
 std::ostream &operator<<(std::ostream &stream, const Tree &item) {

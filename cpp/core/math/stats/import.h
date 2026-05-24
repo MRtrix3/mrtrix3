@@ -124,7 +124,7 @@ void CohortDataImport::initialise(const std::filesystem::path &listpath,
   {
     std::ifstream ifs(listpath);
     if (!ifs)
-      throw Exception(fmt::format("Unable to open subject file list \"{}\"", listpath));
+      throw Exception("Unable to open subject file list \"{}\"", listpath);
     std::string line;
     while (getline(ifs, line)) {
       const size_t p = line.find_last_not_of(" \t");
@@ -150,7 +150,7 @@ void CohortDataImport::initialise(const std::filesystem::path &listpath,
       for (const auto &line : lines) {
         const std::filesystem::path full_path = directory / line;
         if (!std::filesystem::is_regular_file(full_path))
-          throw Exception(fmt::format("File \"{}\" not found", full_path));
+          throw Exception("File \"{}\" not found", full_path);
       }
       load_from_dir = directory;
       break;

@@ -83,7 +83,7 @@ void run() {
 
   const default_type p = get_option_value("padding", PADDING_DEFAULT);
   auto padding = Eigen::Matrix<default_type, 4, 1>(p, p, p, 1.0);
-  INFO(fmt::format("padding in template voxels: {}", padding.head<3>()));
+  INFO("padding in template voxels: {}", padding.head<3>());
   auto opt = get_options("spacing");
   const avgspace_voxspacing_t spacing =
       opt.empty() ? SPACING_DEFAULT_VALUE : static_cast<avgspace_voxspacing_t>(static_cast<int>(opt[0][0]));
@@ -123,13 +123,11 @@ void run() {
     Eigen::Matrix<default_type, 3, 1> centre, vox;
     Registration::Transform::Init::get_geometric_centre(out, centre);
     vox = MR::Transform(out).scanner2voxel * centre;
-    INFO(fmt::format("centre scanner: {}", centre));
+    INFO("centre scanner: {}", centre);
     for (size_t i = 0; i < 3; ++i)
       vox(i) = std::round(vox(i));
-    INFO(fmt::format("centre voxel: {}", vox));
+    INFO("centre voxel: {}", vox);
   }
-  INFO("average transformation:");
-  INFO(str(out.transform().matrix()));
-  INFO("average voxel to scanner transformation:");
-  INFO(str(MR::Transform(out).voxel2scanner.matrix()));
+  INFO("average transformation:\n{}", out.transform().matrix());
+  INFO("average voxel to scanner transformation:\n{}", MR::Transform(out).voxel2scanner.matrix());
 }

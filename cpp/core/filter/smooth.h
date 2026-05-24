@@ -118,7 +118,7 @@ public:
 
     for (size_t dim = 0; dim < 3; dim++) {
       if (stdev[dim] > 0) {
-        DEBUG(fmt::format("creating scratch image for smoothing image along dimension {}", dim));
+        DEBUG("creating scratch image for smoothing image along dimension {}", dim);
         out = std::make_shared<Image<ValueType>>(Image<ValueType>::scratch(input));
         Adapter::Gaussian1D<Image<ValueType>> gaussian(*in, stdev[dim], dim, extent[dim], zero_boundary);
         threaded_copy(gaussian, *out, 0, input.ndim(), 2);
@@ -150,7 +150,7 @@ public:
             continue;
           axes[axdim++] = stride_order[i];
         }
-        DEBUG(fmt::format("smoothing dimension {} in place with stride order: {}", dim, axes));
+        DEBUG("smoothing dimension {} in place with stride order: {}", dim, axes);
         SmoothFunctor1D<ImageType> smooth(in_and_output, stdev[dim], dim, extent[dim], zero_boundary);
         ThreadedLoop(in_and_output, axes, std::min<size_t>(2, axes.size())).run(smooth, in_and_output);
         if (progress)

@@ -97,14 +97,14 @@ public:
     }
 
     void set_response(const std::filesystem::path &path) {
-      INFO(fmt::format("loading response function from file \"{}\"", path));
+      INFO("loading response function from file \"{}\"", path);
       set_response(File::Matrix::load_vector(path));
     }
 
     template <class Derived> void set_response(const Eigen::MatrixBase<Derived> &in) {
       response = in;
       lmax_response = Math::ZSH::LforN(response.size());
-      INFO(fmt::format("setting response function using even SH coefficients: {}", response));
+      INFO("setting response function using even SH coefficients: {}", response);
     }
 
     void init() {
@@ -123,8 +123,7 @@ public:
 
       assert(response.size());
       lmax_response = std::min(lmax_response, std::min(lmax_data, lmax));
-      INFO("calculating even spherical harmonic components up to order " +
-           fmt::format("{} for initialisation", lmax_response));
+      INFO("calculating even spherical harmonic components up to order {} for initialisation", lmax_response);
 
       if (!init_filter.size())
         init_filter = Eigen::VectorXd::Ones(3);
@@ -152,7 +151,7 @@ public:
 
       // forward sconv for iteration, using all response function
       // coefficients up to the requested lmax:
-      INFO(fmt::format("calculating even spherical harmonic components up to order {} for output", lmax));
+      INFO("calculating even spherical harmonic components up to order {} for output", lmax);
       fconv = init_transform(DW_dirs, lmax);
       l = 0;
       nl = 1;

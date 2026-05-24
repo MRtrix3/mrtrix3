@@ -187,7 +187,7 @@ void run() {
         }
       }
     }
-    INFO(fmt::format("Selected axes for demodulation: {}", join(axes, ",")));
+    INFO("Selected axes for demodulation: {}", join(axes, ","));
 
     auto input = H.get_image<cdouble>();
     Filter::Demodulate filter(input, axes, !get_options("linear").empty());
@@ -347,7 +347,7 @@ void run() {
 
     auto opt = get_options("maskin");
     if (opt.empty())
-      throw Exception(fmt::format("{} filter requires initial mask", filter_name));
+      throw Exception("{} filter requires initial mask", filter_name);
     Image<float> maskin = Image<float>::open(opt[0][0]);
     check_dimensions(maskin, input, 0, 3);
 

@@ -49,9 +49,8 @@ bool EarlyExit::operator()(const size_t num_seeds, const size_t num_tracks) {
 
   if ((static_cast<default_type>(num_seeds) / static_cast<default_type>(max_num_seeds) > cease_testing_percentage) ||
       (static_cast<default_type>(num_tracks) / static_cast<default_type>(max_num_tracks) > cease_testing_percentage)) {
-    DEBUG(fmt::format("{}{}%)",
-                      "tckgen early exit: No longer testing (tracking progressed beyond ", //
-                      str<int>(std::round(100.0 * cease_testing_percentage))));            //
+    DEBUG("tckgen early exit: No longer testing (tracking progressed beyond {}%)",
+          static_cast<int>(std::round(100.0 * cease_testing_percentage)));
     next_test = 0;
     return false;
   }
@@ -75,25 +74,18 @@ bool EarlyExit::operator()(const size_t num_seeds, const size_t num_tracks) {
   const default_type prob_hypothesis_prior = (max_num_tracks + 1.0) / (max_num_seeds + 1.0);
   const default_type prob_observation = (num_tracks + 1.0) / (num_seeds + 1.0);
   const default_type posterior = conditional * prob_hypothesis_prior / prob_observation;
-  DEBUG(fmt::format("{}{}/{}{}{}),{}{}/{}{}{}),{}{},{}{},{}{},{}{}",
-                    "tckgen early exit: Target ", //
-                    str(max_num_tracks),
-                    str(max_num_seeds), //
-                    " (",
-                    str(static_cast<default_type>(max_num_tracks) / static_cast<default_type>(max_num_seeds), 3), //
-                    " current ",
-                    str(num_tracks),
-                    str(num_seeds), //
-                    " (",
-                    str(static_cast<default_type>(num_tracks) / static_cast<default_type>(num_seeds), 3), //
-                    " conditional probability ",
-                    str(conditional, 3), //
-                    " hypothesis prior probability ",
-                    str(prob_hypothesis_prior, 3), //
-                    " observation probability ",
-                    str(prob_observation, 3), //
-                    " posterior ",
-                    str(posterior, 3))); //
+  DEBUG("tckgen early exit: Target {}/{} ({:.3g}), current {}/{} ({:.3g}), conditional probability {:.3g}, "
+        "hypothesis prior probability {:.3g}, observation probability {:.3g}, posterior {:.3g}",
+        max_num_tracks,
+        max_num_seeds,
+        static_cast<default_type>(max_num_tracks) / static_cast<default_type>(max_num_seeds),
+        num_tracks,
+        num_seeds,
+        static_cast<default_type>(num_tracks) / static_cast<default_type>(num_seeds),
+        conditional,
+        prob_hypothesis_prior,
+        prob_observation,
+        posterior);
   return (posterior < probability_threshold);
 #else
   // Use normal approximation to the binomial distribution
@@ -107,15 +99,15 @@ bool EarlyExit::operator()(const size_t num_seeds, const size_t num_tracks) {
   //   no streamlines are being accepted
   const default_type variance = target_ratio * (1.0 - target_ratio) / static_cast<default_type>(num_seeds);
   const default_type threshold = target_ratio + (TCKGEN_EARLY_EXIT_ZVALUE * std::sqrt(variance));
-  DEBUG(fmt::format("tckgen early exit: Target {}/{} ({}), current {}/{} ({}), variance {}, threshold {}",
-                    str(max_num_tracks),
-                    str(max_num_seeds),
-                    str(target_ratio, 3),
-                    str(num_tracks),
-                    str(num_seeds),
-                    str(current_ratio, 3),
-                    str(variance, 3),
-                    str(threshold, 3)));
+  DEBUG("tckgen early exit: Target {}/{} ({:.3g}), current {}/{} ({:.3g}), variance {:.3g}, threshold {:.3g}",
+        max_num_tracks,
+        max_num_seeds,
+        target_ratio,
+        num_tracks,
+        num_seeds,
+        current_ratio,
+        variance,
+        threshold);
   return (current_ratio < threshold);
 #endif
 }

@@ -68,12 +68,12 @@ public:
       if (s >= num_subsets)
         s = 0;
     }
-    INFO(fmt::format("split {} directions into subsets with {} volumes", directions.rows(), [&] {
+    INFO("split {} directions into subsets with {} volumes", directions.rows(), [&] {
       std::vector<size_t> c;
       for (auto &x : subset)
         c.push_back(x.size());
       return c;
-    }()));
+    }());
   }
 
   bool update(value_type energy, const std::vector<std::vector<size_t>> &set) {

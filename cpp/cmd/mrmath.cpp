@@ -385,8 +385,7 @@ void run() {
     auto image_in = Header::open(first_input_image_path).get_image<value_type>(DirectIO{static_cast<int>(axis)});
 
     if (axis >= image_in.ndim())
-      throw Exception(fmt::format(
-          "Cannot perform operation along axis {}; image only has {} axes", str(axis), str(image_in.ndim())));
+      throw Exception("Cannot perform operation along axis {}; image only has {} axes", axis, image_in.ndim());
 
     Header header_out(image_in);
 
@@ -485,16 +484,15 @@ void run() {
       headers_in[i] = Header::open(path);
       const Header &temp(headers_in[i]);
       if (temp.ndim() < header.ndim())
-        throw Exception(fmt::format("Image {} has fewer axes than first input image {}", path, header.name()));
+        throw Exception("Image {} has fewer axes than first input image {}", path, header.name());
       for (size_t axis = 0; axis != header.ndim(); ++axis) {
         if (temp.size(axis) != header.size(axis))
-          throw Exception(
-              fmt::format("Dimensions of image {} do not match those of first input image {}", path, header.name()));
+          throw Exception("Dimensions of image {} do not match those of first input image {}", path, header.name());
       }
       for (size_t axis = header.ndim(); axis != temp.ndim(); ++axis) {
         if (temp.size(axis) != 1)
-          throw Exception(fmt::format(
-              "Image {} has axis with non-unary dimension beyond first input image {}", path, header.name()));
+          throw Exception(
+              "Image {} has axis with non-unary dimension beyond first input image {}", path, header.name());
       }
       header.merge_keyval(temp.keyval());
     }

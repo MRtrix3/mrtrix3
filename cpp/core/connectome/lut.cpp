@@ -130,12 +130,12 @@ LUT::file_format LUT::guess_file_format(const std::filesystem::path &path) {
       //   encased within quotation marks
       auto split_by_quotes = split(line, "\"\'", false);
       if (!(split_by_quotes.size() % 2))
-        throw Exception(fmt::format("Line {}{}{}\"{}{}",
-                                    str(line_counter), //
-                                    " of LUT file \"",
-                                    path.filename(),                               //
-                                    " contains an odd number of quotation marks,", //
-                                    " and hence cannot be properly split up according to quotation marks"));
+        throw Exception("Line {}{}{}\"{}{}",
+                        line_counter, //
+                        " of LUT file \"",
+                        path.filename(),                               //
+                        " contains an odd number of quotation marks,", //
+                        " and hence cannot be properly split up according to quotation marks");
       decltype(split_by_quotes) entries;
       for (size_t i = 0; i != split_by_quotes.size(); ++i) {
         // Every second line must be encased in quotation marks, and is
@@ -173,38 +173,36 @@ LUT::file_format LUT::guess_file_format(const std::filesystem::path &path) {
 
   // Make an assessment of the LUT format
   if (columns.size() == 2 && columns[0].is_integer() && !columns[1].is_numeric()) {
-    DEBUG(fmt::format("LUT file \"{}\" contains 1 integer, 1 string per line:\"\n          \" Basic format",
-                      path.filename()));
+    DEBUG("LUT file \"{}\" contains 1 integer, 1 string per line:\"\n          \" Basic format", path.filename());
     return LUT_BASIC;
   }
   if (columns.size() == 6 && columns[0].is_integer() && !columns[1].is_numeric() && columns[2].is_8bit() &&
       columns[3].is_8bit() && columns[4].is_8bit() && columns[5].is_8bit()) {
-    DEBUG(fmt::format("LUT file \"{}\" contains 1 integer, 1 string, then 4 8-bit integers per line:\"\n          \" "
-                      "Freesurfer format",
-                      path.filename()));
+    DEBUG("LUT file \"{}\" contains 1 integer, 1 string, then 4 8-bit integers per line:\"\n          \" "
+          "Freesurfer format",
+          path.filename());
     return LUT_FREESURFER;
   }
   if (columns.size() == 3 && !columns[0].is_numeric() && !columns[1].is_numeric() &&
       columns[0].mean_length() < columns[1].mean_length() && columns[2].is_integer()) {
-    DEBUG(fmt::format(
-        "LUT file \"{}\" contains 2 strings (shorter first), then an integer per line:\"\n          \" AAL format",
-        path.filename()));
+    DEBUG("LUT file \"{}\" contains 2 strings (shorter first), then an integer per line:\"\n          \" AAL format",
+          path.filename());
     return LUT_AAL;
   }
   if (columns.size() == 8 && columns[0].is_integer() && columns[1].is_8bit() && columns[2].is_8bit() &&
       columns[3].is_8bit() && columns[4].is_unary_range_float() && columns[5].is_integer() && columns[6].is_integer() &&
       !columns[7].is_numeric()) {
-    DEBUG(fmt::format("LUT file \"{}\" contains an integer, 3 8-bit integers, a float, two integers, and a string per "
-                      "line:\"\n          \" ITKSNAP format",
-                      path.filename()));
+    DEBUG("LUT file \"{}\" contains an integer, 3 8-bit integers, a float, two integers, and a string per "
+          "line:\"\n          \" ITKSNAP format",
+          path.filename());
     return LUT_ITKSNAP;
   }
   if (columns.size() == 7 && columns[0].is_integer() && !columns[1].is_numeric() && !columns[2].is_numeric() &&
       columns[1].mean_length() < columns[2].mean_length() && columns[3].is_8bit() && columns[4].is_8bit() &&
       columns[5].is_8bit() && columns[6].is_8bit()) {
-    DEBUG(fmt::format("LUT file \"{}\" contains 1 integer, 2 strings (shortest first), then 4 8-bit integers per "
-                      "line:\"\n          \" MRtrix format",
-                      path.filename()));
+    DEBUG("LUT file \"{}\" contains 1 integer, 2 strings (shortest first), then 4 8-bit integers per "
+          "line:\"\n          \" MRtrix format",
+          path.filename());
     return LUT_MRTRIX;
   }
   std::string format_string;
@@ -293,9 +291,9 @@ std::vector<node_t> get_lut_mapping(const LUT &in, const LUT &out) {
     for (const auto &node_out : out) {
       if (node_out.second.get_name() == node_in.second.get_name()) {
         if (target) {
-          throw Exception(fmt::format("Cannot perform LUT conversion: Node {} ({}) has multiple possible targets",
-                                      str(node_in.first),
-                                      node_in.second.get_name()));
+          throw Exception("Cannot perform LUT conversion: Node {} ({}) has multiple possible targets",
+                          node_in.first,
+                          node_in.second.get_name());
           return std::vector<node_t>();
         }
         target = node_out.first;

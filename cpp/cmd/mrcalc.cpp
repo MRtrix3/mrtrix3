@@ -504,7 +504,7 @@ public:
       return;
     auto search = image_list.find(arg);
     if (search != image_list.end()) {
-      DEBUG(fmt::format("image \"{}\" already loaded - re-using exising image", arg));
+      DEBUG("image \"{}\" already loaded - re-using exising image", arg);
       image = search->second.image;
       image_is_complex = search->second.image_is_complex;
     } else {
@@ -585,15 +585,15 @@ public:
     return evaluate(in1, in2, in3);
   }
   virtual Chunk &evaluate(Chunk &in) const {
-    throw Exception(fmt::format("operation \"{}\" not supported!", id));
+    throw Exception("operation \"{}\" not supported!", id);
     return in;
   }
   virtual Chunk &evaluate(Chunk &a, Chunk &b) const {
-    throw Exception(fmt::format("operation \"{}\" not supported!", id));
+    throw Exception("operation \"{}\" not supported!", id);
     return a;
   }
   virtual Chunk &evaluate(Chunk &a, Chunk &b, Chunk &c) const {
-    throw Exception(fmt::format("operation \"{}\" not supported!", id));
+    throw Exception("operation \"{}\" not supported!", id);
     return a;
   }
 
@@ -744,7 +744,7 @@ public:
 template <class Operation>
 void unary_operation(std::string_view operation_name, std::vector<StackEntry> &stack, Operation operation) {
   if (stack.empty())
-    throw Exception(fmt::format("no operand in stack for operation \"{}\"!", operation_name));
+    throw Exception("no operand in stack for operation \"{}\"!", operation_name);
   StackEntry &a(stack[stack.size() - 1]);
   a.load();
   if (a.evaluator || a.image || a.rng) {
@@ -754,7 +754,7 @@ void unary_operation(std::string_view operation_name, std::vector<StackEntry> &s
     try {
       a.value = (a.value.imag() == 0.0 ? operation.R(a.value.real()) : operation.Z(a.value));
     } catch (...) {
-      throw Exception(fmt::format("operation \"{}\" not supported for data type supplied", operation_name));
+      throw Exception("operation \"{}\" not supported for data type supplied", operation_name);
     }
   }
 }
@@ -762,7 +762,7 @@ void unary_operation(std::string_view operation_name, std::vector<StackEntry> &s
 template <class Operation>
 void binary_operation(std::string_view operation_name, std::vector<StackEntry> &stack, Operation operation) {
   if (stack.size() < 2)
-    throw Exception(fmt::format("not enough operands in stack for operation \"{}\"", operation_name));
+    throw Exception("not enough operands in stack for operation \"{}\"", operation_name);
   StackEntry &a(stack[stack.size() - 2]);
   StackEntry &b(stack[stack.size() - 1]);
   a.load();
@@ -781,7 +781,7 @@ void binary_operation(std::string_view operation_name, std::vector<StackEntry> &
 template <class Operation>
 void ternary_operation(std::string_view operation_name, std::vector<StackEntry> &stack, Operation operation) {
   if (stack.size() < 3)
-    throw Exception(fmt::format("not enough operands in stack for operation \"{}\"", operation_name));
+    throw Exception("not enough operands in stack for operation \"{}\"", operation_name);
   StackEntry &a(stack[stack.size() - 3]);
   StackEntry &b(stack[stack.size() - 2]);
   StackEntry &c(stack[stack.size() - 1]);
@@ -1009,7 +1009,7 @@ void run() {
 #include <fmt/format.h>
 
       else
-        throw Exception(fmt::format("operation \"{}\" not yet implemented!", opt->id));
+        throw Exception("operation \"{}\" not yet implemented!", opt->id);
 
     } else {
       stack.push_back(argument);

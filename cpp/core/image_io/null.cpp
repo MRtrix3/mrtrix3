@@ -21,11 +21,11 @@
 namespace MR::ImageIO {
 
 void Null::load(const Header &header, size_t) {
-  throw Exception(fmt::format("No suitable handler to access data in \"{}\"", header.name()));
+  throw Exception("No suitable handler to access data in \"{}\"", header.name());
 }
 
 void Null::unload(const Header &header) {
-  throw Exception(fmt::format("No suitable handler to access data in \"{}\"", header.name()));
+  throw Exception("No suitable handler to access data in \"{}\"", header.name());
 }
 
 } // namespace MR::ImageIO

@@ -169,7 +169,7 @@ align_corresponding_vertices(const Eigen::MatrixXd &src_vertices, const Eigen::M
     }
     // calculate and apply the scale
     default_type fscale = sqrt(fsq_t / fsq_s); // Umeyama: svd.singularValues().dot(e) / fsq;
-    DEBUG(fmt::format("scaling: {}", fscale));
+    DEBUG("scaling: {}", fscale);
     R *= fscale;
   }
 
@@ -276,7 +276,7 @@ void run() {
     transform_out.translation() = ((1.0 - t) * transform1.translation() + t * transform2.translation());
     Qout = Q1.slerp(t, Q2);
     transform_out.linear() = Qout * ((1 - t) * S1 + t * S2);
-    INFO(fmt::format("Interpolated transform: {}", transform_out));
+    INFO("Interpolated transform: {}", transform_out);
     File::Matrix::save_transform(transform_out, output_path);
     break;
   }

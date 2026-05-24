@@ -58,7 +58,7 @@ void run() {
   Eigen::ArrayXXi prettyprint(locations.size(), in.ndim());
   for (size_t row = 0; row != locations.size(); ++row)
     prettyprint.row(row) = std::move(locations[row]);
-  INFO(fmt::format("Printing locations of {} non-zero voxels", prettyprint.rows()));
+  INFO("Printing locations of {} non-zero voxels", prettyprint.rows());
   if (argument.size() == 2)
     File::Matrix::save_matrix(prettyprint, argument[1]);
   else

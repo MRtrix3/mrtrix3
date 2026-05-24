@@ -194,7 +194,7 @@ template <class Fixel> void ModelBase<Fixel>::map_streamlines(const std::filesys
 
   const track_t count = (properties.find("count") == properties.end()) ? 0 : to<track_t>(properties["count"]);
   if (!count)
-    throw Exception(fmt::format("Cannot map streamlines: track file {} is empty", path.filename()));
+    throw Exception("Cannot map streamlines: track file {} is empty", path.filename());
 
   Mapping::TrackLoader loader(file, count);
   Mapping::TrackMapperBase mapper(Fixel_map<Fixel>::header(), dirs);
@@ -206,7 +206,7 @@ template <class Fixel> void ModelBase<Fixel>::map_streamlines(const std::filesys
                     Thread::batch(Mapping::SetDixel()),
                     *this);
 
-  INFO(fmt::format("Proportionality coefficient after streamline mapping is {}", mu()));
+  INFO("Proportionality coefficient after streamline mapping is {}", mu());
 }
 
 template <class Fixel> bool ModelBase<Fixel>::operator()(const FMLS::FOD_lobes &in) {

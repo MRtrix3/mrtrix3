@@ -72,10 +72,9 @@ void run() {
   // Report datatype
   // ---------------------------------------------------------------
   if (H.datatype().is_integer() && !H.datatype().is_signed()) {
-    CONSOLE(fmt::format("Datatype: {} - image conforms to hard segmentation requirements", H.datatype().description()));
+    CONSOLE("Datatype: {} - image conforms to hard segmentation requirements", H.datatype().description());
   } else {
-    CONSOLE(
-        fmt::format("Datatype: {} - image values verified to be non-negative integers", H.datatype().description()));
+    CONSOLE("Datatype: {} - image values verified to be non-negative integers", H.datatype().description());
   }
 
   // Deeper analysis of image contents
@@ -89,21 +88,20 @@ void run() {
     throw Exception("No non-background labels found (image contains only zeros)");
 
   const node_t max_label = *result.labels.rbegin();
-  CONSOLE(
-      fmt::format("{} unique non-background label(s) found; index range: 1 to {}", result.labels.size(), max_label));
+  CONSOLE("{} unique non-background label(s) found; index range: 1 to {}", result.labels.size(), max_label);
 
   // ---------------------------------------------------------------
   // Report index contiguity
   // ---------------------------------------------------------------
   if (result.indices_contiguous) {
-    CONSOLE(fmt::format("Label indices: contiguous (all values 1 through {} are present)", max_label));
+    CONSOLE("Label indices: contiguous (all values 1 through {} are present)", max_label);
   } else {
     const size_t ngaps = result.missing_indices.size();
-    WARN(fmt::format("{}{}{} value(s) missing from the range [1, {}])",
-                     "Label indices: non-contiguous", //
-                     " (",
-                     ngaps,
-                     max_label)); //
+    WARN("{}{}{} value(s) missing from the range [1, {}])",
+         "Label indices: non-contiguous", //
+         " (",
+         ngaps,
+         max_label); //
     // List the missing indices, abbreviated if there are many.
     constexpr size_t max_listed = 20;
     std::string missing_str;
@@ -121,7 +119,7 @@ void run() {
   // Report number of labels without spatial contiguity
   // ---------------------------------------------------------------
   if (result.disconnected_components == 0) {
-    CONSOLE(fmt::format("All {} labels are spatially contiguous", result.labels.size()));
+    CONSOLE("All {} labels are spatially contiguous", result.labels.size());
   } else {
     const std::string msg(fmt::format(
         "{} of {} labels are spatially disconnected: ", result.disconnected_components, result.labels.size()));
@@ -130,6 +128,6 @@ void run() {
       if (result.component_counts.at(label) > 1)
         disconnected_labels.push_back(label);
     }
-    WARN(fmt::format("{}{}", msg, disconnected_labels));
+    WARN("{}{}", msg, disconnected_labels);
   }
 }

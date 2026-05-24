@@ -370,11 +370,11 @@ Image<ValueType>::Image(const std::shared_ptr<Image<ValueType>::Buffer> &buffer_
       data_offset(Stride::offset(*this)) {
   assert(buffer);
   assert(data_pointer || buffer->get_io());
-  DEBUG(fmt::format("image \"{}\" initialised with strides = {}, start = {}, using {}direct IO",
-                    name(),
-                    str(strides),
-                    data_offset,
-                    is_direct_io() ? "" : "in"));
+  DEBUG("image \"{}\" initialised with strides = {}, start = {}, using {}direct IO",
+        name(),
+        strides,
+        data_offset,
+        is_direct_io() ? "" : "in");
 }
 
 template <typename ValueType> Image<ValueType>::~Image() {}
@@ -405,7 +405,7 @@ std::filesystem::path Image<ValueType>::dump_to_mrtrix_file(const std::filesyste
   if (is_dash(filepath.string()))
     resolved_path = File::create_tempfile(0, ".mif");
 
-  DEBUG(fmt::format("dumping image \"{}\" to file \"{}\"...", name(), resolved_path));
+  DEBUG("dumping image \"{}\" to file \"{}\"...", name(), resolved_path);
 
   File::OFStream out(resolved_path, std::ios::out | std::ios::binary);
   out << "mrtrix image\n";
@@ -431,7 +431,7 @@ std::filesystem::path Image<ValueType>::dump_to_mrtrix_file(const std::filesyste
   out.seekp(offset, out.beg);
   out.write((const char *)data_pointer, data_size);
   if (!out.good())
-    throw Exception(fmt::format("error writing back contents of file \"{}\": {}", data_path, strerror(errno)));
+    throw Exception("error writing back contents of file \"{}\": {}", data_path, strerror(errno));
   out.close();
 
   // If data_size exceeds some threshold, ostream artificially increases the file size beyond that required at close()
@@ -476,9 +476,9 @@ save(ImageType &&x, const std::filesystem::path &filepath, bool use_multi_thread
 //! display the contents of an image in MRView (for debugging only)
 template <class ImageType> typename enable_if_image_type<ImageType, void>::type display(ImageType &x) {
   std::string filename = save(x, "-");
-  CONSOLE(fmt::format("displaying image \"{}\"", filename));
+  CONSOLE("displaying image \"{}\"", filename);
   if (system((fmt::format("bash -c \"mrview {}\"", filename)).c_str()))
-    WARN(fmt::format("error invoking viewer: {}", strerror(errno)));
+    WARN("error invoking viewer: {}", strerror(errno));
 }
 // Explicit instantiations in image.cpp:
 extern template MR::Image<bool>::Buffer::~Buffer();

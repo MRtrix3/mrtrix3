@@ -207,7 +207,7 @@ void run() {
   connector.adjacency.set_26_adjacency(do_26_connectivity);
   connector.adjacency.initialise(mask_header, *v2v);
   const Math::Stats::index_type num_voxels = v2v->size();
-  CONSOLE(fmt::format("Number of voxels in mask: {}", num_voxels));
+  CONSOLE("Number of voxels in mask: {}", num_voxels);
 
   // Posthoc analysis mask
   Image<bool> mask_inference_image;
@@ -217,9 +217,9 @@ void run() {
   if (!opt.empty()) {
     mask_inference_image = Image<bool>::open(opt[0][0]);
     if (!(mask_inference_image.ndim() == 3 || (mask_inference_image.ndim() == 4 && mask_inference_image.size(3) == 1)))
-      throw Exception(fmt::format("Post-hoc mask image \"{}\" is not 3D", opt[0][0].as_text()));
+      throw Exception("Post-hoc mask image \"{}\" is not 3D", opt[0][0].as_text());
     if (!dimensions_match(mask_header, mask_inference_image, 0, 3))
-      throw Exception(fmt::format("Post-hoc image \"{}\" does not match mask image", opt[0][0].as_text()));
+      throw Exception("Post-hoc image \"{}\" does not match mask image", opt[0][0].as_text());
     mask_inference.setZero();
     size_t mask_mismatch_count = 0;
     for (auto l = Loop(mask_header)(mask_inference_image); l; ++l) {
@@ -235,11 +235,11 @@ void run() {
         }
       }
     }
-    CONSOLE(fmt::format("Number of voxels in post-hoc analysis mask: {}", mask_infer_voxels));
+    CONSOLE("Number of voxels in post-hoc analysis mask: {}", mask_infer_voxels);
     if (mask_mismatch_count > size_t(0)) {
-      WARN(fmt::format("There are {} voxels in the post-hoc mask that are absent from the processing mask; \"\n        "
-                       "   \"post-hoc inference cannot and will not be performed in those voxels",
-                       str(mask_mismatch_count)));
+      WARN("There are {} voxels in the post-hoc mask that are absent from the processing mask; \"\n        "
+           "   \"post-hoc inference cannot and will not be performed in those voxels",
+           mask_mismatch_count);
     }
   } else {
     mask_inference = element_mask_type::Ones(num_voxels);
@@ -255,9 +255,9 @@ void run() {
   importer.initialise<SubjectVoxelImport>(argument[0]);
   for (index_type i = 0; i != importer.size(); ++i) {
     if (!dimensions_match(dynamic_cast<SubjectVoxelImport *>(importer[i].get())->header(), mask_header))
-      throw Exception(fmt::format("Image file \"{}\" does not match analysis mask", importer[i]->name()));
+      throw Exception("Image file \"{}\" does not match analysis mask", importer[i]->name());
   }
-  CONSOLE(fmt::format("Number of inputs: {}", importer.size()));
+  CONSOLE("Number of inputs: {}", importer.size());
 
   // Load design matrix
   const matrix_type design = File::Matrix::load_matrix<value_type>(argument[1]);
@@ -278,9 +278,9 @@ void run() {
   }
   const bool have_extra_columns = !extra_columns.empty();
   const index_type num_factors = design.cols() + extra_columns.size();
-  CONSOLE(fmt::format("Number of factors: {}", num_factors));
+  CONSOLE("Number of factors: {}", num_factors);
   if (have_extra_columns) {
-    CONSOLE(fmt::format("Number of element-wise design matrix columns: {}", extra_columns.size()));
+    CONSOLE("Number of element-wise design matrix columns: {}", extra_columns.size());
     if (nans_in_columns)
       CONSOLE("Non-finite values detected in element-wise design matrix columns;"
               " individual rows will be removed from voxel-wise design matrices accordingly");
@@ -291,12 +291,12 @@ void run() {
   auto variance_groups = GLM::load_variance_groups(design.rows());
   const index_type num_vgs = variance_groups.size() == 0 ? 1 : (variance_groups.maxCoeff() + 1);
   if (num_vgs > 1)
-    CONSOLE(fmt::format("Number of variance groups: {}", num_vgs));
+    CONSOLE("Number of variance groups: {}", num_vgs);
 
   // Load hypotheses
   const std::vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses(num_factors);
   const index_type num_hypotheses = hypotheses.size();
-  CONSOLE(fmt::format("Number of hypotheses: {}", num_hypotheses));
+  CONSOLE("Number of hypotheses: {}", num_hypotheses);
 
   measurements_matrix_type data(importer.size(), num_voxels);
   {

@@ -54,10 +54,10 @@ template <int N, class Functor, class... ImageType> struct StochasticThreadedLoo
     assign_pos_of(pos, outer_axes).to(vox);
     for (auto i = std::apply(loop, vox); i; ++i) {
       if (rng() >= density) {
-        // DEBUG (fmt::format("{} ...skipped inner", pos));
+        // DEBUG ("{} ...skipped inner", pos);
         continue;
       }
-      // DEBUG (fmt::format("{} ...used inner", pos));
+      // DEBUG ("{} ...used inner", pos);
       std::apply(func, vox);
     }
   }
@@ -84,10 +84,10 @@ template <class Functor, class... ImageType> struct StochasticThreadedLoopRunInn
   void operator()(Iterator &pos) {
     for (auto i = loop(pos); i; ++i) {
       if (rng() >= density) {
-        // DEBUG (fmt::format("{} ...skipped inner", pos));
+        // DEBUG ("{} ...skipped inner", pos);
         continue;
       }
-      // DEBUG (fmt::format("{} ...used inner", pos));
+      // DEBUG ("{} ...used inner", pos);
       func(pos);
     }
   }

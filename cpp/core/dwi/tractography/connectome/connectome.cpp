@@ -139,10 +139,10 @@ void setup_metric(Metric &metric, Image<node_t> &nodes_data) {
       metric.set_scale_file(opt[0][0]);
     } catch (Exception &e) {
       throw Exception(e,
-                      fmt::format("-scale_file option expects a file containing a list of numbers"
-                                  " (one for each streamline);"
-                                  " file \"{}\" does not appear to contain this",
-                                  opt[0][0]));
+                      "-scale_file option expects a file containing a list of numbers"
+                      " (one for each streamline);"
+                      " file \"{}\" does not appear to contain this",
+                      opt[0][0]);
     }
   }
 }

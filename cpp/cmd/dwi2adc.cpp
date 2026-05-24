@@ -191,7 +191,7 @@ void run() {
   size_t dwi_axis = 3;
   while (H_in.size(dwi_axis) < 2)
     ++dwi_axis;
-  INFO(fmt::format("assuming DW images are stored along axis {}", dwi_axis));
+  INFO("assuming DW images are stored along axis {}", dwi_axis);
 
   Header H_out(H_in);
   H_out.datatype() = DataType::Float32;

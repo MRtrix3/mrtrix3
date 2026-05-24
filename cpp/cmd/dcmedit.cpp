@@ -117,11 +117,10 @@ void run() {
       char c[2]; // check_syntax off
     } VR;
     VR.i = VRs[n];
-    INFO(fmt::format("clearing entries with VR \"{}{}\"", VR.c[1], VR.c[0]));
+    INFO("clearing entries with VR \"{}{}\"", VR.c[1], VR.c[0]);
   }
   for (size_t n = 0; n < tags.size(); ++n)
-    INFO(fmt::format(
-        "replacing tag ({},{}) with value \"{}\"", hex(tags[n].group), hex(tags[n].element), tags[n].newvalue));
+    INFO("replacing tag ({},{}) with value \"{}\"", hex(tags[n].group), hex(tags[n].element), tags[n].newvalue);
 
   File::Dicom::Element item;
   item.set(argument[0], true, true);

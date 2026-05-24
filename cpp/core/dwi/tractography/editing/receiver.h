@@ -48,7 +48,7 @@ public:
     progress.set_text(std::string(printf("%8" PRIu64 " read, %8" PRIu64 " written", total_count, count)) +
                       (crop ? printf(", %8" PRIu64 " segments", segments) : ""));
     if (number && (count != number))
-      WARN(fmt::format("User requested {} streamlines, but only {} were written to file", number, count));
+      WARN("User requested {} streamlines, but only {} were written to file", number, count);
   }
 
   bool operator()(const Streamline<> &);

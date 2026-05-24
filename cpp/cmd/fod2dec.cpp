@@ -250,11 +250,11 @@ void run() {
     if (!optlc.empty()) {
       auto lc = parse_floats(optlc[0][0]);
       if (lc.size() != 3)
-        throw Exception(fmt::format("expecting exactly 3 coefficients for the lum_coefs option,"
-                                    " provided as a comma-separated list Cr,Cg,Cb ; e.g., {:.2g},{:.2g},{:.2g}",
-                                    default_lum_cr,
-                                    default_lum_cg,
-                                    default_lum_cb));
+        throw Exception("expecting exactly 3 coefficients for the lum_coefs option,"
+                        " provided as a comma-separated list Cr,Cg,Cb ; e.g., {:.2g},{:.2g},{:.2g}",
+                        default_lum_cr,
+                        default_lum_cg,
+                        default_lum_cb);
       coefs(0) = lc[0];
       coefs(1) = lc[1];
       coefs(2) = lc[2];

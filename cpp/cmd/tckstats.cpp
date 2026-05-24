@@ -163,7 +163,7 @@ void run() {
     WARN(s);
   }
   if (count != header_count)
-    WARN(fmt::format("expected {} tracks according to header; read {}", header_count, count));
+    WARN("expected {} tracks according to header; read {}", header_count, count);
   if (!std::isfinite(min_length))
     min_length = NaNF;
   if (!std::isfinite(max_length))

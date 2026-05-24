@@ -95,19 +95,19 @@ public:
 
     const value_type gradient_tolerance(grad_tolerance * normg);
 
-    DEBUG(fmt::format("Gradient descent iteration: init; cost: {}", f));
+    DEBUG("Gradient descent iteration: init; cost: {}", f);
 
     while (niter < max_iterations) {
       bool retval = iterate(log_os);
-      DEBUG(fmt::format("Gradient descent iteration: {}; cost: {}", niter, f));
+      DEBUG("Gradient descent iteration: {}; cost: {}", niter, f);
       if (verbose) {
-        CONSOLE(fmt::format("iteration {}: f = {}, |g| = {}:", niter, f, normg));
-        CONSOLE(fmt::format("  x = [ {}]", x));
+        CONSOLE("iteration {}: f = {}, |g| = {}:", niter, f, normg);
+        CONSOLE("  x = [ {}]", x);
       }
 
       if (normg < gradient_tolerance) {
         if (verbose)
-          CONSOLE(fmt::format("normg ({}) < gradient tolerance ({})", normg, gradient_tolerance));
+          CONSOLE("normg ({}) < gradient tolerance ({})", normg, gradient_tolerance);
         return;
       }
 
@@ -134,8 +134,8 @@ public:
     assert(!std::isnan(normg));
     dt /= normg;
     if (verbose) {
-      CONSOLE(fmt::format("initialise: f = {}, |g| = {}:", f, normg));
-      CONSOLE(fmt::format("  x = {}", x));
+      CONSOLE("initialise: f = {}, |g| = {}:", f, normg);
+      CONSOLE("  x = {}", x);
     }
     if (normg == 0.0)
       return;
@@ -229,7 +229,7 @@ protected:
     if (!std::isfinite(cost))
       throw Exception("cost function is NaN or Inf!");
     if (verbose)
-      CONSOLE("      << eval " + str(nfeval) + ", f = " + str(cost) + " >>");
+      CONSOLE("      << eval {}, f = {} >>", nfeval, cost);
     return cost;
   }
 

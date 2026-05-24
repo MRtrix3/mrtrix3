@@ -41,7 +41,7 @@ std::vector<default_type> parse_floats(std::string_view spec) {
       if (last_char == ':') {
         i++;
         if (i > 2)
-          throw Exception(fmt::format("invalid number range in number sequence \"{}\"", spec));
+          throw Exception("invalid number range in number sequence \"{}\"", spec);
       } else {
         if (i) {
           if (i != 2)
@@ -63,7 +63,7 @@ std::vector<default_type> parse_floats(std::string_view spec) {
       start = end + 1;
     } while (end < spec.size());
   } catch (Exception &E) {
-    throw Exception(E, fmt::format("can't parse floating-point sequence specifier \"{}\"", spec));
+    throw Exception(E, "can't parse floating-point sequence specifier \"{}\"", spec);
   }
   return (V);
 }
@@ -91,7 +91,7 @@ split(std::string_view string, std::string_view delimiters, bool ignore_empty_fi
       }
     } while (true);
   } catch (...) {
-    throw Exception(fmt::format("can't split string \"{}\"", string));
+    throw Exception("can't split string \"{}\"", string);
   }
   return V;
 }

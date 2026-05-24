@@ -85,7 +85,7 @@ void run() {
 
   std::vector<std::vector<DirectionSet>> dirs;
   std::vector<value_type> bvalue((argument.size() - 2) / (1 + num_subsets));
-  INFO(fmt::format("expecting {} b-values", bvalue.size()));
+  INFO("expecting {} b-values", bvalue.size());
   if (bvalue.size() * (1 + num_subsets) + 2 != argument.size())
     throw Exception("inconsistent number of arguments");
 
@@ -104,12 +104,12 @@ void run() {
         set.push_back(Direction(m(r, 0), m(r, 1), m(r, 2)));
       d.push_back(set);
     }
-    INFO(fmt::format("found b = {}, {} volumes", bvalue[nb], [&] {
+    INFO("found b = {}, {} volumes", bvalue[nb], [&] {
       std::vector<size_t> s;
       for (auto &n : d)
         s.push_back(n.size());
       return s;
-    }()));
+    }());
 
     dirs.push_back(d);
     ++nb;
@@ -122,7 +122,7 @@ void run() {
         n += m.size();
     return n;
   }();
-  INFO(fmt::format("found total of {} volumes", total));
+  INFO("found total of {} volumes", total);
 
   // pick which volume will be first
   size_t first_shell = 0;
@@ -149,7 +149,7 @@ void run() {
       return largestshell_index;
     }();
     first_shell = largest_shell;
-    INFO(fmt::format("first volume will be from shell b={}", bvalue[first_shell]));
+    INFO("first volume will be from shell b={}", bvalue[first_shell]);
     const size_t largest_subset_within_largest_shell = [&] {
       size_t largestsubset_index = 0;
       size_t largestsubset_n = dirs[largest_shell][0].size();
@@ -164,12 +164,12 @@ void run() {
     }();
     first_subset_within_first_shell = largest_subset_within_largest_shell;
     if (num_subsets > 1) {
-      INFO(fmt::format("first volume will be from subset {} from largest shell", first_subset_within_first_shell + 1));
+      INFO("first volume will be from subset {} from largest shell", first_subset_within_first_shell + 1);
     }
   } else {
-    INFO(fmt::format("first volume will be{} from first shell (b={})",
-                     std::string(num_subsets > 1 ? " from first subset" : ""),
-                     bvalue[0]));
+    INFO("first volume will be{} from first shell (b={})",
+         std::string(num_subsets > 1 ? " from first subset" : ""),
+         bvalue[0]);
   }
   std::random_device rd;
   std::mt19937 rng(rd());
@@ -250,10 +250,9 @@ void run() {
     // find most distant direction for that shell & in the current PE direction:
     n = find_lowest_energy_direction(b, nPE);
     if (dirs[b][nPE].empty()) {
-      WARN(fmt::format(
-          "no directions remaining in b={} shell for PE direction {}; PE directions will not cycle through perfectly",
-          bvalue[b],
-          n));
+      WARN("no directions remaining in b={} shell for PE direction {}; PE directions will not cycle through perfectly",
+           bvalue[b],
+           n);
     } else {
       push(b, nPE, n);
     }

@@ -251,7 +251,7 @@ void run() {
   const size_t dimensions = input1.ndim();
   if (input1.ndim() != input2.ndim())
     throw Exception("both images have to have the same number of dimensions");
-  DEBUG(fmt::format("dimensions: {}", dimensions));
+  DEBUG("dimensions: {}", dimensions);
   if (dimensions > 4)
     throw Exception("images have to be 3 or 4 dimensional");
 
@@ -265,7 +265,7 @@ void run() {
       throw Exception("both images have to have the same number of volumes");
     }
   }
-  INFO(fmt::format("volumes: {}", volumes));
+  INFO("volumes: {}", volumes);
 
   MaskType mask1;
   bool use_mask1 = get_options("mask1").size() == 1;
@@ -478,7 +478,7 @@ void run() {
       }
     } // "average space"
   }
-  DEBUG(fmt::format("n_voxels:{}", n_voxels));
+  DEBUG("n_voxels:{}", n_voxels);
   if (n_voxels == 0)
     WARN("number of overlapping voxels is zero");
 

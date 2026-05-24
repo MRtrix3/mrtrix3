@@ -58,25 +58,24 @@ void Element::set(const std::filesystem::path &filepath, bool force_read, bool r
   fmap.reset(new File::MMap(filepath, read_write));
 
   if (fmap->size() < 256)
-    throw Exception(fmt::format("\"{}\" is too small to be a valid DICOM file", fmap->path()));
+    throw Exception("\"{}\" is too small to be a valid DICOM file", fmap->path());
 
   next = fmap->address();
 
   if (memcmp(next + 128, "DICM", 4)) {
     is_explicit = false;
-    DEBUG(fmt::format("DICOM magic number not found in file \"{}\" - trying truncated format", fmap->path()));
+    DEBUG("DICOM magic number not found in file \"{}\" - trying truncated format", fmap->path());
     if (!force_read)
       if (!Path::has_suffix(fmap->path(), ".dcm"))
-        throw Exception(
-            fmt::format("file \"{}\" does not have the DICOM magic number or the .dcm extension - assuming not DICOM",
-                        fmap->path()));
+        throw Exception("file \"{}\" does not have the DICOM magic number or the .dcm extension - assuming not DICOM",
+                        fmap->path());
   } else
     next += 132;
 
   try {
     set_explicit_encoding();
   } catch (Exception) {
-    throw Exception(fmt::format("\"{}\" is not a valid DICOM file", fmap->path()));
+    throw Exception("\"{}\" is not a valid DICOM file", fmap->path());
     fmap.reset();
   }
 }
@@ -84,7 +83,7 @@ void Element::set(const std::filesystem::path &filepath, bool force_read, bool r
 void Element::set_explicit_encoding() {
   assert(fmap);
   if (read_GR_EL())
-    throw Exception(fmt::format("\"{}\" is too small to be DICOM", fmap->path()));
+    throw Exception("\"{}\" is too small to be DICOM", fmap->path());
 
   is_explicit = true;
   next = start;
@@ -119,7 +118,7 @@ bool Element::read_GR_EL() {
 
   if (group == group_byte_order_swapped) {
     if (!is_BE)
-      throw Exception(fmt::format("invalid DICOM group ID {} in file \"{}\"", group, fmap->path()));
+      throw Exception("invalid DICOM group ID {} in file \"{}\"", group, fmap->path());
 
     is_BE = false;
     group = group_byte_order;
@@ -156,12 +155,12 @@ bool Element::read() {
     // implicit encoding:
     std::string name = tag_name();
     if (name.empty()) {
-      DEBUG(fmt::format("{}{}\"",
-                        printf("WARNING: unknown DICOM tag (%04X %04X) "
-                               "with implicit encoding in file \"",
-                               group,
-                               element),
-                        fmap->path()));
+      DEBUG("{}{}\"",
+            printf("WARNING: unknown DICOM tag (%04X %04X) "
+                   "with implicit encoding in file \"",
+                   group,
+                   element),
+            fmap->path());
       VR = VR_UN;
     } else
       VR = get_VR_from_tag_name(name);
@@ -172,21 +171,21 @@ bool Element::read() {
 
   if (size == undefined_length) {
     if (VR != VR_SQ && !(group == group_sequence && element == element_sequence_item))
-      INFO(fmt::format("undefined length used for DICOM tag {}({:04X}, {:04X}) in file \"{}\"",
-                       (!tag_name().empty() ? tag_name().substr(2) : ""),
-                       group,
-                       element,
-                       fmap->path()));
+      INFO("undefined length used for DICOM tag {}({:04X}, {:04X}) in file \"{}\"",
+           (!tag_name().empty() ? tag_name().substr(2) : ""),
+           group,
+           element,
+           fmap->path());
   } else if (next + size > fmap->address() + fmap->size())
-    throw Exception(fmt::format("file \"{}\" is too small to contain DICOM elements specified", fmap->path()));
+    throw Exception("file \"{}\" is too small to contain DICOM elements specified", fmap->path());
   else {
     if (size % 2)
-      DEBUG(fmt::format("WARNING: odd length ({}) used for DICOM tag {} ({}, {}) in file \"{}\"",
-                        size,
-                        (!tag_name().empty() ? tag_name().substr(2) : ""),
-                        group,
-                        element,
-                        fmap->path()));
+      DEBUG("WARNING: odd length ({}) used for DICOM tag {} ({}, {}) in file \"{}\"",
+            size,
+            (!tag_name().empty() ? tag_name().substr(2) : ""),
+            group,
+            element,
+            fmap->path());
     if (VR != VR_SQ) {
       if (group == group_sequence && element == element_sequence_item) {
         if (!parents.empty() && parents.back().group == group_data && parents.back().element == element_data)
@@ -227,7 +226,7 @@ bool Element::read() {
         throw Exception("DICOM deflated explicit VR little endian transfer syntax not supported");
       } else {
         transfer_syntax_supported = false;
-        INFO(fmt::format("unsupported DICOM transfer syntax: \"{}\" in file \"{}\"", data_as_string, fmap->path()));
+        INFO("unsupported DICOM transfer syntax: \"{}\" in file \"{}\"", data_as_string, fmap->path());
       }
     } break;
     }
@@ -406,7 +405,7 @@ std::string Element::as_string() const {
         return "unknown data type";
     }
   } catch (Exception &e) {
-    DEBUG(fmt::format("Error converting data at offset {} to {} type: ", offset(start), type_as_str.at(type())));
+    DEBUG("Error converting data at offset {} to {} type: ", offset(start), type_as_str.at(type()));
     for (auto &s : e.description)
       DEBUG(s);
     return "invalid entry";
@@ -423,28 +422,28 @@ template <class T> inline void print_vec(const std::vector<T> &V) {
 
 void Element::error_in_get(size_t idx) const {
   const std::string name(tag_name());
-  DEBUG(fmt::format("value not found for DICOM tag {}{}{}{})",   //
-                    printf("%04X %04X ", group, element),        //
-                    (name.empty() ? "unknown" : name.substr(2)), //
-                    " (at index ",
-                    idx)); //
+  DEBUG("value not found for DICOM tag {}{}{}{})",   //
+        printf("%04X %04X ", group, element),        //
+        (name.empty() ? "unknown" : name.substr(2)), //
+        " (at index ",
+        idx); //
 }
 
 void Element::error_in_check_size(size_t min_size, size_t actual_size) const {
   const std::string name(tag_name());
-  throw Exception(fmt::format("not enough items in for DICOM tag {}{}{}{}, got {})", //
-                              printf("%04X %04X ", group, element),                  //
-                              (name.empty() ? "unknown" : name.substr(2)),           //
-                              " (expected ",
-                              min_size,
-                              actual_size)); //
+  throw Exception("not enough items in for DICOM tag {}{}{}{}, got {})", //
+                  printf("%04X %04X ", group, element),                  //
+                  (name.empty() ? "unknown" : name.substr(2)),           //
+                  " (expected ",
+                  min_size,
+                  actual_size); //
 }
 
 void Element::report_unknown_tag_with_implicit_syntax() const {
-  DEBUG(fmt::format(
+  DEBUG(
       "attempt to read data of unknown value representation in DICOM implicit syntax for tag ({:04X} {:04X}); ignored",
       group,
-      element));
+      element);
 }
 
 std::ostream &operator<<(std::ostream &stream, const Element &item) {

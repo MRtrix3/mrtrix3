@@ -125,11 +125,11 @@ public:
         ThreadedLoop(params.processed_image, 0, 3).run(kernel);
       }
     }
-    DEBUG(fmt::format("Metric evaluate iteration: {}, cost: {}", iteration++, overall_cost_function.transpose()));
-    DEBUG(fmt::format("  x: {}", x.transpose()));
-    DEBUG(fmt::format("  gradient: {}", gradient.transpose()));
-    DEBUG(fmt::format("  norm(gradient): {}", gradient.norm()));
-    DEBUG(fmt::format("  overlapping voxels: {}", overlap_count));
+    DEBUG("Metric evaluate iteration: {}, cost: {}", iteration++, overall_cost_function.transpose());
+    DEBUG("  x: {}", x.transpose());
+    DEBUG("  gradient: {}", gradient.transpose());
+    DEBUG("  norm(gradient): {}", gradient.norm());
+    DEBUG("  overlapping voxels: {}", overlap_count);
     return overall_cost_function(0);
   }
 
@@ -143,7 +143,7 @@ public:
   //       ssize_t* overlap_count = nullptr) {
 
   //     if (params.loop_density < 1.0) {
-  //       DEBUG (fmt::format("stochastic gradient descent, density: {}", params.loop_density));
+  //       DEBUG ("stochastic gradient descent, density: {}", params.loop_density);
   //       Math::RNG rng;
   //       gradient.setZero();
   //       auto loop = ThreadedLoop (params.midway_image, 0, 3, 2);
@@ -214,7 +214,7 @@ public:
 
     // estimate (params.transformation, metric, params, overall_cost_function, gradient, x, &overlap_count);
     if (params.loop_density < 1.0) {
-      DEBUG(fmt::format("stochastic gradient descent, density: {}", params.loop_density));
+      DEBUG("stochastic gradient descent, density: {}", params.loop_density);
       Math::RNG rng;
       gradient.setZero();
       auto loop = ThreadedLoop(params.midway_image, 0, 3, 2);
@@ -245,11 +245,11 @@ public:
       }
     }
 
-    DEBUG(fmt::format("Metric evaluate iteration: {}, cost: {}", iteration++, overall_cost_function.transpose()));
-    DEBUG(fmt::format("  x: {}", x.transpose()));
-    DEBUG(fmt::format("  gradient: {}", gradient.transpose()));
-    DEBUG(fmt::format("  norm(gradient): {}", gradient.norm()));
-    DEBUG(fmt::format("  overlapping voxels: {}", overlap_count));
+    DEBUG("Metric evaluate iteration: {}, cost: {}", iteration++, overall_cost_function.transpose());
+    DEBUG("  x: {}", x.transpose());
+    DEBUG("  gradient: {}", gradient.transpose());
+    DEBUG("  norm(gradient): {}", gradient.norm());
+    DEBUG("  overlapping voxels: {}", overlap_count);
     return overall_cost_function(0);
   }
 

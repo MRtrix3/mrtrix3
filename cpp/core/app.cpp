@@ -520,15 +520,15 @@ void print_help() {
     std::string help_string = get_help_string(1);
     FILE *file = popen(help_display_command.c_str(), "w");
     if (!file) {
-      INFO(fmt::format("error launching help display command \"{}\": {}", help_display_command, strerror(errno)));
+      INFO("error launching help display command \"{}\": {}", help_display_command, strerror(errno));
     } else if (fwrite(help_string.c_str(), 1, help_string.size(), file) != help_string.size()) {
-      INFO(fmt::format("error sending help page to display command \"{}\": {}", help_display_command, strerror(errno)));
+      INFO("error sending help page to display command \"{}\": {}", help_display_command, strerror(errno));
     }
 
     if (pclose(file) == 0)
       return;
 
-    INFO(fmt::format("error launching help display command \"{}\"", help_display_command));
+    INFO("error launching help display command \"{}\"", help_display_command);
   }
 
   if (!help_display_command.empty())
@@ -836,7 +836,7 @@ const Option *match_option(std::string_view arg) {
 
   // no matches
   if (candidates.empty())
-    throw Exception(fmt::format("unknown option \"-{}\"", root));
+    throw Exception("unknown option \"-{}\"", root);
 
   // return match if unique:
   if (candidates.size() == 1)
@@ -868,7 +868,7 @@ void sort_arguments(const std::vector<std::string> &arguments) {
     const Option *opt = match_option(*it);
     if (opt != nullptr) {
       if (it + opt->size() >= arguments.end()) {
-        throw Exception(fmt::format("not enough parameters to option \"-{}\"", opt->id));
+        throw Exception("not enough parameters to option \"-{}\"", opt->id);
       }
 
       std::vector<std::string> option_args;
@@ -897,9 +897,9 @@ void parse_standard_options() {
 
 void verify_usage() {
   if (AUTHOR.empty())
-    throw Exception(fmt::format("No author specified for command {}", NAME));
+    throw Exception("No author specified for command {}", NAME);
   if (SYNOPSIS.empty())
-    throw Exception(fmt::format("No synopsis specified for command {}", NAME));
+    throw Exception("No synopsis specified for command {}", NAME);
 }
 
 void parse_special_options() {
@@ -963,7 +963,7 @@ void parse() {
   }
 
   if (num_optional_arguments && num_args_required > argument.size())
-    throw Exception(fmt::format("Expected at least {} arguments ({} supplied)", num_args_required, argument.size()));
+    throw Exception("Expected at least {} arguments ({} supplied)", num_args_required, argument.size());
 
   if (num_optional_arguments == 0 && num_args_required != argument.size()) {
     Exception e(fmt::format("Expected exactly {} arguments ({} supplied)", num_args_required, argument.size()));
@@ -1020,10 +1020,10 @@ void parse() {
           count++;
 
       if (count < 1 && OPTIONS[i][j].flags.required())
-        throw Exception(fmt::format("mandatory option \"-{}\" must be specified", OPTIONS[i][j].id));
+        throw Exception("mandatory option \"-{}\" must be specified", OPTIONS[i][j].id);
 
       if (count > 1 && !OPTIONS[i][j].flags.allow_multiple())
-        throw Exception(fmt::format("multiple instances of option \"-{}\" are not allowed", OPTIONS[i][j].id));
+        throw Exception("multiple instances of option \"-{}\" are not allowed", OPTIONS[i][j].id);
     }
   }
 
@@ -1053,9 +1053,9 @@ void parse() {
       types_not_input_file.reset(ArgTypeFlags::TracksIn);
       if (!types_not_input_file.any()) {
         if (!std::filesystem::exists(i))
-          throw Exception(fmt::format("required input file \"{}\" not found", i));
+          throw Exception("required input file \"{}\" not found", i);
         if (!std::filesystem::is_regular_file(i))
-          throw Exception(fmt::format("required input \"{}\" is not a file", i));
+          throw Exception("required input \"{}\" is not a file", i);
       }
     }
     {
@@ -1063,9 +1063,9 @@ void parse() {
       types_not_input_directory.reset(ArgTypeFlags::DirectoryIn);
       if (!types_not_input_directory.any()) {
         if (!std::filesystem::exists(i))
-          throw Exception(fmt::format("required input directory \"{}\" not found", i));
+          throw Exception("required input directory \"{}\" not found", i);
         if (!std::filesystem::is_directory(i))
-          throw Exception(fmt::format("required input \"{}\" is not a directory", i));
+          throw Exception("required input \"{}\" is not a directory", i);
       }
     }
     {
@@ -1074,8 +1074,7 @@ void parse() {
       types_not_output_file.reset(ArgTypeFlags::TracksOut);
       if (!types_not_output_file.any()) {
         if (i.as_text().find_last_of(PATH_SEPARATORS) == i.as_text().size() - 1)
-          throw Exception(
-              fmt::format("output path \"{}\" is not a valid file path (ends with directory path separator)", i));
+          throw Exception("output path \"{}\" is not a valid file path (ends with directory path separator)", i);
       }
     }
     {
@@ -1094,13 +1093,13 @@ void parse() {
             const std::filesystem::path dir_path(i);
             if (std::filesystem::exists(dir_path)) {
               if (!std::filesystem::is_directory(dir_path))
-                throw Exception(fmt::format("output path \"{}\" already exists as a file", i));
+                throw Exception("output path \"{}\" already exists as a file", i);
               if (std::filesystem::directory_iterator(dir_path) != std::filesystem::directory_iterator())
-                throw Exception(fmt::format("output directory \"{}\" is not empty{}",
-                                            i,
-                                            overwrite_files ? " (-force option cannot safely be applied on directories;"
-                                                              " please erase manually instead)"
-                                                            : ""));
+                throw Exception("output directory \"{}\" is not empty{}",
+                                i,
+                                overwrite_files ? " (-force option cannot safely be applied on directories;"
+                                                  " please erase manually instead)"
+                                                : "");
             }
             break;
           }
@@ -1117,7 +1116,7 @@ void parse() {
       types_not_input_tractogram.reset(ArgTypeFlags::TracksIn);
       if (!types_not_input_tractogram.any()) {
         if (static_cast<std::filesystem::path>(i).extension() != ".tck")
-          throw Exception(fmt::format("input file \"{}\" is not a valid track file", i));
+          throw Exception("input file \"{}\" is not a valid track file", i);
       }
     }
     {
@@ -1125,7 +1124,7 @@ void parse() {
       types_not_output_tractogram.reset(ArgTypeFlags::TracksOut);
       if (!types_not_output_tractogram.any()) {
         if (static_cast<std::filesystem::path>(i).extension() != ".tck")
-          throw Exception(fmt::format("output track file \"{}\" must use the .tck suffix", i));
+          throw Exception("output track file \"{}\" must use the .tck suffix", i);
       }
     }
   }
@@ -1140,9 +1139,9 @@ void parse() {
         types_not_input_file.reset(ArgTypeFlags::TracksIn);
         if (!types_not_input_file.any()) {
           if (!std::filesystem::exists(parg))
-            throw Exception(fmt::format("input file \"{}\" for option \"-{}\" not found", parg, i.opt->id));
+            throw Exception("input file \"{}\" for option \"-{}\" not found", parg, i.opt->id);
           if (!std::filesystem::is_regular_file(parg))
-            throw Exception(fmt::format("input \"{}\" for option \"-{}\" is not a file", parg, i.opt->id));
+            throw Exception("input \"{}\" for option \"-{}\" is not a file", parg, i.opt->id);
         }
       }
       {
@@ -1150,9 +1149,9 @@ void parse() {
         types_not_input_directory.reset(ArgTypeFlags::DirectoryIn);
         if (!types_not_input_directory.any()) {
           if (!std::filesystem::exists(parg))
-            throw Exception(fmt::format("input directory \"{}\" for option \"-{}\" not found", parg, i.opt->id));
+            throw Exception("input directory \"{}\" for option \"-{}\" not found", parg, i.opt->id);
           if (!std::filesystem::is_directory(parg))
-            throw Exception(fmt::format("input \"{}\" for option \"-{}\" is not a directory", parg, i.opt->id));
+            throw Exception("input \"{}\" for option \"-{}\" is not a directory", parg, i.opt->id);
         }
       }
       {
@@ -1161,10 +1160,10 @@ void parse() {
         types_not_output_file.reset(ArgTypeFlags::TracksOut);
         if (!types_not_output_file.any()) {
           if (parg.as_text().find_last_of(PATH_SEPARATORS) == parg.as_text().size() - 1)
-            throw Exception(fmt::format(
+            throw Exception(
                 "output path \"{}\" for option \"-{}\" is not a valid file path (ends with directory path separator)",
                 parg,
-                i.opt->id));
+                i.opt->id);
         }
       }
       {
@@ -1183,16 +1182,14 @@ void parse() {
               const std::filesystem::path dir_path(parg);
               if (std::filesystem::exists(dir_path)) {
                 if (!std::filesystem::is_directory(dir_path))
-                  throw Exception(
-                      fmt::format("output path \"{}\" for option \"-{}\" already exists as a file", parg, i.opt->id));
+                  throw Exception("output path \"{}\" for option \"-{}\" already exists as a file", parg, i.opt->id);
                 if (std::filesystem::directory_iterator(dir_path) != std::filesystem::directory_iterator())
-                  throw Exception(fmt::format("output directory \"{}\" for option \"-{}\" is not empty{}",
-                                              parg,
-                                              i.opt->id,
-                                              overwrite_files
-                                                  ? " (-force option cannot safely be applied on directories;"
+                  throw Exception("output directory \"{}\" for option \"-{}\" is not empty{}",
+                                  parg,
+                                  i.opt->id,
+                                  overwrite_files ? " (-force option cannot safely be applied on directories;"
                                                     " please erase manually instead)"
-                                                  : ""));
+                                                  : "");
               }
               break;
             }
@@ -1209,8 +1206,7 @@ void parse() {
         types_not_input_tractogram.reset(ArgTypeFlags::TracksIn);
         if (!types_not_input_tractogram.any()) {
           if (static_cast<std::filesystem::path>(parg).extension() != ".tck")
-            throw Exception(
-                fmt::format("input file \"{}\" for option \"-{}\" is not a valid track file", parg, i.opt->id));
+            throw Exception("input file \"{}\" for option \"-{}\" is not a valid track file", parg, i.opt->id);
         }
       }
       {
@@ -1218,8 +1214,7 @@ void parse() {
         types_not_output_tractogram.reset(ArgTypeFlags::TracksOut);
         if (!types_not_output_tractogram.any()) {
           if (static_cast<std::filesystem::path>(parg).extension() != ".tck")
-            throw Exception(
-                fmt::format("output track file \"{}\" for option \"-{}\" must use the .tck suffix", parg, i.opt->id));
+            throw Exception("output track file \"{}\" for option \"-{}\" must use the .tck suffix", parg, i.opt->id);
         }
       }
     }
@@ -1370,7 +1365,7 @@ int64_t App::ParsedArgument::as_int() const {
           multiplier = 1000000000000;
           break;
         default:
-          throw Exception(fmt::format("unexpected postfix \'{}\'", postfix));
+          throw Exception("unexpected postfix \'{}\'", postfix);
         }
         if (contains_dotpoint) {
           const default_type prefix = to<default_type>(num);
@@ -1389,19 +1384,18 @@ int64_t App::ParsedArgument::as_int() const {
     }
 
     if (retval < arg->int_limits.min() || retval > arg->int_limits.max())
-      throw Exception(fmt::format("out of bounds (valid range: {} to {}; value supplied: {})",
-                                  arg->int_limits.min(),
-                                  arg->int_limits.max(),
-                                  retval));
+      throw Exception("out of bounds (valid range: {} to {}; value supplied: {})",
+                      arg->int_limits.min(),
+                      arg->int_limits.max(),
+                      retval);
     return retval;
   } catch (Exception &e_int) {
     as_int_msg = e_int[0];
     if (!arg->types[ArgTypeFlags::Choice])
-      throw Exception(
-          fmt::format("unable to parse string {} supplied for {} as integer: {}",
+      throw Exception("unable to parse string {} supplied for {} as integer: {}",
                       p,
                       (opt == nullptr ? fmt::format("argument \"{}", arg->id) : fmt::format("option \"{}", opt->id)),
-                      as_int_msg));
+                      as_int_msg);
   }
 
   Exception full_msg(
@@ -1422,8 +1416,7 @@ bool App::ParsedArgument::as_bool() const {
 uint64_t App::ParsedArgument::as_uint() const {
   const int64_t signed_value = as_int();
   if (signed_value < 0)
-    throw Exception(
-        fmt::format("Attempting to interpret negative user-specified value ({}) as unsigned integer", signed_value));
+    throw Exception("Attempting to interpret negative user-specified value ({}) as unsigned integer", signed_value);
   return static_cast<uint64_t>(signed_value);
 }
 
@@ -1522,7 +1515,7 @@ void check_overwrite(const std::filesystem::path &path) {
     if (check_overwrite_files_func != nullptr)
       check_overwrite_files_func(path);
     else
-      throw Exception(fmt::format("output path \"{}\" already exists (use -force option to force overwrite)", path));
+      throw Exception("output path \"{}\" already exists (use -force option to force overwrite)", path);
   }
 }
 
@@ -1536,16 +1529,16 @@ ParsedOption::ParsedOption(const Option *option, const std::vector<std::string> 
         (*option)[i].types[ArgTypeFlags::Integer] || (*option)[i].types[ArgTypeFlags::Float] ||
         (*option)[i].types[ArgTypeFlags::IntSeq] || (*option)[i].types[ArgTypeFlags::FloatSeq])
       continue;
-    WARN(fmt::format("{}{}\" is being used as {}for option \"-{}\", yet this itself looks like a separate command-line "
-                     "option; the requisite input{}to command-line option \"-{}\" may have been erroneously omitted, "
-                     "which may cause other command-line parsing errors",
-                     "Value \"",
-                     arguments[i],
-                     ((option->size() == 1) ? "the expected argument "
-                                            : fmt::format("one of the {} expected arguments ", option->size())),
-                     option->id,
-                     ((option->size() == 1) ? " " : "s "),
-                     option->id));
+    WARN("{}{}\" is being used as {}for option \"-{}\", yet this itself looks like a separate command-line "
+         "option; the requisite input{}to command-line option \"-{}\" may have been erroneously omitted, "
+         "which may cause other command-line parsing errors",
+         "Value \"",
+         arguments[i],
+         ((option->size() == 1) ? "the expected argument "
+                                : fmt::format("one of the {} expected arguments ", option->size())),
+         option->id,
+         ((option->size() == 1) ? " " : "s "),
+         option->id);
   }
 }
 

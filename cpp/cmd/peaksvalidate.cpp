@@ -78,7 +78,7 @@ void run() {
   const Peaks::PeaksValidation result = Peaks::validate_image(image);
 
   const ssize_t n_peaks = H.size(3) / 3;
-  CONSOLE(fmt::format("Image \"{}\": {} peak slot(s) per voxel", H.name(), n_peaks));
+  CONSOLE("Image \"{}\": {} peak slot(s) per voxel", H.name(), n_peaks);
 
   // Report fill-value convention.
   if (!result.fill_value.has_value()) {
@@ -100,8 +100,8 @@ void run() {
   if (unit_norm) {
     CONSOLE("Peak norms: all peaks are unit-norm (directions image; no quantitative amplitude)");
   } else {
-    CONSOLE(fmt::format("Peak norms: range [{}, {}] (quantitative amplitudes encoded in vector norm)",
-                        result.norm_min,
-                        result.norm_max));
+    CONSOLE("Peak norms: range [{}, {}] (quantitative amplitudes encoded in vector norm)",
+            result.norm_min,
+            result.norm_max);
   }
 }

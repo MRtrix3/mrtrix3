@@ -54,12 +54,12 @@ void Base::set_translation(const Eigen::Matrix<ParameterType, 1, 3> &trans) {
 
 void Base::set_centre_without_transform_update(const Eigen::Vector3d &centre_in) {
   centre = centre_in;
-  DEBUG(fmt::format("centre: {}", centre));
+  DEBUG("centre: {}", centre);
 }
 
 void Base::set_centre(const Eigen::Vector3d &centre_in) {
   centre = centre_in;
-  DEBUG(fmt::format("centre: {}", centre));
+  DEBUG("centre: {}", centre);
   compute_offset();
   compute_halfspace_transformations();
 }
@@ -75,19 +75,19 @@ void Base::set_offset(const Eigen::Vector3d &offset_in) {
 }
 
 std::string Base::info() {
-  INFO(fmt::format("transformation: {}", trafo));
-  DEBUG(fmt::format("transformation_half: {}", trafo_half));
-  DEBUG(fmt::format("transformation_half_inverse: {}", trafo_half_inverse));
+  INFO("transformation: {}", trafo);
+  DEBUG("transformation_half: {}", trafo_half);
+  DEBUG("transformation_half_inverse: {}", trafo_half_inverse);
   return fmt::format("centre: {}", centre);
 }
 
 std::string Base::debug() {
   const Eigen::IOFormat fmt(Eigen::FullPrecision, 0, ", ", "\n", "", "", "", "");
-  CONSOLE(fmt::format("trafo: {}", trafo));
-  CONSOLE(fmt::format("trafo_inverse: {}", trafo.inverse()));
-  CONSOLE(fmt::format("trafo_half: {}", trafo_half));
-  CONSOLE(fmt::format("trafo_half_inverse: {}", trafo_half_inverse));
-  CONSOLE(fmt::format("centre: {}", centre));
+  CONSOLE("trafo: {}", trafo);
+  CONSOLE("trafo_inverse: {}", trafo.inverse());
+  CONSOLE("trafo_half: {}", trafo_half);
+  CONSOLE("trafo_half_inverse: {}", trafo_half_inverse);
+  CONSOLE("centre: {}", centre);
   return "";
 }
 

@@ -38,14 +38,14 @@ extern const App::OptionGroup MatrixOutputOptions;
 
 template <class MatrixType> void check(const MatrixType &in, const node_t num_nodes = 0) {
   if (in.rows() != in.cols())
-    throw Exception(fmt::format("Connectome matrix is not square ({} x {})", in.rows(), in.cols()));
+    throw Exception("Connectome matrix is not square ({} x {})", in.rows(), in.cols());
   if (num_nodes && (in.rows() != num_nodes))
-    throw Exception(fmt::format("Connectome matrix contains {} nodes; expected {}", in.rows(), num_nodes));
+    throw Exception("Connectome matrix contains {} nodes; expected {}", in.rows(), num_nodes);
 }
 
 template <class MatrixType> bool is_directed(MatrixType &in) {
   if (in.rows() != in.cols())
-    throw Exception(fmt::format("Connectome matrix is not square ({} x {})", in.rows(), in.cols()));
+    throw Exception("Connectome matrix is not square ({} x {})", in.rows(), in.cols());
 
   for (node_t row = 0; row != in.rows(); ++row) {
     for (node_t col = row + 1; col != in.cols(); ++col) {

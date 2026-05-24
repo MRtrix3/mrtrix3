@@ -25,9 +25,9 @@ Sphere::Sphere(std::string_view in)                                      //
     : Base(in, "sphere", attempts_per_seed.at(seed_attempt_t::RANDOM)) { //
   auto F = parse_floats(in);
   if (F.size() != 4)
-    throw Exception(fmt::format("Could not parse seed \"{}\" as a spherical seed point;{}",
-                                in,                                                                    //
-                                " needs to be 4 comma-separated values (XYZ position, then radius)")); //
+    throw Exception("Could not parse seed \"{}\" as a spherical seed point;{}",
+                    in,                                                                   //
+                    " needs to be 4 comma-separated values (XYZ position, then radius)"); //
   pos = {static_cast<float>(F[0]), static_cast<float>(F[1]), static_cast<float>(F[2])};
   rad = static_cast<float>(F[3]);
   Base::volume = static_cast<float>(4.0 * Math::pi * Math::pow3(F[3]) / 3.0);
@@ -194,7 +194,7 @@ Rejection_per_voxel::Rejection_per_voxel(const std::filesystem::path &in)
   }
 
   if (!max)
-    throw Exception(fmt::format("Cannot use image {} for rejection sampling - image is empty", in));
+    throw Exception("Cannot use image {} for rejection sampling - image is empty", in);
 
   if (bottom[0])
     --bottom[0];
@@ -268,7 +268,7 @@ CoordinatesLoader::CoordinatesLoader(const std::filesystem::path &cds_path) //
     weights *= 1.0F / max_coeff;
   } break;
   default:
-    throw Exception(fmt::format("Invalid number of columns ({}) in seed coordinates file {}", coords.cols(), cds_path));
+    throw Exception("Invalid number of columns ({}) in seed coordinates file {}", coords.cols(), cds_path);
   }
 }
 

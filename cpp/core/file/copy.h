@@ -26,7 +26,7 @@ namespace MR::File {
 
 inline void copy(const std::filesystem::path &source, const std::filesystem::path &destination) {
   {
-    DEBUG(fmt::format("copying file \"{}\" to \"{}\"...", source, destination));
+    DEBUG("copying file \"{}\" to \"{}\"...", source, destination);
     MMap input(source);
     create(destination, input.size());
     MMap output(destination, true);

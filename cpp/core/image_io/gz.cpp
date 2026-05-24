@@ -27,18 +27,18 @@ namespace MR::ImageIO {
 
 void GZ::load(const Header &header, size_t) {
   if (files.empty())
-    throw Exception(fmt::format("no files specified in header for image \"{}\"", header.name()));
+    throw Exception("no files specified in header for image \"{}\"", header.name());
 
   segsize /= files.size();
   bytes_per_segment = (header.datatype().bits() * segsize + 7) / 8;
   if (files.size() * bytes_per_segment > std::numeric_limits<size_t>::max())
-    throw Exception(fmt::format("image \"{}\" is larger than maximum accessible memory", header.name()));
+    throw Exception("image \"{}\" is larger than maximum accessible memory", header.name());
 
-  DEBUG(fmt::format("loading image \"{}\"...", header.name()));
+  DEBUG("loading image \"{}\"...", header.name());
   addresses.resize(header.datatype().bits() == 1 && files.size() > 1 ? files.size() : 1);
   addresses[0].reset(new std::byte[files.size() * bytes_per_segment]);
   if (!addresses[0])
-    throw Exception(fmt::format("failed to allocate memory for image \"{}\"", header.name()));
+    throw Exception("failed to allocate memory for image \"{}\"", header.name());
 
   if (is_new)
     memset(addresses[0].get(), 0, files.size() * bytes_per_segment);

@@ -146,7 +146,7 @@ bool median_weiszfeld(const MatrixType &X,
     ++i;
   }
   if (i == numIter)
-    WARN(fmt::format("Weiszfeld's median algorithm did not converge after {} iterations", numIter));
+    WARN("Weiszfeld's median algorithm did not converge after {} iterations", numIter);
   // std::cerr << str(dist) << std::endl;
   return convergence;
 }

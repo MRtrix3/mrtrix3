@@ -218,9 +218,9 @@ is_out_of_bounds(const HeaderType &header,
 //! requirement for anything that performs 3D interpolation, or erosion (& maybe others not thought of yet)
 template <class HeaderType> FORCE_INLINE void check_3D_nonunity(const HeaderType &in) {
   if (in.ndim() < 3)
-    throw Exception(fmt::format("Image \"{}\" does not represent spatial data (less than 3 dimensions)", in.name()));
+    throw Exception("Image \"{}\" does not represent spatial data (less than 3 dimensions)", in.name());
   if (std::min({in.size(0), in.size(1), in.size(2)}) == 1)
-    throw Exception(fmt::format("Image \"{}\" does not represent spatial data (has axis with size 1)", in.name()));
+    throw Exception("Image \"{}\" does not represent spatial data (has axis with size 1)", in.name());
 }
 
 //! error if the image has dimensionality of at least \a N, allowing for higher singleton dimensions.
@@ -228,11 +228,10 @@ template <class HeaderType> FORCE_INLINE void check_3D_nonunity(const HeaderType
 //! but [ x y z 1 n ] will throw an exception.
 template <class HeaderType> FORCE_INLINE void check_effective_dimensionality(const HeaderType &in, size_t N) {
   if (in.ndim() < N)
-    throw Exception(fmt::format("Image \"{}\" does not represent {}D data (too few dimensions)", in.name(), N));
+    throw Exception("Image \"{}\" does not represent {}D data (too few dimensions)", in.name(), N);
   for (size_t i = N; i < in.ndim(); ++i)
     if (in.size(i) != 1)
-      throw Exception(
-          fmt::format("Image \"{}\" does not represent {}D data (axis {} has size {})", in.name(), N, i, in.size(i)));
+      throw Exception("Image \"{}\" does not represent {}D data (axis {} has size {})", in.name(), N, i, in.size(i));
 }
 
 //! returns the number of voxel in the data set, or a relevant subvolume
@@ -371,34 +370,31 @@ template <class HeaderType> std::string dim2str(const HeaderType &in) {
 template <class HeaderType1, class HeaderType2>
 inline void check_dimensions(const HeaderType1 &in1, const HeaderType2 &in2) {
   if (!dimensions_match(in1, in2))
-    throw Exception(fmt::format("dimension mismatch between \"{}\" and \"{}\" ({} vs. {})",
-                                in1.name(),
-                                in2.name(),
-                                dim2str(in1),
-                                dim2str(in2)));
+    throw Exception(
+        "dimension mismatch between \"{}\" and \"{}\" ({} vs. {})", in1.name(), in2.name(), dim2str(in1), dim2str(in2));
 }
 
 template <class HeaderType1, class HeaderType2>
 inline void check_dimensions(const HeaderType1 &in1, const HeaderType2 &in2, size_t from_axis, size_t to_axis) {
   if (!dimensions_match(in1, in2, from_axis, to_axis))
-    throw Exception(fmt::format("dimension mismatch between \"{}\" and \"{}\" between axes {} and {} ({} vs. {})",
-                                in1.name(),
-                                in2.name(),
-                                from_axis,
-                                to_axis - 1,
-                                dim2str(in1),
-                                dim2str(in2)));
+    throw Exception("dimension mismatch between \"{}\" and \"{}\" between axes {} and {} ({} vs. {})",
+                    in1.name(),
+                    in2.name(),
+                    from_axis,
+                    to_axis - 1,
+                    dim2str(in1),
+                    dim2str(in2));
 }
 
 template <class HeaderType1, class HeaderType2>
 inline void check_dimensions(const HeaderType1 &in1, const HeaderType2 &in2, const std::vector<size_t> &axes) {
   if (!dimensions_match(in1, in2, axes))
-    throw Exception(fmt::format("dimension mismatch between \"{}\" and \"{}\" for axes [{}] ({} vs. {})",
-                                in1.name(),
-                                in2.name(),
-                                join(axes, ","),
-                                dim2str(in1),
-                                dim2str(in2)));
+    throw Exception("dimension mismatch between \"{}\" and \"{}\" for axes [{}] ({} vs. {})",
+                    in1.name(),
+                    in2.name(),
+                    join(axes, ","),
+                    dim2str(in1),
+                    dim2str(in2));
 }
 
 template <class HeaderType1, class HeaderType2>
@@ -406,11 +402,11 @@ inline void
 check_voxel_grids_match_in_scanner_space(const HeaderType1 &in1, const HeaderType2 &in2, const double tol = 1.0e-3) {
   Eigen::IOFormat FullPrecFmt(Eigen::FullPrecision, 0, ", ", "\n", "[", "]");
   if (!voxel_grids_match_in_scanner_space(in1, in2, tol))
-    throw Exception(fmt::format("images \"{}\" and \"{}\" do not have matching header transforms \n{}\nvs\n{})",
-                                in1.name(),
-                                in2.name(),
-                                str(in1.transform().matrix().format(FullPrecFmt)),
-                                str(in2.transform().matrix().format(FullPrecFmt))));
+    throw Exception("images \"{}\" and \"{}\" do not have matching header transforms \n{}\nvs\n{})",
+                    in1.name(),
+                    in2.name(),
+                    in1.transform().matrix().format(FullPrecFmt),
+                    in2.transform().matrix().format(FullPrecFmt));
 }
 
 //! returns true if the image to scanner transformation and voxel sizes of in1 and in2 are within tolerance
@@ -435,7 +431,7 @@ voxel_grids_match_in_scanner_space(const HeaderType1 in1, const HeaderType2 in2,
                                               .colwise()
                                               .squaredNorm()
                                               .maxCoeff());
-  DEBUG(fmt::format("transforms_match: FOV difference in scanner coordinates: {}", diff_in_scannercoord));
+  DEBUG("transforms_match: FOV difference in scanner coordinates: {}", diff_in_scannercoord);
   return diff_in_scannercoord < (0.5 * (vs1 + vs2)).minCoeff() * tol;
 }
 

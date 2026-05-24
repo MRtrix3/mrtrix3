@@ -248,15 +248,14 @@ template <class MatrixType> void Writer<MatrixType>::save(const std::filesystem:
       if (!App::overwrite_files && (std::filesystem::is_regular_file(path / "index.mif") ||
                                     std::filesystem::is_regular_file(path / "fixels.mif") ||
                                     std::filesystem::is_regular_file(path / "values.mif")))
-        throw Exception(fmt::format("Cannot create fixel-fixel connectivity matrix \"{}\": one or more files already "
-                                    "exists (use -force to override)",
-                                    path));
+        throw Exception("Cannot create fixel-fixel connectivity matrix \"{}\": one or more files already "
+                        "exists (use -force to override)",
+                        path);
     } else {
       if (App::overwrite_files) {
         std::filesystem::remove(path);
       } else {
-        throw Exception(fmt::format(
-            "Cannot create fixel-fixel connectivity matrix directory \"{}\": Already exists as file", path));
+        throw Exception("Cannot create fixel-fixel connectivity matrix directory \"{}\": Already exists as file", path);
       }
     }
   } else {
@@ -381,18 +380,16 @@ Reader::Reader(const std::filesystem::path &path, const Image<bool> &mask) : dir
     fixel_image = Image<fixel_index_type>::open(directory / "fixels.mif");
     value_image = Image<connectivity_value_type>::open(directory / "values.mif");
     if (value_image.size(0) != fixel_image.size(0))
-      throw Exception(
-          fmt::format("Number of fixels in value image ({}) does not match number of fixels in fixel image ({})",
+      throw Exception("Number of fixels in value image ({}) does not match number of fixels in fixel image ({})",
                       value_image.size(0),
-                      fixel_image.size(0)));
+                      fixel_image.size(0));
     if (mask_image.valid() && static_cast<size_t>(mask_image.size(0)) != size())
-      throw Exception(
-          fmt::format("Fixel image \"{}\" has different number of fixels ({}) to fixel-fixel connectivity matrix ({})",
+      throw Exception("Fixel image \"{}\" has different number of fixels ({}) to fixel-fixel connectivity matrix ({})",
                       mask_image.name(),
                       mask_image.size(0),
-                      size()));
+                      size());
   } catch (Exception &e) {
-    throw Exception(e, fmt::format("Unable to load path \"{}\" as fixel-fixel connectivity data", directory));
+    throw Exception(e, "Unable to load path \"{}\" as fixel-fixel connectivity data", directory);
   }
 }
 

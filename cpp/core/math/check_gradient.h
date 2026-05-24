@@ -34,18 +34,17 @@ check_function_gradient(Function &function,
   const size_t N = function.size();
   Eigen::Matrix<value_type, Eigen::Dynamic, 1> g(N);
 
-  CONSOLE(fmt::format("checking gradient for cost function over {} parameters of type {}",
-                      N,
-                      DataType::from<value_type>().specifier()));
+  CONSOLE(
+      "checking gradient for cost function over {} parameters of type {}", N, DataType::from<value_type>().specifier());
   value_type step_size = function.init(g);
-  CONSOLE(fmt::format("cost function suggests initial step size = {}", step_size));
-  CONSOLE(fmt::format("cost function suggests initial position at [ {}]", g.transpose()));
+  CONSOLE("cost function suggests initial step size = {}", step_size);
+  CONSOLE("cost function suggests initial position at [ {}]", g.transpose());
 
-  CONSOLE(fmt::format("checking gradient at position [ {}]:", x.transpose()));
+  CONSOLE("checking gradient at position [ {}]:", x.transpose());
   Eigen::Matrix<value_type, Eigen::Dynamic, 1> g0(N);
   value_type f0 = function(x, g0);
-  CONSOLE(fmt::format("  cost function = {}", f0));
-  CONSOLE(fmt::format("  gradient from cost function         = [ {}]", g0.transpose()));
+  CONSOLE("  cost function = {}", f0);
+  CONSOLE("  gradient from cost function         = [ {}]", g0.transpose());
 
   Eigen::Matrix<value_type, Eigen::Dynamic, 1> g_fd(N);
   Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> hessian;
@@ -85,8 +84,8 @@ check_function_gradient(Function &function,
     }
   }
 
-  CONSOLE(fmt::format("gradient by central finite difference = [ {}]", g_fd.transpose()));
-  CONSOLE(fmt::format("normalised dot product = {}", g_fd.dot(g0) / g_fd.squaredNorm()));
+  CONSOLE("gradient by central finite difference = [ {}]", g_fd.transpose());
+  CONSOLE("normalised dot product = {}", g_fd.dot(g0) / g_fd.squaredNorm());
 
   if (show_hessian) {
     hessian /= 4.0 * increment;
@@ -99,7 +98,7 @@ check_function_gradient(Function &function,
     }
     // CONSOLE ("hessian = [ " + fmt::format("{}]", hessian));
     MAT(hessian);
-    CONSOLE(fmt::format("\033[00;34mcondition number: {}\033[0m", condition_number(hessian)));
+    CONSOLE("\033[00;34mcondition number: {}\033[0m", condition_number(hessian));
   }
   return hessian;
 }

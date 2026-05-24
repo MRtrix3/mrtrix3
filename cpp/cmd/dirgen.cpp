@@ -183,13 +183,13 @@ public:
   void execute() {
     size_t this_start = 0;
     while ((this_start = current_start++) < restarts) {
-      DEBUG(fmt::format("launching start {}", this_start));
+      DEBUG("launching start {}", this_start);
       double E = 0.0;
 
       for (power = 1; power <= target_power; power *= 2) {
         Math::GradientDescent<Energy, ProjectedUpdate> optim(*this, ProjectedUpdate());
 
-        DEBUG(fmt::format("start {}: setting power = {}", this_start, power));
+        DEBUG("start {}: setting power = {}", this_start, power);
         optim.init();
 
         size_t iter = 0;
@@ -197,12 +197,12 @@ public:
           if (!optim.iterate())
             break;
 
-          DEBUG(fmt::format("start {}: [ {} ] (pow = {}) E = {:.8g}, grad = {:.8g}",
-                            this_start,
-                            iter,
-                            power,
-                            optim.value(),
-                            optim.gradient_norm()));
+          DEBUG("start {}: [ {} ] (pow = {}) E = {:.8g}, grad = {:.8g}",
+                this_start,
+                iter,
+                power,
+                optim.value(),
+                optim.gradient_norm());
 
           std::lock_guard<std::mutex> lock(mutex);
           ++progress;
@@ -281,7 +281,7 @@ void run() {
     auto threads = Thread::run(Thread::multi(energy_functor), "energy function");
   }
 
-  CONSOLE(fmt::format("final energy = {}", Energy::best_E));
+  CONSOLE("final energy = {}", Energy::best_E);
   Eigen::MatrixXd directions_matrix(ndirs, 3);
   for (size_t n = 0; n < ndirs; ++n)
     directions_matrix.row(n) = Energy::best_directions.segment(3 * n, 3);

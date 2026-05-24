@@ -316,8 +316,7 @@ void run() {
   if (!opt.empty()) {
     mask = Image<float>::open(opt[0][0]);
     if (!dimensions_match(fod_data, mask, 0, 3))
-      throw Exception(
-          fmt::format("Cannot use image \"{}\" as mask image; dimensions do not match FOD image", opt[0][0]));
+      throw Exception("Cannot use image \"{}\" as mask image; dimensions do not match FOD image", opt[0][0]);
   }
 
   Fixel::check_fixel_directory(output_directory, true, true);

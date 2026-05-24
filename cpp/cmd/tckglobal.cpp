@@ -333,9 +333,9 @@ void run() {
 
   Thread::run(Thread::multi(mhs), "MH sampler");
 
-  INFO(fmt::format("Final no. particles: {}", std::to_string(pgrid.getTotalCount())));
-  INFO(fmt::format("Final external energy: {}", std::to_string(stats.getEextTotal())));
-  INFO(fmt::format("Final internal energy: {}", std::to_string(stats.getEintTotal())));
+  INFO("Final no. particles: {}", std::to_string(pgrid.getTotalCount()));
+  INFO("Final external energy: {}", std::to_string(stats.getEextTotal()));
+  INFO("Final internal energy: {}", std::to_string(stats.getEintTotal()));
 
   // Copy results to output buffers -----------------------------------------------------
 
@@ -378,7 +378,7 @@ void run() {
       auto Fiso = Image<float>::create(opt[0][0], header_out);
       threaded_copy(Eext->getFiso(), Fiso);
     } else {
-      WARN(fmt::format("Ignore saving file {}, because no isotropic response functions were provided.", opt[0][0]));
+      WARN("Ignore saving file {}, because no isotropic response functions were provided.", opt[0][0]);
     }
   }
 

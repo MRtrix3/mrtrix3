@@ -131,12 +131,12 @@ void run() {
 
   index_type last_candidate_first_volume = static_cast<index_type>(directions.rows());
   if (static_cast<size_t>(directions.rows()) <= Math::SH::NforL(2)) {
-    WARN(fmt::format("Very few directions in input ({}; selection of first direction cannot be optimised{}",
-                     directions.rows(),
-                     preserve ? fmt::format(" (direction #{} will be first direction in output"
-                                            " as that is the first direction after those to be preserved)",
-                                            preserve + 1)
-                              : " (first direction in input will be first direction in output)"));
+    WARN("Very few directions in input ({}; selection of first direction cannot be optimised{}",
+         directions.rows(),
+         preserve ? fmt::format(" (direction #{} will be first direction in output"
+                                " as that is the first direction after those to be preserved)",
+                                preserve + 1)
+                  : " (first direction in input will be first direction in output)");
     last_candidate_first_volume = preserve + 1;
   }
   value_type min_cost = std::numeric_limits<value_type>::infinity();

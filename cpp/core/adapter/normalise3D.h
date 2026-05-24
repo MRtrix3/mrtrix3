@@ -48,7 +48,7 @@ public:
     else
       extent = ext;
 
-    DEBUG(fmt::format("normalise3D adapter for image \"{}\" initialised with extent {}", name(), extent));
+    DEBUG("normalise3D adapter for image \"{}\" initialised with extent {}", name(), extent);
 
     for (size_t i = 0; i < 3; ++i)
       extent[i] = (extent[i] - 1) / 2;

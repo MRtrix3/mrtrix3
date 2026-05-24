@@ -75,7 +75,7 @@ SharedBase::SharedBase(const std::filesystem::path &diff_path,
   if (properties.find("init_direction") != properties.end()) {
     auto V = parse_floats(properties["init_direction"]);
     if (V.size() != 3)
-      throw Exception(fmt::format("invalid initial direction \"{}\"", properties["init_direction"]));
+      throw Exception("invalid initial direction \"{}\"", properties["init_direction"]);
     init_dir[0] = V[0];
     init_dir[1] = V[1];
     init_dir[2] = V[2];
@@ -102,20 +102,19 @@ SharedBase::SharedBase(const std::filesystem::path &diff_path,
 
 SharedBase::~SharedBase() {
   const size_t sum_terminations = terminations.total();
-  INFO(fmt::format("Total number of track terminations: {}", sum_terminations));
+  INFO("Total number of track terminations: {}", sum_terminations);
   INFO("Termination reason probabilities:");
   for (const auto &i : termination_info) {
     if (termination_relevant(i.first))
-      INFO(fmt::format("  {}: {:.3g}\\%",
-                       i.second.description,
-                       100.0 * static_cast<default_type>(terminations.get(i.first)) /
-                           static_cast<default_type>(sum_terminations)));
+      INFO("  {}: {:.3g}\\%",
+           i.second.description,
+           100.0 * static_cast<default_type>(terminations.get(i.first)) / static_cast<default_type>(sum_terminations));
   }
 
   INFO("Track rejection counts:");
   for (const auto &i : rejection_strings) {
     if (rejection_relevant(i.first))
-      INFO(fmt::format("  {}: {}", i.second, rejections.get(i.first)));
+      INFO("  {}: {}", i.second, rejections.get(i.first));
   }
 }
 
@@ -125,7 +124,7 @@ void SharedBase::set_step_and_angle(const float voxel_frac,
                                     const curvature_constraint_t curvature_constraint_type) {
   step_size = voxel_frac * vox();
   properties.set(step_size, "step_size");
-  INFO(fmt::format("step size = {} mm", step_size));
+  INFO("step size = {} mm", step_size);
 
   max_dist = Defaults::maxlength_voxels * vox();
   properties.set(max_dist, "max_dist");
@@ -144,11 +143,11 @@ void SharedBase::set_step_and_angle(const float voxel_frac,
     angle_msg = "maximum angular change in fibre orientation per step";
     break;
   }
-  INFO(fmt::format("{} = {} deg", angle_msg, max_angle_1o));
+  INFO("{} = {} deg", angle_msg, max_angle_1o);
   max_angle_1o *= Math::pi / 180.0;
   cos_max_angle_1o = std::cos(max_angle_1o);
   min_radius = step_size / (2.0f * std::sin(0.5f * max_angle_1o));
-  INFO(fmt::format("Minimum radius of curvature = {}mm", min_radius));
+  INFO("Minimum radius of curvature = {}mm", min_radius);
 
   if (intrinsic_integration_order == intrinsic_integration_order_t::HIGHER) {
     max_angle_ho = max_angle_1o;
@@ -216,7 +215,7 @@ void SharedBase::set_num_points(const float angle_minradius_preds, const float m
   //         need to quantify its length precisely and compare against the maximum)
   max_num_points_postds = 1 + std::floor(max_dist / max_step_postds);
 
-  DEBUG(fmt::format(
+  DEBUG(
       "For tracking step size {}mm, {}, minimum radius of curvature {:.6g}mm, downsampling ratio {}: minimum length of "
       "{}mm requires at least {} vertices pre-DS, is tested explicitly for {} vertices or less post-DS; maximum length "
       "of {}mm will stop tracking after {} vertices pre-DS, is tested explicitly for {} or more vertices post-DS",
@@ -233,7 +232,7 @@ void SharedBase::set_num_points(const float angle_minradius_preds, const float m
       min_num_points_postds,
       max_dist,
       max_num_points_preds,
-      max_num_points_postds));
+      max_num_points_postds);
 }
 
 void SharedBase::set_cutoff(float cutoff) {

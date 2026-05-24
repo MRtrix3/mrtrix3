@@ -27,7 +27,7 @@ namespace MR::ImageIO {
 
 void Default::load(const Header &header, size_t) {
   if (files.empty())
-    throw Exception(fmt::format("no files specified in header for image \"{}\"", header.name()));
+    throw Exception("no files specified in header for image \"{}\"", header.name());
 
   segsize /= files.size();
 
@@ -40,7 +40,7 @@ void Default::load(const Header &header, size_t) {
   }
 
   if (files.size() > std::numeric_limits<size_t>::max() / bytes_per_segment)
-    throw Exception(fmt::format("image \"{}\" is larger than maximum addressable memory", header.name()));
+    throw Exception("image \"{}\" is larger than maximum addressable memory", header.name());
 
   if (files.size() > max_files_per_image)
     copy_to_mem(header);
@@ -58,8 +58,7 @@ void Default::unload(const Header &header) {
         out.seekp(files[n].start, out.beg);
         out.write(reinterpret_cast<const char *>(addresses[0].get() + n * bytes_per_segment), bytes_per_segment);
         if (!out.good())
-          throw Exception(
-              fmt::format("error writing back contents of file \"{}\": {}", files[n].path, strerror(errno)));
+          throw Exception("error writing back contents of file \"{}\": {}", files[n].path, strerror(errno));
       }
     }
   } else {
@@ -79,13 +78,13 @@ void Default::map_files(const Header &header) {
 }
 
 void Default::copy_to_mem(const Header &header) {
-  DEBUG(fmt::format("loading image \"{}\"...", header.name()));
+  DEBUG("loading image \"{}\"...", header.name());
   addresses.resize(files.size() > 1 && header.datatype().bits() * segsize != 8 * static_cast<size_t>(bytes_per_segment)
                        ? files.size()
                        : 1);
   addresses[0].reset(new std::byte[files.size() * bytes_per_segment]);
   if (!addresses[0])
-    throw Exception(fmt::format("failed to allocate memory for image \"{}\"", header.name()));
+    throw Exception("failed to allocate memory for image \"{}\"", header.name());
 
   if (is_new)
     memset(addresses[0].get(), 0, files.size() * bytes_per_segment);

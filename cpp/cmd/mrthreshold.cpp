@@ -233,11 +233,11 @@ default_type calculate(Image<value_type> &in,
     auto data = get_data(in, mask, max_axis, ignore_zero);
     const ssize_t index(bottom >= 0 ? bottom - 1 : (static_cast<ssize_t>(data.size()) - top));
     if (index < 0 || index >= static_cast<ssize_t>(data.size()))
-      throw Exception(fmt::format(
+      throw Exception(
           "Number of valid input image values ({}) less than number of voxels requested via -{} option ({})",
-          str(data.size()),
+          data.size(),
           (bottom >= 0 ? "bottom" : "top"),
-          str(bottom >= 0 ? bottom : top)));
+          bottom >= 0 ? bottom : top);
     std::nth_element(data.begin(), data.begin() + index, data.end());
     const value_type threshold_float = data[index];
     if (index) {

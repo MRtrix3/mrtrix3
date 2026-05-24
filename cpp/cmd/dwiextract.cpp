@@ -88,7 +88,7 @@ void run() {
     DWI::Shells shells(grad);
     shells.select_shells(singleshell, bzero_only, !get_options("no_bzero").empty());
     for (size_t s = 0; s != shells.count(); ++s) {
-      DEBUG(fmt::format("Including data from shell b={} +- {}", shells[s].get_mean(), shells[s].get_stdev()));
+      DEBUG("Including data from shell b={} +- {}", shells[s].get_mean(), shells[s].get_stdev());
       for (const auto v : shells[s].get_volumes())
         volumes.push_back(v);
     }
@@ -138,7 +138,7 @@ void run() {
 
   if (volumes.empty()) {
     const std::string type = bzero_only ? "b=0" : "dwi";
-    throw Exception(fmt::format("No {} volumes present", type));
+    throw Exception("No {} volumes present", type);
   }
 
   std::sort(volumes.begin(), volumes.end());

@@ -40,12 +40,12 @@ namespace MR::File::JSON {
 void load(Header &H, const std::filesystem::path &path) {
   std::ifstream in{path};
   if (!in)
-    throw Exception(fmt::format("Error opening JSON file \"{}\"", path));
+    throw Exception("Error opening JSON file \"{}\"", path);
   nlohmann::json json;
   try {
     in >> json;
   } catch (std::logic_error &e) {
-    throw Exception(fmt::format("Error parsing JSON file \"{}\": {}", path, e.what()));
+    throw Exception("Error parsing JSON file \"{}\": {}", path, e.what());
   }
   read(json, H);
 }
@@ -92,7 +92,7 @@ KeyValues read(const nlohmann::json &json) {
             line.push_back(str(k));
           result.insert(std::make_pair(i.key(), join(line, ",")));
         } else {
-          throw Exception(fmt::format("JSON entry \"{}\" is array but contains mixed data types", i.key()));
+          throw Exception("JSON entry \"{}\" is array but contains mixed data types", i.key());
         }
       } else if (num_subarrays == i->size()) {
         std::vector<std::string> s;
@@ -104,7 +104,7 @@ KeyValues read(const nlohmann::json &json) {
         }
         result.insert(std::make_pair(i.key(), join(s, "\n")));
       } else
-        throw Exception(fmt::format("JSON entry \"{}\" contains mixture of elements and arrays", i.key()));
+        throw Exception("JSON entry \"{}\" contains mixture of elements and arrays", i.key());
     }
   }
   return result;

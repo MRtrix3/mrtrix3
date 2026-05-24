@@ -37,15 +37,14 @@ void read_annot(const std::filesystem::path &path, label_vector_type &labels, Co
 
   const int32_t colortable_present = get_BE<int32_t>(in);
   if (!in.good()) {
-    WARN(fmt::format("FreeSurfer annotation file \"{}\" does not contain colortable information", path.filename()));
+    WARN("FreeSurfer annotation file \"{}\" does not contain colortable information", path.filename());
     labels = label_vector_type::Zero(num_vertices);
     for (size_t i = 0; i != vertices.size(); ++i)
       labels[vertices[i]] = vertex_labels[i];
     return;
   }
   if (!colortable_present)
-    throw Exception(
-        fmt::format("Error reading FreeSurfer annotation file \"{}\": Unexpected colortable flag", path.filename()));
+    throw Exception("Error reading FreeSurfer annotation file \"{}\": Unexpected colortable flag", path.filename());
 
   // Structure that will map from the colour-based structure identifier to a more sensible index
   std::map<int32_t, Connectome::node_t> rgb2index;
@@ -71,9 +70,8 @@ void read_annot(const std::filesystem::path &path, label_vector_type &labels, Co
   } else {
     const int32_t version = -num_entries;
     if (version != 2)
-      throw Exception(fmt::format("Error reading FreeSurfer annotation file \"{}\": Unsupported file version ({})",
-                                  path.filename(),
-                                  str(version)));
+      throw Exception(
+          "Error reading FreeSurfer annotation file \"{}\": Unsupported file version ({})", path.filename(), version);
 
     num_entries = get_BE<int32_t>(in);
     const int32_t orig_lut_name_length = get_BE<int32_t>(in);
@@ -84,11 +82,9 @@ void read_annot(const std::filesystem::path &path, label_vector_type &labels, Co
     for (int32_t i = 0; i != num_entries_to_read; ++i) {
       const int32_t structure = get_BE<int32_t>(in) + 1;
       if (structure < 0)
-        throw Exception(
-            fmt::format("Error reading FreeSurfer annotation file \"{}\": Negative structure index", path.filename()));
+        throw Exception("Error reading FreeSurfer annotation file \"{}\": Negative structure index", path.filename());
       if (lut.find(structure) != lut.end())
-        throw Exception(
-            fmt::format("Error reading FreeSurfer annotation file \"{}\": Duplicate structure index", path.filename()));
+        throw Exception("Error reading FreeSurfer annotation file \"{}\": Duplicate structure index", path.filename());
       const int32_t struct_name_length = get_BE<int32_t>(in);
       std::unique_ptr<char[]> struct_name(new char[struct_name_length]);
       in.read(struct_name.get(), struct_name_length);
@@ -118,16 +114,15 @@ void read_label(const std::filesystem::path &path, VertexList &vertices, Scalar 
   std::string line;
   std::getline(in, line);
   if (line.substr(0, 13) != "#!ascii label")
-    throw Exception(fmt::format("Error parsing FreeSurfer label file \"{}\":{}",
-                                path.filename(),                //
-                                " Bad first line identifier")); //
+    throw Exception("Error parsing FreeSurfer label file \"{}\":{}",
+                    path.filename(),               //
+                    " Bad first line identifier"); //
   std::getline(in, line);
   uint32_t num_vertices = 0;
   try {
     num_vertices = to<size_t>(line);
   } catch (Exception &e) {
-    throw Exception(
-        e, fmt::format("Error parsing FreeSurfer label file \"{}\":  Bad second line vertex count", path.filename()));
+    throw Exception(e, "Error parsing FreeSurfer label file \"{}\":  Bad second line vertex count", path.filename());
   }
 
   for (size_t i = 0; i != num_vertices; ++i) {
@@ -139,26 +134,26 @@ void read_label(const std::filesystem::path &path, VertexList &vertices, Scalar 
     default_type value = NaN;
     sscanf(line.c_str(), "%u %lf %lf %lf %lf", &index, &x, &y, &z, &value);
     if (index == std::numeric_limits<uint32_t>::max())
-      throw Exception(fmt::format("Error parsing FreeSurfer label file \"{}\":{}",
-                                  path.filename(),     //
-                                  " Malformed line")); //
+      throw Exception("Error parsing FreeSurfer label file \"{}\":{}",
+                      path.filename(),    //
+                      " Malformed line"); //
     if (index >= scalar.size()) {
       scalar.conservativeResizeLike(Scalar::Base::Constant(index + 1, NaN));
       vertices.resize(index + 1, Vertex(NaN, NaN, NaN));
     }
     if (std::isfinite(scalar[index]))
-      throw Exception(fmt::format("Error parsing FreeSurfer label file \"{}\":{}{})",
-                                  path.filename(), //
-                                  " Duplicated index (",
-                                  str(scalar[index]))); //
+      throw Exception("Error parsing FreeSurfer label file \"{}\":{}{})",
+                      path.filename(), //
+                      " Duplicated index (",
+                      scalar[index]); //
     scalar[index] = value;
     vertices[index] = Vertex(x, y, z);
   }
 
   if (!in.good())
-    throw Exception(fmt::format("Error parsing FreeSurfer label file \"{}\":{}",
-                                path.filename(),          //
-                                " End of file reached")); //
+    throw Exception("Error parsing FreeSurfer label file \"{}\":{}",
+                    path.filename(),         //
+                    " End of file reached"); //
   scalar.set_name(path.string());
 }
 

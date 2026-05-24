@@ -58,7 +58,7 @@ public:
 
   void compile(std::string_view source) {
     std::string code = fmt::format("#version 330 core\n{}", source);
-    DEBUG(fmt::format("compiling OpenGL {} shader:\n{}", this->type(), code));
+    DEBUG("compiling OpenGL {} shader:\n{}", this->type(), code);
     if (!index_) {
       index_ = gl::CreateShader(TYPE);
       GL_DEBUG(fmt::format("created OpenGL {} shader ID {}", this->type(), index_));
@@ -70,7 +70,7 @@ public:
     gl::GetShaderiv(index_, gl::COMPILE_STATUS, &status);
     if (status == gl::FALSE_) {
       debug();
-      throw Exception(fmt::format("error compiling OpenGL {} shader ID {}", this->type(), index_));
+      throw Exception("error compiling OpenGL {} shader ID {}", this->type(), index_);
     }
   }
   static const std::string type() {
@@ -137,8 +137,7 @@ public:
     gl::GetProgramiv(index_, gl::LINK_STATUS, &status);
     if (status == gl::FALSE_) {
       debug();
-      throw Exception(fmt::format(
-          "{}", fmt::format("{}", std::string(fmt::format("error linking OpenGL shader program ID {}", index_)))));
+      throw Exception("error linking OpenGL shader program ID {}", index_);
     }
   }
   void start() const {

@@ -220,7 +220,7 @@ IndexType index_mask_voxels(size_t &num_voxels) {
   if (!num_voxels)
     throw Exception("Mask contains no valid voxels.");
 
-  INFO(fmt::format("mask image contains {} voxels", num_voxels));
+  INFO("mask image contains {} voxels", num_voxels);
 
   return index;
 }
@@ -308,7 +308,7 @@ size_t detect_outliers(double outlier_range,
                    lessthan_NaN);
   double upper_quartile = summed_log_sorted[upper_quartile_idx];
 
-  INFO(fmt::format("  outlier rejection quartiles: [ {} {} ]", lower_quartile, upper_quartile));
+  INFO("  outlier rejection quartiles: [ {} {} ]", lower_quartile, upper_quartile);
 
   double lower_outlier_threshold = lower_quartile - outlier_range * (upper_quartile - lower_quartile);
   double upper_outlier_threshold = upper_quartile + outlier_range * (upper_quartile - lower_quartile);
@@ -349,8 +349,7 @@ void compute_balance_factors(const Eigen::MatrixXd &data,
 
   // Ensure our balance factors satisfy the condition that sum(log(balance_factors)) = 0
   if (!balance_factors.allFinite() || (balance_factors.array() <= 0.0).any())
-    throw Exception(
-        fmt::format("Non-positive tissue balance factor was computed. Balance factors: {}", balance_factors));
+    throw Exception("Non-positive tissue balance factor was computed. Balance factors: {}", balance_factors);
 
   balance_factors /= std::exp(balance_factors.array().log().sum() / data.cols());
 }
@@ -500,14 +499,14 @@ void run() {
   Eigen::MatrixXd data(num_voxels, n_tissue_types);
   for (size_t n = 0; n < n_tissue_types; ++n) {
     if (std::filesystem::exists(argument[2 * n + 1].as_path()) && !App::overwrite_files)
-      throw Exception(fmt::format("Output file \"{}\" already exists. (use -force option to force overwrite)",
-                                  argument[2 * n + 1].as_text()));
+      throw Exception("Output file \"{}\" already exists. (use -force option to force overwrite)",
+                      argument[2 * n + 1].as_text());
     load_data(data, argument[2 * n], index);
   }
 
   size_t num_non_finite = (!data.array().isFinite()).count();
   if (num_non_finite > 0) {
-    WARN(fmt::format("Input data contain {} non-finite voxel{}", num_non_finite, (num_non_finite > 1 ? "s" : "")));
+    WARN("Input data contain {} non-finite voxel{}", num_non_finite, (num_non_finite > 1 ? "s" : ""));
     WARN("  Results may be affected if the data contain many non-finite values");
     WARN("  Please refine your mask to avoid non-finite values if this is a problem");
   }
@@ -530,18 +529,18 @@ void run() {
     size_t outliers_changed = detect_outliers(3.0, data, field, balance_factors, weights);
 
     while (++iter <= max_iter) {
-      INFO(fmt::format("Iteration: {}", iter));
+      INFO("Iteration: {}", iter);
 
       size_t balance_iter = 1;
 
       // Iteratively compute tissue balance factors with outlier rejection
       do {
 
-        DEBUG(fmt::format("Balance and outlier rejection iteration {} starts.", balance_iter));
+        DEBUG("Balance and outlier rejection iteration {} starts.", balance_iter);
 
         if (n_tissue_types > 1) {
           compute_balance_factors(data, field, weights, balance_factors);
-          INFO(fmt::format("  balance factors ({}): {}", balance_iter, balance_factors));
+          INFO("  balance factors ({}): {}", balance_iter, balance_factors);
         }
 
         outliers_changed = detect_outliers(1.5, data, field, balance_factors, weights);

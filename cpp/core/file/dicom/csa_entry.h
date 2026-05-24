@@ -44,7 +44,7 @@ public:
       num = Raw::fetch_LE<uint32_t>(start + 8);
       const uint32_t unused2 = Raw::fetch_LE<uint32_t>(start + 12);
       if (unused2 != 77)
-        DEBUG(fmt::format("CSA2 'unused2' integer field contains {}; expected 77", unused2));
+        DEBUG("CSA2 'unused2' integer field contains {}; expected 77", unused2);
       next = start + 16;
     }
   }
@@ -65,7 +65,7 @@ public:
     nitems = Raw::fetch_LE<uint32_t>(start + 76);
     const int32_t xx = Raw::fetch_LE<int32_t>(start + 80);
     if (!(xx == 77 || xx == 205))
-      DEBUG(fmt::format("CSA tag 'xx' integer field contains {}; expected 77 or 205", xx));
+      DEBUG("CSA tag 'xx' integer field contains {}; expected 77 or 205", xx);
     if (print)
       fprintf(stdout, "    [CSA] %s: ", name.c_str());
     next = start + 84;

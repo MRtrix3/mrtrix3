@@ -98,7 +98,7 @@ Image<bool> Mask::get_mask(const std::filesystem::path &path) {
   }
 
   if (!sum)
-    throw Exception(fmt::format("Cannot use image {} as ROI - image is empty", path));
+    throw Exception("Cannot use image {} as ROI - image is empty", path);
 
   if (bottom[0])
     --bottom[0];

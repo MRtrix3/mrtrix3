@@ -250,10 +250,10 @@ DataType determine_datatype(const DataType current_dt,
   if (current_dt == DataType::Undefined) {
     return default_dt;
   } else if ((default_dt.is_floating_point() || precise) && !current_dt.is_floating_point()) {
-    WARN(fmt::format("Cannot use non-floating-point datatype with {} contrast{}; defaulting to {}",
-                     Mapping::contrast_names.at(contrast).description,
-                     (precise ? " and precise mapping" : ""),
-                     default_dt.specifier()));
+    WARN("Cannot use non-floating-point datatype with {} contrast{}; defaulting to {}",
+         Mapping::contrast_names.at(contrast).description,
+         (precise ? " and precise mapping" : ""),
+         default_dt.specifier());
     return default_dt;
   } else {
     return current_dt;
@@ -279,7 +279,7 @@ void run() {
         "voxel size must either be a single isotropic value, or a list of 3 comma-separated voxel dimensions");
 
   if (!voxel_size.empty())
-    INFO(fmt::format("creating image with voxel dimensions [ {} {} {} ]", voxel_size[0], voxel_size[1], voxel_size[2]));
+    INFO("creating image with voxel dimensions [ {} {} {} ]", voxel_size[0], voxel_size[1], voxel_size[2]);
 
   Header header;
   auto opt = get_options("template");
@@ -456,7 +456,7 @@ void run() {
       WARN("cannot use upsampling if only streamline endpoints are to be mapped");
     } else {
       upsample_ratio = opt[0][0];
-      INFO(fmt::format("track upsampling ratio manually set to {}", upsample_ratio));
+      INFO("track upsampling ratio manually set to {}", upsample_ratio);
     }
   } else if (!ends_only) {
     // If accurately calculating the length through each voxel traversed, need a higher upsampling ratio
@@ -464,7 +464,7 @@ void run() {
     // For all other applications, making the upsampled step size about 1/3rd of a voxel seems sufficient
     try {
       upsample_ratio = determine_upsample_ratio(header, properties, (precise ? 0.1 : 0.333));
-      INFO(fmt::format("track upsampling ratio automatically set to {}", upsample_ratio));
+      INFO("track upsampling ratio automatically set to {}", upsample_ratio);
     } catch (Exception &e) {
       e.push_back("Try using -upsample option to explicitly set the streamline upsampling ratio;");
       e.push_back("generally recommend a value of around (3 x step_size / voxel_size)");
@@ -480,8 +480,8 @@ void run() {
   opt = get_options("datatype");
   if (!opt.empty()) {
     if (writer_type == writer_dim::DEC || writer_type == writer_dim::TOD) {
-      WARN(fmt::format("Can't manually set datatype for {} processing; overriding to Float32",
-                       Mapping::output_dimension_names.at(writer_type)));
+      WARN("Can't manually set datatype for {} processing; overriding to Float32",
+           Mapping::output_dimension_names.at(writer_type));
     } else {
       header.datatype() = DataType::parse(opt[0][0]);
     }

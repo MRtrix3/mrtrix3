@@ -182,7 +182,7 @@ public:
 
 Metrics compute(Eigen::MatrixXd &directions) {
   if (directions.cols() < 3)
-    throw Exception(fmt::format("unexpected matrix size for scheme \"{}\"", argument[0]));
+    throw Exception("unexpected matrix size for scheme \"{}\"", argument[0]);
   Math::Sphere::normalise_cartesian(directions);
 
   std::vector<double> NN_bipolar(directions.rows(), -1.0);
@@ -273,7 +273,7 @@ void output_selected(const Metrics &metrics, std::string_view selection) {
         throw Exception("spherical harmonic order requested is too large given number of directions");
       std::cout << metrics.SH[order] << " ";
     } else
-      throw Exception(fmt::format("unknown output specifier \"{}\"", x));
+      throw Exception("unknown output specifier \"{}\"", x);
   }
 
   std::cout << "\n";

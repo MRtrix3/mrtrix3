@@ -83,7 +83,7 @@ std::string ErrorString(GLenum errorcode);
 inline void check_error(const char *filename, int line) { // check_syntax off (input is __FILE__)
   GLenum err = gl::GetError();
   while (err) {
-    FAIL(fmt::format("[{}: ", filename) + fmt::format("{}] OpenGL error: ", line) + ErrorString(err));
+    FAIL("[{}: {}] OpenGL error: {}", filename, line, ErrorString(err));
     err = gl::GetError();
   }
 }

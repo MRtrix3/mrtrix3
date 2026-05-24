@@ -71,9 +71,7 @@ as_cartesian(const MatrixType &in) {
   case 3:
     return in.eval();
   default:
-    throw Exception(fmt::format("Unsupported input to Math::Sphere::as_cartesian() (expected 2 or 3 columns; got {}",
-                                str(in.cols())) +
-                    ")");
+    throw Exception("Unsupported input to Math::Sphere::as_cartesian() (expected 2 or 3 columns; got {})", in.cols());
   }
 }
 
@@ -117,9 +115,7 @@ as_spherical(const MatrixType &in) {
   case 3:
     return cartesian2spherical(in);
   default:
-    throw Exception(fmt::format("Unsupported input to Math::Sphere::as_spherical() (expected 2 or 3 columns; got {}",
-                                str(in.cols())) +
-                    ")");
+    throw Exception("Unsupported input to Math::Sphere::as_spherical() (expected 2 or 3 columns; got {})", in.cols());
   }
 }
 

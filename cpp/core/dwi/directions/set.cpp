@@ -81,7 +81,7 @@ void Set::load_predefined(Eigen::MatrixXd &az_in_pairs, const size_t i) {
     az_in_pairs = electrostatic_repulsion_5000();
     return;
   default:
-    throw Exception(fmt::format("No pre-defined data set of {} directions", i));
+    throw Exception("No pre-defined data set of {} directions", i);
   }
 }
 

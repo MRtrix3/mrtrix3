@@ -155,9 +155,9 @@ EntryPointSelection select_entry_point(slang::ProgramLayout *programLayout, std:
   }
 
   throw SlangCodeGenException(
-      fmt::format("Failed to find entry point '{}' in linked Slang program layout. Available entry points: [{}]",
-                  requested_entry_point,
-                  available));
+      "Failed to find entry point '{}' in linked Slang program layout. Available entry points: [{}]",
+      requested_entry_point,
+      available);
 }
 
 void find_bindings_in_variable_layout(slang::VariableLayoutReflection *varLayout,
@@ -244,7 +244,7 @@ CompiledKernelWGSL compile_kernel_code_to_wgsl(const MR::GPU::KernelSpec &kernel
       const std::string diag_string =
           std::string(static_cast<const char *>(diagnostics->getBufferPointer()), diagnostics->getBufferSize());
       if (!diag_string.empty()) {
-        DEBUG(fmt::format("Slang diagnostics:\n{}", diag_string));
+        DEBUG("Slang diagnostics:\n{}", diag_string);
       }
     }
   };
@@ -267,7 +267,7 @@ CompiledKernelWGSL compile_kernel_code_to_wgsl(const MR::GPU::KernelSpec &kernel
       });
   log_diagnostics();
   if (shader_module == nullptr) {
-    throw SlangCodeGenException(fmt::format("Failed to load shader module: {}", kernel_spec.compute_shader.name));
+    throw SlangCodeGenException("Failed to load shader module: {}", kernel_spec.compute_shader.name);
   }
 
   Slang::ComPtr<slang::IEntryPoint> entry_point;
@@ -290,7 +290,7 @@ CompiledKernelWGSL compile_kernel_code_to_wgsl(const MR::GPU::KernelSpec &kernel
                      [program_layout](const std::string &arg) { // check_syntax off
                        auto *const spec_type = program_layout->findTypeByName(arg.c_str());
                        if (spec_type == nullptr) {
-                         throw SlangCodeGenException(fmt::format("Failed to find specialization type: {}", arg));
+                         throw SlangCodeGenException("Failed to find specialization type: {}", arg);
                        }
                        return slang::SpecializationArg{slang::SpecializationArg::Kind::Type, spec_type};
                      });
@@ -377,7 +377,7 @@ CompiledKernelWGSL compile_kernel_code_to_wgsl(const MR::GPU::KernelSpec &kernel
     shader_cache.insert(hash_key, wgsl_code);
   }
 
-  DEBUG(fmt::format("{} WGSL code:\n{}", kernel_spec.compute_shader.name, wgsl_code));
+  DEBUG("{} WGSL code:\n{}", kernel_spec.compute_shader.name, wgsl_code);
   return CompiledKernelWGSL{
       .wgsl_source = wgsl_code, .linked_program = linked_slang_program, .entry_point_name = entry_point_selection.name};
 }

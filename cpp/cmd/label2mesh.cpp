@@ -62,16 +62,16 @@ void run() {
   auto labels = labels_header.get_image<uint32_t>();
   auto lv = Connectome::validate_label_image(labels);
   if (!lv.indices_contiguous) {
-    WARN(fmt::format("Image \"{}\" does not contain contiguous indices;"
-                     " output mesh file will contain empty objects",
-                     argument[0]));
+    WARN("Image \"{}\" does not contain contiguous indices;"
+         " output mesh file will contain empty objects",
+         argument[0]);
   }
   if (lv.disconnected_components > 0) {
-    WARN(fmt::format("Image \"{}\" contains {}parcel{} that are not spatially contiguous;"
-                     " this may yield erroneous surfaces",
-                     argument[0],
-                     lv.disconnected_components,
-                     lv.disconnected_components > 0 ? "s" : "0"));
+    WARN("Image \"{}\" contains {}parcel{} that are not spatially contiguous;"
+         " this may yield erroneous surfaces",
+         argument[0],
+         lv.disconnected_components,
+         lv.disconnected_components > 0 ? "s" : "0");
   }
 
   using voxel_corner_t = Eigen::Array<int, 3, 1>;

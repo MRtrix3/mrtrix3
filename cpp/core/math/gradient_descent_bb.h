@@ -88,19 +88,19 @@ public:
 
     const value_type gradient_tolerance(grad_tolerance * normg);
 
-    DEBUG(fmt::format("Gradient descent iteration: init; cost: {}", f));
+    DEBUG("Gradient descent iteration: init; cost: {}", f);
 
     while (niter < max_iterations) {
       bool retval = iterate(log_os);
-      DEBUG(fmt::format("Gradient descent iteration: {}; cost: {}", niter, f));
+      DEBUG("Gradient descent iteration: {}; cost: {}", niter, f);
       if (verbose) {
-        CONSOLE(fmt::format("iteration {}: f = {}, |g| = {}:", niter, f, normg));
-        CONSOLE(fmt::format("  x  = [ {} ]", x2.transpose()));
+        CONSOLE("iteration {}: f = {}, |g| = {}:", niter, f, normg);
+        CONSOLE("  x  = [ {} ]", x2.transpose());
       }
 
       if (normg < gradient_tolerance) {
         if (verbose)
-          CONSOLE(fmt::format("normg ({}) < gradient tolerance ({})", normg, gradient_tolerance));
+          CONSOLE("normg ({}) < gradient tolerance ({})", normg, gradient_tolerance);
         return;
       }
 
@@ -130,8 +130,8 @@ public:
     assert(!std::isnan(normg));
     dt /= normg;
     if (verbose) {
-      CONSOLE(fmt::format("initialise: f = {}, |g| = {}, step = {}:", f, normg, dt));
-      CONSOLE(fmt::format("            x = [ {} ]", x1.transpose()));
+      CONSOLE("initialise: f = {}, |g| = {}, step = {}:", f, normg, dt);
+      CONSOLE("            x = [ {} ]", x1.transpose());
     }
     if (log_os) {
       log_os << niter << delim << nfeval << delim << str(f) << delim << str(dt);
@@ -171,8 +171,8 @@ public:
       log_os << std::endl;
     }
     if (verbose) {
-      CONSOLE(fmt::format("            f = {}, |g| = {}, step = {}:", f, normg, dt));
-      CONSOLE(fmt::format("            x = [ {} ]", x2.transpose()));
+      CONSOLE("            f = {}, |g| = {}, step = {}:", f, normg, dt);
+      CONSOLE("            x = [ {} ]", x2.transpose());
     }
   }
 
@@ -222,11 +222,11 @@ protected:
     ++nfeval;
     value_type cost = func(newx, newg);
     if (!std::isfinite(cost))
-      throw Exception(fmt::format("cost function is NaN or Inf!\n      << eval {}", nfeval));
+      throw Exception("cost function is NaN or Inf!\n      << eval {}", nfeval);
     if (verbose) {
-      CONSOLE(fmt::format("      << eval {}, f = {} >>", nfeval, cost));
-      CONSOLE(fmt::format("      << newx = [ {} ]", newx.transpose()));
-      CONSOLE(fmt::format("      << newg = [ {} ]", newg.transpose()));
+      CONSOLE("      << eval {}, f = {} >>", nfeval, cost);
+      CONSOLE("      << newx = [ {} ]", newx.transpose());
+      CONSOLE("      << newg = [ {} ]", newg.transpose());
     }
     return cost;
   }

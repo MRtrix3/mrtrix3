@@ -542,9 +542,9 @@ default_type Frame::get_slice_separation(const std::vector<Frame *> &frames, siz
   }
 
   if (max_gap > 1e-4)
-    WARN(fmt::format("slice gap detected (maximum gap: {:.3g}mm)", max_gap));
+    WARN("slice gap detected (maximum gap: {:.3g}mm)", max_gap);
   if (max_separation - min_separation > 2e-4)
-    WARN(fmt::format("slice separation is not constant (from {:.8g} to {:.8g}mm)", min_separation, max_separation));
+    WARN("slice separation is not constant (from {:.8g} to {:.8g}mm)", min_separation, max_separation);
 
   return (sum_separation / static_cast<default_type>(nslices - 1));
 }

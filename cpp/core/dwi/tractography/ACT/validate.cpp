@@ -42,7 +42,7 @@ void validate_5TT_header(const Header &H) {
       throw Exception(e, "Needs to be non-unity in all three spatial dimensions");
     }
   } catch (Exception &e) {
-    throw Exception(e, fmt::format("Image {} is not a valid ACT 5TT image", H.name()));
+    throw Exception(e, "Image {} is not a valid ACT 5TT image", H.name());
   }
 }
 
@@ -95,23 +95,21 @@ void debug_validate_5TT_image(const Image<float> &in) {
   try {
     validate_5TT_header(in);
   } catch (const Exception &e) {
-    throw Exception(e, fmt::format("5TT image \"{}\" validation failed", in.name()));
+    throw Exception(e, "5TT image \"{}\" validation failed", in.name());
   }
   if (App::log_level < 3)
     return;
   const FiveTTValidation v = validate_5TT_image(in);
   if (v.n_voxels_abs_error == size_t(0) && v.n_voxels_sum_error == size_t(0)) {
-    DEBUG(fmt::format("5TT image \"{}\": validation OK", in.name()));
+    DEBUG("5TT image \"{}\": validation OK", in.name());
     return;
   }
   if (v.n_voxels_abs_error > size_t(0))
-    WARN(fmt::format("5TT image \"{}\": {} brain voxel(s) with a non-physical partial volume fraction",
-                     in.name(),
-                     str(v.n_voxels_abs_error)));
+    WARN("5TT image \"{}\": {} brain voxel(s) with a non-physical partial volume fraction",
+         in.name(),
+         v.n_voxels_abs_error);
   if (v.n_voxels_sum_error > size_t(0))
-    WARN(fmt::format("5TT image \"{}\": {} brain voxel(s) with a non-unity partial volume sum",
-                     in.name(),
-                     str(v.n_voxels_sum_error)));
+    WARN("5TT image \"{}\": {} brain voxel(s) with a non-unity partial volume sum", in.name(), v.n_voxels_sum_error);
 }
 
 } // namespace MR::DWI::Tractography::ACT

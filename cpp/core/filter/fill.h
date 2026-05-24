@@ -54,10 +54,10 @@ public:
   void set_axes(const std::vector<int> &i) {
     const size_t max_axis = *std::max_element(i.begin(), i.end());
     if (max_axis >= ndim())
-      throw Exception(fmt::format("Requested axis for interior-filling filter ({})"
-                                  " is beyond the dimensionality of the image ({}D)",
-                                  max_axis,
-                                  ndim()));
+      throw Exception("Requested axis for interior-filling filter ({})"
+                      " is beyond the dimensionality of the image ({}D)",
+                      max_axis,
+                      ndim());
     enabled_axes = axis_mask_type::Zero(std::max(max_axis + 1, static_cast<size_t>(ndim())));
     for (const auto &axis : i) {
       if (axis < 0)

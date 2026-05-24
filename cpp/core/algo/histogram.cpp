@@ -51,7 +51,7 @@ void Calibrator::from_file(const std::filesystem::path &path) {
         throw Exception("Non-equal spacing in histogram bin centres");
     }
   } catch (Exception &e) {
-    throw Exception(e, fmt::format("Could not use file \"{}\" as histogram template", path));
+    throw Exception(e, "Could not use file \"{}\" as histogram template", path);
   }
 }
 

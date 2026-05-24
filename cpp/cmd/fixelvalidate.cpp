@@ -47,5 +47,5 @@ void usage() {
 
 void run() {
   Fixel::validate_directory(argument[0]);
-  CONSOLE(fmt::format("fixel directory \"{}\" is valid", argument[0]));
+  CONSOLE("fixel directory \"{}\" is valid", argument[0]);
 }

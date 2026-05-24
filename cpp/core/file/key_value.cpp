@@ -24,17 +24,16 @@ namespace MR::File::KeyValue {
 
 void Reader::open(const std::filesystem::path &file, std::string_view first_line) {
   filepath = file;
-  DEBUG(fmt::format("reading key/value file \"{}\"...", filepath));
+  DEBUG("reading key/value file \"{}\"...", filepath);
   in.open(filepath, std::ios::in | std::ios::binary);
   if (!in)
-    throw Exception(fmt::format("failed to open key/value file \"{}\": {}", filepath, strerror(errno)));
+    throw Exception("failed to open key/value file \"{}\": {}", filepath, strerror(errno));
   if (!first_line.empty()) {
     std::string sbuf;
     getline(in, sbuf);
     if (sbuf.compare(0, first_line.size(), first_line)) {
       in.close();
-      throw Exception(
-          fmt::format("invalid first line for key/value file \"{}\" (expected \"{}\")", filepath, first_line));
+      throw Exception("invalid first line for key/value file \"{}\" (expected \"{}\")", filepath, first_line);
     }
   }
 }
@@ -44,7 +43,7 @@ bool Reader::next() {
     std::string sbuf;
     getline(in, sbuf);
     if (in.bad())
-      throw Exception(fmt::format("error reading key/value file \"{}\": {}", filepath, strerror(errno)));
+      throw Exception("error reading key/value file \"{}\": {}", filepath, strerror(errno));
 
     sbuf = strip(sbuf.substr(0, sbuf.find_first_of('#')));
     if (sbuf == "END") {
@@ -55,12 +54,12 @@ bool Reader::next() {
     if (!sbuf.empty()) {
       size_t colon = sbuf.find_first_of(':');
       if (colon == std::string::npos) {
-        INFO(fmt::format("malformed key/value entry (\"{}\") in file \"{}\" - ignored", sbuf, filepath));
+        INFO("malformed key/value entry (\"{}\") in file \"{}\" - ignored", sbuf, filepath);
       } else {
         K = strip(sbuf.substr(0, colon));
         V = strip(sbuf.substr(colon + 1));
         if (K.empty()) {
-          INFO(fmt::format("malformed key/value entry (\"{}\") in file \"{}\" - ignored", sbuf, filepath));
+          INFO("malformed key/value entry (\"{}\") in file \"{}\" - ignored", sbuf, filepath);
         } else
           return true;
       }

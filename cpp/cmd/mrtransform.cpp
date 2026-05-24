@@ -277,7 +277,7 @@ void apply_warp(Image<float> &input,
 
 void apply_linear_jacobian(Image<float> &image, transform_type trafo) {
   const float det = trafo.linear().topLeftCorner<3, 3>().determinant();
-  INFO(fmt::format("global intensity modulation with scale factor {}", det));
+  INFO("global intensity modulation with scale factor {}", det);
   for (auto i = Loop("applying global intensity modulation", image, 0, image.ndim())(image); i; ++i) {
     image.value() *= det;
   }
@@ -310,7 +310,7 @@ void run() {
       try {
         linear_transform = File::Matrix::load_transform(opt[0][0]);
       } catch (...) {
-        throw Exception(fmt::format("Unable to extract transform matrix from -replace file \"{}\"", opt[0][0]));
+        throw Exception("Unable to extract transform matrix from -replace file \"{}\"", opt[0][0]);
       }
     }
   }
@@ -418,7 +418,7 @@ void run() {
     flip.setIdentity();
     for (size_t i = 0; i < axes.size(); ++i) {
       if (axes[i] < 0 || axes[i] > 2)
-        throw Exception(fmt::format("axes supplied to -flip are out of bounds ({})", opt[0][0]));
+        throw Exception("axes supplied to -flip are out of bounds ({})", opt[0][0]);
       flip(axes[i], 3) += flip(axes[i], axes[i]) * input_header.spacing(axes[i]) * (input_header.size(axes[i]) - 1);
       flip(axes[i], axes[i]) *= -1.0;
     }
@@ -446,8 +446,8 @@ void run() {
   opt = get_options("reorient_fod");
   const bool fod_reorientation = !opt.empty() && bool(opt[0][0]);
   if (is_possible_fod_image && opt.empty())
-    throw Exception(fmt::format("-reorient_fod yes/no needs to be explicitly specified for images with {} volumes",
-                                str(input_header.size(3))));
+    throw Exception("-reorient_fod yes/no needs to be explicitly specified for images with {} volumes",
+                    input_header.size(3));
   else if (!is_possible_fod_image && fod_reorientation)
     throw Exception("Apodised PSF reorientation requires SH series images");
 
@@ -514,9 +514,9 @@ void run() {
     if (grad.rows()) {
       try {
         if (input_header.size(3) != static_cast<ssize_t>(grad.rows())) {
-          throw Exception(fmt::format("DW gradient table of different length ({}) to number of image volumes ({})",
-                                      str(grad.rows()),
-                                      str(input_header.size(3))));
+          throw Exception("DW gradient table of different length ({}) to number of image volumes ({})",
+                          grad.rows(),
+                          input_header.size(3));
         }
         INFO("DW gradients detected and will be reoriented");
         if (!test.isIdentity(0.001)) {
@@ -545,20 +545,20 @@ void run() {
       try {
         const auto lines = split_lines(hit->second);
         if (lines.size() != static_cast<size_t>(input_header.size(3)))
-          throw Exception(fmt::format(
+          throw Exception(
               "Number of lines in header entry \"directions\" ({}) does not match number of volumes in image ({})",
-              str(lines.size()),
-              str(input_header.size(3))));
+              lines.size(),
+              input_header.size(3));
         Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> result;
         for (size_t l = 0; l != lines.size(); ++l) {
           const auto v = parse_floats(lines[l]);
           if (!result.cols()) {
             if (!(v.size() == 2 || v.size() == 3))
-              throw Exception(fmt::format("{}{}{}{} columns)",
-                                          "Malformed \"directions\" field",         //
-                                          " (expected matrix with 2 or 3 columns;", //
-                                          " data has ",
-                                          str(v.size())));
+              throw Exception("{}{}{}{} columns)",
+                              "Malformed \"directions\" field",         //
+                              " (expected matrix with 2 or 3 columns;", //
+                              " data has ",
+                              v.size());
             result.resize(lines.size(), v.size());
           } else if (v.size() != static_cast<size_t>(result.cols())) {
             throw Exception("Inconsistent number of columns in \"directions\" field");

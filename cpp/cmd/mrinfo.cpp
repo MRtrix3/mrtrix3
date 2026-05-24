@@ -245,14 +245,14 @@ void print_properties(const Header &header, std::string_view key, const size_t i
     const auto values = source.find(std::string(key));
     if (values != source.end()) {
       auto lines = split(values->second, "\n");
-      INFO(fmt::format("showing property {}:", key));
+      INFO("showing property {}:", key);
       std::cout << lines[0] << "\n";
       for (size_t i = 1; i != lines.size(); ++i) {
         lines[i].insert(0, indent, ' ');
         std::cout << lines[i] << "\n";
       }
     } else {
-      WARN(fmt::format("no \"{}\" entries found in \"{}\"", key, header.name()));
+      WARN("no \"{}\" entries found in \"{}\"", key, header.name());
     }
   }
 }

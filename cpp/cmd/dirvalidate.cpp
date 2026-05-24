@@ -68,11 +68,11 @@ void run() {
                           : result.format == DirectionsFormat::Cartesian ? "Cartesian directions"
                                                                          : "diffusion gradient table";
 
-  CONSOLE(fmt::format("Direction file \"{}\": {} direction(s) in {} format", argument[0], result.n_directions, fmt));
+  CONSOLE("Direction file \"{}\": {} direction(s) in {} format", argument[0], result.n_directions, fmt);
 
   if (result.format == DirectionsFormat::Cartesian || result.format == DirectionsFormat::GradientTable) {
     if (result.n_non_unit > 0U) {
-      WARN(fmt::format("{} of {} direction(s) are not of unit norm", result.n_non_unit, result.n_directions));
+      WARN("{} of {} direction(s) are not of unit norm", result.n_non_unit, result.n_directions);
     } else {
       CONSOLE("All directions are of unit norm");
     }

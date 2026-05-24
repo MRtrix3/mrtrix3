@@ -70,19 +70,15 @@ validate(const MatrixType &M, const std::filesystem::path &path, const bool perm
         inc_min = std::min(inc_min, inc);
         inc_max = std::max(inc_max, inc);
         if (az < -two_pi || az > two_pi)
-          throw Exception(fmt::format("{}",
-                                      fmt::format("{}",
-                                                  fmt::format("Row {}: {}{} is outside the permitted range [-2pi, 2pi]",
-                                                              str(r + 1), //
-                                                              "azimuth value ",
-                                                              str(az)))));
+          throw Exception("Row {}: {}{} is outside the permitted range [-2pi, 2pi]",
+                          r + 1, //
+                          "azimuth value ",
+                          az);
         if (inc < -Math::pi || inc > Math::pi)
-          throw Exception(fmt::format("{}",
-                                      fmt::format("{}",
-                                                  fmt::format("Row {}: {}{} is outside the permitted range [-pi, pi]",
-                                                              str(r + 1), //
-                                                              "inclination value ",
-                                                              str(inc)))));
+          throw Exception("Row {}: {}{} is outside the permitted range [-pi, pi]",
+                          r + 1, //
+                          "inclination value ",
+                          inc);
       }
       if (az_max - az_min > two_pi - range_tol)
         throw Exception("Range of azimuth values exceeds 2pi");
@@ -104,26 +100,20 @@ validate(const MatrixType &M, const std::filesystem::path &path, const bool perm
         const value_type y = M(r, 1);
         const value_type z = M(r, 2);
         if (x < -1.0 || x > 1.0)
-          throw Exception(fmt::format("{}",
-                                      fmt::format("{}",
-                                                  fmt::format("Row {}: {}{} is outside the permitted range [-1.0, 1.0]",
-                                                              str(r + 1), //
-                                                              "x component ",
-                                                              str(x))))); //
+          throw Exception("Row {}: {}{} is outside the permitted range [-1.0, 1.0]",
+                          r + 1, //
+                          "x component ",
+                          x); //
         if (y < -1.0 || y > 1.0)
-          throw Exception(fmt::format("{}",
-                                      fmt::format("{}",
-                                                  fmt::format("Row {}: {}{} is outside the permitted range [-1.0, 1.0]",
-                                                              str(r + 1), //
-                                                              "y component ",
-                                                              str(y))))); //
+          throw Exception("Row {}: {}{} is outside the permitted range [-1.0, 1.0]",
+                          r + 1, //
+                          "y component ",
+                          y); //
         if (z < -1.0 || z > 1.0)
-          throw Exception(fmt::format("{}",
-                                      fmt::format("{}",
-                                                  fmt::format("Row {}: {}{} is outside the permitted range [-1.0, 1.0]",
-                                                              str(r + 1), //
-                                                              "z component ",
-                                                              str(z))))); //
+          throw Exception("Row {}: {}{} is outside the permitted range [-1.0, 1.0]",
+                          r + 1, //
+                          "z component ",
+                          z); //
         const value_type norm = M.row(r).norm();
         if (std::fabs(norm - value_type(1)) > unit_tol)
           ++result.n_non_unit;
@@ -154,33 +144,25 @@ validate(const MatrixType &M, const std::filesystem::path &path, const bool perm
         const value_type z = M(r, 2);
         const value_type b = M(r, 3);
         if (b < 0.0)
-          throw Exception(fmt::format("{}",
-                                      fmt::format("{}",
-                                                  fmt::format("Row {}: {}{} is negative",
-                                                              str(r + 1), //
-                                                              "b-value ",
-                                                              str(b))))); //
+          throw Exception("Row {}: {}{} is negative",
+                          r + 1, //
+                          "b-value ",
+                          b); //
         if (x < -1.0 || x > 1.0)
-          throw Exception(fmt::format("{}",
-                                      fmt::format("{}",
-                                                  fmt::format("Row {}: {}{} is outside the permitted range [-1.0, 1.0]",
-                                                              str(r + 1), //
-                                                              "x component ",
-                                                              str(x))))); //
+          throw Exception("Row {}: {}{} is outside the permitted range [-1.0, 1.0]",
+                          r + 1, //
+                          "x component ",
+                          x); //
         if (y < -1.0 || y > 1.0)
-          throw Exception(fmt::format("{}",
-                                      fmt::format("{}",
-                                                  fmt::format("Row {}: {}{} is outside the permitted range [-1.0, 1.0]",
-                                                              str(r + 1), //
-                                                              "y component ",
-                                                              str(y))))); //
+          throw Exception("Row {}: {}{} is outside the permitted range [-1.0, 1.0]",
+                          r + 1, //
+                          "y component ",
+                          y); //
         if (z < -1.0 || z > 1.0)
-          throw Exception(fmt::format("{}",
-                                      fmt::format("{}",
-                                                  fmt::format("Row {}: {}{} is outside the permitted range [-1.0, 1.0]",
-                                                              str(r + 1), //
-                                                              "z component ",
-                                                              str(z))))); //
+          throw Exception("Row {}: {}{} is outside the permitted range [-1.0, 1.0]",
+                          r + 1, //
+                          "z component ",
+                          z); //
         if (b > bthresh) {
           // const value_type norm = M.block<1,3>(r, 0).norm();
           const value_type norm = M.block(r, 0, 1, 3).norm();
@@ -192,22 +174,22 @@ validate(const MatrixType &M, const std::filesystem::path &path, const bool perm
     } break;
 
     default:
-      throw Exception(fmt::format("Unexpected number of columns ({}): {}",
-                                  str(ncols),                                                       //
-                                  "expected 2 (spherical), 3 (Cartesian), or 4 (gradient table)")); //
+      throw Exception("Unexpected number of columns ({}): {}",
+                      ncols,                                                           //
+                      "expected 2 (spherical), 3 (Cartesian), or 4 (gradient table)"); //
     }
 
   } catch (Exception &e) {
-    throw Exception(e, fmt::format("Direction file \"{}\" validation failed", path));
+    throw Exception(e, "Direction file \"{}\" validation failed", path);
   }
 
   const std::string fmt = result.format == DirectionsFormat::Spherical   ? "spherical"
                           : result.format == DirectionsFormat::Cartesian ? "Cartesian"
                                                                          : "gradient table";
-  DEBUG(fmt::format("Direction file \"{}\": {} direction(s) in {} format",
-                    path, //
-                    str(result.n_directions),
-                    fmt)); //
+  DEBUG("Direction file \"{}\": {} direction(s) in {} format",
+        path, //
+        result.n_directions,
+        fmt); //
   if (result.n_non_unit) {
     const std::string msg = fmt::format("Direction file \"{}\": ", path) +                          //
                             fmt::format("{} direction(s) are not of unit norm", result.n_non_unit); //

@@ -160,7 +160,7 @@ public:
     }
 
     if (OS[0] * OS[1] * OS[2] > 1) {
-      INFO(fmt::format("using oversampling factors [ {} {} {} ]", OS[0], OS[1], OS[2]));
+      INFO("using oversampling factors [ {} {} {} ]", OS[0], OS[1], OS[2]);
       oversampling = true;
       norm = 1.0;
       for (size_t i = 0; i < 3; ++i) {

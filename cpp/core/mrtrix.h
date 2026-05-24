@@ -133,7 +133,7 @@ template <class T> inline std::string str(const T &value, int precision = 0) {
     stream.precision(max_digits<T>::value());
   stream << value;
   if (stream.fail())
-    throw Exception(fmt::format("error converting type \"{}\" value to string", typeid(T).name()));
+    throw Exception("error converting type \"{}\" value to string", typeid(T).name());
   return stream.str();
 }
 
@@ -154,10 +154,9 @@ template <class T> inline T to(std::string_view string) {
       else if (lstring == "-inf")
         return -std::numeric_limits<T>::infinity();
     }
-    throw Exception(fmt::format("error converting string \"{}\" to type \"{}\"", string, typeid(T).name()));
+    throw Exception("error converting string \"{}\" to type \"{}\"", string, typeid(T).name());
   } else if (!stream.eof()) {
-    throw Exception(
-        fmt::format("incomplete use of string \"{}\" in conversion to type \"{}\"", string, typeid(T).name()));
+    throw Exception("incomplete use of string \"{}\" in conversion to type \"{}\"", string, typeid(T).name());
   }
   return value;
 }
@@ -215,17 +214,15 @@ template <> inline cfloat to<cfloat>(std::string_view string) {
   }
 
   if (candidates.empty())
-    throw Exception(fmt::format("error converting string \"{}\" to complex float (no valid conversion)", string));
+    throw Exception("error converting string \"{}\" to complex float (no valid conversion)", string);
 
   for (size_t i = 1; i != candidates.size(); ++i) {
     if (!(candidates[i].real() == candidates[0].real() ||
           (std::isnan(candidates[i].real()) && std::isnan(candidates[0].real()))))
-      throw Exception(
-          fmt::format("error converting string \"{}\" to complex float (ambiguity in real component)", string));
+      throw Exception("error converting string \"{}\" to complex float (ambiguity in real component)", string);
     if (!(candidates[i].imag() == candidates[0].imag() ||
           (std::isnan(candidates[i].imag()) && std::isnan(candidates[0].imag()))))
-      throw Exception(
-          fmt::format("error converting string \"{}\" to complex float (ambiguity in imaginary component)", string));
+      throw Exception("error converting string \"{}\" to complex float (ambiguity in imaginary component)", string);
   }
   return candidates[0];
 }
@@ -274,17 +271,15 @@ template <> inline cdouble to<cdouble>(std::string_view string) {
   }
 
   if (candidates.empty())
-    throw Exception(fmt::format("error converting string \"{}\" to complex double (no valid conversion)", string));
+    throw Exception("error converting string \"{}\" to complex double (no valid conversion)", string);
 
   for (size_t i = 1; i != candidates.size(); ++i) {
     if (!(candidates[i].real() == candidates[0].real() ||
           (std::isnan(candidates[i].real()) && std::isnan(candidates[0].real()))))
-      throw Exception(
-          fmt::format("error converting string \"{}\" to complex double (ambiguity in real component)", string));
+      throw Exception("error converting string \"{}\" to complex double (ambiguity in real component)", string);
     if (!(candidates[i].imag() == candidates[0].imag() ||
           (std::isnan(candidates[i].imag()) && std::isnan(candidates[0].imag()))))
-      throw Exception(
-          fmt::format("error converting string \"{}\" to complex double (ambiguity in imaginary component)", string));
+      throw Exception("error converting string \"{}\" to complex double (ambiguity in imaginary component)", string);
   }
   return candidates[0];
 }
@@ -299,7 +294,7 @@ std::vector<IntType> parse_ints(std::string_view spec, const IntType last = std:
 
   auto to_unsigned = [&](const SignedIntType value) {
     if (std::is_unsigned<IntType>::value && value < 0)
-      throw Exception(fmt::format("Impermissible negative value present in sequence \"{}\"", spec));
+      throw Exception("Impermissible negative value present in sequence \"{}\"", spec);
     return IntType(value);
   };
 
@@ -316,7 +311,7 @@ std::vector<IntType> parse_ints(std::string_view spec, const IntType last = std:
       std::string token(strip(spec.substr(start, end - start)));
       if (lowercase(token) == "end") {
         if (last == std::numeric_limits<IntType>::max())
-          throw Exception(fmt::format("value of \"end\" is not known in number sequence \"{}\"", spec));
+          throw Exception("value of \"end\" is not known in number sequence \"{}\"", spec);
         num[i] = SignedIntType(last);
       } else
         num[i] = to<SignedIntType>(spec.substr(start, end - start));
@@ -327,7 +322,7 @@ std::vector<IntType> parse_ints(std::string_view spec, const IntType last = std:
         ++i;
         ++end;
         if (i > 2)
-          throw Exception(fmt::format("invalid number range in number sequence \"{}\"", spec));
+          throw Exception("invalid number range in number sequence \"{}\"", spec);
       } else {
         if (i) {
           SignedIntType inc, last;
@@ -352,7 +347,7 @@ std::vector<IntType> parse_ints(std::string_view spec, const IntType last = std:
         ++start;
     } while (end < spec.size());
   } catch (Exception &E) {
-    throw Exception(E, fmt::format("can't parse integer sequence specifier \"{}\"", spec));
+    throw Exception(E, "can't parse integer sequence specifier \"{}\"", spec);
   }
 
   return (V);

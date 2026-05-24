@@ -51,9 +51,9 @@ void transform_for_image_load(KeyValues &keyval, const Header &header) {
         orig_dir = Metadata::BIDS::axisid2vector(slice_encoding_it->second);
       } catch (Exception &e) {
         // clang-format off
-        WARN(fmt::format("Unable to conform slice encoding direction \"{}\""
+        WARN("Unable to conform slice encoding direction \"{}\""
                          " to image realignment for image \"{}\"; erasing",
-                         slice_encoding_it->second, header.name()));
+                         slice_encoding_it->second, header.name());
         // clang-format on
         clear(keyval);
         return;
@@ -84,11 +84,11 @@ void transform_for_image_load(KeyValues &keyval, const Header &header) {
     } else {
       keyval["SliceEncodingDirection"] = Metadata::BIDS::vector2axisid(new_dir);
       // clang-format off
-      WARN(fmt::format("Slice encoding direction of image \"{}\""
+      WARN("Slice encoding direction of image \"{}\""
                        " inferred to be \"k\""
                        " in order to preserve interpretation of existing \"SliceTiming\" field"
                        " after MRtrix3 internal transform realignment",
-                       header.name()));
+                       header.name());
       // clang-format on
     }
     INFO(msg);
@@ -154,7 +154,7 @@ std::string resolve_slice_timing(std::string_view one, std::string_view two) {
     }
     const default_type diff = std::fabs(f_two - f_one);
     if (diff > 0.00375) {
-      DEBUG(fmt::format("Supra-threshold difference of {}s in slice times", diff));
+      DEBUG("Supra-threshold difference of {}s in slice times", diff);
       return "variable";
     }
   }

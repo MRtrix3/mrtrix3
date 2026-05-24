@@ -37,8 +37,8 @@ public:
     auto matrix = File::Matrix::load_matrix(path);
 
     if (matrix.cols() != 2 && matrix.cols() != 3)
-      throw Exception(fmt::format(
-          "Text file \"{}\" does not contain directions as either azimuth-inclination pairs or XYZ triplets", path));
+      throw Exception(
+          "Text file \"{}\" does not contain directions as either azimuth-inclination pairs or XYZ triplets", path);
 
     initialise(matrix);
   }

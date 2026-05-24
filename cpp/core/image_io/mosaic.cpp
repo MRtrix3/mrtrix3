@@ -26,19 +26,19 @@ namespace MR::ImageIO {
 
 void Mosaic::load(const Header &header, size_t) {
   if (files.empty())
-    throw Exception(fmt::format("no files specified in header for image \"{}\"", header.name()));
+    throw Exception("no files specified in header for image \"{}\"", header.name());
 
   assert(header.datatype().bits() > 1);
 
   size_t bytes_per_segment = header.datatype().bytes() * segsize;
   if (files.size() * bytes_per_segment > std::numeric_limits<size_t>::max())
-    throw Exception(fmt::format("image \"{}\" is larger than maximum accessible memory", header.name()));
+    throw Exception("image \"{}\" is larger than maximum accessible memory", header.name());
 
-  DEBUG(fmt::format("loading mosaic image \"{}\"...", header.name()));
+  DEBUG("loading mosaic image \"{}\"...", header.name());
   addresses.resize(1);
   addresses[0].reset(new std::byte[files.size() * bytes_per_segment]);
   if (!addresses[0])
-    throw Exception(fmt::format("failed to allocate memory for image \"{}\"", header.name()));
+    throw Exception("failed to allocate memory for image \"{}\"", header.name());
 
   ProgressBar progress("reformatting DICOM mosaic images", slices * files.size());
   std::byte *data = addresses[0].get();

@@ -23,16 +23,15 @@ void Image4D::load_image_buffer() {
   size_t ndim = fixel_data->ndim();
 
   if (ndim < 4)
-    throw InvalidImageException(
-        fmt::format("Vector image {} should contain 4 dimensions. Instead {} found.", get_filepath(), ndim));
+    throw InvalidImageException("Vector image {} should contain 4 dimensions. Instead {} found.", get_filepath(), ndim);
 
   const size_t dim4_len = fixel_data->size(3);
 
   if (dim4_len % 3)
     throw InvalidImageException(
-        fmt::format("Expecting 4th-dimension size of vector image {} to be a multiple of 3. Instead {} entries found.",
-                    get_filepath(),
-                    dim4_len));
+        "Expecting 4th-dimension size of vector image {} to be a multiple of 3. Instead {} entries found.",
+        get_filepath(),
+        dim4_len);
 
   for (size_t axis = 0; axis < 3; ++axis) {
     slice_fixel_indices[axis].resize(fixel_data->size(axis));

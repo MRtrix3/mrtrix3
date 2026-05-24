@@ -159,7 +159,7 @@ void run() {
       std::string err;
       for (const auto &a : argument)
         err += fmt::format(" {}", a);
-      throw Exception(fmt::format("unexpected number of input images. arguments:{}", err));
+      throw Exception("unexpected number of input images. arguments:{}", err);
     }
 
     for (auto i = 0; i < argument.size(); ++i) {
@@ -177,8 +177,8 @@ void run() {
 
   for (size_t i = 0; i < n_images; i++) {
     if (input1[i].ndim() != input2[i].ndim())
-      throw Exception(fmt::format(
-          "input images {} and {} do not have the same number of dimensions", input1[i].name(), input2[i].name()));
+      throw Exception(
+          "input images {} and {} do not have the same number of dimensions", input1[i].name(), input2[i].name());
     check_3D_nonunity(input1[i]);
     check_3D_nonunity(input2[i]);
   }
@@ -236,16 +236,14 @@ void run() {
   Eigen::MatrixXd trafo = MR::Transform(input1[0]).scanner2voxel.linear();
   for (size_t i = 1; i < n_images; i++) {
     if (!trafo.isApprox(MR::Transform(input1[i]).scanner2voxel.linear(), 1e-5))
-      WARN(fmt::format(
-          "Multi contrast image has different header transformation from first image. Ignoring transformation of {}",
-          input1[i].name()));
+      WARN("Multi contrast image has different header transformation from first image. Ignoring transformation of {}",
+           input1[i].name());
   }
   trafo = MR::Transform(input2[0]).scanner2voxel.linear();
   for (size_t i = 1; i < n_images; i++) {
     if (!trafo.isApprox(MR::Transform(input2[i]).scanner2voxel.linear(), 1e-5))
-      WARN(fmt::format(
-          "Multi contrast image has different header transformation from first image. Ignoring transformation of {}",
-          input2[i].name()));
+      WARN("Multi contrast image has different header transformation from first image. Ignoring transformation of {}",
+           input2[i].name());
   }
 
   // multi-contrast settings
@@ -261,32 +259,31 @@ void run() {
     if (i > 0)
       check_dimensions(input2[i], input2[i - 1], 0, 3);
     if ((input1[i].ndim() != 3) and (input1[i].ndim() != 4))
-      throw Exception(
-          fmt::format("image dimensionality other than 3 or 4 are not supported. image {} is {} dimensional",
+      throw Exception("image dimensionality other than 3 or 4 are not supported. image {} is {} dimensional",
                       input1[i].name(),
-                      input1[i].ndim()));
+                      input1[i].ndim());
 
     const size_t nvols1 = input1[i].ndim() == 3 ? 1 : input1[i].size(3);
     const size_t nvols2 = input2[i].ndim() == 3 ? 1 : input2[i].size(3);
     if (nvols1 != nvols2)
-      throw Exception(fmt::format(
-          "input images do not have the same number of volumes: {} and {}", input2[i].name(), input1[i].name()));
+      throw Exception(
+          "input images do not have the same number of volumes: {} and {}", input2[i].name(), input1[i].name());
 
     // set do_reorientation and image_lmax
     if (nvols1 == 1) { // 3D or one volume
       mc_params[i].do_reorientation = false;
       mc_params[i].image_lmax = 0;
-      CONSOLE(fmt::format("3D input pair {}, {}", input1[i].name(), input2[i].name()));
+      CONSOLE("3D input pair {}, {}", input1[i].name(), input2[i].name());
     } else { // more than one volume
       if (do_reorientation && nvols1 > 1 && SH::NforL(SH::LforN(nvols1)) == nvols1) {
-        CONSOLE(fmt::format("SH image input pair {}, {}", input1[i].name(), input2[i].name()));
+        CONSOLE("SH image input pair {}, {}", input1[i].name(), input2[i].name());
         mc_params[i].do_reorientation = true;
         mc_params[i].image_lmax = Math::SH::LforN(nvols1);
         if (!directions_cartesian.cols())
           directions_cartesian =
               Math::Sphere::spherical2cartesian(DWI::Directions::electrostatic_repulsion_60()).transpose();
       } else {
-        CONSOLE(fmt::format("4D scalar input pair {}, {}", input1[i].name(), input2[i].name()));
+        CONSOLE("4D scalar input pair {}, {}", input1[i].name(), input2[i].name());
         mc_params[i].do_reorientation = false;
         mc_params[i].image_lmax = 0;
       }
@@ -312,7 +309,7 @@ void run() {
   if (!do_reorientation and directions_cartesian.cols())
     WARN("-directions option ignored since no FOD reorientation is being performed");
 
-  INFO(fmt::format("maximum input lmax: {}", max_mc_image_lmax));
+  INFO("maximum input lmax: {}", max_mc_image_lmax);
 
   opt = get_options("transformed");
   std::vector<std::filesystem::path> im1_transformed_paths;
@@ -324,8 +321,7 @@ void run() {
     for (size_t c = 0; c < opt.size(); c++) {
       Registration::check_image_output(opt[c][0], input2[c]);
       im1_transformed_paths.push_back(opt[c][0]);
-      INFO(fmt::format(
-          "{}, transformed to space of image2, will be written to {}", input1[c].name(), im1_transformed_paths[c]));
+      INFO("{}, transformed to space of image2, will be written to {}", input1[c].name(), im1_transformed_paths[c]);
     }
   }
 
@@ -340,14 +336,14 @@ void run() {
     for (size_t c = 0; c < opt.size(); c++) {
       Registration::check_image_output(opt[c][0], input2[c]);
       input1_midway_transformed_paths.push_back(opt[c][0]);
-      INFO(fmt::format("{}, transformed to midway space, will be written to {}",
-                       input1[c].name(),
-                       input1_midway_transformed_paths[c]));
+      INFO("{}, transformed to midway space, will be written to {}",
+           input1[c].name(),
+           input1_midway_transformed_paths[c]);
       Registration::check_image_output(opt[c][1], input1[c]);
       input2_midway_transformed_paths.push_back(opt[c][1]);
-      INFO(fmt::format("{}, transformed to midway space, will be written to {}",
-                       input2[c].name(),
-                       input2_midway_transformed_paths[c]));
+      INFO("{}, transformed to midway space, will be written to {}",
+           input2[c].name(),
+           input2_midway_transformed_paths[c]);
     }
   }
 
@@ -483,8 +479,7 @@ void run() {
     rigid_lmax = parse_ints<uint32_t>(opt[0][0]);
     for (size_t i = 0; i < rigid_lmax.size(); ++i)
       if (rigid_lmax[i] > max_mc_image_lmax) {
-        WARN(fmt::format("the requested -rigid_lmax exceeds the lmax of the input images, setting it to {}",
-                         max_mc_image_lmax));
+        WARN("the requested -rigid_lmax exceeds the lmax of the input images, setting it to {}", max_mc_image_lmax);
         rigid_lmax[i] = max_mc_image_lmax;
       }
     rigid_registration.set_lmax(rigid_lmax);
@@ -620,8 +615,7 @@ void run() {
     affine_lmax = parse_ints<uint32_t>(opt[0][0]);
     for (size_t i = 0; i < affine_lmax.size(); ++i)
       if (affine_lmax[i] > max_mc_image_lmax) {
-        WARN(fmt::format("the requested -affine_lmax exceeds the lmax of the input images, setting it to {}",
-                         max_mc_image_lmax));
+        WARN("the requested -affine_lmax exceeds the lmax of the input images, setting it to {}", max_mc_image_lmax);
         affine_lmax[i] = max_mc_image_lmax;
       }
     affine_registration.set_lmax(affine_lmax);
@@ -836,7 +830,7 @@ void run() {
         max_requested_lmax = std::max(max_requested_lmax, affine_registration.get_lmax());
       if (do_nonlinear)
         max_requested_lmax = std::max(max_requested_lmax, nl_registration.get_lmax());
-      INFO(fmt::format("maximum used lmax: {}", max_requested_lmax));
+      INFO("maximum used lmax: {}", max_requested_lmax);
     }
 
     for (size_t idx = 0; idx < n_images; ++idx) {
@@ -853,7 +847,7 @@ void run() {
       mc_params[idx].start = mc_params[idx - 1].start + mc_params[idx - 1].nvols;
 
     for (const auto &mc : mc_params)
-      DEBUG(str(mc));
+      DEBUG("{}", mc);
   }
 
   if (mc_params.size() > 1) {
@@ -1092,7 +1086,7 @@ void run() {
     }
 
     for (size_t idx = 0; idx < im1_transformed_paths.size(); idx++) {
-      CONSOLE(fmt::format("... {}", im1_transformed_paths[idx]));
+      CONSOLE("... {}", im1_transformed_paths[idx]);
       {
         // LogLevelLatch log_level (0);
         Image<value_type> im1_image = Image<value_type>::open(input1[idx].path());
@@ -1160,7 +1154,7 @@ void run() {
     }
 
     for (size_t idx = 0; idx < input1_midway_transformed_paths.size(); idx++) {
-      CONSOLE(fmt::format("... {}", input1_midway_transformed_paths[idx]));
+      CONSOLE("... {}", input1_midway_transformed_paths[idx]);
       {
         // LogLevelLatch log_level (0);
         Image<value_type> im1_image = Image<value_type>::open(input1[idx].path());
@@ -1214,7 +1208,7 @@ void run() {
     }
 
     for (size_t idx = 0; idx < input2_midway_transformed_paths.size(); idx++) {
-      CONSOLE(fmt::format("... {}", input2_midway_transformed_paths[idx]));
+      CONSOLE("... {}", input2_midway_transformed_paths[idx]);
       {
         // LogLevelLatch log_level (0);
         Image<value_type> im2_image = Image<value_type>::open(input2[idx].path());

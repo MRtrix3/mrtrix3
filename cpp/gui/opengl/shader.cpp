@@ -38,7 +38,7 @@ void print_log(bool is_program, std::string_view type_name, GLuint index) {
     log.resize(log.find('\0'));
 
     if (!log.empty())
-      FAIL(fmt::format("GLSL log [{}]: ", type_name) + log);
+      FAIL("GLSL log [{}]: {}", type_name, log);
   }
 }
 

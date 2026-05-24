@@ -98,17 +98,17 @@ void run() {
     voxels_path.emplace(opt_voxels[0][0]);
     if (single_input) {
       if (!Path::has_suffix(voxels_path.value(), MR::Formats::known_extensions))
-        WARN(fmt::format("\"-voxels\" argument \"{}\""
-                         " does not have a recognised image file extension;"
-                         " with a single input image, \"-voxels\" expects an output image path",
-                         voxels_path.value()));
+        WARN("\"-voxels\" argument \"{}\""
+             " does not have a recognised image file extension;"
+             " with a single input image, \"-voxels\" expects an output image path",
+             voxels_path.value());
       check_overwrite(voxels_path.value());
     } else {
       if (Path::has_suffix(voxels_path.value(), MR::Formats::known_extensions))
-        WARN(fmt::format("\"-voxels\" argument \"{}\""
-                         " has a recognised image file extension;"
-                         " with multiple input images, \"-voxels\" expects an output directory path",
-                         voxels_path.value()));
+        WARN("\"-voxels\" argument \"{}\""
+             " has a recognised image file extension;"
+             " with multiple input images, \"-voxels\" expects an output directory path",
+             voxels_path.value());
       check_overwrite(voxels_path.value());
       std::filesystem::create_directories(voxels_path.value());
     }
@@ -136,7 +136,7 @@ void run() {
       result = validate_5TT_image(in);
     } catch (Exception &e) {
       e.display();
-      WARN(fmt::format("Image \"{}\" does not conform to fundamental 5TT format requirements", argument[i]));
+      WARN("Image \"{}\" does not conform to fundamental 5TT format requirements", argument[i]);
       ++major_error_count;
       continue;
     }
@@ -178,22 +178,22 @@ void run() {
     // Phase 4: report findings and accumulate error counts.
     // ---------------------------------------------------------------
     if (result.n_voxels_sum_error > 1) {
-      WARN(fmt::format("Image \"{}\" contains {}{}",
-                       argument[i],                                                     //
-                       (result.n_voxels_sum_error > 1                                   //
-                            ? fmt::format("{} brain voxels", result.n_voxels_sum_error) //
-                            : "one isolated voxel"),                                    //
-                       " with non-unity sum of partial volume fractions"));             //
+      WARN("Image \"{}\" contains {}{}",
+           argument[i],                                                     //
+           (result.n_voxels_sum_error > 1                                   //
+                ? fmt::format("{} brain voxels", result.n_voxels_sum_error) //
+                : "one isolated voxel"),                                    //
+           " with non-unity sum of partial volume fractions");              //
     }
     if (result.n_voxels_abs_error == 0 && result.n_voxels_sum_error == 0) {
-      INFO(fmt::format("Image \"{}\" conforms to 5TT format", argument[i]));
+      INFO("Image \"{}\" conforms to 5TT format", argument[i]);
     }
     if (result.n_voxels_sum_error > 0 && result.n_voxels_abs_error == 0)
       ++minor_error_count;
     if (result.n_voxels_abs_error > 0) {
-      WARN(fmt::format("Image \"{}\" contains {} brain voxels with a non-physical partial volume fraction",
-                       argument[i],
-                       str(result.n_voxels_abs_error)));
+      WARN("Image \"{}\" contains {} brain voxels with a non-physical partial volume fraction",
+           argument[i],
+           result.n_voxels_abs_error);
       ++major_error_count;
     }
   }
@@ -208,17 +208,17 @@ void run() {
     const std::string subject =
         argument.size() > 1 ? fmt::format("{} input image{}", major_error_count, major_error_count > 1 ? "s" : "")
                             : "Input image";
-    throw Exception(fmt::format("{} {} not conform to 5TT format",
-                                subject,
-                                argument.size() > 1 ? (major_error_count > 1 ? "do" : "does") : "does"));
+    throw Exception("{} {} not conform to 5TT format",
+                    subject,
+                    argument.size() > 1 ? (major_error_count > 1 ? "do" : "does") : "does");
   } else if (minor_error_count > size_t(0)) {
     const std::string subject =
         argument.size() > 1 ? fmt::format("{} input image{}", minor_error_count, minor_error_count > 1 ? "s" : "")
                             : "Input image";
-    WARN(fmt::format("{} {} not perfectly conform to 5TT format, but may still be applicable{}",
-                     subject,
-                     argument.size() > 1 ? (minor_error_count > 1 ? "do" : "does") : "does",
-                     vox_option_suggestion));
+    WARN("{} {} not perfectly conform to 5TT format, but may still be applicable{}",
+         subject,
+         argument.size() > 1 ? (minor_error_count > 1 ? "do" : "does") : "does",
+         vox_option_suggestion);
   } else {
     CONSOLE(argument.size() > 1 ? "All images checked OK" : "Input image checked OK");
   }

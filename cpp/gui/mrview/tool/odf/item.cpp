@@ -41,17 +41,17 @@ ODF_Item::ODF_Item(
     if (!dixel->shells)
       throw Exception("No shell data");
     dixel->set_shell(dixel->shells->count() - 1);
-    DEBUG(fmt::format("Image {} initialised as dixel ODF using DW scheme", image.header().name()));
+    DEBUG("Image {} initialised as dixel ODF using DW scheme", image.header().name());
   } catch (...) {
     try {
       dixel->set_header();
-      DEBUG(fmt::format("Image {} initialised as dixel ODF using header directions field", image.header().name()));
+      DEBUG("Image {} initialised as dixel ODF using header directions field", image.header().name());
     } catch (...) {
       try {
         dixel->set_internal(image.header().size(3));
-        DEBUG(fmt::format("Image {} initialised as dixel ODF using internal direction set", image.header().name()));
+        DEBUG("Image {} initialised as dixel ODF using internal direction set", image.header().name());
       } catch (...) {
-        DEBUG(fmt::format("Image {} left uninitialised in ODF tool", image.header().name()));
+        DEBUG("Image {} left uninitialised in ODF tool", image.header().name());
       }
     }
   }
@@ -78,18 +78,16 @@ ODF_Item::DixelPlugin::DixelPlugin(const MR::Header &H) : dir_type(dir_t::NONE),
     try {
       const auto lines = split_lines(entry->second);
       if (lines.size() != static_cast<size_t>(H.size(3)))
-        throw Exception(fmt::format("malformed directions field in image \"{}\" - incorrect number of rows", H.name()));
+        throw Exception("malformed directions field in image \"{}\" - incorrect number of rows", H.name());
       for (size_t row = 0; row < lines.size(); ++row) {
         const auto values = parse_floats(lines[row]);
         if (!header_dirs.rows()) {
           if (values.size() != 2 && values.size() != 3)
-            throw Exception(
-                fmt::format("malformed directions field in image \"{}\" - should have 2 or 3 columns", H.name()));
+            throw Exception("malformed directions field in image \"{}\" - should have 2 or 3 columns", H.name());
           header_dirs.resize(lines.size(), values.size());
         } else if (values.size() != static_cast<size_t>(header_dirs.cols())) {
           header_dirs.resize(0, 0);
-          throw Exception(
-              fmt::format("malformed directions field in image \"{}\" - variable number of columns", H.name()));
+          throw Exception("malformed directions field in image \"{}\" - variable number of columns", H.name());
         }
         for (size_t col = 0; col < values.size(); ++col)
           header_dirs(row, col) = values[col];

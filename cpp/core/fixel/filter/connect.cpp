@@ -35,10 +35,10 @@ void Connect::operator()(Image<float> &input, Image<float> &output) const {
   check_dimensions(input, output);
 
   if (static_cast<size_t>(input.size(0)) != matrix.size())
-    throw Exception(fmt::format("Size of fixel data file \"{}\" ({}) does not match fixel connectivity matrix ({})",
-                                input.name(),
-                                str(input.size(0)),
-                                str(matrix.size())));
+    throw Exception("Size of fixel data file \"{}\" ({}) does not match fixel connectivity matrix ({})",
+                    input.name(),
+                    input.size(0),
+                    matrix.size());
 
   if (input.ndim() > 1 && input.size(1) != 1)
     throw Exception(

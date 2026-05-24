@@ -175,16 +175,15 @@ void run() {
         else if (slice_encoding_axis_onehot[2])
           auto_slice_axes = {0, 1};
         else
-          throw Exception(
-              fmt::format("Fatal error: Invalid slice axis one-hot encoding {}", slice_encoding_axis_onehot));
+          throw Exception("Fatal error: Invalid slice axis one-hot encoding {}", slice_encoding_axis_onehot);
         if (axes_set_manually) {
           if (slice_axes == auto_slice_axes) {
             INFO("User's manual selection of within-slice axes consistent with \"SliceEncodingDirection\" field in "
                  "image header");
           } else {
-            WARN(fmt::format("Within-slice axes set using -axes option will be used, but is inconsistent with \"\n     "
-                             "            \"SliceEncodingDirection field present in image header ({})",
-                             slice_encoding_it->second));
+            WARN("Within-slice axes set using -axes option will be used, but is inconsistent with \"\n     "
+                 "            \"SliceEncodingDirection field present in image header ({})",
+                 slice_encoding_it->second);
           }
         } else {
           if (slice_axes == auto_slice_axes) {
@@ -192,15 +191,15 @@ void run() {
                  "axes as being within-slice");
           } else {
             slice_axes = auto_slice_axes;
-            CONSOLE(fmt::format("Using axes {{ {}, {} }} for Gibbs ringing removal based on"
-                                " \"SliceEncodingDirection\" field in image header",
-                                slice_axes[0],
-                                slice_axes[1]));
+            CONSOLE("Using axes {{ {}, {} }} for Gibbs ringing removal based on"
+                    " \"SliceEncodingDirection\" field in image header",
+                    slice_axes[0],
+                    slice_axes[1]);
           }
         }
       } catch (...) {
-        WARN(fmt::format("Invalid value for field \"SliceEncodingDirection\" in image header ({}); ignoring",
-                         slice_encoding_it->second));
+        WARN("Invalid value for field \"SliceEncodingDirection\" in image header ({}); ignoring",
+             slice_encoding_it->second);
       }
     }
   }

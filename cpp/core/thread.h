@@ -117,9 +117,9 @@ public:
   bool finished() const { return thread.wait_for(std::chrono::microseconds(0)) == std::future_status::ready; }
 
   void wait() noexcept(false) {
-    DEBUG(fmt::format("waiting for completion of thread \"{}\"...", name));
+    DEBUG("waiting for completion of thread \"{}\"...", name);
     thread.get();
-    DEBUG(fmt::format("thread \"{}\" completed OK", name));
+    DEBUG("thread \"{}\" completed OK", name);
   }
 
   ~__single_thread() {
@@ -140,7 +140,7 @@ template <class Functor> class __multi_thread : public __thread_base {
 public:
   __multi_thread(Functor &functor, size_t nthreads, std::string_view name = "unnamed")
       : __thread_base(name), functors((nthreads > 0 ? nthreads - 1 : 0), functor) {
-    DEBUG(fmt::format("launching {} threads \"{}\"...", nthreads, name));
+    DEBUG("launching {} threads \"{}\"...", nthreads, name);
     using F = typename std::remove_reference<Functor>::type;
     threads.reserve(nthreads);
     for (auto &f : functors)
@@ -152,7 +152,7 @@ public:
   __multi_thread(__multi_thread &&) = default;
 
   void wait() noexcept(false) {
-    DEBUG(fmt::format("waiting for completion of threads \"{}\"...", name));
+    DEBUG("waiting for completion of threads \"{}\"...", name);
     bool exception_thrown = false;
     for (auto &t : threads) {
       if (!t.valid())
@@ -165,8 +165,8 @@ public:
       }
     }
     if (exception_thrown)
-      throw Exception(fmt::format("exception thrown from one or more threads \"{}\"", name));
-    DEBUG(fmt::format("threads \"{}\" completed OK", name));
+      throw Exception("exception thrown from one or more threads \"{}\"", name);
+    DEBUG("threads \"{}\" completed OK", name);
   }
 
   bool finished() const {

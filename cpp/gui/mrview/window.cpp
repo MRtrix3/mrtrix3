@@ -84,7 +84,7 @@ Qt::KeyboardModifiers get_modifier(std::string_view key, Qt::KeyboardModifiers d
     return Qt::MetaModifier;
 #endif
 
-  throw Exception(fmt::format("no such modifier \"{}\" (parsed from config file)", value));
+  throw Exception("no such modifier \"{}\" (parsed from config file)", value);
   return Qt::NoModifier;
 }
 } // namespace
@@ -702,7 +702,7 @@ Window::Window()
   std::string cbar_pos = lowercase(MR::File::Config::get("MRViewColourBarPosition", "bottomright"));
   colourbar_position = parse_colourmap_position_str(cbar_pos);
   if (!colourbar_position) {
-    WARN(fmt::format("invalid specifier \"{}\" for config file entry \"MRViewColourBarPosition\"", cbar_pos));
+    WARN("invalid specifier \"{}\" for config file entry \"MRViewColourBarPosition\"", cbar_pos);
   }
 
   // CONF option: MRViewToolsColourBarPosition
@@ -712,7 +712,7 @@ Window::Window()
   cbar_pos = lowercase(MR::File::Config::get("MRViewToolsColourBarPosition", "topright"));
   tools_colourbar_position = parse_colourmap_position_str(cbar_pos);
   if (!tools_colourbar_position) {
-    WARN(fmt::format("invalid specifier \"{}\" for config file entry \"MRViewToolsColourBarPosition\"", cbar_pos));
+    WARN("invalid specifier \"{}\" for config file entry \"MRViewToolsColourBarPosition\"", cbar_pos);
   }
 }
 
@@ -1659,7 +1659,7 @@ void Window::process_commandline_option() {
     if (opt.opt->is("mode")) {
       int n = int(opt[0]) - 1;
       if (n < 0 || n >= mode_group->actions().size())
-        throw Exception(fmt::format("invalid mode index \"{}\" in batch command", n));
+        throw Exception("invalid mode index \"{}\" in batch command", n);
       select_mode_slot(mode_group->actions()[n]);
       return;
     }
@@ -1667,7 +1667,7 @@ void Window::process_commandline_option() {
     if (opt.opt->is("size")) {
       std::vector<uint32_t> glsize = parse_ints<uint32_t>(opt[0]);
       if (glsize.size() != 2)
-        throw Exception(fmt::format("invalid argument \"{}\" to -size batch command", opt.args[0]));
+        throw Exception("invalid argument \"{}\" to -size batch command", opt.args[0]);
       if (glsize[0] < 1 || glsize[1] < 1)
         throw Exception("values provided to -size option must be positive");
       QSize oldsize = glarea->size();
@@ -1804,7 +1804,7 @@ void Window::process_commandline_option() {
     if (opt.opt->is("colourmap")) {
       int n = int(opt[0]) - 1;
       if (n < 0 || n >= static_cast<int>(colourmap_button->colourmap_actions.size()))
-        throw Exception(fmt::format("invalid image colourmap index \"{}\" requested in batch command", n + 1));
+        throw Exception("invalid image colourmap index \"{}\" requested in batch command", n + 1);
       colourmap_button->set_colourmap_index(n);
       return;
     }
@@ -1833,7 +1833,7 @@ void Window::process_commandline_option() {
     if (opt.opt->is("position")) {
       std::vector<int> pos = parse_ints<int>(opt[0]);
       if (pos.size() != 2)
-        throw Exception(fmt::format("invalid argument \"{}\" to -position option", opt[0]));
+        throw Exception("invalid argument \"{}\" to -position option", opt[0]);
       move(pos[0], pos[1]);
       return;
     }

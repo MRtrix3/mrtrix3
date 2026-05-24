@@ -43,7 +43,7 @@ Reader::Reader(const std::filesystem::path &filepath)
       channels(0) {
   std::array<unsigned char, 8> sig;
   if (fread(sig.data(), 1, 8, infile) < 8)
-    throw Exception(fmt::format("error reading from PNG file \"{}\"", filepath));
+    throw Exception("error reading from PNG file \"{}\"", filepath);
   const int sigcmp = png_sig_cmp(sig.data(), 0, 8);
   if (sigcmp) {
     fclose(infile);
@@ -57,17 +57,17 @@ Reader::Reader(const std::filesystem::path &filepath)
   }
   if (!(png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr))) {
     fclose(infile);
-    throw Exception(fmt::format("Unable to allocate memory for PNG read structure for image \"{}\"", filepath));
+    throw Exception("Unable to allocate memory for PNG read structure for image \"{}\"", filepath);
   }
   if (!(info_ptr = png_create_info_struct(png_ptr))) {
     fclose(infile);
     png_destroy_read_struct(&png_ptr, nullptr, nullptr);
-    throw Exception(fmt::format("Unable to allocate memory for PNG info structure for image \"{}\"", filepath));
+    throw Exception("Unable to allocate memory for PNG info structure for image \"{}\"", filepath);
   }
   if (setjmp(png_jmpbuf(png_ptr))) {
     fclose(infile);
     png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
-    throw Exception(fmt::format("Fatal error reading PNG image \"{}\"", filepath));
+    throw Exception("Fatal error reading PNG image \"{}\"", filepath);
   }
   png_init_io(png_ptr, infile);
   png_set_sig_bytes(png_ptr, 8);
@@ -82,7 +82,7 @@ Reader::Reader(const std::filesystem::path &filepath)
   case PNG_COLOR_TYPE_RGB_ALPHA:
     break;
   default:
-    throw Exception(fmt::format("Invalid color type ({}) in PNG file \"{}\"", color_type, filepath));
+    throw Exception("Invalid color type ({}) in PNG file \"{}\"", color_type, filepath);
   }
   switch (bit_depth) {
   case 1:
@@ -92,7 +92,7 @@ Reader::Reader(const std::filesystem::path &filepath)
   case 16:
     break;
   default:
-    throw Exception(fmt::format("Invalid bit depth ({}) in PNG file \"{}\"", str<int>(bit_depth), filepath));
+    throw Exception("Invalid bit depth ({}) in PNG file \"{}\"", static_cast<int>(bit_depth), filepath);
   }
 
   output_bitdepth = bit_depth;
@@ -105,17 +105,17 @@ Reader::Reader(const std::filesystem::path &filepath)
   png_set_interlace_handling(png_ptr);
   png_read_update_info(png_ptr, info_ptr);
   channels = png_get_channels(png_ptr, info_ptr);
-  DEBUG(fmt::format("PNG image \"{}\":  {}x{}; bitdepth = {}; colortype: {}; channels = {}; bytes per row = {};"
-                    " output bitdepth = {}; total bytes = {}",
-                    filepath,
-                    width,
-                    height,
-                    bit_depth,
-                    color_type,
-                    static_cast<int>(channels),
-                    png_get_rowbytes(png_ptr, info_ptr),
-                    output_bitdepth,
-                    get_size()));
+  DEBUG("PNG image \"{}\":  {}x{}; bitdepth = {}; colortype: {}; channels = {}; bytes per row = {};"
+        " output bitdepth = {}; total bytes = {}",
+        filepath,
+        width,
+        height,
+        bit_depth,
+        color_type,
+        static_cast<int>(channels),
+        png_get_rowbytes(png_ptr, info_ptr),
+        output_bitdepth,
+        get_size());
 }
 
 Reader::~Reader() {
@@ -161,18 +161,18 @@ Writer::Writer(const Header &H, const std::filesystem::path &path)
       multiplier(1.0),
       outfile(nullptr) {
   if (std::filesystem::exists(filepath) && !App::overwrite_files)
-    throw Exception(fmt::format("output file \"{}\" already exists (use -force option to force overwrite)", filepath));
+    throw Exception("output file \"{}\" already exists (use -force option to force overwrite)", filepath);
   if (!(png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, this, &error_handler, nullptr)))
-    throw Exception(fmt::format("Unable to create PNG write structure for image \"{}\"", filepath));
+    throw Exception("Unable to create PNG write structure for image \"{}\"", filepath);
   if (!(info_ptr = png_create_info_struct(png_ptr)))
-    throw Exception(fmt::format("Unable to create PNG info structure for image \"{}\"", filepath));
+    throw Exception("Unable to create PNG info structure for image \"{}\"", filepath);
   if (setjmp(jmpbuf)) {
     png_destroy_write_struct(&png_ptr, &info_ptr);
-    throw Exception(fmt::format("Unable to set jump buffer for PNG structure for image \"{}\"", filepath));
+    throw Exception("Unable to set jump buffer for PNG structure for image \"{}\"", filepath);
   }
   outfile = fopen(Writer::filepath.string().c_str(), "wb");
   if (!outfile)
-    throw Exception(fmt::format("Unable to open PNG file for writing for image \"{}\": {}", filepath, strerror(errno)));
+    throw Exception("Unable to open PNG file for writing for image \"{}\": {}", filepath, strerror(errno));
   png_init_io(png_ptr, outfile);
   png_set_compression_level(png_ptr, Z_DEFAULT_COMPRESSION);
   switch (H.ndim()) {
@@ -196,18 +196,16 @@ Writer::Writer(const Header &H, const std::filesystem::path &path)
       break;
     default:
       png_destroy_write_struct(&png_ptr, &info_ptr);
-      throw Exception(
-          fmt::format("Unsupported number of volumes ({}) in image \"{}\" for PNG writer", H.size(3), filepath));
+      throw Exception("Unsupported number of volumes ({}) in image \"{}\" for PNG writer", H.size(3), filepath);
     }
     break;
   default:
     png_destroy_write_struct(&png_ptr, &info_ptr);
-    throw Exception(
-        fmt::format("Unsupported image dimensionality ({}) in image \"{}\" for PNG writer", H.ndim(), filepath));
+    throw Exception("Unsupported image dimensionality ({}) in image \"{}\" for PNG writer", H.ndim(), filepath);
   }
   if (data_type.is_complex()) {
     png_destroy_write_struct(&png_ptr, &info_ptr);
-    throw Exception(fmt::format("Complex datatype from image \"{}\" not supported by PNG format", H.name()));
+    throw Exception("Complex datatype from image \"{}\" not supported by PNG format", H.name());
   }
   if (data_type.is_floating_point()) {
     INFO("Data to be converted to PNG is floating-point; "
@@ -216,7 +214,7 @@ Writer::Writer(const Header &H, const std::filesystem::path &path)
   switch (data_type() & DataType::Type) {
   case DataType::Undefined:
     png_destroy_write_struct(&png_ptr, &info_ptr);
-    throw Exception(fmt::format("Undefined data type in image \"{}\" for PNG writer", H.name()));
+    throw Exception("Undefined data type in image \"{}\" for PNG writer", H.name());
   case DataType::Bit:
     assert(false);
     break;
@@ -310,7 +308,7 @@ void Writer::save(std::byte *data) {
     png_destroy_write_struct(&png_ptr, &info_ptr);
     png_ptr = nullptr;
     info_ptr = nullptr;
-    throw Exception(fmt::format("Unable to set jump buffer for PNG structure for image \"{}\"", filepath));
+    throw Exception("Unable to set jump buffer for PNG structure for image \"{}\"", filepath);
   }
   const size_t row_bytes = png_get_rowbytes(png_ptr, info_ptr);
 

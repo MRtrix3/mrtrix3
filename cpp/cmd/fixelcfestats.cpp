@@ -163,7 +163,7 @@ public:
       : Math::Stats::SubjectDataImportBase(path), H(Header::open(path)), data(H.get_image<measurements_value_type>()) {
     for (size_t axis = 1; axis < data.ndim(); ++axis) {
       if (data.size(axis) > 1)
-        throw Exception(fmt::format("Image file \"{}\" does not contain fixel data (wrong dimensions)", path));
+        throw Exception("Image file \"{}\" does not contain fixel data (wrong dimensions)", path);
     }
   }
 
@@ -204,7 +204,7 @@ void run() {
   Header index_header = Fixel::find_index_header(input_fixel_directory);
 
   const Fixel::index_type num_fixels = Fixel::get_number_of_fixels(index_header);
-  CONSOLE(fmt::format("Number of fixels in template: {}", num_fixels));
+  CONSOLE("Number of fixels in template: {}", num_fixels);
 
   Header mask_header = Fixel::data_header_from_index(index_header);
   mask_header.datatype() = DataType::Bit;
@@ -220,7 +220,7 @@ void run() {
       if (mask_processing_image.value())
         ++mask_proc_fixels;
     }
-    CONSOLE(fmt::format("Number of fixels in processing mask: {}", mask_proc_fixels));
+    CONSOLE("Number of fixels in processing mask: {}", mask_proc_fixels);
   } else {
     mask_processing_image = Image<bool>::scratch(mask_header, "true-filled scratch fixel processing mask");
     for (auto l = Loop(0)(mask_processing_image); l; ++l)
@@ -243,11 +243,11 @@ void run() {
           ++mask_mismatch_count;
       }
     }
-    CONSOLE(fmt::format("Number of fixels in post-hoc analysis mask: {}", mask_infer_fixels));
+    CONSOLE("Number of fixels in post-hoc analysis mask: {}", mask_infer_fixels);
     if (mask_mismatch_count > Fixel::index_type(0)) {
-      WARN(fmt::format("There are {} fixels in the post-hoc mask that are absent from the processing mask; "
-                       "post-hoc inference cannot and will not be performed in those fixels",
-                       mask_mismatch_count));
+      WARN("There are {} fixels in the post-hoc mask that are absent from the processing mask; "
+           "post-hoc inference cannot and will not be performed in those fixels",
+           mask_mismatch_count);
     }
   } else {
     mask_inference_image = Image<bool>::scratch(mask_header, "scratch fixel inference mask");
@@ -263,9 +263,9 @@ void run() {
   importer.initialise<SubjectFixelImport>(argument[1], input_fixel_directory);
   for (Math::Stats::index_type i = 0; i != importer.size(); ++i) {
     if (!Fixel::fixels_match(index_header, dynamic_cast<SubjectFixelImport *>(importer[i].get())->header()))
-      throw Exception(fmt::format("Fixel data file \"{}\" does not match template fixel image", importer[i]->name()));
+      throw Exception("Fixel data file \"{}\" does not match template fixel image", importer[i]->name());
   }
-  CONSOLE(fmt::format("Number of inputs: {}", importer.size()));
+  CONSOLE("Number of inputs: {}", importer.size());
 
   // Load design matrix:
   const matrix_type design = File::Matrix::load_matrix(argument[2]);
@@ -300,10 +300,10 @@ void run() {
     }
   }
   const Math::Stats::index_type num_factors = design.cols() + extra_columns.size();
-  CONSOLE(fmt::format("Number of factors: {}", num_factors));
+  CONSOLE("Number of factors: {}", num_factors);
   const bool have_extra_columns = !extra_columns.empty();
   if (have_extra_columns) {
-    CONSOLE(fmt::format("Number of element-wise design matrix columns: {}", extra_columns.size()));
+    CONSOLE("Number of element-wise design matrix columns: {}", extra_columns.size());
     if (nans_in_columns)
       CONSOLE("Non-finite values detected in element-wise design matrix columns; "
               "individual rows will be removed from fixel-wise design matrices accordingly");
@@ -314,12 +314,12 @@ void run() {
   auto variance_groups = Math::Stats::GLM::load_variance_groups(design.rows());
   const Math::Stats::index_type num_vgs = variance_groups.size() ? variance_groups.maxCoeff() + 1 : 1;
   if (num_vgs > 1)
-    CONSOLE(fmt::format("Number of variance groups: {}", num_vgs));
+    CONSOLE("Number of variance groups: {}", num_vgs);
 
   // Load hypotheses
   const std::vector<Math::Stats::GLM::Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses(num_factors);
   const Math::Stats::index_type num_hypotheses = hypotheses.size();
-  CONSOLE(fmt::format("Number of hypotheses: {}", num_hypotheses));
+  CONSOLE("Number of hypotheses: {}", num_hypotheses);
 
   // Load fixel-fixel connectivity matrix
   // This is based on the processing mask, *not* the inference mask
@@ -343,11 +343,11 @@ void run() {
       ++num_unconnected_fixels;
   }
   if (num_unconnected_fixels) {
-    WARN(fmt::format("A total of {} fixels {}do not possess any streamlines-based connectivity; "
-                     "these will not be enhanced by CFE, and hence cannot be "
-                     "tested for statistical significance",
-                     num_unconnected_fixels,
-                     mask_proc_fixels == num_fixels ? "" : "in the provided mask "));
+    WARN("A total of {} fixels {}do not possess any streamlines-based connectivity; "
+         "these will not be enhanced by CFE, and hence cannot be "
+         "tested for statistical significance",
+         num_unconnected_fixels,
+         mask_proc_fixels == num_fixels ? "" : "in the provided mask ");
   }
 
   Header output_header(dynamic_cast<SubjectFixelImport *>(importer[0].get())->header());

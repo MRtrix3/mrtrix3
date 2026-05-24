@@ -87,7 +87,7 @@ void SyncManager::OnIPSDataReceived(std::vector<std::shared_ptr<QByteArray>> all
       break;
     }
     default: {
-      DEBUG(fmt::format("Unknown data key received: {}", idOfDataEntry));
+      DEBUG("Unknown data key received: {}", idOfDataEntry);
       break;
     }
     }

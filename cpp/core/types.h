@@ -21,6 +21,7 @@
 #include <cstddef>
 #include <deque>
 #include <fmt/format.h>
+#include <fmt/ostream.h>
 #include <iostream>
 #include <map>
 #include <memory>
@@ -300,4 +301,7 @@ template <typename T> struct formatter<Eigen::Transform<T, 3, Eigen::AffineCompa
     return matrix_formatter.format(t.matrix(), ctx);
   }
 };
+//! Format an Eigen expression carrying a custom Eigen::IOFormat (e.g. matrix.format(iofmt))
+//! by delegating to its ostream insertion operator, preserving the requested formatting.
+template <typename T> struct formatter<Eigen::WithFormat<T>> : ostream_formatter {};
 } // namespace fmt

@@ -26,7 +26,7 @@
 namespace MR::Surface {
 
 Scalar::Scalar(const std::filesystem::path &path, const Mesh &mesh) {
-  DEBUG(fmt::format("Attempting to load surface scalar file \"{}\"...", path));
+  DEBUG("Attempting to load surface scalar file \"{}\"...", path);
   try {
     File::Matrix::load_vector(path);
   } catch (Exception &e) {
@@ -39,15 +39,15 @@ Scalar::Scalar(const std::filesystem::path &path, const Mesh &mesh) {
         load_fs_curv(path, mesh);
       } catch (Exception &e) {
         DEBUG(e[0]);
-        throw Exception(fmt::format("Input surface scalar file \"{}\" not in supported format", path));
+        throw Exception("Input surface scalar file \"{}\" not in supported format", path);
       }
     }
   }
   if (static_cast<size_t>(size()) != mesh.num_vertices())
-    throw Exception(fmt::format("Input surface scalar file \"{}\" has incorrect number of vertices ({}, mesh has {})",
-                                path,
-                                str(size()),
-                                str(mesh.num_vertices())));
+    throw Exception("Input surface scalar file \"{}\" has incorrect number of vertices ({}, mesh has {})",
+                    path,
+                    size(),
+                    mesh.num_vertices());
   name = path.filename().string();
 }
 
@@ -56,7 +56,7 @@ void Scalar::save(const std::filesystem::path &path) const { File::Matrix::save_
 void Scalar::load_fs_w(const std::filesystem::path &path, const Mesh &mesh) {
   std::ifstream in(path, std::ios_base::in | std::ios_base::binary);
   if (!in)
-    throw Exception(fmt::format("Error opening surface scalar file \"{}\"", path));
+    throw Exception("Error opening surface scalar file \"{}\"", path);
 
   FreeSurfer::get_BE<int16_t>(in); // 'latency'
   const int32_t num_entries = FreeSurfer::get_int24_BE(in);
@@ -65,14 +65,14 @@ void Scalar::load_fs_w(const std::filesystem::path &path, const Mesh &mesh) {
     const int32_t index = FreeSurfer::get_int24_BE(in);
     const float value = FreeSurfer::get_BE<float>(in);
     if (static_cast<size_t>(index) >= mesh.num_vertices())
-      throw Exception(fmt::format("Error opening file \"{}\" as FreeSurfer w-file:{}{},{}{})",
-                                  path, //
-                                  " invalid vertex index (",
-                                  str(index), //
-                                  " mesh has ",
-                                  str(mesh.num_vertices()))); //
+      throw Exception("Error opening file \"{}\" as FreeSurfer w-file:{}{},{}{})",
+                      path, //
+                      " invalid vertex index (",
+                      index, //
+                      " mesh has ",
+                      mesh.num_vertices()); //
     if (!in.good())
-      throw Exception(fmt::format("Error opening file \"{}\" as FreeSurfer w-file: truncated file", path));
+      throw Exception("Error opening file \"{}\" as FreeSurfer w-file: truncated file", path);
     (*this)[index] = value;
   }
 }
@@ -80,34 +80,34 @@ void Scalar::load_fs_w(const std::filesystem::path &path, const Mesh &mesh) {
 void Scalar::load_fs_curv(const std::filesystem::path &path, const Mesh &mesh) {
   std::ifstream in(path, std::ios_base::in | std::ios_base::binary);
   if (!in)
-    throw Exception(fmt::format("Error opening surface scalar file \"{}\"", path));
+    throw Exception("Error opening surface scalar file \"{}\"", path);
 
   const int32_t magic_number = FreeSurfer::get_int24_BE(in);
   if (magic_number == FreeSurfer::new_curv_file_magic_number) {
 
     const int32_t num_vertices = FreeSurfer::get_BE<int32_t>(in);
     if (static_cast<size_t>(num_vertices) != mesh.num_vertices())
-      throw Exception(fmt::format("Error opening file \"{}\" as Freesurfer curv file:{}{},{}{})",
-                                  path, //
-                                  " Incorrect number of vertices (",
-                                  str(num_vertices), //
-                                  " mesh has ",
-                                  str(mesh.num_vertices()))); //
+      throw Exception("Error opening file \"{}\" as Freesurfer curv file:{}{},{}{})",
+                      path, //
+                      " Incorrect number of vertices (",
+                      num_vertices, //
+                      " mesh has ",
+                      mesh.num_vertices()); //
 
     const int32_t num_faces = FreeSurfer::get_BE<int32_t>(in);
     if (static_cast<size_t>(num_faces) != mesh.num_polygons())
-      throw Exception(fmt::format("Error opening file \"{}\" as Freesurfer curv file:{}{},{}{})",
-                                  path, //
-                                  " Incorrect number of polygons (",
-                                  str(num_faces), //
-                                  " mesh has ",
-                                  str(mesh.num_polygons()))); //
+      throw Exception("Error opening file \"{}\" as Freesurfer curv file:{}{},{}{})",
+                      path, //
+                      " Incorrect number of polygons (",
+                      num_faces, //
+                      " mesh has ",
+                      mesh.num_polygons()); //
 
     const int32_t vals_per_vertex = FreeSurfer::get_BE<int32_t>(in);
     if (vals_per_vertex != 1)
-      throw Exception(fmt::format("Error opening file \"{}\" as Freesurfer curv file:{}",
-                                  path,                                 //
-                                  " Only support 1 value per vertex")); //
+      throw Exception("Error opening file \"{}\" as Freesurfer curv file:{}",
+                      path,                                //
+                      " Only support 1 value per vertex"); //
 
     (*this).resize(num_vertices);
     for (int32_t i = 0; i != num_vertices; ++i)
@@ -117,21 +117,21 @@ void Scalar::load_fs_curv(const std::filesystem::path &path, const Mesh &mesh) {
 
     const int32_t num_vertices = magic_number;
     if (static_cast<size_t>(num_vertices) != mesh.num_vertices())
-      throw Exception(fmt::format("Error opening file \"{}\" as Freesurfer curv file:{}{},{}{})",
-                                  path, //
-                                  " Incorrect number of vertices (",
-                                  str(num_vertices), //
-                                  " mesh has ",
-                                  str(mesh.num_vertices()))); //
+      throw Exception("Error opening file \"{}\" as Freesurfer curv file:{}{},{}{})",
+                      path, //
+                      " Incorrect number of vertices (",
+                      num_vertices, //
+                      " mesh has ",
+                      mesh.num_vertices()); //
 
     const int32_t num_faces = FreeSurfer::get_int24_BE(in);
     if (static_cast<size_t>(num_faces) != mesh.num_polygons())
-      throw Exception(fmt::format("Error opening file \"{}\" as Freesurfer curv file:{}{},{}{})",
-                                  path, //
-                                  " Incorrect number of polygons (",
-                                  str(num_faces), //
-                                  " mesh has ",
-                                  str(mesh.num_polygons()))); //
+      throw Exception("Error opening file \"{}\" as Freesurfer curv file:{}{},{}{})",
+                      path, //
+                      " Incorrect number of polygons (",
+                      num_faces, //
+                      " mesh has ",
+                      mesh.num_polygons()); //
 
     (*this).resize(mesh.num_vertices());
     for (int32_t i = 0; i != num_vertices; ++i)
@@ -139,7 +139,7 @@ void Scalar::load_fs_curv(const std::filesystem::path &path, const Mesh &mesh) {
   }
 
   if (!in.good())
-    throw Exception(fmt::format("Error opening file \"{}\" as Freesurfer curv file: Truncated file", path));
+    throw Exception("Error opening file \"{}\" as Freesurfer curv file: Truncated file", path);
 }
 
 } // namespace MR::Surface

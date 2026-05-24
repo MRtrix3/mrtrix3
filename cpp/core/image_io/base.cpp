@@ -31,7 +31,7 @@ void Base::open(const Header &header, size_t buffer_size) {
     return;
 
   load(header, buffer_size);
-  DEBUG(fmt::format("image \"{}\" loaded", header.name()));
+  DEBUG("image \"{}\" loaded", header.name());
 }
 
 void Base::close(const Header &header) {
@@ -39,7 +39,7 @@ void Base::close(const Header &header) {
     return;
 
   unload(header);
-  DEBUG(fmt::format("image \"{}\" unloaded", header.name()));
+  DEBUG("image \"{}\" unloaded", header.name());
   addresses.clear();
 }
 

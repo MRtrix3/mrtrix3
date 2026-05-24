@@ -43,7 +43,7 @@ void TckFactor::set_reg_lambdas(const double lambda_tikhonov, const double lambd
     A += fixels[i].get_weight() * Math::pow2(fixels[i].get_FOD());
 
   A /= static_cast<double>(num_tracks());
-  INFO(fmt::format("Constant A scaling regularisation terms to match data term is {}", A));
+  INFO("Constant A scaling regularisation terms to match data term is {}", A);
   reg_multiplier_tikhonov = lambda_tikhonov * A;
   reg_multiplier_tv = lambda_tv * A;
 }
@@ -76,15 +76,14 @@ void TckFactor::remove_excluded_fixels(const float min_td_frac) {
       excluded_cf_sum += i->get_cost(fixed_mu);
     }
   }
-  INFO(fmt::format("{} fixels have no attributed streamlines; these account for {}\\% of the initial cost function",
-                   str(zero_TD_count),
-                   str(100.0 * zero_TD_cf_sum / cf)));
+  INFO("{} fixels have no attributed streamlines; these account for {}\\% of the initial cost function",
+       zero_TD_count,
+       100.0 * zero_TD_cf_sum / cf);
   if (excluded_count) {
-    INFO(fmt::format(
-        "{} of {} fixels were tracked, but have been excluded from optimisation due to inadequate reconstruction;",
-        excluded_count,
-        fixels.size()));
-    INFO(fmt::format("these contribute {}\\% of the initial cost function", 100.0 * excluded_cf_sum / cf));
+    INFO("{} of {} fixels were tracked, but have been excluded from optimisation due to inadequate reconstruction;",
+         excluded_count,
+         fixels.size());
+    INFO("these contribute {}\\% of the initial cost function", 100.0 * excluded_cf_sum / cf);
   } else if (min_td_frac) {
     INFO("No fixels were excluded from optimisation due to poor reconstruction");
   }
@@ -126,7 +125,7 @@ void TckFactor::test_streamline_length_scaling() {
 
 void TckFactor::calc_afcsa() {
 
-  CONSOLE(fmt::format("Cost function before linear optimisation is {})", calc_cost_function()));
+  CONSOLE("Cost function before linear optimisation is {})", calc_cost_function());
 
   try {
     coefficients = decltype(coefficients)::Zero(num_tracks());
@@ -178,7 +177,7 @@ void TckFactor::calc_afcsa() {
     Thread::run_queue(writer, SIFT::TrackIndexRange(), Thread::multi(worker));
   }
 
-  CONSOLE(fmt::format("Cost function after linear optimisation is {})", calc_cost_function()));
+  CONSOLE("Cost function after linear optimisation is {})", calc_cost_function());
 }
 
 void TckFactor::estimate_factors() {
@@ -268,7 +267,7 @@ void TckFactor::estimate_factors() {
     // Perform fixel exclusion
     const size_t excluded_count = fixels_to_exclude.count();
     if (excluded_count) {
-      DEBUG(fmt::format("{} fixels excluded this iteration", excluded_count));
+      DEBUG("{} fixels excluded this iteration", excluded_count);
       for (size_t f = 0; f != fixels.size(); ++f) {
         if (fixels_to_exclude[f])
           fixels[f].exclude();
@@ -339,10 +338,10 @@ void TckFactor::report_entropy() const {
   // After SIFT2:
   const default_type H_after = Math::Entropy::shannons(coefficients.exp());
   const size_t equiv_N = std::round(std::pow(2.0, H_after));
-  INFO(fmt::format("Entropy decreased from {} to {}; this is equivalent to {} equally-weighted streamlines",
-                   str(H_before, 6),
-                   str(H_after, 6),
-                   str(equiv_N)));
+  INFO("Entropy decreased from {:.6g} to {:.6g}; this is equivalent to {} equally-weighted streamlines",
+       H_before,
+       H_after,
+       equiv_N);
 }
 
 void TckFactor::output_factors(const std::filesystem::path &path) const {
@@ -352,7 +351,7 @@ void TckFactor::output_factors(const std::filesystem::path &path) const {
   try {
     weights.resize(coefficients.size());
   } catch (...) {
-    WARN(fmt::format("Unable to assign memory for output factor file: \"{}\" not created", path.filename()));
+    WARN("Unable to assign memory for output factor file: \"{}\" not created", path.filename());
     return;
   }
   for (SIFT::track_t i = 0; i != num_tracks(); ++i)

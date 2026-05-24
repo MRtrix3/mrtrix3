@@ -635,7 +635,7 @@ public:
           0.05106681, 0.01365433;
       break;
     default:
-      throw Exception(fmt::format("No aPSF RH data for lmax {}", lmax));
+      throw Exception("No aPSF RH data for lmax {}", lmax);
     }
   }
 };
@@ -673,7 +673,7 @@ public:
           0.04562587, -0.02109019, 0.00635246;
       break;
     default:
-      throw Exception(fmt::format("No aDF RH data for lmax {}", lmax));
+      throw Exception("No aDF RH data for lmax {}", lmax);
     }
   }
 };
@@ -681,11 +681,10 @@ public:
 //! convenience function to check if an input image can contain SH coefficients
 template <class ImageType> void check(const ImageType &H) {
   if (H.ndim() < 4)
-    throw Exception(fmt::format("image \"{}\" does not contain SH coefficients - not 4D", H.name()));
+    throw Exception("image \"{}\" does not contain SH coefficients - not 4D", H.name());
   size_t l = LforN(H.size(3));
   if (l % 2 || NforL(l) != static_cast<size_t>(H.size(3)))
-    throw Exception(
-        fmt::format("image \"{}\" does not contain SH coefficients - unexpected number of coefficients", H.name()));
+    throw Exception("image \"{}\" does not contain SH coefficients - unexpected number of coefficients", H.name());
 }
 /** @} */
 

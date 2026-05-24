@@ -64,9 +64,9 @@ std::vector<std::shared_ptr<Series>> select_cmdline(const Tree &tree) {
         patient.push_back(tree[i]);
     }
     if (patient.empty())
-      throw Exception(fmt::format("no matching patients in DICOM dataset \"{}\"", tree.description));
+      throw Exception("no matching patients in DICOM dataset \"{}\"", tree.description);
     if (patient.size() > 1)
-      throw Exception(fmt::format("too many matching patients in DICOM dataset \"{}\"", tree.description));
+      throw Exception("too many matching patients in DICOM dataset \"{}\"", tree.description);
 
     std::vector<std::shared_ptr<Study>> study;
     for (size_t i = 0; i < patient[0]->size(); i++) {
@@ -74,16 +74,16 @@ std::vector<std::shared_ptr<Series>> select_cmdline(const Tree &tree) {
         study.push_back((*patient[0])[i]);
     }
     if (study.empty())
-      throw Exception(fmt::format("no matching studies in DICOM dataset \"{}\"", tree.description));
+      throw Exception("no matching studies in DICOM dataset \"{}\"", tree.description);
     if (study.size() > 1)
-      throw Exception(fmt::format("too many matching studies in DICOM dataset \"{}\"", tree.description));
+      throw Exception("too many matching studies in DICOM dataset \"{}\"", tree.description);
 
     for (size_t i = 0; i < study[0]->size(); i++) {
       if (series_from_env.empty() || match(series_from_env, (*study[0])[i]->name, true))
         series.push_back((*study[0])[i]);
     }
     if (series.empty())
-      throw Exception(fmt::format("no matching studies in DICOM dataset \"{}\"", tree.description));
+      throw Exception("no matching studies in DICOM dataset \"{}\"", tree.description);
 
     return series;
   }

@@ -171,7 +171,7 @@ public:
         if (translation_extent != 0) {
           gen_random_quaternion(); // overwrites quat
           R0.translation() = rndn() * (quat * extent);
-          DEBUG(fmt::format("translation: {}", R0.translation()));
+          DEBUG("translation: {}", R0.translation());
         }
 
         T = Tc2 * To * R0 * Tc2.inverse();
@@ -184,7 +184,7 @@ public:
       cnt = 0;
       Metric::ThreadKernel<MetricType, ParamType> kernel(metric, parameters, cost, gradient, &cnt);
       ThreadedLoop(parameters.midway_image, 0, 3).run(kernel);
-      DEBUG(fmt::format("rotation search: iteration {} cost: {} cnt: {}", iteration, cost, cnt));
+      DEBUG("rotation search: iteration {} cost: {} cnt: {}", iteration, cost, cnt);
       if (debug)
         std::cout
             << fmt::format(

@@ -189,10 +189,10 @@ void run() {
     const auto position = parse_floats(v[0]);
     const float value = v[1];
     if (position.size() != H.ndim())
-      throw Exception(fmt::format("Image has {} dimensions, but -voxel option position {} provides only {} coordinates",
-                                  str(H.ndim()),
-                                  std::string(v[0]),
-                                  str(position.size())));
+      throw Exception("Image has {} dimensions, but -voxel option position {} provides only {} coordinates",
+                      H.ndim(),
+                      std::string(v[0]),
+                      position.size());
     if (scanner) {
       Eigen::Vector3d p(position[0], position[1], position[2]);
       p = transform.scanner2voxel * p;

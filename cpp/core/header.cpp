@@ -47,28 +47,28 @@ bool Header::do_realign_transform = true;
 
 void Header::check(const Header &H) const {
   if (ndim() != H.ndim())
-    throw Exception(fmt::format("dimension mismatch between image files for \"{}\"", name()));
+    throw Exception("dimension mismatch between image files for \"{}\"", name());
 
   for (size_t n = 0; n < ndim(); ++n) {
     if (size(n) != H.size(n))
-      throw Exception(fmt::format("dimension mismatch between image files for \"{}\"", name()));
+      throw Exception("dimension mismatch between image files for \"{}\"", name());
 
     if (stride(n) != H.stride(n))
-      throw Exception(fmt::format("data strides differs image files for \"{}\"", name()));
+      throw Exception("data strides differs image files for \"{}\"", name());
 
     if (std::isfinite(spacing(n)) && std::isfinite(H.spacing(n)) && spacing(n) != H.spacing(n))
-      WARN(fmt::format("voxel dimensions differ between image files for \"{}\"", name()));
+      WARN("voxel dimensions differ between image files for \"{}\"", name());
   }
 
   if ((transform().matrix() - H.transform().matrix()).cwiseAbs().maxCoeff() > 1.0e-6)
-    WARN(fmt::format("transform matrices differ between image files for \"{}\"", name()));
+    WARN("transform matrices differ between image files for \"{}\"", name());
   ;
 
   if (datatype() != H.datatype())
-    throw Exception(fmt::format("data types differ between image files for \"{}\"", name()));
+    throw Exception("data types differ between image files for \"{}\"", name());
 
   if (intensity_offset() != H.intensity_offset() || intensity_scale() != H.intensity_scale())
-    throw Exception(fmt::format("scaling coefficients differ between image files for \"{}\"", name()));
+    throw Exception("scaling coefficients differ between image files for \"{}\"", name());
 }
 
 void Header::merge_keyval(const KeyValues &in) {
@@ -141,7 +141,7 @@ Header Header::open(const std::filesystem::path &image_path) {
   Header H;
 
   try {
-    INFO(fmt::format("opening image \"{}\"...", image_path));
+    INFO("opening image \"{}\"...", image_path);
 
     File::ParsedName::List list;
     const auto num = list.parse_scan_check(image_path.string());
@@ -156,7 +156,7 @@ Header Header::open(const std::filesystem::path &image_path) {
     }
 
     if (!*format_handler)
-      throw Exception(fmt::format("unknown format for image \"{}\"", H.name()));
+      throw Exception("unknown format for image \"{}\"", H.name());
     assert(H.io);
 
     H.format_ = (*format_handler)->description;
@@ -241,10 +241,10 @@ Header Header::open(const std::filesystem::path &image_path) {
   } catch (CancelException &e) {
     throw;
   } catch (Exception &E) {
-    throw Exception(E, fmt::format("error opening image \"{}\"", image_path));
+    throw Exception(E, "error opening image \"{}\"", image_path);
   }
 
-  INFO(fmt::format("image \"{}\" opened{}", H.name(), short_description(H)));
+  INFO("image \"{}\" opened{}", H.name(), short_description(H));
 
   return H;
 }
@@ -276,7 +276,7 @@ Header Header::create(const std::filesystem::path &image_path, //
   const auto previous_datatype = H.datatype();
 
   try {
-    INFO(fmt::format("creating image \"{}\"...", image_path));
+    INFO("creating image \"{}\"...", image_path);
     if (add_to_command_history) {
       // Make sure the current command is not concatenated more than once
       const auto command_history = split_lines(H.keyval()["command_history"]);
@@ -310,21 +310,20 @@ Header Header::create(const std::filesystem::path &image_path, //
       const std::string basename = image_path.filename().string();
       const size_t extension_index = basename.find_last_of(".");
       if (extension_index == std::string::npos)
-        throw Exception(fmt::format("unknown format for image \"{}\" (no file extension specified)", image_path));
+        throw Exception("unknown format for image \"{}\" (no file extension specified)", image_path);
       else
-        throw Exception(fmt::format("unknown format for image \"{}\" (unsupported file extension: {})",
-                                    image_path,
-                                    basename.substr(extension_index)));
+        throw Exception("unknown format for image \"{}\" (unsupported file extension: {})",
+                        image_path,
+                        basename.substr(extension_index));
     }
 
     const std::vector<ssize_t> strides_aftercheck(Stride::get_symbolic(H));
     if (!check_strides_match(strides, strides_aftercheck)) {
-      INFO(fmt::format(
-          "output strides for image {} modified to {} - requested strides {} are not supported in {} format",
-          image_path,
-          str(strides_aftercheck),
-          str(strides),
-          (*format_handler)->description));
+      INFO("output strides for image {} modified to {} - requested strides {} are not supported in {} format",
+           image_path,
+           strides_aftercheck,
+           strides,
+           (*format_handler)->description);
     }
 
     H.datatype().set_byte_order_native();
@@ -435,7 +434,7 @@ Header Header::create(const std::filesystem::path &image_path, //
 
     H.sanitise();
   } catch (Exception &E) {
-    throw Exception(E, fmt::format("error creating image \"{}\"", image_path));
+    throw Exception(E, "error creating image \"{}\"", image_path);
   }
 
   DataType new_datatype = H.datatype();
@@ -443,13 +442,13 @@ Header Header::create(const std::filesystem::path &image_path, //
     new_datatype.unset_flag(DataType::BigEndian);
     new_datatype.unset_flag(DataType::LittleEndian);
     if (new_datatype != previous_datatype)
-      WARN(fmt::format("{}{}) not supported - substituting with {}",
-                       "requested datatype (",
-                       previous_datatype.specifier(),
-                       H.datatype().specifier()));
+      WARN("{}{}) not supported - substituting with {}",
+           "requested datatype (",
+           previous_datatype.specifier(),
+           H.datatype().specifier());
   }
 
-  INFO(fmt::format("image \"{}\" created{}", H.name(), short_description(H)));
+  INFO("image \"{}\" created{}", H.name(), short_description(H));
 
   return H;
 }
@@ -716,7 +715,7 @@ void Header::realign_transform() {
   axes_[1] = a[1];
   axes_[2] = a[2];
 
-  INFO(fmt::format("Axes and transform of image \"{}\" altered to approximate RAS coordinate system", name()));
+  INFO("Axes and transform of image \"{}\" altered to approximate RAS coordinate system", name());
 
   Metadata::PhaseEncoding::transform_for_image_load(keyval(), *this);
   Metadata::SliceEncoding::transform_for_image_load(keyval(), *this);

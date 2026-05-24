@@ -91,24 +91,23 @@ public:
 
   ~Modifier() {
     if (excess_volume_count > 0) {
-      WARN(fmt::format(
-          "A total of {} voxels had a sum of partial volume fractions across user-provided images greater than one "
-          "(these were auto-scaled to sum to one, but there may have been an error in generation of input images)",
-          excess_volume_count));
+      WARN("A total of {} voxels had a sum of partial volume fractions across user-provided images greater than one "
+           "(these were auto-scaled to sum to one, but there may have been an error in generation of input images)",
+           excess_volume_count);
     }
     if (inadequate_volume_count > 0) {
-      WARN(fmt::format("A total of {} voxels were outside the brain in the input image, the user provided non-zero "
-                       "partial volume fractions in at least one input volume, but the sum of partial volume fractions "
-                       "across user-provided images was less than one (these were auto-scaled to sum to one, but there "
-                       "may have been an error in generation of input images)",
-                       inadequate_volume_count));
+      WARN("A total of {} voxels were outside the brain in the input image, the user provided non-zero "
+           "partial volume fractions in at least one input volume, but the sum of partial volume fractions "
+           "across user-provided images was less than one (these were auto-scaled to sum to one, but there "
+           "may have been an error in generation of input images)",
+           inadequate_volume_count);
     }
   }
 
   void set_none_mask(const std::filesystem::path &path) {
     none = Image<bool>::open(path);
     if (!dimensions_match(v_in, none, 0, 3))
-      throw Exception(fmt::format("Image {} does not match 5TT image dimensions", path));
+      throw Exception("Image {} does not match 5TT image dimensions", path);
   }
 
   bool operator()(const Iterator &pos);
@@ -124,7 +123,7 @@ private:
     assert(index < 5);
     buffers[index] = Image<float>::open(path);
     if (!dimensions_match(v_in, buffers[index], 0, 3))
-      throw Exception(fmt::format("Image {} does not match 5TT image dimensions", path));
+      throw Exception("Image {} does not match 5TT image dimensions", path);
   }
 };
 
@@ -146,9 +145,9 @@ bool Modifier::operator()(const Iterator &pos) {
         assign_pos_of(pos, 0, 3).to(buffers[tissue]);
         const float value = buffers[tissue].value();
         if (value < 0.0)
-          throw Exception(fmt::format("Invalid negative value found in image \"{}\"", buffers[tissue].name()));
+          throw Exception("Invalid negative value found in image \"{}\"", buffers[tissue].name());
         if (value > 1.0)
-          throw Exception(fmt::format("Invalid value greater than zero found in image \"{}\"", buffers[tissue].name()));
+          throw Exception("Invalid value greater than zero found in image \"{}\"", buffers[tissue].name());
         sum_user += value;
       }
     }

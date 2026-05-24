@@ -493,7 +493,7 @@ private:
     assert(writer_count);
     --writer_count;
     if (!writer_count) {
-      DEBUG(fmt::format("no writers left on queue \"{}\"", name));
+      DEBUG("no writers left on queue \"{}\"", name);
       more_data.notify_all();
     }
   }
@@ -506,7 +506,7 @@ private:
     assert(reader_count);
     --reader_count;
     if (!reader_count) {
-      DEBUG(fmt::format("no readers left on queue \"{}\"", name));
+      DEBUG("no readers left on queue \"{}\"", name);
       more_space.notify_all();
     }
   }

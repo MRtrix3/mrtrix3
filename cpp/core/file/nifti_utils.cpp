@@ -82,23 +82,22 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
   if (Raw::fetch_<int32_t>(&NH.sizeof_hdr, is_BE) != sizeof(NH)) {
     is_BE = true;
     if (Raw::fetch_<int32_t>(&NH.sizeof_hdr, is_BE) != sizeof(NH))
-      throw Exception(
-          fmt::format("image \"{}\" is not in {} format (sizeof_hdr != {})", H.name(), version, sizeof(NH)));
+      throw Exception("image \"{}\" is not in {} format (sizeof_hdr != {})", H.name(), version, sizeof(NH));
   }
 
   bool is_nifti = true;
   if (memcmp(NH.magic, Type<NiftiHeader>::magic1.data(), 4) && memcmp(NH.magic, Type<NiftiHeader>::magic2.data(), 4)) {
     if (Type<NiftiHeader>::is_version2) {
-      throw Exception(fmt::format("image \"{}\" is not in {} format (invalid magic signature)", H.name(), version));
+      throw Exception("image \"{}\" is not in {} format (invalid magic signature)", H.name(), version);
     } else {
       is_nifti = false;
-      DEBUG(fmt::format("assuming image \"{}\" is in AnalyseAVW format.", H.name()));
+      DEBUG("assuming image \"{}\" is in AnalyseAVW format.", H.name());
     }
   }
 
   if (Type<NiftiHeader>::is_version2) {
     if (memcmp(NH.magic + 4, Type<NiftiHeader>::signature_extra.data(), 4))
-      WARN(fmt::format("possible file transfer corruption of file \"{}\" (invalid magic signature)", H.name()));
+      WARN("possible file transfer corruption of file \"{}\" (invalid magic signature)", H.name());
   } else {
     std::string db_name(19, '\0');
     strncpy(&db_name[0], Type<NiftiHeader>::db_name(NH), 18); // check_syntax off
@@ -148,7 +147,7 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
     dtype = DataType::CFloat64;
     break;
   default:
-    throw Exception(fmt::format("unknown data type for {} image \"{}\"", version, H.name()));
+    throw Exception("unknown data type for {} image \"{}\"", version, H.name());
   }
 
   if (!(dtype.is(DataType::Bit) || dtype.is(DataType::UInt8) || dtype.is(DataType::Int8))) {
@@ -159,22 +158,20 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
   }
 
   if (Raw::fetch_<int16_t>(&NH.bitpix, is_BE) != static_cast<int16_t>(dtype.bits()))
-    WARN(fmt::format("bitpix field does not match data type in {} image \"{}\" - ignored", version, H.name()));
+    WARN("bitpix field does not match data type in {} image \"{}\" - ignored", version, H.name());
 
   H.datatype() = dtype;
 
   const int ndim = Raw::fetch_<dim_type>(&NH.dim, is_BE);
   if (ndim < 1)
-    throw Exception(fmt::format("too few dimensions specified in NIfTI image \"{}\"", H.name()));
+    throw Exception("too few dimensions specified in NIfTI image \"{}\"", H.name());
   if (ndim > 7)
-    throw Exception(fmt::format("too many dimensions specified in NIfTI image \"{}\"", H.name()));
+    throw Exception("too many dimensions specified in NIfTI image \"{}\"", H.name());
   H.ndim() = ndim;
   for (int i = 0; i != ndim; i++) {
     H.size(i) = Raw::fetch_<dim_type>(&NH.dim[i + 1], is_BE);
     if (H.size(i) < 0) {
-      INFO(fmt::format("dimension along axis {} specified as negative in NIfTI image \"{}\" - taking absolute value",
-                       str(i),
-                       H.name()));
+      INFO("dimension along axis {} specified as negative in NIfTI image \"{}\" - taking absolute value", i, H.name());
       H.size(i) = MR::abs(H.size(i));
     }
     if (!H.size(i))
@@ -187,9 +184,7 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
   for (int i = 0; i < ndim; i++) {
     pixdim[i] = Raw::fetch_<float_type>(&NH.pixdim[i + 1], is_BE);
     if (pixdim[i] < 0.0) {
-      INFO(fmt::format("voxel size along axis {} specified as negative in NIfTI image \"{}\" - taking absolute value",
-                       str(i),
-                       H.name()));
+      INFO("voxel size along axis {} specified as negative in NIfTI image \"{}\" - taking absolute value", i, H.name());
       pixdim[i] = std::fabs(pixdim[i]);
     }
     H.spacing(i) = pixdim[i];
@@ -302,9 +297,9 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
         Header header2(H);
         header2.transform() = M_qform;
         if (!voxel_grids_match_in_scanner_space(H, header2, 0.1))
-          WARN(fmt::format("qform and sform are inconsistent in NIfTI image \"{}\" - using {}",
-                           H.name(),
-                           (use_sform ? "sform" : "qform")));
+          WARN("qform and sform are inconsistent in NIfTI image \"{}\" - using {}",
+               H.name(),
+               (use_sform ? "sform" : "qform"));
       }
 
       if (!sform_code || !use_sform) {
@@ -334,8 +329,7 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
     if (!File::Config::get_bool("AnalyseLeftToRight", false))
       H.stride(0) = -H.stride(0);
     if (!File::NIfTI::right_left_warning_issued) {
-      INFO(fmt::format("assuming Analyse images are encoded {}",
-                       std::string(H.stride(0) > 0 ? "left to right" : "right to left")));
+      INFO("assuming Analyse images are encoded {}", std::string(H.stride(0) > 0 ? "left to right" : "right to left"));
       File::NIfTI::right_left_warning_issued = true;
     }
   }
@@ -351,7 +345,7 @@ template <class NiftiHeader> void store(NiftiHeader &NH, const Header &H, const 
   using float_type = typename Type<NiftiHeader>::float_type;
 
   if (H.ndim() > 7)
-    throw Exception(fmt::format("{} format cannot support more than 7 dimensions for image \"{}\"", version, H.name()));
+    throw Exception("{} format cannot support more than 7 dimensions for image \"{}\"", version, H.name());
 
   bool is_BE = H.datatype().is_big_endian();
 
@@ -436,7 +430,7 @@ template <class NiftiHeader> void store(NiftiHeader &NH, const Header &H, const 
     dt = DT_COMPLEX128;
     break;
   default:
-    throw Exception(fmt::format("unknown data type for {} image \"{}\"", version, H.name()));
+    throw Exception("unknown data type for {} image \"{}\"", version, H.name());
   }
   Raw::store<int16_t>(dt, &NH.datatype, is_BE);
 
@@ -500,7 +494,7 @@ template <class NiftiHeader> void store(NiftiHeader &NH, const Header &H, const 
     Raw::store<float_type>(M(1, 3), &NH.qoffset_y, is_BE);
     Raw::store<float_type>(M(2, 3), &NH.qoffset_z, is_BE);
   } else {
-    WARN(fmt::format("image \"{}\" contains non-rigid transform - qform will not be stored.", H.name()));
+    WARN("image \"{}\" contains non-rigid transform - qform will not be stored.", H.name());
     Raw::store<code_type>(NIFTI_XFORM_UNKNOWN, &NH.qform_code, is_BE);
   }
 
@@ -589,9 +583,9 @@ bool check(int VERSION, Header &H, const size_t num_axes, const std::vector<std:
   const std::string format = VERSION == 1 ? Type<nifti_1_header>::version() : Type<nifti_2_header>::version();
 
   if (num_axes < 3)
-    throw Exception(fmt::format("cannot create {} image with less than 3 dimensions", format));
+    throw Exception("cannot create {} image with less than 3 dimensions", format);
   if (num_axes > 7)
-    throw Exception(fmt::format("cannot create {} image with more than 7 dimensions", format));
+    throw Exception("cannot create {} image with more than 7 dimensions", format);
 
   H.ndim() = num_axes;
 
@@ -687,7 +681,7 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> create(Header &H) {
   const std::string version = Type<nifti_header>::version();
 
   if (H.ndim() > 7)
-    throw Exception(fmt::format("{} format cannot support more than 7 dimensions for image \"{}\"", version, H.name()));
+    throw Exception("{} format cannot support more than 7 dimensions for image \"{}\"", version, H.name());
 
   const bool single_file = Path::has_suffix(H.name(), ".nii");
   const std::string header_path =
@@ -723,7 +717,7 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> create_gz(Header &H) {
   const std::string version = Type<nifti_header>::version();
 
   if (H.ndim() > 7)
-    throw Exception(fmt::format("{} format cannot support more than 7 dimensions for image \"{}\"", version, H.name()));
+    throw Exception("{} format cannot support more than 7 dimensions for image \"{}\"", version, H.name());
 
   std::unique_ptr<ImageIO::GZ> io_handler(new ImageIO::GZ(H, sizeof(nifti_header) + 4));
   nifti_header &NH = *reinterpret_cast<nifti_header *>(io_handler->header());
@@ -764,7 +758,7 @@ int version(Header &H) {
 
   for (size_t axis = 0; axis != H.ndim(); ++axis) {
     if (H.size(axis) > std::numeric_limits<int16_t>::max()) {
-      INFO(fmt::format("Forcing file \"{}\" to use NIfTI version 2 due to image dimensions", H.name()));
+      INFO("Forcing file \"{}\" to use NIfTI version 2 due to image dimensions", H.name());
       return 2;
     }
   }

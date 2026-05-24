@@ -105,7 +105,7 @@ void run() {
       auto vw = Registration::Warp::validate_image(input);
       if (vw.fill_value.has_value()) {
         oob_vector = Eigen::Matrix<value_type, 3, 1>::Constant(*vw.fill_value);
-        CONSOLE(fmt::format("Inferred out-of-bounds fill value {} from input data", *vw.fill_value));
+        CONSOLE("Inferred out-of-bounds fill value {} from input data", *vw.fill_value);
       } else {
         throw Exception("No out-of-bounds marker found in input image data");
       }
@@ -140,6 +140,6 @@ void run() {
   ThreadedLoop("correcting warp", input, 0, 3).run(func, input, output);
 
   if (count == 0)
-    WARN(fmt::format("no out of bounds voxels found with value {}", oob_vector));
-  INFO(fmt::format("converted {} out of bounds values", count));
+    WARN("no out of bounds voxels found with value {}", oob_vector);
+  INFO("converted {} out of bounds values", count);
 }

@@ -36,13 +36,12 @@ inline void check_images_abs(ImageType1 &in1, ImageType2 &in2, const double tol 
   ThreadedLoop(in1).run(
       [&tol](const ImageType1 &a, const ImageType2 &b) {
         if (MR::abs(static_cast<cdouble>(a.value()) - static_cast<cdouble>(b.value())) > tol)
-          throw Exception(
-              fmt::format("images \"{}\" and \"{}\" do not match within absolute precision of {} ({} vs {})",
+          throw Exception("images \"{}\" and \"{}\" do not match within absolute precision of {} ({} vs {})",
                           a.name(),
                           b.name(),
                           tol,
                           a.value(),
-                          b.value()));
+                          b.value());
       },
       in1,
       in2);
@@ -57,13 +56,12 @@ inline void check_images_frac(ImageType1 &in1, ImageType2 &in2, const double tol
       [&tol](const ImageType1 &a, const ImageType2 &b) {
         if (MR::abs((static_cast<cdouble>(a.value()) - static_cast<cdouble>(b.value())) /
                     (0.5 * (static_cast<cdouble>(a.value()) + static_cast<cdouble>(b.value())))) > tol)
-          throw Exception(
-              fmt::format("images \"{}\" and \"{}\" do not match within fractional precision of {} ({} vs {})",
+          throw Exception("images \"{}\" and \"{}\" do not match within fractional precision of {} ({} vs {})",
                           a.name(),
                           b.name(),
                           tol,
                           a.value(),
-                          b.value()));
+                          b.value());
       },
       in1,
       in2);
@@ -78,14 +76,13 @@ inline void check_images_tolimage(ImageType1 &in1, ImageType2 &in2, ImageTypeTol
   ThreadedLoop(in1).run(
       [](const ImageType1 &a, const ImageType2 &b, const ImageTypeTol &t) {
         if (MR::abs(static_cast<cdouble>(a.value()) - static_cast<cdouble>(b.value())) > t.value())
-          throw Exception(
-              fmt::format("images \"{}\" and \"{}\" do not match within precision of \"{}\" ({} vs {}, tolerance {})",
+          throw Exception("images \"{}\" and \"{}\" do not match within precision of \"{}\" ({} vs {}, tolerance {})",
                           a.name(),
                           b.name(),
                           t.name(),
                           a.value(),
                           b.value(),
-                          t.value()));
+                          t.value());
       },
       in1,
       in2,
@@ -104,12 +101,12 @@ inline void check_images_voxel(ImageType1 &in1, ImageType2 &in2, const double to
     const double threshold = tol * 0.5 * (maxa + maxb);
     for (auto l = Loop(3)(a, b); l; ++l) {
       if (MR::abs(static_cast<cdouble>(a.value()) - static_cast<cdouble>(b.value())) > threshold)
-        throw Exception(fmt::format("images \"{}\" and \"{}\" do not match within {} of maximal voxel value ({} vs {})",
-                                    a.name(),
-                                    b.name(),
-                                    tol,
-                                    a.value(),
-                                    b.value()));
+        throw Exception("images \"{}\" and \"{}\" do not match within {} of maximal voxel value ({} vs {})",
+                        a.name(),
+                        b.name(),
+                        tol,
+                        a.value(),
+                        b.value());
     }
   };
 

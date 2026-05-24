@@ -622,7 +622,7 @@ public:
 
   virtual ~ReceiverBase() {
     if (received != expected)
-      WARN(fmt::format("Track file reports {} tracks, but contains {}", expected, received));
+      WARN("Track file reports {} tracks, but contains {}", expected, received);
   }
 
   bool ordered() const { return process_ordered; }

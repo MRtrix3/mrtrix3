@@ -27,7 +27,7 @@ QProgressDialog *progress_dialog = nullptr;
 
 void display(const ::MR::ProgressBar &p) {
   if (!p.data) {
-    INFO(fmt::format("{}: {}", MR::App::NAME, p.text()));
+    INFO("{}: {}", MR::App::NAME, p.text());
     assert(GUI::App::main_window);
     GUI::App::main_window->setUpdatesEnabled(false);
     p.data = new Timer;
@@ -49,7 +49,7 @@ void display(const ::MR::ProgressBar &p) {
 }
 
 void done(const ::MR::ProgressBar &p) {
-  INFO(fmt::format("{}: {} [done]", MR::App::NAME, p.text()));
+  INFO("{}: {} [done]", MR::App::NAME, p.text());
   if (p.data) {
     assert(GUI::App::main_window);
     if (progress_dialog) {

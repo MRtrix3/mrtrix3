@@ -62,7 +62,7 @@ public:
         weight.segment(mc.start, mc.nvols).fill(mc.weight);
     } else
       weight.fill(1.0);
-    DEBUG(fmt::format("Demons4D weights: {}", weight));
+    DEBUG("Demons4D weights: {}", weight);
   }
 
   ~Demons4D() {

@@ -63,7 +63,7 @@ inline size_t index(std::string_view name) {
   auto it = std::find_if(maps.begin(), maps.end(), [&name](const Entry &map) { return map.name == name; });
 
   if (it == maps.end())
-    throw MR::Exception(fmt::format("Colour map \"{}\" not found", name));
+    throw MR::Exception("Colour map \"{}\" not found", name);
   return std::distance(maps.begin(), it);
 }
 

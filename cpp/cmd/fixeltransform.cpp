@@ -90,12 +90,12 @@ void run() {
   std::vector<Image<float>> fixel_data_images;
   for (auto &H : fixel_data_headers) {
     if (H.size(1) > 1)
-      throw Exception(fmt::format("Fixel data file \"{}\" has more than one column;"
-                                  " fixeltransform command not yet compatible with such data",
-                                  H.name())); //
+      throw Exception("Fixel data file \"{}\" has more than one column;"
+                      " fixeltransform command not yet compatible with such data",
+                      H.name()); //
     fixel_data_images.emplace_back(H.get_image<float>());
   }
-  INFO(fmt::format("{} fixel data files to be transformed", fixel_data_headers.size()));
+  INFO("{} fixel data files to be transformed", fixel_data_headers.size());
 
   Header warp_header = Header::open(argument[1]);
   auto warp_format = Registration::Warp::validate_header(warp_header);
@@ -143,7 +143,7 @@ void run() {
     }
   }
   const index_type nfixels_out = rotated_directions.size();
-  INFO(fmt::format("Number of input vs. output fixels: {} -> {}", nfixels_in, nfixels_out));
+  INFO("Number of input vs. output fixels: {} -> {}", nfixels_in, nfixels_out);
 
   // Collect statistics on frequency of input fixels mapping to output fixels
   std::vector<index_type> usage_frequencies;
@@ -154,7 +154,7 @@ void run() {
   }
   INFO("Frequency distribution of utilisation of input fixels:");
   for (index_type count = 0; count != usage_frequencies.size(); ++count) {
-    INFO(fmt::format("  {}: {}", count, usage_frequencies[count]));
+    INFO("  {}: {}", count, usage_frequencies[count]);
   }
 
   std::filesystem::create_directory(output_dir);

@@ -37,7 +37,7 @@ void __ReaderBase__::open(const std::filesystem::path &file, std::string_view ty
           throw 1;
         properties.prior_rois.insert(std::pair<std::string, std::string>(V[0], V[1]));
       } catch (...) {
-        WARN(fmt::format("invalid ROI specification in {} file \"{}\" - ignored", type, file));
+        WARN("invalid ROI specification in {} file \"{}\" - ignored", type, file);
       }
     } else if (key == "comment")
       properties.comments.emplace_back(std::string(kv.value()));
@@ -50,16 +50,16 @@ void __ReaderBase__::open(const std::filesystem::path &file, std::string_view ty
   }
 
   if (dtype == DataType::Undefined)
-    throw Exception(fmt::format("no datatype specified for tracks file \"{}\"", file));
+    throw Exception("no datatype specified for tracks file \"{}\"", file);
   if (dtype != DataType::Float32LE && dtype != DataType::Float32BE && dtype != DataType::Float64LE &&
       dtype != DataType::Float64BE)
-    throw Exception(fmt::format("only supported datatype for tracks file are \"\n                    \"Float32LE, "
-                                "Float32BE, Float64LE & Float64BE (in {} file \"{}\")",
-                                type,
-                                file));
+    throw Exception("only supported datatype for tracks file are \"\n                    \"Float32LE, "
+                    "Float32BE, Float64LE & Float64BE (in {} file \"{}\")",
+                    type,
+                    file);
 
   if (data_file.empty())
-    throw Exception(fmt::format("missing \"files\" specification for {} file \"{}\"", type, file));
+    throw Exception("missing \"files\" specification for {} file \"{}\"", type, file);
 
   std::istringstream files_stream(data_file);
   std::string fname_str;
@@ -69,7 +69,7 @@ void __ReaderBase__::open(const std::filesystem::path &file, std::string_view ty
     try {
       files_stream >> offset;
     } catch (...) {
-      throw Exception(fmt::format("invalid offset specified for file \"{}\" in {} file \"{}\"", fname_str, type, file));
+      throw Exception("invalid offset specified for file \"{}\" in {} file \"{}\"", fname_str, type, file);
     }
   }
 
@@ -81,7 +81,7 @@ void __ReaderBase__::open(const std::filesystem::path &file, std::string_view ty
 
   in.open(fname, std::ios::in | std::ios::binary);
   if (!in)
-    throw Exception(fmt::format("error opening {} data file \"{}\": {}", type, fname, strerror(errno)));
+    throw Exception("error opening {} data file \"{}\": {}", type, fname, strerror(errno));
   in.seekg(offset);
 }
 

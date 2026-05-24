@@ -31,7 +31,7 @@ Eigen::MatrixXd load_spherical(const std::filesystem::path &filename) {
   if (directions.cols() == 2)
     return directions;
   if (directions.cols() != 3)
-    throw Exception(fmt::format("unexpected number of columns for directions file \"{}\"", filename));
+    throw Exception("unexpected number of columns for directions file \"{}\"", filename);
 
   return Math::Sphere::cartesian2spherical(directions);
 }
@@ -42,11 +42,11 @@ Eigen::MatrixXd load_cartesian(const std::filesystem::path &filename) {
     directions = Math::Sphere::spherical2cartesian(directions);
   else {
     if (directions.cols() != 3)
-      throw Exception(fmt::format("unexpected number of columns for directions file \"{}\"", filename));
+      throw Exception("unexpected number of columns for directions file \"{}\"", filename);
     for (ssize_t n = 0; n < directions.rows(); ++n) {
       auto norm = directions.row(n).norm();
       if (std::fabs(default_type(1.0) - norm) > 1.0e-4)
-        WARN(fmt::format("directions file \"{}\" contains non-unit direction vectors", filename));
+        WARN("directions file \"{}\" contains non-unit direction vectors", filename);
       directions.row(n).array() *= norm ? default_type(1.0) / norm : default_type(0.0);
     }
   }

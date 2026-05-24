@@ -49,7 +49,7 @@ std::string vector2axisid(const axis_vector_type &dir) {
     assert(!dir[1]);
     return "k";
   } else {
-    throw Exception(fmt::format("Malformed image axis vector: \"{}\"", dir));
+    throw Exception("Malformed image axis vector: \"{}\"", dir);
   }
 }
 
@@ -67,7 +67,7 @@ axis_vector_type axisid2vector(std::string_view id) {
   else if (id == "k")
     return {0, 0, 1};
   else
-    throw Exception(fmt::format("Malformed image axis identifier: \"{}\"", id));
+    throw Exception("Malformed image axis identifier: \"{}\"", id);
 }
 
 } // namespace MR::Metadata::BIDS

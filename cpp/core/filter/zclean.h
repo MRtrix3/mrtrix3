@@ -70,9 +70,9 @@ public:
     ssize_t cnt_upper = std::floor(fov_max * input.size(0) * input.size(1) * input.size(2));
     float mad, median, previous_mad, previous_median;
     calculate_median_mad<Image<float>, Image<bool>>(input, int_roi, cnt, median, mad);
-    INFO(fmt::format("median: {}", median));
-    INFO(fmt::format("mad: {}", mad));
-    INFO(fmt::format("lower: {} upper: {}", median - zlower * mad, median + zupper * mad));
+    INFO("median: {}", median);
+    INFO("mad: {}", mad);
+    INFO("lower: {} upper: {}", median - zlower * mad, median + zupper * mad);
 
     INFO("eroding intensity mask");
     while (cnt >= cnt_lower) {
@@ -91,13 +91,12 @@ public:
       calculate_median_mad<Image<float>, Image<bool>>(input, int_roi, cnt, median, mad);
       upper = median + zupper * mad;
       lower = median - zlower * mad;
-      INFO(fmt::format("median: {}, changed: {}", median, (median - previous_median) / previous_median));
-      INFO(fmt::format("mad: {}, changed: {}", mad, (mad - previous_mad) / previous_mad));
-      INFO(fmt::format("FOV: {}",
-                       static_cast<default_type>(cnt) /
-                           static_cast<default_type>(input.size(0) * input.size(1) * input.size(2))));
-      INFO(fmt::format("lower: {} upper: {}", lower, upper));
-      INFO(fmt::format("cnt_upper - cnt: {}", cnt_upper - cnt));
+      INFO("median: {}, changed: {}", median, (median - previous_median) / previous_median);
+      INFO("mad: {}, changed: {}", mad, (mad - previous_mad) / previous_mad);
+      INFO("FOV: {}",
+           static_cast<default_type>(cnt) / static_cast<default_type>(input.size(0) * input.size(1) * input.size(2)));
+      INFO("lower: {} upper: {}", lower, upper);
+      INFO("cnt_upper - cnt: {}", cnt_upper - cnt);
       if (lower > 0.0 && ((median + 2.5 * mad) - (previous_median + 2.5 * previous_mad)) < 0.0 && (cnt < cnt_upper))
         break;
     }
@@ -147,11 +146,11 @@ public:
         calculate_median_mad<Image<float>, Image<bool>>(input, int_roi, cnt, median, mad);
         upper = median + zupper * mad;
         lower = median - zlower * mad;
-        INFO(fmt::format("median: {}, changed: {}", median, median - previous_median));
-        INFO(fmt::format("mad: {}, changed: {}", mad, mad - previous_mad));
-        INFO(fmt::format("lower: {} upper: {}", lower, upper));
+        INFO("median: {}, changed: {}", median, median - previous_median);
+        INFO("mad: {}, changed: {}", mad, mad - previous_mad);
+        INFO("lower: {} upper: {}", lower, upper);
         float change = MR::abs(median - previous_median) / previous_mad;
-        INFO(fmt::format("convergence: {}", change));
+        INFO("convergence: {}", change);
         if (change < 1e-2)
           break;
       }
@@ -165,9 +164,9 @@ public:
       lower = 0.0;
     }
 
-    INFO(fmt::format("lower: {}", lower));
-    INFO(fmt::format("upper: {}", upper));
-    INFO(fmt::format("bridge: {}", bridge));
+    INFO("lower: {}", lower);
+    INFO("upper: {}", upper);
+    INFO("bridge: {}", bridge);
 
     mask = Image<bool>::scratch(Header(spatial_prior), "temporary mask");
     if (progress)

@@ -46,8 +46,8 @@ bool DoubleExpSmoothSlopeCheck::go_on(const Eigen::Matrix<default_type, Eigen::D
   // add smoothed elements
   ds.emplace_back(alpha * element + (1.0 - alpha) * (ds.back() + db.back()));
   db.emplace_back(beta * (ds.at(len) - ds.at(len - 1)) + (1.0 - beta) * db.at(len - 1));
-  DEBUG(fmt::format("Smooth check b: {}", db.back()));
-  DEBUG(fmt::format("Smooth check t: {}", thresh));
+  DEBUG("Smooth check b: {}", db.back());
+  DEBUG("Smooth check t: {}", thresh);
   if (check_all(db.back()))
     ++stop_cnt;
   else
@@ -109,7 +109,7 @@ void DoubleExpSmoothSlopeCheck::debug(const Eigen::Matrix<default_type, Eigen::D
 
   std::cout << fmt::format("#b {}", db.back()) << std::endl;
   std::cout << fmt::format("#s {}", ds.back()) << std::endl;
-  DEBUG(fmt::format("bmax : {}", db.back().array().abs().maxCoeff()));
+  DEBUG("bmax : {}", db.back().array().abs().maxCoeff());
 }
 //! @}
 } // namespace Registration::Transform

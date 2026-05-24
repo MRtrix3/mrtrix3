@@ -176,7 +176,7 @@ void compute_average_voxel2scanner(
     const std::vector<Eigen::Transform<default_type, 3, Eigen::Projective>> &transform_header_with,
     const avgspace_voxspacing_t voxel_spacing_calculation) {
   const size_t num_images = input_headers.size();
-  DEBUG(fmt::format("compute_average_voxel2scanner num_images:{}", num_images));
+  DEBUG("compute_average_voxel2scanner num_images:{}", num_images);
   std::vector<Eigen::Transform<default_type, 3, Eigen::Projective>> transformation_matrices;
   Eigen::MatrixXd bounding_box_corners = Eigen::MatrixXd::Zero(8 * num_images, 4);
 
@@ -187,8 +187,8 @@ void compute_average_voxel2scanner(
     if (!transform_header_with.empty()) {
       assert(transform_header_with.size() == input_headers.size());
       if (transform_header_with[iFile].matrix().hasNaN()) {
-        throw Exception(fmt::format(
-            "compute_average_voxel2scanner: transformation to image header of image {} contains NaN", str(iFile)));
+        throw Exception("compute_average_voxel2scanner: transformation to image header of image {} contains NaN",
+                        iFile);
       }
       v2s_trafo = transform_header_with[iFile] * v2s_trafo;
     }
@@ -297,10 +297,10 @@ Header compute_minimum_average_header(
   header_out.ndim() = 3;
   for (size_t i = 0; i < 3; i++)
     header_out.spacing(i) = projected_voxel_sizes(i);
-  DEBUG(fmt::format("compute_minimum_average_header header_out.spacing: {}, {}, {}",
-                    str(header_out.spacing(0)),
-                    str(header_out.spacing(1)),
-                    str(header_out.spacing(2))));
+  DEBUG("compute_minimum_average_header header_out.spacing: {}, {}, {}",
+        header_out.spacing(0),
+        header_out.spacing(1),
+        header_out.spacing(2));
 
   header_out.transform().linear() = average_v2s_trafo.rotation();
   header_out.transform().translation() = average_v2s_trafo.translation();
@@ -308,12 +308,12 @@ Header compute_minimum_average_header(
   for (size_t i = 0; i < 3; i++) {
     header_out.size(i) = std::ceil(average_space_voxel_extent(i));
     if (header_out.size(i) < 1)
-      throw Exception(fmt::format("average space header has zero voxels in dimension {}. Increase resolution?", i));
+      throw Exception("average space header has zero voxels in dimension {}. Increase resolution?", i);
   }
-  DEBUG(fmt::format("compute_minimum_average_header header_out.size: {}, {}, {}",
-                    header_out.size(0),
-                    header_out.size(1),
-                    header_out.size(2)));
+  DEBUG("compute_minimum_average_header header_out.size: {}, {}, {}",
+        header_out.size(0),
+        header_out.size(1),
+        header_out.size(2));
 
   return header_out;
 }

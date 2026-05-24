@@ -90,7 +90,7 @@ void validate(const Mesh &mesh) {
   const size_t np = nt + nq;
 
   if (np == 0)
-    throw Exception(fmt::format("Mesh \"{}\" contains no polygons", mesh.get_name()));
+    throw Exception("Mesh \"{}\" contains no polygons", mesh.get_name());
 
   // ---------------------------------------------------------------
   // Check 1: No disconnected vertices.
@@ -106,11 +106,10 @@ void validate(const Mesh &mesh) {
         referenced[quads[i][j]] = true;
     const size_t unreferenced_count = nv - static_cast<size_t>(referenced.count());
     if (unreferenced_count > 0)
-      throw Exception(fmt::format("Mesh \"{}\": {}{}{}",
-                                  mesh.get_name(), //
-                                  str(unreferenced_count),
-                                  (unreferenced_count > 1 ? " vertices are" : " vertex is"), //
-                                  " not referenced by any polygon (disconnected vertex)"));  //
+      throw Exception("Mesh \"{}\": {}{} not referenced by any polygon (disconnected vertex)", //
+                      mesh.get_name(),                                                         //
+                      unreferenced_count,                                                      //
+                      unreferenced_count > 1 ? " vertices are" : " vertex is");                //
   }
 
   // ---------------------------------------------------------------
@@ -141,11 +140,10 @@ void validate(const Mesh &mesh) {
         ++duplicate_count;
     }
     if (duplicate_count > 0)
-      throw Exception(fmt::format("Mesh \"{}\": {} duplicate {}{}",
-                                  mesh.get_name(),                                        //
-                                  str(duplicate_count),                                   //
-                                  (duplicate_count > 1 ? "vertices" : "vertex"),          //
-                                  " (precisely equivalent position to another vertex)")); //
+      throw Exception("Mesh \"{}\": {} duplicate {} (precisely equivalent position to another vertex)", //
+                      mesh.get_name(),                                                                  //
+                      duplicate_count,                                                                  //
+                      duplicate_count > 1 ? "vertices" : "vertex");                                     //
   }
 
   // ---------------------------------------------------------------
@@ -170,11 +168,11 @@ void validate(const Mesh &mesh) {
     for (size_t i = 0; i != nq; ++i)
       check_poly(quads[i], "quad");
     if (duplicate_count > 0)
-      throw Exception(fmt::format("Mesh \"{}\": {} duplicate polygon{} detected{}",
-                                  mesh.get_name(),                                            //
-                                  str(duplicate_count),                                       //
-                                  (duplicate_count > 1 ? "s" : ""),                           //
-                                  " (polygons referencing the exact same set of vertices)")); //
+      throw Exception("Mesh \"{}\": {} duplicate polygon{} detected"            //
+                      " (polygons referencing the exact same set of vertices)", //
+                      mesh.get_name(),                                          //
+                      duplicate_count,                                          //
+                      duplicate_count > 1 ? "s" : "");                          //
   }
 
   // ---------------------------------------------------------------
@@ -209,21 +207,19 @@ void validate(const Mesh &mesh) {
         ++nonmanifold_count;
       }
     }
-    if (boundary_count > 0 || nonmanifold_count > 0)
-      throw Exception(fmt::format(
-          "{}",
-          fmt::format("{}",
-                      fmt::format("Mesh \"{}\": {}{}",
-                                  mesh.get_name(),                                                                   //
-                                  (boundary_count > 0 ? (fmt::format("{} boundary edge", boundary_count) +           //
-                                                         (boundary_count > 1 ? "s" : "") +                           //
-                                                         " (belong to only one polygon, hence non-closed surface)" + //
-                                                         (nonmanifold_count > 0 ? " and" : ""))                      //
-                                                      : ""),                                                         //
-                                  (nonmanifold_count > 0 ? (fmt::format("{} non-manifold edge", nonmanifold_count) + //
-                                                            (nonmanifold_count > 1 ? "s" : "") +                     //
-                                                            " (belong to more than two polygons)")                   //
-                                                         : "")))));                                                  //
+    if (boundary_count > 0 || nonmanifold_count > 0) {
+      const std::string boundary_msg =
+          boundary_count > 0 ? fmt::format("{} boundary edge{} (belong to only one polygon, hence non-closed surface)",
+                                           boundary_count,
+                                           boundary_count > 1 ? "s" : "")
+                             : "";
+      const std::string nonmanifold_msg = nonmanifold_count > 0
+                                              ? fmt::format("{} non-manifold edge{} (belong to more than two polygons)",
+                                                            nonmanifold_count,
+                                                            nonmanifold_count > 1 ? "s" : "")
+                                              : "";
+      throw Exception("Mesh \"{}\": {}{}", mesh.get_name(), boundary_msg, nonmanifold_msg);
+    }
   }
   // ---------------------------------------------------------------
   // Check 5: Single connected component.
@@ -241,10 +237,9 @@ void validate(const Mesh &mesh) {
     for (size_t i = 0; i != np; ++i)
       unique_roots.insert(uf_find(parent, i));
     if (unique_roots.size() > 1)
-      throw Exception(fmt::format("Mesh \"{}\": {}{} unique connected components",
-                                  mesh.get_name(), //
-                                  "surface is broken into ",
-                                  str(unique_roots.size()))); //
+      throw Exception("Mesh \"{}\": surface is broken into {} unique connected components", //
+                      mesh.get_name(),                                                      //
+                      unique_roots.size());                                                 //
   }
 
   // ---------------------------------------------------------------
@@ -264,9 +259,9 @@ void validate(const Mesh &mesh) {
         ++reversed_normal_count;
     }
     if (reversed_normal_count > 0)
-      throw Exception(fmt::format("Mesh \"{}\": {} connected polygons with inconsistent normals",
-                                  mesh.get_name(),              //
-                                  str(reversed_normal_count))); //
+      throw Exception("Mesh \"{}\": {} connected polygons with inconsistent normals", //
+                      mesh.get_name(),                                                //
+                      reversed_normal_count);                                         //
   }
 }
 
@@ -275,9 +270,9 @@ void debug_validate(const Mesh &mesh) {
     return;
   try {
     validate(mesh);
-    DEBUG(fmt::format("Mesh \"{}\" passed all validation checks", mesh.get_name()));
+    DEBUG("Mesh \"{}\" passed all validation checks", mesh.get_name());
   } catch (const Exception &e) {
-    throw Exception(e, fmt::format("Mesh \"{}\": validation failed", mesh.get_name()));
+    throw Exception(e, "Mesh \"{}\": validation failed", mesh.get_name());
   }
 }
 

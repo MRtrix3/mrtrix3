@@ -181,7 +181,7 @@ void run() {
     count += this_count;
   }
 
-  DEBUG(fmt::format("estimated number of input tracks: {}", count));
+  DEBUG("estimated number of input tracks: {}", count);
 
   // Remove keyval "total_count", as there is ambiguity about what _should_ be
   //   contained in that field upon editing one or more existing tractograms

@@ -208,8 +208,8 @@ std::optional<uint32_t> parse_gpu_adapter_index_env() {
   const auto [parsed_to, parse_error] =
       std::from_chars(gpu_id_string.data(), gpu_id_string.data() + gpu_id_string.size(), gpu_id);
   if (parse_error != std::errc() || parsed_to != gpu_id_string.data() + gpu_id_string.size()) {
-    throw MR::Exception(fmt::format("Invalid MRTRIX_GPU_ID value: '{}'. Expected a non-negative integer adapter index.",
-                                    std::string(gpu_id_string)));
+    throw MR::Exception("Invalid MRTRIX_GPU_ID value: '{}'. Expected a non-negative integer adapter index.",
+                        std::string(gpu_id_string));
   }
 
   return gpu_id;
@@ -235,7 +235,7 @@ wgpu::Adapter request_default_adapter(const wgpu::Instance &instance,
 
   if (wait_status == wgpu::WaitStatus::Success) {
     if (request_adapter_result.status != wgpu::RequestAdapterStatus::Success) {
-      throw MR::Exception(fmt::format("Failed to get adapter: {}", request_adapter_result.message));
+      throw MR::Exception("Failed to get adapter: {}", request_adapter_result.message);
     }
   } else {
     throw MR::Exception("Failed to get adapter: wgpu::Instance::WaitAny failed");
@@ -256,16 +256,16 @@ void log_available_adapters(const std::vector<dawn::native::Adapter> &adapters) 
     wgpu::AdapterInfo adapter_info;
     adapter.GetInfo(&adapter_info);
 
-    INFO(fmt::format("  [{}] {}", std::to_string(adapter_index), to_string(adapter_info.description)));
-    INFO(fmt::format("      details: backend={}, type={}, vendor={}, architecture={}, device={}",
-                     to_string(adapter_info.backendType),
-                     to_string(adapter_info.adapterType),
-                     to_string(adapter_info.vendor),
-                     to_string(adapter_info.architecture),
-                     to_string(adapter_info.device)));
-    INFO(fmt::format("      identifiers: vendor_id={}, device_id={}",
-                     std::to_string(adapter_info.vendorID),
-                     std::to_string(adapter_info.deviceID)));
+    INFO("  [{}] {}", std::to_string(adapter_index), to_string(adapter_info.description));
+    INFO("      details: backend={}, type={}, vendor={}, architecture={}, device={}",
+         to_string(adapter_info.backendType),
+         to_string(adapter_info.adapterType),
+         to_string(adapter_info.vendor),
+         to_string(adapter_info.architecture),
+         to_string(adapter_info.device));
+    INFO("      identifiers: vendor_id={}, device_id={}",
+         std::to_string(adapter_info.vendorID),
+         std::to_string(adapter_info.deviceID));
   }
 }
 
@@ -281,9 +281,9 @@ SelectedAdapter request_adapter_by_index(const wgpu::InstanceDescriptor &instanc
 
   log_available_adapters(adapters);
   if (adapter_index >= adapters.size()) {
-    throw MR::Exception(fmt::format("Invalid MRTRIX_GPU_ID value: {}. Found {} adapter(s).",
-                                    std::to_string(adapter_index),
-                                    std::to_string(adapters.size())));
+    throw MR::Exception("Invalid MRTRIX_GPU_ID value: {}. Found {} adapter(s).",
+                        std::to_string(adapter_index),
+                        std::to_string(adapters.size()));
   }
 
   return {
@@ -327,7 +327,7 @@ ComputeContext::ComputeContext() : m_slang_session_info(std::make_unique<SlangSe
 
     const std::optional<uint32_t> adapter_index_env = parse_gpu_adapter_index_env();
     if (adapter_index_env.has_value()) {
-      INFO(fmt::format("Selecting GPU adapter from MRTRIX_GPU_ID={}", std::to_string(adapter_index_env.value())));
+      INFO("Selecting GPU adapter from MRTRIX_GPU_ID={}", std::to_string(adapter_index_env.value()));
       const wgpu::RequestAdapterOptions adapter_options{
           .powerPreference = wgpu::PowerPreference::Undefined,
           .backendType = GPUBackendType,
@@ -379,14 +379,14 @@ ComputeContext::ComputeContext() : m_slang_session_info(std::make_unique<SlangSe
         wgpu::CallbackMode::AllowSpontaneous,
         [](const wgpu::Device &, wgpu::DeviceLostReason reason, wgpu::StringView message) {
           if (reason != wgpu::DeviceLostReason::Destroyed) {
-            throw MR::Exception(fmt::format("GPU device lost: {}", message.data));
+            throw MR::Exception("GPU device lost: {}", message.data);
           }
         });
     device_descriptor.SetUncapturedErrorCallback(
         [](const wgpu::Device &, wgpu::ErrorType type, wgpu::StringView message) {
           (void)type;
-          FAIL(fmt::format("Uncaptured gpu error: {}", std::string(message)));
-          throw MR::Exception(fmt::format("Uncaptured gpu error: {}", std::string(message)));
+          FAIL("Uncaptured gpu error: {}", std::string(message));
+          throw MR::Exception("Uncaptured gpu error: {}", std::string(message));
         });
 
     m_instance = wgpu_instance;
@@ -399,19 +399,19 @@ ComputeContext::ComputeContext() : m_slang_session_info(std::make_unique<SlangSe
     m_device.GetLimits(&device_limits);
 
     INFO("\nFound GPU:");
-    INFO(fmt::format("  adapter: {}", to_string(adapter_info.description)));
-    INFO(fmt::format("  details: backend={}, type={}, vendor={}, architecture={}, device={}",
-                     to_string(adapter_info.backendType),
-                     to_string(adapter_info.adapterType),
-                     to_string(adapter_info.vendor),
-                     to_string(adapter_info.architecture),
-                     to_string(adapter_info.device)));
-    INFO(fmt::format("  identifiers: vendor_id={}, device_id={}",
-                     std::to_string(adapter_info.vendorID),
-                     std::to_string(adapter_info.deviceID)));
-    INFO(fmt::format("  subgroups: min={}, max={}",
-                     std::to_string(adapter_info.subgroupMinSize),
-                     std::to_string(adapter_info.subgroupMaxSize)));
+    INFO("  adapter: {}", to_string(adapter_info.description));
+    INFO("  details: backend={}, type={}, vendor={}, architecture={}, device={}",
+         to_string(adapter_info.backendType),
+         to_string(adapter_info.adapterType),
+         to_string(adapter_info.vendor),
+         to_string(adapter_info.architecture),
+         to_string(adapter_info.device));
+    INFO("  identifiers: vendor_id={}, device_id={}",
+         std::to_string(adapter_info.vendorID),
+         std::to_string(adapter_info.deviceID));
+    INFO("  subgroups: min={}, max={}",
+         std::to_string(adapter_info.subgroupMinSize),
+         std::to_string(adapter_info.subgroupMaxSize));
     INFO("\n");
 
     m_device_info = DeviceInfo{.subgroup_min_size = adapter_info.subgroupMinSize, .limits = device_limits};
@@ -627,7 +627,7 @@ void ComputeContext::inner_download_buffer(const wgpu::Buffer &buffer, void *dst
 
   auto mapping_callback = [](wgpu::MapAsyncStatus status, wgpu::StringView message) {
     if (status != wgpu::MapAsyncStatus::Success) {
-      throw MR::Exception(fmt::format("Failed to map buffer: {}", message.data ? message.data : ""));
+      throw MR::Exception("Failed to map buffer: {}", message.data ? message.data : "");
     }
   };
   const wgpu::Future mapping_future = staging_buffer.MapAsync(
@@ -659,8 +659,7 @@ void ComputeContext::inner_write_to_buffer(const wgpu::Buffer &buffer,
   if (buffer.GetUsage() & wgpu::BufferUsage::Uniform) {
     const uint64_t align = m_device_info.limits.minUniformBufferOffsetAlignment;
     if (align != 0 && (offset % align) != 0) {
-      throw MR::Exception(
-          fmt::format("Uniform buffer offset must be aligned to minUniformBufferOffsetAlignment: {}", align));
+      throw MR::Exception("Uniform buffer offset must be aligned to minUniformBufferOffsetAlignment: {}", align);
     }
   }
   m_device.GetQueue().WriteBuffer(buffer, offset, data, srcByteSize);
@@ -764,7 +763,7 @@ void ComputeContext::download_texture(const Texture &texture, tcb::span<float> d
 
   auto mapping_callback = [](wgpu::MapAsyncStatus status, wgpu::StringView message) {
     if (status != wgpu::MapAsyncStatus::Success) {
-      throw MR::Exception(fmt::format("Failed to map buffer: {}", message.data ? message.data : ""));
+      throw MR::Exception("Failed to map buffer: {}", message.data ? message.data : "");
     }
   };
 
@@ -824,9 +823,9 @@ Image<float> ComputeContext::download_texture_as_image(const Texture &texture,
   const uint32_t header_dims = static_cast<uint32_t>(header.ndim());
   const bool has_channel_axis = header_dims == (texture_dims + 1U);
   if (texture_dims != header_dims && !has_channel_axis) {
-    throw MR::Exception(fmt::format("Texture dimension ({}) does not match header dimension ({})",
-                                    std::to_string(texture_dims),
-                                    std::to_string(header_dims)));
+    throw MR::Exception("Texture dimension ({}) does not match header dimension ({})",
+                        std::to_string(texture_dims),
+                        std::to_string(header_dims));
   }
 
   const uint32_t texture_width = texture.spec.width;
@@ -913,10 +912,10 @@ Kernel ComputeContext::new_kernel(const KernelSpec &kernel_spec) const {
   for (const auto &[name, resource] : kernel_spec.bindings_map) {
     auto it = reflected_bindings_map.find(name);
     if (it == reflected_bindings_map.end()) {
-      throw MR::Exception(fmt::format("Slang reflection failed to find binding: {} in {} with entry point {}",
-                                      name,
-                                      kernel_spec.compute_shader.name,
-                                      kernel_spec.compute_shader.entryPoint));
+      throw MR::Exception("Slang reflection failed to find binding: {} in {} with entry point {}",
+                          name,
+                          kernel_spec.compute_shader.name,
+                          kernel_spec.compute_shader.entryPoint);
     }
 
     const auto &binding_info = it->second;
@@ -928,7 +927,7 @@ Kernel ComputeContext::new_kernel(const KernelSpec &kernel_spec) const {
         resource,
         // we can't capture structure bindings till C++20
         [&, name = name](const BufferVariant &buffer) {
-          DEBUG(fmt::format("Buffer binding: {}", name));
+          DEBUG("Buffer binding: {}", name);
           auto binding_kind = type_layout->getKind();
           wgpu::BufferBindingType buffer_binding_type = wgpu::BufferBindingType::Undefined;
           if (binding_kind == slang::TypeReflection::Kind::ConstantBuffer) {
@@ -943,12 +942,12 @@ Kernel ComputeContext::new_kernel(const KernelSpec &kernel_spec) const {
               buffer_binding_type = wgpu::BufferBindingType::Storage;
               break;
             default:
-              throw MR::Exception(fmt::format("Unsupported buffer access type for '{}'", name));
+              throw MR::Exception("Unsupported buffer access type for '{}'", name);
             }
           } else {
-            throw MR::Exception(fmt::format("Cannot determine WGPU buffer binding type for '{}'. Its Slang type kind "
-                                            "is not a recognized buffer type.",
-                                            name));
+            throw MR::Exception("Cannot determine WGPU buffer binding type for '{}'. Its Slang type kind "
+                                "is not a recognized buffer type.",
+                                name);
           }
           const wgpu::BindGroupLayoutEntry layout_entry{.binding = binding_index,
                                                         .visibility = wgpu::ShaderStage::Compute,
@@ -980,7 +979,7 @@ Kernel ComputeContext::new_kernel(const KernelSpec &kernel_spec) const {
                                                                     ? wgpu::TextureViewDimension::e3D
                                                                     : wgpu::TextureViewDimension::e2D}};
           } else {
-            throw MR::Exception(fmt::format("Unsupported texture access type for '{}'", name));
+            throw MR::Exception("Unsupported texture access type for '{}'", name);
           }
           const wgpu::BindGroupEntry bind_group_entry{
               .binding = layout_entry.binding,

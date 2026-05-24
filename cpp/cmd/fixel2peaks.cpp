@@ -117,7 +117,7 @@ void run() {
   } else {
     for (auto l = Loop(index_image, 0, 3)(index_image); l; ++l)
       max_fixel_count = std::max(max_fixel_count, static_cast<index_type>(index_image.value()));
-    INFO(fmt::format("Maximum number of fixels in any given voxel: {}", max_fixel_count));
+    INFO("Maximum number of fixels in any given voxel: {}", max_fixel_count);
   }
 
   Header out_header(index_header);

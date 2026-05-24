@@ -83,7 +83,7 @@ public:
         else if (fields[n] == "count")
           std::cout << count << " ";
         else
-          throw Exception(fmt::format("stats type not supported: {}", fields[n]));
+          throw Exception("stats type not supported: {}", fields[n]);
       }
       std::cout << "\n";
 

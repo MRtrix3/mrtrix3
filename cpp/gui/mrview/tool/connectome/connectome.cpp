@@ -2546,7 +2546,7 @@ void Connectome::add_matrices(const std::vector<std::filesystem::path> &list) {
       MR::Connectome::matrix_type matrix = File::Matrix::load_matrix<default_type>(list[i]);
       MR::Connectome::to_upper(matrix);
       if (matrix.rows() != num_nodes())
-        throw Exception(fmt::format("Matrix file \"{}\" is incorrect size", list[i].filename()));
+        throw Exception("Matrix file \"{}\" is incorrect size", list[i].filename());
       FileDataVector temp;
       mat2vec->M2V(matrix, temp);
       temp.calc_stats();
@@ -2919,10 +2919,10 @@ bool Connectome::import_vector_file(FileDataVector &data, std::string_view attri
     const size_t numel = data.size();
     if (data.size() != num_nodes()) {
       data = std::move(prev_data);
-      throw Exception(fmt::format("File {} contains {} elements, but connectome has {} nodes",
-                                  load_paths.single_selection.filename(),
-                                  str(numel),
-                                  str(num_nodes())));
+      throw Exception("File {} contains {} elements, but connectome has {} nodes",
+                      load_paths.single_selection.filename(),
+                      numel,
+                      num_nodes());
     }
     data.set_name(load_paths.single_selection.filename().string());
     return true;
@@ -2944,7 +2944,7 @@ bool Connectome::import_matrix_file(FileDataVector &data, std::string_view attri
     temp = File::Matrix::load_matrix<default_type>(load_paths.single_selection);
     MR::Connectome::to_upper(temp);
     if (temp.rows() != num_nodes())
-      throw Exception(fmt::format("Matrix file \"{}\" is incorrect size", load_paths.single_selection.filename()));
+      throw Exception("Matrix file \"{}\" is incorrect size", load_paths.single_selection.filename());
   } catch (Exception &e) {
     e.display();
     return false;
@@ -2991,9 +2991,9 @@ void Connectome::load_properties() {
       }
     }
     if (duplicate_entry_count > 2) {
-      WARN(fmt::format("Lookup table file contains {} indices with duplicate entries; \"\n           \"file may be "
-                       "intended for use in conversion rather than visualisation",
-                       str(duplicate_entry_count)));
+      WARN("Lookup table file contains {} indices with duplicate entries; \"\n           \"file may be "
+           "intended for use in conversion rather than visualisation",
+           duplicate_entry_count);
     }
     size_t absent_entry_count = 0;
     for (node_t node_index = 1; node_index <= num_nodes(); ++node_index) {
@@ -3005,9 +3005,9 @@ void Connectome::load_properties() {
       }
     }
     if (absent_entry_count) {
-      WARN(fmt::format("{} indices present in parcellation image with no entry in lookup table; \"\n                   "
-                       "                  \"lookup table file and parcellation image may not match",
-                       str(absent_entry_count)));
+      WARN("{} indices present in parcellation image with no entry in lookup table; \"\n                   "
+           "                  \"lookup table file and parcellation image may not match",
+           absent_entry_count);
     }
   }
 
@@ -4021,7 +4021,7 @@ void Connectome::get_meshes() {
   Surface::MeshMulti meshes;
   meshes.load(load_paths.single_selection);
   if (meshes.size() != nodes.size())
-    throw Exception(fmt::format("Mesh file contains {} objects; expected {}", meshes.size(), nodes.size()));
+    throw Exception("Mesh file contains {} objects; expected {}", meshes.size(), nodes.size());
   Surface::debug_validate(meshes);
   have_meshes = false;
   GL::Context::Grab context;
@@ -4044,10 +4044,10 @@ void Connectome::get_exemplars() {
   MR::DWI::Tractography::Reader<float> reader(load_paths.single_selection, properties);
   const size_t num_tracks = to<size_t>(properties["count"]);
   if (num_tracks != num_edges())
-    throw Exception(fmt::format("Track file {} contains {} streamlines; connectome expects {} exemplars",
-                                load_paths.single_selection.filename(),
-                                str(num_tracks),
-                                str(num_edges())));
+    throw Exception("Track file {} contains {} streamlines; connectome expects {} exemplars",
+                    load_paths.single_selection.filename(),
+                    num_tracks,
+                    num_edges());
   ProgressBar progress("Importing connection exemplars", num_edges());
   MR::DWI::Tractography::Streamline<float> tck;
   while (reader(tck)) {

@@ -26,7 +26,7 @@ namespace MR::ImageIO {
 
 void Pipe::load(const Header &header, size_t) {
   assert(files.size() == 1);
-  DEBUG(fmt::format("mapping piped image \"{}\"...", files[0].path));
+  DEBUG("mapping piped image \"{}\"...", files[0].path);
 
   int64_t bytes_per_segment = (header.datatype().bits() * segsize + 7) / 8;
 

@@ -379,7 +379,7 @@ template <typename T> inline T get_option_value(std::string_view name, const T d
       return opt[0][0];
   default:
     assert(false);
-    throw Exception(fmt::format("Internal error parsing command-line option \"-{}\"", name));
+    throw Exception("Internal error parsing command-line option \"-{}\"", name);
   }
 }
 
@@ -400,7 +400,7 @@ template <typename Enum> inline Enum get_option_choice(std::string_view name, co
       return MR::Enum::from_name<Enum>(std::string_view(opt[0][0]));
   default:
     assert(false);
-    throw Exception(fmt::format("Internal error parsing command-line option \"-{}\"", name));
+    throw Exception("Internal error parsing command-line option \"-{}\"", name);
   }
 }
 
@@ -415,7 +415,7 @@ typename std::enable_if<!std::is_enum_v<T>, std::optional<T>>::type get_optional
     return static_cast<T>(opt[0][0]);
   default:
     assert(false);
-    throw Exception(fmt::format("Internal error parsing command-line option \"-{}\"", name));
+    throw Exception("Internal error parsing command-line option \"-{}\"", name);
   }
 }
 template <typename Enum>
@@ -428,7 +428,7 @@ typename std::enable_if<std::is_enum_v<Enum>, std::optional<Enum>>::type get_opt
     return MR::Enum::from_name<Enum>(std::string_view(opt[0][0]));
   default:
     assert(false);
-    throw Exception(fmt::format("Internal error parsing command-line option \"-{}\"", name));
+    throw Exception("Internal error parsing command-line option \"-{}\"", name);
   }
 }
 

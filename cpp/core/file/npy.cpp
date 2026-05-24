@@ -42,7 +42,7 @@ DataType descr2datatype(std::string_view s) {
     try {
       bytes = to<size_t>(s.substr(type_offset + 1));
     } catch (Exception &e) {
-      throw Exception(fmt::format("Invalid byte width specifier \"{}\"", s.substr(type_offset + 1)));
+      throw Exception("Invalid byte width specifier \"{}\"", s.substr(type_offset + 1));
     }
   }
   DataType data_type;
@@ -50,27 +50,27 @@ DataType descr2datatype(std::string_view s) {
   case '?':
     data_type = DataType::Bit;
     if (bytes && bytes > 1)
-      throw Exception(fmt::format("Unexpected byte width ({}) for bitwise data", bytes));
+      throw Exception("Unexpected byte width ({}) for bitwise data", bytes);
     break;
   case 'b':
     data_type = DataType::Int8;
     if (bytes && bytes > 1)
-      throw Exception(fmt::format("Unexpected byte width ({}) for signed byte data", bytes));
+      throw Exception("Unexpected byte width ({}) for signed byte data", bytes);
     break;
   case 'B':
     data_type = DataType::UInt8;
     if (bytes && bytes > 1)
-      throw Exception(fmt::format("Unexpected byte width ({}) for unsigned byte data", bytes));
+      throw Exception("Unexpected byte width ({}) for unsigned byte data", bytes);
     break;
   case 'h':
     data_type = DataType::Int16;
     if (bytes && bytes != 2)
-      throw Exception(fmt::format("Unexpected byte width ({}) for signed short integer data", bytes));
+      throw Exception("Unexpected byte width ({}) for signed short integer data", bytes);
     break;
   case 'H':
     data_type = DataType::UInt16;
     if (bytes && bytes != 2)
-      throw Exception(fmt::format("Unexpected byte width ({}) for unsigned short integer data", bytes));
+      throw Exception("Unexpected byte width ({}) for unsigned short integer data", bytes);
     break;
   case 'i':
     switch (bytes) {
@@ -87,7 +87,7 @@ DataType descr2datatype(std::string_view s) {
       data_type = DataType::Int64;
       break;
     default:
-      throw Exception(fmt::format("Unexpected bit width ({}) for signed integer data", bytes));
+      throw Exception("Unexpected bit width ({}) for signed integer data", bytes);
     }
     break;
   case 'u':
@@ -105,7 +105,7 @@ DataType descr2datatype(std::string_view s) {
       data_type = DataType::UInt64;
       break;
     default:
-      throw Exception(fmt::format("Unexpected bit width ({}) for unsigned integer data", bytes));
+      throw Exception("Unexpected bit width ({}) for unsigned integer data", bytes);
     }
     break;
   case 'e':
@@ -123,15 +123,14 @@ DataType descr2datatype(std::string_view s) {
       data_type = DataType::Float64;
       break;
     default:
-      throw Exception(fmt::format("Unexpected bit width ({}) for floating-point data", bytes));
+      throw Exception("Unexpected bit width ({}) for floating-point data", bytes);
     }
     break;
   default:
-    throw Exception(fmt::format("Unsupported data type indicator '{}'", s[type_offset]));
+    throw Exception("Unsupported data type indicator '{}'", s[type_offset]);
   }
   if (data_type.bytes() != 1 && expect_one_byte_width)
-    throw Exception(
-        fmt::format("Inconsistency in byte width specification (expected one byte; got {})", data_type.bytes()));
+    throw Exception("Inconsistency in byte width specification (expected one byte; got {})", data_type.bytes());
   if (bytes > 1) {
     data_type = data_type() | (is_little_endian ? DataType::LittleEndian : DataType::BigEndian);
     if (issue_endianness_warning) {
@@ -277,19 +276,19 @@ ReadInfo read_header(const std::filesystem::path &path) {
   ReadInfo info;
   std::ifstream in(path, std::ios_base::in | std::ios_base::binary);
   if (!in)
-    throw Exception(fmt::format("Unable to load file \"{}\"", path));
+    throw Exception("Unable to load file \"{}\"", path);
 
   std::array<char, 6> magic;
   in.read(magic.data(), 6);
   if (magic != magic_string)
-    throw Exception(fmt::format("Invalid magic string in NPY binary file \"{}\": {}{}{}{}{}{}",
-                                path, //
-                                magic[0],
-                                magic[1],
-                                magic[2],
-                                magic[3],
-                                magic[4],
-                                magic[5])); //
+    throw Exception("Invalid magic string in NPY binary file \"{}\": {}{}{}{}{}{}",
+                    path, //
+                    magic[0],
+                    magic[1],
+                    magic[2],
+                    magic[3],
+                    magic[4],
+                    magic[5]); //
   uint8_t major_version, minor_version;
   in.read(reinterpret_cast<char *>(&major_version), 1);
   in.read(reinterpret_cast<char *>(&minor_version), 1);
@@ -307,7 +306,7 @@ ReadInfo read_header(const std::filesystem::path &path) {
     header_len = ByteOrder::LE(header_len);
     break;
   default:
-    throw Exception(fmt::format("Incompatible major version ({}) detected in NumPy file \"{}\"", major_version, path));
+    throw Exception("Incompatible major version ({}) detected in NumPy file \"{}\"", major_version, path);
   }
   std::unique_ptr<char[]> header_cstr(new char[header_len + 1]);
   in.read(header_cstr.get(), header_len);
@@ -318,55 +317,55 @@ ReadInfo read_header(const std::filesystem::path &path) {
   try {
     info.keyval = parse_dict(std::string(header_cstr.get()));
   } catch (Exception &e) {
-    throw Exception(e, fmt::format("Error parsing header of NumPy file \"{}\"", path));
+    throw Exception(e, "Error parsing header of NumPy file \"{}\"", path);
   }
   const auto descr_ptr = info.keyval.find("descr");
   if (descr_ptr == info.keyval.end())
-    throw Exception(fmt::format("Error parsing header of NumPy file \"{}\": \"descr\" key absent", path));
+    throw Exception("Error parsing header of NumPy file \"{}\": \"descr\" key absent", path);
   const std::string descr = descr_ptr->second;
   info.keyval.erase(descr_ptr);
   try {
     info.data_type = descr2datatype(descr);
   } catch (Exception &e) {
-    throw Exception(e, fmt::format("Error parsing header of NumPy file \"{}\"", path));
+    throw Exception(e, "Error parsing header of NumPy file \"{}\"", path);
   }
   const auto fortran_order_ptr = info.keyval.find("fortran_order");
   if (fortran_order_ptr == info.keyval.end())
-    throw Exception(fmt::format("Error parsing header of NumPy file \"{}\": \"fortran_order\" key absent", path));
+    throw Exception("Error parsing header of NumPy file \"{}\": \"fortran_order\" key absent", path);
   info.column_major = to<bool>(fortran_order_ptr->second);
   info.keyval.erase(fortran_order_ptr);
   const auto shape_ptr = info.keyval.find("shape");
   if (shape_ptr == info.keyval.end())
-    throw Exception(fmt::format("Error parsing header of NumPy file \"{}\": \"shape\" key absent", path));
+    throw Exception("Error parsing header of NumPy file \"{}\": \"shape\" key absent", path);
   const std::string shape_str = shape_ptr->second;
   info.keyval.erase(shape_ptr);
   // Strip the brackets and split by commas
   auto shape_split_str = split(strip(strip(shape_str, "(", true, false), ")", false, true), ",", true);
   if (shape_split_str.size() > 2)
-    throw Exception(fmt::format("NumPy file \"{}\" contains more than two dimensions: {}", path, shape_str));
+    throw Exception("NumPy file \"{}\" contains more than two dimensions: {}", path, shape_str);
   for (const auto &s : shape_split_str)
     info.shape.push_back(to<ssize_t>(s));
 
   // Make sure that the size of the file matches expectations given the offset to the data, the shape, and the data type
   struct stat sbuf;
   if (stat(std::string(path).c_str(), &sbuf) != 0)
-    throw Exception(fmt::format("Cannot query size of NumPy file \"{}\": {}", path, strerror(errno)));
+    throw Exception("Cannot query size of NumPy file \"{}\": {}", path, strerror(errno));
   const size_t file_size = sbuf.st_size;
   size_t num_elements = info.shape[0];
   if (info.shape.size() == 2)
     num_elements *= info.shape[1];
   const size_t predicted_data_size = num_elements * info.data_type.bytes();
   if (info.data_offset + predicted_data_size != file_size)
-    throw Exception(fmt::format("Size of NumPy file \"{}\" ({}) does not meet expectations given total header size "
-                                "({}) and predicted data size (({}{} = {}) values x {} bytes per value = {} bytes)",
-                                path,
-                                file_size,
-                                info.data_offset,
-                                info.shape[0],
-                                (info.shape.size() == 2 ? fmt::format("x{}", info.shape[1]) : ""),
-                                num_elements,
-                                info.data_type.bytes(),
-                                num_elements * info.data_type.bytes()));
+    throw Exception("Size of NumPy file \"{}\" ({}) does not meet expectations given total header size "
+                    "({}) and predicted data size (({}{} = {}) values x {} bytes per value = {} bytes)",
+                    path,
+                    file_size,
+                    info.data_offset,
+                    info.shape[0],
+                    (info.shape.size() == 2 ? fmt::format("x{}", info.shape[1]) : ""),
+                    num_elements,
+                    info.data_type.bytes(),
+                    num_elements * info.data_type.bytes());
 
   return info;
 }
@@ -381,10 +380,10 @@ prepare_ND_write(const std::filesystem::path &path, const DataType data_type, co
       throw Exception("Complex data types not yet supported with NPY format");
     const size_t max_precision = float_max_save_precision();
     if (max_precision < info.data_type.bits()) {
-      INFO(fmt::format("Precision of floating-point NumPy file \"{}\" decreased from native {} bits to {}",
-                       path,
-                       info.data_type.bits(),
-                       max_precision));
+      INFO("Precision of floating-point NumPy file \"{}\" decreased from native {} bits to {}",
+           path,
+           info.data_type.bits(),
+           max_precision);
       if (max_precision == 16)
         info.data_type = DataType::native(DataType::Float16);
       else
@@ -406,7 +405,7 @@ prepare_ND_write(const std::filesystem::path &path, const DataType data_type, co
   uint32_t padded_header_length = header.size() + space_count + 1;
   File::OFStream out(path, std::ios_base::out | std::ios_base::binary);
   if (!out)
-    throw Exception(fmt::format("Unable to create NumPy file \"{}\"", path));
+    throw Exception("Unable to create NumPy file \"{}\"", path);
   out.write(reinterpret_cast<const char *>(magic_string.data()), 6);
   const unsigned char minor_version = '\x00';
   if (10 + padded_header_length > std::numeric_limits<uint16_t>::max()) {

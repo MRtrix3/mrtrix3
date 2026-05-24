@@ -126,12 +126,11 @@ public:
   const std::vector<size_t> &get_extent() const { return extent; }
 
   template <class OptimiserType> void optimiser_update(OptimiserType &optim, const ssize_t overlap_count) {
-    DEBUG(fmt::format("gradient descent ran using {} cost function evaluations.", optim.function_evaluations()));
+    DEBUG("gradient descent ran using {} cost function evaluations.", optim.function_evaluations());
     if (!optim.state().allFinite()) {
       CONSOLE("last valid transformation:");
       transformation.debug();
-      CONSOLE(
-          fmt::format("last optimisation step ran using {} cost function evaluations.", optim.function_evaluations()));
+      CONSOLE("last optimisation step ran using {} cost function evaluations.", optim.function_evaluations());
       if (overlap_count == 0)
         WARN("linear registration failed because (masked) images do not overlap.");
       throw Exception("Linear registration failed, transformation parameters are NaN.");

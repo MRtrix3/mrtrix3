@@ -50,7 +50,7 @@ void run() {
   MR::Connectome::check(connectome);
   const Operation op = MR::Enum::from_name<Operation>(argument[1]);
 
-  INFO(fmt::format("Applying \\'{}\\' transformation to the input connectome.", MR::Enum::lowercase_name(op)));
+  INFO("Applying \\'{}\\' transformation to the input connectome.", MR::Enum::lowercase_name(op));
 
   switch (op) {
   case Operation::TO_SYMMETRIC:
