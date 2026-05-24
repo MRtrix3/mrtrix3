@@ -18,6 +18,7 @@
 
 #include "eigen_plugins/eigen_plugins.h"
 #include <Eigen/Geometry>
+#include <array>
 #include <cinttypes>
 #include <complex>
 #include <cstddef>

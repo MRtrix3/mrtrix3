@@ -16,6 +16,8 @@
 
 #include "mrview/mode/lightbox.h"
 
+#include "opengl/gl_core_3_3.h"
+
 namespace MR::GUI::MRView::Mode {
 
 bool LightBox::show_grid_lines = true;

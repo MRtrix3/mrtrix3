@@ -18,6 +18,7 @@
 
 #include "cursor.h"
 #include "mrtrix.h"
+#include "opengl/gl_core_3_3.h"
 
 namespace MR::GUI::MRView::Mode {
 

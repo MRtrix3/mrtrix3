@@ -22,6 +22,7 @@
 #include <type_traits>
 #include <vector>
 
+#include "thread.h"
 #include "thread_queue.h"
 
 namespace MR::Thread {

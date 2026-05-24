@@ -19,6 +19,7 @@
 #include "mrview/adjust_button.h"
 #include "mrview/tool/base.h"
 #include "mrview/tool/view.h"
+#include "opengl/gl_core_3_3.h"
 #include "opengl/lighting.h"
 
 namespace MR::GUI::MRView::Mode {

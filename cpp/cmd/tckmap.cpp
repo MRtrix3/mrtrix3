@@ -575,13 +575,13 @@ void run() {
     writer.reset(make_writer(header, output_image_path, stat_vox, writer_dim::GREYSCALE));
     break;
   case writer_dim::DEC:
-    writer.reset(new MapWriter<float>(header, output_image_path, stat_vox, writer_dim::DEC));
+    writer = std::make_unique<MapWriter<float>>(header, output_image_path, stat_vox, writer_dim::DEC);
     break;
   case writer_dim::DIXEL:
     writer.reset(make_writer(header, output_image_path, stat_vox, writer_dim::DIXEL));
     break;
   case writer_dim::TOD:
-    writer.reset(new MapWriter<float>(header, output_image_path, stat_vox, writer_dim::TOD));
+    writer = std::make_unique<MapWriter<float>>(header, output_image_path, stat_vox, writer_dim::TOD);
     break;
   }
 

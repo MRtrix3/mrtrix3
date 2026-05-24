@@ -17,7 +17,7 @@
 #pragma once
 
 #include "eigen_plugins/eigen_plugins.h"
-#include <Eigen/Core>
+#include <Eigen/Dense>
 #include <cmath>
 #include <sys/types.h>
 #include <type_traits>

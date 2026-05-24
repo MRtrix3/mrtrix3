@@ -18,8 +18,6 @@
 
 #include "eigen_plugins/eigen_plugins.h"
 #include <Eigen/Geometry> // Eigen::Translation
-#include <Eigen/SVD>
-#include <unsupported/Eigen/MatrixFunctions> // Eigen::MatrixBase::sqrt()
 
 #include "datatype.h" // debug
 #include "file/config.h"

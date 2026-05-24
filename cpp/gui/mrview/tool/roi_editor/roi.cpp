@@ -14,14 +14,15 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include <string>
-
-#include "mrview/qthelpers.h"
 #include "mrview/tool/roi_editor/roi.h"
+
+#include <string>
 
 #include "cursor.h"
 #include "dialog/file.h"
 #include "header.h"
+#include "mrview/qthelpers.h"
+#include "opengl/gl_core_3_3.h"
 #include "projection.h"
 
 namespace MR::GUI::MRView::Tool {

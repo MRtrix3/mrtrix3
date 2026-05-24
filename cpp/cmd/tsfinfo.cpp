@@ -69,7 +69,7 @@ void run() {
     if (!properties.comments.empty()) {
       std::cout << "    Comments:             ";
       for (std::vector<std::string>::iterator i = properties.comments.begin(); i != properties.comments.end(); ++i)
-        std::cout << (i == properties.comments.begin() ? "" : "                       ") << *i << "\n";
+        std::cout << (i == properties.comments.begin() ? "" : "                          ") << *i << "\n";
     }
 
     for (std::multimap<std::string, std::string>::const_iterator i = properties.prior_rois.begin();

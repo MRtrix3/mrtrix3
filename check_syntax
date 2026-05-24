@@ -80,7 +80,7 @@ run_checks() {
       cat .check_syntax1.tmp | \
       $grep -Po '^#include .*' | \
       tr '\n' ' ' | \
-      $grep -Po '.*#include <Eigen\/[\w\/]+>' | \
+      $grep -Po '.*#include <(unsupported\/)?Eigen\/[\w\/]+>' | \
       $grep -Pv '#include "eigen_plugins\/eigen_plugins\.h"'
     )
   fi

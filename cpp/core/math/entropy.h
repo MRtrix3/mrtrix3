@@ -21,6 +21,7 @@
 #include <cmath>
 #include <type_traits>
 
+#include "exception.h"
 #include "math/math.h"
 #include "types.h"
 

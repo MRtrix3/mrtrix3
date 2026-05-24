@@ -22,7 +22,6 @@
 #include <iostream>
 
 #include "adapter/reslice.h"
-#include "debug.h"
 #include "filter/resize.h"
 #include "filter/reslice.h"
 #include "image.h"

@@ -17,6 +17,7 @@
 #include "mrview/tool/fixel/base_fixel.h"
 
 #include "mrview/tool/fixel/vector_structs.h"
+#include "opengl/gl_core_3_3.h"
 
 namespace MR::GUI::MRView::Tool {
 BaseFixel::BaseFixel(const std::filesystem::path &filepath, Fixel &fixel_tool)

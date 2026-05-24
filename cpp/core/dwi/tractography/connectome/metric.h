@@ -16,10 +16,13 @@
 
 #pragma once
 
+#include <cstddef>
 #include <filesystem>
+#include <limits>
 #include <optional>
 
 #include "algo/loop.h"
+#include "exception.h"
 #include "file/matrix.h"
 #include "image.h"
 #include "interp/linear.h"

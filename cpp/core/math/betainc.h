@@ -17,6 +17,7 @@
 #pragma once
 
 #ifdef MRTRIX_HAVE_EIGEN_UNSUPPORTED_SPECIAL_FUNCTIONS
+#include "eigen_plugins/eigen_plugins.h"
 #include <unsupported/Eigen/SpecialFunctions>
 #endif
 

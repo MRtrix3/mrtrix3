@@ -105,11 +105,16 @@ protected:
 class _single_thread : public _thread_base {
 public:
   _single_thread(const _single_thread &) = delete;
-  _single_thread(_single_thread &&) = default;
+  //_single_thread(_single_thread &&) = default;
+  _single_thread(_single_thread &&) = delete;
+  // Note: the functor is borrowed by reference (only its address is passed to std::async),
+  //   never owned; this is what guarantees single-threaded execution incurs no functor copy.
+  //   An lvalue reference (rather than a forwarding reference) suffices because _run<>::operator()
+  //   always supplies an lvalue, and forwarding would defeat the zero-copy intent.
   template <class Functor,
             typename =
                 typename std::enable_if<!std::is_same<typename std::decay<Functor>::type, _single_thread>::value>::type>
-  _single_thread(Functor &&functor, std::string_view name = "unnamed") : _thread_base(name) {
+  _single_thread(Functor &functor, std::string_view name = "unnamed") : _thread_base(name) {
     DEBUG(std::string("launching thread \"") + name + "\"...");
     using F = typename std::remove_reference<Functor>::type;
     thread = std::async(std::launch::async, &F::execute, &functor);

@@ -18,7 +18,7 @@
 
 #include "eigen_plugins/eigen_plugins.h"
 #include <Eigen/Geometry>
-#include <algorithm>
+#include <vector>
 
 #include "image.h"
 #include "math/SH.h"
