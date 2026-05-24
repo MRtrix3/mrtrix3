@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include "eigen_plugins/eigen_plugins.h"
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
 #include <algorithm>
@@ -23,6 +24,7 @@
 
 #include "command.h"
 #include "image.h"
+#include "image_helpers.h"
 
 using namespace MR;
 using namespace App;

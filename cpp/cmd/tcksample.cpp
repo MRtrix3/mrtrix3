@@ -286,6 +286,9 @@ private:
       }
       return cast_to_nan ? std::numeric_limits<value_type>::quiet_NaN() : value;
     } break;
+    default:
+      assert(false);
+      return std::numeric_limits<value_type>::quiet_NaN();
     }
   }
 };
@@ -380,6 +383,9 @@ protected:
       }
       return cast_to_nan ? std::numeric_limits<value_type>::quiet_NaN() : maxvalue;
     }
+    default:
+      assert(false);
+      return std::numeric_limits<value_type>::quiet_NaN();
     }
   }
 };

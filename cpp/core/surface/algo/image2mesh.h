@@ -16,17 +16,16 @@
 
 #pragma once
 
+#include "eigen_plugins/eigen_plugins.h"
+#include <Eigen/Dense>
 #include <array>
 #include <map>
 
-#include <Eigen/Dense>
-
 #include "image_helpers.h"
-#include "transform.h"
-#include "types.h"
-
 #include "surface/mesh.h"
 #include "surface/types.h"
+#include "transform.h"
+#include "types.h"
 
 namespace MR::Surface::Algo {
 

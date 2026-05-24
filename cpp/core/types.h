@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include "eigen_plugins/eigen_plugins.h"
+#include <Eigen/Geometry>
 #include <cinttypes>
 #include <complex>
 #include <cstddef>
@@ -33,20 +35,6 @@
 #endif
 #else
 #define PRI_SIZET "zu" // check_syntax off
-#endif
-
-namespace MR::Helper {
-template <class ImageType> class ConstRow;
-template <class ImageType> class Row;
-} // namespace MR::Helper
-#define EIGEN_DENSEBASE_PLUGIN "eigen_plugins/dense_base.h"  // check_syntax off
-#define EIGEN_MATRIXBASE_PLUGIN "eigen_plugins/dense_base.h" // check_syntax off
-#define EIGEN_ARRAYBASE_PLUGIN "eigen_plugins/dense_base.h"  // check_syntax off
-#define EIGEN_MATRIX_PLUGIN "eigen_plugins/matrix.h"         // check_syntax off
-#define EIGEN_ARRAY_PLUGIN "eigen_plugins/array.h"           // check_syntax off
-#include <Eigen/Geometry>
-#ifdef EIGEN_HAS_OPENMP
-#undef EIGEN_HAS_OPENMP
 #endif
 
 /*! \defgroup VLA Variable-length array macros

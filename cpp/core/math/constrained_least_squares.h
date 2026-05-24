@@ -16,10 +16,11 @@
 
 #pragma once
 
-#include "math/math.h"
+#include "eigen_plugins/eigen_plugins.h"
+#include <Eigen/Cholesky>
 #include <set>
 
-#include <Eigen/Cholesky>
+#include "math/math.h"
 
 // #define DEBUG_ICLS
 

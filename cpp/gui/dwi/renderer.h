@@ -16,10 +16,10 @@
 
 #pragma once
 
-#include <array>
-
+#include "eigen_plugins/eigen_plugins.h"
 #include <Eigen/Eigenvalues>
 #include <QOpenGLWidget>
+#include <array>
 
 #include "dwi/directions/set.h"
 #include "gui.h"

@@ -73,6 +73,18 @@ run_checks() {
     $grep -Po '\#ifndef\s+__.*__\s+\#define\s+__.*__'
   )
 
+# detect the inclusion of Eigen headers without eigen_plugins/eigen_plugins.h appearing upstream;
+#   this can cause issues with compilation on some systems
+  if [[ ! "$f" -ef "cpp/core/eigen_plugins/eigen_plugins.h" ]]; then
+    res="$res"$(
+      cat .check_syntax1.tmp | \
+      $grep -Po '^#include .*' | \
+      tr '\n' ' ' | \
+      $grep -Po '.*#include <Eigen\/[\w\/]+>' | \
+      $grep -Pv '#include "eigen_plugins\/eigen_plugins\.h"'
+    )
+  fi
+
 #############################################################
 # Process the file to strip macros and single-line comments #
 #############################################################
@@ -256,6 +268,7 @@ else
   echo "" >> $LOG
   echo "Please check the following syntax requirements:
   - Use #pragma once rather than #ifndef __headername__;
+  - #include \"eigen_plugins/eigen_plugins.h\" must appear before inclusion of any Eigen headers;
   - Use nested namespaces rather than sequentially-defined namespaces;
   - Define numerical constants using constexpr rather than preprocessor macros;
   - Use static_cast<>() rather than C-style casts;

@@ -16,10 +16,10 @@
 
 #include "dwi/directions/set.h"
 
+#include "eigen_plugins/eigen_plugins.h"
+#include <Eigen/Dense>
 #include <list>
 #include <set>
-
-#include <Eigen/Dense>
 
 #include "math/rng.h"
 

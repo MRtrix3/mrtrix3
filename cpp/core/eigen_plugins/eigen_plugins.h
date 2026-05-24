@@ -14,14 +14,16 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#pragma once
-
-#include "eigen_plugins/eigen_plugins.h"
-#include <Eigen/Dense>
-
-namespace MR::DWI::Directions {
-
-using index_type = unsigned int;
-using mask_type = Eigen::Array<bool, Eigen::Dynamic, 1>;
-
-} // namespace MR::DWI::Directions
+namespace MR::Helper {
+template <class ImageType> class ConstRow;
+template <class ImageType> class Row;
+} // namespace MR::Helper
+#define EIGEN_DENSEBASE_PLUGIN "eigen_plugins/dense_base.h"  // check_syntax off
+#define EIGEN_MATRIXBASE_PLUGIN "eigen_plugins/dense_base.h" // check_syntax off
+#define EIGEN_ARRAYBASE_PLUGIN "eigen_plugins/dense_base.h"  // check_syntax off
+#define EIGEN_MATRIX_PLUGIN "eigen_plugins/matrix.h"         // check_syntax off
+#define EIGEN_ARRAY_PLUGIN "eigen_plugins/array.h"           // check_syntax off
+#include <Eigen/Geometry>
+#ifdef EIGEN_HAS_OPENMP
+#undef EIGEN_HAS_OPENMP
+#endif

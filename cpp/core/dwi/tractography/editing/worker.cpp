@@ -16,6 +16,7 @@
 
 #include "dwi/tractography/editing/worker.h"
 
+#include "eigen_plugins/eigen_plugins.h"
 #include <Eigen/Dense>
 #include <cstddef>
 
