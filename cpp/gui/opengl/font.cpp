@@ -15,8 +15,10 @@
  */
 
 #include "opengl/font.h"
+
 #include "debug.h"
 #include "math/math.h"
+#include "opengl/gl_core_3_3.h"
 
 namespace MR::GUI::GL {
 

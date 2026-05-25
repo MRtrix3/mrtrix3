@@ -331,8 +331,8 @@ template <class OuterLoopType> struct ThreadedLoopRunOuter {
           assign_pos_of(iterator, loop.axes).to(pos);
           ++loop;
           return true;
-        } else
-          return false;
+        }
+        return false;
       }
     };
 

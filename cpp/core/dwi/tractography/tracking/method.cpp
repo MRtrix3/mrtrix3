@@ -76,8 +76,7 @@ Eigen::Vector3f MethodBase::rotate_direction(const Eigen::Vector3f &reference, c
   if (n == 0.0) {
     if (reference[2] < 0.0)
       return -direction;
-    else
-      return direction;
+    return direction;
   }
 
   Eigen::Vector3f m(reference[0] / n, reference[1] / n, 0.0f);

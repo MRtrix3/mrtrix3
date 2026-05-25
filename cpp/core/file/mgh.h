@@ -440,7 +440,7 @@ template <class Input> void read_other(Header &H, Input &in) {
       if (static_cast<size_t>(structure) < table.size() && !table[structure].empty())
         throw Exception("Error reading colour table from file \"" + H.path().string() + "\":" + //
                         " Duplicate structure index (" + str(structure) + ")");                 //
-      else if (static_cast<size_t>(structure) >= table.size())
+      if (static_cast<size_t>(structure) >= table.size())
         table.resize(structure + 1, std::string());
       const int32_t structurename_length = fetch<int32_t>(in);
       throw Exception("Error reading colour table from file \"" + H.path().string() + "\":" + //

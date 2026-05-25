@@ -44,12 +44,11 @@ QVariant Node_list_model::data(const QModelIndex &index, int role) const {
   }
   if (index.column() == 0 && role == Qt::DisplayRole)
     return qstr(str(index.row()));
-  else if (index.column() == 1 && role == Qt::DecorationRole)
+  if (index.column() == 1 && role == Qt::DecorationRole)
     return connectome.nodes[index.row()].get_pixmap();
-  else if (index.column() == 2 && role == Qt::DisplayRole)
+  if (index.column() == 2 && role == Qt::DisplayRole)
     return qstr(connectome.nodes[index.row()].get_name());
-  else
-    return QVariant();
+  return QVariant();
 }
 
 QVariant Node_list_model::headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const {

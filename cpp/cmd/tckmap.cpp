@@ -251,13 +251,13 @@ DataType determine_datatype(const DataType current_dt,
                             const bool precise) {
   if (current_dt == DataType::Undefined) {
     return default_dt;
-  } else if ((default_dt.is_floating_point() || precise) && !current_dt.is_floating_point()) {
+  }
+  if ((default_dt.is_floating_point() || precise) && !current_dt.is_floating_point()) {
     WARN("Cannot use non-floating-point datatype with " + str(Mapping::contrast_names.at(contrast).description) +
          " contrast" + (precise ? " and precise mapping" : "") + "; defaulting to " + str(default_dt.specifier()));
     return default_dt;
-  } else {
-    return current_dt;
   }
+  return current_dt;
 }
 
 void run() {
@@ -544,9 +544,8 @@ void run() {
       if (contrast == contrast_t::SCALAR_MAP || contrast == contrast_t::SCALAR_MAP_COUNT)
         throw Exception("If using 'scalar_map' or 'scalar_map_count' contrast, must provide the relevant scalar image "
                         "using -image option");
-      else
-        throw Exception(
-            "If using 'fod_amp' contrast, must provide the relevant spherical harmonic image using -image option");
+      throw Exception(
+          "If using 'fod_amp' contrast, must provide the relevant spherical harmonic image using -image option");
     }
     const std::filesystem::path assoc_image(opt[0][0]);
     if (contrast == contrast_t::SCALAR_MAP || contrast == contrast_t::SCALAR_MAP_COUNT) {

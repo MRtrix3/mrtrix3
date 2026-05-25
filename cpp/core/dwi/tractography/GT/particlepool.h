@@ -46,12 +46,11 @@ public:
     if (avail.empty()) {
       pool.emplace_back(pos, dir);
       return &pool.back();
-    } else {
-      Particle *p = avail.top();
-      p->init(pos, dir);
-      avail.pop();
-      return p;
     }
+    Particle *p = avail.top();
+    p->init(pos, dir);
+    avail.pop();
+    return p;
   }
 
   /**

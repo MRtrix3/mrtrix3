@@ -121,14 +121,13 @@ void Connector::depth_first_search(const uint32_t root, Cluster &cluster, std::v
     cluster.size++;
     if (next_neighbour(node, labels)) {
       continue;
-    } else {
-      do {
-        if (stack.top() == root)
-          return;
-        stack.pop();
-        node = stack.top();
-      } while (!next_neighbour(node, labels));
     }
+    do {
+      if (stack.top() == root)
+        return;
+      stack.pop();
+      node = stack.top();
+    } while (!next_neighbour(node, labels));
   }
 }
 

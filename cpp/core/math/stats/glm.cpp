@@ -195,8 +195,7 @@ vector_type abs_effect_size(const measurements_matrix_type &measurements,
                             const Hypothesis &hypothesis) {
   if (hypothesis.is_F())
     return vector_type::Constant(measurements.rows(), std::numeric_limits<vector_type::Scalar>::quiet_NaN());
-  else
-    return hypothesis.matrix() * solve_betas(measurements, design);
+  return hypothesis.matrix() * solve_betas(measurements, design);
 }
 
 matrix_type abs_effect_size(

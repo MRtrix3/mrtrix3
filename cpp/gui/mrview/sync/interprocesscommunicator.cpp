@@ -218,10 +218,8 @@ bool InterprocessCommunicator::SendData(QByteArray dat) {
       }
     }
     return allOk;
-  } else {
-    // We are not the active window
-    return false;
-  }
+  } // We are not the active window
+  return false;
 }
 
 } // namespace MR::GUI::MRView::Sync

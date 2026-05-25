@@ -71,8 +71,7 @@ public:
   operator bool() const {
     if (is_4D)
       return (image.index(3) >= 0 && image.index(3) < image.size(3));
-    else
-      return status;
+    return status;
   }
 
 private:

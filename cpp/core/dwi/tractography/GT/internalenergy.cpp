@@ -92,9 +92,8 @@ ParticleEnd InternalEnergyComputer::pickNeighbour() {
 
   if (neighbour != neighbourhood.end()) {
     return *neighbour;
-  } else {
-    throw Exception("Unable to pick neighbour!");
   }
+  throw Exception("Unable to pick neighbour!");
 }
 
 } // namespace MR::DWI::Tractography::GT

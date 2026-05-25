@@ -33,10 +33,9 @@ namespace MR::File::Matrix {
 inline char delimiter(const std::filesystem::path &path) {
   if (Path::has_suffix(path, ".tsv"))
     return '\t';
-  else if (Path::has_suffix(path, ".csv"))
+  if (Path::has_suffix(path, ".csv"))
     return ',';
-  else
-    return ' ';
+  return ' ';
 }
 
 namespace {
@@ -155,8 +154,7 @@ template <class ValueType = default_type>
 Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> load_matrix(const std::filesystem::path &filename) {
   if (Path::has_suffix(filename, {"npy", ".NPY"}))
     return File::NPY::load_matrix<ValueType>(filename);
-  else
-    return load_matrix_text<ValueType>(filename);
+  return load_matrix_text<ValueType>(filename);
 }
 
 //! read matrix data from \a filename into an Eigen::Tranform class

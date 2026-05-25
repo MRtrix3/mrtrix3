@@ -51,24 +51,21 @@ bool List::get_seed(Eigen::Vector3f &p, Eigen::Vector3f &d) {
 
     p.fill(NaNF);
     return false;
-
-  } else {
-
-    if (seeders.size() == 1)
-      return seeders.front()->get_seed(p, d);
-
-    do {
-      float incrementer = 0.0;
-      const float sample = uniform(rng) * total_volume;
-      for (auto &i : seeders) {
-        incrementer += i->vol();
-        if (incrementer > sample)
-          return i->get_seed(p, d);
-      }
-
-    } while (true);
-    return false;
   }
+  if (seeders.size() == 1)
+    return seeders.front()->get_seed(p, d);
+
+  do {
+    float incrementer = 0.0;
+    const float sample = uniform(rng) * total_volume;
+    for (auto &i : seeders) {
+      incrementer += i->vol();
+      if (incrementer > sample)
+        return i->get_seed(p, d);
+    }
+
+  } while (true);
+  return false;
 }
 
 } // namespace MR::DWI::Tractography::Seeding

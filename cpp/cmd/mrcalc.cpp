@@ -660,15 +660,15 @@ inline void replace(std::string &orig, size_t n, std::string_view value) {
 std::string operation_string(const StackEntry &entry) {
   if (entry.image)
     return std::string(entry.image->name());
-  else if (entry.rng)
+  if (entry.rng)
     return entry.rng_gaussian ? "randn()" : "rand()";
-  else if (entry.evaluator) {
+  if (entry.evaluator) {
     std::string s = entry.evaluator->format;
     for (size_t n = 0; n < entry.evaluator->operands.size(); ++n)
       replace(s, n, operation_string(entry.evaluator->operands[n]));
     return s;
-  } else
-    return str(entry.value);
+  }
+  return str(entry.value);
 }
 
 template <class Operation> class UnaryEvaluator : public Evaluator {
@@ -867,7 +867,8 @@ public:
       storage.back().image.reset(new Image<complex_type>(*entry.image));
       storage.back().chunk.resize(chunk_size);
       return;
-    } else if (entry.rng) {
+    }
+    if (entry.rng) {
       storage.back().chunk.resize(chunk_size);
     } else
       storage.back().chunk.value = entry.value;

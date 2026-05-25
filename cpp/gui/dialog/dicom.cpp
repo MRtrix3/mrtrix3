@@ -101,8 +101,7 @@ public:
     Item *childItem = parentItem->child(row);
     if (childItem != nullptr)
       return createIndex(row, column, childItem);
-    else
-      return QModelIndex();
+    return QModelIndex();
   }
 
   QModelIndex parent(const QModelIndex &index) const {

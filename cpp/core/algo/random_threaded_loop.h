@@ -161,8 +161,8 @@ template <class OuterLoopType> struct RandomThreadedLoopRunOuter {
           assign_pos_of(iterator, loop.axes).to(pos);
           ++loop;
           return true;
-        } else
-          return false;
+        }
+        return false;
       }
     } shared = {iterator, outer_loop(iterator)};
 

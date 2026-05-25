@@ -240,19 +240,20 @@ bool MHSampler::moveOptimal(const Particle *par, Point_t &pos, Point_t &dir) con
     dir = par->getSuccessor()->getPosition() - par->getPredecessor()->getPosition();
     dir.normalize();
     return true;
-  } else if (par->hasPredecessor()) {
+  }
+  if (par->hasPredecessor()) {
     int const a = (par->getPredecessor()->getPredecessor() == par) ? -1 : 1;
     pos = par->getPredecessor()->getEndPoint(2 * a);
     dir = par->getPredecessor()->getDirection() * a;
     return true;
-  } else if (par->hasSuccessor()) {
+  }
+  if (par->hasSuccessor()) {
     int const a = (par->getSuccessor()->getPredecessor() == par) ? -1 : 1;
     pos = par->getSuccessor()->getEndPoint(2 * a);
     dir = par->getSuccessor()->getDirection() * (-a);
     return true;
-  } else {
-    return false;
   }
+  return false;
 }
 
 } // namespace MR::DWI::Tractography::GT

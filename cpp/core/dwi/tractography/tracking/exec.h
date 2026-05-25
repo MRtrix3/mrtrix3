@@ -181,21 +181,18 @@ private:
         tck.set_status(GeneratedTrack::status_t::SEED_REJECTED);
       }
       return true;
-
-    } else {
-
-      for (size_t num_attempts = 0; num_attempts != failed_seed_attempts_to_abort; ++num_attempts) {
-        if (S.properties.seeds.get_seed(method.pos, method.dir)) {
-          if (!(method.check_seed() && method.init())) {
-            track_excluded = true;
-            tck.set_status(GeneratedTrack::status_t::SEED_REJECTED);
-          }
-          return true;
-        }
-      }
-      FAIL("Failed to find suitable seed point after " + str(failed_seed_attempts_to_abort) + " attempts - aborting");
-      return false;
     }
+    for (size_t num_attempts = 0; num_attempts != failed_seed_attempts_to_abort; ++num_attempts) {
+      if (S.properties.seeds.get_seed(method.pos, method.dir)) {
+        if (!(method.check_seed() && method.init())) {
+          track_excluded = true;
+          tck.set_status(GeneratedTrack::status_t::SEED_REJECTED);
+        }
+        return true;
+      }
+    }
+    FAIL("Failed to find suitable seed point after " + str(failed_seed_attempts_to_abort) + " attempts - aborting");
+    return false;
   }
 
   bool gen_track(GeneratedTrack &tck) {

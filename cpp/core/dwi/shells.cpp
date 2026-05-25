@@ -214,17 +214,16 @@ Shells::select_shells(const bool force_singleshell, const bool force_with_bzero,
               }
               throw Exception("Unable to robustly select desired shell b=" + str(*b) +
                               " (detected shells are: " + bvalues + ")");
+            }
+            WARN("User requested shell b=" + str(*b) + "; have selected nearby shell " +
+                 str(shells[best_shell].get_mean()) + " +- " + str(shells[best_shell].get_stdev()));
+            if (!to_retain[best_shell]) {
+              to_retain[best_shell] = true;
+              nonbzero_selected_count++;
             } else {
-              WARN("User requested shell b=" + str(*b) + "; have selected nearby shell " +
-                   str(shells[best_shell].get_mean()) + " +- " + str(shells[best_shell].get_stdev()));
-              if (!to_retain[best_shell]) {
-                to_retain[best_shell] = true;
-                nonbzero_selected_count++;
-              } else {
-                throw Exception("User selected a shell more than once: " + str(shells[best_shell].get_mean()) + " +- " +
-                                str(shells[best_shell].get_stdev()) + " with " + str(shells[best_shell].count()) +
-                                " volumes");
-              }
+              throw Exception("User selected a shell more than once: " + str(shells[best_shell].get_mean()) + " +- " +
+                              str(shells[best_shell].get_stdev()) + " with " + str(shells[best_shell].count()) +
+                              " volumes");
             }
 
           } // End checking if the requested b-value is within 1.0 of a shell mean

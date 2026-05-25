@@ -41,14 +41,17 @@ typedef struct {
 inline const ParCols get_column_indices(const float version) {
   if (version == 3.0f) {
     return {0, 1, 2, 3, 4, 5, -1, -1, -1, -1, -1, 7, 8, 9, -1, -1, -1, -1, -1};
-  } else if (version == 4.0f) {
+  }
+  if (version == 4.0f) {
     return {0, 1, 2, 3, 4, 5, -1, -1, -1, -1, -1, 11, 12, 13, 7, -1, -1, -1, -1};
-  } else if (version == 4.1f) {
+  }
+  if (version == 4.1f) {
     return {0, 1, 2, 3, 4, 5, 16, 19, 33, 45, -1, 11, 12, 13, 7, -1, 28, 22, 23};
-  } else if (version == 4.2f) {
+  }
+  if (version == 4.2f) {
     return {0, 1, 2, 3, 4, 5, 16, 19, 33, 45, 48, 11, 12, 13, 7, 9, 28, 22, 23};
-  } else
-    throw Exception("unsupported version of PAR/REC: V" + str(version));
+  }
+  throw Exception("unsupported version of PAR/REC: V" + str(version));
 }
 
 typedef struct {

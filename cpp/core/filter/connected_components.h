@@ -158,14 +158,13 @@ void Connector::depth_first_search(const uint32_t root,
     cluster.size++;
     if (next_neighbour(node, labels, data, threshold)) {
       continue;
-    } else {
-      do {
-        if (stack.top() == root)
-          return;
-        stack.pop();
-        node = stack.top();
-      } while (!next_neighbour(node, labels, data, threshold));
     }
+    do {
+      if (stack.top() == root)
+        return;
+      stack.pop();
+      node = stack.top();
+    } while (!next_neighbour(node, labels, data, threshold));
   }
 }
 

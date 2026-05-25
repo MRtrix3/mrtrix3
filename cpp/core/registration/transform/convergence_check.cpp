@@ -29,16 +29,15 @@ bool DoubleExpSmoothSlopeCheck::go_on(const Eigen::Matrix<default_type, Eigen::D
     if (x0.size() == 0) {
       x0 = element;
       return true;
-    } else {
-      ds.emplace_back(element);
-      db.emplace_back(element - x0);
-      if (check_all(db.back()))
-        ++stop_cnt;
-      else
-        stop_cnt = 0;
-      ++len;
-      return true;
     }
+    ds.emplace_back(element);
+    db.emplace_back(element - x0);
+    if (check_all(db.back()))
+      ++stop_cnt;
+    else
+      stop_cnt = 0;
+    ++len;
+    return true;
   }
   // add smoothed elements
   ds.emplace_back(alpha * element + (1.0 - alpha) * (ds.back() + db.back()));

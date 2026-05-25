@@ -312,9 +312,8 @@ Header Header::create(const std::filesystem::path &image_name, //
       const size_t extension_index = basename.find_last_of('.');
       if (extension_index == std::string::npos)
         throw Exception("unknown format for image \"" + image_name.string() + "\" (no file extension specified)");
-      else
-        throw Exception("unknown format for image \"" + image_name.string() +
-                        "\" (unsupported file extension: " + basename.substr(extension_index) + ")");
+      throw Exception("unknown format for image \"" + image_name.string() +
+                      "\" (unsupported file extension: " + basename.substr(extension_index) + ")");
     }
 
     const std::vector<ssize_t> strides_aftercheck(Stride::get_symbolic(H));

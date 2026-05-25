@@ -204,7 +204,8 @@ void run() {
                          ? (str(major_error_count) + " input image" + (major_error_count > 1 ? "s do" : " does"))
                          : "Input image does") +
                     " not conform to 5TT format");
-  } else if (minor_error_count > size_t(0)) {
+  }
+  if (minor_error_count > size_t(0)) {
     WARN((argument.size() > 1
               ? (str(minor_error_count) + " input image" + (minor_error_count > 1 ? "s do" : " does")) //
               : "Input image does") +                                                                  //

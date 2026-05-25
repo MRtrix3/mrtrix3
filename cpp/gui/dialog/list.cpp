@@ -49,8 +49,7 @@ QModelIndex TreeModel::index(int row, int column, const QModelIndex &parent) con
   TreeItem *childItem = parentItem->child(row);
   if (childItem != nullptr)
     return createIndex(row, column, childItem);
-  else
-    return {};
+  return {};
 }
 
 QModelIndex TreeModel::parent(const QModelIndex &index) const {
@@ -77,8 +76,7 @@ int TreeModel::rowCount(const QModelIndex &parent) const {
 int TreeModel::columnCount(const QModelIndex &parent) const {
   if (parent.isValid())
     return static_cast<TreeItem *>(parent.internalPointer())->columnCount();
-  else
-    return rootItem->columnCount();
+  return rootItem->columnCount();
 }
 
 } // namespace MR::GUI::Dialog

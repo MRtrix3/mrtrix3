@@ -105,8 +105,7 @@ public:
 
     if (do_reorientation and (fod_lmax.size() != scale_factor.size()))
       throw Exception("the lmax needs to be defined for each multi-resolution level (scale factor)");
-    else
-      fod_lmax.resize(scale_factor.size(), 0);
+    fod_lmax.resize(scale_factor.size(), 0);
 
     for (size_t level = 0; level < scale_factor.size(); level++) {
       if (is_initialised) {

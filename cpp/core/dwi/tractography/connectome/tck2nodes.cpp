@@ -29,8 +29,7 @@ Tck2nodes_end_voxels::select_node(const Tractography::Streamline<> &tck, Image<n
     v.index(axis) = std::round(v_float[axis]);
   if (is_out_of_bounds(v))
     return 0;
-  else
-    return v.value();
+  return v.value();
 }
 
 void Tck2nodes_radial::initialise_search() {

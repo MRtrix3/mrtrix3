@@ -42,7 +42,8 @@ index_type Set::get_min_linkage(const index_type one, const index_type two) cons
       for (const auto &j : adj_dirs[i]) {
         if (j == two) {
           return min_linkage;
-        } else if (!processed[j]) {
+        }
+        if (!processed[j]) {
           processed[j] = true;
           next_to_expand.push_back(j);
         }

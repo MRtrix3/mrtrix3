@@ -120,10 +120,9 @@ public:
     const auto index = magic_enum::enum_index(value);
     if (index.has_value()) {
       return counters[index.value()].value.load(std::memory_order_seq_cst);
-    } else {
-      assert(false);
-      return size_t(-1);
     }
+    assert(false);
+    return size_t(-1);
   }
 
   size_t total() const noexcept {

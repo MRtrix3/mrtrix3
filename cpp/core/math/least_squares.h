@@ -33,8 +33,7 @@ template <class MatrixType>
 inline Eigen::Matrix<typename MatrixType::Scalar, Eigen::Dynamic, Eigen::Dynamic> pinv(const MatrixType &M) {
   if (M.rows() >= M.cols())
     return (M.transpose() * M).ldlt().solve(M.transpose());
-  else
-    return (M * M.transpose()).ldlt().solve(M).transpose();
+  return (M * M.transpose()).ldlt().solve(M).transpose();
 }
 
 template <class MatrixType> inline size_t rank(const MatrixType &M) {

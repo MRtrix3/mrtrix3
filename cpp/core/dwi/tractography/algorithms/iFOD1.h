@@ -170,7 +170,7 @@ public:
       float const val = FOD(rotate_direction(dir, calibrate_list[i]));
       if (std::isnan(val))
         return term_t::EXIT_IMAGE;
-      else if (val > max_val)
+      if (val > max_val)
         max_val = val;
     }
 

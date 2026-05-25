@@ -90,10 +90,9 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
       memcmp(&NH.magic[0], Type<NiftiHeader>::magic2.data(), 4) != 0) {
     if (Type<NiftiHeader>::is_version2) {
       throw Exception("image \"" + H.path().string() + "\" is not in " + version + " format (invalid magic signature)");
-    } else {
-      is_nifti = false;
-      DEBUG("assuming image \"" + H.path().string() + "\" is in AnalyseAVW format.");
     }
+    is_nifti = false;
+    DEBUG("assuming image \"" + H.path().string() + "\" is in AnalyseAVW format.");
   }
 
   if (Type<NiftiHeader>::is_version2) {

@@ -224,7 +224,7 @@ public:
       float const val = path_prob(calib_positions, calib_tangents);
       if (std::isnan(val))
         return term_t::EXIT_IMAGE;
-      else if (val > max_val)
+      if (val > max_val)
         max_val = val;
     }
 

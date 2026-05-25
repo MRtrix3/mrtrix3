@@ -246,8 +246,7 @@ std::vector<uint32_t> ParsedName::List::count() const {
   if (list[0]->ndim() == 0u) {
     if (size() == 1)
       return (std::vector<uint32_t>());
-    else
-      throw Exception("image number mismatch");
+    throw Exception("image number mismatch");
   }
 
   std::vector<uint32_t> dim(list[0]->ndim(), 0);

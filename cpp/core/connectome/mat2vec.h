@@ -36,8 +36,7 @@ public:
     const uint64_t j64(j);
     if (i < j)
       return j64 + (static_cast<uint64_t>(dim) * i64) - ((i64 * (i64 + 1)) / 2);
-    else
-      return i64 + (static_cast<uint64_t>(dim) * j64) - ((j64 * (j64 + 1)) / 2);
+    return i64 + (static_cast<uint64_t>(dim) * j64) - ((j64 * (j64 + 1)) / 2);
   }
 
   std::pair<node_t, node_t> operator()(const uint64_t i) const {

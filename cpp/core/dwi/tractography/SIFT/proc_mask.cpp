@@ -172,9 +172,8 @@ ACT::Tissues ResampleFunctor::ACT2pve(const Iterator &pos) {
                         wm_count / static_cast<float>(total_count),
                         csf_count / static_cast<float>(total_count),
                         path_count / static_cast<float>(total_count));
-  } else {
-    return ACT::Tissues();
   }
+  return ACT::Tissues();
 }
 
 } // namespace MR::DWI::Tractography::SIFT

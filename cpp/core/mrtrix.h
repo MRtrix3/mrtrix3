@@ -151,15 +151,16 @@ template <class T> inline T to(std::string_view string) {
       const std::string lstring = lowercase(stripped);
       if (lstring == "nan")
         return std::numeric_limits<T>::quiet_NaN();
-      else if (lstring == "-nan")
+      if (lstring == "-nan")
         return -std::numeric_limits<T>::quiet_NaN();
-      else if (lstring == "inf")
+      if (lstring == "inf")
         return std::numeric_limits<T>::infinity();
-      else if (lstring == "-inf")
+      if (lstring == "-inf")
         return -std::numeric_limits<T>::infinity();
     }
     throw Exception("error converting string \"" + string + "\" to type \"" + typeid(T).name() + "\"");
-  } else if (!stream.eof()) {
+  }
+  if (!stream.eof()) {
     throw Exception("incomplete use of string \"" + string + "\" in conversion to type \"" + typeid(T).name() + "\"");
   }
   return value;

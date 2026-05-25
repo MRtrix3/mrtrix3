@@ -96,8 +96,7 @@ public:
     if (snap_to_image()) {
       if (image() != nullptr)
         return Eigen::Quaternionf(image()->header().transform().rotation().cast<float>());
-      else
-        return Eigen::Quaternionf::Identity();
+      return Eigen::Quaternionf::Identity();
     }
     return window().orientation();
   }

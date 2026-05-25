@@ -92,21 +92,20 @@ FORCE_INLINE index_type get_number_of_fixels(const Header &index_header) {
   check_index_image(index_header);
   if (index_header.keyval().count(n_fixels_key) != 0u) {
     return std::stoul(index_header.keyval().at(n_fixels_key));
-  } else {
-    auto index_image = Image<index_type>::open(index_header.path());
-    index_image.index(3) = 1;
-    index_type num_fixels = 0;
-    index_type max_offset = 0;
-    for (auto i = MR::Loop(index_image, 0, 3)(index_image); i; ++i) {
-      if (index_image.value() > max_offset) {
-        max_offset = index_image.value();
-        index_image.index(3) = 0;
-        num_fixels = index_image.value();
-        index_image.index(3) = 1;
-      }
-    }
-    return (max_offset + num_fixels);
   }
+  auto index_image = Image<index_type>::open(index_header.path());
+  index_image.index(3) = 1;
+  index_type num_fixels = 0;
+  index_type max_offset = 0;
+  for (auto i = MR::Loop(index_image, 0, 3)(index_image); i; ++i) {
+    if (index_image.value() > max_offset) {
+      max_offset = index_image.value();
+      index_image.index(3) = 0;
+      num_fixels = index_image.value();
+      index_image.index(3) = 1;
+    }
+  }
+  return (max_offset + num_fixels);
 }
 
 template <class DataHeaderType>

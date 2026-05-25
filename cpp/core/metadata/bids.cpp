@@ -26,46 +26,49 @@ std::string vector2axisid(const axis_vector_type &dir) {
     assert(!dir[1]);
     assert(!dir[2]);
     return "i-";
-  } else if (dir[0] == 1) {
+  }
+  if (dir[0] == 1) {
     assert(!dir[1]);
     assert(!dir[2]);
     return "i";
-  } else if (dir[1] == -1) {
+  }
+  if (dir[1] == -1) {
     assert(!dir[0]);
     assert(!dir[2]);
     return "j-";
-  } else if (dir[1] == 1) {
+  }
+  if (dir[1] == 1) {
     assert(!dir[0]);
     assert(!dir[2]);
     return "j";
-  } else if (dir[2] == -1) {
+  }
+  if (dir[2] == -1) {
     assert(!dir[0]);
     assert(!dir[1]);
     return "k-";
-  } else if (dir[2] == 1) {
+  }
+  if (dir[2] == 1) {
     assert(!dir[0]);
     assert(!dir[1]);
     return "k";
-  } else {
-    throw Exception("Malformed image axis vector: \"" + str(dir.transpose()) + "\"");
   }
+  throw Exception("Malformed image axis vector: \"" + str(dir.transpose()) + "\"");
 }
 
 axis_vector_type axisid2vector(std::string_view id) {
   if (id == "i-")
     return {-1, 0, 0};
-  else if (id == "i")
+  if (id == "i")
     return {1, 0, 0};
-  else if (id == "j-")
+  if (id == "j-")
     return {0, -1, 0};
-  else if (id == "j")
+  if (id == "j")
     return {0, 1, 0};
-  else if (id == "k-")
+  if (id == "k-")
     return {0, 0, -1};
-  else if (id == "k")
+  if (id == "k")
     return {0, 0, 1};
-  else
-    throw Exception("Malformed image axis identifier: \"" + id + "\"");
+  throw Exception("Malformed image axis identifier: \"" + id + "\"");
 }
 
 } // namespace MR::Metadata::BIDS

@@ -342,8 +342,7 @@ int ROI::normal2axis(const Eigen::Vector3f &normal, const ROI_Item &roi) const {
       std::fabs((roi.image2scanner().rotation().cast<float>() * Eigen::Vector3f{0.0f, 0.0f, 1.0f}).dot(normal));
   if (x_dot_n > y_dot_n)
     return x_dot_n > z_dot_n ? 0 : 2;
-  else
-    return y_dot_n > z_dot_n ? 1 : 2;
+  return y_dot_n > z_dot_n ? 1 : 2;
 }
 
 void ROI::save_slot() {
@@ -374,7 +373,7 @@ void ROI::close_slot() {
         QMessageBox::Save);
     if (ret == QMessageBox::Cancel)
       return;
-    else if (ret == QMessageBox::Save)
+    if (ret == QMessageBox::Save)
       save_slot();
   }
 
@@ -543,8 +542,8 @@ void ROI::update_selection() {
   if (window().image() == nullptr) {
     setEnabled(false);
     return;
-  } else
-    setEnabled(true);
+  }
+  setEnabled(true);
 
   QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
   bool const enable = (window().image() != nullptr) && !indices.empty();

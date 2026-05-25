@@ -1051,9 +1051,9 @@ bool Tractography::process_commandline_option_tsf_option(const MR::App::ParsedOp
         // prereq options supplied/executed
         scalar_file_options->set_tractogram(tractogram);
         return true;
-      } else {
-        std::cerr << "Could not apply TSF argument - tractography.load_tsf not supplied.\n";
       }
+      std::cerr << "Could not apply TSF argument - tractography.load_tsf not supplied.\n";
+
     } else {
       std::cerr << "Could not apply TSF argument - insufficient number of arguments provided.\n";
     }

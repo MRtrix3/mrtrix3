@@ -64,14 +64,11 @@ ssize_t TWIImagePluginBase::get_end_index(const Streamline<> &tck, const bool en
         }
       }
       return -1;
-
-    } else {
-
-      while (!interp.scanner(tck[index])) {
-        index += step;
-        if (index == -1 || index == static_cast<ssize_t>(tck.size()))
-          return -1;
-      }
+    }
+    while (!interp.scanner(tck[index])) {
+      index += step;
+      if (index == -1 || index == static_cast<ssize_t>(tck.size()))
+        return -1;
     }
 
   } else {

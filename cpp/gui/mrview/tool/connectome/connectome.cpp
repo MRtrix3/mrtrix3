@@ -3878,7 +3878,8 @@ Eigen::Array3f Connectome::node_colour_given_selection(const node_t index) {
   if (selected_nodes[index]) {
     const float fade = node_selection_settings.get_node_selected_colour_fade();
     return ((fade * node_selection_settings.get_node_selected_colour()) + ((1.0f - fade) * nodes[index].get_colour()));
-  } else if (selected_node_count != 0u) {
+  }
+  if (selected_node_count != 0u) {
     // Need to find out whether or not there is a visible connection to a selected node
     // TODO Needs to be a more efficient way of calculating this...
     for (auto e = edges.begin(); e != edges.end(); ++e) {
@@ -3891,14 +3892,14 @@ Eigen::Array3f Connectome::node_colour_given_selection(const node_t index) {
     }
     const float fade = node_selection_settings.get_node_other_colour_fade();
     return ((fade * node_selection_settings.get_node_other_colour()) + ((1.0f - fade) * nodes[index].get_colour()));
-  } else {
-    return nodes[index].get_colour();
   }
+  return nodes[index].get_colour();
 }
 float Connectome::node_size_given_selection(const node_t index) {
   if (selected_nodes[index]) {
     return (node_selection_settings.get_node_selected_size_multiplier() * nodes[index].get_size());
-  } else if (selected_node_count != 0u) {
+  }
+  if (selected_node_count != 0u) {
     for (auto e = edges.begin(); e != edges.end(); ++e) {
       if (e->is_visible() && (e->get_node_index(0) == index || e->get_node_index(1) == index) &&
           (selected_nodes[e->get_node_index(0)] || selected_nodes[e->get_node_index(1)])) {
@@ -3906,14 +3907,14 @@ float Connectome::node_size_given_selection(const node_t index) {
       }
     }
     return (node_selection_settings.get_node_other_size_multiplier() * nodes[index].get_size());
-  } else {
-    return nodes[index].get_size();
   }
+  return nodes[index].get_size();
 }
 float Connectome::node_alpha_given_selection(const node_t index) {
   if (selected_nodes[index]) {
     return (node_selection_settings.get_node_selected_alpha_multiplier() * nodes[index].get_alpha());
-  } else if (selected_node_count != 0u) {
+  }
+  if (selected_node_count != 0u) {
     for (auto e = edges.begin(); e != edges.end(); ++e) {
       if (e->is_visible() && (e->get_node_index(0) == index || e->get_node_index(1) == index) &&
           (selected_nodes[e->get_node_index(0)] || selected_nodes[e->get_node_index(1)])) {
@@ -3921,9 +3922,8 @@ float Connectome::node_alpha_given_selection(const node_t index) {
       }
     }
     return (node_selection_settings.get_node_other_alpha_multiplier() * nodes[index].get_alpha());
-  } else {
-    return nodes[index].get_alpha();
   }
+  return nodes[index].get_alpha();
 }
 bool Connectome::edge_visibility_given_selection(const Edge &edge) {
   if (selected_node_count == 0u)
@@ -4112,13 +4112,12 @@ float Connectome::calc_line_width(const float desired_width, const bool is_smoot
     if ((line_thickness_range_smooth[1] != 0) && std::round(desired_width) > line_thickness_range_smooth[1])
       return line_thickness_range_smooth[1];
     return desired_width;
-  } else {
-    if ((line_thickness_range_aliased[0] != 0) && std::round(desired_width) < line_thickness_range_aliased[0])
-      return line_thickness_range_aliased[0];
-    if ((line_thickness_range_aliased[1] != 0) && std::round(desired_width) > line_thickness_range_aliased[1])
-      return line_thickness_range_aliased[1];
-    return desired_width;
   }
+  if ((line_thickness_range_aliased[0] != 0) && std::round(desired_width) < line_thickness_range_aliased[0])
+    return line_thickness_range_aliased[0];
+  if ((line_thickness_range_aliased[1] != 0) && std::round(desired_width) > line_thickness_range_aliased[1])
+    return line_thickness_range_aliased[1];
+  return desired_width;
 }
 
 } // namespace MR::GUI::MRView::Tool

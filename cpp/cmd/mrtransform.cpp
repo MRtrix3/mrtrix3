@@ -449,7 +449,7 @@ void run() {
   if (is_possible_fod_image && opt.empty())
     throw Exception("-reorient_fod yes/no needs to be explicitly specified for images with " +
                     str(input_header.size(3)) + " volumes");
-  else if (!is_possible_fod_image && fod_reorientation)
+  if (!is_possible_fod_image && fod_reorientation)
     throw Exception("Apodised PSF reorientation requires SH series images");
 
   Eigen::MatrixXd directions_cartesian;

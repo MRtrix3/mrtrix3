@@ -40,8 +40,7 @@ bool Selector::operator()(const NodePair &nodes) const {
   }
   if (exact_match)
     return (found_first && found_second);
-  else
-    return (found_first || found_second);
+  return (found_first || found_second);
 }
 
 bool Selector::operator()(const std::vector<node_t> &nodes) const {

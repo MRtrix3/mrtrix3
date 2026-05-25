@@ -60,9 +60,8 @@ public:
         if (fields.size() == 1 && fields.front() == "count") {
           std::cout << "0\n";
           return;
-        } else {
-          throw Exception("Cannot output statistic of interest; no values read (empty mask?)");
         }
+        throw Exception("Cannot output statistic of interest; no values read (empty mask?)");
       }
       for (size_t n = 0; n < fields.size(); ++n) {
         if (fields[n] == "mean")

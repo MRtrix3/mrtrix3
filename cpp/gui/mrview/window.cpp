@@ -147,8 +147,7 @@ QSize Window::GLArea::sizeHint() const {
     init_window_size = parse_ints<uint32_t>(init_size_string);
   if (init_window_size.size() == 2)
     return QSize(init_window_size[0], init_window_size[1]);
-  else
-    return QSize(512, 512);
+  return QSize(512, 512);
 }
 void Window::GLArea::dragEnterEvent(QDragEnterEvent *event) { event->acceptProposedAction(); }
 void Window::GLArea::dragMoveEvent(QDragMoveEvent *event) { event->acceptProposedAction(); }
@@ -1225,9 +1224,9 @@ int Window::get_mouse_mode() {
   if (mouse_action == NoAction && modifiers_ != Qt::NoModifier) {
     if (modifiers_ == FocusModifier && ((mode->features & Mode::FocusContrast) != 0))
       return 1;
-    else if (modifiers_ == MoveModifier && ((mode->features & Mode::MoveTarget) != 0))
+    if (modifiers_ == MoveModifier && ((mode->features & Mode::MoveTarget) != 0))
       return 2;
-    else if (modifiers_ == RotateModifier && ((mode->features & Mode::TiltRotate) != 0))
+    if (modifiers_ == RotateModifier && ((mode->features & Mode::TiltRotate) != 0))
       return 3;
   }
 

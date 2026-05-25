@@ -130,8 +130,7 @@ inline bool _match(std::string_view first, std::string_view second) {
 bool match(std::string_view pattern, std::string_view text, bool ignore_case) {
   if (ignore_case)
     return _match(lowercase(pattern), lowercase(text));
-  else
-    return _match(pattern, text);
+  return _match(pattern, text);
 }
 
 std::istream &getline(std::istream &stream, std::string &string) {
@@ -149,8 +148,7 @@ std::string &add_line(std::string &original, std::string_view new_line) {
 std::string shorten(std::string_view text, size_t longest, size_t prefix) {
   if (text.size() > longest)
     return (std::string(text.substr(0, prefix)) + "..." + text.substr(text.size() - longest + prefix + 3));
-  else
-    return std::string(text);
+  return std::string(text);
 }
 
 std::string lowercase(std::string_view string) {

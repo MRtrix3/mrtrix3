@@ -241,16 +241,15 @@ public:
           points[i] = ByteOrder::BE(points[i]);
 
         continue;
-      } else {
-        if (sscanf(line.c_str(), "LINES %d %d", &number_of_lines, &number_of_line_indices) == 2) {
-          if (line.find("vtktypeint64") != std::string::npos) {
-            loadLines<int64_t>(lines, input, number_of_line_indices);
-          } else {
-            loadLines<int32_t>(lines, input, number_of_line_indices);
-          }
-          // We can safely break
-          break;
+      }
+      if (sscanf(line.c_str(), "LINES %d %d", &number_of_lines, &number_of_line_indices) == 2) {
+        if (line.find("vtktypeint64") != std::string::npos) {
+          loadLines<int64_t>(lines, input, number_of_line_indices);
+        } else {
+          loadLines<int32_t>(lines, input, number_of_line_indices);
         }
+        // We can safely break
+        break;
       }
     }
     input.close();
