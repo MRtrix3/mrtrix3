@@ -126,7 +126,7 @@ void run() {
     opt = get_options("output_at_counts");
     if (!opt.empty()) {
       std::vector<uint32_t> counts = parse_ints<uint32_t>(opt[0][0]);
-      sifter.set_regular_outputs(counts, debug_path.value());
+      sifter.set_regular_outputs(counts, debug_path);
     }
 
     sifter.perform_filtering();

@@ -72,10 +72,10 @@ void read_annot(const std::filesystem::path &path, label_vector_type &labels, Co
 
     const int32_t version = -num_entries;
     if (version != 2)
-      throw Exception("Error reading FreeSurfer annotation file \"" + path.filename().string() +
-                      "\": Unsupported file version (" + str(version) + ")");
+      throw Exception("Error reading FreeSurfer annotation file \"" + path.filename().string() + "\": " + //
+                      " unsupported file version (" + str(version) + ")");                                //
 
-    num_entries = get_BE<int32_t>(in);
+    get_BE<int32_t>(in);
     const int32_t orig_lut_name_length = get_BE<int32_t>(in);
     std::unique_ptr<char[]> orig_lut_name(new char[orig_lut_name_length]);
     in.read(orig_lut_name.get(), orig_lut_name_length);

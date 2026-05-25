@@ -16,6 +16,8 @@
 
 #include "mrview/mode/lightbox.h"
 
+#include "opengl/gl_core_3_3.h"
+
 namespace MR::GUI::MRView::Mode {
 
 bool LightBox::show_grid_lines = true;
@@ -32,7 +34,7 @@ LightBox::LightBox() : frames_dirty(true) {
   Image *img = image();
 
   if (!img || prev_image_path != img->header().path())
-    image_changed_event();
+    LightBox::image_changed_event();
   else {
     set_volume_increment(volume_increment);
     set_slice_increment(slice_focus_increment);
@@ -193,7 +195,7 @@ void LightBox::draw_grid() {
     frame_VAO.bind();
 
     gl::EnableVertexAttribArray(0);
-    gl::VertexAttribPointer(0, 2, gl::FLOAT, gl::FALSE_, 0, (void *)0);
+    gl::VertexAttribPointer(0, 2, gl::FLOAT, gl::FALSE_, 0, nullptr);
 
     GLfloat data[num_points];
 

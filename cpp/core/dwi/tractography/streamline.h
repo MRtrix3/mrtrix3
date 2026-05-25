@@ -17,6 +17,7 @@
 #pragma once
 
 #include <limits>
+#include <utility>
 
 #include "types.h"
 
@@ -81,15 +82,17 @@ public:
   Streamline &operator=(const Streamline &that) = default;
 
   Streamline(Streamline &&that)
-      : std::vector<point_type>(std::move(that)), DataIndex(std::move(that)), weight(that.weight) {
-    that.weight = 1.0f;
+      : std::vector<point_type>(std::move(static_cast<std::vector<point_type> &&>(that))),
+        DataIndex(std::move(static_cast<DataIndex &&>(that))),
+        weight(that.weight) {
+    that.weight = std::numeric_limits<float>::quiet_NaN();
   }
 
   Streamline(const std::vector<point_type> &tck) : std::vector<point_type>(tck), DataIndex(), weight(1.0) {}
 
   Streamline &operator=(Streamline &&that) {
-    std::vector<point_type>::operator=(std::move(that));
-    DataIndex::operator=(std::move(that));
+    std::vector<point_type>::operator=(std::move(static_cast<std::vector<point_type> &&>(that)));
+    DataIndex::operator=(std::move(static_cast<DataIndex &&>(that)));
     weight = that.weight;
     that.weight = 0.0f;
     return *this;

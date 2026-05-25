@@ -22,6 +22,7 @@
 #include "algo/loop.h"
 #include "algo/threaded_copy.h"
 #include "command.h"
+#include "debug.h"
 #include "dwi/directions/predefined.h"
 #include "dwi/directions/validate.h"
 #include "dwi/gradient.h"
@@ -510,6 +511,7 @@ void run() {
     try {
       grad = DWI::get_DW_scheme(input_header);
     } catch (Exception &) {
+      DEBUG("No valid diffusion gradient table found");
     }
     if (grad.rows()) {
       try {

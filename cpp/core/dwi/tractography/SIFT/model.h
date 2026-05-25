@@ -245,10 +245,11 @@ void Model<Fixel>::output_non_contributing_streamlines(const std::filesystem::pa
   ProgressBar progress("Writing non-contributing streamlines output file", contributions.size());
   track_t tck_counter = 0;
   while (reader(tck) && tck_counter < contributions.size()) {
-    if (contributions[tck_counter] && !contributions[tck_counter++]->get_total_contribution())
+    if (contributions[tck_counter] && !contributions[tck_counter]->get_total_contribution())
       writer(tck);
     else
       writer.skip();
+    ++tck_counter;
     ++progress;
   }
   reader.close();

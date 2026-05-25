@@ -85,28 +85,16 @@ public:
   public:
     Shared(const std::filesystem::path &diff_path, DWI::Tractography::Properties &property_set)
         : iFOD2::Shared(diff_path, property_set) {
-      set_cutoff(0.0f);
+      set_cutoff(0.0F);
       if (is_act())
         act().set_default_sgm_trunc(ACT::sgm_trunc_t::RANDOM);
       properties["method"] = "Nulldist2";
     }
   };
 
-  NullDist2(const Shared &shared)
-      : iFOD2(shared),
-        S(shared),
-        source(S.source, S.source_mask),
-        positions(S.num_samples),
-        tangents(S.num_samples),
-        sample_idx(S.num_samples) {}
+  NullDist2(const Shared &shared) : iFOD2(shared), S(shared) {}
 
-  NullDist2(const NullDist2 &that)
-      : iFOD2(that),
-        S(that.S),
-        source(S.source, S.source_mask),
-        positions(S.num_samples),
-        tangents(S.num_samples),
-        sample_idx(S.num_samples) {}
+  NullDist2(const NullDist2 &that) : iFOD2(that), S(that.S) {}
 
   bool init() override {
     if (!get_data(source))
@@ -135,24 +123,16 @@ public:
     return std::nullopt;
   }
 
-  void reverse_track() override {
-    sample_idx = S.num_samples;
-    MethodBase::reverse_track();
-  }
+  void reverse_track() override { iFOD2::reverse_track(); }
 
   void truncate_track(GeneratedTrack &tck, const size_t length_to_revert_from, const size_t revert_step) override {
     iFOD2::truncate_track(tck, length_to_revert_from, revert_step);
-    sample_idx = S.num_samples;
   }
 
   float get_metric(const Eigen::Vector3f &, const Eigen::Vector3f &) override { return uniform(rng); }
 
 protected:
   const Shared &S;
-  Interpolator<Image<float>>::type source;
-
-  std::vector<Eigen::Vector3f> positions, tangents;
-  size_t sample_idx;
 };
 
 } // namespace MR::DWI::Tractography::Algorithms

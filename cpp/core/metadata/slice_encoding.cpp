@@ -31,15 +31,14 @@ void transform_for_image_load(KeyValues &keyval, const Header &header) {
   auto slice_timing_it = keyval.find("SliceTiming");
   if (!(slice_encoding_it == keyval.end() && slice_timing_it == keyval.end())) {
     switch (header.realignment().state()) {
-    case MR::Header::Realignment::State::Unknown:
-      assert(false);
-      return;
     case MR::Header::Realignment::State::Disabled:
-      return;
+      [[fallthrough]];
     case MR::Header::Realignment::State::Identity:
       return;
     case MR::Header::Realignment::State::Applied:
       break;
+    case MR::Header::Realignment::State::Unknown:
+      [[fallthrough]];
     default:
       assert(false);
       return;

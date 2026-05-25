@@ -15,11 +15,18 @@
  */
 
 #include "dwi/tractography/file_base.h"
+
+#include <cerrno>
+#include <filesystem>
+#include <string_view>
+
+#include "dwi/tractography/properties.h"
+#include "exception.h"
 #include "file/path.h"
 
 namespace MR::DWI::Tractography {
 
-void __ReaderBase__::open(const std::filesystem::path &file, std::string_view type, Properties &properties) {
+void ReaderBase::open(const std::filesystem::path &file, std::string_view type, Properties &properties) {
   properties.clear();
   dtype = DataType::Undefined;
 
@@ -80,7 +87,7 @@ void __ReaderBase__::open(const std::filesystem::path &file, std::string_view ty
 
   in.open(fname, std::ios::in | std::ios::binary);
   if (!in)
-    throw Exception("error opening " + type + " data file \"" + fname.string() + "\": " + strerror(errno));
+    throw Exception("error opening " + type + " data file \"" + fname.string() + "\": " + MR::C_strerror(errno));
   in.seekg(offset);
 }
 

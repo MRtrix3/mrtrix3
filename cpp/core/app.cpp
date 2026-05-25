@@ -15,6 +15,7 @@
  */
 
 #include <algorithm>
+#include <cerrno>
 #include <clocale>
 #include <cstddef>
 #include <fcntl.h>
@@ -23,7 +24,10 @@
 #include <unistd.h>
 
 #include "app.h"
+#include "cmdline_option.h"
 #include "debug.h"
+#include "env.h"
+#include "exception.h"
 #include "executable_version.h"
 #include "file/config.h"
 #include "file/path.h"
@@ -58,7 +62,7 @@ const std::string core_reference =
     "NeuroImage, 2019, 202, 116137";                                                                          //
 
 // clang-format off
-OptionGroup __standard_options = OptionGroup("Standard options")
+const OptionGroup _standard_options = OptionGroup("Standard options")
   + Option("info", "display information messages.")
   + Option("quiet",
            "do not display information messages or progress status; "
@@ -110,7 +114,7 @@ std::vector<ParsedOption> option;
 // ENVVAR Set the default terminal verbosity. Default terminal verbosity
 // ENVVAR is 1. This has the same effect as the ``-quiet`` (0),
 // ENVVAR ``-info`` (2) or ``-debug`` (3) comand-line options.
-int log_level = getenv("MRTRIX_QUIET") ? 0 : (getenv("MRTRIX_LOGLEVEL") ? to<int>(getenv("MRTRIX_LOGLEVEL")) : 1);
+int log_level = MR::get_env("MRTRIX_QUIET").has_value() ? 0 : MR::get_env("MRTRIX_LOGLEVEL", 1);
 
 int exit_error_code = 0;
 bool fail_on_warn = false;
@@ -497,7 +501,7 @@ std::string Option::usage() const {
 std::string get_help_string(const bool format) {
   return help_head(format) + help_synopsis(format) + usage_syntax(format) + ARGUMENTS.syntax(format) +
          DESCRIPTION.syntax(format) + EXAMPLES.syntax(format) + OPTIONS.syntax(format) +
-         __standard_options.header(format) + __standard_options.contents(format) + __standard_options.footer(format) +
+         _standard_options.header(format) + _standard_options.contents(format) + MR::App::OptionGroup::footer(format) +
          help_tail(format);
 }
 
@@ -514,9 +518,9 @@ void print_help() {
     std::string help_string = get_help_string(1);
     FILE *file = popen(help_display_command.c_str(), "w");
     if (!file) {
-      INFO("error launching help display command \"" + help_display_command + "\": " + strerror(errno));
+      INFO("error launching help display command \"" + help_display_command + "\": " + MR::C_strerror(errno));
     } else if (fwrite(help_string.c_str(), 1, help_string.size(), file) != help_string.size()) {
-      INFO("error sending help page to display command \"" + help_display_command + "\": " + strerror(errno));
+      INFO("error sending help page to display command \"" + help_display_command + "\": " + MR::C_strerror(errno));
     }
 
     if (pclose(file) == 0)
@@ -565,25 +569,25 @@ std::string full_usage() {
     for (size_t j = 0; j < OPTIONS[i].size(); ++j)
       s += OPTIONS[i][j].usage();
 
-  for (size_t i = 0; i < __standard_options.size(); ++i)
-    s += __standard_options[i].usage();
+  for (size_t i = 0; i < _standard_options.size(); ++i)
+    s += _standard_options[i].usage();
 
   return s;
 }
 
 std::string markdown_usage() {
   /*
-  help_head (format)
-  + help_synopsis (format)
-  + usage_syntax (format)
-  + ARGUMENTS.syntax (format)
-  + DESCRIPTION.syntax (format)
-  + EXAMPLES.syntax (format)
-  + OPTIONS.syntax (format)
-  + __standard_options.header (format)
-  + __standard_options.contents (format)
-  + __standard_options.footer (format)
-  + help_tail (format);
+    help_head (format)
+    + help_synopsis (format)
+    + usage_syntax (format)
+    + ARGUMENTS.syntax (format)
+    + DESCRIPTION.syntax (format)
+    + EXAMPLES.syntax (format)
+    + OPTIONS.syntax (format)
+    + _standard_options.header (format)
+    + _standard_options.contents (format)
+    + _standard_options.footer (format)
+    + help_tail (format);
   */
   std::string s = std::string("## Synopsis\n\n") + SYNOPSIS + "\n\n";
 
@@ -661,8 +665,8 @@ std::string markdown_usage() {
   }
 
   s += "#### Standard options\n\n";
-  for (size_t i = 0; i < __standard_options.size(); ++i)
-    s += format_option(__standard_options[i]);
+  for (size_t i = 0; i < _standard_options.size(); ++i)
+    s += format_option(_standard_options[i]);
 
   s += std::string("## References\n\n");
   for (size_t i = 0; i < REFERENCES.size(); ++i)
@@ -677,17 +681,17 @@ std::string markdown_usage() {
 
 std::string restructured_text_usage() {
   /*
-  help_head (format)
-  + help_synopsis (format)
-  + usage_syntax (format)
-  + ARGUMENTS.syntax (format)
-  + DESCRIPTION.syntax (format)
-  + EXAMPLES.syntax (format)
-  + OPTIONS.syntax (format)
-  + __standard_options.header (format)
-  + __standard_options.contents (format)
-  + __standard_options.footer (format)
-  + help_tail (format);
+    help_head (format)
+    + help_synopsis (format)
+    + usage_syntax (format)
+    + ARGUMENTS.syntax (format)
+    + DESCRIPTION.syntax (format)
+    + EXAMPLES.syntax (format)
+    + OPTIONS.syntax (format)
+    + _standard_options.header (format)
+    + _standard_options.contents (format)
+    + _standard_options.footer (format)
+    + help_tail (format);
   */
 
   std::string s = std::string("Synopsis\n--------\n\n") + SYNOPSIS + "\n\n";
@@ -791,8 +795,8 @@ std::string restructured_text_usage() {
   }
 
   s += "Standard options\n^^^^^^^^^^^^^^^^\n\n";
-  for (size_t i = 0; i < __standard_options.size(); ++i)
-    s += format_option(__standard_options[i]);
+  for (size_t i = 0; i < _standard_options.size(); ++i)
+    s += format_option(_standard_options[i]);
 
   s += std::string("References\n^^^^^^^^^^\n\n");
   for (size_t i = 0; i < REFERENCES.size(); ++i) {
@@ -821,7 +825,7 @@ const Option *match_option(std::string_view arg) {
 
   for (size_t i = 0; i < OPTIONS.size(); ++i)
     get_matches(candidates, OPTIONS[i], root);
-  get_matches(candidates, __standard_options, root);
+  get_matches(candidates, _standard_options, root);
 
   // no matches
   if (candidates.empty())
@@ -1271,9 +1275,7 @@ void init(int cmdline_argc, const char *const *cmdline_argv) { // check_syntax o
   command_history_string += ")";
 
   std::locale::global(std::locale::classic());
-  std::setlocale(LC_ALL, "C");
-
-  srand(time(nullptr));
+  std::setlocale(LC_ALL, "C"); // NOLINT(concurrency-mt-unsafe)
 }
 
 std::vector<ParsedOption> get_options(std::string_view name) {

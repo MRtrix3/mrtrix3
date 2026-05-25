@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "eigen_plugins/eigen_plugins.h"
 // These lines are to silence deprecation warnings with Eigen & GCC v5
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"

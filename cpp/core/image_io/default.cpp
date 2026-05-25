@@ -14,10 +14,12 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <cerrno>
 #include <cstddef>
 #include <limits>
 
 #include "app.h"
+#include "exception.h"
 #include "file/ofstream.h"
 #include "header.h"
 #include "image_io/default.h"
@@ -57,7 +59,8 @@ void Default::unload(const Header &header) {
         out.seekp(files[n].start, out.beg);
         out.write(reinterpret_cast<const char *>(addresses[0].get() + n * bytes_per_segment), bytes_per_segment);
         if (!out.good())
-          throw Exception("error writing back contents of file \"" + files[n].path.string() + "\": " + strerror(errno));
+          throw Exception("error writing back contents of file \"" + files[n].path.string() + "\": " + //
+                          MR::C_strerror(errno));                                                      //
       }
     }
   } else {

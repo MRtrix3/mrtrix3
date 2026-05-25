@@ -483,11 +483,14 @@ public:
       const default_type beta(MR::File::Config::get_float("RegGdConvergenceSlopeSmooth", 0.1));
       if ((beta < 0.0f) || (beta > 1.0f))
         throw Exception("config file option RegGdConvergenceSlopeSmooth has to be in the range: [0...1]");
-      size_t buffer_len(MR::File::Config::get_float("RegGdConvergenceBufferLen", 4));
+      // CONF option: RegGdConvergenceBufferLen
+      // CONF default: 4
+      // CONF Linear registration: gradient descent convergence buffer length.
+      size_t buffer_len(MR::File::Config::get_int("RegGdConvergenceBufferLen", 4));
       // CONF option: RegGdConvergenceMinIter
       // CONF default: 10
       // CONF Linear registration: minimum number of iterations until convergence check is activated.
-      size_t min_iter(MR::File::Config::get_float("RegGdConvergenceMinIter", 10));
+      size_t min_iter(MR::File::Config::get_int("RegGdConvergenceMinIter", 10));
       transform.get_gradient_descent_updator()->set_convergence_check(
           slope_threshold, alpha, beta, buffer_len, min_iter);
 

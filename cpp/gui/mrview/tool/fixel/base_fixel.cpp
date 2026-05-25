@@ -16,6 +16,9 @@
 
 #include "mrview/tool/fixel/base_fixel.h"
 
+#include "mrview/tool/fixel/vector_structs.h"
+#include "opengl/gl_core_3_3.h"
+
 namespace MR::GUI::MRView::Tool {
 BaseFixel::BaseFixel(const std::filesystem::path &filepath, Fixel &fixel_tool)
     : Displayable(filepath),
@@ -23,8 +26,8 @@ BaseFixel::BaseFixel(const std::filesystem::path &filepath, Fixel &fixel_tool)
       slice_fixel_indices(3),
       slice_fixel_sizes(3),
       slice_fixel_counts(3),
-      colour_type(Direction),
-      scale_type(Unity),
+      colour_type(FixelColourType::Direction),
+      scale_type(FixelScaleType::Unity),
       colour_type_index(0),
       scale_type_index(0),
       threshold_type_index(0),
@@ -92,9 +95,9 @@ std::string BaseFixel::Shader::geometry_shader_source(const Displayable &object)
                        "uniform float line_thickness;\n";
 
   switch (color_type) {
-  case Direction:
+  case FixelColourType::Direction:
     break;
-  case CValue:
+  case FixelColourType::Value:
     source += "uniform float offset, scale;\n";
     break;
   }
@@ -113,17 +116,17 @@ std::string BaseFixel::Shader::geometry_shader_source(const Displayable &object)
     source += "  if (v_threshold[0] > upper || isnan(v_threshold[0])) return;\n";
 
   switch (scale_type) {
-  case Unity:
+  case FixelScaleType::Unity:
     source += "  vec4 line_offset = length_mult * vec4 (v_dir[0], 0);\n";
     break;
-  case Value:
+  case FixelScaleType::Value:
     source += "  if (isnan(v_scale[0])) return;\n"
               "  vec4 line_offset = length_mult * v_scale[0] * vec4 (v_dir[0], 0);\n";
     break;
   }
 
   switch (color_type) {
-  case CValue:
+  case FixelColourType::Value:
     if (!ColourMap::maps[colourmap].special) {
       source += "  if (isnan(v_colour[0])) return;\n"
                 "  float amplitude = clamp (";
@@ -133,7 +136,7 @@ std::string BaseFixel::Shader::geometry_shader_source(const Displayable &object)
     }
     source += std::string("  vec3 color;\n") + ColourMap::maps[colourmap].glsl_mapping + "  fColour = color;\n";
     break;
-  case Direction:
+  case FixelColourType::Direction:
     source += "  fColour = normalize (abs (v_dir[0]));\n";
     break;
   default:
@@ -237,7 +240,7 @@ void BaseFixel::render(const Projection &projection) {
       rebuild_element_index_buffer();
     element_index_buffer.bind(gl::ELEMENT_ARRAY_BUFFER);
     if (!element_indices.empty())
-      gl::DrawElements(gl::POINTS, static_cast<GLsizei>(element_indices.size()), gl::UNSIGNED_INT, (void *)0);
+      gl::DrawElements(gl::POINTS, static_cast<GLsizei>(element_indices.size()), gl::UNSIGNED_INT, nullptr);
   } else {
     request_update_interp_image_buffer(projection);
     if (GLsizei points_count = regular_grid_buffer_pos.size())
@@ -338,9 +341,9 @@ void BaseFixel::update_interp_image_buffer(const Projection &projection,
       for (const GLsizei index : voxel_indices) {
         regular_grid_buffer_pos.push_back(scanner_pos);
         regular_grid_buffer_dir.push_back(dir_buffer_store[index]);
-        if (scale_type == Value)
+        if (scale_type == FixelScaleType::Value)
           regular_grid_buffer_val.push_back(val_buffer[index]);
-        if (colour_type == CValue)
+        if (colour_type == FixelColourType::Value)
           regular_grid_buffer_colour.push_back(col_buffer[index]);
         if (has_val)
           regular_grid_buffer_threshold.push_back(threshold_buffer[index]);
@@ -360,7 +363,7 @@ void BaseFixel::update_interp_image_buffer(const Projection &projection,
                  &regular_grid_buffer_pos[0],
                  gl::DYNAMIC_DRAW);
   gl::EnableVertexAttribArray(0);
-  gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 0, (void *)0);
+  gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 0, nullptr);
 
   // fixel directions
   regular_grid_dir_buffer.bind(gl::ARRAY_BUFFER);
@@ -369,28 +372,28 @@ void BaseFixel::update_interp_image_buffer(const Projection &projection,
                  &regular_grid_buffer_dir[0],
                  gl::DYNAMIC_DRAW);
   gl::EnableVertexAttribArray(1);
-  gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE_, 0, (void *)0);
+  gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE_, 0, nullptr);
 
   // fixel values
-  if (scale_type == Value) {
+  if (scale_type == FixelScaleType::Value) {
     regular_grid_val_buffer.bind(gl::ARRAY_BUFFER);
     gl::BufferData(gl::ARRAY_BUFFER,
                    regular_grid_buffer_val.size() * sizeof(float),
                    &regular_grid_buffer_val[0],
                    gl::DYNAMIC_DRAW);
     gl::EnableVertexAttribArray(2);
-    gl::VertexAttribPointer(2, 1, gl::FLOAT, gl::FALSE_, 0, (void *)0);
+    gl::VertexAttribPointer(2, 1, gl::FLOAT, gl::FALSE_, 0, nullptr);
   }
 
   // fixel colours
-  if (colour_type == CValue) {
+  if (colour_type == FixelColourType::Value) {
     regular_grid_colour_buffer.bind(gl::ARRAY_BUFFER);
     gl::BufferData(gl::ARRAY_BUFFER,
                    regular_grid_buffer_colour.size() * sizeof(float),
                    &regular_grid_buffer_colour[0],
                    gl::DYNAMIC_DRAW);
     gl::EnableVertexAttribArray(3);
-    gl::VertexAttribPointer(3, 1, gl::FLOAT, gl::FALSE_, 0, (void *)0);
+    gl::VertexAttribPointer(3, 1, gl::FLOAT, gl::FALSE_, 0, nullptr);
   }
 
   // fixel threshold
@@ -401,7 +404,7 @@ void BaseFixel::update_interp_image_buffer(const Projection &projection,
                    &regular_grid_buffer_threshold[0],
                    gl::DYNAMIC_DRAW);
     gl::EnableVertexAttribArray(4);
-    gl::VertexAttribPointer(4, 1, gl::FLOAT, gl::FALSE_, 0, (void *)0);
+    gl::VertexAttribPointer(4, 1, gl::FLOAT, gl::FALSE_, 0, nullptr);
   }
 
   GL::assert_context_is_current();
@@ -453,7 +456,7 @@ void BaseFixel::load_image(const std::filesystem::path &filepath) {
   gl::BufferData(
       gl::ARRAY_BUFFER, pos_buffer_store.size() * sizeof(Eigen::Vector3f), &(pos_buffer_store[0][0]), gl::STATIC_DRAW);
   gl::EnableVertexAttribArray(0);
-  gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 0, (void *)0);
+  gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 0, nullptr);
 
   rebuild_element_index_buffer();
   element_indices_dirty = false;
@@ -513,7 +516,7 @@ void BaseFixel::reload_directions_buffer() {
   gl::BufferData(
       gl::ARRAY_BUFFER, dir_buffer_store.size() * sizeof(Eigen::Vector3f), &(dir_buffer_store)[0][0], gl::STATIC_DRAW);
   gl::EnableVertexAttribArray(1);
-  gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE_, 0, (void *)0);
+  gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE_, 0, nullptr);
 
   GL::assert_context_is_current();
 }
@@ -522,7 +525,7 @@ void BaseFixel::reload_values_buffer() {
   GL::Context::Grab context;
   GL::assert_context_is_current();
 
-  if (scale_type == Unity)
+  if (scale_type == FixelScaleType::Unity)
     return;
 
   const auto &fixel_val = current_fixel_value_state();
@@ -534,7 +537,7 @@ void BaseFixel::reload_values_buffer() {
   value_buffer.bind(gl::ARRAY_BUFFER);
   gl::BufferData(gl::ARRAY_BUFFER, val_buffer.size() * sizeof(float), &(val_buffer)[0], gl::STATIC_DRAW);
   gl::EnableVertexAttribArray(2);
-  gl::VertexAttribPointer(2, 1, gl::FLOAT, gl::FALSE_, 0, (void *)0);
+  gl::VertexAttribPointer(2, 1, gl::FLOAT, gl::FALSE_, 0, nullptr);
 
   GL::assert_context_is_current();
 }
@@ -543,7 +546,7 @@ void BaseFixel::reload_colours_buffer() {
   GL::Context::Grab context;
   GL::assert_context_is_current();
 
-  if (colour_type == Direction)
+  if (colour_type == FixelColourType::Direction)
     return;
 
   const auto &fixel_val = current_fixel_colour_state();
@@ -555,7 +558,7 @@ void BaseFixel::reload_colours_buffer() {
   colour_buffer.bind(gl::ARRAY_BUFFER);
   gl::BufferData(gl::ARRAY_BUFFER, val_buffer.size() * sizeof(float), &(val_buffer)[0], gl::STATIC_DRAW);
   gl::EnableVertexAttribArray(3);
-  gl::VertexAttribPointer(3, 1, gl::FLOAT, gl::FALSE_, 0, (void *)0);
+  gl::VertexAttribPointer(3, 1, gl::FLOAT, gl::FALSE_, 0, nullptr);
 
   GL::assert_context_is_current();
 }
@@ -573,7 +576,7 @@ void BaseFixel::reload_threshold_buffer() {
   threshold_buffer.bind(gl::ARRAY_BUFFER);
   gl::BufferData(gl::ARRAY_BUFFER, val_buffer.size() * sizeof(float), &(val_buffer)[0], gl::STATIC_DRAW);
   gl::EnableVertexAttribArray(4);
-  gl::VertexAttribPointer(4, 1, gl::FLOAT, gl::FALSE_, 0, (void *)0);
+  gl::VertexAttribPointer(4, 1, gl::FLOAT, gl::FALSE_, 0, nullptr);
 
   GL::assert_context_is_current();
 }

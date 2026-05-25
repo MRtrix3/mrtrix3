@@ -111,7 +111,7 @@ void run() {
   }
 
   for (size_t n = 0; n < VRs.size(); ++n) {
-    union __VR {
+    union {
       uint16_t i;
       char c[2]; // check_syntax off
     } VR;

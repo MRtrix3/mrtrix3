@@ -417,8 +417,8 @@ private:
       if (method.act().fetch_tissue_data(i)) {
         const float wm = method.act().tissues().get_wm();
         max_value = std::max(max_value, wm);
-        if (((integral += (Math::pow2(wm) * S.internal_step_size())) > ACT::wm_pathintegral_threshold) &&
-            (max_value > ACT::wm_maxabs_threshold))
+        integral += Math::pow2(wm) * S.internal_step_size();
+        if ((integral > ACT::wm_pathintegral_threshold) && (max_value > ACT::wm_maxabs_threshold))
           return true;
       }
     }

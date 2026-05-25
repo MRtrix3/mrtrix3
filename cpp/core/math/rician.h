@@ -16,9 +16,10 @@
 
 #pragma once
 
+#include <vector>
+
 #include "math/bessel.h"
 #include "math/math.h"
-#include "math/vector.h"
 
 namespace MR::Math::Rician {
 

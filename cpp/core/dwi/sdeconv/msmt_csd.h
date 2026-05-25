@@ -16,6 +16,9 @@
 
 #pragma once
 
+#include "eigen_plugins/eigen_plugins.h"
+#include <Eigen/Dense>
+
 #include "dwi/directions/predefined.h"
 #include "dwi/directions/validate.h"
 #include "dwi/gradient.h"
@@ -145,8 +148,7 @@ public:
       // TODO: is this just computing the Associated Legrendre polynomials...?
       Eigen::MatrixXd delta(1, 2);
       delta << 0, 0;
-      Eigen::MatrixXd DSH__ = Math::SH::init_transform(delta, maxlmax);
-      Eigen::VectorXd DSH_ = DSH__.row(0);
+      Eigen::VectorXd DSH_ = Math::SH::init_transform(delta, maxlmax).row(0);
       Eigen::VectorXd DSH(maxlmax / 2 + 1);
       size_t j = 0;
       for (ssize_t i = 0; i < DSH_.size(); i++)

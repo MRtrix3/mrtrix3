@@ -463,14 +463,10 @@ void Mesh::load_obj(const std::filesystem::path &path) {
       std::array<float, 4> values{};
       sscanf(data.c_str(), "%f %f %f %f", &values[0], &values[1], &values[2], &values[3]);
       vertices.push_back(Vertex(values[0], values[1], values[2]));
-    } else if (prefix == "vt") {
-      // Texture data; do nothing
     } else if (prefix == "vn") {
       std::array<float, 3> values{};
       sscanf(data.c_str(), "%f %f %f", &values[0], &values[1], &values[2]);
       normals.push_back(Vertex(values[0], values[1], values[2]));
-    } else if (prefix == "vp") {
-      // Parameter space vertices; do nothing
     } else if (prefix == "f") {
       // Parse face information
       // Need to handle:
@@ -549,7 +545,10 @@ void Mesh::load_obj(const std::filesystem::path &path) {
         object = data;
       else
         throw Exception("Multiple objects in input OBJ file");
-    } // Do nothing for all other prefixes
+    }
+    // Do nothing for all other prefixes, including:
+    // "vt": Texture data
+    // "vp": Parameter space vertices
   }
 
   if (!object.empty())

@@ -18,6 +18,7 @@
 
 #include <array>
 #include <filesystem>
+#include <functional>
 #include <sstream>
 
 #include "datatype.h"
@@ -60,7 +61,7 @@ Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> load_matrix(const std::
   // Actually load the data
   const ssize_t cols = info.shape.size() == 2 ? info.shape[1] : 1;
   Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> data(info.shape[0], cols);
-  const std::function<ValueType(void *, size_t)> fetch_func(__set_fetch_function<ValueType>(info.data_type));
+  const std::function<ValueType(void *, size_t)> fetch_func(_set_fetch_function<ValueType>(info.data_type));
   size_t i = 0;
   if (info.column_major) {
     for (ssize_t col = 0; col != cols; ++col) {
@@ -93,7 +94,7 @@ template <class ContType> void save_vector(const ContType &data, const std::file
       out[i] = std::byte(data[i] ? 1 : 0);
     return;
   }
-  auto store_func = __set_store_function<ValueType>(info.data_type);
+  auto store_func = _set_store_function<ValueType>(info.data_type);
   for (ssize_t i = 0; i != static_cast<ssize_t>(data.size()); ++i)
     store_func(data[i], info.mmap->address(), i);
 }
@@ -111,7 +112,7 @@ template <class ContType> void save_matrix(const ContType &data, const std::file
       }
     return;
   }
-  auto store_func = __set_store_function<ValueType>(info.data_type);
+  auto store_func = _set_store_function<ValueType>(info.data_type);
   size_t i = 0;
   for (ssize_t col = 0; col != data.cols(); ++col)
     for (ssize_t row = 0; row != data.rows(); ++row) {

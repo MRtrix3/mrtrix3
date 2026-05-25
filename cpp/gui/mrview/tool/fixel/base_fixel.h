@@ -42,7 +42,11 @@ public:
 
   class Shader : public Displayable::Shader {
   public:
-    Shader() : do_crop_to_slice(false), bidirectional(false), color_type(Direction), scale_type(Value) {}
+    Shader()
+        : do_crop_to_slice(false),
+          bidirectional(false),
+          color_type(FixelColourType::Direction),
+          scale_type(FixelScaleType::Value) {}
     std::string vertex_shader_source(const Displayable &) override;
     std::string geometry_shader_source(const Displayable &) override;
     std::string fragment_shader_source(const Displayable &) override;
@@ -58,7 +62,7 @@ public:
   void render(const Projection &projection);
 
   void request_render_colourbar(DisplayableVisitor &visitor) override {
-    if (colour_type == CValue && show_colour_bar)
+    if (colour_type == FixelColourType::Value && show_colour_bar)
       visitor.render_fixel_colourbar(*this);
   }
 
@@ -85,7 +89,7 @@ public:
   void set_scale_type_index(size_t index) {
     if (index != scale_type_index) {
       scale_type_index = index;
-      scale_type = index == 0 ? Unity : Value;
+      scale_type = index == 0 ? FixelScaleType::Unity : FixelScaleType::Value;
       value_buffer_dirty = true;
     }
   }
@@ -95,7 +99,7 @@ public:
   void set_threshold_type_index(size_t index) {
     if (index != threshold_type_index) {
       threshold_type_index = index;
-      if (colour_type == CValue) {
+      if (colour_type == FixelColourType::Value) {
         lessthan = get_threshold_lower();
         greaterthan = get_threshold_upper();
       }
@@ -113,14 +117,14 @@ public:
 
     if (index != colour_type_index) {
       colour_type_index = index;
-      colour_type = index == 0 ? Direction : CValue;
+      colour_type = index == 0 ? FixelColourType::Direction : FixelColourType::Value;
       colour_buffer_dirty = true;
     }
 
     auto &new_fixel_val = current_fixel_colour_state();
     value_min = new_fixel_val.value_min;
     value_max = new_fixel_val.value_max;
-    if (colour_type == CValue) {
+    if (colour_type == FixelColourType::Value) {
       lessthan = get_threshold_lower();
       greaterthan = get_threshold_upper();
     }
@@ -140,7 +144,7 @@ public:
   void set_threshold_lower(float value) {
     FixelValue &fixel_threshold = current_fixel_threshold_state();
     fixel_threshold.lessthan = value;
-    if (colour_type == CValue)
+    if (colour_type == FixelColourType::Value)
       lessthan = get_threshold_lower();
   }
 
@@ -155,7 +159,7 @@ public:
   void set_threshold_upper(float value) {
     FixelValue &fixel_threshold = current_fixel_threshold_state();
     fixel_threshold.greaterthan = value;
-    if (colour_type == CValue)
+    if (colour_type == FixelColourType::Value)
       greaterthan = get_threshold_upper();
   }
 

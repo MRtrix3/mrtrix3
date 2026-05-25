@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include "eigen_plugins/eigen_plugins.h"
 #include <Eigen/Geometry>
 #include <filesystem>
 
@@ -373,7 +374,7 @@ void Capture::run(bool with_capture) {
       break;
     }
     case TranslationType::Scanner:
-      break;
+      [[fallthrough]];
     default:
       break;
     }

@@ -31,7 +31,6 @@ class Lighting;
 
 namespace MR::GUI::MRView::Mode {
 class Base;
-class __Entry__;
 } // namespace MR::GUI::MRView::Mode
 
 namespace MR::GUI::MRView::Tool {

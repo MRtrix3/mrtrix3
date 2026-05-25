@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "eigen_plugins/eigen_plugins.h"
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include <Eigen/SVD>

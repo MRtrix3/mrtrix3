@@ -16,12 +16,13 @@
 
 #pragma once
 
+#include "eigen_plugins/eigen_plugins.h"
+#include <Eigen/Dense>
 #include <array>
+#include <cassert>
 #include <fstream>
 #include <iostream>
 #include <mutex>
-
-#include <Eigen/Dense>
 
 #include "math/math.h"
 #include "progressbar.h"
@@ -201,6 +202,9 @@ public:
       break;
     case 'c':
       n_acc[4] += i;
+      break;
+    default:
+      assert(false);
       break;
     }
   }

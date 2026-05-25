@@ -18,6 +18,7 @@
 
 #define IMAGE_H
 
+#include <cerrno>
 #include <cstddef>
 #include <functional>
 #include <optional>
@@ -28,6 +29,7 @@
 #include "algo/threaded_copy.h"
 #include "debug.h"
 #include "directio.h"
+#include "exception.h"
 #include "fetch_store.h"
 #include "file/ofstream.h"
 #include "file/temp.h"
@@ -231,7 +233,7 @@ protected:
   std::function<ValueType(const void *, size_t, default_type, default_type)> fetch_func;
   std::function<void(ValueType, void *, size_t, default_type, default_type)> store_func;
 
-  void set_fetch_store_functions() { __set_fetch_store_scale_functions(fetch_func, store_func, datatype()); }
+  void set_fetch_store_functions() { _set_fetch_store_scale_functions(fetch_func, store_func, datatype()); }
 };
 
 //! \cond skip
@@ -351,9 +353,8 @@ Image<ValueType> Header::get_image(std::optional<DirectIO> direct_io, bool read_
   // direct-IO preload completes before the shared_ptr is published. After this
   // point, Buffer::ram is immutable until destruction (writeback).
   auto raw = std::make_unique<typename Image<ValueType>::Buffer>(*this, read_write_if_existing, std::move(direct_io));
-  Stride::List image_strides;
-  if (raw->ram.has_value())
-    image_strides = raw->ram->strides;
+  // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+  const Stride::List image_strides = raw->ram.has_value() ? raw->ram->strides : Stride::List();
   std::shared_ptr<typename Image<ValueType>::Buffer> buffer(std::move(raw));
   return Image<ValueType>(buffer, image_strides);
 }
@@ -382,13 +383,19 @@ template <typename ValueType> Image<ValueType>::Buffer::~Buffer() {
     return;
   if (!ram.has_value())
     return;
-  auto local_data = std::move(ram->data);
-  // Construct a temporary shared_ptr with a no-op deleter so that Image can be
-  // used as a write destination without triggering a second deletion of this.
-  std::shared_ptr<Buffer> self(this, [](Buffer *) {});
-  TmpImage<ValueType> src = {*this, local_data.get(), std::vector<ssize_t>(ndim(), 0), ram->strides, ram->offset};
-  Image<ValueType> dest(self);
-  threaded_copy_with_progress_message("writing back direct IO buffer for \"" + name() + "\"", src, dest);
+  try {
+    auto local_data = std::move(ram->data);
+    // Construct a temporary shared_ptr with a no-op deleter so that Image can be
+    // used as a write destination without triggering a second deletion of this.
+    std::shared_ptr<Buffer> self(this, [](Buffer *) {});
+    TmpImage<ValueType> src = {*this, local_data.get(), std::vector<ssize_t>(ndim(), 0), ram->strides, ram->offset};
+    Image<ValueType> dest(self);
+    threaded_copy_with_progress_message("writing back direct IO buffer for \"" + name() + "\"", src, dest);
+  } catch (Exception &e) {
+    Exception(e, "Error during writeback of image \"" + name() + "\"; image may be corrupt").display();
+  } catch (std::exception &e) {
+    WARN("Error during writeback of image \"" + name() + "\"---" + e.what() + "---image may be corrupt");
+  }
 }
 
 template <typename ValueType>
@@ -427,7 +434,7 @@ std::filesystem::path Image<ValueType>::dump_to_mrtrix_file(const std::filesyste
   out.seekp(offset, out.beg);
   out.write((const char *)data_pointer, data_size);
   if (!out.good())
-    throw Exception("error writing back contents of file \"" + data_path.string() + "\": " + strerror(errno));
+    throw Exception("error writing back contents of file \"" + data_path.string() + "\": " + MR::C_strerror(errno));
   out.close();
 
   // If data_size exceeds some threshold, ostream artificially increases the file size beyond that required at close()
@@ -438,7 +445,7 @@ std::filesystem::path Image<ValueType>::dump_to_mrtrix_file(const std::filesyste
 }
 
 template <class ImageType>
-std::filesystem::path __save_generic(ImageType &x, const std::filesystem::path &filepath, bool use_multi_threading) {
+std::filesystem::path _save_generic(ImageType &x, const std::filesystem::path &filepath, bool use_multi_threading) {
   auto out = Image<typename ImageType::value_type>::create(filepath, x);
   if (use_multi_threading)
     threaded_copy(x, out);
@@ -454,7 +461,7 @@ template <class ImageType>
 typename std::enable_if<is_adapter_type<typename std::remove_reference<ImageType>::type>::value,
                         std::filesystem::path>::type
 save(ImageType &&x, const std::filesystem::path &filepath, bool use_multi_threading = true) {
-  return __save_generic(x, filepath, use_multi_threading);
+  return _save_generic(x, filepath, use_multi_threading);
 }
 
 //! save contents of an existing image to file (for debugging only)
@@ -464,17 +471,18 @@ typename std::enable_if<is_pure_image<typename std::remove_reference<ImageType>:
 save(ImageType &&x, const std::filesystem::path &filepath, bool use_multi_threading = true) {
   try {
     return x.dump_to_mrtrix_file(filepath);
-  } catch (...) {
+  } catch (Exception &) {
+    return _save_generic(x, filepath, use_multi_threading);
   }
-  return __save_generic(x, filepath, use_multi_threading);
 }
 
 //! display the contents of an image in MRView (for debugging only)
 template <class ImageType> typename enable_if_image_type<ImageType, void>::type display(ImageType &x) {
   const std::filesystem::path filepath = save(x, "-");
   CONSOLE("displaying image \"" + filepath.string() + "\"");
+  // NOLINTNEXTLINE(concurrency-mt-unsafe)
   if (system(("bash -c \"mrview " + filepath.string() + "\"").c_str()))
-    WARN(std::string("error invoking viewer: ") + strerror(errno));
+    WARN(std::string("error invoking viewer: ") + MR::C_strerror(errno));
 }
 // Explicit instantiations in image.cpp:
 extern template MR::Image<bool>::Buffer::~Buffer();

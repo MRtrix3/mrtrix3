@@ -16,6 +16,12 @@
 
 #pragma once
 
+#include "eigen_plugins/eigen_plugins.h"
+#include <Eigen/Dense>
+#include <cmath>
+
+#include "types.h"
+
 namespace MR::Math {
 template <typename T> inline int sgn(T val) { return (T(0) < val) - (val < T(0)); }
 } // namespace MR::Math

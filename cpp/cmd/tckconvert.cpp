@@ -232,7 +232,7 @@ public:
         throw Exception("VTK Reader only supports BINARY input");
 
       if (sscanf(line.c_str(), "POINTS %d float", &number_of_points) == 1) {
-        points.resize(3 * number_of_points);
+        points.resize(3 * static_cast<size_t>(number_of_points));
         input.read(reinterpret_cast<char *>(points.data()),
                    3UL * static_cast<unsigned long>(number_of_points) * sizeof(float));
 
@@ -264,7 +264,9 @@ public:
       lineIdx++;
       for (int i = 0; i < count; i++) {
         int idx = lines[lineIdx];
-        Eigen::Vector3f f(points[idx * 3], points[idx * 3 + 1], points[idx * 3 + 2]);
+        Eigen::Vector3f f(points[static_cast<size_t>(idx) * 3],
+                          points[static_cast<size_t>(idx) * 3 + 1],
+                          points[static_cast<size_t>(idx) * 3 + 2]);
         tck.push_back(f);
         lineIdx++;
       }
@@ -428,7 +430,7 @@ public:
 
   bool operator()(const Streamline<float> &intck) {
     // Need at least 5 points, silently ignore...
-    if (intck.size() < static_cast<size_t>(increment * 3)) {
+    if (intck.size() < static_cast<size_t>(increment) * 3) {
       return true;
     }
 

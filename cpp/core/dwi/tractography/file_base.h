@@ -18,10 +18,13 @@
 
 #include <filesystem>
 #include <iomanip>
+#include <ios>
 #include <map>
 #include <set>
+#include <string_view>
 
 #include "dwi/tractography/properties.h"
+#include "exception.h"
 #include "file/key_value.h"
 #include "file/ofstream.h"
 #include "file/path.h"
@@ -30,10 +33,10 @@
 namespace MR::DWI::Tractography {
 
 //! \cond skip
-class __ReaderBase__ {
+class ReaderBase {
 public:
-  __ReaderBase__() : current_index(0) {}
-  ~__ReaderBase__() {
+  ReaderBase() : current_index(0) {}
+  ~ReaderBase() {
     if (in.is_open())
       in.close();
   }
@@ -48,11 +51,11 @@ protected:
   uint64_t current_index;
 };
 
-template <typename ValueType = float> class __WriterBase__ {
+template <typename ValueType = float> class WriterBase {
 public:
   using value_type = ValueType;
 
-  __WriterBase__(const std::filesystem::path &path)
+  WriterBase(const std::filesystem::path &path)
       : count(0), total_count(0), path(path), dtype(DataType::from<ValueType>()), count_offset(0), open_success(false) {
     dtype.set_byte_order_native();
     if (dtype != DataType::Float32LE && dtype != DataType::Float32BE && dtype != DataType::Float64LE &&
@@ -62,10 +65,14 @@ public:
     App::check_overwrite(path);
   }
 
-  ~__WriterBase__() {
+  ~WriterBase() noexcept {
     if (open_success) {
-      File::OFStream out(path, std::ios::in | std::ios::out | std::ios::binary);
-      update_counts(out);
+      try {
+        File::OFStream out(path, std::ios_base::in | std::ios_base::out | std::ios_base::binary);
+        update_counts(out);
+      } catch (Exception &e) {
+        e.display();
+      }
     }
   }
 
@@ -118,7 +125,7 @@ protected:
 
   void verify_stream(const File::OFStream &out) {
     if (!out.good())
-      throw Exception("error writing file \"" + path.string() + "\": " + strerror(errno));
+      throw Exception("error writing file \"" + path.string() + "\": " + MR::C_strerror(errno));
   }
 
   void update_counts(File::OFStream &out) {

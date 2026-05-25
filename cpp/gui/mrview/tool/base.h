@@ -16,13 +16,13 @@
 
 #pragma once
 
-#include "file/config.h"
+#include <qaction.h>
+#include <qactiongroup.h>
+#include <string_view>
 
+#include "file/config.h"
 #include "mrview/window.h"
 #include "projection.h"
-
-#define __STR__(x) #x
-#define __STR(x) __STR__(x)
 
 namespace MR::App {
 class OptionList;
@@ -155,17 +155,20 @@ public:
 
 inline Dock::~Dock() { delete tool; }
 
-class __Action__ : public QAction {
+class ActionWrapper : public QAction {
   Q_OBJECT
 public:
-  __Action__(QActionGroup *parent, std::string_view name, std::string_view description, int index)
+  ActionWrapper(QActionGroup *parent, std::string_view name, std::string_view description, int index)
       : QAction(std::string(name).c_str(), parent), dock(nullptr) {
     setCheckable(true);
     setShortcut(tr(std::string("Ctrl+F" + str(index)).c_str()));
     setStatusTip(tr(std::string(description).c_str()));
   }
 
-  virtual ~__Action__() { delete dock; }
+  ~ActionWrapper() override {
+    delete dock;
+    dock = nullptr;
+  }
 
   virtual Dock *create(bool floating) = 0;
   Dock *dock;
@@ -183,10 +186,10 @@ template <class T> Dock *create(const QString &text, bool floating) {
   return dock;
 }
 
-template <class T> class Action : public __Action__ {
+template <class T> class Action : public ActionWrapper {
 public:
   Action(QActionGroup *parent, std::string_view name, std::string_view description, int index)
-      : __Action__(parent, std::string(name).c_str(), std::string(description).c_str(), index) {}
+      : ActionWrapper(parent, name, description, index) {}
 
   virtual Dock *create(bool floating) {
     dock = Tool::create<T>(this->text(), floating);

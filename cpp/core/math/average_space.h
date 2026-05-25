@@ -16,12 +16,14 @@
 
 #pragma once
 
-#include "debug.h"
-#include "image.h"
-#include "transform.h"
+#include "eigen_plugins/eigen_plugins.h"
 #include <Eigen/Geometry>
 #include <Eigen/SVD>
 #include <unsupported/Eigen/MatrixFunctions>
+
+#include "debug.h"
+#include "image.h"
+#include "transform.h"
 
 namespace MR::Math {
 double matrix_average(std::vector<Eigen::MatrixXd> const &mat_in, Eigen::MatrixXd &mat_avg, bool verbose = false);

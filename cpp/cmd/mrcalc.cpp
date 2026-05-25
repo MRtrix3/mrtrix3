@@ -25,6 +25,8 @@
 #undef BINARY_OP
 #undef TERNARY_OP
 
+// NOLINTBEGIN(bugprone-macro-parentheses)
+
 #if SECTION == 1 // usage section
 
 #define SECTION_TITLE(TITLE) +OptionGroup(TITLE)
@@ -312,6 +314,8 @@ UNARY_OP(
 
 #undef SECTION
 
+// NOLINTEND(bugprone-macro-parentheses)
+
 #else
 
 /**********************************************************************
@@ -423,7 +427,7 @@ ARGUMENTS
 OPTIONS
 
 #define SECTION 1 // check_syntax off
-#include "mrcalc.cpp"
+#include "mrcalc.cpp" //NOLINT(bugprone-suspicious-include,misc-header-include-cycle)
 
   + DataType::options();
 }
@@ -982,8 +986,8 @@ public:
         EXPAND OPERATIONS:
 **********************************************************************/
 
-#define SECTION 2 // check_syntax off
-#include "mrcalc.cpp"
+#define SECTION 2     // check_syntax off
+#include "mrcalc.cpp" // NOLINT(bugprone-suspicious-include,misc-header-include-cycle)
 
 /**********************************************************************
   MAIN BODY OF COMMAND:
@@ -1004,8 +1008,8 @@ void run() {
       else if (opt->is("config"))
         n += 2;
 
-#define SECTION 3 // check_syntax off
-#include "mrcalc.cpp"
+#define SECTION 3     // check_syntax off
+#include "mrcalc.cpp" // NOLINT(bugprone-suspicious-include,misc-header-include-cycle)
 
       else
         throw Exception(std::string("operation \"") + opt->id + "\" not yet implemented!");

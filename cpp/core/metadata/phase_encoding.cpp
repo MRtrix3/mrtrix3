@@ -238,16 +238,15 @@ void transform_for_image_load(KeyValues &keyval, const Header &H) {
     return;
   }
   switch (H.realignment().state()) {
-  case MR::Header::Realignment::State::Unknown:
-    assert(false);
-    return;
   case MR::Header::Realignment::State::Disabled:
-    return;
+    [[fallthrough]];
   case MR::Header::Realignment::State::Identity:
     return;
   case MR::Header::Realignment::State::Applied:
     set_scheme(keyval, transform_for_image_load(pe_scheme, H));
     return;
+  case MR::Header::Realignment::State::Unknown:
+    [[fallthrough]];
   default:
     assert(false);
     return;
@@ -345,7 +344,7 @@ void export_commandline(const Header &header) {
   auto check = [&](const scheme_type &m) -> const scheme_type & {
     if (m.rows() == 0)
       throw Exception("no phase-encoding information found within image \"" + header.name() + "\"");
-    return m;
+    return m; // NOLINT(bugprone-return-const-ref-from-parameter)
   };
 
   auto scheme = parse_scheme(header.keyval(), header);

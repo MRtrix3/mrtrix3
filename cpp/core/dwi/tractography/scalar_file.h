@@ -28,7 +28,7 @@
 
 namespace MR::DWI::Tractography {
 
-template <typename T = float> class ScalarReader : public __ReaderBase__ {
+template <typename T = float> class ScalarReader : public ReaderBase {
 public:
   using value_type = T;
 
@@ -62,9 +62,9 @@ public:
   }
 
 protected:
-  using __ReaderBase__::current_index;
-  using __ReaderBase__::dtype;
-  using __ReaderBase__::in;
+  using ReaderBase::current_index;
+  using ReaderBase::dtype;
+  using ReaderBase::in;
 
   value_type get_next_scalar() {
     using namespace ByteOrder;
@@ -113,21 +113,21 @@ protected:
  * 16MB, and can be set in the config file using the
  * TrackWriterBufferSize field (in bytes).
  * */
-template <typename T = float> class ScalarWriter : public __WriterBase__<T> {
+template <typename T = float> class ScalarWriter : public WriterBase<T> {
 public:
   using value_type = T;
-  using __WriterBase__<T>::count;
-  using __WriterBase__<T>::count_offset;
-  using __WriterBase__<T>::total_count;
-  using __WriterBase__<T>::path;
-  using __WriterBase__<T>::dtype;
-  using __WriterBase__<T>::create;
-  using __WriterBase__<T>::update_counts;
-  using __WriterBase__<T>::verify_stream;
-  using __WriterBase__<T>::open_success;
+  using WriterBase<T>::count;
+  using WriterBase<T>::count_offset;
+  using WriterBase<T>::total_count;
+  using WriterBase<T>::path;
+  using WriterBase<T>::dtype;
+  using WriterBase<T>::create;
+  using WriterBase<T>::update_counts;
+  using WriterBase<T>::verify_stream;
+  using WriterBase<T>::open_success;
 
   ScalarWriter(const std::filesystem::path &path, const Properties &properties)
-      : __WriterBase__<T>(path),
+      : WriterBase<T>(path),
         buffer_capacity(File::Config::get_int("TrackWriterBufferSize", 16777216) / sizeof(value_type)),
         buffer(new value_type[buffer_capacity + 1]),
         buffer_size(0) {
@@ -146,7 +146,13 @@ public:
     current_offset = out.tellp();
   }
 
-  ~ScalarWriter() { commit(); }
+  ~ScalarWriter() {
+    try {
+      commit();
+    } catch (Exception &e) {
+      Exception(e, "Tractography scalar file not properly finalised").display();
+    }
+  }
 
   bool operator()(const TrackScalar<T> &tck_scalar) {
     if (buffer_size + tck_scalar.size() > buffer_capacity)

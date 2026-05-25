@@ -14,13 +14,14 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <cassert>
+#include <filesystem>
+
 #include "algo/loop.h"
 #include "command.h"
 #include "dwi/gradient.h"
 #include "image.h"
 #include "progressbar.h"
-
-#include <filesystem>
 
 using namespace MR;
 using namespace App;
@@ -129,6 +130,9 @@ void run() {
         write<int64_t>(headers, axis, header_out);
       else
         write<uint64_t>(headers, axis, header_out);
+      break;
+    default:
+      assert(false);
       break;
     }
   } else {

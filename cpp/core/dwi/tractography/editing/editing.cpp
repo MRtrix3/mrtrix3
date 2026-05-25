@@ -16,6 +16,8 @@
 
 #include "dwi/tractography/editing/editing.h"
 
+#include "exception.h"
+
 namespace MR::DWI::Tractography::Editing {
 
 using namespace App;
@@ -60,7 +62,8 @@ void load_properties(Tractography::Properties &properties) {
       try {
         const float maxlength = std::min(static_cast<float>(opt[0][0]), to<float>(properties["max_dist"]));
         properties["max_dist"] = str(maxlength);
-      } catch (...) {
+      } catch (Exception &) {
+        DEBUG("Corrupted pre-existing property field \"max_dist\"; applying user request as-is");
         properties["max_dist"] = static_cast<std::string>(opt[0][0]);
       }
     }
@@ -73,7 +76,8 @@ void load_properties(Tractography::Properties &properties) {
       try {
         const float minlength = std::max(static_cast<float>(opt[0][0]), to<float>(properties["min_dist"]));
         properties["min_dist"] = str(minlength);
-      } catch (...) {
+      } catch (Exception &) {
+        DEBUG("Corrupted pre-existing property field \"min_dist\"; applying user request as-is");
         properties["min_dist"] = static_cast<std::string>(opt[0][0]);
       }
     }

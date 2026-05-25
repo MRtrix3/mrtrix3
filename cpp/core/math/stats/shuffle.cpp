@@ -99,25 +99,12 @@ Shuffler::Shuffler(const index_type num_rows, const bool is_nonstationarity, std
     : rows(num_rows),
       nshuffles(is_nonstationarity ? default_numshuffles_nonstationarity : default_numshuffles_nulldist),
       counter(0) {
+
   using namespace App;
-  auto opt = get_options("errors");
-  error_t error_types = error_t::EE;
-  if (!opt.empty()) {
-    switch (static_cast<MR::App::ParsedArgument::IntType>(opt[0][0])) {
-    case 0:
-      error_types = error_t::EE;
-      break;
-    case 1:
-      error_types = error_t::ISE;
-      break;
-    case 2:
-      error_types = error_t::BOTH;
-      break;
-    }
-  }
+  const error_t error_types = get_option_choice<error_t>("errors", error_t::EE);
 
   bool nshuffles_explicit = false;
-  opt = get_options(is_nonstationarity ? "nshuffles_nonstationarity" : "nshuffles");
+  auto opt = get_options(is_nonstationarity ? "nshuffles_nonstationarity" : "nshuffles");
   if (!opt.empty()) {
     nshuffles = opt[0][0];
     nshuffles_explicit = true;

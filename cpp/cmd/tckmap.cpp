@@ -572,16 +572,16 @@ void run() {
   case writer_dim::UNDEFINED:
     throw Exception("Invalid TWI writer image dimensionality");
   case writer_dim::GREYSCALE:
-    writer.reset(make_writer(header, argument[1], stat_vox, writer_dim::GREYSCALE));
+    writer.reset(make_writer(header, output_image_path, stat_vox, writer_dim::GREYSCALE));
     break;
   case writer_dim::DEC:
-    writer.reset(new MapWriter<float>(header, argument[1], stat_vox, writer_dim::DEC));
+    writer = std::make_unique<MapWriter<float>>(header, output_image_path, stat_vox, writer_dim::DEC);
     break;
   case writer_dim::DIXEL:
-    writer.reset(make_writer(header, argument[1], stat_vox, writer_dim::DIXEL));
+    writer.reset(make_writer(header, output_image_path, stat_vox, writer_dim::DIXEL));
     break;
   case writer_dim::TOD:
-    writer.reset(new MapWriter<float>(header, argument[1], stat_vox, writer_dim::TOD));
+    writer = std::make_unique<MapWriter<float>>(header, output_image_path, stat_vox, writer_dim::TOD);
     break;
   }
 

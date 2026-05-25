@@ -92,11 +92,9 @@ std::unique_ptr<ImageIO::Base> PNG::read(Header &H) const {
     }
     break;
   case 2:
-    H.datatype() = DataType::UInt8;
-    break;
+    [[fallthrough]];
   case 4:
-    H.datatype() = DataType::UInt8;
-    break;
+    [[fallthrough]];
   case 8:
     H.datatype() = DataType::UInt8;
     break;

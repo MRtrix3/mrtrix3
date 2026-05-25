@@ -18,6 +18,7 @@
 
 #include <cstdint>
 #include <filesystem>
+#include <utility>
 
 #include "dwi/directions/directions.h"
 #include "dwi/directions/predefined.h"
@@ -139,7 +140,7 @@ public:
   FastLookupSet(const size_t d) : Set(d) { initialise(); }
 
   FastLookupSet(FastLookupSet &&that)
-      : Set(std::move(that)),
+      : Set(std::move(static_cast<Set &&>(that))),
         grid_lookup(std::move(that.grid_lookup)),
         num_az_grids(that.num_az_grids),
         num_el_grids(that.num_el_grids),

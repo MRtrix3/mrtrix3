@@ -15,8 +15,10 @@
  */
 
 #include <array>
+#include <cerrno>
 #include <cstddef>
 #include <fcntl.h>
+#include <filesystem>
 #include <unistd.h>
 #include <zlib.h>
 
@@ -34,27 +36,25 @@
 #endif
 
 #include "app.h"
+#include "exception.h"
 #include "file/config.h"
 #include "file/mmap.h"
 #include "file/ofstream.h"
 #include "file/path.h"
-
-#include "debug.h"
 
 namespace MR::File {
 
 MMap::MMap(const Entry &entry, bool readwrite, bool preload, std::optional<int64_t> mapped_size)
     : Entry(entry), addr(nullptr), first(nullptr), msize(0), readwrite(readwrite) {
 
-  const std::filesystem::path &file_path = Entry::path;
-  DEBUG("memory-mapping file \"" + file_path.string() + "\"...");
+  DEBUG("memory-mapping file \"" + Entry::path.string() + "\"...");
 
   try {
-    auto last_write = std::filesystem::last_write_time(file_path);
+    auto last_write = std::filesystem::last_write_time(Entry::path);
     auto sctp = std::chrono::time_point_cast<std::chrono::system_clock::duration>(
         last_write - std::filesystem::file_time_type::clock::now() + std::chrono::system_clock::now());
     mtime = std::chrono::system_clock::to_time_t(sctp);
-    const int64_t file_size = std::filesystem::file_size(file_path);
+    const int64_t file_size = std::filesystem::file_size(Entry::path);
     if (!mapped_size.has_value()) {
       msize = file_size - start;
     } else {
@@ -78,12 +78,12 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, std::optional<int64
       const unsigned int code = GetDriveType(root_path.data());
       switch (code) {
       case 0: // DRIVE_UNKNOWN
-        DEBUG("cannot get filesystem information on file \"" + Entry::path.string() + "\": " + strerror(errno));
+        DEBUG("cannot get filesystem information on file \"" + Entry::path.string() + "\": " + MR::C_strerror(errno));
         DEBUG("  defaulting to delayed write-back");
         delayed_writeback = true;
         break;
       case 1: // DRIVE_NO_ROOT_DIR:
-        DEBUG("erroneous root path derived for file \"" + Entry::path.string() + "\": " + strerror(errno));
+        DEBUG("erroneous root path derived for file \"" + Entry::path.string() + "\": " + MR::C_strerror(errno));
         DEBUG("  defaulting to delayed write-back");
         delayed_writeback = true;
         break;
@@ -113,7 +113,7 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, std::optional<int64
 #else
     struct statfs fsbuf;
     if (statfs(Entry::path.string().c_str(), &fsbuf)) {
-      DEBUG("cannot get filesystem information on file \"" + Entry::path.string() + "\": " + strerror(errno));
+      DEBUG("cannot get filesystem information on file \"" + Entry::path.string() + "\": " + MR::C_strerror(errno));
       DEBUG("  defaulting to delayed write-back");
       delayed_writeback = true;
     }
@@ -144,11 +144,12 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, std::optional<int64
         CONSOLE("preloading contents of mapped file \"" + Entry::path.string() + "\"...");
         std::ifstream in(Entry::path, std::ios::in | std::ios::binary);
         if (!in)
-          throw Exception("failed to open file \"" + Entry::path.string() + "\": " + strerror(errno));
+          throw Exception("failed to open file \"" + Entry::path.string() + "\": " + MR::C_strerror(errno));
         in.seekg(start, in.beg);
         in.read(reinterpret_cast<char *>(first), msize);
         if (!in.good())
-          throw Exception("error preloading contents of file \"" + Entry::path.string() + "\": " + strerror(errno));
+          throw Exception("error preloading contents of file \"" + Entry::path.string() + "\": " + //
+                          MR::C_strerror(errno));                                                  //
       } else
         memset(first, 0, msize);
       DEBUG("file \"" + Entry::path.string() + "\" held in RAM at " + str(reinterpret_cast<void *>(first)) + "," + //
@@ -159,9 +160,9 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, std::optional<int64
   }
 
   // use regular memory-mapping:
-
-  if ((fd = open(Entry::path.string().c_str(), (readwrite ? O_RDWR : O_RDONLY), 0666)) < 0)
-    throw Exception("error opening file \"" + Entry::path.string() + "\": " + strerror(errno));
+  fd = open(Entry::path.string().c_str(), (readwrite ? O_RDWR : O_RDONLY), 0666);
+  if (fd < 0)
+    throw Exception("error opening file \"" + Entry::path.string() + "\": " + MR::C_strerror(errno));
 
   try {
 #ifdef MRTRIX_WINDOWS
@@ -183,7 +184,7 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, std::optional<int64
   } catch (...) {
     close(fd);
     addr = nullptr;
-    throw Exception("memory-mapping failed for file \"" + Entry::path.string() + "\": " + strerror(errno));
+    throw Exception("memory-mapping failed for file \"" + Entry::path.string() + "\": " + MR::C_strerror(errno));
   }
   first = addr + start;
   DEBUG("file \"" + Entry::path.string() + "\" mapped at " + str(reinterpret_cast<void *>(addr)) + "," + //
@@ -200,7 +201,7 @@ MMap::~MMap() {
 #else
     if (munmap(addr, msize))
 #endif
-      WARN("error unmapping file \"" + Entry::path.string() + "\": " + strerror(errno));
+      WARN("error unmapping file \"" + Entry::path.string() + "\": " + MR::C_strerror(errno));
     close(fd);
   } else {
     if (readwrite) {
@@ -212,7 +213,7 @@ MMap::~MMap() {
         if (!out.good())
           throw 1;
       } catch (...) {
-        FAIL("error writing back contents of file \"" + Entry::path.string() + "\": " + strerror(errno));
+        FAIL("error writing back contents of file \"" + Entry::path.string() + "\": " + MR::C_strerror(errno));
         App::exit_error_code = 1;
       }
     }

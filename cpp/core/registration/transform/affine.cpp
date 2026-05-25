@@ -15,10 +15,14 @@
  */
 
 #include "registration/transform/affine.h"
+
+#include "eigen_plugins/eigen_plugins.h"
+#include <iterator>
+#include <unsupported/Eigen/MatrixFunctions>
+
 #include "math/gradient_descent.h"
 #include "math/math.h"
 #include "math/median.h"
-#include <iterator>
 
 namespace MR {
 using namespace MR::Math;

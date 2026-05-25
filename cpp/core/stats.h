@@ -17,6 +17,7 @@
 #pragma once
 
 #include "math/median.h"
+#include "mrtrix.h"
 
 #include <iomanip>
 #include <vector>
@@ -67,7 +68,7 @@ public:
         if (fields[n] == "mean")
           std::cout << str(mean) << " ";
         else if (fields[n] == "median")
-          std::cout << (!values.empty() ? str(Math::median(values)) : "N/A") << " ";
+          std::cout << (values.empty() ? "N/A" : str(Math::median(values))) << " ";
         else if (fields[n] == "std")
           std::cout << (count > 1 ? str(std) : "N/A") << " ";
         else if (fields[n] == "std_rv")

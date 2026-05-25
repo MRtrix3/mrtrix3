@@ -15,6 +15,8 @@
  */
 
 #include <cstddef>
+#include <cstring>
+#include <limits>
 
 #include "file/config.h"
 #include "file/mmap.h"
@@ -76,8 +78,9 @@ inline size_t char2order(char item, bool &forward) {
   case 'E':
     forward = false;
     return (3);
+  default:
+    return (std::numeric_limits<size_t>::max());
   }
-  return (std::numeric_limits<size_t>::max());
 }
 
 inline char order2char(size_t axis, bool forward) {
@@ -102,8 +105,9 @@ inline char order2char(size_t axis, bool forward) {
       return ('B');
     else
       return ('E');
+  default:
+    return ('\0');
   }
-  return ('\0');
 }
 
 inline uint32_t type(const std::byte *pos, bool is_BE) { return Raw::fetch_<uint32_t>(pos, is_BE); }
@@ -151,7 +155,7 @@ std::unique_ptr<ImageIO::Base> MRI::read(Header &H) const {
 
   File::MMap fmap(const_cast<const Header &>(H).path());
 
-  if (memcmp(fmap.address(), "MRI#", 4))
+  if (memcmp(fmap.address(), "MRI#", 4) != 0)
     throw Exception("file \"" + H.path().string() + "\" is not in MRI format (unrecognised magic number)");
 
   bool is_BE = false;

@@ -410,7 +410,7 @@ void Overlay::onSetVolumeIndex() {
 
   for (int i = 0; i < volume_index_layout->count(); ++i) {
     auto *box = dynamic_cast<SpinBox *>(volume_index_layout->itemAt(i)->widget());
-    if (overlay->header().ndim() <= static_cast<size_t>(i + 3))
+    if (overlay->header().ndim() <= static_cast<size_t>(i) + 3)
       break;
     overlay->image.index(i + 3) = box->value();
   }

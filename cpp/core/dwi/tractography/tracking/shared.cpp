@@ -254,6 +254,7 @@ void SharedBase::add_termination(const term_t i, const Eigen::Vector3f &p) const
 #endif
 
 bool SharedBase::termination_relevant(const term_t i) const {
+  // NOLINTBEGIN(bugprone-branch-clone)
   switch (i) {
   case term_t::ENTER_CGM:
     return is_act();
@@ -280,10 +281,12 @@ bool SharedBase::termination_relevant(const term_t i) const {
   case term_t::TRAVERSE_ALL_INCLUDE:
     return stop_on_all_include;
   }
+  // NOLINTEND(bugprone-branch-clone)
   return false;
 }
 
 bool SharedBase::rejection_relevant(const reject_t i) const {
+  // NOLINTBEGIN(bugprone-branch-clone)
   switch (i) {
   case reject_t::INVALID_SEED:
     return true;
@@ -302,6 +305,7 @@ bool SharedBase::rejection_relevant(const reject_t i) const {
   case reject_t::ACT_FAILED_WM_REQUIREMENT:
     return is_act();
   }
+  // NOLINTEND(bugprone-branch-clone)
   return false;
 }
 

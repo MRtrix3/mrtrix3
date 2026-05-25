@@ -15,6 +15,10 @@
  */
 
 #include "file/dicom/tree.h"
+
+#include <cerrno>
+
+#include "exception.h"
 #include "file/dicom/element.h"
 #include "file/dicom/image.h"
 #include "file/dicom/patient.h"
@@ -58,7 +62,7 @@ void Tree::read_dir(const std::filesystem::path &dirpath, ProgressBar &progress)
       ++progress;
     }
   } catch (Exception &E) {
-    throw Exception(E, "error opening DICOM folder \"" + dirpath.string() + "\": " + strerror(errno));
+    throw Exception(E, "error opening DICOM folder \"" + dirpath.string() + "\": " + MR::C_strerror(errno));
   }
 }
 
@@ -104,7 +108,8 @@ void Tree::read(const std::filesystem::path &path) {
   } else {
     try {
       read_file(path);
-    } catch (Exception) {
+    } catch (Exception &e) {
+      DEBUG("Error reading DICOM file \"" + path.string() + "\" (\"" + e[0] + "\"); ignored");
     }
   }
 

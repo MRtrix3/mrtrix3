@@ -21,10 +21,12 @@
 #include <filesystem>
 #include <iostream>
 #include <signal.h>
+#include <tuple>
 #include <unistd.h>
 #include <vector>
 
 #include "app.h"
+#include "env.h"
 #include "file/path.h"
 
 #ifdef MRTRIX_WINDOWS
@@ -60,13 +62,13 @@ void handler(int i) noexcept {
     const char *msg = nullptr; // check_syntax off
     switch (i) {
 
-#define __SIGNAL(SIG, MSG)                                                                                             \
+#define MRTRIX_MANIP_SIGNAL(SIG, MSG)                                                                                  \
   case SIG:                                                                                                            \
     sig = #SIG;                                                                                                        \
     msg = MSG;                                                                                                         \
     break;
 #include "signals.h"
-#undef __SIGNAL
+#undef MRTRIX_MANIP_SIGNAL
 
     default:
       sig = "UNKNOWN";
@@ -79,10 +81,8 @@ void handler(int i) noexcept {
     char str[256]; // check_syntax off
     str[255] = '\0';
     snprintf(str, 255, "\n%s: [SYSTEM FATAL CODE: %s (%d)] %s\n", App::NAME.c_str(), sig, i, msg);
-    if (write(STDERR_FILENO, str, strnlen(str, 256)) == 0)
-      std::_Exit(i);
-    else
-      std::_Exit(i);
+    std::ignore = write(STDERR_FILENO, &str[0], strnlen(&str[0], 256));
+    std::_Exit(i);
   }
 }
 
@@ -97,12 +97,12 @@ void init() {
   // ENVVAR Note however that this prevents the
   // ENVVAR deletion of temporary files when the command terminates
   // ENVVAR abnormally.
-  if (getenv("MRTRIX_NOSIGNALS"))
+  if (MR::get_env("MRTRIX_NOSIGNALS").has_value())
     return;
 
 #ifdef MRTRIX_WINDOWS
     // Use signal() rather than sigaction() for Windows, as the latter is not supported
-#define __SIGNAL(SIG, MSG) signal(SIG, handler)
+#define MRTRIX_MANIP_SIGNAL(SIG, MSG) signal(SIG, handler)
 #else
   // Construct the signal structure
   struct sigaction act;
@@ -110,10 +110,10 @@ void init() {
   // Since we're _Exit()-ing for any of these signals, block them all
   sigfillset(&act.sa_mask);
   act.sa_flags = 0;
-#define __SIGNAL(SIG, MSG) sigaction(SIG, &act, nullptr)
+#define MRTRIX_MANIP_SIGNAL(SIG, MSG) sigaction(SIG, &act, nullptr)
 #endif
-
 #include "signals.h"
+#undef MRTRIX_MANIP_SIGNAL
 }
 
 void on_signal(cleanup_function_type func) {

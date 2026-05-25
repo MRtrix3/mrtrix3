@@ -188,7 +188,7 @@ void TckFactor::estimate_factors() {
   const double init_cf = calc_cost_function();
   double cf_data = init_cf;
   double new_cf = init_cf;
-  double prev_cf = init_cf;
+  double prev_cf = NaN;
   double cf_reg = 0.0;
   const double required_cf_change = -min_cf_decrease_percentage * init_cf;
 

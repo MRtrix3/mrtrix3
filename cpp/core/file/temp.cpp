@@ -17,11 +17,15 @@
 #include "file/temp.h"
 
 #include <fcntl.h>
+#include <filesystem>
+#include <optional>
+#include <random>
 #include <string>
 #include <sys/stat.h>
 #include <unistd.h>
 
 #include "app.h"
+#include "env.h"
 #include "exception.h"
 #include "file/config.h"
 #include "file/path.h"
@@ -30,7 +34,9 @@ namespace MR::File {
 
 namespace {
 inline char random_char() {
-  const char c = rand() % 62;
+  thread_local std::mt19937 rng{std::random_device{}()};
+  thread_local std::uniform_int_distribution<int> dist{0, 61};
+  const char c = static_cast<const char>(dist(rng));
   if (c < 10)
     return c + 48;
   if (c < 36)
@@ -61,24 +67,16 @@ inline char random_char() {
 // ENVVAR temporary files (as used in Unix pipes) for a single session,
 // ENVVAR within a single script, or for a single command without
 // ENVVAR modifying the configuration  file.
-std::filesystem::path __get_tmpfile_dir() {
-  const char *from_env_mrtrix = getenv("MRTRIX_TMPFILE_DIR"); // check_syntax off
-  if (from_env_mrtrix != nullptr)
-    return std::string(from_env_mrtrix);
-
-  std::filesystem::path default_tmpdir = std::filesystem::temp_directory_path();
-
-  const char *from_env_general = getenv("TMPDIR"); // check_syntax off
-  if (from_env_general != nullptr)
-    default_tmpdir = std::filesystem::path(from_env_general);
-
-  const std::string from_config = File::Config::get("TmpFileDir");
-  return from_config.empty() ? default_tmpdir : std::filesystem::path(from_config);
+std::filesystem::path _get_tmpfile_dir() {
+  const std::optional<std::filesystem::path> from_env_mrtrix = MR::get_env("MRTRIX_TMPFILE_DIR");
+  if (from_env_mrtrix.has_value())
+    return from_env_mrtrix.value();
+  return {File::Config::get("TmpFileDir", MR::get_env("TMPDIR", std::filesystem::temp_directory_path().string()))};
 }
 
 const std::filesystem::path &tmpfile_dir() {
-  static const std::filesystem::path __tmpfile_dir{__get_tmpfile_dir()};
-  return __tmpfile_dir;
+  static const std::filesystem::path _tmpfile_dir{_get_tmpfile_dir()};
+  return _tmpfile_dir;
 }
 
 // CONF option: TmpFilePrefix
@@ -96,16 +94,16 @@ const std::filesystem::path &tmpfile_dir() {
 // ENVVAR the name  of temporary files (as used in Unix pipes) for a
 // ENVVAR single session, within a single script, or for a single command
 // ENVVAR without modifying the configuration file.
-std::string __get_tmpfile_prefix() {
-  const char *from_env = getenv("MRTRIX_TMPFILE_PREFIX"); // check_syntax off
-  if (from_env != nullptr)
-    return from_env;
+std::string _get_tmpfile_prefix() {
+  const std::optional<std::string> from_env = MR::get_env("MRTRIX_TMPFILE_PREFIX");
+  if (from_env.has_value())
+    return from_env.value();
   return File::Config::get("TmpFilePrefix", "mrtrix-tmp-");
 }
 
 std::string tmpfile_prefix() {
-  static const std::string __tmpfile_prefix = __get_tmpfile_prefix();
-  return __tmpfile_prefix;
+  static const std::string _tmpfile_prefix = _get_tmpfile_prefix();
+  return _tmpfile_prefix;
 }
 
 } // namespace
@@ -136,12 +134,12 @@ std::filesystem::path create_tempfile(int64_t size, std::string_view suffix) {
 
   if (fid < 0)
     throw Exception(std::string("error creating temporary file in directory \"" + tmpfile_dir().string() + "\": ") +
-                    strerror(errno));
+                    MR::C_strerror(errno));
 
   const int status = size == 0 ? 0 : ftruncate(fid, size);
   close(fid);
   if (status)
-    throw Exception("cannot resize file \"" + filepath.string() + "\": " + strerror(errno));
+    throw Exception("cannot resize file \"" + filepath.string() + "\": " + MR::C_strerror(errno));
 
   return filepath;
 }

@@ -165,11 +165,11 @@ protected:
       vertex_array_object.bind();
 
       gl::EnableVertexAttribArray(0);
-      gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 2 * sizeof(Eigen::Vector3f), (void *)0);
+      gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 2 * sizeof(Eigen::Vector3f), nullptr);
 
       gl::EnableVertexAttribArray(1);
       gl::VertexAttribPointer(
-          1, 3, gl::FLOAT, gl::FALSE_, 2 * sizeof(Eigen::Vector3f), (void *)(sizeof(Eigen::Vector3f)));
+          1, 3, gl::FLOAT, gl::FALSE_, 2 * sizeof(Eigen::Vector3f), reinterpret_cast<void *>(sizeof(Eigen::Vector3f)));
     } else {
       vertex_buffer.bind(gl::ARRAY_BUFFER);
       vertex_array_object.bind();

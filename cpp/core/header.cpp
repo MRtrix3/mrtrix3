@@ -150,7 +150,8 @@ Header Header::open(const std::filesystem::path &image_path) {
     H.path() = list[item_index].name();
 
     for (; *format_handler; format_handler++) {
-      if ((H.io = (*format_handler)->read(H)))
+      H.io = (*format_handler)->read(H);
+      if (static_cast<bool>(H.io))
         break;
     }
 
@@ -194,7 +195,8 @@ Header Header::open(const std::filesystem::path &image_path) {
             std::unique_ptr<ImageIO::Base> io_handler;
             header.path() = list[++item_index].name();
             header.keyval().clear();
-            if (!(io_handler = (*format_handler)->read(header)))
+            io_handler = (*format_handler)->read(header);
+            if (io_handler == nullptr)
               throw Exception("image specifier contains mixed format files");
             assert(io_handler);
             template_header.check(header);
@@ -878,11 +880,11 @@ concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, con
       Eigen::MatrixXd extra_pe;
       try {
         extra_dw = DWI::parse_DW_scheme(H);
-      } catch (Exception &) {
+      } catch (Exception &) { // NOLINT(bugprone-empty-catch)
       }
       try {
         extra_pe = Metadata::PhaseEncoding::get_scheme(H);
-      } catch (Exception &) {
+      } catch (Exception &) { // NOLINT(bugprone-empty-catch)
       }
 
       switch (dwscheme_manip) {

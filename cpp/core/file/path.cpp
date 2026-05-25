@@ -17,7 +17,9 @@
 #include "file/path.h"
 
 #include <algorithm>
+#include <optional>
 
+#include "env.h"
 #include "exception.h"
 
 namespace MR::Path {
@@ -53,10 +55,10 @@ bool is_mrtrix_image(const std::filesystem::path &path) {
 const std::filesystem::path &home() {
   static std::filesystem::path result;
   if (result.empty()) {
-    const char *const home = getenv(home_env.c_str()); // check_syntax off
-    if (!home)
+    const std::optional<std::string> home = MR::get_env(home_env);
+    if (!home.has_value())
       throw Exception(home_env + " environment variable is not set!");
-    result = home;
+    result = home.value();
   }
   return result;
 }

@@ -17,13 +17,16 @@
 #include "fixel/validate.h"
 
 #include <limits>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "algo/loop.h"
+#include "exception.h"
 #include "fixel/helpers.h"
 #include "image.h"
+#include "mrtrix.h"
 
 namespace MR::Fixel {
 
@@ -67,7 +70,8 @@ void validate_directory(const std::filesystem::path &fixel_directory_path) {
                                         " but the index image contains " + str(total_nfixels)); //
     } catch (InvalidDirectoryException &) {
       throw;
-    } catch (...) {
+    } catch (Exception &e) {
+      DEBUG("Unable to open \"" + entry.path().string() + "\" as image; ignoring");
     }
   }
   if (!directions_found)
@@ -104,13 +108,17 @@ index_type validate_index_image(Image<index_type> index_image) {
   // Check whether this total number matches what is stored in the header
   try {
     const index_type nfixels_header = to<index_type>(index_image.keyval().at(n_fixels_key));
-    if (to<index_type>(index_image.keyval().at(n_fixels_key)) != total_nfixels) {
+    if (nfixels_header != total_nfixels) {
       WARN("Total number of fixels indicated in header of image \"" + index_image.name() + "\"" + //
            " (" + str(nfixels_header) + ")" +                                                     //
            " does not match that indicated in image data" +                                       //
            " (" + str(total_nfixels) + ")");                                                      //
     }
-  } catch (std::out_of_range &) {
+  } catch (std::out_of_range &e) {
+    DEBUG("Fixel count \"" + index_image.keyval().at(n_fixels_key) + "\"" + //
+          " in fixel index image \"" + index_image.name() + "\"" +          //
+          " out of integer range (error: \"" + str(e.what()) + "\");" +     //
+          " unable to compare to max fixel index in image (" + str(total_nfixels) + "\"");
   }
 
   // Verify that every fixel index in [0, total_nfixels) is covered

@@ -16,11 +16,11 @@
 
 #pragma once
 
+#include "eigen_plugins/eigen_plugins.h"
+#include <Eigen/Dense>
 #include <cmath>
 #include <sys/types.h>
 #include <type_traits>
-
-#include <Eigen/Core>
 
 #include "math/math.h"
 

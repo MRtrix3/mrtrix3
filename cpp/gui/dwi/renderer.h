@@ -16,8 +16,7 @@
 
 #pragma once
 
-#include <array>
-
+#include "eigen_plugins/eigen_plugins.h"
 #include <Eigen/Eigenvalues>
 #include <QOpenGLWidget>
 
@@ -114,7 +113,7 @@ protected:
   void half_draw() const {
     const GLuint num_indices =
         (mode == mode_t::SH ? sh.num_indices() : (mode == mode_t::TENSOR ? tensor.num_indices() : dixel.num_indices()));
-    gl::DrawElements(gl::TRIANGLES, num_indices, gl::UNSIGNED_INT, (void *)0);
+    gl::DrawElements(gl::TRIANGLES, num_indices, gl::UNSIGNED_INT, nullptr);
   }
 
 private:

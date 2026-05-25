@@ -16,6 +16,7 @@
 
 #include "dwi/directions/validate.h"
 
+#include "eigen_plugins/eigen_plugins.h"
 #include <Eigen/Dense>
 #include <cmath>
 #include <string>
@@ -163,12 +164,14 @@ validate(const MatrixType &M, const std::filesystem::path &path, const bool perm
     throw Exception(e, "Direction file \"" + path.string() + "\" validation failed");
   }
 
+  // NOLINTNEXTLINE(bugprone-unused-local-non-trivial-variable)
   const std::string fmt = result.format == DirectionsFormat::Spherical   ? "spherical"
                           : result.format == DirectionsFormat::Cartesian ? "Cartesian"
                                                                          : "gradient table";
   DEBUG("Direction file \"" + path.string() + "\": " +                     //
         str(result.n_directions) + " direction(s) in " + fmt + " format"); //
   if (result.n_non_unit) {
+    // NOLINTNEXTLINE(bugprone-unused-local-non-trivial-variable)
     const std::string msg = "Direction file \"" + path.string() + "\": " +                 //
                             str(result.n_non_unit) + " direction(s) are not of unit norm"; //
     if (result.format == DirectionsFormat::Cartesian) {

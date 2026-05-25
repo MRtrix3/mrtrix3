@@ -333,11 +333,11 @@ template <class HeaderType> inline List contiguous_along_spatial_axes(const Head
   return strides;
 }
 
-List __from_command_line(const List &current);
+List _from_command_line(const List &current);
 
 template <class HeaderType>
 inline void set_from_command_line(HeaderType &header, const List &default_strides = List()) {
-  auto cmdline_strides = __from_command_line(get(header));
+  auto cmdline_strides = _from_command_line(get(header));
   if (cmdline_strides.size())
     set(header, cmdline_strides);
   else if (!default_strides.empty())

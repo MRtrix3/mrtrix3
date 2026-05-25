@@ -30,12 +30,12 @@ public:
 
   Scalar(const Scalar &that) = default;
 
-  Scalar(Scalar &&that) : Base(std::move(that)), name(std::move(that.name)) {}
+  Scalar(Scalar &&that) : Base(std::move(static_cast<Base &&>(that))), name(std::move(that.name)) {}
 
   Scalar() {}
 
   Scalar &operator=(Scalar &&that) {
-    Base::operator=(std::move(that));
+    Base::operator=(std::move(static_cast<Base &&>(that)));
     name = std::move(that.name);
     return *this;
   }

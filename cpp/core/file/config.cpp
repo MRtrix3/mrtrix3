@@ -16,6 +16,8 @@
 
 #include "app.h"
 #include "debug.h"
+#include "env.h"
+#include "exception.h"
 #include "header.h"
 
 #include "file/config.h"
@@ -36,9 +38,7 @@ const std::string Config::default_sys_config_file("/etc/" + file_basename);
 // ENVVAR the software to have different configurations, etc.
 
 void Config::init() {
-  const char *sysconf_location_env = getenv("MRTRIX_CONFIGFILE"); // check_syntax off
-  const std::string sysconf_location(sysconf_location_env == nullptr ? default_sys_config_file
-                                                                     : std::string(sysconf_location_env));
+  const std::string sysconf_location = MR::get_env("MRTRIX_CONFIGFILE", default_sys_config_file);
 
   std::filesystem::path sysconf_path(sysconf_location);
   if (std::filesystem::is_regular_file(sysconf_path)) {
@@ -48,7 +48,8 @@ void Config::init() {
       while (kv.next()) {
         config[std::string(kv.key())] = std::string(kv.value());
       }
-    } catch (...) {
+    } catch (Exception &e) {
+      WARN("Error reading key-values from system config file \"" + sysconf_location + "\": " + e[0]);
     }
   } else {
     DEBUG(std::string("No config file found at \"") + sysconf_path.string() + "\"");
@@ -61,7 +62,8 @@ void Config::init() {
       while (kv.next()) {
         config[std::string(kv.key())] = std::string(kv.value());
       }
-    } catch (...) {
+    } catch (Exception &e) {
+      WARN("Error reading key-values from user config file \"" + home_path.string() + "\": " + e[0]);
     }
   } else {
     DEBUG("No config file found at \"" + home_path.string() + "\"");

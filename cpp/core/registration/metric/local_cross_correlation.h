@@ -21,6 +21,7 @@
 #include "algo/neighbourhooditerator.h"
 #include "algo/threaded_loop.h"
 #include "filter/reslice.h"
+#include "interp/linear.h"
 #include "transform.h"
 
 namespace MR::Registration::Metric {

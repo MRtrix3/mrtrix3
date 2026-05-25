@@ -14,7 +14,9 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <array>
 #include <map>
+#include <vector>
 
 #include "dwi/renderer.h"
 #include "gui.h"
@@ -312,11 +314,11 @@ void Renderer::SH::initGL() {
 
   half_sphere.vertex_buffer.bind(gl::ARRAY_BUFFER);
   gl::EnableVertexAttribArray(0);
-  gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, sizeof(Shapes::HalfSphere::Vertex), (void *)0);
+  gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, sizeof(Shapes::HalfSphere::Vertex), nullptr);
 
   surface_buffer.bind(gl::ARRAY_BUFFER);
   gl::EnableVertexAttribArray(1);
-  gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE_, 3 * sizeof(GLfloat), (void *)0);
+  gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE_, 3 * sizeof(GLfloat), nullptr);
 
   half_sphere.index_buffer.bind();
   GL_CHECK_ERROR;
@@ -331,7 +333,7 @@ void Renderer::SH::bind() {
 void Renderer::SH::set_data(const vector_t &r_del_daz, int /*buffer_ID*/) const {
   surface_buffer.bind(gl::ARRAY_BUFFER);
   gl::BufferData(gl::ARRAY_BUFFER, r_del_daz.size() * sizeof(float), &r_del_daz[0], gl::STREAM_DRAW);
-  gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE_, 3 * sizeof(GLfloat), (void *)0);
+  gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE_, 3 * sizeof(GLfloat), nullptr);
 }
 
 void Renderer::SH::update_mesh(const size_t lod, const int lmax) {
@@ -422,7 +424,7 @@ void Renderer::Tensor::initGL() {
 
   half_sphere.vertex_buffer.bind(gl::ARRAY_BUFFER);
   gl::EnableVertexAttribArray(0);
-  gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, sizeof(Shapes::HalfSphere::Vertex), (void *)0);
+  gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, sizeof(Shapes::HalfSphere::Vertex), nullptr);
 
   half_sphere.index_buffer.bind();
   GL_CHECK_ERROR;
@@ -491,11 +493,11 @@ void Renderer::Dixel::initGL() {
 
   vertex_buffer.bind(gl::ARRAY_BUFFER);
   gl::EnableVertexAttribArray(0);
-  gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 3 * sizeof(GLfloat), (void *)0);
+  gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 3 * sizeof(GLfloat), nullptr);
 
   value_buffer.bind(gl::ARRAY_BUFFER);
   gl::EnableVertexAttribArray(1);
-  gl::VertexAttribPointer(1, 1, gl::FLOAT, gl::FALSE_, sizeof(GLfloat), (void *)0);
+  gl::VertexAttribPointer(1, 1, gl::FLOAT, gl::FALSE_, sizeof(GLfloat), nullptr);
   GL_CHECK_ERROR;
 }
 
@@ -512,7 +514,7 @@ void Renderer::Dixel::set_data(const vector_t &data, int /*buffer_ID*/) const {
   VAO.bind();
   value_buffer.bind(gl::ARRAY_BUFFER);
   gl::BufferData(gl::ARRAY_BUFFER, vertex_count * sizeof(GLfloat), &data[0], gl::STREAM_DRAW);
-  gl::VertexAttribPointer(1, 1, gl::FLOAT, gl::FALSE_, sizeof(GLfloat), (void *)0);
+  gl::VertexAttribPointer(1, 1, gl::FLOAT, gl::FALSE_, sizeof(GLfloat), nullptr);
   GL_CHECK_ERROR;
 }
 
@@ -564,7 +566,7 @@ void Renderer::Dixel::update_dixels(const MR::DWI::Directions::Set &dirs) {
   VAO.bind();
   vertex_buffer.bind(gl::ARRAY_BUFFER);
   gl::BufferData(gl::ARRAY_BUFFER, dirs.size() * sizeof(Eigen::Vector3f), &directions_data[0], gl::STATIC_DRAW);
-  gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 3 * sizeof(GLfloat), (void *)0);
+  gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 3 * sizeof(GLfloat), nullptr);
   index_buffer.bind();
   gl::BufferData(
       gl::ELEMENT_ARRAY_BUFFER, indices_data.size() * sizeof(std::array<GLint, 3>), &indices_data[0], gl::STATIC_DRAW);

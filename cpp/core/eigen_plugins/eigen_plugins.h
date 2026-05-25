@@ -14,26 +14,16 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#pragma once
-
-#include <filesystem>
-
-#include "exception.h"
-#include "file/mmap.h"
-#include "file/ofstream.h"
-
-namespace MR::File {
-
-inline void copy(const std::filesystem::path &source, const std::filesystem::path &destination) {
-  {
-    DEBUG("copying file \"" + source.string() + "\" to \"" + destination.string() + "\"...");
-    MMap input(source);
-    { File::OFStream out(destination); }
-    std::filesystem::resize_file(destination, input.size());
-    MMap output(destination, true);
-    ::memcpy(output.address(), input.address(), input.size());
-  }
-  check_app_exit_code();
-}
-
-} // namespace MR::File
+namespace MR::Helper {
+template <class ImageType> class ConstRow;
+template <class ImageType> class Row;
+} // namespace MR::Helper
+#define EIGEN_DENSEBASE_PLUGIN "eigen_plugins/dense_base.h"  // check_syntax off
+#define EIGEN_MATRIXBASE_PLUGIN "eigen_plugins/dense_base.h" // check_syntax off
+#define EIGEN_ARRAYBASE_PLUGIN "eigen_plugins/dense_base.h"  // check_syntax off
+#define EIGEN_MATRIX_PLUGIN "eigen_plugins/matrix.h"         // check_syntax off
+#define EIGEN_ARRAY_PLUGIN "eigen_plugins/array.h"           // check_syntax off
+#include <Eigen/Geometry>
+#ifdef EIGEN_HAS_OPENMP
+#undef EIGEN_HAS_OPENMP
+#endif

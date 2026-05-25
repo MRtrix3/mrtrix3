@@ -603,7 +603,7 @@ void ODF::dirs_slot() {
       if (preview)
         preview->render_frame->clear_dixels();
       break;
-    case 4: // From file
+    case 4: { // From file
       auto load_paths =
           Dialog::File::input_filepath(this, "Select directions file", "Text files (*.txt)", current_folder);
       if (load_paths.empty()) {
@@ -612,7 +612,10 @@ void ODF::dirs_slot() {
       }
       settings->dixel->set_from_file(load_paths.single_selection);
       current_folder = load_paths.last_directory;
-      break;
+    } break;
+    default:
+      assert(false);
+      return;
     }
     shell_selector->setEnabled(dir_type == 0 && settings->dixel->shells && settings->dixel->shells->count() > 1);
     if (dir_type == 3) {

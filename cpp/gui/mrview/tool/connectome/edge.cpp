@@ -22,6 +22,7 @@
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/streamline.h"
 #include "mrview/tool/connectome/connectome.h"
+#include "opengl/gl_core_3_3.h"
 
 namespace MR::GUI::MRView::Tool {
 
@@ -114,10 +115,10 @@ Edge::Line::Line(const Edge &parent) {
   vertex_array_object.bind();
   vertex_buffer.bind(gl::ARRAY_BUFFER);
   gl::EnableVertexAttribArray(0);
-  gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 0, (void *)(0));
+  gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 0, nullptr);
   tangent_buffer.bind(gl::ARRAY_BUFFER);
   gl::EnableVertexAttribArray(1);
-  gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE_, 0, (void *)(0));
+  gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE_, 0, nullptr);
   GL::assert_context_is_current();
 }
 
@@ -184,10 +185,10 @@ Edge::Streamline::Streamline(const Exemplar &data) {
   vertex_array_object.bind();
   vertex_buffer.bind(gl::ARRAY_BUFFER);
   gl::EnableVertexAttribArray(0);
-  gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 0, (void *)(0));
+  gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 0, nullptr);
   tangent_buffer.bind(gl::ARRAY_BUFFER);
   gl::EnableVertexAttribArray(1);
-  gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE_, 0, (void *)(0));
+  gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE_, 0, nullptr);
   GL::assert_context_is_current();
 }
 
@@ -262,13 +263,13 @@ Edge::Streamtube::Streamtube(const Exemplar &data) : count(data.vertices.size())
   vertex_array_object.bind();
   vertex_buffer.bind(gl::ARRAY_BUFFER);
   gl::EnableVertexAttribArray(0);
-  gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 0, (void *)(0));
+  gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 0, nullptr);
   tangent_buffer.bind(gl::ARRAY_BUFFER);
   gl::EnableVertexAttribArray(1);
-  gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE_, 0, (void *)(0));
+  gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE_, 0, nullptr);
   normal_buffer.bind(gl::ARRAY_BUFFER);
   gl::EnableVertexAttribArray(2);
-  gl::VertexAttribPointer(2, 3, gl::FLOAT, gl::FALSE_, 0, (void *)(0));
+  gl::VertexAttribPointer(2, 3, gl::FLOAT, gl::FALSE_, 0, nullptr);
   GL::assert_context_is_current();
 }
 

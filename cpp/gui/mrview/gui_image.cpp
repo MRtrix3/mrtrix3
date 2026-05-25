@@ -431,7 +431,7 @@ template <typename ValueType> inline void Image::copy_texture_3D() {
     using MR::Image<cfloat>::buffer;
 
     WithType(const MR::Image<cfloat> &source) : MR::Image<cfloat>(source) {
-      __set_fetch_store_scale_functions(fetch_func, store_func, buffer->datatype());
+      _set_fetch_store_scale_functions(fetch_func, store_func, buffer->datatype());
     }
     FORCE_INLINE ValueType value() const {
       ssize_t nseg = data_offset / buffer->get_io()->segment_size();
@@ -619,15 +619,9 @@ inline bool Image::volume_unchanged() {
 
 inline bool Image::format_unchanged() {
   std::string cmap_name = ColourMap::maps[colourmap].name;
-
-  if (cmap_name == "RGB" && format != gl::RGB)
-    return false;
-  else if (cmap_name == "Complex" && format != gl::RG)
-    return false;
-  else if (format != gl::RED)
-    return false;
-
-  return true;
+  return !((cmap_name == "RGB" && format != gl::RGB) ||    //
+           (cmap_name == "Complex" && format != gl::RG) || //
+           format != gl::RED);                             //
 }
 
 } // namespace MR::GUI::MRView

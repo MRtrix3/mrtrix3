@@ -140,15 +140,15 @@ public:
   iFOD2(const Shared &shared)
       : MethodBase(shared),
         S(shared),
-        source(S.source, S.source_mask),
         mean_sample_num(0),
         num_sample_runs(0),
         num_truncations(0),
         max_truncation(0.0),
-        positions(S.num_samples),
         calib_positions(S.num_samples),
-        tangents(S.num_samples),
         calib_tangents(S.num_samples),
+        source(S.source, S.source_mask),
+        positions(S.num_samples),
+        tangents(S.num_samples),
         sample_idx(S.num_samples) {
     calibrate(*this);
   }
@@ -156,17 +156,17 @@ public:
   iFOD2(const iFOD2 &that)
       : MethodBase(that.S),
         S(that.S),
-        source(S.source, S.source_mask),
         calibrate_ratio(that.calibrate_ratio),
         mean_sample_num(0),
         num_sample_runs(0),
         num_truncations(0),
         max_truncation(0.0),
         calibrate_list(that.calibrate_list),
-        positions(S.num_samples),
         calib_positions(S.num_samples),
-        tangents(S.num_samples),
         calib_tangents(S.num_samples),
+        source(S.source, S.source_mask),
+        positions(S.num_samples),
+        tangents(S.num_samples),
         sample_idx(S.num_samples) {}
 
   ~iFOD2() {
@@ -315,20 +315,24 @@ public:
 
 private:
   const Shared &S;
-  Interpolator<Image<float>>::type source;
+
   float calibrate_ratio, half_log_prob0, last_half_log_probN, half_log_prob0_seed;
   size_t mean_sample_num, num_sample_runs, num_truncations;
   float max_truncation;
   std::vector<Eigen::Vector3f> calibrate_list;
+  std::vector<Eigen::Vector3f> calib_positions;
+  std::vector<Eigen::Vector3f> calib_tangents;
 
+protected:
+  Interpolator<Image<float>>::type source;
   // Store list of points in the currently-calculated arc
-  std::vector<Eigen::Vector3f> positions, calib_positions;
-  std::vector<Eigen::Vector3f> tangents, calib_tangents;
-
+  std::vector<Eigen::Vector3f> positions;
+  std::vector<Eigen::Vector3f> tangents;
   // Generate an arc only when required, and on the majority of next() calls, simply return the next point
   //   in the arc - more dense structural image sampling
   size_t sample_idx;
 
+private:
   FORCE_INLINE float FOD(const Eigen::Vector3f &direction) const {
     return (S.precomputer ? S.precomputer.value(values, direction) : Math::SH::value(values, direction, S.lmax));
   }

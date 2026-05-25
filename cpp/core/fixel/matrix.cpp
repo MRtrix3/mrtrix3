@@ -189,7 +189,6 @@ private:
 } // namespace
 
 #define FIXEL_MATRIX_GENERATE_SHARED                                                                                   \
-  const auto fixel_dir_path = index_image.path().parent_path();                                                        \
   auto directions_image = Fixel::find_directions_header(index_image.path().parent_path())                              \
                               .template get_image<default_type>(DirectIO{Stride::List{+2, +1}});                       \
   DWI::Tractography::Properties properties;                                                                            \

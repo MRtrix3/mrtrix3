@@ -10,9 +10,11 @@ Checks: >
   portability-*,
   readability-*,
   -bugprone-easily-swappable-parameters,
+  -clang-analyzer-optin.core.EnumCastOutOfRange,
+  -clang-analyzer-unix.Malloc,
   -cppcoreguidelines-avoid-magic-numbers,
   -readability-braces-around-statements,
   -readability-identifier-length,
   -readability-function-cognitive-complexity,
   -readability-magic-numbers,
-HeaderFilterRegex: '*.(h|hpp)'
+HeaderFilterRegex: '(cpp\/|testing\/(lib\/|tools\/|unit_tests\/)).*\.(h|hpp)'

@@ -14,17 +14,19 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "registration/transform/initialiser_helpers.h"
-#include "registration/multi_contrast.h"
-#include "registration/multi_resolution_lmax.h"
-#include "registration/transform/search.h"
+#include "eigen_plugins/eigen_plugins.h"
+
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
 #include <Eigen/Geometry>
+#include <algorithm>
 
 #include "algo/loop.h"
 #include "algo/threaded_loop.h"
 #include "debug.h"
+#include "registration/multi_contrast.h"
+#include "registration/transform/initialiser_helpers.h"
+#include "registration/transform/search.h"
 // #define DEBUG_INIT
 
 namespace MR::Registration::Transform::Init {
