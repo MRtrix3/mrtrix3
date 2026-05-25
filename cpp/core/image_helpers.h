@@ -370,8 +370,11 @@ template <class HeaderType> std::string dim2str(const HeaderType &in) {
 template <class HeaderType1, class HeaderType2>
 inline void check_dimensions(const HeaderType1 &in1, const HeaderType2 &in2) {
   if (!dimensions_match(in1, in2))
-    throw Exception(
-        "dimension mismatch between \"{}\" and \"{}\" ({} vs. {})", in1.name(), in2.name(), dim2str(in1), dim2str(in2));
+    throw Exception("dimension mismatch between \"{}\" and \"{}\" ({} vs. {})", //
+                    in1.name(),                                                 //
+                    in2.name(),                                                 //
+                    dim2str(in1),                                               //
+                    dim2str(in2));                                              //
 }
 
 template <class HeaderType1, class HeaderType2>
@@ -402,7 +405,7 @@ inline void
 check_voxel_grids_match_in_scanner_space(const HeaderType1 &in1, const HeaderType2 &in2, const double tol = 1.0e-3) {
   Eigen::IOFormat FullPrecFmt(Eigen::FullPrecision, 0, ", ", "\n", "[", "]");
   if (!voxel_grids_match_in_scanner_space(in1, in2, tol))
-    throw Exception("images \"{}\" and \"{}\" do not have matching header transforms \n{}\nvs\n{})",
+    throw Exception("images \"{}\" and \"{}\" do not have matching header transforms: {}\nv.s.{})",
                     in1.name(),
                     in2.name(),
                     in1.transform().matrix().format(FullPrecFmt),
@@ -635,15 +638,19 @@ public:
 
 namespace fmt {
 template <typename ImageType> struct formatter<MR::Helper::Index<ImageType>> {
-  constexpr auto parse(format_parse_context &ctx) { return ctx.begin(); }
+  //! Underlying-index formatter; receives any format specification so it applies to the index value.
+  formatter<ssize_t> value_formatter;
+  constexpr auto parse(format_parse_context &ctx) { return value_formatter.parse(ctx); }
   template <typename FormatContext> auto format(const MR::Helper::Index<ImageType> &index, FormatContext &ctx) const {
-    return format_to(ctx.out(), MR::str(static_cast<ssize_t>(index)));
+    return value_formatter.format(static_cast<ssize_t>(index), ctx);
   }
 };
 template <typename ImageType> struct formatter<MR::Helper::Value<ImageType>> {
-  constexpr auto parse(format_parse_context &ctx) { return ctx.begin(); }
+  //! Underlying-value formatter; receives any format specification so it applies to the voxel value.
+  formatter<typename ImageType::value_type> value_formatter;
+  constexpr auto parse(format_parse_context &ctx) { return value_formatter.parse(ctx); }
   template <typename FormatContext> auto format(const MR::Helper::Value<ImageType> &value, FormatContext &ctx) const {
-    return format_to(ctx.out(), MR::str(static_cast<typename ImageType::value_type>(value)));
+    return value_formatter.format(static_cast<typename ImageType::value_type>(value), ctx);
   }
 };
 } // namespace fmt

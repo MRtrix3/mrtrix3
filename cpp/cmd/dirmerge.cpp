@@ -149,7 +149,7 @@ void run() {
       return largestshell_index;
     }();
     first_shell = largest_shell;
-    INFO("first volume will be from shell b={}", bvalue[first_shell]);
+    INFO("first volume will be from shell b={}", static_cast<size_t>(std::round(bvalue[first_shell])));
     const size_t largest_subset_within_largest_shell = [&] {
       size_t largestsubset_index = 0;
       size_t largestsubset_n = dirs[largest_shell][0].size();
@@ -168,8 +168,8 @@ void run() {
     }
   } else {
     INFO("first volume will be{} from first shell (b={})",
-         std::string(num_subsets > 1 ? " from first subset" : ""),
-         bvalue[0]);
+         num_subsets > 1 ? " from first subset" : "",
+         static_cast<size_t>(std::round(bvalue[0])));
   }
   std::random_device rd;
   std::mt19937 rng(rd());
@@ -250,9 +250,10 @@ void run() {
     // find most distant direction for that shell & in the current PE direction:
     n = find_lowest_energy_direction(b, nPE);
     if (dirs[b][nPE].empty()) {
-      WARN("no directions remaining in b={} shell for PE direction {}; PE directions will not cycle through perfectly",
-           bvalue[b],
-           n);
+      WARN("no directions remaining in b={} shell for PE direction {};" //
+           " PE directions will not cycle through perfectly",           //
+           static_cast<size_t>(std::round(bvalue[b])),                  //
+           n);                                                          //
     } else {
       push(b, nPE, n);
     }
@@ -272,10 +273,13 @@ void run() {
                          d.d[0],
                          d.d[1],
                          d.d[2],
-                         static_cast<int>(bvalue[d.b]),
+                         static_cast<size_t>(std::round(bvalue[d.b])),
                          d.pe + 1);
     else
-      out << fmt::format(
-          "{:#20.15f} {:#20.15f} {:#20.15f} {:5d}\n", d.d[0], d.d[1], d.d[2], static_cast<int>(bvalue[d.b]));
+      out << fmt::format("{:#20.15f} {:#20.15f} {:#20.15f} {:5d}\n",
+                         d.d[0],
+                         d.d[1],
+                         d.d[2],
+                         static_cast<size_t>(std::round(bvalue[d.b])));
   }
 }

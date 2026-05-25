@@ -108,6 +108,10 @@ public:
   };
   static const std::unordered_map<uint8_t, Strings> dt2str;
 
+  // TODO Refactor below as enum(s);
+  //   ensure that set of selectable datatypes form a single enum
+  //   that can be used to invoke .type_choice()
+
   static constexpr uint8_t Attributes = 0xF0U;
   static constexpr uint8_t Type = 0x0FU;
 

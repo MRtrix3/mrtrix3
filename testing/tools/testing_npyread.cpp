@@ -182,17 +182,16 @@ void run() {
   }
 
   if (check_count) {
-    CONSOLE(fmt::format("{} files skipped from advanced read due to possessing mismatched endianness",
-                        wrong_endianness_count));
-    CONSOLE(fmt::format("{} files skipped from advanced read due to numpy not exporting packed boolean data",
-                        advanced_boolean_count));
+    CONSOLE("{} files skipped from advanced read due to possessing mismatched endianness", wrong_endianness_count);
+    CONSOLE("{} files skipped from advanced read due to numpy not exporting packed boolean data",
+            advanced_boolean_count);
     if (!errors_basic.empty() || !errors_advanced.empty())
-      throw Exception(fmt::format("Errors on basic read in {} files & advanced read in {} files: [{}] [{}]",
-                                  errors_basic.size(),
-                                  errors_advanced.size(),
-                                  join(errors_basic, ","),
-                                  join(errors_advanced, ",")));
-    CONSOLE(fmt::format("{} NPY format read checks OK", check_count));
+      throw Exception("Errors on basic read in {} files & advanced read in {} files: [{}] [{}]",
+                      errors_basic.size(),
+                      errors_advanced.size(),
+                      errors_basic,
+                      errors_advanced);
+    CONSOLE("{} NPY format read checks OK", check_count);
   } else {
     WARN("NPY input directory empty; no checks performed");
   }

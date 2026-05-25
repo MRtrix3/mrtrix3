@@ -70,14 +70,13 @@ void run() {
 
       for (size_t i = 0; i < tck_scalar1.size(); ++i) {
         if (abs((tck_scalar1[i] - tck_scalar2[i]) / (0.5 * (tck_scalar1[i] + tck_scalar2[i]))) > tol)
-          throw Exception(
-              fmt::format("track scalar files \"{}\" and \"{}\" do not match within fractional precision of {}"
+          throw Exception("track scalar files \"{}\" and \"{}\" do not match within fractional precision of {}"
                           " ({} vs {})",
                           argument[0],
                           argument[1],
                           tol,
                           tck_scalar1[i],
-                          tck_scalar2[i]));
+                          tck_scalar2[i]);
       }
     }
 
@@ -93,14 +92,13 @@ void run() {
 
       for (size_t i = 0; i < tck_scalar1.size(); ++i) {
         if (abs(tck_scalar1[i] - tck_scalar2[i]) > tol)
-          throw Exception(
-              fmt::format("track scalar files \"{}\" and \"{}\" do not match within absolute precision of {}"
+          throw Exception("track scalar files \"{}\" and \"{}\" do not match within absolute precision of {}"
                           " ({} vs {})",
                           argument[0],
                           argument[1],
                           tol,
                           tck_scalar1[i],
-                          tck_scalar2[i]));
+                          tck_scalar2[i]);
       }
     }
   }

@@ -91,9 +91,9 @@ void run() {
   DWI::Tractography::Reader<float> reader(argument[1], properties);
   properties.comments.push_back("Created using fixel2tsf");
   properties.comments.push_back(
-      fmt::format("Source fixel image: {}", std::filesystem::path(argument[0].as_text()).filename()));
+      fmt::format("Source fixel image: {}", static_cast<std::filesystem::path>(argument[0]).filename()));
   properties.comments.push_back(
-      fmt::format("Source track file: {}", std::filesystem::path(argument[1].as_text()).filename()));
+      fmt::format("Source track file: {}", static_cast<std::filesystem::path>(argument[1]).filename()));
 
   DWI::Tractography::ScalarWriter<float> tsf_writer(output_tsf_path, properties);
 

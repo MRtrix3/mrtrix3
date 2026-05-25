@@ -217,9 +217,9 @@ void run() {
   if (!opt.empty()) {
     mask_inference_image = Image<bool>::open(opt[0][0]);
     if (!(mask_inference_image.ndim() == 3 || (mask_inference_image.ndim() == 4 && mask_inference_image.size(3) == 1)))
-      throw Exception("Post-hoc mask image \"{}\" is not 3D", opt[0][0].as_text());
+      throw Exception("Post-hoc mask image \"{}\" is not 3D", opt[0][0]);
     if (!dimensions_match(mask_header, mask_inference_image, 0, 3))
-      throw Exception("Post-hoc image \"{}\" does not match mask image", opt[0][0].as_text());
+      throw Exception("Post-hoc image \"{}\" does not match mask image", opt[0][0]);
     mask_inference.setZero();
     size_t mask_mismatch_count = 0;
     for (auto l = Loop(mask_header)(mask_inference_image); l; ++l) {

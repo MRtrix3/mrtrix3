@@ -129,8 +129,10 @@ std::string short_description(const Header &H) {
   for (size_t n = 0; n < H.ndim(); ++n)
     vox.push_back(str(H.spacing(n)));
 
-  return fmt::format(
-      " with dimensions {}, voxel spacing {}, datatype {}", join(dims, "x"), join(vox, "x"), H.datatype().specifier());
+  return fmt::format(" with dimensions {}, voxel spacing {}, datatype {}", //
+                     join(dims, "x"),                                      //
+                     join(vox, "x"),                                       //
+                     H.datatype().specifier());                            //
 }
 } // namespace
 
@@ -442,8 +444,7 @@ Header Header::create(const std::filesystem::path &image_path, //
     new_datatype.unset_flag(DataType::BigEndian);
     new_datatype.unset_flag(DataType::LittleEndian);
     if (new_datatype != previous_datatype)
-      WARN("{}{}) not supported - substituting with {}",
-           "requested datatype (",
+      WARN("requested datatype ({}) not supported - substituting with {}",
            previous_datatype.specifier(),
            H.datatype().specifier());
   }
@@ -760,20 +761,20 @@ void Header::realign_transform() {
     INFO(msg);
   }
   for (const auto &item : modified_fields) {
-    DEBUG("    \"" + item + "\": " +                                                   //
-          (realignment().orig_keyval().find(item) == realignment().orig_keyval().end() //
-               ? "<not present>"                                                       //
-               : ("\"" + realignment().orig_keyval().at(item) + "\"")) +               //
-          " -> " +                                                                     //
-          (keyval().find(item) == keyval().end()                                       //
-               ? "<not present>"                                                       //
-               : ("\"" + keyval().at(item) + "\"")));                                  //
+    DEBUG("    \"{}\": {} -> {}",                                                     //
+          item,                                                                       //
+          realignment().orig_keyval().find(item) == realignment().orig_keyval().end() //
+              ? "<not present>"                                                       //
+              : ("\"" + realignment().orig_keyval().at(item) + "\""),                 //
+          keyval().find(item) == keyval().end()                                       //
+              ? "<not present>"                                                       //
+              : ("\"" + keyval().at(item) + "\""));                                   //
   }
 }
 
 Header
 concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, const bool permit_datatype_mismatch) {
-  Exception e(fmt::format("Unable to concatenate {} images along axis {}: ", headers.size(), axis_to_concat));
+  Exception e("Unable to concatenate {} images along axis {}: ", headers.size(), axis_to_concat);
 
   auto datatype_test = [&](const bool condition) {
     if (condition && !permit_datatype_mismatch) {
@@ -800,7 +801,7 @@ concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, con
   size_t global_max_nonunity_dim = 0;
   for (const auto &H : headers) {
     if (axis_to_concat > H.ndim() + 1) {
-      e.push_back(fmt::format("Image \"{}\" is only {}D", H.name(), H.ndim()));
+      e.push_back("Image \"{}\" is only {}D", H.name(), H.ndim());
       throw e;
     }
     ssize_t this_max_nonunity_dim;
@@ -860,12 +861,12 @@ concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, con
     // Check that dimensions of image are compatible with concatenation
     for (size_t axis = 0; axis <= global_max_nonunity_dim; ++axis) {
       if (axis != axis_to_concat && axis < H.ndim() && H.size(axis) != result.size(axis)) {
-        e.push_back(fmt::format("Images \"{}\" and \"{}\" have inequal sizes along axis {} ({} vs {})",
-                                result.name(),
-                                H.name(),
-                                axis_to_concat,
-                                result.size(axis),
-                                H.size(axis)));
+        e.push_back("Images \"{}\" and \"{}\" have inequal sizes along axis {} ({} vs {})",
+                    result.name(),
+                    H.name(),
+                    axis_to_concat,
+                    result.size(axis),
+                    H.size(axis));
         throw e;
       }
     }

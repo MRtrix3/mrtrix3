@@ -58,8 +58,7 @@ std::shared_ptr<Study> Patient::find(std::string_view study_name,
 }
 
 std::ostream &operator<<(std::ostream &stream, const Patient &item) {
-  stream << fmt::format(
-      "  {:<30} {:<16} {:>10}\n", item.name.c_str(), format_ID(item.ID).c_str(), format_date(item.DOB).c_str());
+  stream << fmt::format("  {:<30} {:<16} {:>10}\n", item.name, format_ID(item.ID), format_date(item.DOB));
 
   for (size_t n = 0; n < item.size(); n++)
     stream << *item[n];

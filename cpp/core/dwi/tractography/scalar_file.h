@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include <fmt/format.h>
 #include <map>
 
 #include "dwi/tractography/file_base.h"

@@ -80,20 +80,25 @@ inline void __report_to_user(int type, fmt::format_string<Arg0, Args...> format,
 //! \endcond
 
 #define CONSOLE(...)                                                                                                   \
-  if (MR::App::log_level >= 1)                                                                                         \
-  ::MR::__report_to_user(-1, __VA_ARGS__)
+  if (MR::App::log_level >= 1) {                                                                                       \
+    ::MR::__report_to_user(-1, __VA_ARGS__);                                                                           \
+  }
 #define FAIL(...)                                                                                                      \
-  if (MR::App::log_level >= 0)                                                                                         \
-  ::MR::__report_to_user(0, __VA_ARGS__)
+  if (MR::App::log_level >= 0) {                                                                                       \
+    ::MR::__report_to_user(0, __VA_ARGS__);                                                                            \
+  }
 #define WARN(...)                                                                                                      \
-  if (MR::App::log_level >= 1)                                                                                         \
-  ::MR::__report_to_user(1, __VA_ARGS__)
+  if (MR::App::log_level >= 1) {                                                                                       \
+    ::MR::__report_to_user(1, __VA_ARGS__);                                                                            \
+  }
 #define INFO(...)                                                                                                      \
-  if (MR::App::log_level >= 2)                                                                                         \
-  ::MR::__report_to_user(2, __VA_ARGS__)
+  if (MR::App::log_level >= 2) {                                                                                       \
+    ::MR::__report_to_user(2, __VA_ARGS__);                                                                            \
+  }
 #define DEBUG(...)                                                                                                     \
-  if (MR::App::log_level >= 3)                                                                                         \
-  ::MR::__report_to_user(3, __VA_ARGS__)
+  if (MR::App::log_level >= 3) {                                                                                       \
+    ::MR::__report_to_user(3, __VA_ARGS__);                                                                            \
+  }
 
 class Exception : public std::exception {
 public:
@@ -120,6 +125,10 @@ public:
   size_t num() const { return description.size(); }
   std::string operator[](size_t n) const { return description[n]; }
   void push_back(std::string s) { description.push_back(std::move(s)); }
+  template <typename Arg0, typename... Args>
+  void push_back(fmt::format_string<Arg0, Args...> format, Arg0 &&arg0, Args &&...args) {
+    description.push_back(fmt::format(format, std::forward<Arg0>(arg0), std::forward<Args>(args)...));
+  }
   void push_back(const Exception &e) {
     for (auto s : e.description)
       push_back(s);

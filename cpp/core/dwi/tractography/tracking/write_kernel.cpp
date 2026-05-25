@@ -54,7 +54,7 @@ bool WriteKernel::operator()(const GeneratedTrack &tck) {
       always_increment ? true : tck.size());
   if (early_exit(seeds, selected)) {
     WARN("Track generation terminating prematurely:"
-         " Highly unlikely to reach target number of streamlines (p<{:.1g})",
+         " Highly unlikely to reach target number of streamlines (p<{})",
          EarlyExit::probability_threshold);
     return false;
   }

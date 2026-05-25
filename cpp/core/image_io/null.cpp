@@ -16,16 +16,16 @@
 
 #include "image_io/null.h"
 #include "header.h"
-#include <fmt/format.h>
+#include <fmt/std.h>
 
 namespace MR::ImageIO {
 
 void Null::load(const Header &header, size_t) {
-  throw Exception("No suitable handler to access data in \"{}\"", header.name());
+  throw Exception("No suitable handler to access data in \"{}\"", header.path());
 }
 
 void Null::unload(const Header &header) {
-  throw Exception("No suitable handler to access data in \"{}\"", header.name());
+  throw Exception("No suitable handler to access data in \"{}\"", header.path());
 }
 
 } // namespace MR::ImageIO

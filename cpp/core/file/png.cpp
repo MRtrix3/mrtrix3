@@ -51,8 +51,8 @@ Reader::Reader(const std::filesystem::path &filepath)
     for (size_t i = 0; i != 8; ++i) {
       s << str(static_cast<int>(sig[i])) << " ";
     }
-    Exception e(fmt::format("Bad PNG signature in file \"{}\"", filepath));
-    e.push_back(fmt::format("File signature: {}", s.str()));
+    Exception e("Bad PNG signature in file \"{}\"", filepath);
+    e.push_back("File signature: {}", s.str());
     throw e;
   }
   if (!(png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr))) {
@@ -105,7 +105,7 @@ Reader::Reader(const std::filesystem::path &filepath)
   png_set_interlace_handling(png_ptr);
   png_read_update_info(png_ptr, info_ptr);
   channels = png_get_channels(png_ptr, info_ptr);
-  DEBUG("PNG image \"{}\":  {}x{}; bitdepth = {}; colortype: {}; channels = {}; bytes per row = {};"
+  DEBUG("PNG image \"{}\": {}x{}; bitdepth = {}; colortype: {}; channels = {}; bytes per row = {};"
         " output bitdepth = {}; total bytes = {}",
         filepath,
         width,

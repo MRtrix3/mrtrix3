@@ -26,7 +26,7 @@
 namespace MR::ImageIO {
 
 void PNG::load(const Header &header, size_t) {
-  DEBUG("loading PNG {} \"{}\"", (files.size() > 1 ? "images" : "image"), header.name());
+  DEBUG("loading PNG {} \"{}\"", (files.size() > 1 ? "images" : "image"), header.path());
   segsize = (header.datatype().bits() * voxel_count(header) + 7) / 8;
   addresses.resize(1);
   addresses[0].reset(new std::byte[segsize]);
@@ -45,19 +45,19 @@ void PNG::load(const Header &header, size_t) {
           png.get_output_bitdepth() != static_cast<int>(header.datatype().bits()) ||
           ((header.ndim() > 3 && png.get_channels() != header.size(3)) ||
            (header.ndim() <= 3 && png.get_channels() > 1))) {
-        Exception e(fmt::format("Inconsistent image properties within series \"{}\"", header.name()));
-        e.push_back(fmt::format("Series: {}x{} x {} bits, {} volumes",
-                                header.size(0),
-                                header.size(1),
-                                header.datatype().bits(),
-                                header.ndim() > 3 ? header.size(3) : 1));
-        e.push_back(fmt::format("File \"{}: {}x{} x {}(->{}) bits, {} channels",
-                                files[i].path,
-                                png.get_width(),
-                                png.get_height(),
-                                png.get_bitdepth(),
-                                png.get_output_bitdepth(),
-                                png.get_channels()));
+        Exception e("Inconsistent image properties within series \"{}\"", header.path());
+        e.push_back("Series: {}x{} x {} bits, {} volumes",
+                    header.size(0),
+                    header.size(1),
+                    header.datatype().bits(),
+                    header.ndim() > 3 ? header.size(3) : 1);
+        e.push_back("File \"{}: {}x{} x {}(->{}) bits, {} channels",
+                    files[i].path,
+                    png.get_width(),
+                    png.get_height(),
+                    png.get_bitdepth(),
+                    png.get_output_bitdepth(),
+                    png.get_channels());
         throw e;
       }
       png.load(addresses[0].get() + (i * slice_bytes));

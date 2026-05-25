@@ -61,7 +61,7 @@ void set_centre_via_image_centres(const Image<default_type> &im1,
   get_geometric_centre(im2, im2_centre_scanner);
 
   Eigen::Vector3d centre = (im1_centre_scanner + im2_centre_scanner) / 2.0;
-  DEBUG("centre: {}", centre.transpose());
+  DEBUG("centre: {}", centre);
   transform.set_centre_without_transform_update(centre);
 }
 

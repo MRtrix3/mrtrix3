@@ -209,7 +209,7 @@ std::optional<uint32_t> parse_gpu_adapter_index_env() {
       std::from_chars(gpu_id_string.data(), gpu_id_string.data() + gpu_id_string.size(), gpu_id);
   if (parse_error != std::errc() || parsed_to != gpu_id_string.data() + gpu_id_string.size()) {
     throw MR::Exception("Invalid MRTRIX_GPU_ID value: '{}'. Expected a non-negative integer adapter index.",
-                        std::string(gpu_id_string));
+                        gpu_id_string);
   }
 
   return gpu_id;
@@ -256,16 +256,14 @@ void log_available_adapters(const std::vector<dawn::native::Adapter> &adapters) 
     wgpu::AdapterInfo adapter_info;
     adapter.GetInfo(&adapter_info);
 
-    INFO("  [{}] {}", std::to_string(adapter_index), to_string(adapter_info.description));
+    INFO("  [{}] {}", adapter_index, to_string(adapter_info.description));
     INFO("      details: backend={}, type={}, vendor={}, architecture={}, device={}",
          to_string(adapter_info.backendType),
          to_string(adapter_info.adapterType),
          to_string(adapter_info.vendor),
          to_string(adapter_info.architecture),
          to_string(adapter_info.device));
-    INFO("      identifiers: vendor_id={}, device_id={}",
-         std::to_string(adapter_info.vendorID),
-         std::to_string(adapter_info.deviceID));
+    INFO("      identifiers: vendor_id={}, device_id={}", adapter_info.vendorID, adapter_info.deviceID);
   }
 }
 
@@ -281,9 +279,7 @@ SelectedAdapter request_adapter_by_index(const wgpu::InstanceDescriptor &instanc
 
   log_available_adapters(adapters);
   if (adapter_index >= adapters.size()) {
-    throw MR::Exception("Invalid MRTRIX_GPU_ID value: {}. Found {} adapter(s).",
-                        std::to_string(adapter_index),
-                        std::to_string(adapters.size()));
+    throw MR::Exception("Invalid MRTRIX_GPU_ID value: {}. Found {} adapter(s).", adapter_index, adapters.size());
   }
 
   return {
@@ -327,7 +323,7 @@ ComputeContext::ComputeContext() : m_slang_session_info(std::make_unique<SlangSe
 
     const std::optional<uint32_t> adapter_index_env = parse_gpu_adapter_index_env();
     if (adapter_index_env.has_value()) {
-      INFO("Selecting GPU adapter from MRTRIX_GPU_ID={}", std::to_string(adapter_index_env.value()));
+      INFO("Selecting GPU adapter from MRTRIX_GPU_ID={}", adapter_index_env.value());
       const wgpu::RequestAdapterOptions adapter_options{
           .powerPreference = wgpu::PowerPreference::Undefined,
           .backendType = GPUBackendType,
@@ -406,12 +402,8 @@ ComputeContext::ComputeContext() : m_slang_session_info(std::make_unique<SlangSe
          to_string(adapter_info.vendor),
          to_string(adapter_info.architecture),
          to_string(adapter_info.device));
-    INFO("  identifiers: vendor_id={}, device_id={}",
-         std::to_string(adapter_info.vendorID),
-         std::to_string(adapter_info.deviceID));
-    INFO("  subgroups: min={}, max={}",
-         std::to_string(adapter_info.subgroupMinSize),
-         std::to_string(adapter_info.subgroupMaxSize));
+    INFO("  identifiers: vendor_id={}, device_id={}", adapter_info.vendorID, adapter_info.deviceID);
+    INFO("  subgroups: min={}, max={}", adapter_info.subgroupMinSize, adapter_info.subgroupMaxSize);
     INFO("\n");
 
     m_device_info = DeviceInfo{.subgroup_min_size = adapter_info.subgroupMinSize, .limits = device_limits};
@@ -823,9 +815,7 @@ Image<float> ComputeContext::download_texture_as_image(const Texture &texture,
   const uint32_t header_dims = static_cast<uint32_t>(header.ndim());
   const bool has_channel_axis = header_dims == (texture_dims + 1U);
   if (texture_dims != header_dims && !has_channel_axis) {
-    throw MR::Exception("Texture dimension ({}) does not match header dimension ({})",
-                        std::to_string(texture_dims),
-                        std::to_string(header_dims));
+    throw MR::Exception("Texture dimension ({}) does not match header dimension ({})", texture_dims, header_dims);
   }
 
   const uint32_t texture_width = texture.spec.width;

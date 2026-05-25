@@ -191,7 +191,7 @@ void run() {
     if (position.size() != H.ndim())
       throw Exception("Image has {} dimensions, but -voxel option position {} provides only {} coordinates",
                       H.ndim(),
-                      std::string(v[0]),
+                      v[0],
                       position.size());
     if (scanner) {
       Eigen::Vector3d p(position[0], position[1], position[2]);

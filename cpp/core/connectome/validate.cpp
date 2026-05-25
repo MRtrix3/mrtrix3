@@ -64,8 +64,9 @@ void validate_label_header(const Header &H) {
                         " label images must be strictly non-negative", //
                         H.name());                                     //
     }
-    // WARN("Image \"{}\" stored as floating-point;\"\n    //       \" it is preferable to store label
-    // images using an unsigned integer type", H.name());
+    // WARN("Image \"{}\" stored as floating-point;"
+    //      " it is preferable to store label images using an unsigned integer type",
+    //      H.name());
   } else if (H.datatype().is_signed()) {
     CONSOLE("Image \"{}\" stored with signed integer type;" //
             " need to check for negative values",           //
@@ -77,8 +78,9 @@ void validate_label_header(const Header &H) {
                         " label images must be strictly non-negative", //
                         H.name());                                     //
     }
-    // WARN("Image \"{}\" stored as signed integer; it is preferable to store label images using an\n //
-    // unsigned integer type", H.name());
+    // WARN("Image \"{}\" stored as signed integer;"
+    //      " it is preferable to store label images using an unsigned integer type",
+    //      H.name());
   }
 }
 

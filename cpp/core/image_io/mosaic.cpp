@@ -14,31 +14,31 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <fmt/std.h>
 #include <limits>
 
 #include "app.h"
 #include "header.h"
 #include "image_io/mosaic.h"
 #include "progressbar.h"
-#include <fmt/format.h>
 
 namespace MR::ImageIO {
 
 void Mosaic::load(const Header &header, size_t) {
   if (files.empty())
-    throw Exception("no files specified in header for image \"{}\"", header.name());
+    throw Exception("no files specified in header for image \"{}\"", header.path());
 
   assert(header.datatype().bits() > 1);
 
   size_t bytes_per_segment = header.datatype().bytes() * segsize;
   if (files.size() * bytes_per_segment > std::numeric_limits<size_t>::max())
-    throw Exception("image \"{}\" is larger than maximum accessible memory", header.name());
+    throw Exception("image \"{}\" is larger than maximum accessible memory", header.path());
 
-  DEBUG("loading mosaic image \"{}\"...", header.name());
+  DEBUG("loading mosaic image \"{}\"...", header.path());
   addresses.resize(1);
   addresses[0].reset(new std::byte[files.size() * bytes_per_segment]);
   if (!addresses[0])
-    throw Exception("failed to allocate memory for image \"{}\"", header.name());
+    throw Exception("failed to allocate memory for image \"{}\"", header.path());
 
   ProgressBar progress("reformatting DICOM mosaic images", slices * files.size());
   std::byte *data = addresses[0].get();

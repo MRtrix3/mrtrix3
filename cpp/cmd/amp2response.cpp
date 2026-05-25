@@ -326,7 +326,7 @@ void run() {
       if (!transform.allFinite()) {
         Exception e(fmt::format("Unable to construct A2SH transformation for shell b={};",
                                 static_cast<ssize_t>(std::round((*shells)[shell_index].get_mean()))));
-        e.push_back(fmt::format("  lmax ({}) may be too large for this shell", lmax[shell_index]));
+        e.push_back("  lmax ({}) may be too large for this shell", lmax[shell_index]);
         if (!shell_index && (*shells)[0].is_bzero())
           e.push_back("  (this appears to be a b=0 shell, and therefore lmax should be set to 0 for this shell)");
         throw e;
@@ -379,9 +379,9 @@ void run() {
 
   KeyValues keyvals;
   if (shells) {
-    std::string line = str<int>((*shells)[0].get_mean());
+    std::string line = str(static_cast<size_t>(std::round((*shells)[0].get_mean())));
     for (size_t i = 1; i != (*shells).count(); ++i)
-      line += fmt::format(",{}", (*shells)[i].get_mean());
+      line += fmt::format(",{}", static_cast<size_t>(std::round((*shells)[i].get_mean())));
     keyvals["Shells"] = line;
   }
   File::Matrix::save_matrix(responses, response_output_path, keyvals);

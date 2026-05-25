@@ -139,10 +139,9 @@ void get_mrtrix_file_path(Header &H, std::string_view flag, std::filesystem::pat
     try {
       file_stream >> offset;
     } catch (...) {
-      throw Exception("invalid offset specified for file \"{}\"{}{}\"",
-                      filepath_str, //
-                      " in MRtrix image header \"",
-                      H.name()); //
+      throw Exception("invalid offset specified for file \"{}\" in MRtrix image header \"{}\"", //
+                      filepath_str,                                                             //
+                      H.name());                                                                //
     }
   }
 

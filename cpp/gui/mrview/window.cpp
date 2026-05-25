@@ -592,35 +592,35 @@ Window::Window()
 
   std::string modifier;
   action = toolbar->addAction(QIcon(":/select_contrast.svg"), tr("Change focus / contrast"));
-  action->setToolTip(qstr(fmt::format("{}\n{}\n\n{}\n\n{}\n{}",
-                                      "Left-click: set focus",
-                                      "Right-click: change brightness/constrast"
-                                      "Shortcut: 1",
-                                      fmt::format("Hold down {} key to use this mode", get_modifier(FocusModifier)),
-                                      "regardless of currently selected mode")));
+  action->setToolTip(qstr(fmt::format("Left-click: set focus\n"                      //
+                                      "Right-click: change brightness/constrast\n\n" //
+                                      "Shortcut: 1\n\n"                              //
+                                      "Hold down {} key to use this mode\n"          //
+                                      "regardless of currently selected mode",       //
+                                      get_modifier(FocusModifier))));                //
   action->setShortcut(tr("1"));
   action->setCheckable(true);
   action->setChecked(true);
   mode_action_group->addAction(action);
 
   action = toolbar->addAction(QIcon(":/move.svg"), tr("Move viewport"));
-  action->setToolTip(qstr(fmt::format("{}\n{}\n\n{}\n\n{}\n",
-                                      "Left-click: move in-plane",
-                                      "Right-click: move through-plane",
-                                      "Shortcut: 2",
-                                      fmt::format("Hold down {} key to use this mode", get_modifier(MoveModifier)),
-                                      "regardless of currently selected mode")));
+  action->setToolTip(qstr(fmt::format("Left-click: move in-plane\n"
+                                      "Right-click: move through-plane\n\n"
+                                      "Shortcut: 2\n\n"
+                                      "Hold down {} key to use this mode\n"
+                                      "regardless of currently selected mode",
+                                      get_modifier(MoveModifier))));
   action->setShortcut(tr("2"));
   action->setCheckable(true);
   mode_action_group->addAction(action);
 
   action = toolbar->addAction(QIcon(":/rotate.svg"), tr("Move camera"));
-  action->setToolTip(qstr(fmt::format("{}\n{}\n\n{}\n\n{}\n",
-                                      "Left-click: move camera in-plane",
-                                      "Right-click: rotate camera about view axis",
-                                      "Shortcut: 3",
-                                      fmt::format("Hold down {} key to use this mode", get_modifier(RotateModifier)),
-                                      "regardless of currently selected mode")));
+  action->setToolTip(qstr(fmt::format("Left-click: move camera in-plane\n"
+                                      "Right-click: rotate camera about view axis\n\n"
+                                      "Shortcut: 3\n\n"
+                                      "Hold down {} key to use this mode\n"
+                                      "regardless of currently selected mode",
+                                      get_modifier(RotateModifier))));
   action->setShortcut(tr("3"));
   action->setCheckable(true);
   mode_action_group->addAction(action);

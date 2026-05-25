@@ -80,8 +80,9 @@ public:
     if (eddy < best_eddy) {
       best_eddy = eddy;
       best_signs = signs;
-      progress.set_text("optimising directions for eddy-currents (current best configuration: energy = " +
-                        fmt::format("{})", best_eddy));
+      progress.set_text(fmt::format("optimising directions for eddy-currents"     //
+                                    " (current best configuration: energy = {})", //
+                                    best_eddy));                                  //
     }
     ++num_shuffles;
     ++progress;

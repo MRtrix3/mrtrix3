@@ -139,7 +139,7 @@ void run() {
   }
 
   if (mismatch_count > maxfail)
-    throw Exception(fmt::format("{} mismatched streamlines - test FAILED", mismatch_count));
+    throw Exception("{} mismatched streamlines - test FAILED", mismatch_count);
 
-  CONSOLE(fmt::format("{} mismatched streamlines - data checked OK", mismatch_count));
+  CONSOLE("{} mismatched streamlines - data checked OK", mismatch_count);
 }

@@ -155,11 +155,9 @@ bool Element::read() {
     // implicit encoding:
     std::string name = tag_name();
     if (name.empty()) {
-      DEBUG("{}{}\"",
-            printf("WARNING: unknown DICOM tag (%04X %04X) "
-                   "with implicit encoding in file \"",
-                   group,
-                   element),
+      DEBUG("WARNING: unknown DICOM tag ({:04x} {:04X}) with implicit encoding in file \"{}\"",
+            group,
+            element,
             fmap->path());
       VR = VR_UN;
     } else
@@ -171,18 +169,18 @@ bool Element::read() {
 
   if (size == undefined_length) {
     if (VR != VR_SQ && !(group == group_sequence && element == element_sequence_item))
-      INFO("undefined length used for DICOM tag {}({:04X}, {:04X}) in file \"{}\"",
-           (!tag_name().empty() ? tag_name().substr(2) : ""),
+      INFO("undefined length used for DICOM tag {} ({:04X}, {:04X}) in file \"{}\"",
+           tag_name().empty() ? "" : tag_name().substr(2),
            group,
            element,
            fmap->path());
-  } else if (next + size > fmap->address() + fmap->size())
+  } else if (next + size > fmap->address() + fmap->size()) {
     throw Exception("file \"{}\" is too small to contain DICOM elements specified", fmap->path());
-  else {
+  } else {
     if (size % 2)
-      DEBUG("WARNING: odd length ({}) used for DICOM tag {} ({}, {}) in file \"{}\"",
+      DEBUG("WARNING: odd length ({}) used for DICOM tag {} ({:04X}, {:04X}) in file \"{}\"",
             size,
-            (!tag_name().empty() ? tag_name().substr(2) : ""),
+            tag_name().empty() ? "" : tag_name().substr(2),
             group,
             element,
             fmap->path());
@@ -422,28 +420,28 @@ template <class T> inline void print_vec(const std::vector<T> &V) {
 
 void Element::error_in_get(size_t idx) const {
   const std::string name(tag_name());
-  DEBUG("value not found for DICOM tag {}{}{}{})",   //
-        printf("%04X %04X ", group, element),        //
-        (name.empty() ? "unknown" : name.substr(2)), //
-        " (at index ",
-        idx); //
+  DEBUG("value not found for DICOM tag ({:04X} {:04X}) {} (at index {})",
+        group,
+        element,
+        name.empty() ? "unknown" : name.substr(2),
+        idx);
 }
 
 void Element::error_in_check_size(size_t min_size, size_t actual_size) const {
   const std::string name(tag_name());
-  throw Exception("not enough items in for DICOM tag {}{}{}{}, got {})", //
-                  printf("%04X %04X ", group, element),                  //
-                  (name.empty() ? "unknown" : name.substr(2)),           //
-                  " (expected ",
+  throw Exception("not enough items in for DICOM tag ({:04X} {:04X}) {} (expected {}, got {})",
+                  group,
+                  element,
+                  name.empty() ? "unknown" : name.substr(2),
                   min_size,
-                  actual_size); //
+                  actual_size);
 }
 
 void Element::report_unknown_tag_with_implicit_syntax() const {
-  DEBUG(
-      "attempt to read data of unknown value representation in DICOM implicit syntax for tag ({:04X} {:04X}); ignored",
-      group,
-      element);
+  DEBUG("attempt to read data of unknown value representation"        //
+        " in DICOM implicit syntax for tag ({:04X} {:04X}); ignored", //
+        group,                                                        //
+        element);                                                     //
 }
 
 std::ostream &operator<<(std::ostream &stream, const Element &item) {

@@ -44,8 +44,9 @@ std::string Slice::Shader::fragment_shader_source(const Displayable &object) {
             "  if (texcoord.s < 0.0 || texcoord.s > 1.0 ||\n"
             "      texcoord.t < 0.0 || texcoord.t > 1.0 ||\n"
             "      texcoord.p < 0.0 || texcoord.p > 1.0) discard;\n";
-  source += is_roi ? "  uint ru = texture(tex, texcoord.stp).r;\n  color = vec4(ru > 0u ? 1.0 : 0.0);\n"
-                   : "  color = texture (tex, texcoord.stp);\n";
+  source += is_roi ? "  uint ru = texture(tex, texcoord.stp).r;\n" //
+                     "  color = vec4(ru > 0u ? 1.0 : 0.0);\n"      //
+                   : "  color = texture (tex, texcoord.stp);\n";   //
   source += "  float amplitude = " + std::string(ColourMap::maps[object.colourmap].amplitude) + ";\n";
   source += "  if (isnan(amplitude) || isinf(amplitude)) discard;\n";
 

@@ -312,15 +312,15 @@ void report(std::string_view title, Eigen::MatrixXd &directions) {
 
   output += "\n  Spherical Harmonic fit:\n";
   if (metrics.SH.size() > 1)
-    output += fmt::format(
-        "    condition numbers for lmax = 2 -> {}: {}\n", metrics.SH.size() * 2, str(metrics.SH, precision));
+    output += fmt::format("    condition numbers for lmax = 2 -> {}: {:.6g}\n", metrics.SH.size() * 2, metrics.SH);
   else
     output += fmt::format("    condition number for lmax = 2: {:.6g}\n", metrics.SH[0]);
 
   output += fmt::format("\n  Asymmetry of sampling:\n    norm of mean direction vector = {:.6g}\n", metrics.ASYM);
   if (metrics.ASYM >= 0.1)
-    output += std::string("    WARNING: sampling is ") + (metrics.ASYM >= 0.4 ? "strongly" : "moderately") +
-              " asymmetric - this may affect resiliance to eddy-current distortions\n";
+    output += fmt::format("    WARNING: sampling is {} asymmetric;"
+                          " this may affect resiliance to eddy-current distortions\n",
+                          metrics.ASYM >= 0.4 ? "strongly" : "moderately");
 
   output += "\n";
   print(output);

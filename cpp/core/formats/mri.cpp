@@ -216,12 +216,10 @@ std::unique_ptr<ImageIO::Base> MRI::read(Header &H) const {
       H.keyval()["dw_scheme"] = dw_scheme;
     } break;
     default:
-      WARN("unknown header entity ({},{}{}){}{}\" - ignored",
-           static_cast<uint32_t>(type(current, is_BE)), //
-           " offset ",
-           current - fmap.address(), //
-           " in image \"",
-           H.name()); //
+      WARN("unknown header entity ({}, offset {}) in image \"{}\" - ignored",
+           static_cast<uint32_t>(type(current, is_BE)),
+           current - fmap.address(),
+           H.name());
       break;
     }
 

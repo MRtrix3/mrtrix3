@@ -438,9 +438,11 @@ std::ostream &operator<<(std::ostream &stream, const App::ParsedArgument &arg);
 
 namespace fmt {
 template <> struct formatter<MR::App::ParsedArgument> {
-  constexpr auto parse(format_parse_context &ctx) { return ctx.begin(); }
+  //! Textual-value formatter; receives any format specification so it applies to the argument text.
+  formatter<std::string> value_formatter;
+  constexpr auto parse(format_parse_context &ctx) { return value_formatter.parse(ctx); }
   template <typename FormatContext> auto format(const MR::App::ParsedArgument &a, FormatContext &ctx) const {
-    return format_to(ctx.out(), "{}", a.as_text());
+    return value_formatter.format(a.as_text(), ctx);
   }
 };
 } // namespace fmt

@@ -92,10 +92,11 @@ template <class Method> void calibrate(Method &method) {
   method.calibrate_list = direction_grid(max_angle + theta_min, sqrt3 * theta_min);
   method.calibrate_ratio = ratio;
 
-  INFO("rejection sampling will use {} directions with a ratio of {} (predicted number of samples per step = {})",
-       method.calibrate_list.size(),
-       method.calibrate_ratio,
-       N_min);
+  INFO("rejection sampling will use {} directions with a ratio of {}" //
+       " (predicted number of samples per step = {})",                //
+       method.calibrate_list.size(),                                  //
+       method.calibrate_ratio,                                        //
+       N_min);                                                        //
 }
 
 } // namespace MR::DWI::Tractography::Algorithms

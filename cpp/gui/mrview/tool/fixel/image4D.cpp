@@ -28,10 +28,10 @@ void Image4D::load_image_buffer() {
   const size_t dim4_len = fixel_data->size(3);
 
   if (dim4_len % 3)
-    throw InvalidImageException(
-        "Expecting 4th-dimension size of vector image {} to be a multiple of 3. Instead {} entries found.",
-        get_filepath(),
-        dim4_len);
+    throw InvalidImageException("Expecting 4th-dimension size of vector image {} to be a multiple of 3." //
+                                " Instead {} entries found.",                                            //
+                                get_filepath(),
+                                dim4_len);
 
   for (size_t axis = 0; axis < 3; ++axis) {
     slice_fixel_indices[axis].resize(fixel_data->size(axis));

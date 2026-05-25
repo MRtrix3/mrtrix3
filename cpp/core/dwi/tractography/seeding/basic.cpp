@@ -25,9 +25,9 @@ Sphere::Sphere(std::string_view in)                                      //
     : Base(in, "sphere", attempts_per_seed.at(seed_attempt_t::RANDOM)) { //
   auto F = parse_floats(in);
   if (F.size() != 4)
-    throw Exception("Could not parse seed \"{}\" as a spherical seed point;{}",
-                    in,                                                                   //
-                    " needs to be 4 comma-separated values (XYZ position, then radius)"); //
+    throw Exception("Could not parse seed \"{}\" as a spherical seed point;"             //
+                    " needs to be 4 comma-separated values (XYZ position, then radius)", //
+                    in);                                                                 //
   pos = {static_cast<float>(F[0]), static_cast<float>(F[1]), static_cast<float>(F[2])};
   rad = static_cast<float>(F[3]);
   Base::volume = static_cast<float>(4.0 * Math::pi * Math::pow3(F[3]) / 3.0);

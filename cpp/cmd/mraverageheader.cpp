@@ -128,6 +128,6 @@ void run() {
       vox(i) = std::round(vox(i));
     INFO("centre voxel: {}", vox);
   }
-  INFO("average transformation:\n{}", out.transform().matrix());
-  INFO("average voxel to scanner transformation:\n{}", MR::Transform(out).voxel2scanner.matrix());
+  INFO("average transformation: {}", out.transform());
+  INFO("average voxel to scanner transformation: {}", MR::Transform(out).voxel2scanner);
 }

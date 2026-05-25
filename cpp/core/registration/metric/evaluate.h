@@ -125,9 +125,10 @@ public:
         ThreadedLoop(params.processed_image, 0, 3).run(kernel);
       }
     }
-    DEBUG("Metric evaluate iteration: {}, cost: {}", iteration++, overall_cost_function.transpose());
-    DEBUG("  x: {}", x.transpose());
-    DEBUG("  gradient: {}", gradient.transpose());
+    iteration++;
+    DEBUG("Metric evaluate iteration: {}, cost: {}", iteration, overall_cost_function);
+    DEBUG("  x: {}", x);
+    DEBUG("  gradient: {}", gradient);
     DEBUG("  norm(gradient): {}", gradient.norm());
     DEBUG("  overlapping voxels: {}", overlap_count);
     return overall_cost_function(0);

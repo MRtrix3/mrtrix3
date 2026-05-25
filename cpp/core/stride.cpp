@@ -89,8 +89,7 @@ List __from_command_line(const List &current) {
         strides.push_back(x);
     } catch (Exception &E) {
       E.display(3);
-      throw Exception("argument \"{}\" to option \"-strides\" is not a list of strides or an image",
-                      std::string(opt[0][0]));
+      throw Exception("argument \"{}\" to option \"-strides\" is not a list of strides or an image", opt[0][0]);
     }
   }
 
@@ -100,8 +99,9 @@ List __from_command_line(const List &current) {
 
   for (const auto x : strides)
     if (MR::abs(x) > static_cast<int>(current.size()))
-      throw Exception(
-          "strides specified exceed image dimensions: got {}, but image has {} axes", opt[0][0], current.size());
+      throw Exception("strides specified exceed image dimensions: got {}, but image has {} axes", //
+                      opt[0][0],                                                                  //
+                      current.size());                                                            //
 
   for (size_t i = 0; i < strides.size() - 1; ++i) {
     if (!strides[1])

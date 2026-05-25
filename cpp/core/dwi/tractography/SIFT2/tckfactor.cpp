@@ -76,14 +76,16 @@ void TckFactor::remove_excluded_fixels(const float min_td_frac) {
       excluded_cf_sum += i->get_cost(fixed_mu);
     }
   }
-  INFO("{} fixels have no attributed streamlines; these account for {}\\% of the initial cost function",
-       zero_TD_count,
-       100.0 * zero_TD_cf_sum / cf);
+  INFO("{} fixels have no attributed streamlines;"             //
+       " these account for {}\% of the initial cost function", //
+       zero_TD_count,                                          //
+       100.0 * zero_TD_cf_sum / cf);                           //
   if (excluded_count) {
-    INFO("{} of {} fixels were tracked, but have been excluded from optimisation due to inadequate reconstruction;",
-         excluded_count,
-         fixels.size());
-    INFO("these contribute {}\\% of the initial cost function", 100.0 * excluded_cf_sum / cf);
+    INFO("{} of {} fixels were tracked,"                                                //
+         " but have been excluded from optimisation due to inadequate reconstruction;", //
+         excluded_count,                                                                //
+         fixels.size());                                                                //
+    INFO("these contribute {}\% of the initial cost function", 100.0 * excluded_cf_sum / cf);
   } else if (min_td_frac) {
     INFO("No fixels were excluded from optimisation due to poor reconstruction");
   }
@@ -125,7 +127,7 @@ void TckFactor::test_streamline_length_scaling() {
 
 void TckFactor::calc_afcsa() {
 
-  CONSOLE("Cost function before linear optimisation is {})", calc_cost_function());
+  CONSOLE("Cost function before linear optimisation is {}", calc_cost_function());
 
   try {
     coefficients = decltype(coefficients)::Zero(num_tracks());
@@ -177,7 +179,7 @@ void TckFactor::calc_afcsa() {
     Thread::run_queue(writer, SIFT::TrackIndexRange(), Thread::multi(worker));
   }
 
-  CONSOLE("Cost function after linear optimisation is {})", calc_cost_function());
+  CONSOLE("Cost function after linear optimisation is {}", calc_cost_function());
 }
 
 void TckFactor::estimate_factors() {

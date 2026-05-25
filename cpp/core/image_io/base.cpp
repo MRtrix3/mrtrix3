@@ -16,7 +16,7 @@
 
 #include "image_io/base.h"
 #include "header.h"
-#include <fmt/format.h>
+#include <fmt/std.h>
 
 namespace MR::ImageIO {
 
@@ -31,7 +31,7 @@ void Base::open(const Header &header, size_t buffer_size) {
     return;
 
   load(header, buffer_size);
-  DEBUG("image \"{}\" loaded", header.name());
+  DEBUG("image \"{}\" loaded", header.path());
 }
 
 void Base::close(const Header &header) {
@@ -39,7 +39,7 @@ void Base::close(const Header &header) {
     return;
 
   unload(header);
-  DEBUG("image \"{}\" unloaded", header.name());
+  DEBUG("image \"{}\" unloaded", header.path());
   addresses.clear();
 }
 

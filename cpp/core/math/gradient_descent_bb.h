@@ -95,7 +95,7 @@ public:
       DEBUG("Gradient descent iteration: {}; cost: {}", niter, f);
       if (verbose) {
         CONSOLE("iteration {}: f = {}, |g| = {}:", niter, f, normg);
-        CONSOLE("  x  = [ {} ]", x2.transpose());
+        CONSOLE("  x  = [ {} ]", x2);
       }
 
       if (normg < gradient_tolerance) {
@@ -131,7 +131,7 @@ public:
     dt /= normg;
     if (verbose) {
       CONSOLE("initialise: f = {}, |g| = {}, step = {}:", f, normg, dt);
-      CONSOLE("            x = [ {} ]", x1.transpose());
+      CONSOLE("            x = [ {} ]", x1);
     }
     if (log_os) {
       log_os << niter << delim << nfeval << delim << str(f) << delim << str(dt);
@@ -222,11 +222,11 @@ protected:
     ++nfeval;
     value_type cost = func(newx, newg);
     if (!std::isfinite(cost))
-      throw Exception("cost function is NaN or Inf!\n      << eval {}", nfeval);
+      throw Exception("cost function is NaN or Inf!");
     if (verbose) {
       CONSOLE("      << eval {}, f = {} >>", nfeval, cost);
-      CONSOLE("      << newx = [ {} ]", newx.transpose());
-      CONSOLE("      << newg = [ {} ]", newg.transpose());
+      CONSOLE("      << newx = [ {} ]", newx);
+      CONSOLE("      << newg = [ {} ]", newg);
     }
     return cost;
   }

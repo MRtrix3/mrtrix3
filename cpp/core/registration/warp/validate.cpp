@@ -36,11 +36,14 @@ WarpFormat validate_header(const Header &H) {
   // Check 1: the image must be of real floating-point type.
   // ---------------------------------------------------------------
   if (!H.datatype().is_floating_point())
-    throw Exception(
-        "Warp image \"{}\": expected a floating-point data type (got {})", H.name(), H.datatype().description());
+    throw Exception("Warp image \"{}\": expected a floating-point data type (got {})", //
+                    H.path(),                                                          //
+                    H.datatype().description());                                       //
 
   if (H.datatype().is_complex())
-    throw Exception("Warp image \"{}\": expected a real data type (got {})", H.name(), H.datatype().description());
+    throw Exception("Warp image \"{}\": expected a real data type (got {})", //
+                    H.path(),                                                //
+                    H.datatype().description());                             //
 
   // ---------------------------------------------------------------
   // Check 2: structural dimensions.
@@ -50,39 +53,44 @@ WarpFormat validate_header(const Header &H) {
   // ---------------------------------------------------------------
   if (H.ndim() == 4) {
     if (H.size(3) != 3)
-      throw Exception("Warp image \"{}\": a 4D warp image (displacement or deformation field) must have "
-                      "exactly 3 volumes in the 4th dimension (found {})",
-                      H.name(),
-                      H.size(3));
+      throw Exception("Warp image \"{}\":"                                            //
+                      " a 4D warp image (displacement or deformation field)"          //
+                      " must have exactly 3 volumes in the 4th dimension (found {})", //
+                      H.path(),                                                       //
+                      H.size(3));                                                     //
     return WarpFormat::Simple;
   }
   if (H.ndim() == 5) {
     if (H.size(3) != 3)
-      throw Exception("Warp image \"{}\": a 5D full warp image must have exactly 3 volumes in the 4th "
-                      "dimension (x/y/z components of each warp field) (found {})",
-                      H.name(),
-                      H.size(3));
+      throw Exception("Warp image \"{}\":"                                                     //
+                      " a 5D full warp image must have exactly 3 volumes in the 4th dimension" //
+                      " (x/y/z components of each warp field) (found {})",                     //
+                      H.path(),                                                                //
+                      H.size(3));                                                              //
     if (H.size(4) != 4)
-      throw Exception(
-          "Warp image \"{}\": a 5D full warp image must have exactly 4 volume groups in the 5th dimension (found {})",
-          H.name(),
-          H.size(4));
+      throw Exception("Warp image \"{}\":"                                                           //
+                      " a 5D full warp image must have exactly 4 volume groups in the 5th dimension" //
+                      " (found {})",                                                                 //
+                      H.path(),                                                                      //
+                      H.size(4));                                                                    //
     // ---------------------------------------------------------------
     // Check 3: for full warp images, the header must contain the
     // "linear1" and "linear2" linear transform keys.
     // ---------------------------------------------------------------
     if (H.keyval().find("linear1") == H.keyval().end() || //
         H.keyval().find("linear2") == H.keyval().end())
-      throw Exception("Warp image \"{}\": full warp image header must have both \"linear1\" and "
-                      "\"linear2\" linear transform fields in the associated metadata",
-                      H.name());
+      throw Exception("Warp image \"{}\":"                                                 //
+                      " full warp image header must have both \"linear1\" and \"linear2\"" //
+                      " linear transform fields in the associated metadata",               //
+                      H.path());                                                           //
 
     return WarpFormat::Full;
   }
-  throw Exception("Warp image \"{}\": expected a 4D image (displacement or deformation field) or a 5D "
-                  "image (full warp field) (found {} dimensions)",
-                  H.name(),
-                  H.ndim());
+  throw Exception("Warp image \"{}\":"                                       //
+                  " expected a 4D image (displacement or deformation field)" //
+                  " or a 5D image (full warp field) (found {} dimensions)",  //
+                  H.path(),                                                  //
+                  H.ndim());                                                 //
 }
 
 // Enable accumulation of counts of NaN fill in image data

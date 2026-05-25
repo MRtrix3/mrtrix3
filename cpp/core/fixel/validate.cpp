@@ -265,18 +265,18 @@ const PeaksValidation validate_image(Image<float> image) {
 
   Exception e;
   if (partial_nan_count > 0 || infinity_count > 0)
-    e.push_back(fmt::format("Peaks image \"{}\":", image.name()));
+    e.push_back("Peaks image \"{}\":", image.name());
 
   if (partial_nan_count > 0)
-    e.push_back(fmt::format("{} peak triplet", partial_nan_count) +             //
-                (partial_nan_count > 1 ? "s that contain" : " that contains") + //
-                " a mixture of NaN and non-NaN values" +                        //
-                " (a peak triplet must be either all-finite or all-NaN)");      //
+    e.push_back("{} peak triplet{} a mixture of NaN and non-NaN values"       //
+                " (a peak triplet must be either all-finite or all-NaN)",     //
+                partial_nan_count,                                            //
+                partial_nan_count > 1 ? "s that contain" : " that contains"); //
 
   if (infinity_count > 0)
-    e.push_back(fmt::format("{} peak triplet", infinity_count) +             //
-                (infinity_count > 1 ? "s that contain" : " that contains") + //
-                " impermitted infinity values");                             //
+    e.push_back("{} peak triplet{} impermitted infinity values",           //
+                infinity_count,                                            //
+                infinity_count > 1 ? "s that contain" : " that contains"); //
 
   if (e.num() > size_t(0))
     throw Exception(e, "Major content error(s) in peaks image");
@@ -300,7 +300,8 @@ void debug_validate_image(const Image<float> &image) {
             image.name(),
             (std::fabs(v.norm_min - 1.0F) <= unit_tol && std::fabs(v.norm_max - 1.0F) <= unit_tol)
                 ? "all peaks are unit-norm"
-                : fmt::format("peak norms range from {} to {} (ie. image encodes a quantitative value per peak)",
+                : fmt::format("peak norms range from {} to {}"                      //
+                              " (ie. image encodes a quantitative value per peak)", //
                               v.norm_min,
                               v.norm_max));
     } else {

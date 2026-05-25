@@ -118,13 +118,13 @@ void save_table(const scheme_type &PE, const HeaderType &header, const std::file
   if (Path::has_suffix(header.path(), {".mgh", ".mgz", ".nii", ".nii.gz", ".img"})) {
     // clang-format off
     WARN("External phase encoding table \"{}\" for image \"{}\""
-                     " may not be suitable for FSL topup;"
-                     " consider use of -export_pe_topup instead"
-                     " (see: mrtrix.readthedocs.org/en/"
-                     MRTRIX_BASE_VERSION
-                     "/concepts/pe_scheme.html"
-                     "#reference-axes-for-phase-encoding-directions)",
-                     path, header.name());
+         " may not be suitable for FSL topup;"
+         " consider use of -export_pe_topup instead"
+         " (see: mrtrix.readthedocs.org/en/{}/concepts/pe_scheme.html"
+         "#reference-axes-for-phase-encoding-directions)",
+         path,
+         header.path(),
+         MRTRIX_BASE_VERSION);
     // clang-format on
     save_table(transform_for_nifti_write(PE, header), path, true);
   } else {
@@ -141,13 +141,12 @@ void save_topup(const scheme_type &PE, const HeaderType &header, const std::file
   }
 
   if (!Path::has_suffix(header.path(), {".mgh", ".mgz", ".nii", ".nii.gz", ".img"})) {
-    WARN("Beware use of -export_pe_topup"                       //
-         " in conjunction image format other than MGH / NIfTI;" //
-         " -export_pe_table may be more suitable"               //
-         " (see: mrtrix.readthedocs.org/en/"                    //
-         MRTRIX_BASE_VERSION                                    //
-         "/concepts/pe_scheme.html"                             //
-         "#reference-axes-for-phase-encoding-directions)");     //
+    WARN("Beware use of -export_pe_topup"                              //
+         " in conjunction image format other than MGH / NIfTI;"        //
+         " -export_pe_table may be more suitable"                      //
+         " (see: mrtrix.readthedocs.org/en/{}/concepts/pe_scheme.html" //
+         "#reference-axes-for-phase-encoding-directions)",             //
+         MRTRIX_BASE_VERSION);                                         //
   }
 
   scheme_type table = transform_for_nifti_write(PE, header);
@@ -167,14 +166,13 @@ void save_eddy(const scheme_type &PE,
                std::string_view config_path,
                std::string_view index_path) {
   if (!Path::has_suffix(header.path(), {".mgh", ".mgz", ".nii", ".nii.gz", ".img"})) {
-    WARN("Exporting phase encoding table to FSL eddy format"  //
-         " in conjunction with format other than MGH / NIfTI" //
-         " risks erroneous interpretation"                    //
-         " due to possible flipping of first image axis"      //
-         " (see: mrtrix.readthedocs.org/en/"                  //
-         MRTRIX_BASE_VERSION                                  //
-         "/concepts/pe_scheme.html"                           //
-         "#reference-axes-for-phase-encoding-directions)");   //
+    WARN("Exporting phase encoding table to FSL eddy format"           //
+         " in conjunction with format other than MGH / NIfTI"          //
+         " risks erroneous interpretation"                             //
+         " due to possible flipping of first image axis"               //
+         " (see: mrtrix.readthedocs.org/en/{}/concepts/pe_scheme.html" //
+         "#reference-axes-for-phase-encoding-directions)",             //
+         MRTRIX_BASE_VERSION);                                         //
   }
   scheme_type table = transform_for_nifti_write(PE, header);
   Axes::permutations_type order;

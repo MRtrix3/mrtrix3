@@ -176,7 +176,7 @@ void compute_average_voxel2scanner(
     const std::vector<Eigen::Transform<default_type, 3, Eigen::Projective>> &transform_header_with,
     const avgspace_voxspacing_t voxel_spacing_calculation) {
   const size_t num_images = input_headers.size();
-  DEBUG("compute_average_voxel2scanner num_images:{}", num_images);
+  DEBUG("compute_average_voxel2scanner num_images: {}", num_images);
   std::vector<Eigen::Transform<default_type, 3, Eigen::Projective>> transformation_matrices;
   Eigen::MatrixXd bounding_box_corners = Eigen::MatrixXd::Zero(8 * num_images, 4);
 

@@ -143,7 +143,7 @@ void run() {
       num_inputs = data.rows();
       num_elements = data.cols();
     } catch (Exception &e_asmatrix) {
-      Exception e(fmt::format("Unable to load input data from file \"{}\"", argument[0]));
+      Exception e("Unable to load input data from file \"{}\"", argument[0]);
       e.push_back("Error when interpreted as containing list of file names: ");
       e.push_back(e_asfilelist);
       e.push_back("Error when interpreted as numerical matrix data: ");
@@ -160,16 +160,20 @@ void run() {
   if (!opt.empty()) {
     mask = File::Matrix::load_vector<bool>(opt[0][0]);
     if (static_cast<index_type>(mask.size()) != num_elements)
-      throw Exception(
-          "Length of mask ({}) does not match number of elements in data matrix ({})", mask.size(), num_elements);
+      throw Exception("Length of mask ({})"                                     //
+                      " does not match number of elements in data matrix ({})", //
+                      mask.size(),                                              //
+                      num_elements);                                            //
     CONSOLE("Number of elements included in mask: {}", mask.count());
   }
 
   // Load design matrix
   const matrix_type design = File::Matrix::load_matrix(argument[1]);
   if (static_cast<index_type>(design.rows()) != num_inputs)
-    throw Exception(
-        "Number of subjects ({}) does not match number of rows in design matrix ({})", num_inputs, design.rows());
+    throw Exception("Number of subjects ({})"                               //
+                    " does not match number of rows in design matrix ({})", //
+                    num_inputs,                                             //
+                    design.rows());                                         //
 
   // Before validating the contrast matrix, we first need to see if there are any
   //   additional design matrix columns coming from element-wise subject data
@@ -203,13 +207,14 @@ void run() {
   const std::vector<Hypothesis> hypotheses = Math::Stats::GLM::load_hypotheses(num_factors);
   const index_type num_hypotheses = hypotheses.size();
   if (hypotheses[0].cols() != num_factors)
-    throw Exception(
-        "The number of columns in the contrast matrix ({}) does not equal the number of columns in the "
-        "design matrix "
-        "({}){}",
-        hypotheses[0].cols(),
-        design.cols(),
-        (have_extra_columns ? fmt::format(" (taking into account the {} uses of -column)", extra_columns.size()) : ""));
+    throw Exception("The number of columns in the contrast matrix ({})"                  //
+                    " does not equal the number of columns in the design matrix ({}){}", //
+                    hypotheses[0].cols(),                                                //
+                    design.cols(),                                                       //
+                    have_extra_columns                                                   //
+                        ? fmt::format(" (taking into account the {} uses of -column)",   //
+                                      extra_columns.size())                              //
+                        : "");                                                           //
   CONSOLE("Number of hypotheses: {}", num_hypotheses);
 
   const std::filesystem::path output_dir = argument[2];
@@ -217,7 +222,8 @@ void run() {
 
   const bool nans_in_data = !data.allFinite();
   if (nans_in_data) {
-    INFO("Non-finite values present in data; rows will be removed from element-wise design matrices accordingly");
+    INFO("Non-finite values present in data;"                                    //
+         " rows will be removed from element-wise design matrices accordingly"); //
     if (!have_extra_columns) {
       INFO("(Note that this will result in slower execution than if such values were not present)");
     }

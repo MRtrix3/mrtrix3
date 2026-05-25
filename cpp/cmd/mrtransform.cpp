@@ -156,8 +156,10 @@ void usage() {
 
     + Option ("interp",
         fmt::format("set the interpolation method to use when reslicing"
-                    " (choices: {}; default: {}).", join(MR::Interp::interp_choices, ", "), MR::Interp::interp_choices[static_cast<ssize_t>(default_interp)]))
-      + Argument ("method").type_choice(MR::Interp::interp_choices)
+                    " (choices: {}; default: {}).",
+                    MR::Enum::join<MR::Interp::interp_type>(),
+                    MR::Enum::lowercase_name(default_interp)))
+      + Argument ("method").type_choice<MR::Interp::interp_type>()
 
     + Option ("oversample",
         "set the amount of over-sampling (in the target space) to perform when regridding."
@@ -554,11 +556,9 @@ void run() {
           const auto v = parse_floats(lines[l]);
           if (!result.cols()) {
             if (!(v.size() == 2 || v.size() == 3))
-              throw Exception("{}{}{}{} columns)",
-                              "Malformed \"directions\" field",         //
-                              " (expected matrix with 2 or 3 columns;", //
-                              " data has ",
-                              v.size());
+              throw Exception("Malformed \"directions\" field"                               //
+                              " (expected matrix with 2 or 3 columns; data has {} columns)", //
+                              v.size());                                                     //
             result.resize(lines.size(), v.size());
           } else if (v.size() != static_cast<size_t>(result.cols())) {
             throw Exception("Inconsistent number of columns in \"directions\" field");

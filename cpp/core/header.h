@@ -521,9 +521,21 @@ inline ssize_t &Header::stride(size_t axis) { return axes_[axis].stride; }
 } // namespace MR
 
 // Formatters for types that can't be formatted by default
-template <> struct fmt::formatter<MR::Header::NDimProxy> {
-  constexpr auto parse(fmt::format_parse_context &ctx) { return ctx.begin(); }
-  template <typename FormatContext> auto format(const MR::Header::NDimProxy &ndim, FormatContext &ctx) const {
-    return fmt::format_to(ctx.out(), "{}", static_cast<size_t>(ndim));
+namespace fmt {
+template <> struct formatter<MR::Header::PathProxy> {
+  //! Path-string formatter; receives any format specification so it applies to the rendered path.
+  formatter<std::string> value_formatter;
+  constexpr auto parse(format_parse_context &ctx) { return value_formatter.parse(ctx); }
+  template <typename FormatContext> auto format(const MR::Header::PathProxy &path, FormatContext &ctx) const {
+    return value_formatter.format(static_cast<const std::filesystem::path &>(path).string(), ctx);
   }
 };
+template <> struct formatter<MR::Header::NDimProxy> {
+  //! Underlying-count formatter; receives any format specification so it applies to the axis count.
+  formatter<size_t> value_formatter;
+  constexpr auto parse(format_parse_context &ctx) { return value_formatter.parse(ctx); }
+  template <typename FormatContext> auto format(const MR::Header::NDimProxy &ndim, FormatContext &ctx) const {
+    return value_formatter.format(static_cast<size_t>(ndim), ctx);
+  }
+};
+} // namespace fmt

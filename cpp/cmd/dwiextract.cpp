@@ -136,10 +136,8 @@ void run() {
     std::swap(volumes, new_volumes);
   }
 
-  if (volumes.empty()) {
-    const std::string type = bzero_only ? "b=0" : "dwi";
-    throw Exception("No {} volumes present", type);
-  }
+  if (volumes.empty())
+    throw Exception("No {} volumes present", bzero_only ? "b=0" : "dwi");
 
   std::sort(volumes.begin(), volumes.end());
 

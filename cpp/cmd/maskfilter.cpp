@@ -100,7 +100,10 @@ void usage() {
 
   ARGUMENTS
   + Argument("input", "the input mask.").type_image_in()
-  + Argument("filter", fmt::format("the name of the filter to be applied; options are: {}.", MR::Enum::join<FilterType>())).type_choice<FilterType>()
+  + Argument("filter",
+             fmt::format("the name of the filter to be applied; options are: {}.",
+                         MR::Enum::join<FilterType>()))
+             .type_choice<FilterType>()
   + Argument("output", "the output mask.").type_image_out();
 
   OPTIONS
@@ -129,7 +132,7 @@ void run() {
   case FilterType::CLEAN: {
     Filter::MaskClean filter(input_image,
                              fmt::format("applying mask cleaning filter to image {}",
-                                         std::filesystem::path(argument[0].as_text()).filename()));
+                                         static_cast<std::filesystem::path>(argument[0]).filename()));
     filter.set_scale(get_option_value("scale", default_clean_scale));
     Stride::set_from_command_line(filter);
 
@@ -141,7 +144,7 @@ void run() {
   case FilterType::CONNECT: {
     Filter::ConnectedComponents filter(input_image,
                                        fmt::format("applying connected-component filter to image {}",
-                                                   std::filesystem::path(argument[0].as_text()).filename()));
+                                                   static_cast<std::filesystem::path>(argument[0]).filename()));
     auto opt = get_options("axes");
     if (!opt.empty()) {
       const std::vector<int> axes = MR::container_cast<std::vector<int>>(opt[0][0].as_sequence_int());
@@ -178,7 +181,7 @@ void run() {
   case FilterType::DILATE: {
     Filter::Dilate filter(
         input_image,
-        fmt::format("applying dilate filter to image {}", std::filesystem::path(argument[0].as_text()).filename()));
+        fmt::format("applying dilate filter to image {}", static_cast<std::filesystem::path>(argument[0]).filename()));
     auto opt = get_options("npass");
     if (!opt.empty())
       filter.set_npass(static_cast<unsigned int>(opt[0][0]));
@@ -194,7 +197,7 @@ void run() {
   case FilterType::ERODE: {
     Filter::Erode filter(
         input_image,
-        fmt::format("applying erode filter to image {}", std::filesystem::path(argument[0].as_text()).filename()));
+        fmt::format("applying erode filter to image {}", static_cast<std::filesystem::path>(argument[0]).filename()));
     auto opt = get_options("npass");
     if (!opt.empty())
       filter.set_npass(static_cast<unsigned int>(opt[0][0]));
@@ -210,7 +213,7 @@ void run() {
   case FilterType::FILL: {
     Filter::Fill filter(
         input_image,
-        fmt::format("filling interior of image {}", std::filesystem::path(argument[0].as_text()).filename()));
+        fmt::format("filling interior of image {}", static_cast<std::filesystem::path>(argument[0]).filename()));
     auto opt = get_options("axes");
     if (!opt.empty()) {
       const std::vector<int> axes = MR::container_cast<std::vector<int>>(opt[0][0].as_sequence_int());
@@ -228,7 +231,7 @@ void run() {
   case FilterType::MEDIAN: {
     Filter::Median filter(
         input_image,
-        fmt::format("applying median filter to image {}", std::filesystem::path(argument[0].as_text()).filename()));
+        fmt::format("applying median filter to image {}", static_cast<std::filesystem::path>(argument[0]).filename()));
     auto opt = get_options("extent");
     if (!opt.empty())
       filter.set_extent(MR::container_cast<std::vector<uint32_t>>(opt[0][0].as_sequence_uint()));

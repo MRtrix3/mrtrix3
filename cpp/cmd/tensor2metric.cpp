@@ -81,7 +81,9 @@ void usage() {
 
     + Option("modulate",
              fmt::format("specify how to modulate the magnitude of the eigenvectors."
-                         " Valid choices are: {} (default = {}).", MR::Enum::join<ModulateChoice>(), MR::Enum::lowercase_name(default_modulate_choice)))
+                         " Valid choices are: {} (default = {}).",
+                         MR::Enum::join<ModulateChoice>(),
+                         MR::Enum::lowercase_name(default_modulate_choice)))
       + Argument("choice").type_choice<ModulateChoice>()
 
     + Option("cl",
@@ -127,7 +129,8 @@ void usage() {
 
     + Option("rk_ndirs",
              fmt::format("specify the number of directions used to numerically calculate radial kurtosis"
-                         " (by default, {} directions are used).", default_rk_numdirections))
+                         " (by default, {} directions are used).",
+                         default_rk_numdirections))
       + Argument("integer").type_integer(0, 1000);
 
   AUTHOR = "Ben Jeurissen (ben.jeurissen@uantwerpen.be)"

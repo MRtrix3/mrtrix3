@@ -26,13 +26,12 @@ OpenGL::OpenGL(QWidget *parent, const GL::Format &format) : QDialog(parent) {
 
   TreeItem *root = model->rootItem;
 
-  GLint i;
-  gl::GetIntegerv(gl::MAJOR_VERSION, &i);
-  std::string text = fmt::format("{}.", i);
-  gl::GetIntegerv(gl::MINOR_VERSION, &i);
-  text += str(i);
+  GLint major_version;
+  gl::GetIntegerv(gl::MAJOR_VERSION, &major_version);
+  GLint minor_version;
+  gl::GetIntegerv(gl::MINOR_VERSION, &minor_version);
 
-  root->appendChild(new TreeItem("API version", text, root));
+  root->appendChild(new TreeItem("API version", fmt::format("{}.{}", major_version, minor_version), root));
   root->appendChild(new TreeItem("Renderer", (const char *)gl::GetString(gl::RENDERER), root));
   root->appendChild(new TreeItem("Vendor", (const char *)gl::GetString(gl::VENDOR), root));
   root->appendChild(new TreeItem("Version", (const char *)gl::GetString(gl::VERSION), root));
@@ -56,11 +55,13 @@ OpenGL::OpenGL(QWidget *parent, const GL::Format &format) : QDialog(parent) {
   root->appendChild(
       new TreeItem("Multisample anti-aliasing", format.samples() ? str(format.samples()).c_str() : "off", root));
 
-  gl::GetIntegerv(gl::MAX_TEXTURE_SIZE, &i);
-  root->appendChild(new TreeItem("Maximum 2D texture size", str(i), root));
+  GLint max_2d_texture_size;
+  gl::GetIntegerv(gl::MAX_TEXTURE_SIZE, &max_2d_texture_size);
+  root->appendChild(new TreeItem("Maximum 2D texture size", str(max_2d_texture_size), root));
 
-  gl::GetIntegerv(gl::MAX_3D_TEXTURE_SIZE, &i);
-  root->appendChild(new TreeItem("Maximum 3D texture size", str(i), root));
+  GLint max_3D_texture_size;
+  gl::GetIntegerv(gl::MAX_3D_TEXTURE_SIZE, &max_3D_texture_size);
+  root->appendChild(new TreeItem("Maximum 3D texture size", str(max_3D_texture_size), root));
 
   QTreeView *view = new QTreeView;
   view->setModel(model);

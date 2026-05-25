@@ -76,9 +76,9 @@ void set_default_context() {
 }
 
 void init() {
-  INFO("GL renderer:  {}", (const char *)gl::GetString(gl::RENDERER));
-  INFO("GL version:   {}", (const char *)gl::GetString(gl::VERSION));
-  INFO("GL vendor:    {}", (const char *)gl::GetString(gl::VENDOR));
+  INFO("GL renderer:  {}", reinterpret_cast<const char *>(gl::GetString(gl::RENDERER)));
+  INFO("GL version:   {}", reinterpret_cast<const char *>(gl::GetString(gl::VERSION)));
+  INFO("GL vendor:    {}", reinterpret_cast<const char *>(gl::GetString(gl::VENDOR)));
 
   GLint gl_version(0), gl_version_major(0);
   gl::GetIntegerv(gl::MAJOR_VERSION, &gl_version_major);

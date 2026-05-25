@@ -128,20 +128,19 @@ std::filesystem::path create_tempfile(int64_t size, std::string_view suffix) {
   do {
     for (int n = 0; n < 6; n++)
       random_chars[n] = random_char();
-    filepath = (tmpfile_dir() / (tmpfile_prefix() + random_chars + std::string(suffix)));
+    filepath = tmpfile_dir() / fmt::format("{}{}{}", tmpfile_prefix(), random_chars, suffix);
     fid = open(filepath.string().c_str(),
                O_CREAT | O_RDWR | O_EXCL,
                S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
   } while (fid < 0 && errno == EEXIST);
 
   if (fid < 0)
-    throw Exception(std::string("error creating temporary file in directory \"" + tmpfile_dir().string() + "\": ") +
-                    strerror(errno));
+    throw Exception("error creating temporary file in directory \"{}\": {}", tmpfile_dir(), strerror(errno));
 
   const int status = size == 0 ? 0 : ftruncate(fid, size);
   close(fid);
   if (status)
-    throw Exception("cannot resize file \"" + filepath.string() + "\": " + strerror(errno));
+    throw Exception("cannot resize file \"{}\": {}", filepath, strerror(errno));
 
   return filepath;
 }

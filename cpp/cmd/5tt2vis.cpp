@@ -48,28 +48,22 @@ void usage() {
 
   OPTIONS
 
-  + Option ("bg", "image intensity of background"
-                  + fmt::format(" (default: {:.2g})", default_value_background))
+  + Option ("bg", fmt::format("image intensity of background (default: {:.2g})", default_value_background))
     + Argument ("value").type_float (0.0, 1.0)
 
-  + Option ("cgm", "image intensity of cortical grey matter"
-                   + fmt::format(" (default: {:.2g})", default_value_cgm))
+  + Option ("cgm", fmt::format("image intensity of cortical grey matter (default: {:.2g})", default_value_cgm))
     + Argument ("value").type_float (0.0, 1.0)
 
-  + Option ("sgm", "image intensity of sub-cortical grey matter"
-                   + fmt::format(" (default: {:.2g})", default_value_sgm))
+  + Option ("sgm", fmt::format("image intensity of sub-cortical grey matter (default: {:.2g})", default_value_sgm))
     + Argument ("value").type_float (0.0, 1.0)
 
-  + Option ("wm", "image intensity of white matter"
-                  + fmt::format(" (default: {:.2g})", default_value_wm))
+  + Option ("wm", fmt::format("image intensity of white matter (default: {:.2g})", default_value_wm))
     + Argument ("value").type_float (0.0, 1.0)
 
-  + Option ("csf", "image intensity of CSF"
-                   + fmt::format(" (default: {:.2g})", default_value_csf))
+  + Option ("csf", fmt::format("image intensity of CSF (default: {:.2g})", default_value_csf))
     + Argument ("value").type_float (0.0, 1.0)
 
-  + Option ("path", "image intensity of pathological tissue"
-                    + fmt::format(" (default: {:.2g})", default_value_pathology))
+  + Option ("path", fmt::format("image intensity of pathological tissue (default: {:.2g})", default_value_pathology))
     + Argument ("value").type_float (0.0, 10.0);
 
 }

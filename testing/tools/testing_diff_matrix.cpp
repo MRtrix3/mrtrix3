@@ -62,13 +62,13 @@ void run() {
     const auto in2c = File::Matrix::load_matrix<cdouble>(argument[1]);
 
     if (in1c.rows() != in2c.rows() || in1c.cols() != in2c.cols())
-      throw Exception(fmt::format("matrices \"{}\" and \"{}\" do not have matching sizes ({} x {} vs {} x {})",
-                                  std::filesystem::path(argument[0].as_text()).filename(),
-                                  std::filesystem::path(argument[1].as_text()).filename(),
-                                  in1c.rows(),
-                                  in1c.cols(),
-                                  in2c.rows(),
-                                  in2c.cols()));
+      throw Exception("matrices \"{}\" and \"{}\" do not have matching sizes ({} x {} vs {} x {})",
+                      argument[0],
+                      argument[1],
+                      in1c.rows(),
+                      in1c.cols(),
+                      in2c.rows(),
+                      in2c.cols());
 
     if (bool(tolerance_frac)) {
       for (ssize_t col = 0; col != in1c.cols(); ++col) {
@@ -79,15 +79,15 @@ void run() {
               (abs(in1c(row, col).imag() - in2c(row, col).imag()) /
                    (0.5 * (in1c(row, col).imag() + in2c(row, col).imag())) >
                tolerance_frac))
-            throw Exception(fmt::format(
-                "matrices \"{}\" and \"{}\" do not match within fractional precision of {} (({}, {}): {} vs {})",
-                std::filesystem::path(argument[0].as_text()).filename(),
-                std::filesystem::path(argument[1].as_text()).filename(),
-                tolerance_frac,
-                row,
-                col,
-                str(in1c(row, col)),
-                str(in2c(row, col))));
+            throw Exception("matrices \"{}\" and \"{}\" do not match within fractional precision of {}" //
+                            " (({}, {}): {} vs {})",                                                    //
+                            argument[0],
+                            argument[1],
+                            tolerance_frac,
+                            row,
+                            col,
+                            in1c(row, col),
+                            in2c(row, col));
         }
       }
     }
@@ -97,15 +97,15 @@ void run() {
         for (ssize_t row = 0; row != in1c.rows(); ++row) {
           if ((abs(in1c(row, col).real() - in2c(row, col).real()) > tolerance_abs) ||
               (abs(in1c(row, col).imag() - in2c(row, col).imag()) > tolerance_abs))
-            throw Exception(fmt::format(
-                "matrices \"{}\" and \"{}\" do not match within absolute precision of {} (({}, {}): {} vs {})",
-                std::filesystem::path(argument[0].as_text()).filename(),
-                std::filesystem::path(argument[1].as_text()).filename(),
-                tolerance_abs,
-                row,
-                col,
-                in1c(row, col),
-                in2c(row, col)));
+            throw Exception("matrices \"{}\" and \"{}\" do not match within absolute precision of {}" //
+                            " (({}, {}): {} vs {})",                                                  //
+                            argument[0],
+                            argument[1],
+                            tolerance_abs,
+                            row,
+                            col,
+                            in1c(row, col),
+                            in2c(row, col));
         }
       }
     }
@@ -114,27 +114,27 @@ void run() {
   }
 
   if (in1.rows() != in2.rows() || in1.cols() != in2.cols())
-    throw Exception(fmt::format("matrices \"{}\" and \"{}\" do not have matching sizes ({} x {} vs {} x {})",
-                                std::filesystem::path(argument[0].as_text()).filename(),
-                                std::filesystem::path(argument[1].as_text()).filename(),
-                                in1.rows(),
-                                in1.cols(),
-                                in2.rows(),
-                                in2.cols()));
+    throw Exception("matrices \"{}\" and \"{}\" do not have matching sizes ({} x {} vs {} x {})",
+                    argument[0],
+                    argument[1],
+                    in1.rows(),
+                    in1.cols(),
+                    in2.rows(),
+                    in2.cols());
 
   if (bool(tolerance_frac)) {
     for (ssize_t col = 0; col != in1.cols(); ++col) {
       for (ssize_t row = 0; row != in1.rows(); ++row) {
         if (abs(in1(row, col) - in2(row, col)) / (0.5 * (in1(row, col) + in2(row, col))) > tolerance_frac)
-          throw Exception(fmt::format(
-              "matrices \"{}\" and \"{}\" do not match within fractional precision of {} (({}, {}): {} vs {})",
-              std::filesystem::path(argument[0].as_text()).filename(),
-              std::filesystem::path(argument[1].as_text()).filename(),
-              tolerance_frac,
-              row,
-              col,
-              in1(row, col),
-              in2(row, col)));
+          throw Exception("matrices \"{}\" and \"{}\" do not match within fractional precision of {}" //
+                          " (({}, {}): {} vs {})",                                                    //
+                          argument[0],
+                          argument[1],
+                          tolerance_frac,
+                          row,
+                          col,
+                          in1(row, col),
+                          in2(row, col));
       }
     }
   }
@@ -143,15 +143,15 @@ void run() {
     for (ssize_t col = 0; col != in1.cols(); ++col) {
       for (ssize_t row = 0; row != in1.rows(); ++row) {
         if (abs(in1(row, col) - in2(row, col)) > tolerance_abs)
-          throw Exception(fmt::format(
-              "matrices \"{}\" and \"{}\" do not match within absolute precision of {} (({}, {}): {} vs {})",
-              std::filesystem::path(argument[0].as_text()).filename(),
-              std::filesystem::path(argument[1].as_text()).filename(),
-              tolerance_abs,
-              row,
-              col,
-              in1(row, col),
-              in2(row, col)));
+          throw Exception("matrices \"{}\" and \"{}\" do not match within absolute precision of {}" //
+                          " (({}, {}): {} vs {})",                                                  //
+                          argument[0],
+                          argument[1],
+                          tolerance_abs,
+                          row,
+                          col,
+                          in1(row, col),
+                          in2(row, col));
       }
     }
   }

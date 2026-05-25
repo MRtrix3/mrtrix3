@@ -48,7 +48,7 @@ struct SourceFunctor {
   SourceFunctor(SourceFunctor &&) = default;
   SourceFunctor &operator=(SourceFunctor &&) = default;
 
-  ~SourceFunctor() { DEBUG(fmt::format("SourceFunctor: Sent {} items, last value: {}.", count, value)); }
+  ~SourceFunctor() { DEBUG("SourceFunctor: Sent {} items, last value: {}.", count, value); }
 
   // Operator called by the queue to produce items.
   // Returns false when no more items can be produced.
@@ -84,8 +84,7 @@ struct SinkFunctor {
   SinkFunctor &operator=(SinkFunctor &&) = default;
 
   ~SinkFunctor() {
-    DEBUG(fmt::format(
-        "SinkFunctor: Received {} items, {} out of order.", items_received_count, out_of_order_items_count));
+    DEBUG("SinkFunctor: Received {} items, {} out of order.", items_received_count, out_of_order_items_count);
   }
 
   bool operator()(const Item &item) {
@@ -116,12 +115,11 @@ protected:
       if (enforce_order == OrderEnforcement::Enforce) {
         GTEST_FAIL() << "Order mismatch (enforced). " << sink.out_of_order_items_count << " items out of order.";
       } else {
-        DEBUG(fmt::format("Order mismatch (not enforced). {} items out of order.", sink.out_of_order_items_count));
+        DEBUG("Order mismatch (not enforced). {} items out of order.", sink.out_of_order_items_count);
       }
     }
 
-    DEBUG("Allocated items: " + MR::str(g_items_created_count.load()) + ", Time taken: " + MR::str(timer.elapsed()) +
-          " ns");
+    DEBUG("Allocated items: {}, Time taken: {}ns", g_items_created_count, timer.elapsed());
   }
 };
 

@@ -18,6 +18,7 @@
 
 #include <Eigen/Dense>
 #include <cmath>
+#include <fmt/format.h>
 #include <string>
 
 #include "app.h"
@@ -26,7 +27,6 @@
 #include "file/matrix.h"
 #include "math/math.h"
 #include "mrtrix.h"
-#include <fmt/format.h>
 
 namespace MR::DWI::Directions {
 
@@ -70,15 +70,13 @@ validate(const MatrixType &M, const std::filesystem::path &path, const bool perm
         inc_min = std::min(inc_min, inc);
         inc_max = std::max(inc_max, inc);
         if (az < -two_pi || az > two_pi)
-          throw Exception("Row {}: {}{} is outside the permitted range [-2pi, 2pi]",
-                          r + 1, //
-                          "azimuth value ",
-                          az);
+          throw Exception("Row {}: azimuth value {} is outside the permitted range [-2pi, 2pi]", //
+                          r + 1,                                                                 //
+                          az);                                                                   //
         if (inc < -Math::pi || inc > Math::pi)
-          throw Exception("Row {}: {}{} is outside the permitted range [-pi, pi]",
-                          r + 1, //
-                          "inclination value ",
-                          inc);
+          throw Exception("Row {}: inclination value {} is outside the permitted range [-pi, pi]", //
+                          r + 1,                                                                   //
+                          inc);                                                                    //
       }
       if (az_max - az_min > two_pi - range_tol)
         throw Exception("Range of azimuth values exceeds 2pi");
@@ -100,20 +98,17 @@ validate(const MatrixType &M, const std::filesystem::path &path, const bool perm
         const value_type y = M(r, 1);
         const value_type z = M(r, 2);
         if (x < -1.0 || x > 1.0)
-          throw Exception("Row {}: {}{} is outside the permitted range [-1.0, 1.0]",
-                          r + 1, //
-                          "x component ",
-                          x); //
+          throw Exception("Row {}: x component {} is outside the permitted range [-1.0, 1.0]", //
+                          r + 1,                                                               //
+                          x);                                                                  //
         if (y < -1.0 || y > 1.0)
-          throw Exception("Row {}: {}{} is outside the permitted range [-1.0, 1.0]",
-                          r + 1, //
-                          "y component ",
-                          y); //
+          throw Exception("Row {}: y component {} is outside the permitted range [-1.0, 1.0]", //
+                          r + 1,                                                               //
+                          y);                                                                  //
         if (z < -1.0 || z > 1.0)
-          throw Exception("Row {}: {}{} is outside the permitted range [-1.0, 1.0]",
-                          r + 1, //
-                          "z component ",
-                          z); //
+          throw Exception("Row {}: z component {} is outside the permitted range [-1.0, 1.0]", //
+                          r + 1,                                                               //
+                          z);                                                                  //
         const value_type norm = M.row(r).norm();
         if (std::fabs(norm - value_type(1)) > unit_tol)
           ++result.n_non_unit;
@@ -144,25 +139,21 @@ validate(const MatrixType &M, const std::filesystem::path &path, const bool perm
         const value_type z = M(r, 2);
         const value_type b = M(r, 3);
         if (b < 0.0)
-          throw Exception("Row {}: {}{} is negative",
-                          r + 1, //
-                          "b-value ",
-                          b); //
+          throw Exception("Row {}: b-value {} is negative", //
+                          r + 1,                            //
+                          b);                               //
         if (x < -1.0 || x > 1.0)
-          throw Exception("Row {}: {}{} is outside the permitted range [-1.0, 1.0]",
-                          r + 1, //
-                          "x component ",
-                          x); //
+          throw Exception("Row {}: x component {} is outside the permitted range [-1.0, 1.0]", //
+                          r + 1,                                                               //
+                          x);                                                                  //
         if (y < -1.0 || y > 1.0)
-          throw Exception("Row {}: {}{} is outside the permitted range [-1.0, 1.0]",
-                          r + 1, //
-                          "y component ",
-                          y); //
+          throw Exception("Row {}: y component {} is outside the permitted range [-1.0, 1.0]", //
+                          r + 1,                                                               //
+                          y);                                                                  //
         if (z < -1.0 || z > 1.0)
-          throw Exception("Row {}: {}{} is outside the permitted range [-1.0, 1.0]",
-                          r + 1, //
-                          "z component ",
-                          z); //
+          throw Exception("Row {}: z component {} is outside the permitted range [-1.0, 1.0]", //
+                          r + 1,                                                               //
+                          z);                                                                  //
         if (b > bthresh) {
           // const value_type norm = M.block<1,3>(r, 0).norm();
           const value_type norm = M.block(r, 0, 1, 3).norm();
@@ -174,9 +165,9 @@ validate(const MatrixType &M, const std::filesystem::path &path, const bool perm
     } break;
 
     default:
-      throw Exception("Unexpected number of columns ({}): {}",
-                      ncols,                                                           //
-                      "expected 2 (spherical), 3 (Cartesian), or 4 (gradient table)"); //
+      throw Exception("Unexpected number of columns ({}):"                             //
+                      " expected 2 (spherical), 3 (Cartesian), or 4 (gradient table)", //
+                      ncols);                                                          //
     }
 
   } catch (Exception &e) {
@@ -191,8 +182,9 @@ validate(const MatrixType &M, const std::filesystem::path &path, const bool perm
         result.n_directions,
         fmt); //
   if (result.n_non_unit) {
-    const std::string msg = fmt::format("Direction file \"{}\": ", path) +                          //
-                            fmt::format("{} direction(s) are not of unit norm", result.n_non_unit); //
+    const std::string msg = fmt::format("Direction file \"{}\": {} direction(s) are not of unit norm", //
+                                        path,                                                          //
+                                        result.n_non_unit);                                            //
     if (result.format == DirectionsFormat::Cartesian) {
       WARN(msg);
     } else {

@@ -60,12 +60,14 @@ void usage() {
 
     + Option("threshold",
              fmt::format("a threshold to define the required fraction of shared connections to be included in the neighbourhood"
-                         " (default: {:.2g})", default_connectivity_threshold))
+                         " (default: {:.2g})",
+                         default_connectivity_threshold))
       + Argument("value").type_float(0.0, 1.0)
 
     + Option("angle",
              fmt::format("the max angle threshold for assigning streamline tangents to fixels"
-                         " (Default: {:.2g} degrees)", DWI::Tractography::Mapping::default_streamline2fixel_angle))
+                         " (Default: {:.2g} degrees)",
+                         DWI::Tractography::Mapping::default_streamline2fixel_angle))
       + Argument("value").type_float(0.0, 90.0)
 
     + Option("mask",

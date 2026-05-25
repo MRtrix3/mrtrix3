@@ -195,7 +195,7 @@ FORCE_INLINE void update_displacement_scaling_and_squaring(Image<default_type> &
         update,
         *scaled_update);
 
-    //          CONSOLE (fmt::format("composing {}", std::log2 (scale_factor)) + "times");
+    //          CONSOLE ("composing {}times", std::log2 (scale_factor));
 
     // Squaring
     for (size_t i = 0; i < std::log2(scale_factor); ++i) {

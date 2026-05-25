@@ -293,8 +293,8 @@ void run() {
   if (!get_options("nii").empty())
     file_extension = ".nii";
 
-  static const std::string default_index_filename(fmt::format("index{}", file_extension));
-  static const std::string default_directions_filename(fmt::format("directions{}", file_extension));
+  static const std::filesystem::path default_index_filename(fmt::format("index{}", file_extension));
+  static const std::filesystem::path default_directions_filename(fmt::format("directions{}", file_extension));
   receiver.set_index_output(default_index_filename);
   receiver.set_directions_output(default_directions_filename);
 

@@ -248,14 +248,16 @@ template <class MatrixType> void Writer<MatrixType>::save(const std::filesystem:
       if (!App::overwrite_files && (std::filesystem::is_regular_file(path / "index.mif") ||
                                     std::filesystem::is_regular_file(path / "fixels.mif") ||
                                     std::filesystem::is_regular_file(path / "values.mif")))
-        throw Exception("Cannot create fixel-fixel connectivity matrix \"{}\": one or more files already "
-                        "exists (use -force to override)",
+        throw Exception("Cannot create fixel-fixel connectivity matrix \"{}\":"       //
+                        " one or more files already exists (use -force to override)", //
                         path);
     } else {
       if (App::overwrite_files) {
         std::filesystem::remove(path);
       } else {
-        throw Exception("Cannot create fixel-fixel connectivity matrix directory \"{}\": Already exists as file", path);
+        throw Exception("Cannot create fixel-fixel connectivity matrix directory \"{}\":" //
+                        " Already exists as file",                                        //
+                        path);
       }
     }
   } else {

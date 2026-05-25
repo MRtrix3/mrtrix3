@@ -899,7 +899,10 @@ void run_operations(const std::vector<StackEntry> &stack) {
     assert(!stack[0].evaluator);
     assert(!stack[0].image);
 
-    print(fmt::format("{}\n", stack[0].value));
+    if (stack[0].is_complex())
+      print(fmt::format("{}\n", stack[0].value));
+    else
+      print(fmt::format("{}\n", stack[0].value.real()));
     return;
   }
 

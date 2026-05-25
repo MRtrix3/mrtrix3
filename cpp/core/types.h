@@ -243,21 +243,31 @@ template <class T, std::size_t N> inline ostream &operator<<(ostream &stream, co
 
 namespace fmt {
 template <class T> struct formatter<std::vector<T>> {
-  constexpr auto parse(format_parse_context &ctx) { return ctx.begin(); }
+  //! Per-element formatter; receives any format specification so it propagates to each entry.
+  formatter<T> value_formatter;
+  constexpr auto parse(format_parse_context &ctx) { return value_formatter.parse(ctx); }
   template <typename FormatContext> auto format(const std::vector<T> &v, FormatContext &ctx) const {
-    format_to(ctx.out(), "[ ");
-    for (size_t i = 0; i != v.size(); ++i)
-      format_to(ctx.out(), "{} ", v[i]);
-    return format_to(ctx.out(), "]");
+    auto out = format_to(ctx.out(), "[ ");
+    for (size_t i = 0; i != v.size(); ++i) {
+      ctx.advance_to(out);
+      out = value_formatter.format(v[i], ctx);
+      out = format_to(out, " ");
+    }
+    return format_to(out, "]");
   }
 };
 template <class T, std::size_t N> struct formatter<std::array<T, N>> {
-  constexpr auto parse(format_parse_context &ctx) { return ctx.begin(); }
+  //! Per-element formatter; receives any format specification so it propagates to each entry.
+  formatter<T> value_formatter;
+  constexpr auto parse(format_parse_context &ctx) { return value_formatter.parse(ctx); }
   template <typename FormatContext> auto format(const std::array<T, N> &v, FormatContext &ctx) const {
-    format_to(ctx.out(), "[ ");
-    for (size_t i = 0; i != N; ++i)
-      format_to(ctx.out(), "{} ", v[i]);
-    return format_to(ctx.out(), "]");
+    auto out = format_to(ctx.out(), "[ ");
+    for (size_t i = 0; i != N; ++i) {
+      ctx.advance_to(out);
+      out = value_formatter.format(v[i], ctx);
+      out = format_to(out, " ");
+    }
+    return format_to(out, "]");
   }
 };
 template <typename Derived>
@@ -268,26 +278,37 @@ struct formatter<
         MR::is_eigen_type<std::remove_cv_t<Derived>>::value &&
         (std::is_same_v<typename Eigen::internal::traits<std::remove_cv_t<Derived>>::XprKind, Eigen::MatrixXpr> ||
          std::is_same_v<typename Eigen::internal::traits<std::remove_cv_t<Derived>>::XprKind, Eigen::ArrayXpr>)>> {
-  constexpr auto parse(format_parse_context &ctx) { return ctx.begin(); }
+  //! Per-coefficient formatter; receives any format specification so it propagates to each coefficient.
+  formatter<typename std::remove_cv_t<Derived>::Scalar> value_formatter;
+  constexpr auto parse(format_parse_context &ctx) { return value_formatter.parse(ctx); }
   template <typename FormatContext> auto format(const Derived &m, FormatContext &ctx) const {
     auto out = ctx.out();
     if (m.rows() == 1) {
-      format_to(out, "[ ");
-      for (Eigen::Index i = 0; i < m.cols(); ++i)
-        format_to(out, "{} ", m.coeff(0, i));
+      out = format_to(out, "[ ");
+      for (Eigen::Index i = 0; i < m.cols(); ++i) {
+        ctx.advance_to(out);
+        out = value_formatter.format(m.coeff(0, i), ctx);
+        out = format_to(out, " ");
+      }
       return format_to(out, "]");
     } else if (m.cols() == 1) {
-      format_to(out, "[ ");
-      for (Eigen::Index i = 0; i < m.rows(); ++i)
-        format_to(out, "{} ", m.coeff(i, 0));
+      out = format_to(out, "[ ");
+      for (Eigen::Index i = 0; i < m.rows(); ++i) {
+        ctx.advance_to(out);
+        out = value_formatter.format(m.coeff(i, 0), ctx);
+        out = format_to(out, " ");
+      }
       return format_to(out, "]^T");
     } else {
-      format_to(out, "\n[ ");
+      out = format_to(out, "\n[ ");
       for (Eigen::Index i = 0; i < m.rows(); ++i) {
         if (i > 0)
-          format_to(out, "\n");
-        for (Eigen::Index j = 0; j < m.cols(); ++j)
-          format_to(out, "{} ", m.coeff(i, j));
+          out = format_to(out, "\n");
+        for (Eigen::Index j = 0; j < m.cols(); ++j) {
+          ctx.advance_to(out);
+          out = value_formatter.format(m.coeff(i, j), ctx);
+          out = format_to(out, " ");
+        }
       }
       return format_to(out, "]");
     }
@@ -295,7 +316,7 @@ struct formatter<
 };
 template <typename T> struct formatter<Eigen::Transform<T, 3, Eigen::AffineCompact>> {
   fmt::formatter<Eigen::Matrix<T, 3, 4>> matrix_formatter;
-  constexpr auto parse(format_parse_context &ctx) { return ctx.begin(); }
+  constexpr auto parse(format_parse_context &ctx) { return matrix_formatter.parse(ctx); }
   template <typename FormatContext>
   auto format(const Eigen::Transform<T, 3, Eigen::AffineCompact> &t, FormatContext &ctx) const {
     return matrix_formatter.format(t.matrix(), ctx);

@@ -142,7 +142,7 @@ public:
   }
 
   friend std::ostream &operator<<(std::ostream &stream, const CSAEntry &item) {
-    stream << "[CSA] " << item.name << " " << fmt::format("({} items):", item.nitems);
+    stream << "[CSA] " << item.name << " (" << item.nitems << " items):";
     const std::byte *next = item.start + 84;
 
     for (uint32_t m = 0; m < item.nitems; m++) {

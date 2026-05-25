@@ -98,8 +98,8 @@ void usage() {
 
   + Option("iter",
            fmt::format("number of iterative reweightings for IWLS algorithm"
-                       " (default: {})"
-                       " (see Description).", default_iterations))
+                       " (default: {}) (see Description).",
+                       default_iterations))
     + Argument("integer").type_integer(0, 10)
 
   + Option("constrain",
@@ -137,7 +137,7 @@ void usage() {
   + "* OLS, WLS:\n"
     "Basser, P.J.; Mattiello, J.; LeBihan, D. "
     "Estimation of the effective self-diffusion tensor from the NMR spin echo. "
-    "J Magn Reson B., 1994, 103, 247–254."
+    "J Magn Reson B., 1994, 103, 247-254."
 
   + "* IWLS:\n"
     "Veraart, J.; Sijbers, J.; Sunaert, S.; Leemans, A. & Jeurissen, B. " // Internal

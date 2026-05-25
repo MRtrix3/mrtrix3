@@ -14,19 +14,19 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <fmt/std.h>
 #include <limits>
 
 #include "app.h"
 #include "header.h"
 #include "image_io/variable_scaling.h"
 #include "progressbar.h"
-#include <fmt/format.h>
 
 namespace MR::ImageIO {
 
 void VariableScaling::load(const Header &header, size_t) {
   if (files.empty())
-    throw Exception("no files specified in header for image \"{}\"", header.name());
+    throw Exception("no files specified in header for image \"{}\"", header.path());
 
   assert(header.datatype().is_floating_point() && header.datatype().bits() == 32 &&
          header.datatype().is_byte_order_native());
@@ -35,11 +35,11 @@ void VariableScaling::load(const Header &header, size_t) {
 
   size_t voxels_per_segment = segsize / files.size();
 
-  DEBUG("loading variable-scaling DICOM image \"{}\"...", header.name());
+  DEBUG("loading variable-scaling DICOM image \"{}\"...", header.path());
   addresses.resize(1);
   addresses[0].reset(new std::byte[segsize * sizeof(float32)]);
   if (!addresses[0])
-    throw Exception("failed to allocate memory for image \"{}\"", header.name());
+    throw Exception("failed to allocate memory for image \"{}\"", header.path());
 
   ProgressBar progress("rescaling DICOM images", files.size());
   float32 *data = reinterpret_cast<float32 *>(addresses[0].get());

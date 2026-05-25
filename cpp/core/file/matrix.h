@@ -85,8 +85,8 @@ std::vector<std::vector<ValueType>> load_matrix_2D_vector(const std::filesystem:
       for (const auto &entry : elements)
         V.back().push_back(to<ValueType>(entry));
     } catch (Exception &e) {
-      e.push_back(fmt::format("Cannot load row {}", V.size()) +
-                  fmt::format(" of file \"{}\" as delimited numerical matrix data:", filename));
+      e.push_back(
+          fmt::format("Cannot load row {} of file \"{}\" as delimited numerical matrix data:", V.size(), filename));
       e.push_back(sbuf);
       throw e;
     }
@@ -197,16 +197,17 @@ inline transform_type load_transform(const std::filesystem::path &filename, Vect
         elements = split(strip(line.substr(key_legacy.size())), " ,;\t", true);
       if (!elements.empty()) {
         if (elements.size() != 3)
-          throw Exception(
-              "could not parse centre in transformation file {}: {}", filename, strip(line.substr(key.size())));
+          throw Exception("could not parse centre in transformation file {}: {}", //
+                          filename,                                               //
+                          strip(line.substr(key.size())));                        //
         try {
           centre[0] = to<default_type>(elements[0]);
           centre[1] = to<default_type>(elements[1]);
           centre[2] = to<default_type>(elements[2]);
         } catch (...) {
-          throw Exception("File \"{}\" contains non-numerical data in centre: {}",
-                          filename, //
-                          strip(line.substr(key.size())));
+          throw Exception("File \"{}\" contains non-numerical data in centre: {}", //
+                          filename,                                                //
+                          strip(line.substr(key.size())));                         //
         }
         break;
       }

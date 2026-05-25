@@ -14,13 +14,13 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <fmt/std.h>
 #include <limits>
 #include <unistd.h>
 
 #include "header.h"
 #include "image_io/pipe.h"
 #include "signal_handler.h"
-#include <fmt/std.h>
 
 namespace MR::ImageIO {
 

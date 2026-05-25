@@ -681,13 +681,13 @@ void run() {
   if (nonlinear_init) {
     const std::filesystem::path nl_init_path{opt[0][0]};
     if (!do_nonlinear)
-      throw Exception("the non linear initialisation option -nl_init cannot be used when no non-linear registration "
-                      "is requested");
+      throw Exception("the non linear initialisation option -nl_init cannot be used" //
+                      " when no non-linear registration is requested");              //
 
-    if (!Path::is_mrtrix_image(nl_init_path) &&                                         //
-        !(Path::has_suffix(std::filesystem::path(nl_init_path), {".nii", ".nii.gz"}) && //
-          File::Config::get_bool("NIfTIAutoLoadJSON", false) &&                         //
-          std::filesystem::exists(File::NIfTI::get_json_path(std::filesystem::path(opt[0][0]))))) {
+    if (!Path::is_mrtrix_image(nl_init_path) &&                                 //
+        !(Path::has_suffix(nl_init_path, {".nii", ".nii.gz"}) &&                //
+          File::Config::get_bool("NIfTIAutoLoadJSON", false) &&                 //
+          std::filesystem::exists(File::NIfTI::get_json_path(nl_init_path)))) { //
       WARN("nl_init input requires warp_full in original .mif/.mih file format"
            " or in NIfTI file format with associated JSON."
            " Converting to other file formats may remove linear transformations stored in the image header.");

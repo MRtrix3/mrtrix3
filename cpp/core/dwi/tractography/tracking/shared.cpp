@@ -106,7 +106,7 @@ SharedBase::~SharedBase() {
   INFO("Termination reason probabilities:");
   for (const auto &i : termination_info) {
     if (termination_relevant(i.first))
-      INFO("  {}: {:.3g}\\%",
+      INFO("  {}: {:.3g}\%",
            i.second.description,
            100.0 * static_cast<default_type>(terminations.get(i.first)) / static_cast<default_type>(sum_terminations));
   }
@@ -215,24 +215,25 @@ void SharedBase::set_num_points(const float angle_minradius_preds, const float m
   //         need to quantify its length precisely and compare against the maximum)
   max_num_points_postds = 1 + std::floor(max_dist / max_step_postds);
 
-  DEBUG(
-      "For tracking step size {}mm, {}, minimum radius of curvature {:.6g}mm, downsampling ratio {}: minimum length of "
-      "{}mm requires at least {} vertices pre-DS, is tested explicitly for {} vertices or less post-DS; maximum length "
-      "of {}mm will stop tracking after {} vertices pre-DS, is tested explicitly for {} or more vertices post-DS",
-      step_size,
-      (std::isfinite(max_angle_ho)
-           ? fmt::format("max change in fibre orientation angle per step {} deg (using RK4)",
-                         max_angle_ho * 180.0 / Math::pi,
-                         6)
-           : fmt::format("max angle deviation per step {}deg", max_angle_1o * 180.0 / Math::pi, 6)),
-      min_radius,
-      downsampler.get_ratio(),
-      min_dist,
-      min_num_points_preds,
-      min_num_points_postds,
-      max_dist,
-      max_num_points_preds,
-      max_num_points_postds);
+  DEBUG("For tracking step size {}mm, {}, minimum radius of curvature {:.6g}mm, downsampling ratio {}:" //
+        " minimum length of {}mm requires at least {} vertices pre-DS,"                                 //
+        " is tested explicitly for {} vertices or less post-DS;"                                        //
+        " maximum length of {}mm will stop tracking after {} vertices pre-DS,"                          //
+        " is tested explicitly for {} or more vertices post-DS",                                        //
+        step_size,
+        (std::isfinite(max_angle_ho)
+             ? fmt::format("max change in fibre orientation angle per step {} deg (using RK4)",
+                           max_angle_ho * 180.0 / Math::pi,
+                           6)
+             : fmt::format("max angle deviation per step {}deg", max_angle_1o * 180.0 / Math::pi, 6)),
+        min_radius,
+        downsampler.get_ratio(),
+        min_dist,
+        min_num_points_preds,
+        min_num_points_postds,
+        max_dist,
+        max_num_points_preds,
+        max_num_points_postds);
 }
 
 void SharedBase::set_cutoff(float cutoff) {

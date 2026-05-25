@@ -81,8 +81,11 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
   bool is_BE = false;
   if (Raw::fetch_<int32_t>(&NH.sizeof_hdr, is_BE) != sizeof(NH)) {
     is_BE = true;
-    if (Raw::fetch_<int32_t>(&NH.sizeof_hdr, is_BE) != sizeof(NH))
+    if (Raw::fetch_<int32_t>(&NH.sizeof_hdr, is_BE) != sizeof(NH)) {
+      DEBUG("Header size as LE: {}", Raw::fetch_<int32_t>(&NH.sizeof_hdr, false));
+      DEBUG("Header size as BE: {}", Raw::fetch_<int32_t>(&NH.sizeof_hdr, true));
       throw Exception("image \"{}\" is not in {} format (sizeof_hdr != {})", H.name(), version, sizeof(NH));
+    }
   }
 
   bool is_nifti = true;
@@ -329,7 +332,7 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
     if (!File::Config::get_bool("AnalyseLeftToRight", false))
       H.stride(0) = -H.stride(0);
     if (!File::NIfTI::right_left_warning_issued) {
-      INFO("assuming Analyse images are encoded {}", std::string(H.stride(0) > 0 ? "left to right" : "right to left"));
+      INFO("assuming Analyse images are encoded {}", H.stride(0) > 0 ? "left to right" : "right to left");
       File::NIfTI::right_left_warning_issued = true;
     }
   }
@@ -635,17 +638,18 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> read(Header &H) {
   using nifti_header = typename Get<VERSION>::type;
 
   const std::filesystem::path &header_path = static_cast<const Header &>(H).path();
-  if (!Path::has_suffix(header_path, ".nii") && !Path::has_suffix(header_path, ".img"))
+  if (header_path.extension() != ".nii" && header_path.extension() != ".img")
     return std::unique_ptr<ImageIO::Base>();
 
-  const bool single_file = Path::has_suffix(H.name(), ".nii");
-  const std::string hdr_path = single_file ? H.name() : fmt::format("{}.hdr", H.name().substr(0, H.name().size() - 4));
+  const bool single_file = header_path.extension() == ".nii";
+  const std::filesystem::path hdr_path =
+      single_file ? header_path : std::filesystem::path(header_path).replace_extension(".hdr");
 
   try {
     File::MMap fmap{MR::File::Entry(hdr_path)};
     const size_t data_offset = fetch(H, *((const nifti_header *)fmap.address()));
     std::unique_ptr<ImageIO::Default> handler(new ImageIO::Default(H));
-    handler->files.push_back(File::Entry(hdr_path, (single_file ? data_offset : 0)));
+    handler->files.push_back(File::Entry(header_path, (single_file ? data_offset : 0)));
     return handler;
   } catch (Exception &e) {
     e.display();
@@ -683,13 +687,14 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> create(Header &H) {
   if (H.ndim() > 7)
     throw Exception("{} format cannot support more than 7 dimensions for image \"{}\"", version, H.name());
 
-  const bool single_file = Path::has_suffix(H.name(), ".nii");
-  const std::string header_path =
-      single_file ? H.name() : fmt::format("{}.hdr", H.name().substr(0, H.name().size() - 4));
+  const std::filesystem::path &create_path = const_cast<const Header &>(H).path();
+  const bool single_file = create_path.extension() == ".nii";
+  const std::filesystem::path hdr_path =
+      single_file ? create_path : std::filesystem::path(create_path).replace_extension(".hdr");
 
   nifti_header NH;
   store(NH, H, single_file);
-  File::OFStream out(header_path, std::ios::out | std::ios::binary);
+  File::OFStream out(hdr_path, std::ios::out | std::ios::binary);
   out.write((const char *)&NH, sizeof(nifti_header));
   nifti1_extender extender;
   memset(extender.extension, 0x00, sizeof(nifti1_extender));
@@ -698,16 +703,16 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> create(Header &H) {
 
   const size_t data_offset = single_file ? sizeof(NH) + 4 : 0;
 
-  if (single_file)
-    std::filesystem::resize_file(header_path, data_offset + footprint(H));
-  else {
-    File::OFStream data_file(header_path);
+  if (single_file) {
+    std::filesystem::resize_file(create_path, data_offset + footprint(H));
+  } else {
+    File::OFStream data_file(create_path);
     data_file.close();
-    std::filesystem::resize_file(header_path, footprint(H));
+    std::filesystem::resize_file(create_path, footprint(H));
   }
 
   std::unique_ptr<ImageIO::Default> handler(new ImageIO::Default(H));
-  handler->files.push_back(File::Entry(header_path, data_offset));
+  handler->files.push_back(File::Entry(create_path, data_offset));
 
   return handler;
 }

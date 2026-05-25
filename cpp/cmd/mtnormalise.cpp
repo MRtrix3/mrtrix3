@@ -81,23 +81,30 @@ void usage() {
                    " This option is mandatory.").required()
     + Argument("image").type_image_in()
 
-  + Option("order", "the maximum order of the polynomial basis"
-                    " used to fit the normalisation field in the log-domain."
-                    " An order of 0 is equivalent to not allowing spatial variance"
-                    " of the intensity normalisation factor."
-                    + fmt::format(" (default: {})", default_polynormial_order))
+  + Option("order",
+           fmt::format("the maximum order of the polynomial basis"
+                       " used to fit the normalisation field in the log-domain."
+                       " An order of 0 is equivalent to not allowing spatial variance"
+                       " of the intensity normalisation factor."
+                       " (default: {})",
+                       default_polynormial_order))
     + Argument("number").type_integer(0, 3)
 
-  + Option("niter", "set the number of iterations."
-                    " The first (and potentially only) entry applies to the main loop."
-                    " If supplied as a comma-separated list of integers,"
-                    " the second entry applies to the inner loop to update the balance factors."
-                    + fmt::format(" (default: {},{}).", default_main_iterations, default_balance_maxiterations))
+  + Option("niter",
+           fmt::format("set the number of iterations."
+                       " The first (and potentially only) entry applies to the main loop."
+                       " If supplied as a comma-separated list of integers,"
+                       " the second entry applies to the inner loop to update the balance factors."
+                       " (default: {},{}).",
+                       default_main_iterations,
+                       default_balance_maxiterations))
     + Argument("number").type_sequence_int()
 
-  + Option("reference", "specify the (positive) reference value"
-                        " to which the summed tissue compartments will be normalised."
-                        + fmt::format(" (default: {:.6g}, SH DC term for unit angular integral)", default_reference_value))
+  + Option("reference",
+           fmt::format("specify the (positive) reference value"
+                       " to which the summed tissue compartments will be normalised."
+                       " (default: {:.6g}, SH DC term for unit angular integral)",
+                       default_reference_value))
     + Argument("number").type_float(std::numeric_limits<default_type>::min())
 
   + Option("balanced", "incorporate the per-tissue balancing factors"
@@ -498,7 +505,7 @@ void run() {
 
   Eigen::MatrixXd data(num_voxels, n_tissue_types);
   for (size_t n = 0; n < n_tissue_types; ++n) {
-    if (std::filesystem::exists(argument[2 * n + 1].as_path()) && !App::overwrite_files)
+    if (std::filesystem::exists(argument[2 * n + 1]) && !App::overwrite_files)
       throw Exception("Output file \"{}\" already exists. (use -force option to force overwrite)",
                       argument[2 * n + 1].as_text());
     load_data(data, argument[2 * n], index);

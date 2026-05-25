@@ -63,13 +63,13 @@ public:
       try {
         mask.reset(new Mask(spec));
       } catch (Exception &e_asimage) {
-        Exception e(fmt::format("Unable to parse text \"{}\" as a ROI", spec));
-        e.push_back("If interpreted as sphere:");
+        Exception e("Unable to parse text \"{}\" as a ROI", spec);
+        e.push_back("  If interpreted as sphere:");
         for (size_t i = 0; i != e_assphere.num(); ++i)
-          e.push_back("  " + e_assphere[i]);
-        e.push_back("If interpreted as image:");
+          e.push_back("    " + e_assphere[i]);
+        e.push_back("  If interpreted as image:");
         for (size_t i = 0; i != e_asimage.num(); ++i)
-          e.push_back("  " + e_asimage[i]);
+          e.push_back("    " + e_asimage[i]);
         throw e;
       }
     }

@@ -912,8 +912,7 @@ bool Tractography::process_commandline_option(const MR::App::ParsedOption &opt) 
     try {
       int n = opt[0];
       if (n < 0 || ColourMap::maps[n].name.empty())
-        throw Exception("invalid tsf colourmap index \"{}\" for -tractography.tsf_colourmap option",
-                        std::string(opt[0]));
+        throw Exception("invalid tsf colourmap index \"{}\" for -tractography.tsf_colourmap option", opt[0]);
       if (process_commandline_option_tsf_check_tracto_loaded()) {
         // get list of selected tractograms:
         QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();

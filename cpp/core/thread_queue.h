@@ -467,9 +467,13 @@ public:
   //! Print out a status report for debugging purposes
   void status() {
     std::lock_guard<std::mutex> lock(mutex);
-    std::cerr << fmt::format("Thread::Queue \"{}\": ", name) << writer_count << " writer"
-              << (writer_count > 1 ? "s" : "") << ", " << reader_count << " reader" << (reader_count > 1 ? "s" : "")
-              << ", items waiting: " << size() << "\n";
+    std::cerr << fmt::format("Thread::Queue \"{}\": {} writer{}, {} reader{}, items waiting: {}\n",
+                             name,
+                             writer_count,
+                             writer_count > 1 ? "s" : "",
+                             reader_count,
+                             reader_count > 1 ? "s" : "",
+                             size());
   }
 
 private:

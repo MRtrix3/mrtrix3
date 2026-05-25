@@ -40,7 +40,8 @@ void usage() {
   OPTIONS
   + Option ("stdev", fmt::format("apply Gaussian smoothing with the specified standard deviation."
                                  " The standard deviation is defined in units of track points"
-                                 " (default: {:.2g})", default_smoothing))
+                                 " (default: {:.2g})",
+                                 default_smoothing))
     + Argument ("sigma").type_float(1e-6);
 
 }

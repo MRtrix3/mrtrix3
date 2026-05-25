@@ -187,12 +187,10 @@ Eigen::MatrixXd load_bvecs_bvals(const Header &header,
     }
     if (grad.block<1, 3>(n, 0).hasNaN()) {
       if (grad(n, 3) > 0.0)
-        // clang-format off
         throw Exception("Corrupt content in bvecs/bvals data ({} & {})"     //
-                                    " (NaN bvec direction but non-zero value in bval)", //
-                                    bvecs_path,                                         //
-                                    bvals_path);                                       //
-      // clang-format on
+                        " (NaN bvec direction but non-zero value in bval)", //
+                        bvecs_path,                                         //
+                        bvals_path);                                        //
       nans_present_bvecs = true;
       zero_row = true;
     }
@@ -202,7 +200,8 @@ Eigen::MatrixXd load_bvecs_bvals(const Header &header,
     }
   }
   if (nan_linecount > 0) {
-    WARN("{} row{} with NaN values detected in {}{}; these have been interpreted as b=0 volumes by MRtrix",
+    WARN("{} row{} with NaN values detected in {}{};"             //
+         " these have been interpreted as b=0 volumes by MRtrix", //
          nan_linecount,
          (nan_linecount > 1 ? "s" : ""),
          (nans_present_bvecs ? fmt::format("bvecs file {}{}", bvecs_path, nans_present_bvals ? " and" : "") : ""),

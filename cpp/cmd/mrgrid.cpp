@@ -102,7 +102,10 @@ void usage() {
 
   ARGUMENTS
   + Argument ("input", "input image to be regridded.").type_image_in ()
-  + Argument ("operation", fmt::format("the operation to be performed; one of: {}.", MR::Enum::join<Operation>())).type_choice<Operation>()
+  + Argument ("operation",
+              fmt::format("the operation to be performed; one of: {}.",
+                          MR::Enum::join<Operation>()))
+              .type_choice<Operation>()
   + Argument ("output", "the output image.").type_image_out ();
 
   OPTIONS
@@ -129,9 +132,12 @@ void usage() {
                          " or as a comma-separated list of scale factors for each dimension.")
     + Argument ("factor").type_sequence_float()
 
-    + Option ("interp", fmt::format("set the interpolation method to use when reslicing"
-                                    " (choices: {}; default: {}).", join(MR::Interp::interp_choices, ", "), MR::Interp::interp_choices[static_cast<ssize_t>(default_interp)]))
-    + Argument ("method").type_choice (MR::Interp::interp_choices)
+    + Option ("interp",
+              fmt::format("set the interpolation method to use when reslicing"
+                          " (choices: {}; default: {}).",
+                          MR::Enum::join<MR::Interp::interp_type>(),
+                          MR::Enum::lowercase_name(default_interp)))
+    + Argument ("method").type_choice<MR::Interp::interp_type>()
 
     + Option ("oversample",
         "set the amount of over-sampling (in the target space) to perform when regridding."
@@ -219,8 +225,7 @@ void run() {
     regrid_filter.set_out_of_bounds_value(out_of_bounds_value);
     size_t resize_option_count = 0;
     size_t template_option_count = 0;
-    const MR::Interp::interp_type interp =
-        MR::Interp::interp_type(get_option_value("interp", static_cast<ssize_t>(default_interp)));
+    const MR::Interp::interp_type interp = get_option_choice("interp", default_interp);
 
     // over-sampling
     std::vector<uint32_t> oversample = Adapter::AutoOverSample;

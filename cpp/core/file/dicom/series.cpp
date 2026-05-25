@@ -77,11 +77,11 @@ std::ostream &operator<<(std::ostream &stream, const Series &item) {
   stream << fmt::format("      {:4} - {:4} {:>4} images {:>10} {:>8} {} [ {} ]\n",
                         item.number,
                         item.size(),
-                        (!item.modality.empty() ? item.modality.c_str() : "(?)"),
-                        format_date(item.date).c_str(),
-                        format_time(item.time).c_str(),
-                        item.name.c_str(),
-                        item.image_type.c_str());
+                        (!item.modality.empty() ? item.modality : "(?)"),
+                        format_date(item.date),
+                        format_time(item.time),
+                        item.name,
+                        item.image_type);
 
   for (size_t n = 0; n < item.size(); n++)
     stream << *item[n];

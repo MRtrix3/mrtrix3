@@ -143,7 +143,7 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, std::optional<int64
 
       if (preload) {
         CONSOLE("preloading contents of mapped file \"{}\"...", Entry::path);
-        std::ifstream in(Entry::path.c_str(), std::ios::in | std::ios::binary);
+        std::ifstream in(Entry::path, std::ios::in | std::ios::binary);
         if (!in)
           throw Exception("failed to open file \"{}\": {}", Entry::path, strerror(errno));
         in.seekg(start, in.beg);
@@ -189,7 +189,7 @@ MMap::MMap(const Entry &entry, bool readwrite, bool preload, std::optional<int64
 
   DEBUG("file \"{}\" mapped at {}, size {} (read-{})",
         Entry::path,
-        reinterpret_cast<void *>(addr),
+        fmt::ptr(addr),
         msize,
         (readwrite ? "write" : "only"));
 }

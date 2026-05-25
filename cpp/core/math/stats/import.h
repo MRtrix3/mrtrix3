@@ -143,7 +143,7 @@ void CohortDataImport::initialise(const std::filesystem::path &listpath,
   if (explicit_from_directory.has_value())
     directories.insert(directories.begin(), explicit_from_directory.value());
 
-  Exception e_nosuccess(fmt::format("Unable to load all input data from file \"{}\"", listpath));
+  Exception e_nosuccess("Unable to load all input data from file \"{}\"", listpath);
   std::filesystem::path load_from_dir;
   for (const auto &directory : directories) {
     try {
@@ -155,7 +155,7 @@ void CohortDataImport::initialise(const std::filesystem::path &listpath,
       load_from_dir = directory;
       break;
     } catch (Exception &e) {
-      e_nosuccess.push_back(fmt::format("If loading relative to directory \"{}\": ", directory));
+      e_nosuccess.push_back("If loading relative to directory \"{}\": ", directory);
       e_nosuccess.push_back(e);
     }
   }

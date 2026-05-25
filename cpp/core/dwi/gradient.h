@@ -59,10 +59,10 @@ template <class MatrixType> inline void check_DW_scheme(const Header &header, co
 
   if (header.ndim() >= 4) {
     if (header.size(3) != static_cast<ssize_t>(grad.rows()))
-      throw Exception(
-          "number of studies in base image ({}) does not match number of rows in diffusion gradient table ({})",
-          header.size(3),
-          grad.rows());
+      throw Exception("number of studies in base image ({})"                             //
+                      " does not match number of rows in diffusion gradient table ({})", //
+                      header.size(3),                                                    //
+                      grad.rows());                                                      //
   } else if (grad.rows() != 1)
     throw Exception("For images with less than four dimensions, gradient table can have one row only");
 }
@@ -187,13 +187,12 @@ Eigen::MatrixXd resolve_DW_scheme(const MatrixType1 &one, const MatrixType2 &two
     } else {
       const Eigen::Vector3d mean_dir = (one_dir + two_dir).normalized();
       if (!is_bzero && mean_dir.dot(one_dir) < 1.0 - 1e-3) {
-        throw Exception("Diffusion vector directions not equal within permissible imprecision (row {}:"
-                        " {} <--> {};"
-                        " dot product {})",
-                        rowindex,
-                        one_dir,
-                        two_dir,
-                        mean_dir.dot(one_dir));
+        throw Exception("Diffusion vector directions not equal within permissible imprecision" //
+                        " (row {}: {} <--> {}; dot product {})",                               //
+                        rowindex,                                                              //
+                        one_dir,                                                               //
+                        two_dir,                                                               //
+                        mean_dir.dot(one_dir));                                                //
       }
       result.block<1, 3>(rowindex, 0) = mean_dir;
     }

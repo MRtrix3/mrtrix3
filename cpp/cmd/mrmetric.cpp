@@ -190,19 +190,21 @@ void usage() {
 
   OPTIONS
   + Option ("space", fmt::format("Image \"space\" in which the metric will be computed."
-                                " Options are:"
-                                " voxel: per voxel;"
-                                " image1: scanner space of image 1;"
-                                " image2: scanner space of image 2;"
-                                " average: scanner space of the average affine transformation"
-                                " of image 1 and 2;"
-                                " default: {}.", MR::Enum::lowercase_name(default_space)))
+                                 " Options are:"
+                                 " voxel: per voxel;"
+                                 " image1: scanner space of image 1;"
+                                 " image2: scanner space of image 2;"
+                                 " average: scanner space of the average affine transformation"
+                                 " of image 1 and 2;"
+                                 " default: {}.",
+                                 MR::Enum::lowercase_name(default_space)))
     + Argument ("iteration method").type_choice<space_t>()
 
   + Option ("interp", fmt::format("set the interpolation method to use when reslicing"
-                                 " (choices: nearest, linear, cubic, sinc."
-                                 " Default: {}).", MR::Interp::interp_choices[static_cast<ssize_t>(default_interp)]))
-    + Argument ("method").type_choice(MR::Interp::interp_choices)
+                                  " (choices: {}; default: {}).",
+                                  MR::Enum::join<MR::Interp::interp_type>(),
+                                  MR::Enum::lowercase_name(default_interp)))
+    + Argument ("method").type_choice<MR::Interp::interp_type>()
 
   + Option ("metric",
             "define the dissimilarity metric used to calculate the cost."

@@ -33,7 +33,8 @@ std::unique_ptr<ImageIO::Base> MRtrix_GZ::read(Header &H) const {
   std::string first_line = zf.getline();
   if (first_line != "mrtrix image") {
     zf.close();
-    throw Exception("invalid first line for compressed image \"{}\" (expected \"mrtrix image\", read \"{}\")",
+    throw Exception("invalid first line for compressed image \"{}\"" //
+                    " (expected \"mrtrix image\", read \"{}\")",     //
                     H.name(),
                     first_line);
   }

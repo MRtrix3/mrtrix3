@@ -17,6 +17,7 @@
 #pragma once
 
 #include <array>
+#include <filesystem>
 #include <map>
 
 #include "file/key_value.h"
@@ -38,8 +39,7 @@ public:
 private:
   static KeyValues config;
 
-  static const std::string file_basename;
-  static const std::string default_sys_config_file;
-  static const std::string user_config_file;
+  static const std::filesystem::path file_basename;
+  static const std::filesystem::path default_sys_config_file;
 };
 } // namespace MR::File

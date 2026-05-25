@@ -14,20 +14,23 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <filesystem>
+#include <fmt/std.h>
+
 #include "app.h"
 #include "debug.h"
 #include "header.h"
 
 #include "file/config.h"
 #include "file/path.h"
-#include <fmt/std.h>
 
 namespace MR::File {
 
 KeyValues Config::config;
 
-const std::string Config::file_basename("mrtrix.conf");
-const std::string Config::default_sys_config_file(fmt::format("/etc/{}", file_basename));
+const std::filesystem::path Config::file_basename{"mrtrix.conf"};
+const std::filesystem::path Config::default_sys_config_file(std::filesystem::canonical(__FILE__).root_path() / "etc" /
+                                                            file_basename);
 
 // ENVVAR name: MRTRIX_CONFIGFILE
 // ENVVAR This can be used to set the location of the system-wide
@@ -38,8 +41,8 @@ const std::string Config::default_sys_config_file(fmt::format("/etc/{}", file_ba
 
 void Config::init() {
   const char *sysconf_location_env = getenv("MRTRIX_CONFIGFILE"); // check_syntax off
-  const std::string sysconf_location(sysconf_location_env == nullptr ? default_sys_config_file
-                                                                     : std::string(sysconf_location_env));
+  const std::filesystem::path sysconf_location(
+      sysconf_location_env == nullptr ? default_sys_config_file : std::filesystem::path(sysconf_location_env));
 
   if (std::filesystem::is_regular_file(sysconf_location)) {
     INFO("reading config file \"{}\"...", sysconf_location);
@@ -54,18 +57,18 @@ void Config::init() {
     DEBUG("No config file found at \"{}\"", sysconf_location);
   }
 
-  const std::filesystem::path home_config_path = Path::home() / fmt::format(".{}", file_basename);
-  if (std::filesystem::is_regular_file(home_config_path)) {
-    INFO("reading config file \"{}\"...", home_config_path);
+  const std::filesystem::path user_config_file = Path::home() / fmt::format(".{}", file_basename);
+  if (std::filesystem::is_regular_file(user_config_file)) {
+    INFO("reading config file \"{}\"...", user_config_file);
     try {
-      KeyValue::Reader kv(home_config_path);
+      KeyValue::Reader kv(user_config_file);
       while (kv.next()) {
         config[std::string(kv.key())] = std::string(kv.value());
       }
     } catch (...) {
     }
   } else {
-    DEBUG("No config file found at \"{}\"", home_config_path);
+    DEBUG("No config file found at \"{}\"", user_config_file);
   }
 
   auto opt = App::get_options("config");

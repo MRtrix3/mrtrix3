@@ -13,4 +13,4 @@ mrcat - tmp_inf.mif -axis 3 tmp_partialfinite.mif -force
 rm -f tmp.txt
 ! ( warpvalidate tmp_partialfinite.mif > tmp.txt 2>&1 )
 cat tmp.txt
-grep -E "peaks contain a mix of finite and non\\-finite values" tmp.txt
+grep -E "voxels contain a mix of finite and non\\-finite values" tmp.txt

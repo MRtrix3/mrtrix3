@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <fmt/std.h>
 #include <limits>
 
 #include "app.h"
@@ -21,29 +22,28 @@
 #include "header.h"
 #include "image_io/gz.h"
 #include "progressbar.h"
-#include <fmt/format.h>
 
 namespace MR::ImageIO {
 
 void GZ::load(const Header &header, size_t) {
   if (files.empty())
-    throw Exception("no files specified in header for image \"{}\"", header.name());
+    throw Exception("no files specified in header for image \"{}\"", header.path());
 
   segsize /= files.size();
   bytes_per_segment = (header.datatype().bits() * segsize + 7) / 8;
   if (files.size() * bytes_per_segment > std::numeric_limits<size_t>::max())
-    throw Exception("image \"{}\" is larger than maximum accessible memory", header.name());
+    throw Exception("image \"{}\" is larger than maximum accessible memory", header.path());
 
-  DEBUG("loading image \"{}\"...", header.name());
+  DEBUG("loading image \"{}\"...", header.path());
   addresses.resize(header.datatype().bits() == 1 && files.size() > 1 ? files.size() : 1);
   addresses[0].reset(new std::byte[files.size() * bytes_per_segment]);
   if (!addresses[0])
-    throw Exception("failed to allocate memory for image \"{}\"", header.name());
+    throw Exception("failed to allocate memory for image \"{}\"", header.path());
 
   if (is_new)
     memset(addresses[0].get(), 0, files.size() * bytes_per_segment);
   else {
-    ProgressBar progress(fmt::format("uncompressing image \"{}\"", header.name()),
+    ProgressBar progress(fmt::format("uncompressing image \"{}\"", header.path()),
                          files.size() * bytes_per_segment / bytes_per_zcall);
     for (size_t n = 0; n < files.size(); n++) {
       File::GZ zf(files[n].path, "rb");
@@ -73,7 +73,7 @@ void GZ::unload(const Header &header) {
     assert(addresses[0]);
 
     if (writable) {
-      ProgressBar progress(fmt::format("compressing image \"{}\"", header.name()),
+      ProgressBar progress(fmt::format("compressing image \"{}\"", header.path()),
                            files.size() * bytes_per_segment / bytes_per_zcall);
       for (size_t n = 0; n < files.size(); n++) {
         assert(files[n].start == static_cast<int64_t>(lead_in_size));

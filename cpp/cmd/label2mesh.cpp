@@ -71,7 +71,7 @@ void run() {
          " this may yield erroneous surfaces",
          argument[0],
          lv.disconnected_components,
-         lv.disconnected_components > 0 ? "s" : "0");
+         lv.disconnected_components > 1 ? "s" : "0");
   }
 
   using voxel_corner_t = Eigen::Array<int, 3, 1>;

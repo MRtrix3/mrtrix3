@@ -45,11 +45,11 @@ void run() {
   auto in2 = Image<double>::open(argument[1]);
   check_dimensions(in1, in2);
   if (in1.ndim() != 4)
-    throw Exception(fmt::format("images \"{}\" and \"{}\" are not 4D", in1.name(), in2.name()));
+    throw Exception("images \"{}\" and \"{}\" are not 4D", in1.name(), in2.name());
   if (in1.size(3) % 3)
-    throw Exception(fmt::format("images \"{}\" and \"{}\" do not contain XYZ peak directions", in1.name(), in2.name()));
+    throw Exception("images \"{}\" and \"{}\" do not contain XYZ peak directions", in1.name(), in2.name());
   if (!voxel_grids_match_in_scanner_space(in1, in2))
-    throw Exception(fmt::format("images \"{}\" and \"{}\" do not reside on same voxel grid", in1.name(), in2.name()));
+    throw Exception("images \"{}\" and \"{}\" do not reside on same voxel grid", in1.name(), in2.name());
 
   double tol = argument[2];
 
@@ -67,16 +67,16 @@ void run() {
           vecb.normalize();
           const double dp = abs(veca.dot(vecb));
           if (norma && normb && (1.0 - dp > tol))
-            throw Exception(fmt::format("images \"{}\" and \"{}\" do not match within specified precision of {}"
-                                        " ({} vs {}, norms [{} {}], dot product = {})",
-                                        a.name(),
-                                        b.name(),
-                                        tol,
-                                        veca.cast<float>(),
-                                        vecb.cast<float>(),
-                                        norma,
-                                        normb,
-                                        dp));
+            throw Exception("images \"{}\" and \"{}\" do not match within specified precision of {}"
+                            " ({} vs {}, norms [{} {}], dot product = {})",
+                            a.name(),
+                            b.name(),
+                            tol,
+                            veca.cast<float>(),
+                            vecb.cast<float>(),
+                            norma,
+                            normb,
+                            dp);
         }
       },
       in1,

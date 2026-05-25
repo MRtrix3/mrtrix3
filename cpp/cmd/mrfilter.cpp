@@ -187,7 +187,7 @@ void run() {
         }
       }
     }
-    INFO("Selected axes for demodulation: {}", join(axes, ","));
+    INFO("Selected axes for demodulation: {}", axes);
 
     auto input = H.get_image<cdouble>();
     Filter::Demodulate filter(input, axes, !get_options("linear").empty());

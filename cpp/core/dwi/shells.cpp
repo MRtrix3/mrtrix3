@@ -266,9 +266,10 @@ Shells::select_shells(const bool force_singleshell, const bool force_with_bzero,
     if (force_singleshell && !is_single_shell()) {
       if (count() == 1 && has_bzero())
         throw Exception("No non b=0 data found, but the command requires a non b=0 shell");
-      WARN("Multiple non-zero b-value shells detected, automatically selecting largest b-value: b={} with {} volumes",
-           largest().get_mean(),
-           largest().count());
+      WARN("Multiple non-zero b-value shells detected,"                      //
+           " automatically selecting largest b-value: b={} with {} volumes", //
+           largest().get_mean(),                                             //
+           largest().count());                                               //
       to_retain[count() - 1] = true;
       if (has_bzero())
         to_retain[0] = true;

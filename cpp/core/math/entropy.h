@@ -16,12 +16,12 @@
 
 #pragma once
 
-#include "math/math.h"
-#include "types.h"
 #include <Eigen/Dense>
 #include <cmath>
-#include <fmt/format.h>
 #include <type_traits>
+
+#include "math/math.h"
+#include "types.h"
 
 namespace MR::Math::Entropy {
 

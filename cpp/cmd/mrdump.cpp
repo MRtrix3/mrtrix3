@@ -97,7 +97,7 @@ template <class StreamType> void write(Header &header, Image<bool> &mask, Stream
     break;
   default:
     throw Exception("Unknown data type: {} ({})",
-                    std::string(header.datatype().description()),
+                    header.datatype().description(),
                     static_cast<uint32_t>(static_cast<uint8_t>(DataType(header.datatype())())));
   }
 }

@@ -68,7 +68,7 @@ protected:
     } else if (i == 7) {
       position = Vector3f(10, 10, 10 + offset_z);
     } else {
-      throw std::logic_error(fmt::format("Not implemented for ROI index {}", std::to_string(i)));
+      throw std::logic_error(fmt::format("Not implemented for ROI index {}", i));
     }
     return ROI(position, 1);
   }

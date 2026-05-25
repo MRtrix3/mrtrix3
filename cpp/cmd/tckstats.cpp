@@ -152,15 +152,10 @@ void run() {
   }
 
   if (get_options("ignorezero").empty() && (empty_streamlines || zero_length_streamlines)) {
-    std::string s("read");
-    if (empty_streamlines) {
-      s += fmt::format(" {} empty streamlines", empty_streamlines);
-      if (zero_length_streamlines)
-        s += " and";
-    }
-    if (zero_length_streamlines)
-      s += fmt::format(" {} streamlines with zero length (one vertex only)", zero_length_streamlines);
-    WARN(s);
+    WARN("read {}{}{}",
+         empty_streamlines ? fmt::format("{} empty streamlines", empty_streamlines) : "",
+         empty_streamlines && zero_length_streamlines ? " and " : "",
+         zero_length_streamlines ? fmt::format("{} streamlines with zero length (one vertex only)", zero_length_streamlines) : "");
   }
   if (count != header_count)
     WARN("expected {} tracks according to header; read {}", header_count, count);

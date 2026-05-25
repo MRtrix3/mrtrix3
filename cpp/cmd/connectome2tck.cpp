@@ -328,13 +328,12 @@ void run() {
 
     auto lv = MR::Connectome::validate_label_image(image);
     if (lv.labels.back() != max_node_index) {
-      WARN("Highest-valued parcels in label image \"{}\""
-           " ({})"
-           " differs from highest-valued node in connectome assignments file ({});"
-           " this may lead to issues in exemplar generation",
-           std::string(opt[0][0]),
-           lv.labels.back(),
-           max_node_index);
+      WARN("Highest-valued parcels in label image \"{}\" ({})"                      //
+           " differs from highest-valued node in connectome assignments file ({});" //
+           " this may lead to issues in exemplar generation",                       //
+           opt[0][0],                                                               //
+           lv.labels.back(),                                                        //
+           max_node_index);                                                         //
     }
     std::vector<node_t> missing_nodes;
     for (const auto n : nodes) {
@@ -351,7 +350,7 @@ void run() {
     if (lv.disconnected_components > 0) {
       WARN("{} parcel{} not spatially contiguous; this may result in unusual exemplar trajectories",
            lv.disconnected_components,
-           (lv.disconnected_components > 0 ? "s are" : " is"));
+           (lv.disconnected_components > 1 ? "s are" : " is"));
     }
     std::vector<Eigen::Vector3d> COMs(max_node_index + 1, Eigen::Vector3d::Constant(0.0));
     std::vector<size_t> volumes(max_node_index + 1, 0);
@@ -369,14 +368,12 @@ void run() {
       }
     }
     if (COMs.size() > max_node_index + 1) {
-      WARN("Parcellation image \"{}\" provided via -exemplars option"
-           " contains more nodes ({})"
-           " than are present in input assignments file \"{}\""
-           " ({})",
-           std::string(opt[0][0]),
-           COMs.size() - 1,
-           std::string(argument[1]),
-           max_node_index);
+      WARN("Parcellation image \"{}\" provided via -exemplars option"                          //
+           " contains more nodes ({}) than are present in input assignments file \"{}\" ({})", //
+           opt[0][0],                                                                          //
+           COMs.size() - 1,                                                                    //
+           argument[1],                                                                        //
+           max_node_index);                                                                    //
       max_node_index = COMs.size() - 1;
     }
     Transform transform(image);
@@ -448,8 +445,10 @@ void run() {
         ProgressBar progress("writing exemplars to files", nodes.size() * COMs.size());
         for (std::vector<node_t>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
           for (size_t i = first_node; i != COMs.size(); ++i) {
-            generator.write(
-                *n, i, output_dir / fmt::format("{}-{}.tck", *n, i), weights_path_for(fmt::format("{}-{}.csv", *n, i)));
+            generator.write(*n,                                                 //
+                            i,                                                  //
+                            output_dir / fmt::format("{}-{}.tck", *n, i),       //
+                            weights_path_for(fmt::format("{}-{}.csv", *n, i))); //
             ++progress;
           }
         }
@@ -457,7 +456,9 @@ void run() {
     } else if (file_format == FileOutput::PER_NODE) { // One file per node
       ProgressBar progress("writing exemplars to files", nodes.size());
       for (std::vector<node_t>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
-        generator.write(*n, output_dir / fmt::format("{}.tck", *n), weights_path_for(fmt::format("{}.csv", *n)));
+        generator.write(*n,                                           //
+                        output_dir / fmt::format("{}.tck", *n),       //
+                        weights_path_for(fmt::format("{}.csv", *n))); //
         ++progress;
       }
     } else if (file_format == FileOutput::SINGLE) { // Single file
@@ -475,18 +476,18 @@ void run() {
         if (exclusive) {
           for (size_t j = i; j != nodes.size(); ++j) {
             const node_t two = nodes[j];
-            writer.add(one,
-                       two,
-                       output_dir / fmt::format("{}-{}.tck", one, two),
-                       weights_path_for(fmt::format("{}-{}.csv", one, two)));
+            writer.add(one,                                                   //
+                       two,                                                   //
+                       output_dir / fmt::format("{}-{}.tck", one, two),       //
+                       weights_path_for(fmt::format("{}-{}.csv", one, two))); //
           }
         } else {
           // Allow duplication of edges; want to have an exhaustive set of files for each node
           for (node_t two = first_node; two <= max_node_index; ++two)
-            writer.add(one,
-                       two,
-                       output_dir / fmt::format("{}-{}.tck", one, two),
-                       weights_path_for(fmt::format("{}-{}.csv", one, two)));
+            writer.add(one,                                                   //
+                       two,                                                   //
+                       output_dir / fmt::format("{}-{}.tck", one, two),       //
+                       weights_path_for(fmt::format("{}-{}.csv", one, two))); //
         }
       }
       INFO("A total of {} output track files will be generated (one for each edge)", writer.file_count());

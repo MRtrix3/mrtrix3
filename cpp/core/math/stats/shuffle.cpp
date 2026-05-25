@@ -76,19 +76,20 @@ App::OptionGroup shuffle_options(const bool include_nonstationarity, const defau
       + Argument("value").type_float(0.0)
 
     + Option("nshuffles_nonstationarity",
-             fmt::format("the number of shuffles to use when precomputing the empirical statistic image for non-stationarity correction"
+             fmt::format("the number of shuffles to use"
+                         " when precomputing the empirical statistic image for non-stationarity correction"
                          " (default: {})", default_numshuffles_nonstationarity))
       + Argument("number").type_integer(1)
 
     + Option("permutations_nonstationarity",
-             "manually define the permutations (relabelling) for computing the emprical statistics for "
-             "non-stationarity correction. "
-             "The input should be a text file defining a m x n matrix, where each relabelling is defined as a "
-             "column vector of size m, "
-             "and the number of columns, n, defines the number of permutations. Can be generated with the "
-             "palm_quickperms function in PALM "
-             "(http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/PALM) "
-             "Overrides the -nshuffles_nonstationarity option.")
+             "manually define the permutations (relabelling)"
+             " for computing the emprical statistics for non-stationarity correction."
+             " The input should be a text file defining a m x n matrix,"
+             " where each relabelling is defined as a column vector of size m,"
+             " and the number of columns, n, defines the number of permutations."
+             " Can be generated with the palm_quickperms function in PALM"
+             " (http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/PALM)."
+             " Overrides the -nshuffles_nonstationarity option.")
       + Argument("file").type_file_in();
   }
 
@@ -129,16 +130,16 @@ Shuffler::Shuffler(const index_type num_rows, const bool is_nonstationarity, std
     if (error_types == error_t::EE || error_types == error_t::BOTH) {
       load_permutations(opt[0][0]);
       if (permutations[0].size() != rows)
-        throw Exception(
-            "Number of entries per shuffle in file \"{}\" does not match number of rows in design matrix ({})",
-            std::string(opt[0][0]),
-            rows);
+        throw Exception("Number of entries per shuffle in file \"{}\""          //
+                        " does not match number of rows in design matrix ({})", //
+                        opt[0][0],
+                        rows);
       if (nshuffles_explicit && nshuffles != permutations.size())
-        throw Exception(
-            "Number of shuffles explicitly requested ({}) does not match number of shuffles in file \"{}\" ({})",
-            nshuffles,
-            std::string(opt[0][0]),
-            permutations.size());
+        throw Exception("Number of shuffles explicitly requested ({})"            //
+                        " does not match number of shuffles in file \"{}\" ({})", //
+                        nshuffles,
+                        opt[0][0],
+                        permutations.size());
       nshuffles = permutations.size();
     } else {
       throw Exception("Cannot manually provide permutations if errors are not exchangeable");
@@ -288,27 +289,28 @@ void Shuffler::initialise(const error_t error_types,
 
   if (max_shuffles < nshuffles) {
     if (nshuffles_explicit) {
-      WARN("User requested {} shuffles for {}, but only {} unique shuffles can be generated; \"\n          "
-           " \"this will restrict the minimum achievable p-value to {}",
+      WARN("User requested {} shuffles for {}, but only {} unique shuffles can be generated;"
+           " this will restrict the minimum achievable p-value to {}",
            nshuffles,
-           (is_nonstationarity ? "non-stationarity correction" : "null distribution generation"),
+           is_nonstationarity ? "non-stationarity correction" : "null distribution generation",
            max_shuffles,
            1.0 / max_shuffles);
     } else {
-      WARN("Only {} unique shuffles can be generated, which is less than the default number of {} for {}; "
-           "\"\n           \"this will restrict the minimum achievable p-value to {}",
+      WARN("Only {} unique shuffles can be generated, which is less than the default number of {} for {};"
+           " this will restrict the minimum achievable p-value to {}",
            max_shuffles,
            nshuffles,
-           (is_nonstationarity ? "non-stationarity correction" : "null distribution generation"),
+           is_nonstationarity ? "non-stationarity correction" : "null distribution generation",
            1.0 / max_shuffles);
     }
     nshuffles = max_shuffles;
   } else if (max_shuffles == std::numeric_limits<uint64_t>::max()) {
     DEBUG("Maximum possible number of shuffles was not computable using 64-bit integers");
   } else {
-    DEBUG("Maximum possible number of shuffles was computed as {}; {} number of {} will be used",
+    DEBUG("Maximum possible number of shuffles was computed as {};" //
+          " {} number of {} will be used",                          //
           max_shuffles,
-          (nshuffles_explicit ? "user-requested" : "default"),
+          nshuffles_explicit ? "user-requested" : "default",
           nshuffles);
   }
 

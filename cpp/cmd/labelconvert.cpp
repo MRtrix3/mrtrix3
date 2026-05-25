@@ -108,7 +108,7 @@ void run() {
 
   // Modify the header for the output file
   H.datatype() = DataType::from<node_t>();
-  add_line(H.keyval()["comments"], fmt::format("LUT: {}", std::filesystem::path(argument[2].as_text()).filename()));
+  add_line(H.keyval()["comments"], fmt::format("LUT: {}", static_cast<std::filesystem::path>(argument[2]).filename()));
 
   // Create the output file
   auto out = Image<node_t>::create(output_image_path, H);

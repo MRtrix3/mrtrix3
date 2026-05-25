@@ -97,11 +97,7 @@ void run() {
     CONSOLE("Label indices: contiguous (all values 1 through {} are present)", max_label);
   } else {
     const size_t ngaps = result.missing_indices.size();
-    WARN("{}{}{} value(s) missing from the range [1, {}])",
-         "Label indices: non-contiguous", //
-         " (",
-         ngaps,
-         max_label); //
+    WARN("Label indices: non-contiguous ({} value(s) missing from the range [1, {}])", ngaps, max_label);
     // List the missing indices, abbreviated if there are many.
     constexpr size_t max_listed = 20;
     std::string missing_str;
@@ -112,7 +108,7 @@ void run() {
     }
     if (ngaps > max_listed)
       missing_str += fmt::format(", ... (and {} more)", ngaps - max_listed);
-    CONSOLE("  Missing indices: " + missing_str);
+    CONSOLE("  Missing indices: {}", missing_str);
   }
 
   // ---------------------------------------------------------------
@@ -121,13 +117,14 @@ void run() {
   if (result.disconnected_components == 0) {
     CONSOLE("All {} labels are spatially contiguous", result.labels.size());
   } else {
-    const std::string msg(fmt::format(
-        "{} of {} labels are spatially disconnected: ", result.disconnected_components, result.labels.size()));
     std::vector<node_t> disconnected_labels;
     for (auto label : result.labels) {
       if (result.component_counts.at(label) > 1)
         disconnected_labels.push_back(label);
     }
-    WARN("{}{}", msg, disconnected_labels);
+    WARN("{} of {} labels are spatially disconnected: {}",
+         result.disconnected_components,
+         result.labels.size(),
+         disconnected_labels);
   }
 }

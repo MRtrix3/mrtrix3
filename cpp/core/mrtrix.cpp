@@ -189,7 +189,7 @@ std::string shorten(const std::filesystem::path &path, size_t longest) {
   return elide_inter(result_prefix, result_suffix);
 }
 
-std::string shorten(std::string_view text, size_t longest, size_t prefix) {
+std::string shorten(const std::string &text, size_t longest, size_t prefix) {
   if (text.size() > longest)
     return fmt::format("{}...{}", text.substr(0, prefix), text.substr(text.size() - longest + prefix + 3));
   else

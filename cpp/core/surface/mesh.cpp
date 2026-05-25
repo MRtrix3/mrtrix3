@@ -241,8 +241,10 @@ void Mesh::load_vtk(const std::filesystem::path &path) {
   if (!is_ascii) {
 #if MRTRIX_IS_BIG_ENDIAN
     if (change_endianness) {
-      WARN("File \"{}\" is little-endian, so is not format-compliant (may have been generated using an "
-           "older MRtrix3 version); imported contents will be converted to system big-endian",
+      WARN("File \"{}\" is little-endian,"                              //
+           " so is not format-compliant"                                //
+           " (may have been generated using an older MRtrix3 version);" //
+           " imported contents will be converted to system big-endian", //
            path);
     } else {
       INFO("File \"{}\" is big-endian; no format conversion required as executing on big-endian system", path);
@@ -251,8 +253,10 @@ void Mesh::load_vtk(const std::filesystem::path &path) {
     if (change_endianness) {
       INFO("Converting imported contents of file \"{}\" to native little-endian", path);
     } else {
-      WARN("File \"{}\" already in native little-endian format, so no endianness conversion required; but "
-           "file is therefore not format-compliant (may have been generated using an older MRtrix3 version)",
+      WARN("File \"{}\" already in native little-endian format,"        //
+           " so no endianness conversion required;"                     //
+           " but file is therefore not format-compliant"                //
+           " (may have been generated using an older MRtrix3 version)", //
            path);
     }
 #endif
@@ -610,8 +614,9 @@ void Mesh::load_fs(const std::filesystem::path &path) {
         for (size_t axis = 0; axis != 3; ++axis)
           temp[axis] = FreeSurfer::get_BE<float>(in);
         if (!in.good())
-          throw Exception(
-              "Error reading FreeSurfer file: EOF reached after {} of {} vertices", vertices.size(), num_vertices);
+          throw Exception("Error reading FreeSurfer file: EOF reached after {} of {} vertices", //
+                          vertices.size(),                                                      //
+                          num_vertices);                                                        //
         vertices.push_back(Vertex(temp[0], temp[1], temp[2]));
       }
       for (int32_t i = 0; i != num_polygons; ++i) {
@@ -619,8 +624,9 @@ void Mesh::load_fs(const std::filesystem::path &path) {
         for (size_t v = 0; v != 3; ++v)
           temp[v] = FreeSurfer::get_BE<int32_t>(in);
         if (!in.good())
-          throw Exception(
-              "Error reading FreeSurfer file: EOF reached after {} of {} triangles", triangles.size(), num_polygons);
+          throw Exception("Error reading FreeSurfer file: EOF reached after {} of {} triangles", //
+                          triangles.size(),                                                      //
+                          num_polygons);                                                         //
         triangles.push_back(Triangle(temp));
       }
     };
@@ -701,8 +707,9 @@ void Mesh::save_vtk(const std::filesystem::path &path, const bool binary) const 
       out.write(reinterpret_cast<const char *>(&temp_vertex), 3 * sizeof(float));
       ++progress;
     }
-    const std::string polygons_header(
-        fmt::format("POLYGONS {} {}\n", triangles.size() + quads.size(), 4 * triangles.size() + 5 * quads.size()));
+    const std::string polygons_header(fmt::format("POLYGONS {} {}\n",                        //
+                                                  triangles.size() + quads.size(),           //
+                                                  4 * triangles.size() + 5 * quads.size())); //
     out.write(polygons_header.c_str(), polygons_header.size());
     const uint32_t num_points_triangle = ByteOrder::BE(uint32_t(3));
     std::array<uint32_t, 3> temp_triangle;
@@ -728,7 +735,9 @@ void Mesh::save_vtk(const std::filesystem::path &path, const bool binary) const 
       out << str<float>(v[0]) << " " << str<float>(v[1]) << " " << str<float>(v[2]) << "\n";
       ++progress;
     }
-    out << fmt::format("POLYGONS {} {}\n", triangles.size() + quads.size(), 4 * triangles.size() + 5 * quads.size());
+    out << fmt::format("POLYGONS {} {}\n",                       //
+                       triangles.size() + quads.size(),          //
+                       4 * triangles.size() + 5 * quads.size()); //
     for (const auto &t : triangles) {
       out << "3 " << str(t[0]) << " " << str(t[1]) << " " << str(t[2]) << "\n";
       ++progress;
@@ -749,7 +758,7 @@ void Mesh::save_stl(const std::filesystem::path &path, const bool binary) const 
   if (binary) {
 
     File::OFStream out(path, std::ios_base::binary | std::ios_base::out);
-    const std::string string = "mrtrix_version: " + App::mrtrix_version;
+    const std::string string = fmt::format("mrtrix_version: {}", App::mrtrix_version);
     std::string header(80, '\0');
     header.substr(0, string.size()) = string;
     out.write(&header[0], 80);

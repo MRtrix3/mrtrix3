@@ -2991,8 +2991,8 @@ void Connectome::load_properties() {
       }
     }
     if (duplicate_entry_count > 2) {
-      WARN("Lookup table file contains {} indices with duplicate entries; \"\n           \"file may be "
-           "intended for use in conversion rather than visualisation",
+      WARN("Lookup table file contains {} indices with duplicate entries;"
+           " file may be intended for use in conversion rather than visualisation",
            duplicate_entry_count);
     }
     size_t absent_entry_count = 0;
@@ -3005,8 +3005,8 @@ void Connectome::load_properties() {
       }
     }
     if (absent_entry_count) {
-      WARN("{} indices present in parcellation image with no entry in lookup table; \"\n                   "
-           "                  \"lookup table file and parcellation image may not match",
+      WARN("{} indices present in parcellation image with no entry in lookup table;"
+           " lookup table file and parcellation image may not match",
            absent_entry_count);
     }
   }

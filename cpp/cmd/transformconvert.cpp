@@ -61,7 +61,10 @@ void usage() {
 
   ARGUMENTS
   + Argument ("input", "the input(s) for the specified operation").type_file_in().type_image_in().allow_multiple()
-  + Argument ("operation", fmt::format("the operation to perform; one of: {}", MR::Enum::join<Operation>())).type_choice<Operation>()
+  + Argument ("operation",
+              fmt::format("the operation to perform; one of: {}",
+                          MR::Enum::join<Operation>()))
+              .type_choice<Operation>()
   + Argument ("output", "the output transformation matrix.").type_file_out ();
 
 }
@@ -119,11 +122,11 @@ transform_type get_flirt_transform(const Header &header) {
 //     if (stream.bad())
 //       throw Exception (strerror (errno));
 //     if (!V.size())
-//       throw Exception(fmt::format("no data in file{}{}{}", );
+//       throw Exception("no data in file");
 
 //     transform_type M;
-//     for (ssize_t i = 0; i < 3; i, )
-//       for (ssize_t j = 0; j < 4; j, )
+//     for (ssize_t i = 0; i < 3; i++)
+//       for (ssize_t j = 0; j < 4; j++)
 //         M(i,j) = V[i][j];
 //     return M;
 //   }
@@ -213,7 +216,7 @@ void run() {
     transform_type transform;
     Eigen::Vector3d centre_of_rotation(3);
     parse_itk_trafo(argument[0], transform, centre_of_rotation);
-    INFO("Centre of rotation:\n{}", centre_of_rotation);
+    INFO("Centre of rotation: {}", centre_of_rotation);
 
     // rejig translation to correct for centre of rotation
     transform.translation() = transform.translation() + centre_of_rotation - transform.linear() * centre_of_rotation;
@@ -222,8 +225,8 @@ void run() {
     transform.matrix().template block<2, 2>(0, 2) *= -1.0;
     transform.matrix().template block<1, 2>(2, 0) *= -1.0;
 
-    INFO("linear:\n{}", transform.matrix());
-    INFO("translation:\n{}", transform.translation());
+    INFO("linear: {}", transform.linear());
+    INFO("translation: {}", transform.translation());
     if (((transform.matrix().array() != transform.matrix().array())).any())
       WARN("NAN in transformation.");
 

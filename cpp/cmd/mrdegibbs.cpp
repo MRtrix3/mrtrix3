@@ -178,23 +178,23 @@ void run() {
           throw Exception("Fatal error: Invalid slice axis one-hot encoding {}", slice_encoding_axis_onehot);
         if (axes_set_manually) {
           if (slice_axes == auto_slice_axes) {
-            INFO("User's manual selection of within-slice axes consistent with \"SliceEncodingDirection\" field in "
-                 "image header");
+            INFO("User's manual selection of within-slice axes"                        //
+                 " consistent with \"SliceEncodingDirection\" field in image header"); //
           } else {
-            WARN("Within-slice axes set using -axes option will be used, but is inconsistent with \"\n     "
-                 "            \"SliceEncodingDirection field present in image header ({})",
-                 slice_encoding_it->second);
+            WARN("Within-slice axes set using -axes option will be used,"                                   //
+                 " but is inconsistent with \"SliceEncodingDirection\" field present in image header ({})", //
+                 slice_encoding_it->second);                                                                //
           }
         } else {
           if (slice_axes == auto_slice_axes) {
-            INFO("\"SliceEncodingDirection\" field in image header is consistent with default selection of first two "
-                 "axes as being within-slice");
+            INFO("\"SliceEncodingDirection\" field in image header"                                //
+                 " is consistent with default selection of first two axes as being within-slice"); //
           } else {
             slice_axes = auto_slice_axes;
-            CONSOLE("Using axes {{ {}, {} }} for Gibbs ringing removal based on"
-                    " \"SliceEncodingDirection\" field in image header",
-                    slice_axes[0],
-                    slice_axes[1]);
+            CONSOLE("Using axes ({}, {}) for Gibbs ringing removal"               //
+                    " based on \"SliceEncodingDirection\" field in image header", //
+                    slice_axes[0],                                                //
+                    slice_axes[1]);                                               //
           }
         }
       } catch (...) {

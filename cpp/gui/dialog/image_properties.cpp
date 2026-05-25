@@ -72,10 +72,8 @@ ImageProperties::ImageProperties(QWidget *parent, const MR::Header &header)
     text += fmt::format(", {}", strides[n]);
   root->appendChild(new TreeItem("Strides", text, root));
 
-  root->appendChild(new TreeItem("Data scaling",
-                                 fmt::format("offset: {}", H.intensity_offset()) +
-                                     fmt::format(", multiplier = {}", H.intensity_scale()),
-                                 root));
+  root->appendChild(new TreeItem(
+      "Data scaling", fmt::format("offset: {}, multiplier = {}", H.intensity_offset(), H.intensity_scale()), root));
 
   Eigen::IOFormat Fmt(6, 0, ", ", "\n", "[", "]");
   TreeItem *transform = new TreeItem("Transform", std::string(), root);

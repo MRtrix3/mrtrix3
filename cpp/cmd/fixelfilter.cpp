@@ -58,9 +58,16 @@ void usage() {
   + Fixel::format_description;
 
   ARGUMENTS
-  + Argument ("input", "the input: either a fixel data file, or a fixel directory (see Description)").type_image_in().type_directory_in()
-  + Argument ("filter", fmt::format("the filtering operation to perform; options are: {}.", MR::Enum::join<FilterType>())).type_choice<FilterType>()
-  + Argument ("output", "the output: either a fixel data file, or a fixel directory (see Description)").type_image_out().type_directory_out(DirOutMode::MustNotExist);
+  + Argument ("input",
+              "the input: either a fixel data file, or a fixel directory (see Description)")
+              .type_image_in().type_directory_in()
+  + Argument ("filter",
+              fmt::format("the filtering operation to perform; options are: {}.",
+                          MR::Enum::join<FilterType>()))
+              .type_choice<FilterType>()
+  + Argument ("output",
+              "the output: either a fixel data file, or a fixel directory (see Description)")
+              .type_image_out().type_directory_out(DirOutMode::MustNotExist);
 
   OPTIONS
   + Option ("matrix", "provide a fixel-fixel connectivity matrix"
@@ -73,19 +80,27 @@ void usage() {
   + Fixel::Filter::cfe_options
 
   + OptionGroup ("Options specific to the \"connect\" filter")
-  + Option ("threshold_value", fmt::format("specify a threshold for the input fixel data file values"
-                                           " (default = {})", Fixel::Filter::Connect::default_value_threshold))
+  + Option ("threshold_value",
+            fmt::format("specify a threshold for the input fixel data file values"
+                        " (default = {})",
+                        Fixel::Filter::Connect::default_value_threshold))
     + Argument ("value").type_float ()
-  + Option ("threshold_connectivity", fmt::format("specify a fixel-fixel connectivity threshold for connected-component analysis"
-                                                  " (default = {:.2g})", Fixel::Filter::Connect::default_connectivity_threshold))
+  + Option ("threshold_connectivity",
+            fmt::format("specify a fixel-fixel connectivity threshold for connected-component analysis"
+                        " (default = {:.2g})",
+                        Fixel::Filter::Connect::default_connectivity_threshold))
     + Argument ("value").type_float (0.0)
 
   + OptionGroup ("Options specific to the \"smooth\" filter")
-  + Option ("fwhm", fmt::format("the full-width half-maximum (FWHM) of the spatial component of the smoothing filter"
-                                " (default = {}mm)", Fixel::Filter::Smooth::default_fwhm))
+  + Option ("fwhm",
+            fmt::format("the full-width half-maximum (FWHM) of the spatial component of the smoothing filter"
+                        " (default = {}mm)",
+                        Fixel::Filter::Smooth::default_fwhm))
     + Argument ("value").type_float (0.0)
-  + Option ("minweight", fmt::format("apply a minimum threshold to smoothing weights"
-                                     " (default = {:.2g})", Fixel::Filter::Smooth::default_threshold))
+  + Option ("minweight",
+            fmt::format("apply a minimum threshold to smoothing weights"
+                        " (default = {:.2g})",
+                        Fixel::Filter::Smooth::default_threshold))
     + Argument ("value").type_float (0.0);
 
 }
@@ -135,9 +150,8 @@ void run() {
     }
 
     if (single_file.valid() && !Fixel::fixels_match(index_header, single_file))
-      throw Exception("File \"{}\" is not a valid fixel data file{}",
-                      argument[0],                                    //
-                      " (does not match corresponding index image)"); //
+      throw Exception("File \"{}\" is not a valid fixel data file{} (does not match corresponding index image)",
+                      argument[0]);
 
     Image<index_type> index_image = index_header.get_image<index_type>();
     if (multiple_files.empty())
@@ -157,22 +171,20 @@ void run() {
       if (mask.size(1) != 1)
         throw Exception("Fixel mask must be a 1D fixel data file");
       if (static_cast<size_t>(mask.size(0)) != nfixels)
-        throw Exception("Number of fixels in mask image ({}){}{}{})",
-                        mask.size(0),                                      //
-                        " does not match number of fixels in index image", //
-                        " (",
-                        nfixels); //
+        throw Exception("Number of fixels in mask image ({})"                   //
+                        " does not match number of fixels in index image ({})", //
+                        mask.size(0),                                           //
+                        nfixels);                                               //
     }
 
     opt = get_options("matrix");
     Fixel::Matrix::Reader matrix(opt[0][0], mask);
 
     if (nfixels != matrix.size())
-      throw Exception("Number of fixels in input ({}){}{}{})",
-                      nfixels,                                                   //
-                      " does not match number of fixels in connectivity matrix", //
-                      " (",
-                      matrix.size()); //
+      throw Exception("Number of fixels in input ({})"                                //
+                      " does not match number of fixels in connectivity matrix ({})", //
+                      nfixels,                                                        //
+                      matrix.size());                                                 //
 
     switch (filter_type) {
     case FilterType::CFE: {

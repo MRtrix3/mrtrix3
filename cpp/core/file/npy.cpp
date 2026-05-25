@@ -127,17 +127,16 @@ DataType descr2datatype(std::string_view s) {
     }
     break;
   default:
-    throw Exception("Unsupported data type indicator '{}'", s[type_offset]);
+    throw Exception("Unsupported data type indicator \"{}\"", s[type_offset]);
   }
   if (data_type.bytes() != 1 && expect_one_byte_width)
     throw Exception("Inconsistency in byte width specification (expected one byte; got {})", data_type.bytes());
   if (bytes > 1) {
     data_type = data_type() | (is_little_endian ? DataType::LittleEndian : DataType::BigEndian);
     if (issue_endianness_warning) {
-      using namespace std::string_literals;
-      const std::string message = "NumPy file does not indicate data endianness; assuming "s +
-                                  (MRTRIX_IS_BIG_ENDIAN ? "big"s : "little"s) + "-endian"s + " (same as system)"s;
-      WARN(message);
+      WARN("NumPy file does not indicate data endianness;" //
+           " assuming {}-endian (same as system)",         //
+           MRTRIX_IS_BIG_ENDIAN ? "big" : "little");       //
     }
   }
   return data_type;
@@ -267,7 +266,7 @@ KeyValues parse_dict(std::string s) {
 
   // std::cerr << "Final keyvalues: {";
   // for (const auto& kv : keyval)
-  //   std::cerr << fmt::format(" '{}': '", kv.first) + kv.second + "', ";
+  //   std::cerr << fmt::format(" '{}': '{}',", kv.first, kv.second);
   // std::cerr << "}\n";
   return keyval;
 }
@@ -281,14 +280,14 @@ ReadInfo read_header(const std::filesystem::path &path) {
   std::array<char, 6> magic;
   in.read(magic.data(), 6);
   if (magic != magic_string)
-    throw Exception("Invalid magic string in NPY binary file \"{}\": {}{}{}{}{}{}",
-                    path, //
+    throw Exception("Invalid magic string in NPY binary file \"{}\": [{:#X},{:#X},{:#X},{:#X},{:#X},{:#X}]",
+                    path,
                     magic[0],
                     magic[1],
                     magic[2],
                     magic[3],
                     magic[4],
-                    magic[5]); //
+                    magic[5]);
   uint8_t major_version, minor_version;
   in.read(reinterpret_cast<char *>(&major_version), 1);
   in.read(reinterpret_cast<char *>(&minor_version), 1);
@@ -347,22 +346,25 @@ ReadInfo read_header(const std::filesystem::path &path) {
     info.shape.push_back(to<ssize_t>(s));
 
   // Make sure that the size of the file matches expectations given the offset to the data, the shape, and the data type
-  struct stat sbuf;
-  if (stat(std::string(path).c_str(), &sbuf) != 0)
-    throw Exception("Cannot query size of NumPy file \"{}\": {}", path, strerror(errno));
-  const size_t file_size = sbuf.st_size;
+  size_t file_size;
+  try {
+    file_size = std::filesystem::file_size(path);
+  } catch (const std::exception &e) {
+    throw Exception("Cannot query size of NumPy file \"{}\": {}", path, e.what());
+  }
   size_t num_elements = info.shape[0];
   if (info.shape.size() == 2)
     num_elements *= info.shape[1];
   const size_t predicted_data_size = num_elements * info.data_type.bytes();
   if (info.data_offset + predicted_data_size != file_size)
-    throw Exception("Size of NumPy file \"{}\" ({}) does not meet expectations given total header size "
-                    "({}) and predicted data size (({}{} = {}) values x {} bytes per value = {} bytes)",
+    throw Exception("Size of NumPy file \"{}\" ({}) does not meet expectations" //
+                    " given total header size ({}) and predicted data size"     //
+                    " (({}{} = {}) values x {} bytes per value = {} bytes)",    //
                     path,
                     file_size,
                     info.data_offset,
                     info.shape[0],
-                    (info.shape.size() == 2 ? fmt::format("x{}", info.shape[1]) : ""),
+                    info.shape.size() == 2 ? fmt::format("x{}", info.shape[1]) : "",
                     num_elements,
                     info.data_type.bytes(),
                     num_elements * info.data_type.bytes());

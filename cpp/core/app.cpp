@@ -986,7 +986,7 @@ void parse() {
         }
       }
       if (!potential_options.empty())
-        e.push_back(fmt::format("(Did you mean {}?)", join(potential_options, " or ")));
+        e.push_back("(Did you mean {}?)", join(potential_options, " or "));
     }
     throw e;
   }

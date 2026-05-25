@@ -147,7 +147,7 @@ inline void check_keyvals(const HeaderType1 &in1, const HeaderType2 &in2) {
       ++it2;
     } else {
       if (it1->second != it2->second)
-        errors.push_back(fmt::format("Key \"{}\" has different values between images", it1->first));
+        errors.push_back("Key \"{}\" has different values between images", it1->first);
       ++it1;
       ++it2;
     }

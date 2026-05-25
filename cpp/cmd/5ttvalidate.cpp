@@ -178,12 +178,11 @@ void run() {
     // Phase 4: report findings and accumulate error counts.
     // ---------------------------------------------------------------
     if (result.n_voxels_sum_error > 1) {
-      WARN("Image \"{}\" contains {}{}",
-           argument[i],                                                     //
-           (result.n_voxels_sum_error > 1                                   //
-                ? fmt::format("{} brain voxels", result.n_voxels_sum_error) //
-                : "one isolated voxel"),                                    //
-           " with non-unity sum of partial volume fractions");              //
+      WARN("Image \"{}\" contains {} with non-unity sum of partial volume fractions", //
+           argument[i],                                                               //
+           (result.n_voxels_sum_error > 1                                             //
+                ? fmt::format("{} brain voxels", result.n_voxels_sum_error)           //
+                : "one isolated voxel"));                                             //
     }
     if (result.n_voxels_abs_error == 0 && result.n_voxels_sum_error == 0) {
       INFO("Image \"{}\" conforms to 5TT format", argument[i]);

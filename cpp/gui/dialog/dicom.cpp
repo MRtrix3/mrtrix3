@@ -32,7 +32,7 @@ public:
   }
   Item(Item *parent, const std::shared_ptr<Study> &p) : parentItem(parent) {
     itemData = qstr(fmt::format("{} {} {} {}",
-                                (!p->name.empty() ? p->name : "unnamed"),
+                                p->name.empty() ? "unnamed" : p->name,
                                 format_ID(p->ID),
                                 format_date(p->date),
                                 format_time(p->time)));
@@ -40,10 +40,10 @@ public:
   Item(Item *parent, const std::shared_ptr<Series> &p) : parentItem(parent), dicom_series(p) {
     itemData = qstr(fmt::format("{} {} images {} {} ({}) [{}]{}",
                                 p->size(),
-                                (!p->modality.empty() ? p->modality : std::string()),
+                                p->modality.empty() ? "" : p->modality,
                                 format_time(p->time),
-                                (p->name.empty() ? "unnamed" : p->name),
-                                ((*p)[0]->sequence_name.empty() ? "?" : (*p)[0]->sequence_name),
+                                p->name.empty() ? "unnamed" : p->name,
+                                (*p)[0]->sequence_name.empty() ? "?" : (*p)[0]->sequence_name,
                                 p->number,
                                 p->image_type));
   }

@@ -257,7 +257,7 @@ public:
   void set_axes(const std::vector<int> &i) {
     const size_t max_axis = *std::max_element(i.begin(), i.end());
     if (max_axis >= ndim())
-      throw Exception("Requested axis for connected-component filter ({}"
+      throw Exception("Requested axis for connected-component filter ({})"
                       " is beyond the dimensionality of the image ({}D)",
                       max_axis,
                       ndim());

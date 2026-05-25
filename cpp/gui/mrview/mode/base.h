@@ -208,7 +208,7 @@ public:
   __Action__(QActionGroup *parent, const char *const name, const char *const description, int index) // check_syntax off
       : QAction(name, parent) {
     setCheckable(true);
-    setShortcut(tr(std::string(fmt::format("F{}", index)).c_str()));
+    setShortcut(tr(fmt::format("F{}", index).c_str()));
     setStatusTip(tr(description));
   }
 

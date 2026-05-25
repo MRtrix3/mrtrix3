@@ -178,10 +178,9 @@ void run() {
 
   for (index_type i = 1; i < importer.size(); ++i) {
     if (importer[i]->size() != importer[0]->size())
-      throw Exception("Size of connectome for subject {} (file \"{}\"{}",
-                      i,
-                      importer[i]->name(),                      //
-                      " does not match that of first subject"); //
+      throw Exception("Size of connectome for subject {} (file \"{}\") does not match that of first subject", //
+                      i,                                                                                      //
+                      importer[i]->name());                                                                   //
   }
 
   // TODO Could determine this from the vector length with the right equation
@@ -203,9 +202,8 @@ void run() {
     enhancer.reset(new Stats::TFCE::Wrapper(base));
     load_tfce_parameters(*(dynamic_cast<Stats::TFCE::Wrapper *>(enhancer.get())));
     if (!get_options("threshold").empty())
-      WARN("{} is a threshold-free algorithm;{}",
-           MR::Enum::lowercase_name(Algorithm::TFNBS), //
-           " -threshold option ignored");              //
+      WARN("{} is a threshold-free algorithm; -threshold option ignored", //
+           MR::Enum::lowercase_name(Algorithm::TFNBS));                   //
   } break;
   case Algorithm::None: {
     enhancer.reset(new MR::Connectome::Enhance::PassThrough());
@@ -233,10 +231,9 @@ void run() {
   // Load design matrix
   const matrix_type design = File::Matrix::load_matrix(argument[2]);
   if (static_cast<index_type>(design.rows()) != importer.size())
-    throw Exception("number of subjects ({}){}{})",
-                    importer.size(), //
-                    " does not match number of rows in design matrix (",
-                    design.rows()); //
+    throw Exception("number of subjects ({}) does not match number of rows in design matrix ({})", //
+                    importer.size(),                                                               //
+                    design.rows());                                                                //
 
   // Before validating the contrast matrix, we first need to see if there are any
   //   additional design matrix columns coming from edge-wise subject data

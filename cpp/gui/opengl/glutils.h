@@ -40,9 +40,9 @@
 // #define GL_SHOW_DEBUG_MESSAGE
 
 #ifdef GL_SHOW_DEBUG_MESSAGE
-#define GL_DEBUG(msg) DEBUG(msg)
+#define GL_DEBUG(msg, ...) DEBUG(msg, __VA_ARGS__)
 #else
-#define GL_DEBUG(msg) (void)0
+#define GL_DEBUG(msg, ...) (void)0
 #endif
 
 #ifdef NDEBUG
@@ -167,7 +167,7 @@ public:
       check_context.set();
       tex_type = target;
       gl::GenTextures(1, &id);
-      GL_DEBUG(fmt::format("created OpenGL texture ID {}", id));
+      GL_DEBUG("created OpenGL texture ID {}", id);
       bind();
       gl::TexParameteri(tex_type, gl::TEXTURE_BASE_LEVEL, 0);
       gl::TexParameteri(tex_type, gl::TEXTURE_MAX_LEVEL, 0);
@@ -183,7 +183,7 @@ public:
   void clear() {
     if (id) {
       check_context();
-      GL_DEBUG(fmt::format("deleting OpenGL texture ID {}", id));
+      GL_DEBUG("deleting OpenGL texture ID {}", id);
       gl::DeleteTextures(1, &id);
     }
     id = 0;
@@ -192,7 +192,7 @@ public:
   void bind() const {
     assert(id);
     check_context();
-    GL_DEBUG(fmt::format("binding OpenGL texture ID {}", id));
+    GL_DEBUG("binding OpenGL texture ID {}", id);
     gl::BindTexture(tex_type, id);
   }
   void set_interp(GLint type) const {
@@ -225,13 +225,13 @@ public:
     if (!id) {
       check_context.set();
       gl::GenBuffers(1, &id);
-      GL_DEBUG(fmt::format("created OpenGL vertex buffer ID {}", id));
+      GL_DEBUG("created OpenGL vertex buffer ID {}", id);
     }
   }
   void clear() {
     if (id) {
       check_context();
-      GL_DEBUG(fmt::format("deleting OpenGL vertex buffer ID {}", id));
+      GL_DEBUG("deleting OpenGL vertex buffer ID {}", id);
       gl::DeleteBuffers(1, &id);
       id = 0;
     }
@@ -239,7 +239,7 @@ public:
   void bind(GLenum target) const {
     assert(id);
     check_context();
-    GL_DEBUG(fmt::format("binding OpenGL vertex buffer ID {}", id));
+    GL_DEBUG("binding OpenGL vertex buffer ID {}", id);
     gl::BindBuffer(target, id);
   }
 
@@ -265,13 +265,13 @@ public:
     if (!id) {
       check_context.set();
       gl::GenVertexArrays(1, &id);
-      GL_DEBUG(fmt::format("created OpenGL vertex array ID {}", id));
+      GL_DEBUG("created OpenGL vertex array ID {}", id);
     }
   }
   void clear() {
     if (id) {
       check_context();
-      GL_DEBUG(fmt::format("deleting OpenGL vertex array ID {}", id));
+      GL_DEBUG("deleting OpenGL vertex array ID {}", id);
       gl::DeleteVertexArrays(1, &id);
       id = 0;
     }
@@ -279,7 +279,7 @@ public:
   void bind() const {
     assert(id);
     check_context();
-    GL_DEBUG(fmt::format("binding OpenGL vertex array ID {}", id));
+    GL_DEBUG("binding OpenGL vertex array ID {}", id);
     gl::BindVertexArray(id);
   }
 
@@ -305,13 +305,13 @@ public:
     if (!id) {
       check_context.set();
       gl::GenBuffers(1, &id);
-      GL_DEBUG(fmt::format("created OpenGL index buffer ID {}", id));
+      GL_DEBUG("created OpenGL index buffer ID {}", id);
     }
   }
   void clear() {
     if (id) {
       check_context();
-      GL_DEBUG(fmt::format("deleting OpenGL index buffer ID {}", id));
+      GL_DEBUG("deleting OpenGL index buffer ID {}", id);
       gl::DeleteBuffers(1, &id);
       id = 0;
     }
@@ -319,7 +319,7 @@ public:
   void bind() const {
     assert(id);
     check_context();
-    GL_DEBUG(fmt::format("binding OpenGL index buffer ID {}", id));
+    GL_DEBUG("binding OpenGL index buffer ID {}", id);
     gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, id);
   }
 
@@ -345,13 +345,13 @@ public:
     if (!id) {
       check_context.set();
       gl::GenFramebuffers(1, &id);
-      GL_DEBUG(fmt::format("created OpenGL framebuffer ID {}", id));
+      GL_DEBUG("created OpenGL framebuffer ID {}", id);
     }
   }
   void clear() {
     if (id) {
       check_context();
-      GL_DEBUG(fmt::format("deleting OpenGL framebuffer ID {}", id));
+      GL_DEBUG("deleting OpenGL framebuffer ID {}", id);
       gl::DeleteFramebuffers(1, &id);
       unbind();
     }
@@ -360,7 +360,7 @@ public:
   void bind() const {
     assert(id);
     check_context();
-    GL_DEBUG(fmt::format("binding OpenGL framebuffer ID {}", id));
+    GL_DEBUG("binding OpenGL framebuffer ID {}", id);
     gl::BindFramebuffer(gl::FRAMEBUFFER, id);
   }
   void unbind() const {
@@ -372,7 +372,7 @@ public:
   void attach_color(Texture &tex, size_t attachment) const {
     assert(tex);
     bind();
-    GL_DEBUG(fmt::format("texture ID {} attached to framebuffer ID {} at color attachement {}", tex, id, attachment));
+    GL_DEBUG("texture ID {} attached to framebuffer ID {} at color attachement {}", tex, id, attachment);
     gl::FramebufferTexture(gl::FRAMEBUFFER, GLenum(static_cast<size_t>(gl::COLOR_ATTACHMENT0) + attachment), tex, 0);
   }
   void draw_buffers(size_t first) const {

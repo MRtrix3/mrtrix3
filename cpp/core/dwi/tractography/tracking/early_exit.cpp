@@ -49,7 +49,7 @@ bool EarlyExit::operator()(const size_t num_seeds, const size_t num_tracks) {
 
   if ((static_cast<default_type>(num_seeds) / static_cast<default_type>(max_num_seeds) > cease_testing_percentage) ||
       (static_cast<default_type>(num_tracks) / static_cast<default_type>(max_num_tracks) > cease_testing_percentage)) {
-    DEBUG("tckgen early exit: No longer testing (tracking progressed beyond {}%)",
+    DEBUG("tckgen early exit: No longer testing (tracking progressed beyond {}\%)",
           static_cast<int>(std::round(100.0 * cease_testing_percentage)));
     next_test = 0;
     return false;

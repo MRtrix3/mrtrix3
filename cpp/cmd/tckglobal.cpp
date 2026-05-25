@@ -333,9 +333,9 @@ void run() {
 
   Thread::run(Thread::multi(mhs), "MH sampler");
 
-  INFO("Final no. particles: {}", std::to_string(pgrid.getTotalCount()));
-  INFO("Final external energy: {}", std::to_string(stats.getEextTotal()));
-  INFO("Final internal energy: {}", std::to_string(stats.getEintTotal()));
+  INFO("Final no. particles: {}", pgrid.getTotalCount());
+  INFO("Final external energy: {}", stats.getEextTotal());
+  INFO("Final internal energy: {}", stats.getEintTotal());
 
   // Copy results to output buffers -----------------------------------------------------
 
@@ -344,15 +344,15 @@ void run() {
   MR::DWI::Tractography::Properties ftfileprops;
   ftfileprops.comments.push_back("global tractography");
   ftfileprops.comments.push_back("");
-  ftfileprops.comments.push_back(fmt::format("segment length = {}", (long double)Particle::L));
-  ftfileprops.comments.push_back(fmt::format("segment weight = {}", (long double)properties.weight));
+  ftfileprops.comments.push_back(fmt::format("segment length = {}", Particle::L));
+  ftfileprops.comments.push_back(fmt::format("segment weight = {}", properties.weight));
   ftfileprops.comments.push_back("");
-  ftfileprops.comments.push_back(fmt::format("connection potential = {}", (long double)cpot));
-  ftfileprops.comments.push_back(fmt::format("particle potential = {}", (long double)mu));
+  ftfileprops.comments.push_back(fmt::format("connection potential = {}", cpot));
+  ftfileprops.comments.push_back(fmt::format("particle potential = {}", mu));
   ftfileprops.comments.push_back("");
-  ftfileprops.comments.push_back(fmt::format("no. iterations = {}", (long long int)niter));
-  ftfileprops.comments.push_back(fmt::format("T0 = {}", (long double)t0));
-  ftfileprops.comments.push_back(fmt::format("T1 = {}", (long double)t1));
+  ftfileprops.comments.push_back(fmt::format("no. iterations = {}", niter));
+  ftfileprops.comments.push_back(fmt::format("T0 = {}", t0));
+  ftfileprops.comments.push_back(fmt::format("T1 = {}", t1));
 
   MR::DWI::Tractography::Writer<float> writer(argument[2], ftfileprops);
   pgrid.exportTracks(writer);

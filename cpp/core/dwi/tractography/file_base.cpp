@@ -53,7 +53,7 @@ void __ReaderBase__::open(const std::filesystem::path &file, std::string_view ty
     throw Exception("no datatype specified for tracks file \"{}\"", file);
   if (dtype != DataType::Float32LE && dtype != DataType::Float32BE && dtype != DataType::Float64LE &&
       dtype != DataType::Float64BE)
-    throw Exception("only supported datatype for tracks file are \"\n                    \"Float32LE, "
+    throw Exception("only supported datatype for tracks file are Float32LE, "
                     "Float32BE, Float64LE & Float64BE (in {} file \"{}\")",
                     type,
                     file);
@@ -73,12 +73,7 @@ void __ReaderBase__::open(const std::filesystem::path &file, std::string_view ty
     }
   }
 
-  std::filesystem::path fname;
-  if (fname_str != ".")
-    fname = file.parent_path() / fname_str;
-  else
-    fname = file;
-
+  const std::filesystem::path fname = fname_str == "." ? file : (file.parent_path() / fname_str);
   in.open(fname, std::ios::in | std::ios::binary);
   if (!in)
     throw Exception("error opening {} data file \"{}\": {}", type, fname, strerror(errno));

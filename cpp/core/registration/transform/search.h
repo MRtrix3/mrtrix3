@@ -179,7 +179,6 @@ public:
       }
 
       ParamType parameters = get_parameters();
-      // parameters.make_diagnostics_image ("/tmp/debugme"+fmt::format("{}.mif", iteration), true); // REMOVEME
       cost.fill(0);
       cnt = 0;
       Metric::ThreadKernel<MetricType, ParamType> kernel(metric, parameters, cost, gradient, &cnt);
@@ -190,7 +189,7 @@ public:
             << fmt::format(
                    "{} {} {} [{} {} {}]", iteration, cost, cnt, T.matrix().row(0), T.matrix().row(1), T.matrix().row(2))
             << std::endl;
-      // write_images ( "im1_" + fmt::format("{}.mif", iteration), "im2_" + fmt::format("{}.mif", iteration));
+      // write_images (fmt::format("im1_{}.mif", iteration), fmt::format("im2_{}.mif", iteration));
       if (cnt == 0) {
         if (iteration == 0)
           throw Exception("zero voxel overlap at initialisation. input matrix wrong?");

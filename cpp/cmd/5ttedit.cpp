@@ -96,11 +96,12 @@ public:
            excess_volume_count);
     }
     if (inadequate_volume_count > 0) {
-      WARN("A total of {} voxels were outside the brain in the input image, the user provided non-zero "
-           "partial volume fractions in at least one input volume, but the sum of partial volume fractions "
-           "across user-provided images was less than one (these were auto-scaled to sum to one, but there "
-           "may have been an error in generation of input images)",
-           inadequate_volume_count);
+      WARN("A total of {} voxels were outside the brain in the input image,"                        //
+           " the user provided non-zero partial volume fractions in at least one input volume,"     //
+           " but the sum of partial volume fractions across user-provided images was less than one" //
+           " (these were auto-scaled to sum to one,"                                                //
+           " but there may have been an error in generation of input images)",                      //
+           inadequate_volume_count);                                                                //
     }
   }
 
