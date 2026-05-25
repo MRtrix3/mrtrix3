@@ -75,7 +75,7 @@ node_t Tck2nodes_radial::select_node(const Tractography::Streamline<> &tck, Imag
       assign_pos_of(this_voxel).to(v);
       if (!is_out_of_bounds(v)) {
         const node_t this_node = v.value();
-        if (this_node != 0u) {
+        if (this_node != 0U) {
           node = this_node;
           min_dist = dist;
         }
@@ -98,7 +98,7 @@ node_t Tck2nodes_revsearch::select_node(const Tractography::Streamline<> &tck, I
     assign_pos_of(voxel).to(v);
     if (!is_out_of_bounds(v)) {
       const node_t this_node = v.value();
-      if (this_node != 0u)
+      if (this_node != 0U)
         return this_node;
     }
     dist += (tck[index] - tck[index + step]).norm();
@@ -152,7 +152,7 @@ Tck2nodes_forwardsearch::select_node(const Tractography::Streamline<> &tck, Imag
     if (is_out_of_bounds(v))
       continue;
     const node_t value = v.value();
-    if (value != 0u)
+    if (value != 0U)
       return value;
 
     // Check voxel neighbours
@@ -201,7 +201,7 @@ void Tck2nodes_all_voxels::select_nodes(const Streamline<> &tck, Image<node_t> &
     assign_pos_of(voxel).to(v);
     if (!is_out_of_bounds(v)) {
       const node_t this_node = v.value();
-      if (this_node != 0u)
+      if (this_node != 0U)
         result.insert(this_node);
     }
   }

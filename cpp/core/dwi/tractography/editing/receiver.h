@@ -46,7 +46,7 @@ public:
     // Use set_text() rather than update() here to force update of the text before progress goes out of scope
     progress.set_text(std::string(printf("%8" PRIu64 " read, %8" PRIu64 " written", total_count, count)) +
                       (crop ? printf(", %8" PRIu64 " segments", segments) : ""));
-    if ((number != 0u) && (count != number))
+    if ((number != 0U) && (count != number))
       WARN("User requested " + str(number) + " streamlines, but only " + str(count) + " were written to file");
   }
 

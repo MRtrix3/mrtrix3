@@ -130,7 +130,7 @@ public:
         assert(counts);
         for (auto l = loop(buffer, *counts); l; ++l) {
           const float total_weight = counts->value();
-          if (total_weight != 0.0f) {
+          if (total_weight != 0.0F) {
             auto value = get_dec();
             const default_type norm = value.norm();
             if (norm != 0.0)
@@ -152,7 +152,7 @@ public:
       if (type == writer_dim::GREYSCALE) {
         assert(counts);
         for (auto l = loop(buffer, *counts); l; ++l) {
-          if (counts->value() != 0.0f)
+          if (counts->value() != 0.0F)
             buffer.value() /= static_cast<float>(counts->value());
         }
       } else if (type == writer_dim::DEC) {
@@ -164,7 +164,7 @@ public:
       } else if (type == writer_dim::TOD) {
         assert(counts);
         for (auto l = loop(buffer, *counts); l; ++l) {
-          if (counts->value() != 0.0f) {
+          if (counts->value() != 0.0F) {
             VoxelTOD::vector_type value;
             get_tod(value);
             value *= (1.0 / counts->value());
@@ -176,7 +176,7 @@ public:
         // TODO For dixels, should this be a voxel mean i.e. normalise each non-zero voxel to unit density,
         //   rather than a per-dixel mean?
         for (auto l = Loop(buffer)(buffer, *counts); l; ++l) {
-          if (counts->value() != 0.0f)
+          if (counts->value() != 0.0F)
             buffer.value() /= static_cast<float>(counts->value());
         }
       }

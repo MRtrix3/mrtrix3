@@ -120,7 +120,7 @@ void run() {
     out_index_image.index(3) = 0;
     out_index_image.value() = out_nfixels;
     out_index_image.index(3) = 1;
-    out_index_image.value() = ((out_nfixels) != 0u) ? out_offset : 0;
+    out_index_image.value() = ((out_nfixels) != 0U) ? out_offset : 0;
     out_offset += out_nfixels;
   }
 }

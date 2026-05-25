@@ -80,8 +80,8 @@ public:
   float get_threshold_max() const { return threshold_max; }
 
   static TrackGeometryType default_tract_geom;
-  static constexpr float default_line_thickness = 2e-3f;
-  static constexpr float default_point_size = 4e-3f;
+  static constexpr float default_line_thickness = 2e-3F;
+  static constexpr float default_point_size = 4e-3F;
 
   bool scalarfile_by_direction;
   bool show_colour_bar;

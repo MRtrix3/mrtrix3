@@ -41,7 +41,7 @@ public:
                          rk4 ? intrinsic_integration_order_t::HIGHER : intrinsic_integration_order_t::FIRST,
                          curvature_constraint_t::LIMITED_SEARCH);
       set_num_points();
-      set_cutoff(0.0f);
+      set_cutoff(0.0F);
       if (is_act())
         act().set_default_sgm_trunc(ACT::sgm_trunc_t::RANDOM);
       sin_max_angle_1o = std::sin(max_angle_1o);

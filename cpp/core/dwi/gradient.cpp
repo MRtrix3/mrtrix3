@@ -228,7 +228,7 @@ void save_bvecs_bvals(const Header &header,
   if (adjusted_transform.linear().determinant() > 0.0)
     bvecs.row(0) = -bvecs.row(0);
 
-  if (bval_zeroed_count != 0u) {
+  if (bval_zeroed_count != 0U) {
     WARN("For image \"" + header.name() + "\","                                       //
          + str(bval_zeroed_count) + " volumes had zero gradient direction vector,"    //
          + " but 0.0 < b-value <= BZeroThreshold;"                                    //

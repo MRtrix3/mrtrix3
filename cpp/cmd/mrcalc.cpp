@@ -338,7 +338,7 @@ using real_type = float;
 using complex_type = cfloat;
 static bool transform_mis_match_reported(false);
 
-inline bool is_true(const complex_type &z) { return (z.real() != 0.0f) || (z.imag() != 0.0f); }
+inline bool is_true(const complex_type &z) { return (z.real() != 0.0F) || (z.imag() != 0.0F); }
 
 // clang-format off
 void usage() {

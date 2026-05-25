@@ -531,7 +531,7 @@ private:
     // If the truncation would result in removing the seed point, truncate all
     //   the way back to the seed point, reverse the streamline, and then
     //   truncate off the end (which used to be the start)
-    float length_sum = 0.0f;
+    float length_sum = 0.0F;
     size_t index;
     for (index = 1; index != tck.size(); ++index) {
       const float seg_length = (tck[index] - tck[index - 1]).norm();

@@ -95,7 +95,7 @@ public:
       dir = S.init_dir;
 
     dir.normalize();
-    if (find_peak() == 0.0f)
+    if (find_peak() == 0.0F)
       return false;
 
     return true;
@@ -107,7 +107,7 @@ public:
 
     const Eigen::Vector3f prev_dir(dir);
 
-    if (find_peak() == 0.0f)
+    if (find_peak() == 0.0F)
       return term_t::MODEL;
 
     if (prev_dir.dot(dir) < S.dot_threshold)

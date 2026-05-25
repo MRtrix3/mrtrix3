@@ -371,7 +371,7 @@ void run() {
       grad(row, 0) = ((*dirs)[row])[0];
       grad(row, 1) = ((*dirs)[row])[1];
       grad(row, 2) = ((*dirs)[row])[2];
-      grad(row, 3) = 1.0f;
+      grad(row, 3) = 1.0F;
     }
     set_DW_scheme(header, grad);
   }
@@ -382,7 +382,7 @@ void run() {
       throw Exception("Options for setting output image dimensionality are mutually exclusive");
     writer_type = writer_dim::TOD;
     const size_t lmax = opt[0][0];
-    if ((lmax % 2) != 0u)
+    if ((lmax % 2) != 0U)
       throw Exception("lmax for TODI must be an even number");
     header.ndim() = 4;
     header.size(3) = Math::SH::NforL(lmax);

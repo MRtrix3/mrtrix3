@@ -224,13 +224,13 @@ std::unique_ptr<ImageIO::Base> MRI::read(Header &H) const {
       break;
     }
 
-    if (data_offset != 0u)
+    if (data_offset != 0U)
       break;
 
     current = next(current, is_BE);
   }
 
-  if (data_offset == 0u)
+  if (data_offset == 0U)
     throw Exception("no data field found in MRI image \"" + H.path().string() + "\"");
 
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));
@@ -281,14 +281,14 @@ std::unique_ptr<ImageIO::Base> MRI::create(Header &H) const {
 
   write_tag(out, mriformat_index_voxelsize, 3 * sizeof(float32), is_BE);
   write<float>(out, H.spacing(0), is_BE);
-  write<float>(out, (H.ndim() > 1 ? H.spacing(1) : 2.0f), is_BE);
-  write<float>(out, (H.ndim() > 2 ? H.spacing(2) : 2.0f), is_BE);
+  write<float>(out, (H.ndim() > 1 ? H.spacing(1) : 2.0F), is_BE);
+  write<float>(out, (H.ndim() > 2 ? H.spacing(2) : 2.0F), is_BE);
 
   const auto comments = H.keyval().find("comments");
   if (comments != H.keyval().end()) {
     for (const auto &comment : split_lines(comments->second)) {
       size_t const l = comment.size();
-      if (l != 0u) {
+      if (l != 0U) {
         write_tag(out, mriformat_index_comment, l, is_BE);
         out.write(comment.c_str(), l);
       }
@@ -299,10 +299,10 @@ std::unique_ptr<ImageIO::Base> MRI::create(Header &H) const {
   for (size_t i = 0; i < 3; ++i)
     for (size_t j = 0; j < 4; ++j)
       write<float>(out, H.transform()(i, j), is_BE);
-  write<float>(out, 0.0f, is_BE);
-  write<float>(out, 0.0f, is_BE);
-  write<float>(out, 0.0f, is_BE);
-  write<float>(out, 1.0f, is_BE);
+  write<float>(out, 0.0F, is_BE);
+  write<float>(out, 0.0F, is_BE);
+  write<float>(out, 0.0F, is_BE);
+  write<float>(out, 1.0F, is_BE);
 
   const auto dw_scheme = H.keyval().find("dw_scheme");
   if (dw_scheme != H.keyval().end()) {

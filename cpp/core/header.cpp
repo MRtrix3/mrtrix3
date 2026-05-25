@@ -483,14 +483,14 @@ std::string Header::description(bool print_all) const {
   desc += "  Dimensions:        ";
   size_t i;
   for (i = 0; i < ndim(); i++) {
-    if (i != 0u)
+    if (i != 0U)
       desc += " x ";
     desc += str(size(i));
   }
 
   desc += "\n  Voxel size:        ";
   for (i = 0; i < ndim(); i++) {
-    if (i != 0u)
+    if (i != 0U)
       desc += " x ";
     desc += std::isnan(spacing(i)) ? "?" : str(spacing(i), 6);
   }
@@ -616,7 +616,7 @@ void Header::sanitise_voxel_sizes() {
         mean_vox_size += spacing(i);
       }
     }
-    mean_vox_size = (num_valid_vox != 0u) ? mean_vox_size / num_valid_vox : 1.0;
+    mean_vox_size = (num_valid_vox != 0U) ? mean_vox_size / num_valid_vox : 1.0;
     for (size_t i = 0; i < 3; ++i)
       if (!std::isfinite(spacing(i)))
         spacing(i) = mean_vox_size;

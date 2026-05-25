@@ -111,7 +111,7 @@ void run() {
     mapper(tck, dixels);
     scalars.clear();
     scalars.set_index(tck.get_index());
-    scalars.resize(tck.size(), 0.0f);
+    scalars.resize(tck.size(), 0.0F);
     for (size_t p = 0; p < tck.size(); ++p) {
       voxel_pos_float = transform.scanner2voxel * tck[p].cast<default_type>();
       voxel_pos_int = voxel_pos_float.array().round().cast<int>();
@@ -121,7 +121,7 @@ void run() {
         if (voxel_pos_int == d) {
           assign_pos_of(d).to(in_index_image);
           const Eigen::Vector3f dir = d.get_dir().cast<float>().normalized();
-          float largest_dp = 0.0f;
+          float largest_dp = 0.0F;
           int32_t closest_fixel_index = -1;
 
           in_index_image.index(3) = 0;
@@ -143,9 +143,9 @@ void run() {
             if (std::isfinite(value))
               scalars[p] = in_data_image.value();
             else
-              scalars[p] = 0.0f;
+              scalars[p] = 0.0F;
           } else {
-            scalars[p] = 0.0f;
+            scalars[p] = 0.0F;
           }
           break;
         }

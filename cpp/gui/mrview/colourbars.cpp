@@ -33,25 +33,25 @@ ColourBars::ColourBars()
       // CONF option: MRViewColourBarWidth
       // CONF default: 20
       // CONF The width of the colourbar in MRView, in pixels.
-      width(MR::File::Config::get_float("MRViewColourBarWidth", 20.0f)),
+      width(MR::File::Config::get_float("MRViewColourBarWidth", 20.0F)),
       // CONF option: MRViewColourBarHeight
       // CONF default: 100
       // CONF The height of the colourbar in MRView, in pixels.
-      height(MR::File::Config::get_float("MRViewColourBarHeight", 100.0f)),
+      height(MR::File::Config::get_float("MRViewColourBarHeight", 100.0F)),
       // CONF option: MRViewColourBarInset
       // CONF default: 20
       // CONF How far away from the edge of the main window to place the
       // CONF colourbar in MRView, in pixels.
-      inset(MR::File::Config::get_float("MRViewColourBarInset", 20.0f)),
+      inset(MR::File::Config::get_float("MRViewColourBarInset", 20.0F)),
       // CONF option: MRViewColourBarTextOffset
       // CONF default: 10
       // CONF How far away from the colourbar to place the associated text,
       // CONF in pixels.
-      text_offset(MR::File::Config::get_float("MRViewColourBarTextOffset", 10.0f)),
+      text_offset(MR::File::Config::get_float("MRViewColourBarTextOffset", 10.0F)),
       // CONF option: MRViewColourBarHorizontalPadding
       // CONF default: 100
       // CONF The width in pixels between horizontally adjacent colour bars.
-      colourbar_padding(MR::File::Config::get_float("MRViewColourBarHorizontalPadding", 100.0f)) {
+      colourbar_padding(MR::File::Config::get_float("MRViewColourBarHorizontalPadding", 100.0F)) {
   end();
 }
 
@@ -105,7 +105,7 @@ void ColourBars::render(const Displayable &object, bool inverted) {
          object.scaling_max(),
          object.scaling_min(),
          object.display_range,
-         Eigen::Array3f{object.colour[0] / 255.0f, object.colour[1] / 255.0f, object.colour[2] / 255.0f});
+         Eigen::Array3f{object.colour[0] / 255.0F, object.colour[1] / 255.0F, object.colour[2] / 255.0F});
 }
 
 void ColourBars::render(size_t colourmap,
@@ -115,16 +115,16 @@ void ColourBars::render(size_t colourmap,
                         float global_min_value,
                         float global_range,
                         Eigen::Array3f colour) {
-  if (current_position == 0u)
+  if (current_position == 0U)
     return;
   if (ColourMap::maps[colourmap].special)
     return;
 
-  if ((program == 0u) || (frame_program == 0u) || colourmap != current_colourmap_index ||
+  if ((program == 0U) || (frame_program == 0U) || colourmap != current_colourmap_index ||
       current_colourmap_inverted != inverted)
     setup(colourmap, inverted);
 
-  if ((VB == 0u) || (VAO == 0u)) {
+  if ((VB == 0U) || (VAO == 0U)) {
     VB.gen();
     VAO.gen();
 
@@ -151,19 +151,19 @@ void ColourBars::render(size_t colourmap,
   const float scaled_width = width / static_cast<float>(max_bars_per_row);
   const float scaled_height = height / static_cast<float>(ncols);
 
-  std::array<GLfloat, 12> data = {0.0f,
-                                  0.0f,
+  std::array<GLfloat, 12> data = {0.0F,
+                                  0.0F,
                                   min_frac,
-                                  0.0f,
+                                  0.0F,
                                   scaled_height,
                                   max_frac,
                                   scaled_width,
                                   scaled_height,
                                   max_frac,
                                   scaled_width,
-                                  0.0f,
+                                  0.0F,
                                   min_frac};
-  float x_offset = 0.0f, y_offset = 0.0f;
+  float x_offset = 0.0F, y_offset = 0.0F;
   int halign = -1;
 
   if ((current_position & Position::Right) != 0) {
@@ -194,16 +194,16 @@ void ColourBars::render(size_t colourmap,
   gl::Disable(gl::DEPTH_TEST);
 
   program.start();
-  gl::Uniform1f(gl::GetUniformLocation(program, "scale_x"), 2.0f / current_projection->width());
-  gl::Uniform1f(gl::GetUniformLocation(program, "scale_y"), 2.0f / current_projection->height());
+  gl::Uniform1f(gl::GetUniformLocation(program, "scale_x"), 2.0F / current_projection->width());
+  gl::Uniform1f(gl::GetUniformLocation(program, "scale_y"), 2.0F / current_projection->height());
   if (ColourMap::maps[colourmap].is_colour)
     gl::Uniform3fv(gl::GetUniformLocation(program, "colourmap_colour"), 1, &colour[0]);
   gl::DrawArrays(gl::TRIANGLE_FAN, 0, 4);
   program.stop();
 
   frame_program.start();
-  gl::Uniform1f(gl::GetUniformLocation(frame_program, "scale_x"), 2.0f / current_projection->width());
-  gl::Uniform1f(gl::GetUniformLocation(frame_program, "scale_y"), 2.0f / current_projection->height());
+  gl::Uniform1f(gl::GetUniformLocation(frame_program, "scale_x"), 2.0F / current_projection->width());
+  gl::Uniform1f(gl::GetUniformLocation(frame_program, "scale_y"), 2.0F / current_projection->height());
   gl::DrawArrays(gl::LINE_LOOP, 0, 4);
   frame_program.stop();
 

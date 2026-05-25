@@ -341,7 +341,7 @@ void run() {
     if (mask_processing_image.value() && matrix.size(f) == 0U)
       ++num_unconnected_fixels;
   }
-  if (num_unconnected_fixels != 0u) {
+  if (num_unconnected_fixels != 0U) {
     WARN("A total of " + str(num_unconnected_fixels) + " fixels " +
          (mask_proc_fixels == num_fixels ? "" : "in the provided mask ") +
          "do not possess any streamlines-based connectivity; "

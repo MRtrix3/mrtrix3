@@ -48,9 +48,9 @@ void Overlay::Model::add_items(std::vector<std::unique_ptr<MR::Header>> &list) {
   for (size_t i = 0; i < list.size(); ++i) {
     Item *overlay = new Item(std::move(*list[i]));
     overlay->set_allowed_features(true, true, false);
-    if (overlay->colourmap == 0u)
+    if (overlay->colourmap == 0U)
       overlay->colourmap = 1;
-    overlay->alpha = 1.0f;
+    overlay->alpha = 1.0F;
     overlay->set_use_transparency(true);
     items.push_back(std::unique_ptr<Displayable>(overlay));
   }
@@ -382,7 +382,7 @@ void Overlay::render_image_colourbar(const Image &image) {
       max_value,
       image.scaling_min(),
       image.display_range,
-      Eigen::Vector3f{image.colour[0] / 255.0f, image.colour[1] / 255.0f, image.colour[2] / 255.0f});
+      Eigen::Vector3f{image.colour[0] / 255.0F, image.colour[1] / 255.0F, image.colour[2] / 255.0F});
 }
 
 void Overlay::toggle_shown_slot(const QModelIndex &index, const QModelIndex &index2) {
@@ -477,7 +477,7 @@ void Overlay::opacity_changed(int) {
   QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
   for (int i = 0; i < indices.size(); ++i) {
     Image *overlay = dynamic_cast<Image *>(image_list_model->get_image(indices[i]));
-    overlay->alpha = opacity_slider->value() / 1.0e3f;
+    overlay->alpha = opacity_slider->value() / 1.0e3F;
   }
   window().updateGL();
 }
@@ -526,9 +526,9 @@ void Overlay::update_selection() {
     return;
   }
 
-  float rate = 0.0f, min_val = 0.0f, max_val = 0.0f;
-  float lower_threshold_val = 0.0f, upper_threshold_val = 0.0f;
-  float opacity = 0.0f;
+  float rate = 0.0F, min_val = 0.0F, max_val = 0.0F;
+  float lower_threshold_val = 0.0F, upper_threshold_val = 0.0F;
+  float opacity = 0.0F;
   int num_lower_threshold = 0, num_upper_threshold = 0;
   int colourmap_index = -2;
   int num_interp = 0;
@@ -589,7 +589,7 @@ void Overlay::update_selection() {
 
   colourmap_button->set_colourmap_index(colourmap_index);
   colourmap_button->set_scale_inverted(num_inverted > indices.size() / 2);
-  opacity_slider->setValue(1.0e3f * opacity);
+  opacity_slider->setValue(1.0e3F * opacity);
   if (num_interp == 0)
     interpolate_check_box->setCheckState(Qt::Unchecked);
   else if (num_interp == indices.size())

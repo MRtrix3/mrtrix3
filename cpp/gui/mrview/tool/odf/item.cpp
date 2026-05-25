@@ -62,7 +62,7 @@ bool ODF_Item::valid() const {
   assert(dixel);
   if (!dixel->dirs)
     return false;
-  return dixel->dirs->size() != 0u;
+  return dixel->dirs->size() != 0U;
 }
 
 ODF_Item::DixelPlugin::DixelPlugin(const MR::Header &H) : dir_type(dir_t::NONE), shell_index(0) {

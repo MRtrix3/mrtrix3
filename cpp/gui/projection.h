@@ -60,7 +60,7 @@ public:
 
   float depth_of(const Eigen::Vector3f &x) const {
     float d = MVP(2, 0) * x[0] + MVP(2, 1) * x[1] + MVP(2, 2) * x[2] + MVP(2, 3);
-    if (MVP(3, 2) != 0.0f)
+    if (MVP(3, 2) != 0.0F)
       d /= MVP(3, 0) * x[0] + MVP(3, 1) * x[1] + MVP(3, 2) * x[2] + MVP(3, 3);
     return d;
   }
@@ -69,10 +69,10 @@ public:
     Eigen::Vector3f S(MVP(0, 0) * x[0] + MVP(0, 1) * x[1] + MVP(0, 2) * x[2] + MVP(0, 3),
                       MVP(1, 0) * x[0] + MVP(1, 1) * x[1] + MVP(1, 2) * x[2] + MVP(1, 3),
                       MVP(2, 0) * x[0] + MVP(2, 1) * x[1] + MVP(2, 2) * x[2] + MVP(2, 3));
-    if (MVP(3, 2) != 0.0f)
+    if (MVP(3, 2) != 0.0F)
       S /= MVP(3, 0) * x[0] + MVP(3, 1) * x[1] + MVP(3, 2) * x[2] + MVP(3, 3);
-    S[0] = viewport[0] + 0.5f * viewport[2] * (1.0f + S[0]);
-    S[1] = viewport[1] + 0.5f * viewport[3] * (1.0f + S[1]);
+    S[0] = viewport[0] + 0.5F * viewport[2] * (1.0F + S[0]);
+    S[1] = viewport[1] + 0.5F * viewport[3] * (1.0F + S[1]);
     return S;
   }
 
@@ -80,18 +80,18 @@ public:
     Eigen::Vector3f S(MVP(0, 0) * dir[0] + MVP(0, 1) * dir[1] + MVP(0, 2) * dir[2],
                       MVP(1, 0) * dir[0] + MVP(1, 1) * dir[1] + MVP(1, 2) * dir[2],
                       MVP(2, 0) * dir[0] + MVP(2, 1) * dir[1] + MVP(2, 2) * dir[2]);
-    S[0] *= 0.5f * viewport[2];
-    S[1] *= 0.5f * viewport[3];
+    S[0] *= 0.5F * viewport[2];
+    S[1] *= 0.5F * viewport[3];
     return S;
   }
 
   Eigen::Vector3f screen_to_model(float x, float y, float depth) const {
-    x = 2.0f * (x - viewport[0]) / viewport[2] - 1.0f;
-    y = 2.0f * (y - viewport[1]) / viewport[3] - 1.0f;
+    x = 2.0F * (x - viewport[0]) / viewport[2] - 1.0F;
+    y = 2.0F * (y - viewport[1]) / viewport[3] - 1.0F;
     Eigen::Vector3f S(iMVP(0, 0) * x + iMVP(0, 1) * y + iMVP(0, 2) * depth + iMVP(0, 3),
                       iMVP(1, 0) * x + iMVP(1, 1) * y + iMVP(1, 2) * depth + iMVP(1, 3),
                       iMVP(2, 0) * x + iMVP(2, 1) * y + iMVP(2, 2) * depth + iMVP(2, 3));
-    if (MVP(3, 2) != 0.0f)
+    if (MVP(3, 2) != 0.0F)
       S /= iMVP(3, 0) * x + iMVP(3, 1) * y + iMVP(3, 2) * depth + iMVP(3, 3);
     return S;
   }
@@ -117,11 +117,11 @@ public:
   }
 
   Eigen::Vector3f screen_to_model_direction(float x, float y, float depth) const {
-    x *= 2.0f / viewport[2];
-    y *= 2.0f / viewport[3];
+    x *= 2.0F / viewport[2];
+    y *= 2.0F / viewport[3];
     Eigen::Vector3f S(
         iMVP(0, 0) * x + iMVP(0, 1) * y, iMVP(1, 0) * x + iMVP(1, 1) * y, iMVP(2, 0) * x + iMVP(2, 1) * y);
-    if (MVP(3, 2) != 0.0f)
+    if (MVP(3, 2) != 0.0F)
       S /= iMVP(3, 2) * depth + iMVP(3, 3);
     return S;
   }

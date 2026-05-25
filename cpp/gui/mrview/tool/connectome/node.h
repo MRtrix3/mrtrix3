@@ -52,7 +52,7 @@ public:
   float get_size() const { return size; }
   void set_colour(const Eigen::Array3f &i) {
     colour = i;
-    pixmap.fill(QColor(i[0] * 255.0f, i[1] * 255.0f, i[2] * 255.0f));
+    pixmap.fill(QColor(i[0] * 255.0F, i[1] * 255.0F, i[2] * 255.0F));
   }
   const Eigen::Array3f &get_colour() const { return colour; }
   const QPixmap get_pixmap() const { return pixmap; }
@@ -61,7 +61,7 @@ public:
   void set_visible(const bool i) { visible = i; }
   bool is_visible() const { return visible; }
 
-  bool to_draw() const { return (visible && (alpha > 0.0f) && (size > 0.0f)); }
+  bool to_draw() const { return (visible && (alpha > 0.0F) && (size > 0.0F)); }
 
 private:
   const Eigen::Vector3f centre_of_mass;

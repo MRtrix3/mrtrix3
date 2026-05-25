@@ -23,8 +23,8 @@ bool LightBox::show_volumes = false;
 ssize_t LightBox::n_rows = 3;
 ssize_t LightBox::n_cols = 5;
 ssize_t LightBox::volume_increment = 1;
-float LightBox::slice_focus_increment = 1.0f;
-float LightBox::slice_focus_inc_adjust_rate = 0.2f;
+float LightBox::slice_focus_increment = 1.0F;
+float LightBox::slice_focus_inc_adjust_rate = 0.2F;
 std::filesystem::path LightBox::prev_image_path;
 ssize_t LightBox::current_slice_index = 0;
 
@@ -198,26 +198,26 @@ void LightBox::draw_grid() {
     GLfloat data[num_points];
 
     // Grid line stride
-    float const x_inc = 2.f / n_cols;
-    float const y_inc = 2.f / n_rows;
+    float const x_inc = 2.F / n_cols;
+    float const y_inc = 2.F / n_rows;
 
     size_t pt_idx = 0;
     // Row grid lines
     for (ssize_t row = 1; row < n_rows; ++row, pt_idx += 4) {
-      float const y_pos = (y_inc * row) - 1.f;
-      data[pt_idx] = -1.f;
+      float const y_pos = (y_inc * row) - 1.F;
+      data[pt_idx] = -1.F;
       data[pt_idx + 1] = y_pos;
-      data[pt_idx + 2] = 1.f;
+      data[pt_idx + 2] = 1.F;
       data[pt_idx + 3] = y_pos;
     }
 
     // Column grid lines
     for (ssize_t col = 1; col < n_cols; ++col, pt_idx += 4) {
-      float const x_pos = (x_inc * col) - 1.f;
+      float const x_pos = (x_inc * col) - 1.F;
       data[pt_idx] = x_pos;
-      data[pt_idx + 1] = -1.f;
+      data[pt_idx + 1] = -1.F;
       data[pt_idx + 2] = x_pos;
-      data[pt_idx + 3] = 1.f;
+      data[pt_idx + 3] = 1.F;
     }
 
     gl::BufferData(gl::ARRAY_BUFFER, sizeof(data), data, gl::STATIC_DRAW);
@@ -226,7 +226,7 @@ void LightBox::draw_grid() {
   } else
     frame_VAO.bind();
 
-  if (frame_program == 0u) {
+  if (frame_program == 0U) {
     GL::Shader::Vertex const vertex_shader("layout(location=0) in vec2 pos;\n"
                                            "void main () {\n"
                                            "  gl_Position = vec4 (pos, 0.0, 1.0);\n"
@@ -336,8 +336,8 @@ void LightBox::image_changed_event() {
   if (image() != nullptr) {
     const auto &header = image()->header();
     if (prev_image_path.empty()) {
-      float const slice_inc = std::pow(header.spacing(0) * header.spacing(1) * header.spacing(2), 1.f / 3.f);
-      slice_focus_inc_adjust_rate = slice_inc / 5.f;
+      float const slice_inc = std::pow(header.spacing(0) * header.spacing(1) * header.spacing(2), 1.F / 3.F);
+      slice_focus_inc_adjust_rate = slice_inc / 5.F;
 
       set_slice_increment(slice_inc);
       emit slice_increment_reset();

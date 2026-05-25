@@ -25,21 +25,21 @@ namespace MR::GUI::DWI {
 
 namespace {
 
-constexpr float RotationInc = 0.004f;
-constexpr float Degrees2radians = 0.01745329252f;
+constexpr float RotationInc = 0.004F;
+constexpr float Degrees2radians = 0.01745329252F;
 
-constexpr float DistDefault = 0.3f;
-constexpr float DistInc = 0.005f;
+constexpr float DistDefault = 0.3F;
+constexpr float DistInc = 0.005F;
 
-constexpr float ScaleInc = 1.05f;
+constexpr float ScaleInc = 1.05F;
 
-constexpr float AngleDefault = 40.0f;
-constexpr float AngleInc = 0.1f;
-constexpr float AngleMin = 1.0f;
-constexpr float AngleMax = 90.0f;
+constexpr float AngleDefault = 40.0F;
+constexpr float AngleInc = 0.1F;
+constexpr float AngleMin = 1.0F;
+constexpr float AngleMax = 90.0F;
 
-const Eigen::Quaternionf DefaultOrientation = Eigen::AngleAxisf(Math::pi_4, Eigen::Vector3f(0.0f, 0.0f, 1.0f)) *
-                                              Eigen::AngleAxisf(Math::pi / 3.0f, Eigen::Vector3f(1.0f, 0.0f, 0.0f));
+const Eigen::Quaternionf DefaultOrientation = Eigen::AngleAxisf(Math::pi_4, Eigen::Vector3f(0.0F, 0.0F, 1.0F)) *
+                                              Eigen::AngleAxisf(Math::pi / 3.0F, Eigen::Vector3f(1.0F, 0.0F, 0.0F));
 QFont get_font(QWidget *parent) {
   QFont f = parent->font();
   f.setPointSize(MR::File::Config::get_int("FontSize", 10));
@@ -144,21 +144,21 @@ void RenderFrame::resizeGL(int w, int h) {
 
 void RenderFrame::paintGL() {
   GL::Context::Grab const context(this);
-  gl::ColorMask(1u, 1u, 1u, 1u);
+  gl::ColorMask(1U, 1U, 1U, 1U);
   gl::ClearColor(lighting->background_color[0], lighting->background_color[1], lighting->background_color[2], 0.0);
   gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 
-  float const dist(1.0f / (distance * view_angle * Degrees2radians));
-  float const near_ = (dist - 3.0f > 0.001f ? dist - 3.0f : 0.001f);
-  float const horizontal = 2.0f * near_ * tan(0.5f * view_angle * Degrees2radians) * static_cast<float>(width()) /
+  float const dist(1.0F / (distance * view_angle * Degrees2radians));
+  float const near_ = (dist - 3.0F > 0.001F ? dist - 3.0F : 0.001F);
+  float const horizontal = 2.0F * near_ * tan(0.5F * view_angle * Degrees2radians) * static_cast<float>(width()) /
                            static_cast<float>(width() + height());
-  float const vertical = 2.0f * near_ * tan(0.5f * view_angle * Degrees2radians) * static_cast<float>(height()) /
+  float const vertical = 2.0F * near_ * tan(0.5F * view_angle * Degrees2radians) * static_cast<float>(height()) /
                          static_cast<float>(width() + height());
 
   GL::mat4 P;
   if (OS > 0) {
-    float const incx = 2.0f * horizontal / static_cast<float>(OS);
-    float const incy = 2.0f * vertical / static_cast<float>(OS);
+    float const incx = 2.0F * horizontal / static_cast<float>(OS);
+    float const incy = 2.0F * vertical / static_cast<float>(OS);
     P = GL::frustum(-horizontal + OS_x * incx,
                     -horizontal + (1 + OS_x) * incx,
                     -vertical + OS_y * incy,
@@ -171,8 +171,8 @@ void RenderFrame::paintGL() {
 
   Eigen::Matrix<float, 4, 4> M;
   M.topLeftCorner(3, 3) = orientation.matrix().transpose();
-  M(0, 3) = M(1, 3) = M(2, 3) = M(3, 0) = M(3, 1) = M(3, 2) = 0.0f;
-  M(3, 3) = 1.0f;
+  M(0, 3) = M(1, 3) = M(2, 3) = M(3, 0) = M(3, 1) = M(3, 2) = 0.0F;
+  M(3, 3) = 1.0F;
 
   GL::mat4 const MV = GL::translate(0.0, 0.0, -dist) * GL::mat4(M);
   projection.set(MV, P);
@@ -185,7 +185,7 @@ void RenderFrame::paintGL() {
       gl::Disable(gl::BLEND);
 
       if (!std::isfinite(scale))
-        scale = 2.0f / values.norm();
+        scale = 2.0F / values.norm();
 
       renderer.set_mode(mode);
 
@@ -251,7 +251,7 @@ void RenderFrame::paintGL() {
     gl::Disable(gl::LINE_SMOOTH);
 
     if (!text.empty()) {
-      projection.setup_render_text(0.0f, 0.0f, 0.0f);
+      projection.setup_render_text(0.0F, 0.0F, 0.0F);
       projection.render_text(10, 10, text);
       projection.done_render_text();
     }
@@ -260,7 +260,7 @@ void RenderFrame::paintGL() {
   // need to clear alpha channel when using QOpenGLWidget (Qt >= 5.4)
   // otherwise we get transparent windows...
   gl::ClearColor(0.0, 0.0, 0.0, 1.0);
-  gl::ColorMask(0u, 0u, 0u, 1u);
+  gl::ColorMask(0U, 0U, 0U, 1U);
   gl::Clear(gl::COLOR_BUFFER_BIT);
 
   if (OS > 0)

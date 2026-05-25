@@ -171,7 +171,7 @@ Rejection_per_voxel::Rejection_per_voxel(const std::filesystem::path &in)
 
   for (auto i = Loop(0, 3)(vox); i; ++i) {
     const float value = vox.value();
-    if (value != 0.0f) {
+    if (value != 0.0F) {
       if (value < 0.0)
         throw Exception("Cannot have negative values in an image used for rejection sampling!");
       max = std::max(max, value);
@@ -191,7 +191,7 @@ Rejection_per_voxel::Rejection_per_voxel(const std::filesystem::path &in)
     }
   }
 
-  if (max == 0.0f)
+  if (max == 0.0F)
     throw Exception("Cannot use image " + in.string() + " for rejection sampling - image is empty");
 
   if (bottom[0] != 0)
@@ -243,7 +243,7 @@ bool Rejection_per_voxel::get_seed(Eigen::Vector3f &p) const {
     seed.index(2) = std::uniform_int_distribution<int>(0, image.size(2) - 1)(rng);
     selector = uniform(rng) * max;
   } while (seed.value() < selector);
-  p = {seed.index(0) + uniform(rng) - 0.5f, seed.index(1) + uniform(rng) - 0.5f, seed.index(2) + uniform(rng) - 0.5f};
+  p = {seed.index(0) + uniform(rng) - 0.5F, seed.index(1) + uniform(rng) - 0.5F, seed.index(2) + uniform(rng) - 0.5F};
   p = voxel2scanner * p;
 #endif
   return true;

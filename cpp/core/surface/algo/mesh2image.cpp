@@ -234,7 +234,7 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
     }
     ++progress;
     for (auto l = Loop(init_seg)(init_seg, sum_distances); l; ++l) {
-      if (static_cast<float>(sum_distances.value()) != 0.0f && init_seg.value() != vox_mesh_t::ON_MESH)
+      if (static_cast<float>(sum_distances.value()) != 0.0F && init_seg.value() != vox_mesh_t::ON_MESH)
         init_seg.value() = sum_distances.value() < 0.0 ? vox_mesh_t::PRELIM_INSIDE : vox_mesh_t::PRELIM_OUTSIDE;
     }
     ++progress;
@@ -250,7 +250,7 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
     for (auto l = Loop(seed)(seed); l; ++l) {
       if (seed.value() == vox_mesh_t::PRELIM_INSIDE || seed.value() == vox_mesh_t::PRELIM_OUTSIDE) {
         size_t prelim_inside_count = 0, prelim_outside_count = 0;
-        float sum_sum_distances = 0.0f;
+        float sum_sum_distances = 0.0F;
         if (seed.value() == vox_mesh_t::PRELIM_INSIDE)
           prelim_inside_count = 1;
         else
@@ -281,8 +281,8 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
           }
         } while (!to_expand.empty());
         vox_mesh_t fill_value = vox_mesh_t::UNDEFINED;
-        if (prelim_inside_count == prelim_outside_count && (sum_sum_distances != 0.0f)) {
-          fill_value = sum_sum_distances < 0.0f ? vox_mesh_t::INSIDE : vox_mesh_t::OUTSIDE;
+        if (prelim_inside_count == prelim_outside_count && (sum_sum_distances != 0.0F)) {
+          fill_value = sum_sum_distances < 0.0F ? vox_mesh_t::INSIDE : vox_mesh_t::OUTSIDE;
         } else if (prelim_inside_count > 10 * prelim_outside_count) {
           fill_value = vox_mesh_t::INSIDE;
         } else if (prelim_outside_count > 10 * prelim_inside_count) {
@@ -300,7 +300,7 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
           }
           if (corner_count == 8) {
             fill_value = vox_mesh_t::OUTSIDE;
-          } else if (corner_count == 0u) {
+          } else if (corner_count == 0U) {
             fill_value = vox_mesh_t::INSIDE;
           } else if (sum_sum_distances != 0.0F) {
             fill_value = sum_sum_distances < 0.0F ? vox_mesh_t::INSIDE : vox_mesh_t::OUTSIDE;

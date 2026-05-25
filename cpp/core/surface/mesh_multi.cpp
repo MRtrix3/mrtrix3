@@ -100,7 +100,7 @@ void MeshMulti::load(const std::filesystem::path &path) {
             this_values_count = 3;
           }
         }
-        if (values_per_element == 0u)
+        if (values_per_element == 0U)
           values_per_element = this_values_count;
         else if (values_per_element != this_values_count)
           throw Exception(std::string("Malformed face information in input OBJ file:") +           //

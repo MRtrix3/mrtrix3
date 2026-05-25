@@ -706,7 +706,7 @@ Window::Window()
   // CONF Valid values are: bottomleft, bottomright, topleft, topright.
   std::string cbar_pos = lowercase(MR::File::Config::get("MRViewColourBarPosition", "bottomright"));
   colourbar_position = parse_colourmap_position_str(cbar_pos);
-  if (colourbar_position == 0u)
+  if (colourbar_position == 0U)
     WARN("invalid specifier \"" + cbar_pos + "\" for config file entry \"MRViewColourBarPosition\"");
 
   // CONF option: MRViewToolsColourBarPosition
@@ -715,7 +715,7 @@ Window::Window()
   // CONF Valid values are: bottomleft, bottomright, topleft, topright.
   cbar_pos = lowercase(MR::File::Config::get("MRViewToolsColourBarPosition", "topright"));
   tools_colourbar_position = parse_colourmap_position_str(cbar_pos);
-  if (tools_colourbar_position == 0u)
+  if (tools_colourbar_position == 0U)
     WARN("invalid specifier \"" + cbar_pos + "\" for config file entry \"MRViewToolsColourBarPosition\"");
 }
 
@@ -1061,9 +1061,9 @@ void Window::background_colour_slot() {
       QColorDialog::getColor(Qt::black, this, "Select background colour", QColorDialog::DontUseNativeDialog);
 
   if (colour.isValid()) {
-    background_colour[0] = GLubyte(colour.red()) / 255.0f;
-    background_colour[1] = GLubyte(colour.green()) / 255.0f;
-    background_colour[2] = GLubyte(colour.blue()) / 255.0f;
+    background_colour[0] = GLubyte(colour.red()) / 255.0F;
+    background_colour[1] = GLubyte(colour.green()) / 255.0F;
+    background_colour[2] = GLubyte(colour.blue()) / 255.0F;
     glarea->update();
   }
 }
@@ -1412,9 +1412,9 @@ void Window::paintGL() {
 
   // need to clear alpha channel when using QOpenGLWidget (Qt >= 5.4)
   // otherwise we get transparent windows...
-  gl::ColorMask(0u, 0u, 0u, 1u);
+  gl::ColorMask(0U, 0U, 0U, 1U);
   gl::Clear(gl::COLOR_BUFFER_BIT);
-  glColorMask(1u, 1u, 1u, 1u);
+  glColorMask(1U, 1U, 1U, 1U);
   GL_CHECK_ERROR;
   GL::assert_context_is_current();
 }
@@ -1614,10 +1614,10 @@ bool Window::gestureEventGL(QGestureEvent *event) {
   if (QGesture *pinch = event->gesture(Qt::PinchGesture)) {
     QPinchGesture *e = static_cast<QPinchGesture *>(pinch);
     QPinchGesture::ChangeFlags const changeFlags = e->changeFlags();
-    if ((changeFlags & QPinchGesture::RotationAngleChanged) != 0u) {
+    if ((changeFlags & QPinchGesture::RotationAngleChanged) != 0U) {
       // TODO
     }
-    if ((changeFlags & QPinchGesture::ScaleFactorChanged) != 0u) {
+    if ((changeFlags & QPinchGesture::ScaleFactorChanged) != 0U) {
       set_FOV(FOV() / e->scaleFactor());
       glarea->update();
     }

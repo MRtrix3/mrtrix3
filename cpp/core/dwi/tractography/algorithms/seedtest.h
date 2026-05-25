@@ -39,7 +39,7 @@ public:
       set_step_and_angle(1.0F, 90.0F, intrinsic_integration_order_t::FIRST, curvature_constraint_t::POSTHOC_THRESHOLD);
       min_num_points_preds = min_num_points_postds = 1;
       max_num_points_preds = max_num_points_postds = 2;
-      set_cutoff(0.0f);
+      set_cutoff(0.0F);
       unidirectional = true;
       properties["method"] = "Seedtest";
     }

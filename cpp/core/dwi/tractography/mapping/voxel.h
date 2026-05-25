@@ -39,8 +39,8 @@ inline Streamline<>::tangent_type vec2DEC(const Streamline<>::tangent_type &d) {
 
 class Voxel : public Eigen::Vector3i {
 public:
-  Voxel(const int x, const int y, const int z) : Eigen::Vector3i(x, y, z), length(1.0f) {}
-  Voxel(const Eigen::Vector3i &that) : Eigen::Vector3i(that), length(1.0f) {}
+  Voxel(const int x, const int y, const int z) : Eigen::Vector3i(x, y, z), length(1.0F) {}
+  Voxel(const Eigen::Vector3i &that) : Eigen::Vector3i(that), length(1.0F) {}
   Voxel(const Eigen::Vector3i &v, const default_type l) : Eigen::Vector3i(v), length(l) {}
   Voxel() : length(0.0) { setZero(); }
   bool operator<(const Voxel &V) const {

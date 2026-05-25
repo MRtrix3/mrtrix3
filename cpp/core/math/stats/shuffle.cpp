@@ -369,7 +369,7 @@ index_array_type Shuffler::load_blocks(const std::filesystem::path &filename, co
   index_type max_coeff = data.maxCoeff();
   if (min_coeff > 1)
     throw Exception("Minimum index in file \"" + filename.string() + "\" must be either 0 or 1");
-  if (min_coeff != 0u) {
+  if (min_coeff != 0U) {
     data.array() -= 1;
     max_coeff--;
   }

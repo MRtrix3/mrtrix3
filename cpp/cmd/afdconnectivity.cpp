@@ -123,7 +123,7 @@ public:
   }
   value_type get_selected_volume() const { return (get_TD() != 0.0) ? (get_FOD() * (length / get_TD())) : 0.0; }
   value_type get_selected_length() const { return length; }
-  bool is_selected() const { return length != 0.0f; }
+  bool is_selected() const { return length != 0.0F; }
 
 private:
   value_type length;

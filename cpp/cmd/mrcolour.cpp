@@ -128,9 +128,9 @@ void run() {
       upper = image_max;
     }
   }
-  const float multiplier = 1.0f / (upper - lower);
+  const float multiplier = 1.0F / (upper - lower);
 
-  auto scale = [&](const float value) { return std::max(0.0f, std::min(1.0f, multiplier * (value - lower))); };
+  auto scale = [&](const float value) { return std::max(0.0F, std::min(1.0F, multiplier * (value - lower))); };
 
   Header H_out(H_in);
   H_out.ndim() = 4;
@@ -143,7 +143,7 @@ void run() {
   if (colourmap.is_colour) {
     assert(fixed_colour.allFinite());
     for (auto l_outer = Loop("Applying fixed RGB colour to greyscale image", H_in)(in, out); l_outer; ++l_outer) {
-      const float amplitude = std::max(0.0f, std::min(1.0f, scale(in.value())));
+      const float amplitude = std::max(0.0F, std::min(1.0F, scale(in.value())));
       for (auto l_inner = Loop(3)(out); l_inner; ++l_inner)
         out.value() = amplitude * fixed_colour[out.index(3)];
     }

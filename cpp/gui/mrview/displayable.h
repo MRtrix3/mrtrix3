@@ -71,9 +71,9 @@ public:
 
   const std::filesystem::path &get_filepath() const { return filepath; }
 
-  float scaling_min() const { return display_midpoint - 0.5f * display_range; }
+  float scaling_min() const { return display_midpoint - 0.5F * display_range; }
 
-  float scaling_max() const { return display_midpoint + 0.5f * display_range; }
+  float scaling_max() const { return display_midpoint + 0.5F * display_range; }
 
   float scaling_min_thresholded() const { return std::max(scaling_min(), lessthan); }
 
@@ -101,8 +101,8 @@ public:
   void reset_windowing() { set_windowing(value_min, value_max); }
 
   void adjust_windowing(float brightness, float contrast) {
-    display_midpoint -= 0.0005f * display_range * brightness;
-    display_range *= std::exp(-0.002f * contrast);
+    display_midpoint -= 0.0005F * display_range * brightness;
+    display_range *= std::exp(-0.002F * contrast);
     emit scalingChanged();
   }
 
@@ -151,23 +151,23 @@ public:
 
   void set_invert_scale(bool yesno) { set_bit(InvertScale, yesno); }
 
-  bool scale_inverted() const { return (flags_ & InvertScale) != 0u; }
+  bool scale_inverted() const { return (flags_ & InvertScale) != 0U; }
 
-  bool discard_lower_enabled() const { return (flags_ & DiscardLowerEnabled) != 0u; }
+  bool discard_lower_enabled() const { return (flags_ & DiscardLowerEnabled) != 0U; }
 
-  bool discard_upper_enabled() const { return (flags_ & DiscardUpperEnabled) != 0u; }
+  bool discard_upper_enabled() const { return (flags_ & DiscardUpperEnabled) != 0U; }
 
-  bool transparency_enabled() const { return (flags_ & TransparencyEnabled) != 0u; }
+  bool transparency_enabled() const { return (flags_ & TransparencyEnabled) != 0U; }
 
-  bool lighting_enabled() const { return (flags_ & LightingEnabled) != 0u; }
+  bool lighting_enabled() const { return (flags_ & LightingEnabled) != 0U; }
 
-  bool use_discard_lower() const { return discard_lower_enabled() && ((flags_ & DiscardLower) != 0u); }
+  bool use_discard_lower() const { return discard_lower_enabled() && ((flags_ & DiscardLower) != 0U); }
 
-  bool use_discard_upper() const { return discard_upper_enabled() && ((flags_ & DiscardUpper) != 0u); }
+  bool use_discard_upper() const { return discard_upper_enabled() && ((flags_ & DiscardUpper) != 0U); }
 
-  bool use_transparency() const { return transparency_enabled() && ((flags_ & Transparency) != 0u); }
+  bool use_transparency() const { return transparency_enabled() && ((flags_ & Transparency) != 0U); }
 
-  bool use_lighting() const { return lighting_enabled() && ((flags_ & Lighting) != 0u); }
+  bool use_lighting() const { return lighting_enabled() && ((flags_ & Lighting) != 0U); }
 
   class Shader : public GL::Shader::Program {
   public:
@@ -199,7 +199,7 @@ public:
       GL::Shader::Fragment const fragment_shader(fragment_shader_source(object));
 
       attach(vertex_shader);
-      if (static_cast<GLuint>(geometry_shader) != 0u)
+      if (static_cast<GLuint>(geometry_shader) != 0U)
         attach(geometry_shader);
       attach(fragment_shader);
       link();
@@ -236,7 +236,7 @@ public:
 
   void set_shader_variables(Shader &shader_program, float scaling = 1.0, std::string_view with_prefix = "") {
     gl::Uniform1f(gl::GetUniformLocation(shader_program, (with_prefix + "offset").c_str()),
-                  (display_midpoint - 0.5f * display_range) / scaling);
+                  (display_midpoint - 0.5F * display_range) / scaling);
     gl::Uniform1f(gl::GetUniformLocation(shader_program, (with_prefix + "scale").c_str()), scaling / display_range);
     if (use_discard_lower())
       gl::Uniform1f(gl::GetUniformLocation(shader_program, (with_prefix + "lower").c_str()), lessthan / scaling);

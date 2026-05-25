@@ -92,7 +92,7 @@ void Connector::run(std::vector<Cluster> &clusters, std::vector<uint32_t> &label
   uint32_t current_label = 0;
   for (uint32_t i = 0; i < labels.size(); i++) {
     // This node has not been already clustered
-    if (labels[i] == 0u) {
+    if (labels[i] == 0U) {
       Cluster cluster(++current_label);
       depth_first_search(i, cluster, labels);
       clusters.push_back(cluster);
@@ -104,7 +104,7 @@ void Connector::run(std::vector<Cluster> &clusters, std::vector<uint32_t> &label
 
 bool Connector::next_neighbour(uint32_t &node, std::vector<uint32_t> &labels) const {
   for (auto n : adjacency[node]) {
-    if (labels[n] == 0u) {
+    if (labels[n] == 0U) {
       node = n;
       return true;
     }

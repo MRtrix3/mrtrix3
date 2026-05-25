@@ -31,7 +31,7 @@
 #include "projection.h"
 
 const size_t MAX_BUFFER_SIZE = 2796200;                      // number of points to fill 32MB
-constexpr uint32_t PRIMITIVE_RESTART_SENTINEL = 0xFFFFFFFFu; // Primitive restart index for UNSIGNED_INT
+constexpr uint32_t PRIMITIVE_RESTART_SENTINEL = 0xFFFFFFFFU; // Primitive restart index for UNSIGNED_INT
 
 namespace MR::GUI::MRView::Tool {
 const int Tractogram::track_padding;
@@ -316,7 +316,7 @@ Tractogram::Tractogram(Tractography &tool, const std::filesystem::path &filepath
     : Displayable(filepath),
       show_colour_bar(true),
       original_fov(NaNF),
-      line_thickness(0.f),
+      line_thickness(0.F),
       tractography_tool(tool),
       filepath(filepath),
       color_type(TrackColourType::Direction),
@@ -378,7 +378,7 @@ void Tractogram::render(const Projection &transform) {
                   colour[2] / 255.0);
 
   if (color_type == TrackColourType::ScalarFile) {
-    gl::Uniform1f(gl::GetUniformLocation(track_shader, "offset"), display_midpoint - 0.5f * display_range);
+    gl::Uniform1f(gl::GetUniformLocation(track_shader, "offset"), display_midpoint - 0.5F * display_range);
     gl::Uniform1f(gl::GetUniformLocation(track_shader, "scale"), 1.0 / display_range);
   }
 
@@ -401,16 +401,16 @@ void Tractogram::render(const Projection &transform) {
     original_fov = std::pow(dim[0] * dim[1] * dim[2], 1.0F / 3.0F);
   }
 
-  float const line_thickness_screenspace = Tractogram::default_line_thickness * std::exp(2.0e-3f * line_thickness) *
+  float const line_thickness_screenspace = Tractogram::default_line_thickness * std::exp(2.0e-3F * line_thickness) *
                                            original_fov * (transform.width() + transform.height()) /
-                                           (2.f * window().FOV() * transform.width() * transform.height());
+                                           (2.F * window().FOV() * transform.width() * transform.height());
 
   gl::Uniform1f(gl::GetUniformLocation(track_shader, "line_thickness"), line_thickness_screenspace);
   gl::Uniform1f(gl::GetUniformLocation(track_shader, "scale_x"), transform.width());
   gl::Uniform1f(gl::GetUniformLocation(track_shader, "scale_y"), transform.height());
 
-  float const point_size_screenspace = Tractogram::default_point_size * std::exp(2.0e-3f * line_thickness) *
-                                       original_fov * (transform.width() + transform.height()) / (2.f * window().FOV());
+  float const point_size_screenspace = Tractogram::default_point_size * std::exp(2.0e-3F * line_thickness) *
+                                       original_fov * (transform.width() + transform.height()) / (2.F * window().FOV());
 
   glPointSize(point_size_screenspace);
 
@@ -596,7 +596,7 @@ void Tractogram::load_tracks() {
   while (file(tck)) {
 
     const size_t N = tck.size();
-    if (N == 0u)
+    if (N == 0U)
       continue;
 
     // Pre padding
@@ -684,7 +684,7 @@ void Tractogram::load_intensity_track_scalars(const std::filesystem::path &filep
       const size_t tck_size = tck_scalar.size();
       assert(tck_size == static_cast<size_t>(original_track_sizes[intensity_scalar_buffers.size()][tck_count]));
 
-      if (tck_size == 0u)
+      if (tck_size == 0U)
         continue;
 
       // Pre padding to coincide with tracks buffer
@@ -776,7 +776,7 @@ void Tractogram::load_threshold_track_scalars(const std::filesystem::path &filep
       const size_t tck_size = tck_scalar.size();
       assert(tck_size == static_cast<size_t>(original_track_sizes[threshold_scalar_buffers.size()][tck_count]));
 
-      if (tck_size == 0u)
+      if (tck_size == 0U)
         continue;
 
       // Pre padding to coincide with tracks buffer

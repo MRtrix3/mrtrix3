@@ -210,7 +210,7 @@ void run() {
     out.value() = value;
   }
 
-  if (operation_count == 0u) {
+  if (operation_count == 0U) {
     if (inplace) {
       WARN("No edits specified; image will be unaffected");
     } else {

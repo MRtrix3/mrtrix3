@@ -51,7 +51,7 @@ protected:
 template <class Fixel> bool Fixel_TD_map<Fixel>::operator()(const SetDixel &in) {
   for (const auto &i : in) {
     const size_t fixel_index = dixel2fixel(i);
-    if (fixel_index != 0u)
+    if (fixel_index != 0U)
       fixels[fixel_index] += i.get_length();
   }
   return true;

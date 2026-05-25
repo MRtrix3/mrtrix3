@@ -207,14 +207,14 @@ bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
           if (!modified) {
             // Compensate for impending deletion of elements from the vector
             uint32_t lobe_index = j->second;
-            for (size_t k = adj_lobes.size() - 1; k != 0u; --k) {
+            for (size_t k = adj_lobes.size() - 1; k != 0U; --k) {
               if (adj_lobes[k] < lobe_index)
                 --lobe_index;
             }
             j->second = lobe_index;
           }
         }
-        for (size_t j = adj_lobes.size() - 1; j != 0u; --j) {
+        for (size_t j = adj_lobes.size() - 1; j != 0U; --j) {
           std::vector<FOD_lobe>::iterator ptr = out.begin();
           advance(ptr, adj_lobes[j]);
           out.erase(ptr);

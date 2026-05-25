@@ -331,7 +331,7 @@ void run() {
     if (extent.size() != 3)
       throw Exception("-extent must be either a scalar or a list of length 3");
     for (int i = 0; i < 3; i++) {
-      if ((extent[i] & 1) == 0u)
+      if ((extent[i] & 1) == 0U)
         throw Exception("-extent must be a (list of) odd numbers");
       if (extent[i] > dwi.size(i))
         throw Exception("-extent must not exceed the image dimensions");

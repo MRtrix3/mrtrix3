@@ -138,7 +138,7 @@ public:
     }
   }
   value_type result() const {
-    if (count == 0u)
+    if (count == 0U)
       return NaNF;
     return sum / count;
   }
@@ -189,7 +189,7 @@ public:
     }
   }
   value_type result() const {
-    if (count == 0u)
+    if (count == 0U)
       return NaNF;
     return std::sqrt(sum / count);
   }
@@ -207,7 +207,7 @@ public:
     }
   }
   value_type result() const {
-    if (count == 0u)
+    if (count == 0U)
       return NaNF;
     return std::sqrt(sum);
   }

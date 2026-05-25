@@ -66,7 +66,7 @@ public:
   }
 
   void bind() {
-    if (texture() == 0u) { // allocate:
+    if (texture() == 0U) { // allocate:
       texture().gen(gl::TEXTURE_3D);
       texture().bind();
     } else
@@ -154,7 +154,7 @@ protected:
   }
 
   void draw_vertices() {
-    if ((vertex_buffer == 0u) || (vertex_array_object == 0u)) {
+    if ((vertex_buffer == 0U) || (vertex_array_object == 0U)) {
       assert(!vertex_buffer);
       assert(!vertex_array_object);
 

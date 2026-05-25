@@ -31,12 +31,12 @@ BaseFixel::BaseFixel(const std::filesystem::path &filepath, Fixel &fixel_tool)
       scale_type_index(0),
       threshold_type_index(0),
       fixel_tool(fixel_tool),
-      voxel_size_length_multipler(1.f),
-      user_line_length_multiplier(1.f),
-      line_thickness(0.0015f) {
+      voxel_size_length_multipler(1.F),
+      user_line_length_multiplier(1.F),
+      line_thickness(0.0015F) {
   set_allowed_features(true, true, false);
   colourmap = 1;
-  alpha = 1.0f;
+  alpha = 1.0F;
   set_use_transparency(true);
   colour[0] = colour[1] = colour[2] = 1;
   value_min = std::numeric_limits<float>::infinity();
@@ -216,9 +216,9 @@ void BaseFixel::render(const Projection &projection) {
 
   if (ColourMap::maps[colourmap].is_colour)
     gl::Uniform3f(gl::GetUniformLocation(fixel_shader, "colourmap_colour"),
-                  colour[0] / 255.0f,
-                  colour[1] / 255.0f,
-                  colour[2] / 255.0f);
+                  colour[0] / 255.0F,
+                  colour[1] / 255.0F,
+                  colour[2] / 255.0F);
 
   if (fixel_tool.line_opacity < 1.0) {
     gl::Enable(gl::BLEND);
@@ -289,7 +289,7 @@ void BaseFixel::update_interp_image_buffer(const Projection &projection,
 
   p = transform.voxel2scanner.cast<float>() * p;
 
-  Eigen::Vector3f x_dir = projection.screen_to_model_direction(1.0f, 0.0f, projection.depth_of(p));
+  Eigen::Vector3f x_dir = projection.screen_to_model_direction(1.0F, 0.0F, projection.depth_of(p));
   x_dir.normalize();
   x_dir = transform.scanner2image.rotation().cast<float>() * x_dir;
   x_dir[0] *= fixel_header.spacing(0);
@@ -297,7 +297,7 @@ void BaseFixel::update_interp_image_buffer(const Projection &projection,
   x_dir[2] *= fixel_header.spacing(2);
   x_dir = transform.image2scanner.rotation().cast<float>() * x_dir;
 
-  Eigen::Vector3f y_dir = projection.screen_to_model_direction(0.0f, 1.0f, projection.depth_of(p));
+  Eigen::Vector3f y_dir = projection.screen_to_model_direction(0.0F, 1.0F, projection.depth_of(p));
   y_dir.normalize();
   y_dir = transform.scanner2image.rotation().cast<float>() * y_dir;
   y_dir[0] *= fixel_header.spacing(0);
@@ -306,10 +306,10 @@ void BaseFixel::update_interp_image_buffer(const Projection &projection,
   y_dir = transform.image2scanner.rotation().cast<float>() * y_dir;
 
   Eigen::Vector3f const x_width =
-      projection.screen_to_model_direction(projection.width() / 2.0f, 0.0f, projection.depth_of(p));
+      projection.screen_to_model_direction(projection.width() / 2.0F, 0.0F, projection.depth_of(p));
   int const nx = std::ceil(x_width.norm() / x_dir.norm());
   Eigen::Vector3f const y_width =
-      projection.screen_to_model_direction(0.0f, projection.height() / 2.0f, projection.depth_of(p));
+      projection.screen_to_model_direction(0.0F, projection.height() / 2.0F, projection.depth_of(p));
   int const ny = std::ceil(y_width.norm() / y_dir.norm());
 
   regular_grid_buffer_pos.clear();

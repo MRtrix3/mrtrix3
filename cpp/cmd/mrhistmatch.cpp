@@ -124,7 +124,7 @@ void match_linear(Image<float> &input,
   input_matrix(input_data.size() - 1, 0) = input_data.back();
   output_vector[input_data.size() - 1] = target_data.back();
   if (estimate_intercept)
-    input_matrix.col(1).fill(1.0f);
+    input_matrix.col(1).fill(1.0F);
 
   auto parameters =
       (input_matrix.transpose() * input_matrix).llt().solve(input_matrix.transpose() * output_vector).eval();

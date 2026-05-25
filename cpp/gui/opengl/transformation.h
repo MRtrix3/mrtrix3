@@ -73,7 +73,7 @@ public:
       for (size_t j = 0; j != 3; ++j)
         (*this)(i, j) = R(i, j);
     }
-    (*this)(3, 3) = 1.0f;
+    (*this)(3, 3) = 1.0F;
   }
   template <class M> mat4(const M &a) {
     for (size_t i = 0; i != static_cast<size_t>(a.rows()); ++i) {
@@ -81,8 +81,8 @@ public:
         (*this)(i, j) = a(i, j);
     }
     if (a.rows() == 3) {
-      (*this)(3, 0) = (*this)(3, 1) = (*this)(3, 2) = 0.0f;
-      (*this)(3, 3) = 1.0f;
+      (*this)(3, 0) = (*this)(3, 1) = (*this)(3, 2) = 0.0F;
+      (*this)(3, 3) = 1.0F;
     }
   }
 
@@ -103,7 +103,7 @@ public:
     mat4 t;
     for (size_t j = 0; j < 4; ++j) {
       for (size_t i = 0; i < 4; ++i) {
-        t(i, j) = 0.0f;
+        t(i, j) = 0.0F;
         for (size_t k = 0; k < 4; ++k)
           t(i, j) += (*this)(i, k) * a(k, j);
       }
@@ -141,7 +141,7 @@ protected:
 inline mat4 identity() {
   mat4 m;
   m.zero();
-  m(0, 0) = m(1, 1) = m(2, 2) = m(3, 3) = 1.0f;
+  m(0, 0) = m(1, 1) = m(2, 2) = m(3, 3) = 1.0F;
   return m;
 }
 
@@ -165,10 +165,10 @@ inline mat4 inv(const mat4 &a) {
 inline mat4 ortho(float L, float R, float B, float T, float N, float F) {
   mat4 m;
   m.zero();
-  m(0, 0) = 2.0f / (R - L);
-  m(1, 1) = 2.0f / (T - B);
-  m(2, 2) = 2.0f / (N - F);
-  m(3, 3) = 1.0f;
+  m(0, 0) = 2.0F / (R - L);
+  m(1, 1) = 2.0F / (T - B);
+  m(2, 2) = 2.0F / (N - F);
+  m(3, 3) = 1.0F;
 
   m(0, 3) = (R + L) / (R - L);
   m(1, 3) = (T + B) / (T - B);
@@ -181,13 +181,13 @@ inline mat4 frustum(float L, float R, float B, float T, float N, float F) {
   mat4 m;
   m.zero();
 
-  m(0, 0) = 2.0f * N / (R - L);
-  m(1, 1) = 2.0f * N / (T - B);
+  m(0, 0) = 2.0F * N / (R - L);
+  m(1, 1) = 2.0F * N / (T - B);
   m(0, 2) = (R + L) / (R - L);
   m(1, 2) = (T + B) / (T - B);
   m(2, 2) = (F + N) / (N - F);
-  m(3, 2) = -1.0f;
-  m(2, 3) = 2.0f * F * N / (N - F);
+  m(3, 2) = -1.0F;
+  m(2, 3) = 2.0F * F * N / (N - F);
 
   return m;
 }
@@ -197,7 +197,7 @@ inline mat4 translate(float x, float y, float z) {
   m(0, 3) = x;
   m(1, 3) = y;
   m(2, 3) = z;
-  m(3, 3) = 1.0f;
+  m(3, 3) = 1.0F;
   return m;
 }
 
@@ -209,7 +209,7 @@ inline mat4 scale(float x, float y, float z) {
   m(0, 0) = x;
   m(1, 1) = y;
   m(2, 2) = z;
-  m(3, 3) = 1.0f;
+  m(3, 3) = 1.0F;
   return m;
 }
 

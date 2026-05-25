@@ -197,10 +197,10 @@ bool Receiver::operator()(const Mapping::SetVoxel &in) {
 void Receiver::scale_by_count(Image<uint32_t> &counts) {
   assert(dimensions_match(buffer, counts, 0, 3));
   for (auto l = Loop(buffer)(buffer, counts); l; ++l) {
-    if (counts.value() != 0u)
+    if (counts.value() != 0U)
       buffer.value() /= static_cast<float>(counts.value());
     else
-      buffer.value() = 0.0f;
+      buffer.value() = 0.0F;
   }
 }
 

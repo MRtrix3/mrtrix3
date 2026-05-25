@@ -89,7 +89,7 @@ void Exemplar::add(const Tractography::Streamline<float> &in, const bool is_reve
     if (lower == in.size() - 1)
       pos = in.back();
     else
-      pos = ((1.0f - mu) * in[lower]) + (mu * in[upper]);
+      pos = ((1.0F - mu) * in[lower]) + (mu * in[upper]);
     (*this)[i] += (pos * in.weight);
   }
 
@@ -109,7 +109,7 @@ void Exemplar::finalize(const float step_size) {
   }
 
   // No streamlines assigned; generate a straight line between the two nodes
-  if (weight == 0.0f) {
+  if (weight == 0.0F) {
     clear();
     push_back(node_COMs.first);
     push_back(node_COMs.second);
@@ -117,7 +117,7 @@ void Exemplar::finalize(const float step_size) {
     return;
   }
 
-  const float multiplier = 1.0f / weight;
+  const float multiplier = 1.0F / weight;
   for (auto i = begin(); i != end(); ++i)
     *i *= multiplier;
 
@@ -153,8 +153,8 @@ void Exemplar::finalize(const float step_size) {
       if (index == 0 || index == static_cast<int32_t>(size()) - 1) {
         vertices.push_back((*this)[index]);
       } else {
-        float lower = 0.0f, mu = 0.5f, upper = 1.0f;
-        point_type p(((*this)[index] + (*this)[index + step]) * 0.5f);
+        float lower = 0.0F, mu = 0.5F, upper = 1.0F;
+        point_type p(((*this)[index] + (*this)[index + step]) * 0.5F);
         for (uint32_t iter = 0; iter != 6; ++iter) {
           if ((p - vertices.back()).squaredNorm() > step_sq)
             upper = mu;

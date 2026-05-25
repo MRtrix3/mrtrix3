@@ -61,7 +61,7 @@ public:
   //! or three values, one for each dimension. Default 3x3x3.
   void set_extent(const std::vector<uint32_t> &ext) {
     for (size_t i = 0; i < ext.size(); ++i) {
-      if ((ext[i] & 1) == 0u)
+      if ((ext[i] & 1) == 0U)
         throw Exception("expected odd number for extent");
     }
     extent = ext;

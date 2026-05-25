@@ -155,7 +155,7 @@ public:
       if (sdeconv.iterate())
         break;
 
-    if ((sdeconv.shared.niter != 0u) && n >= sdeconv.shared.niter)
+    if ((sdeconv.shared.niter != 0U) && n >= sdeconv.shared.niter)
       INFO("voxel [ " + str(dwi.index(0)) + " " + str(dwi.index(1)) + " " + str(dwi.index(2)) +
            " ] did not reach full convergence");
 
@@ -302,7 +302,7 @@ void run() {
     break;
   }
   case Algorithm::MSMT_CSD: {
-    if ((argument.size() % 2) != 0u)
+    if ((argument.size() % 2) != 0U)
       throw Exception(
           "MSMT_CSD algorithm expects pairs of (input response function & output FOD image) to be provided");
 

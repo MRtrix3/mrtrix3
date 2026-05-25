@@ -120,7 +120,7 @@ void TrackScalarFileOptions::render_tractogram_colourbar(const Tractogram &tract
       max_value,
       tractogram.scaling_min(),
       tractogram.display_range,
-      {tractogram.colour[0] / 255.0f, tractogram.colour[1] / 255.0f, tractogram.colour[2] / 255.0f});
+      {tractogram.colour[0] / 255.0F, tractogram.colour[1] / 255.0F, tractogram.colour[2] / 255.0F});
 }
 
 void TrackScalarFileOptions::update_UI() {

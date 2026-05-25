@@ -47,7 +47,7 @@ void SIFTer::perform_filtering() {
   std::vector<track_t> noncontributing_indices;
   for (track_t i = 0; i != contributions.size(); ++i) {
     if (contributions[i] != nullptr) {
-      if (contributions[i]->get_total_contribution() != 0.0f) {
+      if (contributions[i]->get_total_contribution() != 0.0F) {
         sum_contributing_length += contributions[i]->get_total_length();
       } else {
         sum_noncontributing_length += contributions[i]->get_total_length();
@@ -181,7 +181,7 @@ void SIFTer::perform_filtering() {
         const std::vector<Cost_fn_gradient_sort>::iterator candidate = sorter.get();
         if (candidate == gradient_vector.end()) {
           recalculate = POS_GRADIENT;
-          if (removed_this_iteration == 0u)
+          if (removed_this_iteration == 0U)
             another_iteration = false;
           goto end_iteration;
         }
@@ -189,7 +189,7 @@ void SIFTer::perform_filtering() {
         const track_t candidate_index = candidate->get_tck_index();
         if (candidate->get_cost_gradient() >= 0.0) {
           recalculate = POS_GRADIENT;
-          if (removed_this_iteration == 0u)
+          if (removed_this_iteration == 0U)
             another_iteration = false;
           goto end_iteration;
         }
@@ -245,15 +245,15 @@ void SIFTer::perform_filtering() {
 
           if (this_actual_cf_change >= this_nonlinearity)
             recalculate = NONLINEARITY;
-          else if ((term_ratio != 0.0f) && this_actual_cf_change >= required_cf_change_ratio)
+          else if ((term_ratio != 0.0F) && this_actual_cf_change >= required_cf_change_ratio)
             recalculate = TERM_RATIO;
           else
             recalculate = QUANTISATION;
-          if (removed_this_iteration == 0u) {
+          if (removed_this_iteration == 0U) {
             // If filtering has been completed to convergence, but the user does not want to filter to convergence
             //   (i.e. they have defined a desired termination criterion but it has not yet been met), disable
             //   the quantisation check to give the algorithm a chance to meet the user's termination request
-            if (enforce_quantisation && ((term_number != 0u) || (term_ratio != 0.0f) || (term_mu != 0.0))) {
+            if (enforce_quantisation && ((term_number != 0U) || (term_ratio != 0.0F) || (term_mu != 0.0))) {
               if (App::log_level != 0)
                 fprintf(stderr, "\n");
               CONSOLE("filtering has reached quantisation error, but user's desired termination criterion has not yet "
@@ -272,7 +272,7 @@ void SIFTer::perform_filtering() {
 
       } // End switching between removal of zero-contribution or nonzero-contribution streamline
 
-    } while (recalculate == 0u); // End removing streamlines in this iteration
+    } while (recalculate == 0U); // End removing streamlines in this iteration
 
   end_iteration:
 
@@ -337,7 +337,7 @@ void SIFTer::perform_filtering() {
     break;
   }
 
-  if (((term_number != 0u) || (term_ratio != 0.0f) || (term_mu != 0.0)) &&
+  if (((term_number != 0U) || (term_ratio != 0.0F) || (term_mu != 0.0)) &&
       (recalculate == NONLINEARITY || recalculate == QUANTISATION || recalculate == POS_GRADIENT))
     WARN("algorithm terminated before any user-specified termination criterion was met");
 
@@ -452,7 +452,7 @@ bool SIFTer::TrackGradientCalculator::operator()(const TrackIndexRange &in) cons
   for (track_t track_index = in.first; track_index != in.second; ++track_index) {
     if (master.contributions[track_index] != nullptr) {
       const double gradient = master.calc_gradient(track_index, current_mu, current_roc_cost);
-      const double grad_per_unit_length = (master.contributions[track_index]->get_total_contribution() != 0.0f)
+      const double grad_per_unit_length = (master.contributions[track_index]->get_total_contribution() != 0.0F)
                                               ? (gradient / master.contributions[track_index]->get_total_contribution())
                                               : 0.0;
       gradient_vector[track_index].set(track_index, gradient, grad_per_unit_length);

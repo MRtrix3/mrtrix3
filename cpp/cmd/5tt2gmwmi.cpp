@@ -100,7 +100,7 @@ public:
       output.value() = std::max(0.0, std::sqrt(gradient));
       assign_pos_of(output, 0, 3).to(input);
     } else {
-      output.value() = 0.0f;
+      output.value() = 0.0F;
     }
     return true;
   }

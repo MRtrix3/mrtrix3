@@ -46,7 +46,7 @@ public:
   ~Object() { clear(); }
 
   void clear() {
-    if (index_ != 0u) {
+    if (index_ != 0U) {
       GL_DEBUG("deleting OpenGL shader ID " + str(index_));
       gl::DeleteShader(index_);
     }
@@ -58,7 +58,7 @@ public:
   void compile(std::string_view source) {
     std::string const code = "#version 330 core\n" + source;
     DEBUG("compiling OpenGL " + this->type() + " shader:\n" + code);
-    if (index_ == 0u) {
+    if (index_ == 0U) {
       index_ = gl::CreateShader(TYPE);
       GL_DEBUG("created OpenGL " + this->type() + " shader ID " + str(index_));
     }
@@ -105,7 +105,7 @@ public:
   ~Program() { clear(); }
 
   void clear() {
-    if (index_ != 0u) {
+    if (index_ != 0U) {
       GL_DEBUG("deleting OpenGL shader program " + str(index_));
       gl::DeleteProgram(index_);
     }

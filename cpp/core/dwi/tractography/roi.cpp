@@ -96,14 +96,14 @@ Image<bool> Mask::get_mask(const std::filesystem::path &path) {
     }
   }
 
-  if (sum == 0u)
+  if (sum == 0U)
     throw Exception("Cannot use image " + path.string() + " as ROI - image is empty");
 
-  if (bottom[0] != 0u)
+  if (bottom[0] != 0U)
     --bottom[0];
-  if (bottom[1] != 0u)
+  if (bottom[1] != 0U)
     --bottom[1];
-  if (bottom[2] != 0u)
+  if (bottom[2] != 0U)
     --bottom[2];
 
   top[0] = std::min(static_cast<size_t>(data.size(0)) - bottom[0], top[0] + 2 - bottom[0]);

@@ -79,7 +79,7 @@ Eigen::Vector3f MethodBase::rotate_direction(const Eigen::Vector3f &reference, c
     return direction;
   }
 
-  Eigen::Vector3f m(reference[0] / n, reference[1] / n, 0.0f);
+  Eigen::Vector3f m(reference[0] / n, reference[1] / n, 0.0F);
   Eigen::Vector3f mp(reference[2] * m[0], reference[2] * m[1], -n);
 
   float const alpha = direction[2];
@@ -87,7 +87,7 @@ Eigen::Vector3f MethodBase::rotate_direction(const Eigen::Vector3f &reference, c
 
   return {direction[0] + alpha * reference[0] + beta * (mp[0] - m[0]),
           direction[1] + alpha * reference[1] + beta * (mp[1] - m[1]),
-          direction[2] + alpha * (reference[2] - 1.0f) + beta * (mp[2] - m[2])};
+          direction[2] + alpha * (reference[2] - 1.0F) + beta * (mp[2] - m[2])};
 }
 
 } // namespace MR::DWI::Tractography::Tracking

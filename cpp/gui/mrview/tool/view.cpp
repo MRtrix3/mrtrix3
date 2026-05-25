@@ -116,7 +116,7 @@ public:
 
     const Eigen::Vector3f centre =
         image.voxel2scanner() *
-        Eigen::Vector3f{image.header().size(0) / 2.0f, image.header().size(1) / 2.0f, image.header().size(2) / 2.0f};
+        Eigen::Vector3f{image.header().size(0) / 2.0F, image.header().size(1) / 2.0F, image.header().size(2) / 2.0F};
     p.plane[3] = centre[0] * p.plane[0] + centre[1] * p.plane[1] + centre[2] * p.plane[2];
     p.active = true;
 
@@ -947,7 +947,7 @@ void View::rotate_clip_planes(std::vector<GL::vec4 *> &clip, const Eigen::Quater
   for (size_t n = 0; n < clip.size(); ++n) {
     GL::vec4 &p(*clip[n]);
     float const distance_to_focus = p[0] * focus[0] + p[1] * focus[1] + p[2] * focus[2] - p[3];
-    const Eigen::Quaternionf norm(0.0f, p[0], p[1], p[2]);
+    const Eigen::Quaternionf norm(0.0F, p[0], p[1], p[2]);
     const Eigen::Quaternionf rotated = norm * rot;
     p[0] = rotated.x();
     p[1] = rotated.y();
@@ -964,7 +964,7 @@ bool View::slice_move_event(const ModelViewProjection &projection, float x) {
   if (clip.empty())
     return false;
   const auto &header = window().image()->header();
-  float const increment = x * std::pow(header.spacing(0) * header.spacing(1) * header.spacing(2), 1.0f / 3.0f);
+  float const increment = x * std::pow(header.spacing(0) * header.spacing(1) * header.spacing(2), 1.0F / 3.0F);
   move_clip_planes_in_out(projection, clip, increment);
   return true;
 }

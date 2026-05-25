@@ -448,7 +448,7 @@ void ODF::add_images(std::vector<std::filesystem::path> &list, const odf_type_t 
   size_t const previous_size = image_list_model->rowCount();
   if (image_list_model->add_items(
           list, mode, colour_by_direction_box->isChecked(), hide_negative_values_box->isChecked(), scale->value()) ==
-      0u)
+      0U)
     return;
   QModelIndex const first = image_list_model->index(previous_size, 0, QModelIndex());
   image_list_view->selectionModel()->select(first, QItemSelectionModel::ClearAndSelect);
@@ -587,7 +587,7 @@ void ODF::dirs_slot() {
   try {
     switch (dir_type) {
     case 0: // DW scheme
-      if (settings->dixel->num_DW_shells() == 0u)
+      if (settings->dixel->num_DW_shells() == 0U)
         throw Exception("Cannot draw orientation information from DW scheme: no such scheme stored in header");
       settings->dixel->set_shell(settings->dixel->shell_index);
       break;

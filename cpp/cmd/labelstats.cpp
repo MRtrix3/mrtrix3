@@ -70,7 +70,7 @@ void run() {
 
   for (auto l = Loop(image)(image); l; ++l) {
     const node_t value = image.value();
-    if (value != 0u) {
+    if (value != 0U) {
       if (value > coms.rows()) {
         coms.conservativeResizeLike(matrix_type::Zero(value, 3));
         masses.conservativeResizeLike(vector_type::Zero(value));

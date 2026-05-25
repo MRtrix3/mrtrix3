@@ -323,7 +323,7 @@ void Mesh::load_stl(const std::filesystem::path &path) {
         vertices.push_back(vertex.cast<default_type>());
       }
       in.read(reinterpret_cast<char *>(&attribute_byte_count), sizeof(uint16_t));
-      if (attribute_byte_count != 0u)
+      if (attribute_byte_count != 0U)
         warn_attribute = true;
 
       triangles.push_back(std::vector<vertex_index_type>{static_cast<vertex_index_type>(vertices.size() - 3),
@@ -418,7 +418,7 @@ void Mesh::load_stl(const std::filesystem::path &path) {
         throw Exception("failed to close facet");
       if (inside_loop)
         throw Exception("failed to close loop");
-      if (vertex_index != 0u)
+      if (vertex_index != 0U)
         throw Exception("failed to complete triangle");
     } catch (Exception &e) {
       throw Exception("Error parsing STL file " + path.string() + ": " + e[0]);
@@ -511,7 +511,7 @@ void Mesh::load_obj(const std::filesystem::path &path) {
             this_values_count = 3;
           }
         }
-        if (values_per_element == 0u)
+        if (values_per_element == 0U)
           values_per_element = this_values_count;
         else if (values_per_element != this_values_count)
           throw Exception(

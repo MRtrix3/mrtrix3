@@ -84,7 +84,7 @@ public:
       return acq < frame.acq;
     if (std::isfinite(distance) && std::isfinite(frame.distance) && distance != frame.distance)
       return distance < frame.distance;
-    for (size_t n = index.size(); (n--) != 0u;)
+    for (size_t n = index.size(); (n--) != 0U;)
       if (index[n] != frame.index[n])
         return index[n] < frame.index[n];
     if (echo_index != frame.echo_index)

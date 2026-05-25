@@ -77,7 +77,7 @@ void run() {
   {
     for (auto i = Loop("Importing label image", labels)(labels); i; ++i) {
       const uint32_t index = labels.value();
-      if (index != 0u) {
+      if (index != 0U) {
 
         if (index >= lower_corners.size()) {
           lower_corners.resize(index + 1, voxel_corner_t(labels.size(0), labels.size(1), labels.size(2)));

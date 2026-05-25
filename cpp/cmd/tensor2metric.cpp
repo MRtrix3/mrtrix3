@@ -584,12 +584,12 @@ void run() {
 
   auto rk_ndirs = get_option_value("rk_ndirs", default_rk_numdirections);
 
-  if ((dki_metric_count != 0u) && !dkt_img.valid()) {
+  if ((dki_metric_count != 0U) && !dkt_img.valid()) {
     throw Exception(
         "Cannot calculate diffusion kurtosis metrics; must provide the kurtosis tensor using the -dkt input option");
   }
 
-  if (metric_count == 0u)
+  if (metric_count == 0U)
     throw Exception(
         "No output specified; must request at least one metric of interest using the available command-line options");
 

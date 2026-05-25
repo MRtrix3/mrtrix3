@@ -83,7 +83,7 @@ ROI_UndoEntry::Shared::~Shared() {
 
 void ROI_UndoEntry::Shared::operator++() { ++count; }
 
-bool ROI_UndoEntry::Shared::operator--() { return (--count) != 0u; }
+bool ROI_UndoEntry::Shared::operator--() { return (--count) != 0U; }
 
 ROI_UndoEntry::ROI_UndoEntry(ROI_Item &roi, int current_axis, int current_slice) {
   from = {{0, 0, 0}};
@@ -202,14 +202,14 @@ void ROI_UndoEntry::draw_line(ROI_Item &roi,
       float min_multiplier = std::numeric_limits<float>::infinity();
       for (size_t axis = 0; axis != 3; ++axis) {
         float this_multiplier;
-        if (dir[axis] > 0.0f)
-          this_multiplier = ((v[axis] + 0.5f) - p[axis]) / dir[axis];
+        if (dir[axis] > 0.0F)
+          this_multiplier = ((v[axis] + 0.5F) - p[axis]) / dir[axis];
         else
-          this_multiplier = ((v[axis] - 0.5f) - p[axis]) / dir[axis];
+          this_multiplier = ((v[axis] - 0.5F) - p[axis]) / dir[axis];
         if (std::isfinite(this_multiplier) && this_multiplier < min_multiplier) {
           min_multiplier = this_multiplier;
           step = {0, 0, 0};
-          step[axis] = (dir[axis] > 0.0f) ? 1 : -1;
+          step[axis] = (dir[axis] > 0.0F) ? 1 : -1;
         }
       }
       v += step;
@@ -240,7 +240,7 @@ void ROI_UndoEntry::draw_thick_line(ROI_Item &roi,
                                     const bool insert_mode_value,
                                     const float diameter) {
   roi.brush_size = diameter;
-  const float radius = 0.5f * diameter;
+  const float radius = 0.5F * diameter;
   const float radius_sq = Math::pow2(radius);
   const GLubyte value = insert_mode_value ? 1 : 0;
   const Eigen::Vector3f start = roi.scanner2voxel() * prev_pos;
@@ -304,7 +304,7 @@ void ROI_UndoEntry::draw_circle(ROI_Item &roi,
                                 const float diameter) {
   Eigen::Vector3f vox = roi.scanner2voxel() * pos;
   roi.brush_size = diameter;
-  const float radius = 0.5f * diameter;
+  const float radius = 0.5F * diameter;
   const float radius_sq = Math::pow2(radius);
   const GLubyte value = insert_mode_value ? 1 : 0;
 
@@ -399,7 +399,7 @@ void ROI_UndoEntry::draw_fill(ROI_Item &roi, const Eigen::Vector3f &pos, const b
   const GLubyte fill_value = insert_mode_value ? 1 : 0;
   const size_t seed_index =
       seed_voxel[0] - from[0] + size[0] * (seed_voxel[1] - from[1] + size[1] * (seed_voxel[2] - from[2]));
-  const bool existing_value = after[seed_index] != 0u;
+  const bool existing_value = after[seed_index] != 0U;
   if (existing_value == insert_mode_value)
     return;
   after[seed_index] = fill_value;
@@ -430,7 +430,7 @@ void ROI_UndoEntry::draw_fill(ROI_Item &roi, const Eigen::Vector3f &pos, const b
           adj[1] < static_cast<int>(roi.header().size(1)) && adj[2] >= 0 &&
           adj[2] < static_cast<int>(roi.header().size(2))) {
         const size_t adj_index = adj[0] - from[0] + size[0] * (adj[1] - from[1] + size[1] * (adj[2] - from[2]));
-        const bool adj_value = after[adj_index] != 0u;
+        const bool adj_value = after[adj_index] != 0U;
         if (adj_value != insert_mode_value) {
           after[adj_index] = fill_value;
           buffer.push_back(adj);

@@ -169,12 +169,12 @@ NodeSelectionSettingsFrame::NodeSelectionSettingsFrame(QWidget *parent, NodeSele
   Base::HBoxLayout *hbox_layout = new Base::HBoxLayout;
   node_selected_colour_slider = new QSlider(Qt::Horizontal);
   node_selected_colour_slider->setRange(0, 100);
-  node_selected_colour_slider->setSliderPosition(settings.get_node_selected_colour_fade() * 100.0f);
+  node_selected_colour_slider->setSliderPosition(settings.get_node_selected_colour_fade() * 100.0F);
   connect(node_selected_colour_slider, SIGNAL(valueChanged(int)), this, SLOT(node_selected_colour_fade_slot()));
   hbox_layout->addWidget(node_selected_colour_slider);
   node_selected_colour_button = new QColorButton;
   Eigen::Array3f c = settings.get_node_selected_colour();
-  c *= 255.0f;
+  c *= 255.0F;
   node_selected_colour_button->setColor(QColor(c[0], c[1], c[2]));
   connect(node_selected_colour_button, SIGNAL(clicked()), this, SLOT(node_selected_colour_slot()));
   hbox_layout->addWidget(node_selected_colour_button);
@@ -183,7 +183,7 @@ NodeSelectionSettingsFrame::NodeSelectionSettingsFrame(QWidget *parent, NodeSele
   label = new QLabel("Size: ");
   grid_layout->addWidget(label, 2, 0);
   node_selected_size_button = new AdjustButton(this, 0.01);
-  node_selected_size_button->setMin(0.0f);
+  node_selected_size_button->setMin(0.0F);
   node_selected_size_button->setValue(settings.get_node_selected_size_multiplier());
   connect(node_selected_size_button, SIGNAL(valueChanged()), this, SLOT(node_selected_size_slot()));
   grid_layout->addWidget(node_selected_size_button, 2, 1);
@@ -191,7 +191,7 @@ NodeSelectionSettingsFrame::NodeSelectionSettingsFrame(QWidget *parent, NodeSele
   label = new QLabel("Transparency: ");
   grid_layout->addWidget(label, 3, 0);
   node_selected_alpha_button = new AdjustButton(this, 0.01);
-  node_selected_alpha_button->setMin(0.0f);
+  node_selected_alpha_button->setMin(0.0F);
   node_selected_alpha_button->setValue(settings.get_node_selected_alpha_multiplier());
   connect(node_selected_alpha_button, SIGNAL(valueChanged()), this, SLOT(node_selected_alpha_slot()));
   grid_layout->addWidget(node_selected_alpha_button, 3, 1);
@@ -221,12 +221,12 @@ NodeSelectionSettingsFrame::NodeSelectionSettingsFrame(QWidget *parent, NodeSele
   hbox_layout = new Base::HBoxLayout;
   edge_selected_colour_slider = new QSlider(Qt::Horizontal);
   edge_selected_colour_slider->setRange(0, 100);
-  edge_selected_colour_slider->setSliderPosition(settings.get_edge_selected_colour_fade() * 100.0f);
+  edge_selected_colour_slider->setSliderPosition(settings.get_edge_selected_colour_fade() * 100.0F);
   connect(edge_selected_colour_slider, SIGNAL(valueChanged(int)), this, SLOT(edge_selected_colour_fade_slot()));
   hbox_layout->addWidget(edge_selected_colour_slider);
   edge_selected_colour_button = new QColorButton;
   c = settings.get_edge_selected_colour();
-  c *= 255.0f;
+  c *= 255.0F;
   edge_selected_colour_button->setColor(QColor(c[0], c[1], c[2]));
   connect(edge_selected_colour_button, SIGNAL(clicked()), this, SLOT(edge_selected_colour_slot()));
   hbox_layout->addWidget(edge_selected_colour_button);
@@ -235,7 +235,7 @@ NodeSelectionSettingsFrame::NodeSelectionSettingsFrame(QWidget *parent, NodeSele
   label = new QLabel("Size: ");
   grid_layout->addWidget(label, 2, 0);
   edge_selected_size_button = new AdjustButton(this, 0.01);
-  edge_selected_size_button->setMin(0.0f);
+  edge_selected_size_button->setMin(0.0F);
   edge_selected_size_button->setValue(settings.get_edge_selected_size_multiplier());
   connect(edge_selected_size_button, SIGNAL(valueChanged()), this, SLOT(edge_selected_size_slot()));
   grid_layout->addWidget(edge_selected_size_button, 2, 1);
@@ -243,7 +243,7 @@ NodeSelectionSettingsFrame::NodeSelectionSettingsFrame(QWidget *parent, NodeSele
   label = new QLabel("Transparency: ");
   grid_layout->addWidget(label, 3, 0);
   edge_selected_alpha_button = new AdjustButton(this, 0.01);
-  edge_selected_alpha_button->setMin(0.0f);
+  edge_selected_alpha_button->setMin(0.0F);
   edge_selected_alpha_button->setValue(settings.get_edge_selected_alpha_multiplier());
   connect(edge_selected_alpha_button, SIGNAL(valueChanged()), this, SLOT(edge_selected_alpha_slot()));
   grid_layout->addWidget(edge_selected_alpha_button, 3, 1);
@@ -267,12 +267,12 @@ NodeSelectionSettingsFrame::NodeSelectionSettingsFrame(QWidget *parent, NodeSele
   hbox_layout = new Base::HBoxLayout;
   node_associated_colour_slider = new QSlider(Qt::Horizontal);
   node_associated_colour_slider->setRange(0, 100);
-  node_associated_colour_slider->setSliderPosition(settings.get_node_associated_colour_fade() * 100.0f);
+  node_associated_colour_slider->setSliderPosition(settings.get_node_associated_colour_fade() * 100.0F);
   connect(node_associated_colour_slider, SIGNAL(valueChanged(int)), this, SLOT(node_associated_colour_fade_slot()));
   hbox_layout->addWidget(node_associated_colour_slider);
   node_associated_colour_button = new QColorButton;
   c = settings.get_node_associated_colour();
-  c *= 255.0f;
+  c *= 255.0F;
   node_associated_colour_button->setColor(QColor(c[0], c[1], c[2]));
   connect(node_associated_colour_button, SIGNAL(clicked()), this, SLOT(node_associated_colour_slot()));
   hbox_layout->addWidget(node_associated_colour_button);
@@ -281,7 +281,7 @@ NodeSelectionSettingsFrame::NodeSelectionSettingsFrame(QWidget *parent, NodeSele
   label = new QLabel("Size: ");
   grid_layout->addWidget(label, 2, 0);
   node_associated_size_button = new AdjustButton(this, 0.01);
-  node_associated_size_button->setMin(0.0f);
+  node_associated_size_button->setMin(0.0F);
   node_associated_size_button->setValue(settings.get_node_associated_size_multiplier());
   connect(node_associated_size_button, SIGNAL(valueChanged()), this, SLOT(node_associated_size_slot()));
   grid_layout->addWidget(node_associated_size_button, 2, 1);
@@ -289,7 +289,7 @@ NodeSelectionSettingsFrame::NodeSelectionSettingsFrame(QWidget *parent, NodeSele
   label = new QLabel("Transparency: ");
   grid_layout->addWidget(label, 3, 0);
   node_associated_alpha_button = new AdjustButton(this, 0.01);
-  node_associated_alpha_button->setMin(0.0f);
+  node_associated_alpha_button->setMin(0.0F);
   node_associated_alpha_button->setValue(settings.get_node_associated_alpha_multiplier());
   connect(node_associated_alpha_button, SIGNAL(valueChanged()), this, SLOT(node_associated_alpha_slot()));
   grid_layout->addWidget(node_associated_alpha_button, 3, 1);
@@ -311,12 +311,12 @@ NodeSelectionSettingsFrame::NodeSelectionSettingsFrame(QWidget *parent, NodeSele
   hbox_layout = new Base::HBoxLayout;
   edge_associated_colour_slider = new QSlider(Qt::Horizontal);
   edge_associated_colour_slider->setRange(0, 100);
-  edge_associated_colour_slider->setSliderPosition(settings.get_edge_associated_colour_fade() * 100.0f);
+  edge_associated_colour_slider->setSliderPosition(settings.get_edge_associated_colour_fade() * 100.0F);
   connect(edge_associated_colour_slider, SIGNAL(valueChanged(int)), this, SLOT(edge_associated_colour_fade_slot()));
   hbox_layout->addWidget(edge_associated_colour_slider);
   edge_associated_colour_button = new QColorButton;
   c = settings.get_edge_associated_colour();
-  c *= 255.0f;
+  c *= 255.0F;
   edge_associated_colour_button->setColor(QColor(c[0], c[1], c[2]));
   connect(edge_associated_colour_button, SIGNAL(clicked()), this, SLOT(edge_associated_colour_slot()));
   hbox_layout->addWidget(edge_associated_colour_button);
@@ -325,7 +325,7 @@ NodeSelectionSettingsFrame::NodeSelectionSettingsFrame(QWidget *parent, NodeSele
   label = new QLabel("Size: ");
   grid_layout->addWidget(label, 2, 0);
   edge_associated_size_button = new AdjustButton(this, 0.01);
-  edge_associated_size_button->setMin(0.0f);
+  edge_associated_size_button->setMin(0.0F);
   edge_associated_size_button->setValue(settings.get_edge_associated_size_multiplier());
   connect(edge_associated_size_button, SIGNAL(valueChanged()), this, SLOT(edge_associated_size_slot()));
   grid_layout->addWidget(edge_associated_size_button, 2, 1);
@@ -333,7 +333,7 @@ NodeSelectionSettingsFrame::NodeSelectionSettingsFrame(QWidget *parent, NodeSele
   label = new QLabel("Transparency: ");
   grid_layout->addWidget(label, 3, 0);
   edge_associated_alpha_button = new AdjustButton(this, 0.01);
-  edge_associated_alpha_button->setMin(0.0f);
+  edge_associated_alpha_button->setMin(0.0F);
   edge_associated_alpha_button->setValue(settings.get_edge_associated_alpha_multiplier());
   connect(edge_associated_alpha_button, SIGNAL(valueChanged()), this, SLOT(edge_associated_alpha_slot()));
   grid_layout->addWidget(edge_associated_alpha_button, 3, 1);
@@ -365,12 +365,12 @@ NodeSelectionSettingsFrame::NodeSelectionSettingsFrame(QWidget *parent, NodeSele
   hbox_layout = new Base::HBoxLayout;
   node_other_colour_slider = new QSlider(Qt::Horizontal);
   node_other_colour_slider->setRange(0, 100);
-  node_other_colour_slider->setSliderPosition(settings.get_node_other_colour_fade() * 100.0f);
+  node_other_colour_slider->setSliderPosition(settings.get_node_other_colour_fade() * 100.0F);
   connect(node_other_colour_slider, SIGNAL(valueChanged(int)), this, SLOT(node_other_colour_fade_slot()));
   hbox_layout->addWidget(node_other_colour_slider);
   node_other_colour_button = new QColorButton;
   c = settings.get_node_other_colour();
-  c *= 255.0f;
+  c *= 255.0F;
   node_other_colour_button->setColor(QColor(c[0], c[1], c[2]));
   connect(node_other_colour_button, SIGNAL(clicked()), this, SLOT(node_other_colour_slot()));
   hbox_layout->addWidget(node_other_colour_button);
@@ -379,7 +379,7 @@ NodeSelectionSettingsFrame::NodeSelectionSettingsFrame(QWidget *parent, NodeSele
   label = new QLabel("Size: ");
   grid_layout->addWidget(label, 2, 0);
   node_other_size_button = new AdjustButton(this, 0.01);
-  node_other_size_button->setMin(0.0f);
+  node_other_size_button->setMin(0.0F);
   node_other_size_button->setValue(settings.get_node_other_size_multiplier());
   connect(node_other_size_button, SIGNAL(valueChanged()), this, SLOT(node_other_size_slot()));
   grid_layout->addWidget(node_other_size_button, 2, 1);
@@ -387,7 +387,7 @@ NodeSelectionSettingsFrame::NodeSelectionSettingsFrame(QWidget *parent, NodeSele
   label = new QLabel("Transparency: ");
   grid_layout->addWidget(label, 3, 0);
   node_other_alpha_button = new AdjustButton(this, 0.01);
-  node_other_alpha_button->setMin(0.0f);
+  node_other_alpha_button->setMin(0.0F);
   node_other_alpha_button->setValue(settings.get_node_other_alpha_multiplier());
   connect(node_other_alpha_button, SIGNAL(valueChanged()), this, SLOT(node_other_alpha_slot()));
   grid_layout->addWidget(node_other_alpha_button, 3, 1);
@@ -418,12 +418,12 @@ NodeSelectionSettingsFrame::NodeSelectionSettingsFrame(QWidget *parent, NodeSele
   hbox_layout = new Base::HBoxLayout;
   edge_other_colour_slider = new QSlider(Qt::Horizontal);
   edge_other_colour_slider->setRange(0, 100);
-  edge_other_colour_slider->setSliderPosition(settings.get_edge_other_colour_fade() * 100.0f);
+  edge_other_colour_slider->setSliderPosition(settings.get_edge_other_colour_fade() * 100.0F);
   connect(edge_other_colour_slider, SIGNAL(valueChanged(int)), this, SLOT(edge_other_colour_fade_slot()));
   hbox_layout->addWidget(edge_other_colour_slider);
   edge_other_colour_button = new QColorButton;
   c = settings.get_edge_other_colour();
-  c *= 255.0f;
+  c *= 255.0F;
   edge_other_colour_button->setColor(QColor(c[0], c[1], c[2]));
   connect(edge_other_colour_button, SIGNAL(clicked()), this, SLOT(edge_other_colour_slot()));
   hbox_layout->addWidget(edge_other_colour_button);
@@ -432,7 +432,7 @@ NodeSelectionSettingsFrame::NodeSelectionSettingsFrame(QWidget *parent, NodeSele
   label = new QLabel("Size: ");
   grid_layout->addWidget(label, 2, 0);
   edge_other_size_button = new AdjustButton(this, 0.01);
-  edge_other_size_button->setMin(0.0f);
+  edge_other_size_button->setMin(0.0F);
   edge_other_size_button->setValue(settings.get_edge_other_size_multiplier());
   connect(edge_other_size_button, SIGNAL(valueChanged()), this, SLOT(edge_other_size_slot()));
   grid_layout->addWidget(edge_other_size_button, 2, 1);
@@ -440,7 +440,7 @@ NodeSelectionSettingsFrame::NodeSelectionSettingsFrame(QWidget *parent, NodeSele
   label = new QLabel("Transparency: ");
   grid_layout->addWidget(label, 3, 0);
   edge_other_alpha_button = new AdjustButton(this, 0.01);
-  edge_other_alpha_button->setMin(0.0f);
+  edge_other_alpha_button->setMin(0.0F);
   edge_other_alpha_button->setValue(settings.get_edge_other_alpha_multiplier());
   connect(edge_other_alpha_button, SIGNAL(valueChanged()), this, SLOT(edge_other_alpha_slot()));
   grid_layout->addWidget(edge_other_alpha_button, 3, 1);
@@ -454,12 +454,12 @@ void NodeSelectionSettingsFrame::node_selected_visibility_slot() {
   emit data.dataChanged();
 }
 void NodeSelectionSettingsFrame::node_selected_colour_fade_slot() {
-  data.node_selected_colour_fade = node_selected_colour_slider->value() / 100.0f;
+  data.node_selected_colour_fade = node_selected_colour_slider->value() / 100.0F;
   emit data.dataChanged();
 }
 void NodeSelectionSettingsFrame::node_selected_colour_slot() {
   const QColor c = node_selected_colour_button->color();
-  data.node_selected_colour = {c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f};
+  data.node_selected_colour = {c.red() / 255.0F, c.green() / 255.0F, c.blue() / 255.0F};
   emit data.dataChanged();
 }
 void NodeSelectionSettingsFrame::node_selected_size_slot() {
@@ -476,12 +476,12 @@ void NodeSelectionSettingsFrame::edge_selected_visibility_slot() {
   emit data.dataChanged();
 }
 void NodeSelectionSettingsFrame::edge_selected_colour_fade_slot() {
-  data.edge_selected_colour_fade = edge_selected_colour_slider->value() / 100.0f;
+  data.edge_selected_colour_fade = edge_selected_colour_slider->value() / 100.0F;
   emit data.dataChanged();
 }
 void NodeSelectionSettingsFrame::edge_selected_colour_slot() {
   const QColor c = edge_selected_colour_button->color();
-  data.edge_selected_colour = {c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f};
+  data.edge_selected_colour = {c.red() / 255.0F, c.green() / 255.0F, c.blue() / 255.0F};
   emit data.dataChanged();
 }
 void NodeSelectionSettingsFrame::edge_selected_size_slot() {
@@ -496,12 +496,12 @@ void NodeSelectionSettingsFrame::edge_selected_alpha_slot() {
 ////////////////////////////////////////////////////////////////////////
 
 void NodeSelectionSettingsFrame::node_associated_colour_fade_slot() {
-  data.node_associated_colour_fade = node_associated_colour_slider->value() / 100.0f;
+  data.node_associated_colour_fade = node_associated_colour_slider->value() / 100.0F;
   emit data.dataChanged();
 }
 void NodeSelectionSettingsFrame::node_associated_colour_slot() {
   const QColor c = node_associated_colour_button->color();
-  data.node_associated_colour = {c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f};
+  data.node_associated_colour = {c.red() / 255.0F, c.green() / 255.0F, c.blue() / 255.0F};
   emit data.dataChanged();
 }
 void NodeSelectionSettingsFrame::node_associated_size_slot() {
@@ -514,12 +514,12 @@ void NodeSelectionSettingsFrame::node_associated_alpha_slot() {
 }
 
 void NodeSelectionSettingsFrame::edge_associated_colour_fade_slot() {
-  data.edge_associated_colour_fade = edge_associated_colour_slider->value() / 100.0f;
+  data.edge_associated_colour_fade = edge_associated_colour_slider->value() / 100.0F;
   emit data.dataChanged();
 }
 void NodeSelectionSettingsFrame::edge_associated_colour_slot() {
   const QColor c = edge_associated_colour_button->color();
-  data.edge_associated_colour = {c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f};
+  data.edge_associated_colour = {c.red() / 255.0F, c.green() / 255.0F, c.blue() / 255.0F};
   emit data.dataChanged();
 }
 void NodeSelectionSettingsFrame::edge_associated_size_slot() {
@@ -542,12 +542,12 @@ void NodeSelectionSettingsFrame::node_other_visibility_slot() {
   emit data.dataChanged();
 }
 void NodeSelectionSettingsFrame::node_other_colour_fade_slot() {
-  data.node_other_colour_fade = node_other_colour_slider->value() / 100.0f;
+  data.node_other_colour_fade = node_other_colour_slider->value() / 100.0F;
   emit data.dataChanged();
 }
 void NodeSelectionSettingsFrame::node_other_colour_slot() {
   const QColor c = node_other_colour_button->color();
-  data.node_other_colour = {c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f};
+  data.node_other_colour = {c.red() / 255.0F, c.green() / 255.0F, c.blue() / 255.0F};
   emit data.dataChanged();
 }
 void NodeSelectionSettingsFrame::node_other_size_slot() {
@@ -568,12 +568,12 @@ void NodeSelectionSettingsFrame::edge_other_visibility_slot() {
   emit data.dataChanged();
 }
 void NodeSelectionSettingsFrame::edge_other_colour_fade_slot() {
-  data.edge_other_colour_fade = edge_other_colour_slider->value() / 100.0f;
+  data.edge_other_colour_fade = edge_other_colour_slider->value() / 100.0F;
   emit data.dataChanged();
 }
 void NodeSelectionSettingsFrame::edge_other_colour_slot() {
   const QColor c = edge_other_colour_button->color();
-  data.edge_other_colour = {c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f};
+  data.edge_other_colour = {c.red() / 255.0F, c.green() / 255.0F, c.blue() / 255.0F};
   emit data.dataChanged();
 }
 void NodeSelectionSettingsFrame::edge_other_size_slot() {

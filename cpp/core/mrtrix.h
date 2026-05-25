@@ -180,7 +180,7 @@ template <> inline std::string str<cfloat>(const cfloat &value, int precision) {
   if (precision > 0)
     stream.precision(precision);
   stream << value.real();
-  if (value.imag() != 0.0f)
+  if (value.imag() != 0.0F)
     stream << std::showpos << value.imag() << "i";
   if (stream.fail())
     throw Exception("error converting complex float value to string");

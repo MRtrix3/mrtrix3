@@ -110,7 +110,7 @@ public:
   bool is_visible() const { return visible; }
   bool is_diagonal() const { return (node_indices[0] == node_indices[1]); }
 
-  bool to_draw() const { return (visible && (alpha > 0.0f) && (size > 0.0f)); }
+  bool to_draw() const { return (visible && (alpha > 0.0F) && (size > 0.0F)); }
 
 private:
   const std::array<node_t, 2> node_indices;

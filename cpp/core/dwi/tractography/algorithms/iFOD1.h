@@ -45,7 +45,7 @@ public:
           lmax(Math::SH::LforN(source.size(3))),
           max_trials(Defaults::max_trials_per_step),
           sin_max_angle_1o(std::sin(max_angle_1o)),
-          fod_power(1.0f),
+          fod_power(1.0F),
           mean_samples(0.0),
           mean_truncations(0.0),
           max_max_truncation(0.0),

@@ -99,8 +99,8 @@ Reader::Reader(const std::filesystem::path &filepath)
   output_bitdepth = bit_depth;
 
   if ((color_type == PNG_COLOR_TYPE_PALETTE) ||
-      (color_type == PNG_COLOR_TYPE_GRAY && bit_depth < 8 && !(bit_depth == 1 && ((width % 8) == 0u))) ||
-      ((png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS)) != 0u)) {
+      (color_type == PNG_COLOR_TYPE_GRAY && bit_depth < 8 && !(bit_depth == 1 && ((width % 8) == 0U))) ||
+      ((png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS)) != 0U)) {
     set_expand();
   }
   png_set_interlace_handling(png_ptr);

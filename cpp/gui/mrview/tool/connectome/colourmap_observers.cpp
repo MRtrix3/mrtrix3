@@ -26,7 +26,7 @@ void NodeColourObserver::selected_colourmap(size_t index, const ColourMapButton 
   master.window().updateGL();
 }
 void NodeColourObserver::selected_custom_colour(const QColor &c, const ColourMapButton &) {
-  master.node_fixed_colour = {c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f};
+  master.node_fixed_colour = {c.red() / 255.0F, c.green() / 255.0F, c.blue() / 255.0F};
   master.calculate_node_colours();
   master.window().updateGL();
 }
@@ -53,7 +53,7 @@ void EdgeColourObserver::selected_colourmap(size_t index, const ColourMapButton 
   master.window().updateGL();
 }
 void EdgeColourObserver::selected_custom_colour(const QColor &c, const ColourMapButton &) {
-  master.edge_fixed_colour = {c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f};
+  master.edge_fixed_colour = {c.red() / 255.0F, c.green() / 255.0F, c.blue() / 255.0F};
   master.calculate_edge_colours();
   master.window().updateGL();
 }

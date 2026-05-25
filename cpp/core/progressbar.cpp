@@ -87,7 +87,7 @@ void display_func_redirect(const ProgressBar &p) {
                              p.text_cstr(),
                              p.ellipsis_cstr()));
       }
-      if (next_update_at != 0u)
+      if (next_update_at != 0U)
         next_update_at *= 2;
       else
         next_update_at = 1;
@@ -110,7 +110,7 @@ void display_func_redirect(const ProgressBar &p) {
       if (p.value() == 0) {
         _print_stderr(printf("%s: %s%s ", App::NAME.c_str(), p.text_cstr(), p.ellipsis_cstr()));
         ;
-      } else if ((p.value() & (p.value() - 1)) == 0u) {
+      } else if ((p.value() & (p.value() - 1)) == 0U) {
         _print_stderr(".");
       }
     }

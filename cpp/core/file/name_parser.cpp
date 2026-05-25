@@ -130,7 +130,7 @@ void NameParser::calculate_padding(const std::vector<uint32_t> &maxvals) {
     size_t const m = seq_index.size() - 1 - n;
     Item &item(array[seq_index[n]]);
     if (!item.sequence().empty()) {
-      if (maxvals[m] != 0u)
+      if (maxvals[m] != 0U)
         if (item.sequence().size() != static_cast<size_t>(maxvals[m]))
           throw Exception("dimensions requested in image specifier \"" + specification + "\"" + //
                           " do not match supplied header information");
@@ -238,12 +238,12 @@ void ParsedName::List::scan(NameParser &parser) {
   while (!(entry = parser.get_next_match(index, true)).empty())
     list.push_back(std::shared_ptr<ParsedName>(new ParsedName(entry, index)));
 
-  if (size() == 0u)
+  if (size() == 0U)
     throw Exception("no matching files found for image specifier \"" + parser.spec() + "\"");
 }
 
 std::vector<uint32_t> ParsedName::List::count() const {
-  if (list[0]->ndim() == 0u) {
+  if (list[0]->ndim() == 0U) {
     if (size() == 1)
       return (std::vector<uint32_t>());
     throw Exception("image number mismatch");
@@ -275,7 +275,7 @@ void ParsedName::List::count_dim(std::vector<uint32_t> &dim, size_t &current_ent
       current_entry++;
   }
 
-  if ((dim[current_dim] != 0u) && dim[current_dim] != n)
+  if ((dim[current_dim] != 0U) && dim[current_dim] != n)
     throw Exception("number mismatch between number of images along different dimensions");
 
   dim[current_dim] = n;

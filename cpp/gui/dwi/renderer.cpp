@@ -54,7 +54,7 @@ void Renderer::start(const Projection &projection,
   }
 
   if (mode == mode_t::TENSOR)
-    scale *= 1000.0f;
+    scale *= 1000.0F;
 
   shader.start(
       mode, use_lighting, colour_by_direction, hide_neg_values, orthographic, colour_relative_to_projection != nullptr);
@@ -89,7 +89,7 @@ void Renderer::Shader::start(mode_t mode,
                              bool orthographic,
                              bool colour_relative_to_projection) {
   GL_CHECK_ERROR;
-  if (((*this) == 0u) || mode != mode_ || use_lighting != use_lighting_ ||
+  if (((*this) == 0U) || mode != mode_ || use_lighting != use_lighting_ ||
       colour_by_direction != colour_by_direction_ || hide_neg_values != hide_neg_values_ ||
       orthographic != orthographic_ || colour_relative_to_projection != colour_relative_to_projection_) {
     mode_ = mode;
@@ -98,13 +98,13 @@ void Renderer::Shader::start(mode_t mode,
     hide_neg_values_ = hide_neg_values;
     orthographic_ = orthographic;
     colour_relative_to_projection_ = colour_relative_to_projection;
-    if (*this != 0u)
+    if (*this != 0U)
       clear();
     GL::Shader::Vertex const vertex_shader(vertex_shader_source());
     GL::Shader::Geometry const geometry_shader(geometry_shader_source());
     GL::Shader::Fragment const fragment_shader(fragment_shader_source());
     attach(vertex_shader);
-    if (static_cast<GLuint>(geometry_shader) != 0u)
+    if (static_cast<GLuint>(geometry_shader) != 0U)
       attach(geometry_shader);
     attach(fragment_shader);
     link();
@@ -458,7 +458,7 @@ void Renderer::Tensor::set_data(const vector_t &data, int /*buffer_ID*/) const {
   D(1, 2) = D(2, 1) = data[5];
   Eigen::FullPivLU<tensor_t> const lu_decomp(D);
   const tensor_t Dinv = lu_decomp.inverse();
-  if (data[0] <= 0.0f || data[1] <= 0.0f || data[2] <= 0.0f || Dinv.diagonal().minCoeff() < 0.0f) {
+  if (data[0] <= 0.0F || data[1] <= 0.0F || data[2] <= 0.0F || Dinv.diagonal().minCoeff() < 0.0F) {
     gl::UniformMatrix3fv(gl::GetUniformLocation(parent.shader, "tensor"), 1, gl::FALSE_, D.data());
     const tensor_t Dinv = tensor_t::Zero();
     gl::UniformMatrix3fv(gl::GetUniformLocation(parent.shader, "inv_tensor"), 1, gl::FALSE_, Dinv.data());

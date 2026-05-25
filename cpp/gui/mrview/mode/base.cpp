@@ -133,7 +133,7 @@ void Base::slice_move_event(const ModelViewProjection &proj, float x) {
   const auto &header = image()->header();
   float const increment = snap_to_image()
                               ? x * header.spacing(plane())
-                              : x * std::pow(header.spacing(0) * header.spacing(1) * header.spacing(2), 1 / 3.f);
+                              : x * std::pow(header.spacing(0) * header.spacing(1) * header.spacing(2), 1 / 3.F);
   auto move = get_through_plane_translation(increment, proj);
 
   set_focus(focus() + move);
@@ -253,7 +253,7 @@ Eigen::Quaternionf Base::get_rotate_rotation(const ModelViewProjection &proj) co
                          (0.5F * static_cast<float>(proj.height())),
                      0.0F);
 
-  if (x1.norm() < 16.0f)
+  if (x1.norm() < 16.0F)
     return Eigen::Quaternionf(NaNF, NaNF, NaNF, NaNF);
 
   Eigen::Vector3f x0(static_cast<float>(dpos.x()) - x1[0], static_cast<float>(dpos.y()) - x1[1], 0.0F);
@@ -335,9 +335,9 @@ void Base::reset_view() {
   else
     set_plane(2);
 
-  const Eigen::Vector3f p(std::floor(static_cast<float>(image()->header().size(0) - 1) / 2.0f),
-                          std::floor(static_cast<float>(image()->header().size(1) - 1) / 2.0f),
-                          std::floor(static_cast<float>(image()->header().size(2) - 1) / 2.0f));
+  const Eigen::Vector3f p(std::floor(static_cast<float>(image()->header().size(0) - 1) / 2.0F),
+                          std::floor(static_cast<float>(image()->header().size(1) - 1) / 2.0F),
+                          std::floor(static_cast<float>(image()->header().size(2) - 1) / 2.0F));
 
   set_focus(image()->voxel2scanner() * p);
   set_target(focus());
@@ -352,8 +352,8 @@ void Base::reset_view() {
 
 GL::mat4 Base::adjust_projection_matrix(const GL::mat4 &Q, int proj) const {
   GL::mat4 M;
-  M(3, 0) = M(3, 1) = M(3, 2) = M(0, 3) = M(1, 3) = M(2, 3) = 0.0f;
-  M(3, 3) = 1.0f;
+  M(3, 0) = M(3, 1) = M(3, 2) = M(0, 3) = M(1, 3) = M(2, 3) = 0.0F;
+  M(3, 3) = 1.0F;
   if (proj == 0) { // sagittal
     for (size_t n = 0; n < 3; n++) {
       M(0, n) = -Q(1, n); // x: -y

@@ -60,7 +60,7 @@ WriterExemplars::WriterExemplars(const Tractography::Properties &properties,
                                  const std::vector<Eigen::Vector3d> &COMs)
     : step_size(properties.get_stepsize()) {
   if (!std::isfinite(step_size))
-    step_size = 1.0f;
+    step_size = 1.0F;
 
   // Determine how many points to use in the initial representation of each exemplar
   size_t length = 0;

@@ -82,7 +82,7 @@ Base *get_resampler() {
                        (!get_options("step_size").empty() ? 1 : 0) + (!get_options("num_points").empty() ? 1 : 0) +
                        (!get_options("endpoints").empty() ? 1 : 0) + (!get_options("line").empty() ? 1 : 0) +
                        (!get_options("arc").empty() ? 1 : 0);
-  if (count == 0u)
+  if (count == 0U)
     throw Exception("Must specify a mechanism for resampling streamlines");
   if (count > 1)
     throw Exception("Can only use one form of streamline resampling");

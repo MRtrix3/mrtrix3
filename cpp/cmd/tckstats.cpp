@@ -112,7 +112,7 @@ void run() {
       header_count = to<size_t>(properties["count"]);
 
     step_size = properties.get_stepsize();
-    if ((!std::isfinite(step_size) || (step_size == 0.0f)) && !get_options("histogram").empty()) {
+    if ((!std::isfinite(step_size) || (step_size == 0.0F)) && !get_options("histogram").empty()) {
       WARN("Do not have streamline step size with which to bin histogram; histogram will be generated using 1mm bin "
            "widths");
     }
@@ -135,7 +135,7 @@ void run() {
         while (histogram.size() <= index)
           histogram.push_back(0.0);
         histogram[index] += tck.weight;
-        if (length == 0.0f)
+        if (length == 0.0F)
           ++zero_length_streamlines;
       } else {
         ++empty_streamlines;
@@ -149,14 +149,14 @@ void run() {
       File::Matrix::save_vector(dump, opt[0][0]);
   }
 
-  if (get_options("ignorezero").empty() && ((empty_streamlines != 0u) || (zero_length_streamlines != 0u))) {
+  if (get_options("ignorezero").empty() && ((empty_streamlines != 0U) || (zero_length_streamlines != 0U))) {
     std::string s("read");
-    if (empty_streamlines != 0u) {
+    if (empty_streamlines != 0U) {
       s += " " + str(empty_streamlines) + " empty streamlines";
-      if (zero_length_streamlines != 0u)
+      if (zero_length_streamlines != 0U)
         s += " and";
     }
-    if (zero_length_streamlines != 0u)
+    if (zero_length_streamlines != 0U)
       s += " " + str(zero_length_streamlines) + " streamlines with zero length (one vertex only)";
     WARN(s);
   }
@@ -169,8 +169,8 @@ void run() {
 
   const float mean_length = (sum_weights != 0.0) ? (sum_lengths / sum_weights) : NaNF;
 
-  float median_length = 0.0f;
-  if (count != 0u) {
+  float median_length = 0.0F;
+  if (count != 0U) {
     if (weights_provided) {
       // Perform a weighted median calculation
       std::sort(all_lengths.begin(), all_lengths.end());

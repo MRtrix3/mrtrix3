@@ -88,7 +88,7 @@ protected:
       residuals = H * log_signal;
 
       for (ssize_t i = 0; i < residuals.size(); ++i) {
-        residuals[i] = (residuals[i] != 0.0f) ? (data[i] - std::exp(-residuals[i])) : float(0.0);
+        residuals[i] = (residuals[i] != 0.0F) ? (data[i] - std::exp(-residuals[i])) : float(0.0);
         data[i] += (uniform_int(rng) != 0) ? residuals[i] : -residuals[i];
       }
     }
@@ -124,7 +124,7 @@ protected:
           index(1) = clamp(P[1] + y, size(1));
           for (ssize_t x = 0; x < 2; ++x) {
             index(0) = clamp(P[0] + x, size(0));
-            if (factors[i] != 0.0f) {
+            if (factors[i] != 0.0F) {
               get_values(raw_signals[i]);
               data += factors[i] * raw_signals[i];
             }

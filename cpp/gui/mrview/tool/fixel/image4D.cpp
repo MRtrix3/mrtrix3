@@ -27,7 +27,7 @@ void Image4D::load_image_buffer() {
 
   const size_t dim4_len = fixel_data->size(3);
 
-  if ((dim4_len % 3) != 0u)
+  if ((dim4_len % 3) != 0U)
     throw InvalidImageException("Expecting 4th-dimension size of vector image " + filepath.string() +
                                 " to be a multiple of 3; instead " + str(dim4_len) + " entries found");
 

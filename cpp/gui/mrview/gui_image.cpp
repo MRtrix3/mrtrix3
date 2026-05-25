@@ -30,7 +30,7 @@ ImageBase::ImageBase(MR::Header &&H) : Volume(std::move(H)), tex_positions(heade
 ImageBase::~ImageBase() {
   GL::Context::Grab const context;
   for (size_t axis = 0; axis != 3; ++axis) {
-    if (texture2D[axis] != 0u)
+    if (texture2D[axis] != 0U)
       texture2D[axis].clear();
   }
 }
@@ -53,22 +53,22 @@ void ImageBase::render2D(Displayable::Shader &shader_program,
   p[x] = -0.5;
   p[y] = -0.5;
   vertices[0].noalias() = V2S * p;
-  vertices[1] = {0.0f, 0.0f, 0.0f};
+  vertices[1] = {0.0F, 0.0F, 0.0F};
 
   p[x] = -0.5;
   p[y] = ysize;
   vertices[2].noalias() = V2S * p;
-  vertices[3] = {0.0f, 1.0f, 0.0f};
+  vertices[3] = {0.0F, 1.0F, 0.0F};
 
   p[x] = xsize;
   p[y] = ysize;
   vertices[4].noalias() = V2S * p;
-  vertices[5] = {1.0f, 1.0f, 0.0f};
+  vertices[5] = {1.0F, 1.0F, 0.0F};
 
   p[x] = xsize;
   p[y] = -0.5;
   vertices[6].noalias() = V2S * p;
-  vertices[7] = {1.0f, 0.0f, 0.0f};
+  vertices[7] = {1.0F, 0.0F, 0.0F};
 
   start(shader_program);
   projection.set(shader_program);
@@ -125,7 +125,7 @@ size_t Image::guess_colourmap() const {
 }
 
 void Image::update_texture2D(int plane, int slice) {
-  if (texture2D[plane] == 0u) { // allocate:
+  if (texture2D[plane] == 0U) { // allocate:
     texture2D[plane].gen(gl::TEXTURE_3D);
     texture2D[plane].bind();
   } else
@@ -147,17 +147,17 @@ void Image::update_texture2D(int plane, int slice) {
 
   std::string const cmap_name = ColourMap::maps[colourmap].name;
 
-  const bool windowing_reset_required = (!std::isfinite(display_range) || (display_range < 0.0f));
+  const bool windowing_reset_required = (!std::isfinite(display_range) || (display_range < 0.0F));
 
   if (cmap_name == "RGB") {
 
-    data.resize(3 * xsize * ysize, 0.0f);
+    data.resize(3 * xsize * ysize, 0.0F);
     format = gl::RGB;
     internal_format = gl::RGB32F;
 
     if (tex_positions[plane] < 0 || tex_positions[plane] >= header().size(plane)) {
-      value_min = 0.0f;
-      value_max = 0.0f;
+      value_min = 0.0F;
+      value_max = 0.0F;
     } else {
       // copy data:
       image.index(plane) = slice;
@@ -202,13 +202,13 @@ void Image::update_texture2D(int plane, int slice) {
 
     if (tex_positions[plane] < 0 || tex_positions[plane] >= header().size(plane)) {
       for (auto &d : data)
-        d = 0.0f;
-      value_min = 0.0f;
-      value_max = 0.0f;
+        d = 0.0F;
+      value_min = 0.0F;
+      value_max = 0.0F;
     } else {
       // copy data:
       image.index(plane) = slice;
-      slice_min[plane] = 0.0f;
+      slice_min[plane] = 0.0F;
       slice_max[plane] = -std::numeric_limits<float>::infinity();
       for (image.index(y) = 0; image.index(y) < ysize; ++image.index(y)) {
         for (image.index(x) = 0; image.index(x) < xsize; ++image.index(x)) {
@@ -233,9 +233,9 @@ void Image::update_texture2D(int plane, int slice) {
 
     if (tex_positions[plane] < 0 || tex_positions[plane] >= header().size(plane)) {
       for (auto &d : data)
-        d = 0.0f;
-      value_min = 0.0f;
-      value_max = 0.0f;
+        d = 0.0F;
+      value_min = 0.0F;
+      value_max = 0.0F;
     } else {
       // copy data:
       image.index(plane) = slice;
@@ -474,7 +474,7 @@ template <typename ValueType> inline void Image::copy_texture_3D() {
     } else {
 
       for (auto &d : data)
-        d = 0.0f;
+        d = 0.0F;
 
       for (size_t n = 0; n < 3; ++n) {
         if (V.ndim() > 3) {

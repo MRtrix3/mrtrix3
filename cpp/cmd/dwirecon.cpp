@@ -531,7 +531,7 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
       first_volume.index(3) = volume_pairs[out_volume].first;
       second_volume.index(3) = volume_pairs[out_volume].second;
       for (auto l = Loop(dwi_out, 0, 3)(dwi_out, first_volume, second_volume); l; ++l)
-        dwi_out.value() = 0.5f * (first_volume.value() + second_volume.value());
+        dwi_out.value() = 0.5F * (first_volume.value() + second_volume.value());
       ++progress;
     }
   }

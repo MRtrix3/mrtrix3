@@ -307,7 +307,7 @@ void Fixel::render_fixel_colourbar(const Tool::BaseFixel &fixel) {
       max_value,
       fixel.scaling_min(),
       fixel.display_range,
-      Eigen::Array3f{fixel.colour[0] / 255.0f, fixel.colour[1] / 255.0f, fixel.colour[2] / 255.0f});
+      Eigen::Array3f{fixel.colour[0] / 255.0F, fixel.colour[1] / 255.0F, fixel.colour[2] / 255.0F});
   GL::assert_context_is_current();
 }
 
@@ -392,19 +392,19 @@ void Fixel::update_gui_colour_controls(bool reload_colour_types) {
   size_t const n_images(indices.size());
 
   colour_combobox->setEnabled(n_images == 1);
-  colourmap_button->setEnabled(n_images != 0u);
+  colourmap_button->setEnabled(n_images != 0U);
 
-  max_value->setEnabled(n_images != 0u);
-  min_value->setEnabled(n_images != 0u);
+  max_value->setEnabled(n_images != 0U);
+  min_value->setEnabled(n_images != 0U);
 
-  if (n_images == 0u) {
+  if (n_images == 0U) {
     max_value->setValue(NaNF);
     min_value->setValue(NaNF);
     length_multiplier->setValue(NaNF);
     return;
   }
 
-  if (n_images == 0u)
+  if (n_images == 0U)
     return;
 
   int colourmap_index = -2;
@@ -421,7 +421,7 @@ void Fixel::update_gui_colour_controls(bool reload_colour_types) {
   // Not all colourmaps are added to this list; therefore need to find out
   // how many menu elements were actually created by ColourMap::create_menu()
   static size_t colourmap_count = 0;
-  if (colourmap_count == 0u) {
+  if (colourmap_count == 0U) {
     for (const auto &map : ColourMap::maps) {
       if (!map.special)
         ++colourmap_count;
@@ -460,10 +460,10 @@ void Fixel::update_gui_scaling_controls(bool reload_scaling_types) {
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
   size_t const n_images(indices.size());
 
-  length_multiplier->setEnabled(n_images != 0u);
+  length_multiplier->setEnabled(n_images != 0U);
   length_combobox->setEnabled(n_images == 1);
 
-  if (n_images == 0u) {
+  if (n_images == 0U) {
     length_multiplier->setValue(NaNF);
     return;
   }
@@ -474,7 +474,7 @@ void Fixel::update_gui_scaling_controls(bool reload_scaling_types) {
     first_fixel->load_scaleby_combobox_options(*length_combobox);
 
   length_multiplier->setValue(first_fixel->get_line_length_multiplier());
-  line_thickness_slider->setValue(static_cast<int>(first_fixel->get_line_thickenss() * 1.0e5f));
+  line_thickness_slider->setValue(static_cast<int>(first_fixel->get_line_thickenss() * 1.0e5F));
 
   length_combobox->setCurrentIndex(first_fixel->get_scale_type_index());
 }
@@ -483,14 +483,14 @@ void Fixel::update_gui_threshold_controls(bool reload_threshold_types) {
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
   size_t const n_images(indices.size());
 
-  threshold_lower->setEnabled(n_images != 0u);
-  threshold_upper->setEnabled(n_images != 0u);
-  threshold_upper_box->setEnabled(n_images != 0u);
-  threshold_lower_box->setEnabled(n_images != 0u);
+  threshold_lower->setEnabled(n_images != 0U);
+  threshold_upper->setEnabled(n_images != 0U);
+  threshold_upper_box->setEnabled(n_images != 0U);
+  threshold_lower_box->setEnabled(n_images != 0U);
 
   threshold_combobox->setEnabled(n_images == 1);
 
-  if (n_images == 0u) {
+  if (n_images == 0U) {
     threshold_lower->setValue(NaNF);
     threshold_upper->setValue(NaNF);
     return;
@@ -537,7 +537,7 @@ void Fixel::update_gui_tracking_controls() {
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
   size_t const n_images(indices.size());
 
-  if (n_images == 0u) {
+  if (n_images == 0U) {
     track_main_volume->setEnabled(false);
     return;
   }
@@ -558,19 +558,19 @@ void Fixel::update_gui_tracking_controls() {
   }
 
   track_main_volume->setEnabled(true);
-  track_main_volume->setCheckState((num_checked != 0u) ? (num_checked == n_images ? Qt::Checked : Qt::PartiallyChecked)
+  track_main_volume->setCheckState((num_checked != 0U) ? (num_checked == n_images ? Qt::Checked : Qt::PartiallyChecked)
                                                        : Qt::Unchecked);
 }
 
 void Fixel::opacity_slot(int opacity) {
-  line_opacity = Math::pow2(static_cast<float>(opacity)) / 1.0e6f;
+  line_opacity = Math::pow2(static_cast<float>(opacity)) / 1.0e6F;
   window().updateGL();
 }
 
 void Fixel::line_thickness_slot(int thickness) {
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
   for (int i = 0; i < indices.size(); ++i)
-    fixel_list_model->get_fixel_image(indices[i])->set_line_thickness(static_cast<float>(thickness) / 1.0e5f);
+    fixel_list_model->get_fixel_image(indices[i])->set_line_thickness(static_cast<float>(thickness) / 1.0e5F);
   window().updateGL();
 }
 

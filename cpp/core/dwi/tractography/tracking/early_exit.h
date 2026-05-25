@@ -34,7 +34,7 @@ public:
       : max_num_seeds(shared.max_num_seeds),
         max_num_tracks(shared.max_num_tracks),
         counter(0),
-        next_test(((max_num_seeds != 0u) && (max_num_tracks != 0u)) ? (10 * max_num_seeds / max_num_tracks) : 0) {}
+        next_test(((max_num_seeds != 0U) && (max_num_tracks != 0U)) ? (10 * max_num_seeds / max_num_tracks) : 0) {}
 
   bool operator()(const size_t, const size_t);
 

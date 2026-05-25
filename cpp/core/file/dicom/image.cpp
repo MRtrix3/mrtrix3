@@ -492,7 +492,7 @@ namespace {
 
 inline void update_count(size_t num, std::vector<size_t> &dim, std::vector<size_t> &index) {
   for (size_t n = 0; n < num; ++n) {
-    if ((dim[n] != 0u) && index[n] != dim[n])
+    if ((dim[n] != 0U) && index[n] != dim[n])
       throw Exception("dimensions mismatch in DICOM series");
     index[n] = 1;
   }
@@ -521,11 +521,11 @@ std::vector<size_t> Frame::count(const std::vector<Frame *> &frames) {
     previous = &frame;
   }
 
-  if (dim[0] == 0u)
+  if (dim[0] == 0U)
     dim[0] = 1;
-  if (dim[1] == 0u)
+  if (dim[1] == 0U)
     dim[1] = 1;
-  if (dim[2] == 0u)
+  if (dim[2] == 0U)
     dim[2] = 1;
 
   return dim;

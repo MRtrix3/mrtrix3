@@ -235,7 +235,7 @@ struct LoopAlongAxisRange {
     bool ok;
     FORCE_INLINE Run(const size_t axis_from, const size_t axis_to, const std::tuple<ImageType &...> &vox)
         : from(axis_from),
-          to((axis_to != 0u) ? axis_to : std::get<0>(vox).ndim()),
+          to((axis_to != 0U) ? axis_to : std::get<0>(vox).ndim()),
           vox(vox),
           size0(std::get<0>(vox).size(from)),
           ok(true) {

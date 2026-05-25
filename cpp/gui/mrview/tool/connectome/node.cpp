@@ -28,16 +28,16 @@ Node::Node(const Eigen::Vector3f &com, const size_t vol, const size_t pixheight,
       volume(vol),
       mask(image),
       name(image.name()),
-      size(1.0f),
-      colour{0.5f, 0.5f, 0.5f},
-      alpha(1.0f),
+      size(1.0F),
+      colour{0.5F, 0.5F, 0.5F},
+      alpha(1.0F),
       visible(true),
       pixmap(pixheight, pixheight) {
   pixmap.fill(QColor(128, 128, 128));
 }
 
 Node::Node()
-    : centre_of_mass(), volume(0), size(0.0f), colour{0.0f, 0.0f, 0.0f}, alpha(0.0f), visible(false), pixmap(12, 12) {
+    : centre_of_mass(), volume(0), size(0.0F), colour{0.0F, 0.0F, 0.0F}, alpha(0.0F), visible(false), pixmap(12, 12) {
   pixmap.fill(QColor(0, 0, 0));
 }
 

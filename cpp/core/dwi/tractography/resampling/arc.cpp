@@ -35,7 +35,7 @@ bool Arc::operator()(const Streamline<> &in, Streamline<> &out) const {
   state_t prev_s = state_t::BEFORE_START;
   for (size_t i = 0; i < in.size(); ++i) {
     const state_t s = state(in[i]);
-    if (i != 0u) {
+    if (i != 0U) {
       if (prev_s == state_t::BEFORE_START && s == state_t::AFTER_START)
         a = i - 1;
       if (prev_s == state_t::AFTER_START && s == state_t::BEFORE_START)
@@ -56,7 +56,7 @@ bool Arc::operator()(const Streamline<> &in, Streamline<> &out) const {
     prev_s = s;
   }
 
-  if (!((idx_start != 0u) && (idx_end != 0u)))
+  if (!((idx_start != 0U) && (idx_end != 0U)))
     return true;
 
   const bool reverse = idx_start > idx_end;
@@ -68,7 +68,7 @@ bool Arc::operator()(const Streamline<> &in, Streamline<> &out) const {
       if (d > 0.0) {
         const value_type f = d / (d - planes[n].dist(in[reverse ? i + 1 : i - 1]));
         assert(f >= 0.0 && f <= 1.0);
-        out.push_back(f * in[reverse ? i + 1 : i - 1] + (1.0f - f) * in[i]);
+        out.push_back(f * in[reverse ? i + 1 : i - 1] + (1.0F - f) * in[i]);
         break;
       }
       reverse ? --i : ++i;
@@ -84,7 +84,7 @@ void Arc::init_line() {
   mid_dir = end_dir = start_dir;
   for (size_t n = 0; n < nsamples; n++) {
     const value_type f = static_cast<value_type>(n) / static_cast<value_type>(nsamples - 1);
-    planes.push_back(Plane((1.0f - f) * start + f * end, (1.0f - f) * start_dir + f * end_dir));
+    planes.push_back(Plane((1.0F - f) * start + f * end, (1.0F - f) * start_dir + f * end_dir));
   }
 }
 

@@ -171,7 +171,7 @@ get_data(Image<value_type> &in, Image<bool> &mask, const size_t max_axis, const 
     Adapter::Replicate<Image<bool>> mask_replicate(mask, in);
     if (ignore_zero) {
       for (auto l = Loop(in, 0, max_axis)(in, mask_replicate); l; ++l) {
-        if (mask_replicate.value() && !std::isnan(static_cast<value_type>(in.value())) && in.value() != 0.0f)
+        if (mask_replicate.value() && !std::isnan(static_cast<value_type>(in.value())) && in.value() != 0.0F)
           data.push_back(in.value());
       }
     } else {
@@ -183,7 +183,7 @@ get_data(Image<value_type> &in, Image<bool> &mask, const size_t max_axis, const 
   } else {
     if (ignore_zero) {
       for (auto l = Loop(in, 0, max_axis)(in); l; ++l) {
-        if (!std::isnan(static_cast<value_type>(in.value())) && in.value() != 0.0f)
+        if (!std::isnan(static_cast<value_type>(in.value())) && in.value() != 0.0F)
           data.push_back(in.value());
       }
     } else {
@@ -468,7 +468,7 @@ void run() {
       WARN("-out_masked option ignored; no mask image provided via -mask");
       mask_out = false;
     }
-    if (num_explicit_mechanisms == 0u) {
+    if (num_explicit_mechanisms == 0U) {
       if (ignore_zero) {
         WARN("Option -ignorezero ignored by automatic threshold calculation");
       }

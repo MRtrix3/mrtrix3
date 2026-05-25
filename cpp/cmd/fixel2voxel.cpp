@@ -148,7 +148,7 @@ struct LoopFixelsInVoxelWithMax {
       MR::apply_for_each(set_offset(offset), data);
     }
     FORCE_INLINE operator bool() const {
-      return (max_fixels != 0u) ? (fixel_index < max_fixels) : (fixel_index < num_fixels);
+      return (max_fixels != 0U) ? (fixel_index < max_fixels) : (fixel_index < num_fixels);
     }
     FORCE_INLINE void operator++() {
       if (!padding())
@@ -156,8 +156,8 @@ struct LoopFixelsInVoxelWithMax {
       ++fixel_index;
     }
     FORCE_INLINE void operator++(int) { operator++(); }
-    FORCE_INLINE bool padding() const { return ((max_fixels != 0u) && fixel_index >= num_fixels); }
-    FORCE_INLINE index_type count() const { return (max_fixels != 0u) ? max_fixels : num_fixels; }
+    FORCE_INLINE bool padding() const { return ((max_fixels != 0U) && fixel_index >= num_fixels); }
+    FORCE_INLINE index_type count() const { return (max_fixels != 0U) ? max_fixels : num_fixels; }
   };
 
   template <class... DataType> FORCE_INLINE Run<DataType...> operator()(DataType &...data) const {
@@ -244,7 +244,7 @@ public:
   void operator()(FixelIndexType &index, Image<float> &out) {
     index.index(3) = 0;
     index_type num_fixels = index.value();
-    if (num_fixels == 0u) {
+    if (num_fixels == 0U) {
       out.value() = 0.0;
       return;
     }
@@ -252,7 +252,7 @@ public:
     index_type const offset = index.value();
     data.index(0) = offset;
     out.value() = data.value();
-    num_fixels = (max_fixels != 0u) ? std::min(max_fixels, num_fixels) : num_fixels;
+    num_fixels = (max_fixels != 0U) ? std::min(max_fixels, num_fixels) : num_fixels;
     for (index_type f = 1; f != num_fixels; ++f) {
       data.index(0)++;
       out.value() *= data.value();
@@ -323,7 +323,7 @@ public:
   void operator()(FixelIndexType &index, Image<float> &out) {
     index.index(3) = 0;
     index_type num_fixels = index.value();
-    num_fixels = (max_fixels != 0u) ? std::min(num_fixels, max_fixels) : num_fixels;
+    num_fixels = (max_fixels != 0U) ? std::min(num_fixels, max_fixels) : num_fixels;
     if (num_fixels <= 1) {
       out.value() = 0.0;
       return;
@@ -496,7 +496,7 @@ void run() {
     H_out.size(3) = 3;
   } else if (op == Operation::NONE) { // none
     H_out.ndim() = 4;
-    if (max_fixels != 0u) {
+    if (max_fixels != 0U) {
       H_out.size(3) = max_fixels;
     } else {
       index_type max_count = 0;

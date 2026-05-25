@@ -78,7 +78,7 @@ void DoubleExpSmoothSlopeCheck::set_parameters(const Eigen::Matrix<default_type,
 
 bool DoubleExpSmoothSlopeCheck::last_b(Eigen::Matrix<default_type, Eigen::Dynamic, 1> &b) const {
   assert(is_initialised);
-  if (len == 0u)
+  if (len == 0U)
     return false;
   b = db.back();
   return true;
@@ -86,7 +86,7 @@ bool DoubleExpSmoothSlopeCheck::last_b(Eigen::Matrix<default_type, Eigen::Dynami
 
 bool DoubleExpSmoothSlopeCheck::last_s(Eigen::Matrix<default_type, Eigen::Dynamic, 1> &s) const {
   assert(is_initialised);
-  if (len == 0u)
+  if (len == 0U)
     return false;
   s = ds.back();
   return true;

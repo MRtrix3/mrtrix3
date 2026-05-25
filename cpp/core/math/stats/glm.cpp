@@ -149,10 +149,10 @@ index_array_type load_variance_groups(const index_type num_inputs) {
     for (Eigen::Index i = 0; i != data.size(); ++i)
       count_per_group[data[i]]++;
     for (Eigen::Index vg_index = min_coeff; vg_index <= max_coeff; ++vg_index) {
-      if (count_per_group[vg_index] == 0u)
+      if (count_per_group[vg_index] == 0U)
         throw Exception("No entries found for variance group " + str(vg_index));
     }
-    if (min_coeff != 0u)
+    if (min_coeff != 0U)
       data.array() -= 1;
     return data.array();
   } catch (Exception &e) {

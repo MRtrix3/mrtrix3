@@ -48,27 +48,27 @@ DataType descr2datatype(std::string_view s) {
   switch (s[type_offset]) {
   case '?':
     data_type = DataType::Bit;
-    if ((bytes != 0u) && bytes > 1)
+    if ((bytes != 0U) && bytes > 1)
       throw Exception("Unexpected byte width (" + str(bytes) + ") for bitwise data");
     break;
   case 'b':
     data_type = DataType::Int8;
-    if ((bytes != 0u) && bytes > 1)
+    if ((bytes != 0U) && bytes > 1)
       throw Exception("Unexpected byte width (" + str(bytes) + ") for signed byte data");
     break;
   case 'B':
     data_type = DataType::UInt8;
-    if ((bytes != 0u) && bytes > 1)
+    if ((bytes != 0U) && bytes > 1)
       throw Exception("Unexpected byte width (" + str(bytes) + ") for unsigned byte data");
     break;
   case 'h':
     data_type = DataType::Int16;
-    if ((bytes != 0u) && bytes != 2)
+    if ((bytes != 0U) && bytes != 2)
       throw Exception("Unexpected byte width (" + str(bytes) + ") for signed short integer data");
     break;
   case 'H':
     data_type = DataType::UInt16;
-    if ((bytes != 0u) && bytes != 2)
+    if ((bytes != 0U) && bytes != 2)
       throw Exception("Unexpected byte width (" + str(bytes) + ") for unsigned short integer data");
     break;
   case 'i':

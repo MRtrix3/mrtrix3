@@ -78,7 +78,7 @@ void Ortho::paint(Projection &projection) {
 
   gl::Disable(gl::DEPTH_TEST);
 
-  if ((frame_VB == 0u) || (frame_VAO == 0u)) {
+  if ((frame_VB == 0U) || (frame_VAO == 0U)) {
     frame_VB.gen();
     frame_VAO.gen();
 
@@ -95,7 +95,7 @@ void Ortho::paint(Projection &projection) {
   } else
     frame_VAO.bind();
 
-  if (frame_program == 0u) {
+  if (frame_program == 0U) {
     GL::Shader::Vertex const vertex_shader("layout(location=0) in vec2 pos;\n"
                                            "void main () {\n"
                                            "  gl_Position = vec4 (pos, 0.0, 1.0);\n"
@@ -157,7 +157,7 @@ void Ortho::slice_move_event(float x) {
   const auto &header = image()->header();
   float const increment = snap_to_image()
                               ? x * header.spacing(current_plane)
-                              : x * std::pow(header.spacing(0) * header.spacing(1) * header.spacing(2), 1 / 3.f);
+                              : x * std::pow(header.spacing(0) * header.spacing(1) * header.spacing(2), 1 / 3.F);
   auto move = get_through_plane_translation(increment, *proj);
 
   set_focus(focus() + move);

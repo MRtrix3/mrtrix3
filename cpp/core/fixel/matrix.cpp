@@ -347,7 +347,7 @@ template <class MatrixType> void Writer<MatrixType>::save(const std::filesystem:
     index_image.index(3) = 0;
     index_image.value() = static_cast<uint64_t>(connection_count);
     index_image.index(3) = 1;
-    index_image.value() = (connection_count != 0u) ? connection_offset : uint64_t(0);
+    index_image.value() = (connection_count != 0U) ? connection_offset : uint64_t(0);
 
     if (count_image.valid()) {
       count_image.index(0) = fixel_index;
@@ -406,7 +406,7 @@ NormFixel Reader::operator[](const size_t i) const {
   index.index(0) = i;
   index.index(3) = 0;
   const index_image_type num_connections = index.value();
-  if (num_connections == 0u)
+  if (num_connections == 0U)
     return result;
   index.index(3) = 1;
   const index_image_type offset = index.value();

@@ -216,7 +216,7 @@ IndexType index_mask_voxels(size_t &num_voxels) {
       index.value() = std::numeric_limits<uint32_t>::max();
   }
 
-  if (num_voxels == 0u)
+  if (num_voxels == 0U)
     throw Exception("Mask contains no valid voxels.");
 
   INFO("mask image contains " + str(num_voxels) + " voxels");
@@ -483,7 +483,7 @@ void run() {
     if (num.empty() && num.size() > 2)
       throw Exception("unexpected number of entries provided to option \"-niter\"");
     for (auto n : num)
-      if (n == 0u)
+      if (n == 0U)
         throw Exception("number of iterations must be nonzero");
 
     max_iter = num[0];
@@ -549,7 +549,7 @@ void run() {
 
         outliers_changed = detect_outliers(1.5, data, field, balance_factors, weights);
 
-      } while ((outliers_changed != 0u) && balance_iter++ < max_balance_iter);
+      } while ((outliers_changed != 0U) && balance_iter++ < max_balance_iter);
 
       update_field(log_ref_value, basis, data, balance_factors, weights, field_coeffs, field);
 

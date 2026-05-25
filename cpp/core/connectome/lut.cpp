@@ -126,7 +126,7 @@ LUT::file_format LUT::guess_file_format(const std::filesystem::path &path) {
       // Before splitting by whitespace, need to capture any strings that are
       //   encased within quotation marks
       auto split_by_quotes = split(line, "\"\'", false);
-      if ((split_by_quotes.size() % 2) == 0u)
+      if ((split_by_quotes.size() % 2) == 0U)
         throw Exception("Line " + str(line_counter) +                         //
                         " of LUT file \"" + path.filename().string() + "\"" + //
                         " contains an odd number of quotation marks," +       //
@@ -135,7 +135,7 @@ LUT::file_format LUT::guess_file_format(const std::filesystem::path &path) {
       for (size_t i = 0; i != split_by_quotes.size(); ++i) {
         // Every second line must be encased in quotation marks, and is
         //   therefore preserved without splitting
-        if ((i % 2) != 0u) {
+        if ((i % 2) != 0U) {
           entries.push_back(split_by_quotes[i]);
         } else {
           const auto block_split = split(split_by_quotes[i], "\t ", true);
@@ -286,7 +286,7 @@ std::vector<node_t> get_lut_mapping(const LUT &in, const LUT &out) {
     node_t target = 0;
     for (const auto &node_out : out) {
       if (node_out.second.get_name() == node_in.second.get_name()) {
-        if (target != 0u) {
+        if (target != 0U) {
           throw Exception("Cannot perform LUT conversion: Node " + str(node_in.first) + " (" +
                           node_in.second.get_name() + ") has multiple possible targets");
           return std::vector<node_t>();
@@ -295,7 +295,7 @@ std::vector<node_t> get_lut_mapping(const LUT &in, const LUT &out) {
         break;
       }
     }
-    if (target != 0u)
+    if (target != 0U)
       map[node_in.first] = target;
   }
   return map;

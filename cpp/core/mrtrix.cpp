@@ -52,7 +52,7 @@ std::vector<default_type> parse_floats(std::string_view spec) {
               !std::isfinite(last))
             throw Exception("Floating-point range does not form a finite set");
           default_type value = first;
-          for (size_t mult = 0; (inc > 0.0f ? value < last - 0.5f * inc : value > last + 0.5f * inc); ++mult)
+          for (size_t mult = 0; (inc > 0.0F ? value < last - 0.5F * inc : value > last + 0.5F * inc); ++mult)
             V.push_back((value = first + (mult * inc)));
         } else {
           V.push_back(range_spec[0]);

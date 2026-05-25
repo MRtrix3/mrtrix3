@@ -42,23 +42,23 @@ ROI_Item::ROI_Item(MR::Header &&src) : Volume(std::move(src)), saved(true), curr
   set_allowed_features(false, true, false);
   set_interpolate(false);
   set_use_transparency(true);
-  value_min = 0.0f;
-  value_max = 1.0f;
-  set_windowing(0.0f, 1.0f);
+  value_min = 0.0F;
+  value_max = 1.0F;
+  set_windowing(0.0F, 1.0F);
   min_max_set();
   // CONF option: MRViewRoiAlpha
   // CONF default: 0.5
   // CONF The default alpha of a ROI overlay.
-  alpha = MR::File::Config::get_float("MRViewRoiAlpha", 0.5f);
+  alpha = MR::File::Config::get_float("MRViewRoiAlpha", 0.5F);
   colour = preset_colours[current_preset_colour++];
   if (current_preset_colour >= 6)
     current_preset_colour = 0;
-  transparent_intensity = 0.4f;
-  opaque_intensity = 0.6f;
+  transparent_intensity = 0.4F;
+  opaque_intensity = 0.6F;
   colourmap = ColourMap::index("Colour");
   float const spacing = std::min({header().spacing(0), header().spacing(1), header().spacing(2)});
   brush_size = min_brush_size = spacing;
-  max_brush_size = 100.0f * min_brush_size;
+  max_brush_size = 100.0F * min_brush_size;
 
   std::stringstream name;
   name << "ROI" << std::setfill('0') << std::setw(5) << new_roi_counter++ << ".mif";

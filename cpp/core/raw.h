@@ -183,7 +183,7 @@ template <typename ValueType> inline void store_native(const ValueType value, vo
 //! \cond skip
 
 template <> inline bool fetch_native<bool>(const void *data, size_t i) {
-  return ((as<uint8_t>(data)[i / 8]) & (BITMASK >> i % 8)) != 0u;
+  return ((as<uint8_t>(data)[i / 8]) & (BITMASK >> i % 8)) != 0U;
 }
 
 template <> inline void store_native<bool>(const bool value, void *data, size_t i) {

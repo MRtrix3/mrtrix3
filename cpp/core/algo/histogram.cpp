@@ -56,7 +56,7 @@ void Calibrator::from_file(const std::filesystem::path &path) {
 
 void Calibrator::finalize(const size_t num_volumes, const bool is_integer) {
   if (!std::isfinite(bin_width)) {
-    if (num_bins != 0u) {
+    if (num_bins != 0U) {
       bin_width = (max - min) / static_cast<default_type>(num_bins);
     } else {
       // Freedman-Diaconis rule for selecting bin size for a histogram

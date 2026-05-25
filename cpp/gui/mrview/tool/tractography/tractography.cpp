@@ -96,7 +96,7 @@ Tractography::Tractography(Dock *parent)
   if (window().image() != nullptr) {
     voxel_size = (window().image()->header().spacing(0) + window().image()->header().spacing(1) +
                   window().image()->header().spacing(2)) /
-                 3.0f;
+                 3.0F;
   } else {
     voxel_size = 2.5;
   }
@@ -443,7 +443,7 @@ void Tractography::on_slab_thickness_slot() {
 }
 
 void Tractography::opacity_slot(int opacity) {
-  line_opacity = Math::pow2(static_cast<float>(opacity)) / 1.0e6f;
+  line_opacity = Math::pow2(static_cast<float>(opacity)) / 1.0e6F;
   window().updateGL();
 }
 

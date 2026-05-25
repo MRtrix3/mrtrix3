@@ -117,7 +117,7 @@ public:
 
       lmax = lmax_cmdline > 0 ? lmax_cmdline : std::min(lmax_response, default_csd_lmax);
 
-      if (lmax <= 0 || ((lmax % 2) != 0u))
+      if (lmax <= 0 || ((lmax % 2) != 0U))
         throw Exception("lmax must be a positive even integer");
 
       assert(response.size());

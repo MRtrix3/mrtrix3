@@ -102,7 +102,7 @@ public:
           throw Exception("Number of lmaxes specified (" + str(lmax.size()) + ") does not match number of tissues (" +
                           str(num_tissues()) + ")");
         for (const auto i : lmax) {
-          if ((i % 2) != 0u)
+          if ((i % 2) != 0U)
             throw Exception("Each value of lmax must be a non-negative even integer");
         }
       }

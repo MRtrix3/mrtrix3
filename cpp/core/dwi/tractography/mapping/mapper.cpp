@@ -79,7 +79,7 @@ void TrackMapperTWI::set_factor(const Streamline<> &tck, SetVoxelExtras &out) co
           ++count;
         }
       }
-      out.factor = ((count != 0u) ? (out.factor / static_cast<default_type>(count)) : 0.0);
+      out.factor = ((count != 0U) ? (out.factor / static_cast<default_type>(count)) : 0.0);
       break;
 
     case tck_stat_t::MAX:
@@ -107,7 +107,7 @@ void TrackMapperTWI::set_factor(const Streamline<> &tck, SetVoxelExtras &out) co
           ++count;
         }
       }
-      out.factor = ((count != 0u) ? (out.factor / static_cast<default_type>(count)) : 0.0);
+      out.factor = ((count != 0U) ? (out.factor / static_cast<default_type>(count)) : 0.0);
       break;
 
     case tck_stat_t::GAUSSIAN:
@@ -258,7 +258,7 @@ void TrackMapperTWI::load_factors(const Streamline<> &tck) const {
       tangents.push_back(this_tangent);
     else
       tangents.push_back(Streamline<>::tangent_type::Zero());
-    if (i != 0u)
+    if (i != 0U)
       step_sizes.push_back((tck[i] - tck[i - 1]).norm());
   }
 
@@ -273,14 +273,14 @@ void TrackMapperTWI::load_factors(const Streamline<> &tck) const {
         tangents[i] = tangents[j];
       } else if (i == tangents.size() - 1) {
         size_t k;
-        for (k = i - 1; (k != 0u) && !tangents[k].isZero(); --k)
+        for (k = i - 1; (k != 0U) && !tangents[k].isZero(); --k)
           ;
         tangents[i] = tangents[k];
       } else {
         size_t j, k;
         for (j = 1; (j < tck.size() - 1) && !tangents[j].isZero(); ++j)
           ;
-        for (k = i - 1; (k != 0u) && !tangents[k].isZero(); --k)
+        for (k = i - 1; (k != 0U) && !tangents[k].isZero(); --k)
           ;
         tangents[i] = (tangents[j] + tangents[k]).normalized();
       }
@@ -335,7 +335,7 @@ void TrackMapperTWI::load_factors(const Streamline<> &tck) const {
       length = spline_distances(i + 1, i - 1);
     }
 
-    if (tangent_dot_product >= 1.0f)
+    if (tangent_dot_product >= 1.0F)
       factors.push_back(0.0);
     else
       factors.push_back(std::acos(tangent_dot_product) / length);

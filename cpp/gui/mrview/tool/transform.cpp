@@ -60,7 +60,7 @@ bool Transform::slice_move_event(const ModelViewProjection &projection, float x)
   const auto &header = window().image()->header();
   float const increment = window().snap_to_image()
                               ? x * header.spacing(window().plane())
-                              : x * std::pow(header.spacing(0) * header.spacing(1) * header.spacing(2), 1.0f / 3.0f);
+                              : x * std::pow(header.spacing(0) * header.spacing(1) * header.spacing(2), 1.0F / 3.0F);
   auto move = window().get_current_mode()->get_through_plane_translation(increment, projection);
 
   transform_type M = header.transform();

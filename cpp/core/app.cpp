@@ -955,7 +955,7 @@ void parse() {
     throw 0;
   }
 
-  if ((num_optional_arguments != 0u) && num_args_required > argument.size())
+  if ((num_optional_arguments != 0U) && num_args_required > argument.size())
     throw Exception("Expected at least " + str(num_args_required) + " arguments (" + str(argument.size()) +
                     " supplied)");
 
@@ -986,7 +986,7 @@ void parse() {
   }
 
   size_t const num_extra_arguments = argument.size() - num_args_required;
-  size_t num_arg_per_multi = (num_optional_arguments != 0u) ? num_extra_arguments / num_optional_arguments : 0;
+  size_t num_arg_per_multi = (num_optional_arguments != 0U) ? num_extra_arguments / num_optional_arguments : 0;
   if (num_arg_per_multi * num_optional_arguments != num_extra_arguments)
     throw Exception("number of optional arguments provided are not equal for all arguments");
   if (flags.required())
@@ -995,7 +995,7 @@ void parse() {
   // assign arguments to their corresponding definitions:
   for (size_t n = 0, index = 0, next = 0; n < argument.size(); ++n) {
     if (n == next) {
-      if (n != 0u)
+      if (n != 0U)
         ++index;
       if (ARGUMENTS[index].flags.any())
         next = n + num_arg_per_multi;
@@ -1341,7 +1341,7 @@ int64_t App::ParsedArgument::as_int() const {
     if (alpha_count > 1)
       throw Exception("too many letters");
     int64_t retval = 0;
-    if (alpha_count != 0u) {
+    if (alpha_count != 0U) {
       if (alpha_is_last) {
         std::string num(p);
         const char postfix = num.back();

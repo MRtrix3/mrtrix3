@@ -36,7 +36,7 @@ public:
              size_t extent = 0,
              bool zero_boundary = false)
       : base_type(parent), stdev(stdev_in), axis(axis_in), zero_boundary(zero_boundary) {
-    if (extent == 0u)
+    if (extent == 0U)
       radius = ceil(2 * stdev / spacing(axis));
     else if (extent == 1)
       radius = 0;

@@ -46,7 +46,7 @@ void Connect::operator()(Image<float> &input, Image<float> &output) const {
   //   duplication of memory requirements
 
   for (auto l = Loop(0)(output); l; ++l)
-    output.value() = 0.0f;
+    output.value() = 0.0F;
 
   Eigen::Array<bool, Eigen::Dynamic, 1> processed(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(input.size(0)));
   using IndexAndSize = std::pair<size_t, size_t>;

@@ -77,11 +77,11 @@ void TckFactor::remove_excluded_fixels(const float min_td_frac) {
   }
   INFO(str(zero_TD_count) + " fixels have no attributed streamlines; these account for " +
        str(100.0 * zero_TD_cf_sum / cf) + "\% of the initial cost function");
-  if (excluded_count != 0u) {
+  if (excluded_count != 0U) {
     INFO(str(excluded_count) + " of " + str(fixels.size()) +
          " fixels were tracked, but have been excluded from optimisation due to inadequate reconstruction;");
     INFO("these contribute " + str(100.0 * excluded_cf_sum / cf) + "\% of the initial cost function");
-  } else if (min_td_frac != 0.0f) {
+  } else if (min_td_frac != 0.0F) {
     INFO("No fixels were excluded from optimisation due to poor reconstruction");
   }
 }
@@ -144,7 +144,7 @@ void TckFactor::calc_afcsa() {
           const float length = tckcont[f].get_length();
           sum_afd += fixel.get_weight() * fixel.get_FOD() * (length / fixel.get_orig_TD());
         }
-        if ((sum_afd != 0.0) && (tckcont.get_total_contribution() != 0.0f)) {
+        if ((sum_afd != 0.0) && (tckcont.get_total_contribution() != 0.0F)) {
           const double afcsa = sum_afd / tckcont.get_total_contribution();
           master.coefficients[track_index] = std::max(master.min_coeff, std::log(afcsa / fixed_mu));
         } else {
@@ -194,7 +194,7 @@ void TckFactor::estimate_factors() {
 
   unsigned int nonzero_streamlines = 0;
   for (SIFT::track_t i = 0; i != num_tracks(); ++i) {
-    if ((contributions[i] != nullptr) && (contributions[i]->dim() != 0u))
+    if ((contributions[i] != nullptr) && (contributions[i]->dim() != 0U))
       ++nonzero_streamlines;
   }
 
@@ -263,7 +263,7 @@ void TckFactor::estimate_factors() {
 
     // Perform fixel exclusion
     const size_t excluded_count = fixels_to_exclude.count();
-    if (excluded_count != 0u) {
+    if (excluded_count != 0U) {
       DEBUG(str(excluded_count) + " fixels excluded this iteration");
       for (size_t f = 0; f != fixels.size(); ++f) {
         if (fixels_to_exclude[f])

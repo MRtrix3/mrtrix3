@@ -175,7 +175,7 @@ private:
 inline void ProgressBar::set_max(size_t target) {
   if (!show)
     return;
-  if (target != 0u) {
+  if (target != 0U) {
     _multiplier = 0.01 * target;
   } else {
     _multiplier = 0.0;

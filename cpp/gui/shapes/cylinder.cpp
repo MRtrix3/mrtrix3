@@ -39,11 +39,11 @@ void Cylinder::LOD(const size_t level_of_detail) {
   const float angle_multiplier = 2.0 * Math::pi / static_cast<float>(N);
 
   // The near face
-  vertices.push_back(Eigen::Vector3f{0.0f, 0.0f, 0.0f});
-  normals.push_back(Eigen::Vector3f{0.0f, 0.0f, -1.0f});
+  vertices.push_back(Eigen::Vector3f{0.0F, 0.0F, 0.0F});
+  normals.push_back(Eigen::Vector3f{0.0F, 0.0F, -1.0F});
   for (int i = 0; i != N; ++i) {
-    vertices.push_back(Eigen::Vector3f{std::cos(i * angle_multiplier), std::sin(i * angle_multiplier), 0.0f});
-    normals.push_back(Eigen::Vector3f{0.0f, 0.0f, -1.0f});
+    vertices.push_back(Eigen::Vector3f{std::cos(i * angle_multiplier), std::sin(i * angle_multiplier), 0.0F});
+    normals.push_back(Eigen::Vector3f{0.0F, 0.0F, -1.0F});
     if (i == N - 1)
       indices.push_back(Eigen::Array3i{0, i, 1});
     else if (i != 0)
@@ -52,11 +52,11 @@ void Cylinder::LOD(const size_t level_of_detail) {
 
   // The far face
   const int far_face_centre_index = int(vertices.size());
-  vertices.push_back(Eigen::Vector3f{0.0f, 0.0f, 1.0f});
-  normals.push_back(Eigen::Vector3f{0.0f, 0.0f, 1.0f});
+  vertices.push_back(Eigen::Vector3f{0.0F, 0.0F, 1.0F});
+  normals.push_back(Eigen::Vector3f{0.0F, 0.0F, 1.0F});
   for (int i = 0; i != N; ++i) {
-    vertices.push_back(Eigen::Vector3f{std::cos(i * angle_multiplier), std::sin(i * angle_multiplier), 1.0f});
-    normals.push_back(Eigen::Vector3f{0.0f, 0.0f, 1.0f});
+    vertices.push_back(Eigen::Vector3f{std::cos(i * angle_multiplier), std::sin(i * angle_multiplier), 1.0F});
+    normals.push_back(Eigen::Vector3f{0.0F, 0.0F, 1.0F});
     if (i == N - 1)
       indices.push_back(Eigen::Array3i{far_face_centre_index, far_face_centre_index + 1, far_face_centre_index + i});
     else if (i != 0)
@@ -65,16 +65,16 @@ void Cylinder::LOD(const size_t level_of_detail) {
   }
 
   // The length of the cylinder
-  vertices.push_back(Eigen::Vector3f{1.0f, 0.0f, 0.0f});
-  normals.push_back(Eigen::Vector3f{1.0f, 0.0f, 0.0f});
-  vertices.push_back(Eigen::Vector3f{1.0f, 0.0f, 1.0f});
-  normals.push_back(Eigen::Vector3f{1.0f, 0.0f, 0.0f});
+  vertices.push_back(Eigen::Vector3f{1.0F, 0.0F, 0.0F});
+  normals.push_back(Eigen::Vector3f{1.0F, 0.0F, 0.0F});
+  vertices.push_back(Eigen::Vector3f{1.0F, 0.0F, 1.0F});
+  normals.push_back(Eigen::Vector3f{1.0F, 0.0F, 0.0F});
   for (int i = 1; i <= N; ++i) {
     const int V = vertices.size();
-    vertices.push_back(Eigen::Vector3f{std::cos(i * angle_multiplier), std::sin(i * angle_multiplier), 0.0f});
-    normals.push_back(Eigen::Vector3f{std::cos(i * angle_multiplier), std::sin(i * angle_multiplier), 0.0f});
-    vertices.push_back(Eigen::Vector3f{std::cos(i * angle_multiplier), std::sin(i * angle_multiplier), 1.0f});
-    normals.push_back(Eigen::Vector3f{std::cos(i * angle_multiplier), std::sin(i * angle_multiplier), 0.0f});
+    vertices.push_back(Eigen::Vector3f{std::cos(i * angle_multiplier), std::sin(i * angle_multiplier), 0.0F});
+    normals.push_back(Eigen::Vector3f{std::cos(i * angle_multiplier), std::sin(i * angle_multiplier), 0.0F});
+    vertices.push_back(Eigen::Vector3f{std::cos(i * angle_multiplier), std::sin(i * angle_multiplier), 1.0F});
+    normals.push_back(Eigen::Vector3f{std::cos(i * angle_multiplier), std::sin(i * angle_multiplier), 0.0F});
     indices.push_back(Eigen::Array3i{V - 2, V - 1, V});
     indices.push_back(Eigen::Array3i{V, V - 1, V + 1});
   }

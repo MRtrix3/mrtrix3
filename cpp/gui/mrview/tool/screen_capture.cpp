@@ -365,7 +365,7 @@ void Capture::run(bool with_capture) {
       const Mode::Base *mode = window().get_current_mode();
       if (mode != nullptr) {
         const GL::vec4 trans_gl_vec = mode->get_current_projection()->modelview_inverse() *
-                                      GL::vec4(trans_vec[0], trans_vec[1], trans_vec[2], 0.0f);
+                                      GL::vec4(trans_vec[0], trans_vec[1], trans_vec[2], 0.0F);
         trans_vec[0] = trans_gl_vec[0];
         trans_vec[1] = trans_gl_vec[1];
         trans_vec[2] = trans_gl_vec[2];
@@ -383,7 +383,7 @@ void Capture::run(bool with_capture) {
     // If rotating image we need to offset the translation so that the rotation is relative to
     // the center (i.e. target) of the image
     if (rotation_type == RotationType::Image) {
-      GL::vec4 target_after = GL::mat4(rotation) * GL::vec4(target[0], target[1], target[2], 1.0f);
+      GL::vec4 target_after = GL::mat4(rotation) * GL::vec4(target[0], target[1], target[2], 1.0F);
       trans_vec += Eigen::Vector3f{target_after[0], target_after[1], target_after[2]} - target;
     }
 

@@ -164,7 +164,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
       "RepetitionTime", [](Frame *f) -> default_type { return f->repetition_time; }, 0.001);
 
   if (std::isfinite(frame.bvalue)) {
-    if (frame.bipolar_flag != 0u) {
+    if (frame.bipolar_flag != 0U) {
       switch (frame.bipolar_flag) {
       case 1:
         H.keyval()["DiffusionScheme"] = "Bipolar";
@@ -175,7 +175,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
       default:
         WARN("Unsupported DWI polarity scheme flag (" + str(frame.bipolar_flag) + ")");
       }
-    } else if (frame.readoutmode_flag != 0u) {
+    } else if (frame.readoutmode_flag != 0U) {
       switch (frame.readoutmode_flag) {
       case 1:
         H.keyval()["DiffusionScheme"] = "Monopolar";
@@ -291,7 +291,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
   for (size_t n = 1; n < frames.size(); ++n) { // check consistency of data scaling:
     if (frames[n]->scale_intercept != frames[n - 1]->scale_intercept ||
         frames[n]->scale_slope != frames[n - 1]->scale_slope) {
-      if (image.images_in_mosaic != 0u)
+      if (image.images_in_mosaic != 0U)
         throw Exception("unable to load series due to inconsistent data scaling between DICOM mosaic frames");
       inconsistent_scaling = true;
       INFO("DICOM images contain inconsistency scaling - data will be rescaled and stored in 32-bit floating-point "
@@ -303,7 +303,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
   // Slice timing may come from a few different potential sources
   std::vector<std::string> slices_timing_str;
   std::vector<float> slices_timing_float;
-  if (image.images_in_mosaic != 0u) {
+  if (image.images_in_mosaic != 0U) {
     if (image.mosaic_slices_timing.size() < image.images_in_mosaic) {
       WARN("Number of entries in mosaic slice timing (" + str(image.mosaic_slices_timing.size()) +
            ") is smaller than number of images in mosaic (" + str(image.images_in_mosaic) + "); omitting");
@@ -342,8 +342,8 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
       slices_timing_float.push_back(static_cast<default_type>(frames[n]->acquisition_time) - min_acquisition_time);
   }
   if (!slices_timing_float.empty()) {
-    const size_t slices_acquired_at_zero = std::count(slices_timing_float.begin(), slices_timing_float.end(), 0.0f);
-    if (slices_acquired_at_zero < ((image.images_in_mosaic != 0u) ? image.images_in_mosaic : dim[1])) {
+    const size_t slices_acquired_at_zero = std::count(slices_timing_float.begin(), slices_timing_float.end(), 0.0F);
+    if (slices_acquired_at_zero < ((image.images_in_mosaic != 0U) ? image.images_in_mosaic : dim[1])) {
       H.keyval()["SliceTiming"] =
           !slices_timing_str.empty() ? join(slices_timing_str, ",") : join(slices_timing_float, ",");
       H.keyval()["MultibandAccelerationFactor"] = str(slices_acquired_at_zero);
@@ -366,7 +366,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
     return io_handler;
   }
 
-  if (image.images_in_mosaic != 0u) {
+  if (image.images_in_mosaic != 0U) {
 
     INFO("DICOM image \"" + H.name() + "\" is in mosaic format");
     if (H.size(2) != 1)

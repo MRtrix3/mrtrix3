@@ -108,7 +108,7 @@ public:
     std::uniform_int_distribution<ssize_t> dist{0, static_cast<ssize_t>(range) - 1};
     while (cnt < max_cnt) {
       index = dist(rng_) + min_idx;
-      if (idx_done.count(index) == 0u) {
+      if (idx_done.count(index) == 0U) {
         idx_done.insert(index);
         break;
       }

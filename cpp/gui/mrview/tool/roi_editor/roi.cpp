@@ -335,11 +335,11 @@ void ROI::save(ROI_Item *roi) {
 
 int ROI::normal2axis(const Eigen::Vector3f &normal, const ROI_Item &roi) const {
   float const x_dot_n =
-      std::fabs((roi.image2scanner().rotation().cast<float>() * Eigen::Vector3f{1.0f, 0.0f, 0.0f}).dot(normal));
+      std::fabs((roi.image2scanner().rotation().cast<float>() * Eigen::Vector3f{1.0F, 0.0F, 0.0F}).dot(normal));
   float const y_dot_n =
-      std::fabs((roi.image2scanner().rotation().cast<float>() * Eigen::Vector3f{0.0f, 1.0f, 0.0f}).dot(normal));
+      std::fabs((roi.image2scanner().rotation().cast<float>() * Eigen::Vector3f{0.0F, 1.0F, 0.0F}).dot(normal));
   float const z_dot_n =
-      std::fabs((roi.image2scanner().rotation().cast<float>() * Eigen::Vector3f{0.0f, 0.0f, 1.0f}).dot(normal));
+      std::fabs((roi.image2scanner().rotation().cast<float>() * Eigen::Vector3f{0.0F, 0.0F, 1.0F}).dot(normal));
   if (x_dot_n > y_dot_n)
     return x_dot_n > z_dot_n ? 0 : 2;
   return y_dot_n > z_dot_n ? 1 : 2;
@@ -517,7 +517,7 @@ void ROI::opacity_changed(int) {
   QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
   for (int i = 0; i < indices.size(); ++i) {
     ROI_Item *roi = list_model->get(indices[i]);
-    roi->alpha = opacity_slider->value() / 1.0e3f;
+    roi->alpha = opacity_slider->value() / 1.0e3F;
   }
   window().updateGL();
   in_insert_mode = false;
@@ -566,11 +566,11 @@ void ROI::update_selection() {
 
   ROI_Item *roi = list_model->get(indices[0]);
   colour_button->setColor(QColor(roi->colour[0], roi->colour[1], roi->colour[2]));
-  opacity_slider->setValue(1.0e3f * roi->alpha);
+  opacity_slider->setValue(1.0e3F * roi->alpha);
 
   brush_size_button->setMin(roi->min_brush_size);
   brush_size_button->setMax(roi->max_brush_size);
-  brush_size_button->setRate(0.1f * roi->min_brush_size);
+  brush_size_button->setRate(0.1F * roi->min_brush_size);
   brush_size_button->setValue(roi->brush_size);
 }
 

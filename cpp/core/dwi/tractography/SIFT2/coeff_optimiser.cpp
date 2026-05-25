@@ -133,7 +133,7 @@ bool CoefficientOptimiserBase::operator()(const SIFT::TrackIndexRange &range) {
     // Update the stats
     local_stats_steps += dFs;
     local_stats_coefficients += new_coefficient;
-    if ((master.contributions[track_index] != nullptr) && (master.contributions[track_index]->dim() != 0u) &&
+    if ((master.contributions[track_index] != nullptr) && (master.contributions[track_index]->dim() != 0U) &&
         new_coefficient > master.min_coeff)
       ++local_nonzero_count;
 
@@ -183,7 +183,7 @@ double CoefficientOptimiserBase::do_fixel_exclusion(const SIFT::track_t track_in
     }
   }
 
-  if (index_to_exclude != 0u)
+  if (index_to_exclude != 0U)
     local_to_exclude[index_to_exclude] = true;
   else
     return 0.0;

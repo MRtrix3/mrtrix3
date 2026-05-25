@@ -283,8 +283,8 @@ inline GL::mat4 get_tex_to_scanner_matrix(const ImageBase &image) {
   T2S(1, 3) = pos[1];
   T2S(2, 3) = pos[2];
 
-  T2S(3, 0) = T2S(3, 1) = T2S(3, 2) = 0.0f;
-  T2S(3, 3) = 1.0f;
+  T2S(3, 0) = T2S(3, 1) = T2S(3, 2) = 0.0F;
+  T2S(3, 3) = 1.0F;
 
   return T2S;
 }
@@ -336,7 +336,7 @@ void Volume::paint(Projection &projection) {
   ray[1] /= image()->header().size(1);
   ray[2] /= image()->header().size(2);
 
-  if ((volume_VB == 0u) || (volume_VAO == 0u) || (volume_VI == 0u)) {
+  if ((volume_VB == 0U) || (volume_VAO == 0U) || (volume_VI == 0U)) {
     volume_VB.gen();
     volume_VI.gen();
     volume_VAO.gen();
@@ -409,15 +409,15 @@ void Volume::paint(Projection &projection) {
 
   if (ColourMap::maps[image()->colourmap].is_colour)
     gl::Uniform3f(gl::GetUniformLocation(volume_shader, "colourmap_colour"),
-                  image()->colour[0] / 255.0f,
-                  image()->colour[1] / 255.0f,
-                  image()->colour[2] / 255.0f);
+                  image()->colour[0] / 255.0F,
+                  image()->colour[1] / 255.0F,
+                  image()->colour[2] / 255.0F);
 
   gl::ActiveTexture(gl::TEXTURE0);
   gl::BindTexture(gl::TEXTURE_3D, image()->texture());
 
   gl::ActiveTexture(gl::TEXTURE1);
-  if (depth_texture == 0u) {
+  if (depth_texture == 0U) {
     depth_texture.gen(gl::TEXTURE_2D);
     depth_texture.bind();
     depth_texture.set_interp(gl::NEAREST);

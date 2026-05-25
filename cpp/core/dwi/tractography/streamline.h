@@ -72,7 +72,7 @@ public:
   using tangent_type = point_type;
   using value_type = ValueType;
 
-  Streamline() : weight(1.0f) {}
+  Streamline() : weight(1.0F) {}
 
   Streamline(size_t size) : std::vector<point_type>(size), weight(value_type(1.0)) {}
 
@@ -94,7 +94,7 @@ public:
     std::vector<point_type>::operator=(std::move(static_cast<std::vector<point_type> &&>(that)));
     DataIndex::operator=(std::move(static_cast<DataIndex &&>(that)));
     weight = that.weight;
-    that.weight = 0.0f;
+    that.weight = 0.0F;
     return *this;
   }
 

@@ -73,7 +73,7 @@ void initialise_processing_mask(Image<float> &in_dwi, Image<float> &out_mask, Im
 
       // Once all of the 5TT data has been read in, use it to derive the processing mask
       out_5tt.index(3) = 2; // Access the WM fraction
-      float integral = 0.0f;
+      float integral = 0.0F;
       for (auto l = Loop(out_5tt, 0, 3)(out_5tt, out_mask); l; ++l) {
         const float value =
             Math::pow2<float>(out_5tt.value()); // Processing mask value is the square of the WM fraction
@@ -81,10 +81,10 @@ void initialise_processing_mask(Image<float> &in_dwi, Image<float> &out_mask, Im
           out_mask.value() = value;
           integral += value;
         } else {
-          out_mask.value() = 0.0f;
+          out_mask.value() = 0.0F;
         }
       }
-      if (integral == 0.0f)
+      if (integral == 0.0F)
         throw Exception("Processing mask is empty; check input images / registration");
 
     } else {

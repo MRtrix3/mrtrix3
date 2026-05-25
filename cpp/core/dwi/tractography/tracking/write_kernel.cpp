@@ -50,7 +50,7 @@ bool WriteKernel::operator()(const GeneratedTrack &tck) {
         return printf(
             "%8" PRIu64 " seeds, %8" PRIu64 " streamlines, %8" PRIu64 " selected", seeds, streamlines, selected);
       },
-      (always_increment ? 1u : tck.size()) != 0u);
+      (always_increment ? 1U : tck.size()) != 0U);
   if (early_exit(seeds, selected)) {
     WARN(std::string("Track generation terminating prematurely:"                   //
                      " Highly unlikely to reach target number of streamlines (p<") //

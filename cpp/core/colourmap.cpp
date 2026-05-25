@@ -20,7 +20,7 @@ namespace MR::ColourMap {
 const std::string Entry::default_amplitude = "color.r";
 
 namespace {
-float clamp(const float i) { return std::max(0.0f, std::min(1.0f, i)); }
+float clamp(const float i) { return std::max(0.0F, std::min(1.0F, i)); }
 } // namespace
 
 const std::vector<Entry> maps = {
@@ -32,24 +32,24 @@ const std::vector<Entry> maps = {
           "color.rgb = vec3 (2.7213 * amplitude, 2.7213 * amplitude - 1.0, 3.7727 * amplitude - 2.7727);\n",
           [](float amplitude) {
             return Eigen::Array3f(
-                clamp(2.7213f * amplitude), clamp(2.7213f * amplitude - 1.0f), clamp(3.7727f * amplitude - 2.7727f));
+                clamp(2.7213F * amplitude), clamp(2.7213F * amplitude - 1.0F), clamp(3.7727F * amplitude - 2.7727F));
           }),
 
     Entry("Cool",
           "color.rgb = 1.0 - (vec3 (2.7213 * (1.0 - amplitude), 2.7213 * (1.0 - amplitude) - 1.0, 3.7727 * (1.0 - "
           "amplitude) - 2.7727));\n",
           [](float amplitude) {
-            return Eigen::Array3f(clamp(1.0f - (2.7213f * (1.0f - amplitude))),
-                                  clamp(1.0f - (2.7213f * (1.0f - amplitude) - 1.0f)),
-                                  clamp(1.0f - (3.7727f * (1.0f - amplitude) - 2.7727f)));
+            return Eigen::Array3f(clamp(1.0F - (2.7213F * (1.0F - amplitude))),
+                                  clamp(1.0F - (2.7213F * (1.0F - amplitude) - 1.0F)),
+                                  clamp(1.0F - (3.7727F * (1.0F - amplitude) - 2.7727F)));
           }),
 
     Entry("Jet",
           "color.rgb = 1.5 - 4.0 * abs (1.0 - amplitude - vec3(0.25, 0.5, 0.75));\n",
           [](float amplitude) {
-            return Eigen::Array3f(clamp(1.5f - 4.0f * std::fabs(1.0f - amplitude - 0.25f)),
-                                  clamp(1.5f - 4.0f * std::fabs(1.0f - amplitude - 0.5f)),
-                                  clamp(1.5f - 4.0f * std::fabs(1.0f - amplitude - 0.75f)));
+            return Eigen::Array3f(clamp(1.5F - 4.0F * std::fabs(1.0F - amplitude - 0.25F)),
+                                  clamp(1.5F - 4.0F * std::fabs(1.0F - amplitude - 0.5F)),
+                                  clamp(1.5F - 4.0F * std::fabs(1.0F - amplitude - 0.75F)));
           }),
 
     // The Inferno and Viridis colour maps are implemented using a 6th order polynomial approximation of the originals,
@@ -114,9 +114,9 @@ const std::vector<Entry> maps = {
           "1.0));\n",
           [](float amplitude) {
             return Eigen::Array3f(
-                clamp(2.0f * amplitude - 0.5f),
-                clamp(2.0f * (0.25f - std::fabs(amplitude - 0.25f))) + clamp(2.0f * amplitude - 1.0f),
-                1.0f - (clamp(1.0f - 2.0f * amplitude) + clamp(1.0f - 4.0f * std::fabs(amplitude - 0.75f))));
+                clamp(2.0F * amplitude - 0.5F),
+                clamp(2.0F * (0.25F - std::fabs(amplitude - 0.25F))) + clamp(2.0F * amplitude - 1.0F),
+                1.0F - (clamp(1.0F - 2.0F * amplitude) + clamp(1.0F - 4.0F * std::fabs(amplitude - 0.75F))));
           }),
 
     Entry("Colour", "color.rgb = amplitude * colourmap_colour;\n", Entry::basic_map_fn(), "", false, true),

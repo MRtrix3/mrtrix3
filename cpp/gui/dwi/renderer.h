@@ -50,7 +50,7 @@ public:
 
   Renderer(QOpenGLWidget *);
 
-  bool ready() const { return shader != 0u; }
+  bool ready() const { return shader != 0U; }
 
   void initGL() {
     sh.initGL();
@@ -74,13 +74,13 @@ public:
   void stop() const { shader.stop(); }
 
   QColor get_colour() const {
-    return QColor(object_color[0] * 255.0f, object_color[1] * 255.0f, object_color[2] * 255.0f);
+    return QColor(object_color[0] * 255.0F, object_color[1] * 255.0F, object_color[2] * 255.0F);
   }
 
   void set_colour(const QColor &c) {
-    object_color[0] = c.red() / 255.0f;
-    object_color[1] = c.green() / 255.0f;
-    object_color[2] = c.blue() / 255.0f;
+    object_color[0] = c.red() / 255.0F;
+    object_color[1] = c.green() / 255.0F;
+    object_color[2] = c.blue() / 255.0F;
   }
 
 protected:

@@ -151,7 +151,7 @@ public:
 
   void set_stage_iterations(const std::vector<uint32_t> &it) {
     for (size_t i = 0; i < it.size(); ++i)
-      if (it[i] == 0u)
+      if (it[i] == 0U)
         throw Exception("the number of stage iterations must be positive");
     if (it.size() == stages.size()) {
       for (size_t i = 0; i < stages.size(); ++i)
@@ -190,7 +190,7 @@ public:
 
   void set_lmax(const std::vector<uint32_t> &lmax) {
     for (size_t i = 0; i < lmax.size(); ++i)
-      if ((lmax[i] % 2) != 0u)
+      if ((lmax[i] % 2) != 0U)
         throw Exception("the input lmax must be even");
     if (lmax.size() == stages.size()) {
       for (size_t i = 0; i < stages.size(); ++i)
@@ -467,21 +467,21 @@ public:
       // CONF default: 5e-3
       // CONF Linear registration: threshold for convergence check using the smoothed control point trajectories
       // CONF measured in fraction of a voxel.
-      slope_threshold.fill(spacing.mean() * File::Config::get_float("RegGdConvergenceThresh", 5e-3f));
+      slope_threshold.fill(spacing.mean() * File::Config::get_float("RegGdConvergenceThresh", 5e-3F));
       DEBUG("convergence slope threshold: " + str(slope_threshold[0]));
       // CONF option: RegGdConvergenceDataSmooth
       // CONF default: 0.8
       // CONF Linear registration: control point trajectory smoothing value used in convergence check
       // CONF parameter range: [0...1].
       const default_type alpha(MR::File::Config::get_float("RegGdConvergenceDataSmooth", 0.8));
-      if ((alpha < 0.0f) || (alpha > 1.0f))
+      if ((alpha < 0.0F) || (alpha > 1.0F))
         throw Exception("config file option RegGdConvergenceDataSmooth has to be in the range: [0...1]");
       // CONF option: RegGdConvergenceSlopeSmooth
       // CONF default: 0.1
       // CONF Linear registration: control point trajectory slope smoothing value used in convergence check
       // CONF parameter range: [0...1].
       const default_type beta(MR::File::Config::get_float("RegGdConvergenceSlopeSmooth", 0.1));
-      if ((beta < 0.0f) || (beta > 1.0f))
+      if ((beta < 0.0F) || (beta > 1.0F))
         throw Exception("config file option RegGdConvergenceSlopeSmooth has to be in the range: [0...1]");
       // CONF option: RegGdConvergenceBufferLen
       // CONF default: 4

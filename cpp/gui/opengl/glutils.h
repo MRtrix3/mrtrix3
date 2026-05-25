@@ -81,7 +81,7 @@ std::string ErrorString(GLenum errorcode);
 
 inline void check_error(const char *filename, int line) { // check_syntax off (input is __FILE__)
   GLenum err = gl::GetError();
-  while (err != 0u) {
+  while (err != 0U) {
     FAIL(std::string("[") + filename + ": " + str(line) + "] OpenGL error: " + ErrorString(err));
     err = gl::GetError();
   }
@@ -162,7 +162,7 @@ public:
   }
   operator GLuint() const { return id; }
   void gen(GLenum target, GLint interp_type = gl::LINEAR) {
-    if (id == 0u) {
+    if (id == 0U) {
       check_context.set();
       tex_type = target;
       gl::GenTextures(1, &id);
@@ -180,7 +180,7 @@ public:
   }
   GLenum type() const { return tex_type; }
   void clear() {
-    if (id != 0u) {
+    if (id != 0U) {
       check_context();
       GL_DEBUG("deleting OpenGL texture ID " + str(id));
       gl::DeleteTextures(1, &id);
@@ -221,14 +221,14 @@ public:
   }
   operator GLuint() const { return id; }
   void gen() {
-    if (id == 0u) {
+    if (id == 0U) {
       check_context.set();
       gl::GenBuffers(1, &id);
       GL_DEBUG("created OpenGL vertex buffer ID " + str(id));
     }
   }
   void clear() {
-    if (id != 0u) {
+    if (id != 0U) {
       check_context();
       GL_DEBUG("deleting OpenGL vertex buffer ID " + str(id));
       gl::DeleteBuffers(1, &id);
@@ -261,14 +261,14 @@ public:
   }
   operator GLuint() const { return id; }
   void gen() {
-    if (id == 0u) {
+    if (id == 0U) {
       check_context.set();
       gl::GenVertexArrays(1, &id);
       GL_DEBUG("created OpenGL vertex array ID " + str(id));
     }
   }
   void clear() {
-    if (id != 0u) {
+    if (id != 0U) {
       check_context();
       GL_DEBUG("deleting OpenGL vertex array ID " + str(id));
       gl::DeleteVertexArrays(1, &id);
@@ -301,14 +301,14 @@ public:
   }
   operator GLuint() const { return id; }
   void gen() {
-    if (id == 0u) {
+    if (id == 0U) {
       check_context.set();
       gl::GenBuffers(1, &id);
       GL_DEBUG("created OpenGL index buffer ID " + str(id));
     }
   }
   void clear() {
-    if (id != 0u) {
+    if (id != 0U) {
       check_context();
       GL_DEBUG("deleting OpenGL index buffer ID " + str(id));
       gl::DeleteBuffers(1, &id);
@@ -341,14 +341,14 @@ public:
   }
   operator GLuint() const { return id; }
   void gen() {
-    if (id == 0u) {
+    if (id == 0U) {
       check_context.set();
       gl::GenFramebuffers(1, &id);
       GL_DEBUG("created OpenGL framebuffer ID " + str(id));
     }
   }
   void clear() {
-    if (id != 0u) {
+    if (id != 0U) {
       check_context();
       GL_DEBUG("deleting OpenGL framebuffer ID " + str(id));
       gl::DeleteFramebuffers(1, &id);
