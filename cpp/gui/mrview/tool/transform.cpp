@@ -19,9 +19,9 @@
 namespace MR::GUI::MRView::Tool {
 
 Transform::Transform(Dock *parent) : Base(parent) {
-  VBoxLayout *main_box = new VBoxLayout(this);
-  QLabel *label = new QLabel("When active, all camera view manipulations will apply "
-                             "to the main image, rather than to the camera");
+  auto *main_box = new VBoxLayout(this);
+  auto *label = new QLabel("When active, all camera view manipulations will apply "
+                           "to the main image, rather than to the camera");
   label->setWordWrap(true);
   label->setAlignment(Qt::AlignHCenter);
   main_box->addWidget(label);

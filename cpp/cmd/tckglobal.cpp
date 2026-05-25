@@ -295,7 +295,7 @@ void run() {
     }
   }
 
-  const uint64_t niter = get_option_value<uint64_t>("niter", default_niter);
+  const auto niter = get_option_value<uint64_t>("niter", default_niter);
   const double t0 = get_option_value("t0", default_t0);
   const double t1 = get_option_value("t1", default_t1);
 
@@ -319,10 +319,10 @@ void run() {
 
   ParticleGrid pgrid(header_in);
 
-  ExternalEnergyComputer *Eext = new ExternalEnergyComputer(stats, header_in, properties);
-  InternalEnergyComputer *Eint = new InternalEnergyComputer(stats, pgrid);
+  auto *Eext = new ExternalEnergyComputer(stats, header_in, properties);
+  auto *Eint = new InternalEnergyComputer(stats, pgrid);
   Eint->setConnPot(cpot);
-  EnergySumComputer *Esum = new EnergySumComputer(
+  auto *Esum = new EnergySumComputer(
       stats, Eint, properties.lam_int, Eext, properties.lam_ext / (wmscale2 * properties.weight * properties.weight));
 
   // All EnergyComputers are recursively destroyed upon destruction of mhs, except for the shared data.

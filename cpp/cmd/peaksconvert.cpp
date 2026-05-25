@@ -557,7 +557,7 @@ void run() {
   if (H_in.ndim() != 4)
     throw Exception("Input image must be 4D");
 
-  const format_t in_format(get_option_choice<format_t>("in_format", format_t::CARTESIAN));
+  const auto in_format(get_option_choice<format_t>("in_format", format_t::CARTESIAN));
   if (in_format == format_t::CARTESIAN || in_format == format_t::UNITCARTESIAN)
     Peaks::validate_header(H_in);
 
@@ -566,14 +566,14 @@ void run() {
   if (num_fixels * in_volumes_per_fixel != H_in.size(3))
     throw Exception("Number of volumes in input image (" + str(H_in.size(3)) + ")" +              //
                     " incompatible with " + str(volumes_per_fixel) + " volumes per orientation"); //
-  const reference_t in_reference(get_option_choice<reference_t>("in_reference", reference_t::XYZ));
+  const auto in_reference(get_option_choice<reference_t>("in_reference", reference_t::XYZ));
 
-  const format_t out_format(get_option_choice<format_t>("out_format", format_t::CARTESIAN));
+  const auto out_format(get_option_choice<format_t>("out_format", format_t::CARTESIAN));
   if ((in_format == format_t::SPHERICAL || in_format == format_t::CARTESIAN) &&
       (out_format == format_t::UNITSPHERICAL || out_format == format_t::UNITCARTESIAN)) {
     WARN("Output image will not include amplitudes that may be present in input image due to chosen format");
   }
-  const reference_t out_reference(get_option_choice<reference_t>("out_reference", reference_t::XYZ));
+  const auto out_reference(get_option_choice<reference_t>("out_reference", reference_t::XYZ));
 
   Header H_out(H_in);
   H_out.path() = argument[1];

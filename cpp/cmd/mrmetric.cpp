@@ -230,12 +230,12 @@ using value_type = double;
 using MaskType = Image<bool>;
 
 void run() {
-  const space_t space = get_option_choice<space_t>("space", default_space);
-  const MR::Interp::interp_type interp =
+  const auto space = get_option_choice<space_t>("space", default_space);
+  const auto interp =
       MR::Interp::interp_type(get_option_value<ssize_t>("interp", static_cast<ssize_t>(default_interp)));
 
   MetricType metric_type = MetricType::MeanSquared;
-  const MetricChoice metric_choice = get_option_choice<MetricChoice>("metric", MetricChoice::DIFF);
+  const auto metric_choice = get_option_choice<MetricChoice>("metric", MetricChoice::DIFF);
   if (metric_choice == MetricChoice::CC) {
     if (space != space_t::AVERAGE)
       throw Exception("CC metric only implemented for use in average space");

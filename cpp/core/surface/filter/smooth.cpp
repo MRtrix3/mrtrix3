@@ -46,7 +46,7 @@ void Smooth::operator()(const Mesh &in, Mesh &out) const {
   // Pre-compute polygon centroids and areas
   VertexList centroids;
   std::vector<default_type> areas;
-  for (TriangleList::const_iterator p = in.triangles.begin(); p != in.triangles.end(); ++p) {
+  for (auto p = in.triangles.begin(); p != in.triangles.end(); ++p) {
     centroids.push_back((in.vertices[(*p)[0]] + in.vertices[(*p)[1]] + in.vertices[(*p)[2]]) * (1.0 / 3.0));
     areas.push_back(area(in, *p));
   }
@@ -97,13 +97,10 @@ void Smooth::operator()(const Mesh &in, Mesh &out) const {
 
       // Find polygons at the outer edge of this expanding front, and add them to the neighbourhood for this vertex
       std::vector<uint32_t> next_front;
-      for (std::vector<uint32_t>::const_iterator front = vert_polys_to_expand[v].begin();
-           front != vert_polys_to_expand[v].end();
-           ++front) {
-        for (std::vector<uint32_t>::const_iterator expansion = poly_neighbours[*front].begin();
-             expansion != poly_neighbours[*front].end();
+      for (auto front = vert_polys_to_expand[v].begin(); front != vert_polys_to_expand[v].end(); ++front) {
+        for (auto expansion = poly_neighbours[*front].begin(); expansion != poly_neighbours[*front].end();
              ++expansion) {
-          const std::set<uint32_t>::const_iterator existing = vert_polys[v].find(*expansion);
+          const auto existing = vert_polys[v].find(*expansion);
           if (existing == vert_polys[v].end()) {
             vert_polys[v].insert(*expansion);
             next_front.push_back(*expansion);
@@ -132,7 +129,7 @@ void Smooth::operator()(const Mesh &in, Mesh &out) const {
     // For now, just use every polygon as part of the estimate
     // Eventually, restrict this to some form of mesh neighbourhood
     // for (size_t i = 0; i != centroids.size(); ++i) {
-    for (std::set<uint32_t>::const_iterator it = vert_polys[v].begin(); it != vert_polys[v].end(); ++it) {
+    for (auto it = vert_polys[v].begin(); it != vert_polys[v].end(); ++it) {
       const uint32_t i = *it;
       default_type this_weight = areas[i];
       const default_type distance_sq = (centroids[i] - in.vertices[v]).squaredNorm();
@@ -152,7 +149,7 @@ void Smooth::operator()(const Mesh &in, Mesh &out) const {
   Mesh mollified_mesh;
   mollified_mesh.load(mollified_vertices, in.triangles);
   VertexList tangents;
-  for (TriangleList::const_iterator p = mollified_mesh.triangles.begin(); p != mollified_mesh.triangles.end(); ++p)
+  for (auto p = mollified_mesh.triangles.begin(); p != mollified_mesh.triangles.end(); ++p)
     tangents.push_back(normal(mollified_mesh, *p));
   if (progress)
     ++(*progress);
@@ -166,7 +163,7 @@ void Smooth::operator()(const Mesh &in, Mesh &out) const {
     default_type sum_weights = 0.0;
 
     // for (size_t i = 0; i != centroids.size(); ++i) {
-    for (std::set<uint32_t>::const_iterator it = vert_polys[v].begin(); it != vert_polys[v].end(); ++it) {
+    for (auto it = vert_polys[v].begin(); it != vert_polys[v].end(); ++it) {
       const uint32_t i = *it;
       default_type this_weight = areas[i];
       const default_type distance_sq = (centroids[i] - in.vertices[v]).squaredNorm();

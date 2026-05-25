@@ -81,12 +81,12 @@ void Config::init() {
 }
 
 std::string Config::get(std::string_view key) {
-  const KeyValues::const_iterator i = config.find(std::string(key));
+  const auto i = config.find(std::string(key));
   return (i != config.end() ? i->second : "");
 }
 
 std::string Config::get(std::string_view key, std::string_view default_value) {
-  const KeyValues::const_iterator i = config.find(std::string(key));
+  const auto i = config.find(std::string(key));
   return (i != config.end() ? i->second : std::string(default_value));
 }
 

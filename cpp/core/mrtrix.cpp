@@ -245,7 +245,7 @@ std::string join(const std::vector<std::string> &V, std::string_view delimiter) 
   if (V.empty())
     return ret;
   ret = V[0];
-  for (std::vector<std::string>::const_iterator i = V.begin() + 1; i != V.end(); ++i)
+  for (auto i = V.begin() + 1; i != V.end(); ++i)
     ret += delimiter + *i;
   return ret;
 }

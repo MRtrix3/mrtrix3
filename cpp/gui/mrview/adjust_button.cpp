@@ -67,7 +67,7 @@ void AdjustButton::onSetValue() {
 bool AdjustButton::eventFilter(QObject *obj, QEvent *event) {
   if (this->isEnabled()) {
     if (event->type() == QEvent::MouseButtonPress) {
-      QMouseEvent *mevent = static_cast<QMouseEvent *>(event);
+      auto *mevent = static_cast<QMouseEvent *>(event);
       if (mevent->button() == mevent->buttons()) {
         previous_y = deadzone_y = mevent->pos().y();
         deadzone_value = value();
@@ -78,7 +78,7 @@ bool AdjustButton::eventFilter(QObject *obj, QEvent *event) {
         deadzone_value = NaNF;
       }
     } else if (event->type() == QEvent::MouseMove) {
-      QMouseEvent *mevent = static_cast<QMouseEvent *>(event);
+      auto *mevent = static_cast<QMouseEvent *>(event);
       if (mevent->buttons() != Qt::NoButton) {
         if (MR::abs(mevent->pos().y() - deadzone_y) < deadzone_size) {
           if (value() != deadzone_value) {

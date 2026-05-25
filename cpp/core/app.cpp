@@ -1368,13 +1368,13 @@ int64_t App::ParsedArgument::as_int() const {
           throw Exception(std::string("unexpected postfix \'") + postfix + "\'");
         }
         if (contains_dotpoint) {
-          const default_type prefix = to<default_type>(num);
+          const auto prefix = to<default_type>(num);
           retval = std::round(prefix * static_cast<default_type>(multiplier));
         } else {
           retval = to<int64_t>(num) * multiplier;
         }
       } else if (alpha_char == 'e' || alpha_char == 'E') {
-        const default_type as_float = to<default_type>(p);
+        const auto as_float = to<default_type>(p);
         retval = std::round(as_float);
       } else {
         throw Exception("unexpected character");
@@ -1423,7 +1423,7 @@ uint64_t App::ParsedArgument::as_uint() const {
 
 default_type App::ParsedArgument::as_float() const {
   assert(arg->types[ArgTypeFlags::Float]);
-  const default_type retval = to<default_type>(p);
+  const auto retval = to<default_type>(p);
   if (retval < arg->float_limits.min() || retval > arg->float_limits.max()) {
     std::string msg("value supplied for ");
     if (opt != nullptr)

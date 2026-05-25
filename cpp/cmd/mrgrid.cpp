@@ -209,7 +209,7 @@ void run() {
 
   auto input_header = Header::open(input_path);
 
-  const Operation op = MR::Enum::from_name<Operation>(argument[1]);
+  const auto op = MR::Enum::from_name<Operation>(argument[1]);
   const std::string operation_name = MR::Enum::lowercase_name(op);
 
   // Out of bounds value
@@ -221,8 +221,7 @@ void run() {
     regrid_filter.set_out_of_bounds_value(out_of_bounds_value);
     size_t resize_option_count = 0;
     size_t template_option_count = 0;
-    const MR::Interp::interp_type interp =
-        MR::Interp::interp_type(get_option_value("interp", static_cast<ssize_t>(default_interp)));
+    const auto interp = MR::Interp::interp_type(get_option_value("interp", static_cast<ssize_t>(default_interp)));
 
     // over-sampling
     std::vector<uint32_t> oversample = Adapter::AutoOverSample;

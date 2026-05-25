@@ -65,9 +65,9 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
 
     // Compute normals for polygons
     polygon_normals.reserve(mesh.num_polygons());
-    for (TriangleList::const_iterator p = mesh.get_triangles().begin(); p != mesh.get_triangles().end(); ++p)
+    for (auto p = mesh.get_triangles().begin(); p != mesh.get_triangles().end(); ++p)
       polygon_normals.push_back(normal(mesh, *p));
-    for (QuadList::const_iterator p = mesh.get_quads().begin(); p != mesh.get_quads().end(); ++p)
+    for (auto p = mesh.get_quads().begin(); p != mesh.get_quads().end(); ++p)
       polygon_normals.push_back(normal(mesh, *p));
     ++progress;
 
@@ -92,7 +92,7 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
         mesh.load_triangle_vertices(this_poly_verts, poly_index);
       else
         mesh.load_quad_vertices(this_poly_verts, poly_index - mesh.num_triangles());
-      for (VertexList::const_iterator v = this_poly_verts.begin(); v != this_poly_verts.end(); ++v) {
+      for (auto v = this_poly_verts.begin(); v != this_poly_verts.end(); ++v) {
         for (size_t axis = 0; axis != 3; ++axis) {
           const int this_axis_voxel = std::round((*v)[axis]);
           lower_bound[axis] = std::min(lower_bound[axis], this_axis_voxel);
@@ -187,7 +187,7 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
               //   (which involves deleting the existing entry then re-writing the concatenated list);
               // If it has not, we're adding a new entry to the list of voxels to be tested,
               //   with only one entry in the list for that voxel
-              Vox2Poly::const_iterator const existing = voxel2poly.find(voxel);
+              auto const existing = voxel2poly.find(voxel);
               if (existing != voxel2poly.end()) {
                 this_voxel_polys = existing->second;
                 voxel2poly.erase(existing);
@@ -399,7 +399,7 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
 
       // Count the number of these points that lie inside the mesh
       size_t inside_mesh_count = 0;
-      for (std::vector<Vertex>::const_iterator i_p = offsets_to_test->begin(); i_p != offsets_to_test->end(); ++i_p) {
+      for (auto i_p = offsets_to_test->begin(); i_p != offsets_to_test->end(); ++i_p) {
         Vertex p(*i_p);
         p += Eigen::Vector3d(voxel[0], voxel[1], voxel[2]);
 
@@ -408,8 +408,7 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
         default_type best_min_distance_from_interior_projection = std::numeric_limits<default_type>::infinity();
 
         // Only test against those polygons that are near this voxel
-        for (std::vector<size_t>::const_iterator polygon_index = in.second.begin(); polygon_index != in.second.end();
-             ++polygon_index) {
+        for (auto polygon_index = in.second.begin(); polygon_index != in.second.end(); ++polygon_index) {
           const Eigen::Vector3d &n(polygon_normals[*polygon_index]);
 
           const size_t polygon_num_vertices = (*polygon_index < mesh.num_triangles()) ? 3 : 4;

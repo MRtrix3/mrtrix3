@@ -135,7 +135,7 @@ public:
 class DicomSelector : public QDialog {
 public:
   DicomSelector(const Tree &tree) : QDialog(GUI::App::main_window) {
-    Model *model = new Model(this);
+    auto *model = new Model(this);
 
     Item *root = model->rootItem;
     for (size_t i = 0; i < tree.size(); ++i) {
@@ -156,11 +156,11 @@ public:
     view->setMinimumSize(500, 200);
     view->expandAll();
 
-    QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok);
+    auto *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok);
     connect(buttonBox, SIGNAL(accepted()), this, SLOT(accept()));
     connect(view, SIGNAL(activated(const QModelIndex &)), this, SLOT(accept()));
 
-    QVBoxLayout *layout = new QVBoxLayout(this);
+    auto *layout = new QVBoxLayout(this);
     layout->addWidget(view);
     layout->addWidget(buttonBox);
     setLayout(layout);

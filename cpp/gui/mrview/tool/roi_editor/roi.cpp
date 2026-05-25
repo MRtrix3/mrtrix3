@@ -28,12 +28,12 @@ namespace MR::GUI::MRView::Tool {
 
 ROI::ROI(Dock *parent) : Base(parent), in_insert_mode(false) {
 
-  VBoxLayout *main_box = new VBoxLayout(this);
-  HBoxLayout *layout = new HBoxLayout;
+  auto *main_box = new VBoxLayout(this);
+  auto *layout = new HBoxLayout;
   layout->setContentsMargins(0, 0, 0, 0);
   layout->setSpacing(0);
 
-  QPushButton *button = new QPushButton(this);
+  auto *button = new QPushButton(this);
   button->setToolTip(tr("New ROI"));
   button->setIcon(QIcon(":/new.svg"));
   connect(button, SIGNAL(clicked()), this, SLOT(new_slot()));
@@ -84,11 +84,11 @@ ROI::ROI(Dock *parent) : Base(parent), in_insert_mode(false) {
 
   main_box->addWidget(list_view, 1);
 
-  GridLayout *grid_layout = new GridLayout;
+  auto *grid_layout = new GridLayout;
 
   draw_button = new QToolButton(this);
   draw_button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-  QAction *action = new QAction(QIcon(":/draw.svg"), tr("Edit"), this);
+  auto *action = new QAction(QIcon(":/draw.svg"), tr("Edit"), this);
   action->setShortcut(tr("E"));
   action->setToolTip(
       tr("Add/remove voxels to/from ROI\n\nUse left mouse button to add voxels,\nright mouse button to erase"));
@@ -122,7 +122,7 @@ ROI::ROI(Dock *parent) : Base(parent), in_insert_mode(false) {
 
   main_box->addLayout(grid_layout, 0);
 
-  QGroupBox *group_box = new QGroupBox("Edit mode");
+  auto *group_box = new QGroupBox("Edit mode");
 
   grid_layout = new GridLayout;
   group_box->setLayout(grid_layout);
@@ -144,7 +144,7 @@ ROI::ROI(Dock *parent) : Base(parent), in_insert_mode(false) {
   brush_button->setDefaultAction(action);
   grid_layout->addWidget(brush_button, 0, 0, 1, 2);
 
-  QLabel *label = new QLabel(tr("size:"));
+  auto *label = new QLabel(tr("size:"));
   grid_layout->addWidget(label, 1, 0, Qt::AlignRight);
 
   brush_size_button = new AdjustButton(this);
@@ -469,7 +469,7 @@ void ROI::draw(const Projection &projection, bool is_3D, int, int) {
 
   for (int i = 0; i < list_model->rowCount(); ++i) {
     if (list_model->items[i]->show && !hide_all_button->isChecked()) {
-      ROI_Item *roi = dynamic_cast<ROI_Item *>(list_model->items[i].get());
+      auto *roi = dynamic_cast<ROI_Item *>(list_model->items[i].get());
       // if (is_3D)
       // window.get_current_mode()->overlays_for_3D.push_back (image);
       // else

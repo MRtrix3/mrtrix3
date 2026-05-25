@@ -178,7 +178,7 @@ void TrackMapperTWI::set_backtrack() {
   const TWIImagePluginBase *const base = image_plugin.get();
   if (typeid(*base) != typeid(TWIScalarImagePlugin))
     throw Exception("Backtracking is only applicable to scalar image TWI plugins");
-  TWIScalarImagePlugin *const ptr = dynamic_cast<TWIScalarImagePlugin *>(image_plugin.get());
+  auto *const ptr = dynamic_cast<TWIScalarImagePlugin *>(image_plugin.get());
   ptr->set_backtrack();
 }
 

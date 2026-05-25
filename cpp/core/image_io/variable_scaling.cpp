@@ -41,7 +41,7 @@ void VariableScaling::load(const Header &header, size_t) {
     throw Exception("failed to allocate memory for image \"" + header.path().string() + "\"");
 
   ProgressBar progress("rescaling DICOM images", files.size());
-  float32 *data = reinterpret_cast<float32 *>(addresses[0].get());
+  auto *data = reinterpret_cast<float32 *>(addresses[0].get());
   for (size_t n = 0; n < files.size(); n++) {
     const float offset = scale_factors[n].offset;
     const float scale = scale_factors[n].scale;

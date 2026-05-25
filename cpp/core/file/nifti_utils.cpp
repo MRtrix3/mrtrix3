@@ -202,7 +202,7 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
     H.reset_intensity_scaling();
   }
 
-  const int64_t data_offset = Raw::fetch_<vox_offset_type>(&NH.vox_offset, is_BE);
+  const auto data_offset = Raw::fetch_<vox_offset_type>(&NH.vox_offset, is_BE);
 
   std::string descrip(81, '\0');
   strncpy(&descrip[0], NH.descrip, 80); // check_syntax off
@@ -519,7 +519,7 @@ template <class NiftiHeader> void store(NiftiHeader &NH, const Header &H, const 
 
   if (Type<NiftiHeader>::is_version2) {
     const std::array<char, 4> xyzt_units{NIFTI_UNITS_MM, NIFTI_UNITS_MM, NIFTI_UNITS_MM, NIFTI_UNITS_SEC};
-    const int32_t *const xyzt_units_as_int_ptr = reinterpret_cast<const int32_t *>(xyzt_units.data());
+    const auto *const xyzt_units_as_int_ptr = reinterpret_cast<const int32_t *>(xyzt_units.data());
     Raw::store<int32_t>(*xyzt_units_as_int_ptr, &NH.xyzt_units, is_BE);
   } else
     NH.xyzt_units = SPACE_TIME_TO_XYZT(NIFTI_UNITS_MM, NIFTI_UNITS_SEC);

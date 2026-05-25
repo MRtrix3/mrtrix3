@@ -67,7 +67,7 @@ public:
   void add_items(const std::vector<std::filesystem::path> &filepaths, Tractography &tractography_tool) {
 
     for (size_t i = 0; i < filepaths.size(); ++i) {
-      Tractogram *tractogram = new Tractogram(tractography_tool, filepaths[i]);
+      auto *tractogram = new Tractogram(tractography_tool, filepaths[i]);
       try {
         tractogram->load_tracks();
         beginInsertRows(QModelIndex(), items.size(), items.size() + 1);
@@ -103,12 +103,12 @@ Tractography::Tractography(Dock *parent)
 
   slab_thickness = 2 * voxel_size;
 
-  VBoxLayout *main_box = new VBoxLayout(this);
-  HBoxLayout *hlayout = new HBoxLayout;
+  auto *main_box = new VBoxLayout(this);
+  auto *hlayout = new HBoxLayout;
   hlayout->setContentsMargins(0, 0, 0, 0);
   hlayout->setSpacing(0);
 
-  QPushButton *button = new QPushButton(this);
+  auto *button = new QPushButton(this);
   button->setToolTip(tr("Open tractogram"));
   button->setIcon(QIcon(":/open.svg"));
   connect(button, SIGNAL(clicked()), this, SLOT(tractogram_open_slot()));
@@ -216,8 +216,8 @@ Tractography::Tractography(Dock *parent)
   scalar_file_options = new TrackScalarFileOptions(this);
   main_box->addWidget(scalar_file_options);
 
-  QGroupBox *general_groupbox = new QGroupBox("General options");
-  GridLayout *general_opt_grid = new GridLayout;
+  auto *general_groupbox = new QGroupBox("General options");
+  auto *general_opt_grid = new GridLayout;
   general_opt_grid->setContentsMargins(0, 0, 0, 0);
   general_opt_grid->setSpacing(0);
 
@@ -237,7 +237,7 @@ Tractography::Tractography(Dock *parent)
 
   connect(slab_group_box, SIGNAL(clicked(bool)), this, SLOT(on_crop_to_slab_slot(bool)));
 
-  GridLayout *slab_layout = new GridLayout;
+  auto *slab_layout = new GridLayout;
   slab_group_box->setLayout(slab_layout);
   slab_layout->addWidget(new QLabel("thickness (mm)"), 0, 0);
   slab_entry = new AdjustButton(this, 0.1);
@@ -253,7 +253,7 @@ Tractography::Tractography(Dock *parent)
 
   connect(lighting_group_box, SIGNAL(clicked(bool)), this, SLOT(on_use_lighting_slot(bool)));
 
-  VBoxLayout *lighting_layout = new VBoxLayout(lighting_group_box);
+  auto *lighting_layout = new VBoxLayout(lighting_group_box);
   lighting_button = new QPushButton("Track lighting...");
   lighting_button->setIcon(QIcon(":/light.svg"));
   connect(lighting_button, SIGNAL(clicked()), this, SLOT(on_lighting_settings()));
@@ -312,7 +312,7 @@ void Tractography::draw(const Projection &transform, bool is_3D, int, int) {
   GL::assert_context_is_current();
   not_3D = !is_3D;
   for (int i = 0; i < tractogram_list_model->rowCount(); ++i) {
-    Tractogram *tractogram = dynamic_cast<Tractogram *>(tractogram_list_model->items[i].get());
+    auto *tractogram = dynamic_cast<Tractogram *>(tractogram_list_model->items[i].get());
     if (tractogram->show && !hide_all_button->isChecked())
       tractogram->render(transform);
   }
@@ -324,7 +324,7 @@ void Tractography::draw_colourbars() {
     return;
 
   for (int i = 0; i < tractogram_list_model->rowCount(); ++i) {
-    Tractogram *tractogram = dynamic_cast<Tractogram *>(tractogram_list_model->items[i].get());
+    auto *tractogram = dynamic_cast<Tractogram *>(tractogram_list_model->items[i].get());
     if (tractogram->show && tractogram->get_color_type() == TrackColourType::ScalarFile &&
         !tractogram->intensity_scalar_path.empty())
       tractogram->request_render_colourbar(*scalar_file_options);
@@ -336,7 +336,7 @@ size_t Tractography::visible_number_colourbars() {
 
   if (!hide_all_button->isChecked()) {
     for (size_t i = 0, N = tractogram_list_model->rowCount(); i < N; ++i) {
-      Tractogram *tractogram = dynamic_cast<Tractogram *>(tractogram_list_model->items[i].get());
+      auto *tractogram = dynamic_cast<Tractogram *>(tractogram_list_model->items[i].get());
       if (tractogram->show && tractogram->get_color_type() == TrackColourType::ScalarFile &&
           !tractogram->intensity_scalar_path.empty())
         total_visible += 1;
@@ -417,7 +417,7 @@ void Tractography::on_crop_to_slab_slot(bool is_checked) {
   do_crop_to_slab = is_checked;
 
   for (size_t i = 0, N = tractogram_list_model->rowCount(); i < N; ++i) {
-    Tractogram *tractogram = dynamic_cast<Tractogram *>(tractogram_list_model->items[i].get());
+    auto *tractogram = dynamic_cast<Tractogram *>(tractogram_list_model->items[i].get());
     tractogram->should_update_stride = true;
   }
 

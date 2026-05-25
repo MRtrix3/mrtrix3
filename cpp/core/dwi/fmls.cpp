@@ -215,7 +215,7 @@ bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
           }
         }
         for (size_t j = adj_lobes.size() - 1; j != 0U; --j) {
-          std::vector<FOD_lobe>::iterator ptr = out.begin();
+          auto ptr = out.begin();
           advance(ptr, adj_lobes[j]);
           out.erase(ptr);
         }
@@ -295,7 +295,7 @@ bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
     if (dilate_lookup_table && !out.empty()) {
 
       Eigen::Array<bool, Eigen::Dynamic, 1> processed(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(dirs.size()));
-      for (std::vector<FOD_lobe>::iterator i = out.begin(); i != out.end(); ++i)
+      for (auto i = out.begin(); i != out.end(); ++i)
         processed = processed || i->get_mask();
 
       NON_POD_VLA(new_assignments, std::vector<uint32_t>, dirs.size());
@@ -303,8 +303,7 @@ bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
 
         for (index_type dir = 0; dir != dirs.size(); ++dir) {
           if (!processed[dir]) {
-            for (std::vector<index_type>::const_iterator neighbour = dirs.get_adj_dirs(dir).begin();
-                 neighbour != dirs.get_adj_dirs(dir).end();
+            for (auto neighbour = dirs.get_adj_dirs(dir).begin(); neighbour != dirs.get_adj_dirs(dir).end();
                  ++neighbour) {
               if (processed[*neighbour])
                 new_assignments[dir].push_back(out.lut[*neighbour]);
@@ -322,9 +321,7 @@ bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
 
             uint32_t best_lobe = 0;
             default_type max_integral = 0.0;
-            for (std::vector<uint32_t>::const_iterator lobe_no = new_assignments[dir].begin();
-                 lobe_no != new_assignments[dir].end();
-                 ++lobe_no) {
+            for (auto lobe_no = new_assignments[dir].begin(); lobe_no != new_assignments[dir].end(); ++lobe_no) {
               if (out[*lobe_no].get_integral() > max_integral) {
                 best_lobe = *lobe_no;
                 max_integral = out[*lobe_no].get_integral();
@@ -341,7 +338,7 @@ bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
 
   if (create_null_lobe) {
     mask_type nonnull_mask(mask_type::Zero(dirs.size()));
-    for (std::vector<FOD_lobe>::iterator i = out.begin(); i != out.end(); ++i)
+    for (auto i = out.begin(); i != out.end(); ++i)
       nonnull_mask = nonnull_mask || i->get_mask();
     // Invert all elements in mask
     const mask_type null_mask =

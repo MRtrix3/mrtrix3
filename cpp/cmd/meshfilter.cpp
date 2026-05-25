@@ -94,7 +94,7 @@ void run() {
 
   // Apply the relevant filter
   std::unique_ptr<Filter::Base> filter;
-  const FilterType selected_filter = MR::Enum::from_name<FilterType>(argument[1]);
+  const auto selected_filter = MR::Enum::from_name<FilterType>(argument[1]);
   if (selected_filter == FilterType::SMOOTH) {
     const default_type spatial = get_option_value("smooth_spatial", Filter::default_smoothing_spatial_factor);
     const default_type influence = get_option_value("smooth_influence", Filter::default_smoothing_influence_factor);

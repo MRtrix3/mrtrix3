@@ -226,7 +226,7 @@ private:
     std::vector<value_type> weights;
     weights.reserve(tck.size());
     for (size_t i = 0; i != tck.size(); ++i) {
-      value_type length = value_type(0);
+      auto length = value_type(0);
       if (i > 0)
         length += (tck[i] - tck[i - 1]).norm();
       if (i < tck.size() - 1)
@@ -244,8 +244,8 @@ private:
     }
     switch (statistic().value()) {
     case Statistic::MEAN: {
-      value_type integral = value_type(0);
-      value_type sum_weights = value_type(0);
+      auto integral = value_type(0);
+      auto sum_weights = value_type(0);
       for (size_t i = 0; i != data.size(); ++i) {
         if (!std::isnan(data[i])) {
           integral += data[i] * weights[i];
@@ -329,8 +329,8 @@ protected:
       return std::numeric_limits<value_type>::quiet_NaN();
     switch (statistic().value()) {
     case Statistic::MEAN: {
-      value_type integral = value_type(0);
-      value_type sum_lengths = value_type(0);
+      auto integral = value_type(0);
+      auto sum_lengths = value_type(0);
       for (const auto &v : data) {
         if (std::isfinite(v.value)) {
           integral += v.length * v.value;
@@ -341,7 +341,7 @@ protected:
     }
     case Statistic::MEDIAN: {
       std::sort(data.begin(), data.end());
-      value_type sum_lengths(value_type(0));
+      auto sum_lengths(value_type(0));
       for (const auto &d : data) {
         if (std::isfinite(d.value))
           sum_lengths += d.length;

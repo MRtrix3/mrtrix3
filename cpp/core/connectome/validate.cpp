@@ -88,9 +88,9 @@ const LabelValidation validate_label_image(Image<node_t> image) {
   //     (and hence back to input parcellation index)
   //     based on the volume index of any voxel in the cluster
 
-  const uint32_t X = static_cast<uint32_t>(image.size(0));
-  const uint32_t Y = static_cast<uint32_t>(image.size(1));
-  const uint32_t Z = static_cast<uint32_t>(image.size(2));
+  const auto X = static_cast<uint32_t>(image.size(0));
+  const auto Y = static_cast<uint32_t>(image.size(1));
+  const auto Z = static_cast<uint32_t>(image.size(2));
 
   // Guard against images too large for the uint32_t index space used below.
   if (static_cast<uint64_t>(X) * static_cast<uint64_t>(Y) * static_cast<uint64_t>(Z) >

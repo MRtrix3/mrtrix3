@@ -65,7 +65,7 @@ template <class Method> void calibrate(Method &method) {
 
   std::vector<Pair> amps;
   // for (float incl = 0.0; incl < max_angle; incl += 0.001) {
-  const size_t incl_maxindex = static_cast<size_t>(std::floor(1000.0F * max_angle));
+  const auto incl_maxindex = static_cast<size_t>(std::floor(1000.0F * max_angle));
   for (size_t incl_index = 0; incl_index <= incl_maxindex; ++incl_index) {
     const float incl = 0.001F * incl_index;
     amps.push_back(Pair(incl, calibrate_func(incl)));

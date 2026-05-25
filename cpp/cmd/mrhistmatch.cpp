@@ -116,7 +116,7 @@ void match_linear(Image<float> &input,
     input_matrix(input_index, 0) = input_data[input_index];
     const default_type output_position = (target_data.size() - 1) * (static_cast<default_type>(input_index) /
                                                                      static_cast<default_type>(input_data.size() - 1));
-    const size_t target_index_lower = static_cast<size_t>(std::floor(output_position));
+    const auto target_index_lower = static_cast<size_t>(std::floor(output_position));
     const default_type mu = output_position - static_cast<default_type>(target_index_lower);
     output_vector[input_index] =
         ((1.0 - mu) * target_data[target_index_lower]) + (mu * target_data[target_index_lower + 1]);

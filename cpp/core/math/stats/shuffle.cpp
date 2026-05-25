@@ -101,7 +101,7 @@ Shuffler::Shuffler(const index_type num_rows, const bool is_nonstationarity, std
       counter(0) {
 
   using namespace App;
-  const error_t error_types = get_option_choice<error_t>("errors", error_t::EE);
+  const auto error_types = get_option_choice<error_t>("errors", error_t::EE);
 
   bool nshuffles_explicit = false;
   auto opt = get_options(is_nonstationarity ? "nshuffles_nonstationarity" : "nshuffles");
@@ -237,7 +237,7 @@ void Shuffler::initialise(const error_t error_types,
     max_num_permutations = 1;
     for (const auto &b : counts) {
       const uint64_t old_value = max_num_permutations;
-      const uint64_t max_permutations_within_block = factorial<uint64_t>(b);
+      const auto max_permutations_within_block = factorial<uint64_t>(b);
       max_num_permutations *= factorial<uint64_t>(b);
       if (max_num_permutations / max_permutations_within_block != old_value) {
         max_num_permutations = std::numeric_limits<uint64_t>::max();

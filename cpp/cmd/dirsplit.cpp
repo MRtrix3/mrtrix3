@@ -163,7 +163,7 @@ void run() {
   if (num_subsets == 1)
     throw Exception("Directions must be split across two or more output files");
 
-  const size_t num_permutations = get_option_value<size_t>("number", default_permutations);
+  const auto num_permutations = get_option_value<size_t>("number", default_permutations);
 
   std::vector<std::vector<size_t>> best;
   {

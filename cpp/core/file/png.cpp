@@ -135,7 +135,7 @@ void Reader::load(std::byte *image_data) {
     throw Exception("Fatal error reading PNG image");
   }
   const size_t row_bytes = png_get_rowbytes(png_ptr, info_ptr);
-  png_bytepp row_pointers = new png_bytep[height];
+  auto row_pointers = new png_bytep[height];
   for (size_t i = 0; i != static_cast<size_t>(height); ++i)
     row_pointers[i] = reinterpret_cast<png_bytep>(image_data + i * row_bytes);
   png_read_image(png_ptr, row_pointers);

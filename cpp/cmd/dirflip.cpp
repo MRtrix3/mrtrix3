@@ -149,8 +149,8 @@ void run() {
   DWI::Directions::validate(directions, argument[0], false);
   directions = Math::Sphere::as_cartesian(directions);
 
-  const size_t num_shuffles = get_option_value<size_t>("number", default_permutations);
-  const size_t preserve = get_option_value<size_t>("preserve", 0);
+  const auto num_shuffles = get_option_value<size_t>("number", default_permutations);
+  const auto preserve = get_option_value<size_t>("preserve", 0);
 
   std::vector<int> signs;
   {

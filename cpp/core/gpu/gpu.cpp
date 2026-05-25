@@ -702,12 +702,12 @@ Texture ComputeContext::new_texture_from_host_image(const MR::Image<float> &imag
   // See discussion at https://github.com/MRtrix3/mrtrix3/pull/3108
   std::vector<float> contiguous_host_data(image_size, 0.0F);
   auto source = image;
-  const size_t width = static_cast<size_t>(source.size(0));
-  const size_t height = static_cast<size_t>(source.size(1));
+  const auto width = static_cast<size_t>(source.size(0));
+  const auto height = static_cast<size_t>(source.size(1));
   const auto pack_voxel = [&contiguous_host_data, width, height](auto &vox) {
-    const size_t x = static_cast<size_t>(vox.index(0));
-    const size_t y = static_cast<size_t>(vox.index(1));
-    const size_t z = static_cast<size_t>(vox.index(2));
+    const auto x = static_cast<size_t>(vox.index(0));
+    const auto y = static_cast<size_t>(vox.index(1));
+    const auto z = static_cast<size_t>(vox.index(2));
     const size_t linear_offset = x + width * (y + height * z);
     contiguous_host_data[linear_offset] = vox.value();
   };
@@ -810,7 +810,7 @@ Image<float> ComputeContext::download_texture_as_image(const Texture &texture,
     }
   }();
 
-  const uint32_t header_dims = static_cast<uint32_t>(header.ndim());
+  const auto header_dims = static_cast<uint32_t>(header.ndim());
   const bool has_channel_axis = header_dims == (texture_dims + 1U);
   if (texture_dims != header_dims && !has_channel_axis) {
     throw MR::Exception("Texture dimension (" + std::to_string(texture_dims) + ") does not match header dimension (" +

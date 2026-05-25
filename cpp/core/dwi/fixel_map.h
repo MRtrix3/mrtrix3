@@ -96,7 +96,7 @@ public:
   // Direction must have been assigned to a histogram bin first
   size_t dir2fixel(const size_t dir) const {
     assert(lookup_table);
-    const size_t offset = static_cast<size_t>(lookup_table[dir]);
+    const auto offset = static_cast<size_t>(lookup_table[dir]);
     return ((offset == count) ? 0 : (first_fixel_index + offset));
   }
 

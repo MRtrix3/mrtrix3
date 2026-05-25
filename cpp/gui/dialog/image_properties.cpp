@@ -35,7 +35,7 @@ ImageProperties::ImageProperties(QWidget *parent, const MR::Header &header)
   root->appendChild(new TreeItem("Format", H.format(), root));
 
   if (!H.keyval().empty()) {
-    TreeItem *keyvals = new TreeItem("Key/value pairs", std::string(), root);
+    auto *keyvals = new TreeItem("Key/value pairs", std::string(), root);
     root->appendChild(keyvals);
     for (const auto &n : H.keyval()) {
       if (n.first != "dw_scheme") {
@@ -43,7 +43,7 @@ ImageProperties::ImageProperties(QWidget *parent, const MR::Header &header)
           keyvals->appendChild(new TreeItem(n.first, n.second, keyvals));
         } else {
           const auto lines = split_lines(n.second);
-          TreeItem *multi_line_keyval = new TreeItem(n.first, std::string(), keyvals);
+          auto *multi_line_keyval = new TreeItem(n.first, std::string(), keyvals);
           keyvals->appendChild(multi_line_keyval);
           for (const auto &l : lines)
             multi_line_keyval->appendChild(new TreeItem(std::string(), l, multi_line_keyval));
@@ -75,7 +75,7 @@ ImageProperties::ImageProperties(QWidget *parent, const MR::Header &header)
       "Data scaling", "offset: " + str(H.intensity_offset()) + ", multiplier = " + str(H.intensity_scale()), root));
 
   Eigen::IOFormat const Fmt(6, 0, ", ", "\n", "[", "]");
-  TreeItem *transform = new TreeItem("Transform", std::string(), root);
+  auto *transform = new TreeItem("Transform", std::string(), root);
   root->appendChild(transform);
   for (size_t n = 0; n < 3; ++n) {
     std::stringstream ss;
@@ -88,7 +88,7 @@ ImageProperties::ImageProperties(QWidget *parent, const MR::Header &header)
     if (DW_scheme.cols() < 4) {
       root->appendChild(new TreeItem("Diffusion scheme", "(invalid)", root));
     } else {
-      TreeItem *scheme = new TreeItem("Diffusion scheme", std::string(), root);
+      auto *scheme = new TreeItem("Diffusion scheme", std::string(), root);
       root->appendChild(scheme);
       for (Eigen::Index n = 0; n < DW_scheme.rows(); ++n) {
         std::stringstream ss;
@@ -106,10 +106,10 @@ ImageProperties::ImageProperties(QWidget *parent, const MR::Header &header)
   view->setContextMenuPolicy(Qt::CustomContextMenu);
   connect(view, SIGNAL(customContextMenuRequested(const QPoint &)), this, SLOT(context_menu(const QPoint &)));
 
-  QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok);
+  auto *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok);
   connect(buttonBox, SIGNAL(accepted()), this, SLOT(accept()));
 
-  QVBoxLayout *layout = new QVBoxLayout(this);
+  auto *layout = new QVBoxLayout(this);
   layout->addWidget(view);
   layout->addWidget(buttonBox);
   setLayout(layout);
@@ -138,7 +138,7 @@ void ImageProperties::context_menu(const QPoint &point) {
     return;
   }
 
-  QAction *save_action = new QAction(tr("&Save as..."), this);
+  auto *save_action = new QAction(tr("&Save as..."), this);
   connect(save_action, SIGNAL(triggered()), this, SLOT(write_to_file()));
 
   QMenu menu(this);

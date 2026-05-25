@@ -22,9 +22,9 @@
 
 namespace MR::GUI {
 LightingSettings::LightingSettings(QWidget *parent, GL::Lighting &lighting) : QFrame(parent), info(lighting) {
-  QVBoxLayout *main_box = new QVBoxLayout;
+  auto *main_box = new QVBoxLayout;
   setLayout(main_box);
-  QGridLayout *grid_layout = new QGridLayout;
+  auto *grid_layout = new QGridLayout;
   main_box->addLayout(grid_layout);
   main_box->addStretch();
 

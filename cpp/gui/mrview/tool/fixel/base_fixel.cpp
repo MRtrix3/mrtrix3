@@ -80,7 +80,7 @@ std::string BaseFixel::Shader::vertex_shader_source(const Displayable &) {
 }
 
 std::string BaseFixel::Shader::geometry_shader_source(const Displayable &object) {
-  const BaseFixel &fixel(dynamic_cast<const BaseFixel &>(object));
+  const auto &fixel(dynamic_cast<const BaseFixel &>(object));
 
   std::string source = "layout(points) in;\n"
                        "layout(triangle_strip, max_vertices = 4) out;\n"
@@ -183,13 +183,13 @@ std::string BaseFixel::Shader::fragment_shader_source(const Displayable &) {
 }
 
 bool BaseFixel::Shader::need_update(const Displayable &object) const {
-  const BaseFixel &fixel(dynamic_cast<const BaseFixel &>(object));
+  const auto &fixel(dynamic_cast<const BaseFixel &>(object));
   return (color_type != fixel.colour_type) || (scale_type != fixel.scale_type) ||
          (bidirectional != fixel.fixel_tool.is_bidirectional()) || Displayable::Shader::need_update(object);
 }
 
 void BaseFixel::Shader::update(const Displayable &object) {
-  const BaseFixel &fixel(dynamic_cast<const BaseFixel &>(object));
+  const auto &fixel(dynamic_cast<const BaseFixel &>(object));
   color_type = fixel.colour_type;
   scale_type = fixel.scale_type;
   bidirectional = fixel.fixel_tool.is_bidirectional();
@@ -487,8 +487,8 @@ void BaseFixel::rebuild_element_index_buffer() {
       assert(starts.size() == sizes.size());
       assert(static_cast<size_t>(draw_count) <= starts.size());
       for (GLsizei d = 0; d < draw_count; ++d) {
-        const uint32_t start = static_cast<uint32_t>(starts[d]);
-        const uint32_t len = static_cast<uint32_t>(sizes[d]);
+        const auto start = static_cast<uint32_t>(starts[d]);
+        const auto len = static_cast<uint32_t>(sizes[d]);
         for (uint32_t i = 0; i < len; ++i)
           element_indices.push_back(start + i);
       }

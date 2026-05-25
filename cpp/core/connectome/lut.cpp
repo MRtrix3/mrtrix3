@@ -75,7 +75,7 @@ LUT::file_format LUT::guess_file_format(const std::filesystem::path &path) {
 
     void operator()(std::string_view entry) {
       try {
-        const default_type value = to<default_type>(entry);
+        const auto value = to<default_type>(entry);
         min = std::min(min, value);
         max = std::max(max, value);
       } catch (...) {
@@ -142,7 +142,7 @@ LUT::file_format LUT::guess_file_format(const std::filesystem::path &path) {
           entries.insert(entries.end(), block_split.begin(), block_split.end());
         }
       }
-      for (decltype(entries)::iterator i = entries.begin(); i != entries.end();) {
+      for (auto i = entries.begin(); i != entries.end();) {
         if (i->empty() || (i->size() == 1 && (std::isspace((*i)[0]) != 0)))
           i = entries.erase(i);
         else

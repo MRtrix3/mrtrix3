@@ -191,7 +191,7 @@ void Font::render(std::string_view text, int x, int y) const {
   for (size_t n = 0; n < text.size(); ++n) {
     starts[n] = 4 * n;
     counts[n] = 4;
-    const size_t c = static_cast<size_t>(static_cast<unsigned char>(text[n]));
+    const auto c = static_cast<size_t>(static_cast<unsigned char>(text[n]));
     GLfloat *pos = &screen_pos[8 * n];
     pos[0] = x;
     pos[1] = y;

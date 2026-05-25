@@ -186,7 +186,7 @@ value_type AFDConnectivity::get(const std::filesystem::path &path) {
     mapper(tck, dixels);
     double this_length = 0.0, this_volume = 0.0;
 
-    for (SetDixel::const_iterator i = dixels.begin(); i != dixels.end(); ++i) {
+    for (auto i = dixels.begin(); i != dixels.end(); ++i) {
       this_length += i->get_length();
 
       // If wbft has not been provided (i.e. FODs have not been pre-segmented), need to
@@ -235,7 +235,7 @@ value_type AFDConnectivity::get(const std::filesystem::path &path) {
     if (all_fixels) {
 
       // All fixels contribute to the result
-      for (std::vector<AFDConnFixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i) {
+      for (auto i = fixels.begin(); i != fixels.end(); ++i) {
         if (i->is_selected())
           sum_volumes += i->get_FOD();
       }

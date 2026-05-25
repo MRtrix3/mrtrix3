@@ -67,7 +67,7 @@ public:
       const std::string max_num_tracks = properties["max_num_tracks"];
       if (max_num_tracks.empty())
         throw Exception("Dynamic seeding requires setting the desired number of tracks using the -select option");
-      const size_t num_tracks = to<size_t>(max_num_tracks);
+      const auto num_tracks = to<size_t>(max_num_tracks);
 
       using SetDixel = Mapping::SetDixel;
       using TckMapper = Mapping::TrackMapperBase;
@@ -76,7 +76,7 @@ public:
       DWI::Directions::FastLookupSet const dirs(1281);
       auto fod_data = Image<float>::open(fod_path);
       Math::SH::check(fod_data);
-      Seeding::Dynamic *seeder = new Seeding::Dynamic(fod_path, fod_data, num_tracks, dirs);
+      auto *seeder = new Seeding::Dynamic(fod_path, fod_data, num_tracks, dirs);
       properties.seeds.add(seeder); // List is responsible for deleting this from memory
 
       typename Method::Shared const shared(diff_path, properties);

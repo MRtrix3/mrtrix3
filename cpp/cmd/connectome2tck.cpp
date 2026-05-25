@@ -190,7 +190,7 @@ void run() {
   const std::filesystem::path output_path{argument[2]};
 
   // Determine output file format first, as it affects interpretation of both output paths
-  const FileOutput file_format = get_option_choice<FileOutput>("files", default_file_output);
+  const auto file_format = get_option_choice<FileOutput>("files", default_file_output);
 
   std::filesystem::path output_dir;
   std::filesystem::path output_file;
@@ -241,7 +241,7 @@ void run() {
   }
   INFO("Maximum node index in assignments file is " + str(max_node_index));
 
-  const size_t count = to<size_t>(properties["count"]);
+  const auto count = to<size_t>(properties["count"]);
   if (assignments_lists.size() != count)
     throw Exception("Assignments file contains " + str(assignments_lists.size()) + " entries;" + //
                     " track file contains " + str(count) + " tracks");                           //
@@ -435,7 +435,7 @@ void run() {
       } else {
         // For each node in the list, write one file for an exemplar to every other node
         ProgressBar progress("writing exemplars to files", nodes.size() * COMs.size());
-        for (std::vector<node_t>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
+        for (auto n = nodes.begin(); n != nodes.end(); ++n) {
           for (size_t i = first_node; i != COMs.size(); ++i) {
             generator.write(*n,
                             i,
@@ -447,7 +447,7 @@ void run() {
       }
     } else if (file_format == FileOutput::PER_NODE) { // One file per node
       ProgressBar progress("writing exemplars to files", nodes.size());
-      for (std::vector<node_t>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
+      for (auto n = nodes.begin(); n != nodes.end(); ++n) {
         generator.write(*n, output_dir / (str(*n) + ".tck"), weights_path_for(str(*n) + ".csv"));
         ++progress;
       }
@@ -483,7 +483,7 @@ void run() {
       INFO("A total of " + str(writer.file_count()) + " output track files will be generated (one for each edge)");
       break;
     case FileOutput::PER_NODE: // One file per node
-      for (std::vector<node_t>::const_iterator i = nodes.begin(); i != nodes.end(); ++i)
+      for (auto i = nodes.begin(); i != nodes.end(); ++i)
         writer.add(*i, output_dir / (str(*i) + ".tck"), weights_path_for(str(*i) + ".csv"));
       INFO("A total of " + str(writer.file_count()) + " output track files will be generated (one for each node)");
       break;

@@ -26,12 +26,12 @@ TrackScalarFileOptions::TrackScalarFileOptions(Tractography *parent)
   main_box = new Tool::Base::VBoxLayout(this);
 
   colour_groupbox = new QGroupBox("Colour map and scaling");
-  Tool::Base::VBoxLayout *vlayout = new Tool::Base::VBoxLayout;
+  auto *vlayout = new Tool::Base::VBoxLayout;
   vlayout->setContentsMargins(0, 0, 0, 0);
   vlayout->setSpacing(0);
   colour_groupbox->setLayout(vlayout);
 
-  Tool::Base::HBoxLayout *hlayout = new Tool::Base::HBoxLayout;
+  auto *hlayout = new Tool::Base::HBoxLayout;
   hlayout->setContentsMargins(0, 0, 0, 0);
   hlayout->setSpacing(0);
 
@@ -61,7 +61,7 @@ TrackScalarFileOptions::TrackScalarFileOptions(Tractography *parent)
 
   main_box->addWidget(colour_groupbox);
 
-  QGroupBox *threshold_box = new QGroupBox("Thresholds");
+  auto *threshold_box = new QGroupBox("Thresholds");
   vlayout = new Tool::Base::VBoxLayout;
   vlayout->setContentsMargins(0, 0, 0, 0);
   vlayout->setSpacing(0);

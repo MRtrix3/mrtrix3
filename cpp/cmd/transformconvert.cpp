@@ -180,7 +180,7 @@ void parse_itk_trafo(const std::filesystem::path &itk_path,
 void run() {
   const std::filesystem::path output_path{argument.back()};
   const size_t num_inputs = argument.size() - 2;
-  const Operation op = MR::Enum::from_name<Operation>(argument[num_inputs]);
+  const auto op = MR::Enum::from_name<Operation>(argument[num_inputs]);
 
   switch (op) {
   case Operation::FLIRT_IMPORT: {

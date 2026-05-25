@@ -141,9 +141,9 @@ public:
 };
 
 View::View(Dock *parent) : Base(parent) {
-  VBoxLayout *main_box = new VBoxLayout(this);
+  auto *main_box = new VBoxLayout(this);
 
-  HBoxLayout *hlayout = new HBoxLayout;
+  auto *hlayout = new HBoxLayout;
   hlayout->setContentsMargins(0, 0, 0, 0);
   hlayout->setSpacing(0);
 
@@ -158,7 +158,7 @@ View::View(Dock *parent) : Base(parent) {
   main_box->addLayout(hlayout, 0);
 
   // FoV
-  QGroupBox *group_box = new QGroupBox("FOV");
+  auto *group_box = new QGroupBox("FOV");
   main_box->addWidget(group_box);
   hlayout = new HBoxLayout;
   group_box->setLayout(hlayout);
@@ -177,7 +177,7 @@ View::View(Dock *parent) : Base(parent) {
   // Focus
   group_box = new QGroupBox("Focus");
   main_box->addWidget(group_box);
-  GridLayout *layout = new GridLayout;
+  auto *layout = new GridLayout;
   group_box->setLayout(layout);
 
   const int focus_button_width = 80;
@@ -262,7 +262,7 @@ View::View(Dock *parent) : Base(parent) {
   // volume render options
   transparency_box = new QGroupBox("Transparency");
   main_box->addWidget(transparency_box);
-  VBoxLayout *vlayout = new VBoxLayout;
+  auto *vlayout = new VBoxLayout;
   transparency_box->setLayout(vlayout);
 
   hlayout = new HBoxLayout;
@@ -347,7 +347,7 @@ View::View(Dock *parent) : Base(parent) {
           SLOT(clip_planes_selection_changed_slot()));
   hlayout->addWidget(clip_planes_list_view, 1);
 
-  QToolBar *toolbar = new QToolBar(this);
+  auto *toolbar = new QToolBar(this);
   toolbar->setOrientation(Qt::Vertical);
   toolbar->setFloatable(false);
   toolbar->setMovable(false);
@@ -373,7 +373,7 @@ View::View(Dock *parent) : Base(parent) {
   clip_planes_option_menu = new QMenu();
   QMenu *submenu = clip_planes_option_menu->addMenu("&New");
 
-  QToolButton *button = new QToolButton(this);
+  auto *button = new QToolButton(this);
   button->setMenu(submenu);
   button->setPopupMode(QToolButton::InstantPopup);
   button->setToolTip("Add new clip planes");
@@ -519,7 +519,7 @@ void View::onImageChanged() {
     delete volume_index_layout->takeAt(volume_index_layout->count() - 1)->widget();
 
   for (size_t d = 3; d < image->image.ndim(); ++d) {
-    SpinBox *vol_index = new SpinBox(this);
+    auto *vol_index = new SpinBox(this);
     vol_index->setMinimum(0);
     vol_index->setPrefix(qstr(str(d + 1) + ": "));
     vol_index->setValue(image->image.index(d));
@@ -859,7 +859,7 @@ void View::init_lightbox_gui(QLayout *parent) {
 
   lightbox_box = new QGroupBox("Light box");
   parent->addWidget(lightbox_box);
-  GridLayout *grid_layout = new GridLayout;
+  auto *grid_layout = new GridLayout;
   lightbox_box->setLayout(grid_layout);
 
   light_box_slice_inc_label = new QLabel(tr("Slice increment (mm):"));

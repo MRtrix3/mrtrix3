@@ -274,7 +274,7 @@ void run() {
   if (!opt.empty())
     dwi_modelled = Image<float>::create(opt[0][0], header_out);
 
-  const Algorithm algorithm = MR::Enum::from_name<Algorithm>(argument[0]);
+  const auto algorithm = MR::Enum::from_name<Algorithm>(argument[0]);
   switch (algorithm) {
   case Algorithm::CSD: {
     if (argument.size() != 4)

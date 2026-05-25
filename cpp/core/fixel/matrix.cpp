@@ -329,7 +329,7 @@ template <class MatrixType> void Writer<MatrixType>::save(const std::filesystem:
 
     const ssize_t connection_offset = fixel_image.index(0);
     index_type connection_count = 0;
-    connectivity_value_type sum_connectivity = connectivity_value_type(0.0);
+    auto sum_connectivity = connectivity_value_type(0.0);
     const connectivity_value_type normalisation_factor = matrix[fixel_index].norm_factor();
     for (auto &it : matrix[fixel_index]) {
       const connectivity_value_type connectivity = normalisation_factor * it.value();
@@ -410,7 +410,7 @@ NormFixel Reader::operator[](const size_t i) const {
     return result;
   index.index(3) = 1;
   const index_image_type offset = index.value();
-  connectivity_value_type sum(connectivity_value_type(0));
+  auto sum(connectivity_value_type(0));
   fixel.index(0) = value.index(0) = offset;
   if (mask.valid()) {
     for (size_t i = 0; i != num_connections; ++i) {

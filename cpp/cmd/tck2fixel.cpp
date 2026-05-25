@@ -83,7 +83,7 @@ public:
     // For each voxel tract tangent, assign to a fixel
     // For each fixel, sum the intersection lengths
     std::map<index_type, float> fixels;
-    for (SetVoxelDir::const_iterator i = visitations.begin(); i != visitations.end(); ++i) {
+    for (auto i = visitations.begin(); i != visitations.end(); ++i) {
       assign_pos_of(*i).to(fixel_indexer);
       fixel_indexer.index(3) = 0;
       index_type const num_fibres = fixel_indexer.value();

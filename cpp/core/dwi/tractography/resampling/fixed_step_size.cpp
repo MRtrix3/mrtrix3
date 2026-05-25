@@ -40,7 +40,7 @@ bool FixedStepSize::operator()(const Streamline<> &in, Streamline<> &out) const 
   for (ssize_t step = -1; step <= 1; step += 2) {
 
     ssize_t index = midpoint;
-    value_type mu_lower = value_type(0);
+    auto mu_lower = value_type(0);
 
     // Loop to generate points
     do {
@@ -62,7 +62,7 @@ bool FixedStepSize::operator()(const Streamline<> &in, Streamline<> &out) const 
 
         // Perform binary search
         point_type p_lower = temp[index], p, p_upper = temp[index + step];
-        value_type mu_upper = value_type(1);
+        auto mu_upper = value_type(1);
         value_type mu = std::numeric_limits<value_type>::quiet_NaN();
         do {
           mu = value_type(0.5) * (mu_lower + mu_upper);

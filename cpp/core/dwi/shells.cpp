@@ -50,14 +50,14 @@ FORCE_INLINE default_type bvalue_epsilon() {
 Shell::Shell(const Eigen::MatrixXd &grad, const std::vector<size_t> &indices)
     : volumes(indices), mean(0.0), stdev(0.0), min(std::numeric_limits<default_type>::max()), max(0.0) {
   assert(!volumes.empty());
-  for (std::vector<size_t>::const_iterator i = volumes.begin(); i != volumes.end(); i++) {
+  for (auto i = volumes.begin(); i != volumes.end(); i++) {
     const default_type b = grad(*i, 3);
     mean += b;
     min = std::min(min, b);
     max = std::max(min, b);
   }
   mean /= static_cast<default_type>(volumes.size());
-  for (std::vector<size_t>::const_iterator i = volumes.begin(); i != volumes.end(); i++)
+  for (auto i = volumes.begin(); i != volumes.end(); i++)
     stdev += Math::pow2(grad(*i, 3) - mean);
   stdev = std::sqrt(stdev / (volumes.size() - 1));
 }
@@ -104,7 +104,7 @@ Shells::select_shells(const bool force_singleshell, const bool force_with_bzero,
     bool bzero_selected = false;
     size_t nonbzero_selected_count = 0;
 
-    for (std::vector<default_type>::const_iterator b = desired_bvalues.begin(); b != desired_bvalues.end(); ++b) {
+    for (auto b = desired_bvalues.begin(); b != desired_bvalues.end(); ++b) {
 
       if (*b < 0)
         throw Exception("Cannot select shells corresponding to negative b-values");
@@ -181,7 +181,7 @@ Shells::select_shells(const bool force_singleshell, const bool force_with_bzero,
             // First, check to see if all non-zero shells have (effectively) non-zero standard deviation
             // (If one non-zero shell has negligible standard deviation, assume a Poisson distribution for all shells)
             bool zero_stdev = false;
-            for (std::vector<Shell>::const_iterator s = shells.begin(); s != shells.end(); ++s) {
+            for (auto s = shells.begin(); s != shells.end(); ++s) {
               if (!s->is_bzero() && s->get_stdev() < 1.0) {
                 zero_stdev = true;
                 break;
@@ -283,7 +283,7 @@ Shells::select_shells(const bool force_singleshell, const bool force_with_bzero,
 }
 
 Shells &Shells::reject_small_shells(const size_t min_volumes) {
-  for (std::vector<Shell>::iterator s = shells.begin(); s != shells.end();) {
+  for (auto s = shells.begin(); s != shells.end();) {
     if (!s->is_bzero() && s->count() < min_volumes)
       s = shells.erase(s);
     else

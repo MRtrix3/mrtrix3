@@ -74,7 +74,7 @@ template <typename T> bool Matrix<T>::operator()(const Mapped_track_nodelist &in
   assert(assignments_single.empty());
   assert(assignments_pairs.empty());
   std::vector<node_t> list(in.get_nodes());
-  for (std::vector<node_t>::const_iterator i = list.begin(); i != list.end(); ++i) {
+  for (auto i = list.begin(); i != list.end(); ++i) {
     assert(*i < data.rows());
   }
   if (is_vector()) {
@@ -83,7 +83,7 @@ template <typename T> bool Matrix<T>::operator()(const Mapped_track_nodelist &in
       inc_count(0, in.get_weight());
       list.push_back(0);
     } else {
-      for (std::vector<node_t>::const_iterator n = list.begin(); n != list.end(); ++n) {
+      for (auto n = list.begin(); n != list.end(); ++n) {
         apply_data(*n, in.get_factor(), in.get_weight());
         inc_count(*n, in.get_weight());
       }

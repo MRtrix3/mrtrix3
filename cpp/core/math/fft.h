@@ -30,12 +30,12 @@ namespace MR::Math {
 class FFT1D {
 public:
   FFT1D(size_t N, int direction) : _data(N), direction(direction) {
-    fftw_complex *p = reinterpret_cast<fftw_complex *>(_data.data());
+    auto *p = reinterpret_cast<fftw_complex *>(_data.data());
     _plan = fftw_plan_dft_1d(static_cast<int>(N), p, p, direction, FFTW_MEASURE);
   }
 
   FFT1D(const FFT1D &other) : _data(other._data.size()), direction(other.direction) {
-    fftw_complex *p = reinterpret_cast<fftw_complex *>(_data.data());
+    auto *p = reinterpret_cast<fftw_complex *>(_data.data());
     _plan = fftw_plan_dft_1d(static_cast<int>(_data.size()), p, p, direction, FFTW_MEASURE);
   }
 
@@ -43,7 +43,7 @@ public:
     fftw_destroy_plan(_plan);
     _data.resize(other._data.size());
     direction = other.direction;
-    fftw_complex *p = reinterpret_cast<fftw_complex *>(_data.data());
+    auto *p = reinterpret_cast<fftw_complex *>(_data.data());
     _plan = fftw_plan_dft_1d(static_cast<int>(_data.size()), p, p, direction, FFTW_MEASURE);
     return *this;
   }

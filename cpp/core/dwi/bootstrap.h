@@ -97,7 +97,7 @@ protected:
 
   value_type *get_voxel() {
     const Eigen::Vector3i voxel(index(0), index(1), index(2));
-    const typename std::map<Eigen::Vector3i, value_type *, IndexCompare>::const_iterator existing = voxels.find(voxel);
+    const auto existing = voxels.find(voxel);
     if (existing != voxels.end())
       return existing->second;
     value_type *const data = allocate_voxel();

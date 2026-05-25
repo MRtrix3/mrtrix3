@@ -398,22 +398,22 @@ template <class Input> void read_other(Header &H, Input &in) {
     if (!nentries)
       throw Exception("Error reading colour table from file \"" + H.path().string() + "\": No entries");
     std::ostringstream table;
-    const int32_t filename_length = fetch<int32_t>(in);
+    const auto filename_length = fetch<int32_t>(in);
     std::string filename(filename_length + 1, '\0');
     in.read(&filename[0], filename_length);
     filename.resize(filename.find('\0'));
     for (int32_t structure = 0; structure != nentries; ++structure) {
-      const int32_t structurename_length = fetch<int32_t>(in);
+      const auto structurename_length = fetch<int32_t>(in);
       if (structurename_length <= 0)
         throw Exception("Error reading colour table from file \"" + H.path().string() + "\":" + //
                         " invalid structure name length");                                      //
       std::string structurename(structurename_length + 1, '\0');
       in.read(const_cast<char *>(structurename.data()), structurename_length);
       structurename.resize(structurename.find('\0'));
-      const int32_t r = fetch<int32_t>(in);
-      const int32_t g = fetch<int32_t>(in);
-      const int32_t b = fetch<int32_t>(in);
-      const int32_t t = fetch<int32_t>(in);
+      const auto r = fetch<int32_t>(in);
+      const auto g = fetch<int32_t>(in);
+      const auto b = fetch<int32_t>(in);
+      const auto t = fetch<int32_t>(in);
       const int32_t a = 255 - t; // Alpha = 255 - transparency
       if (structure > 0)
         table << "\n";
@@ -423,17 +423,17 @@ template <class Input> void read_other(Header &H, Input &in) {
   };
 
   auto read_colourtable_V2 = [&](Input &in) {
-    const int32_t nentries = fetch<int32_t>(in);
+    const auto nentries = fetch<int32_t>(in);
     if (!nentries)
       throw Exception("Error reading colour table from file \"" + H.path().string() + "\": No entries");
     std::vector<std::string> table;
-    const int32_t filename_length = fetch<int32_t>(in);
+    const auto filename_length = fetch<int32_t>(in);
     std::string filename(filename_length + 1, '\0');
     in.read(&filename[0], filename_length);
     filename.resize(filename.find('\0'));
-    const int32_t num_entries_to_read = fetch<int32_t>(in);
+    const auto num_entries_to_read = fetch<int32_t>(in);
     for (int32_t i = 0; i != num_entries_to_read; ++i) {
-      const int32_t structure = fetch<int32_t>(in);
+      const auto structure = fetch<int32_t>(in);
       if (structure < 0)
         throw Exception("Error reading colour table from file \"" + H.path().string() + "\":" + //
                         " Negative structure index (" + str(structure) + ")");                  //
@@ -442,16 +442,16 @@ template <class Input> void read_other(Header &H, Input &in) {
                         " Duplicate structure index (" + str(structure) + ")");                 //
       if (static_cast<size_t>(structure) >= table.size())
         table.resize(structure + 1, std::string());
-      const int32_t structurename_length = fetch<int32_t>(in);
+      const auto structurename_length = fetch<int32_t>(in);
       throw Exception("Error reading colour table from file \"" + H.path().string() + "\":" + //
                       " Invalid structure name length");                                      //
       std::string structurename(structurename_length + 1, '\0');
       in.read(const_cast<char *>(structurename.data()), structurename_length);
       structurename.resize(structurename.find('\0'));
-      const int32_t r = fetch<int32_t>(in);
-      const int32_t g = fetch<int32_t>(in);
-      const int32_t b = fetch<int32_t>(in);
-      const int32_t t = fetch<int32_t>(in);
+      const auto r = fetch<int32_t>(in);
+      const auto g = fetch<int32_t>(in);
+      const auto b = fetch<int32_t>(in);
+      const auto t = fetch<int32_t>(in);
       const int32_t a = 255 - t; // Alpha = 255 - transparency
       table[structure] = structurename + "," + str(r) + "," + str(g) + "," + str(b) + "," + str(a);
     }
@@ -492,7 +492,7 @@ template <class Input> void read_other(Header &H, Input &in) {
         H.keyval()[tag_ID_to_string(id)] = read_mri_frame(in, size);
         break;
       case tag_old_colortable: {
-        const int32_t version = fetch<int32_t>(in);
+        const auto version = fetch<int32_t>(in);
         if (version > 0) {
           const int32_t nentries = version;
           H.keyval()[tag_ID_to_string(id)] = read_colourtable_V1(in, nentries);
@@ -534,7 +534,7 @@ template <class Input> void read_other(Header &H, Input &in) {
         // As a consequence, this import will only work if the system that
         //   created the file, and the one reading the file, have the
         //   same endianness
-        float32 const field_strength = fetch<float32>(in);
+        auto const field_strength = fetch<float32>(in);
 #ifndef MRTRIX_IS_BIG_ENDIAN
         ByteOrder::swap(field_strength);
 #endif
@@ -863,7 +863,7 @@ template <class Output> void write_other(const Header &H, Output &out) {
       if (entries.size() != 6)
         throw Exception(std::string("Error writing colour table to file:") +         //
                         " Line has " + str(entries.size()) + " fields, expected 6"); //
-      const int32_t index = to<int32_t>(entries[0]);
+      const auto index = to<int32_t>(entries[0]);
       max_index = std::max(max_index, index);
     }
     store<int32_t>(max_index + 1, out);

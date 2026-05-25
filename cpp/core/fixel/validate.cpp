@@ -107,7 +107,7 @@ index_type validate_index_image(Image<index_type> index_image) {
 
   // Check whether this total number matches what is stored in the header
   try {
-    const index_type nfixels_header = to<index_type>(index_image.keyval().at(n_fixels_key));
+    const auto nfixels_header = to<index_type>(index_image.keyval().at(n_fixels_key));
     if (nfixels_header != total_nfixels) {
       WARN("Total number of fixels indicated in header of image \"" + index_image.name() + "\"" + //
            " (" + str(nfixels_header) + ")" +                                                     //

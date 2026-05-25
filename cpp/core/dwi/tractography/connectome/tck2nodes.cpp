@@ -61,8 +61,7 @@ node_t Tck2nodes_radial::select_node(const Tractography::Streamline<> &tck, Imag
   const Eigen::Vector3d v_float = transform->scanner2voxel * p;
   const voxel_type centre(v_float.array().round().cast<voxel_type::Scalar>());
 
-  for (std::vector<voxel_type>::const_iterator offset = radial_search.begin(); offset != radial_search.end();
-       ++offset) {
+  for (auto offset = radial_search.begin(); offset != radial_search.end(); ++offset) {
 
     const voxel_type this_voxel(centre + *offset);
     const Eigen::Vector3d p_voxel(transform->voxel2scanner * this_voxel.matrix().cast<default_type>());
@@ -195,7 +194,7 @@ Tck2nodes_forwardsearch::get_cf(const Eigen::Vector3d &p, const Eigen::Vector3d 
 
 void Tck2nodes_all_voxels::select_nodes(const Streamline<> &tck, Image<node_t> &v, std::vector<node_t> &out) const {
   std::set<node_t> result;
-  for (Streamline<>::const_iterator p = tck.begin(); p != tck.end(); ++p) {
+  for (auto p = tck.begin(); p != tck.end(); ++p) {
     const Eigen::Vector3d v_float = transform->scanner2voxel * p->cast<default_type>();
     const voxel_type voxel(v_float.array().round().cast<voxel_type::Scalar>());
     assign_pos_of(voxel).to(v);
@@ -206,7 +205,7 @@ void Tck2nodes_all_voxels::select_nodes(const Streamline<> &tck, Image<node_t> &
     }
   }
   out.clear();
-  for (std::set<node_t>::const_iterator n = result.begin(); n != result.end(); ++n)
+  for (auto n = result.begin(); n != result.end(); ++n)
     out.push_back(*n);
 }
 

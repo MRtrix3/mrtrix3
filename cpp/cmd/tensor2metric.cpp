@@ -520,7 +520,7 @@ void run() {
         throw Exception("eigenvalue/eigenvector number is out of bounds");
   }
 
-  const ModulateChoice modulate = get_option_choice<ModulateChoice>("modulate", default_modulate_choice);
+  const auto modulate = get_option_choice<ModulateChoice>("modulate", default_modulate_choice);
 
   auto value_img = Image<value_type>();
   opt = get_options("value");

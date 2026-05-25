@@ -346,7 +346,7 @@ void run() {
   }
   INFO("selected patch size: " + str(extent[0]) + " x " + str(extent[1]) + " x " + str(extent[2]) + ".");
 
-  const Estimator estimator =
+  const auto estimator =
       get_option_choice<Estimator>("estimator", Estimator::EXP2); // default: Exp2 (unbiased estimator)
   const bool exp1 = estimator == Estimator::EXP1;
 
@@ -374,7 +374,7 @@ void run() {
     rank = Image<uint16_t>::create(opt[0][0], header);
   }
 
-  const DType precision = get_option_choice<DType>("datatype", DType::FLOAT32); // default: single precision
+  const auto precision = get_option_choice<DType>("datatype", DType::FLOAT32); // default: single precision
   int prec = static_cast<int>(precision);
   if (dwi.datatype().is_complex())
     prec += 2; // support complex input data

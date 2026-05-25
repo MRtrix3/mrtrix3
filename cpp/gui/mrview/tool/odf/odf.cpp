@@ -34,13 +34,13 @@ namespace MR::GUI::MRView::Tool {
 ODF::ODF(Dock *parent) : Base(parent), preview(nullptr), renderer(nullptr), lighting_dock(nullptr), lmax(0) {
   lighting = new GL::Lighting(this);
 
-  VBoxLayout *main_box = new VBoxLayout(this);
+  auto *main_box = new VBoxLayout(this);
 
-  HBoxLayout *layout = new HBoxLayout;
+  auto *layout = new HBoxLayout;
   layout->setContentsMargins(0, 0, 0, 0);
   layout->setSpacing(0);
 
-  QPushButton *button = new QPushButton(this);
+  auto *button = new QPushButton(this);
   button->setToolTip(tr("Open SH image"));
   button->setIcon(QIcon(":/odf_sh.svg"));
   connect(button, SIGNAL(clicked()), this, SLOT(sh_open_slot()));
@@ -93,9 +93,9 @@ ODF::ODF(Dock *parent) : Base(parent), preview(nullptr), renderer(nullptr), ligh
   connect(show_preview_button, SIGNAL(clicked()), this, SLOT(show_preview_slot()));
   main_box->addWidget(show_preview_button, 1);
 
-  QGroupBox *group_box = new QGroupBox(tr("Display settings"));
+  auto *group_box = new QGroupBox(tr("Display settings"));
   main_box->addWidget(group_box);
-  GridLayout *box_layout = new GridLayout;
+  auto *box_layout = new GridLayout;
   group_box->setLayout(box_layout);
 
   level_of_detail_label = new QLabel("detail");
@@ -143,7 +143,7 @@ ODF::ODF(Dock *parent) : Base(parent), preview(nullptr), renderer(nullptr), ligh
   connect(shell_selector, SIGNAL(currentIndexChanged(int)), this, SLOT(shell_slot()));
   box_layout->addWidget(shell_selector, 1, 3);
 
-  QLabel *label = new QLabel("scale");
+  auto *label = new QLabel("scale");
   label->setAlignment(Qt::AlignHCenter);
   box_layout->addWidget(label, 2, 0);
   scale = new AdjustButton(this, 1.0);
@@ -200,7 +200,7 @@ ODF::ODF(Dock *parent) : Base(parent), preview(nullptr), renderer(nullptr), ligh
   connect(colour_relative_to_projection_box, SIGNAL(stateChanged(int)), this, SLOT(updateGL()));
   box_layout->addWidget(colour_relative_to_projection_box, 6, 0, 1, 2);
 
-  QPushButton *lighting_settings_button = new QPushButton("ODF lighting...", this);
+  auto *lighting_settings_button = new QPushButton("ODF lighting...", this);
   lighting_settings_button->setIcon(QIcon(":/light.svg"));
   connect(lighting_settings_button, SIGNAL(clicked(bool)), this, SLOT(lighting_settings_slot(bool)));
   box_layout->addWidget(lighting_settings_button, 6, 2, 1, 2);

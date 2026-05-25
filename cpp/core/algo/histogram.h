@@ -95,7 +95,7 @@ public:
   }
 
   template <typename value_type> size_t bin(const value_type val) const {
-    size_t const pos = static_cast<size_t>(std::floor((val - info.get_min()) / info.get_bin_width()));
+    auto const pos = static_cast<size_t>(std::floor((val - info.get_min()) / info.get_bin_width()));
     if (pos > static_cast<size_t>(list.size()))
       return size();
     return pos;

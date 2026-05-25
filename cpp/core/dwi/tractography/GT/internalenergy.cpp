@@ -56,7 +56,7 @@ void InternalEnergyComputer::scanNeighbourhood(const Particle *p, const int alph
 
         std::lock_guard<std::mutex> const lock(pvec->mutex);
 
-        for (ParticleGrid::ParticleContainer::const_iterator it = pvec->begin(); it != pvec->end(); ++it) {
+        for (auto it = pvec->begin(); it != pvec->end(); ++it) {
           pe.par = *it;
           if (pe.par == p)
             continue;

@@ -60,7 +60,7 @@ void run() {
     std::cout << "***********************************\n";
     std::cout << "  Track scalar file: \"" << argument[i].as_text() << "\"\n";
 
-    for (Tractography::Properties::iterator i = properties.begin(); i != properties.end(); ++i) {
+    for (auto i = properties.begin(); i != properties.end(); ++i) {
       std::string S(i->first + ':');
       S.resize(22, ' ');
       std::cout << "    " << S << i->second << "\n";
@@ -68,13 +68,11 @@ void run() {
 
     if (!properties.comments.empty()) {
       std::cout << "    Comments:             ";
-      for (std::vector<std::string>::iterator i = properties.comments.begin(); i != properties.comments.end(); ++i)
+      for (auto i = properties.comments.begin(); i != properties.comments.end(); ++i)
         std::cout << (i == properties.comments.begin() ? "" : "                       ") << *i << "\n";
     }
 
-    for (std::multimap<std::string, std::string>::const_iterator i = properties.prior_rois.begin();
-         i != properties.prior_rois.end();
-         ++i)
+    for (auto i = properties.prior_rois.begin(); i != properties.prior_rois.end(); ++i)
       std::cout << "    ROI:                  " << i->first << " " << i->second << "\n";
 
     if (actual_count) {
@@ -100,7 +98,7 @@ void run() {
         std::ostringstream index_str;
         index_str << std::setfill('0') << std::setw(6) << tck.get_index();
         File::OFStream out(ascii_dir / (index_str.str() + ".txt"));
-        for (std::vector<float>::iterator i = tck.begin(); i != tck.end(); ++i)
+        for (auto i = tck.begin(); i != tck.end(); ++i)
           out << (*i) << "\n";
         out.close();
         ++progress;

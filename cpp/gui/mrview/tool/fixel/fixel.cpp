@@ -80,12 +80,12 @@ public:
 
 Fixel::Fixel(Dock *parent) : Base(parent), not_3D(true), line_opacity(1.0) {
 
-  VBoxLayout *main_box = new VBoxLayout(this);
-  HBoxLayout *layout = new HBoxLayout;
+  auto *main_box = new VBoxLayout(this);
+  auto *layout = new HBoxLayout;
   layout->setContentsMargins(0, 0, 0, 0);
   layout->setSpacing(0);
 
-  QPushButton *button = new QPushButton(this);
+  auto *button = new QPushButton(this);
   button->setToolTip(tr("Open fixel image"));
   button->setIcon(QIcon(":/open.svg"));
   connect(button, SIGNAL(clicked()), this, SLOT(fixel_open_slot()));
@@ -128,7 +128,7 @@ Fixel::Fixel(Dock *parent) : Base(parent), not_3D(true), line_opacity(1.0) {
 
   main_box->addWidget(fixel_list_view, 1);
 
-  HBoxLayout *hlayout = new HBoxLayout;
+  auto *hlayout = new HBoxLayout;
   hlayout->setContentsMargins(0, 0, 0, 0);
   hlayout->setSpacing(0);
   main_box->addLayout(hlayout);
@@ -169,7 +169,7 @@ Fixel::Fixel(Dock *parent) : Base(parent), not_3D(true), line_opacity(1.0) {
   hlayout->addWidget(threshold_combobox, 0);
   connect(threshold_combobox, SIGNAL(activated(int)), this, SLOT(threshold_type_slot(int)));
 
-  QGroupBox *threshold_box = new QGroupBox("Thresholds");
+  auto *threshold_box = new QGroupBox("Thresholds");
   main_box->addWidget(threshold_box);
   hlayout = new HBoxLayout;
   threshold_box->setLayout(hlayout);
@@ -209,7 +209,7 @@ Fixel::Fixel(Dock *parent) : Base(parent), not_3D(true), line_opacity(1.0) {
   connect(length_multiplier, SIGNAL(valueChanged()), this, SLOT(length_multiplier_slot()));
   hlayout->addWidget(length_multiplier);
 
-  GridLayout *default_opt_grid = new GridLayout;
+  auto *default_opt_grid = new GridLayout;
   line_thickness_slider = new QSlider(Qt::Horizontal);
   line_thickness_slider->setRange(10, 1000);
   line_thickness_slider->setSliderPosition(200);
@@ -285,7 +285,7 @@ size_t Fixel::visible_number_colourbars() {
 
   if (!hide_all_button->isChecked()) {
     for (size_t i = 0, N = fixel_list_model->rowCount(); i < N; ++i) {
-      BaseFixel *fixel = dynamic_cast<BaseFixel *>(fixel_list_model->items[i].get());
+      auto *fixel = dynamic_cast<BaseFixel *>(fixel_list_model->items[i].get());
       if ((fixel != nullptr) && fixel->show && !ColourMap::maps[fixel->colourmap].special)
         total_visible += 1;
     }
@@ -544,7 +544,7 @@ void Fixel::update_gui_tracking_controls() {
 
   size_t num_checked = 0;
   for (size_t i = 0; i < n_images; ++i) {
-    Image4D *fixel = dynamic_cast<Image4D *>(fixel_list_model->get_fixel_image(indices[i]));
+    auto *fixel = dynamic_cast<Image4D *>(fixel_list_model->get_fixel_image(indices[i]));
     if (fixel == nullptr) {
       track_main_volume->setEnabled(false);
       return;
@@ -668,7 +668,7 @@ void Fixel::colour_changed_slot(int selection) {
 void Fixel::on_set_tracking_slot(bool is_checked) {
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
   for (int i = 0; i < indices.size(); ++i) {
-    Image4D *fixel = dynamic_cast<Image4D *>(fixel_list_model->get_fixel_image(indices[i]));
+    auto *fixel = dynamic_cast<Image4D *>(fixel_list_model->get_fixel_image(indices[i]));
     assert(fixel != nullptr);
     if (fixel != nullptr)
       fixel->tracking = is_checked;

@@ -108,7 +108,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
 
   if (dim[0] > 1) { // switch axes so slice dim is inner-most:
     std::vector<Frame *> list(frames);
-    std::vector<Frame *>::iterator it = frames.begin();
+    auto it = frames.begin();
     for (size_t k = 0; k < dim[2]; ++k)
       for (size_t i = 0; i < dim[0]; ++i)
         for (size_t j = 0; j < dim[1]; ++j)
@@ -409,7 +409,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
     H.datatype() = DataType::Float32;
     H.datatype().set_byte_order_native();
 
-    MR::ImageIO::VariableScaling *handler = new MR::ImageIO::VariableScaling(H);
+    auto *handler = new MR::ImageIO::VariableScaling(H);
 
     for (size_t n = 0; n < frames.size(); ++n)
       handler->scale_factors.push_back({frames[n]->scale_intercept, frames[n]->scale_slope});

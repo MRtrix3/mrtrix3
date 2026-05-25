@@ -23,7 +23,7 @@ void ROI_Model::load(std::vector<std::unique_ptr<MR::Header>> &list) {
   beginInsertRows(QModelIndex(), items.size(), items.size() + list.size());
   for (size_t i = 0; i < list.size(); ++i) {
     GL::Context::Grab const context;
-    ROI_Item *roi = new ROI_Item(std::move(*list[i]));
+    auto *roi = new ROI_Item(std::move(*list[i]));
     roi->load();
     items.push_back(std::unique_ptr<Displayable>(roi));
   }
@@ -34,7 +34,7 @@ void ROI_Model::create(MR::Header &&image) {
   beginInsertRows(QModelIndex(), items.size(), items.size() + 1);
   {
     GL::Context::Grab const context;
-    ROI_Item *roi = new ROI_Item(std::move(image));
+    auto *roi = new ROI_Item(std::move(image));
     roi->zero();
     items.push_back(std::unique_ptr<Displayable>(roi));
   }

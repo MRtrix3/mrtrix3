@@ -110,7 +110,7 @@ public:
 template <typename PointType> typename PointType::Scalar length(const std::vector<PointType> &tck) {
   if (tck.empty())
     return std::numeric_limits<typename PointType::Scalar>::quiet_NaN();
-  typename PointType::Scalar value = typename PointType::Scalar(0);
+  auto value = typename PointType::Scalar(0);
   for (size_t i = 1; i != tck.size(); ++i)
     value += (tck[i] - tck[i - 1]).norm();
   return value;

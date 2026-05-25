@@ -102,7 +102,7 @@ void run() {
 
   for (auto l = Loop("Colourizing parcellated node image", nodes)(nodes, out); l; ++l) {
     const node_t index = nodes.value();
-    const LUT::const_iterator i = lut.find(index);
+    const auto i = lut.find(index);
     if (i == lut.end()) {
       out.index(3) = 0;
       out.value() = 0;

@@ -79,7 +79,7 @@ void MeshMulti::load(const std::filesystem::path &path) {
                         " (face with neither 3 nor 4 vertices; line " + str(counter) + ")"); //
       std::vector<FaceData> face_data;
       size_t values_per_element = 0;
-      for (std::vector<std::string>::iterator i = elements.begin(); i != elements.end(); ++i) {
+      for (auto i = elements.begin(); i != elements.end(); ++i) {
         FaceData temp;
         temp.vertex = 0;
         temp.texture = 0;
@@ -148,13 +148,13 @@ void MeshMulti::save(const std::filesystem::path &path) const {
   File::OFStream out(path);
   size_t offset = 1;
   out << "# " << App::command_history_string << "\n";
-  for (const_iterator i = begin(); i != end(); ++i) {
+  for (auto i = begin(); i != end(); ++i) {
     out << "o " << i->get_name() << "\n";
-    for (VertexList::const_iterator v = i->vertices.begin(); v != i->vertices.end(); ++v)
+    for (auto v = i->vertices.begin(); v != i->vertices.end(); ++v)
       out << "v " << str((*v)[0]) << " " << str((*v)[1]) << " " << str((*v)[2]) << " 1.0\n";
-    for (TriangleList::const_iterator t = i->triangles.begin(); t != i->triangles.end(); ++t)
+    for (auto t = i->triangles.begin(); t != i->triangles.end(); ++t)
       out << "f " << str((*t)[0] + offset) << " " << str((*t)[1] + offset) << " " << str((*t)[2] + offset) << "\n";
-    for (QuadList::const_iterator q = i->quads.begin(); q != i->quads.end(); ++q)
+    for (auto q = i->quads.begin(); q != i->quads.end(); ++q)
       out << "f " << str((*q)[0] + offset) << " " << str((*q)[1] + offset) << " " << str((*q)[2] + offset) << " "
           << str((*q)[3] + offset) << "\n";
     offset += i->vertices.size();

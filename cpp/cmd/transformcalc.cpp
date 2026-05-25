@@ -184,7 +184,7 @@ align_corresponding_vertices(const Eigen::MatrixXd &src_vertices, const Eigen::M
 
 void run() {
   const size_t num_inputs = argument.size() - 2;
-  const Operation op = MR::Enum::from_name<Operation>(argument[num_inputs]);
+  const auto op = MR::Enum::from_name<Operation>(argument[num_inputs]);
   const std::filesystem::path output_path{argument.back()};
 
   switch (op) {

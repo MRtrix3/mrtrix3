@@ -45,7 +45,7 @@ public:
 
   template <class C> Min_mem_array(const C &data) : n(data.size()), d(new T[data.size()]) {
     size_t index = 0;
-    for (typename C::const_iterator i = data.begin(); i != data.end(); ++i, ++index)
+    for (auto i = data.begin(); i != data.end(); ++i, ++index)
       d[index] = *i;
   }
 

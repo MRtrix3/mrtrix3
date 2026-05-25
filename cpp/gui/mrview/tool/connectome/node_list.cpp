@@ -85,9 +85,9 @@ void Node_list_model::reset_pixmaps() {
 
 Node_list::Node_list(Tool::Dock *dock, Connectome *master)
     : Tool::Base(dock), connectome(*master), node_selection_dialog(nullptr) {
-  VBoxLayout *main_box = new VBoxLayout(this);
+  auto *main_box = new VBoxLayout(this);
 
-  HBoxLayout *hlayout = new HBoxLayout;
+  auto *hlayout = new HBoxLayout;
   main_box->addLayout(hlayout);
   clear_selection_button = new QPushButton(this);
   clear_selection_button->setToolTip(tr("Clear node selection"));

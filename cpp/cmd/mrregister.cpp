@@ -183,7 +183,7 @@ void run() {
     check_3D_nonunity(input2[i]);
   }
 
-  const transformation_t registration_type = get_option_choice<transformation_t>("type", default_transformation_type);
+  const auto registration_type = get_option_choice<transformation_t>("type", default_transformation_type);
   bool do_rigid = false;
   bool do_affine = false;
   bool do_nonlinear = false;

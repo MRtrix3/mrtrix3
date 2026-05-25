@@ -66,7 +66,7 @@ std::vector<Eigen::Vector3d> get(Image<float> &data) {
 }
 
 void run() {
-  std::string dataname = get_option_value<std::string>("dataname", "");
+  auto dataname = get_option_value<std::string>("dataname", "");
 
   auto input_header = Header::open(argument[0]);
   Peaks::validate_header(input_header);

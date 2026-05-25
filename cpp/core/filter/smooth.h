@@ -109,7 +109,7 @@ public:
     std::unique_ptr<ProgressBar> progress;
     if (!message.empty()) {
       size_t axes_to_smooth = 0;
-      for (std::vector<default_type>::const_iterator i = stdev.begin(); i != stdev.end(); ++i)
+      for (auto i = stdev.begin(); i != stdev.end(); ++i)
         if (*i)
           ++axes_to_smooth;
       progress.reset(new ProgressBar(message, axes_to_smooth + 1));
@@ -134,7 +134,7 @@ public:
     std::unique_ptr<ProgressBar> progress;
     if (!message.empty()) {
       size_t axes_to_smooth = 0;
-      for (std::vector<default_type>::const_iterator i = stdev.begin(); i != stdev.end(); ++i)
+      for (auto i = stdev.begin(); i != stdev.end(); ++i)
         if (*i)
           ++axes_to_smooth;
       progress.reset(new ProgressBar(message, axes_to_smooth + 1));

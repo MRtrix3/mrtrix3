@@ -54,7 +54,7 @@ void run() {
     std::cout << "***********************************\n";
     std::cout << "  Tracks file: \"" << input_path.string() << "\"\n";
 
-    for (Tractography::Properties::iterator i = properties.begin(); i != properties.end(); ++i) {
+    for (auto i = properties.begin(); i != properties.end(); ++i) {
       std::string S(i->first + ':');
       S.resize(22, ' ');
       const auto lines = split_lines(i->second);
@@ -65,13 +65,11 @@ void run() {
 
     if (!properties.comments.empty()) {
       std::cout << "    Comments:             ";
-      for (std::vector<std::string>::iterator i = properties.comments.begin(); i != properties.comments.end(); ++i)
+      for (auto i = properties.comments.begin(); i != properties.comments.end(); ++i)
         std::cout << (i == properties.comments.begin() ? "" : "                       ") << *i << "\n";
     }
 
-    for (std::multimap<std::string, std::string>::const_iterator i = properties.prior_rois.begin();
-         i != properties.prior_rois.end();
-         ++i)
+    for (auto i = properties.prior_rois.begin(); i != properties.prior_rois.end(); ++i)
       std::cout << "    ROI:                  " << i->first << " " << i->second << "\n";
 
     if (actual_count) {

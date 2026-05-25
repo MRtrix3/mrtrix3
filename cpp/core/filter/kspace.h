@@ -245,7 +245,7 @@ protected:
     Header H(header);
     H.datatype() = DataType::Float64;
     H.datatype().set_byte_order_native();
-    std::vector<size_t>::const_iterator it = inner_axes.begin();
+    auto it = inner_axes.begin();
     for (size_t axis = 0; axis != header.ndim(); ++axis) {
       if (it != inner_axes.end() && *it == axis)
         ++it;

@@ -102,7 +102,7 @@ Image::Image(MR::Header &&image_header)
       slice_min{{NaNF, NaNF, NaNF}},
       slice_max{{NaNF, NaNF, NaNF}} {
   set_colourmap(guess_colourmap());
-  const KeyValues::const_iterator i = header().keyval().find("comments");
+  const auto i = header().keyval().find("comments");
   if (i != header().keyval().end())
     _comments = split_lines(i->second);
 }

@@ -588,7 +588,7 @@ void run() {
   // Complete branch here for Gaussian track-wise statistic; it's a nightmare to manage, so am
   //   keeping the code as separate as possible
   if (stat_tck == tck_stat_t::GAUSSIAN) {
-    Gaussian::TrackMapper *const mapper_ptr = dynamic_cast<Gaussian::TrackMapper *>(mapper.get());
+    auto *const mapper_ptr = dynamic_cast<Gaussian::TrackMapper *>(mapper.get());
     mapper_ptr->set_gaussian_FWHM(gaussian_fwhm_tck);
     switch (writer_type) {
     case writer_dim::UNDEFINED:

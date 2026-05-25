@@ -220,12 +220,12 @@ default_type calculate(Image<value_type> &in,
       return static_cast<default_type>(*std::min_element(data.begin(), data.end()));
     }
     const default_type interp_index = 0.01 * percentile * (data.size() - 1);
-    const size_t lower_index = static_cast<size_t>(std::floor(interp_index));
+    const auto lower_index = static_cast<size_t>(std::floor(interp_index));
     const default_type mu = interp_index - static_cast<default_type>(lower_index);
     std::nth_element(data.begin(), data.begin() + lower_index, data.end());
-    const default_type lower_value = static_cast<default_type>(data[lower_index]);
+    const auto lower_value = static_cast<default_type>(data[lower_index]);
     std::nth_element(data.begin(), data.begin() + lower_index + 1, data.end());
-    const default_type upper_value = static_cast<default_type>(data[lower_index + 1]);
+    const auto upper_value = static_cast<default_type>(data[lower_index + 1]);
     return (1.0 - mu) * lower_value + mu * upper_value;
   }
   if (std::max(bottom, top) >= 0) {
@@ -421,7 +421,7 @@ void run() {
   bool mask_out = !get_options("out_masked").empty();
 
   const operator_type default_comp = bottom >= 0 ? operator_type::LE : operator_type::GE;
-  operator_type comp = get_option_choice<operator_type>("comparison", default_comp);
+  auto comp = get_option_choice<operator_type>("comparison", default_comp);
   if (invert) {
     switch (comp) {
     case operator_type::LT:

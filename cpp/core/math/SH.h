@@ -365,7 +365,7 @@ public:
     Eigen::Matrix<value_type, Eigen::Dynamic, 1, 0, 64> buf(lmax + 1);
 
     for (int n = 0; n < ndir; n++) {
-      typename std::vector<value_type>::iterator const p = AL.begin() + n * nAL;
+      auto const p = AL.begin() + n * nAL;
       value_type const cos_el = std::cos(n * inc);
       for (int m = 0; m <= lmax; m++) {
         Legendre::Plm_sph(buf, lmax, m, cos_el);

@@ -42,7 +42,7 @@ InterprocessCommunicator::InterprocessCommunicator() : QObject(0) {
     }
 
     // Search for a free id
-    QLocalSocket *socket = new QLocalSocket(this);
+    auto *socket = new QLocalSocket(this);
     freeEntry = -1;
     for (int i = 0; i < maximum_instances; i++) {
       QString const serverName = "mrtrix_interprocesssyncer_" + QString::number(i);
@@ -97,7 +97,7 @@ InterprocessCommunicator::InterprocessCommunicator() : QObject(0) {
  */
 void InterprocessCommunicator::OnNewIncomingConnection() {
   // TODO Possible memory leak here
-  LocalSocketReader *lsr = new LocalSocketReader(receiver->nextPendingConnection());
+  auto *lsr = new LocalSocketReader(receiver->nextPendingConnection());
   connect(lsr,
           SIGNAL(DataReceived(std::vector<std::shared_ptr<QByteArray>>)),
           this,
@@ -131,7 +131,7 @@ void InterprocessCommunicator::TryConnectTo(int connectToId) {
 
       // Send it our id so that it connects back to us (i.e. two-way syncing)
       std::array<char, 8> a;
-      const int32_t connected_id = static_cast<int32_t>(MessageKey::ConnectedID);
+      const auto connected_id = static_cast<int32_t>(MessageKey::ConnectedID);
       memcpy(&a[0], &connected_id, 4);
       memcpy(&a[4], &id, 4);
       QByteArray dat;
@@ -199,7 +199,7 @@ bool InterprocessCommunicator::SendData(QByteArray dat) {
   if (QApplication::activeWindow() != 0 && QApplication::focusWidget() != 0) {
     // make an array: the message key followed by the message
     //--Key
-    const int32_t sync_data = static_cast<int32_t>(MessageKey::SyncData);
+    const auto sync_data = static_cast<int32_t>(MessageKey::SyncData);
     QByteArray data;
     data.insert(0, reinterpret_cast<const char *>(&sync_data), 4);
     //--Data

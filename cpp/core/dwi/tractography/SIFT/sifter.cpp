@@ -178,7 +178,7 @@ void SIFTer::perform_filtering() {
 
       } else { // Proceed as normal
 
-        const std::vector<Cost_fn_gradient_sort>::iterator candidate = sorter.get();
+        const auto candidate = sorter.get();
         if (candidate == gradient_vector.end()) {
           recalculate = POS_GRADIENT;
           if (removed_this_iteration == 0U)
@@ -399,7 +399,7 @@ void SIFTer::test_sorting_block_size(const size_t num_tracks) const {
     block_sizes.push_back(i);
   block_sizes.push_back(num_tracks);
 
-  for (std::vector<size_t>::const_iterator i = block_sizes.begin(); i != block_sizes.end(); ++i) {
+  for (auto i = block_sizes.begin(); i != block_sizes.end(); ++i) {
     const size_t block_size = *i;
 
     // Make a copy of the gradient vector, so the same data is sorted each time
@@ -424,7 +424,7 @@ void SIFTer::test_sorting_block_size(const size_t num_tracks) const {
 double SIFTer::calc_roc_cost_function() const {
   const double current_mu = mu();
   double roc_cost = 0.0;
-  std::vector<Fixel>::const_iterator i = fixels.begin();
+  auto i = fixels.begin();
   for (++i; i != fixels.end(); ++i)
     roc_cost += i->get_d_cost_d_mu(current_mu);
   return roc_cost;

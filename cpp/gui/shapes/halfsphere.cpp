@@ -120,7 +120,7 @@ void HalfSphere::LOD(const size_t level_of_detail) {
       GLuint index1, index2, index3;
 
       Edge E(indices[n][0], indices[n][1]);
-      std::map<Edge, GLuint>::const_iterator iter = edges.find(E);
+      auto iter = edges.find(E);
       if (iter == edges.end()) {
         index1 = vertices.size();
         edges.insert(std::make_pair(E, index1));

@@ -250,7 +250,7 @@ void Set::initialise_adjacency() {
       // TODO Using an alternative data structure, where both faces connected to each
       //   edge are stored and tracked, would speed this up considerably
       std::vector<std::list<Plane>::iterator> all_planes;
-      for (std::list<Plane>::iterator p = planes.begin(); p != planes.end(); ++p) {
+      for (auto p = planes.begin(); p != planes.end(); ++p) {
         if (!p->includes(max_index) && vertices[max_index].dir.dot(p->normal) > p->dist)
           all_planes.push_back(p);
       }
@@ -399,7 +399,7 @@ void FastLookupSet::initialise() {
   default_type adj_dot_product_sum = 0.0;
   size_t adj_dot_product_count = 0;
   for (size_t i = 0; i != size(); ++i) {
-    for (std::vector<index_type>::const_iterator j = adj_dirs[i].begin(); j != adj_dirs[i].end(); ++j) {
+    for (auto j = adj_dirs[i].begin(); j != adj_dirs[i].end(); ++j) {
       if (*j > i) {
         adj_dot_product_sum += std::fabs(unit_vectors[i].dot(unit_vectors[*j]));
         ++adj_dot_product_count;
@@ -456,9 +456,7 @@ void FastLookupSet::initialise() {
       const Eigen::Vector3d p(cos(az) * sin(el), sin(az) * sin(el), cos(el));
       const index_type nearest_dir = select_direction_slow(p);
       bool dir_present = false;
-      for (std::vector<index_type>::const_iterator d = grid_lookup[i].begin();
-           !dir_present && d != grid_lookup[i].end();
-           ++d)
+      for (auto d = grid_lookup[i].begin(); !dir_present && d != grid_lookup[i].end(); ++d)
         dir_present = (*d == nearest_dir);
       if (!dir_present)
         grid_lookup[i].push_back(nearest_dir);
@@ -470,15 +468,13 @@ void FastLookupSet::initialise() {
     const size_t num_to_expand = this_grid.size();
     for (size_t index_to_expand = 0; index_to_expand != num_to_expand; ++index_to_expand) {
       const index_type dir_to_expand = this_grid[index_to_expand];
-      for (std::vector<index_type>::const_iterator adj = get_adj_dirs(dir_to_expand).begin();
-           adj != get_adj_dirs(dir_to_expand).end();
-           ++adj) {
+      for (auto adj = get_adj_dirs(dir_to_expand).begin(); adj != get_adj_dirs(dir_to_expand).end(); ++adj) {
 
         // Size of lookup tables could potentially be reduced by being more prohibitive of adjacent direction inclusion
         // in the lookup table for this grid
 
         bool is_present = false;
-        for (std::vector<index_type>::const_iterator i = this_grid.begin(); !is_present && i != this_grid.end(); ++i)
+        for (auto i = this_grid.begin(); !is_present && i != this_grid.end(); ++i)
           is_present = (*i == *adj);
         if (!is_present)
           this_grid.push_back(*adj);

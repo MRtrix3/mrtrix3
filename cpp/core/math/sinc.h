@@ -59,7 +59,7 @@ public:
       // const value_type hann_factor   = (abs (hann_cos_term) < Math::pi) ? 0.5 * (1.0 + std::cos (hann_cos_term)) :
       // 0.0; const value_type this_weight   = hann_factor * sinc;
 
-      const value_type lanczos_sinc_term = static_cast<value_type>(
+      const auto lanczos_sinc_term = static_cast<value_type>(
           std::fabs(Math::pi * offset / (static_cast<default_type>(max_offset_from_kernel_centre) + 0.5)));
       value_type lanczos_factor = 0.0;
       if (lanczos_sinc_term < Math::pi) {

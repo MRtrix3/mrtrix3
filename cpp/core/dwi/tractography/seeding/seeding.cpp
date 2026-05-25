@@ -141,31 +141,31 @@ void load_seed_mechanisms(Properties &properties) {
 
   auto opt = get_options("seed_voxels");
   for (size_t i = 0; i < opt.size(); ++i) {
-    SeedMask *seed = new SeedMask(opt[i][0]);
+    auto *seed = new SeedMask(opt[i][0]);
     list.add(seed);
   }
 
   opt = get_options("seed_sphere");
   for (size_t i = 0; i < opt.size(); ++i) {
-    Sphere *seed = new Sphere(opt[i][0]);
+    auto *seed = new Sphere(opt[i][0]);
     list.add(seed);
   }
 
   opt = get_options("seed_random_per_voxel");
   for (size_t i = 0; i < opt.size(); ++i) {
-    Random_per_voxel *seed = new Random_per_voxel(opt[i][0], opt[i][1]);
+    auto *seed = new Random_per_voxel(opt[i][0], opt[i][1]);
     list.add(seed);
   }
 
   opt = get_options("seed_grid_per_voxel");
   for (size_t i = 0; i < opt.size(); ++i) {
-    Grid_per_voxel *seed = new Grid_per_voxel(opt[i][0], opt[i][1]);
+    auto *seed = new Grid_per_voxel(opt[i][0], opt[i][1]);
     list.add(seed);
   }
 
   opt = get_options("seed_rejection_per_voxel");
   for (size_t i = 0; i < opt.size(); ++i) {
-    Rejection_per_voxel *seed = new Rejection_per_voxel(opt[i][0]);
+    auto *seed = new Rejection_per_voxel(opt[i][0]);
     list.add(seed);
   }
 
@@ -175,14 +175,14 @@ void load_seed_mechanisms(Properties &properties) {
     if (opt_act.empty())
       throw Exception("Cannot perform GM-WM Interface seeding without ACT segmented tissue image");
     for (size_t i = 0; i < opt.size(); ++i) {
-      GMWMI *seed = new GMWMI(opt[i][0], opt_act[0][0]);
+      auto *seed = new GMWMI(opt[i][0], opt_act[0][0]);
       list.add(seed);
     }
   }
 
   opt = get_options("seed_per_coordinate");
   for (size_t i = 0; i < opt.size(); ++i) {
-    Count_per_coord *seed = new Count_per_coord(opt[i][0], opt[i][1]);
+    auto *seed = new Count_per_coord(opt[i][0], opt[i][1]);
     list.add(seed);
   }
 
@@ -193,7 +193,7 @@ void load_seed_mechanisms(Properties &properties) {
     if (!list.empty())
       throw Exception("If seeding from pre-specified coordinates with no fixed number of streamlines per coordinate,"
                       " cannot specify any other type of seed!");
-    Random_coordinates *seed = new Random_coordinates(opt[0][0]);
+    auto *seed = new Random_coordinates(opt[0][0]);
     list.add(seed);
   }
 
@@ -202,7 +202,7 @@ void load_seed_mechanisms(Properties &properties) {
     if (!list.empty())
       throw Exception("If performing rejection seeding from pre-specified coordinates,"
                       " cannot specify any other type of seed!");
-    Rejection_per_coord *seed = new Rejection_per_coord(opt[0][0]);
+    auto *seed = new Rejection_per_coord(opt[0][0]);
     list.add(seed);
   }
 

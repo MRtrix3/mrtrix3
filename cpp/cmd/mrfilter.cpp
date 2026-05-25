@@ -153,7 +153,7 @@ void usage() {
 
 void run() {
   const std::filesystem::path input_path{argument[0]};
-  const FilterType filter_index = MR::Enum::from_name<FilterType>(argument[1]);
+  const auto filter_index = MR::Enum::from_name<FilterType>(argument[1]);
   const std::string filter_name = MR::Enum::lowercase_name(filter_index);
   const std::filesystem::path output_path{argument[2]};
 

@@ -138,7 +138,7 @@ default_type Zstatistic::LookupBase::interp(const default_type stat,
                                             std::function<default_type(default_type)> func) const {
   const default_type index_float = (stat - offset) * scale;
   if (index_float >= 1.0 && index_float < data.size() - 2) {
-    const ssize_t index_int(static_cast<ssize_t>(std::floor(index_float)));
+    const auto index_int(static_cast<ssize_t>(std::floor(index_float)));
     const default_type mu(index_float - static_cast<default_type>(index_int));
     Math::Hermite<default_type> hermite(0.0);
     hermite.set(mu);

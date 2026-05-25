@@ -33,13 +33,13 @@ ODF_Preview::ODF_Preview(ODF *parent)
   delete render_frame->lighting;
   render_frame->lighting = parent->lighting;
 
-  Tool::Base::VBoxLayout *main_box = new Tool::Base::VBoxLayout(this);
+  auto *main_box = new Tool::Base::VBoxLayout(this);
 
   main_box->addWidget(render_frame);
 
-  QGroupBox *group_box = new QGroupBox(tr("Display settings"));
+  auto *group_box = new QGroupBox(tr("Display settings"));
   main_box->addWidget(group_box);
-  Tool::Base::GridLayout *box_layout = new Tool::Base::GridLayout;
+  auto *box_layout = new Tool::Base::GridLayout;
   group_box->setLayout(box_layout);
 
   lock_orientation_to_image_box = new QCheckBox("auto align");
@@ -57,7 +57,7 @@ ODF_Preview::ODF_Preview(ODF *parent)
   connect(show_axes_box, SIGNAL(stateChanged(int)), this, SLOT(show_axes_slot(int)));
   box_layout->addWidget(show_axes_box, 1, 0, 1, 2);
 
-  QLabel *label = new QLabel("detail");
+  auto *label = new QLabel("detail");
   label->setAlignment(Qt::AlignHCenter);
   box_layout->addWidget(label, 1, 2, 1, 1);
   level_of_detail_selector = new SpinBox(this);

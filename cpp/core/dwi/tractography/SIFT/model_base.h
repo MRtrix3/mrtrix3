@@ -229,7 +229,7 @@ template <class Fixel> bool ModelBase<Fixel>::operator()(const FMLS::FOD_lobes &
 
 template <class Fixel> bool ModelBase<Fixel>::operator()(const Mapping::SetDixel &in) {
   default_type total_contribution = 0.0;
-  for (Mapping::SetDixel::const_iterator i = in.begin(); i != in.end(); ++i) {
+  for (auto i = in.begin(); i != in.end(); ++i) {
     const size_t fixel_index = Mapping::Fixel_TD_map<Fixel>::dixel2fixel(*i);
     if (fixel_index != 0U) {
       fixels[fixel_index] += i->get_length();

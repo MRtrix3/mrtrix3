@@ -166,7 +166,7 @@ void run() {
   const auto directions = std::make_shared<const cartesian_matrix_type>(
       Eigen::Ref<const cartesian_matrix_type>(Math::Sphere::as_cartesian(directions_in)));
 
-  const size_t total_num_rotations = get_option_value<size_t>("number", default_number);
+  const auto total_num_rotations = get_option_value<size_t>("number", default_number);
 
   rotation_type rotation;
   {

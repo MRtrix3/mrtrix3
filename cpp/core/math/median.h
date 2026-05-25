@@ -81,7 +81,7 @@ template <class Container> typename Container::value_type quantile(Container &li
     return *std::max_element(list.begin(), end);
   default_type f(std::numeric_limits<default_type>::quiet_NaN());
   const default_type t = std::modf(static_cast<default_type>(num) * quantile, &f);
-  const ssize_t loc = static_cast<ssize_t>(f);
+  const auto loc = static_cast<ssize_t>(f);
   std::nth_element(list.begin(), list.begin() + loc, end);
   const typename Container::value_type val0 = list[loc];
   std::nth_element(list.begin(), list.begin() + loc + 1, end);

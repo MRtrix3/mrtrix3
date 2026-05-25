@@ -173,7 +173,7 @@ std::string datatype2descr(const DataType data_type) {
 // CONF use a precision any greater than this value in bits (used to
 // CONF minimise file size). Must be equal to either 16, 32 or 64.
 size_t float_max_save_precision() {
-  static size_t const result = to<size_t>(File::Config::get("NPYFloatMaxSavePrecision", "64"));
+  static auto const result = to<size_t>(File::Config::get("NPYFloatMaxSavePrecision", "64"));
   if (!(result == 16 || result == 32 || result == 64))
     throw Exception("Invalid value for config file entry \"NPYFloatMaxSavePrecision\""
                     " (must be 16, 32 or 64)");

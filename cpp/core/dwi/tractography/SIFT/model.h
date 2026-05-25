@@ -125,7 +125,7 @@ private:
 };
 
 template <class Fixel> Model<Fixel>::~Model() {
-  for (std::vector<TrackContribution *>::iterator i = contributions.begin(); i != contributions.end(); ++i) {
+  for (auto i = contributions.begin(); i != contributions.end(); ++i) {
     if (*i != nullptr) {
       delete *i;
       *i = nullptr;
@@ -170,7 +170,7 @@ template <class Fixel> void Model<Fixel>::map_streamlines(const std::filesystem:
 template <class Fixel> void Model<Fixel>::remove_excluded_fixels() {
 
   const bool remove_untracked_fixels = !App::get_options("remove_untracked").empty();
-  const float min_fibre_density = App::get_option_value<float>("fd_thresh", 0.0F);
+  const auto min_fibre_density = App::get_option_value<float>("fd_thresh", 0.0F);
   if (!remove_untracked_fixels && (min_fibre_density == 0.0F))
     return;
 
@@ -213,7 +213,7 @@ template <class Fixel> void Model<Fixel>::remove_excluded_fixels() {
   Thread::run_queue(writer, TrackIndexRange(), Thread::multi(remapper));
 
   TD_sum = 0.0;
-  for (typename std::vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i)
+  for (auto i = fixels.begin(); i != fixels.end(); ++i)
     TD_sum += i->get_weight() * i->get_TD();
 
   INFO("After fixel exclusion, the proportionality coefficient is " + str(mu()));
@@ -229,7 +229,7 @@ template <class Fixel> void Model<Fixel>::check_TD() {
   VAR(sum_from_fixels);
   VAR(sum_from_fixels_weighted);
   double sum_from_tracks = 0.0;
-  for (std::vector<TrackContribution *>::const_iterator i = contributions.begin(); i != contributions.end(); ++i) {
+  for (auto i = contributions.begin(); i != contributions.end(); ++i) {
     if (*i != nullptr)
       sum_from_tracks += (*i)->get_total_contribution();
   }
@@ -294,15 +294,13 @@ template <class Fixel> bool Model<Fixel>::TrackMappingWorker::operator()(const T
     std::vector<Track_fixel_contribution> masked_contributions;
     default_type total_contribution = 0.0, total_length = 0.0;
 
-    for (Mapping::SetDixel::const_iterator i = dixels.begin(); i != dixels.end(); ++i) {
+    for (auto i = dixels.begin(); i != dixels.end(); ++i) {
       total_length += i->get_length();
       const size_t fixel_index = master.dixel2fixel(*i);
       if ((fixel_index != 0U) && (i->get_length() > Track_fixel_contribution::min())) {
         total_contribution += i->get_length() * master.fixels[fixel_index].get_weight();
         bool incremented = false;
-        for (std::vector<Track_fixel_contribution>::iterator c = masked_contributions.begin();
-             !incremented && c != masked_contributions.end();
-             ++c) {
+        for (auto c = masked_contributions.begin(); !incremented && c != masked_contributions.end(); ++c) {
           if ((c->get_fixel_index() == fixel_index) && c->add(i->get_length()))
             incremented = true;
         }
@@ -315,9 +313,7 @@ template <class Fixel> bool Model<Fixel>::TrackMappingWorker::operator()(const T
         new TrackContribution(masked_contributions, total_contribution, total_length);
 
     TD_sum += total_contribution;
-    for (std::vector<Track_fixel_contribution>::const_iterator i = masked_contributions.begin();
-         i != masked_contributions.end();
-         ++i) {
+    for (auto i = masked_contributions.begin(); i != masked_contributions.end(); ++i) {
       fixel_TDs[i->get_fixel_index()] += i->get_length();
       ++fixel_counts[i->get_fixel_index()];
     }
@@ -343,8 +339,7 @@ template <class Fixel> bool Model<Fixel>::FixelRemapper::operator()(const TrackI
           total_contribution += this_cont[i].get_length() * master[new_index].get_weight();
         }
       }
-      TrackContribution *new_contribution =
-          new TrackContribution(new_cont, total_contribution, this_cont.get_total_length());
+      auto *new_contribution = new TrackContribution(new_cont, total_contribution, this_cont.get_total_length());
       delete master.contributions[track_index];
       master.contributions[track_index] = new_contribution;
     }

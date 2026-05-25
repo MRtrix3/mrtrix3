@@ -122,7 +122,7 @@ public:
   friend inline std::ostream &operator<<(std::ostream &stream, const ROISetBase &R) {
     if (R.R.empty())
       return (stream);
-    std::vector<ROI>::const_iterator i = R.R.begin();
+    auto i = R.R.begin();
     stream << *i;
     ++i;
     for (; i != R.R.end(); ++i)

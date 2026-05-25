@@ -283,8 +283,7 @@ Window::Window()
   // CONF default: 2
   // CONF The style of the main toolbar buttons in MRView. See Qt's
   // CONF documentation for Qt::ToolButtonStyle.
-  Qt::ToolButtonStyle const button_style =
-      static_cast<Qt::ToolButtonStyle>(MR::File::Config::get_int("ToolbarStyle", 2));
+  auto const button_style = static_cast<Qt::ToolButtonStyle>(MR::File::Config::get_int("ToolbarStyle", 2));
 
   toolbar = new QToolBar("Main toolbar", this);
   addToolBar(toolbar_position, toolbar);
@@ -647,7 +646,7 @@ Window::Window()
   toolbar->addSeparator();
 
   // Dynamic spacer:
-  QWidget *spacer = new QWidget();
+  auto *spacer = new QWidget();
   spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
   toolbar->addWidget(spacer);
 
@@ -1612,7 +1611,7 @@ bool Window::gestureEventGL(QGestureEvent *event) {
     qDebug() << event;
 
   if (QGesture *pinch = event->gesture(Qt::PinchGesture)) {
-    QPinchGesture *e = static_cast<QPinchGesture *>(pinch);
+    auto *e = static_cast<QPinchGesture *>(pinch);
     QPinchGesture::ChangeFlags const changeFlags = e->changeFlags();
     if ((changeFlags & QPinchGesture::RotationAngleChanged) != 0U) {
       // TODO

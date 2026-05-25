@@ -37,8 +37,8 @@ template <typename ImageType1, typename ImageType2> struct LCCPrecomputeFunctorM
     out.index(3) = 0;
 
     int const nmax = extent[0] * extent[1] * extent[2];
-    Eigen::VectorXd n1 = Eigen::VectorXd(nmax);
-    Eigen::VectorXd n2 = Eigen::VectorXd(nmax);
+    auto n1 = Eigen::VectorXd(nmax);
+    auto n2 = Eigen::VectorXd(nmax);
 
     using value_type = typename ImageType3::value_type;
     in1.index(0) = pos[0];

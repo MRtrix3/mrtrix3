@@ -477,7 +477,7 @@ void run() {
   auto in_index_image = in_index_header.get_image<typename FixelIndexType::value_type>();
   Fixel::debug_validate_index_image(in_index_image);
 
-  const Operation op = MR::Enum::from_name<Operation>(argument[1]);
+  const auto op = MR::Enum::from_name<Operation>(argument[1]);
 
   const index_type max_fixels = get_option_value("number", 0);
   if ((max_fixels != 0U) && op == Operation::COUNT)

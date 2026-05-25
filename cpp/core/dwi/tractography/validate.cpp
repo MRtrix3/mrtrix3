@@ -170,8 +170,8 @@ TckValidation validate_tck(const std::filesystem::path &path) {
 }
 
 void validate_tsf_properties(const Properties &a, const Properties &b, std::string_view file_types) {
-  const Properties::const_iterator stamp_a = a.find("timestamp");
-  const Properties::const_iterator stamp_b = b.find("timestamp");
+  const auto stamp_a = a.find("timestamp");
+  const auto stamp_b = b.find("timestamp");
   if (stamp_a == a.end() || stamp_b == b.end())
     throw Exception("Unable to verify " + file_types + ": missing timestamp");
   if (stamp_a->second != stamp_b->second) {
@@ -180,8 +180,8 @@ void validate_tsf_properties(const Properties &a, const Properties &b, std::stri
                     " suggesting differing originating tractogram(s)"); //
   }
 
-  const Properties::const_iterator count_a = a.find("count");
-  const Properties::const_iterator count_b = b.find("count");
+  const auto count_a = a.find("count");
+  const auto count_b = b.find("count");
   if ((count_a == a.end()) || (count_b == b.end()))
     throw Exception("Unable to validate " + file_types + ": missing count field");
   if (to<size_t>(count_a->second) != to<size_t>(count_b->second))
@@ -203,7 +203,7 @@ void validate_tsf(const std::filesystem::path &tsf_path, const std::filesystem::
   // ---------------------------------------------------------------
   validate_tsf_properties(tsf_props, tck_props, ".tck / .tsf pair");
 
-  const size_t header_count = to<size_t>(tsf_props["count"]);
+  const auto header_count = to<size_t>(tsf_props["count"]);
 
   // ---------------------------------------------------------------
   // Simultaneous scan of the TSF and the tractogram.

@@ -85,14 +85,14 @@ Connectome::Connectome(Dock *parent)
       line_thickness_range_smooth{0, 0},
       node_colourmap_observer(*this),
       edge_colourmap_observer(*this) {
-  VBoxLayout *main_box = new VBoxLayout(this);
+  auto *main_box = new VBoxLayout(this);
 
-  QGroupBox *group_box = new QGroupBox("Basic setup");
+  auto *group_box = new QGroupBox("Basic setup");
   main_box->addWidget(group_box);
-  VBoxLayout *vlayout = new VBoxLayout;
+  auto *vlayout = new VBoxLayout;
   group_box->setLayout(vlayout);
 
-  HBoxLayout *hlayout = new HBoxLayout;
+  auto *hlayout = new HBoxLayout;
   hlayout->setContentsMargins(0, 0, 0, 0);
   hlayout->setSpacing(0);
   hlayout->addWidget(new QLabel("Node image: "));
@@ -143,10 +143,10 @@ Connectome::Connectome(Dock *parent)
 
   group_box = new QGroupBox("Node visualisation");
   main_box->addWidget(group_box);
-  GridLayout *gridlayout = new GridLayout();
+  auto *gridlayout = new GridLayout();
   group_box->setLayout(gridlayout);
 
-  QLabel *label = new QLabel("Visibility: ");
+  auto *label = new QLabel("Visibility: ");
   gridlayout->addWidget(label, 0, 0, 1, 2);
   node_visibility_combobox = new QComboBox(this);
   node_visibility_combobox->setToolTip(tr("Set which nodes are visible"));
@@ -3159,7 +3159,7 @@ void Connectome::calculate_node_colours() {
 
     if (!lut.empty()) {
       for (node_t node_index = 1; node_index <= num_nodes(); ++node_index) {
-        const LUT::const_iterator i = lut.find(node_index);
+        const auto i = lut.find(node_index);
         if (i == lut.end())
           nodes[node_index].set_colour(node_fixed_colour);
         else
@@ -3470,7 +3470,7 @@ void Connectome::calculate_node_alphas() {
 
     if (!lut.empty()) {
       for (node_t node_index = 1; node_index <= num_nodes(); ++node_index) {
-        const LUT::const_iterator i = lut.find(node_index);
+        const auto i = lut.find(node_index);
         if (i == lut.end())
           nodes[node_index].set_alpha(node_fixed_alpha);
         else
@@ -3748,7 +3748,7 @@ void Connectome::calculate_edge_alphas() {
 void Connectome::node_selection_changed(const std::vector<node_t> &list) {
   selected_nodes.setZero();
   selected_node_count = list.size();
-  for (std::vector<node_t>::const_iterator n = list.begin(); n != list.end(); ++n)
+  for (auto n = list.begin(); n != list.end(); ++n)
     selected_nodes[*n] = true;
   if (node_visibility == node_visibility_t::CONNECTOME || node_visibility == node_visibility_t::MATRIX_FILE) {
     if (selected_node_count >= 2) {
@@ -4056,7 +4056,7 @@ void Connectome::get_exemplars() {
   current_folder = load_paths.last_directory;
   MR::DWI::Tractography::Properties properties;
   MR::DWI::Tractography::Reader<float> reader(load_paths.single_selection, properties);
-  const size_t num_tracks = to<size_t>(properties["count"]);
+  const auto num_tracks = to<size_t>(properties["count"]);
   if (num_tracks != num_edges())
     throw Exception("Track file " + load_paths.single_selection.filename().string() + //
                     " contains " + str(num_tracks) + " streamlines;" +                //

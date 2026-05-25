@@ -82,7 +82,7 @@ void Exemplar::add(const Tractography::Streamline<float> &in, const bool is_reve
     float interp_pos = (in.size() - 1) * i / static_cast<float>(size());
     if (is_reversed)
       interp_pos = in.size() - 1 - interp_pos;
-    const size_t lower = static_cast<size_t>(std::floor(interp_pos));
+    const auto lower = static_cast<size_t>(std::floor(interp_pos));
     const size_t upper(lower + 1);
     const float mu = interp_pos - lower;
     point_type pos;

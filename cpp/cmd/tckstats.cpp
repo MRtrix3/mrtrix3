@@ -188,7 +188,7 @@ void run() {
   }
 
   default_type ssd = 0.0;
-  for (std::vector<LW>::const_iterator i = all_lengths.begin(); i != all_lengths.end(); ++i)
+  for (auto i = all_lengths.begin(); i != all_lengths.end(); ++i)
     ssd += i->get_weight() * Math::pow2(i->get_length() - mean_length);
   const float stdev = (sum_weights != 0.0) ? (std::sqrt(ssd / ((static_cast<default_type>(count - 1) / static_cast<default_type>(count)) * sum_weights))) : NaNF;
 

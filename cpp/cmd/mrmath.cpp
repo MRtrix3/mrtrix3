@@ -374,7 +374,7 @@ protected:
 void run() {
   const std::filesystem::path first_input_image_path{argument[0]};
   const size_t num_inputs = argument.size() - 2;
-  const Operation op = MR::Enum::from_name<Operation>(argument[num_inputs]);
+  const auto op = MR::Enum::from_name<Operation>(argument[num_inputs]);
 
   auto opt = get_options("axis");
   if (!opt.empty()) {

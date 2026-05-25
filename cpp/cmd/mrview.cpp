@@ -88,7 +88,7 @@ void usage() {
 void run() {
   GUI::App::setEventHandler([](QEvent *event) {
     if (event->type() == QEvent::FileOpen) {
-      QFileOpenEvent *openEvent = static_cast<QFileOpenEvent *>(event);
+      auto *openEvent = static_cast<QFileOpenEvent *>(event);
       std::vector<std::unique_ptr<MR::Header>> list;
       try {
         const std::filesystem::path file_path{openEvent->file().toUtf8().constData()};

@@ -38,7 +38,7 @@ const int Tractogram::track_padding;
 TrackGeometryType Tractogram::default_tract_geom(TrackGeometryType::Pseudotubes);
 
 std::string Tractogram::Shader::vertex_shader_source(const Displayable &displayable) {
-  const Tractogram &tractogram = dynamic_cast<const Tractogram &>(displayable);
+  const auto &tractogram = dynamic_cast<const Tractogram &>(displayable);
 
   std::string source = "layout (location = 0) in vec3 vertex;\n"
                        "layout (location = 1) in vec3 prev_vertex;\n"
@@ -193,7 +193,7 @@ std::string Tractogram::Shader::geometry_shader_source(const Displayable &) {
 }
 
 std::string Tractogram::Shader::fragment_shader_source(const Displayable &displayable) {
-  const Tractogram &tractogram = dynamic_cast<const Tractogram &>(displayable);
+  const auto &tractogram = dynamic_cast<const Tractogram &>(displayable);
   bool const using_geom = geometry_type == TrackGeometryType::Pseudotubes;
   bool const using_points = geometry_type == TrackGeometryType::Points;
 
@@ -287,7 +287,7 @@ std::string Tractogram::Shader::fragment_shader_source(const Displayable &displa
 }
 
 bool Tractogram::Shader::need_update(const Displayable &object) const {
-  const Tractogram &tractogram(dynamic_cast<const Tractogram &>(object));
+  const auto &tractogram(dynamic_cast<const Tractogram &>(object));
   if (do_crop_to_slab != tractogram.tractography_tool.crop_to_slab())
     return true;
   if (color_type != tractogram.color_type)
@@ -303,7 +303,7 @@ bool Tractogram::Shader::need_update(const Displayable &object) const {
 }
 
 void Tractogram::Shader::update(const Displayable &object) {
-  const Tractogram &tractogram(dynamic_cast<const Tractogram &>(object));
+  const auto &tractogram(dynamic_cast<const Tractogram &>(object));
   do_crop_to_slab = tractogram.tractography_tool.crop_to_slab();
   use_lighting = tractogram.tractography_tool.use_lighting;
   color_type = tractogram.color_type;
@@ -712,7 +712,7 @@ void Tractogram::load_intensity_track_scalars(const std::filesystem::path &filep
   } else {
     const Eigen::VectorXf scalars = File::Matrix::load_vector<float>(filepath);
     size_t total_num_tracks = 0;
-    for (std::vector<size_t>::const_iterator i = num_tracks_per_buffer.begin(); i != num_tracks_per_buffer.end(); ++i)
+    for (auto i = num_tracks_per_buffer.begin(); i != num_tracks_per_buffer.end(); ++i)
       total_num_tracks += *i;
     if (static_cast<size_t>(scalars.size()) != total_num_tracks)
       throw Exception("The scalar text file does not contain the same number of elements as the selected tractogram");
@@ -804,7 +804,7 @@ void Tractogram::load_threshold_track_scalars(const std::filesystem::path &filep
   } else {
     const Eigen::VectorXf scalars = File::Matrix::load_vector<float>(filepath);
     size_t total_num_tracks = 0;
-    for (std::vector<size_t>::const_iterator i = num_tracks_per_buffer.begin(); i != num_tracks_per_buffer.end(); ++i)
+    for (auto i = num_tracks_per_buffer.begin(); i != num_tracks_per_buffer.end(); ++i)
       total_num_tracks += *i;
     if (static_cast<size_t>(scalars.size()) != total_num_tracks)
       throw Exception("The scalar text file does not contain the same number of elements as the selected tractogram");

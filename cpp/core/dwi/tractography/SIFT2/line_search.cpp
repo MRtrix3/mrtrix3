@@ -43,7 +43,7 @@ LineSearchFunctor::Result LineSearchFunctor::get(const double dFs) const {
 
   Result data_result, tik_result, tv_result;
 
-  for (std::vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i) {
+  for (auto i = fixels.begin(); i != fixels.end(); ++i) {
 
     const double contribution = i->length * factor;
     const double scaled_contribution = mu * contribution;
@@ -73,7 +73,7 @@ LineSearchFunctor::Result LineSearchFunctor::get(const double dFs) const {
 double LineSearchFunctor::operator()(const double dFs) const {
   double cf_data = 0.0;
   double cf_reg_tv = 0.0;
-  for (std::vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i) {
+  for (auto i = fixels.begin(); i != fixels.end(); ++i) {
     cf_data += i->cost_frac * i->PM *
                Math::pow2((mu * (i->TD + (i->length * std::exp(Fs + dFs)) + (i->dTD_dFs * dFs))) - i->FOD);
     cf_reg_tv += i->SL_eff * SIFT2::tvreg(Fs + dFs, i->meanFs);

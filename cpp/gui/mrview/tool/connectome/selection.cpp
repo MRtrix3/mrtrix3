@@ -143,20 +143,20 @@ NodeSelectionSettings::NodeSelectionSettings()
 
 NodeSelectionSettingsFrame::NodeSelectionSettingsFrame(QWidget *parent, NodeSelectionSettings &settings)
     : QFrame(parent), data(settings) {
-  Base::GridLayout *main_box = new Base::GridLayout;
+  auto *main_box = new Base::GridLayout;
   setLayout(main_box);
 
-  QGroupBox *group_box = new QGroupBox("Selected nodes highlight");
-  QVBoxLayout *vlayout = new QVBoxLayout;
-  QFrame *frame = new QFrame(this);
+  auto *group_box = new QGroupBox("Selected nodes highlight");
+  auto *vlayout = new QVBoxLayout;
+  auto *frame = new QFrame(this);
   frame->setFrameShadow(QFrame::Sunken);
   frame->setFrameShape(QFrame::Panel);
   group_box->setLayout(vlayout);
   vlayout->addWidget(frame);
-  Base::GridLayout *grid_layout = new Base::GridLayout;
+  auto *grid_layout = new Base::GridLayout;
   frame->setLayout(grid_layout);
 
-  QLabel *label = new QLabel("Visibility: ");
+  auto *label = new QLabel("Visibility: ");
   grid_layout->addWidget(label, 0, 0);
   node_selected_visibility_checkbox = new QCheckBox();
   node_selected_visibility_checkbox->setTristate(false);
@@ -166,7 +166,7 @@ NodeSelectionSettingsFrame::NodeSelectionSettingsFrame(QWidget *parent, NodeSele
 
   label = new QLabel("Colour: ");
   grid_layout->addWidget(label, 1, 0);
-  Base::HBoxLayout *hbox_layout = new Base::HBoxLayout;
+  auto *hbox_layout = new Base::HBoxLayout;
   node_selected_colour_slider = new QSlider(Qt::Horizontal);
   node_selected_colour_slider->setRange(0, 100);
   node_selected_colour_slider->setSliderPosition(settings.get_node_selected_colour_fade() * 100.0F);
@@ -593,14 +593,14 @@ NodeSelectionSettingsDialog::NodeSelectionSettingsDialog(QWidget *,
   setModal(false);
   setSizeGripEnabled(true);
 
-  QPushButton *close_button = new QPushButton(style()->standardIcon(QStyle::SP_DialogCloseButton), tr("&Close"));
+  auto *close_button = new QPushButton(style()->standardIcon(QStyle::SP_DialogCloseButton), tr("&Close"));
   connect(close_button, SIGNAL(clicked()), this, SLOT(close()));
 
-  QHBoxLayout *buttons_layout = new QHBoxLayout;
+  auto *buttons_layout = new QHBoxLayout;
   buttons_layout->addStretch(1);
   buttons_layout->addWidget(close_button);
 
-  QVBoxLayout *main_layout = new QVBoxLayout;
+  auto *main_layout = new QVBoxLayout;
   main_layout->addWidget(frame);
   main_layout->addStretch(1);
   main_layout->addSpacing(12);
