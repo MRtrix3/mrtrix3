@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <memory>
+
 #include "app.h"
 #include "image.h"
 #include "interp/linear.h"
@@ -60,7 +62,7 @@ public:
       radius2 = Math::pow2(radius);
     } catch (Exception &e_assphere) {
       try {
-        mask.reset(new Mask(spec));
+        mask = std::make_shared<Mask>(spec);
       } catch (Exception &e_asimage) {
         Exception e("Unable to parse text \"" + spec + "\" as a ROI");
         e.push_back("If interpreted as sphere:");

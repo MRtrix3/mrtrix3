@@ -16,6 +16,7 @@
 #include <QApplication>
 #include <QtNetwork>
 
+#include <memory>
 #include <thread>
 
 #include "exception.h"
@@ -121,8 +122,7 @@ void InterprocessCommunicator::TryConnectTo(int connectToId) {
       }
     }
 
-    std::shared_ptr<GUI::MRView::Sync::Client> const curCl =
-        std::shared_ptr<GUI::MRView::Sync::Client>(new GUI::MRView::Sync::Client());
+    std::shared_ptr<GUI::MRView::Sync::Client> const curCl = std::make_shared<GUI::MRView::Sync::Client>();
 
     curCl->SetServerName(serverName);
     if (curCl->TryConnect()) {
@@ -167,7 +167,7 @@ void InterprocessCommunicator::OnDataReceived(std::vector<std::shared_ptr<QByteA
     }
     case static_cast<int32_t>(MessageKey::SyncData): {
       // The other process has sent information to sync with
-      std::shared_ptr<QByteArray> const trimmed = std::shared_ptr<QByteArray>(new QByteArray());
+      std::shared_ptr<QByteArray> const trimmed = std::make_shared<QByteArray>();
       trimmed->insert(0, dat->data() + 4, dataLength);
       toSync.emplace_back(trimmed);
       break;

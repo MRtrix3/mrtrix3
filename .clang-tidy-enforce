@@ -15,6 +15,7 @@ Checks: >
   modernize-use-emplace,
   modernize-loop-convert,
   modernize-make-unique,
+  modernize-make-shared,
   # misc-const-correctness -- not enforced; conflicts with ThreadedLoop functor idiom (non-const operator()). See commit body.,
   -bugprone-easily-swappable-parameters,
   -bugprone-narrowing-conversions,

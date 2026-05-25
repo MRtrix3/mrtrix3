@@ -17,6 +17,7 @@
 #pragma once
 
 #include <filesystem>
+#include <memory>
 
 #include "image.h"
 #include "thread_queue.h"
@@ -79,12 +80,12 @@ public:
 
   void create_dixel_plugin(const DWI::Directions::FastLookupSet &dirs) {
     assert(!dixel_plugin && !tod_plugin);
-    dixel_plugin.reset(new DixelMappingPlugin(dirs));
+    dixel_plugin = std::make_shared<DixelMappingPlugin>(dirs);
   }
 
   void create_tod_plugin(const size_t N) {
     assert(!dixel_plugin && !tod_plugin);
-    tod_plugin.reset(new TODMappingPlugin(N));
+    tod_plugin = std::make_shared<TODMappingPlugin>(N);
   }
 
   template <class Cont> bool operator()(const Streamline<> &in, Cont &out) const {

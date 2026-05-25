@@ -15,8 +15,10 @@
  */
 
 #include "file/dicom/patient.h"
+
 #include "file/dicom/series.h"
 #include "file/dicom/study.h"
+#include <memory>
 
 namespace MR::File::Dicom {
 
@@ -53,7 +55,7 @@ std::shared_ptr<Study> Patient::find(std::string_view study_name,
     }
   }
 
-  push_back(std::shared_ptr<Study>(new Study(this, study_name, study_ID, study_UID, study_date, study_time)));
+  push_back(std::make_shared<Study>(this, study_name, study_ID, study_UID, study_date, study_time));
   return back();
 }
 

@@ -15,12 +15,14 @@
  */
 
 #include "file/dicom/image.h"
+
 #include "exception.h"
 #include "file/dicom/csa_entry.h"
 #include "file/dicom/patient.h"
 #include "file/dicom/series.h"
 #include "file/dicom/study.h"
 #include "file/path.h"
+#include <memory>
 
 namespace MR::File::Dicom {
 
@@ -289,7 +291,7 @@ void Image::parse_item(Element &item) {
           item.parents.back().element == 0x9230U) { // multi-frame item
         if (in_frames) {
           calc_distance();
-          frames.push_back(std::shared_ptr<Frame>(new Frame(*this)));
+          frames.push_back(std::make_shared<Frame>(*this));
           frame_offset += dim[0] * dim[1] * (bits_alloc / 8) * samples_per_pixel;
         } else
           in_frames = true;
@@ -320,7 +322,7 @@ void Image::read() {
     calc_distance();
 
     if (frame_offset > 0)
-      frames.push_back(std::shared_ptr<Frame>(new Frame(*this)));
+      frames.push_back(std::make_shared<Frame>(*this));
 
     for (auto &frame : frames)
       frame->data = data + frame->frame_offset;

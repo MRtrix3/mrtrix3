@@ -17,6 +17,7 @@
 #include "file/dicom/tree.h"
 
 #include <cerrno>
+#include <memory>
 
 #include "exception.h"
 #include "file/dicom/element.h"
@@ -43,7 +44,7 @@ Tree::find(std::string_view patient_name, std::string_view patient_ID, std::stri
     }
   }
 
-  push_back(std::shared_ptr<Patient>(new Patient(patient_name, patient_ID, patient_DOB)));
+  push_back(std::make_shared<Patient>(patient_name, patient_ID, patient_DOB));
   return back();
 }
 

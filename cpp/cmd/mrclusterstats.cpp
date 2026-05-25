@@ -34,6 +34,7 @@
 #include "stats/tfce.h"
 
 #include <filesystem>
+#include <memory>
 
 using namespace MR;
 using namespace App;
@@ -399,9 +400,9 @@ void run() {
   if (use_tfce) {
     std::shared_ptr<Stats::TFCE::EnhancerBase> const base(
         new Stats::Cluster::ClusterSize(connector, cluster_forming_threshold));
-    enhancer.reset(new Stats::TFCE::Wrapper(base, tfce_dh, tfce_E, tfce_H));
+    enhancer = std::make_shared<Stats::TFCE::Wrapper>(base, tfce_dh, tfce_E, tfce_H);
   } else {
-    enhancer.reset(new Stats::Cluster::ClusterSize(connector, cluster_forming_threshold));
+    enhancer = std::make_shared<Stats::Cluster::ClusterSize>(connector, cluster_forming_threshold);
   }
 
   matrix_type empirical_enhanced_statistic;

@@ -516,7 +516,7 @@ public:
       try {
         auto header = Header::open(std::filesystem::path{arg});
         image_is_complex = header.datatype().is_complex();
-        image.reset(new Image<complex_type>(header.get_image<complex_type>()));
+        image = std::make_shared<Image<complex_type>>(header.get_image<complex_type>());
         image_list.insert(std::make_pair(arg, LoadedImage(image, image_is_complex)));
       } catch (Exception &e_image) {
         try {

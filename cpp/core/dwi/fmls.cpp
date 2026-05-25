@@ -16,6 +16,8 @@
 
 #include "dwi/fmls.h"
 
+#include <memory>
+
 namespace MR::DWI::FMLS {
 
 // clang-format off
@@ -131,8 +133,8 @@ Segmenter::Segmenter(const DWI::Directions::FastLookupSet &directions, const siz
     az_in_pairs(row, 0) = std::atan2(d[1], d[0]);
     az_in_pairs(row, 1) = std::acos(d[2]);
   }
-  transform.reset(new Math::SH::Transform<default_type>(az_in_pairs, lmax));
-  weights.reset(new IntegrationWeights(dirs));
+  transform = std::make_shared<Math::SH::Transform<default_type>>(az_in_pairs, lmax);
+  weights = std::make_shared<IntegrationWeights>(dirs);
 }
 
 class Max_abs {
