@@ -56,10 +56,10 @@ std::vector<std::shared_ptr<Series>> select_cmdline(const Tree &tree) {
     // select using environment variables:
 
     std::vector<std::shared_ptr<Patient>> patient;
-    for (size_t i = 0; i < tree.size(); i++) {
-      if ((!patient_from_env.has_value() || match(patient_from_env.value(), tree[i]->name, true)) &&
-          (!patid_from_env.has_value() || match(patid_from_env.value(), tree[i]->ID, true)))
-        patient.push_back(tree[i]);
+    for (const auto &i : tree) {
+      if ((!patient_from_env.has_value() || match(patient_from_env.value(), i->name, true)) &&
+          (!patid_from_env.has_value() || match(patid_from_env.value(), i->ID, true)))
+        patient.push_back(i);
     }
     if (patient.empty())
       throw Exception("no matching patients in DICOM dataset \"" + tree.description + "\"");
@@ -188,12 +188,12 @@ std::vector<std::shared_ptr<Series>> select_cmdline(const Tree &tree) {
         std::vector<uint32_t> seq;
         try {
           seq = parse_ints<uint32_t>(buf);
-          for (size_t i = 0; i < seq.size(); i++) {
-            if (seq[i] < 0 || seq[i] >= static_cast<uint32_t>(study.size())) {
+          for (unsigned int i : seq) {
+            if (i < 0 || i >= static_cast<uint32_t>(study.size())) {
               series.clear();
               break;
             }
-            series.push_back(study[seq[i]]);
+            series.push_back(study[i]);
           }
         } catch (Exception) {
           seq.clear();

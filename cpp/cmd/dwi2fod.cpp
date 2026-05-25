@@ -230,10 +230,10 @@ public:
     }
 
     size_t j = 0;
-    for (size_t i = 0; i < odf_images.size(); ++i) {
-      assign_pos_of(dwi_image, 0, 3).to(odf_images[i]);
-      for (auto l = Loop(3)(odf_images[i]); l; ++l)
-        odf_images[i].value() = output_data[j++];
+    for (auto &odf_image : odf_images) {
+      assign_pos_of(dwi_image, 0, 3).to(odf_image);
+      for (auto l = Loop(3)(odf_image); l; ++l)
+        odf_image.value() = output_data[j++];
     }
 
     if (modelled_image.valid()) {

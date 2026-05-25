@@ -79,8 +79,8 @@ public:
     out.clear();
     out.set_index(in.get_index());
     out.weight = in.weight;
-    for (size_t n = 0; n < in.size(); ++n) {
-      auto vertex = pos(in[n]);
+    for (const auto &n : in) {
+      auto vertex = pos(n);
       if (vertex.allFinite())
         out.push_back(vertex);
     }

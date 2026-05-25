@@ -48,14 +48,14 @@ List &sanitise(List &current, const List &desired, const std::vector<ssize_t> &d
   }
 
   ssize_t desired_max = 0;
-  for (size_t i = 0; i < desired.size(); ++i)
-    if (MR::abs(desired[i]) > desired_max)
-      desired_max = MR::abs(desired[i]);
+  for (long i : desired)
+    if (MR::abs(i) > desired_max)
+      desired_max = MR::abs(i);
 
   ssize_t in_max = 0;
-  for (size_t i = 0; i < current.size(); ++i)
-    if (MR::abs(current[i]) > in_max)
-      in_max = MR::abs(current[i]);
+  for (long i : current)
+    if (MR::abs(i) > in_max)
+      in_max = MR::abs(i);
   in_max += desired_max + 1;
 
   for (size_t i = 0; i < current.size(); ++i)

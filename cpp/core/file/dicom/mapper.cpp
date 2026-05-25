@@ -411,8 +411,8 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
 
     auto *handler = new MR::ImageIO::VariableScaling(H);
 
-    for (size_t n = 0; n < frames.size(); ++n)
-      handler->scale_factors.push_back({frames[n]->scale_intercept, frames[n]->scale_slope});
+    for (auto &frame : frames)
+      handler->scale_factors.push_back({frame->scale_intercept, frame->scale_slope});
 
     io_handler.reset(handler);
   } else {
@@ -420,8 +420,8 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
     io_handler.reset(new MR::ImageIO::Default(H));
   }
 
-  for (size_t n = 0; n < frames.size(); ++n)
-    io_handler->files.emplace_back(frames[n]->filepath, frames[n]->data);
+  for (auto &frame : frames)
+    io_handler->files.emplace_back(frame->filepath, frame->data);
 
   return io_handler;
 }

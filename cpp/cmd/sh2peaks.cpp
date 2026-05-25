@@ -191,8 +191,8 @@ public:
       Direction p(dirs(i, 0), dirs(i, 1));
       p.a = Math::SH::get_peak(item.data, lmax, p.v, precomputer.get());
       if (std::isfinite(p.a)) {
-        for (size_t j = 0; j < all_peaks.size(); j++) {
-          if (std::fabs(p.v.dot(all_peaks[j].v)) > dotproduct_threshold) {
+        for (auto &all_peak : all_peaks) {
+          if (std::fabs(p.v.dot(all_peak.v)) > dotproduct_threshold) {
             p.a = NaNF;
             break;
           }
@@ -217,22 +217,22 @@ public:
         p.normalize();
 
         value_type mdot = 0.0;
-        for (size_t n = 0; n < all_peaks.size(); n++) {
-          value_type const f = std::fabs(p.dot(all_peaks[n].v));
+        for (auto &all_peak : all_peaks) {
+          value_type const f = std::fabs(p.dot(all_peak.v));
           if (f > mdot) {
             mdot = f;
-            peaks_out[i] = all_peaks[n];
+            peaks_out[i] = all_peak;
           }
         }
       }
     } else if (!true_peaks.empty()) {
       for (int i = 0; i < npeaks; i++) {
         value_type mdot = 0.0;
-        for (size_t n = 0; n < all_peaks.size(); n++) {
-          value_type const f = std::fabs(all_peaks[n].v.dot(true_peaks[i].v));
+        for (auto &all_peak : all_peaks) {
+          value_type const f = std::fabs(all_peak.v.dot(true_peaks[i].v));
           if (f > mdot) {
             mdot = f;
-            peaks_out[i] = all_peaks[n];
+            peaks_out[i] = all_peak;
           }
         }
       }
@@ -311,9 +311,9 @@ void run() {
 
   opt = get_options("direction");
   std::vector<Direction> true_peaks;
-  for (size_t n = 0; n < opt.size(); ++n) {
-    Direction const p(Math::pi * static_cast<default_type>(opt[n][0]) / 180.0,
-                      Math::pi * static_cast<default_type>(opt[n][1]) / 180.0);
+  for (const auto &n : opt) {
+    Direction const p(Math::pi * static_cast<default_type>(n[0]) / 180.0,
+                      Math::pi * static_cast<default_type>(n[1]) / 180.0);
     true_peaks.push_back(p);
   }
   if (!true_peaks.empty())

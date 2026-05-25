@@ -1204,8 +1204,8 @@ void Connectome::node_geometry_selection_slot(int index) {
       node_geometry_overlay_interp_checkbox->setVisible(false);
     } catch (Exception &e) {
       e.display();
-      for (auto i = nodes.begin(); i != nodes.end(); ++i)
-        i->clear_mesh();
+      for (auto &node : nodes)
+        node.clear_mesh();
       have_meshes = false;
       node_geometry = node_geometry_t::SPHERE;
       node_geometry_combobox->setCurrentIndex(0);
@@ -1973,8 +1973,8 @@ void Connectome::edge_geometry_selection_slot(int index) {
       edge_geometry_line_smooth_checkbox->setVisible(true);
     } catch (Exception &e) {
       e.display();
-      for (auto i = edges.begin(); i != edges.end(); ++i)
-        i->clear_exemplar();
+      for (auto &edge : edges)
+        edge.clear_exemplar();
       have_exemplars = false;
       edge_geometry = edge_geometry_t::LINE;
       edge_geometry_combobox->setCurrentIndex(0);
@@ -1996,8 +1996,8 @@ void Connectome::edge_geometry_selection_slot(int index) {
       edge_geometry_line_smooth_checkbox->setVisible(false);
     } catch (Exception &e) {
       e.display();
-      for (auto i = edges.begin(); i != edges.end(); ++i)
-        i->clear_streamtube();
+      for (auto &edge : edges)
+        edge.clear_streamtube();
       have_exemplars = false;
       edge_geometry = edge_geometry_t::LINE;
       edge_geometry_combobox->setCurrentIndex(0);
@@ -2556,16 +2556,16 @@ void Connectome::initialise(const std::filesystem::path &path) {
 
 void Connectome::add_matrices(const std::vector<std::filesystem::path> &list) {
   std::vector<FileDataVector> data;
-  for (size_t i = 0; i < list.size(); ++i) {
+  for (const auto &i : list) {
     try {
-      MR::Connectome::matrix_type matrix = File::Matrix::load_matrix<default_type>(list[i]);
+      MR::Connectome::matrix_type matrix = File::Matrix::load_matrix<default_type>(i);
       MR::Connectome::to_upper(matrix);
       if (matrix.rows() != num_nodes())
-        throw Exception("Matrix file \"" + list[i].filename().string() + "\" is incorrect size");
+        throw Exception("Matrix file \"" + i.filename().string() + "\" is incorrect size");
       FileDataVector temp;
       mat2vec->M2V(matrix, temp);
       temp.calc_stats();
-      temp.set_name(list[i].filename().string());
+      temp.set_name(i.filename().string());
       data.push_back(std::move(temp));
     } catch (Exception &E) {
       E.display();
@@ -3039,22 +3039,22 @@ void Connectome::load_properties() {
 void Connectome::calculate_node_visibility() {
   if (node_visibility == node_visibility_t::ALL) {
 
-    for (auto i = nodes.begin(); i != nodes.end(); ++i)
-      i->set_visible(true);
+    for (auto &node : nodes)
+      node.set_visible(true);
 
   } else if (node_visibility == node_visibility_t::NONE) {
 
-    for (auto i = nodes.begin(); i != nodes.end(); ++i)
-      i->set_visible(false);
+    for (auto &node : nodes)
+      node.set_visible(false);
 
   } else if (node_visibility == node_visibility_t::DEGREE) {
 
-    for (auto i = nodes.begin(); i != nodes.end(); ++i)
-      i->set_visible(false);
-    for (auto i = edges.begin(); i != edges.end(); ++i) {
-      if (i->to_draw()) {
-        nodes[i->get_node_index(0)].set_visible(true);
-        nodes[i->get_node_index(1)].set_visible(true);
+    for (auto &node : nodes)
+      node.set_visible(false);
+    for (auto &edge : edges) {
+      if (edge.to_draw()) {
+        nodes[edge.get_node_index(0)].set_visible(true);
+        nodes[edge.get_node_index(1)].set_visible(true);
       }
     }
 
@@ -3141,18 +3141,18 @@ void Connectome::calculate_node_visibility() {
 void Connectome::calculate_node_colours() {
   if (node_colour == node_colour_t::FIXED) {
 
-    for (auto i = nodes.begin(); i != nodes.end(); ++i)
-      i->set_colour(node_fixed_colour);
+    for (auto &node : nodes)
+      node.set_colour(node_fixed_colour);
 
   } else if (node_colour == node_colour_t::RANDOM) {
 
     Eigen::Array3f rgb;
     Math::RNG::Uniform<float> rng;
-    for (auto i = nodes.begin(); i != nodes.end(); ++i) {
+    for (auto &node : nodes) {
       do {
         rgb = {rng(), rng(), rng()};
       } while (rgb[0] < 0.5 && rgb[1] < 0.5 && rgb[2] < 0.5);
-      i->set_colour(rgb);
+      node.set_colour(rgb);
     }
 
   } else if (node_colour == node_colour_t::FROM_LUT) {
@@ -3166,8 +3166,8 @@ void Connectome::calculate_node_colours() {
           nodes[node_index].set_colour(Eigen::Array3f(i->second.get_colour().cast<float>()) / 255.0F);
       }
     } else {
-      for (auto i = nodes.begin(); i != nodes.end(); ++i)
-        i->set_colour(node_fixed_colour);
+      for (auto &node : nodes)
+        node.set_colour(node_fixed_colour);
     }
 
   } else if (node_colour == node_colour_t::CONNECTOME) {
@@ -3291,13 +3291,13 @@ void Connectome::calculate_node_colours() {
 void Connectome::calculate_node_sizes() {
   if (node_size == node_size_t::FIXED) {
 
-    for (auto i = nodes.begin(); i != nodes.end(); ++i)
-      i->set_size(1.0F);
+    for (auto &node : nodes)
+      node.set_size(1.0F);
 
   } else if (node_size == node_size_t::NODE_VOLUME) {
 
-    for (auto i = nodes.begin(); i != nodes.end(); ++i)
-      i->set_size(voxel_volume * std::cbrt(i->get_volume() / (4.0 * Math::pi)));
+    for (auto &node : nodes)
+      node.set_size(voxel_volume * std::cbrt(node.get_volume() / (4.0 * Math::pi)));
 
   } else if (node_size == node_size_t::CONNECTOME) {
 
@@ -3414,8 +3414,8 @@ void Connectome::calculate_node_sizes() {
 void Connectome::calculate_node_alphas() {
   if (node_alpha == node_alpha_t::FIXED) {
 
-    for (auto i = nodes.begin(); i != nodes.end(); ++i)
-      i->set_alpha(1.0F);
+    for (auto &node : nodes)
+      node.set_alpha(1.0F);
 
   } else if (node_alpha == node_alpha_t::CONNECTOME) {
 
@@ -3477,8 +3477,8 @@ void Connectome::calculate_node_alphas() {
           nodes[node_index].set_alpha(i->second.get_alpha() / 255.0F);
       }
     } else {
-      for (auto i = nodes.begin(); i != nodes.end(); ++i)
-        i->set_alpha(node_fixed_alpha);
+      for (auto &node : nodes)
+        node.set_alpha(node_fixed_alpha);
     }
 
   } else if (node_alpha == node_alpha_t::VECTOR_FILE) {
@@ -3568,13 +3568,13 @@ void Connectome::update_node_overlay() {
 void Connectome::calculate_edge_visibility() {
   if (edge_visibility == edge_visibility_t::ALL) {
 
-    for (auto i = edges.begin(); i != edges.end(); ++i)
-      i->set_visible(!i->is_diagonal());
+    for (auto &edge : edges)
+      edge.set_visible(!edge.is_diagonal());
 
   } else if (edge_visibility == edge_visibility_t::NONE) {
 
-    for (auto i = edges.begin(); i != edges.end(); ++i)
-      i->set_visible(false);
+    for (auto &edge : edges)
+      edge.set_visible(false);
 
   } else if (edge_visibility == edge_visibility_t::CONNECTOME) {
 
@@ -3592,8 +3592,8 @@ void Connectome::calculate_edge_visibility() {
         }
       }
     } else {
-      for (auto i = edges.begin(); i != edges.end(); ++i)
-        i->set_visible(false);
+      for (auto &edge : edges)
+        edge.set_visible(false);
     }
 
   } else if (edge_visibility == edge_visibility_t::MATRIX_FILE) {
@@ -3612,9 +3612,9 @@ void Connectome::calculate_edge_visibility() {
   }
 
   if (edge_visibility_by_nodes_checkbox->isChecked()) {
-    for (auto i = edges.begin(); i != edges.end(); ++i) {
-      if (!(nodes[i->get_node_index(0)].to_draw() && nodes[i->get_node_index(1)].to_draw()))
-        i->set_visible(false);
+    for (auto &edge : edges) {
+      if (!(nodes[edge.get_node_index(0)].to_draw() && nodes[edge.get_node_index(1)].to_draw()))
+        edge.set_visible(false);
     }
   }
 
@@ -3625,13 +3625,13 @@ void Connectome::calculate_edge_visibility() {
 void Connectome::calculate_edge_colours() {
   if (edge_colour == edge_colour_t::FIXED) {
 
-    for (auto i = edges.begin(); i != edges.end(); ++i)
-      i->set_colour(edge_fixed_colour);
+    for (auto &edge : edges)
+      edge.set_colour(edge_fixed_colour);
 
   } else if (edge_colour == edge_colour_t::DIRECTION) {
 
-    for (auto i = edges.begin(); i != edges.end(); ++i)
-      i->set_colour(i->get_dir().array().abs());
+    for (auto &edge : edges)
+      edge.set_colour(edge.get_dir().array().abs());
 
   } else if (edge_colour == edge_colour_t::CONNECTOME) {
 
@@ -3649,8 +3649,8 @@ void Connectome::calculate_edge_colours() {
           edges[i].set_colour(ColourMap::maps[edge_colourmap_index].basic_mapping(factor));
       }
     } else {
-      for (auto i = edges.begin(); i != edges.end(); ++i)
-        i->set_colour(edge_fixed_colour);
+      for (auto &edge : edges)
+        edge.set_colour(edge_fixed_colour);
     }
 
   } else if (edge_colour == edge_colour_t::MATRIX_FILE) {
@@ -3672,8 +3672,8 @@ void Connectome::calculate_edge_colours() {
 void Connectome::calculate_edge_sizes() {
   if (edge_size == edge_size_t::FIXED) {
 
-    for (auto i = edges.begin(); i != edges.end(); ++i)
-      i->set_size(1.0F);
+    for (auto &edge : edges)
+      edge.set_size(1.0F);
 
   } else if (edge_size == edge_size_t::CONNECTOME) {
 
@@ -3689,8 +3689,8 @@ void Connectome::calculate_edge_sizes() {
         edges[i].set_size(factor);
       }
     } else {
-      for (auto i = edges.begin(); i != edges.end(); ++i)
-        i->set_size(1.0F);
+      for (auto &edge : edges)
+        edge.set_size(1.0F);
     }
 
   } else if (edge_size == edge_size_t::MATRIX_FILE) {
@@ -3710,8 +3710,8 @@ void Connectome::calculate_edge_sizes() {
 void Connectome::calculate_edge_alphas() {
   if (edge_alpha == edge_alpha_t::FIXED) {
 
-    for (auto i = edges.begin(); i != edges.end(); ++i)
-      i->set_alpha(1.0F);
+    for (auto &edge : edges)
+      edge.set_alpha(1.0F);
 
   } else if (edge_alpha == edge_alpha_t::CONNECTOME) {
 
@@ -3727,8 +3727,8 @@ void Connectome::calculate_edge_alphas() {
         edges[i].set_alpha(factor);
       }
     } else {
-      for (auto i = edges.begin(); i != edges.end(); ++i)
-        i->set_alpha(1.0F);
+      for (auto &edge : edges)
+        edge.set_alpha(1.0F);
     }
 
   } else if (edge_alpha == edge_alpha_t::MATRIX_FILE) {
@@ -3748,8 +3748,8 @@ void Connectome::calculate_edge_alphas() {
 void Connectome::node_selection_changed(const std::vector<node_t> &list) {
   selected_nodes.setZero();
   selected_node_count = list.size();
-  for (auto n = list.begin(); n != list.end(); ++n)
-    selected_nodes[*n] = true;
+  for (unsigned int n : list)
+    selected_nodes[n] = true;
   if (node_visibility == node_visibility_t::CONNECTOME || node_visibility == node_visibility_t::MATRIX_FILE) {
     if (selected_node_count >= 2) {
       node_visibility_matrix_operator_combobox->removeItem(2);
@@ -3864,9 +3864,9 @@ bool Connectome::node_visibility_given_selection(const node_t index) {
     return false;
   if (node_selection_settings.get_node_other_visibility_override()) {
     // Only override here if there are no connected selected nodes
-    for (auto e = edges.begin(); e != edges.end(); ++e) {
-      if (e->is_visible() && (e->get_node_index(0) == index || e->get_node_index(1) == index) &&
-          (selected_nodes[e->get_node_index(0)] || selected_nodes[e->get_node_index(1)])) {
+    for (auto &edge : edges) {
+      if (edge.is_visible() && (edge.get_node_index(0) == index || edge.get_node_index(1) == index) &&
+          (selected_nodes[edge.get_node_index(0)] || selected_nodes[edge.get_node_index(1)])) {
         return true;
       }
     }
@@ -3882,9 +3882,9 @@ Eigen::Array3f Connectome::node_colour_given_selection(const node_t index) {
   if (selected_node_count != 0U) {
     // Need to find out whether or not there is a visible connection to a selected node
     // TODO Needs to be a more efficient way of calculating this...
-    for (auto e = edges.begin(); e != edges.end(); ++e) {
-      if (e->is_visible() && (e->get_node_index(0) == index || e->get_node_index(1) == index) &&
-          (selected_nodes[e->get_node_index(0)] || selected_nodes[e->get_node_index(1)])) {
+    for (auto &edge : edges) {
+      if (edge.is_visible() && (edge.get_node_index(0) == index || edge.get_node_index(1) == index) &&
+          (selected_nodes[edge.get_node_index(0)] || selected_nodes[edge.get_node_index(1)])) {
         const float fade = node_selection_settings.get_node_associated_colour_fade();
         return ((fade * node_selection_settings.get_node_associated_colour()) +
                 ((1.0F - fade) * nodes[index].get_colour()));
@@ -3900,9 +3900,9 @@ float Connectome::node_size_given_selection(const node_t index) {
     return (node_selection_settings.get_node_selected_size_multiplier() * nodes[index].get_size());
   }
   if (selected_node_count != 0U) {
-    for (auto e = edges.begin(); e != edges.end(); ++e) {
-      if (e->is_visible() && (e->get_node_index(0) == index || e->get_node_index(1) == index) &&
-          (selected_nodes[e->get_node_index(0)] || selected_nodes[e->get_node_index(1)])) {
+    for (auto &edge : edges) {
+      if (edge.is_visible() && (edge.get_node_index(0) == index || edge.get_node_index(1) == index) &&
+          (selected_nodes[edge.get_node_index(0)] || selected_nodes[edge.get_node_index(1)])) {
         return (node_selection_settings.get_node_associated_size_multiplier() * nodes[index].get_size());
       }
     }
@@ -3915,9 +3915,9 @@ float Connectome::node_alpha_given_selection(const node_t index) {
     return (node_selection_settings.get_node_selected_alpha_multiplier() * nodes[index].get_alpha());
   }
   if (selected_node_count != 0U) {
-    for (auto e = edges.begin(); e != edges.end(); ++e) {
-      if (e->is_visible() && (e->get_node_index(0) == index || e->get_node_index(1) == index) &&
-          (selected_nodes[e->get_node_index(0)] || selected_nodes[e->get_node_index(1)])) {
+    for (auto &edge : edges) {
+      if (edge.is_visible() && (edge.get_node_index(0) == index || edge.get_node_index(1) == index) &&
+          (selected_nodes[edge.get_node_index(0)] || selected_nodes[edge.get_node_index(1)])) {
         return (node_selection_settings.get_node_associated_alpha_multiplier() * nodes[index].get_alpha());
       }
     }
@@ -4078,8 +4078,8 @@ void Connectome::get_streamtubes() {
       return;
   }
   ProgressBar progress("Generating connection streamtubes", num_edges());
-  for (auto i = edges.begin(); i != edges.end(); ++i) {
-    i->create_streamtube();
+  for (auto &edge : edges) {
+    edge.create_streamtube();
     ++progress;
   }
   have_streamtubes = true;

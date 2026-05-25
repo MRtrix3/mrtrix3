@@ -196,22 +196,22 @@ bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
         for (size_t j = 1; j != adj_lobes.size(); ++j)
           out[adj_lobes[0]].merge(out[adj_lobes[j]]);
         out[adj_lobes[0]].add(i.second, dirs[i.second], i.first, (*weights)[i.second]);
-        for (auto j = retrospective_assignments.begin(); j != retrospective_assignments.end(); ++j) {
+        for (auto &retrospective_assignment : retrospective_assignments) {
           bool modified = false;
           for (size_t k = 1; k != adj_lobes.size(); ++k) {
-            if (j->second == adj_lobes[k]) {
-              j->second = adj_lobes[0];
+            if (retrospective_assignment.second == adj_lobes[k]) {
+              retrospective_assignment.second = adj_lobes[0];
               modified = true;
             }
           }
           if (!modified) {
             // Compensate for impending deletion of elements from the vector
-            uint32_t lobe_index = j->second;
+            uint32_t lobe_index = retrospective_assignment.second;
             for (size_t k = adj_lobes.size() - 1; k != 0U; --k) {
               if (adj_lobes[k] < lobe_index)
                 --lobe_index;
             }
-            j->second = lobe_index;
+            retrospective_assignment.second = lobe_index;
           }
         }
         for (size_t j = adj_lobes.size() - 1; j != 0U; --j) {
@@ -295,8 +295,8 @@ bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
     if (dilate_lookup_table && !out.empty()) {
 
       Eigen::Array<bool, Eigen::Dynamic, 1> processed(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(dirs.size()));
-      for (auto i = out.begin(); i != out.end(); ++i)
-        processed = processed || i->get_mask();
+      for (auto &i : out)
+        processed = processed || i.get_mask();
 
       NON_POD_VLA(new_assignments, std::vector<uint32_t>, dirs.size());
       while (!processed.all()) {
@@ -321,10 +321,10 @@ bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
 
             uint32_t best_lobe = 0;
             default_type max_integral = 0.0;
-            for (auto lobe_no = new_assignments[dir].begin(); lobe_no != new_assignments[dir].end(); ++lobe_no) {
-              if (out[*lobe_no].get_integral() > max_integral) {
-                best_lobe = *lobe_no;
-                max_integral = out[*lobe_no].get_integral();
+            for (unsigned int &lobe_no : new_assignments[dir]) {
+              if (out[lobe_no].get_integral() > max_integral) {
+                best_lobe = lobe_no;
+                max_integral = out[lobe_no].get_integral();
               }
             }
             out.lut[dir] = best_lobe;
@@ -338,8 +338,8 @@ bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
 
   if (create_null_lobe) {
     mask_type nonnull_mask(mask_type::Zero(dirs.size()));
-    for (auto i = out.begin(); i != out.end(); ++i)
-      nonnull_mask = nonnull_mask || i->get_mask();
+    for (auto &i : out)
+      nonnull_mask = nonnull_mask || i.get_mask();
     // Invert all elements in mask
     const mask_type null_mask =
         (Eigen::Array<uint8_t, Eigen::Dynamic, 1>::Ones(dirs.size()) - nonnull_mask.cast<uint8_t>()).cast<bool>();

@@ -64,8 +64,8 @@ void Default::unload(const Header &header) {
       }
     }
   } else {
-    for (size_t n = 0; n < addresses.size(); ++n)
-      addresses[n].release();
+    for (auto &addresse : addresses)
+      addresse.release();
     mmaps.clear();
   }
 }

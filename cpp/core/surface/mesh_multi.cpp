@@ -79,24 +79,24 @@ void MeshMulti::load(const std::filesystem::path &path) {
                         " (face with neither 3 nor 4 vertices; line " + str(counter) + ")"); //
       std::vector<FaceData> face_data;
       size_t values_per_element = 0;
-      for (auto i = elements.begin(); i != elements.end(); ++i) {
+      for (auto &element : elements) {
         FaceData temp;
         temp.vertex = 0;
         temp.texture = 0;
         temp.normal = 0;
-        const size_t first_slash = i->find_first_of('/');
-        temp.vertex = to<uint32_t>(i->substr(0, first_slash)) - vertex_index_offset;
+        const size_t first_slash = element.find_first_of('/');
+        temp.vertex = to<uint32_t>(element.substr(0, first_slash)) - vertex_index_offset;
         size_t this_values_count = 0;
-        if (first_slash == i->npos) {
+        if (first_slash == element.npos) {
           this_values_count = 1;
         } else {
-          const size_t last_slash = i->find_last_of('/');
+          const size_t last_slash = element.find_last_of('/');
           if (last_slash == first_slash) {
-            temp.texture = to<uint32_t>(i->substr(last_slash + 1)) - vertex_index_offset;
+            temp.texture = to<uint32_t>(element.substr(last_slash + 1)) - vertex_index_offset;
             this_values_count = 2;
           } else {
-            temp.texture = to<uint32_t>(i->substr(first_slash, last_slash)) - vertex_index_offset;
-            temp.normal = to<uint32_t>(i->substr(last_slash + 1)) - vertex_index_offset;
+            temp.texture = to<uint32_t>(element.substr(first_slash, last_slash)) - vertex_index_offset;
+            temp.normal = to<uint32_t>(element.substr(last_slash + 1)) - vertex_index_offset;
             this_values_count = 3;
           }
         }
@@ -148,16 +148,16 @@ void MeshMulti::save(const std::filesystem::path &path) const {
   File::OFStream out(path);
   size_t offset = 1;
   out << "# " << App::command_history_string << "\n";
-  for (auto i = begin(); i != end(); ++i) {
-    out << "o " << i->get_name() << "\n";
-    for (auto v = i->vertices.begin(); v != i->vertices.end(); ++v)
-      out << "v " << str((*v)[0]) << " " << str((*v)[1]) << " " << str((*v)[2]) << " 1.0\n";
-    for (auto t = i->triangles.begin(); t != i->triangles.end(); ++t)
-      out << "f " << str((*t)[0] + offset) << " " << str((*t)[1] + offset) << " " << str((*t)[2] + offset) << "\n";
-    for (auto q = i->quads.begin(); q != i->quads.end(); ++q)
-      out << "f " << str((*q)[0] + offset) << " " << str((*q)[1] + offset) << " " << str((*q)[2] + offset) << " "
-          << str((*q)[3] + offset) << "\n";
-    offset += i->vertices.size();
+  for (const auto &i : *this) {
+    out << "o " << i.get_name() << "\n";
+    for (const auto &v : i.vertices)
+      out << "v " << str(v[0]) << " " << str(v[1]) << " " << str(v[2]) << " 1.0\n";
+    for (const auto &t : i.triangles)
+      out << "f " << str(t[0] + offset) << " " << str(t[1] + offset) << " " << str(t[2] + offset) << "\n";
+    for (const auto &q : i.quads)
+      out << "f " << str(q[0] + offset) << " " << str(q[1] + offset) << " " << str(q[2] + offset) << " "
+          << str(q[3] + offset) << "\n";
+    offset += i.vertices.size();
   }
 }
 

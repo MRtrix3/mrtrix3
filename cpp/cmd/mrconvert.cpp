@@ -425,13 +425,13 @@ void run() {
   }
 
   opt = get_options("clear_property");
-  for (size_t n = 0; n < opt.size(); ++n) {
-    if (str(opt[n][0]) == "command_history")
+  for (const auto &n : opt) {
+    if (str(n[0]) == "command_history")
       add_to_command_history = false;
-    auto entry = header_out.keyval().find(opt[n][0]);
+    auto entry = header_out.keyval().find(n[0]);
     if (entry == header_out.keyval().end()) {
-      if (std::string(opt[n][0]) != "command_history") {
-        WARN("No header key/value entry \"" + std::string(opt[n][0]) + "\" found; ignored");
+      if (std::string(n[0]) != "command_history") {
+        WARN("No header key/value entry \"" + std::string(n[0]) + "\" found; ignored");
       }
     } else {
       header_out.keyval().erase(entry);
@@ -439,30 +439,30 @@ void run() {
   }
 
   opt = get_options("set_property");
-  for (size_t n = 0; n < opt.size(); ++n) {
-    if (str(opt[n][0]) == "command_history")
+  for (const auto &n : opt) {
+    if (str(n[0]) == "command_history")
       add_to_command_history = false;
-    header_out.keyval()[std::string(opt[n][0])] = std::string(opt[n][1]);
+    header_out.keyval()[std::string(n[0])] = std::string(n[1]);
   }
 
   opt = get_options("append_property");
-  for (size_t n = 0; n < opt.size(); ++n) {
-    if (str(opt[n][0]) == "command_history")
+  for (const auto &n : opt) {
+    if (str(n[0]) == "command_history")
       add_to_command_history = false;
-    add_line(header_out.keyval()[std::string(opt[n][0])], std::string(opt[n][1]));
+    add_line(header_out.keyval()[std::string(n[0])], std::string(n[1]));
   }
 
   opt = get_options("coord");
   std::vector<std::vector<uint32_t>> pos;
   if (!opt.empty()) {
     pos.assign(header_in.ndim(), std::vector<uint32_t>());
-    for (size_t n = 0; n < opt.size(); n++) {
-      size_t const axis = opt[n][0];
+    for (const auto &n : opt) {
+      size_t const axis = n[0];
       if (axis >= header_in.ndim())
         throw Exception("axis " + str(axis) + " provided with -coord option is out of range of input image");
       if (!pos[axis].empty())
         throw Exception("\"coord\" option specified twice for axis " + str(axis));
-      pos[axis] = parse_ints<uint32_t>(opt[n][1], header_in.size(axis) - 1);
+      pos[axis] = parse_ints<uint32_t>(n[1], header_in.size(axis) - 1);
 
       auto minval = std::min_element(std::begin(pos[axis]), std::end(pos[axis]));
       if (*minval < 0)

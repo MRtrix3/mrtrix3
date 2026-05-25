@@ -119,8 +119,8 @@ void Tree::read(const std::filesystem::path &path) {
 
 std::ostream &operator<<(std::ostream &stream, const Tree &item) {
   stream << "FileSet " << item.description << ":\n";
-  for (size_t n = 0; n < item.size(); n++)
-    stream << *item[n];
+  for (const auto &n : item)
+    stream << *n;
   return stream;
 }
 

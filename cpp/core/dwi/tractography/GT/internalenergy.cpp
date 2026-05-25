@@ -56,8 +56,8 @@ void InternalEnergyComputer::scanNeighbourhood(const Particle *p, const int alph
 
         std::lock_guard<std::mutex> const lock(pvec->mutex);
 
-        for (auto it = pvec->begin(); it != pvec->end(); ++it) {
-          pe.par = *it;
+        for (auto it : *pvec) {
+          pe.par = it;
           if (pe.par == p)
             continue;
           d1 = (ep - pe.par->getEndPoint(-1)).squaredNorm();

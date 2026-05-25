@@ -53,17 +53,17 @@ void run() {
 
   bool const actual_count = !get_options("count").empty();
 
-  for (size_t i = 0; i < argument.size(); ++i) {
+  for (const auto &i : argument) {
     Tractography::Properties properties;
-    Tractography::ScalarReader<float> file(argument[i], properties);
+    Tractography::ScalarReader<float> file(i, properties);
 
     std::cout << "***********************************\n";
-    std::cout << "  Track scalar file: \"" << argument[i].as_text() << "\"\n";
+    std::cout << "  Track scalar file: \"" << i.as_text() << "\"\n";
 
-    for (auto i = properties.begin(); i != properties.end(); ++i) {
-      std::string S(i->first + ':');
+    for (auto &propertie : properties) {
+      std::string S(propertie.first + ':');
       S.resize(22, ' ');
-      std::cout << "    " << S << i->second << "\n";
+      std::cout << "    " << S << propertie.second << "\n";
     }
 
     if (!properties.comments.empty()) {
@@ -72,8 +72,8 @@ void run() {
         std::cout << (i == properties.comments.begin() ? "" : "                       ") << *i << "\n";
     }
 
-    for (auto i = properties.prior_rois.begin(); i != properties.prior_rois.end(); ++i)
-      std::cout << "    ROI:                  " << i->first << " " << i->second << "\n";
+    for (auto &prior_roi : properties.prior_rois)
+      std::cout << "    ROI:                  " << prior_roi.first << " " << prior_roi.second << "\n";
 
     if (actual_count) {
       DWI::Tractography::TrackScalar<> tck;
@@ -98,8 +98,8 @@ void run() {
         std::ostringstream index_str;
         index_str << std::setfill('0') << std::setw(6) << tck.get_index();
         File::OFStream out(ascii_dir / (index_str.str() + ".txt"));
-        for (auto i = tck.begin(); i != tck.end(); ++i)
-          out << (*i) << "\n";
+        for (float &i : tck)
+          out << i << "\n";
         out.close();
         ++progress;
       }

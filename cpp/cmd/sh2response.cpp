@@ -138,8 +138,8 @@ void run() {
   response /= count;
 
   if (is_dash(response_path.string())) {
-    for (ssize_t n = 0; n < response.size(); ++n)
-      std::cout << response[n] << " ";
+    for (double n : response)
+      std::cout << n << " ";
     std::cout << "\n";
   } else {
     File::Matrix::save_vector(response, response_path);

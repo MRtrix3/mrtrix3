@@ -114,8 +114,8 @@ void InterprocessCommunicator::TryConnectTo(int connectToId) {
     QString const serverName = "mrtrix_interprocesssyncer_" + QString::number(connectToId);
 
     // check we are not already connected
-    for (unsigned int i = 0; i < senders.size(); i++) {
-      if (senders[i]->GetServerName() == serverName) {
+    for (auto &sender : senders) {
+      if (sender->GetServerName() == serverName) {
         // we have already connected to this
         return;
       }
@@ -148,8 +148,7 @@ void InterprocessCommunicator::TryConnectTo(int connectToId) {
 void InterprocessCommunicator::OnDataReceived(std::vector<std::shared_ptr<QByteArray>> allMessages) {
   std::vector<std::shared_ptr<QByteArray>> toSync;
 
-  for (size_t i = 0; i < allMessages.size(); i++) {
-    std::shared_ptr<QByteArray> const dat = allMessages[i];
+  for (auto dat : allMessages) {
     int dataLength = dat->size();
 
     if (dataLength < 4) {

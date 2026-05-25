@@ -64,8 +64,8 @@ public:
   void set_extent(const std::vector<uint32_t> &new_extent) {
     if (new_extent.size() != 1 && new_extent.size() != 3)
       throw Exception("Please supply a single kernel extent value, or three values (one for each spatial dimension)");
-    for (size_t i = 0; i < new_extent.size(); ++i) {
-      if ((new_extent[i] & uint32_t(1)) == 0U)
+    for (unsigned int i : new_extent) {
+      if ((i & uint32_t(1)) == 0U)
         throw Exception("expected odd number for extent");
     }
     if (new_extent.size() == 1)
@@ -109,8 +109,8 @@ public:
     std::unique_ptr<ProgressBar> progress;
     if (!message.empty()) {
       size_t axes_to_smooth = 0;
-      for (auto i = stdev.begin(); i != stdev.end(); ++i)
-        if (*i)
+      for (double &i : stdev)
+        if (i)
           ++axes_to_smooth;
       progress.reset(new ProgressBar(message, axes_to_smooth + 1));
     }
@@ -134,8 +134,8 @@ public:
     std::unique_ptr<ProgressBar> progress;
     if (!message.empty()) {
       size_t axes_to_smooth = 0;
-      for (auto i = stdev.begin(); i != stdev.end(); ++i)
-        if (*i)
+      for (double &i : stdev)
+        if (i)
           ++axes_to_smooth;
       progress.reset(new ProgressBar(message, axes_to_smooth + 1));
     }
@@ -197,8 +197,8 @@ protected:
         kernel[c] = exp(-((c - radius) * (c - radius) * spacing * spacing) / (2 * stdev * stdev));
         norm_factor += kernel[c];
       }
-      for (ssize_t c = 0; c < kernel.size(); c++) {
-        kernel[c] /= norm_factor;
+      for (double &c : kernel) {
+        c /= norm_factor;
       }
     }
 

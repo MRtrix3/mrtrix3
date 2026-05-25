@@ -132,9 +132,9 @@ void (*check_overwrite_files_func)(const std::filesystem::path &name) = nullptr;
 namespace {
 
 inline void get_matches(std::vector<const Option *> &candidates, const OptionGroup &group, std::string_view stub) {
-  for (size_t i = 0; i < group.size(); ++i) {
-    if (stub.compare(0, stub.size(), std::string(group[i].id), 0, stub.size()) == 0)
-      candidates.push_back(&group[i]);
+  for (const auto &i : group) {
+    if (stub.compare(0, stub.size(), std::string(i.id), 0, stub.size()) == 0)
+      candidates.push_back(&i);
   }
 }
 
@@ -154,9 +154,9 @@ std::string paragraph(std::string_view header, std::string_view text, const Help
 
   std::vector<std::string> paragraphs = split(text, "\n");
 
-  for (size_t n = 0; n < paragraphs.size(); ++n) {
+  for (const auto &paragraph : paragraphs) {
     size_t i = 0;
-    std::vector<std::string> words = split(paragraphs[n]);
+    std::vector<std::string> words = split(paragraph);
     while (i < words.size()) {
       do {
         line += " " + words[i++];
@@ -182,13 +182,13 @@ std::string bold(std::string_view text) {
 std::string underline(std::string_view text, bool ignore_whitespace = false) {
   size_t m(0);
   std::string retval(3 * text.size(), '\0');
-  for (size_t n = 0; n < text.size(); ++n) {
-    if (ignore_whitespace and text[n] == ' ')
+  for (char n : text) {
+    if (ignore_whitespace and n == ' ')
       retval[m++] = ' ';
     else
       retval[m++] = '_';
     retval[m++] = 0x08U;
-    retval[m++] = text[n];
+    retval[m++] = n;
   }
   return retval;
 }
@@ -247,8 +247,8 @@ std::string help_tail(const bool format) {
   return bold("AUTHOR") + "\n" + paragraph("", AUTHOR, help_formatting.purpose_indents) + "\n" + bold("COPYRIGHT") +
          "\n" + paragraph("", COPYRIGHT, help_formatting.purpose_indents) + "\n" + [&]() {
            std::string s = bold("REFERENCES") + "\n";
-           for (size_t n = 0; n < REFERENCES.size(); ++n)
-             s += paragraph("", REFERENCES[n], help_formatting.purpose_indents) + "\n";
+           for (const auto &n : REFERENCES)
+             s += paragraph("", n, help_formatting.purpose_indents) + "\n";
            s += paragraph("", core_reference, help_formatting.purpose_indents) + "\n";
            return s;
          }();
@@ -262,18 +262,18 @@ std::string usage_syntax(const bool format) {
     s += ": ";
   s += (format ? underline(NAME, true) : NAME) + " [ options ]";
 
-  for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
+  for (auto &i : ARGUMENTS) {
 
-    if (ARGUMENTS[i].flags.optional())
+    if (i.flags.optional())
       s += " [";
-    s += std::string(" ") + ARGUMENTS[i].id;
+    s += std::string(" ") + i.id;
 
-    if (ARGUMENTS[i].flags.allow_multiple()) {
-      if (ARGUMENTS[i].flags.required())
-        s += std::string(" [ ") + ARGUMENTS[i].id;
+    if (i.flags.allow_multiple()) {
+      if (i.flags.required())
+        s += std::string(" [ ") + i.id;
       s += " ...";
     }
-    if (ARGUMENTS[i].flags.any())
+    if (i.flags.any())
       s += " ]";
   }
   return s + "\n\n";
@@ -556,21 +556,21 @@ std::string full_usage() {
   std::string s;
   s += SYNOPSIS + std::string("\n");
 
-  for (size_t i = 0; i < DESCRIPTION.size(); ++i)
-    s += DESCRIPTION[i] + std::string("\n");
+  for (const auto &i : DESCRIPTION)
+    s += i + std::string("\n");
 
-  for (size_t i = 0; i < EXAMPLES.size(); ++i)
-    s += std::string(EXAMPLES[i]) + std::string("\n");
+  for (const auto &i : EXAMPLES)
+    s += std::string(i) + std::string("\n");
 
-  for (size_t i = 0; i < ARGUMENTS.size(); ++i)
-    s += ARGUMENTS[i].usage();
+  for (const auto &i : ARGUMENTS)
+    s += i.usage();
 
-  for (size_t i = 0; i < OPTIONS.size(); ++i)
-    for (size_t j = 0; j < OPTIONS[i].size(); ++j)
-      s += OPTIONS[i][j].usage();
+  for (auto &i : OPTIONS)
+    for (auto &j : i)
+      s += j.usage();
 
-  for (size_t i = 0; i < _standard_options.size(); ++i)
-    s += _standard_options[i].usage();
+  for (const auto &_standard_option : _standard_options)
+    s += _standard_option.usage();
 
   return s;
 }
@@ -594,53 +594,53 @@ std::string markdown_usage() {
   s += "## Usage\n\n    " + std::string(NAME) + " [ options ] ";
 
   // Syntax line:
-  for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
+  for (auto &i : ARGUMENTS) {
 
-    if (ARGUMENTS[i].flags.optional())
+    if (i.flags.optional())
       s += "[";
-    s += std::string(" ") + ARGUMENTS[i].id;
+    s += std::string(" ") + i.id;
 
-    if (ARGUMENTS[i].flags.allow_multiple()) {
-      if (ARGUMENTS[i].flags.required())
-        s += std::string(" [ ") + ARGUMENTS[i].id;
+    if (i.flags.allow_multiple()) {
+      if (i.flags.required())
+        s += std::string(" [ ") + i.id;
       s += " ...";
     }
-    if (ARGUMENTS[i].flags.any())
+    if (i.flags.any())
       s += " ]";
   }
   s += "\n\n";
 
   // Argument description:
-  for (size_t i = 0; i < ARGUMENTS.size(); ++i)
-    s += std::string("- *") + ARGUMENTS[i].id + "*: " + ARGUMENTS[i].desc + "\n";
+  for (auto &i : ARGUMENTS)
+    s += std::string("- *") + i.id + "*: " + i.desc + "\n";
 
   if (!DESCRIPTION.empty()) {
     s += "\n## Description\n\n";
-    for (size_t i = 0; i < DESCRIPTION.size(); ++i)
-      s += std::string(DESCRIPTION[i]) + "\n\n";
+    for (const auto &i : DESCRIPTION)
+      s += std::string(i) + "\n\n";
   }
 
   if (!EXAMPLES.empty()) {
     s += "\n## Example usages\n\n";
-    for (size_t i = 0; i < EXAMPLES.size(); ++i) {
-      s += std::string("__") + EXAMPLES[i].title + ":__\n";
-      s += std::string("`$ ") + EXAMPLES[i].code + "`\n";
-      if (!EXAMPLES[i].description.empty())
-        s += EXAMPLES[i].description + "\n";
+    for (auto &i : EXAMPLES) {
+      s += std::string("__") + i.title + ":__\n";
+      s += std::string("`$ ") + i.code + "`\n";
+      if (!i.description.empty())
+        s += i.description + "\n";
       s += "\n";
     }
   }
 
   std::vector<std::string> group_names;
-  for (size_t i = 0; i < OPTIONS.size(); ++i) {
-    if (std::find(group_names.begin(), group_names.end(), OPTIONS[i].name) == group_names.end())
-      group_names.push_back(OPTIONS[i].name);
+  for (auto &i : OPTIONS) {
+    if (std::find(group_names.begin(), group_names.end(), i.name) == group_names.end())
+      group_names.push_back(i.name);
   }
 
   auto format_option = [&](const Option &opt) {
     std::string f = std::string("+ **-") + opt.id;
-    for (size_t a = 0; a < opt.size(); ++a)
-      f += std::string(" ") + opt[a].id;
+    for (const auto &a : opt)
+      f += std::string(" ") + a.id;
     f += "**";
     if (opt.flags.allow_multiple())
       f += "  *(multiple uses permitted)*";
@@ -657,20 +657,20 @@ std::string markdown_usage() {
       s += std::string("#### ") + OPTIONS[n].name + "\n\n";
     while (n < OPTIONS.size()) {
       if (OPTIONS[n].name == group_names[i]) {
-        for (size_t o = 0; o < OPTIONS[n].size(); ++o)
-          s += format_option(OPTIONS[n][o]);
+        for (const auto &o : OPTIONS[n])
+          s += format_option(o);
       }
       ++n;
     }
   }
 
   s += "#### Standard options\n\n";
-  for (size_t i = 0; i < _standard_options.size(); ++i)
-    s += format_option(_standard_options[i]);
+  for (const auto &_standard_option : _standard_options)
+    s += format_option(_standard_option);
 
   s += std::string("## References\n\n");
-  for (size_t i = 0; i < REFERENCES.size(); ++i)
-    s += std::string(REFERENCES[i]) + "\n\n";
+  for (const auto &i : REFERENCES)
+    s += std::string(i) + "\n\n";
   s += core_reference + "\n\n";
 
   s += std::string("**Author:** ") + AUTHOR + "\n\n";
@@ -699,18 +699,18 @@ std::string restructured_text_usage() {
   s += "Usage\n--------\n\n::\n\n    " + std::string(NAME) + " [ options ] ";
 
   // Syntax line:
-  for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
+  for (auto &i : ARGUMENTS) {
 
-    if (ARGUMENTS[i].flags.optional())
+    if (i.flags.optional())
       s += "[";
-    s += std::string(" ") + ARGUMENTS[i].id;
+    s += std::string(" ") + i.id;
 
-    if (ARGUMENTS[i].flags.allow_multiple()) {
-      if (ARGUMENTS[i].flags.required())
-        s += std::string(" [ ") + ARGUMENTS[i].id;
+    if (i.flags.allow_multiple()) {
+      if (i.flags.required())
+        s += std::string(" [ ") + i.id;
       s += " ...";
     }
-    if (ARGUMENTS[i].flags.any())
+    if (i.flags.any())
       s += " ]";
   }
   s += "\n\n";
@@ -727,9 +727,9 @@ std::string restructured_text_usage() {
   };
 
   // Argument description:
-  for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
-    auto desc = split_lines(escape_special(ARGUMENTS[i].desc), false);
-    s += std::string("-  *") + ARGUMENTS[i].id + "*: " + desc[0];
+  for (auto &i : ARGUMENTS) {
+    auto desc = split_lines(escape_special(i.desc), false);
+    s += std::string("-  *") + i.id + "*: " + desc[0];
     for (size_t n = 1; n < desc.size(); ++n)
       s += " |br|\n   " + desc[n];
     s += "\n";
@@ -738,8 +738,8 @@ std::string restructured_text_usage() {
 
   if (!DESCRIPTION.empty()) {
     s += "Description\n-----------\n\n";
-    for (size_t i = 0; i < DESCRIPTION.size(); ++i) {
-      auto desc = split_lines(DESCRIPTION[i], false);
+    for (const auto &i : DESCRIPTION) {
+      auto desc = split_lines(i, false);
       s += desc[0];
       for (size_t n = 1; n < desc.size(); ++n)
         s += " |br|\n" + desc[n];
@@ -749,24 +749,24 @@ std::string restructured_text_usage() {
 
   if (!EXAMPLES.empty()) {
     s += "Example usages\n--------------\n\n";
-    for (size_t i = 0; i < EXAMPLES.size(); ++i) {
-      s += std::string("-   *") + EXAMPLES[i].title + "*::\n\n";
-      s += std::string("        $ ") + EXAMPLES[i].code + "\n\n";
-      if (!EXAMPLES[i].description.empty())
-        s += std::string("    ") + EXAMPLES[i].description + "\n\n";
+    for (auto &i : EXAMPLES) {
+      s += std::string("-   *") + i.title + "*::\n\n";
+      s += std::string("        $ ") + i.code + "\n\n";
+      if (!i.description.empty())
+        s += std::string("    ") + i.description + "\n\n";
     }
   }
 
   std::vector<std::string> group_names;
-  for (size_t i = 0; i < OPTIONS.size(); ++i) {
-    if (std::find(group_names.begin(), group_names.end(), OPTIONS[i].name) == group_names.end())
-      group_names.push_back(OPTIONS[i].name);
+  for (auto &i : OPTIONS) {
+    if (std::find(group_names.begin(), group_names.end(), i.name) == group_names.end())
+      group_names.push_back(i.name);
   }
 
   auto format_option = [&](const Option &opt) {
     std::string f = std::string("-  **-") + opt.id;
-    for (size_t a = 0; a < opt.size(); ++a)
-      f += std::string(" ") + opt[a].id;
+    for (const auto &a : opt)
+      f += std::string(" ") + a.id;
     f += std::string("** ");
     if (opt.flags.allow_multiple())
       f += "*(multiple uses permitted)* ";
@@ -787,20 +787,20 @@ std::string restructured_text_usage() {
       s += OPTIONS[n].name + std::string("\n") + std::string(OPTIONS[n].name.size(), '^') + "\n\n";
     while (n < OPTIONS.size()) {
       if (OPTIONS[n].name == group_names[i]) {
-        for (size_t o = 0; o < OPTIONS[n].size(); ++o)
-          s += format_option(OPTIONS[n][o]);
+        for (const auto &o : OPTIONS[n])
+          s += format_option(o);
       }
       ++n;
     }
   }
 
   s += "Standard options\n^^^^^^^^^^^^^^^^\n\n";
-  for (size_t i = 0; i < _standard_options.size(); ++i)
-    s += format_option(_standard_options[i]);
+  for (const auto &_standard_option : _standard_options)
+    s += format_option(_standard_option);
 
   s += std::string("References\n^^^^^^^^^^\n\n");
-  for (size_t i = 0; i < REFERENCES.size(); ++i) {
-    auto refs = split_lines(REFERENCES[i], false);
+  for (const auto &i : REFERENCES) {
+    auto refs = split_lines(i, false);
     s += refs[0];
     for (size_t n = 1; n < refs.size(); ++n)
       s += " |br|\n  " + refs[n];
@@ -823,8 +823,8 @@ const Option *match_option(std::string_view arg) {
   std::vector<const Option *> candidates;
   std::string root(no_dash_arg);
 
-  for (size_t i = 0; i < OPTIONS.size(); ++i)
-    get_matches(candidates, OPTIONS[i], root);
+  for (const auto &i : OPTIONS)
+    get_matches(candidates, i, root);
   get_matches(candidates, _standard_options, root);
 
   // no matches
@@ -836,9 +836,9 @@ const Option *match_option(std::string_view arg) {
     return candidates[0];
 
   // return match if fully specified:
-  for (size_t i = 0; i < candidates.size(); ++i)
-    if (root == candidates[i]->id)
-      return candidates[i];
+  for (auto &candidate : candidates)
+    if (root == candidate->id)
+      return candidate;
 
   // check if there is only one *unique* candidate
   const auto cid = candidates[0]->id;
@@ -937,12 +937,12 @@ void parse() {
   size_t num_optional_arguments = 0;
 
   ArgModifierFlags flags;
-  for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
-    if (ARGUMENTS[i].flags.any()) {
-      if (flags.any() && flags != ARGUMENTS[i].flags)
+  for (auto &i : ARGUMENTS) {
+    if (i.flags.any()) {
+      if (flags.any() && flags != i.flags)
         throw Exception("FIXME: all arguments declared optional() or allow_multiple()"
                         " should have matching flags in command-line syntax");
-      flags = ARGUMENTS[i].flags;
+      flags = i.flags;
       ++num_optional_arguments;
       if (!flags.optional())
         ++num_args_required;
@@ -1006,18 +1006,18 @@ void parse() {
   }
 
   // check for multiple instances of options:
-  for (size_t i = 0; i < OPTIONS.size(); ++i) {
-    for (size_t j = 0; j < OPTIONS[i].size(); ++j) {
+  for (auto &i : OPTIONS) {
+    for (auto &j : i) {
       size_t count = 0;
-      for (size_t k = 0; k < option.size(); ++k)
-        if (option[k].opt == &OPTIONS[i][j])
+      for (auto &k : option)
+        if (k.opt == &j)
           count++;
 
-      if (count < 1 && OPTIONS[i][j].flags.required())
-        throw Exception(std::string("mandatory option \"-") + OPTIONS[i][j].id + "\" must be specified");
+      if (count < 1 && j.flags.required())
+        throw Exception(std::string("mandatory option \"-") + j.id + "\" must be specified");
 
-      if (count > 1 && !OPTIONS[i][j].flags.allow_multiple())
-        throw Exception(std::string("multiple instances of option \"-") + OPTIONS[i][j].id + "\" are not allowed");
+      if (count > 1 && !j.flags.allow_multiple())
+        throw Exception(std::string("multiple instances of option \"-") + j.id + "\" are not allowed");
     }
   }
 
@@ -1282,10 +1282,10 @@ std::vector<ParsedOption> get_options(std::string_view name) {
   assert(!name.empty());
   assert(name[0] != '-');
   std::vector<ParsedOption> matches;
-  for (size_t i = 0; i < option.size(); ++i) {
-    assert(option[i].opt);
-    if (option[i].opt->is(name))
-      matches.emplace_back(option[i].opt, option[i].args, option[i].index);
+  for (auto &i : option) {
+    assert(i.opt);
+    if (i.opt->is(name))
+      matches.emplace_back(i.opt, i.args, i.index);
   }
   return matches;
 }

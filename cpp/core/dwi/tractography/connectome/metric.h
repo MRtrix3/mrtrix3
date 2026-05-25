@@ -54,9 +54,9 @@ public:
   double operator()(const Streamline<> &tck, const std::vector<node_t> &nodes) const {
     if (scale_by_invnodevol) {
       double sum_volumes = 0.0;
-      for (auto n = nodes.begin(); n != nodes.end(); ++n) {
-        assert(*n < node_volumes.size());
-        sum_volumes += node_volumes[*n];
+      for (unsigned int node : nodes) {
+        assert(node < node_volumes.size());
+        sum_volumes += node_volumes[node];
       }
       if (sum_volumes == 0.0)
         return 0.0;

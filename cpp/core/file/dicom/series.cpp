@@ -82,8 +82,8 @@ std::ostream &operator<<(std::ostream &stream, const Series &item) {
                        item.name.c_str(),
                        item.image_type.c_str());
 
-  for (size_t n = 0; n < item.size(); n++)
-    stream << *item[n];
+  for (const auto &n : item)
+    stream << *n;
 
   return stream;
 }

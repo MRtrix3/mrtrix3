@@ -219,8 +219,8 @@ public:
     Eigen::Vector3f next_pos, next_dir;
 
     float max_val = 0.0;
-    for (size_t i = 0; i < calibrate_list.size(); ++i) {
-      get_path(calib_positions, calib_tangents, rotate_direction(dir, calibrate_list[i]));
+    for (const auto &i : calibrate_list) {
+      get_path(calib_positions, calib_tangents, rotate_direction(dir, i));
       float const val = path_prob(calib_positions, calib_tangents);
       if (std::isnan(val))
         return term_t::EXIT_IMAGE;

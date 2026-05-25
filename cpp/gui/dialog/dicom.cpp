@@ -138,16 +138,16 @@ public:
     auto *model = new Model(this);
 
     Item *root = model->rootItem;
-    for (size_t i = 0; i < tree.size(); ++i) {
-      Item *patient_root = new Item(root, tree[i]);
+    for (const auto &i : tree) {
+      Item *patient_root = new Item(root, i);
       root->appendChild(patient_root);
-      const Patient patient(*tree[i]);
-      for (size_t j = 0; j < patient.size(); ++j) {
-        Item *study_root = new Item(patient_root, patient[j]);
+      const Patient patient(*i);
+      for (const auto &j : patient) {
+        Item *study_root = new Item(patient_root, j);
         patient_root->appendChild(study_root);
-        const Study study(*patient[j]);
-        for (size_t k = 0; k < study.size(); ++k)
-          study_root->appendChild(new Item(study_root, study[k]));
+        const Study study(*j);
+        for (const auto &k : study)
+          study_root->appendChild(new Item(study_root, k));
       }
     }
 

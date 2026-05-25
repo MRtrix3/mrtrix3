@@ -468,16 +468,16 @@ void FastLookupSet::initialise() {
     const size_t num_to_expand = this_grid.size();
     for (size_t index_to_expand = 0; index_to_expand != num_to_expand; ++index_to_expand) {
       const index_type dir_to_expand = this_grid[index_to_expand];
-      for (auto adj = get_adj_dirs(dir_to_expand).begin(); adj != get_adj_dirs(dir_to_expand).end(); ++adj) {
+      for (unsigned int adj : get_adj_dirs(dir_to_expand)) {
 
         // Size of lookup tables could potentially be reduced by being more prohibitive of adjacent direction inclusion
         // in the lookup table for this grid
 
         bool is_present = false;
         for (auto i = this_grid.begin(); !is_present && i != this_grid.end(); ++i)
-          is_present = (*i == *adj);
+          is_present = (*i == adj);
         if (!is_present)
-          this_grid.push_back(*adj);
+          this_grid.push_back(adj);
       }
     }
     std::sort(this_grid.begin(), this_grid.end());

@@ -19,8 +19,8 @@
 namespace MR::DWI::Tractography::Connectome {
 
 bool Selector::operator()(const node_t node) const {
-  for (auto i = list.begin(); i != list.end(); ++i) {
-    if (*i == node)
+  for (unsigned int i : list) {
+    if (i == node)
       return true;
   }
   return false;
@@ -32,10 +32,10 @@ bool Selector::operator()(const NodePair &nodes) const {
   if (exact_match && list.size() == 2)
     return ((nodes.first == list[0] && nodes.second == list[1]) || (nodes.first == list[1] && nodes.second == list[0]));
   bool found_first = false, found_second = false;
-  for (auto i = list.begin(); i != list.end(); ++i) {
-    if (*i == nodes.first)
+  for (unsigned int i : list) {
+    if (i == nodes.first)
       found_first = true;
-    if (*i == nodes.second)
+    if (i == nodes.second)
       found_second = true;
   }
   if (exact_match)
@@ -45,9 +45,9 @@ bool Selector::operator()(const NodePair &nodes) const {
 
 bool Selector::operator()(const std::vector<node_t> &nodes) const {
   Eigen::Array<bool, Eigen::Dynamic, 1> found(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(list.size()));
-  for (auto n = nodes.begin(); n != nodes.end(); ++n) {
+  for (unsigned int node : nodes) {
     for (size_t i = 0; i != list.size(); ++i)
-      if (*n == list[i])
+      if (node == list[i])
         found[i] = true;
   }
   return exact_match ? found.all() : found.any();
@@ -120,8 +120,8 @@ bool WriterExemplars::operator()(const Tractography::Connectome::Streamline_node
 // TODO Multi-thread
 void WriterExemplars::finalize() {
   ProgressBar progress("finalizing exemplars", exemplars.size());
-  for (auto i = exemplars.begin(); i != exemplars.end(); ++i) {
-    i->finalize(step_size);
+  for (auto &exemplar : exemplars) {
+    exemplar.finalize(step_size);
     ++progress;
   }
 }
@@ -174,12 +174,12 @@ void WriterExemplars::write(const std::filesystem::path &path,
   Tractography::Properties properties;
   properties["step_size"] = str(step_size);
   Tractography::Writer<float> writer(path, properties);
-  for (auto i = exemplars.begin(); i != exemplars.end(); ++i)
-    writer(i->get());
+  for (auto &exemplar : exemplars)
+    writer(exemplar.get());
   if (weights_path.has_value()) {
     File::OFStream output(weights_path.value());
-    for (auto i = exemplars.begin(); i != exemplars.end(); ++i)
-      output << str(i->get_weight()) << "\n";
+    for (auto &exemplar : exemplars)
+      output << str(exemplar.get_weight()) << "\n";
   }
 }
 
@@ -229,10 +229,10 @@ bool WriterExtraction::operator()(const Connectome::Streamline_nodepair &in) con
     // Make sure that both nodes are within the list of nodes of interest;
     //   if not, don't bother passing to any of the selectors
     bool first_in_list = false, second_in_list = false;
-    for (auto i = node_list.begin(); i != node_list.end(); ++i) {
-      if (*i == in.get_nodes().first)
+    for (unsigned int i : node_list) {
+      if (i == in.get_nodes().first)
         first_in_list = true;
-      if (*i == in.get_nodes().second)
+      if (i == in.get_nodes().second)
         second_in_list = true;
     }
     if (!first_in_list || !second_in_list) {
@@ -255,9 +255,9 @@ bool WriterExtraction::operator()(const Connectome::Streamline_nodelist &in) con
     // Make sure _all_ nodes are within the list of nodes of interest;
     //   if not, don't pass to any of the selectors
     Eigen::Array<bool, Eigen::Dynamic, 1> in_list(Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(in.get_nodes().size()));
-    for (auto i = node_list.begin(); i != node_list.end(); ++i) {
+    for (unsigned int i : node_list) {
       for (size_t n = 0; n != in.get_nodes().size(); ++n)
-        if (*i == in.get_nodes()[n])
+        if (i == in.get_nodes()[n])
           in_list[n] = true;
     }
     if (!in_list.all()) {

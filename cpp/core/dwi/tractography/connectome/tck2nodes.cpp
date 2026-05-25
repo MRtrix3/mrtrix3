@@ -49,8 +49,8 @@ void Tck2nodes_radial::initialise_search() {
     }
   }
   radial_search.reserve(radial_search_map.size());
-  for (auto i = radial_search_map.begin(); i != radial_search_map.end(); ++i)
-    radial_search.push_back(i->second);
+  for (auto &i : radial_search_map)
+    radial_search.push_back(i.second);
 }
 
 node_t Tck2nodes_radial::select_node(const Tractography::Streamline<> &tck, Image<node_t> &v, const bool end) const {
@@ -61,9 +61,9 @@ node_t Tck2nodes_radial::select_node(const Tractography::Streamline<> &tck, Imag
   const Eigen::Vector3d v_float = transform->scanner2voxel * p;
   const voxel_type centre(v_float.array().round().cast<voxel_type::Scalar>());
 
-  for (auto offset = radial_search.begin(); offset != radial_search.end(); ++offset) {
+  for (const auto &offset : radial_search) {
 
-    const voxel_type this_voxel(centre + *offset);
+    const voxel_type this_voxel(centre + offset);
     const Eigen::Vector3d p_voxel(transform->voxel2scanner * this_voxel.matrix().cast<default_type>());
     const default_type dist((p - p_voxel).norm());
 
@@ -194,8 +194,8 @@ Tck2nodes_forwardsearch::get_cf(const Eigen::Vector3d &p, const Eigen::Vector3d 
 
 void Tck2nodes_all_voxels::select_nodes(const Streamline<> &tck, Image<node_t> &v, std::vector<node_t> &out) const {
   std::set<node_t> result;
-  for (auto p = tck.begin(); p != tck.end(); ++p) {
-    const Eigen::Vector3d v_float = transform->scanner2voxel * p->cast<default_type>();
+  for (const auto &p : tck) {
+    const Eigen::Vector3d v_float = transform->scanner2voxel * p.cast<default_type>();
     const voxel_type voxel(v_float.array().round().cast<voxel_type::Scalar>());
     assign_pos_of(voxel).to(v);
     if (!is_out_of_bounds(v)) {
@@ -205,8 +205,8 @@ void Tck2nodes_all_voxels::select_nodes(const Streamline<> &tck, Image<node_t> &
     }
   }
   out.clear();
-  for (auto n = result.begin(); n != result.end(); ++n)
-    out.push_back(*n);
+  for (unsigned int n : result)
+    out.push_back(n);
 }
 
 } // namespace MR::DWI::Tractography::Connectome

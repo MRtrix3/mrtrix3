@@ -130,11 +130,11 @@ default_type Data::first_min() const {
 
 default_type Data::entropy() const {
   size_t totalFrequency = 0;
-  for (Eigen::Index i = 0; i < list.size(); i++)
-    totalFrequency += list[i];
+  for (unsigned long i : list)
+    totalFrequency += i;
   default_type imageEntropy = 0;
-  for (Eigen::Index i = 0; i < list.size(); i++) {
-    const default_type probability = static_cast<default_type>(list[i]) / static_cast<default_type>(totalFrequency);
+  for (unsigned long i : list) {
+    const default_type probability = static_cast<default_type>(i) / static_cast<default_type>(totalFrequency);
     if (probability > 0.99 / totalFrequency)
       imageEntropy += -probability * log(probability);
   }

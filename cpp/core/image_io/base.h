@@ -80,8 +80,8 @@ public:
 
   void merge(const Base &B) {
     assert(addresses.empty());
-    for (size_t n = 0; n < B.files.size(); ++n)
-      files.push_back(B.files[n]);
+    for (const auto &file : B.files)
+      files.push_back(file);
     segsize += B.segsize;
   }
 

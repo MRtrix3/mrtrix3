@@ -558,10 +558,10 @@ void run() {
       ProgressBar progress(std::string("computing ") + MR::Enum::lowercase_name(op) + " across " +
                                str(headers_in.size()) + " images",
                            num_inputs);
-      for (size_t i = 0; i != headers_in.size(); ++i) {
-        assert(headers_in[i].valid());
-        assert(headers_in[i].is_file_backed());
-        kernel->process(headers_in[i]);
+      for (auto &i : headers_in) {
+        assert(i.valid());
+        assert(i.is_file_backed());
+        kernel->process(i);
         ++progress;
       }
     }

@@ -150,9 +150,9 @@ public:
       Eigen::VectorXd DSH_ = Math::SH::init_transform(delta, maxlmax).row(0);
       Eigen::VectorXd DSH(maxlmax / 2 + 1);
       size_t j = 0;
-      for (ssize_t i = 0; i < DSH_.size(); i++)
-        if (DSH_[i] != 0.0) {
-          DSH[j] = DSH_[i];
+      for (double i : DSH_)
+        if (i != 0.0) {
+          DSH[j] = i;
           j++;
         }
 
@@ -176,10 +176,10 @@ public:
             li++;
           }
           std::vector<size_t> vols = shells[shell_idx].get_volumes();
-          for (size_t idx = 0; idx < vols.size(); idx++) {
-            Eigen::VectorXd SHT_(SHT.row(vols[idx]).head(tissue_n));
+          for (unsigned long vol : vols) {
+            Eigen::VectorXd SHT_(SHT.row(vol).head(tissue_n));
             SHT_ = (SHT_.array() * fconv.array()).matrix();
-            C.row(vols[idx]).segment(pbegin, tissue_n) = SHT_;
+            C.row(vol).segment(pbegin, tissue_n) = SHT_;
           }
         }
         pbegin += tissue_n;

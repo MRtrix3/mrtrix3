@@ -232,8 +232,8 @@ void Shuffler::initialise(const error_t error_types,
   uint64_t max_num_permutations;
   if (eb_within.size() != 0) {
     std::vector<index_type> counts(eb_within.maxCoeff() + 1, 0);
-    for (index_type i = 0; i != eb_within.size(); ++i)
-      counts[eb_within[i]]++;
+    for (unsigned int i : eb_within)
+      counts[i]++;
     max_num_permutations = 1;
     for (const auto &b : counts) {
       const uint64_t old_value = max_num_permutations;
@@ -374,8 +374,8 @@ index_array_type Shuffler::load_blocks(const std::filesystem::path &filename, co
     max_coeff--;
   }
   std::vector<index_type> counts(max_coeff + 1, 0);
-  for (Eigen::Index i = 0; i != data.size(); ++i)
-    counts[data[i]]++;
+  for (unsigned int i : data)
+    counts[i]++;
   for (Eigen::Index i = 0; i <= max_coeff; ++i) {
     if (counts[i] < 2)
       throw Exception("Sequential indices in file \"" + filename.string() + "\"" + //
@@ -451,11 +451,11 @@ void Shuffler::generate_random_permutations(const index_type num_perms,
       do {
         permuted_labelling = default_labelling;
         // Random permutation within each block independently
-        for (index_type ib = 0; ib != blocks.size(); ++ib) {
-          std::vector<index_type> permuted_block(blocks[ib]);
+        for (auto &block : blocks) {
+          std::vector<index_type> permuted_block(block);
           std::shuffle(permuted_block.begin(), permuted_block.end(), rng);
           for (index_type i = 0; i != permuted_block.size(); ++i)
-            permuted_labelling[blocks[ib][i]] = permuted_block[i];
+            permuted_labelling[block[i]] = permuted_block[i];
         }
       } while (!permit_duplicates && is_duplicate(permuted_labelling));
       permutations.push_back(permuted_labelling);
@@ -610,9 +610,9 @@ void Shuffler::generate_random_signflips(const index_type num_signflips,
     const auto blocks = indices2blocks(block_indices);
     for (; s != num_signflips; ++s) {
       do {
-        for (index_type ib = 0; ib != blocks.size(); ++ib) {
+        for (const auto &block : blocks) {
           const bool value = distribution(generator) != 0;
-          for (const auto i : blocks[ib])
+          for (const auto i : block)
             rows_to_flip[i] = value;
         }
       } while (!permit_duplicates && is_duplicate(rows_to_flip));

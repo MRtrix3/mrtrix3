@@ -69,9 +69,7 @@ void SyncManager::OnIPSDataReceived(std::vector<std::shared_ptr<QByteArray>> all
   // processes to this old value
   std::shared_ptr<QByteArray> winFocus = 0;
 
-  for (size_t i = 0; i < all_messages.size(); i++) {
-    std::shared_ptr<QByteArray> const data = all_messages[i];
-
+  for (auto data : all_messages) {
     if (data->size() < 4) {
       DEBUG("Bad data received to syncmanager: too short");
       continue;

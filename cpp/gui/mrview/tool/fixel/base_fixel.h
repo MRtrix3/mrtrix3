@@ -170,8 +170,8 @@ public:
 
   void load_colourby_combobox_options(ComboBoxWithErrorMsg &combo_box) const {
     combo_box.clear();
-    for (size_t i = 0, N = colour_types.size(); i < N; ++i)
-      combo_box.addItem(qstr(colour_types[i]));
+    for (const auto &colour_type : colour_types)
+      combo_box.addItem(qstr(colour_type));
     combo_box.setCurrentIndex(colour_type_index);
   }
 

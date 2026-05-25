@@ -66,8 +66,8 @@ public:
 
   void add_items(const std::vector<std::filesystem::path> &filepaths, Tractography &tractography_tool) {
 
-    for (size_t i = 0; i < filepaths.size(); ++i) {
-      auto *tractogram = new Tractogram(tractography_tool, filepaths[i]);
+    for (const auto &filepath : filepaths) {
+      auto *tractogram = new Tractogram(tractography_tool, filepath);
       try {
         tractogram->load_tracks();
         beginInsertRows(QModelIndex(), items.size(), items.size() + 1);
@@ -449,8 +449,8 @@ void Tractography::opacity_slot(int opacity) {
 
 void Tractography::line_thickness_slot(int thickness) {
   QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
-  for (int i = 0; i < indices.size(); ++i) {
-    Tractogram *tractogram = tractogram_list_model->get_tractogram(indices[i]);
+  for (auto &indice : indices) {
+    Tractogram *tractogram = tractogram_list_model->get_tractogram(indice);
     tractogram->line_thickness = thickness;
     tractogram->should_update_stride = true;
   }
@@ -469,8 +469,8 @@ void Tractography::right_click_menu_slot(const QPoint &pos) {
 
 void Tractography::colour_track_by_direction_slot() {
   QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
-  for (int i = 0; i < indices.size(); ++i) {
-    Tractogram *tractogram = tractogram_list_model->get_tractogram(indices[i]);
+  for (auto &indice : indices) {
+    Tractogram *tractogram = tractogram_list_model->get_tractogram(indice);
     tractogram->set_color_type(TrackColourType::Direction);
     if (tractogram->get_threshold_type() == TrackThresholdType::UseColourFile)
       tractogram->set_threshold_type(TrackThresholdType::None);
@@ -486,8 +486,8 @@ void Tractography::colour_track_by_direction_slot() {
 
 void Tractography::colour_track_by_ends_slot() {
   QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
-  for (int i = 0; i < indices.size(); ++i) {
-    Tractogram *tractogram = tractogram_list_model->get_tractogram(indices[i]);
+  for (auto &indice : indices) {
+    Tractogram *tractogram = tractogram_list_model->get_tractogram(indice);
     tractogram->set_color_type(TrackColourType::Ends);
     tractogram->load_end_colours();
     if (tractogram->get_threshold_type() == TrackThresholdType::UseColourFile)
@@ -535,8 +535,8 @@ void Tractography::set_track_colour_slot() {
   color = QColorDialog::getColor(Qt::red, this, "Select Color", QColorDialog::DontUseNativeDialog);
   if (color.isValid()) {
     QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
-    for (int i = 0; i < indices.size(); ++i) {
-      Tractogram *tractogram = tractogram_list_model->get_tractogram(indices[i]);
+    for (auto &indice : indices) {
+      Tractogram *tractogram = tractogram_list_model->get_tractogram(indice);
       tractogram->set_color_type(TrackColourType::Manual);
       tractogram->set_colour(color);
       if (tractogram->get_threshold_type() == TrackThresholdType::UseColourFile)
@@ -630,8 +630,8 @@ void Tractography::colour_button_slot() {
   const QColor color = colour_button->color();
   if (color.isValid()) {
     QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
-    for (int i = 0; i < indices.size(); ++i)
-      tractogram_list_model->get_tractogram(indices[i])->set_colour(color);
+    for (auto &indice : indices)
+      tractogram_list_model->get_tractogram(indice)->set_colour(color);
     colour_combobox->blockSignals(true);
     colour_combobox->setCurrentIndex(3); // In case it was on random
     colour_combobox->clearError();
@@ -649,8 +649,8 @@ void Tractography::geom_type_selection_slot(int selected_index) {
   TrackGeometryType const geom_type = geometry_index2type(selected_index);
 
   QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
-  for (int i = 0; i < indices.size(); ++i)
-    tractogram_list_model->get_tractogram(indices[i])->set_geometry_type(geom_type);
+  for (auto &indice : indices)
+    tractogram_list_model->get_tractogram(indice)->set_geometry_type(geom_type);
 
   update_geometry_type_gui();
 
@@ -976,8 +976,8 @@ bool Tractography::process_commandline_option(const MR::App::ParsedOption &opt) 
       const TrackGeometryType geom_type = geometry_index2type(geometry_string2index(opt[0]));
       QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
       if (!indices.empty()) {
-        for (int i = 0; i < indices.size(); ++i)
-          tractogram_list_model->get_tractogram(indices[i])->set_geometry_type(geom_type);
+        for (auto &indice : indices)
+          tractogram_list_model->get_tractogram(indice)->set_geometry_type(geom_type);
       } else {
         Tractogram::default_tract_geom = geom_type;
       }

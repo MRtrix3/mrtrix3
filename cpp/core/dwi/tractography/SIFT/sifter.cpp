@@ -365,8 +365,8 @@ void SIFTer::output_filtered_tracks(const std::filesystem::path &input_path,
 
 void SIFTer::output_selection(const std::filesystem::path &path) const {
   File::OFStream out(path, std::ios_base::out | std::ios_base::trunc);
-  for (track_t i = 0; i != contributions.size(); ++i) {
-    if (contributions[i] != nullptr)
+  for (auto contribution : contributions) {
+    if (contribution != nullptr)
       out << "1\n";
     else
       out << "0\n";
@@ -399,9 +399,7 @@ void SIFTer::test_sorting_block_size(const size_t num_tracks) const {
     block_sizes.push_back(i);
   block_sizes.push_back(num_tracks);
 
-  for (auto i = block_sizes.begin(); i != block_sizes.end(); ++i) {
-    const size_t block_size = *i;
-
+  for (unsigned long block_size : block_sizes) {
     // Make a copy of the gradient vector, so the same data is sorted each time
     std::vector<Cost_fn_gradient_sort> temp_gv(gradient_vector);
 

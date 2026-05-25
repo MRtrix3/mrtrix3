@@ -186,8 +186,8 @@ value_type AFDConnectivity::get(const std::filesystem::path &path) {
     mapper(tck, dixels);
     double this_length = 0.0, this_volume = 0.0;
 
-    for (auto i = dixels.begin(); i != dixels.end(); ++i) {
-      this_length += i->get_length();
+    for (const auto &dixel : dixels) {
+      this_length += dixel.get_length();
 
       // If wbft has not been provided (i.e. FODs have not been pre-segmented), need to
       //   check to see if any data have been provided for this voxel; and if not yet,
@@ -195,10 +195,10 @@ value_type AFDConnectivity::get(const std::filesystem::path &path) {
       if (!have_wbft) {
 
         VoxelAccessor v(accessor());
-        assign_pos_of(*i, 0, 3).to(v);
+        assign_pos_of(dixel, 0, 3).to(v);
         if (v.value() == nullptr) {
 
-          assign_pos_of(*i, 0, 3).to(v_fod);
+          assign_pos_of(dixel, 0, 3).to(v_fod);
           DWI::FMLS::SH_coefs fod_data;
           DWI::FMLS::FOD_lobes fod_lobes;
 
@@ -214,11 +214,11 @@ value_type AFDConnectivity::get(const std::filesystem::path &path) {
         }
       }
 
-      const size_t fixel_index = dixel2fixel(*i);
+      const size_t fixel_index = dixel2fixel(dixel);
       AFDConnFixel &fixel = fixels[fixel_index];
-      fixel.add_to_selection(i->get_length());
+      fixel.add_to_selection(dixel.get_length());
       if (have_wbft)
-        this_volume += fixel.get_selected_volume(i->get_length());
+        this_volume += fixel.get_selected_volume(dixel.get_length());
     }
 
     if (have_wbft)
@@ -235,9 +235,9 @@ value_type AFDConnectivity::get(const std::filesystem::path &path) {
     if (all_fixels) {
 
       // All fixels contribute to the result
-      for (auto i = fixels.begin(); i != fixels.end(); ++i) {
-        if (i->is_selected())
-          sum_volumes += i->get_FOD();
+      for (auto &fixel : fixels) {
+        if (fixel.is_selected())
+          sum_volumes += fixel.get_FOD();
       }
 
     } else {

@@ -505,8 +505,8 @@ void ROI::update_slot() { updateGL(); }
 
 void ROI::colour_changed() {
   QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
-  for (int i = 0; i < indices.size(); ++i) {
-    ROI_Item *roi = list_model->get(indices[i]);
+  for (auto &indice : indices) {
+    ROI_Item *roi = list_model->get(indice);
     QColor const c = colour_button->color();
     roi->colour = {{GLubyte(c.red()), GLubyte(c.green()), GLubyte(c.blue())}};
   }
@@ -515,8 +515,8 @@ void ROI::colour_changed() {
 
 void ROI::opacity_changed(int) {
   QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
-  for (int i = 0; i < indices.size(); ++i) {
-    ROI_Item *roi = list_model->get(indices[i]);
+  for (auto &indice : indices) {
+    ROI_Item *roi = list_model->get(indice);
     roi->alpha = opacity_slider->value() / 1.0e3F;
   }
   window().updateGL();

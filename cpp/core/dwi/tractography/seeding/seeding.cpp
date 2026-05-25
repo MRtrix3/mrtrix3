@@ -140,32 +140,32 @@ void load_seed_mechanisms(Properties &properties) {
   List &list(properties.seeds);
 
   auto opt = get_options("seed_voxels");
-  for (size_t i = 0; i < opt.size(); ++i) {
-    auto *seed = new SeedMask(opt[i][0]);
+  for (const auto &i : opt) {
+    auto *seed = new SeedMask(i[0]);
     list.add(seed);
   }
 
   opt = get_options("seed_sphere");
-  for (size_t i = 0; i < opt.size(); ++i) {
-    auto *seed = new Sphere(opt[i][0]);
+  for (const auto &i : opt) {
+    auto *seed = new Sphere(i[0]);
     list.add(seed);
   }
 
   opt = get_options("seed_random_per_voxel");
-  for (size_t i = 0; i < opt.size(); ++i) {
-    auto *seed = new Random_per_voxel(opt[i][0], opt[i][1]);
+  for (const auto &i : opt) {
+    auto *seed = new Random_per_voxel(i[0], i[1]);
     list.add(seed);
   }
 
   opt = get_options("seed_grid_per_voxel");
-  for (size_t i = 0; i < opt.size(); ++i) {
-    auto *seed = new Grid_per_voxel(opt[i][0], opt[i][1]);
+  for (const auto &i : opt) {
+    auto *seed = new Grid_per_voxel(i[0], i[1]);
     list.add(seed);
   }
 
   opt = get_options("seed_rejection_per_voxel");
-  for (size_t i = 0; i < opt.size(); ++i) {
-    auto *seed = new Rejection_per_voxel(opt[i][0]);
+  for (const auto &i : opt) {
+    auto *seed = new Rejection_per_voxel(i[0]);
     list.add(seed);
   }
 
@@ -174,15 +174,15 @@ void load_seed_mechanisms(Properties &properties) {
     auto opt_act = get_options("act");
     if (opt_act.empty())
       throw Exception("Cannot perform GM-WM Interface seeding without ACT segmented tissue image");
-    for (size_t i = 0; i < opt.size(); ++i) {
-      auto *seed = new GMWMI(opt[i][0], opt_act[0][0]);
+    for (const auto &i : opt) {
+      auto *seed = new GMWMI(i[0], opt_act[0][0]);
       list.add(seed);
     }
   }
 
   opt = get_options("seed_per_coordinate");
-  for (size_t i = 0; i < opt.size(); ++i) {
-    auto *seed = new Count_per_coord(opt[i][0], opt[i][1]);
+  for (const auto &i : opt) {
+    auto *seed = new Count_per_coord(i[0], i[1]);
     list.add(seed);
   }
 

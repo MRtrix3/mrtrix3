@@ -50,15 +50,15 @@ FORCE_INLINE default_type bvalue_epsilon() {
 Shell::Shell(const Eigen::MatrixXd &grad, const std::vector<size_t> &indices)
     : volumes(indices), mean(0.0), stdev(0.0), min(std::numeric_limits<default_type>::max()), max(0.0) {
   assert(!volumes.empty());
-  for (auto i = volumes.begin(); i != volumes.end(); i++) {
-    const default_type b = grad(*i, 3);
+  for (unsigned long &volume : volumes) {
+    const default_type b = grad(volume, 3);
     mean += b;
     min = std::min(min, b);
     max = std::max(min, b);
   }
   mean /= static_cast<default_type>(volumes.size());
-  for (auto i = volumes.begin(); i != volumes.end(); i++)
-    stdev += Math::pow2(grad(*i, 3) - mean);
+  for (unsigned long &volume : volumes)
+    stdev += Math::pow2(grad(volume, 3) - mean);
   stdev = std::sqrt(stdev / (volumes.size() - 1));
 }
 
@@ -104,20 +104,20 @@ Shells::select_shells(const bool force_singleshell, const bool force_with_bzero,
     bool bzero_selected = false;
     size_t nonbzero_selected_count = 0;
 
-    for (auto b = desired_bvalues.begin(); b != desired_bvalues.end(); ++b) {
+    for (double &desired_bvalue : desired_bvalues) {
 
-      if (*b < 0)
+      if (desired_bvalue < 0)
         throw Exception("Cannot select shells corresponding to negative b-values");
 
       // Automatically select a b=0 shell if the requested b-value is zero
-      if (*b <= bzero_threshold()) {
+      if (desired_bvalue <= bzero_threshold()) {
 
         if (has_bzero()) {
           if (!bzero_selected) {
             to_retain[0] = true;
             bzero_selected = true;
-            DEBUG("User requested b-value " + str(*b) + "; got b=0 shell : " + str(smallest().get_mean()) + " +- " +
-                  str(smallest().get_stdev()) + " with " + str(smallest().count()) + " volumes");
+            DEBUG("User requested b-value " + str(desired_bvalue) + "; got b=0 shell : " + str(smallest().get_mean()) +
+                  " +- " + str(smallest().get_stdev()) + " with " + str(smallest().count()) + " volumes");
           } else {
             throw Exception("User selected b=0 shell more than once");
           }
@@ -136,13 +136,14 @@ Shells::select_shells(const bool force_singleshell, const bool force_with_bzero,
         // Prompt warning if decision is slightly askew, exception if ambiguous
         bool shell_selected = false;
         for (size_t s = 0; s != count(); ++s) {
-          if ((*b >= shells[s].get_min()) && (*b <= shells[s].get_max())) {
+          if ((desired_bvalue >= shells[s].get_min()) && (desired_bvalue <= shells[s].get_max())) {
             if (!to_retain[s]) {
               to_retain[s] = true;
               nonbzero_selected_count++;
               shell_selected = true;
-              DEBUG("User requested b-value " + str(*b) + "; got shell " + str(s) + ": " + str(shells[s].get_mean()) +
-                    " +- " + str(shells[s].get_stdev()) + " with " + str(shells[s].count()) + " volumes");
+              DEBUG("User requested b-value " + str(desired_bvalue) + "; got shell " + str(s) + ": " +
+                    str(shells[s].get_mean()) + " +- " + str(shells[s].get_stdev()) + " with " +
+                    str(shells[s].count()) + " volumes");
             } else {
               throw Exception("User selected a shell more than once: " + str(shells[s].get_mean()) + " +- " +
                               str(shells[s].get_stdev()) + " with " + str(shells[s].count()) + " volumes");
@@ -155,7 +156,7 @@ Shells::select_shells(const bool force_singleshell, const bool force_with_bzero,
           size_t best_shell = 0;
           bool ambiguous = false;
           for (size_t s = 0; s != count(); ++s) {
-            if (std::fabs(*b - shells[s].get_mean()) <= 1.0) {
+            if (std::fabs(desired_bvalue - shells[s].get_mean()) <= 1.0) {
               if (shell_selected) {
                 ambiguous = true;
               } else {
@@ -168,7 +169,7 @@ Shells::select_shells(const bool force_singleshell, const bool force_with_bzero,
             if (!to_retain[best_shell]) {
               to_retain[best_shell] = true;
               nonbzero_selected_count++;
-              DEBUG("User requested b-value " + str(*b) + "; got shell " + str(best_shell) + ": " +
+              DEBUG("User requested b-value " + str(desired_bvalue) + "; got shell " + str(best_shell) + ": " +
                     str(shells[best_shell].get_mean()) + " +- " + str(shells[best_shell].get_stdev()) + " with " +
                     str(shells[best_shell].count()) + " volumes");
             } else {
@@ -181,8 +182,8 @@ Shells::select_shells(const bool force_singleshell, const bool force_with_bzero,
             // First, check to see if all non-zero shells have (effectively) non-zero standard deviation
             // (If one non-zero shell has negligible standard deviation, assume a Poisson distribution for all shells)
             bool zero_stdev = false;
-            for (auto s = shells.begin(); s != shells.end(); ++s) {
-              if (!s->is_bzero() && s->get_stdev() < 1.0) {
+            for (auto &shell : shells) {
+              if (!shell.is_bzero() && shell.get_stdev() < 1.0) {
                 zero_stdev = true;
                 break;
               }
@@ -195,7 +196,7 @@ Shells::select_shells(const bool force_singleshell, const bool force_with_bzero,
               const default_type stdev =
                   (shells[s].is_bzero() ? 0.5 * bzero_threshold()
                                         : (zero_stdev ? std::sqrt(shells[s].get_mean()) : shells[s].get_stdev()));
-              const default_type num_stdev = std::fabs((*b - shells[s].get_mean()) / stdev);
+              const default_type num_stdev = std::fabs((desired_bvalue - shells[s].get_mean()) / stdev);
               if (num_stdev < best_num_stdevs) {
                 ambiguous = (num_stdev >= 0.1 * best_num_stdevs);
                 best_shell = s;
@@ -212,10 +213,10 @@ Shells::select_shells(const bool force_singleshell, const bool force_with_bzero,
                   bvalues += ", ";
                 bvalues += str(shells[s].get_mean()) + " +- " + str(shells[s].get_stdev());
               }
-              throw Exception("Unable to robustly select desired shell b=" + str(*b) +
+              throw Exception("Unable to robustly select desired shell b=" + str(desired_bvalue) +
                               " (detected shells are: " + bvalues + ")");
             }
-            WARN("User requested shell b=" + str(*b) + "; have selected nearby shell " +
+            WARN("User requested shell b=" + str(desired_bvalue) + "; have selected nearby shell " +
                  str(shells[best_shell].get_mean()) + " +- " + str(shells[best_shell].get_stdev()));
             if (!to_retain[best_shell]) {
               to_retain[best_shell] = true;
@@ -313,10 +314,10 @@ Shells::Shells(const Eigen::MatrixXd &grad) {
       shells.emplace_back(grad, volumes);
     } else if (!volumes.empty()) {
       std::string unassigned;
-      for (size_t i = 0; i != volumes.size(); ++i) {
+      for (unsigned long volume : volumes) {
         if (!unassigned.empty())
           unassigned += ", ";
-        unassigned += str(volumes[i]) + " (" + str(bvals[volumes[i]]) + ")";
+        unassigned += str(volume) + " (" + str(bvals[volume]) + ")";
       }
       WARN("The following image volumes were not successfully assigned to a b-value shell:");
       WARN(unassigned);
@@ -373,8 +374,8 @@ size_t Shells::clusterBvalues(const BValueList &bvals, std::vector<size_t> &clus
             std::vector<size_t> neighborIdx2;
             regionQuery(bvals, bvals[neighborIdx[i]], neighborIdx2);
             if (neighborIdx2.size() >= default_shellclustering_minlinkage)
-              for (size_t j = 0; j != neighborIdx2.size(); j++)
-                neighborIdx.push_back(neighborIdx2[j]);
+              for (unsigned long j : neighborIdx2)
+                neighborIdx.push_back(j);
           }
           if (clusters[neighborIdx[i]] == 0)
             clusters[neighborIdx[i]] = clusterIdx;

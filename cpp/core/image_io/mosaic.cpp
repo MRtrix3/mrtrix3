@@ -41,8 +41,8 @@ void Mosaic::load(const Header &header, size_t) {
 
   ProgressBar progress("reformatting DICOM mosaic images", slices * files.size());
   std::byte *data = addresses[0].get();
-  for (size_t n = 0; n < files.size(); n++) {
-    File::MMap file(files[n], false, false, m_xdim * m_ydim * header.datatype().bytes());
+  for (const auto &n : files) {
+    File::MMap file(n, false, false, m_xdim * m_ydim * header.datatype().bytes());
     size_t nx = 0, ny = 0;
     for (size_t z = 0; z < slices; z++) {
       size_t const ox = nx * xdim;

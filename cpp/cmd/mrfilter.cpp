@@ -258,8 +258,8 @@ void run() {
     auto opt = get_options("stdev");
     if (!opt.empty()) {
       stdev = parse_floats(opt[0][0]);
-      for (size_t i = 0; i < stdev.size(); ++i)
-        if (stdev[i] < 0.0)
+      for (double i : stdev)
+        if (i < 0.0)
           throw Exception("the Gaussian stdev values cannot be negative");
       if (stdev.size() != 1 && stdev.size() != 3)
         throw Exception("unexpected number of elements specified in Gaussian stdev");
@@ -309,8 +309,8 @@ void run() {
       if (stdev_supplied)
         throw Exception("the stdev and FWHM options are mutually exclusive.");
       std::vector<default_type> stdevs = parse_floats((opt[0][0]));
-      for (size_t d = 0; d < stdevs.size(); ++d)
-        stdevs[d] = stdevs[d] / 2.3548; // convert FWHM to stdev
+      for (double &stdev : stdevs)
+        stdev = stdev / 2.3548; // convert FWHM to stdev
       filter.set_stdev(stdevs);
     }
     opt = get_options("extent");

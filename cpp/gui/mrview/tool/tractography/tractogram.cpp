@@ -712,8 +712,8 @@ void Tractogram::load_intensity_track_scalars(const std::filesystem::path &filep
   } else {
     const Eigen::VectorXf scalars = File::Matrix::load_vector<float>(filepath);
     size_t total_num_tracks = 0;
-    for (auto i = num_tracks_per_buffer.begin(); i != num_tracks_per_buffer.end(); ++i)
-      total_num_tracks += *i;
+    for (unsigned long &i : num_tracks_per_buffer)
+      total_num_tracks += i;
     if (static_cast<size_t>(scalars.size()) != total_num_tracks)
       throw Exception("The scalar text file does not contain the same number of elements as the selected tractogram");
     size_t running_index = 0;
@@ -804,8 +804,8 @@ void Tractogram::load_threshold_track_scalars(const std::filesystem::path &filep
   } else {
     const Eigen::VectorXf scalars = File::Matrix::load_vector<float>(filepath);
     size_t total_num_tracks = 0;
-    for (auto i = num_tracks_per_buffer.begin(); i != num_tracks_per_buffer.end(); ++i)
-      total_num_tracks += *i;
+    for (unsigned long &i : num_tracks_per_buffer)
+      total_num_tracks += i;
     if (static_cast<size_t>(scalars.size()) != total_num_tracks)
       throw Exception("The scalar text file does not contain the same number of elements as the selected tractogram");
     size_t running_index = 0;

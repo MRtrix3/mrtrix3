@@ -145,8 +145,8 @@ public:
 
   void render_tools(const Projection &projection, bool is_3D = false, int axis = 0, int slice = 0) {
     QList<QAction *> tools = window().tools()->actions();
-    for (int i = 0; i < tools.size(); ++i) {
-      Tool::Dock *dock = dynamic_cast<Tool::ActionWrapper *>(tools[i])->dock;
+    for (auto &tool : tools) {
+      Tool::Dock *dock = dynamic_cast<Tool::ActionWrapper *>(tool)->dock;
       if (dock != nullptr) {
         GL::assert_context_is_current();
         dock->tool->draw(projection, is_3D, axis, slice);

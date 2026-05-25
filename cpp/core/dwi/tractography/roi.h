@@ -138,8 +138,8 @@ class ROIUnorderedSet : public ROISetBase {
 public:
   ROIUnorderedSet() {}
   bool contains(const Eigen::Vector3f &p) const {
-    for (size_t n = 0; n < R.size(); ++n)
-      if (R[n].contains(p))
+    for (const auto &n : R)
+      if (n.contains(p))
         return (true);
     return false;
   }

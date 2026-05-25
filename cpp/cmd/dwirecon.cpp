@@ -820,8 +820,8 @@ void run_combine_predicted(Image<float> &dwi_in,
           }
           if (weights_image.valid()) {
             assign_pos_of(dwi_out, 0, 3).to(weights_image);
-            for (size_t target_index = 0; target_index != target_volumes.size(); ++target_index) {
-              weights_image.index(3) = target_volumes[target_index];
+            for (unsigned long target_volume : target_volumes) {
+              weights_image.index(3) = target_volume;
               weights_image.value() = empirical_weight;
             }
           }
@@ -895,8 +895,8 @@ void run_combine_predicted(Image<float> &dwi_in,
           }
           if (weights_image.valid()) {
             assign_pos_of(dwi_out, 0, 3).to(weights_image);
-            for (size_t target_index = 0; target_index != target_volumes.size(); ++target_index) {
-              weights_image.index(3) = target_volumes[target_index];
+            for (unsigned long target_volume : target_volumes) {
+              weights_image.index(3) = target_volume;
               weights_image.value() = empirical_weight;
             }
           }

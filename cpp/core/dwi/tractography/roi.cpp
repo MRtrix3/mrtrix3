@@ -54,20 +54,20 @@ const OptionGroup ROIOption =
 
 void load_rois(Properties &properties) {
   auto opt = get_options("include");
-  for (size_t i = 0; i < opt.size(); ++i)
-    properties.include.add(ROI(opt[i][0]));
+  for (const auto &i : opt)
+    properties.include.add(ROI(i[0]));
 
   opt = get_options("include_ordered");
-  for (size_t i = 0; i < opt.size(); ++i)
-    properties.ordered_include.add(ROI(opt[i][0]));
+  for (const auto &i : opt)
+    properties.ordered_include.add(ROI(i[0]));
 
   opt = get_options("exclude");
-  for (size_t i = 0; i < opt.size(); ++i)
-    properties.exclude.add(ROI(opt[i][0]));
+  for (const auto &i : opt)
+    properties.exclude.add(ROI(i[0]));
 
   opt = get_options("mask");
-  for (size_t i = 0; i < opt.size(); ++i)
-    properties.mask.add(ROI(opt[i][0]));
+  for (const auto &i : opt)
+    properties.mask.add(ROI(i[0]));
 }
 
 Image<bool> Mask::get_mask(const std::filesystem::path &path) {

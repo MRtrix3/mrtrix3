@@ -249,8 +249,8 @@ void run() {
   Energy::niter = get_option_value("niter", default_number_iterations);
 
   auto opt = get_options("fixed");
-  for (size_t i = 0; i != opt.size(); ++i) {
-    auto value = parse_floats(opt[i][0]);
+  for (const auto &i : opt) {
+    auto value = parse_floats(i[0]);
     switch (value.size()) {
     case 2: {
       Eigen::Vector3d xyz;

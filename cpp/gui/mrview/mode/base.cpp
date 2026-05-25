@@ -97,16 +97,16 @@ void Base::paintGL() {
 
       QList<QAction *> tools = window().tools()->actions();
       size_t num_tool_colourbars = 0;
-      for (size_t i = 0, N = tools.size(); i < N; ++i) {
-        Tool::Dock *dock = dynamic_cast<Tool::ActionWrapper *>(tools[i])->dock;
+      for (auto &tool : tools) {
+        Tool::Dock *dock = dynamic_cast<Tool::ActionWrapper *>(tool)->dock;
         if (dock != nullptr)
           num_tool_colourbars += dock->tool->visible_number_colourbars();
       }
 
       colourbar_renderer.begin(&projection, window().tools_colourbar_position, num_tool_colourbars);
 
-      for (size_t i = 0, N = tools.size(); i < N; ++i) {
-        Tool::Dock *dock = dynamic_cast<Tool::ActionWrapper *>(tools[i])->dock;
+      for (auto &tool : tools) {
+        Tool::Dock *dock = dynamic_cast<Tool::ActionWrapper *>(tool)->dock;
         if (dock != nullptr)
           dock->tool->draw_colourbars();
       }

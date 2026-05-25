@@ -21,9 +21,9 @@ namespace MR::GUI::MRView::Tool {
 
 void ROI_Model::load(std::vector<std::unique_ptr<MR::Header>> &list) {
   beginInsertRows(QModelIndex(), items.size(), items.size() + list.size());
-  for (size_t i = 0; i < list.size(); ++i) {
+  for (const auto &i : list) {
     GL::Context::Grab const context;
-    auto *roi = new ROI_Item(std::move(*list[i]));
+    auto *roi = new ROI_Item(std::move(*i));
     roi->load();
     items.push_back(std::unique_ptr<Displayable>(roi));
   }

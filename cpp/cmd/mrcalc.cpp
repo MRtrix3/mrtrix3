@@ -602,8 +602,8 @@ public:
   }
 
   virtual bool is_complex() const {
-    for (size_t n = 0; n < operands.size(); ++n)
-      if (operands[n].is_complex())
+    for (const auto &operand : operands)
+      if (operand.is_complex())
         return !ZtoR;
     return RtoZ;
   }
@@ -627,12 +627,12 @@ inline Chunk &StackEntry::evaluate(ThreadLocalStorage &storage) const {
     Chunk &chunk = storage.next();
     if (rng_gaussian) {
       std::normal_distribution<real_type> dis(0.0, 1.0);
-      for (size_t n = 0; n < chunk.size(); ++n)
-        chunk[n] = dis(*rng);
+      for (auto &n : chunk)
+        n = dis(*rng);
     } else {
       std::uniform_real_distribution<real_type> dis(0.0, 1.0);
-      for (size_t n = 0; n < chunk.size(); ++n)
-        chunk[n] = dis(*rng);
+      for (auto &n : chunk)
+        n = dis(*rng);
     }
     return chunk;
   }
@@ -682,11 +682,11 @@ public:
 
   virtual Chunk &evaluate(Chunk &in) const {
     if (operands[0].is_complex())
-      for (size_t n = 0; n < in.size(); ++n)
-        in[n] = op.Z(in[n]);
+      for (auto &n : in)
+        n = op.Z(n);
     else
-      for (size_t n = 0; n < in.size(); ++n)
-        in[n] = op.R(in[n].real());
+      for (auto &n : in)
+        n = op.R(n.real());
 
     return in;
   }
@@ -812,8 +812,8 @@ void ternary_operation(std::string_view operation_name, std::vector<StackEntry> 
 
 void get_header(const StackEntry &entry, Header &header) {
   if (entry.evaluator) {
-    for (size_t n = 0; n < entry.evaluator->operands.size(); ++n)
-      get_header(entry.evaluator->operands[n], header);
+    for (const auto &operand : entry.evaluator->operands)
+      get_header(operand, header);
     return;
   }
 
@@ -857,8 +857,8 @@ public:
 
   void allocate_storage(const StackEntry &entry) {
     if (entry.evaluator) {
-      for (size_t n = 0; n < entry.evaluator->operands.size(); ++n)
-        allocate_storage(entry.evaluator->operands[n]);
+      for (const auto &operand : entry.evaluator->operands)
+        allocate_storage(operand);
       return;
     }
 

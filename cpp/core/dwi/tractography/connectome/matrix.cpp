@@ -74,8 +74,8 @@ template <typename T> bool Matrix<T>::operator()(const Mapped_track_nodelist &in
   assert(assignments_single.empty());
   assert(assignments_pairs.empty());
   std::vector<node_t> list(in.get_nodes());
-  for (auto i = list.begin(); i != list.end(); ++i) {
-    assert(*i < data.rows());
+  for (unsigned int &i : list) {
+    assert(i < data.rows());
   }
   if (is_vector()) {
     if (list.empty()) {
@@ -83,9 +83,9 @@ template <typename T> bool Matrix<T>::operator()(const Mapped_track_nodelist &in
       inc_count(0, in.get_weight());
       list.push_back(0);
     } else {
-      for (auto n = list.begin(); n != list.end(); ++n) {
-        apply_data(*n, in.get_factor(), in.get_weight());
-        inc_count(*n, in.get_weight());
+      for (unsigned int &n : list) {
+        apply_data(n, in.get_factor(), in.get_weight());
+        inc_count(n, in.get_weight());
       }
     }
   } else { // Matrix output
@@ -174,10 +174,10 @@ template <typename T> void Matrix<T>::write_assignments(const std::filesystem::p
     throw Exception("Cannot write streamline assignments to file as they were not stored during processing");
   File::OFStream stream(path);
   stream << "# " << App::command_history_string << "\n";
-  for (auto i = assignments_single.begin(); i != assignments_single.end(); ++i)
-    stream << str(*i) << "\n";
-  for (auto i = assignments_pairs.begin(); i != assignments_pairs.end(); ++i)
-    stream << str(i->first) << " " << str(i->second) << "\n";
+  for (unsigned int i : assignments_single)
+    stream << str(i) << "\n";
+  for (const auto &assignments_pair : assignments_pairs)
+    stream << str(assignments_pair.first) << " " << str(assignments_pair.second) << "\n";
   for (auto i = assignments_lists.begin(); i != assignments_lists.end(); ++i) {
     assert(!i->empty());
     stream << str((*i)[0]);

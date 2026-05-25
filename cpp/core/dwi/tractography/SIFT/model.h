@@ -125,10 +125,10 @@ private:
 };
 
 template <class Fixel> Model<Fixel>::~Model() {
-  for (auto i = contributions.begin(); i != contributions.end(); ++i) {
-    if (*i != nullptr) {
-      delete *i;
-      *i = nullptr;
+  for (auto &contribution : contributions) {
+    if (contribution != nullptr) {
+      delete contribution;
+      contribution = nullptr;
     }
   }
 }
@@ -229,9 +229,9 @@ template <class Fixel> void Model<Fixel>::check_TD() {
   VAR(sum_from_fixels);
   VAR(sum_from_fixels_weighted);
   double sum_from_tracks = 0.0;
-  for (auto i = contributions.begin(); i != contributions.end(); ++i) {
-    if (*i != nullptr)
-      sum_from_tracks += (*i)->get_total_contribution();
+  for (auto &contribution : contributions) {
+    if (contribution != nullptr)
+      sum_from_tracks += contribution->get_total_contribution();
   }
   VAR(sum_from_tracks);
 }
@@ -294,18 +294,18 @@ template <class Fixel> bool Model<Fixel>::TrackMappingWorker::operator()(const T
     std::vector<Track_fixel_contribution> masked_contributions;
     default_type total_contribution = 0.0, total_length = 0.0;
 
-    for (auto i = dixels.begin(); i != dixels.end(); ++i) {
-      total_length += i->get_length();
-      const size_t fixel_index = master.dixel2fixel(*i);
-      if ((fixel_index != 0U) && (i->get_length() > Track_fixel_contribution::min())) {
-        total_contribution += i->get_length() * master.fixels[fixel_index].get_weight();
+    for (const auto &dixel : dixels) {
+      total_length += dixel.get_length();
+      const size_t fixel_index = master.dixel2fixel(dixel);
+      if ((fixel_index != 0U) && (dixel.get_length() > Track_fixel_contribution::min())) {
+        total_contribution += dixel.get_length() * master.fixels[fixel_index].get_weight();
         bool incremented = false;
         for (auto c = masked_contributions.begin(); !incremented && c != masked_contributions.end(); ++c) {
-          if ((c->get_fixel_index() == fixel_index) && c->add(i->get_length()))
+          if ((c->get_fixel_index() == fixel_index) && c->add(dixel.get_length()))
             incremented = true;
         }
         if (!incremented)
-          masked_contributions.emplace_back(fixel_index, i->get_length());
+          masked_contributions.emplace_back(fixel_index, dixel.get_length());
       }
     }
 
@@ -313,9 +313,9 @@ template <class Fixel> bool Model<Fixel>::TrackMappingWorker::operator()(const T
         new TrackContribution(masked_contributions, total_contribution, total_length);
 
     TD_sum += total_contribution;
-    for (auto i = masked_contributions.begin(); i != masked_contributions.end(); ++i) {
-      fixel_TDs[i->get_fixel_index()] += i->get_length();
-      ++fixel_counts[i->get_fixel_index()];
+    for (auto &masked_contribution : masked_contributions) {
+      fixel_TDs[masked_contribution.get_fixel_index()] += masked_contribution.get_length();
+      ++fixel_counts[masked_contribution.get_fixel_index()];
     }
 
     return true;

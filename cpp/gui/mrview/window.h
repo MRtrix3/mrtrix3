@@ -137,8 +137,8 @@ public:
 
   void set_scaling_all(float min, float max) {
     QList<QAction *> list = image_group->actions();
-    for (int n = 0; n < list.size(); ++n)
-      static_cast<Image *>(list[n])->set_windowing(min, max);
+    for (auto &n : list)
+      static_cast<Image *>(n)->set_windowing(min, max);
   }
 
   void set_image_volume(size_t axis, ssize_t index);

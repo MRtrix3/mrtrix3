@@ -188,29 +188,29 @@ void run() {
   }
 
   default_type ssd = 0.0;
-  for (auto i = all_lengths.begin(); i != all_lengths.end(); ++i)
-    ssd += i->get_weight() * Math::pow2(i->get_length() - mean_length);
+  for (auto & all_length : all_lengths)
+    ssd += all_length.get_weight() * Math::pow2(all_length.get_length() - mean_length);
   const float stdev = (sum_weights != 0.0) ? (std::sqrt(ssd / ((static_cast<default_type>(count - 1) / static_cast<default_type>(count)) * sum_weights))) : NaNF;
 
   std::vector<FieldChoice> fields;
   auto opt = get_options("output");
-  for (size_t n = 0; n < opt.size(); ++n)
-    fields.push_back(MR::Enum::from_name<FieldChoice>(opt[n][0]));
+  for (const auto & n : opt)
+    fields.push_back(MR::Enum::from_name<FieldChoice>(n[0]));
 
   if (!fields.empty()) {
 
-    for (size_t n = 0; n < fields.size(); ++n) {
-      if (fields[n] == FieldChoice::MEAN)
+    for (auto & field : fields) {
+      if (field == FieldChoice::MEAN)
         std::cout << str(mean_length) << " ";
-      else if (fields[n] == FieldChoice::MEDIAN)
+      else if (field == FieldChoice::MEDIAN)
         std::cout << str(median_length) << " ";
-      else if (fields[n] == FieldChoice::STD)
+      else if (field == FieldChoice::STD)
         std::cout << str(stdev) << " ";
-      else if (fields[n] == FieldChoice::MIN)
+      else if (field == FieldChoice::MIN)
         std::cout << str(min_length) << " ";
-      else if (fields[n] == FieldChoice::MAX)
+      else if (field == FieldChoice::MAX)
         std::cout << str(max_length) << " ";
-      else if (fields[n] == FieldChoice::COUNT)
+      else if (field == FieldChoice::COUNT)
         std::cout << count << " ";
     }
     std::cout << "\n";

@@ -325,10 +325,10 @@ Header Header::create(const std::filesystem::path &image_name, //
 
     H.datatype().set_byte_order_native();
     size_t a = 0;
-    for (size_t n = 0; n < Pdim.size(); ++n) {
+    for (unsigned int &n : Pdim) {
       while (a < H.ndim() && (H.stride(a) != 0))
         a++;
-      Pdim[n] = Hdim[a++];
+      n = Hdim[a++];
     }
     parser.calculate_padding(Pdim);
 
@@ -412,10 +412,10 @@ Header Header::create(const std::filesystem::path &image_name, //
 
       H.axes_.resize(n + Pdim.size());
 
-      for (size_t i = 0; i < Pdim.size(); ++i) {
+      for (unsigned int i : Pdim) {
         while (H.stride(a) != 0)
           ++a;
-        H.size(a) = Pdim[i];
+        H.size(a) = i;
         H.stride(a) = ++next_stride;
       }
 

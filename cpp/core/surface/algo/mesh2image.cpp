@@ -92,9 +92,9 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
         mesh.load_triangle_vertices(this_poly_verts, poly_index);
       else
         mesh.load_quad_vertices(this_poly_verts, poly_index - mesh.num_triangles());
-      for (auto v = this_poly_verts.begin(); v != this_poly_verts.end(); ++v) {
+      for (auto &this_poly_vert : this_poly_verts) {
         for (size_t axis = 0; axis != 3; ++axis) {
-          const int this_axis_voxel = std::round((*v)[axis]);
+          const int this_axis_voxel = std::round(this_poly_vert[axis]);
           lower_bound[axis] = std::min(lower_bound[axis], this_axis_voxel);
           upper_bound[axis] = std::max(upper_bound[axis], this_axis_voxel);
         }
@@ -399,8 +399,7 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
 
       // Count the number of these points that lie inside the mesh
       size_t inside_mesh_count = 0;
-      for (auto i_p = offsets_to_test->begin(); i_p != offsets_to_test->end(); ++i_p) {
-        Vertex p(*i_p);
+      for (auto p : *offsets_to_test) {
         p += Eigen::Vector3d(voxel[0], voxel[1], voxel[2]);
 
         default_type best_min_edge_distance_on_plane = -std::numeric_limits<default_type>::infinity();
@@ -408,10 +407,10 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
         default_type best_min_distance_from_interior_projection = std::numeric_limits<default_type>::infinity();
 
         // Only test against those polygons that are near this voxel
-        for (auto polygon_index = in.second.begin(); polygon_index != in.second.end(); ++polygon_index) {
-          const Eigen::Vector3d &n(polygon_normals[*polygon_index]);
+        for (unsigned long polygon_index : in.second) {
+          const Eigen::Vector3d &n(polygon_normals[polygon_index]);
 
-          const size_t polygon_num_vertices = (*polygon_index < mesh.num_triangles()) ? 3 : 4;
+          const size_t polygon_num_vertices = (polygon_index < mesh.num_triangles()) ? 3 : 4;
           VertexList v;
 
           bool is_inside = false;
@@ -427,7 +426,7 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
 
           if (polygon_num_vertices == 3) {
 
-            mesh.load_triangle_vertices(v, *polygon_index);
+            mesh.load_triangle_vertices(v, polygon_index);
 
             // First: is it aligned with the normal?
             const Vertex poly_centre((v[0] + v[1] + v[2]) * (1.0 / 3.0));
@@ -452,7 +451,7 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
 
           } else {
 
-            mesh.load_quad_vertices(v, *polygon_index);
+            mesh.load_quad_vertices(v, polygon_index);
 
             // This may be slightly ill-posed with a quad; no guarantee of fixed normal
             // Proceed regardless

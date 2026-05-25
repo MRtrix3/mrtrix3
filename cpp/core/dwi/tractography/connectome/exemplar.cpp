@@ -118,8 +118,8 @@ void Exemplar::finalize(const float step_size) {
   }
 
   const float multiplier = 1.0F / weight;
-  for (auto i = begin(); i != end(); ++i)
-    *i *= multiplier;
+  for (auto &i : *this)
+    i *= multiplier;
 
   // Constrain endpoints to the node centres of mass
   size_t const num_converging_points = endpoint_convergence_fraction * size();

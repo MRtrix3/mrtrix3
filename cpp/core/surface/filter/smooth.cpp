@@ -98,12 +98,11 @@ void Smooth::operator()(const Mesh &in, Mesh &out) const {
       // Find polygons at the outer edge of this expanding front, and add them to the neighbourhood for this vertex
       std::vector<uint32_t> next_front;
       for (auto front = vert_polys_to_expand[v].begin(); front != vert_polys_to_expand[v].end(); ++front) {
-        for (auto expansion = poly_neighbours[*front].begin(); expansion != poly_neighbours[*front].end();
-             ++expansion) {
-          const auto existing = vert_polys[v].find(*expansion);
+        for (unsigned int &expansion : poly_neighbours[*front]) {
+          const auto existing = vert_polys[v].find(expansion);
           if (existing == vert_polys[v].end()) {
-            vert_polys[v].insert(*expansion);
-            next_front.push_back(*expansion);
+            vert_polys[v].insert(expansion);
+            next_front.push_back(expansion);
           }
         }
       }

@@ -395,8 +395,8 @@ void run() {
     if (do_crop && !crop_unbound) {
       opt = get_options("axis");
       std::set<size_t> ignore;
-      for (size_t i = 0; i != opt.size(); ++i)
-        ignore.insert(opt[i][0]);
+      for (const auto &i : opt)
+        ignore.insert(i[0]);
       for (size_t axis = 0; axis != 3; ++axis) {
         if (bounds[axis][0] < 0 || bounds[axis][1] > input_header.size(axis) - 1) {
           if (ignore.find(axis) == ignore.end())
@@ -410,18 +410,18 @@ void run() {
     }
 
     opt = get_options("axis"); // overrides image bounds set by other options
-    for (size_t i = 0; i != opt.size(); ++i) {
+    for (const auto &i : opt) {
       ++crop_pad_option_count;
-      const size_t axis = opt[i][0];
+      const size_t axis = i[0];
       if (axis >= input_header.ndim())
         throw Exception("-axis " + str(axis) + " larger than image dimensions (" + str(input_header.ndim()) + ")");
-      std::string const spec = str(opt[i][1]);
+      std::string const spec = str(i[1]);
       std::string::size_type start = 0, end;
       end = spec.find_first_of(':', start);
       if (end == std::string::npos) { // spec = delta_lower,delta_upper
         std::vector<int> delta;       // 0: not changed, > 0: pad, < 0: crop
         try {
-          delta = parse_ints<int>(opt[i][1]);
+          delta = parse_ints<int>(i[1]);
         } catch (Exception &E) {
           throw Exception(E, "-axis " + str(axis) + ": can't parse delta specifier \"" + spec + "\"");
         }

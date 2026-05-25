@@ -264,9 +264,9 @@ template <class HeaderType> inline size_t voxel_count(const HeaderType &in, cons
 //! returns the number of voxel in the relevant subvolume of the data set
 template <class HeaderType> inline int64_t voxel_count(const HeaderType &in, const std::vector<size_t> &axes) {
   int64_t fp = 1;
-  for (size_t n = 0; n < axes.size(); ++n) {
-    assert(axes[n] < in.ndim());
-    fp *= in.size(axes[n]);
+  for (unsigned long axe : axes) {
+    assert(axe < in.ndim());
+    fp *= in.size(axe);
   }
   return fp;
 }
@@ -320,11 +320,10 @@ inline bool spacings_match(const HeaderType1 &in1,
                            const HeaderType2 &in2,
                            const std::vector<size_t> &axes,
                            const double tol = 0.0) {
-  for (size_t n = 0; n < axes.size(); ++n) {
-    if (in1.ndim() <= axes[n] || in2.ndim() <= axes[n])
+  for (unsigned long axe : axes) {
+    if (in1.ndim() <= axe || in2.ndim() <= axe)
       return false;
-    if (std::fabs(in1.spacing(axes[n]) - in2.spacing(axes[n])) >
-        tol * 0.5 * (in1.spacing(axes[n]) + in2.spacing(axes[n])))
+    if (std::fabs(in1.spacing(axe) - in2.spacing(axe)) > tol * 0.5 * (in1.spacing(axe) + in2.spacing(axe)))
       return false;
   }
   return true;
@@ -353,10 +352,10 @@ inline bool dimensions_match(const HeaderType1 &in1, const HeaderType2 &in2, siz
 
 template <class HeaderType1, class HeaderType2>
 inline bool dimensions_match(const HeaderType1 &in1, const HeaderType2 &in2, const std::vector<size_t> &axes) {
-  for (size_t n = 0; n < axes.size(); ++n) {
-    if (in1.ndim() <= axes[n] || in2.ndim() <= axes[n])
+  for (unsigned long axe : axes) {
+    if (in1.ndim() <= axe || in2.ndim() <= axe)
       return false;
-    if (in1.size(axes[n]) != in2.size(axes[n]))
+    if (in1.size(axe) != in2.size(axe))
       return false;
   }
   return true;

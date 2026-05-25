@@ -753,29 +753,29 @@ void View::clip_planes_add_coronal_slot() {
 
 void View::clip_planes_reset_axial_slot() {
   QModelIndexList indices = clip_planes_list_view->selectionModel()->selectedIndexes();
-  for (int i = 0; i < indices.size(); ++i)
-    clip_planes_model->reset(indices[i], *(window().image()), 2);
+  for (auto &indice : indices)
+    clip_planes_model->reset(indice, *(window().image()), 2);
   window().updateGL();
 }
 
 void View::clip_planes_reset_sagittal_slot() {
   QModelIndexList indices = clip_planes_list_view->selectionModel()->selectedIndexes();
-  for (int i = 0; i < indices.size(); ++i)
-    clip_planes_model->reset(indices[i], *(window().image()), 0);
+  for (auto &indice : indices)
+    clip_planes_model->reset(indice, *(window().image()), 0);
   window().updateGL();
 }
 
 void View::clip_planes_reset_coronal_slot() {
   QModelIndexList indices = clip_planes_list_view->selectionModel()->selectedIndexes();
-  for (int i = 0; i < indices.size(); ++i)
-    clip_planes_model->reset(indices[i], *(window().image()), 1);
+  for (auto &indice : indices)
+    clip_planes_model->reset(indice, *(window().image()), 1);
   window().updateGL();
 }
 
 void View::clip_planes_invert_slot() {
   QModelIndexList indices = clip_planes_list_view->selectionModel()->selectedIndexes();
-  for (int i = 0; i < indices.size(); ++i)
-    clip_planes_model->invert(indices[i]);
+  for (auto &indice : indices)
+    clip_planes_model->invert(indice);
   window().updateGL();
 }
 
@@ -814,9 +814,9 @@ std::vector<GL::vec4 *> View::get_clip_planes_to_be_edited() const {
   std::vector<GL::vec4 *> ret;
   if (clip_box->isChecked()) {
     QModelIndexList indices = clip_planes_list_view->selectionModel()->selectedIndexes();
-    for (int i = 0; i < indices.size(); ++i)
-      if (clip_planes_model->planes[indices[i].row()].active)
-        ret.push_back(&clip_planes_model->planes[indices[i].row()].plane);
+    for (const auto &indice : indices)
+      if (clip_planes_model->planes[indice.row()].active)
+        ret.push_back(&clip_planes_model->planes[indice.row()].plane);
   }
   return ret;
 }
@@ -935,8 +935,8 @@ void View::move_clip_planes_in_out(const ModelViewProjection &projection,
                                    std::vector<GL::vec4 *> &clip,
                                    float distance) {
   Eigen::Vector3f d = projection.screen_normal();
-  for (size_t n = 0; n < clip.size(); ++n) {
-    GL::vec4 &p(*clip[n]);
+  for (auto &n : clip) {
+    GL::vec4 &p(*n);
     p[3] += distance * (p[0] * d[0] + p[1] * d[1] + p[2] * d[2]);
   }
   window().updateGL();
@@ -944,8 +944,8 @@ void View::move_clip_planes_in_out(const ModelViewProjection &projection,
 
 void View::rotate_clip_planes(std::vector<GL::vec4 *> &clip, const Eigen::Quaternionf &rot) {
   const auto &focus(window().focus());
-  for (size_t n = 0; n < clip.size(); ++n) {
-    GL::vec4 &p(*clip[n]);
+  for (auto &n : clip) {
+    GL::vec4 &p(*n);
     float const distance_to_focus = p[0] * focus[0] + p[1] * focus[1] + p[2] * focus[2] - p[3];
     const Eigen::Quaternionf norm(0.0F, p[0], p[1], p[2]);
     const Eigen::Quaternionf rotated = norm * rot;
@@ -974,8 +974,8 @@ bool View::pan_event(const ModelViewProjection &projection) {
   if (clip.empty())
     return false;
   Eigen::Vector3f move = projection.screen_to_model_direction(window().mouse_displacement(), window().target());
-  for (size_t n = 0; n < clip.size(); ++n) {
-    GL::vec4 &p(*clip[n]);
+  for (auto &n : clip) {
+    GL::vec4 &p(*n);
     p[3] += (p[0] * move[0] + p[1] * move[1] + p[2] * move[2]);
   }
   window().updateGL();

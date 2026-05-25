@@ -63,26 +63,26 @@ public:
         }
         throw Exception("Cannot output statistic of interest; no values read (empty mask?)");
       }
-      for (size_t n = 0; n < fields.size(); ++n) {
-        if (fields[n] == "mean")
+      for (const auto &field : fields) {
+        if (field == "mean")
           std::cout << str(mean) << " ";
-        else if (fields[n] == "median")
+        else if (field == "median")
           std::cout << (values.empty() ? "N/A" : str(Math::median(values))) << " ";
-        else if (fields[n] == "std")
+        else if (field == "std")
           std::cout << (count > 1 ? str(std) : "N/A") << " ";
-        else if (fields[n] == "std_rv")
+        else if (field == "std_rv")
           std::cout << (count > 1 ? str(std_rv) : "N/A") << " ";
-        else if (fields[n] == "iqr")
+        else if (field == "iqr")
           std::cout << (!values.empty() ? str(Math::quantile(values, 0.75) - Math::quantile(values, 0.25)) : "N/A")
                     << " ";
-        else if (fields[n] == "min")
+        else if (field == "min")
           std::cout << str(min) << " ";
-        else if (fields[n] == "max")
+        else if (field == "max")
           std::cout << str(max) << " ";
-        else if (fields[n] == "count")
+        else if (field == "count")
           std::cout << count << " ";
         else
-          throw Exception("stats type not supported: " + fields[n]);
+          throw Exception("stats type not supported: " + field);
       }
       std::cout << "\n";
 

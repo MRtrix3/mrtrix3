@@ -25,8 +25,8 @@ namespace {
 inline bool in_seq(const std::vector<uint32_t> &seq, uint32_t val) {
   if (seq.empty())
     return true;
-  for (size_t i = 0; i < seq.size(); i++)
-    if (seq[i] == val)
+  for (unsigned int i : seq)
+    if (i == val)
       return true;
   return false;
 }
@@ -61,12 +61,12 @@ void NameParser::parse(std::string_view specifier, size_t max_num_sequences) {
 
     insert_str(basename);
 
-    for (size_t i = 0; i < array.size(); i++)
-      if (array[i].is_sequence())
-        if (!array[i].sequence().empty())
-          for (size_t n = 0; n < array[i].sequence().size() - 1; n++)
-            for (size_t m = n + 1; m < array[i].sequence().size(); m++)
-              if (array[i].sequence()[n] == array[i].sequence()[m])
+    for (auto &i : array)
+      if (i.is_sequence())
+        if (!i.sequence().empty())
+          for (size_t n = 0; n < i.sequence().size() - 1; n++)
+            for (size_t m = n + 1; m < i.sequence().size(); m++)
+              if (i.sequence()[n] == i.sequence()[m])
                 throw Exception("malformed image sequence specifier for image \"" + specifier + "\"" + //
                                 " (duplicate indices)");
   } catch (...) {
@@ -100,11 +100,11 @@ bool NameParser::match(std::string_view file_name, std::vector<uint32_t> &indice
   size_t num = 0;
   indices.resize(seq_index.size());
 
-  for (size_t i = 0; i < array.size(); i++) {
-    if (array[i].is_string()) {
-      if (file_name.substr(current, array[i].string().size()) != array[i].string())
+  for (const auto &i : array) {
+    if (i.is_string()) {
+      if (file_name.substr(current, i.string().size()) != i.string())
         return false;
-      current += array[i].string().size();
+      current += i.string().size();
     } else {
       uint32_t x = current;
       while (isdigit(file_name[current]) != 0)
@@ -112,7 +112,7 @@ bool NameParser::match(std::string_view file_name, std::vector<uint32_t> &indice
       if (x == current)
         return false;
       x = to<uint32_t>(file_name.substr(x, current - x));
-      if (!in_seq(array[i].sequence(), x))
+      if (!in_seq(i.sequence(), x))
         return false;
       indices[num] = x;
       num++;
@@ -145,10 +145,10 @@ void NameParser::calculate_padding(const std::vector<uint32_t> &maxvals) {
 }
 
 void NameParser::Item::calc_padding(size_t maxval) {
-  for (size_t i = 0; i < sequence().size(); i++) {
-    assert(sequence()[i] >= 0);
-    if (maxval < static_cast<size_t>(sequence()[i]))
-      maxval = sequence()[i];
+  for (unsigned int i : sequence()) {
+    assert(i >= 0);
+    if (maxval < static_cast<size_t>(i))
+      maxval = i;
   }
 
   seq_length = 1;
@@ -164,11 +164,11 @@ std::filesystem::path NameParser::name(const std::vector<uint32_t> &indices) {
 
   std::string str;
   size_t n = seq_index.size() - 1;
-  for (size_t i = 0; i < array.size(); i++) {
-    if (array[i].is_string())
-      str += array[i].string();
+  for (auto &i : array) {
+    if (i.is_string())
+      str += i.string();
     else {
-      str += printf("%*.*d", array[i].size(), array[i].size(), array[i].sequence()[indices[n]]);
+      str += printf("%*.*d", i.size(), i.size(), i.sequence()[indices[n]]);
       n--;
     }
   }

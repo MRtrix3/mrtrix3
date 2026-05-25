@@ -43,20 +43,21 @@ LineSearchFunctor::Result LineSearchFunctor::get(const double dFs) const {
 
   Result data_result, tik_result, tv_result;
 
-  for (auto i = fixels.begin(); i != fixels.end(); ++i) {
+  for (const auto &fixel : fixels) {
 
-    const double contribution = i->length * factor;
+    const double contribution = fixel.length * factor;
     const double scaled_contribution = mu * contribution;
-    const double roc_contribution = mu * (contribution + i->dTD_dFs);
-    const double diff = (mu * (i->TD + contribution + (i->dTD_dFs * dFs))) - i->FOD;
+    const double roc_contribution = mu * (contribution + fixel.dTD_dFs);
+    const double diff = (mu * (fixel.TD + contribution + (fixel.dTD_dFs * dFs))) - fixel.FOD;
 
-    data_result.cost += i->cost_frac * i->PM * Math::pow2(diff);
-    data_result.first_deriv += 2.0 * i->PM * i->cost_frac * (roc_contribution * diff);
+    data_result.cost += fixel.cost_frac * fixel.PM * Math::pow2(diff);
+    data_result.first_deriv += 2.0 * fixel.PM * fixel.cost_frac * (roc_contribution * diff);
     data_result.second_deriv +=
-        2.0 * i->PM * i->cost_frac * (Math::pow2(roc_contribution) + (scaled_contribution * diff));
-    data_result.third_deriv += 2.0 * i->PM * i->cost_frac * scaled_contribution * ((3.0 * roc_contribution) + diff);
+        2.0 * fixel.PM * fixel.cost_frac * (Math::pow2(roc_contribution) + (scaled_contribution * diff));
+    data_result.third_deriv +=
+        2.0 * fixel.PM * fixel.cost_frac * scaled_contribution * ((3.0 * roc_contribution) + diff);
 
-    SIFT2::dxtvreg_dcoeffx(tv_result, coefficient, factor, i->SL_eff, i->meanFs, i->expmeanFs);
+    SIFT2::dxtvreg_dcoeffx(tv_result, coefficient, factor, fixel.SL_eff, fixel.meanFs, fixel.expmeanFs);
   }
 
   tik_result.cost = reg_tik * Math::pow2(coefficient);
@@ -73,10 +74,10 @@ LineSearchFunctor::Result LineSearchFunctor::get(const double dFs) const {
 double LineSearchFunctor::operator()(const double dFs) const {
   double cf_data = 0.0;
   double cf_reg_tv = 0.0;
-  for (auto i = fixels.begin(); i != fixels.end(); ++i) {
-    cf_data += i->cost_frac * i->PM *
-               Math::pow2((mu * (i->TD + (i->length * std::exp(Fs + dFs)) + (i->dTD_dFs * dFs))) - i->FOD);
-    cf_reg_tv += i->SL_eff * SIFT2::tvreg(Fs + dFs, i->meanFs);
+  for (const auto &fixel : fixels) {
+    cf_data += fixel.cost_frac * fixel.PM *
+               Math::pow2((mu * (fixel.TD + (fixel.length * std::exp(Fs + dFs)) + (fixel.dTD_dFs * dFs))) - fixel.FOD);
+    cf_reg_tv += fixel.SL_eff * SIFT2::tvreg(Fs + dFs, fixel.meanFs);
   }
   const double cf_reg_tik = Math::pow2(Fs + dFs);
   return (cf_data + (reg_tik * cf_reg_tik) + (reg_tv * cf_reg_tv));

@@ -322,8 +322,8 @@ void Image::read() {
     if (frame_offset > 0)
       frames.push_back(std::shared_ptr<Frame>(new Frame(*this)));
 
-    for (size_t n = 0; n < frames.size(); ++n)
-      frames[n]->data = data + frames[n]->frame_offset;
+    for (auto &frame : frames)
+      frame->data = data + frame->frame_offset;
   }
   check_app_exit_code();
 }
@@ -480,8 +480,8 @@ std::ostream &operator<<(std::ostream &stream, const Image &item) {
          << (!item.frames.empty() ? str(item.frames.size()) + " frames with dim " + str(item.frame_dim)
                                   : std::string());
   if (!item.frames.empty()) {
-    for (size_t n = 0; n < item.frames.size(); ++n)
-      stream << "  " << static_cast<const Frame &>(*item.frames[n]) << "\n";
+    for (const auto &frame : item.frames)
+      stream << "  " << static_cast<const Frame &>(*frame) << "\n";
   } else
     stream << "  " << static_cast<const Frame &>(item) << "\n";
 

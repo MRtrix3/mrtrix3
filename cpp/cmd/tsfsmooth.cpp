@@ -64,8 +64,8 @@ void run() {
     kernel[c] = std::exp(-(c - radius) * (c - radius) / (2 * stdev * stdev));
     norm_factor += kernel[c];
   }
-  for (size_t c = 0; c < kernel.size(); c++)
-    kernel[c] /= norm_factor;
+  for (float &c : kernel)
+    c /= norm_factor;
 
   DWI::Tractography::TrackScalar<value_type> tck_scalar;
   while (reader(tck_scalar)) {

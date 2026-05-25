@@ -47,8 +47,8 @@ namespace MR {
 
 void display_exception_cmdline(const Exception &E, int log_level) {
   if (App::log_level >= log_level)
-    for (size_t n = 0; n < E.description.size(); ++n)
-      report_to_user_func(E.description[n], log_level);
+    for (const auto &n : E.description)
+      report_to_user_func(n, log_level);
 }
 
 bool _need_newline = false;

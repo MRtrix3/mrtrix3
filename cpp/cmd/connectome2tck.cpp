@@ -254,8 +254,8 @@ void run() {
   if (!nonpair_found) {
     INFO("Assignments file contains node pair for every streamline; operating accordingly");
     assignments_pairs.reserve(assignments_lists.size());
-    for (auto i = assignments_lists.begin(); i != assignments_lists.end(); ++i)
-      assignments_pairs.emplace_back((*i)[0], (*i)[1]);
+    for (auto &assignments_list : assignments_lists)
+      assignments_pairs.emplace_back(assignments_list[0], assignments_list[1]);
     assignments_lists.clear();
   }
 
@@ -435,20 +435,20 @@ void run() {
       } else {
         // For each node in the list, write one file for an exemplar to every other node
         ProgressBar progress("writing exemplars to files", nodes.size() * COMs.size());
-        for (auto n = nodes.begin(); n != nodes.end(); ++n) {
+        for (unsigned int &node : nodes) {
           for (size_t i = first_node; i != COMs.size(); ++i) {
-            generator.write(*n,
+            generator.write(node,
                             i,
-                            output_dir / (str(*n) + "-" + str(i) + ".tck"),
-                            weights_path_for(str(*n) + "-" + str(i) + ".csv"));
+                            output_dir / (str(node) + "-" + str(i) + ".tck"),
+                            weights_path_for(str(node) + "-" + str(i) + ".csv"));
             ++progress;
           }
         }
       }
     } else if (file_format == FileOutput::PER_NODE) { // One file per node
       ProgressBar progress("writing exemplars to files", nodes.size());
-      for (auto n = nodes.begin(); n != nodes.end(); ++n) {
-        generator.write(*n, output_dir / (str(*n) + ".tck"), weights_path_for(str(*n) + ".csv"));
+      for (unsigned int &node : nodes) {
+        generator.write(node, output_dir / (str(node) + ".tck"), weights_path_for(str(node) + ".csv"));
         ++progress;
       }
     } else if (file_format == FileOutput::SINGLE) { // Single file
@@ -483,8 +483,8 @@ void run() {
       INFO("A total of " + str(writer.file_count()) + " output track files will be generated (one for each edge)");
       break;
     case FileOutput::PER_NODE: // One file per node
-      for (auto i = nodes.begin(); i != nodes.end(); ++i)
-        writer.add(*i, output_dir / (str(*i) + ".tck"), weights_path_for(str(*i) + ".csv"));
+      for (unsigned int &node : nodes)
+        writer.add(node, output_dir / (str(node) + ".tck"), weights_path_for(str(node) + ".csv"));
       INFO("A total of " + str(writer.file_count()) + " output track files will be generated (one for each node)");
       break;
     case FileOutput::SINGLE: // Single file

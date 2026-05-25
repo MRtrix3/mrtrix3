@@ -100,8 +100,8 @@ void run() {
 
   auto opt = get_options("tag");
   if (!opt.empty())
-    for (size_t n = 0; n < opt.size(); ++n)
-      tags.emplace_back(read_hex(opt[n][0]), read_hex(opt[n][1]), opt[n][2]);
+    for (const auto &n : opt)
+      tags.emplace_back(read_hex(n[0]), read_hex(n[1]), n[2]);
 
   opt = get_options("id");
   if (!opt.empty()) {
@@ -110,31 +110,30 @@ void run() {
     tags.emplace_back(0x0010U, 0x1000U, newid); // OtherPatientIDs
   }
 
-  for (size_t n = 0; n < VRs.size(); ++n) {
+  for (unsigned short n : VRs) {
     union {
       uint16_t i;
       char c[2]; // check_syntax off
     } VR;
-    VR.i = VRs[n];
+    VR.i = n;
     INFO(std::string("clearing entries with VR \"") + VR.c[1] + VR.c[0] + "\"");
   }
-  for (size_t n = 0; n < tags.size(); ++n)
-    INFO("replacing tag (" + hex(tags[n].group) + "," + hex(tags[n].element) + ") with value \"" + tags[n].newvalue +
-         "\"");
+  for (auto &tag : tags)
+    INFO("replacing tag (" + hex(tag.group) + "," + hex(tag.element) + ") with value \"" + tag.newvalue + "\"");
 
   File::Dicom::Element item;
   item.set(argument[0], true, true);
   while (item.read()) {
-    for (size_t n = 0; n < VRs.size(); ++n) {
-      if (item.VR == VRs[n]) {
+    for (unsigned short VR : VRs) {
+      if (item.VR == VR) {
         memset(item.data, 32, item.size);
         memcpy(item.data, "anonymous", std::min<int>(item.size, 9));
       }
     }
-    for (size_t n = 0; n < tags.size(); ++n) {
-      if (item.is(tags[n].group, tags[n].element)) {
+    for (auto &tag : tags) {
+      if (item.is(tag.group, tag.element)) {
         memset(item.data, 32, item.size);
-        memcpy(item.data, tags[n].newvalue.c_str(), std::min<int>(item.size, tags[n].newvalue.size()));
+        memcpy(item.data, tag.newvalue.c_str(), std::min<int>(item.size, tag.newvalue.size()));
       }
     }
   }

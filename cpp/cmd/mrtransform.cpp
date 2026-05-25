@@ -417,11 +417,11 @@ void run() {
     axes = parse_ints<int32_t>(opt[0][0]);
     transform_type flip;
     flip.setIdentity();
-    for (size_t i = 0; i < axes.size(); ++i) {
-      if (axes[i] < 0 || axes[i] > 2)
+    for (int axe : axes) {
+      if (axe < 0 || axe > 2)
         throw Exception("axes supplied to -flip are out of bounds (" + std::string(opt[0][0]) + ")");
-      flip(axes[i], 3) += flip(axes[i], axes[i]) * input_header.spacing(axes[i]) * (input_header.size(axes[i]) - 1);
-      flip(axes[i], axes[i]) *= -1.0;
+      flip(axe, 3) += flip(axe, axe) * input_header.spacing(axe) * (input_header.size(axe) - 1);
+      flip(axe, axe) *= -1.0;
     }
     if (!replace)
       flip = input_header.transform() * flip * input_header.transform().inverse();

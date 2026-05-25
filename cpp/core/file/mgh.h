@@ -320,12 +320,12 @@ template <class Input> void read_other(Header &H, Input &in) {
       frame.sequence_type = fetch<int32_t>(in);
       frame.echo_spacing = fetch<float32>(in);
       frame.echo_train_len = fetch<float32>(in);
-      for (size_t i = 0; i != 3; i++)
-        frame.read_dir[i] = fetch<float32>(in);
-      for (size_t i = 0; i != 3; i++)
-        frame.pe_dir[i] = fetch<float32>(in);
-      for (size_t i = 0; i != 3; i++)
-        frame.slice_dir[i] = fetch<float32>(in);
+      for (float &i : frame.read_dir)
+        i = fetch<float32>(in);
+      for (float &i : frame.pe_dir)
+        i = fetch<float32>(in);
+      for (float &i : frame.slice_dir)
+        i = fetch<float32>(in);
       frame.label = fetch<int32_t>(in);
       in.read(frame.name, strlen);
       frame.dof = fetch<int32_t>(in);
@@ -781,12 +781,12 @@ template <class Output> void write_other(const Header &H, Output &out) {
       store<int32_t>(frame.sequence_type, out);
       store<float32>(frame.echo_spacing, out);
       store<float32>(frame.echo_train_len, out);
-      for (size_t i = 0; i != 3; ++i)
-        store<float32>(frame.read_dir[i], out);
-      for (size_t i = 0; i != 3; ++i)
-        store<float32>(frame.pe_dir[i], out);
-      for (size_t i = 0; i != 3; ++i)
-        store<float32>(frame.slice_dir[i], out);
+      for (float &i : frame.read_dir)
+        store<float32>(i, out);
+      for (float &i : frame.pe_dir)
+        store<float32>(i, out);
+      for (float &i : frame.slice_dir)
+        store<float32>(i, out);
       store<int32_t>(frame.label, out);
       out.write(frame.name, strlen);
       store<int32_t>(frame.dof, out);

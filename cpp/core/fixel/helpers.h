@@ -37,10 +37,8 @@ public:
 };
 
 FORCE_INLINE bool is_index_filename(const std::filesystem::path &path) {
-  for (std::initializer_list<const std::string>::iterator it = supported_image_formats.begin();
-       it != supported_image_formats.end();
-       ++it) {
-    if (path.filename().string() == "index" + *it)
+  for (const auto &supported_image_format : supported_image_formats) {
+    if (path.filename().string() == "index" + supported_image_format)
       return true;
   }
   return false;
@@ -61,10 +59,8 @@ template <class HeaderType> FORCE_INLINE bool is_data_file(const HeaderType &in)
 }
 
 FORCE_INLINE bool is_directions_filename(const std::filesystem::path &path) {
-  for (std::initializer_list<const std::string>::iterator it = supported_image_formats.begin();
-       it != supported_image_formats.end();
-       ++it) {
-    if (path.filename().string() == "directions" + *it)
+  for (const auto &supported_image_format : supported_image_formats) {
+    if (path.filename().string() == "directions" + supported_image_format)
       return true;
   }
   return false;
@@ -153,10 +149,8 @@ FORCE_INLINE Header find_index_header(const std::filesystem::path &fixel_directo
   Header header;
   check_fixel_directory(fixel_directory_path);
 
-  for (std::initializer_list<const std::string>::iterator it = supported_image_formats.begin();
-       it != supported_image_formats.end();
-       ++it) {
-    std::filesystem::path const full_path = fixel_directory_path / ("index" + *it);
+  for (const auto &supported_image_format : supported_image_formats) {
+    std::filesystem::path const full_path = fixel_directory_path / ("index" + supported_image_format);
     if (std::filesystem::exists(full_path)) {
       if (header.valid())
         throw InvalidDirectoryException("Multiple index images found in directory " + fixel_directory_path.string());

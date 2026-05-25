@@ -149,8 +149,8 @@ void Node_list::node_selection_settings_dialog_slot() {
 void Node_list::node_selection_changed_slot(const QItemSelection &, const QItemSelection &) {
   QModelIndexList list = node_list_view->selectionModel()->selectedRows();
   std::vector<node_t> nodes;
-  for (int i = 0; i != list.size(); ++i)
-    nodes.push_back(list[i].row());
+  for (const auto &i : list)
+    nodes.push_back(i.row());
   connectome.node_selection_changed(nodes);
 }
 

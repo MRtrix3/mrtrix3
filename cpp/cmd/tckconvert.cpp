@@ -317,8 +317,8 @@ public:
 
   bool operator()(const Streamline<float> &tck) {
     File::OFStream out(parser.name(count));
-    for (auto i = tck.begin(); i != tck.end(); ++i)
-      out << (*i)[0] << " " << (*i)[1] << " " << (*i)[2] << "\n";
+    for (const auto &i : tck)
+      out << i[0] << " " << i[1] << " " << i[2] << "\n";
     out.close();
     count[0]++;
     return true;

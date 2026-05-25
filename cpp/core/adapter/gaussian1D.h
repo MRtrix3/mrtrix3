@@ -85,8 +85,8 @@ protected:
       kernel[c] = exp(-((c - radius) * (c - radius) * spacing(axis) * spacing(axis)) / (2 * stdev * stdev));
       norm_factor += kernel[c];
     }
-    for (size_t c = 0; c < kernel.size(); c++) {
-      kernel[c] /= norm_factor;
+    for (double &c : kernel) {
+      c /= norm_factor;
     }
   }
 

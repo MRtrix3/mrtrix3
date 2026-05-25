@@ -63,18 +63,18 @@ void Mesh::save(const std::filesystem::path &path, const bool binary) const {
 void Mesh::calculate_normals() {
   normals.clear();
   normals.assign(vertices.size(), Vertex(0.0, 0.0, 0.0));
-  for (auto p = triangles.begin(); p != triangles.end(); ++p) {
-    const Vertex this_normal = normal(*this, *p);
+  for (auto &triangle : triangles) {
+    const Vertex this_normal = normal(*this, triangle);
     for (size_t index = 0; index != 3; ++index)
-      normals[(*p)[index]] += this_normal;
+      normals[triangle[index]] += this_normal;
   }
-  for (auto p = quads.begin(); p != quads.end(); ++p) {
-    const Vertex this_normal = normal(*this, *p);
+  for (auto &quad : quads) {
+    const Vertex this_normal = normal(*this, quad);
     for (size_t index = 0; index != 4; ++index)
-      normals[(*p)[index]] += this_normal;
+      normals[quad[index]] += this_normal;
   }
-  for (auto n = normals.begin(); n != normals.end(); ++n)
-    n->normalize();
+  for (auto &normal : normals)
+    normal.normalize();
 }
 
 namespace {
@@ -489,25 +489,25 @@ void Mesh::load_obj(const std::filesystem::path &path) {
                         str(counter) + ")");
       std::vector<FaceData> face_data;
       size_t values_per_element = 0;
-      for (auto i = elements.begin(); i != elements.end(); ++i) {
+      for (auto &element : elements) {
         FaceData temp;
         temp.vertex = 0;
         temp.texture = 0;
         temp.normal = 0;
-        const size_t first_slash = i->find_first_of('/');
+        const size_t first_slash = element.find_first_of('/');
         // OBJ format counts from 1 - therefore need to decrement
-        temp.vertex = to<uint32_t>(i->substr(0, first_slash)) - 1;
+        temp.vertex = to<uint32_t>(element.substr(0, first_slash)) - 1;
         size_t this_values_count = 0;
-        if (first_slash == i->npos) {
+        if (first_slash == element.npos) {
           this_values_count = 1;
         } else {
-          const size_t last_slash = i->find_last_of('/');
+          const size_t last_slash = element.find_last_of('/');
           if (last_slash == first_slash) {
-            temp.texture = to<uint32_t>(i->substr(last_slash + 1)) - 1;
+            temp.texture = to<uint32_t>(element.substr(last_slash + 1)) - 1;
             this_values_count = 2;
           } else {
-            temp.texture = to<uint32_t>(i->substr(first_slash, last_slash)) - 1;
-            temp.normal = to<uint32_t>(i->substr(last_slash + 1)) - 1;
+            temp.texture = to<uint32_t>(element.substr(first_slash, last_slash)) - 1;
+            temp.normal = to<uint32_t>(element.substr(last_slash + 1)) - 1;
             this_values_count = 3;
           }
         }
@@ -751,12 +751,12 @@ void Mesh::save_stl(const std::filesystem::path &path, const bool binary) const 
     const uint32_t count = triangles.size();
     out.write(reinterpret_cast<const char *>(&count), sizeof(uint32_t));
     const uint16_t attribute_byte_count = 0;
-    for (auto i = triangles.begin(); i != triangles.end(); ++i) {
-      const Eigen::Vector3d n(normal(*this, *i));
+    for (auto triangle : triangles) {
+      const Eigen::Vector3d n(normal(*this, triangle));
       const float n_temp[3]{static_cast<float>(n[0]), static_cast<float>(n[1]), static_cast<float>(n[2])};
       out.write(reinterpret_cast<const char *>(&n_temp[0]), 3 * sizeof(float));
       for (size_t v = 0; v != 3; ++v) {
-        const Vertex &p(vertices[(*i)[v]]);
+        const Vertex &p(vertices[triangle[v]]);
         const Eigen::Matrix<float, 3, 1> p_temp(p.cast<float>());
         out.write(reinterpret_cast<const char *>(p_temp.data()), 3 * sizeof(float));
       }
@@ -768,12 +768,12 @@ void Mesh::save_stl(const std::filesystem::path &path, const bool binary) const 
 
     File::OFStream out(path);
     out << "solid \n";
-    for (auto i = triangles.begin(); i != triangles.end(); ++i) {
-      const Eigen::Vector3d n(normal(*this, *i));
+    for (auto triangle : triangles) {
+      const Eigen::Vector3d n(normal(*this, triangle));
       out << "facet normal " << str(n[0]) << " " << str(n[1]) << " " << str(n[2]) << "\n";
       out << "    outer loop\n";
       for (size_t v = 0; v != 3; ++v) {
-        const Vertex p(vertices[(*i)[v]]);
+        const Vertex p(vertices[triangle[v]]);
         out << "        vertex " << str(p[0]) << " " << str(p[1]) << " " << str(p[2]) << "\n";
       }
       out << "    endloop\n";
@@ -788,12 +788,12 @@ void Mesh::save_obj(const std::filesystem::path &path) const {
   File::OFStream out(path);
   out << "# " << App::command_history_string << "\n";
   out << "o " << name << "\n";
-  for (auto v = vertices.begin(); v != vertices.end(); ++v)
-    out << "v " << str((*v)[0]) << " " << str((*v)[1]) << " " << str((*v)[2]) << " 1.0\n";
-  for (auto t = triangles.begin(); t != triangles.end(); ++t)
-    out << "f " << str((*t)[0] + 1) << " " << str((*t)[1] + 1) << " " << str((*t)[2] + 1) << "\n";
-  for (auto q = quads.begin(); q != quads.end(); ++q)
-    out << "f " << str((*q)[0] + 1) << " " << str((*q)[1] + 1) << " " << str((*q)[2] + 1) << " " << str((*q)[3] + 1)
+  for (const auto &vertice : vertices)
+    out << "v " << str(vertice[0]) << " " << str(vertice[1]) << " " << str(vertice[2]) << " 1.0\n";
+  for (auto triangle : triangles)
+    out << "f " << str(triangle[0] + 1) << " " << str(triangle[1] + 1) << " " << str(triangle[2] + 1) << "\n";
+  for (auto quad : quads)
+    out << "f " << str(quad[0] + 1) << " " << str(quad[1] + 1) << " " << str(quad[2] + 1) << " " << str(quad[3] + 1)
         << "\n";
 }
 
@@ -810,17 +810,17 @@ void Mesh::load_quad_vertices(VertexList &output, const size_t index) const {
 }
 
 void Mesh::verify_data() const {
-  for (auto i = vertices.begin(); i != vertices.end(); ++i) {
-    if (std::isnan((*i)[0]) || std::isnan((*i)[1]) || std::isnan((*i)[2]))
+  for (const auto &vertice : vertices) {
+    if (std::isnan(vertice[0]) || std::isnan(vertice[1]) || std::isnan(vertice[2]))
       throw Exception("NaN values in mesh vertex data");
   }
-  for (auto i = triangles.begin(); i != triangles.end(); ++i)
+  for (auto triangle : triangles)
     for (size_t j = 0; j != 3; ++j)
-      if ((*i)[j] >= vertices.size())
+      if (triangle[j] >= vertices.size())
         throw Exception("Mesh vertex index exceeds number of vertices read");
-  for (auto i = quads.begin(); i != quads.end(); ++i)
+  for (auto quad : quads)
     for (size_t j = 0; j != 4; ++j)
-      if ((*i)[j] >= vertices.size())
+      if (quad[j] >= vertices.size())
         throw Exception("Mesh vertex index exceeds number of vertices read");
 }
 

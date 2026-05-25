@@ -148,8 +148,8 @@ protected:
   template <class AmpImageType> void get_amps(AmpImageType &amp) {
     double norm = 1.0;
     if (C.normalise) {
-      for (size_t n = 0; n < C.bzeros.size(); n++) {
-        amp.index(3) = C.bzeros[n];
+      for (unsigned long bzero : C.bzeros) {
+        amp.index(3) = bzero;
         norm += amp.value();
       }
       norm = C.bzeros.size() / norm;

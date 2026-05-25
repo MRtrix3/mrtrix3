@@ -166,8 +166,8 @@ public:
       return term_t::EXIT_IMAGE;
 
     float max_val = 0.0;
-    for (size_t i = 0; i < calibrate_list.size(); ++i) {
-      float const val = FOD(rotate_direction(dir, calibrate_list[i]));
+    for (const auto &i : calibrate_list) {
+      float const val = FOD(rotate_direction(dir, i));
       if (std::isnan(val))
         return term_t::EXIT_IMAGE;
       if (val > max_val)

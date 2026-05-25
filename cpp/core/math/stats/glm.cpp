@@ -146,8 +146,8 @@ index_array_type load_variance_groups(const index_type num_inputs) {
       return index_array_type();
     }
     std::vector<index_type> count_per_group(max_coeff + 1, 0);
-    for (Eigen::Index i = 0; i != data.size(); ++i)
-      count_per_group[data[i]]++;
+    for (unsigned int i : data)
+      count_per_group[i]++;
     for (Eigen::Index vg_index = min_coeff; vg_index <= max_coeff; ++vg_index) {
       if (count_per_group[vg_index] == 0U)
         throw Exception("No entries found for variance group " + str(vg_index));
@@ -606,12 +606,12 @@ TestFixedHomoscedastic::TestFixedHomoscedastic(
 #endif
 {
   shared = std::make_shared<const Shared>(measurements, design, hypotheses);
-  for (index_type ih = 0; ih != hypotheses.size(); ++ih)
+  for (const auto &hypothesis : hypotheses)
 #ifdef NDEBUG
-    betas.emplace_back(matrix_type(hypotheses[ih].matrix().rows(), 1));
+    betas.emplace_back(matrix_type(hypothesis.matrix().rows(), 1));
 #else
     betas.emplace_back(
-        matrix_type::Constant(hypotheses[ih].matrix().rows(), 1, std::numeric_limits<default_type>::signaling_NaN()));
+        matrix_type::Constant(hypothesis.matrix().rows(), 1, std::numeric_limits<default_type>::signaling_NaN()));
 #endif
 }
 
@@ -1152,16 +1152,16 @@ TestVariableHomoscedastic::TestVariableHomoscedastic(const measurements_matrix_t
                                                       const bool nans_in_columns)
     : TestVariableBase(measurements, design, hypotheses, importers) {
   shared = std::make_shared<const Shared>(importers, nans_in_data, nans_in_columns);
-  for (index_type ih = 0; ih != hypotheses.size(); ++ih) {
+  for (const auto &hypothesis : hypotheses) {
 #ifdef NDEBUG
-    XtX.emplace_back(hypotheses[ih].matrix().rows(), hypotheses[ih].matrix().rows());
-    beta.emplace_back(hypotheses[ih].matrix().rows(), 1);
+    XtX.emplace_back(hypothesis.matrix().rows(), hypothesis.matrix().rows());
+    beta.emplace_back(hypothesis.matrix().rows(), 1);
 #else
-    XtX.emplace_back(matrix_type::Constant(hypotheses[ih].matrix().rows(),
-                                            hypotheses[ih].matrix().rows(),
+    XtX.emplace_back(matrix_type::Constant(hypothesis.matrix().rows(),
+                                            hypothesis.matrix().rows(),
                                             std::numeric_limits<default_type>::signaling_NaN()));
     beta.emplace_back(
-        matrix_type::Constant(hypotheses[ih].matrix().rows(), 1, std::numeric_limits<default_type>::signaling_NaN()));
+        matrix_type::Constant(hypothesis.matrix().rows(), 1, std::numeric_limits<default_type>::signaling_NaN()));
 #endif
   }
 }

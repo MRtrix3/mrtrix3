@@ -83,8 +83,8 @@ public:
     // For each voxel tract tangent, assign to a fixel
     // For each fixel, sum the intersection lengths
     std::map<index_type, float> fixels;
-    for (auto i = visitations.begin(); i != visitations.end(); ++i) {
-      assign_pos_of(*i).to(fixel_indexer);
+    for (const auto &visitation : visitations) {
+      assign_pos_of(visitation).to(fixel_indexer);
       fixel_indexer.index(3) = 0;
       index_type const num_fibres = fixel_indexer.value();
       if (num_fibres > 0) {
@@ -95,7 +95,7 @@ public:
         float largest_dp = 0.0F;
         for (index_type j = first_index; j < last_index; ++j) {
           fixel_directions.index(0) = j;
-          const float dp = std::fabs(i->get_dir().dot(Eigen::Vector3f(fixel_directions.row(1))));
+          const float dp = std::fabs(visitation.get_dir().dot(Eigen::Vector3f(fixel_directions.row(1))));
           if (dp > largest_dp) {
             largest_dp = dp;
             closest_fixel_index = j;
@@ -104,9 +104,9 @@ public:
         if (largest_dp > angular_threshold_dp) {
           auto existing = fixels.find(closest_fixel_index);
           if (existing == fixels.end())
-            fixels.insert({closest_fixel_index, i->get_length()});
+            fixels.insert({closest_fixel_index, visitation.get_length()});
           else
-            existing->second += static_cast<float>(i->get_length());
+            existing->second += static_cast<float>(visitation.get_length());
         }
       }
     }

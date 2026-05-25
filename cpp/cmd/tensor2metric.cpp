@@ -265,8 +265,8 @@ public:
       assign_pos_of(dt_img, 0, 3).to(value_img);
       if (vals.size() > 1) {
         auto l = Loop(3)(value_img);
-        for (size_t i = 0; i < vals.size(); i++) {
-          value_img.value() = eigval(ith_eig[vals[i]]);
+        for (unsigned int val : vals) {
+          value_img.value() = eigval(ith_eig[val]);
           l++;
         }
       } else {
@@ -323,7 +323,7 @@ public:
       Eigen::Matrix3d eigvec = es.eigenvectors();
       assign_pos_of(dt_img, 0, 3).to(vector_img);
       auto l = Loop(3)(vector_img);
-      for (size_t i = 0; i < vals.size(); i++) {
+      for (unsigned int val : vals) {
         double fact = 1.0;
         switch (modulate) {
         case ModulateChoice::NONE:
@@ -332,16 +332,16 @@ public:
           fact = fa;
           break;
         case ModulateChoice::EIGVAL:
-          fact = eigval(ith_eig[vals[i]]);
+          fact = eigval(ith_eig[val]);
           break;
         default:
           throw Exception("Unsupported modulation mode");
         }
-        vector_img.value() = eigvec(0, ith_eig[vals[i]]) * fact;
+        vector_img.value() = eigvec(0, ith_eig[val]) * fact;
         l++;
-        vector_img.value() = eigvec(1, ith_eig[vals[i]]) * fact;
+        vector_img.value() = eigvec(1, ith_eig[val]) * fact;
         l++;
-        vector_img.value() = eigvec(2, ith_eig[vals[i]]) * fact;
+        vector_img.value() = eigvec(2, ith_eig[val]) * fact;
         l++;
       }
     }
@@ -515,8 +515,8 @@ void run() {
     vals = parse_ints<uint32_t>(opt[0][0]);
     if (vals.empty())
       throw Exception("invalid eigenvalue/eigenvector number specifier");
-    for (size_t i = 0; i < vals.size(); ++i)
-      if (vals[i] < 1 || vals[i] > 3)
+    for (unsigned int val : vals)
+      if (val < 1 || val > 3)
         throw Exception("eigenvalue/eigenvector number is out of bounds");
   }
 

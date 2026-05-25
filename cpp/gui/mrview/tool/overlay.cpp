@@ -45,8 +45,8 @@ public:
 
 void Overlay::Model::add_items(std::vector<std::unique_ptr<MR::Header>> &list) {
   beginInsertRows(QModelIndex(), items.size(), items.size() + list.size());
-  for (size_t i = 0; i < list.size(); ++i) {
-    Item *overlay = new Item(std::move(*list[i]));
+  for (const auto &i : list) {
+    Item *overlay = new Item(std::move(*i));
     overlay->set_allowed_features(true, true, false);
     if (overlay->colourmap == 0U)
       overlay->colourmap = 1;
@@ -318,8 +318,8 @@ int Overlay::draw_tool_labels(int position, int start_line_num, const Projection
 
 void Overlay::selected_colourmap(size_t index, const ColourMapButton &) {
   QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
-  for (size_t i = 0, N = indices.size(); i < N; ++i) {
-    auto *overlay = dynamic_cast<Image *>(image_list_model->get_image(indices[i]));
+  for (auto &indice : indices) {
+    auto *overlay = dynamic_cast<Image *>(image_list_model->get_image(indice));
     overlay->set_colourmap(index);
   }
   updateGL();
@@ -327,8 +327,8 @@ void Overlay::selected_colourmap(size_t index, const ColourMapButton &) {
 
 void Overlay::selected_custom_colour(const QColor &colour, const ColourMapButton &) {
   QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
-  for (size_t i = 0, N = indices.size(); i < N; ++i) {
-    auto *overlay = dynamic_cast<Image *>(image_list_model->get_image(indices[i]));
+  for (auto &indice : indices) {
+    auto *overlay = dynamic_cast<Image *>(image_list_model->get_image(indice));
     std::array<GLubyte, 3> const c_colour{{GLubyte(colour.red()), GLubyte(colour.green()), GLubyte(colour.blue())}};
     overlay->set_colour(c_colour);
   }
@@ -337,8 +337,8 @@ void Overlay::selected_custom_colour(const QColor &colour, const ColourMapButton
 
 void Overlay::toggle_show_colour_bar(bool visible, const ColourMapButton &) {
   QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
-  for (size_t i = 0, N = indices.size(); i < N; ++i) {
-    auto *overlay = dynamic_cast<Image *>(image_list_model->get_image(indices[i]));
+  for (auto &indice : indices) {
+    auto *overlay = dynamic_cast<Image *>(image_list_model->get_image(indice));
     overlay->show_colour_bar = visible;
   }
   updateGL();
@@ -346,8 +346,8 @@ void Overlay::toggle_show_colour_bar(bool visible, const ColourMapButton &) {
 
 void Overlay::toggle_invert_colourmap(bool invert, const ColourMapButton &) {
   QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
-  for (size_t i = 0, N = indices.size(); i < N; ++i) {
-    auto *overlay = dynamic_cast<Image *>(image_list_model->get_image(indices[i]));
+  for (auto &indice : indices) {
+    auto *overlay = dynamic_cast<Image *>(image_list_model->get_image(indice));
     overlay->set_invert_scale(invert);
   }
   updateGL();
@@ -356,8 +356,8 @@ void Overlay::toggle_invert_colourmap(bool invert, const ColourMapButton &) {
 void Overlay::reset_colourmap(const ColourMapButton &) {
   QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
   Displayable *overlay = nullptr;
-  for (size_t i = 0, N = indices.size(); i < N; ++i) {
-    overlay = dynamic_cast<Displayable *>(image_list_model->get_image(indices[i]));
+  for (auto &indice : indices) {
+    overlay = dynamic_cast<Displayable *>(image_list_model->get_image(indice));
     overlay->reset_windowing();
   }
 
@@ -422,8 +422,8 @@ void Overlay::update_slot(int) { updateGL(); }
 
 void Overlay::values_changed() {
   QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
-  for (int i = 0; i < indices.size(); ++i) {
-    auto *overlay = dynamic_cast<Image *>(image_list_model->get_image(indices[i]));
+  for (auto &indice : indices) {
+    auto *overlay = dynamic_cast<Image *>(image_list_model->get_image(indice));
     overlay->set_windowing(min_value->value(), max_value->value());
   }
   updateGL();
@@ -431,8 +431,8 @@ void Overlay::values_changed() {
 
 void Overlay::lower_threshold_changed(int) {
   QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
-  for (int i = 0; i < indices.size(); ++i) {
-    auto *overlay = dynamic_cast<Image *>(image_list_model->get_image(indices[i]));
+  for (auto &indice : indices) {
+    auto *overlay = dynamic_cast<Image *>(image_list_model->get_image(indice));
     overlay->lessthan = lower_threshold->value();
     overlay->set_use_discard_lower(lower_threshold_check_box->isChecked());
   }
@@ -442,8 +442,8 @@ void Overlay::lower_threshold_changed(int) {
 
 void Overlay::upper_threshold_changed(int) {
   QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
-  for (int i = 0; i < indices.size(); ++i) {
-    auto *overlay = dynamic_cast<Image *>(image_list_model->get_image(indices[i]));
+  for (auto &indice : indices) {
+    auto *overlay = dynamic_cast<Image *>(image_list_model->get_image(indice));
     overlay->greaterthan = upper_threshold->value();
     overlay->set_use_discard_upper(upper_threshold_check_box->isChecked());
   }
@@ -454,8 +454,8 @@ void Overlay::upper_threshold_changed(int) {
 void Overlay::lower_threshold_value_changed() {
   if (lower_threshold_check_box->isChecked()) {
     QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
-    for (int i = 0; i < indices.size(); ++i) {
-      auto *overlay = dynamic_cast<Image *>(image_list_model->get_image(indices[i]));
+    for (auto &indice : indices) {
+      auto *overlay = dynamic_cast<Image *>(image_list_model->get_image(indice));
       overlay->lessthan = lower_threshold->value();
     }
   }
@@ -465,8 +465,8 @@ void Overlay::lower_threshold_value_changed() {
 void Overlay::upper_threshold_value_changed() {
   if (upper_threshold_check_box->isChecked()) {
     QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
-    for (int i = 0; i < indices.size(); ++i) {
-      auto *overlay = dynamic_cast<Image *>(image_list_model->get_image(indices[i]));
+    for (auto &indice : indices) {
+      auto *overlay = dynamic_cast<Image *>(image_list_model->get_image(indice));
       overlay->greaterthan = upper_threshold->value();
     }
   }
@@ -475,8 +475,8 @@ void Overlay::upper_threshold_value_changed() {
 
 void Overlay::opacity_changed(int) {
   QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
-  for (int i = 0; i < indices.size(); ++i) {
-    auto *overlay = dynamic_cast<Image *>(image_list_model->get_image(indices[i]));
+  for (auto &indice : indices) {
+    auto *overlay = dynamic_cast<Image *>(image_list_model->get_image(indice));
     overlay->alpha = opacity_slider->value() / 1.0e3F;
   }
   window().updateGL();
@@ -484,8 +484,8 @@ void Overlay::opacity_changed(int) {
 
 void Overlay::interpolate_changed() {
   QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
-  for (int i = 0; i < indices.size(); ++i) {
-    auto *overlay = dynamic_cast<Image *>(image_list_model->get_image(indices[i]));
+  for (auto &indice : indices) {
+    auto *overlay = dynamic_cast<Image *>(image_list_model->get_image(indice));
     overlay->set_interpolate(interpolate_check_box->isChecked());
   }
   window().updateGL();
@@ -533,8 +533,8 @@ void Overlay::update_selection() {
   int colourmap_index = -2;
   int num_interp = 0;
   int num_inverted = 0;
-  for (int i = 0; i < indices.size(); ++i) {
-    auto *overlay = dynamic_cast<Image *>(image_list_model->get_image(indices[i]));
+  for (auto &indice : indices) {
+    auto *overlay = dynamic_cast<Image *>(image_list_model->get_image(indice));
     if (colourmap_index != static_cast<int>(overlay->colourmap)) {
       if (colourmap_index == -2)
         colourmap_index = overlay->colourmap;

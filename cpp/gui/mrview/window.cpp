@@ -743,9 +743,9 @@ void Window::parse_arguments() {
     }
 
     std::vector<std::unique_ptr<MR::Header>> list;
-    for (size_t n = 0; n < MR::App::argument.size(); ++n) {
+    for (const auto &n : MR::App::argument) {
       try {
-        list.push_back(std::make_unique<MR::Header>(MR::Header::open(MR::App::argument[n])));
+        list.push_back(std::make_unique<MR::Header>(MR::Header::open(n)));
       } catch (CancelException &e) {
         for (const auto &msg : e.description) {
           CONSOLE(msg);
@@ -824,9 +824,9 @@ void Window::add_images(std::vector<std::unique_ptr<MR::Header>> &list) {
     return;
 
   QList<QAction *> new_actions;
-  for (size_t i = 0; i < list.size(); ++i) {
-    const std::string name = list[i]->name(); // Gets move-constructed out
-    QAction *action = new Image(std::move(*list[i]));
+  for (const auto &i : list) {
+    const std::string name = i->name(); // Gets move-constructed out
+    QAction *action = new Image(std::move(*i));
     action->setText(qstr(shorten(name, 20, 0)));
     action->setParent(Window::main);
     action->setCheckable(true);

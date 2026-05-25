@@ -478,10 +478,10 @@ void run() {
     if (max_mc_image_lmax == 0)
       throw Exception("-rigid_lmax option is not valid if no input image is FOD image");
     rigid_lmax = parse_ints<uint32_t>(opt[0][0]);
-    for (size_t i = 0; i < rigid_lmax.size(); ++i)
-      if (rigid_lmax[i] > max_mc_image_lmax) {
+    for (unsigned int &i : rigid_lmax)
+      if (i > max_mc_image_lmax) {
         WARN("the requested -rigid_lmax exceeds the lmax of the input images, setting it to " + str(max_mc_image_lmax));
-        rigid_lmax[i] = max_mc_image_lmax;
+        i = max_mc_image_lmax;
       }
     rigid_registration.set_lmax(rigid_lmax);
   }
@@ -614,11 +614,11 @@ void run() {
     if (max_mc_image_lmax == 0)
       throw Exception("-affine_lmax option is not valid if no input image is FOD image");
     affine_lmax = parse_ints<uint32_t>(opt[0][0]);
-    for (size_t i = 0; i < affine_lmax.size(); ++i)
-      if (affine_lmax[i] > max_mc_image_lmax) {
+    for (unsigned int &i : affine_lmax)
+      if (i > max_mc_image_lmax) {
         WARN("the requested -affine_lmax exceeds the lmax of the input images, setting it to " +
              str(max_mc_image_lmax));
-        affine_lmax[i] = max_mc_image_lmax;
+        i = max_mc_image_lmax;
       }
     affine_registration.set_lmax(affine_lmax);
   }
@@ -782,8 +782,8 @@ void run() {
       throw Exception("-nl_lmax option is not valid if no input image is FOD image");
     nl_lmax = parse_ints<uint32_t>(opt[0][0]);
     nl_registration.set_lmax(nl_lmax);
-    for (size_t i = 0; i < (nl_lmax).size(); ++i)
-      if ((nl_lmax)[i] > max_mc_image_lmax)
+    for (unsigned int i : nl_lmax)
+      if (i > max_mc_image_lmax)
         throw Exception("the requested -nl_lmax exceeds the lmax of the input images");
   }
 

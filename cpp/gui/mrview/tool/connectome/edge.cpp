@@ -221,9 +221,9 @@ Edge::Streamtube::Streamtube(const Exemplar &data) : count(data.vertices.size())
   std::vector<Eigen::Vector3f> vertices;
   const size_t N = shared.points_per_vertex();
   vertices.reserve(N * data.vertices.size());
-  for (auto i = data.vertices.begin(); i != data.vertices.end(); ++i) {
+  for (const auto &vertice : data.vertices) {
     for (size_t j = 0; j != N; ++j)
-      vertices.push_back(*i);
+      vertices.push_back(vertice);
   }
   vertex_buffer.gen();
   vertex_buffer.bind(gl::ARRAY_BUFFER);
@@ -232,9 +232,9 @@ Edge::Streamtube::Streamtube(const Exemplar &data) : count(data.vertices.size())
 
   std::vector<Eigen::Vector3f> tangents;
   tangents.reserve(vertices.size());
-  for (auto i = data.tangents.begin(); i != data.tangents.end(); ++i) {
+  for (const auto &tangent : data.tangents) {
     for (size_t j = 0; j != N; ++j)
-      tangents.push_back(*i);
+      tangents.push_back(tangent);
   }
   tangent_buffer.gen();
   tangent_buffer.bind(gl::ARRAY_BUFFER);
@@ -248,8 +248,9 @@ Edge::Streamtube::Streamtube(const Exemplar &data) : count(data.vertices.size())
   std::vector<Eigen::Vector3f> normals;
   normals.reserve(vertices.size());
   for (size_t i = 0; i != data.vertices.size(); ++i) {
-    for (auto j = normal_multipliers.begin(); j != normal_multipliers.end(); ++j)
-      normals.emplace_back((j->first * data.normals[i]) + (j->second * data.binormals[i]));
+    for (auto &normal_multiplier : normal_multipliers)
+      normals.emplace_back((normal_multiplier.first * data.normals[i]) +
+                           (normal_multiplier.second * data.binormals[i]));
   }
   normal_buffer.gen();
   normal_buffer.bind(gl::ARRAY_BUFFER);
