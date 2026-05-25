@@ -276,7 +276,7 @@ std::unique_ptr<ImageIO::Base> PAR::read(Header &H) const {
   }
 
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));
-  io_handler->files.push_back(File::Entry(rec_file));
+  io_handler->files.emplace_back(rec_file);
 
   return io_handler;
 }

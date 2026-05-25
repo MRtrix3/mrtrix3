@@ -305,7 +305,7 @@ template <class Fixel> bool Model<Fixel>::TrackMappingWorker::operator()(const T
             incremented = true;
         }
         if (!incremented)
-          masked_contributions.push_back(Track_fixel_contribution(fixel_index, i->get_length()));
+          masked_contributions.emplace_back(fixel_index, i->get_length());
       }
     }
 
@@ -335,7 +335,7 @@ template <class Fixel> bool Model<Fixel>::FixelRemapper::operator()(const TrackI
       for (size_t i = 0; i != this_cont.dim(); ++i) {
         const size_t new_index = remapper[this_cont[i].get_fixel_index()];
         if (new_index != 0U) {
-          new_cont.push_back(Track_fixel_contribution(new_index, this_cont[i].get_length()));
+          new_cont.emplace_back(new_index, this_cont[i].get_length());
           total_contribution += this_cont[i].get_length() * master[new_index].get_weight();
         }
       }

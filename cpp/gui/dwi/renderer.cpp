@@ -529,7 +529,7 @@ void Renderer::Dixel::update_dixels(const MR::DWI::Directions::Set &dirs) {
   std::vector<std::array<GLint, 3>> indices_data;
 
   for (size_t i = 0; i != dirs.size(); ++i) {
-    directions_data.push_back(dirs[i].cast<float>());
+    directions_data.emplace_back(dirs[i].cast<float>());
     for (auto j : dirs.get_adj_dirs(i)) {
       if (j > i) {
         for (auto k : dirs.get_adj_dirs(j)) {

@@ -255,7 +255,7 @@ void run() {
     INFO("Assignments file contains node pair for every streamline; operating accordingly");
     assignments_pairs.reserve(assignments_lists.size());
     for (auto i = assignments_lists.begin(); i != assignments_lists.end(); ++i)
-      assignments_pairs.push_back(NodePair((*i)[0], (*i)[1]));
+      assignments_pairs.emplace_back((*i)[0], (*i)[1]);
     assignments_lists.clear();
   }
 
@@ -352,7 +352,7 @@ void run() {
       const node_t index = image.value();
       if (index != 0U) {
         while (index >= COMs.size()) {
-          COMs.push_back(Eigen::Vector3d::Zero());
+          COMs.emplace_back(Eigen::Vector3d::Zero());
           volumes.push_back(0);
         }
         COMs[index] += Eigen::Vector3d(static_cast<default_type>(image.index(0)),

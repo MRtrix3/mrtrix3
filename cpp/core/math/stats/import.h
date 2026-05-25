@@ -138,7 +138,7 @@ void CohortDataImport::initialise(const std::filesystem::path &listpath,
   if (directories[0].empty())
     directories[0] = ".";
   else if (directories[0] != ".")
-    directories.push_back(".");
+    directories.emplace_back(".");
   if (explicit_from_directory.has_value())
     directories.insert(directories.begin(), explicit_from_directory.value());
 

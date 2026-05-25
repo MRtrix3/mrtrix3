@@ -84,7 +84,7 @@ void Arc::init_line() {
   mid_dir = end_dir = start_dir;
   for (size_t n = 0; n < nsamples; n++) {
     const value_type f = static_cast<value_type>(n) / static_cast<value_type>(nsamples - 1);
-    planes.push_back(Plane((1.0F - f) * start + f * end, (1.0F - f) * start_dir + f * end_dir));
+    planes.emplace_back((1.0F - f) * start + f * end, (1.0F - f) * start_dir + f * end_dir);
   }
 }
 
@@ -129,7 +129,7 @@ void Arc::init_arc() {
 
   for (size_t n = 0; n < nsamples; n++) {
     const value_type f = angle * static_cast<value_type>(n) / static_cast<value_type>(nsamples - 1);
-    planes.push_back(Plane(c + x * cos(f) + y * sin(f), y * cos(f) - x * sin(f)));
+    planes.emplace_back(c + x * cos(f) + y * sin(f), y * cos(f) - x * sin(f));
   }
 
   start_dir = y;

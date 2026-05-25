@@ -211,7 +211,7 @@ double ExternalEnergyComputer::eval() {
     y = dwi.row(3);
     t = changes_tod[k];
     e = calcEnergy();
-    changes_fiso.push_back(fk.tail(nf));
+    changes_fiso.emplace_back(fk.tail(nf));
     dE += e;
     dE -= eext.value();
     changes_eext.push_back(e);

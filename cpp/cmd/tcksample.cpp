@@ -441,7 +441,7 @@ private:
     std::vector<ValueLength> data;
     for (const auto &v : voxels) {
       assign_pos_of(v, 0, 3).to(image);
-      data.emplace_back(ValueLength(image.value() * get_tdi_multiplier(v), v.get_length()));
+      data.emplace_back(image.value() * get_tdi_multiplier(v), v.get_length());
     }
     return data;
   }
@@ -602,7 +602,7 @@ private:
     for (const auto &i : intersections) {
       assign_pos_of(i, 0, 3).to(image);
       sh_coeffs = image.row(3);
-      data.emplace_back(ValueLength(sh_precomputer->value(sh_coeffs, i.get_dir()), i.get_length()));
+      data.emplace_back(sh_precomputer->value(sh_coeffs, i.get_dir()), i.get_length());
     }
     return data;
   }

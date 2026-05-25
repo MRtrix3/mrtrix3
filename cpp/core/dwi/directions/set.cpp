@@ -131,8 +131,8 @@ void Set::initialise_adjacency() {
   std::vector<Vertex> vertices;
   // Generate antipodal vertices
   for (index_type i = 0; i != size(); ++i) {
-    vertices.push_back(Vertex(*this, i, false));
-    vertices.push_back(Vertex(*this, i, true));
+    vertices.emplace_back(*this, i, false);
+    vertices.emplace_back(*this, i, true);
   }
 
   Eigen::Array<index_type, 3, 2> extremum_indices = Eigen::Array<index_type, 3, 2>::Zero();
@@ -193,8 +193,8 @@ void Set::initialise_adjacency() {
   // It appears not - however random deletion of entries _is_ required
   // std::multiset<Plane, PlaneComp> planes;
   std::list<Plane> planes;
-  planes.push_back(
-      Plane(vertices, all_extrema[distant_pair.first], all_extrema[distant_pair.second], all_extrema[third_point]));
+  planes.emplace_back(
+      vertices, all_extrema[distant_pair.first], all_extrema[distant_pair.second], all_extrema[third_point]);
   // Find the most distant point to this plane, and use it as the tip point of the tetrahedon
   const Plane base_plane = *planes.begin();
   index_type fourth_point = vertices.size();
@@ -208,9 +208,9 @@ void Set::initialise_adjacency() {
     }
   }
   assert(fourth_point != vertices.size());
-  planes.push_back(Plane(vertices, base_plane.indices[0], fourth_point, base_plane.indices[1]));
-  planes.push_back(Plane(vertices, base_plane.indices[1], fourth_point, base_plane.indices[2]));
-  planes.push_back(Plane(vertices, base_plane.indices[2], fourth_point, base_plane.indices[0]));
+  planes.emplace_back(vertices, base_plane.indices[0], fourth_point, base_plane.indices[1]);
+  planes.emplace_back(vertices, base_plane.indices[1], fourth_point, base_plane.indices[2]);
+  planes.emplace_back(vertices, base_plane.indices[2], fourth_point, base_plane.indices[0]);
 
   std::vector<Plane> hull;
 
@@ -291,7 +291,7 @@ void Set::initialise_adjacency() {
       }
 
       for (auto &h : horizon)
-        planes.push_back(Plane(vertices, h.first, h.second, max_index));
+        planes.emplace_back(vertices, h.first, h.second, max_index);
 
       // Delete the used faces
       for (auto i : all_planes)

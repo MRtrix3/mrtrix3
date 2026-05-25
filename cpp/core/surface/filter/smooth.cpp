@@ -47,7 +47,7 @@ void Smooth::operator()(const Mesh &in, Mesh &out) const {
   VertexList centroids;
   std::vector<default_type> areas;
   for (auto p = in.triangles.begin(); p != in.triangles.end(); ++p) {
-    centroids.push_back((in.vertices[(*p)[0]] + in.vertices[(*p)[1]] + in.vertices[(*p)[2]]) * (1.0 / 3.0));
+    centroids.emplace_back((in.vertices[(*p)[0]] + in.vertices[(*p)[1]] + in.vertices[(*p)[2]]) * (1.0 / 3.0));
     areas.push_back(area(in, *p));
   }
   if (progress)

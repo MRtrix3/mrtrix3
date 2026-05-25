@@ -233,7 +233,7 @@ void run() {
     std::vector<Eigen::MatrixXd> matrices;
     for (size_t i = 0; i < num_inputs; i++) {
       Tin = File::Matrix::load_transform(argument[i]);
-      matrices.push_back(Tin.matrix());
+      matrices.emplace_back(Tin.matrix());
     }
 
     Eigen::MatrixXd average_matrix;

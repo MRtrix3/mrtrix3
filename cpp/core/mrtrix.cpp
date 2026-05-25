@@ -78,14 +78,14 @@ split(std::string_view string, std::string_view delimiters, bool ignore_empty_fi
       start = string.find_first_not_of(delimiters);
     do {
       end = string.find_first_of(delimiters, start);
-      V.emplace_back(std::string(string.substr(start, end - start)));
+      V.emplace_back(string.substr(start, end - start));
       if (end >= string.size())
         break;
       start = ignore_empty_fields ? string.find_first_not_of(delimiters, end + 1) : end + 1;
       if (start > string.size())
         break;
       if (num.has_value() && V.size() + 1 >= *num) {
-        V.emplace_back(std::string(string.substr(start)));
+        V.emplace_back(string.substr(start));
         break;
       }
     } while (true);

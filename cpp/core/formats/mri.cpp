@@ -234,7 +234,7 @@ std::unique_ptr<ImageIO::Base> MRI::read(Header &H) const {
     throw Exception("no data field found in MRI image \"" + H.path().string() + "\"");
 
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));
-  io_handler->files.push_back(File::Entry(H.path(), data_offset));
+  io_handler->files.emplace_back(H.path(), data_offset);
 
   return io_handler;
 }
@@ -321,7 +321,7 @@ std::unique_ptr<ImageIO::Base> MRI::create(Header &H) const {
 
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));
   std::filesystem::resize_file(hpath, data_offset + footprint(H));
-  io_handler->files.push_back(File::Entry(hpath, data_offset));
+  io_handler->files.emplace_back(hpath, data_offset);
 
   return io_handler;
 }

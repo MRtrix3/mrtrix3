@@ -76,11 +76,11 @@ WriterExemplars::WriterExemplars(const Tractography::Properties &properties,
       const node_t one = nodes[i];
       for (size_t j = i; j != nodes.size(); ++j) {
         const node_t two = nodes[j];
-        selectors.push_back(Selector(one, two));
-        exemplars.push_back(Exemplar(index++,
-                                     length,
-                                     std::make_pair(one, two),
-                                     std::make_pair(COMs[one].cast<float>(), COMs[two].cast<float>())));
+        selectors.emplace_back(one, two);
+        exemplars.emplace_back(index++,
+                               length,
+                               std::make_pair(one, two),
+                               std::make_pair(COMs[one].cast<float>(), COMs[two].cast<float>()));
       }
     }
   } else {
@@ -90,11 +90,11 @@ WriterExemplars::WriterExemplars(const Tractography::Properties &properties,
       for (node_t two = one; two != COMs.size(); ++two) {
         if (std::find(nodes.begin(), nodes.end(), one) != nodes.end() ||
             std::find(nodes.begin(), nodes.end(), two) != nodes.end()) {
-          selectors.push_back(Selector(one, two));
-          exemplars.push_back(Exemplar(index++,
-                                       length,
-                                       std::make_pair(one, two),
-                                       std::make_pair(COMs[one].cast<float>(), COMs[two].cast<float>())));
+          selectors.emplace_back(one, two);
+          exemplars.emplace_back(index++,
+                                 length,
+                                 std::make_pair(one, two),
+                                 std::make_pair(COMs[one].cast<float>(), COMs[two].cast<float>()));
         }
       }
     }
@@ -192,7 +192,7 @@ WriterExtraction::WriterExtraction(const Tractography::Properties &p,
 void WriterExtraction::add(const node_t node,
                            const std::filesystem::path &path,
                            const std::optional<std::filesystem::path> &weights_path = std::nullopt) {
-  selectors.emplace_back(Selector(node, keep_self));
+  selectors.emplace_back(node, keep_self);
   writers.emplace_back(new Tractography::WriterUnbuffered<float>(path, properties));
   if (weights_path.has_value())
     writers.back()->set_weights_path(weights_path.value());
@@ -203,7 +203,7 @@ void WriterExtraction::add(const node_t node_one,
                            const std::filesystem::path &path,
                            const std::optional<std::filesystem::path> &weights_path = std::nullopt) {
   if (keep_self || (node_one != node_two)) {
-    selectors.emplace_back(Selector(node_one, node_two));
+    selectors.emplace_back(node_one, node_two);
     writers.emplace_back(new Tractography::WriterUnbuffered<float>(path, properties));
     if (weights_path.has_value())
       writers.back()->set_weights_path(weights_path.value());
@@ -213,7 +213,7 @@ void WriterExtraction::add(const node_t node_one,
 void WriterExtraction::add(const std::vector<node_t> &list,
                            const std::filesystem::path &path,
                            const std::optional<std::filesystem::path> &weights_path = std::nullopt) {
-  selectors.emplace_back(Selector(list, exclusive, keep_self));
+  selectors.emplace_back(list, exclusive, keep_self);
   writers.emplace_back(new Tractography::WriterUnbuffered<float>(path, properties));
   if (weights_path.has_value())
     writers.back()->set_weights_path(weights_path.value());

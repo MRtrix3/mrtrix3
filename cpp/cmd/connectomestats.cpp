@@ -240,7 +240,7 @@ void run() {
   bool nans_in_columns = false;
   opt = get_options("column");
   for (size_t i = 0; i != opt.size(); ++i) {
-    extra_columns.push_back(CohortDataImport());
+    extra_columns.emplace_back();
     const std::filesystem::path path(opt[i][0]);
     extra_columns[i].initialise<SubjectConnectomeImport>(path);
     if (!extra_columns[i].allFinite())

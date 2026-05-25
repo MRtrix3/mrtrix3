@@ -174,7 +174,7 @@ void run() {
   bool nans_in_columns = false;
   opt = get_options("column");
   for (size_t i = 0; i != opt.size(); ++i) {
-    extra_columns.push_back(CohortDataImport());
+    extra_columns.emplace_back();
     extra_columns[i].initialise<SubjectVectorImport>(opt[i][0]);
     if (!extra_columns[i].allFinite())
       nans_in_columns = true;

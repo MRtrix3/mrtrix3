@@ -75,7 +75,7 @@ void Connect::operator()(Image<float> &input, Image<float> &output) const {
             } // Finish adding the other fixel in this connection to the list of fixels to expand the cluster
           }   // Finish looping over fixels connected to "index"
         }     // Finish waiting for the list of fixels to expand the cluster to has been exhausted
-        cluster_sizes.push_back(std::make_pair(cluster_index, cluster_size));
+        cluster_sizes.emplace_back(cluster_index, cluster_size);
       } // Finish testing to see if seed fixel is above the value threshold
     }   // Finish thesting whether the seed fixel has already been processed
   }     // Finish looping over all plausible cluster seed fixels

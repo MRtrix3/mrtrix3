@@ -647,7 +647,7 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> read(Header &H) {
     File::MMap fmap{MR::File::Entry(header_path)};
     const size_t data_offset = fetch(H, *((const nifti_header *)fmap.address()));
     std::unique_ptr<ImageIO::Default> handler(new ImageIO::Default(H));
-    handler->files.push_back(File::Entry(hpath, (single_file ? data_offset : 0)));
+    handler->files.emplace_back(hpath, (single_file ? data_offset : 0));
     return handler;
   } catch (Exception &e) {
     e.display();
@@ -671,7 +671,7 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> read_gz(Header &H) {
     std::unique_ptr<ImageIO::GZ> io_handler(new ImageIO::GZ(H, data_offset));
     memcpy(io_handler.get()->header(), &NH, sizeof(NH));
     memset(io_handler.get()->header() + sizeof(NH), 0, sizeof(nifti1_extender));
-    io_handler->files.push_back(File::Entry(static_cast<const Header &>(H).path(), data_offset));
+    io_handler->files.emplace_back(static_cast<const Header &>(H).path(), data_offset);
     return io_handler;
   } catch (Exception &e) {
     throw Exception(e, "Error reading compressed NIfTI image \"" + H.name() + "\"");
@@ -710,7 +710,7 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> create(Header &H) {
   }
 
   std::unique_ptr<ImageIO::Default> handler(new ImageIO::Default(H));
-  handler->files.push_back(File::Entry(hpath, data_offset));
+  handler->files.emplace_back(hpath, data_offset);
 
   return handler;
 }
@@ -731,7 +731,7 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> create_gz(Header &H) {
   const std::filesystem::path &hpath = static_cast<const Header &>(H).path();
   File::OFStream data_file(hpath);
   data_file.close();
-  io_handler->files.push_back(File::Entry(hpath, sizeof(nifti_header) + 4));
+  io_handler->files.emplace_back(hpath, sizeof(nifti_header) + 4);
 
   return io_handler;
 }

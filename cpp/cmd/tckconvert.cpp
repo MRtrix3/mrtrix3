@@ -139,7 +139,7 @@ public:
     // write out points, and build index of tracks:
     size_t const start_index = current_index;
     current_index += tck.size();
-    track_list.push_back(std::pair<size_t, size_t>(start_index, current_index));
+    track_list.emplace_back(start_index, current_index);
     if (write_ascii) {
       for (const auto &pos : tck) {
         VTKout << pos[0] << " " << pos[1] << " " << pos[2] << "\n";

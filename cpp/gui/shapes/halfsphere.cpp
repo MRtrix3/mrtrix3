@@ -107,10 +107,10 @@ void HalfSphere::LOD(const size_t level_of_detail) {
   const Eigen::Map<const Eigen::Array<uint32_t, 10, 3, Eigen::RowMajor>> initial_indices(initial_indices_data);
 
   for (size_t n = 0; n < initial_vertices.rows(); n++)
-    vertices.push_back(initial_vertices.row(n));
+    vertices.emplace_back(initial_vertices.row(n));
 
   for (size_t n = 0; n < initial_indices.rows(); n++)
-    indices.push_back(initial_indices.row(n));
+    indices.emplace_back(initial_indices.row(n));
 
   std::map<Edge, GLuint> edges;
 
@@ -124,7 +124,7 @@ void HalfSphere::LOD(const size_t level_of_detail) {
       if (iter == edges.end()) {
         index1 = vertices.size();
         edges.insert(std::make_pair(E, index1));
-        vertices.push_back(Vertex(vertices, indices[n][0], indices[n][1]));
+        vertices.emplace_back(vertices, indices[n][0], indices[n][1]);
       } else
         index1 = iter->second;
 
@@ -133,7 +133,7 @@ void HalfSphere::LOD(const size_t level_of_detail) {
       if (iter == edges.end()) {
         index2 = vertices.size();
         edges.insert(std::make_pair(E, index2));
-        vertices.push_back(Vertex(vertices, indices[n][1], indices[n][2]));
+        vertices.emplace_back(vertices, indices[n][1], indices[n][2]);
       } else
         index2 = iter->second;
 
@@ -142,13 +142,13 @@ void HalfSphere::LOD(const size_t level_of_detail) {
       if (iter == edges.end()) {
         index3 = vertices.size();
         edges.insert(std::make_pair(E, index3));
-        vertices.push_back(Vertex(vertices, indices[n][2], indices[n][0]));
+        vertices.emplace_back(vertices, indices[n][2], indices[n][0]);
       } else
         index3 = iter->second;
 
-      indices.push_back(Triangle(indices[n][0], index1, index3));
-      indices.push_back(Triangle(indices[n][1], index2, index1));
-      indices.push_back(Triangle(indices[n][2], index3, index2));
+      indices.emplace_back(indices[n][0], index1, index3);
+      indices.emplace_back(indices[n][1], index2, index1);
+      indices.emplace_back(indices[n][2], index3, index2);
       indices[n].set(index1, index2, index3);
     }
   }

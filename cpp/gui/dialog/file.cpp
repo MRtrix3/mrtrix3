@@ -82,7 +82,7 @@ const FileDialogReturn input_filepaths(QWidget *parent,
   FileDialogReturn result;
   if (!qlist.empty()) {
     for (int n = 0; n < qlist.size(); ++n)
-      result.multi_selection.emplace_back(std::filesystem::path(qlist[n].toUtf8().data()));
+      result.multi_selection.emplace_back(qlist[n].toUtf8().data());
     result.last_directory = result.multi_selection.back().parent_path();
   }
   return result;

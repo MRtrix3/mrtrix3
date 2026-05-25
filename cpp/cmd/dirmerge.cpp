@@ -100,7 +100,7 @@ void run() {
       m = Math::Sphere::as_cartesian(m);
       DirectionSet set;
       for (ssize_t r = 0; r < m.rows(); ++r)
-        set.push_back(Direction(m(r, 0), m(r, 1), m(r, 2)));
+        set.emplace_back(m(r, 0), m(r, 1), m(r, 2));
       d.push_back(set);
     }
     INFO("found b = " + str(bvalue[nb]) + ", " + str([&] {

@@ -32,7 +32,7 @@ LineSearchFunctor::LineSearchFunctor(const SIFT::track_t index, const TckFactor 
   for (size_t i = 0; i != track_contribution.dim(); ++i) {
     const SIFT2::Fixel &fixel(tckfactor.fixels[track_contribution[i].get_fixel_index()]);
     if (!fixel.is_excluded())
-      fixels.push_back(Fixel(track_contribution[i], tckfactor, Fs, fixel.get_mean_coeff()));
+      fixels.emplace_back(track_contribution[i], tckfactor, Fs, fixel.get_mean_coeff());
   }
 }
 

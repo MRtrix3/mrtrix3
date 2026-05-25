@@ -107,7 +107,7 @@ std::unique_ptr<ImageIO::Base> PNG::read(Header &H) const {
   }
 
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::PNG(H));
-  io_handler->files.push_back(File::Entry(hpath, 0));
+  io_handler->files.emplace_back(hpath, 0);
 
   return io_handler;
 }
@@ -224,7 +224,7 @@ bool PNG::check(Header &H, size_t num_axes) const {
 
 std::unique_ptr<ImageIO::Base> PNG::create(Header &H) const {
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::PNG(H));
-  io_handler->files.push_back(File::Entry(static_cast<const Header &>(H).path(), 0));
+  io_handler->files.emplace_back(static_cast<const Header &>(H).path(), 0);
   return io_handler;
 }
 

@@ -146,13 +146,13 @@ void run_entropy() {
           concat_amps(SH_images.size() * dirs.size()),
           shared(new Shared(SH_images, dirs, norm_mode)) {
       for (const auto &i : SH_images)
-        images.emplace_back(Image<float>(i));
+        images.emplace_back(i);
     }
 
     Processor(const Processor &that)
         : out(that.out), SH_coefs(that.SH_coefs.size()), concat_amps(that.concat_amps.size()), shared(that.shared) {
       for (const auto &i : that.images)
-        images.emplace_back(Image<float>(i));
+        images.emplace_back(i);
     }
 
     bool operator()(Iterator &pos) {

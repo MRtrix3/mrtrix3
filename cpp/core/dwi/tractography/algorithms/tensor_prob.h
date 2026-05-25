@@ -104,7 +104,7 @@ protected:
     Interp(const Bootstrap<Image<float>, WildBootstrap> &bootstrap_vox, Image<bool> mask)
         : Interpolator<Bootstrap<Image<float>, WildBootstrap>>::type(bootstrap_vox, std::move(mask)) {
       for (size_t i = 0; i < 8; ++i)
-        raw_signals.push_back(Eigen::VectorXf(size(3)));
+        raw_signals.emplace_back(size(3));
     }
 
     std::vector<Eigen::VectorXf> raw_signals;

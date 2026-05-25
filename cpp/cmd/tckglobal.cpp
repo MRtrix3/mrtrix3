@@ -341,14 +341,14 @@ void run() {
   // Save the tracks (output)
   INFO("Saving tracks to file");
   MR::DWI::Tractography::Properties ftfileprops;
-  ftfileprops.comments.push_back("global tractography");
-  ftfileprops.comments.push_back("");
+  ftfileprops.comments.emplace_back("global tractography");
+  ftfileprops.comments.emplace_back("");
   ftfileprops.comments.push_back("segment length = " + std::to_string((long double)Particle::L));
   ftfileprops.comments.push_back("segment weight = " + std::to_string((long double)properties.weight));
-  ftfileprops.comments.push_back("");
+  ftfileprops.comments.emplace_back("");
   ftfileprops.comments.push_back("connection potential = " + std::to_string((long double)cpot));
   ftfileprops.comments.push_back("particle potential = " + std::to_string((long double)mu));
-  ftfileprops.comments.push_back("");
+  ftfileprops.comments.emplace_back("");
   ftfileprops.comments.push_back("no. iterations = " + std::to_string((long long int)niter));
   ftfileprops.comments.push_back("T0 = " + std::to_string((long double)t0));
   ftfileprops.comments.push_back("T1 = " + std::to_string((long double)t1));

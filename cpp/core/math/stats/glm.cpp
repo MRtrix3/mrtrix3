@@ -170,7 +170,7 @@ std::vector<Hypothesis> load_hypotheses(const ssize_t num_factors) {
                       " (" + str(contrast_matrix.cols()) + ")" +                                  //
                       " does not match number of model factors (" + str(num_factors) + ")");      //
     for (Eigen::Index row = 0; row != contrast_matrix.rows(); ++row)
-      hypotheses.emplace_back(Hypothesis(contrast_matrix.row(row), static_cast<index_type>(row)));
+      hypotheses.emplace_back(contrast_matrix.row(row), static_cast<index_type>(row));
   }
   opt = App::get_options("ftest");
   for (size_t i = 0; i != opt.size(); ++i) {
@@ -179,7 +179,7 @@ std::vector<Hypothesis> load_hypotheses(const ssize_t num_factors) {
       throw Exception("Number of columns in F-test matrix \"" + opt[i][0] + "\"" +           //
                       " (" + str(ftest_matrix.cols()) + ")" +                                //
                       " does not match number of model factors (" + str(num_factors) + ")"); //
-    hypotheses.emplace_back(Hypothesis(ftest_matrix, i));
+    hypotheses.emplace_back(ftest_matrix, i);
   }
   if (hypotheses.empty())
     throw Exception("No hypotheses specified; must use at least one of the -ttests or -ftest options");

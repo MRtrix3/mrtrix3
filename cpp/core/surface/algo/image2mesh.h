@@ -512,7 +512,7 @@ template <class ImageType> void image2mesh_mc(const ImageType &input_image, Mesh
           const std::array<uint32_t, 3> indices{edge_to_output_vertex[row[first_edge_index]],
                                                 edge_to_output_vertex[row[first_edge_index + 2]],
                                                 edge_to_output_vertex[row[first_edge_index + 1]]};
-          triangles.push_back(Triangle(indices));
+          triangles.emplace_back(indices);
         }
       }
     }

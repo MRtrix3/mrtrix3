@@ -866,7 +866,7 @@ void sort_arguments(const std::vector<std::string> &arguments) {
 
       std::vector<std::string> option_args;
       std::copy_n(it + 1, opt->size(), std::back_inserter(option_args));
-      option.push_back(ParsedOption(opt, option_args, index));
+      option.emplace_back(opt, option_args, index);
       it += opt->size();
     } else {
       argument.push_back(ParsedArgument(nullptr, nullptr, *it, index));
@@ -1285,7 +1285,7 @@ std::vector<ParsedOption> get_options(std::string_view name) {
   for (size_t i = 0; i < option.size(); ++i) {
     assert(option[i].opt);
     if (option[i].opt->is(name))
-      matches.push_back({option[i].opt, option[i].args, option[i].index});
+      matches.emplace_back(option[i].opt, option[i].args, option[i].index);
   }
   return matches;
 }

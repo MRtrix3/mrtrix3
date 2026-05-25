@@ -203,7 +203,7 @@ bool Element::read() {
   }
 
   if (is_new_sequence())
-    parents.push_back(Sequence(group, element, size == undefined_length ? nullptr : data + size));
+    parents.emplace_back(group, element, size == undefined_length ? nullptr : data + size);
 
   switch (group) {
   case group_byte_order:

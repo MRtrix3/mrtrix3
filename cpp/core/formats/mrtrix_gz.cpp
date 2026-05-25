@@ -54,7 +54,7 @@ std::unique_ptr<ImageIO::Base> MRtrix_GZ::read(Header &H) const {
   std::unique_ptr<ImageIO::GZ> io_handler(new ImageIO::GZ(H, write_offset));
   memcpy(io_handler.get()->header(), header.str().c_str(), header.str().size());
   memset(io_handler.get()->header() + header.str().size(), 0, write_offset - header.str().size());
-  io_handler->files.push_back(File::Entry(hpath, offset));
+  io_handler->files.emplace_back(hpath, offset);
 
   return io_handler;
 }
@@ -88,7 +88,7 @@ std::unique_ptr<ImageIO::Base> MRtrix_GZ::create(Header &H) const {
   const std::filesystem::path &hpath = const_cast<const Header &>(H).path();
   File::OFStream data_file(hpath);
   data_file.close();
-  io_handler->files.push_back(File::Entry(hpath, offset));
+  io_handler->files.emplace_back(hpath, offset);
 
   return io_handler;
 }

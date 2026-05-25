@@ -1016,7 +1016,7 @@ void run() {
         throw Exception(std::string("operation \"") + opt->id + "\" not yet implemented!");
 
     } else {
-      stack.push_back(argument);
+      stack.emplace_back(argument);
     }
   }
 

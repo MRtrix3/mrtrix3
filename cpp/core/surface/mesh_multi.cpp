@@ -58,7 +58,7 @@ void MeshMulti::load(const std::filesystem::path &path) {
         throw Exception("Malformed OBJ file: vertex outside object (line " + str(counter) + ")");
       std::array<float, 4> values{};
       sscanf(data.c_str(), "%f %f %f %f", &values[0], &values[1], &values[2], &values[3]);
-      vertices.push_back(Vertex(values[0], values[1], values[2]));
+      vertices.emplace_back(values[0], values[1], values[2]);
     } else if (prefix == "f") {
       if (index < 0)
         throw Exception("Malformed OBJ file: face outside object (line " + str(counter) + ")");
@@ -109,11 +109,11 @@ void MeshMulti::load(const std::filesystem::path &path) {
       }
       if (face_data.size() == 3) {
         std::vector<uint32_t> const temp{face_data[0].vertex, face_data[1].vertex, face_data[2].vertex};
-        triangles.push_back(Triangle(temp));
+        triangles.emplace_back(temp);
       } else {
         std::vector<uint32_t> const temp{
             face_data[0].vertex, face_data[1].vertex, face_data[2].vertex, face_data[3].vertex};
-        quads.push_back(Quad(temp));
+        quads.emplace_back(temp);
       }
     } else if (prefix == "o") {
       // This is where this function differs from the standard OBJ load

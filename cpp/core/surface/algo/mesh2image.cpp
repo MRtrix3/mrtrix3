@@ -255,7 +255,7 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
           prelim_inside_count = 1;
         else
           prelim_outside_count = 1;
-        to_expand.push(Vox(seed.index(0), seed.index(1), seed.index(2)));
+        to_expand.emplace(seed.index(0), seed.index(1), seed.index(2));
         to_fill.assign(1, to_expand.top());
         do {
           const Vox voxel(to_expand.top());
@@ -388,7 +388,7 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
           for (size_t z_idx = 0; z_idx != pve_os_ratio; ++z_idx) {
             const default_type z =
                 -0.5 + ((static_cast<default_type>(z_idx) + 0.5) / static_cast<default_type>(pve_os_ratio));
-            offsets_to_test->push_back(Vertex(x, y, z));
+            offsets_to_test->emplace_back(x, y, z);
           }
         }
       }

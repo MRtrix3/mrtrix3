@@ -66,7 +66,7 @@ std::unique_ptr<ImageIO::Base> XDS::read(Header &H) const {
   H.stride(3) = 3;
 
   std::unique_ptr<ImageIO::Default> io_handler(new ImageIO::Default(H));
-  io_handler->files.push_back(File::Entry(hpath));
+  io_handler->files.emplace_back(hpath);
 
   return io_handler;
 }
@@ -123,7 +123,7 @@ std::unique_ptr<ImageIO::Base> XDS::create(Header &H) const {
   File::OFStream out_dat(H.path());
   out_dat.close();
   std::filesystem::resize_file(H.path(), footprint(H, {0, 1, 3}));
-  io_handler->files.push_back(File::Entry(H.path()));
+  io_handler->files.emplace_back(H.path());
 
   return io_handler;
 }

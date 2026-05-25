@@ -2504,7 +2504,7 @@ void Connectome::initialise(const std::filesystem::path &path) {
   const size_t pixheight = dynamic_cast<Node_list *>(node_list->tool)->row_height();
 
   {
-    nodes.push_back(Node());
+    nodes.emplace_back();
     for (size_t node_index = 1; node_index <= max_index; ++node_index) {
       if (node_volumes[node_index] != 0U) {
 
@@ -2521,10 +2521,10 @@ void Connectome::initialise(const std::filesystem::path &path) {
         };
         MR::ThreadedLoop(subset).run(copy_func, subset, node_mask);
 
-        nodes.push_back(Node(node_coms[node_index], node_volumes[node_index], pixheight, node_mask));
+        nodes.emplace_back(node_coms[node_index], node_volumes[node_index], pixheight, node_mask);
 
       } else {
-        nodes.push_back(Node());
+        nodes.emplace_back();
       }
     }
   }
@@ -2536,7 +2536,7 @@ void Connectome::initialise(const std::filesystem::path &path) {
   for (size_t edge_index = 0; edge_index != mat2vec->vec_size(); ++edge_index) {
     const node_t one = (*mat2vec)(edge_index).first + 1;
     const node_t two = (*mat2vec)(edge_index).second + 1;
-    edges.push_back(Edge(one, two, nodes[one].get_com(), nodes[two].get_com()));
+    edges.emplace_back(one, two, nodes[one].get_com(), nodes[two].get_com());
   }
 
   // Construct the node overlay image

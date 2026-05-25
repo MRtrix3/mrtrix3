@@ -130,7 +130,7 @@ void run() {
         max_length = std::max(max_length, length);
         sum_lengths += tck.weight * length;
         sum_weights += tck.weight;
-        all_lengths.push_back(LW(length, tck.weight));
+        all_lengths.emplace_back(length, tck.weight);
         const size_t index = std::isfinite(step_size) ? std::round(length / step_size) : std::round(length);
         while (histogram.size() <= index)
           histogram.push_back(0.0);

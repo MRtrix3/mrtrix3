@@ -257,7 +257,7 @@ void TrackMapperTWI::load_factors(const Streamline<> &tck) const {
     if (this_tangent.allFinite())
       tangents.push_back(this_tangent);
     else
-      tangents.push_back(Streamline<>::tangent_type::Zero());
+      tangents.emplace_back(Streamline<>::tangent_type::Zero());
     if (i != 0U)
       step_sizes.push_back((tck[i] - tck[i - 1]).norm());
   }

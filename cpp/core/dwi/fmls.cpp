@@ -222,7 +222,7 @@ bool Segmenter::operator()(const SH_coefs &in, FOD_lobes &out) const {
 
       } else {
 
-        retrospective_assignments.push_back(std::make_pair(i.second, adj_lobes.front()));
+        retrospective_assignments.emplace_back(i.second, adj_lobes.front());
       }
     }
   }

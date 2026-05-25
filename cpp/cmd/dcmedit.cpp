@@ -94,20 +94,20 @@ void run() {
   std::vector<uint16_t> VRs;
 
   if (!get_options("anonymise").empty()) {
-    tags.push_back(Tag(0x0010U, 0x0030U, "")); // PatientBirthDate
+    tags.emplace_back(0x0010U, 0x0030U, ""); // PatientBirthDate
     VRs.push_back(File::Dicom::VR_PN);
   }
 
   auto opt = get_options("tag");
   if (!opt.empty())
     for (size_t n = 0; n < opt.size(); ++n)
-      tags.push_back(Tag(read_hex(opt[n][0]), read_hex(opt[n][1]), opt[n][2]));
+      tags.emplace_back(read_hex(opt[n][0]), read_hex(opt[n][1]), opt[n][2]);
 
   opt = get_options("id");
   if (!opt.empty()) {
     std::string const newid = opt[0][0];
-    tags.push_back(Tag(0x0010U, 0x0020U, newid)); // PatientID
-    tags.push_back(Tag(0x0010U, 0x1000U, newid)); // OtherPatientIDs
+    tags.emplace_back(0x0010U, 0x0020U, newid); // PatientID
+    tags.emplace_back(0x0010U, 0x1000U, newid); // OtherPatientIDs
   }
 
   for (size_t n = 0; n < VRs.size(); ++n) {
