@@ -17,6 +17,7 @@
 #include "file/dicom/element.h"
 
 #include <iomanip>
+#include <memory>
 #include <string.h>
 
 #include "debug.h"
@@ -56,7 +57,7 @@ void Element::set(const std::filesystem::path &filepath, bool force_read, bool r
   transfer_syntax_supported = true;
   parents.clear();
 
-  fmap.reset(new File::MMap(filepath, read_write));
+  fmap = std::make_unique<File::MMap>(filepath, read_write);
 
   if (fmap->size() < 256)
     throw Exception("\"" + fmap->path().string() + "\" is too small to be a valid DICOM file");

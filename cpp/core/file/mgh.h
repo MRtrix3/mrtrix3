@@ -20,6 +20,7 @@
 #include <cassert>
 #include <cstddef>
 #include <iomanip>
+#include <memory>
 #include <sstream>
 
 #include "exception.h"
@@ -923,7 +924,8 @@ template <class Output> void write_other(const Header &H, Output &out) {
         transform_tag.set(tag_mgh_xform, entry.second);
         break;
       case tag_auto_align: {
-        auto_align_matrix.reset(new Eigen::Matrix<default_type, 4, 4>(Eigen::Matrix<default_type, 4, 4>::Zero()));
+        auto_align_matrix =
+            std::make_unique<Eigen::Matrix<default_type, 4, 4>>(Eigen::Matrix<default_type, 4, 4>::Zero());
         const auto lines = split_lines(entry.second);
         if (lines.size() != 4)
           throw Exception(std::string("Error parsing auto align header entry for MGH format:") + //

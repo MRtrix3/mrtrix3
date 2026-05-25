@@ -15,8 +15,10 @@
  */
 
 #include "dwi/tractography/connectome/connectome.h"
+
 #include "dwi/tractography/connectome/metric.h"
 #include "dwi/tractography/connectome/tck2nodes.h"
+#include <memory>
 
 namespace MR::DWI::Tractography::Connectome {
 
@@ -81,31 +83,31 @@ std::unique_ptr<Tck2nodes_base> load_assignment_mode(Image<node_t> &nodes_data) 
   auto opt = get_options("assignment_end_voxels");
   if (!opt.empty()) {
     check_invalid(tck2nodes);
-    tck2nodes.reset(new Tck2nodes_end_voxels(nodes_data));
+    tck2nodes = std::make_unique<Tck2nodes_end_voxels>(nodes_data);
   }
   opt = get_options("assignment_radial_search");
   if (!opt.empty()) {
     check_invalid(tck2nodes);
-    tck2nodes.reset(new Tck2nodes_radial(nodes_data, static_cast<default_type>(opt[0][0])));
+    tck2nodes = std::make_unique<Tck2nodes_radial>(nodes_data, static_cast<default_type>(opt[0][0]));
   }
   opt = get_options("assignment_reverse_search");
   if (!opt.empty()) {
     check_invalid(tck2nodes);
-    tck2nodes.reset(new Tck2nodes_revsearch(nodes_data, static_cast<default_type>(opt[0][0])));
+    tck2nodes = std::make_unique<Tck2nodes_revsearch>(nodes_data, static_cast<default_type>(opt[0][0]));
   }
   opt = get_options("assignment_forward_search");
   if (!opt.empty()) {
     check_invalid(tck2nodes);
-    tck2nodes.reset(new Tck2nodes_forwardsearch(nodes_data, static_cast<default_type>(opt[0][0])));
+    tck2nodes = std::make_unique<Tck2nodes_forwardsearch>(nodes_data, static_cast<default_type>(opt[0][0]));
   }
   opt = get_options("assignment_all_voxels");
   if (!opt.empty()) {
     check_invalid(tck2nodes);
-    tck2nodes.reset(new Tck2nodes_all_voxels(nodes_data));
+    tck2nodes = std::make_unique<Tck2nodes_all_voxels>(nodes_data);
   }
 
   if (!tck2nodes)
-    tck2nodes.reset(new Tck2nodes_radial(nodes_data, default_tck2nodes_radial_distance));
+    tck2nodes = std::make_unique<Tck2nodes_radial>(nodes_data, default_tck2nodes_radial_distance);
 
   return tck2nodes;
 }

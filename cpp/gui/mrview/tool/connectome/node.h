@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <memory>
+
 #include "image.h"
 
 #include "opengl/glutils.h"
@@ -31,7 +33,7 @@ public:
 
   void assign_mesh(MR::Surface::Mesh &in) {
     clear_mesh();
-    mesh.reset(new Node::Mesh(in));
+    mesh = std::make_unique<Node::Mesh>(in);
   }
   void render_mesh() const {
     if (!mesh)

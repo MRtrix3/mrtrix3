@@ -14,6 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <memory>
+
 #include "command.h"
 #include "dwi/directions/file.h"
 #include "dwi/directions/validate.h"
@@ -80,7 +82,7 @@ public:
   bool update(value_type energy, const std::vector<std::vector<size_t>> &set) {
     std::lock_guard<std::mutex> const lock(mutex);
     if (!progress)
-      progress.reset(new ProgressBar("distributing directions", target_num_permutations));
+      progress = std::make_unique<ProgressBar>("distributing directions", target_num_permutations);
     if (energy < best_energy) {
       best_energy = energy;
       best_subset = set;

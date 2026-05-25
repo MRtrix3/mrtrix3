@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <memory>
+
 #include "adapter/gaussian1D.h"
 #include "algo/copy.h"
 #include "algo/threaded_copy.h"
@@ -112,7 +114,7 @@ public:
       for (double &i : stdev)
         if (i)
           ++axes_to_smooth;
-      progress.reset(new ProgressBar(message, axes_to_smooth + 1));
+      progress = std::make_unique<ProgressBar>(message, axes_to_smooth + 1);
     }
 
     for (size_t dim = 0; dim < 3; dim++) {
@@ -137,7 +139,7 @@ public:
       for (double &i : stdev)
         if (i)
           ++axes_to_smooth;
-      progress.reset(new ProgressBar(message, axes_to_smooth + 1));
+      progress = std::make_unique<ProgressBar>(message, axes_to_smooth + 1);
     }
 
     for (size_t dim = 0; dim < 3; dim++) {

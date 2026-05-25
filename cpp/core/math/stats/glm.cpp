@@ -17,6 +17,7 @@
 #include "math/stats/glm.h"
 
 #include <filesystem>
+#include <memory>
 
 #include "debug.h"
 #include "file/matrix.h"
@@ -274,7 +275,7 @@ void all_stats(const measurements_matrix_type &measurements,
   //   that's being displayed by that outer looping function
   std::unique_ptr<ProgressBar> progress;
   if (measurements.cols() > 1)
-    progress.reset(new ProgressBar("Calculating basic properties of default permutation", 5));
+    progress = std::make_unique<ProgressBar>("Calculating basic properties of default permutation", 5);
 #endif
   betas = solve_betas(measurements, design);
 #ifdef GLM_ALL_STATS_DEBUG

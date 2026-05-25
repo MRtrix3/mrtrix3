@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <memory>
+
 #include "dwi/directions/set.h"
 #include "dwi/renderer.h"
 #include "memory.h"
@@ -94,7 +96,7 @@ public:
     assert(mode == mode_t::DIXEL);
     if (dirs)
       delete dirs.release();
-    dirs.reset(new MR::DWI::Directions::Set(directions));
+    dirs = std::make_unique<MR::DWI::Directions::Set>(directions);
     recompute_mesh = recompute_amplitudes = true;
     update();
   }

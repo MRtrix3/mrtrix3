@@ -16,6 +16,7 @@
 
 #include "surface/filter/smooth.h"
 
+#include <memory>
 #include <set>
 
 #include "surface/utils.h"
@@ -25,7 +26,7 @@ namespace MR::Surface::Filter {
 void Smooth::operator()(const Mesh &in, Mesh &out) const {
   std::unique_ptr<ProgressBar> progress;
   if (!message.empty())
-    progress.reset(new ProgressBar(message, 8));
+    progress = std::make_unique<ProgressBar>(message, 8);
   out.clear();
 
   const size_t V = in.num_vertices();

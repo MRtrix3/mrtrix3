@@ -17,6 +17,7 @@
 #include <fstream>
 
 #include <QOpenGLWidget>
+#include <memory>
 
 #include "app.h"
 #include "dwi/render_frame.h"
@@ -349,7 +350,7 @@ void RenderFrame::screenshot(int oversampling, const std::filesystem::path &imag
   OS_x = OS_y = 0;
   framebuffer.reset(
       new GLubyte[3 * static_cast<size_t>(projection.width()) * static_cast<size_t>(projection.height())]);
-  pix.reset(new QImage(OS * projection.width(), OS * projection.height(), QImage::Format_RGB32));
+  pix = std::make_unique<QImage>(OS * projection.width(), OS * projection.height(), QImage::Format_RGB32);
   update();
 }
 

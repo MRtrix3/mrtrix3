@@ -15,6 +15,7 @@
  */
 
 #include <algorithm>
+#include <memory>
 
 #include "env.h"
 #include "file/dicom/image.h"
@@ -362,7 +363,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
     WARN("See the MRtrix3 documentation on DICOM handling for details:");
     WARN("    http://mrtrix.readthedocs.io/en/latest/tips_and_tricks/dicom_handling.html" //
          "#error-unsupported-transfer-syntax");                                           //
-    io_handler.reset(new MR::ImageIO::Null(H));
+    io_handler = std::make_unique<MR::ImageIO::Null>(H);
     return io_handler;
   }
 
@@ -401,7 +402,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
     for (size_t i = 0; i < 3; i++)
       H.transform()(i, 3) += xinc * H.transform()(i, 0) + yinc * H.transform()(i, 1);
 
-    io_handler.reset(new MR::ImageIO::Mosaic(H, frame.dim[0], frame.dim[1], H.size(0), H.size(1), H.size(2)));
+    io_handler = std::make_unique<MR::ImageIO::Mosaic>(H, frame.dim[0], frame.dim[1], H.size(0), H.size(1), H.size(2));
 
   } else if (inconsistent_scaling) {
 
@@ -417,7 +418,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
     io_handler.reset(handler);
   } else {
 
-    io_handler.reset(new MR::ImageIO::Default(H));
+    io_handler = std::make_unique<MR::ImageIO::Default>(H);
   }
 
   for (auto &frame : frames)

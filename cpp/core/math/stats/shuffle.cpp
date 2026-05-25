@@ -17,6 +17,7 @@
 #include "math/stats/shuffle.h"
 
 #include <algorithm>
+#include <memory>
 #include <random>
 
 #include "file/matrix.h"
@@ -152,7 +153,7 @@ Shuffler::Shuffler(const index_type num_rows, const bool is_nonstationarity, std
   initialise(error_types, nshuffles_explicit, is_nonstationarity, eb_within, eb_whole);
 
   if (!msg.empty())
-    progress.reset(new ProgressBar(msg, nshuffles));
+    progress = std::make_unique<ProgressBar>(msg, nshuffles);
 }
 
 Shuffler::Shuffler(const index_type num_rows,
@@ -172,7 +173,7 @@ Shuffler::Shuffler(const index_type num_rows,
     : rows(num_rows), nshuffles(num_shuffles) {
   initialise(error_types, true, is_nonstationarity, eb_within, eb_whole);
   if (!msg.empty())
-    progress.reset(new ProgressBar(msg, nshuffles));
+    progress = std::make_unique<ProgressBar>(msg, nshuffles);
 }
 
 bool Shuffler::operator()(Shuffle &output) {

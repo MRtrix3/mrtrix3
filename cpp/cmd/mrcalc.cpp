@@ -323,6 +323,7 @@ UNARY_OP(
  **********************************************************************/
 
 #include <filesystem>
+#include <memory>
 
 #include "algo/threaded_copy.h"
 #include "command.h"
@@ -526,11 +527,11 @@ public:
             value = Math::e;
           } else if (a == "rand") {
             value = 0.0;
-            rng.reset(new Math::RNG());
+            rng.reset(new Math::RNG()); // NOLINT(modernize-make-unique): copy_ptr is not std::unique_ptr
             rng_gaussian = false;
           } else if (a == "randn") {
             value = 0.0;
-            rng.reset(new Math::RNG());
+            rng.reset(new Math::RNG()); // NOLINT(modernize-make-unique): copy_ptr is not std::unique_ptr
             rng_gaussian = true;
           } else {
             value = to<complex_type>(arg);
@@ -864,6 +865,7 @@ public:
 
     storage.push_back(ThreadLocalStorageItem());
     if (entry.image) {
+      // NOLINTNEXTLINE(modernize-make-unique): copy_ptr is not std::unique_ptr
       storage.back().image.reset(new Image<complex_type>(*entry.image));
       storage.back().chunk.resize(chunk_size);
       return;

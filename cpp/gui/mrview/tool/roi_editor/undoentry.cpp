@@ -15,6 +15,7 @@
  */
 
 #include <limits>
+#include <memory>
 #include <stddef.h>
 
 #include "mrview/tool/roi_editor/item.h"
@@ -109,7 +110,7 @@ ROI_UndoEntry::ROI_UndoEntry(ROI_Item &roi, int current_axis, int current_slice)
   GL::assert_context_is_current();
 
   if (!shared)
-    shared.reset(new Shared());
+    shared = std::make_unique<Shared>();
   else
     ++(*shared);
   shared->vertex_array_object.bind();

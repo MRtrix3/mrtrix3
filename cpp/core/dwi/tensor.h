@@ -17,6 +17,7 @@
 #pragma once
 
 #include <array>
+#include <memory>
 
 #include "dwi/shells.h"
 #include "types.h"
@@ -28,7 +29,7 @@ inline Eigen::Matrix<T, Eigen::Dynamic, Eigen::Dynamic> grad2bmatrix(const Matri
   if (grad.cols() > 3) {
     std::unique_ptr<DWI::Shells> shells;
     try {
-      shells.reset(new DWI::Shells(grad));
+      shells = std::make_unique<DWI::Shells>(grad);
     } catch (...) {
       WARN("Unable to separate diffusion gradient table into shells; tensor estimation success uncertain");
     }

@@ -18,6 +18,8 @@
 
 #include <sys/stat.h>
 
+#include <memory>
+
 namespace MR::File::NPY {
 
 DataType descr2datatype(std::string_view s) {
@@ -423,6 +425,7 @@ prepare_ND_write(const std::filesystem::path &path, const DataType data_type, co
   const size_t num_elements = shape[0] * (shape.size() == 2 ? shape[1] : 1);
   const size_t data_size = num_elements * info.data_type.bytes();
   std::filesystem::resize_file(path, leadin_size + data_size);
+  // NOLINTNEXTLINE(modernize-make-unique): braced-init-list argument cannot be perfect-forwarded
   info.mmap.reset(new File::MMap({path, leadin_size}, true, false));
   return info;
 }

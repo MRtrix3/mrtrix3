@@ -17,6 +17,7 @@
 #include <array>
 #include <cstdio>
 #include <filesystem>
+#include <memory>
 #include <sstream>
 
 #include "command.h"
@@ -688,11 +689,11 @@ void run() {
   Properties properties;
   std::unique_ptr<ReaderInterface<float>> reader;
   if (input_path.extension() == ".tck") {
-    reader.reset(new Reader<float>(input_path, properties));
+    reader = std::make_unique<Reader<float>>(input_path, properties);
   } else if (input_path.extension() == ".txt") {
-    reader.reset(new ASCIIReader(input_path.string()));
+    reader = std::make_unique<ASCIIReader>(input_path.string());
   } else if (input_path.extension() == ".vtk") {
-    reader.reset(new VTKReader(input_path));
+    reader = std::make_unique<VTKReader>(input_path);
   } else {
     throw Exception("Unsupported input file type.");
   }
@@ -700,19 +701,19 @@ void run() {
   // Writer
   std::unique_ptr<WriterInterface<float>> writer;
   if (output_path.extension() == ".tck") {
-    writer.reset(new Writer<float>(output_path, properties));
+    writer = std::make_unique<Writer<float>>(output_path, properties);
   } else if (output_path.extension() == ".vtk") {
     auto write_ascii = get_options("ascii").size();
-    writer.reset(new VTKWriter(output_path, write_ascii != 0U));
+    writer = std::make_unique<VTKWriter>(output_path, write_ascii != 0U);
   } else if (output_path.extension() == ".ply") {
     const int increment = get_option_value("increment", default_ply_increment);
     const float radius = get_option_value("radius", default_ply_radius);
     const int sides = get_option_value("sides", default_ply_sides);
-    writer.reset(new PLYWriter(output_path, increment, radius, sides));
+    writer = std::make_unique<PLYWriter>(output_path, increment, radius, sides);
   } else if (output_path.extension() == ".rib") {
-    writer.reset(new RibWriter(output_path));
+    writer = std::make_unique<RibWriter>(output_path);
   } else if (output_path.extension() == ".txt") {
-    writer.reset(new ASCIIWriter(output_path.string()));
+    writer = std::make_unique<ASCIIWriter>(output_path.string());
   } else {
     throw Exception("Unsupported output file type.");
   }

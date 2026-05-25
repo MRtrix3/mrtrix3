@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <memory>
 #include <vector>
 
 #include "header.h"
@@ -219,7 +220,7 @@ void TckFactor::estimate_factors() {
 
   std::unique_ptr<std::ofstream> csv_out;
   if (!csv_path.empty()) {
-    csv_out.reset(new std::ofstream());
+    csv_out = std::make_unique<std::ofstream>();
     csv_out->open(csv_path, std::ios_base::trunc);
     (*csv_out)
         << "Iteration,Cost_data,Cost_reg_tik,Cost_reg_tv,Cost_reg,Cost_total,Streamlines,Fixels_excluded,Step_min,Step_"

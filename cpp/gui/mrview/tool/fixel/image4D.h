@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <memory>
+
 #include "mrview/tool/fixel/base_fixel.h"
 
 namespace MR::GUI::MRView::Tool {
@@ -26,7 +28,7 @@ public:
     colour_types = {"Direction", "Length"};
     threshold_types = {"Length"};
     fixel_values[value_types[1]];
-    fixel_data.reset(new FixelImage4DType(header.get_image<float>()));
+    fixel_data = std::make_unique<FixelImage4DType>(header.get_image<float>());
 
     load_image(filepath);
   }

@@ -15,6 +15,7 @@
  */
 
 #include <filesystem>
+#include <memory>
 #include <optional>
 #include <string>
 #include <tcb/span.hpp>
@@ -692,9 +693,9 @@ public:
                      const std::filesystem::path &path)
       : ReceiverBase(num_tracks, true, path) {
     if (Path::has_suffix(path, ".tsf")) {
-      tsf.reset(new DWI::Tractography::ScalarWriter<value_type>(path, properties));
+      tsf = std::make_unique<DWI::Tractography::ScalarWriter<value_type>>(path, properties);
     } else {
-      ascii.reset(new File::OFStream(path));
+      ascii = std::make_unique<File::OFStream>(path);
       (*ascii) << "# " << App::command_history_string << "\n";
     }
   }

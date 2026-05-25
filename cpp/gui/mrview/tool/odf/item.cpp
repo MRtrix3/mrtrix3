@@ -16,6 +16,8 @@
 
 #include "mrview/tool/odf/item.h"
 
+#include <memory>
+
 #include "dwi/gradient.h"
 #include "header.h"
 #include "math/SH.h"
@@ -68,7 +70,7 @@ bool ODF_Item::valid() const {
 ODF_Item::DixelPlugin::DixelPlugin(const MR::Header &H) : dir_type(dir_t::NONE), shell_index(0) {
   try {
     grad = MR::DWI::get_DW_scheme(H);
-    shells.reset(new MR::DWI::Shells(grad));
+    shells = std::make_unique<MR::DWI::Shells>(grad);
     shell_index = shells->count() - 1;
   } catch (Exception &) { // NOLINT(bugprone-empty-catch)
   }

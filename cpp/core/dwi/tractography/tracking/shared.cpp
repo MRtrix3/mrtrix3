@@ -15,7 +15,9 @@
  */
 
 #include "dwi/tractography/tracking/shared.h"
+
 #include "algo/implicit_mask.h"
+#include <memory>
 
 namespace MR::DWI::Tractography::Tracking {
 
@@ -81,7 +83,7 @@ SharedBase::SharedBase(const std::filesystem::path &diff_path,
   }
 
   if (properties.find("act") != properties.end()) {
-    act_shared_additions.reset(new ACT::ACT_Shared_additions(properties["act"], property_set));
+    act_shared_additions = std::make_unique<ACT::ACT_Shared_additions>(properties["act"], property_set);
     if (act().backtrack() && stop_on_all_include)
       throw Exception("Cannot use -stop option if ACT backtracking is enabled");
   }

@@ -15,6 +15,7 @@
  */
 
 #include <filesystem>
+#include <memory>
 #include <optional>
 
 #include "command.h"
@@ -144,7 +145,7 @@ public:
       perform_FOD_segmentation(fod_buffer);
       map_streamlines(wbft_path.value());
     } else {
-      fmls.reset(new DWI::FMLS::Segmenter(dirs, Math::SH::LforN(fod_buffer.size(3))));
+      fmls = std::make_unique<DWI::FMLS::Segmenter>(dirs, Math::SH::LforN(fod_buffer.size(3)));
     }
     mapper.set_upsample_ratio(DWI::Tractography::Mapping::determine_upsample_ratio(fod_buffer, tck_path, 0.1));
     mapper.set_use_precise_mapping(true);

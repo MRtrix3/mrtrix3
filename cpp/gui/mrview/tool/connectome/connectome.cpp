@@ -36,6 +36,7 @@
 #include "surface/validate.h"
 
 #include <filesystem>
+#include <memory>
 
 namespace MR::GUI::MRView::Tool {
 
@@ -2286,7 +2287,7 @@ void Connectome::lut_open_slot() {
 void Connectome::lighting_change_slot(int /*value*/) { window().updateGL(); }
 void Connectome::lighting_settings_slot() {
   if (!lighting_dock)
-    lighting_dock.reset(new LightingDock("Connectome lighting", lighting));
+    lighting_dock = std::make_unique<LightingDock>("Connectome lighting", lighting);
   lighting_dock->show();
 }
 void Connectome::lighting_parameter_slot() {
@@ -2456,7 +2457,7 @@ void Connectome::initialise(const std::filesystem::path &path) {
   {
     // Prevent progress dialog from appearing in a multi-threading context
     LogLevelLatch const latch(0);
-    buffer.reset(new MR::Image<node_t>(H.get_image<node_t>(MR::DirectIO{})));
+    buffer = std::make_unique<MR::Image<node_t>>(H.get_image<node_t>(MR::DirectIO{}));
     MR::Connectome::debug_validate_label_image(*buffer);
   }
   MR::Transform const transform(H);
@@ -2529,7 +2530,7 @@ void Connectome::initialise(const std::filesystem::path &path) {
     }
   }
 
-  mat2vec.reset(new MR::Connectome::Mat2Vec(num_nodes()));
+  mat2vec = std::make_unique<MR::Connectome::Mat2Vec>(num_nodes());
 
   edges.clear();
   edges.reserve(mat2vec->vec_size());
@@ -2548,7 +2549,7 @@ void Connectome::initialise(const std::filesystem::path &path) {
   H_overlay.stride(2) = 4;
   H_overlay.stride(3) = 1;
   H_overlay.sanitise();
-  node_overlay.reset(new NodeOverlay(std::move(H_overlay)));
+  node_overlay = std::make_unique<NodeOverlay>(std::move(H_overlay));
   update_node_overlay();
 
   dynamic_cast<Node_list *>(node_list->tool)->initialize();

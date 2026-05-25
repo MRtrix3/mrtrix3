@@ -14,6 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <memory>
 #include <set>
 
 #include "command.h"
@@ -358,9 +359,9 @@ void run() {
       throw Exception("Options for setting output image dimensionality are mutually exclusive");
     writer_type = writer_dim::DIXEL;
     if (std::filesystem::exists(opt[0][0]))
-      dirs.reset(new Directions::FastLookupSet(static_cast<std::filesystem::path>(opt[0][0])));
+      dirs = std::make_unique<Directions::FastLookupSet>(static_cast<std::filesystem::path>(opt[0][0]));
     else
-      dirs.reset(new Directions::FastLookupSet(to<size_t>(opt[0][0])));
+      dirs = std::make_unique<Directions::FastLookupSet>(to<size_t>(opt[0][0]));
     header.ndim() = 4;
     header.size(3) = dirs->size();
     header.sanitise();
@@ -574,13 +575,13 @@ void run() {
     writer.reset(make_writer(header, output_image_path, stat_vox, writer_dim::GREYSCALE));
     break;
   case writer_dim::DEC:
-    writer.reset(new MapWriter<float>(header, output_image_path, stat_vox, writer_dim::DEC));
+    writer = std::make_unique<MapWriter<float>>(header, output_image_path, stat_vox, writer_dim::DEC);
     break;
   case writer_dim::DIXEL:
     writer.reset(make_writer(header, output_image_path, stat_vox, writer_dim::DIXEL));
     break;
   case writer_dim::TOD:
-    writer.reset(new MapWriter<float>(header, output_image_path, stat_vox, writer_dim::TOD));
+    writer = std::make_unique<MapWriter<float>>(header, output_image_path, stat_vox, writer_dim::TOD);
     break;
   }
 

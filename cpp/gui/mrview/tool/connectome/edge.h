@@ -46,7 +46,7 @@ public:
 
   void load_exemplar(const MR::DWI::Tractography::Streamline<float> &data) {
     assert(!exemplar);
-    exemplar.reset(new Exemplar(*this, data));
+    exemplar = std::make_unique<Exemplar>(*this, data);
   }
   void clear_exemplar() {
     if (streamtube)
@@ -60,7 +60,7 @@ public:
   void create_streamline() {
     assert(!streamline);
     assert(exemplar);
-    streamline.reset(new Streamline(*exemplar));
+    streamline = std::make_unique<Streamline>(*exemplar);
   }
   void render_streamline() const {
     assert(streamline);
@@ -74,7 +74,7 @@ public:
   void create_streamtube() {
     assert(!streamtube);
     assert(exemplar);
-    streamtube.reset(new Streamtube(*exemplar));
+    streamtube = std::make_unique<Streamtube>(*exemplar);
   }
   void render_streamtube() const {
     assert(streamtube);

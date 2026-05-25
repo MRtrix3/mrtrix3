@@ -39,7 +39,7 @@ public:
     debug_validate_5TT_image(voxel);
     property_set.set(bt, "backtrack");
     if (property_set.find("crop_at_gmwmi") != property_set.end())
-      gmwmi_finder.reset(new GMWMI_finder(voxel));
+      gmwmi_finder = std::make_unique<GMWMI_finder>(voxel);
     auto sgm_trunc_property = property_set.find("sgm_truncation");
     if (sgm_trunc_property != property_set.end())
       trunc = Enum::from_name<sgm_trunc_t>(sgm_trunc_property->second);

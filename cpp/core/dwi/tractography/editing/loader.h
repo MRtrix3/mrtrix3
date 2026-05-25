@@ -17,6 +17,7 @@
 #pragma once
 
 #include <filesystem>
+#include <memory>
 #include <vector>
 
 #include "memory.h"
@@ -51,7 +52,7 @@ bool Loader::operator()(Streamline<> &out) {
 
   while (++file_index != file_list.size()) {
     dummy_properties.clear();
-    reader.reset(new Reader<>(file_list[file_index], dummy_properties));
+    reader = std::make_unique<Reader<>>(file_list[file_index], dummy_properties);
     if ((*reader)(out))
       return true;
   }

@@ -16,6 +16,8 @@
 
 #include "dwi/tractography/seeding/dynamic.h"
 
+#include <memory>
+
 #include "app.h"
 #include "dwi/fmls.h"
 #include "dwi/tractography/rng.h"
@@ -65,7 +67,7 @@ Dynamic::Dynamic(const std::filesystem::path &in,
       transform(fod_data) {
   auto opt = App::get_options("act");
   if (!opt.empty())
-    act.reset(new Dynamic_ACT_additions(opt[0][0]));
+    act = std::make_unique<Dynamic_ACT_additions>(opt[0][0]);
 
   perform_FOD_segmentation(fod_data);
 

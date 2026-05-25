@@ -17,6 +17,7 @@
 #include "mrview/tool/connectome/node_list.h"
 
 #include <QVector>
+#include <memory>
 
 #include "mrview/tool/base.h"
 #include "mrview/tool/connectome/connectome.h"
@@ -141,8 +142,8 @@ void Node_list::clear_selection_slot() {
 
 void Node_list::node_selection_settings_dialog_slot() {
   if (!node_selection_dialog)
-    node_selection_dialog.reset(new NodeSelectionSettingsDialog(
-        &window(), "Node selection visual settings", connectome.node_selection_settings));
+    node_selection_dialog = std::make_unique<NodeSelectionSettingsDialog>(
+        &window(), "Node selection visual settings", connectome.node_selection_settings);
   node_selection_dialog->show();
 }
 
