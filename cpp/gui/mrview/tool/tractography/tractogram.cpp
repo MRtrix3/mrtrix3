@@ -26,6 +26,7 @@
 #include "file/matrix.h"
 #include "mrview/mode/base.h"
 #include "mrview/window.h"
+#include "opengl/gl_core_3_3.h"
 #include "opengl/lighting.h"
 #include "progressbar.h"
 #include "projection.h"

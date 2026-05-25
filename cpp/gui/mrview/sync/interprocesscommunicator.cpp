@@ -95,6 +95,8 @@ InterprocessCommunicator::InterprocessCommunicator() : QObject(0) {
  * Fires when another process tries to set up a connection from them --> us. I.e. when another MRView calls TryConnectTo
  * with our id as the argument
  */
+// clang-analyzer does not model Qt parent/child ownership, so it false-positives here.
+// NOLINTBEGIN(clang-analyzer-cplusplus.NewDeleteLeaks)
 void InterprocessCommunicator::OnNewIncomingConnection() {
   // Parent the reader to this communicator so that Qt's object-ownership model
   // reclaims it when this object is destroyed, rather than leaking the allocation.
@@ -104,6 +106,7 @@ void InterprocessCommunicator::OnNewIncomingConnection() {
           this,
           SLOT(OnDataReceived(std::vector<std::shared_ptr<QByteArray>>)));
 }
+// NOLINTEND(clang-analyzer-cplusplus.NewDeleteLeaks)
 
 /**
  * Tries to set an outgoing connection to the specified ID (another process), and tells that process what our id is, so

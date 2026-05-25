@@ -17,6 +17,7 @@
 #include "mrview/tool/view.h"
 
 #include <cstdint>
+#include <sys/types.h>
 
 #include "exception.h"
 #include "math/math.h"
