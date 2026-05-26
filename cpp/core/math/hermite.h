@@ -38,12 +38,14 @@ public:
     w[3] = (T(0.5) - t) * (p3 - p2);
   }
 
-  value_type coef(size_t i) const { return (w[i]); }
+  [[nodiscard]] value_type coef(size_t i) const { return (w[i]); }
 
   template <class S> S value(const S *vals) const { return (value(vals[0], vals[1], vals[2], vals[3])); }
-  template <class S> S value(const std::array<S, 4> vals) const { return (value(vals[0], vals[1], vals[2], vals[3])); }
+  template <class S> [[nodiscard]] S value(const std::array<S, 4> vals) const {
+    return (value(vals[0], vals[1], vals[2], vals[3]));
+  }
 
-  template <class S> S value(const S &a, const S &b, const S &c, const S &d) const {
+  template <class S> [[nodiscard]] S value(const S &a, const S &b, const S &c, const S &d) const {
     return (w[0] * a + w[1] * b + w[2] * c + w[3] * d);
   }
 

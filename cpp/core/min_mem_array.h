@@ -103,7 +103,7 @@ public:
       data.push_back(d[i]);
   }
 
-  size_t dim() const { return n; }
+  [[nodiscard]] size_t dim() const { return n; }
 
   bool operator==(const Min_mem_array<T> &that) const { return ((n == that.n) && !memcmp(d, that.d, n * sizeof(T))); }
 

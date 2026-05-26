@@ -179,9 +179,9 @@ public:
     return static_cast<default_type>(static_cast<float>(temp.value()));
   }
 
-  Math::Stats::index_type size() const override { return data.size(0); }
+  [[nodiscard]] Math::Stats::index_type size() const override { return data.size(0); }
 
-  const Header &header() const { return H; }
+  [[nodiscard]] const Header &header() const { return H; }
 
 private:
   Header H;

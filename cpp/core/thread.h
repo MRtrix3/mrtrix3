@@ -115,7 +115,9 @@ public:
     thread = std::async(std::launch::async, &F::execute, &functor);
   }
 
-  bool finished() const { return thread.wait_for(std::chrono::microseconds(0)) == std::future_status::ready; }
+  [[nodiscard]] bool finished() const {
+    return thread.wait_for(std::chrono::microseconds(0)) == std::future_status::ready;
+  }
 
   void wait() noexcept(false) {
     DEBUG("waiting for completion of thread \"" + name + "\"...");
@@ -170,14 +172,14 @@ public:
     DEBUG("threads \"" + name + "\" completed OK");
   }
 
-  bool finished() const {
+  [[nodiscard]] bool finished() const {
     for (auto &t : threads)
       if (t.wait_for(std::chrono::microseconds(0)) != std::future_status::ready)
         return false;
     return true;
   }
 
-  bool any_valid() const {
+  [[nodiscard]] bool any_valid() const {
     for (auto &t : threads)
       if (t.valid())
         return true;

@@ -85,8 +85,8 @@ protected:
   std::filesystem::path csv_path;
 
   // Convenience functions
-  double calc_roc_cost_function() const;
-  double calc_gradient(const track_t, const double, const double) const;
+  [[nodiscard]] double calc_roc_cost_function() const;
+  [[nodiscard]] double calc_gradient(const track_t, const double, const double) const;
 
   // For calculating the streamline removal gradients in a multi-threaded fashion
   class TrackGradientCalculator {

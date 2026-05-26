@@ -75,8 +75,8 @@ public:
   LW(const float l, const float w) : length(l), weight(w) {}
   LW() : length(NaNF), weight(NaNF) {}
   bool operator<(const LW &that) const { return length < that.length; }
-  float get_length() const { return length; }
-  float get_weight() const { return weight; }
+  [[nodiscard]] float get_length() const { return length; }
+  [[nodiscard]] float get_weight() const { return weight; }
 
 private:
   float length, weight;

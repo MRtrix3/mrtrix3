@@ -59,16 +59,16 @@ public:
     }
   }
 
-  size_t ndim() const { return dim.size(); }
-  ssize_t size(size_t axis) const { return dim[axis]; }
+  [[nodiscard]] size_t ndim() const { return dim.size(); }
+  [[nodiscard]] ssize_t size(size_t axis) const { return dim[axis]; }
 
-  const ssize_t &index(size_t axis) const { return pos[axis]; }
+  [[nodiscard]] const ssize_t &index(size_t axis) const { return pos[axis]; }
   ssize_t &index(size_t axis) { return pos[axis]; }
 
-  const Eigen::Matrix<ssize_t, 1, Eigen::Dynamic> get_pos() const { return pos; }
+  [[nodiscard]] const Eigen::Matrix<ssize_t, 1, Eigen::Dynamic> get_pos() const { return pos; }
 
-  const ssize_t &extent(size_t axis) const { return dim[axis]; }
-  const ssize_t &centre(size_t axis) const { return offset[axis]; }
+  [[nodiscard]] const ssize_t &extent(size_t axis) const { return dim[axis]; }
+  [[nodiscard]] const ssize_t &centre(size_t axis) const { return offset[axis]; }
 
   void reset(size_t axis) { pos[axis] = pos_orig[axis]; }
 

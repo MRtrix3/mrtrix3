@@ -240,7 +240,7 @@ void unring3D(ImageIn &input, ImageOut &output, const int minW = 1, const int ma
   class Volume : public ImageType {
   public:
     Volume(const ImageType &parent) : ImageType(parent) {}
-    size_t ndim() const { return 3; }
+    [[nodiscard]] size_t ndim() const { return 3; }
   };
 
   Unring3DFunctor unring(Header(input), minW, maxW, num_shifts);

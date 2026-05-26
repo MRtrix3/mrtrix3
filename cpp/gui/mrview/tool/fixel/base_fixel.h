@@ -50,7 +50,7 @@ public:
     std::string vertex_shader_source(const Displayable &) override;
     std::string geometry_shader_source(const Displayable &) override;
     std::string fragment_shader_source(const Displayable &) override;
-    virtual bool need_update(const Displayable &) const override;
+    [[nodiscard]] virtual bool need_update(const Displayable &) const override;
     virtual void update(const Displayable &) override;
 
   protected:

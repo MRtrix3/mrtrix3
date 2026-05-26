@@ -117,7 +117,7 @@ public:
 
   using value_type = double;
 
-  size_t size() const { return 3 * ndirs; }
+  [[nodiscard]] size_t size() const { return 3 * ndirs; }
 
   // set x to original directions provided in constructor.
   // The idea is to save the directions from one run to initialise next run

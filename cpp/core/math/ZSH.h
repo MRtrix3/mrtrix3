@@ -94,8 +94,8 @@ public:
     amplitudes.noalias() = ZSHT * zsh;
   }
 
-  size_t n_ZSH() const { return ZSHT.cols(); }
-  size_t n_amp() const { return ZSHT.rows(); }
+  [[nodiscard]] size_t n_ZSH() const { return ZSHT.cols(); }
+  [[nodiscard]] size_t n_amp() const { return ZSHT.rows(); }
 
   const matrix_type &mat_A2ZSH() const { return iZSHT; }
   const matrix_type &mat_ZSH2A() const { return ZSHT; }

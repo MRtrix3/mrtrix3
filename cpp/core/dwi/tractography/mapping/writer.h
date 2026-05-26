@@ -255,20 +255,20 @@ private:
   //   For the standard SetVoxel classes, this is a single value 'factor' for the set as
   //     stored in SetVoxelExtras
   //   For the Gaussian SetVoxel classes, there is a factor per mapped element
-  default_type get_factor(const Voxel &element, const SetVoxel &set) const { return set.factor; }
-  default_type get_factor(const VoxelDEC &element, const SetVoxelDEC &set) const { return set.factor; }
-  default_type get_factor(const Dixel &element, const SetDixel &set) const { return set.factor; }
-  default_type get_factor(const VoxelTOD &element, const SetVoxelTOD &set) const { return set.factor; }
-  default_type get_factor(const Gaussian::Voxel &element, const Gaussian::SetVoxel &set) const {
+  [[nodiscard]] default_type get_factor(const Voxel &element, const SetVoxel &set) const { return set.factor; }
+  [[nodiscard]] default_type get_factor(const VoxelDEC &element, const SetVoxelDEC &set) const { return set.factor; }
+  [[nodiscard]] default_type get_factor(const Dixel &element, const SetDixel &set) const { return set.factor; }
+  [[nodiscard]] default_type get_factor(const VoxelTOD &element, const SetVoxelTOD &set) const { return set.factor; }
+  [[nodiscard]] default_type get_factor(const Gaussian::Voxel &element, const Gaussian::SetVoxel &set) const {
     return element.get_factor();
   }
-  default_type get_factor(const Gaussian::VoxelDEC &element, const Gaussian::SetVoxelDEC &set) const {
+  [[nodiscard]] default_type get_factor(const Gaussian::VoxelDEC &element, const Gaussian::SetVoxelDEC &set) const {
     return element.get_factor();
   }
-  default_type get_factor(const Gaussian::Dixel &element, const Gaussian::SetDixel &set) const {
+  [[nodiscard]] default_type get_factor(const Gaussian::Dixel &element, const Gaussian::SetDixel &set) const {
     return element.get_factor();
   }
-  default_type get_factor(const Gaussian::VoxelTOD &element, const Gaussian::SetVoxelTOD &set) const {
+  [[nodiscard]] default_type get_factor(const Gaussian::VoxelTOD &element, const Gaussian::SetVoxelTOD &set) const {
     return element.get_factor();
   }
 

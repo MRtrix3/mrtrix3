@@ -119,12 +119,14 @@ public:
   AFDConnFixel(const AFDConnFixel &that) : FixelBase(that), length(that.length) {}
 
   void add_to_selection(const value_type l) { length += l; }
-  value_type get_selected_volume(const value_type l) const {
+  [[nodiscard]] value_type get_selected_volume(const value_type l) const {
     return (get_TD() != 0.0) ? (get_FOD() * (l / get_TD())) : 0.0;
   }
-  value_type get_selected_volume() const { return (get_TD() != 0.0) ? (get_FOD() * (length / get_TD())) : 0.0; }
-  value_type get_selected_length() const { return length; }
-  bool is_selected() const { return length != 0.0F; }
+  [[nodiscard]] value_type get_selected_volume() const {
+    return (get_TD() != 0.0) ? (get_FOD() * (length / get_TD())) : 0.0;
+  }
+  [[nodiscard]] value_type get_selected_length() const { return length; }
+  [[nodiscard]] bool is_selected() const { return length != 0.0F; }
 
 private:
   value_type length;

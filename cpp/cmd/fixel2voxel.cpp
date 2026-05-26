@@ -156,8 +156,8 @@ struct LoopFixelsInVoxelWithMax {
       ++fixel_index;
     }
     FORCE_INLINE void operator++(int) { operator++(); }
-    FORCE_INLINE bool padding() const { return ((max_fixels != 0U) && fixel_index >= num_fixels); }
-    FORCE_INLINE index_type count() const { return (max_fixels != 0U) ? max_fixels : num_fixels; }
+    [[nodiscard]] FORCE_INLINE bool padding() const { return ((max_fixels != 0U) && fixel_index >= num_fixels); }
+    [[nodiscard]] FORCE_INLINE index_type count() const { return (max_fixels != 0U) ? max_fixels : num_fixels; }
   };
 
   template <class... DataType> FORCE_INLINE Run<DataType...> operator()(DataType &...data) const {

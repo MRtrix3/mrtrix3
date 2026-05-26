@@ -172,11 +172,11 @@ public:
     amplitudes.noalias() = SHT * sh;
   }
 
-  size_t n_SH() const { return SHT.cols(); }
-  size_t n_amp() const { return SHT.rows(); }
+  [[nodiscard]] size_t n_SH() const { return SHT.cols(); }
+  [[nodiscard]] size_t n_amp() const { return SHT.rows(); }
 
-  const matrix_type &mat_A2SH() const { return iSHT; }
-  const matrix_type &mat_SH2A() const { return SHT; }
+  [[nodiscard]] const matrix_type &mat_A2SH() const { return iSHT; }
+  [[nodiscard]] const matrix_type &mat_SH2A() const { return SHT; }
 
 protected:
   matrix_type SHT, iSHT;
@@ -395,13 +395,15 @@ public:
     f.p2 = f.p1 + nAL;
   }
 
-  ValueType get(const PrecomputedFraction<ValueType> &f, int i) const {
+  [[nodiscard]] ValueType get(const PrecomputedFraction<ValueType> &f, int i) const {
     ValueType v = f.f1 * f.p1[i];
     if (f.f2)
       v += f.f2 * f.p2[i];
     return v;
   }
-  ValueType get(const PrecomputedFraction<ValueType> &f, int l, int m) const { return get(f, index_mpos(l, m)); }
+  [[nodiscard]] ValueType get(const PrecomputedFraction<ValueType> &f, int l, int m) const {
+    return get(f, index_mpos(l, m));
+  }
 
   void get(ValueType *dest, const PrecomputedFraction<ValueType> &f) const {
     for (int l = 0; l <= lmax; l += 2) {
@@ -413,7 +415,7 @@ public:
   }
 
   template <class VectorType, class UnitVectorType>
-  ValueType value(const VectorType &val, const UnitVectorType &unit_dir) const {
+  [[nodiscard]] ValueType value(const VectorType &val, const UnitVectorType &unit_dir) const {
     PrecomputedFraction<ValueType> f;
     set(f, std::acos(std::clamp(static_cast<ValueType>(unit_dir[2]), ValueType(-1), ValueType(1))));
     const ValueType rxy = std::hypot(unit_dir[0], unit_dir[1]);
@@ -596,7 +598,7 @@ public:
     delta(sh, dir, lmax);
     return sconv(sh, RH);
   }
-  inline const Eigen::Matrix<ValueType, Eigen::Dynamic, 1> &RH_coefs() const { return RH; }
+  [[nodiscard]] inline const Eigen::Matrix<ValueType, Eigen::Dynamic, 1> &RH_coefs() const { return RH; }
 
 protected:
   const size_t lmax;

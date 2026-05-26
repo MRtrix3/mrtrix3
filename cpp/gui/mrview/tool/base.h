@@ -37,7 +37,7 @@ constexpr ssize_t layout_spacing = 3;
 class CameraInteractor {
 public:
   CameraInteractor() : _active(false) {}
-  bool active() const { return _active; }
+  [[nodiscard]] bool active() const { return _active; }
   virtual void deactivate();
   virtual bool slice_move_event(const ModelViewProjection &projection, float inc);
   virtual bool pan_event(const ModelViewProjection &projection);
@@ -66,14 +66,14 @@ public:
 class Base : public QFrame {
 public:
   Base(Dock *parent);
-  Window &window() const { return *Window::main; }
+  [[nodiscard]] Window &window() const { return *Window::main; }
 
   std::filesystem::path current_folder;
 
   static void add_commandline_options(MR::App::OptionList &options);
   virtual bool process_commandline_option(const MR::App::ParsedOption &opt);
 
-  virtual QSize sizeHint() const override;
+  [[nodiscard]] virtual QSize sizeHint() const override;
 
   void grab_focus() {
     window().tool_has_focus = this;
@@ -137,7 +137,7 @@ public:
   virtual void draw(const Projection &transform, bool is_3D, int axis, int slice);
   virtual void draw_colourbars();
   virtual size_t visible_number_colourbars() { return 0; }
-  virtual int draw_tool_labels(int, int, const Projection &) const { return 0; }
+  [[nodiscard]] virtual int draw_tool_labels(int, int, const Projection &) const { return 0; }
   virtual bool mouse_press_event();
   virtual bool mouse_move_event();
   virtual bool mouse_release_event();

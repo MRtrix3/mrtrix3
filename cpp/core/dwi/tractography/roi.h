@@ -76,17 +76,17 @@ public:
     }
   }
 
-  std::string shape() const { return (mask ? "image" : "sphere"); }
+  [[nodiscard]] std::string shape() const { return (mask ? "image" : "sphere"); }
 
-  std::string parameters() const {
+  [[nodiscard]] std::string parameters() const {
     return mask ? std::string(mask->name()) : (str(pos[0]) + "," + str(pos[1]) + "," + str(pos[2]) + "," + str(radius));
   }
 
-  float min_featurelength() const {
+  [[nodiscard]] float min_featurelength() const {
     return mask ? std::min({mask->spacing(0), mask->spacing(1), mask->spacing(2)}) : radius;
   }
 
-  bool contains(const Eigen::Vector3f &p) const {
+  [[nodiscard]] bool contains(const Eigen::Vector3f &p) const {
     if (mask) {
       Eigen::Vector3f v = *(mask->scanner2voxel) * p;
       Mask temp(*mask); // Required for thread-safety
@@ -116,8 +116,8 @@ public:
   ROISetBase() {}
 
   void clear() { R.clear(); }
-  size_t size() const { return (R.size()); }
-  bool empty() const { return R.empty(); }
+  [[nodiscard]] size_t size() const { return (R.size()); }
+  [[nodiscard]] bool empty() const { return R.empty(); }
   const ROI &operator[](size_t i) const { return (R[i]); }
   void add(const ROI &roi) { R.push_back(roi); }
 
@@ -139,7 +139,7 @@ protected:
 class ROIUnorderedSet : public ROISetBase {
 public:
   ROIUnorderedSet() {}
-  bool contains(const Eigen::Vector3f &p) const {
+  [[nodiscard]] bool contains(const Eigen::Vector3f &p) const {
     for (const auto &n : R)
       if (n.contains(p))
         return (true);
@@ -173,7 +173,7 @@ public:
         valid = false;
     }
 
-    bool all_entered() const { return (valid && (next_index == size)); }
+    [[nodiscard]] bool all_entered() const { return (valid && (next_index == size)); }
 
   private:
     const size_t size;
@@ -207,12 +207,12 @@ public:
   IncludeROIVisitation(const IncludeROIVisitation &) = default;
   IncludeROIVisitation &operator=(const IncludeROIVisitation &) = delete;
 
-  bool empty() const { return unordered.empty() && ordered.empty(); }
+  [[nodiscard]] bool empty() const { return unordered.empty() && ordered.empty(); }
   void reset() {
     visited.setZero();
     state.reset();
   }
-  size_t size() const { return unordered.size() + ordered.size(); }
+  [[nodiscard]] size_t size() const { return unordered.size() + ordered.size(); }
 
   void operator()(const Eigen::Vector3f &p) {
     unordered.contains(p, visited);

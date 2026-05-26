@@ -29,7 +29,7 @@ class AdjustButton : public QLineEdit {
 public:
   AdjustButton(QWidget *parent, float change_rate = 1.0);
 
-  float value() const {
+  [[nodiscard]] float value() const {
     if (text().isEmpty())
       return NaNF;
     try {
@@ -39,8 +39,8 @@ public:
     }
   }
 
-  bool isMin() const { return is_min; }
-  bool isMax() const { return is_max; }
+  [[nodiscard]] bool isMin() const { return is_min; }
+  [[nodiscard]] bool isMax() const { return is_max; }
 
   void setValue(float val) {
     if (std::isfinite(val)) {
@@ -84,8 +84,8 @@ public:
     }
   }
 
-  float getMin() const { return min; }
-  float getMax() const { return max; }
+  [[nodiscard]] float getMin() const { return min; }
+  [[nodiscard]] float getMax() const { return max; }
 
 signals:
   void valueChanged();

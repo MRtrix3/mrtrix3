@@ -90,11 +90,11 @@ public:
     description.push_back(std::move(msg));
   }
 
-  const char *what() const noexcept override; // check_syntax off
+  [[nodiscard]] const char *what() const noexcept override; // check_syntax off
 
   void display(int log_level = 0) const { display_func(*this, log_level); }
 
-  size_t num() const { return description.size(); }
+  [[nodiscard]] size_t num() const { return description.size(); }
   std::string operator[](size_t n) const { return description[n]; }
   void push_back(std::string s) { description.push_back(std::move(s)); }
   void push_back(const Exception &e) {

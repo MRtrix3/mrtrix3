@@ -79,8 +79,8 @@ private:
 class Wrapper {
 public:
   Wrapper(List &strides) : S(strides) {}
-  size_t ndim() const { return S.size(); }
-  const ssize_t &stride(size_t axis) const { return S[axis]; }
+  [[nodiscard]] size_t ndim() const { return S.size(); }
+  [[nodiscard]] const ssize_t &stride(size_t axis) const { return S[axis]; }
   ssize_t &stride(size_t axis) { return S[axis]; }
 
 private:
@@ -90,7 +90,7 @@ private:
 template <class HeaderType> class InfoWrapper : public Wrapper {
 public:
   InfoWrapper(List &strides, const HeaderType &header) : Wrapper(strides), D(header) { assert(ndim() == D.ndim()); }
-  ssize_t size(size_t axis) const { return D.size(axis); }
+  [[nodiscard]] ssize_t size(size_t axis) const { return D.size(axis); }
 
 private:
   const HeaderType &D;

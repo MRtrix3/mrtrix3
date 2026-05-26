@@ -333,7 +333,7 @@ protected:
   size_t sample_idx;
 
 private:
-  FORCE_INLINE float FOD(const Eigen::Vector3f &direction) const {
+  [[nodiscard]] FORCE_INLINE float FOD(const Eigen::Vector3f &direction) const {
     return (S.precomputer ? S.precomputer.value(values, direction) : Math::SH::value(values, direction, S.lmax));
   }
 

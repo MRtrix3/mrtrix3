@@ -48,7 +48,7 @@ public:
     }
   }
 
-  const std::filesystem::path &name() const { return filepath; }
+  [[nodiscard]] const std::filesystem::path &name() const { return filepath; }
   void open(const std::filesystem::path &fname, std::string_view mode) {
     close();
     filepath = fname;
@@ -69,16 +69,16 @@ public:
     }
   }
 
-  bool is_open() const { return gz != nullptr; }
-  bool eof() const {
+  [[nodiscard]] bool is_open() const { return gz != nullptr; }
+  [[nodiscard]] bool eof() const {
     assert(gz);
     return gzeof(gz) != 0;
   }
-  int64_t tell() const {
+  [[nodiscard]] int64_t tell() const {
     assert(gz);
     return gztell(gz);
   }
-  int64_t tellg() const { return tell(); }
+  [[nodiscard]] int64_t tellg() const { return tell(); }
 
   void seek(int64_t offset) {
     assert(gz);

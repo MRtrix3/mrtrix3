@@ -31,7 +31,7 @@ class ODF_Model : public QAbstractItemModel {
 public:
   ODF_Model(QObject *parent) : QAbstractItemModel(parent) {}
 
-  QVariant data(const QModelIndex &index, int role) const {
+  [[nodiscard]] QVariant data(const QModelIndex &index, int role) const {
     if (!index.isValid())
       return {};
     if (role != Qt::DisplayRole && role != Qt::ToolTipRole)
@@ -43,20 +43,20 @@ public:
     return QAbstractItemModel::setData(index, value, role);
   }
 
-  Qt::ItemFlags flags(const QModelIndex &index) const {
+  [[nodiscard]] Qt::ItemFlags flags(const QModelIndex &index) const {
     if (!index.isValid())
       return {};
     return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
   }
 
-  QModelIndex parent(const QModelIndex &) const { return {}; }
+  [[nodiscard]] QModelIndex parent(const QModelIndex &) const { return {}; }
 
-  int rowCount(const QModelIndex &parent = QModelIndex()) const {
+  [[nodiscard]] int rowCount(const QModelIndex &parent = QModelIndex()) const {
     (void)parent; // to suppress warnings about unused parameters
     return items.size();
   }
 
-  int columnCount(const QModelIndex &parent = QModelIndex()) const {
+  [[nodiscard]] int columnCount(const QModelIndex &parent = QModelIndex()) const {
     (void)parent;
     return 1;
   }
@@ -67,7 +67,7 @@ public:
                    bool hide_negative_lobes,
                    float scale);
 
-  QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const {
+  [[nodiscard]] QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const {
     (void)parent;
     return createIndex(row, column);
   }

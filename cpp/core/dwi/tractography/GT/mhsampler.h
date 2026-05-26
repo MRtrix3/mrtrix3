@@ -112,7 +112,7 @@ protected:
     return gaussian_pdf(Dpos, sigpos) * gaussian_pdf(Ddir, sigdir);
   }
 
-  inline double gaussian_pdf(const Point_t &x, double sigma) const {
+  [[nodiscard]] inline double gaussian_pdf(const Point_t &x, double sigma) const {
     return std::exp(-x.squaredNorm() / (2 * sigma)) / std::sqrt(2 * Math::pi * sigma * sigma);
   }
 };

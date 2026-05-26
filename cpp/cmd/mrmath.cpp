@@ -138,7 +138,7 @@ public:
       ++count;
     }
   }
-  value_type result() const {
+  [[nodiscard]] value_type result() const {
     if (count == 0U)
       return NaNF;
     return sum / count;
@@ -165,7 +165,7 @@ public:
     if (std::isfinite(val))
       sum += val;
   }
-  value_type result() const { return sum; }
+  [[nodiscard]] value_type result() const { return sum; }
   double sum;
 };
 
@@ -176,7 +176,7 @@ public:
     if (std::isfinite(val))
       product = std::isfinite(product) ? product * val : val;
   }
-  value_type result() const { return product; }
+  [[nodiscard]] value_type result() const { return product; }
   double product;
 };
 
@@ -189,7 +189,7 @@ public:
       ++count;
     }
   }
-  value_type result() const {
+  [[nodiscard]] value_type result() const {
     if (count == 0U)
       return NaNF;
     return std::sqrt(sum / count);
@@ -207,7 +207,7 @@ public:
       ++count;
     }
   }
-  value_type result() const {
+  [[nodiscard]] value_type result() const {
     if (count == 0U)
       return NaNF;
     return std::sqrt(sum);
@@ -229,7 +229,7 @@ public:
       m2 += delta * delta2;
     }
   }
-  value_type result() const {
+  [[nodiscard]] value_type result() const {
     if (count < 2)
       return NaNF;
     return m2 / (static_cast<double>(count) - 1.0);
@@ -241,7 +241,7 @@ public:
 class Std : public Var {
 public:
   Std() : Var() {}
-  value_type result() const { return std::sqrt(Var::result()); }
+  [[nodiscard]] value_type result() const { return std::sqrt(Var::result()); }
 };
 
 class Min {
@@ -251,7 +251,7 @@ public:
     if (std::isfinite(val) && val < min)
       min = val;
   }
-  value_type result() const { return std::isfinite(min) ? min : NaNF; }
+  [[nodiscard]] value_type result() const { return std::isfinite(min) ? min : NaNF; }
   value_type min;
 };
 
@@ -262,7 +262,7 @@ public:
     if (std::isfinite(val) && val > max)
       max = val;
   }
-  value_type result() const { return std::isfinite(max) ? max : NaNF; }
+  [[nodiscard]] value_type result() const { return std::isfinite(max) ? max : NaNF; }
   value_type max;
 };
 
@@ -273,7 +273,7 @@ public:
     if (std::isfinite(val) && std::fabs(val) > max)
       max = std::fabs(val);
   }
-  value_type result() const { return std::isfinite(max) ? max : NaNF; }
+  [[nodiscard]] value_type result() const { return std::isfinite(max) ? max : NaNF; }
   value_type max;
 };
 
@@ -285,7 +285,7 @@ public:
     if (std::isfinite(val) && (!std::isfinite(max) || std::fabs(val) > std::fabs(max)))
       max = val;
   }
-  value_type result() const { return std::isfinite(max) ? max : NaNF; }
+  [[nodiscard]] value_type result() const { return std::isfinite(max) ? max : NaNF; }
   value_type max;
 };
 
@@ -295,7 +295,7 @@ public:
     if (!std::isnan(val))
       values.push_back(val);
   }
-  value_type result() const {
+  [[nodiscard]] value_type result() const {
     if (values.empty())
       return NaNF;
     if constexpr (logbase == Math::Entropy::log_base_t::TWO)

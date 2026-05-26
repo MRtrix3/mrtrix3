@@ -211,8 +211,8 @@ void run_entropy() {
         assert(transform_it != transforms.end());
         return (transform_it->second * SH_coefs).eval();
       }
-      size_t get_num_dirs() const { return num_dirs; }
-      default_type normalise(const default_type in) const { return normalisation(in); }
+      [[nodiscard]] size_t get_num_dirs() const { return num_dirs; }
+      [[nodiscard]] default_type normalise(const default_type in) const { return normalisation(in); }
 
     private:
       const size_t num_dirs;

@@ -222,7 +222,7 @@ protected:
   float max_truncation;
   std::vector<Eigen::Vector3f> calibrate_list;
 
-  float FOD(const Eigen::Vector3f &d) const {
+  [[nodiscard]] float FOD(const Eigen::Vector3f &d) const {
     return (S.precomputer ? S.precomputer.value(values, d) : Math::SH::value(values, d, S.lmax));
   }
 

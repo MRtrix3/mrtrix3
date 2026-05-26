@@ -36,23 +36,23 @@ public:
     return *this;
   }
 
-  double get_d_cost_d_mu(const double mu) const { return get_d_cost_d_mu_unweighted(mu) * weight; }
-  double get_cost_wo_track(const double mu, const double length) const {
+  [[nodiscard]] double get_d_cost_d_mu(const double mu) const { return get_d_cost_d_mu_unweighted(mu) * weight; }
+  [[nodiscard]] double get_cost_wo_track(const double mu, const double length) const {
     return get_cost_wo_track_unweighted(mu, length) * weight;
   }
-  double get_cost_manual_TD(const double mu, const double manual_TD) const {
+  [[nodiscard]] double get_cost_manual_TD(const double mu, const double manual_TD) const {
     return get_cost_manual_TD_unweighted(mu, manual_TD) * weight;
   }
-  double calc_quantisation(const double mu, const double length) const {
+  [[nodiscard]] double calc_quantisation(const double mu, const double length) const {
     return get_cost_manual_TD(mu, (FOD / mu) + length);
   }
 
 private:
-  double get_d_cost_d_mu_unweighted(const double mu) const { return (2.0 * TD * get_diff(mu)); }
-  double get_cost_wo_track_unweighted(const double mu, const double length) const {
+  [[nodiscard]] double get_d_cost_d_mu_unweighted(const double mu) const { return (2.0 * TD * get_diff(mu)); }
+  [[nodiscard]] double get_cost_wo_track_unweighted(const double mu, const double length) const {
     return (Math::pow2((std::max(TD - length, 0.0) * mu) - FOD));
   }
-  double get_cost_manual_TD_unweighted(const double mu, const double manual_TD) const {
+  [[nodiscard]] double get_cost_manual_TD_unweighted(const double mu, const double manual_TD) const {
     return Math::pow2((manual_TD * mu) - FOD);
   }
 };

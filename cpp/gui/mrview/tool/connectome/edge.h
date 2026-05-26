@@ -87,30 +87,30 @@ public:
 
   static void set_streamtube_LOD(const size_t lod) { Streamtube::LOD(lod); }
 
-  node_t get_node_index(const size_t i) const {
+  [[nodiscard]] node_t get_node_index(const size_t i) const {
     assert(i == 0 || i == 1);
     return node_indices[i];
   }
-  const Eigen::Vector3f &get_node_centre(const size_t i) const {
+  [[nodiscard]] const Eigen::Vector3f &get_node_centre(const size_t i) const {
     assert(i == 0 || i == 1);
     return node_centres[i];
   }
-  Eigen::Vector3f get_com() const { return (node_centres[0] + node_centres[1]) * 0.5; }
+  [[nodiscard]] Eigen::Vector3f get_com() const { return (node_centres[0] + node_centres[1]) * 0.5; }
 
-  const GLfloat *get_rot_matrix() const { return rot_matrix; }
+  [[nodiscard]] const GLfloat *get_rot_matrix() const { return rot_matrix; }
 
-  const Eigen::Vector3f &get_dir() const { return dir; }
+  [[nodiscard]] const Eigen::Vector3f &get_dir() const { return dir; }
   void set_size(const float i) { size = i; }
-  float get_size() const { return size; }
+  [[nodiscard]] float get_size() const { return size; }
   void set_colour(const Eigen::Array3f &i) { colour = i; }
-  const Eigen::Array3f &get_colour() const { return colour; }
+  [[nodiscard]] const Eigen::Array3f &get_colour() const { return colour; }
   void set_alpha(const float i) { alpha = i; }
-  float get_alpha() const { return alpha; }
+  [[nodiscard]] float get_alpha() const { return alpha; }
   void set_visible(const bool i) { visible = i; }
-  bool is_visible() const { return visible; }
-  bool is_diagonal() const { return (node_indices[0] == node_indices[1]); }
+  [[nodiscard]] bool is_visible() const { return visible; }
+  [[nodiscard]] bool is_diagonal() const { return (node_indices[0] == node_indices[1]); }
 
-  bool to_draw() const { return (visible && (alpha > 0.0F) && (size > 0.0F)); }
+  [[nodiscard]] bool to_draw() const { return (visible && (alpha > 0.0F) && (size > 0.0F)); }
 
 private:
   const std::array<node_t, 2> node_indices;
@@ -228,7 +228,7 @@ private:
           regenerate();
         }
       }
-      size_t points_per_vertex() const { return Math::pow2(LOD + 1); }
+      [[nodiscard]] size_t points_per_vertex() const { return Math::pow2(LOD + 1); }
 
     protected:
       size_t max_num_points;

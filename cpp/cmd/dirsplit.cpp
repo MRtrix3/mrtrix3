@@ -93,14 +93,14 @@ public:
     return num_permutations < target_num_permutations;
   }
 
-  value_type energy(size_t i, size_t j) const {
+  [[nodiscard]] value_type energy(size_t i, size_t j) const {
     vector3_type const a = {directions(i, 0), directions(i, 1), directions(i, 2)};
     vector3_type const b = {directions(j, 0), directions(j, 1), directions(j, 2)};
     return 1.0 / (a - b).norm() + 1.0 / (a + b).norm();
   }
 
-  const std::vector<std::vector<size_t>> &get_init_subset() const { return subset; }
-  const std::vector<std::vector<size_t>> &get_best_subset() const { return best_subset; }
+  [[nodiscard]] const std::vector<std::vector<size_t>> &get_init_subset() const { return subset; }
+  [[nodiscard]] const std::vector<std::vector<size_t>> &get_best_subset() const { return best_subset; }
 
 protected:
   const Eigen::MatrixXd &directions;

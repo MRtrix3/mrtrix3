@@ -53,7 +53,7 @@ public:
   //! Resolve the requested memory strides given a \a header.
   /*! Returns an empty Stride::List when no specific layout was requested
    * (i.e. when default-constructed). */
-  template <class HeaderType> Stride::List resolve(const HeaderType &header) const {
+  template <class HeaderType> [[nodiscard]] Stride::List resolve(const HeaderType &header) const {
     return MR::match_v(
         request_,
         [](std::monostate) { return Stride::List(); },

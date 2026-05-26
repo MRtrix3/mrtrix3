@@ -25,7 +25,7 @@ namespace MR::Math {
 class MeanAndVariance {
 public:
   MeanAndVariance() : mean(default_type(0)), variance(default_type(0)) {}
-  default_type std() const { return std::sqrt(variance); }
+  [[nodiscard]] default_type std() const { return std::sqrt(variance); }
   default_type mean;
   default_type variance;
 };

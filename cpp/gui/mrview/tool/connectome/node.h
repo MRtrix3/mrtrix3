@@ -45,25 +45,25 @@ public:
       delete mesh.release();
   }
 
-  const Eigen::Vector3f &get_com() const { return centre_of_mass; }
-  size_t get_volume() const { return volume; }
+  [[nodiscard]] const Eigen::Vector3f &get_com() const { return centre_of_mass; }
+  [[nodiscard]] size_t get_volume() const { return volume; }
 
   void set_name(std::string_view i) { name = i; }
-  std::string get_name() const { return name; }
+  [[nodiscard]] std::string get_name() const { return name; }
   void set_size(const float i) { size = i; }
-  float get_size() const { return size; }
+  [[nodiscard]] float get_size() const { return size; }
   void set_colour(const Eigen::Array3f &i) {
     colour = i;
     pixmap.fill(QColor(i[0] * 255.0F, i[1] * 255.0F, i[2] * 255.0F));
   }
-  const Eigen::Array3f &get_colour() const { return colour; }
-  const QPixmap get_pixmap() const { return pixmap; }
+  [[nodiscard]] const Eigen::Array3f &get_colour() const { return colour; }
+  [[nodiscard]] const QPixmap get_pixmap() const { return pixmap; }
   void set_alpha(const float i) { alpha = i; }
-  float get_alpha() const { return alpha; }
+  [[nodiscard]] float get_alpha() const { return alpha; }
   void set_visible(const bool i) { visible = i; }
-  bool is_visible() const { return visible; }
+  [[nodiscard]] bool is_visible() const { return visible; }
 
-  bool to_draw() const { return (visible && (alpha > 0.0F) && (size > 0.0F)); }
+  [[nodiscard]] bool to_draw() const { return (visible && (alpha > 0.0F) && (size > 0.0F)); }
 
 private:
   const Eigen::Vector3f centre_of_mass;

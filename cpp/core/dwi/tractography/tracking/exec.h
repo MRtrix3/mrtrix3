@@ -458,8 +458,8 @@ private:
       class IndexAndValue {
       public:
         IndexAndValue(const size_t index, const float value) : i(index), v(value) {}
-        size_t index() const { return i; }
-        float value() const { return v; }
+        [[nodiscard]] size_t index() const { return i; }
+        [[nodiscard]] float value() const { return v; }
 
       private:
         const size_t i;

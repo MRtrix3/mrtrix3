@@ -176,7 +176,7 @@ protected:
 
   void add_scalar(const value_type &s) { format_scalar(s, buffer[buffer_size++]); }
 
-  value_type delimiter() const { return std::numeric_limits<value_type>::quiet_NaN(); }
+  [[nodiscard]] value_type delimiter() const { return std::numeric_limits<value_type>::quiet_NaN(); }
 
   void format_scalar(const value_type &s, value_type &destination) {
     using namespace ByteOrder;

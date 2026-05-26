@@ -42,15 +42,15 @@ public:
   ~Item() { qDeleteAll(childItems); }
   void appendChild(Item *child) { childItems.append(child); }
   Item *child(int row) { return childItems.value(row); }
-  int childCount() const { return childItems.count(); }
-  QVariant data() const { return itemData; }
-  int row() const {
+  [[nodiscard]] int childCount() const { return childItems.count(); }
+  [[nodiscard]] QVariant data() const { return itemData; }
+  [[nodiscard]] int row() const {
     if (parentItem != nullptr)
       return (parentItem->childItems.indexOf(const_cast<Item *>(this)));
     return (0);
   }
   Item *parent() { return (parentItem); }
-  const std::shared_ptr<Series> &series() const { return (dicom_series); }
+  [[nodiscard]] const std::shared_ptr<Series> &series() const { return (dicom_series); }
 
 private:
   QList<Item *> childItems;
@@ -68,7 +68,7 @@ public:
 
   ~Model() { delete rootItem; }
 
-  QVariant data(const QModelIndex &index, int role) const {
+  [[nodiscard]] QVariant data(const QModelIndex &index, int role) const {
     if (!index.isValid())
       return (QVariant());
     if (role != Qt::DisplayRole)
@@ -78,19 +78,19 @@ public:
     return static_cast<Item *>(index.internalPointer())->data();
   }
 
-  Qt::ItemFlags flags(const QModelIndex &index) const {
+  [[nodiscard]] Qt::ItemFlags flags(const QModelIndex &index) const {
     if (!index.isValid())
       return {};
     return (Qt::ItemIsEnabled | Qt::ItemIsSelectable);
   }
 
-  QVariant headerData(int, Qt::Orientation orientation, int role = Qt::DisplayRole) const {
+  [[nodiscard]] QVariant headerData(int, Qt::Orientation orientation, int role = Qt::DisplayRole) const {
     if (orientation == Qt::Horizontal && role == Qt::DisplayRole)
       return ("Name");
     return QVariant();
   }
 
-  QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const {
+  [[nodiscard]] QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const {
     if (!hasIndex(row, column, parent))
       return QModelIndex();
     Item *parentItem;
@@ -104,7 +104,7 @@ public:
     return QModelIndex();
   }
 
-  QModelIndex parent(const QModelIndex &index) const {
+  [[nodiscard]] QModelIndex parent(const QModelIndex &index) const {
     if (!index.isValid())
       return QModelIndex();
     Item *childItem = static_cast<Item *>(index.internalPointer());
@@ -114,7 +114,7 @@ public:
     return createIndex(parentItem->row(), 0, parentItem);
   }
 
-  int rowCount(const QModelIndex &parent = QModelIndex()) const {
+  [[nodiscard]] int rowCount(const QModelIndex &parent = QModelIndex()) const {
     if (parent.column() > 0)
       return 0;
     Item *parentItem;
@@ -125,7 +125,7 @@ public:
     return parentItem->childCount();
   }
 
-  int columnCount(const QModelIndex &parent = QModelIndex()) const {
+  [[nodiscard]] int columnCount(const QModelIndex &parent = QModelIndex()) const {
     (void)parent; // to suppress warnings about unused parameters
     return 1;
   }

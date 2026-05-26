@@ -39,7 +39,7 @@ public:
 
   ~Tractogram();
 
-  Window &window() const { return *Window::main; }
+  [[nodiscard]] Window &window() const { return *Window::main; }
 
   void render(const Projection &transform);
 
@@ -60,11 +60,11 @@ public:
   void set_color_type(const TrackColourType);
   void set_threshold_type(const TrackThresholdType);
   void set_geometry_type(const TrackGeometryType);
-  TrackColourType get_color_type() const { return color_type; }
-  TrackThresholdType get_threshold_type() const { return threshold_type; }
-  TrackGeometryType get_geometry_type() const { return geometry_type; }
+  [[nodiscard]] TrackColourType get_color_type() const { return color_type; }
+  [[nodiscard]] TrackThresholdType get_threshold_type() const { return threshold_type; }
+  [[nodiscard]] TrackGeometryType get_geometry_type() const { return geometry_type; }
 
-  float get_threshold_rate() const {
+  [[nodiscard]] float get_threshold_rate() const {
     switch (threshold_type) {
     case TrackThresholdType::None:
       return NaNF;
@@ -76,8 +76,8 @@ public:
     assert(0);
     return NaNF;
   }
-  float get_threshold_min() const { return threshold_min; }
-  float get_threshold_max() const { return threshold_max; }
+  [[nodiscard]] float get_threshold_min() const { return threshold_min; }
+  [[nodiscard]] float get_threshold_max() const { return threshold_max; }
 
   static TrackGeometryType default_tract_geom;
   static constexpr float default_line_thickness = 2e-3F;
@@ -102,7 +102,7 @@ public:
     std::string vertex_shader_source(const Displayable &) override;
     std::string fragment_shader_source(const Displayable &) override;
     std::string geometry_shader_source(const Displayable &) override;
-    virtual bool need_update(const Displayable &) const override;
+    [[nodiscard]] virtual bool need_update(const Displayable &) const override;
     virtual void update(const Displayable &) override;
 
   protected:

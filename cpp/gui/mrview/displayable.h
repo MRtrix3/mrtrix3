@@ -69,21 +69,21 @@ public:
 
   virtual void request_render_colourbar(DisplayableVisitor &) {}
 
-  const std::filesystem::path &get_filepath() const { return filepath; }
+  [[nodiscard]] const std::filesystem::path &get_filepath() const { return filepath; }
 
-  float scaling_min() const { return display_midpoint - 0.5F * display_range; }
+  [[nodiscard]] float scaling_min() const { return display_midpoint - 0.5F * display_range; }
 
-  float scaling_max() const { return display_midpoint + 0.5F * display_range; }
+  [[nodiscard]] float scaling_max() const { return display_midpoint + 0.5F * display_range; }
 
-  float scaling_min_thresholded() const { return std::max(scaling_min(), lessthan); }
+  [[nodiscard]] float scaling_min_thresholded() const { return std::max(scaling_min(), lessthan); }
 
-  float scaling_max_thresholded() const { return std::min(scaling_max(), greaterthan); }
+  [[nodiscard]] float scaling_max_thresholded() const { return std::min(scaling_max(), greaterthan); }
 
-  float scaling_rate() const { return 1e-3 * (value_max - value_min); }
+  [[nodiscard]] float scaling_rate() const { return 1e-3 * (value_max - value_min); }
 
-  float intensity_min() const { return value_min; }
+  [[nodiscard]] float intensity_min() const { return value_min; }
 
-  float intensity_max() const { return value_max; }
+  [[nodiscard]] float intensity_max() const { return value_max; }
 
   void set_min_max(float min, float max) {
     value_min = min;
@@ -106,7 +106,7 @@ public:
     emit scalingChanged();
   }
 
-  uint32_t flags() const { return flags_; }
+  [[nodiscard]] uint32_t flags() const { return flags_; }
 
   void set_allowed_features(bool thresholding, bool transparency, bool lighting) {
     uint32_t cmap = flags_;
@@ -151,23 +151,23 @@ public:
 
   void set_invert_scale(bool yesno) { set_bit(InvertScale, yesno); }
 
-  bool scale_inverted() const { return (flags_ & InvertScale) != 0U; }
+  [[nodiscard]] bool scale_inverted() const { return (flags_ & InvertScale) != 0U; }
 
-  bool discard_lower_enabled() const { return (flags_ & DiscardLowerEnabled) != 0U; }
+  [[nodiscard]] bool discard_lower_enabled() const { return (flags_ & DiscardLowerEnabled) != 0U; }
 
-  bool discard_upper_enabled() const { return (flags_ & DiscardUpperEnabled) != 0U; }
+  [[nodiscard]] bool discard_upper_enabled() const { return (flags_ & DiscardUpperEnabled) != 0U; }
 
-  bool transparency_enabled() const { return (flags_ & TransparencyEnabled) != 0U; }
+  [[nodiscard]] bool transparency_enabled() const { return (flags_ & TransparencyEnabled) != 0U; }
 
-  bool lighting_enabled() const { return (flags_ & LightingEnabled) != 0U; }
+  [[nodiscard]] bool lighting_enabled() const { return (flags_ & LightingEnabled) != 0U; }
 
-  bool use_discard_lower() const { return discard_lower_enabled() && ((flags_ & DiscardLower) != 0U); }
+  [[nodiscard]] bool use_discard_lower() const { return discard_lower_enabled() && ((flags_ & DiscardLower) != 0U); }
 
-  bool use_discard_upper() const { return discard_upper_enabled() && ((flags_ & DiscardUpper) != 0U); }
+  [[nodiscard]] bool use_discard_upper() const { return discard_upper_enabled() && ((flags_ & DiscardUpper) != 0U); }
 
-  bool use_transparency() const { return transparency_enabled() && ((flags_ & Transparency) != 0U); }
+  [[nodiscard]] bool use_transparency() const { return transparency_enabled() && ((flags_ & Transparency) != 0U); }
 
-  bool use_lighting() const { return lighting_enabled() && ((flags_ & Lighting) != 0U); }
+  [[nodiscard]] bool use_lighting() const { return lighting_enabled() && ((flags_ & Lighting) != 0U); }
 
   class Shader : public GL::Shader::Program {
   public:
@@ -175,7 +175,7 @@ public:
     virtual std::string geometry_shader_source(const Displayable &) { return std::string(); }
     virtual std::string vertex_shader_source(const Displayable &object) = 0;
 
-    virtual bool need_update(const Displayable &object) const;
+    [[nodiscard]] virtual bool need_update(const Displayable &object) const;
     virtual void update(const Displayable &object);
 
     void start(const Displayable &object) {
@@ -206,7 +206,7 @@ public:
     }
   };
 
-  std::string declare_shader_variables(std::string_view with_prefix = "") const {
+  [[nodiscard]] std::string declare_shader_variables(std::string_view with_prefix = "") const {
     std::string source = "uniform float " + with_prefix +
                          "offset;\n"
                          "uniform float " +

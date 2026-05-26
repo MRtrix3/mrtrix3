@@ -134,7 +134,7 @@ protected:
     return FOD;
   }
 
-  float FOD(const Eigen::Vector3f &d) const {
+  [[nodiscard]] float FOD(const Eigen::Vector3f &d) const {
     return ((S.precomputer != nullptr) ? S.precomputer->value(values, d) : Math::SH::value(values, d, S.lmax));
   }
 };

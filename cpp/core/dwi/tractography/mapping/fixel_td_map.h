@@ -45,7 +45,7 @@ protected:
 
   const DWI::Directions::FastLookupSet &dirs;
 
-  size_t dixel2fixel(const Dixel &) const;
+  [[nodiscard]] size_t dixel2fixel(const Dixel &) const;
 };
 
 template <class Fixel> bool Fixel_TD_map<Fixel>::operator()(const SetDixel &in) {

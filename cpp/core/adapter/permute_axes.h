@@ -51,16 +51,16 @@ public:
     }
   }
 
-  size_t ndim() const { return axes_.size(); }
-  ssize_t size(size_t axis) const { return axes_[axis] < 0 ? 1 : parent().size(axes_[axis]); }
-  default_type spacing(size_t axis) const {
+  [[nodiscard]] size_t ndim() const { return axes_.size(); }
+  [[nodiscard]] ssize_t size(size_t axis) const { return axes_[axis] < 0 ? 1 : parent().size(axes_[axis]); }
+  [[nodiscard]] default_type spacing(size_t axis) const {
     return axes_[axis] < 0 ? std::numeric_limits<default_type>::quiet_NaN() : parent().spacing(axes_[axis]);
   }
-  ssize_t stride(size_t axis) const { return axes_[axis] < 0 ? 0 : parent().stride(axes_[axis]); }
+  [[nodiscard]] ssize_t stride(size_t axis) const { return axes_[axis] < 0 ? 0 : parent().stride(axes_[axis]); }
 
   void reset() { parent().reset(); }
 
-  ssize_t get_index(size_t axis) const {
+  [[nodiscard]] ssize_t get_index(size_t axis) const {
     const auto a = axes_[axis];
     return a < 0 ? non_existent_axes[-1 - a] : parent().index(a);
   }

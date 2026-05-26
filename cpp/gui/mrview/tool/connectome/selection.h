@@ -29,39 +29,39 @@ class NodeSelectionSettings : public QObject {
 public:
   NodeSelectionSettings();
 
-  bool get_node_selected_visibility_override() const { return node_selected_visibility_override; }
-  float get_node_selected_colour_fade() const { return node_selected_colour_fade; }
-  const Eigen::Array3f &get_node_selected_colour() const { return node_selected_colour; }
-  float get_node_selected_size_multiplier() const { return node_selected_size_multiplier; }
-  float get_node_selected_alpha_multiplier() const { return node_selected_alpha_multiplier; }
+  [[nodiscard]] bool get_node_selected_visibility_override() const { return node_selected_visibility_override; }
+  [[nodiscard]] float get_node_selected_colour_fade() const { return node_selected_colour_fade; }
+  [[nodiscard]] const Eigen::Array3f &get_node_selected_colour() const { return node_selected_colour; }
+  [[nodiscard]] float get_node_selected_size_multiplier() const { return node_selected_size_multiplier; }
+  [[nodiscard]] float get_node_selected_alpha_multiplier() const { return node_selected_alpha_multiplier; }
 
-  bool get_edge_selected_visibility_override() const { return edge_selected_visibility_override; }
-  float get_edge_selected_colour_fade() const { return edge_selected_colour_fade; }
-  const Eigen::Array3f &get_edge_selected_colour() const { return edge_selected_colour; }
-  float get_edge_selected_size_multiplier() const { return edge_selected_size_multiplier; }
-  float get_edge_selected_alpha_multiplier() const { return edge_selected_alpha_multiplier; }
+  [[nodiscard]] bool get_edge_selected_visibility_override() const { return edge_selected_visibility_override; }
+  [[nodiscard]] float get_edge_selected_colour_fade() const { return edge_selected_colour_fade; }
+  [[nodiscard]] const Eigen::Array3f &get_edge_selected_colour() const { return edge_selected_colour; }
+  [[nodiscard]] float get_edge_selected_size_multiplier() const { return edge_selected_size_multiplier; }
+  [[nodiscard]] float get_edge_selected_alpha_multiplier() const { return edge_selected_alpha_multiplier; }
 
-  float get_node_associated_colour_fade() const { return node_associated_colour_fade; }
-  const Eigen::Array3f &get_node_associated_colour() const { return node_associated_colour; }
-  float get_node_associated_size_multiplier() const { return node_associated_size_multiplier; }
-  float get_node_associated_alpha_multiplier() const { return node_associated_alpha_multiplier; }
+  [[nodiscard]] float get_node_associated_colour_fade() const { return node_associated_colour_fade; }
+  [[nodiscard]] const Eigen::Array3f &get_node_associated_colour() const { return node_associated_colour; }
+  [[nodiscard]] float get_node_associated_size_multiplier() const { return node_associated_size_multiplier; }
+  [[nodiscard]] float get_node_associated_alpha_multiplier() const { return node_associated_alpha_multiplier; }
 
-  float get_edge_associated_colour_fade() const { return edge_associated_colour_fade; }
-  const Eigen::Array3f &get_edge_associated_colour() const { return edge_associated_colour; }
-  float get_edge_associated_size_multiplier() const { return edge_associated_size_multiplier; }
-  float get_edge_associated_alpha_multiplier() const { return edge_associated_alpha_multiplier; }
+  [[nodiscard]] float get_edge_associated_colour_fade() const { return edge_associated_colour_fade; }
+  [[nodiscard]] const Eigen::Array3f &get_edge_associated_colour() const { return edge_associated_colour; }
+  [[nodiscard]] float get_edge_associated_size_multiplier() const { return edge_associated_size_multiplier; }
+  [[nodiscard]] float get_edge_associated_alpha_multiplier() const { return edge_associated_alpha_multiplier; }
 
-  bool get_node_other_visibility_override() const { return node_other_visibility_override; }
-  float get_node_other_colour_fade() const { return node_other_colour_fade; }
-  const Eigen::Array3f &get_node_other_colour() const { return node_other_colour; }
-  float get_node_other_size_multiplier() const { return node_other_size_multiplier; }
-  float get_node_other_alpha_multiplier() const { return node_other_alpha_multiplier; }
+  [[nodiscard]] bool get_node_other_visibility_override() const { return node_other_visibility_override; }
+  [[nodiscard]] float get_node_other_colour_fade() const { return node_other_colour_fade; }
+  [[nodiscard]] const Eigen::Array3f &get_node_other_colour() const { return node_other_colour; }
+  [[nodiscard]] float get_node_other_size_multiplier() const { return node_other_size_multiplier; }
+  [[nodiscard]] float get_node_other_alpha_multiplier() const { return node_other_alpha_multiplier; }
 
-  bool get_edge_other_visibility_override() const { return edge_other_visibility_override; }
-  float get_edge_other_colour_fade() const { return edge_other_colour_fade; }
-  const Eigen::Array3f &get_edge_other_colour() const { return edge_other_colour; }
-  float get_edge_other_size_multiplier() const { return edge_other_size_multiplier; }
-  float get_edge_other_alpha_multiplier() const { return edge_other_alpha_multiplier; }
+  [[nodiscard]] bool get_edge_other_visibility_override() const { return edge_other_visibility_override; }
+  [[nodiscard]] float get_edge_other_colour_fade() const { return edge_other_colour_fade; }
+  [[nodiscard]] const Eigen::Array3f &get_edge_other_colour() const { return edge_other_colour; }
+  [[nodiscard]] float get_edge_other_size_multiplier() const { return edge_other_size_multiplier; }
+  [[nodiscard]] float get_edge_other_alpha_multiplier() const { return edge_other_alpha_multiplier; }
 
 signals:
   void dataChanged();

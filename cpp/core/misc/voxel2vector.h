@@ -52,8 +52,8 @@ public:
           str(reverse.size()) + " elements");
   }
 
-  bool empty() const { return reverse.empty(); }
-  size_t size() const { return reverse.size(); }
+  [[nodiscard]] bool empty() const { return reverse.empty(); }
+  [[nodiscard]] size_t size() const { return reverse.size(); }
 
   const std::vector<index_t> &operator[](const size_t index) const {
     assert(index < reverse.size());
@@ -72,7 +72,7 @@ private:
   Image<index_t> forward;
   std::vector<std::vector<index_t>> reverse;
 
-  std::vector<index_t> pos() const {
+  [[nodiscard]] std::vector<index_t> pos() const {
     std::vector<index_t> result;
     for (size_t index = 0; index != forward.ndim(); ++index)
       result.push_back(forward.index(index));

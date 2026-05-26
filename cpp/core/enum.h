@@ -125,7 +125,7 @@ public:
     return size_t(-1);
   }
 
-  size_t total() const noexcept {
+  [[nodiscard]] size_t total() const noexcept {
     size_t sum = 0;
     for (const auto &counter : counters)
       sum += counter.value.load(std::memory_order_seq_cst);

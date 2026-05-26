@@ -433,7 +433,7 @@ template <typename ValueType> inline void Image::copy_texture_3D() {
     WithType(const MR::Image<cfloat> &source) : MR::Image<cfloat>(source) {
       _set_fetch_store_scale_functions(fetch_func, store_func, buffer->datatype());
     }
-    FORCE_INLINE ValueType value() const {
+    [[nodiscard]] FORCE_INLINE ValueType value() const {
       ssize_t const nseg = data_offset / buffer->get_io()->segment_size();
       return fetch_func(buffer->get_io()->segment(nseg),
                         data_offset - nseg * buffer->get_io()->segment_size(),

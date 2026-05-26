@@ -88,7 +88,7 @@ public:
   bool operator()(const Connectome::Streamline_nodepair &) const;
   bool operator()(const Connectome::Streamline_nodelist &) const;
 
-  size_t file_count() const { return writers.size(); }
+  [[nodiscard]] size_t file_count() const { return writers.size(); }
 
 private:
   const Tractography::Properties &properties;

@@ -48,7 +48,7 @@ public:
 
   virtual ~Base();
 
-  virtual bool is_file_backed() const;
+  [[nodiscard]] virtual bool is_file_backed() const;
 
   // buffer_size is only used for scratch data; it is ignored in all
   // other (file-backed) handlers, where the buffer size is determined
@@ -56,8 +56,8 @@ public:
   void open(const Header &header, size_t buffer_size = 0);
   void close(const Header &header);
 
-  bool is_image_new() const { return is_new; }
-  bool is_image_readwrite() const { return writable; }
+  [[nodiscard]] bool is_image_new() const { return is_new; }
+  [[nodiscard]] bool is_image_readwrite() const { return writable; }
 
   void set_readwrite(bool readwrite) { writable = readwrite; }
   void set_image_is_new(bool image_is_new) { is_new = image_is_new; }
@@ -66,12 +66,12 @@ public:
       writable = readwrite;
   }
 
-  std::byte *segment(size_t n) const {
+  [[nodiscard]] std::byte *segment(size_t n) const {
     assert(n < addresses.size());
     return addresses[n].get();
   }
-  size_t nsegments() const { return addresses.size(); }
-  size_t segment_size() const {
+  [[nodiscard]] size_t nsegments() const { return addresses.size(); }
+  [[nodiscard]] size_t segment_size() const {
     check();
     return segsize;
   }

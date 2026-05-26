@@ -67,10 +67,10 @@ public:
   void set_optional() { data.set(Optional); }
   void set_required() { data.reset(Optional); }
   void set_allow_multiple() { data.set(AllowMultiple); }
-  bool optional() const { return data[Optional]; }
-  bool required() const { return !data[Optional]; }
-  bool allow_multiple() const { return data[AllowMultiple]; }
-  bool any() const { return data.any(); }
+  [[nodiscard]] bool optional() const { return data[Optional]; }
+  [[nodiscard]] bool required() const { return !data[Optional]; }
+  [[nodiscard]] bool allow_multiple() const { return data[AllowMultiple]; }
+  [[nodiscard]] bool any() const { return data.any(); }
   bool operator!=(const ArgModifierFlags &that) const { return data != that.data; }
 
 private:
@@ -165,8 +165,8 @@ public:
       _min = i;
       _max = j;
     }
-    T min() const { return _min; }
-    T max() const { return _max; }
+    [[nodiscard]] T min() const { return _min; }
+    [[nodiscard]] T max() const { return _max; }
 
   private:
     T _min, _max;
@@ -327,8 +327,8 @@ public:
     return *this;
   }
 
-  std::string syntax(const bool format) const;
-  std::string usage() const;
+  [[nodiscard]] std::string syntax(const bool format) const;
+  [[nodiscard]] std::string usage() const;
 };
 
 //! A class to specify a command-line option
@@ -414,10 +414,10 @@ public:
     return *this;
   }
 
-  bool is(std::string_view name) const { return name == id; }
+  [[nodiscard]] bool is(std::string_view name) const { return name == id; }
 
-  std::string syntax(const bool format) const;
-  std::string usage() const;
+  [[nodiscard]] std::string syntax(const bool format) const;
+  [[nodiscard]] std::string usage() const;
 };
 
 //! a class to hold a named list of Option's
@@ -457,8 +457,8 @@ public:
     return std::vector<Option>::back();
   }
 
-  std::string header(const bool format) const;
-  std::string contents(const bool format) const;
+  [[nodiscard]] std::string header(const bool format) const;
+  [[nodiscard]] std::string contents(const bool format) const;
   static std::string footer(const bool format);
 };
 

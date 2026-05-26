@@ -60,9 +60,9 @@ public:
     void set_none();
     void set_from_file(const std::filesystem::path &path);
 
-    Eigen::VectorXf get_shell_data(const Eigen::VectorXf &values) const;
+    [[nodiscard]] Eigen::VectorXf get_shell_data(const Eigen::VectorXf &values) const;
 
-    size_t num_DW_shells() const;
+    [[nodiscard]] size_t num_DW_shells() const;
 
     dir_t dir_type;
     Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> header_dirs;

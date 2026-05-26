@@ -48,11 +48,13 @@ public:
     current_pos = 0;
   }
 
-  ssize_t size(size_t axis) const { return (axis == extract_axis ? nsize : base_type::size(axis)); }
+  [[nodiscard]] ssize_t size(size_t axis) const { return (axis == extract_axis ? nsize : base_type::size(axis)); }
 
-  const transform_type &transform() const { return trans; }
+  [[nodiscard]] const transform_type &transform() const { return trans; }
 
-  ssize_t get_index(size_t axis) const { return (axis == extract_axis ? current_pos : parent().index(axis)); }
+  [[nodiscard]] ssize_t get_index(size_t axis) const {
+    return (axis == extract_axis ? current_pos : parent().index(axis));
+  }
   void move_index(size_t axis, ssize_t increment) {
     if (axis == extract_axis) {
       ssize_t const prev_pos = current_pos < nsize ? indices[current_pos] : 0;
@@ -100,9 +102,9 @@ public:
       sizes.push_back(i.size());
   }
 
-  ssize_t size(size_t axis) const { return sizes[axis]; }
+  [[nodiscard]] ssize_t size(size_t axis) const { return sizes[axis]; }
 
-  const transform_type &transform() const { return trans; }
+  [[nodiscard]] const transform_type &transform() const { return trans; }
 
   void reset() {
     for (size_t n = 0; n < ndim(); ++n) {
@@ -111,7 +113,7 @@ public:
     }
   }
 
-  ssize_t get_index(size_t axis) const { return current_pos[axis]; }
+  [[nodiscard]] ssize_t get_index(size_t axis) const { return current_pos[axis]; }
   void move_index(size_t axis, ssize_t increment) {
     current_pos[axis] += increment;
     if (current_pos[axis] < 0)

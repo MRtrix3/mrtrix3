@@ -39,7 +39,7 @@ public:
 
   virtual void clearChanges() {}
 
-  virtual EnergyComputer *clone() const = 0;
+  [[nodiscard]] virtual EnergyComputer *clone() const = 0;
 
 protected:
   Stats &stats;
@@ -83,7 +83,9 @@ public:
     _e2->clearChanges();
   }
 
-  EnergyComputer *clone() const { return new EnergySumComputer(stats, _e1->clone(), l1, _e2->clone(), l2); }
+  [[nodiscard]] EnergyComputer *clone() const {
+    return new EnergySumComputer(stats, _e1->clone(), l1, _e2->clone(), l2);
+  }
 
 protected:
   EnergyComputer *_e1;

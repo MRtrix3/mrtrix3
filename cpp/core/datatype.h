@@ -37,16 +37,16 @@ public:
   DataType &operator=(const DataType &) noexcept = default;
   DataType &operator=(DataType &&) noexcept = default;
 
-  bool undefined() const { return dt == Undefined; }
+  [[nodiscard]] bool undefined() const { return dt == Undefined; }
   uint8_t operator()() const { return dt; }
   bool operator==(uint8_t type) const { return dt == type; }
   bool operator!=(uint8_t type) const { return dt != type; }
   bool operator==(const DataType DT) const { return dt == DT.dt; }
   bool operator!=(const DataType DT) const { return dt != DT.dt; }
 
-  bool is(uint8_t type) const { return dt == type; }
-  bool is_complex() const { return (dt & Complex) != 0; }
-  bool is_signed() const { return (dt & Signed) != 0; }
+  [[nodiscard]] bool is(uint8_t type) const { return dt == type; }
+  [[nodiscard]] bool is_complex() const { return (dt & Complex) != 0; }
+  [[nodiscard]] bool is_signed() const { return (dt & Signed) != 0; }
   bool is_byte_order_native() {
     if (bits() <= 8)
       return true;
@@ -58,13 +58,13 @@ public:
     return is_little_endian();
 #endif
   }
-  bool is_little_endian() const { return (dt & LittleEndian) != 0; }
-  bool is_big_endian() const { return (dt & BigEndian) != 0; }
-  bool is_integer() const {
+  [[nodiscard]] bool is_little_endian() const { return (dt & LittleEndian) != 0; }
+  [[nodiscard]] bool is_big_endian() const { return (dt & BigEndian) != 0; }
+  [[nodiscard]] bool is_integer() const {
     const uint8_t type = dt & Type;
     return ((type == UInt8) || (type == UInt16) || (type == UInt32) || (type == UInt64));
   }
-  bool is_floating_point() const {
+  [[nodiscard]] bool is_floating_point() const {
     const uint8_t type = dt & Type;
     return ((type == Float16) || (type == Float32) || (type == Float64));
   }
@@ -85,10 +85,10 @@ public:
     }
   }
 
-  size_t bits() const;
-  size_t bytes() const { return (bits() + 7) / 8; }
-  std::string description() const;
-  std::string specifier() const;
+  [[nodiscard]] size_t bits() const;
+  [[nodiscard]] size_t bytes() const { return (bits() + 7) / 8; }
+  [[nodiscard]] std::string description() const;
+  [[nodiscard]] std::string specifier() const;
 
   void set_flag(uint8_t flag) { dt |= flag; }
   void unset_flag(uint8_t flag) { dt &= ~flag; }

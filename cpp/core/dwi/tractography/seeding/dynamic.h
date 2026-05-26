@@ -88,12 +88,12 @@ public:
     updating.clear();
   }
 
-  double get_TD() const { return TD.load(std::memory_order_relaxed); }
+  [[nodiscard]] double get_TD() const { return TD.load(std::memory_order_relaxed); }
   void clear_TD() { TD.store(0.0, std::memory_order_relaxed); }
-  double get_diff(const double mu) const { return ((TD.load(std::memory_order_relaxed) * mu) - FOD); }
+  [[nodiscard]] double get_diff(const double mu) const { return ((TD.load(std::memory_order_relaxed) * mu) - FOD); }
 
   void mask() { update = false; }
-  bool can_update() const { return update; }
+  [[nodiscard]] bool can_update() const { return update; }
 
   Fixel_TD_seed &operator+=(const double length) {
     // Apparently the first version may be preferable due to bugs in earlier compiler versions...
@@ -109,9 +109,9 @@ public:
   }
 
   void set_voxel(const Eigen::Vector3i &i) { voxel = i; }
-  const Eigen::Vector3i &get_voxel() const { return voxel; }
+  [[nodiscard]] const Eigen::Vector3i &get_voxel() const { return voxel; }
 
-  float get_ratio(const double mu) const { return ((mu * TD.load(std::memory_order_relaxed)) / FOD); }
+  [[nodiscard]] float get_ratio(const double mu) const { return ((mu * TD.load(std::memory_order_relaxed)) / FOD); }
 
   float get_cumulative_prob(const uint64_t track_count) {
     while (updating.test_and_set(std::memory_order_acquire))
@@ -134,9 +134,9 @@ public:
     updating.clear(std::memory_order_release);
   }
 
-  float get_old_prob() const { return old_prob; }
-  float get_prob() const { return applied_prob; }
-  size_t get_seed_count() const { return seed_count; }
+  [[nodiscard]] float get_old_prob() const { return old_prob; }
+  [[nodiscard]] float get_prob() const { return applied_prob; }
+  [[nodiscard]] size_t get_seed_count() const { return seed_count; }
 
 private:
   Eigen::Vector3i voxel;

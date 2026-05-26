@@ -56,26 +56,26 @@ public:
   //! used internally to instantiate Image objects
   Image(const std::shared_ptr<Buffer> &, const Stride::List & = Stride::List());
 
-  FORCE_INLINE bool valid() const { return bool(buffer); }
+  [[nodiscard]] FORCE_INLINE bool valid() const { return bool(buffer); }
   FORCE_INLINE bool operator!() const { return !valid(); }
 
   //! get generic key/value text attributes
-  FORCE_INLINE const KeyValues &keyval() const { return buffer->keyval(); }
+  [[nodiscard]] FORCE_INLINE const KeyValues &keyval() const { return buffer->keyval(); }
 
-  FORCE_INLINE std::string name() const { return buffer->name(); }
-  FORCE_INLINE const std::filesystem::path &path() const {
+  [[nodiscard]] FORCE_INLINE std::string name() const { return buffer->name(); }
+  [[nodiscard]] FORCE_INLINE const std::filesystem::path &path() const {
     static const std::filesystem::path empty;
     return valid() ? static_cast<const Header &>(*buffer).path() : empty;
   }
-  FORCE_INLINE const transform_type &transform() const { return buffer->transform(); }
+  [[nodiscard]] FORCE_INLINE const transform_type &transform() const { return buffer->transform(); }
 
-  FORCE_INLINE size_t ndim() const { return buffer->ndim(); }
-  FORCE_INLINE ssize_t size(size_t axis) const { return buffer->size(axis); }
-  FORCE_INLINE default_type spacing(size_t axis) const { return buffer->spacing(axis); }
-  FORCE_INLINE ssize_t stride(size_t axis) const { return strides[axis]; }
+  [[nodiscard]] FORCE_INLINE size_t ndim() const { return buffer->ndim(); }
+  [[nodiscard]] FORCE_INLINE ssize_t size(size_t axis) const { return buffer->size(axis); }
+  [[nodiscard]] FORCE_INLINE default_type spacing(size_t axis) const { return buffer->spacing(axis); }
+  [[nodiscard]] FORCE_INLINE ssize_t stride(size_t axis) const { return strides[axis]; }
 
   //! offset to current voxel from start of data
-  FORCE_INLINE size_t offset() const { return data_offset; }
+  [[nodiscard]] FORCE_INLINE size_t offset() const { return data_offset; }
 
   //! reset index to zero (origin)
   FORCE_INLINE void reset() {
@@ -84,17 +84,17 @@ public:
   }
 
   //! get position of current voxel location along \a axis
-  FORCE_INLINE ssize_t get_index(size_t axis) const { return x[axis]; }
+  [[nodiscard]] FORCE_INLINE ssize_t get_index(size_t axis) const { return x[axis]; }
   //! move position of current voxel location along \a axis
   FORCE_INLINE void move_index(size_t axis, ssize_t increment) {
     data_offset += stride(axis) * increment;
     x[axis] += increment;
   }
 
-  FORCE_INLINE bool is_direct_io() const { return data_pointer != nullptr; }
+  [[nodiscard]] FORCE_INLINE bool is_direct_io() const { return data_pointer != nullptr; }
 
   //! get voxel value at current location
-  FORCE_INLINE ValueType get_value() const {
+  [[nodiscard]] FORCE_INLINE ValueType get_value() const {
     if (data_pointer != nullptr)
       return Raw::fetch_native<ValueType>(data_pointer, data_offset);
     return buffer->get_value(data_offset);
@@ -143,13 +143,13 @@ public:
    * method. If there is any possibility that this image might use indirect
    * IO, you should use the save() function instead (and even then, it
    * should only be used for debugging purposes). */
-  std::filesystem::path dump_to_mrtrix_file(const std::filesystem::path &filepath) const;
+  [[nodiscard]] std::filesystem::path dump_to_mrtrix_file(const std::filesystem::path &filepath) const;
 
   //! return RAM address of current voxel
   /*! \note this will only work if image access is direct (i.e. for a
    * scratch image, with preloading, or when the data type is native and
    * without scaling. */
-  ValueType *address() const {
+  [[nodiscard]] ValueType *address() const {
     assert(data_pointer != nullptr && "Image::address() can only be used when image access is via direct RAM access");
     return data_pointer != nullptr ? static_cast<ValueType *>(data_pointer) + data_offset : nullptr;
   }
@@ -201,7 +201,7 @@ public:
   Buffer(const Buffer &b) : Header(b), fetch_func(b.fetch_func), store_func(b.store_func) {}
   ~Buffer();
 
-  FORCE_INLINE ValueType get_value(size_t offset) const {
+  [[nodiscard]] FORCE_INLINE ValueType get_value(size_t offset) const {
     ssize_t const nseg = offset / io->segment_size();
     return fetch_func(io->segment(nseg), offset - nseg * io->segment_size(), intensity_offset(), intensity_scale());
   }
@@ -213,7 +213,7 @@ public:
 
   void *get_data_pointer();
 
-  FORCE_INLINE ImageIO::Base *get_io() const { return io.get(); }
+  [[nodiscard]] FORCE_INLINE ImageIO::Base *get_io() const { return io.get(); }
 
   class RAM {
   public:
@@ -258,19 +258,19 @@ template <typename ValueType> struct TmpImage : public ImageBase<TmpImage<ValueT
   const Stride::List &strides;
   size_t offset;
 
-  bool valid() const { return true; }
-  const std::string name() const { return "direct IO buffer"; }
-  FORCE_INLINE size_t ndim() const { return b.ndim(); }
-  FORCE_INLINE ssize_t size(size_t axis) const { return b.size(axis); }
-  FORCE_INLINE ssize_t stride(size_t axis) const { return strides[axis]; }
+  [[nodiscard]] bool valid() const { return true; }
+  [[nodiscard]] const std::string name() const { return "direct IO buffer"; }
+  [[nodiscard]] FORCE_INLINE size_t ndim() const { return b.ndim(); }
+  [[nodiscard]] FORCE_INLINE ssize_t size(size_t axis) const { return b.size(axis); }
+  [[nodiscard]] FORCE_INLINE ssize_t stride(size_t axis) const { return strides[axis]; }
 
-  FORCE_INLINE ssize_t get_index(size_t axis) const { return x[axis]; }
+  [[nodiscard]] FORCE_INLINE ssize_t get_index(size_t axis) const { return x[axis]; }
   FORCE_INLINE void move_index(size_t axis, ssize_t increment) {
     offset += stride(axis) * increment;
     x[axis] += increment;
   }
 
-  FORCE_INLINE value_type get_value() const { return Raw::fetch_native<ValueType>(data, offset); }
+  [[nodiscard]] FORCE_INLINE value_type get_value() const { return Raw::fetch_native<ValueType>(data, offset); }
   FORCE_INLINE void set_value(ValueType val) { Raw::store_native<ValueType>(val, data, offset); }
 };
 

@@ -277,7 +277,7 @@ private:
     dwi.index(2) = pos[2];
   }
 
-  inline size_t wrapindex(int r, int axis, int max) const {
+  [[nodiscard]] inline size_t wrapindex(int r, int axis, int max) const {
     // patch handling at image edges
     int rr = pos[axis] + r;
     if (rr < 0)

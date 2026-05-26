@@ -26,7 +26,7 @@ public:
   Endpoints() {}
 
   bool operator()(const Streamline<> &, Streamline<> &) const override;
-  bool valid() const override { return true; }
+  [[nodiscard]] bool valid() const override { return true; }
 };
 
 } // namespace MR::DWI::Tractography::Resampling

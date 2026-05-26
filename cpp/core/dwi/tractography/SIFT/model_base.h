@@ -61,10 +61,10 @@ public:
 
   FixelBase(const FixelBase &) = default;
 
-  default_type get_FOD() const { return FOD; }
-  default_type get_TD() const { return TD; }
-  default_type get_weight() const { return weight; }
-  const Eigen::Vector3d &get_dir() const { return dir; }
+  [[nodiscard]] default_type get_FOD() const { return FOD; }
+  [[nodiscard]] default_type get_TD() const { return TD; }
+  [[nodiscard]] default_type get_weight() const { return weight; }
+  [[nodiscard]] const Eigen::Vector3d &get_dir() const { return dir; }
 
   void scale_FOD(const default_type factor) { FOD *= factor; }
   void set_weight(const default_type w) { weight = w; }
@@ -75,14 +75,14 @@ public:
 
   void clear_TD() { TD = 0.0; }
 
-  default_type get_diff(const default_type mu) const { return ((TD * mu) - FOD); }
-  default_type get_cost(const default_type mu) const { return get_cost_unweighted(mu) * weight; }
+  [[nodiscard]] default_type get_diff(const default_type mu) const { return ((TD * mu) - FOD); }
+  [[nodiscard]] default_type get_cost(const default_type mu) const { return get_cost_unweighted(mu) * weight; }
 
 protected:
   default_type FOD, TD, weight;
   Eigen::Vector3d dir;
 
-  default_type get_cost_unweighted(const default_type mu) const { return Math::pow2(get_diff(mu)); }
+  [[nodiscard]] default_type get_cost_unweighted(const default_type mu) const { return Math::pow2(get_diff(mu)); }
 };
 
 // Templated Fixel class should derive from FixelBase to ensure that it has adequate functionality
@@ -116,10 +116,10 @@ public:
   virtual bool operator()(const FMLS::FOD_lobes & /*in*/);
   virtual bool operator()(const Mapping::SetDixel & /*in*/);
 
-  default_type calc_cost_function() const;
+  [[nodiscard]] default_type calc_cost_function() const;
 
-  default_type mu() const { return FOD_sum / TD_sum; }
-  bool have_act_data() const { return act_5tt.valid(); }
+  [[nodiscard]] default_type mu() const { return FOD_sum / TD_sum; }
+  [[nodiscard]] bool have_act_data() const { return act_5tt.valid(); }
 
   void output_proc_mask(const std::filesystem::path & /*path*/);
   void output_5tt_image(const std::filesystem::path & /*path*/);

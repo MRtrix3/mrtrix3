@@ -57,7 +57,7 @@ public:
 
   void clearChanges();
 
-  EnergyComputer *clone() const { return new ExternalEnergyComputer(*this); }
+  [[nodiscard]] EnergyComputer *clone() const { return new ExternalEnergyComputer(*this); }
 
 protected:
   Image<float> dwi;
@@ -88,7 +88,7 @@ protected:
 
   double calcEnergy();
 
-  inline double hanning(const double w) const {
+  [[nodiscard]] inline double hanning(const double w) const {
     return (w <= (1.0 - beta) / 2)   ? 0.0
            : (w >= (1.0 + beta) / 2) ? 1.0
                                      : (1 - std::cos(Math::pi * (w - (1.0 - beta) / 2) / beta)) / 2;

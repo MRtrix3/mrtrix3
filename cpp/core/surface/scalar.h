@@ -53,7 +53,7 @@ public:
 
   void save(const std::filesystem::path &) const;
 
-  std::string get_name() const { return name; }
+  [[nodiscard]] std::string get_name() const { return name; }
   void set_name(std::string_view s) { name = s; }
 
 private:

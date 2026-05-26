@@ -120,7 +120,7 @@ public:
     distance = orientation_z.dot(position_vector);
   }
 
-  bool is_philips_iso() const {
+  [[nodiscard]] bool is_philips_iso() const {
     if (philips_orientation == '\0')
       return false;
     return (philips_orientation == 'I' && bvalue > 0.0);

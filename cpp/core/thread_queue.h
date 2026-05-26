@@ -392,7 +392,7 @@ public:
       T *p;
     };
 
-    Item placeholder() const { return Item(*this); }
+    [[nodiscard]] Item placeholder() const { return Item(*this); }
 
   private:
     Queue<T> &Q;
@@ -457,7 +457,7 @@ public:
       T *p;
     };
 
-    Item placeholder() const { return Item(*this); }
+    [[nodiscard]] Item placeholder() const { return Item(*this); }
 
   private:
     Queue<T> &Q;
@@ -510,9 +510,9 @@ private:
     }
   }
 
-  FORCE_INLINE bool empty() const { return (front == back); }
-  FORCE_INLINE bool full() const { return (inc(back) == front); }
-  FORCE_INLINE size_t size() const { return ((back < front ? back + capacity : back) - front); }
+  [[nodiscard]] FORCE_INLINE bool empty() const { return (front == back); }
+  [[nodiscard]] FORCE_INLINE bool full() const { return (inc(back) == front); }
+  [[nodiscard]] FORCE_INLINE size_t size() const { return ((back < front ? back + capacity : back) - front); }
 
   FORCE_INLINE T *get_item() {
     std::lock_guard<std::mutex> const lock(mutex);

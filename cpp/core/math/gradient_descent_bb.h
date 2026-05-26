@@ -61,12 +61,12 @@ public:
         verbose(verbose),
         delim(",") {}
 
-  value_type value() const { return f; }
-  const Eigen::Matrix<value_type, Eigen::Dynamic, 1> &state() const { return x2; }
-  const Eigen::Matrix<value_type, Eigen::Dynamic, 1> &gradient() const { return g2; }
-  value_type step_size() const { return dt; }
-  value_type gradient_norm() const { return normg; }
-  int function_evaluations() const { return nfeval; }
+  [[nodiscard]] value_type value() const { return f; }
+  [[nodiscard]] const Eigen::Matrix<value_type, Eigen::Dynamic, 1> &state() const { return x2; }
+  [[nodiscard]] const Eigen::Matrix<value_type, Eigen::Dynamic, 1> &gradient() const { return g2; }
+  [[nodiscard]] value_type step_size() const { return dt; }
+  [[nodiscard]] value_type gradient_norm() const { return normg; }
+  [[nodiscard]] int function_evaluations() const { return nfeval; }
 
   void be_verbose(bool v) { verbose = v; }
   void precondition(const Eigen::Matrix<value_type, Eigen::Dynamic, 1> &weights) { preconditioner_weights = weights; }

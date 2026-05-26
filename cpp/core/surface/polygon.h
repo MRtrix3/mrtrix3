@@ -62,14 +62,14 @@ public:
     return indices[i];
   }
 
-  size_t size() const { return vertices; }
+  [[nodiscard]] size_t size() const { return vertices; }
 
-  bool shares_edge(const Polygon &) const;
+  [[nodiscard]] bool shares_edge(const Polygon &) const;
 
 private:
   std::array<vertex_index_type, vertices> indices;
 };
 
-template <> bool Polygon<3>::shares_edge(const Polygon<3> &) const;
+template <> [[nodiscard]] bool Polygon<3>::shares_edge(const Polygon<3> &) const;
 
 } // namespace MR::Surface

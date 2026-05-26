@@ -174,10 +174,10 @@ public:
     }
   }
 
-  size_t num_parameters() const { return H.cols(); }
-  size_t num_measurements() const { return H.rows(); }
-  size_t num_constraints() const { return B.rows(); }
-  size_t num_equalities() const { return num_eq; }
+  [[nodiscard]] size_t num_parameters() const { return H.cols(); }
+  [[nodiscard]] size_t num_measurements() const { return H.rows(); }
+  [[nodiscard]] size_t num_constraints() const { return B.rows(); }
+  [[nodiscard]] size_t num_equalities() const { return num_eq; }
 
   matrix_type H, chol_HtH, B, b2d;
   vector_type t;
@@ -335,7 +335,7 @@ public:
     return niter;
   }
 
-  const Problem<value_type> &problem() const { return P; }
+  [[nodiscard]] const Problem<value_type> &problem() const { return P; }
 
 protected:
   const Problem<value_type> &P;

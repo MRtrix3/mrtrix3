@@ -34,17 +34,17 @@ public:
       : std::array<uint8_t, 3>{std::numeric_limits<uint8_t>::max(),
                                std::numeric_limits<uint8_t>::max(),
                                std::numeric_limits<uint8_t>::max()} {}
-  bool is_identity() const { return ((*this)[0] == 0 && (*this)[1] == 1 && (*this)[2] == 2); }
-  bool valid() const { return (std::set<ssize_t>(begin(), end()) == std::set<ssize_t>({0, 1, 2})); }
+  [[nodiscard]] bool is_identity() const { return ((*this)[0] == 0 && (*this)[1] == 1 && (*this)[2] == 2); }
+  [[nodiscard]] bool valid() const { return (std::set<ssize_t>(begin(), end()) == std::set<ssize_t>({0, 1, 2})); }
 };
 using flips_type = std::array<bool, 3>;
 class Shuffle {
 public:
   Shuffle() : permutations(), flips({false, false, false}) {}
-  bool is_identity() const {
+  [[nodiscard]] bool is_identity() const {
     return permutations.is_identity() && std::none_of(flips.begin(), flips.end(), [](bool b) { return b; });
   }
-  bool valid() const { return permutations.valid(); }
+  [[nodiscard]] bool valid() const { return permutations.valid(); }
   // Always interpret as application of flip then permutation
   permutations_type permutations;
   flips_type flips;

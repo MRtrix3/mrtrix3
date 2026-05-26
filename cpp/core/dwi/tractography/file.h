@@ -251,9 +251,13 @@ protected:
   int64_t barrier_addr;
 
   //! indicates end of track and start of new track
-  vector_type delimiter() const { return vector_type::Constant(std::numeric_limits<ValueType>::quiet_NaN()); }
+  [[nodiscard]] vector_type delimiter() const {
+    return vector_type::Constant(std::numeric_limits<ValueType>::quiet_NaN());
+  }
   //! indicates end of data
-  vector_type barrier() const { return vector_type::Constant(std::numeric_limits<ValueType>::infinity()); }
+  [[nodiscard]] vector_type barrier() const {
+    return vector_type::Constant(std::numeric_limits<ValueType>::infinity());
+  }
 
   //! perform per-point byte-swapping if required
   void format_point(const vector_type &src, vector_type &dest) {

@@ -37,7 +37,7 @@ public:
   void set_real2voxel() { mode = transform_t::REAL2VOXEL; }
   void set_fs2real() { mode = transform_t::FS2REAL; }
 
-  transform_t get_mode() const { return mode; }
+  [[nodiscard]] transform_t get_mode() const { return mode; }
 
   void operator()(const Mesh &, Mesh &) const override;
 

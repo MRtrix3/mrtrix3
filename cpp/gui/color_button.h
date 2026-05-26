@@ -27,9 +27,9 @@ public:
   QColorButton(const QColor &c, QWidget *parent = nullptr, const char *name = nullptr); // check_syntax off
   virtual ~QColorButton() {}
 
-  QColor color() const { return (col); }
+  [[nodiscard]] QColor color() const { return (col); }
   void setColor(const QColor &c);
-  QSize sizeHint() const;
+  [[nodiscard]] QSize sizeHint() const;
 
 signals:
   void changed(const QColor &newColor);

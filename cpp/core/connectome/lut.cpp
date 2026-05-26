@@ -87,11 +87,11 @@ LUT::file_format LUT::guess_file_format(const std::filesystem::path &path) {
       ++count;
     }
 
-    default_type mean_length() const { return sum_lengths / static_cast<default_type>(count); }
-    bool is_numeric() const { return numeric; }
-    bool is_integer() const { return integer; }
-    bool is_unary_range_float() const { return is_numeric() && min >= 0.0 && max <= 1.0; }
-    bool is_8bit() const { return is_integer() && min >= 0 && max <= 255; }
+    [[nodiscard]] default_type mean_length() const { return sum_lengths / static_cast<default_type>(count); }
+    [[nodiscard]] bool is_numeric() const { return numeric; }
+    [[nodiscard]] bool is_integer() const { return integer; }
+    [[nodiscard]] bool is_unary_range_float() const { return is_numeric() && min >= 0.0 && max <= 1.0; }
+    [[nodiscard]] bool is_8bit() const { return is_integer() && min >= 0 && max <= 255; }
 
     operator std::string() const {
       if (!is_numeric())

@@ -188,7 +188,7 @@ public:
       INFO("constrained spherical deconvolution initialised successfully");
     }
 
-    size_t nSH() const { return HR_trans.cols(); }
+    [[nodiscard]] size_t nSH() const { return HR_trans.cols(); }
 
     Eigen::MatrixXd grad;
     Eigen::VectorXd response, init_filter, RH;
@@ -249,7 +249,7 @@ public:
     return false;
   }
 
-  const Eigen::VectorXd &FOD() const { return F; }
+  [[nodiscard]] const Eigen::VectorXd &FOD() const { return F; }
 
   const Shared &shared;
 

@@ -81,7 +81,7 @@ public:
     current_pos = position;
   }
 
-  size_t index(const size_t i) const { return indices[i]; }
+  [[nodiscard]] size_t index(const size_t i) const { return indices[i]; }
 
   template <class ImageType> value_type value(ImageType &image, const size_t axis) const {
     assert(std::isfinite(current_pos));

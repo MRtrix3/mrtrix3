@@ -62,7 +62,7 @@ public:
   // For debugging purposes - make sure the sum of TD in the fixels is equal to the sum of TD in the streamlines
   void check_TD();
 
-  track_t num_tracks() const { return contributions.size(); }
+  [[nodiscard]] track_t num_tracks() const { return contributions.size(); }
 
   void output_non_contributing_streamlines(const std::filesystem::path &) const;
 

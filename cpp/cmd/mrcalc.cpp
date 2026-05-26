@@ -560,7 +560,7 @@ public:
   bool rng_gaussian;
   bool image_is_complex;
 
-  bool is_complex() const;
+  [[nodiscard]] bool is_complex() const;
 
   static std::map<std::string, LoadedImage> image_list;
 
@@ -602,13 +602,13 @@ public:
     return a;
   }
 
-  virtual bool is_complex() const {
+  [[nodiscard]] virtual bool is_complex() const {
     for (const auto &operand : operands)
       if (operand.is_complex())
         return !ZtoR;
     return RtoZ;
   }
-  size_t num_args() const { return operands.size(); }
+  [[nodiscard]] size_t num_args() const { return operands.size(); }
 };
 
 inline bool StackEntry::is_complex() const {
@@ -949,11 +949,11 @@ public:
 class OpUnary : public OpBase {
 public:
   OpUnary(std::string_view format_string, bool Z2R = false, bool R2Z = false) : OpBase(format_string, Z2R, R2Z) {}
-  complex_type R(real_type v) const {
+  [[nodiscard]] complex_type R(real_type v) const {
     throw Exception("operation not supported!");
     return v;
   }
-  complex_type Z(complex_type v) const {
+  [[nodiscard]] complex_type Z(complex_type v) const {
     throw Exception("operation not supported!");
     return v;
   }
@@ -962,11 +962,11 @@ public:
 class OpBinary : public OpBase {
 public:
   OpBinary(std::string_view format_string, bool Z2R = false, bool R2Z = false) : OpBase(format_string, Z2R, R2Z) {}
-  complex_type R(real_type a, real_type b) const {
+  [[nodiscard]] complex_type R(real_type a, real_type b) const {
     throw Exception("operation not supported!");
     return a;
   }
-  complex_type Z(complex_type a, complex_type b) const {
+  [[nodiscard]] complex_type Z(complex_type a, complex_type b) const {
     throw Exception("operation not supported!");
     return a;
   }
@@ -975,11 +975,11 @@ public:
 class OpTernary : public OpBase {
 public:
   OpTernary(std::string_view format_string, bool Z2R = false, bool R2Z = false) : OpBase(format_string, Z2R, R2Z) {}
-  complex_type R(real_type a, real_type b, real_type c) const {
+  [[nodiscard]] complex_type R(real_type a, real_type b, real_type c) const {
     throw Exception("operation not supported!");
     return a;
   }
-  complex_type Z(complex_type a, complex_type b, complex_type c) const {
+  [[nodiscard]] complex_type Z(complex_type a, complex_type b, complex_type c) const {
     throw Exception("operation not supported!");
     return a;
   }

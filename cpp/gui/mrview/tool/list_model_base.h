@@ -25,7 +25,7 @@ class ListModelBase : public QAbstractItemModel {
 public:
   ListModelBase(QObject *parent) : QAbstractItemModel(parent) {}
 
-  QVariant data(const QModelIndex &index, int role) const override {
+  [[nodiscard]] QVariant data(const QModelIndex &index, int role) const override {
     // The item may (temporarily) be null during an intermediate step of reordering items
     // see insertRows / removeRows
     if (!index.isValid())
@@ -54,7 +54,7 @@ public:
     return QAbstractItemModel::setData(idx, value, role);
   }
 
-  Qt::DropActions supportedDropActions() const override { return Qt::CopyAction | Qt::MoveAction; }
+  [[nodiscard]] Qt::DropActions supportedDropActions() const override { return Qt::CopyAction | Qt::MoveAction; }
 
   // For some reason, Qt calls insertRows prior to removeRows in the event of a drag-n-drop
   // item reordering within a given model.
@@ -99,7 +99,7 @@ public:
     return true;
   }
 
-  Qt::ItemFlags flags(const QModelIndex &index) const override {
+  [[nodiscard]] Qt::ItemFlags flags(const QModelIndex &index) const override {
 
     static const auto valid_flags =
         Qt::ItemIsDragEnabled | Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsUserCheckable;
@@ -110,19 +110,19 @@ public:
     return valid_flags;
   }
 
-  QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const override {
+  [[nodiscard]] QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const override {
     (void)parent; // to suppress warnings about unused parameters
     return createIndex(row, column);
   }
 
-  QModelIndex parent(const QModelIndex &) const override { return QModelIndex(); }
+  [[nodiscard]] QModelIndex parent(const QModelIndex &) const override { return QModelIndex(); }
 
-  int rowCount(const QModelIndex &parent = QModelIndex()) const override {
+  [[nodiscard]] int rowCount(const QModelIndex &parent = QModelIndex()) const override {
     (void)parent;
     return items.size();
   }
 
-  int columnCount(const QModelIndex &parent = QModelIndex()) const override {
+  [[nodiscard]] int columnCount(const QModelIndex &parent = QModelIndex()) const override {
     (void)parent;
     return 1;
   }

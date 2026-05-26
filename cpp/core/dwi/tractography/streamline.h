@@ -42,7 +42,7 @@ public:
     return *this;
   }
   void set_index(const size_t i) { index = i; }
-  size_t get_index() const { return index; }
+  [[nodiscard]] size_t get_index() const { return index; }
   void clear() { index = invalid; }
   bool operator<(const DataIndex &i) const { return index < i.index; }
 

@@ -59,9 +59,9 @@ public:
    */
   virtual measurements_value_type operator[](const index_type index) const = 0;
 
-  const std::filesystem::path &name() const { return path; }
+  [[nodiscard]] const std::filesystem::path &name() const { return path; }
 
-  virtual index_type size() const = 0;
+  [[nodiscard]] virtual index_type size() const = 0;
 
 protected:
   const std::filesystem::path path;
@@ -91,14 +91,14 @@ public:
   measurements_vector_type operator()(const index_type element_index) const;
 
   operator bool() const { return !files.empty(); }
-  index_type size() const { return files.size(); }
+  [[nodiscard]] index_type size() const { return files.size(); }
 
   std::shared_ptr<SubjectDataImportBase> operator[](const index_type i) const {
     assert(i < files.size());
     return files[i];
   }
 
-  bool allFinite() const;
+  [[nodiscard]] bool allFinite() const;
 
 protected:
   std::vector<std::shared_ptr<SubjectDataImportBase>> files;

@@ -117,7 +117,9 @@ void Set::initialise_adjacency() {
           normal(((vertices[two].dir - vertices[one].dir).cross(vertices[three].dir - vertices[two].dir)).normalized()),
           dist(std::max(
               {vertices[one].dir.dot(normal), vertices[two].dir.dot(normal), vertices[three].dir.dot(normal)})) {}
-    bool includes(const index_type i) const { return (indices[0] == i || indices[1] == i || indices[2] == i); }
+    [[nodiscard]] bool includes(const index_type i) const {
+      return (indices[0] == i || indices[1] == i || indices[2] == i);
+    }
     const std::array<index_type, 3> indices; // Indexes the vertices vector
     const Eigen::Vector3d normal;
     const default_type dist;

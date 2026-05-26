@@ -48,11 +48,11 @@ template <typename T> struct Buffer {
   BufferType buffer_type = BufferType::StorageBuffer;
   wgpu::Buffer wgpu_handle{};
 
-  uint64_t elementsCount() const {
+  [[nodiscard]] uint64_t elementsCount() const {
     assert(wgpu_handle.GetSize() % sizeof(T) == 0);
     return wgpu_handle.GetSize() / sizeof(T);
   }
-  uint64_t bytesSize() const { return wgpu_handle.GetSize(); }
+  [[nodiscard]] uint64_t bytesSize() const { return wgpu_handle.GetSize(); }
 
   using element_t = std::remove_cv_t<std::remove_reference_t<T>>;
   static_assert(std::is_same_v<element_t, float> || std::is_same_v<element_t, int32_t> ||
@@ -98,7 +98,7 @@ struct WorkgroupSize {
 
   // As a rule of thumb, for optimal performance across different hardware, the
   // total number of threads in a workgroup should be a multiple of 64.
-  uint32_t threadCount() const { return x * y * z; }
+  [[nodiscard]] uint32_t threadCount() const { return x * y * z; }
 };
 
 // The dispatch grid defines the number of workgroups to be dispatched for a
@@ -110,7 +110,7 @@ struct DispatchGrid {
   uint32_t y = 1;
   uint32_t z = 1;
 
-  uint32_t workgroup_count() const { return x * y * z; }
+  [[nodiscard]] uint32_t workgroup_count() const { return x * y * z; }
 
   // Given `workgroup_size`, the returned grid contains the number
   // of workgroups per dimension so that at most one thread is dispatched

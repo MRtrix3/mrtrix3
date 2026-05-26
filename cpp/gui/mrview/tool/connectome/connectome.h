@@ -70,8 +70,8 @@ public:
   void draw_colourbars() override;
   size_t visible_number_colourbars() override;
 
-  node_t num_nodes() const { return nodes.empty() ? 0 : nodes.size() - 1; }
-  size_t num_edges() const { return edges.size(); }
+  [[nodiscard]] node_t num_nodes() const { return nodes.empty() ? 0 : nodes.size() - 1; }
+  [[nodiscard]] size_t num_edges() const { return edges.size(); }
 
   static void add_commandline_options(MR::App::OptionList &options);
   virtual bool process_commandline_option(const MR::App::ParsedOption &opt) override;
@@ -378,11 +378,11 @@ private:
   void get_exemplars();
   void get_streamtubes();
 
-  bool use_lighting() const;
-  bool use_alpha_nodes() const;
-  bool use_alpha_edges() const;
+  [[nodiscard]] bool use_lighting() const;
+  [[nodiscard]] bool use_alpha_nodes() const;
+  [[nodiscard]] bool use_alpha_edges() const;
 
-  float calc_line_width(const float, const bool) const;
+  [[nodiscard]] float calc_line_width(const float, const bool) const;
 
   friend class NodeColourObserver;
   friend class EdgeColourObserver;

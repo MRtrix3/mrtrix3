@@ -49,8 +49,10 @@ public:
     return std::make_pair(node_t(row), node_t(col));
   }
 
-  node_t mat_size() const { return dim; }
-  uint64_t vec_size() const { return (static_cast<uint64_t>(dim) * (static_cast<uint64_t>(dim) + 1) / 2); }
+  [[nodiscard]] node_t mat_size() const { return dim; }
+  [[nodiscard]] uint64_t vec_size() const {
+    return (static_cast<uint64_t>(dim) * (static_cast<uint64_t>(dim) + 1) / 2);
+  }
 
   // Complete Matrix->Vector and Vector->Matrix conversion
   template <class MatType, class VecType> VecType &M2V(const MatType &, VecType &) const;

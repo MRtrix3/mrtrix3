@@ -98,15 +98,17 @@ public:
     out.noalias() = trafo_half_inverse * in;
   }
 
-  size_t size() const { return number_of_parameters; }
+  [[nodiscard]] size_t size() const { return number_of_parameters; }
 
   static Eigen::Matrix<default_type, 4, 1> get_jacobian_vector_wrt_params(const Eigen::Vector3d &p);
 
-  Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> get_transform() const;
+  [[nodiscard]] Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> get_transform() const;
 
-  Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> get_transform_half() const { return trafo_half; }
+  [[nodiscard]] Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> get_transform_half() const {
+    return trafo_half;
+  }
 
-  Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> get_transform_half_inverse() const {
+  [[nodiscard]] Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> get_transform_half_inverse() const {
     return trafo_half_inverse;
   }
 
@@ -131,23 +133,23 @@ public:
   //   compute_halfspace_transformations();
   // }
 
-  const Eigen::Matrix<ParameterType, 3, 3> get_matrix() const { return trafo.linear(); }
+  [[nodiscard]] const Eigen::Matrix<ParameterType, 3, 3> get_matrix() const { return trafo.linear(); }
 
   void set_translation(const Eigen::Matrix<ParameterType, 1, 3> &trans);
 
-  const Eigen::Vector3d get_translation() const { return trafo.translation(); }
+  [[nodiscard]] const Eigen::Vector3d get_translation() const { return trafo.translation(); }
 
   void set_centre_without_transform_update(const Eigen::Vector3d &centre_in);
 
   void set_centre(const Eigen::Vector3d &centre_in);
 
-  const Eigen::Vector3d get_centre() const { return centre; }
+  [[nodiscard]] const Eigen::Vector3d get_centre() const { return centre; }
 
   void set_optimiser_weights(Eigen::VectorXd &weights);
 
-  Eigen::VectorXd get_optimiser_weights() const { return optimiser_weights; }
+  [[nodiscard]] Eigen::VectorXd get_optimiser_weights() const { return optimiser_weights; }
 
-  bool is_symmetric() const { return !nonsymmetric; }
+  [[nodiscard]] bool is_symmetric() const { return !nonsymmetric; }
 
   void use_nonsymmetric(const bool asym) { nonsymmetric = asym; }
 

@@ -100,8 +100,8 @@ public:
 protected:
   Eigen::MatrixXf coords;
   Eigen::VectorXf weights;
-  ssize_t num_coordinates() const { return coords.rows(); }
-  bool have_weights() const { return weights.size() > 0; }
+  [[nodiscard]] ssize_t num_coordinates() const { return coords.rows(); }
+  [[nodiscard]] bool have_weights() const { return weights.size() > 0; }
 };
 
 class Count_per_coord : public Base, public CoordinatesLoader {

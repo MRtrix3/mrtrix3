@@ -480,7 +480,7 @@ public:
 protected:
   ImageType &image;
   const size_t axis;
-  FORCE_INLINE ssize_t get() const { return image.get_index(axis); }
+  [[nodiscard]] FORCE_INLINE ssize_t get() const { return image.get_index(axis); }
   FORCE_INLINE void move(ssize_t amount) { image.move_index(axis, amount); }
 };
 
@@ -509,7 +509,7 @@ public:
 
 private:
   ImageType &image;
-  FORCE_INLINE value_type get() const { return image.get_value(); }
+  [[nodiscard]] FORCE_INLINE value_type get() const { return image.get_value(); }
   FORCE_INLINE value_type set(value_type value) {
     image.set_value(value);
     return value;
@@ -519,7 +519,7 @@ private:
 template <class ImageType> class ConstRow {
 public:
   ConstRow(ImageType &image, size_t axis) : axis(axis), image(image) { assert(axis < image.ndim()); }
-  ssize_t size() const { return image.size(axis); }
+  [[nodiscard]] ssize_t size() const { return image.size(axis); }
   typename ImageType::value_type operator[](ssize_t n) const {
     image.index(axis) = n;
     return image.value();
@@ -606,10 +606,12 @@ public:
   using value_type = ValueType;
 
   FORCE_INLINE Helper::Index<Derived> index(size_t axis) { return {static_cast<Derived &>(*this), axis}; }
-  FORCE_INLINE ssize_t index(size_t axis) const { return static_cast<const Derived *>(this)->get_index(axis); }
+  [[nodiscard]] FORCE_INLINE ssize_t index(size_t axis) const {
+    return static_cast<const Derived *>(this)->get_index(axis);
+  }
 
   FORCE_INLINE Helper::Value<Derived> value() { return {static_cast<Derived &>(*this)}; }
-  FORCE_INLINE ValueType value() const { return static_cast<const Derived *>(this)->get_value(); }
+  [[nodiscard]] FORCE_INLINE ValueType value() const { return static_cast<const Derived *>(this)->get_value(); }
 
   //! a proxy class for the vector of values along the specified axis
   /*! returns a proxy class to simplify interactions with the data as a
@@ -625,7 +627,9 @@ public:
    * out.row(3) += M*Eigen::Vector3f(in.row(3)) + Eigen::VectorXf (other.row(3));
    * \code
    * */
-  FORCE_INLINE Helper::ConstRow<Derived> row(size_t axis) const { return {static_cast<Derived &>(*this), axis}; }
+  [[nodiscard]] FORCE_INLINE Helper::ConstRow<Derived> row(size_t axis) const {
+    return {static_cast<Derived &>(*this), axis};
+  }
   FORCE_INLINE Helper::Row<Derived> row(size_t axis) { return {static_cast<Derived &>(*this), axis}; }
 };
 

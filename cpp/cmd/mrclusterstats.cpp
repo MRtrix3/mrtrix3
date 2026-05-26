@@ -169,12 +169,12 @@ public:
     return temp.value();
   }
 
-  index_type size() const override {
+  [[nodiscard]] index_type size() const override {
     assert(v2v);
     return v2v->size();
   }
 
-  const Header &header() const { return H; }
+  [[nodiscard]] const Header &header() const { return H; }
 
   static void set_mapping(std::shared_ptr<Voxel2Vector> &ptr) { v2v = ptr; }
 

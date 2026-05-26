@@ -31,7 +31,7 @@ using connectivity_value_type = float;
 class MappedTrack : public std::vector<fixel_index_type> {
 public:
   using BaseType = std::vector<fixel_index_type>;
-  default_type get_weight() const { return weight; }
+  [[nodiscard]] default_type get_weight() const { return weight; }
   void set_weight(const default_type w) { weight = w; }
 
 private:
@@ -47,7 +47,7 @@ public:
     fixel_index = that.fixel_index;
     return *this;
   }
-  FORCE_INLINE fixel_index_type index() const { return fixel_index; }
+  [[nodiscard]] FORCE_INLINE fixel_index_type index() const { return fixel_index; }
   FORCE_INLINE bool operator<(const InitElementBase &that) const { return fixel_index < that.fixel_index; }
 
 private:
@@ -64,7 +64,7 @@ public:
   InitElementUnweighted(const fixel_index_type fixel_index, const MappedTrack &all_data)
       : BaseType(fixel_index), track_count(1) {}
   InitElementUnweighted(const InitElementUnweighted &) = default;
-  FORCE_INLINE fixel_index_type index() const { return BaseType::index(); }
+  [[nodiscard]] FORCE_INLINE fixel_index_type index() const { return BaseType::index(); }
   FORCE_INLINE InitElementUnweighted &operator++() {
     track_count++;
     return *this;
@@ -74,7 +74,7 @@ public:
     track_count = that.track_count;
     return *this;
   }
-  FORCE_INLINE ValueType value() const { return track_count; }
+  [[nodiscard]] FORCE_INLINE ValueType value() const { return track_count; }
 
 private:
   ValueType track_count;
@@ -90,7 +90,7 @@ public:
   InitElementWeighted(const fixel_index_type fixel_index, const MappedTrack &all_data)
       : BaseType(fixel_index), sum_weights(all_data.get_weight()) {}
   InitElementWeighted(const InitElementWeighted &) = default;
-  FORCE_INLINE fixel_index_type index() const { return BaseType::index(); }
+  [[nodiscard]] FORCE_INLINE fixel_index_type index() const { return BaseType::index(); }
   FORCE_INLINE InitElementWeighted &operator+=(const ValueType increment) {
     sum_weights += increment;
     return *this;
@@ -100,7 +100,7 @@ public:
     sum_weights = that.sum_weights;
     return *this;
   }
-  FORCE_INLINE ValueType value() const { return sum_weights; }
+  [[nodiscard]] FORCE_INLINE ValueType value() const { return sum_weights; }
 
 private:
   ValueType sum_weights;
@@ -111,7 +111,7 @@ public:
   using BaseType = std::vector<ElementType>;
   virtual ~InitFixelBase() {}
   void add(const MappedTrack &mapped_track);
-  virtual default_type norm_factor() const = 0;
+  [[nodiscard]] virtual default_type norm_factor() const = 0;
 
 protected:
   virtual void increment(const MappedTrack &data) = 0;
@@ -122,7 +122,7 @@ class InitFixelUnweighted : public InitFixelBase<InitElementUnweighted> {
 public:
   using BaseType = InitFixelBase<InitElementUnweighted>;
   InitFixelUnweighted() : track_count(0) {}
-  default_type norm_factor() const override { return 1.0 / static_cast<default_type>(track_count); }
+  [[nodiscard]] default_type norm_factor() const override { return 1.0 / static_cast<default_type>(track_count); }
 
 private:
   count_type track_count;
@@ -134,7 +134,7 @@ class InitFixelWeighted : public InitFixelBase<InitElementWeighted> {
 public:
   using BaseType = InitFixelBase<InitElementWeighted>;
   InitFixelWeighted() : sum_weights(default_type(0)) {}
-  default_type norm_factor() const override { return 1.0 / sum_weights; }
+  [[nodiscard]] default_type norm_factor() const override { return 1.0 / sum_weights; }
 
 private:
   default_type sum_weights;
@@ -152,8 +152,8 @@ public:
   using ValueType = connectivity_value_type;
   NormElement(const fixel_index_type fixel_index, const ValueType connectivity_value)
       : fixel_index(fixel_index), connectivity_value(connectivity_value) {}
-  FORCE_INLINE fixel_index_type index() const { return fixel_index; }
-  FORCE_INLINE ValueType value() const { return connectivity_value; }
+  [[nodiscard]] FORCE_INLINE fixel_index_type index() const { return fixel_index; }
+  [[nodiscard]] FORCE_INLINE ValueType value() const { return connectivity_value; }
   FORCE_INLINE void exponentiate(const ValueType C) { connectivity_value = std::pow(connectivity_value, C); }
   FORCE_INLINE void normalise(const ValueType norm_factor) { connectivity_value *= norm_factor; }
 
@@ -234,8 +234,8 @@ public:
 
   // TODO Define iteration constructs?
 
-  size_t size() const { return index_image.size(0); }
-  size_t size(const size_t) const;
+  [[nodiscard]] size_t size() const { return index_image.size(0); }
+  [[nodiscard]] size_t size(const size_t) const;
 
 protected:
   const std::filesystem::path directory;

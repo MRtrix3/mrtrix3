@@ -29,7 +29,7 @@ public:
   std::filesystem::path single_selection;
   std::vector<std::filesystem::path> multi_selection;
   std::filesystem::path last_directory;
-  bool empty() const { return single_selection.empty() && multi_selection.empty(); }
+  [[nodiscard]] bool empty() const { return single_selection.empty() && multi_selection.empty(); }
 };
 
 const FileDialogReturn input_dirpath(QWidget *parent,

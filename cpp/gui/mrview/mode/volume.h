@@ -46,7 +46,7 @@ protected:
     Shader(const Volume &mode) : mode(mode), active_clip_planes(0), cliphighlight(true), clipintersectionmode(false) {}
     virtual std::string vertex_shader_source(const Displayable &object);
     virtual std::string fragment_shader_source(const Displayable &object);
-    virtual bool need_update(const Displayable &object) const;
+    [[nodiscard]] virtual bool need_update(const Displayable &object) const;
     virtual void update(const Displayable &object);
     const Volume &mode;
     size_t active_clip_planes;
@@ -54,11 +54,11 @@ protected:
     bool clipintersectionmode;
   } volume_shader;
 
-  Tool::View *get_view_tool() const;
-  std::vector<std::pair<GL::vec4, bool>> get_active_clip_planes() const;
-  std::vector<GL::vec4 *> get_clip_planes_to_be_edited() const;
-  bool get_cliphighlightstate() const;
-  bool get_clipintersectionmodestate() const;
+  [[nodiscard]] Tool::View *get_view_tool() const;
+  [[nodiscard]] std::vector<std::pair<GL::vec4, bool>> get_active_clip_planes() const;
+  [[nodiscard]] std::vector<GL::vec4 *> get_clip_planes_to_be_edited() const;
+  [[nodiscard]] bool get_cliphighlightstate() const;
+  [[nodiscard]] bool get_clipintersectionmodestate() const;
 };
 
 } // namespace MR::GUI::MRView::Mode

@@ -73,23 +73,23 @@ public:
     is_valid = false;
   }
 
-  bool valid() const { return is_valid; }
+  [[nodiscard]] bool valid() const { return is_valid; }
 
-  float get_cgm() const { return cgm; }
-  float get_sgm() const { return sgm; }
-  float get_wm() const { return wm; }
-  float get_csf() const { return csf; }
-  float get_path() const { return path; }
+  [[nodiscard]] float get_cgm() const { return cgm; }
+  [[nodiscard]] float get_sgm() const { return sgm; }
+  [[nodiscard]] float get_wm() const { return wm; }
+  [[nodiscard]] float get_csf() const { return csf; }
+  [[nodiscard]] float get_path() const { return path; }
 
-  float get_gm() const { return (cgm + sgm); }
+  [[nodiscard]] float get_gm() const { return (cgm + sgm); }
 
-  bool is_cgm() const { return ((cgm >= sgm) && (cgm >= wm) && (cgm > csf) && (cgm > path)); }
-  bool is_sgm() const { return ((sgm > cgm) && (sgm >= wm) && (sgm > csf) && (sgm > path)); }
-  bool is_wm() const { return ((wm > cgm) && (wm > sgm) && (wm > csf) && (wm > path)); }
-  bool is_csf() const { return ((csf >= cgm) && (csf >= sgm) && (csf >= wm) && (csf >= path)); }
-  bool is_path() const { return ((path >= cgm) && (path >= sgm) && (path >= wm) && (path > csf)); }
+  [[nodiscard]] bool is_cgm() const { return ((cgm >= sgm) && (cgm >= wm) && (cgm > csf) && (cgm > path)); }
+  [[nodiscard]] bool is_sgm() const { return ((sgm > cgm) && (sgm >= wm) && (sgm > csf) && (sgm > path)); }
+  [[nodiscard]] bool is_wm() const { return ((wm > cgm) && (wm > sgm) && (wm > csf) && (wm > path)); }
+  [[nodiscard]] bool is_csf() const { return ((csf >= cgm) && (csf >= sgm) && (csf >= wm) && (csf >= path)); }
+  [[nodiscard]] bool is_path() const { return ((path >= cgm) && (path >= sgm) && (path >= wm) && (path > csf)); }
 
-  bool is_gm() const { return ((get_gm() >= wm) && (get_gm() > csf) && (get_gm() > path)); }
+  [[nodiscard]] bool is_gm() const { return ((get_gm() >= wm) && (get_gm() > csf) && (get_gm() > path)); }
 
 private:
   float cgm, sgm, wm, csf, path;

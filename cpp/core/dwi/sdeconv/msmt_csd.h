@@ -216,8 +216,8 @@ public:
       INFO("Multi-shell, multi-tissue CSD initialised successfully");
     }
 
-    size_t num_shells() const { return shells.count(); }
-    size_t num_tissues() const { return responses.size(); }
+    [[nodiscard]] size_t num_shells() const { return shells.count(); }
+    [[nodiscard]] size_t num_tissues() const { return responses.size(); }
 
     const Eigen::MatrixXd grad;
     DWI::Shells shells;

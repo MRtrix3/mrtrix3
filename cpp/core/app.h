@@ -87,7 +87,7 @@ public:
   Description &operator+(std::string_view text);
   Description &operator+(const char *const text[]); // check_syntax off
 
-  std::string syntax(const bool format) const;
+  [[nodiscard]] std::string syntax(const bool format) const;
 };
 
 //! object for storing a single example command usage
@@ -97,7 +97,7 @@ public:
   const std::string title, code, description;
 
   operator std::string() const;
-  std::string syntax(const bool format) const;
+  [[nodiscard]] std::string syntax(const bool format) const;
 };
 
 //! a class to hold the list of Example's
@@ -105,7 +105,7 @@ class ExampleList : public std::vector<Example> {
 public:
   ExampleList &operator+(const Example &example);
 
-  std::string syntax(const bool format) const;
+  [[nodiscard]] std::string syntax(const bool format) const;
 };
 
 //! a class to hold the list of Argument's
@@ -113,7 +113,7 @@ class ArgumentList : public std::vector<Argument> {
 public:
   ArgumentList &operator+(const Argument &argument);
 
-  std::string syntax(const bool format) const;
+  [[nodiscard]] std::string syntax(const bool format) const;
 };
 
 //! a class to hold the list of option groups
@@ -127,7 +127,7 @@ public:
 
   OptionGroup &back();
 
-  std::string syntax(const bool format) const;
+  [[nodiscard]] std::string syntax(const bool format) const;
 };
 
 void check_overwrite(const std::filesystem::path &path);
@@ -170,17 +170,17 @@ public:
   //   in particular, attempting to implicitly convert to std::string
   //   for an argument that is a filesystem path type will fail,
   //   whereas this function can be used
-  std::string as_text() const { return p; }
+  [[nodiscard]] std::string as_text() const { return p; }
 
-  std::filesystem::path as_path() const;
-  bool as_bool() const;
-  IntType as_int() const;
-  UIntType as_uint() const;
-  default_type as_float() const;
+  [[nodiscard]] std::filesystem::path as_path() const;
+  [[nodiscard]] bool as_bool() const;
+  [[nodiscard]] IntType as_int() const;
+  [[nodiscard]] UIntType as_uint() const;
+  [[nodiscard]] default_type as_float() const;
 
-  std::vector<IntType> as_sequence_int() const;
-  std::vector<UIntType> as_sequence_uint() const;
-  std::vector<default_type> as_sequence_float() const;
+  [[nodiscard]] std::vector<IntType> as_sequence_int() const;
+  [[nodiscard]] std::vector<UIntType> as_sequence_uint() const;
+  [[nodiscard]] std::vector<default_type> as_sequence_float() const;
 
   operator bool() const { return as_bool(); }
   operator int() const { return as_int(); }
@@ -195,10 +195,10 @@ public:
   operator std::vector<UIntType>() const { return as_sequence_uint(); }
   operator std::vector<default_type>() const { return as_sequence_float(); }
 
-  const char *c_str() const { return p.c_str(); } // check_syntax off
+  [[nodiscard]] const char *c_str() const { return p.c_str(); } // check_syntax off
 
   //! the index of this argument in the raw command-line arguments list
-  size_t index() const { return index_; }
+  [[nodiscard]] size_t index() const { return index_; }
 
 private:
   const Option *opt;
@@ -206,8 +206,8 @@ private:
   std::string p;
   size_t index_;
 
-  bool includes_filesystem_arg_types() const noexcept;
-  bool only_filesystem_arg_types() const noexcept;
+  [[nodiscard]] bool includes_filesystem_arg_types() const noexcept;
+  [[nodiscard]] bool only_filesystem_arg_types() const noexcept;
 
   ParsedArgument(const Option *option, const Argument *argument, std::string text, size_t index);
 

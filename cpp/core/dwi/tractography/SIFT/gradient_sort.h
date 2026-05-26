@@ -41,9 +41,9 @@ public:
 
   bool operator<(const Cost_fn_gradient_sort &that) const { return grad_per_unit_length < that.grad_per_unit_length; }
 
-  track_t get_tck_index() const { return tck_index; }
-  double get_cost_gradient() const { return cost_gradient; }
-  double get_gradient_per_unit_length() const { return grad_per_unit_length; }
+  [[nodiscard]] track_t get_tck_index() const { return tck_index; }
+  [[nodiscard]] double get_cost_gradient() const { return cost_gradient; }
+  [[nodiscard]] double get_gradient_per_unit_length() const { return grad_per_unit_length; }
 
 private:
   track_t tck_index;

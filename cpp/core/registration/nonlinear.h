@@ -423,7 +423,7 @@ public:
     scale_factor = scalefactor;
   }
 
-  std::vector<default_type> get_scale_factor() const { return scale_factor; }
+  [[nodiscard]] std::vector<default_type> get_scale_factor() const { return scale_factor; }
 
   void set_init_grad_step(const default_type step) { gradient_step = step; }
 
@@ -456,11 +456,11 @@ public:
 
   std::shared_ptr<Image<default_type>> get_mid_to_im2() { return mid_to_im2; }
 
-  transform_type get_im1_to_mid_linear() const { return im1_to_mid_linear; }
+  [[nodiscard]] transform_type get_im1_to_mid_linear() const { return im1_to_mid_linear; }
 
-  transform_type get_im2_to_mid_linear() const { return im2_to_mid_linear; }
+  [[nodiscard]] transform_type get_im2_to_mid_linear() const { return im2_to_mid_linear; }
 
-  Header get_output_warps_header() const {
+  [[nodiscard]] Header get_output_warps_header() const {
     Header output_header(*im1_to_mid);
     output_header.ndim() = 5;
     output_header.size(3) = 3;

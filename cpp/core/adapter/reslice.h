@@ -172,14 +172,14 @@ public:
       oversampling = false;
   }
 
-  size_t ndim() const { return interp.ndim(); }
-  bool valid() const { return interp.valid(); }
-  int size(size_t axis) const { return axis < 3 ? dim[axis] : interp.size(axis); }
-  default_type spacing(size_t axis) const { return axis < 3 ? vox[axis] : interp.spacing(axis); }
-  const transform_type &transform() const { return transform_; }
-  std::string name() const { return interp.name(); }
+  [[nodiscard]] size_t ndim() const { return interp.ndim(); }
+  [[nodiscard]] bool valid() const { return interp.valid(); }
+  [[nodiscard]] int size(size_t axis) const { return axis < 3 ? dim[axis] : interp.size(axis); }
+  [[nodiscard]] default_type spacing(size_t axis) const { return axis < 3 ? vox[axis] : interp.spacing(axis); }
+  [[nodiscard]] const transform_type &transform() const { return transform_; }
+  [[nodiscard]] std::string name() const { return interp.name(); }
 
-  ssize_t stride(size_t axis) const { return interp.stride(axis); }
+  [[nodiscard]] ssize_t stride(size_t axis) const { return interp.stride(axis); }
 
   void reset() {
     x = {0, 0, 0};
@@ -210,7 +210,7 @@ public:
     return interp.value();
   }
 
-  ssize_t get_index(size_t axis) const { return axis < 3 ? x[axis] : interp.index(axis); }
+  [[nodiscard]] ssize_t get_index(size_t axis) const { return axis < 3 ? x[axis] : interp.index(axis); }
   void move_index(size_t axis, ssize_t increment) {
     if (axis < 3)
       x[axis] += increment;

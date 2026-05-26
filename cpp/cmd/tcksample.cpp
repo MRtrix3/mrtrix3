@@ -169,9 +169,9 @@ public:
   virtual bool operator()(const DWI::Tractography::Streamline<value_type> &tck, //
                           ManyPerStreamline &out) = 0;                          //
 
-  virtual size_t num_contrasts() const = 0;
-  contrast_type contrast() const { return _contrast; }
-  const std::optional<Statistic> &statistic() const { return _statistic; }
+  [[nodiscard]] virtual size_t num_contrasts() const = 0;
+  [[nodiscard]] contrast_type contrast() const { return _contrast; }
+  [[nodiscard]] const std::optional<Statistic> &statistic() const { return _statistic; }
 
 protected:
   const contrast_type _contrast;
@@ -223,7 +223,7 @@ protected:
 private:
   // Take distance between points into account in mean calculation
   //   (Should help down-weight endpoints)
-  std::vector<value_type> compute_weights(const DWI::Tractography::Streamline<value_type> &tck) const {
+  [[nodiscard]] std::vector<value_type> compute_weights(const DWI::Tractography::Streamline<value_type> &tck) const {
     std::vector<value_type> weights;
     weights.reserve(tck.size());
     for (size_t i = 0; i != tck.size(); ++i) {
@@ -238,7 +238,7 @@ private:
   }
 
   template <class VectorType>
-  value_type compute_statistic(const VectorType &data, const std::vector<value_type> &weights) const {
+  [[nodiscard]] value_type compute_statistic(const VectorType &data, const std::vector<value_type> &weights) const {
     if (!statistic().has_value()) {
       assert(false);
       return std::numeric_limits<value_type>::quiet_NaN();
@@ -425,7 +425,9 @@ public:
     return true;
   }
 
-  size_t num_contrasts() const override { return BaseType::image.ndim() == 4 ? BaseType::image.size(3) : 1; }
+  [[nodiscard]] size_t num_contrasts() const override {
+    return BaseType::image.ndim() == 4 ? BaseType::image.size(3) : 1;
+  }
 
 private:
   Image<value_type> tdi;
@@ -477,7 +479,9 @@ public:
     return (*this).BaseType::operator()(tck, out);
   }
 
-  size_t num_contrasts() const override { return BaseType::interp.ndim() == 4 ? BaseType::interp.size(3) : 1; }
+  [[nodiscard]] size_t num_contrasts() const override {
+    return BaseType::interp.ndim() == 4 ? BaseType::interp.size(3) : 1;
+  }
 
 protected:
   bool operator()(const DWI::Tractography::Streamline<value_type> &tck, matrix_type &out) override {
@@ -543,7 +547,7 @@ public:
     return (*this).BaseType::operator()(tck, out);
   }
 
-  size_t num_contrasts() const override { return 1; }
+  [[nodiscard]] size_t num_contrasts() const override { return 1; }
 
 protected:
   bool operator()(const DWI::Tractography::Streamline<value_type> & /*tck*/, matrix_type & /*out*/) override {
@@ -592,7 +596,7 @@ public:
     return false;
   }
 
-  size_t num_contrasts() const override { return 1; }
+  [[nodiscard]] size_t num_contrasts() const override { return 1; }
 
 private:
   std::shared_ptr<Math::SH::PrecomputedAL<default_type>> sh_precomputer;

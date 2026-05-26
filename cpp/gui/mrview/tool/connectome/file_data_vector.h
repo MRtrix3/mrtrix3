@@ -39,12 +39,12 @@ public:
   FileDataVector &load(const std::filesystem::path &filePath);
   FileDataVector &clear();
 
-  const QString &get_name() const { return name; }
+  [[nodiscard]] const QString &get_name() const { return name; }
   void set_name(std::string_view s) { name = qstr(s); }
 
-  float get_min() const { return min; }
-  float get_mean() const { return mean; }
-  float get_max() const { return max; }
+  [[nodiscard]] float get_min() const { return min; }
+  [[nodiscard]] float get_mean() const { return mean; }
+  [[nodiscard]] float get_max() const { return max; }
 
   void calc_stats();
 

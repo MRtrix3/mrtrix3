@@ -46,7 +46,7 @@ class View::ClipPlaneModel : public QAbstractItemModel {
 public:
   ClipPlaneModel(QObject *parent) : QAbstractItemModel(parent) {}
 
-  QVariant data(const QModelIndex &index, int role) const {
+  [[nodiscard]] QVariant data(const QModelIndex &index, int role) const {
     if (!index.isValid())
       return {};
     if (role == Qt::CheckStateRole) {
@@ -66,25 +66,25 @@ public:
     return QAbstractItemModel::setData(idx, value, role);
   }
 
-  Qt::ItemFlags flags(const QModelIndex &index) const {
+  [[nodiscard]] Qt::ItemFlags flags(const QModelIndex &index) const {
     if (!index.isValid())
       return {};
     return Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsUserCheckable;
   }
 
-  QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const {
+  [[nodiscard]] QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const {
     (void)parent; // to suppress warnings about unused parameters
     return createIndex(row, column);
   }
 
-  QModelIndex parent(const QModelIndex &) const { return {}; }
+  [[nodiscard]] QModelIndex parent(const QModelIndex &) const { return {}; }
 
-  int rowCount(const QModelIndex &parent = QModelIndex()) const {
+  [[nodiscard]] int rowCount(const QModelIndex &parent = QModelIndex()) const {
     (void)parent;
     return planes.size();
   }
 
-  int columnCount(const QModelIndex &parent = QModelIndex()) const {
+  [[nodiscard]] int columnCount(const QModelIndex &parent = QModelIndex()) const {
     (void)parent;
     return 1;
   }

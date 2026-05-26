@@ -178,7 +178,7 @@ public:
         gl::TexParameteri(tex_type, gl::TEXTURE_WRAP_R, gl::CLAMP_TO_EDGE);
     }
   }
-  GLenum type() const { return tex_type; }
+  [[nodiscard]] GLenum type() const { return tex_type; }
   void clear() {
     if (id != 0U) {
       check_context();

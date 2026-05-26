@@ -36,21 +36,21 @@ class Node_list_model : public QAbstractItemModel {
 public:
   Node_list_model(Connectome *parent);
 
-  QVariant data(const QModelIndex &index, int role) const override;
-  QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
+  [[nodiscard]] QVariant data(const QModelIndex &index, int role) const override;
+  [[nodiscard]] QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
 
-  Qt::ItemFlags flags(const QModelIndex &index) const override {
+  [[nodiscard]] Qt::ItemFlags flags(const QModelIndex &index) const override {
     if (!index.isValid())
       return {};
     return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
   }
 
-  QModelIndex parent(const QModelIndex &) const override { return {}; }
+  [[nodiscard]] QModelIndex parent(const QModelIndex &) const override { return {}; }
 
-  int rowCount(const QModelIndex &parent = QModelIndex()) const override;
-  int columnCount(const QModelIndex &parent = QModelIndex()) const override;
+  [[nodiscard]] int rowCount(const QModelIndex &parent = QModelIndex()) const override;
+  [[nodiscard]] int columnCount(const QModelIndex &parent = QModelIndex()) const override;
 
-  QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const override {
+  [[nodiscard]] QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const override {
     (void)parent;
     return createIndex(row, column);
   }
@@ -90,7 +90,7 @@ public:
 
   void initialize();
   void colours_changed();
-  int row_height() const;
+  [[nodiscard]] int row_height() const;
 
 private slots:
   void clear_selection_slot();

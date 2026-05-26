@@ -45,15 +45,15 @@ public:
       trunc = Enum::from_name<sgm_trunc_t>(sgm_trunc_property->second);
   }
 
-  bool backtrack() const { return bt; }
+  [[nodiscard]] bool backtrack() const { return bt; }
 
-  bool crop_at_gmwmi() const { return bool(gmwmi_finder); }
+  [[nodiscard]] bool crop_at_gmwmi() const { return bool(gmwmi_finder); }
   void crop_at_gmwmi(std::vector<Eigen::Vector3f> &tck) const {
     assert(gmwmi_finder);
     tck.back() = gmwmi_finder->find_interface(tck, true);
   }
 
-  sgm_trunc_t sgm_trunc() const { return trunc; }
+  [[nodiscard]] sgm_trunc_t sgm_trunc() const { return trunc; }
   void set_default_sgm_trunc(const sgm_trunc_t default_value) {
     if (trunc == sgm_trunc_t::DEFAULT)
       trunc = default_value;

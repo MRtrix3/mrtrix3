@@ -79,7 +79,7 @@ protected:
   std::array<SplineType, 3> H;
   Eigen::Vector3d P;
 
-  ssize_t clamp(ssize_t x, ssize_t dim) const {
+  [[nodiscard]] ssize_t clamp(ssize_t x, ssize_t dim) const {
     if (x < 0)
       return 0;
     if (x >= dim)

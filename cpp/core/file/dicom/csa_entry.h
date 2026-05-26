@@ -88,12 +88,12 @@ public:
     return true;
   }
 
-  std::string key() const { return name; }
+  [[nodiscard]] std::string key() const { return name; }
 
-  uint32_t num_items() const { return nitems; }
-  uint32_t size() const { return num; }
+  [[nodiscard]] uint32_t num_items() const { return nitems; }
+  [[nodiscard]] uint32_t size() const { return num; }
 
-  int get_int() const {
+  [[nodiscard]] int get_int() const {
     const std::byte *p = start + 84;
     for (uint32_t m = 0; m < nitems; m++) {
       auto const length = Raw::fetch_LE<uint32_t>(p);
@@ -105,7 +105,7 @@ public:
     return 0;
   }
 
-  default_type get_float() const {
+  [[nodiscard]] default_type get_float() const {
     const std::byte *p = start + 84;
     for (uint32_t m = 0; m < nitems; m++) {
       auto const length = Raw::fetch_LE<uint32_t>(p);
@@ -132,7 +132,7 @@ public:
       v[m] = NaN;
   }
 
-  std::vector<std::string> get_string() const {
+  [[nodiscard]] std::vector<std::string> get_string() const {
     std::vector<std::string> result;
     const std::byte *p = start + 84;
     for (uint32_t m = 0; m < nitems; m++) {

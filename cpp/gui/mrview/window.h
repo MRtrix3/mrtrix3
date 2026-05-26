@@ -50,7 +50,7 @@ private:
   class GLArea : public GL::Area {
   public:
     GLArea(Window &parent);
-    QSize sizeHint() const override;
+    [[nodiscard]] QSize sizeHint() const override;
 
   protected:
     void dragEnterEvent(QDragEnterEvent *event) override;
@@ -76,31 +76,31 @@ public:
   void parse_arguments();
   void add_images(std::vector<std::unique_ptr<MR::Header>> &list);
 
-  const QPoint &mouse_position() const { return mouse_position_; }
-  const QPoint &mouse_displacement() const { return mouse_displacement_; }
-  Qt::MouseButtons mouse_buttons() const { return buttons_; }
-  Qt::KeyboardModifiers modifiers() const { return modifiers_; }
+  [[nodiscard]] const QPoint &mouse_position() const { return mouse_position_; }
+  [[nodiscard]] const QPoint &mouse_displacement() const { return mouse_displacement_; }
+  [[nodiscard]] Qt::MouseButtons mouse_buttons() const { return buttons_; }
+  [[nodiscard]] Qt::KeyboardModifiers modifiers() const { return modifiers_; }
 
   void selected_colourmap(size_t colourmap, const ColourMapButton &) override;
   void selected_custom_colour(const QColor &colour, const ColourMapButton &) override;
 
-  const Image *image() const { return static_cast<const Image *>(image_group->checkedAction()); }
-  QActionGroup *tools() const { return tool_group; }
+  [[nodiscard]] const Image *image() const { return static_cast<const Image *>(image_group->checkedAction()); }
+  [[nodiscard]] QActionGroup *tools() const { return tool_group; }
 
-  int slice() const {
+  [[nodiscard]] int slice() const {
     if (image() == nullptr)
       return -1;
     return std::round((image()->image.transform().inverse().cast<float>() * focus())(anatomical_plane) /
                       image()->image.spacing(anatomical_plane));
   }
 
-  Mode::Base *get_current_mode() const { return mode.get(); }
-  const Eigen::Vector3f &focus() const { return focal_point; }
-  const Eigen::Vector3f &target() const { return camera_target; }
-  float FOV() const { return field_of_view; }
-  int plane() const { return anatomical_plane; }
-  const Eigen::Quaternionf &orientation() const { return orient; }
-  bool snap_to_image() const { return snap_to_image_axes_and_voxel; }
+  [[nodiscard]] Mode::Base *get_current_mode() const { return mode.get(); }
+  [[nodiscard]] const Eigen::Vector3f &focus() const { return focal_point; }
+  [[nodiscard]] const Eigen::Vector3f &target() const { return camera_target; }
+  [[nodiscard]] float FOV() const { return field_of_view; }
+  [[nodiscard]] int plane() const { return anatomical_plane; }
+  [[nodiscard]] const Eigen::Quaternionf &orientation() const { return orient; }
+  [[nodiscard]] bool snap_to_image() const { return snap_to_image_axes_and_voxel; }
   Image *image() { return static_cast<Image *>(image_group->checkedAction()); }
 
   void set_focus(const Eigen::Vector3f &p) {
@@ -143,23 +143,23 @@ public:
 
   void set_image_volume(size_t axis, ssize_t index);
 
-  bool get_image_visibility() const { return !image_hide_action->isChecked(); }
+  [[nodiscard]] bool get_image_visibility() const { return !image_hide_action->isChecked(); }
   void set_image_visibility(bool flag);
 
-  bool show_crosshairs() const { return show_crosshairs_action->isChecked(); }
-  bool show_comments() const { return show_comments_action->isChecked(); }
-  bool show_voxel_info() const { return show_voxel_info_action->isChecked(); }
-  bool show_orientation_labels() const { return show_orientation_labels_action->isChecked(); }
-  bool show_colourbar() const { return show_colourbar_action->isChecked(); }
+  [[nodiscard]] bool show_crosshairs() const { return show_crosshairs_action->isChecked(); }
+  [[nodiscard]] bool show_comments() const { return show_comments_action->isChecked(); }
+  [[nodiscard]] bool show_voxel_info() const { return show_voxel_info_action->isChecked(); }
+  [[nodiscard]] bool show_orientation_labels() const { return show_orientation_labels_action->isChecked(); }
+  [[nodiscard]] bool show_colourbar() const { return show_colourbar_action->isChecked(); }
 
-  bool sync_focus_on() const { return sync_focus_action->isChecked(); }
+  [[nodiscard]] bool sync_focus_on() const { return sync_focus_action->isChecked(); }
 
   void captureGL(const std::filesystem::path &filepath) {
     QImage const image(glarea->grabFramebuffer());
     image.save(qstr(filepath.string()));
   }
 
-  GL::Area *glwidget() const { return glarea; }
+  [[nodiscard]] GL::Area *glwidget() const { return glarea; }
   GL::Lighting &lighting() { return *lighting_; }
   ColourBars colourbar_renderer;
 

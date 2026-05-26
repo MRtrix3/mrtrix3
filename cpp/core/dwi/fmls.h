@@ -122,17 +122,17 @@ public:
     integral += that.integral;
   }
 
-  const mask_type &get_mask() const { return mask; }
-  const Eigen::Array<default_type, Eigen::Dynamic, 1> &get_values() const { return values; }
-  default_type get_max_peak_value() const { return max_peak_value; }
-  size_t num_peaks() const { return peak_dirs.size(); }
-  const Eigen::Vector3d &get_peak_dir(const size_t i) const {
+  [[nodiscard]] const mask_type &get_mask() const { return mask; }
+  [[nodiscard]] const Eigen::Array<default_type, Eigen::Dynamic, 1> &get_values() const { return values; }
+  [[nodiscard]] default_type get_max_peak_value() const { return max_peak_value; }
+  [[nodiscard]] size_t num_peaks() const { return peak_dirs.size(); }
+  [[nodiscard]] const Eigen::Vector3d &get_peak_dir(const size_t i) const {
     assert(i < num_peaks());
     return peak_dirs[i];
   }
-  const Eigen::Vector3d &get_mean_dir() const { return mean_dir; }
-  default_type get_integral() const { return integral; }
-  bool is_negative() const { return neg; }
+  [[nodiscard]] const Eigen::Vector3d &get_mean_dir() const { return mean_dir; }
+  [[nodiscard]] default_type get_integral() const { return integral; }
+  [[nodiscard]] bool is_negative() const { return neg; }
 
 private:
   mask_type mask;
@@ -214,23 +214,23 @@ public:
 
   bool operator()(const SH_coefs &, FOD_lobes &) const;
 
-  default_type get_integral_threshold() const { return integral_threshold; }
+  [[nodiscard]] default_type get_integral_threshold() const { return integral_threshold; }
   void set_integral_threshold(const default_type i) { integral_threshold = i; }
-  default_type get_peak_value_threshold() const { return peak_value_threshold; }
+  [[nodiscard]] default_type get_peak_value_threshold() const { return peak_value_threshold; }
   void set_peak_value_threshold(const default_type i) { peak_value_threshold = i; }
-  default_type get_lobe_merge_ratio() const { return lobe_merge_ratio; }
+  [[nodiscard]] default_type get_lobe_merge_ratio() const { return lobe_merge_ratio; }
   void set_lobe_merge_ratio(const default_type i) { lobe_merge_ratio = i; }
-  bool get_create_null_lobe() const { return create_null_lobe; }
+  [[nodiscard]] bool get_create_null_lobe() const { return create_null_lobe; }
   void set_create_null_lobe(const bool i) {
     create_null_lobe = i;
     verify_settings();
   }
-  bool get_create_lookup_table() const { return create_lookup_table; }
+  [[nodiscard]] bool get_create_lookup_table() const { return create_lookup_table; }
   void set_create_lookup_table(const bool i) {
     create_lookup_table = i;
     verify_settings();
   }
-  bool get_dilate_lookup_table() const { return dilate_lookup_table; }
+  [[nodiscard]] bool get_dilate_lookup_table() const { return dilate_lookup_table; }
   void set_dilate_lookup_table(const bool i) {
     dilate_lookup_table = i;
     verify_settings();

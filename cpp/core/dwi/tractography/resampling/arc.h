@@ -35,7 +35,7 @@ private:
       n.normalize();
       d = n.dot(pos);
     }
-    value_type dist(const point_type &pos) const { return n.dot(pos) - d; }
+    [[nodiscard]] value_type dist(const point_type &pos) const { return n.dot(pos) - d; }
 
   private:
     point_type n;

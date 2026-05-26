@@ -59,7 +59,7 @@ public:
   virtual bool init() = 0;
   virtual std::optional<term_t> next() = 0;
   virtual float get_metric(const Eigen::Vector3f &position, const Eigen::Vector3f &direction) = 0;
-  float get_threshold() const { return S.threshold; }
+  [[nodiscard]] float get_threshold() const { return S.threshold; }
 
   virtual void reverse_track() {
     if (act_method_additions)
@@ -69,7 +69,7 @@ public:
 
   bool check_seed();
 
-  ACT::ACT_Method_additions &act() const { return *act_method_additions; }
+  [[nodiscard]] ACT::ACT_Method_additions &act() const { return *act_method_additions; }
 
   Eigen::Vector3f pos, dir;
   std::uniform_real_distribution<float> uniform;

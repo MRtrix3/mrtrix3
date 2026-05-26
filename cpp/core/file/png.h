@@ -33,15 +33,15 @@ public:
   Reader(const std::filesystem::path &filepath);
   ~Reader();
 
-  uint32_t get_width() const { return width; }
-  uint32_t get_height() const { return height; }
-  int get_bitdepth() const { return bit_depth; }
-  int get_colortype() const { return color_type; }
-  int get_channels() const { return channels; }
+  [[nodiscard]] uint32_t get_width() const { return width; }
+  [[nodiscard]] uint32_t get_height() const { return height; }
+  [[nodiscard]] int get_bitdepth() const { return bit_depth; }
+  [[nodiscard]] int get_colortype() const { return color_type; }
+  [[nodiscard]] int get_channels() const { return channels; }
 
-  size_t get_size() const { return png_get_rowbytes(png_ptr, info_ptr) * height; }
-  int get_output_bitdepth() const { return output_bitdepth; }
-  bool has_transparency() const { return png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS) != 0U; }
+  [[nodiscard]] size_t get_size() const { return png_get_rowbytes(png_ptr, info_ptr) * height; }
+  [[nodiscard]] int get_output_bitdepth() const { return output_bitdepth; }
+  [[nodiscard]] bool has_transparency() const { return png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS) != 0U; }
 
   void set_expand();
 
@@ -63,7 +63,7 @@ public:
   Writer(const Header &, const std::filesystem::path &);
   ~Writer();
 
-  size_t get_size() const { return png_get_rowbytes(png_ptr, info_ptr) * height; }
+  [[nodiscard]] size_t get_size() const { return png_get_rowbytes(png_ptr, info_ptr) * height; }
 
   void save(std::byte *);
 

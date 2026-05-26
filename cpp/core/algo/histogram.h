@@ -58,16 +58,16 @@ public:
 
   void finalize(const size_t num_volumes, const bool is_integer);
 
-  default_type get_bin_centre(const size_t i) const {
+  [[nodiscard]] default_type get_bin_centre(const size_t i) const {
     assert(i < num_bins);
     return get_min() + (get_bin_width() * (i + 0.5));
   }
 
-  default_type get_bin_width() const { return bin_width; }
-  size_t get_num_bins() const { return num_bins; }
-  default_type get_min() const { return min; }
-  default_type get_max() const { return max; }
-  bool get_ignore_zero() const { return ignore_zero; }
+  [[nodiscard]] default_type get_bin_width() const { return bin_width; }
+  [[nodiscard]] size_t get_num_bins() const { return num_bins; }
+  [[nodiscard]] default_type get_min() const { return min; }
+  [[nodiscard]] default_type get_max() const { return max; }
+  [[nodiscard]] bool get_ignore_zero() const { return ignore_zero; }
 
 private:
   default_type min, max, bin_width;
@@ -94,7 +94,7 @@ public:
     return true;
   }
 
-  template <typename value_type> size_t bin(const value_type val) const {
+  template <typename value_type> [[nodiscard]] size_t bin(const value_type val) const {
     auto const pos = static_cast<size_t>(std::floor((val - info.get_min()) / info.get_bin_width()));
     if (pos > static_cast<size_t>(list.size()))
       return size();
@@ -105,15 +105,15 @@ public:
     assert(index < static_cast<size_t>(list.size()));
     return list[index];
   }
-  size_t size() const { return list.size(); }
-  const Calibrator &get_calibration() const { return info; }
+  [[nodiscard]] size_t size() const { return list.size(); }
+  [[nodiscard]] const Calibrator &get_calibration() const { return info; }
 
-  const vector_type &pdf() const { return list; }
-  cdf_type cdf() const;
+  [[nodiscard]] const vector_type &pdf() const { return list; }
+  [[nodiscard]] cdf_type cdf() const;
 
-  default_type first_min() const;
+  [[nodiscard]] default_type first_min() const;
 
-  default_type entropy() const;
+  [[nodiscard]] default_type entropy() const;
 
 protected:
   const Calibrator info;

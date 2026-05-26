@@ -78,7 +78,7 @@ protected:
 
 private:
   // Required since this no longer derives from Tool::Base
-  Window &window() const { return *Window::main; }
+  [[nodiscard]] Window &window() const { return *Window::main; }
 };
 
 } // namespace MR::GUI::MRView::Tool

@@ -68,11 +68,11 @@ public:
       set_pos(n, 0);
   }
 
-  size_t ndim() const { return size_.size(); }
-  ssize_t size(size_t axis) const { return size_[axis]; }
-  const transform_type &transform() const { return transform_; }
+  [[nodiscard]] size_t ndim() const { return size_.size(); }
+  [[nodiscard]] ssize_t size(size_t axis) const { return size_[axis]; }
+  [[nodiscard]] const transform_type &transform() const { return transform_; }
 
-  ssize_t get_index(size_t axis) const {
+  [[nodiscard]] ssize_t get_index(size_t axis) const {
     return index_requires_bound_check[axis] ? index_[axis] : parent().index(axis) - from_[axis];
   }
 

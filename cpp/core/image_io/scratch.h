@@ -24,7 +24,7 @@ class Scratch : public Base {
 public:
   Scratch(const Header &header) : Base(header) {}
 
-  virtual bool is_file_backed() const;
+  [[nodiscard]] virtual bool is_file_backed() const;
 
 protected:
   virtual void load(const Header &, size_t);

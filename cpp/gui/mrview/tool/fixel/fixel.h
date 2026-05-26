@@ -47,9 +47,9 @@ public:
   void toggle_invert_colourmap(bool, const ColourMapButton &) override;
   void reset_colourmap(const ColourMapButton &) override;
 
-  bool is_locked_to_grid() const { return lock_to_grid->isChecked(); }
-  bool is_cropped_to_slab() const { return crop_to_slice->isChecked(); }
-  bool is_bidirectional() const { return bidirectional->isChecked(); }
+  [[nodiscard]] bool is_locked_to_grid() const { return lock_to_grid->isChecked(); }
+  [[nodiscard]] bool is_cropped_to_slab() const { return crop_to_slice->isChecked(); }
+  [[nodiscard]] bool is_bidirectional() const { return bidirectional->isChecked(); }
 
   QPushButton *hide_all_button;
   bool not_3D;

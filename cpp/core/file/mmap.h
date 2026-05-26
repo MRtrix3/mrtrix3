@@ -56,13 +56,13 @@ public:
        std::optional<int64_t> mapped_size = std::nullopt);
   ~MMap();
 
-  std::filesystem::path path() const { return Entry::path; }
-  int64_t size() const { return msize; }
+  [[nodiscard]] std::filesystem::path path() const { return Entry::path; }
+  [[nodiscard]] int64_t size() const { return msize; }
   std::byte *address() { return first; }
-  const std::byte *address() const { return first; }
+  [[nodiscard]] const std::byte *address() const { return first; }
 
-  bool is_read_write() const { return readwrite; }
-  bool changed() const;
+  [[nodiscard]] bool is_read_write() const { return readwrite; }
+  [[nodiscard]] bool changed() const;
 
   friend std::ostream &operator<<(std::ostream &stream, const MMap &m) {
     stream << "File::MMap { " << m.path().string() << " [" << m.fd << "], size: " << m.size() << ", mapped "

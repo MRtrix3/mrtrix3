@@ -70,9 +70,9 @@ public:
       data.clear();
     }
 
-    size_t size() const { return data.size(); }
-    bool empty() const { return data.empty(); }
-    bool valid() const { return is_initialised; }
+    [[nodiscard]] size_t size() const { return data.size(); }
+    [[nodiscard]] bool empty() const { return data.empty(); }
+    [[nodiscard]] bool valid() const { return is_initialised; }
 
   private:
     bool use_26_neighbours;

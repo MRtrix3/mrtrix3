@@ -35,7 +35,7 @@ class Matrix_list_model : public QAbstractItemModel {
 public:
   Matrix_list_model(Connectome *parent);
 
-  QVariant data(const QModelIndex &index, int role) const override {
+  [[nodiscard]] QVariant data(const QModelIndex &index, int role) const override {
     if (!index.isValid())
       return {};
     if (role != Qt::DisplayRole)
@@ -43,25 +43,25 @@ public:
     return qstr(shorten(items[index.row()].get_name().toStdString(), 35, 0));
   }
 
-  Qt::ItemFlags flags(const QModelIndex &index) const override {
+  [[nodiscard]] Qt::ItemFlags flags(const QModelIndex &index) const override {
     if (!index.isValid())
       return {};
     return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
   }
 
-  QModelIndex parent(const QModelIndex &) const override { return {}; }
+  [[nodiscard]] QModelIndex parent(const QModelIndex &) const override { return {}; }
 
-  int rowCount(const QModelIndex &parent = QModelIndex()) const override {
+  [[nodiscard]] int rowCount(const QModelIndex &parent = QModelIndex()) const override {
     (void)parent; // to suppress warnings about unused parameters
     return items.size();
   }
 
-  int columnCount(const QModelIndex &parent = QModelIndex()) const override {
+  [[nodiscard]] int columnCount(const QModelIndex &parent = QModelIndex()) const override {
     (void)parent;
     return 1;
   }
 
-  QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const override {
+  [[nodiscard]] QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const override {
     (void)parent;
     return createIndex(row, column);
   }

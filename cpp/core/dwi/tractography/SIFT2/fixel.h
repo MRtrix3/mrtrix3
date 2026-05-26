@@ -67,10 +67,10 @@ public:
   }
 
   // get() functions
-  bool is_excluded() const { return excluded; }
-  track_t get_count() const { return count; }
-  double get_orig_TD() const { return orig_TD; }
-  double get_mean_coeff() const { return mean_coeff; }
+  [[nodiscard]] bool is_excluded() const { return excluded; }
+  [[nodiscard]] track_t get_count() const { return count; }
+  [[nodiscard]] double get_orig_TD() const { return orig_TD; }
+  [[nodiscard]] double get_mean_coeff() const { return mean_coeff; }
 
 private:
   bool excluded;

@@ -173,8 +173,8 @@ class ThreeVector : public FormatBase<3> {
 public:
   ThreeVector(const Eigen::Matrix<default_type, 3, 1> &in) : FormatBase(in), threevector(in) {}
   Eigen::Matrix<default_type, 3, 1> operator()() const override { return threevector; }
-  Eigen::Matrix<default_type, 3, 1> normalized() const { return threevector.normalized(); }
-  default_type radius() const { return threevector.norm(); }
+  [[nodiscard]] Eigen::Matrix<default_type, 3, 1> normalized() const { return threevector.normalized(); }
+  [[nodiscard]] default_type radius() const { return threevector.norm(); }
   Eigen::Vector3d threevector;
   friend std::ostream &operator<<(std::ostream &stream, const ThreeVector &in) {
     stream << "ThreeVector(" << in.threevector.transpose() << ")";
@@ -407,10 +407,10 @@ public:
     parent().reset();
     fixel_index = 0;
   }
-  ssize_t size(size_t axis) const {
+  [[nodiscard]] ssize_t size(size_t axis) const {
     return axis == 3 ? (parent().size(3) / FixelType::num_elements()) : parent().size(axis);
   }
-  ssize_t get_index(size_t axis) const { return (axis == 3) ? fixel_index : parent().get_index(axis); }
+  [[nodiscard]] ssize_t get_index(size_t axis) const { return (axis == 3) ? fixel_index : parent().get_index(axis); }
   void move_index(size_t axis, ssize_t increment) {
     if (axis != 3) {
       parent().move_index(axis, increment);

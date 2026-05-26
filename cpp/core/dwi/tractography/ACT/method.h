@@ -47,7 +47,7 @@ public:
 
   ACT_Method_additions() = delete;
 
-  const Tissues &tissues() const { return tissue_values; }
+  [[nodiscard]] const Tissues &tissues() const { return tissue_values; }
 
   std::optional<term_t> check_structural(const Eigen::Vector3f &pos) {
     if (!fetch_tissue_data(pos))
@@ -128,7 +128,7 @@ public:
     return tissue_values.set(act_image);
   }
 
-  bool in_pathology() const { return (tissue_values.valid() && tissue_values.is_path()); }
+  [[nodiscard]] bool in_pathology() const { return (tissue_values.valid() && tissue_values.is_path()); }
 
   void reverse_track() { sgm_depth = 0; }
 

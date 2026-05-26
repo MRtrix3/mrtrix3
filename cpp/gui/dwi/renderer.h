@@ -106,9 +106,9 @@ protected:
   protected:
     mode_t mode_;
     bool use_lighting_, colour_by_direction_, hide_neg_values_, orthographic_, colour_relative_to_projection_;
-    std::string vertex_shader_source() const;
-    std::string geometry_shader_source() const;
-    std::string fragment_shader_source() const;
+    [[nodiscard]] std::string vertex_shader_source() const;
+    [[nodiscard]] std::string geometry_shader_source() const;
+    [[nodiscard]] std::string fragment_shader_source() const;
   } shader;
 
   void half_draw() const {
@@ -126,7 +126,7 @@ private:
     virtual void initGL() = 0;
     virtual void bind() = 0;
     virtual void set_data(const vector_t &, int buffer_ID = 0) const = 0;
-    virtual GLuint num_indices() const = 0;
+    [[nodiscard]] virtual GLuint num_indices() const = 0;
 
   protected:
     Renderer &parent;
@@ -141,7 +141,7 @@ public:
     void initGL() override;
     void bind() override;
     void set_data(const vector_t &r_del_daz, int buffer_ID = 0) const override;
-    GLuint num_indices() const override { return half_sphere.num_indices; }
+    [[nodiscard]] GLuint num_indices() const override { return half_sphere.num_indices; }
 
     void update_mesh(const size_t, const int);
 
@@ -159,7 +159,7 @@ public:
       r_del_daz.noalias() = transform * SH;
     }
 
-    int get_LOD() const { return LOD; }
+    [[nodiscard]] int get_LOD() const { return LOD; }
 
   private:
     int LOD;
@@ -206,7 +206,7 @@ public:
     void initGL() override;
     void bind() override;
     void set_data(const vector_t &, int buffer_ID = 0) const override;
-    GLuint num_indices() const override { return index_count; }
+    [[nodiscard]] GLuint num_indices() const override { return index_count; }
 
     void update_mesh(const MR::DWI::Directions::Set &);
 

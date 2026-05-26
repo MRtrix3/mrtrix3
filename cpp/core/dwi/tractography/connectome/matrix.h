@@ -68,7 +68,7 @@ public:
 
   void write_assignments(const std::filesystem::path &) const;
 
-  bool is_vector() const { return (vector_output); }
+  [[nodiscard]] bool is_vector() const { return (vector_output); }
 
   void save(const std::filesystem::path &, const bool, const bool, const bool) const;
 

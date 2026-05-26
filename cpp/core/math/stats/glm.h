@@ -81,11 +81,11 @@ public:
 
   template <class MatrixType> Partition partition(const MatrixType &) const;
 
-  const matrix_type &matrix() const { return c; }
-  index_type cols() const { return c.cols(); }
-  index_type rank() const { return r; }
-  bool is_F() const { return F; }
-  std::string name() const { return std::string(F ? "F" : "t") + str(i + 1); }
+  [[nodiscard]] const matrix_type &matrix() const { return c; }
+  [[nodiscard]] index_type cols() const { return c.cols(); }
+  [[nodiscard]] index_type rank() const { return r; }
+  [[nodiscard]] bool is_F() const { return F; }
+  [[nodiscard]] std::string name() const { return std::string(F ? "F" : "t") + str(i + 1); }
 
 private:
   const matrix_type c;
@@ -94,7 +94,7 @@ private:
   const index_type i;
 
   void check_nonzero() const;
-  matrix_type check_rank(const matrix_type &, const index_type) const;
+  [[nodiscard]] matrix_type check_rank(const matrix_type &, const index_type) const;
 };
 
 void check_design(const matrix_type &, const bool);
@@ -258,7 +258,7 @@ public:
 
   // This gets utilised within the multi-threading back-end to clone derived classes
   //   based on a pointer to this base class
-  virtual std::unique_ptr<TestBase> _clone() const = 0;
+  [[nodiscard]] virtual std::unique_ptr<TestBase> _clone() const = 0;
 
   /*! Compute the statistics, including conversion to Z-score
    * @param shuffling_matrix a matrix to permute / sign flip the residuals (for permutation testing)
@@ -267,11 +267,11 @@ public:
    */
   virtual void operator()(const shuffle_matrix_type &shuffling_matrix, matrix_type &stat, matrix_type &zstat) = 0;
 
-  index_type num_inputs() const { return M.rows(); }
-  index_type num_elements() const { return y.cols(); }
-  index_type num_hypotheses() const { return c.size(); }
+  [[nodiscard]] index_type num_inputs() const { return M.rows(); }
+  [[nodiscard]] index_type num_elements() const { return y.cols(); }
+  [[nodiscard]] index_type num_hypotheses() const { return c.size(); }
 
-  virtual index_type num_factors() const { return M.cols(); }
+  [[nodiscard]] virtual index_type num_factors() const { return M.cols(); }
 
 protected:
   const measurements_matrix_type &y;
@@ -330,7 +330,7 @@ public:
 
   ~TestFixedHomoscedastic() final = default;
 
-  std::unique_ptr<TestBase> _clone() const final;
+  [[nodiscard]] std::unique_ptr<TestBase> _clone() const final;
 
   /*! Compute the statistics
    * @param shuffling_matrix a matrix to permute / sign flip the residuals (for permutation testing)
@@ -339,9 +339,9 @@ public:
    */
   void operator()(const shuffle_matrix_type &shuffling_matrix, matrix_type &stats, matrix_type &zstats) override;
 
-  index_type num_factors() const override { return M.cols(); }
+  [[nodiscard]] index_type num_factors() const override { return M.cols(); }
 
-  const Shared &S() const { return *dynamic_cast<const Shared *const>(shared.get()); }
+  [[nodiscard]] const Shared &S() const { return *dynamic_cast<const Shared *const>(shared.get()); }
 
 private:
   // Temporaries
@@ -397,7 +397,7 @@ public:
 
   ~TestFixedHeteroscedastic() final = default;
 
-  std::unique_ptr<TestBase> _clone() const final;
+  [[nodiscard]] std::unique_ptr<TestBase> _clone() const final;
 
   /*! Compute the statistics
    * @param shuffling_matrix a matrix to permute / sign flip the residuals (for permutation testing)
@@ -406,10 +406,10 @@ public:
    */
   void operator()(const shuffle_matrix_type &shuffling_matrix, matrix_type &stats, matrix_type &zstats) override;
 
-  index_type num_factors() const final { return M.cols(); }
-  index_type num_variance_groups() const { return S().num_vgs; }
+  [[nodiscard]] index_type num_factors() const final { return M.cols(); }
+  [[nodiscard]] index_type num_variance_groups() const { return S().num_vgs; }
 
-  const Shared &S() const { return *dynamic_cast<const Shared *const>(shared.get()); }
+  [[nodiscard]] const Shared &S() const { return *dynamic_cast<const Shared *const>(shared.get()); }
 
 private:
   // Temporaries
@@ -433,9 +433,9 @@ public:
 
   ~TestVariableBase() override = default;
 
-  std::unique_ptr<TestBase> _clone() const override = 0;
+  [[nodiscard]] std::unique_ptr<TestBase> _clone() const override = 0;
 
-  virtual index_type num_importers() const = 0;
+  [[nodiscard]] virtual index_type num_importers() const = 0;
 
 protected:
   // Temporaries
@@ -496,7 +496,7 @@ public:
 
   ~TestVariableHomoscedastic() final = default;
 
-  std::unique_ptr<TestBase> _clone() const final;
+  [[nodiscard]] std::unique_ptr<TestBase> _clone() const final;
 
   /*! Compute the statistics
    * @param shuffling_matrix a matrix to permute / sign flip the residuals (for permutation testing)
@@ -508,10 +508,10 @@ public:
    */
   void operator()(const shuffle_matrix_type &shuffling_matrix, matrix_type &stat, matrix_type &zstat) override;
 
-  index_type num_factors() const final { return M.cols() + num_importers(); }
-  index_type num_importers() const final { return S().importers.size(); }
+  [[nodiscard]] index_type num_factors() const final { return M.cols() + num_importers(); }
+  [[nodiscard]] index_type num_importers() const final { return S().importers.size(); }
 
-  const Shared &S() const { return *dynamic_cast<const Shared *const>(shared.get()); }
+  [[nodiscard]] const Shared &S() const { return *dynamic_cast<const Shared *const>(shared.get()); }
 
 private:
   std::vector<matrix_type> XtX, beta;
@@ -561,7 +561,7 @@ public:
 
   ~TestVariableHeteroscedastic() final = default;
 
-  std::unique_ptr<TestBase> _clone() const final;
+  [[nodiscard]] std::unique_ptr<TestBase> _clone() const final;
 
   /*! Compute the statistics
    * @param shuffling_matrix a matrix to permute / sign flip the residuals (for permutation testing)
@@ -573,11 +573,11 @@ public:
    */
   void operator()(const shuffle_matrix_type &shuffling_matrix, matrix_type &stat, matrix_type &zstat) override;
 
-  index_type num_factors() const final { return M.cols() + num_importers(); }
-  index_type num_variance_groups() const { return S().num_vgs; }
-  index_type num_importers() const final { return S().importers.size(); }
+  [[nodiscard]] index_type num_factors() const final { return M.cols() + num_importers(); }
+  [[nodiscard]] index_type num_variance_groups() const { return S().num_vgs; }
+  [[nodiscard]] index_type num_importers() const final { return S().importers.size(); }
 
-  const Shared &S() const { return *dynamic_cast<const Shared *const>(shared.get()); }
+  [[nodiscard]] const Shared &S() const { return *dynamic_cast<const Shared *const>(shared.get()); }
 
 private:
   // Temporaries

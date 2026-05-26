@@ -54,7 +54,7 @@ public:
     return true;
   }
 
-  bool provides_pair() const { return pair; }
+  [[nodiscard]] bool provides_pair() const { return pair; }
 
 protected:
   const Image<node_t> nodes;
@@ -164,7 +164,7 @@ private:
   const default_type max_dist;
   const default_type angle_limit;
 
-  default_type get_cf(const Eigen::Vector3d &, const Eigen::Vector3d &, const voxel_type &) const;
+  [[nodiscard]] default_type get_cf(const Eigen::Vector3d &, const Eigen::Vector3d &, const voxel_type &) const;
 };
 
 // Class that obtains a list of all nodes overlapped by the streamline

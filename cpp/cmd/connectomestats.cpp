@@ -164,7 +164,7 @@ public:
     return (data[index]);
   }
 
-  index_type size() const override { return data.size(); }
+  [[nodiscard]] index_type size() const override { return data.size(); }
 
 private:
   measurements_vector_type data;

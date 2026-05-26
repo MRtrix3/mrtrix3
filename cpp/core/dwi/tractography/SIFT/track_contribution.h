@@ -35,8 +35,10 @@ public:
 
   Track_fixel_contribution() : data(0) {}
 
-  uint32_t get_fixel_index() const { return (data & 0x00FFFFFF); }
-  float get_length() const { return (static_cast<uint32_t>((data & 0xFF000000) >> 24) * scale_from_storage); }
+  [[nodiscard]] uint32_t get_fixel_index() const { return (data & 0x00FFFFFF); }
+  [[nodiscard]] float get_length() const {
+    return (static_cast<uint32_t>((data & 0xFF000000) >> 24) * scale_from_storage);
+  }
 
   bool add(const float length) {
     // Allow summing of multiple contributions to a fixel, UNLESS it would cause truncation, in which
@@ -111,8 +113,8 @@ public:
 
   ~TrackContribution() {}
 
-  float get_total_contribution() const { return total_contribution; }
-  float get_total_length() const { return total_length; }
+  [[nodiscard]] float get_total_contribution() const { return total_contribution; }
+  [[nodiscard]] float get_total_length() const { return total_length; }
 
 private:
   const float total_contribution, total_length;

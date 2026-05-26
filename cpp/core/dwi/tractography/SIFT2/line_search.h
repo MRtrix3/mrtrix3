@@ -48,7 +48,7 @@ public:
       return *this;
     }
     double cost, first_deriv, second_deriv, third_deriv;
-    bool valid() const {
+    [[nodiscard]] bool valid() const {
       return std::isfinite(cost) && std::isfinite(first_deriv) && std::isfinite(second_deriv) &&
              std::isfinite(third_deriv);
     }
@@ -57,7 +57,7 @@ public:
   LineSearchFunctor(const SIFT::track_t, const TckFactor &);
 
   // Interfaces for line searches
-  Result get(const double) const;
+  [[nodiscard]] Result get(const double) const;
   double operator()(const double) const;
 
 protected:

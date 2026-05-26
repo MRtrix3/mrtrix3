@@ -69,12 +69,12 @@ public:
         g(func.size()),
         g2(func.size()) {}
 
-  value_type value() const throw() { return f; }
-  const Eigen::Matrix<value_type, Eigen::Dynamic, 1> &state() const throw() { return x; }
-  const Eigen::Matrix<value_type, Eigen::Dynamic, 1> &gradient() const throw() { return g; }
-  value_type step_size() const { return dt; }
-  value_type gradient_norm() const throw() { return normg; }
-  int function_evaluations() const throw() { return nfeval; }
+  [[nodiscard]] value_type value() const throw() { return f; }
+  [[nodiscard]] const Eigen::Matrix<value_type, Eigen::Dynamic, 1> &state() const throw() { return x; }
+  [[nodiscard]] const Eigen::Matrix<value_type, Eigen::Dynamic, 1> &gradient() const throw() { return g; }
+  [[nodiscard]] value_type step_size() const { return dt; }
+  [[nodiscard]] value_type gradient_norm() const throw() { return normg; }
+  [[nodiscard]] int function_evaluations() const throw() { return nfeval; }
 
   void be_verbose(bool v) { verbose = v; }
   void precondition(const Eigen::Matrix<value_type, Eigen::Dynamic, 1> &weights) { preconditioner_weights = weights; }

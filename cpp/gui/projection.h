@@ -50,22 +50,22 @@ public:
     iMVP = iMV * iP;
   }
 
-  GLint x_position() const { return viewport[0]; }
+  [[nodiscard]] GLint x_position() const { return viewport[0]; }
 
-  GLint y_position() const { return viewport[1]; }
+  [[nodiscard]] GLint y_position() const { return viewport[1]; }
 
-  GLint width() const { return viewport[2]; }
+  [[nodiscard]] GLint width() const { return viewport[2]; }
 
-  GLint height() const { return viewport[3]; }
+  [[nodiscard]] GLint height() const { return viewport[3]; }
 
-  float depth_of(const Eigen::Vector3f &x) const {
+  [[nodiscard]] float depth_of(const Eigen::Vector3f &x) const {
     float d = MVP(2, 0) * x[0] + MVP(2, 1) * x[1] + MVP(2, 2) * x[2] + MVP(2, 3);
     if (MVP(3, 2) != 0.0F)
       d /= MVP(3, 0) * x[0] + MVP(3, 1) * x[1] + MVP(3, 2) * x[2] + MVP(3, 3);
     return d;
   }
 
-  Eigen::Vector3f model_to_screen(const Eigen::Vector3f &x) const {
+  [[nodiscard]] Eigen::Vector3f model_to_screen(const Eigen::Vector3f &x) const {
     Eigen::Vector3f S(MVP(0, 0) * x[0] + MVP(0, 1) * x[1] + MVP(0, 2) * x[2] + MVP(0, 3),
                       MVP(1, 0) * x[0] + MVP(1, 1) * x[1] + MVP(1, 2) * x[2] + MVP(1, 3),
                       MVP(2, 0) * x[0] + MVP(2, 1) * x[1] + MVP(2, 2) * x[2] + MVP(2, 3));
@@ -76,7 +76,7 @@ public:
     return S;
   }
 
-  Eigen::Vector3f model_to_screen_direction(const Eigen::Vector3f &dir) const {
+  [[nodiscard]] Eigen::Vector3f model_to_screen_direction(const Eigen::Vector3f &dir) const {
     Eigen::Vector3f S(MVP(0, 0) * dir[0] + MVP(0, 1) * dir[1] + MVP(0, 2) * dir[2],
                       MVP(1, 0) * dir[0] + MVP(1, 1) * dir[1] + MVP(1, 2) * dir[2],
                       MVP(2, 0) * dir[0] + MVP(2, 1) * dir[1] + MVP(2, 2) * dir[2]);
@@ -85,7 +85,7 @@ public:
     return S;
   }
 
-  Eigen::Vector3f screen_to_model(float x, float y, float depth) const {
+  [[nodiscard]] Eigen::Vector3f screen_to_model(float x, float y, float depth) const {
     x = 2.0F * (x - viewport[0]) / viewport[2] - 1.0F;
     y = 2.0F * (y - viewport[1]) / viewport[3] - 1.0F;
     Eigen::Vector3f S(iMVP(0, 0) * x + iMVP(0, 1) * y + iMVP(0, 2) * depth + iMVP(0, 3),
@@ -96,27 +96,31 @@ public:
     return S;
   }
 
-  Eigen::Vector3f screen_to_model(const Eigen::Vector3f &x) const { return screen_to_model(x[0], x[1], x[2]); }
+  [[nodiscard]] Eigen::Vector3f screen_to_model(const Eigen::Vector3f &x) const {
+    return screen_to_model(x[0], x[1], x[2]);
+  }
 
-  Eigen::Vector3f screen_to_model(const Eigen::Vector3f &x, float depth) const {
+  [[nodiscard]] Eigen::Vector3f screen_to_model(const Eigen::Vector3f &x, float depth) const {
     return screen_to_model(x[0], x[1], depth);
   }
 
-  Eigen::Vector3f screen_to_model(const Eigen::Vector3f &x, const Eigen::Vector3f &depth) const {
+  [[nodiscard]] Eigen::Vector3f screen_to_model(const Eigen::Vector3f &x, const Eigen::Vector3f &depth) const {
     return screen_to_model(x, depth_of(depth));
   }
 
-  Eigen::Vector3f screen_to_model(const QPoint &x, float depth) const { return screen_to_model(x.x(), x.y(), depth); }
+  [[nodiscard]] Eigen::Vector3f screen_to_model(const QPoint &x, float depth) const {
+    return screen_to_model(x.x(), x.y(), depth);
+  }
 
-  Eigen::Vector3f screen_to_model(const QPoint &x, const Eigen::Vector3f &depth) const {
+  [[nodiscard]] Eigen::Vector3f screen_to_model(const QPoint &x, const Eigen::Vector3f &depth) const {
     return screen_to_model(x, depth_of(depth));
   }
 
-  Eigen::Vector3f screen_normal() const {
+  [[nodiscard]] Eigen::Vector3f screen_normal() const {
     return Eigen::Vector3f(iMVP(0, 2), iMVP(1, 2), iMVP(2, 2)).normalized().eval();
   }
 
-  Eigen::Vector3f screen_to_model_direction(float x, float y, float depth) const {
+  [[nodiscard]] Eigen::Vector3f screen_to_model_direction(float x, float y, float depth) const {
     x *= 2.0F / viewport[2];
     y *= 2.0F / viewport[3];
     Eigen::Vector3f S(
@@ -126,19 +130,19 @@ public:
     return S;
   }
 
-  Eigen::Vector3f screen_to_model_direction(const Eigen::Vector3f &dx, float x) const {
+  [[nodiscard]] Eigen::Vector3f screen_to_model_direction(const Eigen::Vector3f &dx, float x) const {
     return screen_to_model_direction(dx[0], dx[1], x);
   }
 
-  Eigen::Vector3f screen_to_model_direction(const Eigen::Vector3f &dx, const Eigen::Vector3f &x) const {
+  [[nodiscard]] Eigen::Vector3f screen_to_model_direction(const Eigen::Vector3f &dx, const Eigen::Vector3f &x) const {
     return screen_to_model_direction(dx, depth_of(x));
   }
 
-  Eigen::Vector3f screen_to_model_direction(const QPoint &dx, float x) const {
+  [[nodiscard]] Eigen::Vector3f screen_to_model_direction(const QPoint &dx, float x) const {
     return screen_to_model_direction(dx.x(), dx.y(), x);
   }
 
-  Eigen::Vector3f screen_to_model_direction(const QPoint &dx, const Eigen::Vector3f &x) const {
+  [[nodiscard]] Eigen::Vector3f screen_to_model_direction(const QPoint &dx, const Eigen::Vector3f &x) const {
     return screen_to_model_direction(dx, depth_of(x));
   }
 
@@ -242,12 +246,12 @@ public:
 
   void draw_orientation_labels() const;
 
-  const GL::mat4 &modelview_projection() const { return MVP; }
-  const GL::mat4 &modelview_projection_inverse() const { return iMVP; }
-  const GL::mat4 &modelview() const { return MV; }
-  const GL::mat4 &modelview_inverse() const { return iMV; }
-  const GL::mat4 &projection() const { return P; }
-  const GL::mat4 &projection_inverse() const { return iP; }
+  [[nodiscard]] const GL::mat4 &modelview_projection() const { return MVP; }
+  [[nodiscard]] const GL::mat4 &modelview_projection_inverse() const { return iMVP; }
+  [[nodiscard]] const GL::mat4 &modelview() const { return MV; }
+  [[nodiscard]] const GL::mat4 &modelview_inverse() const { return iMV; }
+  [[nodiscard]] const GL::mat4 &projection() const { return P; }
+  [[nodiscard]] const GL::mat4 &projection_inverse() const { return iP; }
 
   using ModelViewProjection::set;
 
