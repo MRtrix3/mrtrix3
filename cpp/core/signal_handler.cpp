@@ -17,10 +17,10 @@
 #include "signal_handler.h"
 
 #include <atomic>
+#include <csignal>
 #include <cstdlib>
 #include <filesystem>
 #include <iostream>
-#include <signal.h>
 #include <tuple>
 #include <unistd.h>
 #include <vector>

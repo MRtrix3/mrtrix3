@@ -15,9 +15,9 @@
  */
 
 #include <atomic>
+#include <cstddef>
 #include <memory>
 #include <optional>
-#include <stddef.h>
 #include <string>
 #include <thread>
 

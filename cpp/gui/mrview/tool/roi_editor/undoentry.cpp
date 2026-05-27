@@ -14,9 +14,9 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <cstddef>
 #include <limits>
 #include <memory>
-#include <stddef.h>
 
 #include "mrview/tool/roi_editor/item.h"
 #include "mrview/tool/roi_editor/undoentry.h"

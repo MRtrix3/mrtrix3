@@ -16,9 +16,9 @@
 
 #include "file/dicom/element.h"
 
+#include <cstring>
 #include <iomanip>
 #include <memory>
-#include <string.h>
 
 #include "debug.h"
 #include "file/path.h"

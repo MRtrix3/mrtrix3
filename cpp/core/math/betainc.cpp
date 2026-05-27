@@ -14,7 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include <math.h>
+#include <cmath>
 
 #include "math/betainc.h"
 
