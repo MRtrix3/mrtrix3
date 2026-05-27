@@ -20,8 +20,8 @@ namespace MR::DWI::Tractography::Editing {
 
 bool Receiver::operator()(const Streamline<> &in) {
   auto display_func = [&]() {
-    return (printf("%8" PRIu64 " read, %8" PRIu64 " written", total_count, count) +
-            (crop ? printf(", %8" PRIu64 " segments", segments) : ""));
+    return (fmt::format("{:8} read, {:8} written", total_count, count) +
+            (crop ? fmt::format(", {:8} segments", segments) : ""));
   };
 
   if (number && (count == number))

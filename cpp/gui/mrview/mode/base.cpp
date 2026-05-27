@@ -59,12 +59,12 @@ void Base::paintGL() {
       const Eigen::Vector3f voxel(image()->scanner2voxel() * focus());
       const Eigen::Matrix<ssize_t, 3, 1> vox(voxel.array().round().cast<ssize_t>());
 
-      std::string vox_str = printf("voxel index: [ %d %d %d ", vox[0], vox[1], vox[2]);
+      std::string vox_str = fmt::format("voxel index: [ {} {} {} ", vox[0], vox[1], vox[2]);
       for (size_t n = 3; n < image()->header().ndim(); ++n)
         vox_str += fmt::format("{}", image()->image.index(n)) + " ";
       vox_str += "]";
 
-      projection.render_text(printf("position: [ %.4g %.4g %.4g ] mm", focus()[0], focus()[1], focus()[2]),
+      projection.render_text(fmt::format("position: [ {:.4g} {:.4g} {:.4g} ] mm", focus()[0], focus()[1], focus()[2]),
                              LeftEdge | BottomEdge);
       projection.render_text(vox_str, LeftEdge | BottomEdge, 1);
       projection.render_text(image()->describe_value(window().focus()), LeftEdge | BottomEdge, 2);

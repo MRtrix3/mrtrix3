@@ -48,10 +48,7 @@ bool WriteKernel::operator()(const GeneratedTrack &tck) {
     break;
   }
   progress.update(
-      [&]() {
-        return printf(
-            "%8" PRIu64 " seeds, %8" PRIu64 " streamlines, %8" PRIu64 " selected", seeds, streamlines, selected);
-      },
+      [&]() { return fmt::format("{:8} seeds, {:8} streamlines, {:8} selected", seeds, streamlines, selected); },
       always_increment ? true : tck.size());
   if (early_exit(seeds, selected)) {
     WARN("Track generation terminating prematurely:"

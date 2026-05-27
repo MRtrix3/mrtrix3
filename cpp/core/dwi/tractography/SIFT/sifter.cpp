@@ -89,11 +89,11 @@ void SIFTer::perform_filtering() {
   }
 
   auto display_func = [&]() {
-    return printf(" %6u      %7u     %9u       %.2f%%",
-                  iteration,
-                  removed_this_iteration,
-                  tracks_remaining,
-                  100.0 * cf_end_iteration / init_cf);
+    return fmt::format(" {:6}      {:7}     {:9}       {:.2f}%",
+                       iteration,
+                       removed_this_iteration,
+                       tracks_remaining,
+                       100.0 * cf_end_iteration / init_cf);
   };
   CONSOLE("       Iteration     Removed     Remaining     Cost fn");
   ProgressBar progress("");

@@ -39,11 +39,11 @@ bool __need_newline = false;
 
 void cmdline_report_to_user_func(std::string_view msg, int type) {
 
-  static const std::unordered_map<int, std::string> colour_format_strings{{-1, "%s: %s%s\n"},
-                                                                          {0, "%s: \033[01;31m%s%s\033[0m\n"},
-                                                                          {1, "%s: \033[00;31m%s%s\033[0m\n"},
-                                                                          {2, "%s: \033[00;32m%s%s\033[0m\n"},
-                                                                          {3, "%s: \033[00;34m%s%s\033[0m\n"}};
+  static const std::unordered_map<int, std::string> colour_format_strings{{-1, "{}: {}{}\n"},
+                                                                          {0, "{}: \033[01;31m{}{}\033[0m\n"},
+                                                                          {1, "{}: \033[00;31m{}{}\033[0m\n"},
+                                                                          {2, "{}: \033[00;32m{}{}\033[0m\n"},
+                                                                          {3, "{}: \033[00;34m{}{}\033[0m\n"}};
 
   static const std::unordered_map<int, std::string> console_prefixes{
       {-1, ""}, {0, "[ERROR] "}, {1, "[WARNING] "}, {2, "[INFO] "}, {3, "[DEBUG] "}};
@@ -59,10 +59,10 @@ void cmdline_report_to_user_func(std::string_view msg, int type) {
     return t + 1;
   };
 
-  __print_stderr(printf(colour_format_strings.at(App::terminal_use_colour ? type : -1).c_str(),
-                        App::NAME.c_str(),
-                        console_prefixes.at(type).c_str(),
-                        std::string(msg).c_str()));
+  __print_stderr(fmt::format(fmt::runtime(colour_format_strings.at(App::terminal_use_colour ? type : -1)),
+                             App::NAME,
+                             console_prefixes.at(type),
+                             msg));
   if (type == 1 && App::fail_on_warn)
     throw Exception("terminating due to request to fail on warning");
 }

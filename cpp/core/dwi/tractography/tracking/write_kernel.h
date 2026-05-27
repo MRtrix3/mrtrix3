@@ -48,7 +48,7 @@ public:
         seeds(0),
         streamlines(0),
         selected(0),
-        progress(printf("       0 seeds,        0 streamlines,        0 selected", 0, 0),
+        progress("       0 seeds,        0 streamlines,        0 selected",
                  always_increment ? S.max_num_seeds : S.max_num_tracks),
         early_exit(shared) {
     const auto p = properties.find("seed_output");
@@ -64,8 +64,7 @@ public:
 
   ~WriteKernel() {
     // Use set_text() rather than update() here to force update of the text before progress goes out of scope
-    progress.set_text(
-        printf("%8" PRIu64 " seeds, %8" PRIu64 " streamlines, %8" PRIu64 " selected", seeds, streamlines, selected));
+    progress.set_text(fmt::format("{:8} seeds, {:8} streamlines, {:8} selected", seeds, streamlines, selected));
     if (warn_on_max_seeds && writer.total_count == S.max_num_seeds && S.max_num_tracks &&
         writer.count < S.max_num_tracks) {
       WARN("less than desired streamline number due to implicit maximum number of seeds; set -seeds 0 to override");

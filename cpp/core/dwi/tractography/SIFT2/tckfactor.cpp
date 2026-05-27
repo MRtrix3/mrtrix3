@@ -206,11 +206,11 @@ void TckFactor::estimate_factors() {
   unsigned int iter = 0;
 
   auto display_func = [&]() {
-    return printf("    %5u        %3.3f%%         %2.3f%%        %u",
-                  iter,
-                  100.0 * cf_data / init_cf,
-                  100.0 * cf_reg / init_cf,
-                  nonzero_streamlines);
+    return fmt::format("    {:5}        {:3.3f}%         {:2.3f}%        {}",
+                       iter,
+                       100.0 * cf_data / init_cf,
+                       100.0 * cf_reg / init_cf,
+                       nonzero_streamlines);
   };
   CONSOLE("         Iteration     CF (data)       CF (reg)    Streamlines");
   ProgressBar progress("");
