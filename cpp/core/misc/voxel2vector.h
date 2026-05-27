@@ -32,7 +32,7 @@ namespace MR {
 //   with any number of axes, to an index within a 1D vector of data.
 class Voxel2Vector {
 public:
-  typedef uint32_t index_t;
+  using index_t = uint32_t;
 
   static const index_t invalid = std::numeric_limits<index_t>::max();
 

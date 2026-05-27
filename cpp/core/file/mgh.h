@@ -142,7 +142,7 @@ inline bool check(Header &H, size_t num_axes) {
   return true;
 }
 
-typedef struct {
+using mri_frame = struct {
   tag_type type; // code for what is stored in this frame
   float32 TE;    // echo time
   float32 TR;    // recovery time
@@ -189,7 +189,7 @@ typedef struct {
   float64 D3_amp;
   int64_t D4_ramp, D4_flat;
   float64 D4_amp;
-} mri_frame;
+};
 
 template <class Input> void read_header(Header &H, Input &in) {
   auto version = fetch<int32_t>(in);

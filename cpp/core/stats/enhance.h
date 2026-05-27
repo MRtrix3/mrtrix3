@@ -35,8 +35,8 @@ public:
   }
 
 protected:
-  typedef Math::Stats::matrix_type::ConstColXpr in_column_type;
-  typedef Math::Stats::matrix_type::ColXpr out_column_type;
+  using in_column_type = Math::Stats::matrix_type::ConstColXpr;
+  using out_column_type = Math::Stats::matrix_type::ColXpr;
   // Derived classes should override this function
   virtual void operator()(in_column_type, out_column_type) const = 0;
 };

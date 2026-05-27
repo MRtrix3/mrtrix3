@@ -116,14 +116,15 @@ template <typename ValueType> class Image;
 
 //! convenience function for SFINAE on header types
 template <class HeaderType, typename ReturnType> struct enable_if_header_type {
-  typedef decltype((void)(std::declval<HeaderType>().ndim() + std::declval<HeaderType>().size(0) +
-                          std::declval<HeaderType>().name().size()),
-                   std::declval<ReturnType>()) type;
+  using type = decltype((void)(std::declval<HeaderType>().ndim() + std::declval<HeaderType>().size(0) +
+                               std::declval<HeaderType>().name().size()),
+                        std::declval<ReturnType>());
 };
 
 //! convenience function for SFINAE on header types
 template <typename HeaderType> class is_header_type {
-  typedef char yes[1], no[2]; // check_syntax off
+  using yes = char[1]; // check_syntax off
+  using no = char[2];  // check_syntax off
   template <typename C> static yes &test(typename enable_if_header_type<HeaderType, int>::type);
   template <typename C> static no &test(...);
 
@@ -133,15 +134,16 @@ public:
 
 //! convenience function for SFINAE on image types
 template <class ImageType, typename ReturnType> struct enable_if_image_type {
-  typedef decltype((void)(std::declval<ImageType>().ndim() + std::declval<ImageType>().size(0) +
-                          std::declval<ImageType>().name().size() + std::declval<ImageType>().value() +
-                          std::declval<ImageType>().index(0)),
-                   std::declval<ReturnType>()) type;
+  using type = decltype((void)(std::declval<ImageType>().ndim() + std::declval<ImageType>().size(0) +
+                               std::declval<ImageType>().name().size() + std::declval<ImageType>().value() +
+                               std::declval<ImageType>().index(0)),
+                        std::declval<ReturnType>());
 };
 
 //! convenience function for SFINAE on image types
 template <typename ImageType> class is_image_type {
-  typedef char yes[1], no[2]; // check_syntax off
+  using yes = char[1]; // check_syntax off
+  using no = char[2];  // check_syntax off
   template <typename C> static yes &test(typename enable_if_image_type<ImageType, int>::type);
   template <typename C> static no &test(...);
 

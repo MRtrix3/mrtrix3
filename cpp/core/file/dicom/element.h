@@ -89,7 +89,7 @@ public:
 
 class Element {
 public:
-  typedef enum Type : uint8_t { INVALID, INT, UINT, FLOAT, DATE, TIME, DATETIME, STRING, SEQ, OTHER } Type;
+  using Type = enum Type : uint8_t { INVALID, INT, UINT, FLOAT, DATE, TIME, DATETIME, STRING, SEQ, OTHER };
   static const std::unordered_map<Type, std::string> type_as_str;
 
   uint16_t group, element, VR;

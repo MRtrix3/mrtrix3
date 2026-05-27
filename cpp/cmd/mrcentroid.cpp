@@ -42,7 +42,7 @@ void usage() {
 }
 // clang-format on
 
-typedef float value_type;
+using value_type = float;
 
 void run() {
   Image<value_type> image = Image<value_type>::open(argument[0]);

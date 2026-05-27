@@ -34,9 +34,9 @@
 
 namespace MR::Formats {
 
-typedef struct {
+using ParCols = struct {
   int sl, ec, dyn, ph, ty, seq, ang, pos, b, grad, asl, ri, rs, ss, pix, size, vox, thick, gap;
-} ParCols;
+};
 
 inline const ParCols get_column_indices(const float version) {
   if (version == 3.0F) {
@@ -54,10 +54,10 @@ inline const ParCols get_column_indices(const float version) {
   throw Exception("unsupported version of PAR/REC: V" + str(version));
 }
 
-typedef struct {
+using SliceData = struct {
   int sl, ec, dyn, ph, ty, seq, asl, pix, size[2];
   float b, grad[3], ri, rs, ss, ang[3], pos[3], vox[2], thick, gap;
-} SliceData;
+};
 
 inline const SliceData parse_line(std::string_view line, const ParCols &cols) {
   auto token = split(line, " \t\n", true);
