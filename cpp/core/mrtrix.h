@@ -171,18 +171,6 @@ template <> inline bool to<bool>(std::string_view string) {
   return to<int>(string);
 }
 
-template <> inline std::string str<cfloat>(const cfloat &value, int precision) {
-  std::ostringstream stream;
-  if (precision > 0)
-    stream.precision(precision);
-  stream << value.real();
-  if (value.imag())
-    stream << std::showpos << value.imag() << "i";
-  if (stream.fail())
-    throw Exception("error converting complex float value to string");
-  return stream.str();
-}
-
 template <> inline cfloat to<cfloat>(std::string_view string) {
   if (string.empty())
     throw Exception("cannot convert empty string to complex float");
@@ -226,18 +214,6 @@ template <> inline cfloat to<cfloat>(std::string_view string) {
       throw Exception("error converting string \"{}\" to complex float (ambiguity in imaginary component)", string);
   }
   return candidates[0];
-}
-
-template <> inline std::string str<cdouble>(const cdouble &value, int precision) {
-  std::ostringstream stream;
-  if (precision > 0)
-    stream.precision(precision);
-  stream << value.real();
-  if (value.imag() != 0)
-    stream << std::showpos << value.imag() << "i";
-  if (stream.fail())
-    throw Exception("error converting complex double value to string");
-  return stream.str();
 }
 
 template <> inline cdouble to<cdouble>(std::string_view string) {

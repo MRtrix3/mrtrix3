@@ -66,20 +66,20 @@ public:
       }
       for (size_t n = 0; n < fields.size(); ++n) {
         if (fields[n] == "mean")
-          std::cout << str(mean) << " ";
+          std::cout << fmt::format("{}", mean) << " ";
         else if (fields[n] == "median")
           std::cout << (!values.empty() ? str(Math::median(values)) : "N/A") << " ";
         else if (fields[n] == "std")
-          std::cout << (count > 1 ? str(std) : "N/A") << " ";
+          std::cout << (count > 1 ? fmt::format("{}", std) : "N/A") << " ";
         else if (fields[n] == "std_rv")
-          std::cout << (count > 1 ? str(std_rv) : "N/A") << " ";
+          std::cout << (count > 1 ? fmt::format("{}", std_rv) : "N/A") << " ";
         else if (fields[n] == "iqr")
           std::cout << (!values.empty() ? str(Math::quantile(values, 0.75) - Math::quantile(values, 0.25)) : "N/A")
                     << " ";
         else if (fields[n] == "min")
-          std::cout << str(min) << " ";
+          std::cout << fmt::format("{}", min) << " ";
         else if (fields[n] == "max")
-          std::cout << str(max) << " ";
+          std::cout << fmt::format("{}", max) << " ";
         else if (fields[n] == "count")
           std::cout << count << " ";
         else
@@ -100,7 +100,7 @@ public:
       int width = is_complex ? 20 : 10;
       std::cout << std::setw(12) << std::right << s << " ";
 
-      std::cout << std::setw(width) << std::right << (count ? str(mean) : "N/A");
+      std::cout << std::setw(width) << std::right << (count ? fmt::format("{}", mean) : "N/A");
 
       if (!is_complex) {
         std::cout << " " << std::setw(width) << std::right;
@@ -109,9 +109,10 @@ public:
         else
           std::cout << "N/A";
       }
-      std::cout << " " << std::setw(width) << std::right << (count > 1 ? str(std) : "N/A") << " " << std::setw(width)
-                << std::right << (count ? str(min) : "N/A") << " " << std::setw(width) << std::right
-                << (count ? str(max) : "N/A") << " " << std::setw(10) << std::right << count << "\n";
+      std::cout << " " << std::setw(width) << std::right << (count > 1 ? fmt::format("{}", std) : "N/A") << " "
+                << std::setw(width) << std::right << (count ? fmt::format("{}", min) : "N/A") << " " << std::setw(width)
+                << std::right << (count ? fmt::format("{}", max) : "N/A") << " " << std::setw(10) << std::right << count
+                << "\n";
     }
   }
 

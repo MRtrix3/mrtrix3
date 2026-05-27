@@ -664,7 +664,7 @@ std::string operation_string(const StackEntry &entry) {
       replace(s, n, operation_string(entry.evaluator->operands[n]));
     return s;
   } else
-    return str(entry.value);
+    return fmt::format("{}", entry.value);
 }
 
 template <class Operation> class UnaryEvaluator : public Evaluator {
