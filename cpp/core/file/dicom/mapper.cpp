@@ -147,7 +147,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
         values.push_back(value_string);
     }
     if (!values.empty())
-      H.keyval()[key] = join(values, ",");
+      H.keyval()[key] = fmt::format("{}", fmt::join(values, ","));
   };
   import_parameter(
       "EchoTime", [](Frame *f) -> default_type { return f->echo_time; }, 0.001);
@@ -198,7 +198,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
       }
     }
     if (!all_equal)
-      H.keyval()["FlipAngle"] = join(frame.flip_angles, ",");
+      H.keyval()["FlipAngle"] = fmt::format("{}", fmt::join(frame.flip_angles, ","));
   }
 
   size_t nchannels = image.samples_per_pixel;
@@ -343,8 +343,8 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
   if (!slices_timing_float.empty()) {
     const size_t slices_acquired_at_zero = std::count(slices_timing_float.begin(), slices_timing_float.end(), 0.0f);
     if (slices_acquired_at_zero < (image.images_in_mosaic ? image.images_in_mosaic : dim[1])) {
-      H.keyval()["SliceTiming"] =
-          !slices_timing_str.empty() ? join(slices_timing_str, ",") : join(slices_timing_float, ",");
+      H.keyval()["SliceTiming"] = !slices_timing_str.empty() ? fmt::format("{}", fmt::join(slices_timing_str, ","))
+                                                             : fmt::format("{}", fmt::join(slices_timing_float, ","));
       H.keyval()["MultibandAccelerationFactor"] = str(slices_acquired_at_zero);
       H.keyval()["SliceEncodingDirection"] = "k";
     } else {

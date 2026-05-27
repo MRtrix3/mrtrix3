@@ -31,7 +31,7 @@ const App::Option EdgeStatisticOption
                   "statistic for combining the values from all streamlines in an edge "
                   "into a single scale value for that edge "
                   "(options are: " +
-                      join(statistics, ",") + "; default=sum)") +
+                      fmt::format("{}", fmt::join(statistics, ",")) + "; default=sum)") +
       App::Argument("statistic").type_choice(statistics);
 
 template <typename T> bool Matrix<T>::operator()(const Mapped_track_nodepair &in) {
@@ -164,7 +164,7 @@ template <typename T> void Matrix<T>::error_check(const std::vector<node_t> &mis
   }
   if (!empty_nodes.empty()) {
     WARN("The following nodes present in the parcellation do not have any streamlines assigned:");
-    WARN(join(empty_nodes, ", "));
+    WARN("{}", fmt::join(empty_nodes, ", "));
     WARN("(This may indicate a poor registration)");
   }
 }

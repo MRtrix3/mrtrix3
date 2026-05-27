@@ -130,8 +130,8 @@ std::string short_description(const Header &H) {
     vox.push_back(str(H.spacing(n)));
 
   return fmt::format(" with dimensions {}, voxel spacing {}, datatype {}", //
-                     join(dims, "x"),                                      //
-                     join(vox, "x"),                                       //
+                     fmt::join(dims, "x"),                                 //
+                     fmt::join(vox, "x"),                                  //
                      H.datatype().specifier());                            //
 }
 } // namespace
@@ -752,7 +752,7 @@ void Header::realign_transform() {
   }
   std::string msg = "Image \"" + name() + "\" axes realigned to approximate RAS";
   if (!modified_fields.empty())
-    msg += "; reoriented metadata: " + join(modified_fields, ", ");
+    msg += fmt::format("; reoriented metadata: {}", fmt::join(modified_fields, ", "));
   if (File::Config::get_bool("RealignmentVerbose", true)) {
     CONSOLE(msg);
     CONSOLE("  (mrinfo -realignment / -ondisk for details;"

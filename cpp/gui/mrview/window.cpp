@@ -1346,7 +1346,7 @@ void Window::about_slot() {
   const std::string version = "debug";
 #endif
   message += fmt::format("<em>{} bit {} version, built {}</em><p>", 8 * sizeof(size_t), version, MR::App::build_date);
-  message += fmt::format("<h4>Authors:</h4>{}<p>", MR::join(MR::split(MR::App::AUTHOR, ",;&\n", true), "<br>"));
+  message += fmt::format("<h4>Authors:</h4>{}<p>", fmt::join(MR::split(MR::App::AUTHOR, ",;&\n", true), "<br>"));
   message += fmt::format("<em>{}</em>", MR::App::COPYRIGHT);
 
   QMessageBox::about(this, tr("About MRView"), qstr(message));

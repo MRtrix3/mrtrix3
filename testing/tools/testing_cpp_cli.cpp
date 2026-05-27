@@ -181,6 +181,6 @@ void run() {
     std::vector<std::string> specs;
     for (size_t i = 0; i != opt.size(); ++i)
       specs.push_back(fmt::format("\"{}\"", opt[i][0]));
-    CONSOLE("-multiple: [" + join(specs, " ") + "]");
+    CONSOLE("-multiple: [{}]", fmt::join(specs, " "));
   }
 }

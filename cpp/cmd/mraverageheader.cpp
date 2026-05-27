@@ -66,7 +66,7 @@ void usage() {
                         " (see Description)."
                         " Valid options are: {};"
                         " default = {}",
-                        join(avgspace_voxspacing_choices, ","),
+                        fmt::join(avgspace_voxspacing_choices, ","),
                         SPACING_DEFAULT_STRING))
     + Argument("type").type_choice(avgspace_voxspacing_choices)
   + Option ("fill", "set the intensity in the first volume of the average space to 1")

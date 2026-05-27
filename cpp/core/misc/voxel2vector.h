@@ -51,7 +51,7 @@ public:
     }
     DEBUG("Voxel2vector class for image \"{}\" of size {} initialised with {} elements",
           header.name(),
-          join(pos(), "x"),
+          fmt::join(pos(), "x"),
           reverse.size());
   }
 
@@ -104,7 +104,7 @@ Voxel2Vector::Voxel2Vector(MaskType &mask, const Header &data)
   }
   DEBUG("Voxel2vector class for image \"{}\" of size {} initialised with {} elements",
         data.name(),
-        join(pos(), "x"),
+        fmt::join(pos(), "x"),
         reverse.size());
 }
 

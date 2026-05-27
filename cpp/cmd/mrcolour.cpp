@@ -59,7 +59,7 @@ void usage() {
 
   ARGUMENTS
   + Argument ("input",  "the input image").type_image_in()
-  + Argument ("map",    fmt::format("the colourmap to apply; choices are: {}", join(colourmap_choices, ","))).type_choice (colourmap_choices)
+  + Argument ("map",    fmt::format("the colourmap to apply; choices are: {}", fmt::join(colourmap_choices, ","))).type_choice (colourmap_choices)
   + Argument ("output", "the output image").type_image_out();
 
   OPTIONS

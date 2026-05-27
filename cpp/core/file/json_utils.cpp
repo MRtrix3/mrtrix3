@@ -85,12 +85,12 @@ KeyValues read(const nlohmann::json &json) {
           std::vector<std::string> lines;
           for (const auto &k : *i)
             lines.push_back(unquote(std::string(k)));
-          result.insert(std::make_pair(i.key(), join(lines, "\n")));
+          result.insert(std::make_pair(i.key(), fmt::format("{}", fmt::join(lines, "\n"))));
         } else if (all_numeric) {
           std::vector<std::string> line;
           for (const auto &k : *i)
             line.push_back(str(k));
-          result.insert(std::make_pair(i.key(), join(line, ",")));
+          result.insert(std::make_pair(i.key(), fmt::format("{}", fmt::join(line, ","))));
         } else {
           throw Exception("JSON entry \"{}\" is array but contains mixed data types", i.key());
         }
@@ -100,9 +100,9 @@ KeyValues read(const nlohmann::json &json) {
           std::vector<std::string> line;
           for (const auto &k : j)
             line.push_back(unquote(str(k)));
-          s.push_back(join(line, ","));
+          s.push_back(fmt::format("{}", fmt::join(line, ",")));
         }
-        result.insert(std::make_pair(i.key(), join(s, "\n")));
+        result.insert(std::make_pair(i.key(), fmt::format("{}", fmt::join(s, "\n"))));
       } else
         throw Exception("JSON entry \"{}\" contains mixture of elements and arrays", i.key());
     }
@@ -141,7 +141,7 @@ void read(const nlohmann::json &json, Header &header) {
       const std::string msg1 = "JSON metadata for image \"" + header.name() + "\"" +      //
                                " was reoriented on import to match MRtrix3's realignment" //
                                " of the corresponding image axes";                        //
-      const std::string msg2 = "  (affected fields: " + join(modified_fields, ", ") + ")";
+      const std::string msg2 = fmt::format("  (affected fields: {})", fmt::join(modified_fields, ", "));
       if (File::Config::get_bool("RealignmentVerbose", true)) {
         CONSOLE(msg1);
         CONSOLE(msg2);

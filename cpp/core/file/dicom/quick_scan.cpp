@@ -57,7 +57,7 @@ bool QuickScan::read(const std::filesystem::path &file_path,
         if (!item.ignore_when_parsing()) {
 
           if (item.is(0x0008U, 0x0008U))
-            current_image_type = join(item.get_string(), " ");
+            current_image_type = fmt::format("{}", fmt::join(item.get_string(), " "));
           else if (item.is(0x0008U, 0x0020U))
             study_date = item.get_string(0);
           else if (item.is(0x0008U, 0x0021U))

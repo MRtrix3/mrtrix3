@@ -34,7 +34,7 @@ const OptionGroup Options =
                          " For complex data, min, max and std are calculated separately for real and imaginary parts,"
                          " std_rv is based on the real valued variance"
                          " (equals sqrt of sum of variances of imaginary and real parts).",
-                         join(field_choices, ", "))).allow_multiple()
+                         fmt::join(field_choices, ", "))).allow_multiple()
       + Argument("field").type_choice(field_choices)
     + Option("mask",
              "only perform computation within the specified binary mask image.")

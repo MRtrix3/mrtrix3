@@ -121,7 +121,7 @@ void usage () {
       fmt::format("define the statistic for choosing the final voxel intensities"
                   " for a given contrast type given the individual values"
                   " from the tracks passing through each voxel;"
-                  " options are: {} (default: mean)", join(voxel_statistics, ", ")))
+                  " options are: {} (default: mean)", fmt::join(voxel_statistics, ", ")))
     + Argument ("type").type_choice(voxel_statistics)
 
   + OptionGroup ("Other options for affecting the streamline sampling & mapping behaviour")

@@ -215,7 +215,7 @@ void print_shells(const Eigen::MatrixXd &grad,
   }
   if (shell_indices) {
     for (size_t i = 0; i < dwshells.count(); i++)
-      std::cout << join(dwshells[i].get_volumes(), ",") + " ";
+      std::cout << fmt::format("{}", fmt::join(dwshells[i].get_volumes(), ",")) + " ";
     std::cout << "\n";
   }
 }

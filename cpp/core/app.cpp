@@ -986,7 +986,7 @@ void parse() {
         }
       }
       if (!potential_options.empty())
-        e.push_back("(Did you mean {}?)", join(potential_options, " or "));
+        e.push_back("(Did you mean {}?)", fmt::join(potential_options, " or "));
     }
     throw e;
   }
@@ -1305,7 +1305,7 @@ int64_t App::ParsedArgument::as_int() const {
         msg += fmt::format("argument \"{}", arg->id);
       msg += "\" ";
       as_choice_msg = fmt::format("received \"{}\"; ", p);
-      as_choice_msg += fmt::format("valid choices are: {}", join(arg->choices, ", "));
+      as_choice_msg += fmt::format("valid choices are: {}", fmt::join(arg->choices, ", "));
       msg += fmt::format("({})", as_choice_msg);
       if (!arg->types[ArgTypeFlags::Integer])
         throw Exception(msg);

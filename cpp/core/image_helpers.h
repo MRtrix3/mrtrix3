@@ -395,7 +395,7 @@ inline void check_dimensions(const HeaderType1 &in1, const HeaderType2 &in2, con
     throw Exception("dimension mismatch between \"{}\" and \"{}\" for axes [{}] ({} vs. {})",
                     in1.name(),
                     in2.name(),
-                    join(axes, ","),
+                    fmt::join(axes, ","),
                     dim2str(in1),
                     dim2str(in2));
 }

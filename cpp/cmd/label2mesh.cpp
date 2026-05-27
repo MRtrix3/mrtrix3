@@ -107,7 +107,7 @@ void run() {
   if (!missing_nodes.empty()) {
     WARN("The following labels are absent from the parcellation image "
          "and so will have an empty mesh in the output file: " +
-         join(missing_nodes, ", "));
+         fmt::format("{}", fmt::join(missing_nodes, ", ")));
   }
 
   {

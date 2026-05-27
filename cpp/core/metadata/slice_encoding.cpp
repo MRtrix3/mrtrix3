@@ -70,7 +70,7 @@ void transform_for_image_load(KeyValues &keyval, const Header &header) {
     } else if ((new_dir * -1).dot(orig_dir) == 1) {
       auto slice_timing = parse_floats(slice_timing_it->second);
       std::reverse(slice_timing.begin(), slice_timing.end());
-      slice_timing_it->second = join(slice_timing, ",");
+      slice_timing_it->second = fmt::format("{}", fmt::join(slice_timing, ","));
       INFO("Slice timing vector reversed"                                 //
            " to conform to MRtrix3 internal transform realignment"        //
            " of image \"{}\""                                             //
@@ -114,7 +114,7 @@ void transform_for_nifti_write(KeyValues &keyval, const Header &H) {
   } else if ((new_dir * -1).dot(orig_dir) == 1) {
     auto slice_timing = parse_floats(slice_timing_it->second);
     std::reverse(slice_timing.begin(), slice_timing.end());
-    slice_timing_it->second = join(slice_timing, ",");
+    slice_timing_it->second = fmt::format("{}", fmt::join(slice_timing, ","));
     INFO("Slice timing vector reversed to conform to output NIfTI strides");
   } else {
     keyval["SliceEncodingDirection"] = Metadata::BIDS::vector2axisid(new_dir);
