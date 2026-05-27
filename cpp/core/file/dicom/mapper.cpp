@@ -142,7 +142,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
       const default_type value = functor(f);
       if (!std::isfinite(value))
         return;
-      const std::string value_string = str(multiplier * value, 6);
+      const std::string value_string = fmt::format("{}", multiplier * value);
       if (values.empty() || value_string != values.back())
         values.push_back(value_string);
     }

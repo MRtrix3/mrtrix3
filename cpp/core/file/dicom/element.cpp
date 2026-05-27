@@ -33,7 +33,7 @@ std::ostream &operator<<(std::ostream &stream, const Time &item) {
   stream << std::setfill('0') << std::setw(2) << item.hour << ":" << std::setfill('0') << std::setw(2) << item.minute
          << ":" << std::setfill('0') << std::setw(2) << item.second;
   if (item.fraction)
-    stream << str(item.fraction, 6).substr(1);
+    stream << fmt::format("{:.6g}", item.fraction).substr(1);
   return stream;
 }
 

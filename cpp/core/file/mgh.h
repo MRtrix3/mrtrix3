@@ -472,10 +472,10 @@ template <class Input> void read_other(Header &H, Input &in) {
   // Start the function read_other() proper
   try {
     // fetch() will throw an int(1) straight away if these data don't exist
-    H.keyval()["MGH_TR"] = str(fetch<float32>(in), 6);
-    H.keyval()["MGH_flip"] = str(fetch<float32>(in) * 180.0 / Math::pi, 6); // Radians in MGHO -> degrees in header
-    H.keyval()["MGH_TE"] = str(fetch<float32>(in), 6);
-    H.keyval()["MGH_TI"] = str(fetch<float32>(in), 6);
+    H.keyval()["MGH_TR"] = fmt::format("{}", fetch<float32>(in));
+    H.keyval()["MGH_flip"] = fmt::format("{}", fetch<float32>(in) * 180.0 / Math::pi); // Radians in MGHO -> degrees
+    H.keyval()["MGH_TE"] = fmt::format("{}", fetch<float32>(in));
+    H.keyval()["MGH_TI"] = fmt::format("{}", fetch<float32>(in));
     fetch<float32>(in); // fov - ignored
 
     do {

@@ -19,7 +19,9 @@
 
 namespace MR::DWI::Tractography {
 
-void Properties::set_timestamp() { (*this)["timestamp"] = str(Timer::current_time(), file_timestamp_precision); }
+void Properties::set_timestamp() {
+  (*this)["timestamp"] = fmt::format("{:.{}g}", Timer::current_time(), file_timestamp_precision);
+}
 
 void Properties::set_version_info() {
   (*this)["mrtrix_version"] = App::mrtrix_version;

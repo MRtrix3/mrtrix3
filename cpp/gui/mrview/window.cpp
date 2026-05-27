@@ -1382,7 +1382,7 @@ void Window::paintGL() {
 
     if (render_times.size() == 10) {
       FPS = (render_times.size() - 1.0) / (render_times.back() - render_times.front());
-      FPS_string = str(FPS, 4);
+      FPS_string = fmt::format("{:.4g}", FPS);
       if (!std::isfinite(best_FPS) || FPS > best_FPS) {
         best_FPS = FPS;
         best_FPS_time = render_times.back();
@@ -1391,7 +1391,7 @@ void Window::paintGL() {
       best_FPS = NaN;
 
     if (std::isfinite(best_FPS))
-      FPS_best_string = str(best_FPS, 4);
+      FPS_best_string = fmt::format("{:.4g}", best_FPS);
     mode->projection.setup_render_text(0.0, 1.0, 0.0);
     mode->projection.render_text("max FPS: " + FPS_best_string, RightEdge | TopEdge);
     mode->projection.render_text("FPS: " + FPS_string, RightEdge | TopEdge, 1);

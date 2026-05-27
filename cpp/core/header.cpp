@@ -498,7 +498,7 @@ std::string Header::description(bool print_all) const {
   for (i = 0; i < ndim(); i++) {
     if (i)
       desc += " x ";
-    desc += std::isnan(spacing(i)) ? "?" : str(spacing(i), 6);
+    desc += std::isnan(spacing(i)) ? "?" : fmt::format("{}", spacing(i));
   }
   desc += "\n";
 

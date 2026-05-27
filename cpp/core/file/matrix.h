@@ -134,8 +134,8 @@ void save_vector_text(const VectorType &V,
   File::KeyValue::write(out, keyvals, "# ", add_to_command_history);
   const char d(delimiter(filename));
   for (decltype(V.size()) i = 0; i < V.size() - 1; i++)
-    out << str(V[i], 10) << d;
-  out << str(V[V.size() - 1], 10) << "\n";
+    out << fmt::format("{}", V[i]) << d;
+  out << fmt::format("{}", V[V.size() - 1]) << "\n";
 }
 
 } // namespace
