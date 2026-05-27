@@ -190,7 +190,7 @@ public:
 
       // write back total number of points:
       VTKout.seekp(offset_num_points);
-      std::string num_points(str(current_index));
+      std::string num_points(fmt::format("{}", current_index));
       num_points.resize(10, ' ');
       VTKout.write(num_points.c_str(), 10);
 

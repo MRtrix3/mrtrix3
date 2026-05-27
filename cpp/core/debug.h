@@ -49,7 +49,7 @@ extern std::string NAME;
   {                                                                                                                    \
     std::cerr << MR::App::NAME << " [" << __FILE__ << ": " << __LINE__ << "]: " << #variable << " = ";                 \
     for (ssize_t i = 0; i < variable.size(); ++i) {                                                                    \
-      std::cerr << str(variable(i)) << " ";                                                                            \
+      std::cerr << fmt::format("{}", variable(i)) << " ";                                                              \
     }                                                                                                                  \
     std::cerr << std::endl;                                                                                            \
   }

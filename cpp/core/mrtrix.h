@@ -126,18 +126,6 @@ bool starts_with_dash(std::string_view arg);
 //! returns string without leading dashes
 std::string without_leading_dash(std::string_view arg);
 
-template <class T> inline std::string str(const T &value, int precision = 0) {
-  std::ostringstream stream;
-  if (precision)
-    stream.precision(precision);
-  else if (max_digits<T>::value())
-    stream.precision(max_digits<T>::value());
-  stream << value;
-  if (stream.fail())
-    throw Exception("error converting type \"{}\" value to string", typeid(T).name());
-  return stream.str();
-}
-
 template <class T> inline T to(std::string_view string) {
   const std::string stripped(strip(string));
   std::istringstream stream(stripped);

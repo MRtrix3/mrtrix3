@@ -160,7 +160,7 @@ template <typename T> void Matrix<T>::error_check(const std::vector<node_t> &mis
   std::vector<std::string> empty_nodes;
   for (node_t i = 1; i != visited.size(); ++i) {
     if (!visited[i] && std::find(missing_nodes.begin(), missing_nodes.end(), i) == missing_nodes.end())
-      empty_nodes.push_back(str(i));
+      empty_nodes.push_back(fmt::format("{}", i));
   }
   if (!empty_nodes.empty()) {
     WARN("The following nodes present in the parcellation do not have any streamlines assigned:");
@@ -175,14 +175,14 @@ template <typename T> void Matrix<T>::write_assignments(const std::filesystem::p
   File::OFStream stream(path);
   stream << "# " << App::command_history_string << "\n";
   for (auto i = assignments_single.begin(); i != assignments_single.end(); ++i)
-    stream << str(*i) << "\n";
+    stream << fmt::format("{}", *i) << "\n";
   for (auto i = assignments_pairs.begin(); i != assignments_pairs.end(); ++i)
-    stream << str(i->first) << " " << str(i->second) << "\n";
+    stream << fmt::format("{}", i->first) << " " << fmt::format("{}", i->second) << "\n";
   for (auto i = assignments_lists.begin(); i != assignments_lists.end(); ++i) {
     assert(i->size());
-    stream << str((*i)[0]);
+    stream << fmt::format("{}", (*i)[0]);
     for (size_t j = 1; j != i->size(); ++j)
-      stream << " " << str((*i)[j]);
+      stream << " " << fmt::format("{}", (*i)[j]);
     stream << "\n";
   }
 }

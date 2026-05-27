@@ -383,9 +383,9 @@ std::string Element::as_string() const {
         out << x << " ";
       return out.str();
     case Element::DATE:
-      return str(get_date());
+      return fmt::format("{}", get_date());
     case Element::TIME:
-      return str(get_time());
+      return fmt::format("{}", get_time());
     case Element::DATETIME:
       return fmt::format("{} {}", get_datetime().first, get_datetime().second);
     case Element::STRING:

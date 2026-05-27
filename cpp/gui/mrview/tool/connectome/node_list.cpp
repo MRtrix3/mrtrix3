@@ -43,7 +43,7 @@ QVariant Node_list_model::data(const QModelIndex &index, int role) const {
     }
   }
   if (index.column() == 0 && role == Qt::DisplayRole)
-    return qstr(str(index.row()));
+    return qstr(fmt::format("{}", index.row()));
   else if (index.column() == 1 && role == Qt::DecorationRole)
     return connectome.nodes[index.row()].get_pixmap();
   else if (index.column() == 2 && role == Qt::DisplayRole)

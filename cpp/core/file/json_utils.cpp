@@ -89,7 +89,7 @@ KeyValues read(const nlohmann::json &json) {
         } else if (all_numeric) {
           std::vector<std::string> line;
           for (const auto &k : *i)
-            line.push_back(str(k));
+            line.push_back(k.dump());
           result.insert(std::make_pair(i.key(), fmt::format("{}", fmt::join(line, ","))));
         } else {
           throw Exception("JSON entry \"{}\" is array but contains mixed data types", i.key());
@@ -99,7 +99,7 @@ KeyValues read(const nlohmann::json &json) {
         for (const auto &j : *i) {
           std::vector<std::string> line;
           for (const auto &k : j)
-            line.push_back(unquote(str(k)));
+            line.push_back(unquote(k.dump()));
           s.push_back(fmt::format("{}", fmt::join(line, ",")));
         }
         result.insert(std::make_pair(i.key(), fmt::format("{}", fmt::join(s, "\n"))));

@@ -162,7 +162,7 @@ void run() {
   // Ready to construct output images
   Header output_index_header(warp_header);
   output_index_header.size(3) = 2;
-  output_index_header.keyval()[Fixel::n_fixels_key] = str(nfixels_out);
+  output_index_header.keyval()[Fixel::n_fixels_key] = fmt::format("{}", nfixels_out);
   Image<index_type> output_index_image =                  //
       Image<index_type>::create(output_dir / "index.mif", //
                                 output_index_header);     //

@@ -86,8 +86,8 @@ public:
   }
 
   friend std::ostream &operator<<(std::ostream &stream, const Base &B) {
-    stream << str(B.files.size()) << " files, segsize " << str(B.segsize) << ", is " << (B.is_new ? "" : "NOT ")
-           << "new, " << (B.writable ? "read/write" : "read-only");
+    stream << fmt::format("{}", B.files.size()) << " files, segsize " << fmt::format("{}", B.segsize) << ", is "
+           << (B.is_new ? "" : "NOT ") << "new, " << (B.writable ? "read/write" : "read-only");
     return stream;
   }
 

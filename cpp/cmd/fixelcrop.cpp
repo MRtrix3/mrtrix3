@@ -77,7 +77,7 @@ void run() {
       total_nfixels--;
   }
 
-  out_index_header.keyval()[Fixel::n_fixels_key] = str(total_nfixels);
+  out_index_header.keyval()[Fixel::n_fixels_key] = fmt::format("{}", total_nfixels);
   auto out_index_image =
       Image<index_type>::create(out_fixel_directory / in_index_header.path().filename(), out_index_header);
 

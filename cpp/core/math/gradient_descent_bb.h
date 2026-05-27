@@ -134,12 +134,12 @@ public:
       CONSOLE("            x = [ {} ]", x1);
     }
     if (log_os) {
-      log_os << niter << delim << nfeval << delim << str(f) << delim << str(dt);
+      log_os << niter << delim << nfeval << delim << fmt::format("{}", f) << delim << fmt::format("{}", dt);
       for (ssize_t i = 0; i < x2.size(); ++i) {
-        log_os << delim << str(x1(i));
+        log_os << delim << fmt::format("{}", x1(i));
       }
       for (ssize_t i = 0; i < x2.size(); ++i) {
-        log_os << delim << str(g1(i));
+        log_os << delim << fmt::format("{}", g1(i));
       }
       log_os << std::endl;
     }
@@ -161,12 +161,12 @@ public:
     assert(std::isfinite(normg));
     assert(!std::isnan(normg));
     if (log_os) {
-      log_os << niter << delim << nfeval << delim << str(f) << delim << str(dt);
+      log_os << niter << delim << nfeval << delim << fmt::format("{}", f) << delim << fmt::format("{}", dt);
       for (ssize_t i = 0; i < x2.size(); ++i) {
-        log_os << delim << str(x2(i));
+        log_os << delim << fmt::format("{}", x2(i));
       }
       for (ssize_t i = 0; i < x2.size(); ++i) {
-        log_os << delim << str(g2(i));
+        log_os << delim << fmt::format("{}", g2(i));
       }
       log_os << std::endl;
     }
@@ -193,12 +193,12 @@ public:
     g1.swap(g3);
     ++niter;
     if (log_os) {
-      log_os << niter << delim << nfeval << delim << str(f) << delim << str(dt);
+      log_os << niter << delim << nfeval << delim << fmt::format("{}", f) << delim << fmt::format("{}", dt);
       for (ssize_t i = 0; i < x2.size(); ++i) {
-        log_os << delim << str(x2(i));
+        log_os << delim << fmt::format("{}", x2(i));
       }
       for (ssize_t i = 0; i < x2.size(); ++i) {
-        log_os << delim << str(g2(i));
+        log_os << delim << fmt::format("{}", g2(i));
       }
       log_os << std::endl;
     }

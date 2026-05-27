@@ -132,7 +132,7 @@ void WriterExemplars::write(const node_t one,
                             const std::filesystem::path &path,
                             const std::optional<std::filesystem::path> &weights_path = std::nullopt) {
   Tractography::Properties properties;
-  properties["step_size"] = str(step_size);
+  properties["step_size"] = fmt::format("{}", step_size);
   Tractography::WriterUnbuffered<float> writer(path, properties);
   for (size_t i = 0; i != exemplars.size(); ++i) {
     if (selectors[i](one, two))
@@ -144,7 +144,7 @@ void WriterExemplars::write(const node_t one,
     File::OFStream output(weights_path.value());
     for (size_t i = 0; i != exemplars.size(); ++i) {
       if (selectors[i](one, two))
-        output << str(exemplars[i].get_weight()) << "\n";
+        output << fmt::format("{}", exemplars[i].get_weight()) << "\n";
     }
   }
 }
@@ -153,7 +153,7 @@ void WriterExemplars::write(const node_t node,
                             const std::filesystem::path &path,
                             const std::optional<std::filesystem::path> &weights_path = std::nullopt) {
   Tractography::Properties properties;
-  properties["step_size"] = str(step_size);
+  properties["step_size"] = fmt::format("{}", step_size);
   Tractography::Writer<float> writer(path, properties);
   for (size_t i = 0; i != exemplars.size(); ++i) {
     if (selectors[i](node))
@@ -165,7 +165,7 @@ void WriterExemplars::write(const node_t node,
     File::OFStream output(weights_path.value());
     for (size_t i = 0; i != exemplars.size(); ++i) {
       if (selectors[i](node))
-        output << str(exemplars[i].get_weight()) << "\n";
+        output << fmt::format("{}", exemplars[i].get_weight()) << "\n";
     }
   }
 }
@@ -173,14 +173,14 @@ void WriterExemplars::write(const node_t node,
 void WriterExemplars::write(const std::filesystem::path &path,
                             const std::optional<std::filesystem::path> &weights_path = std::nullopt) {
   Tractography::Properties properties;
-  properties["step_size"] = str(step_size);
+  properties["step_size"] = fmt::format("{}", step_size);
   Tractography::Writer<float> writer(path, properties);
   for (std::vector<Exemplar>::const_iterator i = exemplars.begin(); i != exemplars.end(); ++i)
     writer(i->get());
   if (weights_path.has_value()) {
     File::OFStream output(weights_path.value());
     for (std::vector<Exemplar>::const_iterator i = exemplars.begin(); i != exemplars.end(); ++i)
-      output << str(i->get_weight()) << "\n";
+      output << fmt::format("{}", i->get_weight()) << "\n";
   }
 }
 

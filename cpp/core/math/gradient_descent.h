@@ -144,12 +144,12 @@ public:
     assert(std::isfinite(normg));
     assert(!std::isnan(normg));
     if (log_os) {
-      log_os << niter << delim << nfeval << delim << str(f) << delim << str(dt);
+      log_os << niter << delim << nfeval << delim << fmt::format("{}", f) << delim << fmt::format("{}", dt);
       for (ssize_t i = 0; i < x.size(); ++i) {
-        log_os << delim << str(x(i));
+        log_os << delim << fmt::format("{}", x(i));
       }
       for (ssize_t i = 0; i < x.size(); ++i) {
-        log_os << delim << str(g(i));
+        log_os << delim << fmt::format("{}", g(i));
       }
       log_os << std::endl;
     }
@@ -187,12 +187,12 @@ public:
         x.swap(x2);
         g.swap(g2);
         if (log_os) {
-          log_os << niter << delim << nfeval << delim << str(f) << delim << str(dt);
+          log_os << niter << delim << nfeval << delim << fmt::format("{}", f) << delim << fmt::format("{}", dt);
           for (ssize_t i = 0; i < x.size(); ++i) {
-            log_os << delim << str(x(i));
+            log_os << delim << fmt::format("{}", x(i));
           }
           for (ssize_t i = 0; i < x.size(); ++i) {
-            log_os << delim << str(g(i));
+            log_os << delim << fmt::format("{}", g(i));
           }
           log_os << std::endl;
         }

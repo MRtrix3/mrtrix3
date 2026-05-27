@@ -486,9 +486,9 @@ void run() {
 
   if (normalisation)
     sos.array() /= static_cast<value_type>(n_voxels);
-  std::cout << str(sos.transpose());
+  std::cout << fmt::format("{}", sos.transpose());
 
   if (!get_options("overlap").empty())
-    std::cout << " " << str(n_voxels);
+    std::cout << " " << fmt::format("{}", n_voxels);
   std::cout << std::endl;
 }

@@ -476,19 +476,19 @@ public:
   }
 
   void write_linear_to_header(Header &output_header) const {
-    output_header.keyval()["linear1"] = str(im1_to_mid_linear.matrix());
-    output_header.keyval()["linear2"] = str(im2_to_mid_linear.matrix());
+    output_header.keyval()["linear1"] = fmt::format("{}", im1_to_mid_linear.matrix());
+    output_header.keyval()["linear2"] = fmt::format("{}", im2_to_mid_linear.matrix());
   }
 
   void write_params_to_header(Header &output_header) const {
-    output_header.keyval()["nl_scale"] = str(scale_factor);
-    output_header.keyval()["nl_niter"] = str(max_iter);
-    output_header.keyval()["nl_update_smooth"] = str(update_smoothing);
-    output_header.keyval()["nl_disp_smooth"] = str(disp_smoothing);
-    output_header.keyval()["nl_gradient_step"] = str(gradient_step);
-    output_header.keyval()["fod_reorientation"] = str(do_reorientation);
+    output_header.keyval()["nl_scale"] = fmt::format("{}", scale_factor);
+    output_header.keyval()["nl_niter"] = fmt::format("{}", max_iter);
+    output_header.keyval()["nl_update_smooth"] = fmt::format("{}", update_smoothing);
+    output_header.keyval()["nl_disp_smooth"] = fmt::format("{}", disp_smoothing);
+    output_header.keyval()["nl_gradient_step"] = fmt::format("{}", gradient_step);
+    output_header.keyval()["fod_reorientation"] = fmt::format("{}", do_reorientation);
     if (do_reorientation)
-      output_header.keyval()["nl_lmax"] = str(fod_lmax);
+      output_header.keyval()["nl_lmax"] = fmt::format("{}", fod_lmax);
   }
 
   template <class OutputType> void get_output_warps(OutputType &output_warps) {

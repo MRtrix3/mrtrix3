@@ -171,7 +171,7 @@ void print_dimensions(const Header &header) {
   for (size_t i = 0; i < header.ndim(); ++i) {
     if (i)
       buffer += " ";
-    buffer += str(header.size(i));
+    buffer += fmt::format("{}", header.size(i));
   }
   std::cout << buffer << "\n";
 }
@@ -181,7 +181,7 @@ void print_spacing(const Header &header) {
   for (size_t i = 0; i < header.ndim(); ++i) {
     if (i)
       buffer += " ";
-    buffer += str(header.spacing(i));
+    buffer += fmt::format("{}", header.spacing(i));
   }
   std::cout << buffer << "\n";
 }
@@ -193,7 +193,7 @@ void print_strides(const Header &header) {
   for (size_t i = 0; i < header.ndim(); ++i) {
     if (i)
       buffer += " ";
-    buffer += strides[i] == 0 ? "?" : str(strides[i]);
+    buffer += strides[i] == 0 ? "?" : fmt::format("{}", strides[i]);
   }
   std::cout << buffer << "\n";
 }

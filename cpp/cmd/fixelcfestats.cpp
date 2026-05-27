@@ -351,11 +351,11 @@ void run() {
   }
 
   Header output_header(dynamic_cast<SubjectFixelImport *>(importer[0].get())->header());
-  output_header.keyval()["cfe_dh"] = str(cfe_dh);
-  output_header.keyval()["cfe_e"] = str(cfe_e);
-  output_header.keyval()["cfe_h"] = str(cfe_h);
-  output_header.keyval()["cfe_c"] = str(cfe_c);
-  output_header.keyval()["cfe_legacy"] = str(cfe_legacy);
+  output_header.keyval()["cfe_dh"] = fmt::format("{}", cfe_dh);
+  output_header.keyval()["cfe_e"] = fmt::format("{}", cfe_e);
+  output_header.keyval()["cfe_h"] = fmt::format("{}", cfe_h);
+  output_header.keyval()["cfe_c"] = fmt::format("{}", cfe_c);
+  output_header.keyval()["cfe_legacy"] = fmt::format("{}", cfe_legacy);
 
   measurements_matrix_type data(importer.size(), num_fixels);
   {
@@ -468,14 +468,14 @@ void run() {
   matrix_type empirical_cfe_statistic;
   if (do_nonstationarity_adjustment) {
     Stats::PermTest::precompute_empirical_stat(glm_test, cfe_integrator, empirical_skew, empirical_cfe_statistic);
-    output_header.keyval()["nonstationarity_adjustment"] = str(true);
+    output_header.keyval()["nonstationarity_adjustment"] = fmt::format("{}", true);
     for (Math::Stats::index_type i = 0; i != num_hypotheses; ++i)
       write_fixel_output(output_fixel_directory / fmt::format("cfe_empirical{}.mif", postfix(i)),
                          empirical_cfe_statistic.col(i),
                          mask_processing_image,
                          output_header);
   } else {
-    output_header.keyval()["nonstationarity_adjustment"] = str(false);
+    output_header.keyval()["nonstationarity_adjustment"] = fmt::format("{}", false);
   }
 
   // Precompute default statistic and CFE statistic

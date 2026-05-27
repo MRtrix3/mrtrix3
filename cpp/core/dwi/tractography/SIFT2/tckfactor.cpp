@@ -117,7 +117,7 @@ void TckFactor::test_streamline_length_scaling() {
   for (int i = -1000; i != 1000; ++i) {
     const double factor = std::pow(10.0, static_cast<double>(i) / 1000.0);
     TD_sum = factor * actual_TD_sum;
-    out << str(factor) << "," << str(calc_cost_function()) << "\n";
+    out << fmt::format("{}", factor) << "," << fmt::format("{}", calc_cost_function()) << "\n";
   }
   out << "\n";
   out.close();
@@ -311,14 +311,18 @@ void TckFactor::estimate_factors() {
     new_cf = cf_data + cf_reg;
 
     if (!csv_path.empty()) {
-      (*csv_out) << str(iter) << "," << str(cf_data) << "," << str(cf_reg_tik) << "," << str(cf_reg_tv) << ","
-                 << str(cf_reg) << "," << str(new_cf) << "," << str(nonzero_streamlines) << "," << str(total_excluded)
-                 << "," << str(step_stats.get_min()) << "," << str(step_stats.get_mean()) << ","
-                 << str(step_stats.get_mean_abs()) << "," << str(step_stats.get_var()) << ","
-                 << str(step_stats.get_max()) << "," << str(coefficient_stats.get_min()) << ","
-                 << str(coefficient_stats.get_mean()) << "," << str(coefficient_stats.get_mean_abs()) << ","
-                 << str(coefficient_stats.get_var()) << "," << str(coefficient_stats.get_max()) << ","
-                 << str(coefficient_stats.get_var() * (num_tracks() - 1)) << ",\n";
+      (*csv_out) << fmt::format("{}", iter) << "," << fmt::format("{}", cf_data) << "," << fmt::format("{}", cf_reg_tik)
+                 << "," << fmt::format("{}", cf_reg_tv) << "," << fmt::format("{}", cf_reg) << ","
+                 << fmt::format("{}", new_cf) << "," << fmt::format("{}", nonzero_streamlines) << ","
+                 << fmt::format("{}", total_excluded) << "," << fmt::format("{}", step_stats.get_min()) << ","
+                 << fmt::format("{}", step_stats.get_mean()) << "," << fmt::format("{}", step_stats.get_mean_abs())
+                 << "," << fmt::format("{}", step_stats.get_var()) << "," << fmt::format("{}", step_stats.get_max())
+                 << "," << fmt::format("{}", coefficient_stats.get_min()) << ","
+                 << fmt::format("{}", coefficient_stats.get_mean()) << ","
+                 << fmt::format("{}", coefficient_stats.get_mean_abs()) << ","
+                 << fmt::format("{}", coefficient_stats.get_var()) << ","
+                 << fmt::format("{}", coefficient_stats.get_max()) << ","
+                 << fmt::format("{}", coefficient_stats.get_var() * (num_tracks() - 1)) << ",\n";
       csv_out->flush();
     }
 

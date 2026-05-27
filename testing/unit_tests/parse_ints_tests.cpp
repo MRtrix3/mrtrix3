@@ -35,7 +35,7 @@ struct ParseIntsParam {
   ExceptionPolicy exception_policy = ExceptionPolicy::NotExpected;
 
   friend std::ostream &operator<<(std::ostream &os, const ParseIntsParam &p) {
-    os << "InputStr: \"" << p.input_str << "\", ExpectedValues: " << MR::str(p.expected_values);
+    os << "InputStr: \"" << p.input_str << "\", ExpectedValues: " << fmt::format("{}", p.expected_values);
     return os;
   }
 };
@@ -77,8 +77,8 @@ TEST_F(ParseIntsTest, HandlesVariousFormats) {
           << "Input string: \"" << input << "\" should not throw an exception.";
     }
     EXPECT_EQ(actual_values, param.expected_values)
-        << "Input string: \"" << input << "\"\n  Expected: " << MR::str(param.expected_values)
-        << "\n  Actual:   " << MR::str(actual_values);
+        << "Input string: \"" << input << "\"\n  Expected: " << fmt::format("{}", param.expected_values)
+        << "\n  Actual:   " << fmt::format("{}", actual_values);
   };
 
   for (const auto &param : parse_ints_test_cases) {

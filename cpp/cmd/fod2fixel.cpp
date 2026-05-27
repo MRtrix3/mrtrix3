@@ -181,7 +181,7 @@ void Segmented_FOD_receiver::commit() {
   std::unique_ptr<DataImage> skew_image;
 
   auto index_header(H);
-  index_header.keyval()[Fixel::n_fixels_key] = str(fixel_count);
+  index_header.keyval()[Fixel::n_fixels_key] = fmt::format("{}", fixel_count);
   index_header.ndim() = 4;
   index_header.size(3) = 2;
   index_header.datatype() = DataType::from<index_type>();

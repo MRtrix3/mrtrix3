@@ -45,15 +45,15 @@ public:
   void setValue(float val) {
     if (std::isfinite(val)) {
       if (val >= max) {
-        setText(str(max).c_str());
+        setText(fmt::format("{}", max).c_str());
         is_min = false;
         is_max = true;
       } else if (val <= min) {
-        setText(str(min).c_str());
+        setText(fmt::format("{}", min).c_str());
         is_min = true;
         is_max = false;
       } else {
-        setText(str(val).c_str());
+        setText(fmt::format("{}", val).c_str());
         is_min = is_max = false;
       }
     } else {

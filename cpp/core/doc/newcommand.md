@@ -178,8 +178,7 @@ void read_file (const std::string& filename, int64_t offset)
 
   in.seekg (offset);
   if (!in.good())
-    throw Exception ("error seeking to offset " + str(offset)
-       + " in file \"" + filename + "\": " + strerror (errno));
+    throw Exception ("error seeking to offset {} in file \"{}\": {}", offset, filename, strerror (errno));
   ...
   // do something useful
   ...

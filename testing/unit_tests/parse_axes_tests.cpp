@@ -37,7 +37,7 @@ struct ParseAxesParam {
   ExceptionPolicy exception_policy = ExceptionPolicy::NotExpected;
 
   friend std::ostream &operator<<(std::ostream &os, const ParseAxesParam &p) {
-    os << "InputStr: \"" << p.input_str << "\", ExpectedValues: " << MR::str(p.expected_values);
+    os << "InputStr: \"" << p.input_str << "\", ExpectedValues: " << fmt::format("{}", p.expected_values);
     return os;
   }
 };
@@ -70,10 +70,11 @@ TEST_F(ParseAxesTest, HandlesVariousFormats) {
       EXPECT_NO_THROW(actual_values = MR::Formats::parse_axes(param.ndim, input))
           << "Input string: \"" << input << "\" with " << param.ndim << " dimensions should not throw an exception.";
     }
-    EXPECT_EQ(actual_values, param.expected_values) << "Input string: \"" << input << "\""
-                                                    << " with " << param.ndim << " dimensions\n"
-                                                    << "  Expected: " << MR::str(param.expected_values) << "\n"
-                                                    << "  Actual:   " << MR::str(actual_values);
+    EXPECT_EQ(actual_values, param.expected_values)
+        << "Input string: \"" << input << "\""
+        << " with " << param.ndim << " dimensions\n"
+        << "  Expected: " << fmt::format("{}", param.expected_values) << "\n"
+        << "  Actual:   " << fmt::format("{}", actual_values);
   };
 
   for (const auto &param : parse_axes_test_cases) {

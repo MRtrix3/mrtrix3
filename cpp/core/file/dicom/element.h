@@ -219,4 +219,5 @@ namespace fmt {
 //! Render via the type's ostream insertion operator while honouring any standard format specification.
 template <> struct formatter<MR::File::Dicom::Date> : ostream_formatter {};
 template <> struct formatter<MR::File::Dicom::Time> : ostream_formatter {};
+template <> struct formatter<MR::File::Dicom::Element> : ostream_formatter {};
 } // namespace fmt

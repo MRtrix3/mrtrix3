@@ -360,7 +360,7 @@ inline bool dimensions_match(const HeaderType1 &in1, const HeaderType2 &in2, con
 
 namespace {
 template <class HeaderType> std::string dim2str(const HeaderType &in) {
-  std::string msg = str(in.size(0));
+  std::string msg = fmt::format("{}", in.size(0));
   for (size_t axis = 1; axis != in.ndim(); ++axis)
     msg += fmt::format(",{}", in.size(axis));
   return msg;

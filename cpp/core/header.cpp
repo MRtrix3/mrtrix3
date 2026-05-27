@@ -124,10 +124,10 @@ namespace {
 std::string short_description(const Header &H) {
   std::vector<std::string> dims;
   for (size_t n = 0; n < H.ndim(); ++n)
-    dims.push_back(str(H.size(n)));
+    dims.push_back(fmt::format("{}", H.size(n)));
   std::vector<std::string> vox;
   for (size_t n = 0; n < H.ndim(); ++n)
-    vox.push_back(str(H.spacing(n)));
+    vox.push_back(fmt::format("{}", H.spacing(n)));
 
   return fmt::format(" with dimensions {}, voxel spacing {}, datatype {}", //
                      fmt::join(dims, "x"),                                 //
@@ -491,7 +491,7 @@ std::string Header::description(bool print_all) const {
   for (i = 0; i < ndim(); i++) {
     if (i)
       desc += " x ";
-    desc += str(size(i));
+    desc += fmt::format("{}", size(i));
   }
 
   desc += "\n  Voxel size:        ";
@@ -996,9 +996,9 @@ std::vector<std::string> Header::Realignment::describe_axis_mapping() const {
   lines.reserve(3);
   for (size_t output = 0; output != 3; ++output) {
     const size_t source_axis = shuffle_.permutations[output];
-    lines.push_back("output axis " + str(output) + " (~" + std::string(output_labels.at(output)) + ")" //
-                    + " <- source axis " + str(source_axis)                                            //
-                    + ", sign " + (shuffle_.flips[source_axis] ? "reversed" : "preserved"));           //
+    lines.push_back("output axis " + fmt::format("{}", output) + " (~" + std::string(output_labels.at(output)) + ")" //
+                    + " <- source axis " + fmt::format("{}", source_axis)                                            //
+                    + ", sign " + (shuffle_.flips[source_axis] ? "reversed" : "preserved"));                         //
   }
   return lines;
 }

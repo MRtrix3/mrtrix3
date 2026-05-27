@@ -543,7 +543,7 @@ template <class Input> void read_other(Header &H, Input &in) {
 #ifndef MRTRIX_IS_BIG_ENDIAN
         ByteOrder::swap(field_strength);
 #endif
-        H.keyval()[tag_ID_to_string(id)] = str(field_strength);
+        H.keyval()[tag_ID_to_string(id)] = fmt::format("{}", field_strength);
       } break;
       default: // FreeSurfer doesn't actually perform any import of any other fields
         in.read(&content[0], size);

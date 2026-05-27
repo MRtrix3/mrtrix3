@@ -198,15 +198,15 @@ void run() {
 
     for (size_t n = 0; n < fields.size(); ++n) {
       if (fields[n] == FieldChoice::MEAN)
-        std::cout << str(mean_length) << " ";
+        std::cout << fmt::format("{}", mean_length) << " ";
       else if (fields[n] == FieldChoice::MEDIAN)
-        std::cout << str(median_length) << " ";
+        std::cout << fmt::format("{}", median_length) << " ";
       else if (fields[n] == FieldChoice::STD)
-        std::cout << str(stdev) << " ";
+        std::cout << fmt::format("{}", stdev) << " ";
       else if (fields[n] == FieldChoice::MIN)
-        std::cout << str(min_length) << " ";
+        std::cout << fmt::format("{}", min_length) << " ";
       else if (fields[n] == FieldChoice::MAX)
-        std::cout << str(max_length) << " ";
+        std::cout << fmt::format("{}", max_length) << " ";
       else if (fields[n] == FieldChoice::COUNT)
         std::cout << count << " ";
     }
@@ -238,11 +238,11 @@ void run() {
     if (weights_provided) {
       out << "Length,Sum_weights\n";
       for (size_t i = 0; i != histogram.size(); ++i)
-        out << str(i * step_size) << "," << str(histogram[i]) << "\n";
+        out << fmt::format("{}", i * step_size) << "," << fmt::format("{}", histogram[i]) << "\n";
     } else {
       out << "Length,Count\n";
       for (size_t i = 0; i != histogram.size(); ++i)
-        out << str(i * step_size) << "," << fmt::format("{}", static_cast<size_t>(histogram[i])) << "\n";
+        out << fmt::format("{}", i * step_size) << "," << fmt::format("{}", static_cast<size_t>(histogram[i])) << "\n";
     }
     out << "\n";
   }

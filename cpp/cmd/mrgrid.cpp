@@ -423,7 +423,7 @@ void run() {
       const size_t axis = opt[i][0];
       if (axis >= input_header.ndim())
         throw Exception("-axis {} larger than image dimensions ({})", axis, input_header.ndim());
-      std::string spec = str(opt[i][1]);
+      std::string spec = std::string(opt[i][1]);
       std::string::size_type start = 0, end;
       end = spec.find_first_of(":", start);
       if (end == std::string::npos) { // spec = delta_lower,delta_upper

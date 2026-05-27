@@ -549,7 +549,7 @@ void View::copy_focus_slot() {
   std::cout << focus.transpose().format(fmt) << "\n";
 
   QClipboard *clip = QApplication::clipboard();
-  QString input = QString::fromStdString(str(focus.transpose().format(fmt)));
+  QString input = QString::fromStdString(::fmt::format("{}", focus.transpose().format(fmt)));
   clip->setText(input);
 }
 
@@ -562,7 +562,7 @@ void View::copy_voxel_slot() {
   std::cout << focus.transpose().format(fmt) << "\n";
 
   QClipboard *clip = QApplication::clipboard();
-  QString input = QString::fromStdString(str(focus.transpose().format(fmt)));
+  QString input = QString::fromStdString(::fmt::format("{}", focus.transpose().format(fmt)));
   clip->setText(input);
 }
 

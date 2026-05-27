@@ -379,7 +379,7 @@ void run() {
 
   KeyValues keyvals;
   if (shells) {
-    std::string line = str(static_cast<size_t>(std::round((*shells)[0].get_mean())));
+    std::string line = fmt::format("{}", static_cast<size_t>(std::round((*shells)[0].get_mean())));
     for (size_t i = 1; i != (*shells).count(); ++i)
       line += fmt::format(",{}", static_cast<size_t>(std::round((*shells)[i].get_mean())));
     keyvals["Shells"] = line;
