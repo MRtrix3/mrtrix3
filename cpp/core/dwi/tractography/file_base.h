@@ -35,7 +35,7 @@ namespace MR::DWI::Tractography {
 //! \cond skip
 class ReaderBase {
 public:
-  ReaderBase() {}
+  ReaderBase() = default;
   ~ReaderBase() {
     if (in.is_open())
       in.close();

@@ -35,7 +35,7 @@ public:
       const value_type H,
       const value_type C,
       const bool norm);
-  virtual ~CFE() {}
+  virtual ~CFE() = default;
 
 protected:
   Fixel::Matrix::Reader matrix;

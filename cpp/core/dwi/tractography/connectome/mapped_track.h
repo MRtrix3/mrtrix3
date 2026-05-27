@@ -23,7 +23,7 @@ namespace MR::DWI::Tractography::Connectome {
 class Mapped_track_base {
 
 public:
-  Mapped_track_base() {}
+  Mapped_track_base() = default;
 
   void set_track_index(const size_t i) { track_index = i; }
   void set_factor(const float i) { factor = i; }

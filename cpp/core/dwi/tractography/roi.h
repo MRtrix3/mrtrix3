@@ -113,7 +113,7 @@ private:
 
 class ROISetBase {
 public:
-  ROISetBase() {}
+  ROISetBase() = default;
 
   void clear() { R.clear(); }
   [[nodiscard]] size_t size() const { return (R.size()); }
@@ -138,7 +138,7 @@ protected:
 
 class ROIUnorderedSet : public ROISetBase {
 public:
-  ROIUnorderedSet() {}
+  ROIUnorderedSet() = default;
   [[nodiscard]] bool contains(const Eigen::Vector3f &p) const {
     for (const auto &n : R)
       if (n.contains(p))
@@ -181,7 +181,7 @@ public:
     size_t next_index;
   };
 
-  ROIOrderedSet() {}
+  ROIOrderedSet() = default;
 
   void contains(const Eigen::Vector3f &p, LoopState &loop_state) const {
     // do nothing if the series of coordinates have already performed something illegal

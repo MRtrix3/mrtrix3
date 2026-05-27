@@ -48,7 +48,7 @@ public:
         triangles(std::move(that.triangles)),
         quads(std::move(that.quads)) {}
 
-  Mesh() {}
+  Mesh() = default;
 
   Mesh &operator=(Mesh &&that) noexcept {
     vertices = std::move(that.vertices);

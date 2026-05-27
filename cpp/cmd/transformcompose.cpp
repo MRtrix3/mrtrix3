@@ -29,7 +29,7 @@ using namespace App;
 
 class TransformBase {
 public:
-  virtual ~TransformBase() {}
+  virtual ~TransformBase() = default;
   virtual Eigen::Vector3d transform_point(const Eigen::Vector3d &input) = 0;
 };
 

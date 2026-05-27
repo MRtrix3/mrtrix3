@@ -150,7 +150,7 @@ public:
   SubjectVoxelImport(const std::filesystem::path &path)
       : SubjectDataImportBase(path), H(Header::open(path)), data(H.get_image<measurements_value_type>()) {}
 
-  virtual ~SubjectVoxelImport() {}
+  virtual ~SubjectVoxelImport() = default;
 
   void operator()(measurements_matrix_type::RowXpr row) const override {
     assert(v2v);

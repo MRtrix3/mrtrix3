@@ -35,11 +35,9 @@ public:
     set<ImageType>(data);
   }
 
-  Tissues(const Tissues &that)
-      : cgm(that.cgm), sgm(that.sgm), wm(that.wm), csf(that.csf), path(that.path), is_valid(that.is_valid) {}
+  Tissues(const Tissues &that) = default;
 
-  Tissues(Tissues &that)
-      : cgm(that.cgm), sgm(that.sgm), wm(that.wm), csf(that.csf), path(that.path), is_valid(that.is_valid) {}
+  Tissues(Tissues &that) = default;
 
   bool set(const float cg, const float sg, const float w, const float c, const float p) {
     if (std::isnan(cg) || std::isnan(sg) || std::isnan(w) || std::isnan(c) || std::isnan(p)) {

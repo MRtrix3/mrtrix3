@@ -34,7 +34,7 @@ public:
       : Fixel_map<Fixel>(H), dirs(directions) {}
   Fixel_TD_map(const Fixel_TD_map &) = delete;
 
-  virtual ~Fixel_TD_map() {}
+  virtual ~Fixel_TD_map() = default;
 
   virtual bool operator()(const SetDixel &in);
   using Fixel_map<Fixel>::operator();

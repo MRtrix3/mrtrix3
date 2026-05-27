@@ -211,7 +211,7 @@ public:
 
   CSD(const CSD &) = default;
 
-  ~CSD() {}
+  ~CSD() = default;
 
   template <class VectorType> void set(const VectorType &DW_signals) {
     F.head(shared.rconv.rows()) = shared.rconv * DW_signals;

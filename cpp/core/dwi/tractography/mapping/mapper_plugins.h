@@ -31,7 +31,7 @@ namespace MR::DWI::Tractography::Mapping {
 class DixelMappingPlugin {
 public:
   DixelMappingPlugin(const DWI::Directions::FastLookupSet &directions) : dirs(directions) {}
-  DixelMappingPlugin(const DixelMappingPlugin &that) : dirs(that.dirs) {}
+  DixelMappingPlugin(const DixelMappingPlugin &that) = default;
   DWI::Directions::index_type operator()(const Streamline<>::tangent_type &d) const {
     return dirs.select_direction(d.template cast<default_type>());
   }
@@ -59,13 +59,9 @@ public:
   TWIImagePluginBase(Image<float> &input_image, const tck_stat_t track_statistic)
       : statistic(track_statistic), interp(input_image), backtrack(false) {}
 
-  TWIImagePluginBase(const TWIImagePluginBase &that)
-      : statistic(that.statistic),
-        interp(that.interp),
-        backtrack(that.backtrack),
-        backtrack_mask(that.backtrack_mask) {}
+  TWIImagePluginBase(const TWIImagePluginBase &that) = default;
 
-  virtual ~TWIImagePluginBase() {}
+  virtual ~TWIImagePluginBase() = default;
 
   virtual TWIImagePluginBase *clone() const = 0;
 

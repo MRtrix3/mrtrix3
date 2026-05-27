@@ -43,10 +43,7 @@ public:
   InitElementBase() : fixel_index(std::numeric_limits<fixel_index_type>::max()) {}
   InitElementBase(const fixel_index_type fixel_index) : fixel_index(fixel_index) {}
   InitElementBase(const InitElementBase &) = default;
-  FORCE_INLINE InitElementBase &operator=(const InitElementBase &that) {
-    fixel_index = that.fixel_index;
-    return *this;
-  }
+  FORCE_INLINE InitElementBase &operator=(const InitElementBase &that) = default;
   [[nodiscard]] FORCE_INLINE fixel_index_type index() const { return fixel_index; }
   FORCE_INLINE bool operator<(const InitElementBase &that) const { return fixel_index < that.fixel_index; }
 
@@ -69,11 +66,7 @@ public:
     track_count++;
     return *this;
   }
-  FORCE_INLINE InitElementUnweighted &operator=(const InitElementUnweighted &that) {
-    BaseType::operator=(that);
-    track_count = that.track_count;
-    return *this;
-  }
+  FORCE_INLINE InitElementUnweighted &operator=(const InitElementUnweighted &that) = default;
   [[nodiscard]] FORCE_INLINE ValueType value() const { return track_count; }
 
 private:
@@ -95,11 +88,7 @@ public:
     sum_weights += increment;
     return *this;
   }
-  FORCE_INLINE InitElementWeighted &operator=(const InitElementWeighted &that) {
-    BaseType::operator=(that);
-    sum_weights = that.sum_weights;
-    return *this;
-  }
+  FORCE_INLINE InitElementWeighted &operator=(const InitElementWeighted &that) = default;
   [[nodiscard]] FORCE_INLINE ValueType value() const { return sum_weights; }
 
 private:
@@ -109,7 +98,7 @@ private:
 template <class ElementType> class InitFixelBase : public std::vector<ElementType> {
 public:
   using BaseType = std::vector<ElementType>;
-  virtual ~InitFixelBase() {}
+  virtual ~InitFixelBase() = default;
   void add(const MappedTrack &mapped_track);
   [[nodiscard]] virtual default_type norm_factor() const = 0;
 
@@ -121,7 +110,7 @@ protected:
 class InitFixelUnweighted : public InitFixelBase<InitElementUnweighted> {
 public:
   using BaseType = InitFixelBase<InitElementUnweighted>;
-  InitFixelUnweighted() {}
+  InitFixelUnweighted() = default;
   [[nodiscard]] default_type norm_factor() const override { return 1.0 / static_cast<default_type>(track_count); }
 
 private:

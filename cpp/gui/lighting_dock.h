@@ -24,7 +24,7 @@ class LightingSettings : public QFrame {
 
 public:
   LightingSettings(QWidget *parent, GL::Lighting &lighting);
-  ~LightingSettings() {}
+  ~LightingSettings() = default;
 
 protected:
   GL::Lighting &info;

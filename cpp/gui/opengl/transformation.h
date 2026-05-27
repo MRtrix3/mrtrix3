@@ -25,7 +25,7 @@ namespace MR::GUI::GL {
 
 class vec4 {
 public:
-  vec4() {}
+  vec4() = default;
   vec4(float x, float y, float z, float w) {
     v[0] = x;
     v[1] = y;
@@ -63,8 +63,8 @@ protected:
 
 class mat4 {
 public:
-  mat4() {}
-  mat4(const mat4 &a) : m(a.m) {}
+  mat4() = default;
+  mat4(const mat4 &a) = default;
   mat4(const float *p) { memcpy(m.data(), p, sizeof(m)); }
   mat4(const Eigen::Quaternionf &v) {
     const auto R = v.matrix();
@@ -86,10 +86,7 @@ public:
     }
   }
 
-  mat4 &operator=(const mat4 &a) {
-    m = a.m;
-    return *this;
-  }
+  mat4 &operator=(const mat4 &a) = default;
 
   void zero() { std::fill(std::begin(m), std::end(m), 0.0F); }
 

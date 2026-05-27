@@ -72,7 +72,7 @@ namespace {
 
 class Triangle {
 public:
-  Triangle() {}
+  Triangle() = default;
   Triangle(const GLuint x[3]) {
     index[0] = x[0];
     index[1] = x[1];

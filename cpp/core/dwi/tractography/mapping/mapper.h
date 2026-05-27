@@ -63,7 +63,7 @@ public:
   TrackMapperBase(const TrackMapperBase &) = default;
   TrackMapperBase(TrackMapperBase &&) = default;
 
-  virtual ~TrackMapperBase() {}
+  virtual ~TrackMapperBase() = default;
 
   void set_upsample_ratio(const size_t i) { upsampler.set_ratio(i); }
   void set_map_zero(const bool i) { map_zero = i; }

@@ -37,7 +37,7 @@ public:
   }
 
   TrackMapper(const TrackMapper &) = default;
-  ~TrackMapper() {}
+  ~TrackMapper() = default;
 
   void set_gaussian_FWHM(const default_type FWHM) {
     if (track_statistic != tck_stat_t::GAUSSIAN)

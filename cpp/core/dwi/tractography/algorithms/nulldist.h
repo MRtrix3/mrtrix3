@@ -94,7 +94,7 @@ public:
 
   NullDist2(const Shared &shared) : iFOD2(shared), S(shared) {}
 
-  NullDist2(const NullDist2 &that) : iFOD2(that), S(that.S) {}
+  NullDist2(const NullDist2 &that) = default;
 
   bool init() override {
     if (!get_data(source))

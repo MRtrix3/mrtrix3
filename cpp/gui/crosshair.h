@@ -27,7 +27,7 @@ class ModelViewProjection;
 
 class Crosshair {
 public:
-  Crosshair() {}
+  Crosshair() = default;
   void render(const Eigen::Vector3f &focus, const ModelViewProjection &MVP) const;
 
 protected:

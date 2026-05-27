@@ -185,7 +185,7 @@ private:
 
 template <class Im1Type, class Im2Type> class MeanSquaredNoGradient4D : public LinearBase {
 public:
-  MeanSquaredNoGradient4D() {}
+  MeanSquaredNoGradient4D() = default;
 
   template <class Params>
   default_type operator()(Params &params,

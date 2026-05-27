@@ -32,7 +32,7 @@ public:
         tracks_to_load(to_load),
         progress(!msg.empty() ? new ProgressBar(msg, tracks_to_load) : nullptr) {}
 
-  virtual ~TrackLoader() {}
+  virtual ~TrackLoader() = default;
   virtual bool operator()(Streamline<> &out) {
     if (!reader(out)) {
       progress.reset();

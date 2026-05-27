@@ -48,7 +48,7 @@ public:
 
   MapWriterBase(const MapWriterBase &) = delete;
 
-  virtual ~MapWriterBase() {}
+  virtual ~MapWriterBase() = default;
 
   // can't do this in destructor since it could potentially throw,
   // and throwing in destructor is most uncool (invokes

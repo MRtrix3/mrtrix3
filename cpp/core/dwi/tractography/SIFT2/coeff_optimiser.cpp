@@ -211,8 +211,7 @@ CoefficientOptimiserGSS::CoefficientOptimiserGSS(TckFactor &tckfactor,
     : CoefficientOptimiserBase(
           tckfactor, step_stats, coefficient_stats, nonzero_streamlines, fixels_to_exclude, sum_costs) {}
 
-CoefficientOptimiserGSS::CoefficientOptimiserGSS(const CoefficientOptimiserGSS &that)
-    : CoefficientOptimiserBase(that) {}
+CoefficientOptimiserGSS::CoefficientOptimiserGSS(const CoefficientOptimiserGSS &that) = default;
 
 double CoefficientOptimiserGSS::get_coeff_change(const SIFT::track_t track_index) const {
   LineSearchFunctor line_search_functor(track_index, master);
@@ -293,6 +292,7 @@ CoefficientOptimiserIterative::CoefficientOptimiserIterative(TckFactor &tckfacto
 {
 }
 
+// NOLINTNEXTLINE(modernize-use-equals-default): conditional member-init list under SIFT2_COEFF_OPTIMISER_DEBUG
 CoefficientOptimiserIterative::CoefficientOptimiserIterative(const CoefficientOptimiserIterative &that)
     : CoefficientOptimiserBase(that)
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG

@@ -103,8 +103,7 @@ ResampleFunctor::ResampleFunctor(Image<float> &dwi, Image<float> &anat, Image<fl
       interp_anat(anat),
       out(out) {}
 
-ResampleFunctor::ResampleFunctor(const ResampleFunctor &that)
-    : dwi(that.dwi), voxel2scanner(that.voxel2scanner), interp_anat(that.interp_anat), out(that.out) {}
+ResampleFunctor::ResampleFunctor(const ResampleFunctor &that) = default;
 
 void ResampleFunctor::operator()(const Iterator &pos) {
   assign_pos_of(pos).to(dwi, out);

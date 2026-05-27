@@ -30,8 +30,7 @@ public:
   Cost_fn_gradient_sort(const track_t i, const double g, const double gpul)
       : tck_index(i), cost_gradient(g), grad_per_unit_length(gpul) {}
 
-  Cost_fn_gradient_sort(const Cost_fn_gradient_sort &that)
-      : tck_index(that.tck_index), cost_gradient(that.cost_gradient), grad_per_unit_length(that.grad_per_unit_length) {}
+  Cost_fn_gradient_sort(const Cost_fn_gradient_sort &that) = default;
 
   void set(const track_t i, const double g, const double gpul) {
     tck_index = i;
@@ -112,7 +111,7 @@ private:
   class Sorter {
   public:
     Sorter(VecType &in) : data(in) {}
-    Sorter(const Sorter &that) : data(that.data) {}
+    Sorter(const Sorter &that) = default;
     bool operator()(const TrackIndexRange &, VecItType &) const;
 
   private:

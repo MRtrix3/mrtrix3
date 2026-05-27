@@ -44,7 +44,7 @@ extern const std::vector<std::string> known_extensions;
 class Base {
 public:
   Base(std::string_view desc) : description(desc) {}
-  virtual ~Base() {}
+  virtual ~Base() = default;
 
   const std::string description; //!< a short human-readable description of the image format
 

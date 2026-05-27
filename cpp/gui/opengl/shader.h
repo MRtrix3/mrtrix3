@@ -92,7 +92,7 @@ using Fragment = Object<gl::FRAGMENT_SHADER>;
 
 class Program {
 public:
-  Program() {}
+  Program() = default;
   Program(Program &&other) noexcept : index_(other.index_) { other.index_ = 0; }
   Program(const Program &) = delete;
   Program &operator=(const Program &) = delete;

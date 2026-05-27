@@ -212,7 +212,7 @@ private:
 
     class Shared {
     public:
-      Shared() {}
+      Shared() = default;
       ~Shared() { clear(); }
       void check_num_points(const size_t num_points) {
         if (num_points > max_num_points) {

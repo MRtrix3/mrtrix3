@@ -25,7 +25,7 @@ class QColorButton : public QPushButton {
 public:
   QColorButton(QWidget *parent = nullptr, const char *name = nullptr);                  // check_syntax off
   QColorButton(const QColor &c, QWidget *parent = nullptr, const char *name = nullptr); // check_syntax off
-  virtual ~QColorButton() {}
+  virtual ~QColorButton() = default;
 
   [[nodiscard]] QColor color() const { return (col); }
   void setColor(const QColor &c);

@@ -31,7 +31,7 @@ class Capture : public Base {
   Q_OBJECT
 public:
   Capture(Dock *parent);
-  virtual ~Capture() {}
+  virtual ~Capture() = default;
 
   static void add_commandline_options(MR::App::OptionList &options);
   virtual bool process_commandline_option(const MR::App::ParsedOption &opt);

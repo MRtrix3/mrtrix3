@@ -103,7 +103,7 @@ void usage() {
 class Direction {
 public:
   Direction() : a(NaNF) {}
-  Direction(const Direction &d) : a(d.a), v(d.v) {}
+  Direction(const Direction &d) = default;
   Direction(value_type phi, value_type theta)
       : a(1.0), v(std::cos(phi) * std::sin(theta), std::sin(phi) * std::sin(theta), std::cos(theta)) {}
   value_type a;

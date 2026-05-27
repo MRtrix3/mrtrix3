@@ -32,7 +32,7 @@ public:
 
   Scalar(Scalar &&that) noexcept : Base(std::move(static_cast<Base &&>(that))), name(std::move(that.name)) {}
 
-  Scalar() {}
+  Scalar() = default;
 
   Scalar &operator=(Scalar &&that) noexcept {
     Base::operator=(std::move(static_cast<Base &&>(that)));
@@ -40,11 +40,7 @@ public:
     return *this;
   }
 
-  Scalar &operator=(const Scalar &that) {
-    Base::operator=(that);
-    name = that.name;
-    return *this;
-  }
+  Scalar &operator=(const Scalar &that) = default;
 
   void clear() {
     Base::resize(0);

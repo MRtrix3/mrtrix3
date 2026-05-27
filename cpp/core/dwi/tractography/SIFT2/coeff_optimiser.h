@@ -75,7 +75,7 @@ public:
   CoefficientOptimiserGSS(
       TckFactor &, StreamlineStats &, StreamlineStats &, unsigned int &, fixel_mask_type &, double &);
   CoefficientOptimiserGSS(const CoefficientOptimiserGSS &);
-  ~CoefficientOptimiserGSS() {}
+  ~CoefficientOptimiserGSS() = default;
 
 private:
   double get_coeff_change(const SIFT::track_t) const;
@@ -90,7 +90,7 @@ public:
   CoefficientOptimiserQLS(
       TckFactor &, StreamlineStats &, StreamlineStats &, unsigned int &, fixel_mask_type &, double &);
   CoefficientOptimiserQLS(const CoefficientOptimiserQLS &);
-  ~CoefficientOptimiserQLS() {}
+  ~CoefficientOptimiserQLS() = default;
 
 private:
   Math::QuadraticLineSearch<double> qls;

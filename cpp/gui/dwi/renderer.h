@@ -90,9 +90,7 @@ protected:
 
   class Shader : public GL::Shader::Program {
   public:
-    Shader()
-
-    {}
+    Shader() = default;
     void start(mode_t mode,
                bool use_lighting,
                bool colour_by_direction,
@@ -119,7 +117,7 @@ private:
   class ModeBase {
   public:
     ModeBase(Renderer &parent) : parent(parent) {}
-    virtual ~ModeBase() {}
+    virtual ~ModeBase() = default;
 
     virtual void initGL() = 0;
     virtual void bind() = 0;

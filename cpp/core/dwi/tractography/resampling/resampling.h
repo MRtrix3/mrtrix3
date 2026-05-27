@@ -38,7 +38,7 @@ protected:
   Base() {}
 
 public:
-  virtual ~Base() {}
+  virtual ~Base() = default;
 
   [[nodiscard]] virtual Base *clone() const = 0;
   virtual bool operator()(const Streamline<> &, Streamline<> &) const = 0;

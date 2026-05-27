@@ -32,7 +32,7 @@ class NameParser {
 public:
   class Item {
   public:
-    Item() {}
+    Item() = default;
 
     void set_str(std::string_view s) {
       clear();

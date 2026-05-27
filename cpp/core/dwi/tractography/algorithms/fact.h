@@ -67,7 +67,7 @@ public:
       properties["method"] = "FACT";
     }
 
-    ~Shared() {}
+    ~Shared() = default;
 
     size_t num_vec;
     float dot_threshold;
@@ -77,7 +77,7 @@ public:
 
   FACT(const FACT &that) : MethodBase(that.S), S(that.S), source(S.source, S.source_mask) {}
 
-  ~FACT() {}
+  ~FACT() = default;
 
   bool init() override {
     if (!get_data(source))

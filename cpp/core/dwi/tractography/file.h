@@ -37,13 +37,13 @@ namespace MR::DWI::Tractography {
 template <class ValueType> class ReaderInterface {
 public:
   virtual bool operator()(Streamline<ValueType> &) = 0;
-  virtual ~ReaderInterface() {}
+  virtual ~ReaderInterface() = default;
 };
 
 template <class ValueType> class WriterInterface {
 public:
   virtual bool operator()(const Streamline<ValueType> &) = 0;
-  virtual ~WriterInterface() {}
+  virtual ~WriterInterface() = default;
 };
 
 //! A class to read streamlines data

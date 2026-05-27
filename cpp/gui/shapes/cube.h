@@ -27,7 +27,7 @@ namespace MR::GUI::Shapes {
 
 class Cube {
 public:
-  Cube() {}
+  Cube() = default;
 
   void generate();
 

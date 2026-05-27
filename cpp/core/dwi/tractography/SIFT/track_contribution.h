@@ -111,7 +111,7 @@ public:
 
   TrackContribution() : Min_mem_array<Track_fixel_contribution>(), total_contribution(0.0), total_length(0.0) {}
 
-  ~TrackContribution() {}
+  ~TrackContribution() = default;
 
   [[nodiscard]] float get_total_contribution() const { return total_contribution; }
   [[nodiscard]] float get_total_length() const { return total_length; }

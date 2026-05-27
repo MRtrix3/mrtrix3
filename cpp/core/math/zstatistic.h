@@ -30,7 +30,7 @@ default_type G2z(const default_type G, const size_t rank, const default_type dof
 
 class Zstatistic {
 public:
-  Zstatistic() {}
+  Zstatistic() = default;
   Zstatistic(const Zstatistic &) = delete;
   Zstatistic &operator=(const Zstatistic &) = delete;
 
@@ -43,7 +43,7 @@ public:
 protected:
   class LookupBase {
   public:
-    virtual ~LookupBase() {}
+    virtual ~LookupBase() = default;
     using array_type = Eigen::Array<default_type, Eigen::Dynamic, 1>;
     virtual default_type operator()(const default_type) const = 0;
 

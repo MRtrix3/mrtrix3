@@ -29,7 +29,7 @@ public:
 
   Upsampler(const Upsampler &that) : M(that.M), temp(M.rows(), 3), data(4, 3) {}
 
-  ~Upsampler() {}
+  ~Upsampler() = default;
 
   bool operator()(const Streamline<> &, Streamline<> &) const override;
   bool valid() const override { return true; }

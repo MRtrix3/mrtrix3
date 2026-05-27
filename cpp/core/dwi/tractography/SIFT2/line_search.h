@@ -32,7 +32,7 @@ class LineSearchFunctor {
 public:
   class Result {
   public:
-    Result() {}
+    Result() = default;
     Result &operator+=(const Result &that) {
       cost += that.cost;
       first_deriv += that.first_deriv;

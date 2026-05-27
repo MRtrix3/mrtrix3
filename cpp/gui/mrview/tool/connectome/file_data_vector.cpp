@@ -44,14 +44,7 @@ FileDataVector::FileDataVector(const std::filesystem::path &file)
   calc_stats();
 }
 
-FileDataVector &FileDataVector::operator=(const FileDataVector &that) {
-  base_t::operator=(that);
-  name = that.name;
-  min = that.min;
-  mean = that.mean;
-  max = that.max;
-  return *this;
-}
+FileDataVector &FileDataVector::operator=(const FileDataVector &that) = default;
 FileDataVector &FileDataVector::operator=(FileDataVector &&that) noexcept {
   base_t::operator=(std::move(static_cast<base_t &&>(that)));
   name = that.name;

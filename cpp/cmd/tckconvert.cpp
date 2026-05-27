@@ -299,7 +299,7 @@ public:
     return false;
   }
 
-  ~ASCIIReader() {}
+  ~ASCIIReader() = default;
 
 private:
   File::ParsedName::List list;
@@ -325,7 +325,7 @@ public:
     return true;
   }
 
-  ~ASCIIWriter() {}
+  ~ASCIIWriter() = default;
 
 private:
   File::NameParser parser;

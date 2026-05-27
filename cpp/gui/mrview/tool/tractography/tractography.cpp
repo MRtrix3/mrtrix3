@@ -299,7 +299,7 @@ Tractography::Tractography(Dock *parent) : Base(parent) {
   update_geometry_type_gui();
 }
 
-Tractography::~Tractography() {}
+Tractography::~Tractography() = default;
 
 void Tractography::draw(const Projection &transform, bool is_3D, int, int) {
   GL::assert_context_is_current();

@@ -37,7 +37,7 @@ namespace MR::DWI::Tractography::Connectome {
 class Metric {
 
 public:
-  Metric() {}
+  Metric() = default;
 
   double operator()(const Streamline<> &tck, const NodePair &nodes) const {
     if (scale_by_invnodevol) {

@@ -748,7 +748,7 @@ Connectome::Connectome(Dock *parent)
   GL::assert_context_is_current();
 }
 
-Connectome::~Connectome() {}
+Connectome::~Connectome() = default;
 
 void Connectome::draw(const Projection &projection, bool /*is_3D*/, int /*axis*/, int /*slice*/) {
   GL::assert_context_is_current();

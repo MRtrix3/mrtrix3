@@ -28,7 +28,7 @@ enum TransformProjectionType { rigid_nonsym, affine, affine_nonsym, none };
 
 class AffineUpdate {
 public:
-  AffineUpdate() {}
+  AffineUpdate() = default;
 
   bool operator()(Eigen::Matrix<default_type, Eigen::Dynamic, 1> &newx,
                   const Eigen::Matrix<default_type, Eigen::Dynamic, 1> &x,

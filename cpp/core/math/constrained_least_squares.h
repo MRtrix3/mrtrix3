@@ -66,7 +66,7 @@ public:
   using matrix_type = Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic>;
   using vector_type = Eigen::Matrix<value_type, Eigen::Dynamic, 1>;
 
-  Problem() {}
+  Problem() = default;
   //! set up constrained least-squares problem
   /*! With this constructor, equality constraints (if present) are
    * assumed to have been included as the last \e N rows of the

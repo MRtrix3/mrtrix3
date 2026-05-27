@@ -29,7 +29,7 @@ namespace Registration::Transform {
 // we use double exponential smoothing to get rid of small oscillations
 class DoubleExpSmoothSlopeCheck {
 public:
-  DoubleExpSmoothSlopeCheck() {}
+  DoubleExpSmoothSlopeCheck() = default;
 
   void set_parameters(const Eigen::Matrix<default_type, Eigen::Dynamic, 1> &slope_threshold,
                       default_type alpha_in,

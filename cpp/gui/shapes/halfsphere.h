@@ -34,7 +34,7 @@ public:
   // TODO Initialise sphere & buffers at construction;
   //   currently it doesn't seem to work as a GL context has not yet been
   //   created, so gl::GenBuffers() returns zero
-  HalfSphere() {}
+  HalfSphere() = default;
 
   void LOD(const size_t);
 
@@ -44,7 +44,7 @@ public:
 
   class Vertex {
   public:
-    Vertex() {}
+    Vertex() = default;
     Vertex(const float x[3]) {
       p[0] = x[0];
       p[1] = x[1];

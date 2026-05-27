@@ -35,7 +35,7 @@ Displayable::Displayable(const std::filesystem::path &filepath)
   colour[2] = 0;
 }
 
-Displayable::~Displayable() {}
+Displayable::~Displayable() = default;
 
 bool Displayable::Shader::need_update(const Displayable &object) const {
   return flags != object.flags() || colourmap != object.colourmap;

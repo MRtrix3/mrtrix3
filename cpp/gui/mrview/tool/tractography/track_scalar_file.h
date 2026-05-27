@@ -33,7 +33,7 @@ class TrackScalarFileOptions : public QGroupBox, public ColourMapButtonObserver,
 
 public:
   TrackScalarFileOptions(Tractography *);
-  virtual ~TrackScalarFileOptions() {}
+  virtual ~TrackScalarFileOptions() = default;
 
   void set_tractogram(Tractogram *selected_tractogram);
 

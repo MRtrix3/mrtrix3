@@ -157,12 +157,7 @@ Worker::Thresholds::Thresholds(Tractography::Properties &properties)
     min_weight = to<float>(properties["min_weight"]);
 }
 
-Worker::Thresholds::Thresholds(const Worker::Thresholds &that)
-    : max_length(that.max_length),
-      min_length(that.min_length),
-      max_weight(that.max_weight),
-      min_weight(that.min_weight),
-      step_size(that.step_size) {}
+Worker::Thresholds::Thresholds(const Worker::Thresholds &that) = default;
 
 bool Worker::Thresholds::operator()(const Streamline<> &in) const {
   const float length = Tractography::length(in);

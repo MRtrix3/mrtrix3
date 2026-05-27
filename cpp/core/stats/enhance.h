@@ -24,7 +24,7 @@ namespace MR::Stats {
 //   is performed.
 class EnhancerBase {
 public:
-  virtual ~EnhancerBase() {}
+  virtual ~EnhancerBase() = default;
 
   // Perform statistical enhancement once for each column in the matrix
   //   (correspond to different contrasts)

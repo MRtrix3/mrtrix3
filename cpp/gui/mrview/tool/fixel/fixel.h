@@ -31,7 +31,7 @@ public:
 
   Fixel(Dock *parent);
 
-  virtual ~Fixel() {}
+  virtual ~Fixel() = default;
 
   void draw(const Projection &transform, bool is_3D, int, int) override;
   void draw_colourbars() override;

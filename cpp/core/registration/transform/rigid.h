@@ -26,7 +26,7 @@ namespace MR::Registration::Transform {
 
 class RigidLinearNonSymmetricUpdate {
 public:
-  RigidLinearNonSymmetricUpdate() {}
+  RigidLinearNonSymmetricUpdate() = default;
 
   bool operator()(Eigen::Matrix<default_type, Eigen::Dynamic, 1> &newx,
                   const Eigen::Matrix<default_type, Eigen::Dynamic, 1> &x,

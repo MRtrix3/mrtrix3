@@ -25,7 +25,7 @@ class EnergyComputer {
 public:
   EnergyComputer(Stats &s) : stats(s) {}
 
-  virtual ~EnergyComputer() {}
+  virtual ~EnergyComputer() = default;
 
   virtual double stageAdd(const Point_t &pos, const Point_t &dir) { return 0.0; }
 

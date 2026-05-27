@@ -27,7 +27,7 @@ namespace MR::Registration::Metric {
 class LinearBase {
 
 public:
-  LinearBase() {}
+  LinearBase() = default;
 
   /** requires_precompute:
     using requires_precompute = int;

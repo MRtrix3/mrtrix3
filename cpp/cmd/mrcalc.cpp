@@ -573,7 +573,7 @@ class Evaluator {
 public:
   Evaluator(std::string_view name, std::string_view format_string, bool Z2R = false, bool R2Z = false)
       : id(name), format(format_string), ZtoR(Z2R), RtoZ(R2Z) {}
-  virtual ~Evaluator() {}
+  virtual ~Evaluator() = default;
   const std::string id;
   const std::string format;
   bool ZtoR, RtoZ;

@@ -145,7 +145,7 @@ struct Checker {
 
 class Texture {
 public:
-  Texture() {}
+  Texture() = default;
   ~Texture() { clear(); }
   Texture(const Texture &) {}
   Texture(Texture &&t) noexcept : id(t.id), tex_type(t.tex_type) { t.id = t.tex_type = 0; }
@@ -209,7 +209,7 @@ protected:
 
 class VertexBuffer {
 public:
-  VertexBuffer() {}
+  VertexBuffer() = default;
   ~VertexBuffer() { clear(); }
   VertexBuffer(const VertexBuffer &) {}
   VertexBuffer(VertexBuffer &&t) noexcept : id(t.id) { t.id = 0; }
@@ -249,7 +249,7 @@ protected:
 
 class VertexArrayObject {
 public:
-  VertexArrayObject() {}
+  VertexArrayObject() = default;
   ~VertexArrayObject() { clear(); }
   VertexArrayObject(const VertexArrayObject &) {}
   VertexArrayObject(VertexArrayObject &&t) noexcept : id(t.id) { t.id = 0; }
@@ -289,7 +289,7 @@ protected:
 
 class IndexBuffer {
 public:
-  IndexBuffer() {}
+  IndexBuffer() = default;
   ~IndexBuffer() { clear(); }
   IndexBuffer(const IndexBuffer &) {}
   IndexBuffer(IndexBuffer &&t) noexcept : id(t.id) { t.id = 0; }
@@ -329,7 +329,7 @@ protected:
 
 class FrameBuffer {
 public:
-  FrameBuffer() {}
+  FrameBuffer() = default;
   ~FrameBuffer() { clear(); }
   FrameBuffer(const FrameBuffer &) {}
   FrameBuffer(FrameBuffer &&t) noexcept : id(t.id) { t.id = 0; }

@@ -31,7 +31,7 @@ using matrix_type = Math::Stats::matrix_type;
 
 class EnhancerBase : public Stats::EnhancerBase {
 public:
-  virtual ~EnhancerBase() {}
+  virtual ~EnhancerBase() = default;
 
 protected:
   // Alternative functor that also takes the threshold value;
@@ -54,7 +54,7 @@ public:
           const default_type h)
       : enhancer(base), dH(dh), E(e), H(h) {}
   Wrapper(const Wrapper &that) = default;
-  virtual ~Wrapper() {}
+  virtual ~Wrapper() = default;
 
   void set_tfce_parameters(const value_type d_height, const value_type extent, const value_type height) {
     dH = d_height;

@@ -45,7 +45,7 @@ namespace MR::Math::Stats {
 class SubjectDataImportBase {
 public:
   SubjectDataImportBase(const std::filesystem::path &path) : path(path) {}
-  virtual ~SubjectDataImportBase() {}
+  virtual ~SubjectDataImportBase() = default;
 
   /*!
    * @param row the row of a matrix into which the data from this
@@ -76,7 +76,7 @@ protected:
 //   processing.
 class CohortDataImport {
 public:
-  CohortDataImport() {}
+  CohortDataImport() = default;
 
   // Needs to be its own function rather than the constructor
   //   so that the correct template type can be invoked explicitly

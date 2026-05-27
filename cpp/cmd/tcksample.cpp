@@ -156,7 +156,7 @@ public:
 
   SamplerBase(const SamplerBase &that) = default;
 
-  virtual ~SamplerBase() {}
+  virtual ~SamplerBase() = default;
 
   // Note: While these are shown as virtual,
   //   in the current implementation these are not executed using inheritance,

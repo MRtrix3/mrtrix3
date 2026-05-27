@@ -36,7 +36,7 @@ constexpr ssize_t layout_spacing = 3;
 
 class CameraInteractor {
 public:
-  CameraInteractor() {}
+  CameraInteractor() = default;
   [[nodiscard]] bool active() const { return _active; }
   virtual void deactivate();
   virtual bool slice_move_event(const ModelViewProjection &projection, float inc);

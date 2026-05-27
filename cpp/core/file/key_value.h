@@ -31,7 +31,7 @@ namespace KeyValue {
 
 class Reader {
 public:
-  Reader() {}
+  Reader() = default;
   Reader(const std::filesystem::path &file, std::string_view first_line = "") { open(file, first_line); }
   void open(const std::filesystem::path &file, std::string_view first_line = "");
 

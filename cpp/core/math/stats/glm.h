@@ -212,7 +212,7 @@ public:
   SharedBase(SharedBase &&) = delete;
   SharedBase &operator=(const SharedBase &) = delete;
   SharedBase &operator=(SharedBase &&) = delete;
-  virtual ~SharedBase() {}
+  virtual ~SharedBase() = default;
 };
 
 using SharedHomoscedasticBase = Math::Zstatistic;
@@ -254,7 +254,7 @@ public:
     assert(y.rows() == M.rows());
   }
 
-  virtual ~TestBase() {}
+  virtual ~TestBase() = default;
 
   // This gets utilised within the multi-threading back-end to clone derived classes
   //   based on a pointer to this base class
@@ -311,7 +311,7 @@ public:
     Shared(Shared &&) = delete;
     Shared &operator=(const Shared &) = delete;
     Shared &operator=(Shared &&) = delete;
-    ~Shared() final {}
+    ~Shared() final = default;
     std::vector<matrix_type> XtX;
     std::vector<size_t> dof;
     std::vector<default_type> one_over_dof;
@@ -375,7 +375,7 @@ public:
     Shared(Shared &&) = delete;
     Shared &operator=(const Shared &) = delete;
     Shared &operator=(Shared &&) = delete;
-    ~Shared() final {}
+    ~Shared() final = default;
     std::vector<size_t> inputs_per_vg;
     vector_type Rnn_sums;
     vector_type inv_Rnn_sums;
@@ -482,7 +482,7 @@ public:
     Shared(Shared &&) = delete;
     Shared &operator=(const Shared &) = delete;
     Shared &operator=(Shared &&) = delete;
-    ~Shared() final {}
+    ~Shared() final = default;
   };
 
   TestVariableHomoscedastic(const measurements_matrix_type &measurements,
@@ -546,7 +546,7 @@ public:
     Shared(Shared &&) = delete;
     Shared &operator=(const Shared &) = delete;
     Shared &operator=(Shared &&) = delete;
-    ~Shared() final {}
+    ~Shared() final = default;
   };
 
   TestVariableHeteroscedastic(const measurements_matrix_type &measurements,

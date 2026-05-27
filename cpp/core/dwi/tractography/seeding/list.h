@@ -25,7 +25,7 @@ namespace MR::DWI::Tractography::Seeding {
 class List {
 
 public:
-  List() {}
+  List() = default;
 
   List(const List &) = delete;
 

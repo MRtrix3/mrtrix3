@@ -47,11 +47,7 @@ public:
     return (((*this)[2] == V[2]) ? (((*this)[1] == V[1]) ? ((*this)[0] < V[0]) : ((*this)[1] < V[1]))
                                  : ((*this)[2] < V[2]));
   }
-  Voxel &operator=(const Voxel &V) {
-    Eigen::Vector3i::operator=(V);
-    length = V.length;
-    return *this;
-  }
+  Voxel &operator=(const Voxel &V) = default;
   void operator+=(const default_type l) const { length += l; }
   void normalize() const { length = 1.0; }
   default_type get_length() const { return length; }
@@ -72,11 +68,7 @@ public:
   VoxelDEC(const Eigen::Vector3i &V, const Streamline<>::tangent_type &d, const float l)
       : Voxel(V, l), colour(vec2DEC(d)) {}
 
-  VoxelDEC &operator=(const VoxelDEC &V) {
-    Voxel::operator=(V);
-    colour = V.colour;
-    return *this;
-  }
+  VoxelDEC &operator=(const VoxelDEC &V) = default;
   VoxelDEC &operator=(const Eigen::Vector3i &V) {
     Voxel::operator=(V);
     colour.setZero();
@@ -119,11 +111,7 @@ public:
 
   VoxelDir(const Eigen::Vector3i &V, const Streamline<>::tangent_type &d, const default_type l) : Voxel(V, l), dir(d) {}
 
-  VoxelDir &operator=(const VoxelDir &V) {
-    Voxel::operator=(V);
-    dir = V.dir;
-    return *this;
-  }
+  VoxelDir &operator=(const VoxelDir &V) = default;
   VoxelDir &operator=(const Eigen::Vector3i &V) {
     Voxel::operator=(V);
     dir.setZero();
@@ -171,11 +159,7 @@ public:
   bool valid() const { return (dir != invalid); }
   dir_index_type get_dir() const { return dir; }
 
-  Dixel &operator=(const Dixel &V) {
-    Voxel::operator=(V);
-    dir = V.dir;
-    return *this;
-  }
+  Dixel &operator=(const Dixel &V) = default;
   Dixel &operator=(const Eigen::Vector3i &V) {
     Voxel::operator=(V);
     dir = invalid;
@@ -206,11 +190,7 @@ public:
 
   VoxelTOD(const Eigen::Vector3i &V, const vector_type &t, const default_type l) : Voxel(V, l), sh_coefs(t) {}
 
-  VoxelTOD &operator=(const VoxelTOD &V) {
-    Voxel::operator=(V);
-    sh_coefs = V.sh_coefs;
-    return (*this);
-  }
+  VoxelTOD &operator=(const VoxelTOD &V) = default;
   VoxelTOD &operator=(const Eigen::Vector3i &V) {
     Voxel::operator=(V);
     sh_coefs.resize(0);

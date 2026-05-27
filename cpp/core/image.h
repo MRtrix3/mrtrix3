@@ -375,7 +375,7 @@ Image<ValueType>::Image(const std::shared_ptr<Image<ValueType>::Buffer> &buffer_
         ", using " + (is_direct_io() ? "" : "in") + "direct IO");
 }
 
-template <typename ValueType> Image<ValueType>::~Image() {}
+template <typename ValueType> Image<ValueType>::~Image() = default;
 
 template <typename ValueType> Image<ValueType>::Buffer::~Buffer() {
   if (!get_io())

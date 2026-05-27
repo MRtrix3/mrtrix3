@@ -59,7 +59,7 @@ public:
   Base(std::string_view in, std::string_view desc, const size_t attempts)
       : type(desc), name(in), max_attempts(attempts) {}
 
-  virtual ~Base() {}
+  virtual ~Base() = default;
 
   default_type vol() const { return volume; }
   size_t num() const { return count; }

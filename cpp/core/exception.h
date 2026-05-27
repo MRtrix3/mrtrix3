@@ -83,7 +83,7 @@ extern void (*report_to_user_func)(std::string_view msg, int type);
 
 class Exception : public std::exception {
 public:
-  Exception() {}
+  Exception() = default;
 
   Exception(std::string msg) { description.push_back(std::move(msg)); }
   Exception(const Exception &previous_exception, std::string msg) : description(previous_exception.description) {

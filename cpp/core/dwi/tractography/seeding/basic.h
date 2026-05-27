@@ -54,7 +54,7 @@ class Random_per_voxel : public Base {
 public:
   Random_per_voxel(const std::filesystem::path &in, const size_t num_per_voxel);
   virtual bool get_seed(Eigen::Vector3f &p) const override;
-  virtual ~Random_per_voxel() {}
+  virtual ~Random_per_voxel() = default;
 
 private:
   mutable Mask mask;
@@ -66,7 +66,7 @@ private:
 class Grid_per_voxel : public Base {
 public:
   Grid_per_voxel(const std::filesystem::path &in, const size_t os_factor);
-  virtual ~Grid_per_voxel() {}
+  virtual ~Grid_per_voxel() = default;
   virtual bool get_seed(Eigen::Vector3f &p) const override;
 
 private:

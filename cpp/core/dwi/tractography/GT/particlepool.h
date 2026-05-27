@@ -32,11 +32,11 @@ namespace MR::DWI::Tractography::GT {
  */
 class ParticlePool {
 public:
-  ParticlePool() {}
+  ParticlePool() = default;
 
   ParticlePool(const ParticlePool &) = delete;
   ParticlePool &operator=(const ParticlePool &) = delete;
-  ~ParticlePool() {}
+  ~ParticlePool() = default;
 
   /**
    * @brief Creates a new particle and returns a pointer to its address.

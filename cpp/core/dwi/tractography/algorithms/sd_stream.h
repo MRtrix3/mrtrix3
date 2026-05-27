@@ -82,7 +82,7 @@ public:
 
   SDStream(const SDStream &that) : MethodBase(that.S), S(that.S), source(S.source, S.source_mask) {}
 
-  ~SDStream() {}
+  ~SDStream() = default;
 
   bool init() override {
     if (!get_data(source))

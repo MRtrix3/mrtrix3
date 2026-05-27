@@ -28,7 +28,7 @@ class Mapper {
 public:
   Mapper(const Tck2nodes_base &a, const Metric &b) : tck2nodes(a), metric(b) {}
 
-  Mapper(const Mapper &that) : tck2nodes(that.tck2nodes), metric(that.metric) {}
+  Mapper(const Mapper &that) = default;
 
   bool operator()(const Tractography::Streamline<float> &in, Mapped_track_nodepair &out) {
     assert(tck2nodes.provides_pair());

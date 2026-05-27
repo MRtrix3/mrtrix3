@@ -103,7 +103,7 @@ public:
   }
   ModelBase(const ModelBase &) = delete;
 
-  virtual ~ModelBase() {}
+  virtual ~ModelBase() = default;
 
   void perform_FOD_segmentation(Image<float> &);
   void scale_FDs_by_GM();

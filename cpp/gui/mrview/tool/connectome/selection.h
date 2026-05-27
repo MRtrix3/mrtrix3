@@ -109,7 +109,7 @@ class NodeSelectionSettingsFrame : public QFrame {
 
 public:
   NodeSelectionSettingsFrame(QWidget *, NodeSelectionSettings &);
-  ~NodeSelectionSettingsFrame() {}
+  ~NodeSelectionSettingsFrame() = default;
 
 protected:
   NodeSelectionSettings &data;

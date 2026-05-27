@@ -47,7 +47,7 @@ public:
 
   SIFTer(const SIFTer &that) = delete;
 
-  ~SIFTer() {}
+  ~SIFTer() = default;
 
   // CORE OPERATIONS
   void perform_filtering();

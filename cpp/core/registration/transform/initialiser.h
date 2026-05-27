@@ -27,7 +27,7 @@ struct LinearInitialisationParams {
   struct TranslationInit {
     bool unmasked1{false};
     bool unmasked2{false};
-    TranslationInit() {} // TODO config parsing
+    TranslationInit() = default; // TODO config parsing
   };
 
   struct RotationInit {
@@ -41,7 +41,7 @@ struct LinearInitialisationParams {
       double translation_extent{0.05};
       struct global_search {
         size_t iterations{10000};
-        global_search() {}
+        global_search() = default;
       };
       global_search global;
       rot_search() : angles(5) {
@@ -53,7 +53,7 @@ struct LinearInitialisationParams {
       }
     };
     rot_search search;
-    RotationInit() {} // TODO config parsing
+    RotationInit() = default; // TODO config parsing
   };
   TranslationInit init_translation;
   RotationInit init_rotation;

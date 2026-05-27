@@ -91,7 +91,7 @@ public:
   // Used for sorting clusters in order of size
   static bool largest(const Cluster &i, const Cluster &j) { return (i.size > j.size); }
 
-  Connector() {}
+  Connector() = default;
 
   // Perform connected components on vectorized binary data
   void run(std::vector<Cluster> &, std::vector<uint32_t> &) const;

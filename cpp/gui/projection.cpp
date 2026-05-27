@@ -21,7 +21,7 @@ namespace MR::GUI {
 namespace {
 class OrientationLabel {
 public:
-  OrientationLabel() {}
+  OrientationLabel() = default;
   OrientationLabel(const Eigen::Vector3f &direction, const char textlabel) : dir(direction), label(1, textlabel) {}
   Eigen::Vector3f dir;
   std::string label;

@@ -27,7 +27,7 @@ namespace MR::GUI::Shapes {
 
 class Cylinder {
 public:
-  Cylinder() {}
+  Cylinder() = default;
 
   void LOD(const size_t);
 

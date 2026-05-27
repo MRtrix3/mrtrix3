@@ -29,7 +29,7 @@ public:
 
   Fixel(const FMLS::FOD_lobe &lobe) : FixelBase(lobe) {}
 
-  Fixel(const Fixel &that) : FixelBase(that) {}
+  Fixel(const Fixel &that) = default;
 
   Fixel &operator-=(const double length) {
     TD = std::max(TD - length, 0.0);

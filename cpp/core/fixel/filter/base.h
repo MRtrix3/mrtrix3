@@ -34,9 +34,9 @@ namespace MR::Fixel::Filter {
 class Base {
 public:
   Base(std::string_view s) : message(s) {}
-  Base() {}
+  Base() = default;
 
-  virtual ~Base() {}
+  virtual ~Base() = default;
 
   void set_message(std::string_view s) { message = s; }
 

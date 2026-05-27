@@ -116,7 +116,7 @@ class AFDConnFixel : public FixelBase {
 public:
   AFDConnFixel() : FixelBase(), length(0.0) {}
   AFDConnFixel(const FMLS::FOD_lobe &lobe) : FixelBase(lobe), length(0.0) {}
-  AFDConnFixel(const AFDConnFixel &that) : FixelBase(that), length(that.length) {}
+  AFDConnFixel(const AFDConnFixel &that) = default;
 
   void add_to_selection(const value_type l) { length += l; }
   [[nodiscard]] value_type get_selected_volume(const value_type l) const {

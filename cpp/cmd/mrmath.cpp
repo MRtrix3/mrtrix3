@@ -131,7 +131,7 @@ using value_type = float;
 
 class Mean {
 public:
-  Mean() {}
+  Mean() = default;
   void operator()(value_type val) {
     if (std::isfinite(val)) {
       sum += val;
@@ -149,7 +149,7 @@ public:
 
 class Median {
 public:
-  Median() {}
+  Median() = default;
   void operator()(value_type val) {
     if (!std::isnan(val))
       values.push_back(val);
@@ -160,7 +160,7 @@ public:
 
 class Sum {
 public:
-  Sum() {}
+  Sum() = default;
   void operator()(value_type val) {
     if (std::isfinite(val))
       sum += val;
@@ -182,7 +182,7 @@ public:
 
 class RMS {
 public:
-  RMS() {}
+  RMS() = default;
   void operator()(value_type val) {
     if (std::isfinite(val)) {
       sum += Math::pow2(val);
@@ -200,7 +200,7 @@ public:
 
 class NORM2 {
 public:
-  NORM2() {}
+  NORM2() = default;
   void operator()(value_type val) {
     if (std::isfinite(val)) {
       sum += Math::pow2(val);
@@ -219,7 +219,7 @@ public:
 // Welford's algorithm to avoid catastrophic cancellation
 class Var {
 public:
-  Var() {}
+  Var() = default;
   void operator()(value_type val) {
     if (std::isfinite(val)) {
       ++count;
@@ -331,7 +331,7 @@ protected:
 
 class ImageKernelBase {
 public:
-  virtual ~ImageKernelBase() {}
+  virtual ~ImageKernelBase() = default;
   virtual void process(Header &image_in) = 0;
   virtual void write_back(Image<value_type> &out) = 0;
 };

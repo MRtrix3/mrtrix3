@@ -29,7 +29,7 @@ public:
 
   enum class status_t { INVALID, SEED_REJECTED, TRACK_REJECTED, ACCEPTED };
 
-  GeneratedTrack() {}
+  GeneratedTrack() = default;
   void clear() {
     BaseType::clear();
     seed_index = 0;

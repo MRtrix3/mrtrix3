@@ -30,12 +30,9 @@ public:
   static constexpr size_t invalid = std::numeric_limits<size_t>::max();
   DataIndex() : index(invalid) {}
   DataIndex(const size_t i) : index(i) {}
-  DataIndex(const DataIndex &i) : index(i.index) {}
+  DataIndex(const DataIndex &i) = default;
   DataIndex(DataIndex &&i) noexcept : index(i.index) { i.index = invalid; }
-  DataIndex &operator=(const DataIndex &i) {
-    index = i.index;
-    return *this;
-  }
+  DataIndex &operator=(const DataIndex &i) = default;
   DataIndex &operator=(DataIndex &&i) noexcept {
     index = i.index;
     i.index = invalid;

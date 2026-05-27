@@ -42,9 +42,7 @@ public:
 
   class Shader : public Displayable::Shader {
   public:
-    Shader()
-
-    {}
+    Shader() = default;
     std::string vertex_shader_source(const Displayable &) override;
     std::string geometry_shader_source(const Displayable &) override;
     std::string fragment_shader_source(const Displayable &) override;
