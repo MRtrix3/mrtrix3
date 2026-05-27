@@ -212,7 +212,7 @@ private:
 
     class Shared {
     public:
-      Shared() : max_num_points(0), LOD(0), element_counts(nullptr) {}
+      Shared() {}
       ~Shared() { clear(); }
       void check_num_points(const size_t num_points) {
         if (num_points > max_num_points) {
@@ -231,9 +231,9 @@ private:
       [[nodiscard]] size_t points_per_vertex() const { return Math::pow2(LOD + 1); }
 
     protected:
-      size_t max_num_points;
-      size_t LOD;
-      GLsizei *element_counts;
+      size_t max_num_points{0};
+      size_t LOD{0};
+      GLsizei *element_counts{nullptr};
       GLuint **element_indices;
 
     private:

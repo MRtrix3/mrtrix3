@@ -43,15 +43,15 @@ protected:
 
   class Shader : public Displayable::Shader {
   public:
-    Shader(const Volume &mode) : mode(mode), active_clip_planes(0), cliphighlight(true), clipintersectionmode(false) {}
+    Shader(const Volume &mode) : mode(mode) {}
     virtual std::string vertex_shader_source(const Displayable &object);
     virtual std::string fragment_shader_source(const Displayable &object);
     [[nodiscard]] virtual bool need_update(const Displayable &object) const;
     virtual void update(const Displayable &object);
     const Volume &mode;
-    size_t active_clip_planes;
-    bool cliphighlight;
-    bool clipintersectionmode;
+    size_t active_clip_planes{0};
+    bool cliphighlight{true};
+    bool clipintersectionmode{false};
   } volume_shader;
 
   [[nodiscard]] Tool::View *get_view_tool() const;

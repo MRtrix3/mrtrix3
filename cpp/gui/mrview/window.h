@@ -246,19 +246,20 @@ private:
   GL::Font font;
 
   const Qt::KeyboardModifiers FocusModifier, MoveModifier, RotateModifier;
-  MouseAction mouse_action;
+  MouseAction mouse_action{NoAction};
 
   Eigen::Vector3f focal_point, camera_target;
   Eigen::Quaternionf orient;
-  float field_of_view;
-  int anatomical_plane, annotations;
-  ColourBars::Position colourbar_position, tools_colourbar_position;
-  bool snap_to_image_axes_and_voxel;
+  float field_of_view{100.0};
+  int anatomical_plane{2}, annotations;
+  ColourBars::Position colourbar_position{ColourBars::Position::BottomRight},
+      tools_colourbar_position{ColourBars::Position::TopRight};
+  bool snap_to_image_axes_and_voxel{true};
   std::filesystem::path current_folder;
 
   Eigen::Array3f background_colour;
 
-  Tool::CameraInteractor *camera_interactor;
+  Tool::CameraInteractor *camera_interactor{nullptr};
 
   QMenu *image_menu;
 
@@ -309,12 +310,12 @@ private:
   template <class Event> void grab_mouse_state(Event *event);
   template <class Event> void update_mouse_state(Event *event);
 
-  Tool::Base *tool_has_focus;
+  Tool::Base *tool_has_focus{nullptr};
 
   std::vector<double> render_times;
   double best_FPS, best_FPS_time;
-  bool show_FPS;
-  size_t current_option;
+  bool show_FPS{false};
+  size_t current_option{0};
 
   friend class ImageBase;
   friend class Mode::Base;

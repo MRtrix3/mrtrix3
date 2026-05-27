@@ -23,7 +23,7 @@ namespace MR::Math {
 default_type erfinv(const default_type p) {
   class Shared {
   public:
-    Shared() : m_Y(0.0891314744949340820313) {
+    Shared() {
       m_P << -0.000508781949658280665617, -0.00836874819741736770379, 0.0334806625409744615033,
           -0.0126926147662974029034, -0.0365637971411762664006, 0.0219878681111168899165, 0.00822687874676915743155,
           -0.00538772965071242932965;
@@ -39,7 +39,7 @@ default_type erfinv(const default_type p) {
   private:
     Eigen::Array<default_type, 8, 1> m_P;
     Eigen::Array<default_type, 10, 1> m_Q;
-    const default_type m_Y;
+    const default_type m_Y{0.0891314744949340820313};
   };
   static Shared const shared;
 
@@ -58,7 +58,7 @@ default_type erfinv(const default_type p) {
 default_type erfcinv(const default_type q) {
   class Shared {
   public:
-    Shared() : N(6), m_Y(N), m_P(N), m_Q(N) {
+    Shared() : m_Y(N), m_P(N), m_Q(N) {
       // Region 0: q >= 0.25
       m_Y[0] = 2.249481201171875;
       m_P[0].resize(9);
@@ -129,7 +129,7 @@ default_type erfcinv(const default_type q) {
     }
 
   private:
-    const size_t N;
+    const size_t N{6};
     std::vector<default_type> m_Y;
     std::vector<Eigen::Array<default_type, Eigen::Dynamic, 1>> m_P, m_Q;
   };

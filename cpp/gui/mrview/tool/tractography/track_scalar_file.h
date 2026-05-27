@@ -64,7 +64,7 @@ private slots:
 
 protected:
   Tractography *tool;
-  Tractogram *tractogram;
+  Tractogram *tractogram{nullptr};
   Tool::Base::VBoxLayout *main_box;
   QGroupBox *colour_groupbox;
   QAction *show_colour_bar;

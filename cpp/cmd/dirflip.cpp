@@ -69,7 +69,7 @@ public:
       : directions(directions),
         target_num_shuffles(target_num_shuffles),
         preserve(preserve),
-        num_shuffles(0),
+
         progress("optimising directions for eddy-currents", target_num_shuffles),
         best_signs(directions.rows(), 1),
         best_eddy(std::numeric_limits<value_type>::max()) {}
@@ -105,7 +105,7 @@ protected:
   const Eigen::MatrixXd &directions;
   const size_t target_num_shuffles;
   const size_t preserve;
-  size_t num_shuffles;
+  size_t num_shuffles{0};
   ProgressBar progress;
   std::vector<int> best_signs;
   value_type best_eddy;

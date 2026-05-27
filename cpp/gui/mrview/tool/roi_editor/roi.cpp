@@ -26,7 +26,7 @@
 
 namespace MR::GUI::MRView::Tool {
 
-ROI::ROI(Dock *parent) : Base(parent), in_insert_mode(false) {
+ROI::ROI(Dock *parent) : Base(parent) {
 
   auto *main_box = new VBoxLayout(this);
   auto *layout = new HBoxLayout;

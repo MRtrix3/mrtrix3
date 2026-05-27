@@ -28,7 +28,7 @@ enum TransformProjectionType { rigid_nonsym, affine, affine_nonsym, none };
 
 class AffineUpdate {
 public:
-  AffineUpdate() : use_convergence_check(false), projection_type(TransformProjectionType::affine) {}
+  AffineUpdate() {}
 
   bool operator()(Eigen::Matrix<default_type, Eigen::Dynamic, 1> &newx,
                   const Eigen::Matrix<default_type, Eigen::Dynamic, 1> &x,
@@ -56,8 +56,8 @@ public:
   }
 
 private:
-  bool use_convergence_check;
-  TransformProjectionType projection_type;
+  bool use_convergence_check{false};
+  TransformProjectionType projection_type{TransformProjectionType::affine};
   Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> control_points;
   Eigen::Vector3d coherence_distance;
   Eigen::Matrix<default_type, 4, 1> stop_len, recip_spacing;

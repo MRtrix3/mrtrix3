@@ -67,7 +67,7 @@ bool ODF_Item::valid() const {
   return dixel->dirs->size() != 0U;
 }
 
-ODF_Item::DixelPlugin::DixelPlugin(const MR::Header &H) : dir_type(dir_t::NONE), shell_index(0) {
+ODF_Item::DixelPlugin::DixelPlugin(const MR::Header &H) {
   try {
     grad = MR::DWI::get_DW_scheme(H);
     shells = std::make_unique<MR::DWI::Shells>(grad);

@@ -25,7 +25,7 @@ namespace MR::DWI::Tractography::Seeding {
 class List {
 
 public:
-  List() : total_volume(0.0), total_count(0) {}
+  List() {}
 
   List(const List &) = delete;
 
@@ -51,8 +51,8 @@ public:
 
 private:
   std::vector<std::unique_ptr<Base>> seeders;
-  float total_volume;
-  uint32_t total_count;
+  float total_volume{0.0};
+  uint32_t total_count{0};
 };
 
 } // namespace MR::DWI::Tractography::Seeding

@@ -250,11 +250,11 @@ public:
     }
   };
 
-  MSMT_CSD(const Shared &shared_data) : niter(0), shared(shared_data), solver(shared.problem) {}
+  MSMT_CSD(const Shared &shared_data) : shared(shared_data), solver(shared.problem) {}
 
   void operator()(const Eigen::VectorXd &data, Eigen::VectorXd &output) { niter = solver(output, data); }
 
-  size_t niter;
+  size_t niter{0};
   const Shared &shared;
 
 private:

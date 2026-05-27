@@ -34,11 +34,11 @@ public:
   // TODO Initialise sphere & buffers at construction;
   //   currently it doesn't seem to work as a GL context has not yet been
   //   created, so gl::GenBuffers() returns zero
-  HalfSphere() : num_indices(0) {}
+  HalfSphere() {}
 
   void LOD(const size_t);
 
-  size_t num_indices;
+  size_t num_indices{0};
   GL::VertexBuffer vertex_buffer;
   GL::IndexBuffer index_buffer;
 

@@ -31,7 +31,7 @@ class TrackMapper : public Mapping::TrackMapperTWI {
 public:
   template <class HeaderType>
   TrackMapper(const HeaderType &template_image, const contrast_t c)
-      : BaseMapper(template_image, c, tck_stat_t::GAUSSIAN), gaussian_denominator(0.0) {
+      : BaseMapper(template_image, c, tck_stat_t::GAUSSIAN) {
     assert(c == contrast_t::SCALAR_MAP || c == contrast_t::SCALAR_MAP_COUNT || c == contrast_t::FOD_AMP ||
            c == contrast_t::CURVATURE);
   }
@@ -70,7 +70,7 @@ public:
   }
 
 protected:
-  default_type gaussian_denominator;
+  default_type gaussian_denominator{0.0};
   void gaussian_smooth_factors(const Streamline<> &) const;
 
   // Overload corresponding functions in TrackMapperTWI

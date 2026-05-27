@@ -56,8 +56,8 @@ private:
     bool operator()(const Streamline<> &) const;
 
   private:
-    float max_length, min_length;
-    float max_weight, min_weight;
+    float max_length, min_length{0.0F};
+    float max_weight, min_weight{0.0F};
     float step_size;
   } thresholds;
 

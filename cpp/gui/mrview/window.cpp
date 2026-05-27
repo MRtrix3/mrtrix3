@@ -214,20 +214,12 @@ Window::Window()
 #endif
       MoveModifier(get_modifier("MRViewMoveModifierKey", Qt::ShiftModifier)),
       RotateModifier(get_modifier("MRViewRotateModifierKey", Qt::ControlModifier)),
-      mouse_action(NoAction),
+
       focal_point(Eigen::Vector3f::Constant(NaNF)),
       camera_target(Eigen::Vector3f::Constant(NaNF)),
       orient(NaN, NaN, NaN, NaN),
-      field_of_view(100.0),
-      anatomical_plane(2),
-      colourbar_position(ColourBars::Position::BottomRight),
-      tools_colourbar_position(ColourBars::Position::TopRight),
-      snap_to_image_axes_and_voxel(true),
-      camera_interactor(nullptr),
-      tool_has_focus(nullptr),
-      best_FPS(NaN),
-      show_FPS(false),
-      current_option(0) {
+
+      best_FPS(NaN) {
   main = this;
   GUI::App::set_main_window(this, glarea);
   GUI::Dialog::init();

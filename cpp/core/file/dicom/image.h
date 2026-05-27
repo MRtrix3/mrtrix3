@@ -138,12 +138,12 @@ public:
 class Image : public Frame {
 
 public:
-  Image(Series *parent = nullptr) : series(parent), images_in_mosaic(0), is_BE(false), in_frames(false) {}
+  Image(Series *parent = nullptr) : series(parent) {}
 
   Series *series;
-  size_t images_in_mosaic;
+  size_t images_in_mosaic{0};
   std::string sequence_name, manufacturer;
-  bool is_BE, in_frames;
+  bool is_BE{false}, in_frames{false};
   std::vector<float> mosaic_slices_timing;
 
   std::vector<uint32_t> frame_dim;

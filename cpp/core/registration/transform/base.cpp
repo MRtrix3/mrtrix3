@@ -23,8 +23,7 @@ Base::Base(size_t number_of_parameters)
       trafo_half(decltype(trafo_half)::Identity()),
       trafo_half_inverse(decltype(trafo_half_inverse)::Identity()),
       centre(decltype(centre)::Zero()),
-      optimiser_weights(decltype(optimiser_weights)::Zero(number_of_parameters)),
-      nonsymmetric(false) {}
+      optimiser_weights(decltype(optimiser_weights)::Zero(number_of_parameters)) {}
 
 Eigen::Matrix<default_type, 4, 1> Base::get_jacobian_vector_wrt_params(const Eigen::Vector3d &) {
   throw Exception("FIXME: get_jacobian_vector_wrt_params not implemented for this metric");

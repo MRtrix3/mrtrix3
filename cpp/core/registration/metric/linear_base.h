@@ -27,7 +27,7 @@ namespace MR::Registration::Metric {
 class LinearBase {
 
 public:
-  LinearBase() : weighted(false) {}
+  LinearBase() {}
 
   /** requires_precompute:
     using requires_precompute = int;
@@ -66,7 +66,7 @@ public:
 
 protected:
   Eigen::VectorXd mc_weights;
-  bool weighted;
+  bool weighted{false};
 };
 
 } // namespace MR::Registration::Metric

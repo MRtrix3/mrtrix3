@@ -44,9 +44,8 @@ CoefficientOptimiserBase::CoefficientOptimiserBase(TckFactor &tckfactor,
       sum_costs(sum_costs),
       local_stats_steps(),
       local_stats_coefficients(),
-      local_nonzero_count(0),
-      local_to_exclude(fixel_mask_type::Zero(fixels_to_exclude.size())),
-      local_sum_costs(0.0) {
+
+      local_to_exclude(fixel_mask_type::Zero(fixels_to_exclude.size())) {
 }
 
 CoefficientOptimiserBase::CoefficientOptimiserBase(const CoefficientOptimiserBase &that)
@@ -66,9 +65,7 @@ CoefficientOptimiserBase::CoefficientOptimiserBase(const CoefficientOptimiserBas
       sum_costs(that.sum_costs),
       local_stats_steps(),
       local_stats_coefficients(),
-      local_nonzero_count(0),
-      local_to_exclude(fixel_mask_type::Zero(that.fixels_to_exclude.size())),
-      local_sum_costs(0.0) {
+      local_to_exclude(fixel_mask_type::Zero(that.fixels_to_exclude.size())) {
 }
 
 CoefficientOptimiserBase::~CoefficientOptimiserBase() {

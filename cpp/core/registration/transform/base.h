@@ -185,7 +185,7 @@ protected:
   Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> trafo_half_inverse;
   Eigen::Vector3d centre;
   Eigen::VectorXd optimiser_weights;
-  bool nonsymmetric;
+  bool nonsymmetric{false};
 };
 //! @}
 } // namespace MR::Registration::Transform

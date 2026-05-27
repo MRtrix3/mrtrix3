@@ -140,7 +140,7 @@ public:
                   const std::optional<std::filesystem::path> &wbft_path)
       : DWI::Tractography::SIFT::ModelBase<AFDConnFixel>(fod_buffer, dirs),
         have_wbft(wbft_path.has_value()),
-        all_fixels(false),
+
         mapper(fod_buffer, dirs),
         v_fod(fod_buffer) {
     if (have_wbft) {
@@ -160,7 +160,7 @@ public:
 
 private:
   const bool have_wbft;
-  bool all_fixels;
+  bool all_fixels{false};
   DWI::Tractography::Mapping::TrackMapperBase mapper;
   Image<value_type> v_fod;
   std::unique_ptr<DWI::FMLS::Segmenter> fmls;

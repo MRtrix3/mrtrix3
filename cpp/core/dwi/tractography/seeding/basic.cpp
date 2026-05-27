@@ -65,9 +65,7 @@ bool SeedMask::get_seed(Eigen::Vector3f &p) const {
 Random_per_voxel::Random_per_voxel(const std::filesystem::path &in, const size_t num_per_voxel)
     : Base(in.filename().string(), "random per voxel", attempts_per_seed.at(seed_attempt_t::FIXED)),
       mask(in),
-      num(num_per_voxel),
-      inc(0),
-      expired(false) {
+      num(num_per_voxel) {
   Base::count = get_count(mask) * num_per_voxel;
   mask.index(0) = 0;
   mask.index(1) = 0;
@@ -114,8 +112,7 @@ Grid_per_voxel::Grid_per_voxel(const std::filesystem::path &in, const size_t os_
       os(os_factor),
       pos(os, os, os),
       offset(-0.5F + (1.0F / static_cast<float>(2 * os))),
-      step(1.0F / static_cast<float>(os)),
-      expired(false) {
+      step(1.0F / static_cast<float>(os)) {
   Base::count = get_count(mask) * Math::pow3(os_factor);
 }
 
@@ -158,11 +155,11 @@ bool Grid_per_voxel::get_seed(Eigen::Vector3f &p) const {
 }
 
 Rejection_per_voxel::Rejection_per_voxel(const std::filesystem::path &in)
-    : Base(in.filename().string(), "rejection sampling", attempts_per_seed.at(seed_attempt_t::RANDOM)),
+    : Base(in.filename().string(), "rejection sampling", attempts_per_seed.at(seed_attempt_t::RANDOM))
 #ifdef REJECTION_SAMPLING_USE_INTERPOLATION
-      interp(in),
+          interp(in)
 #endif
-      max(0.0) {
+{
   auto vox = Image<float>::open(in);
   if (!(vox.ndim() == 3 || (vox.ndim() == 4 && vox.size(3) == 1)))
     throw Exception("Seed image must be a 3D image");
@@ -274,9 +271,7 @@ CoordinatesLoader::CoordinatesLoader(const std::filesystem::path &cds_path) //
 Count_per_coord::Count_per_coord(const std::filesystem::path &path, const size_t streamlines_per_coord)
     : Base(path.filename().string(), "fixed streamlines per coordinate", attempts_per_seed.at(seed_attempt_t::FIXED)),
       CoordinatesLoader(path),
-      current_coord(0),
-      num_at_coord(0),
-      expired(false),
+
       streamlines_per_coordinate(streamlines_per_coord) {
   if (have_weights())
     throw Exception("Seeding fixed # streamlines per coordinates"

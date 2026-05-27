@@ -39,7 +39,7 @@ private:
   double &cf_reg_tv;
 
   // Each thread needs a local copy of these
-  double tikhonov_sum, tv_sum;
+  double tikhonov_sum{0.0}, tv_sum{0.0};
 };
 
 } // namespace MR::DWI::Tractography::SIFT2

@@ -69,7 +69,7 @@ protected:
 
   int lmax;
   size_t nrows, ncols, nf;
-  double beta, mu, dE;
+  double beta, mu, dE{0.0};
   Eigen::MatrixXd K, Ak;
   Eigen::VectorXd y, t, d, fk;
 

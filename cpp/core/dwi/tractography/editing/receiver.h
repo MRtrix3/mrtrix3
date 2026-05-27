@@ -35,11 +35,9 @@ public:
       : writer(path, properties),
         number(n),
         skip(s),
-        // Need to use local counts instead of writer class members due to track cropping
-        count(0),
-        total_count(0),
+
         crop(!properties.mask.empty()),
-        segments(0),
+
         progress(std::string("       0 read,        0 written") + (crop ? ",        0 segments" : "")) {}
 
   ~Receiver() {
@@ -56,9 +54,9 @@ private:
   Writer<> writer;
   const uint64_t number;
   uint64_t skip;
-  uint64_t count, total_count;
+  uint64_t count{0}, total_count{0};
   bool crop;
-  uint64_t segments;
+  uint64_t segments{0};
   ProgressBar progress;
 };
 

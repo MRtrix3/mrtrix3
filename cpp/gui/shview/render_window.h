@@ -66,12 +66,12 @@ protected slots:
 
 protected:
   RenderFrame *render_frame;
-  QDialog *lighting_dialog;
+  QDialog *lighting_dialog{nullptr};
   QActionGroup *lod_group, *lmax_group, *screenshot_OS_group;
   QAction *colour_by_direction_action, *response_action;
 
   std::string name;
-  int current;
+  int current{0};
   Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> values;
   bool is_response;
 

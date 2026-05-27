@@ -83,7 +83,7 @@ size_t threads_to_execute() { return (Backend::valid() ? 0 : number_of_threads()
 void (*Backend::previous_print_func)(std::string_view msg) = nullptr;
 void (*Backend::previous_report_to_user_func)(std::string_view msg, int type) = nullptr;
 
-Backend::Backend() : refcount(0) {
+Backend::Backend() {
   DEBUG("initialising threads...");
 
   std::atomic<uint8_t> a;

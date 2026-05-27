@@ -36,7 +36,7 @@ constexpr ssize_t layout_spacing = 3;
 
 class CameraInteractor {
 public:
-  CameraInteractor() : _active(false) {}
+  CameraInteractor() {}
   [[nodiscard]] bool active() const { return _active; }
   virtual void deactivate();
   virtual bool slice_move_event(const ModelViewProjection &projection, float inc);
@@ -46,13 +46,13 @@ public:
   virtual bool rotate_event(const ModelViewProjection &projection);
 
 protected:
-  bool _active;
+  bool _active{false};
   void set_active(bool onoff) { _active = onoff; }
 };
 
 class Dock : public QDockWidget {
 public:
-  Dock(const QString &name, bool floating) : QDockWidget(name, Window::main), tool(nullptr) {
+  Dock(const QString &name, bool floating) : QDockWidget(name, Window::main) {
     Window::main->addDockWidget(Qt::RightDockWidgetArea, this);
     setFloating(floating);
   }
@@ -60,7 +60,7 @@ public:
 
   void closeEvent(QCloseEvent *) override;
 
-  Base *tool;
+  Base *tool{nullptr};
 };
 
 class Base : public QFrame {
@@ -159,7 +159,7 @@ class ActionWrapper : public QAction {
   Q_OBJECT
 public:
   ActionWrapper(QActionGroup *parent, std::string_view name, std::string_view description, int index)
-      : QAction(std::string(name).c_str(), parent), dock(nullptr) {
+      : QAction(std::string(name).c_str(), parent) {
     setCheckable(true);
     setShortcut(tr(std::string("Ctrl+F" + str(index)).c_str()));
     setStatusTip(tr(std::string(description).c_str()));
@@ -171,7 +171,7 @@ public:
   }
 
   virtual Dock *create(bool floating) = 0;
-  Dock *dock;
+  Dock *dock{nullptr};
 
 public slots:
   void visibility_slot(bool);

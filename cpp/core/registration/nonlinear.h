@@ -48,15 +48,10 @@ class NonLinear {
 
 public:
   NonLinear()
-      : is_initialised(false),
-        max_iter(1, 50),
+      : max_iter(1, 50),
         scale_factor(3),
-        update_smoothing(2.0),
-        disp_smoothing(1.0),
-        gradient_step(0.5),
-        do_reorientation(false),
-        fod_lmax(3),
-        use_cc(false) {
+
+        fod_lmax(3) {
     scale_factor[0] = 0.25;
     scale_factor[1] = 0.5;
     scale_factor[2] = 1.0;
@@ -530,16 +525,16 @@ protected:
     return false;
   }
 
-  bool is_initialised;
+  bool is_initialised{false};
   std::vector<uint32_t> max_iter;
   std::vector<default_type> scale_factor;
-  default_type update_smoothing;
-  default_type disp_smoothing;
-  default_type gradient_step;
+  default_type update_smoothing{2.0};
+  default_type disp_smoothing{1.0};
+  default_type gradient_step{0.5};
   Eigen::MatrixXd aPSF_directions;
-  bool do_reorientation;
+  bool do_reorientation{false};
   std::vector<uint32_t> fod_lmax;
-  bool use_cc;
+  bool use_cc{false};
   std::optional<std::filesystem::path> diagnostics_image_dir;
 
   std::vector<size_t> cc_extent;

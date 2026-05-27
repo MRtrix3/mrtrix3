@@ -29,10 +29,7 @@ SharedBase::SharedBase(const std::filesystem::path &diff_path,
       source_mask(make_implicit_mask(source, source_mask_config)),
       properties(property_set),
       init_dir(Eigen::Vector3f::Constant(NaN)),
-      min_num_points_preds(0),
-      max_num_points_preds(0),
-      min_num_points_postds(0),
-      max_num_points_postds(0),
+
       min_dist(NaNF),
       max_dist(NaNF),
       max_angle_1o(NaNF),
@@ -43,11 +40,9 @@ SharedBase::SharedBase(const std::filesystem::path &diff_path,
       min_radius(NaNF),
       threshold(NaNF),
       init_threshold(NaNF),
-      unidirectional(false),
-      rk4(false),
-      stop_on_all_include(false),
+
       implicit_max_num_seeds(properties.find("max_num_seeds") == properties.end()),
-      curvature_constraint(curvature_constraint_t::POSTHOC_THRESHOLD),
+
       downsampler(1)
 #ifdef DEBUG_TERMINATIONS
       ,

@@ -61,8 +61,7 @@ public:
       : directions(directions),
         subset(num_subsets),
         best_energy(std::numeric_limits<value_type>::max()),
-        target_num_permutations(target_num_permutations),
-        num_permutations(0) {
+        target_num_permutations(target_num_permutations) {
     size_t s = 0;
     for (ssize_t n = 0; n < directions.rows(); ++n) {
       subset[s++].push_back(n);
@@ -108,7 +107,7 @@ protected:
   std::vector<std::vector<size_t>> subset, best_subset;
   value_type best_energy;
   const size_t target_num_permutations;
-  size_t num_permutations;
+  size_t num_permutations{0};
   std::unique_ptr<ProgressBar> progress;
 };
 

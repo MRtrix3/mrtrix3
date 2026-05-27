@@ -616,8 +616,7 @@ private:
 class ReceiverBase {
 public:
   ReceiverBase(const size_t num_tracks, const bool ordered, const std::filesystem::path &path)
-      : received(0),
-        path(path),
+      : path(path),
         expected(num_tracks),
         process_ordered(ordered),
         progress("Sampling values underlying streamlines", num_tracks) {}
@@ -637,7 +636,7 @@ protected:
     ++progress;
   }
 
-  size_t received;
+  size_t received{0};
   const std::filesystem::path path;
 
 private:

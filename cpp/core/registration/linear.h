@@ -57,16 +57,7 @@ enum LinearRobustMetricEstimatorType { L1, L2, LP, None };
 enum OptimiserAlgoType { bbgd, gd, none };
 
 struct StageSetting {
-  StageSetting()
-      : stage_iterations(1),
-        gd_max_iter(500),
-        scale_factor(1.0),
-        optimisers(1, OptimiserAlgoType::bbgd),
-        optimiser_default(OptimiserAlgoType::bbgd),
-        optimiser_first(OptimiserAlgoType::bbgd),
-        optimiser_last(OptimiserAlgoType::gd),
-        loop_density(1.0),
-        fod_lmax(-1) {}
+  StageSetting() : optimisers(1, OptimiserAlgoType::bbgd) {}
 
   std::string info(const bool &do_reorientation = true) {
     std::string st;
@@ -84,12 +75,13 @@ struct StageSetting {
     }
     return st;
   }
-  size_t stage_iterations, gd_max_iter;
-  default_type scale_factor;
+  size_t stage_iterations{1}, gd_max_iter{500};
+  default_type scale_factor{1.0};
   std::vector<OptimiserAlgoType> optimisers;
-  OptimiserAlgoType optimiser_default, optimiser_first, optimiser_last;
-  default_type loop_density;
-  ssize_t fod_lmax;
+  OptimiserAlgoType optimiser_default{OptimiserAlgoType::bbgd}, optimiser_first{OptimiserAlgoType::bbgd},
+      optimiser_last{OptimiserAlgoType::gd};
+  default_type loop_density{1.0};
+  ssize_t fod_lmax{-1};
   std::vector<std::filesystem::path> diagnostics_image_paths;
 };
 
@@ -101,13 +93,7 @@ public:
   Linear()
       : stages(3),
         kernel_extent(3, 1),
-        grad_tolerance(1.0e-6),
-        step_tolerance(1.0e-10),
-        log_stream(nullptr),
-        init_translation_type(Transform::Init::mass),
-        init_rotation_type(Transform::Init::none),
-        robust_estimate(false),
-        do_reorientation(false),
+
         // CONF option: RegAnalyseDescent
         // CONF default: 0 (false)
         // CONF Linear registration: write comma separated gradient descent parameters and gradients
@@ -579,12 +565,12 @@ protected:
   std::vector<StageSetting> stages;
   std::vector<MultiContrastSetting> contrasts, stage_contrasts;
   std::vector<size_t> kernel_extent;
-  default_type grad_tolerance;
-  default_type step_tolerance;
-  std::streambuf *log_stream;
-  Transform::Init::InitType init_translation_type, init_rotation_type;
-  bool robust_estimate;
-  bool do_reorientation;
+  default_type grad_tolerance{1.0e-6};
+  default_type step_tolerance{1.0e-10};
+  std::streambuf *log_stream{nullptr};
+  Transform::Init::InitType init_translation_type{Transform::Init::mass}, init_rotation_type{Transform::Init::none};
+  bool robust_estimate{false};
+  bool do_reorientation{false};
   Eigen::MatrixXd aPSF_directions;
   const bool analyse_descent;
 

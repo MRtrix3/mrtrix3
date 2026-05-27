@@ -63,9 +63,7 @@ public:
   Stats(const double T0, const double T1, const uint64_t maxiter)
       : Text(T1),
         Tint(T0),
-        EextTot(0.0),
-        EintTot(0.0),
-        n_iter(0),
+
         n_max(maxiter),
         progress("running MH sampler", n_max / iter_bigstep) {
     for (int k = 0; k != 5; k++)
@@ -231,12 +229,12 @@ public:
 protected:
   mutable std::mutex mutex;
   double Text, Tint;
-  double EextTot, EintTot;
+  double EextTot{0.0}, EintTot{0.0};
   double alpha;
 
   std::array<unsigned long, 5> n_gen;
   std::array<unsigned long, 5> n_acc;
-  unsigned long n_iter;
+  unsigned long n_iter{0};
   const uint64_t n_max;
 
   ProgressBar progress;

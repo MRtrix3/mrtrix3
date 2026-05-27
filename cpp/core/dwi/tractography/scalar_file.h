@@ -129,8 +129,7 @@ public:
   ScalarWriter(const std::filesystem::path &path, const Properties &properties)
       : WriterBase<T>(path),
         buffer_capacity(File::Config::get_int("TrackWriterBufferSize", 16777216) / sizeof(value_type)),
-        buffer(new value_type[buffer_capacity + 1]),
-        buffer_size(0) {
+        buffer(new value_type[buffer_capacity + 1]) {
     File::OFStream out;
     try {
       out.open(path, std::ios::out | std::ios::binary | std::ios::trunc);
@@ -171,7 +170,7 @@ public:
 protected:
   const size_t buffer_capacity;
   std::unique_ptr<value_type[]> buffer;
-  size_t buffer_size;
+  size_t buffer_size{0};
   int64_t current_offset;
 
   void add_scalar(const value_type &s) { format_scalar(s, buffer[buffer_size++]); }

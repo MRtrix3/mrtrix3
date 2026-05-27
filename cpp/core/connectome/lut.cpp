@@ -66,12 +66,7 @@ LUT::file_format LUT::guess_file_format(const std::filesystem::path &path) {
   class Column {
   public:
     Column()
-        : numeric(true),
-          integer(true),
-          min(std::numeric_limits<default_type>::infinity()),
-          max(-std::numeric_limits<default_type>::infinity()),
-          sum_lengths(0),
-          count(0) {}
+        : min(std::numeric_limits<default_type>::infinity()), max(-std::numeric_limits<default_type>::infinity()) {}
 
     void operator()(std::string_view entry) {
       try {
@@ -108,9 +103,9 @@ LUT::file_format LUT::guess_file_format(const std::filesystem::path &path) {
     }
 
   private:
-    bool numeric, integer;
+    bool numeric{true}, integer{true};
     default_type min, max;
-    size_t sum_lengths, count;
+    size_t sum_lengths{0}, count{0};
   };
 
   std::ifstream in_lut(path, std::ios_base::in);

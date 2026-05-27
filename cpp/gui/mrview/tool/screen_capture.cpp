@@ -27,8 +27,7 @@
 
 namespace MR::GUI::MRView::Tool {
 
-Capture::Capture(Dock *parent)
-    : Base(parent), rotation_type(RotationType::World), translation_type(TranslationType::Voxel), is_playing(false) {
+Capture::Capture(Dock *parent) : Base(parent) {
   auto *main_box = new VBoxLayout(this);
 
   auto *rotate_group_box = new QGroupBox(tr("Rotate"));

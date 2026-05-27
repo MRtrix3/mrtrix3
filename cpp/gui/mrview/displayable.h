@@ -262,9 +262,9 @@ public:
   float display_midpoint, display_range;
   float transparent_intensity, opaque_intensity, alpha;
   std::array<GLubyte, 3> colour;
-  size_t colourmap;
-  bool show;
-  bool show_colour_bar;
+  size_t colourmap{0};
+  bool show{true};
+  bool show_colour_bar{true};
 
 signals:
   void scalingChanged();
@@ -272,7 +272,7 @@ signals:
 protected:
   std::filesystem::path filepath;
   float value_min, value_max;
-  uint32_t flags_;
+  uint32_t flags_{0x00000000};
 
   void set_bit(uint32_t &field, uint32_t bit, bool value) {
     if (value)

@@ -35,7 +35,7 @@ namespace MR::DWI::Tractography {
 //! \cond skip
 class ReaderBase {
 public:
-  ReaderBase() : current_index(0) {}
+  ReaderBase() {}
   ~ReaderBase() {
     if (in.is_open())
       in.close();
@@ -48,15 +48,14 @@ public:
 protected:
   std::ifstream in;
   DataType dtype;
-  uint64_t current_index;
+  uint64_t current_index{0};
 };
 
 template <typename ValueType = float> class WriterBase {
 public:
   using value_type = ValueType;
 
-  WriterBase(const std::filesystem::path &path)
-      : count(0), total_count(0), path(path), dtype(DataType::from<ValueType>()), count_offset(0), open_success(false) {
+  WriterBase(const std::filesystem::path &path) : path(path), dtype(DataType::from<ValueType>()) {
     dtype.set_byte_order_native();
     if (dtype != DataType::Float32LE && dtype != DataType::Float32BE && dtype != DataType::Float64LE &&
         dtype != DataType::Float64BE)
@@ -115,13 +114,13 @@ public:
 
   void skip() { ++total_count; }
 
-  uint64_t count, total_count;
+  uint64_t count{0}, total_count{0};
 
 protected:
   std::filesystem::path path;
   DataType dtype;
-  int64_t count_offset;
-  bool open_success;
+  int64_t count_offset{0};
+  bool open_success{false};
 
   void verify_stream(const File::OFStream &out) {
     if (!out.good())

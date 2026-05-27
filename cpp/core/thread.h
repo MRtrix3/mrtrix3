@@ -83,7 +83,7 @@ public:
   static void (*previous_report_to_user_func)(std::string_view msg, int type);
 
 protected:
-  size_t refcount;
+  size_t refcount{0};
 
   static std::unique_ptr<Backend> backend;
   static std::mutex mutex;

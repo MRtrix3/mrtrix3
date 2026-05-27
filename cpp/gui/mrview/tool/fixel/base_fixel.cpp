@@ -25,15 +25,8 @@ BaseFixel::BaseFixel(const std::filesystem::path &filepath, Fixel &fixel_tool)
       slice_fixel_indices(3),
       slice_fixel_sizes(3),
       slice_fixel_counts(3),
-      colour_type(FixelColourType::Direction),
-      scale_type(FixelScaleType::Unity),
-      colour_type_index(0),
-      scale_type_index(0),
-      threshold_type_index(0),
-      fixel_tool(fixel_tool),
-      voxel_size_length_multipler(1.F),
-      user_line_length_multiplier(1.F),
-      line_thickness(0.0015F) {
+
+      fixel_tool(fixel_tool) {
   set_allowed_features(true, true, false);
   colourmap = 1;
   alpha = 1.0F;

@@ -232,13 +232,12 @@ struct LoopAlongAxisRange {
     const size_t from, to;
     const std::tuple<ImageType &...> vox;
     const ssize_t size0;
-    bool ok;
+    bool ok{true};
     FORCE_INLINE Run(const size_t axis_from, const size_t axis_to, const std::tuple<ImageType &...> &vox)
         : from(axis_from),
           to((axis_to != 0U) ? axis_to : std::get<0>(vox).ndim()),
           vox(vox),
-          size0(std::get<0>(vox).size(from)),
-          ok(true) {
+          size0(std::get<0>(vox).size(from)) {
       for (size_t n = from; n < to; ++n)
         MR::apply_for_each(set_pos(n, 0), vox);
     }
@@ -312,9 +311,9 @@ struct LoopAlongDynamicAxes {
     const std::tuple<ImageType &...> vox;
     const size_t from;
     const ssize_t size0;
-    bool ok;
+    bool ok{true};
     FORCE_INLINE Run(const std::vector<size_t> &axes, const std::tuple<ImageType &...> &vox)
-        : axes(axes), vox(vox), from(axes[0]), size0(std::get<0>(vox).size(from)), ok(true) {
+        : axes(axes), vox(vox), from(axes[0]), size0(std::get<0>(vox).size(from)) {
       for (auto axis : axes)
         MR::apply_for_each(set_pos(axis, 0), vox);
     }

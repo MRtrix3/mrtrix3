@@ -83,7 +83,7 @@ protected:
   QSlider *opacity_slider;
   AdjustButton *brush_size_button;
   int current_axis, current_slice;
-  bool in_insert_mode, insert_mode_value;
+  bool in_insert_mode{false}, insert_mode_value;
   Eigen::Vector3f current_origin, prev_pos;
   float current_slice_loc;
 

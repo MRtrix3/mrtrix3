@@ -41,7 +41,7 @@ public:
         std_rv(0.0, 0.0),
         min(Inf, Inf),
         max(-Inf, -Inf),
-        count(0),
+
         is_complex(is_complex),
         ignore_zero(ignorezero) {}
 
@@ -116,7 +116,7 @@ public:
 
 private:
   complex_type mean, delta, delta2, m2, std, std_rv, min, max;
-  size_t count;
+  size_t count{0};
   const bool is_complex, ignore_zero;
   std::vector<float> values;
 };

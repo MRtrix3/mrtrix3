@@ -37,7 +37,7 @@ namespace MR::DWI::Tractography::Connectome {
 class Metric {
 
 public:
-  Metric() : scale_by_length(false), scale_by_invlength(false), scale_by_invnodevol(false), scale_by_file(false) {}
+  Metric() {}
 
   double operator()(const Streamline<> &tck, const NodePair &nodes) const {
     if (scale_by_invnodevol) {
@@ -119,7 +119,7 @@ public:
   }
 
 private:
-  bool scale_by_length, scale_by_invlength, scale_by_invnodevol, scale_by_file;
+  bool scale_by_length{false}, scale_by_invlength{false}, scale_by_invnodevol{false}, scale_by_file{false};
   Eigen::VectorXd node_volumes;
   std::optional<std::filesystem::path> file_path;
   std::optional<Eigen::VectorXd> file_values;

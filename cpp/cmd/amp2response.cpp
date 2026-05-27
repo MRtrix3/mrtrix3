@@ -126,19 +126,18 @@ public:
           dirs(dirs),
           volumes(volumes),
           M(Eigen::MatrixXd::Zero(Math::ZSH::NforL(lmax), Math::ZSH::NforL(lmax))),
-          b(Eigen::VectorXd::Zero(M.rows())),
-          count(0) {}
+          b(Eigen::VectorXd::Zero(M.rows())) {}
 
     const int lmax;
     const Eigen::MatrixXd &dirs;
     const std::vector<size_t> &volumes;
     Eigen::MatrixXd M;
     Eigen::VectorXd b;
-    size_t count;
+    size_t count{0};
   };
 
   Accumulator(Shared &shared)
-      : S(shared), amplitudes(S.volumes.size()), b(S.b), M(S.M), count(0), rotated_dirs_cartesian(S.dirs.rows(), 3) {}
+      : S(shared), amplitudes(S.volumes.size()), b(S.b), M(S.M), rotated_dirs_cartesian(S.dirs.rows(), 3) {}
 
   ~Accumulator() {
     // accumulate results from all threads:
@@ -195,7 +194,7 @@ protected:
   Shared &S;
   Eigen::VectorXd amplitudes, b;
   Eigen::MatrixXd M, transform;
-  size_t count;
+  size_t count{0};
   Eigen::Matrix<default_type, Eigen::Dynamic, 3> rotated_dirs_cartesian;
 };
 

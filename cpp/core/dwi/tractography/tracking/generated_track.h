@@ -29,7 +29,7 @@ public:
 
   enum class status_t { INVALID, SEED_REJECTED, TRACK_REJECTED, ACCEPTED };
 
-  GeneratedTrack() : seed_index(0), status(status_t::INVALID) {}
+  GeneratedTrack() {}
   void clear() {
     BaseType::clear();
     seed_index = 0;
@@ -83,8 +83,8 @@ public:
   }
 
 private:
-  size_t seed_index;
-  status_t status;
+  size_t seed_index{0};
+  status_t status{status_t::INVALID};
 };
 
 } // namespace MR::DWI::Tractography::Tracking

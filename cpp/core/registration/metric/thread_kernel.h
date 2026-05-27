@@ -78,7 +78,7 @@ public:
       : metric(metric),
         params(parameters),
         cost_function(overall_cost_function.size()),
-        cnt(0),
+
         gradient(overall_gradient.size()),
         overall_cost_function(overall_cost_function),
         overall_gradient(overall_gradient),
@@ -312,7 +312,7 @@ protected:
   ParamType params;
 
   Eigen::VectorXd cost_function;
-  ssize_t cnt;
+  ssize_t cnt{0};
   Eigen::VectorXd gradient;
   Eigen::VectorXd &overall_cost_function;
   Eigen::VectorXd &overall_gradient;

@@ -145,9 +145,9 @@ struct Checker {
 
 class Texture {
 public:
-  Texture() : id(0), tex_type(0) {}
+  Texture() {}
   ~Texture() { clear(); }
-  Texture(const Texture &) : id(0), tex_type(0) {}
+  Texture(const Texture &) {}
   Texture(Texture &&t) noexcept : id(t.id), tex_type(t.tex_type) { t.id = t.tex_type = 0; }
   Texture &operator=(Texture &&t) noexcept {
     clear();
@@ -203,15 +203,15 @@ public:
 
 protected:
   Context::Checker check_context;
-  GLuint id;
-  GLenum tex_type;
+  GLuint id{0};
+  GLenum tex_type{0};
 };
 
 class VertexBuffer {
 public:
-  VertexBuffer() : id(0) {}
+  VertexBuffer() {}
   ~VertexBuffer() { clear(); }
-  VertexBuffer(const VertexBuffer &) : id(0) {}
+  VertexBuffer(const VertexBuffer &) {}
   VertexBuffer(VertexBuffer &&t) noexcept : id(t.id) { t.id = 0; }
   VertexBuffer &operator=(VertexBuffer &&t) noexcept {
     clear();
@@ -244,14 +244,14 @@ public:
 
 protected:
   Context::Checker check_context;
-  GLuint id;
+  GLuint id{0};
 };
 
 class VertexArrayObject {
 public:
-  VertexArrayObject() : id(0) {}
+  VertexArrayObject() {}
   ~VertexArrayObject() { clear(); }
-  VertexArrayObject(const VertexArrayObject &) : id(0) {}
+  VertexArrayObject(const VertexArrayObject &) {}
   VertexArrayObject(VertexArrayObject &&t) noexcept : id(t.id) { t.id = 0; }
   VertexArrayObject &operator=(VertexArrayObject &&t) noexcept {
     clear();
@@ -284,14 +284,14 @@ public:
 
 protected:
   Context::Checker check_context;
-  GLuint id;
+  GLuint id{0};
 };
 
 class IndexBuffer {
 public:
-  IndexBuffer() : id(0) {}
+  IndexBuffer() {}
   ~IndexBuffer() { clear(); }
-  IndexBuffer(const IndexBuffer &) : id(0) {}
+  IndexBuffer(const IndexBuffer &) {}
   IndexBuffer(IndexBuffer &&t) noexcept : id(t.id) { t.id = 0; }
   IndexBuffer &operator=(IndexBuffer &&t) noexcept {
     clear();
@@ -324,14 +324,14 @@ public:
 
 protected:
   Context::Checker check_context;
-  GLuint id;
+  GLuint id{0};
 };
 
 class FrameBuffer {
 public:
-  FrameBuffer() : id(0) {}
+  FrameBuffer() {}
   ~FrameBuffer() { clear(); }
-  FrameBuffer(const FrameBuffer &) : id(0) {}
+  FrameBuffer(const FrameBuffer &) {}
   FrameBuffer(FrameBuffer &&t) noexcept : id(t.id) { t.id = 0; }
   FrameBuffer &operator=(FrameBuffer &&t) noexcept {
     clear();
@@ -395,7 +395,7 @@ public:
 
 protected:
   Context::Checker check_context;
-  GLuint id;
+  GLuint id{0};
 };
 
 } // namespace MR::GUI::GL

@@ -41,7 +41,7 @@ public slots:
 
 protected:
   std::vector<Projection> projections;
-  int current_plane;
+  int current_plane{0};
   GL::VertexBuffer frame_VB;
   GL::VertexArrayObject frame_VAO;
   GL::Shader::Program frame_program;

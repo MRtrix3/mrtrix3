@@ -72,8 +72,7 @@ public:
         init_upper(upper_bound),
         value_tolerance(0.001 * (upper_bound - lower_bound)),
         function_tolerance(0.0),
-        exit_outside_bounds(true),
-        max_iters(50),
+
         status(SUCCESS) {}
 
   void set_lower_bound(const ValueType i) { init_lower = i; }
@@ -281,8 +280,8 @@ public:
 
 private:
   ValueType init_lower, init_mid, init_upper, value_tolerance, function_tolerance;
-  bool exit_outside_bounds;
-  size_t max_iters;
+  bool exit_outside_bounds{true};
+  size_t max_iters{50};
   std::string message;
 
   mutable return_t status;

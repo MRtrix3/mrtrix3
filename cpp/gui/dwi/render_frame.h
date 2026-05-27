@@ -126,9 +126,10 @@ public:
 
 protected:
   float view_angle, distance, scale;
-  int lmax_computed, lod_computed;
-  mode_t mode;
-  bool recompute_mesh, recompute_amplitudes, show_axes, hide_neg_values, color_by_dir, use_lighting, normalise;
+  int lmax_computed{0}, lod_computed{0};
+  mode_t mode{mode_t::SH};
+  bool recompute_mesh{true}, recompute_amplitudes{true}, show_axes{true}, hide_neg_values{true}, color_by_dir{true},
+      use_lighting{true}, normalise;
   std::unique_ptr<MR::DWI::Directions::Set> dirs;
 
   QPointF last_pos;
@@ -140,7 +141,7 @@ protected:
   std::filesystem::path screenshot_path;
   std::unique_ptr<QImage> pix;
   std::unique_ptr<GLubyte[]> framebuffer;
-  int OS, OS_x, OS_y;
+  int OS{0}, OS_x{0}, OS_y{0};
 
   GL::VertexBuffer axes_VB;
   GL::VertexArrayObject axes_VAO;

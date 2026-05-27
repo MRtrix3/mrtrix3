@@ -592,7 +592,7 @@ private:
 class RibWriter : public WriterInterface<float> {
 public:
   RibWriter(const std::filesystem::path &path, float radius = 0.1, bool dec = false)
-      : out(path), writeDEC(dec), radius(radius), hasPoints(false), wroteHeader(false) {
+      : out(path), writeDEC(dec), radius(radius) {
     pointsFilepath = File::create_tempfile(0, ".points");
     pointsOF.open(pointsFilepath);
     pointsOF << "\"P\" [";
@@ -678,8 +678,8 @@ private:
   File::OFStream decOF;
   bool writeDEC;
   float radius;
-  bool hasPoints;
-  bool wroteHeader;
+  bool hasPoints{false};
+  bool wroteHeader{false};
 };
 
 void run() {

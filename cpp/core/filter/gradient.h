@@ -43,7 +43,7 @@ class Gradient : public Base {
 public:
   template <class HeaderType>
   Gradient(const HeaderType &in, const bool magnitude = false)
-      : Base(in), smoother(in), wrt_scanner(true), magnitude(magnitude), stdev(1, 0) {
+      : Base(in), smoother(in), magnitude(magnitude), stdev(1, 0) {
     if (in.ndim() == 4) {
       if (!magnitude) {
         axes_.resize(5);
@@ -138,7 +138,7 @@ public:
 
 protected:
   Filter::Smooth smoother;
-  bool wrt_scanner;
+  bool wrt_scanner{true};
   const bool magnitude;
   std::vector<default_type> stdev;
 };

@@ -44,7 +44,7 @@ public:
 
 class Date {
 public:
-  Date(std::string_view entry) : year(0), month(0), day(0) {
+  Date(std::string_view entry) {
     if (entry.size() >= 8) {
       year = to<uint32_t>(entry.substr(0, 4));
       month = to<uint32_t>(entry.substr(4, 2));
@@ -53,7 +53,7 @@ public:
     if (year < 1000 || month > 12 || day > 31)
       throw Exception("Error converting string \"" + entry + "\" to date");
   }
-  uint32_t year, month, day;
+  uint32_t year{0}, month{0}, day{0};
   friend std::ostream &operator<<(std::ostream &stream, const Date &item);
 };
 

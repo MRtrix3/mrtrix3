@@ -253,12 +253,12 @@ private:
   default_type lobe_merge_ratio;     // Determines whether two lobes get agglomerated into one, depending on the FOD
                                  // amplitude at the current point and how it compares to the maximal amplitudes of the
                                  // lobes to which it could be assigned
-  bool create_null_lobe;    // If this is set, an additional lobe will be created after segmentation with zero size,
-                            // containing all directions not assigned to any other lobe
-  bool create_lookup_table; // If this is set, an additional lobe will be created after segmentation with zero size,
-                            // containing all directions not assigned to any other lobe
-  bool dilate_lookup_table; // If this is set, the lookup table created for each voxel will be dilated so that all
-                            // directions correspond to the nearest positive non-zero FOD lobe
+  bool create_null_lobe{false}; // If this is set, an additional lobe will be created after segmentation with zero size,
+                                // containing all directions not assigned to any other lobe
+  bool create_lookup_table{true};  // If this is set, an additional lobe will be created after segmentation with zero
+                                   // size, containing all directions not assigned to any other lobe
+  bool dilate_lookup_table{false}; // If this is set, the lookup table created for each voxel will be dilated so that
+                                   // all directions correspond to the nearest positive non-zero FOD lobe
 
   void verify_settings() const {
     if (create_null_lobe && dilate_lookup_table)

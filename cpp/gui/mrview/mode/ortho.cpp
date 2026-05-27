@@ -28,7 +28,7 @@ bool Ortho::show_as_row = false;
 // CONF rather than as a 2x2 montage
 // CONF default: false
 
-Ortho::Ortho() : projections(3, projection), current_plane(0) {
+Ortho::Ortho() : projections(3, projection) {
   static bool conf_read = false;
   if (!conf_read)
     show_as_row = MR::File::Config::get_bool("MRViewOrthoAsRow", false);

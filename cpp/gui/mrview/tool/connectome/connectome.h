@@ -260,52 +260,54 @@ private:
   GL::VertexArrayObject cylinder_VAO;
 
   // Settings related to slab cropping
-  bool is_3D, crop_to_slab;
-  float slab_thickness;
+  bool is_3D{true}, crop_to_slab{false};
+  float slab_thickness{0.0F};
 
   // Settings for colour bars
-  bool show_node_colour_bar, show_edge_colour_bar;
+  bool show_node_colour_bar{true}, show_edge_colour_bar{true};
 
   // Current node visualisation settings
-  node_visibility_t node_visibility;
-  node_geometry_t node_geometry;
-  node_colour_t node_colour;
-  node_size_t node_size;
-  node_alpha_t node_alpha;
+  node_visibility_t node_visibility{node_visibility_t::ALL};
+  node_geometry_t node_geometry{node_geometry_t::SPHERE};
+  node_colour_t node_colour{node_colour_t::FIXED};
+  node_size_t node_size{node_size_t::FIXED};
+  node_alpha_t node_alpha{node_alpha_t::FIXED};
 
   // Values that need to be stored locally w.r.t. node visualisation
   Eigen::Array<bool, Eigen::Dynamic, 1> selected_nodes;
-  node_t selected_node_count;
+  node_t selected_node_count{0};
   NodeSelectionSettings node_selection_settings;
 
-  bool have_meshes;
-  node_visibility_matrix_operator_t node_visibility_matrix_operator;
-  node_property_matrix_operator_t node_colour_matrix_operator, node_size_matrix_operator, node_alpha_matrix_operator;
+  bool have_meshes{false};
+  node_visibility_matrix_operator_t node_visibility_matrix_operator{node_visibility_matrix_operator_t::ANY};
+  node_property_matrix_operator_t node_colour_matrix_operator{node_property_matrix_operator_t::SUM},
+      node_size_matrix_operator{node_property_matrix_operator_t::SUM},
+      node_alpha_matrix_operator{node_property_matrix_operator_t::SUM};
   Eigen::Array3f node_fixed_colour;
-  size_t node_colourmap_index;
-  bool node_colourmap_invert;
-  float node_fixed_alpha;
-  float node_size_scale_factor;
-  float voxel_volume;
+  size_t node_colourmap_index{1};
+  bool node_colourmap_invert{false};
+  float node_fixed_alpha{1.0F};
+  float node_size_scale_factor{1.0F};
+  float voxel_volume{0.0F};
   FileDataVector node_values_from_file_visibility;
   FileDataVector node_values_from_file_colour;
   FileDataVector node_values_from_file_size;
   FileDataVector node_values_from_file_alpha;
 
   // Current edge visualisation settings
-  edge_visibility_t edge_visibility;
-  edge_geometry_t edge_geometry;
-  edge_colour_t edge_colour;
-  edge_size_t edge_size;
-  edge_alpha_t edge_alpha;
+  edge_visibility_t edge_visibility{edge_visibility_t::CONNECTOME};
+  edge_geometry_t edge_geometry{edge_geometry_t::LINE};
+  edge_colour_t edge_colour{edge_colour_t::CONNECTOME};
+  edge_size_t edge_size{edge_size_t::FIXED};
+  edge_alpha_t edge_alpha{edge_alpha_t::FIXED};
 
   // Other values that need to be stored w.r.t. edge visualisation
-  bool have_exemplars, have_streamtubes;
+  bool have_exemplars{false}, have_streamtubes{false};
   Eigen::Array3f edge_fixed_colour;
-  size_t edge_colourmap_index;
-  bool edge_colourmap_invert;
-  float edge_fixed_alpha;
-  float edge_size_scale_factor;
+  size_t edge_colourmap_index{1};
+  bool edge_colourmap_invert{false};
+  float edge_fixed_alpha{1.0F};
+  float edge_size_scale_factor{1.0F};
   FileDataVector edge_values_from_file_visibility;
   FileDataVector edge_values_from_file_colour;
   FileDataVector edge_values_from_file_size;

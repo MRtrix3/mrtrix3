@@ -31,7 +31,7 @@ namespace MR::File::Dicom {
 class CSAEntry {
 public:
   CSAEntry(const std::byte *start_p, const std::byte *end_p, bool output_fields = false)
-      : start(start_p), end(end_p), print(output_fields), cnum(0) {
+      : start(start_p), end(end_p), print(output_fields) {
     if (std::string_view(reinterpret_cast<const char *>(start), 4) == "SV10") {
       DEBUG("Siemens CSA entry does not start with \"SV10\"; ignoring");
       num = 0;
@@ -169,7 +169,7 @@ protected:
   bool print;
   std::string name;
   std::array<char, 4> vr;
-  uint32_t nitems, num, cnum;
+  uint32_t nitems, num, cnum{0};
 };
 
 } // namespace MR::File::Dicom

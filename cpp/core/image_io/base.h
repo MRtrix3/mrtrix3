@@ -94,7 +94,7 @@ public:
 protected:
   size_t segsize;
   std::vector<std::unique_ptr<std::byte[]>> addresses;
-  bool is_new, writable;
+  bool is_new{false}, writable{false};
 
   void check() const { assert(!addresses.empty()); }
   virtual void load(const Header &header, size_t buffer_size) = 0;

@@ -97,9 +97,8 @@ private:
           progress(total_num_rotations == 1 ? "randomising direction set orientation"
                                             : "optimising directions for peak gradient load",
                    total_num_rotations),
-          count(0),
-          best_rotation(0.0, axis_type{0.0, 0.0, 0.0}),
-          min_peak(1.0) {}
+
+          best_rotation(0.0, axis_type{0.0, 0.0, 0.0}) {}
     bool operator()(default_type peak, const rotation_type &rotation) {
       if (peak < min_peak) {
         min_peak = peak;
@@ -119,9 +118,9 @@ private:
     const size_t total_num_rotations;
     const default_type original_peak;
     ProgressBar progress;
-    size_t count;
+    size_t count{0};
     rotation_type best_rotation;
-    default_type min_peak;
+    default_type min_peak{1.0};
   };
   MutexProtected<ProtectedContent> protected_content;
 };

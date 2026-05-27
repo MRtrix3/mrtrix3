@@ -28,7 +28,7 @@ float LightBox::slice_focus_inc_adjust_rate = 0.2F;
 std::filesystem::path LightBox::prev_image_path;
 ssize_t LightBox::current_slice_index = 0;
 
-LightBox::LightBox() : frames_dirty(true) {
+LightBox::LightBox() {
   Image *img = image();
 
   if ((img == nullptr) || prev_image_path != img->header().path())

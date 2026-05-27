@@ -96,10 +96,10 @@ protected slots:
 
 protected:
   float rate, min, max;
-  bool is_min, is_max;
+  bool is_min{false}, is_max{false};
   int previous_y;
 
-  int deadzone_y;
+  int deadzone_y{-1};
   float deadzone_value;
 
   bool eventFilter(QObject *obj, QEvent *event);

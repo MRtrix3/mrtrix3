@@ -49,11 +49,11 @@ public:
 
 private:
   FILE *infile;
-  png_structp png_ptr;
-  png_infop info_ptr;
-  png_uint_32 width, height;
-  int bit_depth, color_type;
-  uint8_t channels;
+  png_structp png_ptr{nullptr};
+  png_infop info_ptr{nullptr};
+  png_uint_32 width{0}, height{0};
+  int bit_depth{0}, color_type{0};
+  uint8_t channels{0};
 
   int output_bitdepth;
 };
@@ -68,14 +68,14 @@ public:
   void save(std::byte *);
 
 private:
-  png_structp png_ptr;
-  png_infop info_ptr;
+  png_structp png_ptr{nullptr};
+  png_infop info_ptr{nullptr};
   uint32_t width, height;
-  int color_type, bit_depth;
+  int color_type{0}, bit_depth{0};
   std::filesystem::path filepath;
   DataType data_type;
-  default_type multiplier;
-  FILE *outfile;
+  default_type multiplier{1.0};
+  FILE *outfile{nullptr};
 
   static void error_handler(png_struct_def *, const char *);
   static jmp_buf jmpbuf;

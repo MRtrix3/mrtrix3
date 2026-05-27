@@ -63,7 +63,7 @@ public:
         step_down(step_size_downfactor),
         verbose(verbose),
         delim(","),
-        niter(0),
+
         x(func.size()),
         x2(func.size()),
         g(func.size()),
@@ -216,7 +216,7 @@ protected:
   const value_type step_up, step_down;
   bool verbose;
   std::string delim;
-  size_t niter;
+  size_t niter{0};
   Eigen::Matrix<value_type, Eigen::Dynamic, 1> x, x2, g, g2, preconditioner_weights;
   value_type f, dt, normg, step_unscaled;
   size_t nfeval;

@@ -18,6 +18,7 @@ Checks: >
   modernize-make-shared,
   modernize-use-nodiscard,
   modernize-use-using,
+  modernize-use-default-member-init,
   # misc-const-correctness -- not enforced; conflicts with ThreadedLoop functor idiom (non-const operator()). See commit body.,
   -bugprone-easily-swappable-parameters,
   -bugprone-narrowing-conversions,

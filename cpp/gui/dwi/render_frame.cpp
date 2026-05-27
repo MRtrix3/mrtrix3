@@ -53,22 +53,12 @@ RenderFrame::RenderFrame(QWidget *parent)
       view_angle(AngleDefault),
       distance(DistDefault),
       scale(NaNF),
-      lmax_computed(0),
-      lod_computed(0),
-      mode(mode_t::SH),
-      recompute_mesh(true),
-      recompute_amplitudes(true),
-      show_axes(true),
-      hide_neg_values(true),
-      color_by_dir(true),
-      use_lighting(true),
+
       glfont(get_font(parent)),
       projection(this, glfont),
       orientation(DefaultOrientation),
       focus(0.0, 0.0, 0.0),
-      OS(0),
-      OS_x(0),
-      OS_y(0),
+
       renderer(static_cast<QOpenGLWidget *>(this)) {
   setMinimumSize(128, 128);
   lighting = new GL::Lighting(this);

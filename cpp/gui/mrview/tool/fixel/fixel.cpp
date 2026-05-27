@@ -78,7 +78,7 @@ public:
   BaseFixel *get_fixel_image(QModelIndex &index) { return dynamic_cast<BaseFixel *>(items[index.row()].get()); }
 };
 
-Fixel::Fixel(Dock *parent) : Base(parent), not_3D(true), line_opacity(1.0) {
+Fixel::Fixel(Dock *parent) : Base(parent) {
 
   auto *main_box = new VBoxLayout(this);
   auto *layout = new HBoxLayout;

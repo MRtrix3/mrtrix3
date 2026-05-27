@@ -29,7 +29,7 @@ namespace Registration::Transform {
 // we use double exponential smoothing to get rid of small oscillations
 class DoubleExpSmoothSlopeCheck {
 public:
-  DoubleExpSmoothSlopeCheck() : stop_cnt(0), iter_count(0), len(0), is_initialised(false) {}
+  DoubleExpSmoothSlopeCheck() {}
 
   void set_parameters(const Eigen::Matrix<default_type, Eigen::Dynamic, 1> &slope_threshold,
                       default_type alpha_in,
@@ -46,14 +46,14 @@ public:
   void debug(const Eigen::Matrix<default_type, Eigen::Dynamic, 1> &vec) const;
 
 private:
-  size_t stop_cnt;
+  size_t stop_cnt{0};
   default_type alpha, beta;
   Eigen::Matrix<default_type, Eigen::Dynamic, 1> thresh;
   Eigen::Matrix<default_type, Eigen::Dynamic, 1> x0;
   size_t buffer_len, min_iter;
-  size_t iter_count, len;
+  size_t iter_count{0}, len{0};
   std::deque<Eigen::Matrix<default_type, Eigen::Dynamic, 1>> ds, db;
-  bool is_initialised;
+  bool is_initialised{false};
 
   inline bool check_all(const Eigen::Matrix<default_type, Eigen::Dynamic, 1> &vec) {
     return (vec.array().abs() < thresh.array()).all();

@@ -347,7 +347,7 @@ void all_stats(const measurements_matrix_type &measurements,
   public:
     Source(const index_type num_elements)
         : num_elements(num_elements),
-          counter(0),
+          
           progress(new ProgressBar("Calculating basic properties of default permutation", num_elements)) {}
     bool operator()(index_type &element_index) {
       element_index = counter++;
@@ -362,7 +362,7 @@ void all_stats(const measurements_matrix_type &measurements,
 
   private:
     const index_type num_elements;
-    index_type counter;
+    index_type counter{0};
     std::unique_ptr<ProgressBar> progress;
   };
 

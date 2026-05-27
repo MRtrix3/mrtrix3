@@ -48,7 +48,7 @@ public:
   };
 
   Bootstrap(const ImageType &Image, const Functor &functor)
-      : base_type(Image), func(functor), next_voxel(nullptr), last_voxel(nullptr), current_chunk(0) {
+      : base_type(Image), func(functor), next_voxel(nullptr), last_voxel(nullptr) {
     assert(ndim() == 4);
     voxel_buffer.push_back(std::vector<value_type>(NUM_VOX_PER_CHUNK * size(3)));
     clear();
@@ -80,7 +80,7 @@ protected:
   std::vector<std::vector<value_type>> voxel_buffer;
   value_type *next_voxel;
   value_type *last_voxel;
-  size_t current_chunk;
+  size_t current_chunk{0};
 
   value_type *allocate_voxel() {
     if (next_voxel == last_voxel) {

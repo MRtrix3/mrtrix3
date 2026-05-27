@@ -24,7 +24,7 @@
 namespace MR::DWI::Tractography::SIFT2 {
 
 RegularisationCalculator::RegularisationCalculator(TckFactor &tckfactor, double &cf_reg_tik, double &cf_reg_tv)
-    : master(tckfactor), cf_reg_tik(cf_reg_tik), cf_reg_tv(cf_reg_tv), tikhonov_sum(0.0), tv_sum(0.0) {}
+    : master(tckfactor), cf_reg_tik(cf_reg_tik), cf_reg_tv(cf_reg_tv) {}
 
 RegularisationCalculator::~RegularisationCalculator() {
   std::lock_guard<std::mutex> const lock(master.mutex);

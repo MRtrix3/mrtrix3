@@ -55,8 +55,7 @@ public:
         min_coeff(default_minimum_coefficient),
         max_coeff(default_maximum_coefficient),
         max_coeff_step(default_maximum_coeffstep),
-        min_cf_decrease_percentage(default_minimum_cf_fractional_decrease),
-        data_scale_term(0.0) {}
+        min_cf_decrease_percentage(default_minimum_cf_fractional_decrease) {}
 
   void set_reg_lambdas(const double, const double);
   void set_min_iters(const int i) { min_iters = i; }
@@ -105,7 +104,7 @@ private:
   double min_coeff, max_coeff, max_coeff_step, min_cf_decrease_percentage;
   std::filesystem::path csv_path;
 
-  double data_scale_term;
+  double data_scale_term{0.0};
 
   friend class LineSearchFunctor;
   friend class CoefficientOptimiserBase;

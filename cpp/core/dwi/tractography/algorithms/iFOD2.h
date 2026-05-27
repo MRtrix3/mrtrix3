@@ -48,11 +48,7 @@ public:
           lmax(Math::SH::LforN(source.size(3))),
           num_samples(Defaults::ifod2_nsamples),
           max_trials(Defaults::max_trials_per_step),
-          sin_max_angle_ho(NaNF),
-          mean_samples(0.0),
-          mean_truncations(0.0),
-          max_max_truncation(0.0),
-          num_proc(0) {
+          sin_max_angle_ho(NaNF) {
       try {
         Math::SH::check(source);
       } catch (Exception &e) {
@@ -133,17 +129,14 @@ public:
     Math::SH::PrecomputedAL<float> precomputer;
 
   private:
-    mutable double mean_samples, mean_truncations, max_max_truncation;
-    mutable int num_proc;
+    mutable double mean_samples{0.0}, mean_truncations{0.0}, max_max_truncation{0.0};
+    mutable int num_proc{0};
   };
 
   iFOD2(const Shared &shared)
       : MethodBase(shared),
         S(shared),
-        mean_sample_num(0),
-        num_sample_runs(0),
-        num_truncations(0),
-        max_truncation(0.0),
+
         calib_positions(S.num_samples),
         calib_tangents(S.num_samples),
         source(S.source, S.source_mask),
@@ -157,10 +150,6 @@ public:
       : MethodBase(that.S),
         S(that.S),
         calibrate_ratio(that.calibrate_ratio),
-        mean_sample_num(0),
-        num_sample_runs(0),
-        num_truncations(0),
-        max_truncation(0.0),
         calibrate_list(that.calibrate_list),
         calib_positions(S.num_samples),
         calib_tangents(S.num_samples),
@@ -317,8 +306,8 @@ private:
   const Shared &S;
 
   float calibrate_ratio, half_log_prob0, last_half_log_probN, half_log_prob0_seed;
-  size_t mean_sample_num, num_sample_runs, num_truncations;
-  float max_truncation;
+  size_t mean_sample_num{0}, num_sample_runs{0}, num_truncations{0};
+  float max_truncation{0.0};
   std::vector<Eigen::Vector3f> calibrate_list;
   std::vector<Eigen::Vector3f> calib_positions;
   std::vector<Eigen::Vector3f> calib_tangents;

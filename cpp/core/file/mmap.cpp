@@ -45,7 +45,7 @@
 namespace MR::File {
 
 MMap::MMap(const Entry &entry, bool readwrite, bool preload, std::optional<int64_t> mapped_size)
-    : Entry(entry), addr(nullptr), first(nullptr), msize(0), readwrite(readwrite) {
+    : Entry(entry), readwrite(readwrite) {
 
   DEBUG("memory-mapping file \"" + Entry::path.string() + "\"...");
 

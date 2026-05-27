@@ -34,10 +34,7 @@ public:
            const size_t length,
            const NodePair &nodes,
            const std::pair<point_type, point_type> &COMs)
-      : Tractography::Streamline<float>(length, {0.0F, 0.0F, 0.0F}),
-        nodes(nodes),
-        node_COMs(COMs),
-        is_finalized(false) {
+      : Tractography::Streamline<float>(length, {0.0F, 0.0F, 0.0F}), nodes(nodes), node_COMs(COMs) {
     set_index(exemplar_index);
     weight = 0.0F;
   }
@@ -75,7 +72,7 @@ private:
   std::mutex mutex;
   NodePair nodes;
   std::pair<point_type, point_type> node_COMs;
-  bool is_finalized;
+  bool is_finalized{false};
 
   void add(const Tractography::Streamline<float> &, const bool is_reversed);
 };

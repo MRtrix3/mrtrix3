@@ -109,7 +109,7 @@ class Segmented_FOD_receiver {
 
 public:
   Segmented_FOD_receiver(const Header &header, const index_type maxnum = 0, bool dir_from_peak = false)
-      : H(header), fixel_count(0), max_per_voxel(maxnum), dir_from_peak(dir_from_peak) {}
+      : H(header), max_per_voxel(maxnum), dir_from_peak(dir_from_peak) {}
 
   void commit();
 
@@ -151,7 +151,7 @@ private:
   Header H;
   std::filesystem::path fixel_directory_path, index_path, dir_path, afd_path, peak_amp_path, disp_path, skew_path;
   std::vector<Primitive_FOD_lobes> lobes;
-  index_type fixel_count;
+  index_type fixel_count{0};
   index_type max_per_voxel;
   bool dir_from_peak;
 };

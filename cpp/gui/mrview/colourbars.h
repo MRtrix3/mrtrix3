@@ -76,8 +76,8 @@ protected:
   GL::VertexBuffer VB;
   GL::VertexArrayObject VAO;
   GL::Shader::Program frame_program, program;
-  size_t current_colourmap_index;
-  bool current_colourmap_inverted;
+  size_t current_colourmap_index{0};
+  bool current_colourmap_inverted{false};
   const GLfloat width, height, inset, text_offset, colourbar_padding;
 
   void setup(size_t index, bool inverted);

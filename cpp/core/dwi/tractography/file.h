@@ -339,8 +339,7 @@ public:
   Writer(const std::filesystem::path &path, const Properties &properties, size_t default_buffer_capacity = 16777216)
       : WriterUnbuffered<ValueType>(path, properties),
         buffer_capacity(File::Config::get_int("TrackWriterBufferSize", default_buffer_capacity) / sizeof(vector_type)),
-        buffer(new vector_type[buffer_capacity]),
-        buffer_size(0) {}
+        buffer(new vector_type[buffer_capacity]) {}
 
   Writer(const Writer &W) = delete;
 
@@ -380,7 +379,7 @@ public:
 protected:
   size_t buffer_capacity;
   std::unique_ptr<vector_type[]> buffer;
-  size_t buffer_size;
+  size_t buffer_size{0};
   std::string weights_buffer;
 
   //! add point to buffer and increment buffer_size accordingly

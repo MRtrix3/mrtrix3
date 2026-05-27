@@ -38,7 +38,7 @@ public:
 
 private:
   const track_t size, end;
-  track_t start;
+  track_t start{0};
   std::unique_ptr<ProgressBar> progress;
 };
 

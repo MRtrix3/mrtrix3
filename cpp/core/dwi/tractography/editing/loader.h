@@ -33,7 +33,7 @@ class Loader {
 
 public:
   Loader(const std::vector<std::filesystem::path> &files)
-      : file_list(files), dummy_properties(), reader(new Reader<>(file_list[0], dummy_properties)), file_index(0) {}
+      : file_list(files), dummy_properties(), reader(new Reader<>(file_list[0], dummy_properties)) {}
 
   bool operator()(Streamline<> &);
 
@@ -41,7 +41,7 @@ private:
   const std::vector<std::filesystem::path> &file_list;
   Properties dummy_properties;
   std::unique_ptr<Reader<>> reader;
-  size_t file_index;
+  size_t file_index{0};
 };
 
 bool Loader::operator()(Streamline<> &out) {

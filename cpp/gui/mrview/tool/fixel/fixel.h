@@ -52,8 +52,8 @@ public:
   [[nodiscard]] bool is_bidirectional() const { return bidirectional->isChecked(); }
 
   QPushButton *hide_all_button;
-  bool not_3D;
-  float line_opacity;
+  bool not_3D{true};
+  float line_opacity{1.0};
   Model *fixel_list_model;
   QListView *fixel_list_view;
 

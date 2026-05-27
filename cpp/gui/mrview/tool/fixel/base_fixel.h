@@ -43,10 +43,8 @@ public:
   class Shader : public Displayable::Shader {
   public:
     Shader()
-        : do_crop_to_slice(false),
-          bidirectional(false),
-          color_type(FixelColourType::Direction),
-          scale_type(FixelScaleType::Value) {}
+
+    {}
     std::string vertex_shader_source(const Displayable &) override;
     std::string geometry_shader_source(const Displayable &) override;
     std::string fragment_shader_source(const Displayable &) override;
@@ -54,9 +52,9 @@ public:
     virtual void update(const Displayable &) override;
 
   protected:
-    bool do_crop_to_slice, bidirectional;
-    FixelColourType color_type;
-    FixelScaleType scale_type;
+    bool do_crop_to_slice{false}, bidirectional{false};
+    FixelColourType color_type{FixelColourType::Direction};
+    FixelScaleType scale_type{FixelScaleType::Value};
   } fixel_shader;
 
   void render(const Projection &projection);
@@ -240,11 +238,11 @@ protected:
   // To support off-axis rendering, we maintain dict mapping voxels to buffer_pos indices
   std::unordered_map<std::array<int, 3>, std::vector<GLint>, IntPointHasher> voxel_to_indices_map;
 
-  FixelColourType colour_type;
-  FixelScaleType scale_type;
-  size_t colour_type_index;
-  size_t scale_type_index;
-  size_t threshold_type_index;
+  FixelColourType colour_type{FixelColourType::Direction};
+  FixelScaleType scale_type{FixelScaleType::Unity};
+  size_t colour_type_index{0};
+  size_t scale_type_index{0};
+  size_t threshold_type_index{0};
 
   bool colour_buffer_dirty;
   bool value_buffer_dirty;
@@ -273,9 +271,9 @@ private:
   // Index buffer for rendering slabs
   std::vector<uint32_t> element_indices;
 
-  float voxel_size_length_multipler;
-  float user_line_length_multiplier;
-  float line_thickness;
+  float voxel_size_length_multipler{1.F};
+  float user_line_length_multiplier{1.F};
+  float line_thickness{0.0015F};
 };
 
 // Wrapper to generically store fixel data

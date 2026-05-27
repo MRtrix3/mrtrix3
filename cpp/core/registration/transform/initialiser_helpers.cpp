@@ -226,7 +226,7 @@ public:
                       const std::vector<MultiContrastSetting> &contrast_settings)
       : transform(image),
         mask(mask),
-        mass(0.0),
+
         global_mass(weighted_mass),
         global_centre_of_mass(weighted_centre_of_mass) {
     centre_of_mass.setZero();
@@ -267,7 +267,7 @@ public:
 protected:
   MR::Transform transform;
   MaskType mask;
-  default_type mass;
+  default_type mass{0.0};
   default_type &global_mass;
   Eigen::Vector3d &global_centre_of_mass;
   Eigen::Vector3d centre_of_mass;

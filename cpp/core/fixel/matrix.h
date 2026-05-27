@@ -121,11 +121,11 @@ protected:
 class InitFixelUnweighted : public InitFixelBase<InitElementUnweighted> {
 public:
   using BaseType = InitFixelBase<InitElementUnweighted>;
-  InitFixelUnweighted() : track_count(0) {}
+  InitFixelUnweighted() {}
   [[nodiscard]] default_type norm_factor() const override { return 1.0 / static_cast<default_type>(track_count); }
 
 private:
-  count_type track_count;
+  count_type track_count{0};
   void increment(const MappedTrack &data) override { ++track_count; }
   void increment(InitElementUnweighted &element, const MappedTrack &data) override { ++element; }
 };

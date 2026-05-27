@@ -84,21 +84,16 @@ public:
   static constexpr float default_point_size = 4e-3F;
 
   bool scalarfile_by_direction;
-  bool show_colour_bar;
+  bool show_colour_bar{true};
   bool should_update_stride;
   float original_fov;
-  float line_thickness;
+  float line_thickness{0.F};
   std::filesystem::path intensity_scalar_path;
   std::filesystem::path threshold_scalar_path;
 
   class Shader : public Displayable::Shader {
   public:
-    Shader()
-        : do_crop_to_slab(false),
-          use_lighting(false),
-          color_type(TrackColourType::Direction),
-          threshold_type(TrackThresholdType::None),
-          geometry_type(Tractogram::default_tract_geom) {}
+    Shader() : geometry_type(Tractogram::default_tract_geom) {}
     std::string vertex_shader_source(const Displayable &) override;
     std::string fragment_shader_source(const Displayable &) override;
     std::string geometry_shader_source(const Displayable &) override;
@@ -106,9 +101,9 @@ public:
     virtual void update(const Displayable &) override;
 
   protected:
-    bool do_crop_to_slab, use_lighting;
-    TrackColourType color_type;
-    TrackThresholdType threshold_type;
+    bool do_crop_to_slab{false}, use_lighting{false};
+    TrackColourType color_type{TrackColourType::Direction};
+    TrackThresholdType threshold_type{TrackThresholdType::None};
     TrackGeometryType geometry_type;
 
   } track_shader;
@@ -122,8 +117,8 @@ private:
 
   const std::filesystem::path filepath;
 
-  TrackColourType color_type;
-  TrackThresholdType threshold_type;
+  TrackColourType color_type{TrackColourType::Direction};
+  TrackThresholdType threshold_type{TrackThresholdType::None};
   TrackGeometryType geometry_type;
 
   // Instead of tracking the file path, pre-calculate the
@@ -148,8 +143,8 @@ private:
   std::vector<GLuint> element_buffers;
   std::vector<GLsizei> element_counts;
 
-  GLint sample_stride;
-  bool vao_dirty;
+  GLint sample_stride{0};
+  bool vao_dirty{true};
 
   // Extra members now required since different scalar files
   //   may be used for streamline colouring and thresholding

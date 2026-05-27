@@ -131,7 +131,7 @@ using value_type = float;
 
 class Mean {
 public:
-  Mean() : sum(0.0), count(0) {}
+  Mean() {}
   void operator()(value_type val) {
     if (std::isfinite(val)) {
       sum += val;
@@ -143,8 +143,8 @@ public:
       return NaNF;
     return sum / count;
   }
-  double sum;
-  size_t count;
+  double sum{0.0};
+  size_t count{0};
 };
 
 class Median {
@@ -160,13 +160,13 @@ public:
 
 class Sum {
 public:
-  Sum() : sum(0.0) {}
+  Sum() {}
   void operator()(value_type val) {
     if (std::isfinite(val))
       sum += val;
   }
   [[nodiscard]] value_type result() const { return sum; }
-  double sum;
+  double sum{0.0};
 };
 
 class Product {
@@ -182,7 +182,7 @@ public:
 
 class RMS {
 public:
-  RMS() : sum(0.0), count(0) {}
+  RMS() {}
   void operator()(value_type val) {
     if (std::isfinite(val)) {
       sum += Math::pow2(val);
@@ -194,13 +194,13 @@ public:
       return NaNF;
     return std::sqrt(sum / count);
   }
-  double sum;
-  size_t count;
+  double sum{0.0};
+  size_t count{0};
 };
 
 class NORM2 {
 public:
-  NORM2() : sum(0.0), count(0) {}
+  NORM2() {}
   void operator()(value_type val) {
     if (std::isfinite(val)) {
       sum += Math::pow2(val);
@@ -212,14 +212,14 @@ public:
       return NaNF;
     return std::sqrt(sum);
   }
-  double sum;
-  size_t count;
+  double sum{0.0};
+  size_t count{0};
 };
 
 // Welford's algorithm to avoid catastrophic cancellation
 class Var {
 public:
-  Var() : delta(0.0), delta2(0.0), mean(0.0), m2(0.0), count(0) {}
+  Var() {}
   void operator()(value_type val) {
     if (std::isfinite(val)) {
       ++count;
@@ -234,8 +234,8 @@ public:
       return NaNF;
     return m2 / (static_cast<double>(count) - 1.0);
   }
-  double delta, delta2, mean, m2;
-  size_t count;
+  double delta{0.0}, delta2{0.0}, mean{0.0}, m2{0.0};
+  size_t count{0};
 };
 
 class Std : public Var {

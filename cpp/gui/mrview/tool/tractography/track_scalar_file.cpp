@@ -22,7 +22,7 @@
 namespace MR::GUI::MRView::Tool {
 
 TrackScalarFileOptions::TrackScalarFileOptions(Tractography *parent)
-    : QGroupBox("Scalar file options", parent), tool(parent), tractogram(nullptr) {
+    : QGroupBox("Scalar file options", parent), tool(parent) {
   main_box = new Tool::Base::VBoxLayout(this);
 
   colour_groupbox = new QGroupBox("Colour map and scaling");

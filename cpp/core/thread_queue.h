@@ -327,8 +327,7 @@ public:
         front(buffer),
         back(buffer),
         capacity(buffer_size),
-        writer_count(0),
-        reader_count(0),
+
         name(description) {
     assert(capacity > 0);
   }
@@ -478,7 +477,7 @@ private:
   T **front;
   T **back;
   size_t capacity;
-  size_t writer_count, reader_count;
+  size_t writer_count{0}, reader_count{0};
   std::stack<T *, std::vector<T *>> item_stack;
   std::vector<std::unique_ptr<T>> items;
   std::string name;
@@ -617,7 +616,7 @@ template <class Item> struct FetchItem {
 };
 
 template <class Item> struct FetchItem<Batch<Item>> {
-  FetchItem(typename Type<Batch<Item>>::reader &in) : in(in.placeholder()), n(0) {}
+  FetchItem(typename Type<Batch<Item>>::reader &in) : in(in.placeholder()) {}
   bool read() {
     if (!in)
       return in.read();
@@ -631,7 +630,7 @@ template <class Item> struct FetchItem<Batch<Item>> {
   }
   Item &value() { return (*in)[n]; }
   typename Type<Batch<Item>>::read_item in;
-  size_t n;
+  size_t n{0};
 };
 
 template <class Item> struct StoreItem {
@@ -644,7 +643,7 @@ template <class Item> struct StoreItem {
 
 template <class Item> struct StoreItem<Batch<Item>> {
   StoreItem(size_t batch_size, typename Type<Batch<Item>>::writer &item)
-      : out(item.placeholder()), batch_size(batch_size), n(0) {
+      : out(item.placeholder()), batch_size(batch_size) {
     out->resize(batch_size);
   }
   bool write() {
@@ -666,7 +665,7 @@ template <class Item> struct StoreItem<Batch<Item>> {
   }
   typename Type<Batch<Item>>::write_item out;
   const size_t batch_size;
-  size_t n;
+  size_t n{0};
 };
 
 template <class Item, class Functor> struct SourceWrapper {

@@ -44,12 +44,7 @@ public:
                      {ZeroExclusion::Enabled, NonFiniteExclusion::Any, HoleFilling::EnabledExcludeNonFinite}),
           lmax(Math::SH::LforN(source.size(3))),
           max_trials(Defaults::max_trials_per_step),
-          sin_max_angle_1o(std::sin(max_angle_1o)),
-          fod_power(1.0F),
-          mean_samples(0.0),
-          mean_truncations(0.0),
-          max_max_truncation(0.0),
-          num_proc(0) {
+          sin_max_angle_1o(std::sin(max_angle_1o)) {
 
       try {
         Math::SH::check(source);
@@ -108,24 +103,15 @@ public:
     }
 
     size_t lmax, max_trials;
-    float sin_max_angle_1o, fod_power;
+    float sin_max_angle_1o, fod_power{1.0F};
     Math::SH::PrecomputedAL<float> precomputer;
 
   private:
-    mutable double mean_samples, mean_truncations, max_max_truncation;
-    mutable int num_proc;
+    mutable double mean_samples{0.0}, mean_truncations{0.0}, max_max_truncation{0.0};
+    mutable int num_proc{0};
   };
 
-  iFOD1(const Shared &shared)
-      : MethodBase(shared),
-        S(shared),
-        source(S.source, S.source_mask),
-        mean_sample_num(0),
-        num_sample_runs(0),
-        num_truncations(0),
-        max_truncation(0.0) {
-    calibrate(*this);
-  }
+  iFOD1(const Shared &shared) : MethodBase(shared), S(shared), source(S.source, S.source_mask) { calibrate(*this); }
 
   ~iFOD1() {
     S.update_stats(calibrate_list.size() +
@@ -218,8 +204,8 @@ protected:
   const Shared &S;
   Interpolator<Image<float>>::type source;
   float calibrate_ratio;
-  size_t mean_sample_num, num_sample_runs, num_truncations;
-  float max_truncation;
+  size_t mean_sample_num{0}, num_sample_runs{0}, num_truncations{0};
+  float max_truncation{0.0};
   std::vector<Eigen::Vector3f> calibrate_list;
 
   [[nodiscard]] float FOD(const Eigen::Vector3f &d) const {

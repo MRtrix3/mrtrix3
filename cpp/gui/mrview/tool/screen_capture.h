@@ -48,14 +48,14 @@ private slots:
   void on_restore_capture_state();
 
 private:
-  enum RotationType { World = 0, Eye, Image } rotation_type;
+  enum RotationType { World = 0, Eye, Image } rotation_type{RotationType::World};
   QComboBox *rotation_type_combobox;
   AdjustButton *rotation_axis_x;
   AdjustButton *rotation_axis_y;
   AdjustButton *rotation_axis_z;
   AdjustButton *degrees_button;
 
-  enum TranslationType { Voxel = 0, Scanner, Camera } translation_type;
+  enum TranslationType { Voxel = 0, Scanner, Camera } translation_type{TranslationType::Voxel};
 
   QComboBox *translation_type_combobox;
   AdjustButton *translate_x;
@@ -71,7 +71,7 @@ private:
   QPushButton *folder_button;
   int axis;
 
-  bool is_playing;
+  bool is_playing{false};
 
   class CaptureState {
   public:

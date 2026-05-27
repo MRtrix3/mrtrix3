@@ -27,7 +27,7 @@
 
 namespace MR::GUI::DWI {
 
-Window::Window(bool is_response_coefs) : lighting_dialog(nullptr), current(0), is_response(is_response_coefs) {
+Window::Window(bool is_response_coefs) : is_response(is_response_coefs) {
   GUI::Dialog::init();
 
   setWindowIcon(QPixmap(":/mrtrix.png"));

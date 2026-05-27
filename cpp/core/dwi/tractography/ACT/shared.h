@@ -33,9 +33,7 @@ public:
   ACT_Shared_additions(const std::filesystem::path &path, Properties &property_set)
       : voxel(Image<float>::open(path)),
         voxel_mask(make_implicit_mask(
-            voxel, {ZeroExclusion::Enabled, NonFiniteExclusion::Any, HoleFilling::EnabledExcludeNonFinite})),
-        bt(false),
-        trunc(sgm_trunc_t::DEFAULT) {
+            voxel, {ZeroExclusion::Enabled, NonFiniteExclusion::Any, HoleFilling::EnabledExcludeNonFinite})) {
     debug_validate_5TT_image(voxel);
     property_set.set(bt, "backtrack");
     if (property_set.find("crop_at_gmwmi") != property_set.end())
@@ -63,8 +61,8 @@ public:
 private:
   Image<float> voxel;
   Image<bool> voxel_mask;
-  bool bt;
-  sgm_trunc_t trunc;
+  bool bt{false};
+  sgm_trunc_t trunc{sgm_trunc_t::DEFAULT};
 
   std::unique_ptr<GMWMI_finder> gmwmi_finder;
 

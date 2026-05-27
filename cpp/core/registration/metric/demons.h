@@ -34,13 +34,9 @@ public:
          const Im2MaskType im2_mask)
       : global_cost(global_energy),
         global_voxel_count(global_voxel_count),
-        thread_cost(0.0),
-        thread_voxel_count(0),
+
         mutex(new std::mutex),
-        normaliser(0.0),
-        robustness_parameter(1.e-12),
-        intensity_difference_threshold(0.001),
-        denominator_threshold(1e-9),
+
         im1_gradient(im1_image, true),
         im2_gradient(im2_image, true),
         im1_mask(im1_mask),
@@ -120,13 +116,13 @@ public:
 protected:
   default_type &global_cost;
   size_t &global_voxel_count;
-  default_type thread_cost;
-  size_t thread_voxel_count;
+  default_type thread_cost{0.0};
+  size_t thread_voxel_count{0};
   std::shared_ptr<std::mutex> mutex;
-  default_type normaliser;
-  const default_type robustness_parameter;
-  const default_type intensity_difference_threshold;
-  const default_type denominator_threshold;
+  default_type normaliser{0.0};
+  const default_type robustness_parameter{1.e-12};
+  const default_type intensity_difference_threshold{0.001};
+  const default_type denominator_threshold{1e-9};
 
   Adapter::Gradient3D<Im1ImageType> im1_gradient;
   Adapter::Gradient3D<Im2ImageType> im2_gradient;

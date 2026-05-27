@@ -84,7 +84,7 @@ private:
   GL::VertexBuffer frame_VB;
   GL::VertexArrayObject frame_VAO;
   GL::Shader::Program frame_program;
-  bool frames_dirty;
+  bool frames_dirty{true};
 signals:
   void slice_increment_reset();
 };

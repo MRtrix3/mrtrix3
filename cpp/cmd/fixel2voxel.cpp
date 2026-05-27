@@ -138,13 +138,13 @@ struct LoopFixelsInVoxelWithMax {
     const index_type num_fixels;
     const index_type max_fixels;
     const index_type offset;
-    index_type fixel_index;
+    index_type fixel_index{0};
     const std::tuple<DataType &...> data;
     FORCE_INLINE Run(const index_type num_fixels,
                      const index_type max_fixels,
                      const index_type offset,
                      const std::tuple<DataType &...> &data)
-        : num_fixels(num_fixels), max_fixels(max_fixels), offset(offset), fixel_index(0), data(data) {
+        : num_fixels(num_fixels), max_fixels(max_fixels), offset(offset), data(data) {
       MR::apply_for_each(set_offset(offset), data);
     }
     FORCE_INLINE operator bool() const {

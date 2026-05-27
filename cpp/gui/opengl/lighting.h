@@ -24,13 +24,13 @@ class Lighting : public QObject {
   Q_OBJECT
 
 public:
-  Lighting(QObject *parent) : QObject(parent), set_background(false) { load_defaults(); }
+  Lighting(QObject *parent) : QObject(parent) { load_defaults(); }
 
   float ambient, diffuse, specular, shine;
   Eigen::Array3f light_color;
   Eigen::Vector3f lightpos;
   Eigen::Array3f background_color;
-  bool set_background;
+  bool set_background{false};
 
   void set() const;
   void load_defaults();

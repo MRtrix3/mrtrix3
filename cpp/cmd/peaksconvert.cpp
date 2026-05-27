@@ -402,7 +402,7 @@ public:
   using ImageType = Image<float>;
   using BaseType = Adapter::Base<FixelImage<FixelType>, ImageType>;
   using BaseType::parent;
-  FixelImage(Image<float> &that) : BaseType(that), fixel_index(0) {}
+  FixelImage(Image<float> &that) : BaseType(that) {}
   void reset() {
     parent().reset();
     fixel_index = 0;
@@ -441,7 +441,7 @@ public:
   }
 
 private:
-  ssize_t fixel_index;
+  ssize_t fixel_index{0};
 };
 
 template <reference_t in_reference, class InFixelType, reference_t out_reference, class OutFixelType>

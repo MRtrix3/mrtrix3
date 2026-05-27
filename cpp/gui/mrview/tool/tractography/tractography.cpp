@@ -83,14 +83,7 @@ public:
   Tractogram *get_tractogram(QModelIndex &index) { return dynamic_cast<Tractogram *>(items[index.row()].get()); }
 };
 
-Tractography::Tractography(Dock *parent)
-    : Base(parent),
-      do_crop_to_slab(true),
-      use_lighting(false),
-      not_3D(true),
-      line_opacity(1.0),
-      scalar_file_options(nullptr),
-      lighting_dock(nullptr) {
+Tractography::Tractography(Dock *parent) : Base(parent) {
 
   float voxel_size;
   if (window().image() != nullptr) {

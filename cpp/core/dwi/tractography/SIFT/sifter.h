@@ -43,8 +43,7 @@ protected:
   using VoxelAccessor = Fixel_map<Fixel>::VoxelAccessor;
 
 public:
-  SIFTer(Image<float> &i, const DWI::Directions::FastLookupSet &d)
-      : MapType(i, d), term_number(0), term_ratio(0.0), term_mu(0.0), enforce_quantisation(true) {}
+  SIFTer(Image<float> &i, const DWI::Directions::FastLookupSet &d) : MapType(i, d) {}
 
   SIFTer(const SIFTer &that) = delete;
 
@@ -78,10 +77,10 @@ protected:
   // User-controllable settings
   std::vector<track_t> output_at_counts;
   std::optional<std::filesystem::path> debug_dir;
-  track_t term_number;
-  float term_ratio;
-  double term_mu;
-  bool enforce_quantisation;
+  track_t term_number{0};
+  float term_ratio{0.0};
+  double term_mu{0.0};
+  bool enforce_quantisation{true};
   std::filesystem::path csv_path;
 
   // Convenience functions

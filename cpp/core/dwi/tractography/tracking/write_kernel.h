@@ -46,9 +46,7 @@ public:
         writer(output_path, properties),
         always_increment(S.properties.seeds.is_finite() || (S.max_num_tracks == 0U)),
         warn_on_max_seeds(S.implicit_max_num_seeds),
-        seeds(0),
-        streamlines(0),
-        selected(0),
+
         progress(printf("       0 seeds,        0 streamlines,        0 selected", 0, 0),
                  always_increment ? S.max_num_seeds : S.max_num_tracks),
         early_exit(shared) {
@@ -106,7 +104,7 @@ protected:
   const SharedBase &S;
   Writer<> writer;
   const bool always_increment, warn_on_max_seeds;
-  size_t seeds, streamlines, selected;
+  size_t seeds{0}, streamlines{0}, selected{0};
   std::unique_ptr<File::OFStream> output_seeds;
   ProgressBar progress;
   EarlyExit early_exit;

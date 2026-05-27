@@ -26,7 +26,7 @@ namespace MR::Registration::Transform {
 
 class RigidLinearNonSymmetricUpdate {
 public:
-  RigidLinearNonSymmetricUpdate() : use_convergence_check(false) {}
+  RigidLinearNonSymmetricUpdate() {}
 
   bool operator()(Eigen::Matrix<default_type, Eigen::Dynamic, 1> &newx,
                   const Eigen::Matrix<default_type, Eigen::Dynamic, 1> &x,
@@ -50,7 +50,7 @@ public:
   }
 
 private:
-  bool use_convergence_check;
+  bool use_convergence_check{false};
   Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> control_points;
   Eigen::Vector3d coherence_distance;
   Eigen::Matrix<default_type, 4, 1> stop_len, recip_spacing;

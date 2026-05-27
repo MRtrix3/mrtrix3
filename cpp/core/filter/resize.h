@@ -58,10 +58,9 @@ public:
   template <class HeaderType>
   Resize(const HeaderType &in)
       : Base(in),
-        interp_type(MR::Interp::interp_type::CUBIC),
+
         transformation(Adapter::NoTransform),
-        oversampling(Adapter::AutoOverSample),
-        out_of_bounds_value(nullptr) {}
+        oversampling(Adapter::AutoOverSample) {}
 
   ~Resize() { delete out_of_bounds_value; }
 
@@ -163,10 +162,10 @@ public:
   }
 
 protected:
-  MR::Interp::interp_type interp_type;
+  MR::Interp::interp_type interp_type{MR::Interp::interp_type::CUBIC};
   transform_type transformation;
   std::vector<uint32_t> oversampling;
-  default_type *out_of_bounds_value;
+  default_type *out_of_bounds_value{nullptr};
 };
 //! @}
 } // namespace MR::Filter

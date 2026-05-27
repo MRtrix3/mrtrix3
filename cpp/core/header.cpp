@@ -978,7 +978,7 @@ concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, con
   return result;
 }
 
-Header::Realignment::Realignment() : state_(State::Unknown), applied_transform_(applied_transform_type::Identity()) {
+Header::Realignment::Realignment() : applied_transform_(applied_transform_type::Identity()) {
   orig_transform_.matrix().fill(std::numeric_limits<default_type>::quiet_NaN());
 }
 

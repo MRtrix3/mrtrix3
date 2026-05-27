@@ -64,10 +64,10 @@ private:
 
   QMenu *colourmap_menu;
   QAction *custom_colour_action;
-  QAction *invert_scale_action;
+  QAction *invert_scale_action{nullptr};
   QAction *show_colour_bar_action;
 
-  size_t fixed_colour_index;
+  size_t fixed_colour_index{0};
 
 private slots:
   void select_colourmap_slot(QAction *action);

@@ -41,8 +41,7 @@ public:
         // CONF default: true
         // CONF Define default interplation setting for image and image overlay.
         interpolation(File::Config::get_bool("ImageInterpolation", true) ? gl::LINEAR : gl::NEAREST),
-        _current_texture(&_texture),
-        texture_mode_changed(true) {}
+        _current_texture(&_texture) {}
 
   virtual ~Volume();
 
@@ -126,7 +125,7 @@ protected:
   GL::VertexArrayObject vertex_array_object;
   GLenum type, format, internal_format;
   float _scale_factor;
-  bool texture_mode_changed;
+  bool texture_mode_changed{true};
 
   std::array<Eigen::Vector3f, 4> pos;
   std::array<Eigen::Vector3f, 4> tex;

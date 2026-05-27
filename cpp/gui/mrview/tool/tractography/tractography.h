@@ -54,12 +54,12 @@ public:
   virtual bool process_commandline_option(const MR::App::ParsedOption &opt) override;
 
   QPushButton *hide_all_button;
-  bool do_crop_to_slab;
-  bool use_lighting;
+  bool do_crop_to_slab{true};
+  bool use_lighting{false};
   bool use_threshold_scalarfile;
-  bool not_3D;
+  bool not_3D{true};
   float slab_thickness;
-  float line_opacity;
+  float line_opacity{1.0};
   Model *tractogram_list_model;
   QListView *tractogram_list_view;
 
@@ -99,8 +99,8 @@ protected:
   QLabel *thickness_label;
   QSlider *thickness_slider;
 
-  TrackScalarFileOptions *scalar_file_options;
-  LightingDock *lighting_dock;
+  TrackScalarFileOptions *scalar_file_options{nullptr};
+  LightingDock *lighting_dock{nullptr};
 
   QGroupBox *slab_group_box;
   QGroupBox *lighting_group_box;

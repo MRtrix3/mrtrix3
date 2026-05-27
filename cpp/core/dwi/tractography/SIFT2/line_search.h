@@ -32,7 +32,7 @@ class LineSearchFunctor {
 public:
   class Result {
   public:
-    Result() : cost(0.0), first_deriv(0.0), second_deriv(0.0), third_deriv(0.0) {}
+    Result() {}
     Result &operator+=(const Result &that) {
       cost += that.cost;
       first_deriv += that.first_deriv;
@@ -47,7 +47,7 @@ public:
       third_deriv *= i;
       return *this;
     }
-    double cost, first_deriv, second_deriv, third_deriv;
+    double cost{0.0}, first_deriv{0.0}, second_deriv{0.0}, third_deriv{0.0};
     [[nodiscard]] bool valid() const {
       return std::isfinite(cost) && std::isfinite(first_deriv) && std::isfinite(second_deriv) &&
              std::isfinite(third_deriv);

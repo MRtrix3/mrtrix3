@@ -23,7 +23,7 @@
 namespace MR::GUI::MRView::Tool {
 class Image4D : public FixelType<FixelImage4DType> {
 public:
-  Image4D(const std::filesystem::path &filepath, Fixel &fixel_tool) : FixelType(filepath, fixel_tool), tracking(false) {
+  Image4D(const std::filesystem::path &filepath, Fixel &fixel_tool) : FixelType(filepath, fixel_tool) {
     value_types = {"Unity", "Length"};
     colour_types = {"Direction", "Length"};
     threshold_types = {"Length"};
@@ -45,6 +45,6 @@ public:
       return false;
     return true;
   }
-  bool tracking;
+  bool tracking{false};
 };
 } // namespace MR::GUI::MRView::Tool

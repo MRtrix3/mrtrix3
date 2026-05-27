@@ -50,9 +50,7 @@ public:
           neg_lambda(default_csd_neglambda),
           norm_lambda(default_csd_normlambda),
           threshold(default_csd_threshold),
-          lmax_response(0),
-          lmax_cmdline(0),
-          lmax(0),
+
           niter(default_csd_maxiterations) {
       grad = DWI::get_DW_scheme(dwi_header);
       // Discard b=0 (b=0 normalisation not supported in this version)
@@ -196,7 +194,7 @@ public:
     Eigen::MatrixXd rconv, HR_trans, M, Mt_M;
     default_type neg_lambda, norm_lambda, threshold;
     std::vector<size_t> dwis;
-    uint32_t lmax_response, lmax_data, lmax_cmdline, lmax;
+    uint32_t lmax_response{0}, lmax_data, lmax_cmdline{0}, lmax{0};
     size_t niter;
   };
 

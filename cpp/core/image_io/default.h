@@ -24,13 +24,13 @@ namespace MR::ImageIO {
 
 class Default : public Base {
 public:
-  Default(const Header &header) : Base(header), bytes_per_segment(0) {}
+  Default(const Header &header) : Base(header) {}
   Default(Default &&) noexcept = default;
   Default &operator=(Default &&) = delete;
 
 protected:
   std::vector<std::shared_ptr<File::MMap>> mmaps;
-  int64_t bytes_per_segment;
+  int64_t bytes_per_segment{0};
 
   virtual void load(const Header &, size_t);
   virtual void unload(const Header &);

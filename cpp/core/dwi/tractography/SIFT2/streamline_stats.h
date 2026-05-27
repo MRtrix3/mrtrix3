@@ -45,8 +45,8 @@ public:
 
 private:
   double min, max;
-  double mean, mean_abs, var;
-  unsigned int count, nonzero;
+  double mean{0.0}, mean_abs{0.0}, var{0.0};
+  unsigned int count{0}, nonzero{0};
 };
 
 } // namespace MR::DWI::Tractography::SIFT2

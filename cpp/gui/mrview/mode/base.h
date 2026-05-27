@@ -66,7 +66,7 @@ public:
   Projection projection;
   const int features;
   QList<ImageBase *> overlays_for_3D;
-  bool update_overlays;
+  bool update_overlays{false};
 
   virtual void paint(Projection &projection);
   virtual void mouse_press_event();
@@ -200,7 +200,7 @@ protected:
 
   void reset_view();
 
-  bool visible;
+  bool visible{true};
 };
 
 //! \cond skip

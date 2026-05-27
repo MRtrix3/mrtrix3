@@ -31,7 +31,7 @@
 
 namespace MR::GUI::MRView::Tool {
 
-ODF::ODF(Dock *parent) : Base(parent), preview(nullptr), renderer(nullptr), lighting_dock(nullptr), lmax(0) {
+ODF::ODF(Dock *parent) : Base(parent) {
   lighting = new GL::Lighting(this);
 
   auto *main_box = new VBoxLayout(this);

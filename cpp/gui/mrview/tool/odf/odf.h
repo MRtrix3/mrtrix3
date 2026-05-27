@@ -73,9 +73,9 @@ private slots:
   void close_event() override;
 
 protected:
-  ODF_Preview *preview;
+  ODF_Preview *preview{nullptr};
 
-  DWI::Renderer *renderer;
+  DWI::Renderer *renderer{nullptr};
 
   ODF_Model *image_list_model;
   QListView *image_list_view;
@@ -90,10 +90,10 @@ protected:
 
   AdjustButton *scale;
 
-  LightingDock *lighting_dock;
+  LightingDock *lighting_dock{nullptr};
   GL::Lighting *lighting;
 
-  int lmax;
+  int lmax{0};
 
   void add_images(std::vector<std::filesystem::path> &list, const odf_type_t mode);
 

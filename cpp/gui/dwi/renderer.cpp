@@ -24,8 +24,7 @@
 
 namespace MR::GUI::DWI {
 
-Renderer::Renderer(QOpenGLWidget *widget)
-    : mode(mode_t::SH), reverse_ID(0), origin_ID(0), sh(*this), tensor(*this), dixel(*this), context_(widget) {
+Renderer::Renderer(QOpenGLWidget *widget) : sh(*this), tensor(*this), dixel(*this), context_(widget) {
   // CONF option: ObjectColor
   // CONF default: 1,1,0 (yellow)
   // CONF The default colour to use for objects (i.e. SH glyphs) when not

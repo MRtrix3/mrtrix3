@@ -183,17 +183,11 @@ bool ProgressBar::set_update_method() {
 
 ProgressBar::ProgressBar(std::string_view text, size_t target, int log_level)
     : first_time(true),
-      last_value(0),
+
       show(std::this_thread::get_id() == ::MR::App::main_thread_ID && !progressbar_active &&
            App::log_level >= log_level),
       _text(text),
-      _ellipsis("..."),
-      _value(0),
-      current_val(0),
-      next_percent(0),
-      next_time(0.0),
-      _multiplier(0.0),
-      _text_has_been_modified(false) {
+      _ellipsis("...") {
   if (show) {
     set_max(target);
     progressbar_active = true;

@@ -31,7 +31,7 @@ namespace MR::DWI::Tractography::GT {
 class InternalEnergyComputer : public EnergyComputer {
 public:
   InternalEnergyComputer(Stats &s, ParticleGrid &pgrid)
-      : EnergyComputer(s), pGrid(pgrid), cpot(1.0), dEint(0.0), neighbourhood(), normalization(1.0), rng_uniform() {
+      : EnergyComputer(s), pGrid(pgrid), neighbourhood(), rng_uniform() {
     DEBUG("Initialise computation of internal energy.");
     neighbourhood.reserve(1000);
     ParticleEnd pe;
@@ -86,9 +86,9 @@ public:
 
 protected:
   ParticleGrid &pGrid;
-  double cpot, dEint;
+  double cpot{1.0}, dEint{0.0};
   std::vector<ParticleEnd> neighbourhood;
-  double normalization;
+  double normalization{1.0};
   Math::RNG::Uniform<double> rng_uniform;
 
   double calcEnergy(const Particle *P1, const int ep1, const Particle *P2, const int ep2) {

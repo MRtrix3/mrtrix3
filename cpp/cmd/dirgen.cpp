@@ -106,7 +106,6 @@ public:
       : progress(progress),                         //
         ndirs(ndirs),                               //
         bipolar(get_options("unipolar").empty()),   //
-        power(0),                                   //
         directions(3 * ndirs) {}                    //
 
 // Non-optimised compilation can't handle recursive inline functions
@@ -226,7 +225,7 @@ protected:
   ProgressBar &progress;
   size_t ndirs;
   bool bipolar;
-  int power;
+  int power{0};
   Eigen::VectorXd directions;
   double E;
 

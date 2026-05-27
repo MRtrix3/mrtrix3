@@ -51,10 +51,10 @@ public:
   //! a class to hold attributes about each axis
   class Axis {
   public:
-    Axis() noexcept : size(1), spacing(std::numeric_limits<default_type>::quiet_NaN()), stride(0) {}
-    ssize_t size;
+    Axis() noexcept : spacing(std::numeric_limits<default_type>::quiet_NaN()) {}
+    ssize_t size{1};
     default_type spacing;
-    ssize_t stride;
+    ssize_t stride{0};
   };
 
   Header()

@@ -98,10 +98,7 @@ protected:
 public:
   ModelBase(Image<float> &dwi, const DWI::Directions::FastLookupSet &dirs)
       : Mapping::Fixel_TD_map<Fixel>(dwi, dirs),
-        proc_mask(Image<float>::scratch(Fixel_map<Fixel>::header(), "SIFT model processing mask")),
-        FOD_sum(0.0),
-        TD_sum(0.0),
-        have_null_lobes(false) {
+        proc_mask(Image<float>::scratch(Fixel_map<Fixel>::header(), "SIFT model processing mask")) {
     SIFT::initialise_processing_mask(dwi, proc_mask, act_5tt);
   }
   ModelBase(const ModelBase &) = delete;
@@ -134,8 +131,8 @@ protected:
   using Mapping::Fixel_TD_map<Fixel>::dirs;
 
   Image<float> act_5tt, proc_mask;
-  default_type FOD_sum, TD_sum;
-  bool have_null_lobes;
+  default_type FOD_sum{0.0}, TD_sum{0.0};
+  bool have_null_lobes{false};
 
   // The definitions of these functions are located in dwi/tractography/SIFT/output.h
   void output_target_voxel(const std::filesystem::path &) const;

@@ -64,11 +64,11 @@ public:
 
     [[nodiscard]] size_t num_DW_shells() const;
 
-    dir_t dir_type;
+    dir_t dir_type{dir_t::NONE};
     Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> header_dirs;
     Eigen::Matrix<double, Eigen::Dynamic, 4> grad;
     std::unique_ptr<MR::DWI::Shells> shells;
-    size_t shell_index;
+    size_t shell_index{0};
     std::unique_ptr<MR::DWI::Directions::Set> dirs;
   };
   std::unique_ptr<DixelPlugin> dixel;

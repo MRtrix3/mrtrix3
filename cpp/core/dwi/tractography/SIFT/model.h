@@ -88,7 +88,7 @@ private:
         : master(i),
           mapper(i.header(), i.dirs),
           mutex(new std::mutex),
-          TD_sum(0.0),
+
           fixel_TDs(master.fixels.size(), 0.0),
           fixel_counts(master.fixels.size(), 0) {
       mapper.set_upsample_ratio(upsample_ratio);
@@ -98,7 +98,6 @@ private:
         : master(that.master),
           mapper(that.mapper),
           mutex(that.mutex),
-          TD_sum(0.0),
           fixel_TDs(master.fixels.size(), 0.0),
           fixel_counts(master.fixels.size(), 0) {}
     ~TrackMappingWorker();
@@ -108,7 +107,7 @@ private:
     Model &master;
     Mapping::TrackMapperBase mapper;
     std::shared_ptr<std::mutex> mutex;
-    double TD_sum;
+    double TD_sum{0.0};
     std::vector<double> fixel_TDs;
     std::vector<track_t> fixel_counts;
   };

@@ -20,7 +20,7 @@
 namespace MR::GUI::MRView {
 
 ComboBoxWithErrorMsg::ComboBoxWithErrorMsg(QWidget *parent, const QString &msg)
-    : QComboBox(parent), error_message(msg), error_index(-1) {
+    : QComboBox(parent), error_message(msg) {
   connect(this, SIGNAL(currentIndexChanged(int)), SLOT(onSetIndex(int)));
 }
 

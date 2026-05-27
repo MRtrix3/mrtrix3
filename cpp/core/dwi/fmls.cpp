@@ -123,10 +123,7 @@ Segmenter::Segmenter(const DWI::Directions::FastLookupSet &directions, const siz
       precomputer(new Math::SH::PrecomputedAL<default_type>(lmax, 2 * dirs.size())),
       integral_threshold(default_integral_threshold),
       peak_value_threshold(default_peakamp_threshold),
-      lobe_merge_ratio(default_mergeratio_bridgetopeak),
-      create_null_lobe(false),
-      create_lookup_table(true),
-      dilate_lookup_table(false) {
+      lobe_merge_ratio(default_mergeratio_bridgetopeak) {
   Eigen::Matrix<default_type, Eigen::Dynamic, 2> az_in_pairs(dirs.size(), 2);
   for (size_t row = 0; row != dirs.size(); ++row) {
     const auto d = dirs.get_dir(row);

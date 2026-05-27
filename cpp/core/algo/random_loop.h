@@ -34,13 +34,7 @@ public:
               RandomEngine &random_engine,
               const size_t &axis = 0,
               const size_t &number_iterations = std::numeric_limits<ssize_t>::max())
-      : image(in),
-        engine(random_engine),
-        ax(axis),
-        idx(image.size(axis)),
-        max_cnt(number_iterations),
-        status(true),
-        cnt(0) {
+      : image(in), engine(random_engine), ax(axis), idx(image.size(axis)), max_cnt(number_iterations) {
     init();
     set_next_index();
   }
@@ -74,8 +68,8 @@ private:
   std::vector<size_t>::iterator it;
   std::vector<size_t>::iterator stop;
   size_t max_cnt;
-  bool status;
-  size_t cnt;
+  bool status{true};
+  size_t cnt{0};
 };
 
 // Random_sparse_loop: ok for VERY sparse loops, slows down significantly at higher density (>5%)
@@ -87,7 +81,7 @@ public:
                      const bool repeat = false,
                      const ssize_t &min_index = 0,
                      const ssize_t &max_index = std::numeric_limits<ssize_t>::max())
-      : image(in), repeat_(repeat), status(true), ax(axis), cnt(0), min_idx(min_index), rng_{std::random_device{}()} {
+      : image(in), repeat_(repeat), ax(axis), min_idx(min_index), rng_{std::random_device{}()} {
     if (max_index < image.size(ax))
       range = max_index - min_idx + 1;
     else
@@ -138,9 +132,9 @@ public:
 private:
   ImageType &image;
   bool repeat_;
-  bool status;
+  bool status{true};
   size_t ax;
-  size_t cnt;
+  size_t cnt{0};
   ssize_t min_idx;
   size_t range;
   size_t max_cnt;
@@ -156,7 +150,7 @@ public:
                 IterType last,
                 const size_t &axis = 0,
                 const size_t &number_iterations = std::numeric_limits<ssize_t>::max())
-      : image(in), ax(axis), start(first), stop(last), max_cnt(number_iterations), status(true), cnt(0) {
+      : image(in), ax(axis), start(first), stop(last), max_cnt(number_iterations) {
     set_next_index();
   }
 
@@ -180,8 +174,8 @@ private:
   IterType &start;
   IterType &stop;
   size_t max_cnt;
-  bool status;
-  size_t cnt;
+  bool status{true};
+  size_t cnt{0};
 };
 
 //! @}

@@ -56,8 +56,7 @@ public:
         g1(func.size()),
         g2(func.size()),
         g3(func.size()),
-        nfeval(0),
-        niter(0),
+
         verbose(verbose),
         delim(",") {}
 
@@ -210,8 +209,8 @@ protected:
   UpdateFunctor update_func;
   Eigen::Matrix<value_type, Eigen::Dynamic, 1> x1, x2, x3, g1, g2, g3, preconditioner_weights;
   value_type f, dt, normg;
-  size_t nfeval;
-  size_t niter;
+  size_t nfeval{0};
+  size_t niter{0};
   bool verbose;
   std::string delim;
 

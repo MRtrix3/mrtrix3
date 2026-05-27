@@ -32,7 +32,7 @@ class NameParser {
 public:
   class Item {
   public:
-    Item() : seq_length(0) {}
+    Item() {}
 
     void set_str(std::string_view s) {
       clear();
@@ -69,7 +69,7 @@ public:
     friend std::ostream &operator<<(std::ostream &stream, const Item &item);
 
   protected:
-    size_t seq_length;
+    size_t seq_length{0};
     std::string str;
     std::vector<uint32_t> seq;
   };

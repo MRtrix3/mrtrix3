@@ -120,9 +120,9 @@ bool Worker::operator()(Streamline<> &in, Streamline<> &out) const {
 
 Worker::Thresholds::Thresholds(Tractography::Properties &properties)
     : max_length(std::numeric_limits<float>::infinity()),
-      min_length(0.0F),
+
       max_weight(std::numeric_limits<float>::infinity()),
-      min_weight(0.0F),
+
       step_size(properties.get_stepsize()) {
   if (properties.find("max_dist") != properties.end()) {
     try {

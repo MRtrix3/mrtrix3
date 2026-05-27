@@ -65,10 +65,8 @@ public:
         midway_image(midway_image),
         im1_mask(im1_mask),
         im2_mask(im2_mask),
-        loop_density(1.0),
-        control_point_exent(10.0, 10.0, 10.0),
-        robust_estimate_subset(false),
-        robust_estimate_use_score(false) {
+
+        control_point_exent(10.0, 10.0, 10.0) {
     im1_image_interp.reset(new Im1ImageInterpType(im1_image));
     im2_image_interp.reset(new Im2ImageInterpType(im2_image));
     if (im1_mask.valid())
@@ -217,11 +215,11 @@ public:
   Im2MaskType im2_mask;
   MR::copy_ptr<Im1MaskInterpolatorType> im1_mask_interp;
   MR::copy_ptr<Im2MaskInterpolatorType> im2_mask_interp;
-  default_type loop_density;
+  default_type loop_density{1.0};
   Eigen::Vector3d control_point_exent;
 
-  bool robust_estimate_subset;
-  bool robust_estimate_use_score;
+  bool robust_estimate_subset{false};
+  bool robust_estimate_use_score{false};
   std::vector<int> robust_estimate_subset_from;
   std::vector<int> robust_estimate_subset_size;
   Image<float> robust_estimate_score1, robust_estimate_score2;

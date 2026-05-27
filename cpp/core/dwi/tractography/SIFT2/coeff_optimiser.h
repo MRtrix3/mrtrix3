@@ -58,11 +58,11 @@ private:
   double &sum_costs;
 
   StreamlineStats local_stats_steps, local_stats_coefficients;
-  size_t local_nonzero_count;
+  size_t local_nonzero_count{0};
   fixel_mask_type local_to_exclude;
 
 protected:
-  mutable double local_sum_costs;
+  mutable double local_sum_costs{0.0};
 
 private:
   double do_fixel_exclusion(const SIFT::track_t);

@@ -141,7 +141,7 @@ const LabelValidation validate_label_image(Image<node_t> image) {
 
   class Seeder {
   public:
-    Seeder(const std::vector<node_t> &labels) : data(labels), index(0) {}
+    Seeder(const std::vector<node_t> &labels) : data(labels) {}
     bool operator()(node_t &out) {
       if (index == data.size()) {
         out = std::numeric_limits<node_t>::max();
@@ -153,7 +153,7 @@ const LabelValidation validate_label_image(Image<node_t> image) {
 
   private:
     std::vector<node_t> data;
-    size_t index;
+    size_t index{0};
   };
   class Worker {
   public:

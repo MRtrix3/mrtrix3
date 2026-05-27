@@ -20,8 +20,7 @@
 
 namespace MR::GUI::MRView::Mode {
 
-Base::Base(int flags)
-    : projection(window().glarea, window().font), features(flags), update_overlays(false), visible(true) {}
+Base::Base(int flags) : projection(window().glarea, window().font), features(flags) {}
 
 Base::~Base() { glarea()->setCursor(Cursor::crosshair); }
 

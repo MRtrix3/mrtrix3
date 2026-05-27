@@ -154,10 +154,7 @@ private:
           msk2(mask2),
           global_s1(sum_im1),
           global_s2(sum_im2),
-          global_cnt(overlap),
-          s1(0.0),
-          s2(0.0),
-          cnt(0) {
+          global_cnt(overlap) {
       assert(in1.valid());
       assert(in2.valid());
       im1_image_interp.reset(new Im1ImageInterpolatorType(in1));
@@ -237,8 +234,8 @@ private:
     MaskType2 msk2;
     default_type &global_s1, &global_s2;
     size_t &global_cnt;
-    default_type s1, s2;
-    size_t cnt;
+    default_type s1{0.0}, s2{0.0};
+    size_t cnt{0};
     Eigen::Vector3d vox, pos, pos1, pos2;
     default_type v1, v2;
     MR::copy_ptr<Im1ImageInterpolatorType> im1_image_interp;

@@ -84,18 +84,15 @@ public:
   }
 
 protected:
-  mode_t mode;
+  mode_t mode{mode_t::SH};
   Eigen::Array3f object_color;
-  mutable GLuint reverse_ID, origin_ID;
+  mutable GLuint reverse_ID{0}, origin_ID{0};
 
   class Shader : public GL::Shader::Program {
   public:
     Shader()
-        : mode_(mode_t::SH),
-          use_lighting_(true),
-          colour_by_direction_(true),
-          hide_neg_values_(true),
-          orthographic_(false) {}
+
+    {}
     void start(mode_t mode,
                bool use_lighting,
                bool colour_by_direction,
@@ -104,8 +101,9 @@ protected:
                bool colour_relative_to_projection);
 
   protected:
-    mode_t mode_;
-    bool use_lighting_, colour_by_direction_, hide_neg_values_, orthographic_, colour_relative_to_projection_;
+    mode_t mode_{mode_t::SH};
+    bool use_lighting_{true}, colour_by_direction_{true}, hide_neg_values_{true}, orthographic_{false},
+        colour_relative_to_projection_;
     [[nodiscard]] std::string vertex_shader_source() const;
     [[nodiscard]] std::string geometry_shader_source() const;
     [[nodiscard]] std::string fragment_shader_source() const;
@@ -135,7 +133,7 @@ private:
 public:
   class SH : public ModeBase {
   public:
-    SH(Renderer &parent) : ModeBase(parent), LOD(0) {}
+    SH(Renderer &parent) : ModeBase(parent) {}
     ~SH();
 
     void initGL() override;
@@ -162,7 +160,7 @@ public:
     [[nodiscard]] int get_LOD() const { return LOD; }
 
   private:
-    int LOD;
+    int LOD{0};
     matrix_t transform;
     Shapes::HalfSphere half_sphere;
     GL::VertexBuffer surface_buffer;
@@ -174,7 +172,7 @@ public:
 
   class Tensor : public ModeBase {
   public:
-    Tensor(Renderer &parent) : ModeBase(parent), LOD(0) {}
+    Tensor(Renderer &parent) : ModeBase(parent) {}
     ~Tensor();
 
     void initGL() override;
@@ -187,7 +185,7 @@ public:
     int get_LOD() const { return LOD; }
 
   private:
-    int LOD;
+    int LOD{0};
     Shapes::HalfSphere half_sphere;
     GL::VertexArrayObject VAO;
 
@@ -200,7 +198,7 @@ public:
     using dir_t = MR::DWI::Directions::index_type;
 
   public:
-    Dixel(Renderer &parent) : ModeBase(parent), vertex_count(0), index_count(0) {}
+    Dixel(Renderer &parent) : ModeBase(parent) {}
     ~Dixel();
 
     void initGL() override;
@@ -214,7 +212,7 @@ public:
     GL::VertexBuffer vertex_buffer, value_buffer;
     GL::IndexBuffer index_buffer;
     GL::VertexArrayObject VAO;
-    GLuint vertex_count, index_count;
+    GLuint vertex_count{0}, index_count{0};
 
     void update_dixels(const MR::DWI::Directions::Set &);
 

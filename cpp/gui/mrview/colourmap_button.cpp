@@ -28,11 +28,7 @@ ColourMapButton::ColourMapButton(QWidget *parent,
                                  bool use_shortcuts,
                                  bool use_special_colourmaps,
                                  bool use_customise_state_items)
-    : QToolButton(parent),
-      observer(obs),
-      core_colourmaps_actions(new QActionGroup(parent)),
-      invert_scale_action(nullptr),
-      fixed_colour_index(0) {
+    : QToolButton(parent), observer(obs), core_colourmaps_actions(new QActionGroup(parent)) {
   setToolTip(tr("Colourmap menu"));
   setIcon(QIcon(":/colourmap.svg"));
   setPopupMode(QToolButton::InstantPopup);

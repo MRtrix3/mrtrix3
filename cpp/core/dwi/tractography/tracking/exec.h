@@ -101,14 +101,11 @@ public:
   Exec(const typename Method::Shared &shared)
       : S(shared),
         method(shared),
-        track_excluded(false),
+
         include_visitation(S.properties.include, S.properties.ordered_include) {}
 
   Exec(const Exec &that)
-      : S(that.S),
-        method(that.method),
-        track_excluded(false),
-        include_visitation(S.properties.include, S.properties.ordered_include) {}
+      : S(that.S), method(that.method), include_visitation(S.properties.include, S.properties.ordered_include) {}
 
   bool operator()(GeneratedTrack &item) {
     if (!seed_track(item))
@@ -134,7 +131,7 @@ public:
 private:
   const typename Method::Shared &S;
   Method method;
-  bool track_excluded;
+  bool track_excluded{false};
   IncludeROIVisitation include_visitation;
 
   std::optional<term_t> iterate() {

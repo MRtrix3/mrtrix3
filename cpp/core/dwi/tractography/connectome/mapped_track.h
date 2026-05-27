@@ -23,7 +23,7 @@ namespace MR::DWI::Tractography::Connectome {
 class Mapped_track_base {
 
 public:
-  Mapped_track_base() : track_index(-1), factor(0.0), weight(1.0) {}
+  Mapped_track_base() {}
 
   void set_track_index(const size_t i) { track_index = i; }
   void set_factor(const float i) { factor = i; }
@@ -34,8 +34,8 @@ public:
   [[nodiscard]] float get_weight() const { return weight; }
 
 private:
-  size_t track_index;
-  float factor, weight;
+  size_t track_index{size_t(-1)};
+  float factor{0.0}, weight{1.0};
 };
 
 class Mapped_track_nodepair : public Mapped_track_base {

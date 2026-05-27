@@ -32,8 +32,7 @@ ExternalEnergyComputer::ExternalEnergyComputer(Stats &stat, Header &dwiheader, c
       ncols(Math::SH::NforL(lmax)),
       nf(props.resp_ISO.size()),
       beta(props.beta),
-      mu(props.ppot * M_sqrt4PI),
-      dE(0.0) {
+      mu(props.ppot * M_sqrt4PI) {
   DEBUG("Initialise computation of external energy.");
 
   // Create images --------------------------------------------------------------

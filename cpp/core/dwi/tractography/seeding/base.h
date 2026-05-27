@@ -57,7 +57,7 @@ class Base {
 
 public:
   Base(std::string_view in, std::string_view desc, const size_t attempts)
-      : volume(0.0), count(0), type(desc), name(in), max_attempts(attempts) {}
+      : type(desc), name(in), max_attempts(attempts) {}
 
   virtual ~Base() {}
 
@@ -78,8 +78,8 @@ public:
 
 protected:
   // Finite seeds are defined by the number of seeds; non-limited are defined by volume
-  float volume;
-  size_t count;
+  float volume{0.0};
+  size_t count{0};
   mutable std::mutex mutex;
   const std::string type; // Text describing the type of seed this is
 

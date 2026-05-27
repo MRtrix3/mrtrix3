@@ -32,12 +32,7 @@ namespace {
 class MeanStdFunctor {
 public:
   MeanStdFunctor(double &overall_sum, double &overall_sum_sqr, size_t &overall_count)
-      : overall_sum(overall_sum),
-        overall_sum_sqr(overall_sum_sqr),
-        overall_count(overall_count),
-        sum(0.0),
-        sum_sqr(0.0),
-        count(0) {}
+      : overall_sum(overall_sum), overall_sum_sqr(overall_sum_sqr), overall_count(overall_count) {}
 
   ~MeanStdFunctor() {
     std::lock_guard<std::mutex> const lock(mutex);
@@ -69,8 +64,8 @@ public:
   double &overall_sum;
   double &overall_sum_sqr;
   size_t &overall_count;
-  double sum, sum_sqr;
-  size_t count;
+  double sum{0.0}, sum_sqr{0.0};
+  size_t count{0};
 
   static std::mutex mutex;
 };
@@ -79,7 +74,7 @@ std::mutex MeanStdFunctor::mutex;
 class CorrelationFunctor {
 public:
   CorrelationFunctor(double threshold, double &overall_sum, double &overall_mean_xy)
-      : threshold(threshold), overall_sum(overall_sum), overall_mean_xy(overall_mean_xy), sum(0), mean_xy(0.0) {}
+      : threshold(threshold), overall_sum(overall_sum), overall_mean_xy(overall_mean_xy) {}
 
   ~CorrelationFunctor() {
     std::lock_guard<std::mutex> const lock(mutex);
@@ -112,8 +107,8 @@ public:
   const double threshold;
   double &overall_sum;
   double &overall_mean_xy;
-  double sum;
-  double mean_xy;
+  double sum{0};
+  double mean_xy{0.0};
 
   static std::mutex mutex;
 };

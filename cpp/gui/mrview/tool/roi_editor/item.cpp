@@ -35,7 +35,7 @@ int ROI_Item::number_of_undos = MR::File::Config::get_int("NumberOfUndos", 16);
 int ROI_Item::current_preset_colour = 0;
 int ROI_Item::new_roi_counter = 0;
 
-ROI_Item::ROI_Item(MR::Header &&src) : Volume(std::move(src)), saved(true), current_undo(-1) {
+ROI_Item::ROI_Item(MR::Header &&src) : Volume(std::move(src)) {
   type = gl::UNSIGNED_BYTE;
   format = gl::RED_INTEGER;
   internal_format = gl::R8UI;

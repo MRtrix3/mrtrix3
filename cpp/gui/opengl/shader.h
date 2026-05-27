@@ -92,7 +92,7 @@ using Fragment = Object<gl::FRAGMENT_SHADER>;
 
 class Program {
 public:
-  Program() : index_(0) {}
+  Program() {}
   Program(Program &&other) noexcept : index_(other.index_) { other.index_ = 0; }
   Program(const Program &) = delete;
   Program &operator=(const Program &) = delete;
@@ -155,7 +155,7 @@ public:
   }
 
 protected:
-  GLuint index_;
+  GLuint index_{0};
 };
 
 } // namespace MR::GUI::GL::Shader

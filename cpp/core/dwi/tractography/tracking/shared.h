@@ -50,15 +50,15 @@ public:
   Properties &properties;
   Eigen::Vector3f init_dir;
   size_t max_num_tracks, max_num_seeds;
-  size_t min_num_points_preds, max_num_points_preds;
-  size_t min_num_points_postds, max_num_points_postds;
+  size_t min_num_points_preds{0}, max_num_points_preds{0};
+  size_t min_num_points_postds{0}, max_num_points_postds{0};
   float min_dist, max_dist;
   // Different variables for 1st-order integration vs. higher-order integration
   float max_angle_1o, max_angle_ho, cos_max_angle_1o, cos_max_angle_ho;
   float step_size, min_radius, threshold, init_threshold;
   size_t max_seed_attempts;
-  bool unidirectional, rk4, stop_on_all_include, implicit_max_num_seeds;
-  curvature_constraint_t curvature_constraint;
+  bool unidirectional{false}, rk4{false}, stop_on_all_include{false}, implicit_max_num_seeds;
+  curvature_constraint_t curvature_constraint{curvature_constraint_t::POSTHOC_THRESHOLD};
   DWI::Tractography::Resampling::Downsampler downsampler;
 
   // Additional members for ACT

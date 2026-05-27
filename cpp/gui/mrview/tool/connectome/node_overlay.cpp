@@ -24,8 +24,7 @@ namespace MR::GUI::MRView::Tool {
 
 NodeOverlay::NodeOverlay(MR::Header &&H)
     : MR::GUI::MRView::ImageBase(std::move(H)),
-      data(MR::Image<float>::scratch(header(), "node overlay scratch image")),
-      need_update(true) {
+      data(MR::Image<float>::scratch(header(), "node overlay scratch image")) {
   tex_positions.assign(3, -1);
   set_interpolate(false);
   set_colourmap(5);

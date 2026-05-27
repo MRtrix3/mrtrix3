@@ -74,9 +74,7 @@ public:
         local_search_directions(init.init_rotation.search.directions),
         image_scale_factor(init.init_rotation.search.scale),
         global_search(init.init_rotation.search.run_global),
-        translation_extent(init.init_rotation.search.translation_extent),
-        idx_angle(0),
-        idx_dir(0) {
+        translation_extent(init.init_rotation.search.translation_extent) {
     local_trafo.set_centre_without_transform_update(centre);
     local_trafo.set_translation(offset);
     Eigen::Matrix<default_type, 3, 3> const lin = input_trafo.get_transform().linear();
@@ -336,7 +334,7 @@ private:
   default_type image_scale_factor;
   bool global_search;
   double translation_extent;
-  size_t idx_angle, idx_dir;
+  size_t idx_angle{0}, idx_dir{0};
   Registration::Transform::Rigid local_trafo;
   Eigen::Matrix<default_type, Eigen::Dynamic, 2> az_in;
   Eigen::Matrix<default_type, Eigen::Dynamic, 3> xyz;

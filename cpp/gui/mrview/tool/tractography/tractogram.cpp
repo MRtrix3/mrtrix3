@@ -314,16 +314,14 @@ void Tractogram::Shader::update(const Displayable &object) {
 
 Tractogram::Tractogram(Tractography &tool, const std::filesystem::path &filepath)
     : Displayable(filepath),
-      show_colour_bar(true),
+
       original_fov(NaNF),
-      line_thickness(0.F),
+
       tractography_tool(tool),
       filepath(filepath),
-      color_type(TrackColourType::Direction),
-      threshold_type(TrackThresholdType::None),
+
       geometry_type(default_tract_geom),
-      sample_stride(0),
-      vao_dirty(true),
+
       threshold_min(NaNF),
       threshold_max(NaNF) {
   set_allowed_features(true, true, true);

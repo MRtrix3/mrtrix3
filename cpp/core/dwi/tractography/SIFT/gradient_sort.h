@@ -92,7 +92,7 @@ private:
 
   class BlockSender {
   public:
-    BlockSender(const track_t count, const track_t size) : num_tracks(count), block_size(size), counter(0) {}
+    BlockSender(const track_t count, const track_t size) : num_tracks(count), block_size(size) {}
     bool operator()(TrackIndexRange &out) {
       if (counter == num_tracks) {
         out.first = out.second = 0;
@@ -106,7 +106,7 @@ private:
 
   private:
     const track_t num_tracks, block_size;
-    track_t counter;
+    track_t counter{0};
   };
 
   class Sorter {

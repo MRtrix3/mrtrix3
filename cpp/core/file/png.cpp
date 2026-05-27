@@ -31,15 +31,7 @@
 
 namespace MR::File::PNG {
 
-Reader::Reader(const std::filesystem::path &filepath)
-    : infile(fopen(filepath.string().c_str(), "rb")),
-      png_ptr(nullptr),
-      info_ptr(nullptr),
-      width(0),
-      height(0),
-      bit_depth(0),
-      color_type(0),
-      channels(0) {
+Reader::Reader(const std::filesystem::path &filepath) : infile(fopen(filepath.string().c_str(), "rb")) {
   std::array<unsigned char, 8> sig;
   if (fread(sig.data(), 1, 8, infile) < 8)
     throw Exception("error reading from PNG file \"" + filepath.string() + "\"");
@@ -145,15 +137,7 @@ void Reader::load(std::byte *image_data) {
 
 jmp_buf Writer::jmpbuf;
 
-Writer::Writer(const Header &H, const std::filesystem::path &path)
-    : png_ptr(nullptr),
-      info_ptr(nullptr),
-      color_type(0),
-      bit_depth(0),
-      filepath(path),
-      data_type(H.datatype()),
-      multiplier(1.0),
-      outfile(nullptr) {
+Writer::Writer(const Header &H, const std::filesystem::path &path) : filepath(path), data_type(H.datatype()) {
   if (std::filesystem::exists(path) && !App::overwrite_files)
     throw Exception("output file \"" + path.string() + "\" already exists (use -force option to force overwrite)");
   png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, this, &error_handler, nullptr);

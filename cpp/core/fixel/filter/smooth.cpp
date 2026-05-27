@@ -70,7 +70,7 @@ void Smooth::operator()(Image<float> &input, Image<float> &output) const {
 
   class Source {
   public:
-    Source(const size_t N) : number(N), counter(0) {}
+    Source(const size_t N) : number(N) {}
     bool operator()(size_t &fixel) {
       fixel = counter;
       if (fixel == number)
@@ -81,7 +81,7 @@ void Smooth::operator()(Image<float> &input, Image<float> &output) const {
 
   private:
     const size_t number;
-    size_t counter;
+    size_t counter{0};
   };
 
   class Worker {

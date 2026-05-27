@@ -50,7 +50,7 @@ public:
 
   struct Guard {
   public:
-    Guard(SpatialLock &l) : lock(l), idx(-1) {}
+    Guard(SpatialLock &l) : lock(l) {}
     Guard(const Guard &) = delete;
     Guard &operator=(const Guard &) = delete;
     Guard(Guard &&other) noexcept = delete;
@@ -67,7 +67,7 @@ public:
 
   private:
     SpatialLock &lock;
-    ssize_t idx;
+    ssize_t idx{-1};
   };
 
 protected:
