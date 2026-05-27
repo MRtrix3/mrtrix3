@@ -43,39 +43,43 @@ const OptionGroup Options =
              "ignore zero values during statistics calculation");
 // clang-format on
 
-void Stats::operator()(complex_type val) {
-  if (std::isfinite(val.real()) && std::isfinite(val.imag()) &&
-      (!ignore_zero || val.real() != 0.0 || val.imag() != 0.0)) {
-    if (min.real() > val.real())
-      min = complex_type(val.real(), min.imag());
-    if (min.imag() > val.imag())
-      min = complex_type(min.real(), val.imag());
-    if (max.real() < val.real())
-      max = complex_type(val.real(), max.imag());
-    if (max.imag() < val.imag())
-      max = complex_type(max.real(), val.imag());
-    count++;
-    // Welford's online algorithm for variance calculation:
-    delta = val - mean;
-    mean += cdouble{delta.real() / static_cast<double>(count), delta.imag() / static_cast<double>(count)};
-    delta2 = val - mean;
-    m2 += cdouble{delta.real() * delta2.real(), delta.imag() * delta2.imag()};
-    if (!is_complex)
-      values.push_back(static_cast<value_type>(val.real()));
+template <typename T> void Stats<T>::operator()(T val) {
+  if constexpr (is_complex<T>::value) {
+    if (std::isfinite(val.real()) && std::isfinite(val.imag()) &&
+        (!ignore_zero || val.real() != 0.0 || val.imag() != 0.0)) {
+      if (min.real() > val.real())
+        min = T(val.real(), min.imag());
+      if (min.imag() > val.imag())
+        min = T(min.real(), val.imag());
+      if (max.real() < val.real())
+        max = T(val.real(), max.imag());
+      if (max.imag() < val.imag())
+        max = T(max.real(), val.imag());
+      count++;
+      // Welford's online algorithm for variance calculation:
+      delta = val - mean;
+      mean += T{delta.real() / static_cast<double>(count), delta.imag() / static_cast<double>(count)};
+      delta2 = val - mean;
+      m2 += T{delta.real() * delta2.real(), delta.imag() * delta2.imag()};
+    }
+  } else {
+    if (std::isfinite(val) && (!ignore_zero || val != 0.0)) {
+      if (min > val)
+        min = val;
+      if (max < val)
+        max = val;
+      count++;
+      // Welford's online algorithm for variance calculation:
+      delta = val - mean;
+      mean += delta / static_cast<double>(count);
+      delta2 = val - mean;
+      m2 += delta * delta2;
+      values.push_back(static_cast<value_type>(val));
+    }
   }
 }
 
-void print_header(bool is_complex) {
-  const int width = is_complex ? 20 : 10;
-  std::cout << std::setw(12) << std::right << "volume"
-            << " " << std::setw(width) << std::right << "mean";
-  if (!is_complex)
-    std::cout << " " << std::setw(width) << std::right << "median";
-  std::cout << " " << std::setw(width) << std::right << "std"
-            << " " << std::setw(width) << std::right << "min"
-            << " " << std::setw(width) << std::right << "max"
-            << " " << std::setw(10) << std::right << "count"
-            << "\n";
-}
+template class Stats<value_type>;
+template class Stats<complex_type>;
 
 } // namespace MR::Stats

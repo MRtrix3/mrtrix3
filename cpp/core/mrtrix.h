@@ -175,7 +175,13 @@ template <> inline cfloat to<cfloat>(std::string_view string) {
   if (string.empty())
     throw Exception("cannot convert empty string to complex float");
 
-  const std::string stripped = strip(string);
+  std::string stripped = strip(string);
+  // Accept fmtlib's parenthesised complex form "(a+bi)" in addition to the bare "a+bi".
+  if (stripped.size() >= 2 && stripped.front() == '(' && stripped.back() == ')') {
+    const std::string inner = strip(stripped.substr(1, stripped.size() - 2));
+    if (!inner.empty())
+      stripped = inner;
+  }
   std::vector<cfloat> candidates;
   for (ssize_t i = -1; i <= static_cast<ssize_t>(stripped.size()); ++i) {
     std::string first, second;
@@ -220,7 +226,13 @@ template <> inline cdouble to<cdouble>(std::string_view string) {
   if (string.empty())
     throw Exception("cannot convert empty string to complex double");
 
-  const std::string stripped = strip(string);
+  std::string stripped = strip(string);
+  // Accept fmtlib's parenthesised complex form "(a+bi)" in addition to the bare "a+bi".
+  if (stripped.size() >= 2 && stripped.front() == '(' && stripped.back() == ')') {
+    const std::string inner = strip(stripped.substr(1, stripped.size() - 2));
+    if (!inner.empty())
+      stripped = inner;
+  }
   std::vector<cdouble> candidates;
   for (ssize_t i = -1; i <= static_cast<ssize_t>(stripped.size()); ++i) {
     std::string first, second;

@@ -53,9 +53,9 @@ void usage() {
 using value_type = Stats::value_type;
 using complex_type = Stats::complex_type;
 
-class Volume_loop {
+template <typename T> class Volume_loop {
 public:
-  Volume_loop(Image<complex_type> &in) : image(in), is_4D(in.ndim() == 4), status(true) {
+  Volume_loop(Image<T> &in) : image(in), is_4D(in.ndim() == 4), status(true) {
     if (is_4D)
       image.index(3) = 0;
   }
@@ -76,12 +76,12 @@ public:
   }
 
 private:
-  Image<complex_type> &image;
+  Image<T> &image;
   const bool is_4D;
   bool status;
 };
 
-void run_volume(Stats::Stats &stats, Image<complex_type> &data, Image<bool> &mask) {
+template <typename T> void run_volume(Stats::Stats<T> &stats, Image<T> &data, Image<bool> &mask) {
   if (mask.valid()) {
     for (auto l = Loop(0, 3)(data, mask); l; ++l) {
       if (mask.value())
@@ -93,12 +93,8 @@ void run_volume(Stats::Stats &stats, Image<complex_type> &data, Image<bool> &mas
   }
 }
 
-void run() {
-  auto header = Header::open(argument[0]);
-  if (header.ndim() > 4)
-    throw Exception("mrstats is not designed to handle images greater than 4D");
-  const bool is_complex = header.datatype().is_complex();
-  auto data = header.get_image<complex_type>();
+template <typename T> void run_impl(Header &header) {
+  auto data = header.get_image<T>();
   const bool ignorezero = !get_options("ignorezero").empty();
 
   auto opt = get_options("mask");
@@ -114,18 +110,28 @@ void run() {
     fields.push_back(opt[n][0]);
 
   if (App::log_level && fields.empty())
-    Stats::print_header(is_complex);
+    Stats::print_header<T>();
 
   if (get_options("allvolumes").empty()) {
-    for (auto i = Volume_loop(data); i; ++i) {
-      Stats::Stats stats(is_complex, ignorezero);
-      run_volume(stats, data, mask);
+    for (auto i = Volume_loop<T>(data); i; ++i) {
+      Stats::Stats<T> stats(ignorezero);
+      run_volume<T>(stats, data, mask);
       stats.print(data, fields);
     }
   } else {
-    Stats::Stats stats(is_complex, ignorezero);
-    for (auto i = Volume_loop(data); i; ++i)
-      run_volume(stats, data, mask);
+    Stats::Stats<T> stats(ignorezero);
+    for (auto i = Volume_loop<T>(data); i; ++i)
+      run_volume<T>(stats, data, mask);
     stats.print(data, fields);
   }
+}
+
+void run() {
+  auto header = Header::open(argument[0]);
+  if (header.ndim() > 4)
+    throw Exception("mrstats is not designed to handle images greater than 4D");
+  if (header.datatype().is_complex())
+    run_impl<complex_type>(header);
+  else
+    run_impl<value_type>(header);
 }

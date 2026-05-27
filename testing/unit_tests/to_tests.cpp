@@ -28,11 +28,65 @@ using namespace MR;
 
 namespace {
 const std::vector<std::string> kInputStrings = {
-    "0",         "1",     "2",     "0 ",   " 1",     "0 0",   "0a",       "a0",          "true", "TRUE",     "tru",
-    "truee",     "false", "FALSE", "fals", "falsee", "true ", "yes",      "YES",         "yeah", "yess",     "no",
-    "NO",        "nope",  "na",    "0.0",  "1e",     "1e-1",  "1e-1a",    "inf",         "INF",  "infinity", "-inf",
-    "-infinity", "nan",   "NAN",   "nana", "-nan",   "i",     "I",        "j",           "J",    "-i",       "1i",
-    "1i0",       "1+i",   "1+ii",  "a1+i", "1+1+i",  "-1-i",  "inf+infi", " -inf+-nani "};
+    "0",
+    "1",
+    "2",
+    "0 ",
+    " 1",
+    "0 0",
+    "0a",
+    "a0",
+    "true",
+    "TRUE",
+    "tru",
+    "truee",
+    "false",
+    "FALSE",
+    "fals",
+    "falsee",
+    "true ",
+    "yes",
+    "YES",
+    "yeah",
+    "yess",
+    "no",
+    "NO",
+    "nope",
+    "na",
+    "0.0",
+    "1e",
+    "1e-1",
+    "1e-1a",
+    "inf",
+    "INF",
+    "infinity",
+    "-inf",
+    "-infinity",
+    "nan",
+    "NAN",
+    "nana",
+    "-nan",
+    "i",
+    "I",
+    "j",
+    "J",
+    "-i",
+    "1i",
+    "1i0",
+    "1+i",
+    "1+ii",
+    "a1+i",
+    "1+1+i",
+    "-1-i",
+    "inf+infi",
+    " -inf+-nani ",
+    // fmtlib's parenthesised complex form "(a+bi)" and malformed parenthesised inputs
+    "(1+2i)",
+    "(0+0i)",
+    "(-1.5-2.5i)",
+    "(3+0i)",
+    "(1+ii)",
+    "()"};
 
 const std::vector<bool> expectedBoolResults = {
     true,  // "0"
@@ -86,7 +140,13 @@ const std::vector<bool> expectedBoolResults = {
     false, // "1+1+i"
     false, // "-1-i"
     false, // "inf+infi"
-    false  // " -inf+-nani "
+    false, // " -inf+-nani "
+    false, // "(1+2i)"
+    false, // "(0+0i)"
+    false, // "(-1.5-2.5i)"
+    false, // "(3+0i)"
+    false, // "(1+ii)"
+    false  // "()"
 };
 
 const std::vector<bool> expectedIntResults = {
@@ -141,7 +201,13 @@ const std::vector<bool> expectedIntResults = {
     false, // "1+1+i"
     false, // "-1-i"
     false, // "inf+infi"
-    false  // " -inf+-nani "
+    false, // " -inf+-nani "
+    false, // "(1+2i)"
+    false, // "(0+0i)"
+    false, // "(-1.5-2.5i)"
+    false, // "(3+0i)"
+    false, // "(1+ii)"
+    false  // "()"
 };
 
 const std::vector<bool> expectedFloatResults = {
@@ -196,7 +262,13 @@ const std::vector<bool> expectedFloatResults = {
     false, // "1+1+i"
     false, // "-1-i"
     false, // "inf+infi"
-    false  // " -inf+-nani "
+    false, // " -inf+-nani "
+    false, // "(1+2i)"
+    false, // "(0+0i)"
+    false, // "(-1.5-2.5i)"
+    false, // "(3+0i)"
+    false, // "(1+ii)"
+    false  // "()"
 };
 
 const std::vector<bool> expectedComplexResults = {
@@ -251,7 +323,13 @@ const std::vector<bool> expectedComplexResults = {
     false, // "1+1+i"
     true,  // "-1-i"
     true,  // "inf+infi"
-    true   //" -inf+-nani "
+    true,  //" -inf+-nani "
+    true,  // "(1+2i)"
+    true,  // "(0+0i)"
+    true,  // "(-1.5-2.5i)"
+    true,  // "(3+0i)"
+    false, // "(1+ii)"
+    false  // "()"
 };
 
 } // namespace
@@ -318,4 +396,17 @@ TEST_F(ToComplexFloatTest, StringToComplexFloatConversion) {
           << "Input: \"" << input_string << "\" to std::complex<float> should fail.";
     }
   }
+}
+
+// fmtlib formats complex values as "(a+bi)"; verify the parenthesised form round-trips back
+// through MR::to<>() to the same value as the equivalent bare "a+bi" form.
+TEST_F(ToComplexFloatTest, ParenthesisedComplexRoundTrip) {
+  EXPECT_EQ(MR::to<std::complex<float>>("(1.5+2.5i)"), std::complex<float>(1.5f, 2.5f));
+  EXPECT_EQ(MR::to<std::complex<float>>("(1.5+2.5i)"), MR::to<std::complex<float>>("1.5+2.5i"));
+  EXPECT_EQ(MR::to<std::complex<float>>("(-1-2i)"), std::complex<float>(-1.0f, -2.0f));
+  EXPECT_EQ(MR::to<std::complex<float>>("(3+0i)"), std::complex<float>(3.0f, 0.0f));
+
+  EXPECT_EQ(MR::to<std::complex<double>>("(1.5+2.5i)"), std::complex<double>(1.5, 2.5));
+  EXPECT_EQ(MR::to<std::complex<double>>("(1.5+2.5i)"), MR::to<std::complex<double>>("1.5+2.5i"));
+  EXPECT_EQ(MR::to<std::complex<double>>("(-1-2i)"), std::complex<double>(-1.0, -2.0));
 }

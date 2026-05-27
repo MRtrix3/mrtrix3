@@ -4,9 +4,11 @@
 #   by mapping mean DWI image to real axis and estimated noise level to imaginary axis;
 #   this image has no meaning,
 #   but is just used to ensure successful command execution
-# Outcome is compared to that generated using a prior software version
+# Outcome is compared to that generated using a prior software version,
+#   with a fractional tolerance to accommodate fmtlib's shortest-round-trip number formatting
+#   (which prints more significant figures than the reference, and a parenthesised complex form)
 rm -f tmp.txt
 mrcalc dwi_mean.mif noise.mif -complex - | \
 mrstats - -output mean -output std -output std_rv -output min -output max -output count > tmp.txt
 
-testing_diff_matrix tmp.txt mrstats/complex.txt
+testing_diff_matrix tmp.txt mrstats/complex.txt -frac 1e-5
