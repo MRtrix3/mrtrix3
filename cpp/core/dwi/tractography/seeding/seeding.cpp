@@ -221,11 +221,11 @@ void load_seed_mechanisms(Properties &properties) {
 void load_seed_parameters(Properties &properties) {
   auto opt = get_options("seeds");
   if (!opt.empty())
-    properties["max_num_seeds"] = str<unsigned int>(opt[0][0]);
+    properties["max_num_seeds"] = fmt::format("{}", static_cast<unsigned int>(opt[0][0]));
 
   opt = get_options("max_attempts_per_seed");
   if (!opt.empty())
-    properties["max_seed_attempts"] = str<unsigned int>(opt[0][0]);
+    properties["max_seed_attempts"] = fmt::format("{}", static_cast<unsigned int>(opt[0][0]));
 
   opt = get_options("seed_cutoff");
   if (!opt.empty())

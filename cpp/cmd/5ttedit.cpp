@@ -200,7 +200,7 @@ bool Modifier::operator()(const Iterator &pos) {
           std::cerr << "User modification values: ";
           for (size_t tissue = 0; tissue != 5; ++tissue) {
             if (buffers[tissue].valid()) {
-              std::cerr << str<float>(buffers[tissue].value()) << " ";
+              std::cerr << fmt::format("{}", static_cast<float>(buffers[tissue].value())) << " ";
             } else {
               std::cerr << "<> ";
             }
@@ -210,8 +210,10 @@ bool Modifier::operator()(const Iterator &pos) {
           for (auto i = Loop(3)(v_out); i; ++i)
             std::cerr << str(v_out.value()) << " ";
           std::cerr << "\n";
-          std::cerr << "sum_user=" << str<float>(sum_user) << "; sum_unmodified=" << str<float>(sum_unmodified)
-                    << "; multiplier=" << str<float>(multiplier) << "\n";
+          std::cerr << fmt::format("sum_user={}; sum_unmodified={}; multiplier={}\n",
+                                   static_cast<float>(sum_user),
+                                   static_cast<float>(sum_unmodified),
+                                   static_cast<float>(multiplier));
         }
 #endif
       }

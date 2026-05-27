@@ -135,10 +135,10 @@ void match_linear(Image<float> &input,
   Header H(input);
   H.datatype() = DataType::Float32;
   H.datatype().set_byte_order_native();
-  H.keyval()["mrhistmatch_scale"] = str<float>(parameters[0]);
+  H.keyval()["mrhistmatch_scale"] = fmt::format("{}", static_cast<float>(parameters[0]));
   if (estimate_intercept) {
     CONSOLE("Estimated linear transform is: {}x + {}", parameters[0], parameters[1]);
-    H.keyval()["mrhistmatch_offset"] = str<float>(parameters[1]);
+    H.keyval()["mrhistmatch_offset"] = fmt::format("{}", static_cast<float>(parameters[1]));
     auto output = Image<float>::create(output_path, H);
     for (auto l = Loop("Writing output image data", input)(input, output); l; ++l) {
       if (std::isfinite(static_cast<float>(input.value()))) {

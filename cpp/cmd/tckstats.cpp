@@ -242,7 +242,7 @@ void run() {
     } else {
       out << "Length,Count\n";
       for (size_t i = 0; i != histogram.size(); ++i)
-        out << str(i * step_size) << "," << str<size_t>(histogram[i]) << "\n";
+        out << str(i * step_size) << "," << fmt::format("{}", static_cast<size_t>(histogram[i])) << "\n";
     }
     out << "\n";
   }

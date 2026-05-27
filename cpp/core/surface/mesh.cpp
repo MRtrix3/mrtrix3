@@ -732,7 +732,7 @@ void Mesh::save_vtk(const std::filesystem::path &path, const bool binary) const 
 
     out << "POINTS " << str(vertices.size()) << " float\n";
     for (const auto &v : vertices) {
-      out << str<float>(v[0]) << " " << str<float>(v[1]) << " " << str<float>(v[2]) << "\n";
+      out << fmt::format("{} {} {}\n", static_cast<float>(v[0]), static_cast<float>(v[1]), static_cast<float>(v[2]));
       ++progress;
     }
     out << fmt::format("POLYGONS {} {}\n",                       //
