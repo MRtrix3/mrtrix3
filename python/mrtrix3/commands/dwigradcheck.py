@@ -203,7 +203,7 @@ def execute(): #pylint: disable=unused-variable
       flip_str = f'{line[1]:4d}'
     else:
       flip_str = line[1]
-    length_string = '{line[0]:5.2f}'
+    length_string = f'{line[0]:5.2f}'
     sys.stderr.write(f'{length_string}         {flip_str}                {line[2]}           {line[3]}\n')
 
 
