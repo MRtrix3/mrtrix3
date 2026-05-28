@@ -260,8 +260,12 @@ struct range_format_kind<
     : std::integral_constant<range_format, range_format::disabled> {};
 
 //! Format an Eigen matrix/array by delegating to Eigen's own ostream insertion operator.
-//! A column vector is emitted transposed onto a single line with a trailing "^T" (the transpose
-//! is performed inside the formatter, so call sites need not transpose explicitly).
+//! Spec grammar: an optional single 'T' selects "display the transpose": the expression is
+//! transposed before being emitted and a trailing "^T" suffix is appended. Without the spec
+//! the expression is emitted as-is (a column vector therefore renders multi-line, matching
+//! Eigen's native ostream layout); the spec is the only way to obtain the transposed
+//! single-line form. No other spec characters are accepted (use Eigen::IOFormat for richer
+//! control via Eigen::WithFormat).
 template <typename Derived>
 struct formatter<
     Derived,
@@ -270,9 +274,20 @@ struct formatter<
         MR::is_eigen_type<std::remove_cv_t<Derived>>::value &&
         (std::is_same_v<typename Eigen::internal::traits<std::remove_cv_t<Derived>>::XprKind, Eigen::MatrixXpr> ||
          std::is_same_v<typename Eigen::internal::traits<std::remove_cv_t<Derived>>::XprKind, Eigen::ArrayXpr>)>> {
-  constexpr auto parse(format_parse_context &ctx) { return ctx.begin(); }
+  bool transpose = false;
+  constexpr auto parse(format_parse_context &ctx) {
+    auto it = ctx.begin();
+    const auto end = ctx.end();
+    if (it != end && *it == 'T') {
+      transpose = true;
+      ++it;
+    }
+    if (it != end && *it != '}')
+      throw format_error("invalid format spec for Eigen matrix/array (expected optional 'T' then '}')");
+    return it;
+  }
   template <typename FormatContext> auto format(const Derived &m, FormatContext &ctx) const {
-    if (m.cols() == 1 && m.rows() > 1)
+    if (transpose)
       return fmt::format_to(ctx.out(), "{}^T", fmt::streamed(m.transpose()));
     return fmt::format_to(ctx.out(), "{}", fmt::streamed(m));
   }

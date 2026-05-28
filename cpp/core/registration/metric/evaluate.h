@@ -126,9 +126,9 @@ public:
       }
     }
     iteration++;
-    DEBUG("Metric evaluate iteration: {}, cost: {}", iteration, overall_cost_function);
-    DEBUG("  x: {}", x);
-    DEBUG("  gradient: {}", gradient);
+    DEBUG("Metric evaluate iteration: {}, cost: {:T}", iteration, overall_cost_function);
+    DEBUG("  x: {:T}", x);
+    DEBUG("  gradient: {:T}", gradient);
     DEBUG("  norm(gradient): {}", gradient.norm());
     DEBUG("  overlapping voxels: {}", overlap_count);
     return overall_cost_function(0);

@@ -21,6 +21,8 @@
 
 #include <complex>
 #include <cstddef>
+#include <cstdint>
+#include <fmt/format.h>
 #include <string>
 #include <vector>
 
@@ -210,6 +212,11 @@ const std::vector<bool> expectedIntResults = {
     false  // "()"
 };
 
+// Note: the expected results below include "infinity"/"-infinity" as true, whereas the
+// historical std::istringstream-based implementation rejected them (istream consumed "inf"
+// then failed the trailing "inity"). std::from_chars accepts the full "infinity" keyword
+// per the C++17 specification, and that more standard-conformant behaviour is now reflected
+// here. The short forms "inf"/"-inf" remain accepted, as do "nan"/"-nan".
 const std::vector<bool> expectedFloatResults = {
     true,  // "0"
     true,  // "1"
@@ -242,9 +249,9 @@ const std::vector<bool> expectedFloatResults = {
     false, // "1e-1a"
     true,  // "inf"
     true,  // "INF"
-    false, // "infinity"
+    true,  // "infinity"
     true,  // "-inf"
-    false, // "-infinity"
+    true,  // "-infinity"
     true,  // "nan"
     true,  // "NAN"
     false, // "nana"
@@ -303,9 +310,9 @@ const std::vector<bool> expectedComplexResults = {
     false, // "1e-1a"
     true,  // "inf"
     true,  // "INF"
-    false, // "infinity"
+    true,  // "infinity"
     true,  // "-inf"
-    false, // "-infinity"
+    true,  // "-infinity"
     true,  // "nan"
     true,  // "NAN"
     false, // "nana"
@@ -409,4 +416,105 @@ TEST_F(ToComplexFloatTest, ParenthesisedComplexRoundTrip) {
   EXPECT_EQ(MR::to<std::complex<double>>("(1.5+2.5i)"), std::complex<double>(1.5, 2.5));
   EXPECT_EQ(MR::to<std::complex<double>>("(1.5+2.5i)"), MR::to<std::complex<double>>("1.5+2.5i"));
   EXPECT_EQ(MR::to<std::complex<double>>("(-1-2i)"), std::complex<double>(-1.0, -2.0));
+}
+
+// Drive the complex specialisation directly off fmtlib's complex formatter output rather than
+// hard-coded literals, so the test pins the actual fmtlib<->MR::to<>() contract. fmtlib elides
+// a zero real/imag component (so {3,0} renders as "3+0i" without the outer brackets, and {0,-7.25}
+// as "-7.25i"); MR::to<>() must accept both the parenthesised form and any shorter form fmtlib
+// chooses to emit.
+TEST_F(ToComplexFloatTest, FmtlibFormatRoundTrip) {
+  const std::vector<std::complex<float>> cf_values = {
+      {0.0f, 0.0f},
+      {1.5f, 2.5f},
+      {-1.5f, -2.5f},
+      {3.0f, 0.0f},
+      {0.0f, -7.25f},
+  };
+  for (const auto &value : cf_values) {
+    const std::string formatted = fmt::format("{}", value);
+    ASSERT_FALSE(formatted.empty()) << "fmt::format produced empty string";
+    EXPECT_EQ(MR::to<std::complex<float>>(formatted), value)
+        << "round-trip failed for fmt-formatted complex \"" << formatted << "\"";
+  }
+
+  const std::vector<std::complex<double>> cd_values = {
+      {0.0, 0.0},
+      {1.5, 2.5},
+      {-1.5, -2.5},
+      {3.0, 0.0},
+  };
+  for (const auto &value : cd_values) {
+    const std::string formatted = fmt::format("{}", value);
+    EXPECT_EQ(MR::to<std::complex<double>>(formatted), value)
+        << "round-trip failed for fmt-formatted complex \"" << formatted << "\"";
+  }
+}
+
+// fmtlib's parenthesised form is meaningful only for complex types; real-valued conversions
+// must reject the brackets so that a real-valued spec accidentally fed a complex literal
+// fails loudly rather than silently truncating to the real component.
+TEST(ToRealParenthesesRejection, ParenthesesRejectedForReal) {
+  const std::vector<std::string> inputs = {
+      "(1)",   // integer
+      "(1.0)", // floating
+      "(1.5+2.5i)",
+      "(-1-2i)",
+      "(0)",
+      "()",
+  };
+  for (const auto &input : inputs) {
+    EXPECT_THROW(MR::to<int>(input), MR::Exception)
+        << "Parenthesised input \"" << input << "\" must be rejected by MR::to<int>()";
+    EXPECT_THROW(MR::to<float>(input), MR::Exception)
+        << "Parenthesised input \"" << input << "\" must be rejected by MR::to<float>()";
+    EXPECT_THROW(MR::to<double>(input), MR::Exception)
+        << "Parenthesised input \"" << input << "\" must be rejected by MR::to<double>()";
+  }
+}
+
+// std::from_chars exposes overflow as std::errc::result_out_of_range; MR::to<>() must surface
+// that distinct condition as an Exception rather than silently saturating or wrapping. The
+// istringstream fallback yields the same observable behaviour (failbit set, value clamped to
+// numeric_limits<T>::max()), so this test pins the user-facing contract independent of which
+// backend was selected at configure time.
+template <typename T> std::string overflow_above_max() {
+  // Multiply numeric_limits::max() by 10 by appending a digit: cheap, portable, and avoids any
+  // arithmetic on the integer type itself (which would itself overflow).
+  return fmt::format("{}0", std::numeric_limits<T>::max());
+}
+
+template <typename T> std::string overflow_below_min() { return fmt::format("{}0", std::numeric_limits<T>::min()); }
+
+TEST(ToOverflow, IntegerOverflowThrows) {
+  EXPECT_THROW(MR::to<int8_t>(overflow_above_max<int8_t>()), MR::Exception);
+  EXPECT_THROW(MR::to<int8_t>(overflow_below_min<int8_t>()), MR::Exception);
+  EXPECT_THROW(MR::to<int16_t>(overflow_above_max<int16_t>()), MR::Exception);
+  EXPECT_THROW(MR::to<int16_t>(overflow_below_min<int16_t>()), MR::Exception);
+  EXPECT_THROW(MR::to<int32_t>(overflow_above_max<int32_t>()), MR::Exception);
+  EXPECT_THROW(MR::to<int32_t>(overflow_below_min<int32_t>()), MR::Exception);
+  EXPECT_THROW(MR::to<int64_t>(overflow_above_max<int64_t>()), MR::Exception);
+  EXPECT_THROW(MR::to<int64_t>(overflow_below_min<int64_t>()), MR::Exception);
+
+  EXPECT_THROW(MR::to<uint8_t>(overflow_above_max<uint8_t>()), MR::Exception);
+  EXPECT_THROW(MR::to<uint16_t>(overflow_above_max<uint16_t>()), MR::Exception);
+  EXPECT_THROW(MR::to<uint32_t>(overflow_above_max<uint32_t>()), MR::Exception);
+  EXPECT_THROW(MR::to<uint64_t>(overflow_above_max<uint64_t>()), MR::Exception);
+
+  // Boundary: numeric_limits::max() itself must round-trip cleanly.
+  EXPECT_EQ(MR::to<int32_t>(fmt::format("{}", std::numeric_limits<int32_t>::max())),
+            std::numeric_limits<int32_t>::max());
+  EXPECT_EQ(MR::to<int32_t>(fmt::format("{}", std::numeric_limits<int32_t>::min())),
+            std::numeric_limits<int32_t>::min());
+}
+
+TEST(ToOverflow, FloatOverflowThrows) {
+  // 1e400 is well beyond either float or double's representable range.
+  EXPECT_THROW(MR::to<float>("1e400"), MR::Exception);
+  EXPECT_THROW(MR::to<float>("-1e400"), MR::Exception);
+  EXPECT_THROW(MR::to<double>("1e400"), MR::Exception);
+  EXPECT_THROW(MR::to<double>("-1e400"), MR::Exception);
+  // A value beyond float range but within double range must be accepted as double.
+  EXPECT_THROW(MR::to<float>("1e40"), MR::Exception);
+  EXPECT_NO_THROW(MR::to<double>("1e40"));
 }

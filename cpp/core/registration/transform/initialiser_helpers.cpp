@@ -292,7 +292,7 @@ void get_centre_of_mass(Image<default_type> &im,
   if (mass == 0.0)
     throw Exception("centre of mass initialisation not possible for empty image");
   centre_of_mass /= mass;
-  DEBUG("centre of mass of {}: {}", im.name(), centre_of_mass);
+  DEBUG("centre of mass of {}: {:T}", im.name(), centre_of_mass);
 }
 
 void initialise_using_rotation_search(Image<default_type> &im1,

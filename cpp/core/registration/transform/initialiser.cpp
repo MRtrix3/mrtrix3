@@ -42,7 +42,7 @@ void set_centre_via_mass(Image<default_type> &im1,
   transform.transform_half(im2_centre_mass_transformed, im2_centre_mass);
 
   const Eigen::Vector3d centre = (im1_centre_mass + im2_centre_mass) * 0.5;
-  DEBUG("centre: {}", centre);
+  DEBUG("centre: {:T}", centre);
   transform.set_centre_without_transform_update(centre);
 }
 
@@ -61,7 +61,7 @@ void set_centre_via_image_centres(const Image<default_type> &im1,
   get_geometric_centre(im2, im2_centre_scanner);
 
   Eigen::Vector3d centre = (im1_centre_scanner + im2_centre_scanner) / 2.0;
-  DEBUG("centre: {}", centre);
+  DEBUG("centre: {:T}", centre);
   transform.set_centre_without_transform_update(centre);
 }
 
