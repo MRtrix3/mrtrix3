@@ -177,7 +177,7 @@ def execute(): #pylint: disable=unused-variable
           assert False
 
         # Run the tracking experiment
-        run.command(f'tckgen -algorithm tensor_det data.mif -seed_image mask.mif -mask mask.mif -minlength 0 -downsample 5 tracks{suffix}.tck '
+        run.command(f'tckgen -algorithm tensor_det data.mif -seed_voxels mask.mif -mask mask.mif -minlength 0 -downsample 5 tracks{suffix}.tck '
                     f'{grad_option} {number_option}')
 
         # Get the mean track length
