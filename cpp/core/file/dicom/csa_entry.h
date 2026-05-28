@@ -170,3 +170,8 @@ protected:
 };
 
 } // namespace MR::File::Dicom
+
+namespace fmt {
+//! Render a CSAEntry via its ostream insertion operator.
+template <> struct formatter<MR::File::Dicom::CSAEntry> : ostream_formatter {};
+} // namespace fmt

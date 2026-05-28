@@ -95,7 +95,7 @@ public:
       DEBUG("Gradient descent iteration: {}; cost: {}", niter, f);
       if (verbose) {
         CONSOLE("iteration {}: f = {}, |g| = {}:", niter, f, normg);
-        CONSOLE("  x  = [ {} ]", x2);
+        CONSOLE("  x  = [ {:T} ]", x2);
       }
 
       if (normg < gradient_tolerance) {
@@ -131,15 +131,15 @@ public:
     dt /= normg;
     if (verbose) {
       CONSOLE("initialise: f = {}, |g| = {}, step = {}:", f, normg, dt);
-      CONSOLE("            x = [ {} ]", x1);
+      CONSOLE("            x = [ {:T} ]", x1);
     }
     if (log_os) {
-      log_os << niter << delim << nfeval << delim << str(f) << delim << str(dt);
+      log_os << niter << delim << nfeval << delim << fmt::format("{}", f) << delim << fmt::format("{}", dt);
       for (ssize_t i = 0; i < x2.size(); ++i) {
-        log_os << delim << str(x1(i));
+        log_os << delim << fmt::format("{}", x1(i));
       }
       for (ssize_t i = 0; i < x2.size(); ++i) {
-        log_os << delim << str(g1(i));
+        log_os << delim << fmt::format("{}", g1(i));
       }
       log_os << std::endl;
     }
@@ -161,12 +161,12 @@ public:
     assert(std::isfinite(normg));
     assert(!std::isnan(normg));
     if (log_os) {
-      log_os << niter << delim << nfeval << delim << str(f) << delim << str(dt);
+      log_os << niter << delim << nfeval << delim << fmt::format("{}", f) << delim << fmt::format("{}", dt);
       for (ssize_t i = 0; i < x2.size(); ++i) {
-        log_os << delim << str(x2(i));
+        log_os << delim << fmt::format("{}", x2(i));
       }
       for (ssize_t i = 0; i < x2.size(); ++i) {
-        log_os << delim << str(g2(i));
+        log_os << delim << fmt::format("{}", g2(i));
       }
       log_os << std::endl;
     }
@@ -193,12 +193,12 @@ public:
     g1.swap(g3);
     ++niter;
     if (log_os) {
-      log_os << niter << delim << nfeval << delim << str(f) << delim << str(dt);
+      log_os << niter << delim << nfeval << delim << fmt::format("{}", f) << delim << fmt::format("{}", dt);
       for (ssize_t i = 0; i < x2.size(); ++i) {
-        log_os << delim << str(x2(i));
+        log_os << delim << fmt::format("{}", x2(i));
       }
       for (ssize_t i = 0; i < x2.size(); ++i) {
-        log_os << delim << str(g2(i));
+        log_os << delim << fmt::format("{}", g2(i));
       }
       log_os << std::endl;
     }
@@ -225,8 +225,8 @@ protected:
       throw Exception("cost function is NaN or Inf!");
     if (verbose) {
       CONSOLE("      << eval {}, f = {} >>", nfeval, cost);
-      CONSOLE("      << newx = [ {} ]", newx);
-      CONSOLE("      << newg = [ {} ]", newg);
+      CONSOLE("      << newx = [ {:T} ]", newx);
+      CONSOLE("      << newg = [ {:T} ]", newg);
     }
     return cost;
   }

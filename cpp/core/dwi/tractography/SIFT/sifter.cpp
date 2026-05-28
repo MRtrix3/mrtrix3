@@ -84,16 +84,16 @@ void SIFTer::perform_filtering() {
     File::OFStream csv_out(csv_path, std::ios_base::out | std::ios_base::trunc);
     csv_out << "# " << App::command_history_string << "\n";
     csv_out << "#Iteration,Removed this iteration,Total removed,Remaining,Cost,TD,Mu,Recalculation,\n";
-    csv_out << "0,0,0," << str(tracks_remaining) << "," << str(init_cf) << "," << str(TD_sum) << "," << str(mu())
-            << ",Start,\n";
+    csv_out << "0,0,0," << fmt::format("{}", tracks_remaining) << "," << fmt::format("{}", init_cf) << ","
+            << fmt::format("{}", TD_sum) << "," << fmt::format("{}", mu()) << ",Start,\n";
   }
 
   auto display_func = [&]() {
-    return printf(" %6u      %7u     %9u       %.2f%%",
-                  iteration,
-                  removed_this_iteration,
-                  tracks_remaining,
-                  100.0 * cf_end_iteration / init_cf);
+    return fmt::format(" {:6}      {:7}     {:9}       {:.2f}%",
+                       iteration,
+                       removed_this_iteration,
+                       tracks_remaining,
+                       100.0 * cf_end_iteration / init_cf);
   };
   CONSOLE("       Iteration     Removed     Remaining     Cost fn");
   ProgressBar progress("");
@@ -140,7 +140,7 @@ void SIFTer::perform_filtering() {
     do {
 
       if (!output_at_counts.empty() && (tracks_remaining == output_at_counts.back())) {
-        const std::string prefix = str(tracks_remaining);
+        const std::string prefix = fmt::format("{}", tracks_remaining);
         if (App::log_level)
           fprintf(stderr, "\n");
         output_filtered_tracks(tck_file_path, prefix + "_tracks.tck");
@@ -283,9 +283,10 @@ void SIFTer::perform_filtering() {
 
     if (!csv_path.empty()) {
       File::OFStream csv_out(csv_path, std::ios_base::out | std::ios_base::app | std::ios_base::ate);
-      csv_out << str(iteration) << "," << str(removed_this_iteration) << "," << str(num_tracks() - tracks_remaining)
-              << "," << str(tracks_remaining) << "," << str(cf_end_iteration) << "," << str(TD_sum) << "," << str(mu())
-              << ",";
+      csv_out << fmt::format("{}", iteration) << "," << fmt::format("{}", removed_this_iteration) << ","
+              << fmt::format("{}", num_tracks() - tracks_remaining) << "," << fmt::format("{}", tracks_remaining) << ","
+              << fmt::format("{}", cf_end_iteration) << "," << fmt::format("{}", TD_sum) << ","
+              << fmt::format("{}", mu()) << ",";
       switch (recalculate) {
       case UNDEFINED:
         throw Exception("Encountered undefined recalculation at end of iteration!");
@@ -349,7 +350,7 @@ void SIFTer::output_filtered_tracks(const std::filesystem::path &input_path,
                                     const std::filesystem::path &output_path) const {
   Tractography::Properties p;
   Tractography::Reader<float> reader(input_path, p);
-  p["SIFT_mu"] = str(mu());
+  p["SIFT_mu"] = fmt::format("{}", mu());
   Tractography::Writer<float> writer(output_path, p);
   track_t tck_counter = 0;
   Tractography::Streamline<> tck;

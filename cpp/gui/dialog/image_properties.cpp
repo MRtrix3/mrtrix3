@@ -54,12 +54,12 @@ ImageProperties::ImageProperties(QWidget *parent, const MR::Header &header)
   }
 
   std::string text;
-  text = str(H.size(0));
+  text = fmt::format("{}", H.size(0));
   for (size_t n = 1; n < H.ndim(); ++n)
     text += fmt::format(" x {}", H.size(n));
   root->appendChild(new TreeItem("Dimensions", text, root));
 
-  text = str(H.spacing(0));
+  text = fmt::format("{}", H.spacing(0));
   for (size_t n = 1; n < H.ndim(); ++n)
     text += fmt::format(" x {}", H.spacing(n));
   root->appendChild(new TreeItem("Voxel size", text, root));
@@ -67,7 +67,7 @@ ImageProperties::ImageProperties(QWidget *parent, const MR::Header &header)
   root->appendChild(new TreeItem("Data type", H.datatype().description(), root));
 
   MR::Stride::List strides = MR::Stride::get_symbolic(H);
-  text = str(strides[0]);
+  text = fmt::format("{}", strides[0]);
   for (size_t n = 1; n != strides.size(); ++n)
     text += fmt::format(", {}", strides[n]);
   root->appendChild(new TreeItem("Strides", text, root));

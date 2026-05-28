@@ -24,8 +24,9 @@ bool WriteKernel::operator()(const GeneratedTrack &tck) {
     return false;
   if (!tck.empty() && output_seeds) {
     const auto &p = tck[tck.get_seed_index()];
-    (*output_seeds) << str(writer.count) << "," << str(tck.get_seed_index()) << "," << str(p[0]) << "," << str(p[1])
-                    << "," << str(p[2]) << ",\n";
+    (*output_seeds) << fmt::format("{}", writer.count) << "," << fmt::format("{}", tck.get_seed_index()) << ","
+                    << fmt::format("{}", p[0]) << "," << fmt::format("{}", p[1]) << "," << fmt::format("{}", p[2])
+                    << ",\n";
   }
   switch (tck.get_status()) {
   case GeneratedTrack::status_t::INVALID:
@@ -47,10 +48,7 @@ bool WriteKernel::operator()(const GeneratedTrack &tck) {
     break;
   }
   progress.update(
-      [&]() {
-        return printf(
-            "%8" PRIu64 " seeds, %8" PRIu64 " streamlines, %8" PRIu64 " selected", seeds, streamlines, selected);
-      },
+      [&]() { return fmt::format("{:8} seeds, {:8} streamlines, {:8} selected", seeds, streamlines, selected); },
       always_increment ? true : tck.size());
   if (early_exit(seeds, selected)) {
     WARN("Track generation terminating prematurely:"

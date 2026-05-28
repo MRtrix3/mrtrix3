@@ -169,7 +169,7 @@ std::filesystem::path NameParser::name(const std::vector<uint32_t> &indices) {
     if (array[i].is_string())
       str += array[i].string();
     else {
-      str += printf("%*.*d", array[i].size(), array[i].size(), array[i].sequence()[indices[n]]);
+      str += fmt::format("{:0{}}", array[i].sequence()[indices[n]], array[i].size());
       n--;
     }
   }

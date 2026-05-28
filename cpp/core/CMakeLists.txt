@@ -1,4 +1,5 @@
 include(CheckSymbolExists)
+include(CheckCXXSourceCompiles)
 find_package(ZLIB REQUIRED)
 find_package(FFTW REQUIRED)
 find_package(Git QUIET)
@@ -17,6 +18,53 @@ list(REMOVE_AT CMAKE_REQUIRED_DEFINITIONS -1)
 
 if(NOT MRTRIX_HAVE_LGAMMA_R)
     message(STATUS "No lgamma_r() function found; statistical inference may have poorer multi-threading performance")
+endif()
+
+# Check support for std::from_chars across every type MR::to<T>() is instantiated with.
+# Integer support has been ubiquitous since C++17; floating-point support landed late in
+# libc++ and in some libstdc++ versions, so probe both paths separately. When either probe
+# fails, MR::to<>() falls back to the historical std::istringstream implementation for the
+# unsupported family.
+set(CMAKE_REQUIRED_FLAGS "${CMAKE_CXX17_STANDARD_COMPILE_OPTION}")
+check_cxx_source_compiles("
+#include <charconv>
+#include <cstddef>
+int main() {
+    const char* s = \"42\";
+    int i = 0;
+    auto r1 = std::from_chars(s, s + 2, i);
+    long l = 0;
+    auto r2 = std::from_chars(s, s + 2, l);
+    long long ll = 0;
+    auto r3 = std::from_chars(s, s + 2, ll);
+    unsigned u = 0;
+    auto r4 = std::from_chars(s, s + 2, u);
+    unsigned long ul = 0;
+    auto r5 = std::from_chars(s, s + 2, ul);
+    unsigned long long ull = 0;
+    auto r6 = std::from_chars(s, s + 2, ull);
+    return r1.ec == std::errc{} && r2.ec == std::errc{} && r3.ec == std::errc{} &&
+           r4.ec == std::errc{} && r5.ec == std::errc{} && r6.ec == std::errc{} ? 0 : 1;
+}
+" MRTRIX_HAVE_FROM_CHARS_INT)
+check_cxx_source_compiles("
+#include <charconv>
+int main() {
+    const char* s = \"1.5\";
+    float f = 0;
+    auto r1 = std::from_chars(s, s + 3, f);
+    double d = 0;
+    auto r2 = std::from_chars(s, s + 3, d);
+    return r1.ec == std::errc{} && r2.ec == std::errc{} ? 0 : 1;
+}
+" MRTRIX_HAVE_FROM_CHARS_FP)
+unset(CMAKE_REQUIRED_FLAGS)
+
+if(NOT MRTRIX_HAVE_FROM_CHARS_INT)
+    message(STATUS "std::from_chars not available for integer types; MR::to<int>() will use std::istringstream fallback")
+endif()
+if(NOT MRTRIX_HAVE_FROM_CHARS_FP)
+    message(STATUS "std::from_chars not available for floating-point types; MR::to<float|double>() will use std::istringstream fallback")
 endif()
 
 file(GLOB_RECURSE HEADLESS_SOURCES *.h *.cpp)
@@ -104,6 +152,8 @@ endif()
 target_compile_definitions(mrtrix-core PUBLIC
     MRTRIX_BASE_VERSION="${MRTRIX_BASE_VERSION}"
     $<$<BOOL:${MRTRIX_HAVE_LGAMMA_R}>:MRTRIX_HAVE_LGAMMA_R>
+    $<$<BOOL:${MRTRIX_HAVE_FROM_CHARS_INT}>:MRTRIX_HAVE_FROM_CHARS_INT>
+    $<$<BOOL:${MRTRIX_HAVE_FROM_CHARS_FP}>:MRTRIX_HAVE_FROM_CHARS_FP>
 )
 
 if(APPLE AND MRTRIX_HAVE_LGAMMA_R)

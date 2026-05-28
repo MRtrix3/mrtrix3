@@ -191,8 +191,10 @@ public:
     ValueType fl = functor(l), fm = functor(m), fu = functor(u);
     std::cerr << "Initialising quadratic line search\n";
     std::cerr << "        Lower        Mid         Upper\n";
-    std::cerr << "Pos     " << str(l) << "           " << str(m) << "        " << str(u) << "\n";
-    std::cerr << "Value   " << str(fl) << "           " << str(fm) << "        " << str(fu) << "\n";
+    std::cerr << "Pos     " << fmt::format("{}", l) << "           " << fmt::format("{}", m) << "        "
+              << fmt::format("{}", u) << "\n";
+    std::cerr << "Value   " << fmt::format("{}", fl) << "           " << fmt::format("{}", fm) << "        "
+              << fmt::format("{}", fu) << "\n";
     size_t iters = 0;
 
     while (iters++ < max_iters) {
@@ -215,7 +217,7 @@ public:
 
       const ValueType fn = functor(n);
 
-      std::cerr << "  New point " << str(n) << ", value " << str(fn) << "\n";
+      std::cerr << "  New point " << fmt::format("{}", n) << ", value " << fmt::format("{}", fn) << "\n";
 
       if (n < l) {
         if (exit_outside_bounds) {
@@ -264,8 +266,10 @@ public:
       }
 
       std::cerr << "\n";
-      std::cerr << "Pos     " << str(l) << "           " << str(m) << "        " << str(u) << "\n";
-      std::cerr << "Value   " << str(fl) << "           " << str(fm) << "        " << str(fu) << "\n";
+      std::cerr << "Pos     " << fmt::format("{}", l) << "           " << fmt::format("{}", m) << "        "
+                << fmt::format("{}", u) << "\n";
+      std::cerr << "Value   " << fmt::format("{}", fl) << "           " << fmt::format("{}", fm) << "        "
+                << fmt::format("{}", fu) << "\n";
 
       if ((u - l) < value_tolerance) {
         status = SUCCESS;

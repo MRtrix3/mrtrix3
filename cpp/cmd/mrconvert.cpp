@@ -410,7 +410,7 @@ void run() {
   opt = get_options("copy_properties");
   if (!opt.empty()) {
     header_out.keyval().clear();
-    if (str(opt[0][0]) != "NULL") {
+    if (std::string(opt[0][0]) != "NULL") {
       try {
         const Header source = Header::open(opt[0][0]);
         header_out.keyval() = source.keyval();
@@ -426,7 +426,7 @@ void run() {
 
   opt = get_options("clear_property");
   for (size_t n = 0; n < opt.size(); ++n) {
-    if (str(opt[n][0]) == "command_history")
+    if (std::string(opt[n][0]) == "command_history")
       add_to_command_history = false;
     auto entry = header_out.keyval().find(opt[n][0]);
     if (entry == header_out.keyval().end()) {
@@ -440,14 +440,14 @@ void run() {
 
   opt = get_options("set_property");
   for (size_t n = 0; n < opt.size(); ++n) {
-    if (str(opt[n][0]) == "command_history")
+    if (std::string(opt[n][0]) == "command_history")
       add_to_command_history = false;
     header_out.keyval()[std::string(opt[n][0])] = std::string(opt[n][1]);
   }
 
   opt = get_options("append_property");
   for (size_t n = 0; n < opt.size(); ++n) {
-    if (str(opt[n][0]) == "command_history")
+    if (std::string(opt[n][0]) == "command_history")
       add_to_command_history = false;
     add_line(header_out.keyval()[std::string(opt[n][0])], std::string(opt[n][1]));
   }

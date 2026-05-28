@@ -49,7 +49,7 @@ Reader::Reader(const std::filesystem::path &filepath)
     fclose(infile);
     std::stringstream s;
     for (size_t i = 0; i != 8; ++i) {
-      s << str(static_cast<int>(sig[i])) << " ";
+      s << fmt::format("{}", static_cast<int>(sig[i])) << " ";
     }
     Exception e("Bad PNG signature in file \"{}\"", filepath);
     e.push_back("File signature: {}", s.str());

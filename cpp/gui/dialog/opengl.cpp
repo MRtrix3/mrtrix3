@@ -39,12 +39,12 @@ OpenGL::OpenGL(QWidget *parent, const GL::Format &format) : QDialog(parent) {
   TreeItem *bit_depths = new TreeItem("Bit depths", std::string(), root);
   root->appendChild(bit_depths);
 
-  bit_depths->appendChild(new TreeItem("red", str(format.redBufferSize()), bit_depths));
-  bit_depths->appendChild(new TreeItem("green", str(format.greenBufferSize()), bit_depths));
-  bit_depths->appendChild(new TreeItem("blue", str(format.blueBufferSize()), bit_depths));
-  bit_depths->appendChild(new TreeItem("alpha", str(format.alphaBufferSize()), bit_depths));
-  bit_depths->appendChild(new TreeItem("depth", str(format.depthBufferSize()), bit_depths));
-  bit_depths->appendChild(new TreeItem("stencil", str(format.stencilBufferSize()), bit_depths));
+  bit_depths->appendChild(new TreeItem("red", fmt::format("{}", format.redBufferSize()), bit_depths));
+  bit_depths->appendChild(new TreeItem("green", fmt::format("{}", format.greenBufferSize()), bit_depths));
+  bit_depths->appendChild(new TreeItem("blue", fmt::format("{}", format.blueBufferSize()), bit_depths));
+  bit_depths->appendChild(new TreeItem("alpha", fmt::format("{}", format.alphaBufferSize()), bit_depths));
+  bit_depths->appendChild(new TreeItem("depth", fmt::format("{}", format.depthBufferSize()), bit_depths));
+  bit_depths->appendChild(new TreeItem("stencil", fmt::format("{}", format.stencilBufferSize()), bit_depths));
 
   root->appendChild(new TreeItem("Buffering",
                                  format.swapBehavior() == QSurfaceFormat::SingleBuffer
@@ -52,16 +52,16 @@ OpenGL::OpenGL(QWidget *parent, const GL::Format &format) : QDialog(parent) {
                                      : (format.swapBehavior() == QSurfaceFormat::DoubleBuffer ? "double" : "triple"),
                                  root));
   root->appendChild(new TreeItem("VSync", format.swapInterval() ? "on" : "off", root));
-  root->appendChild(
-      new TreeItem("Multisample anti-aliasing", format.samples() ? str(format.samples()).c_str() : "off", root));
+  root->appendChild(new TreeItem(
+      "Multisample anti-aliasing", format.samples() ? fmt::format("{}", format.samples()).c_str() : "off", root));
 
   GLint max_2d_texture_size;
   gl::GetIntegerv(gl::MAX_TEXTURE_SIZE, &max_2d_texture_size);
-  root->appendChild(new TreeItem("Maximum 2D texture size", str(max_2d_texture_size), root));
+  root->appendChild(new TreeItem("Maximum 2D texture size", fmt::format("{}", max_2d_texture_size), root));
 
   GLint max_3D_texture_size;
   gl::GetIntegerv(gl::MAX_3D_TEXTURE_SIZE, &max_3D_texture_size);
-  root->appendChild(new TreeItem("Maximum 3D texture size", str(max_3D_texture_size), root));
+  root->appendChild(new TreeItem("Maximum 3D texture size", fmt::format("{}", max_3D_texture_size), root));
 
   QTreeView *view = new QTreeView;
   view->setModel(model);

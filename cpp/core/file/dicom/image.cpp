@@ -37,7 +37,7 @@ void Image::parse_item(Element &item) {
       manufacturer = item.get_string()[0];
       return;
     case 0x0008U:
-      image_type = join(item.get_string(), " ");
+      image_type = fmt::format("{}", fmt::join(item.get_string(), " "));
       return;
     case 0x0032U:
       acquisition_time = item.get_time();
@@ -304,7 +304,7 @@ void Image::read() {
       try {
         parse_item(item);
       } catch (Exception &E) {
-        DEBUG(printf("error reading tag (%04X,%04X):", item.group, item.element));
+        DEBUG("error reading tag ({:04X},{:04X}):", item.group, item.element);
         E.display(3);
       }
     }

@@ -320,14 +320,14 @@ void run() {
   Header output_header(mask_header);
   output_header.datatype() = DataType::Float32;
   // output_header.keyval()["num permutations"] = str(num_perms);
-  output_header.keyval()["26 connectivity"] = str(do_26_connectivity);
-  output_header.keyval()["nonstationary adjustment"] = str(do_nonstationarity_adjustment);
+  output_header.keyval()["26 connectivity"] = fmt::format("{}", do_26_connectivity);
+  output_header.keyval()["nonstationary adjustment"] = fmt::format("{}", do_nonstationarity_adjustment);
   if (use_tfce) {
-    output_header.keyval()["tfce_dh"] = str(tfce_dh);
-    output_header.keyval()["tfce_e"] = str(tfce_E);
-    output_header.keyval()["tfce_h"] = str(tfce_H);
+    output_header.keyval()["tfce_dh"] = fmt::format("{}", tfce_dh);
+    output_header.keyval()["tfce_e"] = fmt::format("{}", tfce_E);
+    output_header.keyval()["tfce_h"] = fmt::format("{}", tfce_H);
   } else {
-    output_header.keyval()["threshold"] = str(cluster_forming_threshold);
+    output_header.keyval()["threshold"] = fmt::format("{}", cluster_forming_threshold);
   }
 
   const std::filesystem::path output_dir = argument[3];

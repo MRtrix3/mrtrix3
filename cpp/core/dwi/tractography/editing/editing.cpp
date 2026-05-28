@@ -59,7 +59,7 @@ void load_properties(Tractography::Properties &properties) {
     } else {
       try {
         const float maxlength = std::min(static_cast<float>(opt[0][0]), to<float>(properties["max_dist"]));
-        properties["max_dist"] = str(maxlength);
+        properties["max_dist"] = fmt::format("{}", maxlength);
       } catch (...) {
         properties["max_dist"] = static_cast<std::string>(opt[0][0]);
       }
@@ -72,7 +72,7 @@ void load_properties(Tractography::Properties &properties) {
     } else {
       try {
         const float minlength = std::max(static_cast<float>(opt[0][0]), to<float>(properties["min_dist"]));
-        properties["min_dist"] = str(minlength);
+        properties["min_dist"] = fmt::format("{}", minlength);
       } catch (...) {
         properties["min_dist"] = static_cast<std::string>(opt[0][0]);
       }

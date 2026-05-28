@@ -30,29 +30,38 @@ extern const App::OptionGroup Options;
 using value_type = default_type;
 using complex_type = cdouble;
 
-class Stats {
+//! Online image statistics accumulator.
+/*! \a T selects the storage/formatting domain at compile time: \c default_type for
+ *  guaranteed-real data (so the complex formatter is never engaged) and \c cdouble for
+ *  complex data, where min/max/std are tracked separately for real and imaginary parts. */
+template <typename T> class Stats {
 public:
-  Stats(const bool is_complex = false, const bool ignorezero = false)
-      : mean(0.0, 0.0),
-        delta(0.0, 0.0),
-        delta2(0.0, 0.0),
-        m2(0.0, 0.0),
-        std(0.0, 0.0),
-        std_rv(0.0, 0.0),
-        min(Inf, Inf),
-        max(-Inf, -Inf),
-        count(0),
-        is_complex(is_complex),
-        ignore_zero(ignorezero) {}
+  Stats(const bool ignorezero = false) : count(0), ignore_zero(ignorezero) {
+    if constexpr (is_complex<T>::value) {
+      mean = delta = delta2 = m2 = std = T(0.0, 0.0);
+      min = T(Inf, Inf);
+      max = T(-Inf, -Inf);
+    } else {
+      mean = delta = delta2 = m2 = std = T(0);
+      min = Inf;
+      max = -Inf;
+    }
+    std_rv = value_type(0);
+  }
 
-  void operator()(complex_type val);
+  void operator()(T val);
 
   template <class ImageType> void print(ImageType &ima, const std::vector<std::string> &fields) {
 
     if (count > 1) {
-      std = complex_type(sqrt(m2.real() / static_cast<value_type>(count - 1)),
-                         sqrt(m2.imag() / static_cast<value_type>(count - 1)));
-      std_rv = complex_type(sqrt((m2.real() + m2.imag()) / static_cast<value_type>(count - 1)));
+      if constexpr (is_complex<T>::value) {
+        std = T(sqrt(m2.real() / static_cast<value_type>(count - 1)),
+                sqrt(m2.imag() / static_cast<value_type>(count - 1)));
+        std_rv = sqrt((m2.real() + m2.imag()) / static_cast<value_type>(count - 1));
+      } else {
+        std = std::sqrt(m2 / static_cast<value_type>(count - 1));
+        std_rv = std;
+      }
       std::sort(values.begin(), values.end());
     }
     if (!fields.empty()) {
@@ -66,20 +75,21 @@ public:
       }
       for (size_t n = 0; n < fields.size(); ++n) {
         if (fields[n] == "mean")
-          std::cout << str(mean) << " ";
+          std::cout << fmt::format("{}", mean) << " ";
         else if (fields[n] == "median")
-          std::cout << (!values.empty() ? str(Math::median(values)) : "N/A") << " ";
+          std::cout << (!values.empty() ? fmt::format("{}", Math::median(values)) : "N/A") << " ";
         else if (fields[n] == "std")
-          std::cout << (count > 1 ? str(std) : "N/A") << " ";
+          std::cout << (count > 1 ? fmt::format("{}", std) : "N/A") << " ";
         else if (fields[n] == "std_rv")
-          std::cout << (count > 1 ? str(std_rv) : "N/A") << " ";
+          std::cout << (count > 1 ? fmt::format("{}", std_rv) : "N/A") << " ";
         else if (fields[n] == "iqr")
-          std::cout << (!values.empty() ? str(Math::quantile(values, 0.75) - Math::quantile(values, 0.25)) : "N/A")
+          std::cout << (!values.empty() ? fmt::format("{}", Math::quantile(values, 0.75) - Math::quantile(values, 0.25))
+                                        : "N/A")
                     << " ";
         else if (fields[n] == "min")
-          std::cout << str(min) << " ";
+          std::cout << fmt::format("{}", min) << " ";
         else if (fields[n] == "max")
-          std::cout << str(max) << " ";
+          std::cout << fmt::format("{}", max) << " ";
         else if (fields[n] == "count")
           std::cout << count << " ";
         else
@@ -97,31 +107,44 @@ public:
         s += "0 ";
       s += "]";
 
-      int width = is_complex ? 20 : 10;
+      constexpr int width = is_complex<T>::value ? 20 : 10;
       std::cout << std::setw(12) << std::right << s << " ";
 
-      std::cout << std::setw(width) << std::right << (count ? str(mean) : "N/A");
+      std::cout << std::setw(width) << std::right << (count ? fmt::format("{}", mean) : "N/A");
 
-      if (!is_complex) {
+      if constexpr (!is_complex<T>::value) {
         std::cout << " " << std::setw(width) << std::right;
         if (count)
-          std::cout << Math::median(values);
+          std::cout << fmt::format("{}", Math::median(values));
         else
           std::cout << "N/A";
       }
-      std::cout << " " << std::setw(width) << std::right << (count > 1 ? str(std) : "N/A") << " " << std::setw(width)
-                << std::right << (count ? str(min) : "N/A") << " " << std::setw(width) << std::right
-                << (count ? str(max) : "N/A") << " " << std::setw(10) << std::right << count << "\n";
+      std::cout << " " << std::setw(width) << std::right << (count > 1 ? fmt::format("{}", std) : "N/A") << " "
+                << std::setw(width) << std::right << (count ? fmt::format("{}", min) : "N/A") << " " << std::setw(width)
+                << std::right << (count ? fmt::format("{}", max) : "N/A") << " " << std::setw(10) << std::right << count
+                << "\n";
     }
   }
 
 private:
-  complex_type mean, delta, delta2, m2, std, std_rv, min, max;
+  T mean, delta, delta2, m2, std, min, max;
+  value_type std_rv;
   size_t count;
-  const bool is_complex, ignore_zero;
+  const bool ignore_zero;
   std::vector<float> values;
 };
 
-void print_header(bool is_complex);
+template <typename T> void print_header() {
+  constexpr int width = is_complex<T>::value ? 20 : 10;
+  std::cout << std::setw(12) << std::right << "volume"
+            << " " << std::setw(width) << std::right << "mean";
+  if constexpr (!is_complex<T>::value)
+    std::cout << " " << std::setw(width) << std::right << "median";
+  std::cout << " " << std::setw(width) << std::right << "std"
+            << " " << std::setw(width) << std::right << "min"
+            << " " << std::setw(width) << std::right << "max"
+            << " " << std::setw(10) << std::right << "count"
+            << "\n";
+}
 
 } // namespace MR::Stats

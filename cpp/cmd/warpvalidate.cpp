@@ -96,5 +96,6 @@ void run() {
           result.format == WarpFormat::Simple ? "simple (displacement or deformation) field" : "full warp field");
 
   CONSOLE("Fill value: {}",
-          result.fill_value.has_value() ? str(result.fill_value.value()) : "not auto-detected from input data");
+          result.fill_value.has_value() ? fmt::format("{}", result.fill_value.value())
+                                        : "not auto-detected from input data");
 }

@@ -104,7 +104,7 @@ void run() {
     for (size_t i = 0; i < std::min(ngaps, max_listed); ++i) {
       if (i > 0U)
         missing_str += ", ";
-      missing_str += str(result.missing_indices[i]);
+      missing_str += fmt::format("{}", result.missing_indices[i]);
     }
     if (ngaps > max_listed)
       missing_str += fmt::format(", ... (and {} more)", ngaps - max_listed);

@@ -122,7 +122,7 @@ void set_scheme(KeyValues &keyval, const scheme_type &PE) {
     const Metadata::BIDS::axis_vector_type dir(PE.block<1, 3>(0, 0).cast<Metadata::BIDS::axis_vector_type::Scalar>());
     keyval["PhaseEncodingDirection"] = Metadata::BIDS::vector2axisid(dir);
     if (PE.cols() >= 4)
-      keyval["TotalReadoutTime"] = str(PE(0, 3), 3);
+      keyval["TotalReadoutTime"] = fmt::format("{}", PE(0, 3));
     else
       erase(keyval, "TotalReadoutTime");
   }

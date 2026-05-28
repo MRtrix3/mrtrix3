@@ -142,12 +142,12 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
       const default_type value = functor(f);
       if (!std::isfinite(value))
         return;
-      const std::string value_string = str(multiplier * value, 6);
+      const std::string value_string = fmt::format("{}", multiplier * value);
       if (values.empty() || value_string != values.back())
         values.push_back(value_string);
     }
     if (!values.empty())
-      H.keyval()[key] = join(values, ",");
+      H.keyval()[key] = fmt::format("{}", fmt::join(values, ","));
   };
   import_parameter(
       "EchoTime", [](Frame *f) -> default_type { return f->echo_time; }, 0.001);
@@ -198,7 +198,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
       }
     }
     if (!all_equal)
-      H.keyval()["FlipAngle"] = join(frame.flip_angles, ",");
+      H.keyval()["FlipAngle"] = fmt::format("{}", fmt::join(frame.flip_angles, ","));
   }
 
   size_t nchannels = image.samples_per_pixel;
@@ -313,7 +313,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
       //   base-10 scaling
       for (size_t n = 0; n < image.images_in_mosaic; ++n) {
         slices_timing_float.push_back(0.001 * image.mosaic_slices_timing[n]);
-        std::string temp = str(static_cast<int>(std::floor(10.0 * image.mosaic_slices_timing[n])));
+        std::string temp = fmt::format("{}", static_cast<int>(std::floor(10.0 * image.mosaic_slices_timing[n])));
         const bool neg = image.mosaic_slices_timing[n] < 0.0;
         if (neg)
           temp.erase(temp.begin());
@@ -343,9 +343,9 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
   if (!slices_timing_float.empty()) {
     const size_t slices_acquired_at_zero = std::count(slices_timing_float.begin(), slices_timing_float.end(), 0.0f);
     if (slices_acquired_at_zero < (image.images_in_mosaic ? image.images_in_mosaic : dim[1])) {
-      H.keyval()["SliceTiming"] =
-          !slices_timing_str.empty() ? join(slices_timing_str, ",") : join(slices_timing_float, ",");
-      H.keyval()["MultibandAccelerationFactor"] = str(slices_acquired_at_zero);
+      H.keyval()["SliceTiming"] = !slices_timing_str.empty() ? fmt::format("{}", fmt::join(slices_timing_str, ","))
+                                                             : fmt::format("{}", fmt::join(slices_timing_float, ","));
+      H.keyval()["MultibandAccelerationFactor"] = fmt::format("{}", slices_acquired_at_zero);
       H.keyval()["SliceEncodingDirection"] = "k";
     } else {
       DEBUG("All slices acquired at same time; not writing slice encoding information");

@@ -33,7 +33,7 @@ std::ostream &operator<<(std::ostream &stream, const Time &item) {
   stream << std::setfill('0') << std::setw(2) << item.hour << ":" << std::setfill('0') << std::setw(2) << item.minute
          << ":" << std::setfill('0') << std::setw(2) << item.second;
   if (item.fraction)
-    stream << str(item.fraction, 6).substr(1);
+    stream << fmt::format("{:.6g}", item.fraction).substr(1);
   return stream;
 }
 
@@ -358,7 +358,7 @@ std::pair<Date, Time> Element::get_datetime() const {
 
 std::vector<std::string> Element::get_string() const {
   if (VR == VR_AT)
-    return {printf("%04X %04X", Raw::fetch_<uint16_t>(data, is_BE), Raw::fetch_<uint16_t>(data + 2, is_BE))};
+    return {fmt::format("{:04X} {:04X}", Raw::fetch_<uint16_t>(data, is_BE), Raw::fetch_<uint16_t>(data + 2, is_BE))};
 
   auto strings = split(std::string(reinterpret_cast<const char *>(data), size), "\\", false);
   for (auto &entry : strings)
@@ -383,9 +383,9 @@ std::string Element::as_string() const {
         out << x << " ";
       return out.str();
     case Element::DATE:
-      return str(get_date());
+      return fmt::format("{}", get_date());
     case Element::TIME:
-      return str(get_time());
+      return fmt::format("{}", get_time());
     case Element::DATETIME:
       return fmt::format("{} {}", get_datetime().first, get_datetime().second);
     case Element::STRING:
@@ -448,13 +448,13 @@ std::ostream &operator<<(std::ostream &stream, const Element &item) {
   // return "TYPE  GROUP ELEMENT VR  SIZE  OFFSET  NAME                               CONTENTS";
 
   const std::string name(item.tag_name());
-  stream << printf("[DCM] %04X %04X %c%c % 8u % 8llu ",
-                   item.group,
-                   item.element,
-                   reinterpret_cast<const char *>(&item.VR)[1],
-                   reinterpret_cast<const char *>(&item.VR)[0],
-                   (item.size == undefined_length ? uint32_t(0) : item.size),
-                   item.offset(item.start));
+  stream << fmt::format("[DCM] {:04X} {:04X} {}{} {:8} {:8} ",
+                        item.group,
+                        item.element,
+                        reinterpret_cast<const char *>(&item.VR)[1],
+                        reinterpret_cast<const char *>(&item.VR)[0],
+                        (item.size == undefined_length ? uint32_t(0) : item.size),
+                        item.offset(item.start));
 
   std::string tmp;
   size_t indent = item.level() - (item.VR == VR_SQ ? 1 : 0);

@@ -429,8 +429,8 @@ void ODF::setup_ODFtype_UI(const ODF_Item *image) {
   if (image->odf_type == odf_type_t::DIXEL && image->dixel->shells) {
     for (size_t i = 0; i != image->dixel->shells->count(); ++i) {
       if (!(*image->dixel->shells)[i].is_bzero())
-        shell_selector->addItem(
-            QString::fromStdString(str(static_cast<size_t>(std::round((*image->dixel->shells)[i].get_mean())))));
+        shell_selector->addItem(QString::fromStdString(
+            fmt::format("{}", static_cast<size_t>(std::round((*image->dixel->shells)[i].get_mean())))));
     }
     if (shell_selector->count() && image->dixel->dir_type == ODF_Item::DixelPlugin::dir_t::DW_SCHEME)
       shell_selector->setCurrentIndex(image->dixel->shell_index -

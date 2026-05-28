@@ -730,20 +730,22 @@ void Mesh::save_vtk(const std::filesystem::path &path, const bool binary) const 
 
   } else {
 
-    out << "POINTS " << str(vertices.size()) << " float\n";
+    out << "POINTS " << fmt::format("{}", vertices.size()) << " float\n";
     for (const auto &v : vertices) {
-      out << str<float>(v[0]) << " " << str<float>(v[1]) << " " << str<float>(v[2]) << "\n";
+      out << fmt::format("{} {} {}\n", static_cast<float>(v[0]), static_cast<float>(v[1]), static_cast<float>(v[2]));
       ++progress;
     }
     out << fmt::format("POLYGONS {} {}\n",                       //
                        triangles.size() + quads.size(),          //
                        4 * triangles.size() + 5 * quads.size()); //
     for (const auto &t : triangles) {
-      out << "3 " << str(t[0]) << " " << str(t[1]) << " " << str(t[2]) << "\n";
+      out << "3 " << fmt::format("{}", t[0]) << " " << fmt::format("{}", t[1]) << " " << fmt::format("{}", t[2])
+          << "\n";
       ++progress;
     }
     for (const auto &q : quads) {
-      out << "4 " << str(q[0]) << " " << str(q[1]) << " " << str(q[2]) << " " << str(q[3]) << "\n";
+      out << "4 " << fmt::format("{}", q[0]) << " " << fmt::format("{}", q[1]) << " " << fmt::format("{}", q[2]) << " "
+          << fmt::format("{}", q[3]) << "\n";
       ++progress;
     }
   }
@@ -784,11 +786,13 @@ void Mesh::save_stl(const std::filesystem::path &path, const bool binary) const 
     out << "solid \n";
     for (TriangleList::const_iterator i = triangles.begin(); i != triangles.end(); ++i) {
       const Eigen::Vector3d n(normal(*this, *i));
-      out << "facet normal " << str(n[0]) << " " << str(n[1]) << " " << str(n[2]) << "\n";
+      out << "facet normal " << fmt::format("{}", n[0]) << " " << fmt::format("{}", n[1]) << " "
+          << fmt::format("{}", n[2]) << "\n";
       out << "    outer loop\n";
       for (size_t v = 0; v != 3; ++v) {
         const Vertex p(vertices[(*i)[v]]);
-        out << "        vertex " << str(p[0]) << " " << str(p[1]) << " " << str(p[2]) << "\n";
+        out << "        vertex " << fmt::format("{}", p[0]) << " " << fmt::format("{}", p[1]) << " "
+            << fmt::format("{}", p[2]) << "\n";
       }
       out << "    endloop\n";
       out << "endfacet\n";
@@ -803,12 +807,14 @@ void Mesh::save_obj(const std::filesystem::path &path) const {
   out << "# " << App::command_history_string << "\n";
   out << "o " << name << "\n";
   for (VertexList::const_iterator v = vertices.begin(); v != vertices.end(); ++v)
-    out << "v " << str((*v)[0]) << " " << str((*v)[1]) << " " << str((*v)[2]) << " 1.0\n";
+    out << "v " << fmt::format("{}", (*v)[0]) << " " << fmt::format("{}", (*v)[1]) << " " << fmt::format("{}", (*v)[2])
+        << " 1.0\n";
   for (TriangleList::const_iterator t = triangles.begin(); t != triangles.end(); ++t)
-    out << "f " << str((*t)[0] + 1) << " " << str((*t)[1] + 1) << " " << str((*t)[2] + 1) << "\n";
+    out << "f " << fmt::format("{}", (*t)[0] + 1) << " " << fmt::format("{}", (*t)[1] + 1) << " "
+        << fmt::format("{}", (*t)[2] + 1) << "\n";
   for (QuadList::const_iterator q = quads.begin(); q != quads.end(); ++q)
-    out << "f " << str((*q)[0] + 1) << " " << str((*q)[1] + 1) << " " << str((*q)[2] + 1) << " " << str((*q)[3] + 1)
-        << "\n";
+    out << "f " << fmt::format("{}", (*q)[0] + 1) << " " << fmt::format("{}", (*q)[1] + 1) << " "
+        << fmt::format("{}", (*q)[2] + 1) << " " << fmt::format("{}", (*q)[3] + 1) << "\n";
 }
 
 void Mesh::load_triangle_vertices(VertexList &output, const size_t index) const {

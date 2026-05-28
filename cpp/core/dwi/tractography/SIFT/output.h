@@ -209,8 +209,8 @@ template <class Fixel> void ModelBase<Fixel>::output_scatterplot(const std::file
   out << "#Fibre density,Track density (unscaled),Track density (scaled),Weight,\n";
   typename std::vector<Fixel>::const_iterator i = fixels.begin(); // Skip first null fixel in DWI::Fixel_map<>
   for (++i; i != fixels.end(); ++i)
-    out << str(i->get_FOD()) << "," << str(i->get_TD()) << "," << str(i->get_TD() * current_mu) << ","
-        << str(i->get_weight()) << ",\n";
+    out << fmt::format("{}", i->get_FOD()) << "," << fmt::format("{}", i->get_TD()) << ","
+        << fmt::format("{}", i->get_TD() * current_mu) << "," << fmt::format("{}", i->get_weight()) << ",\n";
   out.close();
 }
 

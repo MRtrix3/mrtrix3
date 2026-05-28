@@ -148,9 +148,9 @@ public:
     auto trafo1 = transformation.get_transform_half();
     auto trafo2 = transformation.get_transform_half_inverse();
 
-    header.keyval()["control_points"] = str(control_points);
-    header.keyval()["trafo1"] = str(trafo1.matrix());
-    header.keyval()["trafo2"] = str(trafo2.matrix());
+    header.keyval()["control_points"] = fmt::format("{}", control_points);
+    header.keyval()["trafo1"] = fmt::format("{}", trafo1.matrix());
+    header.keyval()["trafo2"] = fmt::format("{}", trafo2.matrix());
     auto check = Image<default_type>::create(image_path, header);
 
     std::vector<uint32_t> no_oversampling(3, 1);

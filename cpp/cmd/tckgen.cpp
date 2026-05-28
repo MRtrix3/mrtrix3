@@ -276,12 +276,12 @@ void run() {
     if (!properties["max_num_tracks"].empty())
       WARN("Overriding -select option (desired number of successful streamline selections), as seeds can only provide "
            "a finite number");
-    properties["max_num_tracks"] = str(properties.seeds.get_total_count());
+    properties["max_num_tracks"] = fmt::format("{}", properties.seeds.get_total_count());
 
     if (!properties["max_num_seeds"].empty())
       WARN("Overriding -seeds option (maximum number of seeds that will be attempted to track from), as seeds can only "
            "provide a finite number");
-    properties["max_num_seeds"] = str(properties.seeds.get_total_count());
+    properties["max_num_seeds"] = fmt::format("{}", properties.seeds.get_total_count());
   }
 
   switch (algorithm) {

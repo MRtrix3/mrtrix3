@@ -208,8 +208,8 @@ void ColourBars::render(size_t colourmap,
 
   current_projection->setup_render_text();
   int x = halign > 0 ? data[0] - text_offset : data[6] + text_offset;
-  current_projection->render_text_align(x, data[1], str(local_min_value), halign, 0);
-  current_projection->render_text_align(x, data[4], str(local_max_value), halign, 0);
+  current_projection->render_text_align(x, data[1], fmt::format("{}", local_min_value), halign, 0);
+  current_projection->render_text_align(x, data[4], fmt::format("{}", local_max_value), halign, 0);
   current_projection->done_render_text();
 
   gl::DepthMask(gl::TRUE_);

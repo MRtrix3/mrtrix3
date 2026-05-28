@@ -16,9 +16,14 @@
 
 #pragma once
 
+#include <fmt/ostream.h>
+
 namespace std {
 template <> struct is_fundamental<Eigen::half> : std::true_type {};
 template <> struct is_floating_point<Eigen::half> : std::true_type {};
 template <> struct is_arithmetic<Eigen::half> : std::true_type {};
 template <> struct is_integral<Eigen::half> : std::false_type {};
 } // namespace std
+
+//! fmtlib bridge for Eigen::half (no native fmt formatter; delegates to its ostream operator<<).
+template <> struct fmt::formatter<Eigen::half> : fmt::ostream_formatter {};

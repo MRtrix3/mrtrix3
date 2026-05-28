@@ -110,7 +110,7 @@ void run() {
   index_header.datatype() = DataType::UInt32;
   index_header.datatype().set_byte_order_native();
   index_header.size(3) = 2;
-  index_header.keyval()[Fixel::n_fixels_key] = str(nfixels);
+  index_header.keyval()[Fixel::n_fixels_key] = fmt::format("{}", nfixels);
   auto index_image = Image<uint32_t>::create(index_path, index_header);
 
   Header directions_header = Fixel::directions_header_from_index(index_header);

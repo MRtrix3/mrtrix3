@@ -31,7 +31,7 @@ const OptionGroup iFODOptions =
 void load_iFOD_options(Tractography::Properties &properties) {
   auto opt = get_options("power");
   if (!opt.empty())
-    properties["fod_power"] = str<float>(opt[0][0]);
+    properties["fod_power"] = fmt::format("{}", static_cast<float>(opt[0][0]));
 }
 
 } // namespace MR::DWI::Tractography::Algorithms

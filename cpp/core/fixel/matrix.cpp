@@ -277,7 +277,7 @@ template <class MatrixType> void Writer<MatrixType>::save(const std::filesystem:
   index_header.spacing(0) = index_header.spacing(1) = index_header.spacing(2) = 1.0;
   index_header.transform() = transform_type::Identity();
   index_header.keyval() = keyvals;
-  index_header.keyval()["nfixels"] = str(matrix.size());
+  index_header.keyval()["nfixels"] = fmt::format("{}", matrix.size());
   index_header.datatype() = DataType::from<index_image_type>();
   index_header.datatype().set_byte_order_native();
 
@@ -307,7 +307,7 @@ template <class MatrixType> void Writer<MatrixType>::save(const std::filesystem:
   fixel_header.spacing(0) = fixel_header.spacing(1) = fixel_header.spacing(2) = 1.0;
   fixel_header.transform() = transform_type::Identity();
   fixel_header.keyval() = keyvals;
-  fixel_header.keyval()["nfixels"] = str(matrix.size());
+  fixel_header.keyval()["nfixels"] = fmt::format("{}", matrix.size());
   fixel_header.datatype() = DataType::from<index_type>();
   fixel_header.datatype().set_byte_order_native();
 

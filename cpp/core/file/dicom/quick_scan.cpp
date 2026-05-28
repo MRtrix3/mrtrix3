@@ -57,7 +57,7 @@ bool QuickScan::read(const std::filesystem::path &file_path,
         if (!item.ignore_when_parsing()) {
 
           if (item.is(0x0008U, 0x0008U))
-            current_image_type = join(item.get_string(), " ");
+            current_image_type = fmt::format("{}", fmt::join(item.get_string(), " "));
           else if (item.is(0x0008U, 0x0020U))
             study_date = item.get_string(0);
           else if (item.is(0x0008U, 0x0021U))
@@ -109,7 +109,7 @@ bool QuickScan::read(const std::filesystem::path &file_path,
         }
 
         if (print_DICOM_fields)
-          print(str(item));
+          print(fmt::format("{}", item));
 
         if ((print_CSA_fields || print_Phoenix) && item.group == 0x0029U) {
           if (item.element == 0x1010U || item.element == 0x1020U || item.element == 0x1110U ||
@@ -119,7 +119,7 @@ bool QuickScan::read(const std::filesystem::path &file_path,
               const bool is_phoenix = entry.key() == "MrPhoenixProtocol";
               if ((print_Phoenix && is_phoenix) || (print_CSA_fields && !is_phoenix)) {
                 if (print_CSA_fields) {
-                  print(str(entry));
+                  print(fmt::format("{}", entry));
                 } else {
                   const auto data = entry.get_string();
                   for (const auto &entry : data)

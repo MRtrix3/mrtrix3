@@ -162,7 +162,7 @@ std::string datatype2descr(const DataType data_type) {
     descr.push_back('?');
     return descr;
   }
-  descr.append(str(data_type.bytes()));
+  descr.append(fmt::format("{}", data_type.bytes()));
   return descr;
 }
 

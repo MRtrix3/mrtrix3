@@ -107,7 +107,7 @@ void run() {
   if (!missing_nodes.empty()) {
     WARN("The following labels are absent from the parcellation image "
          "and so will have an empty mesh in the output file: " +
-         join(missing_nodes, ", "));
+         fmt::format("{}", fmt::join(missing_nodes, ", ")));
   }
 
   {
@@ -120,7 +120,7 @@ void run() {
     };
 
     auto worker = [&](const size_t &in) {
-      meshes[in].set_name(str(in));
+      meshes[in].set_name(fmt::format("{}", in));
       std::vector<int> from, dimensions;
       for (size_t axis = 0; axis != 3; ++axis) {
         from.push_back(lower_corners[in][axis]);

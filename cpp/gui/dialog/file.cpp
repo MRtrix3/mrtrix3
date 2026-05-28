@@ -30,7 +30,8 @@
 
 namespace MR::GUI::Dialog::File {
 
-const std::string image_filter_string = "Medical Images (*" + join(MR::Formats::known_extensions, " *") + ")";
+const std::string image_filter_string =
+    "Medical Images (*" + fmt::format("{}", fmt::join(MR::Formats::known_extensions, " *")) + ")";
 
 const FileDialogReturn
 input_dirpath(QWidget *parent, std::string_view caption, std::optional<std::filesystem::path> start_directory) {

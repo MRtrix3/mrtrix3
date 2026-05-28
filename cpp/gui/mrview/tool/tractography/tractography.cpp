@@ -56,7 +56,7 @@ size_t geometry_string2index(std::string type_str) {
     return std::distance(list.begin(), it);
 
   throw Exception(
-      "Unrecognised value for tractogram geometry \"{}\" (options are: {}); ignoring", type_str, join(list, ", "));
+      "Unrecognised value for tractogram geometry \"{}\" (options are: {}); ignoring", type_str, fmt::join(list, ", "));
   return 0;
 }
 
@@ -785,7 +785,7 @@ void Tractography::add_commandline_options(MR::App::OptionList &options) {
 
       + Option("tractography.geometry",
                "The geometry type to use when rendering tractograms"
-               " (options are: " + join(tractogram_geometry_types, ", ") + ")").allow_multiple()
+               " (options are: " + fmt::format("{}", fmt::join(tractogram_geometry_types, ", ")) + ")").allow_multiple()
         + Argument("value").type_choice(tractogram_geometry_types)
 
       + Option("tractography.opacity",

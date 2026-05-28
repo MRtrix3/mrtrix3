@@ -32,7 +32,7 @@ const OptionGroup iFOD2Options =
 void load_iFOD2_options(Tractography::Properties &properties) {
   auto opt = get_options("samples");
   if (!opt.empty())
-    properties["samples_per_step"] = str<unsigned int>(opt[0][0]);
+    properties["samples_per_step"] = fmt::format("{}", static_cast<unsigned int>(opt[0][0]));
 }
 
 } // namespace MR::DWI::Tractography::Algorithms

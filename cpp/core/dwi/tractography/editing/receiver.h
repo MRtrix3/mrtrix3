@@ -45,8 +45,8 @@ public:
 
   ~Receiver() {
     // Use set_text() rather than update() here to force update of the text before progress goes out of scope
-    progress.set_text(std::string(printf("%8" PRIu64 " read, %8" PRIu64 " written", total_count, count)) +
-                      (crop ? printf(", %8" PRIu64 " segments", segments) : ""));
+    progress.set_text(fmt::format("{:8} read, {:8} written", total_count, count) +
+                      (crop ? fmt::format(", {:8} segments", segments) : ""));
     if (number && (count != number))
       WARN("User requested {} streamlines, but only {} were written to file", number, count);
   }

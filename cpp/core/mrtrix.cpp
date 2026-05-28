@@ -285,28 +285,4 @@ std::string without_leading_dash(std::string_view arg) {
   return result;
 }
 
-std::string join(const std::vector<std::string> &V, std::string_view delimiter) {
-  std::string ret;
-  if (V.empty())
-    return ret;
-  ret = V[0];
-  for (std::vector<std::string>::const_iterator i = V.begin() + 1; i != V.end(); ++i) {
-    ret += delimiter;
-    ret += *i;
-  }
-  return ret;
-}
-
-std::string join(const char *const *null_terminated_array, std::string_view delimiter) { // check_syntax off
-  std::string ret;
-  if (!null_terminated_array)
-    return ret;
-  ret = null_terminated_array[0];
-  for (const char *const *p = null_terminated_array + 1; *p; ++p) { // check_syntax off
-    ret += delimiter;
-    ret += *p;
-  }
-  return ret;
-}
-
 } // namespace MR

@@ -44,24 +44,24 @@ void display_func_multithreaded(const ProgressBar &p) {
 void display_func_terminal(const ProgressBar &p) {
   __need_newline = true;
   if (p.show_percent())
-    __print_stderr(printf(WRAP_OFF_CODE "\r%s: [%3" PRI_SIZET "%%] %s%s" CLEAR_LINE_CODE WRAP_ON_CODE,
-                          App::NAME.c_str(),
-                          p.value(),
-                          p.text_cstr(),
-                          p.ellipsis_cstr()));
+    __print_stderr(fmt::format(WRAP_OFF_CODE "\r{}: [{:3}%] {}{}" CLEAR_LINE_CODE WRAP_ON_CODE,
+                               App::NAME,
+                               p.value(),
+                               p.text_cstr(),
+                               p.ellipsis_cstr()));
   else
-    __print_stderr(printf(WRAP_OFF_CODE "\r%s: [%s] %s%s" CLEAR_LINE_CODE WRAP_ON_CODE,
-                          App::NAME.c_str(),
-                          busy[p.value() % busy.size()].c_str(),
-                          p.text_cstr(),
-                          p.ellipsis_cstr()));
+    __print_stderr(fmt::format(WRAP_OFF_CODE "\r{}: [{}] {}{}" CLEAR_LINE_CODE WRAP_ON_CODE,
+                               App::NAME,
+                               busy[p.value() % busy.size()],
+                               p.text_cstr(),
+                               p.ellipsis_cstr()));
 }
 
 void done_func_terminal(const ProgressBar &p) {
   if (p.show_percent())
-    __print_stderr(printf("\r%s: [100%%] %s" CLEAR_LINE_CODE "\n", App::NAME.c_str(), p.text_cstr()));
+    __print_stderr(fmt::format("\r{}: [100%] {}" CLEAR_LINE_CODE "\n", App::NAME, p.text_cstr()));
   else
-    __print_stderr(printf("\r%s: [done] %s" CLEAR_LINE_CODE "\n", App::NAME.c_str(), p.text_cstr()));
+    __print_stderr(fmt::format("\r{}: [done] {}" CLEAR_LINE_CODE "\n", App::NAME, p.text_cstr()));
   __need_newline = false;
 }
 
@@ -75,15 +75,11 @@ void display_func_redirect(const ProgressBar &p) {
       count = next_update_at = 0;
     if (count++ == next_update_at) {
       if (p.show_percent()) {
-        __print_stderr(
-            printf("%s: [%3" PRI_SIZET "%%] %s%s\n", App::NAME.c_str(), p.value(), p.text_cstr(), p.ellipsis_cstr()));
+        __print_stderr(fmt::format("{}: [{:3}%] {}{}\n", App::NAME, p.value(), p.text_cstr(), p.ellipsis_cstr()));
         ;
       } else {
-        __print_stderr(printf("%s: [%s] %s%s\n",
-                              App::NAME.c_str(),
-                              busy[p.value() % busy.size()].c_str(),
-                              p.text_cstr(),
-                              p.ellipsis_cstr()));
+        __print_stderr(
+            fmt::format("{}: [{}] {}{}\n", App::NAME, busy[p.value() % busy.size()], p.text_cstr(), p.ellipsis_cstr()));
       }
       if (next_update_at)
         next_update_at *= 2;
@@ -97,16 +93,16 @@ void display_func_redirect(const ProgressBar &p) {
     if (p.show_percent()) {
       if (p.first_time) {
         p.first_time = false;
-        __print_stderr(printf("%s: %s%s [", App::NAME.c_str(), p.text_cstr(), p.ellipsis_cstr()));
+        __print_stderr(fmt::format("{}: {}{} [", App::NAME, p.text_cstr(), p.ellipsis_cstr()));
         ;
       } else
         while (p.last_value < p.value()) {
-          __print_stderr(printf("="));
+          __print_stderr("=");
           p.last_value += 2;
         }
     } else {
       if (p.value() == 0) {
-        __print_stderr(printf("%s: %s%s ", App::NAME.c_str(), p.text_cstr(), p.ellipsis_cstr()));
+        __print_stderr(fmt::format("{}: {}{} ", App::NAME, p.text_cstr(), p.ellipsis_cstr()));
         ;
       } else if (!(p.value() & (p.value() - 1))) {
         __print_stderr(".");
@@ -118,16 +114,16 @@ void display_func_redirect(const ProgressBar &p) {
 void done_func_redirect(const ProgressBar &p) {
   if (p.text_has_been_modified()) {
     if (p.show_percent()) {
-      __print_stderr(printf("%s: [100%%] %s\n", App::NAME.c_str(), p.text_cstr()));
+      __print_stderr(fmt::format("{}: [100%] {}\n", App::NAME, p.text_cstr()));
       ;
     } else {
-      __print_stderr(printf("%s: [done] %s\n", App::NAME.c_str(), p.text_cstr()));
+      __print_stderr(fmt::format("{}: [done] {}\n", App::NAME, p.text_cstr()));
     }
   } else {
     if (p.show_percent())
-      __print_stderr(printf("]\n"));
+      __print_stderr("]\n");
     else
-      __print_stderr(printf("done\n"));
+      __print_stderr("done\n");
   }
   __need_newline = false;
 }

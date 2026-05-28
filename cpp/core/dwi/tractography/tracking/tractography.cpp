@@ -126,7 +126,7 @@ void load_streamline_properties_and_rois(Properties &properties) {
 
   auto opt = get_options("select");
   if (!opt.empty())
-    properties["max_num_tracks"] = str<unsigned int>(opt[0][0]);
+    properties["max_num_tracks"] = fmt::format("{}", static_cast<unsigned int>(opt[0][0]));
 
   opt = get_options("step");
   if (!opt.empty())
@@ -150,7 +150,7 @@ void load_streamline_properties_and_rois(Properties &properties) {
 
   opt = get_options("trials");
   if (!opt.empty())
-    properties["max_trials"] = str<unsigned int>(opt[0][0]);
+    properties["max_trials"] = fmt::format("{}", static_cast<unsigned int>(opt[0][0]));
 
   opt = get_options("noprecomputed");
   if (!opt.empty())
@@ -172,7 +172,7 @@ void load_streamline_properties_and_rois(Properties &properties) {
 
   opt = get_options("downsample");
   if (!opt.empty())
-    properties["downsample_factor"] = str<unsigned int>(opt[0][0]);
+    properties["downsample_factor"] = fmt::format("{}", static_cast<unsigned int>(opt[0][0]));
 
   opt = get_options("grad");
   if (!opt.empty())

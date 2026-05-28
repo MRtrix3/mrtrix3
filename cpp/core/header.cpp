@@ -124,14 +124,14 @@ namespace {
 std::string short_description(const Header &H) {
   std::vector<std::string> dims;
   for (size_t n = 0; n < H.ndim(); ++n)
-    dims.push_back(str(H.size(n)));
+    dims.push_back(fmt::format("{}", H.size(n)));
   std::vector<std::string> vox;
   for (size_t n = 0; n < H.ndim(); ++n)
-    vox.push_back(str(H.spacing(n)));
+    vox.push_back(fmt::format("{}", H.spacing(n)));
 
   return fmt::format(" with dimensions {}, voxel spacing {}, datatype {}", //
-                     join(dims, "x"),                                      //
-                     join(vox, "x"),                                       //
+                     fmt::join(dims, "x"),                                 //
+                     fmt::join(vox, "x"),                                  //
                      H.datatype().specifier());                            //
 }
 } // namespace
@@ -491,14 +491,14 @@ std::string Header::description(bool print_all) const {
   for (i = 0; i < ndim(); i++) {
     if (i)
       desc += " x ";
-    desc += str(size(i));
+    desc += fmt::format("{}", size(i));
   }
 
   desc += "\n  Voxel size:        ";
   for (i = 0; i < ndim(); i++) {
     if (i)
       desc += " x ";
-    desc += std::isnan(spacing(i)) ? "?" : str(spacing(i), 6);
+    desc += std::isnan(spacing(i)) ? "?" : fmt::format("{}", spacing(i));
   }
   desc += "\n";
 
@@ -752,7 +752,7 @@ void Header::realign_transform() {
   }
   std::string msg = "Image \"" + name() + "\" axes realigned to approximate RAS";
   if (!modified_fields.empty())
-    msg += "; reoriented metadata: " + join(modified_fields, ", ");
+    msg += fmt::format("; reoriented metadata: {}", fmt::join(modified_fields, ", "));
   if (File::Config::get_bool("RealignmentVerbose", true)) {
     CONSOLE(msg);
     CONSOLE("  (mrinfo -realignment / -ondisk for details;"
@@ -996,9 +996,9 @@ std::vector<std::string> Header::Realignment::describe_axis_mapping() const {
   lines.reserve(3);
   for (size_t output = 0; output != 3; ++output) {
     const size_t source_axis = shuffle_.permutations[output];
-    lines.push_back("output axis " + str(output) + " (~" + std::string(output_labels.at(output)) + ")" //
-                    + " <- source axis " + str(source_axis)                                            //
-                    + ", sign " + (shuffle_.flips[source_axis] ? "reversed" : "preserved"));           //
+    lines.push_back("output axis " + fmt::format("{}", output) + " (~" + std::string(output_labels.at(output)) + ")" //
+                    + " <- source axis " + fmt::format("{}", source_axis)                                            //
+                    + ", sign " + (shuffle_.flips[source_axis] ? "reversed" : "preserved"));                         //
   }
   return lines;
 }

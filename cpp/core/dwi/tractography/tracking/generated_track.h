@@ -64,7 +64,8 @@ public:
   }
 
   friend inline std::ostream &operator<<(std::ostream &stream, GeneratedTrack &tck) {
-    stream << str(tck.size()) << " vertices, seed index " << str(tck.seed_index) << ", status ";
+    stream << fmt::format("{}", tck.size()) << " vertices, seed index " << fmt::format("{}", tck.seed_index)
+           << ", status ";
     switch (tck.status) {
     case status_t::INVALID:
       stream << "INVALID";

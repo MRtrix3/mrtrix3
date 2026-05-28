@@ -39,7 +39,7 @@ public:
   template <typename T> void set(T &variable, std::string_view name) {
     const std::string key(name);
     if ((*this)[key].empty())
-      (*this)[key] = str(variable);
+      (*this)[key] = fmt::format("{}", variable);
     else
       variable = to<T>((*this)[key]);
   }

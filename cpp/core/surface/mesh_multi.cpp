@@ -132,7 +132,7 @@ void MeshMulti::load(const std::filesystem::path &path) {
         vertex_index_offset += vertices.size();
         Mesh temp;
         temp.load(std::move(vertices), std::move(triangles), std::move(quads));
-        temp.set_name(!object.empty() ? object : str(index - 1));
+        temp.set_name(!object.empty() ? object : fmt::format("{}", index - 1));
         push_back(temp);
       }
       object = data;
@@ -157,12 +157,14 @@ void MeshMulti::save(const std::filesystem::path &path) const {
   for (const_iterator i = begin(); i != end(); ++i) {
     out << "o " << i->get_name() << "\n";
     for (VertexList::const_iterator v = i->vertices.begin(); v != i->vertices.end(); ++v)
-      out << "v " << str((*v)[0]) << " " << str((*v)[1]) << " " << str((*v)[2]) << " 1.0\n";
+      out << "v " << fmt::format("{}", (*v)[0]) << " " << fmt::format("{}", (*v)[1]) << " "
+          << fmt::format("{}", (*v)[2]) << " 1.0\n";
     for (TriangleList::const_iterator t = i->triangles.begin(); t != i->triangles.end(); ++t)
-      out << "f " << str((*t)[0] + offset) << " " << str((*t)[1] + offset) << " " << str((*t)[2] + offset) << "\n";
+      out << "f " << fmt::format("{}", (*t)[0] + offset) << " " << fmt::format("{}", (*t)[1] + offset) << " "
+          << fmt::format("{}", (*t)[2] + offset) << "\n";
     for (QuadList::const_iterator q = i->quads.begin(); q != i->quads.end(); ++q)
-      out << "f " << str((*q)[0] + offset) << " " << str((*q)[1] + offset) << " " << str((*q)[2] + offset) << " "
-          << str((*q)[3] + offset) << "\n";
+      out << "f " << fmt::format("{}", (*q)[0] + offset) << " " << fmt::format("{}", (*q)[1] + offset) << " "
+          << fmt::format("{}", (*q)[2] + offset) << " " << fmt::format("{}", (*q)[3] + offset) << "\n";
     offset += i->vertices.size();
   }
 }

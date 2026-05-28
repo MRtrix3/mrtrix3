@@ -586,11 +586,11 @@ std::string Image::describe_value(const Eigen::Vector3f &focus) const {
       value_str += "rgb"[n];
       value_str += ": ";
       const ssize_t v = n + image.index(3);
-      value_str += std::isfinite(MR::abs(values[v])) ? str(values[v]) : "?";
+      value_str += std::isfinite(MR::abs(values[v])) ? fmt::format("{}", values[v]) : "?";
     }
   } else { // show single value
     const cfloat value = interpolate() ? trilinear_value(focus) : nearest_neighbour_value(focus);
-    value_str += " value: " + (std::isfinite(MR::abs(value)) ? str(value) : "?");
+    value_str += " value: " + (std::isfinite(MR::abs(value)) ? fmt::format("{}", value) : "?");
   }
   return value_str;
 }

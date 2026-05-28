@@ -5,4 +5,4 @@
 rm -f tmp.txt
 mredit labelconvert/out_fs.mif.gz -voxel 62,67,63 2 - | \
    labelvalidate - 2>&1 | tee tmp.txt
-grep -E "labels are spatially disconnected: .+ 2 .+" tmp.txt
+grep -E "labels are spatially disconnected:.*\b2\b" tmp.txt

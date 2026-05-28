@@ -454,9 +454,9 @@ void write_output(const std::filesystem::path &original,
   auto in = ImageType::open(original);
   Header header(in);
   header.datatype() = DataType::Float32;
-  header.keyval()["lognorm_scale"] = str(lognorm_scale);
+  header.keyval()["lognorm_scale"] = fmt::format("{}", lognorm_scale);
   if (output_balanced)
-    header.keyval()["lognorm_balance"] = str(balance_factor);
+    header.keyval()["lognorm_balance"] = fmt::format("{}", balance_factor);
   else
     balance_factor = 1.0;
   auto out = ImageType::create(corrected, header);

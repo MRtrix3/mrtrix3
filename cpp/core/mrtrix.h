@@ -17,6 +17,9 @@
 #pragma once
 
 #include <array>
+#if defined(MRTRIX_HAVE_FROM_CHARS_INT) || defined(MRTRIX_HAVE_FROM_CHARS_FP)
+#include <charconv>
+#endif
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -29,6 +32,8 @@
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <system_error>
+#include <type_traits>
 
 #include "exception.h"
 #include "types.h"
@@ -76,16 +81,6 @@ std::string lowercase(std::string_view string);
 //! return uppercase version of string
 std::string uppercase(std::string_view string);
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-security"
-template <typename... Args> std::string printf(const std::string format, Args... args) {
-  const int len = std::snprintf(nullptr, 0, format.c_str(), args...) + 1;
-  VLA(buf, char, len);
-  std::snprintf(buf, len, format.c_str(), args...);
-  return std::string(buf);
-}
-#pragma GCC diagnostic pop
-
 std::string strip(std::string_view string, std::string_view ws = {" \0\t\r\n", 5}, bool left = true, bool right = true);
 
 //! Remove quotation marks only if surrounding entire string
@@ -126,40 +121,86 @@ bool starts_with_dash(std::string_view arg);
 //! returns string without leading dashes
 std::string without_leading_dash(std::string_view arg);
 
-template <class T> inline std::string str(const T &value, int precision = 0) {
-  std::ostringstream stream;
-  if (precision)
-    stream.precision(precision);
-  else if (max_digits<T>::value())
-    stream.precision(max_digits<T>::value());
-  stream << value;
-  if (stream.fail())
-    throw Exception("error converting type \"{}\" value to string", typeid(T).name());
-  return stream.str();
+namespace detail {
+
+//! Floating-point keyword fallback (covers "nan", "-nan", "inf", "-inf"). Both implementations
+//! defer to this so the lexical form is recognised uniformly across the from_chars and
+//! istringstream paths.
+template <class T> inline std::optional<T> floating_point_keyword(std::string_view stripped) {
+  static_assert(std::is_floating_point<T>::value, "floating_point_keyword<T> requires floating-point T");
+  const std::string lstring = lowercase(stripped);
+  if (lstring == "nan")
+    return std::numeric_limits<T>::quiet_NaN();
+  if (lstring == "-nan")
+    return -std::numeric_limits<T>::quiet_NaN();
+  if (lstring == "inf")
+    return std::numeric_limits<T>::infinity();
+  if (lstring == "-inf")
+    return -std::numeric_limits<T>::infinity();
+  return std::nullopt;
 }
 
-template <class T> inline T to(std::string_view string) {
-  const std::string stripped(strip(string));
-  std::istringstream stream(stripped);
+//! Historical stream-based conversion. Retained as the fallback whenever std::from_chars
+//! support for the relevant family is unavailable in the standard library in use.
+template <class T> inline T to_via_istringstream(std::string_view string, std::string_view stripped) {
+  std::istringstream stream{std::string(stripped)};
   T value;
   stream >> value;
   if (stream.fail()) {
-    if (std::is_floating_point<T>::value) {
-      const std::string lstring = lowercase(stripped);
-      if (lstring == "nan")
-        return std::numeric_limits<T>::quiet_NaN();
-      else if (lstring == "-nan")
-        return -std::numeric_limits<T>::quiet_NaN();
-      else if (lstring == "inf")
-        return std::numeric_limits<T>::infinity();
-      else if (lstring == "-inf")
-        return -std::numeric_limits<T>::infinity();
+    if constexpr (std::is_floating_point<T>::value) {
+      if (auto kw = floating_point_keyword<T>(stripped); kw.has_value())
+        return *kw;
     }
     throw Exception("error converting string \"{}\" to type \"{}\"", string, typeid(T).name());
   } else if (!stream.eof()) {
     throw Exception("incomplete use of string \"{}\" in conversion to type \"{}\"", string, typeid(T).name());
   }
   return value;
+}
+
+#if defined(MRTRIX_HAVE_FROM_CHARS_INT) || defined(MRTRIX_HAVE_FROM_CHARS_FP)
+//! std::from_chars-based conversion. Returns a typed value or throws. Distinguishes overflow
+//! (errc::result_out_of_range) from generic parse failure (errc::invalid_argument), and enforces
+//! the same "all of the input must be consumed" invariant as the historical implementation by
+//! comparing the returned ptr against the end of the input range.
+template <class T> inline T to_via_from_chars(std::string_view string, std::string_view stripped) {
+  T value{};
+  const auto result = std::from_chars(stripped.data(), stripped.data() + stripped.size(), value);
+  if (result.ec == std::errc::result_out_of_range)
+    throw Exception("value in string \"{}\" out of range for type \"{}\"", string, typeid(T).name());
+  if (result.ec != std::errc{}) {
+    if constexpr (std::is_floating_point<T>::value) {
+      if (auto kw = floating_point_keyword<T>(stripped); kw.has_value())
+        return *kw;
+    }
+    throw Exception("error converting string \"{}\" to type \"{}\"", string, typeid(T).name());
+  }
+  if (result.ptr != stripped.data() + stripped.size())
+    throw Exception("incomplete use of string \"{}\" in conversion to type \"{}\"", string, typeid(T).name());
+  return value;
+}
+#endif
+
+//! Selects between from_chars and the istringstream fallback at compile time per T, based on
+//! which feature macros the CMake configure step exposed. Non-arithmetic specialisations
+//! (bool, complex) are handled outside this dispatch.
+template <class T> inline T to_dispatch(std::string_view string, std::string_view stripped) {
+#if defined(MRTRIX_HAVE_FROM_CHARS_INT)
+  if constexpr (std::is_integral_v<T> && !std::is_same_v<T, bool>)
+    return to_via_from_chars<T>(string, stripped);
+#endif
+#if defined(MRTRIX_HAVE_FROM_CHARS_FP)
+  if constexpr (std::is_floating_point_v<T>)
+    return to_via_from_chars<T>(string, stripped);
+#endif
+  return to_via_istringstream<T>(string, stripped);
+}
+
+} // namespace detail
+
+template <class T> inline T to(std::string_view string) {
+  const std::string stripped(strip(string));
+  return detail::to_dispatch<T>(string, stripped);
 }
 
 template <> inline bool to<bool>(std::string_view string) {
@@ -171,23 +212,17 @@ template <> inline bool to<bool>(std::string_view string) {
   return to<int>(string);
 }
 
-template <> inline std::string str<cfloat>(const cfloat &value, int precision) {
-  std::ostringstream stream;
-  if (precision > 0)
-    stream.precision(precision);
-  stream << value.real();
-  if (value.imag())
-    stream << std::showpos << value.imag() << "i";
-  if (stream.fail())
-    throw Exception("error converting complex float value to string");
-  return stream.str();
-}
-
 template <> inline cfloat to<cfloat>(std::string_view string) {
   if (string.empty())
     throw Exception("cannot convert empty string to complex float");
 
-  const std::string stripped = strip(string);
+  std::string stripped = strip(string);
+  // Accept fmtlib's parenthesised complex form "(a+bi)" in addition to the bare "a+bi".
+  if (stripped.size() >= 2 && stripped.front() == '(' && stripped.back() == ')') {
+    const std::string inner = strip(stripped.substr(1, stripped.size() - 2));
+    if (!inner.empty())
+      stripped = inner;
+  }
   std::vector<cfloat> candidates;
   for (ssize_t i = -1; i <= static_cast<ssize_t>(stripped.size()); ++i) {
     std::string first, second;
@@ -228,23 +263,17 @@ template <> inline cfloat to<cfloat>(std::string_view string) {
   return candidates[0];
 }
 
-template <> inline std::string str<cdouble>(const cdouble &value, int precision) {
-  std::ostringstream stream;
-  if (precision > 0)
-    stream.precision(precision);
-  stream << value.real();
-  if (value.imag() != 0)
-    stream << std::showpos << value.imag() << "i";
-  if (stream.fail())
-    throw Exception("error converting complex double value to string");
-  return stream.str();
-}
-
 template <> inline cdouble to<cdouble>(std::string_view string) {
   if (string.empty())
     throw Exception("cannot convert empty string to complex double");
 
-  const std::string stripped = strip(string);
+  std::string stripped = strip(string);
+  // Accept fmtlib's parenthesised complex form "(a+bi)" in addition to the bare "a+bi".
+  if (stripped.size() >= 2 && stripped.front() == '(' && stripped.back() == ')') {
+    const std::string inner = strip(stripped.substr(1, stripped.size() - 2));
+    if (!inner.empty())
+      stripped = inner;
+  }
   std::vector<cdouble> candidates;
   for (ssize_t i = -1; i <= static_cast<ssize_t>(stripped.size()); ++i) {
     std::string first, second;
@@ -369,26 +398,5 @@ Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> parse_matrix(std::strin
   }
   return M;
 }
-
-std::string join(const std::vector<std::string> &V, std::string_view delimiter);
-
-template <size_t N> inline std::string join(const std::array<std::string, N> &array, std::string_view delimiter) {
-  const auto v = std::vector<std::string>(array.begin(), array.end());
-  return join(v, delimiter);
-}
-
-template <typename T> inline std::string join(const std::vector<T> &V, std::string_view delimiter) {
-  std::string ret;
-  if (V.empty())
-    return ret;
-  ret = str(V[0]);
-  for (typename std::vector<T>::const_iterator i = V.begin() + 1; i != V.end(); ++i) {
-    ret += delimiter;
-    ret += str(*i);
-  }
-  return ret;
-}
-
-std::string join(const char *const *null_terminated_array, std::string_view delimiter); // check_syntax off
 
 } // namespace MR

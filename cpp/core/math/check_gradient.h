@@ -39,13 +39,13 @@ check_function_gradient(Function &function,
           DataType::from<value_type>().specifier());                           //
   value_type step_size = function.init(g);
   CONSOLE("cost function suggests initial step size = {}", step_size);
-  CONSOLE("cost function suggests initial position at [ {} ]", g);
+  CONSOLE("cost function suggests initial position at [ {:T} ]", g);
 
-  CONSOLE("checking gradient at position [ {}]:", x);
+  CONSOLE("checking gradient at position [ {:T}]:", x);
   Eigen::Matrix<value_type, Eigen::Dynamic, 1> g0(N);
   value_type f0 = function(x, g0);
   CONSOLE("  cost function = {}", f0);
-  CONSOLE("  gradient from cost function         = [ {}]", g0);
+  CONSOLE("  gradient from cost function         = [ {:T}]", g0);
 
   Eigen::Matrix<value_type, Eigen::Dynamic, 1> g_fd(N);
   Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> hessian;
@@ -85,7 +85,7 @@ check_function_gradient(Function &function,
     }
   }
 
-  CONSOLE("gradient by central finite difference = [ {} ]", g_fd);
+  CONSOLE("gradient by central finite difference = [ {:T} ]", g_fd);
   CONSOLE("normalised dot product = {}", g_fd.dot(g0) / g_fd.squaredNorm());
 
   if (show_hessian) {

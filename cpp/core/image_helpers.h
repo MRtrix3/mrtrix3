@@ -360,7 +360,7 @@ inline bool dimensions_match(const HeaderType1 &in1, const HeaderType2 &in2, con
 
 namespace {
 template <class HeaderType> std::string dim2str(const HeaderType &in) {
-  std::string msg = str(in.size(0));
+  std::string msg = fmt::format("{}", in.size(0));
   for (size_t axis = 1; axis != in.ndim(); ++axis)
     msg += fmt::format(",{}", in.size(axis));
   return msg;
@@ -395,7 +395,7 @@ inline void check_dimensions(const HeaderType1 &in1, const HeaderType2 &in2, con
     throw Exception("dimension mismatch between \"{}\" and \"{}\" for axes [{}] ({} vs. {})",
                     in1.name(),
                     in2.name(),
-                    join(axes, ","),
+                    fmt::join(axes, ","),
                     dim2str(in1),
                     dim2str(in2));
 }

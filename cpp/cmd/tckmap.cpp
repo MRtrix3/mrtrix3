@@ -77,7 +77,7 @@ const OptionGroup OutputDimOption = OptionGroup ("Options for the dimensionality
 const OptionGroup TWIOption = OptionGroup ("Options for the TWI image contrast properties")
   + Option ("contrast",
       fmt::format("define the desired form of contrast for the output image;"
-                  " options are: {} (default: tdi)", join(contrasts, ", ")))
+                  " options are: {} (default: tdi)", fmt::join(contrasts, ", ")))
     + Argument ("type").type_choice(contrasts)
   + Option ("image",
       "provide the scalar image map for generating images with 'scalar_map' / 'scalar_map_count' contrast,"
@@ -89,13 +89,13 @@ const OptionGroup TWIOption = OptionGroup ("Options for the TWI image contrast p
   + Option ("stat_vox",
       fmt::format("define the statistic for choosing the final voxel intensities for a given contrast type"
                   " given the individual values from the tracks passing through each voxel."
-                  " Options are: {} (default: sum)", join(voxel_statistics, ", ")))
+                  " Options are: {} (default: sum)", fmt::join(voxel_statistics, ", ")))
     + Argument ("type").type_choice(voxel_statistics)
   + Option ("stat_tck",
       fmt::format("define the statistic for choosing the contribution to be made by each streamline"
                   " as a function of the samples taken along their lengths."
                   " Only has an effect for 'scalar_map', 'fod_amp' and 'curvature' contrast types."
-                  " Options are: {} (default: mean)", join(track_statistics, ", ")))
+                  " Options are: {} (default: mean)", fmt::join(track_statistics, ", ")))
     + Argument ("type").type_choice(track_statistics)
   + Option ("fwhm_tck",
       "when using gaussian-smoothed per-track statistic,"
