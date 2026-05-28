@@ -160,7 +160,7 @@ void read(const nlohmann::json &json, Header &header) {
       }
     }
   }
-  header.merge_keyval(keyval);
+  header.keyval().insert(keyval.begin(), keyval.end());
 }
 
 namespace {

@@ -923,8 +923,7 @@ def execute(): #pylint: disable=unused-variable
     progress.done()
 
   for cid in range(n_contrasts):
-    run.command(['mrconvert', cns.templates[cid], app.ARGS.template[cid]],
-                mrconvert_keyval='NULL',
+    run.command(['mrconvert', cns.templates[cid], app.ARGS.template[cid], '-clear_properties'],
                 force=app.FORCE_OVERWRITE)
 
   if app.ARGS.warp_dir:
@@ -965,6 +964,5 @@ def execute(): #pylint: disable=unused-variable
       progress.done()
 
   if app.ARGS.template_mask:
-    run.command(['mrconvert', current_template_mask, app.ARGS.template_mask],
-                mrconvert_keyval='NULL',
+    run.command(['mrconvert', current_template_mask, app.ARGS.template_mask, '-clear_properties'],
                 force=app.FORCE_OVERWRITE)
