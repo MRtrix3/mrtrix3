@@ -2,9 +2,7 @@
 # Verify the -mask option of "mrcentroid",
 #   which restricts the centre-of-mass computation to voxels within a mask.
 # Output is compared against reference data generated using a prior software version.
-# NOTE: Reference data must be generated using a stable version of the software:
-#   mrcentroid fod.mif -mask mask.mif > mrcentroid/with_mask.txt
 
 rm -f tmp.txt
-mrcentroid fod.mif -mask mask.mif > tmp.txt
+mrcentroid dwi_mean.mif -mask mask.mif > tmp.txt
 testing_diff_matrix tmp.txt mrcentroid/with_mask.txt -frac 1e-4

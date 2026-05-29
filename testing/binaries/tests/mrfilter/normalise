@@ -1,7 +1,6 @@
 #!/bin/bash
-# REFERENCE: generate with: mrfilter dwi.mif normalise mrfilter/out_normalise.mif -force
 # Verify the "normalise" filter using default settings
 # The normalisation filter divides each voxel intensity by the local neighbourhood mean
 # Outcome is compared against that generated using a prior software version
-mrfilter dwi.mif normalise - | \
-testing_diff_image - mrfilter/out_normalise.mif -frac 1e-5
+mrfilter b0.nii.gz normalise - | \
+testing_diff_image - mrfilter/normalise.mif -frac 1e-5

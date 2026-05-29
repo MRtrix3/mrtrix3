@@ -11,7 +11,7 @@ rm -f tmp.txt
 ! ( mrconvert mrregister/warp_full.mif.gz -coord 3 0,1 - | \
     warpvalidate - > tmp.txt 2>&1 )
 cat tmp.txt
-grep "a 5D full warp image must have exactly 3 volumes in the 4th dimension \\(x/y/z components of each warp field\\)" tmp.txt
+grep "a 5D full warp image must have exactly 3 volumes in the 4th dimension" tmp.txt
 
 #########################################
 # Test 2: Wrong number of volume groups #

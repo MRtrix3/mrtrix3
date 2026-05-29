@@ -2,8 +2,6 @@
 # Verify default operation of "maskdump",
 #   printing the coordinates of non-zero voxels to stdout.
 # The output is verified against reference data generated using a prior software version.
-# NOTE: Reference data must be generated using a stable version of the software:
-#   maskdump mask.mif maskdump/coords.txt
 
 rm -f tmp.txt
 maskdump mask.mif > tmp.txt

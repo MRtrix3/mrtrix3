@@ -2,8 +2,6 @@
 # Verify that the -mask option correctly restricts which voxels are dumped.
 # The number of values produced with a mask applied must be less than without.
 # The masked values are verified against reference data generated using a prior software version.
-# NOTE: Reference data must be generated using a stable version of the software:
-#   mrdump dwi.mif -mask mask.mif mrdump/masked_values.txt
 
 rm -f tmp_all.txt tmp_masked.txt
 mrdump dwi.mif > tmp_all.txt

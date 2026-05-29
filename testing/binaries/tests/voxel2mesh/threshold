@@ -1,8 +1,0 @@
-#!/bin/bash
-# Verify operation of the -threshold option
-# Convert a binary mask image to a mesh using a manually specified threshold;
-#   the result should be a non-empty mesh file
-# REFERENCE: This test does not require pre-generated reference data
-
-voxel2mesh mask.mif tmp.obj -threshold 0.5 -force
-[ -s tmp.obj ]

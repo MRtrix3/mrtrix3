@@ -1,5 +1,4 @@
 #!/bin/bash
-# REFERENCE: generate with: tckmap tracks.tck -template dwi.mif -contrast length tckmap/tdi_length.mif.gz -force
 # Verify the "length" contrast type for tckmap,
 #   which weights each streamline contribution by its arc length
 # Output is compared to that generated using a prior version of the software;

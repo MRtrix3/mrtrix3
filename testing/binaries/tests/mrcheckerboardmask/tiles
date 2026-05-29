@@ -5,5 +5,5 @@
 # NOTE: Reference data must be generated using a stable version of the software:
 #   mrcheckerboardmask mask.mif -tiles 10 mrcheckerboardmask/tiles10.mif
 
-mrcheckerboardmask mask.mif tmp.mif -tiles 10 -force
-testing_diff_image tmp.mif mrcheckerboardmask/tiles10.mif
+mrcheckerboardmask mask.mif -tiles 2 - | \
+testing_diff_image - mrcheckerboardmask/tiles2.mif

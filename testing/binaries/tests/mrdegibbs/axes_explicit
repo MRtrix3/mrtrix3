@@ -1,13 +1,15 @@
 #!/bin/bash
 # Test mrdegibbs with explicit -axes specification.
 # The -axes option allows selection of within-slice axes for Gibbs ringing removal.
-# This test specifies axes 0,1 (x-y) and verifies that:
-#   1. The command completes without error
-#   2. The output is deterministic (running twice yields identical results)
-# Note: the result may differ from the default run if the image header contains
-#   a SliceEncodingDirection field that would auto-select different axes.
+# This test:
+#   1. Permutes the axes of a known 2D image
+#   2. Runs mrdegibbs with explicit axis selection rather than the default
+#   3. Undoes the operation from step 1
+#   4. Ensures that the result matches that from the default operation
+# The command is guaranteed to be reliant on use of the -axes option
+#   given that the NIfTI image format cannot convery SliceEncodingDirection
 
-mrdegibbs b0.nii.gz tmp_axes01_a.mif -axes 0,1 -force
-mrdegibbs b0.nii.gz tmp_axes01_b.mif -axes 0,1 -force
-
-testing_diff_image tmp_axes01_a.mif tmp_axes01_b.mif -abs 0
+mrconvert b0.nii.gz -axes 0,2,1 - | \
+mrdegibbs - -axes 0,2 - | \
+mrconvert - -axes 0,2,1 - | \
+testing_diff_image - mrdegibbs/b0_unring.nii.gz -abs 0.2

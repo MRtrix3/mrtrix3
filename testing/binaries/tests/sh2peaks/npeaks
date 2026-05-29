@@ -2,14 +2,14 @@
 # Test sh2peaks with a non-default number of peaks via the -num option
 # By default, 3 peaks are extracted (9 volumes in the output).
 # This test requests 1 peak (3 output volumes) and 5 peaks (15 output volumes),
-#   verifying that the output image size changes accordingly.
+#   verifying that the output image matches that generated using a prior software version
 
 # Request 1 peak: output should have 3 volumes
-sh2peaks fod.mif tmp_1peak.mif -num 1 -force
-NVOLS=$(mrinfo tmp_1peak.mif -size | awk '{print $4}')
-[ "$NVOLS" -eq 3 ] || { echo "ERROR: expected 3 output volumes for 1 peak, got $NVOLS"; exit 1; }
+sh2peaks fod.mif - -num 1 | \
+testing_diff_peaks - sh2peaks/1peak.mif 1e-6
 
 # Request 5 peaks: output should have 15 volumes
-sh2peaks fod.mif tmp_5peaks.mif -num 5 -force
-NVOLS=$(mrinfo tmp_5peaks.mif -size | awk '{print $4}')
-[ "$NVOLS" -eq 15 ] || { echo "ERROR: expected 15 output volumes for 5 peaks, got $NVOLS"; exit 1; }
+# NOTE: Test currently fails due to erroneous peak on dev;
+#   may be rectified once master bugfixes are merged back to dev?
+sh2peaks fod.mif - -num 5 | \
+testing_diff_peaks - sh2peaks/5peaks.mif 1e-6

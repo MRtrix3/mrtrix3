@@ -6,5 +6,5 @@
 rm -f tmp_lengths.txt
 tckstats tracks.tck -dump tmp_lengths.txt
 streamline_count=$(tckstats tracks.tck -output count | tr -d '[:space:]')
-length_count=$(wc -l < tmp_lengths.txt)
-[ "$length_count" -eq "$streamline_count" ]
+length_count=$(tail -n1 tmp_lengths.txt | wc -w)
+(( length_count == streamline_count ))

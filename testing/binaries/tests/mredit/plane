@@ -1,10 +1,19 @@
 #!/bin/bash
 # Verify the -plane option, which fills all voxels in a specified plane to a given value
-# mask.mif is a 3D image; all voxels in plane coord=2 of axis 0 are set to 0.0
+# mask.mif is a 3D image;
+#   all voxels in plane coord=2 of axis 0 are set to 0.0
+#   all voxels in plane coord=4 of axis 0 are set to 1.0
 
-mredit mask.mif -plane 0 2 0.0 tmp_plane.mif -force
+mredit mask.mif -plane 0 2 1.0 -plane 0 4 0.0 tmp_plane.mif -force
 
-# All voxels in the edited plane (axis 0, coord 2) must have value 0.0
 mrconvert tmp_plane.mif -coord 0 2 tmp_plane_slice.mif -force
+slice_min=$(mrstats tmp_plane_slice.mif -output min)
 slice_max=$(mrstats tmp_plane_slice.mif -output max)
-awk -v v="$slice_max" 'BEGIN { if (v + 0 != 0.0) { print "ERROR: plane voxels not all set to 0.0"; exit 1 } }'
+(( slice_min == 1 ))
+(( slice_max == 1 ))
+
+mrconvert tmp_plane.mif -coord 0 4 tmp_plane_slice.mif -force
+slice_min=$(mrstats tmp_plane_slice.mif -output min)
+slice_max=$(mrstats tmp_plane_slice.mif -output max)
+(( slice_min == 0 ))
+(( slice_max == 0 ))

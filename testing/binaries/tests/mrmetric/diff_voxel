@@ -1,7 +1,16 @@
 #!/bin/bash
-# Verify the default (diff) metric computed in voxel space
-# Comparing an image with itself should yield a mean squared difference of zero;
-#   verify that the output is 0
+# Verify the diff metric computed in average scanner space
 
-RESULT=$(mrmetric dwi_mean.mif dwi_mean.mif)
-(( $(echo "$RESULT == 0" | bc) ))
+transformcalc moving2template.txt half tmp_forwardhalf.txt -force
+mrtransform moving.mif.gz -linear tmp_forwardhalf.txt tmp_moving.mif -force
+transformcalc moving2template.txt invert tmp_template2moving.txt -force
+transformcalc tmp_template2moving.txt half tmp_inversehalf.txt -force
+mrtransform template.mif.gz -linear tmp_inversehalf.txt tmp_template.mif -force
+rm -f tmp.txt
+! mrmetric tmp_moving.mif tmp_template.mif -space voxel
+
+mraverageheader tmp_moving.mif tmp_template.mif tmp_average.mif -force
+mrgrid tmp_moving.mif regrid -template tmp_average.mif tmp_moving_regrid.mif -force
+mrgrid tmp_template.mif regrid -template tmp_average.mif tmp_template_regrid.mif -force
+mrmetric tmp_moving_regrid.mif tmp_template_regrid.mif -space voxel > tmp.txt
+testing_diff_matrix tmp.txt mrmetric/diff_voxel.txt -frac 1e-5

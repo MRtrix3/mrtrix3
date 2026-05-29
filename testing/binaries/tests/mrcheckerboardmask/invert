@@ -6,7 +6,7 @@
 
 mrcheckerboardmask mask.mif tmp_normal.mif -force
 mrcheckerboardmask mask.mif tmp_inverted.mif -invert -force
-mrcalc tmp_normal.mif tmp_inverted.mif -add tmp_sum.mif -force
-mrstats tmp_sum.mif -output min > tmp_min.txt
-mrstats tmp_sum.mif -output max > tmp_max.txt
-testing_diff_matrix tmp_min.txt tmp_max.txt -abs 1e-6
+COUNT=$(mrmath tmp_normal.mif tmp_inverted.mif sum - | \
+        mrcalc 1 - -neq - | \
+        mrstats mask.mif -mask - -output count)
+[[ ${COUNT} -eq "0" ]]

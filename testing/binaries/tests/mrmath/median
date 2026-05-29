@@ -1,6 +1,6 @@
 #!/bin/bash
-# REFERENCE: generate with: mrmath dwi.mif median -axis 3 mrmath/out_median_axis.mif -force
 # Verify "median" operator when applied along the axis of a single image
 # Outcome is compared against that calculated using a prior software version
-mrmath dwi.mif median -axis 3 - | \
+dwiextract dwi.mif - | \
+mrmath - median -axis 3 - | \
 testing_diff_image - mrmath/out_median_axis.mif -frac 1e-5

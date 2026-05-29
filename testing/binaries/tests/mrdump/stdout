@@ -2,8 +2,6 @@
 # Verify default operation of "mrdump",
 #   printing all voxel values of an image to stdout.
 # The output is verified against reference data generated using a prior software version.
-# NOTE: Reference data must be generated using a stable version of the software:
-#   mrdump dwi.mif mrdump/values.txt
 
 rm -f tmp.txt
 mrdump dwi.mif > tmp.txt

@@ -10,7 +10,7 @@ tckstats tracks.tck -output min -output max > tmp_minmax.txt
 
 # count output is a single positive integer
 count=$(cat tmp_count.txt | tr -d '[:space:]')
-[ "$count" -gt 0 ]
+[ "$count" -eq 500 ]
 
 # min-max output contains two values on a single line
 word_count=$(wc -w < tmp_minmax.txt)

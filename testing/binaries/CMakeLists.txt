@@ -35,13 +35,12 @@ add_bash_binary_test(5ttedit/onetissue)
 add_bash_binary_test(5ttedit/twotissues)
 
 add_bash_binary_test(5ttvalidate/default)
+add_bash_binary_test(5ttvalidate/masks_output)
 add_bash_binary_test(5ttvalidate/non_float)
 add_bash_binary_test(5ttvalidate/nonphysical_pve)
 add_bash_binary_test(5ttvalidate/unity_size)
 add_bash_binary_test(5ttvalidate/wrong_dimensionality)
 add_bash_binary_test(5ttvalidate/wrong_volumes)
-add_bash_binary_test(5ttvalidate/masks_output)
-
 
 add_bash_binary_test(afdconnectivity/afd_map)
 add_bash_binary_test(afdconnectivity/default)
@@ -78,11 +77,6 @@ add_bash_binary_test(connectomestats/nbs)
 add_bash_binary_test(connectomestats/none)
 add_bash_binary_test(connectomestats/tfnbs)
 
-add_bash_binary_test(dcmedit/anonymise)
-
-add_bash_binary_test(dcminfo/default)
-
-
 add_bash_binary_test(dirflip/default)
 add_bash_binary_test(dirflip/preserve)
 
@@ -118,7 +112,6 @@ add_bash_binary_test(dirsplit/cartesian)
 add_bash_binary_test(dirsplit/foursubsets)
 add_bash_binary_test(dirsplit/twosubsets)
 
-
 add_bash_binary_test(dwi2adc/default)
 add_bash_binary_test(dwi2adc/ivim)
 
@@ -148,7 +141,6 @@ add_bash_binary_test(dwiextract/bzero)
 add_bash_binary_test(dwiextract/default)
 add_bash_binary_test(dwiextract/shells)
 add_bash_binary_test(dwiextract/singleshell)
-
 
 add_bash_binary_test(dwirecon/combinepairs_pequad)
 add_bash_binary_test(dwirecon/combinepairs_reordered)
@@ -189,10 +181,9 @@ add_bash_binary_test(fixelcfestats/legacy)
 add_bash_binary_test(fixelcfestats/masked)
 add_bash_binary_test(fixelcfestats/posthoc)
 
+add_bash_binary_test(fixelconnectivity/default)
 add_bash_binary_test(fixelconnectivity/masked)
 add_bash_binary_test(fixelconnectivity/weighted)
-add_bash_binary_test(fixelconnectivity/default)
-
 
 add_bash_binary_test(fixelcorrespondence/default)
 
@@ -246,25 +237,23 @@ add_bash_binary_test(labelconvert/freesurfer)
 add_bash_binary_test(labelconvert/iit)
 add_bash_binary_test(labelconvert/lpba40)
 add_bash_binary_test(labelconvert/mismatch)
-add_bash_binary_test(labelconvert/freesurfer_spine)
 
-
-add_bash_binary_test(labelvalidate/float)
 add_bash_binary_test(labelstats/default)
 add_bash_binary_test(labelstats/output_centre)
 add_bash_binary_test(labelstats/output_mass)
 add_bash_binary_test(labelstats/voxelspace)
 
+add_bash_binary_test(labelvalidate/float)
 add_bash_binary_test(labelvalidate/negative)
 add_bash_binary_test(labelvalidate/non_sequentially_contiguous)
 add_bash_binary_test(labelvalidate/non_spatially_contiguous)
 add_bash_binary_test(labelvalidate/sequentially_contiguous)
 add_bash_binary_test(labelvalidate/wrong_dimensionality)
 
-add_bash_binary_test(maskfilter/connect_26connectivity)
 add_bash_binary_test(maskdump/output_file)
 add_bash_binary_test(maskdump/stdout)
 
+add_bash_binary_test(maskfilter/connect_26connectivity)
 add_bash_binary_test(maskfilter/connect_26connectivity_largest)
 add_bash_binary_test(maskfilter/connect_axes)
 add_bash_binary_test(maskfilter/connect_axes_26connectivity)
@@ -290,11 +279,10 @@ add_bash_binary_test(meshconvert/transform_voxel2real)
 add_bash_binary_test(meshconvert/vtk_ascii)
 add_bash_binary_test(meshconvert/vtk_binary)
 
-add_bash_binary_test(meshvalidate/default)
 add_bash_binary_test(meshfilter/smooth)
-add_bash_binary_test(meshfilter/smooth_obj)
 add_bash_binary_test(meshfilter/smooth_spatial)
 
+add_bash_binary_test(meshvalidate/default)
 add_bash_binary_test(meshvalidate/disconnected_vertex)
 add_bash_binary_test(meshvalidate/duplicate_polygon)
 add_bash_binary_test(meshvalidate/duplicate_vertex)
@@ -307,21 +295,19 @@ add_bash_binary_test(mraverageheader/min_projection)
 add_bash_binary_test(mraverageheader/padding)
 add_bash_binary_test(mraverageheader/4D)
 
-
 add_bash_binary_test(mrcalc/calc_mode)
+add_bash_binary_test(mrcalc/dwscheme_preservation_imprecision)
 add_bash_binary_test(mrcalc/expression_1)
 add_bash_binary_test(mrcalc/expression_2)
 add_bash_binary_test(mrcalc/expression_3)
 add_bash_binary_test(mrcalc/expression_4)
 add_bash_binary_test(mrcalc/expression_5)
-add_bash_binary_test(mrcalc/dwscheme_preservation_imprecision)
 
 add_bash_binary_test(mrcat/axis)
 add_bash_binary_test(mrcat/dwscheme_merge)
 add_bash_binary_test(mrcat/single_input)
 add_bash_binary_test(mrcat/singlevoxel)
 
-add_bash_binary_test(mrclusterstats/clustersize)
 add_bash_binary_test(mrcentroid/default)
 add_bash_binary_test(mrcentroid/voxelspace)
 add_bash_binary_test(mrcentroid/with_mask)
@@ -331,11 +317,13 @@ add_bash_binary_test(mrcheckerboardmask/invert)
 add_bash_binary_test(mrcheckerboardmask/nan)
 add_bash_binary_test(mrcheckerboardmask/tiles)
 
+add_bash_binary_test(mrclusterstats/clustersize)
 add_bash_binary_test(mrclusterstats/default)
 add_bash_binary_test(mrclusterstats/masked)
 add_bash_binary_test(mrclusterstats/posthoc)
 
 add_bash_binary_test(mrcolour/bothlimits)
+add_bash_binary_test(mrcolour/fixed_colour)
 add_bash_binary_test(mrcolour/map_cool)
 add_bash_binary_test(mrcolour/map_gray)
 add_bash_binary_test(mrcolour/map_hot)
@@ -346,8 +334,6 @@ add_bash_binary_test(mrcolour/map_rgb)
 add_bash_binary_test(mrcolour/map_viridis)
 add_bash_binary_test(mrcolour/scaling)
 add_bash_binary_test(mrcolour/upperlimit)
-add_bash_binary_test(mrcolour/fixed_colour)
-
 
 add_bash_binary_test(mrconvert/big_endian)
 add_bash_binary_test(mrconvert/coord_end)
@@ -365,8 +351,8 @@ add_bash_binary_test(mrconvert/passthrough)
 add_bash_binary_test(mrconvert/real2complex)
 add_bash_binary_test(mrconvert/strides)
 
-add_bash_binary_test(mrdegibbs/default)
 add_bash_binary_test(mrdegibbs/3D)
+add_bash_binary_test(mrdegibbs/default)
 add_bash_binary_test(mrdegibbs/axes_explicit)
 
 add_bash_binary_test(mrdump/masked)
@@ -376,7 +362,6 @@ add_bash_binary_test(mrdump/stdout)
 add_bash_binary_test(mredit/plane)
 add_bash_binary_test(mredit/sphere)
 add_bash_binary_test(mredit/voxel)
-
 
 add_bash_binary_test(mrfilter/demodulate_3Din_linear_2Ddemod)
 add_bash_binary_test(mrfilter/demodulate_3Din_linear_3Ddemod)
@@ -393,14 +378,13 @@ add_bash_binary_test(mrfilter/gradient_scanner_magnitude)
 add_bash_binary_test(mrfilter/median_default)
 add_bash_binary_test(mrfilter/median_extent_anisotropic)
 add_bash_binary_test(mrfilter/median_extent_isotropic)
+add_bash_binary_test(mrfilter/normalise)
 add_bash_binary_test(mrfilter/smooth_default)
 add_bash_binary_test(mrfilter/smooth_extent)
 add_bash_binary_test(mrfilter/smooth_fwhm)
 add_bash_binary_test(mrfilter/smooth_stdev_3vector)
 add_bash_binary_test(mrfilter/smooth_stdev_anisotropic)
 add_bash_binary_test(mrfilter/smooth_stdev_scalar)
-add_bash_binary_test(mrfilter/normalise)
-
 
 add_bash_binary_test(mrgrid/crop_axis_range)
 add_bash_binary_test(mrgrid/crop_axis_widths)
@@ -420,53 +404,44 @@ add_bash_binary_test(mrgrid/regrid_upsample_nearest)
 add_bash_binary_test(mrgrid/regrid_upsample_sinc)
 
 add_bash_binary_test(mrhistmatch/linear)
-add_bash_binary_test(mrhistmatch/scale)
 add_bash_binary_test(mrhistmatch/linear_with_masks)
 add_bash_binary_test(mrhistmatch/nonlinear)
-
+add_bash_binary_test(mrhistmatch/scale)
 
 add_bash_binary_test(mrhistogram/allvolumes)
 add_bash_binary_test(mrhistogram/bins)
 add_bash_binary_test(mrhistogram/default)
 add_bash_binary_test(mrhistogram/masked)
 
-add_bash_binary_test(mrinfo/bvec_bval_nan)
 add_bash_binary_test(mrinfo/all)
+add_bash_binary_test(mrinfo/bvec_bval_nan)
 add_bash_binary_test(mrinfo/json_keyval)
 add_bash_binary_test(mrinfo/print_fields)
 
-
-add_bash_binary_test(mrmath/multiimage_median)
-add_bash_binary_test(mrmath/singleimage_mean)
-add_bash_binary_test(mrmath/singleimage_norm)
-add_bash_binary_test(mrmath/singleimage_rms)
 add_bash_binary_test(mrmath/axis)
 add_bash_binary_test(mrmath/max)
 add_bash_binary_test(mrmath/median)
 add_bash_binary_test(mrmath/min)
-add_bash_binary_test(mrmath/product)
+add_bash_binary_test(mrmath/multiimage_median)
+add_bash_binary_test(mrmath/singleimage_mean)
+add_bash_binary_test(mrmath/singleimage_norm)
+add_bash_binary_test(mrmath/singleimage_rms)
 add_bash_binary_test(mrmath/std)
 add_bash_binary_test(mrmath/var)
 
-
-add_bash_binary_test(mrregister/multicontrast_affine)
-add_bash_binary_test(mrmetric/cc_average_space)
 add_bash_binary_test(mrmetric/diff_average_space)
 add_bash_binary_test(mrmetric/diff_image1_space)
 add_bash_binary_test(mrmetric/diff_voxel)
-add_bash_binary_test(mrmetric/diff_with_mask)
 add_bash_binary_test(mrmetric/overlap)
 
+add_bash_binary_test(mrregister/affine_midway)
+add_bash_binary_test(mrregister/multicontrast_affine)
 add_bash_binary_test(mrregister/multicontrast_affine_weights)
 add_bash_binary_test(mrregister/multicontrast_rigidaffine_fod)
 add_bash_binary_test(mrregister/multicontrast_rigidnonlinear_fod)
+add_bash_binary_test(mrregister/rigid)
 add_bash_binary_test(mrregister/singlecontrast_affine)
 add_bash_binary_test(mrregister/singlecontrast_rigidnonlinear_fod)
-add_bash_binary_test(mrregister/affine_midway)
-add_bash_binary_test(mrregister/affine_with_masks)
-add_bash_binary_test(mrregister/rigid)
-add_bash_binary_test(mrregister/rigid_affine)
-
 
 add_bash_binary_test(mrstats/complex)
 add_bash_binary_test(mrstats/default)
@@ -502,14 +477,12 @@ add_bash_binary_test(mrtransform/fod_linear_reorient_noresample)
 add_bash_binary_test(mrtransform/fod_linear_reorient_withresample)
 add_bash_binary_test(mrtransform/fod_nonlinear)
 add_bash_binary_test(mrtransform/identity)
+add_bash_binary_test(mrtransform/interp_sinc)
 add_bash_binary_test(mrtransform/linear)
 add_bash_binary_test(mrtransform/linear_inverse)
 add_bash_binary_test(mrtransform/linear_template)
 add_bash_binary_test(mrtransform/noop)
 add_bash_binary_test(mrtransform/replace)
-add_bash_binary_test(mrtransform/flip)
-add_bash_binary_test(mrtransform/interp_sinc)
-
 
 add_bash_binary_test(mtnormalise/default)
 
@@ -544,16 +517,15 @@ add_bash_binary_test(sh2amp/nonnegative)
 
 add_bash_binary_test(sh2metric/entropy)
 add_bash_binary_test(sh2metric/entropy_directions)
+add_bash_binary_test(sh2metric/entropy_invnorm)
 add_bash_binary_test(sh2metric/entropy_multiinput)
 add_bash_binary_test(sh2metric/entropy_normalised)
-add_bash_binary_test(sh2metric/entropy_invnorm)
 add_bash_binary_test(sh2metric/power)
 
 add_bash_binary_test(sh2peaks/default)
 add_bash_binary_test(sh2peaks/fast)
 add_bash_binary_test(sh2peaks/npeaks)
 add_bash_binary_test(sh2peaks/with_mask)
-
 
 add_bash_binary_test(sh2response/default)
 
@@ -568,10 +540,8 @@ add_bash_binary_test(tck2fixel/phantom_precise)
 add_bash_binary_test(tck2fixel/phantom_unweighted)
 add_bash_binary_test(tck2fixel/phantom_weighted)
 
+add_bash_binary_test(tckconvert/ply_write)
 add_bash_binary_test(tckconvert/rib_write)
-add_bash_binary_test(tckdfc/dynamic)
-add_bash_binary_test(tckdfc/static)
-
 add_bash_binary_test(tckconvert/scanner2voxel)
 add_bash_binary_test(tckconvert/text_read_range)
 add_bash_binary_test(tckconvert/text_write)
@@ -579,8 +549,6 @@ add_bash_binary_test(tckconvert/vtk_read_binary)
 add_bash_binary_test(tckconvert/vtk_read_empty)
 add_bash_binary_test(tckconvert/vtk_write_ascii)
 add_bash_binary_test(tckconvert/vtk_write_binary)
-add_bash_binary_test(tckconvert/ply_write)
-
 
 add_bash_binary_test(tckedit/include_exclude_inverse)
 add_bash_binary_test(tckedit/include_mask)
@@ -606,21 +574,20 @@ add_bash_binary_test(tckgen/seed_rejection_per_voxel)
 add_bash_binary_test(tckgen/seed_sphere)
 add_bash_binary_test(tckgen/seed_voxels)
 
-add_bash_binary_test(tckglobal/default)
 add_bash_binary_test(tckinfo/count)
 add_bash_binary_test(tckinfo/default)
 add_bash_binary_test(tckinfo/multiple_files)
 
+add_bash_binary_test(tckglobal/default)
 add_bash_binary_test(tckglobal/masked)
 add_bash_binary_test(tckglobal/multitissue)
 
 add_bash_binary_test(tckmap/dec)
 add_bash_binary_test(tckmap/default_template)
 add_bash_binary_test(tckmap/default_vox)
-add_bash_binary_test(tckmap/tod)
 add_bash_binary_test(tckmap/length)
 add_bash_binary_test(tckmap/scalar_map)
-
+add_bash_binary_test(tckmap/tod)
 
 add_bash_binary_test(tckresample/downsample)
 add_bash_binary_test(tckresample/endpoints)
@@ -681,11 +648,10 @@ add_bash_binary_test(tensor2metric/fa)
 add_bash_binary_test(tensor2metric/mo_na)
 
 add_bash_binary_test(transformcalc/average)
+add_bash_binary_test(transformcalc/decompose)
 add_bash_binary_test(transformcalc/header)
 add_bash_binary_test(transformcalc/interpolate)
-add_bash_binary_test(transformcalc/decompose)
 add_bash_binary_test(transformcalc/invert)
-
 
 add_bash_binary_test(transformcompose/affine_nonlinear)
 add_bash_binary_test(transformcompose/affine_to_image)
@@ -703,11 +669,11 @@ add_bash_binary_test(tsfmult/default)
 
 add_bash_binary_test(tsfsmooth/default)
 
-add_bash_binary_test(tsfthreshold/default)
 add_bash_binary_test(tsfinfo/count)
 add_bash_binary_test(tsfinfo/default)
 add_bash_binary_test(tsfinfo/multiple_files)
 
+add_bash_binary_test(tsfthreshold/default)
 add_bash_binary_test(tsfthreshold/invert)
 
 add_bash_binary_test(tsfvalidate/badcount)
@@ -723,28 +689,26 @@ add_bash_binary_test(vectorstats/4)
 
 add_bash_binary_test(voxel2fixel/default)
 
-add_bash_binary_test(warp2metric/fc)
 add_bash_binary_test(voxel2mesh/blocky)
 add_bash_binary_test(voxel2mesh/default)
-add_bash_binary_test(voxel2mesh/threshold)
 
+add_bash_binary_test(warp2metric/fc)
 add_bash_binary_test(warp2metric/jdet)
 add_bash_binary_test(warp2metric/jmat)
-
-add_bash_binary_test(warpcorrect/default)
-add_bash_binary_test(warpcorrect/with_marker)
 
 add_bash_binary_test(warpconvert/deformation2displacement)
 add_bash_binary_test(warpconvert/displacement2deformation)
 add_bash_binary_test(warpconvert/warpfull2deformation)
 add_bash_binary_test(warpconvert/warpfull2displacement)
 
-add_bash_binary_test(warpinvert/deformation)
-add_bash_binary_test(warpinvert/displacement)
-add_bash_binary_test(warpinvert/with_template)
-
+add_bash_binary_test(warpcorrect/default)
+add_bash_binary_test(warpcorrect/with_marker)
 
 add_bash_binary_test(warpinit/default)
+
+add_bash_binary_test(warpinvert/deformation)
+add_bash_binary_test(warpinvert/displacement)
+add_bash_binary_test(warpinvert/noop)
 
 add_bash_binary_test(warpvalidate/deformation)
 add_bash_binary_test(warpvalidate/deformation_volumecount)

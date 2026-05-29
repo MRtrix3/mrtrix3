@@ -1,7 +1,11 @@
 #!/bin/bash
 # Verify the diff metric computed in average scanner space
-# Comparing an image with itself in average space should yield zero;
-#   verify that the output is 0
 
-RESULT=$(mrmetric dwi_mean.mif dwi_mean.mif -space average)
-(( $(echo "$RESULT == 0" | bc) ))
+transformcalc moving2template.txt half tmp_forwardhalf.txt -force
+mrtransform moving.mif.gz -linear tmp_forwardhalf.txt tmp_moving.mif -force
+transformcalc moving2template.txt invert tmp_template2moving.txt -force
+transformcalc tmp_template2moving.txt half tmp_inversehalf.txt -force
+mrtransform template.mif.gz -linear tmp_inversehalf.txt tmp_template.mif -force
+rm -f tmp.txt
+mrmetric tmp_moving.mif tmp_template.mif -space average > tmp.txt
+testing_diff_matrix tmp.txt mrmetric/diff_average.txt -frac 1e-5

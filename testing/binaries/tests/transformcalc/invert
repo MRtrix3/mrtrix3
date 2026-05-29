@@ -2,8 +2,7 @@
 # Verify "invert" operation
 # Properties validated:
 #   1. Double-inversion recovers the original transform
-#   2. Interpolating between a transform and its inverse at t=0 yields the original transform
-#   3. Interpolating between a transform and its inverse at t=1 yields the inverse
+#   2. Matches that generated using a prior software version
 
 transformcalc moving2template.txt invert tmp_inv.txt -force
 
@@ -11,10 +10,4 @@ transformcalc moving2template.txt invert tmp_inv.txt -force
 transformcalc tmp_inv.txt invert tmp_inv_inv.txt -force
 testing_diff_matrix tmp_inv_inv.txt moving2template.txt -abs 1e-6
 
-# Verify the interpolate sanity check: interpolate(T, T^{-1}, 0) == T
-transformcalc moving2template.txt tmp_inv.txt 0.0 interpolate tmp_t0.txt -force
-testing_diff_matrix tmp_t0.txt moving2template.txt -abs 1e-6
-
-# Verify the interpolate sanity check: interpolate(T, T^{-1}, 1) == T^{-1}
-transformcalc moving2template.txt tmp_inv.txt 1.0 interpolate tmp_t1.txt -force
-testing_diff_matrix tmp_t1.txt tmp_inv.txt -abs 1e-6
+testing_diff_matrix tmp_inv.txt transformcalc/invert.txt -abs 1e-5

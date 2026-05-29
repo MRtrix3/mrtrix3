@@ -15,10 +15,10 @@ size=$(mrinfo dwi.mif -size)
 spacing=$(mrinfo dwi.mif -spacing)
 [ $(echo "$spacing" | wc -w) -eq 4 ] || { echo "Expected 4 values for -spacing, got: $spacing"; exit 1; }
 
-# -format should produce a non-empty string
+# -format should produce "MRtrix"
 format=$(mrinfo dwi.mif -format)
-[ -n "$format" ] || { echo "Expected non-empty output for -format"; exit 1; }
+[ "$format" = "MRtrix" ] || { echo "Expected format=MRtrix, got: $format"; exit 1; }
 
 # -datatype should produce a non-empty string
 datatype=$(mrinfo dwi.mif -datatype)
-[ -n "$datatype" ] || { echo "Expected non-empty output for -datatype"; exit 1; }
+[ "$datatype" = "UInt16LE" ] || { echo "Expected datatype=UInt16LE, got: $datatype"; exit 1; }

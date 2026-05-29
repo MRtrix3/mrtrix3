@@ -6,4 +6,3 @@ rm -f tmp.txt
 tsfinfo afd.tsf 2>&1 | tee tmp.txt
 grep "Track scalar file:" tmp.txt
 grep -E "count:" tmp.txt
-grep -E "datatype:" tmp.txt

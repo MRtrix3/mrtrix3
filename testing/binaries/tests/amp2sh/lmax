@@ -1,5 +1,4 @@
 #!/bin/bash
-# REFERENCE: generate with: amp2sh dwi.mif -lmax 4 amp2sh/out_lmax4.mif -force
 # Test amp2sh with an explicit -lmax option to control the maximum harmonic order
 # Using lmax=4 produces 15 SH coefficients per voxel
 # Outcome is compared against that generated using a prior software version

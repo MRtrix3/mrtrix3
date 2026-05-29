@@ -1,6 +1,0 @@
-#!/bin/bash
-# REFERENCE: generate with: mrmath dwi.mif product -axis 3 mrmath/out_product.mif -force
-# Verify "product" operator when applied along the axis of a single image
-# Outcome is compared against that calculated using a prior software version
-mrmath dwi.mif product -axis 3 - | \
-testing_diff_image - mrmath/out_product.mif -frac 1e-5

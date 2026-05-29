@@ -2,13 +2,8 @@
 # Verify the -sphere option, which fills voxels within a sphere to a specified value
 # mask.mif has dimensions 6x8x9 and voxel size 2.5mm
 # A sphere centred at voxel (3,4,4) with radius 5.0mm is filled with value 2.0
+# ENsure output exactly matches that generated using a prior software version
 
-mredit mask.mif -sphere 3,4,4 5.0 2.0 tmp_sphere.mif -force
-
-# Centre voxel must have been set to the edited value (2.0)
-centre_val=$(mrconvert tmp_sphere.mif -coord 0 3 -coord 1 4 -coord 2 4 - | mrstats - -output mean)
-awk -v v="$centre_val" 'BEGIN { if (v + 0 != 2.0) { print "ERROR: centre voxel not set to 2.0"; exit 1 } }'
-
-# The output maximum must be at least 2.0
-max_val=$(mrstats tmp_sphere.mif -output max)
-awk -v v="$max_val" 'BEGIN { if (v + 0 < 2.0) { print "ERROR: no voxel was set to 2.0"; exit 1 } }'
+mrconvert mask.mif -datatype uint8 - | \
+mredit - -sphere 3,4,4 5.0 2.0 - | \
+testing_diff_image - mredit/sphere.mif -abs 0

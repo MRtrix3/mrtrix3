@@ -2,31 +2,38 @@
 # Verify "decompose" operation
 # The command decomposes a transform into translation, rotation and stretch components,
 #   writing a key-value text file.
-# REFERENCE: generate reference output with:
-#   transformcalc moving2template.txt decompose transformcalc/decompose.txt
-# Validations:
-#   1. The command completes without error and writes a key-value text file
-#   2. All expected keys are present in the output
-#   3. The Jacobian determinant is positive (physically meaningful decomposition)
-#   4. The double-decompose round-trip: re-decomposing the original
-#      should yield the same decomposition values
+# Ensure all fields are present and match those generated using a prior software version
 
 transformcalc moving2template.txt decompose tmp_decompose.txt -force
 
-# Verify all expected keys are present in the output
-grep "^scaling:" tmp_decompose.txt
-grep "^shear:" tmp_decompose.txt
-grep "^angles:" tmp_decompose.txt
-grep "^angle_axis:" tmp_decompose.txt
-grep "^translation:" tmp_decompose.txt
-grep "^R:" tmp_decompose.txt
-grep "^S:" tmp_decompose.txt
-grep "^jacobian_det:" tmp_decompose.txt
+grep "^scaling:" tmp_decompose.txt | sed -n 's/^scaling: //p' > tmp_decompose_scaling.txt
+grep "^scaling:" transformcalc/decompose.txt | sed -n 's/^scaling: //p' > tmp_scaling.txt
+testing_diff_matrix tmp_decompose_scaling.txt tmp_scaling.txt -abs 1e-5
 
-# Verify the Jacobian determinant is positive (physically meaningful decomposition)
-JAC=$(grep "^jacobian_det:" tmp_decompose.txt | awk '{print $2}')
-awk -v v="$JAC" 'BEGIN { if (v + 0 <= 0) { print "ERROR: jacobian_det is non-positive: " v; exit 1 } }'
+grep "^shear:" tmp_decompose.txt | sed -n 's/^shear: //p' > tmp_decompose_shear.txt
+grep "^shear:" transformcalc/decompose.txt | sed -n 's/^shear: //p' > tmp_shear.txt
+testing_diff_matrix tmp_decompose_shear.txt tmp_shear.txt -abs 1e-8
 
-# Running decompose twice on the same transform must produce consistent output
-transformcalc moving2template.txt decompose tmp_decompose2.txt -force
-diff <(grep -v "^#" tmp_decompose.txt) <(grep -v "^#" tmp_decompose2.txt)
+grep "^angles:" tmp_decompose.txt | sed -n 's/^angles: //p' > tmp_decompose_angles.txt
+grep "^angles:" transformcalc/decompose.txt | sed -n 's/^angles: //p' > tmp_angles.txt
+testing_diff_matrix tmp_decompose_angles.txt tmp_angles.txt -abs 1e-6
+
+grep "^angle_axis:" tmp_decompose.txt | sed -n 's/^angle_axis: //p' > tmp_decompose_angleaxis.txt
+grep "^angle_axis:" transformcalc/decompose.txt | sed -n 's/^angle_axis: //p' > tmp_angleaxis.txt
+testing_diff_matrix tmp_decompose_angleaxis.txt tmp_angleaxis.txt -abs 1e-5
+
+grep "^translation:" tmp_decompose.txt | sed -n 's/^translation: //p' > tmp_decompose_translation.txt
+grep "^translation:" transformcalc/decompose.txt | sed -n 's/^translation: //p' > tmp_translation.txt
+testing_diff_matrix tmp_decompose_scaling.txt tmp_scaling.txt -abs 1e-5
+
+grep "^R:" tmp_decompose.txt | sed -n 's/^R: //p' > tmp_decompose_rotation.txt
+grep "^R:" transformcalc/decompose.txt | sed -n 's/^R: //p' > tmp_rotation.txt
+testing_diff_matrix tmp_decompose_rotation.txt tmp_rotation.txt -abs 1e-5
+
+grep "^S:" tmp_decompose.txt | sed -n 's/^S: //p' > tmp_decompose_scaleshear.txt
+grep "^S:" transformcalc/decompose.txt | sed -n 's/^S: //p' > tmp_scaleshear.txt
+testing_diff_matrix tmp_decompose_scaleshear.txt tmp_scaleshear.txt -abs 1e-5
+
+grep "^jacobian_det:" tmp_decompose.txt | sed -n 's/^jacobian_det: //p' > tmp_decompose_jacdet.txt
+grep "^jacobian_det:" transformcalc/decompose.txt | sed -n 's/^jacobian_det: //p' > tmp_jacdet.txt
+testing_diff_matrix tmp_decompose_jacdet.txt tmp_jacdet.txt -abs 1e-5

@@ -1,6 +1,9 @@
 #!/bin/bash
-# REFERENCE: generate with: mrtransform moving.mif.gz -linear moving2template.txt -template template.mif.gz -interp sinc mrtransform/out_sinc.mif.gz -force
 # Verify sinc interpolation mode when reslicing an image to a template grid
 # Outcome is compared against that generated using a prior software version
-mrtransform moving.mif.gz -linear moving2template.txt -template template.mif.gz -interp sinc - | \
+mrtransform moving.mif.gz \
+    -linear moving2template.txt \
+    -template template.mif.gz \
+    -interp sinc \
+    - | \
 testing_diff_image - mrtransform/out_sinc.mif.gz -frac 1e-4

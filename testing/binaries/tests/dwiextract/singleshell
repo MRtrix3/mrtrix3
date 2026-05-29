@@ -1,7 +1,22 @@
 #!/bin/bash
-# REFERENCE: generate with: dwiextract dwi.mif -singleshell dwiextract/out_singleshell.mif -force
 # Verify operation of the -singleshell option,
 #   which forces extraction of a single non-b=0 shell including b=0 volumes
-# Outcome is compared against that generated using a prior software version
-dwiextract dwi.mif -singleshell - | \
-testing_diff_image - dwiextract/out_singleshell.mif
+# Ensure that the extracted volumes have the expected b-values and cardinality
+dwiextract dwi2fod/msmt_csd/dwi.mif -singleshell tmp.mif -force
+
+BVALUES=($(mrinfo tmp.mif -shell_bvalues))
+(( ${#BVALUES[@]} == 2 ))
+#[[ "${BVALUES[0]}" -eq "0.5" ]]
+(( ${BVALUES[1]} == 2800 ))
+
+SIZES=($(mrinfo tmp.mif -shell_sizes))
+(( ${#SIZES[@]} == 2 ))
+(( ${SIZES[0]} == 6 ))
+(( ${SIZES[1]} == 50 ))
+
+SIZE=($(mrinfo tmp.mif -size))
+(( ${#SIZE[@]} == 4 ))
+(( ${SIZE[0]} == 15 ))
+(( ${SIZE[1]} == 15 ))
+(( ${SIZE[2]} == 11 ))
+(( ${SIZE[3]} == 56 ))

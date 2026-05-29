@@ -1,8 +1,10 @@
 #!/bin/bash
 # Verify inversion of a deformation field
-# The unit_warp.mif is an identity deformation field;
-#   inverting it should produce a result that is very close to itself
-# Ensure that the inverted identity warp matches the original to floating-point precision
 
-warpinvert unit_warp.mif - | \
-testing_diff_image - unit_warp.mif -abs 1e-3
+# Ensure that inverting a non-trivial warp field
+#   produces the same result as that of a prior software version
+warpinvert warp.mif - | \
+testing_diff_image - warpinvert/deformation.mif.gz -abs 1e-5
+
+warpinvert warp.mif -template template.mif.gz - | \
+testing_diff_image - warpinvert/deformation_template.mif.gz -abs 1e-5

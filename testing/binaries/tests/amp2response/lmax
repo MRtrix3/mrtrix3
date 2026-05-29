@@ -2,7 +2,9 @@
 # Test amp2response with the -lmax option:
 #   estimate a response function restricted to lmax=6.
 # The test verifies that the command runs successfully and produces
-#   an output with the correct number of ZSH coefficients for lmax=6.
+#   an output with the correct number of ZSH coefficients for lmax=6,
+#   with adequate match to that generated with a prior software version.
 amp2response dwi.mif sh2response/sf.mif sh2response/ev.mif tmp.txt \
-    -lmax 6 \
+    -lmax 0,6 \
     -force
+testing_diff_matrix tmp.txt amp2response/lmax6.txt -frac 1e-5

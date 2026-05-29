@@ -1,6 +1,6 @@
 #!/bin/bash
-# REFERENCE: generate with: mrmath dwi.mif var -axis 3 mrmath/out_var.mif -force
 # Verify "var" (unbiased variance) operator when applied along the axis of a single image
 # Outcome is compared against that calculated using a prior software version
-mrmath dwi.mif var -axis 3 - | \
+dwiextract dwi.mif - | \
+mrmath - var -axis 3 - | \
 testing_diff_image - mrmath/out_var.mif -frac 1e-5

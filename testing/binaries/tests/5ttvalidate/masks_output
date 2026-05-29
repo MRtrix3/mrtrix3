@@ -33,6 +33,5 @@ mrcalc 5ttedit/in.mif - -add tmp_invalid.mif -force
 # The mask file must have been created
 [ -f tmp_mask.mif ]
 
-# The known error voxel (34,51,46) must be non-zero in the output mask
-VAL=$(mrconvert tmp_mask.mif -coord 0 34 -coord 1 51 -coord 2 46 - | mrstats - -output mean)
-awk -v v="$VAL" 'BEGIN { if (v + 0 == 0) { print "ERROR: expected error voxel not flagged in mask"; exit 1 } }'
+# The known error voxel (34,51,46) must be the only non-zero voxel in the output mask
+[[ $(maskdump tmp_mask.mif) == "34 51 46" ]]

@@ -1,11 +1,10 @@
 #!/bin/bash
-# Verify inversion of a displacement field
+# Verify inversion of a unit deformation field converted to a displacement field
 # Convert the unit (identity) deformation field to a displacement field,
 #   invert it, then convert back to a deformation field;
 #   the result should match the original identity warp
-# REFERENCE: This test does not require pre-generated reference data
 
-warpconvert unit_warp.mif deformation2displacement tmp_disp.mif -force
-warpinvert tmp_disp.mif -displacement tmp_disp_inv.mif -force
-warpconvert tmp_disp_inv.mif displacement2deformation - | \
-testing_diff_image - unit_warp.mif -abs 1e-3
+warpconvert unit_warp.mif deformation2displacement - | \
+warpinvert - -displacement - | \
+warpconvert - displacement2deformation - | \
+testing_diff_image - unit_warp.mif -abs 1e-5

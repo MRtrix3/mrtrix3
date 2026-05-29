@@ -4,6 +4,9 @@
 #   rather than slice-by-slice, and is invoked by setting -dimensionality 3
 #   or equivalently by specifying -axes 0,1,2.
 # Both invocation methods are tested and verified to be equivalent.
+# Note that the input image used here was not acquired using a 3D image,
+#   and so this operation is not suitable for the data at hand;
+#   it is only used to verify command execution.
 
 mrdegibbs b0.nii.gz tmp_3D_dim.mif -dimensionality 3 -force
 mrdegibbs b0.nii.gz tmp_3D_axes.mif -axes 0,1,2 -force

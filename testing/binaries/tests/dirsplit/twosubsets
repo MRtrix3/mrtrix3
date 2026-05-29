@@ -3,7 +3,6 @@
 # Since the optimisation is stochastic, we cannot compare to a reference output;
 #   instead we verify that the command runs successfully
 #   and that the two output files together contain all 60 input directions
-# REFERENCE: This test does not require pre-generated reference data
 
 dirsplit dirmerge/60.txt -number 100 tmp_a.txt tmp_b.txt -force
 
