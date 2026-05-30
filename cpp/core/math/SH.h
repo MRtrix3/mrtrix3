@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cstddef>
+#include <limits>
 #include <string>
 
 #include "exception.h"
@@ -477,13 +478,19 @@ inline typename VectorType::Scalar get_peak(const VectorType &sh,
 
   value_type prev_amplitude = -std::numeric_limits<value_type>::infinity();
   UnitVectorType prev_dir = unit_init_dir;
-  value_type last_grad_del = 0.0, last_grad_daz = 0.0, last_dt = 0.0;
-  value_type last_az = 0.0, last_el = 0.0;
+  value_type last_grad_del = 0.0;
+  value_type last_grad_daz = 0.0;
+  value_type last_dt = 0.0;
+  value_type last_az = 0.0;
+  value_type last_el = 0.0;
   int backtracks = 0;
 
   value_type amplitude = 0.0;
-  value_type dSH_del = 0.0, dSH_daz = 0.0;
-  value_type d2SH_del2 = 0.0, d2SH_deldaz = 0.0, d2SH_daz2 = 0.0;
+  value_type dSH_del = 0.0;
+  value_type dSH_daz = 0.0;
+  value_type d2SH_del2 = 0.0;
+  value_type d2SH_deldaz = 0.0;
+  value_type d2SH_daz2 = 0.0;
 
   for (int i = 0; i < 50; i++) {
     const value_type az = std::atan2(unit_init_dir[1], unit_init_dir[0]);
@@ -540,7 +547,7 @@ inline typename VectorType::Scalar get_peak(const VectorType &sh,
     if (dt < angle_tolerance) {
       // Verify Hessian is negative-definite: confirms maximum, rejects saddle/minimum.
       const value_type trace = d2SH_del2 + d2SH_daz2;
-      const value_type determinant = d2SH_del2 * d2SH_daz2 - d2SH_deldaz * d2SH_deldaz;
+      const value_type determinant = (d2SH_del2 * d2SH_daz2) - (d2SH_deldaz * d2SH_deldaz);
       if (trace >= 0.0 || determinant <= 0.0) {
         unit_init_dir.fill(std::numeric_limits<typename UnitVectorType::Scalar>::quiet_NaN());
         DEBUG("SH stationary point is not a local maximum (non-negative-definite Hessian)");

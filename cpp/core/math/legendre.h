@@ -132,18 +132,18 @@ inline void Plm_sph(VectorType &array,
   }
   array[m] = 0.282094791773878;
   if (m)
-    array[m] *= std::sqrt(static_cast<value_type>(2 * m + 1) * Plm_sph_helper(1.0 * sin2, 2.0 * m));
+    array[m] *= std::sqrt(static_cast<value_type>((2 * m) + 1) * Plm_sph_helper(1.0 * sin2, 2.0 * m));
   if ((m & 1) != 0)
     array[m] = -array[m];
   if (lmax == m)
     return;
 
-  value_type f = std::sqrt(static_cast<value_type>(2 * m + 3));
+  value_type f = std::sqrt(static_cast<value_type>((2 * m) + 3));
   array[m + 1] = x * f * array[m];
 
   for (int n = m + 2; n <= lmax; n++) {
     array[n] = x * array[n - 1] - array[n - 2] / f;
-    f = std::sqrt(static_cast<value_type>(4 * pow2(n) - 1) / static_cast<value_type>(pow2(n) - pow2(m)));
+    f = std::sqrt(static_cast<value_type>((4 * pow2(n)) - 1) / static_cast<value_type>(pow2(n) - pow2(m)));
     array[n] *= f;
   }
 }

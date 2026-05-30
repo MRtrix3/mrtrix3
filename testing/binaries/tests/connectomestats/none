@@ -7,35 +7,36 @@
 # REFERENCE DATA NOTE: No reference output files exist for this test.
 #   To generate reference data, run the command and inspect the output CSV files.
 #   A future regression test should compare against stored reference matrices.
-rm -rf tmp_cs/
-mkdir tmp_cs/
+rm -rf tmp_cs_in/
+mkdir tmp_cs_in/
 
 # Generate 6 subject connectome files (3 per group) based on the reference connectome.
 # Group 1: slightly elevated values; Group 2: base values.
 # Connectome is symmetric and 4x4 (matching tck2connectome/out.csv).
 for i in 1 2 3; do
-    printf "0 3500 0 0\n3500 0 0 0\n0 0 0 1700\n0 0 1700 0\n" > tmp_cs/sub0${i}.csv
+    printf "0 3500 0 0\n3500 0 0 0\n0 0 0 1700\n0 0 1700 0\n" > tmp_cs_in/sub0${i}.csv
 done
 for i in 4 5 6; do
-    printf "0 3200 0 0\n3200 0 0 0\n0 0 0 1500\n0 0 1500 0\n" > tmp_cs/sub0${i}.csv
+    printf "0 3200 0 0\n3200 0 0 0\n0 0 0 1500\n0 0 1500 0\n" > tmp_cs_in/sub0${i}.csv
 done
 
 # Subject list
-printf "tmp_cs/sub01.csv\ntmp_cs/sub02.csv\ntmp_cs/sub03.csv\ntmp_cs/sub04.csv\ntmp_cs/sub05.csv\ntmp_cs/sub06.csv\n" > tmp_cs/subjects.txt
+printf "sub01.csv\nsub02.csv\nsub03.csv\nsub04.csv\nsub05.csv\nsub06.csv\n" > tmp_cs_in/subjects.txt
 
 # Design matrix: two-group comparison (intercept + group membership)
-printf "1 1\n1 1\n1 1\n1 -1\n1 -1\n1 -1\n" > tmp_cs/design.txt
+printf "1 1\n1 1\n1 1\n1 -1\n1 -1\n1 -1\n" > tmp_cs_in/design.txt
 
 # Contrast matrix: test for group difference
-printf "0 1\n" > tmp_cs/contrast.txt
+printf "0 1\n" > tmp_cs_in/contrast.txt
 
-connectomestats tmp_cs/subjects.txt none tmp_cs/design.txt tmp_cs/out_ \
-    -ttests tmp_cs/contrast.txt \
+rm -rf tmp_cs_out/
+connectomestats tmp_cs_in/subjects.txt none tmp_cs_in/design.txt tmp_cs_out/ \
+    -ttests tmp_cs_in/contrast.txt \
     -notest \
     -force
 
 # Verify expected outputs were produced
-test -f tmp_cs/out_tvalue.csv
-test -f tmp_cs/out_Zstat.csv
-test -f tmp_cs/out_beta_0.csv
-test -f tmp_cs/out_beta_1.csv
+test -f tmp_cs_out/tvalue.csv
+test -f tmp_cs_out/Zstat.csv
+test -f tmp_cs_out/beta_0.csv
+test -f tmp_cs_out/beta_1.csv

@@ -2,28 +2,29 @@
 # Test connectomestats with the TFNBS (Threshold-Free NBS) algorithm:
 #   construct synthetic connectome data for two groups and verify
 #   that the command runs successfully with permutation testing suppressed.
-rm -rf tmp_tfnbs/
-mkdir tmp_tfnbs/
+rm -rf tmp_tfnbs_in/
+mkdir tmp_tfnbs_in/
 
 # Generate 6 subject connectome files (3 per group).
 # Connectome is symmetric and 4x4.
 for i in 1 2 3; do
-    printf "0 3500 0 0\n3500 0 0 0\n0 0 0 1700\n0 0 1700 0\n" > tmp_tfnbs/sub0${i}.csv
+    printf "0 3500 0 0\n3500 0 0 0\n0 0 0 1700\n0 0 1700 0\n" > tmp_tfnbs_in/sub0${i}.csv
 done
 for i in 4 5 6; do
-    printf "0 3200 0 0\n3200 0 0 0\n0 0 0 1500\n0 0 1500 0\n" > tmp_tfnbs/sub0${i}.csv
+    printf "0 3200 0 0\n3200 0 0 0\n0 0 0 1500\n0 0 1500 0\n" > tmp_tfnbs_in/sub0${i}.csv
 done
 
-printf "tmp_tfnbs/sub01.csv\ntmp_tfnbs/sub02.csv\ntmp_tfnbs/sub03.csv\ntmp_tfnbs/sub04.csv\ntmp_tfnbs/sub05.csv\ntmp_tfnbs/sub06.csv\n" > tmp_tfnbs/subjects.txt
-printf "1 1\n1 1\n1 1\n1 -1\n1 -1\n1 -1\n" > tmp_tfnbs/design.txt
-printf "0 1\n" > tmp_tfnbs/contrast.txt
+printf "sub01.csv\nsub02.csv\nsub03.csv\nsub04.csv\nsub05.csv\nsub06.csv\n" > tmp_tfnbs_in/subjects.txt
+printf "1 1\n1 1\n1 1\n1 -1\n1 -1\n1 -1\n" > tmp_tfnbs_in/design.txt
+printf "0 1\n" > tmp_tfnbs_in/contrast.txt
 
-connectomestats tmp_tfnbs/subjects.txt tfnbs tmp_tfnbs/design.txt tmp_tfnbs/out_ \
-    -ttests tmp_tfnbs/contrast.txt \
+rm -rf tmp_tfnbs_out/
+connectomestats tmp_tfnbs_in/subjects.txt tfnbs tmp_tfnbs_in/design.txt tmp_tfnbs_out/ \
+    -ttests tmp_tfnbs_in/contrast.txt \
     -notest \
     -force
 
 # Verify expected outputs were produced
-test -f tmp_tfnbs/out_tvalue.csv
-test -f tmp_tfnbs/out_enhanced.csv
-test -f tmp_tfnbs/out_Zstat.csv
+test -f tmp_tfnbs_out/tvalue.csv
+test -f tmp_tfnbs_out/enhanced.csv
+test -f tmp_tfnbs_out/Zstat.csv

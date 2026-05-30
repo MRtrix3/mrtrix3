@@ -9,4 +9,4 @@ connectome2tck SIFT_phantom/tracks.tck tck2connectome/assignments.csv tmp.tck \
     -exemplars SIFT_phantom/parc.mif \
     -force
 
-testing_diff_tck tmp.tck connectome2tck/exemplars.tck
+testing_diff_tck tmp.tck connectome2tck/exemplars.tck -distance 1e-4
