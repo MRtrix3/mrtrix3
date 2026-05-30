@@ -1,0 +1,33 @@
+#!/bin/bash
+# Round-trip reproduction of a known smooth field for every method.
+# Synthesise the harmonic (and linear) field f = x + y + z on a small grid;
+#   such a field is reproduced exactly by every imputation operator.
+# Poke isolated interior NaN holes, impute, and confirm the ground truth
+#   is recovered to within tight tolerance.
+
+# Build the linear field f = x + y + z.
+mrconvert mask.mif -coord 0 0:4 -coord 1 0:4 -coord 2 0:4 tmp_grid.mif -force -quiet
+make_ramp () {
+  axis=$1; out=$2
+  sz=$(mrinfo tmp_grid.mif -size | cut -d' ' -f$((axis+1)))
+  files=""
+  for i in $(seq 0 $((sz-1))); do
+    mrconvert tmp_grid.mif -coord $axis $i - -quiet | \
+      mrcalc - 0 -mult $i -add tmp_slab_${axis}_${i}.mif -force -quiet
+    files="$files tmp_slab_${axis}_${i}.mif"
+  done
+  mrcat $files -axis $axis $out -force -quiet
+}
+make_ramp 0 tmp_rx.mif
+make_ramp 1 tmp_ry.mif
+make_ramp 2 tmp_rz.mif
+mrcalc tmp_rx.mif tmp_ry.mif -add tmp_rz.mif -add tmp_field.mif -force -quiet
+
+# Inject isolated interior holes.
+mrconvert tmp_field.mif tmp_holes.mif -force -quiet
+mredit tmp_holes.mif -voxel 2,2,2 nan -voxel 1,3,2 nan -voxel 3,1,3 nan -quiet
+
+for method in laplacian laplaciansq biharmonic spring isotropic2 isotropic4; do
+  mrimpute tmp_holes.mif -method $method tmp_out.mif -force -quiet
+  testing_diff_image tmp_out.mif tmp_field.mif -abs 1e-4
+done

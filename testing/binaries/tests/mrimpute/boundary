@@ -1,0 +1,39 @@
+#!/bin/bash
+# Imputation can extrapolate outward, beyond the original image field of view.
+# Pad the smooth field by one voxel in every direction (filling the new border
+#   with NaN), impute, and confirm:
+#   - every output voxel is finite (the padded shell was extrapolated), and
+#   - the original field-of-view is preserved exactly.
+
+# Build the linear field f = x + y + z.
+mrconvert mask.mif -coord 0 0:4 -coord 1 0:4 -coord 2 0:4 tmp_grid.mif -force -quiet
+make_ramp () {
+  axis=$1; out=$2
+  sz=$(mrinfo tmp_grid.mif -size | cut -d' ' -f$((axis+1)))
+  files=""
+  for i in $(seq 0 $((sz-1))); do
+    mrconvert tmp_grid.mif -coord $axis $i - -quiet | \
+      mrcalc - 0 -mult $i -add tmp_slab_${axis}_${i}.mif -force -quiet
+    files="$files tmp_slab_${axis}_${i}.mif"
+  done
+  mrcat $files -axis $axis $out -force -quiet
+}
+make_ramp 0 tmp_rx.mif
+make_ramp 1 tmp_ry.mif
+make_ramp 2 tmp_rz.mif
+mrcalc tmp_rx.mif tmp_ry.mif -add tmp_rz.mif -add tmp_field.mif -force -quiet
+
+# Pad by one voxel in all directions, filling the new border with NaN.
+mrgrid tmp_field.mif pad -uniform 1 -fill nan tmp_padded.mif -force -quiet
+
+# The "spring" method extrapolates (constant continuation) and so always yields
+#   finite values even at the outermost shell.
+mrimpute tmp_padded.mif -method spring tmp_out.mif -force -quiet
+
+# Every output voxel must be finite.
+nonfinite=$(mrcalc tmp_out.mif -finite -not - -quiet | mrstats - -output max)
+[ "$(echo $nonfinite | tr -d ' ')" = "0" ]
+
+# Cropping back to the original field of view must recover the input exactly.
+mrgrid tmp_out.mif crop -uniform 1 tmp_cropped.mif -force -quiet
+testing_diff_image tmp_cropped.mif tmp_field.mif -abs 1e-4

@@ -1,0 +1,30 @@
+#!/bin/bash
+# Images with more than three axes are processed one 3D volume at a time.
+# Build a 4D image of two identical smooth volumes,
+#   poke a different hole pattern into each,
+#   and confirm both volumes are independently recovered.
+
+# Build the linear field f = x + y + z.
+mrconvert mask.mif -coord 0 0:4 -coord 1 0:4 -coord 2 0:4 tmp_grid.mif -force -quiet
+make_ramp () {
+  axis=$1; out=$2
+  sz=$(mrinfo tmp_grid.mif -size | cut -d' ' -f$((axis+1)))
+  files=""
+  for i in $(seq 0 $((sz-1))); do
+    mrconvert tmp_grid.mif -coord $axis $i - -quiet | \
+      mrcalc - 0 -mult $i -add tmp_slab_${axis}_${i}.mif -force -quiet
+    files="$files tmp_slab_${axis}_${i}.mif"
+  done
+  mrcat $files -axis $axis $out -force -quiet
+}
+make_ramp 0 tmp_rx.mif
+make_ramp 1 tmp_ry.mif
+make_ramp 2 tmp_rz.mif
+mrcalc tmp_rx.mif tmp_ry.mif -add tmp_rz.mif -add tmp_field.mif -force -quiet
+
+mrcat tmp_field.mif tmp_field.mif -axis 3 tmp_field4d.mif -force -quiet
+mrconvert tmp_field4d.mif tmp_holes4d.mif -force -quiet
+mredit tmp_holes4d.mif -voxel 2,2,2,0 nan -voxel 1,3,2,1 nan -voxel 3,1,3,1 nan -quiet
+
+mrimpute tmp_holes4d.mif tmp_out4d.mif -force -quiet
+testing_diff_image tmp_out4d.mif tmp_field4d.mif -abs 1e-4

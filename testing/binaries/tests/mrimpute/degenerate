@@ -1,0 +1,12 @@
+#!/bin/bash
+# The square method (laplaciansq) requires a complete axis-aligned stencil and
+#   therefore genuine 3D data. Confirm it is rejected cleanly on data with a
+#   unit spatial dimension.
+
+mrconvert mask.mif -coord 0 0:4 -coord 1 0:4 -coord 2 0 tmp_flat.mif -force -quiet
+
+if mrimpute tmp_flat.mif -method laplaciansq tmp_junk.mif -force -quiet 2> tmp_err.txt; then
+  echo "ERROR: laplaciansq did not reject degenerate (1-voxel-thick) input"
+  exit 1
+fi
+grep -q "does not represent spatial data" tmp_err.txt

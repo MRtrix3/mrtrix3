@@ -1,0 +1,37 @@
+#!/bin/bash
+# The -mask option flags additional (finite-valued) voxels for imputation.
+# Set one finite voxel to a gross outlier value and flag it via -mask;
+#   confirm the imputed result discards the outlier (recovering the smooth
+#   field) while every unflagged voxel is left unchanged.
+
+# Build the linear field f = x + y + z.
+mrconvert mask.mif -coord 0 0:4 -coord 1 0:4 -coord 2 0:4 tmp_grid.mif -force -quiet
+make_ramp () {
+  axis=$1; out=$2
+  sz=$(mrinfo tmp_grid.mif -size | cut -d' ' -f$((axis+1)))
+  files=""
+  for i in $(seq 0 $((sz-1))); do
+    mrconvert tmp_grid.mif -coord $axis $i - -quiet | \
+      mrcalc - 0 -mult $i -add tmp_slab_${axis}_${i}.mif -force -quiet
+    files="$files tmp_slab_${axis}_${i}.mif"
+  done
+  mrcat $files -axis $axis $out -force -quiet
+}
+make_ramp 0 tmp_rx.mif
+make_ramp 1 tmp_ry.mif
+make_ramp 2 tmp_rz.mif
+mrcalc tmp_rx.mif tmp_ry.mif -add tmp_rz.mif -add tmp_field.mif -force -quiet
+
+# Corrupt one finite voxel and build a single-voxel mask flagging it.
+mrconvert tmp_field.mif tmp_outlier.mif -force -quiet
+mredit tmp_outlier.mif -voxel 2,2,2 999 -quiet
+mrcalc tmp_field.mif 0 -mult tmp_zero.mif -force -quiet
+mredit tmp_zero.mif -voxel 2,2,2 1 tmp_mask.mif -force -quiet
+
+mrimpute tmp_outlier.mif -mask tmp_mask.mif tmp_out.mif -force -quiet
+
+# Flagged voxel must be re-predicted to the smooth field value.
+testing_diff_image tmp_out.mif tmp_field.mif -abs 1e-4
+# The output must genuinely differ from the corrupted input (i.e. the outlier
+#   was discarded rather than copied through).
+! testing_diff_image tmp_out.mif tmp_outlier.mif -abs 1e-3

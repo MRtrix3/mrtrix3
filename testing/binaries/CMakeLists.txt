@@ -359,6 +359,13 @@ add_bash_binary_test(mrhistogram/bins)
 add_bash_binary_test(mrhistogram/default)
 add_bash_binary_test(mrhistogram/masked)
 
+add_bash_binary_test(mrimpute/roundtrip)
+add_bash_binary_test(mrimpute/mask)
+add_bash_binary_test(mrimpute/multivolume)
+add_bash_binary_test(mrimpute/nonfinite)
+add_bash_binary_test(mrimpute/degenerate)
+add_bash_binary_test(mrimpute/boundary)
+
 add_bash_binary_test(mrinfo/bvec_bval_nan)
 
 add_bash_binary_test(mrmath/multiimage_median)

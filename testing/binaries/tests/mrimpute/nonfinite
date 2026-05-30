@@ -1,0 +1,34 @@
+#!/bin/bash
+# By default (no -mask), all non-finite voxels (NaN and Inf) are imputed.
+# Inject both a NaN and an Inf into the smooth field,
+#   impute with the default method,
+#   and confirm the result is finite everywhere and matches the ground truth.
+
+# Build the linear field f = x + y + z.
+mrconvert mask.mif -coord 0 0:4 -coord 1 0:4 -coord 2 0:4 tmp_grid.mif -force -quiet
+make_ramp () {
+  axis=$1; out=$2
+  sz=$(mrinfo tmp_grid.mif -size | cut -d' ' -f$((axis+1)))
+  files=""
+  for i in $(seq 0 $((sz-1))); do
+    mrconvert tmp_grid.mif -coord $axis $i - -quiet | \
+      mrcalc - 0 -mult $i -add tmp_slab_${axis}_${i}.mif -force -quiet
+    files="$files tmp_slab_${axis}_${i}.mif"
+  done
+  mrcat $files -axis $axis $out -force -quiet
+}
+make_ramp 0 tmp_rx.mif
+make_ramp 1 tmp_ry.mif
+make_ramp 2 tmp_rz.mif
+mrcalc tmp_rx.mif tmp_ry.mif -add tmp_rz.mif -add tmp_field.mif -force -quiet
+
+mrconvert tmp_field.mif tmp_invalid.mif -force -quiet
+mredit tmp_invalid.mif -voxel 2,2,2 nan -voxel 3,3,3 inf -quiet
+
+mrimpute tmp_invalid.mif tmp_out.mif -force -quiet
+
+# No non-finite voxel may remain.
+nonfinite=$(mrcalc tmp_out.mif -finite -not - -quiet | mrstats - -output max)
+[ "$(echo $nonfinite | tr -d ' ')" = "0" ]
+# Ground truth recovered.
+testing_diff_image tmp_out.mif tmp_field.mif -abs 1e-4
