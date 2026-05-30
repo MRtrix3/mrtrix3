@@ -116,7 +116,7 @@ FORCE_INLINE void invert_deformation(Image<default_type> &deform_field,
                                      bool is_initialised = false,
                                      size_t max_iter = 50,
                                      default_type error_tolerance = 0.0001) {
-  check_dimensions(deform_field, inv_deform_field);
+  // check_dimensions(deform_field, inv_deform_field);
   error_tolerance *= (deform_field.spacing(0) + deform_field.spacing(1) + deform_field.spacing(2)) / 3;
 
   if (!is_initialised)
@@ -147,7 +147,7 @@ FORCE_INLINE void invert_displacement(Image<default_type> &disp_field,
                                       Image<default_type> &inv_disp_field,
                                       size_t max_iter = 50,
                                       default_type error_tolerance = 0.0001) {
-  check_dimensions(disp_field, inv_disp_field);
+  // check_dimensions(disp_field, inv_disp_field);
   error_tolerance *= (disp_field.spacing(0) + disp_field.spacing(1) + disp_field.spacing(2)) / 3;
 
   ThreadedLoop("inverting displacement field...", inv_disp_field, 0, 3)

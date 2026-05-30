@@ -318,7 +318,7 @@ void run() {
   if (!true_peaks.empty())
     npeaks = true_peaks.size();
 
-  value_type threshold = get_option_value("threshold", -InfF);
+  value_type threshold = get_option_value("threshold", value_type(0));
 
   auto header = Header(SH_data);
   header.datatype() = DataType::Float32;

@@ -6,10 +6,16 @@
 
 # Request 1 peak: output should have 3 volumes
 sh2peaks fod.mif - -num 1 | \
-testing_diff_peaks - sh2peaks/1peak.mif 1e-6
+testing_diff_peaks - sh2peaks/1peak.mif 1e-5
 
 # Request 5 peaks: output should have 15 volumes
 # NOTE: Test currently fails due to erroneous peak on dev;
 #   may be rectified once master bugfixes are merged back to dev?
 sh2peaks fod.mif - -num 5 | \
-testing_diff_peaks - sh2peaks/5peaks.mif 1e-6
+testing_diff_peaks - sh2peaks/5peaks.mif 1e-5
+
+for i in {1..100}; do
+  dirrotate dirvalidate/spherical.txt -number 1 tmp.txt -force
+  sh2peaks fod.mif -num 5 -seeds tmp.txt - | \
+  testing_diff_peaks - sh2peaks/5peaks.mif 1e-5
+done

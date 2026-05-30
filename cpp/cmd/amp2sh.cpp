@@ -107,7 +107,11 @@ public:
 class Amp2SH {
 public:
   Amp2SH(const Amp2SHCommon &common)
-      : C(common), a(common.amp2sh.cols()), s(common.amp2sh.rows()), c(common.amp2sh.rows()) {}
+      : C(common),
+        a(common.amp2sh.cols()),
+        s(common.amp2sh.rows()),
+        c(common.amp2sh.rows()),
+        Q(common.amp2sh.rows(), common.amp2sh.rows()) {}
 
   template <class SHImageType, class AmpImageType> void operator()(SHImageType &SH, AmpImageType &amp) {
     get_amps(amp);
