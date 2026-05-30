@@ -2,6 +2,7 @@
 
 mrimpute
 ===================
+
 Synopsis
 --------
 
@@ -30,11 +31,15 @@ laplaciansq: solve the same Laplace equation as a square system, with exactly on
 
 biharmonic: solve the biharmonic (del-to-the-fourth) equation (Inpaint_nans method 3).
 
+hessian: minimise the discrete Hessian (Frobenius) energy as an overdetermined least-squares system. Like biharmonic it extrapolates a linear trend beyond a one-sided boundary rather than flattening, but its natural (free) boundary conditions introduce no boundary bias.
+
 spring: constrain each imputed voxel toward equality with its neighbours (Inpaint_nans method 4); yields constant extrapolation.
 
 isotropic2 / isotropic4: as for laplacian / biharmonic respectively, but assembled from a 13-direction spherical-harmonic-weighted stencil for improved rotational invariance.
 
 Inpaint_nans methods 1 (redundant with method 0) and 5 (an author-discouraged neighbour average) are intentionally omitted. The linear solver is selected automatically per method (dense QR for the least-squares methods; dense LU for the square method).
+
+The -detrend option fits a low-order polynomial trend to the known data bordering the region to be imputed, subtracts it before the solve, and re-adds it afterwards (a "universal kriging" decomposition): affine fits a first-order trend, quadratic a second-order trend. This carries any global gradient (and, for quadratic, curvature) into the imputed region in closed form, leaving the solver to resolve only the bounded residual; it is recommended when extrapolating beyond a one-sided data boundary, where a purely harmonic solve would otherwise flatten to a constant.
 
 The imputation system is dense and scoped to each 3D volume; this is efficient for typical hole counts, but very large contiguous regions to be imputed will produce a large dense system.
 
@@ -43,7 +48,9 @@ Options
 
 -  **-mask image** a bitwise mask image flagging additional voxels to impute (beyond the non-finite voxels imputed by default)
 
--  **-method name** the imputation algorithm to use (default: laplacian); one of: laplacian, laplaciansq, biharmonic, spring, isotropic2, isotropic4
+-  **-method name** the imputation algorithm to use (default: laplacian); one of: laplacian, laplaciansq, biharmonic, hessian, spring, isotropic2, isotropic4
+
+-  **-detrend name** remove a parametric trend before imputation and re-add it afterwards (default: none); one of: none, affine, quadratic
 
 Standard options
 ^^^^^^^^^^^^^^^^

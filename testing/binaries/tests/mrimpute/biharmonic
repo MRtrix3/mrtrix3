@@ -1,0 +1,50 @@
+#!/bin/bash
+# The biharmonic method imposes the natural (free-plate) boundary conditions of
+#   the thin-plate energy, built as the composition of two axis-reduced
+#   Laplacians. Because that operator annihilates affine fields, it extrapolates
+#   a linear ramp into a non-finite border far more accurately than the harmonic
+#   "laplacian" method (which flattens to a constant) or the "spring" method
+#   (which extrapolates a constant by construction). Build the field f = x+y+z
+#   over a padded grid, blank its border to NaN, and confirm the ordering of the
+#   extrapolation errors.
+
+# 7x7x7 grid template: a 5x5x5 interior padded by one voxel on every side.
+mrconvert mask.mif -coord 0 0:4 -coord 1 0:4 -coord 2 0:4 tmp_grid5.mif -force -quiet
+mrgrid tmp_grid5.mif pad -uniform 1 tmp_grid7.mif -force -quiet
+
+# Build f = x + y + z over the full padded grid: the truth, finite on the border.
+make_ramp () {
+  axis=$1; out=$2
+  sz=$(mrinfo tmp_grid7.mif -size | cut -d' ' -f$((axis+1)))
+  files=""
+  for i in $(seq 0 $((sz-1))); do
+    mrconvert tmp_grid7.mif -coord $axis $i - -quiet | \
+      mrcalc - 0 -mult $i -add tmp_slab_${axis}_${i}.mif -force -quiet
+    files="$files tmp_slab_${axis}_${i}.mif"
+  done
+  mrcat $files -axis $axis $out -force -quiet
+}
+make_ramp 0 tmp_rx.mif
+make_ramp 1 tmp_ry.mif
+make_ramp 2 tmp_rz.mif
+mrcalc tmp_rx.mif tmp_ry.mif -add tmp_rz.mif -add tmp_truth.mif -force -quiet
+
+# Input: the truth interior, with its entire one-voxel border replaced by NaN.
+mrgrid tmp_truth.mif crop -uniform 1 tmp_inner.mif -force -quiet
+mrgrid tmp_inner.mif pad -uniform 1 -fill nan tmp_input.mif -force -quiet
+
+# The maximum absolute extrapolation error of each method, with no detrending.
+border_error () {
+  method=$1
+  mrimpute tmp_input.mif -method $method tmp_out_${method}.mif -force -quiet
+  mrcalc tmp_out_${method}.mif tmp_truth.mif -subtract -abs - -quiet | \
+    mrstats - -output max | tr -d ' '
+}
+err_biharmonic=$(border_error biharmonic)
+err_laplacian=$(border_error laplacian)
+err_spring=$(border_error spring)
+
+# The natural-boundary-condition biharmonic must extrapolate the linear ramp
+#   strictly more accurately than either the harmonic or the constant method.
+awk -v b="$err_biharmonic" -v l="$err_laplacian" -v s="$err_spring" \
+  'BEGIN { exit !(b < l && b < s) }'

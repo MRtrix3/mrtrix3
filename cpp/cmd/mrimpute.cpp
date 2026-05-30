@@ -22,8 +22,8 @@
 #include "image.h"
 #include "image_helpers.h"
 
+#include "algo/impute.h"
 #include "algo/loop.h"
-#include "also/impute.h"
 #include "enum.h"
 #include "misc/voxel2vector.h"
 
@@ -63,6 +63,12 @@ void usage() {
   + "biharmonic: solve the biharmonic (del-to-the-fourth) equation"
     " (Inpaint_nans method 3)."
 
+  + "hessian: minimise the discrete Hessian (Frobenius) energy as an"
+    " overdetermined least-squares system."
+    " Like biharmonic it extrapolates a linear trend beyond a one-sided boundary"
+    " rather than flattening,"
+    " but its natural (free) boundary conditions introduce no boundary bias."
+
   + "spring: constrain each imputed voxel toward equality with its neighbours"
     " (Inpaint_nans method 4); yields constant extrapolation."
 
@@ -74,6 +80,17 @@ void usage() {
     " and 5 (an author-discouraged neighbour average) are intentionally omitted."
     " The linear solver is selected automatically per method"
     " (dense QR for the least-squares methods; dense LU for the square method)."
+
+  + "The -detrend option fits a low-order polynomial trend to the known"
+    " data bordering the region to be imputed,"
+    " subtracts it before the solve,"
+    " and re-adds it afterwards (a \"universal kriging\" decomposition):"
+    " affine fits a first-order trend, quadratic a second-order trend."
+    " This carries any global gradient (and, for quadratic, curvature)"
+    " into the imputed region in closed form,"
+    " leaving the solver to resolve only the bounded residual;"
+    " it is recommended when extrapolating beyond a one-sided data boundary,"
+    " where a purely harmonic solve would otherwise flatten to a constant."
 
   + "The imputation system is dense and scoped to each 3D volume;"
     " this is efficient for typical hole counts,"
@@ -92,7 +109,12 @@ void usage() {
   + Option ("method", "the imputation algorithm to use"
                       " (default: laplacian);"
                       " one of: " + MR::Enum::join<Impute::Method>())
-    + Argument ("name").type_choice<Impute::Method>();
+    + Argument ("name").type_choice<Impute::Method>()
+
+  + Option ("detrend", "remove a parametric trend before imputation and re-add it afterwards"
+                       " (default: none);"
+                       " one of: " + MR::Enum::join<Impute::Detrend>())
+    + Argument ("name").type_choice<Impute::Detrend>();
 
 }
 // clang-format on
@@ -107,7 +129,8 @@ void process_volume(Image<value_type> &image_in,
                     Image<value_type> &image_out,
                     Image<bool> &mask,
                     const Header &slab_header,
-                    const Impute::Method method) {
+                    const Impute::Method method,
+                    const Impute::Detrend detrend) {
   // Pass 1: determine the complete set of voxels to be imputed.
   Image<bool> impute_mask(Image<bool>::scratch(slab_header, "imputation region"));
   for (auto l = Loop(0, 3)(image_in, impute_mask); l; ++l) {
@@ -137,7 +160,7 @@ void process_volume(Image<value_type> &image_in,
   };
   auto in_fov = [&slab_header](const Impute::Position &p) -> bool { return !is_out_of_bounds(slab_header, p, 0, 3); };
 
-  const Impute::Vec solution = Impute::make_imputer(method, v2v, value_at, in_fov)->solve();
+  const Impute::Vec solution = Impute::make_imputer(method, v2v, value_at, in_fov, detrend)->solve();
 
   // Pass 2: write the output, substituting imputed values where flagged.
   for (auto l = Loop(0, 3)(image_in, image_out, impute_mask); l; ++l) {
@@ -158,6 +181,7 @@ void run() {
     throw Exception("Command does not operate on complex image data");
 
   const Impute::Method method = get_option_choice<Impute::Method>("method", Impute::Method::laplacian);
+  const Impute::Detrend detrend = get_option_choice<Impute::Detrend>("detrend", Impute::Detrend::none);
 
   // The square method requires a complete axis-aligned stencil at every voxel;
   //   reject data that does not represent a 3D volume.
@@ -184,8 +208,8 @@ void run() {
 
   if (image_in.ndim() > 3) {
     for (auto outer = Loop("Imputing image", image_in, 3)(image_in, image_out); outer; ++outer)
-      process_volume(image_in, image_out, mask, slab_header, method);
+      process_volume(image_in, image_out, mask, slab_header, method, detrend);
   } else {
-    process_volume(image_in, image_out, mask, slab_header, method);
+    process_volume(image_in, image_out, mask, slab_header, method, detrend);
   }
 }

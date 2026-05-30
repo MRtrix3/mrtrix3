@@ -365,6 +365,10 @@ add_bash_binary_test(mrimpute/multivolume)
 add_bash_binary_test(mrimpute/nonfinite)
 add_bash_binary_test(mrimpute/degenerate)
 add_bash_binary_test(mrimpute/boundary)
+add_bash_binary_test(mrimpute/detrend)
+add_bash_binary_test(mrimpute/biharmonic)
+add_bash_binary_test(mrimpute/hessian)
+add_bash_binary_test(mrimpute/quadratic)
 
 add_bash_binary_test(mrinfo/bvec_bval_nan)
 

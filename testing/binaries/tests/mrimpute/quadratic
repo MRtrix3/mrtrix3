@@ -1,0 +1,56 @@
+#!/bin/bash
+# The "-detrend quadratic" option recovers a second-order field exactly when
+#   extrapolating into a wholly non-finite border, where affine (first-order)
+#   detrending cannot capture the curvature. Build f = x^2 + y^2 + z^2 over a
+#   padded grid (finite even on the border), blank the entire one-voxel border to
+#   NaN, and confirm quadratic detrending reproduces the truth everywhere - both
+#   the preserved interior and the extrapolated border - to tight tolerance,
+#   while affine detrending leaves a substantially larger border error.
+
+# 7x7x7 grid template: a 5x5x5 interior padded by one voxel on every side.
+mrconvert mask.mif -coord 0 0:4 -coord 1 0:4 -coord 2 0:4 tmp_grid5.mif -force -quiet
+mrgrid tmp_grid5.mif pad -uniform 1 tmp_grid7.mif -force -quiet
+
+# Build the per-axis linear ramps r_axis = axis-coordinate over the padded grid.
+make_ramp () {
+  axis=$1; out=$2
+  sz=$(mrinfo tmp_grid7.mif -size | cut -d' ' -f$((axis+1)))
+  files=""
+  for i in $(seq 0 $((sz-1))); do
+    mrconvert tmp_grid7.mif -coord $axis $i - -quiet | \
+      mrcalc - 0 -mult $i -add tmp_slab_${axis}_${i}.mif -force -quiet
+    files="$files tmp_slab_${axis}_${i}.mif"
+  done
+  mrcat $files -axis $axis $out -force -quiet
+}
+make_ramp 0 tmp_rx.mif
+make_ramp 1 tmp_ry.mif
+make_ramp 2 tmp_rz.mif
+
+# Build the quadratic truth f = x^2 + y^2 + z^2: finite on the border.
+mrcalc tmp_rx.mif tmp_rx.mif -mult \
+       tmp_ry.mif tmp_ry.mif -mult -add \
+       tmp_rz.mif tmp_rz.mif -mult -add tmp_truth.mif -force -quiet
+
+# Input: the truth interior, with its entire one-voxel border replaced by NaN.
+mrgrid tmp_truth.mif crop -uniform 1 tmp_inner.mif -force -quiet
+mrgrid tmp_inner.mif pad -uniform 1 -fill nan tmp_input.mif -force -quiet
+
+# Quadratic detrending must recover the second-order field everywhere -
+#   including the extrapolated border - irrespective of the solver method.
+for method in laplacian laplaciansq biharmonic hessian; do
+  mrimpute tmp_input.mif -method $method -detrend quadratic tmp_out.mif -force -quiet
+  # No voxel may remain non-finite.
+  nonfinite=$(mrcalc tmp_out.mif -finite -not - -quiet | mrstats - -output max)
+  [ "$(echo $nonfinite | tr -d ' ')" = "0" ]
+  # The recovered field must match the quadratic truth across the whole grid.
+  testing_diff_image tmp_out.mif tmp_truth.mif -abs 1e-2
+done
+
+# Affine detrending, being first-order, cannot capture the curvature, and so
+#   leaves a substantially larger extrapolation error than quadratic detrending.
+mrimpute tmp_input.mif -method hessian -detrend quadratic tmp_quad.mif -force -quiet
+mrimpute tmp_input.mif -method hessian -detrend affine tmp_aff.mif -force -quiet
+err_quad=$(mrcalc tmp_quad.mif tmp_truth.mif -subtract -abs - -quiet | mrstats - -output max | tr -d ' ')
+err_aff=$(mrcalc tmp_aff.mif tmp_truth.mif -subtract -abs - -quiet | mrstats - -output max | tr -d ' ')
+awk -v q="$err_quad" -v a="$err_aff" 'BEGIN { exit !(q < a) }'

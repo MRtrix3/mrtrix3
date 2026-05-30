@@ -1,0 +1,44 @@
+#!/bin/bash
+# The "-detrend affine" option recovers a linear field exactly when extrapolating
+#   into a wholly non-finite border, where a purely harmonic solve would instead
+#   flatten to a constant. Build the field f = x + y + z over a padded grid (the
+#   truth, finite even on the border), blank the entire one-voxel border to NaN,
+#   and confirm that affine detrending reproduces the truth everywhere - both the
+#   preserved interior and the extrapolated border - to tight tolerance.
+
+# 7x7x7 grid template: a 5x5x5 interior padded by one voxel on every side.
+mrconvert mask.mif -coord 0 0:4 -coord 1 0:4 -coord 2 0:4 tmp_grid5.mif -force -quiet
+mrgrid tmp_grid5.mif pad -uniform 1 tmp_grid7.mif -force -quiet
+
+# Build f = x + y + z over the full padded grid: the truth, finite on the border.
+make_ramp () {
+  axis=$1; out=$2
+  sz=$(mrinfo tmp_grid7.mif -size | cut -d' ' -f$((axis+1)))
+  files=""
+  for i in $(seq 0 $((sz-1))); do
+    mrconvert tmp_grid7.mif -coord $axis $i - -quiet | \
+      mrcalc - 0 -mult $i -add tmp_slab_${axis}_${i}.mif -force -quiet
+    files="$files tmp_slab_${axis}_${i}.mif"
+  done
+  mrcat $files -axis $axis $out -force -quiet
+}
+make_ramp 0 tmp_rx.mif
+make_ramp 1 tmp_ry.mif
+make_ramp 2 tmp_rz.mif
+mrcalc tmp_rx.mif tmp_ry.mif -add tmp_rz.mif -add tmp_truth.mif -force -quiet
+
+# Input: the truth interior, with its entire one-voxel border replaced by NaN.
+mrgrid tmp_truth.mif crop -uniform 1 tmp_inner.mif -force -quiet
+mrgrid tmp_inner.mif pad -uniform 1 -fill nan tmp_input.mif -force -quiet
+
+# Affine detrending must recover the linear field everywhere - including the
+#   extrapolated border - for a least-squares method, the square method, and the
+#   biharmonic method alike.
+for method in laplacian laplaciansq biharmonic; do
+  mrimpute tmp_input.mif -method $method -detrend affine tmp_out.mif -force -quiet
+  # No voxel may remain non-finite.
+  nonfinite=$(mrcalc tmp_out.mif -finite -not - -quiet | mrstats - -output max)
+  [ "$(echo $nonfinite | tr -d ' ')" = "0" ]
+  # The recovered field must match the truth across the whole padded grid.
+  testing_diff_image tmp_out.mif tmp_truth.mif -abs 1e-4
+done
