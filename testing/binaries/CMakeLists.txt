@@ -54,6 +54,10 @@ add_bash_binary_test(amp2sh/default)
 add_bash_binary_test(amp2sh/lmax)
 add_bash_binary_test(amp2sh/with_noise)
 
+add_bash_binary_test(connectome2tck/exemplars)
+add_bash_binary_test(connectome2tck/per_node)
+add_bash_binary_test(connectome2tck/single_edge)
+
 add_bash_binary_test(connectomeedit/lower_triangular_from_asymmetric)
 add_bash_binary_test(connectomeedit/lower_triangular_from_lower_triangular)
 add_bash_binary_test(connectomeedit/lower_triangular_from_symmetric)
@@ -68,10 +72,6 @@ add_bash_binary_test(connectomeedit/upper_triangular_from_lower_triangular)
 add_bash_binary_test(connectomeedit/upper_triangular_from_symmetric)
 add_bash_binary_test(connectomeedit/upper_triangular_from_upper_triangular)
 add_bash_binary_test(connectomeedit/zero_diagonal)
-
-add_bash_binary_test(connectome2tck/exemplars)
-add_bash_binary_test(connectome2tck/per_node)
-add_bash_binary_test(connectome2tck/single_edge)
 
 add_bash_binary_test(connectomestats/nbs)
 add_bash_binary_test(connectomestats/none)
@@ -99,6 +99,10 @@ add_bash_binary_test(dirorder/preserve)
 add_bash_binary_test(dirrotate/default)
 add_bash_binary_test(dirrotate/onerotation)
 
+add_bash_binary_test(dirsplit/cartesian)
+add_bash_binary_test(dirsplit/foursubsets)
+add_bash_binary_test(dirsplit/twosubsets)
+
 add_bash_binary_test(dirvalidate/bad_matrix)
 add_bash_binary_test(dirvalidate/cartesian)
 add_bash_binary_test(dirvalidate/grad)
@@ -107,10 +111,6 @@ add_bash_binary_test(dirvalidate/grad_badcomponent)
 add_bash_binary_test(dirvalidate/spherical)
 add_bash_binary_test(dirvalidate/spherical_badcomponent)
 add_bash_binary_test(dirvalidate/spherical_badrange)
-
-add_bash_binary_test(dirsplit/cartesian)
-add_bash_binary_test(dirsplit/foursubsets)
-add_bash_binary_test(dirsplit/twosubsets)
 
 add_bash_binary_test(dwi2adc/default)
 add_bash_binary_test(dwi2adc/ivim)
@@ -624,12 +624,12 @@ add_bash_binary_test(tcksift/default)
 
 add_bash_binary_test(tcksift2/default)
 
-add_bash_binary_test(tcktransform/unitwarp)
 add_bash_binary_test(tckstats/default)
 add_bash_binary_test(tckstats/dump)
 add_bash_binary_test(tckstats/histogram)
 add_bash_binary_test(tckstats/output_fields)
 
+add_bash_binary_test(tcktransform/unitwarp)
 
 add_bash_binary_test(tckvalidate/badcount)
 add_bash_binary_test(tckvalidate/dataaftereofdelim)
@@ -665,13 +665,13 @@ add_bash_binary_test(transformconvert/itk_slicer)
 
 add_bash_binary_test(tsfdivide/default)
 
-add_bash_binary_test(tsfmult/default)
-
-add_bash_binary_test(tsfsmooth/default)
-
 add_bash_binary_test(tsfinfo/count)
 add_bash_binary_test(tsfinfo/default)
 add_bash_binary_test(tsfinfo/multiple_files)
+
+add_bash_binary_test(tsfmult/default)
+
+add_bash_binary_test(tsfsmooth/default)
 
 add_bash_binary_test(tsfthreshold/default)
 add_bash_binary_test(tsfthreshold/invert)
@@ -709,6 +709,7 @@ add_bash_binary_test(warpinit/default)
 add_bash_binary_test(warpinvert/deformation)
 add_bash_binary_test(warpinvert/displacement)
 add_bash_binary_test(warpinvert/noop)
+add_bash_binary_test(warpinvert/roundtrip)
 
 add_bash_binary_test(warpvalidate/deformation)
 add_bash_binary_test(warpvalidate/deformation_volumecount)
