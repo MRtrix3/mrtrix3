@@ -51,7 +51,7 @@ extern void (*print)(std::string_view msg);
 
 // for internal use only
 
-inline void __print_stderr(std::string_view text) {
+inline void _print_stderr(std::string_view text) {
 #ifdef MRTRIX_AS_R_LIBRARY
   REprintf(std::string(text).c_str());
 #else
@@ -122,6 +122,11 @@ public:
 void display_exception_cmdline(const Exception &E, int log_level);
 void cmdline_print_func(std::string_view msg);
 void cmdline_report_to_user_func(std::string_view msg, int type);
+
+//! thread-safe alternative to strerror()
+/*! Uses strerror_r() when available; otherwise acquires a mutex before
+ * calling strerror(). Always returns the message as a std::string. */
+std::string C_strerror(int errnum);
 
 class LogLevelLatch {
 public:

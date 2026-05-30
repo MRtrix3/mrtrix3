@@ -14,11 +14,10 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "command.h"
-
 #include <limits>
 
 #include "algo/threaded_copy.h"
+#include "command.h"
 #include "file/matrix.h"
 #include "image.h"
 #include "math/SH.h"
@@ -213,9 +212,10 @@ void usage() {
 }
 // clang-format on
 
-template <typename T> class __copy_fod {
+namespace {
+template <typename T> class _copy_fod {
 public:
-  __copy_fod(const int lmax, const double weight, const bool apodise)
+  _copy_fod(const int lmax, const double weight, const bool apodise)
       : w(weight), a(apodise), apo(lmax), SH_in(Math::SH::NforL(lmax)), SH_out(SH_in.size()) {}
 
   void operator()(Image<T> &in, Image<T> &out) {
@@ -229,6 +229,7 @@ private:
   Math::SH::aPSF<T> apo;
   Eigen::Matrix<T, Eigen::Dynamic, 1> SH_in, SH_out;
 };
+} // namespace
 
 void run() {
 
@@ -364,7 +365,7 @@ void run() {
     INFO("Saving fODF image to file");
     header_out.size(3) = Math::SH::NforL(properties.Lmax);
     auto fODF = Image<float>::create(opt[0][0], header_out);
-    auto f = __copy_fod<float>(properties.Lmax, properties.weight, get_options("noapo").empty());
+    auto f = _copy_fod<float>(properties.Lmax, properties.weight, get_options("noapo").empty());
     ThreadedLoop(Eext->getTOD(), 0, 3).run(f, Eext->getTOD(), fODF);
   }
 
@@ -376,7 +377,7 @@ void run() {
       auto Fiso = Image<float>::create(opt[0][0], header_out);
       threaded_copy(Eext->getFiso(), Fiso);
     } else {
-      WARN("Ignore saving file " + std::string(opt[0][0]) + ", because no isotropic response functions were provided.");
+      WARN("Ignore saving file " + opt[0][0].as_text() + ", because no isotropic response functions were provided.");
     }
   }
 

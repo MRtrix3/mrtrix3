@@ -43,7 +43,7 @@ private:
 
 class SeedMask : public Base {
 public:
-  SeedMask(std::string_view in);
+  SeedMask(const std::filesystem::path &in);
   virtual bool get_seed(Eigen::Vector3f &p) const override;
 
 private:
@@ -52,7 +52,7 @@ private:
 
 class Random_per_voxel : public Base {
 public:
-  Random_per_voxel(std::string_view in, const size_t num_per_voxel);
+  Random_per_voxel(const std::filesystem::path &in, const size_t num_per_voxel);
   virtual bool get_seed(Eigen::Vector3f &p) const override;
   virtual ~Random_per_voxel() {}
 
@@ -65,7 +65,7 @@ private:
 
 class Grid_per_voxel : public Base {
 public:
-  Grid_per_voxel(std::string_view in, const size_t os_factor);
+  Grid_per_voxel(const std::filesystem::path &in, const size_t os_factor);
   virtual ~Grid_per_voxel() {}
   virtual bool get_seed(Eigen::Vector3f &p) const override;
 
@@ -80,7 +80,7 @@ private:
 class Rejection_per_voxel : public Base {
 public:
   using transform_type = Eigen::Transform<float, 3, Eigen::AffineCompact>;
-  Rejection_per_voxel(std::string_view);
+  Rejection_per_voxel(const std::filesystem::path &);
   virtual bool get_seed(Eigen::Vector3f &p) const override;
 
 private:
@@ -95,7 +95,7 @@ private:
 
 class CoordinatesLoader {
 public:
-  CoordinatesLoader(std::string_view cds_path);
+  CoordinatesLoader(const std::filesystem::path &cds_path);
 
 protected:
   Eigen::MatrixXf coords;
@@ -106,7 +106,7 @@ protected:
 
 class Count_per_coord : public Base, public CoordinatesLoader {
 public:
-  Count_per_coord(std::string_view in, const size_t streamlines_per_coord);
+  Count_per_coord(const std::filesystem::path &path, const size_t streamlines_per_coord);
   bool get_seed(Eigen::Vector3f &p) const override;
 
 private:
@@ -118,13 +118,13 @@ private:
 
 class Random_coordinates : public Base, public CoordinatesLoader {
 public:
-  Random_coordinates(std::string_view in);
+  Random_coordinates(const std::filesystem::path &path);
   bool get_seed(Eigen::Vector3f &p) const override;
 };
 
 class Rejection_per_coord : public Base, public CoordinatesLoader {
 public:
-  Rejection_per_coord(std::string_view in);
+  Rejection_per_coord(const std::filesystem::path &path);
   bool get_seed(Eigen::Vector3f &p) const override;
 };
 

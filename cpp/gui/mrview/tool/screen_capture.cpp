@@ -14,7 +14,9 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include "eigen_plugins/eigen_plugins.h"
 #include <Eigen/Geometry>
+#include <filesystem>
 
 #include "dialog/file.h"
 #include "file/path.h"
@@ -319,12 +321,15 @@ void Capture::run(bool with_capture) {
     volume_inc = static_cast<float>(target_volume->value()) / static_cast<float>(frames_value);
   }
 
+  if (with_capture && !std::filesystem::exists(current_folder))
+    std::filesystem::create_directories(current_folder);
+
   for (size_t i = first_index; i < first_index + frames_value; ++i) {
     if (!is_playing)
       break;
 
     if (with_capture)
-      win.captureGL(Path::join(current_folder, prefix + printf("%04d.png", i)));
+      win.captureGL(current_folder / (prefix + printf("%04d.png", i)));
 
     // Rotation
     Eigen::Quaternionf orientation(win.orientation());
@@ -369,7 +374,7 @@ void Capture::run(bool with_capture) {
       break;
     }
     case TranslationType::Scanner:
-      break;
+      [[fallthrough]];
     default:
       break;
     }
@@ -407,11 +412,12 @@ void Capture::run(bool with_capture) {
 }
 
 void Capture::select_output_folder_slot() {
-  const std::string path = Dialog::File::get_folder(this, "Directory", &current_folder);
-  if (path.empty())
+  auto load_paths = Dialog::File::input_dirpath(this, "Directory", current_folder);
+  if (load_paths.empty())
     return;
-  folder_button->setText(qstr(shorten(current_folder, 20, 0)));
-  folder_button->setToolTip(qstr(current_folder));
+  current_folder = load_paths.last_directory;
+  folder_button->setText(qstr(shorten(load_paths.single_selection.filename().string(), 20, 0)));
+  folder_button->setToolTip(qstr(load_paths.single_selection.string()));
   on_output_update();
 }
 
@@ -424,7 +430,7 @@ void Capture::add_commandline_options(MR::App::OptionList &options) {
 
       + Option("capture.folder",
                "Set the output folder for the screen capture tool.").allow_multiple()
-        + Argument("path").type_text()
+        + Argument("path").type_directory_out(DirOutMode::MayExist)
 
       + Option("capture.prefix",
                "Set the output file prefix for the screen capture tool.").allow_multiple()
@@ -437,10 +443,10 @@ void Capture::add_commandline_options(MR::App::OptionList &options) {
 
 bool Capture::process_commandline_option(const MR::App::ParsedOption &opt) {
   if (opt.opt->is("capture.folder")) {
-    current_folder = std::string(opt[0]);
-    QString path(qstr(shorten(current_folder, 20, 0)));
+    current_folder = static_cast<std::filesystem::path>(opt[0]);
+    QString path(qstr(shorten(current_folder.filename().string(), 20, 0)));
     folder_button->setText(path);
-    folder_button->setToolTip(qstr(current_folder));
+    folder_button->setToolTip(qstr(current_folder.string()));
     on_output_update();
     return true;
   }

@@ -14,7 +14,10 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <filesystem>
+#include <optional>
 #include <string>
+#include <tcb/span.hpp>
 #include <vector>
 
 #include "command.h"
@@ -36,9 +39,6 @@
 #include "memory.h"
 #include "ordered_thread_queue.h"
 #include "thread.h"
-
-#include <optional>
-#include <tcb/span.hpp>
 
 using namespace MR;
 using namespace App;
@@ -238,7 +238,11 @@ private:
 
   template <class VectorType>
   value_type compute_statistic(const VectorType &data, const std::vector<value_type> &weights) const {
-    assert(statistic().has_value());
+    if (!statistic().has_value()) {
+      assert(false);
+      return std::numeric_limits<value_type>::quiet_NaN();
+    }
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
     switch (statistic().value()) {
     case Statistic::MEAN: {
       value_type integral = value_type(0);
@@ -283,9 +287,10 @@ private:
       }
       return cast_to_nan ? std::numeric_limits<value_type>::quiet_NaN() : value;
     } break;
+    default:
+      assert(false);
+      return std::numeric_limits<value_type>::quiet_NaN();
     }
-    assert(false);
-    return std::numeric_limits<value_type>::quiet_NaN();
   }
 };
 
@@ -320,8 +325,13 @@ protected:
   };
 
   value_type compute_statistic(std::vector<ValueLength> &data) const {
+    if (!statistic().has_value()) {
+      assert(false);
+      return std::numeric_limits<value_type>::quiet_NaN();
+    }
     if (data.empty())
       return std::numeric_limits<value_type>::quiet_NaN();
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
     switch (statistic().value()) {
     case Statistic::MEAN: {
       value_type integral = value_type(0);
@@ -375,9 +385,10 @@ protected:
       }
       return cast_to_nan ? std::numeric_limits<value_type>::quiet_NaN() : maxvalue;
     }
+    default:
+      assert(false);
+      return std::numeric_limits<value_type>::quiet_NaN();
     }
-    assert(false);
-    return std::numeric_limits<value_type>::quiet_NaN();
   }
 };
 
@@ -607,7 +618,7 @@ private:
 
 class ReceiverBase {
 public:
-  ReceiverBase(const size_t num_tracks, const bool ordered, std::string_view path)
+  ReceiverBase(const size_t num_tracks, const bool ordered, const std::filesystem::path &path)
       : received(0),
         path(path),
         expected(num_tracks),
@@ -630,7 +641,7 @@ protected:
   }
 
   size_t received;
-  const std::string path;
+  const std::filesystem::path path;
 
 private:
   const size_t expected;
@@ -641,7 +652,7 @@ private:
 class Receiver_OnePerStreamline : public ReceiverBase {
 public:
   using InputType = OnePerStreamline;
-  Receiver_OnePerStreamline(const size_t num_tracks, std::string_view path)
+  Receiver_OnePerStreamline(const size_t num_tracks, const std::filesystem::path &path)
       : ReceiverBase(num_tracks, false, path), data(vector_type::Zero(num_tracks)) {}
   Receiver_OnePerStreamline(const Receiver_OnePerStreamline &) = delete;
   ~Receiver_OnePerStreamline() { File::Matrix::save_vector(data, path); }
@@ -654,7 +665,7 @@ public:
     return true;
   }
 
-  void save(std::string_view path) { File::Matrix::save_vector(data, path); }
+  void save(const std::filesystem::path &path) { File::Matrix::save_vector(data, path); }
 
 private:
   vector_type data;
@@ -663,7 +674,7 @@ private:
 class Receiver_ManyPerStreamline : public ReceiverBase {
 public:
   using InputType = ManyPerStreamline;
-  Receiver_ManyPerStreamline(const size_t num_tracks, const size_t num_metrics, std::string_view path)
+  Receiver_ManyPerStreamline(const size_t num_tracks, const size_t num_metrics, const std::filesystem::path &path)
       : ReceiverBase(num_tracks, false, path), data(matrix_type::Zero(num_tracks, num_metrics)) {}
   Receiver_ManyPerStreamline(const Receiver_ManyPerStreamline &) = delete;
   ~Receiver_ManyPerStreamline() { File::Matrix::save_matrix(data, path); }
@@ -684,7 +695,9 @@ private:
 class Receiver_PerVertex : public ReceiverBase {
 public:
   using InputType = DWI::Tractography::TrackScalar<value_type>;
-  Receiver_PerVertex(const DWI::Tractography::Properties &properties, const size_t num_tracks, std::string_view path)
+  Receiver_PerVertex(const DWI::Tractography::Properties &properties,
+                     const size_t num_tracks,
+                     const std::filesystem::path &path)
       : ReceiverBase(num_tracks, true, path) {
     if (Path::has_suffix(path, ".tsf")) {
       tsf.reset(new DWI::Tractography::ScalarWriter<value_type>(path, properties));
@@ -786,7 +799,7 @@ void execute(DWI::Tractography::Reader<value_type> &reader,
              const contrast_type contrast,
              const std::optional<Statistic> &statistic,
              Image<value_type> &tdi,
-             std::string_view path) {
+             const std::filesystem::path &path) {
   const size_t num_metrics = image.ndim() == 4 && contrast == contrast_type::SCALAR ? image.size(3) : 1;
   if (!statistic.has_value()) {
     Receiver_PerVertex receiver(properties, num_tracks, path);
@@ -840,10 +853,7 @@ void run() {
          "as input image could not be interpreted as spherical harmonics functions");
   }
 
-  const std::optional<Statistic> statistic =
-      get_options("stat_tck").empty()
-          ? std::nullopt
-          : std::optional<Statistic>(get_option_choice<Statistic>("stat_tck", Statistic::MEAN));
+  const auto statistic = get_optional<Statistic>("stat_tck");
 
   if (H.ndim() == 4 && H.size(3) > 1 && contrast == contrast_type::SCALAR) {
     if (!statistic.has_value())

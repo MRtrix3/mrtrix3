@@ -16,6 +16,10 @@
 
 #include "mrview/tool/view.h"
 
+#include <cstdint>
+#include <sys/types.h>
+
+#include "exception.h"
 #include "math/math.h"
 #include "mrtrix.h"
 #include "mrview/adjust_button.h"
@@ -484,7 +488,8 @@ void View::onVolumeIndexChanged() {
 
   for (int i = 0; i < volume_index_layout->count(); ++i) {
     auto *box = dynamic_cast<SpinBox *>(volume_index_layout->itemAt(i)->widget());
-    box->setValue(image.ndim() > static_cast<size_t>(i + 3) ? image.index(i + 3) : 0);
+    box->setValue(image.ndim() > static_cast<size_t>(i) + 3 ? static_cast<int>(image.index(static_cast<ssize_t>(i) + 3))
+                                                            : 0);
   }
 }
 
@@ -589,7 +594,8 @@ void View::onSetFocus() {
   try {
     window().set_focus(Eigen::Vector3f{focus_x->value(), focus_y->value(), focus_z->value()});
     window().updateGL();
-  } catch (Exception) {
+  } catch (Exception &e) {
+    WARN("Error parsing requested focus point: " + e[0]);
   }
 }
 
@@ -599,7 +605,8 @@ void View::onSetVoxel() {
     focus = window().image()->voxel2scanner() * focus;
     window().set_focus(focus);
     window().updateGL();
-  } catch (Exception) {
+  } catch (Exception &e) {
+    WARN("Error parsing requested voxel position: " + e[0]);
   }
 }
 
@@ -610,7 +617,7 @@ void View::onSetVolumeIndex() {
 
     for (int i = 0; i < volume_index_layout->count(); ++i) {
       auto *box = dynamic_cast<SpinBox *>(volume_index_layout->itemAt(i)->widget());
-      if (image.ndim() <= static_cast<size_t>(i + 3))
+      if (image.ndim() <= static_cast<size_t>(i) + 3)
         break;
       window().set_image_volume(i + 3, box->value());
     }

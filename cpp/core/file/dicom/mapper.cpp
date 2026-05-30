@@ -16,6 +16,7 @@
 
 #include <algorithm>
 
+#include "env.h"
 #include "file/dicom/image.h"
 #include "file/dicom/mapper.h"
 #include "file/dicom/patient.h"
@@ -45,7 +46,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
   // ENVVAR will normally have been modified from its initial value
   // ENVVAR (e.g. [ 0 0 0 1000 ] for a b=1000 acquisition) to b=0 due to
   // ENVVAR b-value scaling.
-  bool preserve_philips_iso = (getenv("MRTRIX_PRESERVE_PHILIPS_ISO") != nullptr);
+  const bool preserve_philips_iso = MR::get_env("MRTRIX_PRESERVE_PHILIPS_ISO").has_value();
 
   assert(series.size() > 0);
   std::unique_ptr<MR::ImageIO::Base> io_handler;
@@ -420,7 +421,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
   }
 
   for (size_t n = 0; n < frames.size(); ++n)
-    io_handler->files.push_back(File::Entry(frames[n]->filename, frames[n]->data));
+    io_handler->files.push_back(File::Entry(frames[n]->filepath, frames[n]->data));
 
   return io_handler;
 }

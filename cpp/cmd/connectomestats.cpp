@@ -31,6 +31,7 @@
 #include "connectome/mat2vec.h"
 
 #include "stats/permtest.h"
+#include <filesystem>
 
 using namespace MR;
 using namespace App;
@@ -83,7 +84,7 @@ void usage() {
   + Argument("algorithm", "the algorithm to use in network-based clustering/enhancement."
                           " Options are: " + MR::Enum::join<Algorithm>() + ".").type_choice<Algorithm>()
   + Argument("design", "the design matrix").type_file_in()
-  + Argument("output", "the filename prefix for all output.").type_text();
+  + Argument("output_dir", "the output directory (will be created by the command).").type_directory_out(DirOutMode::EmptyOrAbsent);
 
   OPTIONS
 
@@ -142,11 +143,11 @@ void load_tfce_parameters(Stats::TFCE::Wrapper &enhancer) {
 //   that subject
 class SubjectConnectomeImport : public SubjectDataImportBase {
 public:
-  SubjectConnectomeImport(std::string_view path) : SubjectDataImportBase(path) {
+  SubjectConnectomeImport(const std::filesystem::path &path) : SubjectDataImportBase(path) {
     auto M = File::Matrix::load_matrix<measurements_value_type>(path);
     Connectome::check(M);
     if (Connectome::is_directed(M))
-      throw Exception("Connectome from file \"" + Path::basename(path) + "\" is a directed matrix");
+      throw Exception("Connectome from file \"" + path.filename().string() + "\" is a directed matrix");
     Connectome::to_upper(M);
     Connectome::Mat2Vec mat2vec(M.rows());
     mat2vec.M2V(M, data);
@@ -169,7 +170,6 @@ private:
 };
 
 void run() {
-
   // Read file names and check files exist
   CohortDataImport importer;
   importer.initialise<SubjectConnectomeImport>(argument[0]);
@@ -178,8 +178,9 @@ void run() {
 
   for (index_type i = 1; i < importer.size(); ++i) {
     if (importer[i]->size() != importer[0]->size())
-      throw Exception("Size of connectome for subject " + str(i) + " (file \"" + importer[i]->name() + "\"" + //
-                      " does not match that of first subject");                                               //
+      throw Exception("Size of connectome for subject " + str(i) +        //
+                      " (file \"" + importer[i]->name().string() + "\"" + //
+                      " does not match that of first subject");           //
   }
 
   // TODO Could determine this from the vector length with the right equation
@@ -240,7 +241,8 @@ void run() {
   opt = get_options("column");
   for (size_t i = 0; i != opt.size(); ++i) {
     extra_columns.push_back(CohortDataImport());
-    extra_columns[i].initialise<SubjectConnectomeImport>(opt[i][0]);
+    const std::filesystem::path path(opt[i][0]);
+    extra_columns[i].initialise<SubjectConnectomeImport>(path);
     if (!extra_columns[i].allFinite())
       nans_in_columns = true;
   }
@@ -265,7 +267,8 @@ void run() {
   const index_type num_hypotheses = hypotheses.size();
   CONSOLE("Number of hypotheses: " + str(num_hypotheses));
 
-  const std::string output_prefix = argument[3];
+  const std::filesystem::path output_dir = argument[3];
+  std::filesystem::create_directories(output_dir);
 
   // Load input data
   // For compatibility with existing statistics code, symmetric matrix data is adjusted
@@ -301,31 +304,31 @@ void run() {
     ProgressBar progress("outputting beta coefficients, effect size and standard deviation",
                          num_factors + (2 * num_hypotheses) + num_vgs + (variable_design_matrix ? 1 : 0));
     for (index_type i = 0; i != num_factors; ++i) {
-      File::Matrix::save_matrix(mat2vec.V2M(betas.row(i)), output_prefix + "beta_" + str(i) + ".csv");
+      File::Matrix::save_matrix(mat2vec.V2M(betas.row(i)), output_dir / ("beta_" + str(i) + ".csv"));
       ++progress;
     }
     for (index_type i = 0; i != num_hypotheses; ++i) {
       if (!hypotheses[i].is_F()) {
         File::Matrix::save_matrix(mat2vec.V2M(abs_effect_size.col(i)),
-                                  output_prefix + "abs_effect" + postfix(i) + ".csv");
+                                  output_dir / ("abs_effect" + postfix(i) + ".csv"));
         ++progress;
         if (num_vgs == 1)
           File::Matrix::save_matrix(mat2vec.V2M(std_effect_size.col(i)),
-                                    output_prefix + "std_effect" + postfix(i) + ".csv");
+                                    output_dir / ("std_effect" + postfix(i) + ".csv"));
       } else {
         ++progress;
       }
       ++progress;
     }
     if (variable_design_matrix) {
-      File::Matrix::save_matrix(mat2vec.V2M(cond), output_prefix + "cond.csv");
+      File::Matrix::save_matrix(mat2vec.V2M(cond), output_dir / "cond.csv");
       ++progress;
     }
     if (num_vgs == 1) {
-      File::Matrix::save_matrix(mat2vec.V2M(stdev.row(0)), output_prefix + "std_dev.csv");
+      File::Matrix::save_matrix(mat2vec.V2M(stdev.row(0)), output_dir / "std_dev.csv");
     } else {
       for (index_type i = 0; i != num_vgs; ++i) {
-        File::Matrix::save_matrix(mat2vec.V2M(stdev.row(i)), output_prefix + "std_dev" + str(i) + ".csv");
+        File::Matrix::save_matrix(mat2vec.V2M(stdev.row(i)), output_dir / ("std_dev" + str(i) + ".csv"));
         ++progress;
       }
     }
@@ -354,7 +357,7 @@ void run() {
     Stats::PermTest::precompute_empirical_stat(glm_test, enhancer, empirical_skew, empirical_statistic);
     for (index_type i = 0; i != num_hypotheses; ++i)
       File::Matrix::save_matrix(mat2vec.V2M(empirical_statistic.col(i)),
-                                output_prefix + "empirical" + postfix(i) + ".csv");
+                                output_dir / ("empirical" + postfix(i) + ".csv"));
   }
 
   // Precompute default statistic, Z-transformation of such, and enhanced statistic
@@ -362,10 +365,11 @@ void run() {
   Stats::PermTest::precompute_default_permutation(
       glm_test, enhancer, empirical_statistic, default_statistic, default_zstat, default_enhanced);
   for (index_type i = 0; i != num_hypotheses; ++i) {
-    File::Matrix::save_matrix(mat2vec.V2M(default_statistic.col(i)),
-                              output_prefix + (hypotheses[i].is_F() ? "F" : "t") + "value" + postfix(i) + ".csv");
-    File::Matrix::save_matrix(mat2vec.V2M(default_zstat.col(i)), output_prefix + "Zstat" + postfix(i) + ".csv");
-    File::Matrix::save_matrix(mat2vec.V2M(default_enhanced.col(i)), output_prefix + "enhanced" + postfix(i) + ".csv");
+    File::Matrix::save_matrix(
+        mat2vec.V2M(default_statistic.col(i)),
+        output_dir / ((hypotheses[i].is_F() ? std::string("F") : std::string("t")) + "value" + postfix(i) + ".csv"));
+    File::Matrix::save_matrix(mat2vec.V2M(default_zstat.col(i)), output_dir / ("Zstat" + postfix(i) + ".csv"));
+    File::Matrix::save_matrix(mat2vec.V2M(default_enhanced.col(i)), output_dir / ("enhanced" + postfix(i) + ".csv"));
   }
 
   // Perform permutation testing
@@ -388,19 +392,18 @@ void run() {
                                       null_contributions,
                                       uncorrected_pvalues);
     if (fwe_strong) {
-      File::Matrix::save_vector(null_distribution.col(0), output_prefix + "null_dist.txt");
+      File::Matrix::save_vector(null_distribution.col(0), output_dir / "null_dist.txt");
     } else {
       for (index_type i = 0; i != num_hypotheses; ++i)
-        File::Matrix::save_vector(null_distribution.col(i), output_prefix + "null_dist" + postfix(i) + ".txt");
+        File::Matrix::save_vector(null_distribution.col(i), output_dir / ("null_dist" + postfix(i) + ".txt"));
     }
     const matrix_type pvalue_output = MR::Math::Stats::fwe_pvalue(null_distribution, default_enhanced, mask_inference);
     for (index_type i = 0; i != num_hypotheses; ++i) {
-      File::Matrix::save_matrix(mat2vec.V2M(pvalue_output.col(i)),
-                                output_prefix + "fwe_1mpvalue" + postfix(i) + ".csv");
+      File::Matrix::save_matrix(mat2vec.V2M(pvalue_output.col(i)), output_dir / ("fwe_1mpvalue" + postfix(i) + ".csv"));
       File::Matrix::save_matrix(mat2vec.V2M(uncorrected_pvalues.col(i)),
-                                output_prefix + "uncorrected_1mpvalue" + postfix(i) + ".csv");
+                                output_dir / ("uncorrected_1mpvalue" + postfix(i) + ".csv"));
       File::Matrix::save_matrix(mat2vec.V2M(null_contributions.col(i)),
-                                output_prefix + "null_contributions" + postfix(i) + ".csv");
+                                output_dir / ("null_contributions" + postfix(i) + ".csv"));
     }
   }
 }

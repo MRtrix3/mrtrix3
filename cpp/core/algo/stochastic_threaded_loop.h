@@ -18,6 +18,7 @@
 
 #include "algo/iterator.h"
 #include "algo/loop.h"
+#include "algo/threaded_loop.h"
 #include "debug.h"
 #include "math/rng.h"
 #include "thread.h"

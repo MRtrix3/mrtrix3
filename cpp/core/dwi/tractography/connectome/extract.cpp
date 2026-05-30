@@ -127,7 +127,10 @@ void WriterExemplars::finalize() {
   }
 }
 
-void WriterExemplars::write(const node_t one, const node_t two, std::string_view path, std::string_view weights_path) {
+void WriterExemplars::write(const node_t one,
+                            const node_t two,
+                            const std::filesystem::path &path,
+                            const std::optional<std::filesystem::path> &weights_path = std::nullopt) {
   Tractography::Properties properties;
   properties["step_size"] = str(step_size);
   Tractography::WriterUnbuffered<float> writer(path, properties);
@@ -137,8 +140,8 @@ void WriterExemplars::write(const node_t one, const node_t two, std::string_view
     else
       writer.skip();
   }
-  if (!weights_path.empty()) {
-    File::OFStream output(weights_path);
+  if (weights_path.has_value()) {
+    File::OFStream output(weights_path.value());
     for (size_t i = 0; i != exemplars.size(); ++i) {
       if (selectors[i](one, two))
         output << str(exemplars[i].get_weight()) << "\n";
@@ -146,7 +149,9 @@ void WriterExemplars::write(const node_t one, const node_t two, std::string_view
   }
 }
 
-void WriterExemplars::write(const node_t node, std::string_view path, std::string_view weights_path) {
+void WriterExemplars::write(const node_t node,
+                            const std::filesystem::path &path,
+                            const std::optional<std::filesystem::path> &weights_path = std::nullopt) {
   Tractography::Properties properties;
   properties["step_size"] = str(step_size);
   Tractography::Writer<float> writer(path, properties);
@@ -156,8 +161,8 @@ void WriterExemplars::write(const node_t node, std::string_view path, std::strin
     else
       writer.skip();
   }
-  if (!weights_path.empty()) {
-    File::OFStream output(weights_path);
+  if (weights_path.has_value()) {
+    File::OFStream output(weights_path.value());
     for (size_t i = 0; i != exemplars.size(); ++i) {
       if (selectors[i](node))
         output << str(exemplars[i].get_weight()) << "\n";
@@ -165,14 +170,15 @@ void WriterExemplars::write(const node_t node, std::string_view path, std::strin
   }
 }
 
-void WriterExemplars::write(std::string_view path, std::string_view weights_path) {
+void WriterExemplars::write(const std::filesystem::path &path,
+                            const std::optional<std::filesystem::path> &weights_path = std::nullopt) {
   Tractography::Properties properties;
   properties["step_size"] = str(step_size);
   Tractography::Writer<float> writer(path, properties);
   for (std::vector<Exemplar>::const_iterator i = exemplars.begin(); i != exemplars.end(); ++i)
     writer(i->get());
-  if (!weights_path.empty()) {
-    File::OFStream output(weights_path);
+  if (weights_path.has_value()) {
+    File::OFStream output(weights_path.value());
     for (std::vector<Exemplar>::const_iterator i = exemplars.begin(); i != exemplars.end(); ++i)
       output << str(i->get_weight()) << "\n";
   }
@@ -184,32 +190,34 @@ WriterExtraction::WriterExtraction(const Tractography::Properties &p,
                                    const bool keep_self)
     : properties(p), node_list(nodes), exclusive(exclusive), keep_self(keep_self) {}
 
-void WriterExtraction::add(const node_t node, std::string_view path, const std::string weights_path = "") {
+void WriterExtraction::add(const node_t node,
+                           const std::filesystem::path &path,
+                           const std::optional<std::filesystem::path> &weights_path = std::nullopt) {
   selectors.emplace_back(Selector(node, keep_self));
   writers.emplace_back(new Tractography::WriterUnbuffered<float>(path, properties));
-  if (!weights_path.empty())
-    writers.back()->set_weights_path(weights_path);
+  if (weights_path.has_value())
+    writers.back()->set_weights_path(weights_path.value());
 }
 
 void WriterExtraction::add(const node_t node_one,
                            const node_t node_two,
-                           std::string_view path,
-                           const std::string weights_path = "") {
+                           const std::filesystem::path &path,
+                           const std::optional<std::filesystem::path> &weights_path = std::nullopt) {
   if (keep_self || (node_one != node_two)) {
     selectors.emplace_back(Selector(node_one, node_two));
     writers.emplace_back(new Tractography::WriterUnbuffered<float>(path, properties));
-    if (!weights_path.empty())
-      writers.back()->set_weights_path(weights_path);
+    if (weights_path.has_value())
+      writers.back()->set_weights_path(weights_path.value());
   }
 }
 
 void WriterExtraction::add(const std::vector<node_t> &list,
-                           std::string_view path,
-                           const std::string weights_path = "") {
+                           const std::filesystem::path &path,
+                           const std::optional<std::filesystem::path> &weights_path = std::nullopt) {
   selectors.emplace_back(Selector(list, exclusive, keep_self));
   writers.emplace_back(new Tractography::WriterUnbuffered<float>(path, properties));
-  if (!weights_path.empty())
-    writers.back()->set_weights_path(weights_path);
+  if (weights_path.has_value())
+    writers.back()->set_weights_path(weights_path.value());
 }
 
 void WriterExtraction::clear() {

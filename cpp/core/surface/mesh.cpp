@@ -28,12 +28,14 @@
 
 namespace MR::Surface {
 
-Mesh::Mesh(std::string_view path) {
-  if (path.substr(path.size() - 4) == ".vtk" || path.substr(path.size() - 4) == ".VTK") {
+Mesh::Mesh(const std::filesystem::path &path) : name(path.filename().string()) {
+  const std::string extension = path.extension().string();
+
+  if (extension == ".vtk" || extension == ".VTK") {
     load_vtk(path);
-  } else if (path.substr(path.size() - 4) == ".stl" || path.substr(path.size() - 4) == ".STL") {
+  } else if (extension == ".stl" || extension == ".STL") {
     load_stl(path);
-  } else if (path.substr(path.size() - 4) == ".obj" || path.substr(path.size() - 4) == ".OBJ") {
+  } else if (extension == ".obj" || extension == ".OBJ") {
     load_obj(path);
   } else {
     try {
@@ -43,15 +45,16 @@ Mesh::Mesh(std::string_view path) {
       throw Exception("Input surface mesh file not in supported format");
     }
   }
-  name = Path::basename(path);
+  set_name(path.filename().string());
 }
 
-void Mesh::save(std::string_view path, const bool binary) const {
-  if (path.substr(path.size() - 4) == ".vtk")
+void Mesh::save(const std::filesystem::path &path, const bool binary) const {
+  const std::string extension = path.extension().string();
+  if (extension == ".vtk" || extension == ".VTK")
     save_vtk(path, binary);
-  else if (path.substr(path.size() - 4) == ".stl")
+  else if (extension == ".stl" || extension == ".STL")
     save_stl(path, binary);
-  else if (path.substr(path.size() - 4) == ".obj")
+  else if (extension == ".obj" || extension == ".OBJ")
     save_obj(path);
   else
     throw Exception("Output mesh file format not supported");
@@ -88,9 +91,9 @@ void load_vtk_points_binary(std::ifstream &in,
 }
 } // namespace
 
-void Mesh::load_vtk(std::string_view path) {
+void Mesh::load_vtk(const std::filesystem::path &path) {
 
-  std::ifstream in(std::string(path).c_str(), std::ios_base::binary);
+  std::ifstream in(path, std::ios_base::binary);
   if (!in)
     throw Exception("Error opening input file!");
 
@@ -205,7 +208,7 @@ void Mesh::load_vtk(std::string_view path) {
             }
           }
           if (vertex_count != 3 && vertex_count != 4)
-            throw Exception("Could not parse file \"" + path + "\": only support 3- and 4-vertex polygons");
+            throw Exception("Could not parse file \"" + path.string() + "\": only support 3- and 4-vertex polygons");
 
           std::vector<unsigned int> t(vertex_count, 0);
 
@@ -226,10 +229,10 @@ void Mesh::load_vtk(std::string_view path) {
           element_count += 1 + vertex_count;
         }
         if (polygon_count != num_polygons || element_count != num_elements)
-          throw Exception("Incorrectly read polygon data from .vtk file \"" + path + "\"");
+          throw Exception("Incorrectly read polygon data from .vtk file \"" + path.string() + "\"");
 
       } else {
-        throw Exception("Unsupported data \"" + line + "\" in .vtk file \"" + path + "\"");
+        throw Exception("Unsupported data \"" + line + "\" in .vtk file \"" + path.string() + "\"");
       }
     }
   }
@@ -237,17 +240,18 @@ void Mesh::load_vtk(std::string_view path) {
   if (!is_ascii) {
 #if MRTRIX_IS_BIG_ENDIAN
     if (change_endianness) {
-      WARN("File \"" + path +
+      WARN("File \"" + path.string() +
            "\" is little-endian, so is not format-compliant (may have been generated using an older MRtrix3 version); "
            "imported contents will be converted to system big-endian");
     } else {
-      INFO("File \"" + path + "\" is big-endian; no format conversion required as executing on big-endian system");
+      INFO("File \"" + path.string() +
+           "\" is big-endian; no format conversion required as executing on big-endian system");
     }
 #else
     if (change_endianness) {
-      INFO("Converting imported contents of file \"" + path + "\" to native little-endian");
+      INFO("Converting imported contents of file \"" + path.string() + "\" to native little-endian");
     } else {
-      WARN("File \"" + path +
+      WARN("File \"" + path.string() +
            "\" already in native little-endian format, so no endianness conversion required; "
            "but file is therefore not format-compliant (may have been generated using an older MRtrix3 version)");
     }
@@ -282,12 +286,12 @@ void Mesh::load_vtk(std::string_view path) {
   try {
     verify_data();
   } catch (Exception &e) {
-    throw Exception(e, "Error verifying surface data from VTK file \"" + path + "\"");
+    throw Exception(e, "Error verifying surface data from VTK file \"" + path.string() + "\"");
   }
 }
 
-void Mesh::load_stl(std::string_view path) {
-  std::ifstream in(std::string(path).c_str(), std::ios_base::in);
+void Mesh::load_stl(const std::filesystem::path &path) {
+  std::ifstream in(path, std::ios_base::in);
   if (!in)
     throw Exception("Error opening input file!");
 
@@ -300,9 +304,9 @@ void Mesh::load_stl(std::string_view path) {
 
     // File is stored as binary
     in.close();
-    in.open(std::string(path).c_str(), std::ios_base::in | std::ios_base::binary);
+    in.open(path, std::ios_base::in | std::ios_base::binary);
     std::string header(80, '\0');
-    in.read(&header[0], 80);
+    in.read(header.data(), 80);
 
     uint32_t count;
     in.read(reinterpret_cast<char *>(&count), sizeof(uint32_t));
@@ -332,10 +336,10 @@ void Mesh::load_stl(std::string_view path) {
         warn_nonstandard_normals = true;
     }
     if (triangles.size() != count)
-      WARN("Number of triangles indicated in file " + Path::basename(path) + " (" + str(count) +
-           ") does not match number actually read (" + str(triangles.size()) + ")");
+      WARN("Number of triangles indicated in file " + path.string() + " (" + str(count) + ")" + //
+           " does not match number actually read (" + str(triangles.size()) + ")");             //
     if (warn_attribute)
-      WARN("Some facets in file " + Path::basename(path) + " have extended attributes; ignoring");
+      WARN("Some facets in file " + path.string() + " have extended attributes; ignoring");
 
   } else {
 
@@ -389,9 +393,9 @@ void Mesh::load_stl(std::string_view path) {
           inside_facet = false;
           if (vertex_index != 3)
             throw Exception("facet ended with " + str(vertex_index) + " vertices");
-          triangles.push_back(std::vector<vertex_index_type>{static_cast<vertex_index_type>(vertices.size() - 3),
-                                                             static_cast<vertex_index_type>(vertices.size() - 2),
-                                                             static_cast<vertex_index_type>(vertices.size() - 1)});
+          triangles.push_back(std::vector<uint32_t>{static_cast<vertex_index_type>(vertices.size() - 3),
+                                                    static_cast<vertex_index_type>(vertices.size() - 2),
+                                                    static_cast<vertex_index_type>(vertices.size() - 1)});
           vertex_index = 0;
           const Eigen::Vector3d computed_normal = Surface::normal(*this, triangles.back());
           if (computed_normal.dot(normal) < 0.0)
@@ -417,30 +421,30 @@ void Mesh::load_stl(std::string_view path) {
       if (vertex_index)
         throw Exception("failed to complete triangle");
     } catch (Exception &e) {
-      throw Exception("Error parsing STL file " + Path::basename(path) + ": " + e[0]);
+      throw Exception("Error parsing STL file " + path.string() + ": " + e[0]);
     }
   }
 
   if (warn_right_hand_rule)
-    WARN("File " + Path::basename(path) + " does not strictly conform to the right-hand rule");
+    WARN("File " + path.string() + " does not strictly conform to the right-hand rule");
   if (warn_nonstandard_normals)
-    WARN("File " + Path::basename(path) + " contains non-standard normals, which will be ignored");
+    WARN("File " + path.string() + " contains non-standard normals, which will be ignored");
 
   try {
     verify_data();
   } catch (Exception &e) {
-    throw Exception(e, "Error verifying surface data from STL file \"" + path + "\"");
+    throw Exception(e, "Error verifying surface data from STL file \"" + path.string() + "\"");
   }
 }
 
-void Mesh::load_obj(std::string_view path) {
+void Mesh::load_obj(const std::filesystem::path &path) {
 
   struct FaceData {
     vertex_index_type vertex;
     uint32_t texture, normal;
   };
 
-  std::ifstream in(std::string(path).c_str(), std::ios_base::in);
+  std::ifstream in(path, std::ios_base::in);
   if (!in)
     throw Exception("Error opening input file!");
   std::string line;
@@ -459,14 +463,10 @@ void Mesh::load_obj(std::string_view path) {
       std::array<float, 4> values{};
       sscanf(data.c_str(), "%f %f %f %f", &values[0], &values[1], &values[2], &values[3]);
       vertices.push_back(Vertex(values[0], values[1], values[2]));
-    } else if (prefix == "vt") {
-      // Texture data; do nothing
     } else if (prefix == "vn") {
       std::array<float, 3> values{};
       sscanf(data.c_str(), "%f %f %f", &values[0], &values[1], &values[2]);
       normals.push_back(Vertex(values[0], values[1], values[2]));
-    } else if (prefix == "vp") {
-      // Parameter space vertices; do nothing
     } else if (prefix == "f") {
       // Parse face information
       // Need to handle:
@@ -545,7 +545,10 @@ void Mesh::load_obj(std::string_view path) {
         object = data;
       else
         throw Exception("Multiple objects in input OBJ file");
-    } // Do nothing for all other prefixes
+    }
+    // Do nothing for all other prefixes, including:
+    // "vt": Texture data
+    // "vp": Parameter space vertices
   }
 
   if (!object.empty())
@@ -554,13 +557,13 @@ void Mesh::load_obj(std::string_view path) {
   try {
     verify_data();
   } catch (Exception &e) {
-    throw Exception(e, "Error verifying surface data from OBJ file \"" + path + "\"");
+    throw Exception(e, "Error verifying surface data from OBJ file \"" + path.string() + "\"");
   }
 }
 
-void Mesh::load_fs(std::string_view path) {
+void Mesh::load_fs(const std::filesystem::path &path) {
 
-  std::ifstream in(std::string(path).c_str(), std::ios_base::in | std::ios_base::binary);
+  std::ifstream in(path, std::ios_base::in | std::ios_base::binary);
   if (!in)
     throw Exception("Error opening input file!");
 
@@ -628,7 +631,7 @@ void Mesh::load_fs(std::string_view path) {
       try {
         load_triangles();
       } catch (Exception &e_twocomments) {
-        Exception e("Unable to read FreeSurfer file \"" + path + "\"");
+        Exception e("Unable to read FreeSurfer file \"" + path.string() + "\"");
         e.push_back("Error if file header is one-line comment:");
         e.push_back(e_onecomment);
         e.push_back("Error if file header is two-line comment:");
@@ -657,17 +660,17 @@ void Mesh::load_fs(std::string_view path) {
     }
 
   } else {
-    throw Exception("File " + Path::basename(path) + " is not a FreeSurfer surface file");
+    throw Exception("File " + path.string() + " is not a FreeSurfer surface file");
   }
 
   try {
     verify_data();
   } catch (Exception &e) {
-    throw Exception(e, "Error verifying surface data from FreeSurfer file \"" + path + "\"");
+    throw Exception(e, "Error verifying surface data from FreeSurfer file \"" + path.string() + "\"");
   }
 }
 
-void Mesh::save_vtk(std::string_view path, const bool binary) const {
+void Mesh::save_vtk(const std::filesystem::path &path, const bool binary) const {
   File::OFStream out(path, std::ios_base::out);
   out << "# vtk DataFile Version 1.0\n";
   out << "\n";
@@ -732,7 +735,7 @@ void Mesh::save_vtk(std::string_view path, const bool binary) const {
   }
 }
 
-void Mesh::save_stl(std::string_view path, const bool binary) const {
+void Mesh::save_stl(const std::filesystem::path &path, const bool binary) const {
   if (!quads.empty())
     throw Exception("STL binary file format does not support quads; only triangles");
 
@@ -781,7 +784,7 @@ void Mesh::save_stl(std::string_view path, const bool binary) const {
   }
 }
 
-void Mesh::save_obj(std::string_view path) const {
+void Mesh::save_obj(const std::filesystem::path &path) const {
   File::OFStream out(path);
   out << "# " << App::command_history_string << "\n";
   out << "o " << name << "\n";

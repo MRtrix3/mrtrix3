@@ -13,6 +13,12 @@
  *
  * For more details, see http://www.mrtrix.org/.
  */
+
+#include <QDebug>
+#include <algorithm>
+#include <qopenglwidget.h>
+#include <unordered_map>
+
 #include "algo/copy.h"
 #include "app.h"
 #include "dialog/dialog.h"
@@ -30,8 +36,6 @@
 #include "opengl/glutils.h"
 #include "opengl/lighting.h"
 #include "timer.h"
-#include <QDebug>
-#include <unordered_map>
 
 namespace MR::GUI::MRView {
 using namespace App;
@@ -156,9 +160,7 @@ void Window::GLArea::dropEvent(QDropEvent *event) {
     QList<QUrl> urlList = mimeData->urls();
     for (int i = 0; i < urlList.size() && i < 32; ++i) {
       try {
-        const auto &url = urlList.at(i);
-        const auto filePath = QtHelpers::url_to_std_string(url);
-        list.push_back(std::make_unique<MR::Header>(MR::Header::open(filePath)));
+        list.push_back(std::make_unique<MR::Header>(MR::Header::open(QtHelpers::url_to_fspath(urlList.at(i)))));
       } catch (Exception &e) {
         e.display();
       }
@@ -179,7 +181,7 @@ void Window::GLArea::wheelEvent(QWheelEvent *event) { main->wheelEventGL(event);
 bool Window::GLArea::event(QEvent *event) {
   if (event->type() == QEvent::Gesture)
     return main->gestureEventGL(static_cast<QGestureEvent *>(event));
-  return QWidget::event(event);
+  return QOpenGLWidget::event(event);
 }
 
 // CONF option: MRViewFocusModifierKey
@@ -591,7 +593,6 @@ Window::Window()
   mode_action_group->setExclusive(true);
   connect(mode_action_group, SIGNAL(triggered(QAction *)), this, SLOT(select_mouse_mode_slot(QAction *)));
 
-  std::string modifier;
   action = toolbar->addAction(QIcon(":/select_contrast.svg"), tr("Change focus / contrast"));
   action->setToolTip(qstr("Left-click: set focus\n"
                           "Right-click: change brightness/constrast\n\n"
@@ -728,8 +729,8 @@ void Window::parse_arguments() {
       const auto last_arg_pos = MR::App::argument.back().index();
 
       const auto is_non_standard_option = [](const MR::App::ParsedOption &option) {
-        return std::none_of(MR::App::__standard_options.begin(),
-                            MR::App::__standard_options.end(),
+        return std::none_of(MR::App::_standard_options.begin(),
+                            MR::App::_standard_options.end(),
                             [&option](const auto &standard_option) { return option.opt == &standard_option; });
       };
 
@@ -747,8 +748,9 @@ void Window::parse_arguments() {
       try {
         list.push_back(std::make_unique<MR::Header>(MR::Header::open(MR::App::argument[n])));
       } catch (CancelException &e) {
-        for (const auto &msg : e.description)
+        for (const auto &msg : e.description) {
           CONSOLE(msg);
+        }
       } catch (Exception &e) {
         e.display();
       }
@@ -787,14 +789,14 @@ Window::~Window() {
 void Window::sync_slot() { emit syncChanged(); }
 
 void Window::image_open_slot() {
-  std::vector<std::string> image_list = Dialog::File::get_images(this, "Select images to open", &current_folder);
-  if (image_list.empty())
+  auto load_paths = Dialog::File::input_imagepaths(this, "Select images to open", current_folder);
+  if (load_paths.empty())
     return;
-
+  current_folder = load_paths.last_directory;
   std::vector<std::unique_ptr<MR::Header>> list;
-  for (size_t n = 0; n < image_list.size(); ++n) {
+  for (const auto &path : load_paths.multi_selection) {
     try {
-      list.push_back(std::make_unique<MR::Header>(MR::Header::open(image_list[n])));
+      list.push_back(std::make_unique<MR::Header>(MR::Header::open(path)));
     } catch (Exception &E) {
       E.display();
     }
@@ -803,13 +805,13 @@ void Window::image_open_slot() {
 }
 
 void Window::image_import_DICOM_slot() {
-  std::string folder = Dialog::File::get_folder(this, "Select DICOM folder to import", &current_folder);
-  if (folder.empty())
+  auto load_paths = Dialog::File::input_dirpath(this, "Select DICOM folder to import", current_folder);
+  if (load_paths.empty())
     return;
-
+  current_folder = load_paths.last_directory;
   try {
     std::vector<std::unique_ptr<MR::Header>> list;
-    list.push_back(std::make_unique<MR::Header>(MR::Header::open(folder)));
+    list.push_back(std::make_unique<MR::Header>(MR::Header::open(load_paths.single_selection)));
     add_images(list);
   } catch (CancelException &E) {
     E.display(-1);
@@ -861,12 +863,12 @@ void Window::add_images(std::vector<std::unique_ptr<MR::Header>> &list) {
 }
 
 void Window::image_save_slot() {
-  std::string image_name = Dialog::File::get_save_image_name(this, "Select image destination", "", &current_folder);
-  if (image_name.empty())
+  auto save_paths = Dialog::File::output_imagepath(this, "Select image destination", "", current_folder);
+  if (save_paths.empty())
     return;
-
+  current_folder = save_paths.last_directory;
   try {
-    auto dest = MR::Image<cfloat>::create(image_name, image()->header());
+    auto dest = MR::Image<cfloat>::create(save_paths.single_selection, image()->header());
     MR::copy_with_progress(image()->image, dest);
   } catch (Exception &E) {
     E.display();
@@ -898,7 +900,7 @@ void Window::image_properties_slot() {
 
 void Window::select_mode_slot(QAction *action) {
   glarea->makeCurrent();
-  mode.reset(dynamic_cast<GUI::MRView::Mode::__Action__ *>(action)->create());
+  mode.reset(dynamic_cast<GUI::MRView::Mode::ActionWrapper *>(action)->create());
   mode->set_visible(!image_hide_action->isChecked());
   set_mode_features();
   emit modeChanged();
@@ -914,7 +916,7 @@ void Window::select_mouse_mode_slot(QAction *action) {
 }
 
 void Window::select_tool_slot(QAction *action) {
-  Tool::Dock *tool = dynamic_cast<Tool::__Action__ *>(action)->dock;
+  Tool::Dock *tool = dynamic_cast<Tool::ActionWrapper *>(action)->dock;
   if (!tool) {
     create_tool(action, true);
     return;
@@ -930,16 +932,16 @@ void Window::select_tool_slot(QAction *action) {
 }
 
 void Window::create_tool(QAction *action, bool show) {
-  if (dynamic_cast<Tool::__Action__ *>(action)->dock)
+  if (dynamic_cast<Tool::ActionWrapper *>(action)->dock != nullptr)
     return;
 
-  Tool::Dock *tool = dynamic_cast<Tool::__Action__ *>(action)->create(tools_floating);
+  Tool::Dock *tool = dynamic_cast<Tool::ActionWrapper *>(action)->create(tools_floating);
   connect(tool, SIGNAL(visibilityChanged(bool)), action, SLOT(visibility_slot(bool)));
 
   if (!tools_floating) {
 
     for (int i = 0; i < tool_group->actions().size(); ++i) {
-      Tool::Dock *other_tool = dynamic_cast<Tool::__Action__ *>(tool_group->actions()[i])->dock;
+      Tool::Dock *other_tool = dynamic_cast<Tool::ActionWrapper *>(tool_group->actions()[i])->dock;
       if (other_tool && other_tool != tool) {
         QList<QDockWidget *> list = QMainWindow::tabifiedDockWidgets(other_tool);
         if (!list.empty())
@@ -1047,7 +1049,7 @@ void Window::reset_view_slot() {
     mode->reset_event();
     QList<QAction *> tools = tool_group->actions();
     for (QAction *action : tools) {
-      Tool::Dock *dock = dynamic_cast<Tool::__Action__ *>(action)->dock;
+      Tool::Dock *dock = dynamic_cast<Tool::ActionWrapper *>(action)->dock;
       if (dock)
         dock->tool->reset_event();
     }
@@ -1427,7 +1429,7 @@ void Window::initGL() {
   // CONF The default image background colour in the main MRView window.
   background_colour = File::Config::get_RGB("MRViewImageBackgroundColour", {0.0F, 0.0F, 0.0F});
   gl::ClearColor(background_colour[0], background_colour[1], background_colour[2], 1.0);
-  mode.reset(dynamic_cast<Mode::__Action__ *>(mode_group->actions()[0])->create());
+  mode.reset(dynamic_cast<Mode::ActionWrapper *>(mode_group->actions()[0])->create());
   set_mode_features();
 
   GL::assert_context_is_current();
@@ -1652,7 +1654,8 @@ void Window::process_commandline_option() {
   stub = lowercase(#classname ".");                                                                                    \
   if (stub.compare(0, stub.size(), std::string(opt.opt->id), 0, stub.size()) == 0) {                                   \
     create_tool(tool_group->actions()[tool_id], false);                                                                \
-    if (dynamic_cast<Tool::__Action__ *>(tool_group->actions()[tool_id])->dock->tool->process_commandline_option(opt)) \
+    if (dynamic_cast<Tool::ActionWrapper *>(tool_group->actions()[tool_id])                                            \
+            ->dock->tool->process_commandline_option(opt))                                                             \
       return;                                                                                                          \
   }                                                                                                                    \
   ++tool_id;

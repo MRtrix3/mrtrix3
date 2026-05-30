@@ -28,10 +28,11 @@
 namespace MR::Formats {
 
 std::unique_ptr<ImageIO::Base> PNG::read(Header &H) const {
-  if (!(Path::has_suffix(H.name(), ".png") || Path::has_suffix(H.name(), ".PNG")))
+  if (!Path::has_suffix(H.path(), {".png", ".PNG"}))
     return std::unique_ptr<ImageIO::Base>();
 
-  File::PNG::Reader png(H.name());
+  const std::filesystem::path &hpath = static_cast<const Header &>(H).path();
+  File::PNG::Reader png(hpath);
 
   switch (png.get_colortype()) {
   case PNG_COLOR_TYPE_GRAY:
@@ -51,7 +52,8 @@ std::unique_ptr<ImageIO::Base> PNG::read(Header &H) const {
     H.size(3) = 4;
     break;
   default:
-    throw Exception("Unsupported color type in PNG image \"" + H.name() + "\" (" + str(png.get_colortype()) + ")");
+    throw Exception("Unsupported color type in PNG image \"" + H.path().string() + "\"" + //
+                    " (" + str(png.get_colortype()) + ")");                               //
   }
   if (png.has_transparency()) {
     if (H.ndim() == 3) {
@@ -90,11 +92,9 @@ std::unique_ptr<ImageIO::Base> PNG::read(Header &H) const {
     }
     break;
   case 2:
-    H.datatype() = DataType::UInt8;
-    break;
+    [[fallthrough]];
   case 4:
-    H.datatype() = DataType::UInt8;
-    break;
+    [[fallthrough]];
   case 8:
     H.datatype() = DataType::UInt8;
     break;
@@ -102,25 +102,26 @@ std::unique_ptr<ImageIO::Base> PNG::read(Header &H) const {
     H.datatype() = DataType::UInt16BE;
     break;
   default:
-    throw Exception("Unexpected bit depth (" + str(png.get_bitdepth()) + ") in PNG image \"" + H.name() + "\"");
+    throw Exception("Unexpected bit depth (" + str(png.get_bitdepth()) + ")" + //
+                    " in PNG image \"" + H.path().string() + "\"");            //
   }
 
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::PNG(H));
-  io_handler->files.push_back(File::Entry(H.name(), 0));
+  io_handler->files.push_back(File::Entry(hpath, 0));
 
   return io_handler;
 }
 
 bool PNG::check(Header &H, size_t num_axes) const {
-  if (!(Path::has_suffix(H.name(), ".png") || Path::has_suffix(H.name(), ".PNG")))
+  if (!Path::has_suffix(H.path(), {".png", ".PNG"}))
     return false;
 
   if (H.datatype().is_complex())
     throw Exception("PNG format does not support complex data");
 
   if (H.ndim() == 4 && H.size(3) > 4)
-    throw Exception("A 4D image written to PNG must have between one and four volumes (requested: " + str(H.size(3)) +
-                    ")");
+    throw Exception(std::string("A 4D image written to PNG must have between one and four volumes") + //
+                    " (requested: " + str(H.size(3)) + ")");                                          //
 
   // After looping over axes via square-bracket notation,
   //   there needs to be at least two axes with size greater than one
@@ -223,7 +224,7 @@ bool PNG::check(Header &H, size_t num_axes) const {
 
 std::unique_ptr<ImageIO::Base> PNG::create(Header &H) const {
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::PNG(H));
-  io_handler->files.push_back(File::Entry(H.name(), 0));
+  io_handler->files.push_back(File::Entry(static_cast<const Header &>(H).path(), 0));
   return io_handler;
 }
 

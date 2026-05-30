@@ -27,6 +27,16 @@ else()
     endif()
 endif()
 
+# Wrapper that re-exposes Eigen's headers via -isystem so that the high
+# warning level (and -Werror) applied to MRtrix3 sources does not flag
+# diagnostics originating from within Eigen headers. Consumers should link
+# against mrtrix::eigen rather than Eigen3::Eigen directly.
+add_library(mrtrix-eigen INTERFACE)
+add_library(mrtrix::eigen ALIAS mrtrix-eigen)
+get_target_property(MRTRIX_EIGEN_INCLUDE_DIRS Eigen3::Eigen INTERFACE_INCLUDE_DIRECTORIES)
+target_include_directories(mrtrix-eigen SYSTEM INTERFACE ${MRTRIX_EIGEN_INCLUDE_DIRS})
+target_link_libraries(mrtrix-eigen INTERFACE Eigen3::Eigen)
+
 
 # Json for Modern C++
 if(MRTRIX_USE_SYSTEM_JSON)
@@ -240,13 +250,13 @@ if(MRTRIX_USE_SYSTEM_TCB_SPAN)
     target_include_directories(tcb_span INTERFACE ${TCB_SPAN_INCLUDE_DIR})
     add_library(tcb::span ALIAS tcb_span)
 else()
-    message(STATUS "Downloading tcb::span...")
-
-    FetchContent_Populate(
+    FetchContent_Declare(
         tcb_span
         GIT_REPOSITORY https://github.com/tcbrindle/span.git
         GIT_TAG        836dc6a0efd9849cb194e88e4aa2387436bb079b
+        SOURCE_SUBDIR  non_existent_dir
     )
+    FetchContent_MakeAvailable(tcb_span)
 
     add_library(tcb_span INTERFACE)
     target_include_directories(tcb_span INTERFACE ${tcb_span_SOURCE_DIR}/include)

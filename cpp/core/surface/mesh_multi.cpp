@@ -17,21 +17,22 @@
 #include "surface/mesh_multi.h"
 
 #include <array>
+#include <filesystem>
 #include <ios>
 #include <iostream>
 
 namespace MR::Surface {
 
-void MeshMulti::load(std::string_view path) {
+void MeshMulti::load(const std::filesystem::path &path) {
 
   struct FaceData {
     uint32_t vertex, texture, normal;
   };
 
-  if (!Path::has_suffix(path, "obj") && !Path::has_suffix(path, "OBJ"))
+  if (!Path::has_suffix(std::filesystem::path(path), {".obj", ".OBJ"}))
     throw Exception("Multiple meshes only supported by OBJ file format");
 
-  std::ifstream in(std::string(path).c_str(), std::ios_base::in);
+  std::ifstream in(path, std::ios_base::in);
   if (!in)
     throw Exception("Error opening input file!");
   std::string line;
@@ -58,14 +59,6 @@ void MeshMulti::load(std::string_view path) {
       std::array<float, 4> values{};
       sscanf(data.c_str(), "%f %f %f %f", &values[0], &values[1], &values[2], &values[3]);
       vertices.push_back(Vertex(values[0], values[1], values[2]));
-    } else if (prefix == "vt") {
-    } else if (prefix == "vn") {
-      // if (index < 0)
-      //   throw Exception ("Malformed OBJ file; vertex normal outside object (line " + str(counter) + ")");
-      // float values[3];
-      // sscanf (data.c_str(), "%f %f %f", &values[0], &values[1], &values[2]);
-      // normals.push_back (Vertex (values[0], values[1], values[2]));
-    } else if (prefix == "vp") {
     } else if (prefix == "f") {
       if (index < 0)
         throw Exception("Malformed OBJ file: face outside object (line " + str(counter) + ")");
@@ -121,7 +114,6 @@ void MeshMulti::load(std::string_view path) {
         std::vector<uint32_t> temp{face_data[0].vertex, face_data[1].vertex, face_data[2].vertex, face_data[3].vertex};
         quads.push_back(Quad(temp));
       }
-    } else if (prefix == "g") {
     } else if (prefix == "o") {
       // This is where this function differs from the standard OBJ load
       // Allow multiple objects; in fact explicitly expect them
@@ -131,9 +123,13 @@ void MeshMulti::load(std::string_view path) {
         temp.load(std::move(vertices), std::move(triangles), std::move(quads));
         temp.set_name(!object.empty() ? object : str(index - 1));
         push_back(temp);
+        vertices.clear();
+        triangles.clear();
+        quads.clear();
       }
       object = data;
     }
+    // Unused prefixes: "vt", "vn", "vp", "g"
   }
 
   if (!vertices.empty()) {
@@ -145,8 +141,8 @@ void MeshMulti::load(std::string_view path) {
   }
 }
 
-void MeshMulti::save(std::string_view path) const {
-  if (!Path::has_suffix(path, {"obj", "OBJ"}))
+void MeshMulti::save(const std::filesystem::path &path) const {
+  if (!Path::has_suffix(path, {".obj", ".OBJ"}))
     throw Exception("Multiple meshes only supported by OBJ file format");
   File::OFStream out(path);
   size_t offset = 1;

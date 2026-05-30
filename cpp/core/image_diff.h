@@ -127,25 +127,17 @@ inline void check_keyvals(const HeaderType1 &in1, const HeaderType2 &in2) {
     while (it2 != in2.keyval().end() && reserved.find(it2->first) != reserved.end())
       ++it2;
 
-    if (it1 == in1.keyval().end() || it2 == in2.keyval().end())
+    if (it1 == in1.keyval().end() && it2 == in2.keyval().end())
       break;
 
-    if (it1 == in1.keyval().end()) {
-      errors.push_back("Key \"" + it2->first + "\" in image \"" + in2.name() + "\" not present in \"" + in1.name() +
-                       "\"");
+    if (it1 == in1.keyval().end() || (it2 != in2.keyval().end() && it1->first > it2->first)) {
+      errors.push_back("Key \"" + it2->first + "\" in image \"" + in2.name() + "\"" + //
+                       " not present in \"" + in1.name() + "\"");                     //
       ++it2;
-    } else if (it2 == in2.keyval().end()) {
-      errors.push_back("Key \"" + it1->first + "\" in image \"" + in1.name() + "\" not present in \"" + in2.name() +
-                       "\"");
+    } else if (it2 == in2.keyval().end() || (it1 != in1.keyval().end() && it1->first < it2->first)) {
+      errors.push_back("Key \"" + it1->first + "\" in image \"" + in1.name() + "\"" + //
+                       " not present in \"" + in2.name() + "\"");                     //
       ++it1;
-    } else if (it1->first < it2->first) {
-      errors.push_back("Key \"" + it1->first + "\" in image \"" + in1.name() + "\" not present in \"" + in2.name() +
-                       "\"");
-      ++it1;
-    } else if (it1->first > it2->first) {
-      errors.push_back("Key \"" + it2->first + "\" in image \"" + in2.name() + "\" not present in \"" + in1.name() +
-                       "\"");
-      ++it2;
     } else {
       if (it1->second != it2->second)
         errors.push_back("Key \"" + it1->first + "\" has different values between images");

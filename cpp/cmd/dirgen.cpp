@@ -14,6 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <filesystem>
+
 #include "command.h"
 #include "dwi/directions/file.h"
 #include "math/check_gradient.h"

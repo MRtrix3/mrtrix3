@@ -16,10 +16,12 @@
 
 #include "mrview/tool/connectome/file_data_vector.h"
 
+#include <filesystem>
 #include <limits>
+#include <utility>
 
 #include "file/matrix.h"
-#include "file/path.h"
+#include "gui.h"
 
 namespace MR::GUI::MRView::Tool {
 
@@ -29,15 +31,15 @@ FileDataVector::FileDataVector(const FileDataVector &V)
     : base_t(V), name(V.name), min(V.min), mean(V.mean), max(V.max) {}
 
 FileDataVector::FileDataVector(FileDataVector &&V)
-    : base_t(std::move(V)), name(V.name), min(V.min), mean(V.mean), max(V.max) {
+    : base_t(std::move(static_cast<base_t &&>(V))), name(std::move(V.name)), min(V.min), mean(V.mean), max(V.max) {
   V.name.clear();
   V.min = V.mean = V.max = NaNF;
 }
 
 FileDataVector::FileDataVector(const size_t nelements) : base_t(nelements), min(NaNF), mean(NaNF), max(NaNF) {}
 
-FileDataVector::FileDataVector(std::string_view file)
-    : base_t(), name(qstr(Path::basename(file))), min(NaNF), mean(NaNF), max(NaNF) {
+FileDataVector::FileDataVector(const std::filesystem::path &file)
+    : base_t(), name(qstr(file.filename().string())), min(NaNF), mean(NaNF), max(NaNF) {
   base_t temp = File::Matrix::load_vector<float>(file);
   base_t::operator=(temp);
   calc_stats();
@@ -52,7 +54,7 @@ FileDataVector &FileDataVector::operator=(const FileDataVector &that) {
   return *this;
 }
 FileDataVector &FileDataVector::operator=(FileDataVector &&that) {
-  base_t::operator=(std::move(that));
+  base_t::operator=(std::move(static_cast<base_t &&>(that)));
   name = that.name;
   min = that.min;
   mean = that.mean;
@@ -64,10 +66,10 @@ FileDataVector &FileDataVector::operator=(FileDataVector &&that) {
   return *this;
 }
 
-FileDataVector &FileDataVector::load(std::string_view filename) {
-  base_t temp = File::Matrix::load_vector<float>(filename);
+FileDataVector &FileDataVector::load(const std::filesystem::path &filePath) {
+  base_t temp = File::Matrix::load_vector<float>(filePath);
   base_t::operator=(temp);
-  name = qstr(Path::basename(filename));
+  name = qstr(filePath.filename().string());
   calc_stats();
   return *this;
 }

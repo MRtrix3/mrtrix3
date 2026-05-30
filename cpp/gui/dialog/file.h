@@ -22,36 +22,42 @@
 namespace MR::GUI::Dialog::File {
 
 extern const std::string image_filter_string;
-void check_overwrite_files_func(std::string_view name);
+void check_overwrite_files_func(const std::filesystem::path &name);
 
-std::string get_folder(QWidget *parent, std::string_view caption, std::string *folder = nullptr);
-std::string get_file(QWidget *parent,
-                     std::string_view caption,
-                     std::string_view filter = std::string(),
-                     std::string *folder = nullptr);
-std::vector<std::string> get_files(QWidget *parent,
-                                   std::string_view caption,
-                                   std::string_view filter = std::string(),
-                                   std::string *folder = nullptr);
-std::string get_save_name(QWidget *parent,
-                          std::string_view caption,
-                          std::string_view suggested_name = std::string(),
-                          std::string_view filter = std::string(),
-                          std::string *folder = nullptr);
+class FileDialogReturn {
+public:
+  std::filesystem::path single_selection;
+  std::vector<std::filesystem::path> multi_selection;
+  std::filesystem::path last_directory;
+  bool empty() const { return single_selection.empty() && multi_selection.empty(); }
+};
 
-inline std::string get_image(QWidget *parent, std::string_view caption, std::string *folder = nullptr) {
-  return get_file(parent, caption, image_filter_string, folder);
-}
-
-inline std::vector<std::string> get_images(QWidget *parent, std::string_view caption, std::string *folder = nullptr) {
-  return get_files(parent, caption, image_filter_string, folder);
-}
-
-inline std::string get_save_image_name(QWidget *parent,
+const FileDialogReturn input_dirpath(QWidget *parent,
+                                     std::string_view caption,
+                                     std::optional<std::filesystem::path> start_directory = std::nullopt);
+const FileDialogReturn input_filepath(QWidget *parent,
+                                      std::string_view caption,
+                                      std::string_view filter = "",
+                                      std::optional<std::filesystem::path> start_directory = std::nullopt);
+const FileDialogReturn input_filepaths(QWidget *parent,
                                        std::string_view caption,
-                                       std::string_view suggested_name = std::string(),
-                                       std::string *folder = nullptr) {
-  return get_save_name(parent, caption, suggested_name, image_filter_string, folder);
-}
+                                       std::string_view filter = std::string(),
+                                       std::optional<std::filesystem::path> start_directory = std::nullopt);
+const FileDialogReturn output_filepath(QWidget *parent,
+                                       std::string_view caption,
+                                       std::optional<std::filesystem::path> suggested_name = std::nullopt,
+                                       std::string_view filter = "",
+                                       std::optional<std::filesystem::path> start_directory = std::nullopt);
+
+const FileDialogReturn input_imagepath(QWidget *parent,
+                                       std::string_view caption,
+                                       std::optional<std::filesystem::path> start_directory = std::nullopt);
+const FileDialogReturn input_imagepaths(QWidget *parent,
+                                        std::string_view caption,
+                                        std::optional<std::filesystem::path> start_directory = std::nullopt);
+const FileDialogReturn output_imagepath(QWidget *parent,
+                                        std::string_view caption,
+                                        std::optional<std::filesystem::path> suggested_name = std::nullopt,
+                                        std::optional<std::filesystem::path> start_directory = std::nullopt);
 
 } // namespace MR::GUI::Dialog::File

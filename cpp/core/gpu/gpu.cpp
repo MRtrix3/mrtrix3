@@ -17,6 +17,7 @@
 #include "gpu.h"
 #include "adapter/extract.h"
 #include "algo/threaded_copy.h"
+#include "env.h"
 #include "exception.h"
 #include "image_helpers.h"
 #include "match_variant.h"
@@ -196,13 +197,12 @@ std::future<Slang::ComPtr<slang::IGlobalSession>> request_slang_global_session_a
 }
 
 std::optional<uint32_t> parse_gpu_adapter_index_env() {
-  // NOLINTNEXTLINE(concurrency-mt-unsafe)
-  const char *gpu_id_env = std::getenv("MRTRIX_GPU_ID"); // check_syntax off
-  if (gpu_id_env == nullptr) {
+  const std::optional<std::string> gpu_id_env = MR::get_env("MRTRIX_GPU_ID");
+  if (!gpu_id_env.has_value()) {
     return std::nullopt;
   }
 
-  const std::string_view gpu_id_string = gpu_id_env;
+  const std::string_view gpu_id_string = *gpu_id_env;
   uint32_t gpu_id = 0;
   const auto [parsed_to, parse_error] =
       std::from_chars(gpu_id_string.data(), gpu_id_string.data() + gpu_id_string.size(), gpu_id);
@@ -298,9 +298,8 @@ ComputeContext::ComputeContext() : m_slang_session_info(std::make_unique<SlangSe
 
     // On MacOS, MRTRIX_GPU_DEBUG_TRACE can be enabled together with METAL_CAPTURE_ENABLED=1 and DAWN_TRACE_FILE_BASE to
     // produce a GPU trace that can be opened in Xcode for profile and debugging.
-    // NOLINTNEXTLINE(concurrency-mt-unsafe)
-    const char *dawn_gpu_debug_env = std::getenv("MRTRIX_GPU_DEBUG_TRACE"); // check_syntax off
-    if (dawn_gpu_debug_env != nullptr && std::string(dawn_gpu_debug_env) == "1") {
+    const std::optional<std::string> dawn_gpu_debug_env = MR::get_env("MRTRIX_GPU_DEBUG_TRACE");
+    if (dawn_gpu_debug_env.has_value() && *dawn_gpu_debug_env == "1") {
       dawn_toggles.emplace_back("dump_shaders");
       dawn_toggles.emplace_back("disable_symbol_renaming");
     }
@@ -410,10 +409,9 @@ ComputeContext::ComputeContext() : m_slang_session_info(std::make_unique<SlangSe
   const slang::TargetDesc target_desc{.format = SLANG_WGSL};
 
   const auto executable_path = MR::Platform::get_executable_path();
-  const std::string executable_dir_string = (std::filesystem::path(executable_path).parent_path() / "shaders").string();
+  const std::string executable_dir_string = (executable_path.parent_path() / "shaders").string();
   // TODO: this is a hack to find the modules in shader registration code. We'll find a better way to do this later.
-  const std::string registration_dir_string =
-      (std::filesystem::path(executable_path).parent_path() / "shaders/registration").string();
+  const std::string registration_dir_string = (executable_path.parent_path() / "shaders/registration").string();
   const char *executable_dir_cstr = executable_dir_string.c_str();                         // check_syntax off
   const char *registration_dir_cstr = registration_dir_string.c_str();                     // check_syntax off
   std::array<const char *, 2> search_paths = {executable_dir_cstr, registration_dir_cstr}; // check_syntax off
@@ -700,7 +698,7 @@ Texture ComputeContext::new_texture_from_host_image(const MR::Image<float> &imag
   };
   const auto image_size = MR::voxel_count(image);
   // We need to pack the image data into a contiguous buffer in the layout expected by the GPU texture.
-  // TODO: we cannot rely on Image::with_direct_io() to do this packing for us
+  // TODO: we cannot rely on the Image factories' DirectIO request to do this packing for us
   // See discussion at https://github.com/MRtrix3/mrtrix3/pull/3108
   std::vector<float> contiguous_host_data(image_size, 0.0F);
   auto source = image;

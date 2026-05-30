@@ -32,7 +32,7 @@ constexpr ssize_t default_batchsize = 128;
 namespace {
 
 // to get multi/single job/functor seamlessly:
-template <class X> class __job {
+template <class X> class _job {
 public:
   using type = typename std::remove_reference<X>::type;
   using member_type = typename std::remove_reference<X>::type &;
@@ -41,14 +41,14 @@ public:
   template <class SingleFunctor> static SingleFunctor &get(X & /*f*/, SingleFunctor &functor) { return functor; }
 };
 
-template <class X> class __job<__Multi<X>> {
+template <class X> class _job<Multi<X>> {
 public:
   using type = typename std::remove_reference<X>::type;
   using member_type = typename std::remove_reference<X>::type;
-  static X &functor(__Multi<X> &job) { return job.functor; }
+  static X &functor(Multi<X> &job) { return job.functor; }
 
-  template <class SingleFunctor> static __Multi<SingleFunctor> get(__Multi<X> &f, SingleFunctor &functor) {
-    return __Multi<SingleFunctor>(functor, f.num);
+  template <class SingleFunctor> static Multi<SingleFunctor> get(Multi<X> &f, SingleFunctor &functor) {
+    return Multi<SingleFunctor>(functor, f.num);
   }
 };
 
@@ -573,17 +573,17 @@ namespace {
 /********************************************************************
  * convenience Functor classes for use in Thread::run_queue()
  ********************************************************************/
-template <class Item> struct __Batch {
-  __Batch(size_t number) : num(number) {}
+template <class Item> struct Batch {
+  Batch(size_t number) : num(number) {}
   size_t num;
 };
 
-template <class Item> struct __batch_size {
-  __batch_size(const Item &) {}
+template <class Item> struct _batch_size {
+  _batch_size(const Item & /*unused*/) {}
   operator size_t() const { return 0; }
 };
-template <class Item> struct __batch_size<__Batch<Item>> {
-  __batch_size(const __Batch<Item> &item) : n(item.num) {}
+template <class Item> struct _batch_size<Batch<Item>> {
+  _batch_size(const Batch<Item> &item) : n(item.num) {}
   operator size_t() const { return n; }
   const size_t n;
 };
@@ -600,7 +600,7 @@ template <class Item> struct Type {
   using write_item = typename writer::Item;
 };
 
-template <class Item> struct Type<__Batch<Item>> {
+template <class Item> struct Type<Batch<Item>> {
   using item = Item;
   using queue = Queue<std::vector<Item>>;
   using reader = typename queue::Reader;
@@ -616,8 +616,8 @@ template <class Item> struct FetchItem {
   typename Type<Item>::read_item in;
 };
 
-template <class Item> struct FetchItem<__Batch<Item>> {
-  FetchItem(typename Type<__Batch<Item>>::reader &in) : in(in.placeholder()), n(0) {}
+template <class Item> struct FetchItem<Batch<Item>> {
+  FetchItem(typename Type<Batch<Item>>::reader &in) : in(in.placeholder()), n(0) {}
   bool read() {
     if (!in)
       return in.read();
@@ -630,7 +630,7 @@ template <class Item> struct FetchItem<__Batch<Item>> {
     return true;
   }
   Item &value() { return (*in)[n]; }
-  typename Type<__Batch<Item>>::read_item in;
+  typename Type<Batch<Item>>::read_item in;
   size_t n;
 };
 
@@ -642,8 +642,8 @@ template <class Item> struct StoreItem {
   typename Type<Item>::write_item out;
 };
 
-template <class Item> struct StoreItem<__Batch<Item>> {
-  StoreItem(size_t batch_size, typename Type<__Batch<Item>>::writer &item)
+template <class Item> struct StoreItem<Batch<Item>> {
+  StoreItem(size_t batch_size, typename Type<Batch<Item>>::writer &item)
       : out(item.placeholder()), batch_size(batch_size), n(0) {
     out->resize(batch_size);
   }
@@ -664,23 +664,23 @@ template <class Item> struct StoreItem<__Batch<Item>> {
       out.write();
     }
   }
-  typename Type<__Batch<Item>>::write_item out;
+  typename Type<Batch<Item>>::write_item out;
   const size_t batch_size;
   size_t n;
 };
 
-template <class Item, class Functor> struct __Source {
+template <class Item, class Functor> struct SourceWrapper {
   using item_t = typename Type<Item>::item;
   using queue_t = typename Type<Item>::queue;
   using writer_t = typename Type<Item>::writer;
-  using functor_t = typename __job<Functor>::member_type;
+  using functor_t = typename _job<Functor>::member_type;
 
   writer_t writer;
   functor_t func;
   size_t batch_size;
 
-  __Source(queue_t &queue, Functor &functor, const Item &item)
-      : writer(queue), func(__job<Functor>::functor(functor)), batch_size(__batch_size<Item>(item)) {}
+  SourceWrapper(queue_t &queue, Functor &functor, const Item &item)
+      : writer(queue), func(_job<Functor>::functor(functor)), batch_size(_batch_size<Item>(item)) {}
 
   void execute() {
     auto out = StoreItem<Item>(batch_size, writer);
@@ -692,25 +692,25 @@ template <class Item, class Functor> struct __Source {
   }
 };
 
-template <class Item1, class Functor, class Item2> struct __Pipe {
+template <class Item1, class Functor, class Item2> struct PipeWrapper {
   using item1_t = typename Type<Item1>::item;
   using item2_t = typename Type<Item2>::item;
   using queue1_t = typename Type<Item1>::queue;
   using queue2_t = typename Type<Item2>::queue;
   using reader_t = typename Type<Item1>::reader;
   using writer_t = typename Type<Item2>::writer;
-  using functor_t = typename __job<Functor>::member_type;
+  using functor_t = typename _job<Functor>::member_type;
 
   reader_t reader;
   writer_t writer;
   functor_t func;
   const size_t batch_size;
 
-  __Pipe(queue1_t &queue_in, Functor &functor, queue2_t &queue_out, const Item2 &item2)
+  PipeWrapper(queue1_t &queue_in, Functor &functor, queue2_t &queue_out, const Item2 &item2)
       : reader(queue_in),
         writer(queue_out),
-        func(__job<Functor>::functor(functor)),
-        batch_size(__batch_size<Item2>(item2)) {}
+        func(_job<Functor>::functor(functor)),
+        batch_size(_batch_size<Item2>(item2)) {}
 
   void execute() {
     auto in = FetchItem<Item1>(reader);
@@ -725,16 +725,16 @@ template <class Item1, class Functor, class Item2> struct __Pipe {
   }
 };
 
-template <class Item, class Functor> struct __Sink {
+template <class Item, class Functor> struct SinkWrapper {
   using item_t = typename Type<Item>::item;
   using queue_t = typename Type<Item>::queue;
   using reader_t = typename Type<Item>::reader;
-  using functor_t = typename __job<Functor>::member_type;
+  using functor_t = typename _job<Functor>::member_type;
 
   reader_t reader;
   functor_t func;
 
-  __Sink(queue_t &queue, Functor &functor) : reader(queue), func(__job<Functor>::functor(functor)) {}
+  SinkWrapper(queue_t &queue, Functor &functor) : reader(queue), func(_job<Functor>::functor(functor)) {}
 
   void execute() {
     auto in = FetchItem<Item>(reader);
@@ -754,8 +754,8 @@ template <class Item, class Functor> struct __Sink {
  * that the items \a object be processed in batches of \a number items
  * (defaults to default_batchsize).
  * \sa Thread::run_queue() */
-template <class Item> inline __Batch<Item> batch(const Item &, size_t number = default_batchsize) {
-  return __Batch<Item>(number);
+template <class Item> inline Batch<Item> batch(const Item & /*unused*/, size_t number = default_batchsize) {
+  return Batch<Item>(number);
 }
 
 //! convenience function to set up and run a 2-stage multi-threaded pipeline.
@@ -943,18 +943,18 @@ template <class Source, class Item, class Sink>
 inline void run_queue(Source &&source, const Item &item, Sink &&sink, size_t capacity = default_queue_capacity) {
   if (threads_to_execute() == 0) {
     typename Type<Item>::item item;
-    while (__job<Source>::functor(source)(item))
-      if (!__job<Sink>::functor(sink)(item))
+    while (_job<Source>::functor(source)(item))
+      if (!_job<Sink>::functor(sink)(item))
         return;
     return;
   }
 
   typename Type<Item>::queue queue("source->sink", capacity);
-  __Source<Item, Source> source_functor(queue, source, item);
-  __Sink<Item, Sink> sink_functor(queue, sink);
+  SourceWrapper<Item, Source> source_functor(queue, source, item);
+  SinkWrapper<Item, Sink> sink_functor(queue, sink);
 
-  auto t1 = run(__job<Source>::get(source, source_functor), "source");
-  auto t2 = run(__job<Sink>::get(sink, sink_functor), "sink");
+  auto t1 = run(_job<Source>::get(source, source_functor), "source");
+  auto t2 = run(_job<Sink>::get(sink, sink_functor), "sink");
 
   t1.wait();
   t2.wait();
@@ -1016,9 +1016,9 @@ inline void run_queue(Source &&source,
   if (threads_to_execute() == 0) {
     typename Type<Item1>::item item1;
     typename Type<Item2>::item item2;
-    while (__job<Source>::functor(source)(item1)) {
-      if (__job<Pipe>::functor(pipe)(item1, item2))
-        if (!__job<Sink>::functor(sink)(item2))
+    while (_job<Source>::functor(source)(item1)) {
+      if (_job<Pipe>::functor(pipe)(item1, item2))
+        if (!_job<Sink>::functor(sink)(item2))
           return;
     }
     return;
@@ -1027,13 +1027,13 @@ inline void run_queue(Source &&source,
   typename Type<Item1>::queue queue1("source->pipe", capacity);
   typename Type<Item2>::queue queue2("pipe->sink", capacity);
 
-  __Source<Item1, Source> source_functor(queue1, source, item1);
-  __Pipe<Item1, Pipe, Item2> pipe_functor(queue1, pipe, queue2, item2);
-  __Sink<Item2, Sink> sink_functor(queue2, sink);
+  SourceWrapper<Item1, Source> source_functor(queue1, source, item1);
+  PipeWrapper<Item1, Pipe, Item2> pipe_functor(queue1, pipe, queue2, item2);
+  SinkWrapper<Item2, Sink> sink_functor(queue2, sink);
 
-  auto t1 = run(__job<Source>::get(source, source_functor), "source");
-  auto t2 = run(__job<Pipe>::get(pipe, pipe_functor), "pipe");
-  auto t3 = run(__job<Sink>::get(sink, sink_functor), "sink");
+  auto t1 = run(_job<Source>::get(source, source_functor), "source");
+  auto t2 = run(_job<Pipe>::get(pipe, pipe_functor), "pipe");
+  auto t3 = run(_job<Sink>::get(sink, sink_functor), "sink");
 
   t1.wait();
   t2.wait();
@@ -1058,10 +1058,10 @@ inline void run_queue(Source &&source,
     typename Type<Item1>::item item1;
     typename Type<Item2>::item item2;
     typename Type<Item3>::item item3;
-    while (__job<Source>::functor(source)(item1)) {
-      if (__job<Pipe1>::functor(pipe1)(item1, item2))
-        if (__job<Pipe2>::functor(pipe2)(item2, item3))
-          if (!__job<Sink>::functor(sink)(item3))
+    while (_job<Source>::functor(source)(item1)) {
+      if (_job<Pipe1>::functor(pipe1)(item1, item2))
+        if (_job<Pipe2>::functor(pipe2)(item2, item3))
+          if (!_job<Sink>::functor(sink)(item3))
             return;
     }
     return;
@@ -1071,15 +1071,15 @@ inline void run_queue(Source &&source,
   typename Type<Item2>::queue queue2("pipe->pipe", capacity);
   typename Type<Item3>::queue queue3("pipe->sink", capacity);
 
-  __Source<Item1, Source> source_functor(queue1, source, item1);
-  __Pipe<Item1, Pipe1, Item2> pipe1_functor(queue1, pipe1, queue2, item2);
-  __Pipe<Item2, Pipe2, Item3> pipe2_functor(queue2, pipe2, queue3, item3);
-  __Sink<Item3, Sink> sink_functor(queue3, sink);
+  SourceWrapper<Item1, Source> source_functor(queue1, source, item1);
+  PipeWrapper<Item1, Pipe1, Item2> pipe1_functor(queue1, pipe1, queue2, item2);
+  PipeWrapper<Item2, Pipe2, Item3> pipe2_functor(queue2, pipe2, queue3, item3);
+  SinkWrapper<Item3, Sink> sink_functor(queue3, sink);
 
-  auto t1 = run(__job<Source>::get(source, source_functor), "source");
-  auto t2 = run(__job<Pipe1>::get(pipe1, pipe1_functor), "pipe1");
-  auto t3 = run(__job<Pipe2>::get(pipe2, pipe2_functor), "pipe2");
-  auto t4 = run(__job<Sink>::get(sink, sink_functor), "sink");
+  auto t1 = run(_job<Source>::get(source, source_functor), "source");
+  auto t2 = run(_job<Pipe1>::get(pipe1, pipe1_functor), "pipe1");
+  auto t3 = run(_job<Pipe2>::get(pipe2, pipe2_functor), "pipe2");
+  auto t4 = run(_job<Sink>::get(sink, sink_functor), "sink");
 
   t1.wait();
   t2.wait();

@@ -17,6 +17,7 @@
 #pragma once
 
 #include "surface/mesh.h"
+#include <filesystem>
 
 namespace MR::Surface {
 
@@ -25,16 +26,16 @@ class Scalar : public Eigen::Array<default_type, Eigen::Dynamic, 1> {
 public:
   using Base = Eigen::Array<default_type, Eigen::Dynamic, 1>;
 
-  Scalar(std::string_view, const Mesh &);
+  Scalar(const std::filesystem::path &, const Mesh &);
 
   Scalar(const Scalar &that) = default;
 
-  Scalar(Scalar &&that) : Base(std::move(that)), name(std::move(that.name)) {}
+  Scalar(Scalar &&that) : Base(std::move(static_cast<Base &&>(that))), name(std::move(that.name)) {}
 
   Scalar() {}
 
   Scalar &operator=(Scalar &&that) {
-    Base::operator=(std::move(that));
+    Base::operator=(std::move(static_cast<Base &&>(that)));
     name = std::move(that.name);
     return *this;
   }
@@ -50,7 +51,7 @@ public:
     name.clear();
   }
 
-  void save(std::string_view) const;
+  void save(const std::filesystem::path &) const;
 
   std::string get_name() const { return name; }
   void set_name(std::string_view s) { name = s; }
@@ -58,8 +59,8 @@ public:
 private:
   std::string name;
 
-  void load_fs_w(std::string_view, const Mesh &);
-  void load_fs_curv(std::string_view, const Mesh &);
+  void load_fs_w(const std::filesystem::path &, const Mesh &);
+  void load_fs_curv(const std::filesystem::path &, const Mesh &);
 };
 
 } // namespace MR::Surface

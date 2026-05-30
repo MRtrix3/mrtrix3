@@ -14,18 +14,16 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#pragma once
-
-#include <string_view>
-
-namespace MR::File {
-
-void remove(std::string_view filename);
-void create(std::string_view filename, int64_t size = 0);
-void resize(std::string_view filename, int64_t size);
-bool is_tempfile(std::string_view name, std::string_view suffix = "");
-std::string create_tempfile(int64_t size = 0, std::string_view suffix = "");
-void mkdir(std::string_view folder);
-void rmdir(std::string_view folder, bool recursive = false);
-
-} // namespace MR::File
+namespace MR::Helper {
+template <class ImageType> class ConstRow;
+template <class ImageType> class Row;
+} // namespace MR::Helper
+#define EIGEN_DENSEBASE_PLUGIN "eigen_plugins/dense_base.h"  // check_syntax off
+#define EIGEN_MATRIXBASE_PLUGIN "eigen_plugins/dense_base.h" // check_syntax off
+#define EIGEN_ARRAYBASE_PLUGIN "eigen_plugins/dense_base.h"  // check_syntax off
+#define EIGEN_MATRIX_PLUGIN "eigen_plugins/matrix.h"         // check_syntax off
+#define EIGEN_ARRAY_PLUGIN "eigen_plugins/array.h"           // check_syntax off
+#include <Eigen/Geometry>
+#ifdef EIGEN_HAS_OPENMP
+#undef EIGEN_HAS_OPENMP
+#endif

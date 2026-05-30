@@ -35,6 +35,8 @@
 #include "surface/mesh_multi.h"
 #include "surface/validate.h"
 
+#include <filesystem>
+
 namespace MR::GUI::MRView::Tool {
 
 Connectome::Connectome(Dock *parent)
@@ -740,27 +742,27 @@ Connectome::Connectome(Dock *parent)
   cube_VAO.bind();
   cube.vertex_buffer.bind(gl::ARRAY_BUFFER);
   gl::EnableVertexAttribArray(0);
-  gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 0, (void *)(0));
+  gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 0, nullptr);
   cube.normals_buffer.bind(gl::ARRAY_BUFFER);
   gl::EnableVertexAttribArray(1);
-  gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE_, 0, (void *)(0));
+  gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE_, 0, nullptr);
 
   cylinder.LOD(4);
   cylinder_VAO.gen();
   cylinder_VAO.bind();
   cylinder.vertex_buffer.bind(gl::ARRAY_BUFFER);
   gl::EnableVertexAttribArray(0);
-  gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 0, (void *)(0));
+  gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 0, nullptr);
   cylinder.normal_buffer.bind(gl::ARRAY_BUFFER);
   gl::EnableVertexAttribArray(1);
-  gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE_, 0, (void *)(0));
+  gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE_, 0, nullptr);
 
   sphere.LOD(4);
   sphere_VAO.gen();
   sphere_VAO.bind();
   sphere.vertex_buffer.bind(gl::ARRAY_BUFFER);
   gl::EnableVertexAttribArray(0);
-  gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 0, (void *)(0));
+  gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 0, nullptr);
 
   Edge::set_streamtube_LOD(3);
 
@@ -865,7 +867,7 @@ bool Connectome::process_commandline_option(const MR::App::ParsedOption &opt) {
   if (opt.opt->is("connectome.init")) {
     try {
       initialise(opt[0]);
-      image_button->setText(QString::fromStdString(Path::basename(opt[0])));
+      image_button->setText(QString::fromStdString(static_cast<std::filesystem::path>(opt[0]).filename().string()));
       load_properties();
       enable_all(true);
     } catch (Exception &e) {
@@ -876,7 +878,7 @@ bool Connectome::process_commandline_option(const MR::App::ParsedOption &opt) {
   }
   if (opt.opt->is("connectome.load")) {
     try {
-      std::vector<std::string> list(1, opt[0]);
+      std::vector<std::filesystem::path> list(1, opt[0]);
       add_matrices(list);
     } catch (Exception &e) {
       e.display();
@@ -887,14 +889,15 @@ bool Connectome::process_commandline_option(const MR::App::ParsedOption &opt) {
 }
 
 void Connectome::image_open_slot() {
-  const std::string path = Dialog::File::get_image(this, "Select connectome parcellation image", &current_folder);
-  if (path.empty())
+  auto load_paths = Dialog::File::input_imagepath(this, "Select connectome parcellation image", current_folder);
+  if (load_paths.empty())
     return;
+  current_folder = load_paths.last_directory;
 
   // Read in the image file, do the necessary conversions e.g. to mesh, store the number of nodes, ...
   try {
-    initialise(path);
-    image_button->setText(QString::fromStdString(Path::basename(path)));
+    initialise(load_paths.single_selection);
+    image_button->setText(QString::fromStdString(load_paths.single_selection.filename().string()));
     load_properties();
     enable_all(true);
   } catch (Exception &e) {
@@ -907,11 +910,11 @@ void Connectome::image_open_slot() {
 void Connectome::hide_all_slot() { window().updateGL(); }
 
 void Connectome::matrix_open_slot() {
-  std::vector<std::string> list =
-      Dialog::File::get_files(&window(), "Select connectome file(s) to open", "", &current_folder);
-  if (list.empty())
+  auto load_paths = Dialog::File::input_filepaths(&window(), "Select connectome file(s) to open", "", current_folder);
+  if (load_paths.empty())
     return;
-  add_matrices(list);
+  current_folder = load_paths.last_directory;
+  add_matrices(load_paths.multi_selection);
 }
 
 void Connectome::matrix_close_slot() {
@@ -1045,9 +1048,9 @@ void Connectome::node_visibility_selection_slot(int index) {
         node_visibility_combobox->setCurrentIndex(3);
         return;
       case node_visibility_t::VECTOR_FILE:
-        node_visibility_combobox->setCurrentIndex(6);
-        return;
+        [[fallthrough]];
       case node_visibility_t::MATRIX_FILE:
+        // Selects newly added element in combobox with name of imported file
         node_visibility_combobox->setCurrentIndex(6);
         return;
       }
@@ -1080,9 +1083,9 @@ void Connectome::node_visibility_selection_slot(int index) {
         node_visibility_combobox->setCurrentIndex(3);
         return;
       case node_visibility_t::VECTOR_FILE:
-        node_visibility_combobox->setCurrentIndex(6);
-        return;
+        [[fallthrough]];
       case node_visibility_t::MATRIX_FILE:
+        // Selects newly added element in combobox with name of imported file
         node_visibility_combobox->setCurrentIndex(6);
         return;
       }
@@ -1116,7 +1119,8 @@ void Connectome::node_visibility_selection_slot(int index) {
                                     node_values_from_file_visibility.get_mean(),
                                     node_values_from_file_visibility.get_max());
     break;
-  case 6:
+  default:
+    assert(false);
     return;
   }
   calculate_node_visibility();
@@ -1213,6 +1217,9 @@ void Connectome::node_geometry_selection_slot(int index) {
       node_geometry_overlay_interp_checkbox->setVisible(false);
     }
     break;
+  default:
+    assert(false);
+    return;
   }
   if (node_visibility == node_visibility_t::NONE)
     node_visibility_warning_icon->setVisible(true);
@@ -1311,9 +1318,9 @@ void Connectome::node_colour_selection_slot(int index) {
         node_colour_combobox->setCurrentIndex(3);
         return;
       case node_colour_t::VECTOR_FILE:
-        node_colour_combobox->setCurrentIndex(6);
-        return;
+        [[fallthrough]];
       case node_colour_t::MATRIX_FILE:
+        // Selects newly added element in combobox with name of imported file
         node_colour_combobox->setCurrentIndex(6);
         return;
       }
@@ -1348,9 +1355,9 @@ void Connectome::node_colour_selection_slot(int index) {
         node_colour_combobox->setCurrentIndex(3);
         return;
       case node_colour_t::VECTOR_FILE:
-        node_colour_combobox->setCurrentIndex(6);
-        return;
+        [[fallthrough]];
       case node_colour_t::MATRIX_FILE:
+        // Selects newly added element in combobox with name of imported file
         node_colour_combobox->setCurrentIndex(6);
         return;
       }
@@ -1392,7 +1399,8 @@ void Connectome::node_colour_selection_slot(int index) {
                                 node_values_from_file_colour.get_mean(),
                                 node_values_from_file_colour.get_max());
     break;
-  case 6:
+  default:
+    assert(false);
     return;
   }
   if (node_visibility == node_visibility_t::NONE)
@@ -1477,9 +1485,9 @@ void Connectome::node_size_selection_slot(int index) {
         node_size_combobox->setCurrentIndex(2);
         return;
       case node_size_t::VECTOR_FILE:
-        node_size_combobox->setCurrentIndex(5);
-        return;
+        [[fallthrough]];
       case node_size_t::MATRIX_FILE:
+        // Selects newly added element in combobox with name of imported file
         node_size_combobox->setCurrentIndex(5);
         return;
       }
@@ -1510,9 +1518,9 @@ void Connectome::node_size_selection_slot(int index) {
         node_size_combobox->setCurrentIndex(2);
         return;
       case node_size_t::VECTOR_FILE:
-        node_size_combobox->setCurrentIndex(5);
-        return;
+        [[fallthrough]];
       case node_size_t::MATRIX_FILE:
+        // Selects newly added element in combobox with name of imported file
         node_size_combobox->setCurrentIndex(5);
         return;
       }
@@ -1553,7 +1561,8 @@ void Connectome::node_size_selection_slot(int index) {
                               node_values_from_file_size.get_max());
     node_size_invert_checkbox->setChecked(false);
     break;
-  case 5:
+  default:
+    assert(false);
     return;
   }
   if (node_visibility == node_visibility_t::NONE)
@@ -1637,9 +1646,9 @@ void Connectome::node_alpha_selection_slot(int index) {
         node_alpha_combobox->setCurrentIndex(2);
         return;
       case node_alpha_t::VECTOR_FILE:
-        node_alpha_combobox->setCurrentIndex(5);
-        return;
+        [[fallthrough]];
       case node_alpha_t::MATRIX_FILE:
+        // Selects newly added element in combobox with name of imported file
         node_alpha_combobox->setCurrentIndex(5);
         return;
       }
@@ -1670,9 +1679,9 @@ void Connectome::node_alpha_selection_slot(int index) {
         node_alpha_combobox->setCurrentIndex(2);
         return;
       case node_alpha_t::VECTOR_FILE:
-        node_alpha_combobox->setCurrentIndex(5);
-        return;
+        [[fallthrough]];
       case node_alpha_t::MATRIX_FILE:
+        // Selects newly added element in combobox with name of imported file
         node_alpha_combobox->setCurrentIndex(5);
         return;
       }
@@ -1713,7 +1722,8 @@ void Connectome::node_alpha_selection_slot(int index) {
                                node_values_from_file_alpha.get_max());
     node_alpha_invert_checkbox->setChecked(false);
     break;
-  case 5:
+  default:
+    assert(false);
     return;
   }
   if (node_visibility == node_visibility_t::NONE)
@@ -1921,7 +1931,10 @@ void Connectome::edge_visibility_selection_slot(int index) {
                                     edge_values_from_file_visibility.get_mean(),
                                     edge_values_from_file_visibility.get_max());
     break;
-  case 5:
+  case 4:
+    return;
+  default:
+    assert(false);
     return;
   }
   calculate_edge_visibility();
@@ -1993,6 +2006,9 @@ void Connectome::edge_geometry_selection_slot(int index) {
       edge_geometry_line_smooth_checkbox->setVisible(true);
     }
     break;
+  default:
+    assert(false);
+    return;
   }
   if (edge_visibility == edge_visibility_t::NONE)
     edge_visibility_warning_icon->setVisible(true);
@@ -2070,7 +2086,8 @@ void Connectome::edge_colour_selection_slot(int index) {
                                 edge_values_from_file_colour.get_mean(),
                                 edge_values_from_file_colour.get_max());
     break;
-  case 4:
+  default:
+    assert(false);
     return;
   }
   if (edge_visibility == edge_visibility_t::NONE)
@@ -2132,7 +2149,8 @@ void Connectome::edge_size_selection_slot(int index) {
                               edge_values_from_file_size.get_mean(),
                               edge_values_from_file_size.get_max());
     break;
-  case 3:
+  default:
+    assert(false);
     return;
   }
   if (edge_visibility == edge_visibility_t::NONE)
@@ -2195,7 +2213,8 @@ void Connectome::edge_alpha_selection_slot(int index) {
                                edge_values_from_file_alpha.get_max());
     edge_alpha_invert_checkbox->setChecked(false);
     break;
-  case 3:
+  default:
+    assert(false);
     return;
   }
   if (edge_visibility == edge_visibility_t::NONE)
@@ -2245,8 +2264,8 @@ void Connectome::edge_alpha_parameter_slot() {
 }
 
 void Connectome::lut_open_slot() {
-  const std::string path = Dialog::File::get_file(this, std::string("Select lookup table file"));
-  if (path.empty())
+  auto load_paths = Dialog::File::input_filepath(this, "Select lookup table file");
+  if (load_paths.empty())
     return;
   if (!lut.empty()) {
     lut.clear();
@@ -2255,8 +2274,8 @@ void Connectome::lut_open_slot() {
     lut_button->blockSignals(false);
   }
   try {
-    lut.load(path);
-    lut_button->setText(QString::fromStdString(Path::basename(path)));
+    lut.load(load_paths.single_selection);
+    lut_button->setText(QString::fromStdString(load_paths.single_selection.filename().string()));
   } catch (Exception &e) {
     e.display();
     return;
@@ -2430,14 +2449,14 @@ void Connectome::enable_all(const bool value) {
   edge_alpha_invert_checkbox->setEnabled(value);
 }
 
-void Connectome::initialise(std::string_view path) {
+void Connectome::initialise(const std::filesystem::path &path) {
   MR::Header H = MR::Header::open(path);
   MR::Connectome::validate_label_header(H);
   voxel_volume = H.spacing(0) * H.spacing(1) * H.spacing(2);
   {
     // Prevent progress dialog from appearing in a multi-threading context
     LogLevelLatch latch(0);
-    buffer.reset(new MR::Image<node_t>(H.get_image<node_t>().with_direct_io()));
+    buffer.reset(new MR::Image<node_t>(H.get_image<node_t>(MR::DirectIO{})));
     MR::Connectome::debug_validate_label_image(*buffer);
   }
   MR::Transform transform(H);
@@ -2535,18 +2554,18 @@ void Connectome::initialise(std::string_view path) {
   dynamic_cast<Node_list *>(node_list->tool)->initialize();
 }
 
-void Connectome::add_matrices(const std::vector<std::string> &list) {
+void Connectome::add_matrices(const std::vector<std::filesystem::path> &list) {
   std::vector<FileDataVector> data;
   for (size_t i = 0; i < list.size(); ++i) {
     try {
       MR::Connectome::matrix_type matrix = File::Matrix::load_matrix<default_type>(list[i]);
       MR::Connectome::to_upper(matrix);
       if (matrix.rows() != num_nodes())
-        throw Exception("Matrix file \"" + Path::basename(list[i]) + "\" is incorrect size");
+        throw Exception("Matrix file \"" + list[i].filename().string() + "\" is incorrect size");
       FileDataVector temp;
       mat2vec->M2V(matrix, temp);
       temp.calc_stats();
-      temp.set_name(list[i]);
+      temp.set_name(list[i].filename().string());
       data.push_back(std::move(temp));
     } catch (Exception &E) {
       E.display();
@@ -2710,22 +2729,22 @@ void Connectome::draw_nodes(const Projection &projection) {
               gl::CullFace(gl::FRONT);
               gl::Uniform1f(specular_ID,
                             (1.0 - node_alpha_given_selection(it->second) * node_fixed_alpha) * lighting.specular);
-              gl::DrawElements(gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, (void *)0);
+              gl::DrawElements(gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, nullptr);
               gl::CullFace(gl::BACK);
               gl::Uniform1f(specular_ID, lighting.specular);
             }
-            gl::DrawElements(gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, (void *)0);
+            gl::DrawElements(gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, nullptr);
             break;
           case node_geometry_t::CUBE:
             if (alpha) {
               gl::CullFace(gl::FRONT);
               gl::Uniform1f(specular_ID,
                             (1.0 - node_alpha_given_selection(it->second) * node_fixed_alpha) * lighting.specular);
-              gl::DrawElements(gl::TRIANGLES, cube.num_indices, gl::UNSIGNED_INT, (void *)0);
+              gl::DrawElements(gl::TRIANGLES, cube.num_indices, gl::UNSIGNED_INT, nullptr);
               gl::CullFace(gl::BACK);
               gl::Uniform1f(specular_ID, lighting.specular);
             }
-            gl::DrawElements(gl::TRIANGLES, cube.num_indices, gl::UNSIGNED_INT, (void *)0);
+            gl::DrawElements(gl::TRIANGLES, cube.num_indices, gl::UNSIGNED_INT, nullptr);
             break;
           case node_geometry_t::OVERLAY:
             assert(0);
@@ -2860,11 +2879,11 @@ void Connectome::draw_edges(const Projection &projection) {
           if (alpha) {
             gl::CullFace(gl::FRONT);
             gl::Uniform1f(specular_ID, (1.0 - edge_alpha_given_selection(edge) * edge_fixed_alpha) * lighting.specular);
-            gl::DrawElements(gl::TRIANGLES, cylinder.num_indices, gl::UNSIGNED_INT, (void *)0);
+            gl::DrawElements(gl::TRIANGLES, cylinder.num_indices, gl::UNSIGNED_INT, nullptr);
             gl::CullFace(gl::BACK);
             gl::Uniform1f(specular_ID, lighting.specular);
           }
-          gl::DrawElements(gl::TRIANGLES, cylinder.num_indices, gl::UNSIGNED_INT, (void *)0);
+          gl::DrawElements(gl::TRIANGLES, cylinder.num_indices, gl::UNSIGNED_INT, nullptr);
           break;
         case edge_geometry_t::STREAMLINE:
           gl::LineWidth(calc_line_width(edge_size_given_selection(edge) * edge_size_scale_factor,
@@ -2903,22 +2922,24 @@ void Connectome::draw_edges(const Projection &projection) {
 }
 
 bool Connectome::import_vector_file(FileDataVector &data, std::string_view attribute) {
-  const std::string path = Dialog::File::get_file(
-      this, "Select vector file to determine " + attribute, "Data files (*.csv)", &current_folder);
-  if (path.empty())
+  auto load_paths = Dialog::File::input_filepath(
+      this, "Select vector file to determine " + attribute, "Data files (*.csv)", current_folder);
+  if (load_paths.empty())
     return false;
+  current_folder = load_paths.last_directory;
   try {
     FileDataVector prev_data(data);
     data.clear();
-    data.load(path);
+    data.load(load_paths.single_selection);
     const size_t numel = data.size();
     if (data.size() != num_nodes()) {
       // Restore data in case user is trying to change from one file to another
       data = std::move(prev_data);
-      throw Exception("File " + Path::basename(path) + " contains " + str(numel) + " elements, but connectome has " +
-                      str(num_nodes()) + " nodes");
+      throw Exception("File " + load_paths.single_selection.filename().string() + //
+                      " contains " + str(numel) + " elements," +                  //
+                      " but connectome has " + str(num_nodes()) + " nodes");      //
     }
-    data.set_name(Path::basename(path));
+    data.set_name(load_paths.single_selection.filename().string());
     return true;
   } catch (Exception &e) {
     e.display();
@@ -2928,23 +2949,24 @@ bool Connectome::import_vector_file(FileDataVector &data, std::string_view attri
 }
 
 bool Connectome::import_matrix_file(FileDataVector &data, std::string_view attribute) {
-  const std::string path = Dialog::File::get_file(
-      this, "Select matrix file to determine " + attribute, "Data files (*.csv)", &current_folder);
-  if (path.empty())
+  auto load_paths = Dialog::File::input_filepath(
+      this, "Select matrix file to determine " + attribute, "Data files (*.csv)", current_folder);
+  if (load_paths.empty())
     return false;
+  current_folder = load_paths.last_directory;
   MR::Connectome::matrix_type temp;
   try {
-    temp = File::Matrix::load_matrix<default_type>(path);
+    temp = File::Matrix::load_matrix<default_type>(load_paths.single_selection);
     MR::Connectome::to_upper(temp);
     if (temp.rows() != num_nodes())
-      throw Exception("Matrix file \"" + Path::basename(path) + "\" is incorrect size");
+      throw Exception("Matrix file \"" + load_paths.single_selection.filename().string() + "\" is incorrect size");
   } catch (Exception &e) {
     e.display();
     return false;
   }
   mat2vec->M2V(temp, data);
   data.calc_stats();
-  data.set_name(Path::basename(path));
+  data.set_name(load_paths.single_selection.filename().string());
   return true;
 }
 
@@ -4004,13 +4026,14 @@ void Connectome::update_controls(AdjustButton *const lower_button,
 }
 
 void Connectome::get_meshes() {
-  // Request exemplar track file path from user
-  const std::string path = GUI::Dialog::File::get_file(
-      this, "Select file containing mesh for each node", "OBJ mesh files (*.obj)", &current_folder);
-  if (path.empty())
+  // Request surface mesh file path from user
+  auto load_paths = GUI::Dialog::File::input_filepath(
+      this, "Select file containing mesh for each node", "OBJ mesh files (*.obj)", current_folder);
+  if (load_paths.empty())
     return;
+  current_folder = load_paths.last_directory;
   Surface::MeshMulti meshes;
-  meshes.load(path);
+  meshes.load(load_paths.single_selection);
   if (meshes.size() != nodes.size())
     throw Exception("Mesh file contains " + str(meshes.size()) + " objects; expected " + str(nodes.size()));
   Surface::debug_validate(meshes);
@@ -4023,19 +4046,21 @@ void Connectome::get_meshes() {
 
 void Connectome::get_exemplars() {
   // Request exemplar track file path from user
-  const std::string path =
-      GUI::Dialog::File::get_file(this,
-                                  "Select track file resulting from running connectome2tck -exemplars",
-                                  "Track files (*.tck)",
-                                  &current_folder);
-  if (path.empty())
+  auto load_paths =
+      GUI::Dialog::File::input_filepath(this,
+                                        "Select track file resulting from running connectome2tck -exemplars",
+                                        "Track files (*.tck)",
+                                        current_folder);
+  if (load_paths.empty())
     return;
+  current_folder = load_paths.last_directory;
   MR::DWI::Tractography::Properties properties;
-  MR::DWI::Tractography::Reader<float> reader(path, properties);
+  MR::DWI::Tractography::Reader<float> reader(load_paths.single_selection, properties);
   const size_t num_tracks = to<size_t>(properties["count"]);
   if (num_tracks != num_edges())
-    throw Exception("Track file " + Path::basename(path) + " contains " + str(num_tracks) +
-                    " streamlines; connectome expects " + str(num_edges()) + " exemplars");
+    throw Exception("Track file " + load_paths.single_selection.filename().string() + //
+                    " contains " + str(num_tracks) + " streamlines;" +                //
+                    " connectome expects " + str(num_edges()) + " exemplars");        //
   ProgressBar progress("Importing connection exemplars", num_edges());
   MR::DWI::Tractography::Streamline<float> tck;
   while (reader(tck)) {

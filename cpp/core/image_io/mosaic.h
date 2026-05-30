@@ -17,6 +17,7 @@
 #pragma once
 
 #include "file/mmap.h"
+#include "header.h"
 #include "image_io/base.h"
 
 namespace MR::ImageIO {

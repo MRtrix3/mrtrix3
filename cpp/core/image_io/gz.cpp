@@ -26,29 +26,29 @@ namespace MR::ImageIO {
 
 void GZ::load(const Header &header, size_t) {
   if (files.empty())
-    throw Exception("no files specified in header for image \"" + header.name() + "\"");
+    throw Exception("no files specified in header for image \"" + header.path().string() + "\"");
 
   segsize /= files.size();
   bytes_per_segment = (header.datatype().bits() * segsize + 7) / 8;
   if (files.size() * bytes_per_segment > std::numeric_limits<size_t>::max())
-    throw Exception("image \"" + header.name() + "\" is larger than maximum accessible memory");
+    throw Exception("image \"" + header.path().string() + "\" is larger than maximum accessible memory");
 
-  DEBUG("loading image \"" + header.name() + "\"...");
+  DEBUG("loading image \"" + header.path().string() + "\"...");
   addresses.resize(header.datatype().bits() == 1 && files.size() > 1 ? files.size() : 1);
-  addresses[0].reset(new uint8_t[files.size() * bytes_per_segment]);
+  addresses[0].reset(new std::byte[files.size() * bytes_per_segment]);
   if (!addresses[0])
-    throw Exception("failed to allocate memory for image \"" + header.name() + "\"");
+    throw Exception("failed to allocate memory for image \"" + header.path().string() + "\"");
 
   if (is_new)
     memset(addresses[0].get(), 0, files.size() * bytes_per_segment);
   else {
-    ProgressBar progress("uncompressing image \"" + header.name() + "\"",
+    ProgressBar progress("uncompressing image \"" + header.path().string() + "\"",
                          files.size() * bytes_per_segment / bytes_per_zcall);
     for (size_t n = 0; n < files.size(); n++) {
-      File::GZ zf(files[n].name, "rb");
+      File::GZ zf(files[n].path, "rb");
       zf.seek(files[n].start);
-      uint8_t *address = addresses[0].get() + n * bytes_per_segment;
-      uint8_t *last = address + bytes_per_segment - bytes_per_zcall;
+      std::byte *address = addresses[0].get() + n * bytes_per_segment;
+      std::byte *last = address + bytes_per_segment - bytes_per_zcall;
       while (address < last) {
         zf.read(reinterpret_cast<char *>(address), bytes_per_zcall);
         address += bytes_per_zcall;
@@ -72,15 +72,15 @@ void GZ::unload(const Header &header) {
     assert(addresses[0]);
 
     if (writable) {
-      ProgressBar progress("compressing image \"" + header.name() + "\"",
+      ProgressBar progress("compressing image \"" + header.path().string() + "\"",
                            files.size() * bytes_per_segment / bytes_per_zcall);
       for (size_t n = 0; n < files.size(); n++) {
         assert(files[n].start == static_cast<int64_t>(lead_in_size));
-        File::GZ zf(files[n].name, "wb");
+        File::GZ zf(files[n].path, "wb");
         if (lead_in)
           zf.write(reinterpret_cast<const char *>(lead_in.get()), lead_in_size);
-        uint8_t *address = addresses[0].get() + n * bytes_per_segment;
-        uint8_t *last = address + bytes_per_segment - bytes_per_zcall;
+        std::byte *address = addresses[0].get() + n * bytes_per_segment;
+        std::byte *last = address + bytes_per_segment - bytes_per_zcall;
         while (address < last) {
           zf.write(reinterpret_cast<const char *>(address), bytes_per_zcall);
           address += bytes_per_zcall;

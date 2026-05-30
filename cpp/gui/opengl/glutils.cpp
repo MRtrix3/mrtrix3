@@ -25,10 +25,10 @@ namespace MR::GUI::GL {
 Area *glwidget = nullptr;
 
 #ifndef NDEBUG
-void __assert_context_is_current(QWidget *glarea) {
-  auto __current_context = Context::current();
-  auto __expected_context = Context::get(glarea ? glarea : glwidget);
-  assert(__current_context == __expected_context);
+void _assert_context_is_current(QWidget *glarea) {
+  auto _current_context = Context::current();
+  auto _expected_context = Context::get(glarea ? glarea : glwidget);
+  assert(_current_context == _expected_context);
 }
 #endif
 

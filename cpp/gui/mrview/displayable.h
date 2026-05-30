@@ -23,6 +23,8 @@
 #include "opengl/shader.h"
 #include "projection.h"
 
+#include <filesystem>
+
 namespace MR {
 class ProgressBar;
 
@@ -61,13 +63,13 @@ class Displayable : public QAction {
   Q_OBJECT
 
 public:
-  Displayable(std::string_view filename);
+  Displayable(const std::filesystem::path &filepath);
 
   virtual ~Displayable();
 
   virtual void request_render_colourbar(DisplayableVisitor &) {}
 
-  std::string get_filename() const { return filename; }
+  const std::filesystem::path &get_filepath() const { return filepath; }
 
   float scaling_min() const { return display_midpoint - 0.5f * display_range; }
 
@@ -268,7 +270,7 @@ signals:
   void scalingChanged();
 
 protected:
-  std::string filename;
+  std::filesystem::path filepath;
   float value_min, value_max;
   uint32_t flags_;
 

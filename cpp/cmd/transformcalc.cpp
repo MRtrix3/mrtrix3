@@ -14,6 +14,12 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include "eigen_plugins/eigen_plugins.h"
+#include <Eigen/Geometry>
+#include <algorithm>
+#include <filesystem>
+#include <unsupported/Eigen/MatrixFunctions>
+
 #include "command.h"
 #include "enum.h"
 #include "file/key_value.h"
@@ -23,9 +29,6 @@
 #include "math/average_space.h"
 #include "math/math.h"
 #include "transform.h"
-#include <Eigen/Geometry>
-#include <algorithm>
-#include <unsupported/Eigen/MatrixFunctions>
 
 using namespace MR;
 using namespace App;
@@ -50,7 +53,7 @@ void usage() {
   SYNOPSIS = "Perform calculations on linear transformation matrices";
 
   ARGUMENTS
-  + Argument ("inputs", "the input(s) for the specified operation").type_image_in().type_file_in().allow_multiple()
+  + Argument ("inputs", "the input(s) for the specified operation").type_image_in().type_file_in().type_float(0.0, 1.0).allow_multiple()
   + Argument ("operation", "the operation to perform;"
                            " one of: " + MR::Enum::join<Operation>(", ") +
                            " (see description section for details).").type_choice<Operation>()
@@ -184,7 +187,7 @@ align_corresponding_vertices(const Eigen::MatrixXd &src_vertices, const Eigen::M
 void run() {
   const size_t num_inputs = argument.size() - 2;
   const Operation op = MR::Enum::from_name<Operation>(argument[num_inputs]);
-  const std::string_view output_path = argument.back();
+  const std::filesystem::path output_path{argument.back()};
 
   switch (op) {
   case Operation::INVERT: {
@@ -218,7 +221,6 @@ void run() {
       throw Exception("header requires 2 inputs");
     auto orig_header = Header::open(argument[0]);
     auto modified_header = Header::open(argument[1]);
-
     transform_type forward_transform =
         Transform(modified_header).voxel2scanner * Transform(orig_header).voxel2scanner.inverse();
     File::Matrix::save_transform(forward_transform.inverse(), output_path);
@@ -232,7 +234,6 @@ void run() {
     Eigen::MatrixXd Min;
     std::vector<Eigen::MatrixXd> matrices;
     for (size_t i = 0; i < num_inputs; i++) {
-      DEBUG(str(argument[i]));
       Tin = File::Matrix::load_transform(argument[i]);
       matrices.push_back(Tin.matrix());
     }
@@ -248,7 +249,7 @@ void run() {
       throw Exception("interpolation requires 3 inputs");
     transform_type transform1 = File::Matrix::load_transform(argument[0]);
     transform_type transform2 = File::Matrix::load_transform(argument[1]);
-    default_type t = parse_floats(argument[2])[0];
+    default_type t = argument[2];
 
     transform_type transform_out;
 

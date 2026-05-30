@@ -15,9 +15,15 @@
  */
 
 #include "progressbar.h"
-#include "app.h"
+
+#include <sys/stat.h>
 #include <thread>
+#include <unistd.h>
 #include <utility>
+
+#include "app.h"
+#include "exception.h"
+#include "mrtrix.h"
 
 // MSYS2 supports VT100, and file redirection is handled explicitly so this can be used globally
 #define CLEAR_LINE_CODE "\033[0K" // check_syntax off
@@ -26,7 +32,7 @@
 
 namespace MR {
 
-extern bool __need_newline;
+extern bool _need_newline;
 
 namespace {
 
@@ -38,27 +44,27 @@ void display_func_multithreaded(const ProgressBar &p) {
 }
 
 void display_func_terminal(const ProgressBar &p) {
-  __need_newline = true;
+  _need_newline = true;
   if (p.show_percent())
-    __print_stderr(printf(WRAP_OFF_CODE "\r%s: [%3" PRI_SIZET "%%] %s%s" CLEAR_LINE_CODE WRAP_ON_CODE,
-                          App::NAME.c_str(),
-                          p.value(),
-                          p.text_cstr(),
-                          p.ellipsis_cstr()));
+    _print_stderr(printf(WRAP_OFF_CODE "\r%s: [%3" PRI_SIZET "%%] %s%s" CLEAR_LINE_CODE WRAP_ON_CODE,
+                         App::NAME.c_str(),
+                         p.value(),
+                         p.text_cstr(),
+                         p.ellipsis_cstr()));
   else
-    __print_stderr(printf(WRAP_OFF_CODE "\r%s: [%s] %s%s" CLEAR_LINE_CODE WRAP_ON_CODE,
-                          App::NAME.c_str(),
-                          busy[p.value() % busy.size()].c_str(),
-                          p.text_cstr(),
-                          p.ellipsis_cstr()));
+    _print_stderr(printf(WRAP_OFF_CODE "\r%s: [%s] %s%s" CLEAR_LINE_CODE WRAP_ON_CODE,
+                         App::NAME.c_str(),
+                         busy.at(p.value() % busy.size()).c_str(),
+                         p.text_cstr(),
+                         p.ellipsis_cstr()));
 }
 
 void done_func_terminal(const ProgressBar &p) {
   if (p.show_percent())
-    __print_stderr(printf("\r%s: [100%%] %s" CLEAR_LINE_CODE "\n", App::NAME.c_str(), p.text_cstr()));
+    _print_stderr(printf("\r%s: [100%%] %s" CLEAR_LINE_CODE "\n", App::NAME.c_str(), p.text_cstr()));
   else
-    __print_stderr(printf("\r%s: [done] %s" CLEAR_LINE_CODE "\n", App::NAME.c_str(), p.text_cstr()));
-  __need_newline = false;
+    _print_stderr(printf("\r%s: [done] %s" CLEAR_LINE_CODE "\n", App::NAME.c_str(), p.text_cstr()));
+  _need_newline = false;
 }
 
 void display_func_redirect(const ProgressBar &p) {
@@ -66,20 +72,20 @@ void display_func_redirect(const ProgressBar &p) {
   static size_t next_update_at = 0;
   // need to update whole line since text may have changed:
   if (p.text_has_been_modified()) {
-    __need_newline = false;
+    _need_newline = false;
     if (p.value() == 0 && p.count() == 0)
       count = next_update_at = 0;
     if (count++ == next_update_at) {
       if (p.show_percent()) {
-        __print_stderr(
+        _print_stderr(
             printf("%s: [%3" PRI_SIZET "%%] %s%s\n", App::NAME.c_str(), p.value(), p.text_cstr(), p.ellipsis_cstr()));
         ;
       } else {
-        __print_stderr(printf("%s: [%s] %s%s\n",
-                              App::NAME.c_str(),
-                              busy[p.value() % busy.size()].c_str(),
-                              p.text_cstr(),
-                              p.ellipsis_cstr()));
+        _print_stderr(printf("%s: [%s] %s%s\n",
+                             App::NAME.c_str(),
+                             busy.at(p.value() % busy.size()).c_str(),
+                             p.text_cstr(),
+                             p.ellipsis_cstr()));
       }
       if (next_update_at)
         next_update_at *= 2;
@@ -89,23 +95,23 @@ void display_func_redirect(const ProgressBar &p) {
   }
   // text is static - can simply append to the current line:
   else {
-    __need_newline = true;
+    _need_newline = true;
     if (p.show_percent()) {
       if (p.first_time) {
         p.first_time = false;
-        __print_stderr(printf("%s: %s%s [", App::NAME.c_str(), p.text_cstr(), p.ellipsis_cstr()));
+        _print_stderr(printf("%s: %s%s [", App::NAME.c_str(), p.text_cstr(), p.ellipsis_cstr()));
         ;
       } else
         while (p.last_value < p.value()) {
-          __print_stderr(printf("="));
+          _print_stderr(printf("="));
           p.last_value += 2;
         }
     } else {
       if (p.value() == 0) {
-        __print_stderr(printf("%s: %s%s ", App::NAME.c_str(), p.text_cstr(), p.ellipsis_cstr()));
+        _print_stderr(printf("%s: %s%s ", App::NAME.c_str(), p.text_cstr(), p.ellipsis_cstr()));
         ;
       } else if (!(p.value() & (p.value() - 1))) {
-        __print_stderr(".");
+        _print_stderr(".");
       }
     }
   }
@@ -114,18 +120,18 @@ void display_func_redirect(const ProgressBar &p) {
 void done_func_redirect(const ProgressBar &p) {
   if (p.text_has_been_modified()) {
     if (p.show_percent()) {
-      __print_stderr(printf("%s: [100%%] %s\n", App::NAME.c_str(), p.text_cstr()));
+      _print_stderr(printf("%s: [100%%] %s\n", App::NAME.c_str(), p.text_cstr()));
       ;
     } else {
-      __print_stderr(printf("%s: [done] %s\n", App::NAME.c_str(), p.text_cstr()));
+      _print_stderr(printf("%s: [done] %s\n", App::NAME.c_str(), p.text_cstr()));
     }
   } else {
     if (p.show_percent())
-      __print_stderr(printf("]\n"));
+      _print_stderr(printf("]\n"));
     else
-      __print_stderr(printf("done\n"));
+      _print_stderr(printf("done\n"));
   }
-  __need_newline = false;
+  _need_newline = false;
 }
 
 } // namespace

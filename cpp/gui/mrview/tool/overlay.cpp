@@ -16,6 +16,8 @@
 
 #include "mrview/tool/overlay.h"
 
+#include <filesystem>
+
 #include "dialog/file.h"
 #include "mrtrix.h"
 #include "mrview/gui_image.h"
@@ -172,14 +174,14 @@ Overlay::Overlay(Dock *parent) : Base(parent) {
 }
 
 void Overlay::image_open_slot() {
-  std::vector<std::string> overlay_names =
-      Dialog::File::get_images(this, "Select overlay images to open", &current_folder);
-  if (overlay_names.empty())
+  auto load_paths = Dialog::File::input_imagepaths(this, "Select overlay images to open", current_folder);
+  if (load_paths.empty())
     return;
+  current_folder = load_paths.last_directory;
   std::vector<std::unique_ptr<MR::Header>> list;
-  for (size_t n = 0; n < overlay_names.size(); ++n) {
+  for (const auto &path : load_paths.multi_selection) {
     try {
-      list.push_back(std::make_unique<MR::Header>(MR::Header::open(overlay_names[n])));
+      list.emplace_back(std::make_unique<MR::Header>(MR::Header::open(path)));
     } catch (Exception &e) {
       e.display();
     }
@@ -205,7 +207,7 @@ void Overlay::dropEvent(QDropEvent *event) {
     QList<QUrl> urlList = mimeData->urls();
     for (int i = 0; i < urlList.size() && i < max_files; ++i) {
       try {
-        list.push_back(std::make_unique<MR::Header>(MR::Header::open(QtHelpers::url_to_std_string(urlList.at(i)))));
+        list.emplace_back(std::make_unique<MR::Header>(MR::Header::open(QtHelpers::url_to_fspath(urlList.at(i)))));
       } catch (Exception &e) {
         e.display();
       }
@@ -304,7 +306,7 @@ int Overlay::draw_tool_labels(int position, int start_line_num, const Projection
 
     Image *image = dynamic_cast<Image *>(image_list_model->items[i].get());
     if (image && image->show) {
-      std::string value_str = Path::basename(image->get_filename()) + " ";
+      std::string value_str = image->get_filepath().filename().string() + " ";
       value_str += image->describe_value(window().focus());
       transform.render_text(value_str, position, start_line_num + num_of_new_lines);
       num_of_new_lines += 1;
@@ -408,7 +410,7 @@ void Overlay::onSetVolumeIndex() {
 
   for (int i = 0; i < volume_index_layout->count(); ++i) {
     auto *box = dynamic_cast<SpinBox *>(volume_index_layout->itemAt(i)->widget());
-    if (overlay->header().ndim() <= static_cast<size_t>(i + 3))
+    if (overlay->header().ndim() <= static_cast<size_t>(i) + 3)
       break;
     overlay->image.index(i + 3) = box->value();
   }

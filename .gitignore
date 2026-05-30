@@ -16,6 +16,7 @@
 /dev/
 /compiled_docs/
 /.vscode/
+.claude
 .cproject
 .idea
 .project
@@ -33,5 +34,6 @@
 .check_syntax2.tmp
 build*/
 CMakeLists.txt.user
+CMakeUserPresets.json
 testing/data/tmp*
 testing/data/*-tmp-*

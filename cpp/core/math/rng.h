@@ -16,13 +16,15 @@
 
 #pragma once
 
+#include <mutex>
+#include <optional>
 #include <random>
+#include <string>
 #ifdef MRTRIX_WINDOWS
 #include <sys/time.h>
 #endif
 
-#include <mutex>
-
+#include "env.h"
 #include "mrtrix.h"
 
 namespace MR::Math {
@@ -70,9 +72,9 @@ private:
     // ENVVAR setting the :envvar:`MRTRIX_NTHREADS` environment variable to zero).
     // ENVVAR Multi-threading introduces randomness in the order of execution, which
     // ENVVAR will generally also affect the reproducibility of results.
-    const char *from_env = getenv("MRTRIX_RNG_SEED"); // check_syntax off
-    if (from_env)
-      return to<std::mt19937::result_type>(from_env);
+    const std::optional<std::string> from_env = MR::get_env("MRTRIX_RNG_SEED");
+    if (from_env.has_value())
+      return to<std::mt19937::result_type>(*from_env);
 
     std::random_device rd;
     return rd();

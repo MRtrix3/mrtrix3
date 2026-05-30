@@ -4,7 +4,6 @@
 #   rather than the TFCE expression,
 #   and make sure that these sizes match those generated using a prior software version
 rm -rf tmp/
-mkdir tmp/
 
 mrclusterstats mrclusterstats/subjects.txt mrclusterstats/design.txt SIFT_phantom/mask.mif tmp/ \
     -ttests mrclusterstats/contrast.txt \

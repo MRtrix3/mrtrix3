@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "eigen_plugins/eigen_plugins.h"
 #include <Eigen/Cholesky>
 
 #include "types.h"

@@ -18,6 +18,7 @@
 
 #ifdef MRTRIX_PNG_SUPPORT
 
+#include <cstddef>
 #include <png.h>
 
 #include "fetch_store.h"
@@ -29,7 +30,7 @@ namespace MR::File::PNG {
 
 class Reader {
 public:
-  Reader(std::string_view filename);
+  Reader(const std::filesystem::path &filepath);
   ~Reader();
 
   uint32_t get_width() const { return width; }
@@ -44,7 +45,7 @@ public:
 
   void set_expand();
 
-  void load(uint8_t *);
+  void load(std::byte *);
 
 private:
   FILE *infile;
@@ -59,19 +60,19 @@ private:
 
 class Writer {
 public:
-  Writer(const Header &, std::string_view);
+  Writer(const Header &, const std::filesystem::path &);
   ~Writer();
 
   size_t get_size() const { return png_get_rowbytes(png_ptr, info_ptr) * height; }
 
-  void save(uint8_t *);
+  void save(std::byte *);
 
 private:
   png_structp png_ptr;
   png_infop info_ptr;
   uint32_t width, height;
   int color_type, bit_depth;
-  std::string filename;
+  std::filesystem::path filepath;
   DataType data_type;
   default_type multiplier;
   FILE *outfile;
@@ -80,14 +81,14 @@ private:
   static jmp_buf jmpbuf;
 
   template <typename T>
-  void fill(uint8_t *in_ptr, uint8_t *out_ptr, const DataType data_type, const size_t num_elements);
+  void fill(std::byte *in_ptr, std::byte *out_ptr, const DataType data_type, const size_t num_elements);
 };
 
 template <typename T>
-void Writer::fill(uint8_t *in_ptr, uint8_t *out_ptr, const DataType data_type, const size_t num_elements) {
+void Writer::fill(std::byte *in_ptr, std::byte *out_ptr, const DataType data_type, const size_t num_elements) {
   std::function<default_type(const void *, size_t, default_type, default_type)> fetch_func;
   std::function<void(default_type, void *, size_t, default_type, default_type)> store_func;
-  __set_fetch_store_scale_functions<default_type>(fetch_func, store_func, data_type);
+  _set_fetch_store_scale_functions<default_type>(fetch_func, store_func, data_type);
   for (size_t i = 0; i != num_elements; ++i) {
     Raw::store_BE<T>(std::min(static_cast<default_type>(std::numeric_limits<T>::max()),                 //
                               std::max(0.0, std::round(multiplier * fetch_func(in_ptr, i, 0.0, 1.0)))), //

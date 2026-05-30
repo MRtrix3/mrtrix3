@@ -160,8 +160,7 @@ public:
       // Determine direction and frequency of harmonic
       pos_type kspace_origin;
       for (ssize_t axis = 0; axis != 3; ++axis)
-        // Do integer division, then convert to floating-point
-        kspace_origin[axis] = axis_mask[axis] ? real_type((kspace.size(axis) - 1) / 2) : real_type(0);
+        kspace_origin[axis] = axis_mask[axis] ? static_cast<real_type>((kspace.size(axis) - 1) / 2) : real_type(0);
       const pos_type kspace_offset({axis_mask[0] ? (pos[0] - kspace_origin[0]) : real_type(0),
                                     axis_mask[1] ? (pos[1] - kspace_origin[1]) : real_type(0),
                                     axis_mask[2] ? (pos[2] - kspace_origin[2]) : real_type(0)});

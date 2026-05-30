@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "algo/loop.h"
 #include "algo/neighbourhooditerator.h"
 #include "debug.h"
 #include "image_helpers.h"

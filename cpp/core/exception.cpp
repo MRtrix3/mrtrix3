@@ -15,6 +15,10 @@
  */
 
 #include <array>
+#include <cerrno>
+#include <cstring>
+#include <mutex>
+#include <string>
 #include <string_view>
 #include <unordered_map>
 
@@ -22,9 +26,21 @@
 #include "debug.h"
 #include "exception.h"
 #include "file/config.h"
+#include "mrtrix.h"
 
 #ifdef MRTRIX_AS_R_LIBRARY
 #include "wrap_r.h"
+#endif
+
+#ifdef MRTRIX_HAVE_STRERROR_R
+namespace {
+// Overloads resolve POSIX strerror_r (int return, fills buf) vs
+// GNU strerror_r (char* return, may point to a static string).
+std::string strerror_r_result(int /*errcode*/, const char *buf) { return std::string(buf); } // check_syntax off
+std::string strerror_r_result(const char *result, const char * /*buf*/) {                    // check_syntax off
+  return std::string(result);
+}
+} // namespace
 #endif
 
 namespace MR {
@@ -35,7 +51,7 @@ void display_exception_cmdline(const Exception &E, int log_level) {
       report_to_user_func(E.description[n], log_level);
 }
 
-bool __need_newline = false;
+bool _need_newline = false;
 
 void cmdline_report_to_user_func(std::string_view msg, int type) {
 
@@ -48,9 +64,9 @@ void cmdline_report_to_user_func(std::string_view msg, int type) {
   static const std::unordered_map<int, std::string> console_prefixes{
       {-1, ""}, {0, "[ERROR] "}, {1, "[WARNING] "}, {2, "[INFO] "}, {3, "[DEBUG] "}};
 
-  if (__need_newline) {
-    __print_stderr("\n");
-    __need_newline = false;
+  if (_need_newline) {
+    _print_stderr("\n");
+    _need_newline = false;
   }
 
   auto clamp = [](int t) {
@@ -59,10 +75,10 @@ void cmdline_report_to_user_func(std::string_view msg, int type) {
     return t + 1;
   };
 
-  __print_stderr(printf(colour_format_strings.at(App::terminal_use_colour ? type : -1).c_str(),
-                        App::NAME.c_str(),
-                        console_prefixes.at(type).c_str(),
-                        std::string(msg).c_str()));
+  _print_stderr(printf(colour_format_strings.at(App::terminal_use_colour ? type : -1),
+                       App::NAME.c_str(),
+                       console_prefixes.at(type).c_str(),
+                       std::string(msg).c_str()));
   if (type == 1 && App::fail_on_warn)
     throw Exception("terminating due to request to fail on warning");
 }
@@ -87,6 +103,21 @@ void (*Exception::display_func)(const Exception &E, int log_level) = display_exc
 void check_app_exit_code() {
   if (App::exit_error_code)
     throw Exception("Command performing delayed termination due to prior critical error");
+}
+
+std::string C_strerror(int errnum) {
+#if defined(MRTRIX_HAVE_STRERROR_R)
+  std::array<char, 256> buf = {};
+  return strerror_r_result(strerror_r(errnum, buf.data(), buf.size()), buf.data()); // check_syntax off
+#elif defined(MRTRIX_WINDOWS)
+  std::array<char, 256> buf = {};
+  strerror_s(buf.data(), buf.size(), errnum);
+  return std::string(buf.data()); // check_syntax off
+#else
+  static std::mutex mutex;
+  const std::lock_guard<std::mutex> lock(mutex);
+  return std::string(std::strerror(errnum)); // NOLINT(concurrency-mt-unsafe) check_syntax off
+#endif
 }
 
 } // namespace MR

@@ -22,6 +22,8 @@
 #include "math/least_squares.h"
 #include "transform.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -252,10 +254,10 @@ Eigen::MatrixXd initialise_basis(IndexType &index, size_t num_voxels, int order)
   return basis;
 }
 
-void load_data(Eigen::MatrixXd &data, std::string_view image_name, IndexType &index) {
+void load_data(Eigen::MatrixXd &data, const std::filesystem::path &image_path, IndexType &index) {
   static int num = 0;
 
-  auto in = ImageType::open(image_name);
+  auto in = ImageType::open(image_path.string());
   check_dimensions(index, in, 0, 3);
 
   struct Loader {
@@ -409,11 +411,11 @@ ImageType compute_full_field(int order, const Eigen::VectorXd &field_coeffs, con
   return out;
 }
 
-void write_weights(const Eigen::VectorXd &data, IndexType &index, std::string_view output_file_name) {
+void write_weights(const Eigen::VectorXd &data, IndexType &index, const std::filesystem::path &output_filepath) {
   Header header(index);
   header.datatype() = DataType::Float32;
 
-  auto out = ImageType::create(output_file_name, header);
+  auto out = ImageType::create(output_filepath, header);
 
   struct Write {
     void operator()(ImageType &out, IndexType &index) const {
@@ -428,8 +430,8 @@ void write_weights(const Eigen::VectorXd &data, IndexType &index, std::string_vi
   ThreadedLoop(index, 0, 3).run(write, out, index);
 }
 
-void write_output(std::string_view original,
-                  std::string_view corrected,
+void write_output(const std::filesystem::path &original,
+                  const std::filesystem::path &corrected,
                   bool output_balanced,
                   double balance_factor,
                   ImageType &field,
@@ -463,7 +465,7 @@ void write_output(std::string_view original,
 }
 
 void run() {
-  if (argument.size() % 2)
+  if (argument.size() % 2 != 0)
     throw Exception(
         "The number of arguments must be even, provided as pairs of each input and its corresponding output file.");
   if (argument.size() == 2)
@@ -497,10 +499,12 @@ void run() {
 
   Eigen::MatrixXd data(num_voxels, n_tissue_types);
   for (size_t n = 0; n < n_tissue_types; ++n) {
-    if (Path::exists(argument[2 * n + 1]) && !App::overwrite_files)
-      throw Exception("Output file \"" + std::string(argument[2 * n + 1]) + "\" already exists." +
+    const std::filesystem::path output_path{argument[2 * n + 1]};
+    if (std::filesystem::exists(output_path) && !App::overwrite_files)
+      throw Exception("Output file \"" + output_path.string() + "\" already exists." +
                       " (use -force option to force overwrite)");
-    load_data(data, argument[2 * n], index);
+    const std::filesystem::path input_path{argument[2 * n]};
+    load_data(data, input_path, index);
   }
 
   size_t num_non_finite = (!data.array().isFinite()).count();
@@ -525,6 +529,7 @@ void run() {
     size_t iter = 0;
     ProgressBar progress("performing log-domain intensity normalisation", max_iter);
 
+    // NOLINTNEXTLINE(clang-analyzer-deadcode.DeadStores)
     size_t outliers_changed = detect_outliers(3.0, data, field, balance_factors, weights);
 
     while (++iter <= max_iter) {
@@ -566,13 +571,16 @@ void run() {
 
   opt = get_options("check_factors");
   if (!opt.empty()) {
-    File::OFStream factors_output(opt[0][0]);
+    File::OFStream factors_output{opt[0][0]};
     factors_output << balance_factors.transpose() << "\n";
   }
 
   double lognorm_scale = std::exp((field.array().log() * weights.array()).sum() / weights.sum());
 
   const bool output_balanced = !get_options("balanced").empty();
-  for (size_t n = 0; n < n_tissue_types; ++n)
-    write_output(argument[2 * n], argument[2 * n + 1], output_balanced, balance_factors[n], full_field, lognorm_scale);
+  for (size_t n = 0; n < n_tissue_types; ++n) {
+    const std::filesystem::path input_path{argument[2 * n]};
+    const std::filesystem::path output_path{argument[2 * n + 1]};
+    write_output(input_path, output_path, output_balanced, balance_factors[n], full_field, lognorm_scale);
+  }
 }

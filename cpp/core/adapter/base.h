@@ -31,10 +31,12 @@ inline AdapterType<ImageType> make(const ImageType &parent, Args &&...args) {
 
 template <class AdapterType, class ImageType>
 class Base : public ImageBase<AdapterType, typename ImageType::value_type> {
+protected:
+  // NOLINTNEXTLINE(bugprone-crtp-constructor-accessibility)
+  Base(const ImageType &parent) : parent_(parent) {}
+
 public:
   using value_type = typename ImageType::value_type;
-
-  Base(const ImageType &parent) : parent_(parent) {}
 
   template <class U> const Base &operator=(const U &V) { return parent_ = V; }
 
@@ -42,7 +44,7 @@ public:
   FORCE_INLINE bool valid() const { return parent_.valid(); }
   FORCE_INLINE bool operator!() const { return !valid(); }
   FORCE_INLINE const ImageType &parent() const { return parent_; }
-  FORCE_INLINE std::string_view name() const { return parent_.name(); }
+  FORCE_INLINE std::string name() const { return parent_.name(); }
   FORCE_INLINE size_t ndim() const { return parent_.ndim(); }
   FORCE_INLINE ssize_t size(size_t axis) const { return parent_.size(axis); }
   FORCE_INLINE default_type spacing(size_t axis) const { return parent_.spacing(axis); }

@@ -88,8 +88,8 @@ inline void check_error(const char *filename, int line) { // check_syntax off (i
 }
 
 #ifndef NDEBUG
-void __assert_context_is_current(QWidget *glarea);
-inline void assert_context_is_current(QWidget *glarea = nullptr) { __assert_context_is_current(glarea); }
+void _assert_context_is_current(QWidget *glarea);
+inline void assert_context_is_current(QWidget *glarea = nullptr) { _assert_context_is_current(glarea); }
 #else
 inline void assert_context_is_current(QWidget * = nullptr) {}
 #endif

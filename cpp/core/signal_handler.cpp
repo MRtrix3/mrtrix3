@@ -18,15 +18,21 @@
 
 #include <atomic>
 #include <cstdlib>
+#include <filesystem>
 #include <iostream>
 #include <signal.h>
+#include <tuple>
+#include <unistd.h>
 #include <vector>
 
 #include "app.h"
+#include "env.h"
 #include "file/path.h"
 
 #ifdef MRTRIX_WINDOWS
 #define STDERR_FILENO 2 // check_syntax off
+// #include <stdio.h>
+// constexpr int STDERR_FILENO = GetStdHandle(STD_ERROR_HANDLE);
 #endif
 
 namespace MR::SignalHandler {
@@ -34,12 +40,14 @@ namespace MR::SignalHandler {
 namespace {
 std::vector<cleanup_function_type> cleanup_operations;
 
-std::vector<std::string> marked_files;
+std::vector<std::filesystem::path> marked_files;
 std::atomic_flag flag = ATOMIC_FLAG_INIT;
 
-void delete_temporary_files() {
+void delete_temporary_files() noexcept {
+  // Use non-throwing version of std::filesystem::remove()
+  std::error_code ec;
   for (const auto &i : marked_files)
-    std::remove(i.c_str());
+    std::filesystem::remove(i, ec);
   marked_files.clear();
 }
 
@@ -47,8 +55,6 @@ void handler(int i) noexcept {
   // Only process this once if using multi-threading:
   if (!flag.test_and_set()) {
 
-    // Try to do a tempfile cleanup before printing the error, since the latter's not guaranteed to work...
-    // Don't use File::remove: may throw an exception
     for (auto func : cleanup_operations)
       func();
 
@@ -56,13 +62,13 @@ void handler(int i) noexcept {
     const char *msg = nullptr; // check_syntax off
     switch (i) {
 
-#define __SIGNAL(SIG, MSG)                                                                                             \
+#define MRTRIX_MANIP_SIGNAL(SIG, MSG)                                                                                  \
   case SIG:                                                                                                            \
     sig = #SIG;                                                                                                        \
     msg = MSG;                                                                                                         \
     break;
 #include "signals.h"
-#undef __SIGNAL
+#undef MRTRIX_MANIP_SIGNAL
 
     default:
       sig = "UNKNOWN";
@@ -75,10 +81,8 @@ void handler(int i) noexcept {
     char str[256]; // check_syntax off
     str[255] = '\0';
     snprintf(str, 255, "\n%s: [SYSTEM FATAL CODE: %s (%d)] %s\n", App::NAME.c_str(), sig, i, msg);
-    if (write(STDERR_FILENO, str, strnlen(str, 256)) == 0)
-      std::_Exit(i);
-    else
-      std::_Exit(i);
+    std::ignore = write(STDERR_FILENO, &str[0], strnlen(&str[0], 256));
+    std::_Exit(i);
   }
 }
 
@@ -93,12 +97,12 @@ void init() {
   // ENVVAR Note however that this prevents the
   // ENVVAR deletion of temporary files when the command terminates
   // ENVVAR abnormally.
-  if (getenv("MRTRIX_NOSIGNALS"))
+  if (MR::get_env("MRTRIX_NOSIGNALS").has_value())
     return;
 
 #ifdef MRTRIX_WINDOWS
     // Use signal() rather than sigaction() for Windows, as the latter is not supported
-#define __SIGNAL(SIG, MSG) signal(SIG, handler)
+#define MRTRIX_MANIP_SIGNAL(SIG, MSG) signal(SIG, handler)
 #else
   // Construct the signal structure
   struct sigaction act;
@@ -106,10 +110,10 @@ void init() {
   // Since we're _Exit()-ing for any of these signals, block them all
   sigfillset(&act.sa_mask);
   act.sa_flags = 0;
-#define __SIGNAL(SIG, MSG) sigaction(SIG, &act, nullptr)
+#define MRTRIX_MANIP_SIGNAL(SIG, MSG) sigaction(SIG, &act, nullptr)
 #endif
-
 #include "signals.h"
+#undef MRTRIX_MANIP_SIGNAL
 }
 
 void on_signal(cleanup_function_type func) {
@@ -117,19 +121,19 @@ void on_signal(cleanup_function_type func) {
   std::atexit(func);
 }
 
-void mark_file_for_deletion(std::string_view filename) {
+void mark_file_for_deletion(const std::filesystem::path &filepath) {
   while (!flag.test_and_set())
     ;
-  marked_files.push_back(std::string(filename));
+  marked_files.push_back(filepath);
   flag.clear();
 }
 
-void unmark_file_for_deletion(std::string_view filename) {
+void unmark_file_for_deletion(const std::filesystem::path &filepath) {
   while (!flag.test_and_set())
     ;
   auto i = marked_files.begin();
   while (i != marked_files.end()) {
-    if (*i == filename)
+    if (*i == filepath)
       i = marked_files.erase(i);
     else
       ++i;

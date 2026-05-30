@@ -103,10 +103,11 @@ void RenderFrame::initializeGL() {
   axes_VB.bind(gl::ARRAY_BUFFER);
   axes_VAO.bind();
   gl::EnableVertexAttribArray(0);
-  gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 6 * sizeof(GLfloat), (void *)0);
+  gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, 6 * sizeof(GLfloat), nullptr);
 
   gl::EnableVertexAttribArray(1);
-  gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE_, 6 * sizeof(GLfloat), (void *)(3 * sizeof(GLfloat)));
+  gl::VertexAttribPointer(
+      1, 3, gl::FLOAT, gl::FALSE_, 6 * sizeof(GLfloat), reinterpret_cast<void *>(3 * sizeof(GLfloat)));
 
   const std::array<GLfloat, 36> axis_data = {-1.0, -1.0, -1.0, 1.0, 0.0, 0.0, 1.0,  -1.0, -1.0, 1.0, 0.0, 0.0,  //
                                              -1.0, -1.0, -1.0, 0.0, 1.0, 0.0, -1.0, 1.0,  -1.0, 0.0, 1.0, 0.0,  //
@@ -341,12 +342,13 @@ void RenderFrame::wheelEvent(QWheelEvent *event) {
   update();
 }
 
-void RenderFrame::screenshot(int oversampling, std::string_view image_name) {
+void RenderFrame::screenshot(int oversampling, const std::filesystem::path &image_path) {
   QApplication::setOverrideCursor(Qt::BusyCursor);
-  screenshot_name = image_name;
+  screenshot_path = image_path;
   OS = oversampling;
   OS_x = OS_y = 0;
-  framebuffer.reset(new GLubyte[3 * projection.width() * projection.height()]);
+  framebuffer = std::make_unique<GLubyte[]>(3 * static_cast<size_t>(projection.width()) *
+                                            static_cast<size_t>(projection.height()));
   pix.reset(new QImage(OS * projection.width(), OS * projection.height(), QImage::Format_RGB32));
   update();
 }
@@ -361,13 +363,14 @@ void RenderFrame::snapshot() {
   for (int j = 0; j < projection.height(); j++) {
     int j2 = projection.height() - j - 1;
     for (int i = 0; i < projection.width(); i++) {
-      GLubyte *p = framebuffer.get() + 3 * (i + projection.width() * j);
+      GLubyte *p = framebuffer.get() +
+                   3 * (static_cast<size_t>(i) + (static_cast<size_t>(projection.width()) * static_cast<size_t>(j)));
       pix->setPixel(start_i + i, start_j + j2, qRgb(p[0], p[1], p[2]));
     }
   }
 
   if (OS_x == OS - 1 && OS_y == OS - 1)
-    pix->save(qstr(screenshot_name), "PNG");
+    pix->save(qstr(screenshot_path.string()), "PNG");
 
   OS_x++;
   if (OS_x >= OS) {

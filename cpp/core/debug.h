@@ -42,13 +42,13 @@ extern std::string NAME;
   {                                                                                                                    \
     Eigen::IOFormat fmt(Eigen::FullPrecision, 0, ", ", ",\n        ", "[", "]", "\nnp.array([", "])");                 \
     std::cerr << MR::App::NAME << " [" << __FILE__ << ": " << __LINE__ << "]: " << #variable << " = "                  \
-              << (variable.format(fmt)) << "\n";                                                                       \
+              << (variable).format(fmt) << "\n";                                                                       \
   }
 
 #define VEC(variable)                                                                                                  \
   {                                                                                                                    \
     std::cerr << MR::App::NAME << " [" << __FILE__ << ": " << __LINE__ << "]: " << #variable << " = ";                 \
-    for (ssize_t i = 0; i < variable.size(); ++i) {                                                                    \
+    for (ssize_t i = 0; i < (variable).size(); ++i) {                                                                  \
       std::cerr << str(variable(i)) << " ";                                                                            \
     }                                                                                                                  \
     std::cerr << std::endl;                                                                                            \

@@ -161,7 +161,7 @@ Image<float> get_field_image(const Image<float> &dwi_in, std::string_view operat
          " for \"" + operation + "\" operation;" +               //
          " some functionality will be omitted");                 //
   } else {
-    field_image = Image<float>::open(std::string(opt[0][0]));
+    field_image = Image<float>::open(opt[0][0]);
     if (!voxel_grids_match_in_scanner_space(dwi_in, field_image))
       throw Exception("Susceptibility field image and DWI series not defined on same voxel grid");
     if (!(field_image.ndim() == 3 || (field_image.ndim() == 4 && field_image.size(3) == 1)))
@@ -465,7 +465,7 @@ void run_combine_pairs(Image<float> &dwi_in, const scheme_type &grad_in, const s
 
   header_out.size(3) = dwi_in.size(3) / 2;
   DWI::set_DW_scheme(header_out, grad_out);
-  Image<float> dwi_out = Image<float>::create(header_out.name(), header_out);
+  Image<float> dwi_out = Image<float>::create(header_out.path(), header_out);
 
   if (field_image.valid()) {
 
@@ -629,7 +629,7 @@ void run_combine_predicted(Image<float> &dwi_in,
     }
   }
 
-  Image<float> dwi_out = Image<float>::create(header_out.name(), header_out);
+  Image<float> dwi_out = Image<float>::create(header_out.path(), header_out);
 
   opt = get_options("weights");
   Image<float> weights_image;
@@ -927,7 +927,7 @@ void run() {
   Header header_out(dwi_in);
   header_out.datatype() = DataType::Float32;
   header_out.datatype().set_byte_order_native();
-  header_out.name() = std::string(argument[2]);
+  header_out.path() = argument[2];
 
   switch (MR::Enum::from_name<Operation>(argument[1])) {
 

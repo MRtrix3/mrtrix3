@@ -25,6 +25,8 @@
 #undef BINARY_OP
 #undef TERNARY_OP
 
+// NOLINTBEGIN(bugprone-macro-parentheses)
+
 #if SECTION == 1 // usage section
 
 #define SECTION_TITLE(TITLE) +OptionGroup(TITLE)
@@ -312,11 +314,15 @@ UNARY_OP(
 
 #undef SECTION
 
+// NOLINTEND(bugprone-macro-parentheses)
+
 #else
 
 /**********************************************************************
   Main program
  **********************************************************************/
+
+#include <filesystem>
 
 #include "algo/threaded_copy.h"
 #include "command.h"
@@ -421,7 +427,7 @@ ARGUMENTS
 OPTIONS
 
 #define SECTION 1 // check_syntax off
-#include "mrcalc.cpp"
+#include "mrcalc.cpp" //NOLINT(bugprone-suspicious-include,misc-header-include-cycle)
 
   + DataType::options();
 }
@@ -507,7 +513,7 @@ public:
       image_is_complex = search->second.image_is_complex;
     } else {
       try {
-        auto header = Header::open(arg);
+        auto header = Header::open(std::filesystem::path{arg});
         image_is_complex = header.datatype().is_complex();
         image.reset(new Image<complex_type>(header.get_image<complex_type>()));
         image_list.insert(std::make_pair(arg, LoadedImage(image, image_is_complex)));
@@ -917,7 +923,7 @@ void run_operations(const std::vector<StackEntry> &stack) {
   } else
     header.datatype() = DataType::from_command_line(DataType::Float32);
 
-  auto output = Header::create(stack[1].arg, header).get_image<complex_type>();
+  auto output = Header::create(std::filesystem::path{stack[1].arg}, header).get_image<complex_type>();
 
   auto loop = ThreadedLoop("computing: " + operation_string(stack[0]), output, 0, output.ndim(), 2);
 
@@ -980,8 +986,8 @@ public:
         EXPAND OPERATIONS:
 **********************************************************************/
 
-#define SECTION 2 // check_syntax off
-#include "mrcalc.cpp"
+#define SECTION 2     // check_syntax off
+#include "mrcalc.cpp" // NOLINT(bugprone-suspicious-include,misc-header-include-cycle)
 
 /**********************************************************************
   MAIN BODY OF COMMAND:
@@ -1002,8 +1008,8 @@ void run() {
       else if (opt->is("config"))
         n += 2;
 
-#define SECTION 3 // check_syntax off
-#include "mrcalc.cpp"
+#define SECTION 3     // check_syntax off
+#include "mrcalc.cpp" // NOLINT(bugprone-suspicious-include,misc-header-include-cycle)
 
       else
         throw Exception(std::string("operation \"") + opt->id + "\" not yet implemented!");

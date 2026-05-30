@@ -14,11 +14,18 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "command.h"
-#include "image.h"
-
+#include "eigen_plugins/eigen_plugins.h"
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
+#include <algorithm>
+#include <cassert>
+#include <filesystem>
+#include <stddef.h>
+#include <sys/types.h>
+
+#include "command.h"
+#include "image.h"
+#include "image_helpers.h"
 
 using namespace MR;
 using namespace App;
@@ -158,7 +165,7 @@ public:
                    bool exp1)
       : extent{{extent[0] / 2, extent[1] / 2, extent[2] / 2}},
         m(ndwi),
-        n(extent[0] * extent[1] * extent[2]),
+        n(static_cast<ssize_t>(extent[0]) * static_cast<ssize_t>(extent[1]) * static_cast<ssize_t>(extent[2])),
         r(std::min(m, n)),
         q(std::max(m, n)),
         exp1(exp1),
@@ -289,21 +296,24 @@ void process_image(Header &data,
                    Image<bool> &mask,
                    Image<real_type> &noise,
                    Image<uint16_t> &rank,
-                   std::string_view output_name,
+                   const std::filesystem::path &output_path,
                    const std::vector<uint32_t> &extent,
                    bool exp1) {
-  auto input = data.get_image<T>().with_direct_io(3);
+  auto input = data.get_image<T>(DirectIO{3});
   // create output
   Header header(data);
   header.datatype() = DataType::from<T>();
-  auto output = Image<T>::create(output_name, header);
+  auto output = Image<T>::create(output_path, header);
   // run
   DenoisingFunctor<T> func(data.size(3), extent, mask, noise, rank, exp1);
   ThreadedLoop("running MP-PCA denoising", data, 0, 3).run(func, input, output);
 }
 
 void run() {
-  auto dwi = Header::open(argument[0]);
+  const std::filesystem::path input_path(argument[0]);
+  const std::filesystem::path output_path(argument[1]);
+
+  auto dwi = Header::open(input_path);
 
   if (dwi.ndim() != 4 || dwi.size(3) <= 1)
     throw Exception("input image must be 4-dimensional");
@@ -330,12 +340,12 @@ void run() {
         throw Exception("-extent must not exceed the image dimensions");
     }
   } else {
-    uint32_t e = 1;
+    ssize_t e = 1;
     while (e * e * e < dwi.size(3))
       e += 2;
-    extent = {std::min(e, static_cast<uint32_t>(dwi.size(0))),
-              std::min(e, static_cast<uint32_t>(dwi.size(1))),
-              std::min(e, static_cast<uint32_t>(dwi.size(2)))};
+    extent = {std::min(static_cast<uint32_t>(e), static_cast<uint32_t>(dwi.size(0))),
+              std::min(static_cast<uint32_t>(e), static_cast<uint32_t>(dwi.size(1))),
+              std::min(static_cast<uint32_t>(e), static_cast<uint32_t>(dwi.size(2)))};
   }
   INFO("selected patch size: " + str(extent[0]) + " x " + str(extent[1]) + " x " + str(extent[2]) + ".");
 
@@ -374,19 +384,22 @@ void run() {
   switch (prec) {
   case static_cast<int>(DType::FLOAT32):
     INFO("select real float32 for processing");
-    process_image<float>(dwi, mask, noise, rank, argument[1], extent, exp1);
+    process_image<float>(dwi, mask, noise, rank, output_path, extent, exp1);
     break;
   case static_cast<int>(DType::FLOAT64):
     INFO("select real float64 for processing");
-    process_image<double>(dwi, mask, noise, rank, argument[1], extent, exp1);
+    process_image<double>(dwi, mask, noise, rank, output_path, extent, exp1);
     break;
   case 2:
     INFO("select complex float32 for processing");
-    process_image<cfloat>(dwi, mask, noise, rank, argument[1], extent, exp1);
+    process_image<cfloat>(dwi, mask, noise, rank, output_path, extent, exp1);
     break;
   case 3:
     INFO("select complex float64 for processing");
-    process_image<cdouble>(dwi, mask, noise, rank, argument[1], extent, exp1);
+    process_image<cdouble>(dwi, mask, noise, rank, output_path, extent, exp1);
+    break;
+  default:
+    assert(false);
     break;
   }
 }

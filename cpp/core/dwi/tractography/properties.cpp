@@ -16,6 +16,10 @@
 
 #include "dwi/tractography/properties.h"
 
+#include <cmath>
+
+#include "exception.h"
+
 namespace MR::DWI::Tractography {
 
 void Properties::set_timestamp() { (*this)["timestamp"] = str(Timer::current_time(), file_timestamp_precision); }
@@ -49,7 +53,8 @@ float Properties::get_stepsize() const {
   if (it != KeyValues::end()) {
     try {
       return to<float>(it->second);
-    } catch (...) {
+    } catch (Exception &) {
+      DEBUG("Corrupt tractography property \"step_size\"; ignoring");
     }
   }
   return NaNF;
@@ -57,7 +62,7 @@ float Properties::get_stepsize() const {
 
 void Properties::compare_stepsize_rois() const {
   const float step_size = get_stepsize();
-  if (!std::isfinite(step_size) || !step_size)
+  if (!std::isfinite(step_size) || step_size == 0.0F)
     return;
 
   auto f = [](const ROISetBase &rois, std::string_view type, const float threshold) {

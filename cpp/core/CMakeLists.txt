@@ -19,6 +19,12 @@ if(NOT MRTRIX_HAVE_LGAMMA_R)
     message(STATUS "No lgamma_r() function found; statistical inference may have poorer multi-threading performance")
 endif()
 
+# Check for re-entrant strerror_r() for thread-safe errno string conversion
+check_symbol_exists(strerror_r "string.h" MRTRIX_HAVE_STRERROR_R)
+if(NOT MRTRIX_HAVE_STRERROR_R)
+    message(STATUS "No strerror_r() function found; falling back to mutex-protected strerror()")
+endif()
+
 file(GLOB_RECURSE HEADLESS_SOURCES *.h *.cpp)
 
 
@@ -96,6 +102,7 @@ endif()
 target_compile_definitions(mrtrix-core PUBLIC
     MRTRIX_BASE_VERSION="${MRTRIX_BASE_VERSION}"
     $<$<BOOL:${MRTRIX_HAVE_LGAMMA_R}>:MRTRIX_HAVE_LGAMMA_R>
+    $<$<BOOL:${MRTRIX_HAVE_STRERROR_R}>:MRTRIX_HAVE_STRERROR_R>
 )
 
 if(APPLE AND MRTRIX_HAVE_LGAMMA_R)
@@ -110,7 +117,7 @@ else()
 endif()
 
 target_link_libraries(mrtrix-core PUBLIC
-    Eigen3::Eigen
+    mrtrix::eigen
     ZLIB::ZLIB
     fftw3::fftw
     mrtrix::common
@@ -132,6 +139,7 @@ if(WIN32)
         RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin
     )
 
+if(MRTRIX_ENABLE_GPU)
     add_custom_command(TARGET mrtrix-core POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             $<TARGET_FILE:dawn::webgpu_dawn>
@@ -139,7 +147,7 @@ if(WIN32)
             $<TARGET_FILE_DIR:mrtrix-core>
         COMMENT "Copying imported dependencies to output directory"
     )
-
+endif()
 endif()
 
 

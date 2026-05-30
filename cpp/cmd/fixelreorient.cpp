@@ -26,6 +26,8 @@
 #include "fixel/helpers.h"
 #include "fixel/validate.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -67,40 +69,41 @@ void usage() {
                            " (providing the -force option is supplied)."
                            " If a new directory is supplied,"
                            " then the fixel directions and all other fixel data"
-                           " will be copied to the new directory.").type_directory_out();
+                           " will be copied to the new directory.").type_directory_out(DirOutMode::MayExist);
 }
 // clang-format on
 
 void run() {
-  std::string input_fixel_directory = argument[0];
+  const std::filesystem::path input_fixel_directory{argument[0]};
+  const std::filesystem::path input_warp_file{argument[1]};
+  const std::filesystem::path output_fixel_directory{argument[2]};
+
   Fixel::check_fixel_directory(input_fixel_directory);
   Fixel::debug_validate_directory(input_fixel_directory);
 
   auto input_index_image = Fixel::find_index_header(input_fixel_directory).get_image<index_type>();
 
-  Header warp_header = Header::open(argument[1]);
+  Header warp_header = Header::open(input_warp_file);
   Registration::Warp::validate_header(warp_header);
   check_dimensions(input_index_image, warp_header, 0, 3);
   auto warp_image = warp_header.get_image<float>();
   Registration::Warp::debug_validate_image(warp_image);
   Adapter::Jacobian<Image<float>> jacobian(warp_image);
 
-  std::string output_fixel_directory = argument[2];
   Fixel::check_fixel_directory(output_fixel_directory, true);
 
   // scratch buffer so inplace reorientation can be performed if desired
   Image<float> input_directions_image;
-  std::string output_directions_filename;
+  std::filesystem::path output_directions_filename;
   {
     auto tmp = Fixel::find_directions_header(input_fixel_directory).get_image<float>();
     input_directions_image = Image<float>::scratch(tmp);
     threaded_copy(tmp, input_directions_image);
-    output_directions_filename = Path::basename(tmp.name());
+    output_directions_filename = tmp.path().filename();
   }
 
   auto output_directions_image =
-      Image<float>::create(Path::join(output_fixel_directory, output_directions_filename), input_directions_image)
-          .with_direct_io();
+      Image<float>::create(output_fixel_directory / output_directions_filename, input_directions_image, DirectIO(1));
 
   for (auto i = Loop("reorienting fixel directions", input_index_image, 0, 3)(input_index_image, jacobian); i; ++i) {
     input_index_image.index(3) = 0;

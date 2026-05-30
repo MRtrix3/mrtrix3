@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <fstream>
 #include <stdint.h>
 
@@ -34,10 +35,10 @@ constexpr int32_t quad_file_magic_number = 16777215;
 constexpr int32_t new_curv_file_magic_number = 16777215;
 
 inline int32_t get_int24_BE(std::ifstream &stream) {
-  std::array<uint8_t, 3> bytes{};
+  std::array<std::byte, 3> bytes{};
   stream.read(reinterpret_cast<char *>(bytes.data()), 3);
-  return (static_cast<int32_t>(bytes[0]) << 16) | (static_cast<int32_t>(bytes[1]) << 8) |
-         static_cast<int32_t>(bytes[2]);
+  return (std::to_integer<int32_t>(bytes[0]) << 16) | (std::to_integer<int32_t>(bytes[1]) << 8) |
+         std::to_integer<int32_t>(bytes[2]);
 }
 
 template <typename T> inline T get_BE(std::ifstream &stream) {
@@ -46,7 +47,7 @@ template <typename T> inline T get_BE(std::ifstream &stream) {
   return Raw::fetch_BE<T>(&temp);
 }
 
-void read_annot(std::string_view, label_vector_type &, Connectome::LUT &);
-void read_label(std::string_view, VertexList &, Scalar &);
+void read_annot(const std::filesystem::path &, label_vector_type &, Connectome::LUT &);
+void read_label(const std::filesystem::path &, VertexList &, Scalar &);
 
 } // namespace MR::Surface::FreeSurfer

@@ -138,6 +138,8 @@ public:
   }
 
   Min_mem_array<T> &operator=(const Min_mem_array<T> &that) {
+    if (this == &that)
+      return (*this);
     n = that.n;
     if (d)
       delete[] d;

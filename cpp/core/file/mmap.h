@@ -17,11 +17,13 @@
 #pragma once
 
 #include <cassert>
+#include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <iostream>
+#include <optional>
 
 #include "file/entry.h"
-#include "types.h"
 
 namespace MR::File {
 
@@ -44,23 +46,26 @@ public:
    * the file has just been created, \a preload should be set to \c false to
    * prevent this, in which case the contents will set to zero.
    *
-   * By default, the whole file is mapped. If \a mapped_size is
-   * non-zero, then only the region of size \a mapped_size starting from
-   * the byte offset specified in \a entry will be mapped.
+   * By default, the whole file is mapped. If \a mapped_size is set,
+   * then only the region of that size starting from the byte offset
+   * specified in \a entry will be mapped.
    */
-  MMap(const Entry &entry, bool readwrite = false, bool preload = true, int64_t mapped_size = -1);
+  MMap(const Entry &entry,
+       bool readwrite = false,
+       bool preload = true,
+       std::optional<int64_t> mapped_size = std::nullopt);
   ~MMap();
 
-  std::string name() const { return Entry::name; }
+  std::filesystem::path path() const { return Entry::path; }
   int64_t size() const { return msize; }
-  uint8_t *address() { return first; }
-  const uint8_t *address() const { return first; }
+  std::byte *address() { return first; }
+  const std::byte *address() const { return first; }
 
   bool is_read_write() const { return readwrite; }
   bool changed() const;
 
   friend std::ostream &operator<<(std::ostream &stream, const MMap &m) {
-    stream << "File::MMap { " << m.name() << " [" << m.fd << "], size: " << m.size() << ", mapped "
+    stream << "File::MMap { " << m.path().string() << " [" << m.fd << "], size: " << m.size() << ", mapped "
            << (m.readwrite ? "RW" : "RO") << " at " << reinterpret_cast<const void *>(m.address()) << ", offset "
            << m.start << " }";
     return stream;
@@ -68,10 +73,10 @@ public:
 
 protected:
   int fd;
-  uint8_t *addr;  /**< The address in memory where the file has been mapped. */
-  uint8_t *first; /**< The address in memory to the start of the region of interest. */
-  int64_t msize;  /**< The size of the file. */
-  time_t mtime;   /**< The modification time of the file at the last check. */
+  std::byte *addr;  /**< The address in memory where the file has been mapped. */
+  std::byte *first; /**< The address in memory to the start of the region of interest. */
+  int64_t msize;    /**< The size of the mapped portion of the file. */
+  time_t mtime;     /**< The modification time of the file at the last check. */
   bool readwrite;
 
   void map();

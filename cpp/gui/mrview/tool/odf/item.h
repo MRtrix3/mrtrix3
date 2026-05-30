@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <filesystem>
 #include <memory>
 
 #include "dwi/shells.h"
@@ -57,7 +58,7 @@ public:
     void set_header();
     void set_internal(const size_t n);
     void set_none();
-    void set_from_file(std::string_view path);
+    void set_from_file(const std::filesystem::path &path);
 
     Eigen::VectorXf get_shell_data(const Eigen::VectorXf &values) const;
 

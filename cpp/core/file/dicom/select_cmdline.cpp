@@ -14,11 +14,13 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include "env.h"
 #include "file/dicom/image.h"
 #include "file/dicom/patient.h"
 #include "file/dicom/series.h"
 #include "file/dicom/study.h"
 #include "file/dicom/tree.h"
+#include "mrtrix.h"
 
 namespace MR::File::Dicom {
 
@@ -31,35 +33,32 @@ std::vector<std::shared_ptr<Series>> select_cmdline(const Tree &tree) {
   // ENVVAR name: DICOM_PATIENT
   // ENVVAR when reading DICOM data, match the PatientName entry against
   // ENVVAR the string provided
-  const char *patient_env = getenv("DICOM_PATIENT"); // check_syntax off
-  const std::string patient_from_env(patient_env == nullptr ? "" : std::string(patient_env));
+  const auto patient_from_env = MR::get_env("DICOM_PATIENT");
 
   // ENVVAR name: DICOM_ID
   // ENVVAR when reading DICOM data, match the PatientID entry against
   // ENVVAR the string provided
-  const char *patid_env = getenv("DICOM_ID"); // check_syntax off
-  const std::string patid_from_env(patid_env == nullptr ? "" : std::string(patid_env));
+  const auto patid_from_env = MR::get_env("DICOM_ID");
 
   // ENVVAR name: DICOM_STUDY
   // ENVVAR when reading DICOM data, match the StudyName entry against
   // ENVVAR the string provided
-  const char *study_env = getenv("DICOM_STUDY"); // check_syntax off
-  const std::string study_from_env(study_env == nullptr ? "" : std::string(study_env));
+  const auto study_from_env = MR::get_env("DICOM_STUDY");
 
   // ENVVAR name: DICOM_SERIES
   // ENVVAR when reading DICOM data, match the SeriesName entry against
   // ENVVAR the string provided
-  const char *series_env = getenv("DICOM_SERIES"); // check_syntax off
-  const std::string series_from_env(series_env == nullptr ? "" : std::string(series_env));
+  const auto series_from_env = MR::get_env("DICOM_SERIES");
 
-  if (!patient_from_env.empty() || !patid_from_env.empty() || !study_from_env.empty() || !series_from_env.empty()) {
+  if (patient_from_env.has_value() || patid_from_env.has_value() || study_from_env.has_value() ||
+      series_from_env.has_value()) {
 
     // select using environment variables:
 
     std::vector<std::shared_ptr<Patient>> patient;
     for (size_t i = 0; i < tree.size(); i++) {
-      if ((patient_from_env.empty() || match(patient_from_env, tree[i]->name, true)) &&
-          (patid_from_env.empty() || match(patid_from_env, tree[i]->ID, true)))
+      if ((!patient_from_env.has_value() || match(patient_from_env.value(), tree[i]->name, true)) &&
+          (!patid_from_env.has_value() || match(patid_from_env.value(), tree[i]->ID, true)))
         patient.push_back(tree[i]);
     }
     if (patient.empty())
@@ -69,7 +68,7 @@ std::vector<std::shared_ptr<Series>> select_cmdline(const Tree &tree) {
 
     std::vector<std::shared_ptr<Study>> study;
     for (size_t i = 0; i < patient[0]->size(); i++) {
-      if (study_from_env.empty() || match(study_from_env, (*patient[0])[i]->name, true))
+      if (!study_from_env.has_value() || match(study_from_env.value(), (*patient[0])[i]->name, true))
         study.push_back((*patient[0])[i]);
     }
     if (study.empty())
@@ -78,7 +77,7 @@ std::vector<std::shared_ptr<Series>> select_cmdline(const Tree &tree) {
       throw Exception("too many matching studies in DICOM dataset \"" + tree.description + "\"");
 
     for (size_t i = 0; i < study[0]->size(); i++) {
-      if (series_from_env.empty() || match(series_from_env, (*study[0])[i]->name, true))
+      if (!series_from_env.has_value() || match(series_from_env.value(), (*study[0])[i]->name, true))
         series.push_back((*study[0])[i]);
     }
     if (series.empty())

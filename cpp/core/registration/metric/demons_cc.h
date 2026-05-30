@@ -19,6 +19,7 @@
 #include <mutex>
 
 #include "adapter/gradient3D.h"
+#include "image.h"
 #include "image_helpers.h"
 
 namespace MR::Registration::Metric {

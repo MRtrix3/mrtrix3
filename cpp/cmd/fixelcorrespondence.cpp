@@ -22,6 +22,8 @@
 #include "image.h"
 #include "progressbar.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -63,32 +65,34 @@ void run() {
   const float angular_threshold = get_option_value("angle", default_angle_threshold);
   const float angular_threshold_dp = cos(angular_threshold * (Math::pi / 180.0));
 
-  const std::string input_file(argument[0]);
-  if (Path::is_dir(input_file))
+  const std::filesystem::path input_filepath(argument[0]);
+  if (std::filesystem::is_directory(input_filepath))
     throw Exception("please input the specific fixel data file to be converted"
                     " (not the fixel directory)");
 
-  auto subject_index = Fixel::find_index_header(Fixel::get_fixel_directory(input_file)).get_image<index_type>();
+  const std::filesystem::path subject_fixel_directory = Fixel::get_fixel_directory(input_filepath);
+  auto subject_index_header = Fixel::find_index_header(subject_fixel_directory);
+  auto subject_index = subject_index_header.get_image<index_type>();
   Fixel::debug_validate_index_image(subject_index);
-  auto subject_directions =
-      Fixel::find_directions_header(Fixel::get_fixel_directory(input_file)).get_image<float>().with_direct_io();
+  auto subject_directions = Fixel::find_directions_header(subject_fixel_directory).get_image<float>(DirectIO(1));
 
-  if (input_file == subject_directions.name())
+  if (std::filesystem::equivalent(input_filepath, subject_directions.path()))
     throw Exception("input fixel data file cannot be the directions file");
 
-  auto subject_data = Image<float>::open(input_file);
-  Fixel::check_fixel_size(subject_index, subject_data);
+  auto subject_data = Image<float>::open(input_filepath);
+  Fixel::check_fixel_size(subject_index_header, subject_data);
 
   auto template_index = Fixel::find_index_header(argument[1]).get_image<index_type>();
-  auto template_directions = Fixel::find_directions_header(argument[1]).get_image<float>().with_direct_io();
+  auto template_directions = Fixel::find_directions_header(argument[1]).get_image<float>(DirectIO(1));
 
-  check_dimensions(subject_index, template_index);
-  std::string output_fixel_directory = argument[2];
-  Fixel::copy_index_and_directions_file(argument[1], output_fixel_directory);
+  // TODO If output argument is changed to filepath, remove explicit casts
+  const std::filesystem::path output_directory(argument[2].as_text());
+  Fixel::copy_index_and_directions_file(argument[1], output_directory);
 
   Header output_data_header(template_directions);
   output_data_header.size(1) = 1;
-  auto output_data = Image<float>::create(Path::join(output_fixel_directory, argument[3]), output_data_header);
+  // TODO If output argument is changed to filepath, remove explicit casts
+  auto output_data = Image<float>::create(output_directory / argument[3].as_text(), output_data_header);
 
   for (auto i =
            Loop("mapping subject fixel data to template fixels", template_index, 0, 3)(template_index, subject_index);

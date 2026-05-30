@@ -46,5 +46,5 @@ void usage() {
 
 void run() {
   Fixel::validate_directory(argument[0]);
-  CONSOLE("fixel directory \"" + std::string(argument[0]) + "\" is valid");
+  CONSOLE("fixel directory \"" + argument[0].as_text() + "\" is valid");
 }

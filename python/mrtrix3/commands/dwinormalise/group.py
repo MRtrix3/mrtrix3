@@ -142,9 +142,7 @@ def execute(): #pylint: disable=unused-variable
   progress.done()
 
   app.console('Exporting template images to user locations')
-  run.command(['mrconvert', 'template_wm_mask.mif', app.ARGS.wm_mask],
-              mrconvert_keyval='NULL',
+  run.command(['mrconvert', 'template_wm_mask.mif', app.ARGS.wm_mask, '-clear_properties'],
               force=app.FORCE_OVERWRITE)
-  run.command(['mrconvert', 'fa_template.mif', app.ARGS.fa_template],
-              mrconvert_keyval='NULL',
+  run.command(['mrconvert', 'fa_template.mif', app.ARGS.fa_template, '-clear_properties'],
               force=app.FORCE_OVERWRITE)

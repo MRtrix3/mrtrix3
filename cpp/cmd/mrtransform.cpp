@@ -14,11 +14,15 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <filesystem>
+#include <optional>
+
 #include "adapter/jacobian.h"
 #include "algo/copy.h"
 #include "algo/loop.h"
 #include "algo/threaded_copy.h"
 #include "command.h"
+#include "debug.h"
 #include "dwi/directions/predefined.h"
 #include "dwi/directions/validate.h"
 #include "dwi/gradient.h"
@@ -41,8 +45,6 @@
 #include "registration/warp/compose.h"
 #include "registration/warp/helpers.h"
 #include "registration/warp/validate.h"
-
-#include <optional>
 
 using namespace MR;
 using namespace App;
@@ -309,7 +311,7 @@ void run() {
       try {
         linear_transform = File::Matrix::load_transform(opt[0][0]);
       } catch (...) {
-        throw Exception("Unable to extract transform matrix from -replace file \"" + str(opt[0][0]) + "\"");
+        throw Exception("Unable to extract transform matrix from -replace file \"" + opt[0][0].as_text() + "\"");
       }
     }
   }
@@ -343,10 +345,10 @@ void run() {
     if (linear)
       throw Exception("the -warp_full option cannot be applied in combination with -linear"
                       " since the linear transform is already included in the warp header");
-    if (!Path::is_mrtrix_image(opt[0][0]) &&                    //
-        !(Path::has_suffix(opt[0][0], {".nii", ".nii.gz"}) &&   //
-          File::Config::get_bool("NIfTIAutoLoadJSON", false) && //
-          Path::exists(File::NIfTI::get_json_path(opt[0][0])))) {
+    if (!Path::is_mrtrix_image(opt[0][0]) &&                                 //
+        !(Path::has_suffix(opt[0][0], {".nii", ".nii.gz"}) &&                //
+          File::Config::get_bool("NIfTIAutoLoadJSON", false) &&              //
+          std::filesystem::exists(File::NIfTI::get_json_path(opt[0][0])))) { //
       WARN("warp_full image is not in original .mif/.mih file format or in NIfTI file format with associated JSON;"
            " converting to other file formats may remove linear transformations stored in the image header.");
     }
@@ -355,7 +357,7 @@ void run() {
     if (warp_format != Registration::Warp::WarpFormat::Full)
       throw Exception("Input to -warp_full option must be a 5D \"full\" warp series,"
                       " not a 4D deformation warp (see -warp option)");
-    warp = H_warp.get_image<default_type>().with_direct_io();
+    warp = H_warp.get_image<default_type>(DirectIO(3));
     Registration::Warp::debug_validate_image(warp);
   }
 
@@ -378,7 +380,7 @@ void run() {
     if (warp_format != Registration::Warp::WarpFormat::Simple)
       throw Exception("Input to -warp option must be a 4D deformation field,"
                       " not a \"full\" warp (see -warp_full option)");
-    warp = H_warp.get_image<default_type>().with_direct_io(Stride::contiguous_along_axis(3));
+    warp = H_warp.get_image<default_type>(DirectIO(3));
     Registration::Warp::debug_validate_image(warp);
   }
 
@@ -468,10 +470,7 @@ void run() {
   }
 
   // Intensity / FOD modulation
-  opt = get_options("modulate");
-  const std::optional<Modulation> modulation =
-      opt.empty() ? std::nullopt
-                  : std::optional<Modulation>(get_option_choice<Modulation>("modulate", Modulation::FOD));
+  auto modulation = get_optional<Modulation>("modulate");
   const bool modulate_fod = modulation.has_value() && *modulation == Modulation::FOD;
   const bool modulate_jac = modulation.has_value() && *modulation == Modulation::JAC;
 
@@ -512,6 +511,7 @@ void run() {
     try {
       grad = DWI::get_DW_scheme(input_header);
     } catch (Exception &) {
+      DEBUG("No valid diffusion gradient table found");
     }
     if (grad.rows()) {
       try {
@@ -622,7 +622,7 @@ void run() {
       WARN("Out of bounds value ignored since the input image will not be regridded");
   }
 
-  auto input = input_header.get_image<float>().with_direct_io(stride);
+  auto input = input_header.get_image<float>(DirectIO{stride});
 
   // Reslice the image onto template
   if (template_header.valid() && !warp) {

@@ -28,11 +28,11 @@
 
 namespace MR::DWI::Tractography {
 
-template <typename T = float> class ScalarReader : public __ReaderBase__ {
+template <typename T = float> class ScalarReader : public ReaderBase {
 public:
   using value_type = T;
 
-  ScalarReader(std::string_view file, Properties &properties) { open(file, "track scalars", properties); }
+  ScalarReader(const std::filesystem::path &path, Properties &properties) { open(path, "track scalars", properties); }
 
   bool operator()(TrackScalar<T> &tck_scalar) {
     tck_scalar.clear();
@@ -62,9 +62,9 @@ public:
   }
 
 protected:
-  using __ReaderBase__::current_index;
-  using __ReaderBase__::dtype;
-  using __ReaderBase__::in;
+  using ReaderBase::current_index;
+  using ReaderBase::dtype;
+  using ReaderBase::in;
 
   value_type get_next_scalar() {
     using namespace ByteOrder;
@@ -113,27 +113,27 @@ protected:
  * 16MB, and can be set in the config file using the
  * TrackWriterBufferSize field (in bytes).
  * */
-template <typename T = float> class ScalarWriter : public __WriterBase__<T> {
+template <typename T = float> class ScalarWriter : public WriterBase<T> {
 public:
   using value_type = T;
-  using __WriterBase__<T>::count;
-  using __WriterBase__<T>::count_offset;
-  using __WriterBase__<T>::total_count;
-  using __WriterBase__<T>::name;
-  using __WriterBase__<T>::dtype;
-  using __WriterBase__<T>::create;
-  using __WriterBase__<T>::update_counts;
-  using __WriterBase__<T>::verify_stream;
-  using __WriterBase__<T>::open_success;
+  using WriterBase<T>::count;
+  using WriterBase<T>::count_offset;
+  using WriterBase<T>::total_count;
+  using WriterBase<T>::path;
+  using WriterBase<T>::dtype;
+  using WriterBase<T>::create;
+  using WriterBase<T>::update_counts;
+  using WriterBase<T>::verify_stream;
+  using WriterBase<T>::open_success;
 
-  ScalarWriter(std::string_view file, const Properties &properties)
-      : __WriterBase__<T>(file),
+  ScalarWriter(const std::filesystem::path &path, const Properties &properties)
+      : WriterBase<T>(path),
         buffer_capacity(File::Config::get_int("TrackWriterBufferSize", 16777216) / sizeof(value_type)),
         buffer(new value_type[buffer_capacity + 1]),
         buffer_size(0) {
     File::OFStream out;
     try {
-      out.open(name, std::ios::out | std::ios::binary | std::ios::trunc);
+      out.open(path, std::ios::out | std::ios::binary | std::ios::trunc);
     } catch (Exception &e) {
       throw Exception(e, "Unable to create output track scalar file");
     }
@@ -146,7 +146,13 @@ public:
     current_offset = out.tellp();
   }
 
-  ~ScalarWriter() { commit(); }
+  ~ScalarWriter() {
+    try {
+      commit();
+    } catch (Exception &e) {
+      Exception(e, "Tractography scalar file not properly finalised").display();
+    }
+  }
 
   bool operator()(const TrackScalar<T> &tck_scalar) {
     if (buffer_size + tck_scalar.size() > buffer_capacity)
@@ -183,7 +189,7 @@ protected:
   void commit() {
     if (buffer_size == 0 || !open_success)
       return;
-    File::OFStream out(name, std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
+    File::OFStream out(path, std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
     out.seekp(current_offset, out.beg);
     out.write(reinterpret_cast<char *>(buffer.get()), sizeof(value_type) * buffer_size);
     current_offset = static_cast<int64_t>(out.tellp());

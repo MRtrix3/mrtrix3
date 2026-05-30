@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <filesystem>
 #include <iostream>
 
 #include "adapter/reslice.h"
@@ -89,7 +90,7 @@ struct StageSetting {
   OptimiserAlgoType optimiser_default, optimiser_first, optimiser_last;
   default_type loop_density;
   ssize_t fod_lmax;
-  std::vector<std::string> diagnostics_images;
+  std::vector<std::filesystem::path> diagnostics_image_paths;
 };
 
 class Linear {
@@ -218,16 +219,16 @@ public:
       throw Exception("the lmax must be defined for all stages (1 or " + str(stages.size()) + ")");
   }
 
-  void set_diagnostics_image_prefix(const std::basic_string<char> &diagnostics_image_prefix) {
+  void set_diagnostics_image_dir(const std::filesystem::path &diagnostics_image_dir) {
     for (size_t level = 0; level < stages.size(); ++level) {
       auto &stage = stages[level];
       for (size_t iter = 1; iter <= stage.stage_iterations; ++iter) {
-        std::ostringstream oss;
-        oss << diagnostics_image_prefix << "_stage-" << level + 1 << "_iter-" << iter << ".mif";
-        if (Path::exists(oss.str()) && !App::overwrite_files)
-          throw Exception("diagnostics image file \"" + oss.str() +
-                          "\" already exists (use -force option to force overwrite)");
-        stage.diagnostics_images.push_back(oss.str());
+        const std::filesystem::path image_path =
+            diagnostics_image_dir / ("stage-" + str(level + 1) + "_iter-" + str(iter) + ".mif");
+        if (std::filesystem::exists(image_path) && !App::overwrite_files)
+          throw Exception("diagnostics image file \"" + image_path.string() + "\"" + //
+                          " already exists (use -force option to force overwrite)"); //
+        stage.diagnostics_image_paths.push_back(image_path);
       }
     }
   }
@@ -482,11 +483,14 @@ public:
       const default_type beta(MR::File::Config::get_float("RegGdConvergenceSlopeSmooth", 0.1));
       if ((beta < 0.0f) || (beta > 1.0f))
         throw Exception("config file option RegGdConvergenceSlopeSmooth has to be in the range: [0...1]");
-      size_t buffer_len(MR::File::Config::get_float("RegGdConvergenceBufferLen", 4));
+      // CONF option: RegGdConvergenceBufferLen
+      // CONF default: 4
+      // CONF Linear registration: gradient descent convergence buffer length.
+      size_t buffer_len(MR::File::Config::get_int("RegGdConvergenceBufferLen", 4));
       // CONF option: RegGdConvergenceMinIter
       // CONF default: 10
       // CONF Linear registration: minimum number of iterations until convergence check is activated.
-      size_t min_iter(MR::File::Config::get_float("RegGdConvergenceMinIter", 10));
+      size_t min_iter(MR::File::Config::get_int("RegGdConvergenceMinIter", 10));
       transform.get_gradient_descent_updator()->set_convergence_check(
           slope_threshold, alpha, beta, buffer_len, min_iter);
 
@@ -526,9 +530,9 @@ public:
         // auto params = optim.state();
         // VAR(optim.function_evaluations());
         // Math::check_function_gradient (evaluate, params, 0.0001, true, optimiser_weights);
-        if (!stage.diagnostics_images.empty()) {
-          CONSOLE("    creating diagnostics image: " + stage.diagnostics_images[stage_iter - 1]);
-          parameters.make_diagnostics_image(stage.diagnostics_images[stage_iter - 1],
+        if (!stage.diagnostics_image_paths.empty()) {
+          CONSOLE("    creating diagnostics image: " + stage.diagnostics_image_paths[stage_iter - 1].string());
+          parameters.make_diagnostics_image(stage.diagnostics_image_paths[stage_iter - 1],
                                             File::Config::get_bool("RegLinregDiagnosticsImageMasked", false));
         }
       }
@@ -555,7 +559,7 @@ public:
   //     midway_header.spacing(dim) = input.spacing(dim);
   //     midway_header.size(dim) = input.size(dim);
   //   }
-  //   image_midway = Image<typename ImageType::value_type>::create (out_path, midway_header).with_direct_io();
+  //   image_midway = Image<typename ImageType::value_type>::create (out_path, midway_header, DirectIO{});
   //   if (input_is_one) {
   //     Filter::reslice<Interp::Cubic> (input, image_midway, transformation.get_transform_half(),
   //     Adapter::AutoOverSample, 0.0); if (do_reorientation)

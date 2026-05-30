@@ -1,7 +1,6 @@
 #!/bin/bash
 # Ensure operation of the -posthoc option
 rm -rf tmp/
-mkdir tmp/
 
 mrclusterstats mrclusterstats/subjects.txt mrclusterstats/design.txt SIFT_phantom/mask.mif tmp/ \
     -ttests mrclusterstats/contrast.txt \

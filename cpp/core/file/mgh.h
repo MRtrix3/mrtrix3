@@ -17,9 +17,12 @@
 #pragma once
 
 #include <array>
+#include <cassert>
+#include <cstddef>
 #include <iomanip>
 #include <sstream>
 
+#include "exception.h"
 #include "file/gz.h"
 #include "file/nifti_utils.h"
 #include "header.h"
@@ -34,7 +37,7 @@ namespace MR::File::MGH {
 constexpr size_t header_size = 90;
 constexpr size_t data_offset = 284;
 constexpr size_t strlen = 1024;
-constexpr size_t matrix_strlen = 4 * 4 * 100;
+constexpr size_t matrix_strlen = static_cast<const size_t>(4 * 4 * 100);
 
 using tag_type = int32_t;
 constexpr tag_type tag_old_colortable = 1;
@@ -190,7 +193,7 @@ typedef struct {
 template <class Input> void read_header(Header &H, Input &in) {
   auto version = fetch<int32_t>(in);
   if (version != 1)
-    throw Exception("image \"" + H.name() + "\" is not in MGH format (version != 1)");
+    throw Exception("image \"" + H.path().string() + "\" is not in MGH format (version != 1)");
 
   auto width = fetch<int32_t>(in);
   auto height = fetch<int32_t>(in);
@@ -231,7 +234,7 @@ template <class Input> void read_header(Header &H, Input &in) {
     dtype = DataType::Float32BE;
     break;
   default:
-    throw Exception("unknown data type for MGH image \"" + H.name() + "\" (" + str(type) + ")");
+    throw Exception("unknown data type for MGH image \"" + H.path().string() + "\" (" + str(type) + ")");
   }
   H.datatype() = dtype;
   H.reset_intensity_scaling();
@@ -393,7 +396,7 @@ template <class Input> void read_other(Header &H, Input &in) {
 
   auto read_colourtable_V1 = [&](Input &in, const int32_t nentries) {
     if (!nentries)
-      throw Exception("Error reading colour table from file \"" + H.name() + "\": No entries");
+      throw Exception("Error reading colour table from file \"" + H.path().string() + "\": No entries");
     std::ostringstream table;
     const int32_t filename_length = fetch<int32_t>(in);
     std::string filename(filename_length + 1, '\0');
@@ -402,9 +405,10 @@ template <class Input> void read_other(Header &H, Input &in) {
     for (int32_t structure = 0; structure != nentries; ++structure) {
       const int32_t structurename_length = fetch<int32_t>(in);
       if (structurename_length <= 0)
-        throw Exception("Error reading colour table from file \"" + H.name() + "\": Invalid structure name length");
+        throw Exception("Error reading colour table from file \"" + H.path().string() + "\":" + //
+                        " invalid structure name length");                                      //
       std::string structurename(structurename_length + 1, '\0');
-      in.read(&structurename[0], structurename_length);
+      in.read(const_cast<char *>(structurename.data()), structurename_length);
       structurename.resize(structurename.find('\0'));
       const int32_t r = fetch<int32_t>(in);
       const int32_t g = fetch<int32_t>(in);
@@ -421,7 +425,7 @@ template <class Input> void read_other(Header &H, Input &in) {
   auto read_colourtable_V2 = [&](Input &in) {
     const int32_t nentries = fetch<int32_t>(in);
     if (!nentries)
-      throw Exception("Error reading colour table from file \"" + H.name() + "\": No entries");
+      throw Exception("Error reading colour table from file \"" + H.path().string() + "\": No entries");
     std::vector<std::string> table;
     const int32_t filename_length = fetch<int32_t>(in);
     std::string filename(filename_length + 1, '\0');
@@ -431,19 +435,18 @@ template <class Input> void read_other(Header &H, Input &in) {
     for (int32_t i = 0; i != num_entries_to_read; ++i) {
       const int32_t structure = fetch<int32_t>(in);
       if (structure < 0)
-        throw Exception("Error reading colour table from file \"" + H.name() + "\":" + //
-                        " Negative structure index (" + str(structure) + ")");         //
+        throw Exception("Error reading colour table from file \"" + H.path().string() + "\":" + //
+                        " Negative structure index (" + str(structure) + ")");                  //
       if (static_cast<size_t>(structure) < table.size() && !table[structure].empty())
-        throw Exception("Error reading colour table from file \"" + H.name() + "\":" + //
-                        " Duplicate structure index (" + str(structure) + ")");        //
+        throw Exception("Error reading colour table from file \"" + H.path().string() + "\":" + //
+                        " Duplicate structure index (" + str(structure) + ")");                 //
       else if (static_cast<size_t>(structure) >= table.size())
         table.resize(structure + 1, std::string());
       const int32_t structurename_length = fetch<int32_t>(in);
-      if (structurename_length <= 0)
-        throw Exception("Error reading colour table from file \"" + H.name() + "\":" + //
-                        " Invalid structure name length");                             //
+      throw Exception("Error reading colour table from file \"" + H.path().string() + "\":" + //
+                      " Invalid structure name length");                                      //
       std::string structurename(structurename_length + 1, '\0');
-      in.read(&structurename[0], structurename_length);
+      in.read(const_cast<char *>(structurename.data()), structurename_length);
       structurename.resize(structurename.find('\0'));
       const int32_t r = fetch<int32_t>(in);
       const int32_t g = fetch<int32_t>(in);
@@ -496,8 +499,8 @@ template <class Input> void read_other(Header &H, Input &in) {
         } else if (version == -2) {
           H.keyval()[tag_ID_to_string(id)] = read_colourtable_V2(in);
         } else {
-          throw Exception("Error reading colour table from file \"" + H.name() + "\":" + //
-                          " Unknown version (" + str(version) + ")");                    //
+          throw Exception("Error reading colour table from file \"" + H.path().string() + "\":" + //
+                          " Unknown version (" + str(version) + ")");                             //
         }
       } break;
       case tag_old_mgh_xform:
@@ -544,6 +547,7 @@ template <class Input> void read_other(Header &H, Input &in) {
     } while (!in.eof());
 
   } catch (int) {
+    DEBUG("No MGH \"other\" data found");
   }
 }
 
@@ -601,6 +605,9 @@ template <class Output> void write_header(const Header &H, Output &out) {
       break;
     case 2:
       c[2] = offset;
+      break;
+    default:
+      assert(false);
       break;
     }
   }
@@ -827,7 +834,7 @@ template <class Output> void write_other(const Header &H, Output &out) {
       return;
     store<int32_t>(tag_old_colortable, out);
     store<int32_t>(lines.size(), out);
-    const std::string filename = "INTERNAL";
+    static const std::string filename = "INTERNAL";
     store<int32_t>(filename.size() + 1, out);
     out.write(filename.c_str(), filename.size() + 1);
     for (const auto &line : lines) {
@@ -860,7 +867,7 @@ template <class Output> void write_other(const Header &H, Output &out) {
       max_index = std::max(max_index, index);
     }
     store<int32_t>(max_index + 1, out);
-    const std::string filename = "INTERNAL";
+    static const std::string filename = "INTERNAL";
     store<int32_t>(filename.size() + 1, out);
     out.write(filename.c_str(), filename.size() + 1);
     // Actual number of entries in the table

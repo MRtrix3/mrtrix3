@@ -138,7 +138,7 @@ public:
     update_control_points();
   }
 
-  void make_diagnostics_image(const std::basic_string<char> &image_path, bool masked = true) {
+  void make_diagnostics_image(const std::filesystem::path &image_path, bool masked = true) {
     Header header(midway_image);
     header.datatype() = DataType::Float64;
     header.ndim() = 4;

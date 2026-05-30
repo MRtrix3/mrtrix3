@@ -26,7 +26,7 @@ namespace MR::DWI::Tractography::GT {
 
 ExternalEnergyComputer::ExternalEnergyComputer(Stats &stat, Header &dwiheader, const Properties &props)
     : EnergyComputer(stat),
-      dwi(dwiheader.get_image<float>().with_direct_io(3)),
+      dwi(dwiheader.get_image<float>(DirectIO{3})),
       T(Transform(dwiheader).scanner2voxel),
       lmax(props.Lmax),
       ncols(Math::SH::NforL(lmax)),

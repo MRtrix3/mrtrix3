@@ -32,15 +32,15 @@ class Mask : public Image<bool> {
 public:
   using transform_type = Eigen::Transform<float, 3, Eigen::AffineCompact>;
   Mask(const Mask &) = default;
-  Mask(std::string_view name)
-      : Image<bool>(get_mask(name)),
+  Mask(const std::filesystem::path &path)
+      : Image<bool>(get_mask(path)),
         scanner2voxel(new transform_type(Transform(*this).scanner2voxel.cast<float>())),
         voxel2scanner(new transform_type(Transform(*this).voxel2scanner.cast<float>())) {}
 
   std::shared_ptr<transform_type> scanner2voxel, voxel2scanner; // Ptr to prevent unnecessary copy-construction
 
 private:
-  static Image<bool> get_mask(std::string_view name);
+  static Image<bool> get_mask(const std::filesystem::path &path);
 };
 
 class ROI {
@@ -77,7 +77,7 @@ public:
   std::string shape() const { return (mask ? "image" : "sphere"); }
 
   std::string parameters() const {
-    return mask ? std::string(mask->name()) : str(pos[0]) + "," + str(pos[1]) + "," + str(pos[2]) + "," + str(radius);
+    return mask ? std::string(mask->name()) : (str(pos[0]) + "," + str(pos[1]) + "," + str(pos[2]) + "," + str(radius));
   }
 
   float min_featurelength() const {
@@ -205,6 +205,7 @@ public:
   IncludeROIVisitation(const IncludeROIVisitation &) = default;
   IncludeROIVisitation &operator=(const IncludeROIVisitation &) = delete;
 
+  bool empty() const { return unordered.empty() && ordered.empty(); }
   void reset() {
     visited.setZero();
     state.reset();

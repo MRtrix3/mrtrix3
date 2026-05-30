@@ -65,14 +65,15 @@ void Smooth::operator()(Image<float> &input, Image<float> &output) const {
   check_dimensions(input, output);
 
   if (static_cast<size_t>(input.size(0)) != matrix.size())
-    throw Exception("Size of fixel data file \"" + input.name() + "\" (" + str(input.size(0)) +
-                    ") does not match fixel connectivity matrix (" + str(matrix.size()) + ")");
+    throw Exception("Size of fixel data file \"" + input.path().string() + "\" (" + str(input.size(0)) + ")" + //
+                    " does not match fixel connectivity matrix (" + str(matrix.size()) + ")");                 //
 
   class Source {
   public:
     Source(const size_t N) : number(N), counter(0) {}
     bool operator()(size_t &fixel) {
-      if ((fixel = counter) == number)
+      fixel = counter;
+      if (fixel == number)
         return false;
       ++counter;
       return true;

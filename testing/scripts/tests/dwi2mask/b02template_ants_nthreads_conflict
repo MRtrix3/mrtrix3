@@ -1,0 +1,12 @@
+#!/bin/bash
+# Verify that "dwi2mask b02template", when invoked with both -nthreads
+#   and a "-n" option embedded in the -ants_options string
+#   specifying a different thread count,
+#   produces an appropriate warning message
+dwi2mask b02template BIDS/sub-01/dwi/sub-01_dwi.nii.gz tmp.mif -force \
+-fslgrad BIDS/sub-01/dwi/sub-01_dwi.bvec BIDS/sub-01/dwi/sub-01_dwi.bval \
+-software antsquick \
+-template dwi2mask/template_image.mif.gz dwi2mask/template_mask.mif.gz \
+-nthreads 4 \
+-ants_options "-t r -n 2" 2>&1 |
+grep "but -ants_options contains '-n 2'"

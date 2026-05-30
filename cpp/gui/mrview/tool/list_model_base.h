@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "gui.h"
 #include "mrview/displayable.h"
 
 namespace MR::GUI::MRView::Tool {
@@ -34,7 +35,7 @@ public:
     }
     if (role != Qt::DisplayRole && role != Qt::ToolTipRole)
       return QVariant();
-    return items[index.row()] ? qstr(items[index.row()]->get_filename()) : QString();
+    return items[index.row()] ? qstr(items[index.row()]->get_filepath().string()) : QString();
   }
 
   bool setData(const QModelIndex &idx, const QVariant &value, int role) override {

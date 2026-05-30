@@ -94,7 +94,6 @@ void run_volume(Stats::Stats &stats, Image<complex_type> &data, Image<bool> &mas
 }
 
 void run() {
-
   auto header = Header::open(argument[0]);
   if (header.ndim() > 4)
     throw Exception("mrstats is not designed to handle images greater than 4D");

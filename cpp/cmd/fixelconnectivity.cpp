@@ -14,12 +14,13 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "command.h"
-#include "fixel/fixel.h"
-#include "fixel/helpers.h"
+#include <filesystem>
 
+#include "command.h"
 #include "dwi/tractography/mapping/mapping.h"
 #include "dwi/tractography/weights.h"
+#include "fixel/fixel.h"
+#include "fixel/helpers.h"
 #include "fixel/matrix.h"
 #include "fixel/validate.h"
 
@@ -51,7 +52,7 @@ void usage() {
   + Argument("tracks",
              "the tracks used to determine fixel-fixel connectivity").type_tracks_in()
   + Argument("matrix",
-             "the output fixel-fixel connectivity matrix directory path").type_directory_out();
+             "the output fixel-fixel connectivity matrix directory path").type_directory_out(DirOutMode::MustNotExist);
 
   OPTIONS
   + OptionGroup("Options that influence generation of the connectivity matrix / matrices")
@@ -97,15 +98,15 @@ template <class WriterType> void set_optional_outputs(WriterType &writer) {
 }
 
 void run() {
-  const value_type connectivity_threshold = get_option_value("connectivity", default_connectivity_threshold);
+  const value_type connectivity_threshold =
+      get_option_value("connectivity", static_cast<value_type>(default_connectivity_threshold));
   const value_type angular_threshold =
       get_option_value("angle", static_cast<value_type>(DWI::Tractography::Mapping::default_streamline2fixel_angle));
 
-  const std::string input_fixel_directory = argument[0];
-  Header index_header = Fixel::find_index_header(input_fixel_directory);
+  Header index_header = Fixel::find_index_header(argument[0]);
+  const index_type num_fixels = Fixel::get_number_of_fixels(index_header);
   auto index_image = index_header.get_image<index_type>();
   Fixel::debug_validate_index_image(index_image);
-  const index_type num_fixels = Fixel::get_number_of_fixels(index_image);
 
   // When provided with a mask, this only influences which fixels get their connectivity quantified;
   //   these will appear empty in the output matrix

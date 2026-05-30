@@ -73,6 +73,18 @@ run_checks() {
     $grep -Po '\#ifndef\s+__.*__\s+\#define\s+__.*__'
   )
 
+# detect the inclusion of Eigen headers without eigen_plugins/eigen_plugins.h appearing upstream;
+#   this can cause issues with compilation on some systems
+  if [[ ! "$f" -ef "cpp/core/eigen_plugins/eigen_plugins.h" ]]; then
+    res="$res"$(
+      cat .check_syntax1.tmp | \
+      $grep -Po '^#include .*' | \
+      tr '\n' ' ' | \
+      $grep -Po '.*#include <(unsupported\/)?Eigen\/[\w\/]+>' | \
+      $grep -Pv '#include "eigen_plugins\/eigen_plugins\.h"'
+    )
+  fi
+
 #############################################################
 # Process the file to strip macros and single-line comments #
 #############################################################
@@ -125,14 +137,26 @@ run_checks() {
 #   which does not look like a cast for compatibility with external code
   res="$res"$(
     cat .check_syntax4.tmp | \
-    $grep -Po '(const\s+|)char(\s?\*([\s]*const|)\s?(?![>\(\)])|\s+[a-zA-Z_][a-zA-Z0-9_]*\[(\d*\]|))'
+    $grep -Po '(const\s+|)char(\s?\*(\s?const|)\s?(?![>\(\)])|\s+[a-zA-Z_][a-zA-Z0-9_]*\[(\d*\]|))'
   )
 
-# - Detect any instances of C-style string manipulation functions
-#   (need to permit strerror() for interfacing with external libraries)
+# - Detect any instances of C-style string manipulation functions,
+#   including direct strerror() calls (use MR::C_strerror() instead)
   res="$res"$(
     cat .check_syntax4.tmp | \
-    $grep -Po '\b(strcpy|strncpy|strcat|strncat|strxfrm|strlen|strcmp|strncmp|strcoll|strchr|strrchr|strspn|strcspn|strpbrk|strstr|strtok|wcscpy|wcsncpy|wcscat|wcsncat|wcsxfrm|wcslen|wcscmp|wcsncmp|wcscoll|wcschr|wcsrchr|wcsspn|wcscspn|wcspbrk|wcsstr|wcstok)\s*\('
+    $grep -Po '\b(strcpy|strncpy|strcat|strncat|strxfrm|strlen|strcmp|strncmp|strcoll|strchr|strrchr|strspn|strcspn|strpbrk|strstr|strtok|wcscpy|wcsncpy|wcscat|wcsncat|wcsxfrm|wcslen|wcscmp|wcsncmp|wcscoll|wcschr|wcsrchr|wcsspn|wcscspn|wcspbrk|wcsstr|wcstok|strerror)\s*\('
+  )
+
+# - Detect direct calls to std::getenv() or getenv() (use MR::get_env() instead)
+  res="$res"$(
+    cat .check_syntax4.tmp | \
+    $grep -Po '\bgetenv\s*\('
+  )
+
+# - Detect any instances of C rand() or srand() (use <random> STL instead)
+  res="$res"$(
+    cat .check_syntax4.tmp | \
+    $grep -Po '\b(srand|rand)\s*\('
   )
 
 # - Detect instances of const std::string &
@@ -146,7 +170,7 @@ run_checks() {
 # - Detect namespaces that could have been nested
   res="$res"$(
     cat .check_syntax4.tmp | \
-    $grep -Po '\bnamespace [\w\:]+\s*\{(namespace [\w\:]+\s*\{)+'
+    $grep -Po '\bnamespace [\w\:]+\s*\{(\s*namespace [\w\:]+\s*\{)+'
   )
 
 # - Detect any instances of "using namespace std;":
@@ -158,7 +182,7 @@ run_checks() {
 # - Detect any instances of C-style casts
   res="$res"$(
     cat .check_syntax4.tmp | \
-    $grep -Po '(\((?!void\))[a-zA-Z][a-zA-Z0-9_]*\)[a-zA-Z][a-zA-Z0-9_]*|\([a-zA-Z][a-zA-Z0-9_]*\s?\*(\s?const)?\)[a-zA-Z][a-zA-Z0-9_]*|(?<!\bstd::function<)\b(GLint|GLfloat|c?float|c?double|(default|value|index)_type|[^\w_](unsigned\s+)?int|u?int(8|16|32|64)_t|s?size_t|ValueType|(?<!Scalar)::Scalar)\(\(*\**(?![\d\-\.]*\)))'
+    $grep -Po '(\((?!void\))[a-zA-Z][a-zA-Z0-9_]*\)[a-zA-Z][a-zA-Z0-9_]*|\([a-zA-Z][a-zA-Z0-9_]*\s?\*(\s?const)?\)[a-zA-Z][a-zA-Z0-9_]*|\(\s?void\s?\*(\s?const)?\)[\w&(]|(?<!\bstd::function<)\b(GLint|GLfloat|c?float|c?double|(default|value|index)_type|[^\w_](unsigned\s+)?int|u?int(8|16|32|64)_t|s?size_t|ValueType|(?<!Scalar)::Scalar)\(\(*\**(?![\d\-\.]*\)))'
   )
 
 # - Detect any instances of macros NULL (nullptr is better), NAN, INFINITY
@@ -174,6 +198,12 @@ run_checks() {
       $grep -Po '((?<!::)std::|)(?<!MR::)(?<!\.)\babs\s?\('
     )
   fi
+
+# detect use of std::visit with a lambda function
+  res="$res"$(
+    cat .check_syntax4.tmp | \
+    $grep -Po 'std::visit\s?\(\s?\[\s?(&?\w+(,\s?&?\w+)*)?\]\s?\('
+  )
 
   rm -f .check_syntax1.tmp .check_syntax2.tmp .check_syntax3.tmp .check_syntax4.tmp
 
@@ -238,6 +268,7 @@ else
   echo "" >> $LOG
   echo "Please check the following syntax requirements:
   - Use #pragma once rather than #ifndef __headername__;
+  - #include \"eigen_plugins/eigen_plugins.h\" must appear before inclusion of any Eigen headers;
   - Use nested namespaces rather than sequentially-defined namespaces;
   - Define numerical constants using constexpr rather than preprocessor macros;
   - Use static_cast<>() rather than C-style casts;
@@ -248,6 +279,10 @@ else
   - Replace all instances of %zu in print() calls with PRI_SIZET;
   - Use nullptr rather than NULL macro;
   - Use std::numeric_limits<> or MR::NaN(F) / MR::Inf(F) rather than macros NAN / INFINITY;
-  - Do not use C-style arrays (replace with eg. std::array<>)." >> $LOG
+  - Do not use C-style arrays (replace with eg. std::array<>);
+  - Use MR::match_v() rather than std::visit() with a lambda function;
+  - Replace all instances of strerror() with MR::C_strerror() (declared in exception.h);
+  - Replace all instances of std::getenv() or getenv() with MR::get_env() (declared in env.h);
+  - Replace all instances of rand() and srand() with C++ <random> equivalents (e.g. std::mt19937 + std::uniform_int_distribution); use thread_local engines or per-instance member engines to ensure thread-safety." >> $LOG
   exit 1
 fi

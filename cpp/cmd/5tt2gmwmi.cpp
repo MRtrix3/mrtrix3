@@ -26,6 +26,8 @@
 #include "dwi/tractography/ACT/tissues.h"
 #include "dwi/tractography/ACT/validate.h"
 
+#include <filesystem>
+
 using namespace MR;
 using namespace App;
 
@@ -37,19 +39,19 @@ void usage() {
   SYNOPSIS = "Generate a mask image appropriate for seeding streamlines on the grey matter-white matter interface";
 
   REFERENCES
-    + "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
-      "Anatomically-constrained tractography:"
-      " Improved diffusion MRI streamlines tractography through effective use of anatomical information. "
-      "NeuroImage, 2012, 62, 1924-1938";
+      + "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
+        "Anatomically-constrained tractography:"
+        " Improved diffusion MRI streamlines tractography through effective use of anatomical information. "
+        "NeuroImage, 2012, 62, 1924-1938";
 
   ARGUMENTS
-    + Argument ("5tt_in", "the input 5TT segmented anatomical image").type_image_in()
-    + Argument ("mask_out", "the output mask image").type_image_out();
+      + Argument ("5tt_in", "the input 5TT segmented anatomical image").type_image_in()
+      + Argument ("mask_out", "the output mask image").type_image_out();
 
   OPTIONS
-    + Option("mask_in", "Filter an input mask image according to those voxels that lie upon the grey matter - white matter boundary. "
-                        "If no input mask is provided, "
-                        "the output will be a whole-brain mask image calculated using the anatomical image only.")
+      + Option("mask_in", "Filter an input mask image according to those voxels that lie upon the grey matter - white matter boundary. "
+                          "If no input mask is provided, "
+                          "the output will be a whole-brain mask image calculated using the anatomical image only.")
       + Argument ("image", "the input mask image").type_image_in();
 
 }
@@ -108,7 +110,6 @@ private:
 };
 
 void run() {
-
   Header H_in = Header::open(argument[0]);
   DWI::Tractography::ACT::validate_5TT_header(H_in);
   auto input = H_in.get_image<float>();

@@ -19,6 +19,7 @@
 #include "mrview/adjust_button.h"
 #include "mrview/tool/base.h"
 #include "mrview/tool/view.h"
+#include "opengl/gl_core_3_3.h"
 #include "opengl/lighting.h"
 
 namespace MR::GUI::MRView::Mode {
@@ -346,7 +347,7 @@ void Volume::paint(Projection &projection) {
     volume_VI.bind(gl::ELEMENT_ARRAY_BUFFER);
 
     gl::EnableVertexAttribArray(0);
-    gl::VertexAttribPointer(0, 3, gl::BYTE, gl::FALSE_, 4 * sizeof(GLbyte), (void *)0);
+    gl::VertexAttribPointer(0, 3, gl::BYTE, gl::FALSE_, 4 * sizeof(GLbyte), nullptr);
 
     static const std::array<GLbyte, 32> vertices = {                                                 //
                                                     0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 1, 0,  //
@@ -487,7 +488,7 @@ void Volume::paint(Projection &projection) {
 }
 
 inline Tool::View *Volume::get_view_tool() const {
-  Tool::Dock *dock = dynamic_cast<Tool::__Action__ *>(window().tools()->actions()[0])->dock;
+  Tool::Dock *dock = dynamic_cast<Tool::ActionWrapper *>(window().tools()->actions()[0])->dock;
   if (!dock)
     return nullptr;
   return dynamic_cast<Tool::View *>(dock->tool);

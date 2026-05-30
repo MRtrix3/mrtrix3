@@ -16,14 +16,21 @@
 
 #pragma once
 
-#include "file/config.h"
-#include "header.h"
-#include "raw.h"
-#include "types.h"
+#include <filesystem>
+#include <memory>
+#include <string>
+#include <vector>
+
+#include "image_io/base.h"
 
 namespace MR {
 class Header;
-}
+} // namespace MR
+
+namespace MR::Axes {
+class Shuffle;
+class permutations_type;
+} // namespace MR::Axes
 
 namespace MR::File::NIfTI {
 extern bool right_left_warning_issued;
@@ -40,6 +47,6 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> create(Header &H);
 template <int VERSION> std::unique_ptr<ImageIO::Base> create_gz(Header &H);
 
 int version(Header &H);
-std::string get_json_path(std::string_view nifti_path);
+std::filesystem::path get_json_path(const std::filesystem::path &nifti_path);
 
 } // namespace MR::File::NIfTI

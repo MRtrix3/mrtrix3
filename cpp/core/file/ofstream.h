@@ -16,8 +16,8 @@
 
 #pragma once
 
+#include <filesystem>
 #include <fstream>
-#include <string>
 
 #include "types.h"
 
@@ -32,11 +32,13 @@ namespace MR::File {
 class OFStream : public std::ofstream {
 public:
   OFStream() {}
-  OFStream(std::string_view path, const std::ios_base::openmode mode = std::ios_base::out | std::ios_base::binary) {
+  OFStream(const std::filesystem::path &path,
+           const std::ios_base::openmode mode = std::ios_base::out | std::ios_base::binary) {
     open(path, mode);
   }
 
-  void open(std::string_view path, const std::ios_base::openmode mode = std::ios_base::out | std::ios_base::binary);
+  void open(const std::filesystem::path &path,
+            const std::ios_base::openmode mode = std::ios_base::out | std::ios_base::binary);
 };
 
 } // namespace MR::File

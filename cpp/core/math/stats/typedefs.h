@@ -16,9 +16,10 @@
 
 #pragma once
 
-#include "types.h"
-
+#include "eigen_plugins/eigen_plugins.h"
 #include <Eigen/Dense>
+
+#include "types.h"
 
 namespace MR::Math::Stats {
 

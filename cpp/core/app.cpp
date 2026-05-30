@@ -15,14 +15,19 @@
  */
 
 #include <algorithm>
+#include <cerrno>
 #include <clocale>
 #include <cstddef>
 #include <fcntl.h>
+#include <filesystem>
 #include <locale>
 #include <unistd.h>
 
 #include "app.h"
+#include "cmdline_option.h"
 #include "debug.h"
+#include "env.h"
+#include "exception.h"
 #include "executable_version.h"
 #include "file/config.h"
 #include "file/path.h"
@@ -40,6 +45,8 @@ OptionList OPTIONS;
 Description REFERENCES;
 bool REQUIRES_AT_LEAST_ONE_ARGUMENT = true;
 
+const std::string help_command = "less -X";
+
 const HelpFormatting help_formatting{
     80,      // const ssize_t width
     {0, 4},  // const Indents purpose_indents
@@ -48,8 +55,6 @@ const HelpFormatting help_formatting{
     7        // const ssize_t example_indent
 };
 
-const std::string help_command = "less -X";
-
 const std::string core_reference =
     "Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch, M.; Christiaens, D.; " //
     "Jeurissen, B.; Yeh, C.-H. & Connelly, A. "                                                               //
@@ -57,26 +62,25 @@ const std::string core_reference =
     "NeuroImage, 2019, 202, 116137";                                                                          //
 
 // clang-format off
-OptionGroup __standard_options =
-    OptionGroup("Standard options")
-    + Option("info", "display information messages.")
-    + Option("quiet",
-             "do not display information messages or progress status; "
-             "alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable"
-             " to a non-empty string.")
-    + Option("debug", "display debugging messages & debug input data.")
-    + Option("force",
-             "force overwrite of output files"
-             " (caution: using the same file as input and output might cause unexpected behaviour).")
-    + Option("nthreads",
-             "use this number of threads in multi-threaded applications"
-             " (set to 0 to disable multi-threading).")
-      + Argument("number").type_integer(0)
-    + Option("config", "temporarily set the value of an MRtrix config file entry.").allow_multiple()
-      + Argument("key").type_text()
-      + Argument("value").type_text()
-    + Option("help", "display this information page and exit.")
-    + Option("version", "display version information and exit.");
+const OptionGroup _standard_options = OptionGroup("Standard options")
+  + Option("info", "display information messages.")
+  + Option("quiet",
+           "do not display information messages or progress status; "
+           "alternatively, this can be achieved by setting the MRTRIX_QUIET environment variable"
+           " to a non-empty string.")
+  + Option("debug", "display debugging messages & debug input data.")
+  + Option("force",
+           "force overwrite of output files"
+           " (caution: using the same file as input and output might cause unexpected behaviour).")
+  + Option("nthreads",
+           "use this number of threads in multi-threaded applications"
+           " (set to 0 to disable multi-threading).")
+    + Argument("number").type_integer(0)
+  + Option("config", "temporarily set the value of an MRtrix config file entry.").allow_multiple()
+    + Argument("key").type_text()
+    + Argument("value").type_text()
+  + Option("help", "display this information page and exit.")
+  + Option("version", "display version information and exit.");
 // clang-format on
 
 std::string AUTHOR{};
@@ -110,7 +114,7 @@ std::vector<ParsedOption> option;
 // ENVVAR Set the default terminal verbosity. Default terminal verbosity
 // ENVVAR is 1. This has the same effect as the ``-quiet`` (0),
 // ENVVAR ``-info`` (2) or ``-debug`` (3) comand-line options.
-int log_level = getenv("MRTRIX_QUIET") ? 0 : (getenv("MRTRIX_LOGLEVEL") ? to<int>(getenv("MRTRIX_LOGLEVEL")) : 1);
+int log_level = MR::get_env("MRTRIX_QUIET").has_value() ? 0 : MR::get_env("MRTRIX_LOGLEVEL", 1);
 
 int exit_error_code = 0;
 bool fail_on_warn = false;
@@ -123,7 +127,7 @@ const std::string project_build_date;
 std::vector<std::string> raw_arguments_list;
 
 bool overwrite_files = false;
-void (*check_overwrite_files_func)(std::string_view name) = nullptr;
+void (*check_overwrite_files_func)(const std::filesystem::path &name) = nullptr;
 
 namespace {
 
@@ -308,7 +312,11 @@ Example::Example(std::string_view title, std::string_view code, std::string_view
 Example::operator std::string() const { return title + ": $ " + code + "  " + description; }
 
 std::string Example::syntax(const bool format) const {
-  std::string s = paragraph("", format ? underline(title + ":") + "\n" : title + ": ", help_formatting.purpose_indents);
+  std::string s = paragraph("",                                 //
+                            format                              //
+                                ? underline(title + ":") + "\n" //
+                                : title + ": ",                 //
+                            help_formatting.purpose_indents);   //
   s += std::string(help_formatting.example_indent, ' ') + "$ " + code + "\n";
   if (!description.empty())
     s += paragraph("", description, help_formatting.purpose_indents);
@@ -493,7 +501,7 @@ std::string Option::usage() const {
 std::string get_help_string(const bool format) {
   return help_head(format) + help_synopsis(format) + usage_syntax(format) + ARGUMENTS.syntax(format) +
          DESCRIPTION.syntax(format) + EXAMPLES.syntax(format) + OPTIONS.syntax(format) +
-         __standard_options.header(format) + __standard_options.contents(format) + __standard_options.footer(format) +
+         _standard_options.header(format) + _standard_options.contents(format) + MR::App::OptionGroup::footer(format) +
          help_tail(format);
 }
 
@@ -510,9 +518,9 @@ void print_help() {
     std::string help_string = get_help_string(1);
     FILE *file = popen(help_display_command.c_str(), "w");
     if (!file) {
-      INFO("error launching help display command \"" + help_display_command + "\": " + strerror(errno));
+      INFO("error launching help display command \"" + help_display_command + "\": " + MR::C_strerror(errno));
     } else if (fwrite(help_string.c_str(), 1, help_string.size(), file) != help_string.size()) {
-      INFO("error sending help page to display command \"" + help_display_command + "\": " + strerror(errno));
+      INFO("error sending help page to display command \"" + help_display_command + "\": " + MR::C_strerror(errno));
     }
 
     if (pclose(file) == 0)
@@ -561,26 +569,26 @@ std::string full_usage() {
     for (size_t j = 0; j < OPTIONS[i].size(); ++j)
       s += OPTIONS[i][j].usage();
 
-  for (size_t i = 0; i < __standard_options.size(); ++i)
-    s += __standard_options[i].usage();
+  for (size_t i = 0; i < _standard_options.size(); ++i)
+    s += _standard_options[i].usage();
 
   return s;
 }
 
 std::string markdown_usage() {
   /*
-     help_head (format)
-     + help_synopsis (format)
-     + usage_syntax (format)
-     + ARGUMENTS.syntax (format)
-     + DESCRIPTION.syntax (format)
-     + EXAMPLES.syntax (format)
-     + OPTIONS.syntax (format)
-     + __standard_options.header (format)
-     + __standard_options.contents (format)
-     + __standard_options.footer (format)
-     + help_tail (format);
-     */
+    help_head (format)
+    + help_synopsis (format)
+    + usage_syntax (format)
+    + ARGUMENTS.syntax (format)
+    + DESCRIPTION.syntax (format)
+    + EXAMPLES.syntax (format)
+    + OPTIONS.syntax (format)
+    + _standard_options.header (format)
+    + _standard_options.contents (format)
+    + _standard_options.footer (format)
+    + help_tail (format);
+  */
   std::string s = std::string("## Synopsis\n\n") + SYNOPSIS + "\n\n";
 
   s += "## Usage\n\n    " + std::string(NAME) + " [ options ] ";
@@ -657,8 +665,8 @@ std::string markdown_usage() {
   }
 
   s += "#### Standard options\n\n";
-  for (size_t i = 0; i < __standard_options.size(); ++i)
-    s += format_option(__standard_options[i]);
+  for (size_t i = 0; i < _standard_options.size(); ++i)
+    s += format_option(_standard_options[i]);
 
   s += std::string("## References\n\n");
   for (size_t i = 0; i < REFERENCES.size(); ++i)
@@ -673,18 +681,18 @@ std::string markdown_usage() {
 
 std::string restructured_text_usage() {
   /*
-     help_head (format)
-     + help_synopsis (format)
-     + usage_syntax (format)
-     + ARGUMENTS.syntax (format)
-     + DESCRIPTION.syntax (format)
-     + EXAMPLES.syntax (format)
-     + OPTIONS.syntax (format)
-     + __standard_options.header (format)
-     + __standard_options.contents (format)
-     + __standard_options.footer (format)
-     + help_tail (format);
-     */
+    help_head (format)
+    + help_synopsis (format)
+    + usage_syntax (format)
+    + ARGUMENTS.syntax (format)
+    + DESCRIPTION.syntax (format)
+    + EXAMPLES.syntax (format)
+    + OPTIONS.syntax (format)
+    + _standard_options.header (format)
+    + _standard_options.contents (format)
+    + _standard_options.footer (format)
+    + help_tail (format);
+  */
 
   std::string s = std::string("Synopsis\n--------\n\n") + SYNOPSIS + "\n\n";
 
@@ -787,8 +795,8 @@ std::string restructured_text_usage() {
   }
 
   s += "Standard options\n^^^^^^^^^^^^^^^^\n\n";
-  for (size_t i = 0; i < __standard_options.size(); ++i)
-    s += format_option(__standard_options[i]);
+  for (size_t i = 0; i < _standard_options.size(); ++i)
+    s += format_option(_standard_options[i]);
 
   s += std::string("References\n^^^^^^^^^^\n\n");
   for (size_t i = 0; i < REFERENCES.size(); ++i) {
@@ -817,7 +825,7 @@ const Option *match_option(std::string_view arg) {
 
   for (size_t i = 0; i < OPTIONS.size(); ++i)
     get_matches(candidates, OPTIONS[i], root);
-  get_matches(candidates, __standard_options, root);
+  get_matches(candidates, _standard_options, root);
 
   // no matches
   if (candidates.empty())
@@ -1029,31 +1037,29 @@ void parse() {
   terminal_use_colour = File::Config::get_bool("TerminalColor", terminal_use_colour);
 
   // check for the existence of all specified input files (including optional ones that have been provided)
-  // if necessary, also check for pre-existence of any output files with known paths
-  //   (if the output is e.g. given as a prefix, the argument should be flagged as type_text())
+  // if necessary, also check for pre-existence of any output files or directories with known paths
   // note that if an argument has multiple possible types, some checks can't be enforced
   for (const auto &i : argument) {
-    const std::string text = std::string(i);
     assert(i.arg->types.any());
     {
       ArgTypeFlags types_not_input_file(i.arg->types);
       types_not_input_file.reset(ArgTypeFlags::FileIn);
       types_not_input_file.reset(ArgTypeFlags::TracksIn);
       if (!types_not_input_file.any()) {
-        if (!Path::exists(text))
-          throw Exception("required input file \"" + text + "\" not found");
-        if (!Path::is_file(text))
-          throw Exception("required input \"" + text + "\" is not a file");
+        if (!std::filesystem::exists(i))
+          throw Exception("required input file \"" + i.as_text() + "\" not found");
+        if (!std::filesystem::is_regular_file(i))
+          throw Exception("required input \"" + i.as_text() + "\" is not a file");
       }
     }
     {
       ArgTypeFlags types_not_input_directory(i.arg->types);
       types_not_input_directory.reset(ArgTypeFlags::DirectoryIn);
       if (!types_not_input_directory.any()) {
-        if (!Path::exists(text))
-          throw Exception("required input directory \"" + text + "\" not found");
-        if (!Path::is_dir(text))
-          throw Exception("required input \"" + text + "\" is not a directory");
+        if (!std::filesystem::exists(i))
+          throw Exception("required input directory \"" + i.as_text() + "\" not found");
+        if (!std::filesystem::is_directory(i))
+          throw Exception("required input \"" + i.as_text() + "\" is not a directory");
       }
     }
     {
@@ -1061,8 +1067,8 @@ void parse() {
       types_not_output_file.reset(ArgTypeFlags::FileOut);
       types_not_output_file.reset(ArgTypeFlags::TracksOut);
       if (!types_not_output_file.any()) {
-        if (text.find_last_of(PATH_SEPARATORS) == text.size() - 1)
-          throw Exception("output path \"" + std::string(i) + "\" is not a valid file path" +
+        if (i.as_text().find_last_of(PATH_SEPARATORS) == i.as_text().size() - 1)
+          throw Exception("output path \"" + i.as_text() + "\" is not a valid file path" +
                           " (ends with directory path separator)");
       }
     }
@@ -1071,52 +1077,79 @@ void parse() {
       types_not_output_filesystem.reset(ArgTypeFlags::FileOut);
       types_not_output_filesystem.reset(ArgTypeFlags::DirectoryOut);
       types_not_output_filesystem.reset(ArgTypeFlags::TracksOut);
-      if (!types_not_output_filesystem.any())
-        check_overwrite(text);
+      if (!types_not_output_filesystem.any()) {
+        if (i.arg->types[ArgTypeFlags::DirectoryOut] && !i.arg->types[ArgTypeFlags::FileOut] &&
+            !i.arg->types[ArgTypeFlags::TracksOut]) {
+          switch (i.arg->dir_out_mode) {
+          case DirOutMode::MustNotExist:
+            check_overwrite(i);
+            break;
+          case DirOutMode::EmptyOrAbsent: {
+            const std::filesystem::path dir_path(i);
+            if (std::filesystem::exists(dir_path)) {
+              if (!std::filesystem::is_directory(dir_path))
+                throw Exception("output path \"" + i.as_text() + "\" already exists as a file");
+              if (std::filesystem::directory_iterator(dir_path) != std::filesystem::directory_iterator())
+                throw Exception("output directory \"" + i.as_text() + "\" is not empty" +
+                                (overwrite_files ? " (-force option cannot safely be applied on directories;"
+                                                   " please erase manually instead)"
+                                                 : ""));
+            }
+            break;
+          }
+          case DirOutMode::MayExist:
+            break;
+          }
+        } else {
+          check_overwrite(i);
+        }
+      }
     }
     {
       ArgTypeFlags types_not_input_tractogram(i.arg->types);
       types_not_input_tractogram.reset(ArgTypeFlags::TracksIn);
       if (!types_not_input_tractogram.any()) {
-        if (!Path::has_suffix(text, ".tck"))
-          throw Exception("input file \"" + text + "\" is not a valid track file");
+        if (static_cast<std::filesystem::path>(i).extension() != ".tck")
+          throw Exception("input file \"" + i.as_text() + "\" is not a valid track file");
       }
     }
     {
       ArgTypeFlags types_not_output_tractogram(i.arg->types);
       types_not_output_tractogram.reset(ArgTypeFlags::TracksOut);
       if (!types_not_output_tractogram.any()) {
-        if (!Path::has_suffix(text, ".tck"))
-          throw Exception("output track file \"" + text + "\" must use the .tck suffix");
+        if (static_cast<std::filesystem::path>(i).extension() != ".tck")
+          throw Exception("output track file \"" + i.as_text() + "\" must use the .tck suffix");
       }
     }
   }
   for (const auto &i : option) {
     for (size_t j = 0; j != i.opt->size(); ++j) {
+      const ParsedArgument parg = i[j];
       const Argument &arg = i.opt->operator[](j);
       assert(arg.types.any());
-      const std::string text = std::string(i.args[j]);
       {
         ArgTypeFlags types_not_input_file(arg.types);
         types_not_input_file.reset(ArgTypeFlags::FileIn);
         types_not_input_file.reset(ArgTypeFlags::TracksIn);
         if (!types_not_input_file.any()) {
-          if (!Path::exists(text))
-            throw Exception("input file \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" not found");
-          if (!Path::is_file(text))
-            throw Exception("input \"" + text + "\" for option \"-" + std::string(i.opt->id) + "\" is not a file");
+          if (!std::filesystem::exists(parg))
+            throw Exception("input file \"" + parg.as_text() + "\"" +                     //
+                            " for option \"-" + std::string(i.opt->id) + "\" not found"); //
+          if (!std::filesystem::is_regular_file(parg))
+            throw Exception("input \"" + parg.as_text() + "\"" +                              //
+                            " for option \"-" + std::string(i.opt->id) + "\" is not a file"); //
         }
       }
       {
         ArgTypeFlags types_not_input_directory(arg.types);
         types_not_input_directory.reset(ArgTypeFlags::DirectoryIn);
         if (!types_not_input_directory.any()) {
-          if (!Path::exists(text))
-            throw Exception("input directory \"" + text + "\"" + " for option \"-" + std::string(i.opt->id) +
-                            "\" not found");
-          if (!Path::is_dir(text))
-            throw Exception("input \"" + text + "\"" + " for option \"-" + std::string(i.opt->id) +
-                            "\" is not a directory");
+          if (!std::filesystem::exists(parg))
+            throw Exception("input directory \"" + parg.as_text() + "\"" +                //
+                            " for option \"-" + std::string(i.opt->id) + "\" not found"); //
+          if (!std::filesystem::is_directory(parg))
+            throw Exception("input \"" + parg.as_text() + "\"" +                                   //
+                            " for option \"-" + std::string(i.opt->id) + "\" is not a directory"); //
         }
       }
       {
@@ -1124,9 +1157,11 @@ void parse() {
         types_not_output_file.reset(ArgTypeFlags::FileOut);
         types_not_output_file.reset(ArgTypeFlags::TracksOut);
         if (!types_not_output_file.any()) {
-          if (text.find_last_of(PATH_SEPARATORS) == text.size() - 1)
-            throw Exception("output path \"" + text + "\"" + " for option \"-" + std::string(i.opt->id) + "\"" +
-                            " is not a valid file path (ends with directory path separator)");
+          const std::string filename = static_cast<std::filesystem::path>(parg).filename().string();
+          if (filename.find_last_of(PATH_SEPARATORS) == filename.size() - 1)
+            throw Exception("output path \"" + parg.as_text() + "\"" +                         //
+                            " for option \"-" + std::string(i.opt->id) + "\"" +                //
+                            " is not a valid file path (ends with directory path separator)"); //
         }
       }
       {
@@ -1134,25 +1169,54 @@ void parse() {
         types_not_output_filesystem.reset(ArgTypeFlags::FileOut);
         types_not_output_filesystem.reset(ArgTypeFlags::DirectoryOut);
         types_not_output_filesystem.reset(ArgTypeFlags::TracksOut);
-        if (!types_not_output_filesystem.any())
-          check_overwrite(text);
+        if (!types_not_output_filesystem.any()) {
+          if (arg.types[ArgTypeFlags::DirectoryOut] && !arg.types[ArgTypeFlags::FileOut] &&
+              !arg.types[ArgTypeFlags::TracksOut]) {
+            switch (arg.dir_out_mode) {
+            case DirOutMode::MustNotExist:
+              check_overwrite(parg);
+              break;
+            case DirOutMode::EmptyOrAbsent: {
+              const std::filesystem::path dir_path(parg);
+              if (std::filesystem::exists(dir_path)) {
+                if (!std::filesystem::is_directory(dir_path))
+                  throw Exception("output path \"" + parg.as_text() + "\"" + " for option \"-" +
+                                  std::string(i.opt->id) + "\" already exists as a file");
+                if (std::filesystem::directory_iterator(dir_path) != std::filesystem::directory_iterator())
+                  throw Exception("output directory \"" + parg.as_text() + "\"" + " for option \"-" +
+                                  std::string(i.opt->id) + "\" is not empty" +
+                                  (overwrite_files ? " (-force option cannot safely be applied on directories;"
+                                                     " please erase manually instead)"
+                                                   : ""));
+              }
+              break;
+            }
+            case DirOutMode::MayExist:
+              break;
+            }
+          } else {
+            check_overwrite(parg);
+          }
+        }
       }
       {
         ArgTypeFlags types_not_input_tractogram(arg.types);
         types_not_input_tractogram.reset(ArgTypeFlags::TracksIn);
         if (!types_not_input_tractogram.any()) {
-          if (!Path::has_suffix(text, ".tck"))
-            throw Exception("input file \"" + text + "\"" + " for option \"-" + std::string(i.opt->id) + "\"" +
-                            " is not a valid track file");
+          if (static_cast<std::filesystem::path>(parg).extension() != ".tck")
+            throw Exception("input file \"" + parg.as_text() + "\"" +           //
+                            " for option \"-" + std::string(i.opt->id) + "\"" + //
+                            " is not a valid track file");                      //
         }
       }
       {
         ArgTypeFlags types_not_output_tractogram(arg.types);
         types_not_output_tractogram.reset(ArgTypeFlags::TracksOut);
         if (!types_not_output_tractogram.any()) {
-          if (!Path::has_suffix(text, ".tck"))
-            throw Exception("output track file \"" + text + "\"" + " for option \"-" + std::string(i.opt->id) + "\"" +
-                            " must use the .tck suffix");
+          if (static_cast<std::filesystem::path>(parg).extension() != ".tck")
+            throw Exception("output track file \"" + parg.as_text() + "\"" +    //
+                            " for option \"-" + std::string(i.opt->id) + "\"" + //
+                            " must use the .tck suffix");                       //
         }
       }
     }
@@ -1171,11 +1235,11 @@ void init(int cmdline_argc, const char *const *cmdline_argv) { // check_syntax o
   terminal_use_colour = !ProgressBar::set_update_method();
 
   raw_arguments_list = std::vector<std::string>(cmdline_argv, cmdline_argv + cmdline_argc);
-  NAME = Path::basename(raw_arguments_list.front());
+  NAME = std::filesystem::path(raw_arguments_list.front()).filename().string();
   raw_arguments_list.erase(raw_arguments_list.begin());
 
 #ifdef MRTRIX_WINDOWS
-  if (Path::has_suffix(NAME, ".exe"))
+  if (std::filesystem::path(NAME).extension() == ".exe")
     NAME.erase(NAME.size() - 4);
 #endif
 
@@ -1211,9 +1275,7 @@ void init(int cmdline_argc, const char *const *cmdline_argv) { // check_syntax o
   command_history_string += ")";
 
   std::locale::global(std::locale::classic());
-  std::setlocale(LC_ALL, "C");
-
-  srand(time(nullptr));
+  std::setlocale(LC_ALL, "C"); // NOLINT(concurrency-mt-unsafe)
 }
 
 std::vector<ParsedOption> get_options(std::string_view name) {
@@ -1377,24 +1439,22 @@ default_type App::ParsedArgument::as_float() const {
   return retval;
 }
 
-std::vector<int32_t> ParsedArgument::as_sequence_int() const {
+std::vector<ParsedArgument::IntType> ParsedArgument::as_sequence_int() const {
   assert(arg->types[ArgTypeFlags::IntSeq]);
   try {
-    return parse_ints<int32_t>(p);
+    return parse_ints<IntType>(p);
   } catch (Exception &e) {
-    error(e);
+    throw Exception(e, "Unable to interpret command-line input \"" + as_text() + "\" as sequence of integers");
   }
-  return std::vector<int32_t>();
 }
 
-std::vector<uint32_t> ParsedArgument::as_sequence_uint() const {
+std::vector<ParsedArgument::UIntType> ParsedArgument::as_sequence_uint() const {
   assert(arg->types[ArgTypeFlags::IntSeq]);
   try {
-    return parse_ints<uint32_t>(p);
+    return parse_ints<UIntType>(p);
   } catch (Exception &e) {
-    error(e);
+    throw Exception(e, "Unable to interpret command-line input \"" + as_text() + "\" as sequence of integers");
   }
-  return std::vector<uint32_t>();
 }
 
 std::vector<default_type> ParsedArgument::as_sequence_float() const {
@@ -1402,9 +1462,9 @@ std::vector<default_type> ParsedArgument::as_sequence_float() const {
   try {
     return parse_floats(p);
   } catch (Exception &e) {
-    error(e);
+    throw Exception(
+        e, "Unable to interpret command-line input \"" + as_text() + "\" as sequence of floating-point values");
   }
-  return std::vector<default_type>();
 }
 
 ParsedArgument::ParsedArgument(const Option *option, const Argument *argument, std::string text, size_t index)
@@ -1412,23 +1472,51 @@ ParsedArgument::ParsedArgument(const Option *option, const Argument *argument, s
   assert(!p.empty());
 }
 
-void ParsedArgument::error(Exception &e) const {
-  std::string msg("error parsing token \"");
-  msg += p;
-  if (opt != nullptr)
-    msg += std::string("\" for option \"") + opt->id + "\"";
-  else
-    msg += std::string("\" for argument \"") + arg->id + "\"";
-  throw Exception(e, msg);
+bool ParsedArgument::includes_filesystem_arg_types() const noexcept {
+  if (arg == nullptr)
+    return false;
+  return (arg->types[ArgTypeFlags::FileIn] || arg->types[ArgTypeFlags::FileOut] ||
+          arg->types[ArgTypeFlags::DirectoryIn] || arg->types[ArgTypeFlags::DirectoryOut] ||
+          arg->types[ArgTypeFlags::ImageIn] || arg->types[ArgTypeFlags::ImageOut] ||
+          arg->types[ArgTypeFlags::TracksIn] || arg->types[ArgTypeFlags::TracksOut]);
 }
 
-void check_overwrite(std::string_view name) {
-  if (Path::exists(name) && !overwrite_files) {
+bool ParsedArgument::only_filesystem_arg_types() const noexcept {
+  if (arg == nullptr)
+    return false;
+  ArgTypeFlags flags(arg->types);
+  flags[ArgTypeFlags::FileIn] = flags[ArgTypeFlags::FileOut] = flags[ArgTypeFlags::DirectoryIn] =
+      flags[ArgTypeFlags::DirectoryOut] = flags[ArgTypeFlags::ImageIn] = flags[ArgTypeFlags::ImageOut] =
+          flags[ArgTypeFlags::TracksIn] = flags[ArgTypeFlags::TracksOut] = false;
+  return !flags.any();
+}
+
+ParsedArgument::operator std::string() const {
+  assert(!only_filesystem_arg_types());
+  return p;
+}
+
+ParsedArgument::operator std::string_view() const {
+  assert(!only_filesystem_arg_types());
+  return p;
+}
+
+ParsedArgument::operator std::filesystem::path() const {
+  assert(includes_filesystem_arg_types());
+  return std::filesystem::path(p);
+}
+
+std::filesystem::path ParsedArgument::as_path() const {
+  assert(includes_filesystem_arg_types());
+  return std::filesystem::path(p);
+}
+
+void check_overwrite(const std::filesystem::path &path) {
+  if (std::filesystem::exists(path) && !overwrite_files) {
     if (check_overwrite_files_func != nullptr)
-      check_overwrite_files_func(name);
+      check_overwrite_files_func(path);
     else
-      throw Exception("output path \"" + std::string(name) +
-                      "\" already exists (use -force option to force overwrite)");
+      throw Exception("output path \"" + path.string() + "\" already exists (use -force option to force overwrite)");
   }
 }
 
