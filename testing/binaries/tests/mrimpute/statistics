@@ -1,0 +1,40 @@
+#!/bin/bash
+# mrimpute reports, via INFO, the number of voxels imputed within each 3D volume.
+# Build a 4D image of three identical smooth volumes, poke a different number of
+#   holes into each (0, 1 and 2 respectively), and confirm that both the
+#   per-volume breakdown and the aggregate summary are reported correctly.
+
+# Build the linear field f = x + y + z.
+mrconvert mask.mif -coord 0 0:4 -coord 1 0:4 -coord 2 0:4 tmp_grid.mif -force -quiet
+make_ramp () {
+  axis=$1; out=$2
+  sz=$(mrinfo tmp_grid.mif -size | cut -d' ' -f$((axis+1)))
+  files=""
+  for i in $(seq 0 $((sz-1))); do
+    mrconvert tmp_grid.mif -coord $axis $i - -quiet | \
+      mrcalc - 0 -mult $i -add tmp_slab_${axis}_${i}.mif -force -quiet
+    files="$files tmp_slab_${axis}_${i}.mif"
+  done
+  mrcat $files -axis $axis $out -force -quiet
+}
+make_ramp 0 tmp_rx.mif
+make_ramp 1 tmp_ry.mif
+make_ramp 2 tmp_rz.mif
+mrcalc tmp_rx.mif tmp_ry.mif -add tmp_rz.mif -add tmp_field.mif -force -quiet
+
+# Three identical volumes, with 0, 1 and 2 holes poked into volumes 0, 1 and 2.
+mrcat tmp_field.mif tmp_field.mif tmp_field.mif -axis 3 tmp_field4d.mif -force -quiet
+mrconvert tmp_field4d.mif tmp_holes.mif -force -quiet
+mredit tmp_holes.mif -voxel 2,2,2,1 nan -voxel 1,1,1,2 nan -voxel 3,3,3,2 nan -quiet
+
+mrimpute tmp_holes.mif tmp_out.mif -info -force 2> tmp_err.txt
+
+# The per-volume imputed voxel counts must be reported in volume order.
+grep -qF "Per-volume imputed voxel counts: [ 0, 1, 2 ]" tmp_err.txt
+# The aggregate summary must report the correct total, number of affected
+#   volumes, and per-volume count statistics.
+grep -qF "Imputed 3 voxel(s) across 2 of 3 volume(s)" tmp_err.txt
+grep -qF "min 0, mean 1, max 2" tmp_err.txt
+
+# The smooth field must be recovered exactly in every volume.
+testing_diff_image tmp_out.mif tmp_field4d.mif -abs 1e-4

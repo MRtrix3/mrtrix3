@@ -1,0 +1,31 @@
+#!/bin/bash
+# When the input contains no non-finite voxels and no -mask is supplied, there
+#   is nothing to impute. mrimpute must emit a warning to that effect and pass
+#   the input through to the output unchanged.
+
+# Build the wholly-finite linear field f = x + y + z (no holes, no mask).
+mrconvert mask.mif -coord 0 0:4 -coord 1 0:4 -coord 2 0:4 tmp_grid.mif -force -quiet
+make_ramp () {
+  axis=$1; out=$2
+  sz=$(mrinfo tmp_grid.mif -size | cut -d' ' -f$((axis+1)))
+  files=""
+  for i in $(seq 0 $((sz-1))); do
+    mrconvert tmp_grid.mif -coord $axis $i - -quiet | \
+      mrcalc - 0 -mult $i -add tmp_slab_${axis}_${i}.mif -force -quiet
+    files="$files tmp_slab_${axis}_${i}.mif"
+  done
+  mrcat $files -axis $axis $out -force -quiet
+}
+make_ramp 0 tmp_rx.mif
+make_ramp 1 tmp_ry.mif
+make_ramp 2 tmp_rz.mif
+mrcalc tmp_rx.mif tmp_ry.mif -add tmp_rz.mif -add tmp_field.mif -force -quiet
+
+# Run at default verbosity (warnings shown) and capture stderr.
+mrimpute tmp_field.mif tmp_out.mif -force 2> tmp_err.txt
+
+# The "no imputation" warning must have been emitted.
+grep -qF "No voxels were imputed in any volume" tmp_err.txt
+
+# With nothing to impute, the output must equal the input exactly.
+testing_diff_image tmp_out.mif tmp_field.mif -abs 1e-4

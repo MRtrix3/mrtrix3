@@ -369,6 +369,8 @@ add_bash_binary_test(mrimpute/detrend)
 add_bash_binary_test(mrimpute/biharmonic)
 add_bash_binary_test(mrimpute/hessian)
 add_bash_binary_test(mrimpute/quadratic)
+add_bash_binary_test(mrimpute/statistics)
+add_bash_binary_test(mrimpute/no_imputation_warning)
 
 add_bash_binary_test(mrinfo/bvec_bval_nan)
 

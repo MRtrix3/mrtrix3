@@ -14,7 +14,9 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <algorithm>
 #include <cmath>
+#include <numeric>
 
 #include "command.h"
 #include "datatype.h"
@@ -24,6 +26,7 @@
 
 #include "algo/impute.h"
 #include "algo/loop.h"
+#include "algo/threaded_loop.h"
 #include "enum.h"
 #include "misc/voxel2vector.h"
 
@@ -125,12 +128,13 @@ namespace {
 
 // Fill the output 3D slab at the current outer position from the input,
 //   imputing those voxels flagged in the impute set.
-void process_volume(Image<value_type> &image_in,
-                    Image<value_type> &image_out,
-                    Image<bool> &mask,
-                    const Header &slab_header,
-                    const Impute::Method method,
-                    const Impute::Detrend detrend) {
+// \return the number of voxels for which imputation was performed.
+size_t process_volume(Image<value_type> &image_in,
+                      Image<value_type> &image_out,
+                      Image<bool> &mask,
+                      const Header &slab_header,
+                      const Impute::Method method,
+                      const Impute::Detrend detrend) {
   // Pass 1: determine the complete set of voxels to be imputed.
   Image<bool> impute_mask(Image<bool>::scratch(slab_header, "imputation region"));
   for (auto l = Loop(0, 3)(image_in, impute_mask); l; ++l) {
@@ -146,7 +150,7 @@ void process_volume(Image<value_type> &image_in,
   if (v2v.empty()) {
     for (auto l = Loop(0, 3)(image_in, image_out); l; ++l)
       image_out.value() = image_in.value();
-    return;
+    return 0;
   }
 
   // Independent reader so that index manipulation during the solve does not
@@ -170,6 +174,70 @@ void process_volume(Image<value_type> &image_in,
     } else {
       image_out.value() = image_in.value();
     }
+  }
+
+  return v2v.size();
+}
+
+// Functor enabling one-thread-per-volume parallelisation:
+//   each invocation imputes the single 3D volume at the outer-axis position provided.
+// Each worker thread receives its own copy of this functor,
+//   and hence its own image iterators,
+//   so that concurrent volumes do not contend for index state.
+class VolumeImputer {
+public:
+  VolumeImputer(Image<value_type> &image_in,
+                Image<value_type> &image_out,
+                Image<bool> &mask,
+                const Header &slab_header,
+                const Impute::Method method,
+                const Impute::Detrend detrend,
+                std::vector<size_t> &volume_counts)
+      : image_in(image_in),
+        image_out(image_out),
+        mask(mask),
+        slab_header(slab_header),
+        method(method),
+        detrend(detrend),
+        volume_counts(volume_counts) {}
+
+  void operator()(const Iterator &pos) {
+    assign_pos_of(pos, 3, image_in.ndim()).to(image_in, image_out);
+    // Map the outer-axis position to a linear volume index in row-major order
+    //   over the non-spatial axes; each thread writes a distinct slot.
+    size_t volume_index = 0;
+    for (size_t axis = 3; axis != image_in.ndim(); ++axis)
+      volume_index = volume_index * image_in.size(axis) + pos.index(axis);
+    volume_counts[volume_index] = process_volume(image_in, image_out, mask, slab_header, method, detrend);
+  }
+
+private:
+  Image<value_type> image_in;
+  Image<value_type> image_out;
+  Image<bool> mask;
+  const Header &slab_header;
+  const Impute::Method method;
+  const Impute::Detrend detrend;
+  std::vector<size_t> &volume_counts;
+};
+
+// Report per-volume imputation statistics:
+//   the full set of counts via INFO(), or a warning if no imputation occurred at all.
+void report_statistics(const std::vector<size_t> &volume_counts) {
+  const size_t total = std::accumulate(volume_counts.begin(), volume_counts.end(), size_t(0));
+  if (total == 0) {
+    WARN("No voxels were imputed in any volume");
+    return;
+  }
+  const size_t min = *std::min_element(volume_counts.begin(), volume_counts.end());
+  const size_t max = *std::max_element(volume_counts.begin(), volume_counts.end());
+  const double mean = static_cast<double>(total) / static_cast<double>(volume_counts.size());
+  const size_t imputed_volumes =
+      std::count_if(volume_counts.begin(), volume_counts.end(), [](const size_t c) { return c != 0; });
+  INFO("Imputed " + str(total) + " voxel(s) across " + str(imputed_volumes) + " of " + str(volume_counts.size()) +
+       " volume(s) (per-volume count: min " + str(min) + ", mean " + str(mean) + ", max " + str(max) + ")");
+  if (volume_counts.size() > 1) {
+    INFO("Per-volume imputed voxel counts: [ " + join(volume_counts, ", ") + " ]");
   }
 }
 
@@ -206,10 +274,20 @@ void run() {
   Header slab_header(H_in);
   slab_header.ndim() = 3;
 
+  // One imputed-voxel count per 3D volume,
+  //   indexed in row-major order over the non-spatial axes.
+  size_t num_volumes = 1;
+  for (size_t axis = 3; axis != image_in.ndim(); ++axis)
+    num_volumes *= image_in.size(axis);
+  std::vector<size_t> volume_counts(num_volumes, 0);
+
   if (image_in.ndim() > 3) {
-    for (auto outer = Loop("Imputing image", image_in, 3)(image_in, image_out); outer; ++outer)
-      process_volume(image_in, image_out, mask, slab_header, method, detrend);
+    // Loop over all non-spatial axes, one volume per thread.
+    ThreadedLoop("Imputing image", image_in, 3, image_in.ndim(), 0)
+        .run_outer(VolumeImputer(image_in, image_out, mask, slab_header, method, detrend, volume_counts));
   } else {
-    process_volume(image_in, image_out, mask, slab_header, method, detrend);
+    volume_counts[0] = process_volume(image_in, image_out, mask, slab_header, method, detrend);
   }
+
+  report_statistics(volume_counts);
 }
