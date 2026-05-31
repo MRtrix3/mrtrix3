@@ -134,8 +134,6 @@ public:
       for (Eigen::Index n = 0; n < C.sh2amp.rows(); ++n)
         sh2amp.row(n).array() *= w[n];
 
-      // clang-tidy possibly fails to recognise that "ap" is guaranteed to be filled by get_rician_bias()
-      // NOLINTNEXTLINE(clang-analyzer-core.UndefinedBinaryOperatorResult,clang-analyzer-core.uninitialized.Assign)
       s.noalias() = sh2amp.transpose() * ap;
       Q.triangularView<Eigen::Lower>() = sh2amp.transpose() * sh2amp;
       llt.compute(Q);
