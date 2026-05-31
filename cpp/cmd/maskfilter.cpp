@@ -63,7 +63,10 @@ const OptionGroup ConnectOption =
 const OptionGroup DilateErodeOption =
     OptionGroup("Options for dilate / erode filters")
       + Option("npass", "the number of times to repeatedly apply the filter")
-        + Argument("value").type_integer(1, 1e6);
+        + Argument("value").type_integer(1, 1e6)
+      + Option("connectivity",
+               "use 26-voxel-neighbourhood connectivity"
+               " (Default is 6-voxel-neighbourhood)");
 
 const OptionGroup FillOption =
     OptionGroup("Options for interior-filling filter")
@@ -180,6 +183,9 @@ void run() {
     auto opt = get_options("npass");
     if (!opt.empty())
       filter.set_npass(static_cast<unsigned int>(opt[0][0]));
+    opt = get_options("connectivity");
+    if (!opt.empty())
+      filter.set_26_connectivity(true);
 
     Stride::set_from_command_line(filter);
     filter.datatype() = DataType::Bit;
@@ -194,6 +200,9 @@ void run() {
     auto opt = get_options("npass");
     if (!opt.empty())
       filter.set_npass(static_cast<unsigned int>(opt[0][0]));
+    opt = get_options("connectivity");
+    if (!opt.empty())
+      filter.set_26_connectivity(true);
 
     Stride::set_from_command_line(filter);
     filter.datatype() = DataType::Bit;

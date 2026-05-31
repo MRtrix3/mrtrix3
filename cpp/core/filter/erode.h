@@ -45,12 +45,13 @@ namespace MR::Filter {
 class Erode : public Base {
 
 public:
-  template <class HeaderType> Erode(const HeaderType &in) : Base(in), npass(1) {
+  template <class HeaderType> Erode(const HeaderType &in) : Base(in), npass(1), do_26_connectivity(false) {
     check_3D_nonunity(in);
     datatype_ = DataType::Bit;
   }
 
-  template <class HeaderType> Erode(const HeaderType &in, std::string_view message) : Base(in, message), npass(1) {
+  template <class HeaderType>
+  Erode(const HeaderType &in, std::string_view message) : Base(in, message), npass(1), do_26_connectivity(false) {
     check_3D_nonunity(in);
     datatype_ = DataType::Bit;
   }
@@ -77,60 +78,51 @@ public:
 
   void set_npass(unsigned int npasses) { npass = npasses; }
 
+  //! select the voxel neighbourhood tested for adjacency
+  /*! \param value if \c false (the default) only the 6 voxels sharing a face
+   *    with the central voxel are tested; if \c true the full 26-voxel
+   *    neighbourhood (face-, edge- and corner-adjacent) is tested. */
+  void set_26_connectivity(bool value) { do_26_connectivity = value; }
+
 protected:
   bool erode(Image<bool> &in) {
     if (!in.value())
       return false;
+    // A voxel on the field-of-view boundary has at least one neighbour outside
+    //   the image (for both connectivities); such a neighbour counts as
+    //   background and the voxel is therefore eroded.
     if ((in.index(0) == 0) || (in.index(0) == in.size(0) - 1) || (in.index(1) == 0) ||
         (in.index(1) == in.size(1) - 1) || (in.index(2) == 0) || (in.index(2) == in.size(2) - 1))
       return false;
-    bool val;
-    if (in.index(0) > 0) {
-      in.index(0)--;
-      val = in.value();
-      in.index(0)++;
-      if (!val)
-        return false;
+    const ssize_t x = in.index(0);
+    const ssize_t y = in.index(1);
+    const ssize_t z = in.index(2);
+    bool result = true;
+    // All neighbours are guaranteed in-bounds by the boundary test above.
+    for (ssize_t dz = -1; dz <= 1 && result; ++dz) {
+      for (ssize_t dy = -1; dy <= 1 && result; ++dy) {
+        for (ssize_t dx = -1; dx <= 1 && result; ++dx) {
+          const int nonzero = (dx != 0) + (dy != 0) + (dz != 0);
+          if (nonzero == 0)
+            continue;
+          if (!do_26_connectivity && nonzero > 1)
+            continue;
+          in.index(0) = x + dx;
+          in.index(1) = y + dy;
+          in.index(2) = z + dz;
+          if (!in.value())
+            result = false;
+        }
+      }
     }
-    if (in.index(1) > 0) {
-      in.index(1)--;
-      val = in.value();
-      in.index(1)++;
-      if (!val)
-        return false;
-    }
-    if (in.index(2) > 0) {
-      in.index(2)--;
-      val = in.value();
-      in.index(2)++;
-      if (!val)
-        return false;
-    }
-    if (in.index(0) < in.size(0) - 1) {
-      in.index(0)++;
-      val = in.value();
-      in.index(0)--;
-      if (!val)
-        return false;
-    }
-    if (in.index(1) < in.size(1) - 1) {
-      in.index(1)++;
-      val = in.value();
-      in.index(1)--;
-      if (!val)
-        return false;
-    }
-    if (in.index(2) < in.size(2) - 1) {
-      in.index(2)++;
-      val = in.value();
-      in.index(2)--;
-      if (!val)
-        return false;
-    }
-    return true;
+    in.index(0) = x;
+    in.index(1) = y;
+    in.index(2) = z;
+    return result;
   }
 
   unsigned int npass;
+  bool do_26_connectivity;
 };
 //! @}
 } // namespace MR::Filter

@@ -48,6 +48,8 @@ Options for dilate / erode filters
 
 -  **-npass value** the number of times to repeatedly apply the filter
 
+-  **-connectivity** use 26-voxel-neighbourhood connectivity (Default is 6-voxel-neighbourhood)
+
 Options for interior-filling filter
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

@@ -43,9 +43,12 @@ namespace MR::Filter {
 class Dilate : public Base {
 
 public:
-  template <class HeaderType> Dilate(const HeaderType &in) : Base(in), npass(1) { datatype_ = DataType::Bit; }
+  template <class HeaderType> Dilate(const HeaderType &in) : Base(in), npass(1), do_26_connectivity(false) {
+    datatype_ = DataType::Bit;
+  }
 
-  template <class HeaderType> Dilate(const HeaderType &in, std::string_view message) : Base(in, message), npass(1) {
+  template <class HeaderType>
+  Dilate(const HeaderType &in, std::string_view message) : Base(in, message), npass(1), do_26_connectivity(false) {
     datatype_ = DataType::Bit;
   }
 
@@ -70,57 +73,49 @@ public:
 
   void set_npass(unsigned int npasses) { npass = npasses; }
 
+  //! select the voxel neighbourhood tested for adjacency
+  /*! \param value if \c false (the default) only the 6 voxels sharing a face
+   *    with the central voxel are tested; if \c true the full 26-voxel
+   *    neighbourhood (face-, edge- and corner-adjacent) is tested. */
+  void set_26_connectivity(bool value) { do_26_connectivity = value; }
+
 protected:
   bool dilate(Image<bool> &in) {
     if (in.value())
       return true;
-    bool val;
-    if (in.index(0) > 0) {
-      in.index(0)--;
-      val = in.value();
-      in.index(0)++;
-      if (val)
-        return true;
+    const ssize_t x = in.index(0);
+    const ssize_t y = in.index(1);
+    const ssize_t z = in.index(2);
+    bool result = false;
+    for (ssize_t dz = -1; dz <= 1 && !result; ++dz) {
+      for (ssize_t dy = -1; dy <= 1 && !result; ++dy) {
+        for (ssize_t dx = -1; dx <= 1 && !result; ++dx) {
+          const int nonzero = (dx != 0) + (dy != 0) + (dz != 0);
+          if (nonzero == 0)
+            continue;
+          if (!do_26_connectivity && nonzero > 1)
+            continue;
+          const ssize_t nx = x + dx;
+          const ssize_t ny = y + dy;
+          const ssize_t nz = z + dz;
+          if (nx < 0 || nx >= in.size(0) || ny < 0 || ny >= in.size(1) || nz < 0 || nz >= in.size(2))
+            continue;
+          in.index(0) = nx;
+          in.index(1) = ny;
+          in.index(2) = nz;
+          if (in.value())
+            result = true;
+        }
+      }
     }
-    if (in.index(1) > 0) {
-      in.index(1)--;
-      val = in.value();
-      in.index(1)++;
-      if (val)
-        return true;
-    }
-    if (in.index(2) > 0) {
-      in.index(2)--;
-      val = in.value();
-      in.index(2)++;
-      if (val)
-        return true;
-    }
-    if (in.index(0) < in.size(0) - 1) {
-      in.index(0)++;
-      val = in.value();
-      in.index(0)--;
-      if (val)
-        return true;
-    }
-    if (in.index(1) < in.size(1) - 1) {
-      in.index(1)++;
-      val = in.value();
-      in.index(1)--;
-      if (val)
-        return true;
-    }
-    if (in.index(2) < in.size(2) - 1) {
-      in.index(2)++;
-      val = in.value();
-      in.index(2)--;
-      if (val)
-        return true;
-    }
-    return false;
+    in.index(0) = x;
+    in.index(1) = y;
+    in.index(2) = z;
+    return result;
   }
 
   unsigned int npass;
+  bool do_26_connectivity;
 };
 //! @}
 } // namespace MR::Filter

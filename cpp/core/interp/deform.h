@@ -16,7 +16,9 @@
 
 #pragma once
 
+#include <array>
 #include <cmath>
+#include <limits>
 #include <utility>
 
 #include "datatype.h"
@@ -28,6 +30,7 @@
 
 #include "algo/impute.h"
 #include "algo/loop.h"
+#include "filter/dilate.h"
 #include "interp/cubic.h"
 #include "misc/voxel2vector.h"
 
@@ -45,26 +48,39 @@ namespace MR::Interp {
  *
  *  Cubic interpolation reads a 4x4x4 neighbourhood for every sampled position;
  *  were a non-finite value to enter that kernel, it would poison the result even
- *  for nearby valid positions. To avoid this, during construction the adapter
- *  uses the imputation machinery of \c MR::Impute (the algorithms exposed by the
- *  \c mrimpute command) to populate a scratch buffer that holds the empirical
- *  deformation where finite and imputed values where not. Cubic interpolation is
- *  then performed against this gap-filled buffer, so a valid sample whose kernel
- *  overlaps a hole still yields a clean, finite result.
+ *  for nearby valid positions. The 4x4x4 kernel of any sample residing in a
+ *  valid voxel reaches at most two voxels away from that voxel along each axis,
+ *  so it suffices to guarantee finite data within a two-voxel margin of the
+ *  valid region; imputing the remainder of the field would be wasted work.
  *
- *  Each of the three components is imputed independently, so that a finite
- *  component of a partially-invalid voxel is preserved as known data for its
- *  own component's solve.
+ *  Construction therefore proceeds as follows:
+ *   - A bitwise validity mask is generated, marking a voxel \c true only where
+ *     every component of the input deformation field is finite.
+ *   - If any valid voxel lies within two voxels of a field-of-view edge, a
+ *     larger voxel grid is generated that guarantees a two-voxel margin around
+ *     the entire valid region (the buffer, the mask and the imputed field all
+ *     live on this grid), and the validity mask is shifted onto it.
+ *   - The validity mask is dilated by two passes of 26-connectivity (the
+ *     \c MR::Filter::Dilate filter), yielding the set of voxels that can be
+ *     reached by the cubic kernel of any valid sample.
+ *   - The "halo" of voxels added by that dilation (present after dilation but
+ *     absent before) is filled by the imputation machinery of \c MR::Impute
+ *     (the algorithms exposed by the \c mrimpute command), using the valid
+ *     voxels as the only known data and treating the outer edge of the halo as a
+ *     natural boundary. Each of the three components is imputed independently.
+ *  Cubic interpolation is then performed against this buffer (empirical
+ *  deformation at valid voxels, imputed values across the halo), so a valid
+ *  sample whose kernel overlaps the boundary still yields a clean, finite
+ *  result. Voxels beyond the halo are never read by a valid sample and are left
+ *  unpopulated.
  *
- *  A separate bitwise validity mask is also generated during construction: a
- *  voxel is marked \c true only if every component of the corresponding voxel in
- *  the input deformation field was finite. This mask governs the return value of
- *  voxel(), image() and scanner(): each returns \c true only if the voxel in
- *  which the requested vertex resides is \c true in the mask (i.e. was free of
- *  non-finite values). When a sample resides in an invalid voxel the position is
- *  flagged out-of-bounds, so value() and row() return the out-of-bounds value;
- *  the imputed buffer exists to keep interpolation at valid samples well-posed,
- *  not to fabricate trustworthy data at the holes themselves.
+ *  The validity mask governs the return value of voxel(), image() and scanner():
+ *  each returns \c true only if the voxel in which the requested vertex resides
+ *  was free of non-finite values in the input field. When a sample resides in an
+ *  invalid voxel the position is flagged out-of-bounds, so value() and row()
+ *  return the out-of-bounds value; the imputed halo exists to keep interpolation
+ *  at valid samples well-posed, not to fabricate trustworthy data at the holes
+ *  themselves.
  *
  *  The interpolated deformation is read exactly as for any 4D cubic
  *  interpolator: position the interpolator with voxel(), image() or scanner(),
@@ -81,8 +97,9 @@ namespace MR::Interp {
  *  \endcode
  *
  *  \note The imputation system is dense and is solved once per component during
- *    construction; this is efficient for typical hole counts, but very large
- *    contiguous invalid regions will produce a large dense system.
+ *    construction; because only the two-voxel halo around the valid region is
+ *    imputed, its size is bounded by the surface of that region rather than by
+ *    the total count of non-finite voxels.
  */
 template <class ValueType = default_type> class Deform : public Cubic<Image<ValueType>> {
 public:
@@ -171,18 +188,18 @@ typename Deform<ValueType>::ScratchData Deform<ValueType>::make_scratch(const He
 
   Image<value_type> field(header.get_image<value_type>());
 
-  // 4D buffer: empirical deformation where finite, imputed values where not.
-  Image<value_type> buffer(Image<value_type>::scratch(header, "imputed deformation field"));
-  for (auto l = Loop(field)(field, buffer); l; ++l)
-    buffer.value() = field.value();
-
-  // 3D validity mask: true only where every component of the voxel is finite.
-  Header mask_header(header);
-  mask_header.ndim() = 3;
-  mask_header.datatype() = DataType::Bit;
-  Image<bool> mask(Image<bool>::scratch(mask_header, "deformation field validity mask"));
-  for (auto l = Loop(mask)(mask); l; ++l) {
-    assign_pos_of(mask, 0, 3).to(field);
+  // Step 3.1: validity mask on the input grid, true only where every component
+  //   of the voxel is finite; simultaneously accumulate the bounding box of the
+  //   valid region, needed to size the (possibly padded) working grid.
+  constexpr ssize_t margin = 2;
+  Header input_mask_header(header);
+  input_mask_header.ndim() = 3;
+  input_mask_header.datatype() = DataType::Bit;
+  Image<bool> input_validity(Image<bool>::scratch(input_mask_header, "deformation field validity mask"));
+  std::array<ssize_t, 3> bbox_min{header.size(0), header.size(1), header.size(2)};
+  std::array<ssize_t, 3> bbox_max{-1, -1, -1};
+  for (auto l = Loop(input_validity)(input_validity); l; ++l) {
+    assign_pos_of(input_validity, 0, 3).to(field);
     bool valid = true;
     for (ssize_t component = 0; component != 3; ++component) {
       field.index(3) = component;
@@ -191,51 +208,114 @@ typename Deform<ValueType>::ScratchData Deform<ValueType>::make_scratch(const He
         break;
       }
     }
-    mask.value() = valid;
+    input_validity.value() = valid;
+    if (valid) {
+      for (ssize_t axis = 0; axis != 3; ++axis) {
+        const ssize_t pos = input_validity.index(axis);
+        bbox_min[axis] = std::min(bbox_min[axis], pos);
+        bbox_max[axis] = std::max(bbox_max[axis], pos);
+      }
+    }
+  }
+  if (bbox_max[0] < 0)
+    throw Exception("Deformation field \"" + header.name() + "\" contains no finite voxels");
+
+  // Step 3.2: pad the grid where necessary so that every valid voxel lies at
+  //   least `margin` voxels from the field-of-view edge, guaranteeing both that
+  //   the dilation halo fits and that the cubic kernel of any valid sample stays
+  //   in-bounds. `shift` maps an input voxel index onto the (padded) grid.
+  std::array<ssize_t, 3> shift{0, 0, 0};
+  Header grid(header);
+  for (ssize_t axis = 0; axis != 3; ++axis) {
+    const ssize_t pad_low = std::max<ssize_t>(0, margin - bbox_min[axis]);
+    const ssize_t pad_high = std::max<ssize_t>(0, margin - (header.size(axis) - 1 - bbox_max[axis]));
+    shift[axis] = pad_low;
+    grid.size(axis) = header.size(axis) + pad_low + pad_high;
+    // Shift the transform so that padded voxel `pad_low` along this axis maps to
+    //   the scanner-space position of input voxel 0 (origin offset of `-pad_low`).
+    for (ssize_t i = 0; i != 3; ++i)
+      grid.transform()(i, 3) -= static_cast<default_type>(pad_low) * grid.spacing(axis) * grid.transform()(i, axis);
   }
 
-  // Impute each component independently against its own set of non-finite
-  //   voxels, so that a finite component of a partially-invalid voxel is
-  //   retained as known data for that component's solve.
-  Header slab_header(header);
-  slab_header.ndim() = 3;
-  for (ssize_t component = 0; component != 3; ++component) {
-    Image<bool> invalid(Image<bool>::scratch(mask_header, "non-finite component voxels"));
-    field.index(3) = component;
-    for (auto l = Loop(invalid)(invalid); l; ++l) {
-      assign_pos_of(invalid, 0, 3).to(field);
-      invalid.value() = !std::isfinite(field.value());
-    }
+  // 4D buffer on the working grid: empirical deformation where finite, imputed
+  //   values across the halo, left unpopulated beyond it.
+  Image<value_type> buffer(Image<value_type>::scratch(grid, "imputed deformation field"));
+  for (auto l = Loop(field)(field); l; ++l) {
+    for (ssize_t axis = 0; axis != 3; ++axis)
+      buffer.index(axis) = field.index(axis) + shift[axis];
+    buffer.index(3) = field.index(3);
+    buffer.value() = field.value();
+  }
 
-    const Voxel2Vector v2v(invalid, slab_header);
-    if (v2v.empty())
-      continue;
+  // Validity mask resampled onto the working grid (a pure index shift).
+  Header mask_header(grid);
+  mask_header.ndim() = 3;
+  mask_header.datatype() = DataType::Bit;
+  Image<bool> validity(Image<bool>::scratch(mask_header, "deformation field validity mask"));
+  for (auto l = Loop(input_validity)(input_validity); l; ++l) {
+    for (ssize_t axis = 0; axis != 3; ++axis)
+      validity.index(axis) = input_validity.index(axis) + shift[axis];
+    validity.value() = input_validity.value();
+  }
 
-    // Independent reader so that index manipulation during the solve does not
-    //   disturb the iterators of the surrounding loops.
-    Image<value_type> reader(field);
-    auto value_at = [reader, component](const Impute::Position &p) mutable -> double {
-      reader.index(0) = p[0];
-      reader.index(1) = p[1];
-      reader.index(2) = p[2];
-      reader.index(3) = component;
-      return static_cast<double>(reader.value());
+  // Step 3.3: two passes of 26-connectivity dilation of the validity mask,
+  //   producing the set of voxels reachable by the cubic kernel of any valid
+  //   sample.
+  Image<bool> dilated(Image<bool>::scratch(mask_header, "dilated validity mask"));
+  {
+    Filter::Dilate dilate(validity);
+    dilate.set_26_connectivity(true);
+    dilate.set_npass(2);
+    dilate(validity, dilated);
+  }
+
+  // Step 3.4: the halo is the band added by dilation: present in the dilated
+  //   mask but absent from the validity mask.
+  Image<bool> halo(Image<bool>::scratch(mask_header, "imputation halo mask"));
+  for (auto l = Loop(halo)(halo, dilated, validity); l; ++l)
+    halo.value() = dilated.value() && !validity.value();
+
+  // Step 3.5: impute the halo voxels of each component independently. The valid
+  //   voxels supply the known data; the imputation field of view is restricted
+  //   to the dilated mask so that the outer edge of the halo acts as a natural
+  //   boundary rather than reading the unpopulated voxels beyond it.
+  const Voxel2Vector v2v(halo, mask_header);
+  if (!v2v.empty()) {
+    Image<bool> fov_reader(dilated);
+    auto in_fov = [fov_reader](const Impute::Position &p) mutable -> bool {
+      if (is_out_of_bounds(fov_reader, p, 0, 3))
+        return false;
+      fov_reader.index(0) = p[0];
+      fov_reader.index(1) = p[1];
+      fov_reader.index(2) = p[2];
+      return fov_reader.value();
     };
-    auto in_fov = [&slab_header](const Impute::Position &p) -> bool { return !is_out_of_bounds(slab_header, p, 0, 3); };
+    for (ssize_t component = 0; component != 3; ++component) {
+      // Independent reader so that index manipulation during the solve does not
+      //   disturb the iterators of the surrounding loops.
+      Image<value_type> reader(buffer);
+      auto value_at = [reader, component](const Impute::Position &p) mutable -> double {
+        reader.index(0) = p[0];
+        reader.index(1) = p[1];
+        reader.index(2) = p[2];
+        reader.index(3) = component;
+        return static_cast<double>(reader.value());
+      };
 
-    const Impute::Vec solution = Impute::make_imputer(method, v2v, value_at, in_fov, detrend)->solve();
+      const Impute::Vec solution = Impute::make_imputer(method, v2v, value_at, in_fov, detrend)->solve();
 
-    buffer.index(3) = component;
-    for (auto l = Loop(invalid)(invalid); l; ++l) {
-      if (!invalid.value())
-        continue;
-      assign_pos_of(invalid, 0, 3).to(buffer);
-      const Impute::Position p(invalid.index(0), invalid.index(1), invalid.index(2));
-      buffer.value() = static_cast<value_type>(solution[v2v(p)]);
+      buffer.index(3) = component;
+      for (auto l = Loop(halo)(halo); l; ++l) {
+        if (!halo.value())
+          continue;
+        assign_pos_of(halo, 0, 3).to(buffer);
+        const Impute::Position p(halo.index(0), halo.index(1), halo.index(2));
+        buffer.value() = static_cast<value_type>(solution[v2v(p)]);
+      }
     }
   }
 
-  return ScratchData{buffer, mask};
+  return ScratchData{buffer, validity};
 }
 
 //! @}
