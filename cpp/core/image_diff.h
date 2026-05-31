@@ -16,10 +16,90 @@
 
 #pragma once
 
+#include <cmath>
+#include <complex>
+#include <cstdint>
 #include <set>
+#include <string>
+#include <string_view>
+#include <type_traits>
 
 #include "algo/loop.h"
 #include "image_helpers.h"
+
+//! Machinery for selecting the appropriate arithmetic for comparing two image value types
+namespace MR::ImageDiff {
+
+//! whether a value type carries the concept of "not a number" (any floating-point, real or complex)
+template <class ValueType>
+struct is_floating
+    : std::integral_constant<bool, std::is_floating_point<ValueType>::value || is_complex<ValueType>::value> {};
+
+/*! \brief the value type in which to perform numerical comparison between two image value types
+ *
+ * The comparison is performed using the highest width / precision of the two inputs:
+ * - complex floating-point if either input is complex;
+ * - real floating-point if either (non-complex) input is floating-point;
+ * - the wider integer (signed if either input is signed) if both inputs are integers.
+ */
+template <class T1, class T2, class = void> struct compute_type;
+
+template <class T1, class T2>
+struct compute_type<T1, T2, std::enable_if_t<is_complex<T1>::value || is_complex<T2>::value>> {
+  using type = cdouble;
+};
+
+template <class T1, class T2>
+struct compute_type<T1,
+                    T2,
+                    std::enable_if_t<!is_complex<T1>::value && !is_complex<T2>::value &&
+                                     (std::is_floating_point<T1>::value || std::is_floating_point<T2>::value)>> {
+  using type = double;
+};
+
+template <class T1, class T2>
+struct compute_type<T1, T2, std::enable_if_t<std::is_integral<T1>::value && std::is_integral<T2>::value>> {
+  using type = std::conditional_t<std::is_signed<T1>::value || std::is_signed<T2>::value, int64_t, uint64_t>;
+};
+
+template <class T1, class T2> using compute_t = typename compute_type<T1, T2>::type;
+
+//! floating-point type used for relative (fractional) comparisons, which cannot be performed in integer arithmetic
+template <class T1, class T2>
+using float_compute_t = std::conditional_t<is_complex<T1>::value || is_complex<T2>::value, cdouble, double>;
+
+//! test whether a real floating-point value is NaN
+template <class ValueType>
+inline std::enable_if_t<std::is_floating_point<ValueType>::value, bool> is_nan(const ValueType value) {
+  return std::isnan(value);
+}
+//! test whether either component of a complex floating-point value is NaN
+template <class ValueType>
+inline std::enable_if_t<std::is_floating_point<ValueType>::value, bool> is_nan(const std::complex<ValueType> &value) {
+  return std::isnan(value.real()) || std::isnan(value.imag());
+}
+
+//! whether two voxel values are inconsistent in the presence / absence of NaN; only relevant for floating-point inputs
+template <class T1, class T2>
+inline std::enable_if_t<is_floating<T1>::value || is_floating<T2>::value, bool> nan_mismatch(const T1 a, const T2 b) {
+  using F = float_compute_t<T1, T2>;
+  return is_nan(static_cast<F>(a)) != is_nan(static_cast<F>(b));
+}
+//! integer value types have no concept of NaN, hence can never be inconsistent
+template <class T1, class T2>
+inline std::enable_if_t<!is_floating<T1>::value && !is_floating<T2>::value, bool> nan_mismatch(const T1, const T2) {
+  return false;
+}
+
+//! throw if two voxels are inconsistent in the presence / absence of NaN values
+template <class T1, class T2>
+inline void check_nan_match(const T1 a, const T2 b, const std::string_view name1, const std::string_view name2) {
+  if (nan_mismatch(a, b))
+    throw Exception("images \"" + std::string(name1) + "\" and \"" + std::string(name2) +
+                    "\" do not match in locations of NaN values");
+}
+
+} // namespace MR::ImageDiff
 
 namespace MR {
 
@@ -43,16 +123,33 @@ template <class HeaderType1, class HeaderType2> inline void check_headers(Header
   }
 }
 
+//! check images are bitwise identical; by definition no comparison tolerance is applicable
+template <class ImageType1, class ImageType2> inline void check_images_bitwise(ImageType1 &in1, ImageType2 &in2) {
+  check_headers(in1, in2);
+  ThreadedLoop(in1).run(
+      [](const ImageType1 &a, const ImageType2 &b) {
+        if (a.value() != b.value())
+          throw Exception("images \"" + a.name() + "\" and \"" + b.name() + "\" do not match in bitwise comparison (" +
+                          str(a.value()) + " vs " + str(b.value()) + ")");
+      },
+      in1,
+      in2);
+}
+
 //! check images are the same within a absolute tolerance
 template <class ImageType1, class ImageType2>
 inline void check_images_abs(ImageType1 &in1, ImageType2 &in2, const double tol = 0.0) {
+  using C = ImageDiff::compute_t<typename ImageType1::value_type, typename ImageType2::value_type>;
   check_headers(in1, in2);
   ThreadedLoop(in1).run(
       [&tol](const ImageType1 &a, const ImageType2 &b) {
-        if (MR::abs(static_cast<cdouble>(a.value()) - static_cast<cdouble>(b.value())) > tol)
+        const typename ImageType1::value_type va = a.value();
+        const typename ImageType2::value_type vb = b.value();
+        ImageDiff::check_nan_match(va, vb, a.name(), b.name());
+        if (MR::abs(static_cast<C>(va) - static_cast<C>(vb)) > tol)
           throw Exception("images \"" + a.name() + "\" and \"" + b.name() +
-                          "\" do not match within absolute precision of " + str(tol) + " (" +
-                          str(static_cast<cdouble>(a.value())) + " vs " + str(static_cast<cdouble>(b.value())) + ")");
+                          "\" do not match within absolute precision of " + str(tol) + " (" + str(static_cast<C>(va)) +
+                          " vs " + str(static_cast<C>(vb)) + ")");
       },
       in1,
       in2);
@@ -61,15 +158,18 @@ inline void check_images_abs(ImageType1 &in1, ImageType2 &in2, const double tol 
 //! check images are the same within a fractional tolerance
 template <class ImageType1, class ImageType2>
 inline void check_images_frac(ImageType1 &in1, ImageType2 &in2, const double tol = 0.0) {
-
+  using F = ImageDiff::float_compute_t<typename ImageType1::value_type, typename ImageType2::value_type>;
   check_headers(in1, in2);
   ThreadedLoop(in1).run(
       [&tol](const ImageType1 &a, const ImageType2 &b) {
-        if (MR::abs((static_cast<cdouble>(a.value()) - static_cast<cdouble>(b.value())) /
-                    (0.5 * (static_cast<cdouble>(a.value()) + static_cast<cdouble>(b.value())))) > tol)
+        const typename ImageType1::value_type va = a.value();
+        const typename ImageType2::value_type vb = b.value();
+        ImageDiff::check_nan_match(va, vb, a.name(), b.name());
+        if (MR::abs((static_cast<F>(va) - static_cast<F>(vb)) / (0.5 * (static_cast<F>(va) + static_cast<F>(vb)))) >
+            tol)
           throw Exception("images \"" + a.name() + "\" and \"" + b.name() +
                           "\" do not match within fractional precision of " + str(tol) + " (" +
-                          str(static_cast<cdouble>(a.value())) + " vs " + str(static_cast<cdouble>(b.value())) + ")");
+                          str(static_cast<F>(va)) + " vs " + str(static_cast<F>(vb)) + ")");
       },
       in1,
       in2);
@@ -78,15 +178,18 @@ inline void check_images_frac(ImageType1 &in1, ImageType2 &in2, const double tol
 //! check images are the same within a tolerance defined by a third image
 template <class ImageType1, class ImageType2, class ImageTypeTol>
 inline void check_images_tolimage(ImageType1 &in1, ImageType2 &in2, ImageTypeTol &tol) {
-
+  using C = ImageDiff::compute_t<typename ImageType1::value_type, typename ImageType2::value_type>;
   check_headers(in1, in2);
   check_headers(in1, tol);
   ThreadedLoop(in1).run(
       [](const ImageType1 &a, const ImageType2 &b, const ImageTypeTol &t) {
-        if (MR::abs(static_cast<cdouble>(a.value()) - static_cast<cdouble>(b.value())) > t.value())
+        const typename ImageType1::value_type va = a.value();
+        const typename ImageType2::value_type vb = b.value();
+        ImageDiff::check_nan_match(va, vb, a.name(), b.name());
+        if (MR::abs(static_cast<C>(va) - static_cast<C>(vb)) > t.value())
           throw Exception("images \"" + a.name() + "\" and \"" + b.name() + "\" do not match within precision of \"" +
-                          t.name() + "\"" + " (" + str(static_cast<cdouble>(a.value())) + " vs " +
-                          str(static_cast<cdouble>(b.value())) + ", tolerance " + str(t.value()) + ")");
+                          t.name() + "\"" + " (" + str(static_cast<C>(va)) + " vs " + str(static_cast<C>(vb)) +
+                          ", tolerance " + str(t.value()) + ")");
       },
       in1,
       in2,
@@ -96,18 +199,22 @@ inline void check_images_tolimage(ImageType1 &in1, ImageType2 &in2, ImageTypeTol
 //! check images are the same within a fractional tolerance relative to the maximum value in the voxel
 template <class ImageType1, class ImageType2>
 inline void check_images_voxel(ImageType1 &in1, ImageType2 &in2, const double tol = 0.0) {
+  using F = ImageDiff::float_compute_t<typename ImageType1::value_type, typename ImageType2::value_type>;
   auto func = [&tol](decltype(in1) &a, decltype(in2) &b) {
     double maxa = 0.0, maxb = 0.0;
     for (auto l = Loop(3)(a, b); l; ++l) {
-      maxa = std::max(maxa, MR::abs(static_cast<cdouble>(a.value())));
-      maxb = std::max(maxb, MR::abs(static_cast<cdouble>(b.value())));
+      maxa = std::max(maxa, MR::abs(static_cast<F>(a.value())));
+      maxb = std::max(maxb, MR::abs(static_cast<F>(b.value())));
     }
     const double threshold = tol * 0.5 * (maxa + maxb);
     for (auto l = Loop(3)(a, b); l; ++l) {
-      if (MR::abs(static_cast<cdouble>(a.value()) - static_cast<cdouble>(b.value())) > threshold)
+      const typename ImageType1::value_type va = a.value();
+      const typename ImageType2::value_type vb = b.value();
+      ImageDiff::check_nan_match(va, vb, a.name(), b.name());
+      if (MR::abs(static_cast<F>(va) - static_cast<F>(vb)) > threshold)
         throw Exception("images \"" + a.name() + "\" and \"" + b.name() + "\" do not match within " + str(tol) +
-                        " of maximal voxel value" + " (" + str(static_cast<cdouble>(a.value())) + " vs " +
-                        str(static_cast<cdouble>(b.value())) + ")");
+                        " of maximal voxel value" + " (" + str(static_cast<F>(va)) + " vs " + str(static_cast<F>(vb)) +
+                        ")");
     }
   };
 
@@ -165,11 +272,17 @@ template <class HeaderType1, class HeaderType2> inline bool headers_match(Header
 //! check images are the same within a absolute tolerance
 template <class ImageType1, class ImageType2>
 inline bool images_match_abs(ImageType1 &in1, ImageType2 &in2, const double tol = 0.0) {
+  using C = ImageDiff::compute_t<typename ImageType1::value_type, typename ImageType2::value_type>;
   if (!headers_match(in1, in2))
     return false;
-  for (auto i = Loop(in1)(in1, in2); i; ++i)
-    if (MR::abs(static_cast<cdouble>(in1.value()) - static_cast<cdouble>(in2.value())) > tol)
+  for (auto i = Loop(in1)(in1, in2); i; ++i) {
+    const typename ImageType1::value_type va = in1.value();
+    const typename ImageType2::value_type vb = in2.value();
+    if (ImageDiff::nan_mismatch(va, vb))
       return false;
+    if (MR::abs(static_cast<C>(va) - static_cast<C>(vb)) > tol)
+      return false;
+  }
   return true;
 }
 

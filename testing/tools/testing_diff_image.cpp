@@ -18,6 +18,7 @@
 #include "datatype.h"
 
 #include "diff_images.h"
+#include "header.h"
 #include "image.h"
 #include "progressbar.h"
 
@@ -44,10 +45,10 @@ void usage() {
 // clang-format on
 
 void run() {
-  auto in1 = Image<cdouble>::open(argument[0]);
-  auto in2 = Image<cdouble>::open(argument[1]);
+  Header header1 = Header::open(argument[0]);
+  Header header2 = Header::open(argument[1]);
 
-  Testing::diff_images(in1, in2);
+  Testing::diff_images(header1, header2);
 
   CONSOLE("data checked OK");
 }
