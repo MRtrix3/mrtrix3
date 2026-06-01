@@ -167,7 +167,9 @@ def execute(): # pylint: disable=unused-variable
     # --- FIRST: sub-cortical GM segmentation ---
     SGM_FIRST_MAP = {
       'L_Accu': 'Left-Accumbens-area',  'R_Accu': 'Right-Accumbens-area',
+      'L_Amyg': 'Left-Amygdala',        'R_Amyg': 'Right-Amygdala',
       'L_Caud': 'Left-Caudate',         'R_Caud': 'Right-Caudate',
+      'L_Hipp': 'Left-Hippocampus',     'R_Hipp': 'Right-Hippocampus',
       'L_Pall': 'Left-Pallidum',        'R_Pall': 'Right-Pallidum',
       'L_Puta': 'Left-Putamen',         'R_Puta': 'Right-Putamen',
       'L_Thal': 'Left-Thalamus-Proper', 'R_Thal': 'Right-Thalamus-Proper'
