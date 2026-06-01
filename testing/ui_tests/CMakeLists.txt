@@ -39,6 +39,13 @@ dirs_to_unix(EXEC_DIRS "${EXEC_DIRS}")
 include(BashTests)
 function (add_bash_ui_test FILE_SRC)
     get_filename_component(NAME ${FILE_SRC} NAME_WE)
+    # Forward the NO_FILESYSTEM_LOCK opt-out keyword for tests that never write to disk.
+    set(no_filesystem_lock "")
+    foreach(arg ${ARGN})
+        if(arg STREQUAL "NO_FILESYSTEM_LOCK")
+            set(no_filesystem_lock NO_FILESYSTEM_LOCK)
+        endif()
+    endforeach()
     add_bash_test(
         FILE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/${FILE_SRC}"
         PREFIX "uitest"
@@ -46,6 +53,7 @@ function (add_bash_ui_test FILE_SRC)
         EXEC_DIRECTORIES "${EXEC_DIRS}"
         ENVIRONMENT "PYTHONPATH=${PYTHON_ENV_PATH}"
         LABELS "cli;${NAME}"
+        ${no_filesystem_lock}
     )
 endfunction()
 

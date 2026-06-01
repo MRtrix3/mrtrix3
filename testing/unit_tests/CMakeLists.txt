@@ -73,11 +73,19 @@ gtest_discover_tests(mrtrix-unit-tests
 include(BashTests)
 function (add_bash_unit_test FILE_SRC)
     get_filename_component(NAME ${FILE_SRC} NAME_WE)
+    # Forward the NO_FILESYSTEM_LOCK opt-out keyword for tests that never write to disk.
+    set(no_filesystem_lock "")
+    foreach(arg ${ARGN})
+        if(arg STREQUAL "NO_FILESYSTEM_LOCK")
+            set(no_filesystem_lock NO_FILESYSTEM_LOCK)
+        endif()
+    endforeach()
     add_bash_test(
         FILE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/${FILE_SRC}"
         PREFIX "unittest"
         WORKING_DIRECTORY ${DATA_DIR}
         EXEC_DIRECTORIES "${EXEC_DIRS}"
         LABELS "unittest;${NAME}"
+        ${no_filesystem_lock}
     )
 endfunction()
