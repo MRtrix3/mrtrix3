@@ -18,7 +18,7 @@
 #include "command.h"
 #include "file/matrix.h"
 #include "image.h"
-#include "interp/linear.h"
+#include "interp/warp.h"
 #include "registration/warp/validate.h"
 
 #include <filesystem>
@@ -38,6 +38,13 @@ public:
 
   Eigen::Vector3d transform_point(const Eigen::Vector3d &input) {
     Eigen::Vector3d output;
+    // Interp::Warp::scanner() returns true only where the queried position lies
+    //   inside the warp's valid region (the trilinearly-interpolated finite-input
+    //   mask being at least one half); this is exactly the criterion that decides
+    //   which output voxels retain a finite value. A position outside that region
+    //   yields NaN, which the remaining legs of the composition chain propagate,
+    //   so the composed output voxel is NaN-filled iff some warp leg fell outside
+    //   its valid region.
     if (interp.scanner(input))
       output = interp.row(3);
     else
@@ -46,7 +53,7 @@ public:
   }
 
 protected:
-  Interp::Linear<Image<default_type>> interp;
+  Interp::Warp<default_type> interp;
 };
 
 class Linear : public TransformBase {

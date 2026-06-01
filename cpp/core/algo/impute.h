@@ -880,7 +880,7 @@ protected:
  *  supported) introduce none. See Stein, Jacobson et al., "Natural Boundary
  *  Conditions for Smoothing in Geometry Processing", ACM TOG 2018. This makes
  *  it the preferred default when extrapolating a field across a wide non-finite
- *  border (see \c MR::Interp::Deform). */
+ *  border (see \c MR::Interp::Warp). */
 class Hessian : public Base {
 public:
   using Base::Base;

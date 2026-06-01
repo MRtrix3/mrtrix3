@@ -30,8 +30,8 @@
 
 #include "algo/loop.h"
 #include "algo/threaded_loop.h"
-#include "interp/deform.h"
 #include "interp/linear.h"
+#include "interp/warp.h"
 #include "registration/warp/convert.h"
 
 namespace MR::Registration::Warp {
@@ -40,10 +40,10 @@ namespace {
 
 //! cubic interpolation of the (imputation-aware) forward deformation field, yielding both
 //   the mapped scanner-space position and its 3x3 Jacobian with respect to scanner coordinates
-using DeformInterpType = Interp::Deform<default_type, Math::SplineProcessingType::ValueAndDerivative>;
+using WarpInterpType = Interp::Warp<default_type, Math::SplineProcessingType::ValueAndDerivative>;
 
 // neighbour_offsets() (the 26 shared-corner neighbour offsets) is provided by
-//   registration/warp/extrapolate.h, included transitively via interp/deform.h.
+//   registration/warp/extrapolate.h, included transitively via interp/warp.h.
 
 //! per-output-voxel classification of the Newton-inversion outcome (diagnostic only)
 /*! Written to an optional uint8 scratch image so that, after inversion, the
@@ -109,7 +109,7 @@ private:
 class DeformationThreadKernel {
 
 public:
-  DeformationThreadKernel(const DeformInterpType &deform,
+  DeformationThreadKernel(const WarpInterpType &deform,
                           const Image<default_type> &inv_deform,
                           const size_t max_iter,
                           const default_type error_tol,
@@ -216,7 +216,7 @@ private:
     outcome.value() = static_cast<uint8_t>(code);
   }
 
-  DeformInterpType deform;
+  WarpInterpType deform;
   MR::Transform transform;
   const size_t max_iter;
   const default_type error_tolerance_sq;
@@ -238,7 +238,7 @@ private:
  *  copied into \a inv_deform_field as the starting estimate for the Newton search. */
 inline void initialise_inverse_deformation(Image<default_type> &field,
                                            Image<default_type> &inv_deform_field,
-                                           DeformInterpType &deform) {
+                                           WarpInterpType &deform) {
   const MR::Transform in_transform(field);
   const MR::Transform out_transform(inv_deform_field);
 
@@ -481,7 +481,7 @@ inline void initialise_inverse_deformation(Image<default_type> &field,
  * Note that the output inv_warp can be passed as either a zero field or an initial estimate.
  * Unless \a is_initialised is set, an informed initialisation is computed from the forward
  * field; the inverse is then refined per voxel by a Newton search using the imputation-aware
- * cubic interpolator MR::Interp::Deform. Output voxels that cannot be inverted, or whose
+ * cubic interpolator MR::Interp::Warp. Output voxels that cannot be inverted, or whose
  * recovered origin does not reside in valid (non-extrapolated) input data, are written NaN.
  */
 FORCE_INLINE void invert_deformation(Image<default_type> &deform_field,
@@ -494,7 +494,7 @@ FORCE_INLINE void invert_deformation(Image<default_type> &deform_field,
   check_dimensions(deform_field, inv_deform_field);
   error_tolerance *= (deform_field.spacing(0) + deform_field.spacing(1) + deform_field.spacing(2)) / 3;
 
-  DeformInterpType deform(deform_field, degree, validity_policy);
+  WarpInterpType deform(deform_field, degree, validity_policy);
 
   if (!is_initialised)
     initialise_inverse_deformation(deform_field, inv_deform_field, deform);

@@ -84,6 +84,14 @@ protected:
   default_type step;
 };
 
+// TODO: This kernel interpolates deformation fields with Interp::Linear and could adopt the
+//   imputation-aware cubic Interp::Warp (as filter/warp.h, transformcompose and the deformation
+//   inversion path now do). It is deferred because its productive caller compute_full_deformation()
+//   passes Adapter::Extract1D views into a 5D warp, which Interp::Warp cannot wrap without first
+//   materialising each into a scratch Image<default_type> (two full double-field copies per call,
+//   on mrregister's hot path), for halfway fields that are dense/finite by construction. Revisit
+//   whether the imputation benefit justifies that cost; adoption would also require changing the
+//   vec3() reads below to row(3).
 template <class DeformationField1Type, class DeformationField2Type> class ComposeHalfwayKernel {
 public:
   ComposeHalfwayKernel(const transform_type &linear1,

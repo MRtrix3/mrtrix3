@@ -22,7 +22,7 @@
 #include "algo/threaded_loop.h"
 #include "datatype.h"
 #include "filter/reslice.h"
-#include "interp/cubic.h"
+#include "interp/warp.h"
 
 namespace MR::Filter {
 
@@ -75,7 +75,10 @@ void warp(ImageTypeSource &source,
     header.size(3) = 3;
     Stride::set(header, Stride::contiguous_along_axis(3, header));
     auto warp_resliced = Image<typename WarpType::value_type>::scratch(header);
-    reslice<Interp::Cubic>(warp, warp_resliced, Adapter::NoTransform, oversample);
+    // Regrid the warp field through the imputation-aware cubic interpolator so that
+    //   non-finite voxels do not poison the cubic kernel and samples beyond the
+    //   warp's valid region become NaN rather than fabricated extrapolations.
+    reslice<Interp::WarpReslice>(warp, warp_resliced, Adapter::NoTransform, oversample);
 
     Adapter::Warp<Interpolator, ImageTypeSource, Image<typename WarpType::value_type>> interp(
         source, warp_resliced, value_when_out_of_bounds, jacobian_modulate);

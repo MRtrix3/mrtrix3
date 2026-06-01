@@ -1,5 +1,10 @@
 #!/bin/bash
 # Verify operation when provided with two input non-linear transformations
 # Outcome is compared to that calculated using a prior software version
+# NOTE: transformcompose now interpolates the input warps through the imputation-aware cubic
+#   Interp::Warp rather than Interp::Linear. Reference data may legitimately change near the
+#   warps' field-of-view boundaries, where positions outside the valid region (interpolated
+#   finite-input mask < 0.5) are now NaN-filled instead of clamp-extrapolated; chaining two
+#   warps maps interior positions toward those boundaries, so the affected rim can be wider.
 transformcompose rotatez_warp.mif rotatez_warp.mif - | \
 testing_diff_image - transformcompose/out4.mif -frac 0.001

@@ -54,11 +54,11 @@ inline const std::vector<std::array<ssize_t, 3>> &neighbour_offsets() {
   return offsets;
 }
 
-//! the polynomial degree policy used when extrapolating a deformation field
+//! the polynomial degree policy used when extrapolating a warp field
 /*! \c Adaptive fits the richest model the local support sustains (quadratic,
  *  then affine, then a constant fallback); \c Affine restricts the fit to a
- *  first-order model (with the same constant fallback). A deformation field is a
- *  smooth coordinate map and is therefore well approximated locally by a
+ *  first-order model (with the same constant fallback). A warp field (deformation
+ *  or displacement) is a smooth map and is therefore well approximated locally by a
  *  low-order polynomial, so the continuation beyond the valid region is solved
  *  directly as such a fit rather than via a global partial-differential
  *  equation. */
@@ -73,13 +73,13 @@ struct LocalFit {
   Eigen::Vector3d value;
 };
 
-//! fit a local polynomial to gathered deformation samples and evaluate it at the centre
+//! fit a local polynomial to gathered warp samples and evaluate it at the centre
 /*! \param sample_offsets the integer voxel-index offsets of the gathered samples
  *    relative to the voxel being filled; the target voxel is therefore offset
  *    \c (0,0,0), so the fitted value is the constant term of the polynomial.
  *    Using small, centred, unit-scaled integer offsets (rather than scanner-space
  *    positions) keeps the design matrix well-conditioned.
- *  \param sample_values the three deformation components of each gathered sample,
+ *  \param sample_values the three warp components of each gathered sample,
  *    one sample per row; all three are solved against a shared design matrix.
  *  \param degree the degree policy; see \c ExtrapolateDegree.
  *  \return the fitted three-component value and the model that produced it. The
@@ -120,7 +120,7 @@ inline LocalFit local_polynomial_fit(const std::vector<Eigen::Array<ssize_t, 3, 
 
 // Internal helpers: kept in a detail namespace (with external linkage) rather
 //   than an anonymous one, since they are referenced by the external-linkage
-//   function template extrapolate_deformation_halo().
+//   function template extrapolate_warp_halo().
 namespace detail {
 
 //! the offsets within a Chebyshev radius of a voxel, excluding the voxel itself
@@ -225,7 +225,7 @@ private:
 
 } // namespace detail
 
-//! extrapolate a deformation field across its halo by rank-ordered local polynomial fitting
+//! extrapolate a warp field across its halo by rank-ordered local polynomial fitting
 /*! Fills the \a halo voxels of \a buffer (a 4D image with three components along
  *  axis 3) by growing outward from the \a validity region. Halo voxels are
  *  rank-ordered by their count of currently-filled 26-neighbours and processed in
@@ -237,15 +237,15 @@ private:
  *  quadratic. No global linear system is assembled: the cost is one small
  *  fixed-size least-squares solve per halo voxel.
  *
- *  \param buffer   the deformation-field buffer; halo voxels are written in place.
+ *  \param buffer   the warp-field buffer; halo voxels are written in place.
  *  \param validity the trusted-data mask (true where \a buffer holds valid data).
  *  \param halo     the set of voxels requiring extrapolation.
  *  \param degree   the polynomial degree policy; see \c ExtrapolateDegree. */
 template <class ValueType>
-void extrapolate_deformation_halo(Image<ValueType> &buffer,
-                                  Image<bool> &validity,
-                                  Image<bool> &halo,
-                                  const ExtrapolateDegree degree) {
+void extrapolate_warp_halo(Image<ValueType> &buffer,
+                           Image<bool> &validity,
+                           Image<bool> &halo,
+                           const ExtrapolateDegree degree) {
   // "Filled" status, seeded from the validity mask and grown as halo layers are
   //   committed: a voxel is a usable fit sample once it is valid data or has been
   //   extrapolated. Updated single-threaded between layers, read concurrently

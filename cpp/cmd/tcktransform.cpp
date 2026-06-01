@@ -71,6 +71,11 @@ protected:
   Tractography::Reader<value_type> reader;
 };
 
+// TODO: This warps streamline vertices with Interp::Linear. Unlike the other deformation-field
+//   interpolation paths (filter/warp.h, transformcompose, the deformation inversion path), it is
+//   deliberately left on Interp::Linear for now: routing it through the imputation-aware cubic
+//   Interp::Warp is part of a more intrusive refactoring of this command, to be undertaken
+//   separately. Revisit once that work begins.
 class Warper {
 public:
   Warper(const Image<value_type> &warp) : interp(warp) {}
