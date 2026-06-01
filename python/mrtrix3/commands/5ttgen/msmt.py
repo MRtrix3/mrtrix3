@@ -123,7 +123,13 @@ def execute(): # pylint: disable=unused-variable
                   f' mrcalc - {result_unmasked} -mult {result_masked}')
   else:
     app.console('No 5TT mask provided; generating from input ODFs')
-    run.command(f'mrcalc {volsum_image} 0 -gt - |'
+    run.command(f'mrcalc {volsum_image} 0.1410473959 -gt - |'
+                ' maskfilter - clean - |'
+                ' mrcalc - 0 -eq - |'
+                ' maskfilter - connect -largest - |'
+                ' mrcalc - 0 -eq - |'
+                ' maskfilter - dilate -npass 3 - |'
+                ' maskfilter - erode -npass 3 - |'
                 f' mrcalc - {result_unmasked} -mult {result_masked}')
 
   # Brain mask derived from the masked 5TT — needed for CSF fill in both code paths
