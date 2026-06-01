@@ -1,0 +1,26 @@
+#!/bin/bash
+# Verify extraction of a specific shell by b-value using the -shells option
+# Selecting b=700,2800 should yield only the diffusion-weighted volumes
+#   corresponding to those shells
+# Ensure that the correct set of volumes is selected
+dwiextract dwi2fod/msmt_csd/dwi.mif -shells 700,2800 tmp.mif -force
+
+# Are the b-values correct?
+BVALUES=($(mrinfo tmp.mif -shell_bvalues))
+(( ${#BVALUES[@]} == 2 ))
+(( ${BVALUES[0]} == 700 ))
+(( ${BVALUES[1]} == 2800 ))
+
+# Are the number of volumes in each shell correct?
+SIZES=($(mrinfo tmp.mif -shell_sizes))
+(( ${#SIZES[@]} == 2 ))
+(( ${SIZES[0]} == 16 ))
+(( ${SIZES[1]} == 50 ))
+
+# Is the total number of volumes correct (ie. none that shouldn't be there?)
+SIZE=($(mrinfo tmp.mif -size))
+(( ${#SIZE[@]} == 4 ))
+(( ${SIZE[0]} == 15 ))
+(( ${SIZE[1]} == 15 ))
+(( ${SIZE[2]} == 11 ))
+(( ${SIZE[3]} == 66 ))

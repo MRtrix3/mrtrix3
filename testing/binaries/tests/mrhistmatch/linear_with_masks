@@ -1,0 +1,26 @@
+#!/bin/bash
+# Test "linear" histogram matching mode with -mask_input and -mask_target options.
+# Both masking options are exercised in the same test since they follow the same code path.
+# The validation logic mirrors the existing "linear" test:
+#   1. A known linear intensity transform (scale + offset) is applied to the input image
+#   2. mrhistmatch linear is run with both a mask for the input and a mask for the target
+#   3. The recovered scale and offset parameters must match those applied in step 1
+# dwi_mean.mif is used instead of b0.nii.gz as it has the same spatial dimensions as mask.mif
+
+M=$(bc <<< "scale=9; $RANDOM/16384")
+C=$(bc <<< "$RANDOM-16384")
+echo "$M" > tmp1.txt
+echo "$C" > tmp2.txt
+
+mrcalc dwi_mean.mif "$M" -mult "$C" -add tmp_transformed.mif -force
+
+mrhistmatch linear dwi_mean.mif tmp_transformed.mif tmp_out.mif \
+  -mask_input mask.mif \
+  -mask_target mask.mif \
+  -force
+
+mrinfo tmp_out.mif -property mrhistmatch_scale > tmp_scale.txt
+mrinfo tmp_out.mif -property mrhistmatch_offset > tmp_offset.txt
+
+testing_diff_matrix tmp1.txt tmp_scale.txt -frac 1e-4
+testing_diff_matrix tmp2.txt tmp_offset.txt -abs 0.5

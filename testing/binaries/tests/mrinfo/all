@@ -1,0 +1,11 @@
+#!/bin/bash
+# Verify the -all flag which prints all header key-value pairs
+# rather than the default truncated list
+# Checks that the output produces more lines than the default output
+#  (given that diffusion gradient table is elided by default)
+
+default_lines=$(mrinfo dwi.mif | wc -l)
+all_lines=$(mrinfo dwi.mif -all | wc -l)
+
+[ "$all_lines" -gt "$default_lines" ] || \
+  { echo "Expected -all output to have more lines than default output"; exit 1; }

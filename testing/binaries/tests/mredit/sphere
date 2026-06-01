@@ -1,0 +1,9 @@
+#!/bin/bash
+# Verify the -sphere option, which fills voxels within a sphere to a specified value
+# mask.mif has dimensions 6x8x9 and voxel size 2.5mm
+# A sphere centred at voxel (3,4,4) with radius 5.0mm is filled with value 2.0
+# ENsure output exactly matches that generated using a prior software version
+
+mrconvert mask.mif -datatype uint8 - | \
+mredit - -sphere 3,4,4 5.0 2.0 - | \
+testing_diff_image - mredit/sphere.mif -abs 0

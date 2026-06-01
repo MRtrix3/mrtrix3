@@ -1,0 +1,13 @@
+#!/bin/bash
+# Verify the -count option of "tsfinfo",
+#   which reads the file to obtain the actual scalar sequence count
+#   rather than relying on the value stored in the header.
+# The count reported explicitly from the file must match the header count.
+
+rm -f tmp.txt
+tsfinfo afd.tsf -count 2>&1 | tee tmp.txt
+grep "Track scalar file:" tmp.txt
+grep "actual count in file:" tmp.txt
+header_count=$(grep -E "count:" tmp.txt | head -1 | awk '{print $NF}')
+actual_count=$(grep "actual count in file:" tmp.txt | awk '{print $NF}')
+[ "$header_count" = "$actual_count" ]
