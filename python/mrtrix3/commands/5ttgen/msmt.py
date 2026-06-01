@@ -184,12 +184,18 @@ def execute(): # pylint: disable=unused-variable
 
       sgm_images = []
       for key, value in SGM_FIRST_MAP.items():
-        vtk_in  = 'first-' + key + '_first.vtk'
-        vtk_out = 'first-' + key + '_transformed.vtk'
-        sgm_img = value + '.mif'
+        vtk_in     = 'first-' + key + '_first.vtk'
+        vtk_out    = 'first-' + key + '_transformed.vtk'
+        sgm_img    = value + '.mif'
+        sgm_filled = value + '_filled.mif'
         run.command('meshconvert ' + vtk_in + ' ' + vtk_out + ' -transform first2real vis.nii')
         run.command('mesh2voxel ' + vtk_out + ' odf_wm.mif ' + sgm_img)
-        sgm_images.append(sgm_img)
+        run.command('mrcalc ' + sgm_img + ' 0.5 -gt - -datatype bit | '
+                    'mrcalc - 0 -eq - | '
+                    'maskfilter - connect -largest - | '
+                    'mrcalc - 0 -eq ' + sgm_filled + ' -datatype bit')
+        app.cleanup(sgm_img)
+        sgm_images.append(sgm_filled)
 
       run.command(['mrmath', sgm_images, 'sum', 'sgm_sum.mif'])
       run.command('mrcalc sgm_sum.mif 0.5 -gt sgm.mif -datatype float32')
