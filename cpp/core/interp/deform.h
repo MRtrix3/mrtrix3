@@ -28,18 +28,17 @@
 #include "image_helpers.h"
 #include "types.h"
 
-#include "algo/impute.h"
 #include "algo/loop.h"
 #include "filter/dilate.h"
 #include "interp/cubic.h"
-#include "misc/voxel2vector.h"
+#include "registration/warp/extrapolate.h"
 
 namespace MR::Interp {
 
 //! \addtogroup interp
 // @{
 
-//! Cubic interpolation of a non-linear deformation field with imputation of invalid voxels
+//! Cubic interpolation of a non-linear deformation field with extrapolation of invalid voxels
 /*! This interpolator is dedicated to the application of a non-linear deformation
  *  field (a 4D image with three volumes along axis 3, holding for each voxel the
  *  scanner-space position to which it maps). The input field may contain voxels
@@ -64,12 +63,15 @@ namespace MR::Interp {
  *     \c MR::Filter::Dilate filter), yielding the set of voxels that can be
  *     reached by the cubic kernel of any valid sample.
  *   - The "halo" of voxels added by that dilation (present after dilation but
- *     absent before) is filled by the imputation machinery of \c MR::Impute
- *     (the algorithms exposed by the \c mrimpute command), using the valid
- *     voxels as the only known data and treating the outer edge of the halo as a
- *     natural boundary. Each of the three components is imputed independently.
+ *     absent before) is filled by rank-ordered local polynomial extrapolation
+ *     (\c MR::Registration::Warp::extrapolate_deformation_halo): a deformation
+ *     field is a smooth coordinate map, locally affine or quadratic, so each halo
+ *     voxel is filled by a small least-squares fit of a low-order polynomial to
+ *     the valid (and already-filled) samples in its vicinity. Halo voxels are
+ *     processed outward from the valid region in layers of decreasing
+ *     filled-neighbour count, all three components solved together.
  *  Cubic interpolation is then performed against this buffer (empirical
- *  deformation at valid voxels, imputed values across the halo), so a valid
+ *  deformation at valid voxels, extrapolated values across the halo), so a valid
  *  sample whose kernel overlaps the boundary still yields a clean, finite
  *  result. Voxels beyond the halo are never read by a valid sample and are left
  *  unpopulated.
@@ -78,9 +80,9 @@ namespace MR::Interp {
  *  each returns \c true only if the voxel in which the requested vertex resides
  *  was free of non-finite values in the input field. When a sample resides in an
  *  invalid voxel the position is flagged out-of-bounds, so value() and row()
- *  return the out-of-bounds value; the imputed halo exists to keep interpolation
- *  at valid samples well-posed, not to fabricate trustworthy data at the holes
- *  themselves.
+ *  return the out-of-bounds value; the extrapolated halo exists to keep
+ *  interpolation at valid samples well-posed, not to fabricate trustworthy data
+ *  at the holes themselves.
  *
  *  The interpolated deformation is read exactly as for any 4D cubic
  *  interpolator: position the interpolator with voxel(), image() or scanner(),
@@ -96,10 +98,11 @@ namespace MR::Interp {
  *    Eigen::Vector3d mapped_position = deform.row(3);
  *  \endcode
  *
- *  \note The imputation system is dense and is solved once per component during
- *    construction; because only the two-voxel halo around the valid region is
- *    imputed, its size is bounded by the surface of that region rather than by
- *    the total count of non-finite voxels.
+ *  \note The halo is filled by independent per-voxel polynomial fits rather than
+ *    a global linear solve, so the cost scales linearly with the number of halo
+ *    voxels (themselves bounded by the surface of the valid region rather than by
+ *    the total count of non-finite voxels); this remains tractable for large
+ *    non-linear fields, where a dense global solve over the halo would not.
  */
 template <class ValueType = default_type, Math::SplineProcessingType PType = Math::SplineProcessingType::Value>
 class Deform : public SplineInterp<Image<ValueType>, Math::HermiteSpline<ValueType>, PType> {
@@ -115,8 +118,8 @@ private:
     Image<bool> mask;
   };
 
-  //! build the imputed deformation field buffer and the validity mask
-  static ScratchData make_scratch(Image<value_type> field, const Impute::Method method, const Impute::Detrend detrend);
+  //! build the extrapolated deformation field buffer and the validity mask
+  static ScratchData make_scratch(Image<value_type> field, const Registration::Warp::ExtrapolateDegree degree);
 
   //! open the deformation field image referenced by a Header
   static Image<value_type> open_field(const Header &deformation_field) {
@@ -138,31 +141,25 @@ public:
   //! construct from a deformation field that may contain non-finite voxels
   /*! \param field             a 4D image with three volumes along axis 3; either
    *    a file-backed or a scratch image is accepted
-   *  \param method            the imputation algorithm used to fill non-finite
-   *    voxels; defaults to \c Impute::Method::hessian, whose natural boundary
-   *    conditions extrapolate the boundary trend without the bias of the
-   *    squared-Laplacian (biharmonic) energy
-   *  \param detrend           whether to remove and re-add a polynomial trend
-   *    during imputation; defaults to \c Impute::Detrend::quadratic, as this
-   *    interpolator typically extrapolates the field across a wide non-finite
-   *    border, where carrying the boundary gradient and curvature in closed form
-   *    continues the field rather than flattening it
+   *  \param degree            the polynomial degree policy used to extrapolate
+   *    the halo around the valid region; defaults to
+   *    \c Registration::Warp::ExtrapolateDegree::Adaptive, which fits the richest
+   *    model the local support sustains (quadratic, then affine, then constant),
+   *    carrying the boundary gradient and curvature into the extrapolated region
    *  \param value_when_out_of_bounds the value returned by value()/row() when the
    *    sample is outside the field of view or resides in an invalid voxel */
   Deform(const Image<value_type> &field,
-         const Impute::Method method = Impute::Method::hessian,
-         const Impute::Detrend detrend = Impute::Detrend::quadratic,
+         const Registration::Warp::ExtrapolateDegree degree = Registration::Warp::ExtrapolateDegree::Adaptive,
          const value_type value_when_out_of_bounds = base_type::default_out_of_bounds_value())
-      : Deform(make_scratch(field, method, detrend), value_when_out_of_bounds) {}
+      : Deform(make_scratch(field, degree), value_when_out_of_bounds) {}
 
   //! construct from a deformation field referenced by a Header
   /*! Equivalent to opening the image and forwarding to the image-based
    *  constructor; see that overload for parameter documentation. */
   Deform(const Header &deformation_field,
-         const Impute::Method method = Impute::Method::hessian,
-         const Impute::Detrend detrend = Impute::Detrend::quadratic,
+         const Registration::Warp::ExtrapolateDegree degree = Registration::Warp::ExtrapolateDegree::Adaptive,
          const value_type value_when_out_of_bounds = base_type::default_out_of_bounds_value())
-      : Deform(make_scratch(open_field(deformation_field), method, detrend), value_when_out_of_bounds) {}
+      : Deform(make_scratch(open_field(deformation_field), degree), value_when_out_of_bounds) {}
 
   //! Set the current position to <b>voxel space</b> position \a pos
   /*! See file interp/base.h for details.
@@ -195,9 +192,8 @@ public:
 };
 
 template <class ValueType, Math::SplineProcessingType PType>
-typename Deform<ValueType, PType>::ScratchData Deform<ValueType, PType>::make_scratch(Image<value_type> field,
-                                                                                      const Impute::Method method,
-                                                                                      const Impute::Detrend detrend) {
+typename Deform<ValueType, PType>::ScratchData
+Deform<ValueType, PType>::make_scratch(Image<value_type> field, const Registration::Warp::ExtrapolateDegree degree) {
   Header header(field);
   if (header.ndim() != 4 || header.size(3) != 3)
     throw Exception("Deformation field \"" + header.name() + "\" must be a 4D image with 3 volumes along axis 3");
@@ -285,49 +281,15 @@ typename Deform<ValueType, PType>::ScratchData Deform<ValueType, PType>::make_sc
 
   // Step 3.4: the halo is the band added by dilation: present in the dilated
   //   mask but absent from the validity mask.
-  Image<bool> halo(Image<bool>::scratch(mask_header, "imputation halo mask"));
+  Image<bool> halo(Image<bool>::scratch(mask_header, "extrapolation halo mask"));
   for (auto l = Loop(halo)(halo, dilated, validity); l; ++l)
     halo.value() = dilated.value() && !validity.value();
 
-  // Step 3.5: impute the halo voxels of each component independently. The valid
-  //   voxels supply the known data; the imputation field of view is restricted
-  //   to the dilated mask so that the outer edge of the halo acts as a natural
-  //   boundary rather than reading the unpopulated voxels beyond it.
-  const Voxel2Vector v2v(halo, mask_header);
-  if (!v2v.empty()) {
-    Image<bool> fov_reader(dilated);
-    auto in_fov = [fov_reader](const Impute::Position &p) mutable -> bool {
-      if (is_out_of_bounds(fov_reader, p, 0, 3))
-        return false;
-      fov_reader.index(0) = p[0];
-      fov_reader.index(1) = p[1];
-      fov_reader.index(2) = p[2];
-      return fov_reader.value();
-    };
-    for (ssize_t component = 0; component != 3; ++component) {
-      // Independent reader so that index manipulation during the solve does not
-      //   disturb the iterators of the surrounding loops.
-      Image<value_type> reader(buffer);
-      auto value_at = [reader, component](const Impute::Position &p) mutable -> double {
-        reader.index(0) = p[0];
-        reader.index(1) = p[1];
-        reader.index(2) = p[2];
-        reader.index(3) = component;
-        return static_cast<double>(reader.value());
-      };
-
-      const Impute::Vec solution = Impute::make_imputer(method, v2v, value_at, in_fov, detrend)->solve();
-
-      buffer.index(3) = component;
-      for (auto l = Loop(halo)(halo); l; ++l) {
-        if (!halo.value())
-          continue;
-        assign_pos_of(halo, 0, 3).to(buffer);
-        const Impute::Position p(halo.index(0), halo.index(1), halo.index(2));
-        buffer.value() = static_cast<value_type>(solution[v2v(p)]);
-      }
-    }
-  }
+  // Step 3.5: extrapolate the field across the halo by rank-ordered local
+  //   polynomial fitting, growing outward from the valid region. Each halo voxel
+  //   draws only on valid (and already-filled) samples in its vicinity, so the
+  //   unpopulated voxels beyond the halo are never read.
+  Registration::Warp::extrapolate_deformation_halo(buffer, validity, halo, degree);
 
   return ScratchData{buffer, validity};
 }

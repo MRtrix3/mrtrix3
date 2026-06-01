@@ -1,0 +1,12 @@
+#!/bin/bash
+# Inverting a large identity deformation field must round-trip to the identity
+# while remaining tractable. Interp::Deform extrapolates its halo by rank-ordered
+# local polynomial fitting rather than a dense global solve, so the surface-area
+# halo of a large (here full, uncropped) grid no longer triggers an infeasible
+# O(M^3) solve over tens of thousands of halo voxels. Identity is an affine map,
+# reproduced exactly by the local affine/quadratic fit, so the inverse matches
+# the input across the whole grid.
+mrconvert unit_warp.mif -coord 3 0 - | mrgrid - regrid -size 32,32,32 tmp-bigtemplate.mif -force
+warpinit tmp-bigtemplate.mif tmp-bigwarp.mif -force
+warpinvert tmp-bigwarp.mif - | \
+testing_diff_image - tmp-bigwarp.mif -frac 1e-4

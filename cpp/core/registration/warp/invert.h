@@ -43,19 +43,8 @@ namespace {
 //   the mapped scanner-space position and its 3x3 Jacobian with respect to scanner coordinates
 using DeformInterpType = Interp::Deform<default_type, Math::SplineProcessingType::ValueAndDerivative>;
 
-//! the 26 shared-corner neighbour offsets of a voxel
-inline const std::vector<std::array<ssize_t, 3>> &neighbour_offsets() {
-  static const std::vector<std::array<ssize_t, 3>> offsets = [] {
-    std::vector<std::array<ssize_t, 3>> result;
-    for (ssize_t dz = -1; dz <= 1; ++dz)
-      for (ssize_t dy = -1; dy <= 1; ++dy)
-        for (ssize_t dx = -1; dx <= 1; ++dx)
-          if (dx != 0 || dy != 0 || dz != 0)
-            result.push_back({dx, dy, dz});
-    return result;
-  }();
-  return offsets;
-}
+// neighbour_offsets() (the 26 shared-corner neighbour offsets) is provided by
+//   registration/warp/extrapolate.h, included transitively via interp/deform.h.
 
 class DisplacementThreadKernel {
 
