@@ -623,6 +623,7 @@ add_bash_binary_test(warpinit/default)
 
 add_bash_binary_test(warpinvert/identity_roundtrip)
 add_bash_binary_test(warpinvert/identity_roundtrip_large)
+add_bash_binary_test(warpinvert/warp_roundtrip)
 
 add_bash_binary_test(warpvalidate/deformation)
 add_bash_binary_test(warpvalidate/deformation_volumecount)

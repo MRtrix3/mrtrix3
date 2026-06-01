@@ -195,11 +195,15 @@ template <typename ValueType> WarpValidation validate_image(Image<ValueType> ima
       if (fill_counts.size() > 1) {
         auto second_fill = sort_fills.begin();
         std::advance(second_fill, 1);
-        if (sort_fills.begin()->first / second_fill->first < minratio_firstfill_to_secondfill)
+        if (sort_fills.begin()->first / second_fill->first < minratio_firstfill_to_secondfill) {
+          DEBUG("Candidate fill values and prevalences:");
+          for (const auto &item : sort_fills)
+            DEBUG(str(item.second) + ": " + str(item.first));
           throw Exception("Warp image \"" + image.name() + "\":" +                                 //
                           " Unable to unambiguously determine fill value" +                        //
                           " due to presence of different voxels with different constant values;" + //
                           " a single fill convention must be used throughout");                    //
+        }
       } else {
         DEBUG("Warp image \"" + image.name() + "\": " +                //
               "Fill value of " + str(*result.fill_value) + " chosen" + //
@@ -214,10 +218,10 @@ template <typename ValueType> WarpValidation validate_image(Image<ValueType> ima
   }
 
   if (finitemix_count > 0)
-    throw Exception("Warp image \"" + image.name() + "\": " +                                           //
-                    str(finitemix_count) + (finitemix_count > 1 ? " peaks contain" : "peak contains") + //
-                    " a mix of finite and non-finite values; " +                                        //
-                    " a warp triplet must be either all-finite, or an all-nonfinite fill");             //
+    throw Exception("Warp image \"" + image.name() + "\": " +                                             //
+                    str(finitemix_count) + (finitemix_count > 1 ? " voxels contain" : "voxel contains") + //
+                    " a mix of finite and non-finite values; " +                                          //
+                    " a warp triplet must be either all-finite, or an all-nonfinite fill");               //
 
   return result;
 }

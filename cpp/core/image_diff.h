@@ -99,6 +99,71 @@ inline void check_nan_match(const T1 a, const T2 b, const std::string_view name1
                     "\" do not match in locations of NaN values");
 }
 
+//! throw if two voxel values differ in an exact (bitwise) comparison
+template <class T1, class T2>
+inline void check_voxel_bitwise(const T1 va, const T2 vb, const std::string_view name1, const std::string_view name2) {
+  if (va != vb)
+    throw Exception("images \"" + std::string(name1) + "\" and \"" + std::string(name2) +
+                    "\" do not match in bitwise comparison (" + str(va) + " vs " + str(vb) + ")");
+}
+
+//! throw if two voxel values are NaN-inconsistent or differ by more than an absolute tolerance
+template <class T1, class T2>
+inline void check_voxel_abs(
+    const T1 va, const T2 vb, const double tol, const std::string_view name1, const std::string_view name2) {
+  using C = compute_t<T1, T2>;
+  check_nan_match(va, vb, name1, name2);
+  if (MR::abs(static_cast<C>(va) - static_cast<C>(vb)) > tol)
+    throw Exception("images \"" + std::string(name1) + "\" and \"" + std::string(name2) +
+                    "\" do not match within absolute precision of " + str(tol) + " (" + str(static_cast<C>(va)) +
+                    " vs " + str(static_cast<C>(vb)) + ")");
+}
+
+//! throw if two voxel values are NaN-inconsistent or differ by more than a fractional tolerance
+template <class T1, class T2>
+inline void check_voxel_frac(
+    const T1 va, const T2 vb, const double tol, const std::string_view name1, const std::string_view name2) {
+  using F = float_compute_t<T1, T2>;
+  check_nan_match(va, vb, name1, name2);
+  if (MR::abs((static_cast<F>(va) - static_cast<F>(vb)) / (0.5 * (static_cast<F>(va) + static_cast<F>(vb)))) > tol)
+    throw Exception("images \"" + std::string(name1) + "\" and \"" + std::string(name2) +
+                    "\" do not match within fractional precision of " + str(tol) + " (" + str(static_cast<F>(va)) +
+                    " vs " + str(static_cast<F>(vb)) + ")");
+}
+
+//! throw if two voxel values are NaN-inconsistent or differ by more than a per-voxel (image-specified) tolerance
+template <class T1, class T2>
+inline void check_voxel_tolimage(const T1 va,
+                                 const T2 vb,
+                                 const double tol,
+                                 const std::string_view tolname,
+                                 const std::string_view name1,
+                                 const std::string_view name2) {
+  using C = compute_t<T1, T2>;
+  check_nan_match(va, vb, name1, name2);
+  if (MR::abs(static_cast<C>(va) - static_cast<C>(vb)) > tol)
+    throw Exception("images \"" + std::string(name1) + "\" and \"" + std::string(name2) +
+                    "\" do not match within precision of \"" + std::string(tolname) + "\"" + " (" +
+                    str(static_cast<C>(va)) + " vs " + str(static_cast<C>(vb)) + ", tolerance " + str(tol) + ")");
+}
+
+//! throw if two voxel values are NaN-inconsistent or differ by more than a threshold relative to the maximal voxel
+//! value
+template <class T1, class T2>
+inline void check_voxel_relmax(const T1 va,
+                               const T2 vb,
+                               const double threshold,
+                               const double tol,
+                               const std::string_view name1,
+                               const std::string_view name2) {
+  using F = float_compute_t<T1, T2>;
+  check_nan_match(va, vb, name1, name2);
+  if (MR::abs(static_cast<F>(va) - static_cast<F>(vb)) > threshold)
+    throw Exception("images \"" + std::string(name1) + "\" and \"" + std::string(name2) + "\" do not match within " +
+                    str(tol) + " of maximal voxel value" + " (" + str(static_cast<F>(va)) + " vs " +
+                    str(static_cast<F>(vb)) + ")");
+}
+
 } // namespace MR::ImageDiff
 
 namespace MR {
@@ -128,72 +193,137 @@ template <class ImageType1, class ImageType2> inline void check_images_bitwise(I
   check_headers(in1, in2);
   ThreadedLoop(in1).run(
       [](const ImageType1 &a, const ImageType2 &b) {
-        if (a.value() != b.value())
-          throw Exception("images \"" + a.name() + "\" and \"" + b.name() + "\" do not match in bitwise comparison (" +
-                          str(a.value()) + " vs " + str(b.value()) + ")");
+        const typename ImageType1::value_type va = a.value();
+        const typename ImageType2::value_type vb = b.value();
+        ImageDiff::check_voxel_bitwise(va, vb, a.name(), b.name());
       },
       in1,
       in2);
+}
+
+//! check images are bitwise identical, but only at voxels inside a mask
+template <class ImageType1, class ImageType2, class MaskType>
+inline void check_images_bitwise(ImageType1 &in1, ImageType2 &in2, MaskType &mask) {
+  check_headers(in1, in2);
+  ThreadedLoop(in1).run(
+      [](const ImageType1 &a, const ImageType2 &b, const MaskType &m) {
+        if (!m.value())
+          return;
+        const typename ImageType1::value_type va = a.value();
+        const typename ImageType2::value_type vb = b.value();
+        ImageDiff::check_voxel_bitwise(va, vb, a.name(), b.name());
+      },
+      in1,
+      in2,
+      mask);
 }
 
 //! check images are the same within a absolute tolerance
 template <class ImageType1, class ImageType2>
 inline void check_images_abs(ImageType1 &in1, ImageType2 &in2, const double tol = 0.0) {
-  using C = ImageDiff::compute_t<typename ImageType1::value_type, typename ImageType2::value_type>;
   check_headers(in1, in2);
   ThreadedLoop(in1).run(
       [&tol](const ImageType1 &a, const ImageType2 &b) {
         const typename ImageType1::value_type va = a.value();
         const typename ImageType2::value_type vb = b.value();
-        ImageDiff::check_nan_match(va, vb, a.name(), b.name());
-        if (MR::abs(static_cast<C>(va) - static_cast<C>(vb)) > tol)
-          throw Exception("images \"" + a.name() + "\" and \"" + b.name() +
-                          "\" do not match within absolute precision of " + str(tol) + " (" + str(static_cast<C>(va)) +
-                          " vs " + str(static_cast<C>(vb)) + ")");
+        ImageDiff::check_voxel_abs(va, vb, tol, a.name(), b.name());
       },
       in1,
       in2);
+}
+
+//! check images are the same within a absolute tolerance, but only at voxels inside a mask
+template <class ImageType1, class ImageType2, class MaskType>
+inline void check_images_abs(ImageType1 &in1, ImageType2 &in2, MaskType &mask, const double tol) {
+  check_headers(in1, in2);
+  ThreadedLoop(in1).run(
+      [&tol](const ImageType1 &a, const ImageType2 &b, const MaskType &m) {
+        if (!m.value())
+          return;
+        const typename ImageType1::value_type va = a.value();
+        const typename ImageType2::value_type vb = b.value();
+        ImageDiff::check_voxel_abs(va, vb, tol, a.name(), b.name());
+      },
+      in1,
+      in2,
+      mask);
 }
 
 //! check images are the same within a fractional tolerance
 template <class ImageType1, class ImageType2>
 inline void check_images_frac(ImageType1 &in1, ImageType2 &in2, const double tol = 0.0) {
-  using F = ImageDiff::float_compute_t<typename ImageType1::value_type, typename ImageType2::value_type>;
   check_headers(in1, in2);
   ThreadedLoop(in1).run(
       [&tol](const ImageType1 &a, const ImageType2 &b) {
         const typename ImageType1::value_type va = a.value();
         const typename ImageType2::value_type vb = b.value();
-        ImageDiff::check_nan_match(va, vb, a.name(), b.name());
-        if (MR::abs((static_cast<F>(va) - static_cast<F>(vb)) / (0.5 * (static_cast<F>(va) + static_cast<F>(vb)))) >
-            tol)
-          throw Exception("images \"" + a.name() + "\" and \"" + b.name() +
-                          "\" do not match within fractional precision of " + str(tol) + " (" +
-                          str(static_cast<F>(va)) + " vs " + str(static_cast<F>(vb)) + ")");
+        ImageDiff::check_voxel_frac(va, vb, tol, a.name(), b.name());
       },
       in1,
       in2);
 }
 
+//! check images are the same within a fractional tolerance, but only at voxels inside a mask
+template <class ImageType1, class ImageType2, class MaskType>
+inline void check_images_frac(ImageType1 &in1, ImageType2 &in2, MaskType &mask, const double tol) {
+  check_headers(in1, in2);
+  ThreadedLoop(in1).run(
+      [&tol](const ImageType1 &a, const ImageType2 &b, const MaskType &m) {
+        if (!m.value())
+          return;
+        const typename ImageType1::value_type va = a.value();
+        const typename ImageType2::value_type vb = b.value();
+        ImageDiff::check_voxel_frac(va, vb, tol, a.name(), b.name());
+      },
+      in1,
+      in2,
+      mask);
+}
+
 //! check images are the same within a tolerance defined by a third image
 template <class ImageType1, class ImageType2, class ImageTypeTol>
 inline void check_images_tolimage(ImageType1 &in1, ImageType2 &in2, ImageTypeTol &tol) {
-  using C = ImageDiff::compute_t<typename ImageType1::value_type, typename ImageType2::value_type>;
   check_headers(in1, in2);
   check_headers(in1, tol);
   ThreadedLoop(in1).run(
       [](const ImageType1 &a, const ImageType2 &b, const ImageTypeTol &t) {
         const typename ImageType1::value_type va = a.value();
         const typename ImageType2::value_type vb = b.value();
-        ImageDiff::check_nan_match(va, vb, a.name(), b.name());
-        if (MR::abs(static_cast<C>(va) - static_cast<C>(vb)) > t.value())
-          throw Exception("images \"" + a.name() + "\" and \"" + b.name() + "\" do not match within precision of \"" +
-                          t.name() + "\"" + " (" + str(static_cast<C>(va)) + " vs " + str(static_cast<C>(vb)) +
-                          ", tolerance " + str(t.value()) + ")");
+        ImageDiff::check_voxel_tolimage(va, vb, t.value(), t.name(), a.name(), b.name());
       },
       in1,
       in2,
       tol);
+}
+
+//! check images are the same within a tolerance defined by a third image, but only at voxels inside a mask
+template <class ImageType1, class ImageType2, class ImageTypeTol, class MaskType>
+inline void check_images_tolimage(ImageType1 &in1, ImageType2 &in2, ImageTypeTol &tol, MaskType &mask) {
+  check_headers(in1, in2);
+  check_headers(in1, tol);
+  ThreadedLoop(in1).run(
+      [](const ImageType1 &a, const ImageType2 &b, const ImageTypeTol &t, const MaskType &m) {
+        if (!m.value())
+          return;
+        const typename ImageType1::value_type va = a.value();
+        const typename ImageType2::value_type vb = b.value();
+        ImageDiff::check_voxel_tolimage(va, vb, t.value(), t.name(), a.name(), b.name());
+      },
+      in1,
+      in2,
+      tol,
+      mask);
+}
+
+//! the maximal absolute value across the volume(s) at the current 3D position, for the two images jointly
+template <class ImageType1, class ImageType2, class F>
+inline double voxel_relmax_threshold(ImageType1 &a, ImageType2 &b, const double tol) {
+  double maxa = 0.0, maxb = 0.0;
+  for (auto l = Loop(3)(a, b); l; ++l) {
+    maxa = std::max(maxa, MR::abs(static_cast<F>(a.value())));
+    maxb = std::max(maxb, MR::abs(static_cast<F>(b.value())));
+  }
+  return tol * 0.5 * (maxa + maxb);
 }
 
 //! check images are the same within a fractional tolerance relative to the maximum value in the voxel
@@ -201,24 +331,34 @@ template <class ImageType1, class ImageType2>
 inline void check_images_voxel(ImageType1 &in1, ImageType2 &in2, const double tol = 0.0) {
   using F = ImageDiff::float_compute_t<typename ImageType1::value_type, typename ImageType2::value_type>;
   auto func = [&tol](decltype(in1) &a, decltype(in2) &b) {
-    double maxa = 0.0, maxb = 0.0;
-    for (auto l = Loop(3)(a, b); l; ++l) {
-      maxa = std::max(maxa, MR::abs(static_cast<F>(a.value())));
-      maxb = std::max(maxb, MR::abs(static_cast<F>(b.value())));
-    }
-    const double threshold = tol * 0.5 * (maxa + maxb);
+    const double threshold = voxel_relmax_threshold<ImageType1, ImageType2, F>(a, b, tol);
     for (auto l = Loop(3)(a, b); l; ++l) {
       const typename ImageType1::value_type va = a.value();
       const typename ImageType2::value_type vb = b.value();
-      ImageDiff::check_nan_match(va, vb, a.name(), b.name());
-      if (MR::abs(static_cast<F>(va) - static_cast<F>(vb)) > threshold)
-        throw Exception("images \"" + a.name() + "\" and \"" + b.name() + "\" do not match within " + str(tol) +
-                        " of maximal voxel value" + " (" + str(static_cast<F>(va)) + " vs " + str(static_cast<F>(vb)) +
-                        ")");
+      ImageDiff::check_voxel_relmax(va, vb, threshold, tol, a.name(), b.name());
     }
   };
 
   ThreadedLoop(in1, 0, 3).run(func, in1, in2);
+}
+
+//! check images are the same within a fractional tolerance relative to the maximum value in the voxel,
+//!   but only at voxels inside a mask
+template <class ImageType1, class ImageType2, class MaskType>
+inline void check_images_voxel(ImageType1 &in1, ImageType2 &in2, MaskType &mask, const double tol) {
+  using F = ImageDiff::float_compute_t<typename ImageType1::value_type, typename ImageType2::value_type>;
+  auto func = [&tol](decltype(in1) &a, decltype(in2) &b, const MaskType &m) {
+    if (!m.value())
+      return;
+    const double threshold = voxel_relmax_threshold<ImageType1, ImageType2, F>(a, b, tol);
+    for (auto l = Loop(3)(a, b); l; ++l) {
+      const typename ImageType1::value_type va = a.value();
+      const typename ImageType2::value_type vb = b.value();
+      ImageDiff::check_voxel_relmax(va, vb, threshold, tol, a.name(), b.name());
+    }
+  };
+
+  ThreadedLoop(in1, 0, 3).run(func, in1, in2, mask);
 }
 
 //! check headers contain the same key-value entries

@@ -21,7 +21,6 @@
 #include <limits>
 #include <vector>
 
-#include "app.h"
 #include "datatype.h"
 #include "header.h"
 #include "image.h"
@@ -45,6 +44,20 @@ using DeformInterpType = Interp::Deform<default_type, Math::SplineProcessingType
 
 // neighbour_offsets() (the 26 shared-corner neighbour offsets) is provided by
 //   registration/warp/extrapolate.h, included transitively via interp/deform.h.
+
+//! per-output-voxel classification of the Newton-inversion outcome (diagnostic only)
+/*! Written to an optional uint8 scratch image so that, after inversion, the
+ *  spatial distribution of acceptance and the distinct rejection causes can be
+ *  inspected; this attributes any valid/invalid scatter to a specific code path
+ *  (e.g. seed quality versus the consecutive-blocked heuristic). The codes are
+ *  not consumed by the algorithm and carry no effect on the produced field. */
+enum class InversionOutcome : uint8_t {
+  Converged = 0,         //!< residual fell within tolerance at an in-region point; preimage accepted
+  MaxIterNoConverge = 1, //!< max_iter exhausted without converging; rejected (NaN)
+  SeedNonFinite = 2,     //!< initial estimate was non-finite; rejected (NaN)
+  SeedVoxelInvalid = 3,  //!< initial estimate resided in an invalid input voxel; rejected (NaN)
+  NoValidCandidate = 4   //!< step-halving budget exhausted with no in-region candidate; rejected (NaN)
+};
 
 class DisplacementThreadKernel {
 
@@ -99,8 +112,13 @@ public:
   DeformationThreadKernel(const DeformInterpType &deform,
                           const Image<default_type> &inv_deform,
                           const size_t max_iter,
-                          const default_type error_tol)
-      : deform(deform), transform(inv_deform), max_iter(max_iter), error_tolerance_sq(error_tol * error_tol) {}
+                          const default_type error_tol,
+                          const Image<uint8_t> &outcome = Image<uint8_t>())
+      : deform(deform),
+        transform(inv_deform),
+        max_iter(max_iter),
+        error_tolerance_sq(error_tol * error_tol),
+        outcome(outcome) {}
 
   void operator()(Image<default_type> &inv_deform) {
     const Eigen::Vector3d voxel{static_cast<default_type>(inv_deform.index(0)),
@@ -111,22 +129,36 @@ public:
 
     // Secondary NaN criterion: the initial estimate must reside in valid (non-extrapolated)
     //   input data for the recovered origin to be trustworthy.
-    if (!current.allFinite() || !deform.scanner(current)) {
+    if (!current.allFinite()) {
       inv_deform.row(3) = invalid();
+      record(inv_deform, InversionOutcome::SeedNonFinite);
+      return;
+    }
+    if (!deform.scanner(current)) {
+      inv_deform.row(3) = invalid();
+      record(inv_deform, InversionOutcome::SeedVoxelInvalid);
       return;
     }
 
-    size_t consecutive_blocked = 0;
-    bool noninvertible = false;
+    // Acceptance is decided geometrically by the result, not by the search path: a voxel is
+    //   accepted iff the Newton iterate converges (residual within tolerance) at a point that
+    //   resides in valid input data. Step-halving still confines each candidate to the valid
+    //   region (so the interpolator stays well-posed and `current` is always in-region), but the
+    //   number of halvings no longer drives rejection; this avoids the path-dependent
+    //   "consecutive-blocked" heuristic flipping invertible voxels near a validity boundary.
+    bool converged = false;
+    InversionOutcome reject_reason = InversionOutcome::MaxIterNoConverge;
     for (size_t iter = 0; iter != max_iter; ++iter) {
       // The interpolator is positioned at `current` (either by the pre-loop check or by the
-      //   accepted step of the previous iteration).
+      //   accepted step of the previous iteration), so `current` is in valid data here.
       Eigen::Matrix<default_type, Eigen::Dynamic, 1> mapped;
       Eigen::Matrix<default_type, Eigen::Dynamic, 3> jacobian;
       deform.value_and_gradient_row_wrt_scanner(mapped, jacobian);
       const Eigen::Vector3d residual = truth - Eigen::Vector3d(mapped);
-      if (residual.squaredNorm() <= error_tolerance_sq)
+      if (residual.squaredNorm() <= error_tolerance_sq) {
+        converged = true;
         break;
+      }
 
       const Eigen::Matrix3d J = jacobian.topRows(3);
       Eigen::Vector3d delta;
@@ -154,41 +186,44 @@ public:
         ++halvings;
       }
       if (!stepped) {
-        noninvertible = true; // no valid candidate within the halving budget
+        // The step cannot be confined to the valid region even at the smallest fraction: `truth`
+        //   is unreachable from valid data, i.e. the voxel is genuinely non-invertible.
+        reject_reason = InversionOutcome::NoValidCandidate;
         break;
-      }
-
-      // Heuristic: successive iterations that all require halving indicate the search is
-      //   being persistently driven outside the valid region, i.e. the voxel is not invertible.
-      if (halvings != 0) {
-        if (++consecutive_blocked == max_consecutive_blocked) {
-          noninvertible = true;
-          break;
-        }
-      } else {
-        consecutive_blocked = 0;
       }
       current = candidate;
     }
 
-    if (noninvertible)
-      inv_deform.row(3) = invalid();
-    else
+    if (converged) {
       inv_deform.row(3) = current;
+      record(inv_deform, InversionOutcome::Converged);
+    } else {
+      inv_deform.row(3) = invalid();
+      record(inv_deform, reject_reason);
+    }
   }
 
 private:
   static Eigen::Vector3d invalid() { return Eigen::Vector3d::Constant(std::numeric_limits<default_type>::quiet_NaN()); }
 
+  //! record the per-voxel outcome into the diagnostic image, if one was provided
+  void record(const Image<default_type> &inv_deform, const InversionOutcome code) {
+    if (!outcome.valid())
+      return;
+    outcome.index(0) = inv_deform.index(0);
+    outcome.index(1) = inv_deform.index(1);
+    outcome.index(2) = inv_deform.index(2);
+    outcome.value() = static_cast<uint8_t>(code);
+  }
+
   DeformInterpType deform;
   MR::Transform transform;
   const size_t max_iter;
   const default_type error_tolerance_sq;
+  Image<uint8_t> outcome;
 
   //! maximum number of step halvings attempted within a single iteration (smallest fraction 2^-10)
   static constexpr size_t max_halvings = 10;
-  //! number of consecutive halving-requiring iterations after which a voxel is deemed non-invertible
-  static constexpr size_t max_consecutive_blocked = 3;
   //! Jacobian determinant below which the field is treated as locally degenerate
   static constexpr default_type jacobian_epsilon = 1e-6;
 };
@@ -264,10 +299,10 @@ inline void initialise_inverse_deformation(Image<default_type> &field,
     }
   }
 
-  if (App::log_level >= 3) {
-    nearest_distance.dump_to_mrtrix_file("warpinvert_init_distance_scatter.mif");
-    nearest_position.dump_to_mrtrix_file("warpinvert_init_position_scatter.mif");
-  }
+#ifdef WARPINVERT_EXPORT_DEBUGGING
+  nearest_distance.dump_to_mrtrix_file("warpinvert_init_distance_scatter.mif");
+  nearest_position.dump_to_mrtrix_file("warpinvert_init_position_scatter.mif");
+#endif
 
   // Gap fill: rank uninitialised voxels by their count of initialised 26-neighbours, using
   //   27 bucket lists (counts 0..26) with lazy revalidation as counts increase.
@@ -428,10 +463,10 @@ inline void initialise_inverse_deformation(Image<default_type> &field,
     }
   }
 
-  if (App::log_level >= 3) {
-    nearest_distance.dump_to_mrtrix_file("warpinvert_init_distance_filled.mif");
-    nearest_position.dump_to_mrtrix_file("warpinvert_init_position_filled.mif");
-  }
+#ifdef WARPINVERT_EXPORT_DEBUGGING
+  nearest_distance.dump_to_mrtrix_file("warpinvert_init_distance_filled.mif");
+  nearest_position.dump_to_mrtrix_file("warpinvert_init_position_filled.mif");
+#endif
 
   for (auto l = Loop(nearest_position)(nearest_position, inv_deform_field); l; ++l)
     inv_deform_field.value() = nearest_position.value();
@@ -453,31 +488,54 @@ FORCE_INLINE void invert_deformation(Image<default_type> &deform_field,
                                      Image<default_type> &inv_deform_field,
                                      bool is_initialised = false,
                                      size_t max_iter = 50,
-                                     default_type error_tolerance = 0.0001) {
+                                     default_type error_tolerance = 0.0001,
+                                     ExtrapolateDegree degree = ExtrapolateDegree::Adaptive,
+                                     Interp::ValidityPolicy validity_policy = Interp::ValidityPolicy::Interpolated) {
   check_dimensions(deform_field, inv_deform_field);
   error_tolerance *= (deform_field.spacing(0) + deform_field.spacing(1) + deform_field.spacing(2)) / 3;
 
-  DeformInterpType deform(deform_field);
+  DeformInterpType deform(deform_field, degree, validity_policy);
 
   if (!is_initialised)
     initialise_inverse_deformation(deform_field, inv_deform_field, deform);
 
+  // Optional diagnostic: per-output-voxel Newton-inversion outcome (see InversionOutcome).
+  //   The kernel's outcome-recording code is always compiled in, but the scratch image is
+  //   created (and exported) only under WARPINVERT_EXPORT_DEBUGGING; otherwise `outcome`
+  //   remains invalid and the kernel's record() is a no-op, so the produced field is identical.
+  Image<uint8_t> outcome;
+#ifdef WARPINVERT_EXPORT_DEBUGGING
+  {
+    Header outcome_header(inv_deform_field);
+    outcome_header.ndim() = 3;
+    outcome_header.datatype() = DataType::UInt8;
+    outcome = Image<uint8_t>::scratch(outcome_header, "warp-inversion outcome codes");
+  }
+#endif
+
   ThreadedLoop("inverting warp field...", inv_deform_field, 0, 3)
-      .run(DeformationThreadKernel(deform, inv_deform_field, max_iter, error_tolerance), inv_deform_field);
+      .run(DeformationThreadKernel(deform, inv_deform_field, max_iter, error_tolerance, outcome), inv_deform_field);
+
+#ifdef WARPINVERT_EXPORT_DEBUGGING
+  outcome.dump_to_mrtrix_file("warpinvert_outcome.mif");
+#endif
 }
 
 /*! Estimate the inverse of a displacement field, output the inverse as a deformation field
  * Note that the output inv_warp can be passed as either a zero field or an initial estimate (as a deformation field)
  */
-FORCE_INLINE void invert_displacement_deformation(Image<default_type> &disp,
-                                                  Image<default_type> &inv_deform,
-                                                  bool is_initialised = false,
-                                                  size_t max_iter = 50,
-                                                  default_type error_tolerance = 0.0001) {
+FORCE_INLINE void
+invert_displacement_deformation(Image<default_type> &disp,
+                                Image<default_type> &inv_deform,
+                                bool is_initialised = false,
+                                size_t max_iter = 50,
+                                default_type error_tolerance = 0.0001,
+                                ExtrapolateDegree degree = ExtrapolateDegree::Adaptive,
+                                Interp::ValidityPolicy validity_policy = Interp::ValidityPolicy::Interpolated) {
   auto deform_field = Image<default_type>::scratch(disp);
   Warp::displacement2deformation(disp, deform_field);
 
-  invert_deformation(deform_field, inv_deform, is_initialised, max_iter, error_tolerance);
+  invert_deformation(deform_field, inv_deform, is_initialised, max_iter, error_tolerance, degree, validity_policy);
 }
 
 /*! Estimate the inverse of a displacement field

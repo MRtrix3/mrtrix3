@@ -31,12 +31,23 @@
 #include "algo/loop.h"
 #include "filter/dilate.h"
 #include "interp/cubic.h"
+#include "interp/linear.h"
 #include "registration/warp/extrapolate.h"
 
 namespace MR::Interp {
 
 //! \addtogroup interp
 // @{
+
+//! policy governing how Interp::Deform decides whether a sampled position is valid
+/*! \c Nearest reproduces the original behaviour: the validity bit of the voxel in
+ *  which the position resides (nearest-voxel rounding) governs acceptance, giving a
+ *  blocky, lattice-quantised accept boundary. \c Interpolated instead trilinearly
+ *  interpolates a continuous validity field and accepts at a half threshold, so the
+ *  accept boundary is a sub-voxel iso-surface at the true region edge; this removes
+ *  the per-sample rounding that otherwise scatters acceptance within one voxel of a
+ *  validity transition. \c Nearest is retained so its effect can be assessed. */
+enum class ValidityPolicy { Nearest, Interpolated };
 
 //! Cubic interpolation of a non-linear deformation field with extrapolation of invalid voxels
 /*! This interpolator is dedicated to the application of a non-linear deformation
@@ -112,10 +123,12 @@ public:
   using base_type = SplineInterp<buffer_type, Math::HermiteSpline<ValueType>, PType>;
 
 private:
-  //! the products of construction: the imputed buffer and the validity mask
+  //! the products of construction: the imputed buffer, the validity bit mask and its
+  //!   floating-point counterpart (1 valid / 0 invalid) used for interpolated validity
   struct ScratchData {
     buffer_type buffer;
     Image<bool> mask;
+    Image<float> mask_float;
   };
 
   //! build the extrapolated deformation field buffer and the validity mask
@@ -130,12 +143,18 @@ private:
   }
 
   // The per-voxel validity mask shares the spatial voxel grid of the buffer
-  //   held by the Cubic base class.
+  //   held by the Cubic base class. The float copy backs the trilinear validity
+  //   interpolator used under ValidityPolicy::Interpolated.
   Image<bool> validity;
+  Interp::Linear<Image<float>> validity_interp;
+  ValidityPolicy validity_policy;
 
   //! delegating constructor: parent the cubic interpolator on the imputed buffer
-  Deform(ScratchData data, const value_type value_when_out_of_bounds)
-      : base_type(data.buffer, value_when_out_of_bounds), validity(std::move(data.mask)) {}
+  Deform(ScratchData data, const value_type value_when_out_of_bounds, const ValidityPolicy policy)
+      : base_type(data.buffer, value_when_out_of_bounds),
+        validity(std::move(data.mask)),
+        validity_interp(data.mask_float, 0.0f),
+        validity_policy(policy) {}
 
 public:
   //! construct from a deformation field that may contain non-finite voxels
@@ -147,33 +166,50 @@ public:
    *    model the local support sustains (quadratic, then affine, then constant),
    *    carrying the boundary gradient and curvature into the extrapolated region
    *  \param value_when_out_of_bounds the value returned by value()/row() when the
-   *    sample is outside the field of view or resides in an invalid voxel */
+   *    sample is outside the field of view or resides in an invalid voxel
+   *  \param policy            whether validity is decided by nearest-voxel rounding
+   *    (\c ValidityPolicy::Nearest) or by trilinear interpolation of the validity
+   *    field (\c ValidityPolicy::Interpolated, the default; see \c ValidityPolicy) */
   Deform(const Image<value_type> &field,
          const Registration::Warp::ExtrapolateDegree degree = Registration::Warp::ExtrapolateDegree::Adaptive,
+         const ValidityPolicy policy = ValidityPolicy::Interpolated,
          const value_type value_when_out_of_bounds = base_type::default_out_of_bounds_value())
-      : Deform(make_scratch(field, degree), value_when_out_of_bounds) {}
+      : Deform(make_scratch(field, degree), value_when_out_of_bounds, policy) {}
 
   //! construct from a deformation field referenced by a Header
   /*! Equivalent to opening the image and forwarding to the image-based
    *  constructor; see that overload for parameter documentation. */
   Deform(const Header &deformation_field,
          const Registration::Warp::ExtrapolateDegree degree = Registration::Warp::ExtrapolateDegree::Adaptive,
+         const ValidityPolicy policy = ValidityPolicy::Interpolated,
          const value_type value_when_out_of_bounds = base_type::default_out_of_bounds_value())
-      : Deform(make_scratch(open_field(deformation_field), degree), value_when_out_of_bounds) {}
+      : Deform(make_scratch(open_field(deformation_field), degree), value_when_out_of_bounds, policy) {}
 
   //! Set the current position to <b>voxel space</b> position \a pos
   /*! See file interp/base.h for details.
-   *  \return true only if \a pos lies within the field of view and the voxel in
-   *    which \a pos resides was free of non-finite values in the input field. */
+   *  \return true only if \a pos lies within the field of view and is accepted by the
+   *    active validity policy: under \c ValidityPolicy::Nearest the voxel in which \a pos
+   *    resides must have been free of non-finite values in the input field; under
+   *    \c ValidityPolicy::Interpolated the trilinearly-interpolated validity at \a pos
+   *    must be at least one half. */
   template <class VectorType> bool voxel(const VectorType &pos) {
     if (base_type::set_out_of_bounds(pos))
       return false;
-    validity.index(0) = static_cast<ssize_t>(std::round(pos[0]));
-    validity.index(1) = static_cast<ssize_t>(std::round(pos[1]));
-    validity.index(2) = static_cast<ssize_t>(std::round(pos[2]));
-    if (!validity.value()) {
-      base_type::set_out_of_bounds(true);
-      return false;
+    if (validity_policy == ValidityPolicy::Interpolated) {
+      // Continuous validity: accept where the trilinearly-interpolated 0/1 field is at
+      //   least one half, placing the accept boundary at the true sub-voxel region edge.
+      if (!validity_interp.voxel(pos) || validity_interp.value() < 0.5f) {
+        base_type::set_out_of_bounds(true);
+        return false;
+      }
+    } else {
+      validity.index(0) = static_cast<ssize_t>(std::round(pos[0]));
+      validity.index(1) = static_cast<ssize_t>(std::round(pos[1]));
+      validity.index(2) = static_cast<ssize_t>(std::round(pos[2]));
+      if (!validity.value()) {
+        base_type::set_out_of_bounds(true);
+        return false;
+      }
     }
     return base_type::voxel(pos);
   }
@@ -291,7 +327,16 @@ Deform<ValueType, PType>::make_scratch(Image<value_type> field, const Registrati
   //   unpopulated voxels beyond the halo are never read.
   Registration::Warp::extrapolate_deformation_halo(buffer, validity, halo, degree);
 
-  return ScratchData{buffer, validity};
+  // Floating-point copy of the validity mask (1 valid / 0 invalid) backing the
+  //   trilinear validity interpolator used under ValidityPolicy::Interpolated.
+  Header mask_float_header(mask_header);
+  mask_float_header.datatype() = DataType::Float32;
+  mask_float_header.datatype().set_byte_order_native();
+  Image<float> mask_float(Image<float>::scratch(mask_float_header, "deformation field validity field"));
+  for (auto l = Loop(validity)(validity, mask_float); l; ++l)
+    mask_float.value() = validity.value() ? 1.0f : 0.0f;
+
+  return ScratchData{buffer, validity, mask_float};
 }
 
 //! @}

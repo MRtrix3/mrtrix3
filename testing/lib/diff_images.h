@@ -40,7 +40,10 @@ const App::OptionGroup Diff_Image_Options =
     + App::Option ("image", "specify an image containing the tolerances")
       + App::Argument ("path").type_image_in()
     + App::Option ("voxel", "specify a fractional tolerance relative to the maximum value in the voxel")
-      + App::Argument ("tolerance").type_float(0.0);
+      + App::Argument ("tolerance").type_float(0.0)
+    + App::Option ("mask", "restrict the comparison to voxels within a binary mask image;"
+                           " a 3D mask is broadcast across the volumes of a 4D / 5D comparison")
+      + App::Argument ("image").type_image_in();
 // clang-format on
 
 template <class ImageType1, class ImageType2> void diff_images(ImageType1 &in1, ImageType2 &in2) {
@@ -49,6 +52,26 @@ template <class ImageType1, class ImageType2> void diff_images(ImageType1 &in1, 
   auto frac_opt = App::get_options("frac");
   auto image_opt = App::get_options("image");
   auto voxel_opt = App::get_options("voxel");
+  auto mask_opt = App::get_options("mask");
+
+  if (!mask_opt.empty()) {
+    auto mask = Image<bool>::open(mask_opt[0][0]);
+    Adapter::Replicate<decltype(mask)> mask_replicate(mask, in1);
+    if (!abs_opt.empty()) {
+      check_images_abs(in1, in2, mask_replicate, abs_opt[0][0]);
+    } else if (!frac_opt.empty()) {
+      check_images_frac(in1, in2, mask_replicate, frac_opt[0][0]);
+    } else if (!image_opt.empty()) {
+      auto tolerance = Image<default_type>::open(image_opt[0][0]);
+      Adapter::Replicate<decltype(tolerance)> replicate(tolerance, in1);
+      check_images_tolimage(in1, in2, replicate, mask_replicate);
+    } else if (!voxel_opt.empty()) {
+      check_images_voxel(in1, in2, mask_replicate, voxel_opt[0][0]);
+    } else {
+      check_images_abs(in1, in2, mask_replicate, 0.0);
+    }
+    return;
+  }
 
   if (!abs_opt.empty()) {
     check_images_abs(in1, in2, abs_opt[0][0]);
@@ -99,7 +122,14 @@ inline void diff_images(Header &header1, Header &header2) {
     }
     auto in1 = header1.get_image<bool>();
     auto in2 = header2.get_image<bool>();
-    check_images_bitwise(in1, in2);
+    auto mask_opt = App::get_options("mask");
+    if (!mask_opt.empty()) {
+      auto mask = Image<bool>::open(mask_opt[0][0]);
+      Adapter::Replicate<decltype(mask)> mask_replicate(mask, in1);
+      check_images_bitwise(in1, in2, mask_replicate);
+    } else {
+      check_images_bitwise(in1, in2);
+    }
     return;
   }
 

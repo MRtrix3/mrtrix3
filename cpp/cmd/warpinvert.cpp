@@ -25,6 +25,12 @@
 using namespace MR;
 using namespace App;
 
+// Choice strings for the -extrapolate option; index maps to ExtrapolateDegree.
+const std::vector<std::string> extrapolate_choices{"adaptive", "affine"};
+
+// Choice strings for the -validity option; index maps to Interp::ValidityPolicy.
+const std::vector<std::string> validity_choices{"interpolated", "nearest"};
+
 // clang-format off
 void usage() {
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)"
@@ -52,7 +58,20 @@ void usage() {
   + Argument ("image").type_image_in ()
 
   + Option ("displacement", "indicates that the input warp field is a displacement field;"
-                            " the output will also be a displacement field");
+                            " the output will also be a displacement field")
+
+  + Option ("extrapolate", "polynomial degree used to extrapolate the deformation field across"
+                           " the halo around the valid region prior to cubic interpolation"
+                           " (default: adaptive); a diagnostic control for assessing the"
+                           " sensitivity of the inverted valid region to halo extrapolation")
+  + Argument ("mode").type_choice(extrapolate_choices)
+
+  + Option ("validity", "how a sampled position is judged to reside in valid input data:"
+                        " \"interpolated\" (default) thresholds the trilinearly-interpolated"
+                        " validity field at one half, placing the accept boundary at the true"
+                        " sub-voxel region edge; \"nearest\" uses the validity of the enclosing"
+                        " voxel (nearest-voxel rounding), retained for assessing its effect")
+  + Argument ("mode").type_choice(validity_choices);
 
 }
 // clang-format on
@@ -75,6 +94,28 @@ void run() {
     header_out.datatype().set_byte_order_native();
   }
 
+  auto degree = Registration::Warp::ExtrapolateDegree::Adaptive;
+  auto extrap_opt = get_options("extrapolate");
+  if (!extrap_opt.empty()) {
+    if (displacement)
+      throw Exception("The -extrapolate option applies only to deformation-field inversion,"
+                      " not to the -displacement path (which uses linear interpolation"
+                      " without halo extrapolation)");
+    degree = (static_cast<int>(extrap_opt[0][0]) == 1) ? Registration::Warp::ExtrapolateDegree::Affine
+                                                       : Registration::Warp::ExtrapolateDegree::Adaptive;
+  }
+
+  auto validity_policy = Interp::ValidityPolicy::Interpolated;
+  auto validity_opt = get_options("validity");
+  if (!validity_opt.empty()) {
+    if (displacement)
+      throw Exception("The -validity option applies only to deformation-field inversion,"
+                      " not to the -displacement path (which uses linear interpolation"
+                      " without a validity mask)");
+    validity_policy = (static_cast<int>(validity_opt[0][0]) == 1) ? Interp::ValidityPolicy::Nearest
+                                                                  : Interp::ValidityPolicy::Interpolated;
+  }
+
   Image<default_type> image_in(header_in.get_image<default_type>());
   Registration::Warp::debug_validate_image(image_in);
   Image<default_type> image_out(Image<default_type>::create(argument[1], header_out));
@@ -82,6 +123,6 @@ void run() {
   if (displacement) {
     Registration::Warp::invert_displacement(image_in, image_out);
   } else {
-    Registration::Warp::invert_deformation(image_in, image_out);
+    Registration::Warp::invert_deformation(image_in, image_out, false, 50, 0.0001, degree, validity_policy);
   }
 }

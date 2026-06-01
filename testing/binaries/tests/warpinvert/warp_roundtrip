@@ -1,0 +1,27 @@
+#!/bin/bash
+# Double-inverting a structured (NaN-slab) deformation field is a non-trivial round-trip.
+# warp.mif holds a slab of valid data abutting a slab of NaN; a single inversion shrinks the
+#   valid region and a second inversion regrows it. Exact recovery of neither the values nor
+#   the valid-voxel set is expected, but both must remain close:
+#   - within the region valid in both fields, the round-trip agrees to a small absolute
+#     tolerance (maximum observed discrepancy ~2.15; rounded up to one significant figure: 3);
+#   - the valid-voxel set drifts only slightly: the number of voxels finite in exactly one of
+#     the two fields is bounded (maximum observed 47; rounded up to one significant figure: 50).
+
+# Round-trip: invert, then invert the inverse.
+warpinvert warp.mif - -quiet | warpinvert - tmp-inv2.mif -quiet -force
+
+# Mask of voxels finite (all three components) in both warp.mif and its double-inverse; the
+#   magnitude comparison is restricted to this commonly-valid region so that voxels lost or
+#   gained by the round-trip do not enter the value tolerance check.
+mrcalc warp.mif -finite tmp-inv2.mif -finite -mult - -quiet | \
+  mrmath - min -axis 3 tmp-bothmask.mif -quiet -force
+testing_diff_image warp.mif tmp-inv2.mif -mask tmp-bothmask.mif -abs 3
+
+# Count voxels finite in exactly one field (a voxel is valid iff all three components are
+#   finite); this symmetric difference of the two valid sets must not exceed the threshold.
+mrcalc warp.mif -finite - -quiet | mrmath - min -axis 3 tmp-afinite.mif -quiet -force
+mrcalc tmp-inv2.mif -finite - -quiet | mrmath - min -axis 3 tmp-bfinite.mif -quiet -force
+mismatch=$(mrcalc tmp-afinite.mif tmp-bfinite.mif -add 1 -eq - -quiet | \
+  mrmath - sum -axis 0 - -quiet | mrmath - sum -axis 1 - -quiet | mrmath - sum -axis 2 - -quiet | mrdump -)
+[ "$(echo $mismatch | tr -d ' ')" -le 50 ]
