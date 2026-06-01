@@ -28,6 +28,9 @@
 // Eigen plugin configuration must precede inclusion of any Eigen header,
 //   including the unsupported Tensor module used here.
 #include "eigen_plugins/eigen_plugins.h"
+#include <Eigen/SparseCore>
+#include <Eigen/SparseLU>
+#include <Eigen/SparseQR>
 #include <unsupported/Eigen/CXX11/Tensor>
 
 #include "exception.h"
@@ -72,6 +75,16 @@ using Stencil = Eigen::Tensor<double, 3>;
 
 using Mat = Eigen::MatrixXd;
 using Vec = Eigen::VectorXd;
+
+//! the assembled imputation coefficient matrix
+/*! Each finite-difference equation references only a handful of unknown columns,
+ *  so the global system is sparse: storage and factorisation costs grow with the
+ *  number of coupling terms rather than with the (potentially large) square of
+ *  the unknown count. Column-major storage matches the column-oriented access of
+ *  both the underdetermined-column guard and the sparse QR / LU solvers. */
+using SparseMat = Eigen::SparseMatrix<double>;
+//! a single (row, column, coefficient) contribution used to build a SparseMat
+using Triplet = Eigen::Triplet<double, SparseMat::StorageIndex>;
 
 //! type-erased read access to a known intensity at a spatial position
 using ValueFn = std::function<double(const Position &)>;
@@ -409,37 +422,79 @@ public:
   }
 
 private:
-  //! assemble and solve the dense linear system, returning one value per unknown
+  //! assemble and solve the sparse linear system, returning one value per unknown
+  /*! The coefficient matrix is sparse by construction: every finite-difference
+   *  equation couples its centre to only a handful of neighbouring unknowns. The
+   *  least-squares methods are solved by sparse QR and the square method by
+   *  sparse LU, the direct sparse analogues of the dense column-pivoted QR and
+   *  partial-pivot LU they replace. Because each system is full column rank (the
+   *  underdetermined-column guard below rejects any unconstrained unknown), the
+   *  least-squares solution is unique and so independent of the factorisation
+   *  used. */
   Vec assemble_and_solve() {
     const std::vector<Equation> equations = assemble();
     const ssize_t num_unknowns = static_cast<ssize_t>(v2v.size());
     const ssize_t num_equations = static_cast<ssize_t>(equations.size());
     if (num_equations == 0)
       throw Exception("no linear equations could be assembled for the imputation region");
-    Mat A = Mat::Zero(num_equations, num_unknowns);
+    // setFromTriplets() sums duplicate (row, column) contributions, reproducing
+    //   the coefficient accumulation of the former dense assembly.
+    std::vector<Triplet> triplets;
+    size_t num_terms = 0;
+    for (const Equation &eq : equations)
+      num_terms += eq.terms.size();
+    triplets.reserve(num_terms);
     Vec b = Vec::Zero(num_equations);
     for (ssize_t row = 0; row != num_equations; ++row) {
       for (const auto &term : equations[row].terms)
-        A(row, term.first) += term.second;
+        triplets.emplace_back(
+            static_cast<SparseMat::StorageIndex>(row), static_cast<SparseMat::StorageIndex>(term.first), term.second);
       b[row] = equations[row].rhs;
     }
-    // Guard against any unknown that is referenced by no equation: such a column
-    //   would be left unconstrained by the solver and yield an arbitrary value.
+    SparseMat A(num_equations, num_unknowns);
+    A.setFromTriplets(triplets.begin(), triplets.end());
+    A.makeCompressed();
+    // Guard against any unknown that is referenced by no equation (or whose
+    //   contributions cancel exactly): such a column would be left unconstrained
+    //   by the solver and yield an arbitrary value. The matrix is column-major,
+    //   so iterating a column's inner entries is the sparse analogue of the
+    //   former dense Mat::col().isZero() test.
     for (ssize_t col = 0; col != num_unknowns; ++col) {
-      if (A.col(col).isZero(0.0))
+      bool referenced = false;
+      for (SparseMat::InnerIterator it(A, col); it; ++it) {
+        if (it.value() != 0.0) {
+          referenced = true;
+          break;
+        }
+      }
+      if (!referenced)
         throw Exception("imputation system is underdetermined"
                         " (a voxel to be imputed is not coupled to any usable data)");
     }
     Vec x;
     switch (solve_type()) {
-    case SolveType::SquareDirect:
+    case SolveType::SquareDirect: {
       if (num_equations != num_unknowns)
         throw Exception("internal error: square imputation solver received a non-square system");
-      x = A.partialPivLu().solve(b);
+      Eigen::SparseLU<SparseMat> solver;
+      solver.compute(A);
+      if (solver.info() != Eigen::Success)
+        throw Exception("imputation sparse LU factorisation failed");
+      x = solver.solve(b);
+      if (solver.info() != Eigen::Success)
+        throw Exception("imputation sparse LU solve failed");
       break;
-    case SolveType::LeastSquares:
-      x = A.colPivHouseholderQr().solve(b);
+    }
+    case SolveType::LeastSquares: {
+      Eigen::SparseQR<SparseMat, Eigen::COLAMDOrdering<SparseMat::StorageIndex>> solver;
+      solver.compute(A);
+      if (solver.info() != Eigen::Success)
+        throw Exception("imputation sparse QR factorisation failed");
+      x = solver.solve(b);
+      if (solver.info() != Eigen::Success)
+        throw Exception("imputation sparse QR solve failed");
       break;
+    }
     }
     if (!x.allFinite())
       throw Exception("imputation linear solver produced non-finite values");

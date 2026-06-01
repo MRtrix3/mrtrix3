@@ -37,11 +37,11 @@ spring: constrain each imputed voxel toward equality with its neighbours (Inpain
 
 isotropic2 / isotropic4: as for laplacian / biharmonic respectively, but assembled from a 13-direction spherical-harmonic-weighted stencil for improved rotational invariance.
 
-Inpaint_nans methods 1 (redundant with method 0) and 5 (an author-discouraged neighbour average) are intentionally omitted. The linear solver is selected automatically per method (dense QR for the least-squares methods; dense LU for the square method).
+Inpaint_nans methods 1 (redundant with method 0) and 5 (an author-discouraged neighbour average) are intentionally omitted. The linear solver is selected automatically per method (sparse QR for the least-squares methods; sparse LU for the square method).
 
 The -detrend option fits a low-order polynomial trend to the known data bordering the region to be imputed, subtracts it before the solve, and re-adds it afterwards (a "universal kriging" decomposition): affine fits a first-order trend, quadratic a second-order trend. This carries any global gradient (and, for quadratic, curvature) into the imputed region in closed form, leaving the solver to resolve only the bounded residual; it is recommended when extrapolating beyond a one-sided data boundary, where a purely harmonic solve would otherwise flatten to a constant.
 
-The imputation system is dense and scoped to each 3D volume; this is efficient for typical hole counts, but very large contiguous regions to be imputed will produce a large dense system.
+The imputation system is sparse and scoped to each 3D volume; each finite-difference equation couples only a handful of neighbouring voxels, so the solver cost scales with the number of voxels to be imputed rather than with its square.
 
 Options
 -------
