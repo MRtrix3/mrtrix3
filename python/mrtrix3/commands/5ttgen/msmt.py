@@ -178,7 +178,7 @@ def execute(): # pylint: disable=unused-variable
     if have_first:
       app.console('Running FSL FIRST to segment sub-cortical grey matter structures')
       first_stdout = run.command(
-        first_cmd + ' -m none -s ' + ','.join(SGM_FIRST_MAP.keys()) + ' -i vis.nii -b -o first'
+        [first_cmd, '-s', ','.join(SGM_FIRST_MAP.keys()), '-i', 'vis.nii', '-b', '-o', 'first']
       ).stdout
       fsl.check_first('first', structures=SGM_FIRST_MAP.keys(), first_stdout=first_stdout)
 
