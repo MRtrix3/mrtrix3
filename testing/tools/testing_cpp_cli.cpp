@@ -22,7 +22,7 @@
 using namespace MR;
 using namespace App;
 
-const std::vector<std::string> choices = {"One", "Two", "Three"};
+enum class Choice { One, Two, Three };
 
 // clang-format off
 void usage() {
@@ -67,7 +67,7 @@ void usage() {
     + Argument("values").type_sequence_float()
 
   + Option("choice", "a choice from a set of options")
-    + Argument("item").type_choice(choices)
+    + Argument("item").type_choice<Choice>()
 
   + Option("file_in", "an input file")
     + Argument("input").type_file_in()
@@ -94,7 +94,7 @@ void usage() {
                       .type_float()
                       .type_sequence_int()
                       .type_sequence_float()
-                      .type_choice(choices)
+                      .type_choice<Choice>()
                       .type_file_in()
                       .type_file_out()
                       .type_directory_in()

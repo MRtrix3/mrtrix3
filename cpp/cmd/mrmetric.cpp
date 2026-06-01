@@ -200,8 +200,8 @@ void usage() {
 
   + Option ("interp", std::string("set the interpolation method to use when reslicing") +
                       " (choices: nearest, linear, cubic, sinc."
-                      " Default: " + MR::Interp::interp_choices[static_cast<ssize_t>(default_interp)] + ").")
-    + Argument ("method").type_choice(MR::Interp::interp_choices)
+                      " Default: " + MR::Enum::lowercase_name(default_interp) + ").")
+    + Argument ("method").type_choice<MR::Interp::interp_type>()
 
   + Option ("metric",
             "define the dissimilarity metric used to calculate the cost."
@@ -231,8 +231,7 @@ using MaskType = Image<bool>;
 
 void run() {
   const space_t space = get_option_choice<space_t>("space", default_space);
-  const MR::Interp::interp_type interp =
-      MR::Interp::interp_type(get_option_value<ssize_t>("interp", static_cast<ssize_t>(default_interp)));
+  const MR::Interp::interp_type interp = get_option_choice<MR::Interp::interp_type>("interp", default_interp);
 
   MetricType metric_type = MetricType::MeanSquared;
   const MetricChoice metric_choice = get_option_choice<MetricChoice>("metric", MetricChoice::DIFF);

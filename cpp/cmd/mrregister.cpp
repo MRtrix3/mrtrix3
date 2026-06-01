@@ -402,12 +402,14 @@ void run() {
   if (!opt.empty()) {
     if (init_rigid_matrix_set)
       throw Exception("options -rigid_init_matrix and -rigid_init_translation are mutually exclusive");
-    Registration::set_init_translation_model_from_option(rigid_registration, static_cast<int>(opt[0][0]));
+    Registration::set_init_translation_model_from_option(
+        rigid_registration, MR::Enum::from_name<Registration::init_translation_t>(opt[0][0]));
   }
 
   opt = get_options("rigid_init_rotation");
   if (!opt.empty())
-    Registration::set_init_rotation_model_from_option(rigid_registration, static_cast<int>(opt[0][0]));
+    Registration::set_init_rotation_model_from_option(rigid_registration,
+                                                      MR::Enum::from_name<Registration::init_rotation_t>(opt[0][0]));
 
   opt = get_options("rigid_scale");
   if (!opt.empty()) {
@@ -430,20 +432,8 @@ void run() {
     rigid_registration.set_max_iter(parse_ints<uint32_t>(opt[0][0]));
   }
 
-  opt = get_options("rigid_metric");
-  Registration::LinearMetricType rigid_metric = Registration::Diff;
-  if (!opt.empty()) {
-    switch (static_cast<int>(opt[0][0])) {
-    case 0:
-      rigid_metric = Registration::Diff;
-      break;
-    case 1:
-      rigid_metric = Registration::NCC;
-      break;
-    default:
-      break;
-    }
-  }
+  const Registration::LinearMetricType rigid_metric =
+      get_option_choice<Registration::LinearMetricType>("rigid_metric", Registration::Diff);
 
   if (rigid_metric == Registration::NCC)
     throw Exception("TODO: cross correlation metric not yet implemented");
@@ -453,21 +443,7 @@ void run() {
   if (!opt.empty()) {
     if (rigid_metric != Registration::Diff)
       throw Exception("rigid_metric.diff.estimator set but cost function is not diff.");
-    switch (static_cast<int>(opt[0][0])) {
-    case 0:
-      rigid_estimator = Registration::L1;
-      break;
-    case 1:
-      rigid_estimator = Registration::L2;
-      break;
-    case 2:
-      rigid_estimator = Registration::LP;
-      break;
-    case 3:
-      rigid_estimator = Registration::None;
-    default:
-      assert(false);
-    }
+    rigid_estimator = MR::Enum::from_name<Registration::LinearRobustMetricEstimatorType>(opt[0][0]);
   }
 
   opt = get_options("rigid_lmax");
@@ -534,14 +510,16 @@ void run() {
   if (!opt.empty()) {
     if (init_affine_matrix_set)
       throw Exception("options -affine_init_matrix and -affine_init_translation are mutually exclusive");
-    Registration::set_init_translation_model_from_option(affine_registration, static_cast<int>(opt[0][0]));
+    Registration::set_init_translation_model_from_option(
+        affine_registration, MR::Enum::from_name<Registration::init_translation_t>(opt[0][0]));
   }
 
   opt = get_options("affine_init_rotation");
   if (!opt.empty()) {
     if (init_affine_matrix_set)
       throw Exception("options -affine_init_matrix and -affine_init_rotation are mutually exclusive");
-    Registration::set_init_rotation_model_from_option(affine_registration, static_cast<int>(opt[0][0]));
+    Registration::set_init_rotation_model_from_option(affine_registration,
+                                                      MR::Enum::from_name<Registration::init_rotation_t>(opt[0][0]));
   }
 
   opt = get_options("affine_scale");
@@ -558,20 +536,8 @@ void run() {
     affine_registration.set_loop_density(parse_floats(opt[0][0]));
   }
 
-  opt = get_options("affine_metric");
-  Registration::LinearMetricType affine_metric = Registration::Diff;
-  if (!opt.empty()) {
-    switch (static_cast<int>(opt[0][0])) {
-    case 0:
-      affine_metric = Registration::Diff;
-      break;
-    case 1:
-      affine_metric = Registration::NCC;
-      break;
-    default:
-      break;
-    }
-  }
+  const Registration::LinearMetricType affine_metric =
+      get_option_choice<Registration::LinearMetricType>("affine_metric", Registration::Diff);
 
   if (affine_metric == Registration::NCC)
     throw Exception("TODO cross correlation metric not yet implemented");
@@ -581,22 +547,7 @@ void run() {
   if (!opt.empty()) {
     if (affine_metric != Registration::Diff)
       throw Exception("affine_metric.diff.estimator set but cost function is not diff.");
-    switch (static_cast<int>(opt[0][0])) {
-    case 0:
-      affine_estimator = Registration::L1;
-      break;
-    case 1:
-      affine_estimator = Registration::L2;
-      break;
-    case 2:
-      affine_estimator = Registration::LP;
-      break;
-    case 3:
-      affine_estimator = Registration::None;
-      break;
-    default:
-      assert(false);
-    }
+    affine_estimator = MR::Enum::from_name<Registration::LinearRobustMetricEstimatorType>(opt[0][0]);
   }
 
   opt = get_options("affine_niter");

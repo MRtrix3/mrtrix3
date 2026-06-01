@@ -19,6 +19,7 @@
 #include <array>
 
 #include "dialog/file.h"
+#include "enum.h"
 #include "lighting_dock.h"
 #include "mrtrix.h"
 #include "mrview/qthelpers.h"
@@ -29,7 +30,6 @@
 #include "opengl/lighting.h"
 
 namespace MR::GUI::MRView::Tool {
-const std::vector<std::string> tractogram_geometry_types = {"pseudotubes", "lines", "points"};
 
 TrackGeometryType geometry_index2type(const int idx) {
   switch (idx) {
@@ -45,18 +45,11 @@ TrackGeometryType geometry_index2type(const int idx) {
   }
 }
 
+// The TrackGeometryType enumerators are declared in the same order as the
+//   geometry-type combobox entries, so the enumerator's underlying value
+//   doubles as the combobox index.
 size_t geometry_string2index(std::string type_str) {
-  type_str = lowercase(type_str);
-
-  auto matches = [&type_str](std::string_view s) { return type_str == lowercase(s); };
-  const auto &list = tractogram_geometry_types;
-  auto it = std::find_if(list.begin(), list.end(), matches);
-  if (it != list.end())
-    return std::distance(list.begin(), it);
-
-  throw Exception("Unrecognised value for tractogram geometry \"" + type_str + "\" (options are: " + join(list, ", ") +
-                  "); ignoring");
-  return 0;
+  return static_cast<size_t>(MR::Enum::from_name<TrackGeometryType>(type_str));
 }
 
 class Tractography::Model : public ListModelBase {
@@ -288,7 +281,8 @@ Tractography::Tractography(Dock *parent)
   // CONF default: Pseudotubes
   // CONF The default geometry type used to render tractograms.
   // CONF Options are Pseudotubes, Lines or Points
-  const std::string default_geom_type = File::Config::get("MRViewDefaultTractGeomType", tractogram_geometry_types[0]);
+  const std::string default_geom_type =
+      File::Config::get("MRViewDefaultTractGeomType", MR::Enum::lowercase_name(TrackGeometryType::Pseudotubes));
   try {
     const size_t default_geom_index = geometry_string2index(default_geom_type);
     Tractogram::default_tract_geom = geometry_index2type(default_geom_index);
@@ -784,8 +778,8 @@ void Tractography::add_commandline_options(MR::App::OptionList &options) {
 
       + Option("tractography.geometry",
                "The geometry type to use when rendering tractograms"
-               " (options are: " + join(tractogram_geometry_types, ", ") + ")").allow_multiple()
-        + Argument("value").type_choice(tractogram_geometry_types)
+               " (options are: " + MR::Enum::join<TrackGeometryType>() + ")").allow_multiple()
+        + Argument("value").type_choice<TrackGeometryType>()
 
       + Option("tractography.opacity",
                "Opacity of tractography display, [0.0, 1.0];"

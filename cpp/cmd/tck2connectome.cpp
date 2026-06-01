@@ -17,6 +17,7 @@
 #include <set>
 
 #include "command.h"
+#include "enum.h"
 #include "image.h"
 #include "thread_queue.h"
 #include "types.h"
@@ -154,9 +155,7 @@ void execute(Image<node_t> &node_image, const node_t max_node_index, const std::
   Metric metric;
   Tractography::Connectome::setup_metric(metric, node_image);
   std::unique_ptr<Tck2nodes_base> tck2nodes(load_assignment_mode(node_image));
-  auto opt = get_options("stat_edge");
-  const stat_edge statistic =
-      !opt.empty() ? stat_edge(static_cast<MR::App::ParsedArgument::IntType>(opt[0][0])) : stat_edge::SUM;
+  const stat_edge statistic = get_option_choice<stat_edge>("stat_edge", stat_edge::SUM);
 
   // Prepare for reading the track data
   Tractography::Properties properties;
@@ -191,7 +190,7 @@ void execute(Image<node_t> &node_image, const node_t max_node_index, const std::
                   get_options("symmetric").size(),
                   get_options("zero_diagonal").size());
 
-  opt = get_options("out_assignments");
+  auto opt = get_options("out_assignments");
   if (!opt.empty())
     connectome.write_assignments(opt[0][0]);
 }

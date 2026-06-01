@@ -18,6 +18,7 @@
 
 #include "command.h"
 #include "datatype.h"
+#include "enum.h"
 #include "image.h"
 #include "image_helpers.h"
 #include "memory.h"
@@ -108,10 +109,10 @@ void run() {
     check_dimensions(mask, header, 0, 3);
   }
 
-  std::vector<std::string> fields;
+  std::vector<Stats::field_t> fields;
   opt = get_options("output");
   for (size_t n = 0; n < opt.size(); ++n)
-    fields.push_back(opt[n][0]);
+    fields.push_back(MR::Enum::from_name<Stats::field_t>(opt[n][0]));
 
   if (App::log_level && fields.empty())
     Stats::print_header(is_complex);

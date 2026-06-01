@@ -166,7 +166,52 @@ public:
 #endif
   static App::OptionGroup options();
 
-  static const std::vector<std::string> identifiers;
+  //! enumeration of the data type specifiers accepted on the command-line
+  /*! The lowercase names of these enumerators define the set of valid choices
+   *  for the "-datatype" command-line option; see DataType::options().
+   *  The enumerators are declared in the same order as the historical list of
+   *  choice strings, so that the generated command-line help is unaltered. */
+  enum class Identifier {
+    Float16,
+    Float16LE,
+    Float16BE,
+    Float32,
+    Float32LE,
+    Float32BE,
+    Float64,
+    Float64LE,
+    Float64BE,
+    Int64,
+    UInt64,
+    Int64LE,
+    UInt64LE,
+    Int64BE,
+    UInt64BE,
+    Int32,
+    UInt32,
+    Int32LE,
+    UInt32LE,
+    Int32BE,
+    UInt32BE,
+    Int16,
+    UInt16,
+    Int16LE,
+    UInt16LE,
+    Int16BE,
+    UInt16BE,
+    CFloat16,
+    CFloat16LE,
+    CFloat16BE,
+    CFloat32,
+    CFloat32LE,
+    CFloat32BE,
+    CFloat64,
+    CFloat64LE,
+    CFloat64BE,
+    Int8,
+    UInt8,
+    Bit
+  };
 
   friend std::ostream &operator<<(std::ostream &stream, const DataType &dt) {
     stream << dt.specifier();

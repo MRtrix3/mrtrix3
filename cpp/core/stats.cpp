@@ -20,21 +20,19 @@ namespace MR::Stats {
 
 using namespace App;
 
-const std::vector<std::string> field_choices{"mean", "median", "std", "std_rv", "iqr", "min", "max", "count"};
-
 // clang-format off
 const OptionGroup Options =
     OptionGroup("Statistics options")
     + Option("output",
              "output only the field specified."
              " Multiple such options can be supplied if required."
-             " Choices are: " + join(field_choices, ", ") + "."
+             " Choices are: " + MR::Enum::join<field_t>() + "."
              " Useful for use in scripts."
              " Both std options refer to the unbiased (sample) standard deviation."
              " For complex data, min, max and std are calculated separately for real and imaginary parts,"
              " std_rv is based on the real valued variance"
              " (equals sqrt of sum of variances of imaginary and real parts).").allow_multiple()
-      + Argument("field").type_choice(field_choices)
+      + Argument("field").type_choice<field_t>()
     + Option("mask",
              "only perform computation within the specified binary mask image.")
       + Argument("image").type_image_in()

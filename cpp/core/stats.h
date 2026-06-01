@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "enum.h"
 #include "math/median.h"
 #include "mrtrix.h"
 
@@ -24,7 +25,8 @@
 
 namespace MR::Stats {
 
-extern const std::vector<std::string> field_choices;
+//! enumeration of the per-field statistics that can be requested via "-output"
+enum class field_t { MEAN, MEDIAN, STD, STD_RV, IQR, MIN, MAX, COUNT };
 extern const App::OptionGroup Options;
 
 using value_type = default_type;
@@ -47,7 +49,7 @@ public:
 
   void operator()(complex_type val);
 
-  template <class ImageType> void print(ImageType &ima, const std::vector<std::string> &fields) {
+  template <class ImageType> void print(ImageType &ima, const std::vector<field_t> &fields) {
 
     if (count > 1) {
       std = complex_type(sqrt(m2.real() / static_cast<value_type>(count - 1)),
@@ -57,7 +59,7 @@ public:
     }
     if (!fields.empty()) {
       if (!count) {
-        if (fields.size() == 1 && fields.front() == "count") {
+        if (fields.size() == 1 && fields.front() == field_t::COUNT) {
           std::cout << "0\n";
           return;
         } else {
@@ -65,25 +67,33 @@ public:
         }
       }
       for (size_t n = 0; n < fields.size(); ++n) {
-        if (fields[n] == "mean")
+        switch (fields[n]) {
+        case field_t::MEAN:
           std::cout << str(mean) << " ";
-        else if (fields[n] == "median")
+          break;
+        case field_t::MEDIAN:
           std::cout << (values.empty() ? "N/A" : str(Math::median(values))) << " ";
-        else if (fields[n] == "std")
+          break;
+        case field_t::STD:
           std::cout << (count > 1 ? str(std) : "N/A") << " ";
-        else if (fields[n] == "std_rv")
+          break;
+        case field_t::STD_RV:
           std::cout << (count > 1 ? str(std_rv) : "N/A") << " ";
-        else if (fields[n] == "iqr")
+          break;
+        case field_t::IQR:
           std::cout << (!values.empty() ? str(Math::quantile(values, 0.75) - Math::quantile(values, 0.25)) : "N/A")
                     << " ";
-        else if (fields[n] == "min")
+          break;
+        case field_t::MIN:
           std::cout << str(min) << " ";
-        else if (fields[n] == "max")
+          break;
+        case field_t::MAX:
           std::cout << str(max) << " ";
-        else if (fields[n] == "count")
+          break;
+        case field_t::COUNT:
           std::cout << count << " ";
-        else
-          throw Exception("stats type not supported: " + fields[n]);
+          break;
+        }
       }
       std::cout << "\n";
 

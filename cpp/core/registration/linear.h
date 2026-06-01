@@ -56,6 +56,14 @@ enum LinearMetricType { Diff, NCC };
 enum LinearRobustMetricEstimatorType { L1, L2, LP, None };
 enum OptimiserAlgoType { bbgd, gd, none };
 
+// Command-line choice enumerations.
+// The lowercase enumerator names define the set of valid choices for the
+//   corresponding command-line options; see linear.cpp.
+enum class init_translation_t { mass, geometric, none };
+enum class init_rotation_t { search, moments, none };
+// Subset of OptimiserAlgoType selectable on the command-line (excludes 'none').
+enum class optimiser_choice_t { bbgd, gd };
+
 struct StageSetting {
   StageSetting()
       : stage_iterations(1),
@@ -591,7 +599,7 @@ protected:
   Header midway_image_header;
 };
 
-void set_init_translation_model_from_option(Registration::Linear &registration, const int &option);
-void set_init_rotation_model_from_option(Registration::Linear &registration, const int &option);
+void set_init_translation_model_from_option(Registration::Linear &registration, const init_translation_t option);
+void set_init_rotation_model_from_option(Registration::Linear &registration, const init_rotation_t option);
 void parse_general_options(Registration::Linear &registration);
 } // namespace MR::Registration
