@@ -1,0 +1,8 @@
+#!/bin/bash
+# Inverting an identity deformation field must yield the identity (round-trip).
+# Exercises the imputation-aware Newton inversion end-to-end: a crop of an identity
+# deformation field is itself the identity on the cropped grid, and its inverse must
+# match it. The 3x3x3 crop keeps the dense halo imputation of Interp::Deform small.
+mrconvert unit_warp.mif -coord 0 0:2 -coord 1 0:2 -coord 2 0:2 tmp-warpinvert.mif -force
+warpinvert tmp-warpinvert.mif - | \
+testing_diff_image - tmp-warpinvert.mif -frac 1e-4

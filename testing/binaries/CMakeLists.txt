@@ -621,6 +621,8 @@ add_bash_binary_test(warpcorrect/default)
 
 add_bash_binary_test(warpinit/default)
 
+add_bash_binary_test(warpinvert/identity_roundtrip)
+
 add_bash_binary_test(warpvalidate/deformation)
 add_bash_binary_test(warpvalidate/deformation_volumecount)
 add_bash_binary_test(warpvalidate/dimensionality)

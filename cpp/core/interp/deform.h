@@ -101,11 +101,12 @@ namespace MR::Interp {
  *    imputed, its size is bounded by the surface of that region rather than by
  *    the total count of non-finite voxels.
  */
-template <class ValueType = default_type> class Deform : public Cubic<Image<ValueType>> {
+template <class ValueType = default_type, Math::SplineProcessingType PType = Math::SplineProcessingType::Value>
+class Deform : public SplineInterp<Image<ValueType>, Math::HermiteSpline<ValueType>, PType> {
 public:
   using value_type = ValueType;
   using buffer_type = Image<ValueType>;
-  using base_type = Cubic<buffer_type>;
+  using base_type = SplineInterp<buffer_type, Math::HermiteSpline<ValueType>, PType>;
 
 private:
   //! the products of construction: the imputed buffer and the validity mask
@@ -115,8 +116,15 @@ private:
   };
 
   //! build the imputed deformation field buffer and the validity mask
-  static ScratchData
-  make_scratch(const Header &deformation_field, const Impute::Method method, const Impute::Detrend detrend);
+  static ScratchData make_scratch(Image<value_type> field, const Impute::Method method, const Impute::Detrend detrend);
+
+  //! open the deformation field image referenced by a Header
+  static Image<value_type> open_field(const Header &deformation_field) {
+    Header header(deformation_field);
+    if (header.datatype().is_complex())
+      throw Exception("Deformation field interpolator does not operate on complex image data");
+    return header.get_image<value_type>();
+  }
 
   // The per-voxel validity mask shares the spatial voxel grid of the buffer
   //   held by the Cubic base class.
@@ -128,7 +136,8 @@ private:
 
 public:
   //! construct from a deformation field that may contain non-finite voxels
-  /*! \param deformation_field a 4D image with three volumes along axis 3
+  /*! \param field             a 4D image with three volumes along axis 3; either
+   *    a file-backed or a scratch image is accepted
    *  \param method            the imputation algorithm used to fill non-finite
    *    voxels; defaults to \c Impute::Method::hessian, whose natural boundary
    *    conditions extrapolate the boundary trend without the bias of the
@@ -140,11 +149,20 @@ public:
    *    continues the field rather than flattening it
    *  \param value_when_out_of_bounds the value returned by value()/row() when the
    *    sample is outside the field of view or resides in an invalid voxel */
+  Deform(const Image<value_type> &field,
+         const Impute::Method method = Impute::Method::hessian,
+         const Impute::Detrend detrend = Impute::Detrend::quadratic,
+         const value_type value_when_out_of_bounds = base_type::default_out_of_bounds_value())
+      : Deform(make_scratch(field, method, detrend), value_when_out_of_bounds) {}
+
+  //! construct from a deformation field referenced by a Header
+  /*! Equivalent to opening the image and forwarding to the image-based
+   *  constructor; see that overload for parameter documentation. */
   Deform(const Header &deformation_field,
          const Impute::Method method = Impute::Method::hessian,
          const Impute::Detrend detrend = Impute::Detrend::quadratic,
          const value_type value_when_out_of_bounds = base_type::default_out_of_bounds_value())
-      : Deform(make_scratch(deformation_field, method, detrend), value_when_out_of_bounds) {}
+      : Deform(make_scratch(open_field(deformation_field), method, detrend), value_when_out_of_bounds) {}
 
   //! Set the current position to <b>voxel space</b> position \a pos
   /*! See file interp/base.h for details.
@@ -176,17 +194,13 @@ public:
   }
 };
 
-template <class ValueType>
-typename Deform<ValueType>::ScratchData Deform<ValueType>::make_scratch(const Header &deformation_field,
-                                                                        const Impute::Method method,
-                                                                        const Impute::Detrend detrend) {
-  Header header(deformation_field);
+template <class ValueType, Math::SplineProcessingType PType>
+typename Deform<ValueType, PType>::ScratchData Deform<ValueType, PType>::make_scratch(Image<value_type> field,
+                                                                                      const Impute::Method method,
+                                                                                      const Impute::Detrend detrend) {
+  Header header(field);
   if (header.ndim() != 4 || header.size(3) != 3)
     throw Exception("Deformation field \"" + header.name() + "\" must be a 4D image with 3 volumes along axis 3");
-  if (header.datatype().is_complex())
-    throw Exception("Deformation field interpolator does not operate on complex image data");
-
-  Image<value_type> field(header.get_image<value_type>());
 
   // Step 3.1: validity mask on the input grid, true only where every component
   //   of the voxel is finite; simultaneously accumulate the bounding box of the
