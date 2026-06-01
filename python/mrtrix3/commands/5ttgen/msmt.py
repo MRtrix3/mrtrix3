@@ -122,13 +122,8 @@ def execute(): # pylint: disable=unused-variable
                   ' mrcalc - 0.5 -gt - |'
                   f' mrcalc - {result_unmasked} -mult {result_masked}')
   else:
-    # Generate mask from ODF l=0 sum: threshold at 0.5/sqrt(4pi) = 0.1410473959,
-    #   then clean and close holes via dilate/erode
     app.console('No 5TT mask provided; generating from input ODFs')
-    run.command(f'mrcalc {volsum_image} 0.1410473959 -gt - |'
-                ' maskfilter - clean - |'
-                ' maskfilter - dilate -npass 3 - |'
-                ' maskfilter - erode -npass 3 - |'
+    run.command(f'mrcalc {volsum_image} 0 -gt - |'
                 f' mrcalc - {result_unmasked} -mult {result_masked}')
 
   # Brain mask derived from the masked 5TT — needed for CSF fill in both code paths
