@@ -1,0 +1,21 @@
+#!/bin/bash
+# Verify "5ttgen hsvs" algorithm when -first_dir is used
+# Make sure that 5ttgen hsvs doesn't invoke FIRST
+
+mkdir tmp_first
+
+mrconvert freesurfer/sub-01/mri/norm.mgz tmp_T1w.nii
+
+run_first_all -m none \
+-s L_Accu,R_Accu,L_Caud,R_Caud,L_Pall,R_Pall,L_Puta,R_Puta,L_Thal,R_Thal \
+-i tmp_T1w.nii \
+-o tmp_first/prefix
+
+echo "false" > tmp_first/run_first_all
+chmod 775 tmp_first/run_first_all
+export PATH=$(pwd)/tmp_first:$PATH
+
+5ttgen hsvs freesurfer/sub-01 tmp.mif \
+-first_dir tmp_first \
+-force
+

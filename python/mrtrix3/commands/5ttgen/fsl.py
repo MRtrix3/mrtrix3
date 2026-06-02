@@ -58,6 +58,17 @@ def usage(base_parser, subparsers): #pylint: disable=unused-variable
                        action='store_true',
                        default=None,
                        help='Indicate that brain masking has already been applied to the input image')
+  options.add_argument('-first_dir',
+                       type=app.Parser.DirectoryIn(),
+                       metavar='/path/to/first/dir',
+                       help='use pre-calculated output of FSL FIRST previously run on input T1-weighted image; '
+                            'data must be defined in the same space as input T1w')
+  options.add_argument('-fast_dir',
+                       type=app.Parser.DirectoryIn(),
+                       metavar='/path/to/fast/dir',
+                       help='use pre-calculated output of FSL FAST previously run on input T1-weighted image; '
+                            'data must be defined in the same space as input T1w; '
+                            'filename prefix must be "T1_BET"')
   parser.flag_mutually_exclusive_options( [ 'mask', 'premasked' ] )
 
 
@@ -72,10 +83,41 @@ def execute(): #pylint: disable=unused-variable
     raise MRtrixError('Environment variable FSLDIR is not set; '
                       'please run appropriate FSL configuration script')
 
+  sgm_structures = [ 'L_Accu', 'R_Accu', 'L_Caud', 'R_Caud', 'L_Pall', 'R_Pall', 'L_Puta', 'R_Puta', 'L_Thal', 'R_Thal' ]
+  if app.ARGS.sgm_amyg_hipp:
+    sgm_structures.extend([ 'L_Amyg', 'R_Amyg', 'L_Hipp', 'R_Hipp' ])
+
   bet_cmd = fsl.exe_name('bet')
-  fast_cmd = fsl.exe_name('fast')
-  first_cmd = fsl.exe_name('run_first_all')
   ssroi_cmd = fsl.exe_name('standard_space_roi')
+
+  fast_cmd = None
+  fast_pve_images = []
+  if app.ARGS.fast_dir:
+    pve_candidates = sorted(app.ARGS.fast_dir.glob('*_pve_*.nii*'))
+    if len(pve_candidates) != 3:
+      raise MRtrixError(f'Expected three partial volume images in FAST directory {app.ARGS.fast_dir}; '
+                        f'found {len(pve_candidates)}')
+    for index, filepath in enumerate(pve_candidates):
+      if not f'_pve_{index}.nii' in filepath:
+        raise MRtrixError('Expected FAST PVE image "*_pve_*.nii*"; '
+                          f'found "{filepath.name}"')
+      fast_pve_images.append(filepath.name)
+  else:
+    try:
+      fast_cmd = fsl.exe_name('fast')
+    except MRtrixError as exc:
+      raise MRtrixError('FSL program "fast" is requisite if -fast_dir option is not used') from exc
+
+  first_cmd = None
+  first_object_files = []
+  if app.ARGS.first_dir:
+    first_prefix = fsl.check_first_input(app.ARGS.first_dir, sgm_structures)
+    first_object_files = [app.ARGS.first_dir / f'{first_prefix}{struct}_first.vtk' for struct in sgm_structures]
+  else:
+    try:
+      first_cmd = fsl.exe_name('run_first_all')
+    except MRtrixError as exc:
+      raise MRtrixError('FSL program "run_first_all" is requisite if -first_dir option is not used') from exc
 
   first_atlas_path = os.path.join(fsl_path, 'data', 'first', 'models_336_bin')
   if not os.path.isdir(first_atlas_path):
@@ -98,15 +140,20 @@ def execute(): #pylint: disable=unused-variable
       raise MRtrixError('Provided T2w image does not match input T1w image')
     run.command(['mrconvert', app.ARGS.t2, 'T2.nii', '-strides', '-1,+2,+3'],
                 preserve_pipes=True)
-
-  sgm_structures = [ 'L_Accu', 'R_Accu', 'L_Caud', 'R_Caud', 'L_Pall', 'R_Pall', 'L_Puta', 'R_Puta', 'L_Thal', 'R_Thal' ]
-  if app.ARGS.sgm_amyg_hipp:
-    sgm_structures.extend([ 'L_Amyg', 'R_Amyg', 'L_Hipp', 'R_Hipp' ])
+  if app.ARGS.fast_dir:
+    for name in fast_pve_images:
+      shutil.copyfile(app.ARGS.fast_dir / name, app.SCRATCH_DIR / name)
+  if app.ARGS.first_dir:
+    progress = app.ProgressBar('Importing pre-calculated FIRST segmentations', len(sgm_structures))
+    for filename in first_object_files:
+      run.function(shutil.copyfile, app.ARGS.first_dir / filename, app.SCRATCH_DIR / filename)
+      progress.increment()
+    progress.done()
 
   t1_spacing = image.Header('input.mif').spacing()
   upsample_for_first = False
   # If voxel size is 1.25mm or larger, make a guess that the user has erroneously re-gridded their data
-  if math.pow(t1_spacing[0] * t1_spacing[1] * t1_spacing[2], 1.0/3.0) > 1.225:
+  if not app.ARGS.first_dir and math.pow(t1_spacing[0] * t1_spacing[1] * t1_spacing[2], 1.0/3.0) > 1.225:
     app.warn(f'Voxel size larger than expected for T1-weighted images ({t1_spacing}); '
              f'note that ACT does not require re-gridding of T1 image to DWI space, and indeed '
              f'retaining the original higher resolution of the T1 image is preferable')
@@ -190,35 +237,42 @@ def execute(): #pylint: disable=unused-variable
   # Finish branching based on brain masking
 
   # FAST
-  if fast_t2_input:
-    run.command(f'{fast_cmd} -S 2 {fast_t2_input} {fast_t1_input}')
-  else:
-    run.command(f'{fast_cmd} {fast_t1_input}')
+  if not app.ARGS.fast_dir:
+    assert not fast_pve_images
+    if fast_t2_input:
+      run.command(f'{fast_cmd} -S 2 {fast_t2_input} {fast_t1_input}')
+    else:
+      run.command(f'{fast_cmd} {fast_t1_input}')
+    for index in range(0, 3):
+      fast_pve_images.append(fsl.find_image(f'{fast_t1_input}_pve_{index}'))
 
   # FIRST
-  first_input = 'T1.nii'
-  if upsample_for_first:
-    app.warn('Generating 1mm isotropic T1 image for FIRST in hope of preventing failure, '
-             'since input image is of lower resolution')
-    run.command('mrgrid T1.nii regrid T1_1mm.nii -voxel 1.0 -interp sinc')
-    first_input = 'T1_1mm.nii'
-  first_brain_extracted_option = ['-b'] if app.ARGS.premasked else []
-  first_debug_option = [] if app.DO_CLEANUP else ['-d']
-  first_verbosity_option = ['-v'] if app.VERBOSITY == 3 else []
-  first_stdout = run.command([first_cmd, '-m', 'none', '-s', ','.join(sgm_structures), '-i', first_input, '-o', 'first']
-                             + first_brain_extracted_option
-                             + first_debug_option
-                             + first_verbosity_option).stdout
-  fsl.check_first('first', structures=sgm_structures, first_stdout=first_stdout)
+  # TODO Preferably find a suitable reference image inside the FIRST directory
+  first_reference = 'T1.nii'
+  if not app.ARGS.first_dir:
+    assert not first_object_files
+    if upsample_for_first:
+      app.warn('Generating 1mm isotropic T1 image for FIRST in hope of preventing failure, '
+              'since input image is of lower resolution')
+      run.command('mrgrid T1.nii regrid T1_1mm.nii -voxel 1.0 -interp sinc')
+      first_reference = 'T1_1mm.nii'
+    first_brain_extracted_option = ['-b'] if app.ARGS.premasked else []
+    first_debug_option = [] if app.DO_CLEANUP else ['-d']
+    first_verbosity_option = ['-v'] if app.VERBOSITY == 3 else []
+    first_stdout = run.command([first_cmd, '-m', 'none', '-s', ','.join(sgm_structures), '-i', first_reference, '-o', 'first']
+                               + first_brain_extracted_option
+                               + first_debug_option
+                               + first_verbosity_option).stdout
+    fsl.check_first_output('first', structures=sgm_structures, first_stdout=first_stdout)
+    first_object_files = [f'first-{struct}_first.vtk' for struct in sgm_structures]
 
   # Convert FIRST meshes to partial volume images
   pve_image_list = [ ]
   progress = app.ProgressBar('Generating partial volume images for SGM structures', len(sgm_structures))
-  for struct in sgm_structures:
+  for struct, vtk_in_path in zip(sgm_structures, first_object_files):
     pve_image_path = f'mesh2voxel_{struct}.mif'
-    vtk_in_path = f'first-{struct}_first.vtk'
     vtk_temp_path = f'{struct}.vtk'
-    run.command(['meshconvert', vtk_in_path, vtk_temp_path, '-transform', 'first2real', first_input])
+    run.command(['meshconvert', vtk_in_path, vtk_temp_path, '-transform', 'first2real', first_reference])
     run.command(['mesh2voxel', vtk_temp_path, fast_t1_input, pve_image_path])
     pve_image_list.append(pve_image_path)
     progress.increment()
@@ -227,24 +281,20 @@ def execute(): #pylint: disable=unused-variable
                'mrcalc', '-', '1.0', '-min', 'all_sgms.mif'])
 
   # Combine the tissue images into the 5TT format within the script itself
-  fast_output_prefix = fast_t1_input.split('.')[0]
-  fast_csf_output = fsl.find_image(f'{fast_output_prefix}_pve_0')
-  fast_gm_output = fsl.find_image(f'{fast_output_prefix}_pve_1')
-  fast_wm_output = fsl.find_image(f'{fast_output_prefix}_pve_2')
   # Step 1: Run LCC on the WM image
-  run.command(f'mrthreshold {fast_wm_output} - -abs 0.001 | '
+  run.command(f'mrthreshold {fast_pve_images[2]} - -abs 0.001 | '
               f'maskfilter - connect - -connectivity | '
               f'mrcalc 1 - 1 -gt -sub remove_unconnected_wm_mask.mif -datatype bit')
   # Step 2: Generate the images in the same fashion as the old 5ttgen binary used to:
   #   - Preserve CSF as-is
   #   - Preserve SGM, unless it results in a sum of volume fractions greater than 1, in which case clamp
   #   - Multiply the FAST volume fractions of GM and CSF, so that the sum of CSF, SGM, CGM and WM is 1.0
-  run.command(f'mrcalc {fast_csf_output} remove_unconnected_wm_mask.mif -mult csf.mif')
+  run.command(f'mrcalc {fast_pve_images[0]} remove_unconnected_wm_mask.mif -mult csf.mif')
   run.command('mrcalc 1.0 csf.mif -sub all_sgms.mif -min sgm.mif')
-  run.command(f'mrcalc 1.0 csf.mif sgm.mif -add -sub {fast_gm_output} {fast_wm_output} -add -div multiplier.mif')
+  run.command(f'mrcalc 1.0 csf.mif sgm.mif -add -sub {fast_pve_images[1]} {fast_pve_images[2]} -add -div multiplier.mif')
   run.command('mrcalc multiplier.mif -finite multiplier.mif 0.0 -if multiplier_noNAN.mif')
-  run.command(f'mrcalc {fast_gm_output} multiplier_noNAN.mif -mult remove_unconnected_wm_mask.mif -mult cgm.mif')
-  run.command(f'mrcalc {fast_wm_output} multiplier_noNAN.mif -mult remove_unconnected_wm_mask.mif -mult wm.mif')
+  run.command(f'mrcalc {fast_pve_images[1]} multiplier_noNAN.mif -mult remove_unconnected_wm_mask.mif -mult cgm.mif')
+  run.command(f'mrcalc {fast_pve_images[2]} multiplier_noNAN.mif -mult remove_unconnected_wm_mask.mif -mult wm.mif')
   run.command('mrcalc 0 wm.mif -min path.mif')
   run.command('mrcat cgm.mif sgm.mif wm.mif csf.mif path.mif - -axis 3 | '
               'mrconvert - combined_precrop.mif -strides +2,+3,+4,+1')

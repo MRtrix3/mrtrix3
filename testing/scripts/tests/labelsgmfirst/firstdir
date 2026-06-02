@@ -1,0 +1,21 @@
+#!/bin/bash
+# Verify successful completion when -first_dir option is used
+# Make sure that labelsgmfirst does not invoke FIRST
+
+mkdir tmp_first
+mrgrid BIDS/sub-01/anat/sub-01_T1w.nii.gz regrid tmp_T1w.nii \
+-scale 2
+
+run_first_all -m none \
+-s L_Accu,R_Accu,L_Caud,R_Caud,L_Pall,R_Pall,L_Puta,R_Puta,L_Thal,R_Thal \
+-i tmp_T1w.nii \
+-o tmp_first/prefix
+
+echo "false" > tmp_first/run_first_all
+chmod 775 tmp_first/run_first_all
+export PATH=$(pwd)/tmp_first:$PATH
+
+labelsgmfirst BIDS/sub-01/anat/sub-01_parc-desikan_indices.nii.gz BIDS/sub-01/anat/sub-01_T1w.nii.gz BIDS/parc-desikan_lookup.txt tmp.mif \
+-first_dir tmp_first/ \
+-force
+
