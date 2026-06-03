@@ -3,5 +3,5 @@
 #   where the input is the concatenation of tissue probability images
 #   and the brain stem is allocated to WM rather than 5th volume
 # Outcome is compared to that generated using a prior software version
-5ttgen deep_atropos 5ttgen/deep_atropos/probability_images.nii.gz tmp.mif -white_stem -force
-testing_diff_image tmp.mif 5ttgen/deep_atropos/fromprob_whitestem.mif.gz
+5ttgen deep_atropos 5ttgen/deep_atropos/probability_images.nii.gz - -white_stem | \
+testing_diff_image - 5ttgen/deep_atropos/fromprob_whitestem.mif.gz
