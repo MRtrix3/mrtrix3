@@ -58,9 +58,6 @@ enum OptimiserAlgoType { BBGD, GD };
 // Command-line choice enumerations.
 // The lowercase enumerator names define the set of valid choices for the
 //   corresponding command-line options; see linear.cpp.
-// TODO Define these as subsets of MR::Registration::Transform::Init::InitType
-//   as is performed in cpp/core/dwi/tractography/mapping/twi_stats.h using:
-//   constexpr magic_enum::customize::customize_t magic_enum::customize::enum_name<>();
 enum class init_translation_t { mass, geometric, none };
 enum class init_rotation_t { search, moments, none };
 
@@ -87,7 +84,8 @@ struct StageSetting {
     if (stage_iterations > 1)
       st += ", iterations: " + str(stage_iterations);
     st += ", optimiser: ";
-    st += MR::join(MR::Enum::lower_case_names<OptimiserAlgoType>(), " ");
+    for (auto &optim : optimisers)
+      st += magic_enum::enum_name(optim) + " ";
     return st;
   }
   size_t stage_iterations, gd_max_iter;

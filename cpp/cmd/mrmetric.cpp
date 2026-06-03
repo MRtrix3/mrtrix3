@@ -199,7 +199,7 @@ void usage() {
     + Argument ("iteration method").type_choice<space_t>()
 
   + Option ("interp", std::string("set the interpolation method to use when reslicing") +
-                      " (choices: nearest, linear, cubic, sinc."
+                      " (choices: " + MR::Enum::join<MR::Interp::interp_type>() + "."
                       " Default: " + MR::Enum::lowercase_name(default_interp) + ").")
     + Argument ("method").type_choice<MR::Interp::interp_type>()
 

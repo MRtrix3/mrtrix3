@@ -24,14 +24,14 @@
 
 namespace MR::DWI::Tractography::Connectome {
 
+// clang-format off
 const App::Option EdgeStatisticOption
-
     = App::Option("stat_edge",
                   "statistic for combining the values from all streamlines in an edge "
                   "into a single scale value for that edge "
-                  "(options are: " +
-                      MR::Enum::join<stat_edge>(",") + "; default=sum)") +
-      App::Argument("statistic").type_choice<stat_edge>();
+                  "(options are: " + MR::Enum::join<stat_edge>() + "; default=sum)")
+    + App::Argument("statistic").type_choice<stat_edge>();
+// clang-format on
 
 template <typename T> bool Matrix<T>::operator()(const Mapped_track_nodepair &in) {
   assert(assignments_lists.empty());

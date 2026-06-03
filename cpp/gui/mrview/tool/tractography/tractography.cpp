@@ -270,6 +270,7 @@ Tractography::Tractography(Dock *parent)
       e.display();
     }
   }
+  // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
   geom_type_combobox->setCurrentIndex(*magic_enum::enum_index(Tractogram::default_tract_geom));
 
   // In the instance where pseudotubes are _not_ the default, enable lighting by default
