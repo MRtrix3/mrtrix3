@@ -145,7 +145,7 @@ def parse_commands (commands_dir, completion_path, commands):
 #                         END INTERNAL FUNCTIONS
 ###########################################################################
 
-  encoding = locale.getdefaultlocale()[1]
+  encoding = locale.getlocale()[1]
 
   for command in sorted(commands):
 
