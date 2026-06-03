@@ -559,6 +559,7 @@ add_bash_binary_test(tcksift/default)
 
 add_bash_binary_test(tcksift2/default)
 
+add_bash_binary_test(tcktransform/no_dropped_vertices)
 add_bash_binary_test(tcktransform/unitwarp)
 
 add_bash_binary_test(tckvalidate/badcount)

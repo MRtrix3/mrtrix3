@@ -1,0 +1,36 @@
+#!/bin/bash
+# In an implementation update of the tcktransform command,
+#   streamline vertices for which no valid warp field information exists
+#   are no longer dropped:
+#   the field itself is instead extrapolated
+#   to yield valid warp information at all input streamline locations
+# To prove that this is the case,
+#   the tractogram is warped using a unit warp field
+#   based on a reduced version of the test data image,
+#   such that input streamlines are guaranteed to extend beyond the scope of that field;
+#   then, the streamlines are compared against the input
+#   (since this is a unit deformation field,
+#   and hence does not move streamline vertices and is trivial to extrapolate)
+# Two different reductions of the warp field are shown:
+#   - Cropping the FoV of the warp field image
+#   - Introducing NaNs into the warp field image
+
+for algo in "maskfilter" "mrgrid"; do
+
+    case "$algo" in
+        maskfilter)
+            mrconvert unit_warp.mif -coord 3 0 -axes 0,1,2 - | \
+            mrcalc - -finite - | \
+            maskfilter - erode -npass 2 - | \
+            mrcalc - unit_warp.mif nan -if - | \
+            tcktransform tracks.tck - tmp.tck -force
+            ;;
+        mrgrid)
+            mrgrid unit_warp.mif crop -uniform 2 - | \
+            tcktransform tracks.tck - tmp.tck -force
+            ;;
+    esac
+
+    testing_diff_tck tracks.tck tmp.tck -distance 1e-4
+
+done

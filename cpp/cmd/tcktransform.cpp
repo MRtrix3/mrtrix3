@@ -403,7 +403,6 @@ public:
 
 protected:
   ProgressBar progress;
-  Tractography::Properties properties;
   Tractography::Writer<value_type> writer;
 };
 
