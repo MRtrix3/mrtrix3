@@ -31,6 +31,7 @@
 
 namespace MR::GUI::MRView::Tool {
 
+// TODO Delete me: replace with magic_enum functionality
 TrackGeometryType geometry_index2type(const int idx) {
   switch (idx) {
   case 0:
@@ -48,6 +49,7 @@ TrackGeometryType geometry_index2type(const int idx) {
 // The TrackGeometryType enumerators are declared in the same order as the
 //   geometry-type combobox entries, so the enumerator's underlying value
 //   doubles as the combobox index.
+// TODO Delete me; use magic_enum, throw Exception if no match
 size_t geometry_string2index(std::string type_str) {
   return static_cast<size_t>(MR::Enum::from_name<TrackGeometryType>(type_str));
 }
@@ -183,6 +185,8 @@ Tractography::Tractography(Dock *parent)
 
   geom_type_combobox = new ComboBoxWithErrorMsg(this, "(variable)");
   geom_type_combobox->setToolTip(tr("Set the tractogram geometry type"));
+  // TODO Guarantee that these are inserted in the same order as the enum
+  //   by looping over the enum itself
   geom_type_combobox->addItem("Pseudotubes");
   geom_type_combobox->addItem("Lines");
   geom_type_combobox->addItem("Points");
@@ -277,19 +281,21 @@ Tractography::Tractography(Dock *parent)
   connect(action, SIGNAL(triggered()), this, SLOT(colour_by_scalar_file_slot()));
   track_option_menu->addAction(action);
 
+  Tractogram::default_tract_geom = TrackGeometryType::Pseudotubes;
   // CONF option: MRViewDefaultTractGeomType
   // CONF default: Pseudotubes
   // CONF The default geometry type used to render tractograms.
   // CONF Options are Pseudotubes, Lines or Points
-  const std::string default_geom_type =
-      File::Config::get("MRViewDefaultTractGeomType", MR::Enum::lowercase_name(TrackGeometryType::Pseudotubes));
-  try {
-    const size_t default_geom_index = geometry_string2index(default_geom_type);
-    Tractogram::default_tract_geom = geometry_index2type(default_geom_index);
-    geom_type_combobox->setCurrentIndex(default_geom_index);
-  } catch (Exception &e) {
-    e.display();
+  auto default_geom_type_config = File::Config::get("MRViewDefaultTractGeomType");
+  if (default_geom_type_config.has_value()) {
+    try {
+      const size_t default_geom_index = geometry_string2index(default_geom_type_config.value());
+      Tractogram::default_tract_geom = geometry_index2type(default_geom_index);
+    } catch (Exception &e) {
+      e.display();
+    }
   }
+  geom_type_combobox->setCurrentIndex(*magic_enum::enum_index(Tractogram::default_tract_geom));
 
   // In the instance where pseudotubes are _not_ the default, enable lighting by default
   if (Tractogram::default_tract_geom != TrackGeometryType::Pseudotubes) {

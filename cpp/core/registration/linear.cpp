@@ -23,8 +23,6 @@ namespace MR::Registration {
 
 using namespace App;
 
-const std::vector<std::string> optim_algo_names = {"BBGD", "GD"};
-
 // define parameters of initialisation methods used for both, rigid and affine registration
 void parse_general_options(Registration::Linear &registration) {
   if (!get_options("init_translation.unmasked1").empty())
@@ -71,40 +69,14 @@ void parse_general_options(Registration::Linear &registration) {
   }
 
   opt = get_options("linstage.optimiser.default");
-  if (!opt.empty()) {
-    switch (MR::Enum::from_name<optimiser_choice_t>(opt[0][0])) {
-    case optimiser_choice_t::bbgd:
-      registration.set_stage_optimiser_default(Registration::OptimiserAlgoType::bbgd);
-      break;
-    case optimiser_choice_t::gd:
-      registration.set_stage_optimiser_default(Registration::OptimiserAlgoType::gd);
-      break;
-    }
-  }
-
+  if (!opt.empty())
+    registration.set_stage_optimiser_default(MR::Enum::from_name<OptimiserAlgoType>(opt[0][0]));
   opt = get_options("linstage.optimiser.first");
-  if (!opt.empty()) {
-    switch (MR::Enum::from_name<optimiser_choice_t>(opt[0][0])) {
-    case optimiser_choice_t::bbgd:
-      registration.set_stage_optimiser_first(Registration::OptimiserAlgoType::bbgd);
-      break;
-    case optimiser_choice_t::gd:
-      registration.set_stage_optimiser_first(Registration::OptimiserAlgoType::gd);
-      break;
-    }
-  }
-
+  if (!opt.empty())
+    registration.set_stage_optimiser_first(MR::Enum::from_name<OptimiserAlgoType>(opt[0][0]));
   opt = get_options("linstage.optimiser.last");
-  if (!opt.empty()) {
-    switch (MR::Enum::from_name<optimiser_choice_t>(opt[0][0])) {
-    case optimiser_choice_t::bbgd:
-      registration.set_stage_optimiser_last(Registration::OptimiserAlgoType::bbgd);
-      break;
-    case optimiser_choice_t::gd:
-      registration.set_stage_optimiser_last(Registration::OptimiserAlgoType::gd);
-      break;
-    }
-  }
+  if (!opt.empty())
+    registration.set_stage_optimiser_last(MR::Enum::from_name<OptimiserAlgoType>(opt[0][0]));
 
   opt = get_options("linstage.iterations");
   if (!opt.empty()) {
@@ -210,26 +182,26 @@ const OptionGroup lin_stage_options =
     + Option("linstage.optimiser.first",
              "Cost function optimisation algorithm to use at first iteration of all stages."
              " Valid choices:"
-             " bbgd (Barzilai-Borwein gradient descent);"
-             " gd (simple gradient descent)."
-             " (Default: bbgd)")
-      + Argument("algorithm").type_choice<optimiser_choice_t>()
+             " BBGD (Barzilai-Borwein gradient descent);"
+             " GD (simple gradient descent)."
+             " (Default: BBGD)")
+      + Argument("algorithm").type_choice<OptimiserAlgoType>()
     + Option("linstage.optimiser.last",
              "Cost function optimisation algorithm to use at last iteration of all stages"
              " (if there are more than one)."
              " Valid choices:"
-             " bbgd (Barzilai-Borwein gradient descent);"
-             " gd (simple gradient descent)."
-             " (Default: bbgd)")
-      + Argument("algorithm").type_choice<optimiser_choice_t>()
+             " BBGD (Barzilai-Borwein gradient descent);"
+             " GD (simple gradient descent)."
+             " (Default: BBGD)")
+      + Argument("algorithm").type_choice<OptimiserAlgoType>()
     + Option("linstage.optimiser.default",
              "Cost function optimisation algorithm to use at any stage iteration"
              " other than first or last iteration."
              " Valid choices:"
-             " bbgd (Barzilai-Borwein gradient descent);"
-             " gd (simple gradient descent)."
-             " (Default: bbgd)")
-      + Argument("algorithm").type_choice<optimiser_choice_t>()
+             " BBGD (Barzilai-Borwein gradient descent);"
+             " GD (simple gradient descent)."
+             " (Default: BBGD)")
+      + Argument("algorithm").type_choice<OptimiserAlgoType>()
 
     + Option("linstage.diagnostics.dir",
              "generate diagnostics images after every registration stage")

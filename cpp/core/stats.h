@@ -69,31 +69,32 @@ public:
       for (size_t n = 0; n < fields.size(); ++n) {
         switch (fields[n]) {
         case field_t::MEAN:
-          std::cout << str(mean) << " ";
+          std::cout << str(mean);
           break;
         case field_t::MEDIAN:
-          std::cout << (values.empty() ? "N/A" : str(Math::median(values))) << " ";
+          std::cout << (values.empty() ? "N/A" : str(Math::median(values)));
           break;
         case field_t::STD:
-          std::cout << (count > 1 ? str(std) : "N/A") << " ";
+          std::cout << (count > 1 ? str(std) : "N/A");
           break;
         case field_t::STD_RV:
-          std::cout << (count > 1 ? str(std_rv) : "N/A") << " ";
+          std::cout << (count > 1 ? str(std_rv) : "N/A");
           break;
         case field_t::IQR:
-          std::cout << (!values.empty() ? str(Math::quantile(values, 0.75) - Math::quantile(values, 0.25)) : "N/A")
-                    << " ";
+          std::cout << (!values.empty() ? str(Math::quantile(values, 0.75) - Math::quantile(values, 0.25)) : "N/A");
           break;
         case field_t::MIN:
-          std::cout << str(min) << " ";
+          std::cout << str(min);
           break;
         case field_t::MAX:
-          std::cout << str(max) << " ";
+          std::cout << str(max);
           break;
         case field_t::COUNT:
-          std::cout << count << " ";
+          std::cout << count;
           break;
         }
+        if (n < fields.size() - 1)
+          std::cout << " ";
       }
       std::cout << "\n";
 

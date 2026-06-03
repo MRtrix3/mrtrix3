@@ -14,6 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <optional>
+
 #include "app.h"
 #include "debug.h"
 #include "env.h"
@@ -80,9 +82,9 @@ void Config::init() {
   Header::do_realign_transform = get_bool("RealignTransform", true);
 }
 
-std::string Config::get(std::string_view key) {
+std::optional<std::string> Config::get(std::string_view key) {
   const KeyValues::const_iterator i = config.find(std::string(key));
-  return (i != config.end() ? i->second : "");
+  return (i != config.end() ? std::optional<std::string>(i->second) : std::nullopt);
 }
 
 std::string Config::get(std::string_view key, std::string_view default_value) {
@@ -91,54 +93,55 @@ std::string Config::get(std::string_view key, std::string_view default_value) {
 }
 
 bool Config::get_bool(std::string_view key, bool default_value) {
-  const std::string value = get(std::string(key));
-  if (value.empty())
+  const auto from_config = get(std::string(key));
+  if (!from_config.has_value())
     return default_value;
   try {
-    return to<bool>(value);
+    return to<bool>(from_config.value());
   } catch (...) {
-    WARN("malformed boolean entry \"" + value + "\" for key \"" + key + "\" in configuration file - ignored");
+    WARN("malformed boolean entry \"" + from_config.value() + "\" for key \"" + key + "\"" + //
+         " in configuration file - ignored");
     return default_value;
   }
 }
 
 int Config::get_int(std::string_view key, int default_value) {
-  const std::string value = get(std::string(key));
-  if (value.empty())
+  const auto from_config = get(std::string(key));
+  if (!from_config.has_value())
     return default_value;
   try {
-    return to<int>(value);
+    return to<int>(from_config.value());
   } catch (...) {
-    WARN("malformed integer entry \"" + value + "\" for key \"" + key + "\" in configuration file - ignored");
+    WARN("malformed integer entry \"" + from_config.value() + "\" for key \"" + key + "\"" + //
+         " in configuration file - ignored");
     return default_value;
   }
 }
 
 float Config::get_float(std::string_view key, float default_value) {
-  const std::string value = get(std::string(key));
-  if (value.empty())
+  const auto from_config = get(std::string(key));
+  if (!from_config.has_value())
     return default_value;
   try {
-    return to<float>(value);
+    return to<float>(from_config.value());
   } catch (...) {
-    WARN("malformed floating-point entry \"" + value + "\" for key \"" + key + "\" in configuration file - ignored");
+    WARN("malformed floating-point entry \"" + from_config.value() + "\" for key \"" + key + "\"" + //
+         " in configuration file - ignored");
     return default_value;
   }
 }
 
 Eigen::Array3f Config::get_RGB(std::string_view key, const Eigen::Array3f &default_value) {
-  const std::string value = get(std::string(key));
-  if (!value.empty()) {
-    try {
-      std::vector<default_type> V(parse_floats(value));
-      if (V.size() < 3)
-        throw Exception("malformed RGB entry \"" + value + "\" for key \"" + key +
-                        "\" in configuration file - ignored");
-      return {static_cast<float>(V[0]), static_cast<float>(V[1]), static_cast<float>(V[2])};
-    } catch (Exception) {
-      return default_value;
-    }
-  } else {
+  const auto from_config = get(std::string(key));
+  if (!from_config.has_value())
+    return default_value;
+  try {
+    std::vector<default_type> V(parse_floats(from_config.value()));
+    if (V.size() < 3)
+      throw Exception("malformed RGB entry \"" + from_config.value() + "\" for key \"" + key + "\"" + //
+                      "in configuration file - ignored");
+    return {static_cast<float>(V[0]), static_cast<float>(V[1]), static_cast<float>(V[2])};
+  } catch (Exception) {
     return default_value;
   }
 }

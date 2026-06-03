@@ -30,7 +30,6 @@ const std::unordered_map<contrast_t, Strings> contrast_names{
     {contrast_t::CURVATURE, {"curvature", "curvature}"}},
     {contrast_t::VECTOR_FILE, {"vector_file", "external-file-based"}}};
 
-// TODO Remove "V_" prefix
 const std::unordered_map<vox_stat_t, std::string> voxel_statistic_names{
     {vox_stat_t::SUM, "sum"}, {vox_stat_t::MIN, "mininum"}, {vox_stat_t::MEAN, "mean"}, {vox_stat_t::MAX, "maximum"}};
 
