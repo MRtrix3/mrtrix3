@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "algo/loop.h"
+#include "algo/threaded_copy.h"
 #include "command.h"
 #include "enum.h"
 #include "fixel/helpers.h"
@@ -287,7 +288,10 @@ void run() {
   DEBUG("Number of subjects (n): " + str(nsubjects));
   DEBUG("Number of measurements per subject (k): " + str(nmeasurements));
 
-  Image<float> out_image = Image<float>::create(argument[3], out_header);
+  // The per-element ICC is computed into a scratch buffer first, so that the
+  //   whole-image aggregate ICC can be recorded in the header before the buffer
+  //   is exported to the filesystem
+  Image<float> icc_image = Image<float>::scratch(out_header, "per-element ICC");
 
   // Compute the chosen ICC form independently for each image element using ANOVA mean squares;
   //   input image values are accessed on demand at the shared grid position
@@ -297,33 +301,24 @@ void run() {
   const double df_cols = k - 1.0;
   const double df_within = n * (k - 1.0);
   const double df_error = df_rows * df_cols;
-  Eigen::MatrixXd table(nsubjects, nmeasurements);
-  for (auto l = Loop("Computing per-element " + MR::Enum::lowercase_name(form), out_image)(out_image); l; ++l) {
-    for (auto &image : images)
-      assign_pos_of(out_image).to(image);
-    for (size_t s = 0; s != nsubjects; ++s)
-      for (size_t m = 0; m != nmeasurements; ++m)
-        table(s, m) = images[layout(s, m)].value();
 
-    const double grand_mean = table.mean();
-    const Eigen::VectorXd row_means = table.rowwise().mean();
-    const double ss_rows = k * (row_means.array() - grand_mean).square().sum();
-    const double ss_total = (table.array() - grand_mean).square().sum();
-    const double ms_rows = ss_rows / df_rows;
-
+  // Evaluate the chosen ICC form from a set of ANOVA mean squares.
+  //   Every form is a ratio of linear combinations of the mean squares,
+  //   with coefficients that depend only on the (element-invariant) design
+  //   dimensions n and k; the identical expression is therefore applied both
+  //   per-element and, after the loop, to the variance pooled across all elements
+  auto icc_from_ms = [&](const double ms_rows,   //
+                         const double ms_within, //
+                         const double ms_cols,   //
+                         const double ms_error) -> double {
     double numerator = 0.0;
     double denominator = 0.0;
     if (one_way) {
       // One-way random effects: only between- and within-subject variation
-      const double ms_within = (ss_total - ss_rows) / df_within;
       numerator = ms_rows - ms_within;
       denominator = (form == form_t::ICC_1_1) ? (ms_rows + df_cols * ms_within) : ms_rows;
     } else {
       // Two-way models: partition residual from the measurement (column) effect
-      const Eigen::VectorXd col_means = table.colwise().mean();
-      const double ss_cols = n * (col_means.array() - grand_mean).square().sum();
-      const double ms_cols = ss_cols / df_cols;
-      const double ms_error = (ss_total - ss_rows - ss_cols) / df_error;
       numerator = ms_rows - ms_error;
       switch (form) {
       case form_t::ICC_2_1:
@@ -342,8 +337,63 @@ void run() {
         assert(false);
       }
     }
+    return (std::fabs(denominator) > 0.0) ? (numerator / denominator) : 0.0;
+  };
 
-    const double icc = (std::fabs(denominator) > 0.0) ? numerator / denominator : 0.0;
-    out_image.value() = static_cast<float>(icc);
+  // Pool sums of squares across all elements to form a whole-image aggregate ICC.
+  //   Constant (zero-variance) elements such as image background contribute
+  //   nothing to these sums, and so drop out of the aggregate without masking
+  double sum_ss_rows = 0.0;
+  double sum_ss_within = 0.0;
+  double sum_ss_cols = 0.0;
+  double sum_ss_error = 0.0;
+
+  Eigen::MatrixXd table(nsubjects, nmeasurements);
+  for (auto l = Loop("Computing per-element " + MR::Enum::lowercase_name(form), icc_image)(icc_image); l; ++l) {
+    for (auto &image : images)
+      assign_pos_of(icc_image).to(image);
+    for (size_t s = 0; s != nsubjects; ++s)
+      for (size_t m = 0; m != nmeasurements; ++m)
+        table(s, m) = images[layout(s, m)].value();
+
+    const double grand_mean = table.mean();
+    const Eigen::VectorXd row_means = table.rowwise().mean();
+    const double ss_rows = k * (row_means.array() - grand_mean).square().sum();
+    const double ss_total = (table.array() - grand_mean).square().sum();
+
+    double ss_within = 0.0;
+    double ss_cols = 0.0;
+    double ss_error = 0.0;
+    double icc = 0.0;
+    if (one_way) {
+      ss_within = ss_total - ss_rows;
+      icc = icc_from_ms(ss_rows / df_rows, ss_within / df_within, 0.0, 0.0);
+    } else {
+      const Eigen::VectorXd col_means = table.colwise().mean();
+      ss_cols = n * (col_means.array() - grand_mean).square().sum();
+      ss_error = ss_total - ss_rows - ss_cols;
+      icc = icc_from_ms(ss_rows / df_rows, 0.0, ss_cols / df_cols, ss_error / df_error);
+    }
+    icc_image.value() = static_cast<float>(icc);
+
+    sum_ss_rows += ss_rows;
+    sum_ss_within += ss_within;
+    sum_ss_cols += ss_cols;
+    sum_ss_error += ss_error;
   }
+
+  // Whole-image aggregate: evaluate the same ICC form on the pooled sums of squares.
+  //   As numerator and denominator are each linear in the mean squares, this equals
+  //   the denominator-weighted (i.e. variance-weighted) mean of the per-element ICCs
+  const double aggregate_icc = icc_from_ms(sum_ss_rows / df_rows,     //
+                                           sum_ss_within / df_within, //
+                                           sum_ss_cols / df_cols,     //
+                                           sum_ss_error / df_error);
+  out_header.keyval()["icc_form"] = MR::Enum::lowercase_name(form);
+  out_header.keyval()["icc_aggregate"] = str(aggregate_icc);
+  CONSOLE("Whole-image aggregate " + MR::Enum::lowercase_name(form) + " = " + str(aggregate_icc));
+
+  // Export the scratch buffer now that the aggregate has been stored in the header
+  Image<float> out_image = Image<float>::create(argument[3], out_header);
+  threaded_copy(icc_image, out_image);
 }
