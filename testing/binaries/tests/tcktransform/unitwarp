@@ -1,9 +1,14 @@
 #!/bin/bash
-# Basic test of command where the input non-linear transformation is a unit warp
-# The output of the command however is not compared to the niput tractogram,
-#   as one might expect given that a unit warp should not deform streamlines;
-#   this is because the input streamlines reach the outer edge of the image FoV,
-#   and therefore the unit warp cannot be interpolated beyond that edge
-# THe output is therefore instead compared to that generated using a prior software version
-tcktransform tracks.tck unit_warp.mif tmp.tck -force
-testing_diff_tck tmp.tck tcktransform/out.tck -distance 1e-4
+# A unit (identity) warp must leave streamlines unchanged, including the portions that
+#   extend beyond the field of view of the warp image.
+# Earlier versions truncated streamlines at the FoV edge, as the warp could not be
+#   interpolated beyond it; the output was therefore compared against that of a prior
+#   software version rather than against the input tractogram.
+# The command now extrapolates the warp field (here exactly affine) beyond the input data,
+#   growing its working grid on demand, so an identity warp reproduces the input
+#   tractogram in full.
+# Transforming the beyond-FoV vertices relies on that extrapolation, so the command must
+#   also warn the user that some transformation was based on extrapolation beyond the input.
+tcktransform tracks.tck unit_warp.mif tmp.tck -force 2> tmp.log
+testing_diff_tck tmp.tck tracks.tck -distance 1e-4
+grep -q "extrapolation of the non-linear warp field beyond the input data" tmp.log
