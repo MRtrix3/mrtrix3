@@ -26,16 +26,16 @@
 import getopt, sys, os, re, subprocess, locale
 
 def usage():
-  print ('''
-Usage:  %s -m [dir_path] -c [file_path]\n
+  print (f'''
+Usage:  {sys.argv[0]} -m [dir_path] -c [file_path]\n
         -m, --mrtrix_commands_dir [dir path]: The directory where the mrtrix executable commands reside.
         -c, --completion_path [file path]: The generated bash completion file path.
-''' % (sys.argv[0]))
+''')
 
 
 def main(argv):
   try:
-    opts, args = getopt.getopt(argv, "m:c:", ["mrtrix_commands_dir=", "completion_path="])
+    opts, _ = getopt.getopt(argv, "m:c:", ["mrtrix_commands_dir=", "completion_path="])
     if not opts or len(opts) != 2:
       raise getopt.GetoptError('Incorrect number of arguments')
   except getopt.GetoptError:
@@ -74,7 +74,9 @@ def main(argv):
 
 def parse_commands (commands_dir, completion_path, commands):
 
-  completion_file = open (completion_path, 'w+')
+  # Handle is referenced throughout the nested helper closures below and the
+  #   verbatim shell here-strings, so a 'with' block is not used here.
+  completion_file = open (completion_path, 'w+', encoding='utf-8') # pylint: disable=consider-using-with
 
 ###########################################################################
 #                         INNER PARSE FUNCTIONS
@@ -88,21 +90,23 @@ def parse_commands (commands_dir, completion_path, commands):
 
   def flush_option_arg ():
     if not current_option:
-      print ('\t_%s_arg_%s()' % (command, current_num_of_option_args), file = completion_file)
+      print (f'\t_{command}_arg_{current_num_of_option_args}()', file = completion_file)
     else:
-      print ('\t_%s_%s_arg_%s()' % (command, current_option, current_num_of_option_args), file = completion_file)
+      print (f'\t_{command}_{current_option}_arg_{current_num_of_option_args}()', file = completion_file)
 
     print ('\t{ echo "%s"; }\n' % (current_arg_choices) , file = completion_file)
 
-  def flush_option_arg_allows_multiple ():
+  def flush_option_arg_multiple ():
     if not current_option:
-      print ('\t_%s_arg_%s_allows_multiple()' %  (command, current_num_of_option_args), file = completion_file)
+      print (f'\t_{command}_arg_{current_num_of_option_args}_allows_multiple()', file = completion_file)
     else:
-      print ('\t_%s_%s_arg_%s_allows_multiple()' % (command, current_option, current_num_of_option_args), file = completion_file)
+      print (f'\t_{command}_{current_option}_arg_{current_num_of_option_args}_allows_multiple()', file = completion_file)
 
     print ('\t{ echo %s; }\n' % (current_arg_allows_multiple), file = completion_file)
 
-  def parse_option_arg_choices (arg_type, choices = []):
+  def parse_option_arg_choices (arg_type, choices = None):
+    if choices is None:
+      choices = []
     arg_choices = ""
 
     if arg_type == 'CHOICE':
@@ -111,13 +115,12 @@ def parse_commands (commands_dir, completion_path, commands):
         # End of choice lists are generally delimited by -1
         # however tckgen choices are delimited by 2 (?)
         if choice in ['-1', '2']:
-          break;
-        else:
-          arg_choices +=  " " + choice
+          break
+        arg_choices +=  " " + choice
     elif arg_type == 'IMAGEIN':
       arg_choices ='`eval ls $1*.{mih,mif,nii,dcm,hdr,mgh,nii.gz,mif.gz} 2> /dev/null | tr "\n" " "``eval ls -d $1*/ 2> /dev/null | tr "\n" " "`'
     elif arg_type == 'FILEIN':
-      arg_choices ='`eval ls "$1*" 2> /dev/null | grep -E "$1*\.[^[:space:]]+"``eval ls -d $1*/ 2> /dev/null | tr "\n" " "`'
+      arg_choices ='`eval ls "$1*" 2> /dev/null | grep -E "$1*\\.[^[:space:]]+"``eval ls -d $1*/ 2> /dev/null | tr "\n" " "`'
     elif arg_type == 'TRACKSIN':
       arg_choices ='`eval ls $1*.tck 2> /dev/null | tr "\n" " "``eval ls -d $1*/ 2> /dev/null | tr "\n" " "`'
     #elif arg_type in ['FLOAT', 'INT']:
@@ -133,9 +136,9 @@ def parse_commands (commands_dir, completion_path, commands):
 ###########################################################################
   def is_script (command):
     textchars = bytearray({7,8,9,10,12,13,27} | set(range(0x20, 0x100)) - {0x7f})
-    with open(os.path.join(commands_dir, command), "rb") as f:
-      bytes = f.read(1024)
-    return not bytes.translate(None, textchars)
+    with open(os.path.join(commands_dir, command), "rb") as fileobj:
+      contents = fileobj.read(1024)
+    return not contents.translate(None, textchars)
 
 
 ###########################################################################
@@ -153,14 +156,12 @@ def parse_commands (commands_dir, completion_path, commands):
     double_dash_options = ""
     current_option = ""
     current_num_of_option_args = 0
-    current_arg = ""
-    current_arg_optional = -1
     current_arg_allows_multiple = -1
     current_arg_type = ""
     current_arg_choices = ""
 
     try:
-      process = subprocess.Popen ([ os.path.join( commands_dir, command ), '__print_full_usage__'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+      process = subprocess.Popen ([ os.path.join( commands_dir, command ), '__print_full_usage__'], stdout=subprocess.PIPE, stderr=subprocess.PIPE) # pylint: disable=consider-using-with
 
       print ('''
 _%s()
@@ -175,19 +176,16 @@ _%s()
 
         if words[0] == 'OPTION':
           flush_option_num_args ()
-          current_arg = ""
           current_arg_type = ""
           current_option = words[1]
           single_dash_options += ' -' + current_option
           double_dash_options += ' --' + current_option
           current_num_of_option_args = 0
         elif words[0] == 'ARGUMENT':
-          current_arg = words[1]
-          current_arg_optional = words[2]
           current_arg_allows_multiple = words[3]
           current_arg_type = words[4].rstrip ()
           current_arg_choices = parse_option_arg_choices (current_arg_type, words[5:])
-          flush_option_arg_allows_multiple ()
+          flush_option_arg_multiple ()
           flush_option_arg ()
           current_num_of_option_args += 1
 
@@ -203,7 +201,7 @@ _%s()
 
   COMPREPLY=();
   cur="${COMP_WORDS[COMP_CWORD]}";
-  cur_filtered=`echo "${COMP_WORDS[COMP_CWORD]}" | sed 's/\..*$//g'`;
+  cur_filtered=`echo "${COMP_WORDS[COMP_CWORD]}" | sed 's/\\..*$//g'`;
 
   if [[ "$cur" == --* ]]; then
     COMPREPLY=( $( compgen -W "%s" -- "$cur" ) );
@@ -270,7 +268,7 @@ _%s()
 }
 complete -F _%s %s \n''' % (double_dash_options, single_dash_options, command, command, command, command, command, command, command, command, command), file = completion_file)
 
-    except:
+    except Exception: # pylint: disable=broad-except
       pass
 
   completion_file.close ()
