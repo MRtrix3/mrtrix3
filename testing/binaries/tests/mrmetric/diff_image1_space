@@ -1,0 +1,7 @@
+#!/bin/bash
+# Verify the diff metric computed in average scanner space
+
+mrtransform template.mif.gz -linear moving2template.txt -inverse tmp_template.mif -force
+rm -f tmp.txt
+mrmetric moving.mif.gz tmp_template.mif -space image1 > tmp.txt
+testing_diff_matrix tmp.txt mrmetric/diff_image1.txt -frac 1e-5

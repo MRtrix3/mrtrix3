@@ -1,0 +1,8 @@
+#!/bin/bash
+# Verify default operation of "maskdump",
+#   printing the coordinates of non-zero voxels to stdout.
+# The output is verified against reference data generated using a prior software version.
+
+rm -f tmp.txt
+maskdump mask.mif > tmp.txt
+testing_diff_matrix tmp.txt maskdump/coords.txt

@@ -1,0 +1,13 @@
+#!/bin/bash
+# Verify "invert" operation
+# Properties validated:
+#   1. Double-inversion recovers the original transform
+#   2. Matches that generated using a prior software version
+
+transformcalc moving2template.txt invert tmp_inv.txt -force
+
+# Double-inversion must reproduce the original transform
+transformcalc tmp_inv.txt invert tmp_inv_inv.txt -force
+testing_diff_matrix tmp_inv_inv.txt moving2template.txt -abs 1e-6
+
+testing_diff_matrix tmp_inv.txt transformcalc/invert.txt -abs 1e-5

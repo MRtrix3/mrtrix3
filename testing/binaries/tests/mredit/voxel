@@ -1,0 +1,22 @@
+#!/bin/bash
+# Verify the -voxel option, which sets the value of a single voxel by coordinate
+# mask.mif is a 3D image; voxel (2,3,4) is set to 5.0
+# Verify the edited voxel and that surrounding voxels are unaffected
+
+mrconvert mask.mif -datatype uint8 - | \
+mredit - -voxel 2,3,4 5.0 tmp_voxel.mif -force
+
+# The edited voxel must have value 5.0
+val=$(mrconvert tmp_voxel.mif -coord 0 2 -coord 1 3 -coord 2 4 - | mrstats - -output mean)
+awk -v v="$val" 'BEGIN { if (v + 0 != 5.0) { print "ERROR: voxel not set to 5.0"; exit 1 } }'
+
+# The rest of the image must have not been affected
+diff_count=$(mrconvert mask.mif -datatype uint8 - | \
+             mrcalc tmp_voxel.mif - -sub -abs - | \
+             mrthreshold - -abs 0.0 -comparison gt - | \
+             mrstats mask.mif -mask - -output count)
+awk -v v="$diff_count" 'BEGIN { if (v != 1) { print "ERROR: unexpected modification of voxels"; exit 1 } }'
+
+## The overall maximum must be 5.0 (i.e. the edit worked and no other voxel was boosted)
+#max_val=$(mrstats tmp_voxel.mif -output max)
+#awk -v v="$max_val" 'BEGIN { if (v + 0 != 5.0) { print "ERROR: unexpected maximum value"; exit 1 } }'

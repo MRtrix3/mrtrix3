@@ -1,0 +1,6 @@
+#!/bin/bash
+# Verify conversion from deformation field to displacement field
+# Ensure that output matches that generated using a prior software version
+
+warpconvert warp.mif deformation2displacement - | \
+testing_diff_image - warpconvert/displacement.mif -abs 1e-5

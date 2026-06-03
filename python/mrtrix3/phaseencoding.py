@@ -116,7 +116,7 @@ def save_table(filename, scheme, **kwargs): #pylint: disable=unused-variable
     elif isinstance(header, list):
       header = { 'comments' : '\n'.join(str(entry) for entry in header) }
     elif isinstance(header, dict):
-      header = dict((key, str(value)) for key, value in header.items())
+      header = {key: str(value) for key, value in header.items()}
     else:
       raise TypeError('Unrecognised input to matrix.save_numeric() using "header=" option')
   else:

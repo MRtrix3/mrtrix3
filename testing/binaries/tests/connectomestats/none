@@ -1,0 +1,42 @@
+#!/bin/bash
+# Test connectomestats with the "none" enhancement algorithm (no clustering):
+#   construct synthetic connectome data for multiple subjects (two groups),
+#   using the tck2connectome reference output as the base connectome structure.
+# A design matrix (two-group comparison) and contrast matrix are created in-place.
+#
+# REFERENCE DATA NOTE: No reference output files exist for this test.
+#   To generate reference data, run the command and inspect the output CSV files.
+#   A future regression test should compare against stored reference matrices.
+rm -rf tmp_cs_in/
+mkdir tmp_cs_in/
+
+# Generate 6 subject connectome files (3 per group) based on the reference connectome.
+# Group 1: slightly elevated values; Group 2: base values.
+# Connectome is symmetric and 4x4 (matching tck2connectome/out.csv).
+for i in 1 2 3; do
+    printf "0 3500 0 0\n3500 0 0 0\n0 0 0 1700\n0 0 1700 0\n" > tmp_cs_in/sub0${i}.csv
+done
+for i in 4 5 6; do
+    printf "0 3200 0 0\n3200 0 0 0\n0 0 0 1500\n0 0 1500 0\n" > tmp_cs_in/sub0${i}.csv
+done
+
+# Subject list
+printf "sub01.csv\nsub02.csv\nsub03.csv\nsub04.csv\nsub05.csv\nsub06.csv\n" > tmp_cs_in/subjects.txt
+
+# Design matrix: two-group comparison (intercept + group membership)
+printf "1 1\n1 1\n1 1\n1 -1\n1 -1\n1 -1\n" > tmp_cs_in/design.txt
+
+# Contrast matrix: test for group difference
+printf "0 1\n" > tmp_cs_in/contrast.txt
+
+rm -rf tmp_cs_out/
+connectomestats tmp_cs_in/subjects.txt none tmp_cs_in/design.txt tmp_cs_out/ \
+    -ttests tmp_cs_in/contrast.txt \
+    -notest \
+    -force
+
+# Verify expected outputs were produced
+test -f tmp_cs_out/tvalue.csv
+test -f tmp_cs_out/Zstat.csv
+test -f tmp_cs_out/beta_0.csv
+test -f tmp_cs_out/beta_1.csv

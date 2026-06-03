@@ -1,0 +1,7 @@
+#!/bin/bash
+# Verify smooth filter with custom spatial extent
+# Apply smoothing with a non-default spatial extent;
+#   make sure the result matches that generated using a prior software version
+
+meshfilter meshconvert/in_ascii.vtk smooth tmp.vtk -smooth_spatial 2.0 -force
+testing_diff_mesh tmp.vtk meshfilter/smooth_spatial.vtk 0.001

@@ -1,0 +1,8 @@
+#!/bin/bash
+# Verify default operation of "mrdump",
+#   printing all voxel values of an image to stdout.
+# The output is verified against reference data generated using a prior software version.
+
+rm -f tmp.txt
+mrdump dwi.mif > tmp.txt
+testing_diff_matrix tmp.txt mrdump/values.txt -frac 1e-5

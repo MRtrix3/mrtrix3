@@ -1,0 +1,10 @@
+#!/bin/bash
+# Verify inversion of a deformation field
+
+# Ensure that inverting a non-trivial warp field
+#   produces the same result as that of a prior software version
+warpinvert warp.mif - | \
+testing_diff_image - warpinvert/deformation.mif.gz -abs 1e-5
+
+warpinvert warp.mif -template template.mif.gz - | \
+testing_diff_image - warpinvert/deformation_template.mif.gz -abs 1e-5

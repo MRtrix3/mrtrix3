@@ -17,6 +17,7 @@
 #include <array>
 
 #include "algo/loop.h"
+#include "app.h"
 #include "command.h"
 #include "dwi/directions/predefined.h"
 #include "file/matrix.h"
@@ -318,7 +319,7 @@ void run() {
   if (!true_peaks.empty())
     npeaks = true_peaks.size();
 
-  value_type threshold = get_option_value("threshold", -InfF);
+  const value_type threshold = get_option_value("threshold", value_type(0));
 
   auto header = Header(SH_data);
   header.datatype() = DataType::Float32;

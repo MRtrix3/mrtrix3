@@ -107,7 +107,11 @@ public:
 class Amp2SH {
 public:
   Amp2SH(const Amp2SHCommon &common)
-      : C(common), a(common.amp2sh.cols()), s(common.amp2sh.rows()), c(common.amp2sh.rows()) {}
+      : C(common),
+        a(common.amp2sh.cols()),
+        s(common.amp2sh.rows()),
+        c(common.amp2sh.rows()),
+        Q(common.amp2sh.rows(), common.amp2sh.rows()) {}
 
   template <class SHImageType, class AmpImageType> void operator()(SHImageType &SH, AmpImageType &amp) {
     get_amps(amp);
@@ -121,19 +125,19 @@ public:
     w = Eigen::VectorXd::Ones(C.sh2amp.rows());
 
     get_amps(amp);
-    c = C.amp2sh * a;
+    c.noalias() = C.amp2sh * a;
 
     for (size_t iter = 0; iter < 20; ++iter) {
       sh2amp = C.sh2amp;
       if (get_rician_bias(sh2amp, noise.value()))
         break;
-      for (ssize_t n = 0; n < sh2amp.rows(); ++n)
+      for (Eigen::Index n = 0; n < C.sh2amp.rows(); ++n)
         sh2amp.row(n).array() *= w[n];
 
       s.noalias() = sh2amp.transpose() * ap;
       Q.triangularView<Eigen::Lower>() = sh2amp.transpose() * sh2amp;
       llt.compute(Q);
-      c = llt.solve(s);
+      c.noalias() = llt.solve(s);
     }
 
     write_SH(SH);
@@ -167,7 +171,7 @@ protected:
   }
 
   bool get_rician_bias(const Eigen::MatrixXd &sh2amp, default_type noise) {
-    ap = sh2amp * c;
+    ap.noalias() = sh2amp * c;
     default_type norm_diff = 0.0;
     default_type norm_amp = 0.0;
     for (ssize_t n = 0; n < ap.size(); ++n) {

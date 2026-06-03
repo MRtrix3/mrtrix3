@@ -1,0 +1,15 @@
+#!/bin/bash
+# Verify that the -mask option correctly restricts which voxels are dumped.
+# The number of values produced with a mask applied must be less than without.
+# The masked values are verified against reference data generated using a prior software version.
+
+rm -f tmp_all.txt tmp_masked.txt
+mrdump dwi.mif > tmp_all.txt
+mrdump dwi.mif -mask mask.mif > tmp_masked.txt
+
+# Masked output must contain fewer values than unmasked
+all_count=$(wc -l < tmp_all.txt)
+masked_count=$(wc -l < tmp_masked.txt)
+[ "$masked_count" -lt "$all_count" ]
+
+testing_diff_matrix tmp_masked.txt mrdump/masked_values.txt -frac 1e-5
