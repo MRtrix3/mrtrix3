@@ -1,0 +1,11 @@
+#!/bin/bash
+# Inverting an identity displacement field (zero offsets everywhere) must round-trip to itself.
+# Exercises warpinvert's -displacement path, which converts the input to a deformation field,
+# inverts it via the imputation-aware Newton search (Interp::Warp), then converts the inverse
+# back to a displacement field. A zero displacement field represents the identity map on any
+# grid, so its inverse is again the zero field; the 3x3x3 crop keeps the dense halo imputation
+# of Interp::Warp small.
+mrconvert unit_warp.mif -coord 0 0:2 -coord 1 0:2 -coord 2 0:2 - -force | \
+  mrcalc - 0 -mult tmp-zerodisp.mif -force
+warpinvert -displacement tmp-zerodisp.mif - | \
+testing_diff_image - tmp-zerodisp.mif -abs 1e-4

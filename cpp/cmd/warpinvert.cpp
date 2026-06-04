@@ -60,7 +60,7 @@ void usage() {
   + Option ("displacement", "indicates that the input warp field is a displacement field;"
                             " the output will also be a displacement field")
 
-  + Option ("extrapolate", "polynomial degree used to extrapolate the deformation field across"
+  + Option ("extrapolate", "polynomial degree used to extrapolate the warp field across"
                            " the halo around the valid region prior to cubic interpolation"
                            " (default: adaptive); a diagnostic control for assessing the"
                            " sensitivity of the inverted valid region to halo extrapolation")
@@ -97,10 +97,6 @@ void run() {
   auto degree = Registration::Warp::ExtrapolateDegree::Adaptive;
   auto extrap_opt = get_options("extrapolate");
   if (!extrap_opt.empty()) {
-    if (displacement)
-      throw Exception("The -extrapolate option applies only to deformation-field inversion,"
-                      " not to the -displacement path (which uses linear interpolation"
-                      " without halo extrapolation)");
     degree = (static_cast<int>(extrap_opt[0][0]) == 1) ? Registration::Warp::ExtrapolateDegree::Affine
                                                        : Registration::Warp::ExtrapolateDegree::Adaptive;
   }
@@ -108,10 +104,6 @@ void run() {
   auto validity_policy = Interp::ValidityPolicy::Interpolated;
   auto validity_opt = get_options("validity");
   if (!validity_opt.empty()) {
-    if (displacement)
-      throw Exception("The -validity option applies only to deformation-field inversion,"
-                      " not to the -displacement path (which uses linear interpolation"
-                      " without a validity mask)");
     validity_policy = (static_cast<int>(validity_opt[0][0]) == 1) ? Interp::ValidityPolicy::Nearest
                                                                   : Interp::ValidityPolicy::Interpolated;
   }
@@ -121,7 +113,7 @@ void run() {
   Image<default_type> image_out(Image<default_type>::create(argument[1], header_out));
 
   if (displacement) {
-    Registration::Warp::invert_displacement(image_in, image_out);
+    Registration::Warp::invert_displacement_warp(image_in, image_out, false, 50, 0.0001, degree, validity_policy);
   } else {
     Registration::Warp::invert_deformation(image_in, image_out, false, 50, 0.0001, degree, validity_policy);
   }

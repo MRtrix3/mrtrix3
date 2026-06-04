@@ -46,8 +46,17 @@ namespace MR::Interp {
  *  interpolates a continuous validity field and accepts at a half threshold, so the
  *  accept boundary is a sub-voxel iso-surface at the true region edge; this removes
  *  the per-sample rounding that otherwise scatters acceptance within one voxel of a
- *  validity transition. \c Nearest is retained so its effect can be assessed. */
-enum class ValidityPolicy { Nearest, Interpolated };
+ *  validity transition. \c Nearest is retained so its effect can be assessed.
+ *
+ *  \c Extrapolated widens acceptance to the whole region over which cubic interpolation
+ *  is well-posed: a position is accepted wherever its cubic kernel reads only finite
+ *  data, i.e. anywhere within the dilated reach (the valid region plus its extrapolated
+ *  halo), and the extrapolated value is returned there. Whereas \c Interpolated and
+ *  \c Nearest treat the halo as untrustworthy and mask it out, \c Extrapolated is intended
+ *  for resampling a field that is dense and finite by construction (e.g. multi-resolution
+ *  upsampling of a registration displacement field), where every output voxel centre must
+ *  yield a finite value and the only role of the halo is to keep the edge kernels well-posed. */
+enum class ValidityPolicy { Nearest, Interpolated, Extrapolated };
 
 //! Cubic interpolation of a non-linear warp field with extrapolation of invalid voxels
 /*! This interpolator is dedicated to the application of a non-linear warp field: a
@@ -126,12 +135,14 @@ public:
   using base_type = SplineInterp<buffer_type, Math::HermiteSpline<ValueType>, PType>;
 
 private:
-  //! the products of construction: the imputed buffer, the validity bit mask and its
-  //!   floating-point counterpart (1 valid / 0 invalid) used for interpolated validity
+  //! the products of construction: the imputed buffer, the validity bit mask, its
+  //!   floating-point counterpart (1 valid / 0 invalid) used for interpolated validity,
+  //!   and the dilated mask (valid region plus extrapolated halo) used by Extrapolated
   struct ScratchData {
     buffer_type buffer;
     Image<bool> mask;
     Image<float> mask_float;
+    Image<bool> dilated;
   };
 
   //! build the extrapolated warp field buffer and the validity mask
@@ -148,8 +159,11 @@ private:
 
   // The per-voxel validity mask shares the spatial voxel grid of the buffer
   //   held by the Cubic base class. The float copy backs the trilinear validity
-  //   interpolator used under ValidityPolicy::Interpolated.
+  //   interpolator used under ValidityPolicy::Interpolated; the dilated mask (valid
+  //   region plus extrapolated halo) backs nearest-voxel acceptance under
+  //   ValidityPolicy::Extrapolated.
   Image<bool> validity;
+  Image<bool> dilated;
   Interp::Linear<Image<float>> validity_interp;
   ValidityPolicy validity_policy;
 
@@ -157,6 +171,7 @@ private:
   Warp(ScratchData data, const value_type value_when_out_of_bounds, const ValidityPolicy policy)
       : base_type(data.buffer, value_when_out_of_bounds),
         validity(std::move(data.mask)),
+        dilated(std::move(data.dilated)),
         validity_interp(data.mask_float, 0.0f),
         validity_policy(policy) {}
 
@@ -204,25 +219,44 @@ public:
   template <class VectorType> bool voxel(const VectorType &pos) {
     if (base_type::set_out_of_bounds(pos))
       return false;
-    if (validity_policy == ValidityPolicy::Interpolated) {
+    switch (validity_policy) {
+    case ValidityPolicy::Interpolated:
       // Continuous validity: accept where the trilinearly-interpolated 0/1 field is at
       //   least one half, placing the accept boundary at the true sub-voxel region edge.
       if (!validity_interp.voxel(pos) || validity_interp.value() < 0.5f) {
         base_type::set_out_of_bounds(true);
         return false;
       }
-    } else {
-      validity.index(0) = static_cast<ssize_t>(std::round(pos[0]));
-      validity.index(1) = static_cast<ssize_t>(std::round(pos[1]));
-      validity.index(2) = static_cast<ssize_t>(std::round(pos[2]));
-      if (!validity.value()) {
+      break;
+    case ValidityPolicy::Nearest:
+      // Nearest-voxel rounding against the empirical validity mask.
+      if (!nearest_value(validity, pos)) {
         base_type::set_out_of_bounds(true);
         return false;
       }
+      break;
+    case ValidityPolicy::Extrapolated:
+      // Accept anywhere the cubic kernel is well-posed, i.e. within the dilated reach
+      //   (valid region plus extrapolated halo); the extrapolated value is then returned.
+      if (!nearest_value(dilated, pos)) {
+        base_type::set_out_of_bounds(true);
+        return false;
+      }
+      break;
     }
     return base_type::voxel(pos);
   }
 
+private:
+  //! value of a boolean mask at the voxel in which \a pos resides (nearest-voxel rounding)
+  template <class VectorType> static bool nearest_value(Image<bool> &mask, const VectorType &pos) {
+    mask.index(0) = static_cast<ssize_t>(std::round(pos[0]));
+    mask.index(1) = static_cast<ssize_t>(std::round(pos[1]));
+    mask.index(2) = static_cast<ssize_t>(std::round(pos[2]));
+    return mask.value();
+  }
+
+public:
   //! Set the current position to <b>image space</b> position \a pos
   /*! See file interp/base.h for details. */
   template <class VectorType> FORCE_INLINE bool image(const VectorType &pos) {
@@ -346,7 +380,7 @@ Warp<ValueType, PType>::make_scratch(ImageType field, const Registration::Warp::
   for (auto l = Loop(validity)(validity, mask_float); l; ++l)
     mask_float.value() = validity.value() ? 1.0f : 0.0f;
 
-  return ScratchData{buffer, validity, mask_float};
+  return ScratchData{buffer, validity, mask_float, dilated};
 }
 
 //! adapt Interp::Warp to the Filter::reslice / Adapter::Reslice interpolator interface
@@ -369,6 +403,24 @@ public:
       : base_type(field,
                   Registration::Warp::ExtrapolateDegree::Adaptive,
                   ValidityPolicy::Interpolated,
+                  value_when_out_of_bounds) {}
+};
+
+//! adapt Interp::Warp with Extrapolated validity to the Filter::reslice / Adapter::Reslice interface
+/*! As \c WarpReslice, but selects \c ValidityPolicy::Extrapolated so that resampling a field
+ *  which is dense and finite by construction (e.g. multi-resolution upsampling of a registration
+ *  displacement field) yields a finite value at every output voxel: acceptance extends across the
+ *  extrapolated halo rather than masking the field-of-view edge, while the two-voxel halo keeps the
+ *  edge cubic kernels well-posed. See \c WarpReslice for why a plain type alias cannot be used. */
+template <class ImageType> class WarpResliceExtrapolated : public Warp<typename ImageType::value_type> {
+public:
+  using value_type = typename ImageType::value_type;
+  using base_type = Warp<value_type>;
+  WarpResliceExtrapolated(const ImageType &field,
+                          const value_type value_when_out_of_bounds = base_type::default_out_of_bounds_value())
+      : base_type(field,
+                  Registration::Warp::ExtrapolateDegree::Adaptive,
+                  ValidityPolicy::Extrapolated,
                   value_when_out_of_bounds) {}
 };
 

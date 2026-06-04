@@ -333,6 +333,11 @@ public:
 
           DEBUG("inverting displacement field");
           {
+            // The fast linear displacement inverter is retained here deliberately: these
+            //   halfway fields are dense and finite by construction, so the imputation-aware
+            //   cubic inversion (Warp::invert_displacement_warp, used by the warpinvert command)
+            //   would add its scatter-based initialisation and Newton search per accepted
+            //   iteration for no correctness gain on this hot path.
             LogLevelLatch level(0);
             Warp::invert_displacement(*im1_to_mid, *mid_to_im1);
             Warp::invert_displacement(*im2_to_mid, *mid_to_im2);
@@ -515,10 +520,18 @@ public:
   void set_diagnostics_image_dir(const std::filesystem::path &dir) { diagnostics_image_dir.emplace(dir); }
 
 protected:
+  // Upsample a displacement/deformation field onto a finer multi-resolution grid.
+  //   Cubic interpolation through Interp::Warp (Extrapolated policy) is used rather than
+  //   linear: the field is dense and finite by construction, so the imputation machinery
+  //   adds only a two-voxel extrapolated halo around the field of view, and the Extrapolated
+  //   policy returns a finite value at every output voxel. The pyramid grids are produced by
+  //   Filter::Resize, which centres a field of view contained within the source extent, so
+  //   each output voxel centre overhangs the nearest input voxel centre by well under the
+  //   two-voxel halo; cubic interpolation is therefore well-posed and accepted everywhere.
   std::shared_ptr<Image<default_type>> reslice(Image<default_type> &image, Header &header) {
     std::shared_ptr<Image<default_type>> temp =
         std::make_shared<Image<default_type>>(Image<default_type>::scratch(header));
-    Filter::reslice<Interp::Linear>(image, *temp);
+    Filter::reslice<Interp::WarpResliceExtrapolated>(image, *temp);
     return temp;
   }
 

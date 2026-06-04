@@ -59,6 +59,13 @@ enum class InversionOutcome : uint8_t {
   NoValidCandidate = 4   //!< step-halving budget exhausted with no in-region candidate; rejected (NaN)
 };
 
+//! Fixed-point inverter of a displacement field using linear interpolation
+/*! Retained for the non-linear registration hot path (MR::Registration::Transform::NonLinear),
+ *  where the halfway displacement fields are dense and finite by construction and a fast
+ *  inversion is run per accepted iteration. The user-facing warpinvert command instead routes
+ *  the displacement path through invert_displacement_warp(), which uses the imputation-aware
+ *  cubic interpolator and honours non-finite holes; that machinery is deliberately not used here
+ *  because it would add a scatter-based initialisation and Newton search for no gain on dense data. */
 class DisplacementThreadKernel {
 
 public:
@@ -550,6 +557,37 @@ FORCE_INLINE void invert_displacement(Image<default_type> &disp_field,
 
   ThreadedLoop("inverting displacement field...", inv_disp_field, 0, 3)
       .run(DisplacementThreadKernel(disp_field, inv_disp_field, max_iter, error_tolerance), inv_disp_field);
+}
+
+/*! Estimate the inverse of a displacement field via imputation-aware cubic interpolation,
+ *  output the inverse as a displacement field.
+ *  The input displacement field is converted to a deformation field, inverted by the Newton
+ *  search against MR::Interp::Warp (which extrapolates a halo around the valid region so the
+ *  cubic kernel stays well-posed at the boundary, and writes NaN where the field cannot be
+ *  inverted), then converted back to a displacement field on the output grid. \a degree and
+ *  \a validity_policy are forwarded to the deformation inversion. In contrast to
+ *  invert_displacement(), non-finite holes in the input are honoured rather than smeared by
+ *  linear interpolation; this is the path used by the warpinvert command. */
+FORCE_INLINE void
+invert_displacement_warp(Image<default_type> &disp_field,
+                         Image<default_type> &inv_disp_field,
+                         bool is_initialised = false,
+                         size_t max_iter = 50,
+                         default_type error_tolerance = 0.0001,
+                         ExtrapolateDegree degree = ExtrapolateDegree::Adaptive,
+                         Interp::ValidityPolicy validity_policy = Interp::ValidityPolicy::Interpolated) {
+  auto deform_field = Image<default_type>::scratch(disp_field, "forward deformation field");
+  Warp::displacement2deformation(disp_field, deform_field);
+
+  auto inv_deform = Image<default_type>::scratch(inv_disp_field, "inverse deformation field");
+  // If an initial estimate was supplied (as a displacement field), convert it to a deformation
+  //   field on the output grid before the Newton refinement begins.
+  if (is_initialised)
+    Warp::displacement2deformation(inv_disp_field, inv_deform);
+
+  invert_deformation(deform_field, inv_deform, is_initialised, max_iter, error_tolerance, degree, validity_policy);
+
+  Warp::deformation2displacement(inv_deform, inv_disp_field);
 }
 
 //! @}

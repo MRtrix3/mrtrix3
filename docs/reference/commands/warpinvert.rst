@@ -30,7 +30,7 @@ Options
 
 -  **-displacement** indicates that the input warp field is a displacement field; the output will also be a displacement field
 
--  **-extrapolate mode** polynomial degree used to extrapolate the deformation field across the halo around the valid region prior to cubic interpolation (default: adaptive); a diagnostic control for assessing the sensitivity of the inverted valid region to halo extrapolation
+-  **-extrapolate mode** polynomial degree used to extrapolate the warp field across the halo around the valid region prior to cubic interpolation (default: adaptive); a diagnostic control for assessing the sensitivity of the inverted valid region to halo extrapolation
 
 -  **-validity mode** how a sampled position is judged to reside in valid input data: "interpolated" (default) thresholds the trilinearly-interpolated validity field at one half, placing the accept boundary at the true sub-voxel region edge; "nearest" uses the validity of the enclosing voxel (nearest-voxel rounding), retained for assessing its effect
 
