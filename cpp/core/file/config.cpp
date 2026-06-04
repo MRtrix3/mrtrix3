@@ -15,12 +15,15 @@
  */
 
 #include <optional>
+#include <vector>
 
 #include "app.h"
 #include "debug.h"
 #include "env.h"
 #include "exception.h"
 #include "header.h"
+#include "mrtrix.h"
+#include "types.h"
 
 #include "file/config.h"
 #include "file/path.h"
@@ -141,7 +144,7 @@ Eigen::Array3f Config::get_RGB(std::string_view key, const Eigen::Array3f &defau
       throw Exception("malformed RGB entry \"" + from_config.value() + "\" for key \"" + key + "\"" + //
                       "in configuration file - ignored");
     return {static_cast<float>(V[0]), static_cast<float>(V[1]), static_cast<float>(V[2])};
-  } catch (Exception) {
+  } catch (Exception &) {
     return default_value;
   }
 }

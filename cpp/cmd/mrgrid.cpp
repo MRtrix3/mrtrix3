@@ -16,6 +16,7 @@
 
 #include "adapter/regrid.h"
 #include "algo/copy.h"
+#include "app.h"
 #include "command.h"
 #include "enum.h"
 #include "filter/resize.h"

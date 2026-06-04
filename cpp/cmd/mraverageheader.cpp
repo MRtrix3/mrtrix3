@@ -15,6 +15,7 @@
  */
 
 #include "algo/loop.h"
+#include "app.h"
 #include "command.h"
 #include "debug.h"
 #include "enum.h"

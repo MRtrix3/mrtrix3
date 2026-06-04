@@ -16,7 +16,9 @@
 
 #include <set>
 
+#include "app.h"
 #include "command.h"
+#include "datatype.h"
 #include "enum.h"
 #include "image.h"
 #include "memory.h"
@@ -32,6 +34,7 @@
 #include "dwi/tractography/mapping/loader.h"
 #include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/mapping/mapping.h"
+#include "dwi/tractography/mapping/twi_stats.h"
 #include "dwi/tractography/mapping/voxel.h"
 #include "dwi/tractography/mapping/writer.h"
 

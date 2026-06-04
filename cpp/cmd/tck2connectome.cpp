@@ -16,8 +16,8 @@
 
 #include <set>
 
+#include "app.h"
 #include "command.h"
-#include "enum.h"
 #include "image.h"
 #include "thread_queue.h"
 #include "types.h"

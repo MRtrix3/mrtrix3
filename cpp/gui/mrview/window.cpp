@@ -17,6 +17,7 @@
 #include <QDebug>
 #include <algorithm>
 #include <qopenglwidget.h>
+#include <string>
 #include <unordered_map>
 
 #include "algo/copy.h"
@@ -28,6 +29,7 @@
 #include "dialog/progress.h"
 #include "file/config.h"
 #include "header.h"
+#include "mrtrix.h"
 #include "mrview/mode/base.h"
 #include "mrview/mode/list.h"
 #include "mrview/qthelpers.h"

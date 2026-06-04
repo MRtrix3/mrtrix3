@@ -15,7 +15,9 @@
  */
 
 #include "mrview/mode/volume.h"
+
 #include "file/config.h"
+#include "mrtrix.h"
 #include "mrview/adjust_button.h"
 #include "mrview/tool/base.h"
 #include "mrview/tool/view.h"

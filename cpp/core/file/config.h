@@ -18,6 +18,7 @@
 
 #include <array>
 #include <map>
+#include <optional>
 
 #include "file/key_value.h"
 #include "types.h"

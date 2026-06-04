@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "enum.h"
 #include "math/median.h"
 #include "mrtrix.h"
 

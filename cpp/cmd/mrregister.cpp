@@ -17,6 +17,7 @@
 #include <filesystem>
 #include <optional>
 
+#include "app.h"
 #include "command.h"
 #include "dwi/directions/predefined.h"
 #include "dwi/directions/validate.h"

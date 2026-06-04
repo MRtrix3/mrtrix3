@@ -16,6 +16,7 @@
 
 #include "algo/loop.h"
 #include "algo/threaded_loop.h"
+#include "app.h"
 #include "command.h"
 #include "enum.h"
 #include "image.h"

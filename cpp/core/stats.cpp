@@ -15,6 +15,7 @@
  */
 
 #include "stats.h"
+#include "enum.h"
 
 namespace MR::Stats {
 

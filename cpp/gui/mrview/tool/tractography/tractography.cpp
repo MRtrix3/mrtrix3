@@ -16,16 +16,20 @@
 
 #include "mrview/tool/tractography/tractography.h"
 
+#include "magic_enum/magic_enum.hpp"
 #include <array>
 
 #include "dialog/file.h"
 #include "enum.h"
+#include "file/config.h"
+#include "gui.h"
 #include "lighting_dock.h"
 #include "mrtrix.h"
 #include "mrview/qthelpers.h"
 #include "mrview/tool/list_model_base.h"
 #include "mrview/tool/tractography/track_scalar_file.h"
 #include "mrview/tool/tractography/tractogram.h"
+#include "mrview/tool/tractography/tractogram_enums.h"
 #include "mrview/window.h"
 #include "opengl/lighting.h"
 
@@ -622,7 +626,7 @@ void Tractography::geom_type_selection_slot(int selected_index) {
   if (selected_index == 3)
     return;
 
-  TrackGeometryType geom_type = magic_enum::enum_value<TrackGeometryType>(static_cast<size_t>(selected_index));
+  const TrackGeometryType geom_type = magic_enum::enum_value<TrackGeometryType>(static_cast<size_t>(selected_index));
 
   QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
   for (int i = 0; i < indices.size(); ++i)

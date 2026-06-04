@@ -16,6 +16,7 @@
 
 #include <filesystem>
 
+#include "app.h"
 #include "command.h"
 #include "enum.h"
 #include "exception.h"
