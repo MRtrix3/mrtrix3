@@ -21,11 +21,13 @@
 #include "algo/copy.h"
 #include "algo/loop.h"
 #include "algo/threaded_copy.h"
+#include "app.h"
 #include "command.h"
 #include "debug.h"
 #include "dwi/directions/predefined.h"
 #include "dwi/directions/validate.h"
 #include "dwi/gradient.h"
+#include "enum.h"
 #include "file/matrix.h"
 #include "file/nifti_utils.h"
 #include "filter/reslice.h"
@@ -156,9 +158,9 @@ void usage() {
 
     + Option ("interp",
         std::string("set the interpolation method to use when reslicing")
-        + " (choices: " + join(MR::Interp::interp_choices, ", ") + ";"
-        + " default: " + MR::Interp::interp_choices[static_cast<ssize_t>(default_interp)] + ").")
-      + Argument ("method").type_choice(MR::Interp::interp_choices)
+        + " (choices: " + MR::Enum::join<MR::Interp::interp_type>() + ";"
+        + " default: " + MR::Enum::lowercase_name(default_interp) + ").")
+      + Argument ("method").type_choice<MR::Interp::interp_type>()
 
     + Option ("oversample",
         "set the amount of over-sampling (in the target space) to perform when regridding."
@@ -584,13 +586,9 @@ void run() {
   }
 
   // Interpolator
-  MR::Interp::interp_type interp = default_interp;
-  opt = get_options("interp");
-  if (!opt.empty()) {
-    interp = MR::Interp::interp_type(static_cast<MR::App::ParsedArgument::IntType>(opt[0][0]));
-    if (!warp && !template_header)
-      WARN("interpolator choice ignored since the input image will not be regridded");
-  }
+  const MR::Interp::interp_type interp = get_option_choice<MR::Interp::interp_type>("interp", default_interp);
+  if (!get_options("interp").empty() && !warp && !template_header)
+    WARN("interpolator choice ignored since the input image will not be regridded");
 
   // over-sampling
   std::vector<uint32_t> oversample = Adapter::AutoOverSample;

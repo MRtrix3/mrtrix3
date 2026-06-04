@@ -53,6 +53,15 @@ public:
 
 extern const std::vector<Entry> maps;
 
+//! enumeration of the colour maps that can be selected on the command-line
+/*! The lowercase enumerator names define the set of valid choices for
+ *  colour-map command-line options. Each enumerator name matches the \c name
+ *  field of the corresponding entry in the \c maps table, so a selection can be
+ *  resolved to a \c maps entry via index() without relying on the enumerator's
+ *  underlying integer value. The "Complex" map is deliberately omitted, as it is
+ *  not offered as a command-line selection. */
+enum class Choice { Gray, Hot, Cool, Jet, Inferno, Viridis, PET, Colour, RGB };
+
 inline size_t num() { return maps.size(); }
 
 inline size_t num_scalar() {

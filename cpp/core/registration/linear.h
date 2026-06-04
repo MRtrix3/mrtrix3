@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "magic_enum/magic_enum.hpp"
 #include <filesystem>
 #include <iostream>
 
@@ -50,21 +51,26 @@ extern const App::OptionGroup lin_stage_options;
 extern const App::OptionGroup rigid_options;
 extern const App::OptionGroup affine_options;
 extern const App::OptionGroup fod_options;
-extern const std::vector<std::string> optim_algo_names;
 
 enum LinearMetricType { Diff, NCC };
 enum LinearRobustMetricEstimatorType { L1, L2, LP, None };
-enum OptimiserAlgoType { bbgd, gd, none };
+enum OptimiserAlgoType { BBGD, GD };
+
+// Command-line choice enumerations.
+// The lowercase enumerator names define the set of valid choices for the
+//   corresponding command-line options; see linear.cpp.
+enum class init_translation_t { mass, geometric, none };
+enum class init_rotation_t { search, moments, none };
 
 struct StageSetting {
   StageSetting()
       : stage_iterations(1),
         gd_max_iter(500),
         scale_factor(1.0),
-        optimisers(1, OptimiserAlgoType::bbgd),
-        optimiser_default(OptimiserAlgoType::bbgd),
-        optimiser_first(OptimiserAlgoType::bbgd),
-        optimiser_last(OptimiserAlgoType::gd),
+        optimisers(1, OptimiserAlgoType::BBGD),
+        optimiser_default(OptimiserAlgoType::BBGD),
+        optimiser_first(OptimiserAlgoType::BBGD),
+        optimiser_last(OptimiserAlgoType::GD),
         loop_density(1.0),
         fod_lmax(-1) {}
 
@@ -79,9 +85,8 @@ struct StageSetting {
     if (stage_iterations > 1)
       st += ", iterations: " + str(stage_iterations);
     st += ", optimiser: ";
-    for (auto &optim : optimisers) {
-      st += str(optim_algo_names[optim]) + " ";
-    }
+    for (auto &optim : optimisers)
+      st += magic_enum::enum_name(optim) + " ";
     return st;
   }
   size_t stage_iterations, gd_max_iter;
@@ -500,7 +505,7 @@ public:
 
       INFO("registration stage running...");
       for (auto stage_iter = 1U; stage_iter <= stage.stage_iterations; ++stage_iter) {
-        if (stage.gd_max_iter > 0 and stage.optimisers[stage_iter - 1] == OptimiserAlgoType::bbgd) {
+        if (stage.gd_max_iter > 0 and stage.optimisers[stage_iter - 1] == OptimiserAlgoType::BBGD) {
           Math::GradientDescentBB<Metric::Evaluate<MetricType, ParamType>, typename TransformType::UpdateType> optim(
               evaluate, *transform.get_gradient_descent_updator());
           optim.be_verbose(analyse_descent);
@@ -591,7 +596,7 @@ protected:
   Header midway_image_header;
 };
 
-void set_init_translation_model_from_option(Registration::Linear &registration, const int &option);
-void set_init_rotation_model_from_option(Registration::Linear &registration, const int &option);
+void set_init_translation_model_from_option(Registration::Linear &registration, const init_translation_t option);
+void set_init_rotation_model_from_option(Registration::Linear &registration, const init_rotation_t option);
 void parse_general_options(Registration::Linear &registration);
 } // namespace MR::Registration

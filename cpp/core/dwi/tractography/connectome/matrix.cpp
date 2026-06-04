@@ -18,21 +18,20 @@
 
 #include <filesystem>
 
+#include "enum.h"
 #include "file/matrix.h"
 #include "file/path.h"
 
 namespace MR::DWI::Tractography::Connectome {
 
-std::vector<std::string> statistics = {"sum", "mean", "min", "max"};
-
+// clang-format off
 const App::Option EdgeStatisticOption
-
     = App::Option("stat_edge",
                   "statistic for combining the values from all streamlines in an edge "
                   "into a single scale value for that edge "
-                  "(options are: " +
-                      join(statistics, ",") + "; default=sum)") +
-      App::Argument("statistic").type_choice(statistics);
+                  "(options are: " + MR::Enum::join<stat_edge>() + "; default=sum)")
+    + App::Argument("statistic").type_choice<stat_edge>();
+// clang-format on
 
 template <typename T> bool Matrix<T>::operator()(const Mapped_track_nodepair &in) {
   assert(assignments_lists.empty());

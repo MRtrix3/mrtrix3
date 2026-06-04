@@ -33,7 +33,7 @@ a comma-separated sequence of floating-point numbers
 ARGUMENT values 0 0 FSEQ
 OPTION choice 1 0
 a choice from a set of options
-ARGUMENT item 0 0 CHOICE One Two Three
+ARGUMENT item 0 0 CHOICE one two three
 OPTION file_in 1 0
 an input file
 ARGUMENT input 0 0 FILEIN
@@ -54,7 +54,7 @@ an output tractogram
 ARGUMENT output 0 0 TRACKSOUT
 OPTION any 1 0
 an argument that could accept any of the various forms
-ARGUMENT spec 0 0 TEXT BOOL INT -9223372036854775808 9223372036854775807 FLOAT -inf inf FILEIN FILEOUT DIRIN DIROUT ISEQ FSEQ TRACKSIN TRACKSOUT CHOICE One Two Three
+ARGUMENT spec 0 0 TEXT BOOL INT -9223372036854775808 9223372036854775807 FLOAT -inf inf FILEIN FILEOUT DIRIN DIROUT ISEQ FSEQ TRACKSIN TRACKSOUT CHOICE one two three
 OPTION nargs_two 1 0
 A command-line option that accepts two arguments
 ARGUMENT first 0 0 TEXT
