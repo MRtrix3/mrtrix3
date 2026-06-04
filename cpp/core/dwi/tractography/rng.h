@@ -20,7 +20,12 @@
 
 namespace MR::DWI::Tractography {
 
-//! thread-local, but globally accessible RNG to vastly simplify multi-threading
-extern thread_local Math::RNG rng;
+//! Thread-local, but globally accessible RNG to vastly simplify multi-threading.
+/*! Implemented as a Meyers-style accessor returning a reference to a
+ *  function-local \c thread_local instance, lazily constructed on first use.
+ *  This avoids a namespace-scope \c thread_local definition,
+ *  which triggers compilation failures under GCC 16 on Windows
+ *  due to changes in thread-local storage (TLS) handling. */
+Math::RNG &rng();
 
 } // namespace MR::DWI::Tractography

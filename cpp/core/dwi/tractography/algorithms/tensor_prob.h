@@ -89,7 +89,7 @@ protected:
 
       for (ssize_t i = 0; i < residuals.size(); ++i) {
         residuals[i] = residuals[i] ? (data[i] - std::exp(-residuals[i])) : float(0.0);
-        data[i] += uniform_int(rng) ? residuals[i] : -residuals[i];
+        data[i] += uniform_int(rng()) ? residuals[i] : -residuals[i];
       }
     }
 
