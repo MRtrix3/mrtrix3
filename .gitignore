@@ -38,3 +38,4 @@ CMakeLists.txt.user
 CMakeUserPresets.json
 testing/data/tmp*
 testing/data/*-tmp-*
+testing/data/.mrtrix_testing.lock
