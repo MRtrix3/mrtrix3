@@ -135,7 +135,7 @@ Dynamic::Dynamic(const std::filesystem::path &in,
   // Pick a good fixel to use for testing / debugging
   std::uniform_real_distribution<float> uniform;
   do {
-    test_fixel = std::uniform_int_distribution<int>(1, fixels.size() - 1)(rng);
+    test_fixel = std::uniform_int_distribution<int>(1, fixels.size() - 1)(rng());
   } while (fixels[test_fixel].get_weight() < 1.0 || fixels[test_fixel].get_FOD() < 0.5);
 
   output_fixel_images("begin");
@@ -186,7 +186,7 @@ bool Dynamic::get_seed(Eigen::Vector3f &p, Eigen::Vector3f &d) {
   while (1) {
 
     ++this_attempts;
-    const size_t fixel_index = 1 + uniform_int(rng);
+    const size_t fixel_index = 1 + uniform_int(rng());
     Fixel &fixel = fixels[fixel_index];
     float seed_prob;
     if (fixel.can_update()) {
@@ -223,11 +223,11 @@ bool Dynamic::get_seed(Eigen::Vector3f &p, Eigen::Vector3f &d) {
       seed_prob = fixel.get_old_prob();
     }
 
-    if (seed_prob > uniform_float(rng)) {
+    if (seed_prob > uniform_float(rng())) {
 
       const Eigen::Vector3i &v(fixel.get_voxel());
       const Eigen::Vector3f vp(
-          v[0] + uniform_float(rng) - 0.5, v[1] + uniform_float(rng) - 0.5, v[2] + uniform_float(rng) - 0.5);
+          v[0] + uniform_float(rng()) - 0.5, v[1] + uniform_float(rng()) - 0.5, v[2] + uniform_float(rng()) - 0.5);
       p = transform.voxel2scanner.cast<float>() * vp;
 
       bool good_seed = !act;

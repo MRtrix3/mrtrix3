@@ -34,7 +34,7 @@ Sphere::Sphere(std::string_view in)                                      //
 bool Sphere::get_seed(Eigen::Vector3f &p) const {
   std::uniform_real_distribution<float> uniform;
   do {
-    p = {2.0F * uniform(rng) - 1.0F, 2.0F * uniform(rng) - 1.0F, 2.0F * uniform(rng) - 1.0F};
+    p = {2.0F * uniform(rng()) - 1.0F, 2.0F * uniform(rng()) - 1.0F, 2.0F * uniform(rng()) - 1.0F};
   } while (p.squaredNorm() > 1.0F);
   p = pos + rad * p;
   return true;
@@ -50,14 +50,14 @@ SeedMask::SeedMask(const std::filesystem::path &in)                             
 bool SeedMask::get_seed(Eigen::Vector3f &p) const {
   auto seed = mask;
   do {
-    seed.index(0) = std::uniform_int_distribution<int>(0, mask.size(0) - 1)(rng);
-    seed.index(1) = std::uniform_int_distribution<int>(0, mask.size(1) - 1)(rng);
-    seed.index(2) = std::uniform_int_distribution<int>(0, mask.size(2) - 1)(rng);
+    seed.index(0) = std::uniform_int_distribution<int>(0, mask.size(0) - 1)(rng());
+    seed.index(1) = std::uniform_int_distribution<int>(0, mask.size(1) - 1)(rng());
+    seed.index(2) = std::uniform_int_distribution<int>(0, mask.size(2) - 1)(rng());
   } while (!seed.value());
   std::uniform_real_distribution<float> uniform;
-  p = {static_cast<float>(seed.index(0)) + uniform(rng) - 0.5F,
-       static_cast<float>(seed.index(1)) + uniform(rng) - 0.5F,
-       static_cast<float>(seed.index(2)) + uniform(rng) - 0.5F};
+  p = {static_cast<float>(seed.index(0)) + uniform(rng()) - 0.5F,
+       static_cast<float>(seed.index(1)) + uniform(rng()) - 0.5F,
+       static_cast<float>(seed.index(2)) + uniform(rng()) - 0.5F};
   p = (*mask.voxel2scanner) * p;
   return true;
 }
@@ -101,9 +101,9 @@ bool Random_per_voxel::get_seed(Eigen::Vector3f &p) const {
   }
 
   std::uniform_real_distribution<float> uniform;
-  p = {static_cast<float>(mask.index(0)) + uniform(rng) - 0.5F,
-       static_cast<float>(mask.index(1)) + uniform(rng) - 0.5F,
-       static_cast<float>(mask.index(2)) + uniform(rng) - 0.5F};
+  p = {static_cast<float>(mask.index(0)) + uniform(rng()) - 0.5F,
+       static_cast<float>(mask.index(1)) + uniform(rng()) - 0.5F,
+       static_cast<float>(mask.index(2)) + uniform(rng()) - 0.5F};
   p = (*mask.voxel2scanner) * p;
   return true;
 }
@@ -228,22 +228,25 @@ bool Rejection_per_voxel::get_seed(Eigen::Vector3f &p) const {
   float selector;
   Eigen::Vector3f pos;
   do {
-    pos = {
-        uniform(rng) * (interp.size(0) - 1), uniform(rng) * (interp.size(1) - 1), uniform(rng) * (interp.size(2) - 1)};
+    pos = {uniform(rng()) * (interp.size(0) - 1),
+           uniform(rng()) * (interp.size(1) - 1),
+           uniform(rng()) * (interp.size(2) - 1)};
     seed.voxel(pos);
-    selector = rng->Uniform() * max;
+    selector = rng().Uniform() * max;
   } while (seed.value() < selector);
   p = interp.voxel2scanner * pos;
 #else
   auto seed = image;
   float selector;
   do {
-    seed.index(0) = std::uniform_int_distribution<int>(0, image.size(0) - 1)(rng);
-    seed.index(1) = std::uniform_int_distribution<int>(0, image.size(1) - 1)(rng);
-    seed.index(2) = std::uniform_int_distribution<int>(0, image.size(2) - 1)(rng);
-    selector = uniform(rng) * max;
+    seed.index(0) = std::uniform_int_distribution<int>(0, image.size(0) - 1)(rng());
+    seed.index(1) = std::uniform_int_distribution<int>(0, image.size(1) - 1)(rng());
+    seed.index(2) = std::uniform_int_distribution<int>(0, image.size(2) - 1)(rng());
+    selector = uniform(rng()) * max;
   } while (seed.value() < selector);
-  p = {seed.index(0) + uniform(rng) - 0.5f, seed.index(1) + uniform(rng) - 0.5f, seed.index(2) + uniform(rng) - 0.5f};
+  p = {seed.index(0) + uniform(rng()) - 0.5f,
+       seed.index(1) + uniform(rng()) - 0.5f,
+       seed.index(2) + uniform(rng()) - 0.5f};
   p = voxel2scanner * p;
 #endif
   return true;
@@ -314,7 +317,7 @@ Random_coordinates::Random_coordinates(const std::filesystem::path &path) //
 }
 
 bool Random_coordinates::get_seed(Eigen::Vector3f &p) const {
-  p = coords.row(std::uniform_int_distribution<>(0, static_cast<int>(num_coordinates() - 1))(rng));
+  p = coords.row(std::uniform_int_distribution<>(0, static_cast<int>(num_coordinates() - 1))(rng()));
   return true;
 }
 
@@ -334,8 +337,8 @@ bool Rejection_per_coord::get_seed(Eigen::Vector3f &p) const {
   std::uniform_real_distribution<float> selector;
   ssize_t coordinate_index(-1);
   do {
-    coordinate_index = index_selector(rng);
-  } while (weights(coordinate_index) < selector(rng));
+    coordinate_index = index_selector(rng());
+  } while (weights(coordinate_index) < selector(rng()));
   p = coords.row(coordinate_index);
   return true;
 }
