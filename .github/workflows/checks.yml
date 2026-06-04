@@ -257,6 +257,7 @@ jobs:
             -D MRTRIX_BUILD_TESTS=ON
             -D MRTRIX_STL_DEBUGGING=ON
             -D MRTRIX_WARNINGS_AS_ERRORS=ON
+            -D MRTRIX_ENABLE_GPU=OFF
             -D CMAKE_CXX_COMPILER_LAUNCHER=${{env.SCCACHE_UNIX_PATH}} .
 
       - name: build

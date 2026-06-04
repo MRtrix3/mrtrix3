@@ -30,6 +30,8 @@ https://mrtrix.readthedocs.io/en/3.0.8/constrained_spherical_deconvolution/respo
 Note that if the -mask command-line option is not specified, the MRtrix3 command dwi2mask will automatically be called to derive an initial voxel exclusion mask. More information on mask derivation from DWI data can be found at: 
 https://mrtrix.readthedocs.io/en/3.0.8/dwi_preprocessing/masking.html
 
+In the absence of a user-specified mask (option -mask), the whole DWI series will be used for derivation of the brain mask, even where only a subset of the DWI volumes is used for response function estimation (whether because the -shells option has been specified, or because the nominated algorithm operates on only a single b-value shell). If it is instead desired that the same subset of shells used for response function estimation also be used for brain mask derivation, then the user has two alternatives: either generate that subset of shells themselves---e.g. using the dwiextract command---and provide the result as the input to dwi2response; or generate a brain mask from that subset of shells and provide that mask via the -mask option.
+
 Options
 -------
 
