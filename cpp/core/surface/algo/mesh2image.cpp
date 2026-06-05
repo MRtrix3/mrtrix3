@@ -80,6 +80,24 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
     for (auto l = Loop(init_seg)(init_seg); l; ++l)
       init_seg.value() = vox_mesh_t::UNDEFINED;
 
+#ifdef MRTRIX_MESH2IMAGE_DEBUG
+    // Preprocessor-gated export of intermediate image data,
+    //   used to diagnose mis-classification of voxels as inside / outside the surface.
+    // Enable by compiling this translation unit with -DMRTRIX_MESH2IMAGE_DEBUG.
+    auto debug_export_u8 = [](Image<uint8_t> &img, std::string_view path) {
+      Header H_out(img);
+      auto out = Image<uint8_t>::create(std::string(path), H_out);
+      for (auto l = Loop(img)(img, out); l; ++l)
+        out.value() = img.value();
+    };
+    auto debug_export_f32 = [](Image<float> &img, std::string_view path) {
+      Header H_out(img);
+      auto out = Image<float>::create(std::string(path), H_out);
+      for (auto l = Loop(img)(img, out); l; ++l)
+        out.value() = img.value();
+    };
+#endif
+
     // Map each polygon to the underlying voxels
     for (size_t poly_index = 0; poly_index != mesh.num_polygons(); ++poly_index) {
 
@@ -205,6 +223,11 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
     }
     ++progress;
 
+#ifdef MRTRIX_MESH2IMAGE_DEBUG
+    // Stage 1: voxels intersected by the mesh (vox_mesh_t::ON_MESH); everything else still UNDEFINED
+    debug_export_u8(init_seg, "mesh2image_debug_1_onmesh.mif");
+#endif
+
     // For *any* voxel not on the mesh but neighbouring a voxel in which a vertex lies,
     //   track a floating-point value corresponding to its distance from the plane defined
     //   by the normal at the vertex.
@@ -238,6 +261,13 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
         init_seg.value() = sum_distances.value() < 0.0 ? vox_mesh_t::PRELIM_INSIDE : vox_mesh_t::PRELIM_OUTSIDE;
     }
     ++progress;
+
+#ifdef MRTRIX_MESH2IMAGE_DEBUG
+    // Stage 2: signed sum-of-distances field used to seed the preliminary inside / outside classification
+    debug_export_f32(sum_distances, "mesh2image_debug_2_sumdist.mif");
+    // Stage 3: preliminary classification (UNDEFINED / ON_MESH / PRELIM_INSIDE / PRELIM_OUTSIDE)
+    debug_export_u8(init_seg, "mesh2image_debug_3_prelim.mif");
+#endif
 
     // Can't guarantee that mesh might have a single isolated polygon pointing the wrong way
     // Therefore, need to:
@@ -280,8 +310,28 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
             }
           }
         } while (!to_expand.empty());
+        // Count how many of the eight corners of the field of view are contained
+        //   within this connected region.
+        // This is a topological signal that is more reliable than the preliminary
+        //   normal-based inside/outside vote:
+        //   a bounded interior cannot contain a corner of the FoV, whereas the
+        //   exterior background necessarily wraps around to encompass all eight.
+        size_t corner_count = 0;
+        for (const auto &voxel : to_fill) {
+          if ((voxel[0] == 0 || voxel[0] == H.size(0) - 1) && (voxel[1] == 0 || voxel[1] == H.size(1) - 1) &&
+              (voxel[2] == 0 || voxel[2] == H.size(2) - 1))
+            ++corner_count;
+        }
         vox_mesh_t fill_value = vox_mesh_t::UNDEFINED;
-        if (prelim_inside_count == prelim_outside_count && sum_sum_distances) {
+        // A region that encompasses every corner of the FoV wraps the entire volume
+        //   and therefore cannot be a bounded interior; it must lie outside the structure.
+        // This must take precedence over the preliminary normal-based vote: for degenerate
+        //   or sub-voxel meshes the voxelised surface does not form a closed shell separating
+        //   interior from exterior, so the flood fill merges the two into a single region whose
+        //   normal-based vote can be unanimous yet wrong (e.g. labelling the whole FoV inside).
+        if (corner_count == 8) {
+          fill_value = vox_mesh_t::OUTSIDE;
+        } else if (prelim_inside_count == prelim_outside_count && sum_sum_distances) {
           fill_value = sum_sum_distances < 0.0f ? vox_mesh_t::INSIDE : vox_mesh_t::OUTSIDE;
         } else if (prelim_inside_count > 10 * prelim_outside_count) {
           fill_value = vox_mesh_t::INSIDE;
@@ -290,17 +340,8 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
         } else {
           // Residual ambiguity about whether the connected region is inside or outside the surface
           // What other tests can we perform to make this decision?
-          // If all eight corners of the FoV are included in to_fill, we can be
-          //   reasonably confident that this connected region lies outside the structure
-          size_t corner_count = 0;
-          for (const auto &voxel : to_fill) {
-            if ((voxel[0] == 0 || voxel[0] == H.size(0) - 1) && (voxel[1] == 0 || voxel[1] == H.size(1) - 1) &&
-                (voxel[2] == 0 || voxel[2] == H.size(2) - 1))
-              ++corner_count;
-          }
-          if (corner_count == 8) {
-            fill_value = vox_mesh_t::OUTSIDE;
-          } else if (!corner_count) {
+          // A region containing none of the FoV corners is most consistent with a bounded interior
+          if (corner_count == 0) {
             fill_value = vox_mesh_t::INSIDE;
           } else if (sum_sum_distances != 0.0F) {
             fill_value = sum_sum_distances < 0.0F ? vox_mesh_t::INSIDE : vox_mesh_t::OUTSIDE;
@@ -322,12 +363,22 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
     }
     ++progress;
 
+#ifdef MRTRIX_MESH2IMAGE_DEBUG
+    // Stage 4: classification after flood-fill + majority vote, before residual UNDEFINED -> OUTSIDE
+    debug_export_u8(init_seg, "mesh2image_debug_4_filled.mif");
+#endif
+
     // Any voxel not yet processed must lie outside the structure(s)
     for (auto l = Loop(init_seg)(init_seg); l; ++l) {
       if (init_seg.value() == vox_mesh_t::UNDEFINED)
         init_seg.value() = vox_mesh_t::OUTSIDE;
     }
     ++progress;
+
+#ifdef MRTRIX_MESH2IMAGE_DEBUG
+    // Stage 5: final ternary segmentation (ON_MESH / INSIDE / OUTSIDE)
+    debug_export_u8(init_seg, "mesh2image_debug_5_final.mif");
+#endif
 
     // Write initial ternary segmentation
     for (auto l = Loop(init_seg)(init_seg, image); l; ++l) {

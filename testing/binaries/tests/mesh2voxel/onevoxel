@@ -1,0 +1,13 @@
+#!/bin/bash
+# Regression test for a single-voxel surface.
+# A surface enclosing a single voxel is the smallest possible structure; after smoothing
+#   it remains sub-voxel, and must voxelise to a partial volume image that is zero away
+#   from the seed voxel and never (near-)fully inside any voxel.
+# Reproduce the 5ttgen hsvs pipeline (voxel2mesh -> meshfilter smooth -> mesh2voxel),
+#   then assert that no voxel is (near-)fully classified as inside the surface.
+voxel2mesh mesh2voxel/onevoxel.mif -threshold 0.5 tmp-init.vtk -force
+meshfilter tmp-init.vtk smooth tmp-smooth.vtk -force
+mesh2voxel tmp-smooth.vtk mesh2voxel/onevoxel.mif tmp-pvf.mif -force
+mrcalc tmp-pvf.mif 0.9 -ge tmp-saturated.mif -force
+mrcalc tmp-pvf.mif 0 -mult tmp-zero.mif -force
+testing_diff_image tmp-saturated.mif tmp-zero.mif -abs 0.5

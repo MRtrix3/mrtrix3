@@ -238,6 +238,9 @@ add_bash_binary_test(maskfilter/median)
 
 add_bash_binary_test(mesh2voxel/default)
 add_bash_binary_test(mesh2voxel/input_4D)
+add_bash_binary_test(mesh2voxel/onevoxel)
+add_bash_binary_test(mesh2voxel/twovoxels_sharededge)
+add_bash_binary_test(mesh2voxel/twovoxels_sharedvertex)
 
 add_bash_binary_test(meshconvert/big_endian)
 add_bash_binary_test(meshconvert/little_endian)
