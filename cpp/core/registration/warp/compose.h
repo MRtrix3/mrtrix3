@@ -17,7 +17,7 @@
 #pragma once
 
 #include "adapter/extract.h"
-#include "adapter/jacobian.h" //TODO remove after debug
+#include "adapter/jacobian.h"
 #include "algo/threaded_loop.h"
 #include "image.h"
 #include "interp/warp.h"
@@ -178,6 +178,67 @@ FORCE_INLINE void update_displacement(Image<default_type> &input,
   ThreadedLoop(input, 0, 3).run(kernel, input, output);
 }
 
+/** Per-sub-step displacement bound divisor for diffeomorphism preservation under scaling-and-squaring.
+ *
+ * Each squared sub-step displacement must remain below \c min_vox_size / \c diffeomorphism_bound_divisor so that
+ * composition of the sub-steps yields a diffeomorphic (positive-Jacobian) displacement field.  The safe value of this
+ * divisor depends on the interpolation kernel used along the composition / inversion path:
+ *
+ * - K = 2.0: half-voxel bound, sufficient for LINEAR interpolation only.  A linear interpolant is a convex combination
+ *   of its nodes, so the steepest interpolated slope equals the node secant slope (2a for a symmetric +/-a step);
+ *   det = 1 - 2a > 0 requires a < 0.5 voxel.  NOT safe for cubic interpolation, which overshoots.
+ * - K = 2.5: Catmull-Rom monotone-step bound (0.4 voxel).  A symmetric monotone step (nodes a, a, -a, -a) has cubic
+ *   midpoint slope -2.5a, so det = 1 - 2.5a > 0 requires a < 0.4 voxel.  Matches the Choi-Lee (2000) cubic B-spline
+ *   injectivity constant (~0.40).  Safe for smooth/monotone fields but not for pathological oscillation.
+ * - K = 3.0: Catmull-Rom 1D axis-aligned worst-case bound (1/3 voxel).  For nodes bounded by +/-B the steepest slope
+ * any single cubic segment can manufacture is -3B (oscillatory nodes -B, +B, -B, +B; slope extremum at cell centre);
+ *   det = 1 - 3B > 0 requires B < 1/3 voxel.  Safe for a purely axial (diagonal-Jacobian) fold, but NOT for 3D shear:
+ *   it ignores the off-diagonal Jacobian terms that the tri-cubic tensor product introduces.
+ * - K = 7.03125 (= 225/32): the exact 3D tri-cubic Catmull-Rom injectivity bound (B < 32/225 ~ 0.1422 voxel).  The
+ *   worst case is not axial compression but a rank-1 "uniform" Jacobian grad u = -c * (all-ones), whose eigenvalues are
+ *   {3c, 0, 0}; det(I + grad u) = 1 - 3c folds once 3c = 1.  Each row of grad u can reach c = (75/32) B at the cell
+ *   centre (the value-interpolation factor (5/4)^2 on the two un-differentiated axes amplifies every entry, and the
+ *   three entries of a row jointly reach half the single-entry maximum), giving det = 1 - (225/32) B.  This is the
+ *   minimum K that keeps EVERY sub-voxel position diffeomorphic for any node configuration within the bound.  It is far
+ *   tighter than the Choi-Lee (2000) cubic B-spline bound (~0.40) because Catmull-Rom is interpolating: its basis is
+ *   not positive (it overshoots) and has no convex-hull property to temper the Jacobian.
+ * - K = 14.0625 (= 225/16): the rigorous Gershgorin / row-sum sufficient bound (B < 16/225 ~ 0.0711 voxel).  Exactly
+ *   twice the critical divisor; conservative because it triple-counts shear that the rank-1 worst case single-counts.
+ *
+ * Active value: K = 225/32 = 7.03125.  The composition / inversion path uses tri-cubic Catmull-Rom interpolation, so
+ * the binding constraint is the 3D shear-inclusive injectivity bound, not the 1D axial K = 3.0.  This is the *sharp*
+ * bound: it is the smallest divisor that still keeps every sub-voxel position diffeomorphic for the worst-case
+ * (pathological rank-1 oscillatory) node configuration, at which the minimum determinant is marginal (det -> 0).  Real
+ * image data is far from that worst case, so the realised minimum Jacobian determinant typically carries substantial
+ * headroom; the debug-only per-iteration logging below reports it so the divisor can be relaxed toward 3.0 (recovering
+ * step size) if the bound proves unnecessarily pessimistic, or raised toward the Gershgorin K = 14.0625 if a worst-case
+ * proof is required.
+ */
+constexpr default_type diffeomorphism_bound_divisor = 225.0 / 32.0;
+
+#ifndef NDEBUG
+//! Debug-only: report the minimum deformation-Jacobian determinant of an update field and assert diffeomorphism.
+/*! Computes det(I + \a step * grad u) at every voxel of \a update, tracks its minimum over the whole image, emits that
+ *  minimum at -debug verbosity, and throws if the field is not diffeomorphic (non-positive determinant anywhere).  The
+ *  logging lets the realised headroom below the conservative injectivity bound (diffeomorphism_bound_divisor) be
+ *  observed on real image data: if the minimum determinant stays comfortably positive the divisor is unnecessarily
+ *  pessimistic and may be relaxed.  Compiled out entirely in release builds. */
+FORCE_INLINE void
+debug_report_diffeomorphism(Image<default_type> &update, const default_type step, const std::string_view context) {
+  Adapter::Jacobian<Image<default_type>> jacobian(update);
+  const Eigen::Matrix3d identity = Eigen::Matrix3d::Identity();
+  default_type min_det = std::numeric_limits<default_type>::infinity();
+  for (auto l = Loop(0, 3)(jacobian); l; ++l)
+    min_det = std::min(min_det, (identity + step * jacobian.value()).determinant());
+  DEBUG("minimum deformation Jacobian determinant of " + std::string(context) + " = " + str(min_det) +
+        " (diffeomorphism bound divisor K = " + str(diffeomorphism_bound_divisor) + ")");
+  if (min_det <= 0.0) {
+    throw Exception("non-positive deformation Jacobian determinant (" + str(min_det) + ") in " + std::string(context) +
+                    "; interpolation overshoot has folded the displacement field");
+  }
+}
+#endif
+
 // Compose two displacement fields and output a displacement field using scaling and squaring.  The input and output can
 // be the same image.
 FORCE_INLINE void update_displacement_scaling_and_squaring(Image<default_type> &input,
@@ -196,14 +257,21 @@ FORCE_INLINE void update_displacement_scaling_and_squaring(Image<default_type> &
   default_type min_vox_size =
       static_cast<default_type>(std::min(input.spacing(0), std::min(input.spacing(1), input.spacing(2))));
 
-  // if the maximum update is larger than half a voxel, perform scaling and squaring to ensure the displacement field
-  // remains diffeomorphic
+  // if the maximum update exceeds the per-sub-step diffeomorphism bound, perform scaling and squaring to ensure the
+  // displacement field remains diffeomorphic.  The bound (min_vox_size / diffeomorphism_bound_divisor) accounts for the
+  // overshoot of the Catmull-Rom cubic interpolation used along the composition path, not just the linear half-voxel
+  // limit; see diffeomorphism_bound_divisor.
+  const default_type per_step_bound = min_vox_size / diffeomorphism_bound_divisor;
 
   default_type scale_factor = 1.0;
-  if (max_norm * step < min_vox_size / 2.0) {
+  if (max_norm * step < per_step_bound) {
     update_displacement(input, update, output, step);
+#ifndef NDEBUG
+    // The applied sub-step is update * step; report its minimum Jacobian determinant and assert diffeomorphism.
+    debug_report_diffeomorphism(update, step, "direct (single-composition) update");
+#endif
   } else {
-    scale_factor = std::pow(2, std::ceil(std::log((max_norm * step) / (min_vox_size / 2.0)) / std::log(2.0)));
+    scale_factor = std::pow(2, std::ceil(std::log((max_norm * step) / per_step_bound) / std::log(2.0)));
 
     std::shared_ptr<Image<default_type>> scaled_update =
         std::make_shared<Image<default_type>>(Image<default_type>::scratch(update));
@@ -226,22 +294,11 @@ FORCE_INLINE void update_displacement_scaling_and_squaring(Image<default_type> &
       update_displacement(*scaled_update, *scaled_update, *composed);
       std::swap(scaled_update, composed);
     }
-    //          save (*scaled_update, std::string("composed_update.mif"), false);
-    //          Adapter::Jacobian<Image<default_type> > jacobian (*scaled_update);
-    //          Header header (*scaled_update);
-    //          header.ndim() = 3;
-    //          bool is_neg = false;
-    //          auto jacobian_det = Image<default_type>::scratch (header);
-    //          Eigen::MatrixXd ident = Eigen::MatrixXd::Identity (3,3);
-    //          for (auto i = Loop (0,3) (jacobian, jacobian_det); i; ++i) {
-    //            auto jac_matrix = ident + jacobian.value();
-    //            jacobian_det.value() = jac_matrix.determinant();
-    //            if (jacobian_det.value() < 0.0)
-    //              is_neg = true;
-    //          }
-    //          save (jacobian_det, std::string("jacobian.mif"), false);
-    //          if (is_neg)
-    //            throw Exception ("negative jacobians in update");
+#ifndef NDEBUG
+    // The squaring loop leaves *scaled_update holding the full-magnitude composed update (step already baked in), so
+    //   report its minimum Jacobian determinant and assert diffeomorphism with a unit step factor.
+    debug_report_diffeomorphism(*scaled_update, 1.0, "scaling-and-squaring update");
+#endif
 
     update_displacement(input, *scaled_update, output);
   }
