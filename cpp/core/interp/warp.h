@@ -314,18 +314,15 @@ Warp<ValueType, PType>::make_scratch(ImageType field, const Registration::Warp::
   //   least `margin` voxels from the field-of-view edge, guaranteeing both that
   //   the dilation halo fits and that the cubic kernel of any valid sample stays
   //   in-bounds. `shift` maps an input voxel index onto the (padded) grid.
-  std::array<ssize_t, 3> shift{0, 0, 0};
-  Header grid(header);
+  std::array<ssize_t, 3> pad_low;
+  std::array<ssize_t, 3> pad_high;
   for (ssize_t axis = 0; axis != 3; ++axis) {
-    const ssize_t pad_low = std::max<ssize_t>(0, margin - bbox_min[axis]);
-    const ssize_t pad_high = std::max<ssize_t>(0, margin - (header.size(axis) - 1 - bbox_max[axis]));
-    shift[axis] = pad_low;
-    grid.size(axis) = header.size(axis) + pad_low + pad_high;
-    // Shift the transform so that padded voxel `pad_low` along this axis maps to
-    //   the scanner-space position of input voxel 0 (origin offset of `-pad_low`).
-    for (ssize_t i = 0; i != 3; ++i)
-      grid.transform()(i, 3) -= static_cast<default_type>(pad_low) * grid.spacing(axis) * grid.transform()(i, axis);
+    pad_low[axis] = std::max<ssize_t>(0, margin - bbox_min[axis]);
+    pad_high[axis] = std::max<ssize_t>(0, margin - (header.size(axis) - 1 - bbox_max[axis]));
   }
+  const Registration::Warp::PaddedGrid padded = Registration::Warp::make_padded_grid(header, pad_low, pad_high);
+  const std::array<ssize_t, 3> &shift = padded.shift;
+  const Header &grid = padded.grid;
 
   // 4D buffer on the working grid: empirical warp where finite, imputed
   //   values across the halo, left unpopulated beyond it.
@@ -422,6 +419,79 @@ public:
                   Registration::Warp::ExtrapolateDegree::Adaptive,
                   ValidityPolicy::Extrapolated,
                   value_when_out_of_bounds) {}
+};
+
+//! Cubic interpolation of a warp field that is dense and finite by construction
+/*! Where \c Interp::Warp targets a warp field that may carry non-finite holes (and so
+ *  builds a validity mask, dilates a halo and fills it by polynomial extrapolation),
+ *  \c DenseWarp targets a field with no holes at all: the valid region is the entire
+ *  field of view. Such fields arise throughout non-linear registration's internal
+ *  Demons calculation, where the four half-way displacement fields start at zero and
+ *  are only ever smoothed, composed and inverted. For these the validity / dilation /
+ *  polynomial-halo machinery is wasted; all that cubic interpolation needs is finite
+ *  data within a two-voxel margin of the field-of-view edge so the edge kernels stay
+ *  well-posed (the alternative, \c Interp::Cubic's built-in clamping, would replicate
+ *  the edge value and bias the field there).
+ *
+ *  \c DenseWarp samples a \c MR::Registration::Warp::PaddedField: a buffer enlarged by
+ *  that margin whose border shell is filled by separable linear extrapolation, built
+ *  once per multi-resolution level and refreshed in place each iteration. Acceptance is
+ *  the original (pre-padding) field of view: \c voxel(), \c image() and \c scanner()
+ *  return \c false outside it, exactly as a plain interpolator over the unpadded field
+ *  would, so the padded halo is read by the cubic kernel but never accepted as a sample
+ *  position in its own right. */
+template <class ValueType = default_type, Math::SplineProcessingType PType = Math::SplineProcessingType::Value>
+class DenseWarp : public SplineInterp<Image<ValueType>, Math::HermiteSpline<ValueType>, PType> {
+public:
+  using value_type = ValueType;
+  using base_type = SplineInterp<Image<ValueType>, Math::HermiteSpline<ValueType>, PType>;
+
+  //! construct over a padded buffer, restricting acceptance to the original field of view
+  /*! \param padded_buffer the enlarged 4D buffer (interior plus extrapolated border shell)
+   *  \param shift         the per-axis index of the original voxel 0 within the padded grid
+   *  \param original_size the per-axis voxel count of the original (unpadded) field
+   *  \param value_when_out_of_bounds the value returned by value()/row() outside the
+   *    original field of view */
+  DenseWarp(const Image<ValueType> &padded_buffer,
+            const std::array<ssize_t, 3> &shift,
+            const std::array<ssize_t, 3> &original_size,
+            const value_type value_when_out_of_bounds = base_type::default_out_of_bounds_value())
+      : base_type(padded_buffer, value_when_out_of_bounds) {
+    for (ssize_t axis = 0; axis != 3; ++axis) {
+      lower[axis] = static_cast<default_type>(shift[axis]) - 0.5;
+      upper[axis] = static_cast<default_type>(shift[axis] + original_size[axis]) - 0.5;
+    }
+  }
+
+  //! Set the current position to <b>voxel space</b> position \a pos (padded-grid voxels)
+  /*! \return true only if \a pos lies within the original (pre-padding) field of view. */
+  template <class VectorType> bool voxel(const VectorType &pos) {
+    if (base_type::set_out_of_bounds(pos))
+      return false;
+    for (ssize_t axis = 0; axis != 3; ++axis) {
+      if (pos[axis] <= lower[axis] || pos[axis] >= upper[axis]) {
+        base_type::set_out_of_bounds(true);
+        return false;
+      }
+    }
+    return base_type::voxel(pos);
+  }
+
+  //! Set the current position to <b>image space</b> position \a pos
+  template <class VectorType> FORCE_INLINE bool image(const VectorType &pos) {
+    return voxel(Transform::voxelsize.inverse() * pos.template cast<default_type>());
+  }
+
+  //! Set the current position to the <b>scanner space</b> position \a pos
+  template <class VectorType> FORCE_INLINE bool scanner(const VectorType &pos) {
+    return voxel(Transform::scanner2voxel * pos.template cast<default_type>());
+  }
+
+private:
+  //! the original field-of-view bounds in padded-grid voxel coordinates (the base
+  //!   class out-of-bounds convention: accept iff lower < pos < upper on every axis)
+  std::array<default_type, 3> lower;
+  std::array<default_type, 3> upper;
 };
 
 //! @}

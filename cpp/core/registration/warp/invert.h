@@ -30,9 +30,9 @@
 
 #include "algo/loop.h"
 #include "algo/threaded_loop.h"
-#include "interp/linear.h"
 #include "interp/warp.h"
 #include "registration/warp/convert.h"
+#include "registration/warp/padded_field.h"
 
 namespace MR::Registration::Warp {
 
@@ -59,21 +59,27 @@ enum class InversionOutcome : uint8_t {
   NoValidCandidate = 4   //!< step-halving budget exhausted with no in-region candidate; rejected (NaN)
 };
 
-//! Fixed-point inverter of a displacement field using linear interpolation
-/*! Retained for the non-linear registration hot path (MR::Registration::Transform::NonLinear),
- *  where the halfway displacement fields are dense and finite by construction and a fast
- *  inversion is run per accepted iteration. The user-facing warpinvert command instead routes
- *  the displacement path through invert_displacement_warp(), which uses the imputation-aware
- *  cubic interpolator and honours non-finite holes; that machinery is deliberately not used here
- *  because it would add a scatter-based initialisation and Newton search for no gain on dense data. */
+//! Fixed-point inverter of a dense displacement field using cubic interpolation
+/*! Used by the non-linear registration hot path (MR::Registration::Transform::NonLinear), where
+ *  the half-way displacement fields are dense and finite by construction. The forward field is
+ *  sampled through Interp::DenseWarp over a reusable PaddedField (a margin-voxel border shell
+ *  filled by linear extrapolation), so cubic interpolation stays well-posed at the field-of-view
+ *  edge without the per-call finiteness scan, dilation and polynomial-halo extrapolation that
+ *  Interp::Warp performs for fields that may contain non-finite holes. This simple fixed-point
+ *  inverter remains the right choice for these dense fields; the user-facing warpinvert command
+ *  instead routes the displacement path through invert_displacement_warp(), whose Newton search
+ *  over Interp::Warp additionally honours such holes. */
 class DisplacementThreadKernel {
 
 public:
-  DisplacementThreadKernel(Image<default_type> &displacement,
+  DisplacementThreadKernel(PaddedField &displacement,
                            Image<default_type> &displacement_inverse,
                            const size_t max_iter,
                            const default_type error_tol)
-      : displacement(displacement), transform(displacement_inverse), max_iter(max_iter), error_tolerance(error_tol) {}
+      : displacement(displacement.buffer(), displacement.shift(), displacement.original_size()),
+        transform(displacement_inverse),
+        max_iter(max_iter),
+        error_tolerance(error_tol) {}
 
   void operator()(Image<default_type> &displacement_inverse) {
     const Eigen::Vector3d voxel{static_cast<default_type>(displacement_inverse.index(0)),
@@ -94,12 +100,12 @@ public:
 private:
   default_type update(Eigen::Vector3d &current, const Eigen::Vector3d &truth) {
     displacement.scanner(current);
-    const Eigen::Vector3d discrepancy = truth - (current + Eigen::Vector3d(displacement.vec3()));
+    const Eigen::Vector3d discrepancy = truth - (current + Eigen::Vector3d(displacement.row(3)));
     current += discrepancy;
     return discrepancy.dot(discrepancy);
   }
 
-  Interp::Linear<Image<default_type>> displacement;
+  Interp::DenseWarp<default_type> displacement;
   MR::Transform transform;
   const size_t max_iter;
   default_type error_tolerance;
@@ -545,18 +551,24 @@ invert_displacement_deformation(Image<default_type> &disp,
   invert_deformation(deform_field, inv_deform, is_initialised, max_iter, error_tolerance, degree, validity_policy);
 }
 
-/*! Estimate the inverse of a displacement field
- * Note that the output inv_warp can be passed as either a zero field or an initial estimate
- */
+/*! Estimate the inverse of a dense displacement field by fixed-point iteration with cubic
+ *  interpolation. The forward field is loaded into the reusable \a disp_padded buffer (whose
+ *  border shell is filled by linear extrapolation), so the caller can build one PaddedField per
+ *  multi-resolution level and amortise its allocation across iterations. Intended for the dense,
+ *  hole-free half-way fields of the non-linear registration hot path; the warpinvert command's
+ *  hole-honouring displacement inversion is invert_displacement_warp().
+ *  Note that the output inv_warp can be passed as either a zero field or an initial estimate. */
 FORCE_INLINE void invert_displacement(Image<default_type> &disp_field,
+                                      PaddedField &disp_padded,
                                       Image<default_type> &inv_disp_field,
                                       size_t max_iter = 50,
                                       default_type error_tolerance = 0.0001) {
   check_dimensions(disp_field, inv_disp_field);
   error_tolerance *= (disp_field.spacing(0) + disp_field.spacing(1) + disp_field.spacing(2)) / 3;
 
+  disp_padded.refresh(disp_field);
   ThreadedLoop("inverting displacement field...", inv_disp_field, 0, 3)
-      .run(DisplacementThreadKernel(disp_field, inv_disp_field, max_iter, error_tolerance), inv_disp_field);
+      .run(DisplacementThreadKernel(disp_padded, inv_disp_field, max_iter, error_tolerance), inv_disp_field);
 }
 
 /*! Estimate the inverse of a displacement field via imputation-aware cubic interpolation,

@@ -3,15 +3,16 @@
 #
 # REFERENCE DATA REGENERATION REQUIRED:
 #   The reference mrregister/warp_full.mif.gz (in the mrtrix3/test_data repository) was
-#   generated when the non-linear registration upsampled the deformation field between
-#   multi-resolution levels with linear interpolation. That upsampling now uses cubic
-#   interpolation (Interp::WarpResliceExtrapolated, in cpp/core/registration/nonlinear.h),
-#   which slightly perturbs the demons optimisation trajectory and hence the output warp:
-#   a small, smooth shift in deformation values (order a few percent; no non-finite values
-#   introduced), which exceeds the tight -abs 1e-4 tolerance below. To restore this test,
-#   regenerate the reference: run the mrregister invocation below, write its -nl_warp_full
-#   output over mrregister/warp_full.mif.gz in the test_data checkout, then commit and push
-#   that update to the mrtrix3/test_data repository.
+#   generated when the non-linear registration sampled warp fields with linear interpolation.
+#   The internal Demons calculation now samples them cubically: inter-level field upsampling
+#   (Interp::WarpResliceExtrapolated), displacement-field inversion and the scaling-and-squaring
+#   composition all read through Interp::DenseWarp / Interp::Warp (see cpp/core/registration/
+#   nonlinear.h, .../warp/invert.h and .../warp/compose.h). This slightly perturbs the demons
+#   optimisation trajectory and hence the output warp: a small, smooth shift in deformation
+#   values (order a few percent; no non-finite values introduced), which exceeds the tight
+#   -abs 1e-4 tolerance below. To restore this test, regenerate the reference: run the mrregister
+#   invocation below, write its -nl_warp_full output over mrregister/warp_full.mif.gz in the
+#   test_data checkout, then commit and push that update to the mrtrix3/test_data repository.
 mrtransform dwi2fod/msmt_csd/wm.mif -linear moving2template.txt -reorient_fod yes tmp-wmtemplate.mif -force
 
 mrregister -type rigid_nonlinear \

@@ -11,6 +11,7 @@ set(UNIT_TESTS_CPP_SRCS
     extrapolate_tests.cpp
     icls_tests.cpp
     ordered_queue_tests.cpp
+    padded_field_tests.cpp
     parse_axes_tests.cpp
     parse_ints_tests.cpp
     platform_tests.cpp

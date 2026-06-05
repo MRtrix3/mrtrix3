@@ -20,8 +20,9 @@
 #include "adapter/jacobian.h" //TODO remove after debug
 #include "algo/threaded_loop.h"
 #include "image.h"
-#include "interp/linear.h"
+#include "interp/warp.h"
 #include "registration/warp/helpers.h"
+#include "registration/warp/padded_field.h"
 #include "transform.h"
 
 namespace MR::Registration::Warp {
@@ -57,10 +58,13 @@ protected:
   MR::Transform image_transform;
 };
 
+// Compose two dense displacement fields. The second field is dense and finite by construction, so
+//   it is sampled with cubic interpolation via Interp::DenseWarp over a PaddedField buffer; outside
+//   its field of view the kernel falls back to the input displacement (as the linear sampler did).
 class ComposeDispKernel {
 public:
-  ComposeDispKernel(Image<default_type> &disp_input1, Image<default_type> &disp_input2, default_type step)
-      : disp1_transform(disp_input1), disp2_interp(disp_input2), step(step) {}
+  ComposeDispKernel(Image<default_type> &disp_input1, Interp::DenseWarp<default_type> disp2_interp, default_type step)
+      : disp1_transform(disp_input1), disp2_interp(std::move(disp2_interp)), step(step) {}
 
   void operator()(Image<default_type> &disp_input1, Image<default_type> &disp_output) {
     const Eigen::Vector3d voxel{static_cast<default_type>(disp_input1.index(0)),
@@ -68,11 +72,10 @@ public:
                                 static_cast<default_type>(disp_input1.index(2))};
     const Eigen::Vector3d voxel_position = disp1_transform.voxel2scanner * voxel;
     const Eigen::Vector3d original_position = voxel_position + Eigen::Vector3d(disp_input1.row(3));
-    disp2_interp.scanner(original_position);
-    if (!disp2_interp) {
+    if (!disp2_interp.scanner(original_position)) {
       disp_output.row(3) = disp_input1.row(3);
     } else {
-      const Eigen::Vector3d displacement(Eigen::Vector3d(disp2_interp.vec3()).array() * step);
+      const Eigen::Vector3d displacement(Eigen::Vector3d(disp2_interp.row(3)).array() * step);
       const Eigen::Vector3d new_position = displacement + original_position;
       disp_output.row(3) = new_position - voxel_position;
     }
@@ -80,27 +83,24 @@ public:
 
 protected:
   MR::Transform disp1_transform;
-  Interp::Linear<Image<default_type>> disp2_interp;
+  Interp::DenseWarp<default_type> disp2_interp;
   default_type step;
 };
 
-// TODO: This kernel interpolates deformation fields with Interp::Linear and could adopt the
-//   imputation-aware cubic Interp::Warp (as filter/warp.h, transformcompose and the deformation
-//   inversion path now do). It is deferred because its productive caller compute_full_deformation()
-//   passes Adapter::Extract1D views into a 5D warp, which Interp::Warp cannot wrap without first
-//   materialising each into a scratch Image<default_type> (two full double-field copies per call,
-//   on mrregister's hot path), for halfway fields that are dense/finite by construction. Revisit
-//   whether the imputation benefit justifies that cost; adoption would also require changing the
-//   vec3() reads below to row(3).
-template <class DeformationField1Type, class DeformationField2Type> class ComposeHalfwayKernel {
+// Compose two half-way deformation fields, chaining a sample through both. The fields are dense
+//   and finite by construction (they originate from the registration's half-way warps), so they
+//   are sampled with cubic interpolation via Interp::DenseWarp over PaddedField buffers built by
+//   the caller; out-of-field-of-view samples yield NaN. The fields reach the productive caller as
+//   Adapter::Extract1D views into a 5D warp, which the caller materialises into the padded buffers.
+class ComposeHalfwayKernel {
 public:
   ComposeHalfwayKernel(const transform_type &linear1,
-                       DeformationField1Type &deform1,
-                       DeformationField2Type &deform2,
+                       Interp::DenseWarp<default_type> deform1_interp,
+                       Interp::DenseWarp<default_type> deform2_interp,
                        const transform_type &linear2)
       : linear1(linear1),
-        deform1_interp(deform1),
-        deform2_interp(deform2),
+        deform1_interp(std::move(deform1_interp)),
+        deform2_interp(std::move(deform2_interp)),
         linear2(linear2),
         out_of_bounds(Eigen::Vector3d::Constant(NaN)) {}
 
@@ -109,28 +109,38 @@ public:
                                 static_cast<default_type>(deform.index(1)),
                                 static_cast<default_type>(deform.index(2))};
     const Eigen::Vector3d position = linear1 * voxel;
-    deform1_interp.scanner(position);
-    if (!deform1_interp) {
+    if (!deform1_interp.scanner(position)) {
       deform.row(3) = out_of_bounds;
-    } else {
-      const Eigen::Vector3d position2 = deform1_interp.vec3();
-      deform2_interp.scanner(position2);
-      if (!deform2_interp) {
-        deform.row(3) = out_of_bounds;
-      } else {
-        const Eigen::Vector3d position3 = deform2_interp.vec3();
-        deform.row(3) = linear2 * position3;
-      }
+      return;
     }
+    const Eigen::Vector3d position2 = deform1_interp.row(3);
+    if (!deform2_interp.scanner(position2)) {
+      deform.row(3) = out_of_bounds;
+      return;
+    }
+    const Eigen::Vector3d position3 = deform2_interp.row(3);
+    deform.row(3) = linear2 * position3;
   }
 
 protected:
   const transform_type linear1;
-  Interp::Linear<DeformationField2Type> deform1_interp;
-  Interp::Linear<DeformationField2Type> deform2_interp;
+  Interp::DenseWarp<default_type> deform1_interp;
+  Interp::DenseWarp<default_type> deform2_interp;
   const transform_type linear2;
   Eigen::Vector3d out_of_bounds;
 };
+
+//! load a dense warp field into a padded buffer for cubic sampling via Interp::DenseWarp
+/*! \a field may be an \c Image or an \c Adapter::Extract1D view into a higher-dimensional warp;
+ *  a 4D header (three components along axis 3) is taken explicitly so either is accepted. */
+template <class FieldType> FORCE_INLINE PaddedField make_padded_dense_field(FieldType &field) {
+  Header header(field);
+  header.ndim() = 4;
+  header.size(3) = 3;
+  PaddedField padded(header);
+  padded.refresh(field);
+  return padded;
+}
 
 // Compose a linear transform and a displacement field. The output field is a deformation field. The input and output
 // can be the same image.
@@ -158,7 +168,14 @@ FORCE_INLINE void update_displacement(Image<default_type> &input,
                                       Image<default_type> &output,
                                       default_type step = 1.0) {
   check_dimensions(input, output, 0, 3);
-  ThreadedLoop(input, 0, 3).run(ComposeDispKernel(input, update, step), input, output);
+  // The sampled field (update) is dense and finite by construction; load it into a padded buffer
+  //   so it is read with cubic interpolation, well-posed at the field-of-view edge.
+  PaddedField update_padded = make_padded_dense_field(update);
+  ComposeDispKernel kernel(
+      input,
+      Interp::DenseWarp<default_type>(update_padded.buffer(), update_padded.shift(), update_padded.original_size()),
+      step);
+  ThreadedLoop(input, 0, 3).run(kernel, input, output);
 }
 
 // Compose two displacement fields and output a displacement field using scaling and squaring.  The input and output can
@@ -238,8 +255,13 @@ FORCE_INLINE void compute_full_deformation(const transform_type &linear1,
                                            const transform_type &linear2,
                                            OutputDeformationFieldType &deform_out) {
   MR::Transform deform_header_transform(deform_out);
-  ComposeHalfwayKernel<DeformationField1Type, DeformationField2Type> compose_kernel(
-      linear1 * deform_header_transform.voxel2scanner, deform1, deform2, linear2);
+  PaddedField padded1 = make_padded_dense_field(deform1);
+  PaddedField padded2 = make_padded_dense_field(deform2);
+  ComposeHalfwayKernel compose_kernel(
+      linear1 * deform_header_transform.voxel2scanner,
+      Interp::DenseWarp<default_type>(padded1.buffer(), padded1.shift(), padded1.original_size()),
+      Interp::DenseWarp<default_type>(padded2.buffer(), padded2.shift(), padded2.original_size()),
+      linear2);
   ThreadedLoop(deform_out, 0, 3).run(compose_kernel, deform_out);
 }
 
@@ -252,8 +274,13 @@ FORCE_INLINE void compute_full_deformation(std::string message,
                                            const transform_type &linear2,
                                            OutputDeformationFieldType &deform_out) {
   MR::Transform deform_header_transform(deform_out);
-  ComposeHalfwayKernel<DeformationField1Type, DeformationField2Type> compose_kernel(
-      linear1 * deform_header_transform.voxel2scanner, deform1, deform2, linear2);
+  PaddedField padded1 = make_padded_dense_field(deform1);
+  PaddedField padded2 = make_padded_dense_field(deform2);
+  ComposeHalfwayKernel compose_kernel(
+      linear1 * deform_header_transform.voxel2scanner,
+      Interp::DenseWarp<default_type>(padded1.buffer(), padded1.shift(), padded1.original_size()),
+      Interp::DenseWarp<default_type>(padded2.buffer(), padded2.shift(), padded2.original_size()),
+      linear2);
   ThreadedLoop(message, deform_out, 0, 3).run(compose_kernel, deform_out);
 }
 

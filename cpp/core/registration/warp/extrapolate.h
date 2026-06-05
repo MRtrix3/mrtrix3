@@ -38,6 +38,33 @@ namespace MR::Registration::Warp {
 //! \addtogroup registration
 // @{
 
+//! a padded copy of a voxel grid together with the index shift onto it
+struct PaddedGrid {
+  Header grid;                  //!< the enlarged grid
+  std::array<ssize_t, 3> shift; //!< index added to an input voxel to reach the padded grid
+};
+
+//! enlarge a voxel grid by the requested low/high padding along each spatial axis
+/*! Returns the padded \a Header and the per-axis \c shift mapping an input voxel index
+ *  onto the padded grid. The spatial transform is offset so that the padded voxel
+ *  \c shift[axis] along each axis maps to the scanner-space position of input voxel 0,
+ *  leaving every voxel's scanner-space position unchanged. Shared by \c Interp::Warp
+ *  (which pads only where the valid region abuts a field-of-view edge) and
+ *  \c PaddedField (which pads a fixed margin on all sides). */
+inline PaddedGrid
+make_padded_grid(const Header &header, const std::array<ssize_t, 3> &pad_low, const std::array<ssize_t, 3> &pad_high) {
+  PaddedGrid result{Header(header), pad_low};
+  for (ssize_t axis = 0; axis != 3; ++axis) {
+    result.grid.size(axis) = header.size(axis) + pad_low[axis] + pad_high[axis];
+    // Shift the transform so that padded voxel `pad_low[axis]` maps to the scanner-space
+    //   position of input voxel 0 (origin offset of `-pad_low[axis]` along this axis).
+    for (ssize_t i = 0; i != 3; ++i)
+      result.grid.transform()(i, 3) -=
+          static_cast<default_type>(pad_low[axis]) * result.grid.spacing(axis) * result.grid.transform()(i, axis);
+  }
+  return result;
+}
+
 //! the 26 shared-corner neighbour offsets of a voxel
 /*! Shared with the warp-inversion region-grow (\c invert.h); a single
  *  definition avoids duplicating the offset table. */

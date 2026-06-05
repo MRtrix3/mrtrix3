@@ -39,6 +39,7 @@
 #include "registration/warp/convert.h"
 #include "registration/warp/helpers.h"
 #include "registration/warp/invert.h"
+#include "registration/warp/padded_field.h"
 
 namespace MR::Registration {
 
@@ -212,6 +213,11 @@ public:
         }
       }
 
+      // Reusable padded buffer backing the cubic displacement inversion below: built once for
+      //   this level's field grid and refreshed in place each iteration, so the imputation-free
+      //   per-iteration cost is one interior copy plus a border-shell extrapolation.
+      Registration::Warp::PaddedField disp_padded(field_header);
+
       ssize_t iteration = 1;
       default_type grad_step_altered =
           gradient_step * (field_header.spacing(0) + field_header.spacing(1) + field_header.spacing(2)) / 3.0;
@@ -333,14 +339,13 @@ public:
 
           DEBUG("inverting displacement field");
           {
-            // The fast linear displacement inverter is retained here deliberately: these
-            //   halfway fields are dense and finite by construction, so the imputation-aware
-            //   cubic inversion (Warp::invert_displacement_warp, used by the warpinvert command)
-            //   would add its scatter-based initialisation and Newton search per accepted
-            //   iteration for no correctness gain on this hot path.
+            // These half-way fields are dense and finite by construction, so the simple
+            //   fixed-point inverter is retained rather than the warpinvert command's
+            //   hole-honouring Newton search (Warp::invert_displacement_warp); the forward field
+            //   is sampled cubically through the reusable disp_padded buffer (see invert.h).
             LogLevelLatch level(0);
-            Warp::invert_displacement(*im1_to_mid, *mid_to_im1);
-            Warp::invert_displacement(*im2_to_mid, *mid_to_im2);
+            Warp::invert_displacement(*im1_to_mid, disp_padded, *mid_to_im1);
+            Warp::invert_displacement(*im2_to_mid, disp_padded, *mid_to_im2);
           }
 
         } else {
