@@ -388,9 +388,8 @@ prepare_ND_write(const std::filesystem::path &path, const DataType data_type, co
                      "," + (shape.size() == 2 ? (" " + str(shape[1])) : "") + "), }");
   // Pad with spaces so that, for version 1, upon adding a newline at the end, the file size (i.e. eventual offset to
   // the data) is a multiple of alignment (16)
-  uint32_t space_count =
-      alignment -
-      ((header.size() + 11) % alignment); // 11 = 6 magic number + 2 version + 2 header length + 1 newline for header
+  // 11 = 6 magic number + 2 version + 2 header length + 1 newline for header
+  uint32_t space_count = alignment - ((header.size() + 11) % alignment);
   uint32_t padded_header_length = header.size() + space_count + 1;
   File::OFStream out(path, std::ios_base::out | std::ios_base::binary);
   if (!out)
@@ -401,8 +400,8 @@ prepare_ND_write(const std::filesystem::path &path, const DataType data_type, co
     const unsigned char major_version = '\x02';
     out.write(reinterpret_cast<const char *>(&major_version), 1);
     out.write(reinterpret_cast<const char *>(&minor_version), 1);
-    space_count = alignment - ((header.size() + 13) %
-                               alignment); // 13 = 6 magic number + 2 version + 4 header length + 1 newline for header
+    // 13 = 6 magic number + 2 version + 4 header length + 1 newline for header
+    space_count = alignment - ((header.size() + 13) % alignment);
     padded_header_length = header.size() + space_count + 1;
     padded_header_length = ByteOrder::LE(padded_header_length);
     out.write(reinterpret_cast<const char *>(&padded_header_length), 4);

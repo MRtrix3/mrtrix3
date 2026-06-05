@@ -285,8 +285,8 @@ void Image::parse_item(Element &item) {
   case 0xFFFEU:
     switch (item.element) {
     case 0xE000U:
-      if (!item.parents.empty() && item.parents.back().group == 0x5200U &&
-          item.parents.back().element == 0x9230U) { // multi-frame item
+      // multi-frame item
+      if (!item.parents.empty() && item.parents.back().group == 0x5200U && item.parents.back().element == 0x9230U) {
         if (in_frames) {
           calc_distance();
           frames.push_back(std::shared_ptr<Frame>(new Frame(*this)));

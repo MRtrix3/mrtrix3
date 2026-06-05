@@ -67,8 +67,8 @@ std::vector<ShufflerParams> GetShufflerTestParams() {
       max_num_permutations = Math::factorial(ROWS);
       max_num_signflips = size_t(1) << ROWS;
     } else if (exchange_type == Exchange::WITHIN) {
-      max_num_permutations =
-          static_cast<size_t>(Math::factorial(2)) * Math::factorial(2) * Math::factorial(2); // 2 per block
+      // 2 per block
+      max_num_permutations = static_cast<size_t>(Math::factorial(2)) * Math::factorial(2) * Math::factorial(2);
       max_num_signflips = size_t(1) << ROWS;
     } else {
       // WHOLE

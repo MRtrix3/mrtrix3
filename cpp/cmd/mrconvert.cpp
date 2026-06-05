@@ -267,8 +267,8 @@ void permute_DW_scheme(Header &H, const std::vector<int> &axes) {
   const Eigen::Matrix3d R = T.scanner2voxel.rotation() * permute * T.voxel2scanner.rotation();
 
   Eigen::MatrixXd out(in.rows(), in.cols());
-  out.block(0, 3, out.rows(), out.cols() - 3) =
-      in.block(0, 3, in.rows(), in.cols() - 3); // Copy b-values (and anything else stored in dw_scheme)
+  // Copy b-values (and anything else stored in dw_scheme)
+  out.block(0, 3, out.rows(), out.cols() - 3) = in.block(0, 3, in.rows(), in.cols() - 3);
   for (int row = 0; row != in.rows(); ++row)
     out.block<1, 3>(row, 0) = in.block<1, 3>(row, 0) * R;
 
@@ -285,8 +285,8 @@ void permute_PE_scheme(Header &H, const std::vector<int> &axes) {
     permute(axes[axis], axis) = 1.0;
 
   Eigen::MatrixXd out(in.rows(), in.cols());
-  out.block(0, 3, out.rows(), out.cols() - 3) =
-      in.block(0, 3, in.rows(), in.cols() - 3); // Copy total readout times (and anything else stored in pe_scheme)
+  // Copy total readout times (and anything else stored in pe_scheme)
+  out.block(0, 3, out.rows(), out.cols() - 3) = in.block(0, 3, in.rows(), in.cols() - 3);
   for (int row = 0; row != in.rows(); ++row)
     out.block<1, 3>(row, 0) = in.block<1, 3>(row, 0) * permute;
 

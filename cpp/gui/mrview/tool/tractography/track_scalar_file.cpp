@@ -235,10 +235,10 @@ void TrackScalarFileOptions::selected_custom_colour(const QColor &c, const Colou
   }
 }
 
+// TrackThresholdType dataSource
 void TrackScalarFileOptions::set_threshold(GUI::MRView::Tool::TrackThresholdType dataSource,
                                            default_type min,
-                                           default_type max) // TrackThresholdType dataSource
-{
+                                           default_type max) {
   if (tractogram) {
     // Source
     tractogram->set_threshold_type(dataSource);

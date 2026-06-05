@@ -319,8 +319,8 @@ public:
       Transform::Init::initialise_using_image_centres(im1_image, im2_image, im1_mask, im2_mask, transform, init);
     else if (init_translation_type == Transform::Init::set_centre_mass) // doesn't change translation or linear matrix
       Transform::Init::set_centre_via_mass(im1_image, im2_image, im1_mask, im2_mask, transform, init, contrasts);
-    else if (init_translation_type ==
-             Transform::Init::set_centre_geometric) // doesn't change translation or linear matrix
+    // doesn't change translation or linear matrix
+    else if (init_translation_type == Transform::Init::set_centre_geometric)
       Transform::Init::set_centre_via_image_centres(im1_image, im2_image, im1_mask, im2_mask, transform, init);
 
     if (init_rotation_type == Transform::Init::moments)

@@ -150,8 +150,9 @@ private:
 class Tck2nodes_forwardsearch : public Tck2nodes_base {
 
 public:
+  // 45 degree limit
   Tck2nodes_forwardsearch(const Image<node_t> &nodes_data, const default_type length)
-      : Tck2nodes_base(nodes_data, true), max_dist(length), angle_limit(Math::pi_4) {} // 45 degree limit
+      : Tck2nodes_base(nodes_data, true), max_dist(length), angle_limit(Math::pi_4) {}
 
   Tck2nodes_forwardsearch(const Tck2nodes_forwardsearch &that)
       : Tck2nodes_base(that), max_dist(that.max_dist), angle_limit(that.angle_limit) {}
