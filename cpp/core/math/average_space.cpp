@@ -266,8 +266,8 @@ void compute_average_voxel2scanner(
     average_space_extent(1) = std::round(average_space_extent(1)) + 1;
     average_space_extent(2) = std::round(average_space_extent(2)) + 1;
 
-    Eigen::Vector3d c000 =
-        average_v2s_trafo.linear() * (bounding_box_corners_inv_min - padding).head<3>(); // voxel space min corner
+    // voxel space min corner
+    Eigen::Vector3d c000 = average_v2s_trafo.linear() * (bounding_box_corners_inv_min - padding).head<3>();
     average_v2s_trafo.matrix().col(3).template head<3>() = c000.template head<3>();
   }
 }

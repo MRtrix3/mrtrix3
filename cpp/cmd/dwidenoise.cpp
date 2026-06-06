@@ -349,8 +349,8 @@ void run() {
   }
   INFO("selected patch size: " + str(extent[0]) + " x " + str(extent[1]) + " x " + str(extent[2]) + ".");
 
-  const Estimator estimator =
-      get_option_choice<Estimator>("estimator", Estimator::EXP2); // default: Exp2 (unbiased estimator)
+  // default: Exp2 (unbiased estimator)
+  const Estimator estimator = get_option_choice<Estimator>("estimator", Estimator::EXP2);
   const bool exp1 = estimator == Estimator::EXP1;
 
   if (std::min<uint32_t>(dwi.size(3), extent[0] * extent[1] * extent[2]) < 15) {
