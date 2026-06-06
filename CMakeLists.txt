@@ -39,6 +39,23 @@ option(MRTRIX_USE_SYSTEM_SLANG "Use system-installed Slang library" OFF)
 option(MRTRIX_USE_SYSTEM_TCB_SPAN "Use system-installed TCB Span library" OFF)
 option(MRTRIX_USE_SYSTEM_MAGIC_ENUM "Use system-installed Magic Enum library" OFF)
 
+# When MRtrix3 is built as a sub-project of another CMake project (e.g. an external MRtrix3 project
+# that vendors it), MRTRIX_SUBPROJECT_INSTALL_PREFIX nests all of MRtrix3's install artifacts under
+# a sub-directory of the install prefix (e.g. "mrtrix3" -> <prefix>/mrtrix3/{bin,lib,share}). This
+# keeps MRtrix3 self-contained so its internal relative paths (bin <-> lib <-> share) are preserved,
+# and keeps its commands out of the parent project's bin/ (and hence off the user's PATH).
+set(MRTRIX_SUBPROJECT_INSTALL_PREFIX "" CACHE STRING
+    "Sub-directory of the install prefix under which to nest MRtrix3 (empty = install directly)")
+if(MRTRIX_SUBPROJECT_INSTALL_PREFIX)
+    set(MRTRIX_INSTALL_BINDIR "${MRTRIX_SUBPROJECT_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}")
+    set(MRTRIX_INSTALL_LIBDIR "${MRTRIX_SUBPROJECT_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
+    set(MRTRIX_INSTALL_DATADIR "${MRTRIX_SUBPROJECT_INSTALL_PREFIX}/${CMAKE_INSTALL_DATADIR}")
+else()
+    set(MRTRIX_INSTALL_BINDIR "${CMAKE_INSTALL_BINDIR}")
+    set(MRTRIX_INSTALL_LIBDIR "${CMAKE_INSTALL_LIBDIR}")
+    set(MRTRIX_INSTALL_DATADIR "${CMAKE_INSTALL_DATADIR}")
+endif()
+
 if(MRTRIX_BUILD_TESTS)
     list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")
     enable_testing()
@@ -69,8 +86,8 @@ else()
 endif()
 
 file(RELATIVE_PATH relDir
-    ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_BINDIR}
-    ${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}
+    ${CMAKE_CURRENT_BINARY_DIR}/${MRTRIX_INSTALL_BINDIR}
+    ${CMAKE_CURRENT_BINARY_DIR}/${MRTRIX_INSTALL_LIBDIR}
 )
 
 set(CMAKE_INSTALL_RPATH ${base} ${base}/${relDir})

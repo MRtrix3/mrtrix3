@@ -15,14 +15,16 @@
 
 import os
 
-# Directory (or os.pathsep-separated list of directories) containing the version-matched
-# executables that run.command() should resolve MRtrix3-family commands to. Defaults to the
-# 'bin' directory of this installation, but may be overridden via the MRTRIX_EXECUTABLES_PATH
-# environment variable. An external MRtrix3 project sets this (in its command launchers) to its
-# own private executables directory, so that the commands it invokes are the versions built with
-# the project rather than whatever happens to be on the user's $PATH.
-_DEFAULT_EXECUTABLES_PATH = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, os.pardir, os.pardir, 'bin'))
-EXECUTABLES_PATH = os.environ.get('MRTRIX_EXECUTABLES_PATH', _DEFAULT_EXECUTABLES_PATH)
+# Directories (os.pathsep-separated) containing the version-matched executables that run.command()
+# resolves MRtrix3-family commands to. The baked default is the 'bin' directory of this installation
+# (for a vendored/nested MRtrix3 this is its own self-contained bin/). An external MRtrix3 project
+# additionally contributes its own executables directory via MRTRIX_EXTRA_EXECUTABLES_PATH, so the
+# commands it invokes are the versions built with the project rather than whatever is on the user's
+# $PATH. Note the default is appended to, not overridden: MRtrix3 commands always resolve to this
+# (nested) installation's bin/.
+_BAKED_EXECUTABLES_PATH = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir, os.pardir, os.pardir, 'bin'))
+_EXTRA_EXECUTABLES_PATH = os.environ.get('MRTRIX_EXTRA_EXECUTABLES_PATH', '')
+EXECUTABLES_PATH = os.pathsep.join(path for path in [_BAKED_EXECUTABLES_PATH, _EXTRA_EXECUTABLES_PATH] if path)
 
 CPP_COMMANDS = [
   @MRTRIX_CPP_COMMAND_LIST@
