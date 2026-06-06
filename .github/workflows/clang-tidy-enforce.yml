@@ -23,7 +23,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt update
-        sudo apt install clang-tidy-19 qt6-base-dev libqt6opengl6-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev ninja-build
+        sudo apt install clang-tidy-19 qt6-base-dev libqt6opengl6-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev ninja-build libgtest-dev
 
     - name: Run CMake
       run: cmake . -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DMRTRIX_USE_PCH=OFF
