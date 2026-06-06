@@ -1353,6 +1353,15 @@ int main() { Foo f; }
         if entry[0] != '$':
           qt_ldflags += [ entry.replace('\"','').replace("'",'') ]
 
+      # Newer Qt5 / mingw-w64 packaging (and the stricter binutils linker shipped with GCC 16)
+      #   no longer list the OpenGL import libraries in qmake's LIBS line, nor pull them in
+      #   transitively under -Wl,--as-needed; gl_core_3_3.cpp calls wglGetProcAddress directly,
+      #   so opengl32 (plus gdi32 for pixel-format setup) must be linked explicitly on Windows.
+      if system == 'windows':
+        for winlib in [ '-lopengl32', '-lgdi32' ]:
+          if winlib not in qt_ldflags:
+            qt_ldflags += [ winlib ]
+
       execute ([ moc, 'qt.h', '-o', 'qt_moc.cpp' ], \
           QMOCError, cwd=qt_dir.name)
 
@@ -1389,6 +1398,44 @@ int main() { Foo f; }
 
   if system == "darwin":
     qt_cflags = [ x for x in qt_cflags if x not in [ '-Wall', '-W' ] ]
+
+  # Verify that the OpenGL function-pointer loader used by
+  #   src/gui/opengl/gl_core_3_3.cpp can be linked against the libraries carried in
+  #   qt_ldflags. The trivial Qt program checked above links successfully even when
+  #   the OpenGL import libraries are absent, because Qt resolves OpenGL dynamically;
+  #   the dependency only surfaces when a GUI command is linked, as gl_core_3_3.cpp
+  #   calls the platform proc-address resolver (wglGetProcAddress on Windows, from
+  #   opengl32) directly. Newer Qt5 / mingw-w64 packaging no longer lists those
+  #   libraries in qmake's LIBS, so this check reproduces the same link dependency
+  #   to catch a missing OpenGL library during configure rather than during build.
+  compile_check ('OpenGL function loading', 'OpenGL',
+                 cpp_flags + qt_cflags, ld_flags + qt_ldflags, '''
+#if defined(_WIN32)
+# include <windows.h>
+# include <GL/gl.h>
+#elif defined(__APPLE__)
+# include <dlfcn.h>
+#else
+# include <GL/glx.h>
+#endif
+
+int main()
+{
+  // Reference the same per-platform proc-address resolver as gl_core_3_3.cpp, so
+  //   that the corresponding OpenGL library must be resolved at link time. The
+  //   resolved pointer is folded into the return value to prevent the call being
+  //   optimised away, while leaving the program safe to run without a current
+  //   OpenGL context (the resolver returns null rather than faulting):
+#if defined(_WIN32)
+  PROC address = wglGetProcAddress ("glClear");
+#elif defined(__APPLE__)
+  void *address = dlsym (RTLD_DEFAULT, "glClear");
+#else
+  __GLXextFuncPtr address = glXGetProcAddressARB (reinterpret_cast<const GLubyte *> ("glClear"));
+#endif
+  return address == nullptr ? 0 : 0;
+}
+''')
 
 
 # output R module:
