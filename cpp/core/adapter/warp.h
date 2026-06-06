@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <optional>
+
 #include "adapter/jacobian.h"
 #include "image.h"
 #include "interp/cubic.h"
@@ -52,7 +54,8 @@ public:
   Warp(const ImageType &original,
        const WarpType &warp,
        const value_type value_when_out_of_bounds = Interpolator<ImageType>::default_out_of_bounds_value(),
-       const bool jacobian_modulate = false)
+       const bool jacobian_modulate = false,
+       std::optional<Image<default_type>> precomputed_jacobian_determinant = std::nullopt)
       : interp(original, value_when_out_of_bounds),
         warp(warp),
         x{0, 0, 0},
@@ -60,7 +63,8 @@ public:
         vox{warp.spacing(0), warp.spacing(1), warp.spacing(2)},
         value_when_out_of_bounds(value_when_out_of_bounds),
         jac_modulate(jacobian_modulate),
-        jacobian_adapter(warp, true) {
+        jacobian_adapter(warp, true),
+        precomputed_jacobian_determinant(std::move(precomputed_jacobian_determinant)) {
     assert(warp.ndim() == 4);
     assert(warp.size(3) == 3);
   }
@@ -86,9 +90,19 @@ public:
     interp.scanner(pos);
     default_type val = interp.value();
     if (jac_modulate && val != 0.0) {
-      for (size_t dim = 0; dim < 3; ++dim)
-        jacobian_adapter.index(dim) = x[dim];
-      val *= jacobian_adapter.value().template cast<default_type>().determinant();
+      default_type determinant;
+      if (precomputed_jacobian_determinant) {
+        // Determinant precomputed analytically from the warp's cubic spline on this grid.
+        for (size_t axis = 0; axis < 3; ++axis)
+          precomputed_jacobian_determinant->index(axis) = x[axis];
+        determinant = precomputed_jacobian_determinant->value();
+      } else {
+        // Finite-difference fallback when the warp was not resliced (grid matches the output).
+        for (size_t axis = 0; axis < 3; ++axis)
+          jacobian_adapter.index(axis) = x[axis];
+        determinant = jacobian_adapter.value().template cast<default_type>().determinant();
+      }
+      val *= determinant;
     }
     return static_cast<value_type>(val);
   }
@@ -115,6 +129,7 @@ private:
   const value_type value_when_out_of_bounds;
   const bool jac_modulate;
   Adapter::Jacobian<Image<default_type>> jacobian_adapter;
+  std::optional<Image<default_type>> precomputed_jacobian_determinant;
 };
 
 //! @}
