@@ -269,7 +269,7 @@ namespace MR
         LinearInterp (const ImageType& parent, value_type value_when_out_of_bounds = Base<ImageType>::default_out_of_bounds_value()) :
             LinearInterpBase <ImageType, LinearInterpProcessingType::Derivative> (parent, value_when_out_of_bounds),
             out_of_bounds_vec (value_when_out_of_bounds, value_when_out_of_bounds, value_when_out_of_bounds),
-            wrt_scanner_transform (Transform::scanner2image.linear() * voxelsize.inverse())
+            wrt_scanner_transform (voxelsize.inverse() * Transform::scanner2image.linear())
         { }
 
         //! Set the current position to <b>voxel space</b> position \a pos
@@ -417,7 +417,7 @@ namespace MR
 
         LinearInterp (const ImageType& parent, coef_type value_when_out_of_bounds = Base<ImageType>::default_out_of_bounds_value()) :
           LinearInterpBase <ImageType, LinearInterpProcessingType::ValueAndDerivative> (parent, value_when_out_of_bounds),
-          wrt_scanner_transform (Transform::scanner2image.linear() * voxelsize.inverse())
+          wrt_scanner_transform (voxelsize.inverse() * Transform::scanner2image.linear())
         {
           if (ImageType::ndim() == 4) {
             out_of_bounds_vec.resize(ImageType::size(3), 1);
