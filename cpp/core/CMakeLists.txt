@@ -45,6 +45,7 @@ add_custom_target(mrtrix-executable-version-target ALL
     COMMAND ${CMAKE_COMMAND}
         -D GIT_EXECUTABLE=${GIT_EXECUTABLE}
         -D MRTRIX_BASE_VERSION=${MRTRIX_BASE_VERSION}
+        -D MRTRIX_IGNORE_VERSION_MISMATCH=${MRTRIX_IGNORE_VERSION_MISMATCH}
         -D DST=${CMD_VERSION_CPP}
         -D SRC=${CMAKE_CURRENT_SOURCE_DIR}/executable_version.cpp.in
         -P ${PROJECT_SOURCE_DIR}/cmake/FindVersion.cmake
@@ -58,6 +59,7 @@ add_custom_target(mrtrix-version-target ALL
     COMMAND ${CMAKE_COMMAND}
         -D GIT_EXECUTABLE=${GIT_EXECUTABLE}
         -D MRTRIX_BASE_VERSION=${MRTRIX_BASE_VERSION}
+        -D MRTRIX_IGNORE_VERSION_MISMATCH=${MRTRIX_IGNORE_VERSION_MISMATCH}
         -D DST=${MRTRIX_VERSION_CPP}
         -D SRC=${CMAKE_CURRENT_SOURCE_DIR}/mrtrix_version.cpp.in
         -P ${PROJECT_SOURCE_DIR}/cmake/FindVersion.cmake

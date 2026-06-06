@@ -13,7 +13,9 @@ include(GNUInstallDirs)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-set(MRTRIX_BASE_VERSION "${CMAKE_PROJECT_VERSION}")
+# Use this project's own version (PROJECT_VERSION), not CMAKE_PROJECT_VERSION, so that the value is
+# correct when MRtrix3 is built as a sub-project (e.g. vendored by an external MRtrix3 project).
+set(MRTRIX_BASE_VERSION "${PROJECT_VERSION}")
 
 option(MRTRIX_BUILD_GUI "Build the MRtrix3 GUI" ON)
 option(MRTRIX_USE_QT5 "Use Qt 5 to build" OFF)
@@ -122,6 +124,62 @@ add_subdirectory(share)
 
 if(PROJECT_IS_TOP_LEVEL AND MRTRIX_BUILD_TESTS)
     add_subdirectory(testing)
+endif()
+
+# ------------------------------------------------------------------------------------------------
+# Build-tree package export. Enables an external MRtrix3 project to build against this build + source
+# tree via find_package(MRtrix3 CONFIG PATHS <this build directory> NO_DEFAULT_PATH). This is a
+# build-tree export (absolute paths into this tree), not a relocatable installation package.
+# ------------------------------------------------------------------------------------------------
+if(PROJECT_IS_TOP_LEVEL AND NOT MRTRIX_BUILD_GUI)
+    # Real (non-imported) targets that make up mrtrix::core's public interface.
+    set(MRTRIX_EXPORT_TARGETS
+        mrtrix-core mrtrix-executable-version mrtrix-version mrtrix-common mrtrix-eigen
+        nifti tcb_span)
+    # Dependencies that are real targets only when vendored (otherwise system/imported -> find_dependency).
+    if(NOT MRTRIX_USE_SYSTEM_JSON)
+        list(APPEND MRTRIX_EXPORT_TARGETS nlohmann_json)
+    endif()
+    if(NOT MRTRIX_USE_SYSTEM_MAGIC_ENUM)
+        list(APPEND MRTRIX_EXPORT_TARGETS magic_enum)
+    endif()
+    if(NOT MRTRIX_USE_SYSTEM_EIGEN)
+        list(APPEND MRTRIX_EXPORT_TARGETS Eigen3)
+    endif()
+
+    # Export under names that match the existing mrtrix:: aliases (mrtrix::core, not mrtrix::mrtrix-core).
+    set_target_properties(mrtrix-core PROPERTIES EXPORT_NAME core)
+    set_target_properties(mrtrix-executable-version PROPERTIES EXPORT_NAME executable-version)
+    set_target_properties(mrtrix-version PROPERTIES EXPORT_NAME version)
+    set_target_properties(mrtrix-common PROPERTIES EXPORT_NAME common)
+    set_target_properties(mrtrix-eigen PROPERTIES EXPORT_NAME eigen)
+
+    export(TARGETS ${MRTRIX_EXPORT_TARGETS}
+        NAMESPACE mrtrix::
+        FILE ${PROJECT_BINARY_DIR}/MRtrix3Targets.cmake)
+
+    # find_dependency() calls the consumer needs for the imported (system) dependencies.
+    set(MRTRIX_CONFIG_FIND_DEPS "")
+    if(MRTRIX_USE_SYSTEM_EIGEN)
+        string(APPEND MRTRIX_CONFIG_FIND_DEPS "find_dependency(Eigen3 3.4)\n")
+    endif()
+    if(MRTRIX_USE_SYSTEM_JSON)
+        string(APPEND MRTRIX_CONFIG_FIND_DEPS "find_dependency(nlohmann_json)\n")
+    endif()
+    if(MRTRIX_USE_SYSTEM_MAGIC_ENUM)
+        string(APPEND MRTRIX_CONFIG_FIND_DEPS "find_dependency(magic_enum)\n")
+    endif()
+    # PNG is found in a subdirectory, so check mrtrix-core's actual interface rather than PNG_FOUND.
+    get_target_property(MRTRIX_CORE_LINKS mrtrix-core INTERFACE_LINK_LIBRARIES)
+    if("PNG::PNG" IN_LIST MRTRIX_CORE_LINKS)
+        string(APPEND MRTRIX_CONFIG_FIND_DEPS "find_dependency(PNG)\n")
+    endif()
+
+    set(MRTRIX_SOURCE_CMAKE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+    configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/cmake/MRtrix3Config.cmake.in
+        ${PROJECT_BINARY_DIR}/MRtrix3Config.cmake
+        @ONLY)
 endif()
 
 add_custom_target(Github SOURCES

@@ -9,10 +9,14 @@ file(GLOB_RECURSE PYTHON_ALL_COMMANDS_FILES
 )
 
 # Collect a list of top-level command names (directories or single .py files).
+# When MRTRIX_CMD_SUBSET is provided (external-project builds), restrict to the named commands.
 set(PYTHON_COMMAND_LIST "")
 foreach(PYTHON_PATH IN LISTS PYTHON_ALL_COMMANDS_ROOT_PATHS)
     get_filename_component(CMDNAME "${PYTHON_PATH}" NAME_WE)
     if(NOT "${CMDNAME}" STREQUAL "CMakeLists" AND NOT "${CMDNAME}" STREQUAL "__init__")
+        if(MRTRIX_CMD_SUBSET AND NOT "${CMDNAME}" IN_LIST MRTRIX_CMD_SUBSET)
+            continue()
+        endif()
         list(APPEND PYTHON_COMMAND_LIST "${CMDNAME}")
     endif()
 endforeach()
@@ -116,11 +120,18 @@ foreach(CMDNAME IN LISTS PYTHON_COMMAND_LIST)
 endforeach()
 
 add_custom_target(MRtrixPythonCommands ALL)
-add_dependencies(MRtrixPythonCommands ${ALL_PYTHON_COMMAND_TARGETS})
+# ALL_PYTHON_COMMAND_TARGETS may be empty when MRTRIX_CMD_SUBSET selects no Python commands.
+if(ALL_PYTHON_COMMAND_TARGETS)
+    add_dependencies(MRtrixPythonCommands ${ALL_PYTHON_COMMAND_TARGETS})
+endif()
 
 # We need to generate a list of MRtrix3 commands:
 # function run.command() does different things if it is executing an MRtrix3 command vs. an external command,
 # but unlike prior software versions we cannot simply interrogate the contents of the bin/ directory at runtime
+# Pass the subset as a comma-separated string: a raw CMake list (semicolons) embedded in an
+# add_custom_command argument would be re-split into separate arguments. GenPythonCommandsLists
+# converts it back to a list.
+string(REPLACE ";" "," MRTRIX_CMD_SUBSET_CSV "${MRTRIX_CMD_SUBSET}")
 add_custom_target(MakePythonCommandsInit ALL)
 add_dependencies(MakePythonCommandsInit MRtrixPythonCommands)
 add_custom_command(
@@ -129,6 +140,7 @@ add_custom_command(
     COMMAND ${CMAKE_COMMAND}
     -D DST=${PYTHON_COMMANDS_INIT_FILE}
     -D SRC=${CMAKE_CURRENT_SOURCE_DIR}/__init__.py.in
+    -D MRTRIX_CMD_SUBSET=${MRTRIX_CMD_SUBSET_CSV}
     -P ${PROJECT_SOURCE_DIR}/cmake/GenPythonCommandsLists.cmake
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
 )

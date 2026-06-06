@@ -9,6 +9,21 @@ foreach(CMD ${GUI_CMD_SRCS})
     list(REMOVE_ITEM HEADLESS_CMD_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/${CMD})
 endforeach(CMD)
 
+# Optional restriction to a subset of commands (used when building an external project that
+#   only requires a handful of MRtrix3 commands). Default (unset) builds every command, so
+#   MRtrix3's own build is unaffected.
+if(MRTRIX_CMD_SUBSET)
+    set(SUBSET_CMD_SRCS "")
+    foreach(CMD ${MRTRIX_CMD_SUBSET})
+        if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/${CMD}.cpp)
+            list(APPEND SUBSET_CMD_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/${CMD}.cpp)
+        else()
+            message(WARNING "MRTRIX_CMD_SUBSET requested C++ command '${CMD}' that does not exist")
+        endif()
+    endforeach()
+    set(HEADLESS_CMD_SRCS ${SUBSET_CMD_SRCS})
+endif()
+
 add_custom_target(MRtrixCppCommands)
 
 if(MRTRIX_USE_PCH)
@@ -64,9 +79,19 @@ endforeach(CMD)
 # we try to start their compilation as soon as possible by adding them as dependencies
 # of a generated dummy file (which Ninja prioritises during compilation).
 # This is hacky, but it increases build parallelism.
-file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/dummy.cpp CONTENT "int main(){}")
-add_executable(0_dummy ${CMAKE_CURRENT_BINARY_DIR}/dummy.cpp)
-add_dependencies(0_dummy ${HEAVY_CMDS})
+# Restrict the prioritised set to commands that are actually being built (e.g. when
+# MRTRIX_CMD_SUBSET excludes mrregister/mrtransform).
+set(HEAVY_CMDS_BUILT "")
+foreach(CMD ${HEAVY_CMDS})
+    if(TARGET ${CMD})
+        list(APPEND HEAVY_CMDS_BUILT ${CMD})
+    endif()
+endforeach()
+if(HEAVY_CMDS_BUILT)
+    file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/dummy.cpp CONTENT "int main(){}")
+    add_executable(0_dummy ${CMAKE_CURRENT_BINARY_DIR}/dummy.cpp)
+    add_dependencies(0_dummy ${HEAVY_CMDS_BUILT})
+endif()
 
 if(MRTRIX_BUILD_GUI)
     foreach(CMD ${GUI_CMD_SRCS})

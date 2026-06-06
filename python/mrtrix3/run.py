@@ -548,6 +548,14 @@ def function(fn_to_execute, *args, **kwargs): #pylint: disable=unused-variable
 
 
 
+# EXECUTABLES_PATH may be a single directory or an os.pathsep-separated list of directories
+#   (the latter occurs when an external MRtrix3 project resolves both its own and MRtrix3's
+#   version-matched executables); return the directories as a list.
+def _executables_dirs():
+  return [entry for entry in EXECUTABLES_PATH.split(os.pathsep) if entry]
+
+
+
 # When running on Windows, add the necessary '.exe' so that hopefully the correct
 #   command is found by subprocess
 def exe_name(item):
@@ -556,9 +564,9 @@ def exe_name(item):
     path = item
   elif item.endswith('.exe'):
     path = item
-  elif os.path.isfile(os.path.join(EXECUTABLES_PATH, item)):
+  elif any(os.path.isfile(os.path.join(directory, item)) for directory in _executables_dirs()):
     path = item
-  elif os.path.isfile(os.path.join(EXECUTABLES_PATH, f'{item}.exe')):
+  elif any(os.path.isfile(os.path.join(directory, f'{item}.exe')) for directory in _executables_dirs()):
     path = item + '.exe'
   elif shutil.which(item) is not None:
     path = item
@@ -582,10 +590,11 @@ def version_match(item):
   if not item in ALL_COMMANDS:
     app.debug(f'Command "{item}" not in list of MRtrix3 commands')
     return item
-  exe_path_manual = os.path.join(EXECUTABLES_PATH, exe_name(item))
-  if os.path.isfile(exe_path_manual):
-    app.debug(f'Version-matched executable for "{item}": {exe_path_manual}')
-    return exe_path_manual
+  for directory in _executables_dirs():
+    exe_path_manual = os.path.join(directory, exe_name(item))
+    if os.path.isfile(exe_path_manual):
+      app.debug(f'Version-matched executable for "{item}": {exe_path_manual}')
+      return exe_path_manual
   exe_path_sys = shutil.which(exe_name(item))
   if exe_path_sys and os.path.isfile(exe_path_sys):
     app.debug(f'Using non-version-matched executable for "{item}": {exe_path_sys}')
