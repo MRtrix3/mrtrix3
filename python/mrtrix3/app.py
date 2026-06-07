@@ -54,6 +54,15 @@ WORKING_DIR = os.getcwd()
 CMDLINE = None
 
 
+# Build-time identity of an EXTERNAL MRtrix3 project, injected by that project's generated command
+# launcher (which imports its own version.py and passes it to _execute()). These are the Python
+# analogue of the C++ globals MR::App::project_version / project_build_date populated by an external
+# project's set_project_version(): left None for core MRtrix3 commands, so help / -version fall back
+# to reporting only the MRtrix3 version (see Parser.print_version and Parser.print_help).
+_PROJECT_VERSION = None
+_PROJECT_BUILD_DATE = None
+
+
 # This is auto-populated by script "update_copyright"
 _DEFAULT_COPYRIGHT = \
 '''Copyright (c) 2008-2026 the MRtrix3 contributors.
@@ -111,9 +120,18 @@ _STDOUT_IMAGES = []
 
 
 # This function gets executed by the corresponding cmake-generated Python executable
-def _execute(usage_function, execute_function): #pylint: disable=unused-variable
+def _execute(usage_function, execute_function, project=None): #pylint: disable=unused-variable
   from mrtrix3 import run #pylint: disable=import-outside-toplevel
   global ARGS, CMDLINE, CONTINUE_OPTION, DO_CLEANUP, FORCE_OVERWRITE, NUM_THREADS, SCRATCH_DIR, VERBOSITY
+
+  # For an external MRtrix3 project, the generated launcher passes that project's version module
+  # (its build-time-baked version.py); record its identity BEFORE the Parser is constructed below,
+  # so Parser.__init__ reports the project version. This mirrors the C++ entry point calling
+  # set_project_version() before usage() (see command.h, MRTRIX_PROJECT).
+  global _PROJECT_VERSION, _PROJECT_BUILD_DATE
+  if project is not None:
+    _PROJECT_VERSION = getattr(project, 'VERSION', None) or None
+    _PROJECT_BUILD_DATE = getattr(project, 'BUILD_DATE', None) or None
 
   assert inspect.isfunction(usage_function) and inspect.isfunction(execute_function)
 
@@ -923,19 +941,13 @@ class Parser(argparse.ArgumentParser):
                                   help='continue the script from a previous execution; '
                                        'must provide the scratch directory path, '
                                        'and the name of the last successfully-generated file.')
-    module_file = os.path.realpath (inspect.getsourcefile(inspect.stack()[-1][0]))
-    self._is_project = os.path.abspath(os.path.join(os.path.dirname(module_file), os.pardir, 'lib', 'mrtrix3', 'app.py')) != os.path.abspath(__file__)
-    try:
-      with subprocess.Popen ([ 'git', 'describe', '--abbrev=8', '--dirty', '--always' ],
-                             cwd=os.path.abspath(os.path.join(os.path.dirname(module_file), os.pardir)),
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE) as process:
-        self._git_version = process.communicate()[0]
-        self._git_version = str(self._git_version.decode(errors='ignore')).strip() \
-                            if process.returncode == 0 \
-                            else 'unknown'
-    except OSError:
-      self._git_version = 'unknown'
+    # Whether this command belongs to an external MRtrix3 project, and that project's version, are
+    # taken from the build-time identity injected by the project's launcher (see _execute() and
+    # mrtrix3.app._PROJECT_VERSION). This is the Python counterpart of the C++ project_version
+    # global: baked at build time, never derived from a run-time `git describe` (which would fail in
+    # an installed tree with no .git). Core MRtrix3 commands leave these unset and report version.VERSION.
+    self._is_project = bool(_PROJECT_VERSION)
+    self._git_version = _PROJECT_VERSION if _PROJECT_VERSION else None
 
   def set_author(self, text):
     self._author = text
@@ -1473,6 +1485,8 @@ class Parser(argparse.ArgumentParser):
   def print_version(self):
     text = f'== {self.prog} {self._git_version if self._is_project else version.VERSION} ==\n'
     if self._is_project:
+      if _PROJECT_BUILD_DATE:
+        text += f'built {_PROJECT_BUILD_DATE}\n'
       text += f'executing against MRtrix {version.VERSION}\n'
     text += f'Author(s): {self._author}\n'
     text += f'{self._copyright}\n'
