@@ -230,7 +230,7 @@ namespace MR
         SplineInterp (const ImageType& parent, value_type value_when_out_of_bounds = SplineBase::default_out_of_bounds_value()) :
             SplineInterpBase <ImageType, SplineType, Math::SplineProcessingType::Derivative> (parent, value_when_out_of_bounds),
             out_of_bounds_vec (value_when_out_of_bounds, value_when_out_of_bounds, value_when_out_of_bounds),
-            wrt_scanner_transform (Transform::voxelsize.inverse() * Transform::scanner2image.linear())
+            wrt_scanner_transform (Transform::scanner2voxel.linear())
             {
               if (ImageType::ndim() == 4) {
                 out_of_bounds_matrix.resize(ImageType::size(3), 3);
@@ -375,7 +375,7 @@ namespace MR
 
         SplineInterp (const ImageType& parent, value_type value_when_out_of_bounds = SplineBase::default_out_of_bounds_value()) :
             SplineInterpBase <ImageType, SplineType, Math::SplineProcessingType::ValueAndDerivative> (parent, value_when_out_of_bounds),
-            wrt_scanner_transform (Transform::voxelsize.inverse() * Transform::scanner2image.linear())
+            wrt_scanner_transform (Transform::scanner2voxel.linear())
         {
           if (ImageType::ndim() == 4) {
             out_of_bounds_vec.resize(ImageType::size(3), 1);

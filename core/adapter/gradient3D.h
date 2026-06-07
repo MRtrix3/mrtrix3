@@ -36,7 +36,7 @@ namespace MR
 
         Gradient3D (const ImageType& parent,
                     bool wrt_scanner = false) :
-          Gradient1D<ImageType> (parent, wrt_scanner),
+          Gradient1D<ImageType> (parent, 0, wrt_scanner),
           wrt_scanner (wrt_scanner),
           transform (parent) {}
 
