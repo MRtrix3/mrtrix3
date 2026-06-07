@@ -135,6 +135,42 @@ if(COMPILER_PATH MATCHES "fsl/bin" OR LINKER_PATH MATCHES "fsl/bin")
     )
 endif()
 
+# ------------------------------------------------------------------------------------------------
+# External-project command selection: Python dependencies force the full C++ command set.
+#
+# MRTRIX_CMD_SUBSET (set by an external MRtrix3 project to the commands it requires) restricts BOTH
+# the C++ and the Python commands that are built. A requested *Python* command, however, may invoke
+# any number of MRtrix3 *C++* commands at run time via run.command(); those invocations are opaque to
+# cmake, so there is no safe way to know which C++ commands the Python command depends on. The only
+# correct conservative behaviour is therefore to build the ENTIRE MRtrix3 command set whenever the
+# subset names any Python command. We detect that here (before the cpp/ and python/ subdirectories
+# consume MRTRIX_CMD_SUBSET) and clear the subset so the full set is built; a single-binary static
+# build is incompatible with building the whole set, so we also force a shared core.
+if(MRTRIX_CMD_SUBSET)
+    set(_subset_python_cmds "")
+    foreach(_cmd IN LISTS MRTRIX_CMD_SUBSET)
+        if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/cpp/cmd/${_cmd}.cpp")
+            if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/python/mrtrix3/commands/${_cmd}.py" OR
+               IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/python/mrtrix3/commands/${_cmd}")
+                list(APPEND _subset_python_cmds "${_cmd}")
+            endif()
+        endif()
+    endforeach()
+    if(_subset_python_cmds)
+        message(STATUS "MRTRIX_CMD_SUBSET names MRtrix3 Python command(s) [${_subset_python_cmds}] "
+                       "whose C++ dependencies are opaque to cmake; building the FULL MRtrix3 command "
+                       "set so every C++ command the Python command(s) might invoke is available.")
+        # Shadow the cache value with an empty directory-scope variable; the cpp/ and python/
+        # subdirectories (and GenPythonCommandsLists) then build/record every command.
+        set(MRTRIX_CMD_SUBSET "")
+        if(MRTRIX_BUILD_STATIC)
+            message(STATUS "Forcing MRTRIX_BUILD_STATIC=OFF: the full MRtrix3 command set cannot be a "
+                           "single self-contained static binary.")
+            set(MRTRIX_BUILD_STATIC OFF CACHE BOOL "" FORCE)
+        endif()
+    endif()
+endif()
+
 add_subdirectory(cpp)
 add_subdirectory(python)
 add_subdirectory(share)

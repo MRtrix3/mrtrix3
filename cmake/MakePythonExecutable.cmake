@@ -45,13 +45,20 @@ if(DEFINED EXTERNAL_COMMANDS)
     # External-project mode. MRtrix3 commands are resolved by the (nested) mrtrix3 package's baked
     # executables path; the project's own commands are added via the env vars below. setdefault()
     # ensures the outermost project command wins and nested invocations inherit.
+    #
+    # The application machinery (_execute) is imported straight from the nested mrtrix3 package
+    # ('mrtrix3.app'), which is on sys.path via MRTRIX_LIB_RELPATH below. Only the command MODULE
+    # (usage/execute) is loaded from the project's own package ('${PACKAGE}.commands.*', further
+    # down). Importing mrtrix3.app here - rather than a project-local '${PACKAGE}.app' re-export
+    # shim - means the project package needs no generated app.py: the launcher reaches MRtrix3's
+    # application code directly, and the project ships only its package/commands __init__ markers.
     string(REPLACE ";" "," EXTERNAL_COMMANDS_CSV "${EXTERNAL_COMMANDS}")
     string(APPEND BINPATH_CONTENTS
         "os.environ.setdefault('MRTRIX_EXTRA_COMMANDS', '${EXTERNAL_COMMANDS_CSV}')\n"
         "os.environ.setdefault('MRTRIX_EXTRA_EXECUTABLES_PATH', _self_dir)\n"
         "sys.path.insert(0, os.path.normpath(os.path.join(_self_dir, '${MRTRIX_LIB_RELPATH}')))\n"
         "sys.path.insert(0, os.path.normpath(os.path.join(_self_dir, '${PROJECT_LIB_RELPATH}')))\n"
-        "from ${PACKAGE}.app import _execute\n"
+        "from mrtrix3.app import _execute\n"
         "\n"
     )
 else()
