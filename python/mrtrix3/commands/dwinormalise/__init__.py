@@ -13,14 +13,13 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
-# MRtrix3 commands that this command may invoke at execution.
-# This list is parsed at build configure time to establish the set of
-#   compilation targets required by this command (see the cmake Python command dependency helpers),
-#   and is verified for completeness by the dependency linter run within continuous integration.
+# MRtrix3 commands that this command may invoke at execution are declared on a per-file basis:
+#   this constant is seeded here as an empty set, and each source file augments it (via "|=") with
+#   the MRtrix3 commands that it itself invokes. The aggregate is parsed at build configure time to
+#   establish the set of compilation targets required by this command (see the cmake Python command
+#   dependency helpers), and verified for completeness by the dependency linter run within CI.
 # pylint: disable=unused-variable
-MRTRIX_DEPENDENCIES = ['dwi2fod', 'dwi2mask', 'dwi2response', 'dwi2tensor', 'dwiextract', 'dwinormalise', 'maskfilter',
-                       'mrcalc', 'mrconvert', 'mrdump', 'mrinfo', 'mrmath', 'mrstats', 'mrthreshold', 'mrtransform',
-                       'mtnormalise', 'population_template', 'tensor2metric']
+MRTRIX_DEPENDENCIES = set()
 
 # pylint: disable=unused-variable
 ALGORITHMS = ['group', 'manual', 'mtnorm']

@@ -25,8 +25,8 @@ from mrtrix3 import app, image, run #pylint: disable=no-name-in-module
 #   compilation targets required by this command (see the cmake Python command dependency helpers),
 #   and is verified for completeness by the dependency linter run within continuous integration.
 # pylint: disable=unused-variable
-MRTRIX_DEPENDENCIES = ['mrcalc', 'mrcat', 'mrconvert', 'mrinfo', 'mrmath', 'mrthreshold', 'peaksconvert',
-                       'peaksvalidate', 'tckgen', 'tckstats']
+MRTRIX_DEPENDENCIES = {'mrcalc', 'mrcat', 'mrconvert', 'mrinfo', 'mrmath', 'mrthreshold', 'peaksconvert',
+                       'peaksvalidate', 'tckgen', 'tckstats'}
 
 
 

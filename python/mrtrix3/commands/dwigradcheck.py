@@ -20,7 +20,7 @@ import copy, numbers, os, shutil, sys
 #   compilation targets required by this command (see the cmake Python command dependency helpers),
 #   and is verified for completeness by the dependency linter run within continuous integration.
 # pylint: disable=unused-variable
-MRTRIX_DEPENDENCIES = ['dwi2mask', 'mrconvert', 'mrinfo', 'tckgen', 'tckstats']
+MRTRIX_DEPENDENCIES = {'dwi2mask', 'mrconvert', 'mrinfo', 'tckgen', 'tckstats'}
 
 
 

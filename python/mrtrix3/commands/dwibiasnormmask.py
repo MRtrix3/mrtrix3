@@ -20,8 +20,8 @@ import math, os, shutil, sys
 #   compilation targets required by this command (see the cmake Python command dependency helpers),
 #   and is verified for completeness by the dependency linter run within continuous integration.
 # pylint: disable=unused-variable
-MRTRIX_DEPENDENCIES = ['dwi2fod', 'dwi2mask', 'dwi2response', 'maskfilter', 'mrcalc', 'mrconvert', 'mrinfo', 'mrmath',
-                       'mrstats', 'mrthreshold', 'mtnormalise']
+MRTRIX_DEPENDENCIES = {'dwi2fod', 'dwi2mask', 'dwi2response', 'maskfilter', 'mrcalc', 'mrconvert', 'mrinfo', 'mrmath',
+                       'mrstats', 'mrthreshold', 'mtnormalise'}
 
 DWIBIASCORRECT_MAX_ITERS = 2
 LMAXES_MULTI = [4,0,0]

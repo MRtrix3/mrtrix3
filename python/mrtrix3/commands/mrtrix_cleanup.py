@@ -20,7 +20,7 @@ import math, os, re, shutil, sys
 #   compilation targets required by this command (see the cmake Python command dependency helpers),
 #   and is verified for completeness by the dependency linter run within continuous integration.
 # pylint: disable=unused-variable
-MRTRIX_DEPENDENCIES = []
+MRTRIX_DEPENDENCIES = set()
 
 
 POSTFIXES = [ 'B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB' ]

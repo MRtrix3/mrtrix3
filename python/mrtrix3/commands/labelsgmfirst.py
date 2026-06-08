@@ -20,8 +20,8 @@ import math, os
 #   compilation targets required by this command (see the cmake Python command dependency helpers),
 #   and is verified for completeness by the dependency linter run within continuous integration.
 # pylint: disable=unused-variable
-MRTRIX_DEPENDENCIES = ['labelconvert', 'labelvalidate', 'mesh2voxel', 'meshconvert', 'mrcalc', 'mrconvert', 'mrgrid',
-                       'mrinfo', 'mrmath', 'mrstats', 'mrthreshold']
+MRTRIX_DEPENDENCIES = {'labelconvert', 'labelvalidate', 'mesh2voxel', 'meshconvert', 'mrcalc', 'mrconvert', 'mrgrid',
+                       'mrinfo', 'mrmath', 'mrstats', 'mrthreshold'}
 
 
 

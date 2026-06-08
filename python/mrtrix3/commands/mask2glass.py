@@ -18,7 +18,7 @@
 #   compilation targets required by this command (see the cmake Python command dependency helpers),
 #   and is verified for completeness by the dependency linter run within continuous integration.
 # pylint: disable=unused-variable
-MRTRIX_DEPENDENCIES = ['maskfilter', 'mrcalc', 'mrconvert', 'mrfilter', 'mrgrid', 'mrinfo', 'mrstats', 'mrthreshold']
+MRTRIX_DEPENDENCIES = {'maskfilter', 'mrcalc', 'mrconvert', 'mrfilter', 'mrgrid', 'mrinfo', 'mrstats', 'mrthreshold'}
 
 def usage(cmdline): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel

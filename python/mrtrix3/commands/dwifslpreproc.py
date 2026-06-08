@@ -23,8 +23,8 @@ from enum import Enum
 #   compilation targets required by this command (see the cmake Python command dependency helpers),
 #   and is verified for completeness by the dependency linter run within continuous integration.
 # pylint: disable=unused-variable
-MRTRIX_DEPENDENCIES = ['dirstat', 'dwi2mask', 'dwiextract', 'dwirecon', 'maskfilter', 'mrcalc', 'mrcat', 'mrconvert',
-                       'mrinfo', 'mrthreshold', 'mrtransform']
+MRTRIX_DEPENDENCIES = {'dirstat', 'dwi2mask', 'dwiextract', 'dwirecon', 'maskfilter', 'mrcalc', 'mrcat', 'mrconvert',
+                       'mrinfo', 'mrthreshold', 'mrtransform'}
 
 
 STRIDES_OPTION_FSL_COMPAT_3D = ' -strides -1,+2,+3'

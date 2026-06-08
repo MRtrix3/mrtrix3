@@ -21,7 +21,7 @@ import os, re, stat, sys, threading
 #   compilation targets required by this command (see the cmake Python command dependency helpers),
 #   and is verified for completeness by the dependency linter run within continuous integration.
 # pylint: disable=unused-variable
-MRTRIX_DEPENDENCIES = []
+MRTRIX_DEPENDENCIES = set()
 
 
 
