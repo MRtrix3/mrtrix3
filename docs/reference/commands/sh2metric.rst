@@ -33,6 +33,15 @@ The various metrics available are detailed individually below.
 The spherical harmonic coefficients are stored according to the conventions described in the main documentation, which can be found at the following link:  |br|
 https://mrtrix.readthedocs.io/en/3.0.8/concepts/spherical_harmonics.html
 
+Example usages
+--------------
+
+-   *Compute the spherical harmonic spectral entropy ("SHE")*::
+
+        $ sh2metric fod.mif power -spectrum - | mrmath - nats spectral_entropy.mif -axis 3
+
+    The "entropy" metric of this command computes the Shannon entropy of the amplitudes of the spherical function, sampled densely across the sphere; it therefore quantifies how dispersed (vs. concentrated) the function is across orientations. The spectral entropy demonstrated here is a distinct measure: the "power" metric with the -spectrum option yields the power contained within each harmonic degree (l=0, 2, 4, ...) as a 4D image; treating that per-degree power as a probability distribution and computing its Shannon entropy (here via mrmath, collapsing the harmonic-degree axis with operation "nats") instead quantifies how the function's energy is distributed across angular frequencies rather than across orientations. The two measures are not interchangeable; unlike the amplitude-distribution entropy, the spectral entropy can be computed directly from the SH coefficients without any sampling of amplitudes on the sphere.
+
 Options
 -------
 

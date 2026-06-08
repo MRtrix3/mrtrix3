@@ -65,6 +65,28 @@ void usage() {
 
     + Math::SH::encoding_description;
 
+  EXAMPLES
+    + Example ("Compute the spherical harmonic spectral entropy (\"SHE\")",
+               "sh2metric fod.mif power -spectrum - | mrmath - nats spectral_entropy.mif -axis 3",
+               "The \"entropy\" metric of this command computes the Shannon entropy"
+               " of the amplitudes of the spherical function,"
+               " sampled densely across the sphere;"
+               " it therefore quantifies how dispersed (vs. concentrated)"
+               " the function is across orientations."
+               " The spectral entropy demonstrated here is a distinct measure:"
+               " the \"power\" metric with the -spectrum option yields"
+               " the power contained within each harmonic degree (l=0, 2, 4, ...)"
+               " as a 4D image;"
+               " treating that per-degree power as a probability distribution"
+               " and computing its Shannon entropy (here via mrmath,"
+               " collapsing the harmonic-degree axis with operation \"nats\")"
+               " instead quantifies how the function's energy is distributed"
+               " across angular frequencies rather than across orientations."
+               " The two measures are not interchangeable;"
+               " unlike the amplitude-distribution entropy,"
+               " the spectral entropy can be computed directly from the SH coefficients"
+               " without any sampling of amplitudes on the sphere.");
+
   ARGUMENTS
     + Argument ("SH", "the input spherical harmonics coefficients image(s)").type_image_in().allow_multiple()
     + Argument ("metric", "the metrc to compute; one of: " + Enum::join<metrics>()).type_choice<metrics>()
