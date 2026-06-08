@@ -82,10 +82,8 @@ void usage() {
                " collapsing the harmonic-degree axis with operation \"nats\")"
                " instead quantifies how the function's energy is distributed"
                " across angular frequencies rather than across orientations."
-               " The two measures are not interchangeable;"
-               " unlike the amplitude-distribution entropy,"
-               " the spectral entropy can be computed directly from the SH coefficients"
-               " without any sampling of amplitudes on the sphere.");
+               " The two measures are therefore NOT interchangeable,"
+               " despite both being described as \"the entropy of a spherical harmonic function\".");
 
   ARGUMENTS
     + Argument ("SH", "the input spherical harmonics coefficients image(s)").type_image_in().allow_multiple()
