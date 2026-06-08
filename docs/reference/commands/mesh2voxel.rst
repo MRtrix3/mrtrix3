@@ -22,6 +22,10 @@ Usage
 Options
 -------
 
+-  **-algorithm name** algorithm for partial volume estimation; options are: toblerone, brute_force (default: toblerone)
+
+-  **-subvoxel value** for the "toblerone" algorithm, the target sub-voxel edge length in mm (default: 0.75)
+
 Standard options
 ^^^^^^^^^^^^^^^^
 

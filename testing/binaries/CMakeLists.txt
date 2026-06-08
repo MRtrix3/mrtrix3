@@ -279,6 +279,7 @@ add_bash_binary_test(maskfilter/erode NO_FILESYSTEM_LOCK)
 add_bash_binary_test(maskfilter/median NO_FILESYSTEM_LOCK)
 
 add_bash_binary_test(mesh2voxel/default NO_FILESYSTEM_LOCK)
+add_bash_binary_test(mesh2voxel/bruteforce NO_FILESYSTEM_LOCK)
 add_bash_binary_test(mesh2voxel/input_4D NO_FILESYSTEM_LOCK)
 
 add_bash_binary_test(meshconvert/big_endian)

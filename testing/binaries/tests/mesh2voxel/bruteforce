@@ -1,0 +1,9 @@
+#!/bin/bash
+# Verify the legacy brute-force partial volume estimation algorithm
+# The input surface should be closed and free of inconsistencies in normal polarity
+# NOTE TO MAINTAINER: mesh2voxel/out_bruteforce.mif.gz is the reference output previously
+#   stored as mesh2voxel/out.mif.gz (the brute-force algorithm is unchanged); in the
+#   BinariesTestData repository, move (rename) the original mesh2voxel/out.mif.gz to
+#   mesh2voxel/out_bruteforce.mif.gz to provide this reference.
+mesh2voxel -algorithm brute_force meshconvert/in_ascii.vtk meshconvert/image.mif.gz - | \
+testing_diff_image - mesh2voxel/out_bruteforce.mif.gz -abs 1.5e-3

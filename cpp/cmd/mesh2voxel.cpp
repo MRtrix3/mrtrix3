@@ -16,6 +16,7 @@
 
 #include "command.h"
 
+#include "enum.h"
 #include "header.h"
 #include "image.h"
 #include "image_helpers.h"
@@ -46,6 +47,16 @@ void usage() {
   + Argument ("template", "the template image").type_image_in()
   + Argument ("output",   "the output image").type_image_out();
 
+  OPTIONS
+  + Option ("algorithm", "algorithm for partial volume estimation;"
+                         " options are: " + MR::Enum::join<Surface::Algo::Mesh2ImageMethod>() +
+                         " (default: toblerone)")
+    + Argument ("name").type_choice<Surface::Algo::Mesh2ImageMethod>()
+
+  + Option ("subvoxel", "for the \"toblerone\" algorithm,"
+                        " the target sub-voxel edge length in mm (default: 0.75)")
+    + Argument ("value").type_float (0.0);
+
 }
 // clang-format on
 
@@ -68,6 +79,15 @@ void run() {
   // Create the output image
   Image<float> output = Image<float>::create(argument[2], template_header);
 
+  // Select the partial volume estimation algorithm
+  Surface::Algo::Mesh2ImageOptions options;
+  auto opt = get_options("algorithm");
+  if (!opt.empty())
+    options.method = MR::Enum::from_name<Surface::Algo::Mesh2ImageMethod>(opt[0][0]);
+  opt = get_options("subvoxel");
+  if (!opt.empty())
+    options.subvoxel_mm = static_cast<default_type>(opt[0][0]);
+
   // Perform the partial volume estimation
-  Surface::Algo::mesh2image(mesh, output);
+  Surface::Algo::mesh2image(mesh, output, options);
 }
