@@ -2,6 +2,8 @@
 # Ensure that if the input image used to define the voxel grid is > 3D,
 #   the program still proceeds gracefully
 # (this caused command failure prior to #3107)
+# Uses the default ("toblerone") algorithm; relies on the regenerated mesh2voxel/out.mif.gz
+#   reference (see the "default" test)
 mrcat meshconvert/image.mif.gz meshconvert/image.mif.gz -axis 3 - | \
     mesh2voxel meshconvert/in_ascii.vtk - - | \
-    testing_diff_image - mesh2voxel/out.mif.gz -abs 1.5e-3
+    testing_diff_image - mesh2voxel/toblerone.mif.gz -abs 1.5e-3

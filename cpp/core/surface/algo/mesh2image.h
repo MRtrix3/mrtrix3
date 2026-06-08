@@ -16,12 +16,28 @@
 
 #pragma once
 
+#include <optional>
+
 #include "image.h"
 #include "surface/mesh.h"
 #include "types.h"
 
 namespace MR::Surface::Algo {
 
-void mesh2image(const Mesh &, Image<float> &);
+//! Algorithm used to compute partial volume fractions from a closed surface mesh
+enum class Mesh2ImageMethod {
+  //! Geometric voxelisation after Toblerone (Kirk et al., IEEE TMI 2020)
+  TOBLERONE,
+  //! Legacy dense point-lattice supersampling with heuristic interior classification
+  BRUTE_FORCE
+};
 
-}
+struct Mesh2ImageOptions {
+  Mesh2ImageMethod method = Mesh2ImageMethod::TOBLERONE;
+  //! Toblerone only: target sub-voxel edge length in mm; if unset an internal default (0.75mm) is used
+  std::optional<default_type> subvoxel_mm;
+};
+
+void mesh2image(const Mesh &, Image<float> &, const Mesh2ImageOptions & = {});
+
+} // namespace MR::Surface::Algo
