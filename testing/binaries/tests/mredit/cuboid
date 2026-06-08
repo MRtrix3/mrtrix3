@@ -1,19 +1,30 @@
 #!/bin/bash
-# Verify the -cuboid option draws a rectangular box of voxels.
-# mask.mif is a 6x8x9 image with 2.5mm voxels;
-#   a 5mm cube centred at voxel (3,4,4) is filled with value 1.
+# Verify that the -cuboid option honours three independent side lengths,
+#   i.e. that it can draw a rectangular cuboid that is not a cube,
+#   defined with respect to the voxel grid (i.e. without the -scanner option).
+# oblique.mif is a 16x16x16 grid of 2mm isotropic voxels whose image-to-scanner
+#   transform is a 45-degree rotation about the (1,1,1) axis
+#   (see the mredit cube test for its construction).
+# A cuboid of side lengths 6,10,14 voxels centred at voxel (8,8,8)
+#   is filled with value 2,
+#   yielding an exact 7x11x15 voxel box aligned with the image axes.
 # The output is compared against a reference image
 #   that has been manually verified to be correct
 #   and committed to the test_data repository.
 #
 # To (re)generate the reference image mredit/cuboid.mif:
 #   1. From the root of the test_data repository, run:
-#        mrconvert mask.mif -datatype uint8 - | \
-#        mredit - -cuboid 3,4,4 5.0 1.0 mredit/cuboid.mif -force
+#        mredit mredit/oblique.mif -cuboid 8,8,8 6,10,14 2.0 mredit/cuboid.mif -force
 #   2. Manually verify that the result is correct (e.g. using mrview).
 #   3. Commit mredit/cuboid.mif to the test_data repository
 #        on the branch matching the target source-code branch.
 
-mrconvert mask.mif -datatype uint8 - | \
-mredit - -cuboid 3,4,4 5.0 1.0 - | \
-testing_diff_image - mredit/cuboid.mif -abs 0
+mredit mredit/oblique.mif -cuboid 8,8,8 6,10,14 2.0 tmp_cuboid.mif -force
+testing_diff_image tmp_cuboid.mif mredit/cuboid.mif -abs 0
+
+# The three increasing side lengths must yield three increasing extents,
+#   confirming that per-axis sizes are applied independently.
+mrgrid tmp_cuboid.mif crop -mask tmp_cuboid.mif -uniform 0 tmp_cuboid_crop.mif -force
+read cuboid_x cuboid_y cuboid_z < <(mrinfo tmp_cuboid_crop.mif -size)
+[ "$cuboid_x" -lt "$cuboid_y" ]
+[ "$cuboid_y" -lt "$cuboid_z" ]

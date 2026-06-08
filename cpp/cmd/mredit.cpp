@@ -52,7 +52,21 @@ void usage() {
     "(use at own risk);"
     " if input and output image paths are provided,"
     " the output will contain the edited image,"
-    " and the original image will not be modified in any way.";
+    " and the original image will not be modified in any way."
+
+  + "The geometric primitives -sphere, -ellipsoid, -cuboid and -line"
+    " are by default defined with respect to the image voxel grid:"
+    " positions are voxel indices,"
+    " sizes (radii and side lengths) are measured in voxels,"
+    " and the principal axes of each shape are aligned with the image axes."
+    " If the -scanner option is used,"
+    " these quantities are instead defined with respect to scanner space:"
+    " positions are scanner-space coordinates in millimetres,"
+    " sizes are measured in millimetres,"
+    " and the principal axes of each shape are aligned with the scanner axes."
+    " For an image whose voxel axes are not aligned with the scanner axes,"
+    " or whose voxels are not isotropic,"
+    " the two interpretations can yield substantially different results.";
 
   ARGUMENTS
   + Argument ("input", "the input image").type_image_in()
@@ -64,25 +78,24 @@ void usage() {
     + Argument ("coord").type_sequence_int()
     + Argument ("value").type_float()
 
-  + Option ("sphere", "draw a sphere with radius in mm").allow_multiple()
+  + Option ("sphere", "draw a sphere of the specified radius").allow_multiple()
     + Argument ("position").type_sequence_float()
     + Argument ("radius").type_float()
     + Argument ("value").type_float()
 
-  + Option ("ellipsoid", "draw an ellipsoid with radii in mm"
-                         " (a single value yields a sphere)").allow_multiple()
+  + Option ("ellipsoid", "draw an ellipsoid"
+                         " (a single radius value yields a sphere)").allow_multiple()
     + Argument ("position").type_sequence_float()
     + Argument ("radii").type_sequence_float()
     + Argument ("value").type_float()
 
-  + Option ("cuboid", "draw a rectangular cuboid with side lengths in mm,"
-                      " aligned with the scanner axes"
-                      " (a single value yields a cube)").allow_multiple()
+  + Option ("cuboid", "draw a rectangular cuboid"
+                      " (a single side-length value yields a cube)").allow_multiple()
     + Argument ("position").type_sequence_float()
     + Argument ("size").type_sequence_float()
     + Argument ("value").type_float()
 
-  + Option ("line", "draw a straight line of specified radius in mm between two points"
+  + Option ("line", "draw a straight line of the specified radius between two points"
                     " (i.e. a cylinder with hemispherical caps)").allow_multiple()
     + Argument ("first").type_sequence_float()
     + Argument ("second").type_sequence_float()
@@ -93,8 +106,8 @@ void usage() {
     + Argument ("position").type_sequence_float()
     + Argument ("value").type_float()
 
-  + Option ("scanner", "indicate that coordinates are specified in scanner space,"
-                       " rather than as voxel coordinates");
+  + Option ("scanner", "interpret all stencil positions, sizes and orientations in scanner space (mm),"
+                       " rather than with respect to the voxel grid");
 
 }
 // clang-format on
@@ -115,32 +128,40 @@ public:
 const std::array<Vox, 6> voxel_offsets = {
     Vox(0, 0, -1), Vox(0, 0, 1), Vox(0, -1, 0), Vox(0, 1, 0), Vox(-1, 0, 0), Vox(1, 0, 0)};
 
-//! A single point expressed in both scanner (mm) and voxel coordinate spaces
-struct Point {
-  Eigen::Vector3d scanner;
-  Eigen::Vector3d voxel;
+//! The coordinate space in which stencil geometry (position, size, orientation) is defined
+enum class Space { voxel, scanner };
+
+//! A resolved stencil reference point:
+//!   `centre` is its location within the active working space
+//!   (voxel indices for Space::voxel, scanner-space mm for Space::scanner),
+//!   while `seed` is the nearest integer voxel used to seed the region-growing fill
+struct Stencil {
+  Eigen::Vector3d centre;
+  Vox seed;
 };
 
-//! Resolve a triplet of command-line coordinates into both scanner and voxel space
-Point to_spaces(const std::vector<default_type> &coords, const bool coords_are_scanner, const Transform &transform) {
+//! Resolve a triplet of command-line coordinates within the active working space
+Stencil resolve(const std::vector<default_type> &coords, const Space space, const Transform &transform) {
   if (coords.size() != 3)
     throw Exception("Coordinates must be specified using 3 comma-separated values");
-  Eigen::Vector3d scanner(coords[0], coords[1], coords[2]);
-  Eigen::Vector3d voxel(scanner);
-  if (coords_are_scanner)
-    voxel = transform.scanner2voxel * scanner;
-  else
-    scanner = transform.voxel2scanner * voxel;
-  return {scanner, voxel};
+  const Eigen::Vector3d input(coords[0], coords[1], coords[2]);
+  if (space == Space::scanner)
+    return {input, Vox(Eigen::Vector3d(transform.scanner2voxel * input))};
+  return {input, Vox(input)};
 }
 
 //! Region-grow from one or more seed voxels,
-//!   assigning `value` to every voxel whose centre (in scanner space)
+//!   assigning `value` to every voxel whose centre
+//!   (expressed within the active working space)
 //!   satisfies the `inside` predicate;
 //!   valid for any convex region that contains at least one seed
 template <class Predicate>
-void flood_fill(
-    Image<float> &out, const Transform &transform, const std::vector<Vox> &seeds, Predicate inside, const float value) {
+void flood_fill(Image<float> &out,
+                const Space space,
+                const Transform &transform,
+                const std::vector<Vox> &seeds,
+                Predicate inside,
+                const float value) {
   std::set<Vox> processed;
   std::vector<Vox> to_expand;
   for (const auto &seed : seeds) {
@@ -150,8 +171,10 @@ void flood_fill(
   while (!to_expand.empty()) {
     const Vox v(to_expand.back());
     to_expand.pop_back();
-    const Eigen::Vector3d v_scanner = transform.voxel2scanner * v.matrix().cast<default_type>();
-    if (!inside(v_scanner))
+    const Eigen::Vector3d v_voxel = v.matrix().cast<default_type>();
+    const Eigen::Vector3d v_working =
+        (space == Space::scanner) ? Eigen::Vector3d(transform.voxel2scanner * v_voxel) : v_voxel;
+    if (!inside(v_working))
       continue;
     if (!is_out_of_bounds(out, v)) {
       assign_pos_of(v).to(out);
@@ -187,6 +210,7 @@ void run() {
   const bool scanner = !get_options("scanner").empty();
   if (scanner && H.ndim() < 3)
     throw Exception("Cannot specify scanner-space coordinates if image has less than 3 dimensions");
+  const Space space = scanner ? Space::scanner : Space::voxel;
 
   size_t operation_count = 0;
 
@@ -217,11 +241,11 @@ void run() {
     throw Exception("-sphere option only works for 3D images");
   operation_count += opt.size();
   for (auto s : opt) {
-    const Point centre = to_spaces(parse_floats(s[0]), scanner, transform);
+    const Stencil ref = resolve(parse_floats(s[0]), space, transform);
     const default_type radius = s[1];
     const float value = s[2];
-    auto inside = [&centre, radius](const Eigen::Vector3d &p) { return (p - centre.scanner).norm() < radius; };
-    flood_fill(out, transform, {Vox(centre.voxel)}, inside, value);
+    auto inside = [centre = ref.centre, radius](const Eigen::Vector3d &p) { return (p - centre).norm() < radius; };
+    flood_fill(out, space, transform, {ref.seed}, inside, value);
   }
 
   opt = get_options("ellipsoid");
@@ -229,7 +253,7 @@ void run() {
     throw Exception("-ellipsoid option only works for 3D images");
   operation_count += opt.size();
   for (auto e : opt) {
-    const Point centre = to_spaces(parse_floats(e[0]), scanner, transform);
+    const Stencil ref = resolve(parse_floats(e[0]), space, transform);
     const auto radii_in = parse_floats(e[1]);
     Eigen::Vector3d radii;
     if (radii_in.size() == 1)
@@ -241,10 +265,10 @@ void run() {
     if ((radii.array() <= 0.0).any())
       throw Exception("-ellipsoid radii must be positive");
     const float value = e[2];
-    auto inside = [&centre, &radii](const Eigen::Vector3d &p) {
-      return ((p - centre.scanner).array() / radii.array()).square().sum() < 1.0;
+    auto inside = [centre = ref.centre, radii](const Eigen::Vector3d &p) {
+      return ((p - centre).array() / radii.array()).square().sum() < 1.0;
     };
-    flood_fill(out, transform, {Vox(centre.voxel)}, inside, value);
+    flood_fill(out, space, transform, {ref.seed}, inside, value);
   }
 
   opt = get_options("cuboid");
@@ -252,7 +276,7 @@ void run() {
     throw Exception("-cuboid option only works for 3D images");
   operation_count += opt.size();
   for (auto c : opt) {
-    const Point centre = to_spaces(parse_floats(c[0]), scanner, transform);
+    const Stencil ref = resolve(parse_floats(c[0]), space, transform);
     const auto size_in = parse_floats(c[1]);
     Eigen::Vector3d halfsize;
     if (size_in.size() == 1)
@@ -264,10 +288,10 @@ void run() {
     if ((halfsize.array() <= 0.0).any())
       throw Exception("-cuboid side lengths must be positive");
     const float value = c[2];
-    auto inside = [&centre, &halfsize](const Eigen::Vector3d &p) {
-      return ((p - centre.scanner).array().abs() <= halfsize.array()).all();
+    auto inside = [centre = ref.centre, halfsize](const Eigen::Vector3d &p) {
+      return ((p - centre).array().abs() <= halfsize.array()).all();
     };
-    flood_fill(out, transform, {Vox(centre.voxel)}, inside, value);
+    flood_fill(out, space, transform, {ref.seed}, inside, value);
   }
 
   opt = get_options("line");
@@ -275,21 +299,22 @@ void run() {
     throw Exception("-line option only works for 3D images");
   operation_count += opt.size();
   for (auto l : opt) {
-    const Point first = to_spaces(parse_floats(l[0]), scanner, transform);
-    const Point second = to_spaces(parse_floats(l[1]), scanner, transform);
+    const Stencil first = resolve(parse_floats(l[0]), space, transform);
+    const Stencil second = resolve(parse_floats(l[1]), space, transform);
     const default_type radius = l[2];
     const float value = l[3];
-    const Eigen::Vector3d axis = second.scanner - first.scanner;
+    const Eigen::Vector3d axis = second.centre - first.centre;
     const default_type length_squared = axis.squaredNorm();
-    auto inside = [&first, &axis, length_squared, radius](const Eigen::Vector3d &p) {
-      default_type t = length_squared > 0.0 ? (p - first.scanner).dot(axis) / length_squared : 0.0;
+    auto inside = [start = first.centre, axis, length_squared, radius](const Eigen::Vector3d &p) {
+      default_type t = length_squared > 0.0 ? (p - start).dot(axis) / length_squared : 0.0;
       t = std::clamp(t, 0.0, 1.0);
-      const Eigen::Vector3d nearest = first.scanner + t * axis;
+      const Eigen::Vector3d nearest = start + t * axis;
       return (p - nearest).norm() < radius;
     };
-    const Eigen::Vector3d midpoint = 0.5 * (first.voxel + second.voxel);
-    const std::vector<Vox> seeds{Vox(first.voxel), Vox(midpoint), Vox(second.voxel)};
-    flood_fill(out, transform, seeds, inside, value);
+    const Eigen::Vector3d midpoint =
+        0.5 * (first.seed.matrix().cast<default_type>() + second.seed.matrix().cast<default_type>());
+    const std::vector<Vox> seeds{first.seed, Vox(midpoint), second.seed};
+    flood_fill(out, space, transform, seeds, inside, value);
   }
 
   opt = get_options("voxel");

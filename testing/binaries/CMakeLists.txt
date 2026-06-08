@@ -375,6 +375,7 @@ add_bash_binary_test(mrdump/masked)
 add_bash_binary_test(mrdump/output_file)
 add_bash_binary_test(mrdump/stdout)
 
+add_bash_binary_test(mredit/cube)
 add_bash_binary_test(mredit/cuboid)
 add_bash_binary_test(mredit/ellipsoid)
 add_bash_binary_test(mredit/line)

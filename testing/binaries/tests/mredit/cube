@@ -1,0 +1,44 @@
+#!/bin/bash
+# Verify that the -cuboid option draws a cube when given a single side length,
+#   defined with respect to the voxel grid (i.e. without the -scanner option).
+# oblique.mif is a 16x16x16 grid of 2mm isotropic voxels whose image-to-scanner
+#   transform is a 45-degree rotation about the (1,1,1) axis,
+#   so the voxel and scanner coordinate frames are strongly misaligned.
+# A cube of side length 6 voxels centred at voxel (8,8,8) is filled with value 2.
+# Because the default (voxel-space) stencil is aligned with the image axes,
+#   this yields an exact 7x7x7 voxel cube
+#   irrespective of the oblique scanner transform.
+# The output is compared against a reference image
+#   that has been manually verified to be correct
+#   and committed to the test_data repository.
+#
+# To (re)generate the fixture grid mredit/oblique.mif,
+#   from the root of the test_data repository write a header file oblique.mih:
+#     mrtrix image
+#     dim: 16,16,16
+#     vox: 2,2,2
+#     layout: +0,+1,+2
+#     datatype: UInt8
+#     transform: 0.8047378541243651,-0.31061721752604565,0.5058793633016806,-15
+#     transform: 0.5058793633016806,0.8047378541243651,-0.31061721752604565,-15
+#     transform: -0.31061721752604565,0.5058793633016806,0.8047378541243651,-15
+#     file: oblique.dat
+#   then run:
+#     truncate -s 4096 oblique.dat
+#     mrconvert oblique.mih mredit/oblique.mif -force
+#
+# To (re)generate the reference image mredit/cube.mif:
+#   1. From the root of the test_data repository, run:
+#        mredit mredit/oblique.mif -cuboid 8,8,8 6 2.0 mredit/cube.mif -force
+#   2. Manually verify that the result is correct (e.g. using mrview).
+#   3. Commit mredit/oblique.mif and mredit/cube.mif to the test_data repository
+#        on the branch matching the target source-code branch.
+
+mredit mredit/oblique.mif -cuboid 8,8,8 6 2.0 tmp_cube.mif -force
+testing_diff_image tmp_cube.mif mredit/cube.mif -abs 0
+
+# A single side length must yield equal extents along all three axes.
+mrgrid tmp_cube.mif crop -mask tmp_cube.mif -uniform 0 tmp_cube_crop.mif -force
+read cube_x cube_y cube_z < <(mrinfo tmp_cube_crop.mif -size)
+[ "$cube_x" -eq "$cube_y" ]
+[ "$cube_y" -eq "$cube_z" ]

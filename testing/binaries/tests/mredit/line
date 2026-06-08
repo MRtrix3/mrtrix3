@@ -1,20 +1,34 @@
 #!/bin/bash
-# Verify the -line option (a cylinder with hemispherical caps).
-# mask.mif is a 6x8x9 image with 2.5mm voxels;
-#   a line of radius 1.5mm is drawn between voxels (1,4,4) and (5,4,4)
-#   and filled with value 1.
-# The output is compared against a reference image
-#   that has been manually verified to be correct
-#   and committed to the test_data repository.
+# Verify the -line option (a cylinder with hemispherical caps),
+#   both with respect to the voxel grid (default) and to scanner space (-scanner).
+# oblique.mif is a 16x16x16 grid of 2mm isotropic voxels whose image-to-scanner
+#   transform is a 45-degree rotation about the (1,1,1) axis
+#   (see the mredit cube test for its construction),
+#   so the voxel and scanner coordinate frames are strongly misaligned.
+# The same command-line numbers (endpoints 4,8,8 and 12,8,8; radius 2) are used
+#   in both cases; toggling -scanner changes the interpretation of the endpoint
+#   positions (voxel indices vs scanner mm), the radius (voxels vs mm)
+#   and hence the orientation of the cylinder axis,
+#   so the two results differ substantially.
+# Each result is compared against its own manually-verified reference image,
+#   and the two results are confirmed to differ
+#   (a byte-identical pair would indicate that -scanner had no effect).
 #
-# To (re)generate the reference image mredit/line.mif:
-#   1. From the root of the test_data repository, run:
-#        mrconvert mask.mif -datatype uint8 - | \
-#        mredit - -line 1,4,4 5,4,4 1.5 1.0 mredit/line.mif -force
-#   2. Manually verify that the result is correct (e.g. using mrview).
-#   3. Commit mredit/line.mif to the test_data repository
-#        on the branch matching the target source-code branch.
+# To (re)generate the reference images,
+#   from the root of the test_data repository run:
+#     mredit mredit/oblique.mif -line 4,8,8 12,8,8 2.0 2.0 mredit/line_voxel.mif -force
+#     mredit mredit/oblique.mif -scanner -line 4,8,8 12,8,8 2.0 2.0 mredit/line_scanner.mif -force
+#   then manually verify each (e.g. using mrview)
+#   and commit both to the test_data repository
+#   on the branch matching the target source-code branch.
 
-mrconvert mask.mif -datatype uint8 - | \
-mredit - -line 1,4,4 5,4,4 1.5 1.0 - | \
-testing_diff_image - mredit/line.mif -abs 0
+mredit mredit/oblique.mif -line 4,8,8 12,8,8 2.0 2.0 tmp_line_voxel.mif -force
+testing_diff_image tmp_line_voxel.mif mredit/line_voxel.mif -abs 0
+
+mredit mredit/oblique.mif -scanner -line 4,8,8 12,8,8 2.0 2.0 tmp_line_scanner.mif -force
+testing_diff_image tmp_line_scanner.mif mredit/line_scanner.mif -abs 0
+
+# The voxel-space and scanner-space interpretations must not coincide:
+mrcalc tmp_line_voxel.mif tmp_line_scanner.mif -subtract -abs - | \
+mrstats - -output max | \
+awk '{ exit !($1 > 0) }'
