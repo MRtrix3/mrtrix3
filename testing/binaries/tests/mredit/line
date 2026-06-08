@@ -1,0 +1,16 @@
+#!/bin/bash
+# Verify the -line option (a cylinder with hemispherical caps).
+# A zero-length line fills the region { ||x - centre|| < radius },
+#   and must therefore be identical to a sphere of the same radius.
+set -e
+
+mrconvert mask.mif -datatype uint8 - | mredit - -sphere 3,4,4 5.0 1.0 tmp_line_sphere.mif -force
+mrconvert mask.mif -datatype uint8 - | mredit - -line 3,4,4 3,4,4 5.0 1.0 tmp_line_point.mif -force
+testing_diff_image tmp_line_sphere.mif tmp_line_point.mif -abs 0
+
+# A genuine line must fill the voxels at both of its endpoints,
+#   which lie exactly on the line and so fall within any positive radius
+mrconvert mask.mif -datatype uint8 - | mredit - -line 1,4,4 5,4,4 1.5 1.0 tmp_line_axis.mif -force
+e0=$(mrconvert tmp_line_axis.mif -coord 0 1 -coord 1 4 -coord 2 4 - | mrstats - -output mean)
+e1=$(mrconvert tmp_line_axis.mif -coord 0 5 -coord 1 4 -coord 2 4 - | mrstats - -output mean)
+awk -v a="$e0" -v b="$e1" 'BEGIN { if (a + 0 != 1 || b + 0 != 1) { print "ERROR: line endpoints not filled (" a "," b ")"; exit 1 } }'

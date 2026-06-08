@@ -1,0 +1,14 @@
+#!/bin/bash
+# Verify the -ellipsoid option.
+# An ellipsoid with equal radii fills the region { ||x - centre|| < radius },
+#   and must therefore be identical to a sphere of that radius;
+#   this is checked using both the three-value and single-value radius forms.
+set -e
+
+mrconvert mask.mif -datatype uint8 - | mredit - -sphere 3,4,4 5.0 2.0 tmp_ell_sphere.mif -force
+
+mrconvert mask.mif -datatype uint8 - | mredit - -ellipsoid 3,4,4 5.0,5.0,5.0 2.0 tmp_ell_three.mif -force
+testing_diff_image tmp_ell_sphere.mif tmp_ell_three.mif -abs 0
+
+mrconvert mask.mif -datatype uint8 - | mredit - -ellipsoid 3,4,4 5.0 2.0 tmp_ell_one.mif -force
+testing_diff_image tmp_ell_sphere.mif tmp_ell_one.mif -abs 0

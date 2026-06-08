@@ -323,6 +323,7 @@ UNARY_OP(
  **********************************************************************/
 
 #include <filesystem>
+#include <optional>
 
 #include "algo/threaded_copy.h"
 #include "command.h"
@@ -330,6 +331,7 @@ UNARY_OP(
 #include "image.h"
 #include "math/rng.h"
 #include "memory.h"
+#include "transform.h"
 
 using namespace MR;
 using namespace App;
@@ -339,6 +341,15 @@ using complex_type = cfloat;
 static bool transform_mis_match_reported(false);
 
 inline bool is_true(const complex_type &z) { return z.real() || z.imag(); }
+
+// Per-voxel coordinate generators (the "pos" and "index" special keyword operands);
+//   these yield a value derived from each voxel's location,
+//   and therefore require a defined output voxel grid
+enum class coordinate_t { index, scanner };
+struct Coordinate {
+  coordinate_t type;
+  size_t axis;
+};
 
 // clang-format off
 void usage() {
@@ -381,9 +392,31 @@ void usage() {
     " 'rand' (random number between 0 and 1);"
     " 'randn' (random number from unit std.dev. normal distribution);"
     " 'e' (Euler's number);"
-    " 'pi' (ratio of circumference of circle to diameter)";
+    " 'pi' (ratio of circumference of circle to diameter);"
+    " 'pos.x', 'pos.y', 'pos.z'"
+    " (scanner-space position in mm of each voxel along the respective spatial axis);"
+    " 'index.0' ... 'index.4'"
+    " (voxel index of each voxel along the respective image axis)"
+
+  + "The 'rand', 'randn', 'pos' and 'index' special keywords"
+    " each yield one value per voxel,"
+    " and therefore require a voxel grid against which to be evaluated."
+    " This grid is normally taken from an input image operand;"
+    " if no input image is provided"
+    " (e.g. when generating image data from scratch),"
+    " the -template option must be used to define the output image grid.";
 
 EXAMPLES
+  + Example ("Generate a synthetic image from scratch using a template grid",
+             "mrcalc -template grid.mih"
+             " pos.x 2 -pow pos.y 2 -pow pos.z 2 -pow -add -add -sqrt 15 -le sphere.mif",
+             "Using image 'grid.mih' (which may be hand-authored or pre-existing)"
+             " solely to define the output voxel grid,"
+             " this evaluates the scanner-space radius at each voxel"
+             " and assigns a value of 1 to all voxels within 15mm of the scanner-space origin"
+             " (and 0 elsewhere),"
+             " thereby drawing a solid sphere without requiring any input image data.")
+
   + Example ("Double the value stored in every voxel",
              "mrcalc a.mif 2 -mult r.mif",
              "This performs the operation: "
@@ -429,6 +462,13 @@ OPTIONS
 #define SECTION 1 // check_syntax off
 #include "mrcalc.cpp" //NOLINT(bugprone-suspicious-include,misc-header-include-cycle)
 
+  + OptionGroup ("Options for generating image data without an input image")
+  + Option ("template", "an image whose grid (dimensions, voxel size and transform)"
+                        " defines that of the output image,"
+                        " enabling generation of image data from the special keyword operands"
+                        " (e.g. 'pos' and 'index') without any input image operand")
+    + Argument ("image").type_image_in()
+
   + DataType::options();
 }
 // clang-format on
@@ -471,6 +511,43 @@ public:
     }
   }
 
+  // Populate a chunk with per-voxel coordinate values:
+  //   either the scanner-space position (in mm) along one spatial axis,
+  //   or the voxel index along one image axis
+  void fill_coordinate(Chunk &chunk, const Coordinate &coordinate) {
+    size_t n = 0;
+    if (coordinate.type == coordinate_t::index) {
+      for (size_t y = 0; y != size[1]; ++y) {
+        for (size_t x = 0; x != size[0]; ++x) {
+          ssize_t index;
+          if (coordinate.axis == axes[0])
+            index = static_cast<ssize_t>(x);
+          else if (coordinate.axis == axes[1])
+            index = static_cast<ssize_t>(y);
+          else
+            index = coordinate.axis < iter->ndim() ? iter->index(coordinate.axis) : 0;
+          chunk[n++] = complex_type(static_cast<real_type>(index), 0.0F);
+        }
+      }
+    } else {
+      Eigen::Vector3d voxel;
+      for (size_t y = 0; y != size[1]; ++y) {
+        for (size_t x = 0; x != size[0]; ++x) {
+          for (size_t axis = 0; axis != 3; ++axis) {
+            if (axis == axes[0])
+              voxel[axis] = static_cast<double>(x);
+            else if (axis == axes[1])
+              voxel[axis] = static_cast<double>(y);
+            else
+              voxel[axis] = static_cast<double>(iter->index(axis));
+          }
+          const Eigen::Vector3d scanner = voxel2scanner * voxel;
+          chunk[n++] = complex_type(static_cast<real_type>(scanner[coordinate.axis]), 0.0F);
+        }
+      }
+    }
+  }
+
   Chunk &next() {
     ThreadLocalStorageItem &item((*this)[current++]);
     if (item.image)
@@ -485,6 +562,7 @@ public:
 
   const Iterator *iter;
   std::vector<size_t> axes, size;
+  transform_type voxel2scanner;
 
 private:
   size_t current;
@@ -532,6 +610,13 @@ public:
             value = 0.0;
             rng.reset(new Math::RNG());
             rng_gaussian = true;
+          } else if (a == "pos.x" || a == "pos.y" || a == "pos.z") {
+            value = 0.0;
+            coordinate = Coordinate{coordinate_t::scanner, static_cast<size_t>(a[4] - 'x')};
+          } else if (a == "index.0" || a == "index.1" || a == "index.2" || //
+                     a == "index.3" || a == "index.4") {
+            value = 0.0;
+            coordinate = Coordinate{coordinate_t::index, static_cast<size_t>(a[6] - '0')};
           } else {
             value = to<complex_type>(arg);
           }
@@ -555,6 +640,7 @@ public:
   std::shared_ptr<Evaluator> evaluator;
   std::shared_ptr<Image<complex_type>> image;
   copy_ptr<Math::RNG> rng;
+  std::optional<Coordinate> coordinate;
   complex_type value;
   bool rng_gaussian;
   bool image_is_complex;
@@ -617,6 +703,8 @@ inline bool StackEntry::is_complex() const {
     return evaluator->is_complex();
   if (rng)
     return false;
+  if (coordinate)
+    return false;
   return value.imag() != 0.0;
 }
 
@@ -634,6 +722,11 @@ inline Chunk &StackEntry::evaluate(ThreadLocalStorage &storage) const {
       for (size_t n = 0; n < chunk.size(); ++n)
         chunk[n] = dis(*rng);
     }
+    return chunk;
+  }
+  if (coordinate) {
+    Chunk &chunk = storage.next();
+    storage.fill_coordinate(chunk, *coordinate);
     return chunk;
   }
   return storage.next();
@@ -662,6 +755,10 @@ std::string operation_string(const StackEntry &entry) {
     return std::string(entry.image->name());
   else if (entry.rng)
     return entry.rng_gaussian ? "randn()" : "rand()";
+  else if (entry.coordinate)
+    return entry.coordinate->type == coordinate_t::scanner
+               ? std::string("pos.") + static_cast<char>('x' + entry.coordinate->axis)
+               : std::string("index.") + str(entry.coordinate->axis);
   else if (entry.evaluator) {
     std::string s = entry.evaluator->format;
     for (size_t n = 0; n < entry.evaluator->operands.size(); ++n)
@@ -751,7 +848,7 @@ void unary_operation(std::string_view operation_name, std::vector<StackEntry> &s
     throw Exception("no operand in stack for operation \"" + operation_name + "\"!");
   StackEntry &a(stack[stack.size() - 1]);
   a.load();
-  if (a.evaluator || a.image || a.rng) {
+  if (a.evaluator || a.image || a.rng || a.coordinate) {
     StackEntry entry(new UnaryEvaluator<Operation>(operation_name, operation, a));
     stack.back() = entry;
   } else {
@@ -771,7 +868,8 @@ void binary_operation(std::string_view operation_name, std::vector<StackEntry> &
   StackEntry &b(stack[stack.size() - 1]);
   a.load();
   b.load();
-  if (a.evaluator || a.image || a.rng || b.evaluator || b.image || b.rng) {
+  if (a.evaluator || a.image || a.rng || a.coordinate || //
+      b.evaluator || b.image || b.rng || b.coordinate) {
     StackEntry entry(new BinaryEvaluator<Operation>(operation_name, operation, a, b));
     stack.pop_back();
     stack.back() = entry;
@@ -792,7 +890,9 @@ void ternary_operation(std::string_view operation_name, std::vector<StackEntry> 
   a.load();
   b.load();
   c.load();
-  if (a.evaluator || a.image || a.rng || b.evaluator || b.image || b.rng || c.evaluator || c.image || c.rng) {
+  if (a.evaluator || a.image || a.rng || a.coordinate || //
+      b.evaluator || b.image || b.rng || b.coordinate || //
+      c.evaluator || c.image || c.rng || c.coordinate) {
     StackEntry entry(new TernaryEvaluator<Operation>(operation_name, operation, a, b, c));
     stack.pop_back();
     stack.pop_back();
@@ -852,6 +952,8 @@ public:
     storage.size.push_back(image.size(storage.axes[0]));
     storage.size.push_back(image.size(storage.axes[1]));
     chunk_size = image.size(storage.axes[0]) * image.size(storage.axes[1]);
+    if (image.ndim() >= 3)
+      storage.voxel2scanner = Transform(image).voxel2scanner;
     allocate_storage(top_entry);
   }
 
@@ -868,6 +970,8 @@ public:
       storage.back().chunk.resize(chunk_size);
       return;
     } else if (entry.rng) {
+      storage.back().chunk.resize(chunk_size);
+    } else if (entry.coordinate) {
       storage.back().chunk.resize(chunk_size);
     } else
       storage.back().chunk.value = entry.value;
@@ -891,21 +995,40 @@ public:
   size_t chunk_size;
 };
 
-void run_operations(const std::vector<StackEntry> &stack) {
+bool has_scanner_operand(const StackEntry &entry) {
+  if (entry.evaluator) {
+    for (const auto &operand : entry.evaluator->operands)
+      if (has_scanner_operand(operand))
+        return true;
+    return false;
+  }
+  return entry.coordinate.has_value() && entry.coordinate->type == coordinate_t::scanner;
+}
+
+void run_operations(const std::vector<StackEntry> &stack, const std::filesystem::path &template_path) {
   Header header;
+  if (!template_path.empty())
+    header = Header::open(template_path);
   get_header(stack[0], header);
 
   if (header.ndim() == 0) {
     DEBUG("no valid images supplied - assuming calculator mode");
+    if (stack[0].evaluator || stack[0].coordinate || stack[0].rng)
+      throw Exception("no voxel grid available against which to evaluate per-voxel operands;" //
+                      " provide an input image operand,"                                      //
+                      " or use the -template option to define the output image grid");
     if (stack.size() != 1)
       throw Exception("too many operands left on stack!");
 
-    assert(!stack[0].evaluator);
     assert(!stack[0].image);
 
     print(str(stack[0].value) + "\n");
     return;
   }
+
+  if (has_scanner_operand(stack[0]) && header.ndim() < 3)
+    throw Exception("the 'pos' special keyword operands require"
+                    " an output image grid with at least 3 dimensions");
 
   if (stack.size() == 1)
     throw Exception("output image not specified");
@@ -995,6 +1118,7 @@ public:
 
 void run() {
   std::vector<StackEntry> stack;
+  std::filesystem::path template_path;
 
   for (size_t n = 0; n < raw_arguments_list.size(); ++n) {
     const auto &argument = raw_arguments_list[n];
@@ -1003,6 +1127,8 @@ void run() {
 
       if (opt->is("datatype") || opt->is("nthreads"))
         ++n;
+      else if (opt->is("template"))
+        template_path = raw_arguments_list[++n];
       else if (opt->is("force") || opt->is("info") || opt->is("debug") || opt->is("quiet"))
         continue;
       else if (opt->is("config"))
@@ -1020,7 +1146,7 @@ void run() {
   }
 
   stack[0].load();
-  run_operations(stack);
+  run_operations(stack, template_path);
 }
 
 #endif

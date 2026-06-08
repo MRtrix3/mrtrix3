@@ -14,8 +14,10 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <algorithm>
 #include <array>
 #include <set>
+#include <vector>
 
 #include "command.h"
 #include "image.h"
@@ -67,6 +69,26 @@ void usage() {
     + Argument ("radius").type_float()
     + Argument ("value").type_float()
 
+  + Option ("ellipsoid", "draw an ellipsoid with radii in mm"
+                         " (a single value yields a sphere)").allow_multiple()
+    + Argument ("position").type_sequence_float()
+    + Argument ("radii").type_sequence_float()
+    + Argument ("value").type_float()
+
+  + Option ("cuboid", "draw a rectangular cuboid with side lengths in mm,"
+                      " aligned with the scanner axes"
+                      " (a single value yields a cube)").allow_multiple()
+    + Argument ("position").type_sequence_float()
+    + Argument ("size").type_sequence_float()
+    + Argument ("value").type_float()
+
+  + Option ("line", "draw a straight line of specified radius in mm between two points"
+                    " (i.e. a cylinder with hemispherical caps)").allow_multiple()
+    + Argument ("first").type_sequence_float()
+    + Argument ("second").type_sequence_float()
+    + Argument ("radius").type_float()
+    + Argument ("value").type_float()
+
   + Option ("voxel", "change the image value within a single voxel").allow_multiple()
     + Argument ("position").type_sequence_float()
     + Argument ("value").type_float()
@@ -92,6 +114,56 @@ public:
 
 const std::array<Vox, 6> voxel_offsets = {
     Vox(0, 0, -1), Vox(0, 0, 1), Vox(0, -1, 0), Vox(0, 1, 0), Vox(-1, 0, 0), Vox(1, 0, 0)};
+
+//! A single point expressed in both scanner (mm) and voxel coordinate spaces
+struct Point {
+  Eigen::Vector3d scanner;
+  Eigen::Vector3d voxel;
+};
+
+//! Resolve a triplet of command-line coordinates into both scanner and voxel space
+Point to_spaces(const std::vector<default_type> &coords, const bool coords_are_scanner, const Transform &transform) {
+  if (coords.size() != 3)
+    throw Exception("Coordinates must be specified using 3 comma-separated values");
+  Eigen::Vector3d scanner(coords[0], coords[1], coords[2]);
+  Eigen::Vector3d voxel(scanner);
+  if (coords_are_scanner)
+    voxel = transform.scanner2voxel * scanner;
+  else
+    scanner = transform.voxel2scanner * voxel;
+  return {scanner, voxel};
+}
+
+//! Region-grow from one or more seed voxels,
+//!   assigning `value` to every voxel whose centre (in scanner space)
+//!   satisfies the `inside` predicate;
+//!   valid for any convex region that contains at least one seed
+template <class Predicate>
+void flood_fill(
+    Image<float> &out, const Transform &transform, const std::vector<Vox> &seeds, Predicate inside, const float value) {
+  std::set<Vox> processed;
+  std::vector<Vox> to_expand;
+  for (const auto &seed : seeds) {
+    if (processed.insert(seed).second)
+      to_expand.push_back(seed);
+  }
+  while (!to_expand.empty()) {
+    const Vox v(to_expand.back());
+    to_expand.pop_back();
+    const Eigen::Vector3d v_scanner = transform.voxel2scanner * v.matrix().cast<default_type>();
+    if (!inside(v_scanner))
+      continue;
+    if (!is_out_of_bounds(out, v)) {
+      assign_pos_of(v).to(out);
+      out.value() = value;
+    }
+    for (size_t i = 0; i != 6; ++i) {
+      const Vox v_adj(v + voxel_offsets[i]);
+      if (processed.insert(v_adj).second)
+        to_expand.push_back(v_adj);
+    }
+  }
+}
 
 void run() {
   bool inplace = (argument.size() == 1);
@@ -145,41 +217,79 @@ void run() {
     throw Exception("-sphere option only works for 3D images");
   operation_count += opt.size();
   for (auto s : opt) {
-    const auto position = parse_floats(s[0]);
-    Eigen::Vector3d centre_scannerspace(position[0], position[1], position[2]);
+    const Point centre = to_spaces(parse_floats(s[0]), scanner, transform);
     const default_type radius = s[1];
     const float value = s[2];
-    if (position.size() != 3)
-      throw Exception("Centre of sphere must be defined using 3 comma-separated values");
-    Eigen::Vector3d centre_voxelspace(centre_scannerspace);
-    if (scanner)
-      centre_voxelspace = transform.scanner2voxel * centre_scannerspace;
+    auto inside = [&centre, radius](const Eigen::Vector3d &p) { return (p - centre.scanner).norm() < radius; };
+    flood_fill(out, transform, {Vox(centre.voxel)}, inside, value);
+  }
+
+  opt = get_options("ellipsoid");
+  if (!opt.empty() && H.ndim() != 3)
+    throw Exception("-ellipsoid option only works for 3D images");
+  operation_count += opt.size();
+  for (auto e : opt) {
+    const Point centre = to_spaces(parse_floats(e[0]), scanner, transform);
+    const auto radii_in = parse_floats(e[1]);
+    Eigen::Vector3d radii;
+    if (radii_in.size() == 1)
+      radii.setConstant(radii_in[0]);
+    else if (radii_in.size() == 3)
+      radii = Eigen::Vector3d(radii_in[0], radii_in[1], radii_in[2]);
     else
-      centre_scannerspace = transform.voxel2scanner * centre_voxelspace;
-    std::set<Vox> processed;
-    std::vector<Vox> to_expand;
-    const Vox seed_voxel(centre_voxelspace);
-    processed.insert(seed_voxel);
-    to_expand.push_back(seed_voxel);
-    while (!to_expand.empty()) {
-      const Vox v(to_expand.back());
-      to_expand.pop_back();
-      const Eigen::Vector3d v_scanner = transform.voxel2scanner * v.matrix().cast<default_type>();
-      const default_type distance = (v_scanner - centre_scannerspace).norm();
-      if (distance < radius) {
-        if (!is_out_of_bounds(H, v)) {
-          assign_pos_of(v).to(out);
-          out.value() = value;
-        }
-        for (size_t i = 0; i != 6; ++i) {
-          const Vox v_adj(v + voxel_offsets[i]);
-          if (processed.find(v_adj) == processed.end()) {
-            processed.insert(v_adj);
-            to_expand.push_back(v_adj);
-          }
-        }
-      }
-    }
+      throw Exception("-ellipsoid radii must be either a single value or 3 comma-separated values");
+    if ((radii.array() <= 0.0).any())
+      throw Exception("-ellipsoid radii must be positive");
+    const float value = e[2];
+    auto inside = [&centre, &radii](const Eigen::Vector3d &p) {
+      return ((p - centre.scanner).array() / radii.array()).square().sum() < 1.0;
+    };
+    flood_fill(out, transform, {Vox(centre.voxel)}, inside, value);
+  }
+
+  opt = get_options("cuboid");
+  if (!opt.empty() && H.ndim() != 3)
+    throw Exception("-cuboid option only works for 3D images");
+  operation_count += opt.size();
+  for (auto c : opt) {
+    const Point centre = to_spaces(parse_floats(c[0]), scanner, transform);
+    const auto size_in = parse_floats(c[1]);
+    Eigen::Vector3d halfsize;
+    if (size_in.size() == 1)
+      halfsize.setConstant(0.5 * size_in[0]);
+    else if (size_in.size() == 3)
+      halfsize = 0.5 * Eigen::Vector3d(size_in[0], size_in[1], size_in[2]);
+    else
+      throw Exception("-cuboid size must be either a single value or 3 comma-separated values");
+    if ((halfsize.array() <= 0.0).any())
+      throw Exception("-cuboid side lengths must be positive");
+    const float value = c[2];
+    auto inside = [&centre, &halfsize](const Eigen::Vector3d &p) {
+      return ((p - centre.scanner).array().abs() <= halfsize.array()).all();
+    };
+    flood_fill(out, transform, {Vox(centre.voxel)}, inside, value);
+  }
+
+  opt = get_options("line");
+  if (!opt.empty() && H.ndim() != 3)
+    throw Exception("-line option only works for 3D images");
+  operation_count += opt.size();
+  for (auto l : opt) {
+    const Point first = to_spaces(parse_floats(l[0]), scanner, transform);
+    const Point second = to_spaces(parse_floats(l[1]), scanner, transform);
+    const default_type radius = l[2];
+    const float value = l[3];
+    const Eigen::Vector3d axis = second.scanner - first.scanner;
+    const default_type length_squared = axis.squaredNorm();
+    auto inside = [&first, &axis, length_squared, radius](const Eigen::Vector3d &p) {
+      default_type t = length_squared > 0.0 ? (p - first.scanner).dot(axis) / length_squared : 0.0;
+      t = std::clamp(t, 0.0, 1.0);
+      const Eigen::Vector3d nearest = first.scanner + t * axis;
+      return (p - nearest).norm() < radius;
+    };
+    const Eigen::Vector3d midpoint = 0.5 * (first.voxel + second.voxel);
+    const std::vector<Vox> seeds{Vox(first.voxel), Vox(midpoint), Vox(second.voxel)};
+    flood_fill(out, transform, seeds, inside, value);
   }
 
   opt = get_options("voxel");

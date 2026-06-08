@@ -30,6 +30,12 @@ Options
 
 -  **-sphere position radius value** *(multiple uses permitted)* draw a sphere with radius in mm
 
+-  **-ellipsoid position radii value** *(multiple uses permitted)* draw an ellipsoid with radii in mm (a single value yields a sphere)
+
+-  **-cuboid position size value** *(multiple uses permitted)* draw a rectangular cuboid with side lengths in mm, aligned with the scanner axes (a single value yields a cube)
+
+-  **-line first second radius value** *(multiple uses permitted)* draw a straight line of specified radius in mm between two points (i.e. a cylinder with hemispherical caps)
+
 -  **-voxel position value** *(multiple uses permitted)* change the image value within a single voxel
 
 -  **-scanner** indicate that coordinates are specified in scanner space, rather than as voxel coordinates

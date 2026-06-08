@@ -1,0 +1,20 @@
+#!/bin/bash
+# Verify the -cuboid option draws a rectangular box of voxels.
+# mask.mif is a 6x8x9 image with 2.5mm voxels;
+#   a 5mm cube centred at voxel (3,4,4) is filled with value 1.
+set -e
+
+mrconvert mask.mif -datatype uint8 - | mredit - -cuboid 3,4,4 5.0 1.0 tmp_cuboid.mif -force
+
+# The centre voxel must be set
+cval=$(mrconvert tmp_cuboid.mif -coord 0 3 -coord 1 4 -coord 2 4 - | mrstats - -output mean)
+awk -v v="$cval" 'BEGIN { if (v + 0 != 1) { print "ERROR: cuboid centre voxel not set (" v ")"; exit 1 } }'
+
+# A distant corner must remain unset
+fval=$(mrconvert tmp_cuboid.mif -coord 0 0 -coord 1 0 -coord 2 0 - | mrstats - -output mean)
+awk -v v="$fval" 'BEGIN { if (v + 0 != 0) { print "ERROR: cuboid filled a distant voxel (" v ")"; exit 1 } }'
+
+# The number of filled voxels must be positive and smaller than the whole image
+nfilled=$(mrstats tmp_cuboid.mif -mask tmp_cuboid.mif -output count)
+ntotal=$(mrstats tmp_cuboid.mif -output count)
+awk -v n="$nfilled" -v t="$ntotal" 'BEGIN { if (!(n + 0 > 0 && n + 0 < t + 0)) { print "ERROR: unexpected cuboid voxel count " n "/" t; exit 1 } }'
