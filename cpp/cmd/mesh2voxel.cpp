@@ -57,6 +57,12 @@ void usage() {
                         " the target sub-voxel edge length in mm (default: 0.75)")
     + Argument ("value").type_float (0.0);
 
+  REFERENCES
+  + "If utilising the default \"toblerone\" algorithm:"
+    " Kirk T.F., Coalson T.S., Craig M.S., Chappell M.A."
+    " Toblerone: Surface-Based Partial Volume Estimation."
+    " IEEE TMI 2020:39(5);1501-1510.";
+
 }
 // clang-format on
 

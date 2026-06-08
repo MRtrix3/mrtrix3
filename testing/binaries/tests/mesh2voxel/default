@@ -1,9 +1,5 @@
 #!/bin/bash
 # Basic test verifying the default operation of the command (the "toblerone" algorithm)
 # The input surface should be closed and free of inconsistencies in normal polarity
-# NOTE TO MAINTAINER: the default algorithm is now "toblerone"; the reference image
-#   mesh2voxel/out.mif.gz in the BinariesTestData repository must therefore be regenerated
-#   using the current implementation, e.g.:
-#     mesh2voxel meshconvert/in_ascii.vtk meshconvert/image.mif.gz mesh2voxel/out.mif.gz -force
 mesh2voxel meshconvert/in_ascii.vtk meshconvert/image.mif.gz - | \
-testing_diff_image - mesh2voxel/out.mif.gz -abs 1.5e-3
+testing_diff_image - mesh2voxel/toblerone.mif.gz -abs 1.5e-3
