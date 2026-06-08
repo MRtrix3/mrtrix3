@@ -46,7 +46,7 @@ def copy(src, dst, follow_symlinks=True): # pylint: disable=unused-variable
 
 
 
-def check_linear_transformation(transformation, cmd, max_scaling=0.5, max_shear=0.2, max_rot=None, pause_on_warn=True): # pylint: disable=unused-variable, too-many-arguments, too-many-positional-arguments
+def check_linear_transformation(transformation, cmd, *, max_scaling=0.5, max_shear=0.2, max_rot=None, pause_on_warn=True):
   if max_rot is None:
     max_rot = 2 * math.pi
 
@@ -102,7 +102,7 @@ def check_linear_transformation(transformation, cmd, max_scaling=0.5, max_shear=
       app.console("by the one obtained with:")
       app.console(newcmd)
       run.command(newcmd, force=True)
-      return check_linear_transformation(transformation, newcmd, max_scaling, max_shear, max_rot, pause_on_warn=pause_on_warn)
+      return check_linear_transformation(transformation, newcmd, max_scaling=max_scaling, max_shear=max_shear, max_rot=max_rot, pause_on_warn=pause_on_warn)
     if pause_on_warn:
       app.warn('you might want to manually repeat mrregister with different parameters and overwrite the transformation file: \n{transformation}')
       app.console(f'The command that failed the test was: \n{cmd}')

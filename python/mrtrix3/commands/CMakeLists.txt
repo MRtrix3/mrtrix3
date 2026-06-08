@@ -8,11 +8,20 @@ file(GLOB_RECURSE PYTHON_ALL_COMMANDS_FILES
     "${CMAKE_CURRENT_SOURCE_DIR}/*.py"
 )
 
-# Collect a list of top-level command names (directories or single .py files).
+# Collect a list of top-level command names: single "<name>.py" files, and package directories
+#   that contain an "__init__.py". Selecting commands by this positive criterion (rather than
+#   blocklisting known non-command entries) ensures that build-system artefacts deposited alongside
+#   the sources by an in-source build -- e.g. the generated "CMakeFiles" directory,
+#   "cmake_install.cmake", "CTestTestfile.cmake" -- are never mistaken for commands.
 set(PYTHON_COMMAND_LIST "")
 foreach(PYTHON_PATH IN LISTS PYTHON_ALL_COMMANDS_ROOT_PATHS)
-    get_filename_component(CMDNAME "${PYTHON_PATH}" NAME_WE)
-    if(NOT "${CMDNAME}" STREQUAL "CMakeLists" AND NOT "${CMDNAME}" STREQUAL "__init__")
+    get_filename_component(FILENAME "${PYTHON_PATH}" NAME)
+    if(IS_DIRECTORY "${PYTHON_PATH}")
+        if(EXISTS "${PYTHON_PATH}/__init__.py")
+            list(APPEND PYTHON_COMMAND_LIST "${FILENAME}")
+        endif()
+    elseif("${FILENAME}" MATCHES "\\.py$" AND NOT "${FILENAME}" STREQUAL "__init__.py")
+        get_filename_component(CMDNAME "${PYTHON_PATH}" NAME_WE)
         list(APPEND PYTHON_COMMAND_LIST "${CMDNAME}")
     endif()
 endforeach()
