@@ -1005,10 +1005,29 @@ bool has_scanner_operand(const StackEntry &entry) {
   return entry.coordinate.has_value() && entry.coordinate->type == coordinate_t::scanner;
 }
 
-void run_operations(const std::vector<StackEntry> &stack, const std::filesystem::path &template_path) {
+// Determine the greatest image axis referenced by any 'index' special keyword operand;
+//   this is checked against the dimensionality of the output voxel grid
+//   so that an operand referencing a non-existent axis is reported as an error
+//   rather than silently yielding zero
+std::optional<size_t> max_index_axis(const StackEntry &entry) {
+  if (entry.evaluator) {
+    std::optional<size_t> result;
+    for (const auto &operand : entry.evaluator->operands) {
+      const std::optional<size_t> axis = max_index_axis(operand);
+      if (axis.has_value() && (!result.has_value() || *axis > *result))
+        result = axis;
+    }
+    return result;
+  }
+  if (entry.coordinate.has_value() && entry.coordinate->type == coordinate_t::index)
+    return entry.coordinate->axis;
+  return std::nullopt;
+}
+
+void run_operations(const std::vector<StackEntry> &stack, const std::optional<Header> &template_header) {
   Header header;
-  if (!template_path.empty())
-    header = Header::open(template_path);
+  if (template_header)
+    header = *template_header;
   get_header(stack[0], header);
 
   if (header.ndim() == 0) {
@@ -1029,6 +1048,12 @@ void run_operations(const std::vector<StackEntry> &stack, const std::filesystem:
   if (has_scanner_operand(stack[0]) && header.ndim() < 3)
     throw Exception("the 'pos' special keyword operands require"
                     " an output image grid with at least 3 dimensions");
+
+  const std::optional<size_t> max_index = max_index_axis(stack[0]);
+  if (max_index.has_value() && *max_index >= header.ndim())
+    throw Exception("the 'index." + str(*max_index) +
+                    "' special keyword operand requires an output image grid with at least " + str(*max_index + 1) +
+                    " dimensions (the grid has only " + str(header.ndim()) + ")");
 
   if (stack.size() == 1)
     throw Exception("output image not specified");
@@ -1118,7 +1143,7 @@ public:
 
 void run() {
   std::vector<StackEntry> stack;
-  std::filesystem::path template_path;
+  std::optional<Header> template_header;
 
   for (size_t n = 0; n < raw_arguments_list.size(); ++n) {
     const auto &argument = raw_arguments_list[n];
@@ -1128,7 +1153,7 @@ void run() {
       if (opt->is("datatype") || opt->is("nthreads"))
         ++n;
       else if (opt->is("template"))
-        template_path = raw_arguments_list[++n];
+        template_header = Header::open(std::filesystem::path{raw_arguments_list[++n]});
       else if (opt->is("force") || opt->is("info") || opt->is("debug") || opt->is("quiet"))
         continue;
       else if (opt->is("config"))
@@ -1146,7 +1171,7 @@ void run() {
   }
 
   stack[0].load();
-  run_operations(stack, template_path);
+  run_operations(stack, template_header);
 }
 
 #endif

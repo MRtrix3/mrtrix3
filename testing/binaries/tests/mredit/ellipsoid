@@ -1,14 +1,22 @@
 #!/bin/bash
-# Verify the -ellipsoid option.
-# An ellipsoid with equal radii fills the region { ||x - centre|| < radius },
-#   and must therefore be identical to a sphere of that radius;
-#   this is checked using both the three-value and single-value radius forms.
-set -e
+# Verify the -ellipsoid option draws an anisotropic ellipsoid of voxels.
+# mask.mif is a 6x8x9 image with 2.5mm voxels;
+#   an ellipsoid centred at voxel (3,4,4) with radii 6.0,4.0,2.5 mm
+#   is filled with value 2,
+#   exercising the anisotropic (three-radius) capability
+#   that distinguishes -ellipsoid from -sphere.
+# The output is compared against a reference image
+#   that has been manually verified to be correct
+#   and committed to the test_data repository.
+#
+# To (re)generate the reference image mredit/ellipsoid.mif:
+#   1. From the root of the test_data repository, run:
+#        mrconvert mask.mif -datatype uint8 - | \
+#        mredit - -ellipsoid 3,4,4 6.0,4.0,2.5 2.0 mredit/ellipsoid.mif -force
+#   2. Manually verify that the result is correct (e.g. using mrview).
+#   3. Commit mredit/ellipsoid.mif to the test_data repository
+#        on the branch matching the target source-code branch.
 
-mrconvert mask.mif -datatype uint8 - | mredit - -sphere 3,4,4 5.0 2.0 tmp_ell_sphere.mif -force
-
-mrconvert mask.mif -datatype uint8 - | mredit - -ellipsoid 3,4,4 5.0,5.0,5.0 2.0 tmp_ell_three.mif -force
-testing_diff_image tmp_ell_sphere.mif tmp_ell_three.mif -abs 0
-
-mrconvert mask.mif -datatype uint8 - | mredit - -ellipsoid 3,4,4 5.0 2.0 tmp_ell_one.mif -force
-testing_diff_image tmp_ell_sphere.mif tmp_ell_one.mif -abs 0
+mrconvert mask.mif -datatype uint8 - | \
+mredit - -ellipsoid 3,4,4 6.0,4.0,2.5 2.0 - | \
+testing_diff_image - mredit/ellipsoid.mif -abs 0

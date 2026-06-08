@@ -1,16 +1,20 @@
 #!/bin/bash
 # Verify the -line option (a cylinder with hemispherical caps).
-# A zero-length line fills the region { ||x - centre|| < radius },
-#   and must therefore be identical to a sphere of the same radius.
-set -e
+# mask.mif is a 6x8x9 image with 2.5mm voxels;
+#   a line of radius 1.5mm is drawn between voxels (1,4,4) and (5,4,4)
+#   and filled with value 1.
+# The output is compared against a reference image
+#   that has been manually verified to be correct
+#   and committed to the test_data repository.
+#
+# To (re)generate the reference image mredit/line.mif:
+#   1. From the root of the test_data repository, run:
+#        mrconvert mask.mif -datatype uint8 - | \
+#        mredit - -line 1,4,4 5,4,4 1.5 1.0 mredit/line.mif -force
+#   2. Manually verify that the result is correct (e.g. using mrview).
+#   3. Commit mredit/line.mif to the test_data repository
+#        on the branch matching the target source-code branch.
 
-mrconvert mask.mif -datatype uint8 - | mredit - -sphere 3,4,4 5.0 1.0 tmp_line_sphere.mif -force
-mrconvert mask.mif -datatype uint8 - | mredit - -line 3,4,4 3,4,4 5.0 1.0 tmp_line_point.mif -force
-testing_diff_image tmp_line_sphere.mif tmp_line_point.mif -abs 0
-
-# A genuine line must fill the voxels at both of its endpoints,
-#   which lie exactly on the line and so fall within any positive radius
-mrconvert mask.mif -datatype uint8 - | mredit - -line 1,4,4 5,4,4 1.5 1.0 tmp_line_axis.mif -force
-e0=$(mrconvert tmp_line_axis.mif -coord 0 1 -coord 1 4 -coord 2 4 - | mrstats - -output mean)
-e1=$(mrconvert tmp_line_axis.mif -coord 0 5 -coord 1 4 -coord 2 4 - | mrstats - -output mean)
-awk -v a="$e0" -v b="$e1" 'BEGIN { if (a + 0 != 1 || b + 0 != 1) { print "ERROR: line endpoints not filled (" a "," b ")"; exit 1 } }'
+mrconvert mask.mif -datatype uint8 - | \
+mredit - -line 1,4,4 5,4,4 1.5 1.0 - | \
+testing_diff_image - mredit/line.mif -abs 0
