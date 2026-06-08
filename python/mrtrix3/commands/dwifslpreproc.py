@@ -18,6 +18,14 @@
 import argparse, glob, itertools, json, os, shlex, shutil, sys
 from enum import Enum
 
+# MRtrix3 commands that this command may invoke at execution.
+# This list is parsed at build configure time to establish the set of
+#   compilation targets required by this command (see the cmake Python command dependency helpers),
+#   and is verified for completeness by the dependency linter run within continuous integration.
+# pylint: disable=unused-variable
+MRTRIX_DEPENDENCIES = ['dirstat', 'dwi2mask', 'dwiextract', 'dwirecon', 'maskfilter', 'mrcalc', 'mrcat', 'mrconvert',
+                       'mrinfo', 'mrthreshold', 'mrtransform']
+
 
 STRIDES_OPTION_FSL_COMPAT_3D = ' -strides -1,+2,+3'
 STRIDES_OPTION_FSL_COMPAT_4D = ' -strides -1,+2,+3,+4'

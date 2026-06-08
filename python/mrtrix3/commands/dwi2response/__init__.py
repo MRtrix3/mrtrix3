@@ -13,5 +13,14 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
+# MRtrix3 commands that this command may invoke at execution.
+# This list is parsed at build configure time to establish the set of
+#   compilation targets required by this command (see the cmake Python command dependency helpers),
+#   and is verified for completeness by the dependency linter run within continuous integration.
+# pylint: disable=unused-variable
+MRTRIX_DEPENDENCIES = ['amp2response', 'dwi2fod', 'dwi2mask', 'dwi2response', 'dwi2tensor', 'dwiextract', 'fixel2peaks',
+                       'fixel2voxel', 'fod2fixel', 'maskfilter', 'mrcalc', 'mrcat', 'mrconvert', 'mrinfo', 'mrmath',
+                       'mrstats', 'mrthreshold', 'mrtransform', 'peaks2amp', 'sh2peaks', 'tensor2metric']
+
 # pylint: disable=unused-variable
 ALGORITHMS = [ 'dhollander', 'fa', 'manual', 'msmt_5tt', 'tax', 'tournier' ]

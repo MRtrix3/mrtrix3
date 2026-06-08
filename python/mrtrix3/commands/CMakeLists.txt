@@ -17,6 +17,24 @@ foreach(PYTHON_PATH IN LISTS PYTHON_ALL_COMMANDS_ROOT_PATHS)
     endif()
 endforeach()
 
+# Per-command compilation dependency resolution.
+# Rather than requiring every C++ command to be built whenever any Python command is built,
+#   each Python command declares (via its MRTRIX_DEPENDENCIES constant) the MRtrix3 commands that
+#   it may invoke at execution; this is parsed and recursively resolved at configure time to
+#   establish a minimal set of build targets per Python command (see below).
+include(ResolvePythonCommandDependencies)
+
+# Complete list of all MRtrix3 command names (C++ and Python), used as the safe fallback when a
+#   command (or one of its transitive Python dependencies) fails to declare MRTRIX_DEPENDENCIES.
+file(GLOB MRTRIX_CPP_COMMAND_SRCS "${PROJECT_SOURCE_DIR}/cpp/cmd/*.cpp")
+set(MRTRIX_ALL_CPP_COMMANDS "")
+foreach(CPP_SRC IN LISTS MRTRIX_CPP_COMMAND_SRCS)
+    get_filename_component(CPP_CMDNAME "${CPP_SRC}" NAME_WE)
+    list(APPEND MRTRIX_ALL_CPP_COMMANDS "${CPP_CMDNAME}")
+endforeach()
+set(MRTRIX_ALL_COMMANDS ${MRTRIX_ALL_CPP_COMMANDS} ${PYTHON_COMMAND_LIST})
+list(REMOVE_DUPLICATES MRTRIX_ALL_COMMANDS)
+
 if(MRTRIX_PYTHON_SOFTLINK)
     set(PYTHON_API_TARGET_NAME "LinkPythonAPIFiles")
     set(PYTHON_COMMANDS_FUNCTION_NAME "create_symlink")
@@ -50,7 +68,6 @@ foreach(CMDNAME IN LISTS PYTHON_COMMAND_LIST)
     add_dependencies(${CMD_TARGET}
         ${PYTHON_API_TARGET_NAME}
         MakePythonCommandsDir
-        MRtrixCppCommands
     )
 
     # For Python commands that need to be in a subdirectory, use presence of "__init__.py"
@@ -113,6 +130,31 @@ foreach(CMDNAME IN LISTS PYTHON_COMMAND_LIST)
     )
 
     list(APPEND ALL_PYTHON_COMMAND_TARGETS "${CMD_TARGET}")
+endforeach()
+
+# Establish per-command build dependencies.
+# The resolved dependency set already contains the full transitive closure of C++ commands reached
+#   through any chain of Python-to-Python command invocations, so it is sufficient to add edges to
+#   the C++ command targets only. Edges to other Python command targets are deliberately NOT added:
+#   they are unnecessary (every Python command is built unconditionally via the MRtrixPythonCommands
+#   target below), and mutually-recursive commands (e.g. dwi2mask <-> dwi2response) would otherwise
+#   form a target dependency cycle, which CMake forbids among non-library targets.
+# Only targets that actually exist are added; this gracefully skips both commands that are not built
+#   in the current configuration (e.g. the GUI commands when MRTRIX_BUILD_GUI is disabled) and any
+#   declared dependency that does not correspond to a build target.
+foreach(CMDNAME IN LISTS PYTHON_COMMAND_LIST)
+    mrtrix_python_command_build_dependencies(
+        "${CMDNAME}"
+        "${CMAKE_CURRENT_SOURCE_DIR}"
+        "${PYTHON_COMMAND_LIST}"
+        "${MRTRIX_ALL_COMMANDS}"
+        CMD_BUILD_DEPENDENCIES)
+    foreach(DEP IN LISTS CMD_BUILD_DEPENDENCIES)
+        list(FIND PYTHON_COMMAND_LIST "${DEP}" DEP_IS_PYTHON_INDEX)
+        if(TARGET ${DEP} AND DEP_IS_PYTHON_INDEX EQUAL -1)
+            add_dependencies(${CMDNAME} ${DEP})
+        endif()
+    endforeach()
 endforeach()
 
 add_custom_target(MRtrixPythonCommands ALL)

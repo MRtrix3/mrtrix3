@@ -13,6 +13,13 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
+# MRtrix3 commands that this command may invoke at execution.
+# This list is parsed at build configure time to establish the set of
+#   compilation targets required by this command (see the cmake Python command dependency helpers),
+#   and is verified for completeness by the dependency linter run within continuous integration.
+# pylint: disable=unused-variable
+MRTRIX_DEPENDENCIES = ['maskfilter', 'mrcalc', 'mrconvert', 'mrfilter', 'mrgrid', 'mrinfo', 'mrstats', 'mrthreshold']
+
 def usage(cmdline): #pylint: disable=unused-variable
   from mrtrix3 import app #pylint: disable=no-name-in-module, import-outside-toplevel
   cmdline.set_author('Remika Mito (remika.mito@florey.edu.au)'

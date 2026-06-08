@@ -13,6 +13,14 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
+# MRtrix3 commands that this command may invoke at execution.
+# This list is parsed at build configure time to establish the set of
+#   compilation targets required by this command (see the cmake Python command dependency helpers),
+#   and is verified for completeness by the dependency linter run within continuous integration.
+# pylint: disable=unused-variable
+MRTRIX_DEPENDENCIES = ['maskfilter', 'mraverageheader', 'mrcalc', 'mrcat', 'mrconvert', 'mrfilter', 'mrgrid', 'mrinfo',
+                       'mrmath', 'mrregister', 'mrtransform', 'transformcalc']
+
 # pylint: disable=unused-variable
 
 DEFAULT_RIGID_SCALES  = [0.3,0.4,0.6,0.8,1.0,1.0]
