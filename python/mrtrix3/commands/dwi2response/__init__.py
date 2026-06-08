@@ -18,9 +18,9 @@
 #   compilation targets required by this command (see the cmake Python command dependency helpers),
 #   and is verified for completeness by the dependency linter run within continuous integration.
 # pylint: disable=unused-variable
-MRTRIX_DEPENDENCIES = ['amp2response', 'dwi2fod', 'dwi2mask', 'dwi2response', 'dwi2tensor', 'dwiextract', 'fixel2peaks',
-                       'fixel2voxel', 'fod2fixel', 'maskfilter', 'mrcalc', 'mrcat', 'mrconvert', 'mrinfo', 'mrmath',
-                       'mrstats', 'mrthreshold', 'mrtransform', 'peaks2amp', 'sh2peaks', 'tensor2metric']
+MRTRIX_DEPENDENCIES = ['5ttvalidate', 'amp2response', 'dwi2fod', 'dwi2mask', 'dwi2response', 'dwi2tensor', 'dwiextract',
+                       'fixel2peaks', 'fixel2voxel', 'fod2fixel', 'maskfilter', 'mrcalc', 'mrcat', 'mrconvert', 'mrinfo',
+                       'mrmath', 'mrstats', 'mrthreshold', 'mrtransform', 'peaks2amp', 'sh2peaks', 'tensor2metric']
 
 # pylint: disable=unused-variable
 ALGORITHMS = [ 'dhollander', 'fa', 'manual', 'msmt_5tt', 'tax', 'tournier' ]
