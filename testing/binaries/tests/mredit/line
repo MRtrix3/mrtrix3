@@ -17,6 +17,7 @@ nset() {
 # Voxel-space line along image axis 0, from voxel (4,8,8) to voxel (12,8,8):
 #   the driving axis spans 8 voxels, so the trace is exactly 9 voxels long.
 mredit mredit/oblique.mif.gz -line 4,8,8 12,8,8 2 tmp_line_voxel.mif -force
+testing_diff_image tmp_line_voxel.mif mredit/line_voxel.mif.gz -abs 0
 [ "$(nset tmp_line_voxel.mif 2)" -eq 9 ]
 
 # The trace must be exactly one voxel thick: collapsing the two minor axes must leave
@@ -35,6 +36,7 @@ awk -v a="$ep1" -v b="$ep2" 'BEGIN { if (a + 0 != 2 || b + 0 != 2) { print "ERRO
 # Interpreting the same command-line numbers in scanner space must yield a different line,
 #   confirming that -scanner changes the interpretation of the endpoint positions.
 mredit mredit/oblique.mif.gz -scanner -line 4,8,8 12,8,8 2 tmp_line_scanner.mif -force
+testing_diff_image tmp_line_scanner.mif mredit/line_scanner.mif.gz -abs 0
 mrcalc tmp_line_voxel.mif tmp_line_scanner.mif -subtract -abs - | \
 mrstats - -output max | \
 awk '{ exit !($1 > 0) }'

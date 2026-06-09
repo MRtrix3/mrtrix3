@@ -30,6 +30,7 @@ read cuboid_x cuboid_y cuboid_z < <(mrinfo tmp_cuboid_crop.mif -size)
 #   machinery, so no -cuboid-specific implementation is required for this to hold;
 #   this test exists only to discriminate the two interpretations.
 mredit mredit/oblique.mif.gz -scanner -cuboid 8,8,8 6,10,14 2.0 tmp_cuboid_scanner.mif -force
+testing_diff_image tmp_cuboid_scanner.mif mredit/cuboid_scanner.mif.gz -abs 0
 mrcalc tmp_cuboid.mif tmp_cuboid_scanner.mif -subtract -abs - | \
 mrstats - -output max | \
 awk '{ exit !($1 > 0) }'

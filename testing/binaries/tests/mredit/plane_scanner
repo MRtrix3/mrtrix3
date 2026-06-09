@@ -10,6 +10,7 @@
 
 # A plane perpendicular to scanner axis 0 (scanner-x), at offset 0mm, filled with value 2.
 mredit mredit/oblique.mif.gz -scanner -plane 0 0 2 tmp_plane_s.mif -force
+testing_diff_image tmp_plane_s.mif mredit/plane_s.mif.gz -abs 0
 mrcalc tmp_plane_s.mif 2 -eq tmp_plane_s_mask.mif -force -quiet
 
 # The image axis most closely aligned with scanner-x is solved for, while the other two
@@ -27,6 +28,7 @@ awk -v d="$maxdev" 'BEGIN { if (d + 0 > 1.0) { print "ERROR: scanner plane voxel
 # The scanner-space plane must differ from a voxel-space plane drawn with the same numbers
 #   (axis 0, coordinate 8); a byte-identical pair would indicate that -scanner had no effect.
 mredit mredit/oblique.mif.gz -plane 0 8 2 tmp_plane_v.mif -force
+testing_diff_image tmp_plane_v.mif mredit/plane_v.mif.gz -abs 0
 mrcalc tmp_plane_s.mif tmp_plane_v.mif -subtract -abs - | \
 mrstats - -output max | \
 awk '{ exit !($1 > 0) }'
