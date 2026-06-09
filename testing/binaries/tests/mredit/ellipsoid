@@ -13,22 +13,14 @@
 # Each result is compared against its own manually-verified reference image,
 #   and the two results are confirmed to differ
 #   (a byte-identical pair would indicate that -scanner had no effect).
-#
-# To (re)generate the reference images,
-#   from the root of the test_data repository run:
-#     mredit mredit/oblique.mif -ellipsoid 8,8,8 2,4,6 2.0 mredit/ellipsoid_voxel.mif -force
-#     mredit mredit/oblique.mif -scanner -ellipsoid 8,8,8 2,4,6 2.0 mredit/ellipsoid_scanner.mif -force
-#   then manually verify each (e.g. using mrview)
-#   and commit both to the test_data repository
-#   on the branch matching the target source-code branch.
 
-mredit mredit/oblique.mif -ellipsoid 8,8,8 2,4,6 2.0 tmp_ellipsoid_voxel.mif -force
-testing_diff_image tmp_ellipsoid_voxel.mif mredit/ellipsoid_voxel.mif -abs 0
+mredit mredit/oblique.mif.gz -ellipsoid 8,8,8 2,4,6 2.0 tmp_ellipsoid_voxel.mif -force
+testing_diff_image tmp_ellipsoid_voxel.mif mredit/ellipsoid_voxel.mif.gz -abs 0
 
-mredit mredit/oblique.mif -scanner -ellipsoid 8,8,8 2,4,6 2.0 tmp_ellipsoid_scanner.mif -force
-testing_diff_image tmp_ellipsoid_scanner.mif mredit/ellipsoid_scanner.mif -abs 0
+mredit mredit/oblique.mif.gz -scanner -ellipsoid 8,8,8 2,4,6 2.0 tmp_ellipsoid_scanner.mif -force
+testing_diff_image tmp_ellipsoid_scanner.mif mredit/ellipsoid_scanner.mif.gz -abs 0
 
 # The voxel-space and scanner-space interpretations must not coincide:
-mrcalc tmp_ellipsoid_voxel.mif tmp_ellipsoid_scanner.mif -subtract -abs - | \
+mrcalc tmp_ellipsoid_voxel.mif.gz tmp_ellipsoid_scanner.mif.gz -subtract -abs - | \
 mrstats - -output max | \
 awk '{ exit !($1 > 0) }'

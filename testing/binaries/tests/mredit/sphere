@@ -8,13 +8,6 @@
 # The output is compared against a reference image
 #   that has been manually verified to be correct
 #   and committed to the test_data repository.
-#
-# To (re)generate the reference image mredit/sphere.mif:
-#   1. From the root of the test_data repository, run:
-#        mredit mredit/oblique.mif -sphere 8,8,8 4.0 2.0 mredit/sphere.mif -force
-#   2. Manually verify that the result is correct (e.g. using mrview).
-#   3. Commit mredit/sphere.mif to the test_data repository
-#        on the branch matching the target source-code branch.
 
-mredit mredit/oblique.mif -sphere 8,8,8 4.0 2.0 - | \
-testing_diff_image - mredit/sphere.mif -abs 0
+mredit mredit/oblique.mif.gz -sphere 8,8,8 4.0 2.0 - | \
+testing_diff_image - mredit/sphere.mif.gz -abs 0

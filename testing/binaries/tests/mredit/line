@@ -1,34 +1,40 @@
 #!/bin/bash
-# Verify the -line option (a cylinder with hemispherical caps),
+# Verify the -line option, which draws a single-voxel-thick line between two points
+#   using Bresenham's algorithm (the error terms are retained as floating-point values),
 #   both with respect to the voxel grid (default) and to scanner space (-scanner).
 # oblique.mif is a 16x16x16 grid of 2mm isotropic voxels whose image-to-scanner
 #   transform is a 45-degree rotation about the (1,1,1) axis
 #   (see the mredit cube test for its construction),
 #   so the voxel and scanner coordinate frames are strongly misaligned.
-# The same command-line numbers (endpoints 4,8,8 and 12,8,8; radius 2) are used
-#   in both cases; toggling -scanner changes the interpretation of the endpoint
-#   positions (voxel indices vs scanner mm), the radius (voxels vs mm)
-#   and hence the orientation of the cylinder axis,
-#   so the two results differ substantially.
-# Each result is compared against its own manually-verified reference image,
-#   and the two results are confirmed to differ
-#   (a byte-identical pair would indicate that -scanner had no effect).
-#
-# To (re)generate the reference images,
-#   from the root of the test_data repository run:
-#     mredit mredit/oblique.mif -line 4,8,8 12,8,8 2.0 2.0 mredit/line_voxel.mif -force
-#     mredit mredit/oblique.mif -scanner -line 4,8,8 12,8,8 2.0 2.0 mredit/line_scanner.mif -force
-#   then manually verify each (e.g. using mrview)
-#   and commit both to the test_data repository
-#   on the branch matching the target source-code branch.
+# oblique.mif is everywhere zero, so each drawn line can be isolated by its value.
 
-mredit mredit/oblique.mif -line 4,8,8 12,8,8 2.0 2.0 tmp_line_voxel.mif -force
-testing_diff_image tmp_line_voxel.mif mredit/line_voxel.mif -abs 0
+# Count the number of voxels equal to a given value.
+nset() {
+  mrcalc "$1" "$2" -eq tmp_line_mask.mif -force -quiet
+  mrstats tmp_line_mask.mif -mask tmp_line_mask.mif -output count -quiet
+}
 
-mredit mredit/oblique.mif -scanner -line 4,8,8 12,8,8 2.0 2.0 tmp_line_scanner.mif -force
-testing_diff_image tmp_line_scanner.mif mredit/line_scanner.mif -abs 0
+# Voxel-space line along image axis 0, from voxel (4,8,8) to voxel (12,8,8):
+#   the driving axis spans 8 voxels, so the trace is exactly 9 voxels long.
+mredit mredit/oblique.mif.gz -line 4,8,8 12,8,8 2 tmp_line_voxel.mif -force
+[ "$(nset tmp_line_voxel.mif 2)" -eq 9 ]
 
-# The voxel-space and scanner-space interpretations must not coincide:
+# The trace must be exactly one voxel thick: collapsing the two minor axes must leave
+#   no position along the driving axis occupied by more than a single voxel.
+mrcalc tmp_line_voxel.mif 2 -eq tmp_line_bin.mif -force -quiet
+mrmath tmp_line_bin.mif sum -axis 1 tmp_line_p1.mif -force -quiet
+mrmath tmp_line_p1.mif sum -axis 2 tmp_line_p2.mif -force -quiet
+thick=$(mrstats tmp_line_p2.mif -output max -quiet)
+awk -v t="$thick" 'BEGIN { if (t + 0 != 1) { print "ERROR: line is not single-voxel-thick"; exit 1 } }'
+
+# Both endpoints must be coloured.
+ep1=$(mrconvert tmp_line_voxel.mif -coord 0 4 -coord 1 8 -coord 2 8 - -quiet | mrstats - -output max -quiet)
+ep2=$(mrconvert tmp_line_voxel.mif -coord 0 12 -coord 1 8 -coord 2 8 - -quiet | mrstats - -output max -quiet)
+awk -v a="$ep1" -v b="$ep2" 'BEGIN { if (a + 0 != 2 || b + 0 != 2) { print "ERROR: line endpoints not set"; exit 1 } }'
+
+# Interpreting the same command-line numbers in scanner space must yield a different line,
+#   confirming that -scanner changes the interpretation of the endpoint positions.
+mredit mredit/oblique.mif.gz -scanner -line 4,8,8 12,8,8 2 tmp_line_scanner.mif -force
 mrcalc tmp_line_voxel.mif tmp_line_scanner.mif -subtract -abs - | \
 mrstats - -output max | \
 awk '{ exit !($1 > 0) }'

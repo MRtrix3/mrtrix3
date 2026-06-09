@@ -11,16 +11,9 @@
 # The output is compared against a reference image
 #   that has been manually verified to be correct
 #   and committed to the test_data repository.
-#
-# To (re)generate the reference image mredit/cuboid.mif:
-#   1. From the root of the test_data repository, run:
-#        mredit mredit/oblique.mif -cuboid 8,8,8 6,10,14 2.0 mredit/cuboid.mif -force
-#   2. Manually verify that the result is correct (e.g. using mrview).
-#   3. Commit mredit/cuboid.mif to the test_data repository
-#        on the branch matching the target source-code branch.
 
-mredit mredit/oblique.mif -cuboid 8,8,8 6,10,14 2.0 tmp_cuboid.mif -force
-testing_diff_image tmp_cuboid.mif mredit/cuboid.mif -abs 0
+mredit mredit/oblique.mif.gz -cuboid 8,8,8 6,10,14 2.0 tmp_cuboid.mif -force
+testing_diff_image tmp_cuboid.mif mredit/cuboid.mif.gz -abs 0
 
 # The three increasing side lengths must yield three increasing extents,
 #   confirming that per-axis sizes are applied independently.
@@ -28,3 +21,15 @@ mrgrid tmp_cuboid.mif crop -mask tmp_cuboid.mif -uniform 0 tmp_cuboid_crop.mif -
 read cuboid_x cuboid_y cuboid_z < <(mrinfo tmp_cuboid_crop.mif -size)
 [ "$cuboid_x" -lt "$cuboid_y" ]
 [ "$cuboid_y" -lt "$cuboid_z" ]
+
+# Drawing the same cuboid with -scanner reinterprets the centre position,
+#   the per-axis sizes (voxels vs mm) and the principal-axis orientation
+#   (image axes vs scanner axes); on this deliberately oblique grid the two results
+#   must differ, confirming that -scanner is honoured by -cuboid.
+# The cuboid stencil shares the common scanner-space resolution and flood-fill
+#   machinery, so no -cuboid-specific implementation is required for this to hold;
+#   this test exists only to discriminate the two interpretations.
+mredit mredit/oblique.mif.gz -scanner -cuboid 8,8,8 6,10,14 2.0 tmp_cuboid_scanner.mif -force
+mrcalc tmp_cuboid.mif tmp_cuboid_scanner.mif -subtract -abs - | \
+mrstats - -output max | \
+awk '{ exit !($1 > 0) }'
