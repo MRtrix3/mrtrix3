@@ -115,6 +115,14 @@ void usage() {
   + Argument("output",
              "the output image of per-element ICC values").type_image_out();
 
+  OPTIONS
+  + Option("mask",
+           "only compute the ICC within those image elements for which the mask image is true;"
+           " elements outside the mask are assigned a value of NaN in the output image"
+           " and are excluded from the whole-image aggregate measure."
+           " The mask must possess the same axis dimensions as the input images.")
+    + Argument("image").type_image_in();
+
   REFERENCES
   + "Shrout PE, Fleiss JL."
     " Intraclass correlations: uses in assessing rater reliability."
@@ -283,6 +291,18 @@ void run() {
     }
   }
 
+  // Optional mask: restrict the computation, and the whole-image aggregate,
+  //   to the flagged image elements. Only the axis dimensions are required to
+  //   match the inputs; no spatial transform comparison is performed.
+  Image<bool> mask;
+  {
+    auto opt = get_options("mask");
+    if (!opt.empty()) {
+      mask = Image<bool>::open(opt[0][0]);
+      check_dimensions(out_header, mask);
+    }
+  }
+
   DEBUG("ICC form: " + MR::Enum::lowercase_name(form));
   DEBUG("Number of input images: " + str(nimages));
   DEBUG("Number of subjects (n): " + str(nsubjects));
@@ -340,21 +360,105 @@ void run() {
     return (std::fabs(denominator) > 0.0) ? (numerator / denominator) : 0.0;
   };
 
+  // Unbalanced one-way ICC for an element that contains missing (non-finite) data.
+  //   Because measurements within a subject are exchangeable in the one-way model,
+  //   a missing value simply reduces that subject's measurement count n_i; the
+  //   variance decomposition SS_total = SS_between + SS_within remains exact for
+  //   any per-subject count n_i >= 1. The degrees of freedom are revised to
+  //   (subjects with data - 1) and (total observations - subjects with data), and
+  //   the adjusted average group size n0 replaces the constant k in the icc_1_1
+  //   denominator (n0 reduces to k when the design is balanced). NaN is returned
+  //   when fewer than two subjects retain data, or when no subject retains more
+  //   than one measurement (so the within-subject mean square is undefined).
+  auto oneway_icc_missing = [&](const Eigen::MatrixXd &t) -> double {
+    double grand_sum = 0.0;
+    double total_sumsq = 0.0;
+    double sum_rowsumsq_over_n = 0.0;
+    size_t total_count = 0;
+    size_t subjects_with_data = 0;
+    double sum_ni_squared = 0.0;
+    for (size_t s = 0; s != nsubjects; ++s) {
+      double row_sum = 0.0;
+      double row_sumsq = 0.0;
+      size_t ni = 0;
+      for (size_t m = 0; m != nmeasurements; ++m) {
+        const double v = t(s, m);
+        if (std::isfinite(v)) {
+          row_sum += v;
+          row_sumsq += v * v;
+          ++ni;
+        }
+      }
+      if (ni == 0)
+        continue;
+      ++subjects_with_data;
+      total_count += ni;
+      sum_ni_squared += static_cast<double>(ni) * static_cast<double>(ni);
+      grand_sum += row_sum;
+      total_sumsq += row_sumsq;
+      sum_rowsumsq_over_n += row_sum * row_sum / static_cast<double>(ni);
+    }
+    const double m_eff = static_cast<double>(subjects_with_data);
+    const double n_eff = static_cast<double>(total_count);
+    const double df_between = m_eff - 1.0;
+    const double df_within_eff = n_eff - m_eff;
+    if (df_between < 1.0 || df_within_eff < 1.0)
+      return std::numeric_limits<double>::quiet_NaN();
+    const double ss_between = sum_rowsumsq_over_n - grand_sum * grand_sum / n_eff;
+    const double ss_within = total_sumsq - sum_rowsumsq_over_n;
+    const double ms_between = ss_between / df_between;
+    const double ms_within = ss_within / df_within_eff;
+    const double n0 = (n_eff - sum_ni_squared / n_eff) / df_between;
+    const double numerator = ms_between - ms_within;
+    const double denominator = (form == form_t::ICC_1_1) ? (ms_between + (n0 - 1.0) * ms_within) : ms_between;
+    return (std::fabs(denominator) > 0.0) ? (numerator / denominator) : 0.0;
+  };
+
   // Pool sums of squares across all elements to form a whole-image aggregate ICC.
   //   Constant (zero-variance) elements such as image background contribute
-  //   nothing to these sums, and so drop out of the aggregate without masking
+  //   nothing to these sums, and so drop out of the aggregate without masking.
+  //   Only elements with complete data (and, where given, inside the mask)
+  //   contribute, so that the pooled mean squares share a common degrees of freedom
   double sum_ss_rows = 0.0;
   double sum_ss_within = 0.0;
   double sum_ss_cols = 0.0;
   double sum_ss_error = 0.0;
+  size_t n_aggregate = 0;        // elements with complete data contributing to the aggregate
+  size_t n_missing_computed = 0; // elements with missing data for which an ICC was still computed
+  size_t n_missing_failed = 0;   // elements for which the ICC could not be computed due to missing data
 
   Eigen::MatrixXd table(nsubjects, nmeasurements);
   for (auto l = Loop("Computing per-element " + MR::Enum::lowercase_name(form), icc_image)(icc_image); l; ++l) {
+    // Elements outside the mask are excluded entirely: set to NaN, not computed,
+    //   and not counted against the missing-data tallies
+    if (mask.valid()) {
+      assign_pos_of(icc_image).to(mask);
+      if (!mask.value()) {
+        icc_image.value() = std::numeric_limits<float>::quiet_NaN();
+        continue;
+      }
+    }
     for (auto &image : images)
       assign_pos_of(icc_image).to(image);
     for (size_t s = 0; s != nsubjects; ++s)
       for (size_t m = 0; m != nmeasurements; ++m)
         table(s, m) = images[layout(s, m)].value();
+
+    // Elements containing missing data are excluded from the aggregate. One-way
+    //   models can still yield a per-element ICC from the available data; the
+    //   two-way mean-squares decomposition requires a complete balanced table,
+    //   so such elements are assigned NaN
+    if (!table.allFinite()) {
+      const double icc = one_way ? oneway_icc_missing(table) : std::numeric_limits<double>::quiet_NaN();
+      if (std::isfinite(icc)) {
+        icc_image.value() = static_cast<float>(icc);
+        ++n_missing_computed;
+      } else {
+        icc_image.value() = std::numeric_limits<float>::quiet_NaN();
+        ++n_missing_failed;
+      }
+      continue;
+    }
 
     const double grand_mean = table.mean();
     const Eigen::VectorXd row_means = table.rowwise().mean();
@@ -380,18 +484,44 @@ void run() {
     sum_ss_within += ss_within;
     sum_ss_cols += ss_cols;
     sum_ss_error += ss_error;
+    ++n_aggregate;
   }
 
   // Whole-image aggregate: evaluate the same ICC form on the pooled sums of squares.
   //   As numerator and denominator are each linear in the mean squares, this equals
   //   the denominator-weighted (i.e. variance-weighted) mean of the per-element ICCs
-  const double aggregate_icc = icc_from_ms(sum_ss_rows / df_rows,     //
-                                           sum_ss_within / df_within, //
-                                           sum_ss_cols / df_cols,     //
-                                           sum_ss_error / df_error);
   out_header.keyval()["icc_form"] = MR::Enum::lowercase_name(form);
-  out_header.keyval()["icc_aggregate"] = str(aggregate_icc);
-  CONSOLE("Whole-image aggregate " + MR::Enum::lowercase_name(form) + " = " + str(aggregate_icc));
+  if (n_aggregate > 0) {
+    DEBUG("Aggregate variances:");
+    DEBUG("  Rows: " + str(sum_ss_rows) + " / " + str(df_rows) + " = " + str(sum_ss_rows / df_rows));
+    DEBUG("  Within-subject: " + str(sum_ss_within) + " / " + str(df_within) + " = " + str(sum_ss_within / df_within));
+    DEBUG("  Columns: " + str(sum_ss_cols) + " / " + str(df_cols) + " = " + str(sum_ss_cols / df_cols));
+    DEBUG("  Error: " + str(sum_ss_error) + " / " + str(df_error) + " = " + str(sum_ss_error / df_error));
+    const double aggregate_icc = icc_from_ms(sum_ss_rows / df_rows,     //
+                                             sum_ss_within / df_within, //
+                                             sum_ss_cols / df_cols,     //
+                                             sum_ss_error / df_error);
+    out_header.keyval()["icc_aggregate"] = str(aggregate_icc);
+    CONSOLE("Whole-image aggregate " + MR::Enum::lowercase_name(form) + " = " + str(aggregate_icc));
+  } else {
+    WARN("No image elements with complete data were available;"
+         " no whole-image aggregate ICC could be computed");
+  }
+
+  // Report on elements affected by missing data: those for which the ICC was
+  //   computed from incomplete data, and those that could not be computed at all.
+  //   All such elements are excluded from the whole-image aggregate
+  const size_t n_missing = n_missing_computed + n_missing_failed;
+  if (n_missing > 0)
+    WARN(str(n_missing) +
+         " image element(s) contained missing (non-finite) input data" //
+         " and were excluded from the whole-image aggregate;"          //
+         " of these, " +
+         str(n_missing_computed) +
+         " had an ICC computed from the available data" //
+         " with reduced degrees of freedom, and " +
+         str(n_missing_failed) +                          //
+         " could not be computed and were assigned NaN"); //
 
   // Export the scratch buffer now that the aggregate has been stored in the header
   Image<float> out_image = Image<float>::create(argument[3], out_header);
