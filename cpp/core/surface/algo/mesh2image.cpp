@@ -329,14 +329,12 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
         //   or sub-voxel meshes the voxelised surface does not form a closed shell separating
         //   interior from exterior, so the flood fill merges the two into a single region whose
         //   normal-based vote can be unanimous yet wrong (e.g. labelling the whole FoV inside).
-        if (corner_count == 8) {
+        if (corner_count == 8 || prelim_outside_count > 10 * prelim_inside_count) {
           fill_value = vox_mesh_t::OUTSIDE;
-        } else if (prelim_inside_count == prelim_outside_count && sum_sum_distances) {
+        } else if (prelim_inside_count == prelim_outside_count && sum_sum_distances != 0.0F) {
           fill_value = sum_sum_distances < 0.0f ? vox_mesh_t::INSIDE : vox_mesh_t::OUTSIDE;
         } else if (prelim_inside_count > 10 * prelim_outside_count) {
           fill_value = vox_mesh_t::INSIDE;
-        } else if (prelim_outside_count > 10 * prelim_inside_count) {
-          fill_value = vox_mesh_t::OUTSIDE;
         } else {
           // Residual ambiguity about whether the connected region is inside or outside the surface
           // What other tests can we perform to make this decision?
