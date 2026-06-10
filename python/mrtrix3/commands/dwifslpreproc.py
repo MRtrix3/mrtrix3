@@ -1058,7 +1058,7 @@ def execute(): #pylint: disable=unused-variable
           app.cleanup(se_epi_path)
           se_epi_path = new_se_epi_path
           new_dwi_path = f'{os.path.splitext(dwi_path)[0]}_pad{axis}.mif'
-          run.command(f'mrconvert {dwi_path} -coord {axis} {axis_size-1} -clear dw_scheme - | '
+          run.command(f'mrconvert {dwi_path} -coord {axis} {axis_size-1} -clear_property dw_scheme - | '
                       f'mrcat {dwi_path} - {new_dwi_path} -axis {axis}')
           app.cleanup(dwi_path)
           dwi_path = new_dwi_path

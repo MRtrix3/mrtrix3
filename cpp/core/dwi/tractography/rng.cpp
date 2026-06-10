@@ -18,6 +18,9 @@
 
 namespace MR::DWI::Tractography {
 
-thread_local Math::RNG rng;
-
+Math::RNG &rng() {
+  static thread_local Math::RNG instance;
+  return instance;
 }
+
+} // namespace MR::DWI::Tractography

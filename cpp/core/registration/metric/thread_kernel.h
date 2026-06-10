@@ -202,8 +202,8 @@ public:
     }
 
     Eigen::Vector3d im1_point; // moving
-    params.transformation.transform_half(
-        im1_point, im2_point); // transform_half is full transformation, transform_half_inverse is identity
+    // transform_half is full transformation, transform_half_inverse is identity
+    params.transformation.transform_half(im1_point, im2_point);
     if (params.im1_mask_interp) {
       params.im1_mask_interp->scanner(im1_point);
       if (params.im1_mask_interp->value() < 0.5)

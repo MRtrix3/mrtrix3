@@ -1,0 +1,16 @@
+#!/bin/bash
+# Verify operation of dirsplit with -cartesian output flag
+# The -cartesian option requests Cartesian (x,y,z) rather than spherical output
+# Since the optimisation is stochastic, we cannot compare to a reference output;
+#   instead we verify that the command runs successfully
+#   and that the output files contain three columns (x, y, z)
+
+dirsplit dirmerge/60.txt -number 100 -cartesian tmp_a.txt tmp_b.txt -force
+
+# Verify the command succeeds and produces non-empty output files
+[ -s tmp_a.txt ]
+[ -s tmp_b.txt ]
+
+# Verify that output contains three columns (Cartesian format)
+NCOLS=$(sed '/^#/d' tmp_a.txt | head -n1 | awk '{print NF}')
+(( NCOLS == 3 ))

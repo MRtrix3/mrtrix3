@@ -1,0 +1,8 @@
+#!/bin/bash
+# Verify default operation of "tckinfo" on a well-formed track file.
+# Checks that key fields are reported in the output.
+
+rm -f tmp.txt
+tckinfo tracks.tck 2>&1 | tee tmp.txt
+grep "Tracks file:" tmp.txt
+grep -E "count:" tmp.txt

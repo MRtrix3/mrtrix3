@@ -1,0 +1,36 @@
+#!/bin/bash
+# Verify that the -cuboid option honours three independent side lengths,
+#   i.e. that it can draw a rectangular cuboid that is not a cube,
+#   defined with respect to the voxel grid (i.e. without the -scanner option).
+# oblique.mif is a 16x16x16 grid of 2mm isotropic voxels whose image-to-scanner
+#   transform is a 45-degree rotation about the (1,1,1) axis
+#   (see the mredit cube test for its construction).
+# A cuboid of side lengths 6,10,14 voxels centred at voxel (8,8,8)
+#   is filled with value 2,
+#   yielding an exact 7x11x15 voxel box aligned with the image axes.
+# The output is compared against a reference image
+#   that has been manually verified to be correct
+#   and committed to the test_data repository.
+
+mredit mredit/oblique.mif.gz -cuboid 8,8,8 6,10,14 2.0 tmp_cuboid.mif -force
+testing_diff_image tmp_cuboid.mif mredit/cuboid.mif.gz -abs 0
+
+# The three increasing side lengths must yield three increasing extents,
+#   confirming that per-axis sizes are applied independently.
+mrgrid tmp_cuboid.mif crop -mask tmp_cuboid.mif -uniform 0 tmp_cuboid_crop.mif -force
+read cuboid_x cuboid_y cuboid_z < <(mrinfo tmp_cuboid_crop.mif -size)
+[ "$cuboid_x" -lt "$cuboid_y" ]
+[ "$cuboid_y" -lt "$cuboid_z" ]
+
+# Drawing the same cuboid with -scanner reinterprets the centre position,
+#   the per-axis sizes (voxels vs mm) and the principal-axis orientation
+#   (image axes vs scanner axes); on this deliberately oblique grid the two results
+#   must differ, confirming that -scanner is honoured by -cuboid.
+# The cuboid stencil shares the common scanner-space resolution and flood-fill
+#   machinery, so no -cuboid-specific implementation is required for this to hold;
+#   this test exists only to discriminate the two interpretations.
+mredit mredit/oblique.mif.gz -scanner -cuboid 8,8,8 6,10,14 2.0 tmp_cuboid_scanner.mif -force
+testing_diff_image tmp_cuboid_scanner.mif mredit/cuboid_scanner.mif.gz -abs 0
+mrcalc tmp_cuboid.mif tmp_cuboid_scanner.mif -subtract -abs - | \
+mrstats - -output max | \
+awk '{ exit !($1 > 0) }'

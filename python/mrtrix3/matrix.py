@@ -182,17 +182,13 @@ def save_numeric(filename, data, **kwargs):
     raise MRtrixError(f'output file "{filename}" already exists '
                       '(use -force option to force overwrite)')
 
-  encode_args = {'errors': 'ignore'}
-  if encoding:
-    encode_args['encoding'] = encoding
-
   if header:
     if isinstance(header, str):
       header = { 'comments' : header }
     elif isinstance(header, list):
       header = { 'comments' : '\n'.join(str(entry) for entry in header) }
     elif isinstance(header, dict):
-      header = dict((key, str(value)) for key, value in header.items())
+      header = {key: str(value) for key, value in header.items()}
     else:
       raise TypeError('Unrecognised input to matrix.save_numeric() using "header=" option')
   else:
@@ -210,7 +206,7 @@ def save_numeric(filename, data, **kwargs):
     elif isinstance(footer, list):
       footer = { 'comments' : '\n'.join(str(entry) for entry in footer) }
     elif isinstance(footer, dict):
-      footer = dict((key, str(value)) for key, value in footer.items())
+      footer = {key: str(value) for key, value in footer.items()}
     else:
       raise TypeError('Unrecognised input to matrix.save_numeric() using "footer=" option')
   else:
@@ -222,26 +218,28 @@ def save_numeric(filename, data, **kwargs):
   else:
     open_mode = open_mode | os.O_EXCL
   file_descriptor = os.open(filename, open_mode)
-  with io.open(file_descriptor, 'wb') as outfile:
+  # Write in text mode with explicit encoding and no newline translation,
+  #   preserving the exact byte content the formatting produces across platforms.
+  with io.open(file_descriptor, 'w', encoding=encoding or 'utf-8', errors='ignore', newline='') as outfile:
     for key, value in sorted(header.items()):
       for line in value.splitlines():
-        outfile.write(f'{comments}{key}: {line}{newline}'.encode(**encode_args))
+        outfile.write(f'{comments}{key}: {line}{newline}')
 
     if data:
       if isinstance(data[0], list):
         # input is 2D
         for row in data:
           row_fmt = delimiter.join([fmt, ] * len(row))
-          outfile.write(((row_fmt % tuple(row) + newline).encode(**encode_args)))
+          outfile.write(row_fmt % tuple(row) + newline)
 
       else:
         # input is 1D
         fmt = delimiter.join([fmt, ] * len(data))
-        outfile.write(((fmt % tuple(data) + newline).encode(**encode_args)))
+        outfile.write(fmt % tuple(data) + newline)
 
     for key, value in sorted(footer.items()):
       for line in value.splitlines():
-        outfile.write(f'{comments}{key}: {line}{newline}'.encode(**encode_args))
+        outfile.write(f'{comments}{key}: {line}{newline}')
 
 
 

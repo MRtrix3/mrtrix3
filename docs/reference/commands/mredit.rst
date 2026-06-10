@@ -23,16 +23,26 @@ Description
 
 A range of options are provided to enable direct editing of voxel intensities based on voxel / real-space coordinates. If only one image path is provided, the image will be edited in-place (use at own risk); if input and output image paths are provided, the output will contain the edited image, and the original image will not be modified in any way.
 
+All editing options are by default interpreted with respect to the image voxel grid: -plane fills a whole image plane perpendicular to one image axis; -voxel addresses a single voxel by its indices; and the geometric primitives -sphere, -ellipsoid, -cuboid and -line take positions as voxel indices, sizes (radii and side lengths) measured in voxels, and principal axes aligned with the image axes. If the -scanner option is used, these inputs are instead interpreted with respect to scanner space: -plane fills a digital plane perpendicular to one scanner axis at a given offset in millimetres; -voxel modifies the single voxel that contains the specified scanner-space position; positions are scanner-space coordinates in millimetres; sizes are measured in millimetres; and the principal axes of each shape are aligned with the scanner axes. For an image whose voxel axes are not aligned with the scanner axes, or whose voxels are not isotropic, the two interpretations can yield substantially different results.
+
+Unlike most MRtrix3 commands, the order in which editing options are provided on the command-line is significant: each stencil is applied to the image in turn, in the order specified, so that wherever two stencils overlap the one provided later takes precedence.
+
 Options
 -------
 
--  **-plane axis coord value** *(multiple uses permitted)* fill one or more planes on a particular image axis
+-  **-plane axis coord value** *(multiple uses permitted)* fill one or more planes perpendicular to the specified axis
 
--  **-sphere position radius value** *(multiple uses permitted)* draw a sphere with radius in mm
+-  **-sphere position radius value** *(multiple uses permitted)* draw a sphere of the specified radius
+
+-  **-ellipsoid position radii value** *(multiple uses permitted)* draw an ellipsoid (a single radius value yields a sphere)
+
+-  **-cuboid position size value** *(multiple uses permitted)* draw a rectangular cuboid (a single side-length value yields a cube)
+
+-  **-line first second value** *(multiple uses permitted)* draw a single-voxel-thick line between two points using Bresenham's algorithm
 
 -  **-voxel position value** *(multiple uses permitted)* change the image value within a single voxel
 
--  **-scanner** indicate that coordinates are specified in scanner space, rather than as voxel coordinates
+-  **-scanner** interpret all stencil positions, sizes and orientations in scanner space (mm), rather than with respect to the voxel grid
 
 Standard options
 ^^^^^^^^^^^^^^^^

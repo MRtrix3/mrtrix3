@@ -23,7 +23,7 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt update
-        sudo apt install clang-tidy-19 qt6-base-dev libqt6opengl6-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev ninja-build
+        sudo apt install clang-tidy-19 qt6-base-dev libqt6opengl6-dev libglvnd-dev libeigen3-dev zlib1g-dev libfftw3-dev ninja-build libgtest-dev
 
     - name: Run CMake
       run: cmake . -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DMRTRIX_USE_PCH=OFF
@@ -38,4 +38,4 @@ jobs:
         fi
         echo "Files to check:"
         echo "${CHANGED}"
-        echo "${CHANGED}" | xargs clang-tidy-19 --config-file=.clang-tidy-enforce --header-filter='(cpp\/|testing\/(lib\/|tools\/|unit_tests\/)).*' --exclude-header-filter='(_deps\/|cpp\/core\/eigen_plugins\/|cpp\/gui\/opengl\/gl_core_3_3).*' -p=.
+        echo "${CHANGED}" | xargs clang-tidy-19 --config-file=.clang-tidy-enforce -p=.

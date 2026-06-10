@@ -1,0 +1,9 @@
+#!/bin/bash
+# Verify default operation of "mrcentroid",
+#   computing the centre of mass of a 3D image in scanner space.
+# The output is three space-separated floating-point values on a single line.
+# Output is compared against reference data generated using a prior software version.
+
+rm -f tmp.txt
+mrcentroid mask.mif > tmp.txt
+testing_diff_matrix tmp.txt mrcentroid/default.txt -frac 1e-4

@@ -15,7 +15,9 @@
  */
 
 #include "mrview/mode/volume.h"
+
 #include "file/config.h"
+#include "mrtrix.h"
 #include "mrview/adjust_button.h"
 #include "mrview/tool/base.h"
 #include "mrview/tool/view.h"
@@ -50,10 +52,10 @@ std::string Volume::Shader::vertex_shader_source(const Displayable &) {
 std::string Volume::Shader::fragment_shader_source(const Displayable &object) {
   std::vector<std::pair<GL::vec4, bool>> clip = mode.get_active_clip_planes();
   const bool AND = mode.get_clipintersectionmodestate();
-  std::string clip_color_spec = File::Config::get("MRViewClipPlaneColour");
+  const auto clip_color_spec = File::Config::get("MRViewClipPlaneColour");
   std::vector<float> clip_color = {1.0, 0.0, 0.0, 0.1};
-  if (!clip_color_spec.empty()) {
-    auto colour = parse_floats(clip_color_spec);
+  if (clip_color_spec.has_value()) {
+    auto colour = parse_floats(clip_color_spec.value());
     if (colour.size() != 4)
       WARN("malformed config file entry for \"MRViewClipPlaneColour\" - expected 4 comma-separated values");
     clip_color = {static_cast<float>(colour[0]),

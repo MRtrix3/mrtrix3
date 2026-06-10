@@ -195,7 +195,7 @@ public:
             max_truncation = val / max_val;
         }
 
-        if (uniform(rng) < val / max_val) {
+        if (uniform(rng()) < val / max_val) {
           dir = new_dir;
           dir.normalize();
           pos += S.step_size * dir;

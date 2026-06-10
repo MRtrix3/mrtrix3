@@ -274,11 +274,10 @@ def parse_input_files(in_files, mask_files, contrasts, f_agg_weight=None, whites
   if f_agg_weight:
     try:
       with open(f_agg_weight, 'r', encoding='utf-8') as fweights:
-        agg_weights = dict((row[0].strip(), row[1].strip()) for row in csv.reader(fweights, delimiter=',', quotechar='#'))
+        agg_weights = {row[0].strip(): row[1].strip() for row in csv.reader(fweights, delimiter=',', quotechar='#')}
     except UnicodeDecodeError:
-      with open(f_agg_weight, 'r', encoding='utf-8') as fweights:
-        reader = csv.reader(fweights.read().decode('utf-8', errors='replace'), delimiter=',', quotechar='#')
-        agg_weights = dict((row[0].strip(), row[1].strip()) for row in reader)
+      with open(f_agg_weight, 'r', encoding='utf-8', errors='replace') as fweights:
+        agg_weights = {row[0].strip(): row[1].strip() for row in csv.reader(fweights, delimiter=',', quotechar='#')}
     pref = '^' + re.escape(get_common_prefix(list(agg_weights.keys())))
     suff = re.escape(get_common_postfix(list(agg_weights.keys()))) + '$'
     agg_weights = {re.sub(suff, '', re.sub(pref, '', item[0])):item[1] for item in agg_weights.items()}

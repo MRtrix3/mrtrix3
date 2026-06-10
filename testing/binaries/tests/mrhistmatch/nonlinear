@@ -1,0 +1,33 @@
+#!/bin/bash
+# Test "nonlinear" histogram matching mode.
+# The nonlinear mode maps each input intensity to its corresponding intensity in the target image
+#   via matched cumulative distribution functions, without any parametric constraint.
+# Validation approach:
+#   1. A version of the input image with a known monotonic intensity transformation is generated
+#   2. Nonlinear histogram matching is applied from the transformed image back toward the original
+#   3. The resulting image must have a histogram standard deviation closer to the original
+#      than the transformed image was, verifying that nonlinear matching shifted the histogram
+# dwi_mean.mif is used as it is a representative 3D image with good dynamic range.
+
+mrcalc dwi_mean.mif 2.0 -mult 50.0 -add tmp_transformed.mif -force
+
+mrhistmatch nonlinear tmp_transformed.mif dwi_mean.mif tmp_out.mif -force
+
+# Verify the command produced output
+[ -f tmp_out.mif ]
+
+# The standard deviation of the output (within the brain mask) should be
+#   closer to the original than the transformed image was
+SD_orig=$(mrstats dwi_mean.mif -output std -mask mask.mif)
+SD_trans=$(mrstats tmp_transformed.mif -output std -mask mask.mif)
+SD_out=$(mrstats tmp_out.mif -output std -mask mask.mif)
+
+awk -v orig="$SD_orig" -v trans="$SD_trans" -v out="$SD_out" \
+  'BEGIN {
+    diff_out  = out  - orig; if (diff_out  < 0) diff_out  = -diff_out;
+    diff_trans = trans - orig; if (diff_trans < 0) diff_trans = -diff_trans;
+    if (diff_out >= diff_trans) {
+      print "ERROR: nonlinear matching did not bring histogram closer to target";
+      exit 1
+    }
+  }'

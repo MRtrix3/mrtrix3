@@ -16,6 +16,7 @@
 
 #include "adapter/regrid.h"
 #include "algo/copy.h"
+#include "app.h"
 #include "command.h"
 #include "enum.h"
 #include "filter/resize.h"
@@ -131,9 +132,9 @@ void usage() {
     + Argument ("factor").type_sequence_float()
 
     + Option ("interp", std::string("set the interpolation method to use when reslicing")
-                        + " (choices: " + join(MR::Interp::interp_choices, ", ") + ";"
-                        " default: " + MR::Interp::interp_choices[static_cast<ssize_t>(default_interp)] + ").")
-    + Argument ("method").type_choice (MR::Interp::interp_choices)
+                        + " (choices: " + MR::Enum::join<MR::Interp::interp_type>() + ";"
+                        " default: " + MR::Enum::lowercase_name(default_interp) + ").")
+    + Argument ("method").type_choice<MR::Interp::interp_type>()
 
     + Option ("oversample",
         "set the amount of over-sampling (in the target space) to perform when regridding."
@@ -221,8 +222,7 @@ void run() {
     regrid_filter.set_out_of_bounds_value(out_of_bounds_value);
     size_t resize_option_count = 0;
     size_t template_option_count = 0;
-    const MR::Interp::interp_type interp =
-        MR::Interp::interp_type(get_option_value("interp", static_cast<ssize_t>(default_interp)));
+    const MR::Interp::interp_type interp = get_option_choice<MR::Interp::interp_type>("interp", default_interp);
 
     // over-sampling
     std::vector<uint32_t> oversample = Adapter::AutoOverSample;

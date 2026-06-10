@@ -1,0 +1,7 @@
+#!/bin/bash
+# Verify that "mrdump" produces identical output whether writing to stdout
+#   or to a specified output file.
+
+rm -f tmp_stdout.txt
+mrdump dwi.mif > tmp_stdout.txt
+testing_diff_matrix tmp_stdout.txt mrdump/values.txt -frac 1e-5

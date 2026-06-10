@@ -5,5 +5,5 @@
 #   as such, the slight change in outcomes of the standard_space_roi command
 #   between FSL versions does not affect the outcome of the 5ttgen fsl command.
 #   As such, the outcome can be directly compared to that computed using a prior MRtrix3 version
-5ttgen fsl BIDS/sub-01/anat/sub-01_T1w.nii.gz tmp.mif -mask BIDS/sub-01/anat/sub-01_brainmask.nii.gz -force
-testing_diff_header tmp.mif 5ttgen/fsl/masked.mif.gz
+5ttgen fsl BIDS/sub-01/anat/sub-01_T1w.nii.gz - -mask BIDS/sub-01/anat/sub-01_brainmask.nii.gz | \
+testing_diff_header - 5ttgen/fsl/masked.mif.gz

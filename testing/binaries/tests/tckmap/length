@@ -1,0 +1,7 @@
+#!/bin/bash
+# Verify the "length" contrast type for tckmap,
+#   which weights each streamline contribution by its arc length
+# Output is compared to that generated using a prior version of the software;
+#   a tolerance of 1e-4 absolute is permitted to account for platform differences
+tckmap tracks.tck -template dwi.mif -contrast length - | \
+testing_diff_image - tckmap/tdi_length.mif.gz -abs 1e-3

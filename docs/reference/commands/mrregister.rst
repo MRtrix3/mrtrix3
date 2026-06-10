@@ -122,11 +122,11 @@ Advanced linear registration stage options
 
 -  **-linstage.iterations value(s)** number of iterations for each registration stage. Not to be confused with -rigid_niter or -affine_niter. This can be used to generate intermediate diagnostics images (-linstage.diagnostics.dir) or to change the cost function optimiser during registration (without the need to repeatedly resize the images). (Default: 1 == no repetition)
 
--  **-linstage.optimiser.first algorithm** Cost function optimisation algorithm to use at first iteration of all stages. Valid choices: bbgd (Barzilai-Borwein gradient descent); gd (simple gradient descent). (Default: bbgd)
+-  **-linstage.optimiser.first algorithm** Cost function optimisation algorithm to use at first iteration of all stages. Valid choices: BBGD (Barzilai-Borwein gradient descent); GD (simple gradient descent). (Default: BBGD)
 
--  **-linstage.optimiser.last algorithm** Cost function optimisation algorithm to use at last iteration of all stages (if there are more than one). Valid choices: bbgd (Barzilai-Borwein gradient descent); gd (simple gradient descent). (Default: bbgd)
+-  **-linstage.optimiser.last algorithm** Cost function optimisation algorithm to use at last iteration of all stages (if there are more than one). Valid choices: BBGD (Barzilai-Borwein gradient descent); GD (simple gradient descent). (Default: BBGD)
 
--  **-linstage.optimiser.default algorithm** Cost function optimisation algorithm to use at any stage iteration other than first or last iteration. Valid choices: bbgd (Barzilai-Borwein gradient descent); gd (simple gradient descent). (Default: bbgd)
+-  **-linstage.optimiser.default algorithm** Cost function optimisation algorithm to use at any stage iteration other than first or last iteration. Valid choices: BBGD (Barzilai-Borwein gradient descent); GD (simple gradient descent). (Default: BBGD)
 
 -  **-linstage.diagnostics.dir dir** generate diagnostics images after every registration stage
 

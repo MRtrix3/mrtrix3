@@ -88,7 +88,7 @@ Options for outputting connectome matrices
 Other options for tck2connectome
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-stat_edge statistic** statistic for combining the values from all streamlines in an edge into a single scale value for that edge (options are: sum,mean,min,max; default=sum)
+-  **-stat_edge statistic** statistic for combining the values from all streamlines in an edge into a single scale value for that edge (options are: sum, mean, min, max; default=sum)
 
 -  **-tck_weights_in path** specify a text scalar file containing the streamline weights
 

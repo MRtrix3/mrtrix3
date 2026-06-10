@@ -1,0 +1,8 @@
+#!/bin/bash
+# Verify that "tckinfo" correctly handles multiple input track files,
+#   producing a separate information block for each.
+
+rm -f tmp.txt
+tckinfo tracks.tck SIFT_phantom/tracks.tck 2>&1 | tee tmp.txt
+# Expect exactly two "Tracks file:" lines
+[ "$(grep -c "Tracks file:" tmp.txt)" -eq 2 ]

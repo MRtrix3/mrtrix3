@@ -16,12 +16,8 @@
 
 #pragma once
 
-#include <string>
-#include <vector>
-
 namespace MR::Interp {
 
-const std::vector<std::string> interp_choices{"nearest", "linear", "cubic", "sinc"};
 enum class interp_type { NEAREST, LINEAR, CUBIC, SINC };
 
 } // namespace MR::Interp
