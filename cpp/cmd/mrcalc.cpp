@@ -322,6 +322,9 @@ UNARY_OP(
   Main program
  **********************************************************************/
 
+#include "eigen_plugins/eigen_plugins.h"
+#include <Eigen/Dense>
+
 #include <filesystem>
 #include <optional>
 
@@ -332,6 +335,7 @@ UNARY_OP(
 #include "math/rng.h"
 #include "memory.h"
 #include "transform.h"
+#include "types.h"
 
 using namespace MR;
 using namespace App;
@@ -519,7 +523,7 @@ public:
     if (coordinate.type == coordinate_t::index) {
       for (size_t y = 0; y != size[1]; ++y) {
         for (size_t x = 0; x != size[0]; ++x) {
-          ssize_t index;
+          ssize_t index(-1);
           if (coordinate.axis == axes[0])
             index = static_cast<ssize_t>(x);
           else if (coordinate.axis == axes[1])
@@ -969,9 +973,7 @@ public:
       storage.back().image.reset(new Image<complex_type>(*entry.image));
       storage.back().chunk.resize(chunk_size);
       return;
-    } else if (entry.rng) {
-      storage.back().chunk.resize(chunk_size);
-    } else if (entry.coordinate) {
+    } else if (entry.rng || entry.coordinate) {
       storage.back().chunk.resize(chunk_size);
     } else
       storage.back().chunk.value = entry.value;
@@ -996,12 +998,8 @@ public:
 };
 
 bool has_scanner_operand(const StackEntry &entry) {
-  if (entry.evaluator) {
-    for (const auto &operand : entry.evaluator->operands)
-      if (has_scanner_operand(operand))
-        return true;
-    return false;
-  }
+  if (entry.evaluator)
+    return std::any_of(entry.evaluator->operands.begin(), entry.evaluator->operands.end(), has_scanner_operand);
   return entry.coordinate.has_value() && entry.coordinate->type == coordinate_t::scanner;
 }
 

@@ -14,20 +14,23 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include <algorithm>
 #include <array>
+#include <cstddef>
+#include <filesystem>
 #include <set>
 #include <vector>
 
+#include "app.h"
 #include "command.h"
+#include "exception.h"
 #include "image.h"
 #include "image_helpers.h"
+#include "mrtrix.h"
 #include "transform.h"
 #include "types.h"
 
 #include "algo/copy.h"
-
-#include <filesystem>
+#include "algo/loop.h"
 
 using namespace MR;
 using namespace App;
@@ -119,6 +122,8 @@ void usage() {
 }
 // clang-format on
 
+namespace {
+
 class Vox : public Eigen::Array3i {
 public:
   using Eigen::Array3i::Array3i;
@@ -167,7 +172,7 @@ void flood_fill(Image<float> &out,
                 const Space space,
                 const Transform &transform,
                 const std::vector<Vox> &seeds,
-                Predicate inside,
+                const Predicate &inside,
                 const float value) {
   std::set<Vox> processed;
   std::vector<Vox> to_expand;
@@ -282,7 +287,8 @@ void apply_plane(Image<float> &out, const ParsedOption &opt, const Space space, 
   for (const default_type coord : coords) {
     for (ssize_t i0 = 0; i0 != out.size(plane_axes[0]); ++i0) {
       for (ssize_t i1 = 0; i1 != out.size(plane_axes[1]); ++i1) {
-        const default_type numerator = coord - offset - gradient[plane_axes[0]] * i0 - gradient[plane_axes[1]] * i1;
+        const default_type numerator = coord - offset - (gradient[plane_axes[0]] * static_cast<default_type>(i0)) -
+                                       (gradient[plane_axes[1]] * static_cast<default_type>(i1));
         const ssize_t free_index = static_cast<ssize_t>(std::round(numerator / gradient[free_axis]));
         if (free_index < 0 || free_index >= out.size(free_axis))
           continue;
@@ -392,6 +398,8 @@ void apply_voxel(Image<float> &out, const ParsedOption &opt, const Space space, 
   }
   out.value() = value;
 }
+
+} // namespace
 
 void run() {
   const bool inplace = (argument.size() == 1);
