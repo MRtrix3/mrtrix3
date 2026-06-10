@@ -280,6 +280,9 @@ add_bash_binary_test(maskfilter/median NO_FILESYSTEM_LOCK)
 
 add_bash_binary_test(mesh2voxel/default NO_FILESYSTEM_LOCK)
 add_bash_binary_test(mesh2voxel/input_4D NO_FILESYSTEM_LOCK)
+add_bash_binary_test(mesh2voxel/onevoxel)
+add_bash_binary_test(mesh2voxel/twovoxels_sharededge)
+add_bash_binary_test(mesh2voxel/twovoxels_sharedvertex)
 
 add_bash_binary_test(meshconvert/big_endian)
 add_bash_binary_test(meshconvert/little_endian)
