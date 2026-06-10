@@ -89,3 +89,6 @@ function (add_bash_unit_test FILE_SRC)
         ${no_filesystem_lock}
     )
 endfunction()
+
+# Reads the check_syntax fixture and runs the Perl engine; never writes to disk.
+add_bash_unit_test(check_syntax_engine.sh NO_FILESYSTEM_LOCK)

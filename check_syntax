@@ -15,213 +15,59 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
+# Thin front-end for the C++ house-style checks.  File discovery (whole-tree),
+# an explicit command-line file list, and staged-diff extraction live here; the
+# per-file pattern checks and the reporting of offending line numbers are
+# delegated to the Perl engine check_syntax_engine.pl (invoked via "perl", so it
+# needs no execute bit).  The engine matches the project's PCRE patterns and
+# reports each offending line (or line range), so neither the BSD gnu-grep
+# workaround nor any in-band diff-hunk sentinel is required here.
+#
+# Usage:
+#   check_syntax                 check every C++ source file under cpp/
+#   check_syntax FILE [FILE ...] check only the explicitly listed files
+#   check_syntax --diff          check the staged changes only
+
 DIFF_MODE=0
+FILES=()
 while [[ $# -gt 0 ]]; do
   case $1 in
     --diff)
       DIFF_MODE=1
       shift
       ;;
-    *)
+    -*)
       echo "Unknown option: $1" >&2
       exit 1
       ;;
+    *)
+      FILES+=("$1")
+      shift
+      ;;
   esac
 done
+
+if [[ $DIFF_MODE -eq 1 && ${#FILES[@]} -gt 0 ]]; then
+  echo "Cannot combine --diff with an explicit file list" >&2
+  exit 1
+fi
+
+ENGINE="$(dirname "$0")/check_syntax_engine.pl"
 
 LOG=syntax.log
 echo -n "Checking syntax... "
 echo "Checking syntax..." > $LOG
 echo "" >> $LOG
 
-grep=grep
-v=`grep --version`
-if [[ "$OSTYPE" == darwin* ]] && [[ $v == *"BSD"* ]]; then
-  if ! hash ggrep 2>/dev/null; then
-    echo 'Aborting, this script requires gnu-grep which you can install for instance via "brew install grep"'
-    exit 1
-  else
-    grep=ggrep
-  fi
-fi
-
 retval=0
-
-rm -f .check_syntax1.tmp .check_syntax2.tmp .check_syntax3.tmp .check_syntax4.tmp
-
-# Run all syntax checks on content already written to .check_syntax1.tmp.
-# Argument: $1 = filename (for log reporting and special-case handling).
-# Cleans up all .check_syntax*.tmp files on exit.
-run_checks() {
-  local f="$1"
-  local res=""
-
-# Check for use of #define for constants
-# Intended to catch integers, floats, scientific notation, hexadecimal, bitwise, and strings
-  res=$(
-    cat .check_syntax1.tmp | \
-    $grep -Po '^#define\s+[a-zA-Z_][a-zA-Z0-9_]*\s+(0x[\dA-F]+|0b[01]+|\".*\"|[-+]?(?:[0-9]+\.?[0-9]*|\.[0-9]+)(?:[eE][-+]?[0-9]+)?)'
-  )
-
-# detect deprecated use of "#ifdef __headerpath__"
-  res="$res"$(
-    cat .check_syntax1.tmp | \
-    perl -pe 's|//.*$||' | \
-    tr '\n' ' ' | \
-    perl -pe 's|\s+| |g' | \
-    perl -pe 's|/\*.*?\*/||g' |
-    $grep -Po '\#ifndef\s+__.*__\s+\#define\s+__.*__'
-  )
-
-# detect the inclusion of Eigen headers without eigen_plugins/eigen_plugins.h appearing upstream;
-#   this can cause issues with compilation on some systems
-  if [[ ! "$f" -ef "cpp/core/eigen_plugins/eigen_plugins.h" ]]; then
-    res="$res"$(
-      cat .check_syntax1.tmp | \
-      $grep -Po '^#include .*' | \
-      tr '\n' ' ' | \
-      $grep -Po '.*#include <(unsupported\/)?Eigen\/[\w\/]+>' | \
-      $grep -Pv '#include "eigen_plugins\/eigen_plugins\.h"'
-    )
-  fi
-
-#############################################################
-# Process the file to strip macros and single-line comments #
-#############################################################
-  cat .check_syntax1.tmp | \
-  $grep -v '^#' | \
-  perl -pe 's|//.*$||' > .check_syntax2.tmp
-
-# Identify any uses of std::string_view as a function return
-  res="$res"$(
-    cat .check_syntax2.tmp | \
-    $grep -Po '^\s*(const\s+|)std::string_view\s?\&?([a-zA-Z_][a-zA-Z0-9_]*|operator.*)\s?\(.*\)'
-  )
-
-######################################
-# Further processing of file content #
-######################################
-  cat .check_syntax2.tmp | \
-# remove all newlines to make file one long line:
-  tr '\n' ' ' | \
-# remove any duplicate spaces:
-  perl -pe 's|\s+| |g' | \
-# remove C-style comments:
-  perl -pe 's|/\*.*?\*/||g' | \
-# split diff hunks across lines
-  perl -pe 's|\s?\@\@\@HUNK_BREAK\@\@\@\s?|\n|g' > .check_syntax3.tmp
-
-# detect any instances of %zu in a print() call (not supported on MSYS2):
-  res="$res"$(
-    cat .check_syntax3.tmp | \
-# match for the parts we're interested in and output just the bits that match:
-    $grep -Po '\w*print\w*.*?%\d?zu\b' |
-    $grep -Po '\w*print(?!.*?print).*?$'
-  )
-
-# Detect any instances of definition of C-style arrays
-# Note: Need to use version without removal of quoted strings
-#   so that keyval["key"] isn't a hit
-  res="$res"$(
-    cat .check_syntax3.tmp | \
-    $grep -Po '\b\w+(::\w+)*(?<!\breturn)(?<!\bnew)\s\w+(\[\d*\])+\s*[=;,]'
-  )
-
-#########################
-# Remove quoted strings #
-#########################
-  cat .check_syntax3.tmp | \
-  perl -pe 's/(")(\\"|.)*?"//g' > .check_syntax4.tmp
-
-# - Detect any instances of char* or char item[],
-#   which does not look like a cast for compatibility with external code
-  res="$res"$(
-    cat .check_syntax4.tmp | \
-    $grep -Po '(const\s+|)char(\s?\*(\s?const|)\s?(?![>\(\)])|\s+[a-zA-Z_][a-zA-Z0-9_]*\[(\d*\]|))'
-  )
-
-# - Detect any instances of C-style string manipulation functions,
-#   including direct strerror() calls (use MR::C_strerror() instead)
-  res="$res"$(
-    cat .check_syntax4.tmp | \
-    $grep -Po '\b(strcpy|strncpy|strcat|strncat|strxfrm|strlen|strcmp|strncmp|strcoll|strchr|strrchr|strspn|strcspn|strpbrk|strstr|strtok|wcscpy|wcsncpy|wcscat|wcsncat|wcsxfrm|wcslen|wcscmp|wcsncmp|wcscoll|wcschr|wcsrchr|wcsspn|wcscspn|wcspbrk|wcsstr|wcstok|strerror)\s*\('
-  )
-
-# - Detect direct calls to std::getenv() or getenv() (use MR::get_env() instead)
-  res="$res"$(
-    cat .check_syntax4.tmp | \
-    $grep -Po '\bgetenv\s*\('
-  )
-
-# - Detect any instances of C rand() or srand() (use <random> STL instead)
-  res="$res"$(
-    cat .check_syntax4.tmp | \
-    $grep -Po '\b(srand|rand)\s*\('
-  )
-
-# - Detect instances of const std::string &
-#   most can be changed to std::string_view,
-#   others would be safer to return a copy
-  res="$res"$(
-    cat .check_syntax4.tmp | \
-    $grep -Po '\bconst\sstd::string\s?\&'
-  )
-
-# - Detect namespaces that could have been nested
-  res="$res"$(
-    cat .check_syntax4.tmp | \
-    $grep -Po '\bnamespace [\w\:]+\s*\{(\s*namespace [\w\:]+\s*\{)+'
-  )
-
-# - Detect any instances of "using namespace std;":
-  res="$res"$(
-    cat .check_syntax4.tmp | \
-    $grep -Po '\busing\snamespace\sstd\s?;'
-  )
-
-# - Detect any instances of C-style casts
-  res="$res"$(
-    cat .check_syntax4.tmp | \
-    $grep -Po '(\((?!void\))[a-zA-Z][a-zA-Z0-9_]*\)[a-zA-Z][a-zA-Z0-9_]*|\([a-zA-Z][a-zA-Z0-9_]*\s?\*(\s?const)?\)[a-zA-Z][a-zA-Z0-9_]*|\(\s?void\s?\*(\s?const)?\)[\w&(]|(?<!\bstd::function<)\b(GLint|GLfloat|c?float|c?double|(default|value|index)_type|[^\w_](unsigned\s+)?int|u?int(8|16|32|64)_t|s?size_t|ValueType|(?<!Scalar)::Scalar)\(\(*\**(?![\d\-\.]*\)))'
-  )
-
-# - Detect any instances of macros NULL (nullptr is better), NAN, INFINITY
-  res="$res"$(
-    cat .check_syntax4.tmp | \
-    $grep -Po '\b(NAN|INFINITY|NULL)\b'
-  )
-
-# detect any instances of std::abs() or non-disambiguated abs() (outside of the SFINAE call in core/types.h):
-  if [[ ! "$f" -ef "cpp/core/types.h" ]]; then
-    res="$res"$(
-      cat .check_syntax4.tmp | \
-      $grep -Po '((?<!::)std::|)(?<!MR::)(?<!\.)\babs\s?\('
-    )
-  fi
-
-# detect use of std::visit with a lambda function
-  res="$res"$(
-    cat .check_syntax4.tmp | \
-    $grep -Po 'std::visit\s?\(\s?\[\s?(&?\w+(,\s?&?\w+)*)?\]\s?\('
-  )
-
-  rm -f .check_syntax1.tmp .check_syntax2.tmp .check_syntax3.tmp .check_syntax4.tmp
-
-# if anything is left after that, show it:
-  if [[ ! -z $res ]]; then
-    echo "################################### $f" >> $LOG
-    echo "$res" >> $LOG
-    retval=1
-  fi
-}
 
 if [[ $DIFF_MODE -eq 1 ]]; then
 
   staged_cpp_files=$(git diff --cached --name-only | \
-    $grep -E '\.(h|cpp)$' | \
-    $grep -v '_moc\.cpp' | \
-    $grep -v 'gl_core_3_3' | \
-    $grep '^cpp/')
+    grep -E '\.(h|cpp)$' | \
+    grep -v '_moc\.cpp' | \
+    grep -v 'gl_core_3_3' | \
+    grep '^cpp/')
 
   if [[ -z "$staged_cpp_files" ]]; then
     echo "OK"
@@ -233,27 +79,48 @@ if [[ $DIFF_MODE -eq 1 ]]; then
   git diff --cached > "$diff_tmp"
 
   for f in $staged_cpp_files; do
-    awk -v target="b/$f" '
-      /^diff --git / { in_file = ($4 == target); hunk_started = 0 }
+    # Emit one "<new-file-line>\t<content>" record per added/context line, and a
+    # bare "--" line between hunks so the engine treats each hunk as a separate
+    # segment (preventing matches that span non-contiguous blocks of code).
+    res=$(awk -v target="b/$f" '
+      /^diff --git / { in_file = ($4 == target); started = 0 }
       in_file && /^\+\+\+ / { next }
-      in_file && /^@@ / { if (hunk_started) print "@@@HUNK_BREAK@@@"; hunk_started = 1; next }
-      in_file && /^[+ ]/ { print substr($0, 2) }
+      in_file && /^@@ / {
+        if (match($0, /\+[0-9]+/)) newline = substr($0, RSTART + 1, RLENGTH - 1) + 0
+        if (started) print "--"
+        started = 1
+        next
+      }
+      in_file && /^[+ ]/ { print newline "\t" substr($0, 2); newline++ }
     ' "$diff_tmp" | \
-    $grep -v '\/\/.*\bcheck_syntax\soff' > .check_syntax1.tmp
+    perl "$ENGINE" --diff --label "$f")
 
-    run_checks "$f"
+    if [[ -n "$res" ]]; then
+      echo "$res" >> $LOG
+      retval=1
+    fi
   done
 
   rm -f "$diff_tmp"
 
 else
 
-  for f in $(find cpp -type f -name '*.h' -o -name '*.cpp' | $grep -v '_moc.cpp' | $grep -v 'gl_core_3_3' | sort); do
-    cat $f | \
-    $grep -v '\/\/.*\bcheck_syntax\soff' > .check_syntax1.tmp
+  if [[ ${#FILES[@]} -gt 0 ]]; then
+    # Explicit command-line file list: check exactly the files requested.
+    cpp_files=("${FILES[@]}")
+  else
+    # Whole-tree discovery of every C++ source file under cpp/.
+    mapfile -t cpp_files < <(find cpp -type f \( -name '*.h' -o -name '*.cpp' \) | \
+      grep -v '_moc.cpp' | \
+      grep -v 'gl_core_3_3' | \
+      sort)
+  fi
 
-    run_checks "$f"
-  done
+  res=$(perl "$ENGINE" "${cpp_files[@]}")
+  if [[ -n "$res" ]]; then
+    echo "$res" >> $LOG
+    retval=1
+  fi
 
 fi
 
