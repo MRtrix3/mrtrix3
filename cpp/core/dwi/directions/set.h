@@ -68,11 +68,11 @@ public:
   }
 
   [[nodiscard]] size_t size() const { return unit_vectors.size(); }
-  [[nodiscard]] const Eigen::Vector3d &get_dir(const size_t i) const {
+  const [[nodiscard]] Eigen::Vector3d &get_dir(const size_t i) const {
     assert(i < size());
     return unit_vectors[i];
   }
-  [[nodiscard]] const std::vector<index_type> &get_adj_dirs(const size_t i) const {
+  const [[nodiscard]] std::vector<index_type> &get_adj_dirs(const size_t i) const {
     assert(i < size());
     return adj_dirs[i];
   }
@@ -88,7 +88,7 @@ public:
 
   [[nodiscard]] index_type get_min_linkage(const index_type one, const index_type two) const;
 
-  [[nodiscard]] const std::vector<Eigen::Vector3d> &get_dirs() const { return unit_vectors; }
+  const [[nodiscard]] std::vector<Eigen::Vector3d> &get_dirs() const { return unit_vectors; }
   const Eigen::Vector3d &operator[](const size_t i) const {
     assert(i < size());
     return unit_vectors[i];

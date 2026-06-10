@@ -55,7 +55,7 @@ public:
 
     if (properties.find("seed_dynamic") == properties.end()) {
 
-      typename Method::Shared const shared(diff_path, properties);
+      const typename Method::Shared shared(diff_path, properties);
       WriteKernel writer(shared, destination, properties);
       Exec<Method> tracker(shared);
       Thread::run_queue(
@@ -73,13 +73,13 @@ public:
       using TckMapper = Mapping::TrackMapperBase;
       using Writer = Seeding::WriteKernelDynamic;
 
-      DWI::Directions::FastLookupSet const dirs(1281);
+      const DWI::Directions::FastLookupSet dirs(1281);
       auto fod_data = Image<float>::open(fod_path);
       Math::SH::check(fod_data);
       auto *seeder = new Seeding::Dynamic(fod_path, fod_data, num_tracks, dirs);
       properties.seeds.add(seeder); // List is responsible for deleting this from memory
 
-      typename Method::Shared const shared(diff_path, properties);
+      const typename Method::Shared shared(diff_path, properties);
 
       Writer writer(shared, destination, properties);
       Exec<Method> tracker(shared);

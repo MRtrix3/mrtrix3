@@ -170,7 +170,7 @@ GMWMI_finder::find_interface(const std::vector<Eigen::Vector3f> &tck, const bool
 
   // Track is long enough; can do the proper search
   // Need to generate an additional point beyond the end point
-  size_t const last = tck.size() - 1;
+  const size_t last = tck.size() - 1;
 
   const Eigen::Vector3f p_end(end ? tck.back() : tck.front());
   const Eigen::Vector3f p_prev(end ? tck[last - 1] : tck[1]);

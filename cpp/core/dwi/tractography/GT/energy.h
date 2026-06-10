@@ -68,8 +68,8 @@ public:
   double stageRemove(const Particle *par) { return l1 * _e1->stageRemove(par) + l2 * _e2->stageRemove(par); }
 
   double stageConnect(const ParticleEnd &pe1, ParticleEnd &pe2) {
-    double const eint = _e1->stageConnect(pe1, pe2); // Warning: not symmetric due to output variable!
-    double const eext = _e2->stageConnect(pe1, pe2);
+    const double eint = _e1->stageConnect(pe1, pe2); // Warning: not symmetric due to output variable!
+    const double eext = _e2->stageConnect(pe1, pe2);
     return l1 * eint + l2 * eext;
   }
 

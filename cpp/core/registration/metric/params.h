@@ -120,7 +120,7 @@ public:
     control_points.block<3, 4>(0, 0).colwise() += centre;
   }
 
-  [[nodiscard]] const std::vector<size_t> &get_extent() const { return extent; }
+  const [[nodiscard]] std::vector<size_t> &get_extent() const { return extent; }
 
   template <class OptimiserType> void optimiser_update(OptimiserType &optim, const ssize_t overlap_count) {
     DEBUG("gradient descent ran using " + str(optim.function_evaluations()) + " cost function evaluations.");
@@ -150,7 +150,7 @@ public:
     header.keyval()["trafo2"] = str(trafo2.matrix());
     auto check = Image<default_type>::create(image_path, header);
 
-    std::vector<uint32_t> const no_oversampling(3, 1);
+    const std::vector<uint32_t> no_oversampling(3, 1);
     Adapter::Reslice<Interp::Linear, Im1ImageType> im1_reslicer(
         im1_image, midway_image, trafo1, no_oversampling, std::numeric_limits<Im1ValueType>::quiet_NaN());
     Adapter::Reslice<Interp::Linear, Im2ImageType> im2_reslicer(

@@ -362,7 +362,7 @@ void TckFactor::output_coefficients(const std::filesystem::path &path) const {
 void TckFactor::output_TD_images(const std::filesystem::path &dirpath,
                                  const std::filesystem::path &origTD_path,
                                  const std::filesystem::path &count_path) const {
-  Header const H(MR::Fixel::data_header_from_nfixels(fixels.size()));
+  const Header H(MR::Fixel::data_header_from_nfixels(fixels.size()));
   Header H_count;
   H_count.datatype() = DataType::native(DataType::UInt32);
   Image<float> origTD_image(Image<float>::create(dirpath / origTD_path, H));
@@ -416,7 +416,7 @@ void TckFactor::output_all_debug_images(const std::filesystem::path &dirpath, st
       maxs[i] = std::numeric_limits<double>::quiet_NaN();
   }
 
-  Header const H(MR::Fixel::data_header_from_nfixels(fixels.size()));
+  const Header H(MR::Fixel::data_header_from_nfixels(fixels.size()));
   Header H_excluded(H);
   H_excluded.datatype() = DataType::Bit;
   Image<float> min_image(Image<float>::create(dirpath / (prefix + "_coeff_min.mif"), H));

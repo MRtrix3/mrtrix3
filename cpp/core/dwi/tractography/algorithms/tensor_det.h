@@ -141,11 +141,11 @@ protected:
     if (tensor2FA(dt) < S.threshold)
       return term_t::MODEL;
 
-    Eigen::Vector3f const prev_dir = dir;
+    const Eigen::Vector3f prev_dir = dir;
 
     get_EV();
 
-    float const dot = prev_dir.dot(dir);
+    const float dot = prev_dir.dot(dir);
     if (std::fabs(dot) < S.cos_max_angle_1o)
       return term_t::HIGH_CURVATURE;
 

@@ -49,7 +49,7 @@ public:
 
   [[nodiscard]] node_t get_first_node() const { return nodes.first; }
   [[nodiscard]] node_t get_second_node() const { return nodes.second; }
-  [[nodiscard]] const NodePair &get_nodes() const { return nodes; }
+  const [[nodiscard]] NodePair &get_nodes() const { return nodes; }
 
 private:
   NodePair nodes;
@@ -64,7 +64,7 @@ public:
   void set_nodes(const std::vector<node_t> &i) { nodes = i; }
   void set_nodes(std::vector<node_t> &&i) { std::swap(nodes, i); }
 
-  [[nodiscard]] const std::vector<node_t> &get_nodes() const { return nodes; }
+  const [[nodiscard]] std::vector<node_t> &get_nodes() const { return nodes; }
 
 private:
   std::vector<node_t> nodes;

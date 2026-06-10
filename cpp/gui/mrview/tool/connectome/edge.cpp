@@ -51,7 +51,7 @@ Edge::Edge(const node_t one, const node_t two, const Eigen::Vector3f &c_one, con
   } else {
 
     // First, let's get an axis of rotation, s.t. the rotation angle is positive
-    Eigen::Vector3f const v = (z_axis.cross(dir)).normalized();
+    const Eigen::Vector3f v = (z_axis.cross(dir)).normalized();
     // Now, a rotation angle
     const float angle = std::acos(z_axis.dot(dir));
     // Convert to rotation matrix representation
@@ -97,7 +97,7 @@ Edge::Line::Line(const Edge &parent) {
   data.push_back(parent.get_node_centre(0));
   data.push_back(parent.get_node_centre(1));
 
-  GL::Context::Grab const context;
+  const GL::Context::Grab context;
   GL::assert_context_is_current();
 
   vertex_buffer.gen();
@@ -122,7 +122,7 @@ Edge::Line::Line(const Edge &parent) {
 }
 
 Edge::Line::~Line() {
-  GL::Context::Grab const context;
+  const GL::Context::Grab context;
   vertex_buffer.clear();
   tangent_buffer.clear();
   vertex_array_object.clear();
@@ -162,7 +162,7 @@ Edge::Exemplar::Exemplar(const Edge &parent, const MR::DWI::Tractography::Stream
 }
 
 Edge::Streamline::Streamline(const Exemplar &data) {
-  GL::Context::Grab const context;
+  const GL::Context::Grab context;
   GL::assert_context_is_current();
   assert(data.tangents.size() == data.vertices.size());
 
@@ -192,7 +192,7 @@ Edge::Streamline::Streamline(const Exemplar &data) {
 }
 
 Edge::Streamline::~Streamline() {
-  GL::Context::Grab const context;
+  const GL::Context::Grab context;
   vertex_buffer.clear();
   tangent_buffer.clear();
   vertex_array_object.clear();
@@ -210,7 +210,7 @@ void Edge::Streamline::render() const {
 }
 
 Edge::Streamtube::Streamtube(const Exemplar &data) : count(data.vertices.size()) {
-  GL::Context::Grab const context;
+  const GL::Context::Grab context;
   GL::assert_context_is_current();
 
   assert(data.normals.size() == data.vertices.size());
@@ -272,7 +272,7 @@ Edge::Streamtube::Streamtube(const Exemplar &data) : count(data.vertices.size())
 }
 
 Edge::Streamtube::~Streamtube() {
-  GL::Context::Grab const context;
+  const GL::Context::Grab context;
   vertex_buffer.clear();
   tangent_buffer.clear();
   normal_buffer.clear();

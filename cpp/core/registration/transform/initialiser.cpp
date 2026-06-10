@@ -77,8 +77,8 @@ void initialise_using_image_centres(const Image<default_type> &im1,
   Eigen::Vector3d im2_centre_scanner;
   get_geometric_centre(im2, im2_centre_scanner);
 
-  Eigen::Vector3d const translation = im1_centre_scanner - im2_centre_scanner;
-  Eigen::Vector3d const centre = (im1_centre_scanner + im2_centre_scanner) / 2.0;
+  const Eigen::Vector3d translation = im1_centre_scanner - im2_centre_scanner;
+  const Eigen::Vector3d centre = (im1_centre_scanner + im2_centre_scanner) / 2.0;
   transform.set_centre(centre);
   transform.set_translation(translation);
 }
@@ -111,7 +111,7 @@ void initialise_using_FOD(Image<default_type> &im1,
                           Registration::Transform::Init::LinearInitialisationParams &init) {
 
   Image<default_type> bogus_mask;
-  ssize_t const lmax = -1; // TODO add to options
+  const ssize_t lmax = -1; // TODO add to options
   CONSOLE("initialising using masked images interpreted as FOD");
   WARN("Not implemented yet. Setting only centre of mass.");
   auto fod_init = Transform::Init::FODInitialiser(im1,

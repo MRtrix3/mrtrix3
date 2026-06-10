@@ -219,8 +219,8 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
   bool rescale_voxel_sizes = false;
 
   if (is_nifti) {
-    bool const sform_code = Raw::fetch_<code_type>(&NH.sform_code, is_BE);
-    bool const qform_code = Raw::fetch_<code_type>(&NH.qform_code, is_BE);
+    const bool sform_code = Raw::fetch_<code_type>(&NH.sform_code, is_BE);
+    const bool qform_code = Raw::fetch_<code_type>(&NH.qform_code, is_BE);
 
     if (sform_code) {
       auto &M(H.transform().matrix());
@@ -281,7 +281,7 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
       M_qform.translation()[2] = Raw::fetch_<float_type>(&NH.qoffset_z, is_BE);
 
       // qfac:
-      float const qfac = Raw::fetch_<float_type>(&NH.pixdim[0], is_BE) >= 0.0 ? 1.0 : -1.0;
+      const float qfac = Raw::fetch_<float_type>(&NH.pixdim[0], is_BE) >= 0.0 ? 1.0 : -1.0;
       if (qfac < 0.0)
         M_qform.matrix().col(2) *= qfac;
 
@@ -316,7 +316,7 @@ template <class NiftiHeader> size_t fetch(Header &H, const NiftiHeader &NH) {
     // CONF A boolean value to indicate whether, when opening NIfTI images,
     // CONF any corresponding JSON file should be automatically loaded.
     if (File::Config::get_bool("NIfTIAutoLoadJSON", false)) {
-      std::filesystem::path const json_path = get_json_path(static_cast<const Header &>(H).path());
+      const std::filesystem::path json_path = get_json_path(static_cast<const Header &>(H).path());
       if (std::filesystem::exists(json_path))
         File::JSON::load(H, json_path);
     }
@@ -348,7 +348,7 @@ template <class NiftiHeader> void store(NiftiHeader &NH, const Header &H, const 
   if (H.ndim() > 7)
     throw Exception(version + " format cannot support more than 7 dimensions for image \"" + H.path().string() + "\"");
 
-  bool const is_BE = H.datatype().is_big_endian();
+  const bool is_BE = H.datatype().is_big_endian();
 
   Axes::permutations_type axes;
   auto M = File::NIfTI::adjust_transform(H, axes);
@@ -531,7 +531,7 @@ template <class NiftiHeader> void store(NiftiHeader &NH, const Header &H, const 
   // CONF to save any header entries that cannot be stored in the NIfTI
   // CONF header.
   if (single_file && File::Config::get_bool("NIfTIAutoSaveJSON", false)) {
-    std::filesystem::path const json_path = get_json_path(H.path());
+    const std::filesystem::path json_path = get_json_path(H.path());
     File::JSON::save(H, json_path, H.path());
   }
 }
@@ -640,7 +640,7 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> read(Header &H) {
     return std::unique_ptr<ImageIO::Base>();
 
   const bool single_file = Path::has_suffix(hpath, ".nii");
-  std::filesystem::path const header_path =
+  const std::filesystem::path header_path =
       single_file ? hpath : std::filesystem::path(hpath).replace_extension(".hdr");
 
   try {
@@ -687,7 +687,7 @@ template <int VERSION> std::unique_ptr<ImageIO::Base> create(Header &H) {
 
   const std::filesystem::path &hpath = static_cast<const Header &>(H).path();
   const bool single_file = Path::has_suffix(hpath, ".nii");
-  std::filesystem::path const header_path =
+  const std::filesystem::path header_path =
       single_file ? hpath : std::filesystem::path(hpath).replace_extension(".hdr");
 
   nifti_header NH;

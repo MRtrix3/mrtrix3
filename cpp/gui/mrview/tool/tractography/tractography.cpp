@@ -364,7 +364,7 @@ void Tractography::dropEvent(QDropEvent *event) {
   const QMimeData *mimeData = event->mimeData();
   if (mimeData->hasUrls()) {
     std::vector<std::filesystem::path> list;
-    QList<QUrl> const urlList = mimeData->urls();
+    const QList<QUrl> urlList = mimeData->urls();
     for (int i = 0; i < urlList.size() && i < max_files; ++i) {
       list.push_back(QtHelpers::url_to_fspath(urlList.at(i)));
     }
@@ -379,7 +379,7 @@ void Tractography::dropEvent(QDropEvent *event) {
 }
 
 void Tractography::tractogram_close_slot() {
-  GL::Context::Grab const context;
+  const GL::Context::Grab context;
   QModelIndexList indexes = tractogram_list_view->selectionModel()->selectedIndexes();
   while (!indexes.empty()) {
     tractogram_list_model->remove_item(indexes.first());
@@ -452,9 +452,9 @@ void Tractography::line_thickness_slot(int thickness) {
 }
 
 void Tractography::right_click_menu_slot(const QPoint &pos) {
-  QModelIndex const index = tractogram_list_view->indexAt(pos);
+  const QModelIndex index = tractogram_list_view->indexAt(pos);
   if (index.isValid()) {
-    QPoint const globalPos = tractogram_list_view->mapToGlobal(pos);
+    const QPoint globalPos = tractogram_list_view->mapToGlobal(pos);
     tractogram_list_view->selectionModel()->select(index, QItemSelectionModel::Select);
     track_option_menu->exec(globalPos);
   }
@@ -507,7 +507,7 @@ void Tractography::randomise_track_colour_slot() {
       colour[2] = rng();
     } while (colour[0] < 0.5F && colour[1] < 0.5F && colour[2] < 0.5F);
     tractogram->set_color_type(TrackColourType::Manual);
-    QColor const c(colour[0] * 255.0F, colour[1] * 255.0F, colour[2] * 255.0F);
+    const QColor c(colour[0] * 255.0F, colour[1] * 255.0F, colour[2] * 255.0F);
     tractogram->set_colour(c);
     if (tractogram->get_threshold_type() == TrackThresholdType::UseColourFile)
       tractogram->set_threshold_type(TrackThresholdType::None);
@@ -639,7 +639,7 @@ void Tractography::geom_type_selection_slot(int selected_index) {
   if (selected_index == 3)
     return;
 
-  TrackGeometryType const geom_type = geometry_index2type(selected_index);
+  const TrackGeometryType geom_type = geometry_index2type(selected_index);
 
   QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
   for (auto &indice : indices)
@@ -664,9 +664,9 @@ void Tractography::selection_changed_slot(const QItemSelection &, const QItemSel
 
   const Tractogram *first_tractogram = tractogram_list_model->get_tractogram(indices[0]);
 
-  TrackColourType const color_type = first_tractogram->get_color_type();
-  QColor const color(first_tractogram->colour[0], first_tractogram->colour[1], first_tractogram->colour[2]);
-  TrackGeometryType const geom_type = first_tractogram->get_geometry_type();
+  const TrackColourType color_type = first_tractogram->get_color_type();
+  const QColor color(first_tractogram->colour[0], first_tractogram->colour[1], first_tractogram->colour[2]);
+  const TrackGeometryType geom_type = first_tractogram->get_geometry_type();
   bool color_type_consistent = true, geometry_type_consistent = true;
   float mean_thickness = first_tractogram->line_thickness;
   for (int i = 1; i != indices.size(); ++i) {
@@ -825,9 +825,9 @@ void Tractography::add_commandline_options(MR::App::OptionList &options) {
   view, no action is taken.
 */
 void Tractography::select_last_added_tractogram() {
-  int const count = tractogram_list_model->rowCount();
+  const int count = tractogram_list_model->rowCount();
   if (count != 0) {
-    QModelIndex const index = tractogram_list_view->model()->index(count - 1, 0);
+    const QModelIndex index = tractogram_list_view->model()->index(count - 1, 0);
     tractogram_list_view->setCurrentIndex(index);
     window().updateGL();
   }
@@ -836,7 +836,7 @@ void Tractography::select_last_added_tractogram() {
 bool Tractography::process_commandline_option(const MR::App::ParsedOption &opt) {
 
   if (opt.opt->is("tractography.load")) {
-    std::vector<std::filesystem::path> const list(1, opt[0]);
+    const std::vector<std::filesystem::path> list(1, opt[0]);
     add_tractogram(list);
     return true;
   }
@@ -891,7 +891,7 @@ bool Tractography::process_commandline_option(const MR::App::ParsedOption &opt) 
 
   if (opt.opt->is("tractography.thickness")) {
     // Thickness runs from -1000 to 1000,
-    float const thickness = static_cast<float>(opt[0]) * 1000.0F;
+    const float thickness = static_cast<float>(opt[0]) * 1000.0F;
     try {
       thickness_slider->setValue(thickness);
     } catch (Exception &E) {
@@ -902,7 +902,7 @@ bool Tractography::process_commandline_option(const MR::App::ParsedOption &opt) 
 
   if (opt.opt->is("tractography.tsf_colourmap")) {
     try {
-      int const n = opt[0];
+      const int n = opt[0];
       if (n < 0 || ColourMap::maps[n].name.empty())
         throw Exception("invalid tsf colourmap index \"" + std::string(opt[0]) +
                         "\" for -tractography.tsf_colourmap option");
@@ -940,7 +940,7 @@ bool Tractography::process_commandline_option(const MR::App::ParsedOption &opt) 
       const float multiplier = max_value <= 1.0 ? 255.0 : 1.0;
 
       // input need to be a float *
-      QColor const colour(multiplier * values[0], multiplier * values[1], multiplier * values[2]);
+      const QColor colour(multiplier * values[0], multiplier * values[1], multiplier * values[2]);
 
       QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
 
@@ -983,7 +983,7 @@ bool Tractography::process_commandline_option(const MR::App::ParsedOption &opt) 
 
   if (opt.opt->is("tractography.opacity")) {
     // Opacity runs from 0 to 1000, so multiply by 1000
-    float const opacity = static_cast<float>(opt[0]) * 1000.0F;
+    const float opacity = static_cast<float>(opt[0]) * 1000.0F;
     try {
       opacity_slider->setValue(opacity);
     } catch (Exception &E) {
@@ -993,9 +993,9 @@ bool Tractography::process_commandline_option(const MR::App::ParsedOption &opt) 
   }
 
   if (opt.opt->is("tractography.slab")) {
-    float const thickness = opt[0];
+    const float thickness = opt[0];
     try {
-      bool const crop = thickness > 0;
+      const bool crop = thickness > 0;
       slab_group_box->setChecked(crop);
       on_crop_to_slab_slot(crop); // Needs to be manually bumped
       if (crop) {
@@ -1020,7 +1020,7 @@ bool Tractography::process_commandline_option(const MR::App::ParsedOption &opt) 
 
 /*Checks whether any tractography has been loaded and warns the user if it has not*/
 bool Tractography::process_commandline_option_tsf_check_tracto_loaded() {
-  int const count = tractogram_list_model->rowCount();
+  const int count = tractogram_list_model->rowCount();
   if (count == 0) {
     // Error to std error to save many dialogs appearing for a single missed argument
     std::cerr << "TSF argument specified but no tractography loaded. Ensure TSF arguments follow the tractography.load "

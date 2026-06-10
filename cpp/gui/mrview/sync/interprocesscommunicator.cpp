@@ -46,10 +46,10 @@ InterprocessCommunicator::InterprocessCommunicator() : QObject(0) {
     auto *socket = new QLocalSocket(this);
     freeEntry = -1;
     for (int i = 0; i < maximum_instances; i++) {
-      QString const serverName = "mrtrix_interprocesssyncer_" + QString::number(i);
+      const QString serverName = "mrtrix_interprocesssyncer_" + QString::number(i);
       socket->connectToServer(serverName);
       socket->waitForConnected();
-      QLocalSocket::LocalSocketState const state = socket->state();
+      const QLocalSocket::LocalSocketState state = socket->state();
       socket->abort();
       if (state != QLocalSocket::ConnectedState) {
         // we found a free name
@@ -62,7 +62,7 @@ InterprocessCommunicator::InterprocessCommunicator() : QObject(0) {
       }
     }
     if (freeEntry == -1) {
-      std::string const errMsg = "No free ids available";
+      const std::string errMsg = "No free ids available";
       throw std::runtime_error(errMsg);
     }
 
@@ -112,7 +112,7 @@ void InterprocessCommunicator::OnNewIncomingConnection() {
 void InterprocessCommunicator::TryConnectTo(int connectToId) {
   if (connectToId != id) // don't connect to ourself!
   {
-    QString const serverName = "mrtrix_interprocesssyncer_" + QString::number(connectToId);
+    const QString serverName = "mrtrix_interprocesssyncer_" + QString::number(connectToId);
 
     // check we are not already connected
     for (auto &sender : senders) {
@@ -122,7 +122,7 @@ void InterprocessCommunicator::TryConnectTo(int connectToId) {
       }
     }
 
-    std::shared_ptr<GUI::MRView::Sync::Client> const curCl = std::make_shared<GUI::MRView::Sync::Client>();
+    const std::shared_ptr<GUI::MRView::Sync::Client> curCl = std::make_shared<GUI::MRView::Sync::Client>();
 
     curCl->SetServerName(serverName);
     if (curCl->TryConnect()) {
@@ -167,7 +167,7 @@ void InterprocessCommunicator::OnDataReceived(std::vector<std::shared_ptr<QByteA
     }
     case static_cast<int32_t>(MessageKey::SyncData): {
       // The other process has sent information to sync with
-      std::shared_ptr<QByteArray> const trimmed = std::make_shared<QByteArray>();
+      const std::shared_ptr<QByteArray> trimmed = std::make_shared<QByteArray>();
       trimmed->insert(0, dat->data() + 4, dataLength);
       toSync.emplace_back(trimmed);
       break;

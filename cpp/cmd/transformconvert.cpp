@@ -196,8 +196,8 @@ void run() {
     if (transform.matrix().topLeftCorner<3, 3>().determinant() < 0.0)
       INFO("Transformation matrix determinant is negative.");
 
-    transform_type const src_flirt_to_scanner = get_flirt_transform(src_header);
-    transform_type const dest_flirt_to_scanner = get_flirt_transform(dest_header);
+    const transform_type src_flirt_to_scanner = get_flirt_transform(src_header);
+    const transform_type dest_flirt_to_scanner = get_flirt_transform(dest_header);
 
     transform_type forward_transform = dest_flirt_to_scanner * transform * src_flirt_to_scanner.inverse();
     if (((forward_transform.matrix().array() != forward_transform.matrix().array())).any())

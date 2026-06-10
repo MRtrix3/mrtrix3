@@ -158,9 +158,9 @@ struct PolyBasisFunction {
   const int n_basis_vecs;
 
   FORCE_INLINE Eigen::VectorXd operator()(const Eigen::Vector3d &pos) const {
-    double const x = pos[0];
-    double const y = pos[1];
-    double const z = pos[2];
+    const double x = pos[0];
+    const double y = pos[1];
+    const double z = pos[2];
     Eigen::VectorXd basis(n_basis_vecs);
     basis(0) = 1.0;
     if (n_basis_vecs < 4)
@@ -233,8 +233,8 @@ Eigen::MatrixXd initialise_basis(IndexType &index, size_t num_voxels, int order)
       const uint32_t idx = index.value();
       if (idx != std::numeric_limits<uint32_t>::max()) {
         assert(idx < basis.rows());
-        Eigen::Vector3d const vox(index.index(0), index.index(1), index.index(2));
-        Eigen::Vector3d const pos = transform.voxel2scanner * vox;
+        const Eigen::Vector3d vox(index.index(0), index.index(1), index.index(2));
+        const Eigen::Vector3d pos = transform.voxel2scanner * vox;
         basis.row(idx) = basis_function(pos);
       }
     }
@@ -246,8 +246,8 @@ Eigen::MatrixXd initialise_basis(IndexType &index, size_t num_voxels, int order)
 
   INFO("initialising basis...");
 
-  PolyBasisFunction const basis_function(order);
-  Transform const transform(index);
+  const PolyBasisFunction basis_function(order);
+  const Transform transform(index);
   Eigen::MatrixXd basis(num_voxels, num_basis_vec_for_order(order));
 
   ThreadedLoop(index, 0, 3, 2).run(BasisInitialiser(transform, basis_function, basis), index);
@@ -290,7 +290,7 @@ size_t detect_outliers(double outlier_range,
                        const Eigen::VectorXd &field,
                        const Eigen::VectorXd &balance_factors,
                        Eigen::VectorXd &weights) {
-  Eigen::VectorXd const summed_log = (data * balance_factors).cwiseQuotient(field).array().log();
+  const Eigen::VectorXd summed_log = (data * balance_factors).cwiseQuotient(field).array().log();
   Eigen::VectorXd summed_log_sorted = summed_log;
   const size_t lower_quartile_idx = std::round(field.size() * 0.25);
   const size_t upper_quartile_idx = std::round(field.size() * 0.75);
@@ -299,18 +299,18 @@ size_t detect_outliers(double outlier_range,
                    summed_log_sorted.data() + lower_quartile_idx,
                    summed_log_sorted.data() + summed_log_sorted.size(),
                    lessthan_NaN);
-  double const lower_quartile = summed_log_sorted[lower_quartile_idx];
+  const double lower_quartile = summed_log_sorted[lower_quartile_idx];
 
   std::nth_element(summed_log_sorted.data(),
                    summed_log_sorted.data() + upper_quartile_idx,
                    summed_log_sorted.data() + summed_log_sorted.size(),
                    lessthan_NaN);
-  double const upper_quartile = summed_log_sorted[upper_quartile_idx];
+  const double upper_quartile = summed_log_sorted[upper_quartile_idx];
 
   INFO("  outlier rejection quartiles: [ " + str(lower_quartile) + " " + str(upper_quartile) + " ]");
 
-  double const lower_outlier_threshold = lower_quartile - outlier_range * (upper_quartile - lower_quartile);
-  double const upper_outlier_threshold = upper_quartile + outlier_range * (upper_quartile - lower_quartile);
+  const double lower_outlier_threshold = lower_quartile - outlier_range * (upper_quartile - lower_quartile);
+  const double upper_outlier_threshold = upper_quartile + outlier_range * (upper_quartile - lower_quartile);
 
   struct SetWeight {
     size_t &changed;
@@ -325,7 +325,7 @@ size_t detect_outliers(double outlier_range,
   };
 
   size_t changed = 0;
-  SetWeight const set_weight = {changed, lower_outlier_threshold, upper_outlier_threshold};
+  const SetWeight set_weight = {changed, lower_outlier_threshold, upper_outlier_threshold};
   weights = summed_log.binaryExpr(weights, set_weight);
 
   return changed;
@@ -368,7 +368,7 @@ void update_field(const double log_norm_value,
     }
     const double log_norm_value;
   };
-  LogWeight const logweight = {log_norm_value};
+  const LogWeight logweight = {log_norm_value};
 
   Eigen::VectorXd logsum = data * balance_factors;
   logsum = logsum.binaryExpr(weights, logweight);
@@ -388,12 +388,12 @@ ImageType compute_full_field(int order, const Eigen::VectorXd &field_coeffs, con
   header.datatype() = DataType::Float32;
 
   auto out = ImageType::scratch(header, "full field");
-  Transform const transform(out);
+  const Transform transform(out);
 
   struct FieldWriter {
     void operator()(ImageType &field) const {
-      Eigen::Vector3d const vox(field.index(0), field.index(1), field.index(2));
-      Eigen::Vector3d const pos = transform.voxel2scanner * vox;
+      const Eigen::Vector3d vox(field.index(0), field.index(1), field.index(2));
+      const Eigen::Vector3d pos = transform.voxel2scanner * vox;
       field.value() = std::exp(basis_function(pos).dot(field_coeffs));
     }
 
@@ -402,7 +402,7 @@ ImageType compute_full_field(int order, const Eigen::VectorXd &field_coeffs, con
     const Transform &transform;
   };
 
-  PolyBasisFunction const basis_function(order);
+  const PolyBasisFunction basis_function(order);
 
   FieldWriter writer = {basis_function, field_coeffs, transform};
 
@@ -507,7 +507,7 @@ void run() {
     load_data(data, input_path, index);
   }
 
-  size_t const num_non_finite = (!data.array().isFinite()).count();
+  const size_t num_non_finite = (!data.array().isFinite()).count();
   if (num_non_finite > 0) {
     WARN("Input data contain " + str(num_non_finite) + " non-finite voxel" + (num_non_finite > 1 ? "s" : ""));
     WARN("  Results may be affected if the data contain many non-finite values");
@@ -575,7 +575,7 @@ void run() {
     factors_output << balance_factors.transpose() << "\n";
   }
 
-  double const lognorm_scale = std::exp((field.array().log() * weights.array()).sum() / weights.sum());
+  const double lognorm_scale = std::exp((field.array().log() * weights.array()).sum() / weights.sum());
 
   const bool output_balanced = !get_options("balanced").empty();
   for (size_t n = 0; n < n_tissue_types; ++n) {

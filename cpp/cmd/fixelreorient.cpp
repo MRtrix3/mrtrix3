@@ -107,11 +107,11 @@ void run() {
 
   for (auto i = Loop("reorienting fixel directions", input_index_image, 0, 3)(input_index_image, jacobian); i; ++i) {
     input_index_image.index(3) = 0;
-    index_type const num_fixels_in_voxel = input_index_image.value();
+    const index_type num_fixels_in_voxel = input_index_image.value();
     if (num_fixels_in_voxel != 0U) {
       input_index_image.index(3) = 1;
-      index_type const index = input_index_image.value();
-      Eigen::Matrix<float, 3, 3> const transform = jacobian.value().inverse();
+      const index_type index = input_index_image.value();
+      const Eigen::Matrix<float, 3, 3> transform = jacobian.value().inverse();
       for (index_type f = 0; f < num_fixels_in_voxel; ++f) {
         input_directions_image.index(0) = index + f;
         output_directions_image.index(0) = index + f;

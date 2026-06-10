@@ -143,7 +143,7 @@ void run() {
     input_file_list.push_back(input_path);
 
     Properties p;
-    { Reader<float> const reader(input_path, p); }
+    { const Reader<float> reader(input_path, p); }
 
     for (const auto &i : p.comments) {
       bool present = false;

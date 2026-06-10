@@ -38,7 +38,7 @@ void Base::operator()(const MeshMulti &in, MeshMulti &out) const {
   auto worker = [&](const size_t &index) {
     (*this)(in[index], out[index]);
     if (progress) {
-      std::lock_guard<std::mutex> const lock(mutex);
+      const std::lock_guard<std::mutex> lock(mutex);
       ++(*progress);
     }
     return true;

@@ -54,7 +54,7 @@ void run() {
   DWI::Tractography::ScalarReader<value_type> reader(argument[0], properties);
   DWI::Tractography::ScalarWriter<value_type> writer(argument[1], properties);
 
-  float const stdev = get_option_value("stdev", default_smoothing);
+  const float stdev = get_option_value("stdev", default_smoothing);
 
   std::vector<float> kernel(2 * ceil(2.5 * stdev) + 1, 0);
   float norm_factor = 0.0;

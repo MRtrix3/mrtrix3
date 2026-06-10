@@ -266,7 +266,7 @@ scheme_type transform_for_image_load(const scheme_type &pe_scheme, const Header 
 }
 
 void transform_for_nifti_write(KeyValues &keyval, const Header &H) {
-  scheme_type const pe_scheme = parse_scheme(keyval, H);
+  const scheme_type pe_scheme = parse_scheme(keyval, H);
   if (pe_scheme.rows() == 0) {
     DEBUG(std::string("No phase encoding information found for transformation") + //
           " with save of NIfTI image \"" + H.name() + "\"");                      //
@@ -310,8 +310,8 @@ void topup2eddy(const scheme_type &PE, Eigen::MatrixXd &config, Eigen::Array<int
   indices = Eigen::Array<int, Eigen::Dynamic, 1>::Constant(PE.rows(), PE.rows());
   for (ssize_t PE_row = 0; PE_row != PE.rows(); ++PE_row) {
     for (ssize_t config_row = 0; config_row != config.rows(); ++config_row) {
-      bool const dir_match = PE.template block<1, 3>(PE_row, 0).isApprox(config.block<1, 3>(config_row, 0));
-      bool const time_match = std::fabs(PE(PE_row, 3) - config(config_row, 3)) < trt_tolerance;
+      const bool dir_match = PE.template block<1, 3>(PE_row, 0).isApprox(config.block<1, 3>(config_row, 0));
+      const bool time_match = std::fabs(PE(PE_row, 3) - config(config_row, 3)) < trt_tolerance;
       if (dir_match && time_match) {
         // FSL-style index file indexes from 1
         indices[PE_row] = config_row + 1;

@@ -243,7 +243,7 @@ class SetVoxel : public std::set<Voxel>, public SetVoxelExtras {
 public:
   using VoxType = Voxel;
   inline void insert(const Voxel &v) {
-    auto const existing = std::set<Voxel>::find(v);
+    const auto existing = std::set<Voxel>::find(v);
     if (existing == std::set<Voxel>::end())
       std::set<Voxel>::insert(v);
     else
@@ -259,7 +259,7 @@ class SetVoxelDEC : public std::set<VoxelDEC>, public SetVoxelExtras {
 public:
   using VoxType = VoxelDEC;
   inline void insert(const VoxelDEC &v) {
-    auto const existing = std::set<VoxelDEC>::find(v);
+    const auto existing = std::set<VoxelDEC>::find(v);
     if (existing == std::set<VoxelDEC>::end())
       std::set<VoxelDEC>::insert(v);
     else
@@ -279,7 +279,7 @@ class SetVoxelDir : public std::set<VoxelDir>, public SetVoxelExtras {
 public:
   using VoxType = VoxelDir;
   inline void insert(const VoxelDir &v) {
-    auto const existing = std::set<VoxelDir>::find(v);
+    const auto existing = std::set<VoxelDir>::find(v);
     if (existing == std::set<VoxelDir>::end())
       std::set<VoxelDir>::insert(v);
     else
@@ -301,7 +301,7 @@ public:
   using dir_index_type = Dixel::dir_index_type;
 
   inline void insert(const Dixel &v) {
-    auto const existing = std::set<Dixel>::find(v);
+    const auto existing = std::set<Dixel>::find(v);
     if (existing == std::set<Dixel>::end())
       std::set<Dixel>::insert(v);
     else
@@ -323,7 +323,7 @@ public:
   using vector_type = VoxelTOD::vector_type;
 
   inline void insert(const VoxelTOD &v) {
-    auto const existing = std::set<VoxelTOD>::find(v);
+    const auto existing = std::set<VoxelTOD>::find(v);
     if (existing == std::set<VoxelTOD>::end())
       std::set<VoxelTOD>::insert(v);
     else

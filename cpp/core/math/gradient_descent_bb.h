@@ -61,8 +61,8 @@ public:
         delim(",") {}
 
   [[nodiscard]] value_type value() const { return f; }
-  [[nodiscard]] const Eigen::Matrix<value_type, Eigen::Dynamic, 1> &state() const { return x2; }
-  [[nodiscard]] const Eigen::Matrix<value_type, Eigen::Dynamic, 1> &gradient() const { return g2; }
+  const [[nodiscard]] Eigen::Matrix<value_type, Eigen::Dynamic, 1> &state() const { return x2; }
+  const [[nodiscard]] Eigen::Matrix<value_type, Eigen::Dynamic, 1> &gradient() const { return g2; }
   [[nodiscard]] value_type step_size() const { return dt; }
   [[nodiscard]] value_type gradient_norm() const { return normg; }
   [[nodiscard]] int function_evaluations() const { return nfeval; }
@@ -89,7 +89,7 @@ public:
     DEBUG("Gradient descent iteration: init; cost: " + str(f));
 
     while (niter < max_iterations) {
-      bool const retval = iterate(log_os);
+      const bool retval = iterate(log_os);
       DEBUG("Gradient descent iteration: " + str(niter) + "; cost: " + str(f));
       if (verbose) {
         CONSOLE("iteration " + str(niter) + ": f = " + str(f) + ", |g| = " + str(normg) + ":");
@@ -218,7 +218,7 @@ protected:
                            Eigen::Matrix<value_type, Eigen::Dynamic, 1> &newg,
                            bool verbose = false) {
     ++nfeval;
-    value_type const cost = func(newx, newg);
+    const value_type cost = func(newx, newg);
     if (!std::isfinite(cost))
       throw Exception("cost function is NaN or Inf!");
     if (verbose) {

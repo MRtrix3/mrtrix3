@@ -101,9 +101,9 @@ public:
   }
 
   [[nodiscard]] float scale_factor() const { return _scale_factor; }
-  [[nodiscard]] const GL::Texture &texture() const { return *_current_texture; }
+  const [[nodiscard]] GL::Texture &texture() const { return *_current_texture; }
   GL::Texture &texture() { return *_current_texture; }
-  [[nodiscard]] const MR::Header &header() const { return _header; }
+  const [[nodiscard]] MR::Header &header() const { return _header; }
   MR::Header &header() { return _header; }
 
   void min_max_set() {

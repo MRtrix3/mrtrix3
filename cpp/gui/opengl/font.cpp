@@ -164,8 +164,8 @@ void Font::initGL(bool with_shadow) {
   gl::EnableVertexAttribArray(1);
   gl::VertexAttribPointer(1, 2, gl::FLOAT, gl::FALSE_, 0, nullptr);
 
-  GL::Shader::Vertex const vertex_shader(vertex_shader_source.c_str());
-  GL::Shader::Fragment const fragment_shader(fragment_shader_source.c_str());
+  const GL::Shader::Vertex vertex_shader(vertex_shader_source.c_str());
+  const GL::Shader::Fragment fragment_shader(fragment_shader_source.c_str());
 
   program.attach(vertex_shader);
   program.attach(fragment_shader);

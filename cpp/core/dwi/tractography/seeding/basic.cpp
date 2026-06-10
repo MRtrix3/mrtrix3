@@ -74,7 +74,7 @@ Random_per_voxel::Random_per_voxel(const std::filesystem::path &in, const size_t
 
 bool Random_per_voxel::get_seed(Eigen::Vector3f &p) const {
 
-  std::lock_guard<std::mutex> const lock(mutex);
+  const std::lock_guard<std::mutex> lock(mutex);
 
   if (expired)
     return false;
@@ -118,7 +118,7 @@ Grid_per_voxel::Grid_per_voxel(const std::filesystem::path &in, const size_t os_
 
 bool Grid_per_voxel::get_seed(Eigen::Vector3f &p) const {
 
-  std::lock_guard<std::mutex> const lock(mutex);
+  const std::lock_guard<std::mutex> lock(mutex);
 
   if (expired)
     return false;

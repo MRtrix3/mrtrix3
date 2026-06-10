@@ -104,7 +104,7 @@ void run() {
     }
   }
 
-  std::vector<Eigen::Transform<default_type, 3, Eigen::Projective>> const transform_header_with;
+  const std::vector<Eigen::Transform<default_type, 3, Eigen::Projective>> transform_header_with;
   auto H = compute_minimum_average_header(headers_in, transform_header_with, spacing, padding);
   H.datatype() = DataType::Bit;
   if (fill) {

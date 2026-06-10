@@ -114,13 +114,13 @@ void Image::parse_item(Element &item) {
       echo_time = item.get_float(0, echo_time);
       return;
     case 0x9087U: { // ugly hack to handle badly formatted Philips data:
-      default_type const v = item.get_float(0, bvalue);
+      const default_type v = item.get_float(0, bvalue);
       if (v < 1.0e10)
         bvalue = v;
     }
       return;
     case 0x9089U: { // ugly hack to handle badly formatted Philips data:
-      default_type const v = item.get_float(0, G[0]);
+      const default_type v = item.get_float(0, G[0]);
       if (v < 1.0e10) {
         G[0] = v;
         G[1] = item.get_float(1, G[1]);

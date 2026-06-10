@@ -96,7 +96,7 @@ std::unique_ptr<ImageIO::Base> MRtrix::create(Header &H) const {
     std::filesystem::resize_file(hpath, offset + footprint(H));
     io_handler->files.emplace_back(hpath, offset);
   } else {
-    std::filesystem::path const data_file = std::filesystem::path(hpath).replace_extension(".dat");
+    const std::filesystem::path data_file = std::filesystem::path(hpath).replace_extension(".dat");
     File::OFStream out_dat(data_file);
     out_dat.close();
     std::filesystem::resize_file(data_file, footprint(H));

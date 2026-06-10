@@ -133,7 +133,7 @@ template <typename T> inline void write(std::ostream &out, T val, bool is_BE) {
 // needed to get around changes in hard-coded enum types in datatype.h:
 DataType fetch_datatype(uint8_t c) {
   uint8_t d = c & 0x07U;
-  uint8_t const t = c & ~(0x07U);
+  const uint8_t t = c & ~(0x07U);
   if (d >= 0x05U)
     ++d;
   return DataType(d | t);
@@ -141,7 +141,7 @@ DataType fetch_datatype(uint8_t c) {
 
 uint8_t store_datatype(const DataType &dt) {
   uint8_t d = dt() & 0x07U;
-  uint8_t const t = dt() & ~(0x07U);
+  const uint8_t t = dt() & ~(0x07U);
   if (d >= 0x05U)
     --d;
   return (d | t);
@@ -258,7 +258,7 @@ std::unique_ptr<ImageIO::Base> MRI::create(Header &H) const {
 #ifdef MRTRIX_BYTE_ORDER_BIG_ENDIAN
   bool is_BE = true;
 #else
-  bool const is_BE = false;
+  const bool is_BE = false;
 #endif
 
   out.write("MRI#", 4);
@@ -287,7 +287,7 @@ std::unique_ptr<ImageIO::Base> MRI::create(Header &H) const {
   const auto comments = H.keyval().find("comments");
   if (comments != H.keyval().end()) {
     for (const auto &comment : split_lines(comments->second)) {
-      size_t const l = comment.size();
+      const size_t l = comment.size();
       if (l != 0U) {
         write_tag(out, mriformat_index_comment, l, is_BE);
         out.write(comment.c_str(), l);
@@ -316,7 +316,7 @@ std::unique_ptr<ImageIO::Base> MRI::create(Header &H) const {
   write_tag(out, mriformat_index_data, 1, is_BE);
   out.put(store_datatype(H.datatype()));
 
-  size_t const data_offset = static_cast<size_t>(out.tellp());
+  const size_t data_offset = static_cast<size_t>(out.tellp());
   out.close();
 
   std::unique_ptr<ImageIO::Base> io_handler(new ImageIO::Default(H));

@@ -60,14 +60,14 @@ public:
   FORCE_INLINE bool operator!() const { return !valid(); }
 
   //! get generic key/value text attributes
-  [[nodiscard]] FORCE_INLINE const KeyValues &keyval() const { return buffer->keyval(); }
+  const [[nodiscard]] FORCE_INLINE KeyValues &keyval() const { return buffer->keyval(); }
 
   [[nodiscard]] FORCE_INLINE std::string name() const { return buffer->name(); }
-  [[nodiscard]] FORCE_INLINE const std::filesystem::path &path() const {
+  const [[nodiscard]] FORCE_INLINE std::filesystem::path &path() const {
     static const std::filesystem::path empty;
     return valid() ? static_cast<const Header &>(*buffer).path() : empty;
   }
-  [[nodiscard]] FORCE_INLINE const transform_type &transform() const { return buffer->transform(); }
+  const [[nodiscard]] FORCE_INLINE transform_type &transform() const { return buffer->transform(); }
 
   [[nodiscard]] FORCE_INLINE size_t ndim() const { return buffer->ndim(); }
   [[nodiscard]] FORCE_INLINE ssize_t size(size_t axis) const { return buffer->size(axis); }
@@ -202,12 +202,12 @@ public:
   ~Buffer();
 
   [[nodiscard]] FORCE_INLINE ValueType get_value(size_t offset) const {
-    ssize_t const nseg = offset / io->segment_size();
+    const ssize_t nseg = offset / io->segment_size();
     return fetch_func(io->segment(nseg), offset - nseg * io->segment_size(), intensity_offset(), intensity_scale());
   }
 
   FORCE_INLINE void set_value(size_t offset, ValueType val) const {
-    ssize_t const nseg = offset / io->segment_size();
+    const ssize_t nseg = offset / io->segment_size();
     store_func(val, io->segment(nseg), offset - nseg * io->segment_size(), intensity_offset(), intensity_scale());
   }
 
@@ -259,7 +259,7 @@ template <typename ValueType> struct TmpImage : public ImageBase<TmpImage<ValueT
   size_t offset;
 
   [[nodiscard]] bool valid() const { return true; }
-  [[nodiscard]] const std::string name() const { return "direct IO buffer"; }
+  const [[nodiscard]] std::string name() const { return "direct IO buffer"; }
   [[nodiscard]] FORCE_INLINE size_t ndim() const { return b.ndim(); }
   [[nodiscard]] FORCE_INLINE ssize_t size(size_t axis) const { return b.size(axis); }
   [[nodiscard]] FORCE_INLINE ssize_t stride(size_t axis) const { return strides[axis]; }
@@ -318,7 +318,7 @@ Image<ValueType>::Buffer::Buffer(Header &H, bool read_write_if_existing, std::op
     // Wrap *this in a no-op-deleter shared_ptr purely to source-iterate.
     // Safe because no other shared_ptr<Buffer> exists yet (we are still in
     // construction and the unique_ptr in the factory has not been released).
-    std::shared_ptr<Buffer> const self(this, [](Buffer *) {});
+    const std::shared_ptr<Buffer> self(this, [](Buffer *) {});
     Image<ValueType> src(self);
     TmpImage<ValueType> dest{
         *this, staging.data.get(), std::vector<ssize_t>(ndim(), 0), staging.strides, staging.offset};
@@ -356,7 +356,7 @@ Image<ValueType> Header::get_image(std::optional<DirectIO> direct_io, bool read_
   auto raw = std::make_unique<typename Image<ValueType>::Buffer>(*this, read_write_if_existing, std::move(direct_io));
   // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
   const Stride::List image_strides = raw->ram.has_value() ? raw->ram->strides : Stride::List();
-  std::shared_ptr<typename Image<ValueType>::Buffer> const buffer(std::move(raw));
+  const std::shared_ptr<typename Image<ValueType>::Buffer> buffer(std::move(raw));
   return Image<ValueType>(buffer, image_strides);
 }
 
@@ -388,7 +388,7 @@ template <typename ValueType> Image<ValueType>::Buffer::~Buffer() {
     auto local_data = std::move(ram->data);
     // Construct a temporary shared_ptr with a no-op deleter so that Image can be
     // used as a write destination without triggering a second deletion of this.
-    std::shared_ptr<Buffer> const self(this, [](Buffer *) {});
+    const std::shared_ptr<Buffer> self(this, [](Buffer *) {});
     TmpImage<ValueType> src = {*this, local_data.get(), std::vector<ssize_t>(ndim(), 0), ram->strides, ram->offset};
     Image<ValueType> dest(self);
     threaded_copy_with_progress_message("writing back direct IO buffer for \"" + name() + "\"", src, dest);

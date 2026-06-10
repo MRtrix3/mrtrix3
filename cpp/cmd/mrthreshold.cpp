@@ -360,7 +360,7 @@ void execute(Image<value_type> &in,
     if (out.valid()) {
 
       for (auto l = Loop("Determining and applying per-volume thresholds", 3, in.ndim())(in); l; ++l) {
-        LogLevelLatch const latch(App::log_level - 1);
+        const LogLevelLatch latch(App::log_level - 1);
         const default_type threshold = calculate(in, mask, 3, abs, percentile, bottom, top, ignore_zero);
         assign_pos_of(in, 3).to(out);
         apply(in, mask, out, 3, static_cast<value_type>(threshold), op, mask_out);
@@ -368,7 +368,7 @@ void execute(Image<value_type> &in,
 
     } else {
 
-      LogLevelLatch const latch(App::log_level - 1);
+      const LogLevelLatch latch(App::log_level - 1);
       bool is_first_loop = true;
       for (auto l = Loop(3, in.ndim())(in); l; ++l) {
         if (is_first_loop)

@@ -288,7 +288,7 @@ public:
 
     /* output shape measures */
     if (cl_img.valid() || cp_img.valid() || cs_img.valid()) {
-      double const eigsum = eigval.sum();
+      const double eigsum = eigval.sum();
       if (eigsum != 0.0) {
         if (cl_img.valid()) {
           assign_pos_of(dt_img, 0, 3).to(cl_img);
@@ -349,7 +349,7 @@ public:
     /* input dkt */
     Eigen::Matrix<double, 15, 1> dkt;
     if (dkt_img.valid()) {
-      double const adc_sq = Math::pow2(DWI::tensor2ADC(dt));
+      const double adc_sq = Math::pow2(DWI::tensor2ADC(dt));
       assign_pos_of(dt_img, 0, 3).to(dkt_img);
       for (auto l = Loop(3)(dkt_img); l; ++l)
         dkt[dkt_img.index(3)] = dkt_img.value() * adc_sq;
@@ -363,7 +363,7 @@ public:
 
     /* output ak */
     if (ak_img.valid()) {
-      Eigen::Matrix<double, 1, 22> const ak_bmat =
+      const Eigen::Matrix<double, 1, 22> ak_bmat =
           DWI::grad2bmatrix<double>(es.eigenvectors().col(ith_eig[0]).transpose(), true);
       assign_pos_of(dt_img, 0, 3).to(ak_img);
       ak_img.value() = kurtosis(ak_bmat, dt, dkt);
@@ -371,8 +371,8 @@ public:
 
     /* output rk */
     if (rk_img.valid()) {
-      Eigen::Vector3d const dir1 = es.eigenvectors().col(ith_eig[0]);
-      Eigen::Vector3d const dir2 = es.eigenvectors().col(ith_eig[1]);
+      const Eigen::Vector3d dir1 = es.eigenvectors().col(ith_eig[0]);
+      const Eigen::Vector3d dir2 = es.eigenvectors().col(ith_eig[1]);
       const double delta = Math::pi / rk_ndirs;
       double a = 0;
       for (int i = 0; i < rk_ndirs; i++) {

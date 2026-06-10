@@ -56,7 +56,7 @@ public:
   operator GLuint() const { return (index_); }
 
   void compile(std::string_view source) {
-    std::string const code = "#version 330 core\n" + source;
+    const std::string code = "#version 330 core\n" + source;
     DEBUG("compiling OpenGL " + this->type() + " shader:\n" + code);
     if (index_ == 0U) {
       index_ = gl::CreateShader(TYPE);

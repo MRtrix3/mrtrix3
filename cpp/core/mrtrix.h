@@ -167,7 +167,7 @@ template <class T> inline T to(std::string_view string) {
 }
 
 template <> inline bool to<bool>(std::string_view string) {
-  std::string const value = lowercase(strip(string));
+  const std::string value = lowercase(strip(string));
   if (value == "true" || value == "yes")
     return true;
   if (value == "false" || value == "no")
@@ -314,7 +314,7 @@ std::vector<IntType> parse_ints(std::string_view spec, const IntType last = std:
       if (start == std::string::npos)
         break;
       end = spec.find_first_of(" \t,:", start);
-      std::string const token(strip(spec.substr(start, end - start)));
+      const std::string token(strip(spec.substr(start, end - start)));
       if (lowercase(token) == "end") {
         if (last == std::numeric_limits<IntType>::max())
           throw Exception("value of \"end\" is not known in number sequence \"" + spec + "\"");

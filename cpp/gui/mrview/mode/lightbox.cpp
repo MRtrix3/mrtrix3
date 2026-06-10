@@ -128,13 +128,13 @@ void LightBox::paint(Projection &) {
       setup_projection(plane(), projection);
 
       if (render_volumes()) {
-        int const vol_index = original_slice_index + volume_increment * (slice_idx - current_slice_index);
+        const int vol_index = original_slice_index + volume_increment * (slice_idx - current_slice_index);
         if (vol_index >= 0 && vol_index < image()->image.size(3))
           image()->image.index(3) = vol_index;
         else
           render_plane = false;
       } else {
-        float const focus_delta = slice_focus_increment * (slice_idx - current_slice_index);
+        const float focus_delta = slice_focus_increment * (slice_idx - current_slice_index);
         auto move = get_through_plane_translation(focus_delta, projection);
         set_focus(orig_focus + move);
       }
@@ -179,10 +179,10 @@ void LightBox::draw_grid() {
   if (n_cols < 1 && n_rows < 1)
     return;
 
-  size_t const num_points = ((n_rows - 1) + (n_cols - 1)) * 4;
+  const size_t num_points = ((n_rows - 1) + (n_cols - 1)) * 4;
 
-  GL::mat4 const MV = GL::identity();
-  GL::mat4 const P = GL::ortho(0, width(), 0, height(), -1.0, 1.0);
+  const GL::mat4 MV = GL::identity();
+  const GL::mat4 P = GL::ortho(0, width(), 0, height(), -1.0, 1.0);
   projection.set(MV, P);
 
   if (frames_dirty) {
@@ -198,13 +198,13 @@ void LightBox::draw_grid() {
     GLfloat data[num_points];
 
     // Grid line stride
-    float const x_inc = 2.F / n_cols;
-    float const y_inc = 2.F / n_rows;
+    const float x_inc = 2.F / n_cols;
+    const float y_inc = 2.F / n_rows;
 
     size_t pt_idx = 0;
     // Row grid lines
     for (ssize_t row = 1; row < n_rows; ++row, pt_idx += 4) {
-      float const y_pos = (y_inc * row) - 1.F;
+      const float y_pos = (y_inc * row) - 1.F;
       data[pt_idx] = -1.F;
       data[pt_idx + 1] = y_pos;
       data[pt_idx + 2] = 1.F;
@@ -213,7 +213,7 @@ void LightBox::draw_grid() {
 
     // Column grid lines
     for (ssize_t col = 1; col < n_cols; ++col, pt_idx += 4) {
-      float const x_pos = (x_inc * col) - 1.F;
+      const float x_pos = (x_inc * col) - 1.F;
       data[pt_idx] = x_pos;
       data[pt_idx + 1] = -1.F;
       data[pt_idx + 2] = x_pos;
@@ -227,11 +227,11 @@ void LightBox::draw_grid() {
     frame_VAO.bind();
 
   if (frame_program == 0U) {
-    GL::Shader::Vertex const vertex_shader("layout(location=0) in vec2 pos;\n"
+    const GL::Shader::Vertex vertex_shader("layout(location=0) in vec2 pos;\n"
                                            "void main () {\n"
                                            "  gl_Position = vec4 (pos, 0.0, 1.0);\n"
                                            "}\n");
-    GL::Shader::Fragment const fragment_shader("out vec3 color;\n"
+    const GL::Shader::Fragment fragment_shader("out vec3 color;\n"
                                                "void main () {\n"
                                                "  color = vec3 (0.1);\n"
                                                "}\n");
@@ -247,10 +247,10 @@ void LightBox::draw_grid() {
 }
 
 ModelViewProjection LightBox::get_projection_at(int row, int col) const {
-  GLint const x = projection.x_position();
-  GLint const y = projection.y_position();
-  GLint const dw = projection.width() / n_cols;
-  GLint const dh = projection.height() / n_rows;
+  const GLint x = projection.x_position();
+  const GLint y = projection.y_position();
+  const GLint dw = projection.width() / n_cols;
+  const GLint dh = projection.height() / n_rows;
 
   ModelViewProjection proj;
   proj.set_viewport(x + dw * col, y + projection.height() - (dh * (row + 1)), dw, dh);
@@ -262,23 +262,23 @@ ModelViewProjection LightBox::get_projection_at(int row, int col) const {
 void LightBox::set_focus_event() {
   const auto &mouse_pos = window().mouse_position();
 
-  GLint const dw = projection.width() / n_cols;
-  GLint const dh = projection.height() / n_rows;
-  ssize_t const col = (mouse_pos.x() - projection.x_position()) / dw;
-  ssize_t const row = n_rows - 1 - (mouse_pos.y() - projection.y_position()) / dh;
+  const GLint dw = projection.width() / n_cols;
+  const GLint dh = projection.height() / n_rows;
+  const ssize_t col = (mouse_pos.x() - projection.x_position()) / dw;
+  const ssize_t row = n_rows - 1 - (mouse_pos.y() - projection.y_position()) / dh;
 
-  ssize_t const new_slice_index = col + row * n_cols;
+  const ssize_t new_slice_index = col + row * n_cols;
 
-  ModelViewProjection const proj = get_projection_at(row, col);
+  const ModelViewProjection proj = get_projection_at(row, col);
 
   Eigen::Vector3f slice_focus = focus();
   if (render_volumes()) {
-    ssize_t const vol = image()->image.index(3) + volume_increment * (new_slice_index - current_slice_index);
+    const ssize_t vol = image()->image.index(3) + volume_increment * (new_slice_index - current_slice_index);
     if (vol < 0 || vol >= image()->image.size(3))
       return;
     window().set_image_volume(3, vol);
   } else {
-    float const focus_delta = slice_focus_increment * (new_slice_index - current_slice_index);
+    const float focus_delta = slice_focus_increment * (new_slice_index - current_slice_index);
     slice_focus += get_through_plane_translation(focus_delta, proj);
   }
   set_focus(proj.screen_to_model(mouse_pos, slice_focus));
@@ -288,37 +288,37 @@ void LightBox::set_focus_event() {
 }
 
 void LightBox::slice_move_event(float x) {
-  int const row = current_slice_index / n_cols;
-  int const col = current_slice_index - row * n_cols;
-  ModelViewProjection const proj = get_projection_at(row, col);
+  const int row = current_slice_index / n_cols;
+  const int col = current_slice_index - row * n_cols;
+  const ModelViewProjection proj = get_projection_at(row, col);
   Slice::slice_move_event(proj, x);
 }
 
 void LightBox::pan_event() {
-  int const row = current_slice_index / n_cols;
-  int const col = current_slice_index - row * n_cols;
-  ModelViewProjection const proj = get_projection_at(row, col);
+  const int row = current_slice_index / n_cols;
+  const int col = current_slice_index - row * n_cols;
+  const ModelViewProjection proj = get_projection_at(row, col);
   Slice::pan_event(proj);
 }
 
 void LightBox::panthrough_event() {
-  int const row = current_slice_index / n_cols;
-  int const col = current_slice_index - row * n_cols;
-  ModelViewProjection const proj = get_projection_at(row, col);
+  const int row = current_slice_index / n_cols;
+  const int col = current_slice_index - row * n_cols;
+  const ModelViewProjection proj = get_projection_at(row, col);
   Slice::panthrough_event(proj);
 }
 
 void LightBox::tilt_event() {
-  int const row = current_slice_index / n_cols;
-  int const col = current_slice_index - row * n_cols;
-  ModelViewProjection const proj = get_projection_at(row, col);
+  const int row = current_slice_index / n_cols;
+  const int col = current_slice_index - row * n_cols;
+  const ModelViewProjection proj = get_projection_at(row, col);
   Slice::tilt_event(proj);
 }
 
 void LightBox::rotate_event() {
-  int const row = current_slice_index / n_cols;
-  int const col = current_slice_index - row * n_cols;
-  ModelViewProjection const proj = get_projection_at(row, col);
+  const int row = current_slice_index / n_cols;
+  const int col = current_slice_index - row * n_cols;
+  const ModelViewProjection proj = get_projection_at(row, col);
   Slice::rotate_event(proj);
 }
 
@@ -336,7 +336,7 @@ void LightBox::image_changed_event() {
   if (image() != nullptr) {
     const auto &header = image()->header();
     if (prev_image_path.empty()) {
-      float const slice_inc = std::pow(header.spacing(0) * header.spacing(1) * header.spacing(2), 1.F / 3.F);
+      const float slice_inc = std::pow(header.spacing(0) * header.spacing(1) * header.spacing(2), 1.F / 3.F);
       slice_focus_inc_adjust_rate = slice_inc / 5.F;
 
       set_slice_increment(slice_inc);

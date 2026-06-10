@@ -53,7 +53,7 @@ public:
   FFT1D(FFT1D &&other) = delete;
   FFT1D &operator=(FFT1D &&other) = delete;
 
-  [[nodiscard]] const size_t size() const { return _data.size(); }
+  const [[nodiscard]] size_t size() const { return _data.size(); }
 
   const cdouble &operator[](size_t n) const { return _data[n]; }
   cdouble &operator[](size_t n) { return _data[n]; }

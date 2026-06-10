@@ -64,7 +64,7 @@ public:
   [[nodiscard]] default_type get_FOD() const { return FOD; }
   [[nodiscard]] default_type get_TD() const { return TD; }
   [[nodiscard]] default_type get_weight() const { return weight; }
-  [[nodiscard]] const Eigen::Vector3d &get_dir() const { return dir; }
+  const [[nodiscard]] Eigen::Vector3d &get_dir() const { return dir; }
 
   void scale_FOD(const default_type factor) { FOD *= factor; }
   void set_weight(const default_type w) { weight = w; }
@@ -175,7 +175,7 @@ template <class Fixel> void ModelBase<Fixel>::scale_FDs_by_GM() {
   VoxelAccessor v(accessor());
   FOD_sum = 0.0;
   for (auto l = Loop(v)(v, act_5tt); l; ++l) {
-    Tractography::ACT::Tissues const tissues(act_5tt);
+    const Tractography::ACT::Tissues tissues(act_5tt);
     const default_type multiplier = 1.0 - tissues.get_cgm() - (0.5 * tissues.get_sgm()); // Heuristic
     for (typename Fixel_map<Fixel>::Iterator i = begin(v); i; ++i) {
       i().scale_FOD(multiplier);

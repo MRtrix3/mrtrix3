@@ -224,7 +224,7 @@ void Segmented_FOD_receiver::commit() {
 
   size_t offset(0);
   for (const auto &vox_fixels : lobes) {
-    size_t const n_vox_fixels = vox_fixels.size();
+    const size_t n_vox_fixels = vox_fixels.size();
 
     assign_pos_of(vox_fixels.vox).to(*index_image);
 

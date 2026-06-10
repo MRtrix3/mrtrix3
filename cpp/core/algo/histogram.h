@@ -95,7 +95,7 @@ public:
   }
 
   template <typename value_type> [[nodiscard]] size_t bin(const value_type val) const {
-    auto const pos = static_cast<size_t>(std::floor((val - info.get_min()) / info.get_bin_width()));
+    const auto pos = static_cast<size_t>(std::floor((val - info.get_min()) / info.get_bin_width()));
     if (pos > static_cast<size_t>(list.size()))
       return size();
     return pos;
@@ -106,9 +106,9 @@ public:
     return list[index];
   }
   [[nodiscard]] size_t size() const { return list.size(); }
-  [[nodiscard]] const Calibrator &get_calibration() const { return info; }
+  const [[nodiscard]] Calibrator &get_calibration() const { return info; }
 
-  [[nodiscard]] const vector_type &pdf() const { return list; }
+  const [[nodiscard]] vector_type &pdf() const { return list; }
   [[nodiscard]] cdf_type cdf() const;
 
   [[nodiscard]] default_type first_min() const;

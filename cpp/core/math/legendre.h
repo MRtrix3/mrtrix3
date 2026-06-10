@@ -89,7 +89,7 @@ template <typename ValueType> inline ValueType Plm_sph(const int l, const int m,
 template <typename VectorType>
 inline void Plm_sph(VectorType &array, const int lmax, const int m, const typename VectorType::Scalar x) {
   using value_type = typename VectorType::Scalar;
-  value_type const x2 = pow2(x);
+  const value_type x2 = pow2(x);
   if (m && x2 >= 1.0) {
     for (int n = m; n <= lmax; ++n)
       array[n] = 0.0;

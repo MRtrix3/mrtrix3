@@ -108,10 +108,10 @@ void MeshMulti::load(const std::filesystem::path &path) {
         face_data.push_back(temp);
       }
       if (face_data.size() == 3) {
-        std::vector<uint32_t> const temp{face_data[0].vertex, face_data[1].vertex, face_data[2].vertex};
+        const std::vector<uint32_t> temp{face_data[0].vertex, face_data[1].vertex, face_data[2].vertex};
         triangles.emplace_back(temp);
       } else {
-        std::vector<uint32_t> const temp{
+        const std::vector<uint32_t> temp{
             face_data[0].vertex, face_data[1].vertex, face_data[2].vertex, face_data[3].vertex};
         quads.emplace_back(temp);
       }

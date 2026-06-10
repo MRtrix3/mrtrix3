@@ -175,7 +175,7 @@ std::string datatype2descr(const DataType data_type) {
 // CONF use a precision any greater than this value in bits (used to
 // CONF minimise file size). Must be equal to either 16, 32 or 64.
 size_t float_max_save_precision() {
-  static auto const result = to<size_t>(File::Config::get("NPYFloatMaxSavePrecision", "64"));
+  static const auto result = to<size_t>(File::Config::get("NPYFloatMaxSavePrecision", "64"));
   if (!(result == 16 || result == 32 || result == 64))
     throw Exception("Invalid value for config file entry \"NPYFloatMaxSavePrecision\""
                     " (must be 16, 32 or 64)");
@@ -304,7 +304,7 @@ ReadInfo read_header(const std::filesystem::path &path) {
     throw Exception("Incompatible major version (" + str(major_version) + ") detected in NumPy file \"" +
                     path.string() + "\"");
   }
-  std::unique_ptr<char[]> const header_cstr(new char[header_len + 1]);
+  const std::unique_ptr<char[]> header_cstr(new char[header_len + 1]);
   in.read(header_cstr.get(), header_len);
   header_cstr[header_len] = '\0';
   info.data_offset = in.tellg();

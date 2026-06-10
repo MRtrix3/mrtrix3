@@ -86,11 +86,11 @@ public:
     for (const auto &visitation : visitations) {
       assign_pos_of(visitation).to(fixel_indexer);
       fixel_indexer.index(3) = 0;
-      index_type const num_fibres = fixel_indexer.value();
+      const index_type num_fibres = fixel_indexer.value();
       if (num_fibres > 0) {
         fixel_indexer.index(3) = 1;
-        index_type const first_index = fixel_indexer.value();
-        index_type const last_index = first_index + num_fibres;
+        const index_type first_index = fixel_indexer.value();
+        const index_type last_index = first_index + num_fibres;
         index_type closest_fixel_index = 0;
         float largest_dp = 0.0F;
         for (index_type j = first_index; j < last_index; ++j) {

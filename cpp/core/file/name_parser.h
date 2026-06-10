@@ -54,7 +54,7 @@ public:
 
     [[nodiscard]] std::string string() const { return (str); }
 
-    [[nodiscard]] const std::vector<uint32_t> &sequence() const { return (seq); }
+    const [[nodiscard]] std::vector<uint32_t> &sequence() const { return (seq); }
 
     std::vector<uint32_t> &sequence() { return (seq); }
 
@@ -82,7 +82,7 @@ public:
 
   const Item &operator[](size_t i) const { return (array[i]); }
 
-  [[nodiscard]] const std::vector<uint32_t> &sequence(size_t index) const {
+  const [[nodiscard]] std::vector<uint32_t> &sequence(size_t index) const {
     return (array[seq_index[index]].sequence());
   }
 
@@ -146,7 +146,7 @@ public:
     size_t max_name_size;
   };
 
-  [[nodiscard]] const std::filesystem::path &name() const { return filename; }
+  const [[nodiscard]] std::filesystem::path &name() const { return filename; }
   [[nodiscard]] size_t ndim() const { return indices.size(); }
   [[nodiscard]] uint32_t index(size_t num) const { return indices[num]; }
 

@@ -198,7 +198,7 @@ protected:
     return ByteOrder::BE(d.i);
   }
 
-  static std::unordered_map<uint32_t, const char *> dict;
+  static const std::unordered_map<uint32_t, char *> dict;
   static void init_dict();
 
   [[nodiscard]] bool check_get(size_t idx, size_t size) const {

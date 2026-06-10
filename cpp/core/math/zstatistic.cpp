@@ -94,13 +94,13 @@ default_type G2z(const default_type G, const size_t rank, const default_type dof
 
 default_type Zstatistic::t2z(const default_type t, const size_t dof) const {
   {
-    std::shared_lock const lock(mutex);
+    const std::shared_lock lock(mutex);
     auto it = t2z_data.find(dof);
     if (it != t2z_data.end())
       return (it->second)(t);
   }
   {
-    std::unique_lock const lock(mutex);
+    const std::unique_lock lock(mutex);
     auto it = t2z_data.find(dof);
     if (it == t2z_data.end())
       it = t2z_data.emplace(dof, Lookup_t2z(dof)).first;
@@ -111,13 +111,13 @@ default_type Zstatistic::t2z(const default_type t, const size_t dof) const {
 default_type Zstatistic::F2z(const default_type F, const size_t rank, const size_t dof) const {
   const auto pair = std::make_pair(rank, dof);
   {
-    std::shared_lock const lock(mutex);
+    const std::shared_lock lock(mutex);
     auto it = F2z_data.find(pair);
     if (it != F2z_data.end())
       return (it->second)(F);
   }
   {
-    std::unique_lock const lock(mutex);
+    const std::unique_lock lock(mutex);
     // Need to check again for presence of lookup table
     //   now that we have the lock
     auto it = F2z_data.find(pair);

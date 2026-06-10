@@ -32,7 +32,7 @@ void VariableScaling::load(const Header &header, size_t) {
   assert(files.size() == scale_factors.size());
   assert(header.intensity_offset() == 0 && header.intensity_scale() == 1.0);
 
-  size_t const voxels_per_segment = segsize / files.size();
+  const size_t voxels_per_segment = segsize / files.size();
 
   DEBUG("loading variable-scaling DICOM image \"" + header.path().string() + "\"...");
   addresses.resize(1);

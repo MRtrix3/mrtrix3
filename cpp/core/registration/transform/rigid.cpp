@@ -29,9 +29,9 @@ using namespace MR::Math;
 namespace Registration::Transform {
 void project_linear2rotation(const Eigen::Matrix<default_type, 3, 3> &linear,
                              Eigen::Matrix<default_type, 3, 3> &rotation) {
-  Eigen::JacobiSVD<Eigen::Matrix<default_type, 3, 3>> const svd(linear, Eigen::ComputeFullU | Eigen::ComputeFullV);
+  const Eigen::JacobiSVD<Eigen::Matrix<default_type, 3, 3>> svd(linear, Eigen::ComputeFullU | Eigen::ComputeFullV);
 
-  default_type const x = (svd.matrixU() * svd.matrixV().adjoint()).determinant(); // so x has absolute value 1
+  const default_type x = (svd.matrixU() * svd.matrixV().adjoint()).determinant(); // so x has absolute value 1
   Eigen::Matrix<default_type, 3, 1> sv(svd.singularValues());
   sv.coeffRef(0) *= x;
   Eigen::Matrix<default_type, 3, 3> m(svd.matrixU());
@@ -180,7 +180,7 @@ bool RigidLinearNonSymmetricUpdate::operator()(Eigen::Matrix<default_type, Eigen
   // project affine 3x3 matrix to rigid matrix
   // adjust translation to account for scale of affine by matching projected control point
   // centroids of affine and projected rigid transformation
-  Eigen::Matrix<default_type, 3, 3> const L(Xnew.template block<3, 3>(0, 0));
+  const Eigen::Matrix<default_type, 3, 3> L(Xnew.template block<3, 3>(0, 0));
   Eigen::Matrix<default_type, 3, 3> R;
   project_linear2rotation(L, R);
   Xnew.template block<3, 3>(0, 0) = R;

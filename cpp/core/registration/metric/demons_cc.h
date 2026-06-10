@@ -47,7 +47,7 @@ public:
   }
 
   ~DemonsCC() {
-    std::lock_guard<std::mutex> const lock(*mutex);
+    const std::lock_guard<std::mutex> lock(*mutex);
     global_cost += thread_cost;
     global_voxel_count += thread_voxel_count;
   }
@@ -94,12 +94,12 @@ public:
       }
     }
 
-    default_type const sfm = A.value();
-    default_type const smm = B.value();
-    default_type const sff = C.value();
-    default_type const asq = sfm * sfm;
+    const default_type sfm = A.value();
+    const default_type smm = B.value();
+    const default_type sff = C.value();
+    const default_type asq = sfm * sfm;
 
-    default_type const denom = smm * sff;
+    const default_type denom = smm * sff;
     if (std::isnan(sfm) || std::isnan(denom) || MR::abs(denom) < denominator_threshold) {
       // if (std::abs (asq) > robustness_parameter)
       //   thread_voxel_count++; // TODO to count or not to count?
@@ -108,17 +108,17 @@ public:
       return;
     }
 
-    default_type const lcc = asq / denom;
+    const default_type lcc = asq / denom;
     thread_cost -= lcc;
     thread_voxel_count++;
 
     assign_pos_of(im1_meansubtracted, 0, 3).to(im1_gradient, im2_gradient);
 
-    default_type const i1 = im1_meansubtracted.value();
-    default_type const i2 = im2_meansubtracted.value();
+    const default_type i1 = im1_meansubtracted.value();
+    const default_type i2 = im2_meansubtracted.value();
 
     // Avants eq. 6 and 7
-    Eigen::Matrix<typename Im1ImageType::value_type, 3, 1> const grad =
+    const Eigen::Matrix<typename Im1ImageType::value_type, 3, 1> grad =
         2.0 * sfm / (sff * smm) *
         ((i2 - sfm / smm * i1) * im1_gradient.value() - (i1 - sfm / sff * i2) * im2_gradient.value());
     // TODO: add det(jacobian(Phi)))

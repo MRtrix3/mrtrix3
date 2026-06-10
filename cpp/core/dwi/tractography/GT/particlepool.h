@@ -42,7 +42,7 @@ public:
    * @brief Creates a new particle and returns a pointer to its address.
    */
   Particle *create(const Point_t &pos, const Point_t &dir) {
-    std::lock_guard<std::mutex> const lock(mutex);
+    const std::lock_guard<std::mutex> lock(mutex);
     if (avail.empty()) {
       pool.emplace_back(pos, dir);
       return &pool.back();
@@ -57,7 +57,7 @@ public:
    * @brief Destroys the particle at pointer p.
    */
   void destroy(Particle *p) {
-    std::lock_guard<std::mutex> const lock(mutex);
+    const std::lock_guard<std::mutex> lock(mutex);
     p->finalize();
     avail.push(p);
   }
@@ -66,7 +66,7 @@ public:
    * @brief Return number of Particles in the pool.
    */
   inline size_t size() const {
-    std::lock_guard<std::mutex> const lock(mutex);
+    const std::lock_guard<std::mutex> lock(mutex);
     return pool.size() - avail.size();
   }
 
@@ -74,7 +74,7 @@ public:
    * @brief Select random particle from the pool (uniformly).
    */
   Particle *random() {
-    std::lock_guard<std::mutex> const lock(mutex);
+    const std::lock_guard<std::mutex> lock(mutex);
     if (pool.size() > avail.size()) {
       std::uniform_int_distribution<size_t> dist(0, pool.size() - 1);
       for (int k = 0; k != 5; ++k) {
@@ -90,7 +90,7 @@ public:
    * @brief Clear pool.
    */
   void clear() {
-    std::lock_guard<std::mutex> const lock(mutex);
+    const std::lock_guard<std::mutex> lock(mutex);
     pool.clear();
     std::stack<Particle *, std::deque<Particle *>> e{};
     avail.swap(e);

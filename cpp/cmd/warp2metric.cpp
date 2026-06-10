@@ -95,7 +95,7 @@ void run() {
         Fixel::find_directions_header(template_fixel_directory).get_image<value_type>(DirectIO(1));
 
     // TODO Remove explicit cast if interface is changed to make output path a single argument
-    std::filesystem::path const output_fixel_directory(opt[0][1].as_text());
+    const std::filesystem::path output_fixel_directory(opt[0][1].as_text());
     if (template_fixel_directory != output_fixel_directory) {
       Fixel::copy_index_file(template_fixel_directory, output_fixel_directory);
       Fixel::copy_directions_file(template_fixel_directory, output_fixel_directory);
@@ -132,7 +132,7 @@ void run() {
       for (auto f = Fixel::Loop(fixel_template_index)(fixel_template_directions, fc_output_data); f; ++f) {
         Eigen::Vector3f fixel_direction = fixel_template_directions.row(1);
         fixel_direction.normalize();
-        Eigen::Vector3f const fixel_direction_transformed = jacobian_matrix * fixel_direction;
+        const Eigen::Vector3f fixel_direction_transformed = jacobian_matrix * fixel_direction;
         fc_output_data.value() = jacobian_matrix.determinant() / fixel_direction_transformed.norm();
       }
     }

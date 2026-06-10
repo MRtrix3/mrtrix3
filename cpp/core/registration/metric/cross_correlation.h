@@ -43,9 +43,9 @@ public:
     if (!params.processed_mask.value())
       return 0.0;
 
-    default_type const val1 = params.processed_image.value();
+    const default_type val1 = params.processed_image.value();
     ++params.processed_image.index(3);
-    default_type const val2 = params.processed_image.value();
+    const default_type val2 = params.processed_image.value();
     --params.processed_image.index(3);
 
     return (mean1 - val1) * (val2 - mean2); // negative cross correlation
@@ -72,8 +72,8 @@ public:
     mean2 = 0.0;
     size_t overlap(0);
 
-    Header const midway_header(parameters.midway_image);
-    MR::Transform const transform(midway_header);
+    const Header midway_header(parameters.midway_image);
+    const MR::Transform transform(midway_header);
 
     parameters.processed_mask = Header::scratch(midway_header).template get_image<bool>();
     // processed_image: 2 volumes: interpolated image1 value, interpolated image2 value if both masks' values are >= 0.5

@@ -177,8 +177,8 @@ Window::Window(bool is_response_coefs) : is_response(is_response_coefs) {
 
   lmax_group = new QActionGroup(this);
   for (int n = 0; n <= 8; n++) {
-    int const num = 2 * n;
-    QString const label = QString::number(num);
+    const int num = 2 * n;
+    const QString label = QString::number(num);
     auto *lmax_action = new QAction(label, this);
     lmax_action->setCheckable(true);
     lmax_action->setData(num);
@@ -190,7 +190,7 @@ Window::Window(bool is_response_coefs) : is_response(is_response_coefs) {
 
   lod_group = new QActionGroup(this);
   for (int n = 1; n < 8; n++) {
-    QString const label = QString::number(n);
+    const QString label = QString::number(n);
     auto *lod_action = new QAction(label, this);
     lod_action->setShortcut(label);
     lod_action->setCheckable(true);
@@ -203,8 +203,8 @@ Window::Window(bool is_response_coefs) : is_response(is_response_coefs) {
 
   screenshot_OS_group = new QActionGroup(this);
   for (int n = 0; n < 4; n++) {
-    int const num = n + 1;
-    QString const label = QString::number(num);
+    const int num = n + 1;
+    const QString label = QString::number(num);
     auto *screenshot_OS_action = new QAction(label, this);
     screenshot_OS_action->setCheckable(true);
     screenshot_OS_action->setData(num);
@@ -273,7 +273,7 @@ void Window::lod_slot() { render_frame->set_LOD(lod_group->checkedAction()->data
 
 void Window::lmax_inc_slot() {
   QList<QAction *> actions = lmax_group->actions();
-  int const index = actions.indexOf(lmax_group->checkedAction());
+  const int index = actions.indexOf(lmax_group->checkedAction());
   if (index < 8) {
     actions[index + 1]->setChecked(true);
     lmax_slot();
@@ -282,7 +282,7 @@ void Window::lmax_inc_slot() {
 
 void Window::lmax_dec_slot() {
   QList<QAction *> actions = lmax_group->actions();
-  int const index = actions.indexOf(lmax_group->checkedAction());
+  const int index = actions.indexOf(lmax_group->checkedAction());
   if (index > 0) {
     actions[index - 1]->setChecked(true);
     lmax_slot();

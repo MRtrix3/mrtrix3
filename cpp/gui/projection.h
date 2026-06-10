@@ -161,7 +161,7 @@ public:
   }
 
   void set_viewport(const QWidget &frame) const {
-    int const m = frame.window()->devicePixelRatio();
+    const int m = frame.window()->devicePixelRatio();
     gl::Viewport(m * viewport[0], m * viewport[1], m * viewport[2], m * viewport[3]);
   }
 
@@ -175,13 +175,13 @@ public:
   void render_text(int x, int y, std::string_view text) const { font.render(text, x, y); }
 
   void render_text_align(int x, int y, std::string_view text, int halign = 0, int valign = 0) const {
-    QString const s(qstr(text));
+    const QString s(qstr(text));
 #if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
     int w = font.metric.width(s);
 #else
-    int const w = font.metric.horizontalAdvance(s);
+    const int w = font.metric.horizontalAdvance(s);
 #endif
-    int const h = font.metric.height();
+    const int h = font.metric.height();
     if (halign == 0)
       x -= w / 2;
     else if (halign > 0)
@@ -194,7 +194,7 @@ public:
   }
 
   void render_text_inset(int x, int y, std::string_view text, int inset = -1) const {
-    QString const s(qstr(text));
+    const QString s(qstr(text));
     if (inset < 0)
       inset = font.metric.height() / 2;
     if (x < inset)
@@ -215,7 +215,7 @@ public:
   }
 
   void render_text(std::string_view text, int position, int line = 0) const {
-    QString const s(qstr(text));
+    const QString s(qstr(text));
     int x, y;
 
 #if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
@@ -246,12 +246,12 @@ public:
 
   void draw_orientation_labels() const;
 
-  [[nodiscard]] const GL::mat4 &modelview_projection() const { return MVP; }
-  [[nodiscard]] const GL::mat4 &modelview_projection_inverse() const { return iMVP; }
-  [[nodiscard]] const GL::mat4 &modelview() const { return MV; }
-  [[nodiscard]] const GL::mat4 &modelview_inverse() const { return iMV; }
-  [[nodiscard]] const GL::mat4 &projection() const { return P; }
-  [[nodiscard]] const GL::mat4 &projection_inverse() const { return iP; }
+  const [[nodiscard]] GL::mat4 &modelview_projection() const { return MVP; }
+  const [[nodiscard]] GL::mat4 &modelview_projection_inverse() const { return iMVP; }
+  const [[nodiscard]] GL::mat4 &modelview() const { return MV; }
+  const [[nodiscard]] GL::mat4 &modelview_inverse() const { return iMV; }
+  const [[nodiscard]] GL::mat4 &projection() const { return P; }
+  const [[nodiscard]] GL::mat4 &projection_inverse() const { return iP; }
 
   using ModelViewProjection::set;
 

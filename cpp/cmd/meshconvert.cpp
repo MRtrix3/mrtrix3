@@ -60,7 +60,7 @@ void run() {
   // Read in the mesh data
   MeshMulti meshes;
   try {
-    MR::Surface::Mesh const mesh(input_path);
+    const MR::Surface::Mesh mesh(input_path);
     meshes.push_back(mesh);
   } catch (Exception &e) {
     try {

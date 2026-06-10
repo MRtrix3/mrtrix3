@@ -116,7 +116,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
           *(it++) = list[i + dim[0] * (j + dim[1] * k)];
   }
 
-  default_type const slice_separation = Frame::get_slice_separation(frames, dim[1]);
+  const default_type slice_separation = Frame::get_slice_separation(frames, dim[1]);
 
   if (!series[0]->study->name.empty())
     add_line(H.keyval()["comments"],
@@ -276,7 +276,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
     M(2, 3) = +frame.position_vector[2];
 
     H.transform() = M;
-    std::string const dw_scheme = Frame::get_DW_scheme(frames, dim[1], M);
+    const std::string dw_scheme = Frame::get_DW_scheme(frames, dim[1], M);
     if (!dw_scheme.empty())
       H.keyval()["dw_scheme"] = dw_scheme;
   }
@@ -373,7 +373,7 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
     if (H.size(2) != 1)
       throw Exception("DICOM mosaic contains multiple slices in image \"" + H.name() + "\"");
 
-    size_t const mosaic_size = std::ceil(std::sqrt(image.images_in_mosaic));
+    const size_t mosaic_size = std::ceil(std::sqrt(image.images_in_mosaic));
     H.size(0) = std::floor(frame.dim[0] / mosaic_size);
     H.size(1) = std::floor(frame.dim[1] / mosaic_size);
     H.size(2) = image.images_in_mosaic;
@@ -397,8 +397,8 @@ std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper(MR::Header &H, std::vector<st
       INFO("note: acquisition matrix [ " + str(frame.acq_dim[0]) + " " + str(frame.acq_dim[1]) +
            " ] differs from reconstructed matrix [ " + str(H.size(0)) + " " + str(H.size(1)) + " ]");
 
-    float const xinc = H.spacing(0) * (frame.dim[0] - H.size(0)) / 2.0;
-    float const yinc = H.spacing(1) * (frame.dim[1] - H.size(1)) / 2.0;
+    const float xinc = H.spacing(0) * (frame.dim[0] - H.size(0)) / 2.0;
+    const float yinc = H.spacing(1) * (frame.dim[1] - H.size(1)) / 2.0;
     for (size_t i = 0; i < 3; i++)
       H.transform()(i, 3) += xinc * H.transform()(i, 0) + yinc * H.transform()(i, 1);
 

@@ -70,8 +70,8 @@ public:
         g2(func.size()) {}
 
   [[nodiscard]] value_type value() const throw() { return f; }
-  [[nodiscard]] const Eigen::Matrix<value_type, Eigen::Dynamic, 1> &state() const throw() { return x; }
-  [[nodiscard]] const Eigen::Matrix<value_type, Eigen::Dynamic, 1> &gradient() const throw() { return g; }
+  const [[nodiscard]] Eigen::Matrix<value_type, Eigen::Dynamic, 1> &state() const throw() { return x; }
+  const [[nodiscard]] Eigen::Matrix<value_type, Eigen::Dynamic, 1> &gradient() const throw() { return g; }
   [[nodiscard]] value_type step_size() const { return dt; }
   [[nodiscard]] value_type gradient_norm() const throw() { return normg; }
   [[nodiscard]] int function_evaluations() const throw() { return nfeval; }
@@ -98,7 +98,7 @@ public:
     DEBUG("Gradient descent iteration: init; cost: " + str(f));
 
     while (niter < max_iterations) {
-      bool const retval = iterate(log_os);
+      const bool retval = iterate(log_os);
       DEBUG("Gradient descent iteration: " + str(niter) + "; cost: " + str(f));
       if (verbose) {
         CONSOLE("iteration " + str(niter) + ": f = " + str(f) + ", |g| = " + str(normg) + ":");
@@ -168,11 +168,11 @@ public:
       if (!update_func(x2, x, g, dt))
         return false;
 
-      value_type const f2 = evaluate_func(x2, g2, verbose);
+      const value_type f2 = evaluate_func(x2, g2, verbose);
 
       // quadratic minimum:
-      value_type const step_length = step_unscaled * dt;
-      value_type const denom = 2.0 * (normg * step_length + f2 - f);
+      const value_type step_length = step_unscaled * dt;
+      const value_type denom = 2.0 * (normg * step_length + f2 - f);
       value_type quadratic_minimum = denom > 0.0 ? normg * step_length / denom : step_up;
 
       if (quadratic_minimum < step_down)
@@ -225,7 +225,7 @@ protected:
                            Eigen::Matrix<value_type, Eigen::Dynamic, 1> &newg,
                            bool verbose = false) {
     nfeval++;
-    value_type const cost = func(newx, newg);
+    const value_type cost = func(newx, newg);
     if (!std::isfinite(cost))
       throw Exception("cost function is NaN or Inf!");
     if (verbose)

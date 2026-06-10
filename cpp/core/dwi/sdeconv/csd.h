@@ -162,7 +162,7 @@ public:
 
       // high-res sampling to apply constraint:
       HR_trans = init_transform(HR_dirs, lmax);
-      default_type const constraint_multiplier =
+      const default_type constraint_multiplier =
           neg_lambda * 50.0 * response[0] / static_cast<default_type>(HR_trans.rows());
       HR_trans.array() *= constraint_multiplier;
 
@@ -247,7 +247,7 @@ public:
     return false;
   }
 
-  [[nodiscard]] const Eigen::VectorXd &FOD() const { return F; }
+  const [[nodiscard]] Eigen::VectorXd &FOD() const { return F; }
 
   const Shared &shared;
 

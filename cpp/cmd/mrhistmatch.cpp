@@ -164,16 +164,16 @@ void match_nonlinear(
   Algo::Histogram::calibrate(calib_input, input, mask_input);
   INFO("Input histogram ranges from " + str(calib_input.get_min()) + " to " + str(calib_input.get_max()) + "; using " +
        str(calib_input.get_num_bins()) + " bins");
-  Algo::Histogram::Data const hist_input = Algo::Histogram::generate(calib_input, input, mask_input);
+  const Algo::Histogram::Data hist_input = Algo::Histogram::generate(calib_input, input, mask_input);
 
   Algo::Histogram::Calibrator calib_target(nbins, true);
   Algo::Histogram::calibrate(calib_target, target, mask_target);
   INFO("Target histogram ranges from " + str(calib_target.get_min()) + " to " + str(calib_target.get_max()) +
        "; using " + str(calib_target.get_num_bins()) + " bins");
-  Algo::Histogram::Data const hist_target = Algo::Histogram::generate(calib_target, target, mask_target);
+  const Algo::Histogram::Data hist_target = Algo::Histogram::generate(calib_target, target, mask_target);
 
   // Non-linear intensity mapping determined within this class
-  Algo::Histogram::Matcher const matcher(hist_input, hist_target);
+  const Algo::Histogram::Matcher matcher(hist_input, hist_target);
 
   Header H(input);
   H.datatype() = DataType::Float32;

@@ -136,7 +136,7 @@ void run() {
         MR::Surface::Algo::image2mesh_blocky(scratch, meshes[in]);
       else
         MR::Surface::Algo::image2mesh_mc(scratch, meshes[in], 0.5);
-      std::lock_guard<std::mutex> const lock(mutex);
+      const std::lock_guard<std::mutex> lock(mutex);
       ++progress;
       return true;
     };

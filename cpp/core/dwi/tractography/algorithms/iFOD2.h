@@ -210,7 +210,7 @@ public:
     float max_val = 0.0;
     for (const auto &i : calibrate_list) {
       get_path(calib_positions, calib_tangents, rotate_direction(dir, i));
-      float const val = path_prob(calib_positions, calib_tangents);
+      const float val = path_prob(calib_positions, calib_tangents);
       if (std::isnan(val))
         return term_t::EXIT_IMAGE;
       if (val > max_val)
@@ -225,7 +225,7 @@ public:
     num_sample_runs++;
 
     for (size_t n = 0; n < S.max_trials; n++) {
-      float const val = rand_path_prob();
+      const float val = rand_path_prob();
 
       if (val > max_val) {
         DEBUG("max_val exceeded!!! (val = " + str(val) + ", max_val = " + str(max_val) + ")");
@@ -373,18 +373,18 @@ protected:
                 const Eigen::Vector3f &end_dir) const {
     float cos_theta = end_dir.dot(dir);
     cos_theta = std::min(cos_theta, 1.0F);
-    float const theta = std::acos(cos_theta);
+    const float theta = std::acos(cos_theta);
 
     if (theta != 0.0F) {
 
       Eigen::Vector3f curv = end_dir - cos_theta * dir;
       curv.normalize();
-      float const R = S.step_size / theta;
+      const float R = S.step_size / theta;
 
       for (size_t i = 0; i < S.num_samples - 1; ++i) {
-        float const a = (theta * (i + 1)) / S.num_samples;
-        float const cos_a = std::cos(a);
-        float const sin_a = std::sin(a);
+        const float a = (theta * (i + 1)) / S.num_samples;
+        const float cos_a = std::cos(a);
+        const float sin_a = std::sin(a);
         positions[i] = pos + R * (sin_a * dir + (1.0F - cos_a) * curv);
         tangents[i] = cos_a * dir + sin_a * curv;
       }
@@ -394,7 +394,7 @@ protected:
     } else { // straight on:
 
       for (size_t i = 0; i < S.num_samples; ++i) {
-        float const f = (i + 1) * (S.step_size / S.num_samples);
+        const float f = (i + 1) * (S.step_size / S.num_samples);
         positions[i] = pos + f * dir;
         tangents[i] = dir;
       }

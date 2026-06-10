@@ -69,7 +69,7 @@ public:
 
   virtual void request_render_colourbar(DisplayableVisitor &) {}
 
-  [[nodiscard]] const std::filesystem::path &get_filepath() const { return filepath; }
+  const [[nodiscard]] std::filesystem::path &get_filepath() const { return filepath; }
 
   [[nodiscard]] float scaling_min() const { return display_midpoint - 0.5F * display_range; }
 
@@ -194,9 +194,9 @@ public:
 
       update(object);
 
-      GL::Shader::Vertex const vertex_shader(vertex_shader_source(object));
-      GL::Shader::Geometry const geometry_shader(geometry_shader_source(object));
-      GL::Shader::Fragment const fragment_shader(fragment_shader_source(object));
+      const GL::Shader::Vertex vertex_shader(vertex_shader_source(object));
+      const GL::Shader::Geometry geometry_shader(geometry_shader_source(object));
+      const GL::Shader::Fragment fragment_shader(fragment_shader_source(object));
 
       attach(vertex_shader);
       if (static_cast<GLuint>(geometry_shader) != 0U)

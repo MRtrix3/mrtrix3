@@ -48,7 +48,7 @@ public:
 
   void zero() { v = {0.0F, 0.0F, 0.0F, 0.0F}; }
 
-  operator const GLfloat *() const { return v.data(); }
+  const operator GLfloat *() const { return v.data(); }
   operator GLfloat *() { return v.data(); }
 
   friend std::ostream &operator<<(std::ostream &stream, const vec4 &v) {
@@ -90,7 +90,7 @@ public:
 
   void zero() { std::fill(std::begin(m), std::end(m), 0.0F); }
 
-  operator const GLfloat *() const { return m.data(); }
+  const operator GLfloat *() const { return m.data(); }
   operator GLfloat *() { return m.data(); }
 
   GLfloat &operator()(size_t i, size_t j) { return m[i + 4 * j]; }

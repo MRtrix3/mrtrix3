@@ -44,7 +44,7 @@ bool Client::TryConnect() {
   socket->abort();
   socket->connectToServer(connectToServerName);
   socket->waitForConnected();
-  QLocalSocket::LocalSocketState const state = socket->state();
+  const QLocalSocket::LocalSocketState state = socket->state();
 
   return state == QLocalSocket::ConnectedState;
 }

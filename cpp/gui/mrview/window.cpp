@@ -67,7 +67,7 @@ template <> inline QPoint position(QWheelEvent *event) {
 }
 
 Qt::KeyboardModifiers get_modifier(std::string_view key, Qt::KeyboardModifiers default_key) {
-  std::string const value = lowercase(MR::File::Config::get(key));
+  const std::string value = lowercase(MR::File::Config::get(key));
   if (value.empty())
     return default_key;
 
@@ -141,7 +141,7 @@ QSize Window::GLArea::sizeHint() const {
   // CONF option: MRViewInitWindowSize
   // CONF Initial window size of MRView in pixels.
   // CONF default: 512,512
-  std::string const init_size_string = lowercase(MR::File::Config::get("MRViewInitWindowSize"));
+  const std::string init_size_string = lowercase(MR::File::Config::get("MRViewInitWindowSize"));
   std::vector<uint32_t> init_window_size;
   if (!init_size_string.empty())
     init_window_size = parse_ints<uint32_t>(init_size_string);
@@ -156,7 +156,7 @@ void Window::GLArea::dropEvent(QDropEvent *event) {
   const QMimeData *mimeData = event->mimeData();
   if (mimeData->hasUrls()) {
     std::vector<std::unique_ptr<MR::Header>> list;
-    QList<QUrl> const urlList = mimeData->urls();
+    const QList<QUrl> urlList = mimeData->urls();
     for (int i = 0; i < urlList.size() && i < 32; ++i) {
       try {
         list.push_back(std::make_unique<MR::Header>(MR::Header::open(QtHelpers::url_to_fspath(urlList.at(i)))));
@@ -233,7 +233,7 @@ Window::Window()
   setWindowTitle(tr("MRView"));
   setWindowIcon(QPixmap(":/mrtrix.png"));
   {
-    int const iconsize = MR::File::Config::get_int("IconSize", 30);
+    const int iconsize = MR::File::Config::get_int("IconSize", 30);
     setIconSize(QSize(iconsize, iconsize));
   }
   setCentralWidget(glarea);
@@ -258,7 +258,7 @@ Window::Window()
   // CONF top, bottom, left, right.
   Qt::ToolBarArea toolbar_position = Qt::TopToolBarArea;
   {
-    std::string const toolbar_pos_spec = lowercase(MR::File::Config::get("InitialToolBarPosition"));
+    const std::string toolbar_pos_spec = lowercase(MR::File::Config::get("InitialToolBarPosition"));
     if (!toolbar_pos_spec.empty()) {
       if (toolbar_pos_spec == "bottom")
         toolbar_position = Qt::BottomToolBarArea;
@@ -275,7 +275,7 @@ Window::Window()
   // CONF default: 2
   // CONF The style of the main toolbar buttons in MRView. See Qt's
   // CONF documentation for Qt::ToolButtonStyle.
-  auto const button_style = static_cast<Qt::ToolButtonStyle>(MR::File::Config::get_int("ToolbarStyle", 2));
+  const auto button_style = static_cast<Qt::ToolButtonStyle>(MR::File::Config::get_int("ToolbarStyle", 2));
 
   toolbar = new QToolBar("Main toolbar", this);
   addToolBar(toolbar_position, toolbar);
@@ -899,7 +899,7 @@ void Window::select_mode_slot(QAction *action) {
 }
 
 void Window::select_mouse_mode_slot(QAction *action) {
-  bool const rotate_button_checked = mode_action_group->actions().indexOf(action) == 2;
+  const bool rotate_button_checked = mode_action_group->actions().indexOf(action) == 2;
   if (rotate_button_checked)
     set_snap_to_image(false);
   snap_to_image_action->setEnabled(!rotate_button_checked);
@@ -963,7 +963,7 @@ void Window::selected_colourmap(size_t colourmap, const ColourMapButton &) {
 void Window::selected_custom_colour(const QColor &colour, const ColourMapButton &) {
   Image *imagep = image();
   if (imagep != nullptr) {
-    std::array<GLubyte, 3> const c_colour{{GLubyte(colour.red()), GLubyte(colour.green()), GLubyte(colour.blue())}};
+    const std::array<GLubyte, 3> c_colour{{GLubyte(colour.red()), GLubyte(colour.green()), GLubyte(colour.blue())}};
     imagep->set_colour(c_colour);
     glarea->update();
   }
@@ -1048,7 +1048,7 @@ void Window::reset_view_slot() {
 }
 
 void Window::background_colour_slot() {
-  QColor const colour =
+  const QColor colour =
       QColorDialog::getColor(Qt::black, this, "Select background colour", QColorDialog::DontUseNativeDialog);
 
   if (colour.isValid()) {
@@ -1079,7 +1079,7 @@ void Window::set_image_visibility(bool flag) {
 }
 
 void Window::hide_image_slot() {
-  bool const visible = !image_hide_action->isChecked();
+  const bool visible = !image_hide_action->isChecked();
   mode->set_visible(visible);
   emit imageVisibilityChanged(visible);
 }
@@ -1098,62 +1098,62 @@ void Window::slice_previous_slot() {
 
 void Window::image_next_slot() {
   QAction *action = image_group->checkedAction();
-  int const N = image_group->actions().size();
-  int const n = image_group->actions().indexOf(action);
+  const int N = image_group->actions().size();
+  const int n = image_group->actions().indexOf(action);
   image_select_slot(image_group->actions()[(n + 1) % N]);
 }
 
 void Window::image_previous_slot() {
   QAction *action = image_group->checkedAction();
-  int const N = image_group->actions().size();
-  int const n = image_group->actions().indexOf(action);
+  const int N = image_group->actions().size();
+  const int n = image_group->actions().indexOf(action);
   image_select_slot(image_group->actions()[(n + N - 1) % N]);
 }
 
 void Window::image_next_volume_slot() {
-  ssize_t const vol = image()->image.index(3) + 1;
+  const ssize_t vol = image()->image.index(3) + 1;
   set_image_volume(3, vol);
 }
 
 void Window::image_previous_volume_slot() {
-  ssize_t const vol = image()->image.index(3) - 1;
+  const ssize_t vol = image()->image.index(3) - 1;
   set_image_volume(3, vol);
 }
 
 void Window::image_goto_volume_slot() {
-  size_t const maxvol = image()->image.size(3) - 1;
+  const size_t maxvol = image()->image.size(3) - 1;
   auto label = std::string("volume (0...") + str(maxvol) + std::string(")");
   bool ok;
-  ssize_t const vol =
+  const ssize_t vol =
       QInputDialog::getInt(this, tr("Go to..."), qstr(label), image()->image.index(3), 0, maxvol, 1, &ok);
   if (ok)
     set_image_volume(3, vol);
 }
 
 void Window::image_goto_volume_group_slot() {
-  size_t const maxvolgroup = image()->image.size(4) - 1;
+  const size_t maxvolgroup = image()->image.size(4) - 1;
   auto label = std::string("volume group (0...") + str(maxvolgroup) + std::string(")");
   bool ok;
-  ssize_t const grp =
+  const ssize_t grp =
       QInputDialog::getInt(this, tr("Go to..."), qstr(label), image()->image.index(4), 0, maxvolgroup, 1, &ok);
   if (ok)
     set_image_volume(4, grp);
 }
 
 void Window::image_next_volume_group_slot() {
-  ssize_t const vol = image()->image.index(4) + 1;
+  const ssize_t vol = image()->image.index(4) + 1;
   set_image_volume(4, vol);
 }
 
 void Window::image_previous_volume_group_slot() {
-  ssize_t const vol = image()->image.index(4) - 1;
+  const ssize_t vol = image()->image.index(4) - 1;
   set_image_volume(4, vol);
 }
 
 void Window::image_select_slot(QAction *action) {
   action->setChecked(true);
   image_interpolate_action->setChecked(image()->interpolate());
-  size_t const cmap_index = image()->colourmap;
+  const size_t cmap_index = image()->colourmap;
   colourmap_button->colourmap_actions[cmap_index]->setChecked(true);
   invert_scale_action->setChecked(image()->scale_inverted());
   mode->image_changed_event();
@@ -1199,7 +1199,7 @@ void Window::toggle_annotations_slot() {
 }
 
 void Window::set_image_menu() {
-  int const N = image_group->actions().size();
+  const int N = image_group->actions().size();
   next_image_action->setEnabled(N > 1);
   prev_image_action->setEnabled(N > 1);
   reset_windowing_action->setEnabled(N > 0);
@@ -1335,7 +1335,7 @@ void Window::OpenGL_slot() {
 }
 
 void Window::about_slot() {
-  std::string const message = std::string("<h1>MRView</h1>The MRtrix viewer, version ") + MR::App::mrtrix_version +
+  const std::string message = std::string("<h1>MRView</h1>The MRtrix viewer, version ") + MR::App::mrtrix_version +
                               "<br>"
                               "<em>" +
                               str(8 * sizeof(size_t)) +
@@ -1467,7 +1467,7 @@ void Window::mousePressEventGL(QMouseEvent *event) {
     }
   }
 
-  int const group = get_mouse_mode();
+  const int group = get_mouse_mode();
 
   if (buttons_ == Qt::MiddleButton)
     mouse_action = Pan;
@@ -1586,8 +1586,8 @@ void Window::wheelEventGL(QWheelEvent *event) {
     if (buttons_ == Qt::RightButton && modifiers_ == Qt::NoModifier) {
       if (image_group->actions().size() > 1) {
         QAction *action = image_group->checkedAction();
-        int const N = image_group->actions().size();
-        int const n = image_group->actions().indexOf(action);
+        const int N = image_group->actions().size();
+        const int n = image_group->actions().indexOf(action);
         image_select_slot(image_group->actions()[(n + N + int(std::round(delta.y() / 120.0))) % N]);
       }
     }
@@ -1604,7 +1604,7 @@ bool Window::gestureEventGL(QGestureEvent *event) {
 
   if (QGesture *pinch = event->gesture(Qt::PinchGesture)) {
     auto *e = static_cast<QPinchGesture *>(pinch);
-    QPinchGesture::ChangeFlags const changeFlags = e->changeFlags();
+    const QPinchGesture::ChangeFlags changeFlags = e->changeFlags();
     if ((changeFlags & QPinchGesture::RotationAngleChanged) != 0U) {
       // TODO
     }
@@ -1661,7 +1661,7 @@ void Window::process_commandline_option() {
 
     // process general options:
     if (opt.opt->is("mode")) {
-      int const n = int(opt[0]) - 1;
+      const int n = int(opt[0]) - 1;
       if (n < 0 || n >= mode_group->actions().size())
         throw Exception("invalid mode index \"" + str(n) + "\" in batch command");
       select_mode_slot(mode_group->actions()[n]);
@@ -1674,8 +1674,8 @@ void Window::process_commandline_option() {
         throw Exception("invalid argument \"" + std::string(opt.args[0]) + "\" to -size batch command");
       if (glsize[0] < 1 || glsize[1] < 1)
         throw Exception("values provided to -size option must be positive");
-      QSize const oldsize = glarea->size();
-      QSize const winsize = size();
+      const QSize oldsize = glarea->size();
+      const QSize winsize = size();
       resize(winsize.width() - oldsize.width() + glsize[0], winsize.height() - oldsize.height() + glsize[1]);
       return;
     }
@@ -1686,7 +1686,7 @@ void Window::process_commandline_option() {
     }
 
     if (opt.opt->is("fov")) {
-      float const fov = opt[0];
+      const float fov = opt[0];
       set_FOV(fov);
       glarea->update();
       return;
@@ -1761,28 +1761,28 @@ void Window::process_commandline_option() {
     }
 
     if (opt.opt->is("fov")) {
-      float const fov = opt[0];
+      const float fov = opt[0];
       set_FOV(fov);
       glarea->update();
       return;
     }
 
     if (opt.opt->is("plane")) {
-      int const n = opt[0];
+      const int n = opt[0];
       set_plane(n);
       glarea->update();
       return;
     }
 
     if (opt.opt->is("lock")) {
-      bool const n = opt[0];
+      const bool n = opt[0];
       snap_to_image_action->setChecked(n);
       snap_to_image_slot();
       return;
     }
 
     if (opt.opt->is("select_image")) {
-      int const n = int(opt[0]) - 1;
+      const int n = int(opt[0]) - 1;
       if (n < 0 || n >= image_group->actions().size())
         throw Exception("invalid image index requested for option -select_image");
       image_select_slot(image_group->actions()[n]);
@@ -1806,7 +1806,7 @@ void Window::process_commandline_option() {
     }
 
     if (opt.opt->is("colourmap")) {
-      int const n = int(opt[0]) - 1;
+      const int n = int(opt[0]) - 1;
       if (n < 0 || n >= static_cast<int>(colourmap_button->colourmap_actions.size()))
         throw Exception("invalid image colourmap index \"" + str(n + 1) + "\" requested in batch command");
       colourmap_button->set_colourmap_index(n);

@@ -97,8 +97,8 @@ void run() {
   Connectome::debug_validate_label_image(in);
 
   // Load the lookup tables
-  LUT const lut_in{input_lut_path};
-  LUT const lut_out{output_lut_path};
+  const LUT lut_in{input_lut_path};
+  const LUT lut_out{output_lut_path};
 
   // Build the mapping from input to output indices
   const auto mapping = get_lut_mapping(lut_in, lut_out);
@@ -161,7 +161,7 @@ void run() {
            "interpolation;");
       WARN("recommend using the parcellation image as the basis for this mask so that interpolation is not required");
 
-      Transform const transform(out);
+      const Transform transform(out);
       Interp::Nearest<decltype(in_spine)> nearest(in_spine);
       for (auto l = Loop(out)(out); l; ++l) {
         Eigen::Vector3d p(out.index(0), out.index(1), out.index(2));

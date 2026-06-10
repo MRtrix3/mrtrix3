@@ -520,7 +520,7 @@ public:
         image_list.insert(std::make_pair(arg, LoadedImage(image, image_is_complex)));
       } catch (Exception &e_image) {
         try {
-          std::string const a = lowercase(arg);
+          const std::string a = lowercase(arg);
           if (a == "pi") {
             value = Math::pi;
           } else if (a == "e") {
@@ -642,14 +642,14 @@ inline Chunk &StackEntry::evaluate(ThreadLocalStorage &storage) const {
 
 inline void replace(std::string &orig, size_t n, std::string_view value) {
   if (orig[0] == '(' && orig[orig.size() - 1] == ')') {
-    size_t const pos = orig.find("(%" + str(n + 1) + ")");
+    const size_t pos = orig.find("(%" + str(n + 1) + ")");
     if (pos != orig.npos) {
       orig.replace(pos, 4, value);
       return;
     }
   }
 
-  size_t const pos = orig.find("%" + str(n + 1));
+  const size_t pos = orig.find("%" + str(n + 1));
   if (pos != orig.npos)
     orig.replace(pos, 2, value);
 }
@@ -753,7 +753,7 @@ void unary_operation(std::string_view operation_name, std::vector<StackEntry> &s
   StackEntry &a(stack[stack.size() - 1]);
   a.load();
   if (a.evaluator || a.image || a.rng) {
-    StackEntry const entry(new UnaryEvaluator<Operation>(operation_name, operation, a));
+    const StackEntry entry(new UnaryEvaluator<Operation>(operation_name, operation, a));
     stack.back() = entry;
   } else {
     try {
@@ -773,7 +773,7 @@ void binary_operation(std::string_view operation_name, std::vector<StackEntry> &
   a.load();
   b.load();
   if (a.evaluator || a.image || a.rng || b.evaluator || b.image || b.rng) {
-    StackEntry const entry(new BinaryEvaluator<Operation>(operation_name, operation, a, b));
+    const StackEntry entry(new BinaryEvaluator<Operation>(operation_name, operation, a, b));
     stack.pop_back();
     stack.back() = entry;
   } else {
@@ -794,7 +794,7 @@ void ternary_operation(std::string_view operation_name, std::vector<StackEntry> 
   b.load();
   c.load();
   if (a.evaluator || a.image || a.rng || b.evaluator || b.image || b.rng || c.evaluator || c.image || c.rng) {
-    StackEntry const entry(new TernaryEvaluator<Operation>(operation_name, operation, a, b, c));
+    const StackEntry entry(new TernaryEvaluator<Operation>(operation_name, operation, a, b, c));
     stack.pop_back();
     stack.pop_back();
     stack.back() = entry;
@@ -880,7 +880,7 @@ public:
     storage.reset(iter);
     assign_pos_of(iter).to(image);
 
-    Chunk const &chunk = top_entry.evaluate(storage);
+    const Chunk &chunk = top_entry.evaluate(storage);
 
     auto value = chunk.cbegin();
     for (auto l = loop(image); l; ++l)

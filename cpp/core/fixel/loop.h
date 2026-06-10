@@ -61,9 +61,9 @@ struct LoopFixelsInVoxel {
 
 template <class IndexType> FORCE_INLINE LoopFixelsInVoxel Loop(IndexType &index) {
   index.index(3) = 0;
-  index_type const num_fixels = index.value();
+  const index_type num_fixels = index.value();
   index.index(3) = 1;
-  index_type const offset = index.value();
+  const index_type offset = index.value();
   return {num_fixels, offset};
 }
 } // namespace MR::Fixel

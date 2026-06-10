@@ -59,7 +59,7 @@ public:
   [[nodiscard]] std::filesystem::path path() const { return Entry::path; }
   [[nodiscard]] int64_t size() const { return msize; }
   std::byte *address() { return first; }
-  [[nodiscard]] const std::byte *address() const { return first; }
+  const [[nodiscard]] std::byte *address() const { return first; }
 
   [[nodiscard]] bool is_read_write() const { return readwrite; }
   [[nodiscard]] bool changed() const;

@@ -515,7 +515,7 @@ void print_help() {
   const std::string help_display_command = File::Config::get("HelpCommand", help_command);
 
   if (!help_display_command.empty()) {
-    std::string const help_string = get_help_string(true);
+    const std::string help_string = get_help_string(true);
     FILE *file = popen(help_display_command.c_str(), "w");
     if (file == nullptr) {
       INFO("error launching help display command \"" + help_display_command + "\": " + MR::C_strerror(errno));
@@ -985,7 +985,7 @@ void parse() {
     throw e;
   }
 
-  size_t const num_extra_arguments = argument.size() - num_args_required;
+  const size_t num_extra_arguments = argument.size() - num_args_required;
   size_t num_arg_per_multi = (num_optional_arguments != 0U) ? num_extra_arguments / num_optional_arguments : 0;
   if (num_arg_per_multi * num_optional_arguments != num_extra_arguments)
     throw Exception("number of optional arguments provided are not equal for all arguments");

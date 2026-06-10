@@ -55,7 +55,7 @@ public:
 
   [[nodiscard]] size_t ndim() const { return size_.size(); }
   [[nodiscard]] ssize_t size(size_t axis) const { return size_[axis]; }
-  [[nodiscard]] const transform_type &transform() const { return transform_; }
+  const [[nodiscard]] transform_type &transform() const { return transform_; }
 
   [[nodiscard]] ssize_t get_index(size_t axis) const { return parent().index(axis) - from_[axis]; }
   void move_index(size_t axis, ssize_t increment) { parent().index(axis) += increment; }

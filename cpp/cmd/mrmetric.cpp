@@ -267,7 +267,7 @@ void run() {
   INFO("volumes: " + str(volumes));
 
   MaskType mask1;
-  bool const use_mask1 = get_options("mask1").size() == 1;
+  const bool use_mask1 = get_options("mask1").size() == 1;
   if (use_mask1) {
     mask1 = Image<bool>::open(get_options("mask1")[0][0]);
     if (mask1.ndim() != 3)
@@ -275,7 +275,7 @@ void run() {
   }
 
   MaskType mask2;
-  bool const use_mask2 = get_options("mask2").size() == 1;
+  const bool use_mask2 = get_options("mask2").size() == 1;
   if (use_mask2) {
     mask2 = Image<bool>::open(get_options("mask2")[0][0]);
     if (mask2.ndim() != 3)
@@ -309,7 +309,7 @@ void run() {
       output2 = Header::scratch(input1, "-").get_image<value_type>();
       output2mask = Header::scratch(input1, "-").get_image<bool>();
       {
-        LogLevelLatch const log_level(0);
+        const LogLevelLatch log_level(0);
         reslice(interp, input2, output2, Adapter::NoTransform, Adapter::AutoOverSample, out_of_bounds_value);
         if (use_mask2)
           Filter::reslice<Interp::Nearest>(mask2, output2mask, Adapter::NoTransform, Adapter::AutoOverSample, false);
@@ -325,7 +325,7 @@ void run() {
       output2 = input2;
       output2mask = mask2;
       {
-        LogLevelLatch const log_level(0);
+        const LogLevelLatch log_level(0);
         reslice(interp, input1, output1, Adapter::NoTransform, Adapter::AutoOverSample, out_of_bounds_value);
         if (use_mask1)
           Filter::reslice<Interp::Nearest>(mask1, output1mask, Adapter::NoTransform, Adapter::AutoOverSample, false);
@@ -463,7 +463,7 @@ void run() {
         output1 = Header::scratch(new_header, "-").get_image<value_type>();
         output2 = Header::scratch(new_header, "-").get_image<value_type>();
         {
-          LogLevelLatch const log_level(0);
+          const LogLevelLatch log_level(0);
           reslice(interp, input1, output1, Adapter::NoTransform, Adapter::AutoOverSample, out_of_bounds_value);
           reslice(interp, input2, output2, Adapter::NoTransform, Adapter::AutoOverSample, out_of_bounds_value);
           if (use_mask1)

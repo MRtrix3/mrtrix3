@@ -62,14 +62,14 @@ public:
   ~Backend();
 
   static void register_thread() {
-    std::lock_guard<std::mutex> const lock(mutex);
+    const std::lock_guard<std::mutex> lock(mutex);
     if (!backend)
       backend = std::make_unique<Backend>();
     ++backend->refcount;
   }
   static void unregister_thread() {
     assert(backend);
-    std::lock_guard<std::mutex> const lock(mutex);
+    const std::lock_guard<std::mutex> lock(mutex);
     if (--backend->refcount == 0)
       backend.reset();
   }

@@ -133,17 +133,17 @@ public:
   //   compute_halfspace_transformations();
   // }
 
-  [[nodiscard]] const Eigen::Matrix<ParameterType, 3, 3> get_matrix() const { return trafo.linear(); }
+  const [[nodiscard]] Eigen::Matrix<ParameterType, 3, 3> get_matrix() const { return trafo.linear(); }
 
   void set_translation(const Eigen::Matrix<ParameterType, 1, 3> &trans);
 
-  [[nodiscard]] const Eigen::Vector3d get_translation() const { return trafo.translation(); }
+  const [[nodiscard]] Eigen::Vector3d get_translation() const { return trafo.translation(); }
 
   void set_centre_without_transform_update(const Eigen::Vector3d &centre_in);
 
   void set_centre(const Eigen::Vector3d &centre_in);
 
-  [[nodiscard]] const Eigen::Vector3d get_centre() const { return centre; }
+  const [[nodiscard]] Eigen::Vector3d get_centre() const { return centre; }
 
   void set_optimiser_weights(Eigen::VectorXd &weights);
 

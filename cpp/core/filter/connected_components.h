@@ -208,7 +208,7 @@ public:
   template <class InputVoxelType, class OutputVoxelType> void operator()(InputVoxelType &in, OutputVoxelType &out) {
     std::unique_ptr<ProgressBar> progress(!message.empty() ? new ProgressBar(message, 5) : nullptr);
 
-    Voxel2Vector const v2v(in, *this);
+    const Voxel2Vector v2v(in, *this);
     if (progress)
       ++(*progress);
 

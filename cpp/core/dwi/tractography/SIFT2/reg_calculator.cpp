@@ -27,7 +27,7 @@ RegularisationCalculator::RegularisationCalculator(TckFactor &tckfactor, double 
     : master(tckfactor), cf_reg_tik(cf_reg_tik), cf_reg_tv(cf_reg_tv) {}
 
 RegularisationCalculator::~RegularisationCalculator() {
-  std::lock_guard<std::mutex> const lock(master.mutex);
+  const std::lock_guard<std::mutex> lock(master.mutex);
   cf_reg_tik += tikhonov_sum;
   cf_reg_tv += tv_sum;
 }

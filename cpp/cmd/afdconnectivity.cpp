@@ -299,7 +299,7 @@ void run() {
   const std::filesystem::path input_tracks_path{argument[1]};
   auto wbft_path = get_optional<std::filesystem::path>("wbft");
 
-  DWI::Directions::FastLookupSet const dirs(1281);
+  const DWI::Directions::FastLookupSet dirs(1281);
   auto fod = Image<value_type>::open(input_image_path);
   Math::SH::check(fod);
   check_3D_nonunity(fod);

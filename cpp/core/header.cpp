@@ -395,7 +395,7 @@ Header Header::create(const std::filesystem::path &image_name, //
         if (pe_scheme.rows() != 0)
           Metadata::PhaseEncoding::set_scheme(header.keyval(), pe_scheme.row(counter));
       }
-      std::shared_ptr<ImageIO::Base> const io_handler((*format_handler)->create(header));
+      const std::shared_ptr<ImageIO::Base> io_handler((*format_handler)->create(header));
       assert(io_handler);
       H.io->merge(*io_handler);
     }
@@ -574,7 +574,7 @@ std::string Header::description(bool print_all) const {
       return "    (on-disk: " + ondisk_entries[line_index] + ")";
     };
     if (!entries.empty()) {
-      bool const shorten = (!print_all && entries.size() > 5);
+      const bool shorten = (!print_all && entries.size() > 5);
       desc += key + entries[0] + annotation_for(0) + "\n";
       if (entries.size() > 5) {
         key = "  [" + str(entries.size()) + " entries] ";

@@ -39,7 +39,7 @@ template <class Container> typename Container::value_type median(Container &list
       --num;
       // std::swap (list[n], list[num]);
       //  Commented std::swap to provide bool compatibility
-      typename Container::value_type const temp = list[num];
+      const typename Container::value_type temp = list[num];
       list[num] = list[n];
       list[n] = temp;
     }
@@ -67,7 +67,7 @@ template <class Container> typename Container::value_type quantile(Container &li
       --num;
       // std::swap (list[n], list[num]);
       //  Commented std::swap to provide bool compatibility
-      typename Container::value_type const temp = list[num];
+      const typename Container::value_type temp = list[num];
       list[num] = list[n];
       list[n] = temp;
     }

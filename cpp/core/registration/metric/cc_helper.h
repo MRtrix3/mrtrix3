@@ -36,7 +36,7 @@ void cc_precompute(Im1ImageType &im1_image,
                    DerivedImageType &im2_meansubtr,
                    const std::vector<size_t> &extent) {
   // TODO check extent
-  int const nmax = extent[0] * extent[1] * extent[2];
+  const int nmax = extent[0] * extent[1] * extent[2];
   Eigen::VectorXd n1 = Eigen::VectorXd(nmax);
   Eigen::VectorXd n2 = Eigen::VectorXd(nmax);
   Eigen::Vector3d pos;

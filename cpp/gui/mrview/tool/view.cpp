@@ -507,7 +507,7 @@ void View::onImageChanged() {
 
   onImageVisibilityChanged(window().get_image_visibility());
 
-  float const rate = image->focus_rate();
+  const float rate = image->focus_rate();
   focus_x->setRate(rate);
   focus_y->setRate(rate);
   focus_z->setRate(rate);
@@ -547,11 +547,11 @@ void View::copy_focus_slot() {
     return;
 
   Eigen::VectorXf focus(window().focus());
-  Eigen::IOFormat const fmt(Eigen::FullPrecision, Eigen::DontAlignCols, ",", "\n", "", "", "", "");
+  const Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, ",", "\n", "", "", "", "");
   std::cout << focus.transpose().format(fmt) << "\n";
 
   QClipboard *clip = QApplication::clipboard();
-  QString const input = QString::fromStdString(str(focus.transpose().format(fmt)));
+  const QString input = QString::fromStdString(str(focus.transpose().format(fmt)));
   clip->setText(input);
 }
 
@@ -560,11 +560,11 @@ void View::copy_voxel_slot() {
     return;
 
   Eigen::VectorXf focus = window().image()->scanner2voxel() * window().focus();
-  Eigen::IOFormat const fmt(Eigen::FullPrecision, Eigen::DontAlignCols, ",", "\n", "", "", "", "");
+  const Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, ",", "\n", "", "", "", "");
   std::cout << focus.transpose().format(fmt) << "\n";
 
   QClipboard *clip = QApplication::clipboard();
-  QString const input = QString::fromStdString(str(focus.transpose().format(fmt)));
+  const QString input = QString::fromStdString(str(focus.transpose().format(fmt)));
   clip->setText(input);
 }
 
@@ -694,7 +694,7 @@ void View::set_transparency_from_image() {
   lower_threshold_check_box->setChecked(window().image()->use_discard_lower());
   upper_threshold_check_box->setChecked(window().image()->use_discard_upper());
 
-  float const rate = (window().image() != nullptr) ? window().image()->scaling_rate() : 0.0;
+  const float rate = (window().image() != nullptr) ? window().image()->scaling_rate() : 0.0;
   transparent_intensity->setRate(rate);
   opaque_intensity->setRate(rate);
   lower_threshold->setRate(rate);
@@ -720,7 +720,7 @@ void View::onScalingChanged() {
   if (window().image() != nullptr) {
     min_entry->setValue(window().image()->scaling_min());
     max_entry->setValue(window().image()->scaling_max());
-    float const rate = window().image()->scaling_rate();
+    const float rate = window().image()->scaling_rate();
     min_entry->setRate(rate);
     max_entry->setRate(rate);
 
@@ -729,8 +729,8 @@ void View::onScalingChanged() {
 }
 
 void View::clip_planes_right_click_menu_slot(const QPoint &pos) {
-  QPoint const globalPos = clip_planes_list_view->mapToGlobal(pos);
-  QModelIndex const index = clip_planes_list_view->indexAt(pos);
+  const QPoint globalPos = clip_planes_list_view->mapToGlobal(pos);
+  const QModelIndex index = clip_planes_list_view->indexAt(pos);
   clip_planes_list_view->selectionModel()->select(index, QItemSelectionModel::Select);
 
   clip_planes_option_menu->popup(globalPos);
@@ -887,9 +887,9 @@ void View::reset_light_box_gui_controls() {
   if (lightbox_box == nullptr)
     return;
 
-  bool const img_4d = (window().image() != nullptr) && window().image()->image.ndim() == 4;
-  bool const show_volumes = Mode::LightBox::get_show_volumes();
-  bool const can_show_vol = img_4d && show_volumes;
+  const bool img_4d = (window().image() != nullptr) && window().image()->image.ndim() == 4;
+  const bool show_volumes = Mode::LightBox::get_show_volumes();
+  const bool can_show_vol = img_4d && show_volumes;
 
   light_box_rows->setValue(static_cast<int>(Mode::LightBox::get_rows()));
   light_box_cols->setValue(static_cast<int>(Mode::LightBox::get_cols()));
@@ -946,7 +946,7 @@ void View::rotate_clip_planes(std::vector<GL::vec4 *> &clip, const Eigen::Quater
   const auto &focus(window().focus());
   for (auto &n : clip) {
     GL::vec4 &p(*n);
-    float const distance_to_focus = p[0] * focus[0] + p[1] * focus[1] + p[2] * focus[2] - p[3];
+    const float distance_to_focus = p[0] * focus[0] + p[1] * focus[1] + p[2] * focus[2] - p[3];
     const Eigen::Quaternionf norm(0.0F, p[0], p[1], p[2]);
     const Eigen::Quaternionf rotated = norm * rot;
     p[0] = rotated.x();
@@ -964,7 +964,7 @@ bool View::slice_move_event(const ModelViewProjection &projection, float x) {
   if (clip.empty())
     return false;
   const auto &header = window().image()->header();
-  float const increment = x * std::pow(header.spacing(0) * header.spacing(1) * header.spacing(2), 1.0F / 3.0F);
+  const float increment = x * std::pow(header.spacing(0) * header.spacing(1) * header.spacing(2), 1.0F / 3.0F);
   move_clip_planes_in_out(projection, clip, increment);
   return true;
 }

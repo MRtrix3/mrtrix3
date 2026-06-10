@@ -76,7 +76,7 @@ void Exemplar::add(const Connectome::Streamline_nodelist &in) {
 
 void Exemplar::add(const Tractography::Streamline<float> &in, const bool is_reversed) {
   assert(!is_finalized);
-  std::lock_guard<std::mutex> const lock(mutex);
+  const std::lock_guard<std::mutex> lock(mutex);
 
   for (size_t i = 0; i != size(); ++i) {
     float interp_pos = (in.size() - 1) * i / static_cast<float>(size());
@@ -98,7 +98,7 @@ void Exemplar::add(const Tractography::Streamline<float> &in, const bool is_reve
 
 void Exemplar::finalize(const float step_size) {
   assert(!is_finalized);
-  std::lock_guard<std::mutex> const lock(mutex);
+  const std::lock_guard<std::mutex> lock(mutex);
 
   // For diagonal matrix entries (self-connection), or if one of the two nodes
   //   does not have a defined position in space, don't write an exemplar
@@ -122,7 +122,7 @@ void Exemplar::finalize(const float step_size) {
     i *= multiplier;
 
   // Constrain endpoints to the node centres of mass
-  size_t const num_converging_points = endpoint_convergence_fraction * size();
+  const size_t num_converging_points = endpoint_convergence_fraction * size();
   for (size_t i = 0; i != num_converging_points; ++i) {
     const float mu = i / static_cast<float>(num_converging_points);
     (*this)[i] = (mu * (*this)[i]) + ((1.0F - mu) * node_COMs.first);

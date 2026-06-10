@@ -52,7 +52,7 @@ void usage() {
 void run() {
 
   // Read in the mesh data
-  Surface::Mesh const mesh(argument[0]);
+  const Surface::Mesh mesh(argument[0]);
   Surface::debug_validate(mesh);
 
   // Get the template image

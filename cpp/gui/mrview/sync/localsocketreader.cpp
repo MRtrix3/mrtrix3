@@ -61,7 +61,7 @@ void LocalSocketReader::OnDataReceived() {
     // Read delivered data
     std::string read(sizeOfMessage, '\0');
     socket->read(&read[0], sizeOfMessage);
-    std::shared_ptr<QByteArray> const readData = std::make_shared<QByteArray>();
+    const std::shared_ptr<QByteArray> readData = std::make_shared<QByteArray>();
     readData->insert(0, &read[0], sizeOfMessage);
 
     // save message

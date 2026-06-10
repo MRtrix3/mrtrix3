@@ -81,7 +81,7 @@ public:
 
   template <class MatrixType> Partition partition(const MatrixType &) const;
 
-  [[nodiscard]] const matrix_type &matrix() const { return c; }
+  const [[nodiscard]] matrix_type &matrix() const { return c; }
   [[nodiscard]] index_type cols() const { return c.cols(); }
   [[nodiscard]] index_type rank() const { return r; }
   [[nodiscard]] bool is_F() const { return F; }
@@ -341,7 +341,7 @@ public:
 
   [[nodiscard]] index_type num_factors() const override { return M.cols(); }
 
-  [[nodiscard]] const Shared &S() const { return *dynamic_cast<const Shared *const>(shared.get()); }
+  const [[nodiscard]] Shared &S() const { return *dynamic_cast<const Shared *const>(shared.get()); }
 
 private:
   // Temporaries
@@ -409,7 +409,7 @@ public:
   [[nodiscard]] index_type num_factors() const final { return M.cols(); }
   [[nodiscard]] index_type num_variance_groups() const { return S().num_vgs; }
 
-  [[nodiscard]] const Shared &S() const { return *dynamic_cast<const Shared *const>(shared.get()); }
+  const [[nodiscard]] Shared &S() const { return *dynamic_cast<const Shared *const>(shared.get()); }
 
 private:
   // Temporaries
@@ -511,7 +511,7 @@ public:
   [[nodiscard]] index_type num_factors() const final { return M.cols() + num_importers(); }
   [[nodiscard]] index_type num_importers() const final { return S().importers.size(); }
 
-  [[nodiscard]] const Shared &S() const { return *dynamic_cast<const Shared *const>(shared.get()); }
+  const [[nodiscard]] Shared &S() const { return *dynamic_cast<const Shared *const>(shared.get()); }
 
 private:
   std::vector<matrix_type> XtX, beta;
@@ -577,7 +577,7 @@ public:
   [[nodiscard]] index_type num_variance_groups() const { return S().num_vgs; }
   [[nodiscard]] index_type num_importers() const final { return S().importers.size(); }
 
-  [[nodiscard]] const Shared &S() const { return *dynamic_cast<const Shared *const>(shared.get()); }
+  const [[nodiscard]] Shared &S() const { return *dynamic_cast<const Shared *const>(shared.get()); }
 
 private:
   // Temporaries

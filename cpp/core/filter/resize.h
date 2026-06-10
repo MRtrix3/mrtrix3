@@ -65,7 +65,7 @@ public:
   ~Resize() { delete out_of_bounds_value; }
 
   void set_voxel_size(default_type size) {
-    std::vector<default_type> const voxel_size(3, size);
+    const std::vector<default_type> voxel_size(3, size);
     set_voxel_size(voxel_size);
   }
 

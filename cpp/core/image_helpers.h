@@ -129,7 +129,7 @@ template <typename HeaderType> class is_header_type {
   template <typename C> static no &test(...);
 
 public:
-  static bool const value = sizeof(test<HeaderType>(0)) == sizeof(yes);
+  static const bool value = sizeof(test<HeaderType>(0)) == sizeof(yes);
 };
 
 //! convenience function for SFINAE on image types
@@ -148,17 +148,17 @@ template <typename ImageType> class is_image_type {
   template <typename C> static no &test(...);
 
 public:
-  static bool const value = sizeof(test<ImageType>(0)) == sizeof(yes);
+  static const bool value = sizeof(test<ImageType>(0)) == sizeof(yes);
 };
 
 //! convenience function for SFINAE on images of type Image<ValueType>
 template <class ImageType> struct is_pure_image {
-  static bool const value = std::is_same<ImageType, ::MR::Image<typename ImageType::value_type>>::value;
+  static const bool value = std::is_same<ImageType, ::MR::Image<typename ImageType::value_type>>::value;
 };
 
 //! convenience function for SFINAE on images NOT of type Image<ValueType>
 template <class ImageType> struct is_adapter_type {
-  static bool const value = is_image_type<ImageType>::value && !is_pure_image<ImageType>::value;
+  static const bool value = is_image_type<ImageType>::value && !is_pure_image<ImageType>::value;
 };
 
 //! returns a functor to set the position in ref to other voxels
@@ -396,7 +396,7 @@ inline void check_dimensions(const HeaderType1 &in1, const HeaderType2 &in2, con
 template <class HeaderType1, class HeaderType2>
 inline void
 check_voxel_grids_match_in_scanner_space(const HeaderType1 &in1, const HeaderType2 &in2, const double tol = 1.0e-3) {
-  Eigen::IOFormat const FullPrecFmt(Eigen::FullPrecision, 0, ", ", "\n", "[", "]");
+  const Eigen::IOFormat FullPrecFmt(Eigen::FullPrecision, 0, ", ", "\n", "[", "]");
   if (!voxel_grids_match_in_scanner_space(in1, in2, tol))
     throw Exception("images \"" + in1.name() + "\" and \"" + in2.name() + "\" do not have matching header transforms " +
                     "\n" + str(in1.transform().matrix().format(FullPrecFmt)) + "\nvs\n" +
@@ -420,7 +420,7 @@ voxel_grids_match_in_scanner_space(const HeaderType1 in1, const HeaderType2 in2,
   voxel_coord(1, 1) = voxel_coord(1, 3) = 0.5 * (in1.size(1) + in2.size(1));
   voxel_coord(2, 2) = voxel_coord(2, 3) = 0.5 * (in1.size(2) + in2.size(2));
 
-  double const diff_in_scannercoord = std::sqrt((vs1.asDiagonal() * in1.transform().matrix() * voxel_coord -
+  const double diff_in_scannercoord = std::sqrt((vs1.asDiagonal() * in1.transform().matrix() * voxel_coord -
                                                  vs2.asDiagonal() * in2.transform().matrix() * voxel_coord)
                                                     .colwise()
                                                     .squaredNorm()

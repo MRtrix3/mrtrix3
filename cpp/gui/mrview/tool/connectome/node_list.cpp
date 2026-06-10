@@ -78,9 +78,9 @@ int Node_list_model::columnCount(const QModelIndex &parent) const {
 }
 
 void Node_list_model::reset_pixmaps() {
-  QModelIndex const topleft = createIndex(0, 0);
-  QModelIndex const bottomright = createIndex(rowCount() - 1, 0);
-  QVector<int> const roles(1, Qt::DecorationRole);
+  const QModelIndex topleft = createIndex(0, 0);
+  const QModelIndex bottomright = createIndex(rowCount() - 1, 0);
+  const QVector<int> roles(1, Qt::DecorationRole);
   emit dataChanged(topleft, bottomright, roles);
 }
 
@@ -136,7 +136,7 @@ int Node_list::row_height() const { return node_list_view->fontMetrics().height(
 
 void Node_list::clear_selection_slot() {
   node_list_view->clearSelection();
-  std::vector<node_t> const empty_node_list;
+  const std::vector<node_t> empty_node_list;
   connectome.node_selection_changed(empty_node_list);
 }
 

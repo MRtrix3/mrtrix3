@@ -122,15 +122,15 @@ public:
     integral += that.integral;
   }
 
-  [[nodiscard]] const mask_type &get_mask() const { return mask; }
-  [[nodiscard]] const Eigen::Array<default_type, Eigen::Dynamic, 1> &get_values() const { return values; }
+  const [[nodiscard]] mask_type &get_mask() const { return mask; }
+  const [[nodiscard]] Eigen::Array<default_type, Eigen::Dynamic, 1> &get_values() const { return values; }
   [[nodiscard]] default_type get_max_peak_value() const { return max_peak_value; }
   [[nodiscard]] size_t num_peaks() const { return peak_dirs.size(); }
-  [[nodiscard]] const Eigen::Vector3d &get_peak_dir(const size_t i) const {
+  const [[nodiscard]] Eigen::Vector3d &get_peak_dir(const size_t i) const {
     assert(i < num_peaks());
     return peak_dirs[i];
   }
-  [[nodiscard]] const Eigen::Vector3d &get_mean_dir() const { return mean_dir; }
+  const [[nodiscard]] Eigen::Vector3d &get_mean_dir() const { return mean_dir; }
   [[nodiscard]] default_type get_integral() const { return integral; }
   [[nodiscard]] bool is_negative() const { return neg; }
 

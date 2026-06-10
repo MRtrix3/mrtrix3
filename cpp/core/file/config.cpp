@@ -40,7 +40,7 @@ const std::string Config::default_sys_config_file("/etc/" + file_basename);
 void Config::init() {
   const std::string sysconf_location = MR::get_env("MRTRIX_CONFIGFILE", default_sys_config_file);
 
-  std::filesystem::path const sysconf_path(sysconf_location);
+  const std::filesystem::path sysconf_path(sysconf_location);
   if (std::filesystem::is_regular_file(sysconf_path)) {
     INFO("reading config file \"" + sysconf_path.string() + "\"...");
     try {
@@ -54,7 +54,7 @@ void Config::init() {
   } else {
     DEBUG(std::string("No config file found at \"") + sysconf_path.string() + "\"");
   }
-  std::filesystem::path const home_path = Path::home() / ("." + file_basename);
+  const std::filesystem::path home_path = Path::home() / ("." + file_basename);
   if (std::filesystem::is_regular_file(home_path)) {
     INFO("reading config file \"" + home_path.string() + "\"...");
     try {

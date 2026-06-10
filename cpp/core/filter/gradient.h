@@ -85,7 +85,7 @@ public:
       full_gradient(in, temp);
       for (auto l = Loop(out)(out, temp); l; ++l) {
         if (out.ndim() == 4) {
-          ssize_t const tmp = out.index(3);
+          const ssize_t tmp = out.index(3);
           temp.index(4) = tmp;
         }
         float grad_sq = 0.0;
@@ -129,7 +129,7 @@ public:
         ++(*progress);
 
       if (wrt_scanner) {
-        Transform const transform(in);
+        const Transform transform(in);
         for (auto l = Loop(0, 3)(out); l; ++l)
           out.row(3) = transform.image2scanner.linear() * Eigen::Vector3d(out.row(3));
       }

@@ -101,7 +101,7 @@ void run() {
   }
 
   // Ensure that the printout of centres-of-mass is nicely formatted
-  Eigen::IOFormat const fmt(Eigen::StreamPrecision, 0, ", ", "\n", "[ ", " ]", "", "");
+  const Eigen::IOFormat fmt(Eigen::StreamPrecision, 0, ", ", "\n", "[ ", " ]", "", "");
   std::stringstream com_stringstream;
   com_stringstream << coms.format(fmt);
   const std::vector<std::string> com_strings = split(com_stringstream.str(), "\n");

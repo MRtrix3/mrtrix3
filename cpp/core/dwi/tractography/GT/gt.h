@@ -81,7 +81,7 @@ public:
   }
 
   bool next() {
-    std::lock_guard<std::mutex> const lock(mutex);
+    const std::lock_guard<std::mutex> lock(mutex);
     ++n_iter;
     if (n_iter % iter_bigstep == 0) {
       if ((n_iter >= fraction_burnin * n_max) && (n_iter < n_max - fraction_phaseout * n_max))
@@ -97,32 +97,32 @@ public:
   double getText() const { return Text; }
 
   double getTint() const {
-    std::lock_guard<std::mutex> const lock(mutex);
+    const std::lock_guard<std::mutex> lock(mutex);
     return Tint;
   }
 
   void setTint(double temp) {
-    std::lock_guard<std::mutex> const lock(mutex);
+    const std::lock_guard<std::mutex> lock(mutex);
     Tint = temp;
   }
 
   double getEextTotal() const {
-    std::lock_guard<std::mutex> const lock(mutex);
+    const std::lock_guard<std::mutex> lock(mutex);
     return EextTot;
   }
 
   double getEintTotal() const {
-    std::lock_guard<std::mutex> const lock(mutex);
+    const std::lock_guard<std::mutex> lock(mutex);
     return EintTot;
   }
 
   void incEextTotal(double d) {
-    std::lock_guard<std::mutex> const lock(mutex);
+    const std::lock_guard<std::mutex> lock(mutex);
     EextTot += d;
   }
 
   void incEintTotal(double d) {
-    std::lock_guard<std::mutex> const lock(mutex);
+    const std::lock_guard<std::mutex> lock(mutex);
     EintTot += d;
   }
 
@@ -161,7 +161,7 @@ public:
   }
 
   void incN(const char p, unsigned int i = 1) {
-    std::lock_guard<std::mutex> const lock(mutex);
+    const std::lock_guard<std::mutex> lock(mutex);
     switch (p) {
     case 'b':
       n_gen[0] += i;
@@ -184,7 +184,7 @@ public:
   }
 
   void incNa(const char p, unsigned int i = 1) {
-    std::lock_guard<std::mutex> const lock(mutex);
+    const std::lock_guard<std::mutex> lock(mutex);
     switch (p) {
     case 'b':
       n_acc[0] += i;

@@ -115,7 +115,7 @@ void HalfSphere::LOD(const size_t level_of_detail) {
   std::map<Edge, GLuint> edges;
 
   for (size_t lod = 0; lod < level_of_detail; lod++) {
-    GLuint const num = indices.size();
+    const GLuint num = indices.size();
     for (GLuint n = 0; n < num; n++) {
       GLuint index1, index2, index3;
 

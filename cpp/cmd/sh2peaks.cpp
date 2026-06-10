@@ -218,7 +218,7 @@ public:
 
         value_type mdot = 0.0;
         for (auto &all_peak : all_peaks) {
-          value_type const f = std::fabs(p.dot(all_peak.v));
+          const value_type f = std::fabs(p.dot(all_peak.v));
           if (f > mdot) {
             mdot = f;
             peaks_out[i] = all_peak;
@@ -229,7 +229,7 @@ public:
       for (int i = 0; i < npeaks; i++) {
         value_type mdot = 0.0;
         for (auto &all_peak : all_peaks) {
-          value_type const f = std::fabs(all_peak.v.dot(true_peaks[i].v));
+          const value_type f = std::fabs(all_peak.v.dot(true_peaks[i].v));
           if (f > mdot) {
             mdot = f;
             peaks_out[i] = all_peak;
@@ -312,14 +312,14 @@ void run() {
   opt = get_options("direction");
   std::vector<Direction> true_peaks;
   for (const auto &n : opt) {
-    Direction const p(Math::pi * static_cast<default_type>(n[0]) / 180.0,
+    const Direction p(Math::pi * static_cast<default_type>(n[0]) / 180.0,
                       Math::pi * static_cast<default_type>(n[1]) / 180.0);
     true_peaks.push_back(p);
   }
   if (!true_peaks.empty())
     npeaks = true_peaks.size();
 
-  value_type const threshold = get_option_value("threshold", -InfF);
+  const value_type threshold = get_option_value("threshold", -InfF);
 
   auto header = Header(SH_data);
   header.datatype() = DataType::Float32;

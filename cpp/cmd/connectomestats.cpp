@@ -150,7 +150,7 @@ public:
     if (Connectome::is_directed(M))
       throw Exception("Connectome from file \"" + path.filename().string() + "\" is a directed matrix");
     Connectome::to_upper(M);
-    Connectome::Mat2Vec const mat2vec(M.rows());
+    const Connectome::Mat2Vec mat2vec(M.rows());
     mat2vec.M2V(M, data);
   }
 
@@ -187,7 +187,7 @@ void run() {
   // TODO Could determine this from the vector length with the right equation
   const MR::Connectome::matrix_type example_connectome = File::Matrix::load_matrix(importer[0]->name());
   const MR::Connectome::node_t num_nodes = example_connectome.rows();
-  Connectome::Mat2Vec const mat2vec(num_nodes);
+  const Connectome::Mat2Vec mat2vec(num_nodes);
 
   // Initialise enhancement algorithm
   std::shared_ptr<Stats::EnhancerBase> enhancer;
@@ -199,7 +199,7 @@ void run() {
     enhancer = std::make_shared<MR::Connectome::Enhance::NBS>(num_nodes, opt[0][0]);
   } break;
   case Algorithm::TFNBS: {
-    std::shared_ptr<Stats::TFCE::EnhancerBase> const base(new MR::Connectome::Enhance::NBS(num_nodes));
+    const std::shared_ptr<Stats::TFCE::EnhancerBase> base(new MR::Connectome::Enhance::NBS(num_nodes));
     enhancer = std::make_shared<Stats::TFCE::Wrapper>(base);
     load_tfce_parameters(*(dynamic_cast<Stats::TFCE::Wrapper *>(enhancer.get())));
     if (!get_options("threshold").empty())

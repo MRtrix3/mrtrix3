@@ -51,7 +51,7 @@ void usage() {
 
 void run() {
 
-  bool const actual_count = !get_options("count").empty();
+  const bool actual_count = !get_options("count").empty();
 
   for (const auto &i : argument) {
     Tractography::Properties properties;

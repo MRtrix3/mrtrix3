@@ -72,8 +72,8 @@ void Ortho::paint(Projection &projection) {
 
   projection.set_viewport(window());
 
-  GL::mat4 const MV = GL::identity();
-  GL::mat4 const P = GL::ortho(0, width(), 0, height(), -1.0, 1.0);
+  const GL::mat4 MV = GL::identity();
+  const GL::mat4 P = GL::ortho(0, width(), 0, height(), -1.0, 1.0);
   projection.set(MV, P);
 
   gl::Disable(gl::DEPTH_TEST);
@@ -96,11 +96,11 @@ void Ortho::paint(Projection &projection) {
     frame_VAO.bind();
 
   if (frame_program == 0U) {
-    GL::Shader::Vertex const vertex_shader("layout(location=0) in vec2 pos;\n"
+    const GL::Shader::Vertex vertex_shader("layout(location=0) in vec2 pos;\n"
                                            "void main () {\n"
                                            "  gl_Position = vec4 (pos, 0.0, 1.0);\n"
                                            "}\n");
-    GL::Shader::Fragment const fragment_shader("out vec3 color;\n"
+    const GL::Shader::Fragment fragment_shader("out vec3 color;\n"
                                                "void main () {\n"
                                                "  color = vec3 (0.1);\n"
                                                "}\n");
@@ -155,7 +155,7 @@ void Ortho::slice_move_event(float x) {
     return;
 
   const auto &header = image()->header();
-  float const increment = snap_to_image()
+  const float increment = snap_to_image()
                               ? x * header.spacing(current_plane)
                               : x * std::pow(header.spacing(0) * header.spacing(1) * header.spacing(2), 1 / 3.F);
   auto move = get_through_plane_translation(increment, *proj);
@@ -179,7 +179,7 @@ void Ortho::panthrough_event() {
 }
 
 void Ortho::set_show_as_row_slot(bool state) {
-  GL::Context::Grab const context;
+  const GL::Context::Grab context;
   show_as_row = state;
   frame_VB.clear();
   updateGL();

@@ -31,7 +31,7 @@ bool has_suffix(const std::filesystem::path &name, std::string_view suffix) {
     if (name.extension() == suffix)
       return true;
   }
-  std::string const name_str = name.string();
+  const std::string name_str = name.string();
   return name_str.size() >= suffix.size() &&
          name_str.compare(name_str.size() - suffix.size(), suffix.size(), suffix) == 0;
 }

@@ -137,7 +137,7 @@ public:
       for (size_t i = 0; i != static_cast<size_t>(grad.rows()); i++)
         dwilist.push_back(i);
 
-      Eigen::MatrixXd const directions = DWI::gen_direction_matrix(grad, dwilist);
+      const Eigen::MatrixXd directions = DWI::gen_direction_matrix(grad, dwilist);
       Eigen::MatrixXd SHT = Math::SH::init_transform(directions, maxlmax);
       for (ssize_t i = 0; i < SHT.rows(); i++)
         for (ssize_t j = 0; j < SHT.cols(); j++)

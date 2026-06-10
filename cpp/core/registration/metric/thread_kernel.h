@@ -116,7 +116,7 @@ public:
     const Eigen::Vector3d voxel_pos{static_cast<default_type>(iter.index(0)),
                                     static_cast<default_type>(iter.index(1)),
                                     static_cast<default_type>(iter.index(2))};
-    Eigen::Vector3d const midway_point = voxel2scanner * voxel_pos;
+    const Eigen::Vector3d midway_point = voxel2scanner * voxel_pos;
 
     Eigen::Vector3d im2_point;
     params.transformation.transform_half_inverse(im2_point, midway_point);
@@ -234,7 +234,7 @@ public:
                                     static_cast<default_type>(iter.index(1)),
                                     static_cast<default_type>(iter.index(2))};
 
-    Eigen::Vector3d const midway_point = voxel2scanner * voxel_pos;
+    const Eigen::Vector3d midway_point = voxel2scanner * voxel_pos;
 
     Eigen::Vector3d im2_point;
     params.transformation.transform_half_inverse(im2_point, midway_point);

@@ -76,7 +76,7 @@ const std::vector<std::string> DataType::identifiers = {
     "cfloat32be", "cfloat64",  "cfloat64le", "cfloat64be", "int8",       "uint8",      "bit"};
 
 DataType DataType::parse(std::string_view spec) {
-  std::string const str(lowercase(spec));
+  const std::string str(lowercase(spec));
 
   if (str == "float16")
     return Float16;

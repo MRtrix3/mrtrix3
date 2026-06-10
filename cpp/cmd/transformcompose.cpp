@@ -168,9 +168,9 @@ void run() {
 
     Image<float> output = Image<value_type>::create(output_path, output_header);
 
-    Transform const template_transform(output);
+    const Transform template_transform(output);
     for (auto i = Loop("composing transformations", output, 0, 3)(output); i; ++i) {
-      Eigen::Vector3d const voxel(static_cast<double>(output.index(0)),
+      const Eigen::Vector3d voxel(static_cast<double>(output.index(0)),
                                   static_cast<double>(output.index(1)),
                                   static_cast<double>(output.index(2)));
 

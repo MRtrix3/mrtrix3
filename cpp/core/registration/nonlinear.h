@@ -82,7 +82,7 @@ public:
       im2_to_mid_linear = linear_transform.get_transform_half_inverse();
 
       INFO("Estimating halfway space");
-      std::vector<Eigen::Transform<double, 3, Eigen::Projective>> const init_transforms;
+      const std::vector<Eigen::Transform<double, 3, Eigen::Projective>> init_transforms;
       // define transfomations that will be applied to the image header when the common space is calculated
       midway_image_header = compute_minimum_average_header(
           im1_image, im2_image, linear_transform.get_transform_half_inverse(), linear_transform.get_transform_half());
@@ -128,11 +128,11 @@ public:
       Header midway_image_header_resized = resize_filter;
       midway_image_header_resized.ndim() = 3;
 
-      default_type const update_smoothing_mm =
+      const default_type update_smoothing_mm =
           update_smoothing * ((midway_image_header_resized.spacing(0) + midway_image_header_resized.spacing(1) +
                                midway_image_header_resized.spacing(2)) /
                               3.0);
-      default_type const disp_smoothing_mm =
+      const default_type disp_smoothing_mm =
           disp_smoothing * ((midway_image_header_resized.spacing(0) + midway_image_header_resized.spacing(1) +
                              midway_image_header_resized.spacing(2)) /
                             3.0);
@@ -143,7 +143,7 @@ public:
         for (auto &mc : stage_contrasts)
           mc.lower_lmax(fod_lmax[level]);
       } else {
-        MultiContrastSetting const mc(im1_image.ndim() < 4 ? 1 : im1_image.size(3), do_reorientation, fod_lmax[level]);
+        const MultiContrastSetting mc(im1_image.ndim() < 4 ? 1 : im1_image.size(3), do_reorientation, fod_lmax[level]);
         stage_contrasts.push_back(mc);
       }
 
@@ -197,7 +197,7 @@ public:
         } else {
           DEBUG("Upsampling fields");
           {
-            LogLevelLatch const level(0);
+            const LogLevelLatch level(0);
             im1_to_mid = reslice(*im1_to_mid, field_header);
             im2_to_mid = reslice(*im2_to_mid, field_header);
             mid_to_im1 = reslice(*mid_to_im1, field_header);
@@ -207,7 +207,7 @@ public:
       }
 
       ssize_t iteration = 1;
-      default_type const grad_step_altered =
+      const default_type grad_step_altered =
           gradient_step * (field_header.spacing(0) + field_header.spacing(1) + field_header.spacing(2)) / 3.0;
       default_type cost = std::numeric_limits<default_type>::max();
       bool converged = false;
@@ -245,7 +245,7 @@ public:
 
         DEBUG("warping input images");
         {
-          LogLevelLatch const level(0);
+          const LogLevelLatch level(0);
           Filter::warp<Interp::Linear>(im1_smoothed, im1_warped, im1_deform_field, 0.0);
           Filter::warp<Interp::Linear>(im2_smoothed, im2_warped, im2_deform_field, 0.0);
         }
@@ -260,13 +260,13 @@ public:
         Im1MaskType im1_mask_warped;
         if (im1_mask.valid()) {
           im1_mask_warped = Im1MaskType::scratch(midway_image_header_resized);
-          LogLevelLatch const level(0);
+          const LogLevelLatch level(0);
           Filter::warp<Interp::Linear>(im1_mask, im1_mask_warped, im1_deform_field, 0.0);
         }
         Im1MaskType im2_mask_warped;
         if (im2_mask.valid()) {
           im2_mask_warped = Im1MaskType::scratch(midway_image_header_resized);
-          LogLevelLatch const level(0);
+          const LogLevelLatch level(0);
           Filter::warp<Interp::Linear>(im2_mask, im2_mask_warped, im2_deform_field, 0.0);
         }
 
@@ -327,7 +327,7 @@ public:
 
           DEBUG("inverting displacement field");
           {
-            LogLevelLatch const level(0);
+            const LogLevelLatch level(0);
             Warp::invert_displacement(*im1_to_mid, *mid_to_im1);
             Warp::invert_displacement(*im2_to_mid, *mid_to_im2);
           }

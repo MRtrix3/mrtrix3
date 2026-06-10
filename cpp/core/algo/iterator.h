@@ -35,7 +35,7 @@ public:
   [[nodiscard]] size_t ndim() const { return d.size(); }
   [[nodiscard]] ssize_t size(size_t axis) const { return d[axis]; }
 
-  [[nodiscard]] const ssize_t &index(size_t axis) const { return p[axis]; }
+  const [[nodiscard]] ssize_t &index(size_t axis) const { return p[axis]; }
   ssize_t &index(size_t axis) { return p[axis]; }
 
   friend std::ostream &operator<<(std::ostream &stream, const Iterator &V) {

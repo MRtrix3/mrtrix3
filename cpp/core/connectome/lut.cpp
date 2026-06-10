@@ -249,7 +249,7 @@ void LUT::parse_line_itksnap(const std::string &line) { // check_syntax off
   std::istringstream iss(line);
   iss >> index >> r >> g >> b >> a >> label_vis >> mesh_vis >> name;
   if (!iss.fail()) {
-    std::string const strname(strip(name, " \t\n\""));
+    const std::string strname(strip(name, " \t\n\""));
     check_and_insert(index, LUT_node(strname, r, g, b, static_cast<uint8_t>(std::round(a * 255.0F))));
   }
 }

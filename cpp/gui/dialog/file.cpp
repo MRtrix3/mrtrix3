@@ -94,7 +94,7 @@ void check_overwrite_files_func(const std::filesystem::path &path) {
   if (overwrite_files)
     return;
 
-  QMessageBox::StandardButton const response =
+  const QMessageBox::StandardButton response =
       QMessageBox::warning(QApplication::activeWindow(),
                            qstr("confirm file overwrite"),
                            qstr("Action will overwrite file \"" + path.string() + "\" - proceed?"),

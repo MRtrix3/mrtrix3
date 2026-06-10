@@ -162,7 +162,7 @@ void run() {
     }
 
     opt = get_options("matrix");
-    Fixel::Matrix::Reader const matrix(opt[0][0], mask);
+    const Fixel::Matrix::Reader matrix(opt[0][0], mask);
 
     if (nfixels != matrix.size())
       throw Exception("Number of fixels in input (" + str(nfixels) + ")" +        //

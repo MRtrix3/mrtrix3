@@ -37,7 +37,7 @@ inline Eigen::Matrix<typename MatrixType::Scalar, Eigen::Dynamic, Eigen::Dynamic
 }
 
 template <class MatrixType> inline size_t rank(const MatrixType &M) {
-  Eigen::FullPivLU<MatrixType> const lu_decomp(M);
+  const Eigen::FullPivLU<MatrixType> lu_decomp(M);
   return lu_decomp.rank();
 }
 

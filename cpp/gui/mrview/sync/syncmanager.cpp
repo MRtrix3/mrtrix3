@@ -42,7 +42,7 @@ bool SyncManager::GetInErrorState() { return ips == 0; }
  */
 void SyncManager::OnWindowFocusChanged() {
   if (Window::main->sync_focus_on()) {
-    Eigen::Vector3f const &foc = Window::main->focus();
+    const Eigen::Vector3f &foc = Window::main->focus();
     SendData(DataKey::WindowFocus, ToQByteArray(foc));
   }
 }
@@ -93,7 +93,7 @@ void SyncManager::OnIPSDataReceived(std::vector<std::shared_ptr<QByteArray>> all
   if (winFocus && Window::main->sync_focus_on()) {
     // We received 1+ signals to change our window focus
 
-    unsigned int const offset = 4; // we have already read 4 bytes, above
+    const unsigned int offset = 4; // we have already read 4 bytes, above
     // Read three single point floats
     if (winFocus->size() != (int)(offset + 12)) // cast to int to avoid compiler warning
     {

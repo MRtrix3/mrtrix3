@@ -26,9 +26,9 @@ void ShaderBase::recompile(const Connectome &parent) {
   if (*this != 0)
     clear();
   update(parent);
-  GL::Shader::Vertex const vertex_shader(vertex_shader_source);
-  GL::Shader::Geometry const geometry_shader(geometry_shader_source);
-  GL::Shader::Fragment const fragment_shader(fragment_shader_source);
+  const GL::Shader::Vertex vertex_shader(vertex_shader_source);
+  const GL::Shader::Geometry geometry_shader(geometry_shader_source);
+  const GL::Shader::Fragment fragment_shader(fragment_shader_source);
   attach(vertex_shader);
   if (static_cast<GLuint>(geometry_shader) != 0U)
     attach(geometry_shader);

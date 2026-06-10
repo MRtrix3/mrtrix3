@@ -29,7 +29,7 @@ void Mosaic::load(const Header &header, size_t) {
 
   assert(header.datatype().bits() > 1);
 
-  size_t const bytes_per_segment = header.datatype().bytes() * segsize;
+  const size_t bytes_per_segment = header.datatype().bytes() * segsize;
   if (files.size() * bytes_per_segment > std::numeric_limits<size_t>::max())
     throw Exception("image \"" + header.path().string() + "\" is larger than maximum accessible memory");
 
@@ -45,8 +45,8 @@ void Mosaic::load(const Header &header, size_t) {
     File::MMap file(n, false, false, m_xdim * m_ydim * header.datatype().bytes());
     size_t nx = 0, ny = 0;
     for (size_t z = 0; z < slices; z++) {
-      size_t const ox = nx * xdim;
-      size_t const oy = ny * ydim;
+      const size_t ox = nx * xdim;
+      const size_t oy = ny * ydim;
       for (size_t y = 0; y < ydim; y++) {
         memcpy(data,
                file.address() + header.datatype().bytes() * (ox + m_xdim * (y + oy)),

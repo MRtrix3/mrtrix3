@@ -69,7 +69,7 @@ void run() {
   auto mask = Image<bool>::open(mask_path);
   auto dir = Image<value_type>::open(dir_path, DirectIO(3));
 
-  int const lmax = get_option_value("lmax", Math::SH::LforN(SH.size(3)));
+  const int lmax = get_option_value("lmax", Math::SH::LforN(SH.size(3)));
 
   check_dimensions(SH, mask, 0, 3);
   check_dimensions(SH, dir, 0, 3);
@@ -116,14 +116,14 @@ void run() {
       value_type d_dot_s = 0.0;
       value_type d_dot_d = 0.0;
       for (int m = -l; m <= l; ++m) {
-        size_t const i = Math::SH::index(l, m);
+        const size_t i = Math::SH::index(l, m);
         SH.index(3) = i;
-        value_type const s = SH.value();
+        const value_type s = SH.value();
         // TODO: currently this does NOT handle the non-orthonormal basis
         d_dot_s += s * delta[i];
         d_dot_d += Math::pow2(delta[i]);
       }
-      value_type const val = AL[l] * d_dot_s / d_dot_d;
+      const value_type val = AL[l] * d_dot_s / d_dot_d;
       response[Math::ZSH::index(l)] += val;
 
       if (dump_stream.is_open())

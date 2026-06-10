@@ -40,7 +40,7 @@ public:
 
   bool setData(const QModelIndex &idx, const QVariant &value, int role) override {
     if (role == Qt::CheckStateRole) {
-      Qt::KeyboardModifiers const keyMod = QApplication::keyboardModifiers();
+      const Qt::KeyboardModifiers keyMod = QApplication::keyboardModifiers();
       if (keyMod.testFlag(Qt::ShiftModifier)) {
         for (size_t i = 0; i < items.size(); ++i)
           items[i]->show = (i == idx.row());

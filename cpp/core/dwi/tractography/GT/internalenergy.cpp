@@ -26,7 +26,7 @@ double InternalEnergyComputer::stageConnect(const ParticleEnd &pe1, ParticleEnd 
   // old
   Particle *par0 = (pe1.alpha == -1) ? pe1.par->getPredecessor() : pe1.par->getSuccessor();
   if (par0 != nullptr) {
-    int const a = (par0->getPredecessor() == pe1.par) ? -1 : +1;
+    const int a = (par0->getPredecessor() == pe1.par) ? -1 : +1;
     dEint -= calcEnergy(pe1.par, pe1.alpha, par0, a);
   }
   return dEint / stats.getTint();
@@ -36,14 +36,14 @@ void InternalEnergyComputer::scanNeighbourhood(const Particle *p, const int alph
   neighbourhood.resize(1);
   normalization = 1.0;
 
-  Point_t const ep = p->getEndPoint(alpha0);
+  const Point_t ep = p->getEndPoint(alpha0);
   if (pGrid.isoutofbounds(ep))
     return;
   size_t x, y, z;
   pGrid.pos2xyz(ep, x, y, z);
 
-  float const tolerance2 = Particle::L * Particle::L; // distance threshold (particle length), hard coded
-  float const costheta = Math::sqrt1_2;               // angular threshold (45 degrees), hard coded
+  const float tolerance2 = Particle::L * Particle::L; // distance threshold (particle length), hard coded
+  const float costheta = Math::sqrt1_2;               // angular threshold (45 degrees), hard coded
   ParticleEnd pe;
   float d1, d2, d, ct;
 
@@ -54,7 +54,7 @@ void InternalEnergyComputer::scanNeighbourhood(const Particle *p, const int alph
         if (pvec == nullptr)
           continue;
 
-        std::lock_guard<std::mutex> const lock(pvec->mutex);
+        const std::lock_guard<std::mutex> lock(pvec->mutex);
 
         for (auto it : *pvec) {
           pe.par = it;

@@ -116,7 +116,7 @@ void run() {
     ++nb;
   }
 
-  size_t const total = [&] {
+  const size_t total = [&] {
     size_t n = 0;
     for (auto &d : dirs)
       for (auto &m : d)
@@ -204,7 +204,7 @@ void run() {
     size_t best = 0;
     value_type bestE = std::numeric_limits<value_type>::max();
     for (size_t n = 0; n < dirs[b][p].size(); ++n) {
-      value_type const E = energy(b, p, n);
+      const value_type E = energy(b, p, n);
       if (E < bestE) {
         bestE = E;
         best = n;
@@ -240,7 +240,7 @@ void run() {
     size_t b = 0, n;
     value_type fraction_diff = std::numeric_limits<value_type>::max();
     for (n = 0; n < bvalue.size(); ++n) {
-      value_type const f_diff = static_cast<float>(num_for_b(n)) / static_cast<float>(merged.size()) - fraction[n];
+      const value_type f_diff = static_cast<float>(num_for_b(n)) / static_cast<float>(merged.size()) - fraction[n];
       if (f_diff < fraction_diff && !dirs[n][nPE].empty()) {
         fraction_diff = f_diff;
         b = n;

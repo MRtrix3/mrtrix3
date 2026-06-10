@@ -293,7 +293,7 @@ void run() {
   {
     // Just get the properties for now; will re-instantiate the reader multiple times later
     // TODO Constructor for properties using the file path?
-    Tractography::Reader<float> const tck_file(input_tracks_path, properties);
+    const Tractography::Reader<float> tck_file(input_tracks_path, properties);
   }
   const size_t num_tracks = properties["count"].empty() ? 0 : to<size_t>(properties["count"]);
 
@@ -397,7 +397,7 @@ void run() {
     for (ssize_t timepoint = 0; timepoint != header.size(3); ++timepoint) {
 
       {
-        LogLevelLatch const latch(0);
+        const LogLevelLatch latch(0);
         Tractography::Reader<float> tck_file(input_tracks_path, properties);
         Mapping::TrackLoader loader(tck_file);
         Mapping::TrackMapperTWI mapper(H_3D, contrast_t::SCALAR_MAP, tck_stat_t::ENDS_CORR);

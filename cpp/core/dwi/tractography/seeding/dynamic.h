@@ -109,7 +109,7 @@ public:
   }
 
   void set_voxel(const Eigen::Vector3i &i) { voxel = i; }
-  [[nodiscard]] const Eigen::Vector3i &get_voxel() const { return voxel; }
+  const [[nodiscard]] Eigen::Vector3i &get_voxel() const { return voxel; }
 
   [[nodiscard]] float get_ratio(const double mu) const { return ((mu * TD.load(std::memory_order_relaxed)) / FOD); }
 

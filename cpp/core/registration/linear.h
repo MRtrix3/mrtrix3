@@ -367,7 +367,7 @@ public:
                                      ProcessedMaskType,
                                      Interp::Nearest<ProcessedMaskType>>;
 
-    Eigen::Matrix<typename TransformType::ParameterType, Eigen::Dynamic, 1> const optimiser_weights =
+    const Eigen::Matrix<typename TransformType::ParameterType, Eigen::Dynamic, 1> optimiser_weights =
         transform.get_optimiser_weights();
 
     // calculate midway (affine average) space which will be constant for each resolution level
@@ -385,7 +385,7 @@ public:
           mc.lower_lmax(stage.fod_lmax);
         }
       } else {
-        MultiContrastSetting const mc(im1_image.ndim() < 4 ? 1 : im1_image.size(3), do_reorientation, stage.fod_lmax);
+        const MultiContrastSetting mc(im1_image.ndim() < 4 ? 1 : im1_image.size(3), do_reorientation, stage.fod_lmax);
         stage_contrasts.push_back(mc);
       }
 
@@ -428,20 +428,20 @@ public:
       }
       DEBUG("neighbourhood kernel extent: " + str(kernel_extent));
       parameters.set_extent(kernel_extent);
-      Eigen::Vector3d const spacing(
+      const Eigen::Vector3d spacing(
           midway_image_header.spacing(0), midway_image_header.spacing(1), midway_image_header.spacing(2));
       Eigen::Vector3d coherence(spacing);
       Eigen::Vector3d stop(spacing);
       // CONF option: RegCoherenceLen
       // CONF default: 3.0
       // CONF Linear registration: estimated spatial coherence length in voxels.
-      default_type const reg_coherence_len = File::Config::get_float("RegCoherenceLen", 3.0); // = 3 stdev blur
+      const default_type reg_coherence_len = File::Config::get_float("RegCoherenceLen", 3.0); // = 3 stdev blur
       coherence *= reg_coherence_len * 1.0 / (2.0 * stage.scale_factor);
       // CONF option: RegStopLen
       // CONF default: 0.0001
       // CONF Linear registration: smallest gradient descent step measured in fraction of a voxel at which to stop
       // CONF registration.
-      default_type const reg_stop_len = File::Config::get_float("RegStopLen", 0.0001);
+      const default_type reg_stop_len = File::Config::get_float("RegStopLen", 0.0001);
       stop.array() *= reg_stop_len;
       DEBUG("coherence length: " + str(coherence));
       DEBUG("stop length:      " + str(stop));
@@ -472,11 +472,11 @@ public:
       // CONF option: RegGdConvergenceBufferLen
       // CONF default: 4
       // CONF Linear registration: gradient descent convergence buffer length.
-      size_t const buffer_len(MR::File::Config::get_int("RegGdConvergenceBufferLen", 4));
+      const size_t buffer_len(MR::File::Config::get_int("RegGdConvergenceBufferLen", 4));
       // CONF option: RegGdConvergenceMinIter
       // CONF default: 10
       // CONF Linear registration: minimum number of iterations until convergence check is activated.
-      size_t const min_iter(MR::File::Config::get_int("RegGdConvergenceMinIter", 10));
+      const size_t min_iter(MR::File::Config::get_int("RegGdConvergenceMinIter", 10));
       transform.get_gradient_descent_updator()->set_convergence_check(
           slope_threshold, alpha, beta, buffer_len, min_iter);
 

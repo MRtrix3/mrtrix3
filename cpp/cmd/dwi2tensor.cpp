@@ -190,7 +190,7 @@ public:
 
     notnan = dwi.array().isFinite().template cast<double>();
 
-    double const small_intensity = 1.0e-6 * dwi.maxCoeff();
+    const double small_intensity = 1.0e-6 * dwi.maxCoeff();
     for (int i = 0; i < dwi.rows(); i++) {
       if (notnan[i] == 0 || dwi[i] < small_intensity)
         dwi[i] = small_intensity;
@@ -227,7 +227,7 @@ public:
 
     if (dkt_image.valid()) {
       assign_pos_of(dwi_image, 0, 3).to(dkt_image);
-      double const adc_sq = Math::pow2(x[1] + x[2] + x[3]) / 9.0 + 1e-18;
+      const double adc_sq = Math::pow2(x[1] + x[2] + x[3]) / 9.0 + 1e-18;
       for (auto l = Loop(3)(dkt_image); l; ++l) {
         dkt_image.value() = x[dkt_image.index(3) + 7] / adc_sq;
       }
@@ -320,7 +320,7 @@ void run() {
     dkt = Image<value_type>::create(opt[0][0], header_out);
   }
 
-  Eigen::MatrixXd const A = -DWI::grad2bmatrix<double>(grad, dki);
+  const Eigen::MatrixXd A = -DWI::grad2bmatrix<double>(grad, dki);
 
   const bool constrain = !get_options("constrain").empty();
   Eigen::MatrixXd Aneq;

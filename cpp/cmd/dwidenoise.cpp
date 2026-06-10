@@ -202,11 +202,11 @@ public:
     ssize_t cutoff_p = 0;
     for (ssize_t p = 0; p < r; ++p) // p+1 is the number of noise components
     {                               // (as opposed to the paper where p is defined as the number of signal components)
-      double const lam = std::max(s[p], 0.0) / q;
+      const double lam = std::max(s[p], 0.0) / q;
       clam += lam;
-      double const gam = static_cast<double>(p + 1) / static_cast<double>(exp1 ? q : q - (r - p - 1));
-      double const sigsq1 = clam / static_cast<double>(p + 1);
-      double const sigsq2 = (lam - lam_r) / (4.0 * std::sqrt(gam));
+      const double gam = static_cast<double>(p + 1) / static_cast<double>(exp1 ? q : q - (r - p - 1));
+      const double sigsq1 = clam / static_cast<double>(p + 1);
+      const double sigsq2 = (lam - lam_r) / (4.0 * std::sqrt(gam));
       // sigsq2 > sigsq1 if signal else noise
       if (sigsq2 < sigsq1) {
         sigma2 = sigsq1;

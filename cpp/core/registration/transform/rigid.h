@@ -80,8 +80,8 @@ public:
   using has_robust_estimator = int;
 
   Rigid() : Base(12) {
-    default_type const w1(MR::File::Config::get_float("RegGdWeightMatrix", 0.0003F));
-    default_type const w2(MR::File::Config::get_float("RegGdWeightTranslation", 1.0F));
+    const default_type w1(MR::File::Config::get_float("RegGdWeightMatrix", 0.0003F));
+    const default_type w2(MR::File::Config::get_float("RegGdWeightTranslation", 1.0F));
     const Eigen::Vector4d weights(w1, w1, w1, w2);
     this->optimiser_weights << weights, weights, weights;
   }

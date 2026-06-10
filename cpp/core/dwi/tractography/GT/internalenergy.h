@@ -45,14 +45,14 @@ public:
   double stageShift(const Particle *par, const Point_t &pos, const Point_t &dir) {
     dEint = 0.0;
     if (par->hasPredecessor()) {
-      int const a = (par->getPredecessor()->getPredecessor() == par) ? -1 : 1;
+      const int a = (par->getPredecessor()->getPredecessor() == par) ? -1 : 1;
       dEint -= calcEnergy(par, -1, par->getPredecessor(), a);
       Point_t ep(pos);
       ep -= Particle::L * dir;
       dEint += calcEnergy(pos, ep, par->getPredecessor()->getPosition(), par->getPredecessor()->getEndPoint(a));
     }
     if (par->hasSuccessor()) {
-      int const a = (par->getSuccessor()->getPredecessor() == par) ? -1 : 1;
+      const int a = (par->getSuccessor()->getPredecessor() == par) ? -1 : 1;
       dEint -= calcEnergy(par, 1, par->getSuccessor(), a);
       Point_t ep(pos);
       ep += Particle::L * dir;
@@ -64,11 +64,11 @@ public:
   double stageRemove(const Particle *par) {
     dEint = 0.0;
     if (par->hasPredecessor()) {
-      int const a = (par->getPredecessor()->getPredecessor() == par) ? -1 : 1;
+      const int a = (par->getPredecessor()->getPredecessor() == par) ? -1 : 1;
       dEint -= calcEnergy(par, -1, par->getPredecessor(), a);
     }
     if (par->hasSuccessor()) {
-      int const a = (par->getSuccessor()->getPredecessor() == par) ? -1 : 1;
+      const int a = (par->getSuccessor()->getPredecessor() == par) ? -1 : 1;
       dEint -= calcEnergy(par, 1, par->getSuccessor(), a);
     }
     return dEint / stats.getTint();
@@ -96,8 +96,8 @@ protected:
   }
 
   double calcEnergy(const Point_t &pos1, const Point_t &ep1, const Point_t &pos2, const Point_t &ep2) {
-    Point_t const Xm = (pos1 + pos2) * 0.5; // midpoint between both segments
-    double const Ucon = ((ep1 - Xm).squaredNorm() + (ep2 - Xm).squaredNorm()) / (Particle::L * Particle::L);
+    const Point_t Xm = (pos1 + pos2) * 0.5; // midpoint between both segments
+    const double Ucon = ((ep1 - Xm).squaredNorm() + (ep2 - Xm).squaredNorm()) / (Particle::L * Particle::L);
     return Ucon - cpot;
   }
 

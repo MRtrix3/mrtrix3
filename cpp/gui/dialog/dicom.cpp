@@ -50,7 +50,7 @@ public:
     return (0);
   }
   Item *parent() { return (parentItem); }
-  [[nodiscard]] const std::shared_ptr<Series> &series() const { return (dicom_series); }
+  const [[nodiscard]] std::shared_ptr<Series> &series() const { return (dicom_series); }
 
 private:
   QList<Item *> childItems;
@@ -62,7 +62,7 @@ private:
 class Model : public QAbstractItemModel {
 public:
   Model(QObject *parent) : QAbstractItemModel(parent) {
-    QList<QVariant> const rootData;
+    const QList<QVariant> rootData;
     rootItem = new Item;
   }
 
@@ -187,7 +187,7 @@ std::vector<std::shared_ptr<Series>> select_dicom(const Tree &tree) {
 
   DicomSelector selector(tree);
   if (selector.exec() != 0) {
-    QModelIndexList const indexes = selector.view->selectionModel()->selectedIndexes();
+    const QModelIndexList indexes = selector.view->selectionModel()->selectedIndexes();
     if (!indexes.empty()) {
       QModelIndex index;
       Q_FOREACH (index, indexes) {

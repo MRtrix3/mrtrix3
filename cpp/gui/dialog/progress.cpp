@@ -31,7 +31,7 @@ void display(const ::MR::ProgressBar &p) {
     GUI::App::main_window->setUpdatesEnabled(false);
     p.data = new Timer;
   } else if (reinterpret_cast<Timer *>(p.data)->elapsed() > 1.0) {
-    GL::Context::Grab const context;
+    const GL::Context::Grab context;
     if (progress_dialog == nullptr) {
       progress_dialog = new QProgressDialog(
           qstr(p.text() + p.ellipsis()), QString(), 0, p.show_percent() ? 100 : 0, GUI::App::main_window);
@@ -49,7 +49,7 @@ void done(const ::MR::ProgressBar &p) {
   if (p.data != nullptr) {
     assert(GUI::App::main_window);
     if (progress_dialog != nullptr) {
-      GL::Context::Grab const context;
+      const GL::Context::Grab context;
       delete progress_dialog;
       progress_dialog = nullptr;
     }

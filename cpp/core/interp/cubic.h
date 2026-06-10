@@ -124,7 +124,7 @@ public:
     size_t i(0);
     for (ssize_t z = 0; z < 4; ++z) {
       for (ssize_t y = 0; y < 4; ++y) {
-        value_type const partial_weight = H[1].weights[y] * H[2].weights[z];
+        const value_type partial_weight = H[1].weights[y] * H[2].weights[z];
         for (ssize_t x = 0; x < 4; ++x)
           weights_vec[i++] = H[0].weights[x] * partial_weight;
       }
@@ -396,9 +396,9 @@ public:
     size_t i(0);
     for (ssize_t z = 0; z < 4; ++z) {
       for (ssize_t y = 0; y < 4; ++y) {
-        value_type const partial_weight = H[1].weights[y] * H[2].weights[z];
-        value_type const partial_weight_dy = H[1].deriv_weights[y] * H[2].weights[z];
-        value_type const partial_weight_dz = H[1].weights[y] * H[2].deriv_weights[z];
+        const value_type partial_weight = H[1].weights[y] * H[2].weights[z];
+        const value_type partial_weight_dy = H[1].deriv_weights[y] * H[2].weights[z];
+        const value_type partial_weight_dz = H[1].weights[y] * H[2].deriv_weights[z];
 
         for (ssize_t x = 0; x < 4; ++x) {
           // Gradient

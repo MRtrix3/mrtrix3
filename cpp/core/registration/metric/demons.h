@@ -47,7 +47,7 @@ public:
   }
 
   ~Demons() {
-    std::lock_guard<std::mutex> const lock(*mutex);
+    const std::lock_guard<std::mutex> lock(*mutex);
     global_cost += thread_cost;
     global_voxel_count += thread_voxel_count;
   }
@@ -95,7 +95,7 @@ public:
     if (std::fabs(speed) < robustness_parameter)
       speed = 0.0;
 
-    default_type const speed_squared = speed * speed;
+    const default_type speed_squared = speed * speed;
     thread_cost += speed_squared;
     thread_voxel_count++;
 
@@ -103,7 +103,7 @@ public:
 
     Eigen::Matrix<typename Im1ImageType::value_type, 3, 1> grad =
         (im2_gradient.value() + im1_gradient.value()).array() / 2.0;
-    default_type const denominator = speed_squared / normaliser + grad.squaredNorm();
+    const default_type denominator = speed_squared / normaliser + grad.squaredNorm();
     if (std::fabs(speed) < intensity_difference_threshold || denominator < denominator_threshold) {
       im1_update.row(3) = 0.0;
       im2_update.row(3) = 0.0;

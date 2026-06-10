@@ -171,7 +171,7 @@ public:
 
   [[nodiscard]] virtual size_t num_contrasts() const = 0;
   [[nodiscard]] contrast_type contrast() const { return _contrast; }
-  [[nodiscard]] const std::optional<Statistic> &statistic() const { return _statistic; }
+  const [[nodiscard]] std::optional<Statistic> &statistic() const { return _statistic; }
 
 protected:
   const contrast_type _contrast;

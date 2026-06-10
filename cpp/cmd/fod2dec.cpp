@@ -162,7 +162,7 @@ public:
     dec = dec.cwiseMax(0.0);
     ampsum = std::max(ampsum, 0.0);
 
-    double const decnorm = dec.norm();
+    const double decnorm = dec.norm();
 
     if (decnorm == 0.0)
       dec_img.row(3) = UNIT;
@@ -207,7 +207,7 @@ public:
 
     dec = dec.cwiseMax(0.0);
 
-    value_type const br = std::pow((dec.pow(gamma) * coefs).sum(), 1.0 / gamma);
+    const value_type br = std::pow((dec.pow(gamma) * coefs).sum(), 1.0 / gamma);
 
     if (br == 0.0)
       dec.fill(grey * w);
@@ -230,7 +230,7 @@ void run() {
     check_dimensions(mask_hdr, fod_hdr, 0, 3);
   }
 
-  float const thresh = get_option_value("threshold", NaNF);
+  const float thresh = get_option_value("threshold", NaNF);
 
   bool needtolum = false;
   Eigen::Array<value_type, 3, 1> coefs(1.0, 1.0, 1.0);
@@ -281,7 +281,7 @@ void run() {
       Stride::set(dec_hdr, Stride::contiguous_along_axis(3, dec_hdr));
       dec_img = Image<value_type>::scratch(dec_hdr, "DEC map");
 
-      Eigen::Matrix<double, 1281, 2> const dirs = DWI::Directions::tesselation_1281();
+      const Eigen::Matrix<double, 1281, 2> dirs = DWI::Directions::tesselation_1281();
 
       auto mask_img = Image<bool>();
       if (mask_hdr.valid())

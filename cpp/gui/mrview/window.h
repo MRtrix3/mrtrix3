@@ -76,15 +76,15 @@ public:
   void parse_arguments();
   void add_images(std::vector<std::unique_ptr<MR::Header>> &list);
 
-  [[nodiscard]] const QPoint &mouse_position() const { return mouse_position_; }
-  [[nodiscard]] const QPoint &mouse_displacement() const { return mouse_displacement_; }
+  const [[nodiscard]] QPoint &mouse_position() const { return mouse_position_; }
+  const [[nodiscard]] QPoint &mouse_displacement() const { return mouse_displacement_; }
   [[nodiscard]] Qt::MouseButtons mouse_buttons() const { return buttons_; }
   [[nodiscard]] Qt::KeyboardModifiers modifiers() const { return modifiers_; }
 
   void selected_colourmap(size_t colourmap, const ColourMapButton &) override;
   void selected_custom_colour(const QColor &colour, const ColourMapButton &) override;
 
-  [[nodiscard]] const Image *image() const { return static_cast<const Image *>(image_group->checkedAction()); }
+  const [[nodiscard]] Image *image() const { return static_cast<const Image *>(image_group->checkedAction()); }
   [[nodiscard]] QActionGroup *tools() const { return tool_group; }
 
   [[nodiscard]] int slice() const {
@@ -95,11 +95,11 @@ public:
   }
 
   [[nodiscard]] Mode::Base *get_current_mode() const { return mode.get(); }
-  [[nodiscard]] const Eigen::Vector3f &focus() const { return focal_point; }
-  [[nodiscard]] const Eigen::Vector3f &target() const { return camera_target; }
+  const [[nodiscard]] Eigen::Vector3f &focus() const { return focal_point; }
+  const [[nodiscard]] Eigen::Vector3f &target() const { return camera_target; }
   [[nodiscard]] float FOV() const { return field_of_view; }
   [[nodiscard]] int plane() const { return anatomical_plane; }
-  [[nodiscard]] const Eigen::Quaternionf &orientation() const { return orient; }
+  const [[nodiscard]] Eigen::Quaternionf &orientation() const { return orient; }
   [[nodiscard]] bool snap_to_image() const { return snap_to_image_axes_and_voxel; }
   Image *image() { return static_cast<Image *>(image_group->checkedAction()); }
 
@@ -155,7 +155,7 @@ public:
   [[nodiscard]] bool sync_focus_on() const { return sync_focus_action->isChecked(); }
 
   void captureGL(const std::filesystem::path &filepath) {
-    QImage const image(glarea->grabFramebuffer());
+    const QImage image(glarea->grabFramebuffer());
     image.save(qstr(filepath.string()));
   }
 

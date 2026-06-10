@@ -47,7 +47,7 @@ public:
 
   ACT_Method_additions() = delete;
 
-  [[nodiscard]] const Tissues &tissues() const { return tissue_values; }
+  const [[nodiscard]] Tissues &tissues() const { return tissue_values; }
 
   std::optional<term_t> check_structural(const Eigen::Vector3f &pos) {
     if (!fetch_tissue_data(pos))

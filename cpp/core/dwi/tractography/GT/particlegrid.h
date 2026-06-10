@@ -41,11 +41,11 @@ public:
     ParticleContainer(const ParticleContainer &other) : particles(other.particles) {}
 
     void push_back(Particle *p) {
-      std::lock_guard<std::mutex> const lock(mutex);
+      const std::lock_guard<std::mutex> lock(mutex);
       particles.push_back(p);
     }
     void remove(Particle *p) {
-      std::lock_guard<std::mutex> const lock(mutex);
+      const std::lock_guard<std::mutex> lock(mutex);
       particles.erase(std::remove(particles.begin(), particles.end(), p), particles.end());
     }
 

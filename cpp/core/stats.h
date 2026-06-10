@@ -96,7 +96,7 @@ public:
         s += "0 ";
       s += "]";
 
-      int const width = is_complex ? 20 : 10;
+      const int width = is_complex ? 20 : 10;
       std::cout << std::setw(12) << std::right << s << " ";
 
       std::cout << std::setw(width) << std::right << (count ? str(mean) : "N/A");

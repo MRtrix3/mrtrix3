@@ -39,7 +39,7 @@ public:
   FileDataVector &load(const std::filesystem::path &filePath);
   FileDataVector &clear();
 
-  [[nodiscard]] const QString &get_name() const { return name; }
+  const [[nodiscard]] QString &get_name() const { return name; }
   void set_name(std::string_view s) { name = qstr(s); }
 
   [[nodiscard]] float get_min() const { return min; }

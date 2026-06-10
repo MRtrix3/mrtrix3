@@ -49,15 +49,15 @@ void read_annot(const std::filesystem::path &path, label_vector_type &labels, Co
   // Structure that will map from the colour-based structure identifier to a more sensible index
   std::map<int32_t, Connectome::node_t> rgb2index;
 
-  auto const num_entries = get_BE<int32_t>(in);
+  const auto num_entries = get_BE<int32_t>(in);
   if (num_entries > 0) {
 
     const auto orig_lut_name_length = get_BE<int32_t>(in);
-    std::unique_ptr<char[]> const orig_lut_name(new char[orig_lut_name_length]);
+    const std::unique_ptr<char[]> orig_lut_name(new char[orig_lut_name_length]);
     in.read(orig_lut_name.get(), orig_lut_name_length);
     for (int32_t i = 0; i != num_entries; ++i) {
       const auto struct_name_length = get_BE<int32_t>(in);
-      std::unique_ptr<char[]> const struct_name(new char[struct_name_length]);
+      const std::unique_ptr<char[]> struct_name(new char[struct_name_length]);
       in.read(struct_name.get(), struct_name_length);
       const auto r = get_BE<int32_t>(in);
       const auto g = get_BE<int32_t>(in);
@@ -77,7 +77,7 @@ void read_annot(const std::filesystem::path &path, label_vector_type &labels, Co
 
     get_BE<int32_t>(in);
     const auto orig_lut_name_length = get_BE<int32_t>(in);
-    std::unique_ptr<char[]> const orig_lut_name(new char[orig_lut_name_length]);
+    const std::unique_ptr<char[]> orig_lut_name(new char[orig_lut_name_length]);
     in.read(orig_lut_name.get(), orig_lut_name_length);
 
     const auto num_entries_to_read = get_BE<int32_t>(in);
@@ -90,7 +90,7 @@ void read_annot(const std::filesystem::path &path, label_vector_type &labels, Co
         throw Exception("Error reading FreeSurfer annotation file \"" + path.filename().string() +
                         "\": Duplicate structure index");
       const auto struct_name_length = get_BE<int32_t>(in);
-      std::unique_ptr<char[]> const struct_name(new char[struct_name_length]);
+      const std::unique_ptr<char[]> struct_name(new char[struct_name_length]);
       in.read(struct_name.get(), struct_name_length);
       const auto r = get_BE<int32_t>(in);
       const auto g = get_BE<int32_t>(in);

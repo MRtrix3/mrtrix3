@@ -80,7 +80,7 @@ class Wrapper {
 public:
   Wrapper(List &strides) : S(strides) {}
   [[nodiscard]] size_t ndim() const { return S.size(); }
-  [[nodiscard]] const ssize_t &stride(size_t axis) const { return S[axis]; }
+  const [[nodiscard]] ssize_t &stride(size_t axis) const { return S[axis]; }
   ssize_t &stride(size_t axis) { return S[axis]; }
 
 private:
@@ -132,7 +132,7 @@ order(const HeaderType &header, size_t from_axis = 0, size_t to_axis = std::nume
   std::vector<size_t> ret(to_axis - from_axis);
   for (size_t i = 0; i < ret.size(); ++i)
     ret[i] = from_axis + i;
-  Compare<HeaderType> const compare(header);
+  const Compare<HeaderType> compare(header);
   std::sort(ret.begin(), ret.end(), compare);
   return ret;
 }
@@ -270,7 +270,7 @@ template <class HeaderType> size_t offset(const HeaderType &header) {
  * to the first voxel value (i.e. at voxel [ 0 0 0 ... ]), assuming the
  * strides in \a strides and HeaderType dimensions of \a header. */
 template <class HeaderType> size_t offset(List &strides, const HeaderType &header) {
-  InfoWrapper<HeaderType> const wrapper(strides, header);
+  const InfoWrapper<HeaderType> wrapper(strides, header);
   return offset(wrapper);
 }
 

@@ -36,7 +36,7 @@ public:
   SpatialLock(const value_type tx, const value_type ty, const value_type tz) : _tx(tx), _ty(ty), _tz(tz) {}
 
   ~SpatialLock() {
-    std::lock_guard<std::mutex> const lock(mutex);
+    const std::lock_guard<std::mutex> lock(mutex);
     lockcentres.clear();
   }
 
@@ -76,7 +76,7 @@ protected:
   value_type _tx, _ty, _tz;
 
   bool try_lock(const point_type &pos, ssize_t &idx) {
-    std::lock_guard<std::mutex> const lock(mutex);
+    const std::lock_guard<std::mutex> lock(mutex);
     idx = -1;
     ssize_t i = 0;
     point_type d;
@@ -101,7 +101,7 @@ protected:
   }
 
   void unlock(const size_t idx) {
-    std::lock_guard<std::mutex> const lock(mutex);
+    const std::lock_guard<std::mutex> lock(mutex);
     lockcentres[idx].second = false;
   }
 };

@@ -102,7 +102,7 @@ void run() {
   });
   Q_INIT_RESOURCE(icons);
   GUI::MRView::Window window;
-  MR::GUI::MRView::Sync::SyncManager const sync; // sync allows syncing between mrview windows in different processes
+  const MR::GUI::MRView::Sync::SyncManager sync; // sync allows syncing between mrview windows in different processes
   window.show();
   try {
     window.parse_arguments();

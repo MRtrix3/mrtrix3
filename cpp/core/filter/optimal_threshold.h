@@ -35,7 +35,7 @@ public:
       : overall_sum(overall_sum), overall_sum_sqr(overall_sum_sqr), overall_count(overall_count) {}
 
   ~MeanStdFunctor() {
-    std::lock_guard<std::mutex> const lock(mutex);
+    const std::lock_guard<std::mutex> lock(mutex);
     overall_sum += sum;
     overall_sum_sqr += sum_sqr;
     overall_count += count;
@@ -43,7 +43,7 @@ public:
 
   template <class ImageType, class MaskType> void operator()(ImageType &vox, MaskType &mask) {
     if (mask.value()) {
-      double const in = vox.value();
+      const double in = vox.value();
       if (std::isfinite(in)) {
         sum += in;
         sum_sqr += Math::pow2(in);
@@ -53,7 +53,7 @@ public:
   }
 
   template <class ImageType> void operator()(ImageType &vox) {
-    double const in = vox.value();
+    const double in = vox.value();
     if (std::isfinite(in)) {
       sum += in;
       sum_sqr += Math::pow2(in);
@@ -77,13 +77,13 @@ public:
       : threshold(threshold), overall_sum(overall_sum), overall_mean_xy(overall_mean_xy) {}
 
   ~CorrelationFunctor() {
-    std::lock_guard<std::mutex> const lock(mutex);
+    const std::lock_guard<std::mutex> lock(mutex);
     overall_sum += sum;
     overall_mean_xy += mean_xy;
   }
 
   template <class ImageType> void operator()(ImageType &vox) {
-    double const in = vox.value();
+    const double in = vox.value();
     if (std::isfinite(in)) {
       if (in > threshold) {
         sum += 1;
@@ -94,7 +94,7 @@ public:
 
   template <class ImageType, class MaskType> void operator()(ImageType &vox, MaskType &mask) {
     if (mask.value()) {
-      double const in = vox.value();
+      const double in = vox.value();
       if (std::isfinite(in)) {
         if (in > threshold) {
           sum += 1;
@@ -149,8 +149,8 @@ public:
       ThreadedLoop(input).run(CorrelationFunctor(threshold, sum, mean_xy), input);
 
     mean_xy /= count;
-    double const covariance = mean_xy - (sum / count) * input_image_mean;
-    double const mask_stdev = sqrt((sum - Math::pow2(sum) / static_cast<double>(count)) / static_cast<double>(count));
+    const double covariance = mean_xy - (sum / count) * input_image_mean;
+    const double mask_stdev = sqrt((sum - Math::pow2(sum) / static_cast<double>(count)) / static_cast<double>(count));
 
     return -covariance / (input_image_stdev * mask_stdev);
   }

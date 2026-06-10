@@ -79,11 +79,11 @@ void Tree::read_file(const std::filesystem::path &filepath) {
     return;
   }
 
-  std::shared_ptr<Patient> const patient = find(reader.patient, reader.patient_ID, reader.patient_DOB);
-  std::shared_ptr<Study> const study =
+  const std::shared_ptr<Patient> patient = find(reader.patient, reader.patient_ID, reader.patient_DOB);
+  const std::shared_ptr<Study> study =
       patient->find(reader.study, reader.study_ID, reader.study_UID, reader.study_date, reader.study_time);
   for (const auto &image_type : reader.image_type) {
-    std::shared_ptr<Series> const series = study->find(reader.series,
+    const std::shared_ptr<Series> series = study->find(reader.series,
                                                        reader.series_number,
                                                        image_type.first,
                                                        reader.series_ref_UID,
@@ -91,7 +91,7 @@ void Tree::read_file(const std::filesystem::path &filepath) {
                                                        reader.series_date,
                                                        reader.series_time);
 
-    std::shared_ptr<Image> const image(new Image);
+    const std::shared_ptr<Image> image(new Image);
     image->filepath = filepath;
     image->series = series.get();
     image->sequence_name = reader.sequence;

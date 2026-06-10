@@ -56,7 +56,7 @@ ROI_Item::ROI_Item(MR::Header &&src) : Volume(std::move(src)) {
   transparent_intensity = 0.4F;
   opaque_intensity = 0.6F;
   colourmap = ColourMap::index("Colour");
-  float const spacing = std::min({header().spacing(0), header().spacing(1), header().spacing(2)});
+  const float spacing = std::min({header().spacing(0), header().spacing(1), header().spacing(2)});
   brush_size = min_brush_size = spacing;
   max_brush_size = 100.0F * min_brush_size;
 
@@ -64,7 +64,7 @@ ROI_Item::ROI_Item(MR::Header &&src) : Volume(std::move(src)) {
   name << "ROI" << std::setfill('0') << std::setw(5) << new_roi_counter++ << ".mif";
   filepath = name.str();
 
-  GL::Context::Grab const context;
+  const GL::Context::Grab context;
   GL::assert_context_is_current();
   bind();
   allocate();
@@ -72,7 +72,7 @@ ROI_Item::ROI_Item(MR::Header &&src) : Volume(std::move(src)) {
 }
 
 void ROI_Item::zero() {
-  GL::Context::Grab const context;
+  const GL::Context::Grab context;
   GL::assert_context_is_current();
   bind();
   std::vector<GLubyte> data(header().size(0) * header().size(1));
@@ -82,7 +82,7 @@ void ROI_Item::zero() {
 }
 
 void ROI_Item::load() {
-  GL::Context::Grab const context;
+  const GL::Context::Grab context;
   GL::assert_context_is_current();
   bind();
   auto image = header().get_image<bool>();

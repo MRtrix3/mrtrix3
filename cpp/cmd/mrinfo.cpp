@@ -201,7 +201,7 @@ void print_shells(const Eigen::MatrixXd &grad,
                   const bool shell_bvalues,
                   const bool shell_sizes,
                   const bool shell_indices) {
-  DWI::Shells const dwshells(grad);
+  const DWI::Shells dwshells(grad);
   if (shell_bvalues) {
     for (size_t i = 0; i < dwshells.count(); i++)
       std::cout << dwshells[i].get_mean() << " ";
@@ -220,7 +220,7 @@ void print_shells(const Eigen::MatrixXd &grad,
 }
 
 void print_transform(const Header &header) {
-  Eigen::IOFormat const fmt(Eigen::FullPrecision, 0, " ", "\n", "", "", "", "\n");
+  const Eigen::IOFormat fmt(Eigen::FullPrecision, 0, " ", "\n", "", "", "", "\n");
   Eigen::Matrix<default_type, 4, 4> matrix;
   matrix.topLeftCorner<3, 4>() = header.transform().matrix();
   matrix.row(3) << 0.0, 0.0, 0.0, 1.0;
@@ -408,7 +408,7 @@ void run() {
       grad = DWI::get_DW_scheme(header, DWI::get_cmdline_bvalue_scaling_behaviour());
 
       if (dwgrad) {
-        Eigen::IOFormat const fmt(Eigen::FullPrecision, 0, " ", "\n", "", "", "", "");
+        const Eigen::IOFormat fmt(Eigen::FullPrecision, 0, " ", "\n", "", "", "", "");
         std::cout << grad.format(fmt) << "\n";
       }
       if (shell_bvalues || shell_sizes || shell_indices)

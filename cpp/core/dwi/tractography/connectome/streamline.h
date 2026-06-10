@@ -27,7 +27,7 @@ public:
   Streamline_nodepair(const size_t i) : Tractography::Streamline<>(i), nodes(std::make_pair(0, 0)) {}
 
   void set_nodes(const NodePair &i) { nodes = i; }
-  [[nodiscard]] const NodePair &get_nodes() const { return nodes; }
+  const [[nodiscard]] NodePair &get_nodes() const { return nodes; }
 
 private:
   NodePair nodes;
@@ -39,7 +39,7 @@ public:
   Streamline_nodelist(const size_t i) : Tractography::Streamline<>(i), nodes() {}
 
   void set_nodes(const std::vector<node_t> &i) { nodes = i; }
-  [[nodiscard]] const std::vector<node_t> &get_nodes() const { return nodes; }
+  const [[nodiscard]] std::vector<node_t> &get_nodes() const { return nodes; }
 
 private:
   std::vector<node_t> nodes;

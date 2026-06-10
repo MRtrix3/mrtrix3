@@ -58,7 +58,7 @@ void Transform::hideEvent(QHideEvent *) { setActive(false); }
 
 bool Transform::slice_move_event(const ModelViewProjection &projection, float x) {
   const auto &header = window().image()->header();
-  float const increment = window().snap_to_image()
+  const float increment = window().snap_to_image()
                               ? x * header.spacing(window().plane())
                               : x * std::pow(header.spacing(0) * header.spacing(1) * header.spacing(2), 1.0F / 3.0F);
   auto move = window().get_current_mode()->get_through_plane_translation(increment, projection);
@@ -108,7 +108,7 @@ bool Transform::tilt_event(const ModelViewProjection &projection) {
     return true;
 
   const Eigen::Vector3d origin = window().focus().cast<double>();
-  transform_type const M =
+  const transform_type M =
       transform_type(rot).pretranslate(origin).translate(-origin) * window().image()->header().transform();
 
   window().image()->header().transform() = M;
@@ -127,7 +127,7 @@ bool Transform::rotate_event(const ModelViewProjection &projection) {
     return true;
 
   const Eigen::Vector3d origin = window().target().cast<double>();
-  transform_type const M =
+  const transform_type M =
       transform_type(rot).inverse().pretranslate(origin).translate(-origin) * window().image()->header().transform();
 
   window().image()->header().transform() = M;

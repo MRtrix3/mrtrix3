@@ -48,7 +48,7 @@ public:
     }
   }
 
-  [[nodiscard]] const std::filesystem::path &name() const { return filepath; }
+  const [[nodiscard]] std::filesystem::path &name() const { return filepath; }
   void open(const std::filesystem::path &fname, std::string_view mode) {
     close();
     filepath = fname;
@@ -89,7 +89,7 @@ public:
 
   int read(void *const s, size_t n) {
     assert(gz);
-    int const n_read = gzread(gz, s, n);
+    const int n_read = gzread(gz, s, n);
     if (n_read < 0)
       throw Exception("error uncompressing GZ file \"" + filepath.string() + "\": " + error());
     return n_read;

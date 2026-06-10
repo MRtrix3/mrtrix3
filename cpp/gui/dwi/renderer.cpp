@@ -99,9 +99,9 @@ void Renderer::Shader::start(mode_t mode,
     colour_relative_to_projection_ = colour_relative_to_projection;
     if (*this != 0U)
       clear();
-    GL::Shader::Vertex const vertex_shader(vertex_shader_source());
-    GL::Shader::Geometry const geometry_shader(geometry_shader_source());
-    GL::Shader::Fragment const fragment_shader(fragment_shader_source());
+    const GL::Shader::Vertex vertex_shader(vertex_shader_source());
+    const GL::Shader::Geometry geometry_shader(geometry_shader_source());
+    const GL::Shader::Fragment fragment_shader(fragment_shader_source());
     attach(vertex_shader);
     if (static_cast<GLuint>(geometry_shader) != 0U)
       attach(geometry_shader);
@@ -294,7 +294,7 @@ std::string Renderer::Shader::fragment_shader_source() const {
 }
 
 Renderer::SH::~SH() {
-  GL::Context::Grab const context(parent.context_);
+  const GL::Context::Grab context(parent.context_);
   half_sphere.vertex_buffer.clear();
   half_sphere.index_buffer.clear();
   surface_buffer.clear();
@@ -303,7 +303,7 @@ Renderer::SH::~SH() {
 
 void Renderer::SH::initGL() {
   GL_CHECK_ERROR;
-  GL::Context::Grab const context(parent.context_);
+  const GL::Context::Grab context(parent.context_);
   half_sphere.vertex_buffer.gen();
   surface_buffer.gen();
   half_sphere.index_buffer.gen();
@@ -338,7 +338,7 @@ void Renderer::SH::update_mesh(const size_t lod, const int lmax) {
   INFO("updating ODF SH renderer transform...");
   QApplication::setOverrideCursor(Qt::BusyCursor);
   {
-    GL::Context::Grab const context(parent.context_);
+    const GL::Context::Grab context(parent.context_);
     LOD = lod;
     half_sphere.LOD(LOD);
   }
@@ -360,8 +360,8 @@ void Renderer::SH::update_transform(const std::vector<Shapes::HalfSphere::Vertex
       }
     }
 
-    bool const atpole(vertices[n][0] == 0.0 && vertices[n][1] == 0.0);
-    float const az = atpole ? 0.0 : atan2(vertices[n][1], vertices[n][0]);
+    const bool atpole(vertices[n][0] == 0.0 && vertices[n][1] == 0.0);
+    const float az = atpole ? 0.0 : atan2(vertices[n][1], vertices[n][0]);
 
     for (int l = 2; l <= lmax; l += 2) {
       const int idx(Math::SH::index(l, 0));
@@ -369,8 +369,8 @@ void Renderer::SH::update_transform(const std::vector<Shapes::HalfSphere::Vertex
     }
 
     for (int m = 1; m <= lmax; m++) {
-      float const caz = cos(m * az);
-      float const saz = sin(m * az);
+      const float caz = cos(m * az);
+      const float saz = sin(m * az);
       for (int l = 2 * ((m + 1) / 2); l <= lmax; l += 2) {
         const int idx(Math::SH::index(l, m));
         transform(3 * n + 1, idx) = -transform(3 * n, idx - 1) * sqrt(static_cast<float>((l + m) * (l - m + 1)));
@@ -383,7 +383,7 @@ void Renderer::SH::update_transform(const std::vector<Shapes::HalfSphere::Vertex
           transform(3 * n + 2, idx) = -transform(3 * n + 1, idx) * saz;
           transform(3 * n + 2, idx2) = transform(3 * n + 1, idx) * caz;
         } else {
-          float const tmp(m * transform(3 * n, idx));
+          const float tmp(m * transform(3 * n, idx));
           transform(3 * n + 2, idx) = -tmp * saz;
           transform(3 * n + 2, idx2) = tmp * caz;
         }
@@ -394,8 +394,8 @@ void Renderer::SH::update_transform(const std::vector<Shapes::HalfSphere::Vertex
     }
 
     for (int m = 1; m <= lmax; m++) {
-      float const caz = cos(m * az);
-      float const saz = sin(m * az);
+      const float caz = cos(m * az);
+      const float saz = sin(m * az);
       for (int l = 2 * ((m + 1) / 2); l <= lmax; l += 2) {
         const int idx(Math::SH::index(l, m));
         transform(3 * n, idx) *= caz;
@@ -406,7 +406,7 @@ void Renderer::SH::update_transform(const std::vector<Shapes::HalfSphere::Vertex
 }
 
 Renderer::Tensor::~Tensor() {
-  GL::Context::Grab const context(parent.context_);
+  const GL::Context::Grab context(parent.context_);
   half_sphere.vertex_buffer.clear();
   half_sphere.index_buffer.clear();
   VAO.clear();
@@ -414,7 +414,7 @@ Renderer::Tensor::~Tensor() {
 
 void Renderer::Tensor::initGL() {
   GL_CHECK_ERROR;
-  GL::Context::Grab const context(parent.context_);
+  const GL::Context::Grab context(parent.context_);
   half_sphere.vertex_buffer.gen();
   half_sphere.index_buffer.gen();
   VAO.gen();
@@ -438,7 +438,7 @@ void Renderer::Tensor::update_mesh(const size_t lod) {
   INFO("updating tensor renderer...");
   QApplication::setOverrideCursor(Qt::BusyCursor);
   {
-    GL::Context::Grab const context(parent.context_);
+    const GL::Context::Grab context(parent.context_);
     LOD = lod;
     half_sphere.LOD(LOD);
   }
@@ -455,7 +455,7 @@ void Renderer::Tensor::set_data(const vector_t &data, int /*buffer_ID*/) const {
   D(0, 1) = D(1, 0) = data[3];
   D(0, 2) = D(2, 0) = data[4];
   D(1, 2) = D(2, 1) = data[5];
-  Eigen::FullPivLU<tensor_t> const lu_decomp(D);
+  const Eigen::FullPivLU<tensor_t> lu_decomp(D);
   const tensor_t Dinv = lu_decomp.inverse();
   if (data[0] <= 0.0F || data[1] <= 0.0F || data[2] <= 0.0F || Dinv.diagonal().minCoeff() < 0.0F) {
     gl::UniformMatrix3fv(gl::GetUniformLocation(parent.shader, "tensor"), 1, gl::FALSE_, D.data());
@@ -473,7 +473,7 @@ void Renderer::Tensor::set_data(const vector_t &data, int /*buffer_ID*/) const {
 }
 
 Renderer::Dixel::~Dixel() {
-  GL::Context::Grab const context(parent.context_);
+  const GL::Context::Grab context(parent.context_);
   vertex_buffer.clear();
   value_buffer.clear();
   index_buffer.clear();
@@ -482,7 +482,7 @@ Renderer::Dixel::~Dixel() {
 
 void Renderer::Dixel::initGL() {
   GL_CHECK_ERROR;
-  GL::Context::Grab const context(parent.context_);
+  const GL::Context::Grab context(parent.context_);
   vertex_buffer.gen();
   value_buffer.gen();
   index_buffer.gen();
@@ -508,7 +508,7 @@ void Renderer::Dixel::set_data(const vector_t &data, int /*buffer_ID*/) const {
   assert(data.size() == vertex_count);
 
   GL_CHECK_ERROR;
-  GL::Context::Grab const context(parent.context_);
+  const GL::Context::Grab context(parent.context_);
   VAO.bind();
   value_buffer.bind(gl::ARRAY_BUFFER);
   gl::BufferData(gl::ARRAY_BUFFER, vertex_count * sizeof(GLfloat), &data[0], gl::STREAM_DRAW);
@@ -560,7 +560,7 @@ void Renderer::Dixel::update_dixels(const MR::DWI::Directions::Set &dirs) {
   }
 
   GL_CHECK_ERROR;
-  GL::Context::Grab const context(parent.context_);
+  const GL::Context::Grab context(parent.context_);
   VAO.bind();
   vertex_buffer.bind(gl::ARRAY_BUFFER);
   gl::BufferData(gl::ARRAY_BUFFER, dirs.size() * sizeof(Eigen::Vector3f), &directions_data[0], gl::STATIC_DRAW);

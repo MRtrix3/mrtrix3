@@ -68,22 +68,22 @@ void ColourBars::setup(size_t index, bool inverted) {
   source += "data.z;\n"
             "}\n";
 
-  GL::Shader::Vertex const vertex_shader(source);
+  const GL::Shader::Vertex vertex_shader(source);
 
-  std::string const shader = "in float amplitude;\n"
+  const std::string shader = "in float amplitude;\n"
                              "out vec3 color;\n"
                              "uniform vec3 colourmap_colour;\n"
                              "void main () {\n"
                              "  " +
                              std::string(ColourMap::maps[index].glsl_mapping) + "}\n";
 
-  GL::Shader::Fragment const fragment_shader(shader);
+  const GL::Shader::Fragment fragment_shader(shader);
 
   program.attach(vertex_shader);
   program.attach(fragment_shader);
   program.link();
 
-  GL::Shader::Fragment const frame_fragment_shader("out vec3 color;\n"
+  const GL::Shader::Fragment frame_fragment_shader("out vec3 color;\n"
                                                    "void main () {\n"
                                                    "  color = vec3(1.0, 1.0, 0.0);\n"
                                                    "}\n");
@@ -206,7 +206,7 @@ void ColourBars::render(size_t colourmap,
   frame_program.stop();
 
   current_projection->setup_render_text();
-  int const x = halign > 0 ? data[0] - text_offset : data[6] + text_offset;
+  const int x = halign > 0 ? data[0] - text_offset : data[6] + text_offset;
   current_projection->render_text_align(x, data[1], str(local_min_value), halign, 0);
   current_projection->render_text_align(x, data[4], str(local_max_value), halign, 0);
   current_projection->done_render_text();

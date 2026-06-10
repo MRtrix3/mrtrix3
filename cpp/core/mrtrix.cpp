@@ -34,7 +34,7 @@ std::vector<default_type> parse_floats(std::string_view spec) {
   try {
     do {
       end = spec.find_first_of(",:", start);
-      std::string const sub(spec.substr(start, end - start));
+      const std::string sub(spec.substr(start, end - start));
       range_spec[i] = (sub.empty() || sub == "nan") ? NaN : to<default_type>(sub);
       const char last_char = end < spec.size() ? spec[end] : '\0';
       if (last_char == ':') {
@@ -211,7 +211,7 @@ size_t dash_bytes(std::string_view arg) {
     return 1;
   if (arg.size() < 3)
     return 0;
-  std::basic_string_view<unsigned char> const uarg(reinterpret_cast<const unsigned char *>(arg.data()), arg.size());
+  const std::basic_string_view<unsigned char> uarg(reinterpret_cast<const unsigned char *>(arg.data()), arg.size());
   if (uarg[0] == 0xE2 && uarg[1] == 0x80 && (uarg[2] >= 0x90 && uarg[2] <= 0x95))
     return 3;
   if (uarg[0] == 0xEF) {

@@ -195,7 +195,7 @@ public:
   operator std::vector<UIntType>() const { return as_sequence_uint(); }
   operator std::vector<default_type>() const { return as_sequence_float(); }
 
-  [[nodiscard]] const char *c_str() const { return p.c_str(); } // check_syntax off
+  const [[nodiscard]] char *c_str() const { return p.c_str(); } // check_syntax off
 
   //! the index of this argument in the raw command-line arguments list
   [[nodiscard]] size_t index() const { return index_; }

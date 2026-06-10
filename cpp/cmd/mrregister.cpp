@@ -292,7 +292,7 @@ void run() {
     mc_params[i].image_nvols = input1[i].ndim() < 4 ? 1 : input1[i].size(3);
   }
 
-  ssize_t const max_mc_image_lmax =
+  const ssize_t max_mc_image_lmax =
       std::max_element(mc_params.begin(),
                        mc_params.end(),
                        [](const Registration::MultiContrastSetting &x, const Registration::MultiContrastSetting &y) {
@@ -300,7 +300,7 @@ void run() {
                        })
           ->lmax;
 
-  do_reorientation = std::any_of(mc_params.begin(), mc_params.end(), [](Registration::MultiContrastSetting const &i) {
+  do_reorientation = std::any_of(mc_params.begin(), mc_params.end(), [](const Registration::MultiContrastSetting &i) {
     return i.do_reorientation;
   });
   if (do_reorientation)
@@ -388,7 +388,7 @@ void run() {
   if (!opt.empty()) {
     init_rigid_matrix_set = true;
     Eigen::Vector3d centre;
-    transform_type const rigid_transform = File::Matrix::load_transform(opt[0][0], centre);
+    const transform_type rigid_transform = File::Matrix::load_transform(opt[0][0], centre);
     rigid.set_transform(rigid_transform);
     if (!std::isfinite(centre(0))) {
       rigid_registration.set_init_translation_type(Registration::Transform::Init::set_centre_mass);
@@ -520,7 +520,7 @@ void run() {
 
     init_affine_matrix_set = true;
     Eigen::Vector3d centre;
-    transform_type const affine_transform = File::Matrix::load_transform(opt[0][0], centre);
+    const transform_type affine_transform = File::Matrix::load_transform(opt[0][0], centre);
     affine.set_transform(affine_transform);
     if (!std::isfinite(centre(0))) {
       affine_registration.set_init_translation_type(Registration::Transform::Init::set_centre_mass);
@@ -727,7 +727,7 @@ void run() {
     if (!do_nonlinear)
       throw Exception("the non-linear multi-resolution scale factors were input"
                       " when no non-linear registration is requested");
-    std::vector<default_type> const scale_factors = parse_floats(opt[0][0]);
+    const std::vector<default_type> scale_factors = parse_floats(opt[0][0]);
     if (nonlinear_init) {
       WARN("-nl_scale option ignored since only the full resolution"
            " will be performed when initialising with non-linear warp");
@@ -741,7 +741,7 @@ void run() {
     if (!do_nonlinear)
       throw Exception("the number of non-linear iterations have been input"
                       " when no non-linear registration is requested");
-    std::vector<uint32_t> const iterations_per_level = parse_ints<uint32_t>(opt[0][0]);
+    const std::vector<uint32_t> iterations_per_level = parse_ints<uint32_t>(opt[0][0]);
     if (nonlinear_init && iterations_per_level.size() > 1)
       throw Exception("when initialising the non-linear registration"
                       " the max number of iterations can only be defined"
@@ -885,17 +885,17 @@ void run() {
           Registration::Metric::MeanSquared4D<Image<value_type>, Image<value_type>> metric;
           rigid_registration.run_masked(metric, rigid, images1, images2, im1_mask, im2_mask);
         } else if (rigid_estimator == Registration::L1) {
-          Registration::Metric::L1 const estimator;
+          const Registration::Metric::L1 estimator;
           Registration::Metric::DifferenceRobust4D<Image<value_type>, Image<value_type>, Registration::Metric::L1>
               metric(images1, images2, estimator);
           rigid_registration.run_masked(metric, rigid, images1, images2, im1_mask, im2_mask);
         } else if (rigid_estimator == Registration::L2) {
-          Registration::Metric::L2 const estimator;
+          const Registration::Metric::L2 estimator;
           Registration::Metric::DifferenceRobust4D<Image<value_type>, Image<value_type>, Registration::Metric::L2>
               metric(images1, images2, estimator);
           rigid_registration.run_masked(metric, rigid, images1, images2, im1_mask, im2_mask);
         } else if (rigid_estimator == Registration::LP) {
-          Registration::Metric::LP const estimator;
+          const Registration::Metric::LP estimator;
           Registration::Metric::DifferenceRobust4D<Image<value_type>, Image<value_type>, Registration::Metric::LP>
               metric(images1, images2, estimator);
           rigid_registration.run_masked(metric, rigid, images1, images2, im1_mask, im2_mask);
@@ -906,7 +906,7 @@ void run() {
     } else { // 3D
       if (rigid_metric == Registration::NCC) {
         Registration::Metric::LocalCrossCorrelation metric;
-        std::vector<size_t> const extent(3, 3);
+        const std::vector<size_t> extent(3, 3);
         rigid_registration.set_extent(extent);
         rigid_registration.run_masked(metric, rigid, images1, images2, im1_mask, im2_mask);
       } else if (rigid_metric == Registration::Diff) {
@@ -914,15 +914,15 @@ void run() {
           Registration::Metric::MeanSquared metric;
           rigid_registration.run_masked(metric, rigid, images1, images2, im1_mask, im2_mask);
         } else if (rigid_estimator == Registration::L1) {
-          Registration::Metric::L1 const estimator;
+          const Registration::Metric::L1 estimator;
           Registration::Metric::DifferenceRobust<Registration::Metric::L1> metric(estimator);
           rigid_registration.run_masked(metric, rigid, images1, images2, im1_mask, im2_mask);
         } else if (rigid_estimator == Registration::L2) {
-          Registration::Metric::L2 const estimator;
+          const Registration::Metric::L2 estimator;
           Registration::Metric::DifferenceRobust<Registration::Metric::L2> metric(estimator);
           rigid_registration.run_masked(metric, rigid, images1, images2, im1_mask, im2_mask);
         } else if (rigid_estimator == Registration::LP) {
-          Registration::Metric::LP const estimator;
+          const Registration::Metric::LP estimator;
           Registration::Metric::DifferenceRobust<Registration::Metric::LP> metric(estimator);
           rigid_registration.run_masked(metric, rigid, images1, images2, im1_mask, im2_mask);
         } else
@@ -961,17 +961,17 @@ void run() {
           Registration::Metric::MeanSquared4D<Image<value_type>, Image<value_type>> metric;
           affine_registration.run_masked(metric, affine, images1, images2, im1_mask, im2_mask);
         } else if (affine_estimator == Registration::L1) {
-          Registration::Metric::L1 const estimator;
+          const Registration::Metric::L1 estimator;
           Registration::Metric::DifferenceRobust4D<Image<value_type>, Image<value_type>, Registration::Metric::L1>
               metric(images1, images2, estimator);
           affine_registration.run_masked(metric, affine, images1, images2, im1_mask, im2_mask);
         } else if (affine_estimator == Registration::L2) {
-          Registration::Metric::L2 const estimator;
+          const Registration::Metric::L2 estimator;
           Registration::Metric::DifferenceRobust4D<Image<value_type>, Image<value_type>, Registration::Metric::L2>
               metric(images1, images2, estimator);
           affine_registration.run_masked(metric, affine, images1, images2, im1_mask, im2_mask);
         } else if (affine_estimator == Registration::LP) {
-          Registration::Metric::LP const estimator;
+          const Registration::Metric::LP estimator;
           Registration::Metric::DifferenceRobust4D<Image<value_type>, Image<value_type>, Registration::Metric::LP>
               metric(images1, images2, estimator);
           affine_registration.run_masked(metric, affine, images1, images2, im1_mask, im2_mask);
@@ -982,7 +982,7 @@ void run() {
     } else { // 3D
       if (affine_metric == Registration::NCC) {
         Registration::Metric::LocalCrossCorrelation metric;
-        std::vector<size_t> const extent(3, 3);
+        const std::vector<size_t> extent(3, 3);
         affine_registration.set_extent(extent);
         affine_registration.run_masked(metric, affine, images1, images2, im1_mask, im2_mask);
       } else if (affine_metric == Registration::Diff) {
@@ -990,15 +990,15 @@ void run() {
           Registration::Metric::MeanSquared metric;
           affine_registration.run_masked(metric, affine, images1, images2, im1_mask, im2_mask);
         } else if (affine_estimator == Registration::L1) {
-          Registration::Metric::L1 const estimator;
+          const Registration::Metric::L1 estimator;
           Registration::Metric::DifferenceRobust<Registration::Metric::L1> metric(estimator);
           affine_registration.run_masked(metric, affine, images1, images2, im1_mask, im2_mask);
         } else if (affine_estimator == Registration::L2) {
-          Registration::Metric::L2 const estimator;
+          const Registration::Metric::L2 estimator;
           Registration::Metric::DifferenceRobust<Registration::Metric::L2> metric(estimator);
           affine_registration.run_masked(metric, affine, images1, images2, im1_mask, im2_mask);
         } else if (affine_estimator == Registration::LP) {
-          Registration::Metric::LP const estimator;
+          const Registration::Metric::LP estimator;
           Registration::Metric::DifferenceRobust<Registration::Metric::LP> metric(estimator);
           affine_registration.run_masked(metric, affine, images1, images2, im1_mask, im2_mask);
         } else
@@ -1029,7 +1029,7 @@ void run() {
     } else if (do_rigid || init_rigid_matrix_set) {
       nl_registration.run(rigid, images1, images2, im1_mask, im2_mask);
     } else {
-      Registration::Transform::Affine const identity_transform;
+      const Registration::Transform::Affine identity_transform;
       nl_registration.run(identity_transform, images1, images2, im1_mask, im2_mask);
     }
     if (warp_full_path.has_value()) {

@@ -61,7 +61,7 @@ public:
   }
 
   ~Demons4D() {
-    std::lock_guard<std::mutex> const lock(*mutex);
+    const std::lock_guard<std::mutex> lock(*mutex);
     global_cost += thread_cost;
     global_voxel_count += thread_voxel_count;
   }
@@ -126,7 +126,7 @@ public:
       im2_gradient.index(3) = vol;
       grad = (im2_gradient.value() + im1_gradient.value()).array() / 2.0;
 
-      default_type const denominator = speed_squared[vol] / normaliser + grad.squaredNorm();
+      const default_type denominator = speed_squared[vol] / normaliser + grad.squaredNorm();
       if (denominator < denominator_threshold)
         continue;
       total_update += (weight[vol] * speed[vol] / denominator) * grad;

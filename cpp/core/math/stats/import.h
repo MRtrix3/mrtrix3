@@ -59,7 +59,7 @@ public:
    */
   virtual measurements_value_type operator[](const index_type index) const = 0;
 
-  [[nodiscard]] const std::filesystem::path &name() const { return path; }
+  const [[nodiscard]] std::filesystem::path &name() const { return path; }
 
   [[nodiscard]] virtual index_type size() const = 0;
 
@@ -168,7 +168,7 @@ void CohortDataImport::initialise(const std::filesystem::path &listpath,
 
   for (const auto &line : lines) {
     try {
-      std::shared_ptr<SubjectDataImport> const subject(new SubjectDataImport((load_from_dir / line)));
+      const std::shared_ptr<SubjectDataImport> subject(new SubjectDataImport((load_from_dir / line)));
       files.emplace_back(subject);
     } catch (Exception &e) {
       throw Exception(e, "Input data not successfully configured for load: \"" + line + "\"");

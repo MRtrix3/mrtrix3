@@ -32,7 +32,7 @@ void get_geometric_centre(const ImageType &image, Eigen::Matrix<ValueType, 3, 1>
   centre_voxel[0] = (static_cast<default_type>(image.size(0)) / 2.0) - 1.0;
   centre_voxel[1] = (static_cast<default_type>(image.size(1)) / 2.0) - 1.0;
   centre_voxel[2] = (static_cast<default_type>(image.size(2)) / 2.0) - 1.0;
-  MR::Transform const transform(image);
+  const MR::Transform transform(image);
   centre = transform.voxel2scanner * centre_voxel;
 }
 
@@ -56,7 +56,7 @@ public:
       : im1(image1), im2(image2), transform(transform), mask1(mask1), mask2(mask2), lmax(l_max) {
     assert(im1.ndim() == 4 && im2.ndim() == 4);
     assert(im1.size(3) == im2.size(3));
-    ssize_t const l = Math::SH::LforN(im1.size(3));
+    const ssize_t l = Math::SH::LforN(im1.size(3));
     if (lmax == -1 or lmax > l)
       lmax = l;
     N = Math::SH::NforL(lmax);
