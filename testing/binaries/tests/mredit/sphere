@@ -1,9 +1,13 @@
 #!/bin/bash
-# Verify the -sphere option, which fills voxels within a sphere to a specified value
-# mask.mif has dimensions 6x8x9 and voxel size 2.5mm
-# A sphere centred at voxel (3,4,4) with radius 5.0mm is filled with value 2.0
-# ENsure output exactly matches that generated using a prior software version
+# Verify the -sphere option, which fills voxels within a sphere to a given value,
+#   defined with respect to the voxel grid (i.e. without the -scanner option).
+# oblique.mif is a 16x16x16 grid of 2mm isotropic voxels whose image-to-scanner
+#   transform is a 45-degree rotation about the (1,1,1) axis
+#   (see the mredit cube test for its construction).
+# A sphere of radius 4 voxels centred at voxel (8,8,8) is filled with value 2.
+# The output is compared against a reference image
+#   that has been manually verified to be correct
+#   and committed to the test_data repository.
 
-mrconvert mask.mif -datatype uint8 - | \
-mredit - -sphere 3,4,4 5.0 2.0 - | \
-testing_diff_image - mredit/sphere.mif -abs 0
+mredit mredit/oblique.mif.gz -sphere 8,8,8 4.0 2.0 - | \
+testing_diff_image - mredit/sphere.mif.gz -abs 0

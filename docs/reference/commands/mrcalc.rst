@@ -26,10 +26,18 @@ This command uses a stack-based syntax, with operators (specified using options)
 
 As an additional feature, this command will allow images with different dimensions to be processed, provided they satisfy the following conditions: for each axis, the dimensions match if they are the same size, or one of them has size one. In the latter case, the entire image will be replicated along that axis. This allows for example a 4D image of size [ X Y Z N ] to be added to a 3D image of size [ X Y Z ], as if it consisted of N copies of the 3D image along the 4th axis (the missing dimension is assumed to have size 1). Another example would a single-voxel 4D image of size [ 1 1 1 N ], multiplied by a 3D image of size [ X Y Z ], which would allow the creation of a 4D image where each volume consists of the 3D image scaled by the corresponding value for that volume in the single-voxel image.
 
-The following special keywords are permitted as operands on the stack: 'rand' (random number between 0 and 1); 'randn' (random number from unit std.dev. normal distribution); 'e' (Euler's number); 'pi' (ratio of circumference of circle to diameter)
+The following special keywords are permitted as operands on the stack: 'rand' (random number between 0 and 1); 'randn' (random number from unit std.dev. normal distribution); 'e' (Euler's number); 'pi' (ratio of circumference of circle to diameter); 'pos.x', 'pos.y', 'pos.z' (scanner-space position in mm of each voxel along the respective spatial axis); 'index.0' ... 'index.4' (voxel index of each voxel along the respective image axis)
+
+The 'rand', 'randn', 'pos' and 'index' special keywords each yield one value per voxel, and therefore require a voxel grid against which to be evaluated. This grid is normally taken from an input image operand; if no input image is provided (e.g. when generating image data from scratch), the -template option must be used to define the output image grid.
 
 Example usages
 --------------
+
+-   *Generate a synthetic image from scratch using a template grid*::
+
+        $ mrcalc -template grid.mih pos.x 2 -pow pos.y 2 -pow pos.z 2 -pow -add -add -sqrt 15 -le sphere.mif
+
+    Using image 'grid.mih' (which may be hand-authored or pre-existing) solely to define the output voxel grid, this evaluates the scanner-space radius at each voxel and assigns a value of 1 to all voxels within 15mm of the scanner-space origin (and 0 elsewhere), thereby drawing a solid sphere without requiring any input image data.
 
 -   *Double the value stored in every voxel*::
 
@@ -198,6 +206,11 @@ hyperbolic functions
 -  **-asinh** *(multiple uses permitted)* asinh (%1) : inverse hyperbolic sine
 
 -  **-atanh** *(multiple uses permitted)* atanh (%1) : inverse hyperbolic tangent
+
+Options for generating image data without an input image
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-template image** an image whose grid (dimensions, voxel size and transform) defines that of the output image, enabling generation of image data from the special keyword operands (e.g. 'pos' and 'index') without any input image operand
 
 Data type options
 ^^^^^^^^^^^^^^^^^
