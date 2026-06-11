@@ -16,6 +16,7 @@
 
 #include "dwi/tractography/formats/list.h"
 
+#include "dwi/tractography/formats/pipe.h"
 #include "dwi/tractography/formats/tck.h"
 #include "dwi/tractography/formats/tt.h"
 #include "dwi/tractography/formats/vtk.h"
@@ -23,12 +24,13 @@
 
 namespace MR::DWI::Tractography::Formats {
 
+Pipe pipe_handler;
 TCK tck_handler;
 TT tt_handler;
 VTK vtk_handler;
 VTX vtx_handler;
 
-const Base *handlers[] = {&tck_handler, &tt_handler, &vtk_handler, &vtx_handler, nullptr};
+const Base *handlers[] = {&pipe_handler, &tck_handler, &tt_handler, &vtk_handler, &vtx_handler, nullptr};
 
 const Base *get_handler(const std::filesystem::path &path) {
   for (const Base **format = handlers; *format != nullptr; ++format) {
