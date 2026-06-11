@@ -17,12 +17,14 @@
 #include "dwi/tractography/formats/list.h"
 
 #include "dwi/tractography/formats/tck.h"
+#include "dwi/tractography/formats/vtk.h"
 
 namespace MR::DWI::Tractography::Formats {
 
 TCK tck_handler;
+VTK vtk_handler;
 
-const Base *handlers[] = {&tck_handler, nullptr};
+const Base *handlers[] = {&tck_handler, &vtk_handler, nullptr};
 
 const Base *get_handler(const std::filesystem::path &path) {
   for (const Base **format = handlers; *format != nullptr; ++format) {
