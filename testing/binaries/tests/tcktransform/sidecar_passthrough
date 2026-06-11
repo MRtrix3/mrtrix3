@@ -1,0 +1,32 @@
+#!/bin/bash
+# Step 5: tcktransform passes per-vertex (dpv) and per-streamline (dps) sidecar
+#   data through unchanged. A spatial transform relocates existing vertices
+#   without altering their number or order, so the per-vertex scalar stays valid
+#   (a vertex dropped because it falls outside the warp field has its matching
+#   scalar dropped too, keeping the two aligned).
+# Generate a per-vertex .tsf and a per-streamline weights file, transform the
+#   tractogram carrying both, and confirm:
+#   (a) the output .tsf is consistent with the output .tck (per-streamline vertex
+#       counts match);
+#   (b) the per-streamline weights are carried through unchanged.
+tcksample tracks.tck tcksample/fa.mif tmp_in.tsf -force
+
+# Per-streamline weights, one per streamline.
+N=$(tckinfo tracks.tck -count 2>/dev/null | grep -iE "actual count" | grep -oE "[0-9]+" | head -n1)
+rm -f tmp_w.txt
+i=0
+while [ "$i" -lt "$N" ]; do echo "2.5" >> tmp_w.txt; i=$((i+1)); done
+
+tcktransform tracks.tck unit_warp.mif tmp_out.tck \
+  -tsf_in tmp_in.tsf -tsf_out tmp_out.tsf \
+  -tck_weights_in tmp_w.txt -tck_weights_out tmp_out_w.txt -force
+
+# (a) per-vertex sidecar remains consistent with the transformed tractogram.
+tsfvalidate tmp_out.tsf tmp_out.tck
+
+# (b) per-streamline weights pass through unchanged (all 2.5, count preserved).
+grep -v '^#' tmp_out_w.txt | tr ' \t' '\n\n' | grep -E '[0-9]' > tmp_tok.txt
+NW=$(grep -cE '[0-9]' tmp_tok.txt)
+echo "weights out: $NW (expected $N)"
+[ "$NW" -eq "$N" ]
+! grep -vqE '^2.5$' tmp_tok.txt

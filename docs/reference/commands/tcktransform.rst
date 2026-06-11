@@ -24,8 +24,21 @@ Description
 
 Unlike the non-linear transformation of image data, where the value of the deformation field in a destination voxel position defines the location in space from which to "pull" image data into that voxel, the non-linear transformation of streamlines data involves sampling the deformation field at each streamline vertex location to determine the new spatial location to which to "push" that vertex. As such, the appropriate deformation field to apply to streamlines data is the inverse of what would be applied to image data. So for instance, this may involve the utilisation of a template-to-subject warp field in order to transform streamlines from subject to template space.
 
+Sidecar data associated with the streamlines are passed through unchanged, since a spatial transformation relocates existing vertices without altering their number or order: per-streamline weights (-tck_weights_in/out) and per-vertex data (a track scalar file via -tsf_in / -tsf_out) remain valid for the transformed streamlines and are carried across verbatim.
+
 Options
 -------
+
+Options for handling sidecar data
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-tck_weights_in path** specify a text scalar file containing the streamline weights
+
+-  **-tck_weights_out path** specify the path for an output text scalar file containing streamline weights
+
+-  **-tsf_in path** an input track scalar file (.tsf) of per-vertex data, passed through unchanged to correspond to the transformed vertices
+
+-  **-tsf_out path** the output track scalar file (.tsf) corresponding to -tsf_in
 
 Standard options
 ^^^^^^^^^^^^^^^^
