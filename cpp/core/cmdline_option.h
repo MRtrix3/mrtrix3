@@ -38,7 +38,7 @@ namespace MR::App {
  * \ref command_line_parsing page.
  * */
 
-class ArgTypeFlags : public std::bitset<15> {
+class ArgTypeFlags : public std::bitset<17> {
 public:
   ArgTypeFlags() = default;
   inline static constexpr ssize_t Text = 0;
@@ -56,6 +56,10 @@ public:
   inline static constexpr ssize_t TracksIn = 12;
   inline static constexpr ssize_t TracksOut = 13;
   inline static constexpr ssize_t Choice = 14;
+  //! input data associated with the streamlines of a tractogram (§2.4; Stage 11)
+  inline static constexpr ssize_t TractogramDataIn = 15;
+  //! output data associated with the streamlines of a tractogram (§2.4; Stage 11)
+  inline static constexpr ssize_t TractogramDataOut = 16;
 };
 
 class ArgModifierFlags {
@@ -312,6 +316,34 @@ public:
   //! specifies that the argument should be an output tracks file
   Argument &type_tracks_out() {
     types.set(ArgTypeFlags::TracksOut);
+    return *this;
+  }
+
+  //! \brief specifies that the argument should be input data associated with
+  //!   the streamlines of a tractogram (§2.4; Stage 11).
+  /*! The argument is either a bare filesystem path to a standalone sidecar file
+   * (a per-streamline text/.csv/.npy file, or a per-vertex .tsf file) — in which
+   * case it behaves exactly as type_file_in() — or a qualified "DATASET::NAME"
+   * reference selecting a named sidecar field carried within a tractography
+   * dataset (parsed on the last "::"). Stage 11 implements the standalone-path
+   * import; the qualified form is reserved (yields a "not yet implemented"
+   * error). */
+  Argument &type_tractogram_data_in() {
+    types.set(ArgTypeFlags::TractogramDataIn);
+    return *this;
+  }
+
+  //! \brief specifies that the argument should be output data associated with
+  //!   the streamlines of a tractogram (§2.4; Stage 11).
+  /*! The argument is either a bare filesystem path to a standalone sidecar file
+   * to be created (a per-streamline text/.csv/.npy file, or a per-vertex .tsf
+   * file) — in which case it behaves exactly as type_file_out() — or a qualified
+   * "DATASET::NAME" reference naming a sidecar field to be written into a
+   * tractography dataset (parsed on the last "::"). Stage 11 implements the
+   * standalone-path export; the qualified form is reserved (yields a "not yet
+   * implemented" error). */
+  Argument &type_tractogram_data_out() {
+    types.set(ArgTypeFlags::TractogramDataOut);
     return *this;
   }
 

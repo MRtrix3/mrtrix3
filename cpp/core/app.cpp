@@ -472,6 +472,10 @@ std::string Argument::usage() const {
     stream << " TRACKSIN";
   if (types[ArgTypeFlags::TracksOut])
     stream << " TRACKSOUT";
+  if (types[ArgTypeFlags::TractogramDataIn])
+    stream << " TRACKSCALARIN";
+  if (types[ArgTypeFlags::TractogramDataOut])
+    stream << " TRACKSCALAROUT";
   if (types[ArgTypeFlags::Choice]) {
     stream << " CHOICE";
     for (const auto &p : choices)
@@ -875,6 +879,57 @@ void sort_arguments(const std::vector<std::string> &arguments) {
   }
 }
 
+namespace {
+
+//! \brief whether some type_tracks_out() argument resolves to \a dataset (§2.4).
+/*! Scans the parsed positional arguments and option arguments for a
+ * type_tracks_out() entry whose filesystem path equals \a dataset. Used to
+ * validate a qualified "DATASET::NAME" tractogram-sidecar OUTPUT whose
+ * destination dataset does not (yet) exist: the dataset must then be created by
+ * a matching tracks output of the same command (Stage 11, step 4). */
+bool sidecar_output_dataset_is_created(const std::filesystem::path &dataset) {
+  // The destination dataset does not exist on the filesystem, so equality is a
+  //   lexically-normalised path comparison rather than std::filesystem::equivalent.
+  const std::filesystem::path target = dataset.lexically_normal();
+  for (const auto &a : argument) {
+    if (a.has_type(ArgTypeFlags::TracksOut) && std::filesystem::path(a.as_text()).lexically_normal() == target)
+      return true;
+  }
+  for (const auto &o : option) {
+    for (size_t j = 0; j != o.opt->size(); ++j) {
+      const ParsedArgument parg = o[j];
+      if (parg.has_type(ArgTypeFlags::TracksOut) && std::filesystem::path(parg.as_text()).lexically_normal() == target)
+        return true;
+    }
+  }
+  return false;
+}
+
+void verify_sidecar_output(std::string_view arg) {
+  // A tractogram-sidecar output (type_tractogram_data_out(), §2.4) is either a
+  //   bare filesystem path to a standalone sidecar file to be created, or a
+  //   qualified "DATASET::NAME" reference. For the bare path the pre-existence
+  //   overwrite policy is identical to type_file_out(). For the qualified form
+  //   (step 4): if the destination DATASET does not exist, a matching
+  //   type_tracks_out() argument resolving to the same filesystem path must be
+  //   present elsewhere on the command-line (the tractogram that the sidecar is
+  //   to be embedded within is being created by the same invocation).
+  const std::string_view::size_type pos = arg.rfind("::");
+  if (pos == std::string_view::npos) {
+    check_overwrite(std::filesystem::path(std::string(arg)));
+    return;
+  }
+  const std::filesystem::path dataset(std::string(arg.substr(0, pos)));
+  if (std::filesystem::exists(dataset))
+    return;
+  if (!sidecar_output_dataset_is_created(dataset))
+    throw Exception("output tractogram-sidecar reference \"" + std::string(arg) + "\"" +           //
+                    " targets dataset \"" + dataset.string() + "\", which neither exists nor is" + //
+                    " created as a tractogram output by this command");
+}
+
+} // namespace
+
 void parse_standard_options() {
   if (!get_options("info").empty())
     log_level = std::max(log_level, 2);
@@ -1045,11 +1100,16 @@ void parse() {
       ArgTypeFlags types_not_input_file(i.arg->types);
       types_not_input_file.reset(ArgTypeFlags::FileIn);
       types_not_input_file.reset(ArgTypeFlags::TracksIn);
+      types_not_input_file.reset(ArgTypeFlags::TractogramDataIn);
       if (!types_not_input_file.any()) {
-        if (!std::filesystem::exists(i))
-          throw Exception("required input file \"" + i.as_text() + "\" not found");
-        if (!std::filesystem::is_regular_file(i))
-          throw Exception("required input \"" + i.as_text() + "\" is not a file");
+        // A tractogram-sidecar input may be a qualified "DATASET::NAME" reference
+        //   (§2.4); the path component (the DATASET, or the whole bare token) is
+        //   the filesystem entity whose existence is required (Stage 11, step 4).
+        const std::string path = sidecar_dataset_path(i.as_text());
+        if (!std::filesystem::exists(path))
+          throw Exception("required input file \"" + path + "\" not found");
+        if (!std::filesystem::is_regular_file(path))
+          throw Exception("required input \"" + path + "\" is not a file");
       }
     }
     {
@@ -1066,9 +1126,11 @@ void parse() {
       ArgTypeFlags types_not_output_file(i.arg->types);
       types_not_output_file.reset(ArgTypeFlags::FileOut);
       types_not_output_file.reset(ArgTypeFlags::TracksOut);
+      types_not_output_file.reset(ArgTypeFlags::TractogramDataOut);
       if (!types_not_output_file.any()) {
-        if (i.as_text().find_last_of(PATH_SEPARATORS) == i.as_text().size() - 1)
-          throw Exception("output path \"" + i.as_text() + "\" is not a valid file path" +
+        const std::string path = sidecar_dataset_path(i.as_text());
+        if (path.find_last_of(PATH_SEPARATORS) == path.size() - 1)
+          throw Exception("output path \"" + path + "\" is not a valid file path" +
                           " (ends with directory path separator)");
       }
     }
@@ -1077,9 +1139,12 @@ void parse() {
       types_not_output_filesystem.reset(ArgTypeFlags::FileOut);
       types_not_output_filesystem.reset(ArgTypeFlags::DirectoryOut);
       types_not_output_filesystem.reset(ArgTypeFlags::TracksOut);
+      types_not_output_filesystem.reset(ArgTypeFlags::TractogramDataOut);
       if (!types_not_output_filesystem.any()) {
-        if (i.arg->types[ArgTypeFlags::DirectoryOut] && !i.arg->types[ArgTypeFlags::FileOut] &&
-            !i.arg->types[ArgTypeFlags::TracksOut]) {
+        if (i.arg->types[ArgTypeFlags::TractogramDataOut]) {
+          verify_sidecar_output(i.as_text());
+        } else if (i.arg->types[ArgTypeFlags::DirectoryOut] && !i.arg->types[ArgTypeFlags::FileOut] &&
+                   !i.arg->types[ArgTypeFlags::TracksOut]) {
           switch (i.arg->dir_out_mode) {
           case DirOutMode::MustNotExist:
             check_overwrite(i);
@@ -1131,12 +1196,16 @@ void parse() {
         ArgTypeFlags types_not_input_file(arg.types);
         types_not_input_file.reset(ArgTypeFlags::FileIn);
         types_not_input_file.reset(ArgTypeFlags::TracksIn);
+        types_not_input_file.reset(ArgTypeFlags::TractogramDataIn);
         if (!types_not_input_file.any()) {
-          if (!std::filesystem::exists(parg))
-            throw Exception("input file \"" + parg.as_text() + "\"" +                     //
+          // A tractogram-sidecar input may be a qualified "DATASET::NAME"
+          //   reference (§2.4); the path component must exist (step 4).
+          const std::string path = sidecar_dataset_path(parg.as_text());
+          if (!std::filesystem::exists(path))
+            throw Exception("input file \"" + path + "\"" +                               //
                             " for option \"-" + std::string(i.opt->id) + "\" not found"); //
-          if (!std::filesystem::is_regular_file(parg))
-            throw Exception("input \"" + parg.as_text() + "\"" +                              //
+          if (!std::filesystem::is_regular_file(path))
+            throw Exception("input \"" + path + "\"" +                                        //
                             " for option \"-" + std::string(i.opt->id) + "\" is not a file"); //
         }
       }
@@ -1156,10 +1225,12 @@ void parse() {
         ArgTypeFlags types_not_output_file(arg.types);
         types_not_output_file.reset(ArgTypeFlags::FileOut);
         types_not_output_file.reset(ArgTypeFlags::TracksOut);
+        types_not_output_file.reset(ArgTypeFlags::TractogramDataOut);
         if (!types_not_output_file.any()) {
-          const std::string filename = static_cast<std::filesystem::path>(parg).filename().string();
+          const std::string path = sidecar_dataset_path(parg.as_text());
+          const std::string filename = std::filesystem::path(path).filename().string();
           if (filename.find_last_of(PATH_SEPARATORS) == filename.size() - 1)
-            throw Exception("output path \"" + parg.as_text() + "\"" +                         //
+            throw Exception("output path \"" + path + "\"" +                                   //
                             " for option \"-" + std::string(i.opt->id) + "\"" +                //
                             " is not a valid file path (ends with directory path separator)"); //
         }
@@ -1169,9 +1240,12 @@ void parse() {
         types_not_output_filesystem.reset(ArgTypeFlags::FileOut);
         types_not_output_filesystem.reset(ArgTypeFlags::DirectoryOut);
         types_not_output_filesystem.reset(ArgTypeFlags::TracksOut);
+        types_not_output_filesystem.reset(ArgTypeFlags::TractogramDataOut);
         if (!types_not_output_filesystem.any()) {
-          if (arg.types[ArgTypeFlags::DirectoryOut] && !arg.types[ArgTypeFlags::FileOut] &&
-              !arg.types[ArgTypeFlags::TracksOut]) {
+          if (arg.types[ArgTypeFlags::TractogramDataOut]) {
+            verify_sidecar_output(parg.as_text());
+          } else if (arg.types[ArgTypeFlags::DirectoryOut] && !arg.types[ArgTypeFlags::FileOut] &&
+                     !arg.types[ArgTypeFlags::TracksOut]) {
             switch (arg.dir_out_mode) {
             case DirOutMode::MustNotExist:
               check_overwrite(parg);
@@ -1478,7 +1552,8 @@ bool ParsedArgument::includes_filesystem_arg_types() const noexcept {
   return (arg->types[ArgTypeFlags::FileIn] || arg->types[ArgTypeFlags::FileOut] ||
           arg->types[ArgTypeFlags::DirectoryIn] || arg->types[ArgTypeFlags::DirectoryOut] ||
           arg->types[ArgTypeFlags::ImageIn] || arg->types[ArgTypeFlags::ImageOut] ||
-          arg->types[ArgTypeFlags::TracksIn] || arg->types[ArgTypeFlags::TracksOut]);
+          arg->types[ArgTypeFlags::TracksIn] || arg->types[ArgTypeFlags::TracksOut] ||
+          arg->types[ArgTypeFlags::TractogramDataIn] || arg->types[ArgTypeFlags::TractogramDataOut]);
 }
 
 bool ParsedArgument::only_filesystem_arg_types() const noexcept {
@@ -1487,7 +1562,8 @@ bool ParsedArgument::only_filesystem_arg_types() const noexcept {
   ArgTypeFlags flags(arg->types);
   flags[ArgTypeFlags::FileIn] = flags[ArgTypeFlags::FileOut] = flags[ArgTypeFlags::DirectoryIn] =
       flags[ArgTypeFlags::DirectoryOut] = flags[ArgTypeFlags::ImageIn] = flags[ArgTypeFlags::ImageOut] =
-          flags[ArgTypeFlags::TracksIn] = flags[ArgTypeFlags::TracksOut] = false;
+          flags[ArgTypeFlags::TracksIn] = flags[ArgTypeFlags::TracksOut] = flags[ArgTypeFlags::TractogramDataIn] =
+              flags[ArgTypeFlags::TractogramDataOut] = false;
   return !flags.any();
 }
 
@@ -1509,6 +1585,16 @@ ParsedArgument::operator std::filesystem::path() const {
 std::filesystem::path ParsedArgument::as_path() const {
   assert(includes_filesystem_arg_types());
   return std::filesystem::path(p);
+}
+
+std::string sidecar_dataset_path(std::string_view arg) {
+  // Split on the LAST "::" (§2.4): a qualified "DATASET::NAME" reference yields
+  //   the DATASET; a bare path (including a Windows "C:\\..." drive-letter path,
+  //   which contains only single colons) is returned unchanged.
+  const std::string_view::size_type pos = arg.rfind("::");
+  if (pos == std::string_view::npos)
+    return std::string(arg);
+  return std::string(arg.substr(0, pos));
 }
 
 void check_overwrite(const std::filesystem::path &path) {

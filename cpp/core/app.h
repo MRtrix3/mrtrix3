@@ -132,6 +132,14 @@ public:
 
 void check_overwrite(const std::filesystem::path &path);
 
+//! \brief the filesystem-dataset component of a tractogram-sidecar argument (§2.4; Stage 11).
+/*! A tractogram-sidecar argument (type_tractogram_data_in()/out()) is either a
+ * bare filesystem path or a qualified "DATASET::NAME" reference. This returns the
+ * DATASET (filesystem) component: the substring preceding the LAST "::" when the
+ * token is qualified, otherwise the whole token unchanged. Splitting on the last
+ * "::" leaves a Windows drive-letter path ("C:\\...", a single colon) untouched. */
+std::string sidecar_dataset_path(std::string_view arg);
+
 //! initialise MRtrix and parse command-line arguments
 /*! this function must be called from within main(), immediately after the
  * argument and options have been specified, and before any further
@@ -199,6 +207,12 @@ public:
 
   //! the index of this argument in the raw command-line arguments list
   size_t index() const { return index_; }
+
+  //! \brief whether this parsed argument carries the given ArgTypeFlags bit.
+  /*! A read-only query over the bound Argument's declared types, used where the
+   * private Argument pointer is not accessible (e.g. tractogram-sidecar
+   * cross-referencing, §2.4). Returns false for the end-of-list sentinel. */
+  bool has_type(const ssize_t flag) const { return arg != nullptr && arg->types[flag]; }
 
 private:
   const Option *opt;
