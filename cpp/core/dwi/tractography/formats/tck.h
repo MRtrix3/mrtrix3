@@ -24,6 +24,7 @@
 
 #include "dwi/tractography/file_base.h"
 #include "dwi/tractography/formats/base.h"
+#include "dwi/tractography/formats/write_buffer.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/streamline.h"
 #include "types.h"
@@ -171,13 +172,19 @@ public:
   bool operator()(const Streamline<ValueType> &tck) override;
 
 protected:
-  size_t buffer_capacity;
-  std::unique_ptr<vector_type[]> buffer;
-  size_t buffer_size;
+  //! format-agnostic RAM write-back buffer (Stage 2); holds formatted point bytes
+  Formats::WriteBuffer buffer;
   std::string weights_buffer;
 
-  //! add point to buffer and increment buffer_size accordingly
-  void add_point(const vector_type &p) { format_point(p, buffer[buffer_size++]); }
+  //! append one already-formatted point to the byte buffer
+  void add_point(const vector_type &p) {
+    vector_type formatted;
+    format_point(p, formatted);
+    buffer.add(reinterpret_cast<const std::byte *>(&formatted[0]), sizeof(vector_type));
+  }
+
+  //! push the buffered point bytes to the filesystem, applying the .tck barrier protocol
+  void flush_points(const std::byte *data, size_t size, const Formats::WriteBuffer::Counts &counts);
 
   void commit();
 };

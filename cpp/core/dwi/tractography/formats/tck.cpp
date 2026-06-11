@@ -233,9 +233,13 @@ Writer<ValueType>::Writer(const std::filesystem::path &path,
                           const Properties &properties,
                           size_t default_buffer_capacity)
     : WriterUnbuffered<ValueType>(path, properties),
-      buffer_capacity(File::Config::get_int("TrackWriterBufferSize", default_buffer_capacity) / sizeof(vector_type)),
-      buffer(new vector_type[buffer_capacity]),
-      buffer_size(0) {}
+      buffer(File::Config::get_int("TrackWriterBufferSize", default_buffer_capacity), sizeof(vector_type)) {
+  // The .tck header count is patched from the live WriterBase counters inside
+  //   flush_points() via update_counts(), so no separate count state is forwarded.
+  buffer.set_flush_callback([this](const std::byte *data, size_t size, const Formats::WriteBuffer::Counts &counts) {
+    this->flush_points(data, size, counts);
+  });
+}
 
 template <typename ValueType> Writer<ValueType>::~Writer() {
   try {
@@ -246,14 +250,6 @@ template <typename ValueType> Writer<ValueType>::~Writer() {
 }
 
 template <typename ValueType> bool Writer<ValueType>::operator()(const Streamline<ValueType> &tck) {
-  if (buffer_size + tck.size() + 2 > buffer_capacity)
-    commit();
-
-  if (tck.size() + 1 >= buffer_capacity) {
-    buffer_capacity = tck.size() + 1;
-    buffer.reset(new vector_type[buffer_capacity]);
-  }
-
   for (const auto &i : tck) {
     assert(i.allFinite());
     add_point(i);
@@ -268,9 +264,32 @@ template <typename ValueType> bool Writer<ValueType>::operator()(const Streamlin
   return true;
 }
 
+template <typename ValueType>
+void Writer<ValueType>::flush_points(const std::byte *data,
+                                     size_t size,
+                                     const Formats::WriteBuffer::Counts & /*counts*/) {
+  if (size == 0 || !this->open_success)
+    return;
+
+  // The .tck binary stream is terminated by an Inf "barrier" point; appending a
+  //   new batch overwrites the previous barrier with the incoming points and
+  //   writes a fresh barrier at the new end of the data region.
+  const int64_t prev_barrier_addr = this->barrier_addr;
+  vector_type formatted_barrier;
+  format_point(this->barrier(), formatted_barrier);
+
+  File::OFStream out(this->path, std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
+  out.seekp(prev_barrier_addr, out.beg);
+  out.write(reinterpret_cast<const char *>(data), size);
+  this->verify_stream(out);
+  out.write(reinterpret_cast<const char *>(&formatted_barrier[0]), sizeof(vector_type));
+  this->verify_stream(out);
+  this->barrier_addr = static_cast<int64_t>(out.tellp()) - sizeof(vector_type);
+  this->update_counts(out);
+}
+
 template <typename ValueType> void Writer<ValueType>::commit() {
-  WriterUnbuffered<ValueType>::commit(buffer.get(), buffer_size);
-  buffer_size = 0;
+  buffer.commit();
 
   if (!weights_path.empty()) {
     write_weights(weights_buffer);
