@@ -22,6 +22,7 @@
 
 #include "app.h"
 #include "dwi/tractography/file_base.h"
+#include "dwi/tractography/formats/base.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/streamline.h"
 #include "exception.h"
@@ -34,17 +35,9 @@
 
 namespace MR::DWI::Tractography {
 
-template <class ValueType> class ReaderInterface {
-public:
-  virtual bool operator()(Streamline<ValueType> &) = 0;
-  virtual ~ReaderInterface() {}
-};
-
-template <class ValueType> class WriterInterface {
-public:
-  virtual bool operator()(const Streamline<ValueType> &) = 0;
-  virtual ~WriterInterface() {}
-};
+// ReaderInterface<> and WriterInterface<> are the type-erased streaming I/O
+//   contracts; they are declared in dwi/tractography/formats/base.h so that
+//   format handlers can manufacture them. They are re-used here unchanged.
 
 //! A class to read streamlines data
 template <class ValueType = float> class Reader : public ReaderBase, public ReaderInterface<ValueType> {

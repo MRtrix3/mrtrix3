@@ -1,0 +1,177 @@
+/* Copyright (c) 2008-2026 the MRtrix3 contributors.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Covered Software is provided under this License on an "as is"
+ * basis, without warranty of any kind, either expressed, implied, or
+ * statutory, including, without limitation, warranties that the
+ * Covered Software is free of defects, merchantable, fit for a
+ * particular purpose or non-infringing.
+ * See the Mozilla Public License v. 2.0 for more details.
+ *
+ * For more details, see http://www.mrtrix.org/.
+ */
+
+#pragma once
+
+#include <filesystem>
+#include <memory>
+#include <string>
+#include <string_view>
+#include <type_traits>
+
+#include "dwi/tractography/properties.h"
+#include "dwi/tractography/streamline.h"
+
+namespace MR::DWI::Tractography {
+
+//! \brief The contract for streaming reads of tractography data.
+/*! A reader yields one Streamline per invocation of operator(), returning
+ * false once the dataset is exhausted. This type-erased interface lets a
+ * command consume any supported format through a single handle, irrespective
+ * of the concrete handler backing it (cf. ImageIO::Base in the image
+ * subsystem). The composite sidecar payload of §2.1 is grown onto this
+ * contract in later stages; Stage 1 carries only the Streamline. */
+template <class ValueType> class ReaderInterface {
+public:
+  virtual bool operator()(Streamline<ValueType> &) = 0;
+  virtual ~ReaderInterface() {}
+};
+
+//! \brief The contract for streaming writes of tractography data.
+/*! A writer appends one Streamline per invocation of operator(); see
+ * ReaderInterface for the rationale behind the type-erased interface. */
+template <class ValueType> class WriterInterface {
+public:
+  virtual bool operator()(const Streamline<ValueType> &) = 0;
+  virtual ~WriterInterface() {}
+};
+
+namespace Formats {
+
+//! \brief I/O directions a tractography format handler can service.
+/*! Broadcast by every handler so that the framework can reject an
+ * unsupported operation (e.g. attempting to create a read-only format)
+ * with a clean error rather than a backend failure. */
+enum class IO {
+  ReadOnly,  //!< the format can only be read
+  WriteOnly, //!< the format can only be written
+  ReadWrite  //!< the format supports both reading and writing
+};
+
+//! \brief The access model offered by a tractography format handler.
+/*! Mirrors the streaming-vs-random-access distinction of the image
+ * subsystem; the framework consults this to decide whether a command's
+ * access pattern is directly serviceable or requires the random-access
+ * wrapper (a later stage). */
+enum class Access {
+  //! sequential streaming of ordered data only (e.g. the .tck plaintext stream)
+  Streaming,
+  //! random access permitted iff the streamline count and the per-streamline
+  //!   vertex counts are not altered
+  RandomAccessFixed,
+  //! complete random access, including streamline deletion and resizing
+  RandomAccessFull
+};
+
+//! \brief Whether a format can grow an existing dataset in place.
+enum class Augment {
+  //! an existing dataset may be augmented with new data in place
+  Append,
+  //! any modification requires the whole dataset to be rewritten
+  Rewrite
+};
+
+//! \brief The capabilities a tractography format handler broadcasts.
+/*! Encapsulates the three orthogonal axes of §2.6: I/O direction, access
+ * model, and in-place augmentation, so that the framework can match a
+ * command's requirements against a handler without probing the backend. */
+struct Capabilities {
+  IO io;
+  Access access;
+  Augment augment;
+};
+
+//! \brief The interface for classes that support the various tractography formats.
+/*! All tractography formats supported by %MRtrix are handled by a class
+ * derived from Formats::Base; this is the direct analogue of
+ * MR::Formats::Base in the image subsystem. An instance of each derived
+ * class is added to the handler list in formats/list.cpp.
+ *
+ * A handler is responsible for recognising a path/extension, advertising its
+ * capabilities, and manufacturing the reader/writer backend that performs the
+ * byte-level I/O. The factory methods return the type-erased
+ * ReaderInterface / WriterInterface so that a command can stream any format
+ * through one handle, preserving the filesystem-vs-compute separation of the
+ * image subsystem.
+ *
+ * Streamline data are processed in a floating-point precision selected by the
+ * command (float or double). Because a virtual function cannot itself be a
+ * template, the precision is dispatched through the templated read() / create()
+ * helpers to the corresponding float/double virtual. */
+class Base {
+public:
+  Base(std::string_view description, const Capabilities &capabilities)
+      : description(description), capabilities(capabilities) {}
+  virtual ~Base() = default;
+
+  //! a short human-readable description of the tractography format
+  const std::string description;
+
+  //! the capabilities advertised by this format handler (§2.6)
+  const Capabilities capabilities;
+
+  //! \brief test whether this handler is responsible for the given path.
+  /*! Selection loops the handler list (formats/list.cpp); the first handler
+   * that recognises \a path (typically by file extension) wins. This is a
+   * pure path test and does not open the file. */
+  virtual bool handles(const std::filesystem::path &path) const = 0;
+
+  bool can_read() const { return capabilities.io != IO::WriteOnly; }
+  bool can_write() const { return capabilities.io != IO::ReadOnly; }
+
+  //! \brief open \a path for streaming reads in the requested precision.
+  /*! Dispatches to the float/double factory virtual. \a properties is
+   * populated from the dataset header. */
+  template <class ValueType>
+  std::unique_ptr<ReaderInterface<ValueType>> read(const std::filesystem::path &path, Properties &properties) const {
+    static_assert(std::is_same<ValueType, float>::value || std::is_same<ValueType, double>::value,
+                  "tractography I/O is supported in float or double precision only");
+    if constexpr (std::is_same<ValueType, float>::value)
+      return read_float(path, properties);
+    else
+      return read_double(path, properties);
+  }
+
+  //! \brief create \a path for streaming writes in the requested precision.
+  template <class ValueType>
+  std::unique_ptr<WriterInterface<ValueType>> create(const std::filesystem::path &path,
+                                                     const Properties &properties) const {
+    static_assert(std::is_same<ValueType, float>::value || std::is_same<ValueType, double>::value,
+                  "tractography I/O is supported in float or double precision only");
+    if constexpr (std::is_same<ValueType, float>::value)
+      return create_float(path, properties);
+    else
+      return create_double(path, properties);
+  }
+
+protected:
+  //! \brief manufacture a single-precision streaming reader for \a path.
+  virtual std::unique_ptr<ReaderInterface<float>> read_float(const std::filesystem::path &path,
+                                                             Properties &properties) const = 0;
+  //! \brief manufacture a double-precision streaming reader for \a path.
+  virtual std::unique_ptr<ReaderInterface<double>> read_double(const std::filesystem::path &path,
+                                                               Properties &properties) const = 0;
+  //! \brief manufacture a single-precision streaming writer for \a path.
+  virtual std::unique_ptr<WriterInterface<float>> create_float(const std::filesystem::path &path,
+                                                               const Properties &properties) const = 0;
+  //! \brief manufacture a double-precision streaming writer for \a path.
+  virtual std::unique_ptr<WriterInterface<double>> create_double(const std::filesystem::path &path,
+                                                                 const Properties &properties) const = 0;
+};
+
+} // namespace Formats
+
+} // namespace MR::DWI::Tractography
