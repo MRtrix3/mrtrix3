@@ -16,8 +16,6 @@
 
 #include "dwi/tractography/formats/tck.h"
 
-#include "dwi/tractography/file.h"
-
 namespace MR::DWI::Tractography::Formats {
 
 bool TCK::handles(const std::filesystem::path &path) const { return path.extension() == ".tck"; }
