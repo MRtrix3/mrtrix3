@@ -18,15 +18,23 @@
 #include "dwi/tractography/field_registry.h"
 #include "dwi/tractography/formats/pipe.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/scalar_file.h"
 #include "dwi/tractography/shared.h"
+#include "dwi/tractography/sidecar.h"
 #include "dwi/tractography/sidecar_value.h"
 #include "dwi/tractography/streamline.h"
 #include "dwi/tractography/tractogram_item.h"
 #include "exception.h"
+#include "file/matrix.h"
+#include "file/npy.h"
 
 #include <gtest/gtest.h>
 
+#include <Eigen/Core>
+
 #include <cstdint>
+#include <filesystem>
+#include <string>
 #include <variant>
 
 #include <sys/wait.h>
@@ -404,6 +412,49 @@ TEST(PipeSidecar, RoundTripCarriesMixedFields) {
     ASSERT_EQ(col_v.cols(), 3);
     EXPECT_EQ(col_v(4, 2), static_cast<uint8_t>(4 + s));
   }
+}
+
+// §2.4 / step 4: a bare path parses as an unqualified reference (no field name);
+//   behaviour is unchanged from a plain file argument.
+TEST(Sidecar, ParseBarePath) {
+  const SidecarReference ref = parse_sidecar_reference("weights.csv");
+  EXPECT_FALSE(ref.is_qualified());
+  EXPECT_FALSE(ref.name.has_value());
+  EXPECT_EQ(ref.dataset, std::filesystem::path("weights.csv"));
+}
+
+// §2.4 / step 4: "DATASET::NAME" splits into a dataset path and a field name.
+TEST(Sidecar, ParseQualifiedReference) {
+  const SidecarReference ref = parse_sidecar_reference("tracks.tck::fa");
+  EXPECT_TRUE(ref.is_qualified());
+  ASSERT_TRUE(ref.name.has_value());
+  EXPECT_EQ(*ref.name, "fa");
+  EXPECT_EQ(ref.dataset, std::filesystem::path("tracks.tck"));
+}
+
+// §2.4 / step 4: parsing is on the LAST "::", so a field name is taken from the
+//   final segment when the dataset path itself contains "::".
+TEST(Sidecar, ParseSplitsOnLastDoubleColon) {
+  const SidecarReference ref = parse_sidecar_reference("a::b::c");
+  ASSERT_TRUE(ref.name.has_value());
+  EXPECT_EQ(*ref.name, "c");
+  EXPECT_EQ(ref.dataset, std::filesystem::path("a::b"));
+}
+
+// §2.4 / step 4: a Windows drive-letter path ("C:\\...", a single colon) is NOT
+//   mistaken for a qualified reference — splitting on the last "::" leaves it intact.
+TEST(Sidecar, ParseWindowsDriveLetterUnaffected) {
+  const SidecarReference ref = parse_sidecar_reference("C:\\data\\weights.csv");
+  EXPECT_FALSE(ref.is_qualified());
+  EXPECT_EQ(ref.dataset, std::filesystem::path("C:\\data\\weights.csv"));
+}
+
+// §2.4 / step 4: a trailing "::" yields an empty field name (still qualified).
+TEST(Sidecar, ParseTrailingDoubleColon) {
+  const SidecarReference ref = parse_sidecar_reference("tracks.tck::");
+  ASSERT_TRUE(ref.name.has_value());
+  EXPECT_TRUE(ref.name->empty());
+  EXPECT_EQ(ref.dataset, std::filesystem::path("tracks.tck"));
 }
 
 } // namespace
