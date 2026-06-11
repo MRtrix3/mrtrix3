@@ -1,0 +1,9 @@
+#!/bin/bash
+# Step 2: per-vertex (dpv) sidecar data are sub-sampled to the retained vertices
+#   for the vertex-subset-preserving -downsample mode.
+# Generate a per-vertex scalar file, downsample the tractogram while carrying it,
+#   and confirm the output .tsf is consistent with the output tractogram
+#   (one scalar sequence per streamline; per-streamline vertex counts match).
+tcksample tracks.tck tcksample/fa.mif tmp_in.tsf -force
+tckresample tracks.tck tmp_out.tck -downsample 2 -tsf_in tmp_in.tsf -tsf_out tmp_out.tsf -force
+tsfvalidate tmp_out.tsf tmp_out.tck

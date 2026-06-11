@@ -1,0 +1,24 @@
+#!/bin/bash
+# Step 2: per-streamline weights (dps) pass through resampling unchanged in every
+#   mode. Resample a weighted tractogram with both a subset mode and an
+#   interpolating mode, and confirm the output weights equal the input weights.
+# Manufacture a weights file (one weight per streamline) the length of the input.
+N=$(tckinfo tracks.tck -count 2>/dev/null | grep -iE "^[[:space:]]*count" | grep -oE "[0-9]+" | head -n1)
+rm -f tmp_w.txt
+i=0
+while [ "$i" -lt "$N" ]; do
+  echo "1.5" >> tmp_w.txt
+  i=$((i+1))
+done
+# Subset mode preserves the weights.
+tckresample tracks.tck tmp_ds.tck -downsample 2 -tck_weights_in tmp_w.txt -tck_weights_out tmp_ds_w.txt -force
+# Interpolating mode preserves the weights too.
+tckresample tracks.tck tmp_np.tck -num_points 10 -tck_weights_in tmp_w.txt -tck_weights_out tmp_np_w.txt -force
+# Both output weight files must hold exactly N copies of 1.5 (whitespace-tolerant).
+for f in tmp_ds_w.txt tmp_np_w.txt; do
+  K=$(tr ' \t' '\n\n' < "$f" | grep -c "1.5")
+  echo "$f has $K weights of 1.5 (expected $N)"
+  [ "$K" -eq "$N" ]
+  # Confirm no weight differs from 1.5.
+  ! tr ' \t' '\n\n' < "$f" | grep -vqE "^(1.5|)$"
+done

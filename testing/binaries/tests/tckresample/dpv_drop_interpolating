@@ -1,0 +1,13 @@
+#!/bin/bash
+# Step 2: per-vertex (dpv) sidecar data are DROPPED, with a single explanatory
+#   warning, for an interpolating resampling mode (-num_points here), because
+#   such modes invent new vertex positions (D8 drop).
+# The command must succeed (the tractogram is still resampled), emit the drop
+#   warning, and produce no output .tsf.
+rm -f tmp_out.tsf tmp.txt
+tcksample tracks.tck tcksample/fa.mif tmp_in.tsf -force
+tckresample tracks.tck tmp_out.tck -num_points 10 -tsf_in tmp_in.tsf -tsf_out tmp_out.tsf -force 2> tmp.txt
+cat tmp.txt
+grep -i "dropped" tmp.txt
+# The -tsf_out file must not have been created for an interpolating mode.
+! test -f tmp_out.tsf

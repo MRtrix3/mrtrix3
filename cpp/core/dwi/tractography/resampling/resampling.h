@@ -16,6 +16,10 @@
 
 #pragma once
 
+#include <cassert>
+#include <cstddef>
+#include <vector>
+
 #include "app.h"
 
 #include "dwi/tractography/streamline.h"
@@ -43,6 +47,29 @@ public:
   virtual Base *clone() const = 0;
   virtual bool operator()(const Streamline<> &, Streamline<> &) const = 0;
   virtual bool valid() const = 0;
+
+  //! \brief whether this mode retains a subset of the input vertices (§2.7; D8).
+  /*! A resampling mode is "vertex-subset preserving" when every output vertex is
+   * a verbatim copy of an input vertex (no new positions are interpolated), so
+   * that data-per-vertex (dpv) sidecar fields can be carried across by
+   * sub-sampling them to the retained vertices (tckresample step 2). The two such
+   * modes are downsampling and endpoint extraction. The interpolating modes
+   * (fixed step size / Hermite, upsampling, arc/line, fixed number of points)
+   * invent new vertex positions, so their dpv fields are dropped; they return
+   * false here and do not implement retained_indices(). */
+  virtual bool preserves_vertex_subset() const { return false; }
+
+  //! \brief the input-vertex indices retained by a vertex-subset mode.
+  /*! \pre preserves_vertex_subset() == true.
+   * \returns one index into \a in per output vertex, in output order, so that a
+   * caller can sub-sample a parallel dpv field (e.g. a per-vertex ".tsf") to the
+   * retained vertices. The default implementation asserts: an interpolating mode
+   * must never be asked for retained indices. */
+  virtual std::vector<size_t> retained_indices(const Streamline<> &in) const {
+    assert(false);
+    (void)in;
+    return {};
+  }
 };
 
 template <class Derived> class BaseCRTP : public Base {

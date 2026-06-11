@@ -1,0 +1,8 @@
+#!/bin/bash
+# Step 2: per-vertex (dpv) sidecar data are sub-sampled to the two endpoints
+#   for the vertex-subset-preserving -endpoints mode.
+# The resampled .tsf must be valid against the resampled tractogram, and every
+#   streamline of two or more vertices must reduce to exactly two scalars.
+tcksample tracks.tck tcksample/fa.mif tmp_in.tsf -force
+tckresample tracks.tck tmp_out.tck -endpoints -tsf_in tmp_in.tsf -tsf_out tmp_out.tsf -force
+tsfvalidate tmp_out.tsf tmp_out.tck

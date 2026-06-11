@@ -27,6 +27,10 @@ public:
 
   bool operator()(const Streamline<> &, Streamline<> &) const override;
   bool valid() const override { return true; }
+
+  //! \brief endpoint extraction retains a subset of the input vertices (§2.7; D8).
+  bool preserves_vertex_subset() const override { return true; }
+  std::vector<size_t> retained_indices(const Streamline<> &) const override;
 };
 
 } // namespace MR::DWI::Tractography::Resampling

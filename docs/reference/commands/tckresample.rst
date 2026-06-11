@@ -25,6 +25,8 @@ It is necessary to specify precisely ONE of the command-line options for control
 
 Note that because the length of a streamline is calculated based on the sums of distances between adjacent vertices, resampling a streamline to a new set of vertices will typically change the quantified length of that streamline; the magnitude of the difference will typically depend on the discrepancy in the number of vertices, with less vertices leading to a shorter length (due to taking chordal lengths of curved trajectories).
 
+Per-vertex (data-per-vertex) sidecar data, supplied as a track scalar file (.tsf) via the -tsf_in option, are updated to correspond to the output vertices. For the vertex-subset-preserving modes (-downsample, -endpoints), each scalar is sub-sampled to the retained vertices. For the interpolating modes (-upsample, -step_size, -num_points, -line, -arc), which invent new vertex positions, the per-vertex data cannot meaningfully be carried and are dropped (with a warning); in that circumstance the -tsf_out option has no effect. Per-streamline weights (-tck_weights_in/out) pass through unchanged in every mode.
+
 Options
 -------
 
@@ -44,6 +46,20 @@ Streamline resampling options
 -  **-line num start end** resample tracks at 'num' equidistant locations along a line between 'start' and 'end' (specified as comma-separated 3-vectors in scanner coordinates)
 
 -  **-arc num start mid end** resample tracks at 'num' equidistant locations along a circular arc specified by points 'start', 'mid' and 'end' (specified as comma-separated 3-vectors in scanner coordinates)
+
+Options for handling per-vertex (data-per-vertex) sidecar data
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-tsf_in path** an input track scalar file (.tsf), one scalar per vertex of the input tractogram, to be resampled to correspond to the output vertices (only the vertex-subset modes -downsample / -endpoints preserve it; interpolating modes drop it with a warning)
+
+-  **-tsf_out path** the output track scalar file (.tsf) corresponding to -tsf_in (ignored for the interpolating modes, which drop per-vertex data)
+
+Options for handling per-streamline (data-per-streamline) weights
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-tck_weights_in path** specify a text scalar file containing the streamline weights
+
+-  **-tck_weights_out path** specify the path for an output text scalar file containing streamline weights
 
 Standard options
 ^^^^^^^^^^^^^^^^

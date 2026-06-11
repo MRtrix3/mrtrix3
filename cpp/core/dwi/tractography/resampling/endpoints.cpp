@@ -18,6 +18,12 @@
 
 namespace MR::DWI::Tractography::Resampling {
 
+std::vector<size_t> Endpoints::retained_indices(const Streamline<> &in) const {
+  if (in.size() < 2)
+    return {};
+  return {size_t(0), in.size() - 1};
+}
+
 bool Endpoints::operator()(const Streamline<> &in, Streamline<> &out) const {
   out.clear();
   out.set_index(in.get_index());
