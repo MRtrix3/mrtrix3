@@ -16,9 +16,11 @@
 
 #include "datatype.h"
 #include "dwi/tractography/field_registry.h"
+#include "dwi/tractography/shared.h"
 #include "dwi/tractography/sidecar_value.h"
 #include "dwi/tractography/streamline.h"
 #include "dwi/tractography/tractogram_item.h"
+#include "exception.h"
 
 #include <gtest/gtest.h>
 
@@ -134,6 +136,110 @@ TEST(Sidecar, WeightIsSingleSourceOfTruth) {
   EXPECT_FLOAT_EQ(moved.streamline.weight, 0.75F);
   ASSERT_EQ(moved.dps.size(), 1u);
   EXPECT_FLOAT_EQ(std::get<ScalarOrVector<float>>(moved.dps[0]).scalar(), 3.0F);
+}
+
+//! register a field of the given role; returns its assigned ordinal.
+size_t add_field(FieldRegistry &reg, const std::string &name, FieldRole role, DataType dtype, size_t M) {
+  FieldDescriptor d;
+  d.name = name;
+  d.role = role;
+  d.dtype = dtype;
+  d.columns = M;
+  d.source = FieldSource::Internal;
+  d.ordinal = 0;
+  return reg.add(d);
+}
+
+// The registry counts ordinals independently per role (the dps and dpv payload
+//   vectors of TractogramItem are separate ordinal spaces, §2.1).
+TEST(FieldRegistry, RoleLocalOrdinals) {
+  FieldRegistry reg;
+  EXPECT_EQ(add_field(reg, "weight", FieldRole::DPS, DataType(DataType::Float32), 1), 0u);
+  EXPECT_EQ(add_field(reg, "fa", FieldRole::DPV, DataType(DataType::Float32), 1), 0u);
+  EXPECT_EQ(add_field(reg, "bundle", FieldRole::DPS, DataType(DataType::UInt32), 1), 1u);
+  EXPECT_EQ(add_field(reg, "colour", FieldRole::DPV, DataType(DataType::UInt8), 3), 1u);
+
+  EXPECT_EQ(reg.dps_count(), 2u);
+  EXPECT_EQ(reg.dpv_count(), 2u);
+  EXPECT_EQ(reg.ordinal("bundle", FieldRole::DPS), 1u);
+  EXPECT_EQ(reg.ordinal("colour", FieldRole::DPV), 1u);
+  EXPECT_FALSE(reg.ordinal("missing").has_value());
+}
+
+// A duplicate name+role registration is rejected with a clean Exception.
+TEST(FieldRegistry, DuplicateRejected) {
+  FieldRegistry reg;
+  add_field(reg, "fa", FieldRole::DPV, DataType(DataType::Float32), 1);
+  EXPECT_THROW(add_field(reg, "fa", FieldRole::DPV, DataType(DataType::Float32), 1), MR::Exception);
+  // Same name, different role is allowed (distinct ordinal spaces).
+  EXPECT_NO_THROW(add_field(reg, "fa", FieldRole::DPS, DataType(DataType::Float32), 1));
+}
+
+// The Shared object precomputes an identity pass-through map when the output
+//   registry equals the input registry (the lossless-copy case, §2.7).
+TEST(Shared, IdentityPassThrough) {
+  FieldRegistry reg;
+  add_field(reg, "weight2", FieldRole::DPS, DataType(DataType::Float32), 1);
+  add_field(reg, "bundle", FieldRole::DPS, DataType(DataType::UInt32), 1);
+  add_field(reg, "fa", FieldRole::DPV, DataType(DataType::Float32), 1);
+
+  Shared shared(reg);
+  EXPECT_EQ(shared.dps_passthrough().size(), 2u);
+  EXPECT_EQ(shared.dpv_passthrough().size(), 1u);
+  for (const auto &p : shared.dps_passthrough())
+    EXPECT_EQ(p.input_ordinal, p.output_ordinal);
+}
+
+// A field present in both registries but with mismatched dtype or M is NOT a
+//   pass-through (it would require conversion the framework does not do, §2.7).
+TEST(Shared, IncompatibleFieldsExcluded) {
+  FieldRegistry in;
+  add_field(in, "same", FieldRole::DPS, DataType(DataType::Float32), 1);
+  add_field(in, "dtype_changed", FieldRole::DPS, DataType(DataType::UInt8), 1);
+  add_field(in, "m_changed", FieldRole::DPV, DataType(DataType::Float32), 1);
+  add_field(in, "dropped", FieldRole::DPS, DataType(DataType::Float32), 2);
+
+  FieldRegistry out;
+  add_field(out, "same", FieldRole::DPS, DataType(DataType::Float32), 1);
+  add_field(out, "dtype_changed", FieldRole::DPS, DataType(DataType::Float32), 1); // dtype differs
+  add_field(out, "m_changed", FieldRole::DPV, DataType(DataType::Float32), 3);     // M differs
+
+  Shared shared(in, out);
+  // Only "same" passes through; the others are excluded.
+  ASSERT_EQ(shared.dps_passthrough().size(), 1u);
+  EXPECT_TRUE(shared.dpv_passthrough().empty());
+  EXPECT_EQ(shared.input()[shared.dps_passthrough()[0].input_ordinal].name, "same");
+}
+
+// carry_passthrough() copies pass-through fields verbatim (native dtype) and
+//   sizes the output payload to the output registry.
+TEST(Shared, CarryPassThroughCopiesNativeDtype) {
+  FieldRegistry reg;
+  add_field(reg, "bundle", FieldRole::DPS, DataType(DataType::UInt32), 1);
+  add_field(reg, "fa", FieldRole::DPV, DataType(DataType::Float32), 1);
+  Shared shared(reg);
+
+  TractogramItem<float> in;
+  in.dps.resize(1);
+  in.dpv.resize(1);
+  {
+    ScalarOrVector<uint32_t> b(1);
+    b(0, 0) = 7u;
+    in.dps[0] = make_dps(std::move(b));
+  }
+  {
+    VectorOrMatrix<float> f(3, 1);
+    f.col(0) << 0.1F, 0.2F, 0.3F;
+    in.dpv[0] = make_dpv(std::move(f));
+  }
+
+  TractogramItem<float> out;
+  shared.carry_passthrough(in, out);
+  ASSERT_EQ(out.dps.size(), 1u);
+  ASSERT_EQ(out.dpv.size(), 1u);
+  ASSERT_TRUE(std::holds_alternative<ScalarOrVector<uint32_t>>(out.dps[0]));
+  EXPECT_EQ(std::get<ScalarOrVector<uint32_t>>(out.dps[0]).scalar(), 7u);
+  EXPECT_FLOAT_EQ(std::get<VectorOrMatrix<float>>(out.dpv[0]).vector()(2), 0.3F);
 }
 
 } // namespace

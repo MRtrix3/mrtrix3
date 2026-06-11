@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "datatype.h"
+#include "exception.h"
 
 namespace MR::DWI::Tractography {
 
@@ -41,57 +42,90 @@ enum class FieldSource {
 
 //! \brief Descriptor for a single sidecar field (§2.5).
 /*! Records a field's name, role, native on-disk datatype, column count and
- * provenance. The registry assigns each descriptor a stable ordinal that
- * indexes the per-item payload vectors of TractogramItem (§2.1). */
+ * provenance, plus the role-local ordinal assigned by the registry. The ordinal
+ * is the slot of this field within the matching per-item payload vector of
+ * TractogramItem (§2.1): a DPS field's ordinal indexes TractogramItem::dps, a
+ * DPV field's ordinal indexes TractogramItem::dpv. Ordinals are therefore
+ * counted separately per role. */
 struct FieldDescriptor {
   std::string name;
   FieldRole role;
   DataType dtype;
   size_t columns; //!< the field's column count M (§2.2); 1 for a scalar field
   FieldSource source;
+  size_t ordinal; //!< role-local payload-vector slot (§2.1); set by FieldRegistry::add()
 };
 
 //! \brief The sidecar field registry owned by a Tractogram (§2.5).
 /*! When a tractogram is opened (read) or created (write), its handler
  * enumerates the sidecar fields it carries and registers a FieldDescriptor for
- * each. The registry assigns a stable ordinal per field and maps name →
- * ordinal, so that per-item payloads (§2.1) are std::vectors indexed by that
- * ordinal rather than maps keyed by name. A pipeline holds two registries — one
- * per input/output Tractogram — with a name-based pass-through map between them
- * (§2.7).
+ * each. The registry assigns a stable, role-local ordinal per field and maps
+ * name → descriptor, so that per-item payloads (§2.1) are std::vectors indexed
+ * by that ordinal rather than maps keyed by name. The DPS and DPV ordinal spaces
+ * are independent (one per TractogramItem payload vector). A pipeline holds two
+ * registries — one per input/output Tractogram — reconciled by a name-based
+ * pass-through map (the Shared object, §2.7).
  *
- * \par Stage 1 scope
- * The ".tck" format carries no internal sidecar fields, so a Stage-1 registry
- * is always empty. The type is introduced now, with the §2.5 shape, so that
- * Tractogram owns it from the outset and the sidecar machinery of later stages
- * slots in without changing Tractogram's interface. */
+ * The empty registry (no sidecar fields, e.g. ".tck") is the common fast path:
+ * size()==0, both payload vectors empty. */
 class FieldRegistry {
 public:
-  //! \brief register a field, returning its assigned ordinal.
-  size_t add(const FieldDescriptor &descriptor) {
-    const size_t ordinal = descriptors.size();
-    descriptors.push_back(descriptor);
+  //! \brief register a field, returning its assigned role-local ordinal.
+  /*! The supplied descriptor's role-local ordinal is overwritten with the
+   * assigned value (the next free slot for that role). Throws if a field of the
+   * same name and role is already registered. */
+  size_t add(FieldDescriptor descriptor) {
+    if (ordinal(descriptor.name, descriptor.role).has_value())
+      throw Exception("duplicate sidecar field \"" + descriptor.name + "\" registered");
+    const size_t ordinal = (descriptor.role == FieldRole::DPV) ? dpv_count_ : dps_count_;
+    descriptor.ordinal = ordinal;
+    if (descriptor.role == FieldRole::DPV)
+      ++dpv_count_;
+    else
+      ++dps_count_;
+    descriptors.push_back(std::move(descriptor));
     return ordinal;
   }
 
-  //! \brief the number of registered fields.
+  //! \brief the total number of registered fields (across all roles).
   size_t size() const { return descriptors.size(); }
   bool empty() const { return descriptors.empty(); }
 
-  //! \brief the descriptor at the given ordinal.
-  const FieldDescriptor &operator[](const size_t ordinal) const { return descriptors[ordinal]; }
+  //! \brief the number of registered data-per-streamline (dps) fields.
+  size_t dps_count() const { return dps_count_; }
+  //! \brief the number of registered data-per-vertex (dpv) fields.
+  size_t dpv_count() const { return dpv_count_; }
 
-  //! \brief resolve a field name to its ordinal, if present.
-  std::optional<size_t> ordinal(std::string_view name) const {
-    for (size_t i = 0; i != descriptors.size(); ++i) {
-      if (descriptors[i].name == name)
-        return i;
+  //! \brief the descriptor at the given position in registration order.
+  const FieldDescriptor &operator[](const size_t position) const { return descriptors[position]; }
+
+  //! \brief iteration over descriptors in registration order.
+  auto begin() const { return descriptors.begin(); }
+  auto end() const { return descriptors.end(); }
+
+  //! \brief resolve a field name (optionally constrained to a role) to its
+  //!   role-local ordinal, if present.
+  std::optional<size_t> ordinal(std::string_view name, std::optional<FieldRole> role = std::nullopt) const {
+    for (const auto &descriptor : descriptors) {
+      if (descriptor.name == name && (!role.has_value() || descriptor.role == *role))
+        return descriptor.ordinal;
     }
     return std::nullopt;
   }
 
+  //! \brief the descriptor for a field name+role, if present.
+  const FieldDescriptor *find(std::string_view name, const FieldRole role) const {
+    for (const auto &descriptor : descriptors) {
+      if (descriptor.name == name && descriptor.role == role)
+        return &descriptor;
+    }
+    return nullptr;
+  }
+
 private:
   std::vector<FieldDescriptor> descriptors;
+  size_t dps_count_ = 0;
+  size_t dpv_count_ = 0;
 };
 
 } // namespace MR::DWI::Tractography
