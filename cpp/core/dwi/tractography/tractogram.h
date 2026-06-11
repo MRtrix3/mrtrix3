@@ -100,6 +100,10 @@ public:
    * forwards to it for use as a queue sink. */
   bool write(const item_type &item) {
     assert(writer != nullptr);
+    // Extract any registered standalone output-sidecar data from the processed
+    //   per-streamline payload (§2.7; Stage 11, step 6).
+    for (auto &exporter : output_sidecars)
+      (*exporter)(item);
     return (*writer)(item);
   }
 
@@ -153,6 +157,26 @@ public:
     input_sidecars.push_back(make_sidecar_loader<ValueType>(parse_sidecar_reference(arg), properties, registry));
   }
 
+  //! \brief register a standalone output-sidecar reference for export (step 6).
+  /*! Parses \a arg (§2.4) and constructs the appropriate exporter (a
+   * per-streamline numerical text/.npy writer, or a per-vertex .tsf writer). The
+   * exporter is invoked per write() to extract its field from the processed
+   * item, and commits on destruction (or via finalise_sidecars()). A qualified
+   * "DATASET::NAME" reference is rejected as not-yet-implemented. */
+  void register_output_sidecar(std::string_view arg, const Properties &properties) {
+    assert(writer != nullptr);
+    output_sidecars.push_back(
+        make_sidecar_exporter<ValueType>(parse_sidecar_reference(arg), properties, is_random_access()));
+  }
+
+  //! \brief flush all registered output sidecars to the filesystem.
+  /*! Called explicitly when deterministic finalisation order is required;
+   * otherwise each exporter commits in its own destructor. Idempotent. */
+  void finalise_sidecars() {
+    for (auto &exporter : output_sidecars)
+      exporter->finalise();
+  }
+
   //! \brief the sidecar field registry for this dataset (§2.5).
   const FieldRegistry &fields() const { return registry; }
   FieldRegistry &fields() { return registry; }
@@ -173,6 +197,8 @@ private:
   FieldRegistry registry;
   //! registered standalone input-sidecar loaders (§2.5; Stage 11, step 5)
   std::vector<std::unique_ptr<SidecarLoader<ValueType>>> input_sidecars;
+  //! registered standalone output-sidecar exporters (§2.7; Stage 11, step 6)
+  std::vector<std::unique_ptr<SidecarExporter<ValueType>>> output_sidecars;
 };
 
 } // namespace MR::DWI::Tractography

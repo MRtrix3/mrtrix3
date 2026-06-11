@@ -164,6 +164,99 @@ private:
   size_t ordinal;
 };
 
+// ---------------------------------------------------------------------------
+//  Output exporters (Stage 11, step 6)
+// ---------------------------------------------------------------------------
+
+//! \brief accumulate processed per-streamline dps data in an Eigen::Array<>,
+//!   grown on the std::vector<> doubling schedule, and write a numerical text
+//!   file or .npy on finalise (§2.7; step 6).
+template <class ValueType> class MatrixExporter : public SidecarExporter<ValueType> {
+public:
+  MatrixExporter(const std::filesystem::path &path, const size_t initial_streamlines)
+      : path(path),
+        data(Eigen::Array<ValueType, Eigen::Dynamic, Eigen::Dynamic>::Zero(initial_streamlines, 1)),
+        rows(0),
+        cols(0),
+        finalised(false) {}
+
+  ~MatrixExporter() override {
+    try {
+      finalise();
+    } catch (Exception &e) {
+      Exception(e, "Error finalising tractogram-sidecar output \"" + path.string() + "\"").display();
+    }
+  }
+
+  bool operator()(const TractogramItem<ValueType> &item) override {
+    if (item.dps.empty())
+      throw Exception("tractogram-sidecar export \"" + path.string() + "\"" +
+                      " received a streamline with no per-streamline data to export");
+    const ScalarOrVector<ValueType> &value = std::get<ScalarOrVector<ValueType>>(item.dps.front());
+    const size_t index = item.get_index();
+    grow_to(index + 1, static_cast<size_t>(value.cols()));
+    data.row(static_cast<Eigen::Index>(index)).head(value.cols()) = value.array();
+    if (index + 1 > rows)
+      rows = index + 1;
+    return true;
+  }
+
+  void finalise() override {
+    if (finalised)
+      return;
+    finalised = true;
+    Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> out =
+        data.topLeftCorner(static_cast<Eigen::Index>(rows), static_cast<Eigen::Index>(cols)).matrix();
+    File::Matrix::save_matrix(out, path);
+  }
+
+private:
+  std::filesystem::path path;
+  Eigen::Array<ValueType, Eigen::Dynamic, Eigen::Dynamic> data;
+  size_t rows;
+  size_t cols;
+  bool finalised;
+
+  //! grow the backing array to at least \a need_rows x \a need_cols, expanding
+  //!   the row capacity geometrically (the std::vector<> doubling schedule).
+  void grow_to(const size_t need_rows, const size_t need_cols) {
+    if (need_cols > cols)
+      cols = need_cols;
+    size_t capacity = static_cast<size_t>(data.rows());
+    if (need_rows > capacity || static_cast<size_t>(data.cols()) < cols) {
+      while (capacity < need_rows)
+        capacity = (capacity == 0) ? 1 : capacity * 2;
+      data.conservativeResizeLike(
+          Eigen::Array<ValueType, Eigen::Dynamic, Eigen::Dynamic>::Zero(capacity, static_cast<Eigen::Index>(cols)));
+    }
+  }
+};
+
+//! \brief write processed per-vertex dpv data to a .tsf file as streamlines are
+//!   fed to the output tractogram (§2.7; step 6).
+template <class ValueType> class TsfExporter : public SidecarExporter<ValueType> {
+public:
+  TsfExporter(const std::filesystem::path &path, const Properties &properties) : writer(path, properties) {}
+
+  bool operator()(const TractogramItem<ValueType> &item) override {
+    if (item.dpv.empty())
+      throw Exception("per-vertex tractogram-sidecar (.tsf) export received a streamline with no per-vertex data");
+    const VectorOrMatrix<ValueType> &value = std::get<VectorOrMatrix<ValueType>>(item.dpv.front());
+    TrackScalar<ValueType> scalars;
+    scalars.set_index(item.get_index());
+    scalars.resize(static_cast<size_t>(value.rows()));
+    for (Eigen::Index v = 0; v != value.rows(); ++v)
+      scalars[static_cast<size_t>(v)] = value(v, 0);
+    writer(scalars);
+    return true;
+  }
+
+  void finalise() override {}
+
+private:
+  ScalarWriter<ValueType> writer;
+};
+
 } // namespace
 
 template <class ValueType>
@@ -183,5 +276,25 @@ template std::unique_ptr<SidecarLoader<float>>
 make_sidecar_loader<float>(const SidecarReference &, Properties &, FieldRegistry &);
 template std::unique_ptr<SidecarLoader<double>>
 make_sidecar_loader<double>(const SidecarReference &, Properties &, FieldRegistry &);
+
+template <class ValueType>
+std::unique_ptr<SidecarExporter<ValueType>> make_sidecar_exporter(const SidecarReference &reference,
+                                                                  const Properties &properties,
+                                                                  const bool /*is_random_access*/) {
+  if (reference.is_qualified())
+    throw Exception("export of a qualified \"DATASET::NAME\" tractogram-sidecar reference"
+                    " is not yet implemented");
+  if (is_tsf(reference.dataset))
+    return std::make_unique<TsfExporter<ValueType>>(reference.dataset, properties);
+  // A per-streamline export starts sized for the input streamline count where
+  //   known (0 -> grown geometrically as streamlines arrive).
+  const size_t initial = properties.find("count") != properties.end() ? to<size_t>(properties.at("count")) : size_t(0);
+  return std::make_unique<MatrixExporter<ValueType>>(reference.dataset, initial);
+}
+
+template std::unique_ptr<SidecarExporter<float>>
+make_sidecar_exporter<float>(const SidecarReference &, const Properties &, bool);
+template std::unique_ptr<SidecarExporter<double>>
+make_sidecar_exporter<double>(const SidecarReference &, const Properties &, bool);
 
 } // namespace MR::DWI::Tractography

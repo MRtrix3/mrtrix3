@@ -578,4 +578,90 @@ TEST_F(SidecarIO, QualifiedImportNotYetImplemented) {
                MR::Exception);
 }
 
+// ---------------------------------------------------------------------------
+//  Step 6: standalone output-sidecar export
+// ---------------------------------------------------------------------------
+
+// Step 6: export processed per-streamline data to a numerical text file; the
+//   exporter stores rows by index and writes on finalise.
+TEST_F(SidecarIO, ExportCsvPerStreamline) {
+  const std::filesystem::path path = dir / "out.csv";
+  {
+    Properties properties;
+    properties["count"] = "3";
+    auto exporter = make_sidecar_exporter<float>(parse_sidecar_reference(path.string()), properties, false);
+    for (size_t s = 0; s != 3; ++s) {
+      TractogramItem<float> item;
+      item.set_index(s);
+      ScalarOrVector<float> v(1);
+      v(0, 0) = 10.0F + static_cast<float>(s);
+      item.dps.push_back(make_dps(std::move(v)));
+      ASSERT_TRUE((*exporter)(item));
+    }
+    exporter->finalise();
+  }
+  const Eigen::MatrixXf m = MR::File::Matrix::load_matrix<float>(path);
+  ASSERT_EQ(m.rows(), 3);
+  EXPECT_FLOAT_EQ(m(0, 0), 10.0F);
+  EXPECT_FLOAT_EQ(m(2, 0), 12.0F);
+}
+
+// Step 6: export processed per-streamline data to a .npy file; round-trips.
+//   With no streamline count in Properties the backing array is grown via
+//   conservativeResizeLike() (the std::vector<> doubling schedule).
+TEST_F(SidecarIO, ExportNpyPerStreamline) {
+  const std::filesystem::path path = dir / "out.npy";
+  {
+    Properties properties; // no count -> grown geometrically
+    auto exporter = make_sidecar_exporter<float>(parse_sidecar_reference(path.string()), properties, false);
+    for (size_t s = 0; s != 5; ++s) {
+      TractogramItem<float> item;
+      item.set_index(s);
+      ScalarOrVector<float> v(2);
+      v << static_cast<float>(s), static_cast<float>(s) * 2.0F;
+      item.dps.push_back(make_dps(std::move(v)));
+      ASSERT_TRUE((*exporter)(item));
+    }
+    exporter->finalise();
+  }
+  const Eigen::MatrixXf m = MR::File::NPY::load_matrix<float>(path);
+  ASSERT_EQ(m.rows(), 5);
+  ASSERT_EQ(m.cols(), 2);
+  EXPECT_FLOAT_EQ(m(4, 0), 4.0F);
+  EXPECT_FLOAT_EQ(m(4, 1), 8.0F);
+}
+
+// Step 6: export processed per-vertex data to a .tsf file as streamlines arrive.
+TEST_F(SidecarIO, ExportTsfPerVertex) {
+  const std::filesystem::path path = dir / "out.tsf";
+  {
+    Properties properties;
+    auto exporter = make_sidecar_exporter<float>(parse_sidecar_reference(path.string()), properties, false);
+    for (size_t s = 0; s != 2; ++s) {
+      TractogramItem<float> item;
+      item.set_index(s);
+      VectorOrMatrix<float> v(static_cast<Eigen::Index>(3 + s), 1);
+      for (Eigen::Index k = 0; k != v.rows(); ++k)
+        v(k, 0) = static_cast<float>(k) + static_cast<float>(s);
+      item.dpv.push_back(make_dpv(std::move(v)));
+      ASSERT_TRUE((*exporter)(item));
+    }
+  } // exporter + ScalarWriter destructors flush
+
+  Properties properties;
+  ScalarReader<float> reader(path, properties);
+  TrackScalar<float> scalars;
+  ASSERT_TRUE(reader(scalars));
+  EXPECT_EQ(scalars.size(), 3u);
+  EXPECT_FLOAT_EQ(scalars[2], 2.0F);
+}
+
+// Step 6: a qualified "DATASET::NAME" export reference is not yet implemented.
+TEST_F(SidecarIO, QualifiedExportNotYetImplemented) {
+  const std::filesystem::path tck = dir / "tracks.tck";
+  Properties properties;
+  EXPECT_THROW(make_sidecar_exporter<float>(parse_sidecar_reference(tck.string() + "::fa"), properties, false),
+               MR::Exception);
+}
+
 } // namespace
