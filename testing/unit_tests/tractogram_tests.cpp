@@ -16,6 +16,7 @@
 
 #include "dwi/tractography/formats/base.h"
 #include "dwi/tractography/formats/list.h"
+#include "dwi/tractography/formats/pipe.h"
 #include "dwi/tractography/formats/tck.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/streamline.h"
@@ -126,6 +127,35 @@ TEST_F(TractogramTest, TckRoundTripViaFramework) {
     for (size_t v = 0; v != input[s].size(); ++v)
       EXPECT_TRUE(output[s][v].isApprox(input[s][v]));
   }
+}
+
+// The inter-command pipe handler is selected on the "-" dash token (Step 1) and
+//   broadcasts streaming-only, rewrite-only read+write capabilities (Step 3).
+TEST_F(TractogramTest, PipeHandlerSelectionAndCapabilities) {
+  const Formats::Base *handler = Formats::get_handler("-");
+  ASSERT_NE(handler, nullptr);
+  EXPECT_EQ(handler->description, "piped tracks");
+  EXPECT_TRUE(handler->handles("-"));
+  EXPECT_FALSE(handler->handles("dataset.tck"));
+
+  Formats::Pipe pipe_handler;
+  EXPECT_TRUE(pipe_handler.can_read());
+  EXPECT_TRUE(pipe_handler.can_write());
+  EXPECT_EQ(pipe_handler.capabilities.io, Formats::IO::ReadWrite);
+  EXPECT_EQ(pipe_handler.capabilities.access, Formats::Access::Streaming);
+  EXPECT_EQ(pipe_handler.capabilities.augment, Formats::Augment::Rewrite);
+}
+
+// A streaming-only handler must reject a random-access request through the
+//   framework with a clean Exception (Step 3). The pipe is the canonical
+//   streaming-only format; the rejection is exercised here on a .tck Tractogram,
+//   which shares the identical Access::Streaming model and therefore the same
+//   framework code path (a unit test cannot stand up a live stdin/stdout pipe).
+TEST_F(TractogramTest, StreamingHandlerRejectsRandomAccess) {
+  Properties properties;
+  Tractogram<float> writer = Tractogram<float>::create(tck_path, properties);
+  EXPECT_FALSE(writer.is_random_access());
+  EXPECT_THROW(writer.require_random_access("indexed streamline retrieval"), MR::Exception);
 }
 
 // The Stage-1 field registry is present but empty for .tck (no sidecar fields).

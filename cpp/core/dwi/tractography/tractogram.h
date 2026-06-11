@@ -19,11 +19,13 @@
 #include <filesystem>
 #include <memory>
 #include <string>
+#include <string_view>
 
 #include "dwi/tractography/field_registry.h"
 #include "dwi/tractography/formats/base.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/tractogram_item.h"
+#include "exception.h"
 
 namespace MR::DWI::Tractography {
 
@@ -104,6 +106,29 @@ public:
   const Formats::Capabilities &capabilities() const { return handler->capabilities; }
   //! \brief a human-readable description of the selected format.
   std::string format() const { return handler->description; }
+
+  //! \brief whether the selected handler permits random access to the data.
+  /*! True iff the handler advertises one of the random-access models (§2.6);
+   * false for a streaming-only handler such as the inter-command pipe ("-"),
+   * whose backing byte stream is sequential by nature. */
+  bool is_random_access() const { return handler->capabilities.access != Formats::Access::Streaming; }
+
+  //! \brief assert that the selected handler supports random access, or throw.
+  /*! A command that requires random access to the tractogram (e.g. multiple
+   * passes, indexed retrieval, in-place mutation) calls this before doing so.
+   * A streaming-only handler — the inter-command pipe being the canonical case —
+   * cannot service such a request: a pipe is a one-pass sequential stream that
+   * cannot be rewound, and silently buffering the whole (unbounded) tractogram
+   * to fake random access is rejected by design (§2.2 of the pipe design note).
+   * The error names the operation \a context so the message is
+   * user-interpretable. The random-access wrapper of a later stage may instead
+   * be selected automatically for formats that can be wrapped; the pipe cannot,
+   * so it always raises here. */
+  void require_random_access(std::string_view context = "this operation") const {
+    if (!is_random_access())
+      throw Exception("tractography format \"" + handler->description + "\" provides sequential streaming access only" +
+                      " and cannot service " + std::string(context) + " (which requires random access to the data)");
+  }
 
   //! \brief the sidecar field registry for this dataset (§2.5).
   const FieldRegistry &fields() const { return registry; }
