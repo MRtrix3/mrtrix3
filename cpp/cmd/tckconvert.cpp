@@ -14,10 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include <array>
-#include <cstdio>
 #include <filesystem>
-#include <sstream>
 
 #include "command.h"
 #include "dwi/tractography/file.h"
@@ -27,13 +24,10 @@
 #include "file/matrix.h"
 #include "file/name_parser.h"
 #include "file/ofstream.h"
-#include "raw.h"
 
 using namespace MR;
 using namespace App;
 using namespace MR::DWI::Tractography;
-using namespace MR::Raw;
-using namespace MR::ByteOrder;
 
 constexpr int default_ply_increment = 1;
 constexpr float default_ply_radius = 0.1F;
@@ -114,176 +108,12 @@ void usage() {
 
     + Option ("ascii", "write an ASCII VTK file"
                        " (binary by default)");
+  // The "-ascii" option is consumed by the framework's .vtk format handler
+  //   (dwi/tractography/formats/vtk.cpp), which selects the ASCII encoding when
+  //   it is present; tckconvert itself no longer branches on the VTK encoding.
 
 }
 // clang-format on
-
-class VTKWriter : public WriterInterface<float> {
-public:
-  VTKWriter(const std::filesystem::path &path, bool write_ascii = true)
-      : VTKout(path, std::ios::binary), write_ascii(write_ascii) {
-    // create and write header of VTK output file:
-    VTKout << "# vtk DataFile Version 3.0\n"
-              "Data values for Tracks\n";
-    if (write_ascii) {
-      VTKout << "ASCII\n";
-    } else {
-      VTKout << "BINARY\n";
-    }
-    VTKout << "DATASET POLYDATA\n"
-              "POINTS ";
-    // keep track of offset to write proper value later:
-    offset_num_points = VTKout.tellp();
-    VTKout << "XXXXXXXXXX float\n";
-  }
-
-  bool operator()(const Streamline<float> &tck) {
-    // write out points, and build index of tracks:
-    size_t start_index = current_index;
-    current_index += tck.size();
-    track_list.push_back(std::pair<size_t, size_t>(start_index, current_index));
-    if (write_ascii) {
-      for (const auto &pos : tck) {
-        VTKout << pos[0] << " " << pos[1] << " " << pos[2] << "\n";
-      }
-    } else {
-      std::array<float, 3> p{};
-      for (const auto &pos : tck) {
-        for (auto i = 0; i < 3; ++i)
-          Raw::store_BE(pos[i], p.data(), i);
-        VTKout.write(reinterpret_cast<char *>(p.data()), sizeof(p));
-      }
-    }
-    return true;
-  }
-
-  ~VTKWriter() {
-    try {
-      // write out list of tracks:
-      if (write_ascii == false) {
-        // Need to include an extra new line when writing binary
-        VTKout << "\n";
-      }
-      VTKout << "LINES " << track_list.size() << " " << track_list.size() + current_index << "\n";
-      for (const auto &track : track_list) {
-        if (write_ascii) {
-          VTKout << track.second - track.first << " " << track.first;
-          for (size_t i = track.first + 1; i < track.second; ++i)
-            VTKout << " " << i;
-          VTKout << "\n";
-        } else {
-          int32_t buffer;
-          buffer = ByteOrder::BE<int32_t>(track.second - track.first);
-          VTKout.write(reinterpret_cast<char *>(&buffer), sizeof(int32_t));
-
-          buffer = ByteOrder::BE<int32_t>(track.first);
-          VTKout.write(reinterpret_cast<char *>(&buffer), sizeof(int32_t));
-
-          for (size_t i = track.first + 1; i < track.second; ++i) {
-            buffer = ByteOrder::BE<int32_t>(i);
-            VTKout.write(reinterpret_cast<char *>(&buffer), sizeof(int32_t));
-          }
-        }
-      }
-      if (write_ascii == false) {
-        // Need to include an extra new line when writing binary
-        VTKout << "\n";
-      }
-
-      // write back total number of points:
-      VTKout.seekp(offset_num_points);
-      std::string num_points(str(current_index));
-      num_points.resize(10, ' ');
-      VTKout.write(num_points.c_str(), 10);
-
-      VTKout.close();
-    } catch (Exception &e) {
-      e.display();
-      App::exit_error_code = 1;
-    }
-  }
-
-private:
-  File::OFStream VTKout;
-  const bool write_ascii;
-  size_t offset_num_points;
-  std::vector<std::pair<size_t, size_t>> track_list;
-  size_t current_index = 0;
-};
-
-template <class T> void loadLines(std::vector<int64_t> &lines, std::ifstream &input, int number_of_line_indices) {
-  std::vector<T> buffer(number_of_line_indices);
-  input.read(reinterpret_cast<char *>(buffer.data()), number_of_line_indices * sizeof(T));
-  lines.resize(number_of_line_indices);
-  // swap from big endian
-  for (int i = 0; i < number_of_line_indices; i++)
-    lines[i] = static_cast<int64_t>(ByteOrder::BE(buffer[i]));
-}
-
-class VTKReader : public ReaderInterface<float> {
-public:
-  VTKReader(const std::filesystem::path &path) {
-    std::ifstream input(path, std::ios::binary);
-    std::string line;
-    int number_of_points = 0;
-    number_of_lines = 0;
-    number_of_line_indices = 0;
-
-    while (std::getline(input, line)) {
-      if (line.find("ASCII") == 0)
-        throw Exception("VTK Reader only supports BINARY input");
-
-      if (sscanf(line.c_str(), "POINTS %d float", &number_of_points) == 1) {
-        points.resize(3 * static_cast<size_t>(number_of_points));
-        input.read(reinterpret_cast<char *>(points.data()),
-                   3UL * static_cast<unsigned long>(number_of_points) * sizeof(float));
-
-        // swap
-        for (int i = 0; i < 3 * number_of_points; i++)
-          points[i] = ByteOrder::BE(points[i]);
-
-        continue;
-      } else {
-        if (sscanf(line.c_str(), "LINES %d %d", &number_of_lines, &number_of_line_indices) == 2) {
-          if (line.find("vtktypeint64") != std::string::npos) {
-            loadLines<int64_t>(lines, input, number_of_line_indices);
-          } else {
-            loadLines<int32_t>(lines, input, number_of_line_indices);
-          }
-          // We can safely break
-          break;
-        }
-      }
-    }
-    input.close();
-    lineIdx = 0;
-  }
-
-  bool operator()(Streamline<float> &tck) {
-    tck.clear();
-    if (lineIdx < number_of_line_indices) {
-      int count = lines[lineIdx];
-      lineIdx++;
-      for (int i = 0; i < count; i++) {
-        int idx = lines[lineIdx];
-        Eigen::Vector3f f(points[static_cast<size_t>(idx) * 3],
-                          points[static_cast<size_t>(idx) * 3 + 1],
-                          points[static_cast<size_t>(idx) * 3 + 2]);
-        tck.push_back(f);
-        lineIdx++;
-      }
-      return true;
-    }
-    return false;
-  }
-
-private:
-  std::vector<float> points;
-  std::vector<int64_t> lines;
-  int lineIdx;
-  int number_of_lines;
-  int number_of_line_indices;
-};
 
 class ASCIIReader : public ReaderInterface<float> {
 public:
@@ -748,9 +578,9 @@ void run_generic(const std::filesystem::path &input_path, const std::filesystem:
 //! \brief bespoke conversion for esoteric / export-only formats.
 /*! The original tckconvert reader/writer selection, retained verbatim for the
  * formats intentionally not exposed to other commands as framework handlers:
- * the ".txt" ASCII reader/writer, the ".vtk" reader/writer, and the write-only
- * ".ply" and ".rib" exporters. Selected as a fallback whenever the framework
- * does not recognise either of the two extensions. */
+ * the ".txt" ASCII reader/writer and the write-only ".ply" and ".rib"
+ * exporters. Selected as a fallback whenever the framework does not recognise
+ * either of the two extensions. */
 void run_bespoke(const std::filesystem::path &input_path, const std::filesystem::path &output_path) {
   // Reader
   Properties properties;
@@ -759,8 +589,6 @@ void run_bespoke(const std::filesystem::path &input_path, const std::filesystem:
     reader.reset(new Reader<float>(input_path, properties));
   } else if (input_path.extension() == ".txt") {
     reader.reset(new ASCIIReader(input_path.string()));
-  } else if (input_path.extension() == ".vtk") {
-    reader.reset(new VTKReader(input_path));
   } else {
     throw Exception("Unsupported input file type.");
   }
@@ -769,9 +597,6 @@ void run_bespoke(const std::filesystem::path &input_path, const std::filesystem:
   std::unique_ptr<WriterInterface<float>> writer;
   if (output_path.extension() == ".tck") {
     writer.reset(new Writer<float>(output_path, properties));
-  } else if (output_path.extension() == ".vtk") {
-    auto write_ascii = get_options("ascii").size();
-    writer.reset(new VTKWriter(output_path, write_ascii));
   } else if (output_path.extension() == ".ply") {
     const int increment = get_option_value("increment", default_ply_increment);
     const float radius = get_option_value("radius", default_ply_radius);
@@ -803,8 +628,8 @@ void run() {
 
   // First attempt the generic framework branch: it serves the conversion only
   // when both extensions are recognised by the format-handler framework
-  // (currently ".tck" alone). Otherwise fall back to the bespoke handlers,
-  // retained for the esoteric / export-only formats (".txt"/".vtk"/".ply"/".rib").
+  // (".tck" and ".vtk"). Otherwise fall back to the bespoke handlers, retained
+  // for the esoteric / export-only formats (".txt"/".ply"/".rib").
   const bool input_is_framework = MR::DWI::Tractography::Formats::get_handler(input_path) != nullptr;
   const bool output_is_framework = MR::DWI::Tractography::Formats::get_handler(output_path) != nullptr;
   if (input_is_framework && output_is_framework) {

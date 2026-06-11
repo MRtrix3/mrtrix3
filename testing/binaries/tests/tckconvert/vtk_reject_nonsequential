@@ -1,0 +1,8 @@
+#!/bin/bash
+# The framework VTK reader must reject a .vtk file whose LINES connectivity does not
+#   describe a sequentially-ordered run of vertex indices (the only topology an MRtrix
+#   streamline admits). Construct a POLYDATA file with a permuted LINES record and
+#   confirm the conversion fails cleanly (non-zero exit).
+printf '# vtk DataFile Version 3.0\ntest\nASCII\nDATASET POLYDATA\nPOINTS 3 float\n0 0 0\n1 0 0\n2 0 0\nLINES 1 4\n3 0 2 1\n' > tmp_bad_seq.vtk
+tckconvert tmp_bad_seq.vtk tmp_bad_seq.tck -force -quiet 2>/dev/null && { echo "Expected rejection of non-sequential LINES indices"; exit 1; }
+true
