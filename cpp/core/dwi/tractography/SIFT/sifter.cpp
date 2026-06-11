@@ -24,6 +24,7 @@
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/selection_dps.h"
 
 #include "dwi/tractography/ACT/tissues.h"
 
@@ -371,6 +372,17 @@ void SIFTer::output_selection(const std::filesystem::path &path) const {
     else
       out << "0\n";
   }
+}
+
+void SIFTer::output_selection_dps(const std::filesystem::path &path) const {
+  // One value per OUTPUT streamline; only retained streamlines are written to
+  //   the filtered output, so each embedded selection value is 1.
+  std::vector<uint8_t> values;
+  for (track_t i = 0; i != contributions.size(); ++i) {
+    if (contributions[i])
+      values.push_back(1);
+  }
+  write_selection_dps(path, values);
 }
 
 void SIFTer::set_regular_outputs(const std::vector<uint32_t> &in, const std::optional<std::filesystem::path> &dirpath) {

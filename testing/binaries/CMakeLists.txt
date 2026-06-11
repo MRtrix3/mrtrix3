@@ -597,6 +597,8 @@ add_bash_binary_test(tckedit/include_exclude_inverse)
 add_bash_binary_test(tckedit/include_mask)
 add_bash_binary_test(tckedit/length)
 add_bash_binary_test(tckedit/mask)
+add_bash_binary_test(tckedit/selection_dps)
+add_bash_binary_test(tckedit/selection_dps_fragmented)
 
 add_bash_binary_test(tckgen/act_terminations)
 add_bash_binary_test(tckgen/algorithm_ifod2)
@@ -668,6 +670,7 @@ add_bash_binary_test(tcksample/inputsh_precise)
 add_bash_binary_test(tcksample/interp_tdifrac)
 
 add_bash_binary_test(tcksift/default)
+add_bash_binary_test(tcksift/selection_dps)
 
 add_bash_binary_test(tcksift2/default)
 

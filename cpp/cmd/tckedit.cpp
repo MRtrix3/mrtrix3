@@ -107,6 +107,18 @@ void usage() {
 
   + Option ("ends_only", "only test the ends of each streamline against the provided include/exclude ROIs")
 
+  + Option ("out_selection", "record the streamline selection as an embedded per-streamline"
+                             " (data-per-streamline) field:"
+                             " one value (1) per streamline written to the output,"
+                             " saved as a standalone per-streamline sidecar file"
+                             " (plain-text or .npy by extension)."
+                             " When the -mask option fragments a single input streamline into"
+                             " several output streamlines, each fragment is an independent output"
+                             " streamline and is assigned its own selection value;"
+                             " any associated per-vertex (data-per-vertex) data would likewise be"
+                             " sub-sampled per fragment.")
+    + Argument ("path").type_tractogram_data_out()
+
   // TODO Input weights with multiple input files currently not supported
   + OptionGroup ("Options for handling streamline weights")
   + Tractography::TrackWeightsInOption
@@ -213,6 +225,9 @@ void run() {
   Loader loader(input_file_list);
   Worker worker(properties, inverse, ends_only);
   Receiver receiver(output_path, properties, number, skip);
+  auto selection_dps_path = get_optional<std::filesystem::path>("out_selection");
+  if (selection_dps_path.has_value())
+    receiver.set_selection_dps_path(*selection_dps_path);
 
   Thread::run_ordered_queue(
       loader, Thread::batch(Streamline<>()), Thread::multi(worker), Thread::batch(Streamline<>()), receiver);

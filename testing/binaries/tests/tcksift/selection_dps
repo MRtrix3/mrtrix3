@@ -1,0 +1,20 @@
+#!/bin/bash
+# Step 3: tcksift records the streamline selection as an embedded per-streamline
+#   (dps) field (-out_selection_dps), one value per OUTPUT streamline, in addition
+#   to the separate whole-input binary selection text file (-out_selection).
+# The embedded selection must have exactly one entry per output streamline (all 1),
+#   and the separate -out_selection mask (over the INPUT) must contain exactly that
+#   many ones.
+rm -rf tmp/
+tcksift SIFT_phantom/tracks.tck SIFT_phantom/fods.mif tmp.tck \
+  -out_selection tmp_mask.txt -out_selection_dps tmp_dps.txt -force
+NTCK=$(tckinfo tmp.tck -count 2>/dev/null | grep -iE "actual count" | grep -oE "[0-9]+" | head -n1)
+grep -v '^#' tmp_dps.txt | tr ' \t' '\n\n' | grep -E '[0-9]' > tmp_dps_tok.txt
+NDPS=$(grep -cE '[0-9]' tmp_dps_tok.txt)
+# The -out_selection mask is written one value per line (over the input streamlines).
+NMASK_ONES=$(grep -cE '^[[:space:]]*1[[:space:]]*$' tmp_mask.txt)
+echo "output streamlines: $NTCK ; embedded dps entries: $NDPS ; input-mask ones: $NMASK_ONES"
+[ "$NTCK" -eq "$NDPS" ]
+[ "$NDPS" -eq "$NMASK_ONES" ]
+# Every embedded dps entry must be exactly 1 (selected).
+! grep -vqE '^1$' tmp_dps_tok.txt

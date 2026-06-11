@@ -17,13 +17,17 @@
 #pragma once
 
 #include <cinttypes>
+#include <cstdint>
 #include <filesystem>
+#include <optional>
 #include <string>
+#include <vector>
 
 #include "progressbar.h"
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/selection_dps.h"
 #include "dwi/tractography/streamline.h"
 
 namespace MR::DWI::Tractography::Editing {
@@ -48,7 +52,16 @@ public:
                       (crop ? printf(", %8" PRIu64 " segments", segments) : ""));
     if (number && (count != number))
       WARN("User requested " + str(number) + " streamlines, but only " + str(count) + " were written to file");
+    if (selection_dps_path.has_value())
+      write_selection_dps(*selection_dps_path, selection_dps_values);
   }
+
+  //! \brief request an embedded per-output-streamline selection dps field (step 3).
+  /*! When set, the Receiver records a "selected" value (1) for every streamline
+   * written to the output — including each fragment produced when vertex-masking
+   * fragments a single input streamline into several output streamlines — and
+   * writes them as a standalone per-streamline dps sidecar on destruction. */
+  void set_selection_dps_path(const std::filesystem::path &path) { selection_dps_path = path; }
 
   bool operator()(const Streamline<> &);
 
@@ -60,6 +73,14 @@ private:
   bool crop;
   uint64_t segments;
   ProgressBar progress;
+  std::optional<std::filesystem::path> selection_dps_path;
+  std::vector<uint8_t> selection_dps_values;
+
+  //! \brief record a selection value for one output streamline (a fragment included).
+  void record_selection() {
+    if (selection_dps_path.has_value())
+      selection_dps_values.push_back(1);
+  }
 };
 
 } // namespace MR::DWI::Tractography::Editing

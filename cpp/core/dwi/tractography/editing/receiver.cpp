@@ -44,11 +44,14 @@ bool Receiver::operator()(const Streamline<> &in) {
     }
     writer(in);
     ++segments;
+    record_selection();
 
   } else {
 
     // Explicitly handle case where the streamline has been cropped into multiple components
     // Worker class separates track segments using invalid points as delimiters
+    // Each fragment is an independent output streamline and is assigned its own
+    //   selection value (step 3 fragmentation policy).
     Streamline<> temp;
     for (const auto &p : in) {
       if (p.allFinite()) {
@@ -58,6 +61,7 @@ bool Receiver::operator()(const Streamline<> &in) {
         temp.weight = in.weight;
         writer(temp);
         ++segments;
+        record_selection();
         temp.clear();
       }
     }

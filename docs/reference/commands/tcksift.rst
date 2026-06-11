@@ -57,6 +57,8 @@ Options to make SIFT provide additional output files
 
 -  **-out_selection path** output a text file containing the binary selection of streamlines
 
+-  **-out_selection_dps path** in addition to the output tractogram, record the streamline selection as an embedded per-streamline (data-per-streamline) field: one value (1) per streamline retained in the output, written as a standalone per-streamline sidecar file (plain-text or .npy by extension)
+
 Options to control when SIFT terminates filtering
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

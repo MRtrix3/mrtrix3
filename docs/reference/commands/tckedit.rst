@@ -92,6 +92,8 @@ Other options specific to tckedit
 
 -  **-ends_only** only test the ends of each streamline against the provided include/exclude ROIs
 
+-  **-out_selection path** record the streamline selection as an embedded per-streamline (data-per-streamline) field: one value (1) per streamline written to the output, saved as a standalone per-streamline sidecar file (plain-text or .npy by extension). When the -mask option fragments a single input streamline into several output streamlines, each fragment is an independent output streamline and is assigned its own selection value; any associated per-vertex (data-per-vertex) data would likewise be sub-sampled per fragment.
+
 Options for handling streamline weights
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
