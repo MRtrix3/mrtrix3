@@ -1,0 +1,7 @@
+#!/bin/bash
+# Ensure that reading a .vtx file with no streamlines (zero POINTS, zero OFFSETS)
+#   nevertheless succeeds and produces an empty tractogram.
+printf '# vtk DataFile Version 3.0\nempty\nASCII\nDATASET STREAMLINES\nPOINTS 0 float\nOFFSETS 0 int\n' > tmp_empty.vtx
+tckconvert -force -quiet tmp_empty.vtx tmp_empty.tck
+count=$(tckinfo tmp_empty.tck -count | awk '/actual count/{print $NF}')
+[ "$count" = "0" ] || { echo "expected 0 streamlines, got $count"; exit 1; }

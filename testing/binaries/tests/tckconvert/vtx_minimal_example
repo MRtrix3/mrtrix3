@@ -1,0 +1,16 @@
+#!/bin/bash
+# The minimal example file from the .vtx spec (vtx.md) must parse to the expected
+#   two streamlines: OFFSETS {3,5} means streamline 0 spans points [0,1,2,3]
+#   (4 vertices) and streamline 1 spans points [4,5] (2 vertices), with
+#   offsetEnd[-1] = -1.
+printf '# vtk DataFile Version 2.0\nsimple example\nASCII\nDATASET STREAMLINES\nPOINTS 6 float \n0.0 0.0 0.0\n1.0 0.0 0.0\n1.0 1.0 0.0\n0.0 1.0 0.0\n0.0 0.0 1.0\n1.0 0.0 1.0\nOFFSETS 2 int \n3\n5\n' > tmp_minimal.vtx
+tckconvert tmp_minimal.vtx tmp_minimal.tck -force -quiet
+# Two streamlines expected.
+count=$(tckinfo tmp_minimal.tck -count | awk '/actual count/{print $NF}')
+[ "$count" = "2" ] || { echo "expected 2 streamlines, got $count"; exit 1; }
+# Dump per-streamline vertices and confirm the exact vertex membership.
+tckconvert tmp_minimal.tck 'tmp_minimal-[].txt' -force -quiet
+printf '0 0 0\n1 0 0\n1 1 0\n0 1 0\n' > tmp_expect0.txt
+printf '0 0 1\n1 0 1\n' > tmp_expect1.txt
+testing_diff_matrix tmp_minimal-0000000.txt tmp_expect0.txt -abs 1e-5
+testing_diff_matrix tmp_minimal-0000001.txt tmp_expect1.txt -abs 1e-5

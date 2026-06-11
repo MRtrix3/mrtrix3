@@ -1,0 +1,8 @@
+#!/bin/bash
+# Ensure that a binary .vtx file can be read successfully and is equivalent to the
+#   .tck from which it was generated. The binary .vtx (big-endian POINTS + OFFSETS)
+#   is produced in-test rather than committed as reference data; the read path is
+#   what is under test.
+tckconvert tracks.tck tmp_binary.vtx -force -quiet
+tckconvert tmp_binary.vtx tmp.tck -force -quiet
+testing_diff_tck tmp.tck tracks.tck

@@ -25,6 +25,7 @@
 #include "app.h"
 #include "exception.h"
 #include "file/config.h"
+#include "file/entry.h"
 #include "file/mmap.h"
 #include "file/ofstream.h"
 #include "file/temp.h"
@@ -63,19 +64,216 @@ void append_bytes(const std::filesystem::path &path, const std::byte *data, size
 /*                          VTXReader<ValueType>                           */
 /* ************************************************************************ */
 
-// NOTE: the ".vtx" read backend is implemented in the following enumerated
-//   step of this stage; the writer (below) is what this step delivers.
-template <class ValueType> VTXReader<ValueType>::VTXReader(const std::filesystem::path &path, Properties &) {
-  throw Exception("reading of VTX file \"" + path.string() + "\" not yet supported");
+template <class ValueType>
+VTXReader<ValueType>::VTXReader(const std::filesystem::path &path, Properties &properties)
+    : points_offset(0),
+      num_points(0),
+      num_streamlines(0),
+      offsets_offset(0),
+      current_streamline(0),
+      current_vertex(0),
+      previous_offset_end(-1),
+      current_index(0) {
+  std::ifstream in(path, std::ios::binary);
+  if (!in)
+    throw Exception("unable to open VTX file \"" + path.string() + "\"");
+
+  std::string line;
+
+  // Part 1: version/identifier line.
+  if (!std::getline(in, line))
+    throw Exception("VTX file \"" + path.string() + "\" is empty");
+
+  // Part 3: ASCII or BINARY. The intervening part-2 header line (a free-text
+  //   description) is optional in practice; consume lines until the format
+  //   keyword is found, preserving any preceding description as a comment.
+  bool encoding_found = false;
+  while (std::getline(in, line)) {
+    if (line.compare(0, 5, "ASCII") == 0) {
+      encoding = Encoding::ASCII;
+      encoding_found = true;
+      break;
+    }
+    if (line.compare(0, 6, "BINARY") == 0) {
+      encoding = Encoding::Binary;
+      encoding_found = true;
+      break;
+    }
+    if (!line.empty()) {
+      if (line.back() == '\r')
+        line.pop_back();
+      if (!line.empty())
+        properties.comments.push_back(line);
+    }
+  }
+  if (!encoding_found)
+    throw Exception("VTX file \"" + path.string() + "\" does not declare an ASCII or BINARY format");
+
+  // Part 4: dataset structure; only STREAMLINES with POINTS and OFFSETS admitted.
+  bool have_points = false;
+  bool have_offsets = false;
+
+  while (std::getline(in, line)) {
+    std::string keyword;
+    {
+      std::istringstream stream(line);
+      stream >> keyword;
+    }
+    if (keyword.empty())
+      continue;
+
+    if (keyword == "DATASET") {
+      std::istringstream stream(line);
+      std::string dummy;
+      std::string type;
+      stream >> dummy >> type;
+      if (type != "STREAMLINES")
+        throw Exception("VTX file \"" + path.string() + "\" is not STREAMLINES (DATASET " + type +
+                        "); only POINTS/OFFSETS STREAMLINES is supported");
+      continue;
+    }
+
+    if (keyword == "POINTS") {
+      std::istringstream stream(line);
+      std::string dummy;
+      std::string datatype;
+      stream >> dummy >> num_points >> datatype;
+      if (datatype == "float")
+        point_type = PointType::Float32;
+      else if (datatype == "double")
+        point_type = PointType::Float64;
+      else
+        throw Exception("VTX file \"" + path.string() + "\" POINTS datatype \"" + datatype +
+                        "\" is unsupported (expected float or double)");
+      have_points = true;
+      const size_t element_size = (point_type == PointType::Float32) ? sizeof(float) : sizeof(double);
+
+      if (encoding == Encoding::Binary) {
+        points_offset = static_cast<int64_t>(in.tellg());
+        // Skip the POINTS payload to reach the next keyword.
+        in.seekg(points_offset + static_cast<int64_t>(3 * num_points * element_size), std::ios::beg);
+      } else {
+        ascii_points.resize(3 * num_points);
+        for (size_t i = 0; i != 3 * num_points; ++i) {
+          double value = 0.0;
+          if (!(in >> value))
+            throw Exception("VTX file \"" + path.string() + "\" truncated while reading ASCII POINTS data");
+          ascii_points[i] = static_cast<ValueType>(value);
+        }
+      }
+      continue;
+    }
+
+    if (keyword == "OFFSETS") {
+      std::istringstream stream(line);
+      std::string dummy;
+      std::string datatype;
+      stream >> dummy >> num_streamlines >> datatype;
+      // A "vtktypeint64" qualifier selects 64-bit indices; "int"/"vtktypeint32"
+      //   select 32-bit. The writer emits "vtktypeint64".
+      if (datatype == "vtktypeint64" || datatype == "long" || datatype == "vtkIdType")
+        offset_type = OffsetType::Int64;
+      else if (datatype == "int" || datatype == "vtktypeint32")
+        offset_type = OffsetType::Int32;
+      else
+        throw Exception("VTX file \"" + path.string() + "\" OFFSETS datatype \"" + datatype +
+                        "\" is unsupported (expected int or vtktypeint64)");
+      have_offsets = true;
+
+      if (encoding == Encoding::Binary) {
+        offsets_offset = static_cast<int64_t>(in.tellg());
+      } else {
+        // ASCII OFFSETS follow on the same input stream; parse them into RAM so
+        //   that streaming can later read one offset at a time without a stream
+        //   re-position. Per the streaming requirement, the per-streamline vertex
+        //   count is still computed during operator(), as the difference between
+        //   consecutive offsets, never up-front.
+        ascii_offsets.resize(num_streamlines);
+        for (size_t i = 0; i != num_streamlines; ++i) {
+          int64_t value = 0;
+          if (!(in >> value))
+            throw Exception("VTX file \"" + path.string() + "\" truncated while reading ASCII OFFSETS data");
+          ascii_offsets[i] = value;
+        }
+      }
+      // OFFSETS is the last field of interest; stop scanning the header.
+      break;
+    }
+
+    // Any other dataset field is not part of a STREAMLINES tractogram.
+    throw Exception("VTX file \"" + path.string() + "\" contains unsupported dataset field \"" + keyword +
+                    "\"; only POINTS and OFFSETS are permitted");
+  }
+
+  if (!have_points)
+    throw Exception("VTX file \"" + path.string() + "\" contains no POINTS data");
+
+  // A file with no OFFSETS contains no streamlines; this is a valid empty tractogram.
+  if (!have_offsets)
+    num_streamlines = 0;
+
+  // Establish the memory-map for binary POINTS / OFFSETS access. OFFSETS are read
+  //   incrementally through this map during streaming (operator()), one at a time.
+  if (encoding == Encoding::Binary)
+    mmap.reset(new File::MMap(File::Entry(path), false, true));
 }
 
 template <class ValueType> VTXReader<ValueType>::~VTXReader() = default;
 
-template <class ValueType> Eigen::Matrix<ValueType, 3, 1> VTXReader<ValueType>::get_point(size_t) const { return {}; }
+template <class ValueType> Eigen::Matrix<ValueType, 3, 1> VTXReader<ValueType>::get_point(size_t i) const {
+  if (encoding == Encoding::ASCII) {
+    return {ascii_points[3 * i], ascii_points[3 * i + 1], ascii_points[3 * i + 2]};
+  }
+  const std::byte *const base = mmap->address();
+  if (point_type == PointType::Float32) {
+    const int64_t offset = points_offset + static_cast<int64_t>(3 * i * sizeof(float));
+    return {static_cast<ValueType>(Raw::fetch_BE<float>(base + offset)),
+            static_cast<ValueType>(Raw::fetch_BE<float>(base + offset + sizeof(float))),
+            static_cast<ValueType>(Raw::fetch_BE<float>(base + offset + 2 * sizeof(float)))};
+  }
+  const int64_t offset = points_offset + static_cast<int64_t>(3 * i * sizeof(double));
+  return {static_cast<ValueType>(Raw::fetch_BE<double>(base + offset)),
+          static_cast<ValueType>(Raw::fetch_BE<double>(base + offset + sizeof(double))),
+          static_cast<ValueType>(Raw::fetch_BE<double>(base + offset + 2 * sizeof(double)))};
+}
 
-template <class ValueType> int64_t VTXReader<ValueType>::get_offset_end(size_t) const { return 0; }
+template <class ValueType> int64_t VTXReader<ValueType>::get_offset_end(size_t j) const {
+  if (encoding == Encoding::ASCII)
+    return ascii_offsets[j];
+  // Read a single OFFSETS entry directly from the memory-map; nothing of the
+  //   OFFSETS block is parsed ahead of the streamline currently being yielded.
+  const std::byte *const base = mmap->address();
+  const size_t index_size = (offset_type == OffsetType::Int64) ? sizeof(int64_t) : sizeof(int32_t);
+  const int64_t pos = offsets_offset + static_cast<int64_t>(j * index_size);
+  if (pos + static_cast<int64_t>(index_size) > mmap->size())
+    throw Exception("VTX file truncated within OFFSETS block");
+  return (offset_type == OffsetType::Int64) ? Raw::fetch_BE<int64_t>(base + pos)
+                                            : static_cast<int64_t>(Raw::fetch_BE<int32_t>(base + pos));
+}
 
-template <class ValueType> bool VTXReader<ValueType>::operator()(Streamline<ValueType> &) { return false; }
+template <class ValueType> bool VTXReader<ValueType>::operator()(Streamline<ValueType> &tck) {
+  tck.clear();
+  if (current_streamline >= num_streamlines)
+    return false;
+
+  // Streaming vertex-count determination: read this streamline's END offset and
+  //   subtract the previous streamline's END offset (offsetEnd[-1] = -1). The
+  //   streamline spans points offsetEnd[j-1]+1 .. offsetEnd[j].
+  const int64_t offset_end = get_offset_end(current_streamline);
+  const int64_t count = offset_end - previous_offset_end;
+  if (count < 0)
+    throw Exception("VTX file OFFSETS are not monotonically increasing");
+  if (current_vertex + static_cast<size_t>(count) > num_points)
+    throw Exception("VTX file OFFSETS reference a vertex beyond the POINTS block");
+
+  tck.set_index(current_index++);
+  for (int64_t v = 0; v != count; ++v)
+    tck.push_back(get_point(current_vertex++));
+
+  previous_offset_end = offset_end;
+  ++current_streamline;
+  return true;
+}
 
 /* ************************************************************************ */
 /*                          VTXWriter<ValueType>                           */
