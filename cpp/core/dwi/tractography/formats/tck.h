@@ -210,14 +210,16 @@ public:
   bool handles(const std::filesystem::path &path) const override;
 
 protected:
-  std::unique_ptr<ReaderInterface<float>> read_float(const std::filesystem::path &path,
-                                                     Properties &properties) const override;
-  std::unique_ptr<ReaderInterface<double>> read_double(const std::filesystem::path &path,
-                                                       Properties &properties) const override;
+  std::unique_ptr<ReaderInterface<float>>
+  read_float(const std::filesystem::path &path, Properties &properties, const OptionalHeader &grid) const override;
+  std::unique_ptr<ReaderInterface<double>>
+  read_double(const std::filesystem::path &path, Properties &properties, const OptionalHeader &grid) const override;
   std::unique_ptr<WriterInterface<float>> create_float(const std::filesystem::path &path,
-                                                       const Properties &properties) const override;
+                                                       const Properties &properties,
+                                                       const OptionalHeader &grid) const override;
   std::unique_ptr<WriterInterface<double>> create_double(const std::filesystem::path &path,
-                                                         const Properties &properties) const override;
+                                                         const Properties &properties,
+                                                         const OptionalHeader &grid) const override;
 };
 
 } // namespace Formats

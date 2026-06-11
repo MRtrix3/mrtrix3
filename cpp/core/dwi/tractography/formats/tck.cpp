@@ -312,23 +312,23 @@ namespace Formats {
 
 bool TCK::handles(const std::filesystem::path &path) const { return path.extension() == ".tck"; }
 
-std::unique_ptr<ReaderInterface<float>> TCK::read_float(const std::filesystem::path &path,
-                                                        Properties &properties) const {
+std::unique_ptr<ReaderInterface<float>>
+TCK::read_float(const std::filesystem::path &path, Properties &properties, const OptionalHeader &) const {
   return std::make_unique<Reader<float>>(path, properties);
 }
 
-std::unique_ptr<ReaderInterface<double>> TCK::read_double(const std::filesystem::path &path,
-                                                          Properties &properties) const {
+std::unique_ptr<ReaderInterface<double>>
+TCK::read_double(const std::filesystem::path &path, Properties &properties, const OptionalHeader &) const {
   return std::make_unique<Reader<double>>(path, properties);
 }
 
-std::unique_ptr<WriterInterface<float>> TCK::create_float(const std::filesystem::path &path,
-                                                          const Properties &properties) const {
+std::unique_ptr<WriterInterface<float>>
+TCK::create_float(const std::filesystem::path &path, const Properties &properties, const OptionalHeader &) const {
   return std::make_unique<Writer<float>>(path, properties);
 }
 
-std::unique_ptr<WriterInterface<double>> TCK::create_double(const std::filesystem::path &path,
-                                                            const Properties &properties) const {
+std::unique_ptr<WriterInterface<double>>
+TCK::create_double(const std::filesystem::path &path, const Properties &properties, const OptionalHeader &) const {
   return std::make_unique<Writer<double>>(path, properties);
 }
 
