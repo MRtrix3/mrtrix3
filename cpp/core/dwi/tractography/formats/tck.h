@@ -16,22 +16,16 @@
 
 #pragma once
 
-#include <array>
-#include <cerrno>
 #include <filesystem>
 #include <limits>
 #include <memory>
 #include <string>
+#include <string_view>
 
-#include "app.h"
 #include "dwi/tractography/file_base.h"
 #include "dwi/tractography/formats/base.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/streamline.h"
-#include "exception.h"
-#include "file/config.h"
-#include "file/matrix.h"
-#include "file/ofstream.h"
 #include "types.h"
 
 namespace MR::DWI::Tractography {
@@ -40,66 +34,17 @@ namespace MR::DWI::Tractography {
 /*! This is the read backend for the ".tck" format handler
  * (Formats::TCK). It streams Streamline objects from the binary ".tck"
  * data, NaN-vertex delimiting streamlines and an Inf-vertex marking the
- * end-of-data barrier, and itself loads any "-tck_weights_in" sidecar. */
+ * end-of-data barrier, and itself loads any "-tck_weights_in" sidecar.
+ *
+ * The implementation is explicitly instantiated for float and double in
+ * formats/tck.cpp. */
 template <class ValueType = float> class Reader : public ReaderBase, public ReaderInterface<ValueType> {
 public:
   //! open the \c file for reading and load header into \c properties
-  Reader(const std::filesystem::path &path, Properties &properties) {
-    open(path, "tracks", properties);
-    auto opt = App::get_options("tck_weights_in");
-    if (!opt.empty())
-      weights = File::Matrix::load_vector<ValueType>(opt[0][0]);
-  }
+  Reader(const std::filesystem::path &path, Properties &properties);
 
   //! fetch next track from file
-  bool operator()(Streamline<ValueType> &tck) {
-    tck.clear();
-
-    if (!in.is_open())
-      return false;
-
-    do {
-      auto p = get_next_point();
-      if (std::isinf(p[0])) {
-        in.close();
-        check_excess_weights();
-        return false;
-      }
-      if (in.eof()) {
-        in.close();
-        check_excess_weights();
-        return false;
-      }
-
-      if (std::isnan(p[0])) {
-        tck.set_index(current_index++);
-
-        if (weights.size()) {
-
-          if (tck.get_index() < static_cast<size_t>(weights.size())) {
-            tck.weight = weights[tck.get_index()];
-          } else {
-            WARN("Streamline weights file contains less entries (" + str(weights.size()) +
-                 ") than .tck file; "
-                 "ceasing reading of streamline data");
-            in.close();
-            tck.clear();
-            return false;
-          }
-
-        } else {
-          tck.weight = 1.0;
-        }
-
-        return true;
-      }
-
-      tck.push_back(p);
-    } while (in.good());
-
-    in.close();
-    return false;
-  }
+  bool operator()(Streamline<ValueType> &tck) override;
 
 protected:
   using ReaderBase::current_index;
@@ -109,46 +54,10 @@ protected:
   Eigen::Matrix<ValueType, Eigen::Dynamic, 1> weights;
 
   //! takes care of byte ordering issues
-
-  Eigen::Matrix<ValueType, 3, 1> get_next_point() {
-    using namespace ByteOrder;
-    switch (dtype()) {
-    case DataType::Float32LE: {
-      std::array<float, 3> p{};
-      in.read(reinterpret_cast<char *>(p.data()), sizeof(p));
-      return {static_cast<ValueType>(LE(p[0])), static_cast<ValueType>(LE(p[1])), static_cast<ValueType>(LE(p[2]))};
-    }
-    case DataType::Float32BE: {
-      std::array<float, 3> p{};
-      in.read(reinterpret_cast<char *>(p.data()), sizeof(p));
-      return {static_cast<ValueType>(BE(p[0])), static_cast<ValueType>(BE(p[1])), static_cast<ValueType>(BE(p[2]))};
-    }
-    case DataType::Float64LE: {
-      std::array<double, 3> p{};
-      in.read(reinterpret_cast<char *>(p.data()), sizeof(p));
-      return {static_cast<ValueType>(LE(p[0])), static_cast<ValueType>(LE(p[1])), static_cast<ValueType>(LE(p[2]))};
-    }
-    case DataType::Float64BE: {
-      std::array<double, 3> p{};
-      in.read(reinterpret_cast<char *>(p.data()), sizeof(p));
-      return {static_cast<ValueType>(BE(p[0])), static_cast<ValueType>(BE(p[1])), static_cast<ValueType>(BE(p[2]))};
-    }
-    default:
-      assert(0);
-      break;
-    }
-    return Eigen::Matrix<ValueType, 3, 1>::Constant(std::numeric_limits<ValueType>::quiet_NaN());
-  }
+  Eigen::Matrix<ValueType, 3, 1> get_next_point();
 
   //! Check that the weights file does not contain excess entries
-  void check_excess_weights() {
-    if (!weights.size())
-      return;
-    if (static_cast<size_t>(weights.size()) > current_index) {
-      WARN("Streamline weights file contains more entries (" + str(weights.size()) + ") than .tck file (" +
-           str(current_index) + ")");
-    }
-  }
+  void check_excess_weights();
 
   Reader(const Reader &) = delete;
 };
@@ -164,7 +73,9 @@ protected:
  * use cases where a very large number of track files are being written
  * at once. For most applications (where typically one track file is
  * written at a time), the Writer class is more appropriate.
- * */
+ *
+ * The implementation is explicitly instantiated for float and double in
+ * formats/tck.cpp. */
 template <class ValueType = float>
 class WriterUnbuffered : public WriterBase<ValueType>, public WriterInterface<ValueType> {
 public:
@@ -180,65 +91,13 @@ public:
   using vector_type = Eigen::Matrix<ValueType, 3, 1>;
 
   //! create a new track file with the specified properties
-  WriterUnbuffered(const std::filesystem::path &path, const Properties &properties) : WriterBase<ValueType>(path) {
-
-    if (path.extension() != ".tck")
-      throw Exception("output track files must use the .tck suffix");
-
-    File::OFStream out;
-    try {
-      out.open(path, std::ios::out | std::ios::binary | std::ios::trunc);
-    } catch (Exception &e) {
-      throw Exception(e, "Unable to create output track file");
-    }
-
-    const_cast<Properties &>(properties).set_timestamp();
-    const_cast<Properties &>(properties).set_version_info();
-    const_cast<Properties &>(properties).update_command_history();
-
-    create(out, properties, "tracks");
-    barrier_addr = out.tellp();
-
-    vector_type x;
-    format_point(barrier(), x);
-    out.write(reinterpret_cast<const char *>(&x[0]), sizeof(x)); // check_syntax off
-    if (!out.good())
-      throw Exception("error writing tracks file \"" + path.string() + "\": " + MR::C_strerror(errno));
-    open_success = true;
-
-    auto opt = App::get_options("tck_weights_out");
-    if (!opt.empty())
-      set_weights_path(opt[0][0]);
-  }
+  WriterUnbuffered(const std::filesystem::path &path, const Properties &properties);
 
   //! append track to file
-  bool operator()(const Streamline<ValueType> &tck) {
-    // allocate buffer on the stack for performance:
-    NON_POD_VLA(buffer, vector_type, tck.size() + 2);
-    for (size_t n = 0; n < tck.size(); ++n) {
-      assert(tck[n].allFinite());
-      format_point(tck[n], buffer[n]);
-    }
-    format_point(delimiter(), buffer[tck.size()]);
-
-    commit(buffer, tck.size() + 1);
-
-    if (!weights_path.empty())
-      write_weights(str(tck.weight) + "\n");
-
-    ++count;
-    ++total_count;
-    return true;
-  }
+  bool operator()(const Streamline<ValueType> &tck) override;
 
   //! set the path to the track weights
-  void set_weights_path(const std::filesystem::path &path) {
-    if (!weights_path.empty())
-      throw Exception("Cannot change output streamline weights file path");
-    weights_path = path;
-    App::check_overwrite(weights_path);
-    File::OFStream out(weights_path, std::ios::out | std::ios::binary | std::ios::trunc);
-  }
+  void set_weights_path(const std::filesystem::path &path);
 
 protected:
   std::filesystem::path weights_path;
@@ -250,42 +109,15 @@ protected:
   vector_type barrier() const { return vector_type::Constant(std::numeric_limits<ValueType>::infinity()); }
 
   //! perform per-point byte-swapping if required
-  void format_point(const vector_type &src, vector_type &dest) {
-    using namespace ByteOrder;
-    if (dtype.is_little_endian())
-      dest = {LE(src[0]), LE(src[1]), LE(src[2])};
-    else
-      dest = {BE(src[0]), BE(src[1]), BE(src[2])};
-  }
+  void format_point(const vector_type &src, vector_type &dest);
 
   //! write track weights data to file
-  void write_weights(std::string_view contents) {
-    File::OFStream out(weights_path, std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
-    out << contents;
-    if (!out.good())
-      throw Exception("error writing streamline weights file \"" + weights_path.string() + "\": " + //
-                      MR::C_strerror(errno));
-  }
+  void write_weights(std::string_view contents);
 
   //! write track point data to file
   /*! \note \c buffer needs to be greater than \c num_points by one
    * element to add the barrier. */
-  void commit(vector_type *data, size_t num_points) {
-    if (num_points == 0 || !open_success)
-      return;
-
-    int64_t prev_barrier_addr = barrier_addr;
-
-    format_point(barrier(), data[num_points]);
-    File::OFStream out(path, std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
-    out.write(reinterpret_cast<const char *>(data + 1), sizeof(vector_type) * num_points);
-    verify_stream(out);
-    barrier_addr = static_cast<int64_t>(out.tellp()) - sizeof(vector_type);
-    out.seekp(prev_barrier_addr, out.beg);
-    out.write(reinterpret_cast<const char *>(data), sizeof(vector_type));
-    verify_stream(out);
-    update_counts(out);
-  }
+  void commit(vector_type *data, size_t num_points);
 
   //! copy construction explicitly disabled
   WriterUnbuffered(const WriterUnbuffered &) = delete;
@@ -304,7 +136,9 @@ protected:
  * to file concurrently. The size of the write-back buffer defaults to
  * 16MB, and can be set in the config file using the
  * TrackWriterBufferSize field (in bytes).
- * */
+ *
+ * The implementation is explicitly instantiated for float and double in
+ * formats/tck.cpp. */
 template <typename ValueType = float> class Writer : public WriterUnbuffered<ValueType> {
 public:
   using WriterBase<ValueType>::count;
@@ -326,46 +160,15 @@ public:
   // CONF writing track files. MRtrix will store the output tracks in a
   // CONF relatively large buffer to limit the number of write() calls,
   // CONF avoid associated issues such as file fragmentation.
-  Writer(const std::filesystem::path &path, const Properties &properties, size_t default_buffer_capacity = 16777216)
-      : WriterUnbuffered<ValueType>(path, properties),
-        buffer_capacity(File::Config::get_int("TrackWriterBufferSize", default_buffer_capacity) / sizeof(vector_type)),
-        buffer(new vector_type[buffer_capacity]),
-        buffer_size(0) {}
+  Writer(const std::filesystem::path &path, const Properties &properties, size_t default_buffer_capacity = 16777216);
 
   Writer(const Writer &W) = delete;
 
   //! commits any remaining data to file
-  ~Writer() {
-    try {
-      commit();
-    } catch (Exception &e) {
-      Exception(e, "Tractography file not properly finalised").display();
-    }
-  }
+  ~Writer() override;
 
   //! append track to file
-  bool operator()(const Streamline<ValueType> &tck) {
-    if (buffer_size + tck.size() + 2 > buffer_capacity)
-      commit();
-
-    if (tck.size() + 1 >= buffer_capacity) {
-      buffer_capacity = tck.size() + 1;
-      buffer.reset(new vector_type[buffer_capacity]);
-    }
-
-    for (const auto &i : tck) {
-      assert(i.allFinite());
-      add_point(i);
-    }
-    add_point(delimiter());
-
-    if (!weights_path.empty())
-      weights_buffer += str(tck.weight) + ' ';
-
-    ++count;
-    ++total_count;
-    return true;
-  }
+  bool operator()(const Streamline<ValueType> &tck) override;
 
 protected:
   size_t buffer_capacity;
@@ -376,15 +179,7 @@ protected:
   //! add point to buffer and increment buffer_size accordingly
   void add_point(const vector_type &p) { format_point(p, buffer[buffer_size++]); }
 
-  void commit() {
-    WriterUnbuffered<ValueType>::commit(buffer.get(), buffer_size);
-    buffer_size = 0;
-
-    if (!weights_path.empty()) {
-      write_weights(weights_buffer);
-      weights_buffer.clear();
-    }
-  }
+  void commit();
 };
 
 namespace Formats {

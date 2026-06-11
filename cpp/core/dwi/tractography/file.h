@@ -25,3 +25,12 @@
 //   unchanged.
 
 #include "dwi/tractography/formats/tck.h"
+
+// Preserve the transitive include surface that this header historically
+//   exposed, so that callers relying on it continue to compile unchanged.
+#include "app.h"
+#include "file/config.h"
+#include "file/key_value.h"
+#include "file/matrix.h"
+#include "file/ofstream.h"
+#include "memory.h"
