@@ -18,7 +18,6 @@
 
 #include <array>
 #include <fstream>
-#include <limits>
 #include <sstream>
 #include <string>
 
@@ -31,34 +30,13 @@
 #include "file/temp.h"
 #include "raw.h"
 
+#include "dwi/tractography/formats/vtk_utils.h"
+
 namespace MR::DWI::Tractography {
 
-namespace {
-
-//! \brief Maximum length of the VTK header line (part 2 of the spec).
-constexpr size_t vtk_header_max_length = 256;
-
-//! \brief Append the contents of \a source to the already-open stream \a dest.
-void append_file(std::ofstream &dest, const std::filesystem::path &source) {
-  std::ifstream in(source, std::ios::binary);
-  if (!in)
-    throw Exception("unable to open temporary file \"" + source.string() + "\" for VTX assembly");
-  dest << in.rdbuf();
-  if (!dest.good() && !in.eof())
-    throw Exception("error concatenating temporary file \"" + source.string() + "\" into VTX output");
-}
-
-//! \brief Append \a size bytes of \a data to the file at \a path (binary append).
-void append_bytes(const std::filesystem::path &path, const std::byte *data, size_t size) {
-  std::ofstream out(path, std::ios::out | std::ios::binary | std::ios::app);
-  if (!out)
-    throw Exception("unable to open temporary file \"" + path.string() + "\" for writing");
-  out.write(reinterpret_cast<const char *>(data), size);
-  if (!out.good())
-    throw Exception("error writing to temporary file \"" + path.string() + "\"");
-}
-
-} // namespace
+namespace VTKUtils = Formats::VTKUtils;
+using VTKUtils::Encoding;
+using VTKUtils::PointDataType;
 
 /* ************************************************************************ */
 /*                          VTXReader<ValueType>                           */
@@ -66,9 +44,7 @@ void append_bytes(const std::filesystem::path &path, const std::byte *data, size
 
 template <class ValueType>
 VTXReader<ValueType>::VTXReader(const std::filesystem::path &path, Properties &properties)
-    : points_offset(0),
-      num_points(0),
-      num_streamlines(0),
+    : num_streamlines(0),
       offsets_offset(0),
       current_streamline(0),
       current_vertex(0),
@@ -80,38 +56,17 @@ VTXReader<ValueType>::VTXReader(const std::filesystem::path &path, Properties &p
 
   std::string line;
 
-  // Part 1: version/identifier line.
-  if (!std::getline(in, line))
-    throw Exception("VTX file \"" + path.string() + "\" is empty");
-
-  // Part 3: ASCII or BINARY. The intervening part-2 header line (a free-text
-  //   description) is optional in practice; consume lines until the format
-  //   keyword is found, preserving any preceding description as a comment.
-  bool encoding_found = false;
-  while (std::getline(in, line)) {
-    if (line.compare(0, 5, "ASCII") == 0) {
-      encoding = Encoding::ASCII;
-      encoding_found = true;
-      break;
-    }
-    if (line.compare(0, 6, "BINARY") == 0) {
-      encoding = Encoding::Binary;
-      encoding_found = true;
-      break;
-    }
-    if (!line.empty()) {
-      if (line.back() == '\r')
-        line.pop_back();
-      if (!line.empty())
-        properties.comments.push_back(line);
-    }
-  }
-  if (!encoding_found)
-    throw Exception("VTX file \"" + path.string() + "\" does not declare an ASCII or BINARY format");
+  // Parts 1-3: version line, optional description comments, and the ASCII/BINARY
+  //   encoding keyword (shared with the ".vtk" reader; see VTKUtils).
+  encoding = VTKUtils::parse_preamble(in, path, properties);
 
   // Part 4: dataset structure; only STREAMLINES with POINTS and OFFSETS admitted.
   bool have_points = false;
   bool have_offsets = false;
+  size_t num_points = 0;
+  PointDataType point_type = PointDataType::Float32;
+  int64_t points_offset = 0;
+  std::vector<ValueType> ascii_points;
 
   while (std::getline(in, line)) {
     std::string keyword;
@@ -139,14 +94,14 @@ VTXReader<ValueType>::VTXReader(const std::filesystem::path &path, Properties &p
       std::string datatype;
       stream >> dummy >> num_points >> datatype;
       if (datatype == "float")
-        point_type = PointType::Float32;
+        point_type = PointDataType::Float32;
       else if (datatype == "double")
-        point_type = PointType::Float64;
+        point_type = PointDataType::Float64;
       else
         throw Exception("VTX file \"" + path.string() + "\" POINTS datatype \"" + datatype +
                         "\" is unsupported (expected float or double)");
       have_points = true;
-      const size_t element_size = (point_type == PointType::Float32) ? sizeof(float) : sizeof(double);
+      const size_t element_size = (point_type == PointDataType::Float32) ? sizeof(float) : sizeof(double);
 
       if (encoding == Encoding::Binary) {
         points_offset = static_cast<int64_t>(in.tellg());
@@ -214,28 +169,17 @@ VTXReader<ValueType>::VTXReader(const std::filesystem::path &path, Properties &p
 
   // Establish the memory-map for binary POINTS / OFFSETS access. OFFSETS are read
   //   incrementally through this map during streaming (operator()), one at a time.
-  if (encoding == Encoding::Binary)
-    mmap.reset(new File::MMap(File::Entry(path), false, true));
+  //   Construct the shared POINTS accessor (VTKUtils) over the same map (binary)
+  //   or the RAM-resident ASCII coordinates.
+  if (encoding == Encoding::Binary) {
+    mmap = std::make_shared<File::MMap>(File::Entry(path), false, true);
+    points = std::make_unique<VTKUtils::PointReader<ValueType>>(mmap, points_offset, point_type, num_points);
+  } else {
+    points = std::make_unique<VTKUtils::PointReader<ValueType>>(std::move(ascii_points), num_points);
+  }
 }
 
 template <class ValueType> VTXReader<ValueType>::~VTXReader() = default;
-
-template <class ValueType> Eigen::Matrix<ValueType, 3, 1> VTXReader<ValueType>::get_point(size_t i) const {
-  if (encoding == Encoding::ASCII) {
-    return {ascii_points[3 * i], ascii_points[3 * i + 1], ascii_points[3 * i + 2]};
-  }
-  const std::byte *const base = mmap->address();
-  if (point_type == PointType::Float32) {
-    const int64_t offset = points_offset + static_cast<int64_t>(3 * i * sizeof(float));
-    return {static_cast<ValueType>(Raw::fetch_BE<float>(base + offset)),
-            static_cast<ValueType>(Raw::fetch_BE<float>(base + offset + sizeof(float))),
-            static_cast<ValueType>(Raw::fetch_BE<float>(base + offset + 2 * sizeof(float)))};
-  }
-  const int64_t offset = points_offset + static_cast<int64_t>(3 * i * sizeof(double));
-  return {static_cast<ValueType>(Raw::fetch_BE<double>(base + offset)),
-          static_cast<ValueType>(Raw::fetch_BE<double>(base + offset + sizeof(double))),
-          static_cast<ValueType>(Raw::fetch_BE<double>(base + offset + 2 * sizeof(double)))};
-}
 
 template <class ValueType> int64_t VTXReader<ValueType>::get_offset_end(size_t j) const {
   if (encoding == Encoding::ASCII)
@@ -263,12 +207,12 @@ template <class ValueType> bool VTXReader<ValueType>::operator()(Streamline<Valu
   const int64_t count = offset_end - previous_offset_end;
   if (count < 0)
     throw Exception("VTX file OFFSETS are not monotonically increasing");
-  if (current_vertex + static_cast<size_t>(count) > num_points)
+  if (current_vertex + static_cast<size_t>(count) > points->size())
     throw Exception("VTX file OFFSETS reference a vertex beyond the POINTS block");
 
   tck.set_index(current_index++);
   for (int64_t v = 0; v != count; ++v)
-    tck.push_back(get_point(current_vertex++));
+    tck.push_back(points->get_point(current_vertex++));
 
   previous_offset_end = offset_end;
   ++current_streamline;
@@ -311,11 +255,11 @@ VTXWriter<ValueType>::VTXWriter(const std::filesystem::path &path, const Propert
   const std::filesystem::path offsets_path = offsets_tempfile;
   points_buffer.set_flush_callback(
       [points_path](const std::byte *data, size_t size, const Formats::WriteBuffer::Counts &) {
-        append_bytes(points_path, data, size);
+        VTKUtils::append_bytes(points_path, data, size);
       });
   offsets_buffer.set_flush_callback(
       [offsets_path](const std::byte *data, size_t size, const Formats::WriteBuffer::Counts &) {
-        append_bytes(offsets_path, data, size);
+        VTKUtils::append_bytes(offsets_path, data, size);
       });
 }
 
@@ -333,24 +277,8 @@ template <class ValueType> void VTXWriter<ValueType>::add_offset(int64_t offset_
 }
 
 template <class ValueType> bool VTXWriter<ValueType>::operator()(const Streamline<ValueType> &tck) {
-  if (encoding == Encoding::ASCII) {
-    std::ostringstream stream;
-    // Coordinates are stored as float32 (matching the binary encoding); print
-    //   enough significant digits to round-trip float32 losslessly.
-    stream.precision(std::numeric_limits<float>::max_digits10);
-    for (const auto &pos : tck)
-      stream << static_cast<float>(pos[0]) << " " << static_cast<float>(pos[1]) << " " << static_cast<float>(pos[2])
-             << "\n";
-    const std::string text = stream.str();
-    points_buffer.add(reinterpret_cast<const std::byte *>(text.data()), text.size());
-  } else {
-    for (const auto &pos : tck) {
-      std::array<float, 3> raw{};
-      for (size_t i = 0; i != 3; ++i)
-        Raw::store_BE<float>(static_cast<float>(pos[i]), raw.data(), i);
-      points_buffer.add(reinterpret_cast<const std::byte *>(raw.data()), sizeof(raw));
-    }
-  }
+  for (const auto &pos : tck)
+    VTKUtils::write_point<ValueType>(points_buffer, encoding, pos);
   num_points += tck.size();
   ++num_streamlines;
   // OFFSETS store the END vertex index of streamline j (offsetEnd[j]); with
@@ -360,39 +288,15 @@ template <class ValueType> bool VTXWriter<ValueType>::operator()(const Streamlin
   return true;
 }
 
-template <class ValueType> std::string VTXWriter<ValueType>::finalise_header() const {
-  std::string result = "# vtk DataFile Version 3.0\n";
-
-  // Part 2: header line, maximum 256 characters (spec part 2). Prefer the full
-  //   command string; fall back to the software name and version if it would not
-  //   fit within the permitted header length.
-  std::string description = App::command_history_string;
-  if (description.empty() || description.size() > vtk_header_max_length)
-    description = std::string("MRtrix ") + App::mrtrix_version;
-  if (description.size() > vtk_header_max_length)
-    description.resize(vtk_header_max_length);
-  // The header line is terminated by a newline and may not itself contain one.
-  for (char &c : description) {
-    if (c == '\n' || c == '\r')
-      c = ' ';
-  }
-  result += description;
-  result += '\n';
-
-  result += (encoding == Encoding::ASCII) ? "ASCII\n" : "BINARY\n";
-  result += "DATASET STREAMLINES\n";
-  return result;
-}
-
 template <class ValueType> void VTXWriter<ValueType>::finalise() {
   points_buffer.commit();
   offsets_buffer.commit();
 
   File::OFStream out(path, std::ios::out | std::ios::binary | std::ios::trunc);
 
-  out << finalise_header();
+  out << VTKUtils::dataset_header(encoding, "STREAMLINES");
   out << "POINTS " << num_points << " float\n";
-  append_file(out, points_tempfile);
+  VTKUtils::append_file(out, points_tempfile);
   // Binary payloads must be separated from the following ASCII keyword by a
   //   newline; ASCII payloads already end each record with one.
   if (encoding == Encoding::Binary)
@@ -400,7 +304,7 @@ template <class ValueType> void VTXWriter<ValueType>::finalise() {
 
   // The number of OFFSETS entries equals the number of streamlines.
   out << "OFFSETS " << num_streamlines << " vtktypeint64\n";
-  append_file(out, offsets_tempfile);
+  VTKUtils::append_file(out, offsets_tempfile);
   if (encoding == Encoding::Binary)
     out << "\n";
 

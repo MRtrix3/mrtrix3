@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "dwi/tractography/formats/base.h"
+#include "dwi/tractography/formats/vtk_utils.h"
 #include "dwi/tractography/formats/write_buffer.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/streamline.h"
@@ -32,6 +33,9 @@ class MMap;
 }
 
 namespace MR::DWI::Tractography {
+
+//! \brief Convenience alias for the shared VTK-derived I/O utilities namespace.
+namespace VTKUtils = Formats::VTKUtils;
 
 //! \brief Streaming reader backend for the experimental ".vtx" STREAMLINES format.
 /*! This is the read backend for the ".vtx" format handler (Formats::VTX). It
@@ -59,24 +63,17 @@ public:
   bool operator()(Streamline<ValueType> &tck) override;
 
 private:
-  //! the encoding of the POINTS / OFFSETS binary payload
-  enum class Encoding { ASCII, Binary };
   //! the element datatype of the OFFSETS index data
   enum class OffsetType { Int32, Int64 };
 
-  //! the element datatype of the POINTS coordinate data
-  enum class PointType { Float32, Float64 };
-
-  Encoding encoding;
+  //! the encoding of the POINTS / OFFSETS payload
+  VTKUtils::Encoding encoding;
   OffsetType offset_type;
-  PointType point_type;
 
   //! memory-map over the whole file, used to read POINTS / OFFSETS in binary mode
-  std::unique_ptr<File::MMap> mmap;
-  //! byte offset of the first POINTS coordinate (binary mode)
-  int64_t points_offset;
-  //! number of vertices (POINTS) in the dataset
-  size_t num_points;
+  std::shared_ptr<File::MMap> mmap;
+  //! shared POINTS accessor (ASCII RAM or binary mmap), provided by VTKUtils
+  std::unique_ptr<VTKUtils::PointReader<ValueType>> points;
 
   //! number of streamlines (== number of OFFSETS entries)
   size_t num_streamlines;
@@ -85,9 +82,6 @@ private:
   //! parsed OFFSETS for the ASCII encoding
   std::vector<int64_t> ascii_offsets;
 
-  //! coordinate data for the ASCII encoding, parsed up-front into RAM
-  std::vector<ValueType> ascii_points;
-
   //! ordinal of the next streamline to be yielded
   size_t current_streamline;
   //! index of the next vertex to be consumed from the POINTS block
@@ -95,9 +89,6 @@ private:
   //! end-vertex index of the previously-yielded streamline (offsetEnd[j-1])
   int64_t previous_offset_end;
   size_t current_index;
-
-  //! fetch the \a i-th point coordinates, honouring the encoding and dtype
-  Eigen::Matrix<ValueType, 3, 1> get_point(size_t i) const;
 
   //! incrementally read the OFFSETS entry of streamline \a j
   int64_t get_offset_end(size_t j) const;
@@ -129,10 +120,8 @@ public:
   bool operator()(const Streamline<ValueType> &tck) override;
 
 private:
-  enum class Encoding { ASCII, Binary };
-
   const std::filesystem::path path;
-  Encoding encoding;
+  VTKUtils::Encoding encoding;
 
   //! the two independent temporary files holding the POINTS and OFFSETS payloads
   std::filesystem::path points_tempfile;
@@ -149,9 +138,6 @@ private:
 
   //! append one streamline's END vertex index to the OFFSETS temporary file
   void add_offset(int64_t offset_end);
-
-  //! the VTX header to be written ahead of the concatenated POINTS / OFFSETS data
-  std::string finalise_header() const;
 
   //! flush the buffers and assemble the final ".vtx" from the two temporary files
   void finalise();

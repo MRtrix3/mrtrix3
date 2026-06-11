@@ -24,6 +24,7 @@
 #include <vector>
 
 #include "dwi/tractography/formats/base.h"
+#include "dwi/tractography/formats/vtk_utils.h"
 #include "dwi/tractography/formats/write_buffer.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/streamline.h"
@@ -33,6 +34,9 @@ class MMap;
 }
 
 namespace MR::DWI::Tractography {
+
+//! \brief Convenience alias for the shared VTK-derived I/O utilities namespace.
+namespace VTKUtils = Formats::VTKUtils;
 
 //! \brief Streaming reader backend for the legacy VTK PolyData format.
 /*! This is the read backend for the ".vtk" format handler (Formats::VTK). It
@@ -59,19 +63,12 @@ public:
 
 private:
   //! the encoding of the POINTS / LINES binary payload
-  enum class Encoding { ASCII, Binary };
-  //! the element datatype of the POINTS coordinate data
-  enum class PointType { Float32, Float64 };
+  VTKUtils::Encoding encoding;
 
-  Encoding encoding;
-  PointType point_type;
-
-  //! memory-map over the whole file, used to read the POINTS block in binary mode
-  std::unique_ptr<File::MMap> mmap;
-  //! byte offset of the first POINTS coordinate (binary mode)
-  int64_t points_offset;
-  //! number of vertices (POINTS) in the dataset
-  size_t num_points;
+  //! memory-map over the whole file, used to read the LINES / POINTS blocks
+  std::shared_ptr<File::MMap> mmap;
+  //! shared POINTS accessor (ASCII RAM or binary mmap), provided by VTKUtils
+  std::unique_ptr<VTKUtils::PointReader<ValueType>> points;
 
   //! per-streamline vertex counts, established by the up-front LINES scan
   std::vector<uint32_t> streamline_sizes;
@@ -80,12 +77,6 @@ private:
   //! index of the next vertex to be consumed from the POINTS block
   size_t current_vertex;
   size_t current_index;
-
-  //! coordinate data for the ASCII encoding, parsed up-front into RAM
-  std::vector<ValueType> ascii_points;
-
-  //! fetch the \a i-th point coordinates, honouring the encoding and dtype
-  Eigen::Matrix<ValueType, 3, 1> get_point(size_t i) const;
 
   VTKReader(const VTKReader &) = delete;
 };
@@ -114,10 +105,8 @@ public:
   bool operator()(const Streamline<ValueType> &tck) override;
 
 private:
-  enum class Encoding { ASCII, Binary };
-
   const std::filesystem::path path;
-  Encoding encoding;
+  VTKUtils::Encoding encoding;
 
   //! the two independent temporary files holding the POINTS and LINES payloads
   std::filesystem::path points_tempfile;
@@ -134,11 +123,6 @@ private:
   //! total number of integers in the LINES connectivity list
   size_t lines_list_size;
 
-  //! the VTK header to be written ahead of the concatenated POINTS / LINES data
-  std::string header() const;
-
-  //! append one point to the POINTS temporary file in the active encoding
-  void add_point(const Eigen::Matrix<ValueType, 3, 1> &p);
   //! append one streamline's connectivity record to the LINES temporary file
   void add_line(size_t first_vertex, size_t num_vertices);
 
