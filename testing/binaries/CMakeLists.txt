@@ -673,6 +673,7 @@ add_bash_binary_test(tcksift/default)
 add_bash_binary_test(tcksift/selection_dps)
 
 add_bash_binary_test(tcksift2/default)
+add_bash_binary_test(tcksift2/embed_weights)
 
 add_bash_binary_test(tckstats/default)
 add_bash_binary_test(tckstats/dump)

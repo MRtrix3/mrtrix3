@@ -90,6 +90,21 @@ public:
   void output_factors(const std::filesystem::path &) const;
   void output_coefficients(const std::filesystem::path &) const;
 
+  //! \brief embed the estimated per-streamline weights into an output tractogram (step 4).
+  /*! Writes the input tractogram to \a output_path with each streamline's weight
+   * set to its estimated SIFT2 factor, so the weights ride as the reserved
+   * "weight" data-per-streamline field (§2.1), serialised to \a weights_path (the
+   * tractogram's weights sidecar — the on-disk home of the "weight" dps for a
+   * vertices-only format such as ".tck"). Where the output format advertises the
+   * §2.6 append capability, only the weights dps is appended to the existing
+   * dataset (no vertex / other sidecar data is re-read or rewritten). Where the
+   * format is rewrite-only (e.g. ".tck"), the whole tractogram is re-read from
+   * \a input_path and rewritten with the embedded weights, with a warning that a
+   * full rewrite was required. */
+  void output_weighted_tractogram(const std::filesystem::path &input_path,
+                                  const std::filesystem::path &output_path,
+                                  const std::filesystem::path &weights_path) const;
+
   void output_TD_images(const std::filesystem::path &, //
                         const std::filesystem::path &, //
                         const std::filesystem::path &) const;

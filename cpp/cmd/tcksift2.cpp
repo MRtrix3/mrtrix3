@@ -139,6 +139,16 @@ void usage() {
   + Option ("out_coeffs", "output text file containing the weighting coefficient for each streamline")
     + Argument ("path").type_tractogram_data_out()
 
+  + Option ("out_tracks", "in addition to the weights text file,"
+                          " write a copy of the input tractogram with the estimated SIFT2 weights"
+                          " embedded as the per-streamline (data-per-streamline) \"weight\" field."
+                          " Where the output format supports it,"
+                          " the weights are appended without rewriting the vertex data;"
+                          " otherwise (e.g. for .tck) the whole tractogram is rewritten,"
+                          " with a warning,"
+                          " and the embedded weights are written to the out_weights sidecar file.")
+    + Argument ("path").type_tracks_out()
+
   + SIFT2RegularisationOption
   + SIFT2AlgorithmOption;
 
@@ -233,6 +243,10 @@ void run() {
   auto opt = get_options("out_coeffs");
   if (!opt.empty())
     tckfactor.output_coefficients(opt[0][0]);
+
+  opt = get_options("out_tracks");
+  if (!opt.empty())
+    tckfactor.output_weighted_tractogram(input_tracks_path, opt[0][0], output_weights_path);
 
   if (debug_path.has_value())
     tckfactor.output_all_debug_images(debug_path.value(), "after");

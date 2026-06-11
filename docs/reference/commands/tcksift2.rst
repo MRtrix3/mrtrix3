@@ -53,6 +53,8 @@ Options to make SIFT provide additional output files
 
 -  **-out_coeffs path** output text file containing the weighting coefficient for each streamline
 
+-  **-out_tracks path** in addition to the weights text file, write a copy of the input tractogram with the estimated SIFT2 weights embedded as the per-streamline (data-per-streamline) "weight" field. Where the output format supports it, the weights are appended without rewriting the vertex data; otherwise (e.g. for .tck) the whole tractogram is rewritten, with a warning, and the embedded weights are written to the out_weights sidecar file.
+
 Regularisation options for SIFT2
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

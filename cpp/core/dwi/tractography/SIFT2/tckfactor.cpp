@@ -24,6 +24,11 @@
 #include "math/entropy.h"
 #include "math/math.h"
 
+#include "dwi/tractography/file.h"
+#include "dwi/tractography/formats/base.h"
+#include "dwi/tractography/formats/list.h"
+#include "dwi/tractography/properties.h"
+
 #include "dwi/tractography/SIFT2/coeff_optimiser.h"
 #include "dwi/tractography/SIFT2/fixel_updater.h"
 #include "dwi/tractography/SIFT2/reg_calculator.h"
@@ -356,6 +361,66 @@ void TckFactor::output_factors(const std::filesystem::path &path) const {
 
 void TckFactor::output_coefficients(const std::filesystem::path &path) const {
   File::Matrix::save_vector(coefficients, path);
+}
+
+void TckFactor::output_weighted_tractogram(const std::filesystem::path &input_path,
+                                           const std::filesystem::path &output_path,
+                                           const std::filesystem::path &weights_path) const {
+  if (static_cast<size_t>(coefficients.size()) != contributions.size())
+    throw Exception("Cannot output weighted tractogram if factors have not first been estimated!");
+
+  // The estimated per-streamline weight (factor) for every streamline.
+  std::vector<float> weights(num_tracks());
+  for (SIFT::track_t i = 0; i != num_tracks(); ++i)
+    weights[i] = (coefficients[i] == min_coeff || !std::isfinite(coefficients[i]))
+                     ? 0.0F
+                     : static_cast<float>(std::exp(coefficients[i]));
+
+  // Consult the output format's augmentation capability (§2.6): an append-capable
+  //   format can have the weights dps appended in place; a rewrite-only format
+  //   (e.g. ".tck") requires the whole tractogram to be re-read and rewritten.
+  const Formats::Base *handler = Formats::get_handler(output_path);
+  const bool can_append = handler != nullptr && handler->capabilities.augment == Formats::Augment::Append;
+
+  if (can_append) {
+    INFO("Output format \"" + handler->description + "\" supports append;" +
+         " embedding SIFT2 weights without rewriting vertex data");
+    // tcksift2 has already read the whole tractogram to compute the factors, so
+    //   only the weights data-per-streamline field needs to be written. The
+    //   append-capable handler attaches it to the existing dataset in place.
+    // NOTE: the concrete append handlers (TRX) arrive in a later stage; until
+    //   then no registered handler advertises Augment::Append, so this branch is
+    //   not exercised by the in-house ".tck" format and the rewrite fallback
+    //   below is taken.
+    throw Exception("Append-based embedding of SIFT2 weights is not yet supported"
+                    " by any registered output format handler");
+  }
+
+  // Rewrite fallback: the format cannot append, so the entire tractogram is
+  //   re-read and rewritten with the embedded weights (the reserved "weight"
+  //   dps, serialised to the weights sidecar). Warn that the cheaper append path
+  //   was unavailable.
+  WARN(std::string("Output tractography format") +
+       (handler != nullptr ? (" \"" + handler->description + "\"") : std::string()) +
+       " does not support appending a data-per-streamline field;" +
+       " re-reading and rewriting the whole tractogram to embed SIFT2 weights");
+
+  Tractography::Properties properties;
+  Tractography::Reader<float> reader(input_path, properties);
+  properties["SIFT2_mu"] = str(mu());
+  Tractography::Writer<float> writer(output_path, properties);
+  // Route the reserved "weight" dps to its on-disk sidecar (the dps home for a
+  //   vertices-only format such as ".tck").
+  writer.set_weights_path(weights_path);
+  Tractography::Streamline<float> tck;
+  SIFT::track_t counter = 0;
+  ProgressBar progress("Writing weighted tractogram output file", num_tracks());
+  while (reader(tck) && counter < num_tracks()) {
+    tck.weight = weights[counter++];
+    writer(tck);
+    ++progress;
+  }
+  reader.close();
 }
 
 void TckFactor::output_TD_images(const std::filesystem::path &dirpath,
