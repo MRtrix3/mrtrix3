@@ -30,6 +30,7 @@
 #include "file/key_value.h"
 #include "file/ofstream.h"
 #include "file/temp.h"
+#include "match_variant.h"
 #include "mrtrix.h"
 #include "signal_handler.h"
 
@@ -84,7 +85,8 @@ void ensure_sigpipe_ignored() {
 /* ************************************************************************ */
 
 template <class ValueType>
-PipeReader<ValueType>::PipeReader(Properties &properties, FieldRegistry &) : current_index(0), barrier_reached(false) {
+PipeReader<ValueType>::PipeReader(Properties &properties, FieldRegistry &registry)
+    : registry(registry), current_index(0), barrier_reached(false) {
   // [1] The tractogram header travels via a temp file whose path is sent on the
   //   pipe newline-terminated (Stage 9 step 1); read that path from stdin.
   std::string header_path;
@@ -136,11 +138,46 @@ PipeReader<ValueType>::PipeReader(Properties &properties, FieldRegistry &) : cur
   if (preamble.endianness != native_endianness())
     throw Exception("cross-endian tractogram piping is not supported");
 
-  // [3] Field-registry block: a uint32 field count, empty in this stage.
+  // [3] Field-registry block: reconstruct the sidecar field registry (§2.5) so
+  //   the per-streamline sidecar payloads can be addressed by ordinal. Empty in
+  //   the vertices-only common case (the fast path below).
+  read_field_registry();
+}
+
+//! \brief one serialised field-registry entry on the pipe wire (§2.5 / Step 4).
+/*! Fixed-layout prefix followed by the variable-length field name. The name,
+ * role, on-disk datatype, column count M and source are all carried so the
+ * receiver reconstructs the registry verbatim before reading the stream. */
+namespace {
+struct WireFieldHeader {
+  uint8_t role;        //!< FieldRole as uint8 (DPS=0, DPV=1, DPG=2)
+  uint8_t dtype;       //!< MR::DataType specifier code
+  uint8_t source;      //!< FieldSource as uint8 (Internal=0, External=1)
+  uint8_t reserved;    //!< zero padding
+  uint32_t columns;    //!< the field's column count M
+  uint32_t name_bytes; //!< length of the UTF-8 field name that follows
+};
+static_assert(sizeof(WireFieldHeader) == 12, "pipe field-registry entry header must be 12 bytes");
+} // namespace
+
+template <class ValueType> void PipeReader<ValueType>::read_field_registry() {
   uint32_t field_count = 0;
   read_exact(&field_count, sizeof(field_count), "field-registry block");
-  if (field_count != 0)
-    throw Exception("piped tractogram declares sidecar fields, which this build cannot consume");
+  for (uint32_t i = 0; i != field_count; ++i) {
+    WireFieldHeader header{};
+    read_exact(&header, sizeof(header), "field descriptor");
+    std::string name(header.name_bytes, '\0');
+    if (header.name_bytes != 0)
+      read_exact(name.data(), header.name_bytes, "field name");
+    FieldDescriptor descriptor;
+    descriptor.name = std::move(name);
+    descriptor.role = static_cast<FieldRole>(header.role);
+    descriptor.dtype = DataType(header.dtype);
+    descriptor.columns = header.columns;
+    descriptor.source = static_cast<FieldSource>(header.source);
+    descriptor.ordinal = 0;
+    registry.add(std::move(descriptor));
+  }
 }
 
 template <class ValueType> bool PipeReader<ValueType>::operator()(Streamline<ValueType> &tck) {
@@ -148,19 +185,117 @@ template <class ValueType> bool PipeReader<ValueType>::operator()(Streamline<Val
   if (barrier_reached)
     return false;
 
-  do {
-    auto p = get_next_point();
-    if (std::isinf(p[0])) {
-      barrier_reached = true;
-      return false;
-    }
-    if (std::isnan(p[0])) {
-      tck.set_index(current_index++);
-      tck.weight = 1.0;
-      return true;
-    }
-    tck.push_back(p);
-  } while (true);
+  // Vertices-only fast path: the NaN-delimited, Inf-barrier stream (unchanged
+  //   from the pre-sidecar wire format, so a no-sidecar pipe is bit-identical).
+  if (registry.empty()) {
+    do {
+      auto p = get_next_point();
+      if (std::isinf(p[0])) {
+        barrier_reached = true;
+        return false;
+      }
+      if (std::isnan(p[0])) {
+        tck.set_index(current_index++);
+        tck.weight = 1.0;
+        return true;
+      }
+      tck.push_back(p);
+    } while (true);
+  }
+
+  // Sidecar present: streamlines are length-prefixed (Step 4 packing). The
+  //   first vector read is either the Inf barrier or the uint64 vertex count.
+  TractogramItem<ValueType> item;
+  if (!(*this)(item))
+    return false;
+  tck = std::move(item.streamline);
+  return true;
+}
+
+template <class ValueType> bool PipeReader<ValueType>::operator()(TractogramItem<ValueType> &item) {
+  item.clear();
+  if (barrier_reached)
+    return false;
+
+  // Vertices-only fast path delegates to the Streamline overload (no sidecar).
+  if (registry.empty())
+    return (*this)(item.streamline);
+
+  // Step 4 packing, per streamline: (a) uint64 vertex count n — or the sentinel
+  //   barrier value end_of_data marking end-of-data; (b) n x 3 positions;
+  //   (c) each dps field's M values in registry order; (d) each dpv field's
+  //   n x M values; then a NaN-vertex delimiter.
+  uint64_t n_vertices = 0;
+  read_exact(&n_vertices, sizeof(n_vertices), "streamline vertex count");
+  if (n_vertices == Tractography::Pipe::end_of_data) {
+    barrier_reached = true;
+    return false;
+  }
+
+  item.streamline.resize(n_vertices);
+  for (uint64_t v = 0; v != n_vertices; ++v)
+    item.streamline[v] = get_next_point();
+
+  item.dps.resize(registry.dps_count());
+  item.dpv.resize(registry.dpv_count());
+  for (const auto &field : registry) {
+    if (field.role == FieldRole::DPS)
+      item.dps[field.ordinal] = read_dps_field(field);
+    else if (field.role == FieldRole::DPV)
+      item.dpv[field.ordinal] = read_dpv_field(field, n_vertices);
+  }
+
+  // Consume the trailing NaN-vertex streamline delimiter.
+  const auto delimiter = get_next_point();
+  if (!std::isnan(delimiter[0]))
+    throw Exception("malformed piped tractogram: missing streamline delimiter after sidecar data");
+
+  item.set_index(current_index++);
+  item.streamline.weight = 1.0;
+  return true;
+}
+
+namespace {
+
+//! \brief dtype-generic dps reader: pull M native-typed values off the pipe.
+template <class Reader> struct ReadDPSField {
+  Reader *reader;
+  size_t M;
+  template <typename T> DPSValue operator()() const {
+    ScalarOrVector<T> value(static_cast<Eigen::Index>(M));
+    reader->read_field_bytes(value.data(), M * sizeof(T), "dps field");
+    return make_dps(std::move(value));
+  }
+};
+
+//! \brief dtype-generic dpv reader: pull n_vertices x M native-typed values.
+template <class Reader> struct ReadDPVField {
+  Reader *reader;
+  size_t M;
+  size_t n_vertices;
+  template <typename T> DPVValue operator()() const {
+    VectorOrMatrix<T> value(static_cast<Eigen::Index>(n_vertices), static_cast<Eigen::Index>(M));
+    // Stored row-major (per-vertex contiguous); Eigen default is column-major,
+    //   so read into a temporary then assign element-wise.
+    std::vector<T> raw(n_vertices * M);
+    if (!raw.empty())
+      reader->read_field_bytes(raw.data(), raw.size() * sizeof(T), "dpv field");
+    for (size_t r = 0; r != n_vertices; ++r)
+      for (size_t c = 0; c != M; ++c)
+        value(static_cast<Eigen::Index>(r), static_cast<Eigen::Index>(c)) = raw[r * M + c];
+    return make_dpv(std::move(value));
+  }
+};
+
+} // namespace
+
+template <class ValueType> DPSValue PipeReader<ValueType>::read_dps_field(const FieldDescriptor &field) {
+  return dispatch_sidecar_datatype(field.dtype, ReadDPSField<PipeReader>{this, field.columns});
+}
+
+template <class ValueType>
+DPVValue PipeReader<ValueType>::read_dpv_field(const FieldDescriptor &field, const size_t n_vertices) {
+  return dispatch_sidecar_datatype(field.dtype, ReadDPVField<PipeReader>{this, field.columns, n_vertices});
 }
 
 template <class ValueType> Eigen::Matrix<ValueType, 3, 1> PipeReader<ValueType>::get_next_point() {
@@ -196,8 +331,9 @@ template <class ValueType> void PipeReader<ValueType>::read_exact(void *dest, si
 /* ************************************************************************ */
 
 template <class ValueType>
-PipeWriter<ValueType>::PipeWriter(const Properties &properties, const FieldRegistry &)
-    : dtype(DataType::from<ValueType>()),
+PipeWriter<ValueType>::PipeWriter(const Properties &properties, const FieldRegistry &registry)
+    : registry(registry),
+      dtype(DataType::from<ValueType>()),
       count(0),
       total_count(0),
       finalised(false),
@@ -286,12 +422,29 @@ template <class ValueType> void PipeWriter<ValueType>::write_preamble() {
   preamble.vertex_datatype = static_cast<uint8_t>(vertex_datatype_code<ValueType>());
   write_stdout(reinterpret_cast<const std::byte *>(&preamble), sizeof(preamble));
 
-  // [3] Field-registry block: empty in this stage (vertices only).
-  const uint32_t field_count = 0;
+  // [3] Field-registry block: a uint32 field count followed by one descriptor
+  //   per field (name, role, dtype, M, source), so the receiver reconstructs the
+  //   registry before reading the stream (Step 4). Empty (count 0) for the
+  //   vertices-only common case, which keeps the wire format unchanged.
+  const uint32_t field_count = static_cast<uint32_t>(registry.size());
   write_stdout(reinterpret_cast<const std::byte *>(&field_count), sizeof(field_count));
+  for (const auto &field : registry) {
+    WireFieldHeader header{};
+    header.role = static_cast<uint8_t>(field.role);
+    header.dtype = field.dtype();
+    header.source = static_cast<uint8_t>(field.source);
+    header.reserved = 0;
+    header.columns = static_cast<uint32_t>(field.columns);
+    header.name_bytes = static_cast<uint32_t>(field.name.size());
+    write_stdout(reinterpret_cast<const std::byte *>(&header), sizeof(header));
+    if (!field.name.empty())
+      write_stdout(reinterpret_cast<const std::byte *>(field.name.data()), field.name.size());
+  }
 }
 
 template <class ValueType> bool PipeWriter<ValueType>::operator()(const Streamline<ValueType> &tck) {
+  // Vertices-only fast path: NaN-delimited framing (unchanged wire format).
+  assert(registry.empty());
   for (const auto &p : tck) {
     assert(p.allFinite());
     add_point(p);
@@ -300,6 +453,61 @@ template <class ValueType> bool PipeWriter<ValueType>::operator()(const Streamli
   ++count;
   ++total_count;
   return true;
+}
+
+template <class ValueType> bool PipeWriter<ValueType>::operator()(const TractogramItem<ValueType> &item) {
+  // Vertices-only fast path delegates to the NaN-delimited Streamline overload.
+  if (registry.empty())
+    return (*this)(item.streamline);
+
+  // Step 4 packing, per streamline: (a) uint64 vertex count n; (b) n x 3
+  //   positions; (c) each dps field's M values in registry order; (d) each dpv
+  //   field's n x M values; then a NaN-vertex delimiter.
+  const auto &tck = item.streamline;
+  const uint64_t n_vertices = tck.size();
+  buffer.add(reinterpret_cast<const std::byte *>(&n_vertices), sizeof(n_vertices));
+  for (const auto &p : tck) {
+    assert(p.allFinite());
+    add_point(p);
+  }
+  add_dps(item);
+  add_dpv(item);
+  add_point(delimiter());
+  ++count;
+  ++total_count;
+  return true;
+}
+
+template <class ValueType> void PipeWriter<ValueType>::add_dps(const TractogramItem<ValueType> &item) {
+  for (const auto &field : registry) {
+    if (field.role != FieldRole::DPS)
+      continue;
+    assert(field.ordinal < item.dps.size());
+    MR::match_v(item.dps[field.ordinal], [this](const auto &value) {
+      using Element = typename std::decay_t<decltype(value)>::element_type;
+      buffer.add(reinterpret_cast<const std::byte *>(value.data()),
+                 static_cast<size_t>(value.size()) * sizeof(Element));
+    });
+  }
+}
+
+template <class ValueType> void PipeWriter<ValueType>::add_dpv(const TractogramItem<ValueType> &item) {
+  for (const auto &field : registry) {
+    if (field.role != FieldRole::DPV)
+      continue;
+    assert(field.ordinal < item.dpv.size());
+    MR::match_v(item.dpv[field.ordinal], [this](const auto &value) {
+      // Serialise row-major (per-vertex contiguous) to match the reader.
+      using Element = typename std::decay_t<decltype(value)>::element_type;
+      const Eigen::Index rows = value.rows();
+      const Eigen::Index cols = value.cols();
+      for (Eigen::Index r = 0; r != rows; ++r)
+        for (Eigen::Index c = 0; c != cols; ++c) {
+          const Element e = value(r, c);
+          buffer.add(reinterpret_cast<const std::byte *>(&e), sizeof(Element));
+        }
+    });
+  }
 }
 
 template <class ValueType> void PipeWriter<ValueType>::add_point(const vector_type &p) {
@@ -343,13 +551,22 @@ template <class ValueType> void PipeWriter<ValueType>::finalise() {
     return;
   finalised = true;
 
-  // Commit any buffered vertices, then write the Inf end-of-data barrier and a
-  //   trailing uint64 streamline count after it (the authoritative count, since
-  //   the offset-zero header could not be patched on a non-seekable pipe).
+  // Commit any buffered data, then write the end-of-data barrier and a trailing
+  //   uint64 streamline count after it (the authoritative count, since the
+  //   offset-zero header could not be patched on a non-seekable pipe).
   buffer.commit();
 
-  vector_type barrier_point = barrier();
-  write_stdout(reinterpret_cast<const std::byte *>(&barrier_point[0]), sizeof(vector_type));
+  if (registry.empty()) {
+    // Vertices-only framing: an Inf-vertex barrier (unchanged wire format).
+    vector_type barrier_point = barrier();
+    write_stdout(reinterpret_cast<const std::byte *>(&barrier_point[0]), sizeof(vector_type));
+  } else {
+    // Sidecar framing: streamlines are length-prefixed, so the barrier is the
+    //   sentinel vertex-count value end_of_data (an Inf-vertex would be
+    //   indistinguishable from a count).
+    const uint64_t barrier_marker = Tractography::Pipe::end_of_data;
+    write_stdout(reinterpret_cast<const std::byte *>(&barrier_marker), sizeof(barrier_marker));
+  }
 
   const uint64_t trailer_count = count;
   write_stdout(reinterpret_cast<const std::byte *>(&trailer_count), sizeof(trailer_count));

@@ -16,6 +16,8 @@
 
 #include "datatype.h"
 #include "dwi/tractography/field_registry.h"
+#include "dwi/tractography/formats/pipe.h"
+#include "dwi/tractography/properties.h"
 #include "dwi/tractography/shared.h"
 #include "dwi/tractography/sidecar_value.h"
 #include "dwi/tractography/streamline.h"
@@ -26,6 +28,9 @@
 
 #include <cstdint>
 #include <variant>
+
+#include <sys/wait.h>
+#include <unistd.h>
 
 using namespace MR;
 using namespace MR::DWI::Tractography;
@@ -240,6 +245,165 @@ TEST(Shared, CarryPassThroughCopiesNativeDtype) {
   ASSERT_TRUE(std::holds_alternative<ScalarOrVector<uint32_t>>(out.dps[0]));
   EXPECT_EQ(std::get<ScalarOrVector<uint32_t>>(out.dps[0]).scalar(), 7u);
   EXPECT_FLOAT_EQ(std::get<VectorOrMatrix<float>>(out.dpv[0]).vector()(2), 0.3F);
+}
+
+//! build a registry carrying multiple dps/dpv fields of mixed shape and dtype.
+MR::DWI::Tractography::FieldRegistry make_sidecar_registry() {
+  using namespace MR::DWI::Tractography;
+  FieldRegistry reg;
+  add_field(reg, "selection", FieldRole::DPS, DataType(DataType::Bit), 1);                      // dps M=1 bit
+  add_field(reg, "bundle", FieldRole::DPS, DataType(DataType::UInt32), 1);                      // dps M=1 int
+  add_field(reg, "centroid", FieldRole::DPS, DataType::native(DataType(DataType::Float32)), 3); // dps M>1
+  add_field(reg, "fa", FieldRole::DPV, DataType::native(DataType(DataType::Float32)), 1);       // dpv M=1
+  add_field(reg, "colour", FieldRole::DPV, DataType(DataType::UInt8), 3);                       // dpv M>1
+  return reg;
+}
+
+//! populate one item's sidecar payload deterministically from its index.
+void fill_item(MR::DWI::Tractography::TractogramItem<float> &item,
+               const MR::DWI::Tractography::FieldRegistry &reg,
+               size_t s,
+               size_t n_vertices) {
+  using namespace MR::DWI::Tractography;
+  item.streamline.clear();
+  for (size_t v = 0; v != n_vertices; ++v)
+    item.streamline.push_back(Eigen::Vector3f(static_cast<float>(s), static_cast<float>(v), static_cast<float>(s + v)));
+  item.set_index(s);
+
+  item.dps.resize(reg.dps_count());
+  item.dpv.resize(reg.dpv_count());
+  {
+    ScalarOrVector<uint8_t> sel(1);
+    sel(0, 0) = static_cast<uint8_t>(s % 2);
+    item.dps[*reg.ordinal("selection", FieldRole::DPS)] = make_dps(std::move(sel));
+  }
+  {
+    ScalarOrVector<uint32_t> b(1);
+    b(0, 0) = static_cast<uint32_t>(100 + s);
+    item.dps[*reg.ordinal("bundle", FieldRole::DPS)] = make_dps(std::move(b));
+  }
+  {
+    ScalarOrVector<float> c(3);
+    c << static_cast<float>(s), static_cast<float>(s) + 0.5F, static_cast<float>(s) + 1.5F;
+    item.dps[*reg.ordinal("centroid", FieldRole::DPS)] = make_dps(std::move(c));
+  }
+  {
+    VectorOrMatrix<float> fa(static_cast<Eigen::Index>(n_vertices), 1);
+    for (size_t v = 0; v != n_vertices; ++v)
+      fa(static_cast<Eigen::Index>(v), 0) = 0.1F * static_cast<float>(v + s);
+    item.dpv[*reg.ordinal("fa", FieldRole::DPV)] = make_dpv(std::move(fa));
+  }
+  {
+    VectorOrMatrix<uint8_t> col(static_cast<Eigen::Index>(n_vertices), 3);
+    for (size_t v = 0; v != n_vertices; ++v) {
+      col(static_cast<Eigen::Index>(v), 0) = static_cast<uint8_t>(v);
+      col(static_cast<Eigen::Index>(v), 1) = static_cast<uint8_t>(s);
+      col(static_cast<Eigen::Index>(v), 2) = static_cast<uint8_t>(v + s);
+    }
+    item.dpv[*reg.ordinal("colour", FieldRole::DPV)] = make_dpv(std::move(col));
+  }
+}
+
+// End-to-end pipe round-trip carrying multiple dps (M=1 and M>1) and dpv
+//   (M=1 and M>1) fields, including an integer and a bit field, through a real
+//   OS pipe. Asserts the registry is reconstructed from the header, every field
+//   survives in its NATIVE dtype, the M=1 dps surfaces as a scalar, and
+//   pass-through fields are carried unchanged (the PipeWriter neither inspects
+//   nor modifies them). Exercises both PipeWriter and PipeReader.
+TEST(PipeSidecar, RoundTripCarriesMixedFields) {
+  using namespace MR::DWI::Tractography;
+  constexpr size_t n_streamlines = 4;
+  constexpr size_t n_vertices = 5;
+  const FieldRegistry registry = make_sidecar_registry();
+
+  int fds[2];
+  ASSERT_EQ(pipe(fds), 0);
+
+  const pid_t pid = fork();
+  ASSERT_GE(pid, 0);
+
+  if (pid == 0) {
+    // Child: the writer. Redirect stdout to the pipe write end.
+    close(fds[0]);
+    dup2(fds[1], STDOUT_FILENO);
+    close(fds[1]);
+    ::testing::GTEST_FLAG(throw_on_failure) = false;
+    try {
+      Properties properties;
+      properties["count"] = std::to_string(n_streamlines);
+      PipeWriter<float> writer(properties, registry);
+      for (size_t s = 0; s != n_streamlines; ++s) {
+        TractogramItem<float> item;
+        fill_item(item, registry, s, n_vertices);
+        writer(item);
+      }
+    } catch (...) {
+      _exit(2);
+    }
+    _exit(0);
+  }
+
+  // Parent: the reader. Redirect stdin from the pipe read end.
+  close(fds[1]);
+  dup2(fds[0], STDIN_FILENO);
+  close(fds[0]);
+
+  Properties properties;
+  FieldRegistry recovered;
+  PipeReader<float> reader(properties, recovered);
+
+  // The registry must be reconstructed verbatim from the stream header.
+  ASSERT_EQ(recovered.size(), registry.size());
+  ASSERT_EQ(recovered.dps_count(), 3u);
+  ASSERT_EQ(recovered.dpv_count(), 2u);
+  const FieldDescriptor *sel = recovered.find("selection", FieldRole::DPS);
+  ASSERT_NE(sel, nullptr);
+  EXPECT_EQ(sel->dtype(), DataType::Bit);
+  EXPECT_EQ(recovered.find("colour", FieldRole::DPV)->columns, 3u);
+
+  std::vector<TractogramItem<float>> out;
+  TractogramItem<float> item;
+  while (reader(item))
+    out.push_back(std::move(item));
+
+  int status = 0;
+  waitpid(pid, &status, 0);
+  ASSERT_TRUE(WIFEXITED(status));
+  ASSERT_EQ(WEXITSTATUS(status), 0);
+
+  ASSERT_EQ(out.size(), n_streamlines);
+  for (size_t s = 0; s != n_streamlines; ++s) {
+    TractogramItem<float> expect;
+    fill_item(expect, registry, s, n_vertices);
+    const auto &got = out[s];
+    ASSERT_EQ(got.streamline.size(), n_vertices);
+
+    // dps M=1 bit field — native dtype preserved AND surfaces as a scalar.
+    const auto &sel_v = std::get<ScalarOrVector<uint8_t>>(got.dps[*recovered.ordinal("selection", FieldRole::DPS)]);
+    EXPECT_EQ(sel_v.cols(), 1); // scalar, NOT a 1-element vector that must be unwrapped
+    EXPECT_EQ(sel_v.scalar(), static_cast<uint8_t>(s % 2));
+
+    // dps M=1 integer field — native uint32 preserved.
+    const auto &bundle_v = std::get<ScalarOrVector<uint32_t>>(got.dps[*recovered.ordinal("bundle", FieldRole::DPS)]);
+    EXPECT_EQ(bundle_v.scalar(), static_cast<uint32_t>(100 + s));
+
+    // dps M>1 float field — length-3 vector.
+    const auto &cen_v = std::get<ScalarOrVector<float>>(got.dps[*recovered.ordinal("centroid", FieldRole::DPS)]);
+    ASSERT_EQ(cen_v.cols(), 3);
+    EXPECT_FLOAT_EQ(cen_v(2), static_cast<float>(s) + 1.5F);
+
+    // dpv M=1 float field.
+    const auto &fa_v = std::get<VectorOrMatrix<float>>(got.dpv[*recovered.ordinal("fa", FieldRole::DPV)]);
+    ASSERT_EQ(fa_v.rows(), static_cast<Eigen::Index>(n_vertices));
+    ASSERT_EQ(fa_v.cols(), 1);
+    EXPECT_FLOAT_EQ(fa_v.vector()(3), 0.1F * static_cast<float>(3 + s));
+
+    // dpv M>1 uint8 field — native dtype + n_vertices x 3 matrix.
+    const auto &col_v = std::get<VectorOrMatrix<uint8_t>>(got.dpv[*recovered.ordinal("colour", FieldRole::DPV)]);
+    ASSERT_EQ(col_v.rows(), static_cast<Eigen::Index>(n_vertices));
+    ASSERT_EQ(col_v.cols(), 3);
+    EXPECT_EQ(col_v(4, 2), static_cast<uint8_t>(4 + s));
+  }
 }
 
 } // namespace
