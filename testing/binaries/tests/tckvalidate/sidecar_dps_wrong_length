@@ -1,0 +1,13 @@
+#!/bin/bash
+# Step 8: a per-streamline (dps) sidecar with the wrong number of entries (one too
+#   few) must fail validation with a clear message.
+N=$(tckinfo tracks.tck -count 2>/dev/null | grep -iE "actual count" | grep -oE "[0-9]+" | head -n1)
+rm -f tmp_w.txt
+i=1
+# Write N-1 entries (one short).
+while [ "$i" -lt "$N" ]; do echo "1" >> tmp_w.txt; i=$((i+1)); done
+
+rm -f tmp.txt
+! ( tckvalidate tracks.tck -tck_weights tmp_w.txt > tmp.txt 2>&1 )
+cat tmp.txt
+grep -E "Data-per-streamline field .+ has .+ entries, but the tractogram contains .+ streamline" tmp.txt

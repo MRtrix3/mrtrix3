@@ -24,7 +24,10 @@
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/scalar_file.h"
 #include "dwi/tractography/streamline.h"
+#include "dwi/tractography/tractogram.h"
+#include "dwi/tractography/tractogram_item.h"
 #include "exception.h"
+#include "file/matrix.h"
 #include "mrtrix.h"
 #include "progressbar.h"
 
@@ -167,6 +170,74 @@ TckValidation validate_tck(const std::filesystem::path &path) {
                     " does not match the number of streamlines read (" + str(result.n_streamlines) + ")"); //
 
   return result;
+}
+
+TractogramValidation validate_tractogram(const std::filesystem::path &path) {
+  Properties properties;
+  // Read through the format-handler framework so any supported format is
+  //   accepted, not just ".tck" (step 8).
+  auto tractogram = Tractogram<float>::open(path, properties);
+
+  TractogramValidation result;
+  if (properties.find("count") != properties.end())
+    result.header_count = to<size_t>(properties["count"]);
+
+  ProgressBar progress("Validating tractogram", result.header_count.has_value() ? *result.header_count : 0);
+  TractogramItem<float> item;
+  while (tractogram.read(item)) {
+    result.vertices_per_streamline.push_back(item.streamline.size());
+    ++result.n_streamlines;
+    ++progress;
+  }
+
+  if (result.header_count.has_value() && result.n_streamlines != *result.header_count)
+    throw Exception("Tractogram \"" + path.string() + "\":" +                                              //
+                    " header count (" + str(*result.header_count) + ")" +                                  //
+                    " does not match the number of streamlines read (" + str(result.n_streamlines) + ")"); //
+
+  return result;
+}
+
+void validate_dps_field(const std::filesystem::path &dps_path,
+                        std::string_view field_name,
+                        const TractogramValidation &validation) {
+  // A per-streamline (dps) field is a single value or one fixed-length row per
+  //   streamline: exactly one row per streamline of the tractogram (step 8).
+  const auto data = File::Matrix::load_matrix<double>(dps_path);
+  const size_t n_entries = static_cast<size_t>(data.rows());
+  if (n_entries != validation.n_streamlines)
+    throw Exception("Data-per-streamline field \"" + std::string(field_name) + "\"" +                    //
+                    " (\"" + dps_path.string() + "\")" +                                                 //
+                    " has " + str(n_entries) + " entries," +                                             //
+                    " but the tractogram contains " + str(validation.n_streamlines) + " streamline(s)"); //
+}
+
+void validate_dpv_field(const std::filesystem::path &tsf_path,
+                        std::string_view field_name,
+                        const TractogramValidation &validation) {
+  // A per-vertex (dpv) field has one scalar sequence per streamline, each of
+  //   length equal to that streamline's vertex count (step 8).
+  Properties tsf_properties;
+  ScalarReader<float> reader(tsf_path, tsf_properties);
+  TrackScalar<float> scalar;
+  size_t index = 0;
+  size_t n_length_mismatch = 0;
+  while (reader(scalar)) {
+    if (index < validation.vertices_per_streamline.size() && scalar.size() != validation.vertices_per_streamline[index])
+      ++n_length_mismatch;
+    ++index;
+  }
+  if (index != validation.n_streamlines)
+    throw Exception("Data-per-vertex field \"" + std::string(field_name) + "\"" +     //
+                    " (\"" + tsf_path.string() + "\")" +                              //
+                    " contains " + str(index) + " scalar sequence(s)," +              //
+                    " but the tractogram contains " + str(validation.n_streamlines) + //
+                    " streamline(s)");                                                //
+  if (n_length_mismatch > 0)
+    throw Exception("Data-per-vertex field \"" + std::string(field_name) + "\"" +                        //
+                    " (\"" + tsf_path.string() + "\"): " +                                               //
+                    str(n_length_mismatch) + " of " + str(validation.n_streamlines) + " streamline(s)" + //
+                    " have a per-vertex sequence length differing from the streamline vertex count");    //
 }
 
 void validate_tsf_properties(const Properties &a, const Properties &b, std::string_view file_types) {

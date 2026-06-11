@@ -1,0 +1,15 @@
+#!/bin/bash
+# Step 8: a per-vertex (.tsf) sidecar whose per-streamline scalar lengths do not
+#   match the tractogram's per-streamline vertex counts must fail validation.
+# Sample a .tsf on the original tractogram (correct lengths), then downsample the
+#   tractogram so its vertex counts change; validating the original .tsf against
+#   the downsampled tractogram must report the per-vertex length mismatch.
+tcksample tracks.tck tcksample/fa.mif tmp.tsf -force
+tckresample tracks.tck tmp_ds.tck -downsample 3 -force
+
+rm -f tmp.txt
+! ( tckvalidate tmp_ds.tck -tsf tmp.tsf > tmp.txt 2>&1 )
+cat tmp.txt
+# Either a per-streamline length mismatch or (if counts differ) a sequence-count
+#   mismatch is an acceptable clean failure; both name the dpv field.
+grep -E "Data-per-vertex field" tmp.txt

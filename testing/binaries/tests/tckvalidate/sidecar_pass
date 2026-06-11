@@ -1,0 +1,14 @@
+#!/bin/bash
+# Step 8: a valid per-vertex (.tsf) and a valid per-streamline (dps) sidecar both
+#   pass validation against the tractogram.
+tcksample tracks.tck tcksample/fa.mif tmp.tsf -force
+N=$(tckinfo tracks.tck -count 2>/dev/null | grep -iE "actual count" | grep -oE "[0-9]+" | head -n1)
+rm -f tmp_w.txt
+i=0
+while [ "$i" -lt "$N" ]; do echo "1" >> tmp_w.txt; i=$((i+1)); done
+
+rm -f tmp.txt
+tckvalidate tracks.tck -tsf tmp.tsf -tck_weights tmp_w.txt 2>&1 | tee tmp.txt
+grep -E "Tractogram \".+\" is valid" tmp.txt
+grep "Data-per-vertex field" tmp.txt
+grep "Data-per-streamline field" tmp.txt

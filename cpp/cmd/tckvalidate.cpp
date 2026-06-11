@@ -14,6 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <filesystem>
+
 #include "command.h"
 #include "mrtrix.h"
 
@@ -28,19 +30,19 @@ void usage() {
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  SYNOPSIS = "Validate a tractogram (.tck) file";
+  SYNOPSIS = "Validate a tractogram file and its associated sidecar data";
 
   DESCRIPTION
   + "This command checks that a tractogram file is well-formed."
-    " The binary data section of a .tck file consists of a sequence of"
-    " 3-float triplets."
-    " Each triplet must be exactly one of:"
+    " For the in-house \".tck\" format,"
+    " the binary data section consists of a sequence of 3-float triplets,"
+    " each of which must be exactly one of:"
     " a regular vertex (all three components finite),"
     " an inter-streamline delimiter (all three components NaN),"
-    " or the mandatory end-of-file barrier (all three components infinity)."
-    " The end-of-file barrier must be the last triplet in the file."
+    " or the mandatory end-of-file barrier (all three components infinity);"
+    " the end-of-file barrier must be the last triplet in the file."
 
-  + "The following hard violations cause the command to fail:"
+  + "The following hard violations cause the command to fail for a \".tck\" file:"
     " (1) a triplet that is partially non-finite"
     " (i.e. not all-finite, not all-NaN, and not all-infinity);"
     " (2) any data present after the end-of-file barrier;"
@@ -52,6 +54,17 @@ void usage() {
     " (6) the \"count\" field in the file header does not match"
     " the number of streamlines actually present in the file."
 
+  + "For any supported tractography format,"
+    " the entire tractogram is read"
+    " and the \"count\" field in the header (where present)"
+    " is checked against the number of streamlines actually read."
+
+  + "Associated sidecar data can additionally be validated against the tractogram"
+    " using the -tsf and -tck_weights options;"
+    " every per-streamline (data-per-streamline) field must contain exactly one entry per streamline,"
+    " and every per-vertex (data-per-vertex) field must contain"
+    " one scalar sequence per streamline whose length matches that streamline's vertex count."
+
   + "The command also reports the presence of streamlines"
     " with zero vertices or exactly one vertex,"
     " which are degenerate cases that may indicate issues with the"
@@ -59,25 +72,63 @@ void usage() {
 
   ARGUMENTS
   + Argument ("tracks_in", "the input tractogram file").type_tracks_in();
+
+  OPTIONS
+  + Option ("tsf", "validate a per-vertex (data-per-vertex) track scalar file (.tsf)"
+                   " against the tractogram"
+                   " (may be specified multiple times)").allow_multiple()
+    + Argument ("path").type_file_in()
+  + Option ("tck_weights", "validate a per-streamline (data-per-streamline) numerical sidecar file"
+                           " (plain-text / .csv / .npy) against the tractogram"
+                           " (may be specified multiple times)").allow_multiple()
+    + Argument ("path").type_file_in();
 }
 // clang-format on
 
 void run() {
-  // validate_tck() throws on any hard format or metadata violation.
-  const TckValidation result = validate_tck(argument[0]);
+  const std::filesystem::path tracks_path{argument[0]};
+  const bool is_tck = tracks_path.extension() == ".tck";
+
+  // For the in-house ".tck" format, retain the exhaustive triplet-level scan
+  //   (delimiter / barrier / partial-finite checks) of validate_tck(); the
+  //   format-agnostic validate_tractogram() reads any supported format and
+  //   checks the header/content count and records per-streamline vertex counts.
+  TractogramValidation validation;
+  if (is_tck) {
+    const TckValidation tck = validate_tck(tracks_path);
+    validation.header_count = tck.header_count;
+    validation.n_streamlines = tck.n_streamlines;
+    if (tck.n_empty > 0) {
+      WARN(str(tck.n_empty) + " empty streamline(s) (0 vertices) found");
+    }
+    if (tck.n_single_vertex > 0) {
+      WARN(str(tck.n_single_vertex) + " single-vertex streamline(s) found");
+    }
+    if (tck.n_empty == 0 && tck.n_single_vertex == 0) {
+      CONSOLE("All streamlines have two or more vertices");
+    }
+  }
+
+  // Read the whole tractogram through the framework: this validates the
+  //   header/content count for every supported format, and (crucially) provides
+  //   the per-streamline vertex counts needed to validate any dpv sidecar.
+  const bool need_vertices = !get_options("tsf").empty();
+  if (!is_tck || need_vertices)
+    validation = validate_tractogram(tracks_path);
 
   CONSOLE("Tractogram \"" + argument[0].as_text() + "\" is valid: " + //
-          str(result.n_streamlines) + " streamline(s)");              //
+          str(validation.n_streamlines) + " streamline(s)");          //
 
-  if (result.n_empty > 0) {
-    WARN(str(result.n_empty) + " empty streamline(s) (0 vertices) found");
+  // Validate each requested sidecar field, generalising validate_tsf across all
+  //   dps/dpv fields supplied for the tractogram (step 8).
+  for (const auto &opt : get_options("tck_weights")) {
+    const std::filesystem::path dps_path{opt[0]};
+    validate_dps_field(dps_path, dps_path.stem().string(), validation);
+    CONSOLE("Data-per-streamline field \"" + dps_path.string() + "\" is consistent with the tractogram");
   }
-
-  if (result.n_single_vertex > 0) {
-    WARN(str(result.n_single_vertex) + " single-vertex streamline(s) found");
-  }
-
-  if (result.n_empty == 0 && result.n_single_vertex == 0) {
-    CONSOLE("All streamlines have two or more vertices");
+  for (const auto &opt : get_options("tsf")) {
+    const std::filesystem::path dpv_path{opt[0]};
+    validate_dpv_field(dpv_path, dpv_path.stem().string(), validation);
+    CONSOLE("Data-per-vertex field \"" + dpv_path.string() + "\" is consistent with the tractogram");
   }
 }
