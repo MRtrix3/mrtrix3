@@ -457,4 +457,125 @@ TEST(Sidecar, ParseTrailingDoubleColon) {
   EXPECT_EQ(ref.dataset, std::filesystem::path("tracks.tck"));
 }
 
+// ---------------------------------------------------------------------------
+//  Step 5: standalone input-sidecar injection
+// ---------------------------------------------------------------------------
+
+class SidecarIO : public ::testing::Test {
+protected:
+  std::filesystem::path dir;
+
+  void SetUp() override {
+    dir = std::filesystem::temp_directory_path() /
+          ("mrtrix_sidecar_io_" + std::to_string(::testing::UnitTest::GetInstance()->random_seed()));
+    std::filesystem::create_directories(dir);
+  }
+  void TearDown() override {
+    std::error_code ec;
+    std::filesystem::remove_all(dir, ec);
+  }
+};
+
+// Step 5: import per-streamline data from a numerical text (.csv) file; one row
+//   is yielded per streamline as a dps field named after the file stem.
+TEST_F(SidecarIO, ImportCsvPerStreamline) {
+  const std::filesystem::path path = dir / "scale.csv";
+  Eigen::MatrixXf m(3, 1);
+  m << 1.5F, 2.5F, 3.5F;
+  MR::File::Matrix::save_matrix(m, path);
+
+  Properties properties;
+  FieldRegistry registry;
+  auto loader = make_sidecar_loader<float>(parse_sidecar_reference(path.string()), properties, registry);
+
+  const auto ordinal = registry.ordinal("scale", FieldRole::DPS);
+  ASSERT_TRUE(ordinal.has_value());
+
+  for (float expected : {1.5F, 2.5F, 3.5F}) {
+    TractogramItem<float> item;
+    ASSERT_TRUE((*loader)(item));
+    ASSERT_GT(item.dps.size(), *ordinal);
+    const auto &v = std::get<ScalarOrVector<float>>(item.dps[*ordinal]);
+    EXPECT_FLOAT_EQ(v.scalar(), expected);
+  }
+  TractogramItem<float> spent;
+  EXPECT_FALSE((*loader)(spent));
+}
+
+// Step 5: import per-streamline data from a NumPy (.npy) file via memory-mapped
+//   access, preserving a multi-column row per streamline.
+TEST_F(SidecarIO, ImportNpyPerStreamline) {
+  const std::filesystem::path path = dir / "metrics.npy";
+  Eigen::MatrixXf m(2, 3);
+  m << 1.0F, 2.0F, 3.0F, 4.0F, 5.0F, 6.0F;
+  MR::File::NPY::save_matrix(m, path);
+
+  Properties properties;
+  FieldRegistry registry;
+  auto loader = make_sidecar_loader<float>(parse_sidecar_reference(path.string()), properties, registry);
+
+  const auto ordinal = registry.ordinal("metrics", FieldRole::DPS);
+  ASSERT_TRUE(ordinal.has_value());
+
+  TractogramItem<float> item0;
+  ASSERT_TRUE((*loader)(item0));
+  const auto &row0 = std::get<ScalarOrVector<float>>(item0.dps[*ordinal]);
+  ASSERT_EQ(row0.cols(), 3);
+  EXPECT_FLOAT_EQ(row0(0, 0), 1.0F);
+  EXPECT_FLOAT_EQ(row0(0, 2), 3.0F);
+
+  TractogramItem<float> item1;
+  ASSERT_TRUE((*loader)(item1));
+  const auto &row1 = std::get<ScalarOrVector<float>>(item1.dps[*ordinal]);
+  EXPECT_FLOAT_EQ(row1(0, 0), 4.0F);
+  EXPECT_FLOAT_EQ(row1(0, 2), 6.0F);
+
+  TractogramItem<float> spent;
+  EXPECT_FALSE((*loader)(spent));
+}
+
+// Step 5: import per-vertex data from a .tsf file; each streamline's scalars
+//   surface as a dpv (n_vertices x 1) field.
+TEST_F(SidecarIO, ImportTsfPerVertex) {
+  const std::filesystem::path path = dir / "fa.tsf";
+  {
+    Properties properties;
+    ScalarWriter<float> writer(path, properties);
+    for (size_t s = 0; s != 2; ++s) {
+      TrackScalar<float> scalars;
+      scalars.set_index(s);
+      for (size_t v = 0; v != 3 + s; ++v)
+        scalars.push_back(0.1F * static_cast<float>(s) + static_cast<float>(v));
+      writer(scalars);
+    }
+  }
+
+  Properties properties;
+  FieldRegistry registry;
+  auto loader = make_sidecar_loader<float>(parse_sidecar_reference(path.string()), properties, registry);
+  const auto ordinal = registry.ordinal("fa", FieldRole::DPV);
+  ASSERT_TRUE(ordinal.has_value());
+
+  TractogramItem<float> item0;
+  ASSERT_TRUE((*loader)(item0));
+  const auto &v0 = std::get<VectorOrMatrix<float>>(item0.dpv[*ordinal]);
+  ASSERT_EQ(v0.rows(), 3);
+  ASSERT_EQ(v0.cols(), 1);
+  EXPECT_FLOAT_EQ(v0.vector()(1), 1.0F);
+
+  TractogramItem<float> item1;
+  ASSERT_TRUE((*loader)(item1));
+  const auto &v1 = std::get<VectorOrMatrix<float>>(item1.dpv[*ordinal]);
+  EXPECT_EQ(v1.rows(), 4);
+}
+
+// Step 5: a qualified "DATASET::NAME" import reference is not yet implemented.
+TEST_F(SidecarIO, QualifiedImportNotYetImplemented) {
+  const std::filesystem::path tck = dir / "tracks.tck";
+  Properties properties;
+  FieldRegistry registry;
+  EXPECT_THROW(make_sidecar_loader<float>(parse_sidecar_reference(tck.string() + "::fa"), properties, registry),
+               MR::Exception);
+}
+
 } // namespace

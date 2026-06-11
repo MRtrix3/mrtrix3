@@ -20,10 +20,12 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "dwi/tractography/field_registry.h"
 #include "dwi/tractography/formats/base.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/sidecar.h"
 #include "dwi/tractography/tractogram_item.h"
 #include "exception.h"
 
@@ -84,7 +86,13 @@ public:
    * operator() overload below forwards to it for use as a queue source. */
   bool read(item_type &item) {
     assert(reader != nullptr);
-    return (*reader)(item);
+    if (!(*reader)(item))
+      return false;
+    // Inject any registered standalone input-sidecar data into the per-streamline
+    //   payload prior to processing (§2.5; Stage 11, step 5).
+    for (auto &loader : input_sidecars)
+      (*loader)(item);
+    return true;
   }
 
   //! \brief append an item to the dataset (write mode only).
@@ -134,6 +142,17 @@ public:
                       " and cannot service " + std::string(context) + " (which requires random access to the data)");
   }
 
+  //! \brief register a standalone input-sidecar reference for injection (step 5).
+  /*! Parses \a arg (§2.4), constructs the appropriate loader (text/.csv/.npy
+   * per-streamline, or .tsf per-vertex), and registers the loaded field in this
+   * read Tractogram's field registry. The loader is then invoked per read() to
+   * inject its value into the streaming item. A qualified "DATASET::NAME"
+   * reference is rejected as not-yet-implemented. */
+  void register_input_sidecar(std::string_view arg, Properties &properties) {
+    assert(reader != nullptr);
+    input_sidecars.push_back(make_sidecar_loader<ValueType>(parse_sidecar_reference(arg), properties, registry));
+  }
+
   //! \brief the sidecar field registry for this dataset (§2.5).
   const FieldRegistry &fields() const { return registry; }
   FieldRegistry &fields() { return registry; }
@@ -152,6 +171,8 @@ private:
   std::unique_ptr<WriterInterface<ValueType>> writer;
   //! the sidecar field registry (empty in Stage 1)
   FieldRegistry registry;
+  //! registered standalone input-sidecar loaders (§2.5; Stage 11, step 5)
+  std::vector<std::unique_ptr<SidecarLoader<ValueType>>> input_sidecars;
 };
 
 } // namespace MR::DWI::Tractography
