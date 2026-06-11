@@ -26,6 +26,7 @@
 
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/streamline.h"
+#include "dwi/tractography/tractogram_item.h"
 
 namespace MR {
 class Header;
@@ -46,24 +47,40 @@ namespace MR::DWI::Tractography {
 using OptionalHeader = std::optional<std::reference_wrapper<const Header>>;
 
 //! \brief The contract for streaming reads of tractography data.
-/*! A reader yields one Streamline per invocation of operator(), returning
- * false once the dataset is exhausted. This type-erased interface lets a
- * command consume any supported format through a single handle, irrespective
- * of the concrete handler backing it (cf. ImageIO::Base in the image
- * subsystem). The composite sidecar payload of §2.1 is grown onto this
- * contract in later stages; Stage 1 carries only the Streamline. */
+/*! A reader yields one item per invocation of operator(), returning false once
+ * the dataset is exhausted. This type-erased interface lets a command consume
+ * any supported format through a single handle, irrespective of the concrete
+ * handler backing it (cf. ImageIO::Base in the image subsystem).
+ *
+ * Two read overloads coexist (§2.1): the Streamline overload (vertices + weight
+ * + index) is the primitive every handler implements; the TractogramItem
+ * overload additionally fills the dps/dpv sidecar payloads. The latter has a
+ * default implementation that forwards to the former and leaves the sidecar
+ * vectors empty, so a vertices-only handler (.tck/.vtk/.vtx/.tt) needs no
+ * change while a sidecar-carrying handler (the pipe; later TRX) overrides it. */
 template <class ValueType> class ReaderInterface {
 public:
   virtual bool operator()(Streamline<ValueType> &) = 0;
+  //! \brief fill the composite item; defaults to the vertices-only read.
+  virtual bool operator()(TractogramItem<ValueType> &item) {
+    item.dps.clear();
+    item.dpv.clear();
+    return (*this)(item.streamline);
+  }
   virtual ~ReaderInterface() {}
 };
 
 //! \brief The contract for streaming writes of tractography data.
-/*! A writer appends one Streamline per invocation of operator(); see
- * ReaderInterface for the rationale behind the type-erased interface. */
+/*! A writer appends one item per invocation of operator(); see ReaderInterface
+ * for the rationale behind the type-erased interface and the two overloads. The
+ * TractogramItem overload defaults to writing only the streamline vertices, so
+ * a vertices-only handler is unaffected; a sidecar-carrying handler overrides it
+ * to serialise the dps/dpv payloads. */
 template <class ValueType> class WriterInterface {
 public:
   virtual bool operator()(const Streamline<ValueType> &) = 0;
+  //! \brief append the composite item; defaults to the vertices-only write.
+  virtual bool operator()(const TractogramItem<ValueType> &item) { return (*this)(item.streamline); }
   virtual ~WriterInterface() {}
 };
 

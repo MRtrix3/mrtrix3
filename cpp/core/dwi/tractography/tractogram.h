@@ -80,7 +80,7 @@ public:
    * operator() overload below forwards to it for use as a queue source. */
   bool read(item_type &item) {
     assert(reader != nullptr);
-    return (*reader)(item.streamline);
+    return (*reader)(item);
   }
 
   //! \brief append an item to the dataset (write mode only).
@@ -88,7 +88,7 @@ public:
    * forwards to it for use as a queue sink. */
   bool write(const item_type &item) {
     assert(writer != nullptr);
-    return (*writer)(item.streamline);
+    return (*writer)(item);
   }
 
   //! \brief queue-source convenience: read the next item (read mode only).

@@ -16,6 +16,7 @@ set(UNIT_TESTS_CPP_SRCS
     roi_tests.cpp
     sh_precomputer_tests.cpp
     shuffle_tests.cpp
+    sidecar_tests.cpp
     to_tests.cpp
     tractogram_tests.cpp
     write_buffer_tests.cpp
