@@ -430,23 +430,31 @@ namespace Formats {
 
 bool TT::handles(const std::filesystem::path &path) const { return path.extension() == ".tt"; }
 
-std::unique_ptr<ReaderInterface<float>>
-TT::read_float(const std::filesystem::path &path, Properties &properties, const OptionalHeader &grid) const {
+std::unique_ptr<ReaderInterface<float>> TT::read_float(const std::filesystem::path &path,
+                                                       Properties &properties,
+                                                       FieldRegistry &,
+                                                       const OptionalHeader &grid) const {
   return std::make_unique<TTReader<float>>(path, properties, grid);
 }
 
-std::unique_ptr<ReaderInterface<double>>
-TT::read_double(const std::filesystem::path &path, Properties &properties, const OptionalHeader &grid) const {
+std::unique_ptr<ReaderInterface<double>> TT::read_double(const std::filesystem::path &path,
+                                                         Properties &properties,
+                                                         FieldRegistry &,
+                                                         const OptionalHeader &grid) const {
   return std::make_unique<TTReader<double>>(path, properties, grid);
 }
 
-std::unique_ptr<WriterInterface<float>>
-TT::create_float(const std::filesystem::path &path, const Properties &properties, const OptionalHeader &grid) const {
+std::unique_ptr<WriterInterface<float>> TT::create_float(const std::filesystem::path &path,
+                                                         const Properties &properties,
+                                                         const FieldRegistry &,
+                                                         const OptionalHeader &grid) const {
   return std::make_unique<TTWriter<float>>(path, properties, grid);
 }
 
-std::unique_ptr<WriterInterface<double>>
-TT::create_double(const std::filesystem::path &path, const Properties &properties, const OptionalHeader &grid) const {
+std::unique_ptr<WriterInterface<double>> TT::create_double(const std::filesystem::path &path,
+                                                           const Properties &properties,
+                                                           const FieldRegistry &,
+                                                           const OptionalHeader &grid) const {
   return std::make_unique<TTWriter<double>>(path, properties, grid);
 }
 

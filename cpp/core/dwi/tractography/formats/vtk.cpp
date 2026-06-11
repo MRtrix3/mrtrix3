@@ -346,23 +346,31 @@ namespace Formats {
 
 bool VTK::handles(const std::filesystem::path &path) const { return path.extension() == ".vtk"; }
 
-std::unique_ptr<ReaderInterface<float>>
-VTK::read_float(const std::filesystem::path &path, Properties &properties, const OptionalHeader &) const {
+std::unique_ptr<ReaderInterface<float>> VTK::read_float(const std::filesystem::path &path,
+                                                        Properties &properties,
+                                                        FieldRegistry &,
+                                                        const OptionalHeader &) const {
   return std::make_unique<VTKReader<float>>(path, properties);
 }
 
-std::unique_ptr<ReaderInterface<double>>
-VTK::read_double(const std::filesystem::path &path, Properties &properties, const OptionalHeader &) const {
+std::unique_ptr<ReaderInterface<double>> VTK::read_double(const std::filesystem::path &path,
+                                                          Properties &properties,
+                                                          FieldRegistry &,
+                                                          const OptionalHeader &) const {
   return std::make_unique<VTKReader<double>>(path, properties);
 }
 
-std::unique_ptr<WriterInterface<float>>
-VTK::create_float(const std::filesystem::path &path, const Properties &properties, const OptionalHeader &) const {
+std::unique_ptr<WriterInterface<float>> VTK::create_float(const std::filesystem::path &path,
+                                                          const Properties &properties,
+                                                          const FieldRegistry &,
+                                                          const OptionalHeader &) const {
   return std::make_unique<VTKWriter<float>>(path, properties);
 }
 
-std::unique_ptr<WriterInterface<double>>
-VTK::create_double(const std::filesystem::path &path, const Properties &properties, const OptionalHeader &) const {
+std::unique_ptr<WriterInterface<double>> VTK::create_double(const std::filesystem::path &path,
+                                                            const Properties &properties,
+                                                            const FieldRegistry &,
+                                                            const OptionalHeader &) const {
   return std::make_unique<VTKWriter<double>>(path, properties);
 }
 

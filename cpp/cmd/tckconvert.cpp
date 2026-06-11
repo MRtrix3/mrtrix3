@@ -20,6 +20,7 @@
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/formats/list.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/shared.h"
 #include "dwi/tractography/tractogram.h"
 #include "file/matrix.h"
 #include "file/name_parser.h"
@@ -556,22 +557,36 @@ transform_type get_transform() {
 //! \brief generic conversion through the Tractogram format-handler framework.
 /*! Used when both the input and output extensions are recognised by the
  * framework's handler list (Stage 1). Constructs an input and an output
- * Tractogram and copies streamlines single-threaded (pure I/O; no thread
- * queue), applying the point-position transform per vertex. */
+ * Tractogram and copies the full composite TractogramItem single-threaded (pure
+ * I/O; no thread queue), applying the point-position transform per vertex.
+ *
+ * The conversion is sidecar-aware (Stage 10): the output Tractogram is created
+ * with the input's field registry, so every dps/dpv field the input handler
+ * enumerates is declared on the output and carried across in its native dtype —
+ * including pass-through fields the conversion does not touch. A const-shared
+ * Shared object precomputes the (identity) pass-through map and applies it per
+ * item; the empty-registry common case (.tck/.vtk/...) is a no-op fast path. */
 void run_generic(const std::filesystem::path &input_path, const std::filesystem::path &output_path) {
   Properties properties;
   auto input = Tractogram<float>::open(input_path, properties);
-  auto output = Tractogram<float>::create(output_path, properties);
+  // Declare the output field set up-front from the input registry (§2.7), so a
+  //   sidecar-aware output handler (the pipe; later TRX) serialises it.
+  auto output = Tractogram<float>::create(output_path, properties, input.fields());
+
+  // Pass-through map: every input field is carried unchanged to the output.
+  const Shared shared(input.fields(), output.fields());
 
   const transform_type T = get_transform();
 
-  // Copy
-  TractogramItem<float> item;
-  while (input.read(item)) {
-    for (auto &pos : item.streamline) {
+  TractogramItem<float> in_item;
+  TractogramItem<float> out_item;
+  while (input.read(in_item)) {
+    out_item.clear();
+    out_item.streamline = in_item.streamline;
+    for (auto &pos : out_item.streamline)
       pos = T.cast<float>() * pos;
-    }
-    output.write(item);
+    shared.carry_passthrough(in_item, out_item);
+    output.write(out_item);
   }
 }
 

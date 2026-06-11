@@ -84,7 +84,7 @@ void ensure_sigpipe_ignored() {
 /* ************************************************************************ */
 
 template <class ValueType>
-PipeReader<ValueType>::PipeReader(Properties &properties) : current_index(0), barrier_reached(false) {
+PipeReader<ValueType>::PipeReader(Properties &properties, FieldRegistry &) : current_index(0), barrier_reached(false) {
   // [1] The tractogram header travels via a temp file whose path is sent on the
   //   pipe newline-terminated (Stage 9 step 1); read that path from stdin.
   std::string header_path;
@@ -196,7 +196,7 @@ template <class ValueType> void PipeReader<ValueType>::read_exact(void *dest, si
 /* ************************************************************************ */
 
 template <class ValueType>
-PipeWriter<ValueType>::PipeWriter(const Properties &properties)
+PipeWriter<ValueType>::PipeWriter(const Properties &properties, const FieldRegistry &)
     : dtype(DataType::from<ValueType>()),
       count(0),
       total_count(0),
@@ -372,24 +372,32 @@ namespace Formats {
 
 bool Pipe::handles(const std::filesystem::path &path) const { return is_dash(path.string()); }
 
-std::unique_ptr<ReaderInterface<float>>
-Pipe::read_float(const std::filesystem::path &, Properties &properties, const OptionalHeader &) const {
-  return std::make_unique<PipeReader<float>>(properties);
+std::unique_ptr<ReaderInterface<float>> Pipe::read_float(const std::filesystem::path &,
+                                                         Properties &properties,
+                                                         FieldRegistry &registry,
+                                                         const OptionalHeader &) const {
+  return std::make_unique<PipeReader<float>>(properties, registry);
 }
 
-std::unique_ptr<ReaderInterface<double>>
-Pipe::read_double(const std::filesystem::path &, Properties &properties, const OptionalHeader &) const {
-  return std::make_unique<PipeReader<double>>(properties);
+std::unique_ptr<ReaderInterface<double>> Pipe::read_double(const std::filesystem::path &,
+                                                           Properties &properties,
+                                                           FieldRegistry &registry,
+                                                           const OptionalHeader &) const {
+  return std::make_unique<PipeReader<double>>(properties, registry);
 }
 
-std::unique_ptr<WriterInterface<float>>
-Pipe::create_float(const std::filesystem::path &, const Properties &properties, const OptionalHeader &) const {
-  return std::make_unique<PipeWriter<float>>(properties);
+std::unique_ptr<WriterInterface<float>> Pipe::create_float(const std::filesystem::path &,
+                                                           const Properties &properties,
+                                                           const FieldRegistry &registry,
+                                                           const OptionalHeader &) const {
+  return std::make_unique<PipeWriter<float>>(properties, registry);
 }
 
-std::unique_ptr<WriterInterface<double>>
-Pipe::create_double(const std::filesystem::path &, const Properties &properties, const OptionalHeader &) const {
-  return std::make_unique<PipeWriter<double>>(properties);
+std::unique_ptr<WriterInterface<double>> Pipe::create_double(const std::filesystem::path &,
+                                                             const Properties &properties,
+                                                             const FieldRegistry &registry,
+                                                             const OptionalHeader &) const {
+  return std::make_unique<PipeWriter<double>>(properties, registry);
 }
 
 } // namespace Formats

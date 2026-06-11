@@ -67,12 +67,16 @@ public:
 
   //! \brief create a new tractography dataset for streaming writes.
   /*! Selects the handler for \a path by extension and verifies it supports
-   * writing. The output field set is declared up-front via \a properties /
-   * (in later stages) the output registry (§2.7). Throws a user-interpretable
-   * Exception if no handler recognises the extension or the recognised handler
-   * cannot write. */
-  static Tractogram
-  create(const std::filesystem::path &path, const Properties &properties, const OptionalHeader &grid = std::nullopt);
+   * writing. The output sidecar field set is declared up-front via \a registry
+   * (§2.5/§2.7): a sidecar-aware handler serialises it (the pipe; later TRX),
+   * while a vertices-only handler ignores it. \a registry defaults to an empty
+   * registry, so existing vertices-only callers are unaffected. Throws a
+   * user-interpretable Exception if no handler recognises the extension or the
+   * recognised handler cannot write. */
+  static Tractogram create(const std::filesystem::path &path,
+                           const Properties &properties,
+                           const FieldRegistry &registry = FieldRegistry(),
+                           const OptionalHeader &grid = std::nullopt);
 
   //! \brief read the next item from the dataset (read mode only).
   /*! \returns true and fills \a item while data remain; false once the dataset

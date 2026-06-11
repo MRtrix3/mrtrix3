@@ -24,6 +24,7 @@
 #include <string_view>
 #include <type_traits>
 
+#include "dwi/tractography/field_registry.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/streamline.h"
 #include "dwi/tractography/tractogram_item.h"
@@ -169,49 +170,66 @@ public:
 
   //! \brief open \a path for streaming reads in the requested precision.
   /*! Dispatches to the float/double factory virtual. \a properties is
-   * populated from the dataset header. \a grid is the optional image-grid
-   * reference (§ OptionalHeader): handlers for grid-relative formats use its
-   * voxel↔scanner transform; scanner-space handlers ignore it. It defaults to
-   * std::nullopt, so existing callers are unaffected. */
+   * populated from the dataset header. \a registry is populated with the sidecar
+   * field descriptors the format carries (§2.5): a vertices-only format leaves
+   * it empty, while a sidecar-carrying format (the pipe; later TRX) registers a
+   * descriptor per field so the per-item dps/dpv payloads can be addressed by
+   * ordinal. \a grid is the optional image-grid reference (§ OptionalHeader):
+   * handlers for grid-relative formats use its voxel↔scanner transform;
+   * scanner-space handlers ignore it. */
   template <class ValueType>
-  std::unique_ptr<ReaderInterface<ValueType>>
-  read(const std::filesystem::path &path, Properties &properties, const OptionalHeader &grid = std::nullopt) const {
+  std::unique_ptr<ReaderInterface<ValueType>> read(const std::filesystem::path &path,
+                                                   Properties &properties,
+                                                   FieldRegistry &registry,
+                                                   const OptionalHeader &grid = std::nullopt) const {
     static_assert(std::is_same<ValueType, float>::value || std::is_same<ValueType, double>::value,
                   "tractography I/O is supported in float or double precision only");
     if constexpr (std::is_same<ValueType, float>::value)
-      return read_float(path, properties, grid);
+      return read_float(path, properties, registry, grid);
     else
-      return read_double(path, properties, grid);
+      return read_double(path, properties, registry, grid);
   }
 
   //! \brief create \a path for streaming writes in the requested precision.
-  /*! \a grid is the optional image-grid reference (§ OptionalHeader), defaulting
-   * to std::nullopt so existing callers are unaffected; see read(). */
+  /*! \a registry declares the sidecar field set the output is to carry (§2.5/
+   * §2.7): a sidecar-aware format (the pipe; later TRX) serialises it so a
+   * receiver can reconstruct the field ordinals, whereas a vertices-only format
+   * ignores it. \a grid is the optional image-grid reference (§ OptionalHeader);
+   * see read(). */
   template <class ValueType>
   std::unique_ptr<WriterInterface<ValueType>> create(const std::filesystem::path &path,
                                                      const Properties &properties,
+                                                     const FieldRegistry &registry,
                                                      const OptionalHeader &grid = std::nullopt) const {
     static_assert(std::is_same<ValueType, float>::value || std::is_same<ValueType, double>::value,
                   "tractography I/O is supported in float or double precision only");
     if constexpr (std::is_same<ValueType, float>::value)
-      return create_float(path, properties, grid);
+      return create_float(path, properties, registry, grid);
     else
-      return create_double(path, properties, grid);
+      return create_double(path, properties, registry, grid);
   }
 
 protected:
   //! \brief manufacture a single-precision streaming reader for \a path.
-  virtual std::unique_ptr<ReaderInterface<float>>
-  read_float(const std::filesystem::path &path, Properties &properties, const OptionalHeader &grid) const = 0;
+  virtual std::unique_ptr<ReaderInterface<float>> read_float(const std::filesystem::path &path,
+                                                             Properties &properties,
+                                                             FieldRegistry &registry,
+                                                             const OptionalHeader &grid) const = 0;
   //! \brief manufacture a double-precision streaming reader for \a path.
-  virtual std::unique_ptr<ReaderInterface<double>>
-  read_double(const std::filesystem::path &path, Properties &properties, const OptionalHeader &grid) const = 0;
+  virtual std::unique_ptr<ReaderInterface<double>> read_double(const std::filesystem::path &path,
+                                                               Properties &properties,
+                                                               FieldRegistry &registry,
+                                                               const OptionalHeader &grid) const = 0;
   //! \brief manufacture a single-precision streaming writer for \a path.
-  virtual std::unique_ptr<WriterInterface<float>>
-  create_float(const std::filesystem::path &path, const Properties &properties, const OptionalHeader &grid) const = 0;
+  virtual std::unique_ptr<WriterInterface<float>> create_float(const std::filesystem::path &path,
+                                                               const Properties &properties,
+                                                               const FieldRegistry &registry,
+                                                               const OptionalHeader &grid) const = 0;
   //! \brief manufacture a double-precision streaming writer for \a path.
-  virtual std::unique_ptr<WriterInterface<double>>
-  create_double(const std::filesystem::path &path, const Properties &properties, const OptionalHeader &grid) const = 0;
+  virtual std::unique_ptr<WriterInterface<double>> create_double(const std::filesystem::path &path,
+                                                                 const Properties &properties,
+                                                                 const FieldRegistry &registry,
+                                                                 const OptionalHeader &grid) const = 0;
 };
 
 } // namespace Formats

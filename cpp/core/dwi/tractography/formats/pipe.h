@@ -22,6 +22,7 @@
 #include <limits>
 #include <memory>
 
+#include "dwi/tractography/field_registry.h"
 #include "dwi/tractography/formats/base.h"
 #include "dwi/tractography/formats/write_buffer.h"
 #include "dwi/tractography/properties.h"
@@ -76,7 +77,9 @@ namespace MR::DWI::Tractography {
  * Explicitly instantiated for float and double in formats/pipe.cpp. */
 template <class ValueType = float> class PipeReader : public ReaderInterface<ValueType> {
 public:
-  PipeReader(Properties &properties);
+  //! \brief open the pipe; \a registry is populated from the stream header
+  //!   (empty in this step, grown in Step 4).
+  PipeReader(Properties &properties, FieldRegistry &registry);
 
   bool operator()(Streamline<ValueType> &tck) override;
 
@@ -107,7 +110,9 @@ template <class ValueType = float> class PipeWriter : public WriterInterface<Val
 public:
   using vector_type = Eigen::Matrix<ValueType, 3, 1>;
 
-  PipeWriter(const Properties &properties);
+  //! \brief open the pipe; \a registry's fields are serialised in the header
+  //!   (empty in this step, grown in Step 4).
+  PipeWriter(const Properties &properties, const FieldRegistry &registry);
   ~PipeWriter() override;
 
   bool operator()(const Streamline<ValueType> &tck) override;
@@ -156,15 +161,21 @@ public:
   bool handles(const std::filesystem::path &path) const override;
 
 protected:
-  std::unique_ptr<ReaderInterface<float>>
-  read_float(const std::filesystem::path &path, Properties &properties, const OptionalHeader &grid) const override;
-  std::unique_ptr<ReaderInterface<double>>
-  read_double(const std::filesystem::path &path, Properties &properties, const OptionalHeader &grid) const override;
+  std::unique_ptr<ReaderInterface<float>> read_float(const std::filesystem::path &path,
+                                                     Properties &properties,
+                                                     FieldRegistry &registry,
+                                                     const OptionalHeader &grid) const override;
+  std::unique_ptr<ReaderInterface<double>> read_double(const std::filesystem::path &path,
+                                                       Properties &properties,
+                                                       FieldRegistry &registry,
+                                                       const OptionalHeader &grid) const override;
   std::unique_ptr<WriterInterface<float>> create_float(const std::filesystem::path &path,
                                                        const Properties &properties,
+                                                       const FieldRegistry &registry,
                                                        const OptionalHeader &grid) const override;
   std::unique_ptr<WriterInterface<double>> create_double(const std::filesystem::path &path,
                                                          const Properties &properties,
+                                                         const FieldRegistry &registry,
                                                          const OptionalHeader &grid) const override;
 };
 
