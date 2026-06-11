@@ -1,0 +1,18 @@
+#!/bin/bash
+# Write streamlines to the experimental ASCII .vtx (VTK STREAMLINES) format and
+#   confirm the file structure: a STREAMLINES dataset with POINTS and OFFSETS
+#   blocks, the OFFSETS count equal to the streamline count, and offsets that are
+#   strictly increasing (each offsetEnd[j] > offsetEnd[j-1]).
+tckconvert -ascii tracks.tck tmp.vtx -force -quiet
+# Dataset declaration present.
+grep -q "DATASET STREAMLINES" tmp.vtx
+grep -q "^ASCII" tmp.vtx
+# POINTS and OFFSETS keyword lines present.
+grep -q "^POINTS " tmp.vtx
+grep -q "^OFFSETS " tmp.vtx
+# Number of OFFSETS entries declared must equal the count of offset values written,
+#   and offsets must be strictly increasing (one END index per non-empty streamline).
+declared=$(awk '/^OFFSETS /{print $2; exit}' tmp.vtx)
+written=$(awk 'f && NF==1 {c++} /^OFFSETS /{f=1} END{print c}' tmp.vtx)
+[ "$declared" = "$written" ] || { echo "OFFSETS count mismatch: declared=$declared written=$written"; exit 1; }
+awk 'f && NF==1 { if (NR>1 && $1<=prev) { print "non-increasing offset"; exit 1 } prev=$1 } /^OFFSETS /{f=1}' tmp.vtx

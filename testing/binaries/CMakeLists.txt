@@ -579,6 +579,8 @@ add_bash_binary_test(tckconvert/vtk_roundtrip_ascii)
 add_bash_binary_test(tckconvert/vtk_roundtrip_via_tck)
 add_bash_binary_test(tckconvert/vtk_reject_nonpolyline)
 add_bash_binary_test(tckconvert/vtk_reject_nonsequential)
+add_bash_binary_test(tckconvert/vtx_write_ascii)
+add_bash_binary_test(tckconvert/vtx_write_binary)
 
 add_bash_binary_test(tckedit/include_exclude_inverse)
 add_bash_binary_test(tckedit/include_mask)

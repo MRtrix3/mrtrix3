@@ -1,0 +1,10 @@
+#!/bin/bash
+# Write streamlines to the experimental binary .vtx (VTK STREAMLINES) format and
+#   confirm the dataset header is well formed: a BINARY STREAMLINES dataset with
+#   POINTS and OFFSETS blocks declared. The big-endian binary payloads themselves
+#   are validated by the round-trip test (vtx_roundtrip_via_tck).
+tckconvert tracks.tck tmp.vtx -force -quiet
+grep -q "DATASET STREAMLINES" tmp.vtx
+grep -q "^BINARY" tmp.vtx
+grep -q "^POINTS " tmp.vtx
+grep -q "^OFFSETS " tmp.vtx
