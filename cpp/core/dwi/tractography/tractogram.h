@@ -60,7 +60,8 @@ public:
    * reading, and populates \a properties from the dataset header. Throws a
    * user-interpretable Exception if no handler recognises the extension or the
    * recognised handler cannot read. */
-  static Tractogram open(const std::filesystem::path &path, Properties &properties);
+  static Tractogram
+  open(const std::filesystem::path &path, Properties &properties, const OptionalHeader &grid = std::nullopt);
 
   //! \brief create a new tractography dataset for streaming writes.
   /*! Selects the handler for \a path by extension and verifies it supports
@@ -68,7 +69,8 @@ public:
    * (in later stages) the output registry (§2.7). Throws a user-interpretable
    * Exception if no handler recognises the extension or the recognised handler
    * cannot write. */
-  static Tractogram create(const std::filesystem::path &path, const Properties &properties);
+  static Tractogram
+  create(const std::filesystem::path &path, const Properties &properties, const OptionalHeader &grid = std::nullopt);
 
   //! \brief read the next item from the dataset (read mode only).
   /*! \returns true and fills \a item while data remain; false once the dataset

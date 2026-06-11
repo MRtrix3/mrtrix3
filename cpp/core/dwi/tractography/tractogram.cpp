@@ -34,24 +34,27 @@ const Formats::Base *select_handler(const std::filesystem::path &path) {
 } // namespace
 
 template <class ValueType>
-Tractogram<ValueType> Tractogram<ValueType>::open(const std::filesystem::path &path, Properties &properties) {
+Tractogram<ValueType>
+Tractogram<ValueType>::open(const std::filesystem::path &path, Properties &properties, const OptionalHeader &grid) {
   const Formats::Base *handler = select_handler(path);
   if (!handler->can_read())
     throw Exception("tractography format \"" + handler->description + "\" does not support reading (file \"" +
                     path.string() + "\")");
   Tractogram tractogram(handler);
-  tractogram.reader = handler->template read<ValueType>(path, properties);
+  tractogram.reader = handler->template read<ValueType>(path, properties, grid);
   return tractogram;
 }
 
 template <class ValueType>
-Tractogram<ValueType> Tractogram<ValueType>::create(const std::filesystem::path &path, const Properties &properties) {
+Tractogram<ValueType> Tractogram<ValueType>::create(const std::filesystem::path &path,
+                                                    const Properties &properties,
+                                                    const OptionalHeader &grid) {
   const Formats::Base *handler = select_handler(path);
   if (!handler->can_write())
     throw Exception("tractography format \"" + handler->description + "\" does not support writing (file \"" +
                     path.string() + "\")");
   Tractogram tractogram(handler);
-  tractogram.writer = handler->template create<ValueType>(path, properties);
+  tractogram.writer = handler->template create<ValueType>(path, properties, grid);
   return tractogram;
 }
 
