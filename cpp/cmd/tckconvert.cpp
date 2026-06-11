@@ -21,7 +21,9 @@
 
 #include "command.h"
 #include "dwi/tractography/file.h"
+#include "dwi/tractography/formats/list.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/tractogram.h"
 #include "file/matrix.h"
 #include "file/name_parser.h"
 #include "file/ofstream.h"
@@ -682,9 +684,74 @@ private:
   bool wroteHeader;
 };
 
-void run() {
-  std::filesystem::path input_path{argument[0]};
-  std::filesystem::path output_path{argument[1]};
+//! \brief resolve the (optional) point-position transform from the CLI options.
+/*! The four scanner/voxel/image transform options are mutually exclusive; the
+ * identity transform is returned when none is given. Shared verbatim by both
+ * conversion branches so the transform behaviour is independent of the I/O
+ * path selected. */
+transform_type get_transform() {
+  transform_type T;
+  T.setIdentity();
+  size_t nopts = 0;
+  auto opt = get_options("scanner2voxel");
+  if (!opt.empty()) {
+    auto header = Header::open(opt[0][0]);
+    T = Transform(header).scanner2voxel;
+    nopts++;
+  }
+  opt = get_options("scanner2image");
+  if (!opt.empty()) {
+    auto header = Header::open(opt[0][0]);
+    T = Transform(header).scanner2image;
+    nopts++;
+  }
+  opt = get_options("voxel2scanner");
+  if (!opt.empty()) {
+    auto header = Header::open(opt[0][0]);
+    T = Transform(header).voxel2scanner;
+    nopts++;
+  }
+  opt = get_options("image2scanner");
+  if (!opt.empty()) {
+    auto header = Header::open(opt[0][0]);
+    T = Transform(header).image2scanner;
+    nopts++;
+  }
+  if (nopts > 1) {
+    throw Exception("Transform options are mutually exclusive.");
+  }
+  return T;
+}
+
+//! \brief generic conversion through the Tractogram format-handler framework.
+/*! Used when both the input and output extensions are recognised by the
+ * framework's handler list (Stage 1). Constructs an input and an output
+ * Tractogram and copies streamlines single-threaded (pure I/O; no thread
+ * queue), applying the point-position transform per vertex. */
+void run_generic(const std::filesystem::path &input_path, const std::filesystem::path &output_path) {
+  Properties properties;
+  auto input = Tractogram<float>::open(input_path, properties);
+  auto output = Tractogram<float>::create(output_path, properties);
+
+  const transform_type T = get_transform();
+
+  // Copy
+  TractogramItem<float> item;
+  while (input.read(item)) {
+    for (auto &pos : item.streamline) {
+      pos = T.cast<float>() * pos;
+    }
+    output.write(item);
+  }
+}
+
+//! \brief bespoke conversion for esoteric / export-only formats.
+/*! The original tckconvert reader/writer selection, retained verbatim for the
+ * formats intentionally not exposed to other commands as framework handlers:
+ * the ".txt" ASCII reader/writer, the ".vtk" reader/writer, and the write-only
+ * ".ply" and ".rib" exporters. Selected as a fallback whenever the framework
+ * does not recognise either of the two extensions. */
+void run_bespoke(const std::filesystem::path &input_path, const std::filesystem::path &output_path) {
   // Reader
   Properties properties;
   std::unique_ptr<ReaderInterface<float>> reader;
@@ -718,37 +785,7 @@ void run() {
     throw Exception("Unsupported output file type.");
   }
 
-  // Tranform matrix
-  transform_type T;
-  T.setIdentity();
-  size_t nopts = 0;
-  auto opt = get_options("scanner2voxel");
-  if (!opt.empty()) {
-    auto header = Header::open(opt[0][0]);
-    T = Transform(header).scanner2voxel;
-    nopts++;
-  }
-  opt = get_options("scanner2image");
-  if (!opt.empty()) {
-    auto header = Header::open(opt[0][0]);
-    T = Transform(header).scanner2image;
-    nopts++;
-  }
-  opt = get_options("voxel2scanner");
-  if (!opt.empty()) {
-    auto header = Header::open(opt[0][0]);
-    T = Transform(header).voxel2scanner;
-    nopts++;
-  }
-  opt = get_options("image2scanner");
-  if (!opt.empty()) {
-    auto header = Header::open(opt[0][0]);
-    T = Transform(header).image2scanner;
-    nopts++;
-  }
-  if (nopts > 1) {
-    throw Exception("Transform options are mutually exclusive.");
-  }
+  const transform_type T = get_transform();
 
   // Copy
   Streamline<float> tck;
@@ -757,5 +794,22 @@ void run() {
       pos = T.cast<float>() * pos;
     }
     (*writer)(tck);
+  }
+}
+
+void run() {
+  std::filesystem::path input_path{argument[0]};
+  std::filesystem::path output_path{argument[1]};
+
+  // First attempt the generic framework branch: it serves the conversion only
+  // when both extensions are recognised by the format-handler framework
+  // (currently ".tck" alone). Otherwise fall back to the bespoke handlers,
+  // retained for the esoteric / export-only formats (".txt"/".vtk"/".ply"/".rib").
+  const bool input_is_framework = MR::DWI::Tractography::Formats::get_handler(input_path) != nullptr;
+  const bool output_is_framework = MR::DWI::Tractography::Formats::get_handler(output_path) != nullptr;
+  if (input_is_framework && output_is_framework) {
+    run_generic(input_path, output_path);
+  } else {
+    run_bespoke(input_path, output_path);
   }
 }
