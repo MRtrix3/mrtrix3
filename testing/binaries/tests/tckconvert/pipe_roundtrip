@@ -1,0 +1,17 @@
+#!/bin/bash
+# A two-command pipe round-trip through the framework Unix-pipe handler ("-"):
+#   one tckconvert streams the tractogram out through stdout, a second reads it
+#   back from stdin and writes a .tck. The reconstructed .tck must match the
+#   input bit-for-bit (the pipe stream carries native-endian vertices framed
+#   exactly as the .tck binary convention). Exercises both the pipe writer
+#   (stdout) and the pipe reader (stdin).
+tckconvert tracks.tck - -quiet | tckconvert - tmp_pipe_roundtrip.tck -force -quiet
+testing_diff_tck tracks.tck tmp_pipe_roundtrip.tck
+
+# The streamline count must survive even though a pipe is not seekable (the
+#   header count is conveyed by the end-of-data barrier, not patched in place);
+#   confirm the count header field of the reconstructed file is non-zero and
+#   matches the input (testing_diff_tck above already verifies the vertex data).
+in_count=$(tckinfo tracks.tck | grep -m1 -E '^\s*count:' | awk '{print $NF}')
+out_count=$(tckinfo tmp_pipe_roundtrip.tck | grep -m1 -E '^\s*count:' | awk '{print $NF}')
+[ "$in_count" = "$out_count" ]

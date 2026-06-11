@@ -590,6 +590,8 @@ add_bash_binary_test(tckconvert/vtx_reject_nondataset)
 add_bash_binary_test(tckconvert/tt_roundtrip_via_tck)
 add_bash_binary_test(tckconvert/tt_coordinate_conversion)
 add_bash_binary_test(tckconvert/tt_reject_malformed)
+add_bash_binary_test(tckconvert/pipe_roundtrip)
+add_bash_binary_test(tckconvert/pipe_premature_close)
 
 add_bash_binary_test(tckedit/include_exclude_inverse)
 add_bash_binary_test(tckedit/include_mask)
