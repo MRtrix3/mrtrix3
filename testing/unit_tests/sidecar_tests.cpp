@@ -664,4 +664,20 @@ TEST_F(SidecarIO, QualifiedExportNotYetImplemented) {
                MR::Exception);
 }
 
+// ---------------------------------------------------------------------------
+//  Step 7: .tsf export under a random-access request
+// ---------------------------------------------------------------------------
+
+// Step 7: exporting a .tsf file while random access to the tractogram was
+//   requested is rejected (the .tsf format precludes random access). A
+//   per-streamline export is unaffected by the random-access flag.
+TEST_F(SidecarIO, TsfExportUnderRandomAccessRejected) {
+  Properties properties;
+  const std::filesystem::path tsf = dir / "out.tsf";
+  EXPECT_THROW(make_sidecar_exporter<float>(parse_sidecar_reference(tsf.string()), properties, /*random_access=*/true),
+               MR::Exception);
+  const std::filesystem::path csv = dir / "out.csv";
+  EXPECT_NO_THROW(make_sidecar_exporter<float>(parse_sidecar_reference(csv.string()), properties, true));
+}
+
 } // namespace

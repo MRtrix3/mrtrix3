@@ -278,14 +278,20 @@ template std::unique_ptr<SidecarLoader<double>>
 make_sidecar_loader<double>(const SidecarReference &, Properties &, FieldRegistry &);
 
 template <class ValueType>
-std::unique_ptr<SidecarExporter<ValueType>> make_sidecar_exporter(const SidecarReference &reference,
-                                                                  const Properties &properties,
-                                                                  const bool /*is_random_access*/) {
+std::unique_ptr<SidecarExporter<ValueType>>
+make_sidecar_exporter(const SidecarReference &reference, const Properties &properties, const bool is_random_access) {
   if (reference.is_qualified())
     throw Exception("export of a qualified \"DATASET::NAME\" tractogram-sidecar reference"
                     " is not yet implemented");
-  if (is_tsf(reference.dataset))
+  if (is_tsf(reference.dataset)) {
+    // Step 7: the .tsf format is inherently sequential and cannot be produced
+    //   under a random-access request to the tractogram content.
+    if (is_random_access)
+      throw Exception("cannot export a per-vertex track scalar (.tsf) file \"" + reference.dataset.string() + "\"" +
+                      " when random access to the tractogram content has been requested" +
+                      " (the .tsf format precludes random access)");
     return std::make_unique<TsfExporter<ValueType>>(reference.dataset, properties);
+  }
   // A per-streamline export starts sized for the input streamline count where
   //   known (0 -> grown geometrically as streamlines arrive).
   const size_t initial = properties.find("count") != properties.end() ? to<size_t>(properties.at("count")) : size_t(0);
