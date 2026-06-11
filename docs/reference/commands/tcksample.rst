@@ -41,6 +41,8 @@ Options
 
 -  **-sh value** Interpret a 4D image input as representing coefficients of a spherical harmonic function, and sample the amplitudes of that function along the streamline
 
+-  **-deliberate_vertex_mismatch** (for testing only) deliberately emit one fewer scalar than the number of vertices for each streamline, to verify that the write-time per-vertex consistency check (one scalar per vertex) raises a clean error
+
 Standard options
 ^^^^^^^^^^^^^^^^
 

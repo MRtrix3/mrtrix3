@@ -98,7 +98,12 @@ void usage ()
   + Option ("sh",
             "Interpret a 4D image input as representing coefficients of a spherical harmonic function, "
             "and sample the amplitudes of that function along the streamline")
-    + Argument ("value").type_bool();
+    + Argument ("value").type_bool()
+
+  + Option ("deliberate_vertex_mismatch",
+            "(for testing only) deliberately emit one fewer scalar than the number of vertices"
+            " for each streamline, to verify that the write-time per-vertex consistency check"
+            " (one scalar per vertex) raises a clean error");
 
   // TODO add support for reading from fixel image
   //   (this would supersede fixel2tsf when used without -precise or -stat_tck options)
@@ -692,9 +697,48 @@ private:
   matrix_type data;
 };
 
+//! \brief A sampled per-vertex scalar sequence plus its source vertex count.
+/*! Carries the number of vertices in the streamline that produced this scalar
+ * sequence (step 7), so that the receiver can perform a cheap write-time
+ * consistency check (scalar length == streamline vertex count) without a second
+ * pass over the tractogram. */
+struct PerVertexScalar : public DWI::Tractography::TrackScalar<value_type> {
+  size_t source_vertices = 0;
+};
+
+//! \brief Worker that runs a per-vertex sampler and tags the source vertex count.
+/*! Wraps any per-vertex sampler (which fills a TrackScalar from a streamline) so
+ * that the produced item also records the streamline's vertex count, enabling
+ * the receiver's write-time consistency check (step 7). */
+template <class Sampler> class PerVertexWorker {
+public:
+  PerVertexWorker(Sampler &&sampler, const bool deliberate_mismatch)
+      : sampler(std::move(sampler)), deliberate_mismatch(deliberate_mismatch) {}
+  PerVertexWorker(const PerVertexWorker &) = default;
+
+  bool operator()(const DWI::Tractography::Streamline<value_type> &tck, PerVertexScalar &out) {
+    DWI::Tractography::TrackScalar<value_type> scalar;
+    sampler(tck, scalar);
+    out.clear();
+    out.set_index(scalar.get_index());
+    for (const value_type v : scalar)
+      out.push_back(v);
+    out.source_vertices = tck.size();
+    // Test-only fault injection: deliberately corrupt the scalar length so the
+    //   receiver's write-time consistency check (step 7) is exercised.
+    if (deliberate_mismatch && !out.empty())
+      out.pop_back();
+    return true;
+  }
+
+private:
+  Sampler sampler;
+  bool deliberate_mismatch;
+};
+
 class Receiver_PerVertex : public ReceiverBase {
 public:
-  using InputType = DWI::Tractography::TrackScalar<value_type>;
+  using InputType = PerVertexScalar;
   Receiver_PerVertex(const DWI::Tractography::Properties &properties,
                      const size_t num_tracks,
                      const std::filesystem::path &path)
@@ -711,6 +755,13 @@ public:
   bool operator()(const InputType &in) {
     // Requires preservation of order
     assert(in.get_index() == ReceiverBase::received);
+    // Write-time consistency check (step 7): the emitted per-vertex scalar
+    //   sequence must contain exactly one value per streamline vertex. This is a
+    //   cheap O(1) invariant at the write boundary, not a second pass.
+    if (in.size() != in.source_vertices)
+      throw Exception("Inconsistent per-vertex output for streamline " + str(in.get_index()) + ":" + //
+                      " produced " + str(in.size()) + " scalar value(s)" +                           //
+                      " for a streamline of " + str(in.source_vertices) + " vertices");              //
     if (ascii) {
       if (!in.empty()) {
         auto i = in.begin();
@@ -731,20 +782,41 @@ private:
   std::unique_ptr<DWI::Tractography::ScalarWriter<value_type>> tsf;
 };
 
+//! \brief whether the per-vertex producer should be deliberately corrupted (step 7 test).
+bool deliberate_vertex_mismatch() { return !App::get_options("deliberate_vertex_mismatch").empty(); }
+
 template <class SamplerType, class ReceiverType>
 void execute(DWI::Tractography::Reader<value_type> &reader, SamplerType &sampler, ReceiverType &receiver) {
-  if (receiver.ordered())
-    Thread::run_ordered_queue(reader,
-                              Thread::batch(DWI::Tractography::Streamline<value_type>()),
-                              Thread::multi(sampler),
-                              Thread::batch(typename ReceiverType::InputType()),
-                              receiver);
-  else
-    Thread::run_queue(reader,
-                      Thread::batch(DWI::Tractography::Streamline<value_type>()),
-                      Thread::multi(sampler),
-                      Thread::batch(typename ReceiverType::InputType()),
-                      receiver);
+  if constexpr (std::is_same<typename ReceiverType::InputType, PerVertexScalar>::value) {
+    // Per-vertex output: wrap the sampler so each item also carries the source
+    //   vertex count for the receiver's write-time consistency check (step 7).
+    PerVertexWorker<SamplerType> worker(std::move(sampler), deliberate_vertex_mismatch());
+    if (receiver.ordered())
+      Thread::run_ordered_queue(reader,
+                                Thread::batch(DWI::Tractography::Streamline<value_type>()),
+                                Thread::multi(worker),
+                                Thread::batch(PerVertexScalar()),
+                                receiver);
+    else
+      Thread::run_queue(reader,
+                        Thread::batch(DWI::Tractography::Streamline<value_type>()),
+                        Thread::multi(worker),
+                        Thread::batch(PerVertexScalar()),
+                        receiver);
+  } else {
+    if (receiver.ordered())
+      Thread::run_ordered_queue(reader,
+                                Thread::batch(DWI::Tractography::Streamline<value_type>()),
+                                Thread::multi(sampler),
+                                Thread::batch(typename ReceiverType::InputType()),
+                                receiver);
+    else
+      Thread::run_queue(reader,
+                        Thread::batch(DWI::Tractography::Streamline<value_type>()),
+                        Thread::multi(sampler),
+                        Thread::batch(typename ReceiverType::InputType()),
+                        receiver);
+  }
 }
 
 template <class ReceiverType>

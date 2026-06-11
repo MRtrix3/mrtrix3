@@ -669,6 +669,8 @@ add_bash_binary_test(tcksample/inputsh_interp_statnone)
 add_bash_binary_test(tcksample/inputsh_noshoption)
 add_bash_binary_test(tcksample/inputsh_precise)
 add_bash_binary_test(tcksample/interp_tdifrac)
+add_bash_binary_test(tcksample/consistency_check_pass)
+add_bash_binary_test(tcksample/consistency_check_fail)
 
 add_bash_binary_test(tcksift/default)
 add_bash_binary_test(tcksift/selection_dps)

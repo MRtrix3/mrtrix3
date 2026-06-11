@@ -1,0 +1,6 @@
+#!/bin/bash
+# Step 7: the write-time per-vertex consistency check passes for a correctly
+#   produced track scalar file: every emitted scalar sequence has exactly one
+#   value per streamline vertex. Confirm by validating the .tsf against the .tck.
+tcksample tracks.tck tcksample/fa.mif tmp.tsf -force
+tsfvalidate tmp.tsf tracks.tck
