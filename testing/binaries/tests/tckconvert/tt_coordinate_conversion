@@ -1,0 +1,20 @@
+#!/bin/bash
+# Verify the ".tt" voxel<->scanner coordinate pipeline against a known geometry.
+# With no reference grid the ".tt" handler uses a default axis-aligned grid with a
+#   corner origin and identity rotation, scaled by "voxel_size" (defaulting to 1 mm
+#   isotropic). For a 1 mm isotropic grid that round-trip is the identity, so an
+#   input whose coordinates are exact multiples of 1/32 mm must survive tck -> tt ->
+#   tck exactly (no offset, no axis flip, no scaling error). Coordinates are chosen
+#   on a 1/32 mm lattice so quantisation is exact.
+
+# A single streamline tracing a known, axis-distinguishing path (so an axis swap or
+#   sign flip would be detected), on the 1/32 mm lattice (multiples of 0.03125).
+printf "1.00000 2.00000 3.00000\n1.03125 2.06250 3.09375\n1.50000 2.25000 3.75000\n2.00000 3.00000 4.00000\n" > tmp_known.txt
+tckconvert tmp_known.txt tmp_known.tck -force -quiet
+
+tckconvert tmp_known.tck tmp_known.tt -force -quiet
+tckconvert tmp_known.tt tmp_known_back.tck -force -quiet
+tckconvert tmp_known_back.tck tmp_known_back-[].txt -force -quiet
+
+# Exact match expected (quantisation is lossless on the chosen lattice).
+testing_diff_matrix tmp_known.txt tmp_known_back-0000000.txt -abs 1e-5

@@ -1,0 +1,10 @@
+#!/bin/bash
+# Round-trip via a DSI Studio ".tt" intermediary: tck -> tt -> tck must preserve
+#   streamline geometry to within the format's 1/32-voxel quantisation. With no
+#   reference grid the ".tt" handler self-describes a default 1 mm isotropic grid,
+#   so scanner-space coordinates are quantised to 1/32 mm; the comparison tolerance
+#   is set accordingly. Exercises the framework TT reader and the buffered TT writer.
+tckconvert tracks.tck tmp.tt -force -quiet
+tckconvert tmp.tt tmp_back.tck -force -quiet
+# 1/32 mm ~= 0.031 mm per axis; allow a small Hausdorff tolerance above that.
+testing_diff_tck tracks.tck tmp_back.tck -distance 0.1
