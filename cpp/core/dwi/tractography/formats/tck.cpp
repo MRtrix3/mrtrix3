@@ -132,7 +132,9 @@ template <class ValueType> void Reader<ValueType>::check_excess_weights() {
 /* ************************************************************************ */
 
 template <class ValueType>
-WriterUnbuffered<ValueType>::WriterUnbuffered(const std::filesystem::path &path, const Properties &properties)
+WriterUnbuffered<ValueType>::WriterUnbuffered(const std::filesystem::path &path,
+                                              const Properties &properties,
+                                              WeightsAutoDetect weights_autodetect)
     : WriterBase<ValueType>(path) {
 
   if (path.extension() != ".tck")
@@ -159,9 +161,11 @@ WriterUnbuffered<ValueType>::WriterUnbuffered(const std::filesystem::path &path,
     throw Exception("error writing tracks file \"" + path.string() + "\": " + MR::C_strerror(errno));
   open_success = true;
 
-  auto opt = App::get_options("tck_weights_out");
-  if (!opt.empty())
-    set_weights_path(opt[0][0]);
+  if (weights_autodetect == WeightsAutoDetect::Enabled) {
+    auto opt = App::get_options("tck_weights_out");
+    if (!opt.empty())
+      set_weights_path(opt[0][0]);
+  }
 }
 
 template <class ValueType> bool WriterUnbuffered<ValueType>::operator()(const Streamline<ValueType> &tck) {

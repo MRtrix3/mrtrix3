@@ -17,7 +17,9 @@
 #pragma once
 
 #include <filesystem>
+#include <memory>
 #include <optional>
+#include <vector>
 
 #include "file/ofstream.h"
 
@@ -25,6 +27,8 @@
 #include "dwi/tractography/connectome/exemplar.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/scalar_file.h"
+#include "dwi/tractography/streamline.h"
 
 namespace MR::DWI::Tractography::Connectome {
 
@@ -78,14 +82,38 @@ class WriterExtraction {
 public:
   WriterExtraction(const Tractography::Properties &, const std::vector<node_t> &, const bool, const bool);
 
-  void add(const node_t, const std::filesystem::path &, const std::optional<std::filesystem::path> &);
-  void add(const node_t, const node_t, const std::filesystem::path &, const std::optional<std::filesystem::path> &);
-  void add(const std::vector<node_t> &, const std::filesystem::path &, const std::optional<std::filesystem::path> &);
+  void add(const node_t,
+           const std::filesystem::path &,
+           const std::optional<std::filesystem::path> &,
+           const std::optional<std::filesystem::path> & = std::nullopt);
+  void add(const node_t,
+           const node_t,
+           const std::filesystem::path &,
+           const std::optional<std::filesystem::path> &,
+           const std::optional<std::filesystem::path> & = std::nullopt);
+  void add(const std::vector<node_t> &,
+           const std::filesystem::path &,
+           const std::optional<std::filesystem::path> &,
+           const std::optional<std::filesystem::path> & = std::nullopt);
 
   void clear();
 
+  //! \brief whether an input per-vertex (.tsf) sidecar is being carried (step 6).
+  /*! When per-edge / per-node .tsf paths have been registered via add(), the
+   * caller must drive the extraction with the scalar-carrying operator()
+   * overloads so that the per-vertex data is sub-set into the matching output
+   * files alongside the streamlines. */
+  bool has_scalars() const { return have_scalars; }
+
   bool operator()(const Connectome::Streamline_nodepair &) const;
   bool operator()(const Connectome::Streamline_nodelist &) const;
+
+  //! \brief extract a streamline together with its per-vertex scalar (step 6).
+  /*! Writes the streamline (and its scalar) to every matching output file and
+   * skips it in the rest, exactly as the vertices-only overloads, keeping each
+   * output .tsf aligned with its output tractogram. */
+  bool operator()(const Connectome::Streamline_nodepair &, const Tractography::TrackScalar<float> &) const;
+  bool operator()(const Connectome::Streamline_nodelist &, const Tractography::TrackScalar<float> &) const;
 
   size_t file_count() const { return writers.size(); }
 
@@ -94,9 +122,19 @@ private:
   const std::vector<node_t> &node_list;
   const bool exclusive;
   const bool keep_self;
+  bool have_scalars = false;
   std::vector<Selector> selectors;
   std::vector<std::unique_ptr<Tractography::WriterUnbuffered<float>>> writers;
+  std::vector<std::unique_ptr<Tractography::ScalarWriter<float>>> scalar_writers;
   Tractography::Streamline<> empty_tck;
+
+  //! \brief register the (optional) parallel scalar writer for a just-added file.
+  void add_scalar_writer(const std::optional<std::filesystem::path> &scalar_path);
+  //! \brief write \a tck (and \a scalar where present) to output file \a i.
+  void
+  write_one(size_t i, const Tractography::Streamline<float> &tck, const Tractography::TrackScalar<float> *scalar) const;
+  //! \brief skip output file \a i in both the tractogram and scalar streams.
+  void skip_one(size_t i) const;
 };
 
 } // namespace MR::DWI::Tractography::Connectome

@@ -33,6 +33,7 @@
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/mapping/loader.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/scalar_file.h"
 #include "dwi/tractography/weights.h"
 
 #include <filesystem>
@@ -82,6 +83,17 @@ void usage() {
   const OptionGroup TrackWeightsOptions = OptionGroup ("Options for importing / exporting streamline weights")
       + Tractography::TrackWeightsInOption
       + Option ("tck_weights_out", "provide the output path for streamline weight data (see Description)")
+        + Argument ("path").type_directory_out(DirOutMode::MayExist).type_file_out();
+
+  // Note: as with TrackWeightsOptions above, this group depends on
+  //   Tractography option definitions and so is constructed at run time.
+  const OptionGroup ScalarOptions = OptionGroup ("Options for carrying per-vertex (data-per-vertex) sidecar data")
+      + Option ("tsf_in", "an input track scalar file (.tsf) of per-vertex data,"
+                          " sub-set into the extracted per-edge / per-node output files alongside the streamlines")
+        + Argument ("path").type_file_in()
+      + Option ("tsf_out", "provide the output path for per-vertex (.tsf) data;"
+                           " interpreted as a single file or a directory of per-tract-file .tsf files,"
+                           " mirroring the third argument / -tck_weights_out path")
         + Argument ("path").type_directory_out(DirOutMode::MayExist).type_file_out();
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
@@ -179,7 +191,8 @@ void usage() {
 
   OPTIONS
   + TrackOutputOptions
-  + TrackWeightsOptions;
+  + TrackWeightsOptions
+  + ScalarOptions;
 
 }
 // clang-format on
@@ -280,6 +293,33 @@ void run() {
   const auto weights_path_for = [&](const std::string_view filename) -> std::optional<std::filesystem::path> {
     return weights_dir ? std::optional<std::filesystem::path>{*weights_dir / std::string{filename}} : std::nullopt;
   };
+
+  // Per-vertex (.tsf) sidecar paths, resolved exactly as the weights paths above.
+  auto scalar_in = get_optional<std::filesystem::path>("tsf_in");
+  const auto opt_scalar_out = get_options("tsf_out");
+  std::optional<std::filesystem::path> scalar_dir;
+  std::optional<std::filesystem::path> scalar_file;
+  if (!opt_scalar_out.empty()) {
+    if (!scalar_in.has_value())
+      throw Exception("The -tsf_out option requires the -tsf_in option");
+    const std::filesystem::path scalar_path{opt_scalar_out[0][0]};
+    if (file_format == FileOutput::SINGLE) {
+      scalar_file.emplace(scalar_path);
+      if (!scalar_path.has_filename())
+        WARN("Per-vertex output path \"" + scalar_path.string() + "\" ends with a path separator;" + //
+             " when -files single is specified, the -tsf_out path is interpreted as a file path");   //
+    } else {
+      scalar_dir.emplace(scalar_path);
+      if (scalar_path.has_extension())
+        WARN("Per-vertex output path \"" + scalar_path.string() + "\" has a file extension;" +       //
+             " unless -files single is specified, the -tsf_out path is interpreted as a directory"); //
+      std::filesystem::create_directories(scalar_path);
+    }
+  }
+  const auto scalar_path_for = [&](const std::string_view filename) -> std::optional<std::filesystem::path> {
+    return scalar_dir ? std::optional<std::filesystem::path>{*scalar_dir / std::string{filename}} : std::nullopt;
+  };
+
   const node_t first_node = get_options("keep_unassigned").empty() ? 1 : 0;
   const bool keep_self = !get_options("keep_self").empty();
 
@@ -314,6 +354,9 @@ void run() {
 
   opt = get_options("exemplars");
   if (!opt.empty()) {
+    if (scalar_in.has_value())
+      throw Exception("The -tsf_in option (per-vertex sidecar data) cannot be combined with -exemplars;" //
+                      " exemplar trajectories are synthesised and do not correspond to input vertices"); //
     if (keep_self)
       WARN("Exemplars cannot be calculated for node self-connections; -keep_self option ignored");
 
@@ -469,7 +512,8 @@ void run() {
             writer.add(one,
                        two,
                        output_dir / (str(one) + "-" + str(two) + ".tck"),
-                       weights_path_for(str(one) + "-" + str(two) + ".csv"));
+                       weights_path_for(str(one) + "-" + str(two) + ".csv"),
+                       scalar_path_for(str(one) + "-" + str(two) + ".tsf"));
           }
         } else {
           // Allow duplication of edges; want to have an exhaustive set of files for each node
@@ -477,34 +521,62 @@ void run() {
             writer.add(one,
                        two,
                        output_dir / (str(one) + "-" + str(two) + ".tck"),
-                       weights_path_for(str(one) + "-" + str(two) + ".csv"));
+                       weights_path_for(str(one) + "-" + str(two) + ".csv"),
+                       scalar_path_for(str(one) + "-" + str(two) + ".tsf"));
         }
       }
       INFO("A total of " + str(writer.file_count()) + " output track files will be generated (one for each edge)");
       break;
     case FileOutput::PER_NODE: // One file per node
       for (std::vector<node_t>::const_iterator i = nodes.begin(); i != nodes.end(); ++i)
-        writer.add(*i, output_dir / (str(*i) + ".tck"), weights_path_for(str(*i) + ".csv"));
+        writer.add(
+            *i, output_dir / (str(*i) + ".tck"), weights_path_for(str(*i) + ".csv"), scalar_path_for(str(*i) + ".tsf"));
       INFO("A total of " + str(writer.file_count()) + " output track files will be generated (one for each node)");
       break;
     case FileOutput::SINGLE: // Single file
-      writer.add(nodes, output_file, weights_file);
+      writer.add(nodes, output_file, weights_file, scalar_file);
       break;
     }
 
     ProgressBar progress("Extracting tracks from connectome", count);
+    // When per-vertex sidecar data is carried, read the input .tsf in lock-step
+    //   with the tractogram and pass the scalar alongside each streamline.
+    std::unique_ptr<Tractography::ScalarReader<float>> scalar_reader;
+    Tractography::Properties scalar_properties;
+    if (scalar_in.has_value())
+      scalar_reader.reset(new Tractography::ScalarReader<float>(*scalar_in, scalar_properties));
     if (assignments_pairs.empty()) {
       Tractography::Connectome::Streamline_nodelist tck;
+      Tractography::TrackScalar<float> scalar;
       while (reader(tck)) {
         tck.set_nodes(assignments_lists[tck.get_index()]);
-        writer(tck);
+        if (scalar_reader) {
+          if (!(*scalar_reader)(scalar))
+            throw Exception("Track scalar file exhausted before the tractogram");
+          if (scalar.size() != tck.size())
+            throw Exception("Streamline " + str(tck.get_index()) + " has " + str(tck.size()) +           //
+                            " vertices but its scalar sequence has " + str(scalar.size()) + " entries"); //
+          writer(tck, scalar);
+        } else {
+          writer(tck);
+        }
         ++progress;
       }
     } else {
       Tractography::Connectome::Streamline_nodepair tck;
+      Tractography::TrackScalar<float> scalar;
       while (reader(tck)) {
         tck.set_nodes(assignments_pairs[tck.get_index()]);
-        writer(tck);
+        if (scalar_reader) {
+          if (!(*scalar_reader)(scalar))
+            throw Exception("Track scalar file exhausted before the tractogram");
+          if (scalar.size() != tck.size())
+            throw Exception("Streamline " + str(tck.get_index()) + " has " + str(tck.size()) +           //
+                            " vertices but its scalar sequence has " + str(scalar.size()) + " entries"); //
+          writer(tck, scalar);
+        } else {
+          writer(tck);
+        }
         ++progress;
       }
     }

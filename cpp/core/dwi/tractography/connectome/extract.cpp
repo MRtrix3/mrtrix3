@@ -190,42 +190,84 @@ WriterExtraction::WriterExtraction(const Tractography::Properties &p,
                                    const bool keep_self)
     : properties(p), node_list(nodes), exclusive(exclusive), keep_self(keep_self) {}
 
+void WriterExtraction::add_scalar_writer(const std::optional<std::filesystem::path> &scalar_path) {
+  if (scalar_path.has_value()) {
+    scalar_writers.emplace_back(new Tractography::ScalarWriter<float>(scalar_path.value(), properties));
+    have_scalars = true;
+  } else {
+    scalar_writers.emplace_back(nullptr);
+  }
+}
+
 void WriterExtraction::add(const node_t node,
                            const std::filesystem::path &path,
-                           const std::optional<std::filesystem::path> &weights_path = std::nullopt) {
+                           const std::optional<std::filesystem::path> &weights_path,
+                           const std::optional<std::filesystem::path> &scalar_path) {
   selectors.emplace_back(Selector(node, keep_self));
-  writers.emplace_back(new Tractography::WriterUnbuffered<float>(path, properties));
+  writers.emplace_back(new Tractography::WriterUnbuffered<float>(
+      path, properties, Tractography::WriterUnbuffered<float>::WeightsAutoDetect::Disabled));
   if (weights_path.has_value())
     writers.back()->set_weights_path(weights_path.value());
+  add_scalar_writer(scalar_path);
 }
 
 void WriterExtraction::add(const node_t node_one,
                            const node_t node_two,
                            const std::filesystem::path &path,
-                           const std::optional<std::filesystem::path> &weights_path = std::nullopt) {
+                           const std::optional<std::filesystem::path> &weights_path,
+                           const std::optional<std::filesystem::path> &scalar_path) {
   if (keep_self || (node_one != node_two)) {
     selectors.emplace_back(Selector(node_one, node_two));
-    writers.emplace_back(new Tractography::WriterUnbuffered<float>(path, properties));
+    writers.emplace_back(new Tractography::WriterUnbuffered<float>(
+        path, properties, Tractography::WriterUnbuffered<float>::WeightsAutoDetect::Disabled));
     if (weights_path.has_value())
       writers.back()->set_weights_path(weights_path.value());
+    add_scalar_writer(scalar_path);
   }
 }
 
 void WriterExtraction::add(const std::vector<node_t> &list,
                            const std::filesystem::path &path,
-                           const std::optional<std::filesystem::path> &weights_path = std::nullopt) {
+                           const std::optional<std::filesystem::path> &weights_path,
+                           const std::optional<std::filesystem::path> &scalar_path) {
   selectors.emplace_back(Selector(list, exclusive, keep_self));
-  writers.emplace_back(new Tractography::WriterUnbuffered<float>(path, properties));
+  writers.emplace_back(new Tractography::WriterUnbuffered<float>(
+      path, properties, Tractography::WriterUnbuffered<float>::WeightsAutoDetect::Disabled));
   if (weights_path.has_value())
     writers.back()->set_weights_path(weights_path.value());
+  add_scalar_writer(scalar_path);
 }
 
 void WriterExtraction::clear() {
   selectors.clear();
   writers.clear();
+  scalar_writers.clear();
+  have_scalars = false;
+}
+
+void WriterExtraction::write_one(const size_t i,
+                                 const Tractography::Streamline<float> &tck,
+                                 const Tractography::TrackScalar<float> *scalar) const {
+  (*writers[i])(tck);
+  if (scalar_writers[i] != nullptr) {
+    assert(scalar != nullptr);
+    (*scalar_writers[i])(*scalar);
+  }
+}
+
+void WriterExtraction::skip_one(const size_t i) const {
+  writers[i]->skip();
+  if (scalar_writers[i] != nullptr)
+    scalar_writers[i]->skip();
 }
 
 bool WriterExtraction::operator()(const Connectome::Streamline_nodepair &in) const {
+  return (*this)(in, Tractography::TrackScalar<float>());
+}
+
+bool WriterExtraction::operator()(const Connectome::Streamline_nodepair &in,
+                                  const Tractography::TrackScalar<float> &scalar) const {
+  const Tractography::TrackScalar<float> *scalar_ptr = have_scalars ? &scalar : nullptr;
   if (exclusive) {
     // Make sure that both nodes are within the list of nodes of interest;
     //   if not, don't bother passing to any of the selectors
@@ -238,20 +280,26 @@ bool WriterExtraction::operator()(const Connectome::Streamline_nodepair &in) con
     }
     if (!first_in_list || !second_in_list) {
       for (size_t i = 0; i != file_count(); ++i)
-        writers[i]->skip();
+        skip_one(i);
       return true;
     }
   }
   for (size_t i = 0; i != file_count(); ++i) {
     if (selectors[i](in.get_nodes()))
-      (*writers[i])(in);
+      write_one(i, in, scalar_ptr);
     else
-      writers[i]->skip();
+      skip_one(i);
   }
   return true;
 }
 
 bool WriterExtraction::operator()(const Connectome::Streamline_nodelist &in) const {
+  return (*this)(in, Tractography::TrackScalar<float>());
+}
+
+bool WriterExtraction::operator()(const Connectome::Streamline_nodelist &in,
+                                  const Tractography::TrackScalar<float> &scalar) const {
+  const Tractography::TrackScalar<float> *scalar_ptr = have_scalars ? &scalar : nullptr;
   if (exclusive) {
     // Make sure _all_ nodes are within the list of nodes of interest;
     //   if not, don't pass to any of the selectors
@@ -263,15 +311,15 @@ bool WriterExtraction::operator()(const Connectome::Streamline_nodelist &in) con
     }
     if (!in_list.all()) {
       for (size_t i = 0; i != file_count(); ++i)
-        writers[i]->skip();
+        skip_one(i);
       return true;
     }
   }
   for (size_t i = 0; i != file_count(); ++i) {
     if (selectors[i](in.get_nodes()))
-      (*writers[i])(in);
+      write_one(i, in, scalar_ptr);
     else
-      writers[i]->skip();
+      skip_one(i);
   }
   return true;
 }

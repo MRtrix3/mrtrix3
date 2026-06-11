@@ -91,8 +91,18 @@ public:
 
   using vector_type = Eigen::Matrix<ValueType, 3, 1>;
 
+  //! \brief whether to auto-detect the output weights path from the CLI option.
+  /*! By default a writer reads the global "-tck_weights_out" option and routes
+   * the per-streamline weights to that single file. A command that writes many
+   * tractograms (e.g. connectome2tck, one per edge/node) manages a distinct
+   * weights path per file and must suppress that auto-detection, setting each
+   * file's path explicitly via set_weights_path() instead. */
+  enum class WeightsAutoDetect { Enabled, Disabled };
+
   //! create a new track file with the specified properties
-  WriterUnbuffered(const std::filesystem::path &path, const Properties &properties);
+  WriterUnbuffered(const std::filesystem::path &path,
+                   const Properties &properties,
+                   WeightsAutoDetect weights_autodetect = WeightsAutoDetect::Enabled);
 
   //! append track to file
   bool operator()(const Streamline<ValueType> &tck) override;

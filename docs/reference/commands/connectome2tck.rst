@@ -92,6 +92,13 @@ Options for importing / exporting streamline weights
 
 -  **-tck_weights_out path** provide the output path for streamline weight data (see Description)
 
+Options for carrying per-vertex (data-per-vertex) sidecar data
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-tsf_in path** an input track scalar file (.tsf) of per-vertex data, sub-set into the extracted per-edge / per-node output files alongside the streamlines
+
+-  **-tsf_out path** provide the output path for per-vertex (.tsf) data; interpreted as a single file or a directory of per-tract-file .tsf files, mirroring the third argument / -tck_weights_out path
+
 Standard options
 ^^^^^^^^^^^^^^^^
 
