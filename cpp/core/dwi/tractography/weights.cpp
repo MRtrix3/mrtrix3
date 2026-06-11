@@ -24,12 +24,12 @@ using namespace App;
 const Option TrackWeightsInOption =
     Option("tck_weights_in",
            "specify a text scalar file containing the streamline weights")
-      + Argument("path").type_file_in();
+      + Argument("path").type_tractogram_data_in();
 
 const Option TrackWeightsOutOption =
     Option("tck_weights_out",
            "specify the path for an output text scalar file containing streamline weights")
-      + Argument("path").type_file_out();
+      + Argument("path").type_tractogram_data_out();
 // clang-format on
 
 } // namespace MR::DWI::Tractography

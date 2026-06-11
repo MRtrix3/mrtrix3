@@ -128,7 +128,7 @@ void usage() {
   ARGUMENTS
   + Argument ("in_tracks", "the input track file").type_tracks_in()
   + Argument ("in_fod", "input image containing the spherical harmonics of the fibre orientation distributions").type_image_in()
-  + Argument ("out_weights", "output text file containing the weighting factor for each streamline").type_file_out();
+  + Argument ("out_weights", "output text file containing the weighting factor for each streamline").type_tractogram_data_out();
 
   OPTIONS
 
@@ -137,7 +137,7 @@ void usage() {
   + SIFT::SIFTOutputOption
 
   + Option ("out_coeffs", "output text file containing the weighting coefficient for each streamline")
-    + Argument ("path").type_file_out()
+    + Argument ("path").type_tractogram_data_out()
 
   + SIFT2RegularisationOption
   + SIFT2AlgorithmOption;

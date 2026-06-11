@@ -122,7 +122,7 @@ void usage() {
 
   + Option ("out_assignments", "output the node assignments of each streamline to a file;"
                                " this can be used subsequently e.g. by the command connectome2tck")
-    + Argument ("path").type_file_out()
+    + Argument ("path").type_tractogram_data_out()
 
   + Option ("vector", "output a vector representing connectivities from a given seed point to target nodes,"
                       " rather than a matrix of node-node connectivities");

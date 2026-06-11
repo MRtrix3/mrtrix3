@@ -173,7 +173,7 @@ void usage() {
 
   ARGUMENTS
   + Argument ("tracks_in",      "the input track file").type_file_in()
-  + Argument ("assignments_in", "input text file containing the node assignments for each streamline").type_file_in()
+  + Argument ("assignments_in", "input text file containing the node assignments for each streamline").type_tractogram_data_in()
   + Argument ("output",         "the output tractogram file / directory path (see Description)")
               .type_directory_out(DirOutMode::MayExist).type_file_out();
 

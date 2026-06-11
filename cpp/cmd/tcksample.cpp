@@ -75,7 +75,7 @@ void usage ()
   ARGUMENTS
   + Argument ("tracks", "the input track file").type_tracks_in()
   + Argument ("image",  "the image to be sampled").type_image_in()
-  + Argument ("values", "the output sampled values").type_file_out();
+  + Argument ("values", "the output sampled values").type_tractogram_data_out();
 
   OPTIONS
   + Option ("stat_tck", "compute some statistic from the values along each streamline;"
