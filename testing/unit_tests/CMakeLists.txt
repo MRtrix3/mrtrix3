@@ -17,6 +17,7 @@ set(UNIT_TESTS_CPP_SRCS
     sh_precomputer_tests.cpp
     shuffle_tests.cpp
     to_tests.cpp
+    tractogram_tests.cpp
 )
 
 if(MRTRIX_ENABLE_GPU)
