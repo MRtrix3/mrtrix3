@@ -8,6 +8,7 @@ target_compile_definitions(gtest PRIVATE
 
 set(UNIT_TESTS_CPP_SRCS
     curvature_tests.cpp
+    distance_tests.cpp
     erfinv_tests.cpp
     hermite_tests.cpp
     icls_tests.cpp
