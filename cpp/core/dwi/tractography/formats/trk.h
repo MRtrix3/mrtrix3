@@ -86,5 +86,74 @@ struct Header {
 static_assert(sizeof(Header) == header_bytes, "TrackVis \".trk\" header must be exactly 1000 bytes");
 
 } // namespace MR::DWI::Tractography::Formats::TRKUtils
-// Reader/writer backends and the Formats::TRK handler are added in subsequent
-//   Stage 14 steps (write, read, command-string provenance, capability flags).
+
+namespace MR::DWI::Tractography {
+//! \brief Streaming writer backend for the TrackVis (".trk") format.
+/*! This is the write backend for the ".trk" format handler (Formats::TRK). The
+ * 1000-byte header is written first (with placeholder track count), then each
+ * streamline record is accumulated through the shared Formats::WriteBuffer; on
+ * finalisation the \c n_count header field is patched in place with the realised
+ * streamline count (the header is at a fixed offset, so unlike a pipe it can be
+ * patched). Vertices are converted from MRtrix scanner-space to ".trk"
+ * voxel-millimetre coordinates (scanner→voxel via the reference / default grid,
+ * then scaled by the voxel spacing).
+ *
+ * Per-vertex dpv fields are written as \c n_scalars float scalars after each
+ * vertex; per-streamline dps fields as \c n_properties float properties after
+ * the streamline's vertices (D7: emitted as float, the only sidecar element type
+ * ".trk" admits). Multi-column (M>1) fields expand to M consecutive named
+ * columns.
+ *
+ * The implementation is explicitly instantiated for float and double in
+ * formats/trk.cpp. */
+template <class ValueType = float> class TRKWriter : public WriterInterface<ValueType> {
+public:
+  TRKWriter(const std::filesystem::path &path,
+            const Properties &properties,
+            const FieldRegistry &registry,
+            const OptionalHeader &grid);
+  ~TRKWriter() override;
+
+  bool operator()(const Streamline<ValueType> &tck) override;
+  bool operator()(const TractogramItem<ValueType> &item) override;
+
+private:
+  //! \brief one dpv (scalar) or dps (property) output field, with its registry ordinal.
+  struct SidecarOutput {
+    FieldDescriptor descriptor;
+    size_t ordinal; //!< role-local ordinal into TractogramItem::dpv / ::dps
+  };
+
+  const std::filesystem::path path;
+  const FieldRegistry &registry;
+
+  //! scanner→voxel transform (inverse of the reference / default voxel→scanner)
+  transform_type scanner2voxel;
+  //! voxel spacing (mm) written into the header and used to map voxel → mm
+  std::array<float, 3> voxel_size;
+  //! voxel→RAS affine written into the header
+  std::array<std::array<float, 4>, 4> vox_to_ras;
+  //! grid dimensions written into the header
+  std::array<int16_t, 3> dim;
+
+  //! dpv fields, in registry order; their values become per-vertex scalars
+  std::vector<SidecarOutput> scalar_fields;
+  //! dps fields, in registry order; their values become per-streamline properties
+  std::vector<SidecarOutput> property_fields;
+  //! total scalar columns (Σ over dpv fields of M) == header n_scalars
+  size_t n_scalars;
+  //! total property columns (Σ over dps fields of M) == header n_properties
+  size_t n_properties;
+
+  //! accumulated streamline-record payload (the file body)
+  std::filesystem::path body_tempfile;
+  Formats::WriteBuffer body_buffer;
+  size_t num_streamlines;
+
+  //! assemble and write the header, then concatenate the buffered body
+  void finalise();
+
+  TRKWriter(const TRKWriter &) = delete;
+};
+
+} // namespace MR::DWI::Tractography
