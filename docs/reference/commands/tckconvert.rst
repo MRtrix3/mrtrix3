@@ -21,7 +21,9 @@ Usage
 Description
 -----------
 
-The program currently supports MRtrix .tck files (input/output), ascii text files (input/output), VTK polydata files (input/output), and RenderMan RIB (export only).
+The program currently supports MRtrix .tck files (input/output), ascii text files (input/output), VTK polydata files (input/output), QFib lossy compressed .qfib files (input/output), and RenderMan RIB (export only).
+
+The QFib format (Mercier et al.) stores each streamline as its first two vertices plus a sequence of quantized unit tangents. It is lossy, requires the input to be of constant step size (resample beforehand with "tckresample -step_size" otherwise), and stores geometry only: per-streamline weights and dps/dpv sidecar data are discarded.
 
 Example usages
 --------------
@@ -69,6 +71,13 @@ Options specific to ZFIB writer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 -  **-zfib_max_error value** the worst-case compression error in mm for lossy .zfib output (default: 0.5)
+
+Options specific to the QFib writer
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-qfib_bits depth** the per-direction quantization bit depth for lossy .qfib output, either 8 or 16 (default: 16)
+
+-  **-qfib_max_angle angle** the maximum streamline deviation angle in degrees for lossy .qfib output; defaults to the max_angle property of the input, else 90
 
 Standard options
 ^^^^^^^^^^^^^^^^

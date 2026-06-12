@@ -1,0 +1,11 @@
+#!/bin/bash
+# QFib reconstructs every vertex at the implicit per-streamline step |p1 - p0|,
+#   so it cannot represent streamlines whose vertices are not uniformly spaced.
+#   The shared tracks.tck fixture was generated with downsampling, leaving its
+#   terminal segments shorter than the tracking step, so conversion to ".qfib"
+#   must fail with a clear error rather than silently corrupting geometry.
+if tckconvert tracks.tck tmp.qfib -force -quiet 2> tmp_err; then
+  echo "expected qfib conversion of non-constant-step data to fail" >&2
+  exit 1
+fi
+grep -qi "constant step size" tmp_err

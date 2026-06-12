@@ -15,6 +15,7 @@ set(UNIT_TESTS_CPP_SRCS
     parse_axes_tests.cpp
     parse_ints_tests.cpp
     platform_tests.cpp
+    qfib_codec_tests.cpp
     roi_tests.cpp
     sh_precomputer_tests.cpp
     shuffle_tests.cpp

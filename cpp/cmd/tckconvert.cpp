@@ -49,7 +49,14 @@ void usage() {
       " MRtrix .tck files (input/output),"
       " ascii text files (input/output),"
       " VTK polydata files (input/output),"
-      " and RenderMan RIB (export only).";
+      " QFib lossy compressed .qfib files (input/output),"
+      " and RenderMan RIB (export only)."
+
+    + "The QFib format (Mercier et al.) stores each streamline as its first two"
+      " vertices plus a sequence of quantized unit tangents. It is lossy, requires"
+      " the input to be of constant step size (resample beforehand with"
+      " \"tckresample -step_size\" otherwise), and stores geometry only:"
+      " per-streamline weights and dps/dpv sidecar data are discarded.";
 
   EXAMPLES
     + Example("Writing multiple ASCII files, one per streamline",
@@ -117,10 +124,25 @@ void usage() {
 
     + Option ("zfib_max_error",
               "the worst-case compression error in mm for lossy .zfib output (default: 0.5)")
-      + Argument("value").type_float(0.0);
+      + Argument("value").type_float(0.0)
   // The "-zfib_max_error" option is consumed by the framework's .zfib format
   //   handler backend (dwi/tractography/formats/zfib.cpp), which derives the
   //   linearization tolerance and the quantization precision from it.
+
+    + OptionGroup ("Options specific to the QFib writer")
+
+    + Option ("qfib_bits",
+              "the per-direction quantization bit depth for lossy .qfib output,"
+              " either 8 or 16 (default: 16)")
+      + Argument("depth").type_integer(8, 16)
+
+    + Option ("qfib_max_angle",
+              "the maximum streamline deviation angle in degrees for lossy .qfib output;"
+              " defaults to the max_angle property of the input, else 90")
+      + Argument("angle").type_float(0.0, 90.0);
+  // The "-qfib_bits" and "-qfib_max_angle" options are consumed by the framework's
+  //   .qfib format handler backend (dwi/tractography/formats/qfib.cpp), which
+  //   derives the octahedral bit depth and the cap-to-sphere ratio from them.
 
 }
 // clang-format on

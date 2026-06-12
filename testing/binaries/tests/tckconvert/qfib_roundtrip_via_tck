@@ -1,0 +1,25 @@
+#!/bin/bash
+# Self round-trip through the lossy ".qfib" format: tck -> qfib -> tck. QFib is
+#   lossy (octahedral-quantized tangents over a Rousseau-Boubekeur cap), so the
+#   reconstructed geometry must match the source within a bounded distance. The
+#   input is a synthetic constant-step helix: QFib reconstructs every vertex at
+#   the implicit step |p1 - p0|, so it requires a genuinely uniform step size
+#   (which neither raw nor resampled tractograms provide at their endpoints).
+awk 'BEGIN{R=10;c=2;n=40;for(i=0;i<n;i++){a=i*0.1;printf "%.6f %.6f %.6f\n",R*cos(a),R*sin(a),c*a}}' > tmp_arc.txt
+tckconvert tmp_arc.txt tmp_arc.tck -force -quiet
+tckconvert tmp_arc.tck tmp.qfib -force -quiet
+# Header sanity: version byte (offset 0) = 2; quantization byte (offset 9) = 16
+#   (the default bit depth); nb_fibers (uint32 at offset 1) = streamline count.
+read v <<< "$(od -An -tu1 -j0 -N1 tmp.qfib)"
+[ "$v" = "2" ]
+read q <<< "$(od -An -tu1 -j9 -N1 tmp.qfib)"
+[ "$q" = "16" ]
+read nb <<< "$(od -An -tu4 -j1 -N4 tmp.qfib)"
+[ "$nb" = "1" ]
+tckconvert tmp.qfib tmp_back.tck -force -quiet
+testing_diff_tck tmp_arc.tck tmp_back.tck -distance 0.05
+# Idempotency (error-propagation reduction): re-encoding a decompressed streamline
+#   reproduces it, so a second cycle is near-exact.
+tckconvert tmp_back.tck tmp2.qfib -force -quiet
+tckconvert tmp2.qfib tmp_back2.tck -force -quiet
+testing_diff_tck tmp_back.tck tmp_back2.tck -distance 0.01

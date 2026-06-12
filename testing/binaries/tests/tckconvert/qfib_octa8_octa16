@@ -1,0 +1,30 @@
+#!/bin/bash
+# The two supported octahedral bit depths: 16-bit spends 8 bits per tangent
+#   coordinate, 8-bit only 4, so the 16-bit round-trip is markedly more accurate
+#   and its file markedly larger (2 bytes vs 1 byte per quantized direction).
+awk 'BEGIN{R=10;c=2;n=40;for(i=0;i<n;i++){a=i*0.1;printf "%.6f %.6f %.6f\n",R*cos(a),R*sin(a),c*a}}' > tmp_arc.txt
+tckconvert tmp_arc.txt tmp_arc.tck -force -quiet
+
+tckconvert tmp_arc.tck tmp16.qfib -force -quiet -qfib_bits 16
+tckconvert tmp16.qfib tmp16_back.tck -force -quiet
+tckconvert tmp_arc.tck tmp8.qfib -force -quiet -qfib_bits 8
+tckconvert tmp8.qfib tmp8_back.tck -force -quiet
+
+# The 16-bit quantization byte is 16, the 8-bit one is 8.
+read q16 <<< "$(od -An -tu1 -j9 -N1 tmp16.qfib)"
+[ "$q16" = "16" ]
+read q8 <<< "$(od -An -tu1 -j9 -N1 tmp8.qfib)"
+[ "$q8" = "8" ]
+
+# The 16-bit reconstruction satisfies a tight error bound that the 8-bit one
+#   exceeds, demonstrating the higher fidelity of the deeper quantization.
+testing_diff_tck tmp_arc.tck tmp16_back.tck -distance 0.05
+if testing_diff_tck tmp_arc.tck tmp8_back.tck -distance 0.05 2>/dev/null; then
+  echo "expected 8-bit qfib to exceed the 16-bit error bound" >&2
+  exit 1
+fi
+
+# The 16-bit file is larger (2 bytes vs 1 byte per quantized direction).
+s16=$(wc -c < tmp16.qfib)
+s8=$(wc -c < tmp8.qfib)
+[ "$s16" -gt "$s8" ]

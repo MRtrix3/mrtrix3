@@ -17,6 +17,7 @@
 #include "dwi/tractography/formats/list.h"
 
 #include "dwi/tractography/formats/pipe.h"
+#include "dwi/tractography/formats/qfib.h"
 #include "dwi/tractography/formats/tck.h"
 #include "dwi/tractography/formats/trk.h"
 #include "dwi/tractography/formats/trx.h"
@@ -29,6 +30,7 @@ namespace MR::DWI::Tractography::Formats {
 
 Pipe pipe_handler;
 TCK tck_handler;
+QFIB qfib_handler;
 TRK trk_handler;
 TRX trx_handler;
 TT tt_handler;
@@ -38,6 +40,7 @@ ZFIB zfib_handler;
 
 const Base *handlers[] = {&pipe_handler,
                           &tck_handler,
+                          &qfib_handler,
                           &trk_handler,
                           &trx_handler,
                           &tt_handler,

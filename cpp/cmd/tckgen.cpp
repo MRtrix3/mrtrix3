@@ -18,6 +18,7 @@
 #include "enum.h"
 #include "image.h"
 
+#include "dwi/tractography/formats/list.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/roi.h"
 
@@ -203,7 +204,11 @@ void usage() {
         " The type of image data required depends on the algorithm used"
         " (see Description section).").type_image_in()
 
-    + Argument ("tracks", "the output file containing the tracks generated.").type_tracks_out();
+  // type_file_out() (in addition to type_tracks_out()) defers output-extension
+  //   validation from argument parsing to run(), so that the constant-step-format
+  //   guard below can issue a specific error rather than the generic ".tck suffix"
+  //   parse-time rejection.
+    + Argument ("tracks", "the output file containing the tracks generated.").type_tracks_out().type_file_out();
 
 
 
@@ -282,6 +287,26 @@ void run() {
       WARN("Overriding -seeds option (maximum number of seeds that will be attempted to track from), as seeds can only "
            "provide a finite number");
     properties["max_num_seeds"] = str(properties.seeds.get_total_count());
+  }
+
+  // Downsampling and end-cropping both yield streamlines whose terminal segments
+  //   are shorter than the tracking step; a constant-step output format (e.g.
+  //   ".qfib") cannot represent these, so reject the combination up front rather
+  //   than failing partway through generation.
+  {
+    namespace TrackFormats = DWI::Tractography::Formats;
+    const TrackFormats::Base *const output_handler = TrackFormats::get_handler(std::filesystem::path(argument[1]));
+    if (output_handler != nullptr && output_handler->requires_constant_stepsize()) {
+      const auto downsample = properties.find("downsample_factor");
+      const bool downsampling = downsample != properties.end() && to<unsigned int>(downsample->second) > 1;
+      const bool cropping = properties.find("crop_at_gmwmi") != properties.end();
+      if (downsampling || cropping) {
+        throw Exception(std::string("the output tractography format requires a constant streamline step size,") +
+                        " which is incompatible with " +
+                        (downsampling ? "streamline downsampling (-downsample)"
+                                      : "end-cropping at the GM-WM interface (-crop_at_gmwmi)"));
+      }
+    }
   }
 
   switch (algorithm) {

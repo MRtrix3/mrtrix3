@@ -134,14 +134,32 @@ enum class Augment {
   Rewrite
 };
 
+//! \brief Whether a format can represent streamlines of non-constant step size.
+/*! Most formats store explicit vertex coordinates and so accept any vertex
+ * spacing. A handful of compressed formats instead encode each streamline as a
+ * sequence of fixed-length steps (e.g. ".qfib", whose per-fiber step is the
+ * distance between its first two vertices); such a handler cannot faithfully
+ * represent a streamline whose vertices are not uniformly spaced, and broadcasts
+ * StepSize::Constant so a producing command can reject the combination up front
+ * rather than silently corrupting geometry. */
+enum class StepSize {
+  //! the format accepts arbitrary (non-uniform) vertex spacing
+  Arbitrary,
+  //! the format requires a constant per-streamline step size
+  Constant
+};
+
 //! \brief The capabilities a tractography format handler broadcasts.
-/*! Encapsulates the three orthogonal axes of §2.6: I/O direction, access
- * model, and in-place augmentation, so that the framework can match a
- * command's requirements against a handler without probing the backend. */
+/*! Encapsulates the orthogonal axes of §2.6: I/O direction, access model,
+ * in-place augmentation, and step-size requirement, so that the framework can
+ * match a command's requirements against a handler without probing the backend.
+ * The step-size axis defaults to Arbitrary, the common case, so that only a
+ * constant-step format need declare it. */
 struct Capabilities {
   IO io;
   Access access;
   Augment augment;
+  StepSize stepsize = StepSize::Arbitrary;
 };
 
 //! \brief The interface for classes that support the various tractography formats.
@@ -181,6 +199,9 @@ public:
 
   bool can_read() const { return capabilities.io != IO::WriteOnly; }
   bool can_write() const { return capabilities.io != IO::ReadOnly; }
+
+  //! \brief whether this format requires a constant per-streamline step size.
+  bool requires_constant_stepsize() const { return capabilities.stepsize == StepSize::Constant; }
 
   //! \brief whether a streaming-only handler may be wrapped for random access (Stage 15).
   /*! When a command requires random access against a handler that advertises

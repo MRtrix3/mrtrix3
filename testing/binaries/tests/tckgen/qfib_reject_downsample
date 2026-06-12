@@ -1,0 +1,11 @@
+#!/bin/bash
+# Downsampling yields streamlines whose terminal segments are shorter than the
+#   tracking step, which the constant-step ".qfib" format cannot represent.
+#   tckgen must reject the combination up front, before any tracking is performed,
+#   rather than failing at write time or producing corrupted output.
+if tckgen SIFT_phantom/fods.mif -algo sd_stream -seed_voxels SIFT_phantom/mask.mif \
+          -downsample 3 tmp.qfib -force 2> tmp_err; then
+  echo "expected tckgen with downsampling to a constant-step format to fail" >&2
+  exit 1
+fi
+grep -qi "constant streamline step size" tmp_err
