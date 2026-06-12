@@ -116,6 +116,7 @@ List of MRtrix3 commands
     commands/tck2connectome
     commands/tck2fixel
     commands/tckconvert
+    commands/tckdecimatecalibrate
     commands/tckdfc
     commands/tckedit
     commands/tckgen
@@ -258,6 +259,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`tck2connectome`, "Generate a connectome matrix from a streamlines file and a node parcellation image"
     |cpp.png|, :ref:`tck2fixel`, "Compute a fixel TDI map from a tractogram"
     |cpp.png|, :ref:`tckconvert`, "Convert between different track file formats"
+    |cpp.png|, :ref:`tckdecimatecalibrate`, "Calibrate the fast streamline decimation density parameter against geometric error"
     |cpp.png|, :ref:`tckdfc`, "Perform the Track-Weighted Dynamic Functional Connectivity (TW-dFC) method"
     |cpp.png|, :ref:`tckedit`, "Perform various editing operations on track files"
     |cpp.png|, :ref:`tckgen`, "Perform streamlines tractography"
