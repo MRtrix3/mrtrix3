@@ -37,6 +37,11 @@ namespace MR::DWI::Tractography {
  * data, NaN-vertex delimiting streamlines and an Inf-vertex marking the
  * end-of-data barrier, and itself loads any "-tck_weights_in" sidecar.
  *
+ * On-disk vertex data may be stored as half- (\c Eigen::half), single- or
+ * double-precision floating-point in either byte order; each is converted to
+ * the in-memory \c ValueType on read (see get_next_point()). NaN/Inf
+ * delimiters survive this conversion, so the streaming protocol is unaffected.
+ *
  * The implementation is explicitly instantiated for float and double in
  * formats/tck.cpp. */
 template <class ValueType = float> class Reader : public ReaderBase, public ReaderInterface<ValueType> {

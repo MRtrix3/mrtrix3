@@ -25,6 +25,7 @@
 #include "file/config.h"
 #include "file/matrix.h"
 #include "file/ofstream.h"
+#include "half.h"
 
 namespace MR::DWI::Tractography {
 
@@ -91,6 +92,16 @@ template <class ValueType> bool Reader<ValueType>::operator()(Streamline<ValueTy
 template <class ValueType> Eigen::Matrix<ValueType, 3, 1> Reader<ValueType>::get_next_point() {
   using namespace ByteOrder;
   switch (dtype()) {
+  case DataType::Float16LE: {
+    std::array<Eigen::half, 3> p{};
+    in.read(reinterpret_cast<char *>(p.data()), sizeof(p));
+    return {static_cast<ValueType>(LE(p[0])), static_cast<ValueType>(LE(p[1])), static_cast<ValueType>(LE(p[2]))};
+  }
+  case DataType::Float16BE: {
+    std::array<Eigen::half, 3> p{};
+    in.read(reinterpret_cast<char *>(p.data()), sizeof(p));
+    return {static_cast<ValueType>(BE(p[0])), static_cast<ValueType>(BE(p[1])), static_cast<ValueType>(BE(p[2]))};
+  }
   case DataType::Float32LE: {
     std::array<float, 3> p{};
     in.read(reinterpret_cast<char *>(p.data()), sizeof(p));
