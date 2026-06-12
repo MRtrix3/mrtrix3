@@ -24,12 +24,27 @@
 
 #include "dwi/tractography/field_registry.h"
 #include "dwi/tractography/formats/base.h"
+#include "dwi/tractography/formats/ram.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/sidecar.h"
 #include "dwi/tractography/tractogram_item.h"
 #include "exception.h"
 
 namespace MR::DWI::Tractography {
+
+//! \brief The access pattern a command requires of a Tractogram (Stage 15).
+/*! A command declares, when it opens/creates a Tractogram, whether it will
+ * stream the data sequentially (the default, fitting the
+ * Reader→queue→worker→queue→Writer paradigm) or needs random access to any
+ * streamline at any time (e.g. multiple passes, indexed retrieval, in-place
+ * mutation). When RandomAccess is requested against a format whose native
+ * handler offers streaming only, the framework transparently wraps that handler
+ * in the in-RAM random-access wrapper (Formats::RAMWrapper) rather than raising
+ * the streaming-only error. */
+enum class AccessRequest {
+  Streaming,   //!< sequential streaming suffices (the default)
+  RandomAccess //!< random access to any streamline is required
+};
 
 //! \brief Standardised accessor for streamlines data, analogous to MR::Image<>.
 /*! Tractogram is to tractography what MR::Image<> is to image intensity data:
@@ -64,8 +79,10 @@ public:
    * reading, and populates \a properties from the dataset header. Throws a
    * user-interpretable Exception if no handler recognises the extension or the
    * recognised handler cannot read. */
-  static Tractogram
-  open(const std::filesystem::path &path, Properties &properties, const OptionalHeader &grid = std::nullopt);
+  static Tractogram open(const std::filesystem::path &path,
+                         Properties &properties,
+                         AccessRequest access = AccessRequest::Streaming,
+                         const OptionalHeader &grid = std::nullopt);
 
   //! \brief create a new tractography dataset for streaming writes.
   /*! Selects the handler for \a path by extension and verifies it supports
@@ -78,6 +95,7 @@ public:
   static Tractogram create(const std::filesystem::path &path,
                            const Properties &properties,
                            const FieldRegistry &registry = FieldRegistry(),
+                           AccessRequest access = AccessRequest::Streaming,
                            const OptionalHeader &grid = std::nullopt);
 
   //! \brief read the next item from the dataset (read mode only).
@@ -146,6 +164,50 @@ public:
                       " and cannot service " + std::string(context) + " (which requires random access to the data)");
   }
 
+  //! \brief whether this Tractogram is backed by the in-RAM random-access store.
+  /*! True iff the dataset was opened/created with AccessRequest::RandomAccess and
+   * the framework selected the RAM wrapper (Stage 15). When true, the indexed
+   * accessors below operate directly on the resident items. */
+  bool has_ram_store() const { return store != nullptr; }
+
+  //! \brief the number of streamlines resident in the RAM store.
+  /*! \pre has_ram_store(); the dataset must have been opened/created for random
+   * access. */
+  size_t size() const {
+    require_ram_store("the streamline count");
+    return store->items.size();
+  }
+
+  //! \brief random read of the streamline at ordinal \a n from the RAM store.
+  /*! Any streamline is addressable at any time, in any order (the defining
+   * property of the random-access wrapper). \pre has_ram_store(); n < size(). */
+  const item_type &operator[](const size_t n) const {
+    require_ram_store("indexed streamline retrieval");
+    return store->items[n];
+  }
+  item_type &operator[](const size_t n) {
+    require_ram_store("indexed streamline modification");
+    return store->items[n];
+  }
+
+  //! \brief random overwrite of the streamline at ordinal \a n in the RAM store.
+  void set(const size_t n, const item_type &item) {
+    require_ram_store("indexed streamline assignment");
+    store->items[n] = item;
+  }
+
+  //! \brief append an item to the RAM store (RandomAccessFull only).
+  void append(const item_type &item) {
+    require_ram_store("streamline append");
+    store->items.push_back(item);
+  }
+
+  //! \brief erase the streamline at ordinal \a n from the RAM store (RandomAccessFull only).
+  void erase(const size_t n) {
+    require_ram_store("streamline deletion");
+    store->items.erase(store->items.begin() + n);
+  }
+
   //! \brief register a standalone input-sidecar reference for injection (step 5).
   /*! Parses \a arg (§2.4), constructs the appropriate loader (text/.csv/.npy
    * per-streamline, or .tsf per-vertex), and registers the loaded field in this
@@ -187,8 +249,20 @@ public:
 private:
   explicit Tractogram(const Formats::Base *handler) : handler(handler) {}
 
-  //! the selected format handler (a non-owning pointer into the static handler list)
+  //! \brief assert this Tractogram is RAM-backed before an indexed access, or throw.
+  void require_ram_store(std::string_view context) const {
+    if (store == nullptr)
+      throw Exception("tractography dataset was not opened for random access" + std::string(" and cannot service ") +
+                      std::string(context));
+  }
+
+  //! the selected format handler (a non-owning pointer into the static handler
+  //!   list, or — when RAM-wrapped — the owned ram_wrapper below)
   const Formats::Base *handler;
+  //! the in-RAM random-access store, non-null iff RAM-wrapped (Stage 15)
+  std::shared_ptr<RAMStore<ValueType>> store;
+  //! the owned RAM wrapper handler, non-null iff RAM-wrapped (Stage 15)
+  std::shared_ptr<Formats::Base> ram_wrapper;
   //! the streaming read backend (non-null in read mode)
   std::unique_ptr<ReaderInterface<ValueType>> reader;
   //! the streaming write backend (non-null in write mode)

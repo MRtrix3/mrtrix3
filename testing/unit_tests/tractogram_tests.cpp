@@ -14,12 +14,16 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include "app.h"
+#include "dwi/tractography/field_registry.h"
 #include "dwi/tractography/formats/base.h"
 #include "dwi/tractography/formats/list.h"
 #include "dwi/tractography/formats/pipe.h"
+#include "dwi/tractography/formats/ram.h"
 #include "dwi/tractography/formats/tck.h"
 #include "dwi/tractography/formats/trk.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/sidecar_value.h"
 #include "dwi/tractography/streamline.h"
 #include "dwi/tractography/tractogram.h"
 #include "dwi/tractography/tractogram_item.h"
@@ -58,20 +62,30 @@ class TractogramTest : public ::testing::Test {
 protected:
   std::filesystem::path tck_path;
   std::filesystem::path trk_path;
+  std::filesystem::path vtk_path;
 
   void SetUp() override {
     const std::string stem =
         "mrtrix_tractogram_test_" + std::to_string(::testing::UnitTest::GetInstance()->random_seed());
     tck_path = std::filesystem::temp_directory_path() / (stem + ".tck");
     trk_path = std::filesystem::temp_directory_path() / (stem + ".trk");
+    vtk_path = std::filesystem::temp_directory_path() / (stem + ".vtk");
     std::filesystem::remove(tck_path);
     std::filesystem::remove(trk_path);
+    std::filesystem::remove(vtk_path);
+    // No App is stood up in a unit-test context, so the global overwrite flag
+    //   defaults to false; the ".vtk" writer's App::check_overwrite() guard would
+    //   then reject a scratch path written more than once within a test. These
+    //   tests own their unique scratch paths, so permit overwriting (== a command
+    //   run with -force, or a fresh output).
+    MR::App::overwrite_files = true;
   }
 
   void TearDown() override {
     std::error_code ec;
     std::filesystem::remove(tck_path, ec);
     std::filesystem::remove(trk_path, ec);
+    std::filesystem::remove(vtk_path, ec);
   }
 };
 
@@ -311,6 +325,185 @@ TEST_F(TractogramTest, FieldRegistryEmptyForTck) {
   Tractogram<float> writer = Tractogram<float>::create(tck_path, properties);
   EXPECT_TRUE(writer.fields().empty());
   EXPECT_EQ(writer.fields().size(), 0u);
+}
+
+// =====================================================================
+// Stage 15 — random-access RAM wrapper around a streaming-only format
+// =====================================================================
+
+// Helper: write the synthetic streamlines to a streaming ".vtk" via the framework.
+void write_streaming_vtk(const std::filesystem::path &path, const std::vector<Streamline<float>> &input) {
+  Properties properties;
+  Tractogram<float> writer = Tractogram<float>::create(path, properties);
+  EXPECT_FALSE(writer.is_random_access());
+  for (const auto &tck : input)
+    writer(TractogramItem<float>(tck));
+}
+
+// Step 2: requesting random access against a streaming-only format (".vtk")
+//   transparently selects the in-RAM wrapper rather than raising the
+//   streaming-only error. The wrapper advertises full random access and exposes
+//   the RAM store.
+TEST_F(TractogramTest, RamWrapperSelectedForStreamingRandomAccess) {
+  const std::vector<Streamline<float>> input = make_streamlines();
+  write_streaming_vtk(vtk_path, input);
+
+  Properties properties;
+  Tractogram<float> reader = Tractogram<float>::open(vtk_path, properties, AccessRequest::RandomAccess);
+  EXPECT_TRUE(reader.is_read());
+  EXPECT_TRUE(reader.is_random_access());
+  EXPECT_TRUE(reader.has_ram_store());
+  EXPECT_EQ(reader.capabilities().access, Formats::Access::RandomAccessFull);
+  // The whole dataset is resident: the indexed count is available immediately.
+  ASSERT_EQ(reader.size(), input.size());
+}
+
+// Step 1: the wrapper loads the WHOLE dataset into RAM on construction, so any
+//   streamline is addressable at any time, in any order (out-of-order indexed
+//   retrieval against the resident store).
+TEST_F(TractogramTest, RamWrapperRandomAccessOutOfOrderVtk) {
+  const std::vector<Streamline<float>> input = make_streamlines();
+  write_streaming_vtk(vtk_path, input);
+
+  Properties properties;
+  Tractogram<float> reader = Tractogram<float>::open(vtk_path, properties, AccessRequest::RandomAccess);
+  ASSERT_EQ(reader.size(), input.size());
+
+  // Read streamline N out of order (last, first, middle) and confirm the vertices.
+  const std::vector<size_t> order = {input.size() - 1, 0, input.size() / 2};
+  for (const size_t s : order) {
+    const auto &item = reader[s];
+    ASSERT_EQ(item.streamline.size(), input[s].size());
+    for (size_t v = 0; v != input[s].size(); ++v)
+      EXPECT_TRUE(item.streamline[v].isApprox(input[s][v]));
+  }
+}
+
+// Step 1: load-once / write-once. The inner streaming handler touches the
+//   filesystem only at construction (load) and destruction (flush). A wrapped
+//   write that mutates the RAM store (append / erase / set) commits to disk
+//   exactly once, on destruction, and reloading reproduces the mutated dataset.
+TEST_F(TractogramTest, RamWrapperWriteOnceFlushVtk) {
+  const std::vector<Streamline<float>> input = make_streamlines();
+
+  {
+    Properties properties;
+    Tractogram<float> writer =
+        Tractogram<float>::create(vtk_path, properties, FieldRegistry(), AccessRequest::RandomAccess);
+    EXPECT_TRUE(writer.is_random_access());
+    EXPECT_TRUE(writer.has_ram_store());
+    // No file is written yet: everything is buffered in RAM (write-once on dtor).
+    EXPECT_FALSE(std::filesystem::exists(vtk_path));
+    for (const auto &tck : input)
+      writer.append(TractogramItem<float>(tck));
+    EXPECT_EQ(writer.size(), input.size());
+    // Mutate the resident store: drop the middle streamline (RandomAccessFull).
+    writer.erase(1);
+    EXPECT_EQ(writer.size(), input.size() - 1);
+  } // destructor flushes the RAM store to disk exactly once via the inner handler
+
+  ASSERT_TRUE(std::filesystem::exists(vtk_path));
+
+  // Reload (streaming) and confirm the file holds the mutated set (streamlines 0 and 2).
+  Properties properties;
+  Tractogram<float> reader = Tractogram<float>::open(vtk_path, properties);
+  std::vector<Streamline<float>> output;
+  TractogramItem<float> item;
+  while (reader(item))
+    output.push_back(item.streamline);
+
+  ASSERT_EQ(output.size(), input.size() - 1);
+  const std::vector<size_t> expected = {0, 2};
+  for (size_t i = 0; i != expected.size(); ++i) {
+    const size_t s = expected[i];
+    ASSERT_EQ(output[i].size(), input[s].size());
+    for (size_t v = 0; v != input[s].size(); ++v)
+      EXPECT_TRUE(output[i][v].isApprox(input[s][v]));
+  }
+}
+
+// Step 1: the sidecar (dps/dpv, native dtype, M>1) is carried through the RAM
+//   store intact. A ".vtk" with a per-streamline (dps, int32, M=1 scalar) field
+//   and a per-vertex (dpv, uint8, M=3 RGB matrix) field is written through the
+//   RAM wrapper, then reopened for random access; the resident items must
+//   reproduce both fields exactly, with their native variant alternative.
+TEST_F(TractogramTest, RamWrapperSidecarCarriedThroughVtk) {
+  const std::vector<Streamline<float>> tracks = make_streamlines();
+
+  // Declare the output field set: one dps (int32 scalar) + one dpv (uint8 RGB).
+  FieldRegistry registry;
+  const size_t dps_ord =
+      registry.add({"bundle", FieldRole::DPS, MR::DataType(MR::DataType::Int32), 1, FieldSource::Internal, 0});
+  const size_t dpv_ord =
+      registry.add({"colour", FieldRole::DPV, MR::DataType(MR::DataType::UInt8), 3, FieldSource::Internal, 0});
+
+  // Build the per-streamline payloads.
+  auto make_item = [&](size_t s) {
+    TractogramItem<float> item(tracks[s]);
+    item.dps.resize(registry.dps_count());
+    item.dpv.resize(registry.dpv_count());
+    ScalarOrVector<int32_t> bundle(1);
+    bundle(0, 0) = static_cast<int32_t>(100 + s);
+    item.dps[dps_ord] = make_dps(std::move(bundle));
+    VectorOrMatrix<uint8_t> colour(static_cast<Eigen::Index>(tracks[s].size()), 3);
+    for (Eigen::Index v = 0; v != colour.rows(); ++v) {
+      colour(v, 0) = static_cast<uint8_t>(s);
+      colour(v, 1) = static_cast<uint8_t>(v);
+      colour(v, 2) = static_cast<uint8_t>(s + v);
+    }
+    item.dpv[dpv_ord] = make_dpv(std::move(colour));
+    return item;
+  };
+
+  {
+    Properties properties;
+    Tractogram<float> writer = Tractogram<float>::create(vtk_path, properties, registry, AccessRequest::RandomAccess);
+    EXPECT_TRUE(writer.has_ram_store());
+    for (size_t s = 0; s != tracks.size(); ++s)
+      writer.append(make_item(s));
+  } // write-once flush through the inner VTK handler on destruction
+
+  // Reopen for random access; the wrapper re-loads everything (incl. sidecar) into RAM.
+  Properties properties;
+  Tractogram<float> reader = Tractogram<float>::open(vtk_path, properties, AccessRequest::RandomAccess);
+  ASSERT_EQ(reader.size(), tracks.size());
+
+  const auto *dps_desc = reader.fields().find("bundle", FieldRole::DPS);
+  const auto *dpv_desc = reader.fields().find("colour", FieldRole::DPV);
+  ASSERT_NE(dps_desc, nullptr);
+  ASSERT_NE(dpv_desc, nullptr);
+  EXPECT_EQ(dpv_desc->columns, 3u);
+
+  for (size_t s = 0; s != tracks.size(); ++s) {
+    const auto &item = reader[s];
+    // dps: native int32 scalar preserved (M==1, not flattened to a vector).
+    ASSERT_EQ(item.dps.size(), 1u);
+    ASSERT_TRUE(std::holds_alternative<ScalarOrVector<int32_t>>(item.dps[dps_desc->ordinal]));
+    EXPECT_EQ(std::get<ScalarOrVector<int32_t>>(item.dps[dps_desc->ordinal]).scalar(), static_cast<int32_t>(100 + s));
+    // dpv: native uint8 n_vertices x 3 matrix preserved (M>1 carried intact).
+    ASSERT_EQ(item.dpv.size(), 1u);
+    ASSERT_TRUE(std::holds_alternative<VectorOrMatrix<uint8_t>>(item.dpv[dpv_desc->ordinal]));
+    const auto &colour = std::get<VectorOrMatrix<uint8_t>>(item.dpv[dpv_desc->ordinal]);
+    ASSERT_EQ(static_cast<size_t>(colour.rows()), tracks[s].size());
+    ASSERT_EQ(colour.cols(), 3);
+    for (Eigen::Index v = 0; v != colour.rows(); ++v) {
+      EXPECT_EQ(colour(v, 0), static_cast<uint8_t>(s));
+      EXPECT_EQ(colour(v, 1), static_cast<uint8_t>(v));
+      EXPECT_EQ(colour(v, 2), static_cast<uint8_t>(s + v));
+    }
+  }
+}
+
+// Step 2: the clean streaming-only error is preserved for a format the wrapper
+//   genuinely cannot satisfy. The inter-command pipe is a one-pass stdin/stdout
+//   stream (can_ram_wrap() == false), so a random-access request must still raise
+//   rather than being silently RAM-wrapped.
+TEST_F(TractogramTest, RamWrapperNotSelectedForPipe) {
+  Formats::Pipe pipe_handler;
+  EXPECT_FALSE(pipe_handler.can_ram_wrap());
+
+  Properties properties;
+  EXPECT_THROW(Tractogram<float>::open("-", properties, AccessRequest::RandomAccess), MR::Exception);
 }
 
 } // namespace

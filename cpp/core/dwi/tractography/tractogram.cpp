@@ -16,7 +16,10 @@
 
 #include "dwi/tractography/tractogram.h"
 
+#include <memory>
+
 #include "dwi/tractography/formats/list.h"
+#include "dwi/tractography/formats/ram.h"
 #include "exception.h"
 
 namespace MR::DWI::Tractography {
@@ -31,15 +34,44 @@ const Formats::Base *select_handler(const std::filesystem::path &path) {
   return handler;
 }
 
+//! \brief whether the framework must interpose the RAM wrapper (Stage 15, step 2).
+/*! The wrapper is selected whenever the chosen \a handler offers streaming only
+ * (Access::Streaming) yet the command requested random access. A handler that
+ * already provides a random-access model needs no wrapping; a streaming handler
+ * that genuinely cannot be wrapped (the inter-command pipe) is excluded here so
+ * the clean streaming-only error is preserved for it. */
+bool requires_ram_wrapper(const Formats::Base *handler, const AccessRequest access) {
+  return access == AccessRequest::RandomAccess && handler->capabilities.access == Formats::Access::Streaming &&
+         handler->can_ram_wrap();
+}
+
 } // namespace
 
 template <class ValueType>
-Tractogram<ValueType>
-Tractogram<ValueType>::open(const std::filesystem::path &path, Properties &properties, const OptionalHeader &grid) {
+Tractogram<ValueType> Tractogram<ValueType>::open(const std::filesystem::path &path,
+                                                  Properties &properties,
+                                                  AccessRequest access,
+                                                  const OptionalHeader &grid) {
   const Formats::Base *handler = select_handler(path);
   if (!handler->can_read())
     throw Exception("tractography format \"" + handler->description + "\" does not support reading (file \"" +
                     path.string() + "\")");
+
+  // When random access is requested against a streaming-only format, transparently
+  //   wrap the chosen handler in the in-RAM random-access wrapper (Stage 15, step 2).
+  if (requires_ram_wrapper(handler, access)) {
+    auto store = std::make_shared<RAMStore<ValueType>>();
+    auto wrapper = std::make_shared<Formats::RAMWrapper<ValueType>>(handler, store);
+    Tractogram tractogram(wrapper.get());
+    tractogram.store = store;
+    tractogram.ram_wrapper = wrapper;
+    tractogram.reader = wrapper->template read<ValueType>(path, properties, tractogram.registry, grid);
+    return tractogram;
+  }
+
+  if (access == AccessRequest::RandomAccess)
+    Tractogram(handler).require_random_access("indexed access to the data");
+
   Tractogram tractogram(handler);
   tractogram.reader = handler->template read<ValueType>(path, properties, tractogram.registry, grid);
   return tractogram;
@@ -49,11 +81,29 @@ template <class ValueType>
 Tractogram<ValueType> Tractogram<ValueType>::create(const std::filesystem::path &path,
                                                     const Properties &properties,
                                                     const FieldRegistry &registry,
+                                                    AccessRequest access,
                                                     const OptionalHeader &grid) {
   const Formats::Base *handler = select_handler(path);
   if (!handler->can_write())
     throw Exception("tractography format \"" + handler->description + "\" does not support writing (file \"" +
                     path.string() + "\")");
+
+  // When random access is requested against a streaming-only format, transparently
+  //   wrap the chosen handler in the in-RAM random-access wrapper (Stage 15, step 2).
+  if (requires_ram_wrapper(handler, access)) {
+    auto store = std::make_shared<RAMStore<ValueType>>();
+    auto wrapper = std::make_shared<Formats::RAMWrapper<ValueType>>(handler, store);
+    Tractogram tractogram(wrapper.get());
+    tractogram.registry = registry;
+    tractogram.store = store;
+    tractogram.ram_wrapper = wrapper;
+    tractogram.writer = wrapper->template create<ValueType>(path, properties, tractogram.registry, grid);
+    return tractogram;
+  }
+
+  if (access == AccessRequest::RandomAccess)
+    Tractogram(handler).require_random_access("indexed access to the data");
+
   Tractogram tractogram(handler);
   tractogram.registry = registry;
   tractogram.writer = handler->template create<ValueType>(path, properties, tractogram.registry, grid);

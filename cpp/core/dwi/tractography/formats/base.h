@@ -168,6 +168,19 @@ public:
   bool can_read() const { return capabilities.io != IO::WriteOnly; }
   bool can_write() const { return capabilities.io != IO::ReadOnly; }
 
+  //! \brief whether a streaming-only handler may be wrapped for random access (Stage 15).
+  /*! When a command requires random access against a handler that advertises
+   * Access::Streaming, the framework wraps the handler in the in-RAM
+   * random-access wrapper (Formats::RAMWrapper) — load-once into RAM, write-once
+   * out — rather than raising the streaming-only error. This is possible for any
+   * file-backed format (the whole dataset can be loaded once and flushed once),
+   * but NOT for the inter-command pipe: a pipe is a one-pass sequential stdin/
+   * stdout stream that cannot be re-opened to flush a mutated dataset, and
+   * silently buffering an unbounded stream is rejected by design (§2.6 /
+   * pipe_design.md §2.2). The pipe therefore overrides this to false so the clean
+   * streaming-only error is preserved for it. Defaults to true. */
+  virtual bool can_ram_wrap() const { return true; }
+
   //! \brief open \a path for streaming reads in the requested precision.
   /*! Dispatches to the float/double factory virtual. \a properties is
    * populated from the dataset header. \a registry is populated with the sidecar

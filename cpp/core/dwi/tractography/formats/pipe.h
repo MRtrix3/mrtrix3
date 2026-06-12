@@ -194,6 +194,9 @@ public:
 
   bool handles(const std::filesystem::path &path) const override;
 
+  //! \brief the pipe is a one-pass stdin/stdout stream and cannot be RAM-wrapped (Stage 15).
+  bool can_ram_wrap() const override { return false; }
+
 protected:
   std::unique_ptr<ReaderInterface<float>> read_float(const std::filesystem::path &path,
                                                      Properties &properties,
