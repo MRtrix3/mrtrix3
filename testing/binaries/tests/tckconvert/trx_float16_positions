@@ -1,0 +1,42 @@
+#!/bin/bash
+# TRX positions may be stored in float16 (the spec's recommended default); the
+#   reader must convert them to the processing precision via Eigen::half (D7).
+#   Author a minimal TRX directory with float16 positions and read it back,
+#   confirming the (half-precision-representable) coordinates are recovered.
+#
+# The handler's own writer emits float32 positions, so a float16 input cannot be
+#   produced by tckconvert itself; numpy is used to author the half-precision
+#   arrays. Skip cleanly if numpy is unavailable.
+if ! python3 -c "import numpy" 2>/dev/null; then
+  echo "numpy unavailable; skipping float16 positions test"
+  exit 0
+fi
+
+rm -rf tmp_f16_dir
+mkdir tmp_f16_dir
+python3 - <<'PY'
+import numpy as np, json, os
+d = "tmp_f16_dir"
+# Two streamlines: 3 and 2 vertices. Coordinates exactly representable in float16.
+pos = np.array([[0,0,0],[1,0,0],[2,0,0],
+                [0,1,0],[1,1,0]], dtype=np.float16)
+offsets = np.array([0,3,5], dtype=np.uint64)  # NB_STREAMLINES+1 entries
+pos.tofile(os.path.join(d,"positions.3.float16"))
+offsets.tofile(os.path.join(d,"offsets.uint64"))
+header = {
+    "VOXEL_TO_RASMM": [[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]],
+    "DIMENSIONS": [3,3,1],
+    "NB_STREAMLINES": 2,
+    "NB_VERTICES": 5,
+}
+with open(os.path.join(d,"header.json"),"w") as f:
+    json.dump(header,f)
+PY
+
+tckconvert tmp_f16_dir tmp_f16.tck -force -quiet
+# Two streamlines, 5 vertices total.
+tckinfo tmp_f16.tck | grep -q "count: *2"
+# Convert to ASCII vtk and confirm an integer coordinate value survives the
+#   half-precision -> float conversion exactly.
+tckconvert tmp_f16.tck tmp_f16.vtk -force -quiet -ascii
+grep -q "2 0 0" tmp_f16.vtk

@@ -1,0 +1,17 @@
+#!/bin/bash
+# Round-trip via a TRX intermediary: tck -> trx -> tck must preserve streamline
+#   geometry exactly. TRX positions are stored in world (RASMM) space, matching
+#   ".tck" scanner-space, and the writer emits float32 positions, so the
+#   coordinates round-trip losslessly. Exercises the framework TRX reader (the
+#   ZIP_STORE-archive parse + in-place mmap) and the buffered TRX writer (header,
+#   offsets and positions layout, ZIP_STORE archive packing via libzip).
+tckconvert tracks.tck tmp.trx -force -quiet
+# A ".trx" output is an uncompressed (ZIP_STORE) zip archive: confirm it is a zip
+#   and carries the three mandatory members.
+unzip -l tmp.trx | grep -q "header.json"
+unzip -l tmp.trx | grep -q "positions.3.float32"
+unzip -l tmp.trx | grep -q "offsets.uint64"
+
+tckconvert tmp.trx tmp_back.tck -force -quiet
+# float32 positions in world space with no grid transform: exact round-trip.
+testing_diff_tck tracks.tck tmp_back.tck -distance 0.01
