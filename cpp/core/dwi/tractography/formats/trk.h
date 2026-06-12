@@ -88,6 +88,74 @@ static_assert(sizeof(Header) == header_bytes, "TrackVis \".trk\" header must be 
 } // namespace MR::DWI::Tractography::Formats::TRKUtils
 
 namespace MR::DWI::Tractography {
+
+//! \brief Streaming reader backend for the TrackVis (".trk") format.
+/*! This is the read backend for the ".trk" format handler (Formats::TRK). A
+ * ".trk" file is a single binary file with a fixed 1000-byte header followed by
+ * a body of variable-length streamline records. Each record is an int32 vertex
+ * count, then per vertex 3 float coordinates plus \c n_scalars float scalars
+ * (→ dpv), then \c n_properties float properties for the whole streamline
+ * (→ dps). Per the format spec all scalars/properties are float32 on disk, so
+ * they are carried as native-float sidecar fields (D7).
+ *
+ * Coordinates are stored in millimetres measured in the voxel space of the grid
+ * the header describes (corner-referenced). They are converted to MRtrix
+ * scanner-space RAS by dividing out the voxel spacing to obtain a fractional
+ * voxel index, then applying the voxel→scanner transform: the supplied
+ * OptionalHeader's transform when a reference grid is available, else an
+ * axis-aligned default derived from the ".trk" \c vox_to_ras / \c voxel_size so
+ * that a ".trk" → ".trk" round-trip is exact.
+ *
+ * The implementation is explicitly instantiated for float and double in
+ * formats/trk.cpp. */
+template <class ValueType = float> class TRKReader : public ReaderInterface<ValueType> {
+public:
+  TRKReader(const std::filesystem::path &path,
+            Properties &properties,
+            FieldRegistry &registry,
+            const OptionalHeader &grid);
+  ~TRKReader() override;
+
+  bool operator()(Streamline<ValueType> &tck) override;
+  bool operator()(TractogramItem<ValueType> &item) override;
+
+private:
+  FieldRegistry &registry;
+
+  //! whole-file memory map; the body is streamed by advancing an offset within it
+  std::shared_ptr<File::MMap> mmap;
+  //! byte offset of the next streamline record within the memory map
+  int64_t position;
+  //! one-past-the-end byte offset of the mapped data
+  int64_t end;
+  //! true if the file's multi-byte fields are opposite-endian to this host
+  bool byte_swapped;
+
+  //! number of per-vertex scalars (dpv) declared in the header
+  size_t n_scalars;
+  //! number of per-streamline properties (dps) declared in the header
+  size_t n_properties;
+  //! role-local dpv ordinals of the scalar fields, in on-disk column order
+  std::vector<size_t> scalar_ordinals;
+  //! role-local dps ordinals of the property fields, in on-disk column order
+  std::vector<size_t> property_ordinals;
+
+  //! voxel spacing (mm) recovered from the header (used to map mm ↔ voxel)
+  std::array<double, 3> voxel_size;
+  //! voxel→scanner transform (reference grid or ".trk"-derived default)
+  transform_type voxel2scanner;
+
+  size_t current_index;
+
+  //! \brief read the next record's geometry into \a tck; optionally capture sidecars.
+  /*! \a item is null on the vertices-only path; when non-null the per-vertex
+   * scalars are gathered into its dpv payload and the per-streamline properties
+   * into its dps payload. */
+  bool read_record(Streamline<ValueType> &tck, TractogramItem<ValueType> *item);
+
+  TRKReader(const TRKReader &) = delete;
+};
+
 //! \brief Streaming writer backend for the TrackVis (".trk") format.
 /*! This is the write backend for the ".trk" format handler (Formats::TRK). The
  * 1000-byte header is written first (with placeholder track count), then each

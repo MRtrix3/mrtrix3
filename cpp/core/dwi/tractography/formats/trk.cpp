@@ -42,6 +42,16 @@ namespace {
 //! the size in bytes of one on-disk ".trk" coordinate / scalar / property value
 constexpr size_t trk_value_bytes = sizeof(float);
 
+//! \brief read a fixed-width header name array entry into a trimmed std::string.
+/*! TrackVis names are NUL-padded within a 20-char field; copy up to the first
+ * NUL (or the field width) so the in-memory name has no trailing padding. */
+std::string read_name(const std::array<char, TRKUtils::name_length> &field) {
+  size_t length = 0;
+  while (length != TRKUtils::name_length && field[length] != '\0')
+    ++length;
+  return std::string(field.data(), length);
+}
+
 //! \brief write a std::string into a fixed-width NUL-padded header name field.
 void write_name(std::array<char, TRKUtils::name_length> &field, std::string_view name) {
   field.fill('\0');
@@ -49,7 +59,231 @@ void write_name(std::array<char, TRKUtils::name_length> &field, std::string_view
   std::memcpy(field.data(), name.data(), length);
 }
 
+//! \brief in-place byte-swap of every multi-byte field of a ".trk" header.
+/*! Invoked when the \c hdr_size sentinel reveals the file is opposite-endian to
+ * this host; single-byte (char / uint8) fields are unaffected. */
+void byte_swap_header(TRKUtils::Header &header) {
+  for (size_t axis = 0; axis != 3; ++axis) {
+    header.dim[axis] = ByteOrder::swap(header.dim[axis]);
+    header.voxel_size[axis] = ByteOrder::swap(header.voxel_size[axis]);
+    header.origin[axis] = ByteOrder::swap(header.origin[axis]);
+  }
+  header.n_scalars = ByteOrder::swap(header.n_scalars);
+  header.n_properties = ByteOrder::swap(header.n_properties);
+  for (size_t row = 0; row != 4; ++row)
+    for (size_t col = 0; col != 4; ++col)
+      header.vox_to_ras[row][col] = ByteOrder::swap(header.vox_to_ras[row][col]);
+  for (size_t i = 0; i != 6; ++i)
+    header.image_orientation_patient[i] = ByteOrder::swap(header.image_orientation_patient[i]);
+  header.n_count = ByteOrder::swap(header.n_count);
+  header.version = ByteOrder::swap(header.version);
+  header.hdr_size = ByteOrder::swap(header.hdr_size);
+}
+
+//! \brief build the voxel→scanner transform a ".trk" header describes.
+/*! The header's \c vox_to_ras maps a voxel index (crs) to scanner-space RAS xyz;
+ * an unrecorded affine (vox_to_ras[3][3]==0) falls back to identity so the grid
+ * is axis-aligned with a corner origin. This is the transform applied after the
+ * mm→voxel-index division by the spacing. */
+transform_type vox_to_ras_transform(const TRKUtils::Header &header) {
+  transform_type T;
+  T.setIdentity();
+  if (std::fabs(header.vox_to_ras[3][3]) > 0.0F) {
+    for (size_t row = 0; row != 3; ++row)
+      for (size_t col = 0; col != 4; ++col)
+        T(row, col) = static_cast<double>(header.vox_to_ras[row][col]);
+  }
+  return T;
+}
+
 } // namespace
+
+/* ************************************************************************ */
+/*                          TRKReader<ValueType>                           */
+/* ************************************************************************ */
+
+template <class ValueType>
+TRKReader<ValueType>::TRKReader(const std::filesystem::path &path,
+                                Properties &properties,
+                                FieldRegistry &registry,
+                                const OptionalHeader &grid)
+    : registry(registry),
+      position(static_cast<int64_t>(TRKUtils::header_bytes)),
+      end(0),
+      byte_swapped(false),
+      n_scalars(0),
+      n_properties(0),
+      voxel_size{1.0, 1.0, 1.0},
+      current_index(0) {
+  mmap = std::make_shared<File::MMap>(File::Entry(path), false, false);
+  end = mmap->size();
+  if (end < static_cast<int64_t>(TRKUtils::header_bytes))
+    throw Exception("TrackVis \".trk\" file \"" + path.string() + "\" is smaller than its 1000-byte header");
+
+  TRKUtils::Header header;
+  std::memcpy(&header, mmap->address(), TRKUtils::header_bytes);
+
+  // The hdr_size field must read as 1000; if not, the file is opposite-endian to
+  //   this host and every multi-byte field is byte-swapped on ingest.
+  if (header.hdr_size != TRKUtils::header_size_sentinel) {
+    byte_swap_header(header);
+    if (header.hdr_size != TRKUtils::header_size_sentinel)
+      throw Exception("TrackVis \".trk\" file \"" + path.string() + "\" has an invalid header size field (" +
+                      str(header.hdr_size) + "); not a recognised \".trk\" file");
+    byte_swapped = true;
+  }
+
+  if (std::string_view(header.id_string.data(), 5) != "TRACK")
+    throw Exception("file \"" + path.string() + "\" is not a TrackVis \".trk\" file (bad id string)");
+
+  for (size_t axis = 0; axis != 3; ++axis)
+    voxel_size[axis] = (std::fabs(header.voxel_size[axis]) > 0.0F) ? static_cast<double>(header.voxel_size[axis]) : 1.0;
+
+  n_scalars = static_cast<size_t>(std::max<int16_t>(0, header.n_scalars));
+  n_properties = static_cast<size_t>(std::max<int16_t>(0, header.n_properties));
+  if (n_scalars > TRKUtils::max_named_fields || n_properties > TRKUtils::max_named_fields)
+    throw Exception("TrackVis \".trk\" file \"" + path.string() + "\" declares more than " +
+                    str(TRKUtils::max_named_fields) + " scalars/properties");
+
+  // The grid orientation/origin: prefer the supplied reference Header's
+  //   voxel→scanner transform; otherwise fall back to the file's own vox_to_ras
+  //   so a ".trk" → ".trk" round-trip is exact.
+  if (grid.has_value()) {
+    voxel2scanner = Transform(grid->get()).voxel2scanner;
+    for (size_t axis = 0; axis != 3; ++axis)
+      voxel_size[axis] = grid->get().spacing(axis);
+  } else {
+    voxel2scanner = vox_to_ras_transform(header);
+  }
+
+  // Preserve grid metadata into the Properties for a faithful round-trip.
+  properties["trk_dim"] = str(header.dim[0]) + "," + str(header.dim[1]) + "," + str(header.dim[2]);
+  properties["trk_voxel_size"] = str(voxel_size[0]) + "," + str(voxel_size[1]) + "," + str(voxel_size[2]);
+  {
+    std::string voxel_order(header.voxel_order.begin(), header.voxel_order.end());
+    voxel_order.erase(std::find(voxel_order.begin(), voxel_order.end(), '\0'), voxel_order.end());
+    if (!voxel_order.empty())
+      properties["trk_voxel_order"] = voxel_order;
+  }
+
+  // Register each scalar as a dpv field and each property as a dps field; per the
+  //   format spec these are float32 on disk (D7: carried as native float). Unnamed
+  //   columns are given a positional default name.
+  for (size_t i = 0; i != n_scalars; ++i) {
+    FieldDescriptor descriptor;
+    descriptor.name = read_name(header.scalar_name[i]);
+    if (descriptor.name.empty())
+      descriptor.name = "scalar_" + str(i);
+    descriptor.role = FieldRole::DPV;
+    descriptor.dtype = DataType::native(DataType(DataType::Float32));
+    descriptor.columns = 1;
+    descriptor.source = FieldSource::Internal;
+    descriptor.ordinal = 0;
+    scalar_ordinals.push_back(registry.add(std::move(descriptor)));
+  }
+  for (size_t i = 0; i != n_properties; ++i) {
+    FieldDescriptor descriptor;
+    descriptor.name = read_name(header.property_name[i]);
+    if (descriptor.name.empty())
+      descriptor.name = "property_" + str(i);
+    descriptor.role = FieldRole::DPS;
+    descriptor.dtype = DataType::native(DataType(DataType::Float32));
+    descriptor.columns = 1;
+    descriptor.source = FieldSource::Internal;
+    descriptor.ordinal = 0;
+    property_ordinals.push_back(registry.add(std::move(descriptor)));
+  }
+}
+
+template <class ValueType> TRKReader<ValueType>::~TRKReader() = default;
+
+template <class ValueType>
+bool TRKReader<ValueType>::read_record(Streamline<ValueType> &tck, TractogramItem<ValueType> *item) {
+  tck.clear();
+  if (position + static_cast<int64_t>(sizeof(int32_t)) > end)
+    return false;
+
+  const std::byte *const base = mmap->address();
+  const int32_t npoints =
+      byte_swapped ? Raw::fetch_BE<int32_t>(base + position) : Raw::fetch_LE<int32_t>(base + position);
+  if (npoints < 0)
+    throw Exception("malformed TrackVis \".trk\" record: negative vertex count (" + str(npoints) + ")");
+  position += static_cast<int64_t>(sizeof(int32_t));
+
+  const size_t per_vertex_floats = 3 + n_scalars;
+  const int64_t vertices_bytes =
+      static_cast<int64_t>(npoints) * static_cast<int64_t>(per_vertex_floats * trk_value_bytes);
+  const int64_t properties_bytes = static_cast<int64_t>(n_properties * trk_value_bytes);
+  if (position + vertices_bytes + properties_bytes > end)
+    throw Exception("malformed TrackVis \".trk\" file: streamline record overruns the file");
+
+  // Prepare the dpv columns (one VectorOrMatrix<float> of n_vertices rows per
+  //   scalar field) and dps slots when capturing sidecars.
+  std::vector<VectorOrMatrix<float>> scalars;
+  if (item != nullptr && n_scalars != 0) {
+    scalars.resize(n_scalars);
+    for (auto &column : scalars)
+      column.resize(static_cast<Eigen::Index>(npoints), 1);
+  }
+
+  tck.set_index(current_index);
+  if (item != nullptr)
+    item->streamline.set_index(current_index);
+  ++current_index;
+
+  int64_t cursor = position;
+  for (int32_t v = 0; v != npoints; ++v) {
+    Eigen::Vector3d point_mm;
+    for (size_t axis = 0; axis != 3; ++axis) {
+      const float value = byte_swapped ? Raw::fetch_BE<float>(base + cursor) : Raw::fetch_LE<float>(base + cursor);
+      point_mm[axis] = static_cast<double>(value);
+      cursor += static_cast<int64_t>(trk_value_bytes);
+    }
+    // mm (voxel space, corner-referenced) → fractional voxel index → scanner RAS.
+    const Eigen::Vector3d voxel(point_mm[0] / voxel_size[0], point_mm[1] / voxel_size[1], point_mm[2] / voxel_size[2]);
+    const Eigen::Vector3d scanner = voxel2scanner * voxel;
+    tck.push_back(scanner.cast<ValueType>());
+
+    for (size_t s = 0; s != n_scalars; ++s) {
+      const float value = byte_swapped ? Raw::fetch_BE<float>(base + cursor) : Raw::fetch_LE<float>(base + cursor);
+      cursor += static_cast<int64_t>(trk_value_bytes);
+      if (item != nullptr)
+        scalars[s](static_cast<Eigen::Index>(v), 0) = value;
+    }
+  }
+
+  // Per-streamline properties (dps), one float each.
+  std::vector<float> property_values(n_properties);
+  for (size_t p = 0; p != n_properties; ++p) {
+    const float value = byte_swapped ? Raw::fetch_BE<float>(base + cursor) : Raw::fetch_LE<float>(base + cursor);
+    cursor += static_cast<int64_t>(trk_value_bytes);
+    property_values[p] = value;
+  }
+
+  position = cursor;
+
+  if (item != nullptr) {
+    item->dps.resize(registry.dps_count());
+    item->dpv.resize(registry.dpv_count());
+    for (size_t s = 0; s != n_scalars; ++s)
+      item->dpv[scalar_ordinals[s]] = make_dpv(std::move(scalars[s]));
+    for (size_t p = 0; p != n_properties; ++p) {
+      ScalarOrVector<float> value(1);
+      value(0, 0) = property_values[p];
+      item->dps[property_ordinals[p]] = make_dps(std::move(value));
+    }
+  }
+  return true;
+}
+
+template <class ValueType> bool TRKReader<ValueType>::operator()(Streamline<ValueType> &tck) {
+  return read_record(tck, nullptr);
+}
+
+template <class ValueType> bool TRKReader<ValueType>::operator()(TractogramItem<ValueType> &item) {
+  item.clear();
+  return read_record(item.streamline, &item);
+}
 
 /* ************************************************************************ */
 /*                          TRKWriter<ValueType>                           */
@@ -285,6 +519,8 @@ template <class ValueType> TRKWriter<ValueType>::~TRKWriter() {
 /*               Explicit instantiation for float and double              */
 /* ************************************************************************ */
 
+template class TRKReader<float>;
+template class TRKReader<double>;
 template class TRKWriter<float>;
 template class TRKWriter<double>;
 
