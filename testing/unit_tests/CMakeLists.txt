@@ -23,6 +23,7 @@ set(UNIT_TESTS_CPP_SRCS
     tractogram_tests.cpp
     trx_tests.cpp
     write_buffer_tests.cpp
+    zfib_tests.cpp
 )
 
 if(MRTRIX_ENABLE_GPU)

@@ -65,6 +65,11 @@ Options specific to VTK writer
 
 -  **-ascii** write an ASCII VTK file (binary by default)
 
+Options specific to ZFIB writer
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-zfib_max_error value** the worst-case compression error in mm for lossy .zfib output (default: 0.5)
+
 Standard options
 ^^^^^^^^^^^^^^^^
 

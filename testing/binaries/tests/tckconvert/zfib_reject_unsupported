@@ -1,0 +1,16 @@
+#!/bin/bash
+# A ".zfib" file declaring an unsupported encoding or transformation type must be
+#   rejected with a clean non-zero exit, not silently mis-decoded. Only the final
+#   (Huffman + no-transform) variant of the format is supported.
+
+# Header int32 LE: fiberType=5, countLines=0, encodingType=1 (ARITHMETIC), ttype=6.
+printf '\x05\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x06\x00\x00\x00' > tmp_bad_enc.zfib
+tckconvert tmp_bad_enc.zfib tmp_bad_enc.tck -force -quiet 2>/dev/null \
+  && { echo "Expected rejection of .zfib with non-Huffman encoding"; exit 1; }
+
+# Header int32 LE: fiberType=5, countLines=0, encodingType=0, ttype=0 (DCT).
+printf '\x05\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00' > tmp_bad_tt.zfib
+tckconvert tmp_bad_tt.zfib tmp_bad_tt.tck -force -quiet 2>/dev/null \
+  && { echo "Expected rejection of .zfib with unsupported transformation"; exit 1; }
+
+true

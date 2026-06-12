@@ -23,6 +23,7 @@
 #include "dwi/tractography/formats/tt.h"
 #include "dwi/tractography/formats/vtk.h"
 #include "dwi/tractography/formats/vtx.h"
+#include "dwi/tractography/formats/zfib.h"
 
 namespace MR::DWI::Tractography::Formats {
 
@@ -33,9 +34,17 @@ TRX trx_handler;
 TT tt_handler;
 VTK vtk_handler;
 VTX vtx_handler;
+ZFIB zfib_handler;
 
-const Base *handlers[] = {
-    &pipe_handler, &tck_handler, &trk_handler, &trx_handler, &tt_handler, &vtk_handler, &vtx_handler, nullptr};
+const Base *handlers[] = {&pipe_handler,
+                          &tck_handler,
+                          &trk_handler,
+                          &trx_handler,
+                          &tt_handler,
+                          &vtk_handler,
+                          &vtx_handler,
+                          &zfib_handler,
+                          nullptr};
 
 const Base *get_handler(const std::filesystem::path &path) {
   for (const Base **format = handlers; *format != nullptr; ++format) {

@@ -1,0 +1,19 @@
+#!/bin/bash
+# Self round-trip through the lossy ".zfib" format at the default 0.5 mm error:
+#   tck -> .zfib -> tck. At the default error the quantization precision is p=0
+#   (snap to the 1 mm grid), whose worst-case Euclidean error is sqrt(3)*0.5 ~=
+#   0.87 mm, so the reconstructed geometry must match within that bound. Exercises
+#   the framework .zfib writer (linearization + uniform quantization + Huffman
+#   encoding, buffer-and-finalise) and reader (load-all, Huffman decode).
+tckconvert tracks.tck tmp.zfib -force -quiet
+# Header: the first four little-endian int32 are fiberType=5 (MRtrix scanner
+#   space), countLines=N, encodingType=0 (Huffman), ttype=6 (no transform).
+read f1 f2 f3 f4 <<< "$(od -An -tu4 -N16 tmp.zfib)"
+[ "$f1" = "5" ]
+[ "$f3" = "0" ]
+[ "$f4" = "6" ]
+# countLines must equal the source streamline count.
+n=$(tckinfo tracks.tck | sed -n 's/.*count:[[:space:]]*\([0-9][0-9]*\).*/\1/p' | head -1)
+[ "$f2" = "$n" ]
+tckconvert tmp.zfib tmp_back.tck -force -quiet
+testing_diff_tck tracks.tck tmp_back.tck -distance 0.9

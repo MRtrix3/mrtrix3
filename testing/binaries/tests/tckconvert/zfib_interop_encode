@@ -1,0 +1,13 @@
+#!/bin/bash
+# Byte-compatibility interop: encode a reference ".tck" and confirm the output is
+#   byte-identical to the reference ".zfib" produced by the SCIL FiberCompression
+#   tool. This is the gate for the byte-layout residual unknowns (encoded-size
+#   field width, Huffman tree determinism, dictionary ordering, colour-block
+#   placement). Registered now; skips cleanly until the user supplies the
+#   reference data.
+if [ ! -f reference_input.tck ] || [ ! -f reference_encode.zfib ]; then
+  echo "reference .zfib interop data not present; skipping encode interop test"
+  exit 0
+fi
+tckconvert reference_input.tck tmp_interop.zfib -zfib_max_error 0.5 -force -quiet
+cmp reference_encode.zfib tmp_interop.zfib

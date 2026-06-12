@@ -108,10 +108,19 @@ void usage() {
     + OptionGroup ("Options specific to VTK writer")
 
     + Option ("ascii", "write an ASCII VTK file"
-                       " (binary by default)");
+                       " (binary by default)")
   // The "-ascii" option is consumed by the framework's .vtk format handler
   //   (dwi/tractography/formats/vtk.cpp), which selects the ASCII encoding when
   //   it is present; tckconvert itself no longer branches on the VTK encoding.
+
+    + OptionGroup ("Options specific to ZFIB writer")
+
+    + Option ("zfib_max_error",
+              "the worst-case compression error in mm for lossy .zfib output (default: 0.5)")
+      + Argument("value").type_float(0.0);
+  // The "-zfib_max_error" option is consumed by the framework's .zfib format
+  //   handler backend (dwi/tractography/formats/zfib.cpp), which derives the
+  //   linearization tolerance and the quantization precision from it.
 
 }
 // clang-format on

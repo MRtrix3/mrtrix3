@@ -1,0 +1,9 @@
+#!/bin/bash
+# RDP linearization preserves the end points and never drops a whole streamline
+#   (only intermediate vertices), so a ".zfib" round-trip must preserve the
+#   streamline count exactly even though vertex counts may shrink.
+tckconvert tracks.tck tmp.zfib -force -quiet
+tckconvert tmp.zfib tmp_back.tck -force -quiet
+n_in=$(tckinfo tracks.tck | sed -n 's/.*count:[[:space:]]*\([0-9][0-9]*\).*/\1/p' | head -1)
+n_out=$(tckinfo tmp_back.tck | sed -n 's/.*count:[[:space:]]*\([0-9][0-9]*\).*/\1/p' | head -1)
+[ "$n_in" = "$n_out" ]
