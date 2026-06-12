@@ -620,6 +620,8 @@ add_bash_binary_test(tckmap/tod NO_FILESYSTEM_LOCK)
 
 add_bash_binary_test(tckresample/decimate_fast)
 add_bash_binary_test(tckresample/decimate_fast_sanity)
+add_bash_binary_test(tckresample/decimate_slow)
+add_bash_binary_test(tckresample/decimate_slow_sanity)
 add_bash_binary_test(tckresample/downsample)
 add_bash_binary_test(tckresample/endpoints)
 add_bash_binary_test(tckresample/num_points)

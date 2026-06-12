@@ -41,6 +41,8 @@ Streamline resampling options
 
 -  **-decimate_fast value** decimate each streamline to the fewest vertices necessary to represent its spline trajectory, placing more vertices where the curvature is greater; the value sets the number of output vertices generated per unit of curvature-weighted arc length (larger values retain more vertices)
 
+-  **-decimate_slow tolerance** decimate each streamline to a near-minimal set of vertices whose spline reconstruction stays within a tolerance (in mm) of the original trajectory, by greedy knot insertion with slide refinement; the value sets that maximum permitted deviation (smaller values retain more vertices)
+
 -  **-endpoints** only output the two endpoints of each streamline
 
 -  **-line num start end** resample tracks at 'num' equidistant locations along a line between 'start' and 'end' (specified as comma-separated 3-vectors in scanner coordinates)

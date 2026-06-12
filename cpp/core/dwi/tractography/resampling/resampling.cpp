@@ -20,6 +20,7 @@
 
 #include "dwi/tractography/resampling/arc.h"
 #include "dwi/tractography/resampling/decimate_fast.h"
+#include "dwi/tractography/resampling/decimate_slow.h"
 #include "dwi/tractography/resampling/downsampler.h"
 #include "dwi/tractography/resampling/endpoints.h"
 #include "dwi/tractography/resampling/fixed_num_points.h"
@@ -53,6 +54,13 @@ const OptionGroup ResampleOption =
              " the value sets the number of output vertices generated per unit of"
              " curvature-weighted arc length (larger values retain more vertices)")
       + Argument("value").type_float(0.0)
+    + Option("decimate_slow",
+             "decimate each streamline to a near-minimal set of vertices whose spline"
+             " reconstruction stays within a tolerance (in mm) of the original trajectory,"
+             " by greedy knot insertion with slide refinement;"
+             " the value sets that maximum permitted deviation"
+             " (smaller values retain more vertices)")
+      + Argument("tolerance").type_float(0.0)
     + Option("endpoints",
              "only output the two endpoints of each streamline")
     + Option("line",
@@ -87,7 +95,8 @@ point_type get_pos(const std::vector<default_type> &s) {
 Base *get_resampler() {
   const size_t count = (!get_options("upsample").empty() ? 1 : 0) + (!get_options("downsample").empty() ? 1 : 0) +
                        (!get_options("step_size").empty() ? 1 : 0) + (!get_options("num_points").empty() ? 1 : 0) +
-                       (!get_options("decimate_fast").empty() ? 1 : 0) + (!get_options("endpoints").empty() ? 1 : 0) +
+                       (!get_options("decimate_fast").empty() ? 1 : 0) +
+                       (!get_options("decimate_slow").empty() ? 1 : 0) + (!get_options("endpoints").empty() ? 1 : 0) +
                        (!get_options("line").empty() ? 1 : 0) + (!get_options("arc").empty() ? 1 : 0);
   if (!count)
     throw Exception("Must specify a mechanism for resampling streamlines");
@@ -109,6 +118,9 @@ Base *get_resampler() {
   opt = get_options("decimate_fast");
   if (!opt.empty())
     return new DecimateFast(opt[0][0]);
+  opt = get_options("decimate_slow");
+  if (!opt.empty())
+    return new DecimateSlow(opt[0][0]);
   opt = get_options("endpoints");
   if (!opt.empty())
     return new Endpoints;
