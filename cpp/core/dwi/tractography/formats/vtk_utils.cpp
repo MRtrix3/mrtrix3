@@ -19,10 +19,13 @@
 #include <array>
 #include <limits>
 #include <sstream>
+#include <type_traits>
+#include <vector>
 
 #include "app.h"
 #include "exception.h"
 #include "file/mmap.h"
+#include "half.h"
 
 namespace MR::DWI::Tractography::Formats::VTKUtils {
 
@@ -185,10 +188,65 @@ std::string vtk_token_from_datatype(DataType dtype) {
   }
 }
 
+namespace {
+//! \brief promote a sidecar element to a type that streams as a number (not a char).
+template <class T> auto as_printable(T value) {
+  if constexpr (std::is_same<T, int8_t>::value || std::is_same<T, uint8_t>::value)
+    return static_cast<int>(value);
+  else
+    return value;
+}
+} // namespace
+
+template <class T> void write_sidecar_tuple(WriteBuffer &buffer, Encoding encoding, const T *values, size_t M) {
+  if (encoding == Encoding::ASCII) {
+    std::ostringstream stream;
+    if constexpr (std::is_floating_point<T>::value)
+      stream.precision(std::numeric_limits<T>::max_digits10);
+    for (size_t c = 0; c != M; ++c) {
+      if (c != 0)
+        stream << " ";
+      stream << as_printable(values[c]);
+    }
+    stream << "\n";
+    const std::string text = stream.str();
+    buffer.add(reinterpret_cast<const std::byte *>(text.data()), text.size());
+  } else {
+    std::vector<T> raw(M);
+    for (size_t c = 0; c != M; ++c)
+      Raw::store_BE<T>(values[c], raw.data(), c);
+    buffer.add(reinterpret_cast<const std::byte *>(raw.data()), M * sizeof(T));
+  }
+}
+
+template <class T> void fetch_sidecar_tuple_BE(const std::byte *base, int64_t offset, T *out, size_t M) {
+  for (size_t c = 0; c != M; ++c)
+    out[c] = Raw::fetch_BE<T>(base + offset + static_cast<int64_t>(c * sizeof(T)));
+}
+
 template class PointReader<float>;
 template class PointReader<double>;
 
 template void write_point<float>(WriteBuffer &, Encoding, const Eigen::Matrix<float, 3, 1> &);
 template void write_point<double>(WriteBuffer &, Encoding, const Eigen::Matrix<double, 3, 1> &);
+
+#define MRTRIX_VTK_INSTANTIATE_SIDECAR(T)                                                                              \
+  template void write_sidecar_tuple<T>(WriteBuffer &, Encoding, const T *, size_t);                                    \
+  template void fetch_sidecar_tuple_BE<T>(const std::byte *, int64_t, T *, size_t)
+MRTRIX_VTK_INSTANTIATE_SIDECAR(uint8_t);
+MRTRIX_VTK_INSTANTIATE_SIDECAR(int8_t);
+MRTRIX_VTK_INSTANTIATE_SIDECAR(uint16_t);
+MRTRIX_VTK_INSTANTIATE_SIDECAR(int16_t);
+MRTRIX_VTK_INSTANTIATE_SIDECAR(uint32_t);
+MRTRIX_VTK_INSTANTIATE_SIDECAR(int32_t);
+MRTRIX_VTK_INSTANTIATE_SIDECAR(uint64_t);
+MRTRIX_VTK_INSTANTIATE_SIDECAR(int64_t);
+MRTRIX_VTK_INSTANTIATE_SIDECAR(float);
+MRTRIX_VTK_INSTANTIATE_SIDECAR(double);
+// Eigen::half completes the DPSValue/DPVValue variant alternative set so the
+//   dtype-generic match_v dispatch in the writer links; the legacy VTK format
+//   has no float16 token, so such a field is rejected before it reaches here.
+MRTRIX_VTK_INSTANTIATE_SIDECAR(Eigen::half);
+#undef MRTRIX_VTK_INSTANTIATE_SIDECAR
 
 } // namespace MR::DWI::Tractography::Formats::VTKUtils

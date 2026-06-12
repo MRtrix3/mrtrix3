@@ -16,6 +16,7 @@
 
 #include "dwi/tractography/formats/vtk.h"
 
+#include <algorithm>
 #include <cctype>
 #include <cstring>
 #include <fstream>
@@ -29,9 +30,11 @@
 #include "file/mmap.h"
 #include "file/ofstream.h"
 #include "file/temp.h"
+#include "match_variant.h"
 #include "raw.h"
 
 #include "dwi/tractography/formats/vtk_utils.h"
+#include "dwi/tractography/sidecar_value.h"
 
 namespace MR::DWI::Tractography {
 
@@ -229,8 +232,11 @@ template <class ValueType> bool VTKReader<ValueType>::operator()(Streamline<Valu
 /* ************************************************************************ */
 
 template <class ValueType>
-VTKWriter<ValueType>::VTKWriter(const std::filesystem::path &path, const Properties &properties)
+VTKWriter<ValueType>::VTKWriter(const std::filesystem::path &path,
+                                const Properties &properties,
+                                const FieldRegistry &registry)
     : path(path),
+      registry(registry),
       points_buffer(File::Config::get_int("TrackWriterBufferSize", 16777216), 1),
       lines_buffer(File::Config::get_int("TrackWriterBufferSize", 16777216), 1),
       num_points(0),
@@ -266,6 +272,27 @@ VTKWriter<ValueType>::VTKWriter(const std::filesystem::path &path, const Propert
       [lines_path](const std::byte *data, size_t size, const Formats::WriteBuffer::Counts &) {
         VTKUtils::append_bytes(lines_path, data, size);
       });
+
+  // One own temporary file + WriteBuffer per sidecar field (Stage 13 step 3):
+  //   every dps/dpv field is streamed independently and concatenated behind its
+  //   POINT_DATA / CELL_DATA attribute header on finalisation. The reserved
+  //   "weight" field is sourced from streamline.weight, not from the dps vector,
+  //   and is not a generic VTK attribute, so it is skipped here.
+  const size_t buffer_size = File::Config::get_int("TrackWriterBufferSize", 16777216);
+  for (const auto &field : registry) {
+    if (field.role != FieldRole::DPS && field.role != FieldRole::DPV)
+      continue;
+    SidecarOutput output;
+    output.descriptor = field;
+    output.tempfile = File::create_tempfile(0, ".vtksidecar");
+    output.buffer = std::make_shared<Formats::WriteBuffer>(buffer_size, 1);
+    const std::filesystem::path field_path = output.tempfile;
+    output.buffer->set_flush_callback(
+        [field_path](const std::byte *data, size_t size, const Formats::WriteBuffer::Counts &) {
+          VTKUtils::append_bytes(field_path, data, size);
+        });
+    sidecars.push_back(std::move(output));
+  }
 }
 
 template <class ValueType> void VTKWriter<ValueType>::add_line(size_t first_vertex, size_t num_vertices) {
@@ -299,9 +326,66 @@ template <class ValueType> bool VTKWriter<ValueType>::operator()(const Streamlin
   return true;
 }
 
+template <class ValueType> bool VTKWriter<ValueType>::operator()(const TractogramItem<ValueType> &item) {
+  // The vertices-and-topology write is identical to the bare-streamline path;
+  //   the sidecar values are streamed in lock-step to their own temporary files.
+  (*this)(item.streamline);
+  add_sidecars(item);
+  return true;
+}
+
+template <class ValueType> void VTKWriter<ValueType>::add_sidecars(const TractogramItem<ValueType> &item) {
+  for (auto &field : sidecars) {
+    const FieldDescriptor &descriptor = field.descriptor;
+    if (descriptor.role == FieldRole::DPS) {
+      assert(descriptor.ordinal < item.dps.size());
+      // One M-component tuple for this streamline (D3: scalar when M==1).
+      MR::match_v(item.dps[descriptor.ordinal], [&](const auto &value) {
+        using Element = typename std::decay_t<decltype(value)>::element_type;
+        VTKUtils::write_sidecar_tuple<Element>(*field.buffer, encoding, value.data(), descriptor.columns);
+      });
+    } else {
+      assert(descriptor.ordinal < item.dpv.size());
+      // One M-component tuple per vertex; serialise row-major (per-vertex
+      //   contiguous) so the reader can step one vertex at a time.
+      MR::match_v(item.dpv[descriptor.ordinal], [&](const auto &value) {
+        using Element = typename std::decay_t<decltype(value)>::element_type;
+        const Eigen::Index rows = value.rows();
+        std::vector<Element> row(descriptor.columns);
+        for (Eigen::Index r = 0; r != rows; ++r) {
+          for (size_t c = 0; c != descriptor.columns; ++c)
+            row[c] = value(r, static_cast<Eigen::Index>(c));
+          VTKUtils::write_sidecar_tuple<Element>(*field.buffer, encoding, row.data(), descriptor.columns);
+        }
+      });
+    }
+  }
+}
+
+template <class ValueType> void VTKWriter<ValueType>::append_sidecar(std::ofstream &out, const SidecarOutput &field) {
+  const FieldDescriptor &descriptor = field.descriptor;
+  const std::string token = VTKUtils::vtk_token_from_datatype(descriptor.dtype);
+  // SCALARS supports 1..4 components and an arbitrary dataType (incl.
+  //   unsigned_char, so native uint8 RGB round-trips losslessly through both
+  //   encodings); wider fields use FIELD, the general multi-column carrier.
+  if (descriptor.columns >= 1 && descriptor.columns <= 4) {
+    out << "SCALARS " << descriptor.name << " " << token << " " << descriptor.columns << "\n";
+    out << "LOOKUP_TABLE default\n";
+  } else {
+    const size_t num_tuples = (descriptor.role == FieldRole::DPV) ? num_points : num_lines;
+    out << "FIELD " << descriptor.name << " 1\n";
+    out << descriptor.name << " " << descriptor.columns << " " << num_tuples << " " << token << "\n";
+  }
+  VTKUtils::append_file(out, field.tempfile);
+  if (encoding == Encoding::Binary)
+    out << "\n";
+}
+
 template <class ValueType> void VTKWriter<ValueType>::finalise() {
   points_buffer.commit();
   lines_buffer.commit();
+  for (auto &field : sidecars)
+    field.buffer->commit();
 
   File::OFStream out(path, std::ios::out | std::ios::binary | std::ios::trunc);
 
@@ -318,11 +402,32 @@ template <class ValueType> void VTKWriter<ValueType>::finalise() {
   if (encoding == Encoding::Binary)
     out << "\n";
 
+  // Sidecar attributes (Stage 13): dpv fields under POINT_DATA, dps fields under
+  //   CELL_DATA. The attribute-section count is the number of points / cells.
+  const bool have_dpv = std::any_of(
+      sidecars.begin(), sidecars.end(), [](const SidecarOutput &f) { return f.descriptor.role == FieldRole::DPV; });
+  const bool have_dps = std::any_of(
+      sidecars.begin(), sidecars.end(), [](const SidecarOutput &f) { return f.descriptor.role == FieldRole::DPS; });
+  if (have_dpv) {
+    out << "POINT_DATA " << num_points << "\n";
+    for (const auto &field : sidecars)
+      if (field.descriptor.role == FieldRole::DPV)
+        append_sidecar(out, field);
+  }
+  if (have_dps) {
+    out << "CELL_DATA " << num_lines << "\n";
+    for (const auto &field : sidecars)
+      if (field.descriptor.role == FieldRole::DPS)
+        append_sidecar(out, field);
+  }
+
   out.close();
 
   std::error_code ec;
   std::filesystem::remove(points_tempfile, ec);
   std::filesystem::remove(lines_tempfile, ec);
+  for (const auto &field : sidecars)
+    std::filesystem::remove(field.tempfile, ec);
 }
 
 template <class ValueType> VTKWriter<ValueType>::~VTKWriter() {
@@ -362,16 +467,16 @@ std::unique_ptr<ReaderInterface<double>> VTK::read_double(const std::filesystem:
 
 std::unique_ptr<WriterInterface<float>> VTK::create_float(const std::filesystem::path &path,
                                                           const Properties &properties,
-                                                          const FieldRegistry &,
+                                                          const FieldRegistry &registry,
                                                           const OptionalHeader &) const {
-  return std::make_unique<VTKWriter<float>>(path, properties);
+  return std::make_unique<VTKWriter<float>>(path, properties, registry);
 }
 
 std::unique_ptr<WriterInterface<double>> VTK::create_double(const std::filesystem::path &path,
                                                             const Properties &properties,
-                                                            const FieldRegistry &,
+                                                            const FieldRegistry &registry,
                                                             const OptionalHeader &) const {
-  return std::make_unique<VTKWriter<double>>(path, properties);
+  return std::make_unique<VTKWriter<double>>(path, properties, registry);
 }
 
 } // namespace Formats

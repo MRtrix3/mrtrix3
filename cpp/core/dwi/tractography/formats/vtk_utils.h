@@ -141,4 +141,20 @@ DataType datatype_from_vtk_token(std::string_view token, const std::filesystem::
  * datatype. Throws if the datatype has no legacy-VTK token. */
 std::string vtk_token_from_datatype(DataType dtype);
 
+//! \brief Append one M-component sidecar tuple to a dataset-attribute WriteBuffer.
+/*! Encodes the \a M values pointed to by \a values (native element type \c T)
+ * for one tuple (one streamline for dps / CELL_DATA, one vertex for dpv /
+ * POINT_DATA), terminated by a newline in ASCII. BINARY values are stored
+ * big-endian (the legacy-VTK convention); ASCII values are printed with enough
+ * significant digits to round-trip the native type. Integer types are printed
+ * as integers (char/unsigned_char promoted so they are not emitted as
+ * characters). Shared by the ".vtk"/".vtx" writers. */
+template <class T> void write_sidecar_tuple(WriteBuffer &buffer, Encoding encoding, const T *values, size_t M);
+
+//! \brief Fetch one M-component sidecar tuple of native type \c T from a memory-map.
+/*! Reads \a M big-endian values of type \c T starting at byte \a offset within
+ * the map \a base into \a out. The binary counterpart of the per-tuple read used
+ * while streaming a POINT_DATA / CELL_DATA block (§ Stage 13). */
+template <class T> void fetch_sidecar_tuple_BE(const std::byte *base, int64_t offset, T *out, size_t M);
+
 } // namespace MR::DWI::Tractography::Formats::VTKUtils

@@ -91,21 +91,37 @@ private:
  *
  * The POINTS and LINES payloads are accumulated into two independent temporary
  * files created with File::create_tempfile(), each fed through the shared
- * Formats::WriteBuffer so that filesystem writes are batched. Only once
- * processing is complete and both buffers have been flushed are the temporary
+ * Formats::WriteBuffer so that filesystem writes are batched. Sidecar fields
+ * (Stage 13) are likewise streamed each to its OWN temporary file: every dpv
+ * field is written under POINT_DATA, every dps field under CELL_DATA. Only once
+ * processing is complete and every buffer has been flushed are the temporary
  * files concatenated, behind the dataset header, into the final ".vtk".
  *
  * The implementation is explicitly instantiated for float and double in
  * formats/vtk.cpp. */
 template <class ValueType = float> class VTKWriter : public WriterInterface<ValueType> {
 public:
-  VTKWriter(const std::filesystem::path &path, const Properties &properties);
+  VTKWriter(const std::filesystem::path &path, const Properties &properties, const FieldRegistry &registry);
   ~VTKWriter() override;
 
   bool operator()(const Streamline<ValueType> &tck) override;
+  bool operator()(const TractogramItem<ValueType> &item) override;
 
 private:
+  //! \brief one sidecar field's own temporary file + write-back buffer (Stage 13).
+  /*! Each unique dps/dpv field is written to its own File::create_tempfile()
+   * temporary, fed through its own Formats::WriteBuffer (consistent with how the
+   * POINTS / LINES temporaries already work), then concatenated behind its
+   * attribute header on finalisation. The descriptor records the field's role
+   * (DPV → POINT_DATA, DPS → CELL_DATA), native datatype and column count M. */
+  struct SidecarOutput {
+    FieldDescriptor descriptor;
+    std::filesystem::path tempfile;
+    std::shared_ptr<Formats::WriteBuffer> buffer;
+  };
+
   const std::filesystem::path path;
+  const FieldRegistry &registry;
   VTKUtils::Encoding encoding;
 
   //! the two independent temporary files holding the POINTS and LINES payloads
@@ -115,6 +131,9 @@ private:
   //! byte-oriented write-back buffers for the two temporary files (§ Stage 2)
   Formats::WriteBuffer points_buffer;
   Formats::WriteBuffer lines_buffer;
+
+  //! one own temporary file + buffer per sidecar field (Stage 13)
+  std::vector<SidecarOutput> sidecars;
 
   //! running tally of vertices written (== next vertex index)
   size_t num_points;
@@ -126,7 +145,13 @@ private:
   //! append one streamline's connectivity record to the LINES temporary file
   void add_line(size_t first_vertex, size_t num_vertices);
 
-  //! flush the buffers and assemble the final ".vtk" from the two temporary files
+  //! append one streamline's sidecar values to each field's temporary file
+  void add_sidecars(const TractogramItem<ValueType> &item);
+
+  //! emit one sidecar field's attribute header + concatenated payload to \a out
+  void append_sidecar(std::ofstream &out, const SidecarOutput &field);
+
+  //! flush the buffers and assemble the final ".vtk" from the temporary files
   void finalise();
 
   VTKWriter(const VTKWriter &) = delete;
@@ -139,9 +164,14 @@ namespace Formats {
  * restricted to POINTS (streamline vertices) and LINES (per-streamline vertex
  * index runs), in both the ASCII and BINARY (big-endian) encodings.
  *
+ * POINT_DATA (→ dpv) and CELL_DATA (→ dps) sidecar attributes are carried
+ * (Stage 13): on read each is registered on the FieldRegistry and streamed; on
+ * write each dps/dpv field is emitted to its own temporary file.
+ *
  * Capabilities: read+write; sequential streaming access (the read backend
- * mmaps the POINTS block and advances a pointer; the write backend streams to
- * two temporary files concatenated on completion); rewrite-only. */
+ * mmaps the POINTS / attribute blocks and advances a pointer; the write backend
+ * streams to per-block temporary files concatenated on completion);
+ * rewrite-only. */
 class VTK : public Base {
 public:
   VTK() : Base("VTK PolyData", {IO::ReadWrite, Access::Streaming, Augment::Rewrite}) {}
