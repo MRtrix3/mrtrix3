@@ -1,0 +1,7 @@
+#!/bin/bash
+# Evaluate the operation of the "demodulate" filter when:
+# - Input is a *4D* image series
+# - Using *linear* phase map estimation
+# - Phase maps are to be estimated based on *2D slices*
+mrfilter mrfilter/demodulate/in.mif.gz demodulate - -linear | \
+    testing_diff_image - mrfilter/demodulate/linear_2Ddemod.mif.gz -frac 1e-6

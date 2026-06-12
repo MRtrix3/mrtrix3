@@ -20,14 +20,19 @@ FetchContent_Declare(
     eigen3
     DOWNLOAD_EXTRACT_TIMESTAMP ON
     URL ${eigen_url}
+    # Hack to turn off Eigen's configure
+    # See https://stackoverflow.com/questions/77210209/how-to-prevent-eigen-targets-to-show-up-in-the-main-app-in-a-cmake-project
+    SOURCE_SUBDIR non_existent_dir
 )
-FetchContent_GetProperties(Eigen3)
-if(NOT eigen3_POPULATED)
-    FetchContent_Populate(Eigen3)
+
+FetchContent_MakeAvailable(eigen3)
+
+if(NOT TARGET Eigen3::Eigen)
     add_library(Eigen3 INTERFACE)
     add_library(Eigen3::Eigen ALIAS Eigen3)
-    target_include_directories(Eigen3 INTERFACE "${eigen3_SOURCE_DIR}")
+    set_target_properties(Eigen3 PROPERTIES INTERFACE_INCLUDE_DIRECTORIES ${eigen3_SOURCE_DIR})
 endif()
+
 
 # Json for Modern C++
 if(MRTRIX_LOCAL_DEPENDENCIES)
@@ -92,5 +97,22 @@ else()
             "${nifti2_SOURCE_DIR}"
         )
     endif()
+endif()
+
+if(MRTRIX_BUILD_TESTS)
+    # Google Test
+    set(googletest_version 1.17.0)
+    if(MRTRIX_LOCAL_DEPENDENCIES)
+        set(googletest_url ${MRTRIX_DEPENDENCIES_DIR}/googletest-${googletest_version}.tar.gz)
+    else()
+        set(googletest_url "https://github.com/google/googletest/releases/download/v${googletest_version}/googletest-${googletest_version}.tar.gz")
+    endif()
+
+    FetchContent_Declare(
+        googletest
+        DOWNLOAD_EXTRACT_TIMESTAMP ON
+        URL ${googletest_url}
+    )
+    FetchContent_MakeAvailable(googletest)
 endif()
 

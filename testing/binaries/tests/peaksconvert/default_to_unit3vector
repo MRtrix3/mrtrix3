@@ -1,0 +1,31 @@
+#!/bin/bash
+# Evaluation of command operation for conversion from default format to:
+# - Unit 3-vector
+# - Persisting with the default "xyz" reference axes
+# This image can be expected to be identical to that produced
+#   through an explicit normalisation of the original peaks image
+
+# For each of the up-to-three peaks per voxel,
+#   we need to compute the norm
+mrconvert peaks.mif -coord 3 0,1,2 - | \
+    mrmath - norm -axis 3 tmp_norm1.mif -force
+mrconvert peaks.mif -coord 3 3,4,5 - | \
+    mrmath - norm -axis 3 tmp_norm2.mif -force
+mrconvert peaks.mif -coord 3 6,7,8 - | \
+    mrmath - norm -axis 3 tmp_norm3.mif -force
+
+# Now we can manually compute the unit-normalised version
+#   of the input peaks image
+mrcalc \
+    peaks.mif \
+    $(mrcat \
+        tmp_norm1.mif tmp_norm1.mif tmp_norm1.mif \
+        tmp_norm2.mif tmp_norm2.mif tmp_norm2.mif \
+        tmp_norm3.mif tmp_norm3.mif tmp_norm3.mif \
+        -axis 3 -) \
+    -div tmp_unitpeaks.mif -force
+
+peaksconvert peaks.mif \
+    -out_format unit3vector \
+    - | \
+testing_diff_peaks - tmp_unitpeaks.mif 1e-14

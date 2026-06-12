@@ -32,6 +32,8 @@ Options
 
 -  **-restarts num** specify the number of restarts to perform (default: 10).
 
+-  **-fixed direction** *(multiple uses permitted)* specify a fixed direction (comm-separateed floats) that will always be included at the start of the scheme
+
 -  **-unipolar** optimise assuming a unipolar electrostatic repulsion model rather than the bipolar model normally assumed in DWI
 
 -  **-cartesian** Output the directions in Cartesian coordinates [x y z] instead of [az el].
@@ -70,7 +72,7 @@ Tournier, J.-D.; Smith, R. E.; Raffelt, D.; Tabbara, R.; Dhollander, T.; Pietsch
 
 **Author:** J-Donald Tournier (jdtournier@gmail.com)
 
-**Copyright:** Copyright (c) 2008-2024 the MRtrix3 contributors.
+**Copyright:** Copyright (c) 2008-2025 the MRtrix3 contributors.
 
 This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0. If a copy of the MPL was not distributed with this

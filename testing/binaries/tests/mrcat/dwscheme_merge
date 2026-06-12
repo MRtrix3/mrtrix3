@@ -1,0 +1,28 @@
+#!/bin/bash
+# Checks that ensure appropriate issuing or non-issuing of specific warning
+#   relating to resolving of diffusion gradient tables when image headers are merged:
+#   - If concatenating along an axis other than 3,
+#     then the diffusion gradient table needs to match across all images
+#   - If concatenating along axis 3,
+#     then the diffusion gradient tables should be concatenated across images
+rm -f tmp-*.mif
+mrconvert dwi.mif tmp-[].mif
+
+# Concatenating along volumes; warning should _not_ appear
+if [ mrcat tmp-[].mif -axis 3 tmp.mif -info -force 2>&1 | \
+     grep "Unable to merge inconsistent DW gradient tables between headers" ]; then
+    exit 1
+fi
+
+# Concatenating along volumes; warning should _not_ appear
+if [ mrcat rpesplit1.mif rpesplit2.mif -info -axis 3 tmp.mif -force 2>&1 | \
+     grep "Unable to merge inconsistent DW gradient tables between headers" ]; then
+    exit 1
+fi
+
+# Concatenating along axis 2; warning _should_ appear
+if [ ! $(mrconvert rpesplit1.mif -coord 3 0:9 - | \
+         mrcat - rpesplit2.mif -axis 2 tmp.mif -info -force 2>&1 | \
+         grep "Unable to merge inconsistent DW gradient tables between headers") ]; then
+    exit 1
+fi

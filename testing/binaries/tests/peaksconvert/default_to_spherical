@@ -1,0 +1,16 @@
+#!/bin/bash
+# Evaluation of command operation for conversion from default format to:
+# - Spherical format, including "radius"
+#   (which should be filled with the vector norms)
+# - Persisting with the default "xyz" reference axes
+# Note that "testing_diff_peaks" can't be used here
+#   as it assumes that its inputs are 3-vectors
+# As such, if a different platform / implementation
+#   were to define a direction as its antipodal reflection,
+#   or otherwise change the azimuth / inclination angles
+#   such that their values are different but the interpretation remains unchanged,
+#   this test would fail
+peaksconvert peaks.mif \
+    -out_format spherical \
+    - | \
+testing_diff_image - peaksconvert/xyzspherical.mif

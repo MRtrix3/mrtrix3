@@ -108,7 +108,7 @@ else
 
   # QT6
   SECONDS=0
-  QT_MIRROR=https://ftp1.nluug.nl/languages/qt
+  QT_MIRROR=https://ftp.nluug.nl/languages/qt
 
   if [ "${OS}" = "linux" ]; then
     QT_URL=${QT_MIRROR}/online/qtsdkrepository/linux_x64/desktop/qt6_${QT_VERSION//./}/qt.qt6.${QT_VERSION//./}.gcc_64/

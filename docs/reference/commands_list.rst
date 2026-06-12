@@ -97,13 +97,14 @@ List of MRtrix3 commands
     commands/mtnormalise
     commands/peaks2amp
     commands/peaks2fixel
+    commands/peakscheck
+    commands/peaksconvert
     commands/population_template
     commands/responsemean
     commands/sh2amp
     commands/sh2peaks
     commands/sh2power
     commands/sh2response
-    commands/shbasis
     commands/shconv
     commands/shview
     commands/tck2connectome
@@ -230,13 +231,14 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`mtnormalise`, "Multi-tissue informed log-domain intensity normalisation"
     |cpp.png|, :ref:`peaks2amp`, "Extract amplitudes from a peak directions image"
     |cpp.png|, :ref:`peaks2fixel`, "Convert peak directions image to a fixel directory"
+    |python.png|, :ref:`peakscheck`, "Check the orientations of an image containing discrete fibre orientations"
+    |cpp.png|, :ref:`peaksconvert`, "Convert peak directions images between formats and/or conventions"
     |python.png|, :ref:`population_template`, "Generates an unbiased group-average template from a series of images"
     |python.png|, :ref:`responsemean`, "Calculate the mean response function from a set of text files"
     |cpp.png|, :ref:`sh2amp`, "Evaluate the amplitude of an image of spherical harmonic functions along specified directions"
     |cpp.png|, :ref:`sh2peaks`, "Extract the peaks of a spherical harmonic function in each voxel"
     |cpp.png|, :ref:`sh2power`, "Compute the total power of a spherical harmonics image"
     |cpp.png|, :ref:`sh2response`, "Generate an appropriate response function from the image data for spherical deconvolution"
-    |cpp.png|, :ref:`shbasis`, "Examine the values in spherical harmonic images to estimate (and optionally change) the SH basis used"
     |cpp.png|, :ref:`shconv`, "Perform spherical convolution"
     |cpp.png|, :ref:`shview`, "View spherical harmonics surface plots"
     |cpp.png|, :ref:`tck2connectome`, "Generate a connectome matrix from a streamlines file and a node parcellation image"

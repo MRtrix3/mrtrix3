@@ -1,0 +1,19 @@
+#!/bin/bash
+# Verify operation of the "peakscheck" command
+#   under default usage,
+#   with the input image being of the default format,
+#   but specifying the -all option,
+#   which prints a greater amount of information to stdout
+# This test just makes sure that the code executes successfully,
+#   and that the output contains data consistent with expectation
+rm -f tmp.txt
+peakscheck peakscheck/posdet_xyz3vector.mif \
+    -number 100 \
+    -threshold 0.0 \
+    -all > tmp.txt
+
+head -n1 tmp.txt | \
+    grep "^Mean length *Variant$"
+
+# 118 variants by default, plus the column header
+(( $(echo "119 == $(wc -l tmp.txt | cut -d' ' -f1)" | bc) ))

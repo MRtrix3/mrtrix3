@@ -1,0 +1,15 @@
+#!/bin/bash
+# Evaluation of command operation for conversion:
+#   - From:
+#     - Spherical format, including "radius"
+#       (filled with the original vector norms)
+#     - The "xyz" reference axes
+#   - To the default (xyz reference non-unit 3-vectors)
+# This is a direct reversal of the operation that was used
+#   to produce the sample data in spherical format
+#   from its native 3-vector format,
+#   and should therefore reproduce the original data
+peaksconvert peaksconvert/xyzspherical.mif \
+    -in_format spherical \
+    - | \
+testing_diff_peaks - peaks.mif 1e-13

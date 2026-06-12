@@ -1,8 +1,0 @@
-#include "version.h"
-
-namespace MR {
-    namespace App {
-        const char *mrtrix_version = "@MRTRIX_VERSION@";
-        const char *build_date = __DATE__;
-    }
-}
