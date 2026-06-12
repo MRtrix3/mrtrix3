@@ -127,6 +127,7 @@ target_link_libraries(mrtrix-core PUBLIC
     nifti::nifti
     tcb::span
     magic_enum::magic_enum
+    libzip::zip
 )
 
 if(MRTRIX_ENABLE_GPU)
