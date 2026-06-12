@@ -25,8 +25,10 @@
 #include "connectome/mat2vec.h"
 #include "math/math.h"
 
+#include "dwi/tractography/connectome/assignments.h"
 #include "dwi/tractography/connectome/connectome.h"
 #include "dwi/tractography/connectome/mapped_track.h"
+#include "dwi/tractography/grouping.h"
 
 namespace MR::DWI::Tractography::Connectome {
 
@@ -64,6 +66,16 @@ public:
   void finalize();
 
   void error_check(const std::vector<node_t> &);
+
+  //! \brief the streamline node assignments as the canonical per-streamline form (Stage 17).
+  /*! Collects whichever of the single / pair / list assignment tables was
+   * populated into a single Assignments object, the in-memory form shared with
+   * connectome2tck and the basis for both the "-out_assignments" text file and
+   * the canonical Grouping encoding (§2.3). */
+  Assignments assignments() const;
+
+  //! \brief the streamline grouping encoded from these assignments (§2.3 / D6).
+  Grouping grouping() const { return assignments().to_grouping(); }
 
   void write_assignments(const std::filesystem::path &) const;
 

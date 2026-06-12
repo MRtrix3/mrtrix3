@@ -16,9 +16,13 @@
 
 #include "dwi/tractography/connectome/exemplar.h"
 
+#include "dwi/tractography/connectome/assignments.h"
+
 namespace MR::DWI::Tractography::Connectome {
 
 const default_type Exemplar::endpoint_convergence_fraction = 0.25;
+
+std::string Exemplar::group_name() const { return edge_group_name(nodes.first, nodes.second); }
 
 Exemplar &Exemplar::operator=(const Exemplar &that) {
   Tractography::Streamline<float>(*this) = that;

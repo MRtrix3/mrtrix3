@@ -168,22 +168,28 @@ template <typename T> void Matrix<T>::error_check(const std::vector<node_t> &mis
   }
 }
 
+template <typename T> Assignments Matrix<T>::assignments() const {
+  // Exactly one of the three assignment tables is populated for a given run
+  //   (matrix vs vector output, pair vs list assignment mode); collect whichever
+  //   it is into the unified per-streamline form. The ordering and node order
+  //   are preserved verbatim so the text export (save) is byte-identical to the
+  //   historical write_assignments output.
+  Assignments out;
+  for (const node_t node : assignments_single)
+    out.add(std::vector<node_t>{node});
+  for (const NodePair &pair : assignments_pairs)
+    out.add(std::vector<node_t>{pair.first, pair.second});
+  for (const std::vector<node_t> &list : assignments_lists)
+    out.add(list);
+  return out;
+}
+
 template <typename T> void Matrix<T>::write_assignments(const std::filesystem::path &path) const {
   if (!track_assignments)
     throw Exception("Cannot write streamline assignments to file as they were not stored during processing");
-  File::OFStream stream(path);
-  stream << "# " << App::command_history_string << "\n";
-  for (auto i = assignments_single.begin(); i != assignments_single.end(); ++i)
-    stream << str(*i) << "\n";
-  for (auto i = assignments_pairs.begin(); i != assignments_pairs.end(); ++i)
-    stream << str(i->first) << " " << str(i->second) << "\n";
-  for (auto i = assignments_lists.begin(); i != assignments_lists.end(); ++i) {
-    assert(i->size());
-    stream << str((*i)[0]);
-    for (size_t j = 1; j != i->size(); ++j)
-      stream << " " << str((*i)[j]);
-    stream << "\n";
-  }
+  // Serialise through the shared Assignments class (the byte-faithful export
+  //   interface to the canonical Grouping; Stage 17, step 4).
+  assignments().save(path);
 }
 
 template <typename T>

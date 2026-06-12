@@ -28,9 +28,11 @@
 #include "connectome/connectome.h"
 #include "connectome/validate.h"
 
+#include "dwi/tractography/connectome/assignments.h"
 #include "dwi/tractography/connectome/extract.h"
 #include "dwi/tractography/connectome/streamline.h"
 #include "dwi/tractography/file.h"
+#include "dwi/tractography/grouping.h"
 #include "dwi/tractography/mapping/loader.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/scalar_file.h"
@@ -223,35 +225,21 @@ void run() {
   Tractography::Properties properties;
   Tractography::Reader<float> reader(tracks_input_path, properties);
 
-  std::vector<std::vector<node_t>> assignments_lists;
-  assignments_lists.reserve(to<size_t>(properties["count"]));
+  // Read the assignments through the shared Assignments class (Stage 17, step 4):
+  //   the same byte-faithful "-out_assignments" text format, now the import
+  //   interface to the canonical streamline Grouping (§2.3 / D6).
+  const Tractography::Connectome::Assignments assignments =
+      Tractography::Connectome::Assignments::load(assignments_input_path);
+  // The canonical grouping encoding (edge "<n1>-<n2>" / node "<n>" → streamline
+  //   indices), realising overlap / multi-membership; carried alongside the
+  //   per-streamline tables that drive extraction below.
+  const Tractography::Grouping grouping = assignments.to_grouping();
+  DEBUG("connectome assignments encode " + str(grouping.size()) + " streamline group(s)");
+  node_t max_node_index = assignments.max_node();
+  const bool nonpair_found = !assignments.all_pairs();
+
+  std::vector<std::vector<node_t>> assignments_lists = assignments.as_lists();
   std::vector<NodePair> assignments_pairs;
-  bool nonpair_found = false;
-  node_t max_node_index = 0;
-  {
-    std::ifstream stream(assignments_input_path);
-    std::string line;
-    ProgressBar progress("reading streamline assignments file");
-    while (std::getline(stream, line)) {
-      line = strip(line.substr(0, line.find_first_of('#')));
-      if (line.empty())
-        continue;
-      std::stringstream line_stream(line);
-      std::vector<node_t> nodes;
-      while (1) {
-        node_t n;
-        line_stream >> n;
-        if (!line_stream)
-          break;
-        nodes.push_back(n);
-        max_node_index = std::max(max_node_index, n);
-      }
-      if (nodes.size() != 2)
-        nonpair_found = true;
-      assignments_lists.push_back(std::move(nodes));
-      ++progress;
-    }
-  }
   INFO("Maximum node index in assignments file is " + str(max_node_index));
 
   const size_t count = to<size_t>(properties["count"]);
@@ -266,9 +254,7 @@ void run() {
   //   now supported.
   if (!nonpair_found) {
     INFO("Assignments file contains node pair for every streamline; operating accordingly");
-    assignments_pairs.reserve(assignments_lists.size());
-    for (auto i = assignments_lists.begin(); i != assignments_lists.end(); ++i)
-      assignments_pairs.push_back(NodePair((*i)[0], (*i)[1]));
+    assignments_pairs = assignments.as_pairs();
     assignments_lists.clear();
   }
 

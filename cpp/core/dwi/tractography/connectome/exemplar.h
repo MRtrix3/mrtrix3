@@ -17,6 +17,7 @@
 #pragma once
 
 #include <mutex>
+#include <string>
 
 #include "dwi/tractography/connectome/connectome.h"
 #include "dwi/tractography/connectome/streamline.h"
@@ -70,6 +71,16 @@ public:
   bool is_diagonal() const { return nodes.first == nodes.second; }
 
   float get_weight() const { return weight; }
+
+  //! \brief the node pair (edge) this exemplar represents.
+  const NodePair &get_nodes() const { return nodes; }
+
+  //! \brief the canonical group name for this exemplar's edge (§2.3 / D6).
+  /*! An exemplar is the representative trajectory of one connectome edge, so it
+   * corresponds to the group named "<lo>-<hi>" in the canonical Grouping; its
+   * per-edge metadata (e.g. the streamline weight) is naturally a dpg field on
+   * that group. */
+  std::string group_name() const;
 
 private:
   std::mutex mutex;
