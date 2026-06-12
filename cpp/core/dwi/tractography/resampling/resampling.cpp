@@ -19,6 +19,7 @@
 #include "types.h"
 
 #include "dwi/tractography/resampling/arc.h"
+#include "dwi/tractography/resampling/decimate_fast.h"
 #include "dwi/tractography/resampling/downsampler.h"
 #include "dwi/tractography/resampling/endpoints.h"
 #include "dwi/tractography/resampling/fixed_num_points.h"
@@ -46,6 +47,12 @@ const OptionGroup ResampleOption =
     + Option("num_points",
              "re-sample each streamline to a fixed number of points")
       + Argument("count").type_integer(2)
+    + Option("decimate_fast",
+             "decimate each streamline to the fewest vertices necessary to represent its"
+             " spline trajectory, placing more vertices where the curvature is greater;"
+             " the value sets the number of output vertices generated per unit of"
+             " curvature-weighted arc length (larger values retain more vertices)")
+      + Argument("value").type_float(0.0)
     + Option("endpoints",
              "only output the two endpoints of each streamline")
     + Option("line",
@@ -80,8 +87,8 @@ point_type get_pos(const std::vector<default_type> &s) {
 Base *get_resampler() {
   const size_t count = (!get_options("upsample").empty() ? 1 : 0) + (!get_options("downsample").empty() ? 1 : 0) +
                        (!get_options("step_size").empty() ? 1 : 0) + (!get_options("num_points").empty() ? 1 : 0) +
-                       (!get_options("endpoints").empty() ? 1 : 0) + (!get_options("line").empty() ? 1 : 0) +
-                       (!get_options("arc").empty() ? 1 : 0);
+                       (!get_options("decimate_fast").empty() ? 1 : 0) + (!get_options("endpoints").empty() ? 1 : 0) +
+                       (!get_options("line").empty() ? 1 : 0) + (!get_options("arc").empty() ? 1 : 0);
   if (!count)
     throw Exception("Must specify a mechanism for resampling streamlines");
   if (count > 1)
@@ -99,6 +106,9 @@ Base *get_resampler() {
   opt = get_options("num_points");
   if (!opt.empty())
     return new FixedNumPoints(opt[0][0]);
+  opt = get_options("decimate_fast");
+  if (!opt.empty())
+    return new DecimateFast(opt[0][0]);
   opt = get_options("endpoints");
   if (!opt.empty())
     return new Endpoints;
