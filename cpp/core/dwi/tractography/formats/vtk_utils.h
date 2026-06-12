@@ -26,6 +26,7 @@
 #include <string_view>
 #include <vector>
 
+#include "datatype.h"
 #include "raw.h"
 
 #include "dwi/tractography/formats/write_buffer.h"
@@ -120,5 +121,24 @@ private:
  * printed with enough significant digits to round-trip float32 losslessly. */
 template <class ValueType>
 void write_point(WriteBuffer &buffer, Encoding encoding, const Eigen::Matrix<ValueType, 3, 1> &p);
+
+/* ************************************************************************ */
+/*               VTK dataset-attribute (sidecar) data types               */
+/* ************************************************************************ */
+
+//! \brief Map a legacy-VTK \c dataType token to an MR::DataType (§ Stage 13).
+/*! Implements the spec's "dataType is one of bit, unsigned_char, char,
+ * unsigned_short, short, unsigned_int, int, unsigned_long, long, float, double"
+ * (vtk.md). The returned DataType carries native byte-order for the multi-byte
+ * types so that a sidecar field round-trips in its on-disk precision (D7). The
+ * "bit" token maps to UInt8 (the in-memory sidecar bit representation, §2.2).
+ * Throws if the token is not a recognised / sidecar-supportable VTK type. */
+DataType datatype_from_vtk_token(std::string_view token, const std::filesystem::path &path);
+
+//! \brief The legacy-VTK \c dataType token for an MR::DataType (§ Stage 13).
+/*! The inverse of datatype_from_vtk_token(): emits the VTK keyword written into
+ * the SCALARS / FIELD attribute header for a sidecar field of the given native
+ * datatype. Throws if the datatype has no legacy-VTK token. */
+std::string vtk_token_from_datatype(DataType dtype);
 
 } // namespace MR::DWI::Tractography::Formats::VTKUtils

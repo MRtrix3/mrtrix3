@@ -128,6 +128,63 @@ void write_point(WriteBuffer &buffer, Encoding encoding, const Eigen::Matrix<Val
   }
 }
 
+DataType datatype_from_vtk_token(std::string_view token, const std::filesystem::path &path) {
+  // The "bit" token is the on-disk packed boolean; in memory it is carried as a
+  //   uint8 (sidecar_value.h, §2.2). Multi-byte types are reported native-endian
+  //   so the field round-trips without a precision/endianness detour (D7); the
+  //   VTK binary payload is big-endian and is byte-swapped on read/write.
+  if (token == "bit" || token == "unsigned_char")
+    return DataType(DataType::UInt8);
+  if (token == "char")
+    return DataType(DataType::Int8);
+  if (token == "unsigned_short")
+    return DataType::native(DataType(DataType::UInt16));
+  if (token == "short")
+    return DataType::native(DataType(DataType::Int16));
+  if (token == "unsigned_int")
+    return DataType::native(DataType(DataType::UInt32));
+  if (token == "int")
+    return DataType::native(DataType(DataType::Int32));
+  if (token == "unsigned_long")
+    return DataType::native(DataType(DataType::UInt64));
+  if (token == "long")
+    return DataType::native(DataType(DataType::Int64));
+  if (token == "float")
+    return DataType::native(DataType(DataType::Float32));
+  if (token == "double")
+    return DataType::native(DataType(DataType::Float64));
+  throw Exception("VTK file \"" + path.string() + "\" sidecar field datatype \"" + std::string(token) +
+                  "\" is unsupported");
+}
+
+std::string vtk_token_from_datatype(DataType dtype) {
+  switch (dtype() & (DataType::Type | DataType::Signed)) {
+  case DataType::Bit:
+  case DataType::UInt8:
+    return "unsigned_char";
+  case DataType::Int8:
+    return "char";
+  case DataType::UInt16:
+    return "unsigned_short";
+  case DataType::Int16:
+    return "short";
+  case DataType::UInt32:
+    return "unsigned_int";
+  case DataType::Int32:
+    return "int";
+  case DataType::UInt64:
+    return "unsigned_long";
+  case DataType::Int64:
+    return "long";
+  case DataType::Float32:
+    return "float";
+  case DataType::Float64:
+    return "double";
+  default:
+    throw Exception("sidecar field datatype \"" + dtype.specifier() + "\" has no legacy-VTK representation");
+  }
+}
+
 template class PointReader<float>;
 template class PointReader<double>;
 
