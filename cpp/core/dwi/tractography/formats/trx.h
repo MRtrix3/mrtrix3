@@ -31,6 +31,7 @@
 #include "dwi/tractography/field_registry.h"
 #include "dwi/tractography/formats/base.h"
 #include "dwi/tractography/formats/write_buffer.h"
+#include "dwi/tractography/grouping.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/streamline.h"
 
@@ -99,6 +100,23 @@ struct SidecarSummary {
   MemberRange range; //!< the member's byte range
 };
 
+//! \brief A parsed summary of one TRX "groups/<name>.uint32" index table (Stage 17).
+struct GroupSummary {
+  std::string name;  //!< the group name (member basename)
+  DataType dtype;    //!< native on-disk element datatype (uint32 per spec; any int accepted)
+  size_t count;      //!< the number of index entries present
+  MemberRange range; //!< the member's byte range
+};
+
+//! \brief A parsed summary of one TRX "dpg/<group>/<field>" metadata member (Stage 17).
+struct DPGSummary {
+  std::string group; //!< the group the metadatum is attached to (the dpg sub-folder)
+  std::string field; //!< the metadata field name (member basename)
+  DataType dtype;    //!< native on-disk element datatype
+  size_t columns;    //!< column count M
+  MemberRange range; //!< the member's byte range
+};
+
 //! \brief The verified summary of a TRX dataset's contents (steps 2–4).
 /*! Produced by examining the directory/archive structure and the JSON header
  * WITHOUT loading the bulk vertex/sidecar payloads. Carries the required header
@@ -122,6 +140,11 @@ struct DatasetSummary {
 
   //! one summary per dps/dpv array member, in directory-sorted order
   std::vector<SidecarSummary> sidecars;
+
+  //! one summary per "groups/" index table, in directory-sorted order (Stage 17)
+  std::vector<GroupSummary> groups;
+  //! one summary per "dpg/<group>/<field>" metadata member (Stage 17)
+  std::vector<DPGSummary> dpg;
 };
 
 //! \brief Abstract provider of TRX members as named contiguous byte ranges (D5).
@@ -224,6 +247,9 @@ public:
   bool operator()(Streamline<ValueType> &tck) override;
   bool operator()(TractogramItem<ValueType> &item) override;
 
+  //! \brief populate \a grouping from the TRX groups/ and dpg/ members (Stage 17).
+  void read_grouping(Grouping &grouping) override;
+
 private:
   FieldRegistry &registry;
 
@@ -263,6 +289,9 @@ public:
   bool operator()(const Streamline<ValueType> &tck) override;
   bool operator()(const TractogramItem<ValueType> &item) override;
 
+  //! \brief register the grouping to serialise as groups/ and dpg/ members (Stage 17).
+  void write_grouping(const Grouping &grouping) override;
+
 private:
   //! \brief one dps/dpv output field, with its registry ordinal and on-disk layout.
   struct SidecarOutput {
@@ -286,6 +315,11 @@ private:
 
   std::vector<SidecarOutput> dps_fields;
   std::vector<SidecarOutput> dpv_fields;
+
+  //! \brief the dataset-level grouping to emit as groups/ and dpg/ members (Stage 17).
+  /*! Supplied once via write_grouping() before finalisation; serialised in
+   * finalise() alongside the positions/offsets/dps/dpv members. */
+  Grouping grouping;
 
   uint64_t num_streamlines;
   uint64_t num_vertices;

@@ -295,6 +295,39 @@ DatasetSummary TrxSource::summarise() {
       sc.range = member(name);
       summary.sidecars.push_back(std::move(sc));
     } break;
+    case MemberRole::Groups: {
+      // A "groups/<name>.<dtype>" index table (Stage 17). The TRX spec mandates
+      //   uint32; any integer dtype is accepted defensively.
+      GroupSummary gs;
+      gs.name = grammar->name;
+      gs.dtype = grammar->dtype;
+      gs.range = member(name);
+      const size_t bytes = grammar->dtype.bytes();
+      gs.count = (bytes != 0) ? gs.range.size / bytes : 0;
+      summary.groups.push_back(std::move(gs));
+    } break;
+    case MemberRole::DPG: {
+      // A "dpg/<group>/<field>[.M].<dtype>" per-group metadatum (Stage 17). The
+      //   group is the directory component immediately below "dpg/".
+      DPGSummary ds;
+      ds.field = grammar->name;
+      ds.dtype = grammar->dtype;
+      ds.columns = grammar->columns;
+      ds.range = member(name);
+      // Recover the group name (the sub-folder under "dpg/").
+      std::string normalised(name);
+      std::replace(normalised.begin(), normalised.end(), '\\', '/');
+      if (normalised.rfind("./", 0) == 0)
+        normalised = normalised.substr(2);
+      const size_t leaf_slash = normalised.rfind('/');
+      const std::string folder = (leaf_slash == std::string::npos) ? std::string() : normalised.substr(0, leaf_slash);
+      // folder == "dpg/<group>" (or, degenerately, "dpg"); take the trailing path
+      //   component as the group name.
+      const size_t group_slash = folder.rfind('/');
+      ds.group = (group_slash == std::string::npos) ? std::string() : folder.substr(group_slash + 1);
+      if (!ds.group.empty())
+        summary.dpg.push_back(std::move(ds));
+    } break;
     default:
       break;
     }
@@ -759,6 +792,48 @@ template <class ValueType> bool TRXReader<ValueType>::operator()(TractogramItem<
   return ok;
 }
 
+template <class ValueType> void TRXReader<ValueType>::read_grouping(Grouping &grouping) {
+  // Groups: each "groups/<name>" is a flat array of streamline indices (uint32
+  //   per spec; any integer dtype is decoded). Stored verbatim so the on-disk
+  //   ordering and (permitted) overlap round-trip (§2.3).
+  for (const TRXUtils::GroupSummary &gs : summary.groups) {
+    std::vector<uint32_t> members;
+    members.reserve(gs.count);
+    const std::byte *const base = gs.range.data;
+    const size_t elem = gs.dtype.bytes();
+    for (size_t i = 0; i != gs.count; ++i) {
+      const std::byte *const addr = base + i * elem;
+      uint64_t value = 0;
+      switch (elem) {
+      case 1:
+        value = static_cast<uint64_t>(Raw::fetch_native<uint8_t>(addr));
+        break;
+      case 2:
+        value = static_cast<uint64_t>(Raw::fetch_native<uint16_t>(addr));
+        break;
+      case 4:
+        value = static_cast<uint64_t>(Raw::fetch_native<uint32_t>(addr));
+        break;
+      default:
+        value = Raw::fetch_native<uint64_t>(addr);
+        break;
+      }
+      members.push_back(static_cast<uint32_t>(value));
+    }
+    grouping.set_group(gs.name, std::move(members));
+  }
+
+  // dpg: each "dpg/<group>/<field>" is a single (1, M) row of per-group metadata
+  //   in its native on-disk dtype (D7), read via the same functor as a dps row.
+  for (const TRXUtils::DPGSummary &ds : summary.dpg) {
+    const size_t elem = ds.dtype.bytes();
+    DPSValue value = dispatch_sidecar_datatype(ds.dtype, ReadDPS{ds.range.data, ds.columns, elem});
+    grouping.set_dpg(ds.group, ds.field, std::move(value));
+  }
+
+  grouping.validate(summary.nb_streamlines);
+}
+
 /* ************************************************************************ */
 /*                          TRXWriter<ValueType>                           */
 /* ************************************************************************ */
@@ -874,6 +949,8 @@ template <class ValueType> bool TRXWriter<ValueType>::operator()(const Tractogra
   return true;
 }
 
+template <class ValueType> void TRXWriter<ValueType>::write_grouping(const Grouping &g) { grouping = g; }
+
 namespace {
 
 //! \brief slurp a file's bytes into a vector.
@@ -950,6 +1027,40 @@ template <class ValueType> void TRXWriter<ValueType>::finalise() {
     const std::string ext = TRXUtils::extension_from_dtype(output.descriptor.dtype);
     const std::string mid = (output.descriptor.columns == 1) ? "" : "." + str(output.descriptor.columns);
     members.emplace_back("dpv/" + output.descriptor.name + mid + "." + ext, slurp(output.tempfile));
+  }
+
+  // groups: one "groups/<name>.uint32" index table per group (Stage 17). Indices
+  //   are written little-endian uint32 (the spec-recommended dtype), preserving
+  //   the in-memory order (and any overlap across groups).
+  for (const auto &group : grouping.groups()) {
+    const std::vector<uint32_t> &indices = group.second;
+    std::vector<std::byte> bytes(indices.size() * sizeof(uint32_t));
+    for (size_t i = 0; i != indices.size(); ++i)
+      Raw::store_LE<uint32_t>(indices[i], bytes.data() + i * sizeof(uint32_t));
+    members.emplace_back("groups/" + group.first + ".uint32", std::move(bytes));
+  }
+
+  // dpg: one "dpg/<group>/<field>[.M].<dtype>" member per per-group metadatum
+  //   (Stage 17), serialised in its native on-disk dtype (D7).
+  for (const auto &group : grouping.dpg()) {
+    for (const auto &field : group.second) {
+      const DataType dtype = MR::match_v(field.second, [](const auto &value) {
+        using T = typename std::decay_t<decltype(value)>::element_type;
+        return sidecar_datatype<T>();
+      });
+      const size_t cols =
+          MR::match_v(field.second, [](const auto &value) { return static_cast<size_t>(value.cols()); });
+      const size_t elem = dtype.bytes();
+      std::vector<std::byte> bytes(cols * elem, std::byte{0});
+      MR::match_v(field.second, [&](const auto &value) {
+        using T = typename std::decay_t<decltype(value)>::element_type;
+        for (size_t c = 0; c != cols && static_cast<Eigen::Index>(c) < value.cols(); ++c)
+          Raw::store_native<T>(value(0, static_cast<Eigen::Index>(c)), bytes.data() + c * elem);
+      });
+      const std::string ext = TRXUtils::extension_from_dtype(dtype);
+      const std::string mid = (cols == 1) ? "" : "." + str(cols);
+      members.emplace_back("dpg/" + group.first + "/" + field.first + mid + "." + ext, std::move(bytes));
+    }
   }
 
   if (TRXUtils::path_is_trx(path) && !path.empty()) {

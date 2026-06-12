@@ -25,6 +25,7 @@
 #include "dwi/tractography/field_registry.h"
 #include "dwi/tractography/formats/base.h"
 #include "dwi/tractography/formats/ram.h"
+#include "dwi/tractography/grouping.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/sidecar.h"
 #include "dwi/tractography/tractogram_item.h"
@@ -256,6 +257,26 @@ public:
   const FieldRegistry &fields() const { return *registry; }
   FieldRegistry &fields() { return *registry; }
 
+  //! \brief the dataset-level streamline grouping (TRX groups/dpg; §2.3/§2.7).
+  /*! Grouping is reconciled at the Tractogram/Grouping boundary, not per item.
+   * For a read Tractogram the grouping is populated when the dataset is opened
+   * (from the format's on-disk groups/dpg members, if any). For a write
+   * Tractogram the caller populates this before finalisation (write_grouping
+   * below, or directly), and it is serialised by the handler when the writer is
+   * finalised. */
+  const Grouping &grouping() const { return grouping_; }
+  Grouping &grouping() { return grouping_; }
+
+  //! \brief register the dataset-level grouping to be serialised (write mode).
+  /*! Copies \a grouping into this write Tractogram and hands it to the writer
+   * backend so the on-disk groups/dpg members are emitted at finalisation. A
+   * vertices-only format silently ignores it. */
+  void write_grouping(const Grouping &grouping) {
+    assert(writer != nullptr);
+    grouping_ = grouping;
+    writer->write_grouping(grouping_);
+  }
+
   bool is_read() const { return reader != nullptr; }
   bool is_write() const { return writer != nullptr; }
 
@@ -290,6 +311,10 @@ private:
    * pointee does not move when the Tractogram is moved, so the reference stays
    * valid for the Tractogram's lifetime (the backends share that lifetime). */
   std::shared_ptr<FieldRegistry> registry;
+  //! \brief the dataset-level streamline grouping (§2.3; Stage 17).
+  /*! Populated from the format's on-disk groups/dpg on open() (read), or by the
+   * caller before finalisation (write). Empty for formats without grouping. */
+  Grouping grouping_;
   //! registered standalone input-sidecar loaders (§2.5; Stage 11, step 5)
   std::vector<std::unique_ptr<SidecarLoader<ValueType>>> input_sidecars;
   //! registered standalone output-sidecar exporters (§2.7; Stage 11, step 6)

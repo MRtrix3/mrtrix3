@@ -66,6 +66,7 @@ Tractogram<ValueType> Tractogram<ValueType>::open(const std::filesystem::path &p
     tractogram.store = store;
     tractogram.ram_wrapper = wrapper;
     tractogram.reader = wrapper->template read<ValueType>(path, properties, *tractogram.registry, grid);
+    tractogram.reader->read_grouping(tractogram.grouping_);
     return tractogram;
   }
 
@@ -74,6 +75,9 @@ Tractogram<ValueType> Tractogram<ValueType>::open(const std::filesystem::path &p
 
   Tractogram tractogram(handler);
   tractogram.reader = handler->template read<ValueType>(path, properties, *tractogram.registry, grid);
+  // Reconcile any dataset-level grouping at the Tractogram/Grouping boundary
+  //   (§2.7): the format fills the Grouping once, here, not per item.
+  tractogram.reader->read_grouping(tractogram.grouping_);
   return tractogram;
 }
 

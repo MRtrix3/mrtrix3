@@ -25,6 +25,7 @@
 #include <type_traits>
 
 #include "dwi/tractography/field_registry.h"
+#include "dwi/tractography/grouping.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/streamline.h"
 #include "dwi/tractography/tractogram_item.h"
@@ -68,6 +69,13 @@ public:
     item.dpv.clear();
     return (*this)(item.streamline);
   }
+  //! \brief populate the dataset-level streamline grouping, if the format carries one (§2.3/§2.7).
+  /*! Grouping (TRX groups/dpg; connectome assignments) is tractogram-level, not
+   * per-item: it is reconciled once at the Tractogram/Grouping boundary rather
+   * than threaded through the per-streamline queue. A handler that carries no
+   * grouping (the default) leaves \a grouping untouched; the TRX reader fills it
+   * from the on-disk groups/ and dpg/ members. */
+  virtual void read_grouping(Grouping &) {}
   virtual ~ReaderInterface() {}
 };
 
@@ -82,6 +90,12 @@ public:
   virtual bool operator()(const Streamline<ValueType> &) = 0;
   //! \brief append the composite item; defaults to the vertices-only write.
   virtual bool operator()(const TractogramItem<ValueType> &item) { return (*this)(item.streamline); }
+  //! \brief register the dataset-level streamline grouping to be serialised (§2.3/§2.7).
+  /*! Grouping is tractogram-level (TRX groups/dpg), so the caller supplies the
+   * whole Grouping once, before the writer is finalised, rather than per item.
+   * A vertices-only handler (the default) ignores it; the TRX writer stores it
+   * and emits the groups/ and dpg/ members at finalisation. */
+  virtual void write_grouping(const Grouping &) {}
   virtual ~WriterInterface() {}
 };
 
