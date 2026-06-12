@@ -26,6 +26,7 @@
 #include "app.h"
 #include "cmdline_option.h"
 #include "debug.h"
+#include "dwi/tractography/formats/list.h"
 #include "env.h"
 #include "exception.h"
 #include "executable_version.h"
@@ -1108,7 +1109,10 @@ void parse() {
         const std::string path = sidecar_dataset_path(i.as_text());
         if (!std::filesystem::exists(path))
           throw Exception("required input file \"" + path + "\" not found");
-        if (!std::filesystem::is_regular_file(path))
+        // A tractogram input may be a directory-backed TRX dataset rather than
+        //   a regular file; every other input category requires a regular file.
+        if (!std::filesystem::is_regular_file(path) &&
+            !(i.arg->types[ArgTypeFlags::TracksIn] && std::filesystem::is_directory(path)))
           throw Exception("required input \"" + path + "\" is not a file");
       }
     }
@@ -1174,16 +1178,24 @@ void parse() {
       ArgTypeFlags types_not_input_tractogram(i.arg->types);
       types_not_input_tractogram.reset(ArgTypeFlags::TracksIn);
       if (!types_not_input_tractogram.any()) {
-        if (static_cast<std::filesystem::path>(i).extension() != ".tck")
-          throw Exception("input file \"" + i.as_text() + "\" is not a valid track file");
+        // A tractogram path is valid iff it is a directory (a TRX dataset) or
+        //   carries an extension recognised by a format handler.
+        const std::filesystem::path path(i);
+        if (!std::filesystem::is_directory(path) && !DWI::Tractography::Formats::is_supported_extension(path))
+          throw Exception("input file \"" + i.as_text() + "\" is not a recognised tractogram" +
+                          " (expected a directory or one of: " + DWI::Tractography::Formats::supported_extensions() +
+                          ")");
       }
     }
     {
       ArgTypeFlags types_not_output_tractogram(i.arg->types);
       types_not_output_tractogram.reset(ArgTypeFlags::TracksOut);
       if (!types_not_output_tractogram.any()) {
-        if (static_cast<std::filesystem::path>(i).extension() != ".tck")
-          throw Exception("output track file \"" + i.as_text() + "\" must use the .tck suffix");
+        const std::filesystem::path path(i);
+        if (!std::filesystem::is_directory(path) && !DWI::Tractography::Formats::is_supported_extension(path))
+          throw Exception("output track file \"" + i.as_text() + "\" is not a recognised tractogram" +
+                          " (expected a directory or one of: " + DWI::Tractography::Formats::supported_extensions() +
+                          ")");
       }
     }
   }
@@ -1204,7 +1216,10 @@ void parse() {
           if (!std::filesystem::exists(path))
             throw Exception("input file \"" + path + "\"" +                               //
                             " for option \"-" + std::string(i.opt->id) + "\" not found"); //
-          if (!std::filesystem::is_regular_file(path))
+          // A tractogram input may be a directory-backed TRX dataset rather than
+          //   a regular file; every other input category requires a regular file.
+          if (!std::filesystem::is_regular_file(path) &&
+              !(arg.types[ArgTypeFlags::TracksIn] && std::filesystem::is_directory(path)))
             throw Exception("input \"" + path + "\"" +                                        //
                             " for option \"-" + std::string(i.opt->id) + "\" is not a file"); //
         }
@@ -1277,20 +1292,26 @@ void parse() {
         ArgTypeFlags types_not_input_tractogram(arg.types);
         types_not_input_tractogram.reset(ArgTypeFlags::TracksIn);
         if (!types_not_input_tractogram.any()) {
-          if (static_cast<std::filesystem::path>(parg).extension() != ".tck")
+          // A tractogram path is valid iff it is a directory (a TRX dataset) or
+          //   carries an extension recognised by a format handler.
+          const std::filesystem::path path(parg);
+          if (!std::filesystem::is_directory(path) && !DWI::Tractography::Formats::is_supported_extension(path))
             throw Exception("input file \"" + parg.as_text() + "\"" +           //
                             " for option \"-" + std::string(i.opt->id) + "\"" + //
-                            " is not a valid track file");                      //
+                            " is not a recognised tractogram (expected a directory or one of: " +
+                            DWI::Tractography::Formats::supported_extensions() + ")"); //
         }
       }
       {
         ArgTypeFlags types_not_output_tractogram(arg.types);
         types_not_output_tractogram.reset(ArgTypeFlags::TracksOut);
         if (!types_not_output_tractogram.any()) {
-          if (static_cast<std::filesystem::path>(parg).extension() != ".tck")
+          const std::filesystem::path path(parg);
+          if (!std::filesystem::is_directory(path) && !DWI::Tractography::Formats::is_supported_extension(path))
             throw Exception("output track file \"" + parg.as_text() + "\"" +    //
                             " for option \"-" + std::string(i.opt->id) + "\"" + //
-                            " must use the .tck suffix");                       //
+                            " is not a recognised tractogram (expected a directory or one of: " +
+                            DWI::Tractography::Formats::supported_extensions() + ")"); //
         }
       }
     }

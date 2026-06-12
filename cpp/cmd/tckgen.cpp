@@ -204,11 +204,7 @@ void usage() {
         " The type of image data required depends on the algorithm used"
         " (see Description section).").type_image_in()
 
-  // type_file_out() (in addition to type_tracks_out()) defers output-extension
-  //   validation from argument parsing to run(), so that the constant-step-format
-  //   guard below can issue a specific error rather than the generic ".tck suffix"
-  //   parse-time rejection.
-    + Argument ("tracks", "the output file containing the tracks generated.").type_tracks_out().type_file_out();
+    + Argument ("tracks", "the output file containing the tracks generated.").type_tracks_out();
 
 
 

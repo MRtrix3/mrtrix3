@@ -16,6 +16,9 @@
 
 #include "dwi/tractography/formats/list.h"
 
+#include <string>
+#include <string_view>
+
 #include "dwi/tractography/formats/pipe.h"
 #include "dwi/tractography/formats/qfib.h"
 #include "dwi/tractography/formats/tck.h"
@@ -55,6 +58,25 @@ const Base *get_handler(const std::filesystem::path &path) {
       return *format;
   }
   return nullptr;
+}
+
+bool is_supported_extension(const std::filesystem::path &path) {
+  const std::string ext = path.extension().string();
+  for (const std::string_view candidate : extensions) {
+    if (ext == candidate)
+      return true;
+  }
+  return false;
+}
+
+std::string supported_extensions() {
+  std::string result;
+  for (const std::string_view ext : extensions) {
+    if (!result.empty())
+      result += ", ";
+    result += ext;
+  }
+  return result;
 }
 
 } // namespace MR::DWI::Tractography::Formats
