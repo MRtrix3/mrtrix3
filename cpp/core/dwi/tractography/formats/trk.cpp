@@ -488,8 +488,15 @@ template <class ValueType> void TRKWriter<ValueType>::finalise() {
   header.version = 2;
   header.hdr_size = TRKUtils::header_size_sentinel;
 
-  // Provenance (the MRtrix3 command string) is stamped into the "reserved" block
-  //   in step 5; left unset here.
+  // Step 5: stamp the provenance into the otherwise-unused 444-byte "reserved"
+  //   block. The spec has no dedicated software field, so the MRtrix3 command
+  //   string is written if it fits the fixed-width field; otherwise the MRtrix3
+  //   software name and version are written instead.
+  const std::string command = App::command_history_string;
+  const std::string provenance =
+      (command.size() < header.reserved.size()) ? command : std::string("MRtrix3 ") + App::mrtrix_version;
+  const size_t length = std::min(provenance.size(), header.reserved.size() - 1);
+  std::memcpy(header.reserved.data(), provenance.data(), length);
 
   // Write the header, then concatenate the buffered body. The header sits at a
   //   fixed offset, so the n_count field is already final (no in-place patch
