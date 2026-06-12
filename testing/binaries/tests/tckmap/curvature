@@ -1,0 +1,14 @@
+#!/bin/bash
+# Verify the "curvature" contrast type for tckmap,
+#   which weights each streamline contribution by a robust per-vertex curvature estimate (1/mm).
+# There is no golden reference image for this contrast; the test is self-validating.
+# Curvature is a non-negative quantity, so every voxel of the output density map must be >= 0,
+#   the map must be finite throughout, and a real tractogram must produce a non-trivial
+#   (strictly positive maximum) curvature-weighted density.
+tckmap tracks.tck -template dwi.mif -contrast curvature -stat_tck mean tmp-curvature.mif -force
+min=$(mrstats tmp-curvature.mif -output min)
+max=$(mrstats tmp-curvature.mif -output max)
+# Non-negativity: the minimum density must not be negative (allowing tiny negative round-off).
+echo "${min}" | awk '{ if ($1 < -1e-6) { print "negative curvature density: " $1; exit 1 } }'
+# Non-triviality: the maximum density must be strictly positive and finite.
+echo "${max}" | awk '{ if (!($1 > 0) || $1 != $1) { print "degenerate curvature density: " $1; exit 1 } }'

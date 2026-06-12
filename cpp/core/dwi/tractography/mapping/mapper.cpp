@@ -16,6 +16,7 @@
 
 #include "dwi/tractography/mapping/mapper.h"
 
+#include "dwi/tractography/curvature.h"
 #include "file/matrix.h"
 
 namespace MR::DWI::Tractography::Mapping {
@@ -236,110 +237,10 @@ void TrackMapperTWI::load_factors(const Streamline<> &tck) const {
   if (contrast != contrast_t::CURVATURE)
     throw Exception("Unsupported contrast in function TrackMapperTWI::load_factors()");
 
-  std::vector<Streamline<>::tangent_type> tangents;
-  tangents.reserve(tck.size());
-
-  // Would like to be able to manipulate the length over which the tangent calculation is affected
-  // However don't want to just take a pair of distant points and get the tangent that way; would rather
-  //   find a way to 'smooth' the curvature in a non-scalar fashion i.e. inverted curvature cancels
-  // Ideally would like to get a curvature measurement & azimuth at each point; these can be averaged
-  //   using a Gaussian kernel
-  // But how to define azimuth & make it consistent between points?
-  // Average principal normal vectors using a gaussian kernel, re-determine the curvature
-
-  // Need to know the distance along the spline between every point and every other point
-  // Start by logging the length of each step
-  std::vector<default_type> step_sizes;
-  step_sizes.reserve(tck.size());
-
-  for (size_t i = 0; i != tck.size(); ++i) {
-    const Streamline<>::tangent_type this_tangent = Tractography::tangent(tck, i);
-    if (this_tangent.allFinite())
-      tangents.push_back(this_tangent);
-    else
-      tangents.push_back(Streamline<>::tangent_type::Zero());
-    if (i)
-      step_sizes.push_back((tck[i] - tck[i - 1]).norm());
-  }
-
-  // For those tangents that are invalid, fill with valid factors from neighbours
-  for (size_t i = 0; i != tangents.size(); ++i) {
-    if (tangents[i].isZero()) {
-
-      if (i == 0) {
-        size_t j;
-        for (j = 1; (j < tck.size() - 1) && !tangents[j].isZero(); ++j)
-          ;
-        tangents[i] = tangents[j];
-      } else if (i == tangents.size() - 1) {
-        size_t k;
-        for (k = i - 1; k && !tangents[k].isZero(); --k)
-          ;
-        tangents[i] = tangents[k];
-      } else {
-        size_t j, k;
-        for (j = 1; (j < tck.size() - 1) && !tangents[j].isZero(); ++j)
-          ;
-        for (k = i - 1; k && !tangents[k].isZero(); --k)
-          ;
-        tangents[i] = (tangents[j] + tangents[k]).normalized();
-      }
-    }
-  }
-
-  // Produce a matrix of spline distances between points
-  Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> spline_distances =
-      Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic>::Zero(tck.size(), tck.size());
-  for (size_t i = 0; i != tck.size(); ++i) {
-    for (size_t j = 0; j <= i; ++j) {
-      for (size_t k = i + 1; k != tck.size(); ++k) {
-        spline_distances(j, k) += step_sizes[i];
-        spline_distances(k, j) += step_sizes[i];
-      }
-    }
-  }
-
-  // Smooth both the tangent vectors and the principal normal vectors according to a Gaussuan kernel
-  // Remember: tangent vectors are unit length, but for principal normal vectors length must be preserved!
-
-  std::vector<Streamline<>::tangent_type> smoothed_tangents;
-  smoothed_tangents.reserve(tangents.size());
-
-  static const default_type gaussian_theta = curvature_smoothing_mm / (2.0 * sqrt(2.0 * log(2.0)));
-  static const default_type gaussian_denominator = 2.0 * gaussian_theta * gaussian_theta;
-
-  for (size_t i = 0; i != tck.size(); ++i) {
-
-    Streamline<>::tangent_type this_tangent(Streamline<>::tangent_type::Zero());
-
-    for (size_t j = 0; j != tck.size(); ++j) {
-      const default_type distance = spline_distances(i, j);
-      const default_type this_weight = exp(-distance * distance / gaussian_denominator);
-      this_tangent += tangents[j] * this_weight;
-    }
-
-    smoothed_tangents.push_back(this_tangent.normalized());
-  }
-
-  for (size_t i = 0; i != tck.size(); ++i) {
-
-    default_type tangent_dot_product, length;
-    if (i == 0) {
-      tangent_dot_product = smoothed_tangents[1].dot(smoothed_tangents[0]);
-      length = spline_distances(0, 1);
-    } else if (i == tck.size() - 1) {
-      tangent_dot_product = smoothed_tangents[i].dot(smoothed_tangents[i - 1]);
-      length = spline_distances(i, i - 1);
-    } else {
-      tangent_dot_product = smoothed_tangents[i + 1].dot(smoothed_tangents[i - 1]);
-      length = spline_distances(i + 1, i - 1);
-    }
-
-    if (tangent_dot_product >= 1.0f)
-      factors.push_back(0.0);
-    else
-      factors.push_back(std::acos(tangent_dot_product) / length);
-  }
+  // Per-vertex curvature (1/mm) is produced by a dedicated, robust, arc-length-smoothed estimator.
+  // The per-vertex factor remains "curvature at this vertex in 1/mm"; only its quality changes.
+  const std::vector<default_type> kappa = Tractography::curvature(tck);
+  factors.assign(kappa.begin(), kappa.end());
 }
 
 } // namespace MR::DWI::Tractography::Mapping

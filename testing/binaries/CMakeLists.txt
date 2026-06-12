@@ -608,6 +608,7 @@ add_bash_binary_test(tckglobal/default)
 add_bash_binary_test(tckglobal/masked)
 add_bash_binary_test(tckglobal/multitissue)
 
+add_bash_binary_test(tckmap/curvature)
 add_bash_binary_test(tckmap/dec NO_FILESYSTEM_LOCK)
 add_bash_binary_test(tckmap/default_template NO_FILESYSTEM_LOCK)
 add_bash_binary_test(tckmap/default_vox NO_FILESYSTEM_LOCK)
