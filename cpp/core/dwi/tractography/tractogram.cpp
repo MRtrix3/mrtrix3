@@ -65,7 +65,7 @@ Tractogram<ValueType> Tractogram<ValueType>::open(const std::filesystem::path &p
     Tractogram tractogram(wrapper.get());
     tractogram.store = store;
     tractogram.ram_wrapper = wrapper;
-    tractogram.reader = wrapper->template read<ValueType>(path, properties, tractogram.registry, grid);
+    tractogram.reader = wrapper->template read<ValueType>(path, properties, *tractogram.registry, grid);
     return tractogram;
   }
 
@@ -73,7 +73,7 @@ Tractogram<ValueType> Tractogram<ValueType>::open(const std::filesystem::path &p
     Tractogram(handler).require_random_access("indexed access to the data");
 
   Tractogram tractogram(handler);
-  tractogram.reader = handler->template read<ValueType>(path, properties, tractogram.registry, grid);
+  tractogram.reader = handler->template read<ValueType>(path, properties, *tractogram.registry, grid);
   return tractogram;
 }
 
@@ -94,10 +94,10 @@ Tractogram<ValueType> Tractogram<ValueType>::create(const std::filesystem::path 
     auto store = std::make_shared<RAMStore<ValueType>>();
     auto wrapper = std::make_shared<Formats::RAMWrapper<ValueType>>(handler, store);
     Tractogram tractogram(wrapper.get());
-    tractogram.registry = registry;
+    *tractogram.registry = registry;
     tractogram.store = store;
     tractogram.ram_wrapper = wrapper;
-    tractogram.writer = wrapper->template create<ValueType>(path, properties, tractogram.registry, grid);
+    tractogram.writer = wrapper->template create<ValueType>(path, properties, *tractogram.registry, grid);
     return tractogram;
   }
 
@@ -105,8 +105,8 @@ Tractogram<ValueType> Tractogram<ValueType>::create(const std::filesystem::path 
     Tractogram(handler).require_random_access("indexed access to the data");
 
   Tractogram tractogram(handler);
-  tractogram.registry = registry;
-  tractogram.writer = handler->template create<ValueType>(path, properties, tractogram.registry, grid);
+  *tractogram.registry = registry;
+  tractogram.writer = handler->template create<ValueType>(path, properties, *tractogram.registry, grid);
   return tractogram;
 }
 

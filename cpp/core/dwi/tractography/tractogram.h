@@ -216,7 +216,7 @@ public:
    * reference is rejected as not-yet-implemented. */
   void register_input_sidecar(std::string_view arg, Properties &properties) {
     assert(reader != nullptr);
-    input_sidecars.push_back(make_sidecar_loader<ValueType>(parse_sidecar_reference(arg), properties, registry));
+    input_sidecars.push_back(make_sidecar_loader<ValueType>(parse_sidecar_reference(arg), properties, *registry));
   }
 
   //! \brief register a standalone output-sidecar reference for export (step 6).
@@ -240,14 +240,14 @@ public:
   }
 
   //! \brief the sidecar field registry for this dataset (§2.5).
-  const FieldRegistry &fields() const { return registry; }
-  FieldRegistry &fields() { return registry; }
+  const FieldRegistry &fields() const { return *registry; }
+  FieldRegistry &fields() { return *registry; }
 
   bool is_read() const { return reader != nullptr; }
   bool is_write() const { return writer != nullptr; }
 
 private:
-  explicit Tractogram(const Formats::Base *handler) : handler(handler) {}
+  explicit Tractogram(const Formats::Base *handler) : handler(handler), registry(std::make_shared<FieldRegistry>()) {}
 
   //! \brief assert this Tractogram is RAM-backed before an indexed access, or throw.
   void require_ram_store(std::string_view context) const {
@@ -267,8 +267,16 @@ private:
   std::unique_ptr<ReaderInterface<ValueType>> reader;
   //! the streaming write backend (non-null in write mode)
   std::unique_ptr<WriterInterface<ValueType>> writer;
-  //! the sidecar field registry (empty in Stage 1)
-  FieldRegistry registry;
+  //! \brief the sidecar field registry (empty in Stage 1), heap-owned for a stable address.
+  /*! Allocated on the heap (and shared) so that the registry has an address that
+   * survives a move of the owning Tractogram. The format-handler reader/writer
+   * backends (owned by this same Tractogram) bind a FieldRegistry& to the pointee
+   * via the open()/create() factories; were the registry an in-object member, the
+   * move-out of the returned-by-value Tractogram would destroy the moved-from
+   * local whose registry the backend referenced, dangling that reference. The
+   * pointee does not move when the Tractogram is moved, so the reference stays
+   * valid for the Tractogram's lifetime (the backends share that lifetime). */
+  std::shared_ptr<FieldRegistry> registry;
   //! registered standalone input-sidecar loaders (§2.5; Stage 11, step 5)
   std::vector<std::unique_ptr<SidecarLoader<ValueType>>> input_sidecars;
   //! registered standalone output-sidecar exporters (§2.7; Stage 11, step 6)
