@@ -49,6 +49,14 @@ struct SidecarReference {
 //! \brief parse a tractogram-sidecar CLI token into its components (§2.4).
 SidecarReference parse_sidecar_reference(std::string_view arg);
 
+//! \brief the field name a standalone (bare-path) sidecar reference would register.
+/*! For a bare path this is the file basename (stem); for a qualified
+ * "DATASET::NAME" reference it is the explicit NAME. Used by the Tractogram to
+ * de-duplicate an external sidecar against a same-named field already carried
+ * internally by the dataset (Stage 16, step 9), so the field is not loaded
+ * twice. */
+std::string sidecar_field_name(const SidecarReference &reference);
+
 //! \brief Streaming injector of standalone per-streamline / per-vertex sidecar
 //!   data into the read pipeline (§2.5; Stage 11, step 5).
 /*! Registered with a read Tractogram for a standalone-path input reference. The

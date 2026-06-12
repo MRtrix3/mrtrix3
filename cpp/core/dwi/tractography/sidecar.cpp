@@ -50,6 +50,16 @@ namespace {
 //! \brief the registered field name for a standalone sidecar file (its stem).
 std::string field_name_for(const std::filesystem::path &path) { return path.stem().string(); }
 
+} // namespace
+
+std::string sidecar_field_name(const SidecarReference &reference) {
+  if (reference.is_qualified())
+    return *reference.name;
+  return reference.dataset.stem().string();
+}
+
+namespace {
+
 //! \brief is the standalone reference a per-vertex (.tsf) sidecar?
 bool is_tsf(const std::filesystem::path &path) { return Path::has_suffix(path, ".tsf"); }
 

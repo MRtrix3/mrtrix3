@@ -216,7 +216,20 @@ public:
    * reference is rejected as not-yet-implemented. */
   void register_input_sidecar(std::string_view arg, Properties &properties) {
     assert(reader != nullptr);
-    input_sidecars.push_back(make_sidecar_loader<ValueType>(parse_sidecar_reference(arg), properties, *registry));
+    const SidecarReference reference = parse_sidecar_reference(arg);
+    // De-duplicate against internally-carried fields (§2.5; Stage 16, step 9):
+    //   when the dataset itself already provides a field of this name (e.g. a
+    //   TRX dpv/dps member), the external file would load the same field twice.
+    //   The internal data takes precedence and the external load is skipped.
+    const std::string name = sidecar_field_name(reference);
+    for (const FieldDescriptor &descriptor : *registry) {
+      if (descriptor.name == name && descriptor.source == FieldSource::Internal) {
+        INFO("sidecar field \"" + name + "\" is already carried by the input dataset; " +
+             "ignoring the externally-specified copy to avoid duplication");
+        return;
+      }
+    }
+    input_sidecars.push_back(make_sidecar_loader<ValueType>(reference, properties, *registry));
   }
 
   //! \brief register a standalone output-sidecar reference for export (step 6).
