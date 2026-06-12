@@ -1,0 +1,11 @@
+#!/bin/bash
+# Round-trip via a TrackVis ".trk" intermediary: tck -> trk -> tck must preserve
+#   streamline geometry exactly. With no reference grid the ".trk" handler
+#   self-describes a default 1 mm isotropic, identity-affine grid, so the
+#   scanner-space <-> voxel-millimetre conversion is the identity and the float32
+#   coordinates round-trip losslessly. Exercises the framework TRK reader and the
+#   buffered TRK writer (incl. the n_count header field and byte layout).
+tckconvert tracks.tck tmp.trk -force -quiet
+tckconvert tmp.trk tmp_back.tck -force -quiet
+# float32 on-disk coordinates with an identity transform; allow only rounding.
+testing_diff_tck tracks.tck tmp_back.tck -distance 0.01

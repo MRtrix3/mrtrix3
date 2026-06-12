@@ -488,10 +488,10 @@ template <class ValueType> void TRKWriter<ValueType>::finalise() {
   header.version = 2;
   header.hdr_size = TRKUtils::header_size_sentinel;
 
-  // Step 5: stamp the provenance into the otherwise-unused 444-byte "reserved"
-  //   block. The spec has no dedicated software field, so the MRtrix3 command
-  //   string is written if it fits the fixed-width field; otherwise the MRtrix3
-  //   software name and version are written instead.
+  // Step 5: stamp the provenance into "voxel_order"'s sibling reserved space. The
+  //   spec has no dedicated software field, so the MRtrix3 command string (or the
+  //   software name + version if it does not fit) is written into the otherwise
+  //   unused 444-byte "reserved" block.
   const std::string command = App::command_history_string;
   const std::string provenance =
       (command.size() < header.reserved.size()) ? command : std::string("MRtrix3 ") + App::mrtrix_version;
@@ -530,5 +530,39 @@ template class TRKReader<float>;
 template class TRKReader<double>;
 template class TRKWriter<float>;
 template class TRKWriter<double>;
+
+namespace Formats {
+
+bool TRK::handles(const std::filesystem::path &path) const { return path.extension() == ".trk"; }
+
+std::unique_ptr<ReaderInterface<float>> TRK::read_float(const std::filesystem::path &path,
+                                                        Properties &properties,
+                                                        FieldRegistry &registry,
+                                                        const OptionalHeader &grid) const {
+  return std::make_unique<TRKReader<float>>(path, properties, registry, grid);
+}
+
+std::unique_ptr<ReaderInterface<double>> TRK::read_double(const std::filesystem::path &path,
+                                                          Properties &properties,
+                                                          FieldRegistry &registry,
+                                                          const OptionalHeader &grid) const {
+  return std::make_unique<TRKReader<double>>(path, properties, registry, grid);
+}
+
+std::unique_ptr<WriterInterface<float>> TRK::create_float(const std::filesystem::path &path,
+                                                          const Properties &properties,
+                                                          const FieldRegistry &registry,
+                                                          const OptionalHeader &grid) const {
+  return std::make_unique<TRKWriter<float>>(path, properties, registry, grid);
+}
+
+std::unique_ptr<WriterInterface<double>> TRK::create_double(const std::filesystem::path &path,
+                                                            const Properties &properties,
+                                                            const FieldRegistry &registry,
+                                                            const OptionalHeader &grid) const {
+  return std::make_unique<TRKWriter<double>>(path, properties, registry, grid);
+}
+
+} // namespace Formats
 
 } // namespace MR::DWI::Tractography

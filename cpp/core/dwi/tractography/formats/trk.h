@@ -224,4 +224,49 @@ private:
   TRKWriter(const TRKWriter &) = delete;
 };
 
+namespace Formats {
+
+//! \brief Format handler for the TrackVis (".trk") tractography format.
+/*! The ".trk" format is a single binary file: a fixed 1000-byte header
+ * (geometry, the voxel→RAS affine, and the names of any per-vertex scalars /
+ * per-streamline properties) followed by variable-length streamline records.
+ * Coordinates are stored in voxel-millimetres, so an external reference grid
+ * (the Stage 6 OptionalHeader) is used to place streamlines in MRtrix
+ * scanner-space; when none is supplied a default grid derived from the file's
+ * own \c vox_to_ras / \c voxel_size is used so a ".trk" → ".trk" round-trip is
+ * exact. Per-vertex scalars map to dpv and per-streamline properties to dps,
+ * carried as native-float sidecar fields (D7).
+ *
+ * Capabilities: read+write; sequential streaming access only — the streamline
+ * records are variable-length, so the dataset cannot be randomly indexed without
+ * a prior full scan; rewrite-only (any change requires the whole file to be
+ * rewritten). The framework therefore rejects a random-access request against
+ * ".trk" with a clean error (Tractogram::require_random_access). */
+class TRK : public Base {
+public:
+  TRK() : Base("TrackVis TRK", {IO::ReadWrite, Access::Streaming, Augment::Rewrite}) {}
+
+  bool handles(const std::filesystem::path &path) const override;
+
+protected:
+  std::unique_ptr<ReaderInterface<float>> read_float(const std::filesystem::path &path,
+                                                     Properties &properties,
+                                                     FieldRegistry &registry,
+                                                     const OptionalHeader &grid) const override;
+  std::unique_ptr<ReaderInterface<double>> read_double(const std::filesystem::path &path,
+                                                       Properties &properties,
+                                                       FieldRegistry &registry,
+                                                       const OptionalHeader &grid) const override;
+  std::unique_ptr<WriterInterface<float>> create_float(const std::filesystem::path &path,
+                                                       const Properties &properties,
+                                                       const FieldRegistry &registry,
+                                                       const OptionalHeader &grid) const override;
+  std::unique_ptr<WriterInterface<double>> create_double(const std::filesystem::path &path,
+                                                         const Properties &properties,
+                                                         const FieldRegistry &registry,
+                                                         const OptionalHeader &grid) const override;
+};
+
+} // namespace Formats
+
 } // namespace MR::DWI::Tractography
