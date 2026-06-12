@@ -41,34 +41,66 @@ namespace VTKUtils = Formats::VTKUtils;
 //! \brief Streaming reader backend for the legacy VTK PolyData format.
 /*! This is the read backend for the ".vtk" format handler (Formats::VTK). It
  * supports both the ASCII and BINARY encodings of the legacy VTK PolyData
- * (DATASET POLYDATA) format, restricted to the POINTS and LINES data fields
- * (any other dataset is rejected with a user-interpretable error).
+ * (DATASET POLYDATA) format, restricted to the POINTS and LINES topology fields
+ * plus the optional POINT_DATA (→ dpv) and CELL_DATA (→ dps) sidecar attribute
+ * sections (Stage 13). Any other dataset structure is rejected.
  *
  * On construction the ASCII keyword lines are parsed to locate the byte offsets
  * of the POINTS and LINES blocks. The LINES block is scanned immediately, both
  * to verify that every streamline is constituted by a sequentially-ordered run
  * of vertex indices (the only topology MRtrix streamlines admit) and to record
- * the per-streamline vertex count in RAM. The POINTS block is then accessed
- * through a memory-map; sequential reads advance a pointer through that map,
- * consuming the pre-established vertex count of each streamline in turn.
+ * the per-streamline vertex count in RAM. The POINTS block, and each discovered
+ * POINT_DATA / CELL_DATA attribute block, is accessed through the file
+ * memory-map (binary) or parsed into RAM (ASCII); sequential reads advance an
+ * independent pointer through each block, consuming the appropriate number of
+ * tuples per streamline (n_vertices for a dpv block, one for a dps block).
+ *
+ * Each discovered sidecar attribute is registered on the supplied FieldRegistry
+ * (§2.5) with its role (dpv/dps), native datatype and column count M, so the
+ * per-item dps/dpv payloads can be addressed by ordinal.
  *
  * The implementation is explicitly instantiated for float and double in
  * formats/vtk.cpp. */
 template <class ValueType = float> class VTKReader : public ReaderInterface<ValueType> {
 public:
-  VTKReader(const std::filesystem::path &path, Properties &properties);
+  VTKReader(const std::filesystem::path &path, Properties &properties, FieldRegistry &registry);
   ~VTKReader() override;
 
   bool operator()(Streamline<ValueType> &tck) override;
+  bool operator()(TractogramItem<ValueType> &item) override;
+
+  //! \brief streaming state of one POINT_DATA (dpv) or CELL_DATA (dps) attribute.
+  /*! Each sidecar attribute block has its own memory-mapping cursor (binary) or
+   * RAM-resident value array (ASCII) plus a running tuple pointer, stepped per
+   * streamline (mirroring the POINTS streaming). The native datatype and column
+   * count M are recorded so values are decoded losslessly (D7). Public so the
+   * dtype-generic per-tuple readers in vtk.cpp can reference it. */
+  struct SidecarBlock {
+    std::string name;
+    FieldRole role;            //!< DPV (POINT_DATA) or DPS (CELL_DATA)
+    DataType dtype;            //!< native on-disk element datatype
+    size_t columns;            //!< the field's column count M
+    size_t ordinal;            //!< role-local payload-vector slot (registry)
+    int64_t binary_offset;     //!< byte offset of the first value (binary)
+    std::vector<double> ascii; //!< all values, row-major (ASCII); empty if binary
+    size_t cursor;             //!< index of the next tuple to consume
+    //! \brief ASCII COLOR_SCALARS store floats 0..1; rescale to the native 0..255.
+    bool ascii_color;
+  };
 
 private:
+  FieldRegistry &registry;
+
   //! the encoding of the POINTS / LINES binary payload
   VTKUtils::Encoding encoding;
 
-  //! memory-map over the whole file, used to read the LINES / POINTS blocks
+  //! memory-map over the whole file, used to read the LINES / POINTS / attribute blocks
   std::shared_ptr<File::MMap> mmap;
   //! shared POINTS accessor (ASCII RAM or binary mmap), provided by VTKUtils
   std::unique_ptr<VTKUtils::PointReader<ValueType>> points;
+
+  //! the discovered sidecar attribute blocks (POINT_DATA → dpv, CELL_DATA → dps)
+  std::vector<SidecarBlock> sidecars;
 
   //! per-streamline vertex counts, established by the up-front LINES scan
   std::vector<uint32_t> streamline_sizes;
@@ -77,6 +109,10 @@ private:
   //! index of the next vertex to be consumed from the POINTS block
   size_t current_vertex;
   size_t current_index;
+
+  //! consume the next streamline's values from one dps / dpv sidecar block.
+  DPSValue read_dps(SidecarBlock &block);
+  DPVValue read_dpv(SidecarBlock &block, size_t n_vertices);
 
   VTKReader(const VTKReader &) = delete;
 };

@@ -1,0 +1,67 @@
+#!/bin/bash
+# Round-trip per-vertex (POINT_DATA -> dpv) and per-streamline (CELL_DATA -> dps)
+#   sidecar data through the ASCII .vtk handler, at M=1 and M>1 (incl. native
+#   uint8 RGB colour), via tckconvert's sidecar-aware generic branch.
+#
+# A hand-authored ASCII .vtk carries: a float scalar dpv (M=1), a uint8 colour
+#   dpv (M=3), a float scalar dps (M=1) and an int dps (M=2). Converting it
+#   .vtk -> .vtk re-derives the field registry from the input and re-emits every
+#   field; a second conversion must reproduce the first byte-for-byte (modulo the
+#   command-history header line, which embeds the exact invocation). The data
+#   sections being identical confirms the dps/dpv fields round-trip in their
+#   native dtype and shape through the ASCII encoding.
+cat > tmp_sidecar_in.vtk <<'VTK'
+# vtk DataFile Version 3.0
+sidecar roundtrip ascii
+ASCII
+DATASET POLYDATA
+POINTS 5 float
+0 0 0
+1 0 0
+2 0 0
+0 1 0
+1 1 0
+LINES 2 7
+3 0 1 2
+2 3 4
+POINT_DATA 5
+SCALARS fa float 1
+LOOKUP_TABLE default
+0.1
+0.2
+0.3
+0.4
+0.5
+SCALARS colour unsigned_char 3
+LOOKUP_TABLE default
+10 20 30
+40 50 60
+70 80 90
+100 110 120
+130 140 150
+CELL_DATA 2
+SCALARS streamline_weight float 1
+LOOKUP_TABLE default
+1.5
+2.5
+SCALARS node_pair int 2
+LOOKUP_TABLE default
+1 2
+3 4
+VTK
+
+tckconvert -ascii tmp_sidecar_in.vtk tmp_sidecar_a1.vtk -force -quiet
+tckconvert -ascii tmp_sidecar_a1.vtk tmp_sidecar_a2.vtk -force -quiet
+
+# The data sections (everything bar the command-history header on line 2) must
+#   be identical across the two writer passes.
+sed '2d' tmp_sidecar_a1.vtk > tmp_sidecar_a1_nohdr.txt
+sed '2d' tmp_sidecar_a2.vtk > tmp_sidecar_a2_nohdr.txt
+diff tmp_sidecar_a1_nohdr.txt tmp_sidecar_a2_nohdr.txt
+
+# The re-emitted file must still carry both attribute sections and the colour
+#   field in its native uint8 form (not floats).
+grep -q "POINT_DATA 5" tmp_sidecar_a1.vtk
+grep -q "CELL_DATA 2" tmp_sidecar_a1.vtk
+grep -q "SCALARS colour unsigned_char 3" tmp_sidecar_a1.vtk
+grep -q "130 140 150" tmp_sidecar_a1.vtk

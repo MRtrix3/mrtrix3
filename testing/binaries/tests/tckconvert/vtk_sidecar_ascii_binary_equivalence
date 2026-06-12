@@ -1,0 +1,58 @@
+#!/bin/bash
+# The ASCII and BINARY .vtk encodings must carry IDENTICAL dpv (POINT_DATA) and
+#   dps (CELL_DATA) sidecar data, at M=1 and M>1 incl. native uint8 RGB colour.
+#
+# A hand-authored input is converted to a BINARY .vtk (big-endian sidecar) and,
+#   separately, to an ASCII .vtk. Re-expressing the BINARY one as ASCII must then
+#   match the directly-produced ASCII file's data sections byte-for-byte (modulo
+#   the command-history header line). This proves the native-dtype sidecar values
+#   survive the big-endian binary detour exactly, with no precision loss (D7).
+cat > tmp_sidecar_eq_in.vtk <<'VTK'
+# vtk DataFile Version 3.0
+sidecar ascii/binary equivalence
+ASCII
+DATASET POLYDATA
+POINTS 5 float
+0 0 0
+1 0 0
+2 0 0
+0 1 0
+1 1 0
+LINES 2 7
+3 0 1 2
+2 3 4
+POINT_DATA 5
+SCALARS fa float 1
+LOOKUP_TABLE default
+0.125
+0.25
+0.375
+0.5
+0.625
+SCALARS colour unsigned_char 3
+LOOKUP_TABLE default
+10 20 30
+40 50 60
+70 80 90
+100 110 120
+130 140 150
+CELL_DATA 2
+SCALARS streamline_weight float 1
+LOOKUP_TABLE default
+1.5
+2.5
+SCALARS node_pair int 2
+LOOKUP_TABLE default
+1 2
+3 4
+VTK
+
+# Directly-produced ASCII, and ASCII re-expression of the BINARY conversion.
+tckconvert -ascii tmp_sidecar_eq_in.vtk tmp_sidecar_eq_ascii.vtk -force -quiet
+tckconvert tmp_sidecar_eq_in.vtk tmp_sidecar_eq_binary.vtk -force -quiet
+tckconvert -ascii tmp_sidecar_eq_binary.vtk tmp_sidecar_eq_binary_as_ascii.vtk -force -quiet
+
+# The data sections of the two ASCII renderings must be identical.
+sed '2d' tmp_sidecar_eq_ascii.vtk > tmp_sidecar_eq_ascii_nohdr.txt
+sed '2d' tmp_sidecar_eq_binary_as_ascii.vtk > tmp_sidecar_eq_binary_as_ascii_nohdr.txt
+diff tmp_sidecar_eq_ascii_nohdr.txt tmp_sidecar_eq_binary_as_ascii_nohdr.txt
