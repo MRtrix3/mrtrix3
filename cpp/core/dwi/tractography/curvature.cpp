@@ -21,6 +21,9 @@
 #include <optional>
 
 #include "exception.h"
+#include "mrtrix.h"
+
+#include "dwi/tractography/properties.h"
 
 namespace MR::DWI::Tractography {
 
@@ -123,16 +126,39 @@ std::optional<default_type> turn_angle_lag2_autocorrelation(const std::vector<de
   return covariance / variance;
 }
 
+//! One representative position per parent arc, decimating sub-step runs of \c grouping vertices.
+/*! When contiguous vertices are sub-step samples of a single deterministically-smooth parent arc
+ *  (e.g. un-downsampled iFOD2 integration steps), the autocorrelation discriminant must be evaluated
+ *  on one vertex per arc so the within-arc structure is excluded. The stride is the grouping rounded
+ *  to the nearest integer (at least 1). */
+std::vector<point_type> decimate_to_parent_arcs(const std::vector<point_type> &positions, const default_type grouping) {
+  const size_t stride = std::max<size_t>(1, static_cast<size_t>(std::lround(grouping)));
+  std::vector<point_type> out;
+  out.reserve(positions.size() / stride + 1);
+  for (size_t i = 0; i < positions.size(); i += stride)
+    out.push_back(positions[i]);
+  return out;
+}
+
 //! Resolve the arc-length smoothing scale (mm) for one streamline per curvature.md section 5.
 /*! The scale is anchored to the streamline's own mean step and interpolated, by the turn-angle
  *  lag-2 autocorrelation, between a tight window for smooth geometry (which preserves genuine
  *  high-curvature bends) and a wide window for decorrelated wiggle (which averages the noise away),
- *  then bracketed into [2*step, L/4]. No absolute mm constant is involved. */
+ *  then bracketed into [2*step, L/4]. No absolute mm constant is involved.
+ *
+ *  When \c config.vertices_per_parent_arc exceeds 1, contiguous vertices are sub-step samples of a
+ *  single parent arc rather than independent geometric samples; the mean step is scaled up by that
+ *  factor (so the scale ladder is measured in independent-sample widths, not sub-steps) and the
+ *  autocorrelation is estimated on one vertex per arc (so the deterministic within-arc structure is
+ *  not read as anatomical smoothness). With the default factor of 1 both adjustments are no-ops. */
 default_type resolve_scale(const DistinctVertices &distinct, const CurvatureConfig &config) {
   const size_t n = distinct.positions.size();
   const default_type total_length = distinct.arclength.back();
   const default_type mean_step = total_length / static_cast<default_type>(n - 1);
-  const default_type scale_min = min_scale_steps * mean_step;
+  const default_type grouping = std::max<default_type>(1.0, config.vertices_per_parent_arc);
+  // Step between independent geometric samples (one parent arc), in mm.
+  const default_type effective_step = grouping * mean_step;
+  const default_type scale_min = min_scale_steps * effective_step;
   const default_type scale_max = std::max(total_length / 4.0, scale_min);
 
   if (config.scale == CurvatureScale::FIXED)
@@ -141,7 +167,9 @@ default_type resolve_scale(const DistinctVertices &distinct, const CurvatureConf
   if (n < min_vertices_for_auto)
     return std::max(config.fixed_scale_mm, scale_min);
 
-  const std::vector<default_type> angles = turn_angles(distinct.positions);
+  const std::vector<default_type> angles = (grouping > 1.0)
+                                               ? turn_angles(decimate_to_parent_arcs(distinct.positions, grouping))
+                                               : turn_angles(distinct.positions);
   const std::optional<default_type> rho2 = turn_angle_lag2_autocorrelation(angles);
 
   // Map the lag-2 autocorrelation to a 0..1 "wiggle fraction": fully correlated geometry (rho2 at
@@ -153,7 +181,7 @@ default_type resolve_scale(const DistinctVertices &distinct, const CurvatureConf
     wiggle_fraction = (full_correlation_threshold - clamped) / full_correlation_threshold;
   }
   const default_type scale_steps = min_scale_steps + wiggle_fraction * (noise_scale_steps - min_scale_steps);
-  const default_type scale = scale_steps * mean_step;
+  const default_type scale = scale_steps * effective_step;
 
   return std::max(scale_min, std::min(scale, scale_max));
 }
@@ -294,6 +322,37 @@ std::vector<default_type> curvature(const SplineView<> &view, const CurvatureCon
   for (size_t i = 0; i != view.size(); ++i)
     tck.push_back(view[static_cast<ssize_t>(i)]);
   return curvature_impl(tck, config);
+}
+
+void configure_from_properties(CurvatureConfig &config, const Properties &properties) {
+  const auto method = properties.find("method");
+  if (method == properties.end() || method->second != "iFOD2")
+    return;
+
+  // iFOD2 records the per-step sample count and the downsample factor that was applied on output.
+  //   Each integration step is a single analytically computed arc sampled at samples_per_step points
+  //   (i.e. samples_per_step - 1 sub-step segments); the default downsample factor equals that
+  //   segment count, leaving one vertex per step. Only when the factor has been reduced do multiple
+  //   sub-step vertices per arc survive into the exported streamline.
+  const auto samples = properties.find("samples_per_step");
+  const auto downsample = properties.find("downsample_factor");
+  if (samples == properties.end() || downsample == properties.end())
+    return;
+  const size_t num_samples = to<size_t>(samples->second);
+  const size_t downsample_factor = to<size_t>(downsample->second);
+  if (num_samples < 2 || downsample_factor < 1)
+    return;
+  const default_type grouping =
+      static_cast<default_type>(num_samples - 1) / static_cast<default_type>(downsample_factor);
+  if (!(grouping > 1.0))
+    return;
+
+  config.vertices_per_parent_arc = grouping;
+  WARN("input tractogram was generated by iFOD2 with reduced streamline downsampling"
+       " (samples_per_step=" +
+       str(num_samples) + ", downsample_factor=" + str(downsample_factor) +
+       "); curvature scale calibration adjusted to treat each run of " + str(grouping) +
+       " sub-step vertices as one independent geometric sample");
 }
 
 } // namespace MR::DWI::Tractography

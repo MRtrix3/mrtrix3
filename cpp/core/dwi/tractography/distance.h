@@ -20,6 +20,7 @@
 
 #include "types.h"
 
+#include "dwi/tractography/curvature.h"
 #include "dwi/tractography/resampling/resampling.h"
 #include "dwi/tractography/streamline.h"
 
@@ -36,6 +37,11 @@ struct HausdorffConfig {
   //! Optional Hausdorff threshold (mm). When set it drives the probe-spacing rule (\c tau in the
   //!   derivation below); when unset a small fraction of the inter-vertex spacing is used instead.
   std::optional<default_type> threshold_mm{};
+  //! Curvature-estimation parameters used to derive the robust minimum radius of curvature that
+  //!   bounds the probe spacing. Normally defaulted; a metadata-derived configuration may be supplied
+  //!   so sub-step-sampled inputs are handled correctly by the AUTO scale tuning (see
+  //!   configure_from_properties()).
+  CurvatureConfig curvature{};
 };
 
 //! Result of a (symmetric or directed) spline Hausdorff computation.

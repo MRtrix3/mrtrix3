@@ -25,6 +25,8 @@
 
 namespace MR::DWI::Tractography {
 
+class Properties;
+
 //! Algorithm used to estimate smooth per-vertex curvature.
 enum class CurvatureMethod {
   SAVITZKY_GOLAY, //!< Local polynomial-in-arc-length LS fit; analytic r', r''. (default)
@@ -49,7 +51,29 @@ struct CurvatureConfig {
   default_type fixed_scale_mm{5.0};
   //! Polynomial order for the local fit (must be >= 2 to admit a non-trivial second derivative).
   size_t polynomial_order{2};
+  //! Number of consecutive exported vertices that originate from a single deterministically-smooth
+  //!   parent arc (e.g. the sub-step samples of one iFOD2 integration step when the default output
+  //!   downsampling has been disabled). The AUTO scale tuning treats this many vertices as one
+  //!   independent geometric sample, both when normalising the smoothing scale and when estimating
+  //!   the turn-angle autocorrelation, so the within-arc determinism is not mistaken for either
+  //!   anatomical smoothness or noise. 1.0 (the default) disables the adjustment; populate from the
+  //!   input tractogram metadata via configure_from_properties().
+  default_type vertices_per_parent_arc{1.0};
 };
+
+//! Adjust \c config from input tractogram generator metadata, warning once when an adjustment applies.
+/*! Inspects the tractography \c Properties for evidence that contiguous runs of exported vertices are
+ *  sub-step samples of a single analytically computed arc (presently: the iFOD2 algorithm with the
+ *  default streamline downsampling reduced, so more than one vertex per integration step survives).
+ *  When so, sets \c config.vertices_per_parent_arc to the number of such vertices per parent arc and
+ *  issues a single terminal warning; otherwise leaves \c config unchanged. Intended to be called once
+ *  per command (single-threaded), so the warning fires at most once.
+ *
+ *  \warning The decision trusts the metadata. If intermediate processing has changed the vertex
+ *  spacing without updating the \c downsample_factor / \c samples_per_step fields (for example a
+ *  prior resampling to a fixed step size), the grouping could be misapplied; the emitted warning
+ *  makes any such adjustment visible. */
+void configure_from_properties(CurvatureConfig &config, const Properties &properties);
 
 //! Smooth per-vertex curvature (1/mm) along a streamline.
 /*! Returns a vector of length \c tck.size(); element \c i is the estimated curvature magnitude

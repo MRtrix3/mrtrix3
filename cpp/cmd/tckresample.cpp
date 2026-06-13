@@ -110,7 +110,7 @@ void run() {
   Properties properties;
   Reader<value_type> read(argument[0], properties);
 
-  const std::unique_ptr<Resampling::Base> resampler(Resampling::get_resampler());
+  const std::unique_ptr<Resampling::Base> resampler(Resampling::get_resampler(properties));
 
   Worker worker(resampler);
   Receiver receiver(argument[1], properties);

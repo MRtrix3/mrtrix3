@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "dwi/tractography/curvature.h"
 #include "dwi/tractography/resampling/resampling.h"
 #include "dwi/tractography/streamline.h"
 
@@ -46,9 +47,17 @@ public:
   default_type get_density() const { return density; }
   void set_density(const default_type mu) { density = mu; }
 
+  //! Curvature-estimation parameters, normally left at their defaults; the caller may inject a
+  //!   metadata-derived configuration (see configure_from_properties()) so that sub-step-sampled
+  //!   inputs are handled correctly by the AUTO scale tuning.
+  const CurvatureConfig &get_curvature_config() const { return curv_config; }
+  void set_curvature_config(const CurvatureConfig &config) { curv_config = config; }
+
 private:
   //! Target vertices per unit curvature-weighted arc length (the user knob mu).
   default_type density;
+  //! Curvature-estimation parameters passed through to every per-streamline curvature() call.
+  CurvatureConfig curv_config;
 };
 
 } // namespace MR::DWI::Tractography::Resampling

@@ -65,8 +65,9 @@ bool DecimateFast::operator()(const Streamline<> &in, Streamline<> &out) const {
 
   const size_t num_vertices = in.size();
 
-  // Per-vertex curvature (1/mm); robust to probabilistic wiggle (stage 3.4).
-  const std::vector<default_type> kappa = curvature(in);
+  // Per-vertex curvature (1/mm); robust to probabilistic wiggle (stage 3.4). The curvature config
+  //   carries any metadata-derived adjustment for sub-step-sampled inputs (configure_from_properties).
+  const std::vector<default_type> kappa = curvature(in, curv_config);
 
   // Cumulative cost C[i] = integral of rho along arc length up to vertex i, with
   //   rho(s) = 1 + lambda * g(kappa(s)). The integral is approximated trapezoidally per segment,

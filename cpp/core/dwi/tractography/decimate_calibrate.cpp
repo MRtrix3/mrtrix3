@@ -28,6 +28,7 @@
 #include "progressbar.h"
 #include "thread_queue.h"
 
+#include "dwi/tractography/curvature.h"
 #include "dwi/tractography/distance.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/resampling/decimate_fast.h"
@@ -54,10 +55,16 @@ struct StreamlineRecord {
  *  instances so the operation is thread-safe. */
 class Worker {
 public:
-  explicit Worker(const std::vector<default_type> &mu_values) {
+  Worker(const std::vector<default_type> &mu_values, const CurvatureConfig &curvature_config) {
+    // The curvature configuration (possibly carrying a metadata-derived sub-step adjustment) is
+    //   shared by both the decimator and the Hausdorff probe-spacing rule so the calibration is
+    //   measured consistently with the way the curvature estimator is actually applied.
+    hausdorff_config.curvature = curvature_config;
     decimators.reserve(mu_values.size());
-    for (const default_type mu : mu_values)
+    for (const default_type mu : mu_values) {
       decimators.emplace_back(mu);
+      decimators.back().set_curvature_config(curvature_config);
+    }
   }
 
   bool operator()(const Streamline<value_type> &in, StreamlineRecord &out) const {
@@ -71,7 +78,7 @@ public:
       out.output_vertices[i] = decimated.size();
       if (in.size() < 2 || decimated.size() < 2)
         continue;
-      const HausdorffResult result = hausdorff(in, decimated);
+      const HausdorffResult result = hausdorff(in, decimated, hausdorff_config);
       if (std::isfinite(result.distance))
         out.hausdorff_mm[i] = static_cast<value_type>(result.distance);
     }
@@ -80,6 +87,7 @@ public:
 
 private:
   std::vector<Resampling::DecimateFast> decimators;
+  HausdorffConfig hausdorff_config;
 };
 
 //! Sink that accumulates, per mu, the finite per-streamline distances and the vertex-count ratios.
@@ -170,7 +178,11 @@ std::vector<CalibrationRow> decimate_calibrate(const std::filesystem::path &path
   if (properties.find("count") != properties.end())
     num_tracks = to<size_t>(properties["count"]);
 
-  Worker worker(mu_values);
+  // Derive any curvature-scale adjustment from the generator metadata once (warns at most once).
+  CurvatureConfig curvature_config;
+  configure_from_properties(curvature_config, properties);
+
+  Worker worker(mu_values, curvature_config);
   Accumulator accumulator(mu_values, num_tracks);
   Thread::run_queue(reader,
                     Thread::batch(Streamline<value_type>()),

@@ -74,8 +74,8 @@ default_type mean_spacing(const Streamline<> &tck) {
 //! Robust minimum radius of curvature (mm) over a streamline: the reciprocal of a high-percentile
 //!   curvature. Returns no value when curvature is everywhere (near) zero (a straight curve), in
 //!   which case the radius is effectively infinite and only the threshold/vertex scale governs.
-std::optional<default_type> robust_min_radius(const Streamline<> &tck) {
-  std::vector<default_type> kappa = curvature(tck);
+std::optional<default_type> robust_min_radius(const Streamline<> &tck, const CurvatureConfig &curvature_config) {
+  std::vector<default_type> kappa = curvature(tck, curvature_config);
   if (kappa.empty())
     return std::nullopt;
   std::sort(kappa.begin(), kappa.end());
@@ -238,8 +238,8 @@ HausdorffResult hausdorff(const Streamline<> &a, const Streamline<> &b, const Ha
   // for either curve's tightest bend and Newton stays well-conditioned on either target.
   std::optional<default_type> min_radius;
   {
-    const std::optional<default_type> ra = robust_min_radius(a);
-    const std::optional<default_type> rb = robust_min_radius(b);
+    const std::optional<default_type> ra = robust_min_radius(a, config.curvature);
+    const std::optional<default_type> rb = robust_min_radius(b, config.curvature);
     if (ra.has_value() && rb.has_value())
       min_radius = std::min(*ra, *rb);
     else if (ra.has_value())

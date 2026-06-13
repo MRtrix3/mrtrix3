@@ -24,15 +24,18 @@
 #include "types.h"
 
 #include "dwi/tractography/curvature.h"
+#include "dwi/tractography/properties.h"
 #include "dwi/tractography/streamline.h"
 
 namespace {
 
 using MR::default_type;
+using MR::DWI::Tractography::configure_from_properties;
 using MR::DWI::Tractography::curvature;
 using MR::DWI::Tractography::CurvatureConfig;
 using MR::DWI::Tractography::CurvatureMethod;
 using MR::DWI::Tractography::CurvatureScale;
+using MR::DWI::Tractography::Properties;
 using MR::DWI::Tractography::Streamline;
 using point_type = Streamline<>::point_type;
 
@@ -68,6 +71,55 @@ default_type interior_median(const std::vector<default_type> &kappa) {
   std::vector<default_type> interior(kappa.begin() + margin, kappa.end() - margin);
   std::sort(interior.begin(), interior.end());
   return interior[interior.size() / 2];
+}
+
+// Standard deviation of the interior curvature estimates (a robust proxy for residual wiggle that the
+//   smoothing failed to suppress); shares the same end-margin convention as interior_median().
+default_type interior_stdev(const std::vector<default_type> &kappa) {
+  if (kappa.size() < 5)
+    return 0.0;
+  const size_t margin = kappa.size() / 4;
+  const std::vector<default_type> interior(kappa.begin() + margin, kappa.end() - margin);
+  default_type mean = 0.0;
+  for (const default_type v : interior)
+    mean += v;
+  mean /= static_cast<default_type>(interior.size());
+  default_type variance = 0.0;
+  for (const default_type v : interior)
+    variance += (v - mean) * (v - mean);
+  variance /= static_cast<default_type>(interior.size());
+  return std::sqrt(variance);
+}
+
+// Emulate an un-downsampled iFOD2 export: an overall circle of radius R whose trajectory is built
+//   from contiguous parent arcs of \c segs_per_arc segments each. Within one parent arc the local
+//   curvature (hence the turn angle) is constant; between arcs it jumps by a random per-arc factor,
+//   reproducing the deterministic within-arc / decorrelated-between-arc structure of probabilistic
+//   tracking whose sub-step samples have been retained.
+Streamline<> arc_subsampled_noisy_circle(const default_type radius,
+                                         const default_type step_mm,
+                                         const size_t num_arcs,
+                                         const size_t segs_per_arc,
+                                         const default_type noise_amplitude,
+                                         const unsigned seed) {
+  std::mt19937 rng(seed);
+  std::uniform_real_distribution<default_type> noise(-noise_amplitude, noise_amplitude);
+  Streamline<> tck;
+  default_type x = radius;
+  default_type y = 0.0;
+  default_type heading = pi / 2.0; // tangent perpendicular to the radius: the curve turns left.
+  tck.push_back(point_type(static_cast<float>(x), static_cast<float>(y), 0.0f));
+  for (size_t arc = 0; arc != num_arcs; ++arc) {
+    const default_type kappa = (1.0 / radius) * (1.0 + noise(rng));
+    const default_type dheading = step_mm * kappa; // constant within this parent arc.
+    for (size_t s = 0; s != segs_per_arc; ++s) {
+      heading += dheading;
+      x += step_mm * std::cos(heading);
+      y += step_mm * std::sin(heading);
+      tck.push_back(point_type(static_cast<float>(x), static_cast<float>(y), 0.0f));
+    }
+  }
+  return tck;
 }
 
 } // namespace
@@ -209,4 +261,72 @@ TEST(CurvatureTest, FixedScaleCircularArc) {
   const std::vector<default_type> kappa = curvature(circular_arc(radius, 0.5, pi), config);
   const default_type median = interior_median(kappa);
   EXPECT_NEAR(median, 1.0 / radius, 0.06 / radius);
+}
+
+// configure_from_properties: iFOD2 with the output downsampling disabled leaves (samples_per_step-1)
+//   sub-step vertices per parent arc, which must be reflected in vertices_per_parent_arc.
+TEST(CurvatureTest, ConfigureFromPropertiesDownsamplingDisabled) {
+  Properties properties;
+  properties["method"] = "iFOD2";
+  properties["samples_per_step"] = "4";
+  properties["downsample_factor"] = "1";
+  CurvatureConfig config;
+  configure_from_properties(config, properties);
+  EXPECT_NEAR(config.vertices_per_parent_arc, 3.0, 1.0e-9);
+}
+
+// configure_from_properties must leave the configuration untouched for any input that does not carry
+//   retained iFOD2 sub-step samples: the default downsampling, a different algorithm, or absent keys.
+TEST(CurvatureTest, ConfigureFromPropertiesLeavesConventionalInputsUnchanged) {
+  {
+    // iFOD2 default downsampling (factor == samples_per_step - 1): one vertex per integration step.
+    Properties properties;
+    properties["method"] = "iFOD2";
+    properties["samples_per_step"] = "4";
+    properties["downsample_factor"] = "3";
+    CurvatureConfig config;
+    configure_from_properties(config, properties);
+    EXPECT_EQ(config.vertices_per_parent_arc, 1.0);
+  }
+  {
+    // A non-iFOD2 algorithm: the sub-step-arc reasoning does not apply.
+    Properties properties;
+    properties["method"] = "iFOD1";
+    properties["samples_per_step"] = "4";
+    properties["downsample_factor"] = "1";
+    CurvatureConfig config;
+    configure_from_properties(config, properties);
+    EXPECT_EQ(config.vertices_per_parent_arc, 1.0);
+  }
+  {
+    // Missing metadata: nothing can be inferred.
+    Properties properties;
+    properties["method"] = "iFOD2";
+    CurvatureConfig config;
+    configure_from_properties(config, properties);
+    EXPECT_EQ(config.vertices_per_parent_arc, 1.0);
+  }
+}
+
+// The headline fix: on a streamline whose vertices are sub-step samples of noisy parent arcs, the
+//   metadata-aware grouping smooths over whole arcs and suppresses the per-arc curvature noise that
+//   the naive one-vertex-per-sample calibration under-smooths.
+TEST(CurvatureTest, SubStepSampledNoiseSuppression) {
+  const default_type radius = 40.0;
+  const default_type step = 0.5;
+  const size_t segs_per_arc = 3;
+  const Streamline<> tck = arc_subsampled_noisy_circle(radius, step, 60, segs_per_arc, 0.8, 9876);
+  const default_type expected = 1.0 / radius;
+
+  CurvatureConfig naive; // vertices_per_parent_arc == 1: mis-calibrated for this input.
+  CurvatureConfig adjusted;
+  adjusted.vertices_per_parent_arc = static_cast<default_type>(segs_per_arc);
+
+  const std::vector<default_type> kappa_naive = curvature(tck, naive);
+  const std::vector<default_type> kappa_adjusted = curvature(tck, adjusted);
+
+  // The adjusted calibration leaves materially less residual wiggle in the curvature estimate.
+  EXPECT_LT(interior_stdev(kappa_adjusted), interior_stdev(kappa_naive));
+  // ...while the adjusted estimate still tracks the true anatomical curvature.
+  EXPECT_NEAR(interior_median(kappa_adjusted), expected, 0.3 * expected);
 }

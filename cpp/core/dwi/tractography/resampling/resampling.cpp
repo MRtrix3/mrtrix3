@@ -27,6 +27,9 @@
 #include "dwi/tractography/resampling/fixed_step_size.h"
 #include "dwi/tractography/resampling/upsampler.h"
 
+#include "dwi/tractography/curvature.h"
+#include "dwi/tractography/properties.h"
+
 namespace MR::DWI::Tractography::Resampling {
 
 using namespace App;
@@ -92,7 +95,7 @@ point_type get_pos(const std::vector<default_type> &s) {
 }
 } // namespace
 
-Base *get_resampler() {
+Base *get_resampler(const Properties &properties) {
   const size_t count = (!get_options("upsample").empty() ? 1 : 0) + (!get_options("downsample").empty() ? 1 : 0) +
                        (!get_options("step_size").empty() ? 1 : 0) + (!get_options("num_points").empty() ? 1 : 0) +
                        (!get_options("decimate_fast").empty() ? 1 : 0) +
@@ -116,8 +119,15 @@ Base *get_resampler() {
   if (!opt.empty())
     return new FixedNumPoints(opt[0][0]);
   opt = get_options("decimate_fast");
-  if (!opt.empty())
-    return new DecimateFast(opt[0][0]);
+  if (!opt.empty()) {
+    auto *decimator = new DecimateFast(opt[0][0]);
+    // Inject any metadata-derived curvature calibration (warns once if an adjustment applies); for a
+    //   conventional tractogram this leaves the curvature configuration at its defaults.
+    CurvatureConfig curvature_config;
+    configure_from_properties(curvature_config, properties);
+    decimator->set_curvature_config(curvature_config);
+    return decimator;
+  }
   opt = get_options("decimate_slow");
   if (!opt.empty())
     return new DecimateSlow(opt[0][0]);
