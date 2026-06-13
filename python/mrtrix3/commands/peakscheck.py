@@ -478,7 +478,7 @@ def execute(): #pylint: disable=unused-variable
       app.cleanup(imagepath)
 
     # Get the mean track length & add to the database
-    mean_length = float(run.command(['tckstats', track_file_path, '-output', 'mean', '-ignorezero']).stdout)
+    mean_length = float(run.command(['tck2metric', track_file_path, '-mean_length', '-ignorezero']).stdout)
     variant.mean_length = mean_length
     app.cleanup(track_file_path)
 

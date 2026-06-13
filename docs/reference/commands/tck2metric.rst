@@ -1,32 +1,51 @@
-.. _tckstats:
+.. _tck2metric:
 
-tckstats
+tck2metric
 ===================
 
 Synopsis
 --------
 
-Calculate statistics on streamlines lengths
+Compute one or more per-streamline metrics for a tractogram
 
 Usage
 --------
 
 ::
 
-    tckstats [ options ]  tracks_in
+    tck2metric [ options ]  tracks_in
 
 -  *tracks_in*: the input track file
+
+Description
+-----------
+
+Each requested metric is derived from a single serialised pass through the input tractogram, so that multiple metrics can be exported simultaneously without re-reading the data.
+
+At least one metric export option must be specified.
+
+Streamline length can be exported per-streamline to a vector file using the -length option, or summarised as a single mean value reported to stdout using the -mean_length option.
+
+Streamline curvature is estimated using a smooth arc-length-based local fit; the -mean_curvature option exports the per-streamline mean curvature to a vector file, whereas the -vertex_curvature option exports the per-vertex curvature to a track scalar (.tsf) file, the latter being written in the same order as the streamlines of the input tractogram.
 
 Options
 -------
 
--  **-output field** *(multiple uses permitted)* output only the field specified. Multiple such options can be supplied if required. Choices are: mean, median, std, min, max, count. Useful for use in scripts.
+Options for exporting streamline length
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-histogram path** output a histogram of streamline lengths
+-  **-length path** export the length of each streamline to a vector file
 
--  **-dump path** dump the streamlines lengths to a text file
+-  **-mean_length** compute the mean streamline length and report it to stdout
 
 -  **-ignorezero** do not generate a warning if the track file contains streamlines with zero length
+
+Options for exporting streamline curvature
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-mean_curvature path** export the per-streamline mean curvature (1/mm) to a vector file
+
+-  **-vertex_curvature path** export the per-vertex curvature (1/mm) to a track scalar (.tsf) file
 
 -  **-tck_weights_in path** specify a text scalar file containing the streamline weights
 

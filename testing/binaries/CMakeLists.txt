@@ -566,6 +566,12 @@ add_bash_binary_test(tck2fixel/phantom_precise)
 add_bash_binary_test(tck2fixel/phantom_unweighted)
 add_bash_binary_test(tck2fixel/phantom_weighted)
 
+add_bash_binary_test(tck2metric/length)
+add_bash_binary_test(tck2metric/mean_curvature)
+add_bash_binary_test(tck2metric/mean_length)
+add_bash_binary_test(tck2metric/multiple)
+add_bash_binary_test(tck2metric/vertex_curvature)
+
 add_bash_binary_test(tckconvert/ply_write)
 add_bash_binary_test(tckconvert/rib_write)
 add_bash_binary_test(tckconvert/scanner2voxel)
@@ -656,11 +662,6 @@ add_bash_binary_test(tcksample/interp_tdifrac)
 add_bash_binary_test(tcksift/default)
 
 add_bash_binary_test(tcksift2/default)
-
-add_bash_binary_test(tckstats/default)
-add_bash_binary_test(tckstats/dump)
-add_bash_binary_test(tckstats/histogram)
-add_bash_binary_test(tckstats/output_fields)
 
 add_bash_binary_test(tcktransform/unitwarp)
 

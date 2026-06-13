@@ -1,0 +1,10 @@
+#!/bin/bash
+# Verify the -length option of "tck2metric",
+#   which writes the per-streamline lengths to a vector file.
+# The number of values written must equal the streamline count in the input tractogram.
+
+rm -f tmp_lengths.txt
+tck2metric tracks.tck -length tmp_lengths.txt
+streamline_count=$(tckinfo tracks.tck -count 2>&1 | grep "actual count in file:" | awk '{print $NF}')
+length_count=$(tail -n1 tmp_lengths.txt | wc -w)
+(( length_count == streamline_count ))
