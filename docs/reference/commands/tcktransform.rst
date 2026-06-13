@@ -26,6 +26,8 @@ Unlike the non-linear transformation of image data, where the value of the defor
 
 Sidecar data associated with the streamlines are passed through unchanged, since a spatial transformation relocates existing vertices without altering their number or order: per-streamline weights (-tck_weights_in/out) and per-vertex data (a track scalar file via -tsf_in / -tsf_out) remain valid for the transformed streamlines and are carried across verbatim.
 
+A streamline vertex that falls outside the field of view of the deformation field has no defined transformed location, and is assigned a non-finite (NaN) position. How such vertices are handled on output depends on whether the selected output format can represent non-finite vertex coordinates: a format that cannot (e.g. ".tck", which uses non-finite values as in-band delimiters) has those vertices culled from the output, and a warning is issued quoting the number of streamlines so affected; a format that can (e.g. ".trk", ".trx") retains those vertices in the output, and a warning is issued quoting the number of streamlines that contain non-finite vertex data.
+
 Options
 -------
 

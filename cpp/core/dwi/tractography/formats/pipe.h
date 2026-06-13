@@ -175,6 +175,13 @@ private:
   void finalise();
 };
 
+//! \brief non-finite tolerance broadcast by the pipe handler and enforced by its writer.
+/*! In its default (no-sidecar) framing the pipe reuses the ".tck" wire format,
+ * delimiting streamlines with a NaN vertex and marking end-of-data with an Inf
+ * vertex, so it cannot carry a non-finite vertex coordinate. (Sidecar data, when
+ * present, travels length-prefixed in native dtype and is unrestricted.) */
+inline constexpr Formats::NonFinite pipe_vertex_tolerance = Formats::NonFinite::Forbidden;
+
 namespace Formats {
 
 //! \brief Format handler for inter-command Unix-pipe tractography streaming.
@@ -190,7 +197,14 @@ namespace Formats {
  * error rather than silently buffering the whole tractogram); rewrite-only. */
 class Pipe : public Base {
 public:
-  Pipe() : Base("piped tracks", {IO::ReadWrite, Access::Streaming, Augment::Rewrite}) {}
+  Pipe()
+      : Base("piped tracks",
+             {IO::ReadWrite,
+              Access::Streaming,
+              Augment::Rewrite,
+              StepSize::Arbitrary,
+              pipe_vertex_tolerance,
+              NonFinite::Any}) {}
 
   bool handles(const std::filesystem::path &path) const override;
 

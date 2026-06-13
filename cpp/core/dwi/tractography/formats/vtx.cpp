@@ -16,6 +16,8 @@
 
 #include "dwi/tractography/formats/vtx.h"
 
+#include "dwi/tractography/nonfinite.h"
+
 #include <array>
 #include <fstream>
 #include <sstream>
@@ -277,6 +279,7 @@ template <class ValueType> void VTXWriter<ValueType>::add_offset(int64_t offset_
 }
 
 template <class ValueType> bool VTXWriter<ValueType>::operator()(const Streamline<ValueType> &tck) {
+  enforce_vertices(tck, vtx_vertex_tolerance);
   for (const auto &pos : tck)
     VTKUtils::write_point<ValueType>(points_buffer, encoding, pos);
   num_points += tck.size();

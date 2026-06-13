@@ -204,6 +204,12 @@ protected:
   void commit();
 };
 
+//! \brief non-finite tolerance broadcast by the ".tck" handler and enforced by its writer.
+/*! The ".tck" binary stream delimits streamlines with a NaN vertex and marks
+ * end-of-data with an Inf vertex, so it can carry neither in real vertex data.
+ * ".tck" carries no per-vertex / per-streamline sidecar data. */
+inline constexpr Formats::NonFinite tck_vertex_tolerance = Formats::NonFinite::Forbidden;
+
 namespace Formats {
 
 //! \brief Format handler for the in-house MRtrix3 ".tck" tractography format.
@@ -220,7 +226,14 @@ namespace Formats {
  * backends that perform the byte-level streaming I/O. */
 class TCK : public Base {
 public:
-  TCK() : Base("MRtrix tracks", {IO::ReadWrite, Access::Streaming, Augment::Rewrite}) {}
+  TCK()
+      : Base("MRtrix tracks",
+             {IO::ReadWrite,
+              Access::Streaming,
+              Augment::Rewrite,
+              StepSize::Arbitrary,
+              tck_vertex_tolerance,
+              NonFinite::Forbidden}) {}
 
   bool handles(const std::filesystem::path &path) const override;
 

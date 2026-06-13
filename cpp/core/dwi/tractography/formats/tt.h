@@ -118,6 +118,11 @@ private:
   TTWriter(const TTWriter &) = delete;
 };
 
+//! \brief non-finite tolerance broadcast by the ".tt" handler and enforced by its writer.
+/*! TinyTrack stores vertices as quantised 1/32-voxel integers, which cannot
+ * represent any non-finite coordinate. */
+inline constexpr Formats::NonFinite tt_vertex_tolerance = Formats::NonFinite::Forbidden;
+
 namespace Formats {
 
 //! \brief Format handler for the DSI Studio TinyTrack (".tt") tractography format.
@@ -135,7 +140,14 @@ namespace Formats {
  * whole gzip ".mat" must be rewritten to alter any streamline). */
 class TT : public Base {
 public:
-  TT() : Base("DSI Studio TinyTrack", {IO::ReadWrite, Access::Streaming, Augment::Rewrite}) {}
+  TT()
+      : Base("DSI Studio TinyTrack",
+             {IO::ReadWrite,
+              Access::Streaming,
+              Augment::Rewrite,
+              StepSize::Arbitrary,
+              tt_vertex_tolerance,
+              NonFinite::Forbidden}) {}
 
   bool handles(const std::filesystem::path &path) const override;
 

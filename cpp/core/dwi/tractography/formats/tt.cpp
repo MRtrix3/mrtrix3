@@ -16,6 +16,8 @@
 
 #include "dwi/tractography/formats/tt.h"
 
+#include "dwi/tractography/nonfinite.h"
+
 #include <algorithm>
 #include <cmath>
 #include <cstring>
@@ -281,6 +283,7 @@ template <class ValueType> bool TTWriter<ValueType>::operator()(const Streamline
   if (tck.empty())
     return true;
 
+  enforce_vertices(tck, tt_vertex_tolerance);
   const size_t npoints = tck.size();
   const uint32_t length = static_cast<uint32_t>(3 * npoints);
 

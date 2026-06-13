@@ -224,6 +224,12 @@ private:
   TRKWriter(const TRKWriter &) = delete;
 };
 
+//! \brief non-finite tolerance broadcast by the ".trk" handler and enforced by its writer.
+/*! TrackVis records are count-prefixed and store float32 coordinates with no
+ * in-band sentinel, so a NaN vertex round-trips faithfully (an infinite vertex is
+ * forbidden, as for every format). */
+inline constexpr Formats::NonFinite trk_vertex_tolerance = Formats::NonFinite::NaNOnly;
+
 namespace Formats {
 
 //! \brief Format handler for the TrackVis (".trk") tractography format.
@@ -244,7 +250,14 @@ namespace Formats {
  * ".trk" with a clean error (Tractogram::require_random_access). */
 class TRK : public Base {
 public:
-  TRK() : Base("TrackVis TRK", {IO::ReadWrite, Access::Streaming, Augment::Rewrite}) {}
+  TRK()
+      : Base("TrackVis TRK",
+             {IO::ReadWrite,
+              Access::Streaming,
+              Augment::Rewrite,
+              StepSize::Arbitrary,
+              trk_vertex_tolerance,
+              NonFinite::Any}) {}
 
   bool handles(const std::filesystem::path &path) const override;
 

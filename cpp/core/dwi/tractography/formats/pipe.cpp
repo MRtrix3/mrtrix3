@@ -16,6 +16,8 @@
 
 #include "dwi/tractography/formats/pipe.h"
 
+#include "dwi/tractography/nonfinite.h"
+
 #include <cerrno>
 #include <csignal>
 #include <cstring>
@@ -445,10 +447,9 @@ template <class ValueType> void PipeWriter<ValueType>::write_preamble() {
 template <class ValueType> bool PipeWriter<ValueType>::operator()(const Streamline<ValueType> &tck) {
   // Vertices-only fast path: NaN-delimited framing (unchanged wire format).
   assert(registry.empty());
-  for (const auto &p : tck) {
-    assert(p.allFinite());
+  enforce_vertices(tck, pipe_vertex_tolerance);
+  for (const auto &p : tck)
     add_point(p);
-  }
   add_point(delimiter());
   ++count;
   ++total_count;
@@ -464,12 +465,11 @@ template <class ValueType> bool PipeWriter<ValueType>::operator()(const Tractogr
   //   positions; (c) each dps field's M values in registry order; (d) each dpv
   //   field's n x M values; then a NaN-vertex delimiter.
   const auto &tck = item.streamline;
+  enforce_vertices(tck, pipe_vertex_tolerance);
   const uint64_t n_vertices = tck.size();
   buffer.add(reinterpret_cast<const std::byte *>(&n_vertices), sizeof(n_vertices));
-  for (const auto &p : tck) {
-    assert(p.allFinite());
+  for (const auto &p : tck)
     add_point(p);
-  }
   add_dps(item);
   add_dpv(item);
   add_point(delimiter());

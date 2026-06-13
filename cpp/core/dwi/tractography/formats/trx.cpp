@@ -16,6 +16,8 @@
 
 #include "dwi/tractography/formats/trx.h"
 
+#include "dwi/tractography/nonfinite.h"
+
 #include <algorithm>
 #include <cstring>
 #include <fstream>
@@ -892,6 +894,7 @@ TRXWriter<ValueType>::TRXWriter(const std::filesystem::path &path,
 
 template <class ValueType>
 void TRXWriter<ValueType>::append(const Streamline<ValueType> &tck, const TractogramItem<ValueType> *item) {
+  enforce_vertices(tck, trx_vertex_tolerance);
   const size_t npoints = tck.size();
 
   // Positions: float32, row-major (npoints, 3).

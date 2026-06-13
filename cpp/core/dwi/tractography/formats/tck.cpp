@@ -16,6 +16,8 @@
 
 #include "dwi/tractography/formats/tck.h"
 
+#include "dwi/tractography/nonfinite.h"
+
 #include <array>
 #include <cerrno>
 #include <limits>
@@ -180,12 +182,13 @@ WriterUnbuffered<ValueType>::WriterUnbuffered(const std::filesystem::path &path,
 }
 
 template <class ValueType> bool WriterUnbuffered<ValueType>::operator()(const Streamline<ValueType> &tck) {
+  // The ".tck" stream uses NaN/Inf vertices as in-band delimiters, so any
+  //   non-finite vertex coordinate in the data would corrupt it: reject up front.
+  enforce_vertices(tck, tck_vertex_tolerance);
   // allocate buffer on the stack for performance:
   NON_POD_VLA(buffer, vector_type, tck.size() + 2);
-  for (size_t n = 0; n < tck.size(); ++n) {
-    assert(tck[n].allFinite());
+  for (size_t n = 0; n < tck.size(); ++n)
     format_point(tck[n], buffer[n]);
-  }
   format_point(delimiter(), buffer[tck.size()]);
 
   commit(buffer, tck.size() + 1);
@@ -265,10 +268,9 @@ template <typename ValueType> Writer<ValueType>::~Writer() {
 }
 
 template <typename ValueType> bool Writer<ValueType>::operator()(const Streamline<ValueType> &tck) {
-  for (const auto &i : tck) {
-    assert(i.allFinite());
+  enforce_vertices(tck, tck_vertex_tolerance);
+  for (const auto &i : tck)
     add_point(i);
-  }
   add_point(delimiter());
 
   if (!weights_path.empty())

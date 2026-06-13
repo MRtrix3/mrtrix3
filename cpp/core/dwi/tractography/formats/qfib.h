@@ -95,6 +95,11 @@ private:
   QFibWriter(const QFibWriter &) = delete;
 };
 
+//! \brief non-finite tolerance broadcast by the ".qfib" handler and enforced by its writer.
+/*! ".qfib" octahedrally quantizes unit tangents and stores a constant step size,
+ * neither of which can represent a non-finite coordinate. */
+inline constexpr Formats::NonFinite qfib_vertex_tolerance = Formats::NonFinite::Forbidden;
+
 namespace Formats {
 
 //! \brief Format handler for the lossy ".qfib" streamline-compression format.
@@ -108,7 +113,14 @@ namespace Formats {
  * fixed at finalisation, so an existing dataset cannot be appended to in place). */
 class QFIB : public Base {
 public:
-  QFIB() : Base("QFib compressed tracks", {IO::ReadWrite, Access::Streaming, Augment::Rewrite, StepSize::Constant}) {}
+  QFIB()
+      : Base("QFib compressed tracks",
+             {IO::ReadWrite,
+              Access::Streaming,
+              Augment::Rewrite,
+              StepSize::Constant,
+              qfib_vertex_tolerance,
+              NonFinite::Forbidden}) {}
 
   bool handles(const std::filesystem::path &path) const override;
 

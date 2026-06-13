@@ -710,6 +710,7 @@ add_bash_binary_test(tckstats/output_fields)
 
 add_bash_binary_test(tcktransform/unitwarp)
 add_bash_binary_test(tcktransform/sidecar_passthrough)
+add_bash_binary_test(tcktransform/nonfinite_handling)
 
 add_bash_binary_test(tckvalidate/badcount)
 add_bash_binary_test(tckvalidate/dataaftereofdelim)

@@ -11,6 +11,7 @@ set(UNIT_TESTS_CPP_SRCS
     erfinv_tests.cpp
     grouping_tests.cpp
     icls_tests.cpp
+    nonfinite_tests.cpp
     ordered_queue_tests.cpp
     parse_axes_tests.cpp
     parse_ints_tests.cpp

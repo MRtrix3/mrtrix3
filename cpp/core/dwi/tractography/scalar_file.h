@@ -21,6 +21,7 @@
 
 #include "dwi/tractography/file_base.h"
 #include "dwi/tractography/formats/write_buffer.h"
+#include "dwi/tractography/nonfinite.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/streamline.h"
 #include "file/config.h"
@@ -29,6 +30,13 @@
 #include "types.h"
 
 namespace MR::DWI::Tractography {
+
+//! \brief non-finite tolerance of the Track Scalar File (".tsf") format.
+/*! Like the ".tck" stream, ".tsf" uses NaN as the per-streamline delimiter and
+ * Inf as the end-of-data barrier, so it can carry neither in real scalar data.
+ * Broadcast here (the ".tsf" reader/writer are not Formats::Base handlers) so a
+ * producing command can poll it, and enforced by ScalarWriter::operator(). */
+inline constexpr Formats::NonFinite tsf_nonfinite_tolerance = Formats::NonFinite::Forbidden;
 
 template <typename T = float> class ScalarReader : public ReaderBase {
 public:
@@ -161,10 +169,11 @@ public:
   }
 
   bool operator()(const TrackScalar<T> &tck_scalar) {
-    for (typename std::vector<value_type>::const_iterator i = tck_scalar.begin(); i != tck_scalar.end(); ++i) {
-      assert(std::isfinite(*i));
+    // The ".tsf" stream uses NaN as the per-streamline delimiter and Inf as the
+    //   end-of-data barrier, so a non-finite scalar would corrupt it: reject up front.
+    enforce_scalars(tck_scalar, tsf_nonfinite_tolerance);
+    for (typename std::vector<value_type>::const_iterator i = tck_scalar.begin(); i != tck_scalar.end(); ++i)
       add_scalar(*i);
-    }
     add_scalar(delimiter());
     ++count;
     ++total_count;

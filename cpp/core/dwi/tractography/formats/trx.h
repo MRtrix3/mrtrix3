@@ -333,6 +333,12 @@ private:
   TRXWriter(const TRXWriter &) = delete;
 };
 
+//! \brief non-finite tolerance broadcast by the TRX handler and enforced by its writer.
+/*! TRX stores float32 vertex coordinates in a flat array indexed by a separate
+ * offsets array (no in-band sentinel), so a NaN vertex round-trips faithfully (an
+ * infinite vertex is forbidden, as for every format); sidecars are native-dtype. */
+inline constexpr Formats::NonFinite trx_vertex_tolerance = Formats::NonFinite::NaNOnly;
+
 namespace Formats {
 
 //! \brief Format handler for the TRX tractography format (D1/D5/D7).
@@ -350,7 +356,14 @@ namespace Formats {
  * archive. The "-force" interaction (step 11) is resolved per backing kind. */
 class TRX : public Base {
 public:
-  TRX() : Base("TRX", {IO::ReadWrite, Access::RandomAccessFixed, Augment::Append}) {}
+  TRX()
+      : Base("TRX",
+             {IO::ReadWrite,
+              Access::RandomAccessFixed,
+              Augment::Append,
+              StepSize::Arbitrary,
+              trx_vertex_tolerance,
+              NonFinite::Any}) {}
 
   bool handles(const std::filesystem::path &path) const override;
 

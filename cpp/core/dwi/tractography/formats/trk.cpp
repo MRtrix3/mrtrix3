@@ -16,6 +16,8 @@
 
 #include "dwi/tractography/formats/trk.h"
 
+#include "dwi/tractography/nonfinite.h"
+
 #include <algorithm>
 #include <cmath>
 #include <cstring>
@@ -380,6 +382,7 @@ TRKWriter<ValueType>::TRKWriter(const std::filesystem::path &path,
 }
 
 template <class ValueType> bool TRKWriter<ValueType>::operator()(const Streamline<ValueType> &tck) {
+  enforce_vertices(tck, trk_vertex_tolerance);
   // Vertices-only write: no scalars/properties (this path is taken only when the
   //   output registry has no dpv/dps fields).
   const size_t npoints = tck.size();
@@ -401,6 +404,7 @@ template <class ValueType> bool TRKWriter<ValueType>::operator()(const Streamlin
 
 template <class ValueType> bool TRKWriter<ValueType>::operator()(const TractogramItem<ValueType> &item) {
   const auto &tck = item.streamline;
+  enforce_vertices(tck, trk_vertex_tolerance);
   const size_t npoints = tck.size();
   const size_t per_vertex_floats = 3 + n_scalars;
   std::vector<std::byte> record(sizeof(int32_t) + npoints * per_vertex_floats * trk_value_bytes +

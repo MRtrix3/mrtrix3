@@ -16,6 +16,8 @@
 
 #include "dwi/tractography/formats/vtk.h"
 
+#include "dwi/tractography/nonfinite.h"
+
 #include <algorithm>
 #include <cctype>
 #include <cmath>
@@ -568,6 +570,7 @@ template <class ValueType> void VTKWriter<ValueType>::add_line(size_t first_vert
 }
 
 template <class ValueType> bool VTKWriter<ValueType>::operator()(const Streamline<ValueType> &tck) {
+  enforce_vertices(tck, vtk_vertex_tolerance);
   const size_t first_vertex = num_points;
   for (const auto &pos : tck)
     VTKUtils::write_point<ValueType>(points_buffer, encoding, pos);

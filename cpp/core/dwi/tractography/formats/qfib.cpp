@@ -16,6 +16,8 @@
 
 #include "dwi/tractography/formats/qfib.h"
 
+#include "dwi/tractography/nonfinite.h"
+
 #include <array>
 #include <cstddef>
 #include <limits>
@@ -203,6 +205,7 @@ template <class ValueType> bool QFibWriter<ValueType>::operator()(const Streamli
     return true;
   }
 
+  enforce_vertices(tck, qfib_vertex_tolerance);
   Formats::QFibCodec::Compressed<ValueType> cfiber;
   try {
     cfiber = Formats::QFibCodec::compress<ValueType>(tck, bitdepth, ratio, step_tolerance);

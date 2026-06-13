@@ -16,6 +16,8 @@
 
 #include "command.h"
 #include "dwi/tractography/file.h"
+#include "dwi/tractography/formats/list.h"
+#include "dwi/tractography/nonfinite.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/resampling/arc.h"
 #include "dwi/tractography/resampling/downsampler.h"
@@ -37,6 +39,9 @@
 using namespace MR;
 using namespace App;
 using namespace DWI::Tractography;
+
+// Disambiguate from the image subsystem's MR::Formats, also in scope here.
+namespace TrackFormats = DWI::Tractography::Formats;
 
 // clang-format off
 void usage() {
@@ -98,6 +103,20 @@ void usage() {
 
 using value_type = float;
 
+//! \brief poll the output format and reject a streamline it cannot represent.
+/*! Interpolating resampling modes can extrapolate to non-finite vertex
+ * positions; if the selected output format cannot represent them (e.g. ".tck",
+ * which uses non-finite values as in-band delimiters) this throws a clear,
+ * resampling-specific error rather than letting the writer corrupt the stream. */
+void verify_output_representable(const Streamline<value_type> &tck,
+                                 const TrackFormats::NonFinite output_tolerance,
+                                 const std::string_view output_format) {
+  const NonFiniteContent content = scan_vertices(tck);
+  if (!nonfinite_permitted(output_tolerance, content))
+    throw Exception("resampling produced non-finite vertex positions in streamline " + str(tck.get_index()) +
+                    ", which the output tractography format (\"" + std::string(output_format) + "\") cannot represent");
+}
+
 //! \brief A streamline plus its (optional) parallel per-vertex scalar (.tsf).
 /*! The composite queue item used when tckresample is asked to carry per-vertex
  * sidecar data (the -tsf_in option). When no .tsf is coupled, \c scalar is left
@@ -132,14 +151,21 @@ private:
 
 class Receiver {
 public:
-  Receiver(const std::filesystem::path &path, const Properties &properties)
-      : writer(path, properties), progress("resampling streamlines") {}
+  Receiver(const std::filesystem::path &path,
+           const Properties &properties,
+           const TrackFormats::NonFinite output_tolerance,
+           std::string output_format)
+      : writer(path, properties),
+        progress("resampling streamlines"),
+        output_tolerance(output_tolerance),
+        output_format(std::move(output_format)) {}
 
   bool operator()(const Streamline<value_type> &tck) {
     auto progress_message = [&]() {
       return "resampling streamlines (count: " + str(writer.count) +
              ", skipped: " + str(writer.total_count - writer.count) + ")";
     };
+    verify_output_representable(tck, output_tolerance, output_format);
     writer(tck);
     progress.set_text(progress_message());
     return true;
@@ -148,6 +174,8 @@ public:
 private:
   Writer<value_type> writer;
   ProgressBar progress;
+  TrackFormats::NonFinite output_tolerance;
+  std::string output_format;
 };
 
 // ---------------------------------------------------------------------------
@@ -212,8 +240,13 @@ class CoupledReceiver {
 public:
   CoupledReceiver(const std::filesystem::path &tracks_path,
                   const Properties &tck_properties,
-                  const std::optional<std::filesystem::path> &tsf_path)
-      : writer(tracks_path, tck_properties), progress("resampling streamlines") {
+                  const std::optional<std::filesystem::path> &tsf_path,
+                  const TrackFormats::NonFinite output_tolerance,
+                  std::string output_format)
+      : writer(tracks_path, tck_properties),
+        progress("resampling streamlines"),
+        output_tolerance(output_tolerance),
+        output_format(std::move(output_format)) {
     // The output .tsf must inherit the output tractogram's properties (notably
     //   its freshly-stamped "timestamp") so that the pair is mutually
     //   consistent, rather than carrying the input .tsf's timestamp.
@@ -222,6 +255,7 @@ public:
   }
 
   bool operator()(const CoupledItem &item) {
+    verify_output_representable(item.streamline, output_tolerance, output_format);
     writer(item.streamline);
     if (tsf_writer)
       (*tsf_writer)(item.scalar);
@@ -237,12 +271,21 @@ private:
   Writer<value_type> writer;
   std::unique_ptr<ScalarWriter<value_type>> tsf_writer;
   ProgressBar progress;
+  TrackFormats::NonFinite output_tolerance;
+  std::string output_format;
 };
 
 void run() {
   Properties properties;
 
   const std::unique_ptr<Resampling::Base> resampler(Resampling::get_resampler());
+
+  // Poll the output format's non-finite tolerance up front, so a streamline that
+  //   resampling pushes to a non-finite position is reported against the format.
+  const TrackFormats::Base *const output_handler = TrackFormats::get_handler(std::filesystem::path(argument[1]));
+  const TrackFormats::NonFinite output_tolerance =
+      output_handler != nullptr ? output_handler->vertex_nonfinite() : TrackFormats::NonFinite::Forbidden;
+  const std::string output_format = output_handler != nullptr ? output_handler->description : std::string("tracks");
 
   auto tsf_in = get_optional<std::filesystem::path>("tsf_in");
   auto tsf_out = get_optional<std::filesystem::path>("tsf_out");
@@ -253,7 +296,7 @@ void run() {
     // Original (vertices-only) pipeline.
     Reader<value_type> read(argument[0], properties);
     Worker worker(resampler);
-    Receiver receiver(argument[1], properties);
+    Receiver receiver(argument[1], properties, output_tolerance, output_format);
     Thread::run_ordered_queue(read,
                               Thread::batch(Streamline<value_type>()),
                               Thread::multi(worker),
@@ -280,7 +323,7 @@ void run() {
   CoupledWorker worker(resampler);
   // The output .tsf inherits the output tractogram's (input-derived) properties
   //   so that its timestamp matches the freshly-written output .tck.
-  CoupledReceiver receiver(argument[1], properties, tsf_out);
+  CoupledReceiver receiver(argument[1], properties, tsf_out, output_tolerance, output_format);
   Thread::run_ordered_queue(
       loader, Thread::batch(CoupledItem()), Thread::multi(worker), Thread::batch(CoupledItem()), receiver);
 }

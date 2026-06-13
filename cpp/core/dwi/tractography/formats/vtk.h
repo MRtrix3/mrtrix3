@@ -193,6 +193,12 @@ private:
   VTKWriter(const VTKWriter &) = delete;
 };
 
+//! \brief non-finite tolerance broadcast by the ".vtk" handler and enforced by its writer.
+/*! Legacy VTK PolyData stores float POINTS with no in-band sentinel, so a NaN
+ * vertex round-trips faithfully (an infinite vertex is forbidden, as for every
+ * format); POINT_DATA/CELL_DATA sidecars are likewise raw float. */
+inline constexpr Formats::NonFinite vtk_vertex_tolerance = Formats::NonFinite::NaNOnly;
+
 namespace Formats {
 
 //! \brief Format handler for the legacy VTK PolyData (".vtk") tractography format.
@@ -210,7 +216,14 @@ namespace Formats {
  * rewrite-only. */
 class VTK : public Base {
 public:
-  VTK() : Base("VTK PolyData", {IO::ReadWrite, Access::Streaming, Augment::Rewrite}) {}
+  VTK()
+      : Base("VTK PolyData",
+             {IO::ReadWrite,
+              Access::Streaming,
+              Augment::Rewrite,
+              StepSize::Arbitrary,
+              vtk_vertex_tolerance,
+              NonFinite::Any}) {}
 
   bool handles(const std::filesystem::path &path) const override;
 

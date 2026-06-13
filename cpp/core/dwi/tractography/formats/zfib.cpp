@@ -16,6 +16,8 @@
 
 #include "dwi/tractography/formats/zfib.h"
 
+#include "dwi/tractography/nonfinite.h"
+
 #include <algorithm>
 #include <cmath>
 #include <fstream>
@@ -219,6 +221,7 @@ ZFIBWriter<ValueType>::ZFIBWriter(const std::filesystem::path &path, const Prope
 }
 
 template <class ValueType> void ZFIBWriter<ValueType>::append(const Streamline<ValueType> &tck) {
+  enforce_vertices(tck, zfib_vertex_tolerance);
   if (tck.weight != 1.0F && !warned_weight) {
     WARN("the \".zfib\" format does not store streamline weights; weights are being discarded");
     warned_weight = true;

@@ -145,6 +145,12 @@ private:
   VTXWriter(const VTXWriter &) = delete;
 };
 
+//! \brief non-finite tolerance broadcast by the ".vtx" handler and enforced by its writer.
+/*! The STREAMLINES format stores float POINTS delimited by a separate OFFSETS
+ * array (no in-band sentinel), so a NaN vertex round-trips faithfully (an
+ * infinite vertex is forbidden, as for every format). */
+inline constexpr Formats::NonFinite vtx_vertex_tolerance = Formats::NonFinite::NaNOnly;
+
 namespace Formats {
 
 //! \brief Format handler for the experimental ".vtx" STREAMLINES tractography format.
@@ -160,7 +166,14 @@ namespace Formats {
  * streamline's vertex count during streaming); rewrite-only. */
 class VTX : public Base {
 public:
-  VTX() : Base("VTK STREAMLINES", {IO::ReadWrite, Access::Streaming, Augment::Rewrite}) {}
+  VTX()
+      : Base("VTK STREAMLINES",
+             {IO::ReadWrite,
+              Access::Streaming,
+              Augment::Rewrite,
+              StepSize::Arbitrary,
+              vtx_vertex_tolerance,
+              NonFinite::Forbidden}) {}
 
   bool handles(const std::filesystem::path &path) const override;
 

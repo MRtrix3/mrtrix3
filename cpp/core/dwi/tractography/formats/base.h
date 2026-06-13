@@ -149,17 +149,42 @@ enum class StepSize {
   Constant
 };
 
+//! \brief Whether a data channel can carry non-finite floating-point values.
+/*! Several formats embed non-finite values as in-band control tokens — the
+ * ".tck" stream (and the inter-command pipe in its default framing) delimits
+ * streamlines with a NaN vertex and marks end-of-data with an Inf vertex, while
+ * the ".tsf" track scalar file uses the same NaN/Inf protocol — and the
+ * quantised/compressed formats (".tt", ".qfib", ".zfib") cannot represent a
+ * non-finite coordinate at all. Such a format therefore broadcasts
+ * NonFinite::Forbidden so that a producing command (or the writer backend
+ * itself) rejects the data up front rather than silently corrupting it. Formats
+ * that store explicit floating-point coordinates can faithfully round-trip a NaN
+ * (NonFinite::NaNOnly) or, for sidecar data only, both NaN and Inf
+ * (NonFinite::Any). Per the data model, no format tolerates an infinite vertex
+ * coordinate, so the vertex axis is never Any. */
+enum class NonFinite {
+  Forbidden, //!< neither NaN nor infinity permitted
+  NaNOnly,   //!< NaN permitted; infinity forbidden
+  Any        //!< both NaN and infinity permitted (sidecar data only)
+};
+
 //! \brief The capabilities a tractography format handler broadcasts.
 /*! Encapsulates the orthogonal axes of §2.6: I/O direction, access model,
- * in-place augmentation, and step-size requirement, so that the framework can
- * match a command's requirements against a handler without probing the backend.
- * The step-size axis defaults to Arbitrary, the common case, so that only a
- * constant-step format need declare it. */
+ * in-place augmentation, step-size requirement, and non-finite tolerance, so
+ * that the framework can match a command's requirements against a handler
+ * without probing the backend. The step-size axis defaults to Arbitrary, the
+ * common case, so that only a constant-step format need declare it. The two
+ * non-finite axes default to Forbidden (the strict, safe case), so that a format
+ * opts *in* to tolerance and the in-band-delimited ".tck" handler's existing
+ * three-argument initializer keeps the correct meaning unchanged. The \a sidecar
+ * axis is moot for formats that carry no per-streamline / per-vertex data. */
 struct Capabilities {
   IO io;
   Access access;
   Augment augment;
   StepSize stepsize = StepSize::Arbitrary;
+  NonFinite vertices = NonFinite::Forbidden;
+  NonFinite sidecar = NonFinite::Forbidden;
 };
 
 //! \brief The interface for classes that support the various tractography formats.
@@ -202,6 +227,11 @@ public:
 
   //! \brief whether this format requires a constant per-streamline step size.
   bool requires_constant_stepsize() const { return capabilities.stepsize == StepSize::Constant; }
+
+  //! \brief the non-finite tolerance advertised for streamline vertex positions.
+  NonFinite vertex_nonfinite() const { return capabilities.vertices; }
+  //! \brief the non-finite tolerance advertised for sidecar (dps/dpv) data.
+  NonFinite sidecar_nonfinite() const { return capabilities.sidecar; }
 
   //! \brief whether a streaming-only handler may be wrapped for random access (Stage 15).
   /*! When a command requires random access against a handler that advertises

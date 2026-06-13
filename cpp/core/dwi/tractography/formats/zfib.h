@@ -108,6 +108,11 @@ private:
   ZFIBWriter(const ZFIBWriter &) = delete;
 };
 
+//! \brief non-finite tolerance broadcast by the ".zfib" handler and enforced by its writer.
+/*! ".zfib" linearizes and uniformly quantizes coordinates before Huffman
+ * encoding, which cannot represent a non-finite coordinate. */
+inline constexpr Formats::NonFinite zfib_vertex_tolerance = Formats::NonFinite::Forbidden;
+
 namespace Formats {
 
 //! \brief Format handler for the lossy ".zfib" streamline-compression format.
@@ -122,7 +127,14 @@ namespace Formats {
  * finalisation, so an existing dataset cannot be appended to in place). */
 class ZFIB : public Base {
 public:
-  ZFIB() : Base("ZFIB (lossy streamline compression)", {IO::ReadWrite, Access::Streaming, Augment::Rewrite}) {}
+  ZFIB()
+      : Base("ZFIB (lossy streamline compression)",
+             {IO::ReadWrite,
+              Access::Streaming,
+              Augment::Rewrite,
+              StepSize::Arbitrary,
+              zfib_vertex_tolerance,
+              NonFinite::Forbidden}) {}
 
   bool handles(const std::filesystem::path &path) const override;
 
