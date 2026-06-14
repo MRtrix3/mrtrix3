@@ -86,7 +86,8 @@ Tractogram<ValueType> Tractogram<ValueType>::create(const std::filesystem::path 
                                                     const Properties &properties,
                                                     const FieldRegistry &registry,
                                                     AccessRequest access,
-                                                    const OptionalHeader &grid) {
+                                                    const OptionalHeader &grid,
+                                                    const Formats::WriteOptions &options) {
   const Formats::Base *handler = select_handler(path);
   if (!handler->can_write())
     throw Exception("tractography format \"" + handler->description + "\" does not support writing (file \"" +
@@ -101,7 +102,7 @@ Tractogram<ValueType> Tractogram<ValueType>::create(const std::filesystem::path 
     *tractogram.registry = registry;
     tractogram.store = store;
     tractogram.ram_wrapper = wrapper;
-    tractogram.writer = wrapper->template create<ValueType>(path, properties, *tractogram.registry, grid);
+    tractogram.writer = wrapper->template create<ValueType>(path, properties, *tractogram.registry, grid, options);
     return tractogram;
   }
 
@@ -110,7 +111,7 @@ Tractogram<ValueType> Tractogram<ValueType>::create(const std::filesystem::path 
 
   Tractogram tractogram(handler);
   *tractogram.registry = registry;
-  tractogram.writer = handler->template create<ValueType>(path, properties, *tractogram.registry, grid);
+  tractogram.writer = handler->template create<ValueType>(path, properties, *tractogram.registry, grid, options);
   return tractogram;
 }
 

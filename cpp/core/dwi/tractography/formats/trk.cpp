@@ -556,14 +556,16 @@ std::unique_ptr<ReaderInterface<double>> TRK::read_double(const std::filesystem:
 std::unique_ptr<WriterInterface<float>> TRK::create_float(const std::filesystem::path &path,
                                                           const Properties &properties,
                                                           const FieldRegistry &registry,
-                                                          const OptionalHeader &grid) const {
+                                                          const OptionalHeader &grid,
+                                                          const WriteOptions &options) const {
   return std::make_unique<TRKWriter<float>>(path, properties, registry, grid);
 }
 
 std::unique_ptr<WriterInterface<double>> TRK::create_double(const std::filesystem::path &path,
                                                             const Properties &properties,
                                                             const FieldRegistry &registry,
-                                                            const OptionalHeader &grid) const {
+                                                            const OptionalHeader &grid,
+                                                            const WriteOptions &options) const {
   return std::make_unique<TRKWriter<double>>(path, properties, registry, grid);
 }
 

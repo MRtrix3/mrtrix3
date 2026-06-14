@@ -68,22 +68,24 @@ protected:
   Reader(const Reader &) = delete;
 };
 
-//! class to handle unbuffered writing of tracks to file
-/*! writes track header as specified in \a properties and individual
- * tracks to the file specified in \a file. Writing individual tracks is
- * done using the operator() method.
+//! class to handle writing tracks to file, with a RAM write-back buffer
+/*! Writes the track header as specified in \a properties and individual tracks
+ * to the file specified by \a path; each track is appended via operator().
  *
- * This class re-opens the output file every time a new streamline is
- * written. This may result in slow operation in some circumstances, and
- * may lead to fragmentation on some file systems, but is necessary in
- * use cases where a very large number of track files are being written
- * at once. For most applications (where typically one track file is
- * written at a time), the Writer class is more appropriate.
+ * Track data are accumulated in a RAM write-back buffer (Formats::WriteBuffer)
+ * and committed to the filesystem when the buffer fills, on finalisation, or on
+ * destruction. Batching writes this way minimises the number of write() calls (a
+ * bottleneck on distributed / network filesystems) and reduces fragmentation when
+ * several processes write concurrently. The buffer capacity defaults to the
+ * TrackWriterBufferSize config field (16 MB); a capacity of 0 instead grows the
+ * buffer only as far as the longest streamline encountered, flushing each
+ * streamline as it arrives — the appropriate choice for a command that holds a
+ * very large number of output files open at once (e.g. connectome2tck, one per
+ * edge/node), where a full per-file buffer would exhaust memory.
  *
  * The implementation is explicitly instantiated for float and double in
  * formats/tck.cpp. */
-template <class ValueType = float>
-class WriterUnbuffered : public WriterBase<ValueType>, public WriterInterface<ValueType> {
+template <typename ValueType = float> class Writer : public WriterBase<ValueType>, public WriterInterface<ValueType> {
 public:
   using WriterBase<ValueType>::count;
   using WriterBase<ValueType>::total_count;
@@ -102,22 +104,40 @@ public:
    * tractograms (e.g. connectome2tck, one per edge/node) manages a distinct
    * weights path per file and must suppress that auto-detection, setting each
    * file's path explicitly via set_weights_path() instead. */
-  enum class WeightsAutoDetect { Enabled, Disabled };
+  using WeightsAutoDetect = Formats::WeightsAutoDetect;
 
   //! create a new track file with the specified properties
-  WriterUnbuffered(const std::filesystem::path &path,
-                   const Properties &properties,
-                   WeightsAutoDetect weights_autodetect = WeightsAutoDetect::Enabled);
+  // CONF option: TrackWriterBufferSize
+  // CONF default: 16777216
+  // CONF The size of the write-back buffer (in bytes) to use when
+  // CONF writing track files. MRtrix will store the output tracks in a
+  // CONF relatively large buffer to limit the number of write() calls,
+  // CONF avoid associated issues such as file fragmentation.
+  Writer(const std::filesystem::path &path,
+         const Properties &properties,
+         WeightsAutoDetect weights_autodetect = WeightsAutoDetect::Enabled,
+         std::optional<size_t> buffer_capacity = std::nullopt);
+
+  Writer(const Writer &) = delete;
+
+  //! commits any remaining data to file
+  ~Writer() override;
 
   //! append track to file
   bool operator()(const Streamline<ValueType> &tck) override;
 
+  //! record a streamline seen but not exported (advances total_count only)
+  void note_unexported() override { this->skip(); }
+
   //! set the path to the track weights
-  void set_weights_path(const std::filesystem::path &path);
+  void set_weights_path(const std::filesystem::path &path) override;
 
 protected:
   std::filesystem::path weights_path;
   int64_t barrier_addr;
+  //! format-agnostic RAM write-back buffer (Stage 2); holds formatted point bytes
+  Formats::WriteBuffer buffer;
+  std::string weights_buffer;
 
   //! indicates end of track and start of new track
   vector_type delimiter() const { return vector_type::Constant(std::numeric_limits<ValueType>::quiet_NaN()); }
@@ -129,67 +149,6 @@ protected:
 
   //! write track weights data to file
   void write_weights(std::string_view contents);
-
-  //! write track point data to file
-  /*! \note \c buffer needs to be greater than \c num_points by one
-   * element to add the barrier. */
-  void commit(vector_type *data, size_t num_points);
-
-  //! copy construction explicitly disabled
-  WriterUnbuffered(const WriterUnbuffered &) = delete;
-};
-
-//! class to handle writing tracks to file, with RAM buffer
-/*! writes track header as specified in \a properties and individual
- * tracks to the file specified in \a file. Writing individual tracks is
- * done using the append() method.
- *
- * This class implements a large write-back RAM buffer to hold the track
- * data in RAM, and only commits to file when the buffer capacity is
- * reached. This minimises the number of write() calls, which can
- * otherwise become a bottleneck on distributed or network filesystems.
- * It also helps reduce file fragmentation when multiple processes write
- * to file concurrently. The size of the write-back buffer defaults to
- * 16MB, and can be set in the config file using the
- * TrackWriterBufferSize field (in bytes).
- *
- * The implementation is explicitly instantiated for float and double in
- * formats/tck.cpp. */
-template <typename ValueType = float> class Writer : public WriterUnbuffered<ValueType> {
-public:
-  using WriterBase<ValueType>::count;
-  using WriterBase<ValueType>::total_count;
-  using WriterUnbuffered<ValueType>::delimiter;
-  using WriterUnbuffered<ValueType>::format_point;
-  using WriterUnbuffered<ValueType>::weights_path;
-  using WriterUnbuffered<ValueType>::write_weights;
-  using vector_type = typename WriterUnbuffered<ValueType>::vector_type;
-
-  //! create new RAM-buffered track file with specified properties
-  /*! the capacity of the RAM buffer can be specified as a config file
-   * option (TrackWriterBufferSize), or in the constructor by
-   * specifying a value in bytes for \c default_buffer_capacity
-   * (default is 16M). */
-  // CONF option: TrackWriterBufferSize
-  // CONF default: 16777216
-  // CONF The size of the write-back buffer (in bytes) to use when
-  // CONF writing track files. MRtrix will store the output tracks in a
-  // CONF relatively large buffer to limit the number of write() calls,
-  // CONF avoid associated issues such as file fragmentation.
-  Writer(const std::filesystem::path &path, const Properties &properties, size_t default_buffer_capacity = 16777216);
-
-  Writer(const Writer &W) = delete;
-
-  //! commits any remaining data to file
-  ~Writer() override;
-
-  //! append track to file
-  bool operator()(const Streamline<ValueType> &tck) override;
-
-protected:
-  //! format-agnostic RAM write-back buffer (Stage 2); holds formatted point bytes
-  Formats::WriteBuffer buffer;
-  std::string weights_buffer;
 
   //! append one already-formatted point to the byte buffer
   void add_point(const vector_type &p) {
@@ -249,11 +208,13 @@ protected:
   std::unique_ptr<WriterInterface<float>> create_float(const std::filesystem::path &path,
                                                        const Properties &properties,
                                                        const FieldRegistry &registry,
-                                                       const OptionalHeader &grid) const override;
+                                                       const OptionalHeader &grid,
+                                                       const WriteOptions &options) const override;
   std::unique_ptr<WriterInterface<double>> create_double(const std::filesystem::path &path,
                                                          const Properties &properties,
                                                          const FieldRegistry &registry,
-                                                         const OptionalHeader &grid) const override;
+                                                         const OptionalHeader &grid,
+                                                         const WriteOptions &options) const override;
 };
 
 } // namespace Formats

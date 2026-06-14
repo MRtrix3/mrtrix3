@@ -284,14 +284,16 @@ std::unique_ptr<ReaderInterface<double>> QFIB::read_double(const std::filesystem
 std::unique_ptr<WriterInterface<float>> QFIB::create_float(const std::filesystem::path &path,
                                                            const Properties &properties,
                                                            const FieldRegistry &,
-                                                           const OptionalHeader &) const {
+                                                           const OptionalHeader &,
+                                                           const WriteOptions &options) const {
   return std::make_unique<QFibWriter<float>>(path, properties);
 }
 
 std::unique_ptr<WriterInterface<double>> QFIB::create_double(const std::filesystem::path &path,
                                                              const Properties &properties,
                                                              const FieldRegistry &,
-                                                             const OptionalHeader &) const {
+                                                             const OptionalHeader &,
+                                                             const WriteOptions &options) const {
   return std::make_unique<QFibWriter<double>>(path, properties);
 }
 

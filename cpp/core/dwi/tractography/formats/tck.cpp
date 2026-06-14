@@ -141,14 +141,16 @@ template <class ValueType> void Reader<ValueType>::check_excess_weights() {
 }
 
 /* ************************************************************************ */
-/*                       WriterUnbuffered<ValueType>                       */
+/*                            Writer<ValueType>                            */
 /* ************************************************************************ */
 
-template <class ValueType>
-WriterUnbuffered<ValueType>::WriterUnbuffered(const std::filesystem::path &path,
-                                              const Properties &properties,
-                                              WeightsAutoDetect weights_autodetect)
-    : WriterBase<ValueType>(path) {
+template <typename ValueType>
+Writer<ValueType>::Writer(const std::filesystem::path &path,
+                          const Properties &properties,
+                          WeightsAutoDetect weights_autodetect,
+                          std::optional<size_t> buffer_capacity)
+    : WriterBase<ValueType>(path),
+      buffer(buffer_capacity.value_or(File::Config::get_int("TrackWriterBufferSize", 16777216)), sizeof(vector_type)) {
 
   if (path.extension() != ".tck")
     throw Exception("output track files must use the .tck suffix");
@@ -174,6 +176,12 @@ WriterUnbuffered<ValueType>::WriterUnbuffered(const std::filesystem::path &path,
     throw Exception("error writing tracks file \"" + path.string() + "\": " + MR::C_strerror(errno));
   open_success = true;
 
+  // The .tck header count is patched from the live WriterBase counters inside
+  //   flush_points() via update_counts(), so no separate count state is forwarded.
+  buffer.set_flush_callback([this](const std::byte *data, size_t size, const Formats::WriteBuffer::Counts &counts) {
+    this->flush_points(data, size, counts);
+  });
+
   if (weights_autodetect == WeightsAutoDetect::Enabled) {
     auto opt = App::get_options("tck_weights_out");
     if (!opt.empty())
@@ -181,27 +189,7 @@ WriterUnbuffered<ValueType>::WriterUnbuffered(const std::filesystem::path &path,
   }
 }
 
-template <class ValueType> bool WriterUnbuffered<ValueType>::operator()(const Streamline<ValueType> &tck) {
-  // The ".tck" stream uses NaN/Inf vertices as in-band delimiters, so any
-  //   non-finite vertex coordinate in the data would corrupt it: reject up front.
-  enforce_vertices(tck, tck_vertex_tolerance);
-  // allocate buffer on the stack for performance:
-  NON_POD_VLA(buffer, vector_type, tck.size() + 2);
-  for (size_t n = 0; n < tck.size(); ++n)
-    format_point(tck[n], buffer[n]);
-  format_point(delimiter(), buffer[tck.size()]);
-
-  commit(buffer, tck.size() + 1);
-
-  if (!weights_path.empty())
-    write_weights(str(tck.weight) + "\n");
-
-  ++count;
-  ++total_count;
-  return true;
-}
-
-template <class ValueType> void WriterUnbuffered<ValueType>::set_weights_path(const std::filesystem::path &path) {
+template <class ValueType> void Writer<ValueType>::set_weights_path(const std::filesystem::path &path) {
   if (!weights_path.empty())
     throw Exception("Cannot change output streamline weights file path");
   weights_path = path;
@@ -209,7 +197,7 @@ template <class ValueType> void WriterUnbuffered<ValueType>::set_weights_path(co
   File::OFStream out(weights_path, std::ios::out | std::ios::binary | std::ios::trunc);
 }
 
-template <class ValueType> void WriterUnbuffered<ValueType>::format_point(const vector_type &src, vector_type &dest) {
+template <class ValueType> void Writer<ValueType>::format_point(const vector_type &src, vector_type &dest) {
   using namespace ByteOrder;
   if (dtype.is_little_endian())
     dest = {LE(src[0]), LE(src[1]), LE(src[2])};
@@ -217,46 +205,12 @@ template <class ValueType> void WriterUnbuffered<ValueType>::format_point(const 
     dest = {BE(src[0]), BE(src[1]), BE(src[2])};
 }
 
-template <class ValueType> void WriterUnbuffered<ValueType>::write_weights(std::string_view contents) {
+template <class ValueType> void Writer<ValueType>::write_weights(std::string_view contents) {
   File::OFStream out(weights_path, std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
   out << contents;
   if (!out.good())
     throw Exception("error writing streamline weights file \"" + weights_path.string() + "\": " + //
                     MR::C_strerror(errno));
-}
-
-template <class ValueType> void WriterUnbuffered<ValueType>::commit(vector_type *data, size_t num_points) {
-  if (num_points == 0 || !open_success)
-    return;
-
-  int64_t prev_barrier_addr = barrier_addr;
-
-  format_point(barrier(), data[num_points]);
-  File::OFStream out(path, std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
-  out.write(reinterpret_cast<const char *>(data + 1), sizeof(vector_type) * num_points);
-  verify_stream(out);
-  barrier_addr = static_cast<int64_t>(out.tellp()) - sizeof(vector_type);
-  out.seekp(prev_barrier_addr, out.beg);
-  out.write(reinterpret_cast<const char *>(data), sizeof(vector_type));
-  verify_stream(out);
-  update_counts(out);
-}
-
-/* ************************************************************************ */
-/*                            Writer<ValueType>                            */
-/* ************************************************************************ */
-
-template <typename ValueType>
-Writer<ValueType>::Writer(const std::filesystem::path &path,
-                          const Properties &properties,
-                          size_t default_buffer_capacity)
-    : WriterUnbuffered<ValueType>(path, properties),
-      buffer(File::Config::get_int("TrackWriterBufferSize", default_buffer_capacity), sizeof(vector_type)) {
-  // The .tck header count is patched from the live WriterBase counters inside
-  //   flush_points() via update_counts(), so no separate count state is forwarded.
-  buffer.set_flush_callback([this](const std::byte *data, size_t size, const Formats::WriteBuffer::Counts &counts) {
-    this->flush_points(data, size, counts);
-  });
 }
 
 template <typename ValueType> Writer<ValueType>::~Writer() {
@@ -320,8 +274,6 @@ template <typename ValueType> void Writer<ValueType>::commit() {
 
 template class Reader<float>;
 template class Reader<double>;
-template class WriterUnbuffered<float>;
-template class WriterUnbuffered<double>;
 template class Writer<float>;
 template class Writer<double>;
 
@@ -346,15 +298,17 @@ std::unique_ptr<ReaderInterface<double>> TCK::read_double(const std::filesystem:
 std::unique_ptr<WriterInterface<float>> TCK::create_float(const std::filesystem::path &path,
                                                           const Properties &properties,
                                                           const FieldRegistry &,
-                                                          const OptionalHeader &) const {
-  return std::make_unique<Writer<float>>(path, properties);
+                                                          const OptionalHeader &,
+                                                          const WriteOptions &options) const {
+  return std::make_unique<Writer<float>>(path, properties, options.weights, options.buffer_capacity);
 }
 
 std::unique_ptr<WriterInterface<double>> TCK::create_double(const std::filesystem::path &path,
                                                             const Properties &properties,
                                                             const FieldRegistry &,
-                                                            const OptionalHeader &) const {
-  return std::make_unique<Writer<double>>(path, properties);
+                                                            const OptionalHeader &,
+                                                            const WriteOptions &options) const {
+  return std::make_unique<Writer<double>>(path, properties, options.weights, options.buffer_capacity);
 }
 
 } // namespace Formats

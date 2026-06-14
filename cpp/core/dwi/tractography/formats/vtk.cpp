@@ -725,14 +725,16 @@ std::unique_ptr<ReaderInterface<double>> VTK::read_double(const std::filesystem:
 std::unique_ptr<WriterInterface<float>> VTK::create_float(const std::filesystem::path &path,
                                                           const Properties &properties,
                                                           const FieldRegistry &registry,
-                                                          const OptionalHeader &) const {
+                                                          const OptionalHeader &,
+                                                          const WriteOptions &options) const {
   return std::make_unique<VTKWriter<float>>(path, properties, registry);
 }
 
 std::unique_ptr<WriterInterface<double>> VTK::create_double(const std::filesystem::path &path,
                                                             const Properties &properties,
                                                             const FieldRegistry &registry,
-                                                            const OptionalHeader &) const {
+                                                            const OptionalHeader &,
+                                                            const WriteOptions &options) const {
   return std::make_unique<VTKWriter<double>>(path, properties, registry);
 }
 

@@ -32,6 +32,8 @@
 #include "dwi/tractography/connectome/extract.h"
 #include "dwi/tractography/connectome/streamline.h"
 #include "dwi/tractography/file.h"
+#include "dwi/tractography/formats/base.h"
+#include "dwi/tractography/formats/list.h"
 #include "dwi/tractography/grouping.h"
 #include "dwi/tractography/mapping/loader.h"
 #include "dwi/tractography/properties.h"
@@ -46,6 +48,9 @@ using namespace MR::Connectome;
 using namespace MR::DWI;
 using namespace MR::DWI::Tractography;
 using namespace MR::DWI::Tractography::Connectome;
+
+// Disambiguate from the image subsystem's MR::Formats, also in scope here.
+namespace TrackFormats = MR::DWI::Tractography::Formats;
 
 enum class FileOutput { PER_EDGE, PER_NODE, SINGLE };
 constexpr FileOutput default_file_output = FileOutput::PER_EDGE;
@@ -62,6 +67,14 @@ const OptionGroup TrackOutputOptions = OptionGroup ("Options for determining the
     + Option ("files", "select how the resulting streamlines will be grouped in output files."
                        " Options are: " + MR::Enum::join<FileOutput>(", ") + ". Default: " + MR::Enum::lowercase_name(default_file_output) + ".")
       + Argument ("option").type_choice<FileOutput>()
+
+    + Option ("file_format", "the output tractogram file format for the per-edge / per-node directory modes,"
+                             " given as a filename extension (default: tck);"
+                             " ignored for \"-files single\", where the format is taken from the output path."
+                             " A format that can store per-streamline data (e.g. trx) embeds the streamline"
+                             " weights and any -tsf_in per-vertex data, in which case -tck_weights_out / -tsf_out"
+                             " do not apply.")
+      + Argument ("extension").type_text()
 
     + Option ("exemplars", "generate a mean connection exemplar per edge,"
                            " rather than keeping all streamlines "
@@ -116,6 +129,14 @@ void usage() {
     " into which individual output tractogram files will be written."
     " The -tck_weights_out path is interpreted in the same manner,"
     " as either a single output file or a directory of per-tract-file weight text files."
+
+  + "In the per-edge / per-node directory modes the output tractogram files are written"
+    " in the format selected by the -file_format option (default \".tck\");"
+    " with -files single the format is taken from the extension of the output path."
+    " If the selected format can store per-streamline / per-vertex data (e.g. \".trx\"),"
+    " the streamline weights and any -tsf_in per-vertex data are embedded within the output"
+    " tractogram itself, and the separate -tck_weights_out / -tsf_out outputs do not apply;"
+    " for a vertices-only format (e.g. \".tck\") these are instead written as separate sidecar files."
 
   + "The -tck_weights_out option behaves similarity to the third argument as described above."
     " If option \"-files single\" is specified,"
@@ -220,6 +241,45 @@ void run() {
       WARN("Output path \"" + argument[2].as_text() + "\" has a .tck extension;" +               //
            " unless -files single is specified, the output path is interpreted as a directory"); //
     std::filesystem::create_directories(output_dir);
+  }
+
+  // Resolve the output tractogram file format. In the directory modes the per-edge
+  //   / per-node files take the -file_format extension (default "tck"); for a single
+  //   file the format is that of the output path itself.
+  std::string out_extension = "tck";
+  {
+    const auto opt_format = get_options("file_format");
+    if (!opt_format.empty()) {
+      if (file_format == FileOutput::SINGLE) {
+        WARN("The -file_format option has no effect with \"-files single\";" +                                  //
+             std::string(" the output format is taken from the output path \"") + output_file.string() + "\""); //
+      } else {
+        out_extension = lowercase(opt_format[0][0].as_text());
+        if (!out_extension.empty() && out_extension.front() == '.')
+          out_extension.erase(0, 1);
+      }
+    }
+  }
+  const std::filesystem::path format_probe =
+      (file_format == FileOutput::SINGLE) ? output_file : std::filesystem::path("x." + out_extension);
+  const TrackFormats::Base *const out_handler = TrackFormats::get_handler(format_probe);
+  if (out_handler == nullptr)
+    throw Exception("no tractography format handler recognises the output " +
+                    (file_format == FileOutput::SINGLE ? ("path \"" + output_file.string() + "\"")
+                                                       : ("file format \"" + out_extension + "\"")));
+  if (!out_handler->can_write())
+    throw Exception("tractography format \"" + out_handler->description + "\" does not support writing");
+  // A format that serialises per-streamline / per-vertex data embeds the weights
+  //   (and any -tsf_in scalars) directly; the separate-file weight / .tsf outputs
+  //   then do not apply.
+  const bool embed = out_handler->capabilities.sidecar_data == TrackFormats::SidecarData::Supported;
+  if (embed) {
+    if (!get_options("tck_weights_out").empty())
+      throw Exception("output format \"" + out_handler->description + "\" embeds per-streamline weights;" + //
+                      " the -tck_weights_out option (separate weight files) does not apply");
+    if (!get_options("tsf_out").empty())
+      throw Exception("output format \"" + out_handler->description + "\" embeds per-vertex data;" + //
+                      " the -tsf_out option (separate .tsf files) does not apply");
   }
 
   Tractography::Properties properties;
@@ -407,6 +467,8 @@ void run() {
 
     // If user specifies a subset of nodes, only a subset of exemplars need to be calculated
     WriterExemplars generator(properties, nodes, exclusive, first_node, COMs);
+    if (embed)
+      generator.enable_embedding();
 
     {
       std::mutex mutex;
@@ -456,7 +518,7 @@ void run() {
             const node_t two = nodes[j];
             generator.write(one,
                             two,
-                            output_dir / (str(one) + "-" + str(two) + ".tck"),
+                            output_dir / (str(one) + "-" + str(two) + ("." + out_extension)),
                             weights_path_for(str(one) + "-" + str(two) + ".csv"));
             ++progress;
           }
@@ -468,7 +530,7 @@ void run() {
           for (size_t i = first_node; i != COMs.size(); ++i) {
             generator.write(*n,
                             i,
-                            output_dir / (str(*n) + "-" + str(i) + ".tck"),
+                            output_dir / (str(*n) + "-" + str(i) + ("." + out_extension)),
                             weights_path_for(str(*n) + "-" + str(i) + ".csv"));
             ++progress;
           }
@@ -477,7 +539,7 @@ void run() {
     } else if (file_format == FileOutput::PER_NODE) { // One file per node
       ProgressBar progress("writing exemplars to files", nodes.size());
       for (std::vector<node_t>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
-        generator.write(*n, output_dir / (str(*n) + ".tck"), weights_path_for(str(*n) + ".csv"));
+        generator.write(*n, output_dir / (str(*n) + ("." + out_extension)), weights_path_for(str(*n) + ".csv"));
         ++progress;
       }
     } else if (file_format == FileOutput::SINGLE) { // Single file
@@ -487,6 +549,9 @@ void run() {
   } else { // Old behaviour ie. all tracks, rather than generating exemplars
 
     WriterExtraction writer(properties, nodes, exclusive, keep_self);
+    if (embed)
+      writer.enable_embedding(scalar_in.has_value() ? std::optional<std::string>(scalar_in->stem().string())
+                                                    : std::nullopt);
 
     switch (file_format) {
     case FileOutput::PER_EDGE: // One file per edge
@@ -497,7 +562,7 @@ void run() {
             const node_t two = nodes[j];
             writer.add(one,
                        two,
-                       output_dir / (str(one) + "-" + str(two) + ".tck"),
+                       output_dir / (str(one) + "-" + str(two) + ("." + out_extension)),
                        weights_path_for(str(one) + "-" + str(two) + ".csv"),
                        scalar_path_for(str(one) + "-" + str(two) + ".tsf"));
           }
@@ -506,7 +571,7 @@ void run() {
           for (node_t two = first_node; two <= max_node_index; ++two)
             writer.add(one,
                        two,
-                       output_dir / (str(one) + "-" + str(two) + ".tck"),
+                       output_dir / (str(one) + "-" + str(two) + ("." + out_extension)),
                        weights_path_for(str(one) + "-" + str(two) + ".csv"),
                        scalar_path_for(str(one) + "-" + str(two) + ".tsf"));
         }
@@ -515,8 +580,10 @@ void run() {
       break;
     case FileOutput::PER_NODE: // One file per node
       for (std::vector<node_t>::const_iterator i = nodes.begin(); i != nodes.end(); ++i)
-        writer.add(
-            *i, output_dir / (str(*i) + ".tck"), weights_path_for(str(*i) + ".csv"), scalar_path_for(str(*i) + ".tsf"));
+        writer.add(*i,
+                   output_dir / (str(*i) + ("." + out_extension)),
+                   weights_path_for(str(*i) + ".csv"),
+                   scalar_path_for(str(*i) + ".tsf"));
       INFO("A total of " + str(writer.file_count()) + " output track files will be generated (one for each node)");
       break;
     case FileOutput::SINGLE: // Single file

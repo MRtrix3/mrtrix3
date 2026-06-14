@@ -1,0 +1,9 @@
+#!/bin/bash
+# An embed-capable -file_format (e.g. .trx) embeds the per-streamline weights into
+#   the output tractogram, so the separate-file -tck_weights_out option does not
+#   apply and must be rejected with a clear error.
+rm -rf tmp/ tmp_w/ tmp_err.txt
+! connectome2tck SIFT_phantom/tracks.tck tck2connectome/assignments.csv tmp/ \
+  -nodes 1,3 -files per_node -file_format trx -tck_weights_out tmp_w/ -force 2> tmp_err.txt
+cat tmp_err.txt
+grep -i "does not apply" tmp_err.txt

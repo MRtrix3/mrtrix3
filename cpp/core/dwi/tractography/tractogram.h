@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <filesystem>
 #include <memory>
 #include <string>
@@ -97,7 +98,8 @@ public:
                            const Properties &properties,
                            const FieldRegistry &registry = FieldRegistry(),
                            AccessRequest access = AccessRequest::Streaming,
-                           const OptionalHeader &grid = std::nullopt);
+                           const OptionalHeader &grid = std::nullopt,
+                           const Formats::WriteOptions &options = {});
 
   //! \brief read the next item from the dataset (read mode only).
   /*! \returns true and fills \a item while data remain; false once the dataset
@@ -123,8 +125,41 @@ public:
     //   per-streamline payload (§2.7; Stage 11, step 6).
     for (auto &exporter : output_sidecars)
       (*exporter)(item);
+    ++count_;
+    ++total_count_;
     return (*writer)(item);
   }
+
+  //! \brief route per-streamline weights to an explicit external file (write mode only).
+  /*! Forwards to the handler's set_weights_path(): for a vertices-only format with
+   * an external weights sidecar (".tck") this is the per-file equivalent of the
+   * global "-tck_weights_out" option, used when a command writes many tractograms
+   * each with its own weights path (e.g. connectome2tck). A format that embeds
+   * per-streamline data, or carries no weights, rejects the call. */
+  void set_weights_path(const std::filesystem::path &path) {
+    assert(writer != nullptr);
+    writer->set_weights_path(path);
+  }
+
+  //! \brief record a streamline that was seen but not exported (write mode only).
+  /*! Forwards to the handler's note_unexported(): advances the count of
+   * streamlines seen without writing one, so a format that records both the
+   * exported count and the total seen (e.g. ".tck") reflects the selection ratio
+   * when a command (tckgen, tckedit) discards some of the streamlines it
+   * processes. A format that does not track the distinction no-ops. */
+  void note_unexported() {
+    assert(writer != nullptr);
+    writer->note_unexported();
+    ++total_count_;
+  }
+
+  //! \brief the number of streamlines exported to the dataset so far (write mode).
+  uint64_t count() const { return count_; }
+  //! \brief the number of streamlines seen so far, including those not exported (write mode).
+  /*! Equals count() plus the number of note_unexported() calls — the same
+   * exported-vs-seen distinction the ".tck" header records, but maintained here so
+   * it is available for any output format. */
+  uint64_t total_count() const { return total_count_; }
 
   //! \brief queue-source convenience: read the next item (read mode only).
   /*! \note A read Tractogram is the source of a thread queue, so its functor
@@ -301,6 +336,10 @@ private:
   std::unique_ptr<ReaderInterface<ValueType>> reader;
   //! the streaming write backend (non-null in write mode)
   std::unique_ptr<WriterInterface<ValueType>> writer;
+  //! streamlines exported so far (write mode); see count() / total_count()
+  uint64_t count_ = 0;
+  //! streamlines seen so far including those not exported (write mode)
+  uint64_t total_count_ = 0;
   //! \brief the sidecar field registry (empty in Stage 1), heap-owned for a stable address.
   /*! Allocated on the heap (and shared) so that the registry has an address that
    * survives a move of the owning Tractogram. The format-handler reader/writer

@@ -74,7 +74,8 @@ template <class ValueType>
 std::unique_ptr<WriterInterface<float>> RAMWrapper<ValueType>::create_float(const std::filesystem::path &path,
                                                                             const Properties &properties,
                                                                             const FieldRegistry &registry,
-                                                                            const OptionalHeader &grid) const {
+                                                                            const OptionalHeader &grid,
+                                                                            const WriteOptions &options) const {
   if constexpr (std::is_same<ValueType, float>::value) {
     store->registry = registry;
     return std::make_unique<RAMWriter<float>>(inner, path, properties, store, grid);
@@ -87,7 +88,8 @@ template <class ValueType>
 std::unique_ptr<WriterInterface<double>> RAMWrapper<ValueType>::create_double(const std::filesystem::path &path,
                                                                               const Properties &properties,
                                                                               const FieldRegistry &registry,
-                                                                              const OptionalHeader &grid) const {
+                                                                              const OptionalHeader &grid,
+                                                                              const WriteOptions &options) const {
   if constexpr (std::is_same<ValueType, double>::value) {
     store->registry = registry;
     return std::make_unique<RAMWriter<double>>(inner, path, properties, store, grid);

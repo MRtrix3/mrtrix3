@@ -72,6 +72,8 @@ add_bash_binary_test(connectome2tck/exemplars)
 add_bash_binary_test(connectome2tck/per_node)
 add_bash_binary_test(connectome2tck/single_edge)
 add_bash_binary_test(connectome2tck/sidecar_passthrough)
+add_bash_binary_test(connectome2tck/format_trx)
+add_bash_binary_test(connectome2tck/reject_embed_weights)
 
 add_bash_binary_test(connectomeedit/lower_triangular_from_asymmetric NO_FILESYSTEM_LOCK)
 add_bash_binary_test(connectomeedit/lower_triangular_from_lower_triangular)
@@ -702,6 +704,7 @@ add_bash_binary_test(tcksift/selection_dps)
 
 add_bash_binary_test(tcksift2/default)
 add_bash_binary_test(tcksift2/embed_weights)
+add_bash_binary_test(tcksift2/reject_nondps)
 
 add_bash_binary_test(tckstats/default)
 add_bash_binary_test(tckstats/dump)

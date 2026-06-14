@@ -24,10 +24,15 @@
 #include "math/entropy.h"
 #include "math/math.h"
 
+#include "dwi/tractography/field_registry.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/formats/base.h"
 #include "dwi/tractography/formats/list.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/sidecar.h"
+#include "dwi/tractography/sidecar_value.h"
+#include "dwi/tractography/tractogram.h"
+#include "dwi/tractography/tractogram_item.h"
 
 #include "dwi/tractography/SIFT2/coeff_optimiser.h"
 #include "dwi/tractography/SIFT2/fixel_updater.h"
@@ -344,83 +349,81 @@ void TckFactor::report_entropy() const {
        str(equiv_N) + " equally-weighted streamlines");
 }
 
-void TckFactor::output_factors(const std::filesystem::path &path) const {
+Eigen::Array<default_type, Eigen::Dynamic, 1> TckFactor::compute_weights() const {
   if (static_cast<size_t>(coefficients.size()) != contributions.size())
     throw Exception("Cannot output weighting factors if they have not first been estimated!");
-  decltype(coefficients) weights;
-  try {
-    weights.resize(coefficients.size());
-  } catch (...) {
-    WARN("Unable to assign memory for output factor file: \"" + path.filename().string() + "\" not created");
-    return;
-  }
+  decltype(coefficients) weights(coefficients.size());
   for (SIFT::track_t i = 0; i != num_tracks(); ++i)
     weights[i] = (coefficients[i] == min_coeff || !std::isfinite(coefficients[i])) ? 0.0 : std::exp(coefficients[i]);
-  File::Matrix::save_vector(weights, path);
+  return weights;
+}
+
+void TckFactor::output_weights(const std::filesystem::path &input_path, std::string_view arg) const {
+  const SidecarReference reference = parse_sidecar_reference(arg);
+
+  // The qualified "DATASET::NAME" forms (embed into a named field of a new or
+  //   existing dataset) require the as-yet-unimplemented qualified-sidecar export
+  //   path; reject them clearly until that arrives (Step 2).
+  if (reference.is_qualified())
+    throw Exception("embedding SIFT2 weights into a named field of a tractogram dataset"
+                    " (the \"DATASET::NAME\" form) is not yet implemented");
+
+  const Eigen::Array<default_type, Eigen::Dynamic, 1> weights = compute_weights();
+
+  // A bare path that no tractography format handler recognises is a standalone
+  //   numerical weights file (the historical behaviour).
+  const Formats::Base *const handler = Formats::get_handler(reference.dataset);
+  if (handler == nullptr) {
+    File::Matrix::save_vector(weights, reference.dataset);
+    return;
+  }
+
+  // A bare path that IS a tractography format receives a copy of the input
+  //   tractogram with the weights embedded as a per-streamline field "weights".
+  write_tractogram_with_weights(input_path, reference.dataset, "weights", weights);
 }
 
 void TckFactor::output_coefficients(const std::filesystem::path &path) const {
   File::Matrix::save_vector(coefficients, path);
 }
 
-void TckFactor::output_weighted_tractogram(const std::filesystem::path &input_path,
-                                           const std::filesystem::path &output_path,
-                                           const std::filesystem::path &weights_path) const {
-  if (static_cast<size_t>(coefficients.size()) != contributions.size())
-    throw Exception("Cannot output weighted tractogram if factors have not first been estimated!");
-
-  // The estimated per-streamline weight (factor) for every streamline.
-  std::vector<float> weights(num_tracks());
-  for (SIFT::track_t i = 0; i != num_tracks(); ++i)
-    weights[i] = (coefficients[i] == min_coeff || !std::isfinite(coefficients[i]))
-                     ? 0.0F
-                     : static_cast<float>(std::exp(coefficients[i]));
-
-  // Consult the output format's augmentation capability (§2.6): an append-capable
-  //   format can have the weights dps appended in place; a rewrite-only format
-  //   (e.g. ".tck") requires the whole tractogram to be re-read and rewritten.
-  const Formats::Base *handler = Formats::get_handler(output_path);
-  const bool can_append = handler != nullptr && handler->capabilities.augment == Formats::Augment::Append;
-
-  if (can_append) {
-    INFO("Output format \"" + handler->description + "\" supports append;" +
-         " embedding SIFT2 weights without rewriting vertex data");
-    // tcksift2 has already read the whole tractogram to compute the factors, so
-    //   only the weights data-per-streamline field needs to be written. The
-    //   append-capable handler attaches it to the existing dataset in place.
-    // NOTE: the concrete append handlers (TRX) arrive in a later stage; until
-    //   then no registered handler advertises Augment::Append, so this branch is
-    //   not exercised by the in-house ".tck" format and the rewrite fallback
-    //   below is taken.
-    throw Exception("Append-based embedding of SIFT2 weights is not yet supported"
-                    " by any registered output format handler");
-  }
-
-  // Rewrite fallback: the format cannot append, so the entire tractogram is
-  //   re-read and rewritten with the embedded weights (the reserved "weight"
-  //   dps, serialised to the weights sidecar). Warn that the cheaper append path
-  //   was unavailable.
-  WARN(std::string("Output tractography format") +
-       (handler != nullptr ? (" \"" + handler->description + "\"") : std::string()) +
-       " does not support appending a data-per-streamline field;" +
-       " re-reading and rewriting the whole tractogram to embed SIFT2 weights");
+void TckFactor::write_tractogram_with_weights(const std::filesystem::path &input_path,
+                                              const std::filesystem::path &output_path,
+                                              std::string_view field_name,
+                                              const Eigen::Array<default_type, Eigen::Dynamic, 1> &weights) const {
+  // Reject up front a format that cannot serialise per-streamline sidecar data,
+  //   rather than silently dropping the embedded weights.
+  const Formats::Base *const handler = Formats::get_handler(output_path);
+  if (handler == nullptr || handler->capabilities.sidecar_data != Formats::SidecarData::Supported)
+    throw Exception(
+        "output tractography format" + (handler != nullptr ? (" \"" + handler->description + "\"") : std::string()) +
+        " cannot carry per-streamline sidecar data," + " so the SIFT2 weights cannot be embedded into \"" +
+        output_path.string() + "\"" + " (use a format such as \".trx\", or write a standalone weights file)");
 
   Tractography::Properties properties;
-  Tractography::Reader<float> reader(input_path, properties);
+  auto input = Tractogram<float>::open(input_path, properties);
   properties["SIFT2_mu"] = str(mu());
-  Tractography::Writer<float> writer(output_path, properties);
-  // Route the reserved "weight" dps to its on-disk sidecar (the dps home for a
-  //   vertices-only format such as ".tck").
-  writer.set_weights_path(weights_path);
-  Tractography::Streamline<float> tck;
+
+  // Declare the output field set from the input registry plus the new weights
+  //   field, so the input's own sidecar data passes through unchanged and the
+  //   weights ride alongside as a named per-streamline (dps) field.
+  FieldRegistry registry = input.fields();
+  const size_t ordinal =
+      registry.add({std::string(field_name), FieldRole::DPS, DataType::Float32, 1, FieldSource::Internal, 0});
+
+  auto output = Tractogram<float>::create(output_path, properties, registry);
+
+  TractogramItem<float> item;
   SIFT::track_t counter = 0;
   ProgressBar progress("Writing weighted tractogram output file", num_tracks());
-  while (reader(tck) && counter < num_tracks()) {
-    tck.weight = weights[counter++];
-    writer(tck);
+  while (input.read(item) && counter < num_tracks()) {
+    item.dps.resize(registry.dps_count());
+    ScalarOrVector<float> value(1);
+    value(0, 0) = static_cast<float>(weights[counter++]);
+    item.dps[ordinal] = make_dps(std::move(value));
+    output.write(item);
     ++progress;
   }
-  reader.close();
 }
 
 void TckFactor::output_TD_images(const std::filesystem::path &dirpath,

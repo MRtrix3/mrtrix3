@@ -23,7 +23,7 @@ bool WriteKernel::operator()(const GeneratedTrack &tck) {
     return false;
   if (!tck.empty() && output_seeds) {
     const auto &p = tck[tck.get_seed_index()];
-    (*output_seeds) << str(writer.count) << "," << str(tck.get_seed_index()) << "," << str(p[0]) << "," << str(p[1])
+    (*output_seeds) << str(output.count()) << "," << str(tck.get_seed_index()) << "," << str(p[0]) << "," << str(p[1])
                     << "," << str(p[2]) << ",\n";
   }
   switch (tck.get_status()) {
@@ -34,12 +34,12 @@ bool WriteKernel::operator()(const GeneratedTrack &tck) {
     ++selected;
     ++streamlines;
     ++seeds;
-    writer(tck);
+    output.write(TractogramItem<float>(tck));
     break;
   case GeneratedTrack::status_t::TRACK_REJECTED:
     ++streamlines;
     ++seeds;
-    writer.skip();
+    output.note_unexported();
     break;
   case GeneratedTrack::status_t::SEED_REJECTED:
     ++seeds;

@@ -24,9 +24,10 @@
 #include "file/ofstream.h"
 #include "timer.h"
 
-#include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/streamline.h"
+#include "dwi/tractography/tractogram.h"
+#include "dwi/tractography/tractogram_item.h"
 
 #include "dwi/tractography/tracking/early_exit.h"
 #include "dwi/tractography/tracking/generated_track.h"
@@ -42,7 +43,7 @@ public:
               const std::filesystem::path &output_path,
               const DWI::Tractography::Properties &properties)
       : S(shared),
-        writer(output_path, properties),
+        output(Tractogram<float>::create(output_path, properties)),
         always_increment(S.properties.seeds.is_finite() || !S.max_num_tracks),
         warn_on_max_seeds(S.implicit_max_num_seeds),
         seeds(0),
@@ -66,8 +67,8 @@ public:
     // Use set_text() rather than update() here to force update of the text before progress goes out of scope
     progress.set_text(
         printf("%8" PRIu64 " seeds, %8" PRIu64 " streamlines, %8" PRIu64 " selected", seeds, streamlines, selected));
-    if (warn_on_max_seeds && writer.total_count == S.max_num_seeds && S.max_num_tracks &&
-        writer.count < S.max_num_tracks) {
+    if (warn_on_max_seeds && output.total_count() == S.max_num_seeds && S.max_num_tracks &&
+        output.count() < S.max_num_tracks) {
       WARN("less than desired streamline number due to implicit maximum number of seeds; set -seeds 0 to override");
     }
     if (output_seeds) {
@@ -102,7 +103,7 @@ public:
 
 protected:
   const SharedBase &S;
-  Writer<> writer;
+  Tractogram<float> output;
   const bool always_increment, warn_on_max_seeds;
   size_t seeds, streamlines, selected;
   std::unique_ptr<File::OFStream> output_seeds;

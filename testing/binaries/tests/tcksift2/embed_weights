@@ -1,26 +1,14 @@
 #!/bin/bash
-# Step 4: tcksift2 -out_tracks embeds the estimated per-streamline weights as the
-#   reserved "weight" data-per-streamline field of an output tractogram.
-# For the rewrite-only .tck format the command must:
-#   (a) emit the fallback warning that a full rewrite was required;
-#   (b) write the embedded weights to the out_weights sidecar, equal to the
-#       weights produced by a plain (no -out_tracks) run;
-#   (c) leave the streamline vertex data unchanged (no other data rewritten).
-rm -rf tmp/ tmp_plain.csv tmp_embed.csv tmp_embed.tck tmp.txt
-
-# Plain run: weights only.
-tcksift2 SIFT_phantom/tracks.tck SIFT_phantom/fods.mif tmp_plain.csv -force
-
-# Embedded run: same weights to a sidecar plus a weighted tractogram.
-tcksift2 SIFT_phantom/tracks.tck SIFT_phantom/fods.mif tmp_embed.csv \
-  -out_tracks tmp_embed.tck -force 2> tmp.txt
-cat tmp.txt
-
-# (a) the rewrite fallback warning must be present for .tck.
-grep -i "does not support appending" tmp.txt
-
-# (b) the embedded weights (out_weights sidecar) must equal the plain weights.
-testing_diff_matrix tmp_plain.csv tmp_embed.csv -frac 1e-4
-
-# (c) the rewritten tractogram must hold the same vertices as the input.
-testing_diff_tck tmp_embed.tck SIFT_phantom/tracks.tck
+# Step 4: when the tcksift2 "out_weights" argument is a tractography format that can
+#   carry per-streamline data (here ".trx"), the command writes a copy of the input
+#   tractogram with the estimated SIFT2 weights embedded as a per-streamline
+#   (data-per-streamline) field named "weights".
+# Step 1 of the redesign verifies that the command produces a valid tractogram whose
+#   streamline vertices are unchanged from the input (read back via tckconvert); the
+#   embedded weight VALUES are checked once the qualified "DATASET::NAME" sidecar
+#   import (a later stage) provides a way to extract a named dps field.
+rm -rf tmp_embed.trx tmp_embed_rt.tck
+tcksift2 SIFT_phantom/tracks.tck SIFT_phantom/fods.mif tmp_embed.trx -force
+# The embedded tractogram must round-trip back to the input streamline geometry.
+tckconvert tmp_embed.trx tmp_embed_rt.tck -force
+testing_diff_tck tmp_embed_rt.tck SIFT_phantom/tracks.tck

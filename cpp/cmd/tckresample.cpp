@@ -15,8 +15,6 @@
  */
 
 #include "command.h"
-#include "dwi/tractography/file.h"
-#include "dwi/tractography/formats/list.h"
 #include "dwi/tractography/nonfinite.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/resampling/arc.h"
@@ -26,8 +24,9 @@
 #include "dwi/tractography/resampling/fixed_step_size.h"
 #include "dwi/tractography/resampling/resampling.h"
 #include "dwi/tractography/resampling/upsampler.h"
-#include "dwi/tractography/scalar_file.h"
 #include "dwi/tractography/streamline.h"
+#include "dwi/tractography/tractogram.h"
+#include "dwi/tractography/tractogram_item.h"
 #include "dwi/tractography/weights.h"
 #include "image.h"
 #include "math/math.h"
@@ -35,6 +34,8 @@
 #include "thread.h"
 
 #include <filesystem>
+#include <memory>
+#include <optional>
 
 using namespace MR;
 using namespace App;
@@ -102,6 +103,7 @@ void usage() {
 // clang-format on
 
 using value_type = float;
+using item_type = TractogramItem<value_type>;
 
 //! \brief poll the output format and reject a streamline it cannot represent.
 /*! Interpolating resampling modes can extrapolate to non-finite vertex
@@ -117,198 +119,79 @@ void verify_output_representable(const Streamline<value_type> &tck,
                     ", which the output tractography format (\"" + std::string(output_format) + "\") cannot represent");
 }
 
-//! \brief A streamline plus its (optional) parallel per-vertex scalar (.tsf).
-/*! The composite queue item used when tckresample is asked to carry per-vertex
- * sidecar data (the -tsf_in option). When no .tsf is coupled, \c scalar is left
- * empty and the item degrades to a plain streamline. */
-struct CoupledItem {
-  Streamline<value_type> streamline;
-  TrackScalar<value_type> scalar;
-  void clear() {
-    streamline.clear();
-    scalar.clear();
-  }
-};
-
-// ---------------------------------------------------------------------------
-// Plain (no per-vertex sidecar) pipeline: the original behaviour.
-// ---------------------------------------------------------------------------
-
+//! \brief Queue worker: resamples a streamline and carries its sidecar data.
+/*! Per-streamline (dps) fields and the streamline weight pass through unchanged
+ * in every mode. Per-vertex (dpv) fields are carried only by the
+ * vertex-subset-preserving modes (-downsample / -endpoints), where each field
+ * is sub-sampled to exactly the retained vertices (select_dpv_vertices). The
+ * interpolating modes invent new vertex positions and so carry no dpv; for those
+ * modes run() has already suppressed the dpv input and -tsf_out, so in.dpv is
+ * empty here. */
 class Worker {
 public:
-  Worker(const std::unique_ptr<Resampling::Base> &in) : resampler(in->clone()) {}
+  Worker(const std::unique_ptr<Resampling::Base> &in)
+      : resampler(in->clone()), preserves_subset(resampler->preserves_vertex_subset()) {}
 
-  Worker(const Worker &that) : resampler(that.resampler->clone()) {}
+  Worker(const Worker &that) : resampler(that.resampler->clone()), preserves_subset(that.preserves_subset) {}
 
-  bool operator()(const Streamline<value_type> &in, Streamline<value_type> &out) const {
-    (*resampler)(in, out);
-    return true;
-  }
-
-private:
-  std::unique_ptr<Resampling::Base> resampler;
-};
-
-class Receiver {
-public:
-  Receiver(const std::filesystem::path &path,
-           const Properties &properties,
-           const TrackFormats::NonFinite output_tolerance,
-           std::string output_format)
-      : writer(path, properties),
-        progress("resampling streamlines"),
-        output_tolerance(output_tolerance),
-        output_format(std::move(output_format)) {}
-
-  bool operator()(const Streamline<value_type> &tck) {
-    auto progress_message = [&]() {
-      return "resampling streamlines (count: " + str(writer.count) +
-             ", skipped: " + str(writer.total_count - writer.count) + ")";
-    };
-    verify_output_representable(tck, output_tolerance, output_format);
-    writer(tck);
-    progress.set_text(progress_message());
-    return true;
-  }
-
-private:
-  Writer<value_type> writer;
-  ProgressBar progress;
-  TrackFormats::NonFinite output_tolerance;
-  std::string output_format;
-};
-
-// ---------------------------------------------------------------------------
-// Coupled (per-vertex sidecar) pipeline: -tsf_in / -tsf_out.
-// ---------------------------------------------------------------------------
-
-//! \brief reads a streamline and its parallel .tsf scalar in lock-step.
-class CoupledLoader {
-public:
-  CoupledLoader(const std::filesystem::path &tracks_path,
-                Properties &tck_properties,
-                const std::filesystem::path &tsf_path,
-                Properties &tsf_properties)
-      : tck_reader(tracks_path, tck_properties), tsf_reader(tsf_path, tsf_properties) {}
-
-  bool operator()(CoupledItem &item) {
-    item.clear();
-    if (!tck_reader(item.streamline))
-      return false;
-    if (!tsf_reader(item.scalar))
-      throw Exception("Track scalar file exhausted before the tractogram;"
-                      " the two do not contain the same number of streamlines");
-    if (item.scalar.size() != item.streamline.size())
-      throw Exception("Streamline " + str(item.streamline.get_index()) +                   //
-                      " has " + str(item.streamline.size()) + " vertices but its scalar" + //
-                      " sequence has " + str(item.scalar.size()) + " entries");            //
-    return true;
-  }
-
-private:
-  Reader<value_type> tck_reader;
-  ScalarReader<value_type> tsf_reader;
-};
-
-//! \brief resamples a streamline and sub-samples its scalar to the output vertices.
-class CoupledWorker {
-public:
-  CoupledWorker(const std::unique_ptr<Resampling::Base> &in) : resampler(in->clone()) {}
-  CoupledWorker(const CoupledWorker &that) : resampler(that.resampler->clone()) {}
-
-  bool operator()(const CoupledItem &in, CoupledItem &out) const {
+  bool operator()(const item_type &in, item_type &out) const {
     out.clear();
     (*resampler)(in.streamline, out.streamline);
-    out.scalar.set_index(in.streamline.get_index());
-    // The subset modes (downsample/endpoints) retain a subset of the input
-    //   vertices; sub-sample the per-vertex scalar to exactly those vertices.
-    //   The interpolating modes drop per-vertex data (handled by the receiver),
-    //   so leave out.scalar empty here.
-    if (resampler->preserves_vertex_subset()) {
-      for (const size_t i : resampler->retained_indices(in.streamline))
-        out.scalar.push_back(in.scalar[i]);
+    out.streamline.set_index(in.streamline.get_index());
+    out.streamline.weight = in.streamline.weight;
+    out.dps = in.dps;
+    out.groups = in.groups;
+    if (preserves_subset && !in.dpv.empty()) {
+      out.dpv = in.dpv;
+      select_dpv_vertices(out, resampler->retained_indices(in.streamline));
     }
     return true;
   }
 
 private:
   std::unique_ptr<Resampling::Base> resampler;
+  bool preserves_subset;
 };
 
-//! \brief writes the resampled streamline and (for subset modes) its scalar.
-class CoupledReceiver {
+//! \brief Queue sink: rejects unrepresentable vertices, writes the item, advances progress.
+class Sink {
 public:
-  CoupledReceiver(const std::filesystem::path &tracks_path,
-                  const Properties &tck_properties,
-                  const std::optional<std::filesystem::path> &tsf_path,
-                  const TrackFormats::NonFinite output_tolerance,
-                  std::string output_format)
-      : writer(tracks_path, tck_properties),
-        progress("resampling streamlines"),
-        output_tolerance(output_tolerance),
-        output_format(std::move(output_format)) {
-    // The output .tsf must inherit the output tractogram's properties (notably
-    //   its freshly-stamped "timestamp") so that the pair is mutually
-    //   consistent, rather than carrying the input .tsf's timestamp.
-    if (tsf_path.has_value())
-      tsf_writer.reset(new ScalarWriter<value_type>(*tsf_path, tck_properties));
-  }
+  Sink(Tractogram<value_type> &output)
+      : output(output),
+        output_tolerance(output.capabilities().vertices),
+        output_format(output.format()),
+        count(0),
+        progress("resampling streamlines") {}
 
-  bool operator()(const CoupledItem &item) {
+  bool operator()(const item_type &item) {
     verify_output_representable(item.streamline, output_tolerance, output_format);
-    writer(item.streamline);
-    if (tsf_writer)
-      (*tsf_writer)(item.scalar);
-    auto progress_message = [&]() {
-      return "resampling streamlines (count: " + str(writer.count) +
-             ", skipped: " + str(writer.total_count - writer.count) + ")";
-    };
-    progress.set_text(progress_message());
+    output.write(item);
+    ++count;
+    progress.set_text("resampling streamlines (count: " + str(count) + ")");
     return true;
   }
 
 private:
-  Writer<value_type> writer;
-  std::unique_ptr<ScalarWriter<value_type>> tsf_writer;
+  Tractogram<value_type> &output;
+  const TrackFormats::NonFinite output_tolerance;
+  const std::string output_format;
+  size_t count;
   ProgressBar progress;
-  TrackFormats::NonFinite output_tolerance;
-  std::string output_format;
 };
 
 void run() {
-  Properties properties;
-
   const std::unique_ptr<Resampling::Base> resampler(Resampling::get_resampler());
-
-  // Poll the output format's non-finite tolerance up front, so a streamline that
-  //   resampling pushes to a non-finite position is reported against the format.
-  const TrackFormats::Base *const output_handler = TrackFormats::get_handler(std::filesystem::path(argument[1]));
-  const TrackFormats::NonFinite output_tolerance =
-      output_handler != nullptr ? output_handler->vertex_nonfinite() : TrackFormats::NonFinite::Forbidden;
-  const std::string output_format = output_handler != nullptr ? output_handler->description : std::string("tracks");
+  const bool preserves_subset = resampler->preserves_vertex_subset();
 
   auto tsf_in = get_optional<std::filesystem::path>("tsf_in");
   auto tsf_out = get_optional<std::filesystem::path>("tsf_out");
+  if (!tsf_in.has_value() && tsf_out.has_value())
+    throw Exception("The -tsf_out option requires the -tsf_in option");
 
-  if (!tsf_in.has_value()) {
-    if (tsf_out.has_value())
-      throw Exception("The -tsf_out option requires the -tsf_in option");
-    // Original (vertices-only) pipeline.
-    Reader<value_type> read(argument[0], properties);
-    Worker worker(resampler);
-    Receiver receiver(argument[1], properties, output_tolerance, output_format);
-    Thread::run_ordered_queue(read,
-                              Thread::batch(Streamline<value_type>()),
-                              Thread::multi(worker),
-                              Thread::batch(Streamline<value_type>()),
-                              receiver);
-    return;
-  }
-
-  // Coupled per-vertex sidecar pipeline.
-  const bool drop_dpv = !resampler->preserves_vertex_subset();
-  if (drop_dpv) {
-    // D8 drop: a single explanatory warning; the output omits per-vertex data.
+  // The interpolating modes invent new vertex positions, so per-vertex (dpv)
+  //   sidecar data cannot meaningfully be carried (D8 drop): warn, suppress
+  //   -tsf_out, and do not register the input .tsf for pass-through at all.
+  if (tsf_in.has_value() && !preserves_subset) {
     WARN("Resampling mode interpolates new vertex positions;"
          " per-vertex (data-per-vertex) sidecar data from \"" +
          tsf_in->string() + "\"" + " cannot be carried to the output and will be dropped");
@@ -316,14 +199,28 @@ void run() {
       WARN("The -tsf_out option is ignored for interpolating resampling modes");
       tsf_out = std::nullopt;
     }
+    tsf_in = std::nullopt;
   }
 
-  Properties tsf_in_properties;
-  CoupledLoader loader(argument[0], properties, *tsf_in, tsf_in_properties);
-  CoupledWorker worker(resampler);
-  // The output .tsf inherits the output tractogram's (input-derived) properties
-  //   so that its timestamp matches the freshly-written output .tck.
-  CoupledReceiver receiver(argument[1], properties, tsf_out, output_tolerance, output_format);
-  Thread::run_ordered_queue(
-      loader, Thread::batch(CoupledItem()), Thread::multi(worker), Thread::batch(CoupledItem()), receiver);
+  Properties properties;
+  auto input = Tractogram<value_type>::open(argument[0], properties);
+  // Inject the input .tsf as a per-vertex (dpv) field so it flows through the
+  //   item pipeline alongside the vertices (and is sub-sampled in lock-step).
+  if (tsf_in.has_value())
+    input.register_input_sidecar(tsf_in->string(), properties);
+
+  // Declare the output field set from the (possibly sidecar-augmented) input
+  //   registry, so a sidecar-aware output handler serialises it; a vertices-only
+  //   format (e.g. ".tck") writes the per-vertex data to the -tsf_out sidecar.
+  auto output = Tractogram<value_type>::create(argument[1], properties, input.fields());
+  if (tsf_out.has_value())
+    output.register_output_sidecar(tsf_out->string(), properties);
+
+  {
+    Worker worker(resampler);
+    Sink sink(output);
+    Thread::run_ordered_queue(
+        input, Thread::batch(item_type(), 1024), Thread::multi(worker), Thread::batch(item_type(), 1024), sink);
+  }
+  output.finalise_sidecars();
 }

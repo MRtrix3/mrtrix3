@@ -25,10 +25,11 @@
 
 #include "progressbar.h"
 
-#include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/selection_dps.h"
 #include "dwi/tractography/streamline.h"
+#include "dwi/tractography/tractogram.h"
+#include "dwi/tractography/tractogram_item.h"
 
 namespace MR::DWI::Tractography::Editing {
 
@@ -36,7 +37,7 @@ class Receiver {
 
 public:
   Receiver(const std::filesystem::path &path, const Properties &properties, const size_t n, const size_t s)
-      : writer(path, properties),
+      : output(Tractogram<float>::create(path, properties)),
         number(n),
         skip(s),
         // Need to use local counts instead of writer class members due to track cropping
@@ -66,7 +67,7 @@ public:
   bool operator()(const Streamline<> &);
 
 private:
-  Writer<> writer;
+  Tractogram<float> output;
   const uint64_t number;
   uint64_t skip;
   uint64_t count, total_count;

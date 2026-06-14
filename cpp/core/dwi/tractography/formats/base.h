@@ -90,6 +90,23 @@ public:
   virtual bool operator()(const Streamline<ValueType> &) = 0;
   //! \brief append the composite item; defaults to the vertices-only write.
   virtual bool operator()(const TractogramItem<ValueType> &item) { return (*this)(item.streamline); }
+  //! \brief route per-streamline weights to an explicit external file (§2.7).
+  /*! Only a vertices-only format with an external weights sidecar (".tck")
+   * supports this; it is the per-file equivalent of the global "-tck_weights_out"
+   * option, used when a command writes many tractograms each with its own weights
+   * path. A format that embeds per-streamline data as a named dps field, or that
+   * carries no weights, has no external weights file and rejects the call. */
+  virtual void set_weights_path(const std::filesystem::path &) {
+    throw Exception("this tractography format does not support an external per-streamline weights file");
+  }
+  //! \brief record a streamline that was seen (read/generated) but not exported.
+  /*! Advances the dataset's count of streamlines seen without emitting one,
+   * preserving the distinction between the number of streamlines exported to the
+   * output (the written "count") and the larger number processed to produce it
+   * (the "total_count"): for tckgen the latter is the number generated, for
+   * tckedit the number read from the input. A format that records both figures
+   * (e.g. ".tck") reflects this selection ratio; one that does not, no-ops. */
+  virtual void note_unexported() {}
   //! \brief register the dataset-level streamline grouping to be serialised (§2.3/§2.7).
   /*! Grouping is tractogram-level (TRX groups/dpg), so the caller supplies the
    * whole Grouping once, before the writer is finalised, rather than per item.
@@ -168,6 +185,46 @@ enum class NonFinite {
   Any        //!< both NaN and infinity permitted (sidecar data only)
 };
 
+//! \brief Whether a format can serialise per-streamline / per-vertex sidecar data.
+/*! A handler broadcasts Supported iff its writer serialises the named
+ * per-streamline (dps) and per-vertex (dpv) fields of the FieldRegistry (i.e. it
+ * overrides operator()(const TractogramItem&) to emit them): the TRX, VTK, TRK
+ * and inter-command pipe handlers. A vertices-only handler (".tck", ".tt",
+ * ".qfib", ".zfib", ".vtx", ".mat") silently ignores the registry, so a command
+ * that needs to embed a named field can consult this axis and reject such a
+ * format up front rather than have the data silently dropped. */
+enum class SidecarData {
+  Unsupported, //!< the format carries only vertices; named dps/dpv fields are dropped
+  Supported    //!< the format serialises named per-streamline / per-vertex fields
+};
+
+//! \brief Whether a writer auto-detects the global "-tck_weights_out" option.
+/*! By default the ".tck" writer reads the global "-tck_weights_out" CLI option and
+ * routes per-streamline weights to that single file. A command that manages a
+ * distinct weights path per output file (e.g. connectome2tck) — or that defines
+ * its own "-tck_weights_out" option with different semantics — must suppress that
+ * auto-detection (Disabled) and set each file's path explicitly via
+ * Tractogram::set_weights_path(). */
+enum class WeightsAutoDetect {
+  Enabled, //!< read the global "-tck_weights_out" option (the default)
+  Disabled //!< do not auto-detect; the caller sets any weights path explicitly
+};
+
+//! \brief Optional write-time controls passed to a handler's create factory (§2.6).
+/*! Both axes default to the historical behaviour, so an omitted WriteOptions
+ * reproduces the previous single-buffered, weights-auto-detecting writer. Only the
+ * ".tck" handler currently consults these; other handlers ignore them. */
+struct WriteOptions {
+  //! \brief RAM write-back buffer capacity in bytes for the ".tck" writer.
+  /*! std::nullopt selects the TrackWriterBufferSize config default (16 MB). A
+   * value of 0 makes the buffer grow only as far as the longest streamline
+   * encountered, flushing each streamline as it arrives — so a command that holds
+   * many output files open at once (e.g. connectome2tck, one per edge/node) costs
+   * only one streamline's worth of memory per file rather than a full buffer. */
+  std::optional<size_t> buffer_capacity = std::nullopt;
+  WeightsAutoDetect weights = WeightsAutoDetect::Enabled;
+};
+
 //! \brief The capabilities a tractography format handler broadcasts.
 /*! Encapsulates the orthogonal axes of §2.6: I/O direction, access model,
  * in-place augmentation, step-size requirement, and non-finite tolerance, so
@@ -185,6 +242,9 @@ struct Capabilities {
   StepSize stepsize = StepSize::Arbitrary;
   NonFinite vertices = NonFinite::Forbidden;
   NonFinite sidecar = NonFinite::Forbidden;
+  //! whether the format serialises named per-streamline / per-vertex (dps/dpv)
+  //!   fields; defaults to Unsupported (the vertices-only common case)
+  SidecarData sidecar_data = SidecarData::Unsupported;
 };
 
 //! \brief The interface for classes that support the various tractography formats.
@@ -278,13 +338,14 @@ public:
   std::unique_ptr<WriterInterface<ValueType>> create(const std::filesystem::path &path,
                                                      const Properties &properties,
                                                      const FieldRegistry &registry,
-                                                     const OptionalHeader &grid = std::nullopt) const {
+                                                     const OptionalHeader &grid = std::nullopt,
+                                                     const WriteOptions &options = {}) const {
     static_assert(std::is_same<ValueType, float>::value || std::is_same<ValueType, double>::value,
                   "tractography I/O is supported in float or double precision only");
     if constexpr (std::is_same<ValueType, float>::value)
-      return create_float(path, properties, registry, grid);
+      return create_float(path, properties, registry, grid, options);
     else
-      return create_double(path, properties, registry, grid);
+      return create_double(path, properties, registry, grid, options);
   }
 
 protected:
@@ -302,12 +363,14 @@ protected:
   virtual std::unique_ptr<WriterInterface<float>> create_float(const std::filesystem::path &path,
                                                                const Properties &properties,
                                                                const FieldRegistry &registry,
-                                                               const OptionalHeader &grid) const = 0;
+                                                               const OptionalHeader &grid,
+                                                               const WriteOptions &options) const = 0;
   //! \brief manufacture a double-precision streaming writer for \a path.
   virtual std::unique_ptr<WriterInterface<double>> create_double(const std::filesystem::path &path,
                                                                  const Properties &properties,
                                                                  const FieldRegistry &registry,
-                                                                 const OptionalHeader &grid) const = 0;
+                                                                 const OptionalHeader &grid,
+                                                                 const WriteOptions &options) const = 0;
 };
 
 } // namespace Formats

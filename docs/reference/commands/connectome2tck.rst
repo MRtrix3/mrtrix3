@@ -26,6 +26,8 @@ The compulsory input file "assignments_in" should contain a text file where ther
 
 When -files single is specified, the third argument is interpreted as a tractogram file path; otherwise it is interpreted as a directory, into which individual output tractogram files will be written. The -tck_weights_out path is interpreted in the same manner, as either a single output file or a directory of per-tract-file weight text files.
 
+In the per-edge / per-node directory modes the output tractogram files are written in the format selected by the -file_format option (default ".tck"); with -files single the format is taken from the extension of the output path. If the selected format can store per-streamline / per-vertex data (e.g. ".trx"), the streamline weights and any -tsf_in per-vertex data are embedded within the output tractogram itself, and the separate -tck_weights_out / -tsf_out outputs do not apply; for a vertices-only format (e.g. ".tck") these are instead written as separate sidecar files.
+
 The -tck_weights_out option behaves similarity to the third argument as described above. If option "-files single" is specified, then the user-specified input to the -tck_weights_out option will be interpreted as the path to a file to be created. Otherwise, that path will instead be interpreted as a directory to be created, which will then be populated with files of the same name as the tractogram files written as the primary command output.
 
 Example usages
@@ -78,6 +80,8 @@ Options for determining the content / format of output files
 -  **-exclusive** only select tracks that exclusively connect nodes from within the list of nodes of interest
 
 -  **-files option** select how the resulting streamlines will be grouped in output files. Options are: per_edge, per_node, single. Default: per_edge.
+
+-  **-file_format extension** the output tractogram file format for the per-edge / per-node directory modes, given as a filename extension (default: tck); ignored for "-files single", where the format is taken from the output path. A format that can store per-streamline data (e.g. trx) embeds the streamline weights and any -tsf_in per-vertex data, in which case -tck_weights_out / -tsf_out do not apply.
 
 -  **-exemplars image** generate a mean connection exemplar per edge, rather than keeping all streamlines (the parcellation node image must be provided in order to constrain the exemplar endpoints)
 

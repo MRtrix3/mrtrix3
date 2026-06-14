@@ -30,7 +30,7 @@ bool Receiver::operator()(const Streamline<> &in) {
   ++total_count;
 
   if (in.empty()) {
-    writer.skip();
+    output.note_unexported();
     progress.update(display_func);
     return true;
   }
@@ -42,7 +42,7 @@ bool Receiver::operator()(const Streamline<> &in) {
       progress.update(display_func);
       return true;
     }
-    writer(in);
+    output.write(TractogramItem<float>(in));
     ++segments;
     record_selection();
 
@@ -59,7 +59,7 @@ bool Receiver::operator()(const Streamline<> &in) {
       } else if (!temp.empty()) {
         temp.set_index(in.get_index());
         temp.weight = in.weight;
-        writer(temp);
+        output.write(TractogramItem<float>(temp));
         ++segments;
         record_selection();
         temp.clear();

@@ -73,7 +73,7 @@ const ParticleGrid::ParticleContainer *ParticleGrid::at(const ssize_t x, const s
   return &grid[xyz2idx(x, y, z)];
 }
 
-void ParticleGrid::exportTracks(Tractography::Writer<float> &writer) {
+void ParticleGrid::exportTracks(Tractography::Tractogram<float> &output) {
   std::lock_guard<std::mutex> lock(mutex);
   // Initialise
   Particle *par;
@@ -110,7 +110,7 @@ void ParticleGrid::exportTracks(Tractography::Writer<float> &writer) {
         }
         track.push_back(par->getEndPoint(alpha));
         if (track.size() > 1)
-          writer(track);
+          output.write(Tractography::TractogramItem<float>(Tractography::Streamline<float>(track)));
         track.clear();
       }
     }

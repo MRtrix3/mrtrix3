@@ -17,7 +17,12 @@ Usage
 
 -  *in_tracks*: the input track file
 -  *in_fod*: input image containing the spherical harmonics of the fibre orientation distributions
--  *out_weights*: output text file containing the weighting factor for each streamline
+-  *out_weights*: the output per-streamline weights (see Description)
+
+Description
+-----------
+
+The estimated per-streamline weights are written to the "out_weights" output, the form of which depends on the path provided. If the path carries no recognised tractography format extension (e.g. ".csv" or ".txt"), the weights are written as a standalone numerical vector, one value per streamline, in the order of the input tractogram. If instead the path is a tractography format capable of carrying per-streamline data (e.g. ".trx"), a copy of the input tractogram is written to that path with the weights embedded as a per-streamline (data-per-streamline) field named "weights"; a tractography format that cannot represent per-streamline data (e.g. ".tck") is rejected.
 
 Options
 -------
@@ -52,8 +57,6 @@ Options to make SIFT provide additional output files
 -  **-output_debug dirpath** write to a directory various output images for assessing & debugging performance etc.
 
 -  **-out_coeffs path** output text file containing the weighting coefficient for each streamline
-
--  **-out_tracks path** in addition to the weights text file, write a copy of the input tractogram with the estimated SIFT2 weights embedded as the per-streamline (data-per-streamline) "weight" field. Where the output format supports it, the weights are appended without rewriting the vertex data; otherwise (e.g. for .tck) the whole tractogram is rewritten, with a warning, and the embedded weights are written to the out_weights sidecar file.
 
 Regularisation options for SIFT2
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

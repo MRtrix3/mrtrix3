@@ -606,14 +606,16 @@ std::unique_ptr<ReaderInterface<double>> Pipe::read_double(const std::filesystem
 std::unique_ptr<WriterInterface<float>> Pipe::create_float(const std::filesystem::path &,
                                                            const Properties &properties,
                                                            const FieldRegistry &registry,
-                                                           const OptionalHeader &) const {
+                                                           const OptionalHeader &,
+                                                           const WriteOptions &options) const {
   return std::make_unique<PipeWriter<float>>(properties, registry);
 }
 
 std::unique_ptr<WriterInterface<double>> Pipe::create_double(const std::filesystem::path &,
                                                              const Properties &properties,
                                                              const FieldRegistry &registry,
-                                                             const OptionalHeader &) const {
+                                                             const OptionalHeader &,
+                                                             const WriteOptions &options) const {
   return std::make_unique<PipeWriter<double>>(properties, registry);
 }
 

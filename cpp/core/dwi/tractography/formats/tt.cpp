@@ -450,14 +450,16 @@ std::unique_ptr<ReaderInterface<double>> TT::read_double(const std::filesystem::
 std::unique_ptr<WriterInterface<float>> TT::create_float(const std::filesystem::path &path,
                                                          const Properties &properties,
                                                          const FieldRegistry &,
-                                                         const OptionalHeader &grid) const {
+                                                         const OptionalHeader &grid,
+                                                         const WriteOptions &options) const {
   return std::make_unique<TTWriter<float>>(path, properties, grid);
 }
 
 std::unique_ptr<WriterInterface<double>> TT::create_double(const std::filesystem::path &path,
                                                            const Properties &properties,
                                                            const FieldRegistry &,
-                                                           const OptionalHeader &grid) const {
+                                                           const OptionalHeader &grid,
+                                                           const WriteOptions &options) const {
   return std::make_unique<TTWriter<double>>(path, properties, grid);
 }
 

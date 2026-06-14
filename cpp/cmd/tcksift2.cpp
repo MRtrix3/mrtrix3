@@ -113,6 +113,17 @@ void usage() {
   SYNOPSIS = "Optimise per-streamline cross-section multipliers"
              " to match a whole-brain tractogram to fixel-wise fibre densities";
 
+  DESCRIPTION
+  + "The estimated per-streamline weights are written to the \"out_weights\" output,"
+    " the form of which depends on the path provided."
+    " If the path carries no recognised tractography format extension (e.g. \".csv\" or \".txt\"),"
+    " the weights are written as a standalone numerical vector,"
+    " one value per streamline, in the order of the input tractogram."
+    " If instead the path is a tractography format capable of carrying per-streamline data (e.g. \".trx\"),"
+    " a copy of the input tractogram is written to that path"
+    " with the weights embedded as a per-streamline (data-per-streamline) field named \"weights\";"
+    " a tractography format that cannot represent per-streamline data (e.g. \".tck\") is rejected.";
+
   REFERENCES
     + "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
     "SIFT2: Enabling dense quantitative assessment of brain white matter connectivity"
@@ -128,7 +139,7 @@ void usage() {
   ARGUMENTS
   + Argument ("in_tracks", "the input track file").type_tracks_in()
   + Argument ("in_fod", "input image containing the spherical harmonics of the fibre orientation distributions").type_image_in()
-  + Argument ("out_weights", "output text file containing the weighting factor for each streamline").type_tractogram_data_out();
+  + Argument ("out_weights", "the output per-streamline weights (see Description)").type_tractogram_data_out();
 
   OPTIONS
 
@@ -139,16 +150,6 @@ void usage() {
   + Option ("out_coeffs", "output text file containing the weighting coefficient for each streamline")
     + Argument ("path").type_tractogram_data_out()
 
-  + Option ("out_tracks", "in addition to the weights text file,"
-                          " write a copy of the input tractogram with the estimated SIFT2 weights"
-                          " embedded as the per-streamline (data-per-streamline) \"weight\" field."
-                          " Where the output format supports it,"
-                          " the weights are appended without rewriting the vertex data;"
-                          " otherwise (e.g. for .tck) the whole tractogram is rewritten,"
-                          " with a warning,"
-                          " and the embedded weights are written to the out_weights sidecar file.")
-    + Argument ("path").type_tracks_out()
-
   + SIFT2RegularisationOption
   + SIFT2AlgorithmOption;
 
@@ -158,15 +159,11 @@ void usage() {
 void run() {
   const std::filesystem::path input_tracks_path{argument[0]};
   const std::filesystem::path input_fod_path{argument[1]};
-  const std::filesystem::path output_weights_path{argument[2]};
 
   if (!get_options("min_factor").empty() && !get_options("min_coeff").empty())
     throw Exception("Options -min_factor and -min_coeff are mutually exclusive");
   if (!get_options("max_factor").empty() && !get_options("max_coeff").empty())
     throw Exception("Options -max_factor and -max_coeff are mutually exclusive");
-
-  if (output_weights_path.extension() == ".tck")
-    throw Exception("Output of tcksift2 command should be a text file, not a tracks file");
 
   auto in_dwi = Image<float>::open(input_fod_path);
 
@@ -238,15 +235,11 @@ void run() {
 
   tckfactor.report_entropy();
 
-  tckfactor.output_factors(output_weights_path);
+  tckfactor.output_weights(input_tracks_path, argument[2].as_text());
 
   auto opt = get_options("out_coeffs");
   if (!opt.empty())
     tckfactor.output_coefficients(opt[0][0]);
-
-  opt = get_options("out_tracks");
-  if (!opt.empty())
-    tckfactor.output_weighted_tractogram(input_tracks_path, opt[0][0], output_weights_path);
 
   if (debug_path.has_value())
     tckfactor.output_all_debug_images(debug_path.value(), "after");

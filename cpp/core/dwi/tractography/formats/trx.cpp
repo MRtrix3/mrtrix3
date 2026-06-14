@@ -1156,14 +1156,16 @@ std::unique_ptr<ReaderInterface<double>> TRX::read_double(const std::filesystem:
 std::unique_ptr<WriterInterface<float>> TRX::create_float(const std::filesystem::path &path,
                                                           const Properties &properties,
                                                           const FieldRegistry &registry,
-                                                          const OptionalHeader &) const {
+                                                          const OptionalHeader &,
+                                                          const WriteOptions &options) const {
   return std::make_unique<TRXWriter<float>>(path, properties, registry);
 }
 
 std::unique_ptr<WriterInterface<double>> TRX::create_double(const std::filesystem::path &path,
                                                             const Properties &properties,
                                                             const FieldRegistry &registry,
-                                                            const OptionalHeader &) const {
+                                                            const OptionalHeader &,
+                                                            const WriteOptions &options) const {
   return std::make_unique<TRXWriter<double>>(path, properties, registry);
 }
 

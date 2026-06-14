@@ -25,6 +25,8 @@
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/selection_dps.h"
+#include "dwi/tractography/tractogram.h"
+#include "dwi/tractography/tractogram_item.h"
 
 #include "dwi/tractography/ACT/tissues.h"
 
@@ -350,15 +352,15 @@ void SIFTer::output_filtered_tracks(const std::filesystem::path &input_path,
   Tractography::Properties p;
   Tractography::Reader<float> reader(input_path, p);
   p["SIFT_mu"] = str(mu());
-  Tractography::Writer<float> writer(output_path, p);
+  auto output = Tractography::Tractogram<float>::create(output_path, p);
   track_t tck_counter = 0;
   Tractography::Streamline<> tck;
   ProgressBar progress("Writing filtered tracks output file", contributions.size());
   while (reader(tck) && tck_counter < contributions.size()) {
     if (contributions[tck_counter++])
-      writer(tck);
+      output.write(Tractography::TractogramItem<float>(tck));
     else
-      writer.skip();
+      output.note_unexported();
     ++progress;
   }
   reader.close();

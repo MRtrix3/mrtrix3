@@ -20,7 +20,7 @@
 #include <deque>
 #include <mutex>
 
-#include "dwi/tractography/file.h"
+#include "dwi/tractography/tractogram.h"
 #include "header.h"
 #include "math/rng.h"
 #include "transform.h"
@@ -83,7 +83,7 @@ public:
 
   inline Particle *getRandom() { return pool.random(); }
 
-  void exportTracks(Tractography::Writer<float> &writer);
+  void exportTracks(Tractography::Tractogram<float> &output);
 
 protected:
   std::mutex mutex;

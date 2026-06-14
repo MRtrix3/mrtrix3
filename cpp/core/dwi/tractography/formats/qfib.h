@@ -136,11 +136,13 @@ protected:
   std::unique_ptr<WriterInterface<float>> create_float(const std::filesystem::path &path,
                                                        const Properties &properties,
                                                        const FieldRegistry &registry,
-                                                       const OptionalHeader &grid) const override;
+                                                       const OptionalHeader &grid,
+                                                       const WriteOptions &options) const override;
   std::unique_ptr<WriterInterface<double>> create_double(const std::filesystem::path &path,
                                                          const Properties &properties,
                                                          const FieldRegistry &registry,
-                                                         const OptionalHeader &grid) const override;
+                                                         const OptionalHeader &grid,
+                                                         const WriteOptions &options) const override;
 };
 
 } // namespace Formats
