@@ -14,6 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <filesystem>
+
 #include "command.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
@@ -28,8 +30,6 @@
 #include "math/math.h"
 #include "ordered_thread_queue.h"
 #include "thread.h"
-
-#include <filesystem>
 
 using namespace MR;
 using namespace App;

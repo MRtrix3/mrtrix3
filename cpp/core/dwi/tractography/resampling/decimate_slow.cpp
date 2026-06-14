@@ -244,7 +244,7 @@ bool DecimateSlow::operator()(const Streamline<> &in, Streamline<> &out) const {
   for (size_t k = 1; k + 1 < controls.size(); ++k) {
     const default_type t_lo = controls[k - 1].t;
     const default_type t_hi = controls[k + 1].t;
-    if (!(t_hi - t_lo > 0.0))
+    if (t_hi - t_lo <= 0.0)
       continue;
 
     // Objective: worst deviation over the vertices in intervals (k-1) and k, as a function of the

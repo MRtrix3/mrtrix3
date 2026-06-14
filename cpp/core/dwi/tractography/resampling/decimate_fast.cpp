@@ -72,17 +72,20 @@ bool DecimateFast::operator()(const Streamline<> &in, Streamline<> &out) const {
   // Cumulative cost C[i] = integral of rho along arc length up to vertex i, with
   //   rho(s) = 1 + lambda * g(kappa(s)). The integral is approximated trapezoidally per segment,
   //   weighting the average of the two endpoint densities by the segment's chord length.
+  std::vector<default_type> rho;
+  rho.reserve(kappa.size());
+  for (size_t i = 0; i != num_vertices; ++i)
+    rho.push_back(1.0 + curvature_weight * curvature_map(kappa[i]));
   std::vector<default_type> cost(num_vertices, 0.0);
   for (size_t i = 1; i != num_vertices; ++i) {
     const default_type step = (in[i] - in[i - 1]).norm();
-    const default_type rho_prev = 1.0 + curvature_weight * curvature_map(kappa[i - 1]);
-    const default_type rho_curr = 1.0 + curvature_weight * curvature_map(kappa[i]);
-    cost[i] = cost[i - 1] + step * 0.5 * (rho_prev + rho_curr);
+    cost[i] = cost[i - 1] + step * 0.5 * (rho[i - 1] + rho[i]);
   }
   const default_type cost_total = cost[num_vertices - 1];
 
   // Degenerate (zero-length / coincident) input: emit the two endpoints only, never NaN.
-  if (!(cost_total > 0.0)) {
+  if (cost_total <= 0.0) {
+    out.reserve(2);
     out.push_back(in.front());
     out.push_back(in.back());
     return true;
@@ -90,9 +93,7 @@ bool DecimateFast::operator()(const Streamline<> &in, Streamline<> &out) const {
 
   // Target vertex count: n vertices per unit curvature-weighted cost, clamped so the result
   //   keeps at least the two endpoints and never exceeds (i.e. never upsamples) the input.
-  size_t n = static_cast<size_t>(std::lround(density * cost_total));
-  n = std::max<size_t>(n, 2);
-  n = std::min<size_t>(n, num_vertices);
+  const size_t n = std::clamp<size_t>(static_cast<size_t>(std::lround(density * cost_total)), 2, num_vertices);
 
   const SplineView<value_type> view(in);
   out.push_back(in.front());
