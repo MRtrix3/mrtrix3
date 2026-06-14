@@ -906,7 +906,7 @@ bool sidecar_output_dataset_is_created(const std::filesystem::path &dataset) {
   return false;
 }
 
-void verify_sidecar_output(std::string_view arg) {
+void verify_sidecar_output(std::string_view arg, const TractogramDataOutMode mode) {
   // A tractogram-sidecar output (type_tractogram_data_out(), §2.4) is either a
   //   bare filesystem path to a standalone sidecar file to be created, or a
   //   qualified "DATASET::NAME" reference. For the bare path the pre-existence
@@ -914,7 +914,9 @@ void verify_sidecar_output(std::string_view arg) {
   //   (step 4): if the destination DATASET does not exist, a matching
   //   type_tracks_out() argument resolving to the same filesystem path must be
   //   present elsewhere on the command-line (the tractogram that the sidecar is
-  //   to be embedded within is being created by the same invocation).
+  //   to be embedded within is being created by the same invocation) — unless the
+  //   argument opts into TractogramDataOutMode::MayCreateDataset, whereby the
+  //   command itself materialises a missing DATASET (e.g. from its own input).
   const std::string_view::size_type pos = arg.rfind("::");
   if (pos == std::string_view::npos) {
     check_overwrite(std::filesystem::path(std::string(arg)));
@@ -922,6 +924,8 @@ void verify_sidecar_output(std::string_view arg) {
   }
   const std::filesystem::path dataset(std::string(arg.substr(0, pos)));
   if (std::filesystem::exists(dataset))
+    return;
+  if (mode == TractogramDataOutMode::MayCreateDataset)
     return;
   if (!sidecar_output_dataset_is_created(dataset))
     throw Exception("output tractogram-sidecar reference \"" + std::string(arg) + "\"" +           //
@@ -1146,7 +1150,7 @@ void parse() {
       types_not_output_filesystem.reset(ArgTypeFlags::TractogramDataOut);
       if (!types_not_output_filesystem.any()) {
         if (i.arg->types[ArgTypeFlags::TractogramDataOut]) {
-          verify_sidecar_output(i.as_text());
+          verify_sidecar_output(i.as_text(), i.arg->tractogram_data_out_mode);
         } else if (i.arg->types[ArgTypeFlags::DirectoryOut] && !i.arg->types[ArgTypeFlags::FileOut] &&
                    !i.arg->types[ArgTypeFlags::TracksOut]) {
           switch (i.arg->dir_out_mode) {
@@ -1258,7 +1262,7 @@ void parse() {
         types_not_output_filesystem.reset(ArgTypeFlags::TractogramDataOut);
         if (!types_not_output_filesystem.any()) {
           if (arg.types[ArgTypeFlags::TractogramDataOut]) {
-            verify_sidecar_output(parg.as_text());
+            verify_sidecar_output(parg.as_text(), arg.tractogram_data_out_mode);
           } else if (arg.types[ArgTypeFlags::DirectoryOut] && !arg.types[ArgTypeFlags::FileOut] &&
                      !arg.types[ArgTypeFlags::TracksOut]) {
             switch (arg.dir_out_mode) {

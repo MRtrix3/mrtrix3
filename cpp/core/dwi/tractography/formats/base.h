@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <cstddef>
 #include <filesystem>
 #include <functional>
 #include <memory>
@@ -23,6 +24,7 @@
 #include <string>
 #include <string_view>
 #include <type_traits>
+#include <vector>
 
 #include "dwi/tractography/field_registry.h"
 #include "dwi/tractography/grouping.h"
@@ -185,17 +187,27 @@ enum class NonFinite {
   Any        //!< both NaN and infinity permitted (sidecar data only)
 };
 
-//! \brief Whether a format can serialise per-streamline / per-vertex sidecar data.
-/*! A handler broadcasts Supported iff its writer serialises the named
- * per-streamline (dps) and per-vertex (dpv) fields of the FieldRegistry (i.e. it
- * overrides operator()(const TractogramItem&) to emit them): the TRX, VTK, TRK
- * and inter-command pipe handlers. A vertices-only handler (".tck", ".tt",
- * ".qfib", ".zfib", ".vtx", ".mat") silently ignores the registry, so a command
- * that needs to embed a named field can consult this axis and reject such a
- * format up front rather than have the data silently dropped. */
+//! \brief Whether, and how, a format can carry / augment named sidecar data.
+/*! A single ordered axis spanning three capability levels for per-streamline
+ * (dps) and per-vertex (dpv) fields:
+ *   - Unsupported: the format carries only vertices; named dps/dpv fields are
+ *     silently dropped (".tck", ".tt", ".qfib", ".zfib", ".vtx", ".mat"). A
+ *     command that needs to embed a named field consults this axis and rejects
+ *     such a format up front rather than have the data dropped.
+ *   - Rewrite: the writer serialises named dps/dpv fields (it overrides
+ *     operator()(const TractogramItem&) to emit them), but adding a field to an
+ *     *existing* dataset requires the whole dataset to be rewritten (".trk",
+ *     ".vtk", the inter-command pipe, and the compressed TRX archive).
+ *   - Append: as Rewrite, and additionally a new sidecar member can be written
+ *     into an *existing* dataset in place, without rewriting the streamline data
+ *     (a TRX directory or uncompressed ZIP_STORE archive; see
+ *     Base::append_sidecar()).
+ * "can serialise sidecar at all" is therefore (value != Unsupported), with no
+ * separate boolean required. */
 enum class SidecarData {
   Unsupported, //!< the format carries only vertices; named dps/dpv fields are dropped
-  Supported    //!< the format serialises named per-streamline / per-vertex fields
+  Rewrite,     //!< serialises dps/dpv, but augmenting an existing dataset needs a full rewrite
+  Append       //!< a new sidecar member can be added to an existing dataset in place
 };
 
 //! \brief Whether a writer auto-detects the global "-tck_weights_out" option.
@@ -292,6 +304,22 @@ public:
   NonFinite vertex_nonfinite() const { return capabilities.vertices; }
   //! \brief the non-finite tolerance advertised for sidecar (dps/dpv) data.
   NonFinite sidecar_nonfinite() const { return capabilities.sidecar; }
+
+  //! \brief append a NEW per-streamline / per-vertex sidecar member to an EXISTING dataset.
+  /*! Writes \a descriptor's field into the dataset at \a path *in place*, without
+   * reading or rewriting the streamline data (no per-streamline loop). \a row_bytes
+   * is the already-serialised little-endian array
+   * (rows × descriptor.columns × descriptor.dtype.bytes(), where rows is the
+   * dataset's streamline count for a dps field). Only a handler advertising
+   * SidecarData::Append overrides this; the default throws so a Rewrite/Unsupported
+   * format that is reached in error fails cleanly. The caller is responsible for
+   * resolving any "-force" overwrite permission (e.g. when a member of this name
+   * already exists) before invoking this; the override overwrites unconditionally. */
+  virtual void
+  append_sidecar(const std::filesystem::path &, const FieldDescriptor &, const std::vector<std::byte> &) const {
+    throw Exception("tractography format \"" + description + "\"" +
+                    " cannot append a sidecar member to an existing dataset in place");
+  }
 
   //! \brief whether a streaming-only handler may be wrapped for random access (Stage 15).
   /*! When a command requires random access against a handler that advertises

@@ -121,16 +121,6 @@ private:
 
   //! \brief the per-streamline weights for export: exp(coefficient), or 0 at the floor / non-finite.
   Eigen::Array<default_type, Eigen::Dynamic, 1> compute_weights() const;
-  //! \brief write a copy of the input tractogram with \a weights as a named per-streamline (dps) field.
-  /*! Opens \a input_path, declares an additional Float32 dps field \a field_name
-   * on the output's registry, and streams every input streamline through to
-   * \a output_path with its weight slotted into that field (carrying any existing
-   * input sidecar data unchanged). Throws if the output format cannot serialise
-   * per-streamline sidecar data (Formats::SidecarData::Unsupported). */
-  void write_tractogram_with_weights(const std::filesystem::path &input_path,
-                                     const std::filesystem::path &output_path,
-                                     std::string_view field_name,
-                                     const Eigen::Array<default_type, Eigen::Dynamic, 1> &weights) const;
 
   friend class LineSearchFunctor;
   friend class CoefficientOptimiserBase;

@@ -1,0 +1,11 @@
+#!/bin/bash
+# Qualified "DATASET::NAME" export into a NON-EXISTENT tractography dataset:
+#   tcksift2 creates DATASET as a copy of the input tractogram carrying the SIFT2
+#   weights as a per-streamline (data-per-streamline) field named NAME. The
+#   streamline geometry must round-trip back to the input (read via tckconvert);
+#   the embedded weight VALUES are verified once the qualified sidecar import path
+#   provides a way to extract a named dps field (cf. embed_weights).
+rm -rf tmp_q.trx tmp_q_rt.tck
+tcksift2 SIFT_phantom/tracks.tck SIFT_phantom/fods.mif tmp_q.trx::myweights -force
+tckconvert tmp_q.trx tmp_q_rt.tck -force
+testing_diff_tck tmp_q_rt.tck SIFT_phantom/tracks.tck

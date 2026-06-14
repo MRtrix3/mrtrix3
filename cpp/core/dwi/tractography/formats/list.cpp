@@ -35,7 +35,14 @@ Pipe pipe_handler;
 TCK tck_handler;
 QFIB qfib_handler;
 TRK trk_handler;
-TRX trx_handler;
+// The TRX container is serviced by three backing-specific handlers (directory /
+//   uncompressed archive / compressed archive) so that the in-place sidecar-append
+//   capability is fixed per handler. Their handles() predicates are disjoint
+//   (an existing path resolves by backing form; a fresh ".trx" file resolves by
+//   the TRXArchiveCompression config), so registration order is not load-bearing.
+TRXDirectory trx_directory_handler;
+TRXUncompressedArchive trx_uncompressed_handler;
+TRXCompressedArchive trx_compressed_handler;
 TT tt_handler;
 VTK vtk_handler;
 VTX vtx_handler;
@@ -45,7 +52,9 @@ const Base *handlers[] = {&pipe_handler,
                           &tck_handler,
                           &qfib_handler,
                           &trk_handler,
-                          &trx_handler,
+                          &trx_directory_handler,
+                          &trx_uncompressed_handler,
+                          &trx_compressed_handler,
                           &tt_handler,
                           &vtk_handler,
                           &vtx_handler,

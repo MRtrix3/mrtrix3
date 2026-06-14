@@ -1,0 +1,8 @@
+#!/bin/bash
+# Per-streamline (data-per-streamline) embedding via "DATASET::NAME" into a
+#   non-existent dataset: a per-streamline statistic (mean) is stored as a dps field
+#   in a freshly-created copy of the input tractogram, in the sampling pass.
+rm -rf tmp_dps.trx tmp_dps_rt.tck
+tcksample tracks.tck tcksample/fa.mif tmp_dps.trx::FA -stat_tck mean -force
+tckconvert tmp_dps.trx tmp_dps_rt.tck -force
+testing_diff_tck tmp_dps_rt.tck tracks.tck

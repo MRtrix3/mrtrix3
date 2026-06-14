@@ -205,7 +205,7 @@ public:
               StepSize::Arbitrary,
               pipe_vertex_tolerance,
               NonFinite::Any,
-              SidecarData::Supported}) {}
+              SidecarData::Rewrite}) {}
 
   bool handles(const std::filesystem::path &path) const override;
 

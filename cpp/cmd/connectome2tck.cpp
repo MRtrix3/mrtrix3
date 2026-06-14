@@ -272,7 +272,7 @@ void run() {
   // A format that serialises per-streamline / per-vertex data embeds the weights
   //   (and any -tsf_in scalars) directly; the separate-file weight / .tsf outputs
   //   then do not apply.
-  const bool embed = out_handler->capabilities.sidecar_data == TrackFormats::SidecarData::Supported;
+  const bool embed = out_handler->capabilities.sidecar_data != TrackFormats::SidecarData::Unsupported;
   if (embed) {
     if (!get_options("tck_weights_out").empty())
       throw Exception("output format \"" + out_handler->description + "\" embeds per-streamline weights;" + //

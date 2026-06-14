@@ -1,0 +1,10 @@
+#!/bin/bash
+# Per-vertex (data-per-vertex) embedding via the qualified "DATASET::NAME" form into
+#   a NON-EXISTENT dataset: tcksample creates the dataset as a copy of the input
+#   tractogram carrying the sampled per-vertex field, generated in the sampling pass.
+#   The streamline geometry must round-trip back to the input (read via tckconvert);
+#   the embedded VALUES are checked once the qualified sidecar import path lands.
+rm -rf tmp_dpv.trx tmp_dpv_rt.tck
+tcksample tracks.tck tcksample/fa.mif tmp_dpv.trx::FA -force
+tckconvert tmp_dpv.trx tmp_dpv_rt.tck -force
+testing_diff_tck tmp_dpv_rt.tck tracks.tck

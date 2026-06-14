@@ -30,6 +30,7 @@
 #include "dwi/tractography/formats/list.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/sidecar.h"
+#include "dwi/tractography/sidecar_export.h"
 #include "dwi/tractography/sidecar_value.h"
 #include "dwi/tractography/tractogram.h"
 #include "dwi/tractography/tractogram_item.h"
@@ -360,70 +361,15 @@ Eigen::Array<default_type, Eigen::Dynamic, 1> TckFactor::compute_weights() const
 
 void TckFactor::output_weights(const std::filesystem::path &input_path, std::string_view arg) const {
   const SidecarReference reference = parse_sidecar_reference(arg);
-
-  // The qualified "DATASET::NAME" forms (embed into a named field of a new or
-  //   existing dataset) require the as-yet-unimplemented qualified-sidecar export
-  //   path; reject them clearly until that arrives (Step 2).
-  if (reference.is_qualified())
-    throw Exception("embedding SIFT2 weights into a named field of a tractogram dataset"
-                    " (the \"DATASET::NAME\" form) is not yet implemented");
-
   const Eigen::Array<default_type, Eigen::Dynamic, 1> weights = compute_weights();
-
-  // A bare path that no tractography format handler recognises is a standalone
-  //   numerical weights file (the historical behaviour).
-  const Formats::Base *const handler = Formats::get_handler(reference.dataset);
-  if (handler == nullptr) {
-    File::Matrix::save_vector(weights, reference.dataset);
-    return;
-  }
-
-  // A bare path that IS a tractography format receives a copy of the input
-  //   tractogram with the weights embedded as a per-streamline field "weights".
-  write_tractogram_with_weights(input_path, reference.dataset, "weights", weights);
+  // The destination form (standalone vector / embedded into a new or existing
+  //   tractogram, in place or via rewrite) is resolved by the shared exporter
+  //   from the reference and the format's capabilities (§2.7).
+  export_sidecar_column(reference, input_path, weights, "weights", {{"SIFT2_mu", str(mu())}});
 }
 
 void TckFactor::output_coefficients(const std::filesystem::path &path) const {
   File::Matrix::save_vector(coefficients, path);
-}
-
-void TckFactor::write_tractogram_with_weights(const std::filesystem::path &input_path,
-                                              const std::filesystem::path &output_path,
-                                              std::string_view field_name,
-                                              const Eigen::Array<default_type, Eigen::Dynamic, 1> &weights) const {
-  // Reject up front a format that cannot serialise per-streamline sidecar data,
-  //   rather than silently dropping the embedded weights.
-  const Formats::Base *const handler = Formats::get_handler(output_path);
-  if (handler == nullptr || handler->capabilities.sidecar_data != Formats::SidecarData::Supported)
-    throw Exception(
-        "output tractography format" + (handler != nullptr ? (" \"" + handler->description + "\"") : std::string()) +
-        " cannot carry per-streamline sidecar data," + " so the SIFT2 weights cannot be embedded into \"" +
-        output_path.string() + "\"" + " (use a format such as \".trx\", or write a standalone weights file)");
-
-  Tractography::Properties properties;
-  auto input = Tractogram<float>::open(input_path, properties);
-  properties["SIFT2_mu"] = str(mu());
-
-  // Declare the output field set from the input registry plus the new weights
-  //   field, so the input's own sidecar data passes through unchanged and the
-  //   weights ride alongside as a named per-streamline (dps) field.
-  FieldRegistry registry = input.fields();
-  const size_t ordinal =
-      registry.add({std::string(field_name), FieldRole::DPS, DataType::Float32, 1, FieldSource::Internal, 0});
-
-  auto output = Tractogram<float>::create(output_path, properties, registry);
-
-  TractogramItem<float> item;
-  SIFT::track_t counter = 0;
-  ProgressBar progress("Writing weighted tractogram output file", num_tracks());
-  while (input.read(item) && counter < num_tracks()) {
-    item.dps.resize(registry.dps_count());
-    ScalarOrVector<float> value(1);
-    value(0, 0) = static_cast<float>(weights[counter++]);
-    item.dps[ordinal] = make_dps(std::move(value));
-    output.write(item);
-    ++progress;
-  }
 }
 
 void TckFactor::output_TD_images(const std::filesystem::path &dirpath,

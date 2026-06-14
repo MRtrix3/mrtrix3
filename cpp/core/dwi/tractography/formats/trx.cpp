@@ -28,12 +28,14 @@
 
 #include "app.h"
 #include "exception.h"
+#include "file/config.h"
 #include "file/mmap.h"
 #include "file/ofstream.h"
 #include "file/path.h"
 #include "file/temp.h"
 #include "half.h"
 #include "match_variant.h"
+#include "mrtrix.h"
 #include "raw.h"
 #include "signal_handler.h"
 
@@ -587,6 +589,31 @@ bool augment_requires_force(const std::filesystem::path &path) {
   return true;
 }
 
+bool trx_config_compressed() {
+  // CONF option: TRXArchiveCompression
+  // CONF default: store
+  // CONF The zip compression method used when writing a new ".trx" archive
+  // CONF file: "store" (uncompressed; the default, which permits later in-place
+  // CONF augmentation of the dataset with additional sidecar data without
+  // CONF rewriting it) or "deflate" (smaller files, but adding sidecar data
+  // CONF later requires the whole archive to be rewritten). Has no effect on a
+  // CONF TRX dataset written as a directory.
+  const std::string value = lowercase(File::Config::get("TRXArchiveCompression", "store"));
+  if (value == "deflate")
+    return true;
+  if (value == "store")
+    return false;
+  throw Exception("invalid value \"" + value + "\" for config option \"TRXArchiveCompression\"" +
+                  " (expected \"store\" or \"deflate\")");
+}
+
+std::string sidecar_member_name(const FieldDescriptor &descriptor) {
+  const std::string folder = (descriptor.role == FieldRole::DPV) ? "dpv/" : "dps/";
+  const std::string ext = extension_from_dtype(descriptor.dtype);
+  const std::string mid = (descriptor.columns == 1) ? "" : ("." + str(descriptor.columns));
+  return folder + descriptor.name + mid + "." + ext;
+}
+
 } // namespace MR::DWI::Tractography::Formats::TRXUtils
 
 namespace MR::DWI::Tractography {
@@ -857,8 +884,9 @@ std::shared_ptr<Formats::WriteBuffer> make_appender(const std::filesystem::path 
 template <class ValueType>
 TRXWriter<ValueType>::TRXWriter(const std::filesystem::path &path,
                                 const Properties &properties,
-                                const FieldRegistry &registry)
-    : path(path), registry(registry), num_streamlines(0), num_vertices(0) {
+                                const FieldRegistry &registry,
+                                const TRXCompression compression)
+    : path(path), registry(registry), compression(compression), num_streamlines(0), num_vertices(0) {
   if (path.extension() != ".trx" && !path.has_extension())
     throw Exception("output TRX dataset must use the .trx suffix");
 
@@ -1021,16 +1049,10 @@ template <class ValueType> void TRXWriter<ValueType>::finalise() {
                              reinterpret_cast<const std::byte *>(header_text.data()) + header_text.size()));
   members.emplace_back("positions.3.float32", positions_bytes);
   members.emplace_back("offsets.uint64", std::move(offsets_bytes));
-  for (SidecarOutput &output : dps_fields) {
-    const std::string ext = TRXUtils::extension_from_dtype(output.descriptor.dtype);
-    const std::string mid = (output.descriptor.columns == 1) ? "" : "." + str(output.descriptor.columns);
-    members.emplace_back("dps/" + output.descriptor.name + mid + "." + ext, slurp(output.tempfile));
-  }
-  for (SidecarOutput &output : dpv_fields) {
-    const std::string ext = TRXUtils::extension_from_dtype(output.descriptor.dtype);
-    const std::string mid = (output.descriptor.columns == 1) ? "" : "." + str(output.descriptor.columns);
-    members.emplace_back("dpv/" + output.descriptor.name + mid + "." + ext, slurp(output.tempfile));
-  }
+  for (SidecarOutput &output : dps_fields)
+    members.emplace_back(TRXUtils::sidecar_member_name(output.descriptor), slurp(output.tempfile));
+  for (SidecarOutput &output : dpv_fields)
+    members.emplace_back(TRXUtils::sidecar_member_name(output.descriptor), slurp(output.tempfile));
 
   // groups: one "groups/<name>.uint32" index table per group (Stage 17). Indices
   //   are written little-endian uint32 (the spec-recommended dtype), preserving
@@ -1067,8 +1089,11 @@ template <class ValueType> void TRXWriter<ValueType>::finalise() {
   }
 
   if (TRXUtils::path_is_trx(path) && !path.empty()) {
-    // Emit an uncompressed (ZIP_STORE) ".trx" archive via libzip. The overwrite
-    //   permission was already resolved at construction (App::check_overwrite).
+    // Emit a ".trx" archive via libzip, ZIP_STORE (uncompressed; the default,
+    //   permitting later in-place sidecar augmentation) or ZIP_DEFLATE per the
+    //   selected compression. The overwrite permission was already resolved at
+    //   construction (App::check_overwrite).
+    const zip_int32_t method = (compression == TRXCompression::Deflate) ? ZIP_CM_DEFLATE : ZIP_CM_STORE;
     std::error_code ec;
     std::filesystem::remove(path, ec);
     int err = 0;
@@ -1085,7 +1110,7 @@ template <class ValueType> void TRXWriter<ValueType>::finalise() {
           zip_source_free(src);
           throw Exception("failed to add member \"" + member.first + "\" to TRX archive");
         }
-        zip_set_file_compression(za, static_cast<zip_uint64_t>(idx), ZIP_CM_STORE, 0);
+        zip_set_file_compression(za, static_cast<zip_uint64_t>(idx), method, 0);
       }
     } catch (...) {
       zip_discard(za);
@@ -1128,45 +1153,132 @@ template class TRXWriter<double>;
 
 namespace Formats {
 
-bool TRX::handles(const std::filesystem::path &path) const {
-  if (path.extension() == ".trx")
-    return true;
-  // A directory whose name carries no recognised extension but which contains a
-  //   TRX "header.json" is also a TRX dataset.
+namespace {
+
+//! \brief validate a sidecar append against an existing TRX dataset (header only).
+/*! Opens \a path, reads only its header/member directory (no streamline payload),
+ * and checks that \a row_bytes matches the dataset's row count for \a descriptor's
+ * role. \returns the dataset member name the field is to be written as. */
+std::string validate_append(const std::filesystem::path &path,
+                            const FieldDescriptor &descriptor,
+                            const std::vector<std::byte> &row_bytes) {
+  std::unique_ptr<TRXUtils::TrxSource> source = TRXUtils::open_source(path);
+  const TRXUtils::DatasetSummary summary = source->summarise();
+  const uint64_t rows = (descriptor.role == FieldRole::DPV) ? summary.nb_vertices : summary.nb_streamlines;
+  const size_t expected = static_cast<size_t>(rows) * descriptor.columns * descriptor.dtype.bytes();
+  if (row_bytes.size() != expected)
+    throw Exception("cannot append sidecar field \"" + descriptor.name + "\"" + //
+                    " to TRX dataset \"" + path.string() + "\":" +              //
+                    " expected " + str(expected) + " bytes (" + str(rows) + " rows)" + " but received " +
+                    str(row_bytes.size()));
+  return TRXUtils::sidecar_member_name(descriptor);
+}
+
+} // namespace
+
+bool TRXDirectory::handles(const std::filesystem::path &path) const {
+  // An existing directory is a TRX dataset iff it carries the JSON header member.
   std::error_code ec;
-  if (std::filesystem::is_directory(path, ec))
-    return std::filesystem::exists(path / "header.json", ec);
+  return std::filesystem::is_directory(path, ec) && std::filesystem::exists(path / "header.json", ec);
+}
+
+void TRXDirectory::append_sidecar(const std::filesystem::path &path,
+                                  const FieldDescriptor &descriptor,
+                                  const std::vector<std::byte> &row_bytes) const {
+  const std::string member = validate_append(path, descriptor, row_bytes);
+  // A new member is a single file written alongside the existing arrays; the
+  //   header/positions/offsets are untouched (NB_STREAMLINES is unchanged).
+  write_member(path / member, row_bytes.data(), row_bytes.size());
+}
+
+bool TRXUncompressedArchive::handles(const std::filesystem::path &path) const {
+  // Only a ".trx" file is a TRX archive: classify_backing() conservatively reports
+  //   CompressedArchive for any existing non-zip file, so an extension guard is
+  //   required to avoid claiming an unrelated file (e.g. a ".csv" weights path).
+  if (path.extension() != ".trx")
+    return false;
+  const TRXUtils::Backing backing = TRXUtils::classify_backing(path);
+  if (backing == TRXUtils::Backing::UncompressedArchive)
+    return true;
+  // A fresh ".trx" file is written as an archive; the uncompressed handler claims
+  //   it unless the config selects deflate compression.
+  if (backing == TRXUtils::Backing::Missing)
+    return !TRXUtils::trx_config_compressed();
   return false;
 }
 
-std::unique_ptr<ReaderInterface<float>> TRX::read_float(const std::filesystem::path &path,
-                                                        Properties &properties,
-                                                        FieldRegistry &registry,
-                                                        const OptionalHeader &) const {
+void TRXUncompressedArchive::append_sidecar(const std::filesystem::path &path,
+                                            const FieldDescriptor &descriptor,
+                                            const std::vector<std::byte> &row_bytes) const {
+  const std::string member = validate_append(path, descriptor, row_bytes);
+  // libzip streams a modified archive to a temp file and atomically replaces the
+  //   original on zip_close(), so existing members survive a mid-write crash; the
+  //   new member is stored uncompressed (ZIP_CM_STORE), matching the archive.
+  //   ZIP_FL_OVERWRITE replaces a member of this name if one already exists (the
+  //   caller has resolved -force for that case).
+  int err = 0;
+  zip_t *za = zip_open(path.string().c_str(), 0, &err);
+  if (za == nullptr)
+    throw Exception("failed to open TRX archive \"" + path.string() + "\" to append a sidecar member");
+  try {
+    zip_source_t *src = zip_source_buffer(za, row_bytes.data(), row_bytes.size(), 0);
+    if (src == nullptr)
+      throw Exception("failed to create zip source for member \"" + member + "\"");
+    const zip_int64_t idx = zip_file_add(za, member.c_str(), src, ZIP_FL_OVERWRITE);
+    if (idx < 0) {
+      zip_source_free(src);
+      throw Exception("failed to add member \"" + member + "\" to TRX archive");
+    }
+    zip_set_file_compression(za, static_cast<zip_uint64_t>(idx), ZIP_CM_STORE, 0);
+  } catch (...) {
+    zip_discard(za);
+    throw;
+  }
+  if (zip_close(za) != 0)
+    throw Exception("failed to finalise TRX archive \"" + path.string() + "\" after appending a sidecar member");
+}
+
+bool TRXCompressedArchive::handles(const std::filesystem::path &path) const {
+  // Only a ".trx" file is a TRX archive (see TRXUncompressedArchive::handles for
+  //   why the extension guard is required).
+  if (path.extension() != ".trx")
+    return false;
+  const TRXUtils::Backing backing = TRXUtils::classify_backing(path);
+  if (backing == TRXUtils::Backing::CompressedArchive)
+    return true;
+  if (backing == TRXUtils::Backing::Missing)
+    return TRXUtils::trx_config_compressed();
+  return false;
+}
+
+std::unique_ptr<ReaderInterface<float>> TRXBase::read_float(const std::filesystem::path &path,
+                                                            Properties &properties,
+                                                            FieldRegistry &registry,
+                                                            const OptionalHeader &) const {
   return std::make_unique<TRXReader<float>>(path, properties, registry);
 }
 
-std::unique_ptr<ReaderInterface<double>> TRX::read_double(const std::filesystem::path &path,
-                                                          Properties &properties,
-                                                          FieldRegistry &registry,
-                                                          const OptionalHeader &) const {
+std::unique_ptr<ReaderInterface<double>> TRXBase::read_double(const std::filesystem::path &path,
+                                                              Properties &properties,
+                                                              FieldRegistry &registry,
+                                                              const OptionalHeader &) const {
   return std::make_unique<TRXReader<double>>(path, properties, registry);
 }
 
-std::unique_ptr<WriterInterface<float>> TRX::create_float(const std::filesystem::path &path,
-                                                          const Properties &properties,
-                                                          const FieldRegistry &registry,
-                                                          const OptionalHeader &,
-                                                          const WriteOptions &options) const {
-  return std::make_unique<TRXWriter<float>>(path, properties, registry);
+std::unique_ptr<WriterInterface<float>> TRXBase::create_float(const std::filesystem::path &path,
+                                                              const Properties &properties,
+                                                              const FieldRegistry &registry,
+                                                              const OptionalHeader &,
+                                                              const WriteOptions &) const {
+  return std::make_unique<TRXWriter<float>>(path, properties, registry, fresh_compression());
 }
 
-std::unique_ptr<WriterInterface<double>> TRX::create_double(const std::filesystem::path &path,
-                                                            const Properties &properties,
-                                                            const FieldRegistry &registry,
-                                                            const OptionalHeader &,
-                                                            const WriteOptions &options) const {
-  return std::make_unique<TRXWriter<double>>(path, properties, registry);
+std::unique_ptr<WriterInterface<double>> TRXBase::create_double(const std::filesystem::path &path,
+                                                                const Properties &properties,
+                                                                const FieldRegistry &registry,
+                                                                const OptionalHeader &,
+                                                                const WriteOptions &) const {
+  return std::make_unique<TRXWriter<double>>(path, properties, registry, fresh_compression());
 }
 
 } // namespace Formats

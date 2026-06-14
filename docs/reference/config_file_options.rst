@@ -736,6 +736,17 @@ List of MRtrix3 configuration file options
 
      The default intensity for the specular light in OpenGL renders.
 
+.. option:: TRXArchiveCompression
+
+    *default: store*
+
+     The zip compression method used when writing a new ".trx" archive
+     file: "store" (uncompressed; the default, which permits later in-place
+     augmentation of the dataset with additional sidecar data without
+     rewriting it) or "deflate" (smaller files, but adding sidecar data
+     later requires the whole archive to be rewritten). Has no effect on a
+     TRX dataset written as a directory.
+
 .. option:: TckgenEarlyExit
 
     *default: 0 (false)*

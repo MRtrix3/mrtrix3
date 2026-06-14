@@ -201,6 +201,18 @@ enum class Backing {
 //! \brief classify the backing form of an existing TRX path (step 11).
 Backing classify_backing(const std::filesystem::path &path);
 
+//! \brief whether a freshly-written ".trx" archive should be deflate-compressed.
+/*! Reads the "TRXArchiveCompression" config option (default "store"). When false
+ * a new ".trx" file is an uncompressed ZIP_STORE archive (permitting later
+ * in-place sidecar augmentation); when true it is deflate-compressed (smaller,
+ * but augmenting it later requires a full rewrite). */
+bool trx_config_compressed();
+
+//! \brief the TRX member basename for a sidecar field: `dps/NAME[.M].dtype`.
+/*! Builds the member path component from \a descriptor's role (dps/dpv), name,
+ * column count and on-disk dtype, per the `name[.M].dtype` grammar. */
+std::string sidecar_member_name(const FieldDescriptor &descriptor);
+
 //! \brief whether augmenting an existing TRX dataset with a NEW sidecar member
 //!   requires force-overwrite permission (-force) (step 11).
 /*! Adding a new field to an existing dataset must be intuitive with respect to
@@ -270,6 +282,13 @@ private:
   TRXReader(const TRXReader &) = delete;
 };
 
+//! \brief The zip compression method used when writing a new ".trx" *archive*.
+/*! A directory-backed dataset stores loose member files and ignores this. */
+enum class TRXCompression {
+  Store,  //!< uncompressed (ZIP_STORE); permits later in-place sidecar append
+  Deflate //!< deflate-compressed (ZIP_DEFLATE); augmenting later needs a full rewrite
+};
+
 //! \brief Streaming writer backend for the TRX tractography format.
 /*! Accumulates streamline vertices and sidecar (dps/dpv) values, then on
  * finalisation lays them out as the flat little-endian TRX arrays plus the JSON
@@ -283,7 +302,10 @@ private:
  * instantiated for float and double in formats/trx.cpp. */
 template <class ValueType = float> class TRXWriter : public WriterInterface<ValueType> {
 public:
-  TRXWriter(const std::filesystem::path &path, const Properties &properties, const FieldRegistry &registry);
+  TRXWriter(const std::filesystem::path &path,
+            const Properties &properties,
+            const FieldRegistry &registry,
+            TRXCompression compression = TRXCompression::Store);
   ~TRXWriter() override;
 
   bool operator()(const Streamline<ValueType> &tck) override;
@@ -303,6 +325,7 @@ private:
 
   const std::filesystem::path path;
   const FieldRegistry &registry;
+  const TRXCompression compression; //!< archive compression method (ignored for a directory)
 
   //! grid geometry written into the JSON header
   transform_type voxel_to_rasmm;
@@ -341,7 +364,7 @@ inline constexpr Formats::NonFinite trx_vertex_tolerance = Formats::NonFinite::N
 
 namespace Formats {
 
-//! \brief Format handler for the TRX tractography format (D1/D5/D7).
+//! \brief Shared implementation core for the three backing-specific TRX handlers.
 /*! TRX is a community tractography container: a directory or (un)compressed zip
  * archive of flat little-endian arrays (positions, offsets, dps/dpv sidecars)
  * plus a JSON header (VOXEL_TO_RASMM, DIMENSIONS, NB_STREAMLINES, NB_VERTICES).
@@ -349,24 +372,19 @@ namespace Formats {
  * nlohmann/json, libzip; D1), with native-dtype sidecar preservation (D7) and
  * in-place memory-mapping of uncompressed members (D5).
  *
- * Capabilities: read+write; RandomAccessFixed (random access is serviceable so
- * long as the streamline count and per-streamline vertex counts are unchanged —
- * the offsets array indexes any streamline directly); append for an existing
- * directory (a new sidecar member is simply written alongside), rewrite for an
- * archive. The "-force" interaction (step 11) is resolved per backing kind. */
-class TRX : public Base {
+ * The reader auto-detects the backing form (directory / ZIP_STORE in place /
+ * ZIP_DEFLATE via temp-dir extraction), so all three concrete handlers share one
+ * read path. The writer manufactures a directory or an archive (compression
+ * selected by fresh_compression()) from the same buffered arrays. The three
+ * concrete handlers differ only in which existing/new path they recognise
+ * (handles()) and in the capability they broadcast: a directory or uncompressed
+ * archive can take a new sidecar member in place (SidecarData::Append), whereas a
+ * compressed archive must be re-packed (SidecarData::Rewrite). Fixing the
+ * capability per handler lets a command decide its augmentation strategy from the
+ * handler alone (§2.6/§2.7). This base is not registered in formats/list.cpp. */
+class TRXBase : public Base {
 public:
-  TRX()
-      : Base("TRX",
-             {IO::ReadWrite,
-              Access::RandomAccessFixed,
-              Augment::Append,
-              StepSize::Arbitrary,
-              trx_vertex_tolerance,
-              NonFinite::Any,
-              SidecarData::Supported}) {}
-
-  bool handles(const std::filesystem::path &path) const override;
+  using Base::Base;
 
 protected:
   std::unique_ptr<ReaderInterface<float>> read_float(const std::filesystem::path &path,
@@ -387,6 +405,72 @@ protected:
                                                          const FieldRegistry &registry,
                                                          const OptionalHeader &grid,
                                                          const WriteOptions &options) const override;
+
+  //! \brief the zip compression a fresh ".trx" archive from this handler uses.
+  virtual TRXCompression fresh_compression() const = 0;
+};
+
+//! \brief TRX handler for a filesystem-directory dataset (append-capable).
+class TRXDirectory : public TRXBase {
+public:
+  TRXDirectory()
+      : TRXBase("TRX directory",
+                {IO::ReadWrite,
+                 Access::RandomAccessFixed,
+                 Augment::Append,
+                 StepSize::Arbitrary,
+                 trx_vertex_tolerance,
+                 NonFinite::Any,
+                 SidecarData::Append}) {}
+
+  bool handles(const std::filesystem::path &path) const override;
+  void append_sidecar(const std::filesystem::path &path,
+                      const FieldDescriptor &descriptor,
+                      const std::vector<std::byte> &row_bytes) const override;
+
+protected:
+  TRXCompression fresh_compression() const override { return TRXCompression::Store; }
+};
+
+//! \brief TRX handler for an uncompressed (ZIP_STORE) archive (append-capable).
+class TRXUncompressedArchive : public TRXBase {
+public:
+  TRXUncompressedArchive()
+      : TRXBase("TRX uncompressed archive",
+                {IO::ReadWrite,
+                 Access::RandomAccessFixed,
+                 Augment::Append,
+                 StepSize::Arbitrary,
+                 trx_vertex_tolerance,
+                 NonFinite::Any,
+                 SidecarData::Append}) {}
+
+  bool handles(const std::filesystem::path &path) const override;
+  void append_sidecar(const std::filesystem::path &path,
+                      const FieldDescriptor &descriptor,
+                      const std::vector<std::byte> &row_bytes) const override;
+
+protected:
+  TRXCompression fresh_compression() const override { return TRXCompression::Store; }
+};
+
+//! \brief TRX handler for a compressed (ZIP_DEFLATE) archive (rewrite-only).
+class TRXCompressedArchive : public TRXBase {
+public:
+  TRXCompressedArchive()
+      : TRXBase("TRX compressed archive",
+                {IO::ReadWrite,
+                 Access::RandomAccessFixed,
+                 Augment::Rewrite,
+                 StepSize::Arbitrary,
+                 trx_vertex_tolerance,
+                 NonFinite::Any,
+                 SidecarData::Rewrite}) {}
+
+  bool handles(const std::filesystem::path &path) const override;
+
+protected:
+  TRXCompression fresh_compression() const override { return TRXCompression::Deflate; }
 };
 
 } // namespace Formats

@@ -1,0 +1,13 @@
+#!/bin/bash
+# In-place augmentation requires -force only when the named field is ALREADY
+#   present: the first export of a new field succeeds without -force; a second
+#   export of the same field name fails without -force and succeeds with it.
+#   (That the second export detects the field also confirms the first one was
+#   actually written into the dataset.)
+rm -rf tmp_force.trx tmp_force.txt
+tckconvert SIFT_phantom/tracks.tck tmp_force.trx -config TRXArchiveCompression store -force
+tcksift2 SIFT_phantom/tracks.tck SIFT_phantom/fods.mif tmp_force.trx::w
+! tcksift2 SIFT_phantom/tracks.tck SIFT_phantom/fods.mif tmp_force.trx::w 2> tmp_force.txt
+cat tmp_force.txt
+grep -i "already exists" tmp_force.txt
+tcksift2 SIFT_phantom/tracks.tck SIFT_phantom/fods.mif tmp_force.trx::w -force

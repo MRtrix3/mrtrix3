@@ -24,6 +24,8 @@ Description
 
 The estimated per-streamline weights are written to the "out_weights" output, the form of which depends on the path provided. If the path carries no recognised tractography format extension (e.g. ".csv" or ".txt"), the weights are written as a standalone numerical vector, one value per streamline, in the order of the input tractogram. If instead the path is a tractography format capable of carrying per-streamline data (e.g. ".trx"), a copy of the input tractogram is written to that path with the weights embedded as a per-streamline (data-per-streamline) field named "weights"; a tractography format that cannot represent per-streamline data (e.g. ".tck") is rejected.
 
+The qualified "DATASET::NAME" syntax instead embeds the weights as a per-streamline field named NAME within the tractography dataset DATASET. If DATASET does not yet exist, it is created as a copy of the input tractogram carrying the new field. If DATASET already exists and its format supports adding a field to an existing dataset in place (a TRX directory or uncompressed archive), the field is written directly without rewriting the streamline data; in this case the -force option is required only if a field named NAME is already present. If DATASET already exists but its format cannot be augmented in place (e.g. ".trk", or a compressed TRX archive), the -force option is required, and the dataset is rewritten with the field added.
+
 Options
 -------
 

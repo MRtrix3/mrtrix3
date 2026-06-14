@@ -106,6 +106,19 @@ enum class DirOutMode {
   MayExist,      //!< No pre-existence check; the command is responsible for creation and access
 };
 
+//! Specifies how a qualified "DATASET::NAME" tractogram-sidecar output is validated
+/*! Used as the parameter to Argument::type_tractogram_data_out() to control the
+ *  parse-time check applied to a qualified reference whose DATASET does not yet
+ *  exist. */
+enum class TractogramDataOutMode {
+  //! the DATASET must already exist, or be created as a tracks output by the same
+  //!   command (the default; catches a mistyped dataset path early)
+  RequireDataset,
+  //! the command may itself create a missing DATASET (e.g. as a copy of its own
+  //!   input tractogram), so a missing DATASET is permitted
+  MayCreateDataset
+};
+
 //! A class to specify a command-line argument
 /*! Command-line arguments that are accepted by a particular command are
  * specified as a vector of Arguments objects. Please refer to \ref
@@ -156,6 +169,8 @@ public:
   std::vector<std::string> choices;
   //! for DirectoryOut arguments, specifies behaviour with respect to pre-existing directories
   DirOutMode dir_out_mode = DirOutMode::MustNotExist;
+  //! for TractogramDataOut arguments, whether a missing qualified DATASET may be created by the command
+  TractogramDataOutMode tractogram_data_out_mode = TractogramDataOutMode::RequireDataset;
 
   template <typename T> class ScalarRange {
   public:
@@ -339,11 +354,15 @@ public:
    * to be created (a per-streamline text/.csv/.npy file, or a per-vertex .tsf
    * file) — in which case it behaves exactly as type_file_out() — or a qualified
    * "DATASET::NAME" reference naming a sidecar field to be written into a
-   * tractography dataset (parsed on the last "::"). Stage 11 implements the
-   * standalone-path export; the qualified form is reserved (yields a "not yet
-   * implemented" error). */
-  Argument &type_tractogram_data_out() {
+   * tractography dataset (parsed on the last "::"). \a mode controls the
+   * parse-time check on a qualified reference whose DATASET does not yet exist:
+   * by default it must be created as a tracks output by the same command, but
+   * TractogramDataOutMode::MayCreateDataset permits a command to materialise a
+   * missing DATASET itself (e.g. tcksift2, which writes a copy of its input
+   * tractogram carrying the new field). */
+  Argument &type_tractogram_data_out(TractogramDataOutMode mode = TractogramDataOutMode::RequireDataset) {
     types.set(ArgTypeFlags::TractogramDataOut);
+    tractogram_data_out_mode = mode;
     return *this;
   }
 

@@ -122,7 +122,20 @@ void usage() {
     " If instead the path is a tractography format capable of carrying per-streamline data (e.g. \".trx\"),"
     " a copy of the input tractogram is written to that path"
     " with the weights embedded as a per-streamline (data-per-streamline) field named \"weights\";"
-    " a tractography format that cannot represent per-streamline data (e.g. \".tck\") is rejected.";
+    " a tractography format that cannot represent per-streamline data (e.g. \".tck\") is rejected."
+
+  + "The qualified \"DATASET::NAME\" syntax instead embeds the weights as a"
+    " per-streamline field named NAME within the tractography dataset DATASET."
+    " If DATASET does not yet exist, it is created as a copy of the input tractogram"
+    " carrying the new field."
+    " If DATASET already exists and its format supports adding a field to an"
+    " existing dataset in place (a TRX directory or uncompressed archive),"
+    " the field is written directly without rewriting the streamline data;"
+    " in this case the -force option is required only if a field named NAME"
+    " is already present."
+    " If DATASET already exists but its format cannot be augmented in place"
+    " (e.g. \".trk\", or a compressed TRX archive), the -force option is required,"
+    " and the dataset is rewritten with the field added.";
 
   REFERENCES
     + "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. " // Internal
@@ -139,7 +152,8 @@ void usage() {
   ARGUMENTS
   + Argument ("in_tracks", "the input track file").type_tracks_in()
   + Argument ("in_fod", "input image containing the spherical harmonics of the fibre orientation distributions").type_image_in()
-  + Argument ("out_weights", "the output per-streamline weights (see Description)").type_tractogram_data_out();
+  + Argument ("out_weights", "the output per-streamline weights (see Description)")
+    .type_tractogram_data_out(TractogramDataOutMode::MayCreateDataset);
 
   OPTIONS
 
