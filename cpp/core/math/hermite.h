@@ -19,6 +19,7 @@
 #include <array>
 #include <limits>
 
+#include "math/spline_processing_type.h"
 #include "types.h"
 
 namespace MR::Math {
@@ -29,11 +30,15 @@ namespace MR::Math {
  *  are the preceding and following control points respectively. The tension parameter follows
  *  the canonical Catmull-Rom convention \c t = 0.5*tension.
  *
- *  In addition to the four position weights, \c set() also populates the four derivative weights
- *  \c wd[i] = d(w[i])/d(mu). These are computed unconditionally alongside the position weights:
- *  the extra arithmetic is negligible, callers that only read \c coef() / \c value() are
- *  numerically unaffected, and the position weight expressions are byte-for-byte identical to
- *  the previous implementation. The derivative accessors / evaluators are purely additive. */
+ *  In addition to the four position weights, \c set() can also populate the four derivative weights
+ *  \c wd[i] = d(w[i])/d(mu). Which families are evaluated is selected at construction by a
+ *  \c SplineProcessingType: \c Value computes only the position weights \c w, \c Derivative computes
+ *  only the derivative weights \c wd, and \c ValueAndDerivative (the default, preserving the historical
+ *  behaviour) computes both. A caller
+ *  that needs only the parametric tangent (for example arc-length quadrature) therefore avoids the
+ *  position-weight arithmetic, while callers reading \c coef() / \c value() under the default mode are
+ *  numerically unaffected and the weight expressions are byte-for-byte identical to before. Reading an
+ *  un-computed weight family is undefined; request the family you intend to use. */
 template <typename T> class Hermite {
 public:
   using value_type = T;
@@ -44,20 +49,25 @@ public:
     S derivative;
   };
 
-  Hermite(value_type tension = 0.0) : t(T(0.5) * tension) {}
+  Hermite(value_type tension = 0.0, SplineProcessingType process = ValueAndDerivative)
+      : t(T(0.5) * tension), process(process) {}
 
   void set(value_type position) {
-    value_type p2 = position * position;
-    value_type p3 = position * p2;
-    w[0] = (T(0.5) - t) * (T(2.0) * p2 - p3 - position);
-    w[1] = T(1.0) + (T(1.5) + t) * p3 - (T(2.5) + t) * p2;
-    w[2] = (T(2.0) + T(2.0) * t) * p2 + (T(0.5) - t) * position - (T(1.5) + t) * p3;
-    w[3] = (T(0.5) - t) * (p3 - p2);
-    // Derivative basis weights wd[i] = d(w[i])/d(mu); analytic d/dmu of the expressions above.
-    wd[0] = (T(0.5) - t) * (T(4.0) * position - T(3.0) * p2 - T(1.0));
-    wd[1] = T(3.0) * (T(1.5) + t) * p2 - T(2.0) * (T(2.5) + t) * position;
-    wd[2] = (T(4.0) + T(4.0) * t) * position + (T(0.5) - t) - T(3.0) * (T(1.5) + t) * p2;
-    wd[3] = (T(0.5) - t) * (T(3.0) * p2 - T(2.0) * position);
+    const value_type p2 = position * position;
+    const value_type p3 = position * p2;
+    if ((process & SplineProcessingType::Value) != 0) {
+      w[0] = (T(0.5) - t) * (T(2.0) * p2 - p3 - position);
+      w[1] = T(1.0) + (T(1.5) + t) * p3 - (T(2.5) + t) * p2;
+      w[2] = (T(2.0) + T(2.0) * t) * p2 + (T(0.5) - t) * position - (T(1.5) + t) * p3;
+      w[3] = (T(0.5) - t) * (p3 - p2);
+    }
+    if ((process & SplineProcessingType::Derivative) != 0) {
+      // Derivative basis weights wd[i] = d(w[i])/d(mu); analytic d/dmu of the position expressions.
+      wd[0] = (T(0.5) - t) * (T(4.0) * position - T(3.0) * p2 - T(1.0));
+      wd[1] = T(3.0) * (T(1.5) + t) * p2 - T(2.0) * (T(2.5) + t) * position;
+      wd[2] = (T(4.0) + T(4.0) * t) * position + (T(0.5) - t) - T(3.0) * (T(1.5) + t) * p2;
+      wd[3] = (T(0.5) - t) * (T(3.0) * p2 - T(2.0) * position);
+    }
   }
 
   value_type coef(size_t i) const { return (w[i]); }
@@ -103,6 +113,7 @@ private:
   std::array<value_type, 4> w;
   std::array<value_type, 4> wd;
   value_type t;
+  SplineProcessingType process;
 };
 
 } // namespace MR::Math

@@ -108,7 +108,7 @@ public:
   bool operator()(const Streamline<value_type> &tck, Metrics &out) const {
     out.index = tck.get_index();
     out.weight = tck.weight;
-    out.length = Tractography::length(tck);
+    out.length = Tractography::length(tck, Tractography::LengthMethod::CHORD);
     out.mean_curvature = NaNF;
     out.vertex_curvature.clear();
     out.vertex_curvature.set_index(tck.get_index());

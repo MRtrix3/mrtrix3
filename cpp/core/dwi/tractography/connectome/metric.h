@@ -71,9 +71,9 @@ public:
   double operator()(const Streamline<> &tck) const {
     double result = 1.0;
     if (scale_by_length)
-      result *= Tractography::length(tck);
+      result *= Tractography::length(tck, Tractography::LengthMethod::CHORD);
     else if (scale_by_invlength)
-      result = (tck.size() > 1 ? (result / Tractography::length(tck)) : 0.0);
+      result = (tck.size() > 1 ? (result / Tractography::length(tck, Tractography::LengthMethod::CHORD)) : 0.0);
     if (scale_by_file) {
       if (by_file.has_value()) {
         if (tck.get_index() >= static_cast<size_t>(by_file->values.size()))
