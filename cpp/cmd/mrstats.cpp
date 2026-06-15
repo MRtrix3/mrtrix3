@@ -15,9 +15,11 @@
  */
 
 #include <iomanip>
+#include <vector>
 
 #include "command.h"
 #include "datatype.h"
+#include "enum.h"
 #include "image.h"
 #include "image_helpers.h"
 #include "memory.h"
@@ -107,8 +109,9 @@ void run() {
     check_dimensions(mask, header, 0, 3);
   }
 
-  std::vector<std::string> fields;
+  std::vector<Stats::field_t> fields;
   opt = get_options("output");
+  fields.reserve(opt.size());
   for (const auto &n : opt)
     fields.push_back(n[0]);
 

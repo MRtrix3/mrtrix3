@@ -1,0 +1,22 @@
+#!/bin/bash
+# Test mraverageheader with 4D input images using the -fill option
+# The -fill option populates the first volume of the average space with ones,
+#   and when 4D inputs are provided the output should also be 4D with the correct number of volumes.
+# dwi.mif is a 4D DWI image and can be used as a 4D test case.
+# Validation:
+#   1. The command succeeds with 4D inputs and -fill
+#   2. The output has the same number of volumes as the input
+#   3. The spatial dimensions of the output are consistent with the average header
+
+NVOLS=$(mrinfo dwi.mif -size | awk '{print $4}')
+
+mraverageheader dwi.mif dwi.mif tmp_4D_avg.mif -fill -force
+
+# Output must be 4D with the same number of volumes as the inputs
+OUT_NVOLS=$(mrinfo tmp_4D_avg.mif -size | awk '{print $4}')
+[ "$OUT_NVOLS" -eq "$NVOLS" ] || \
+  { echo "ERROR: expected $NVOLS output volumes, got $OUT_NVOLS"; exit 1; }
+
+# Output must be 4D (4 dimensions)
+NDIM=$(mrinfo tmp_4D_avg.mif -ndim)
+[ "$NDIM" -eq 4 ] || { echo "ERROR: expected 4 dimensions, got $NDIM"; exit 1; }

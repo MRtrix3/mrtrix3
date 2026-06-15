@@ -55,7 +55,7 @@ jobs:
         -D CMAKE_CXX_COMPILER=clang++
 
     - name: build
-      run: cmake --build build
+      run: cmake --build build -- -k 0
 
     - name: interface tests
       run: cd build && ctest -L cli --output-on-failure
@@ -120,7 +120,7 @@ jobs:
         -D MRTRIX_WARNINGS_AS_ERRORS=ON
 
     - name: build
-      run: cmake --build build
+      run: cmake --build build -- -k 0
 
     - name: interface tests
       run: cd build && ctest -L cli --output-on-failure
@@ -181,7 +181,7 @@ jobs:
         -D MRTRIX_WARNINGS_AS_ERRORS=ON
 
     - name: build
-      run: cmake --build build
+      run: cmake --build build -- -k 0
 
     - name: interface tests
       run: cd build && ctest -L cli --output-on-failure
@@ -233,6 +233,7 @@ jobs:
             ${{env.MINGW_PACKAGE_PREFIX}}-diffutils
             ${{env.MINGW_PACKAGE_PREFIX}}-fftw
             ${{env.MINGW_PACKAGE_PREFIX}}-gcc
+            ${{env.MINGW_PACKAGE_PREFIX}}-jq
             ${{env.MINGW_PACKAGE_PREFIX}}-mesa
             ${{env.MINGW_PACKAGE_PREFIX}}-ninja
             ${{env.MINGW_PACKAGE_PREFIX}}-pkg-config
@@ -257,10 +258,11 @@ jobs:
             -D MRTRIX_BUILD_TESTS=ON
             -D MRTRIX_STL_DEBUGGING=ON
             -D MRTRIX_WARNINGS_AS_ERRORS=ON
+            -D MRTRIX_ENABLE_GPU=OFF
             -D CMAKE_CXX_COMPILER_LAUNCHER=${{env.SCCACHE_UNIX_PATH}} .
 
       - name: build
-        run: cmake --build build
+        run: cmake --build build -- -k 0
 
       - name: interface tests
         run: cd build && ctest -L cli --output-on-failure

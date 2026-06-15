@@ -14,6 +14,11 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include "eigen_plugins/eigen_plugins.h"
+#include <algorithm>
+#include <filesystem>
+#include <unsupported/Eigen/MatrixFunctions>
+
 #include "axes.h"
 #include "command.h"
 #include "enum.h"
@@ -22,9 +27,6 @@
 #include "file/nifti_utils.h"
 #include "image.h"
 #include "transform.h"
-#include <algorithm>
-#include <filesystem>
-#include <unsupported/Eigen/MatrixFunctions>
 
 using namespace MR;
 using namespace App;

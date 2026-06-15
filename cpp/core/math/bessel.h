@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include <limits>
-
+#include "eigen_plugins/eigen_plugins.h"
 #include <Eigen/Dense>
+#include <limits>
 
 #include "math/chebyshev.h"
 

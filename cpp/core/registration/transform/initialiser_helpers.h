@@ -16,14 +16,16 @@
 
 #pragma once
 
+#include "eigen_plugins/eigen_plugins.h"
+#include <Eigen/Geometry>
+#include <vector>
+
 #include "image.h"
 #include "math/SH.h"
 #include "math/math.h"
 #include "registration/multi_contrast.h"
 #include "registration/transform/base.h"
 #include "transform.h"
-#include <Eigen/Geometry>
-#include <algorithm>
 
 namespace MR::Registration::Transform::Init {
 template <class ImageType, class ValueType>

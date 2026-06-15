@@ -14,6 +14,12 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include "eigen_plugins/eigen_plugins.h"
+#include <Eigen/Geometry>
+#include <algorithm>
+#include <filesystem>
+#include <unsupported/Eigen/MatrixFunctions>
+
 #include "command.h"
 #include "enum.h"
 #include "file/key_value.h"
@@ -23,10 +29,6 @@
 #include "math/average_space.h"
 #include "math/math.h"
 #include "transform.h"
-#include <Eigen/Geometry>
-#include <algorithm>
-#include <filesystem>
-#include <unsupported/Eigen/MatrixFunctions>
 
 using namespace MR;
 using namespace App;

@@ -68,7 +68,7 @@ public:
     return std::nullopt;
   }
 
-  float get_metric(const Eigen::Vector3f &, const Eigen::Vector3f &) override { return uniform(rng); }
+  float get_metric(const Eigen::Vector3f &, const Eigen::Vector3f &) override { return uniform(rng()); }
 
 protected:
   const Shared &S;
@@ -129,7 +129,7 @@ public:
     iFOD2::truncate_track(tck, length_to_revert_from, revert_step);
   }
 
-  float get_metric(const Eigen::Vector3f &, const Eigen::Vector3f &) override { return uniform(rng); }
+  float get_metric(const Eigen::Vector3f &, const Eigen::Vector3f &) override { return uniform(rng()); }
 
 protected:
   const Shared &S;

@@ -467,7 +467,7 @@ def execute(): #pylint: disable=unused-variable
     track_file_path = f'tracks_{variant}.tck'
     run.command(['tckgen', imagepath,
                  '-algorithm', 'fact',
-                 '-seed_image', 'mask.mif',
+                 '-seed_voxels', 'mask.mif',
                  '-mask', 'mask.mif',
                  '-minlength', '0',
                  '-downsample', '5',

@@ -16,8 +16,7 @@
 
 #pragma once
 
-#include <array>
-
+#include "eigen_plugins/eigen_plugins.h"
 #include <Eigen/Eigenvalues>
 #include <QOpenGLWidget>
 

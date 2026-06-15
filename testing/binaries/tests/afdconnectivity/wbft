@@ -1,0 +1,10 @@
+#!/bin/bash
+# Test afdconnectivity with the -wbft (whole-brain fibre-tracking) option:
+#   use the full SIFT_phantom track bundle as both the pathway of interest
+#   and as the whole-brain fibre-tracking data set.
+# The output is a scalar value printed to stdout.
+# The test verifies that the command completes without error.
+tckedit SIFT_phantom/tracks.tck -include SIFT_phantom/upper.mif tmp.tck -force
+afdconnectivity SIFT_phantom/fods.mif tmp.tck \
+    -wbft SIFT_phantom/tracks.tck \
+    -quiet

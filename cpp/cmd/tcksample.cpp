@@ -243,6 +243,7 @@ private:
       assert(false);
       return std::numeric_limits<value_type>::quiet_NaN();
     }
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
     switch (statistic().value()) {
     case Statistic::MEAN: {
       value_type integral = 0.0F;
@@ -331,6 +332,7 @@ protected:
     }
     if (data.empty())
       return std::numeric_limits<value_type>::quiet_NaN();
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
     switch (statistic().value()) {
     case Statistic::MEAN: {
       value_type integral = 0.0F;

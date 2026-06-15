@@ -14,7 +14,10 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include "eigen_plugins/eigen_plugins.h"
 #include <Eigen/Dense>
+#include <filesystem>
+#include <memory>
 
 #include "command.h"
 #include "dwi/directions/validate.h"
@@ -30,9 +33,6 @@
 #include "math/rng.h"
 #include "math/sphere.h"
 #include "types.h"
-
-#include <filesystem>
-#include <memory>
 
 using namespace MR;
 using namespace App;

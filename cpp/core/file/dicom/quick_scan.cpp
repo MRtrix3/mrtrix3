@@ -97,8 +97,9 @@ bool QuickScan::read(const std::filesystem::path &file_path,
           else if (item.is(0x7FE0U, 0x0010U))
             data = item.offset(item.data);
           else if (item.is(0xFFFEU, 0xE000U)) {
+            // multi-frame item
             if (!item.parents.empty() && item.parents.back().group == 0x5200U &&
-                item.parents.back().element == 0x9230U) { // multi-frame item
+                item.parents.back().element == 0x9230U) {
               if (in_frames)
                 ++image_type[current_image_type];
               else

@@ -1,0 +1,12 @@
+#!/bin/bash
+# Verify the -invert option of "mrcheckerboardmask",
+#   which swaps the roles of zero and one in the checkerboard pattern.
+# When the normal and inverted outputs are added together,
+#   every voxel must equal 1.
+
+mrcheckerboardmask mask.mif tmp_normal.mif -force
+mrcheckerboardmask mask.mif tmp_inverted.mif -invert -force
+COUNT=$(mrmath tmp_normal.mif tmp_inverted.mif sum - | \
+        mrcalc 1 - -neq - | \
+        mrstats mask.mif -mask - -output count)
+[[ ${COUNT} -eq "0" ]]

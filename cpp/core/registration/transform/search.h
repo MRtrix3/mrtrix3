@@ -16,18 +16,15 @@
 
 #pragma once
 
+#include "eigen_plugins/eigen_plugins.h"
 #include <Eigen/Eigen>
 #include <Eigen/Geometry>
 #include <iostream>
 
-#include "debug.h"
-#include "image.h"
-#include "progressbar.h"
-#include "types.h"
-
 #include "adapter/reslice.h"
 #include "filter/resize.h"
 #include "filter/reslice.h"
+#include "image.h"
 #include "interp/cubic.h"
 #include "interp/linear.h"
 #include "interp/nearest.h"
@@ -36,6 +33,7 @@
 #include "math/math.h"
 #include "math/median.h"
 #include "math/rng.h"
+#include "progressbar.h"
 #include "registration/metric/mean_squared.h"
 #include "registration/metric/params.h"
 // #include "registration/metric/local_cross_correlation.h"
@@ -43,6 +41,7 @@
 #include "registration/metric/thread_kernel.h"
 #include "registration/transform/initialiser.h"
 #include "registration/transform/rigid.h"
+#include "types.h"
 
 namespace MR::Registration::RotationSearch {
 

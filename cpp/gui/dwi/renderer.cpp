@@ -14,7 +14,9 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <array>
 #include <map>
+#include <vector>
 
 #include "dwi/renderer.h"
 #include "gui.h"

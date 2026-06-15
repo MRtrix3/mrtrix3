@@ -17,7 +17,10 @@
 #include <memory>
 #include <set>
 
+#include "app.h"
 #include "command.h"
+#include "datatype.h"
+#include "enum.h"
 #include "image.h"
 #include "memory.h"
 #include "progressbar.h"
@@ -32,6 +35,7 @@
 #include "dwi/tractography/mapping/loader.h"
 #include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/mapping/mapping.h"
+#include "dwi/tractography/mapping/twi_stats.h"
 #include "dwi/tractography/mapping/voxel.h"
 #include "dwi/tractography/mapping/writer.h"
 
@@ -56,7 +60,7 @@ const OptionGroup OutputHeaderOption = OptionGroup ("Options for the header of t
                    " or comma-separated list of 3 voxel dimensions.")
     + Argument ("size").type_sequence_float()
   + Option ("datatype", "specify output image data type.")
-    + Argument ("spec").type_choice(DataType::identifiers);
+    + Argument ("spec").type_choice<DataType::Identifier>();
 
 const OptionGroup OutputDimOption = OptionGroup ("Options for the dimensionality of the output image")
   + Option ("dec",
@@ -77,9 +81,9 @@ const OptionGroup OutputDimOption = OptionGroup ("Options for the dimensionality
 const OptionGroup TWIOption = OptionGroup ("Options for the TWI image contrast properties")
   + Option ("contrast",
       "define the desired form of contrast for the output image;"
-      " options are: " + join(contrasts, ", ") +
+      " options are: " + MR::Enum::join<contrast_t>() +
       " (default: tdi)")
-    + Argument ("type").type_choice(contrasts)
+    + Argument ("type").type_choice<contrast_t>()
   + Option ("image",
       "provide the scalar image map for generating images with 'scalar_map' / 'scalar_map_count' contrast,"
       " or the spherical harmonics image for 'fod_amp' contrast")
@@ -90,16 +94,16 @@ const OptionGroup TWIOption = OptionGroup ("Options for the TWI image contrast p
   + Option ("stat_vox",
       "define the statistic for choosing the final voxel intensities for a given contrast type"
       " given the individual values from the tracks passing through each voxel."
-      " Options are: " + join(voxel_statistics, ", ") +
+      " Options are: " + MR::Enum::join<vox_stat_t>() +
       " (default: sum)")
-    + Argument ("type").type_choice(voxel_statistics)
+    + Argument ("type").type_choice<vox_stat_t>()
   + Option ("stat_tck",
       "define the statistic for choosing the contribution to be made by each streamline"
       " as a function of the samples taken along their lengths."
       " Only has an effect for 'scalar_map', 'fod_amp' and 'curvature' contrast types."
-      " Options are: " + join(track_statistics, ", ") +
+      " Options are: " + MR::Enum::join<tck_stat_t>() +
       " (default: mean)")
-    + Argument ("type").type_choice(track_statistics)
+    + Argument ("type").type_choice<tck_stat_t>()
   + Option ("fwhm_tck",
       "when using gaussian-smoothed per-track statistic,"
       " specify the desired full-width half-maximum of the Gaussian smoothing kernel"
@@ -306,17 +310,13 @@ void run() {
   add_line(header.keyval()["comments"], "track-weighted image");
   header.keyval()["tck_source"] = input_tracks_path.filename().string();
 
-  opt = get_options("contrast");
-  const contrast_t contrast =
-      !opt.empty() ? contrast_t(static_cast<MR::App::ParsedArgument::IntType>(opt[0][0])) : contrast_t::TDI;
+  const contrast_t contrast = get_option_choice<contrast_t>("contrast", contrast_t::TDI);
 
-  opt = get_options("stat_vox");
-  vox_stat_t stat_vox =
-      !opt.empty() ? vox_stat_t(static_cast<MR::App::ParsedArgument::IntType>(opt[0][0])) : vox_stat_t::SUM;
+  vox_stat_t stat_vox = get_option_choice<vox_stat_t>("stat_vox", vox_stat_t::SUM);
 
-  opt = get_options("stat_tck");
-  tck_stat_t stat_tck =
-      !opt.empty() ? tck_stat_t(static_cast<MR::App::ParsedArgument::IntType>(opt[0][0])) : tck_stat_t::MEAN;
+  // ENDS_CORR is excluded from tck_stat_t's magic_enum reflection (see twi_stats.h),
+  // so get_option_choice() (via from_name) rejects it as an unsupported value.
+  tck_stat_t stat_tck = get_option_choice<tck_stat_t>("stat_tck", tck_stat_t::MEAN);
 
   float gaussian_fwhm_tck = 0.0;
   opt = get_options("fwhm_tck");

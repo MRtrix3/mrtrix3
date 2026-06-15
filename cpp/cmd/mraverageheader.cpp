@@ -15,8 +15,10 @@
  */
 
 #include "algo/loop.h"
+#include "app.h"
 #include "command.h"
 #include "debug.h"
+#include "enum.h"
 #include "image.h"
 #include "interp/nearest.h"
 #include "math/average_space.h"
@@ -62,9 +64,9 @@ void usage() {
             "Method for determination of voxel spacings based on"
             " the set of input images and the average header axes"
             " (see Description)."
-            " Valid options are: " + join(avgspace_voxspacing_choices, ",") + ";"
+            " Valid options are: " + MR::Enum::join<avgspace_voxspacing_t>(",") + ";"
             " default = " + SPACING_DEFAULT_STRING)
-    + Argument("type").type_choice(avgspace_voxspacing_choices)
+    + Argument("type").type_choice<avgspace_voxspacing_t>()
   + Option ("fill", "set the intensity in the first volume of the average space to 1")
   + DataType::options();
 
@@ -80,9 +82,7 @@ void run() {
   const default_type p = get_option_value("padding", PADDING_DEFAULT);
   auto padding = Eigen::Matrix<default_type, 4, 1>(p, p, p, 1.0);
   INFO("padding in template voxels: " + str(padding.transpose().head<3>()));
-  auto opt = get_options("spacing");
-  const avgspace_voxspacing_t spacing =
-      opt.empty() ? SPACING_DEFAULT_VALUE : static_cast<avgspace_voxspacing_t>(static_cast<int>(opt[0][0]));
+  const avgspace_voxspacing_t spacing = get_option_choice<avgspace_voxspacing_t>("spacing", SPACING_DEFAULT_VALUE);
   const bool fill = !get_options("fill").empty();
 
   std::vector<Header> headers_in;

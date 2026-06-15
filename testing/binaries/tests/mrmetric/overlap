@@ -1,0 +1,15 @@
+#!/bin/bash
+# Verify the -overlap option outputs the voxel count alongside the metric value
+# When comparing an image with itself and requesting the overlap count,
+#   the metric should be zero and the overlap should be the total voxel count
+
+rm -f tmp.txt
+mrmetric dwi_mean.mif dwi_mean.mif -overlap | tee tmp.txt
+
+# Output should contain two fields: metric and overlap count
+NFIELDS=$(cat tmp.txt | awk '{print NF}')
+(( NFIELDS == 2 ))
+
+# The metric value (first field) should be zero
+METRIC=$(cat tmp.txt | awk '{print $1}')
+(( $(echo "$METRIC == 0" | bc) ))

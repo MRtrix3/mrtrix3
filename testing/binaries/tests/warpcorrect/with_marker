@@ -1,0 +1,23 @@
+#!/bin/bash
+# Test warpcorrect with explicit -marker value
+# The -marker option specifies the coordinate value that identifies out-of-bounds voxels
+#   in the input warp image.
+# This test creates a synthetic all-zero warp (every voxel == [0,0,0]),
+#   runs warpcorrect with -marker 0 (treating [0,0,0] as the out-of-bounds marker),
+#   and verifies that all voxels in the corrected output are NaN,
+#   since every voxel matches the marker.
+
+# Generate an identity warp in the space of the brain mask image
+warpinit mask.mif tmp_warp_init.mif -force
+
+# Zero all values in the warp to create an all-[0,0,0] warp field
+mrcalc tmp_warp_init.mif 0 -mult tmp_zero_warp.mif -force
+
+# Run warpcorrect with explicit scalar marker value of 0.0
+# All voxels match the marker, so all should be replaced with NaN
+warpcorrect tmp_zero_warp.mif tmp_corrected.mif -marker 0 -force
+
+# Verify the output is all-NaN by checking that mrcalc isnan() returns 1 everywhere
+mrcalc tmp_corrected.mif -isnan - | \
+mrstats - -output min | \
+awk '{ if ($1 + 0 != 1) { print "ERROR: expected all-NaN output, but some voxels are finite"; exit 1 } }'

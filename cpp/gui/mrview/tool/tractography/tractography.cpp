@@ -16,48 +16,24 @@
 
 #include "mrview/tool/tractography/tractography.h"
 
+#include "magic_enum/magic_enum.hpp"
 #include <array>
 
 #include "dialog/file.h"
+#include "enum.h"
+#include "file/config.h"
+#include "gui.h"
 #include "lighting_dock.h"
 #include "mrtrix.h"
 #include "mrview/qthelpers.h"
 #include "mrview/tool/list_model_base.h"
 #include "mrview/tool/tractography/track_scalar_file.h"
 #include "mrview/tool/tractography/tractogram.h"
+#include "mrview/tool/tractography/tractogram_enums.h"
 #include "mrview/window.h"
 #include "opengl/lighting.h"
 
 namespace MR::GUI::MRView::Tool {
-const std::vector<std::string> tractogram_geometry_types = {"pseudotubes", "lines", "points"};
-
-TrackGeometryType geometry_index2type(const int idx) {
-  switch (idx) {
-  case 0:
-    return TrackGeometryType::Pseudotubes;
-  case 1:
-    return TrackGeometryType::Lines;
-  case 2:
-    return TrackGeometryType::Points;
-  default:
-    assert(0);
-    return TrackGeometryType::Pseudotubes;
-  }
-}
-
-size_t geometry_string2index(std::string type_str) {
-  type_str = lowercase(type_str);
-
-  auto matches = [&type_str](std::string_view s) { return type_str == lowercase(s); };
-  const auto &list = tractogram_geometry_types;
-  auto it = std::find_if(list.begin(), list.end(), matches);
-  if (it != list.end())
-    return std::distance(list.begin(), it);
-
-  throw Exception("Unrecognised value for tractogram geometry \"" + type_str + "\" (options are: " + join(list, ", ") +
-                  "); ignoring");
-  return 0;
-}
 
 class Tractography::Model : public ListModelBase {
 
@@ -183,9 +159,10 @@ Tractography::Tractography(Dock *parent) : Base(parent) {
 
   geom_type_combobox = new ComboBoxWithErrorMsg(this, "(variable)");
   geom_type_combobox->setToolTip(tr("Set the tractogram geometry type"));
-  geom_type_combobox->addItem("Pseudotubes");
-  geom_type_combobox->addItem("Lines");
-  geom_type_combobox->addItem("Points");
+  // Insert combobox entries in the same order as the enumerators are declared,
+  //   so that each entry's index matches its TrackGeometryType underlying value.
+  for (const auto &geom_type_name : magic_enum::enum_names<TrackGeometryType>())
+    geom_type_combobox->addItem(qstr(geom_type_name));
   connect(geom_type_combobox, SIGNAL(activated(int)), this, SLOT(geom_type_selection_slot(int)));
   hlayout->addWidget(geom_type_combobox);
 
@@ -277,18 +254,21 @@ Tractography::Tractography(Dock *parent) : Base(parent) {
   connect(action, SIGNAL(triggered()), this, SLOT(colour_by_scalar_file_slot()));
   track_option_menu->addAction(action);
 
+  Tractogram::default_tract_geom = TrackGeometryType::Pseudotubes;
   // CONF option: MRViewDefaultTractGeomType
   // CONF default: Pseudotubes
   // CONF The default geometry type used to render tractograms.
   // CONF Options are Pseudotubes, Lines or Points
-  const std::string default_geom_type = File::Config::get("MRViewDefaultTractGeomType", tractogram_geometry_types[0]);
-  try {
-    const size_t default_geom_index = geometry_string2index(default_geom_type);
-    Tractogram::default_tract_geom = geometry_index2type(default_geom_index);
-    geom_type_combobox->setCurrentIndex(default_geom_index);
-  } catch (Exception &e) {
-    e.display();
+  auto default_geom_type_config = File::Config::get("MRViewDefaultTractGeomType");
+  if (default_geom_type_config.has_value()) {
+    try {
+      Tractogram::default_tract_geom = MR::Enum::from_name<TrackGeometryType>(default_geom_type_config.value());
+    } catch (Exception &e) {
+      e.display();
+    }
   }
+  // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+  geom_type_combobox->setCurrentIndex(*magic_enum::enum_index(Tractogram::default_tract_geom));
 
   // In the instance where pseudotubes are _not_ the default, enable lighting by default
   if (Tractogram::default_tract_geom != TrackGeometryType::Pseudotubes) {
@@ -639,7 +619,7 @@ void Tractography::geom_type_selection_slot(int selected_index) {
   if (selected_index == 3)
     return;
 
-  const TrackGeometryType geom_type = geometry_index2type(selected_index);
+  const TrackGeometryType geom_type = magic_enum::enum_value<TrackGeometryType>(static_cast<size_t>(selected_index));
 
   QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
   for (auto index : indices)
@@ -777,8 +757,8 @@ void Tractography::add_commandline_options(MR::App::OptionList &options) {
 
       + Option("tractography.geometry",
                "The geometry type to use when rendering tractograms"
-               " (options are: " + join(tractogram_geometry_types, ", ") + ")").allow_multiple()
-        + Argument("value").type_choice(tractogram_geometry_types)
+               " (options are: " + MR::Enum::join<TrackGeometryType>() + ")").allow_multiple()
+        + Argument("value").type_choice<TrackGeometryType>()
 
       + Option("tractography.opacity",
                "Opacity of tractography display, [0.0, 1.0];"
@@ -966,7 +946,7 @@ bool Tractography::process_commandline_option(const MR::App::ParsedOption &opt) 
 
   if (opt.opt->is("tractography.geometry")) {
     try {
-      const TrackGeometryType geom_type = geometry_index2type(geometry_string2index(opt[0]));
+      const TrackGeometryType geom_type = MR::Enum::from_name<TrackGeometryType>(std::string(opt[0]));
       QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
       if (!indices.empty()) {
         for (auto index : indices)

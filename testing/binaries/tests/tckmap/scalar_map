@@ -1,0 +1,12 @@
+#!/bin/bash
+# Verify the "scalar_map" contrast type for tckmap,
+#   which assigns voxel values using a scalar image sampled along each streamline
+# The l=0 term of the FOD is used as the scalar map
+# Output is compared to that generated using a prior version of the software;
+#   a tolerance of 1e-4 absolute is permitted to account for platform differences
+mrconvert fod.mif -coord 3 0 -axes 0,1,2 - | \
+tckmap tracks.tck \
+    -template dwi.mif \
+    -contrast scalar_map -image - \
+    - | \
+testing_diff_image - tckmap/tdi_scalar_map.mif.gz -abs 1e-4

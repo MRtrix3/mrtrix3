@@ -16,6 +16,7 @@
 
 #include "datatype.h"
 #include "app.h"
+#include "enum.h"
 #include <vector>
 
 namespace MR {
@@ -67,13 +68,6 @@ constexpr uint8_t DataType::CFloat64;
 constexpr uint8_t DataType::CFloat64LE;
 constexpr uint8_t DataType::CFloat64BE;
 constexpr uint8_t DataType::Native;
-
-const std::vector<std::string> DataType::identifiers = {
-    "float16",    "float16le", "float16be",  "float32",    "float32le",  "float32be",  "float64",  "float64le",
-    "float64be",  "int64",     "uint64",     "int64le",    "uint64le",   "int64be",    "uint64be", "int32",
-    "uint32",     "int32le",   "uint32le",   "int32be",    "uint32be",   "int16",      "uint16",   "int16le",
-    "uint16le",   "int16be",   "uint16be",   "cfloat16",   "cfloat16le", "cfloat16be", "cfloat32", "cfloat32le",
-    "cfloat32be", "cfloat64",  "cfloat64le", "cfloat64be", "int8",       "uint8",      "bit"};
 
 DataType DataType::parse(std::string_view spec) {
   const std::string str(lowercase(spec));
@@ -255,8 +249,8 @@ App::OptionGroup DataType::options() {
   return OptionGroup("Data type options")
          + Option("datatype", "specify output image data type."
                               " Valid choices are: "
-                              + join(identifiers, ", ") + ".")
-          + Argument("spec").type_choice(identifiers);
+                              + MR::Enum::join<DataType::Identifier>() + ".")
+          + Argument("spec").type_choice<DataType::Identifier>();
 }
 // clang-format on
 

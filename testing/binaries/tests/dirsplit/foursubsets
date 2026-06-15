@@ -1,0 +1,21 @@
+#!/bin/bash
+# Verify operation of dirsplit splitting 60 directions into four subsets
+# Since the optimisation is stochastic, we cannot compare to a reference output;
+#   instead we verify that the command runs successfully
+#   and that the four output files together contain all 60 input directions
+
+dirsplit dirmerge/60.txt -number 100 tmp_a.txt tmp_b.txt tmp_c.txt tmp_d.txt -force
+
+# Verify the command succeeds and produces non-empty output files
+[ -s tmp_a.txt ]
+[ -s tmp_b.txt ]
+[ -s tmp_c.txt ]
+[ -s tmp_d.txt ]
+
+# Verify that the total direction count across all subsets equals the input count
+COUNT_IN=$(sed '/^#/d' dirmerge/60.txt | wc -l)
+COUNT_A=$(sed '/^#/d' tmp_a.txt | wc -l)
+COUNT_B=$(sed '/^#/d' tmp_b.txt | wc -l)
+COUNT_C=$(sed '/^#/d' tmp_c.txt | wc -l)
+COUNT_D=$(sed '/^#/d' tmp_d.txt | wc -l)
+(( COUNT_A + COUNT_B + COUNT_C + COUNT_D == COUNT_IN ))

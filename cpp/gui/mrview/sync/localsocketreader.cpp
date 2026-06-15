@@ -21,7 +21,7 @@
 #include "exception.h"
 
 namespace MR::GUI::MRView::Sync {
-LocalSocketReader::LocalSocketReader(QLocalSocket *mySocket) : QObject(0) {
+LocalSocketReader::LocalSocketReader(QLocalSocket *mySocket, QObject *parent) : QObject(parent) {
   socket = mySocket;
   QObject::connect(socket, SIGNAL(readyRead()), this, SLOT(OnDataReceived()));
 }

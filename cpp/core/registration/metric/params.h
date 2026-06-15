@@ -189,8 +189,8 @@ public:
         transformation.transform_half_inverse(im2_point, midway_point);
         robust_estimate_score2_interp->scanner(im2_point);
         if (robust_estimate_score1_interp->value() >= 0.5 && robust_estimate_score2_interp->value() >= 0.5)
-          check.value() =
-              0.0; // 0.5 * (robust_estimate_score2_interp->value() + robust_estimate_score1_interp->value());
+          // 0.5 * (robust_estimate_score2_interp->value() + robust_estimate_score1_interp->value());
+          check.value() = 0.0;
         else
           check.value() = NaN;
       }

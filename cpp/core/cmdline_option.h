@@ -242,23 +242,6 @@ public:
     return *this;
   }
 
-  //! specifies that the argument should be selected from a predefined list
-  /*! The list of allowed values must be specified as a vector of strings.
-   * Here is an example usage:
-   * \code
-   * const std::vector<std::string> mode_list = { "standard", "pedantic", "approx" };
-   *
-   * ARGUMENTS
-   *   + Argument ("mode", "the mode of operation")
-   *     .type_choice (mode_list);
-   * \endcode
-   * \note Each string in the list must be supplied in \b lowercase. */
-  Argument &type_choice(const std::vector<std::string> &c) {
-    types.set(ArgTypeFlags::Choice);
-    choices = c;
-    return *this;
-  }
-
   //! specifies that the argument should be selected from a predefined list of enum values
   /*! The list of allowed values is automatically generated from the enum type provided as template parameter.
    * Here is an example usage:
@@ -269,6 +252,11 @@ public:
    *   + Argument ("mode", "the mode of operation")
    *     .type_choice<Mode>();
    * \endcode
+   * Enumerators that are meaningful internally but should not be user-selectable can be
+   * omitted from the presented set by excluding them from the enum's magic_enum reflection
+   * (a magic_enum::customize::enum_name specialization returning invalid_tag, declared at the
+   * enum definition); such values are then absent from the choices here, and are rejected by
+   * MR::Enum::from_name() / App::get_option_choice() when supplied on the command-line.
    * \note Each enum value in the list must be supplied in \b lowercase. */
   template <typename Enum> Argument &type_choice() {
     static_assert(std::is_enum_v<Enum>, "Template parameter must be an enum type");

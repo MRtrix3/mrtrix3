@@ -9,6 +9,11 @@ repos:
         language: system
         pass_filenames: false
         types_or: [c++]
+      - id: run-pylint
+        name: run-pylint
+        entry: ./run_pylint --precommit
+        language: system
+        types_or: [python]
   - repo: https://github.com/pre-commit/mirrors-clang-format
     rev: v16.0.4
     hooks:

@@ -15,13 +15,17 @@
  */
 
 #include "registration/transform/rigid.h"
+
+#include "eigen_plugins/eigen_plugins.h"
+#include <algorithm> // std::min_element
+#include <deque>
+#include <iterator>
+#include <unsupported/Eigen/MatrixFunctions>
+
 #include "debug.h"
 #include "math/gradient_descent.h"
 #include "math/math.h"
 #include "math/median.h"
-#include <algorithm> // std::min_element
-#include <deque>
-#include <iterator>
 
 namespace MR {
 using namespace MR::Math;

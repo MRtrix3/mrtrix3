@@ -17,6 +17,7 @@
 #include "mrview/tool/view.h"
 
 #include <cstdint>
+#include <sys/types.h>
 
 #include "exception.h"
 #include "math/math.h"
@@ -662,9 +663,10 @@ void View::onCheckThreshold(bool) {
 }
 
 void View::set_transparency_from_image() {
+  // reset:
   if (!std::isfinite(window().image()->transparent_intensity) || !std::isfinite(window().image()->opaque_intensity) ||
       !std::isfinite(window().image()->alpha) || !std::isfinite(window().image()->lessthan) ||
-      !std::isfinite(window().image()->greaterthan)) { // reset:
+      !std::isfinite(window().image()->greaterthan)) {
     if (!std::isfinite(window().image()->intensity_min()) || !std::isfinite(window().image()->intensity_max()))
       return;
 

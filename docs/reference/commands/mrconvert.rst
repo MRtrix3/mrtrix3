@@ -112,11 +112,13 @@ Options to modify generic header entries
 
 -  **-clear_property key** *(multiple uses permitted)* remove the specified key from the image header altogether.
 
+-  **-clear_properties** remove all pre-existing key-value entries from the image header
+
 -  **-set_property key value** *(multiple uses permitted)* set the value of the specified key in the image header.
 
 -  **-append_property key value** *(multiple uses permitted)* append the given value to the specified key in the image header (this adds the value specified as a new line in the header value).
 
--  **-copy_properties source** clear all generic properties and replace with the properties from the image / file specified.
+-  **-copy_properties source** copy all properties from the image / JSON file specified into the output image header (combine with -clear_properties to keep *only* the properties from this image / file)
 
 Stride options
 ^^^^^^^^^^^^^^

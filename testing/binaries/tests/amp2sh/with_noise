@@ -1,0 +1,6 @@
+#!/bin/bash
+# Test Rician bias correction path via the -rician option,
+#   using the available noise map
+# Outcome is compared against that generated using a prior software version
+amp2sh dwi.mif -rician noise.mif - | \
+testing_diff_image - amp2sh/out_rician.mif -voxel 1e-5

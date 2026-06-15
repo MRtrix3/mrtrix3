@@ -30,13 +30,8 @@ const std::unordered_map<contrast_t, Strings> contrast_names{
     {contrast_t::CURVATURE, {"curvature", "curvature}"}},
     {contrast_t::VECTOR_FILE, {"vector_file", "external-file-based"}}};
 
-const std::vector<std::string> contrasts = {
-    "tdi", "length", "invlength", "scalar_map", "scalar_map_count", "fod_amp", "curvature", "vector_file"};
-
-// TODO Remove "V_" prefix
 const std::unordered_map<vox_stat_t, std::string> voxel_statistic_names{
     {vox_stat_t::SUM, "sum"}, {vox_stat_t::MIN, "mininum"}, {vox_stat_t::MEAN, "mean"}, {vox_stat_t::MAX, "maximum"}};
-const std::vector<std::string> voxel_statistics = {"sum", "min", "mean", "max"};
 
 const std::unordered_map<tck_stat_t, Strings> track_statistic_names{
     {tck_stat_t::SUM, {"sum", "sum"}},
@@ -51,18 +46,5 @@ const std::unordered_map<tck_stat_t, Strings> track_statistic_names{
     {tck_stat_t::ENDS_MAX, {"ends_max", "maximum-of-endpoints"}},
     {tck_stat_t::ENDS_PROD, {"ends_prod", "product-of-endpoints"}},
     {tck_stat_t::ENDS_CORR, {"ends_corr", "correlation-between-endpoints"}}};
-
-// Note: ENDS_CORR not provided as a command-line option
-const std::vector<std::string> track_statistics = {"sum",
-                                                   "min",
-                                                   "mean",
-                                                   "max",
-                                                   "median",
-                                                   "mean_nonzero",
-                                                   "gaussian",
-                                                   "ends_min",
-                                                   "ends_mean",
-                                                   "ends_max",
-                                                   "ends_prod"};
 
 } // namespace MR::DWI::Tractography::Mapping

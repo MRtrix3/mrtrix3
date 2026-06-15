@@ -18,6 +18,7 @@
 
 #include <array>
 #include <map>
+#include <optional>
 
 #include "file/key_value.h"
 #include "types.h"
@@ -28,7 +29,7 @@ public:
   static void init();
 
   static void set(std::string_view key, std::string_view value) { config[std::string(key)] = std::string(value); }
-  static std::string get(std::string_view key);
+  static std::optional<std::string> get(std::string_view key);
   static std::string get(std::string_view key, std::string_view default_value);
   static bool get_bool(std::string_view key, bool default_value);
   static int get_int(std::string_view key, int default_value);

@@ -1,0 +1,6 @@
+#!/bin/bash
+# Verify "min" operator when applied along the axis of a single image
+# Outcome is compared against that calculated using a prior software version
+dwiextract dwi.mif - | \
+mrmath - min -axis 3 - | \
+testing_diff_image - mrmath/out_min.mif -frac 1e-5

@@ -88,8 +88,8 @@ protected:
       residuals = H * log_signal;
 
       for (ssize_t i = 0; i < residuals.size(); ++i) {
-        residuals[i] = (residuals[i] == 0.0F) ? float(0.0) : (data[i] - std::exp(-residuals[i]));
-        data[i] += (uniform_int(rng) == 0) ? residuals[i] : -residuals[i];
+        residuals[i] = (residuals[i] == 0.0F) ? 0.0F : (data[i] - std::exp(-residuals[i]));
+        data[i] += (uniform_int(rng()) == 0) ? residuals[i] : -residuals[i];
       }
     }
 

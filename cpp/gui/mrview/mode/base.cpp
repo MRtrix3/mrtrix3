@@ -15,7 +15,9 @@
  */
 
 #include "mrview/mode/base.h"
+
 #include "file/config.h"
+#include "opengl/gl_core_3_3.h"
 #include "opengl/glutils.h"
 
 namespace MR::GUI::MRView::Mode {

@@ -1,0 +1,31 @@
+#!/bin/bash
+# Verify image generation via the -template option together with the
+#   'index' and 'pos' special keyword operands,
+#   which yield one value per voxel without requiring an input image operand.
+set -e
+
+# 'index.0' must yield, at each voxel, that voxel's index along axis 0
+mrcalc -template mask.mif index.0 tmp_gen_index.mif -force
+size0=$(mrinfo mask.mif -size | cut -d' ' -f1)
+for i in 0 2 4; do
+  val=$(mrconvert tmp_gen_index.mif -coord 0 $i -coord 1 0 -coord 2 0 - | mrstats - -output mean)
+  awk -v v="$val" -v e="$i" 'BEGIN { if (v + 0 != e + 0) { print "ERROR: index.0 at voxel " e " = " v; exit 1 } }'
+done
+maxidx=$(mrstats tmp_gen_index.mif -output max)
+awk -v v="$maxidx" -v e="$size0" 'BEGIN { if (v + 0 != e - 1) { print "ERROR: max(index.0) = " v ", expected " e - 1; exit 1 } }'
+
+# 'pos.x', 'pos.y' and 'pos.z' must reproduce the scanner-space coordinates
+#   produced by warpinit (the canonical identity-warp generator)
+for vol_comp in 0:x 1:y 2:z; do
+  vol=${vol_comp%%:*}
+  comp=${vol_comp##*:}
+  warpinit mask.mif - | mrconvert - -coord 3 $vol -axes 0,1,2 tmp_gen_warp.mif -force
+  mrcalc -template mask.mif pos.$comp tmp_gen_pos.mif -force
+  testing_diff_image tmp_gen_pos.mif tmp_gen_warp.mif -abs 1e-4
+done
+
+# Per-voxel operands without any voxel grid (no template, no input image) must fail
+if mrcalc pos.x tmp_gen_fail.mif -force 2>/dev/null; then
+  echo "ERROR: mrcalc generated an image with no voxel grid available"
+  exit 1
+fi

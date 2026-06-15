@@ -16,6 +16,7 @@
 
 #include "command.h"
 #include "datatype.h"
+#include "enum.h"
 #include "header.h"
 #include "image.h"
 #include "mrtrix.h"
@@ -29,15 +30,8 @@
 using namespace MR;
 using namespace App;
 
-std::vector<std::string> colourmap_choices;
-
 // clang-format off
 void usage() {
-
-  for (const auto& entry : ColourMap::maps) {
-    if (entry.name != "Complex")
-      colourmap_choices.push_back(lowercase(entry.name));
-  }
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
@@ -60,7 +54,7 @@ void usage() {
   ARGUMENTS
   + Argument ("input",  "the input image").type_image_in()
   + Argument ("map",    "the colourmap to apply;"
-                        " choices are: " + join(colourmap_choices, ",")).type_choice (colourmap_choices)
+                        " choices are: " + MR::Enum::join<ColourMap::Choice>(",")).type_choice<ColourMap::Choice>()
   + Argument ("output", "the output image").type_image_out();
 
   OPTIONS
@@ -79,7 +73,10 @@ void usage() {
 
 void run() {
   Header H_in = Header::open(argument[0]);
-  const ColourMap::Entry &colourmap = ColourMap::maps[argument[1]];
+  // Resolve the selected colour map by name rather than by integer index,
+  //   so the ColourMap::Choice enumeration need not be kept in lock-step with the maps table.
+  const ColourMap::Entry &colourmap =
+      ColourMap::maps[ColourMap::index(MR::Enum::name(MR::Enum::from_name<ColourMap::Choice>(argument[1])))];
   Eigen::Vector3d fixed_colour(Eigen::Vector3d::Constant(NaN));
   if (colourmap.is_colour) {
     if (!(H_in.ndim() == 3 || (H_in.ndim() == 4 && H_in.size(3) == 1)))

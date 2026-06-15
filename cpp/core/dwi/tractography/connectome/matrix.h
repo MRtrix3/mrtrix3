@@ -31,7 +31,6 @@
 namespace MR::DWI::Tractography::Connectome {
 
 enum stat_edge { SUM, MEAN, MIN, MAX };
-extern std::vector<std::string> statistics;
 extern const App::Option EdgeStatisticOption;
 
 // The number of nodes that must be exceeded in a connectome matrix in

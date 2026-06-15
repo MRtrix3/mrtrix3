@@ -15,6 +15,9 @@
  */
 #include "registration/transform/base.h"
 
+#include "eigen_plugins/eigen_plugins.h"
+#include <unsupported/Eigen/MatrixFunctions> // Eigen::MatrixBase::sqrt()
+
 namespace MR::Registration::Transform {
 
 Base::Base(size_t number_of_parameters)

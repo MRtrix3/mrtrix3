@@ -22,6 +22,8 @@
 #include "mutexprotected.h"
 #include "thread.h"
 #include <tuple>
+#include <type_traits>
+#include <utility>
 
 namespace MR {
 
@@ -296,11 +298,16 @@ template <class Functor, class... ImageType> struct ThreadedLoopRunInner<0, Func
   }
 };
 
-inline void _manage_progress(...) {}
+//! Detect whether \a LoopType exposes a \c progress member to be updated during threaded execution.
+template <class LoopType, class = void> struct has_progress : std::false_type {};
+template <class LoopType>
+struct has_progress<LoopType, std::void_t<decltype(std::declval<const LoopType &>().progress)>> : std::true_type {};
+
+//! Spawn a progress-update thread for the duration of the loop, but only if \a loop carries a progress bar.
 template <class LoopType, class ThreadType>
-inline auto _manage_progress(const LoopType *loop, const ThreadType *threads)
-    -> decltype((void)(&loop->progress), void()) {
-  loop->progress.run_update_thread(*threads);
+inline void _manage_progress(const LoopType *loop, const ThreadType *threads) {
+  if constexpr (has_progress<LoopType>::value)
+    loop->progress.run_update_thread(*threads);
 }
 
 template <class OuterLoopType> struct ThreadedLoopRunOuter {

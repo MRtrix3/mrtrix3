@@ -1,0 +1,34 @@
+#!/bin/bash
+# Verify the -plane option when combined with -scanner, where the nominated axis is a
+#   scanner axis and the operation colours a "digital plane": the single layer of voxels
+#   straddling the requested scanner-space plane, with no slab-thickness parameter.
+# oblique.mif is a 16x16x16 grid of 2mm isotropic voxels whose image-to-scanner
+#   transform is a 45-degree rotation about the (1,1,1) axis
+#   (see the mredit cube test for its construction),
+#   so the scanner-x = const plane cuts obliquely across the voxel grid.
+# oblique.mif is everywhere zero, so the coloured plane can be isolated by its value.
+
+# A plane perpendicular to scanner axis 0 (scanner-x), at offset 0mm, filled with value 2.
+mredit mredit/oblique.mif.gz -scanner -plane 0 0 2 tmp_plane_s.mif -force
+testing_diff_image tmp_plane_s.mif mredit/plane_s.mif.gz -abs 0
+mrcalc tmp_plane_s.mif 2 -eq tmp_plane_s_mask.mif -force -quiet
+
+# The image axis most closely aligned with scanner-x is solved for, while the other two
+#   image axes (each of extent 16) are enumerated; the scanner-x = 0 plane spans the whole
+#   field of view, so exactly one voxel is coloured per column, i.e. 16 x 16 = 256 voxels.
+#   Obtaining this count proves the plane is simultaneously hole-free and single-voxel-thick.
+[ "$(mrstats tmp_plane_s_mask.mif -mask tmp_plane_s_mask.mif -output count -quiet)" -eq 256 ]
+
+# Every coloured voxel must straddle the requested plane, i.e. its scanner-x coordinate must
+#   lie within half a voxel-step (< 1mm here) of 0; this is the digital-plane guarantee.
+mrcalc -template mredit/oblique.mif.gz pos.x -abs tmp_plane_s_absx.mif -force -quiet
+maxdev=$(mrstats tmp_plane_s_absx.mif -mask tmp_plane_s_mask.mif -output max -quiet)
+awk -v d="$maxdev" 'BEGIN { if (d + 0 > 1.0) { print "ERROR: scanner plane voxels too far from requested offset"; exit 1 } }'
+
+# The scanner-space plane must differ from a voxel-space plane drawn with the same numbers
+#   (axis 0, coordinate 8); a byte-identical pair would indicate that -scanner had no effect.
+mredit mredit/oblique.mif.gz -plane 0 8 2 tmp_plane_v.mif -force
+testing_diff_image tmp_plane_v.mif mredit/plane_v.mif.gz -abs 0
+mrcalc tmp_plane_s.mif tmp_plane_v.mif -subtract -abs - | \
+mrstats - -output max | \
+awk '{ exit !($1 > 0) }'

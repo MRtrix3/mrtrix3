@@ -1,0 +1,9 @@
+#!/bin/bash
+# Verify default operation of labelstats on a parcellation image
+# The default output includes parcel index, mass (voxel count),
+#   and centre of mass in scanner space;
+#   verify the command executes successfully and produces formatted output
+
+rm -f tmp.txt
+labelstats labelconvert/out_aal.mif.gz 2>&1 | tee tmp.txt
+grep -E "^\s+index\s+mass\s+centre of mass" tmp.txt

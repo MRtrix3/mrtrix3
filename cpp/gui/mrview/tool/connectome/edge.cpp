@@ -22,6 +22,7 @@
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/streamline.h"
 #include "mrview/tool/connectome/connectome.h"
+#include "opengl/gl_core_3_3.h"
 
 namespace MR::GUI::MRView::Tool {
 

@@ -19,6 +19,7 @@
 
 #include "exception.h"
 #include "mrview/window.h"
+#include "opengl/gl_core_3_3.h"
 #include "types.h"
 
 namespace MR::GUI::MRView::Tool {

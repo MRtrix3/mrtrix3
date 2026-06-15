@@ -338,8 +338,8 @@ void RenderFrame::screenshot(int oversampling, const std::filesystem::path &imag
   screenshot_path = image_path;
   OS = oversampling;
   OS_x = OS_y = 0;
-  framebuffer.reset(
-      new GLubyte[3 * static_cast<size_t>(projection.width()) * static_cast<size_t>(projection.height())]);
+  framebuffer = std::make_unique<GLubyte[]>(3U * static_cast<size_t>(projection.width()) *
+                                            static_cast<size_t>(projection.height()));
   pix = std::make_unique<QImage>(OS * projection.width(), OS * projection.height(), QImage::Format_RGB32);
   update();
 }
@@ -355,7 +355,7 @@ void RenderFrame::snapshot() {
     const int j2 = projection.height() - j - 1;
     for (int i = 0; i < projection.width(); i++) {
       GLubyte *p = framebuffer.get() +
-                   3 * (static_cast<size_t>(i) + static_cast<size_t>(projection.width()) * static_cast<size_t>(j));
+                   3 * (static_cast<size_t>(i) + (static_cast<size_t>(projection.width()) * static_cast<size_t>(j)));
       pix->setPixel(start_i + i, start_j + j2, qRgb(p[0], p[1], p[2]));
     }
   }

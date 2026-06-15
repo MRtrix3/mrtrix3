@@ -63,7 +63,7 @@ size_t number_of_threads() {
   // CONF option: NumberOfThreads
   // CONF default: number of threads provided by hardware
   // CONF Set the default number of CPU threads to use for multi-threading.
-  if (!File::Config::get("NumberOfThreads").empty()) {
+  if (File::Config::get("NumberOfThreads").has_value()) {
     const int i = File::Config::get_int("NumberOfThreads", -1);
     if (i >= 0) {
       _number_of_threads = i;

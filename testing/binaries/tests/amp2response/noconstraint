@@ -1,0 +1,9 @@
+#!/bin/bash
+# Test amp2response with the -noconstraint option:
+#   estimate a response function using ordinary least-squares
+#   (without the non-negativity and monotonicity constraints).
+# Ensure the output matches that generated using a prior software version.
+amp2response dwi.mif sh2response/sf.mif sh2response/ev.mif tmp.txt \
+    -noconstraint \
+    -force
+testing_diff_matrix tmp.txt amp2response/noconstraint.txt -frac 1e-5

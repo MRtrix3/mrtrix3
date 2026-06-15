@@ -16,6 +16,7 @@
 
 #include <filesystem>
 
+#include "app.h"
 #include "command.h"
 #include "enum.h"
 #include "exception.h"
@@ -120,9 +121,9 @@ void usage () {
       "define the statistic for choosing the final voxel intensities"
       " for a given contrast type given the individual values"
       " from the tracks passing through each voxel;"
-      " options are: " + join(voxel_statistics, ", ") +
+      " options are: " + MR::Enum::join<vox_stat_t>() +
       " (default: mean)")
-    + Argument ("type").type_choice(voxel_statistics)
+    + Argument ("type").type_choice<vox_stat_t>()
 
   + OptionGroup ("Other options for affecting the streamline sampling & mapping behaviour")
 
@@ -349,9 +350,7 @@ void run() {
     }
   }
 
-  opt = get_options("stat_vox");
-  const vox_stat_t stat_vox =
-      !opt.empty() ? vox_stat_t(static_cast<MR::App::ParsedArgument::IntType>(opt[0][0])) : vox_stat_t::MEAN;
+  const vox_stat_t stat_vox = get_option_choice<vox_stat_t>("stat_vox", vox_stat_t::MEAN);
 
   Header H_3D(header);
   H_3D.ndim() = 3;

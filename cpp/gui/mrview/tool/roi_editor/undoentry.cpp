@@ -14,13 +14,15 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include "mrview/tool/roi_editor/undoentry.h"
+
 #include <cstddef>
 #include <limits>
 #include <memory>
 
 #include "mrview/tool/roi_editor/item.h"
-#include "mrview/tool/roi_editor/undoentry.h"
 #include "mrview/window.h"
+#include "opengl/gl_core_3_3.h"
 
 namespace MR::GUI::MRView::Tool {
 

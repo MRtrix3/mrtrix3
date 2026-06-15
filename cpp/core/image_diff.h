@@ -154,8 +154,8 @@ inline void check_keyvals(const HeaderType1 &in1, const HeaderType2 &in2) {
 template <class HeaderType1, class HeaderType2> inline bool headers_match(HeaderType1 &in1, HeaderType2 &in2) {
   if (!dimensions_match(in1, in2))
     return false;
-  if (!spacings_match(
-          in1, in2, 1e-6)) // implicitly checked in voxel_grids_match_in_scanner_space but with different tolerance
+  // implicitly checked in voxel_grids_match_in_scanner_space but with different tolerance
+  if (!spacings_match(in1, in2, 1e-6))
     return false;
   if (!voxel_grids_match_in_scanner_space(in1, in2))
     return false;

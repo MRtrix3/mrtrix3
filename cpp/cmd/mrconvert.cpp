@@ -222,6 +222,9 @@ void usage() {
             "remove the specified key from the image header altogether.").allow_multiple()
   + Argument ("key").type_text()
 
+  + Option ("clear_properties",
+            "remove all pre-existing key-value entries from the image header")
+
   + Option ("set_property",
             "set the value of the specified key in the image header.").allow_multiple()
   + Argument ("key").type_text()
@@ -234,15 +237,15 @@ void usage() {
   + Argument ("value").type_text()
 
   + Option ("copy_properties",
-            "clear all generic properties"
-            " and replace with the properties from the image / file specified.")
+            "copy all properties from the image / JSON file specified into the output image header"
+            " (combine with -clear_properties to keep *only* the properties from this image / file)")
   + Argument ("source").type_image_in().type_file_in()
 
   + Stride::Options
 
   + DataType::options()
 
-  + DWI::GradImportOptions ()
+  + DWI::GradImportOptions()
   + DWI::bvalue_scaling_option
   + DWI::GradExportOptions()
 
@@ -264,8 +267,8 @@ void permute_DW_scheme(Header &H, const std::vector<int> &axes) {
   const Eigen::Matrix3d R = T.scanner2voxel.rotation() * permute * T.voxel2scanner.rotation();
 
   Eigen::MatrixXd out(in.rows(), in.cols());
-  out.block(0, 3, out.rows(), out.cols() - 3) =
-      in.block(0, 3, in.rows(), in.cols() - 3); // Copy b-values (and anything else stored in dw_scheme)
+  // Copy b-values (and anything else stored in dw_scheme)
+  out.block(0, 3, out.rows(), out.cols() - 3) = in.block(0, 3, in.rows(), in.cols() - 3);
   for (int row = 0; row != in.rows(); ++row)
     out.block<1, 3>(row, 0) = in.block<1, 3>(row, 0) * R;
 
@@ -282,8 +285,8 @@ void permute_PE_scheme(Header &H, const std::vector<int> &axes) {
     permute(axes[axis], axis) = 1.0;
 
   Eigen::MatrixXd out(in.rows(), in.cols());
-  out.block(0, 3, out.rows(), out.cols() - 3) =
-      in.block(0, 3, in.rows(), in.cols() - 3); // Copy total readout times (and anything else stored in pe_scheme)
+  // Copy total readout times (and anything else stored in pe_scheme)
+  out.block(0, 3, out.rows(), out.cols() - 3) = in.block(0, 3, in.rows(), in.cols() - 3);
   for (int row = 0; row != in.rows(); ++row)
     out.block<1, 3>(row, 0) = in.block<1, 3>(row, 0) * permute;
 
@@ -407,19 +410,20 @@ void run() {
   if (header_in.datatype().is_complex() && !header_out.datatype().is_complex())
     WARN("requested datatype is real but input datatype is complex - imaginary component will be ignored");
 
+  opt = get_options("clear_properties");
+  if (!opt.empty())
+    header_out.keyval().clear();
+
   opt = get_options("copy_properties");
   if (!opt.empty()) {
-    header_out.keyval().clear();
-    if (str(opt[0][0]) != "NULL") {
+    try {
+      const Header source = Header::open(opt[0][0]);
+      header_out.keyval().insert(source.keyval().begin(), source.keyval().end());
+    } catch (...) {
       try {
-        const Header source = Header::open(opt[0][0]);
-        header_out.keyval() = source.keyval();
+        File::JSON::load(header_out, std::filesystem::path(opt[0][0]));
       } catch (...) {
-        try {
-          File::JSON::load(header_out, std::filesystem::path(opt[0][0]));
-        } catch (...) {
-          throw Exception("Unable to obtain header key-value entries from spec \"" + str(opt[0][0]) + "\"");
-        }
+        throw Exception("Unable to obtain header key-value entries from spec \"" + opt[0][0].as_text() + "\"");
       }
     }
   }

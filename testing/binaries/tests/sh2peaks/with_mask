@@ -1,0 +1,22 @@
+#!/bin/bash
+# Test sh2peaks with the -mask option
+# When a mask is provided, voxels outside the mask should have all-NaN output vectors,
+#   while voxels inside the mask should be identical to those from the unmasked run.
+# Validation:
+#   1. Both masked and unmasked runs succeed
+#   2. A voxel known to be outside the mask (coordinate 0,0,0) is NaN in the masked output
+#   3. The total number of finite values in the masked output is less than in the unmasked output
+#      (because NaN values were assigned to outside-mask voxels)
+
+sh2peaks fod.mif tmp.mif -mask mask.mif -force
+
+# Within the mask, result should be identical to pre-existing
+testing_diff_peaks \
+    $(mrcalc mask.mif tmp.mif 0 -if -) \
+    $(mrcalc peaks.mif mask.mif -mult -) \
+    1e-6
+
+# Outside of the mask, the number of finite values should be zero
+COUNT=$(mrcalc 1 mask.mif -sub - | \
+        mrstats $(mrconvert tmp.mif -coord 3 0 -axes 0,1,2 -) -mask - -output count)
+(( COUNT == 0 ))

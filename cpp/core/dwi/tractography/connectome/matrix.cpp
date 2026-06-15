@@ -18,22 +18,21 @@
 
 #include <filesystem>
 
+#include "enum.h"
 #include "file/matrix.h"
 #include "file/path.h"
 #include "mrtrix.h"
 
 namespace MR::DWI::Tractography::Connectome {
 
-std::vector<std::string> statistics = {"sum", "mean", "min", "max"};
-
+// clang-format off
 const App::Option EdgeStatisticOption
-
     = App::Option("stat_edge",
                   "statistic for combining the values from all streamlines in an edge "
                   "into a single scale value for that edge "
-                  "(options are: " +
-                      join(statistics, ",") + "; default=sum)") +
-      App::Argument("statistic").type_choice(statistics);
+                  "(options are: " + MR::Enum::join<stat_edge>() + "; default=sum)")
+    + App::Argument("statistic").type_choice<stat_edge>();
+// clang-format on
 
 template <typename T> bool Matrix<T>::operator()(const Mapped_track_nodepair &in) {
   assert(assignments_lists.empty());
@@ -177,17 +176,8 @@ template <typename T> void Matrix<T>::write_assignments(const std::filesystem::p
     stream << str(i) << "\n";
   for (const auto &assignments_pair : assignments_pairs)
     stream << str(assignments_pair.first) << " " << str(assignments_pair.second) << "\n";
-  for (const auto &assignments_list : assignments_lists) {
-    //if (assignments_list.empty()) {
-    //  stream << "\n";
-    //  continue;
-    //}
+  for (const auto &assignments_list : assignments_lists)
     stream << join(assignments_list, " ") << "\n";
-    //stream << str(assignments_list[0]);
-    //for (size_t j = 1; j != assignments_list.size(); ++j)
-    //  stream << " " << str(assignments_list[j]);
-    //stream << "\n";
-  }
 }
 
 template <typename T>

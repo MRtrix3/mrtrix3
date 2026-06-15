@@ -101,8 +101,8 @@ public:
         keyval_(H.keyval_),
         format_(H.format_),
         datatype_(H.datatype_),
-        offset_(datatype().is_integer() ? H.offset_ : 0.0),
-        scale_(datatype().is_integer() ? H.scale_ : 1.0),
+        offset_(H.datatype_.is_integer() ? H.offset_ : 0.0),
+        scale_(H.datatype_.is_integer() ? H.scale_ : 1.0),
         realignment_(H.realignment_) {}
 
   //! copy constructor from type of class derived from Header

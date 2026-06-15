@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cstddef>
+#include <limits>
 #include <string>
 
 #include "exception.h"
@@ -449,7 +450,24 @@ protected:
  * to operate directly in spherical coordinates. The initial search
  * direction is \a unit_init_dir. If \a precomputer is not nullptr, it
  * will be used to speed up the calculations, at the cost of a minor
- * reduction in accuracy. */
+ * reduction in accuracy.
+ *
+ * On convergence the following checks are applied before the peak is
+ * accepted:
+ *   - The 2x2 spherical Hessian must be negative-definite
+ *     (trace < 0 and determinant > 0), confirming that the stationary
+ *     point is a local maximum rather than a saddle or minimum.
+ *   - The amplitude must exceed zero.
+ *
+ * During iteration:
+ *   - If the directional curvature along the gradient is non-negative,
+ *     a fixed gradient-ascent step of \a max_dir_change is used instead
+ *     of the Newton step (which would point toward a minimum or saddle).
+ *   - If a step decreases the amplitude, the iteration backtracks from
+ *     the previous direction with the step magnitude halved, up to
+ *     \a max_backtracks times before accepting the descent.
+ *
+ * Returns NaN (and sets \a unit_init_dir to NaN) on any failure. */
 template <class VectorType, class UnitVectorType>
 inline typename VectorType::Scalar get_peak(const VectorType &sh,
                                             int lmax,
@@ -457,15 +475,51 @@ inline typename VectorType::Scalar get_peak(const VectorType &sh,
                                             PrecomputedAL<typename VectorType::Scalar> *precomputer = nullptr) {
   static const default_type max_dir_change = 0.2;
   static const default_type angle_tolerance = 1e-4;
+  static const default_type amplitude_tolerance = 1e-6;
+  static const int max_backtracks = 5;
   using value_type = typename VectorType::Scalar;
   assert(std::isfinite(unit_init_dir[0]));
+
+  value_type prev_amplitude = -std::numeric_limits<value_type>::infinity();
+  UnitVectorType prev_dir = unit_init_dir;
+  value_type last_grad_del = 0.0;
+  value_type last_grad_daz = 0.0;
+  value_type last_dt = 0.0;
+  value_type last_az = 0.0;
+  value_type last_el = 0.0;
+  int backtracks = 0;
+
+  value_type amplitude = 0.0;
+  value_type dSH_del = 0.0;
+  value_type dSH_daz = 0.0;
+  value_type d2SH_del2 = 0.0;
+  value_type d2SH_deldaz = 0.0;
+  value_type d2SH_daz2 = 0.0;
+
   for (int i = 0; i < 50; i++) {
     const value_type az = std::atan2(unit_init_dir[1], unit_init_dir[0]);
-    const value_type el = std::acos(unit_init_dir[2]);
-    value_type amplitude, dSH_del, dSH_daz, d2SH_del2, d2SH_deldaz, d2SH_daz2;
+    const value_type el = std::atan2(std::hypot(unit_init_dir[0], unit_init_dir[1]), unit_init_dir[2]);
     derivatives(sh, lmax, el, az, amplitude, dSH_del, dSH_daz, d2SH_del2, d2SH_deldaz, d2SH_daz2, precomputer);
 
-    value_type del = sqrt(dSH_del * dSH_del + dSH_daz * dSH_daz);
+    // Backtrack if the most recent step decreased the objective.
+    if (i > 0 && amplitude < prev_amplitude - amplitude_tolerance && backtracks < max_backtracks) {
+      ++backtracks;
+      last_dt *= 0.5;
+      const value_type del = last_grad_del * last_dt;
+      const value_type daz = last_grad_daz * last_dt;
+      unit_init_dir = prev_dir;
+      unit_init_dir[0] += del * std::cos(last_az) * std::cos(last_el) - daz * std::sin(last_az);
+      unit_init_dir[1] += del * std::sin(last_az) * std::cos(last_el) + daz * std::cos(last_az);
+      unit_init_dir[2] -= del * std::sin(last_el);
+      unit_init_dir.normalize();
+      continue;
+    }
+
+    backtracks = 0;
+    prev_amplitude = amplitude;
+    prev_dir = unit_init_dir;
+
+    value_type del = std::sqrt(dSH_del * dSH_del + dSH_daz * dSH_daz);
     value_type daz = 0.0;
     if (del != 0.0) {
       daz = dSH_daz / del;
@@ -474,12 +528,17 @@ inline typename VectorType::Scalar get_peak(const VectorType &sh,
 
     const value_type dSH_dt = daz * dSH_daz + del * dSH_del;
     const value_type d2SH_dt2 = daz * daz * d2SH_daz2 + 2.0 * daz * del * d2SH_deldaz + del * del * d2SH_del2;
-    value_type dt = d2SH_dt2 ? (-dSH_dt / d2SH_dt2) : 0.0;
-
-    if (dt < 0.0)
-      dt = -dt;
+    // Newton step is only valid when curvature is concave-down along +gradient.
+    // Otherwise we are stepping toward a minimum or saddle; fall back to gradient ascent.
+    value_type dt = (d2SH_dt2 < 0.0) ? std::fabs(dSH_dt / d2SH_dt2) : max_dir_change;
     if (dt > max_dir_change)
       dt = max_dir_change;
+
+    last_grad_del = del;
+    last_grad_daz = daz;
+    last_dt = dt;
+    last_az = az;
+    last_el = el;
 
     del *= dt;
     daz *= dt;
@@ -489,8 +548,22 @@ inline typename VectorType::Scalar get_peak(const VectorType &sh,
     unit_init_dir[2] -= del * std::sin(el);
     unit_init_dir.normalize();
 
-    if (dt < angle_tolerance)
+    if (dt < angle_tolerance) {
+      // Verify Hessian is negative-definite: confirms maximum, rejects saddle/minimum.
+      const value_type trace = d2SH_del2 + d2SH_daz2;
+      const value_type determinant = (d2SH_del2 * d2SH_daz2) - (d2SH_deldaz * d2SH_deldaz);
+      if (trace >= 0.0 || determinant <= 0.0) {
+        unit_init_dir.fill(std::numeric_limits<typename UnitVectorType::Scalar>::quiet_NaN());
+        DEBUG("SH stationary point is not a local maximum (non-negative-definite Hessian)");
+        return std::numeric_limits<value_type>::quiet_NaN();
+      }
+      if (amplitude <= 0.0) {
+        unit_init_dir.fill(std::numeric_limits<typename UnitVectorType::Scalar>::quiet_NaN());
+        DEBUG("SH peak rejected: amplitude is non-positive");
+        return std::numeric_limits<value_type>::quiet_NaN();
+      }
       return amplitude;
+    }
   }
 
   unit_init_dir.fill(std::numeric_limits<typename UnitVectorType::Scalar>::quiet_NaN());
@@ -531,7 +604,7 @@ inline void derivatives(const VectorType &sh,
   } else {
     Eigen::Matrix<value_type, Eigen::Dynamic, 1, 0, 64> buf(lmax + 1);
     for (int m = 0; m <= lmax; m++) {
-      Legendre::Plm_sph(buf, lmax, m, cos_incl);
+      Legendre::Plm_sph(buf, lmax, m, cos_incl, sin_incl);
       for (int l = ((m & 1) ? m + 1 : m); l <= lmax; l += 2)
         AL[index_mpos(l, m)] = buf[l];
     }

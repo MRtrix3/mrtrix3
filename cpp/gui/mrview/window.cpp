@@ -17,6 +17,7 @@
 #include <QDebug>
 #include <algorithm>
 #include <qopenglwidget.h>
+#include <string>
 #include <unordered_map>
 
 #include "algo/copy.h"
@@ -28,6 +29,7 @@
 #include "dialog/progress.h"
 #include "file/config.h"
 #include "header.h"
+#include "mrtrix.h"
 #include "mrview/mode/base.h"
 #include "mrview/mode/list.h"
 #include "mrview/qthelpers.h"
@@ -67,10 +69,10 @@ template <> inline QPoint position(QWheelEvent *event) {
 }
 
 Qt::KeyboardModifiers get_modifier(std::string_view key, Qt::KeyboardModifiers default_key) {
-  const std::string value = lowercase(MR::File::Config::get(key));
-  if (value.empty())
+  const auto from_config = MR::File::Config::get(key);
+  if (!from_config.has_value())
     return default_key;
-
+  const std::string value = lowercase(from_config.value());
   if (value == "shift")
     return Qt::ShiftModifier;
   if (value == "alt")
@@ -141,10 +143,10 @@ QSize Window::GLArea::sizeHint() const {
   // CONF option: MRViewInitWindowSize
   // CONF Initial window size of MRView in pixels.
   // CONF default: 512,512
-  const std::string init_size_string = lowercase(MR::File::Config::get("MRViewInitWindowSize"));
+  const auto from_config = MR::File::Config::get("MRViewInitWindowSize");
   std::vector<uint32_t> init_window_size;
-  if (!init_size_string.empty())
-    init_window_size = parse_ints<uint32_t>(init_size_string);
+  if (from_config.has_value())
+    init_window_size = parse_ints<uint32_t>(from_config.value());
   return (init_window_size.size() == 2) ? QSize(init_window_size[0], init_window_size[1]) : QSize(512, 512);
 }
 void Window::GLArea::dragEnterEvent(QDragEnterEvent *event) { event->acceptProposedAction(); }
@@ -256,8 +258,9 @@ Window::Window()
   // CONF top, bottom, left, right.
   Qt::ToolBarArea toolbar_position = Qt::TopToolBarArea;
   {
-    const std::string toolbar_pos_spec = lowercase(MR::File::Config::get("InitialToolBarPosition"));
-    if (!toolbar_pos_spec.empty()) {
+    const auto from_config = MR::File::Config::get("InitialToolBarPosition");
+    if (from_config.has_value()) {
+      const std::string toolbar_pos_spec = lowercase(from_config.value());
       if (toolbar_pos_spec == "bottom")
         toolbar_position = Qt::BottomToolBarArea;
       else if (toolbar_pos_spec == "left")

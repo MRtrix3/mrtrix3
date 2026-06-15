@@ -1,0 +1,13 @@
+#!/bin/bash
+# Test sh2peaks with a non-default number of peaks via the -num option
+# By default, 3 peaks are extracted (9 volumes in the output).
+# This test requests 1 peak (3 output volumes) and 5 peaks (15 output volumes),
+#   verifying that the output image matches that generated using a prior software version
+
+# Request 1 peak: output should have 3 volumes
+sh2peaks fod.mif - -num 1 | \
+testing_diff_peaks - sh2peaks/1peak.mif 1e-5
+
+# Request 5 peaks: output should have 15 volumes
+sh2peaks fod.mif - -num 5 | \
+testing_diff_peaks - sh2peaks/5peaks.mif 1e-5

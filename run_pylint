@@ -15,23 +15,140 @@
 #
 # For more details, see http://www.mrtrix.org/.
 
+# Field separator used to pack (index, filepath) records for the parallel
+#   worker fan-out; safe because source paths never contain tabs or newlines.
+TAB=$'\t'
+
+# Reduced check set applied only when invoked with --precommit (e.g. as a
+#   pre-commit hook). These are violations that are either too slow to
+#   evaluate on a per-commit basis (duplicate-code, cyclic-import, which both
+#   require whole-codebase analysis to be meaningful), or that are acceptable
+#   to carry within an individual commit but must be rectified before a Pull
+#   Request is merged (fixme and the unused-* family). Full CI linting still
+#   enforces all of these. Kept as a single list so the set is easy to adjust.
+PRECOMMIT_DISABLE="fixme,duplicate-code,cyclic-import,unused-import,unused-variable,unused-argument"
+
+RCFILE="testing/pylint.rc"
+
+# Hidden worker mode: analyse a single file in its own process, writing its
+#   pylint output and exit status to per-file paths within the shared work
+#   directory. Re-invoking the script itself (rather than exporting a shell
+#   function) keeps the xargs fan-out portable. Configuration is inherited via
+#   the exported RP_* environment variables set up by the parent process.
+if [[ "$1" == "__worker" ]]; then
+  rec="$2"
+  idx="${rec%%"$TAB"*}"
+  file="${rec#*"$TAB"}"
+  args=(--rcfile="$RP_RCFILE")
+  if [[ -n "$RP_DISABLE" ]]; then
+    args+=(--disable="$RP_DISABLE")
+  fi
+  python3 -m pylint "${args[@]}" "$file" > "$RP_TMPDIR/$idx.log" 2>&1
+  echo $? > "$RP_TMPDIR/$idx.status"
+  exit 0
+fi
+
+usage() {
+  cat <<EOD
+Usage: run_pylint [options] [files...]
+
+Lint MRtrix3 Python code with pylint (${RCFILE}).
+With no file arguments, lints all tracked Python files in the repository;
+otherwise, lints only the files provided (as supplied by, e.g., a pre-commit
+hook via pass_filenames).
+
+Files are analysed in parallel, one single-threaded pylint process per file.
+
+Options:
+  -j, --jobs N    Number of files to analyse in parallel
+                  (default: number of available processors).
+  --precommit     Use the reduced pre-commit check set
+                  (disables: ${PRECOMMIT_DISABLE}).
+  -h, --help      Show this help and exit.
+
+Results are written to pylint.log.
+EOD
+}
+
+# --- Argument parsing -------------------------------------------------------
+PRECOMMIT=0
+JOBS=""
+files=()
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    -j|--jobs)
+      JOBS="$2"
+      shift 2
+      ;;
+    --jobs=*)
+      JOBS="${1#*=}"
+      shift
+      ;;
+    -j*)
+      JOBS="${1#-j}"
+      shift
+      ;;
+    --precommit)
+      PRECOMMIT=1
+      shift
+      ;;
+    --)
+      shift
+      while [[ $# -gt 0 ]]; do
+        files+=("$1")
+        shift
+      done
+      ;;
+    -*)
+      echo "Unknown option: $1" >&2
+      exit 1
+      ;;
+    *)
+      files+=("$1")
+      shift
+      ;;
+  esac
+done
+
+# Determine parallelism: explicit --jobs, else the available processor count
+#   (getconf is portable across Linux and macOS), falling back to nproc then 1.
+if [[ -z "$JOBS" ]]; then
+  JOBS=$(getconf _NPROCESSORS_ONLN 2>/dev/null || nproc 2>/dev/null || echo 1)
+fi
+if ! [[ "$JOBS" =~ ^[1-9][0-9]*$ ]]; then
+  echo "Invalid value for --jobs: '$JOBS' (expected a positive integer)" >&2
+  exit 1
+fi
+
+# --- File list --------------------------------------------------------------
+# With no explicit files, lint the update_copyright script plus every tracked
+#   Python file in the repository (git ls-files excludes build and untracked
+#   content; nothing vendored under python/lib is tracked).
+if [[ ${#files[@]} -eq 0 ]]; then
+  files=(update_copyright)
+  while IFS= read -r f; do
+    files+=("$f")
+  done < <(git ls-files '*.py')
+fi
+
 LOGFILE=pylint.log
 echo logging to \""$LOGFILE"\"
 
-# generate list of tests to run:
-tests="update_copyright"
-if [ $# == 0 ]; then
-  for filepath in $(find python/mrtrix3/ -name '*.py'); do
-    tests="$tests $filepath"
-  done
-else
-  tests="$@"
+if [[ ${#files[@]} -eq 0 ]]; then
+  echo "no Python files to test"
+  exit 0
 fi
+
+# --- Per-run work directory (predictable prefix; .gitignored and trap-cleaned)
+tmpdir=$(mktemp -d ./.run_pylint_tmp.XXXXXX)
+trap 'rm -rf "$tmpdir"' EXIT INT TERM
 
 success=0
 ntests=0
-
-
 
 cat > $LOGFILE <<EOD
 -------------------------------------------
@@ -50,9 +167,30 @@ cat >> $LOGFILE <<EOD
 
 EOD
 
-
+# Configuration passed to the worker processes via the environment.
 export PYTHONPATH="$(pwd)/python/lib:$PYTHONPATH"
-for file in $tests; do
+export RP_TMPDIR="$tmpdir"
+export RP_RCFILE="$RCFILE"
+if [[ $PRECOMMIT -eq 1 ]]; then
+  export RP_DISABLE="$PRECOMMIT_DISABLE"
+else
+  export RP_DISABLE=""
+fi
+
+# Fan out: one packed "(index, filepath)" record per line, up to $JOBS workers
+#   running concurrently. Each worker writes to its own index-keyed files, so
+#   results never interleave; ordering and reporting are reconstructed below.
+idx=0
+for file in "${files[@]}"; do
+  printf '%s%s%s\n' "$idx" "$TAB" "$file"
+  ((idx++))
+done | xargs -P "$JOBS" -I REC "$0" __worker REC
+
+# Aggregate per-file results in the original (deterministic) order. Live
+#   progress cannot be ordered under concurrency, so per-file status is printed
+#   here once all workers have completed.
+idx=0
+for file in "${files[@]}"; do
 
   cat >> $LOGFILE <<EOD
 -------------------------------------------
@@ -60,22 +198,20 @@ for file in $tests; do
 ## testing "${file}"...
 EOD
 
-  echo -n 'testing "'${file}'"... '
-
-  python3 -m pylint --rcfile=testing/pylint.rc ${file} > .__tmp.log 2>&1
-
-  if [[ $? -ne 0 ]]; then
-    echo 'ERROR'
+  status=$(cat "$tmpdir/$idx.status" 2>/dev/null)
+  if [[ "$status" != "0" ]]; then
+    echo "testing \"${file}\"... ERROR"
     echo " [ ERROR ]" >> $LOGFILE
   else
-    echo 'OK'
+    echo "testing \"${file}\"... OK"
     echo " [ ok ]" >> $LOGFILE
     ((success++))
   fi
 
-  cat .__tmp.log >> $LOGFILE
+  cat "$tmpdir/$idx.log" >> $LOGFILE 2>/dev/null
   echo "" >> $LOGFILE
   ((ntests++))
+  ((idx++))
 
 done
 

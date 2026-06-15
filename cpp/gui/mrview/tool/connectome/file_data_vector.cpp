@@ -18,6 +18,7 @@
 
 #include <filesystem>
 #include <limits>
+#include <utility>
 
 #include "file/matrix.h"
 #include "gui.h"
@@ -30,7 +31,7 @@ FileDataVector::FileDataVector(const FileDataVector &V)
     : base_t(V), name(V.name), min(V.min), mean(V.mean), max(V.max) {}
 
 FileDataVector::FileDataVector(FileDataVector &&V) noexcept
-    : base_t(std::move(static_cast<base_t &&>(V))), name(V.name), min(V.min), mean(V.mean), max(V.max) {
+    : base_t(std::move(static_cast<base_t &&>(V))), name(std::move(V.name)), min(V.min), mean(V.mean), max(V.max) {
   V.name.clear();
   V.min = V.mean = V.max = NaNF;
 }
