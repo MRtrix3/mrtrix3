@@ -50,7 +50,7 @@ public:
     return (0);
   }
   Item *parent() { return (parentItem); }
-  const [[nodiscard]] std::shared_ptr<Series> &series() const { return (dicom_series); }
+  [[nodiscard]] const std::shared_ptr<Series> &series() const { return (dicom_series); }
 
 private:
   QList<Item *> childItems;

@@ -114,37 +114,36 @@ void InterprocessCommunicator::OnNewIncomingConnection() {
  * it can connect back to us
  */
 void InterprocessCommunicator::TryConnectTo(int connectToId) {
-  if (connectToId != id) // don't connect to ourself!
-  {
-    const QString serverName = "mrtrix_interprocesssyncer_" + QString::number(connectToId);
+  if (connectToId == id) // don't connect to ourself!
+    return;
 
-    // check we are not already connected
-    if (std::any_of(
-            senders.begin(), senders.end(), [&serverName](std::shared_ptr<MR::GUI::MRView::Sync::Client> sender) {
-              return sender->GetServerName() == serverName;
-            }))
-      // we have already connected to this
-      return;
-  }
+  const QString serverName = "mrtrix_interprocesssyncer_" + QString::number(connectToId);
+
+  // check we are not already connected
+  if (std::any_of(senders.begin(), senders.end(), [&serverName](std::shared_ptr<MR::GUI::MRView::Sync::Client> sender) {
+        return sender->GetServerName() == serverName;
+      }))
+    // we have already connected to this
+    return;
 
   const std::shared_ptr<GUI::MRView::Sync::Client> curCl = std::make_shared<GUI::MRView::Sync::Client>();
 
   curCl->SetServerName(serverName);
-  if (curCl->TryConnect()) {
-    // Save this connection
-    senders.emplace_back(curCl);
+  if (!curCl->TryConnect())
+    // we couldn't connect - likely that there was nothing to connect to
+    return;
 
-    // Send it our id so that it connects back to us (i.e. two-way syncing)
-    std::array<char, 8> a;
-    const auto connected_id = static_cast<int32_t>(MessageKey::ConnectedID);
-    memcpy(&a[0], &connected_id, 4);
-    memcpy(&a[4], &id, 4);
-    QByteArray dat;
-    dat.insert(0, &a[0], 8);
-    curCl->SendData(dat);
-  }
-  // else we couldn't connect - likely that there was nothing to connect to
-}
+  // Save this connection
+  senders.emplace_back(curCl);
+
+  // Send it our id so that it connects back to us (i.e. two-way syncing)
+  std::array<char, 8> a;
+  const auto connected_id = static_cast<int32_t>(MessageKey::ConnectedID);
+  memcpy(&a[0], &connected_id, 4);
+  memcpy(&a[4], &id, 4);
+  QByteArray dat;
+  dat.insert(0, &a[0], 8);
+  curCl->SendData(dat);
 }
 
 /**

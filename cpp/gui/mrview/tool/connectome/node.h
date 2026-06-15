@@ -45,7 +45,7 @@ public:
       delete mesh.release();
   }
 
-  const [[nodiscard]] Eigen::Vector3f &get_com() const { return centre_of_mass; }
+  [[nodiscard]] const Eigen::Vector3f &get_com() const { return centre_of_mass; }
   [[nodiscard]] size_t get_volume() const { return volume; }
 
   void set_name(std::string_view i) { name = i; }
@@ -56,8 +56,8 @@ public:
     colour = i;
     pixmap.fill(QColor(i[0] * 255.0F, i[1] * 255.0F, i[2] * 255.0F));
   }
-  const [[nodiscard]] Eigen::Array3f &get_colour() const { return colour; }
-  const [[nodiscard]] QPixmap get_pixmap() const { return pixmap; }
+  [[nodiscard]] const Eigen::Array3f &get_colour() const { return colour; }
+  [[nodiscard]] const QPixmap get_pixmap() const { return pixmap; }
   void set_alpha(const float i) { alpha = i; }
   [[nodiscard]] float get_alpha() const { return alpha; }
   void set_visible(const bool i) { visible = i; }

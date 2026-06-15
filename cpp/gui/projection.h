@@ -246,12 +246,12 @@ public:
 
   void draw_orientation_labels() const;
 
-  const [[nodiscard]] GL::mat4 &modelview_projection() const { return MVP; }
-  const [[nodiscard]] GL::mat4 &modelview_projection_inverse() const { return iMVP; }
-  const [[nodiscard]] GL::mat4 &modelview() const { return MV; }
-  const [[nodiscard]] GL::mat4 &modelview_inverse() const { return iMV; }
-  const [[nodiscard]] GL::mat4 &projection() const { return P; }
-  const [[nodiscard]] GL::mat4 &projection_inverse() const { return iP; }
+  [[nodiscard]] const GL::mat4 &modelview_projection() const { return MVP; }
+  [[nodiscard]] const GL::mat4 &modelview_projection_inverse() const { return iMVP; }
+  [[nodiscard]] const GL::mat4 &modelview() const { return MV; }
+  [[nodiscard]] const GL::mat4 &modelview_inverse() const { return iMV; }
+  [[nodiscard]] const GL::mat4 &projection() const { return P; }
+  [[nodiscard]] const GL::mat4 &projection_inverse() const { return iP; }
 
   using ModelViewProjection::set;
 

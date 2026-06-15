@@ -181,7 +181,7 @@ public:
 
   [[nodiscard]] Math::Stats::index_type size() const override { return data.size(0); }
 
-  const [[nodiscard]] Header &header() const { return H; }
+  [[nodiscard]] const Header &header() const { return H; }
 
 private:
   Header H;

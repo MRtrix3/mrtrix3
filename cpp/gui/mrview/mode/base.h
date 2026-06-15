@@ -80,16 +80,16 @@ public:
   virtual void tilt_event();
   virtual void rotate_event();
   virtual void image_changed_event() {}
-  const [[nodiscard]] virtual Projection *get_current_projection() const;
+  [[nodiscard]] virtual const Projection *get_current_projection() const;
   virtual void reset_windowing();
 
   virtual void request_update_mode_gui(ModeGuiVisitor &visitor) const { visitor.update_base_mode_gui(*this); }
 
   void paintGL();
 
-  const [[nodiscard]] Image *image() const { return window().image(); }
-  const [[nodiscard]] Eigen::Vector3f &focus() const { return window().focus(); }
-  const [[nodiscard]] Eigen::Vector3f &target() const { return window().target(); }
+  [[nodiscard]] const Image *image() const { return window().image(); }
+  [[nodiscard]] const Eigen::Vector3f &focus() const { return window().focus(); }
+  [[nodiscard]] const Eigen::Vector3f &target() const { return window().target(); }
   [[nodiscard]] float FOV() const { return window().FOV(); }
   [[nodiscard]] int plane() const { return window().plane(); }
   [[nodiscard]] Eigen::Quaternionf orientation() const {

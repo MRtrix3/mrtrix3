@@ -316,11 +316,11 @@ int Overlay::draw_tool_labels(int position, int start_line_num, const Projection
   return num_of_new_lines;
 }
 
-void Overlay::selected_colourmap(size_t index, const ColourMapButton &) {
+void Overlay::selected_colourmap(size_t cmap_index, const ColourMapButton &) {
   QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
-  for (auto index : indices) {
-    auto *overlay = dynamic_cast<Image *>(image_list_model->get_image(index));
-    overlay->set_colourmap(index);
+  for (auto overlay_index : indices) {
+    auto *overlay = dynamic_cast<Image *>(image_list_model->get_image(overlay_index));
+    overlay->set_colourmap(cmap_index);
   }
   updateGL();
 }

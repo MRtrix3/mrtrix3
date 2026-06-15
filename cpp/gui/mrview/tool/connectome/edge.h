@@ -91,19 +91,19 @@ public:
     assert(i == 0 || i == 1);
     return node_indices[i];
   }
-  const [[nodiscard]] Eigen::Vector3f &get_node_centre(const size_t i) const {
+  [[nodiscard]] const Eigen::Vector3f &get_node_centre(const size_t i) const {
     assert(i == 0 || i == 1);
     return node_centres[i];
   }
   [[nodiscard]] Eigen::Vector3f get_com() const { return (node_centres[0] + node_centres[1]) * 0.5; }
 
-  const [[nodiscard]] GLfloat *get_rot_matrix() const { return rot_matrix; }
+  [[nodiscard]] const GLfloat *get_rot_matrix() const { return rot_matrix; }
 
-  const [[nodiscard]] Eigen::Vector3f &get_dir() const { return dir; }
+  [[nodiscard]] const Eigen::Vector3f &get_dir() const { return dir; }
   void set_size(const float i) { size = i; }
   [[nodiscard]] float get_size() const { return size; }
   void set_colour(const Eigen::Array3f &i) { colour = i; }
-  const [[nodiscard]] Eigen::Array3f &get_colour() const { return colour; }
+  [[nodiscard]] const Eigen::Array3f &get_colour() const { return colour; }
   void set_alpha(const float i) { alpha = i; }
   [[nodiscard]] float get_alpha() const { return alpha; }
   void set_visible(const bool i) { visible = i; }

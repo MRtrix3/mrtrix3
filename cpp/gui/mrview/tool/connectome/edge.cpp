@@ -146,9 +146,9 @@ Edge::Exemplar::Exemplar(const Edge &parent, const MR::DWI::Tractography::Stream
   Math::RNG::Normal<float> rng;
   for (size_t i = 0; i != data.size(); ++i) {
     vertices.push_back(data[i]);
-    tangents.push_back(Tractography::tangent(data, i));
+    tangents.push_back(MR::DWI::Tractography::tangent(data, i));
     normals.push_back((i == 0U) ? Eigen::Vector3f(rng(), rng(), rng()).cross(tangents[i]).normalized()
-                                : binormals.back().cross(tangents[i]).normalized(););
+                                : binormals.back().cross(tangents[i]).normalized());
     binormals.push_back(tangents[i].cross(normals.back()).normalized());
   }
 }

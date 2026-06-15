@@ -618,10 +618,10 @@ void Fixel::toggle_show_colour_bar(bool visible, const ColourMapButton &) {
   window().updateGL();
 }
 
-void Fixel::selected_colourmap(size_t index, const ColourMapButton &) {
+void Fixel::selected_colourmap(size_t cmap_index, const ColourMapButton &) {
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-  for (auto index : indices) {
-    fixel_list_model->get_fixel_image(index)->colourmap = index;
+  for (auto overlay_index : indices) {
+    fixel_list_model->get_fixel_image(overlay_index)->colourmap = cmap_index;
   }
   window().updateGL();
 }

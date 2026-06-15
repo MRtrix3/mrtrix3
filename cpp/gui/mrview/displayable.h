@@ -69,7 +69,7 @@ public:
 
   virtual void request_render_colourbar(DisplayableVisitor &) {}
 
-  const [[nodiscard]] std::filesystem::path &get_filepath() const { return filepath; }
+  [[nodiscard]] const std::filesystem::path &get_filepath() const { return filepath; }
 
   [[nodiscard]] float scaling_min() const { return display_midpoint - 0.5F * display_range; }
 
