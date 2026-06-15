@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <vector>
 
 #include "dwi/tractography/foot_point.h"
@@ -303,13 +304,94 @@ bool DecimateSlow::operator()(const Streamline<> &in, Streamline<> &out) const {
     }
   }
 
-  // Lyche-Morken knot removal would slot in here, after the slide converges: attempt to remove the
-  //   interior control point whose removal least increases the deviation, accepting the removal
-  //   only while the reconstruction still satisfies epsilon, and repeating greedily. Benefit:
-  //   trims knots that the greedy insertion left redundant once later insertions / the slide
-  //   re-shaped the local fit, yielding a strictly smaller control set for the same tolerance.
-  //   Not implemented here (scope limit): it requires a re-fit-and-recheck pass per removal
-  //   candidate and a removal-cost ordering analogous to the B-spline knot-removal error bound.
+  // -------------------------------------------------------------------------------------------
+  // Step 7: Lyche-Morken knot removal. Greedy insertion followed by the slide can leave interior
+  //   control points that later insertions / the slide rendered redundant. Each interior control is
+  //   assigned a removal cost: the worst deviation its removal would induce among the original
+  //   vertices over the arc whose reconstruction geometry that removal perturbs. The cheapest
+  //   removable knot is dropped while the reconstruction there still satisfies epsilon, the costs in
+  //   the perturbed neighbourhood are refreshed, and the process repeats greedily; this is the
+  //   removal-cost-ordered analogue of the B-spline knot-removal error bound. Endpoints are never
+  //   candidates. Only the on-curve control set is consulted (the per-vertex feet and interval
+  //   maxima are not needed), so the pass is self-contained, and every surviving control remains on
+  //   the original spline -- decode compatibility is preserved exactly as for insertion / slide.
+  // -------------------------------------------------------------------------------------------
+
+  // Worst deviation that removing interior control \c k would induce, evaluated against the trial
+  //   reconstruction (control \c k erased) over only the original vertices in the perturbed arc.
+  /*! The removed control's tension-Catmull-Rom support covers reconstruction segments [k-2, k+1],
+   *  i.e. controls [k-2 .. k+2] (clamped to the endpoints). Vertices whose original parameter falls
+   *  outside that span see an unchanged local reconstruction and therefore an unchanged deviation,
+   *  so they need not be re-footed; the worst deviation over the in-span vertices alone decides
+   *  whether the removal keeps the reconstruction within epsilon everywhere. */
+  const auto removal_cost = [&](const size_t k) -> default_type {
+    Streamline<> trial_recon;
+    trial_recon.reserve(controls.size() - 1);
+    for (size_t j = 0; j != controls.size(); ++j) {
+      if (j != k)
+        trial_recon.push_back(controls[j].p);
+    }
+    const SplineView<value_type> trial_view(trial_recon);
+    const default_type trial_s_max = static_cast<default_type>(trial_recon.size() - 1);
+
+    const size_t lo_ctrl = (k >= 2) ? (k - 2) : 0;
+    const size_t hi_ctrl = std::min(controls.size() - 1, k + 2);
+    const default_type t_lo = controls[lo_ctrl].t;
+    const default_type t_hi = controls[hi_ctrl].t;
+
+    default_type worst = 0.0;
+    // March in order from a warm start at the window's left control; its trial index equals its
+    //   original index (the removed control lies to its right), so the seed needs no shift.
+    default_type warm = static_cast<default_type>(lo_ctrl);
+    for (size_t v = 0; v != num_vertices; ++v) {
+      const default_type t_v = static_cast<default_type>(v);
+      if (t_v < t_lo || t_v > t_hi)
+        continue;
+      const vec3 probe = in[v].template cast<default_type>();
+      const FootPoint::Foot foot = FootPoint::nearest_point(trial_view, tension, probe, warm, trial_s_max);
+      warm = foot.s;
+      worst = std::max(worst, std::sqrt(std::max<default_type>(0.0, foot.dist_sq)));
+    }
+    return worst;
+  };
+
+  // Removal cost per control, aligned to \c controls; endpoints are non-removable (infinite cost).
+  std::vector<default_type> removal_costs(controls.size(), std::numeric_limits<default_type>::infinity());
+  for (size_t k = 1; k + 1 < controls.size(); ++k)
+    removal_costs[k] = removal_cost(k);
+
+  while (controls.size() > 2) {
+    // Cheapest removable interior control (O(m) over the maintained costs).
+    size_t best_k = 0;
+    default_type best_cost = std::numeric_limits<default_type>::infinity();
+    for (size_t k = 1; k + 1 < controls.size(); ++k) {
+      if (removal_costs[k] < best_cost) {
+        best_cost = removal_costs[k];
+        best_k = k;
+      }
+    }
+    if (best_k == 0 || !(best_cost <= tolerance))
+      break;
+
+    // Re-evaluate the chosen candidate against the current control set before committing: this
+    //   guards the epsilon guarantee against any stale neighbourhood cost. If the refreshed cost
+    //   now exceeds epsilon, correct it and re-select rather than removing it.
+    const default_type fresh_cost = removal_cost(best_k);
+    removal_costs[best_k] = fresh_cost;
+    if (!(fresh_cost <= tolerance))
+      continue;
+
+    // Commit: drop the control and its cost entry. The control set stays sorted in t and on-curve.
+    controls.erase(controls.begin() + best_k);
+    removal_costs.erase(removal_costs.begin() + best_k);
+
+    // Only the costs of controls whose own support arc overlaps the just-perturbed span can have
+    //   changed; refresh exactly those (the rest of the curve, hence their costs, is unchanged).
+    const size_t refresh_lo = (best_k > 4) ? (best_k - 4) : 1;
+    const size_t refresh_hi = std::min(controls.size() - 2, best_k + 3);
+    for (size_t k = refresh_lo; k <= refresh_hi; ++k)
+      removal_costs[k] = removal_cost(k);
+  }
 
   // -------------------------------------------------------------------------------------------
   // Emit the control positions (all on the original spline; endpoints exact by construction).
