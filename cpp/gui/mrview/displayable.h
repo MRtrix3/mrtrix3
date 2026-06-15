@@ -272,7 +272,7 @@ signals:
 protected:
   std::filesystem::path filepath;
   float value_min, value_max;
-  uint32_t flags_{0x00000000};
+  uint32_t flags_{0x00000000u};
 
   void set_bit(uint32_t &field, uint32_t bit, bool value) {
     if (value)

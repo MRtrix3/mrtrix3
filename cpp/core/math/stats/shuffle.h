@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <optional>
+
 #include "app.h"
 #include "progressbar.h"
 #include "types.h"
@@ -81,7 +83,7 @@ private:
   std::vector<PermuteLabels> permutations;
   std::vector<FlipSigns> signflips;
   index_type nshuffles, counter;
-  std::unique_ptr<ProgressBar> progress;
+  std::optional<ProgressBar> progress;
 
   void initialise(const error_t error_types,
                   const bool nshuffles_explicit,
@@ -90,7 +92,7 @@ private:
                   const index_array_type &eb_whole);
 
   // For exchangeability blocks (either within or whole)
-  index_array_type load_blocks(const std::filesystem::path &filename, const bool equal_sizes);
+  [[nodiscard]] index_array_type load_blocks(const std::filesystem::path &filename, const bool equal_sizes);
 
   // For generating unique permutations
   [[nodiscard]] bool is_duplicate(const PermuteLabels &, const PermuteLabels &) const;

@@ -89,7 +89,7 @@ public:
 
 class Element {
 public:
-  using Type = enum Type : uint8_t { INVALID, INT, UINT, FLOAT, DATE, TIME, DATETIME, STRING, SEQ, OTHER };
+  enum class Type : uint8_t { INVALID, INT, UINT, FLOAT, DATE, TIME, DATETIME, STRING, SEQ, OTHER };
   static const std::unordered_map<Type, std::string> type_as_str;
 
   uint16_t group, element, VR;
@@ -110,8 +110,8 @@ public:
   [[nodiscard]] std::string tag_name() const {
     if (dict.empty())
       init_dict();
-    const char *s = dict[tag()]; // check_syntax off
-    return (s == nullptr ? "" : s);
+    auto it = dict.find(tag());
+    return it == dict.end() ? std::string() : std::string(it->second);
   }
 
   [[nodiscard]] uint32_t tag() const {
@@ -198,7 +198,7 @@ protected:
     return ByteOrder::BE(d.i);
   }
 
-  static const std::unordered_map<uint32_t, char *> dict;
+  static std::unordered_map<uint32_t, const char *> dict;
   static void init_dict();
 
   [[nodiscard]] bool check_get(size_t idx, size_t size) const {

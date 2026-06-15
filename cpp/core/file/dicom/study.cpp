@@ -16,9 +16,10 @@
 
 #include "file/dicom/study.h"
 
+#include <memory>
+
 #include "file/dicom/patient.h"
 #include "file/dicom/series.h"
-#include <memory>
 
 namespace MR::File::Dicom {
 

@@ -39,15 +39,15 @@ std::ostream &operator<<(std::ostream &stream, const Time &item) {
   return stream;
 }
 
-const std::unordered_map<Element::Type, std::string> Element::type_as_str{{INVALID, "invalid"},
-                                                                          {INT, "integer"},
-                                                                          {UINT, "unsigned integer"},
-                                                                          {FLOAT, "floating-point"},
-                                                                          {DATE, "date"},
-                                                                          {TIME, "time"},
-                                                                          {STRING, "string"},
-                                                                          {SEQ, "sequence"},
-                                                                          {OTHER, "other"}};
+const std::unordered_map<Element::Type, std::string> Element::type_as_str{{Type::INVALID, "invalid"},
+                                                                          {Type::INT, "integer"},
+                                                                          {Type::UINT, "unsigned integer"},
+                                                                          {Type::FLOAT, "floating-point"},
+                                                                          {Type::DATE, "date"},
+                                                                          {Type::TIME, "time"},
+                                                                          {Type::STRING, "string"},
+                                                                          {Type::SEQ, "sequence"},
+                                                                          {Type::OTHER, "other"}};
 
 void Element::set(const std::filesystem::path &filepath, bool force_read, bool read_write) {
   group = element = VR = 0;
@@ -267,25 +267,25 @@ bool Element::is_in_series_ref_sequence() const {
 
 Element::Type Element::type() const {
   if (VR == 0U)
-    return INVALID;
+    return Element::Type::INVALID;
   if (VR == VR_FD || VR == VR_FL)
-    return FLOAT;
+    return Element::Type::FLOAT;
   if (VR == VR_SL || VR == VR_SS)
-    return INT;
+    return Element::Type::INT;
   if (VR == VR_UL || VR == VR_US)
-    return UINT;
+    return Element::Type::UINT;
   if (VR == VR_SQ)
-    return SEQ;
+    return Element::Type::SEQ;
   if (VR == VR_DA)
-    return DATE;
+    return Element::Type::DATE;
   if (VR == VR_TM)
-    return TIME;
+    return Element::Type::TIME;
   if (VR == VR_DT)
-    return DATETIME;
+    return Element::Type::DATETIME;
   if (VR == VR_AE || VR == VR_AS || VR == VR_CS || VR == VR_DS || VR == VR_IS || VR == VR_LO || VR == VR_LT ||
       VR == VR_PN || VR == VR_SH || VR == VR_ST || VR == VR_UI || VR == VR_UT || VR == VR_AT)
-    return STRING;
-  return OTHER;
+    return Element::Type::STRING;
+  return Element::Type::OTHER;
 }
 
 std::vector<int32_t> Element::get_int() const {
@@ -344,17 +344,17 @@ std::vector<default_type> Element::get_float() const {
 }
 
 Date Element::get_date() const {
-  assert(type() == DATE);
+  assert(type() == Element::Type::DATE);
   return Date(std::string(reinterpret_cast<const char *>(data), size));
 }
 
 Time Element::get_time() const {
-  assert(type() == TIME);
+  assert(type() == Element::Type::TIME);
   return Time(std::string(reinterpret_cast<const char *>(data), size));
 }
 
 std::pair<Date, Time> Element::get_datetime() const {
-  assert(type() == DATETIME);
+  assert(type() == Element::Type::DATETIME);
   if (size < 14)
     throw Exception("malformed DateTime entry");
   return {Date(std::string(reinterpret_cast<const char *>(data), 8)),
@@ -375,25 +375,25 @@ std::string Element::as_string() const {
   std::ostringstream out;
   try {
     switch (type()) {
-    case Element::INT:
+    case Element::Type::INT:
       for (const auto &x : get_int())
         out << x << " ";
       return out.str();
-    case Element::UINT:
+    case Element::Type::UINT:
       for (const auto &x : get_uint())
         out << x << " ";
       return out.str();
-    case Element::FLOAT:
+    case Element::Type::FLOAT:
       for (const auto &x : get_float())
         out << x << " ";
       return out.str();
-    case Element::DATE:
+    case Element::Type::DATE:
       return str(get_date());
-    case Element::TIME:
+    case Element::Type::TIME:
       return str(get_time());
-    case Element::DATETIME:
+    case Element::Type::DATETIME:
       return str(get_datetime().first) + " " + str(get_datetime().second);
-    case Element::STRING:
+    case Element::Type::STRING:
       if (group == group_data && element == element_data) {
         return "(data)";
       } else {
@@ -401,7 +401,7 @@ std::string Element::as_string() const {
           out << x << " ";
         return out.str();
       }
-    case Element::SEQ:
+    case Element::Type::SEQ:
       return "";
     default:
       if (group != group_sequence || element != element_sequence_item)

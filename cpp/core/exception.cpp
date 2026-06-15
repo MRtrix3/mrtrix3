@@ -91,7 +91,7 @@ void cmdline_print_func(std::string_view msg) {
 #endif
 }
 
-const char *Exception::what() const noexcept { // check_syntax off
+const char * Exception::what() const noexcept { // check_syntax off
   static const std::string no_message("MR::Exception (no specific message)");
   return description.empty() ? no_message.c_str() : description.back().c_str();
 }

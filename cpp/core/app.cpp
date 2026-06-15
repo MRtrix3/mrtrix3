@@ -250,6 +250,7 @@ std::string help_tail(const bool format) {
          paragraph("", COPYRIGHT, help_formatting.purpose_indents) + "\n" + //
          bold("REFERENCES") + "\n" +                                        //
          [&]() {
+           std::string s;
            for (const auto &n : REFERENCES)
              s += paragraph("", n, help_formatting.purpose_indents) + "\n";
            s += paragraph("", core_reference, help_formatting.purpose_indents) + "\n";

@@ -61,8 +61,8 @@ public:
         delim(",") {}
 
   [[nodiscard]] value_type value() const { return f; }
-  const [[nodiscard]] Eigen::Matrix<value_type, Eigen::Dynamic, 1> &state() const { return x2; }
-  const [[nodiscard]] Eigen::Matrix<value_type, Eigen::Dynamic, 1> &gradient() const { return g2; }
+  [[nodiscard]] const Eigen::Matrix<value_type, Eigen::Dynamic, 1> &state() const { return x2; }
+  [[nodiscard]] const Eigen::Matrix<value_type, Eigen::Dynamic, 1> &gradient() const { return g2; }
   [[nodiscard]] value_type step_size() const { return dt; }
   [[nodiscard]] value_type gradient_norm() const { return normg; }
   [[nodiscard]] int function_evaluations() const { return nfeval; }

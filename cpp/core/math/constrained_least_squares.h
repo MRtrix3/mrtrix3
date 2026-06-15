@@ -335,7 +335,7 @@ public:
     return niter;
   }
 
-  const [[nodiscard]] Problem<value_type> &problem() const { return P; }
+  [[nodiscard]] const Problem<value_type> &problem() const { return P; }
 
 protected:
   const Problem<value_type> &P;

@@ -16,13 +16,14 @@
 
 #include "file/dicom/image.h"
 
+#include <memory>
+
 #include "exception.h"
 #include "file/dicom/csa_entry.h"
 #include "file/dicom/patient.h"
 #include "file/dicom/series.h"
 #include "file/dicom/study.h"
 #include "file/path.h"
-#include <memory>
 
 namespace MR::File::Dicom {
 

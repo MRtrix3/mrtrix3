@@ -24,16 +24,16 @@ namespace MR::Math {
 
 class MeanAndVariance {
 public:
-  MeanAndVariance() : mean(default_type(0)), variance(default_type(0)) {}
+  MeanAndVariance() = default;
   [[nodiscard]] default_type std() const { return std::sqrt(variance); }
-  default_type mean;
-  default_type variance;
+  default_type mean{0.0};
+  default_type variance{0.0};
 };
 
-template <class Cont> MeanAndVariance welford(const Cont &data) {
+template <class Cont> [[nodiscard]] MeanAndVariance welford(const Cont &data) {
   MeanAndVariance result;
   default_type m2 = 0.0;
-  size count = 0U;
+  size_t count = 0U;
   default_type delta(std::numeric_limits<default_type>::quiet_NaN());
   default_type delta2(std::numeric_limits<default_type>::quiet_NaN());
   for (size_t i = 0; i != data.size(); ++i) {

@@ -174,7 +174,7 @@ public:
     return v2v->size();
   }
 
-  const [[nodiscard]] Header &header() const { return H; }
+  [[nodiscard]] const Header &header() const { return H; }
 
   static void set_mapping(std::shared_ptr<Voxel2Vector> &ptr) { v2v = ptr; }
 

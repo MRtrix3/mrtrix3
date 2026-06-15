@@ -109,11 +109,11 @@ public:
   }
 
   void set_voxel(const Eigen::Vector3i &i) { voxel = i; }
-  const [[nodiscard]] Eigen::Vector3i &get_voxel() const { return voxel; }
+  [[nodiscard]] const Eigen::Vector3i &get_voxel() const { return voxel; }
 
   [[nodiscard]] float get_ratio(const double mu) const { return ((mu * TD.load(std::memory_order_relaxed)) / FOD); }
 
-  float get_cumulative_prob(const uint64_t track_count) {
+  [[nodiscard]] float get_cumulative_prob(const uint64_t track_count) {
     while (updating.test_and_set(std::memory_order_acquire))
       ;
     float cumulative_prob = old_prob;

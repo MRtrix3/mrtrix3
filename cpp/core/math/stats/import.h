@@ -59,7 +59,7 @@ public:
    */
   virtual measurements_value_type operator[](const index_type index) const = 0;
 
-  const [[nodiscard]] std::filesystem::path &name() const { return path; }
+  [[nodiscard]] const std::filesystem::path &name() const { return path; }
 
   [[nodiscard]] virtual index_type size() const = 0;
 
@@ -88,12 +88,12 @@ public:
    * @param index for a particular element being tested (data will be acquired for
    * all subjects for that element)
    */
-  measurements_vector_type operator()(const index_type element_index) const;
+  [[nodiscard]] measurements_vector_type operator()(const index_type element_index) const;
 
-  operator bool() const { return !files.empty(); }
+  [[nodiscard]] operator bool() const { return !files.empty(); }
   [[nodiscard]] index_type size() const { return files.size(); }
 
-  std::shared_ptr<SubjectDataImportBase> operator[](const index_type i) const {
+  [[nodiscard]] std::shared_ptr<SubjectDataImportBase> operator[](const index_type i) const {
     assert(i < files.size());
     return files[i];
   }

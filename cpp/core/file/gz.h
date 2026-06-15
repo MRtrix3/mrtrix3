@@ -48,7 +48,7 @@ public:
     }
   }
 
-  const [[nodiscard]] std::filesystem::path &name() const { return filepath; }
+  [[nodiscard]] const std::filesystem::path &name() const { return filepath; }
   void open(const std::filesystem::path &fname, std::string_view mode) {
     close();
     filepath = fname;

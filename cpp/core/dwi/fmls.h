@@ -122,15 +122,15 @@ public:
     integral += that.integral;
   }
 
-  const [[nodiscard]] mask_type &get_mask() const { return mask; }
-  const [[nodiscard]] Eigen::Array<default_type, Eigen::Dynamic, 1> &get_values() const { return values; }
+  [[nodiscard]] const mask_type &get_mask() const { return mask; }
+  [[nodiscard]] const Eigen::Array<default_type, Eigen::Dynamic, 1> &get_values() const { return values; }
   [[nodiscard]] default_type get_max_peak_value() const { return max_peak_value; }
   [[nodiscard]] size_t num_peaks() const { return peak_dirs.size(); }
-  const [[nodiscard]] Eigen::Vector3d &get_peak_dir(const size_t i) const {
+  [[nodiscard]] const Eigen::Vector3d &get_peak_dir(const size_t i) const {
     assert(i < num_peaks());
     return peak_dirs[i];
   }
-  const [[nodiscard]] Eigen::Vector3d &get_mean_dir() const { return mean_dir; }
+  [[nodiscard]] const Eigen::Vector3d &get_mean_dir() const { return mean_dir; }
   [[nodiscard]] default_type get_integral() const { return integral; }
   [[nodiscard]] bool is_negative() const { return neg; }
 
@@ -248,25 +248,32 @@ private:
   std::shared_ptr<Math::SH::PrecomputedAL<default_type>> precomputer;
   std::shared_ptr<IntegrationWeights> weights;
 
-  default_type integral_threshold;   // Integral of positive lobe must be at least this value
-  default_type peak_value_threshold; // Absolute threshold for the peak amplitude of the lobe
-  default_type lobe_merge_ratio;     // Determines whether two lobes get agglomerated into one, depending on the FOD
-                                 // amplitude at the current point and how it compares to the maximal amplitudes of the
-                                 // lobes to which it could be assigned
-  bool create_null_lobe{false}; // If this is set, an additional lobe will be created after segmentation with zero size,
-                                // containing all directions not assigned to any other lobe
-  bool create_lookup_table{true};  // If this is set, an additional lobe will be created after segmentation with zero
-                                   // size, containing all directions not assigned to any other lobe
-  bool dilate_lookup_table{false}; // If this is set, the lookup table created for each voxel will be dilated so that
-                                   // all directions correspond to the nearest positive non-zero FOD lobe
+  // Integral of positive lobe must be at least this value
+  default_type integral_threshold;
+  // Absolute threshold for the peak amplitude of the lobe
+  default_type peak_value_threshold;
+  // Determines whether two lobes get agglomerated into one,
+  // depending on the FOD amplitude at the current point
+  // and how it compares to the maximal amplitudes of the lobes to which it could be assigned
+  default_type lobe_merge_ratio;
+  // If this is set, an additional lobe will be created after segmentation with zero size,
+  // containing all directions not assigned to any other lobe
+  bool create_null_lobe{false};
+  // If this is set, an additional lobe will be created after segmentation with zero size,
+  // containing all directions not assigned to any other lobe
+  bool create_lookup_table{true};
+  // If this is set, the lookup table created for each voxel will be dilated
+  // so that all directions correspond to the nearest positive non-zero FOD lobe
+  bool dilate_lookup_table{false};
 
   void verify_settings() const {
     if (create_null_lobe && dilate_lookup_table)
-      throw Exception(
-          "For FOD segmentation, options 'create_null_lobe' and 'dilate_lookup_table' are mutually exclusive");
+      throw Exception("For FOD segmentation,"
+                      " options 'create_null_lobe' and 'dilate_lookup_table' are mutually exclusive");
     if (!create_lookup_table && dilate_lookup_table)
-      throw Exception("For FOD segmentation, 'create_lookup_table' must be set in order for lookup tables to be "
-                      "dilated ('dilate_lookup_table')");
+      throw Exception("For FOD segmentation,"
+                      " 'create_lookup_table' must be set in order for lookup tables to be dilated"
+                      " ('dilate_lookup_table')");
   }
 
 #ifdef FMLS_OPTIMISE_MEAN_DIR

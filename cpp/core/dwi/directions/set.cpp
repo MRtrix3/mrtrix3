@@ -400,7 +400,7 @@ void FastLookupSet::initialise() {
   default_type adj_dot_product_sum = 0.0;
   size_t adj_dot_product_count = 0;
   for (size_t i = 0; i != size(); ++i) {
-    for (auto j : adj_dirs) {
+    for (auto j : adj_dirs[i]) {
       if (j > i) {
         adj_dot_product_sum += std::fabs(unit_vectors[i].dot(unit_vectors[j]));
         ++adj_dot_product_count;

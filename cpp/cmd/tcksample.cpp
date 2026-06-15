@@ -171,7 +171,7 @@ public:
 
   [[nodiscard]] virtual size_t num_contrasts() const = 0;
   [[nodiscard]] contrast_type contrast() const { return _contrast; }
-  const [[nodiscard]] std::optional<Statistic> &statistic() const { return _statistic; }
+  [[nodiscard]] const std::optional<Statistic> &statistic() const { return _statistic; }
 
 protected:
   const contrast_type _contrast;
@@ -287,6 +287,9 @@ private:
       }
       return cast_to_nan ? std::numeric_limits<value_type>::quiet_NaN() : value;
     } break;
+    default:
+      assert(false);
+      return std::numeric_limits<value_type>::signaling_NaN();
     }
   }
 };
@@ -381,6 +384,9 @@ protected:
       }
       return cast_to_nan ? std::numeric_limits<value_type>::quiet_NaN() : maxvalue;
     }
+    default:
+      assert(false);
+      return std::numeric_limits<value_type>::signaling_NaN();
     }
   }
 };

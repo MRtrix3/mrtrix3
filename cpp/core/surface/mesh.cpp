@@ -810,14 +810,15 @@ void Mesh::load_quad_vertices(VertexList &output, const size_t index) const {
 }
 
 void Mesh::verify_data() const {
-  if (std::any_of(vertices.begin(), vertices.end(), [](const Vertex &v) { return !v.allFinite() }))
+  if (std::any_of(vertices.begin(), vertices.end(), [](const Vertex &v) { return !v.allFinite(); }))
     throw Exception("NaN values in mesh vertex data");
-  if (std::any_of(triangles.begin(), triangles.end(), [](const Triangle &t) {
-        return std::max({t[0], t[1], t[2]}) >= vertices.size()
+  const size_t nv = num_vertices();
+  if (std::any_of(triangles.begin(), triangles.end(), [&nv](const Triangle &t) {
+        return std::max({t[0], t[1], t[2]}) >= nv;
       }))
     throw Exception("Mesh vertex index exceeds number of vertices read");
-  if (std::any_of(quads.begin(), quads.end(), [](const Quad &q) {
-        return std::max({q[0], q[1], q[2], q[3]}) >= vertices.size()
+  if (std::any_of(quads.begin(), quads.end(), [&nv](const Quad &q) {
+        return std::max({q[0], q[1], q[2], q[3]}) >= nv;
       }))
     throw Exception("Mesh vertex index exceeds number of vertices read");
 }

@@ -55,7 +55,7 @@ public:
     Partition(const matrix_type &x, const matrix_type &z)
         : X(x),
           Z(z),
-          Hz((Z.cols() == 0) ? matrix_type::Zero(X.rows(), X.rows()) : (Z * Math::pinv(Z))),
+          Hz((Z.cols() == 0) ? matrix_type::Zero(X.rows(), X.rows()).eval() : (Z * Math::pinv(Z)).eval()),
           Rz(matrix_type::Identity(X.rows(), X.rows()) - Hz),
           rank_x(Math::rank(X)),
           rank_z((Z.cols() == 0) ? 0 : Math::rank(Z)) {}
@@ -81,7 +81,7 @@ public:
 
   template <class MatrixType> Partition partition(const MatrixType &) const;
 
-  const [[nodiscard]] matrix_type &matrix() const { return c; }
+  [[nodiscard]] const matrix_type &matrix() const { return c; }
   [[nodiscard]] index_type cols() const { return c.cols(); }
   [[nodiscard]] index_type rank() const { return r; }
   [[nodiscard]] bool is_F() const { return F; }
@@ -341,7 +341,7 @@ public:
 
   [[nodiscard]] index_type num_factors() const override { return M.cols(); }
 
-  const [[nodiscard]] Shared &S() const { return *dynamic_cast<const Shared *const>(shared.get()); }
+  [[nodiscard]] const Shared &S() const { return *dynamic_cast<const Shared *const>(shared.get()); }
 
 private:
   // Temporaries
@@ -409,7 +409,7 @@ public:
   [[nodiscard]] index_type num_factors() const final { return M.cols(); }
   [[nodiscard]] index_type num_variance_groups() const { return S().num_vgs; }
 
-  const [[nodiscard]] Shared &S() const { return *dynamic_cast<const Shared *const>(shared.get()); }
+  [[nodiscard]] const Shared &S() const { return *dynamic_cast<const Shared *const>(shared.get()); }
 
 private:
   // Temporaries
@@ -511,7 +511,7 @@ public:
   [[nodiscard]] index_type num_factors() const final { return M.cols() + num_importers(); }
   [[nodiscard]] index_type num_importers() const final { return S().importers.size(); }
 
-  const [[nodiscard]] Shared &S() const { return *dynamic_cast<const Shared *const>(shared.get()); }
+  [[nodiscard]] const Shared &S() const { return *dynamic_cast<const Shared *const>(shared.get()); }
 
 private:
   std::vector<matrix_type> XtX, beta;
@@ -577,7 +577,7 @@ public:
   [[nodiscard]] index_type num_variance_groups() const { return S().num_vgs; }
   [[nodiscard]] index_type num_importers() const final { return S().importers.size(); }
 
-  const [[nodiscard]] Shared &S() const { return *dynamic_cast<const Shared *const>(shared.get()); }
+  [[nodiscard]] const Shared &S() const { return *dynamic_cast<const Shared *const>(shared.get()); }
 
 private:
   // Temporaries

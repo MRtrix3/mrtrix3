@@ -80,7 +80,7 @@ class Wrapper {
 public:
   Wrapper(List &strides) : S(strides) {}
   [[nodiscard]] size_t ndim() const { return S.size(); }
-  const [[nodiscard]] ssize_t &stride(size_t axis) const { return S[axis]; }
+  [[nodiscard]] const ssize_t &stride(size_t axis) const { return S[axis]; }
   ssize_t &stride(size_t axis) { return S[axis]; }
 
 private:

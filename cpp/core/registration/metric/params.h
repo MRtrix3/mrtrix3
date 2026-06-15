@@ -120,7 +120,7 @@ public:
     control_points.block<3, 4>(0, 0).colwise() += centre;
   }
 
-  const [[nodiscard]] std::vector<size_t> &get_extent() const { return extent; }
+  [[nodiscard]] const std::vector<size_t> &get_extent() const { return extent; }
 
   template <class OptimiserType> void optimiser_update(OptimiserType &optim, const ssize_t overlap_count) {
     DEBUG("gradient descent ran using " + str(optim.function_evaluations()) + " cost function evaluations.");

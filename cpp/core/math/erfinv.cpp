@@ -33,8 +33,8 @@ default_type erfinv(const default_type p) {
     }
 
     [[nodiscard]] default_type Y() const { return m_Y; }
-    const [[nodiscard]] Eigen::Array<default_type, 8, 1> &P() const { return m_P; }
-    const [[nodiscard]] Eigen::Array<default_type, 10, 1> &Q() const { return m_Q; }
+    [[nodiscard]] const Eigen::Array<default_type, 8, 1> &P() const { return m_P; }
+    [[nodiscard]] const Eigen::Array<default_type, 10, 1> &Q() const { return m_Q; }
 
   private:
     Eigen::Array<default_type, 8, 1> m_P;
@@ -119,11 +119,11 @@ default_type erfcinv(const default_type q) {
       assert(i < N);
       return m_Y[i];
     }
-    const [[nodiscard]] Eigen::Array<default_type, Eigen::Dynamic, 1> P(const size_t i) const {
+    [[nodiscard]] const Eigen::Array<default_type, Eigen::Dynamic, 1> P(const size_t i) const {
       assert(i < N);
       return m_P[i];
     }
-    const [[nodiscard]] Eigen::Array<default_type, Eigen::Dynamic, 1> Q(const size_t i) const {
+    [[nodiscard]] const Eigen::Array<default_type, Eigen::Dynamic, 1> Q(const size_t i) const {
       assert(i < N);
       return m_Q[i];
     }

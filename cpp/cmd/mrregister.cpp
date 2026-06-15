@@ -782,7 +782,7 @@ void run() {
       throw Exception("-nl_lmax option is not valid if no input image is FOD image");
     nl_lmax = parse_ints<uint32_t>(opt[0][0]);
     nl_registration.set_lmax(nl_lmax);
-    if (std::any_of(nl_lmax.begin(), nl_lmax.end(), [](uint32_t i) { return i > max_mc_image_lmax; }))
+    if (std::any_of(nl_lmax.begin(), nl_lmax.end(), [&max_mc_image_lmax](uint32_t i) { return i > max_mc_image_lmax; }))
       throw Exception("the requested -nl_lmax exceeds the lmax of the input images");
   }
 

@@ -177,8 +177,8 @@ public:
   [[nodiscard]] size_t n_SH() const { return SHT.cols(); }
   [[nodiscard]] size_t n_amp() const { return SHT.rows(); }
 
-  const [[nodiscard]] matrix_type &mat_A2SH() const { return iSHT; }
-  const [[nodiscard]] matrix_type &mat_SH2A() const { return SHT; }
+  [[nodiscard]] const matrix_type &mat_A2SH() const { return iSHT; }
+  [[nodiscard]] const matrix_type &mat_SH2A() const { return SHT; }
 
 protected:
   matrix_type SHT, iSHT;
@@ -600,7 +600,7 @@ public:
     delta(sh, dir, lmax);
     return sconv(sh, RH);
   }
-  const [[nodiscard]] inline Eigen::Matrix<ValueType, Eigen::Dynamic, 1> &RH_coefs() const { return RH; }
+  [[nodiscard]] const inline Eigen::Matrix<ValueType, Eigen::Dynamic, 1> &RH_coefs() const { return RH; }
 
 protected:
   const size_t lmax;

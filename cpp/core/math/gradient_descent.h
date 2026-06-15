@@ -70,8 +70,8 @@ public:
         g2(func.size()) {}
 
   [[nodiscard]] value_type value() const throw() { return f; }
-  const [[nodiscard]] Eigen::Matrix<value_type, Eigen::Dynamic, 1> &state() const throw() { return x; }
-  const [[nodiscard]] Eigen::Matrix<value_type, Eigen::Dynamic, 1> &gradient() const throw() { return g; }
+  [[nodiscard]] const Eigen::Matrix<value_type, Eigen::Dynamic, 1> &state() const throw() { return x; }
+  [[nodiscard]] const Eigen::Matrix<value_type, Eigen::Dynamic, 1> &gradient() const throw() { return g; }
   [[nodiscard]] value_type step_size() const { return dt; }
   [[nodiscard]] value_type gradient_norm() const throw() { return normg; }
   [[nodiscard]] int function_evaluations() const throw() { return nfeval; }

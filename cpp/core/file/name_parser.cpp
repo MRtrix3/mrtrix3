@@ -141,7 +141,7 @@ void NameParser::calculate_padding(const std::vector<uint32_t> &maxvals) {
 }
 
 void NameParser::Item::calc_padding(size_t maxval) {
-  maxval = std::max(maxval, *std::max_element(sequence().begin(), sequence().end()));
+  maxval = std::max(maxval, static_cast<size_t>(*std::max_element(sequence().begin(), sequence().end())));
   seq_length = 1;
   for (size_t num = 10; maxval >= num; num *= 10)
     seq_length += 1;

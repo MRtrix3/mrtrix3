@@ -50,7 +50,7 @@ public:
 
   [[nodiscard]] ssize_t size(size_t axis) const { return (axis == extract_axis ? nsize : base_type::size(axis)); }
 
-  const [[nodiscard]] transform_type &transform() const { return trans; }
+  [[nodiscard]] const transform_type &transform() const { return trans; }
 
   [[nodiscard]] ssize_t get_index(size_t axis) const {
     return (axis == extract_axis ? current_pos : parent().index(axis));
@@ -104,7 +104,7 @@ public:
 
   [[nodiscard]] ssize_t size(size_t axis) const { return sizes[axis]; }
 
-  const [[nodiscard]] transform_type &transform() const { return trans; }
+  [[nodiscard]] const transform_type &transform() const { return trans; }
 
   void reset() {
     for (size_t n = 0; n < ndim(); ++n) {

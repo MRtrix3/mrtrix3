@@ -16,8 +16,9 @@
 
 #include "mrview/sync/localsocketreader.h"
 
-#include "exception.h"
 #include <memory>
+
+#include "exception.h"
 
 namespace MR::GUI::MRView::Sync {
 LocalSocketReader::LocalSocketReader(QLocalSocket *mySocket) : QObject(0) {

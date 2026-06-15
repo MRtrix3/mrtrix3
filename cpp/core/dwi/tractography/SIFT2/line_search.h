@@ -58,7 +58,7 @@ public:
 
   // Interfaces for line searches
   [[nodiscard]] Result get(const double) const;
-  double operator()(const double) const;
+  [[nodiscard]] double operator()(const double) const;
 
 protected:
   // Necessary information for those fixels traversed by this streamline

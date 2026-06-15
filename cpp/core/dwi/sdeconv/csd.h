@@ -247,7 +247,7 @@ public:
     return false;
   }
 
-  const [[nodiscard]] Eigen::VectorXd &FOD() const { return F; }
+  [[nodiscard]] const Eigen::VectorXd &FOD() const { return F; }
 
   const Shared &shared;
 

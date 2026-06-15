@@ -64,7 +64,7 @@ public:
   [[nodiscard]] default_type get_FOD() const { return FOD; }
   [[nodiscard]] default_type get_TD() const { return TD; }
   [[nodiscard]] default_type get_weight() const { return weight; }
-  const [[nodiscard]] Eigen::Vector3d &get_dir() const { return dir; }
+  [[nodiscard]] const Eigen::Vector3d &get_dir() const { return dir; }
 
   void scale_FOD(const default_type factor) { FOD *= factor; }
   void set_weight(const default_type w) { weight = w; }

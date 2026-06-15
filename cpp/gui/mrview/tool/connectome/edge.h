@@ -234,7 +234,7 @@ private:
       size_t max_num_points{0};
       size_t LOD{0};
       GLsizei *element_counts{nullptr};
-      GLuint **element_indices;
+      GLuint **element_indices{nullptr};
 
     private:
       void regenerate();

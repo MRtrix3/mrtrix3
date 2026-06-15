@@ -16,9 +16,9 @@
 
 #include "connectome/enhance.h"
 
-#include "connectome/mat2vec.h"
 #include <memory>
 
+#include "connectome/mat2vec.h"
 #include "progressbar.h"
 
 namespace MR::Connectome::Enhance {

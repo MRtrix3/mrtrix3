@@ -106,9 +106,9 @@ public:
     return list[index];
   }
   [[nodiscard]] size_t size() const { return list.size(); }
-  const [[nodiscard]] Calibrator &get_calibration() const { return info; }
+  [[nodiscard]] const Calibrator &get_calibration() const { return info; }
 
-  const [[nodiscard]] vector_type &pdf() const { return list; }
+  [[nodiscard]] const vector_type &pdf() const { return list; }
   [[nodiscard]] cdf_type cdf() const;
 
   [[nodiscard]] default_type first_min() const;

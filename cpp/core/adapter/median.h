@@ -38,7 +38,7 @@ public:
   Median(const ImageType &parent, const std::vector<uint32_t> &extent) : base_type(parent) { set_extent(extent); }
 
   void set_extent(const std::vector<uint32_t> &ext) {
-    if (std::any_of(ext.begin(), ext.end(), [](uint32_t i) { return (i & uint32_t(1)) == 0U }))
+    if (std::any_of(ext.begin(), ext.end(), [](uint32_t i) { return (i & uint32_t(1)) == 0U; }))
       throw Exception("expected odd number for extent");
     if (ext.size() != 1 && ext.size() != 3)
       throw Exception("unexpected number of elements specified in extent");

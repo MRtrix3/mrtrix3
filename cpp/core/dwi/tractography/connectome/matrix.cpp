@@ -20,6 +20,7 @@
 
 #include "file/matrix.h"
 #include "file/path.h"
+#include "mrtrix.h"
 
 namespace MR::DWI::Tractography::Connectome {
 
@@ -177,14 +178,15 @@ template <typename T> void Matrix<T>::write_assignments(const std::filesystem::p
   for (const auto &assignments_pair : assignments_pairs)
     stream << str(assignments_pair.first) << " " << str(assignments_pair.second) << "\n";
   for (const auto &assignments_list : assignments_lists) {
-    if (assignments_list.empty()) {
-      stream << "\n";
-      continue;
-    }
-    stream << str((*i)[0]);
-    for (size_t j = 1; j != i->size(); ++j)
-      stream << " " << str((*i)[j]);
-    stream << "\n";
+    //if (assignments_list.empty()) {
+    //  stream << "\n";
+    //  continue;
+    //}
+    stream << join(assignments_list, " ") << "\n";
+    //stream << str(assignments_list[0]);
+    //for (size_t j = 1; j != assignments_list.size(); ++j)
+    //  stream << " " << str(assignments_list[j]);
+    //stream << "\n";
   }
 }
 

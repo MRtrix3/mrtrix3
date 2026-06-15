@@ -40,7 +40,7 @@ public:
 
   [[nodiscard]] value_type coef(size_t i) const { return (w[i]); }
 
-  template <class S> S value(const S *vals) const { return (value(vals[0], vals[1], vals[2], vals[3])); }
+  template <class S> [[nodiscard]] S value(const S *vals) const { return (value(vals[0], vals[1], vals[2], vals[3])); }
   template <class S> [[nodiscard]] S value(const std::array<S, 4> vals) const {
     return (value(vals[0], vals[1], vals[2], vals[3]));
   }

@@ -38,19 +38,19 @@ protected:
 public:
   using value_type = typename ImageType::value_type;
 
-  const template <class U> Base &operator=(const U &V) { return parent_ = V; }
+  template <class U> const Base &operator=(const U &V) { return parent_ = V; }
 
-  FORCE_INLINE ImageType &parent() { return parent_; }
+  [[nodiscard]] FORCE_INLINE ImageType &parent() { return parent_; }
   [[nodiscard]] FORCE_INLINE bool valid() const { return parent_.valid(); }
   FORCE_INLINE bool operator!() const { return !valid(); }
-  const [[nodiscard]] FORCE_INLINE ImageType &parent() const { return parent_; }
+  [[nodiscard]] FORCE_INLINE const ImageType &parent() const { return parent_; }
   [[nodiscard]] FORCE_INLINE std::string name() const { return parent_.name(); }
   [[nodiscard]] FORCE_INLINE size_t ndim() const { return parent_.ndim(); }
   [[nodiscard]] FORCE_INLINE ssize_t size(size_t axis) const { return parent_.size(axis); }
   [[nodiscard]] FORCE_INLINE default_type spacing(size_t axis) const { return parent_.spacing(axis); }
   [[nodiscard]] FORCE_INLINE ssize_t stride(size_t axis) const { return parent_.stride(axis); }
-  const [[nodiscard]] FORCE_INLINE transform_type &transform() const { return parent_.transform(); }
-  const [[nodiscard]] FORCE_INLINE KeyValues &keyval() const { return parent_.keyval(); }
+  [[nodiscard]] FORCE_INLINE const transform_type &transform() const { return parent_.transform(); }
+  [[nodiscard]] FORCE_INLINE const KeyValues &keyval() const { return parent_.keyval(); }
 
   [[nodiscard]] FORCE_INLINE ssize_t get_index(size_t axis) const { return parent_.index(axis); }
   FORCE_INLINE void move_index(size_t axis, ssize_t increment) { parent_.index(axis) += increment; }

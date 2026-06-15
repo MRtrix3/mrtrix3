@@ -54,9 +54,9 @@ public:
 
     [[nodiscard]] std::string string() const { return (str); }
 
-    const [[nodiscard]] std::vector<uint32_t> &sequence() const { return (seq); }
+    [[nodiscard]] const std::vector<uint32_t> &sequence() const { return (seq); }
 
-    std::vector<uint32_t> &sequence() { return (seq); }
+    [[nodiscard]] std::vector<uint32_t> &sequence() { return (seq); }
 
     [[nodiscard]] bool is_string() const { return (seq_length == 0); }
 
@@ -80,9 +80,9 @@ public:
 
   [[nodiscard]] std::string spec() const { return specification; }
 
-  const Item &operator[](size_t i) const { return (array[i]); }
+  [[nodiscard]] const Item &operator[](size_t i) const { return (array[i]); }
 
-  const [[nodiscard]] std::vector<uint32_t> &sequence(size_t index) const {
+  [[nodiscard]] const std::vector<uint32_t> &sequence(size_t index) const {
     return (array[seq_index[index]].sequence());
   }
 
@@ -146,7 +146,7 @@ public:
     size_t max_name_size;
   };
 
-  const [[nodiscard]] std::filesystem::path &name() const { return filename; }
+  [[nodiscard]] const std::filesystem::path &name() const { return filename; }
   [[nodiscard]] size_t ndim() const { return indices.size(); }
   [[nodiscard]] uint32_t index(size_t num) const { return indices[num]; }
 

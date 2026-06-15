@@ -60,14 +60,14 @@ public:
   FORCE_INLINE bool operator!() const { return !valid(); }
 
   //! get generic key/value text attributes
-  const [[nodiscard]] FORCE_INLINE KeyValues &keyval() const { return buffer->keyval(); }
+  [[nodiscard]] FORCE_INLINE const KeyValues &keyval() const { return buffer->keyval(); }
 
   [[nodiscard]] FORCE_INLINE std::string name() const { return buffer->name(); }
-  const [[nodiscard]] FORCE_INLINE std::filesystem::path &path() const {
+  [[nodiscard]] FORCE_INLINE const std::filesystem::path &path() const {
     static const std::filesystem::path empty;
     return valid() ? static_cast<const Header &>(*buffer).path() : empty;
   }
-  const [[nodiscard]] FORCE_INLINE transform_type &transform() const { return buffer->transform(); }
+  [[nodiscard]] FORCE_INLINE const transform_type &transform() const { return buffer->transform(); }
 
   [[nodiscard]] FORCE_INLINE size_t ndim() const { return buffer->ndim(); }
   [[nodiscard]] FORCE_INLINE ssize_t size(size_t axis) const { return buffer->size(axis); }
@@ -259,7 +259,7 @@ template <typename ValueType> struct TmpImage : public ImageBase<TmpImage<ValueT
   size_t offset;
 
   [[nodiscard]] bool valid() const { return true; }
-  const [[nodiscard]] std::string name() const { return "direct IO buffer"; }
+  [[nodiscard]] const std::string name() const { return "direct IO buffer"; }
   [[nodiscard]] FORCE_INLINE size_t ndim() const { return b.ndim(); }
   [[nodiscard]] FORCE_INLINE ssize_t size(size_t axis) const { return b.size(axis); }
   [[nodiscard]] FORCE_INLINE ssize_t stride(size_t axis) const { return strides[axis]; }
