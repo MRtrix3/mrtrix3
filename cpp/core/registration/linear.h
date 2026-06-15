@@ -83,8 +83,8 @@ struct StageSetting {
   size_t stage_iterations{1}, gd_max_iter{500};
   default_type scale_factor{1.0};
   std::vector<OptimiserAlgoType> optimisers;
-  OptimiserAlgoType optimiser_default{OptimiserAlgoType::bbgd}, optimiser_first{OptimiserAlgoType::bbgd},
-      optimiser_last{OptimiserAlgoType::gd};
+  OptimiserAlgoType optimiser_default{OptimiserAlgoType::BBGD}, optimiser_first{OptimiserAlgoType::BBGD},
+      optimiser_last{OptimiserAlgoType::GD};
   default_type loop_density{1.0};
   ssize_t fod_lmax{-1};
   std::vector<std::filesystem::path> diagnostics_image_paths;

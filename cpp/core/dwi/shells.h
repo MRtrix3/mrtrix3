@@ -42,7 +42,7 @@ public:
   Shell() : mean(0.0), stdev(0.0), min(0.0), max(0.0) {}
   Shell(const Eigen::MatrixXd &grad, const std::vector<size_t> &indices);
 
-  const [[nodiscard]] std::vector<size_t> &get_volumes() const { return volumes; }
+  [[nodiscard]] const std::vector<size_t> &get_volumes() const { return volumes; }
   [[nodiscard]] size_t count() const { return volumes.size(); }
   [[nodiscard]] size_t size() const { return volumes.size(); }
 
@@ -71,8 +71,8 @@ public:
   Shells(const Eigen::MatrixXd &grad);
 
   const Shell &operator[](const size_t i) const { return shells[i]; }
-  const [[nodiscard]] Shell &smallest() const { return shells.front(); }
-  const [[nodiscard]] Shell &largest() const { return shells.back(); }
+  [[nodiscard]] const Shell &smallest() const { return shells.front(); }
+  [[nodiscard]] const Shell &largest() const { return shells.back(); }
   [[nodiscard]] size_t count() const { return shells.size(); }
   [[nodiscard]] size_t size() const { return shells.size(); }
   [[nodiscard]] size_t volumecount() const {

@@ -53,7 +53,7 @@ public:
 
   [[nodiscard]] std::string get_name() const { return name; }
   [[nodiscard]] std::string get_short_name() const { return !short_name.empty() ? short_name : name; }
-  const [[nodiscard]] RGB &get_colour() const { return colour; }
+  [[nodiscard]] const RGB &get_colour() const { return colour; }
   [[nodiscard]] uint8_t get_alpha() const { return alpha; }
 
 private:

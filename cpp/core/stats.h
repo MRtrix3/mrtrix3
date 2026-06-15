@@ -91,10 +91,9 @@ public:
           std::cout << count;
           break;
         default:
-          throw Exception("stats type not supported: " + field);
+          throw Exception("stats type not supported: " + Enum::lowercase_name(field));
         }
-        if (n < fields.size() - 1)
-          std::cout << " ";
+        std::cout << " ";
       }
       std::cout << "\n";
 

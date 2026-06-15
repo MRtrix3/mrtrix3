@@ -153,7 +153,7 @@ Shuffler::Shuffler(const index_type num_rows, const bool is_nonstationarity, std
   initialise(error_types, nshuffles_explicit, is_nonstationarity, eb_within, eb_whole);
 
   if (!msg.empty())
-    progress = std::make_unique<ProgressBar>(msg, nshuffles);
+    progress.emplace(msg, nshuffles);
 }
 
 Shuffler::Shuffler(const index_type num_rows,
@@ -173,14 +173,14 @@ Shuffler::Shuffler(const index_type num_rows,
     : rows(num_rows), nshuffles(num_shuffles) {
   initialise(error_types, true, is_nonstationarity, eb_within, eb_whole);
   if (!msg.empty())
-    progress = std::make_unique<ProgressBar>(msg, nshuffles);
+    progress.emplace(msg, nshuffles);
 }
 
 bool Shuffler::operator()(Shuffle &output) {
   output.index = counter;
   if (counter >= nshuffles) {
-    if (progress)
-      progress.reset(nullptr);
+    if (progress.has_value())
+      progress.reset();
     output.data.resize(0, 0);
     return false;
   }
@@ -202,7 +202,7 @@ bool Shuffler::operator()(Shuffle &output) {
     }
   }
   ++counter;
-  if (progress)
+  if (progress.has_value())
     ++(*progress);
   return true;
 }

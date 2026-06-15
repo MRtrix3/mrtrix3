@@ -61,7 +61,7 @@ public:
   virtual bool operator()(const FMLS::FOD_lobes &in);
 
   // Functions can copy-construct their own voxel accessor from this and retain const-ness:
-  const [[nodiscard]] VoxelAccessor &accessor() const { return _accessor; }
+  [[nodiscard]] const VoxelAccessor &accessor() const { return _accessor; }
 
   [[nodiscard]] const ::MR::Header &header() const { return _header; }
 

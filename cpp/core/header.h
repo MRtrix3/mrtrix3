@@ -204,7 +204,7 @@ public:
   [[nodiscard]] std::string format() const { return format_; }
 
   //! get the 4x4 affine transformation matrix mapping image to world coordinates
-  const [[nodiscard]] transform_type &transform() const { return transform_; }
+  [[nodiscard]] const transform_type &transform() const { return transform_; }
   //! get/set the 4x4 affine transformation matrix mapping image to world coordinates
   transform_type &transform() { return transform_; }
 
@@ -241,21 +241,21 @@ public:
       assert((state_ != State::Unknown) == shuffle_.valid());
       return state_ != State::Unknown;
     }
-    const [[nodiscard]] Axes::permutations_type &permutations() const { return shuffle_.permutations; }
+    [[nodiscard]] const Axes::permutations_type &permutations() const { return shuffle_.permutations; }
     [[nodiscard]] size_t permutation(const size_t axis) const {
       assert(axis < 3);
       return shuffle_.permutations[axis];
     }
-    const [[nodiscard]] Axes::flips_type &flips() const { return shuffle_.flips; }
+    [[nodiscard]] const Axes::flips_type &flips() const { return shuffle_.flips; }
     [[nodiscard]] bool flip(const size_t axis) const {
       assert(axis < 3);
       return shuffle_.flips[axis];
     }
-    const [[nodiscard]] transform_type &orig_transform() const { return orig_transform_; }
-    const [[nodiscard]] Stride::List &orig_strides() const { return orig_strides_; }
-    const [[nodiscard]] applied_transform_type &applied_transform() const { return applied_transform_; }
+    [[nodiscard]] const transform_type &orig_transform() const { return orig_transform_; }
+    [[nodiscard]] const Stride::List &orig_strides() const { return orig_strides_; }
+    [[nodiscard]] const applied_transform_type &applied_transform() const { return applied_transform_; }
     KeyValues &orig_keyval() { return orig_keyval_; }
-    const [[nodiscard]] KeyValues &orig_keyval() const { return orig_keyval_; }
+    [[nodiscard]] const KeyValues &orig_keyval() const { return orig_keyval_; }
 
     //! Human-readable per-output-axis enumeration of the shuffle.
     //!  Returns 3 lines (~R, ~A, ~S); empty if is_identity().
@@ -271,7 +271,7 @@ public:
     friend class Header;
   };
   //! get information on how the transform was modified on image load
-  const [[nodiscard]] Realignment &realignment() const { return realignment_; }
+  [[nodiscard]] const Realignment &realignment() const { return realignment_; }
   //! non-const accessor; used by external metadata importers (JSON, etc.)
   //!   to populate Realignment::orig_keyval() with the pre-transformation
   //!   view of axis-dependent fields.
@@ -312,7 +312,7 @@ public:
     PathProxy &operator=(PathProxy &&) = delete;
     PathProxy &operator=(const PathProxy &) = delete;
 
-    const operator std::filesystem::path &() const { return path; }
+    operator const std::filesystem::path &() const { return path; }
     const std::filesystem::path &operator=(const std::filesystem::path &new_path) {
       path = new_path;
       name = path.filename().string();
@@ -330,22 +330,22 @@ public:
   };
 
   //! get the path of the image
-  const [[nodiscard]] std::filesystem::path &path() const { return path_; }
+  [[nodiscard]] const std::filesystem::path &path() const { return path_; }
   //! get/set the path of the image
   PathProxy path() { return {name_, path_}; }
 
   //! get the number of voxels across axis
-  const [[nodiscard]] ssize_t &size(size_t axis) const;
+  [[nodiscard]] const ssize_t &size(size_t axis) const;
   //! get/set the number of voxels across axis
   ssize_t &size(size_t axis);
 
   //! get the voxel size along axis
-  const [[nodiscard]] default_type &spacing(size_t axis) const;
+  [[nodiscard]] const default_type &spacing(size_t axis) const;
   //! get/set the voxel size along axis
   default_type &spacing(size_t axis);
 
   //! get the stride between adjacent voxels along axis
-  const [[nodiscard]] ssize_t &stride(size_t axis) const;
+  [[nodiscard]] const ssize_t &stride(size_t axis) const;
   //! get/set the stride between adjacent voxels along axis
   ssize_t &stride(size_t axis);
 
@@ -451,7 +451,7 @@ public:
   Image<ValueType> get_image(std::optional<DirectIO> direct_io = std::nullopt, bool read_write_if_existing = false);
 
   //! get generic key/value text attributes
-  const [[nodiscard]] KeyValues &keyval() const { return keyval_; }
+  [[nodiscard]] const KeyValues &keyval() const { return keyval_; }
   //! get/set generic key/value text attributes
   KeyValues &keyval() { return keyval_; }
   //! merge key/value entries from another dictionary

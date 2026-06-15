@@ -113,7 +113,7 @@ void run() {
   opt = get_options("output");
   fields.reserve(opt.size());
   for (const auto &n : opt)
-    fields.push_back(n[0]);
+    fields.push_back(Enum::from_name<Stats::field_t>(n[0]));
 
   if ((App::log_level != 0) && fields.empty())
     Stats::print_header(is_complex);

@@ -176,7 +176,7 @@ public:
   [[nodiscard]] bool valid() const { return interp.valid(); }
   [[nodiscard]] int size(size_t axis) const { return axis < 3 ? dim[axis] : interp.size(axis); }
   [[nodiscard]] default_type spacing(size_t axis) const { return axis < 3 ? vox[axis] : interp.spacing(axis); }
-  const [[nodiscard]] transform_type &transform() const { return transform_; }
+  [[nodiscard]] const transform_type &transform() const { return transform_; }
   [[nodiscard]] std::string name() const { return interp.name(); }
 
   [[nodiscard]] ssize_t stride(size_t axis) const { return interp.stride(axis); }

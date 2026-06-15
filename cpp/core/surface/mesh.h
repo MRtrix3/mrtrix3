@@ -138,27 +138,27 @@ public:
   [[nodiscard]] std::string get_name() const { return name; }
   void set_name(std::string_view n) { name = n; }
 
-  const [[nodiscard]] Vertex &vert(const vertex_index_type i) const {
+  [[nodiscard]] const Vertex &vert(const vertex_index_type i) const {
     assert(i < vertices.size());
     return vertices[i];
   }
-  const [[nodiscard]] Vertex &norm(const vertex_index_type i) const {
+  [[nodiscard]] const Vertex &norm(const vertex_index_type i) const {
     assert(i < normals.size());
     return normals[i];
   }
-  const [[nodiscard]] Triangle &tri(const size_t i) const {
+  [[nodiscard]] const Triangle &tri(const size_t i) const {
     assert(i < triangles.size());
     return triangles[i];
   }
-  const [[nodiscard]] Quad &quad(const size_t i) const {
+  [[nodiscard]] const Quad &quad(const size_t i) const {
     assert(i < quads.size());
     return quads[i];
   }
 
-  const [[nodiscard]] VertexList &get_vertices() const { return vertices; }
-  const [[nodiscard]] VertexList &get_normals() const { return normals; }
-  const [[nodiscard]] TriangleList &get_triangles() const { return triangles; }
-  const [[nodiscard]] QuadList &get_quads() const { return quads; }
+  [[nodiscard]] const VertexList &get_vertices() const { return vertices; }
+  [[nodiscard]] const VertexList &get_normals() const { return normals; }
+  [[nodiscard]] const TriangleList &get_triangles() const { return triangles; }
+  [[nodiscard]] const QuadList &get_quads() const { return quads; }
 
   void load_triangle_vertices(VertexList &, const size_t) const;
   void load_quad_vertices(VertexList &, const size_t) const;

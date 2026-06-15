@@ -59,7 +59,7 @@ public:
   void add(const Connectome::Streamline_nodelist &);
   void finalize(const float);
 
-  const [[nodiscard]] Tractography::Streamline<float> &get() const {
+  [[nodiscard]] const Tractography::Streamline<float> &get() const {
     assert(is_finalized);
     return *this;
   }
