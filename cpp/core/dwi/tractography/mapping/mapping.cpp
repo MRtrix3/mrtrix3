@@ -30,7 +30,7 @@ size_t determine_upsample_ratio(const Header &header, const float step_size, con
 
 size_t determine_upsample_ratio(const Header &header, const std::filesystem::path &tck_path, const float ratio) {
   Properties properties;
-  Reader<> reader(tck_path, properties);
+  Tractogram<float>::open(tck_path, properties);
   return determine_upsample_ratio(header, properties, ratio);
 }
 
@@ -45,7 +45,7 @@ void generate_header(Header &header,
                      const std::vector<default_type> &voxel_size) {
 
   Properties properties;
-  Reader<> file(tck_file_path, properties);
+  auto file = Tractogram<float>::open(tck_file_path, properties);
 
   Streamline<> tck;
   size_t track_counter = 0;
@@ -82,7 +82,6 @@ void generate_header(Header &header,
 
   header.transform().matrix().setIdentity();
   header.transform().translation() = min_values.cast<double>();
-  file.close();
 }
 
 void oversample_header(Header &header, const std::vector<default_type> &voxel_size) {

@@ -15,8 +15,8 @@
  */
 
 #include "command.h"
-#include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/tractogram.h"
 #include "file/ofstream.h"
 #include "progressbar.h"
 
@@ -49,7 +49,7 @@ void run() {
   for (size_t i = 0; i < argument.size(); ++i) {
     const std::filesystem::path input_path{argument[i]};
     Tractography::Properties properties;
-    Tractography::Reader<float> file(input_path, properties);
+    auto file = Tractography::Tractogram<float>::open(input_path, properties);
 
     std::cout << "***********************************\n";
     std::cout << "  Tracks file: \"" << input_path.string() << "\"\n";

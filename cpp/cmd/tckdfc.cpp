@@ -27,8 +27,8 @@
 #include "thread_queue.h"
 #include "transform.h"
 
-#include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/tractogram.h"
 
 #include "dwi/tractography/mapping/loader.h"
 #include "dwi/tractography/mapping/mapper.h"
@@ -293,8 +293,7 @@ void run() {
   Tractography::Properties properties;
   {
     // Just get the properties for now; will re-instantiate the reader multiple times later
-    // TODO Constructor for properties using the file path?
-    Tractography::Reader<float> tck_file(input_tracks_path, properties);
+    Tractography::Tractogram<float>::open(input_tracks_path, properties);
   }
   const size_t num_tracks = properties["count"].empty() ? 0 : to<size_t>(properties["count"]);
 
@@ -361,7 +360,7 @@ void run() {
 
   if (is_static) {
 
-    Tractography::Reader<float> tck_file(input_tracks_path, properties);
+    auto tck_file = Tractography::Tractogram<float>::open(input_tracks_path, properties);
     Mapping::TrackLoader loader(tck_file, num_tracks, "Generating (static) TW-dFC image");
     Mapping::TrackMapperTWI mapper(H_3D, contrast_t::SCALAR_MAP, tck_stat_t::ENDS_CORR);
     mapper.set_upsample_ratio(upsample_ratio);
@@ -379,7 +378,7 @@ void run() {
     Image<uint32_t> counts;
     if (stat_vox == vox_stat_t::MEAN) {
       counts = Image<uint32_t>::scratch(H_3D, "Track count scratch buffer");
-      Tractography::Reader<float> tck_file(input_tracks_path, properties);
+      auto tck_file = Tractography::Tractogram<float>::open(input_tracks_path, properties);
       Mapping::TrackLoader loader(tck_file, num_tracks, "Calculating initial TDI");
       Mapping::TrackMapperBase mapper(H_3D);
       mapper.set_upsample_ratio(upsample_ratio);
@@ -397,7 +396,7 @@ void run() {
 
       {
         LogLevelLatch latch(0);
-        Tractography::Reader<float> tck_file(input_tracks_path, properties);
+        auto tck_file = Tractography::Tractogram<float>::open(input_tracks_path, properties);
         Mapping::TrackLoader loader(tck_file);
         Mapping::TrackMapperTWI mapper(H_3D, contrast_t::SCALAR_MAP, tck_stat_t::ENDS_CORR);
         mapper.set_upsample_ratio(upsample_ratio);

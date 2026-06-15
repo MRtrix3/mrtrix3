@@ -29,9 +29,9 @@
 #include "dwi/tractography/connectome/matrix.h"
 #include "dwi/tractography/connectome/metric.h"
 #include "dwi/tractography/connectome/tck2nodes.h"
-#include "dwi/tractography/file.h"
 #include "dwi/tractography/mapping/loader.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/tractogram.h"
 #include "dwi/tractography/weights.h"
 
 using namespace MR;
@@ -159,7 +159,7 @@ void execute(Image<node_t> &node_image, const node_t max_node_index, const std::
 
   // Prepare for reading the track data
   Tractography::Properties properties;
-  Tractography::Reader<float> reader(argument[0], properties);
+  auto reader = Tractography::Tractogram<float>::open(argument[0], properties);
 
   // Initialise classes in preparation for multi-threading
   Mapping::TrackLoader loader(

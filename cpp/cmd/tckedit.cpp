@@ -16,6 +16,7 @@
 
 #include <filesystem>
 #include <string>
+#include <vector>
 
 #include "command.h"
 #include "exception.h"
@@ -23,9 +24,10 @@
 #include "ordered_thread_queue.h"
 #include "types.h"
 
-#include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/roi.h"
+#include "dwi/tractography/tractogram.h"
+#include "dwi/tractography/tractogram_item.h"
 #include "dwi/tractography/weights.h"
 
 #include "dwi/tractography/editing/editing.h"
@@ -155,7 +157,7 @@ void run() {
     input_file_list.push_back(input_path);
 
     Properties p;
-    { Reader<float> reader(input_path, p); }
+    Tractography::Tractogram<float>::open(input_path, p);
 
     for (const auto &i : p.comments) {
       bool present = false;
@@ -229,6 +231,19 @@ void run() {
   if (selection_dps_path.has_value())
     receiver.set_selection_dps_path(*selection_dps_path);
 
-  Thread::run_ordered_queue(
-      loader, Thread::batch(Streamline<>()), Thread::multi(worker), Thread::batch(Streamline<>()), receiver);
+  // When any mask is present, a single input streamline may be cropped into several
+  //   output streamlines; the worker yields std::vector<TractogramItem<>> on the
+  //   second pipe in that case. Without a mask, no fragmentation can occur and the
+  //   second pipe carries a single TractogramItem<>. The first pipe is always
+  //   TractogramItem<>.
+  if (properties.mask.size() != 0) {
+    Thread::run_ordered_queue(loader,
+                              Thread::batch(TractogramItem<>()),
+                              Thread::multi(worker),
+                              Thread::batch(std::vector<TractogramItem<>>()),
+                              receiver);
+  } else {
+    Thread::run_ordered_queue(
+        loader, Thread::batch(TractogramItem<>()), Thread::multi(worker), Thread::batch(TractogramItem<>()), receiver);
+  }
 }

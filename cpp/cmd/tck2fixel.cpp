@@ -202,7 +202,7 @@ void run() {
   Fixel::copy_index_and_directions_file(std::filesystem::path(argument[1].as_text()), argument[2].as_text());
 
   DWI::Tractography::Properties properties;
-  DWI::Tractography::Reader<float> track_file(argument[0], properties);
+  auto track_file = DWI::Tractography::Tractogram<float>::open(argument[0], properties);
   const size_t num_tracks = properties["count"].empty() ? 0 : to<size_t>(properties["count"]);
   if (num_tracks == 0)
     throw Exception("no tracks found in input file");

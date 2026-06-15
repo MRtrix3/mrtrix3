@@ -116,6 +116,47 @@ public:
     return true;
   }
 
+  //! \brief read the next streamline only (vertices + weight + index), ignoring sidecars.
+  /*! The lightweight counterpart to read(item_type&): fills a bare Streamline and
+   * skips the per-streamline (dps) and per-vertex (dpv) sidecar payloads entirely.
+   * Intended for the call sites (Stages 2 and 4) that only ever consumed vertices,
+   * the streamline weight, and the ordinal index — the contract of the legacy
+   * Reader<>::operator()(Streamline&).
+   *
+   * \par Weight handling
+   * The streamline weight is honoured on this path; non-weight sidecar data are not.
+   *   - The "available" case needs no extra work: the handler's
+   *     operator()(Streamline&) already fills streamline.weight for formats that
+   *     carry weights natively (notably ".tck" via "-tck_weights_in"), so the bare
+   *     forward below already yields the correct weight.
+   *   - The "nominated by user" case is an external weight sidecar registered via
+   *     register_input_sidecar(). The input-sidecar loaders (SidecarLoader,
+   *     dwi/tractography/sidecar.h) operate on a TractogramItem; a weight-targeting
+   *     loader writes into item.streamline.weight. So when (and only when) input
+   *     sidecars are registered, this path reads into a reused member item, runs the
+   *     loaders, and moves item.streamline out into the caller's streamline — the
+   *     weight survives the move while dps/dpv are discarded. None of the currently
+   *     implemented loaders (MatrixLoader/NpyLoader/TsfLoader) mutate
+   *     streamline.weight — they populate dps/dpv only — so today they are
+   *     effectively no-ops on this path; the plumbing exists so that a future
+   *     weight-targeting loader is honoured without re-plumbing the call sites.
+   *
+   * The common no-sidecar case forwards straight to the handler with zero overhead
+   * and allocates no TractogramItem. */
+  bool read(Streamline<ValueType> &streamline) {
+    assert(reader != nullptr);
+    // Fast path: no registered input sidecars -> forward straight to the handler,
+    //   allocating no TractogramItem. The handler fills streamline.weight natively.
+    if (input_sidecars.empty())
+      return (*reader)(streamline);
+    // Sidecar path: read into the reused member item so a weight-targeting loader
+    //   can set the weight, then move the streamline out; dps/dpv are discarded.
+    if (!read(streamline_read_item))
+      return false;
+    streamline = std::move(streamline_read_item.streamline);
+    return true;
+  }
+
   //! \brief append an item to the dataset (write mode only).
   /*! Explicit, unambiguous write entry point; the operator() overload below
    * forwards to it for use as a queue sink. */
@@ -168,6 +209,13 @@ public:
    * intended role unambiguously: a non-const lvalue reads, a const lvalue
    * writes. Prefer the named read() / write() methods where clarity matters. */
   bool operator()(item_type &item) { return read(item); }
+
+  //! \brief queue-source convenience: read the next streamline only (read mode only).
+  /*! The lightweight Streamline counterpart to operator()(item_type&), forwarding to
+   * read(Streamline&). A non-const Streamline& lvalue binds only to this overload —
+   * not to operator()(item_type&), which would require a user-defined conversion to a
+   * non-const reference — so the read source is unambiguous. */
+  bool operator()(Streamline<ValueType> &streamline) { return read(streamline); }
 
   //! \brief queue-sink convenience: append an item (write mode only).
   bool operator()(const item_type &item) { return write(item); }
@@ -354,6 +402,10 @@ private:
   /*! Populated from the format's on-disk groups/dpg on open() (read), or by the
    * caller before finalisation (write). Empty for formats without grouping. */
   Grouping grouping_;
+  //! \brief reused scratch item for read(Streamline&) when input sidecars are registered.
+  /*! Only touched on the sidecar-present branch of read(Streamline&), so the
+   * common no-sidecar Streamline read allocates no TractogramItem. */
+  item_type streamline_read_item;
   //! registered standalone input-sidecar loaders (§2.5; Stage 11, step 5)
   std::vector<std::unique_ptr<SidecarLoader<ValueType>>> input_sidecars;
   //! registered standalone output-sidecar exporters (§2.7; Stage 11, step 6)

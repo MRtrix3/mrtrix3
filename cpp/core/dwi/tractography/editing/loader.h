@@ -22,37 +22,46 @@
 #include "memory.h"
 #include "types.h"
 
-#include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/streamline.h"
+#include "dwi/tractography/tractogram.h"
+#include "dwi/tractography/tractogram_item.h"
 
 namespace MR::DWI::Tractography::Editing {
 
+//! \brief tckedit input source: concatenates the input files into one item stream.
+/*! Sources from a format-agnostic Tractogram (any registered tractography format),
+ * yielding TractogramItem<> so that per-streamline (dps), per-vertex (dpv) and
+ * weight payloads flow downstream. The reader is move-assigned as the source
+ * advances across input files (Tractogram is factory-only but movable). */
 class Loader {
 
 public:
   Loader(const std::vector<std::filesystem::path> &files)
-      : file_list(files), dummy_properties(), reader(new Reader<>(file_list[0], dummy_properties)), file_index(0) {}
+      : file_list(files),
+        dummy_properties(),
+        reader(Tractogram<float>::open(file_list[0], dummy_properties)),
+        file_index(0) {}
 
-  bool operator()(Streamline<> &);
+  bool operator()(TractogramItem<> &);
 
 private:
   const std::vector<std::filesystem::path> &file_list;
   Properties dummy_properties;
-  std::unique_ptr<Reader<>> reader;
+  Tractogram<float> reader;
   size_t file_index;
 };
 
-bool Loader::operator()(Streamline<> &out) {
+bool Loader::operator()(TractogramItem<> &out) {
   out.clear();
 
-  if ((*reader)(out))
+  if (reader.read(out))
     return true;
 
   while (++file_index != file_list.size()) {
     dummy_properties.clear();
-    reader.reset(new Reader<>(file_list[file_index], dummy_properties));
-    if ((*reader)(out))
+    reader = Tractogram<float>::open(file_list[file_index], dummy_properties);
+    if (reader.read(out))
       return true;
   }
 

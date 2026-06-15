@@ -20,12 +20,13 @@
 #include "progressbar.h"
 #include "types.h"
 
+#include "file/matrix.h"
 #include "file/ofstream.h"
 
 #include "math/median.h"
 
-#include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/tractogram.h"
 #include "dwi/tractography/weights.h"
 
 using namespace MR;
@@ -106,7 +107,7 @@ void run() {
 
   {
     Tractography::Properties properties;
-    Tractography::Reader<float> reader(argument[0], properties);
+    auto reader = Tractography::Tractogram<float>::open(argument[0], properties);
 
     if (properties.find("count") != properties.end())
       header_count = to<size_t>(properties["count"]);

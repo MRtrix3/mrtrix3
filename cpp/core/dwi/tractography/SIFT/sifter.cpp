@@ -350,7 +350,7 @@ void SIFTer::perform_filtering() {
 void SIFTer::output_filtered_tracks(const std::filesystem::path &input_path,
                                     const std::filesystem::path &output_path) const {
   Tractography::Properties p;
-  Tractography::Reader<float> reader(input_path, p);
+  auto reader = Tractography::Tractogram<float>::open(input_path, p);
   p["SIFT_mu"] = str(mu());
   auto output = Tractography::Tractogram<float>::create(output_path, p);
   track_t tck_counter = 0;
@@ -363,7 +363,6 @@ void SIFTer::output_filtered_tracks(const std::filesystem::path &input_path,
       output.note_unexported();
     ++progress;
   }
-  reader.close();
 }
 
 void SIFTer::output_selection(const std::filesystem::path &path) const {

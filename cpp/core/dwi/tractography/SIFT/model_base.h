@@ -30,7 +30,7 @@
 
 #include "dwi/directions/set.h"
 
-#include "dwi/tractography/file.h"
+#include "dwi/tractography/tractogram.h"
 
 #include "dwi/tractography/ACT/tissues.h"
 
@@ -189,7 +189,7 @@ template <class Fixel> void ModelBase<Fixel>::scale_FDs_by_GM() {
 
 template <class Fixel> void ModelBase<Fixel>::map_streamlines(const std::filesystem::path &path) {
   Tractography::Properties properties;
-  Tractography::Reader<> file(path, properties);
+  auto file = Tractography::Tractogram<float>::open(path, properties);
 
   const track_t count = (properties.find("count") == properties.end()) ? 0 : to<track_t>(properties["count"]);
   if (!count)

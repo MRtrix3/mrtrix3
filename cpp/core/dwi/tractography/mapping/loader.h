@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "dwi/tractography/file.h"
 #include "dwi/tractography/streamline.h"
+#include "dwi/tractography/tractogram.h"
 #include "memory.h"
 #include "progressbar.h"
 #include "thread_queue.h"
@@ -27,14 +27,14 @@ namespace MR::DWI::Tractography::Mapping {
 class TrackLoader {
 
 public:
-  TrackLoader(Reader<> &file, const size_t to_load = 0, std::string_view msg = "mapping tracks to image")
-      : reader(file),
+  TrackLoader(Tractogram<float> &file, const size_t to_load = 0, std::string_view msg = "mapping tracks to image")
+      : tractogram(file),
         tracks_to_load(to_load),
         progress(!msg.empty() ? new ProgressBar(msg, tracks_to_load) : nullptr) {}
 
   virtual ~TrackLoader() {}
   virtual bool operator()(Streamline<> &out) {
-    if (!reader(out)) {
+    if (!tractogram(out)) {
       progress.reset();
       return false;
     }
@@ -49,7 +49,7 @@ public:
   }
 
 protected:
-  Reader<> &reader;
+  Tractogram<float> &tractogram;
   const size_t tracks_to_load;
   std::unique_ptr<ProgressBar> progress;
 };

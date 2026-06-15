@@ -18,7 +18,7 @@
 
 namespace MR::DWI::Tractography::Editing {
 
-bool Receiver::operator()(const Streamline<> &in) {
+bool Receiver::operator()(const TractogramItem<> &in) {
   auto display_func = [&]() {
     return (printf("%8" PRIu64 " read, %8" PRIu64 " written", total_count, count) +
             (crop ? printf(", %8" PRIu64 " segments", segments) : ""));
@@ -29,45 +29,61 @@ bool Receiver::operator()(const Streamline<> &in) {
 
   ++total_count;
 
-  if (in.empty()) {
+  if (in.streamline.empty()) {
     output.note_unexported();
     progress.update(display_func);
     return true;
   }
 
-  if (in[0].allFinite()) {
-
-    if (skip) {
-      --skip;
-      progress.update(display_func);
-      return true;
-    }
-    output.write(TractogramItem<float>(in));
-    ++segments;
-    record_selection();
-
-  } else {
-
-    // Explicitly handle case where the streamline has been cropped into multiple components
-    // Worker class separates track segments using invalid points as delimiters
-    // Each fragment is an independent output streamline and is assigned its own
-    //   selection value (step 3 fragmentation policy).
-    Streamline<> temp;
-    for (const auto &p : in) {
-      if (p.allFinite()) {
-        temp.push_back(p);
-      } else if (!temp.empty()) {
-        temp.set_index(in.get_index());
-        temp.weight = in.weight;
-        output.write(TractogramItem<float>(temp));
-        ++segments;
-        record_selection();
-        temp.clear();
-      }
-    }
-    assert(temp.empty());
+  if (skip) {
+    --skip;
+    progress.update(display_func);
+    return true;
   }
 
+  output.write(in);
+  ++segments;
+  record_selection();
+
+  ++count;
+  progress.update(display_func);
+  return (!(number && (count == number)));
+}
+
+bool Receiver::operator()(const std::vector<TractogramItem<>> &fragments) {
+  auto display_func = [&]() {
+    return (printf("%8" PRIu64 " read, %8" PRIu64 " written", total_count, count) +
+            (crop ? printf(", %8" PRIu64 " segments", segments) : ""));
+  };
+
+  if (number && (count == number))
+    return false;
+
+  ++total_count;
+
+  if (fragments.empty()) {
+    output.note_unexported();
+    progress.update(display_func);
+    return true;
+  }
+
+  // -skip operates on whole input streamlines: one decrement per input, not per fragment.
+  if (skip) {
+    --skip;
+    progress.update(display_func);
+    return true;
+  }
+
+  // Each fragment is an independent output streamline and is assigned its own
+  //   selection value (step 3 fragmentation policy). The fragments share an index;
+  //   nothing here may rely on per-fragment index values or ordering.
+  for (const auto &fragment : fragments) {
+    output.write(fragment);
+    ++segments;
+    record_selection();
+  }
+
+  // -number caps the number of input streamlines selected, not fragments.
   ++count;
   progress.update(display_func);
   return (!(number && (count == number)));

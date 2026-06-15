@@ -22,8 +22,8 @@
 #include "progressbar.h"
 #include "types.h"
 
-#include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/tractogram.h"
 
 namespace MR::DWI::Tractography::Mapping {
 

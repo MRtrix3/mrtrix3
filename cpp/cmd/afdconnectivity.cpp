@@ -20,11 +20,11 @@
 #include "command.h"
 #include "dwi/fmls.h"
 #include "dwi/tractography/SIFT/model_base.h"
-#include "dwi/tractography/file.h"
 #include "dwi/tractography/mapping/loader.h"
 #include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/mapping/mapping.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/tractogram.h"
 #include "memory.h"
 #include "mrtrix_version.h"
 
@@ -166,7 +166,7 @@ private:
 value_type AFDConnectivity::get(const std::filesystem::path &path) {
 
   Tractography::Properties properties;
-  Tractography::Reader<value_type> reader(path, properties);
+  auto reader = Tractography::Tractogram<float>::open(path, properties);
   const size_t track_count = (properties.find("count") == properties.end() ? 0 : to<size_t>(properties["count"]));
   DWI::Tractography::Mapping::TrackLoader loader(reader, track_count, "summing apparent fibre density within track");
 

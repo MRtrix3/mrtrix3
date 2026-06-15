@@ -64,7 +64,12 @@ public:
    * writes them as a standalone per-streamline dps sidecar on destruction. */
   void set_selection_dps_path(const std::filesystem::path &path) { selection_dps_path = path; }
 
-  bool operator()(const Streamline<> &);
+  //! \brief no-mask path: consume one item per input streamline.
+  bool operator()(const TractogramItem<> &);
+  //! \brief mask path: consume the fragment items of one input streamline.
+  /*! The fragments deliberately share an index; this method must not rely on
+   * per-fragment index values or ordering. */
+  bool operator()(const std::vector<TractogramItem<>> &);
 
 private:
   Tractogram<float> output;

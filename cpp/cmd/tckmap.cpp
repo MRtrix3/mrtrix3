@@ -27,8 +27,8 @@
 #include "types.h"
 
 #include "dwi/gradient.h"
-#include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/tractogram.h"
 #include "dwi/tractography/weights.h"
 
 #include "dwi/tractography/mapping/loader.h"
@@ -269,7 +269,7 @@ void run() {
   const std::filesystem::path output_image_path{argument[1]};
 
   Tractography::Properties properties;
-  Tractography::Reader<float> file(input_tracks_path, properties);
+  auto file = Tractography::Tractogram<float>::open(input_tracks_path, properties);
 
   const size_t num_tracks = properties["count"].empty() ? 0 : to<size_t>(properties["count"]);
 
