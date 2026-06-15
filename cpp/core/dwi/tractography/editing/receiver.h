@@ -30,14 +30,19 @@
 #include "dwi/tractography/streamline.h"
 #include "dwi/tractography/tractogram.h"
 #include "dwi/tractography/tractogram_item.h"
+#include "dwi/tractography/weights.h"
 
 namespace MR::DWI::Tractography::Editing {
 
 class Receiver {
 
 public:
-  Receiver(const std::filesystem::path &path, const Properties &properties, const size_t n, const size_t s)
-      : output(Tractogram<float>::create(path, properties)),
+  Receiver(const std::filesystem::path &path,
+           const Properties &properties,
+           const size_t n,
+           const size_t s,
+           const WeightOutput &weight_output)
+      : output(Tractogram<float>::create(path, properties, weight_output.registry)),
         number(n),
         skip(s),
         // Need to use local counts instead of writer class members due to track cropping
@@ -45,7 +50,13 @@ public:
         total_count(0),
         crop(properties.mask.size()),
         segments(0),
-        progress(std::string("       0 read,        0 written") + (crop ? ",        0 segments" : "")) {}
+        progress(std::string("       0 read,        0 written") + (crop ? ",        0 segments" : "")) {
+    // Route the privileged streamline weight to its resolved destination (an
+    //   external file, an embedded field, or — per the provenance default —
+    //   suppressed). tckedit's output registry is otherwise empty (generic dps/dpv
+    //   are not propagated), so the weight is never double-carried.
+    apply_weight_output(output, weight_output);
+  }
 
   ~Receiver() {
     // Use set_text() rather than update() here to force update of the text before progress goes out of scope

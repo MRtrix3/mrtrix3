@@ -119,6 +119,22 @@ template <typename T> DPSValue make_dps(ScalarOrVector<T> &&v) { return DPSValue
 //! \brief Build a DPVValue holding a VectorOrMatrix<T>.
 template <typename T> DPVValue make_dpv(VectorOrMatrix<T> &&v) { return DPVValue(std::move(v)); }
 
+//! \brief Build a scalar (M==1) DPSValue of float, the shape of the reserved weight.
+inline DPSValue make_dps_scalar(const float value) {
+  ScalarOrVector<float> row(1);
+  row(0, 0) = value;
+  return DPSValue(std::move(row));
+}
+
+//! \brief The scalar value of a per-streamline (M==1) field as float (§2.2/D3).
+/*! Reads the single element of a dps field whose column count M==1 — the shape of
+ * the reserved streamline weight — converting from the field's native on-disk
+ * element type to the float processing precision. \pre the value's column count
+ * is 1 (asserts via ScalarOrVector::scalar()). */
+inline float dps_scalar_to_float(const DPSValue &value) {
+  return std::visit([](const auto &row) -> float { return static_cast<float>(row.scalar()); }, value);
+}
+
 //! \brief The canonical (native-endian, non-complex) DataType for a sidecar
 //!   element type \c T (§2.2/D7).
 /*! The "bit" datatype maps onto a uint8_t storage element and is reported here

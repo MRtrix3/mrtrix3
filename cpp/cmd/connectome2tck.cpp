@@ -285,6 +285,21 @@ void run() {
   Tractography::Properties properties;
   Tractography::Reader<float> reader(tracks_input_path, properties);
 
+  // Route the input streamline weights into Streamline::weight as each streamline is
+  //   read. connectome2tck reads via the legacy ".tck" reader, so the weights are a
+  //   standalone scalar file; a named field of the input tractogram is not available.
+  std::unique_ptr<Tractography::ExternalWeightLoader<float>> weight_loader;
+  {
+    const auto opt_weights_in = get_options("tck_weights_in");
+    if (!opt_weights_in.empty()) {
+      const Tractography::SidecarReference ref = Tractography::parse_sidecar_reference(opt_weights_in[0][0].as_text());
+      if (ref.is_qualified())
+        throw Exception("connectome2tck reads streamline weights from a standalone file only;"
+                        " a named field of the input tractogram is not supported");
+      weight_loader = std::make_unique<Tractography::ExternalWeightLoader<float>>(ref.dataset);
+    }
+  }
+
   // Read the assignments through the shared Assignments class (Stage 17, step 4):
   //   the same byte-faithful "-out_assignments" text format, now the import
   //   interface to the canonical streamline Grouping (§2.3 / D6).
@@ -477,6 +492,8 @@ void run() {
         auto loader = [&](Tractography::Connectome::Streamline_nodepair &out) {
           if (!reader(out))
             return false;
+          if (weight_loader && !(*weight_loader)(out))
+            return false;
           out.set_nodes(assignments_pairs[out.get_index()]);
           return true;
         };
@@ -491,6 +508,8 @@ void run() {
       } else {
         auto loader = [&](Tractography::Connectome::Streamline_nodelist &out) {
           if (!reader(out))
+            return false;
+          if (weight_loader && !(*weight_loader)(out))
             return false;
           out.set_nodes(assignments_lists[out.get_index()]);
           return true;
@@ -602,6 +621,8 @@ void run() {
       Tractography::Connectome::Streamline_nodelist tck;
       Tractography::TrackScalar<float> scalar;
       while (reader(tck)) {
+        if (weight_loader && !(*weight_loader)(tck))
+          break;
         tck.set_nodes(assignments_lists[tck.get_index()]);
         if (scalar_reader) {
           if (!(*scalar_reader)(scalar))
@@ -619,6 +640,8 @@ void run() {
       Tractography::Connectome::Streamline_nodepair tck;
       Tractography::TrackScalar<float> scalar;
       while (reader(tck)) {
+        if (weight_loader && !(*weight_loader)(tck))
+          break;
         tck.set_nodes(assignments_pairs[tck.get_index()]);
         if (scalar_reader) {
           if (!(*scalar_reader)(scalar))

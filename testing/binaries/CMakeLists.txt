@@ -671,6 +671,7 @@ add_bash_binary_test(tckresample/dpv_subset_downsample)
 add_bash_binary_test(tckresample/dpv_subset_endpoints)
 add_bash_binary_test(tckresample/dpv_drop_interpolating)
 add_bash_binary_test(tckresample/dps_weights_preserved)
+add_bash_binary_test(tckresample/weights_embed_roundtrip)
 
 add_bash_binary_test(tcksample/input3d_interplinear_statmax)
 add_bash_binary_test(tcksample/input3d_interplinear_statmean)

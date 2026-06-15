@@ -204,6 +204,9 @@ void run() {
 
   Properties properties;
   auto input = Tractogram<value_type>::open(argument[0], properties);
+  // Route the explicitly-specified streamline weights (external file or named field
+  //   of the input tractogram) into Streamline::weight; weights pass through unchanged.
+  const WeightInput weight_input = register_weight_input(input, argument[0]);
   // Inject the input .tsf as a per-vertex (dpv) field so it flows through the
   //   item pipeline alongside the vertices (and is sub-sampled in lock-step).
   if (tsf_in.has_value())
@@ -212,7 +215,11 @@ void run() {
   // Declare the output field set from the (possibly sidecar-augmented) input
   //   registry, so a sidecar-aware output handler serialises it; a vertices-only
   //   format (e.g. ".tck") writes the per-vertex data to the -tsf_out sidecar.
-  auto output = Tractogram<value_type>::create(argument[1], properties, input.fields());
+  //   plan_weight_output resolves where the streamline weights go (embedded field,
+  //   external file, or — by the provenance default — propagated / suppressed).
+  const WeightOutput weight_output = plan_weight_output(input.fields(), weight_input, argument[1], properties);
+  auto output = Tractogram<value_type>::create(argument[1], properties, weight_output.registry);
+  apply_weight_output(output, weight_output);
   if (tsf_out.has_value())
     output.register_output_sidecar(tsf_out->string(), properties);
 

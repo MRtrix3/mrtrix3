@@ -16,12 +16,14 @@
 
 #include "dwi/tractography/sidecar.h"
 
+#include <algorithm>
 #include <cstddef>
 #include <functional>
 #include <memory>
 #include <string>
 #include <string_view>
 
+#include "app.h"
 #include "datatype.h"
 #include "dwi/tractography/scalar_file.h"
 #include "dwi/tractography/sidecar_value.h"
@@ -31,6 +33,7 @@
 #include "file/mmap.h"
 #include "file/npy.h"
 #include "file/path.h"
+#include "mrtrix.h"
 #include "types.h"
 
 namespace MR::DWI::Tractography {
@@ -312,5 +315,79 @@ template std::unique_ptr<SidecarExporter<float>>
 make_sidecar_exporter<float>(const SidecarReference &, const Properties &, bool);
 template std::unique_ptr<SidecarExporter<double>>
 make_sidecar_exporter<double>(const SidecarReference &, const Properties &, bool);
+
+// ---------------------------------------------------------------------------
+//  Streamline-weight I/O (the privileged Streamline::weight route)
+// ---------------------------------------------------------------------------
+
+template <class ValueType>
+ExternalWeightLoader<ValueType>::ExternalWeightLoader(const std::filesystem::path &path)
+    : weights(File::Matrix::load_vector<ValueType>(path)), source(path), warned_short(false) {}
+
+template <class ValueType> bool ExternalWeightLoader<ValueType>::operator()(Streamline<ValueType> &streamline) {
+  const size_t index = streamline.get_index();
+  if (index >= static_cast<size_t>(weights.size())) {
+    if (!warned_short) {
+      WARN("streamline weights file \"" + source.string() + "\" contains fewer entries (" + str(weights.size()) +
+           ") than the tractogram; ceasing reading of streamline data");
+      warned_short = true;
+    }
+    return false;
+  }
+  streamline.weight = static_cast<float>(weights[static_cast<Eigen::Index>(index)]);
+  return true;
+}
+
+template <class ValueType> void ExternalWeightLoader<ValueType>::check_excess(const size_t streamline_count) const {
+  if (static_cast<size_t>(weights.size()) > streamline_count) {
+    WARN("streamline weights file \"" + source.string() + "\" contains more entries (" + str(weights.size()) +
+         ") than the tractogram (" + str(streamline_count) + ")");
+  }
+}
+
+template class ExternalWeightLoader<float>;
+template class ExternalWeightLoader<double>;
+
+template <class ValueType>
+ExternalWeightExporter<ValueType>::ExternalWeightExporter(const std::filesystem::path &path,
+                                                          const size_t initial_streamlines)
+    : path(path),
+      data(Eigen::Array<ValueType, Eigen::Dynamic, 1>::Zero(
+          static_cast<Eigen::Index>(std::max<size_t>(initial_streamlines, 1)))),
+      rows(0),
+      finalised(false) {}
+
+template <class ValueType> ExternalWeightExporter<ValueType>::~ExternalWeightExporter() {
+  try {
+    finalise();
+  } catch (Exception &e) {
+    Exception(e, "Error finalising streamline weights output \"" + path.string() + "\"").display();
+  }
+}
+
+template <class ValueType> void ExternalWeightExporter<ValueType>::operator()(const Streamline<ValueType> &streamline) {
+  grow_to(rows + 1);
+  data[static_cast<Eigen::Index>(rows)] = static_cast<ValueType>(streamline.weight);
+  ++rows;
+}
+
+template <class ValueType> void ExternalWeightExporter<ValueType>::finalise() {
+  if (finalised)
+    return;
+  finalised = true;
+  File::Matrix::save_vector(data.head(static_cast<Eigen::Index>(rows)).eval(), path);
+}
+
+template <class ValueType> void ExternalWeightExporter<ValueType>::grow_to(const size_t need_rows) {
+  size_t capacity = static_cast<size_t>(data.size());
+  if (need_rows <= capacity)
+    return;
+  while (capacity < need_rows)
+    capacity = (capacity == 0) ? 1 : capacity * 2;
+  data.conservativeResizeLike(Eigen::Array<ValueType, Eigen::Dynamic, 1>::Zero(static_cast<Eigen::Index>(capacity)));
+}
+
+template class ExternalWeightExporter<float>;
+template class ExternalWeightExporter<double>;
 
 } // namespace MR::DWI::Tractography

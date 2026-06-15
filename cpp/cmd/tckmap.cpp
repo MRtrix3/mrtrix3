@@ -270,6 +270,8 @@ void run() {
 
   Tractography::Properties properties;
   auto file = Tractography::Tractogram<float>::open(input_tracks_path, properties);
+  // Route the explicitly-specified streamline weights into Streamline::weight.
+  register_weight_input(file, input_tracks_path);
 
   const size_t num_tracks = properties["count"].empty() ? 0 : to<size_t>(properties["count"]);
 

@@ -37,9 +37,6 @@ namespace MR::DWI::Tractography {
 
 template <class ValueType> Reader<ValueType>::Reader(const std::filesystem::path &path, Properties &properties) {
   open(path, "tracks", properties);
-  auto opt = App::get_options("tck_weights_in");
-  if (!opt.empty())
-    weights = File::Matrix::load_vector<ValueType>(opt[0][0]);
 }
 
 template <class ValueType> bool Reader<ValueType>::operator()(Streamline<ValueType> &tck) {
@@ -52,35 +49,18 @@ template <class ValueType> bool Reader<ValueType>::operator()(Streamline<ValueTy
     auto p = get_next_point();
     if (std::isinf(p[0])) {
       in.close();
-      check_excess_weights();
       return false;
     }
     if (in.eof()) {
       in.close();
-      check_excess_weights();
       return false;
     }
 
     if (std::isnan(p[0])) {
+      // The streamline weight (Streamline::weight, default 1.0) is populated by the
+      //   framework-level weight loader (dwi/tractography/weights.h) when the user
+      //   designates a source, never by this format reader.
       tck.set_index(current_index++);
-
-      if (weights.size()) {
-
-        if (tck.get_index() < static_cast<size_t>(weights.size())) {
-          tck.weight = weights[tck.get_index()];
-        } else {
-          WARN("Streamline weights file contains less entries (" + str(weights.size()) +
-               ") than .tck file; "
-               "ceasing reading of streamline data");
-          in.close();
-          tck.clear();
-          return false;
-        }
-
-      } else {
-        tck.weight = 1.0;
-      }
-
       return true;
     }
 
@@ -131,15 +111,6 @@ template <class ValueType> Eigen::Matrix<ValueType, 3, 1> Reader<ValueType>::get
   return Eigen::Matrix<ValueType, 3, 1>::Constant(std::numeric_limits<ValueType>::quiet_NaN());
 }
 
-template <class ValueType> void Reader<ValueType>::check_excess_weights() {
-  if (!weights.size())
-    return;
-  if (static_cast<size_t>(weights.size()) > current_index) {
-    WARN("Streamline weights file contains more entries (" + str(weights.size()) + ") than .tck file (" +
-         str(current_index) + ")");
-  }
-}
-
 /* ************************************************************************ */
 /*                            Writer<ValueType>                            */
 /* ************************************************************************ */
@@ -147,7 +118,6 @@ template <class ValueType> void Reader<ValueType>::check_excess_weights() {
 template <typename ValueType>
 Writer<ValueType>::Writer(const std::filesystem::path &path,
                           const Properties &properties,
-                          WeightsAutoDetect weights_autodetect,
                           std::optional<size_t> buffer_capacity)
     : WriterBase<ValueType>(path),
       buffer(buffer_capacity.value_or(File::Config::get_int("TrackWriterBufferSize", 16777216)), sizeof(vector_type)) {
@@ -181,20 +151,6 @@ Writer<ValueType>::Writer(const std::filesystem::path &path,
   buffer.set_flush_callback([this](const std::byte *data, size_t size, const Formats::WriteBuffer::Counts &counts) {
     this->flush_points(data, size, counts);
   });
-
-  if (weights_autodetect == WeightsAutoDetect::Enabled) {
-    auto opt = App::get_options("tck_weights_out");
-    if (!opt.empty())
-      set_weights_path(opt[0][0]);
-  }
-}
-
-template <class ValueType> void Writer<ValueType>::set_weights_path(const std::filesystem::path &path) {
-  if (!weights_path.empty())
-    throw Exception("Cannot change output streamline weights file path");
-  weights_path = path;
-  App::check_overwrite(weights_path);
-  File::OFStream out(weights_path, std::ios::out | std::ios::binary | std::ios::trunc);
 }
 
 template <class ValueType> void Writer<ValueType>::format_point(const vector_type &src, vector_type &dest) {
@@ -203,14 +159,6 @@ template <class ValueType> void Writer<ValueType>::format_point(const vector_typ
     dest = {LE(src[0]), LE(src[1]), LE(src[2])};
   else
     dest = {BE(src[0]), BE(src[1]), BE(src[2])};
-}
-
-template <class ValueType> void Writer<ValueType>::write_weights(std::string_view contents) {
-  File::OFStream out(weights_path, std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
-  out << contents;
-  if (!out.good())
-    throw Exception("error writing streamline weights file \"" + weights_path.string() + "\": " + //
-                    MR::C_strerror(errno));
 }
 
 template <typename ValueType> Writer<ValueType>::~Writer() {
@@ -226,9 +174,6 @@ template <typename ValueType> bool Writer<ValueType>::operator()(const Streamlin
   for (const auto &i : tck)
     add_point(i);
   add_point(delimiter());
-
-  if (!weights_path.empty())
-    weights_buffer += str(tck.weight) + ' ';
 
   ++count;
   ++total_count;
@@ -259,14 +204,7 @@ void Writer<ValueType>::flush_points(const std::byte *data,
   this->update_counts(out);
 }
 
-template <typename ValueType> void Writer<ValueType>::commit() {
-  buffer.commit();
-
-  if (!weights_path.empty()) {
-    write_weights(weights_buffer);
-    weights_buffer.clear();
-  }
-}
+template <typename ValueType> void Writer<ValueType>::commit() { buffer.commit(); }
 
 /* ************************************************************************ */
 /*               Explicit instantiation for float and double              */
@@ -300,7 +238,7 @@ std::unique_ptr<WriterInterface<float>> TCK::create_float(const std::filesystem:
                                                           const FieldRegistry &,
                                                           const OptionalHeader &,
                                                           const WriteOptions &options) const {
-  return std::make_unique<Writer<float>>(path, properties, options.weights, options.buffer_capacity);
+  return std::make_unique<Writer<float>>(path, properties, options.buffer_capacity);
 }
 
 std::unique_ptr<WriterInterface<double>> TCK::create_double(const std::filesystem::path &path,
@@ -308,7 +246,7 @@ std::unique_ptr<WriterInterface<double>> TCK::create_double(const std::filesyste
                                                             const FieldRegistry &,
                                                             const OptionalHeader &,
                                                             const WriteOptions &options) const {
-  return std::make_unique<Writer<double>>(path, properties, options.weights, options.buffer_capacity);
+  return std::make_unique<Writer<double>>(path, properties, options.buffer_capacity);
 }
 
 } // namespace Formats

@@ -39,7 +39,7 @@ Options that influence generation of the connectivity matrix / matrices
 
 -  **-mask file** provide a fixel data file containing a mask of those fixels to be computed; fixels outside the mask will be empty in the output matrix
 
--  **-tck_weights_in path** specify a text scalar file containing the streamline weights
+-  **-tck_weights_in spec** specify the streamline weights: either a standalone scalar file, or "<tractogram>::<field>" naming a per-streamline field of the input tractogram
 
 Options for additional outputs to be generated
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

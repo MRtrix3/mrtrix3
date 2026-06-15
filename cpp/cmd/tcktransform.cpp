@@ -212,6 +212,9 @@ void run() {
 
   Properties properties;
   auto input = Tractogram<value_type>::open(argument[0], properties);
+  // Route the explicitly-specified streamline weights (external file or named field
+  //   of the input tractogram) into Streamline::weight; weights pass through unchanged.
+  const WeightInput weight_input = register_weight_input(input, argument[0]);
   // Inject the input .tsf as a per-vertex (dpv) field so it flows through the
   //   item pipeline alongside the vertices (and is culled in lock-step below).
   if (tsf_in.has_value())
@@ -219,8 +222,11 @@ void run() {
 
   // Declare the output field set from the (possibly sidecar-augmented) input
   //   registry, and reference the warp field's grid for grid-relative formats.
+  //   plan_weight_output resolves the streamline-weight destination.
+  const WeightOutput weight_output = plan_weight_output(input.fields(), weight_input, argument[2], properties);
   auto output = Tractogram<value_type>::create(
-      argument[2], properties, input.fields(), AccessRequest::Streaming, OptionalHeader(std::cref(H_warp)));
+      argument[2], properties, weight_output.registry, AccessRequest::Streaming, OptionalHeader(std::cref(H_warp)));
+  apply_weight_output(output, weight_output);
   if (tsf_out.has_value())
     output.register_output_sidecar(tsf_out->string(), properties);
 

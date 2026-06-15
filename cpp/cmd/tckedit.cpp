@@ -226,7 +226,12 @@ void run() {
 
   Loader loader(input_file_list);
   Worker worker(properties, inverse, ends_only);
-  Receiver receiver(output_path, properties, number, skip);
+  // Resolve where the output streamline weights go (external file, embedded field,
+  //   or — per the provenance default — propagated / suppressed). tckedit does not
+  //   propagate generic per-streamline / per-vertex fields, so the registry that
+  //   seeds the output starts empty.
+  const WeightOutput weight_output = plan_weight_output(FieldRegistry(), loader.weights(), output_path, properties);
+  Receiver receiver(output_path, properties, number, skip, weight_output);
   auto selection_dps_path = get_optional<std::filesystem::path>("out_selection");
   if (selection_dps_path.has_value())
     receiver.set_selection_dps_path(*selection_dps_path);

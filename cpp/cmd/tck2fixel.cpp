@@ -203,6 +203,8 @@ void run() {
 
   DWI::Tractography::Properties properties;
   auto track_file = DWI::Tractography::Tractogram<float>::open(argument[0], properties);
+  // Route the explicitly-specified streamline weights into Streamline::weight.
+  DWI::Tractography::register_weight_input(track_file, argument[0]);
   const size_t num_tracks = properties["count"].empty() ? 0 : to<size_t>(properties["count"]);
   if (num_tracks == 0)
     throw Exception("no tracks found in input file");

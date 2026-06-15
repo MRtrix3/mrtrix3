@@ -92,7 +92,7 @@ Options for the streamline-to-voxel mapping mechanism
 
 -  **-ends_only** only map the streamline endpoints to the image
 
--  **-tck_weights_in path** specify a text scalar file containing the streamline weights
+-  **-tck_weights_in spec** specify the streamline weights: either a standalone scalar file, or "<tractogram>::<field>" naming a per-streamline field of the input tractogram
 
 Standard options
 ^^^^^^^^^^^^^^^^

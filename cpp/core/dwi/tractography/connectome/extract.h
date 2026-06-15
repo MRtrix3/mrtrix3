@@ -162,8 +162,8 @@ private:
   /*! The write-back buffer is created with zero capacity, so it grows only as far
    * as the longest streamline encountered and flushes each streamline as it
    * arrives: with one writer open per edge/node this costs a single streamline's
-   * memory per file rather than a full buffer. Weights auto-detection is disabled
-   * (connectome2tck manages a distinct weights path per file). */
+   * memory per file rather than a full buffer. Each file's per-streamline weights
+   * are routed explicitly (register_weight_output_external) to a distinct path. */
   Tractography::Tractogram<float> make_writer(const std::filesystem::path &path) const;
   //! \brief register the (optional) parallel scalar writer for a just-added file.
   void add_scalar_writer(const std::optional<std::filesystem::path> &scalar_path);

@@ -26,6 +26,7 @@
 #include "dwi/tractography/streamline.h"
 #include "dwi/tractography/tractogram.h"
 #include "dwi/tractography/tractogram_item.h"
+#include "dwi/tractography/weights.h"
 
 namespace MR::DWI::Tractography::Editing {
 
@@ -33,7 +34,10 @@ namespace MR::DWI::Tractography::Editing {
 /*! Sources from a format-agnostic Tractogram (any registered tractography format),
  * yielding TractogramItem<> so that per-streamline (dps), per-vertex (dpv) and
  * weight payloads flow downstream. The reader is move-assigned as the source
- * advances across input files (Tractogram is factory-only but movable). */
+ * advances across input files (Tractogram is factory-only but movable). The
+ * explicitly-specified streamline weights (an external file or a named field of the
+ * input tractogram) are routed into Streamline::weight; weights are only permitted
+ * with a single input file (enforced by the command). */
 class Loader {
 
 public:
@@ -41,15 +45,21 @@ public:
       : file_list(files),
         dummy_properties(),
         reader(Tractogram<float>::open(file_list[0], dummy_properties)),
-        file_index(0) {}
+        file_index(0) {
+    weight_input = register_weight_input(reader, file_list[0]);
+  }
 
   bool operator()(TractogramItem<> &);
+
+  //! \brief the provenance of the input streamline weights (for the output default).
+  const WeightInput &weights() const { return weight_input; }
 
 private:
   const std::vector<std::filesystem::path> &file_list;
   Properties dummy_properties;
   Tractogram<float> reader;
   size_t file_index;
+  WeightInput weight_input;
 };
 
 bool Loader::operator()(TractogramItem<> &out) {
@@ -61,6 +71,7 @@ bool Loader::operator()(TractogramItem<> &out) {
   while (++file_index != file_list.size()) {
     dummy_properties.clear();
     reader = Tractogram<float>::open(file_list[file_index], dummy_properties);
+    register_weight_input(reader, file_list[file_index]);
     if (reader.read(out))
       return true;
   }

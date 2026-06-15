@@ -92,15 +92,6 @@ public:
   virtual bool operator()(const Streamline<ValueType> &) = 0;
   //! \brief append the composite item; defaults to the vertices-only write.
   virtual bool operator()(const TractogramItem<ValueType> &item) { return (*this)(item.streamline); }
-  //! \brief route per-streamline weights to an explicit external file (§2.7).
-  /*! Only a vertices-only format with an external weights sidecar (".tck")
-   * supports this; it is the per-file equivalent of the global "-tck_weights_out"
-   * option, used when a command writes many tractograms each with its own weights
-   * path. A format that embeds per-streamline data as a named dps field, or that
-   * carries no weights, has no external weights file and rejects the call. */
-  virtual void set_weights_path(const std::filesystem::path &) {
-    throw Exception("this tractography format does not support an external per-streamline weights file");
-  }
   //! \brief record a streamline that was seen (read/generated) but not exported.
   /*! Advances the dataset's count of streamlines seen without emitting one,
    * preserving the distinction between the number of streamlines exported to the
@@ -210,22 +201,14 @@ enum class SidecarData {
   Append       //!< a new sidecar member can be added to an existing dataset in place
 };
 
-//! \brief Whether a writer auto-detects the global "-tck_weights_out" option.
-/*! By default the ".tck" writer reads the global "-tck_weights_out" CLI option and
- * routes per-streamline weights to that single file. A command that manages a
- * distinct weights path per output file (e.g. connectome2tck) — or that defines
- * its own "-tck_weights_out" option with different semantics — must suppress that
- * auto-detection (Disabled) and set each file's path explicitly via
- * Tractogram::set_weights_path(). */
-enum class WeightsAutoDetect {
-  Enabled, //!< read the global "-tck_weights_out" option (the default)
-  Disabled //!< do not auto-detect; the caller sets any weights path explicitly
-};
-
 //! \brief Optional write-time controls passed to a handler's create factory (§2.6).
-/*! Both axes default to the historical behaviour, so an omitted WriteOptions
- * reproduces the previous single-buffered, weights-auto-detecting writer. Only the
- * ".tck" handler currently consults these; other handlers ignore them. */
+/*! The single axis defaults to the historical behaviour, so an omitted WriteOptions
+ * reproduces the previous single-buffered writer. Only the ".tck" handler currently
+ * consults this; other handlers ignore it.
+ *
+ * \note Per-streamline weights are NOT a write option: they are routed through the
+ * framework-level weight exporter (dwi/tractography/weights.h, sidecar.h) to the
+ * privileged Streamline::weight, never auto-detected by a handler. */
 struct WriteOptions {
   //! \brief RAM write-back buffer capacity in bytes for the ".tck" writer.
   /*! std::nullopt selects the TrackWriterBufferSize config default (16 MB). A
@@ -234,7 +217,6 @@ struct WriteOptions {
    * many output files open at once (e.g. connectome2tck, one per edge/node) costs
    * only one streamline's worth of memory per file rather than a full buffer. */
   std::optional<size_t> buffer_capacity = std::nullopt;
-  WeightsAutoDetect weights = WeightsAutoDetect::Enabled;
 };
 
 //! \brief The capabilities a tractography format handler broadcasts.

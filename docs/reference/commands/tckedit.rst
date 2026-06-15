@@ -97,9 +97,9 @@ Other options specific to tckedit
 Options for handling streamline weights
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-tck_weights_in path** specify a text scalar file containing the streamline weights
+-  **-tck_weights_in spec** specify the streamline weights: either a standalone scalar file, or "<tractogram>::<field>" naming a per-streamline field of the input tractogram
 
--  **-tck_weights_out path** specify the path for an output text scalar file containing streamline weights
+-  **-tck_weights_out spec** specify where to write the output streamline weights: either a standalone scalar file, or "<tractogram>::<field>" naming a per-streamline field of the output tractogram
 
 Standard options
 ^^^^^^^^^^^^^^^^

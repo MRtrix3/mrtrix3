@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -107,12 +108,27 @@ public:
    * operator() overload below forwards to it for use as a queue source. */
   bool read(item_type &item) {
     assert(reader != nullptr);
-    if (!(*reader)(item))
+    if (!(*reader)(item)) {
+      finalise_weight_input();
       return false;
+    }
     // Inject any registered standalone input-sidecar data into the per-streamline
     //   payload prior to processing (§2.5; Stage 11, step 5).
     for (auto &loader : input_sidecars)
       (*loader)(item);
+    // Route the explicitly-designated streamline weight into the privileged
+    //   Streamline::weight (its single source of truth). An external weight file
+    //   shorter than the tractogram truncates the stream here, mirroring the
+    //   legacy ".tck" reader; an internal field is read from the dps payload.
+    if (weight_in_external) {
+      if (!(*weight_in_external)(item.streamline)) {
+        finalise_weight_input();
+        return false;
+      }
+    } else if (weight_in_internal_ordinal.has_value()) {
+      item.streamline.weight = dps_scalar_to_float(item.dps[*weight_in_internal_ordinal]);
+    }
+    ++read_count_;
     return true;
   }
 
@@ -124,33 +140,39 @@ public:
    * Reader<>::operator()(Streamline&).
    *
    * \par Weight handling
-   * The streamline weight is honoured on this path; non-weight sidecar data are not.
-   *   - The "available" case needs no extra work: the handler's
-   *     operator()(Streamline&) already fills streamline.weight for formats that
-   *     carry weights natively (notably ".tck" via "-tck_weights_in"), so the bare
-   *     forward below already yields the correct weight.
-   *   - The "nominated by user" case is an external weight sidecar registered via
-   *     register_input_sidecar(). The input-sidecar loaders (SidecarLoader,
-   *     dwi/tractography/sidecar.h) operate on a TractogramItem; a weight-targeting
-   *     loader writes into item.streamline.weight. So when (and only when) input
-   *     sidecars are registered, this path reads into a reused member item, runs the
-   *     loaders, and moves item.streamline out into the caller's streamline — the
-   *     weight survives the move while dps/dpv are discarded. None of the currently
-   *     implemented loaders (MatrixLoader/NpyLoader/TsfLoader) mutate
-   *     streamline.weight — they populate dps/dpv only — so today they are
-   *     effectively no-ops on this path; the plumbing exists so that a future
-   *     weight-targeting loader is honoured without re-plumbing the call sites.
+   * The privileged streamline weight is honoured on this path; non-weight sidecar
+   * data are not. Streamline::weight defaults to 1.0 and is overwritten only when an
+   * explicit weight source was registered (register_weight_input_external /
+   * register_weight_input_internal, driven by "-tck_weights_in"):
+   *   - an EXTERNAL weight file is applied by ordinal index immediately after the
+   *     bare handler read, on the fast path (no TractogramItem allocated);
+   *   - an INTERNAL weight field must be extracted from the dps payload, so this
+   *     path reads into a reused member item, routes the weight into
+   *     item.streamline.weight, then moves the streamline out (dps/dpv discarded).
    *
-   * The common no-sidecar case forwards straight to the handler with zero overhead
-   * and allocates no TractogramItem. */
+   * The common no-source, no-sidecar case forwards straight to the handler with
+   * zero overhead and allocates no TractogramItem. */
   bool read(Streamline<ValueType> &streamline) {
     assert(reader != nullptr);
-    // Fast path: no registered input sidecars -> forward straight to the handler,
-    //   allocating no TractogramItem. The handler fills streamline.weight natively.
-    if (input_sidecars.empty())
-      return (*reader)(streamline);
-    // Sidecar path: read into the reused member item so a weight-targeting loader
-    //   can set the weight, then move the streamline out; dps/dpv are discarded.
+    // Fast path: no per-streamline payload needed — no input sidecars and no
+    //   internal weight field to extract from the dps payload. An external weight
+    //   file (if any) is applied by ordinal index after the bare read.
+    if (input_sidecars.empty() && !weight_in_internal_ordinal.has_value()) {
+      if (!(*reader)(streamline)) {
+        finalise_weight_input();
+        return false;
+      }
+      if (weight_in_external) {
+        if (!(*weight_in_external)(streamline)) {
+          finalise_weight_input();
+          return false;
+        }
+      }
+      ++read_count_;
+      return true;
+    }
+    // Sidecar / internal-weight path: read into the reused member item so the
+    //   weight is routed (and dps/dpv discarded), then move the streamline out.
     if (!read(streamline_read_item))
       return false;
     streamline = std::move(streamline_read_item.streamline);
@@ -166,20 +188,22 @@ public:
     //   per-streamline payload (§2.7; Stage 11, step 6).
     for (auto &exporter : output_sidecars)
       (*exporter)(item);
+    // Route the privileged Streamline::weight to its explicit destination: an
+    //   external scalar file, and/or (for an embedding format) re-emitted into the
+    //   designated output dps field from Streamline::weight so it reflects any
+    //   modification the command made.
+    if (weight_out_external)
+      (*weight_out_external)(item.streamline);
     ++count_;
     ++total_count_;
+    if (weight_out_embed_ordinal.has_value()) {
+      weight_embed_item = item;
+      if (weight_embed_item.dps.size() <= *weight_out_embed_ordinal)
+        weight_embed_item.dps.resize(*weight_out_embed_ordinal + 1);
+      weight_embed_item.dps[*weight_out_embed_ordinal] = make_dps_scalar(item.streamline.weight);
+      return (*writer)(weight_embed_item);
+    }
     return (*writer)(item);
-  }
-
-  //! \brief route per-streamline weights to an explicit external file (write mode only).
-  /*! Forwards to the handler's set_weights_path(): for a vertices-only format with
-   * an external weights sidecar (".tck") this is the per-file equivalent of the
-   * global "-tck_weights_out" option, used when a command writes many tractograms
-   * each with its own weights path (e.g. connectome2tck). A format that embeds
-   * per-streamline data, or carries no weights, rejects the call. */
-  void set_weights_path(const std::filesystem::path &path) {
-    assert(writer != nullptr);
-    writer->set_weights_path(path);
   }
 
   //! \brief record a streamline that was seen but not exported (write mode only).
@@ -328,12 +352,57 @@ public:
         make_sidecar_exporter<ValueType>(parse_sidecar_reference(arg), properties, is_random_access()));
   }
 
-  //! \brief flush all registered output sidecars to the filesystem.
+  //! \brief route an external scalar weight file into Streamline::weight (read mode).
+  /*! Implements the bare-path "-tck_weights_in <file>" form. Unlike a generic
+   * input sidecar this targets the privileged Streamline::weight, never a dps
+   * field. */
+  void register_weight_input_external(const std::filesystem::path &path) {
+    assert(reader != nullptr);
+    weight_in_external = std::make_unique<ExternalWeightLoader<ValueType>>(path);
+  }
+
+  //! \brief route an internal dps field into Streamline::weight (read mode).
+  /*! Implements the qualified "-tck_weights_in <dataset>::<field>" form, where
+   * <dataset> is this input tractogram. \a ordinal is the dps role-local ordinal
+   * (in this read Tractogram's registry) of the designated field; on each read its
+   * scalar value is moved into Streamline::weight. The field remains present in the
+   * dps payload — a consuming command excludes it from output pass-through via the
+   * registry (FieldRegistry::copy_excluding) so it is never double-carried. */
+  void register_weight_input_internal(const size_t ordinal) {
+    assert(reader != nullptr);
+    weight_in_internal_ordinal = ordinal;
+  }
+
+  //! \brief whether an internal field has been designated as the input weight.
+  bool has_internal_weight_input() const { return weight_in_internal_ordinal.has_value(); }
+
+  //! \brief route Streamline::weight to a standalone scalar file (write mode).
+  /*! Implements the bare-path "-tck_weights_out <file>" form; works for any output
+   * tractography format. \a initial_streamlines pre-sizes the accumulator. */
+  void register_weight_output_external(const std::filesystem::path &path, const size_t initial_streamlines) {
+    assert(writer != nullptr);
+    weight_out_external = std::make_unique<ExternalWeightExporter<ValueType>>(path, initial_streamlines);
+  }
+
+  //! \brief re-emit Streamline::weight into the output dps field at \a ordinal (write mode).
+  /*! Implements the qualified "-tck_weights_out <dataset>::<field>" embedded form
+   * (and the internal-provenance propagation default). \a ordinal is the dps
+   * role-local ordinal of the weight field declared in this write Tractogram's
+   * registry; on each write Streamline::weight is injected there, so the embedded
+   * value reflects any modification the command made. */
+  void register_weight_output_embedded(const size_t ordinal) {
+    assert(writer != nullptr);
+    weight_out_embed_ordinal = ordinal;
+  }
+
+  //! \brief flush all registered output sidecars and any external weight file.
   /*! Called explicitly when deterministic finalisation order is required;
    * otherwise each exporter commits in its own destructor. Idempotent. */
   void finalise_sidecars() {
     for (auto &exporter : output_sidecars)
       exporter->finalise();
+    if (weight_out_external)
+      weight_out_external->finalise();
   }
 
   //! \brief the sidecar field registry for this dataset (§2.5).
@@ -410,6 +479,30 @@ private:
   std::vector<std::unique_ptr<SidecarLoader<ValueType>>> input_sidecars;
   //! registered standalone output-sidecar exporters (§2.7; Stage 11, step 6)
   std::vector<std::unique_ptr<SidecarExporter<ValueType>>> output_sidecars;
+
+  //! external scalar weight file -> Streamline::weight ("-tck_weights_in <file>"); null unless registered
+  std::unique_ptr<ExternalWeightLoader<ValueType>> weight_in_external;
+  //! dps ordinal of an internal field designated as the input weight ("-tck_weights_in <dataset>::<field>")
+  std::optional<size_t> weight_in_internal_ordinal;
+  //! Streamline::weight -> external scalar file ("-tck_weights_out <file>"); null unless registered
+  std::unique_ptr<ExternalWeightExporter<ValueType>> weight_out_external;
+  //! output dps ordinal into which Streamline::weight is re-emitted ("-tck_weights_out <dataset>::<field>")
+  std::optional<size_t> weight_out_embed_ordinal;
+  //! scratch item used to inject the weight on the embedded-output path
+  item_type weight_embed_item;
+  //! number of streamlines read so far (for the external-weight excess check)
+  uint64_t read_count_ = 0;
+  //! whether the input-weight end-of-stream finalisation has already run
+  bool weight_input_finalised = false;
+
+  //! \brief emit the external-weight excess warning once, at end-of-stream.
+  void finalise_weight_input() {
+    if (weight_input_finalised)
+      return;
+    weight_input_finalised = true;
+    if (weight_in_external)
+      weight_in_external->check_excess(read_count_);
+  }
 };
 
 } // namespace MR::DWI::Tractography

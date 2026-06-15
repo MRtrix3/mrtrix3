@@ -160,6 +160,8 @@ void execute(Image<node_t> &node_image, const node_t max_node_index, const std::
   // Prepare for reading the track data
   Tractography::Properties properties;
   auto reader = Tractography::Tractogram<float>::open(argument[0], properties);
+  // Route the explicitly-specified streamline weights into Streamline::weight.
+  register_weight_input(reader, argument[0]);
 
   // Initialise classes in preparation for multi-threading
   Mapping::TrackLoader loader(

@@ -35,7 +35,9 @@ namespace MR::DWI::Tractography {
 /*! This is the read backend for the ".tck" format handler
  * (Formats::TCK). It streams Streamline objects from the binary ".tck"
  * data, NaN-vertex delimiting streamlines and an Inf-vertex marking the
- * end-of-data barrier, and itself loads any "-tck_weights_in" sidecar.
+ * end-of-data barrier. Per-streamline weights are not handled here: they are
+ * routed into Streamline::weight by the framework-level weight loader
+ * (dwi/tractography/weights.h), independent of the format.
  *
  * On-disk vertex data may be stored as half- (\c Eigen::half), single- or
  * double-precision floating-point in either byte order; each is converted to
@@ -57,13 +59,8 @@ protected:
   using ReaderBase::dtype;
   using ReaderBase::in;
 
-  Eigen::Matrix<ValueType, Eigen::Dynamic, 1> weights;
-
   //! takes care of byte ordering issues
   Eigen::Matrix<ValueType, 3, 1> get_next_point();
-
-  //! Check that the weights file does not contain excess entries
-  void check_excess_weights();
 
   Reader(const Reader &) = delete;
 };
@@ -98,14 +95,6 @@ public:
 
   using vector_type = Eigen::Matrix<ValueType, 3, 1>;
 
-  //! \brief whether to auto-detect the output weights path from the CLI option.
-  /*! By default a writer reads the global "-tck_weights_out" option and routes
-   * the per-streamline weights to that single file. A command that writes many
-   * tractograms (e.g. connectome2tck, one per edge/node) manages a distinct
-   * weights path per file and must suppress that auto-detection, setting each
-   * file's path explicitly via set_weights_path() instead. */
-  using WeightsAutoDetect = Formats::WeightsAutoDetect;
-
   //! create a new track file with the specified properties
   // CONF option: TrackWriterBufferSize
   // CONF default: 16777216
@@ -115,7 +104,6 @@ public:
   // CONF avoid associated issues such as file fragmentation.
   Writer(const std::filesystem::path &path,
          const Properties &properties,
-         WeightsAutoDetect weights_autodetect = WeightsAutoDetect::Enabled,
          std::optional<size_t> buffer_capacity = std::nullopt);
 
   Writer(const Writer &) = delete;
@@ -129,15 +117,10 @@ public:
   //! record a streamline seen but not exported (advances total_count only)
   void note_unexported() override { this->skip(); }
 
-  //! set the path to the track weights
-  void set_weights_path(const std::filesystem::path &path) override;
-
 protected:
-  std::filesystem::path weights_path;
   int64_t barrier_addr;
   //! format-agnostic RAM write-back buffer (Stage 2); holds formatted point bytes
   Formats::WriteBuffer buffer;
-  std::string weights_buffer;
 
   //! indicates end of track and start of new track
   vector_type delimiter() const { return vector_type::Constant(std::numeric_limits<ValueType>::quiet_NaN()); }
@@ -146,9 +129,6 @@ protected:
 
   //! perform per-point byte-swapping if required
   void format_point(const vector_type &src, vector_type &dest);
-
-  //! write track weights data to file
-  void write_weights(std::string_view contents);
 
   //! append one already-formatted point to the byte buffer
   void add_point(const vector_type &p) {

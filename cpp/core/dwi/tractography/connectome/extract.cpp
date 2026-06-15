@@ -136,15 +136,14 @@ Tractography::Tractogram<float> WriterExemplars::make_writer(const std::filesyst
   Tractography::Properties properties;
   properties["step_size"] = str(step_size);
   // connectome2tck manages its own per-file weights (either the manual stream in
-  //   the vertices-only path, or the embedded dps field), so suppress the writer's
-  //   global "-tck_weights_out" auto-detection.
-  return Tractography::Tractogram<float>::create(
-      path,
-      properties,
-      embed ? embed_registry : Tractography::FieldRegistry(),
-      Tractography::AccessRequest::Streaming,
-      std::nullopt,
-      Formats::WriteOptions{std::nullopt, Formats::WeightsAutoDetect::Disabled});
+  //   the vertices-only path, or the embedded dps field); no handler auto-detection
+  //   of weights exists to suppress.
+  return Tractography::Tractogram<float>::create(path,
+                                                 properties,
+                                                 embed ? embed_registry : Tractography::FieldRegistry(),
+                                                 Tractography::AccessRequest::Streaming,
+                                                 std::nullopt,
+                                                 Formats::WriteOptions{std::nullopt});
 }
 
 void WriterExemplars::write_one(Tractography::Tractogram<float> &output, const size_t i) const {
@@ -228,13 +227,12 @@ void WriterExtraction::enable_embedding(const std::optional<std::string> &scalar
 }
 
 Tractography::Tractogram<float> WriterExtraction::make_writer(const std::filesystem::path &path) const {
-  return Tractography::Tractogram<float>::create(
-      path,
-      properties,
-      embed ? embed_registry : Tractography::FieldRegistry(),
-      Tractography::AccessRequest::Streaming,
-      std::nullopt,
-      Formats::WriteOptions{size_t(0), Formats::WeightsAutoDetect::Disabled});
+  return Tractography::Tractogram<float>::create(path,
+                                                 properties,
+                                                 embed ? embed_registry : Tractography::FieldRegistry(),
+                                                 Tractography::AccessRequest::Streaming,
+                                                 std::nullopt,
+                                                 Formats::WriteOptions{size_t(0)});
 }
 
 void WriterExtraction::add_scalar_writer(const std::optional<std::filesystem::path> &scalar_path) {
@@ -253,7 +251,7 @@ void WriterExtraction::add(const node_t node,
   selectors.emplace_back(Selector(node, keep_self));
   writers.push_back(std::make_unique<Tractography::Tractogram<float>>(make_writer(path)));
   if (weights_path.has_value())
-    writers.back()->set_weights_path(weights_path.value());
+    writers.back()->register_weight_output_external(weights_path.value(), 0);
   add_scalar_writer(scalar_path);
 }
 
@@ -266,7 +264,7 @@ void WriterExtraction::add(const node_t node_one,
     selectors.emplace_back(Selector(node_one, node_two));
     writers.push_back(std::make_unique<Tractography::Tractogram<float>>(make_writer(path)));
     if (weights_path.has_value())
-      writers.back()->set_weights_path(weights_path.value());
+      writers.back()->register_weight_output_external(weights_path.value(), 0);
     add_scalar_writer(scalar_path);
   }
 }
@@ -278,7 +276,7 @@ void WriterExtraction::add(const std::vector<node_t> &list,
   selectors.emplace_back(Selector(list, exclusive, keep_self));
   writers.push_back(std::make_unique<Tractography::Tractogram<float>>(make_writer(path)));
   if (weights_path.has_value())
-    writers.back()->set_weights_path(weights_path.value());
+    writers.back()->register_weight_output_external(weights_path.value(), 0);
   add_scalar_writer(scalar_path);
 }
 

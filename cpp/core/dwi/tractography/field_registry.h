@@ -122,6 +122,23 @@ public:
     return nullptr;
   }
 
+  //! \brief a copy of this registry with the named field (of the given role) removed.
+  /*! Every surviving field is re-registered in its original order, so each role's
+   * remaining fields receive fresh, contiguous role-local ordinals. Used to pull a
+   * designated streamline-weight field out of generic per-streamline (dps)
+   * pass-through: the weight is routed through Streamline::weight (its single
+   * source of truth), never additionally carried as a dps field. If no field of
+   * that name+role is present the result is an exact copy. */
+  FieldRegistry copy_excluding(std::string_view name, const FieldRole role) const {
+    FieldRegistry result;
+    for (const auto &descriptor : descriptors) {
+      if (descriptor.name == name && descriptor.role == role)
+        continue;
+      result.add(descriptor);
+    }
+    return result;
+  }
+
 private:
   std::vector<FieldDescriptor> descriptors;
   size_t dps_count_ = 0;

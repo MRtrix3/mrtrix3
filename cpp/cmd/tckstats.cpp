@@ -108,6 +108,8 @@ void run() {
   {
     Tractography::Properties properties;
     auto reader = Tractography::Tractogram<float>::open(argument[0], properties);
+    // Route the explicitly-specified streamline weights into Streamline::weight.
+    Tractography::register_weight_input(reader, argument[0]);
 
     if (properties.find("count") != properties.end())
       header_count = to<size_t>(properties["count"]);

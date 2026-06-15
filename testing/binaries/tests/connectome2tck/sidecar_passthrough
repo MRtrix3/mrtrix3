@@ -26,7 +26,8 @@ for node in 1 3; do
   test -f tmp_tsf/${node}.tsf
   test -s tmp_w/${node}.csv
   tsfvalidate tmp_tsf/${node}.tsf tmp_tck/${node}.tck
-  # Every extracted streamline had weight 3, so the per-node weights are all 3.
-  grep -v '^#' tmp_w/${node}.csv | tr ' \t' '\n\n' | grep -E '[0-9]' > tmp_tok.txt
+  # Every extracted streamline had weight 3, so the per-node weights are all 3
+  #   (standard MRtrix vector file: "# " comment header then comma/space values).
+  grep -v '^#' tmp_w/${node}.csv | tr ' \t,' '\n\n\n' | grep -E '[0-9]' > tmp_tok.txt
   ! grep -vqE '^3$' tmp_tok.txt
 done

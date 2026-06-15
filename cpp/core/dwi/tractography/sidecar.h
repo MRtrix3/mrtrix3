@@ -24,8 +24,10 @@
 
 #include "dwi/tractography/field_registry.h"
 #include "dwi/tractography/properties.h"
+#include "dwi/tractography/streamline.h"
 #include "dwi/tractography/tractogram_item.h"
 #include "exception.h"
+#include "types.h"
 
 namespace MR::DWI::Tractography {
 
@@ -120,5 +122,65 @@ make_sidecar_loader(const SidecarReference &reference, Properties &properties, F
 template <class ValueType>
 std::unique_ptr<SidecarExporter<ValueType>>
 make_sidecar_exporter(const SidecarReference &reference, const Properties &properties, bool is_random_access);
+
+// ---------------------------------------------------------------------------
+//  Streamline-weight I/O (the privileged Streamline::weight route)
+// ---------------------------------------------------------------------------
+/* The streamline weight is NOT a generic sidecar field: it is the privileged
+ * Streamline::weight (the single source of truth; tractogram_item.h). The two
+ * classes below route an EXTERNAL scalar file to / from that member, in contrast
+ * to the SidecarLoader/SidecarExporter above which target the generic dps/dpv
+ * payloads. The other explicit weight route — a NAMED field within a tractogram
+ * dataset ("DATASET::NAME") — is handled inside the Tractogram itself, by
+ * extracting the already-read dps field into / injecting Streamline::weight back
+ * out at the designated ordinal, so it needs no separate class here. */
+
+//! \brief Streaming injector of an external streamline-weight file into the
+//!   privileged Streamline::weight.
+/*! Constructed for a bare-path "-tck_weights_in" reference. The whole weight
+ * vector is loaded into RAM on construction (one scalar per streamline; text/.csv
+ * via File::Matrix::load_vector). On each streamline it sets streamline.weight at
+ * the streamline's ordinal index; a file shorter than the tractogram truncates
+ * the stream (as the legacy ".tck" reader did), a longer one warns at
+ * end-of-stream (check_excess). */
+template <class ValueType> class ExternalWeightLoader {
+public:
+  explicit ExternalWeightLoader(const std::filesystem::path &path);
+  //! \brief assign streamline.weight for the streamline at its ordinal index.
+  /*! \returns false if the weight file is exhausted before this streamline (fewer
+   * weights than streamlines), signalling end-of-stream. */
+  bool operator()(Streamline<ValueType> &streamline);
+  //! \brief warn if the file carried more weights than \a streamline_count.
+  void check_excess(size_t streamline_count) const;
+
+private:
+  Eigen::Matrix<ValueType, Eigen::Dynamic, 1> weights;
+  std::filesystem::path source;
+  bool warned_short;
+};
+
+//! \brief Streaming exporter of the privileged Streamline::weight to a standalone
+//!   scalar file.
+/*! Constructed for a bare-path "-tck_weights_out" reference. Accumulates one weight
+ * per WRITTEN streamline, in write order (the legacy ".tck" convention: the file
+ * carries one entry per exported streamline, not per streamline seen), and writes
+ * the vector on finalise() / destruction. Works for any output tractography format,
+ * since the weights file is independent of it. */
+template <class ValueType> class ExternalWeightExporter {
+public:
+  ExternalWeightExporter(const std::filesystem::path &path, size_t initial_streamlines);
+  ~ExternalWeightExporter();
+  //! \brief append streamline.weight for the streamline just written.
+  void operator()(const Streamline<ValueType> &streamline);
+  //! \brief write the accumulated weights to the filesystem (idempotent).
+  void finalise();
+
+private:
+  std::filesystem::path path;
+  Eigen::Array<ValueType, Eigen::Dynamic, 1> data;
+  size_t rows;
+  bool finalised;
+  void grow_to(size_t need_rows);
+};
 
 } // namespace MR::DWI::Tractography

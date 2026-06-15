@@ -42,14 +42,17 @@ namespace MR::DWI::Tractography {
  * carry-with-streamline model (D2) extends to groups without a later signature
  * change.
  *
- * \par The reserved "weight" field (D3 / §2.1)
- * The SIFT2-style per-streamline weight is NOT stored in \c dps: it remains a
- * member of the embedded Streamline (Streamline::weight) — the single source of
- * truth — so the many commands that read tck.weight keep compiling and behaving
- * identically. A "weight" descriptor may still appear in the field registry
- * (ordinal-reserved), but its value is sourced from / written to
- * streamline.weight, never duplicated into the \c dps vector. The \c dps vector
- * holds only the additional per-streamline fields. */
+ * \par The privileged "weight" field (D3 / §2.1)
+ * The SIFT2-style per-streamline weight is NOT a generic \c dps field: it is a
+ * member of the embedded Streamline (Streamline::weight) — its single source of
+ * truth — so the many commands that read tck.weight keep behaving identically. A
+ * weight enters or leaves Streamline::weight ONLY when the user names a source /
+ * destination on the command line (a standalone scalar file, or a named field of a
+ * tractogram dataset; dwi/tractography/weights.h). It is never inferred: a generic
+ * \c dps field that merely happens to be named "weights" stays an ordinary
+ * pass-through field, and is treated as the streamline weight only when explicitly
+ * designated. The \c dps vector therefore holds the additional per-streamline
+ * fields, never a duplicate of the weight. */
 template <class ValueType = float> class TractogramItem {
 public:
   using value_type = ValueType;
