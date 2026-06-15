@@ -15,6 +15,7 @@
  */
 
 #include "command.h"
+#include "enum.h"
 #include "mrtrix.h"
 
 #include "dwi/tractography/decimate_calibrate.h"
@@ -28,31 +29,47 @@ void usage() {
 
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
-  SYNOPSIS = "Calibrate the fast streamline decimation density parameter against geometric error";
+  SYNOPSIS = "Calibrate a streamline decimation resampler against geometric error and computational cost";
 
   DESCRIPTION
-  + "The fast decimator exposed by the tckresample -decimate_fast option is governed by a single"
-    " dimensionless density knob (mu): the number of output vertices per unit curvature-weighted"
-    " arc length. This command sweeps mu over a user-specified range and, for each value, decimates"
-    " every streamline in the input tractogram and measures the symmetric Hausdorff distance (in mm)"
-    " between the original and decimated tension-Catmull-Rom splines."
+  + "This command evaluates one of the two streamline decimation resamplers exposed by tckresample:"
+    " the curvature-adaptive single-pass \"fast\" decimator (the -decimate_fast option), governed by"
+    " a dimensionless density knob mu (output vertices per unit curvature-weighted arc length;"
+    " larger values retain more vertices); and the greedy knot-insertion \"slow\" decimator (the"
+    " -decimate_slow option), governed directly by a deviation tolerance in mm (smaller values retain"
+    " more vertices). Use the -algorithm option to select which resampler to calibrate (default: fast)."
 
-  + "For each mu it reports percentiles [50, 75, 95, 99, 99.9, 100] of the distribution of those"
-    " per-streamline Hausdorff distances, allowing a value of mu to be selected that bounds the"
-    " geometric error introduced by decimation to within a tolerance appropriate for the data. The"
-    " mean output/input vertex ratio (compression) is also reported per mu to expose the"
-    " fidelity-versus-size trade-off."
+  + "For every streamline in the input tractogram and every value in the swept parameter set, the"
+    " selected decimator is run and the symmetric Hausdorff distance (in mm) between the original and"
+    " decimated tension-Catmull-Rom splines is measured. Per parameter value the command reports"
+    " percentiles [50, 75, 95, 99, 99.9, 100] of that per-streamline distance distribution, the mean"
+    " output/input vertex ratio (compression), the mean absolute output vertex count, and the total"
+    " time spent inside the decimator (summed across all streamlines; the resampling cost only,"
+    " excluding the Hausdorff measurement)."
 
-  + "The mu range may be specified either as a comma-separated list of explicit values"
+  + "For the fast algorithm the swept values are mu, and the Hausdorff percentiles expose the"
+    " geometric error that the chosen density incurs. For the slow algorithm the swept values are the"
+    " deviation tolerances themselves; the reconstruction is bounded within the tolerance by"
+    " construction, so the headline output is the compression ratio achieved at each tolerance, while"
+    " the reported Hausdorff percentiles verify that the spline-level error respects the bound."
+
+  + "The parameter set may be specified either as a comma-separated list of explicit values"
     " (e.g. \"1.0,2.0,4.0\") or as a min:step:max range (e.g. \"1.0:1.0:5.0\");"
     " every value must be strictly positive.";
 
   ARGUMENTS
   + Argument ("in_tracks", "the input track file").type_tracks_in()
-  + Argument ("mu", "the set of density values to calibrate over"
-                    " (comma-separated list and/or a min:step:max range)").type_sequence_float();
+  + Argument ("values", "the set of decimation parameter values to calibrate over"
+                        " (comma-separated list and/or a min:step:max range);"
+                        " interpreted as the fast decimator density knob mu by default,"
+                        " or as the slow decimator Hausdorff-distance tolerance (mm) under -algorithm slow")
+              .type_sequence_float();
 
   OPTIONS
+  + Option ("algorithm", "the decimation resampler to calibrate; one of "
+                         + MR::Enum::join<DecimateAlgorithm>() + " (default: fast)")
+    + Argument ("name").type_choice<DecimateAlgorithm>()
+
   + Option ("csv", "write the calibration table to a CSV file")
     + Argument ("path").type_file_out();
 
@@ -60,13 +77,15 @@ void usage() {
 // clang-format on
 
 void run() {
-  const std::vector<default_type> mu_values = parse_floats(std::string(argument[1]));
+  const std::vector<default_type> values = parse_floats(std::string(argument[1]));
 
-  const std::vector<CalibrationRow> rows = decimate_calibrate(argument[0], mu_values);
+  const DecimateAlgorithm algorithm = get_option_choice("algorithm", DecimateAlgorithm::Fast);
 
-  std::cout << calibration_table(rows);
+  const std::vector<CalibrationRow> rows = decimate_calibrate(argument[0], values, algorithm);
+
+  std::cout << calibration_table(rows, algorithm);
 
   auto opt = get_options("csv");
   if (!opt.empty())
-    calibration_save_csv(rows, opt[0][0]);
+    calibration_save_csv(rows, algorithm, opt[0][0]);
 }

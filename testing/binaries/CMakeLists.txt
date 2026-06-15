@@ -583,6 +583,7 @@ add_bash_binary_test(tckconvert/vtk_write_ascii)
 add_bash_binary_test(tckconvert/vtk_write_binary)
 
 add_bash_binary_test(tckdecimatecalibrate/default)
+add_bash_binary_test(tckdecimatecalibrate/slow)
 
 add_bash_binary_test(tckedit/include_exclude_inverse)
 add_bash_binary_test(tckedit/include_mask)

@@ -260,7 +260,7 @@ List of MRtrix3 commands
     |cpp.png|, :ref:`tck2fixel`, "Compute a fixel TDI map from a tractogram"
     |cpp.png|, :ref:`tck2metric`, "Compute one or more per-streamline metrics for a tractogram"
     |cpp.png|, :ref:`tckconvert`, "Convert between different track file formats"
-    |cpp.png|, :ref:`tckdecimatecalibrate`, "Calibrate the fast streamline decimation density parameter against geometric error"
+    |cpp.png|, :ref:`tckdecimatecalibrate`, "Calibrate a streamline decimation resampler against geometric error and computational cost"
     |cpp.png|, :ref:`tckdfc`, "Perform the Track-Weighted Dynamic Functional Connectivity (TW-dFC) method"
     |cpp.png|, :ref:`tckedit`, "Perform various editing operations on track files"
     |cpp.png|, :ref:`tckgen`, "Perform streamlines tractography"
