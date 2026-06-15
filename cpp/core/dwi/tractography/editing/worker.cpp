@@ -60,11 +60,37 @@ std::vector<DPVValue> slice_dpv(const std::vector<DPVValue> &in_dpv, const Fragm
 
 } // namespace
 
-bool Worker::keep(const Streamline<> &in) const {
+bool Worker::dps_filters_pass(const std::vector<DPSValue> &dps) const {
+  for (const auto &filter : dps_filters) {
+    assert(filter.ordinal < dps.size());
+    const float value = dps_scalar_to_float(dps[filter.ordinal]);
+    const bool ok = (filter.bound == Bound::Min) ? (value >= filter.value) : (value <= filter.value);
+    if (!ok)
+      return false;
+  }
+  return true;
+}
+
+bool Worker::dpv_filters_pass(const std::vector<DPVValue> &dpv, const size_t row) const {
+  for (const auto &filter : dpv_filters) {
+    assert(filter.ordinal < dpv.size());
+    const float value = dpv_scalar_to_float(dpv[filter.ordinal], row);
+    const bool ok = (filter.bound == Bound::Min) ? (value >= filter.value) : (value <= filter.value);
+    if (!ok)
+      return false;
+  }
+  return true;
+}
+
+bool Worker::keep(const TractogramItem<> &item) const {
+
+  const Streamline<> &in = item.streamline;
 
   // Need to track exclusion separately, since we may still need to apply mask
-  //   (or, more accurately, their inverse) afterwards if -inverse is specified
-  bool exclude = !thresholds(in);
+  //   (or, more accurately, their inverse) afterwards if -inverse is specified.
+  // A per-streamline (dps) field threshold is a whole-streamline criterion,
+  //   applied here alongside the length / weight thresholds.
+  bool exclude = !thresholds(in) || !dps_filters_pass(item.dps);
 
   if (!exclude) {
     // If no thresholds are specified, and no include / exclude ROIs are defined, then
@@ -115,7 +141,7 @@ bool Worker::operator()(TractogramItem<> &in, TractogramItem<> &out) const {
   out.clear();
 
   // No-mask path: filtering only. Excluded streamlines yield an empty item.
-  if (!keep(in.streamline))
+  if (!keep(in))
     return true;
 
   out = std::move(in);
@@ -126,18 +152,23 @@ bool Worker::operator()(TractogramItem<> &in, std::vector<TractogramItem<>> &out
 
   out.clear();
 
-  if (!keep(in.streamline))
+  if (!keep(in))
     return true;
 
-  // Split the streamline into contiguous in-mask fragments, recording each kept
-  //   fragment's vertex span so dpv rows can be sliced in lockstep.
+  // Split the streamline into contiguous retained fragments, recording each kept
+  //   fragment's vertex span so dpv rows can be sliced in lockstep. A vertex is
+  //   retained iff it lies within the mask (when one is provided) AND satisfies
+  //   every per-vertex (dpv) field threshold; either criterion alone can fragment
+  //   one input streamline into several outputs.
+  const bool have_mask = !properties.mask.empty();
   std::vector<FragmentRange> fragments;
   size_t run_start = 0;
   size_t run_length = 0;
   for (size_t i = 0; i != in.streamline.size(); ++i) {
-    const bool contains = properties.mask.contains(in.streamline[i]);
-    // "Inverse" applies to masks in addition to selection criteria
-    if (contains == inverse) {
+    const bool in_mask = !have_mask || properties.mask.contains(in.streamline[i]);
+    const bool retain = in_mask && dpv_filters_pass(in.dpv, i);
+    // "Inverse" applies to per-vertex retention in addition to selection criteria
+    if (retain == inverse) {
       if (run_length >= 2)
         fragments.push_back({run_start, run_length});
       run_length = 0;

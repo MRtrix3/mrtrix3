@@ -54,6 +54,13 @@ public:
   //! \brief the provenance of the input streamline weights (for the output default).
   const WeightInput &weights() const { return weight_input; }
 
+  //! \brief the sidecar field registry of the (first) input tractogram (§2.5).
+  /*! Used to resolve the named per-streamline / per-vertex fields of the dps/dpv
+   * threshold options against the input dataset. Field-based filtering is
+   * restricted to a single input file (enforced by the command), so this registry
+   * is authoritative for the ordinals the worker indexes. */
+  const FieldRegistry &fields() const { return reader.fields(); }
+
 private:
   const std::vector<std::filesystem::path> &file_list;
   Properties dummy_properties;

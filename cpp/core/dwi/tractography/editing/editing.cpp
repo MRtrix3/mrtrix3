@@ -49,6 +49,29 @@ const OptionGroup WeightsOption =
     + Option("minweight",
              "set the minimum weight of any streamline")
       + Argument("value").type_float(0.0);
+
+const OptionGroup FieldFilterOption =
+    OptionGroup("Options for thresholding based on arbitrary streamline data fields")
+    + Option("dps_min",
+             "retain only those streamlines for which the named per-streamline field"
+             " is greater than or equal to the specified value").allow_multiple()
+      + Argument("field").type_text()
+      + Argument("value").type_float()
+    + Option("dps_max",
+             "retain only those streamlines for which the named per-streamline field"
+             " is less than or equal to the specified value").allow_multiple()
+      + Argument("field").type_text()
+      + Argument("value").type_float()
+    + Option("dpv_min",
+             "retain only those streamline vertices for which the named per-vertex field"
+             " is greater than or equal to the specified value").allow_multiple()
+      + Argument("field").type_text()
+      + Argument("value").type_float()
+    + Option("dpv_max",
+             "retain only those streamline vertices for which the named per-vertex field"
+             " is less than or equal to the specified value").allow_multiple()
+      + Argument("field").type_text()
+      + Argument("value").type_float();
 // clang-format on
 
 void load_properties(Tractography::Properties &properties) {
@@ -94,6 +117,39 @@ void load_properties(Tractography::Properties &properties) {
   opt = get_options("minweight");
   if (!opt.empty())
     properties["min_weight"] = static_cast<std::string>(opt[0][0]);
+}
+
+FieldFilters load_field_filters(const FieldRegistry &registry) {
+  FieldFilters result;
+
+  // Resolve every instance of one option name into \a destination, looking the
+  //   named field up in the input registry under \a role.
+  const auto resolve = [&registry](const std::string_view option_name,
+                                   const FieldRole role,
+                                   const Bound bound,
+                                   std::vector<FieldFilter> &destination) {
+    const std::string option = std::string("-").append(option_name);
+    const std::string role_text = (role == FieldRole::DPV) ? "per-vertex" : "per-streamline";
+    for (const auto &instance : get_options(option_name)) {
+      const std::string field_name = instance[0].as_text();
+      const float value = static_cast<float>(instance[1]);
+      const FieldDescriptor *descriptor = registry.find(field_name, role);
+      if (descriptor == nullptr)
+        throw Exception("input tractogram carries no " + role_text + " field named \"" + field_name +
+                        "\" to threshold with " + option);
+      if (descriptor->columns != 1)
+        throw Exception(role_text + " field \"" + field_name + "\" has " + str(descriptor->columns) +
+                        " columns; only a single-column (scalar) field can be thresholded with " + option);
+      destination.push_back({descriptor->ordinal, bound, value, field_name});
+    }
+  };
+
+  resolve("dps_min", FieldRole::DPS, Bound::Min, result.dps);
+  resolve("dps_max", FieldRole::DPS, Bound::Max, result.dps);
+  resolve("dpv_min", FieldRole::DPV, Bound::Min, result.dpv);
+  resolve("dpv_max", FieldRole::DPV, Bound::Max, result.dpv);
+
+  return result;
 }
 
 } // namespace MR::DWI::Tractography::Editing

@@ -41,14 +41,17 @@ public:
            const Properties &properties,
            const size_t n,
            const size_t s,
-           const WeightOutput &weight_output)
+           const WeightOutput &weight_output,
+           const bool may_fragment)
       : output(Tractogram<float>::create(path, properties, weight_output.registry)),
         number(n),
         skip(s),
         // Need to use local counts instead of writer class members due to track cropping
         count(0),
         total_count(0),
-        crop(properties.mask.size()),
+        // A vertex mask or a per-vertex (dpv) field threshold can fragment one input
+        //   streamline into several outputs, in which case the segment tally is shown.
+        crop(may_fragment),
         segments(0),
         progress(std::string("       0 read,        0 written") + (crop ? ",        0 segments" : "")) {
     // Route the privileged streamline weight to its resolved destination (an

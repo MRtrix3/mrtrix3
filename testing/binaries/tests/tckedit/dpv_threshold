@@ -1,0 +1,89 @@
+#!/bin/bash
+# Threshold individual streamline vertices on an arbitrary per-vertex
+#   (data-per-vertex) field. As with the -mask option, removing interior vertices
+#   may fragment a single input streamline into several output streamlines, so this
+#   exercises the same fragmenting code branch. A hand-authored ASCII ".vtk"
+#   carrying a scalar dpv field "scalar" is converted to ".trx"; the four input
+#   streamlines carry per-vertex values:
+#     streamline 1 : 1 1 0 1 1   (interior low vertex -> two retained fragments)
+#     streamline 2 : 1 1 0 1 1   (interior low vertex -> two retained fragments)
+#     streamline 3 : 5 5 5        (all retained -> one fragment)
+#     streamline 4 : 0 0 5 5 0 0  (one retained fragment forward; two under -inverse)
+rm -f tmp_dpv.vtk tmp_dpv_fwd.tck tmp_dpv_inv.tck
+rm -rf tmp_dpv.trx
+cat > tmp_dpv.vtk <<'VTK'
+# vtk DataFile Version 3.0
+tckedit dpv threshold fixture
+ASCII
+DATASET POLYDATA
+POINTS 19 float
+0 0 0
+1 0 0
+2 0 0
+3 0 0
+4 0 0
+0 1 0
+1 1 0
+2 1 0
+3 1 0
+4 1 0
+0 2 0
+1 2 0
+2 2 0
+0 3 0
+1 3 0
+2 3 0
+3 3 0
+4 3 0
+5 3 0
+LINES 4 23
+5 0 1 2 3 4
+5 5 6 7 8 9
+3 10 11 12
+6 13 14 15 16 17 18
+POINT_DATA 19
+SCALARS scalar float 1
+LOOKUP_TABLE default
+1
+1
+0
+1
+1
+1
+1
+0
+1
+1
+5
+5
+5
+0
+0
+5
+5
+0
+0
+CELL_DATA 4
+SCALARS metric float 1
+LOOKUP_TABLE default
+1
+2
+3
+5
+VTK
+tckconvert tmp_dpv.vtk tmp_dpv.trx -force -quiet
+
+cnt() { tckinfo "$1" -count 2>/dev/null | grep -iE "actual count" | grep -oE "[0-9]+" | head -n1; }
+
+# Retain vertices with scalar >= 0.5. The two interior-low streamlines each split
+#   into two fragments (2+2), the all-high streamline yields one fragment (1), and
+#   the leading/trailing-low streamline yields its single high run (1): 2+2+1+1 = 6.
+#   Six outputs from four inputs confirms the fragmenting branch was taken.
+tckedit tmp_dpv.trx tmp_dpv_fwd.tck -dpv_min scalar 0.5 -force -quiet
+[ "$(cnt tmp_dpv_fwd.tck)" -eq 6 ]
+
+# -inverse retains the complement (scalar < 0.5). Every low vertex is isolated except
+#   the two leading and two trailing vertices of the final streamline, which form two
+#   retained fragments: 0+0+0+2 = 2.
+tckedit tmp_dpv.trx tmp_dpv_inv.tck -dpv_min scalar 0.5 -inverse -force -quiet
+[ "$(cnt tmp_dpv_inv.tck)" -eq 2 ]

@@ -23,6 +23,7 @@
 #include "datatype.h"
 #include "exception.h"
 #include "half.h"
+#include "match_variant.h"
 #include "types.h"
 
 namespace MR::DWI::Tractography {
@@ -132,7 +133,19 @@ inline DPSValue make_dps_scalar(const float value) {
  * element type to the float processing precision. \pre the value's column count
  * is 1 (asserts via ScalarOrVector::scalar()). */
 inline float dps_scalar_to_float(const DPSValue &value) {
-  return std::visit([](const auto &row) -> float { return static_cast<float>(row.scalar()); }, value);
+  return MR::match_v(value, [](const auto &row) -> float { return static_cast<float>(row.scalar()); });
+}
+
+//! \brief The per-vertex scalar value of a per-vertex (M==1) field at \a row, as float.
+/*! Reads element (row, 0) of a dpv field whose column count M==1 — the legacy
+ * ".tsf" / TrackScalar shape — converting from the field's native on-disk element
+ * type to the float processing precision. \pre the value's column count is 1
+ * (asserts); \a row is a valid vertex index. */
+inline float dpv_scalar_to_float(const DPVValue &value, const Eigen::Index row) {
+  return MR::match_v(value, [row](const auto &matrix) -> float {
+    assert(matrix.cols() == 1);
+    return static_cast<float>(matrix(row, 0));
+  });
 }
 
 //! \brief The canonical (native-endian, non-complex) DataType for a sidecar

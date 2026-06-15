@@ -620,6 +620,8 @@ add_bash_binary_test(tckconvert/qfib_reject_nonconstant_stepsize)
 add_bash_binary_test(tckconvert/pipe_roundtrip)
 add_bash_binary_test(tckconvert/pipe_premature_close)
 
+add_bash_binary_test(tckedit/dps_threshold)
+add_bash_binary_test(tckedit/dpv_threshold)
 add_bash_binary_test(tckedit/include_exclude_inverse)
 add_bash_binary_test(tckedit/include_mask)
 add_bash_binary_test(tckedit/length)

@@ -23,6 +23,8 @@ Description
 
 This command can be used to perform various types of manipulations on track data. A range of such manipulations are demonstrated in the examples provided below.
 
+Streamlines can additionally be filtered based on arbitrary data fields carried by the input tractogram. The -dps_min / -dps_max options threshold a named per-streamline (data-per-streamline) field, discarding any whole streamline whose value lies outside the requested range. The -dpv_min / -dpv_max options instead threshold a named per-vertex (data-per-vertex) field, retaining only those vertices whose value lies within the range; as with the -mask option, removing interior vertices may fragment a single input streamline into several output streamlines. Each of these options may be specified multiple times, and the named field must be a single-column (scalar) field present in the input; field-based filtering requires a single input track file.
+
 Example usages
 --------------
 
@@ -84,6 +86,17 @@ Thresholds pertaining to per-streamline weighting
 -  **-maxweight value** set the maximum weight of any streamline
 
 -  **-minweight value** set the minimum weight of any streamline
+
+Options for thresholding based on arbitrary streamline data fields
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-dps_min field value** *(multiple uses permitted)* retain only those streamlines for which the named per-streamline field is greater than or equal to the specified value
+
+-  **-dps_max field value** *(multiple uses permitted)* retain only those streamlines for which the named per-streamline field is less than or equal to the specified value
+
+-  **-dpv_min field value** *(multiple uses permitted)* retain only those streamline vertices for which the named per-vertex field is greater than or equal to the specified value
+
+-  **-dpv_max field value** *(multiple uses permitted)* retain only those streamline vertices for which the named per-vertex field is less than or equal to the specified value
 
 Other options specific to tckedit
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

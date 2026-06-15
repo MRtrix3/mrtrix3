@@ -1,0 +1,54 @@
+#!/bin/bash
+# Threshold whole streamlines on an arbitrary per-streamline (data-per-streamline)
+#   field. A hand-authored ASCII ".vtk" carrying a scalar dps field "metric"
+#   (values 1..4, one per streamline) is converted to ".trx"; -dps_min / -dps_max
+#   then select those streamlines whose field value lies within the requested range.
+#   The selection is verified by the output streamline count.
+rm -f tmp_dps.vtk tmp_dps_min.tck tmp_dps_max.tck tmp_dps_rng.tck tmp_dps_none.tck
+rm -rf tmp_dps.trx
+cat > tmp_dps.vtk <<'VTK'
+# vtk DataFile Version 3.0
+tckedit dps threshold fixture
+ASCII
+DATASET POLYDATA
+POINTS 8 float
+0 0 0
+1 0 0
+0 1 0
+1 1 0
+0 2 0
+1 2 0
+0 3 0
+1 3 0
+LINES 4 12
+2 0 1
+2 2 3
+2 4 5
+2 6 7
+CELL_DATA 4
+SCALARS metric float 1
+LOOKUP_TABLE default
+1
+2
+3
+4
+VTK
+tckconvert tmp_dps.vtk tmp_dps.trx -force -quiet
+
+cnt() { tckinfo "$1" -count 2>/dev/null | grep -iE "actual count" | grep -oE "[0-9]+" | head -n1; }
+
+# metric >= 2.5 retains the streamlines valued 3 and 4 -> 2 streamlines.
+tckedit tmp_dps.trx tmp_dps_min.tck -dps_min metric 2.5 -force -quiet
+[ "$(cnt tmp_dps_min.tck)" -eq 2 ]
+
+# metric <= 2.5 retains the streamlines valued 1 and 2 -> 2 streamlines.
+tckedit tmp_dps.trx tmp_dps_max.tck -dps_max metric 2.5 -force -quiet
+[ "$(cnt tmp_dps_max.tck)" -eq 2 ]
+
+# 2 <= metric <= 3 (both bounds on one field) retains the streamlines valued 2 and 3.
+tckedit tmp_dps.trx tmp_dps_rng.tck -dps_min metric 2 -dps_max metric 3 -force -quiet
+[ "$(cnt tmp_dps_rng.tck)" -eq 2 ]
+
+# metric >= 5 retains nothing.
+tckedit tmp_dps.trx tmp_dps_none.tck -dps_min metric 5 -force -quiet
+[ "$(cnt tmp_dps_none.tck)" -eq 0 ]
