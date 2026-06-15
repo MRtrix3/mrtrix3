@@ -187,7 +187,8 @@ value_type AFDConnectivity::get(const std::filesystem::path &path) {
 
     SetDixel dixels;
     mapper(tck, dixels);
-    double this_length = 0.0, this_volume = 0.0;
+    double this_length = 0.0;
+    double this_volume = 0.0;
 
     for (const auto &dixel : dixels) {
       this_length += dixel.get_length();
@@ -238,7 +239,7 @@ value_type AFDConnectivity::get(const std::filesystem::path &path) {
     if (all_fixels) {
 
       // All fixels contribute to the result
-      for (auto &fixel : fixels) {
+      for (const auto &fixel : fixels) {
         if (fixel.is_selected())
           sum_volumes += fixel.get_FOD();
       }

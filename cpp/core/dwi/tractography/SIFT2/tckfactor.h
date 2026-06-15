@@ -61,10 +61,14 @@ public:
   void set_min_iters(const int i) { min_iters = i; }
   void set_max_iters(const int i) { max_iters = i; }
   void set_min_factor(const double i) {
-    min_coeff = (i != 0.0) ? std::log(i) : -std::numeric_limits<double>::infinity();
+    assert(i >= 0.0);
+    min_coeff = (i == 0.0) ? -std::numeric_limits<double>::infinity() : std::log(i);
   }
   void set_min_coeff(const double i) { min_coeff = i; }
-  void set_max_factor(const double i) { max_coeff = std::log(i); }
+  void set_max_factor(const double i) {
+    assert(i >= 1.0);
+    max_coeff = std::log(i);
+  }
   void set_max_coeff(const double i) { max_coeff = i; }
   void set_max_coeff_step(const double i) { max_coeff_step = i; }
   void set_min_cf_decrease(const double i) { min_cf_decrease_percentage = i; }

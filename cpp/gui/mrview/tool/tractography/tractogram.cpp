@@ -31,7 +31,7 @@
 #include "projection.h"
 
 const size_t MAX_BUFFER_SIZE = 2796200;                      // number of points to fill 32MB
-constexpr uint32_t PRIMITIVE_RESTART_SENTINEL = 0xFFFFFFFFU; // Primitive restart index for UNSIGNED_INT
+constexpr uint32_t PRIMITIVE_RESTART_SENTINEL = 0xFFFFFFFFu; // Primitive restart index for UNSIGNED_INT
 
 namespace MR::GUI::MRView::Tool {
 const int Tractogram::track_padding;
@@ -710,7 +710,7 @@ void Tractogram::load_intensity_track_scalars(const std::filesystem::path &filep
   } else {
     const Eigen::VectorXf scalars = File::Matrix::load_vector<float>(filepath);
     size_t total_num_tracks = 0;
-    for (unsigned long &i : num_tracks_per_buffer)
+    for (auto i : num_tracks_per_buffer)
       total_num_tracks += i;
     if (static_cast<size_t>(scalars.size()) != total_num_tracks)
       throw Exception("The scalar text file does not contain the same number of elements as the selected tractogram");
@@ -802,7 +802,7 @@ void Tractogram::load_threshold_track_scalars(const std::filesystem::path &filep
   } else {
     const Eigen::VectorXf scalars = File::Matrix::load_vector<float>(filepath);
     size_t total_num_tracks = 0;
-    for (unsigned long &i : num_tracks_per_buffer)
+    for (auto i : num_tracks_per_buffer)
       total_num_tracks += i;
     if (static_cast<size_t>(scalars.size()) != total_num_tracks)
       throw Exception("The scalar text file does not contain the same number of elements as the selected tractogram");

@@ -37,8 +37,8 @@ public:
 };
 
 FORCE_INLINE bool is_index_filename(const std::filesystem::path &path) {
-  for (const auto &supported_image_format : supported_image_formats) {
-    if (path.filename().string() == "index" + supported_image_format)
+  for (const auto &extension : supported_image_formats) {
+    if (path.filename().string() == "index" + extension)
       return true;
   }
   return false;
@@ -59,8 +59,8 @@ template <class HeaderType> FORCE_INLINE bool is_data_file(const HeaderType &in)
 }
 
 FORCE_INLINE bool is_directions_filename(const std::filesystem::path &path) {
-  for (const auto &supported_image_format : supported_image_formats) {
-    if (path.filename().string() == "directions" + supported_image_format)
+  for (const auto &extension : supported_image_formats) {
+    if (path.filename().string() == "directions" + extension)
       return true;
   }
   return false;
@@ -86,9 +86,8 @@ FORCE_INLINE std::filesystem::path get_fixel_directory(const std::filesystem::pa
 
 FORCE_INLINE index_type get_number_of_fixels(const Header &index_header) {
   check_index_image(index_header);
-  if (index_header.keyval().count(n_fixels_key) != 0U) {
+  if (index_header.keyval().count(n_fixels_key) != 0U)
     return std::stoul(index_header.keyval().at(n_fixels_key));
-  }
   auto index_image = Image<index_type>::open(index_header.path());
   index_image.index(3) = 1;
   index_type num_fixels = 0;
@@ -149,8 +148,8 @@ FORCE_INLINE Header find_index_header(const std::filesystem::path &fixel_directo
   Header header;
   check_fixel_directory(fixel_directory_path);
 
-  for (const auto &supported_image_format : supported_image_formats) {
-    const std::filesystem::path full_path = fixel_directory_path / ("index" + supported_image_format);
+  for (const auto &extension : supported_image_formats) {
+    const std::filesystem::path full_path = fixel_directory_path / ("index" + extension);
     if (std::filesystem::exists(full_path)) {
       if (header.valid())
         throw InvalidDirectoryException("Multiple index images found in directory " + fixel_directory_path.string());

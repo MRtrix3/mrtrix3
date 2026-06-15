@@ -151,7 +151,6 @@ void run() {
     auto header = Header::open(directions_path);
     directions = DWI::get_DW_scheme(header);
   }
-
   if (directions.size() == 0)
     throw Exception("no directions found in input directions file");
 

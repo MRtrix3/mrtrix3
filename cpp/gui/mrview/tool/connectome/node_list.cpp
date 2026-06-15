@@ -70,7 +70,7 @@ QVariant Node_list_model::headerData(int section, Qt::Orientation orientation, i
 
 int Node_list_model::rowCount(const QModelIndex &parent) const {
   (void)parent; // to suppress warnings about unused parameters
-  return ((connectome.num_nodes() != 0U) ? connectome.num_nodes() + 1 : 0);
+  return ((connectome.num_nodes() == 0U) ? 0 : (connectome.num_nodes() + 1));
 }
 int Node_list_model::columnCount(const QModelIndex &parent) const {
   (void)parent;

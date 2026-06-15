@@ -49,7 +49,7 @@ bool Worker::operator()(Streamline<> &in, Streamline<> &out) const {
 
       if (ends_only) {
         for (size_t i = 0; i != 2; ++i) {
-          const Eigen::Vector3f &p((i != 0U) ? in.back() : in.front());
+          const Eigen::Vector3f &p((i == 0U) ? in.front() : in.back());
           include_visitation(p);
           if (properties.exclude.contains(p)) {
             exclude = true;

@@ -43,7 +43,7 @@ void NBS::operator()(in_column_type in, const value_type T, out_column_type out)
         to_expand.pop_back();
         cluster_size++;
 
-        for (unsigned long &i : (*adjacency)[index]) {
+        for (const auto i : (*adjacency)[index]) {
           if (!visited[i] && std::isfinite(in[i]) && in[i] >= T) {
             visited[i] = true;
             to_expand.push_back(i);

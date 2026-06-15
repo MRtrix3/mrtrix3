@@ -316,11 +316,12 @@ void all_stats(const measurements_matrix_type &measurements,
   if (progress)
     ++*progress;
 #endif
-  if (variance_groups.size() != 0)
-    std_effect_size = matrix_type::Constant(
-        measurements.cols(), hypotheses.size(), std::numeric_limits<matrix_type::Scalar>::quiet_NaN());
-  else
+  if (variance_groups.size() == 0)
     std_effect_size = abs_effect_size.array().colwise() / stdev.transpose().array().col(0);
+  else
+    std_effect_size = matrix_type::Constant(measurements.cols(),                                    //
+                                            hypotheses.size(),                                      //
+                                            std::numeric_limits<matrix_type::Scalar>::quiet_NaN()); //
 #ifdef GLM_ALL_STATS_DEBUG
   std::cerr << "std_effect_size: " << std_effect_size.rows() << " x " << std_effect_size.cols() << ", max "
             << std_effect_size.array().maxCoeff() << "\n";
@@ -347,7 +348,7 @@ void all_stats(const measurements_matrix_type &measurements,
   public:
     Source(const index_type num_elements)
         : num_elements(num_elements),
-          
+
           progress(new ProgressBar("Calculating basic properties of default permutation", num_elements)) {}
     bool operator()(index_type &element_index) {
       element_index = counter++;
@@ -388,7 +389,7 @@ void all_stats(const measurements_matrix_type &measurements,
           global_abs_effect_size(abs_effect_size),
           global_std_effect_size(std_effect_size),
           global_stdev(stdev),
-          num_vgs((variance_groups.size() != 0) ? variance_groups.maxCoeff() + 1 : 1) {
+          num_vgs((variance_groups.size() == 0) ? 1 : (variance_groups.maxCoeff() + 1)) {
       assert(design_fixed.cols() + extra_columns.size() == hypotheses[0].cols());
     }
     bool operator()(const index_type &element_index) {
@@ -425,7 +426,7 @@ void all_stats(const measurements_matrix_type &measurements,
         // Need to reduce the data and design matrices to contain only finite data
         measurements_matrix_type element_data_finite(valid_rows, 1);
         matrix_type element_design_finite(valid_rows, element_design.cols());
-        index_array_type variance_groups_finite((variance_groups.size() != 0) ? valid_rows : 0);
+        index_array_type variance_groups_finite((variance_groups.size() == 0) ? 0 : valid_rows);
         index_type output_row = 0;
         for (Eigen::Index row = 0; row != data.rows(); ++row) {
           if (std::isfinite(element_data(row)) && element_design.row(row).allFinite()) {

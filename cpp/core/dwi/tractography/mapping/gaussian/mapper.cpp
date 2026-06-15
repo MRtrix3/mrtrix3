@@ -58,10 +58,7 @@ void TrackMapper::gaussian_smooth_factors(const Streamline<> &tck) const {
       }
     }
 
-    if (norm != 0.0)
-      factors[i] = (sum / norm);
-    else
-      factors[i] = 0.0;
+    factors[i] = (norm == 0.0) ? 0.0 : (sum / norm);
   }
 }
 

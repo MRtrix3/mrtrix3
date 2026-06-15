@@ -569,23 +569,23 @@ void Fixel::opacity_slot(int opacity) {
 
 void Fixel::line_thickness_slot(int thickness) {
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-  for (auto &indice : indices)
-    fixel_list_model->get_fixel_image(indice)->set_line_thickness(static_cast<float>(thickness) / 1.0e5F);
+  for (auto index : indices)
+    fixel_list_model->get_fixel_image(index)->set_line_thickness(static_cast<float>(thickness) / 1.0e5F);
   window().updateGL();
 }
 
 void Fixel::length_multiplier_slot() {
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-  for (auto &indice : indices)
-    fixel_list_model->get_fixel_image(indice)->set_line_length_multiplier(length_multiplier->value());
+  for (auto index : indices)
+    fixel_list_model->get_fixel_image(index)->set_line_length_multiplier(length_multiplier->value());
   window().updateGL();
 }
 
 void Fixel::length_type_slot(int selection) {
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
 
-  for (auto &indice : indices) {
-    const auto fixel = fixel_list_model->get_fixel_image(indice);
+  for (auto index : indices) {
+    const auto fixel = fixel_list_model->get_fixel_image(index);
     fixel->set_scale_type_index(selection);
     update_gui_scaling_controls(false);
     break;
@@ -597,8 +597,8 @@ void Fixel::length_type_slot(int selection) {
 void Fixel::threshold_type_slot(int selection) {
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
 
-  for (auto &indice : indices) {
-    const auto fixel = fixel_list_model->get_fixel_image(indice);
+  for (auto index : indices) {
+    const auto fixel = fixel_list_model->get_fixel_image(index);
     fixel->set_threshold_type_index(selection);
     update_gui_threshold_controls(false);
     break;
@@ -613,15 +613,15 @@ void Fixel::on_checkbox_slot(bool) { window().updateGL(); }
 
 void Fixel::toggle_show_colour_bar(bool visible, const ColourMapButton &) {
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-  for (auto &indice : indices)
-    fixel_list_model->get_fixel_image(indice)->show_colour_bar = visible;
+  for (auto index : indices)
+    fixel_list_model->get_fixel_image(index)->show_colour_bar = visible;
   window().updateGL();
 }
 
 void Fixel::selected_colourmap(size_t index, const ColourMapButton &) {
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-  for (auto &indice : indices) {
-    fixel_list_model->get_fixel_image(indice)->colourmap = index;
+  for (auto index : indices) {
+    fixel_list_model->get_fixel_image(index)->colourmap = index;
   }
   window().updateGL();
 }
@@ -630,8 +630,8 @@ void Fixel::selected_custom_colour(const QColor &colour, const ColourMapButton &
   if (colour.isValid()) {
     QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
     const std::array<GLubyte, 3> c_colour{{GLubyte(colour.red()), GLubyte(colour.green()), GLubyte(colour.blue())}};
-    for (auto &indice : indices) {
-      fixel_list_model->get_fixel_image(indice)->set_colour(c_colour);
+    for (auto index : indices) {
+      fixel_list_model->get_fixel_image(index)->set_colour(c_colour);
     }
     window().updateGL();
   }
@@ -639,16 +639,16 @@ void Fixel::selected_custom_colour(const QColor &colour, const ColourMapButton &
 
 void Fixel::reset_colourmap(const ColourMapButton &) {
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-  for (auto &indice : indices)
-    fixel_list_model->get_fixel_image(indice)->reset_windowing();
+  for (auto index : indices)
+    fixel_list_model->get_fixel_image(index)->reset_windowing();
   update_gui_controls();
   window().updateGL();
 }
 
 void Fixel::toggle_invert_colourmap(bool inverted, const ColourMapButton &) {
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-  for (auto &indice : indices)
-    fixel_list_model->get_fixel_image(indice)->set_invert_scale(inverted);
+  for (auto index : indices)
+    fixel_list_model->get_fixel_image(index)->set_invert_scale(inverted);
   window().updateGL();
 }
 
@@ -656,8 +656,8 @@ void Fixel::colour_changed_slot(int selection) {
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
 
   colourmap_option_group->setEnabled(selection == 0);
-  for (auto &indice : indices) {
-    fixel_list_model->get_fixel_image(indice)->set_colour_type_index(selection);
+  for (auto index : indices) {
+    fixel_list_model->get_fixel_image(index)->set_colour_type_index(selection);
     update_gui_colour_controls(false);
     break;
   }
@@ -667,8 +667,8 @@ void Fixel::colour_changed_slot(int selection) {
 
 void Fixel::on_set_tracking_slot(bool is_checked) {
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-  for (auto &indice : indices) {
-    auto *fixel = dynamic_cast<Image4D *>(fixel_list_model->get_fixel_image(indice));
+  for (auto index : indices) {
+    auto *fixel = dynamic_cast<Image4D *>(fixel_list_model->get_fixel_image(index));
     assert(fixel != nullptr);
     if (fixel != nullptr)
       fixel->tracking = is_checked;
@@ -678,8 +678,8 @@ void Fixel::on_set_tracking_slot(bool is_checked) {
 
 void Fixel::on_set_scaling_slot() {
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-  for (auto &indice : indices)
-    fixel_list_model->get_fixel_image(indice)->set_windowing(min_value->value(), max_value->value());
+  for (auto index : indices)
+    fixel_list_model->get_fixel_image(index)->set_windowing(min_value->value(), max_value->value());
   window().updateGL();
 }
 
@@ -688,8 +688,8 @@ void Fixel::threshold_lower_changed(int) {
     return;
   threshold_lower->setEnabled(threshold_lower_box->isChecked());
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-  for (auto &indice : indices) {
-    auto &fixel_image = *fixel_list_model->get_fixel_image(indice);
+  for (auto index : indices) {
+    auto &fixel_image = *fixel_list_model->get_fixel_image(index);
     fixel_image.set_use_discard_lower(threshold_lower_box->isChecked() && fixel_image.has_values());
   }
   window().updateGL();
@@ -700,8 +700,8 @@ void Fixel::threshold_upper_changed(int) {
     return;
   threshold_upper->setEnabled(threshold_upper_box->isChecked());
   QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-  for (auto &indice : indices) {
-    auto &fixel_image = *fixel_list_model->get_fixel_image(indice);
+  for (auto index : indices) {
+    auto &fixel_image = *fixel_list_model->get_fixel_image(index);
     fixel_image.set_use_discard_upper(threshold_upper_box->isChecked() && fixel_image.has_values());
   }
   window().updateGL();
@@ -712,8 +712,8 @@ void Fixel::threshold_lower_value_changed() {
     return;
   if (threshold_lower_box->isChecked()) {
     QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-    for (auto &indice : indices) {
-      auto &fixel_image = *fixel_list_model->get_fixel_image(indice);
+    for (auto index : indices) {
+      auto &fixel_image = *fixel_list_model->get_fixel_image(index);
       if (fixel_image.has_values()) {
         fixel_image.set_threshold_lower(threshold_lower->value());
         fixel_image.set_use_discard_lower(threshold_lower_box->isChecked());
@@ -728,8 +728,8 @@ void Fixel::threshold_upper_value_changed() {
     return;
   if (threshold_upper_box->isChecked()) {
     QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-    for (auto &indice : indices) {
-      auto &fixel_image = *fixel_list_model->get_fixel_image(indice);
+    for (auto index : indices) {
+      auto &fixel_image = *fixel_list_model->get_fixel_image(index);
       if (fixel_image.has_values()) {
         fixel_image.set_threshold_upper(threshold_upper->value());
         fixel_image.set_use_discard_upper(threshold_upper_box->isChecked());

@@ -199,7 +199,7 @@ double CoefficientOptimiserBase::do_fixel_exclusion(const SIFT::track_t track_in
     }
   }
 
-  return ((sum_weights != 0.0) ? (weighted_sum / sum_weights) : 0.0);
+  return ((sum_weights == 0.0) ? 0.0 : (weighted_sum / sum_weights));
 }
 
 CoefficientOptimiserGSS::CoefficientOptimiserGSS(TckFactor &tckfactor,
@@ -321,7 +321,7 @@ double CoefficientOptimiserIterative::get_coeff_change(const SIFT::track_t track
     const LineSearchFunctor::Result result = line_search_functor.get(dFs);
 
     // Newton update
-    change = (result.second_deriv != 0.0) ? (-result.first_deriv / result.second_deriv) : 0.0;
+    change = (result.second_deriv == 0.0) ? 0.0 : (-result.first_deriv / result.second_deriv);
     if (result.second_deriv < 0.0)
       change = -change;
 

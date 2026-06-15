@@ -515,9 +515,8 @@ void run() {
     vals = parse_ints<uint32_t>(opt[0][0]);
     if (vals.empty())
       throw Exception("invalid eigenvalue/eigenvector number specifier");
-    for (unsigned int val : vals)
-      if (val < 1 || val > 3)
-        throw Exception("eigenvalue/eigenvector number is out of bounds");
+    if (std::any_of(vals.begin(), vals.end(), [](uint32_t i) { return i < 1 || i > 3; }))
+      throw Exception("eigenvalue/eigenvector number is out of bounds");
   }
 
   const auto modulate = get_option_choice<ModulateChoice>("modulate", default_modulate_choice);
@@ -585,13 +584,13 @@ void run() {
   auto rk_ndirs = get_option_value("rk_ndirs", default_rk_numdirections);
 
   if ((dki_metric_count != 0U) && !dkt_img.valid()) {
-    throw Exception(
-        "Cannot calculate diffusion kurtosis metrics; must provide the kurtosis tensor using the -dkt input option");
+    throw Exception("Cannot calculate diffusion kurtosis metrics;"                    //
+                    " must provide the kurtosis tensor using the -dkt input option"); //
   }
 
   if (metric_count == 0U)
-    throw Exception(
-        "No output specified; must request at least one metric of interest using the available command-line options");
+    throw Exception("No output specified;"                                                                     //
+                    " must request at least one metric of interest using the available command-line options"); //
 
   ThreadedLoop(std::string("computing metric") + (metric_count > 1 ? "s" : ""), dt_img, 0, 3)
       .run(Processor(mask_img,

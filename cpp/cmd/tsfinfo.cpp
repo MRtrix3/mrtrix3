@@ -60,19 +60,19 @@ void run() {
     std::cout << "***********************************\n";
     std::cout << "  Track scalar file: \"" << i.as_text() << "\"\n";
 
-    for (auto &propertie : properties) {
-      std::string S(propertie.first + ':');
+    for (const auto &property : properties) {
+      std::string S(property.first + ':');
       S.resize(22, ' ');
-      std::cout << "    " << S << propertie.second << "\n";
+      std::cout << "    " << S << property.second << "\n";
     }
 
     if (!properties.comments.empty()) {
       std::cout << "    Comments:             ";
-      for (auto i = properties.comments.begin(); i != properties.comments.end(); ++i)
-        std::cout << (i == properties.comments.begin() ? "" : "                       ") << *i << "\n";
+      for (auto i = properties.comments.cbegin(); i != properties.comments.cend(); ++i)
+        std::cout << (i == properties.comments.cbegin() ? "" : "                       ") << *i << "\n";
     }
 
-    for (auto &prior_roi : properties.prior_rois)
+    for (const auto &prior_roi : properties.prior_rois)
       std::cout << "    ROI:                  " << prior_roi.first << " " << prior_roi.second << "\n";
 
     if (actual_count) {
@@ -98,7 +98,7 @@ void run() {
         std::ostringstream index_str;
         index_str << std::setfill('0') << std::setw(6) << tck.get_index();
         File::OFStream out(ascii_dir / (index_str.str() + ".txt"));
-        for (float &i : tck)
+        for (auto i : tck)
           out << i << "\n";
         out.close();
         ++progress;

@@ -165,9 +165,9 @@ public:
     norm_multiplier = ValueType(0);
     for (const auto &c : *this)
       norm_multiplier += c.value();
-    norm_multiplier = (norm_multiplier != 0.0F) ? (ValueType(1) / norm_multiplier) : ValueType(0);
+    norm_multiplier = (norm_multiplier == 0.0F) ? ValueType(0) : (ValueType(1) / norm_multiplier);
   }
-  void normalise(const ValueType sum) { norm_multiplier = (sum != 0.0F) ? (ValueType(1) / sum) : ValueType(0); }
+  void normalise(const ValueType sum) { norm_multiplier = (sum == 0.0F) ? ValueType(0) : (ValueType(1) / sum); }
   ValueType norm_multiplier;
 };
 

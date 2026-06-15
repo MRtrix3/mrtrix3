@@ -50,14 +50,14 @@ FORCE_INLINE default_type bvalue_epsilon() {
 Shell::Shell(const Eigen::MatrixXd &grad, const std::vector<size_t> &indices)
     : volumes(indices), mean(0.0), stdev(0.0), min(std::numeric_limits<default_type>::max()), max(0.0) {
   assert(!volumes.empty());
-  for (unsigned long &volume : volumes) {
+  for (auto volume : volumes) {
     const default_type b = grad(volume, 3);
     mean += b;
     min = std::min(min, b);
     max = std::max(min, b);
   }
   mean /= static_cast<default_type>(volumes.size());
-  for (unsigned long &volume : volumes)
+  for (auto volume : volumes)
     stdev += Math::pow2(grad(volume, 3) - mean);
   stdev = std::sqrt(stdev / (volumes.size() - 1));
 }
@@ -104,7 +104,7 @@ Shells::select_shells(const bool force_singleshell, const bool force_with_bzero,
     bool bzero_selected = false;
     size_t nonbzero_selected_count = 0;
 
-    for (double &desired_bvalue : desired_bvalues) {
+    for (double desired_bvalue : desired_bvalues) {
 
       if (desired_bvalue < 0)
         throw Exception("Cannot select shells corresponding to negative b-values");
@@ -182,7 +182,7 @@ Shells::select_shells(const bool force_singleshell, const bool force_with_bzero,
             // First, check to see if all non-zero shells have (effectively) non-zero standard deviation
             // (If one non-zero shell has negligible standard deviation, assume a Poisson distribution for all shells)
             bool zero_stdev = false;
-            for (auto &shell : shells) {
+            for (const auto &shell : shells) {
               if (!shell.is_bzero() && shell.get_stdev() < 1.0) {
                 zero_stdev = true;
                 break;

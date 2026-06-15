@@ -32,8 +32,8 @@ public:
 
   Gaussian1D(const ImageType &parent,
              default_type stdev_in = 1.0,
-             size_t axis_in = 0,
-             size_t extent = 0,
+             size_t axis_in = 0U,
+             size_t extent = 0U,
              bool zero_boundary = false)
       : base_type(parent), stdev(stdev_in), axis(axis_in), zero_boundary(zero_boundary) {
     if (extent == 0U)

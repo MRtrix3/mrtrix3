@@ -46,7 +46,7 @@ void run() {
 
   const bool actual_count = !get_options("count").empty();
 
-  for (auto &i : argument) {
+  for (const auto &i : argument) {
     const std::filesystem::path input_path{i};
     Tractography::Properties properties;
     Tractography::Reader<float> file(input_path, properties);
@@ -54,10 +54,10 @@ void run() {
     std::cout << "***********************************\n";
     std::cout << "  Tracks file: \"" << input_path.string() << "\"\n";
 
-    for (auto &propertie : properties) {
-      std::string S(propertie.first + ':');
+    for (const auto &property : properties) {
+      std::string S(property.first + ':');
       S.resize(22, ' ');
-      const auto lines = split_lines(propertie.second);
+      const auto lines = split_lines(property.second);
       std::cout << "    " << S << lines[0] << "\n";
       for (size_t i = 1; i != lines.size(); ++i)
         std::cout << "                          " << lines[i] << "\n";
@@ -65,8 +65,8 @@ void run() {
 
     if (!properties.comments.empty()) {
       std::cout << "    Comments:             ";
-      for (auto i = properties.comments.begin(); i != properties.comments.end(); ++i)
-        std::cout << (i == properties.comments.begin() ? "" : "                       ") << *i << "\n";
+      for (auto i = properties.comments.cbegin(); i != properties.comments.cend(); ++i)
+        std::cout << (i == properties.comments.cbegin() ? "" : "                       ") << *i << "\n";
     }
 
     for (auto &prior_roi : properties.prior_rois)

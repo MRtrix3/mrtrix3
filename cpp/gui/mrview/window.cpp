@@ -145,9 +145,7 @@ QSize Window::GLArea::sizeHint() const {
   std::vector<uint32_t> init_window_size;
   if (!init_size_string.empty())
     init_window_size = parse_ints<uint32_t>(init_size_string);
-  if (init_window_size.size() == 2)
-    return QSize(init_window_size[0], init_window_size[1]);
-  return QSize(512, 512);
+  return (init_window_size.size() == 2) ? QSize(init_window_size[0], init_window_size[1]) : QSize(512, 512);
 }
 void Window::GLArea::dragEnterEvent(QDragEnterEvent *event) { event->acceptProposedAction(); }
 void Window::GLArea::dragMoveEvent(QDragMoveEvent *event) { event->acceptProposedAction(); }

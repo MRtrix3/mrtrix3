@@ -410,11 +410,9 @@ public:
   void set_max_iter(const std::vector<uint32_t> &maxiter) { max_iter = maxiter; }
 
   void set_scale_factor(const std::vector<default_type> &scalefactor) {
-    for (double level : scalefactor) {
-      if (level <= 0 || level > 1)
-        throw Exception(
-            "the non-linear registration scale factor for each multi-resolution level must be between 0 and 1");
-    }
+    if (std::any_of(scalefactor.begin(), scalefactor.end(), [](double level) { return level <= 0.0 || level > 1.0; }))
+      throw Exception("the non-linear registration scale factor for each multi-resolution level" //
+                      " must be between 0 and 1");                                               //
     scale_factor = scalefactor;
   }
 
@@ -432,9 +430,8 @@ public:
   void set_disp_smoothing(const default_type voxel_fwhm) { disp_smoothing = voxel_fwhm; }
 
   void set_lmax(const std::vector<uint32_t> &lmax) {
-    for (unsigned int i : lmax)
-      if ((i % 2) != 0U)
-        throw Exception("the input nonlinear lmax must be even");
+    if (std::any_of(lmax.begin(), lmax.end(), [](uint32_t l) { return ((l % 2) != 0U); }))
+      throw Exception("the input nonlinear lmax must be even");
     fod_lmax = lmax;
   }
 

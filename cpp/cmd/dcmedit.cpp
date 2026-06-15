@@ -130,7 +130,7 @@ void run() {
         memcpy(item.data, "anonymous", std::min<int>(item.size, 9));
       }
     }
-    for (auto &tag : tags) {
+    for (const auto &tag : tags) {
       if (item.is(tag.group, tag.element)) {
         memset(item.data, 32, item.size);
         memcpy(item.data, tag.newvalue.c_str(), std::min<int>(item.size, tag.newvalue.size()));

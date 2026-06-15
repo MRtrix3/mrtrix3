@@ -66,10 +66,8 @@ public:
   void set_extent(const std::vector<uint32_t> &new_extent) {
     if (new_extent.size() != 1 && new_extent.size() != 3)
       throw Exception("Please supply a single kernel extent value, or three values (one for each spatial dimension)");
-    for (unsigned int i : new_extent) {
-      if ((i & uint32_t(1)) == 0U)
-        throw Exception("expected odd number for extent");
-    }
+    if (std::any_of(ext.begin(), ext.end(), [](uint32_t i) { return (i & uint32_t(1)) == 0U; }))
+      throw Exception("expected odd number for extent");
     if (new_extent.size() == 1)
       for (size_t i = 0; i < 3; i++)
         extent[i] = new_extent[0];
@@ -111,8 +109,8 @@ public:
     std::unique_ptr<ProgressBar> progress;
     if (!message.empty()) {
       size_t axes_to_smooth = 0;
-      for (double &i : stdev)
-        if (i)
+      for (double i : stdev)
+        if (i != 0.0)
           ++axes_to_smooth;
       progress = std::make_unique<ProgressBar>(message, axes_to_smooth + 1);
     }
@@ -136,8 +134,8 @@ public:
     std::unique_ptr<ProgressBar> progress;
     if (!message.empty()) {
       size_t axes_to_smooth = 0;
-      for (double &i : stdev)
-        if (i)
+      for (double i : stdev)
+        if (i != 0.0)
           ++axes_to_smooth;
       progress = std::make_unique<ProgressBar>(message, axes_to_smooth + 1);
     }

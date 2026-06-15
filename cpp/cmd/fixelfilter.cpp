@@ -14,6 +14,9 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <filesystem>
+#include <memory>
+
 #include "command.h"
 #include "enum.h"
 #include "file/path.h"
@@ -30,9 +33,6 @@
 #include "fixel/filter/smooth.h"
 #include "fixel/matrix.h"
 #include "stats/cfe.h"
-
-#include <filesystem>
-#include <memory>
 
 using namespace MR;
 using namespace App;

@@ -140,12 +140,10 @@ class ROIUnorderedSet : public ROISetBase {
 public:
   ROIUnorderedSet() = default;
   [[nodiscard]] bool contains(const Eigen::Vector3f &p) const {
-    for (const auto &n : R)
-      if (n.contains(p))
-        return (true);
-    return false;
+    return std::any_of(R.begin(), R.end(), [&p](const ROI &n) { return n.contains(p); });
   }
   void contains(const Eigen::Vector3f &p, Eigen::Array<bool, Eigen::Dynamic, 1> &retval) const {
+    retval.setZero();
     for (size_t n = 0; n < R.size(); ++n)
       if (R[n].contains(p))
         retval[n] = true;

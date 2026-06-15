@@ -30,10 +30,10 @@ public:
 
   PermuteAxes(const ImageType &original, const std::vector<int> &axes) : base_type(original), axes_(axes) {
     for (int i = 0; i < static_cast<int>(parent().ndim()); ++i) {
-      for (int axe : axes_) {
-        if (axe >= static_cast<int>(parent().ndim()))
-          throw Exception("axis " + str(axe) + " exceeds image dimensionality");
-        if (axe == i)
+      for (int axis : axes_) {
+        if (axis >= static_cast<int>(parent().ndim()))
+          throw Exception("axis " + str(axis) + " exceeds image dimensionality");
+        if (axis == i)
           goto next_axis;
       }
       if (parent().size(i) != 1)

@@ -115,31 +115,32 @@ void InterprocessCommunicator::TryConnectTo(int connectToId) {
     const QString serverName = "mrtrix_interprocesssyncer_" + QString::number(connectToId);
 
     // check we are not already connected
-    for (auto &sender : senders) {
-      if (sender->GetServerName() == serverName) {
-        // we have already connected to this
-        return;
-      }
-    }
-
-    const std::shared_ptr<GUI::MRView::Sync::Client> curCl = std::make_shared<GUI::MRView::Sync::Client>();
-
-    curCl->SetServerName(serverName);
-    if (curCl->TryConnect()) {
-      // Save this connection
-      senders.emplace_back(curCl);
-
-      // Send it our id so that it connects back to us (i.e. two-way syncing)
-      std::array<char, 8> a;
-      const auto connected_id = static_cast<int32_t>(MessageKey::ConnectedID);
-      memcpy(&a[0], &connected_id, 4);
-      memcpy(&a[4], &id, 4);
-      QByteArray dat;
-      dat.insert(0, &a[0], 8);
-      curCl->SendData(dat);
-    }
-    // else we couldn't connect - likely that there was nothing to connect to
+    if (std::any_of(
+            senders.begin(), senders.end(), [&serverName](std::shared_ptr<MR::GUI::MRView::Sync::Client> sender) {
+              return sender->GetServerName() == serverName;
+            }))
+      // we have already connected to this
+      return;
   }
+
+  const std::shared_ptr<GUI::MRView::Sync::Client> curCl = std::make_shared<GUI::MRView::Sync::Client>();
+
+  curCl->SetServerName(serverName);
+  if (curCl->TryConnect()) {
+    // Save this connection
+    senders.emplace_back(curCl);
+
+    // Send it our id so that it connects back to us (i.e. two-way syncing)
+    std::array<char, 8> a;
+    const auto connected_id = static_cast<int32_t>(MessageKey::ConnectedID);
+    memcpy(&a[0], &connected_id, 4);
+    memcpy(&a[4], &id, 4);
+    QByteArray dat;
+    dat.insert(0, &a[0], 8);
+    curCl->SendData(dat);
+  }
+  // else we couldn't connect - likely that there was nothing to connect to
+}
 }
 
 /**
@@ -148,7 +149,7 @@ void InterprocessCommunicator::TryConnectTo(int connectToId) {
 void InterprocessCommunicator::OnDataReceived(std::vector<std::shared_ptr<QByteArray>> allMessages) {
   std::vector<std::shared_ptr<QByteArray>> toSync;
 
-  for (auto dat : allMessages) {
+  for (const auto &dat : allMessages) {
     int dataLength = dat->size();
 
     if (dataLength < 4) {
@@ -195,30 +196,31 @@ bool InterprocessCommunicator::SendData(QByteArray dat) {
   // not cross-platform, probably poor performance, and/or require much more programming
   // than below.
 
-  if (QApplication::activeWindow() != 0 && QApplication::focusWidget() != 0) {
-    // make an array: the message key followed by the message
-    //--Key
-    const auto sync_data = static_cast<int32_t>(MessageKey::SyncData);
-    QByteArray data;
-    data.insert(0, reinterpret_cast<const char *>(&sync_data), 4);
-    //--Data
-    data.insert(4, dat.data(), dat.size());
+  // We are not the active window
+  if (QApplication::activeWindow() == 0 || QApplication::focusWidget() == 0)
+    return false;
 
-    // send to all senders
-    bool allOk = true;
-    for (int i = senders.size() - 1; i >= 0; i--) {
-      try {
-        senders[i]->SendData(data);
-      } catch (...) {
-        DEBUG("Send Error");
-        allOk = false;
-        // sending error.
-        // TODO: send again or disconnect this item
-      }
+  // make an array: the message key followed by the message
+  //--Key
+  const auto sync_data = static_cast<int32_t>(MessageKey::SyncData);
+  QByteArray data;
+  data.insert(0, reinterpret_cast<const char *>(&sync_data), 4);
+  //--Data
+  data.insert(4, dat.data(), dat.size());
+
+  // send to all senders
+  bool allOk = true;
+  for (int i = senders.size() - 1; i >= 0; i--) {
+    try {
+      senders[i]->SendData(data);
+    } catch (...) {
+      DEBUG("Send Error");
+      allOk = false;
+      // sending error.
+      // TODO: send again or disconnect this item
     }
-    return allOk;
-  } // We are not the active window
-  return false;
+  }
+  return allOk;
 }
 
 } // namespace MR::GUI::MRView::Sync

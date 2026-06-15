@@ -157,9 +157,9 @@ public:
     if (buffer_size + tck_scalar.size() > buffer_capacity)
       commit();
 
-    for (auto i = tck_scalar.begin(); i != tck_scalar.end(); ++i) {
-      assert(std::isfinite(*i));
-      add_scalar(*i);
+    for (const auto i : tck_scalar) {
+      assert(std::isfinite(i));
+      add_scalar(i);
     }
     add_scalar(delimiter());
     ++count;

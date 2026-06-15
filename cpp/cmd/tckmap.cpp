@@ -250,9 +250,8 @@ DataType determine_datatype(const DataType current_dt,
                             const contrast_t contrast,
                             const DataType default_dt,
                             const bool precise) {
-  if (current_dt == DataType::Undefined) {
+  if (current_dt == DataType::Undefined)
     return default_dt;
-  }
   if ((default_dt.is_floating_point() || precise) && !current_dt.is_floating_point()) {
     WARN("Cannot use non-floating-point datatype with " + str(Mapping::contrast_names.at(contrast).description) +
          " contrast" + (precise ? " and precise mapping" : "") + "; defaulting to " + str(default_dt.specifier()));
@@ -280,8 +279,9 @@ void run() {
         "voxel size must either be a single isotropic value, or a list of 3 comma-separated voxel dimensions");
 
   if (!voxel_size.empty())
-    INFO("creating image with voxel dimensions [ " + str(voxel_size[0]) + " " + str(voxel_size[1]) + " " +
-         str(voxel_size[2]) + " ]");
+    INFO("creating image with voxel dimensions" //
+         " [ " +
+         str(voxel_size[0]) + " " + str(voxel_size[1]) + " " + str(voxel_size[2]) + " ]"); //
 
   Header header;
   auto opt = get_options("template");
@@ -327,8 +327,8 @@ void run() {
     }
     gaussian_fwhm_tck = opt[0][0];
   } else if (stat_tck == tck_stat_t::GAUSSIAN) {
-    throw Exception("If using Gaussian per-streamline statistic, need to provide a full-width half-maximum for the "
-                    "Gaussian kernel using the -fwhm option");
+    throw Exception("If using Gaussian per-streamline statistic,"                                                 //
+                    " need to provide a full-width half-maximum for the Gaussian kernel using the -fwhm option"); //
   }
 
   bool backtrack = false;
@@ -361,7 +361,7 @@ void run() {
     if (std::filesystem::exists(opt[0][0]))
       dirs = std::make_unique<Directions::FastLookupSet>(static_cast<std::filesystem::path>(opt[0][0]));
     else
-      dirs = std::make_unique<Directions::FastLookupSet>(to<size_t>(opt[0][0]));
+      dirs = std::make_unique<Directions::FastLookupSet>(static_cast<size_t>(opt[0][0]));
     header.ndim() = 4;
     header.size(3) = dirs->size();
     header.sanitise();
@@ -482,9 +482,10 @@ void run() {
   opt = get_options("datatype");
   if (!opt.empty()) {
     if (writer_type == writer_dim::DEC || writer_type == writer_dim::TOD) {
-      WARN("Can't manually set datatype for " + str(Mapping::output_dimension_names.at(writer_type)) +
-           " processing;" + //
-           " overriding to Float32");
+      WARN("Can't manually set datatype" //
+           " for " +
+           str(Mapping::output_dimension_names.at(writer_type)) + " processing;" + //
+           " overriding to Float32");                                              //
     } else {
       header.datatype() = DataType::parse(opt[0][0]);
     }
@@ -543,10 +544,10 @@ void run() {
     opt = get_options("image");
     if (opt.empty()) {
       if (contrast == contrast_t::SCALAR_MAP || contrast == contrast_t::SCALAR_MAP_COUNT)
-        throw Exception("If using 'scalar_map' or 'scalar_map_count' contrast, must provide the relevant scalar image "
-                        "using -image option");
-      throw Exception(
-          "If using 'fod_amp' contrast, must provide the relevant spherical harmonic image using -image option");
+        throw Exception("If using 'scalar_map' or 'scalar_map_count' contrast,"                   //
+                        " must provide the relevant scalar image using -image option");           //
+      throw Exception("If using 'fod_amp' contrast,"                                              //
+                      " must provide the relevant spherical harmonic image using -image option"); //
     }
     const std::filesystem::path assoc_image(opt[0][0]);
     if (contrast == contrast_t::SCALAR_MAP || contrast == contrast_t::SCALAR_MAP_COUNT) {
@@ -560,8 +561,8 @@ void run() {
   } else if (contrast == contrast_t::VECTOR_FILE) {
     opt = get_options("vector_file");
     if (opt.empty())
-      throw Exception(
-          "If using 'vector_file' contrast, must provide the relevant data file using the -vector_file option");
+      throw Exception("If using 'vector_file' contrast,"                                     //
+                      " must provide the relevant data file using the -vector_file option"); //
     const std::filesystem::path path(opt[0][0]);
     mapper->add_vector_data(path);
     header.keyval()["twi_vector_file"] = path.filename().string();

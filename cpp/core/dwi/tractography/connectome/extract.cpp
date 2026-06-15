@@ -19,11 +19,7 @@
 namespace MR::DWI::Tractography::Connectome {
 
 bool Selector::operator()(const node_t node) const {
-  for (unsigned int i : list) {
-    if (i == node)
-      return true;
-  }
-  return false;
+  return std::find(list.cbegin(), list.cend(), node) != list.cend();
 }
 
 bool Selector::operator()(const NodePair &nodes) const {
@@ -38,9 +34,7 @@ bool Selector::operator()(const NodePair &nodes) const {
     if (i == nodes.second)
       found_second = true;
   }
-  if (exact_match)
-    return (found_first && found_second);
-  return (found_first || found_second);
+  return exact_match ? (found_first && found_second) : (found_first || found_second);
 }
 
 bool Selector::operator()(const std::vector<node_t> &nodes) const {
@@ -174,11 +168,11 @@ void WriterExemplars::write(const std::filesystem::path &path,
   Tractography::Properties properties;
   properties["step_size"] = str(step_size);
   Tractography::Writer<float> writer(path, properties);
-  for (auto &exemplar : exemplars)
+  for (const auto &exemplar : exemplars)
     writer(exemplar.get());
   if (weights_path.has_value()) {
     File::OFStream output(weights_path.value());
-    for (auto &exemplar : exemplars)
+    for (const auto &exemplar : exemplars)
       output << str(exemplar.get_weight()) << "\n";
   }
 }

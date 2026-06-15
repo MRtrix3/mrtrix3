@@ -151,7 +151,7 @@ public:
    * without scaling. */
   [[nodiscard]] ValueType *address() const {
     assert(data_pointer != nullptr && "Image::address() can only be used when image access is via direct RAM access");
-    return data_pointer != nullptr ? static_cast<ValueType *>(data_pointer) + data_offset : nullptr;
+    return data_pointer == nullptr ? nullptr : (static_cast<ValueType *>(data_pointer) + data_offset);
   }
 
   //! open an existing image; pass \a direct_io to demand direct RAM access, see DirectIO.

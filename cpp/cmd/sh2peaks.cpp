@@ -191,8 +191,8 @@ public:
       Direction p(dirs(i, 0), dirs(i, 1));
       p.a = Math::SH::get_peak(item.data, lmax, p.v, precomputer.get());
       if (std::isfinite(p.a)) {
-        for (auto &all_peak : all_peaks) {
-          if (std::fabs(p.v.dot(all_peak.v)) > dotproduct_threshold) {
+        for (auto &peak : all_peaks) {
+          if (std::fabs(p.v.dot(peak.v)) > dotproduct_threshold) {
             p.a = NaNF;
             break;
           }
@@ -217,22 +217,22 @@ public:
         p.normalize();
 
         value_type mdot = 0.0;
-        for (auto &all_peak : all_peaks) {
-          const value_type f = std::fabs(p.dot(all_peak.v));
+        for (auto &peak : all_peaks) {
+          const value_type f = std::fabs(p.dot(peak.v));
           if (f > mdot) {
             mdot = f;
-            peaks_out[i] = all_peak;
+            peaks_out[i] = peak;
           }
         }
       }
     } else if (!true_peaks.empty()) {
       for (int i = 0; i < npeaks; i++) {
         value_type mdot = 0.0;
-        for (auto &all_peak : all_peaks) {
-          const value_type f = std::fabs(all_peak.v.dot(true_peaks[i].v));
+        for (auto &peak : all_peaks) {
+          const value_type f = std::fabs(peak.v.dot(true_peaks[i].v));
           if (f > mdot) {
             mdot = f;
-            peaks_out[i] = all_peak;
+            peaks_out[i] = peak;
           }
         }
       }

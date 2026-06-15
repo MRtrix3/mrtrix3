@@ -42,8 +42,9 @@ bool MethodBase::check_seed() {
   if (!pos.allFinite())
     return false;
 
-  if (((!S.properties.mask.empty()) && !S.properties.mask.contains(pos)) || (S.properties.exclude.contains(pos)) ||
-      (S.is_act() && !act().check_seed(pos))) {
+  if ((!S.properties.mask.empty() && !S.properties.mask.contains(pos)) || //
+      S.properties.exclude.contains(pos) ||                               //
+      (S.is_act() && !act().check_seed(pos))) {                           //
     pos.fill(NaNF);
     return false;
   }
@@ -73,11 +74,8 @@ Eigen::Vector3f MethodBase::random_direction(const float max_angle, const float 
 
 Eigen::Vector3f MethodBase::rotate_direction(const Eigen::Vector3f &reference, const Eigen::Vector3f &direction) {
   const float n = std::sqrt(Math::pow2(reference[0]) + Math::pow2(reference[1]));
-  if (n == 0.0) {
-    if (reference[2] < 0.0)
-      return -direction;
-    return direction;
-  }
+  if (n == 0.0)
+    return (reference[2] < 0.0) ? -direction : direction;
 
   Eigen::Vector3f m(reference[0] / n, reference[1] / n, 0.0F);
   Eigen::Vector3f mp(reference[2] * m[0], reference[2] * m[1], -n);

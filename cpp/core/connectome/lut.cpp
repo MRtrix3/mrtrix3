@@ -91,15 +91,9 @@ LUT::file_format LUT::guess_file_format(const std::filesystem::path &path) {
     operator std::string() const {
       if (!is_numeric())
         return "text";
-      if (is_integer()) {
-        if (is_8bit())
-          return "8bit_integer";
-        return "integer";
-      }
-      if (is_unary_range_float())
-        return "unary_float";
-      return "float";
-      assert(0);
+      if (is_integer())
+        return is_8bit() ? "8bit_integer" : "integer";
+      return is_unary_range_float() ? "unary_float" : "float";
     }
 
   private:

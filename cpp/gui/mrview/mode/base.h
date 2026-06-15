@@ -93,11 +93,9 @@ public:
   [[nodiscard]] float FOV() const { return window().FOV(); }
   [[nodiscard]] int plane() const { return window().plane(); }
   [[nodiscard]] Eigen::Quaternionf orientation() const {
-    if (snap_to_image()) {
-      if (image() != nullptr)
-        return Eigen::Quaternionf(image()->header().transform().rotation().cast<float>());
-      return Eigen::Quaternionf::Identity();
-    }
+    if (snap_to_image())
+      return (image() == nullptr) ? Eigen::Quaternionf::Identity()
+                                  : Eigen::Quaternionf(image()->header().transform().rotation().cast<float>());
     return window().orientation();
   }
 

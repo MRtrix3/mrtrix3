@@ -102,7 +102,7 @@ Shuffler::Shuffler(const index_type num_rows, const bool is_nonstationarity, std
       counter(0) {
 
   using namespace App;
-  const auto error_types = get_option_choice<error_t>("errors", error_t::EE);
+  const error_t error_types = get_option_choice("errors", error_t::EE);
 
   bool nshuffles_explicit = false;
   auto opt = get_options(is_nonstationarity ? "nshuffles_nonstationarity" : "nshuffles");
@@ -254,7 +254,7 @@ void Shuffler::initialise(const error_t error_types,
   auto safe2pow = [](const uint64_t i) {
     return (i >= 8 * sizeof(uint64_t)) ? (std::numeric_limits<uint64_t>::max()) : ((uint64_t(1) << i));
   };
-  const uint64_t max_num_signflips = (eb_whole.size() != 0) ? safe2pow(eb_whole.maxCoeff() + 1) : safe2pow(rows);
+  const uint64_t max_num_signflips = (eb_whole.size() == 0) ? safe2pow(rows) : safe2pow(eb_whole.maxCoeff() + 1);
 
   uint64_t max_shuffles;
   if (ee) {
@@ -452,7 +452,7 @@ void Shuffler::generate_random_permutations(const index_type num_perms,
       do {
         permuted_labelling = default_labelling;
         // Random permutation within each block independently
-        for (auto &block : blocks) {
+        for (const auto &block : blocks) {
           std::vector<index_type> permuted_block(block);
           std::shuffle(permuted_block.begin(), permuted_block.end(), rng);
           for (index_type i = 0; i != permuted_block.size(); ++i)

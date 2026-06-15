@@ -87,9 +87,7 @@ default_type G2z(const default_type G, const size_t rank, const default_type dof
   assert(G >= 0.0);
   if (G == default_type(0))
     return -std::numeric_limits<default_type>::infinity();
-  if (G >= 1.0)
-    return F2z_upper(G, rank, dof);
-  return F2z_lower(1.0 / G, rank, dof);
+  return (G >= 1.0) ? F2z_upper(G, rank, dof) : F2z_lower(1.0 / G, rank, dof);
 }
 
 default_type Zstatistic::t2z(const default_type t, const size_t dof) const {
@@ -278,9 +276,8 @@ Zstatistic::Lookup_F2z::Lookup_F2z(const size_t rank, const size_t dof)
 default_type Zstatistic::Lookup_F2z::operator()(const default_type F) const {
   auto func_upper = [&](const default_type in) { return F2z_upper(in, rank, static_cast<default_type>(dof)); };
   auto func_lower = [&](const default_type in) { return F2z_lower(in, rank, static_cast<default_type>(dof)); };
-  if (F >= 1.0)
-    return interp(F, offset_upper, scale_upper, data_upper, func_upper);
-  return interp(1.0 / F, offset_lower, scale_lower, data_lower, func_lower);
+  return (F >= 1.0) ? interp(F, offset_upper, scale_upper, data_upper, func_upper)
+                    : interp(1.0 / F, offset_lower, scale_lower, data_lower, func_lower);
 }
 
 } // namespace MR::Math

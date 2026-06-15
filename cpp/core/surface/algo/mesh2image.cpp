@@ -66,10 +66,10 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
 
     // Compute normals for polygons
     polygon_normals.reserve(mesh.num_polygons());
-    for (auto p = mesh.get_triangles().begin(); p != mesh.get_triangles().end(); ++p)
-      polygon_normals.push_back(normal(mesh, *p));
-    for (auto p = mesh.get_quads().begin(); p != mesh.get_quads().end(); ++p)
-      polygon_normals.push_back(normal(mesh, *p));
+    for (const auto &p : mesh.get_triangles())
+      polygon_normals.push_back(normal(mesh, p));
+    for (const auto &p : mesh.get_quads())
+      polygon_normals.push_back(normal(mesh, p));
     ++progress;
 
     // Create some memory to work with:
@@ -93,9 +93,9 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
         mesh.load_triangle_vertices(this_poly_verts, poly_index);
       else
         mesh.load_quad_vertices(this_poly_verts, poly_index - mesh.num_triangles());
-      for (auto &this_poly_vert : this_poly_verts) {
+      for (const auto &vertex_index : this_poly_verts) {
         for (size_t axis = 0; axis != 3; ++axis) {
-          const int this_axis_voxel = std::round(this_poly_vert[axis]);
+          const int this_axis_voxel = std::round(vertex_index[axis]);
           lower_bound[axis] = std::min(lower_bound[axis], this_axis_voxel);
           upper_bound[axis] = std::max(upper_bound[axis], this_axis_voxel);
         }
@@ -408,7 +408,7 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
         default_type best_min_distance_from_interior_projection = std::numeric_limits<default_type>::infinity();
 
         // Only test against those polygons that are near this voxel
-        for (unsigned long polygon_index : in.second) {
+        for (size_t polygon_index : in.second) {
           const Eigen::Vector3d &n(polygon_normals[polygon_index]);
 
           const size_t polygon_num_vertices = (polygon_index < mesh.num_triangles()) ? 3 : 4;

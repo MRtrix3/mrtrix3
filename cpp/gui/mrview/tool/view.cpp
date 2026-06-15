@@ -753,29 +753,29 @@ void View::clip_planes_add_coronal_slot() {
 
 void View::clip_planes_reset_axial_slot() {
   QModelIndexList indices = clip_planes_list_view->selectionModel()->selectedIndexes();
-  for (auto &indice : indices)
-    clip_planes_model->reset(indice, *(window().image()), 2);
+  for (auto index : indices)
+    clip_planes_model->reset(index, *(window().image()), 2);
   window().updateGL();
 }
 
 void View::clip_planes_reset_sagittal_slot() {
   QModelIndexList indices = clip_planes_list_view->selectionModel()->selectedIndexes();
-  for (auto &indice : indices)
-    clip_planes_model->reset(indice, *(window().image()), 0);
+  for (auto index : indices)
+    clip_planes_model->reset(index, *(window().image()), 0);
   window().updateGL();
 }
 
 void View::clip_planes_reset_coronal_slot() {
   QModelIndexList indices = clip_planes_list_view->selectionModel()->selectedIndexes();
-  for (auto &indice : indices)
-    clip_planes_model->reset(indice, *(window().image()), 1);
+  for (auto index : indices)
+    clip_planes_model->reset(index, *(window().image()), 1);
   window().updateGL();
 }
 
 void View::clip_planes_invert_slot() {
   QModelIndexList indices = clip_planes_list_view->selectionModel()->selectedIndexes();
-  for (auto &indice : indices)
-    clip_planes_model->invert(indice);
+  for (auto index : indices)
+    clip_planes_model->invert(index);
   window().updateGL();
 }
 
@@ -814,9 +814,9 @@ std::vector<GL::vec4 *> View::get_clip_planes_to_be_edited() const {
   std::vector<GL::vec4 *> ret;
   if (clip_box->isChecked()) {
     QModelIndexList indices = clip_planes_list_view->selectionModel()->selectedIndexes();
-    for (const auto &indice : indices)
-      if (clip_planes_model->planes[indice.row()].active)
-        ret.push_back(&clip_planes_model->planes[indice.row()].plane);
+    for (const auto &index : indices)
+      if (clip_planes_model->planes[index.row()].active)
+        ret.push_back(&clip_planes_model->planes[index.row()].plane);
   }
   return ret;
 }

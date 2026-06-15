@@ -173,9 +173,9 @@ public:
     if (mask.valid()) {
       do {
         assign_pos_of(fod, 0, 3).to(mask);
-        if (mask.value() == 0.0F)
+        if (!static_cast<bool>(mask.value()))
           ++loop;
-      } while (loop && (mask.value() == 0.0F));
+      } while (loop && !static_cast<bool>(mask.value()));
     }
     assign_pos_of(fod).to(out.vox);
     out.resize(fod.size(3));

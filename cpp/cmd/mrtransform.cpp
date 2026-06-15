@@ -417,11 +417,11 @@ void run() {
     axes = parse_ints<int32_t>(opt[0][0]);
     transform_type flip;
     flip.setIdentity();
-    for (int axe : axes) {
-      if (axe < 0 || axe > 2)
+    for (int axis : axes) {
+      if (axis < 0 || axis > 2)
         throw Exception("axes supplied to -flip are out of bounds (" + std::string(opt[0][0]) + ")");
-      flip(axe, 3) += flip(axe, axe) * input_header.spacing(axe) * (input_header.size(axe) - 1);
-      flip(axe, axe) *= -1.0;
+      flip(axis, 3) += flip(axis, axis) * input_header.spacing(axis) * (input_header.size(axis) - 1);
+      flip(axis, axis) *= -1.0;
     }
     if (!replace)
       flip = input_header.transform() * flip * input_header.transform().inverse();
@@ -507,16 +507,16 @@ void run() {
       rotation = linear_transform.linear() * input_header.transform().linear().inverse();
 
     // Diffusion gradient table
-    Eigen::MatrixXd grad;
+    std::optional<Eigen::MatrixXd> grad;
     try {
-      grad = DWI::get_DW_scheme(input_header);
+      grad.emplace(DWI::get_DW_scheme(input_header));
     } catch (Exception &) {
       DEBUG("No valid diffusion gradient table found");
     }
-    if (grad.rows() != 0) {
+    if (grad.has_value()) {
       try {
-        if (input_header.size(3) != static_cast<ssize_t>(grad.rows())) {
-          throw Exception("DW gradient table of different length (" + str(grad.rows()) + ")" +
+        if (input_header.size(3) != static_cast<ssize_t>(grad->rows())) {
+          throw Exception("DW gradient table of different length (" + str(grad->rows()) + ")" +
                           " to number of image volumes (" + str(input_header.size(3)) + ")");
         }
         INFO("DW gradients detected and will be reoriented");
@@ -524,11 +524,11 @@ void run() {
           WARN("the input linear transform contains shear or anisotropic scaling"
                " and therefore should not be used to reorient directions / diffusion gradients");
         }
-        for (ssize_t n = 0; n < grad.rows(); ++n) {
-          const Eigen::Vector3d grad_vector = grad.block<1, 3>(n, 0);
-          grad.block<1, 3>(n, 0) = rotation * grad_vector;
+        for (ssize_t n = 0; n < grad->rows(); ++n) {
+          const Eigen::Vector3d grad_vector = grad->block<1, 3>(n, 0);
+          grad->block<1, 3>(n, 0) = rotation * grad_vector;
         }
-        DWI::set_DW_scheme(output_header, grad);
+        DWI::set_DW_scheme(output_header, grad.value());
       } catch (Exception &e) {
         e.display(2);
         WARN("DW gradients not correctly reoriented");

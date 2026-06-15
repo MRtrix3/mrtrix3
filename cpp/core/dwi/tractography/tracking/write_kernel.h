@@ -65,8 +65,8 @@ public:
     // Use set_text() rather than update() here to force update of the text before progress goes out of scope
     progress.set_text(
         printf("%8" PRIu64 " seeds, %8" PRIu64 " streamlines, %8" PRIu64 " selected", seeds, streamlines, selected));
-    if (warn_on_max_seeds && writer.total_count == S.max_num_seeds && (S.max_num_tracks != 0U) &&
-        writer.count < S.max_num_tracks) {
+    if (warn_on_max_seeds && (writer.total_count == S.max_num_seeds) && (S.max_num_tracks != 0U) &&
+        (writer.count < S.max_num_tracks)) {
       WARN("less than desired streamline number due to implicit maximum number of seeds; set -seeds 0 to override");
     }
     if (output_seeds) {
@@ -96,8 +96,8 @@ public:
   bool operator()(const GeneratedTrack &);
 
   bool complete() const {
-    return (((S.max_num_tracks != 0U) && selected >= S.max_num_tracks) ||
-            ((S.max_num_seeds != 0U) && seeds >= S.max_num_seeds));
+    return (((S.max_num_tracks != 0U) && (selected >= S.max_num_tracks)) ||
+            ((S.max_num_seeds != 0U) && (seeds >= S.max_num_seeds)));
   }
 
 protected:

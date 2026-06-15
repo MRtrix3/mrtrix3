@@ -136,9 +136,8 @@ public:
   }
 
   void set_stage_iterations(const std::vector<uint32_t> &it) {
-    for (unsigned int i : it)
-      if (i == 0U)
-        throw Exception("the number of stage iterations must be positive");
+    if (std::find(it.begin(), it.end(), 0U) != it.end())
+      throw Exception("the number of stage iterations must be positive");
     if (it.size() == stages.size()) {
       for (size_t i = 0; i < stages.size(); ++i)
         stages[i].stage_iterations = it[i];
@@ -146,8 +145,9 @@ public:
       for (auto &stage : stages)
         stage.stage_iterations = it[0];
     } else
-      throw Exception("the number of stage iterations must be defined for all stages (1 or " + str(stages.size()) +
-                      ")");
+      throw Exception("the number of stage iterations must be defined for all stages" //
+                      " (1 or " +
+                      str(stages.size()) + ")"); //
     for (auto &stage : stages) {
       stage.optimisers.resize(stage.stage_iterations, stage.optimiser_default);
       stage.optimisers[0] = stage.optimiser_first;
@@ -164,8 +164,9 @@ public:
       for (auto &stage : stages)
         stage.gd_max_iter = maxiter[0];
     } else
-      throw Exception("the number of gradient descent iterations must be defined for all stages (1 or " +
-                      str(stages.size()) + ")");
+      throw Exception("the number of gradient descent iterations must be defined for all stages" //
+                      " (1 or " +
+                      str(stages.size()) + ")"); //
   }
 
   // needs to be set before set_lmax
@@ -175,9 +176,8 @@ public:
   }
 
   void set_lmax(const std::vector<uint32_t> &lmax) {
-    for (unsigned int i : lmax)
-      if ((i % 2) != 0U)
-        throw Exception("the input lmax must be even");
+    if (std::any_of(lmax.begin(), lmax.end(), [](uint32_t l) { return (l % 2) != 0U; }))
+      throw Exception("the input lmax must be even");
     if (lmax.size() == stages.size()) {
       for (size_t i = 0; i < stages.size(); ++i)
         stages[i].fod_lmax = lmax[i];
@@ -192,9 +192,8 @@ public:
   void set_mc_parameters(const std::vector<MultiContrastSetting> &mcs) { contrasts = mcs; }
 
   void set_loop_density(const std::vector<default_type> &loop_density_) {
-    for (double d : loop_density_)
-      if (d < 0.0 or d > 1.0)
-        throw Exception("loop density must be between 0.0 and 1.0");
+    if (std::any_of(loop_density_.begin(), loop_density_.end(), [](double d) { return d < 0.0 || d > 1.0; }))
+      throw Exception("loop density must be between 0.0 and 1.0");
     if (loop_density_.size() == stages.size()) {
       for (size_t i = 0; i < stages.size(); ++i)
         stages[i].loop_density = loop_density_[i];
@@ -220,10 +219,8 @@ public:
   }
 
   void set_extent(const std::vector<size_t> &extent) {
-    for (unsigned long d : extent) {
-      if (d < 1)
-        throw Exception("the neighborhood kernel extent must be at least 1 voxel");
-    }
+    if (std::any_of(extent.begin(), extent.end(), [](size_t e) { return e < 1; }))
+      throw Exception("the neighborhood kernel extent must be at least 1 voxel");
     kernel_extent = extent;
   }
 

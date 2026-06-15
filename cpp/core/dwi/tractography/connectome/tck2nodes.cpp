@@ -27,9 +27,7 @@ Tck2nodes_end_voxels::select_node(const Tractography::Streamline<> &tck, Image<n
   const Eigen::Vector3d v_float(transform->scanner2voxel * p);
   for (size_t axis = 0; axis != 3; ++axis)
     v.index(axis) = std::round(v_float[axis]);
-  if (is_out_of_bounds(v))
-    return 0;
-  return v.value();
+  return is_out_of_bounds(v) ? 0 : v.value();
 }
 
 void Tck2nodes_radial::initialise_search() {
@@ -41,15 +39,14 @@ void Tck2nodes_radial::initialise_search() {
     for (offset[1] = -max_axis_offset; offset[1] <= +max_axis_offset; ++offset[1]) {
       for (offset[0] = -max_axis_offset; offset[0] <= +max_axis_offset; ++offset[0]) {
         const default_type dist =
-            std::sqrt(Math::pow2(offset[2] * nodes.spacing(2)) + Math::pow2(offset[1] * nodes.spacing(1)) +
-                      Math::pow2(offset[0] * nodes.spacing(0)));
+            std::hypot(offset[2] * nodes.spacing(2), offset[1] * nodes.spacing(1), offset[0] * nodes.spacing(0));
         if (dist < (max_dist + max_add_dist))
           radial_search_map.insert(std::make_pair(dist, offset));
       }
     }
   }
   radial_search.reserve(radial_search_map.size());
-  for (auto &i : radial_search_map)
+  for (const auto &i : radial_search_map)
     radial_search.push_back(i.second);
 }
 

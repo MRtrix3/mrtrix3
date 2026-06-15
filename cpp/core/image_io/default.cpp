@@ -65,8 +65,8 @@ void Default::unload(const Header &header) {
       }
     }
   } else {
-    for (auto &addresse : addresses)
-      addresse.release();
+    for (auto &address : addresses)
+      address.release();
     mmaps.clear();
   }
 }

@@ -54,9 +54,9 @@ public:
     ImageType input(in);
 
     std::vector<size_t> outer_axes;
-    auto it = inner_axes.begin();
+    auto it = inner_axes.cbegin();
     for (size_t axis = 0; axis != input.ndim(); ++axis) {
-      if (it != inner_axes.end() && *it == axis)
+      if (it != inner_axes.cend() && *it == axis)
         ++it;
       else
         outer_axes.push_back(axis);
@@ -107,9 +107,9 @@ public:
       }
 
       std::vector<ssize_t> index_of_max(kspace.ndim());
-      auto it = axes.begin();
+      auto it = axes.cbegin();
       for (ssize_t axis = 0; axis != kspace.ndim(); ++axis) {
-        if (it != axes.end() && *it == axis) {
+        if (it != axes.cend() && *it == axis) {
           index_of_max[axis] = -1;
           ++it;
         } else {

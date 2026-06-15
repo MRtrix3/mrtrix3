@@ -245,9 +245,9 @@ protected:
     Header H(header);
     H.datatype() = DataType::Float64;
     H.datatype().set_byte_order_native();
-    auto it = inner_axes.begin();
+    auto it = inner_axes.cbegin();
     for (size_t axis = 0; axis != header.ndim(); ++axis) {
-      if (it != inner_axes.end() && *it == axis)
+      if (it != inner_axes.cend() && *it == axis)
         ++it;
       else
         H.size(axis) = 1;

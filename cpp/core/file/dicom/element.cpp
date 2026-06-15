@@ -243,10 +243,10 @@ bool Element::read() {
 bool Element::ignore_when_parsing() const {
   for (const auto &seq : parents) {
     // ignore anything within IconImageSequence:
-    if (seq.is(0x0088U, 0x0200U))
+    if (seq.is(0x0088u, 0x0200u))
       return true;
     // allow Philips PrivatePerFrameSq:
-    if (seq.is(0x2005U, 0x140FU))
+    if (seq.is(0x2005u, 0x140Fu))
       continue;
     // ignore anything within sequences with unknown (private) group:
     if ((seq.group & 1U) != 0U)

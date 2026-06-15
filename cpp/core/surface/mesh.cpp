@@ -63,12 +63,12 @@ void Mesh::save(const std::filesystem::path &path, const bool binary) const {
 void Mesh::calculate_normals() {
   normals.clear();
   normals.assign(vertices.size(), Vertex(0.0, 0.0, 0.0));
-  for (auto &triangle : triangles) {
+  for (const auto &triangle : triangles) {
     const Vertex this_normal = normal(*this, triangle);
     for (size_t index = 0; index != 3; ++index)
       normals[triangle[index]] += this_normal;
   }
-  for (auto &quad : quads) {
+  for (const auto &quad : quads) {
     const Vertex this_normal = normal(*this, quad);
     for (size_t index = 0; index != 4; ++index)
       normals[quad[index]] += this_normal;
@@ -489,7 +489,7 @@ void Mesh::load_obj(const std::filesystem::path &path) {
                         str(counter) + ")");
       std::vector<FaceData> face_data;
       size_t values_per_element = 0;
-      for (auto &element : elements) {
+      for (const auto &element : elements) {
         FaceData temp;
         temp.vertex = 0;
         temp.texture = 0;
@@ -751,7 +751,7 @@ void Mesh::save_stl(const std::filesystem::path &path, const bool binary) const 
     const uint32_t count = triangles.size();
     out.write(reinterpret_cast<const char *>(&count), sizeof(uint32_t));
     const uint16_t attribute_byte_count = 0;
-    for (auto triangle : triangles) {
+    for (const auto &triangle : triangles) {
       const Eigen::Vector3d n(normal(*this, triangle));
       const float n_temp[3]{static_cast<float>(n[0]), static_cast<float>(n[1]), static_cast<float>(n[2])};
       out.write(reinterpret_cast<const char *>(&n_temp[0]), 3 * sizeof(float));
@@ -768,7 +768,7 @@ void Mesh::save_stl(const std::filesystem::path &path, const bool binary) const 
 
     File::OFStream out(path);
     out << "solid \n";
-    for (auto triangle : triangles) {
+    for (const auto &triangle : triangles) {
       const Eigen::Vector3d n(normal(*this, triangle));
       out << "facet normal " << str(n[0]) << " " << str(n[1]) << " " << str(n[2]) << "\n";
       out << "    outer loop\n";
@@ -788,11 +788,11 @@ void Mesh::save_obj(const std::filesystem::path &path) const {
   File::OFStream out(path);
   out << "# " << App::command_history_string << "\n";
   out << "o " << name << "\n";
-  for (const auto &vertice : vertices)
-    out << "v " << str(vertice[0]) << " " << str(vertice[1]) << " " << str(vertice[2]) << " 1.0\n";
-  for (auto triangle : triangles)
+  for (const auto &vertex : vertices)
+    out << "v " << str(vertex[0]) << " " << str(vertex[1]) << " " << str(vertex[2]) << " 1.0\n";
+  for (const auto &triangle : triangles)
     out << "f " << str(triangle[0] + 1) << " " << str(triangle[1] + 1) << " " << str(triangle[2] + 1) << "\n";
-  for (auto quad : quads)
+  for (const auto &quad : quads)
     out << "f " << str(quad[0] + 1) << " " << str(quad[1] + 1) << " " << str(quad[2] + 1) << " " << str(quad[3] + 1)
         << "\n";
 }
@@ -810,18 +810,16 @@ void Mesh::load_quad_vertices(VertexList &output, const size_t index) const {
 }
 
 void Mesh::verify_data() const {
-  for (const auto &vertice : vertices) {
-    if (std::isnan(vertice[0]) || std::isnan(vertice[1]) || std::isnan(vertice[2]))
-      throw Exception("NaN values in mesh vertex data");
-  }
-  for (auto triangle : triangles)
-    for (size_t j = 0; j != 3; ++j)
-      if (triangle[j] >= vertices.size())
-        throw Exception("Mesh vertex index exceeds number of vertices read");
-  for (auto quad : quads)
-    for (size_t j = 0; j != 4; ++j)
-      if (quad[j] >= vertices.size())
-        throw Exception("Mesh vertex index exceeds number of vertices read");
+  if (std::any_of(vertices.begin(), vertices.end(), [](const Vertex &v) { return !v.allFinite() }))
+    throw Exception("NaN values in mesh vertex data");
+  if (std::any_of(triangles.begin(), triangles.end(), [](const Triangle &t) {
+        return std::max({t[0], t[1], t[2]}) >= vertices.size()
+      }))
+    throw Exception("Mesh vertex index exceeds number of vertices read");
+  if (std::any_of(quads.begin(), quads.end(), [](const Quad &q) {
+        return std::max({q[0], q[1], q[2], q[3]}) >= vertices.size()
+      }))
+    throw Exception("Mesh vertex index exceeds number of vertices read");
 }
 
 } // namespace MR::Surface

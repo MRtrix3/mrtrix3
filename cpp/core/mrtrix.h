@@ -387,7 +387,7 @@ template <typename T> inline std::string join(const std::vector<T> &V, std::stri
   if (V.empty())
     return ret;
   ret = str(V[0]);
-  for (auto i = V.begin() + 1; i != V.end(); ++i)
+  for (auto i = V.cbegin() + 1; i != V.cend(); ++i)
     ret += delimiter + str(*i);
   return ret;
 }

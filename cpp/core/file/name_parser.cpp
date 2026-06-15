@@ -24,12 +24,7 @@ namespace MR::File {
 namespace {
 
 inline bool in_seq(const std::vector<uint32_t> &seq, uint32_t val) {
-  if (seq.empty())
-    return true;
-  for (unsigned int i : seq)
-    if (i == val)
-      return true;
-  return false;
+  return std::find(seq.begin(), seq.end(), val) != seq.end();
 }
 
 } // namespace
@@ -62,7 +57,7 @@ void NameParser::parse(std::string_view specifier, size_t max_num_sequences) {
 
     insert_str(basename);
 
-    for (auto &i : array)
+    for (const auto &i : array)
       if (i.is_sequence())
         if (!i.sequence().empty())
           for (size_t n = 0; n < i.sequence().size() - 1; n++)
@@ -146,12 +141,7 @@ void NameParser::calculate_padding(const std::vector<uint32_t> &maxvals) {
 }
 
 void NameParser::Item::calc_padding(size_t maxval) {
-  for (unsigned int i : sequence()) {
-    assert(i >= 0);
-    if (maxval < static_cast<size_t>(i))
-      maxval = i;
-  }
-
+  maxval = std::max(maxval, *std::max_element(sequence().begin(), sequence().end()));
   seq_length = 1;
   for (size_t num = 10; maxval >= num; num *= 10)
     seq_length += 1;
@@ -165,7 +155,7 @@ std::filesystem::path NameParser::name(const std::vector<uint32_t> &indices) {
 
   std::string str;
   size_t n = seq_index.size() - 1;
-  for (auto &i : array) {
+  for (const auto &i : array) {
     if (i.is_string())
       str += i.string();
     else {
@@ -276,7 +266,7 @@ void ParsedName::List::count_dim(std::vector<uint32_t> &dim, size_t &current_ent
       current_entry++;
   }
 
-  if ((dim[current_dim] != 0U) && dim[current_dim] != n)
+  if ((dim[current_dim] != 0U) && (dim[current_dim] != n))
     throw Exception("number mismatch between number of images along different dimensions");
 
   dim[current_dim] = n;

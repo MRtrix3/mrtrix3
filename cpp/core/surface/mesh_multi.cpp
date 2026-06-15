@@ -79,7 +79,7 @@ void MeshMulti::load(const std::filesystem::path &path) {
                         " (face with neither 3 nor 4 vertices; line " + str(counter) + ")"); //
       std::vector<FaceData> face_data;
       size_t values_per_element = 0;
-      for (auto &element : elements) {
+      for (const auto &element : elements) {
         FaceData temp;
         temp.vertex = 0;
         temp.texture = 0;

@@ -43,8 +43,8 @@ void read_annot(const std::filesystem::path &path, label_vector_type &labels, Co
     return;
   }
   if (colortable_present == 0)
-    throw Exception("Error reading FreeSurfer annotation file \"" + path.filename().string() +
-                    "\": Unexpected colortable flag");
+    throw Exception("Error reading FreeSurfer annotation file \"" + path.filename().string() + "\":" + //
+                    " Unexpected colortable flag");                                                    // a
 
   // Structure that will map from the colour-based structure identifier to a more sensible index
   std::map<int32_t, Connectome::node_t> rgb2index;

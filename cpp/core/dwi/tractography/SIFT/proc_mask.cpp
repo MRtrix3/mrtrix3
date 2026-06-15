@@ -75,7 +75,8 @@ void initialise_processing_mask(Image<float> &in_dwi, Image<float> &out_mask, Im
       out_5tt.index(3) = 2; // Access the WM fraction
       float integral = 0.0F;
       for (auto l = Loop(out_5tt, 0, 3)(out_5tt, out_mask); l; ++l) {
-        const auto value = Math::pow2<float>(out_5tt.value()); // Processing mask value is the square of the WM fraction
+        // Processing mask value is the square of the WM fraction
+        const float value = Math::pow2(static_cast<float>(out_5tt.value()));
         if (std::isfinite(value)) {
           out_mask.value() = value;
           integral += value;

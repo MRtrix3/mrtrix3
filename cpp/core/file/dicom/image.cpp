@@ -609,7 +609,7 @@ Eigen::MatrixXd Frame::get_PE_scheme(const std::vector<Frame *> &frames, const s
 
   for (size_t n = 0; n != num_volumes; ++n) {
     const Frame &frame(*frames[n * nslices]);
-    if (frame.pe_axis == 3 || (frame.pe_sign == 0)) {
+    if ((frame.pe_axis == 3) || (frame.pe_sign == 0)) {
       DEBUG("no phase-encoding information found in DICOM frames");
       return {};
     }

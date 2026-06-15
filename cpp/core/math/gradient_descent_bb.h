@@ -73,7 +73,7 @@ public:
   void run(const size_t max_iterations = 1000,
            const value_type grad_tolerance = 1e-6,
            std::streambuf *log_stream = nullptr) {
-    std::ostream log_os((log_stream != nullptr) ? log_stream : nullptr);
+    std::ostream log_os((log_stream == nullptr) ? nullptr : log_stream);
     if (log_os) {
       log_os << "#iteration" << delim << "feval" << delim << "cost" << delim << "stepsize";
       for (ssize_t a = 0; a < x1.size(); a++)

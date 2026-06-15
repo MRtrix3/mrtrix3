@@ -496,22 +496,22 @@ inline Tool::View *Volume::get_view_tool() const {
 
 inline std::vector<std::pair<GL::vec4, bool>> Volume::get_active_clip_planes() const {
   Tool::View *view = get_view_tool();
-  return (view != nullptr) ? view->get_active_clip_planes() : std::vector<std::pair<GL::vec4, bool>>();
+  return (view == nullptr) ? std::vector<std::pair<GL::vec4, bool>>() : view->get_active_clip_planes();
 }
 
 inline std::vector<GL::vec4 *> Volume::get_clip_planes_to_be_edited() const {
   Tool::View *view = get_view_tool();
-  return (view != nullptr) ? view->get_clip_planes_to_be_edited() : std::vector<GL::vec4 *>();
+  return (view == nullptr) ? std::vector<GL::vec4 *>() : view->get_clip_planes_to_be_edited();
 }
 
 inline bool Volume::get_cliphighlightstate() const {
   Tool::View *view = get_view_tool();
-  return (view != nullptr) ? view->get_cliphighlightstate() : true;
+  return (view == nullptr) ? true : view->get_cliphighlightstate();
 }
 
 inline bool Volume::get_clipintersectionmodestate() const {
   Tool::View *view = get_view_tool();
-  return (view != nullptr) ? view->get_clipintersectionmodestate() : false;
+  return (view == nullptr) ? false : view->get_clipintersectionmodestate();
 }
 
 } // namespace MR::GUI::MRView::Mode

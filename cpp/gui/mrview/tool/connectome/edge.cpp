@@ -145,19 +145,10 @@ Edge::Exemplar::Exemplar(const Edge &parent, const MR::DWI::Tractography::Stream
   Math::RNG::Normal<float> rng;
   for (size_t i = 0; i != data.size(); ++i) {
     vertices.push_back(data[i]);
-    if (i == 0U)
-      tangents.push_back((data[i + 1] - data[i]).normalized());
-    else if (i == data.size() - 1)
-      tangents.push_back((data[i] - data[i - 1]).normalized());
-    else
-      tangents.push_back((data[i + 1] - data[i - 1]).normalized());
-    Eigen::Vector3f n;
-    if (i != 0U)
-      n = binormals.back().cross(tangents[i]).normalized();
-    else
-      n = Eigen::Vector3f(rng(), rng(), rng()).cross(tangents[i]).normalized();
-    normals.push_back(n);
-    binormals.push_back(tangents[i].cross(n).normalized());
+    tangents.push_back(Tractography::tangent(data, i));
+    normals.push_back((i == 0U) ? Eigen::Vector3f(rng(), rng(), rng()).cross(tangents[i]).normalized()
+                                : binormals.back().cross(tangents[i]).normalized(););
+    binormals.push_back(tangents[i].cross(normals.back()).normalized());
   }
 }
 
@@ -221,9 +212,9 @@ Edge::Streamtube::Streamtube(const Exemplar &data) : count(data.vertices.size())
   std::vector<Eigen::Vector3f> vertices;
   const size_t N = shared.points_per_vertex();
   vertices.reserve(N * data.vertices.size());
-  for (const auto &vertice : data.vertices) {
+  for (const auto &vertex : data.vertices) {
     for (size_t j = 0; j != N; ++j)
-      vertices.push_back(vertice);
+      vertices.push_back(vertex);
   }
   vertex_buffer.gen();
   vertex_buffer.bind(gl::ARRAY_BUFFER);
@@ -248,7 +239,7 @@ Edge::Streamtube::Streamtube(const Exemplar &data) : count(data.vertices.size())
   std::vector<Eigen::Vector3f> normals;
   normals.reserve(vertices.size());
   for (size_t i = 0; i != data.vertices.size(); ++i) {
-    for (auto &normal_multiplier : normal_multipliers)
+    for (const auto &normal_multiplier : normal_multipliers)
       normals.emplace_back((normal_multiplier.first * data.normals[i]) +
                            (normal_multiplier.second * data.binormals[i]));
   }

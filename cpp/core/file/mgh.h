@@ -782,11 +782,11 @@ template <class Output> void write_other(const Header &H, Output &out) {
       store<int32_t>(frame.sequence_type, out);
       store<float32>(frame.echo_spacing, out);
       store<float32>(frame.echo_train_len, out);
-      for (float &i : frame.read_dir)
+      for (float i : frame.read_dir)
         store<float32>(i, out);
-      for (float &i : frame.pe_dir)
+      for (float i : frame.pe_dir)
         store<float32>(i, out);
-      for (float &i : frame.slice_dir)
+      for (float i : frame.slice_dir)
         store<float32>(i, out);
       store<int32_t>(frame.label, out);
       out.write(frame.name, strlen);

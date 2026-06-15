@@ -399,8 +399,8 @@ void run() {
     if (petable)
       std::cout << Metadata::PhaseEncoding::get_scheme(header) << "\n";
 
-    for (const auto &propertie : properties)
-      print_properties(header, propertie[0]);
+    for (const auto &property : properties)
+      print_properties(header, property[0]);
 
     Eigen::MatrixXd grad;
     if (export_grad || check_option_group(GradImportOptions) || dwgrad || shell_bvalues || shell_sizes ||

@@ -56,7 +56,7 @@ bool Arc::operator()(const Streamline<> &in, Streamline<> &out) const {
     prev_s = s;
   }
 
-  if (!((idx_start != 0U) && (idx_end != 0U)))
+  if ((idx_start == 0U) || (idx_end == 0U))
     return true;
 
   const bool reverse = idx_start > idx_end;

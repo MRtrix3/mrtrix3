@@ -118,9 +118,8 @@ public:
 
   size_t get(EnumType value) const noexcept {
     const auto index = magic_enum::enum_index(value);
-    if (index.has_value()) {
+    if (index.has_value())
       return counters[index.value()].value.load(std::memory_order_seq_cst);
-    }
     assert(false);
     return size_t(-1);
   }

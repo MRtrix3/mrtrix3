@@ -128,9 +128,7 @@ inline bool _match(std::string_view first, std::string_view second) {
 } // namespace
 
 bool match(std::string_view pattern, std::string_view text, bool ignore_case) {
-  if (ignore_case)
-    return _match(lowercase(pattern), lowercase(text));
-  return _match(pattern, text);
+  return ignore_case ? _match(lowercase(pattern), lowercase(text)) : _match(pattern, text);
 }
 
 std::istream &getline(std::istream &stream, std::string &string) {
@@ -146,9 +144,9 @@ std::string &add_line(std::string &original, std::string_view new_line) {
 }
 
 std::string shorten(std::string_view text, size_t longest, size_t prefix) {
-  if (text.size() > longest)
-    return (std::string(text.substr(0, prefix)) + "..." + text.substr(text.size() - longest + prefix + 3));
-  return std::string(text);
+  if (text.size() <= longest)
+    return std::string(text);
+  return (std::string(text.substr(0, prefix)) + "..." + text.substr(text.size() - longest + prefix + 3));
 }
 
 std::string lowercase(std::string_view string) {
@@ -245,7 +243,7 @@ std::string join(const std::vector<std::string> &V, std::string_view delimiter) 
   if (V.empty())
     return ret;
   ret = V[0];
-  for (auto i = V.begin() + 1; i != V.end(); ++i)
+  for (auto i = V.cbegin() + 1; i != V.cend(); ++i)
     ret += delimiter + *i;
   return ret;
 }

@@ -40,9 +40,8 @@ index_type Set::get_min_linkage(const index_type one, const index_type two) cons
     std::vector<index_type> next_to_expand;
     for (const auto &i : to_expand) {
       for (const auto &j : adj_dirs[i]) {
-        if (j == two) {
+        if (j == two)
           return min_linkage;
-        }
         if (!processed[j]) {
           processed[j] = true;
           next_to_expand.push_back(j);
@@ -251,8 +250,8 @@ void Set::initialise_adjacency() {
 
       // TODO Using an alternative data structure, where both faces connected to each
       //   edge are stored and tracked, would speed this up considerably
-      std::vector<std::list<Plane>::iterator> all_planes;
-      for (auto p = planes.begin(); p != planes.end(); ++p) {
+      std::vector<std::list<Plane>::const_iterator> all_planes;
+      for (auto p = planes.cbegin(); p != planes.cend(); ++p) {
         if (!p->includes(max_index) && vertices[max_index].dir.dot(p->normal) > p->dist)
           all_planes.push_back(p);
       }
@@ -260,7 +259,7 @@ void Set::initialise_adjacency() {
       // Find the matching edges from multiple faces, and construct new triangles going up to the new point
       // Remove any shared edges; non-shared edges are the projection horizon
       std::set<std::pair<index_type, index_type>> horizon;
-      for (auto &p : all_planes) {
+      for (const auto &p : all_planes) {
         for (size_t edge_index = 0; edge_index != 3; ++edge_index) {
           std::pair<index_type, index_type> edge;
           switch (edge_index) {
@@ -401,9 +400,9 @@ void FastLookupSet::initialise() {
   default_type adj_dot_product_sum = 0.0;
   size_t adj_dot_product_count = 0;
   for (size_t i = 0; i != size(); ++i) {
-    for (auto j = adj_dirs[i].begin(); j != adj_dirs[i].end(); ++j) {
-      if (*j > i) {
-        adj_dot_product_sum += std::fabs(unit_vectors[i].dot(unit_vectors[*j]));
+    for (auto j : adj_dirs) {
+      if (j > i) {
+        adj_dot_product_sum += std::fabs(unit_vectors[i].dot(unit_vectors[j]));
         ++adj_dot_product_count;
       }
     }
@@ -457,10 +456,7 @@ void FastLookupSet::initialise() {
 
       const Eigen::Vector3d p(cos(az) * sin(el), sin(az) * sin(el), cos(el));
       const index_type nearest_dir = select_direction_slow(p);
-      bool dir_present = false;
-      for (auto d = grid_lookup[i].begin(); !dir_present && d != grid_lookup[i].end(); ++d)
-        dir_present = (*d == nearest_dir);
-      if (!dir_present)
+      if (std::find(grid_lookup[i].cbegin(), grid_lookup[i].cend(), nearest_dir) == grid_lookup[i].cend())
         grid_lookup[i].push_back(nearest_dir);
     }
   }
@@ -475,10 +471,7 @@ void FastLookupSet::initialise() {
         // Size of lookup tables could potentially be reduced by being more prohibitive of adjacent direction inclusion
         // in the lookup table for this grid
 
-        bool is_present = false;
-        for (auto i = this_grid.begin(); !is_present && i != this_grid.end(); ++i)
-          is_present = (*i == adj);
-        if (!is_present)
+        if (std::find(this_grid.cbegin(), this_grid.cend(), adj) == this_grid.cend())
           this_grid.push_back(adj);
       }
     }

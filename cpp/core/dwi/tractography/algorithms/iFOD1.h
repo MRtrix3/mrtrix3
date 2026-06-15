@@ -86,11 +86,11 @@ public:
       mean_samples /= static_cast<double>(num_proc);
       mean_truncations /= static_cast<double>(num_proc);
       INFO("mean number of samples per step = " + str(mean_samples));
-      if (mean_truncations != 0.0) {
+      if (mean_truncations == 0.0) {
+        INFO("no rejection sampling truncations occurred");
+      } else {
         INFO("mean number of steps between rejection sampling truncations = " + str(1.0 / mean_truncations));
         INFO("maximum truncation error = " + str(max_max_truncation));
-      } else {
-        INFO("no rejection sampling truncations occurred");
       }
     }
 

@@ -159,7 +159,7 @@ public:
   ~VTKWriter() {
     try {
       // write out list of tracks:
-      if (write_ascii == false) {
+      if (!write_ascii) {
         // Need to include an extra new line when writing binary
         VTKout << "\n";
       }
@@ -184,7 +184,7 @@ public:
           }
         }
       }
-      if (write_ascii == false) {
+      if (!write_ascii) {
         // Need to include an extra new line when writing binary
         VTKout << "\n";
       }
@@ -703,8 +703,8 @@ void run() {
   if (output_path.extension() == ".tck") {
     writer = std::make_unique<Writer<float>>(output_path, properties);
   } else if (output_path.extension() == ".vtk") {
-    auto write_ascii = get_options("ascii").size();
-    writer = std::make_unique<VTKWriter>(output_path, write_ascii != 0U);
+    const bool write_ascii = !get_options("ascii").empty();
+    writer = std::make_unique<VTKWriter>(output_path, write_ascii);
   } else if (output_path.extension() == ".ply") {
     const int increment = get_option_value("increment", default_ply_increment);
     const float radius = get_option_value("radius", default_ply_radius);

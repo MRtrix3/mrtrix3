@@ -245,7 +245,8 @@ public:
         // Includes hack for val < lo
         output.value() = val > hi ? hi : val;
         continue;
-      } // outside refined mask but inside initial mask
+      }
+      // outside refined mask but inside initial mask
       if (keep_lower && val < lo)
         output.value() = lo;
       else if (keep_upper && val > hi)

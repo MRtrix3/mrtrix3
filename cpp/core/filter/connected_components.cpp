@@ -25,7 +25,7 @@ void Connector::Adjacency::initialise(const Header &header, const Voxel2Vector &
   if (header.ndim() < 3)
     throw Exception("Connected components filter not designed to handle less than 3 axes");
   if (header.ndim() > enabled_axes.size())
-    enabled_axes.resize(header.ndim(), 0);
+    enabled_axes.conservativeResizeLike(axis_mask_type::Zero(header.ndim()));
   // Begin by disabling adjacency offsets for those axes for which adjacency is not permitted
   std::vector<std::vector<int>> offsets;
   std::vector<int> o(header.ndim(), -1);

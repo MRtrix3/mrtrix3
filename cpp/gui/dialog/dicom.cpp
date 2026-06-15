@@ -99,9 +99,7 @@ public:
     else
       parentItem = static_cast<Item *>(parent.internalPointer());
     Item *childItem = parentItem->child(row);
-    if (childItem != nullptr)
-      return createIndex(row, column, childItem);
-    return QModelIndex();
+    return (childItem == nullptr) ? QModelIndex() : createIndex(row, column, childItem);
   }
 
   [[nodiscard]] QModelIndex parent(const QModelIndex &index) const {
@@ -109,9 +107,7 @@ public:
       return QModelIndex();
     Item *childItem = static_cast<Item *>(index.internalPointer());
     Item *parentItem = childItem->parent();
-    if (parentItem == rootItem)
-      return QModelIndex();
-    return createIndex(parentItem->row(), 0, parentItem);
+    return (parentItem == rootItem) ? QModelIndex() : createIndex(parentItem->row(), 0, parentItem);
   }
 
   [[nodiscard]] int rowCount(const QModelIndex &parent = QModelIndex()) const {

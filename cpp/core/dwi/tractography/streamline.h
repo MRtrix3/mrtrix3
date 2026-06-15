@@ -125,14 +125,12 @@ template <typename PointType> PointType tangent(const std::vector<PointType> &tc
   const PointType offset_next = tck[index + 1] - tck[index];
   const typename PointType::Scalar dist_prev = offset_prev.norm();
   const typename PointType::Scalar dist_next = offset_next.norm();
-  if (dist_prev == typename PointType::Scalar(0)) {
+  if (dist_prev == typename PointType::Scalar(0))
     return (dist_next == typename PointType::Scalar(0)
                 ? PointType::Constant(std::numeric_limits<typename PointType::Scalar>::quiet_NaN())
                 : offset_next.normalized());
-  }
-  if (dist_next == typename PointType::Scalar(0)) {
+  if (dist_next == typename PointType::Scalar(0))
     return offset_prev.normalized();
-  }
   // Greater weight given to the shorter step
   return (dist_next * offset_prev.normalized() + dist_prev * offset_next.normalized()).normalized();
 }

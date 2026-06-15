@@ -188,8 +188,8 @@ void run() {
   }
 
   default_type ssd = 0.0;
-  for (auto & all_length : all_lengths)
-    ssd += all_length.get_weight() * Math::pow2(all_length.get_length() - mean_length);
+  for (const auto &length_bin : all_lengths)
+    ssd += length_bin.get_weight() * Math::pow2(length_bin.get_length() - mean_length);
   const float stdev = (sum_weights != 0.0) ? (std::sqrt(ssd / ((static_cast<default_type>(count - 1) / static_cast<default_type>(count)) * sum_weights))) : NaNF;
 
   std::vector<FieldChoice> fields;
@@ -199,7 +199,7 @@ void run() {
 
   if (!fields.empty()) {
 
-    for (auto & field : fields) {
+    for (const auto &field : fields) {
       if (field == FieldChoice::MEAN)
         std::cout << str(mean_length) << " ";
       else if (field == FieldChoice::MEDIAN)

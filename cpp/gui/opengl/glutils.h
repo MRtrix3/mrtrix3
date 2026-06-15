@@ -99,13 +99,13 @@ extern Area *glwidget;
 namespace Context {
 inline std::pair<QOpenGLContext *, QSurface *> current() {
   QOpenGLContext *context = QOpenGLContext::currentContext();
-  QSurface *surface = (context != nullptr) ? context->surface() : nullptr;
+  QSurface *surface = (context == nullptr) ? nullptr : context->surface();
   return {context, surface};
 }
 
 inline std::pair<QOpenGLContext *, QSurface *> get(QWidget *window) {
   QOpenGLContext *context = reinterpret_cast<QOpenGLWidget *>(window)->context();
-  QSurface *surface = (context != nullptr) ? context->surface() : nullptr;
+  QSurface *surface = (context == nullptr) ? nullptr : context->surface();
   return {context, surface};
 }
 
@@ -123,7 +123,7 @@ inline void restore(std::pair<QOpenGLContext *, QSurface *> previous_context) {
 
 struct Grab {
   decltype(current()) previous_context;
-  Grab(QWidget *window = nullptr) : previous_context(makeCurrent((window != nullptr) ? window : GL::glwidget)) {
+  Grab(QWidget *window = nullptr) : previous_context(makeCurrent((window == nullptr) ? GL::glwidget : window)) {
     assert_context_is_current(window);
   }
   ~Grab() { restore(previous_context); }

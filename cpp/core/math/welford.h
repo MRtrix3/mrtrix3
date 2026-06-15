@@ -32,8 +32,8 @@ public:
 
 template <class Cont> MeanAndVariance welford(const Cont &data) {
   MeanAndVariance result;
-  auto m2(default_type(0));
-  auto count(size_t(0));
+  default_type m2 = 0.0;
+  size count = 0U;
   default_type delta(std::numeric_limits<default_type>::quiet_NaN());
   default_type delta2(std::numeric_limits<default_type>::quiet_NaN());
   for (size_t i = 0; i != data.size(); ++i) {

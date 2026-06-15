@@ -51,9 +51,9 @@ OpenGL::OpenGL(QWidget *parent, const GL::Format &format) : QDialog(parent) {
                                      ? "single"
                                      : (format.swapBehavior() == QSurfaceFormat::DoubleBuffer ? "double" : "triple"),
                                  root));
-  root->appendChild(new TreeItem("VSync", (format.swapInterval() != 0) ? "on" : "off", root));
+  root->appendChild(new TreeItem("VSync", (format.swapInterval() == 0) ? "off" : "on", root));
   root->appendChild(
-      new TreeItem("Multisample anti-aliasing", (format.samples() != 0) ? str(format.samples()).c_str() : "off", root));
+      new TreeItem("Multisample anti-aliasing", (format.samples() == 0) ? "off" : str(format.samples()).c_str(), root));
 
   gl::GetIntegerv(gl::MAX_TEXTURE_SIZE, &i);
   root->appendChild(new TreeItem("Maximum 2D texture size", str(i), root));

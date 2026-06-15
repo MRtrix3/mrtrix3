@@ -165,8 +165,8 @@ Eigen::MatrixXd load_bvecs_bvals(const Header &header,
   grad.col(3) = bvals.row(0);
 
   // Substitute NaNs with b=0 volumes
-  ssize_t nans_present_bvecs = 0;
-  ssize_t nans_present_bvals = 0;
+  bool nans_present_bvecs = false;
+  bool nans_present_bvals = false;
   ssize_t nan_linecount = 0;
   for (ssize_t n = 0; n != grad.rows(); ++n) {
     bool zero_row = false;
@@ -177,7 +177,7 @@ Eigen::MatrixXd load_bvecs_bvals(const Header &header,
                         " (" + bvecs_path.string() + " & " + bvals_path.string() + ")"
                         " (NaN present in bval but valid direction in bvec)");
       // clang-format on
-      nans_present_bvals = 1;
+      nans_present_bvals = true;
       zero_row = true;
     }
     if (grad.block<1, 3>(n, 0).hasNaN()) {
@@ -187,7 +187,7 @@ Eigen::MatrixXd load_bvecs_bvals(const Header &header,
                         " (" + bvecs_path.string() + " & " + bvals_path.string() + ")"
                         " (NaN bvec direction but non-zero value in bval)");
       // clang-format on
-      nans_present_bvecs = 1;
+      nans_present_bvecs = true;
       zero_row = true;
     }
     if (zero_row) {

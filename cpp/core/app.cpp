@@ -154,9 +154,9 @@ std::string paragraph(std::string_view header, std::string_view text, const Help
 
   std::vector<std::string> paragraphs = split(text, "\n");
 
-  for (const auto &paragraph : paragraphs) {
+  for (const auto &para : paragraphs) {
     size_t i = 0;
-    std::vector<std::string> words = split(paragraph);
+    std::vector<std::string> words = split(para);
     while (i < words.size()) {
       do {
         line += " " + words[i++];
@@ -244,9 +244,12 @@ std::string help_tail(const bool format) {
   if (!format)
     return retval;
 
-  return bold("AUTHOR") + "\n" + paragraph("", AUTHOR, help_formatting.purpose_indents) + "\n" + bold("COPYRIGHT") +
-         "\n" + paragraph("", COPYRIGHT, help_formatting.purpose_indents) + "\n" + [&]() {
-           std::string s = bold("REFERENCES") + "\n";
+  return bold("AUTHOR") + "\n" +                                            //
+         paragraph("", AUTHOR, help_formatting.purpose_indents) + "\n" +    //
+         bold("COPYRIGHT") + "\n" +                                         //
+         paragraph("", COPYRIGHT, help_formatting.purpose_indents) + "\n" + //
+         bold("REFERENCES") + "\n" +                                        //
+         [&]() {
            for (const auto &n : REFERENCES)
              s += paragraph("", n, help_formatting.purpose_indents) + "\n";
            s += paragraph("", core_reference, help_formatting.purpose_indents) + "\n";
@@ -262,7 +265,7 @@ std::string usage_syntax(const bool format) {
     s += ": ";
   s += (format ? underline(NAME, true) : NAME) + " [ options ]";
 
-  for (auto &i : ARGUMENTS) {
+  for (const auto &i : ARGUMENTS) {
 
     if (i.flags.optional())
       s += " [";
@@ -565,12 +568,12 @@ std::string full_usage() {
   for (const auto &i : ARGUMENTS)
     s += i.usage();
 
-  for (auto &i : OPTIONS)
-    for (auto &j : i)
+  for (const auto &i : OPTIONS)
+    for (const auto &j : i)
       s += j.usage();
 
-  for (const auto &_standard_option : _standard_options)
-    s += _standard_option.usage();
+  for (const auto &opt : _standard_options)
+    s += opt.usage();
 
   return s;
 }
@@ -594,7 +597,7 @@ std::string markdown_usage() {
   s += "## Usage\n\n    " + std::string(NAME) + " [ options ] ";
 
   // Syntax line:
-  for (auto &i : ARGUMENTS) {
+  for (const auto &i : ARGUMENTS) {
 
     if (i.flags.optional())
       s += "[";
@@ -611,7 +614,7 @@ std::string markdown_usage() {
   s += "\n\n";
 
   // Argument description:
-  for (auto &i : ARGUMENTS)
+  for (const auto &i : ARGUMENTS)
     s += std::string("- *") + i.id + "*: " + i.desc + "\n";
 
   if (!DESCRIPTION.empty()) {
@@ -622,7 +625,7 @@ std::string markdown_usage() {
 
   if (!EXAMPLES.empty()) {
     s += "\n## Example usages\n\n";
-    for (auto &i : EXAMPLES) {
+    for (const auto &i : EXAMPLES) {
       s += std::string("__") + i.title + ":__\n";
       s += std::string("`$ ") + i.code + "`\n";
       if (!i.description.empty())
@@ -632,7 +635,7 @@ std::string markdown_usage() {
   }
 
   std::vector<std::string> group_names;
-  for (auto &i : OPTIONS) {
+  for (const auto &i : OPTIONS) {
     if (std::find(group_names.begin(), group_names.end(), i.name) == group_names.end())
       group_names.push_back(i.name);
   }
@@ -665,8 +668,8 @@ std::string markdown_usage() {
   }
 
   s += "#### Standard options\n\n";
-  for (const auto &_standard_option : _standard_options)
-    s += format_option(_standard_option);
+  for (const auto &opt : _standard_options)
+    s += format_option(opt);
 
   s += std::string("## References\n\n");
   for (const auto &i : REFERENCES)
@@ -699,7 +702,7 @@ std::string restructured_text_usage() {
   s += "Usage\n--------\n\n::\n\n    " + std::string(NAME) + " [ options ] ";
 
   // Syntax line:
-  for (auto &i : ARGUMENTS) {
+  for (const auto &i : ARGUMENTS) {
 
     if (i.flags.optional())
       s += "[";
@@ -727,8 +730,8 @@ std::string restructured_text_usage() {
   };
 
   // Argument description:
-  for (auto &i : ARGUMENTS) {
-    auto desc = split_lines(escape_special(i.desc), false);
+  for (const auto &i : ARGUMENTS) {
+    const auto desc = split_lines(escape_special(i.desc), false);
     s += std::string("-  *") + i.id + "*: " + desc[0];
     for (size_t n = 1; n < desc.size(); ++n)
       s += " |br|\n   " + desc[n];
@@ -739,7 +742,7 @@ std::string restructured_text_usage() {
   if (!DESCRIPTION.empty()) {
     s += "Description\n-----------\n\n";
     for (const auto &i : DESCRIPTION) {
-      auto desc = split_lines(i, false);
+      const auto desc = split_lines(i, false);
       s += desc[0];
       for (size_t n = 1; n < desc.size(); ++n)
         s += " |br|\n" + desc[n];
@@ -749,7 +752,7 @@ std::string restructured_text_usage() {
 
   if (!EXAMPLES.empty()) {
     s += "Example usages\n--------------\n\n";
-    for (auto &i : EXAMPLES) {
+    for (const auto &i : EXAMPLES) {
       s += std::string("-   *") + i.title + "*::\n\n";
       s += std::string("        $ ") + i.code + "\n\n";
       if (!i.description.empty())
@@ -758,7 +761,7 @@ std::string restructured_text_usage() {
   }
 
   std::vector<std::string> group_names;
-  for (auto &i : OPTIONS) {
+  for (const auto &i : OPTIONS) {
     if (std::find(group_names.begin(), group_names.end(), i.name) == group_names.end())
       group_names.push_back(i.name);
   }
@@ -770,7 +773,7 @@ std::string restructured_text_usage() {
     f += std::string("** ");
     if (opt.flags.allow_multiple())
       f += "*(multiple uses permitted)* ";
-    auto desc = split_lines(opt.desc, false);
+    const auto desc = split_lines(opt.desc, false);
     f += escape_special(desc[0]);
     for (size_t n = 1; n < desc.size(); ++n)
       f += " |br|\n   " + escape_special(desc[n]);
@@ -795,12 +798,12 @@ std::string restructured_text_usage() {
   }
 
   s += "Standard options\n^^^^^^^^^^^^^^^^\n\n";
-  for (const auto &_standard_option : _standard_options)
-    s += format_option(_standard_option);
+  for (const auto &opt : _standard_options)
+    s += format_option(opt);
 
   s += std::string("References\n^^^^^^^^^^\n\n");
   for (const auto &i : REFERENCES) {
-    auto refs = split_lines(i, false);
+    const auto refs = split_lines(i, false);
     s += refs[0];
     for (size_t n = 1; n < refs.size(); ++n)
       s += " |br|\n  " + refs[n];
@@ -836,7 +839,7 @@ const Option *match_option(std::string_view arg) {
     return candidates[0];
 
   // return match if fully specified:
-  for (auto &candidate : candidates)
+  for (const auto &candidate : candidates)
     if (root == candidate->id)
       return candidate;
 
@@ -937,7 +940,7 @@ void parse() {
   size_t num_optional_arguments = 0;
 
   ArgModifierFlags flags;
-  for (auto &i : ARGUMENTS) {
+  for (const auto &i : ARGUMENTS) {
     if (i.flags.any()) {
       if (flags.any() && flags != i.flags)
         throw Exception("FIXME: all arguments declared optional() or allow_multiple()"
@@ -956,11 +959,12 @@ void parse() {
   }
 
   if ((num_optional_arguments != 0U) && num_args_required > argument.size())
-    throw Exception("Expected at least " + str(num_args_required) + " arguments (" + str(argument.size()) +
-                    " supplied)");
+    throw Exception("Expected at least " + str(num_args_required) + " arguments" + //
+                    " (" + str(argument.size()) + " supplied)");                   //
 
   if (num_optional_arguments == 0 && num_args_required != argument.size()) {
-    Exception e("Expected exactly " + str(num_args_required) + " arguments (" + str(argument.size()) + " supplied)");
+    Exception e("Expected exactly " + str(num_args_required) + " arguments" + //
+                " (" + str(argument.size()) + " supplied)");                  //
     std::string s = "Usage: " + NAME;
     for (const auto &a : ARGUMENTS)
       s += " " + std::string(a.id);
@@ -1006,10 +1010,10 @@ void parse() {
   }
 
   // check for multiple instances of options:
-  for (auto &i : OPTIONS) {
-    for (auto &j : i) {
+  for (const auto &i : OPTIONS) {
+    for (const auto &j : i) {
       size_t count = 0;
-      for (auto &k : option)
+      for (const auto &k : option)
         if (k.opt == &j)
           count++;
 
@@ -1282,7 +1286,7 @@ std::vector<ParsedOption> get_options(std::string_view name) {
   assert(!name.empty());
   assert(name[0] != '-');
   std::vector<ParsedOption> matches;
-  for (auto &i : option) {
+  for (const auto &i : option) {
     assert(i.opt);
     if (i.opt->is(name))
       matches.emplace_back(i.opt, i.args, i.index);
@@ -1426,10 +1430,10 @@ default_type App::ParsedArgument::as_float() const {
   const auto retval = to<default_type>(p);
   if (retval < arg->float_limits.min() || retval > arg->float_limits.max()) {
     std::string msg("value supplied for ");
-    if (opt != nullptr)
-      msg += std::string("option \"") + opt->id;
-    else
+    if (opt == nullptr)
       msg += std::string("argument \"") + arg->id;
+    else
+      msg += std::string("option \"") + opt->id;
     msg += "\" is out of bounds";
     msg += " (valid range: " + str(arg->float_limits.min()) + " to " + str(arg->float_limits.max()) + ";";
     msg += " value supplied: " + str(retval) + ")";

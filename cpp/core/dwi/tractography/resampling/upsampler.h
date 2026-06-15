@@ -35,7 +35,7 @@ public:
   bool valid() const override { return true; }
 
   void set_ratio(const size_t);
-  size_t get_ratio() const { return ((M.rows() != 0) ? (M.rows() + 1) : 1); }
+  size_t get_ratio() const { return ((M.rows() == 0) ? 1 : (M.rows() + 1)); }
 
 private:
   Eigen::MatrixXf M;

@@ -55,10 +55,10 @@ public:
     Partition(const matrix_type &x, const matrix_type &z)
         : X(x),
           Z(z),
-          Hz((Z.cols() != 0) ? (Z * Math::pinv(Z)) : matrix_type(matrix_type::Zero(X.rows(), X.rows()))),
+          Hz((Z.cols() == 0) ? matrix_type::Zero(X.rows(), X.rows()) : (Z * Math::pinv(Z))),
           Rz(matrix_type::Identity(X.rows(), X.rows()) - Hz),
           rank_x(Math::rank(X)),
-          rank_z((Z.cols() != 0) ? Math::rank(Z) : 0) {}
+          rank_z((Z.cols() == 0) ? 0 : Math::rank(Z)) {}
     // X = Component of design matrix related to effect of interest
     // Z = Component of design matrix related to nuisance regressors
     const matrix_type X, Z;

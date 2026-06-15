@@ -17,6 +17,7 @@
 #pragma once
 
 #include <memory>
+#include <utility>
 
 /** \defgroup Memory Memory management
  * \brief Classes & functions to ease memory management. */
@@ -37,6 +38,11 @@ public:
     return *this;
   }
 };
+
+//! Construct a copy_ptr<T> owning a newly-allocated T, mimicking std::make_unique<>() / std::make_shared<>().
+template <class T, class... Args> copy_ptr<T> make_copyptr(Args &&...args) {
+  return copy_ptr<T>(new T(std::forward<Args>(args)...));
+}
 
 struct compare_ptr_contents {
   template <class X> bool operator()(const X &a, const X &b) const { return *a < *b; }

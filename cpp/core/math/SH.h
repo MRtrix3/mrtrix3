@@ -51,7 +51,9 @@ inline size_t index_mpos(int l, int m) { return l * l / 4 + m; }
 
 //! returns the largest \e lmax given \a N parameters
 inline size_t LforN(int N) {
-  return (N != 0) ? 2 * std::floor<size_t>((std::sqrt(static_cast<default_type>(1 + 8 * N)) - 3.0) / 4.0) : 0;
+  if (N == 0)
+    return 0;
+  return 2 * std::floor<size_t>((std::sqrt(static_cast<default_type>(1 + 8 * N)) - 3.0) / 4.0);
 }
 
 //! returns whether a cardinality is commensurate with a set of SH coefficients
