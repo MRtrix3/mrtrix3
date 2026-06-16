@@ -177,6 +177,10 @@ add_bash_binary_test(fixel2sh/default NO_FILESYSTEM_LOCK)
 add_bash_binary_test(fixel2sh/lmax NO_FILESYSTEM_LOCK)
 
 add_bash_binary_test(fixel2tsf/default)
+add_bash_binary_test(fixel2tsf/embed_dpv_create)
+add_bash_binary_test(fixel2tsf/embed_append)
+add_bash_binary_test(fixel2tsf/embed_append_force)
+add_bash_binary_test(fixel2tsf/embed_rewrite_force)
 
 add_bash_binary_test(fixel2voxel/absmax NO_FILESYSTEM_LOCK)
 add_bash_binary_test(fixel2voxel/complexity NO_FILESYSTEM_LOCK)

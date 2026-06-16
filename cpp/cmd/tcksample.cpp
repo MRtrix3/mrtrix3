@@ -28,7 +28,7 @@
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/scalar_file.h"
 #include "dwi/tractography/sidecar.h"
-#include "dwi/tractography/sidecar_export.h"
+#include "dwi/tractography/sidecar_embed.h"
 #include "dwi/tractography/sidecar_value.h"
 #include "dwi/tractography/tractogram.h"
 #include "dwi/tractography/tractogram_item.h"
@@ -45,7 +45,6 @@
 #include "math/median.h"
 #include "memory.h"
 #include "ordered_thread_queue.h"
-#include "signal_handler.h"
 #include "thread.h"
 
 using namespace MR;
@@ -948,76 +947,13 @@ private:
   size_t columns;
 };
 
-//! \brief Ordered queue sink that writes each composite item to the output tractogram.
-class WriterSink {
-public:
-  WriterSink(DWI::Tractography::Tractogram<value_type> &output, const size_t num_tracks)
-      : output(output), progress("Sampling values and writing tractogram", num_tracks) {}
-  WriterSink(const WriterSink &) = delete;
-  bool operator()(const DWI::Tractography::TractogramItem<value_type> &item) {
-    output.write(item);
-    ++progress;
-    return true;
-  }
-
-private:
-  DWI::Tractography::Tractogram<value_type> &output;
-  ProgressBar progress;
-};
-
-//! \brief Ordered queue sink that accumulates the sampled field then appends it to an
-//!   existing dataset in place (no streamline rewrite); call finalise() when done.
-class AppendSink {
-public:
-  AppendSink(const DWI::Tractography::Formats::Base &handler,
-             std::filesystem::path dataset,
-             DWI::Tractography::FieldDescriptor descriptor,
-             const size_t ordinal,
-             const size_t num_tracks)
-      : handler(handler),
-        dataset(std::move(dataset)),
-        descriptor(std::move(descriptor)),
-        ordinal(ordinal),
-        progress("Sampling values and appending field", num_tracks) {}
-  AppendSink(const AppendSink &) = delete;
-
-  bool operator()(const DWI::Tractography::TractogramItem<value_type> &item) {
-    if (descriptor.role == DWI::Tractography::FieldRole::DPV) {
-      const auto &value = std::get<DWI::Tractography::VectorOrMatrix<value_type>>(item.dpv[ordinal]);
-      append_floats(value.data(), static_cast<size_t>(value.size()));
-    } else {
-      const auto &value = std::get<DWI::Tractography::ScalarOrVector<value_type>>(item.dps[ordinal]);
-      append_floats(value.data(), static_cast<size_t>(value.size()));
-    }
-    ++progress;
-    return true;
-  }
-
-  //! \brief append the accumulated field bytes to the dataset as a new member.
-  void finalise() { handler.append_sidecar(dataset, descriptor, bytes); }
-
-private:
-  const DWI::Tractography::Formats::Base &handler;
-  const std::filesystem::path dataset;
-  const DWI::Tractography::FieldDescriptor descriptor;
-  const size_t ordinal;
-  std::vector<std::byte> bytes;
-  ProgressBar progress;
-
-  void append_floats(const value_type *const data, const size_t count) {
-    const size_t offset = bytes.size();
-    bytes.resize(offset + count * sizeof(float));
-    for (size_t i = 0; i != count; ++i)
-      Raw::store_LE<float>(data[i], bytes.data() + offset + i * sizeof(float));
-  }
-};
-
 //! \brief embed the sampled values into a tractography dataset via "DATASET::NAME".
 /*! Writes the sampled column as a new per-streamline (dps) or per-vertex (dpv) field
  * named NAME within the dataset, choosing in-place append vs whole-dataset create/
- * rewrite from the format's capabilities (§2.7). For the create / rewrite cases the
- * output tractogram (input streamlines + the new field) is produced by the sampling
- * queue itself, so the input is not looped a second time. */
+ * rewrite from the format's capabilities (§2.7). The destination decision and the
+ * three write forms are handled by the shared embed_sidecar_field() orchestration;
+ * this command supplies only the sampling queue, so the output tractogram (input
+ * streamlines + the new field) is produced by that queue without a second pass. */
 void run_embed(const DWI::Tractography::SidecarReference &reference,
                DWI::Tractography::Tractogram<value_type> &input,
                DWI::Tractography::Properties &properties,
@@ -1030,78 +966,16 @@ void run_embed(const DWI::Tractography::SidecarReference &reference,
                const size_t num_metrics) {
   using namespace DWI::Tractography;
   using Item = TractogramItem<value_type>;
-  const DWI::Tractography::Formats::Base *const handler = DWI::Tractography::Formats::get_handler(reference.dataset);
-
-  if (!reference.is_qualified())
-    throw Exception("to embed sampled values into a tractogram dataset \"" + reference.dataset.string() + "\"," +
-                    " name the field with the \"DATASET::NAME\" form");
-  if (handler->capabilities.sidecar_data == DWI::Tractography::Formats::SidecarData::Unsupported)
-    throw Exception("output tractography format \"" + handler->description + "\"" +
-                    " cannot carry per-streamline / per-vertex sidecar data," +
-                    " so the sampled values cannot be embedded into \"" + reference.dataset.string() + "\"");
-
-  const std::string field_name = *reference.name;
   const FieldRole role = statistic.has_value() ? FieldRole::DPS : FieldRole::DPV;
   const size_t columns = (role == FieldRole::DPS) ? num_metrics : 1;
 
-  const SidecarDestination destination = classify_sidecar_destination(*handler, reference.dataset);
-
-  if (destination == SidecarDestination::AppendInPlace) {
-    const size_t ordinal = (role == FieldRole::DPV) ? input.fields().dpv_count() : input.fields().dps_count();
-    // The new member appends without rewriting the streamline data; -force is
-    //   required only if a field of this name is already present in the dataset.
-    {
-      Properties existing_properties;
-      auto existing = Tractogram<value_type>::open(reference.dataset, existing_properties);
-      if (existing.fields().ordinal(field_name, role).has_value())
-        App::check_overwrite(reference.dataset);
-    }
-    const FieldDescriptor descriptor{field_name, role, DataType::Float32, columns, FieldSource::Internal, ordinal};
-    AppendSink sink(*handler, reference.dataset, descriptor, ordinal, num_tracks);
-    with_sampler(image, interp, contrast, statistic, tdi, [&](auto &&sampler) {
-      EmbedWorker<std::decay_t<decltype(sampler)>> worker(std::move(sampler), role, ordinal, columns);
-      Thread::run_ordered_queue(input, Thread::batch(Item()), Thread::multi(worker), Thread::batch(Item()), sink);
-    });
-    sink.finalise();
-    return;
-  }
-
-  // CreateDataset / RewriteDataset: generate the output tractogram (input streamlines
-  //   plus the new field) within the sampling loop. A missing dataset is written
-  //   directly; an existing rewrite-only dataset (-force required) is written to a
-  //   sibling scratch file then atomically moved over the destination.
-  const bool rewrite = destination == SidecarDestination::RewriteDataset;
-  if (rewrite)
-    App::check_overwrite(reference.dataset);
-  const std::filesystem::path out_path = rewrite ? make_sibling_path(reference.dataset) : reference.dataset;
-
-  FieldRegistry registry = input.fields();
-  if (registry.ordinal(field_name, role).has_value())
-    throw Exception("input tractogram already carries a field named \"" + field_name + "\"");
-  const size_t ordinal = registry.add({field_name, role, DataType::Float32, columns, FieldSource::Internal, 0});
-
-  if (rewrite)
-    SignalHandler::mark_file_for_deletion(out_path);
-  try {
-    {
-      auto output = Tractogram<value_type>::create(out_path, properties, registry);
-      WriterSink sink(output, num_tracks);
-      with_sampler(image, interp, contrast, statistic, tdi, [&](auto &&sampler) {
-        EmbedWorker<std::decay_t<decltype(sampler)>> worker(std::move(sampler), role, ordinal, columns);
-        Thread::run_ordered_queue(input, Thread::batch(Item()), Thread::multi(worker), Thread::batch(Item()), sink);
+  embed_sidecar_field<value_type>(
+      reference, input, properties, role, columns, num_tracks, [&](auto &sink, const size_t ordinal) {
+        with_sampler(image, interp, contrast, statistic, tdi, [&](auto &&sampler) {
+          EmbedWorker<std::decay_t<decltype(sampler)>> worker(std::move(sampler), role, ordinal, columns);
+          Thread::run_ordered_queue(input, Thread::batch(Item()), Thread::multi(worker), Thread::batch(Item()), sink);
+        });
       });
-    } // the output Tractogram is finalised (written) here, before any rename
-    if (rewrite) {
-      std::filesystem::rename(out_path, reference.dataset);
-      SignalHandler::unmark_file_for_deletion(out_path);
-    }
-  } catch (...) {
-    if (rewrite) {
-      std::error_code ec;
-      std::filesystem::remove(out_path, ec);
-    }
-    throw;
-  }
 }
 
 void run() {
