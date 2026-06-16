@@ -26,7 +26,7 @@ The compulsory input file "assignments_in" should contain a text file where ther
 
 When -files single is specified, the third argument is interpreted as a tractogram file path; otherwise it is interpreted as a directory, into which individual output tractogram files will be written. The -tck_weights_out path is interpreted in the same manner, as either a single output file or a directory of per-tract-file weight text files.
 
-In the per-edge / per-node directory modes the output tractogram files are written in the format selected by the -file_format option (default ".tck"); with -files single the format is taken from the extension of the output path. If the selected format can store per-streamline / per-vertex data (e.g. ".trx"), the streamline weights and any -tsf_in per-vertex data are embedded within the output tractogram itself, and the separate -tck_weights_out / -tsf_out outputs do not apply; for a vertices-only format (e.g. ".tck") these are instead written as separate sidecar files.
+In the per-edge / per-node directory modes the output tractogram files are written in the format selected by the -file_format option (default ".tck"); with -files single the format is taken from the extension of the output path. If the selected format can store per-streamline / per-vertex data (e.g. ".trx"), the streamline weights are embedded within the output tractogram itself, and the separate -tck_weights_out output does not apply; for a vertices-only format (e.g. ".tck") the weights are instead written as a separate sidecar file. Any per-vertex (data-per-vertex) data carried by the input tractogram propagates to the output for formats that can embed it (e.g. ".trx"), and is dropped for a vertices-only format.
 
 The -tck_weights_out option behaves similarity to the third argument as described above. If option "-files single" is specified, then the user-specified input to the -tck_weights_out option will be interpreted as the path to a file to be created. Otherwise, that path will instead be interpreted as a directory to be created, which will then be populated with files of the same name as the tractogram files written as the primary command output.
 
@@ -81,7 +81,7 @@ Options for determining the content / format of output files
 
 -  **-files option** select how the resulting streamlines will be grouped in output files. Options are: per_edge, per_node, single. Default: per_edge.
 
--  **-file_format extension** the output tractogram file format for the per-edge / per-node directory modes, given as a filename extension (default: tck); ignored for "-files single", where the format is taken from the output path. A format that can store per-streamline data (e.g. trx) embeds the streamline weights and any -tsf_in per-vertex data, in which case -tck_weights_out / -tsf_out do not apply.
+-  **-file_format extension** the output tractogram file format for the per-edge / per-node directory modes, given as a filename extension (default: tck); ignored for "-files single", where the format is taken from the output path. A format that can store per-streamline data (e.g. trx) embeds the streamline weights, in which case -tck_weights_out does not apply.
 
 -  **-exemplars image** generate a mean connection exemplar per edge, rather than keeping all streamlines (the parcellation node image must be provided in order to constrain the exemplar endpoints)
 
@@ -95,13 +95,6 @@ Options for importing / exporting streamline weights
 -  **-tck_weights_in spec** specify the streamline weights: either a standalone scalar file, or "<tractogram>::<field>" naming a per-streamline field of the input tractogram
 
 -  **-tck_weights_out path** provide the output path for streamline weight data (see Description)
-
-Options for carrying per-vertex (data-per-vertex) sidecar data
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
--  **-tsf_in path** an input track scalar file (.tsf) of per-vertex data, sub-set into the extracted per-edge / per-node output files alongside the streamlines
-
--  **-tsf_out path** provide the output path for per-vertex (.tsf) data; interpreted as a single file or a directory of per-tract-file .tsf files, mirroring the third argument / -tck_weights_out path
 
 Standard options
 ^^^^^^^^^^^^^^^^

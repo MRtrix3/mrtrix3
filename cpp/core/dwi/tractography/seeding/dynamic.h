@@ -33,6 +33,8 @@
 #include "dwi/tractography/seeding/base.h"
 #include "dwi/tractography/tracking/generated_track.h"
 #include "dwi/tractography/tracking/write_kernel.h"
+#include "dwi/tractography/tractogram.h"
+#include "dwi/tractography/tractogram_item.h"
 #include "thread_queue.h"
 #include "transform.h"
 
@@ -227,7 +229,7 @@ private:
   std::atomic<uint64_t> attempts, seeds;
 
 #ifdef DYNAMIC_SEED_DEBUGGING
-  Tractography::Writer<float> seed_output;
+  Tractography::Tractogram<float> seed_output;
   void write_seed(const Eigen::Vector3f &);
   size_t test_fixel;
   std::string debugging_fixel_path;

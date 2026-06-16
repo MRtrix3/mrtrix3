@@ -58,7 +58,7 @@ Dynamic::Dynamic(const std::filesystem::path &in,
       attempts(0),
       seeds(0),
 #ifdef DYNAMIC_SEED_DEBUGGING
-      seed_output("seeds.tck", Tractography::Properties()),
+      seed_output(Tractography::Tractogram<float>::create("seeds.tck", Tractography::Properties())),
       debugging_fixel_path("dynamic_seeding"),
       test_fixel(0),
 #endif
@@ -274,9 +274,9 @@ bool Dynamic::operator()(const FMLS::FOD_lobes &in) {
 void Dynamic::write_seed(const Eigen::Vector3f &p) {
   static std::mutex mutex;
   std::lock_guard<std::mutex> lock(mutex);
-  std::vector<Eigen::Vector3f> tck;
+  Tractography::Streamline<float> tck;
   tck.push_back(p);
-  seed_output(tck);
+  seed_output.write(Tractography::TractogramItem<float>(tck));
 }
 
 void Dynamic::output_fixel_images(std::string_view prefix) {

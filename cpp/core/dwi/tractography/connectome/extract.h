@@ -27,7 +27,6 @@
 #include "dwi/tractography/connectome/exemplar.h"
 #include "dwi/tractography/field_registry.h"
 #include "dwi/tractography/properties.h"
-#include "dwi/tractography/scalar_file.h"
 #include "dwi/tractography/sidecar_value.h"
 #include "dwi/tractography/streamline.h"
 #include "dwi/tractography/tractogram.h"
@@ -99,46 +98,31 @@ class WriterExtraction {
 public:
   WriterExtraction(const Tractography::Properties &, const std::vector<node_t> &, const bool, const bool);
 
-  void add(const node_t,
-           const std::filesystem::path &,
-           const std::optional<std::filesystem::path> &,
-           const std::optional<std::filesystem::path> & = std::nullopt);
-  void add(const node_t,
-           const node_t,
-           const std::filesystem::path &,
-           const std::optional<std::filesystem::path> &,
-           const std::optional<std::filesystem::path> & = std::nullopt);
-  void add(const std::vector<node_t> &,
-           const std::filesystem::path &,
-           const std::optional<std::filesystem::path> &,
-           const std::optional<std::filesystem::path> & = std::nullopt);
+  void add(const node_t, const std::filesystem::path &, const std::optional<std::filesystem::path> &);
+  void add(const node_t, const node_t, const std::filesystem::path &, const std::optional<std::filesystem::path> &);
+  void add(const std::vector<node_t> &, const std::filesystem::path &, const std::optional<std::filesystem::path> &);
 
   void clear();
 
-  //! \brief embed per-streamline weights (and optional per-vertex scalars) into the output tractograms.
+  //! \brief embed per-streamline weights into the output tractograms.
   /*! Used when the output format can serialise sidecar data (e.g. ".trx"): each
-   * streamline's weight rides as a "weights" per-streamline (dps) field and, when
-   * \a scalar_field_name is given, the carried per-vertex scalar rides as a dpv
-   * field of that name — instead of being written to separate -tck_weights_out /
-   * -tsf_out files. Call once before any add(). */
-  void enable_embedding(const std::optional<std::string> &scalar_field_name);
+   * streamline's weight rides as a "weights" per-streamline (dps) field instead
+   * of being written to a separate -tck_weights_out file. Any per-vertex (dpv)
+   * data present on the input items propagates natively to the output (no extra
+   * declaration is required here, as it is carried by \a input_registry — see the
+   * constructor of the output tractograms). Call once before any add().
+   *
+   * \param input_registry the read tractogram's field registry, whose dps/dpv
+   *   fields are declared on the output so that input sidecar data propagates. */
+  void enable_embedding(const Tractography::FieldRegistry &input_registry);
 
-  //! \brief whether an input per-vertex (.tsf) sidecar is being carried (step 6).
-  /*! When per-edge / per-node .tsf paths have been registered via add(), the
-   * caller must drive the extraction with the scalar-carrying operator()
-   * overloads so that the per-vertex data is sub-set into the matching output
-   * files alongside the streamlines. */
-  bool has_scalars() const { return have_scalars; }
-
-  bool operator()(const Connectome::Streamline_nodepair &) const;
-  bool operator()(const Connectome::Streamline_nodelist &) const;
-
-  //! \brief extract a streamline together with its per-vertex scalar (step 6).
-  /*! Writes the streamline (and its scalar) to every matching output file and
-   * skips it in the rest, exactly as the vertices-only overloads, keeping each
-   * output .tsf aligned with its output tractogram. */
-  bool operator()(const Connectome::Streamline_nodepair &, const Tractography::TrackScalar<float> &) const;
-  bool operator()(const Connectome::Streamline_nodelist &, const Tractography::TrackScalar<float> &) const;
+  //! \brief extract an item routed to a node pair, propagating its sidecar payloads.
+  /*! Writes the item to every matching output file and skips it in the rest. For
+   * an embedding output format the item's per-vertex (dpv) data rides inside the
+   * output tractogram; for a vertices-only format it is dropped. */
+  bool operator()(const Tractography::TractogramItem<float> &, const NodePair &) const;
+  //! \brief extract an item routed to a node list, propagating its sidecar payloads.
+  bool operator()(const Tractography::TractogramItem<float> &, const std::vector<node_t> &) const;
 
   size_t file_count() const { return writers.size(); }
 
@@ -147,16 +131,11 @@ private:
   const std::vector<node_t> &node_list;
   const bool exclusive;
   const bool keep_self;
-  bool have_scalars = false;
   bool embed = false;
-  std::optional<std::string> embed_scalar_field;
   FieldRegistry embed_registry;
   size_t weights_ordinal = 0;
-  size_t scalar_ordinal = 0;
   std::vector<Selector> selectors;
   std::vector<std::unique_ptr<Tractography::Tractogram<float>>> writers;
-  std::vector<std::unique_ptr<Tractography::ScalarWriter<float>>> scalar_writers;
-  Tractography::Streamline<> empty_tck;
 
   //! \brief create a per-file output tractogram for the just-added selector.
   /*! The write-back buffer is created with zero capacity, so it grows only as far
@@ -165,12 +144,9 @@ private:
    * memory per file rather than a full buffer. Each file's per-streamline weights
    * are routed explicitly (register_weight_output_external) to a distinct path. */
   Tractography::Tractogram<float> make_writer(const std::filesystem::path &path) const;
-  //! \brief register the (optional) parallel scalar writer for a just-added file.
-  void add_scalar_writer(const std::optional<std::filesystem::path> &scalar_path);
-  //! \brief write \a tck (and \a scalar where present) to output file \a i.
-  void
-  write_one(size_t i, const Tractography::Streamline<float> &tck, const Tractography::TrackScalar<float> *scalar) const;
-  //! \brief skip output file \a i in both the tractogram and scalar streams.
+  //! \brief write \a item to output file \a i, embedding its weight where enabled.
+  void write_one(size_t i, const Tractography::TractogramItem<float> &item) const;
+  //! \brief skip output file \a i in the tractogram stream.
   void skip_one(size_t i) const;
 };
 

@@ -1,33 +1,53 @@
 #!/bin/bash
-# Step 6: connectome2tck carries per-streamline weights (dps) AND per-vertex
-#   (dpv, a .tsf) sidecar data through to the extracted per-edge tractograms.
-# Sample a per-vertex .tsf and manufacture a per-streamline weights file, extract
-#   per-node track files carrying both, then confirm that for each output file the
-#   .tsf is consistent with its .tck (per-streamline vertex counts match) and that
-#   a matching per-edge weights file was produced.
-rm -rf tmp_tck/ tmp_tsf/ tmp_w/
-tcksample SIFT_phantom/tracks.tck SIFT_phantom/mask.mif tmp_in.tsf -force
+# connectome2tck carries per-streamline weights through to the extracted per-node
+#   output files, and propagates any per-vertex (data-per-vertex, dpv) data carried
+#   by the input tractogram into the output for an embedding format (.trx), dropping
+#   it for a vertices-only format (.tck) without error.
 
+# --- Part A: per-streamline weights passthrough (separate-file outputs). ---
+rm -rf tmp_tck/ tmp_w/ tmp_w.txt tmp_tok.txt
 # One weight per streamline.
 N=$(tckinfo SIFT_phantom/tracks.tck -count 2>/dev/null | grep -iE "actual count" | grep -oE "[0-9]+" | head -n1)
-rm -f tmp_w.txt
 i=0
 while [ "$i" -lt "$N" ]; do echo "3" >> tmp_w.txt; i=$((i+1)); done
 
 connectome2tck SIFT_phantom/tracks.tck tck2connectome/assignments.csv tmp_tck/ \
   -nodes 1,3 -files per_node \
-  -tsf_in tmp_in.tsf -tsf_out tmp_tsf/ \
   -tck_weights_in tmp_w.txt -tck_weights_out tmp_w/ -force
 
-# For each extracted node file, the .tsf must be consistent with the .tck, and a
-#   per-node weights file must exist (and be non-empty).
+# For each extracted node file, a per-node weights file must exist and be non-empty.
 for node in 1 3; do
   test -f tmp_tck/${node}.tck
-  test -f tmp_tsf/${node}.tsf
   test -s tmp_w/${node}.csv
-  tsfvalidate tmp_tsf/${node}.tsf tmp_tck/${node}.tck
   # Every extracted streamline had weight 3, so the per-node weights are all 3
   #   (standard MRtrix vector file: "# " comment header then comma/space values).
   grep -v '^#' tmp_w/${node}.csv | tr ' \t,' '\n\n\n' | grep -E '[0-9]' > tmp_tok.txt
   ! grep -vqE '^3$' tmp_tok.txt
+done
+
+# --- Part B: per-vertex (dpv) propagation through an embedding output (.trx). ---
+rm -rf tmp_in.trx tmp_dpv_trx/ tmp_dpv_tck/
+# Build a TRX input that carries a per-vertex "scalar" field (sampled per vertex).
+#   The streamline order matches SIFT_phantom/tracks.tck, so the index->assignment
+#   mapping is preserved.
+tcksample SIFT_phantom/tracks.tck SIFT_phantom/mask.mif tmp_in.trx::scalar \
+  -config TRXArchiveCompression store -force
+
+# Extract per-node TRX files: the input dpv must ride through to each output.
+connectome2tck tmp_in.trx tck2connectome/assignments.csv tmp_dpv_trx/ \
+  -nodes 1,3 -files per_node -file_format trx \
+  -config TRXArchiveCompression store -force
+for node in 1 3; do
+  test -f tmp_dpv_trx/${node}.trx
+  # The output TRX archive carries the propagated per-vertex field as a "dpv/" member.
+  unzip -l tmp_dpv_trx/${node}.trx | grep -q "dpv/scalar"
+done
+
+# Extracting the same input to a vertices-only format (.tck) must simply drop the
+#   per-vertex data (no error, no sidecar produced).
+connectome2tck tmp_in.trx tck2connectome/assignments.csv tmp_dpv_tck/ \
+  -nodes 1,3 -files per_node -force
+for node in 1 3; do
+  test -f tmp_dpv_tck/${node}.tck
+  ! test -e tmp_dpv_tck/${node}.tsf
 done

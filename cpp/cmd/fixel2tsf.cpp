@@ -23,9 +23,9 @@
 #include "fixel/helpers.h"
 #include "fixel/validate.h"
 
-#include "dwi/tractography/file.h"
 #include "dwi/tractography/scalar_file.h"
 #include "dwi/tractography/streamline.h"
+#include "dwi/tractography/tractogram.h"
 
 #include "dwi/tractography/mapping/loader.h"
 #include "dwi/tractography/mapping/mapper.h"
@@ -86,7 +86,7 @@ void run() {
   auto in_directions_image = Fixel::find_directions_header(input_fixel_directory).get_image<float>(DirectIO(1));
 
   DWI::Tractography::Properties properties;
-  DWI::Tractography::Reader<float> reader(input_tracks_path, properties);
+  auto reader = DWI::Tractography::Tractogram<float>::open(input_tracks_path, properties);
 
   DWI::Tractography::ScalarWriter<float> tsf_writer(output_tsf_path, properties);
 
