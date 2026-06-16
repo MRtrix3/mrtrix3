@@ -30,7 +30,7 @@
 
 #include "dwi/tractography/field_registry.h"
 #include "dwi/tractography/formats/list.h"
-#include "dwi/tractography/scalar_file.h"
+#include "dwi/tractography/formats/tsf.h"
 #include "dwi/tractography/sidecar.h"
 #include "dwi/tractography/sidecar_embed.h"
 #include "dwi/tractography/sidecar_value.h"

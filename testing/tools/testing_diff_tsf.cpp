@@ -15,7 +15,7 @@
  */
 
 #include "command.h"
-#include "dwi/tractography/scalar_file.h"
+#include "dwi/tractography/formats/tsf.h"
 #include "dwi/tractography/streamline.h"
 #include "dwi/tractography/validate.h"
 

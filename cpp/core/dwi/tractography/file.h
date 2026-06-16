@@ -16,12 +16,12 @@
 
 #pragma once
 
-// The ".tck" Reader / Writer classes formerly defined here are now the
-//   read/write backends of the ".tck" format handler and live in
+// The ".tck" reader / writer classes formerly defined here are now the
+//   TCKReader / TCKWriter backends of the ".tck" format handler and live in
 //   dwi/tractography/formats/tck.h. This header is retained as a compatibility
-//   shim so that the many existing callers of
-//   MR::DWI::Tractography::Reader<> / Writer<> (and the ReaderInterface<> /
-//   WriterInterface<> contracts) continue to compile unchanged.
+//   shim so that the existing callers of MR::DWI::Tractography::TCKReader<> /
+//   TCKWriter<> (and the ReaderInterface<> / WriterInterface<> contracts)
+//   continue to compile unchanged.
 
 #include "dwi/tractography/formats/tck.h"
 

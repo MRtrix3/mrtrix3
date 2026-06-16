@@ -20,8 +20,8 @@
 #include <cstdint>
 
 #include "dwi/tractography/file.h"
+#include "dwi/tractography/formats/tsf.h"
 #include "dwi/tractography/properties.h"
-#include "dwi/tractography/scalar_file.h"
 #include "dwi/tractography/validate.h"
 #include "file/matrix.h"
 #include "mrview/mode/base.h"
@@ -585,7 +585,7 @@ void Tractogram::load_tracks() {
   GL::Context::Grab context;
   GL::assert_context_is_current();
 
-  DWI::Tractography::Reader<float> file(filepath, properties);
+  DWI::Tractography::TCKReader<float> file(filepath, properties);
   DWI::Tractography::Streamline<float> tck;
   std::vector<Eigen::Vector3f> buffer;
   std::vector<GLint> starts;

@@ -25,7 +25,7 @@
 
 #include "app.h"
 #include "datatype.h"
-#include "dwi/tractography/scalar_file.h"
+#include "dwi/tractography/formats/tsf.h"
 #include "dwi/tractography/sidecar_value.h"
 #include "dwi/tractography/streamline.h"
 #include "fetch_store.h"

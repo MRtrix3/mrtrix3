@@ -19,7 +19,7 @@
 #include <cstddef>
 #include <map>
 
-#include "dwi/tractography/file_base.h"
+#include "dwi/tractography/formats/mrtrix_base.h"
 #include "dwi/tractography/formats/write_buffer.h"
 #include "dwi/tractography/nonfinite.h"
 #include "dwi/tractography/properties.h"

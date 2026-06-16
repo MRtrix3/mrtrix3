@@ -14,7 +14,7 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
-#include "dwi/tractography/file_base.h"
+#include "dwi/tractography/formats/mrtrix_base.h"
 
 #include <cerrno>
 #include <filesystem>

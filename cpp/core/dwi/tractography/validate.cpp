@@ -21,8 +21,8 @@
 
 #include "app.h"
 #include "dwi/tractography/file.h"
+#include "dwi/tractography/formats/tsf.h"
 #include "dwi/tractography/properties.h"
-#include "dwi/tractography/scalar_file.h"
 #include "dwi/tractography/streamline.h"
 #include "dwi/tractography/tractogram.h"
 #include "dwi/tractography/tractogram_item.h"
@@ -35,13 +35,13 @@ namespace MR::DWI::Tractography {
 
 namespace {
 
-// A thin subclass of Reader<float> that exposes the protected
+// A thin subclass of TCKReader<float> that exposes the protected
 // get_next_point() method so that raw triplets can be read without
 // the high-level streamline-assembly logic filtering them out.
 // This allows inspection of delimiter and barrier triplets directly.
-class RawTckReader : public Reader<float> {
+class RawTckReader : public TCKReader<float> {
 public:
-  RawTckReader(const std::filesystem::path &file, Properties &props) : Reader<float>(file, props) {}
+  RawTckReader(const std::filesystem::path &file, Properties &props) : TCKReader<float>(file, props) {}
 
   // Read one raw 3-float triplet from the binary data section.
   // Returns true if a complete triplet was successfully read, and fills p.
@@ -263,7 +263,7 @@ void validate_tsf(const std::filesystem::path &tsf_path, const std::filesystem::
   Properties tsf_props;
   Properties tck_props;
   ScalarReader<float> tsf_reader(tsf_path, tsf_props);
-  Reader<float> tck_reader(tck_path, tck_props);
+  TCKReader<float> tck_reader(tck_path, tck_props);
 
   // ---------------------------------------------------------------
   // Check 1: timestamps must be present in both headers and must match.

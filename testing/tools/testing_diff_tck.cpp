@@ -105,8 +105,8 @@ void run() {
   size_t mismatch_count = 0;
 
   DWI::Tractography::Properties properties1, properties2;
-  DWI::Tractography::Reader<> reader1(argument[0], properties1);
-  DWI::Tractography::Reader<> reader2(argument[1], properties2);
+  DWI::Tractography::TCKReader<> reader1(argument[0], properties1);
+  DWI::Tractography::TCKReader<> reader2(argument[1], properties2);
 
   if (!get_options("unordered").empty()) {
 

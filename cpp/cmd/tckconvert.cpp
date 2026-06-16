@@ -632,7 +632,7 @@ void run_bespoke(const std::filesystem::path &input_path, const std::filesystem:
   Properties properties;
   std::unique_ptr<ReaderInterface<float>> reader;
   if (input_path.extension() == ".tck") {
-    reader.reset(new Reader<float>(input_path, properties));
+    reader.reset(new TCKReader<float>(input_path, properties));
   } else if (input_path.extension() == ".txt") {
     reader.reset(new ASCIIReader(input_path.string()));
   } else {
@@ -642,7 +642,7 @@ void run_bespoke(const std::filesystem::path &input_path, const std::filesystem:
   // Writer
   std::unique_ptr<WriterInterface<float>> writer;
   if (output_path.extension() == ".tck") {
-    writer.reset(new Writer<float>(output_path, properties));
+    writer.reset(new TCKWriter<float>(output_path, properties));
   } else if (output_path.extension() == ".ply") {
     const int increment = get_option_value("increment", default_ply_increment);
     const float radius = get_option_value("radius", default_ply_radius);

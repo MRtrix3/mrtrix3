@@ -22,8 +22,8 @@
 #include <string>
 #include <string_view>
 
-#include "dwi/tractography/file_base.h"
 #include "dwi/tractography/formats/base.h"
+#include "dwi/tractography/formats/mrtrix_base.h"
 #include "dwi/tractography/formats/write_buffer.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/streamline.h"
@@ -46,10 +46,10 @@ namespace MR::DWI::Tractography {
  *
  * The implementation is explicitly instantiated for float and double in
  * formats/tck.cpp. */
-template <class ValueType = float> class Reader : public ReaderBase, public ReaderInterface<ValueType> {
+template <class ValueType = float> class TCKReader : public ReaderBase, public ReaderInterface<ValueType> {
 public:
   //! open the \c file for reading and load header into \c properties
-  Reader(const std::filesystem::path &path, Properties &properties);
+  TCKReader(const std::filesystem::path &path, Properties &properties);
 
   //! fetch next track from file
   bool operator()(Streamline<ValueType> &tck) override;
@@ -62,7 +62,7 @@ protected:
   //! takes care of byte ordering issues
   Eigen::Matrix<ValueType, 3, 1> get_next_point();
 
-  Reader(const Reader &) = delete;
+  TCKReader(const TCKReader &) = delete;
 };
 
 //! class to handle writing tracks to file, with a RAM write-back buffer
@@ -82,7 +82,8 @@ protected:
  *
  * The implementation is explicitly instantiated for float and double in
  * formats/tck.cpp. */
-template <typename ValueType = float> class Writer : public WriterBase<ValueType>, public WriterInterface<ValueType> {
+template <typename ValueType = float>
+class TCKWriter : public WriterBase<ValueType>, public WriterInterface<ValueType> {
 public:
   using WriterBase<ValueType>::count;
   using WriterBase<ValueType>::total_count;
@@ -102,14 +103,14 @@ public:
   // CONF writing track files. MRtrix will store the output tracks in a
   // CONF relatively large buffer to limit the number of write() calls,
   // CONF avoid associated issues such as file fragmentation.
-  Writer(const std::filesystem::path &path,
-         const Properties &properties,
-         std::optional<size_t> buffer_capacity = std::nullopt);
+  TCKWriter(const std::filesystem::path &path,
+            const Properties &properties,
+            std::optional<size_t> buffer_capacity = std::nullopt);
 
-  Writer(const Writer &) = delete;
+  TCKWriter(const TCKWriter &) = delete;
 
   //! commits any remaining data to file
-  ~Writer() override;
+  ~TCKWriter() override;
 
   //! append track to file
   bool operator()(const Streamline<ValueType> &tck) override;
@@ -161,7 +162,7 @@ namespace Formats {
  * consumed in order); rewrite-only for structural change, although growth by
  * appending streamlines is supported during a single writing pass.
  *
- * The read/create factories manufacture the co-located Reader / Writer
+ * The read/create factories manufacture the co-located TCKReader / TCKWriter
  * backends that perform the byte-level streaming I/O. */
 class TCK : public Base {
 public:

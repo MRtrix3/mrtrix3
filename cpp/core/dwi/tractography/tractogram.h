@@ -137,7 +137,7 @@ public:
    * skips the per-streamline (dps) and per-vertex (dpv) sidecar payloads entirely.
    * Intended for the call sites (Stages 2 and 4) that only ever consumed vertices,
    * the streamline weight, and the ordinal index — the contract of the legacy
-   * Reader<>::operator()(Streamline&).
+   * TCKReader<>::operator()(Streamline&).
    *
    * \par Weight handling
    * The privileged streamline weight is honoured on this path; non-weight sidecar

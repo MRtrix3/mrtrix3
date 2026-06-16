@@ -4055,7 +4055,7 @@ void Connectome::get_exemplars() {
     return;
   current_folder = load_paths.last_directory;
   MR::DWI::Tractography::Properties properties;
-  MR::DWI::Tractography::Reader<float> reader(load_paths.single_selection, properties);
+  MR::DWI::Tractography::TCKReader<float> reader(load_paths.single_selection, properties);
   const size_t num_tracks = to<size_t>(properties["count"]);
   if (num_tracks != num_edges())
     throw Exception("Track file " + load_paths.single_selection.filename().string() + //

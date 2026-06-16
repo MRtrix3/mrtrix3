@@ -32,14 +32,14 @@
 namespace MR::DWI::Tractography {
 
 /* ************************************************************************ */
-/*                          Reader<ValueType>                              */
+/*                          TCKReader<ValueType>                           */
 /* ************************************************************************ */
 
-template <class ValueType> Reader<ValueType>::Reader(const std::filesystem::path &path, Properties &properties) {
+template <class ValueType> TCKReader<ValueType>::TCKReader(const std::filesystem::path &path, Properties &properties) {
   open(path, "tracks", properties);
 }
 
-template <class ValueType> bool Reader<ValueType>::operator()(Streamline<ValueType> &tck) {
+template <class ValueType> bool TCKReader<ValueType>::operator()(Streamline<ValueType> &tck) {
   tck.clear();
 
   if (!in.is_open())
@@ -71,7 +71,7 @@ template <class ValueType> bool Reader<ValueType>::operator()(Streamline<ValueTy
   return false;
 }
 
-template <class ValueType> Eigen::Matrix<ValueType, 3, 1> Reader<ValueType>::get_next_point() {
+template <class ValueType> Eigen::Matrix<ValueType, 3, 1> TCKReader<ValueType>::get_next_point() {
   using namespace ByteOrder;
   switch (dtype()) {
   case DataType::Float16LE: {
@@ -112,13 +112,13 @@ template <class ValueType> Eigen::Matrix<ValueType, 3, 1> Reader<ValueType>::get
 }
 
 /* ************************************************************************ */
-/*                            Writer<ValueType>                            */
+/*                          TCKWriter<ValueType>                           */
 /* ************************************************************************ */
 
 template <typename ValueType>
-Writer<ValueType>::Writer(const std::filesystem::path &path,
-                          const Properties &properties,
-                          std::optional<size_t> buffer_capacity)
+TCKWriter<ValueType>::TCKWriter(const std::filesystem::path &path,
+                                const Properties &properties,
+                                std::optional<size_t> buffer_capacity)
     : WriterBase<ValueType>(path),
       buffer(buffer_capacity.value_or(File::Config::get_int("TrackWriterBufferSize", 16777216)), sizeof(vector_type)) {
 
@@ -153,7 +153,7 @@ Writer<ValueType>::Writer(const std::filesystem::path &path,
   });
 }
 
-template <class ValueType> void Writer<ValueType>::format_point(const vector_type &src, vector_type &dest) {
+template <class ValueType> void TCKWriter<ValueType>::format_point(const vector_type &src, vector_type &dest) {
   using namespace ByteOrder;
   if (dtype.is_little_endian())
     dest = {LE(src[0]), LE(src[1]), LE(src[2])};
@@ -161,7 +161,7 @@ template <class ValueType> void Writer<ValueType>::format_point(const vector_typ
     dest = {BE(src[0]), BE(src[1]), BE(src[2])};
 }
 
-template <typename ValueType> Writer<ValueType>::~Writer() {
+template <typename ValueType> TCKWriter<ValueType>::~TCKWriter() {
   try {
     commit();
   } catch (Exception &e) {
@@ -169,7 +169,7 @@ template <typename ValueType> Writer<ValueType>::~Writer() {
   }
 }
 
-template <typename ValueType> bool Writer<ValueType>::operator()(const Streamline<ValueType> &tck) {
+template <typename ValueType> bool TCKWriter<ValueType>::operator()(const Streamline<ValueType> &tck) {
   enforce_vertices(tck, tck_vertex_tolerance);
   for (const auto &i : tck)
     add_point(i);
@@ -181,9 +181,9 @@ template <typename ValueType> bool Writer<ValueType>::operator()(const Streamlin
 }
 
 template <typename ValueType>
-void Writer<ValueType>::flush_points(const std::byte *data,
-                                     size_t size,
-                                     const Formats::WriteBuffer::Counts & /*counts*/) {
+void TCKWriter<ValueType>::flush_points(const std::byte *data,
+                                        size_t size,
+                                        const Formats::WriteBuffer::Counts & /*counts*/) {
   if (size == 0 || !this->open_success)
     return;
 
@@ -204,16 +204,16 @@ void Writer<ValueType>::flush_points(const std::byte *data,
   this->update_counts(out);
 }
 
-template <typename ValueType> void Writer<ValueType>::commit() { buffer.commit(); }
+template <typename ValueType> void TCKWriter<ValueType>::commit() { buffer.commit(); }
 
 /* ************************************************************************ */
 /*               Explicit instantiation for float and double              */
 /* ************************************************************************ */
 
-template class Reader<float>;
-template class Reader<double>;
-template class Writer<float>;
-template class Writer<double>;
+template class TCKReader<float>;
+template class TCKReader<double>;
+template class TCKWriter<float>;
+template class TCKWriter<double>;
 
 namespace Formats {
 
@@ -223,14 +223,14 @@ std::unique_ptr<ReaderInterface<float>> TCK::read_float(const std::filesystem::p
                                                         Properties &properties,
                                                         FieldRegistry &,
                                                         const OptionalHeader &) const {
-  return std::make_unique<Reader<float>>(path, properties);
+  return std::make_unique<TCKReader<float>>(path, properties);
 }
 
 std::unique_ptr<ReaderInterface<double>> TCK::read_double(const std::filesystem::path &path,
                                                           Properties &properties,
                                                           FieldRegistry &,
                                                           const OptionalHeader &) const {
-  return std::make_unique<Reader<double>>(path, properties);
+  return std::make_unique<TCKReader<double>>(path, properties);
 }
 
 std::unique_ptr<WriterInterface<float>> TCK::create_float(const std::filesystem::path &path,
@@ -238,7 +238,7 @@ std::unique_ptr<WriterInterface<float>> TCK::create_float(const std::filesystem:
                                                           const FieldRegistry &,
                                                           const OptionalHeader &,
                                                           const WriteOptions &options) const {
-  return std::make_unique<Writer<float>>(path, properties, options.buffer_capacity);
+  return std::make_unique<TCKWriter<float>>(path, properties, options.buffer_capacity);
 }
 
 std::unique_ptr<WriterInterface<double>> TCK::create_double(const std::filesystem::path &path,
@@ -246,7 +246,7 @@ std::unique_ptr<WriterInterface<double>> TCK::create_double(const std::filesyste
                                                             const FieldRegistry &,
                                                             const OptionalHeader &,
                                                             const WriteOptions &options) const {
-  return std::make_unique<Writer<double>>(path, properties, options.buffer_capacity);
+  return std::make_unique<TCKWriter<double>>(path, properties, options.buffer_capacity);
 }
 
 } // namespace Formats
