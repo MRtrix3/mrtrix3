@@ -398,7 +398,7 @@ void Tractography::on_crop_to_slab_slot(bool is_checked) {
 
   for (size_t i = 0, N = tractogram_list_model->rowCount(); i < N; ++i) {
     Tractogram *tractogram = dynamic_cast<Tractogram *>(tractogram_list_model->items[i].get());
-    tractogram->should_update_stride = true;
+    tractogram->should_update_lod = true;
   }
 
   window().updateGL();
@@ -432,7 +432,7 @@ void Tractography::line_thickness_slot(int thickness) {
   for (int i = 0; i < indices.size(); ++i) {
     Tractogram *tractogram = tractogram_list_model->get_tractogram(indices[i]);
     tractogram->line_thickness = thickness;
-    tractogram->should_update_stride = true;
+    tractogram->should_update_lod = true;
   }
 
   window().updateGL();

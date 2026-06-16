@@ -35,7 +35,6 @@ const size_t MAX_BUFFER_SIZE = 2796200;                      // number of points
 constexpr uint32_t PRIMITIVE_RESTART_SENTINEL = 0xFFFFFFFFu; // Primitive restart index for UNSIGNED_INT
 
 namespace MR::GUI::MRView::Tool {
-const int Tractogram::track_padding;
 TrackGeometryType Tractogram::default_tract_geom(TrackGeometryType::Pseudotubes);
 
 std::string Tractogram::Shader::vertex_shader_source(const Displayable &displayable) {
@@ -43,7 +42,8 @@ std::string Tractogram::Shader::vertex_shader_source(const Displayable &displaya
 
   std::string source = "layout (location = 0) in vec3 vertex;\n"
                        "layout (location = 1) in vec3 prev_vertex;\n"
-                       "layout (location = 2) in vec3 next_vertex;\n";
+                       "layout (location = 2) in vec3 next_vertex;\n"
+                       "layout (location = 5) in uint vertex_class;\n";
 
   if (color_type == TrackColourType::Ends)
     source += "layout (location = 3) in vec3 end_colour;\n";
@@ -80,10 +80,27 @@ std::string Tractogram::Shader::vertex_shader_source(const Displayable &displaya
   // Main function
   source += "void main() {\n"
             "  gl_Position = MVP * vec4(vertex, 1);\n"
-            "  v_tangent = next_vertex - prev_vertex;\n"
+            // Derive the local tangent from neighbouring vertices; the
+            // per-vertex classification selects which neighbours are valid,
+            // so no duplicate endpoint padding is required
+            // (TrackVertexType: 0=Single, 1=First, 2=Middle, 3=Last)
+            "  if (vertex_class == 1u)\n"
+            "    v_tangent = next_vertex - vertex;\n"
+            "  else if (vertex_class == 3u)\n"
+            "    v_tangent = vertex - prev_vertex;\n"
+            "  else if (vertex_class == 2u)\n"
+            "    v_tangent = next_vertex - prev_vertex;\n"
+            "  else\n"
+            "    v_tangent = vec3 (0.0);\n"
             "  vec2 dir = mat3x2(MVP) * v_tangent;\n"
-            "  v_end = line_thickness * normalize (vec2 (dir.y/scale_x, -dir.x/scale_y));\n"
-            "  v_end.x *= scale_y; v_end.y *= scale_x;\n";
+            // A single-vertex streamline has no tangent: emit a zero offset
+            // rather than normalising a zero vector (which would be NaN)
+            "  if (dot (dir, dir) > 0.0) {\n"
+            "    v_end = line_thickness * normalize (vec2 (dir.y/scale_x, -dir.x/scale_y));\n"
+            "    v_end.x *= scale_y; v_end.y *= scale_x;\n"
+            "  } else {\n"
+            "    v_end = vec2 (0.0);\n"
+            "  }\n";
 
   if (do_crop_to_slab)
     source += "  v_include = (dot(vertex, screen_normal) - crop_var) / slab_width;\n";
@@ -243,7 +260,9 @@ std::string Tractogram::Shader::fragment_shader_source(const Displayable &displa
 
   switch (color_type) {
   case TrackColourType::Direction:
-    source += using_geom ? "  colour = abs (normalize (g_tangent));\n" : "  colour = abs (normalize (v_tangent));\n";
+    // Guard against a zero tangent (single-vertex streamline) to avoid NaN
+    source += using_geom ? "  colour = dot (g_tangent, g_tangent) > 0.0 ? abs (normalize (g_tangent)) : vec3 (0.0);\n"
+                         : "  colour = dot (v_tangent, v_tangent) > 0.0 ? abs (normalize (v_tangent)) : vec3 (0.0);\n";
     break;
   case TrackColourType::ScalarFile:
     [[fallthrough]];
@@ -323,7 +342,8 @@ Tractogram::Tractogram(Tractography &tool, const std::filesystem::path &filepath
       color_type(TrackColourType::Direction),
       threshold_type(TrackThresholdType::None),
       geometry_type(default_tract_geom),
-      sample_stride(0),
+      lod_ratio(1),
+      ebo_dirty(false),
       vao_dirty(true),
       threshold_min(NaNF),
       threshold_max(NaNF) {
@@ -339,6 +359,8 @@ Tractogram::~Tractogram() {
     gl::DeleteBuffers(vertex_buffers.size(), &vertex_buffers[0]);
   if (!vertex_array_objects.empty())
     gl::DeleteVertexArrays(vertex_array_objects.size(), &vertex_array_objects[0]);
+  if (!vertex_type_buffers.empty())
+    gl::DeleteBuffers(vertex_type_buffers.size(), &vertex_type_buffers[0]);
   if (!colour_buffers.empty())
     gl::DeleteBuffers(colour_buffers.size(), &colour_buffers[0]);
   if (!intensity_scalar_buffers.empty())
@@ -448,35 +470,32 @@ void Tractogram::render(const Projection &transform) {
 
 inline void Tractogram::render_streamlines() {
   GL::assert_context_is_current();
+
+  if (should_update_lod)
+    update_lod();
+  if (ebo_dirty)
+    update_element_buffers();
+
+  const GLenum mode = geometry_type == TrackGeometryType::Points ? gl::POINTS : gl::LINE_STRIP;
+
   for (size_t buf = 0, N = vertex_buffers.size(); buf < N; ++buf) {
     gl::BindVertexArray(vertex_array_objects[buf]);
 
-    if (should_update_stride)
-      update_stride();
-
     if (vao_dirty) {
 
+      // Attribute 3: per-vertex colour (Ends) or intensity scalar (ScalarFile).
+      //   Side buffers carry one element per vertex with no padding, so they
+      //   are addressed directly by the element index (tightly packed, offset 0)
       switch (color_type) {
       case TrackColourType::Ends:
         gl::BindBuffer(gl::ARRAY_BUFFER, colour_buffers[buf]);
         gl::EnableVertexAttribArray(3);
-        gl::VertexAttribPointer(
-            3,
-            3,
-            gl::FLOAT,
-            gl::FALSE_,
-            static_cast<GLsizei>(3 * static_cast<unsigned long>(sample_stride) * sizeof(float)),
-            reinterpret_cast<void *>(3 * static_cast<unsigned long>(sample_stride) * sizeof(float)));
+        gl::VertexAttribPointer(3, 3, gl::FLOAT, gl::FALSE_, 0, nullptr);
         break;
       case TrackColourType::ScalarFile:
         gl::BindBuffer(gl::ARRAY_BUFFER, intensity_scalar_buffers[buf]);
         gl::EnableVertexAttribArray(3);
-        gl::VertexAttribPointer(3,
-                                1,
-                                gl::FLOAT,
-                                gl::FALSE_,
-                                static_cast<GLsizei>(sample_stride * sizeof(float)),
-                                reinterpret_cast<void *>(sample_stride * sizeof(float)));
+        gl::VertexAttribPointer(3, 1, gl::FLOAT, gl::FALSE_, 0, nullptr);
         break;
       default:
         break;
@@ -485,67 +504,37 @@ inline void Tractogram::render_streamlines() {
       if (threshold_type == TrackThresholdType::SeparateFile) {
         gl::BindBuffer(gl::ARRAY_BUFFER, threshold_scalar_buffers[buf]);
         gl::EnableVertexAttribArray(4);
-        gl::VertexAttribPointer(4,
-                                1,
-                                gl::FLOAT,
-                                gl::FALSE_,
-                                static_cast<GLsizei>(sample_stride * sizeof(float)),
-                                reinterpret_cast<void *>(sample_stride * sizeof(float)));
+        gl::VertexAttribPointer(4, 1, gl::FLOAT, gl::FALSE_, 0, nullptr);
       }
 
+      // Position attributes prev / curr / next all read from the one vertex
+      //   buffer, offset by one vertex each (the "offset trick"). The leading
+      //   and trailing sentinel vertices keep the chunk-boundary fetches in
+      //   bounds. Stride is fixed at one vertex regardless of sub-sampling
+      //   level (sub-sampling is encoded entirely in the element buffers).
+      constexpr GLsizei vertex_stride = static_cast<GLsizei>(sizeof(Eigen::Vector3f));
       gl::BindBuffer(gl::ARRAY_BUFFER, vertex_buffers[buf]);
-      gl::EnableVertexAttribArray(0);
-      gl::VertexAttribPointer(0,
-                              3,
-                              gl::FLOAT,
-                              gl::FALSE_,
-                              static_cast<GLsizei>(3 * static_cast<unsigned long>(sample_stride) * sizeof(float)),
-                              reinterpret_cast<void *>(3 * static_cast<unsigned long>(sample_stride) * sizeof(float)));
-      gl::EnableVertexAttribArray(1);
-      gl::VertexAttribPointer(1,
-                              3,
-                              gl::FLOAT,
-                              gl::FALSE_,
-                              static_cast<GLsizei>(3 * static_cast<unsigned long>(sample_stride) * sizeof(float)),
-                              nullptr);
-      gl::EnableVertexAttribArray(2);
-      gl::VertexAttribPointer(2,
-                              3,
-                              gl::FLOAT,
-                              gl::FALSE_,
-                              static_cast<GLsizei>(3 * static_cast<unsigned long>(sample_stride) * sizeof(float)),
-                              reinterpret_cast<void *>(6 * static_cast<unsigned long>(sample_stride) * sizeof(float)));
+      gl::EnableVertexAttribArray(0); // curr
+      gl::VertexAttribPointer(0, 3, gl::FLOAT, gl::FALSE_, vertex_stride, reinterpret_cast<void *>(vertex_stride));
+      gl::EnableVertexAttribArray(1); // prev
+      gl::VertexAttribPointer(1, 3, gl::FLOAT, gl::FALSE_, vertex_stride, nullptr);
+      gl::EnableVertexAttribArray(2); // next
+      gl::VertexAttribPointer(2, 3, gl::FLOAT, gl::FALSE_, vertex_stride, reinterpret_cast<void *>(2 * vertex_stride));
 
-      for (size_t j = 0, M = track_sizes[buf].size(); j < M; ++j) {
-        track_sizes[buf][j] = static_cast<GLint>(
-            std::ceil(static_cast<float>(original_track_sizes[buf][j]) / static_cast<float>(sample_stride)));
-        track_starts[buf][j] = static_cast<GLint>(
-            std::floor(static_cast<float>(original_track_starts[buf][j]) / static_cast<float>(sample_stride)));
-
-        // Vertex attributes are packed prev, curr, next
-        // So ensure first curr does indeed correspond to track start
-        if (original_track_starts[buf][j] - sample_stride * track_starts[buf][j] < sample_stride - 1)
-          --track_starts[buf][j];
-
-        // Ensure final vertex corresponds to track end
-        GLint offset = original_track_starts[buf][j] + original_track_sizes[buf][j] -
-                       (track_starts[buf][j] + track_sizes[buf][j] - 1) * sample_stride;
-
-        track_sizes[buf][j] +=
-            static_cast<GLint>(std::floor(static_cast<float>(offset) / static_cast<float>(sample_stride)));
-      }
+      // Attribute 5: per-vertex TrackVertexType classification (integer)
+      gl::BindBuffer(gl::ARRAY_BUFFER, vertex_type_buffers[buf]);
+      gl::EnableVertexAttribArray(5);
+      gl::VertexAttribIPointer(5, 1, gl::UNSIGNED_BYTE, static_cast<GLsizei>(sizeof(uint8_t)), nullptr);
     }
 
-    auto mode = geometry_type == TrackGeometryType::Points ? gl::POINTS : gl::LINE_STRIP;
-
-    if (mode == gl::POINTS) {
-      gl::MultiDrawArrays(mode, &track_starts[buf][0], &track_sizes[buf][0], num_tracks_per_buffer[buf]);
-    } else if (element_counts[buf] > 0 && element_buffers[buf] != 0) {
-      // Use the EBO stored with this VAO to render all tracks in this chunk
-      gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, element_buffers[buf]);
+    if (element_counts[buf] > 0) {
+      // The element buffer (resident in VAO state) draws the active
+      //   sub-sampling level for both points and lines; primitive restart is
+      //   kept enabled for points too so the separators are consumed as
+      //   no-ops rather than dereferenced
       gl::Enable(gl::PRIMITIVE_RESTART);
       gl::PrimitiveRestartIndex(PRIMITIVE_RESTART_SENTINEL);
-      gl::DrawElements(gl::LINE_STRIP, element_counts[buf], gl::UNSIGNED_INT, nullptr);
+      gl::DrawElements(mode, element_counts[buf], gl::UNSIGNED_INT, nullptr);
       gl::Disable(gl::PRIMITIVE_RESTART);
     }
   }
@@ -554,29 +543,40 @@ inline void Tractogram::render_streamlines() {
   GL::assert_context_is_current();
 }
 
-inline void Tractogram::update_stride() {
-  // Note: If streamlines have been resampled at all,
-  //   strides will be incorrect
+inline void Tractogram::update_lod() {
+  // Note: if streamlines have been resampled, the stored step size (and hence
+  //   the chosen ratio) may not be representative
   const float step_size = properties.get_stepsize();
-  GLint new_stride = 1;
+  GLint new_ratio = 1;
 
   if (geometry_type == TrackGeometryType::Pseudotubes && std::isfinite(step_size)) {
-    const auto geom_size = geometry_type == TrackGeometryType::Pseudotubes ? Tractogram::default_line_thickness
-                                                                           : Tractogram::default_point_size;
-    new_stride =
-        static_cast<GLint>(std::floor(geom_size * std::exp(2.0e-3F * line_thickness) * original_fov / step_size));
-    // We have to ensure that our vertex buffer contains at least two copies
-    // of track start and track end to correctly render our tracks
-    // => Max stride = track_padding / 2
-    new_stride = std::max(1, std::min(track_padding / 2, new_stride));
+    new_ratio = static_cast<GLint>(
+        std::floor(Tractogram::default_line_thickness * std::exp(2.0e-3F * line_thickness) * original_fov / step_size));
+    new_ratio = std::max(1, std::min(static_cast<GLint>(num_lod_ratios), new_ratio));
   }
 
-  if (new_stride != sample_stride) {
-    sample_stride = new_stride;
-    vao_dirty = true;
+  if (new_ratio != lod_ratio) {
+    lod_ratio = new_ratio;
+    ebo_dirty = true;
   }
 
-  should_update_stride = false;
+  should_update_lod = false;
+}
+
+inline void Tractogram::update_element_buffers() {
+  GL::assert_context_is_current();
+  const size_t ratio_index = static_cast<size_t>(lod_ratio) - 1;
+  for (size_t buf = 0, N = element_buffers.size(); buf < N; ++buf) {
+    const std::vector<uint32_t> &indices = element_indices[buf][ratio_index];
+    // Bind the VAO first so the element-array binding is recorded as VAO state,
+    //   then replace the resident buffer contents with the active level
+    gl::BindVertexArray(vertex_array_objects[buf]);
+    gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, element_buffers[buf]);
+    gl::BufferData(gl::ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(uint32_t), indices.data(), gl::STATIC_DRAW);
+    element_counts[buf] = static_cast<GLsizei>(indices.size());
+  }
+  ebo_dirty = false;
+  GL::assert_context_is_current();
 }
 
 void Tractogram::load_tracks() {
@@ -597,29 +597,22 @@ void Tractogram::load_tracks() {
   while (file(tck)) {
 
     const size_t N = tck.size();
-    if (!N)
+    if (N == 0)
       continue;
 
-    // Pre padding
-    // To support downsampling, we want to ensure that the starting track vertex
-    // is used even when we're using a stride > 1
-    for (size_t i = 0; i < track_padding; ++i)
-      buffer.push_back(tck.front());
-
-    starts.push_back(buffer.size() - 1);
-
-    buffer.insert(buffer.end(), tck.begin(), tck.end());
-
-    // Post padding
-    // Similarly, to support downsampling, we also want to ensure the final track vertex
-    // will be used even we're using a stride > 1
-    for (size_t i = 0; i < track_padding; ++i)
-      buffer.push_back(tck.back());
-
-    sizes.push_back(N);
-    tck_count++;
-    if (buffer.size() >= MAX_BUFFER_SIZE)
+    // Commit the current chunk before appending a streamline that would push
+    //   it beyond the maximum buffer size, so each chunk holds at most
+    //   MAX_BUFFER_SIZE vertices
+    if (!buffer.empty() && buffer.size() + N > MAX_BUFFER_SIZE)
       load_tracks_onto_GPU(buffer, starts, sizes, tck_count);
+
+    // No endpoint padding: the per-vertex classification (TrackVertexType)
+    //   lets the vertex shader compute endpoint tangents directly.
+    //   starts[] records the vertex index of each streamline within the chunk
+    starts.push_back(static_cast<GLint>(buffer.size()));
+    buffer.insert(buffer.end(), tck.begin(), tck.end());
+    sizes.push_back(static_cast<GLint>(N));
+    ++tck_count;
 
     endpoint_tangents.push_back((tck.back() - tck.front()).normalized());
   }
@@ -651,8 +644,8 @@ void Tractogram::load_end_colours() {
       const Eigen::Vector3f colour(tangent.array().abs());
       const size_t tck_length = original_track_sizes[buffer_index][buffer_tck_counter];
 
-      // Includes pre- and post-padding to coincide with tracks buffer
-      for (size_t i = 0; i != tck_length + static_cast<size_t>(2 * track_padding); ++i)
+      // One colour per real vertex (no padding; addressed directly by element index)
+      for (size_t i = 0; i != tck_length; ++i)
         buffer.push_back(colour);
     }
     load_end_colours_onto_GPU(buffer);
@@ -679,18 +672,19 @@ void Tractogram::load_intensity_track_scalars(const std::filesystem::path &filep
     DWI::Tractography::Properties scalar_properties;
     DWI::Tractography::ScalarReader<float> file(filepath, scalar_properties);
     DWI::Tractography::validate_tsf_properties(properties, scalar_properties, ".tck / .tsf pair");
-    size_t tck_count = 0;
+    // Replay the chunk boundaries established when loading the tracks so that
+    //   the scalar buffers align exactly with the vertex buffers
+    size_t buffer_index = 0;
+    size_t chunk_track_count = 0;
     while (file(tck_scalar)) {
 
       const size_t tck_size = tck_scalar.size();
-      assert(tck_size == static_cast<size_t>(original_track_sizes[intensity_scalar_buffers.size()][tck_count]));
+      if (tck_size == 0)
+        continue; // empty streamlines were skipped when loading the tracks
 
-      if (!tck_size)
-        continue;
-
-      // Pre padding to coincide with tracks buffer
-      for (size_t i = 0; i < track_padding; ++i)
-        buffer.push_back(tck_scalar.front());
+      if (buffer_index >= vertex_buffers.size() ||
+          tck_size != static_cast<size_t>(original_track_sizes[buffer_index][chunk_track_count]))
+        throw Exception("Track scalar file is inconsistent with the selected tractogram");
 
       for (size_t i = 0; i < tck_size; ++i) {
         buffer.push_back(tck_scalar[i]);
@@ -698,18 +692,15 @@ void Tractogram::load_intensity_track_scalars(const std::filesystem::path &filep
         value_min = std::min(value_min, tck_scalar[i]);
       }
 
-      // Post padding to coincide with tracks buffer
-      for (size_t i = 0; i < track_padding; ++i)
-        buffer.push_back(tck_scalar.back());
-
-      ++tck_count;
-
-      if (buffer.size() >= MAX_BUFFER_SIZE)
-        load_intensity_scalars_onto_GPU(buffer, tck_count);
+      if (++chunk_track_count == num_tracks_per_buffer[buffer_index]) {
+        load_intensity_scalars_onto_GPU(buffer, chunk_track_count);
+        ++buffer_index;
+        chunk_track_count = 0;
+      }
     }
-    if (!buffer.empty())
-      load_intensity_scalars_onto_GPU(buffer, tck_count);
     file.close();
+    if (buffer_index != vertex_buffers.size())
+      throw Exception("Track scalar file contains fewer streamlines than the selected tractogram");
   } else {
     const Eigen::VectorXf scalars = File::Matrix::load_vector<float>(filepath);
     size_t total_num_tracks = 0;
@@ -726,17 +717,10 @@ void Tractogram::load_intensity_track_scalars(const std::filesystem::path &filep
 
       for (size_t index = 0; index != num_tracks; ++index, ++running_index) {
         const float value = scalars[running_index];
-        tck_scalar.assign(track_lengths[index], value);
 
-        // Pre padding to coincide with tracks buffer
-        for (size_t i = 0; i < track_padding; ++i)
-          buffer.push_back(tck_scalar.front());
-
-        buffer.insert(buffer.end(), tck_scalar.begin(), tck_scalar.end());
-
-        // Post padding to coincide with tracks buffer
-        for (size_t i = 0; i < track_padding; ++i)
-          buffer.push_back(tck_scalar.back());
+        // One scalar per real vertex (no padding)
+        for (GLint i = 0; i < track_lengths[index]; ++i)
+          buffer.push_back(value);
 
         value_max = std::max(value_max, value);
         value_min = std::min(value_min, value);
@@ -771,18 +755,19 @@ void Tractogram::load_threshold_track_scalars(const std::filesystem::path &filep
     DWI::Tractography::Properties scalar_properties;
     DWI::Tractography::ScalarReader<float> file(filepath, scalar_properties);
     DWI::Tractography::validate_tsf_properties(properties, scalar_properties, ".tck / .tsf pair");
-    size_t tck_count = 0;
+    // Replay the chunk boundaries established when loading the tracks so that
+    //   the scalar buffers align exactly with the vertex buffers
+    size_t buffer_index = 0;
+    size_t chunk_track_count = 0;
     while (file(tck_scalar)) {
 
       const size_t tck_size = tck_scalar.size();
-      assert(tck_size == static_cast<size_t>(original_track_sizes[threshold_scalar_buffers.size()][tck_count]));
+      if (tck_size == 0)
+        continue; // empty streamlines were skipped when loading the tracks
 
-      if (!tck_size)
-        continue;
-
-      // Pre padding to coincide with tracks buffer
-      for (size_t i = 0; i < track_padding; ++i)
-        buffer.push_back(tck_scalar.front());
+      if (buffer_index >= vertex_buffers.size() ||
+          tck_size != static_cast<size_t>(original_track_sizes[buffer_index][chunk_track_count]))
+        throw Exception("Track scalar file is inconsistent with the selected tractogram");
 
       for (size_t i = 0; i < tck_size; ++i) {
         buffer.push_back(tck_scalar[i]);
@@ -790,18 +775,15 @@ void Tractogram::load_threshold_track_scalars(const std::filesystem::path &filep
         threshold_min = std::min(threshold_min, tck_scalar[i]);
       }
 
-      // Post padding to coincide with tracks buffer
-      for (size_t i = 0; i < track_padding; ++i)
-        buffer.push_back(tck_scalar.back());
-
-      ++tck_count;
-
-      if (buffer.size() >= MAX_BUFFER_SIZE)
-        load_threshold_scalars_onto_GPU(buffer, tck_count);
+      if (++chunk_track_count == num_tracks_per_buffer[buffer_index]) {
+        load_threshold_scalars_onto_GPU(buffer, chunk_track_count);
+        ++buffer_index;
+        chunk_track_count = 0;
+      }
     }
-    if (!buffer.empty())
-      load_threshold_scalars_onto_GPU(buffer, tck_count);
     file.close();
+    if (buffer_index != vertex_buffers.size())
+      throw Exception("Track scalar file contains fewer streamlines than the selected tractogram");
   } else {
     const Eigen::VectorXf scalars = File::Matrix::load_vector<float>(filepath);
     size_t total_num_tracks = 0;
@@ -818,17 +800,10 @@ void Tractogram::load_threshold_track_scalars(const std::filesystem::path &filep
 
       for (size_t index = 0; index != num_tracks; ++index, ++running_index) {
         const float value = scalars[running_index];
-        tck_scalar.assign(track_lengths[index], value);
 
-        // Pre padding to coincide with tracks buffer
-        for (size_t i = 0; i < track_padding; ++i)
-          buffer.push_back(tck_scalar.front());
-
-        buffer.insert(buffer.end(), tck_scalar.begin(), tck_scalar.end());
-
-        // Post padding to coincide with tracks buffer
-        for (size_t i = 0; i < track_padding; ++i)
-          buffer.push_back(tck_scalar.back());
+        // One scalar per real vertex (no padding)
+        for (GLint i = 0; i < track_lengths[index]; ++i)
+          buffer.push_back(value);
 
         threshold_max = std::max(threshold_max, value);
         threshold_min = std::min(threshold_min, value);
@@ -905,7 +880,7 @@ void Tractogram::set_threshold_type(const TrackThresholdType t) {
 
 void Tractogram::set_geometry_type(const TrackGeometryType t) {
   geometry_type = t;
-  should_update_stride = true;
+  should_update_lod = true;
 }
 
 void Tractogram::load_tracks_onto_GPU(std::vector<Eigen::Vector3f> &buffer,
@@ -913,51 +888,91 @@ void Tractogram::load_tracks_onto_GPU(std::vector<Eigen::Vector3f> &buffer,
                                       std::vector<GLint> &sizes,
                                       size_t &tck_count) {
   GL::assert_context_is_current();
+  assert(!buffer.empty());
 
-  GLuint vertex_array_object;
+  // Number of real (unpadded) vertices in this chunk
+  const GLint num_vertices = static_cast<GLint>(buffer.size());
+
+  GLuint vertex_array_object = 0;
   gl::GenVertexArrays(1, &vertex_array_object);
   gl::BindVertexArray(vertex_array_object);
 
-  GLuint vertexbuffer;
+  // Position buffer: the real vertices are bracketed by one sentinel slot at
+  //   each end so that the prev / next neighbour fetch of the chunk's first
+  //   and last vertices stays within the buffer. The sentinel values are
+  //   never used by the shader (the first vertex is classified First and so
+  //   ignores prev; the last is classified Last and so ignores next)
+  const Eigen::Vector3f front_sentinel = buffer.front();
+  const Eigen::Vector3f back_sentinel = buffer.back();
+  GLuint vertexbuffer = 0;
   gl::GenBuffers(1, &vertexbuffer);
   gl::BindBuffer(gl::ARRAY_BUFFER, vertexbuffer);
-  gl::BufferData(gl::ARRAY_BUFFER, buffer.size() * sizeof(Eigen::Vector3f), &buffer[0][0], gl::STATIC_DRAW);
+  gl::BufferData(gl::ARRAY_BUFFER, (num_vertices + 2) * sizeof(Eigen::Vector3f), nullptr, gl::STATIC_DRAW);
+  gl::BufferSubData(gl::ARRAY_BUFFER, 0, sizeof(Eigen::Vector3f), front_sentinel.data());
+  gl::BufferSubData(gl::ARRAY_BUFFER, sizeof(Eigen::Vector3f), num_vertices * sizeof(Eigen::Vector3f), &buffer[0][0]);
+  gl::BufferSubData(
+      gl::ARRAY_BUFFER, (num_vertices + 1) * sizeof(Eigen::Vector3f), sizeof(Eigen::Vector3f), back_sentinel.data());
 
-  vertex_array_objects.push_back(vertex_array_object);
-  vertex_buffers.push_back(vertexbuffer);
-  track_starts.push_back(starts);
-  track_sizes.push_back(sizes);
-  original_track_starts.push_back(starts);
-  original_track_sizes.push_back(sizes);
-  num_tracks_per_buffer.push_back(tck_count);
-
-  // Build an index buffer for this chunk of tracks
-  std::vector<uint32_t> chunk_indices;
+  // Per-vertex classification (no sentinels: addressed directly by element index)
+  std::vector<uint8_t> vertex_classes(num_vertices, static_cast<uint8_t>(TrackVertexType::Middle));
   for (size_t t = 0; t < sizes.size(); ++t) {
     const GLint start = starts[t];
     const GLint n = sizes[t];
-    if (n < 2)
-      continue;
-    for (GLint k = 0; k < n; ++k)
-      chunk_indices.push_back(static_cast<uint32_t>(start + k));
-    chunk_indices.push_back(PRIMITIVE_RESTART_SENTINEL);
+    if (n == 1) {
+      vertex_classes[start] = static_cast<uint8_t>(TrackVertexType::Single);
+    } else {
+      vertex_classes[start] = static_cast<uint8_t>(TrackVertexType::First);
+      vertex_classes[start + n - 1] = static_cast<uint8_t>(TrackVertexType::Last);
+    }
+  }
+  GLuint typebuffer = 0;
+  gl::GenBuffers(1, &typebuffer);
+  gl::BindBuffer(gl::ARRAY_BUFFER, typebuffer);
+  gl::BufferData(gl::ARRAY_BUFFER, vertex_classes.size() * sizeof(uint8_t), vertex_classes.data(), gl::STATIC_DRAW);
+
+  vertex_array_objects.push_back(vertex_array_object);
+  vertex_buffers.push_back(vertexbuffer);
+  vertex_type_buffers.push_back(typebuffer);
+  original_track_sizes.push_back(sizes);
+  num_tracks_per_buffer.push_back(tck_count);
+
+  // Precompute, for every sub-sampling ratio, the element indices that draw
+  //   this chunk. Element indices address real vertices directly (0-based);
+  //   the position-buffer sentinels are reached implicitly via the prev / next
+  //   attribute offsets. Both streamline endpoints are always included, and a
+  //   PRIMITIVE_RESTART_SENTINEL separates streamlines.
+  std::array<std::vector<uint32_t>, num_lod_ratios> indices;
+  for (size_t ratio_index = 0; ratio_index < num_lod_ratios; ++ratio_index) {
+    const GLint ratio = static_cast<GLint>(ratio_index) + 1;
+    std::vector<uint32_t> &chunk_indices = indices[ratio_index];
+    for (size_t t = 0; t < sizes.size(); ++t) {
+      const GLint start = starts[t];
+      const GLint n = sizes[t];
+      GLint last_emitted = -1;
+      for (GLint k = 0; k < n; k += ratio) {
+        chunk_indices.push_back(static_cast<uint32_t>(start + k));
+        last_emitted = k;
+      }
+      // Guarantee the terminating endpoint is present at non-unity ratios
+      if (last_emitted != n - 1)
+        chunk_indices.push_back(static_cast<uint32_t>(start + n - 1));
+      chunk_indices.push_back(PRIMITIVE_RESTART_SENTINEL);
+    }
   }
 
-  if (!chunk_indices.empty()) {
-    GLuint ebo = 0;
-    gl::GenBuffers(1, &ebo);
-    // bind to the VAO so that ELEMENT_ARRAY_BUFFER is part of VAO state
-    gl::BindVertexArray(vertex_array_object);
-    gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
-    gl::BufferData(
-        gl::ELEMENT_ARRAY_BUFFER, chunk_indices.size() * sizeof(uint32_t), chunk_indices.data(), gl::STATIC_DRAW);
-    element_buffers.push_back(ebo);
-    element_counts.push_back(static_cast<GLsizei>(chunk_indices.size()));
-  } else {
-    // keep arrays aligned with other per-chunk vectors
-    element_buffers.push_back(0);
-    element_counts.push_back(0);
-  }
+  // Create the chunk's element buffer object and upload the active ratio.
+  //   Bind the VAO first so the ELEMENT_ARRAY_BUFFER binding is recorded as
+  //   part of the VAO state.
+  GLuint ebo = 0;
+  gl::GenBuffers(1, &ebo);
+  gl::BindVertexArray(vertex_array_object);
+  gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
+  const std::vector<uint32_t> &active_indices = indices[lod_ratio - 1];
+  gl::BufferData(
+      gl::ELEMENT_ARRAY_BUFFER, active_indices.size() * sizeof(uint32_t), active_indices.data(), gl::STATIC_DRAW);
+  element_buffers.push_back(ebo);
+  element_counts.push_back(static_cast<GLsizei>(active_indices.size()));
+  element_indices.push_back(std::move(indices));
 
   buffer.clear();
   starts.clear();

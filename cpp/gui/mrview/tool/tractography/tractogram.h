@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <array>
+#include <cstdint>
 #include <vector>
 
 #include "dwi/tractography/properties.h"
@@ -85,7 +87,7 @@ public:
 
   bool scalarfile_by_direction;
   bool show_colour_bar;
-  bool should_update_stride;
+  bool should_update_lod;
   float original_fov;
   float line_thickness;
   std::filesystem::path intensity_scalar_path;
@@ -117,7 +119,8 @@ signals:
   void scalingChanged();
 
 private:
-  static const int track_padding = 6;
+  //! Number of available level-of-detail sub-sampling ratios (1, 2, 3).
+  static constexpr size_t num_lod_ratios = 3;
   Tractography &tractography_tool;
 
   const std::filesystem::path filepath;
@@ -134,21 +137,31 @@ private:
 
   std::vector<GLuint> vertex_buffers;
   std::vector<GLuint> vertex_array_objects;
+  // Per-vertex TrackVertexType classification (uint8_t), one buffer per chunk
+  std::vector<GLuint> vertex_type_buffers;
   std::vector<GLuint> colour_buffers;
   std::vector<GLuint> intensity_scalar_buffers;
   std::vector<GLuint> threshold_scalar_buffers;
   MR::DWI::Tractography::Properties properties;
-  std::vector<std::vector<GLint>> track_starts;
-  std::vector<std::vector<GLint>> track_sizes;
+  // Number of vertices per streamline, retained per chunk for rebuilding
+  //   element buffers and for replaying chunk boundaries when loading the
+  //   per-vertex colour / scalar side buffers
   std::vector<std::vector<GLint>> original_track_sizes;
-  std::vector<std::vector<GLint>> original_track_starts;
   std::vector<size_t> num_tracks_per_buffer;
 
-  // EBOs and indices for chunks of tracks
+  // One GPU element buffer object per chunk; its contents are swapped between
+  //   the precomputed sub-sampling levels as the level of detail changes
   std::vector<GLuint> element_buffers;
   std::vector<GLsizei> element_counts;
+  // Precomputed (host-side) draw indices per chunk, per sub-sampling ratio
+  //   (index 0 -> ratio 1, index 1 -> ratio 2, index 2 -> ratio 3)
+  std::vector<std::array<std::vector<uint32_t>, num_lod_ratios>> element_indices;
 
-  GLint sample_stride;
+  // Active sub-sampling ratio (1, 2 or 3); selects which precomputed element
+  //   buffer is resident on the GPU
+  GLint lod_ratio;
+  // Flags that the resident element buffers no longer match lod_ratio
+  bool ebo_dirty;
   bool vao_dirty;
 
   // Extra members now required since different scalar files
@@ -167,10 +180,13 @@ private:
 
   void render_streamlines();
 
-  void update_stride();
+  //! Recompute lod_ratio from the current field of view.
+  void update_lod();
+  //! Upload the element buffers for the active lod_ratio to the GPU.
+  void update_element_buffers();
 
 private slots:
-  void on_FOV_changed() { should_update_stride = true; }
+  void on_FOV_changed() { should_update_lod = true; }
 };
 
 } // namespace Tool
