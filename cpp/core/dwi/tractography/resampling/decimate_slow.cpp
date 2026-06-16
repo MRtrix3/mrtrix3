@@ -40,6 +40,12 @@ constexpr size_t max_insertions_per_input_vertex = 2;
 //! Number of golden-section iterations used by the per-knot slide line search.
 constexpr size_t slide_search_iterations = 24;
 
+//! Sub-segment samples per reconstruction segment used by the spline-aware knot-removal check to
+//!   bound the reconstruction's between-control-point deviation from the original spline (the reverse
+//!   Hausdorff direction). The chord-vs-arc sag the check guards against peaks near a segment centre,
+//!   so a handful of interior samples resolve it; this is the slow (reference) decimator.
+constexpr size_t removal_reverse_probes_per_segment = 8;
+
 //! A control point of the reconstruction, located on the ORIGINAL spline.
 /*! The control set is stored as parameters \c t on the original spline (global parameter
  *  \c segment + mu in [0, N-1]); the reconstructed position is the original spline evaluated there,
@@ -307,30 +313,36 @@ bool DecimateSlow::operator()(const Streamline<> &in, Streamline<> &out) const {
   // -------------------------------------------------------------------------------------------
   // Step 7: Lyche-Morken knot removal. Greedy insertion followed by the slide can leave interior
   //   control points that later insertions / the slide rendered redundant. Each interior control is
-  //   assigned a removal cost: the worst deviation its removal would induce among the original
-  //   vertices over the arc whose reconstruction geometry that removal perturbs. The cheapest
-  //   removable knot is dropped while the reconstruction there still satisfies epsilon, the costs in
-  //   the perturbed neighbourhood are refreshed, and the process repeats greedily; this is the
-  //   removal-cost-ordered analogue of the B-spline knot-removal error bound. Endpoints are never
-  //   candidates. Only the on-curve control set is consulted (the per-vertex feet and interval
-  //   maxima are not needed), so the pass is self-contained, and every surviving control remains on
-  //   the original spline -- decode compatibility is preserved exactly as for insertion / slide.
+  //   assigned a removal cost: the worst SPLINE deviation its removal would induce over the arc whose
+  //   reconstruction geometry that removal perturbs. The cheapest removable knot is dropped while the
+  //   reconstruction there still satisfies epsilon, the costs in the perturbed neighbourhood are
+  //   refreshed, and the process repeats greedily; this is the removal-cost-ordered analogue of the
+  //   B-spline knot-removal error bound. Endpoints are never candidates. Every surviving control
+  //   remains on the original spline -- decode compatibility is preserved exactly as for the
+  //   insertion / slide stages.
+  //
+  // The cost is a LOCAL SYMMETRIC bound, not just the vertex deviation: removing a control widens the
+  //   gap between the surviving controls, and the tension-Catmull-Rom reconstruction can then sag
+  //   away from the original spline BETWEEN the original vertices even while every vertex itself stays
+  //   within epsilon. The vertex-only (forward) check cannot see that sag, so the cost also probes the
+  //   trial reconstruction sub-vertex and measures its distance back to the original spline (the
+  //   reverse direction). Bounding both keeps the removed-knot reconstruction within epsilon of the
+  //   original curve everywhere, matching the spline-level guarantee the decimator advertises.
   // -------------------------------------------------------------------------------------------
 
-  // Worst deviation that removing interior control \c k would induce, evaluated against the trial
-  //   reconstruction (control \c k erased) over only the original vertices in the perturbed arc.
-  /*! The removed control's tension-Catmull-Rom support covers reconstruction segments [k-2, k+1],
-   *  i.e. controls [k-2 .. k+2] (clamped to the endpoints). Vertices whose original parameter falls
-   *  outside that span see an unchanged local reconstruction and therefore an unchanged deviation,
-   *  so they need not be re-footed; the worst deviation over the in-span vertices alone decides
-   *  whether the removal keeps the reconstruction within epsilon everywhere. */
+  // Worst (symmetric) spline deviation over the arc that removing interior control \c k perturbs. The
+  //   removed control's tension-Catmull-Rom support covers reconstruction segments [k-2, k+1], i.e.
+  //   controls [k-2 .. k+2] (clamped); outside that span the reconstruction, and hence the deviation,
+  //   is unchanged, so only this window is examined.
   const auto removal_cost = [&](const size_t k) -> default_type {
-    Streamline<> trial_recon;
-    trial_recon.reserve(controls.size() - 1);
+    std::vector<Control> trial;
+    trial.reserve(controls.size() - 1);
     for (size_t j = 0; j != controls.size(); ++j) {
       if (j != k)
-        trial_recon.push_back(controls[j].p);
+        trial.push_back(controls[j]);
     }
+    Streamline<> trial_recon;
+    assemble_reconstruction(trial, trial_recon);
     const SplineView<value_type> trial_view(trial_recon);
     const default_type trial_s_max = static_cast<default_type>(trial_recon.size() - 1);
 
@@ -340,8 +352,10 @@ bool DecimateSlow::operator()(const Streamline<> &in, Streamline<> &out) const {
     const default_type t_hi = controls[hi_ctrl].t;
 
     default_type worst = 0.0;
-    // March in order from a warm start at the window's left control; its trial index equals its
-    //   original index (the removed control lies to its right), so the seed needs no shift.
+
+    // (1) Forward: each original vertex in the window -> nearest point on the trial reconstruction.
+    //     March from a warm start at the window's left control; its trial index equals its original
+    //     index (the removed control lies to its right), so the seed needs no shift.
     default_type warm = static_cast<default_type>(lo_ctrl);
     for (size_t v = 0; v != num_vertices; ++v) {
       const default_type t_v = static_cast<default_type>(v);
@@ -352,6 +366,32 @@ bool DecimateSlow::operator()(const Streamline<> &in, Streamline<> &out) const {
       warm = foot.s;
       worst = std::max(worst, std::sqrt(std::max<default_type>(0.0, foot.dist_sq)));
     }
+
+    // (2) Reverse: sub-vertex samples of the trial reconstruction across the perturbed segments ->
+    //     nearest point on the ORIGINAL spline, bounding the between-control sag the forward check
+    //     cannot see. The trial index of a window control below \c k is unchanged; \c hi_ctrl > k, so
+    //     its trial index shifts left by one. Each sample is seeded at the original parameter its two
+    //     bracketing controls span linearly -- a tight warm start for the (descent-guarded) solve.
+    const size_t lo_trial = lo_ctrl;
+    const size_t hi_trial = hi_ctrl - 1;
+    for (size_t seg = lo_trial; seg != hi_trial; ++seg) {
+      for (size_t sub = 0; sub != removal_reverse_probes_per_segment; ++sub) {
+        const default_type mu =
+            static_cast<default_type>(sub) / static_cast<default_type>(removal_reverse_probes_per_segment);
+        const default_type p = static_cast<default_type>(seg) + mu;
+        const vec3 q = trial_view.position(p, static_cast<value_type>(tension)).template cast<default_type>();
+        const default_type seed = trial[seg].t + mu * (trial[seg + 1].t - trial[seg].t);
+        const FootPoint::Foot foot = FootPoint::nearest_point(original, tension, q, seed, original_s_max);
+        worst = std::max(worst, std::sqrt(std::max<default_type>(0.0, foot.dist_sq)));
+      }
+    }
+    // The window's right endpoint sample (the loop above stops just short of it).
+    const vec3 q_end = trial_view.position(static_cast<default_type>(hi_trial), static_cast<value_type>(tension))
+                           .template cast<default_type>();
+    const FootPoint::Foot foot_end =
+        FootPoint::nearest_point(original, tension, q_end, trial[hi_trial].t, original_s_max);
+    worst = std::max(worst, std::sqrt(std::max<default_type>(0.0, foot_end.dist_sq)));
+
     return worst;
   };
 

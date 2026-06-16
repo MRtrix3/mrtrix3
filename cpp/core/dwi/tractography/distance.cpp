@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <cmath>
 #include <limits>
+#include <vector>
 
 #include "dwi/tractography/curvature.h"
 #include "dwi/tractography/foot_point.h"
@@ -128,8 +129,49 @@ size_t choose_upsample_ratio(const default_type spacing,
   return std::min(static_cast<size_t>(ratio), max_upsample_ratio);
 }
 
+//! Cumulative chord length (mm) at each vertex: \c cum[0]=0, \c cum[j]=cum[j-1]+|v_j - v_{j-1}|.
+/*! The piecewise-linear (chord) approximation is used only to SEED the foot-point search; the Newton
+ *  solve that follows refines to the true spline foot, so the sub-segment arc-vs-chord error of the
+ *  seed is immaterial. */
+std::vector<default_type> cumulative_chord_length(const Streamline<> &tck) {
+  std::vector<default_type> cum(tck.size(), 0.0);
+  for (size_t j = 1; j != tck.size(); ++j)
+    cum[j] = cum[j - 1] + (tck[j].template cast<default_type>() - tck[j - 1].template cast<default_type>()).norm();
+  return cum;
+}
+
+//! Cumulative chord length at a global spline parameter \c s in [0, n-1] (linear within the chord).
+default_type param_to_length(const std::vector<default_type> &cum, const default_type s) {
+  const default_type s_max = static_cast<default_type>(cum.size() - 1);
+  const default_type clamped = std::min(std::max<default_type>(0.0, s), s_max);
+  const size_t seg = std::min(static_cast<size_t>(clamped), cum.size() - 2);
+  const default_type mu = clamped - static_cast<default_type>(seg);
+  return cum[seg] + mu * (cum[seg + 1] - cum[seg]);
+}
+
+//! Inverse of \c param_to_length: the global spline parameter whose cumulative chord length is \c len.
+/*! Binary search over the (monotone) cumulative table, returning \c segment+mu so the result indexes
+ *  the same reflected-ghost spline the foot-point solve runs against. */
+default_type length_to_param(const std::vector<default_type> &cum, const default_type len) {
+  const default_type total = cum.back();
+  if (!(total > 0.0))
+    return 0.0;
+  const default_type clamped = std::min(std::max<default_type>(0.0, len), total);
+  // First vertex whose cumulative length exceeds the query; the foot lies in the preceding chord.
+  const auto it = std::upper_bound(cum.begin(), cum.end(), clamped);
+  size_t hi = static_cast<size_t>(it - cum.begin());
+  if (hi == 0)
+    return 0.0;
+  if (hi >= cum.size())
+    hi = cum.size() - 1;
+  const size_t lo = hi - 1;
+  const default_type chord = cum[hi] - cum[lo];
+  const default_type mu = chord > 0.0 ? (clamped - cum[lo]) / chord : 0.0;
+  return static_cast<default_type>(lo) + mu;
+}
+
 //! Directed Hausdorff distance d(source -> target): max over probes on the source spline of the
-//!   nearest distance to the target spline. Probes march monotonically, warm-starting each foot.
+//!   nearest distance to the target spline. Each foot is seeded by arc-length correspondence.
 struct DirectedResult {
   default_type distance;         //!< Directed Hausdorff distance (mm).
   default_type argmax_parameter; //!< Source global parameter attaining the maximum.
@@ -148,15 +190,24 @@ DirectedResult directed_hausdorff(const Streamline<> &source,
   const default_type spacing = mean_spacing(source);
   const size_t ratio = choose_upsample_ratio(spacing, min_radius, threshold_mm);
 
-  // Probes are sampled at global parameter s = segment + i/ratio across the whole source spline.
-  // The foot on the target is warm-started from the previous probe's converged foot (monotone
-  // advance under the proximity + co-orientation assumptions).
-  //
+  // Probes are sampled at global parameter s = segment + i/ratio across the whole source spline, and
+  //   each foot on the target is sought by an independent ARC-LENGTH-CORRESPONDENCE seed: the probe
+  //   at fractional arc length f along the source is searched from the target parameter at the same
+  //   fractional arc length. Under the proximity + co-orientation assumption this seed lies near the
+  //   true foot for every probe on its own, so -- unlike a previous-foot ("marching") warm start,
+  //   which can stick or jump to the wrong branch on a CLOSED LOOP or self-approaching curve and,
+  //   being monotone, never recover (yielding a nearest distance on the order of the loop diameter) --
+  //   the search cannot accumulate drift. The cost stays sub-quadratic: O(n+m) to build the chord
+  //   tables once, then O(log m) per probe to invert the target arc length.
+  const std::vector<default_type> source_length = cumulative_chord_length(source);
+  const std::vector<default_type> target_length = cumulative_chord_length(target);
+  const default_type source_total = source_length.back();
+  const default_type target_total = target_length.back();
+
   // *** Assumption boundary ***
-  // The warm start below presumes the foot advances monotonically along the target. For general
-  // (crossing / antiparallel / non-proximal) streamline pairs this is invalid and the warm-started
-  // marching search must be replaced by a global nearest-point or Frechet-style search.
-  default_type warm_start = 0.0;
+  // Arc-length correspondence still presumes proximity + matching orientation. For general
+  // (crossing / antiparallel / non-proximal) pairs the seed may land on the wrong branch and the
+  // per-probe seed must be replaced by a global nearest-point or Frechet-style search.
   default_type max_dist_sq = -1.0;
   default_type argmax_parameter = 0.0;
   const size_t total_probes = source_segments * ratio + 1;
@@ -165,8 +216,12 @@ DirectedResult directed_hausdorff(const Streamline<> &source,
                                            static_cast<default_type>(source_segments));
     const point_type q = source_view.position(s_source, static_cast<SplineView<>::value_type>(tension));
     const vec3 probe = q.template cast<default_type>();
-    const Foot foot = FootPoint::nearest_point(target_view, tension, probe, warm_start, target_s_max);
-    warm_start = foot.s;
+    default_type seed = 0.0;
+    if (source_total > 0.0 && target_total > 0.0) {
+      const default_type fraction = param_to_length(source_length, s_source) / source_total;
+      seed = length_to_param(target_length, fraction * target_total);
+    }
+    const Foot foot = FootPoint::nearest_point(target_view, tension, probe, seed, target_s_max);
     if (foot.dist_sq > max_dist_sq) {
       max_dist_sq = foot.dist_sq;
       argmax_parameter = s_source;

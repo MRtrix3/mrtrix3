@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <limits>
+
 #include "types.h"
 
 #include "dwi/tractography/spline.h"
@@ -47,6 +49,12 @@ constexpr size_t fallback_search_subdivisions = 32;
 //! Width of the bracketed-fallback window, as a fraction of the spline's parametric span, used
 //!   when Newton fails to converge from the warm start.
 constexpr default_type fallback_window_fraction = 0.25;
+//! Maximum step halvings of the Gauss-Newton backtracking line search. The Gauss-Newton step drops
+//!   the curvature term and so is unreliable on high-curvature targets, where the raw step can leap
+//!   clear across the curve to a far stationary point (e.g. the antipode of a near-circular loop);
+//!   halving the step until the squared distance decreases keeps every accepted step a descent step.
+//!   2^-24 of a segment is far below \c newton_tolerance, so the budget is never the limiting factor.
+constexpr size_t newton_max_backtracks = 24;
 
 //! State of a converged (or fallen-back) foot-point search on a target spline.
 struct Foot {
@@ -136,6 +144,7 @@ inline Foot nearest_point(const SplineView<ValueType> &target,
                           const default_type s_max) {
   const ValueType tension_v = static_cast<ValueType>(tension);
   default_type s = std::min(std::max<default_type>(0.0, warm_start), s_max);
+  default_type dist_sq = std::numeric_limits<default_type>::infinity();
   bool converged = false;
   for (size_t iter = 0; iter != newton_max_iterations; ++iter) {
     const typename SplineView<ValueType>::point_type position = target.position(s, tension_v);
@@ -143,24 +152,45 @@ inline Foot nearest_point(const SplineView<ValueType> &target,
     const vec3 residual = probe - position.template cast<default_type>();
     const vec3 deriv = tangent.template cast<default_type>();
     const default_type speed_sq = deriv.squaredNorm();
+    // Squared distance at the current parameter, reused as the descent reference below (the residual
+    //   is already formed, so this costs nothing beyond the position evaluation this iteration needs).
+    dist_sq = residual.squaredNorm();
     if (speed_sq < min_speed_squared)
       break; // Parametric-speed null: hand over to the bracketed fallback.
     const default_type f = residual.dot(deriv);
-    // Gauss-Newton: f'(s) ~= -||P'(s)||^2 (drop the (Q-P).P'' curvature term).
-    const default_type step = f / speed_sq; // = -f / f'(s)
-    default_type s_next = s + step;
-    s_next = std::min(std::max<default_type>(0.0, s_next), s_max);
-    const default_type delta = std::fabs(s_next - s);
-    s = s_next;
-    if (delta < newton_tolerance) {
+    // Gauss-Newton: f'(s) ~= -||P'(s)||^2 (drop the (Q-P).P'' curvature term). The dropped curvature
+    //   makes the raw step unreliable on a high-curvature target, where it can overshoot clear across
+    //   the curve to a far stationary point and clamp to an endpoint. A backtracking line search keeps
+    //   every accepted step a descent step on the squared distance, so the solve converges to the
+    //   nearest foot rather than that far root; near the foot the curvature term vanishes and the full
+    //   step is taken, preserving the quadratic convergence.
+    const default_type full_step = f / speed_sq; // = -f / f'(s)
+    // Backtracking line search: take the largest step in the (descent) Gauss-Newton direction that
+    //   strictly reduces the squared distance. The loop is skipped once the trial step underflows
+    //   newton_tolerance -- which is immediately the case at a converged foot (full_step ~ 0), so the
+    //   common warm-started call costs no backtracking evaluations.
+    bool improved = false;
+    default_type trial_step = full_step;
+    for (size_t bt = 0; bt != newton_max_backtracks && std::fabs(trial_step) >= newton_tolerance; ++bt) {
+      const default_type s_trial = std::min(std::max<default_type>(0.0, s + trial_step), s_max);
+      const default_type d2_trial = foot_distance_squared(target, tension, probe, s_trial);
+      if (d2_trial < dist_sq) {
+        s = s_trial;
+        dist_sq = d2_trial;
+        improved = true;
+        break;
+      }
+      trial_step *= 0.5; // Overshoot: backtrack toward the current (closer) point and retry.
+    }
+    if (!improved) {
+      // No descending step of non-negligible length exists: s is the foot to working precision.
       converged = true;
       break;
     }
   }
   if (converged) {
-    const default_type d2 = foot_distance_squared(target, tension, probe, s);
     // Endpoints: the clamp above already pins a probe whose foot lies past an end to that end.
-    return {s, d2};
+    return {s, dist_sq};
   }
   // Non-convergence: search a local bracket around the warm start rather than accept a bad foot.
   const default_type half_window = std::max<default_type>(1.0, fallback_window_fraction * s_max);
