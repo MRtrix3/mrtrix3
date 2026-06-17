@@ -1473,8 +1473,8 @@ int main() { Foo f; }
   #   opengl32) directly. Newer Qt5 / mingw-w64 packaging no longer lists those
   #   libraries in qmake's LIBS, so this check reproduces the same link dependency
   #   to catch a missing OpenGL library during configure rather than during build.
-  compile_check ('OpenGL function loading', 'OpenGL',
-                 cpp_flags + qt_cflags, ld_flags + qt_ldflags, '''
+  compile_test ('OpenGL function loading', 'OpenGL',
+                cpp_flags + qt_cflags, ld_flags + qt_ldflags, '''
 #if defined(_WIN32)
 # include <windows.h>
 # include <GL/gl.h>
@@ -1498,7 +1498,7 @@ int main()
 #else
   __GLXextFuncPtr address = glXGetProcAddressARB (reinterpret_cast<const GLubyte *> ("glClear"));
 #endif
-  return address == nullptr ? 0 : 0;
+  return address == nullptr ? 1 : 0;
 }
 ''')
 
