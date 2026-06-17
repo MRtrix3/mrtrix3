@@ -993,15 +993,28 @@ void Tractogram::load_tracks_onto_GPU(std::vector<Eigen::Vector3f> &buffer,
     std::vector<uint32_t> &chunk_indices = indices[level];
     for (size_t t = 0; t < sizes.size(); ++t) {
       const GLint start = starts[t];
-      const GLint n = sizes[t];
-      GLint last_emitted = -1;
-      for (GLint k = 0; k < n; k += ratio) {
-        chunk_indices.push_back(static_cast<uint32_t>(start + k));
-        last_emitted = k;
+      const GLint span = sizes[t] - 1;
+      // Always include the first streamline endpoint.
+      chunk_indices.push_back(static_cast<uint32_t>(start));
+      if (span > 0) {
+        // Number of interior vertices to display, chosen so that consecutive
+        //   displayed vertices are separated by approximately "ratio" steps:
+        //   round(span / ratio) intervals, hence one fewer interior vertex.
+        const GLint interior_count = (span + ratio / 2) / ratio - 1;
+        if (interior_count > 0) {
+          // The interior vertices are evenly spaced by exactly "ratio"; the
+          //   leftover (span is rarely an exact multiple of the stride) is
+          //   split symmetrically across the two terminal intervals. The
+          //   resulting gap from the start vertex to the first interior vertex
+          //   thus matches the gap from the last interior vertex to the end
+          //   vertex, rather than dumping the entire remainder at one end.
+          const GLint first = (span - (interior_count - 1) * ratio + 1) / 2;
+          for (GLint i = 0; i < interior_count; ++i)
+            chunk_indices.push_back(static_cast<uint32_t>(start + first + i * ratio));
+        }
+        // Always include the terminating streamline endpoint.
+        chunk_indices.push_back(static_cast<uint32_t>(start + span));
       }
-      // Guarantee the terminating endpoint is present at non-unity ratios
-      if (last_emitted != n - 1)
-        chunk_indices.push_back(static_cast<uint32_t>(start + n - 1));
       chunk_indices.push_back(PRIMITIVE_RESTART_SENTINEL);
     }
   }

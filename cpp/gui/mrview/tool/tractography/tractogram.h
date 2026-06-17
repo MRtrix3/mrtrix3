@@ -129,7 +129,7 @@ private:
   static constexpr GLint lod_ratio_for_level(const size_t level) { return GLint(1) << level; }
   //! Minimum permissible on-screen spacing between consecutive drawn vertices, in
   //!   pixels; below this, samples are visually redundant regardless of geometry.
-  static constexpr float min_vertex_spacing_px = 1.0f;
+  static constexpr float min_vertex_spacing_px = 2.0f;
   Tractography &tractography_tool;
 
   const std::filesystem::path filepath;
