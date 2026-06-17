@@ -119,8 +119,17 @@ signals:
   void scalingChanged();
 
 private:
-  //! Number of available level-of-detail sub-sampling ratios (1, 2, 3).
-  static constexpr size_t num_lod_ratios = 3;
+  //! Number of available level-of-detail sub-sampling levels.
+  //! Levels use geometric sub-sampling ratios (1, 2, 4, 8, ...): level \a l draws
+  //!   every (1 << l)-th vertex, so the maximum ratio is (1 << (num_lod_levels - 1)).
+  //!   The total host-side index storage across all levels converges to ~2x the
+  //!   vertex count irrespective of the level count.
+  static constexpr size_t num_lod_levels = 6;
+  //! Sub-sampling ratio (stride) for a given level index.
+  static constexpr GLint lod_ratio_for_level(const size_t level) { return GLint(1) << level; }
+  //! Minimum permissible on-screen spacing between consecutive drawn vertices, in
+  //!   pixels; below this, samples are visually redundant regardless of geometry.
+  static constexpr float min_vertex_spacing_px = 1.0f;
   Tractography &tractography_tool;
 
   const std::filesystem::path filepath;
@@ -153,14 +162,14 @@ private:
   //   the precomputed sub-sampling levels as the level of detail changes
   std::vector<GLuint> element_buffers;
   std::vector<GLsizei> element_counts;
-  // Precomputed (host-side) draw indices per chunk, per sub-sampling ratio
-  //   (index 0 -> ratio 1, index 1 -> ratio 2, index 2 -> ratio 3)
-  std::vector<std::array<std::vector<uint32_t>, num_lod_ratios>> element_indices;
+  // Precomputed (host-side) draw indices per chunk, per sub-sampling level
+  //   (index l -> ratio (1 << l): level 0 -> ratio 1, level 1 -> ratio 2, ...)
+  std::vector<std::array<std::vector<uint32_t>, num_lod_levels>> element_indices;
 
-  // Active sub-sampling ratio (1, 2 or 3); selects which precomputed element
-  //   buffer is resident on the GPU
-  GLint lod_ratio;
-  // Flags that the resident element buffers no longer match lod_ratio
+  // Active sub-sampling level (0 .. num_lod_levels - 1); selects which precomputed
+  //   element buffer is resident on the GPU
+  size_t lod_level;
+  // Flags that the resident element buffers no longer match lod_level
   bool ebo_dirty;
   bool vao_dirty;
 
@@ -178,11 +187,21 @@ private:
   void load_intensity_scalars_onto_GPU(std::vector<float> &buffer, size_t &tck_count);
   void load_threshold_scalars_onto_GPU(std::vector<float> &buffer, size_t &tck_count);
 
-  void render_streamlines();
+  //! On-screen sizes (in pixels) shared by rendering and level-of-detail selection.
+  //! Derived from the current field of view and viewport so that the level of
+  //!   detail tracks zoom, and computed from the same expressions the shaders draw.
+  struct ScreenMetrics {
+    float pixels_per_mm;     //!< on-screen pixels per world-space millimetre
+    float tube_width_px;     //!< pseudotube full width on screen
+    float point_diameter_px; //!< point disk diameter on screen
+  };
+  ScreenMetrics screen_metrics(const Projection &transform) const;
 
-  //! Recompute lod_ratio from the current field of view.
-  void update_lod();
-  //! Upload the element buffers for the active lod_ratio to the GPU.
+  void render_streamlines(const ScreenMetrics &metrics);
+
+  //! Recompute lod_level from the current screen-space metrics.
+  void update_lod(const ScreenMetrics &metrics);
+  //! Upload the element buffers for the active lod_level to the GPU.
   void update_element_buffers();
 
 private slots:

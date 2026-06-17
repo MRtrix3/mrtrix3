@@ -16,6 +16,7 @@
 
 #include "mrview/tool/tractography/tractogram.h"
 
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
 
@@ -342,7 +343,7 @@ Tractogram::Tractogram(Tractography &tool, const std::filesystem::path &filepath
       color_type(TrackColourType::Direction),
       threshold_type(TrackThresholdType::None),
       geometry_type(default_tract_geom),
-      lod_ratio(1),
+      lod_level(0),
       ebo_dirty(false),
       vao_dirty(true),
       threshold_min(NaNF),
@@ -424,18 +425,17 @@ void Tractogram::render(const Projection &transform) {
     original_fov = std::pow(dim[0] * dim[1] * dim[2], 1.0F / 3.0F);
   }
 
-  float line_thickness_screenspace = Tractogram::default_line_thickness * std::exp(2.0e-3f * line_thickness) *
-                                     original_fov * (transform.width() + transform.height()) /
-                                     (2.f * window().FOV() * transform.width() * transform.height());
+  const ScreenMetrics metrics = screen_metrics(transform);
 
-  gl::Uniform1f(gl::GetUniformLocation(track_shader, "line_thickness"), line_thickness_screenspace);
+  // The vertex and geometry shaders scale the line_thickness uniform back up by
+  //   (width * height) / 2 (the v_end aspect-ratio correction), so the uniform that
+  //   yields a tube of tube_width_px on screen is tube_width_px / (width * height).
+  gl::Uniform1f(gl::GetUniformLocation(track_shader, "line_thickness"),
+                metrics.tube_width_px / (transform.width() * transform.height()));
   gl::Uniform1f(gl::GetUniformLocation(track_shader, "scale_x"), transform.width());
   gl::Uniform1f(gl::GetUniformLocation(track_shader, "scale_y"), transform.height());
 
-  float point_size_screenspace = Tractogram::default_point_size * std::exp(2.0e-3f * line_thickness) * original_fov *
-                                 (transform.width() + transform.height()) / (2.f * window().FOV());
-
-  glPointSize(point_size_screenspace);
+  glPointSize(metrics.point_diameter_px);
 
   if (tractography_tool.line_opacity < 1.0) {
     gl::Enable(gl::BLEND);
@@ -444,18 +444,18 @@ void Tractogram::render(const Projection &transform) {
     gl::Disable(gl::DEPTH_TEST);
     gl::DepthMask(gl::TRUE_);
     gl::BlendColor(1.0, 1.0, 1.0, tractography_tool.line_opacity / 0.5);
-    render_streamlines();
+    render_streamlines(metrics);
     gl::BlendFunc(gl::CONSTANT_ALPHA, gl::ONE_MINUS_CONSTANT_ALPHA);
     gl::Enable(gl::DEPTH_TEST);
     gl::DepthMask(gl::TRUE_);
     gl::BlendColor(1.0, 1.0, 1.0, tractography_tool.line_opacity / 0.5);
-    render_streamlines();
+    render_streamlines(metrics);
 
   } else {
     gl::Disable(gl::BLEND);
     gl::Enable(gl::DEPTH_TEST);
     gl::DepthMask(gl::TRUE_);
-    render_streamlines();
+    render_streamlines(metrics);
   }
 
   if (tractography_tool.line_opacity < 1.0) {
@@ -468,11 +468,25 @@ void Tractogram::render(const Projection &transform) {
   GL::assert_context_is_current();
 }
 
-inline void Tractogram::render_streamlines() {
+Tractogram::ScreenMetrics Tractogram::screen_metrics(const Projection &transform) const {
+  // Orthographic projection (mode/base.cpp): the visible world extent is
+  //   2 * width * FOV / (width + height) horizontally (and the analogous vertical),
+  //   so the on-screen scale is isotropic at (width + height) / (2 * FOV) pixels/mm.
+  const float pixels_per_mm = (transform.width() + transform.height()) / (2.0f * window().FOV());
+  // Tube width and point diameter are fixed in world space (proportional to the
+  //   image extent frozen at load via original_fov, modulated by the thickness
+  //   slider); convert to their on-screen pixel sizes at the current zoom.
+  const float world_scale = std::exp(2.0e-3f * line_thickness) * original_fov;
+  return {pixels_per_mm,
+          Tractogram::default_line_thickness * world_scale * pixels_per_mm,
+          Tractogram::default_point_size * world_scale * pixels_per_mm};
+}
+
+inline void Tractogram::render_streamlines(const ScreenMetrics &metrics) {
   GL::assert_context_is_current();
 
   if (should_update_lod)
-    update_lod();
+    update_lod(metrics);
   if (ebo_dirty)
     update_element_buffers();
 
@@ -543,20 +557,53 @@ inline void Tractogram::render_streamlines() {
   GL::assert_context_is_current();
 }
 
-inline void Tractogram::update_lod() {
+inline void Tractogram::update_lod(const ScreenMetrics &metrics) {
   // Note: if streamlines have been resampled, the stored step size (and hence
-  //   the chosen ratio) may not be representative
+  //   the chosen level) may not be representative; if it is unavailable (variable
+  //   step), no reasoning about on-screen spacing is possible and the level stays 0.
   const float step_size = properties.get_stepsize();
-  GLint new_ratio = 1;
+  size_t new_level = 0;
 
-  if (geometry_type == TrackGeometryType::Pseudotubes && std::isfinite(step_size)) {
-    new_ratio = static_cast<GLint>(
-        std::floor(Tractogram::default_line_thickness * std::exp(2.0e-3F * line_thickness) * original_fov / step_size));
-    new_ratio = std::max(1, std::min(static_cast<GLint>(num_lod_ratios), new_ratio));
+  if (std::isfinite(step_size) && step_size > 0.0f) {
+    // On-screen distance between consecutive samples at the current zoom. This is
+    //   an upper bound on the true projected spacing (a streamline angled towards
+    //   the view normal projects shorter), so the resulting level is conservative.
+    const float vertex_spacing_px = step_size * metrics.pixels_per_mm;
+    // Per-geometry on-screen feature below which denser sampling is redundant:
+    //   pseudotubes produce banner-edge discontinuities when a segment is shorter
+    //   than the tube is wide; point disks overlap when spaced below their diameter;
+    //   lines have no width feature and rely solely on the sub-pixel floor.
+    float feature_px = 0.0f;
+    switch (geometry_type) {
+    case TrackGeometryType::Pseudotubes:
+      feature_px = metrics.tube_width_px;
+      break;
+    case TrackGeometryType::Points:
+      feature_px = metrics.point_diameter_px;
+      break;
+    case TrackGeometryType::Lines:
+      feature_px = 0.0f;
+      break;
+    }
+    const float target_spacing_px = std::max(feature_px, min_vertex_spacing_px);
+    const float ratio = target_spacing_px / vertex_spacing_px;
+    // Geometric levels: pick the smallest level whose ratio (1 << level) is at least
+    //   the desired ratio, so the effective on-screen spacing meets the target.
+    if (ratio > 1.0f)
+      new_level = std::min(num_lod_levels - 1, static_cast<size_t>(std::ceil(std::log2(ratio))));
+    DEBUG("Proposed subsampling for geometry " + str(static_cast<int>(geometry_type)) + ":" + //
+          " line thickness " + str(line_thickness) + "," +                                    //
+          " pixels/mm " + str(metrics.pixels_per_mm) + "," +                                  //
+          " feature " + str(feature_px) + "px," +                                             //
+          " vertex spacing " + str(vertex_spacing_px) + "px" +                                //
+          " -> ratio " + str(ratio) + " -> level " + str(new_level) +                         //
+          " (stride " + str(lod_ratio_for_level(new_level)) + ")");
   }
 
-  if (new_ratio != lod_ratio) {
-    lod_ratio = new_ratio;
+  if (new_level != lod_level) {
+    DEBUG("Changing tractogram LOD to level " + str(new_level) + " (stride " + str(lod_ratio_for_level(new_level)) +
+          ")");
+    lod_level = new_level;
     ebo_dirty = true;
   }
 
@@ -565,9 +612,8 @@ inline void Tractogram::update_lod() {
 
 inline void Tractogram::update_element_buffers() {
   GL::assert_context_is_current();
-  const size_t ratio_index = static_cast<size_t>(lod_ratio) - 1;
   for (size_t buf = 0, N = element_buffers.size(); buf < N; ++buf) {
-    const std::vector<uint32_t> &indices = element_indices[buf][ratio_index];
+    const std::vector<uint32_t> &indices = element_indices[buf][lod_level];
     // Bind the VAO first so the element-array binding is recorded as VAO state,
     //   then replace the resident buffer contents with the active level
     gl::BindVertexArray(vertex_array_objects[buf]);
@@ -936,15 +982,15 @@ void Tractogram::load_tracks_onto_GPU(std::vector<Eigen::Vector3f> &buffer,
   original_track_sizes.push_back(sizes);
   num_tracks_per_buffer.push_back(tck_count);
 
-  // Precompute, for every sub-sampling ratio, the element indices that draw
+  // Precompute, for every sub-sampling level, the element indices that draw
   //   this chunk. Element indices address real vertices directly (0-based);
   //   the position-buffer sentinels are reached implicitly via the prev / next
   //   attribute offsets. Both streamline endpoints are always included, and a
   //   PRIMITIVE_RESTART_SENTINEL separates streamlines.
-  std::array<std::vector<uint32_t>, num_lod_ratios> indices;
-  for (size_t ratio_index = 0; ratio_index < num_lod_ratios; ++ratio_index) {
-    const GLint ratio = static_cast<GLint>(ratio_index) + 1;
-    std::vector<uint32_t> &chunk_indices = indices[ratio_index];
+  std::array<std::vector<uint32_t>, num_lod_levels> indices;
+  for (size_t level = 0; level < num_lod_levels; ++level) {
+    const GLint ratio = lod_ratio_for_level(level);
+    std::vector<uint32_t> &chunk_indices = indices[level];
     for (size_t t = 0; t < sizes.size(); ++t) {
       const GLint start = starts[t];
       const GLint n = sizes[t];
@@ -967,7 +1013,7 @@ void Tractogram::load_tracks_onto_GPU(std::vector<Eigen::Vector3f> &buffer,
   gl::GenBuffers(1, &ebo);
   gl::BindVertexArray(vertex_array_object);
   gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
-  const std::vector<uint32_t> &active_indices = indices[lod_ratio - 1];
+  const std::vector<uint32_t> &active_indices = indices[lod_level];
   gl::BufferData(
       gl::ELEMENT_ARRAY_BUFFER, active_indices.size() * sizeof(uint32_t), active_indices.data(), gl::STATIC_DRAW);
   element_buffers.push_back(ebo);
