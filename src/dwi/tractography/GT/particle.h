@@ -17,6 +17,8 @@
 #ifndef __gt_particle_h__
 #define __gt_particle_h__
 
+#include <cassert>
+
 #include "types.h"
 #include "spinlock.h"
 

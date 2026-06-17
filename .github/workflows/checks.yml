@@ -75,6 +75,47 @@ jobs:
 
 
 
+  # Compilation test exercising Eigen 5.0.0 rather than the system Eigen3
+  # package. Eigen >= 5.0 mandates at least C++14; 'configure' detects this
+  # requirement from the Eigen headers (located via the EIGEN_CFLAGS include
+  # path) and selects the C++14 language standard accordingly. The Eigen 5.0.0
+  # headers are fetched from the upstream GitLab source archive and exposed
+  # exclusively through EIGEN_CFLAGS, so the system 'libeigen3-dev' package is
+  # deliberately not installed. As with the other Linux builds, 'CFLAGS:
+  # -Werror' promotes any compiler warning to an error, so that a warning
+  # causes the build (and therefore CI) to fail.
+  linux-eigen5-build:
+
+    runs-on: ubuntu-latest
+
+    env:
+      CFLAGS: -Werror
+      QT_SELECT: qt5
+      EIGEN_CFLAGS: "-isystem ${{ github.workspace }}/eigen-5.0.0"
+
+    steps:
+    - uses: actions/checkout@v1
+
+    - name: install dependencies
+      run: |
+         sudo apt-get update
+         sudo apt-get install clang libqt5opengl5-dev libqt5svg5-dev libglvnd-dev zlib1g-dev libfftw3-dev libpng-dev
+
+    - name: fetch Eigen 5.0.0
+      run: |
+         mkdir -p "${{ github.workspace }}/eigen-5.0.0"
+         curl -sSL https://gitlab.com/libeigen/eigen/-/archive/5.0.0/eigen-5.0.0.tar.gz | tar xz --strip-components=1 -C "${{ github.workspace }}/eigen-5.0.0"
+
+    - name: configure
+      run: ./configure -assert || { cat configure.log; false; }
+
+    - name: build
+      run: ./build -nowarnings -persistent -nopaginate || { cat build.log; false; }
+
+
+
+
+
 
   macos-build:
 

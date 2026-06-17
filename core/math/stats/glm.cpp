@@ -182,7 +182,16 @@ namespace MR
 
         matrix_type solve_betas (const matrix_type& measurements, const matrix_type& design)
         {
+          // Eigen's "WORLD" version remains 3 for the Eigen3 library; the
+          // semantic-versioning major version (EIGEN_MAJOR_VERSION) became 5 as
+          // of the 5.0.0 release, which deprecated the runtime-argument overload
+          // of jacobiSvd() in favour of specifying the computation options as a
+          // template parameter.
+#if EIGEN_MAJOR_VERSION >= 5
+          return design.jacobiSvd<Eigen::ComputeThinU | Eigen::ComputeThinV>().solve (measurements);
+#else
           return design.jacobiSvd (Eigen::ComputeThinU | Eigen::ComputeThinV).solve (measurements);
+#endif
         }
 
 

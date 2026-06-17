@@ -387,7 +387,13 @@ class PLYWriter: public WriterInterface<float> { MEMALIGN(PLYWriter)
 
       // we only need the left-singular matrix here
       //  http://math.stackexchange.com/questions/99299/best-fitting-plane-given-a-set-of-points
+      // Eigen 5 (EIGEN_MAJOR_VERSION >= 5) deprecated the runtime-argument
+      // overload of jacobiSvd() in favour of template-parameter options.
+#if EIGEN_MAJOR_VERSION >= 5
+      auto svd = coord.jacobiSvd<Eigen::ComputeThinU | Eigen::ComputeThinV>();
+#else
       auto svd = coord.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV);
+#endif
       Eigen::Vector3f plane_normal = svd.matrixU().rightCols<1>();
       return plane_normal;
     }

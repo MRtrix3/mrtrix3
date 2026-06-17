@@ -16,6 +16,8 @@
 
 #include "axes.h"
 
+#include <cassert>
+
 namespace MR
 {
   namespace Axes

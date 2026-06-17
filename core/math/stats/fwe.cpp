@@ -18,6 +18,7 @@
 #include "math/stats/fwe.h"
 
 #include <algorithm>
+#include <cassert>
 #include <types.h>
 
 namespace MR

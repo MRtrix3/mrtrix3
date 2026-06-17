@@ -836,6 +836,72 @@ else:
 
 
 
+# Determine the C++ language standard required for compilation.
+#
+# MRtrix3 has historically targeted C++11, and the compliance check above is
+# performed against that standard. However, Eigen version 5.0 and later mandate
+# at least C++14. The Eigen include path is provided to 'configure' via the
+# EIGEN_CFLAGS environment variable, so as soon as a working compiler has been
+# identified we attempt to compile a minimal program that includes an Eigen
+# header using the C++11 standard. If Eigen signals (via a preprocessor #error)
+# that C++14 is required, the language standard flag is switched from
+# '-std=c++11' to '-std=c++14', and a fresh compliance check is performed
+# against C++14 (additionally verifying availability of std::make_unique()).
+# All subsequent compilation checks performed by this script then proceed using
+# the selected language standard.
+
+cxx_standard = 'c++11'
+eigen_cflags = get_flags ([ '-isystem', '/usr/include/eigen3' ], 'EIGEN_CFLAGS', '--cflags eigen3')
+
+report ('Checking C++ standard required by Eigen: ')
+try:
+  compile ('''
+#include <Eigen/Core>
+int main() { return 0; }
+''', cpp_flags + eigen_cflags, ld_flags)
+  report (cxx_standard + '\n')
+except CompileError as eigen_std_probe:
+  if 'Eigen requires at least c++14 support' in str (eigen_std_probe):
+    report ('c++14\n')
+    cpp_flags = [ '-std=c++14' if flag == '-std=c++11' else flag for flag in cpp_flags ]
+    cxx_standard = 'c++14'
+    if not compile_test ('C++14 compliance', cpp_flags, ld_flags, '''
+#include <cstddef>
+#include <memory>
+struct Base {
+    Base (int) { }
+};
+struct Derived : Base {
+    using Base::Base;
+};
+
+int main() {
+  Derived D (int); // check for contructor inheritance
+  auto ptr = std::make_unique<Derived> (0); // check for std::make_unique() (requires C++14)
+  return ptr ? 0 : 1;
+}
+''', on_failure='test failed (see configure.log for details)\n'):
+      error ('''C++14 compliance test failed!
+
+  The Eigen library detected via the EIGEN_CFLAGS environment variable requires
+  at least C++14 support, but the selected compiler was unable to compile a
+  C++14 test program.'''
+          + compiler_hint ('compiler', 'CXX', '/usr/bin/g++-5.5', 'CXX_ARGS', '"-c CFLAGS SRC -o OBJECT"')
+          + configure_log_hint)
+  else:
+    # Compilation failed for some unrelated reason (e.g. the Eigen headers
+    # could not be found); leave the standard at C++11 and let the dedicated
+    # Eigen dependency check below report the problem with appropriate hints.
+    report ('unable to determine; assuming c++11\n')
+except Exception:
+  # A linking or runtime failure here is not informative for the purpose of
+  # language standard selection; the dedicated Eigen dependency check below
+  # will report any genuine problems.
+  report ('unable to determine; assuming c++11\n')
+
+
+
+
 # shared library generation:
 if not noshared:
   report ('Checking shared library generation: ')
@@ -974,9 +1040,8 @@ int main() {
 
 
 
-# Eigen3 flags:
-
-eigen_cflags = get_flags ([ '-isystem', '/usr/include/eigen3' ], 'EIGEN_CFLAGS', '--cflags eigen3')
+# Eigen library:
+# (eigen_cflags was determined above, during C++ language standard detection)
 
 compile_check ('Eigen3 library', 'Eigen3', cpp_flags + eigen_cflags, ld_flags, '''
 #include <cstddef>
@@ -1277,7 +1342,7 @@ int main() { Foo f; }
       with open (os.path.join (qt_dir.name, 'qt.cpp'), 'w') as f:
         f.write (filetext)
 
-      filetext = 'CONFIG += c++11'
+      filetext = 'CONFIG += ' + cxx_standard
       if debug:
         filetext += ' debug'
       filetext += '\nQT += core gui opengl svg network\n'

@@ -284,10 +284,17 @@ namespace MR
       return std::shared_ptr<X> (new X (std::forward<Args> (args)...));
     }
 
+#if __cplusplus >= 201402L
+  // C++14 and later (mandated by Eigen >= 5) provide std::make_unique();
+  // expose it within the MR namespace rather than defining a separate facility,
+  // so that unqualified make_unique() calls remain unambiguous.
+  using std::make_unique;
+#else
   template <typename X, typename... Args>
     inline std::unique_ptr<X> make_unique (Args&&... args) {
       return std::unique_ptr<X> (new X (std::forward<Args> (args)...));
     }
+#endif
 
 
   // required to allow use of abs() call on unsigned integers in template
