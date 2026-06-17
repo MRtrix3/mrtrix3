@@ -135,6 +135,17 @@ if [[ ${#files[@]} -eq 0 ]]; then
   done < <(git ls-files '*.py')
 fi
 
+# Exclude all content under testing/data/ (e.g. intentionally non-conforming
+#   fixtures) from linting, however the file list was assembled.
+filtered=()
+for f in "${files[@]}"; do
+  if [[ "$f" =~ (^|/)testing/data/ ]]; then
+    continue
+  fi
+  filtered+=("$f")
+done
+files=("${filtered[@]}")
+
 LOGFILE=pylint.log
 echo logging to \""$LOGFILE"\"
 

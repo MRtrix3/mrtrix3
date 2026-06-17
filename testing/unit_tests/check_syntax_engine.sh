@@ -11,9 +11,13 @@
 # Any failing assertion makes the script exit non-zero, failing the test.
 set -e
 
+# The engine and fixture are served from the build tree (copied there at
+# configuration time) via CHECK_SYNTAX_ENGINE / CHECK_SYNTAX_FIXTURE, set by
+# CMake when the test is run through ctest.  Fall back to the source-relative
+# locations so the script remains runnable by hand from a checkout.
 DIR=$(dirname "${BASH_SOURCE[0]}")
-ENGINE="$DIR/../../check_syntax_engine.pl"
-FIXTURE="$DIR/../data/check_syntax/offenders.cpp"
+ENGINE="${CHECK_SYNTAX_ENGINE:-$DIR/../../check_syntax_engine.pl}"
+FIXTURE="${CHECK_SYNTAX_FIXTURE:-$DIR/../data/check_syntax/offenders.cpp}"
 
 test -f "$ENGINE"
 test -f "$FIXTURE"

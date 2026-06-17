@@ -67,6 +67,7 @@ if [[ $DIFF_MODE -eq 1 ]]; then
     grep -E '\.(h|cpp)$' | \
     grep -v '_moc\.cpp' | \
     grep -v 'gl_core_3_3' | \
+    grep -v -E '(^|/)testing/data/' | \
     grep '^cpp/')
 
   if [[ -z "$staged_cpp_files" ]]; then
@@ -116,7 +117,23 @@ else
       sort)
   fi
 
-  res=$(perl "$ENGINE" "${cpp_files[@]}")
+  # Exclude all content under testing/data/ (e.g. intentionally non-conforming
+  # fixtures such as the check_syntax unit-test offenders file) from checking,
+  # however the file list was assembled.
+  filtered=()
+  for f in "${cpp_files[@]}"; do
+    if [[ "$f" =~ (^|/)testing/data/ ]]; then
+      continue
+    fi
+    filtered+=("$f")
+  done
+  cpp_files=("${filtered[@]}")
+
+  if [[ ${#cpp_files[@]} -eq 0 ]]; then
+    res=""
+  else
+    res=$(perl "$ENGINE" "${cpp_files[@]}")
+  fi
   if [[ -n "$res" ]]; then
     echo "$res" >> $LOG
     retval=1

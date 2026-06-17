@@ -90,5 +90,21 @@ function (add_bash_unit_test FILE_SRC)
     )
 endfunction()
 
+# The check_syntax engine unit test consumes two repository artifacts: the Perl
+# engine under test (repository root) and the offenders fixture (testing/data/).
+# Copy both into the build tree so the test runs entirely against build-directory
+# content; configure_file(COPYONLY) refreshes each copy whenever its source
+# changes (re-running CMake configuration to do so).
+set(CHECK_SYNTAX_ENGINE_BUILD ${CMAKE_CURRENT_BINARY_DIR}/check_syntax_engine.pl)
+set(CHECK_SYNTAX_FIXTURE_BUILD ${CMAKE_CURRENT_BINARY_DIR}/data/check_syntax/offenders.cpp)
+configure_file(${PROJECT_SOURCE_DIR}/check_syntax_engine.pl ${CHECK_SYNTAX_ENGINE_BUILD} COPYONLY)
+configure_file(${DATA_DIR}/check_syntax/offenders.cpp ${CHECK_SYNTAX_FIXTURE_BUILD} COPYONLY)
+
 # Reads the check_syntax fixture and runs the Perl engine; never writes to disk.
 add_bash_unit_test(check_syntax_engine.sh NO_FILESYSTEM_LOCK)
+
+# Point the test at the build-tree copies (see configure_file calls above).
+set_property(TEST unittest_check_syntax_engine APPEND PROPERTY ENVIRONMENT
+    "CHECK_SYNTAX_ENGINE=${CHECK_SYNTAX_ENGINE_BUILD}"
+    "CHECK_SYNTAX_FIXTURE=${CHECK_SYNTAX_FIXTURE_BUILD}"
+)
