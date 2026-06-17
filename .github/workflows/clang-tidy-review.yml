@@ -22,6 +22,9 @@ jobs:
         apt_packages: g++,qt6-base-dev,libqt6opengl6-dev,libglvnd-dev,zlib1g-dev,libfftw3-dev,ninja-build
         config_file: .clang-tidy-review
         clang_tidy_version: 19
+        # Exclude intentionally non-conforming fixtures under testing/data/
+        # (e.g. the check_syntax offenders fixture) from review.
+        exclude: "testing/data/*"
 
     - uses: ZedThree/clang-tidy-review/upload@v0.21.0
       id: upload-review
