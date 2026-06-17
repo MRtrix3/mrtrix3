@@ -17,12 +17,13 @@
 #include "gui/mrview/tool/fixel/fixel.h"
 
 #include "mrtrix.h"
+#include "gui/dialog/file.h"
+#include "gui/mrview/qthelpers.h"
 #include "gui/mrview/window.h"
 #include "gui/mrview/tool/fixel/base_fixel.h"
 #include "gui/mrview/tool/fixel/legacy.h"
 #include "gui/mrview/tool/fixel/directory.h"
 #include "gui/mrview/tool/fixel/image4D.h"
-#include "gui/dialog/file.h"
 #include "gui/mrview/tool/list_model_base.h"
 #include "math/rng.h"
 
@@ -379,7 +380,7 @@ namespace MR
             vector<std::string> list;
             QList<QUrl> urlList = mimeData->urls();
             for (int i = 0; i < urlList.size() && i < max_files; ++i) {
-                list.push_back (urlList.at (i).path().toUtf8().constData());
+                list.push_back (QtHelpers::url_to_std_string(urlList.at (i)));
             }
             try {
               add_images (list);

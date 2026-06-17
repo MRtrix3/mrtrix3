@@ -17,10 +17,11 @@
 #include "gui/mrview/tool/overlay.h"
 
 #include "mrtrix.h"
+#include "gui/dialog/file.h"
 #include "gui/mrview/gui_image.h"
+#include "gui/mrview/qthelpers.h"
 #include "gui/mrview/window.h"
 #include "gui/mrview/mode/slice.h"
-#include "gui/dialog/file.h"
 #include "gui/mrview/tool/list_model_base.h"
 
 namespace MR

@@ -22,6 +22,7 @@
 #include "gui/cursor.h"
 #include "gui/projection.h"
 #include "gui/dialog/file.h"
+#include "gui/mrview/qthelpers.h"
 
 
 namespace MR
@@ -321,7 +322,7 @@ namespace MR
             QList<QUrl> urlList = mimeData->urls();
             for (int i = 0; i < urlList.size() && i < max_files; ++i) {
               try {
-                list.push_back (make_unique<MR::Header> (MR::Header::open (urlList.at (i).path().toUtf8().constData())));
+                list.push_back (make_unique<MR::Header> (MR::Header::open (QtHelpers::url_to_std_string (urlList.at (i)))));
               }
               catch (Exception& e) {
                 e.display();

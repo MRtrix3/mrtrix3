@@ -26,6 +26,7 @@
 #include "gui/dialog/opengl.h"
 #include "gui/dialog/progress.h"
 #include "gui/dialog/image_properties.h"
+#include "gui/mrview/qthelpers.h"
 #include "gui/mrview/mode/base.h"
 #include "gui/mrview/mode/list.h"
 #include "gui/mrview/tool/base.h"
@@ -160,7 +161,7 @@ namespace MR
           QList<QUrl> urlList = mimeData->urls();
           for (int i = 0; i < urlList.size() && i < 32; ++i) {
             try {
-              list.push_back (make_unique<MR::Header> (MR::Header::open (urlList.at (i).path().toUtf8().constData())));
+              list.push_back (make_unique<MR::Header> (MR::Header::open (QtHelpers::url_to_std_string (urlList.at (i)))));
             }
             catch (Exception& e) {
               e.display();

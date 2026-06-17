@@ -292,8 +292,29 @@ namespace MR
                   }
                 }
               } while (to_expand.size());
+              // Count how many of the eight corners of the field of view are contained
+              //   within this connected region.
+              // This is a topological signal that is more reliable than the preliminary
+              //   normal-based inside/outside vote:
+              //   a bounded interior cannot contain a corner of the FoV, whereas the
+              //   exterior background necessarily wraps around to encompass all eight.
+              size_t corner_count = 0;
+              for (const auto &voxel : to_fill) {
+                if ((voxel[0] == 0 || voxel[0] == H.size(0) - 1) &&
+                    (voxel[1] == 0 || voxel[1] == H.size(1) - 1) &&
+                    (voxel[2] == 0 || voxel[2] == H.size(2) - 1))
+                  ++corner_count;
+              }
               vox_mesh_t fill_value = vox_mesh_t::UNDEFINED;
-              if (prelim_inside_count == prelim_outside_count && sum_sum_distances) {
+              // A region that encompasses every corner of the FoV wraps the entire volume
+              //   and therefore cannot be a bounded interior; it must lie outside the structure.
+              // This must take precedence over the preliminary normal-based vote: for degenerate
+              //   or sub-voxel meshes the voxelised surface does not form a closed shell separating
+              //   interior from exterior, so the flood fill merges the two into a single region whose
+              //   normal-based vote can be unanimous yet wrong (e.g. labelling the whole FoV inside).
+              if (corner_count == 8) {
+                fill_value = vox_mesh_t::OUTSIDE;
+              } else if (prelim_inside_count == prelim_outside_count && sum_sum_distances) {
                 fill_value = sum_sum_distances < 0.0f ? vox_mesh_t::INSIDE : vox_mesh_t::OUTSIDE;
               } else if (prelim_inside_count > 10 * prelim_outside_count) {
                 fill_value = vox_mesh_t::INSIDE;
@@ -302,18 +323,8 @@ namespace MR
               } else {
                 // Residual ambiguity about whether the connected region is inside or outside the surface
                 // What other tests can we perform to make this decision?
-                // If all eight corners of the FoV are included in to_fill, we can be
-                //   reasonably confident that this connected region lies outside the structure
-                size_t corner_count = 0;
-                for (const auto& voxel : to_fill) {
-                  if ((voxel[0] == 0 || voxel[0] == H.size(0) - 1) &&
-                      (voxel[1] == 0 || voxel[1] == H.size(1) - 1) &&
-                      (voxel[2] == 0 || voxel[2] == H.size(2) - 1))
-                    ++corner_count;
-                }
-                if (corner_count == 8) {
-                  fill_value = vox_mesh_t::OUTSIDE;
-                } else if (!corner_count) {
+                // A region containing none of the FoV corners is most consistent with a bounded interior
+                if (corner_count == 0) {
                   fill_value = vox_mesh_t::INSIDE;
                 } else if (sum_sum_distances) {
                   fill_value = sum_sum_distances < 0.0f ? vox_mesh_t::INSIDE : vox_mesh_t::OUTSIDE;
