@@ -26,11 +26,11 @@ using namespace App;
 
 OptionGroup POTOptions =
     OptionGroup("Options specific to algorithm \"pot\"") +
-    Option("pot_steepness",
-           "exponent \"p\" controlling the angular sensitivity of the directional misalignment cost"
-           " (default: " +
-               str(default_pot_p) + ")") +
-    Argument("value").type_float(1.0) +
+    // Option("pot_steepness",
+    //        "exponent \"p\" controlling the angular sensitivity of the directional misalignment cost"
+    //        " (default: " +
+    //            str(default_pot_p) + ")") +
+    // Argument("value").type_float(1.0) +
     Option("pot_complexity",
            "weight \"gamma\" applied to the linear penalty for merging multiple subject fixels into one template fixel"
            " or splitting one subject fixel across multiple template fixels"
@@ -38,7 +38,7 @@ OptionGroup POTOptions =
                str(default_pot_gamma) + ")") +
     Argument("value").type_float(0.0);
 
-float POT::p = default_pot_p;
+// float POT::p = default_pot_p;
 float POT::g = default_pot_gamma;
 
 float POT::calculate(const std::vector<Correspondence::Fixel> &s,
@@ -55,15 +55,15 @@ float POT::calculate(const std::vector<Correspondence::Fixel> &s,
     const float d_t = t[t_index].density();
     const float d_rs = rs[t_index].density();
 
-    // Matched mass undergoes a bounded directional misalignment cost.
-    // Skip evaluating the dot product when no subject fixel was assigned;
-    //   the remapped direction is undefined in that case
-    //   and "min(d_t, 0) = 0" zeros the angular term anyway
+    // Matched mass undergoes an unbounded directional misalignment cost
+    //   (this technically violates optimal transport)
     const float matched_mass = std::min(d_t, d_rs);
     if (matched_mass > 0.0f) {
-      const float dp = t[t_index].absdot(rs[t_index]);
-      const float aligned_fraction = (p == 1.0f) ? dp : std::pow(dp, p);
-      result += 2.0f * matched_mass * (1.0f - aligned_fraction);
+      const float sq_dp = Math::pow2(t[t_index].dot(rs[t_index]));
+      if (sq_dp > 0.0f)
+        result += 2.0f * matched_mass * (1.0f - sq_dp) / sq_dp;
+      else
+        result = std::numeric_limits<float>::infinity();
     }
 
     // Surplus mass on either side is created/destroyed at unit cost;
@@ -93,9 +93,10 @@ float POT::calculate(const std::vector<Correspondence::Fixel> &s,
   return result;
 }
 
-void POT::set_constants(const float p_in, const float gamma_in) {
-  p = p_in;
-  g = gamma_in;
-}
+// void POT::set_constants(const float p_in, const float gamma_in) {
+//   p = p_in;
+//   g = gamma_in;
+// }
+void POT::set_gamma(const float gamma_in) { g = gamma_in; }
 
 } // namespace MR::Fixel::Correspondence::Algorithms

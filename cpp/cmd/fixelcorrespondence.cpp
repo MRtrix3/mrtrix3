@@ -14,6 +14,8 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <filesystem>
+
 #include "algo/threaded_loop.h"
 #include "command.h"
 #include "enum.h"
@@ -28,8 +30,6 @@
 #include "fixel/correspondence/algorithms/rs2023.h"
 #include "fixel/correspondence/correspondence.h"
 #include "fixel/correspondence/matcher.h"
-
-#include <filesystem>
 
 using namespace MR;
 using namespace App;
@@ -201,9 +201,10 @@ void run() {
     algorithm.reset(new Algorithms::POT(get_option_value("max_origins", default_max_origins_per_target),
                                         get_option_value("max_objectives", default_max_objectives_per_source),
                                         H_cost));
-    dynamic_cast<Algorithms::POT *>(algorithm.get())
-        ->set_constants(get_option_value("pot_steepness", default_pot_p),
-                        get_option_value("pot_complexity", default_pot_gamma));
+    // dynamic_cast<Algorithms::POT *>(algorithm.get())
+    //     ->set_constants(get_option_value("pot_steepness", default_pot_p),
+    //                     get_option_value("pot_complexity", default_pot_gamma));
+    dynamic_cast<Algorithms::POT *>(algorithm.get())->set_gamma(get_option_value("pot_complexity", default_pot_gamma));
     break;
   case algorithm_t::RS2023:
     algorithm.reset(new Algorithms::RS2023(get_option_value("max_origins", default_max_origins_per_target),

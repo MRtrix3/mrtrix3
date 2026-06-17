@@ -52,10 +52,12 @@ public:
                          const std::vector<std::vector<index_type>> &inv_mapping,
                          const Eigen::Array<int8_t, Eigen::Dynamic, 1> &origins_per_remapped_fixel);
 
-  static void set_constants(const float p, const float gamma);
+  // static void set_constants(const float p, const float gamma);
+  static void set_gamma(const float gamma);
 
 protected:
-  static float p, g;
+  // static float p;
+  static float g;
 };
 
 } // namespace MR::Fixel::Correspondence::Algorithms

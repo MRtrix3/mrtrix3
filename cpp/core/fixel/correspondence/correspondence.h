@@ -38,7 +38,7 @@ constexpr unsigned int dp2cost_lookup_resolution = 1000;
 
 constexpr float default_in2023_alpha = 0.5f;
 constexpr float default_in2023_beta = 0.1f;
-constexpr float default_pot_p = 1.0f;
+// constexpr float default_pot_p = 1.0f;
 constexpr float default_pot_gamma = 0.5f;
 constexpr float default_nearest_maxangle = 45.0f;
 
