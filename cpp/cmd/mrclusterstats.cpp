@@ -416,7 +416,9 @@ void run() {
   }
 
   // Precompute statistic value and enhanced statistic for the default permutation
-  matrix_type default_statistic, default_zstat, default_enhanced;
+  matrix_type default_statistic;
+  matrix_type default_zstat;
+  matrix_type default_enhanced;
   Stats::PermTest::precompute_default_permutation(
       glm_test, enhancer, empirical_enhanced_statistic, default_statistic, default_zstat, default_enhanced);
   for (index_type i = 0; i != num_hypotheses; ++i) {
@@ -439,7 +441,8 @@ void run() {
       WARN("Option -strong has no effect when testing a single hypothesis only");
     }
 
-    matrix_type null_distribution, uncorrected_pvalue;
+    matrix_type null_distribution;
+    matrix_type uncorrected_pvalue;
     count_matrix_type null_contributions;
 
     Stats::PermTest::run_permutations(glm_test,

@@ -216,7 +216,8 @@ public:
 
   void render_text(std::string_view text, int position, int line = 0) const {
     const QString s(qstr(text));
-    int x, y;
+    int x;
+    int y;
 
 #if QT_VERSION < QT_VERSION_CHECK(5, 11, 0)
     if (position & RightEdge)

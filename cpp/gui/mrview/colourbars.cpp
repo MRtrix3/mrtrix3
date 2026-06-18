@@ -161,7 +161,8 @@ void ColourBars::render(size_t colourmap,
                                   scaled_width,
                                   0.0F,
                                   min_frac};
-  float x_offset = 0.0F, y_offset = 0.0F;
+  float x_offset = 0.0F;
+  float y_offset = 0.0F;
   int halign = -1;
 
   if ((current_position & Position::Right) != 0) {

@@ -143,7 +143,8 @@ public:
     Eigen::Matrix<default_type, Eigen::Dynamic, 1> gradient(local_trafo.size());
     Eigen::VectorXd cost = Eigen::VectorXd::Zero(1, 1);
     transform_type T;
-    const Eigen::Translation<default_type, 3> Tc2(centre - 0.5 * offset), To(offset);
+    const Eigen::Translation<default_type, 3> Tc2(centre - 0.5 * offset);
+    const Eigen::Translation<default_type, 3> To(offset);
     transform_type R0;
     R0.translation().fill(0);
 

@@ -106,7 +106,8 @@ void MHSampler::randshift() {
       return;
   } while (!spatial_guard.try_lock(par->getPosition()));
 
-  Point_t pos, dir;
+  Point_t pos;
+  Point_t dir;
   moveRandom(par, pos, dir);
 
   if (!inMask(T.scanner2voxel.cast<float>() * pos)) {
@@ -135,7 +136,8 @@ void MHSampler::optshift() {
       return;
   } while (!spatial_guard.try_lock(par->getPosition()));
 
-  Point_t pos, dir;
+  Point_t pos;
+  Point_t dir;
   const bool moved = moveOptimal(par, pos, dir);
   if (!moved || !inMask(T.scanner2voxel.cast<float>() * pos)) {
     return;

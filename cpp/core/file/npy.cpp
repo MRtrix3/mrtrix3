@@ -192,7 +192,8 @@ KeyValues parse_dict(std::string s) {
   const std::map<char, char> pairs{{'{', '}'}, {'[', ']'}, {'(', ')'}, {'\'', '\''}, {'"', '"'}};
   std::vector<char> openers;
   bool prev_was_escape = false;
-  std::string current, key;
+  std::string current;
+  std::string key;
   KeyValues keyval;
   for (const auto c : s) {
     // std::cerr << "Openers: [" << join(openers, ",") << "]; prev_was_escape = " << str(prev_was_escape) << "; current:
@@ -284,7 +285,8 @@ ReadInfo read_header(const std::filesystem::path &path) {
   in.read(magic.data(), 6);
   if (magic != magic_string)
     throw Exception("Invalid magic string in NPY binary file \"" + path.string() + "\": " + str(magic));
-  uint8_t major_version, minor_version;
+  uint8_t major_version;
+  uint8_t minor_version;
   in.read(reinterpret_cast<char *>(&major_version), 1);
   in.read(reinterpret_cast<char *>(&minor_version), 1);
   uint32_t header_len;

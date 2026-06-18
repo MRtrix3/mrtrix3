@@ -43,7 +43,8 @@ void SIFTer::perform_filtering() {
 
   // For streamlines that do not contribute to the map, remove an equivalent proportion of length to those that do
   // contribute
-  double sum_contributing_length = 0.0, sum_noncontributing_length = 0.0;
+  double sum_contributing_length = 0.0;
+  double sum_noncontributing_length = 0.0;
   std::vector<track_t> noncontributing_indices;
   for (track_t i = 0; i != contributions.size(); ++i) {
     if (contributions[i] != nullptr) {
@@ -55,7 +56,8 @@ void SIFTer::perform_filtering() {
       }
     }
   }
-  double contributing_length_removed = 0.0, noncontributing_length_removed = 0.0;
+  double contributing_length_removed = 0.0;
+  double noncontributing_length_removed = 0.0;
   // Randomise the order or removal here; faster than trying to select at random later
   std::shuffle(noncontributing_indices.begin(), noncontributing_indices.end(), Math::RNG());
 

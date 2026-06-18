@@ -142,7 +142,8 @@ bool Processor::operator()(const Math::Stats::Shuffle &shuffle) {
     enhanced_statistics.array() /= empirical_enhanced_statistics.array();
 
   if (null_dist.cols() == 1) { // strong fwe control
-    ssize_t max_element, max_hypothesis;
+    ssize_t max_element;
+    ssize_t max_hypothesis;
     null_dist(shuffle.index, 0) = (enhanced_statistics.array().colwise() * mask.cast<matrix_type::Scalar>())
                                       .maxCoeff(&max_element, &max_hypothesis);
     local_nulldist_contributions(max_element, max_hypothesis)++;

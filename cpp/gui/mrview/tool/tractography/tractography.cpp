@@ -647,7 +647,8 @@ void Tractography::selection_changed_slot(const QItemSelection &, const QItemSel
   const TrackColourType color_type = first_tractogram->get_color_type();
   const QColor color(first_tractogram->colour[0], first_tractogram->colour[1], first_tractogram->colour[2]);
   const TrackGeometryType geom_type = first_tractogram->get_geometry_type();
-  bool color_type_consistent = true, geometry_type_consistent = true;
+  bool color_type_consistent = true;
+  bool geometry_type_consistent = true;
   float mean_thickness = first_tractogram->line_thickness;
   for (int i = 1; i != indices.size(); ++i) {
     const Tractogram *tractogram = tractogram_list_model->get_tractogram(indices[i]);

@@ -63,8 +63,10 @@ void TckFactor::remove_excluded_fixels(const float min_td_frac) {
   // Would prefer not to actually modify the streamline visitations; just exclude fixels from optimisation
   const double fixed_mu = mu();
   const double cf = calc_cost_function();
-  SIFT::track_t excluded_count = 0, zero_TD_count = 0;
-  double zero_TD_cf_sum = 0.0, excluded_cf_sum = 0.0;
+  SIFT::track_t excluded_count = 0;
+  SIFT::track_t zero_TD_count = 0;
+  double zero_TD_cf_sum = 0.0;
+  double excluded_cf_sum = 0.0;
   auto i = fixels.begin(); // SKip first fixel, which is an intentional null in DWI::Fixel_map<>
   for (++i; i != fixels.end(); ++i) {
     if (i->get_orig_TD() == 0.0) {
@@ -245,7 +247,8 @@ void TckFactor::estimate_factors() {
     prev_cf = new_cf;
 
     // Line search to optimise each coefficient
-    StreamlineStats step_stats, coefficient_stats;
+    StreamlineStats step_stats;
+    StreamlineStats coefficient_stats;
     nonzero_streamlines = 0;
     fixels_to_exclude.setZero();
     double sum_costs = 0.0;
@@ -293,7 +296,8 @@ void TckFactor::estimate_factors() {
     // Calculate the cost of regularisation, given the updates to both the
     //   streamline weighting coefficients and the new fixel mean coefficients
     // Log different regularisation costs separately
-    double cf_reg_tik = 0.0, cf_reg_tv = 0.0;
+    double cf_reg_tik = 0.0;
+    double cf_reg_tv = 0.0;
     {
       SIFT::TrackIndexRangeWriter writer(SIFT::TrackIndexRangeWriter::default_batch_size, num_tracks());
       RegularisationCalculator worker(*this, cf_reg_tik, cf_reg_tv);

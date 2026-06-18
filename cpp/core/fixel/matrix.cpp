@@ -32,7 +32,8 @@
 namespace MR::Fixel::Matrix {
 
 template <class ElementType> void InitFixelBase<ElementType>::add(const MappedTrack &mapped_track) {
-  ssize_t self_index = 0, in_index = 0;
+  ssize_t self_index = 0;
+  ssize_t in_index = 0;
 
   // For anything in mapped_track that doesn't yet appear in *this,
   //   add to this list; once completed, extend *this by the appropriate

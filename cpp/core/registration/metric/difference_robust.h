@@ -48,7 +48,8 @@ public:
     if (std::isnan(im2_value))
       return 0.0;
 
-    default_type residual, grad;
+    default_type residual;
+    default_type grad;
     estimator(static_cast<default_type>(im1_value) - static_cast<default_type>(im2_value), residual, grad);
     const auto jacobian_vec = params.transformation.get_jacobian_vector_wrt_params(midway_point);
     const Eigen::Vector3d g = grad * (im1_grad + im2_grad);

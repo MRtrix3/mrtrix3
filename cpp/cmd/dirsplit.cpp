@@ -121,7 +121,8 @@ public:
   }
 
   void next_permutation() {
-    size_t i, j;
+    size_t i;
+    size_t j;
     std::uniform_int_distribution<size_t> dist(0, subset.size() - 1);
     do {
       i = dist(rng);

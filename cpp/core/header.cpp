@@ -337,7 +337,8 @@ Header Header::create(const std::filesystem::path &image_name, //
     // FIXME This fails to appropriately assign rows of these schemes to images
     //   if splitting 4D image into 2D images
     const bool split_4d_schemes = (parser.ndim() == 1 && template_header.ndim() == 4);
-    Eigen::MatrixXd dw_scheme, pe_scheme;
+    Eigen::MatrixXd dw_scheme;
+    Eigen::MatrixXd pe_scheme;
     try {
       dw_scheme = DWI::parse_DW_scheme(template_header);
     } catch (Exception &) {
@@ -403,7 +404,8 @@ Header Header::create(const std::filesystem::path &image_name, //
     }
 
     if (!Pdim.empty()) {
-      int a = 0, n = 0;
+      int a = 0;
+      int n = 0;
       ssize_t next_stride = 0;
       for (size_t i = 0; i < H.ndim(); ++i) {
         if (H.stride(i) != 0) {
@@ -836,7 +838,8 @@ concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, con
   // Need an enum to track what we're going to do with these fields,
   //   rather than relying exclusively on Header::merge_keyval()
   enum class scheme_manip_t { ABSENT, MERGE, CONCAT, ERASE };
-  Eigen::MatrixXd dw_scheme, pe_scheme;
+  Eigen::MatrixXd dw_scheme;
+  Eigen::MatrixXd pe_scheme;
   scheme_manip_t dwscheme_manip = scheme_manip_t::MERGE;
   scheme_manip_t pescheme_manip = scheme_manip_t::MERGE;
   if (axis_to_concat == 3) {

@@ -526,10 +526,14 @@ void Overlay::update_selection() {
     return;
   }
 
-  float rate = 0.0F, min_val = 0.0F, max_val = 0.0F;
-  float lower_threshold_val = 0.0F, upper_threshold_val = 0.0F;
+  float rate = 0.0F;
+  float min_val = 0.0F;
+  float max_val = 0.0F;
+  float lower_threshold_val = 0.0F;
+  float upper_threshold_val = 0.0F;
   float opacity = 0.0F;
-  int num_lower_threshold = 0, num_upper_threshold = 0;
+  int num_lower_threshold = 0;
+  int num_upper_threshold = 0;
   int colourmap_index = -2;
   int num_interp = 0;
   int num_inverted = 0;

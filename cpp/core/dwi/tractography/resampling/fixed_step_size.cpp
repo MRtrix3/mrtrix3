@@ -61,7 +61,9 @@ bool FixedStepSize::operator()(const Streamline<> &in, Streamline<> &out) const 
       } else {
 
         // Perform binary search
-        point_type p_lower = temp[index], p, p_upper = temp[index + step];
+        point_type p_lower = temp[index];
+        point_type p;
+        point_type p_upper = temp[index + step];
         value_type mu_upper = 1.0F;
         value_type mu = std::numeric_limits<value_type>::quiet_NaN();
         do {

@@ -188,7 +188,8 @@ void Mesh::load_vtk(const std::filesystem::path &path) {
         line = line.substr(ws + 1);
         const int num_elements = to<int>(line);
 
-        int polygon_count = 0, element_count = 0;
+        int polygon_count = 0;
+        int element_count = 0;
         while (polygon_count < num_polygons && element_count < num_elements) {
 
           int vertex_count;
@@ -295,7 +296,8 @@ void Mesh::load_stl(const std::filesystem::path &path) {
   if (!in)
     throw Exception("Error opening input file!");
 
-  bool warn_right_hand_rule = false, warn_nonstandard_normals = false;
+  bool warn_right_hand_rule = false;
+  bool warn_nonstandard_normals = false;
 
   std::string init(7, '\0');
   in.get(&init[0], 6);
@@ -314,7 +316,8 @@ void Mesh::load_stl(const std::filesystem::path &path) {
     uint16_t attribute_byte_count;
     bool warn_attribute = false;
 
-    Eigen::Vector3f vertex, normal;
+    Eigen::Vector3f vertex;
+    Eigen::Vector3f normal;
 
     while (in.read(reinterpret_cast<char *>(normal.data()), 3 * sizeof(float))) {
       for (size_t index = 0; index != 3; ++index) {
@@ -347,11 +350,14 @@ void Mesh::load_stl(const std::filesystem::path &path) {
     std::string rest_of_header;
     std::getline(in, rest_of_header);
 
-    Vertex vertex, normal;
+    Vertex vertex;
+    Vertex normal;
 
     std::string line;
     vertex_index_type vertex_index = 0;
-    bool inside_solid = true, inside_facet = false, inside_loop = false;
+    bool inside_solid = true;
+    bool inside_facet = false;
+    bool inside_loop = false;
     try {
       while (std::getline(in, line)) {
         // Strip leading whitespace
@@ -448,7 +454,8 @@ void Mesh::load_obj(const std::filesystem::path &path) {
   if (!in)
     throw Exception("Error opening input file!");
   std::string line;
-  std::string group, object;
+  std::string group;
+  std::string object;
   int counter = -1;
   while (std::getline(in, line)) {
     ++counter;

@@ -69,7 +69,8 @@ ExternalEnergyComputer::ExternalEnergyComputer(Stats &stat, Header &dwiheader, c
   Ak.setZero();
 
   Eigen::VectorXd delta_vec(ncols);
-  Eigen::VectorXd wmr_zsh(Math::ZSH::NforL(lmax)), wmr_rh(Math::ZSH::NforL(lmax));
+  Eigen::VectorXd wmr_zsh(Math::ZSH::NforL(lmax));
+  Eigen::VectorXd wmr_rh(Math::ZSH::NforL(lmax));
   wmr_zsh.setZero();
   Eigen::Vector3d unit_dir;
   double wmr0;

@@ -53,8 +53,12 @@ ValueType golden_section_search(FunctionType &function,
 
   std::unique_ptr<ProgressBar> progress(!message.empty() ? new ProgressBar(message) : nullptr);
 
-  const ValueType g1 = 0.61803399, g2 = 1 - g1;
-  ValueType x0 = min_bound, x1, x2, x3 = max_bound;
+  const ValueType g1 = 0.61803399;
+  const ValueType g2 = 1 - g1;
+  ValueType x0 = min_bound;
+  ValueType x1;
+  ValueType x2;
+  ValueType x3 = max_bound;
 
   if (MR::abs(max_bound - init_estimate) > MR::abs(init_estimate - min_bound)) {
     x1 = init_estimate;

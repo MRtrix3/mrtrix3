@@ -95,11 +95,14 @@ void run() {
   const bool weights_provided = !get_options("tck_weights_in").empty();
 
   float step_size = NaNF;
-  size_t count = 0, header_count = 0;
+  size_t count = 0;
+  size_t header_count = 0;
   float min_length = std::numeric_limits<float>::infinity();
   float max_length = -std::numeric_limits<float>::infinity();
-  size_t empty_streamlines = 0, zero_length_streamlines = 0;
-  default_type sum_lengths = 0.0, sum_weights = 0.0;
+  size_t empty_streamlines = 0;
+  size_t zero_length_streamlines = 0;
+  default_type sum_lengths = 0.0;
+  default_type sum_weights = 0.0;
   std::vector<default_type> histogram;
   std::vector<LW> all_lengths;
   all_lengths.reserve(header_count);

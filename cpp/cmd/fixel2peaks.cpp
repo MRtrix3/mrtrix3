@@ -66,7 +66,9 @@ void usage() {
 // clang-format on
 
 void run() {
-  Header index_header, directions_header, data_header;
+  Header index_header;
+  Header directions_header;
+  Header data_header;
   const std::filesystem::path input_path(argument[0]);
   const auto input_dirpath = input_path.parent_path();
   const std::filesystem::path output_path(argument[1]);

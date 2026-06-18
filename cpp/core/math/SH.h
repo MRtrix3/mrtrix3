@@ -110,7 +110,8 @@ Eigen::Matrix<typename MatrixType::Scalar, Eigen::Dynamic, Eigen::Dynamic> init_
     Legendre::Plm_sph(AL, lmax, 0, z);
     for (int l = 0; l <= lmax; l += 2)
       SHT(i, index(l, 0)) = AL[l];
-    value_type c0(1.0), s0(0.0);
+    value_type c0(1.0);
+    value_type s0(0.0);
     for (int m = 1; m <= lmax; m++) {
       Legendre::Plm_sph(AL, lmax, m, z);
       const value_type c = c0 * cp - s0 * sp;
@@ -129,7 +130,8 @@ Eigen::Matrix<typename MatrixType::Scalar, Eigen::Dynamic, Eigen::Dynamic> init_
 //! scale the coefficients of each SH degree by the corresponding value in \a coefs
 template <class MatrixType, class VectorType>
 inline void scale_degrees_forward(MatrixType &SH2amp_mapping, const VectorType &coefs) {
-  ssize_t l = 0, nl = 1;
+  ssize_t l = 0;
+  ssize_t nl = 1;
   for (ssize_t col = 0; col < SH2amp_mapping.cols(); ++col) {
     if (col >= nl) {
       l++;
@@ -142,7 +144,8 @@ inline void scale_degrees_forward(MatrixType &SH2amp_mapping, const VectorType &
 //! scale the coefficients of each SH degree by the corresponding value in \a coefs
 template <typename MatrixType, class VectorType>
 inline void scale_degrees_inverse(MatrixType &amp2SH_mapping, const VectorType &coefs) {
-  ssize_t l = 0, nl = 1;
+  ssize_t l = 0;
+  ssize_t nl = 1;
   for (ssize_t row = 0; row < amp2SH_mapping.rows(); ++row) {
     if (row >= nl) {
       l++;
@@ -218,7 +221,8 @@ inline typename VectorType::Scalar value(const VectorType &coefs,
   Legendre::Plm_sph(AL, lmax, 0, cos_inclination);
   for (int l = 0; l <= lmax; l += 2)
     amplitude += AL[l] * coefs[index(l, 0)];
-  value_type c0(1.0), s0(0.0);
+  value_type c0(1.0);
+  value_type s0(0.0);
   for (int m = 1; m <= lmax; m++) {
     Legendre::Plm_sph(AL, lmax, m, cos_inclination);
     const value_type c = c0 * cos_azimuth - s0 * sin_azimuth; // std::cos(m*azimuth)
@@ -259,7 +263,8 @@ inline VectorType1 &delta(VectorType1 &delta_vec, const VectorType2 &unit_dir, i
   Legendre::Plm_sph(AL, lmax, 0, unit_dir[2]);
   for (int l = 0; l <= lmax; l += 2)
     delta_vec[index(l, 0)] = AL[l];
-  value_type c0(1.0), s0(0.0);
+  value_type c0(1.0);
+  value_type s0(0.0);
   for (int m = 1; m <= lmax; m++) {
     Legendre::Plm_sph(AL, lmax, m, unit_dir[2]);
     const value_type c = c0 * cp - s0 * sp;
@@ -427,7 +432,8 @@ public:
     ValueType v = 0.0;
     for (int l = 0; l <= lmax; l += 2)
       v += get(f, l, 0) * val[index(l, 0)];
-    ValueType c0(1.0), s0(0.0);
+    ValueType c0(1.0);
+    ValueType s0(0.0);
     for (int m = 1; m <= lmax; m++) {
       ValueType c = c0 * cp - s0 * sp;
       ValueType s = s0 * cp + c0 * sp;

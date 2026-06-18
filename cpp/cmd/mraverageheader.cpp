@@ -115,7 +115,8 @@ void run() {
   if (fill) {
     for (auto l = Loop(0, 3)(out); l; ++l)
       out.value() = true;
-    Eigen::Matrix<default_type, 3, 1> centre, vox;
+    Eigen::Matrix<default_type, 3, 1> centre;
+    Eigen::Matrix<default_type, 3, 1> vox;
     Registration::Transform::Init::get_geometric_centre(out, centre);
     vox = MR::Transform(out).scanner2voxel * centre;
     INFO("centre scanner: " + str(centre.transpose()));

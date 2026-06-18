@@ -330,7 +330,8 @@ void initialise_using_image_mass(Image<default_type> &im1,
 
   CONSOLE("initialising translation and centre of rotation using centre of mass");
   Image<default_type> bogus_mask;
-  Eigen::Matrix<default_type, 3, 1> im1_centre_of_mass, im2_centre_of_mass;
+  Eigen::Matrix<default_type, 3, 1> im1_centre_of_mass;
+  Eigen::Matrix<default_type, 3, 1> im2_centre_of_mass;
 
   // ENH: add option to use mask instead of image intensities
 
@@ -488,8 +489,10 @@ void MomentsInitialiser::run() {
   const Eigen::Vector3d offset = im1_centre_of_mass - im2_centre_of_mass;
   transform.set_centre_without_transform_update(centre);
 
-  Eigen::Translation<default_type, 3> T_offset(offset), T_c2(im2_centre_of_mass);
-  transform_type T, R0;
+  Eigen::Translation<default_type, 3> T_offset(offset);
+  Eigen::Translation<default_type, 3> T_c2(im2_centre_of_mass);
+  transform_type T;
+  transform_type R0;
   R0.setIdentity();
   R0.linear() = A;
   T = T_c2 * T_offset * R0 * T_c2.inverse();

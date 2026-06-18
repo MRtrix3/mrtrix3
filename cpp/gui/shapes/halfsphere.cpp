@@ -119,7 +119,9 @@ void HalfSphere::LOD(const size_t level_of_detail) {
   for (size_t lod = 0; lod < level_of_detail; lod++) {
     const GLuint num = indices.size();
     for (GLuint n = 0; n < num; n++) {
-      GLuint index1, index2, index3;
+      GLuint index1;
+      GLuint index2;
+      GLuint index3;
 
       Edge E(indices[n][0], indices[n][1]);
       auto iter = edges.find(E);

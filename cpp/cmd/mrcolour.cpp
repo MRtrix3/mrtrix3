@@ -108,7 +108,8 @@ void run() {
   float lower = colourmap.is_rgb ? 0.0 : get_option_value("lower", NaNF);
   float upper = get_option_value("upper", NaNF);
   if (!std::isfinite(lower) || !std::isfinite(upper)) {
-    float image_min = NaNF, image_max = NaNF;
+    float image_min = NaNF;
+    float image_max = NaNF;
     min_max(in, image_min, image_max);
     if (colourmap.is_rgb) { // RGB
       image_max = std::max(MR::abs(image_min), MR::abs(image_max));

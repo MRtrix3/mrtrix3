@@ -191,7 +191,8 @@ template <> inline void store_native<bool>(const bool value, void *data, size_t 
   // atomic<uint8_t> genuinely is one byte. Both now checked in thread
   // initialisation (in Thread::__Backend() constructor)
   auto *at = reinterpret_cast<std::atomic<uint8_t> *>(as<uint8_t>(data) + (i / 8));
-  uint8_t prev = *at, new_value;
+  uint8_t prev = *at;
+  uint8_t new_value;
   do {
     if (value)
       new_value = prev | (BITMASK >> i % 8);

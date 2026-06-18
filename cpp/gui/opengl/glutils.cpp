@@ -79,7 +79,8 @@ void init() {
   INFO("GL version:   " + std::string((const char *)gl::GetString(gl::VERSION)));
   INFO("GL vendor:    " + std::string((const char *)gl::GetString(gl::VENDOR)));
 
-  GLint gl_version(0), gl_version_major(0);
+  GLint gl_version(0);
+  GLint gl_version_major(0);
   gl::GetIntegerv(gl::MAJOR_VERSION, &gl_version_major);
   gl::GetIntegerv(gl::MINOR_VERSION, &gl_version);
   GL_CHECK_ERROR;

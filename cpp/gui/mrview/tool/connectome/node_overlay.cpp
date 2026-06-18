@@ -60,9 +60,11 @@ void NodeOverlay::update_texture2D(const int plane, const int slice) {
     return;
   tex_positions[plane] = slice;
 
-  int x, y;
+  int x;
+  int y;
   get_axes(plane, x, y);
-  const ssize_t xsize = data.size(x), ysize = data.size(y);
+  const ssize_t xsize = data.size(x);
+  const ssize_t ysize = data.size(y);
 
   std::vector<float> texture_data;
   texture_data.resize(4 * xsize * ysize, 0.0F);

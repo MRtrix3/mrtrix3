@@ -27,7 +27,8 @@ bool Selector::operator()(const NodePair &nodes) const {
     return false;
   if (exact_match && list.size() == 2)
     return ((nodes.first == list[0] && nodes.second == list[1]) || (nodes.first == list[1] && nodes.second == list[0]));
-  bool found_first = false, found_second = false;
+  bool found_first = false;
+  bool found_second = false;
   for (unsigned int i : list) {
     if (i == nodes.first)
       found_first = true;
@@ -222,7 +223,8 @@ bool WriterExtraction::operator()(const Connectome::Streamline_nodepair &in) con
   if (exclusive) {
     // Make sure that both nodes are within the list of nodes of interest;
     //   if not, don't bother passing to any of the selectors
-    bool first_in_list = false, second_in_list = false;
+    bool first_in_list = false;
+    bool second_in_list = false;
     for (unsigned int i : node_list) {
       if (i == in.get_nodes().first)
         first_in_list = true;

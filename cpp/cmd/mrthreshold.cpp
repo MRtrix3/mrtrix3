@@ -255,7 +255,8 @@ default_type calculate(Image<value_type> &in,
   if (max_axis < in.ndim()) {
 
     // Need to extract just the current 3D volume
-    std::vector<size_t> in_from(in.ndim()), in_size(in.ndim());
+    std::vector<size_t> in_from(in.ndim());
+    std::vector<size_t> in_size(in.ndim());
     size_t axis;
     for (axis = 0; axis != 3; ++axis) {
       in_from[axis] = 0;
@@ -267,7 +268,8 @@ default_type calculate(Image<value_type> &in,
     }
     Adapter::Subset<Image<value_type>> in_subset(in, in_from, in_size);
     if (mask.valid()) {
-      std::vector<size_t> mask_from(mask.ndim()), mask_size(mask.ndim());
+      std::vector<size_t> mask_from(mask.ndim());
+      std::vector<size_t> mask_size(mask.ndim());
       for (axis = 0; axis != 3; ++axis) {
         mask_from[axis] = 0;
         mask_size[axis] = mask.size(axis);

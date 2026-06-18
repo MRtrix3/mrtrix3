@@ -186,7 +186,8 @@ double CoefficientOptimiserBase::do_fixel_exclusion(const SIFT::track_t track_in
     return 0.0;
 
   // Task 2: Calculate a new coefficient for this streamline
-  double weighted_sum = 0.0, sum_weights = 0.0;
+  double weighted_sum = 0.0;
+  double sum_weights = 0.0;
 
   for (size_t j = 0; j != this_contribution.dim(); ++j) {
     const size_t fixel_index = this_contribution[j].get_fixel_index();

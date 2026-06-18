@@ -279,7 +279,8 @@ void TrackMapperTWI::load_factors(const Streamline<> &tck) const {
           ;
         tangents[i] = tangents[k];
       } else {
-        size_t j, k;
+        size_t j;
+        size_t k;
         for (j = 1; (j < tck.size() - 1) && !tangents[j].isZero(); ++j)
           ;
         for (k = i - 1; (k != 0U) && !tangents[k].isZero(); --k)
@@ -325,7 +326,8 @@ void TrackMapperTWI::load_factors(const Streamline<> &tck) const {
 
   for (size_t i = 0; i != tck.size(); ++i) {
 
-    default_type tangent_dot_product, length;
+    default_type tangent_dot_product;
+    default_type length;
     if (i == 0) {
       tangent_dot_product = smoothed_tangents[1].dot(smoothed_tangents[0]);
       length = spline_distances(0, 1);

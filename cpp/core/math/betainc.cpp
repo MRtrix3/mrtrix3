@@ -90,7 +90,9 @@ default_type betaincreg(const default_type a, const default_type b, const defaul
   const default_type front = std::exp(std::log(x) * a + std::log(1.0 - x) * b - lbeta_ab) / a;
 
   // Use Lentz's algorithm to evaluate the continued fraction
-  default_type f = 1.0, c = 1.0, d = 0.0;
+  default_type f = 1.0;
+  default_type c = 1.0;
+  default_type d = 0.0;
 
   for (size_t i = 0; i <= 200; ++i) {
     const size_t m = i / 2;

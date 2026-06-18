@@ -43,9 +43,11 @@ void ImageBase::render2D(Displayable::Shader &shader_program,
 
   auto V2S = voxel2scanner();
 
-  int x, y;
+  int x;
+  int y;
   get_axes(plane, x, y);
-  float xsize = header().size(x) - 0.5, ysize = header().size(y) - 0.5;
+  float xsize = header().size(x) - 0.5;
+  float ysize = header().size(y) - 0.5;
 
   Eigen::Vector3f p;
   p[plane] = slice;
@@ -138,9 +140,11 @@ void Image::update_texture2D(int plane, int slice) {
 
   tex_positions[plane] = slice;
 
-  int x, y;
+  int x;
+  int y;
   get_axes(plane, x, y);
-  const ssize_t xsize = header().size(x), ysize = header().size(y);
+  const ssize_t xsize = header().size(x);
+  const ssize_t ysize = header().size(y);
 
   type = gl::FLOAT;
   std::vector<float> data;

@@ -297,7 +297,8 @@ template <class HeaderType> size_t offset(List &strides, const HeaderType &heade
  * - \c current: [ -1 2 -3 4 ], \c desired: [ 1 2 3 0 ] => [ -1 2 -3 4 ]
  *   */
 template <class HeaderType> List get_nearest_match(const HeaderType &current, const List &desired) {
-  List in(get_symbolic(current)), out(desired);
+  List in(get_symbolic(current));
+  List out(desired);
   out.resize(in.size(), 0);
 
   std::vector<ssize_t> dims(current.ndim());

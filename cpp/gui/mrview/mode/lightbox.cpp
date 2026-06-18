@@ -114,7 +114,8 @@ void LightBox::paint(Projection &) {
       current_slice_index = original_slice_index / volume_increment;
   }
 
-  float value_min = NaNF, value_max = NaNF;
+  float value_min = NaNF;
+  float value_max = NaNF;
 
   ssize_t slice_idx = 0;
   for (ssize_t row = 0; row < n_rows; ++row) {

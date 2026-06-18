@@ -205,7 +205,8 @@ public:
       return std::nullopt;
     }
 
-    Eigen::Vector3f next_pos, next_dir;
+    Eigen::Vector3f next_pos;
+    Eigen::Vector3f next_dir;
 
     float max_val = 0.0;
     for (const auto &i : calibrate_list) {

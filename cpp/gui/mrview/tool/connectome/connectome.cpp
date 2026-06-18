@@ -995,7 +995,9 @@ void Connectome::node_visibility_selection_slot(int index) {
     }
     node_visibility_threshold_controls->setVisible(true);
     {
-      float min = 0.0F, mean = 0.0F, max = 0.0F;
+      float min = 0.0F;
+      float mean = 0.0F;
+      float max = 0.0F;
       QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
       if (!list.empty()) {
         const FileDataVector &data(matrix_list_model->get(list[0]));
@@ -1265,7 +1267,9 @@ void Connectome::node_colour_selection_slot(int index) {
     }
     node_colour_range_controls->setVisible(true);
     {
-      float min = 0.0F, mean = 0.0F, max = 0.0F;
+      float min = 0.0F;
+      float mean = 0.0F;
+      float max = 0.0F;
       QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
       if (!list.empty()) {
         const FileDataVector &data(matrix_list_model->get(list[0]));
@@ -1434,7 +1438,9 @@ void Connectome::node_size_selection_slot(int index) {
     }
     node_size_range_controls->setVisible(true);
     {
-      float min = 0.0F, mean = 0.0F, max = 0.0F;
+      float min = 0.0F;
+      float mean = 0.0F;
+      float max = 0.0F;
       QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
       if (!list.empty()) {
         const FileDataVector &data(matrix_list_model->get(list[0]));
@@ -1587,7 +1593,9 @@ void Connectome::node_alpha_selection_slot(int index) {
     }
     node_alpha_range_controls->setVisible(true);
     {
-      float min = 0.0F, mean = 0.0F, max = 0.0F;
+      float min = 0.0F;
+      float mean = 0.0F;
+      float max = 0.0F;
       QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
       if (!list.empty()) {
         const FileDataVector &data(matrix_list_model->get(list[0]));
@@ -1866,7 +1874,9 @@ void Connectome::edge_visibility_selection_slot(int index) {
     edge_visibility_combobox->removeItem(4);
     edge_visibility_threshold_controls->setVisible(true);
     {
-      float min = 0.0F, mean = 0.0F, max = 0.0F;
+      float min = 0.0F;
+      float mean = 0.0F;
+      float max = 0.0F;
       QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
       if (!list.empty()) {
         const FileDataVector &data(matrix_list_model->get(list[0]));
@@ -2019,7 +2029,9 @@ void Connectome::edge_colour_selection_slot(int index) {
     edge_colour_combobox->removeItem(4);
     edge_colour_range_controls->setVisible(true);
     {
-      float min = 0.0F, mean = 0.0F, max = 0.0F;
+      float min = 0.0F;
+      float mean = 0.0F;
+      float max = 0.0F;
       QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
       if (!list.empty()) {
         const FileDataVector &data(matrix_list_model->get(list[0]));
@@ -2087,7 +2099,9 @@ void Connectome::edge_size_selection_slot(int index) {
     edge_size_combobox->removeItem(3);
     edge_size_range_controls->setVisible(true);
     {
-      float min = 0.0F, mean = 0.0F, max = 0.0F;
+      float min = 0.0F;
+      float mean = 0.0F;
+      float max = 0.0F;
       QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
       if (!list.empty()) {
         const FileDataVector &data(matrix_list_model->get(list[0]));
@@ -2150,7 +2164,9 @@ void Connectome::edge_alpha_selection_slot(int index) {
     edge_alpha_combobox->removeItem(3);
     edge_alpha_range_controls->setVisible(true);
     {
-      float min = 0.0F, mean = 0.0F, max = 0.0F;
+      float min = 0.0F;
+      float mean = 0.0F;
+      float max = 0.0F;
       QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
       if (!list.empty()) {
         const FileDataVector &data(matrix_list_model->get(list[0]));
@@ -2436,7 +2452,8 @@ void Connectome::initialise(const std::filesystem::path &path) {
   const MR::Transform transform(H);
   std::vector<Eigen::Vector3f> node_coms;
   std::vector<size_t> node_volumes;
-  std::vector<Eigen::Array3i> node_lower_corners, node_upper_corners;
+  std::vector<Eigen::Array3i> node_lower_corners;
+  std::vector<Eigen::Array3i> node_upper_corners;
   size_t max_index = 0;
 
   {
@@ -2482,7 +2499,8 @@ void Connectome::initialise(const std::filesystem::path &path) {
     for (size_t node_index = 1; node_index <= max_index; ++node_index) {
       if (node_volumes[node_index] != 0U) {
 
-        std::vector<int> from(3), dim(3);
+        std::vector<int> from(3);
+        std::vector<int> dim(3);
         for (size_t axis = 0; axis != 3; ++axis) {
           from[axis] = node_lower_corners[node_index][axis];
           dim[axis] = node_upper_corners[node_index][axis] - node_lower_corners[node_index][axis] + 1;
@@ -2781,7 +2799,9 @@ void Connectome::draw_edges(const Projection &projection) {
         edge_geometry_line_smooth_checkbox->isChecked())
       gl::Enable(gl::LINE_SMOOTH);
 
-    GLuint node_centre_one_ID = 0, node_centre_two_ID = 0, rot_matrix_ID = 0;
+    GLuint node_centre_one_ID = 0;
+    GLuint node_centre_two_ID = 0;
+    GLuint rot_matrix_ID = 0;
     if (edge_geometry == edge_geometry_t::CYLINDER) {
       cylinder.vertex_buffer.bind(gl::ARRAY_BUFFER);
       cylinder_VAO.bind();
@@ -3042,7 +3062,8 @@ void Connectome::calculate_node_visibility() {
       const bool invert = node_visibility_threshold_invert_checkbox->isChecked();
       const float threshold = node_visibility_threshold_button->value();
       for (node_t i = 1; i <= num_nodes(); ++i) {
-        bool any = false, all = true;
+        bool any = false;
+        bool all = true;
         for (node_t j = 1; j <= num_nodes(); ++j) {
           if (selected_nodes[j]) {
             const float value = data[(*mat2vec)(i - 1, j - 1)];
@@ -3085,7 +3106,8 @@ void Connectome::calculate_node_visibility() {
       const bool invert = node_visibility_threshold_invert_checkbox->isChecked();
       const float threshold = node_visibility_threshold_button->value();
       for (node_t i = 1; i <= num_nodes(); ++i) {
-        bool any = false, all = true;
+        bool any = false;
+        bool all = true;
         for (node_t j = 1; j <= num_nodes(); ++j) {
           if (selected_nodes[j]) {
             const float value = node_values_from_file_visibility[(*mat2vec)(i - 1, j - 1)];
@@ -3150,12 +3172,15 @@ void Connectome::calculate_node_colours() {
     if (!list.empty() && (selected_node_count != 0U)) {
 
       const FileDataVector &data(matrix_list_model->get(list[0]));
-      const float lower = node_colour_lower_button->value(), upper = node_colour_upper_button->value();
+      const float lower = node_colour_lower_button->value();
+      const float upper = node_colour_upper_button->value();
       for (node_t i = 1; i <= num_nodes(); ++i) {
         if (selected_nodes[i]) {
           nodes[i].set_colour(node_selection_settings.get_node_selected_colour());
         } else {
-          float min = std::numeric_limits<float>::infinity(), sum = 0.0F, max = -std::numeric_limits<float>::infinity();
+          float min = std::numeric_limits<float>::infinity();
+          float sum = 0.0F;
+          float max = -std::numeric_limits<float>::infinity();
           for (node_t j = 1; j <= num_nodes(); ++j) {
             if (selected_nodes[j]) {
               const float value = data[(*mat2vec)(i - 1, j - 1)];
@@ -3198,7 +3223,8 @@ void Connectome::calculate_node_colours() {
   } else if (node_colour == node_colour_t::VECTOR_FILE) {
 
     assert(node_values_from_file_colour.size() == num_nodes());
-    const float lower = node_colour_lower_button->value(), upper = node_colour_upper_button->value();
+    const float lower = node_colour_lower_button->value();
+    const float upper = node_colour_upper_button->value();
     for (node_t i = 1; i <= num_nodes(); ++i) {
       float factor = (node_values_from_file_colour[i - 1] - lower) / (upper - lower);
       factor = std::min(1.0F, std::max(factor, 0.0F));
@@ -3213,12 +3239,15 @@ void Connectome::calculate_node_colours() {
 
     assert(static_cast<size_t>(node_values_from_file_colour.size()) == num_edges());
     if (selected_node_count != 0U) {
-      const float lower = node_colour_lower_button->value(), upper = node_colour_upper_button->value();
+      const float lower = node_colour_lower_button->value();
+      const float upper = node_colour_upper_button->value();
       for (node_t i = 1; i <= num_nodes(); ++i) {
         if (selected_nodes[i]) {
           nodes[i].set_colour(node_selection_settings.get_node_selected_colour());
         } else {
-          float min = std::numeric_limits<float>::infinity(), sum = 0.0F, max = -std::numeric_limits<float>::infinity();
+          float min = std::numeric_limits<float>::infinity();
+          float sum = 0.0F;
+          float max = -std::numeric_limits<float>::infinity();
           for (node_t j = 1; j <= num_nodes(); ++j) {
             if (selected_nodes[j]) {
               const float value = node_values_from_file_colour[(*mat2vec)(i - 1, j - 1)];
@@ -3279,13 +3308,16 @@ void Connectome::calculate_node_sizes() {
     if (!list.empty() && (selected_node_count != 0U)) {
 
       const FileDataVector &data(matrix_list_model->get(list[0]));
-      const float lower = node_size_lower_button->value(), upper = node_size_upper_button->value();
+      const float lower = node_size_lower_button->value();
+      const float upper = node_size_upper_button->value();
       const bool invert = node_size_invert_checkbox->isChecked();
       for (node_t i = 1; i <= num_nodes(); ++i) {
         if (selected_nodes[i]) {
           nodes[i].set_size(1.0F);
         } else {
-          float min = std::numeric_limits<float>::infinity(), sum = 0.0F, max = -std::numeric_limits<float>::infinity();
+          float min = std::numeric_limits<float>::infinity();
+          float sum = 0.0F;
+          float max = -std::numeric_limits<float>::infinity();
           for (node_t j = 1; j <= num_nodes(); ++j) {
             if (selected_nodes[j]) {
               const float value = data[(*mat2vec)(i - 1, j - 1)];
@@ -3325,7 +3357,8 @@ void Connectome::calculate_node_sizes() {
   } else if (node_size == node_size_t::VECTOR_FILE) {
 
     assert(node_values_from_file_size.size() == num_nodes());
-    const float lower = node_size_lower_button->value(), upper = node_size_upper_button->value();
+    const float lower = node_size_lower_button->value();
+    const float upper = node_size_upper_button->value();
     const bool invert = node_size_invert_checkbox->isChecked();
     for (node_t i = 1; i <= num_nodes(); ++i) {
       float factor = (node_values_from_file_size[i - 1] - lower) / (upper - lower);
@@ -3338,7 +3371,8 @@ void Connectome::calculate_node_sizes() {
 
     assert(static_cast<size_t>(node_values_from_file_size.size()) == num_edges());
     if (selected_node_count != 0U) {
-      const float lower = node_size_lower_button->value(), upper = node_size_upper_button->value();
+      const float lower = node_size_lower_button->value();
+      const float upper = node_size_upper_button->value();
       const bool invert = node_size_invert_checkbox->isChecked();
       for (node_t i = 1; i <= num_nodes(); ++i) {
         // Unfortunately there's no real sensible way to deal with the case where
@@ -3347,7 +3381,9 @@ void Connectome::calculate_node_sizes() {
         if (selected_nodes[i]) {
           nodes[i].set_size(1.0F);
         } else {
-          float min = std::numeric_limits<float>::infinity(), sum = 0.0F, max = -std::numeric_limits<float>::infinity();
+          float min = std::numeric_limits<float>::infinity();
+          float sum = 0.0F;
+          float max = -std::numeric_limits<float>::infinity();
           for (node_t j = 1; j <= num_nodes(); ++j) {
             if (selected_nodes[j]) {
               const float value = node_values_from_file_size[(*mat2vec)(i - 1, j - 1)];
@@ -3397,13 +3433,16 @@ void Connectome::calculate_node_alphas() {
     if (!list.empty() && (selected_node_count != 0U)) {
 
       const FileDataVector &data(matrix_list_model->get(list[0]));
-      const float lower = node_alpha_lower_button->value(), upper = node_alpha_upper_button->value();
+      const float lower = node_alpha_lower_button->value();
+      const float upper = node_alpha_upper_button->value();
       const bool invert = node_alpha_invert_checkbox->isChecked();
       for (node_t i = 1; i <= num_nodes(); ++i) {
         if (selected_nodes[i]) {
           nodes[i].set_alpha(1.0F);
         } else {
-          float min = std::numeric_limits<float>::infinity(), sum = 0.0F, max = -std::numeric_limits<float>::infinity();
+          float min = std::numeric_limits<float>::infinity();
+          float sum = 0.0F;
+          float max = -std::numeric_limits<float>::infinity();
           for (node_t j = 1; j <= num_nodes(); ++j) {
             if (selected_nodes[j]) {
               const float value = data[(*mat2vec)(i - 1, j - 1)];
@@ -3458,7 +3497,8 @@ void Connectome::calculate_node_alphas() {
   } else if (node_alpha == node_alpha_t::VECTOR_FILE) {
 
     assert(node_values_from_file_alpha.size() == num_nodes());
-    const float lower = node_alpha_lower_button->value(), upper = node_alpha_upper_button->value();
+    const float lower = node_alpha_lower_button->value();
+    const float upper = node_alpha_upper_button->value();
     const bool invert = node_alpha_invert_checkbox->isChecked();
     for (node_t i = 1; i <= num_nodes(); ++i) {
       float factor = (node_values_from_file_alpha[i - 1] - lower) / (upper - lower);
@@ -3471,13 +3511,16 @@ void Connectome::calculate_node_alphas() {
 
     assert(static_cast<size_t>(node_values_from_file_alpha.size()) == num_edges());
     if (selected_node_count != 0U) {
-      const float lower = node_alpha_lower_button->value(), upper = node_alpha_upper_button->value();
+      const float lower = node_alpha_lower_button->value();
+      const float upper = node_alpha_upper_button->value();
       const bool invert = node_alpha_invert_checkbox->isChecked();
       for (node_t i = 1; i <= num_nodes(); ++i) {
         if (selected_nodes[i]) {
           nodes[i].set_alpha(1.0F);
         } else {
-          float min = std::numeric_limits<float>::infinity(), sum = 0.0F, max = -std::numeric_limits<float>::infinity();
+          float min = std::numeric_limits<float>::infinity();
+          float sum = 0.0F;
+          float max = -std::numeric_limits<float>::infinity();
           for (node_t j = 1; j <= num_nodes(); ++j) {
             if (selected_nodes[j]) {
               const float value = node_values_from_file_alpha[(*mat2vec)(i - 1, j - 1)];
@@ -3612,7 +3655,8 @@ void Connectome::calculate_edge_colours() {
     QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
     if (!list.empty()) {
       const FileDataVector &data(matrix_list_model->get(list[0]));
-      const float lower = edge_colour_lower_button->value(), upper = edge_colour_upper_button->value();
+      const float lower = edge_colour_lower_button->value();
+      const float upper = edge_colour_upper_button->value();
       for (size_t i = 0; i != num_edges(); ++i) {
         float factor = (data[i] - lower) / (upper - lower);
         factor = std::min(1.0F, std::max(factor, 0.0F));
@@ -3630,7 +3674,8 @@ void Connectome::calculate_edge_colours() {
   } else if (edge_colour == edge_colour_t::MATRIX_FILE) {
 
     assert(edge_values_from_file_colour.size());
-    const float lower = edge_colour_lower_button->value(), upper = edge_colour_upper_button->value();
+    const float lower = edge_colour_lower_button->value();
+    const float upper = edge_colour_upper_button->value();
     for (size_t i = 0; i != num_edges(); ++i) {
       float factor = (edge_values_from_file_colour[i] - lower) / (upper - lower);
       factor = std::min(1.0F, std::max(factor, 0.0F));
@@ -3654,7 +3699,8 @@ void Connectome::calculate_edge_sizes() {
     QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
     if (!list.empty()) {
       const FileDataVector &data(matrix_list_model->get(list[0]));
-      const float lower = edge_size_lower_button->value(), upper = edge_size_upper_button->value();
+      const float lower = edge_size_lower_button->value();
+      const float upper = edge_size_upper_button->value();
       const bool invert = edge_size_invert_checkbox->isChecked();
       for (size_t i = 0; i != num_edges(); ++i) {
         float factor = (data[i] - lower) / (upper - lower);
@@ -3670,7 +3716,8 @@ void Connectome::calculate_edge_sizes() {
   } else if (edge_size == edge_size_t::MATRIX_FILE) {
 
     assert(edge_values_from_file_size.size());
-    const float lower = edge_size_lower_button->value(), upper = edge_size_upper_button->value();
+    const float lower = edge_size_lower_button->value();
+    const float upper = edge_size_upper_button->value();
     const bool invert = edge_size_invert_checkbox->isChecked();
     for (size_t i = 0; i != num_edges(); ++i) {
       float factor = (edge_values_from_file_size[i] - lower) / (upper - lower);
@@ -3692,7 +3739,8 @@ void Connectome::calculate_edge_alphas() {
     QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
     if (!list.empty()) {
       const FileDataVector &data(matrix_list_model->get(list[0]));
-      const float lower = edge_alpha_lower_button->value(), upper = edge_alpha_upper_button->value();
+      const float lower = edge_alpha_lower_button->value();
+      const float upper = edge_alpha_upper_button->value();
       const bool invert = edge_alpha_invert_checkbox->isChecked();
       for (size_t i = 0; i != num_edges(); ++i) {
         float factor = (data[i] - lower) / (upper - lower);
@@ -3708,7 +3756,8 @@ void Connectome::calculate_edge_alphas() {
   } else if (edge_alpha == edge_alpha_t::MATRIX_FILE) {
 
     assert(edge_values_from_file_alpha.size());
-    const float lower = edge_alpha_lower_button->value(), upper = edge_alpha_upper_button->value();
+    const float lower = edge_alpha_lower_button->value();
+    const float upper = edge_alpha_upper_button->value();
     const bool invert = edge_alpha_invert_checkbox->isChecked();
     for (size_t i = 0; i != num_edges(); ++i) {
       float factor = (edge_values_from_file_alpha[i] - lower) / (upper - lower);

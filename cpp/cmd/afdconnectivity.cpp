@@ -250,7 +250,8 @@ value_type AFDConnectivity::get(const std::filesystem::path &path) {
       VoxelAccessor v(accessor());
       for (auto l = Loop(v)(v); l; ++l) {
         if (v.value() != nullptr) {
-          value_type voxel_afd = 0.0, max_td = 0.0;
+          value_type voxel_afd = 0.0;
+          value_type max_td = 0.0;
           for (Fixel_map<AFDConnFixel>::Iterator i = begin(v); i; ++i) {
             if (i().get_selected_length() > max_td) {
               max_td = i().get_selected_length();

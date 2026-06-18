@@ -1292,8 +1292,12 @@ void Window::set_mode_features() {
 }
 
 void Window::set_image_navigation_menu() {
-  bool show_next_volume(false), show_goto_volume(false), show_prev_volume(false);
-  bool show_next_volume_group(false), show_goto_volume_group(false), show_prev_volume_group(false);
+  bool show_next_volume(false);
+  bool show_goto_volume(false);
+  bool show_prev_volume(false);
+  bool show_next_volume_group(false);
+  bool show_goto_volume_group(false);
+  bool show_prev_volume_group(false);
   Image *imagep = image();
   if (imagep != nullptr) {
     if (imagep->image.ndim() > 3) {

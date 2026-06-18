@@ -218,7 +218,8 @@ void Base::setup_projection(const Eigen::Quaternionf &V, ModelViewProjection &wi
 
 void Base::setup_projection(const GL::mat4 &M, ModelViewProjection &with_projection) const {
   // info for projection:
-  const int w = with_projection.width(), h = with_projection.height();
+  const int w = with_projection.width();
+  const int h = with_projection.height();
   const float fov = FOV() / (float)(w + h);
   const float depth = std::sqrt(Math::pow2(image()->header().spacing(0) * image()->header().size(0)) +
                                 Math::pow2(image()->header().spacing(1) * image()->header().size(1)) +
@@ -344,7 +345,8 @@ void Base::reset_view() {
   set_target(focus());
   reset_orientation();
 
-  int x, y;
+  int x;
+  int y;
   image()->get_axes(plane(), x, y);
   set_FOV(std::max(dim[x], dim[y]));
 

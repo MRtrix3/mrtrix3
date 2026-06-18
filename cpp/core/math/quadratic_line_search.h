@@ -92,8 +92,12 @@ public:
 
     std::unique_ptr<ProgressBar> progress(!message.empty() ? new ProgressBar(message) : nullptr);
 
-    ValueType l = init_lower, m = init_mid, u = init_upper;
-    ValueType fl = functor(l), fm = functor(m), fu = functor(u);
+    ValueType l = init_lower;
+    ValueType m = init_mid;
+    ValueType u = init_upper;
+    ValueType fl = functor(l);
+    ValueType fm = functor(m);
+    ValueType fu = functor(u);
     // TODO Need to test if these bounds are producing a NaN CF
     size_t iters = 0;
 
@@ -186,8 +190,12 @@ public:
 
     status = EXECUTING;
 
-    ValueType l = init_lower, m = init_mid, u = init_upper;
-    ValueType fl = functor(l), fm = functor(m), fu = functor(u);
+    ValueType l = init_lower;
+    ValueType m = init_mid;
+    ValueType u = init_upper;
+    ValueType fl = functor(l);
+    ValueType fm = functor(m);
+    ValueType fu = functor(u);
     std::cerr << "Initialising quadratic line search\n";
     std::cerr << "        Lower        Mid         Upper\n";
     std::cerr << "Pos     " << str(l) << "           " << str(m) << "        " << str(u) << "\n";

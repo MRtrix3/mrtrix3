@@ -213,7 +213,10 @@ void LUT::parse_line_basic(const std::string &line) { // check_syntax off
 }
 void LUT::parse_line_freesurfer(const std::string &line) { // check_syntax off
   node_t index = std::numeric_limits<node_t>::max();
-  node_t r = 256, g = 256, b = 256, a = 255;
+  node_t r = 256;
+  node_t g = 256;
+  node_t b = 256;
+  node_t a = 255;
   std::string name;
   std::istringstream iss(line);
   iss >> index >> name >> r >> g >> b >> a;
@@ -236,9 +239,12 @@ void LUT::parse_line_aal(const std::string &line) { // check_syntax off
 }
 void LUT::parse_line_itksnap(const std::string &line) { // check_syntax off
   node_t index = std::numeric_limits<node_t>::max();
-  node_t r = 256, g = 256, b = 256;
+  node_t r = 256;
+  node_t g = 256;
+  node_t b = 256;
   float a = 1.0;
-  unsigned int label_vis = 0, mesh_vis = 0;
+  unsigned int label_vis = 0;
+  unsigned int mesh_vis = 0;
   std::string name;
   std::istringstream iss(line);
   iss >> index >> r >> g >> b >> a >> label_vis >> mesh_vis >> name;
@@ -249,7 +255,10 @@ void LUT::parse_line_itksnap(const std::string &line) { // check_syntax off
 }
 void LUT::parse_line_mrtrix(const std::string &line) { // check_syntax off
   node_t index = std::numeric_limits<node_t>::max();
-  node_t r = 256, g = 256, b = 256, a = 255;
+  node_t r = 256;
+  node_t g = 256;
+  node_t b = 256;
+  node_t a = 255;
   std::string short_name;
   std::string name;
   std::istringstream iss(line);

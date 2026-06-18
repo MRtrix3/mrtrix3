@@ -63,7 +63,8 @@ bool MGZ::check(Header &H, size_t num_axes) const {
 }
 
 std::unique_ptr<ImageIO::Base> MGZ::create(Header &H) const {
-  std::ostringstream mgh_header, mgh_tailer;
+  std::ostringstream mgh_header;
+  std::ostringstream mgh_tailer;
   File::MGH::write_header(H, mgh_header);
   File::MGH::write_other(H, mgh_tailer);
 

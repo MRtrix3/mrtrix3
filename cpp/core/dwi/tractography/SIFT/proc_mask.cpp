@@ -131,7 +131,12 @@ ACT::Tissues ResampleFunctor::ACT2pve(const Iterator &pos) {
   static const float os_step = 1.0 / static_cast<float>(os_ratio);
   static const float os_offset = 0.5 * os_step;
 
-  size_t cgm_count = 0, sgm_count = 0, wm_count = 0, csf_count = 0, path_count = 0, total_count = 0;
+  size_t cgm_count = 0;
+  size_t sgm_count = 0;
+  size_t wm_count = 0;
+  size_t csf_count = 0;
+  size_t path_count = 0;
+  size_t total_count = 0;
 
   Eigen::Array3i i;
   Eigen::Vector3f subvoxel_pos_dwi;

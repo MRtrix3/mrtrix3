@@ -124,7 +124,8 @@ public:
   using mask_value_type = typename MaskType::value_type;
 
   ImageCorrelationCostFunction(ImageType &input, MaskType &mask) : input(input), mask(mask) {
-    double sum_sqr = 0.0, sum = 0.0;
+    double sum_sqr = 0.0;
+    double sum = 0.0;
     count = 0;
 
     if (mask.valid()) {
@@ -167,7 +168,8 @@ template <class ImageType, class MaskType>
 typename ImageType::value_type estimate_optimal_threshold(ImageType &input, MaskType &mask) {
   using input_value_type = typename ImageType::value_type;
 
-  input_value_type min, max;
+  input_value_type min;
+  input_value_type max;
   if (mask.valid())
     min_max(input, mask, min, max);
   else

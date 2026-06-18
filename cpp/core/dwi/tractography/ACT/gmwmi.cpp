@@ -200,7 +200,8 @@ GMWMI_finder::find_interface(const std::vector<Eigen::Vector3f> &tck, const bool
 
   Math::Hermite<float> hermite(hermite_tension);
 
-  float min_mu = 0.0, max_mu = 1.0;
+  float min_mu = 0.0;
+  float max_mu = 1.0;
   Eigen::Vector3f p_best = p_end;
   size_t iters = 0;
   do {

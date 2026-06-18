@@ -139,7 +139,8 @@ std::string resolve_slice_timing(std::string_view one, std::string_view two) {
   // Siemens CSA reports with 2.5ms precision = 0.0025s
   // Allow slice times to vary by 1.5x this amount, but no more
   for (size_t i = 0; i != one_split.size(); ++i) {
-    default_type f_one, f_two;
+    default_type f_one;
+    default_type f_two;
     try {
       f_one = to<default_type>(one_split[i]);
       f_two = to<default_type>(two_split[i]);

@@ -118,7 +118,8 @@ Eigen::MatrixXd load_bvecs_bvals(const Header &header,
                                  const std::filesystem::path &bvecs_path,
                                  const std::filesystem::path &bvals_path) {
   assert(header.realignment().orig_transform().matrix().allFinite());
-  Eigen::MatrixXd bvals, bvecs;
+  Eigen::MatrixXd bvals;
+  Eigen::MatrixXd bvecs;
   try {
     bvals = File::Matrix::load_matrix<>(bvals_path);
     bvecs = File::Matrix::load_matrix<>(bvecs_path);

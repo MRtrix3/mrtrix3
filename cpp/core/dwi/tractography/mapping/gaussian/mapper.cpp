@@ -32,7 +32,8 @@ void TrackMapper::gaussian_smooth_factors(const Streamline<> &tck) const {
 
   for (size_t i = 0; i != unsmoothed.size(); ++i) {
 
-    default_type sum = 0.0, norm = 0.0;
+    default_type sum = 0.0;
+    default_type norm = 0.0;
 
     if (std::isfinite(unsmoothed[i])) {
       sum = unsmoothed[i];

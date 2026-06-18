@@ -26,7 +26,8 @@ void read_annot(const std::filesystem::path &path, label_vector_type &labels, Co
     throw Exception("Error opening input file!");
 
   const auto num_vertices = get_BE<int32_t>(in);
-  std::vector<int32_t> vertices, vertex_labels;
+  std::vector<int32_t> vertices;
+  std::vector<int32_t> vertex_labels;
   vertices.reserve(num_vertices);
   vertex_labels.reserve(num_vertices);
   for (int32_t i = 0; i != num_vertices; ++i) {

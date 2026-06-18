@@ -896,7 +896,8 @@ template <class Output> void write_other(const Header &H, Output &out) {
   std::unique_ptr<Eigen::Matrix<default_type, 4, 4>> auto_align_matrix;
   std::string pe_dir("UNKNOWN");
   float32 field_strength = NaNF;
-  std::string mri_frames, colour_table;
+  std::string mri_frames;
+  std::string colour_table;
   std::vector<Tag> cmdline_tags;
 
   for (const auto &entry : H.keyval()) {

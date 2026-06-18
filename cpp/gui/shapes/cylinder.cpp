@@ -24,7 +24,8 @@ namespace MR::GUI::Shapes {
 
 void Cylinder::LOD(const size_t level_of_detail) {
 
-  std::vector<Eigen::Vector3f> vertices, normals;
+  std::vector<Eigen::Vector3f> vertices;
+  std::vector<Eigen::Vector3f> normals;
   std::vector<Eigen::Array3i> indices;
 
   // Want to be able to display using a single DrawElements call; not worth faffing about

@@ -149,7 +149,8 @@ template <class Fixel> void Model<Fixel>::map_streamlines(const std::filesystem:
   }
 
   if (contributions.back() == nullptr) {
-    track_t num_tracks = 0, max_index = 0;
+    track_t num_tracks = 0;
+    track_t max_index = 0;
     for (track_t i = 0; i != contributions.size(); ++i) {
       if (contributions[i] != nullptr) {
         ++num_tracks;
@@ -220,7 +221,8 @@ template <class Fixel> void Model<Fixel>::remove_excluded_fixels() {
 
 template <class Fixel> void Model<Fixel>::check_TD() {
   VAR(TD_sum);
-  double sum_from_fixels = 0.0, sum_from_fixels_weighted = 0.0;
+  double sum_from_fixels = 0.0;
+  double sum_from_fixels_weighted = 0.0;
   for (typename std::vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i) {
     sum_from_fixels += i->get_TD();
     sum_from_fixels_weighted += i->get_TD() * i->get_weight();
@@ -291,7 +293,8 @@ template <class Fixel> bool Model<Fixel>::TrackMappingWorker::operator()(const T
     mapper(in, dixels);
 
     std::vector<Track_fixel_contribution> masked_contributions;
-    default_type total_contribution = 0.0, total_length = 0.0;
+    default_type total_contribution = 0.0;
+    default_type total_length = 0.0;
 
     for (const auto &dixel : dixels) {
       total_length += dixel.get_length();

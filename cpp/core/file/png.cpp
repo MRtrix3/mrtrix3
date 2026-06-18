@@ -224,7 +224,8 @@ Writer::Writer(const Header &H, const std::filesystem::path &path) : filepath(pa
   //   being set via selection of a single slice rather than axis permutation
   // Note that H may be 3D or 4D, all with non-unity size, in which case
   //   axis 2 forms the image plane
-  size_t width_axis = 0, height_axis = 1;
+  size_t width_axis = 0;
+  size_t height_axis = 1;
   if (H.ndim() > 2 && H.size(2) != 1) {
     if (H.size(0) == 1 && H.size(1) != 1) {
       width_axis = 1;

@@ -28,7 +28,8 @@ std::vector<default_type> parse_floats(std::string_view spec) {
   std::vector<default_type> V;
   if (spec.empty())
     throw Exception("floating-point sequence specifier is empty");
-  std::string::size_type start = 0, end;
+  std::string::size_type start = 0;
+  std::string::size_type end;
   std::array<default_type, 3> range_spec{NaN, NaN, NaN};
   int i = 0;
   try {
@@ -72,7 +73,8 @@ split(std::string_view string, std::string_view delimiters, bool ignore_empty_fi
   std::vector<std::string> V;
   if (string.empty())
     return V;
-  std::string::size_type start = 0, end;
+  std::string::size_type start = 0;
+  std::string::size_type end;
   try {
     if (ignore_empty_fields)
       start = string.find_first_not_of(delimiters);

@@ -46,7 +46,8 @@ void Exemplar::add(const Connectome::Streamline_nodelist &in) {
   // To try to make the exemplars sensible, find the two points along the streamline
   //   that are closest to the node COMs, and truncate the track to that range,
   //   before contributing to the exemplar
-  size_t index_closest_to_first_node = 0, index_closest_to_second_node = 0;
+  size_t index_closest_to_first_node = 0;
+  size_t index_closest_to_second_node = 0;
   float min_distance_to_first_node = (node_COMs.first - in[0]).squaredNorm();
   float min_distance_to_second_node = (node_COMs.second - in[0]).squaredNorm();
   for (size_t i = 1; i != in.size(); ++i) {
@@ -153,7 +154,9 @@ void Exemplar::finalize(const float step_size) {
       if (index == 0 || index == static_cast<int32_t>(size()) - 1) {
         vertices.push_back((*this)[index]);
       } else {
-        float lower = 0.0F, mu = 0.5F, upper = 1.0F;
+        float lower = 0.0F;
+        float mu = 0.5F;
+        float upper = 1.0F;
         point_type p(((*this)[index] + (*this)[index + step]) * 0.5F);
         for (uint32_t iter = 0; iter != 6; ++iter) {
           if ((p - vertices.back()).squaredNorm() > step_sq)

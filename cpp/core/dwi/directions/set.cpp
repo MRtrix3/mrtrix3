@@ -311,7 +311,8 @@ void Set::initialise_adjacency() {
     // Each of these three directions is adjacent
     // However: Each edge may have already been added from other triangles
     for (size_t edge = 0; edge != 6; ++edge) {
-      index_type from = 0, to = 0;
+      index_type from = 0;
+      index_type to = 0;
       switch (edge) {
       case 0:
         from = vertices[current.indices[0]].index;

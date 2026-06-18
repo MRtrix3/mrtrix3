@@ -40,7 +40,10 @@ void QColorButton::paintEvent(QPaintEvent *p) {
   QStyleOptionButton option;
   option.initFrom(this);
 
-  int x, y, w, h;
+  int x;
+  int y;
+  int w;
+  int h;
   const QRect r = style()->subElementRect(QStyle::SE_PushButtonContents, &option, this);
   r.getRect(&x, &y, &w, &h);
 

@@ -109,7 +109,8 @@ void evaluate_voxelwise_msq(InType1 &in1,
           meansquared<value_type>(in1.value(), in2.value(), sos);
         }
     } else { // 4D
-      Eigen::Matrix<value_type, Eigen::Dynamic, 1> a(in1.size(3)), b(in2.size(3));
+      Eigen::Matrix<value_type, Eigen::Dynamic, 1> a(in1.size(3));
+      Eigen::Matrix<value_type, Eigen::Dynamic, 1> b(in2.size(3));
       for (auto i = Loop(0, 3)(in1, in2, in1mask, in2mask); i; ++i) {
         if (in1mask.value() and in2mask.value()) {
           ++n_voxels;
@@ -127,7 +128,8 @@ void evaluate_voxelwise_msq(InType1 &in1,
           meansquared<value_type>(in1.value(), in2.value(), sos);
         }
     } else { // 4D
-      Eigen::Matrix<value_type, Eigen::Dynamic, 1> a(in1.size(3)), b(in2.size(3));
+      Eigen::Matrix<value_type, Eigen::Dynamic, 1> a(in1.size(3));
+      Eigen::Matrix<value_type, Eigen::Dynamic, 1> b(in2.size(3));
       for (auto i = Loop(0, 3)(in1, in2, in1mask); i; ++i) {
         if (in1mask.value()) {
           ++n_voxels;
@@ -145,7 +147,8 @@ void evaluate_voxelwise_msq(InType1 &in1,
           meansquared<value_type>(in1.value(), in2.value(), sos);
         }
     } else { // 4D
-      Eigen::Matrix<value_type, Eigen::Dynamic, 1> a(in1.size(3)), b(in2.size(3));
+      Eigen::Matrix<value_type, Eigen::Dynamic, 1> a(in1.size(3));
+      Eigen::Matrix<value_type, Eigen::Dynamic, 1> b(in2.size(3));
       for (auto i = Loop(0, 3)(in1, in2, in2mask); i; ++i) {
         if (in2mask.value()) {
           ++n_voxels;
@@ -160,7 +163,8 @@ void evaluate_voxelwise_msq(InType1 &in1,
       for (auto i = Loop()(in1, in2); i; ++i)
         meansquared<value_type>(in1.value(), in2.value(), sos);
     } else { // 4D
-      Eigen::Matrix<value_type, Eigen::Dynamic, 1> a(in1.size(3)), b(in2.size(3));
+      Eigen::Matrix<value_type, Eigen::Dynamic, 1> a(in1.size(3));
+      Eigen::Matrix<value_type, Eigen::Dynamic, 1> b(in2.size(3));
       for (auto i = Loop(0, 3)(in1, in2); i; ++i) {
         a = in1.row(3);
         b = in2.row(3);

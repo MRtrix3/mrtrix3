@@ -154,12 +154,15 @@ void get_mrtrix_file_path(Header &H, std::string_view flag, std::filesystem::pat
 }
 
 template <class SourceType> void read_mrtrix_header(Header &H, SourceType &kv) {
-  std::string dtype, layout;
+  std::string dtype;
+  std::string layout;
   std::vector<uint64_t> dim;
-  std::vector<default_type> vox, scaling;
+  std::vector<default_type> vox;
+  std::vector<default_type> scaling;
   std::vector<std::vector<default_type>> transform;
 
-  std::string key, value;
+  std::string key;
+  std::string value;
   while (next_keyvalue(kv, key, value)) {
     const std::string lkey = lowercase(key);
     if (lkey == "dim")

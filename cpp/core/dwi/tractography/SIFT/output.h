@@ -170,7 +170,9 @@ void ModelBase<Fixel>::output_errors_voxel(const std::filesystem::path &dirpath,
   VoxelAccessor v(accessor());
   for (auto l = Loop(v)(v, out_max_abs_diff, out_diff, out_cost); l; ++l) {
     if (v.value()) {
-      default_type max_abs_diff = 0.0, diff = 0.0, cost = 0.0;
+      default_type max_abs_diff = 0.0;
+      default_type diff = 0.0;
+      default_type cost = 0.0;
       for (typename Fixel_map<Fixel>::ConstIterator i = begin(v); i; ++i) {
         const default_type this_diff = i().get_diff(current_mu);
         max_abs_diff = std::max(max_abs_diff, std::fabs(this_diff));

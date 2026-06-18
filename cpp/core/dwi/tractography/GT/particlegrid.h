@@ -95,7 +95,9 @@ protected:
   default_type grid_spacing;
 
   inline size_t pos2idx(const Point_t &pos) const {
-    size_t x, y, z;
+    size_t x;
+    size_t y;
+    size_t z;
     pos2xyz(pos, x, y, z);
     return xyz2idx(x, y, z);
   }

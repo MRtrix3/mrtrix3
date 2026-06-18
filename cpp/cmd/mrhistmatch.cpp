@@ -74,7 +74,8 @@ void match_linear(Image<float> &input,
                   Image<bool> &mask_input,
                   Image<bool> &mask_target,
                   const bool estimate_intercept) {
-  std::vector<float> input_data, target_data;
+  std::vector<float> input_data;
+  std::vector<float> target_data;
   const std::filesystem::path output_path{argument[3]};
   {
     ProgressBar progress("Loading & sorting image data", 4);
@@ -192,7 +193,8 @@ void run() {
   auto input = Image<float>::open(argument[1]);
   auto target = Image<float>::open(argument[2]);
 
-  Image<bool> mask_input, mask_target;
+  Image<bool> mask_input;
+  Image<bool> mask_target;
   auto opt = get_options("mask_input");
   if (!opt.empty()) {
     const std::filesystem::path mask_input_path{opt[0][0]};

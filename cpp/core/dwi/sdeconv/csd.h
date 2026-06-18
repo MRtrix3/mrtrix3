@@ -137,7 +137,8 @@ public:
       // fconv.save ("fconv.txt");
       rconv = Math::pinv(fconv);
       // rconv.save ("rconv.txt");
-      ssize_t l = 0, nl = 1;
+      ssize_t l = 0;
+      ssize_t nl = 1;
       for (ssize_t row = 0; row < rconv.rows(); ++row) {
         if (row >= nl) {
           l++;

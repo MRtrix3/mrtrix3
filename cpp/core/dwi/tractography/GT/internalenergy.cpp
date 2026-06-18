@@ -39,13 +39,18 @@ void InternalEnergyComputer::scanNeighbourhood(const Particle *p, const int alph
   const Point_t ep = p->getEndPoint(alpha0);
   if (pGrid.isoutofbounds(ep))
     return;
-  size_t x, y, z;
+  size_t x;
+  size_t y;
+  size_t z;
   pGrid.pos2xyz(ep, x, y, z);
 
   const float tolerance2 = Particle::L * Particle::L; // distance threshold (particle length), hard coded
   const float costheta = Math::sqrt1_2;               // angular threshold (45 degrees), hard coded
   ParticleEnd pe;
-  float d1, d2, d, ct;
+  float d1;
+  float d2;
+  float d;
+  float ct;
 
   for (int i = -1; i <= 1; i++) {
     for (int j = -1; j <= 1; j++) {

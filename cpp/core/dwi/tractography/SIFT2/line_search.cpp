@@ -41,7 +41,9 @@ LineSearchFunctor::Result LineSearchFunctor::get(const double dFs) const {
   const double coefficient = Fs + dFs;
   const double factor = std::exp(coefficient);
 
-  Result data_result, tik_result, tv_result;
+  Result data_result;
+  Result tik_result;
+  Result tv_result;
 
   for (const auto &fixel : fixels) {
 

@@ -63,7 +63,8 @@ std::vector<std::vector<ValueType>> load_matrix_2D_vector(const std::filesystem:
   if (!stream)
     throw Exception("Unable to open numerical data text file \"" + filename.string() + "\": " + MR::C_strerror(errno));
   std::vector<std::vector<ValueType>> V;
-  std::string sbuf, cbuf;
+  std::string sbuf;
+  std::string cbuf;
   size_t hash;
 
   while (getline(stream, sbuf)) {

@@ -220,7 +220,8 @@ void run() {
     auto output = Image<cdouble>::create(output_path, header);
     double scale = 1.0;
 
-    Image<cdouble> in(input), out;
+    Image<cdouble> in(input);
+    Image<cdouble> out;
     for (size_t n = 0; n < axes.size(); ++n) {
       scale *= in.size(axes[n]);
       if (n >= (axes.size() - 1) && !magnitude) {

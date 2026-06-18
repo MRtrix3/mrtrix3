@@ -126,7 +126,8 @@ Eigen::Quaterniond rot_match_coordinates(const Eigen::MatrixXd &target_vertices,
   assert(target_vertices.cols() == 3 && "3D");
 
   double sqnorm = std::numeric_limits<double>::max();
-  int tidx = 0, midx = 0;
+  int tidx = 0;
+  int midx = 0;
   for (int mrow = 0; mrow < nm; mrow++) {
     for (int trow = 0; trow < nt; trow++) {
       const double sn = (target_vertices.row(trow) - moving_vertices.row(mrow)).squaredNorm();

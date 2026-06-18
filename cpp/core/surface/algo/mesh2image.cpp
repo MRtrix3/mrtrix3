@@ -105,7 +105,8 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
       const size_t num_vertices = (poly_index < mesh.num_triangles()) ? 3 : 4;
 
       // Figure out the voxel extent of this polygon in three dimensions
-      Vox lower_bound(H.size(0) - 1, H.size(1) - 1, H.size(2) - 1), upper_bound(0, 0, 0);
+      Vox lower_bound(H.size(0) - 1, H.size(1) - 1, H.size(2) - 1);
+      Vox upper_bound(0, 0, 0);
       VertexList this_poly_verts;
       if (num_vertices == 3)
         mesh.load_triangle_vertices(this_poly_verts, poly_index);
@@ -280,7 +281,8 @@ void mesh2image(const Mesh &mesh_realspace, Image<float> &image) {
     std::stack<Vox> to_expand;
     for (auto l = Loop(seed)(seed); l; ++l) {
       if (seed.value() == vox_mesh_t::PRELIM_INSIDE || seed.value() == vox_mesh_t::PRELIM_OUTSIDE) {
-        size_t prelim_inside_count = 0, prelim_outside_count = 0;
+        size_t prelim_inside_count = 0;
+        size_t prelim_outside_count = 0;
         float sum_sum_distances = 0.0F;
         if (seed.value() == vox_mesh_t::PRELIM_INSIDE)
           prelim_inside_count = 1;

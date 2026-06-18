@@ -215,7 +215,8 @@ void TWDFCDynamicImagePlugin::load_factors(const Streamline<> &tck, std::vector<
 
   // Calculate the Pearson correlation coefficient within the kernel window
   std::array<default_type, 2> sums = {0.0, 0.0};
-  default_type kernel_sum = 0.0, kernel_sq_sum = 0.0;
+  default_type kernel_sum = 0.0;
+  default_type kernel_sq_sum = 0.0;
   for (size_t i = 0; i != kernel.size(); ++i) {
     if (std::isfinite(values[0][i])) {
       sums[0] += kernel[i] * values[0][i];

@@ -156,7 +156,11 @@ public:
       auto im1_warped = Image<default_type>::scratch(warped_header);
       auto im2_warped = Image<default_type>::scratch(warped_header);
 
-      Image<default_type> im_cca, im_ccc, im_ccb, im_cc1, im_cc2;
+      Image<default_type> im_cca;
+      Image<default_type> im_ccc;
+      Image<default_type> im_ccb;
+      Image<default_type> im_cc1;
+      Image<default_type> im_cc2;
       if (use_cc) {
         DEBUG("Initialising CC images");
         im_cca = Image<default_type>::scratch(warped_header);

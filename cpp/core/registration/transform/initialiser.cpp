@@ -28,8 +28,10 @@ void set_centre_via_mass(Image<default_type> &im1,
                          const std::vector<MultiContrastSetting> &contrast_settings) {
 
   CONSOLE("initialising centre of rotation using centre of mass");
-  Eigen::Vector3d im1_centre_mass, im2_centre_mass;
-  Eigen::Vector3d im1_centre_mass_transformed, im2_centre_mass_transformed;
+  Eigen::Vector3d im1_centre_mass;
+  Eigen::Vector3d im2_centre_mass;
+  Eigen::Vector3d im1_centre_mass_transformed;
+  Eigen::Vector3d im2_centre_mass_transformed;
 
   Image<default_type> bogus_mask;
 

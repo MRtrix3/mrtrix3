@@ -68,7 +68,10 @@ public:
     const ssize_t cnt_lower =
         std::max<size_t>(10000, std::floor(fov_min * input.size(0) * input.size(1) * input.size(2)));
     const ssize_t cnt_upper = std::floor(fov_max * input.size(0) * input.size(1) * input.size(2));
-    float mad, median, previous_mad, previous_median;
+    float mad;
+    float median;
+    float previous_mad;
+    float previous_median;
     calculate_median_mad<Image<float>, Image<bool>>(input, int_roi, cnt, median, mad);
     INFO("median: " + str(median));
     INFO("mad: " + str(mad));

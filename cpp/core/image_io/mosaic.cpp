@@ -43,7 +43,8 @@ void Mosaic::load(const Header &header, size_t) {
   std::byte *data = addresses[0].get();
   for (const auto &n : files) {
     File::MMap file(n, false, false, m_xdim * m_ydim * header.datatype().bytes());
-    size_t nx = 0, ny = 0;
+    size_t nx = 0;
+    size_t ny = 0;
     for (size_t z = 0; z < slices; z++) {
       const size_t ox = nx * xdim;
       const size_t oy = ny * ydim;

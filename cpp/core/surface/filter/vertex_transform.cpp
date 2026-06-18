@@ -23,7 +23,8 @@
 namespace MR::Surface::Filter {
 
 void VertexTransform::operator()(const Mesh &in, Mesh &out) const {
-  VertexList vertices, normals;
+  VertexList vertices;
+  VertexList normals;
   const size_t V = in.num_vertices();
   vertices.reserve(V);
   if (in.have_normals())

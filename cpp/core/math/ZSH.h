@@ -210,7 +210,8 @@ inline VectorType &FA2ZSH(VectorType &zsh,
                           const size_t lmax,
                           const size_t precision = 100) {
   const default_type a = FA / sqrt(3.0 - 2.0 * FA * FA);
-  default_type ev1 = ADC * (1.0 + 2.0 * a), ev2 = ADC * (1.0 - a);
+  default_type ev1 = ADC * (1.0 + 2.0 * a);
+  default_type ev2 = ADC * (1.0 - a);
 
   Eigen::VectorXd sigs(precision);
   Eigen::MatrixXd ZSHT(precision, lmax / 2 + 1);

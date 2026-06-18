@@ -47,7 +47,8 @@ template <class ImageType> void image2mesh_blocky(const ImageType &input_image, 
   if (input_image.ndim() != 3)
     throw Exception("Voxel-to-mesh conversion only works for 3D images");
 
-  ImageType voxel(input_image), neighbour(input_image);
+  ImageType voxel(input_image);
+  ImageType neighbour(input_image);
   VertexList vertices;
   TriangleList triangles;
   std::map<Vox, size_t> vox2vertindex;

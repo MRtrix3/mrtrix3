@@ -30,7 +30,8 @@ bool Arc::operator()(const Streamline<> &in, Streamline<> &out) const {
     return true;
   // Determine which points on the streamline correspond to the endpoints of the arc
   idx_start = idx_end = 0;
-  size_t a(in.size()), b(in.size());
+  size_t a(in.size());
+  size_t b(in.size());
 
   state_t prev_s = state_t::BEFORE_START;
   for (size_t i = 0; i < in.size(); ++i) {
@@ -121,7 +122,8 @@ void Arc::init_arc() {
   y *= R / y.norm();
 
   const point_type e(end - c);
-  value_type ex(x.dot(e)), ey(y.dot(e));
+  value_type ex(x.dot(e));
+  value_type ey(y.dot(e));
 
   value_type angle = std::atan2(ey, ex);
   if (angle < 0.0)

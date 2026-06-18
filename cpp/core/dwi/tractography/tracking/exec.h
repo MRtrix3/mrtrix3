@@ -404,7 +404,8 @@ private:
     // ACT instead now defaults to a 2-voxel minimum length
     if (ACT::wm_pathintegral_threshold == 0.0F && ACT::wm_maxabs_threshold == 0.0F)
       return true;
-    float integral = 0.0, max_value = 0.0;
+    float integral = 0.0;
+    float max_value = 0.0;
     for (const auto &i : tck) {
       if (method.act().fetch_tissue_data(i)) {
         const float wm = method.act().tissues().get_wm();

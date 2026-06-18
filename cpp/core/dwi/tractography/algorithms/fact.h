@@ -116,7 +116,9 @@ protected:
   float select_fixel(Eigen::Vector3f &d) const {
 
     int idx = -1;
-    float max_abs_dot = 0.0, max_dot = 0.0, max_norm = 0.0;
+    float max_abs_dot = 0.0;
+    float max_dot = 0.0;
+    float max_norm = 0.0;
 
     for (size_t n = 0; n < S.num_vec; ++n) {
       const Eigen::Vector3f v(values[3 * n], values[3 * n + 1], values[3 * n + 2]);

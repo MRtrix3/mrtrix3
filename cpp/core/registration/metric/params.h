@@ -157,7 +157,10 @@ public:
         im2_image, midway_image, trafo2, no_oversampling, std::numeric_limits<Im2ValueType>::quiet_NaN());
 
     auto T = MR::Transform(midway_image).voxel2scanner;
-    Eigen::Vector3d midway_point, voxel_pos, im1_point, im2_point;
+    Eigen::Vector3d midway_point;
+    Eigen::Vector3d voxel_pos;
+    Eigen::Vector3d im1_point;
+    Eigen::Vector3d im2_point;
 
     for (auto i = Loop(midway_image)(check, im1_reslicer, im2_reslicer); i; ++i) {
       voxel_pos = {static_cast<default_type>(check.index(0)),

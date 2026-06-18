@@ -120,7 +120,8 @@ void run() {
   //   a list of files
   CohortDataImport importer;
   measurements_matrix_type data;
-  index_type num_inputs = 0, num_elements = 0;
+  index_type num_inputs = 0;
+  index_type num_elements = 0;
   try {
     importer.initialise<SubjectVectorImport>(argument[0]);
     num_inputs = importer.size();
@@ -285,7 +286,8 @@ void run() {
   // Manually construct default shuffling matrix
   // TODO Change to use convenience function; we make an empty enhancer later anyway
   const shuffle_matrix_type default_shuffle(shuffle_matrix_type::Identity(num_inputs, num_inputs));
-  matrix_type default_statistic, default_zstat;
+  matrix_type default_statistic;
+  matrix_type default_zstat;
   (*glm_test)(default_shuffle, default_statistic, default_zstat);
   for (index_type i = 0; i != num_hypotheses; ++i) {
     File::Matrix::save_vector(
@@ -303,7 +305,8 @@ void run() {
     }
 
     const std::shared_ptr<Stats::EnhancerBase> enhancer;
-    matrix_type null_distribution, uncorrected_pvalues;
+    matrix_type null_distribution;
+    matrix_type uncorrected_pvalues;
     count_matrix_type null_contributions;
     const matrix_type empirical_distribution; // unused
     Stats::PermTest::run_permutations(glm_test,

@@ -153,7 +153,8 @@ void usage() {
 using value_type = double;
 
 void run() {
-  std::vector<Header> input1, input2;
+  std::vector<Header> input1;
+  std::vector<Header> input2;
   const size_t n_images = argument.size() / 2;
   { // parse arguments and load input headers
     if (n_images * 2 != argument.size()) {
@@ -814,7 +815,8 @@ void run() {
   // only load the volumes we actually need for the highest lmax requested
   // load multiple tissue types into the same 4D image
   // drop last axis if input is 4D with one volume for speed reasons
-  Image<value_type> images1, images2;
+  Image<value_type> images1;
+  Image<value_type> images2;
   INFO("preloading input1...");
   Registration::preload_data(input1, images1, mc_params);
   INFO("preloading input2...");
@@ -1084,7 +1086,8 @@ void run() {
 
   if (!input1_midway_transformed_paths.empty() and !input2_midway_transformed_paths.empty()) {
     Header midway_header;
-    Image<default_type> im1_deform_field, im2_deform_field;
+    Image<default_type> im1_deform_field;
+    Image<default_type> im2_deform_field;
 
     if (do_nonlinear)
       midway_header = Header(*nl_registration.get_im1_to_mid());

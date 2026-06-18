@@ -55,7 +55,18 @@ bool RigidLinearNonSymmetricUpdate::operator()(Eigen::Matrix<default_type, Eigen
   assert(g.size() == 12);
 
   Eigen::Matrix<default_type, 12, 1> delta;
-  Eigen::Matrix<default_type, 4, 4> X, Delta, G, A, Asqrt, B, Bsqrt, Bsqrtinv, Xnew, P, Diff, XnewP;
+  Eigen::Matrix<default_type, 4, 4> X;
+  Eigen::Matrix<default_type, 4, 4> Delta;
+  Eigen::Matrix<default_type, 4, 4> G;
+  Eigen::Matrix<default_type, 4, 4> A;
+  Eigen::Matrix<default_type, 4, 4> Asqrt;
+  Eigen::Matrix<default_type, 4, 4> B;
+  Eigen::Matrix<default_type, 4, 4> Bsqrt;
+  Eigen::Matrix<default_type, 4, 4> Bsqrtinv;
+  Eigen::Matrix<default_type, 4, 4> Xnew;
+  Eigen::Matrix<default_type, 4, 4> P;
+  Eigen::Matrix<default_type, 4, 4> Diff;
+  Eigen::Matrix<default_type, 4, 4> XnewP;
   Registration::Transform::param_vec2mat(g, G);
   Registration::Transform::param_vec2mat(x, X);
 
@@ -190,7 +201,9 @@ bool RigidLinearNonSymmetricUpdate::operator()(Eigen::Matrix<default_type, Eigen
   Xnew.template block<3, 3>(0, 0) = R;
   if (control_points.size() != 0) {
     P = control_points;
-    Eigen::Matrix<default_type, 3, 1> T_affine, T_new, centroid;
+    Eigen::Matrix<default_type, 3, 1> T_affine;
+    Eigen::Matrix<default_type, 3, 1> T_new;
+    Eigen::Matrix<default_type, 3, 1> centroid;
     T_affine = Xnew.block<3, 1>(0, 3);
     centroid = P.rowwise().mean().head<3>();
     T_new = L.sqrt() * centroid + T_affine - R.sqrt() * centroid;

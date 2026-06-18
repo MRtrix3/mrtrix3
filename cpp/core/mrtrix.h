@@ -194,7 +194,8 @@ template <> inline cfloat to<cfloat>(std::string_view string) {
   const std::string stripped = strip(string);
   std::vector<cfloat> candidates;
   for (ssize_t i = -1; i <= static_cast<ssize_t>(stripped.size()); ++i) {
-    std::string first, second;
+    std::string first;
+    std::string second;
     if (i == -1) {
       first = "0";
       second = stripped;
@@ -251,7 +252,8 @@ template <> inline cdouble to<cdouble>(std::string_view string) {
   const std::string stripped = strip(string);
   std::vector<cdouble> candidates;
   for (ssize_t i = -1; i <= static_cast<ssize_t>(stripped.size()); ++i) {
-    std::string first, second;
+    std::string first;
+    std::string second;
     if (i == -1) {
       first = "0";
       second = stripped;
@@ -305,7 +307,8 @@ std::vector<IntType> parse_ints(std::string_view spec, const IntType last = std:
   };
 
   std::vector<IntType> V;
-  std::string::size_type start = 0, end;
+  std::string::size_type start = 0;
+  std::string::size_type end;
   std::array<SignedIntType, 3> num;
   size_t i = 0;
   try {
@@ -331,7 +334,8 @@ std::vector<IntType> parse_ints(std::string_view spec, const IntType last = std:
           throw Exception("invalid number range in number sequence \"" + spec + "\"");
       } else {
         if (i) {
-          SignedIntType inc, last;
+          SignedIntType inc;
+          SignedIntType last;
           if (i == 2) {
             inc = num[1];
             last = num[2];

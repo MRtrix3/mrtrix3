@@ -312,7 +312,8 @@ void Capture::run(bool with_capture) {
   const float radians = degrees_button->value() * (Math::pi / 180.0) / frames_value;
   const size_t first_index = start_index->value();
 
-  float volume = 0.0F, volume_inc = 0.0F;
+  float volume = 0.0F;
+  float volume_inc = 0.0F;
   if (volume_axis->value() < static_cast<ssize_t>(image.ndim())) {
     if (target_volume->value() >= image.size(volume_axis->value()))
       target_volume->setValue(image.size(volume_axis->value()) - 1);

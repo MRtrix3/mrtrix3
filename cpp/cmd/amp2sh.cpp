@@ -192,7 +192,8 @@ void run() {
   Header header_out(header_in);
   header_out.datatype() = DataType::Float32;
 
-  std::vector<size_t> bzeros, dwis;
+  std::vector<size_t> bzeros;
+  std::vector<size_t> dwis;
   Eigen::MatrixXd dirs;
   auto opt = get_options("directions");
   if (!opt.empty()) {
