@@ -22,6 +22,7 @@
 #include "exception.h"
 #include "image.h"
 #include "image_helpers.h"
+#include "types.h"
 
 #include "adapter/replicate.h"
 #include "adapter/subset.h"
@@ -300,8 +301,8 @@ void apply(Image<value_type> &in,
            const value_type threshold,
            const operator_type comp,
            const bool mask_out) {
-  const T true_value = std::is_floating_point<T>::value ? 1.0 : true;
-  const T false_value = std::is_floating_point<T>::value ? std::numeric_limits<T>::quiet_NaN() : false;
+  const T true_value = MR::is_floating_point<T>::value ? 1.0 : true;
+  const T false_value = MR::is_floating_point<T>::value ? std::numeric_limits<T>::quiet_NaN() : false;
 
   std::function<bool(value_type, value_type)> func;
   switch (comp) {

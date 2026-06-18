@@ -34,7 +34,6 @@
 #include "file/ofstream.h"
 #include "file/temp.h"
 #include "formats/mrtrix_utils.h"
-#include "half.h"
 #include "header.h"
 #include "image_helpers.h"
 

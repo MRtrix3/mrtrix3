@@ -39,7 +39,7 @@ public:
         ignore_zero(ignorezero) {}
 
   template <typename value_type>
-  typename std::enable_if<std::is_arithmetic<value_type>::value, bool>::type operator()(const value_type val) {
+  typename std::enable_if<MR::is_arithmetic<value_type>::value, bool>::type operator()(const value_type val) {
     if (std::isfinite(val) && !(ignore_zero && val == 0.0)) {
       min = std::min(min, static_cast<default_type>(val));
       max = std::max(max, static_cast<default_type>(val));
@@ -50,7 +50,7 @@ public:
   }
 
   template <class T>
-  FORCE_INLINE typename std::enable_if<!std::is_arithmetic<T>::value, bool>::type operator()(const T &val) {
+  FORCE_INLINE typename std::enable_if<!MR::is_arithmetic<T>::value, bool>::type operator()(const T &val) {
     return (*this)(static_cast<typename T::value_type>(val));
   }
 

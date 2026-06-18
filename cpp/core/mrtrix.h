@@ -50,19 +50,19 @@ template <typename X, typename ReturnType = int> struct max_digits {
   static constexpr int value() { return 0; }
 };
 
-template <typename X> struct max_digits<X, typename std::enable_if<std::is_fundamental<X>::value, int>::type> {
+template <typename X> struct max_digits<X, typename std::enable_if<MR::is_fundamental<X>::value, int>::type> {
   static constexpr int value() { return std::numeric_limits<X>::max_digits10; }
 };
 
 template <typename X>
-struct max_digits<X, typename std::enable_if<std::is_fundamental<typename X::Scalar>::value, int>::type> {
+struct max_digits<X, typename std::enable_if<MR::is_fundamental<typename X::Scalar>::value, int>::type> {
   static constexpr int value() { return std::numeric_limits<typename X::Scalar>::max_digits10; }
 };
 
 template <typename X>
 struct max_digits<X,
-                  typename std::enable_if<std::is_fundamental<typename X::value_type>::value &&
-                                              !std::is_fundamental<typename X::Scalar>::value,
+                  typename std::enable_if<MR::is_fundamental<typename X::value_type>::value &&
+                                              !MR::is_fundamental<typename X::Scalar>::value,
                                           int>::type> {
   static constexpr int value() { return std::numeric_limits<typename X::value_type>::max_digits10; }
 };
@@ -147,7 +147,7 @@ template <class T> inline T to(std::string_view string) {
   T value;
   stream >> value;
   if (stream.fail()) {
-    if (std::is_floating_point<T>::value) {
+    if (MR::is_floating_point<T>::value) {
       const std::string lstring = lowercase(stripped);
       if (lstring == "nan")
         return std::numeric_limits<T>::quiet_NaN();
@@ -298,7 +298,7 @@ std::vector<IntType> parse_ints(std::string_view spec, const IntType last = std:
     throw Exception("integer sequence specifier is empty");
 
   auto to_unsigned = [&](const SignedIntType value) {
-    if (std::is_unsigned<IntType>::value && value < 0)
+    if (MR::is_unsigned<IntType>::value && value < 0)
       throw Exception("Impermissible negative value present in sequence \"" + spec + "\"");
     return IntType(value);
   };

@@ -19,7 +19,6 @@
 
 #include "datatype.h"
 #include "fetch_store.h"
-#include "half.h"
 #include "types.h"
 
 namespace MR {
@@ -31,22 +30,22 @@ namespace {
 
 // any -> floating-point
 template <typename TypeOUT, typename TypeIN>
-inline typename std::enable_if<std::is_floating_point<TypeOUT>::value, TypeOUT>::type
-round_func(TypeIN in, typename std::enable_if<std::is_arithmetic<TypeIN>::value>::type * = nullptr) {
+inline typename std::enable_if<MR::is_floating_point<TypeOUT>::value, TypeOUT>::type
+round_func(TypeIN in, typename std::enable_if<MR::is_arithmetic<TypeIN>::value>::type * = nullptr) {
   return TypeOUT(in);
 }
 
 // integer -> integer
 template <typename TypeOUT, typename TypeIN>
-inline typename std::enable_if<std::is_integral<TypeOUT>::value, TypeOUT>::type
-round_func(TypeIN in, typename std::enable_if<std::is_integral<TypeIN>::value>::type * = nullptr) {
+inline typename std::enable_if<MR::is_integral<TypeOUT>::value, TypeOUT>::type
+round_func(TypeIN in, typename std::enable_if<MR::is_integral<TypeIN>::value>::type * = nullptr) {
   return TypeOUT(in);
 }
 
 // floating-point -> integer
 template <typename TypeOUT, typename TypeIN>
-inline typename std::enable_if<std::is_integral<TypeOUT>::value, TypeOUT>::type
-round_func(TypeIN in, typename std::enable_if<std::is_floating_point<TypeIN>::value>::type * = nullptr) {
+inline typename std::enable_if<MR::is_integral<TypeOUT>::value, TypeOUT>::type
+round_func(TypeIN in, typename std::enable_if<MR::is_floating_point<TypeIN>::value>::type * = nullptr) {
   return std::isfinite(in) ? std::round(in) : TypeOUT(0);
 }
 
@@ -62,13 +61,13 @@ round_func(
 // real -> complex
 template <typename TypeOUT, typename TypeIN>
 inline typename std::enable_if<std::is_same<std::complex<typename TypeOUT::value_type>, TypeOUT>::value, TypeOUT>::type
-round_func(TypeIN in, typename std::enable_if<std::is_arithmetic<TypeIN>::value>::type * = nullptr) {
+round_func(TypeIN in, typename std::enable_if<MR::is_arithmetic<TypeIN>::value>::type * = nullptr) {
   return round_func<typename TypeOUT::value_type>(in);
 }
 
 // complex -> real
 template <typename TypeOUT, typename TypeIN>
-inline typename std::enable_if<std::is_arithmetic<TypeOUT>::value, TypeOUT>::type round_func(
+inline typename std::enable_if<MR::is_arithmetic<TypeOUT>::value, TypeOUT>::type round_func(
     TypeIN in,
     typename std::enable_if<std::is_same<std::complex<typename TypeIN::value_type>, TypeIN>::value>::type * = nullptr) {
   return round_func<TypeOUT>(in.real());
@@ -76,7 +75,7 @@ inline typename std::enable_if<std::is_arithmetic<TypeOUT>::value, TypeOUT>::typ
 
 // apply scaling from storage:
 template <typename DiskType>
-inline typename std::enable_if<std::is_arithmetic<DiskType>::value, default_type>::type
+inline typename std::enable_if<MR::is_arithmetic<DiskType>::value, default_type>::type
 scale_from_storage(DiskType val, default_type offset, default_type scale) {
   return offset + scale * val;
 }
@@ -90,7 +89,7 @@ inline
 
 // apply scaling to storage:
 template <typename DiskType>
-inline typename std::enable_if<std::is_arithmetic<DiskType>::value, default_type>::type
+inline typename std::enable_if<MR::is_arithmetic<DiskType>::value, default_type>::type
 scale_to_storage(DiskType val, default_type offset, default_type scale) {
   return (val - offset) / scale;
 }

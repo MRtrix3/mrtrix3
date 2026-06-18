@@ -206,7 +206,7 @@ is_out_of_bounds(const ImageType &image, size_t from_axis = 0, size_t to_axis = 
 }
 
 template <class HeaderType, class VectorType>
-FORCE_INLINE typename std::enable_if<!std::is_arithmetic<VectorType>::value, bool>::type
+FORCE_INLINE typename std::enable_if<!MR::is_arithmetic<VectorType>::value, bool>::type
 is_out_of_bounds(const HeaderType &header,
                  const VectorType &pos,
                  size_t from_axis = 0,

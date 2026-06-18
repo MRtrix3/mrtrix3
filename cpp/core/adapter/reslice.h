@@ -40,7 +40,7 @@ typename std::enable_if<std::is_same<value_type, bool>::value,   //
 // Partial specialisation to invoke round-to-nearest when taking an average of integers
 template <typename value_type>                                    //
 typename std::enable_if<!std::is_same<value_type, bool>::value && //
-                            std::is_integral<value_type>::value,  //
+                            MR::is_integral<value_type>::value,   //
                         value_type>::type inline                  //
     normalise(const default_type sum, const default_type norm) {  //
   return static_cast<value_type>(std::round(sum * norm));
@@ -49,7 +49,7 @@ typename std::enable_if<!std::is_same<value_type, bool>::value && //
 // Standard implementation for floating point (either real or complex)
 template <typename value_type, typename summing_type>             //
 typename std::enable_if<!std::is_same<value_type, bool>::value && //
-                            !std::is_integral<value_type>::value, //
+                            !MR::is_integral<value_type>::value,  //
                         value_type>::type inline                  //
     normalise(const summing_type sum, const default_type norm) {  //
   return static_cast<value_type>(sum * norm);

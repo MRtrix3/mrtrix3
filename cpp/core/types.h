@@ -158,25 +158,41 @@ using KeyValues = std::map<std::string, std::string>;
 template <class ValueType> struct is_complex : std::false_type {};
 template <class ValueType> struct is_complex<std::complex<ValueType>> : std::true_type {};
 
+//! Required for any SFINAE involving data types that may include Eigen::half
+template <typename X> struct is_floating_point : std::is_floating_point<X> {};
+template <> struct is_floating_point<Eigen::half> : std::true_type {};
+template <typename T> inline constexpr bool is_floating_point_v = is_floating_point<T>::value;
+template <typename X> struct is_fundamental : std::is_fundamental<X> {};
+template <> struct is_fundamental<Eigen::half> : std::true_type {};
+template <typename T> inline constexpr bool is_fundamental_v = is_fundamental<T>::value;
+template <typename X> struct is_arithmetic : std::is_arithmetic<X> {};
+template <> struct is_arithmetic<Eigen::half> : std::true_type {};
+template <typename T> inline constexpr bool is_arithmetic_v = is_arithmetic<T>::value;
+template <typename X> struct is_integral : std::is_integral<X> {};
+template <> struct is_integral<Eigen::half> : std::false_type {};
+template <typename T> inline constexpr bool is_integral_v = is_integral<T>::value;
+template <typename X> struct is_unsigned : std::is_unsigned<X> {};
+template <> struct is_unsigned<Eigen::half> : std::false_type {};
+template <typename T> inline constexpr bool is_unsigned_v = is_unsigned<T>::value;
+
 //! check whether type is compatible with MRtrix3's file IO backend:
 template <class ValueType>
 struct is_data_type
-    : std::integral_constant<bool, std::is_arithmetic<ValueType>::value || is_complex<ValueType>::value> {};
+    : std::integral_constant<bool, MR::is_arithmetic<ValueType>::value || is_complex<ValueType>::value> {};
 
 // required to allow use of abs() call on unsigned integers in template
 // functions, etc, since the standard labels such calls ill-formed:
 // http://en.cppreference.com/w/cpp/numeric/math/abs
 template <typename X>
-inline constexpr typename std::enable_if<std::is_arithmetic<X>::value && std::is_unsigned<X>::value, X>::type abs(X x) {
+inline constexpr typename std::enable_if<MR::is_arithmetic<X>::value && std::is_unsigned<X>::value, X>::type abs(X x) {
   return x;
 }
 template <typename X>
-inline constexpr typename std::enable_if<std::is_floating_point<X>::value, X>::type abs(const std::complex<X> &x) {
+inline constexpr typename std::enable_if<MR::is_floating_point<X>::value, X>::type abs(const std::complex<X> &x) {
   return std::abs(x);
 }
 template <typename X>
-inline constexpr typename std::enable_if<std::is_arithmetic<X>::value && !std::is_unsigned<X>::value, X>::type
-abs(X x) {
+inline constexpr typename std::enable_if<MR::is_arithmetic<X>::value && !std::is_unsigned<X>::value, X>::type abs(X x) {
   return std::abs(x);
 }
 

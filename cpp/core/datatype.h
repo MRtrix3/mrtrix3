@@ -20,7 +20,6 @@
 #include <unordered_map>
 
 #include "cmdline_option.h"
-#include "half.h"
 
 #ifdef Complex
 #undef Complex

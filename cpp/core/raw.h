@@ -41,13 +41,13 @@
 namespace MR::ByteOrder {
 
 template <typename ValueType>
-inline typename std::enable_if<std::is_fundamental<ValueType>::value && sizeof(ValueType) == 1, ValueType>::type
+inline typename std::enable_if<MR::is_fundamental<ValueType>::value && sizeof(ValueType) == 1, ValueType>::type
 swap(ValueType v) {
   return v;
 }
 
 template <typename ValueType>
-inline typename std::enable_if<std::is_fundamental<ValueType>::value && sizeof(ValueType) == 2, ValueType>::type
+inline typename std::enable_if<MR::is_fundamental<ValueType>::value && sizeof(ValueType) == 2, ValueType>::type
 swap(ValueType v) {
   union {
     ValueType v;
@@ -58,7 +58,7 @@ swap(ValueType v) {
 }
 
 template <typename ValueType>
-inline typename std::enable_if<std::is_fundamental<ValueType>::value && sizeof(ValueType) == 4, ValueType>::type
+inline typename std::enable_if<MR::is_fundamental<ValueType>::value && sizeof(ValueType) == 4, ValueType>::type
 swap(ValueType v) {
   union {
     ValueType v;
@@ -70,7 +70,7 @@ swap(ValueType v) {
 }
 
 template <typename ValueType>
-inline typename std::enable_if<std::is_fundamental<ValueType>::value && sizeof(ValueType) == 8, ValueType>::type
+inline typename std::enable_if<MR::is_fundamental<ValueType>::value && sizeof(ValueType) == 8, ValueType>::type
 swap(ValueType v) {
   union {
     ValueType v;
