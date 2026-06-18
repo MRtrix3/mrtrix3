@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <stdint.h>
+#include <cstdint>
 
 #include "types.h"
 

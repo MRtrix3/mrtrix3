@@ -194,6 +194,7 @@ void run() {
 
   std::vector<FieldChoice> fields;
   auto opt = get_options("output");
+  fields.reserve(opt.size());
   for (const auto & n : opt)
     fields.push_back(MR::Enum::from_name<FieldChoice>(n[0]));
 

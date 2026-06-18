@@ -38,9 +38,9 @@ public:
   bool next();
   void close() { in.close(); }
 
-  std::string key() const throw() { return (K); }
-  std::string value() const throw() { return (V); }
-  const std::filesystem::path &path() const throw() { return (filepath); }
+  [[nodiscard]] std::string key() const throw() { return (K); }
+  [[nodiscard]] std::string value() const throw() { return (V); }
+  [[nodiscard]] const std::filesystem::path &path() const throw() { return (filepath); }
 
 protected:
   std::string K, V;

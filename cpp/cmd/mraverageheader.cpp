@@ -30,9 +30,8 @@ using namespace MR;
 using namespace App;
 using namespace Registration;
 
-const default_type PADDING_DEFAULT = 0.0;
-const avgspace_voxspacing_t SPACING_DEFAULT_VALUE = avgspace_voxspacing_t::MEAN_PROJECTION;
-const std::string SPACING_DEFAULT_STRING = "mean_projection";
+constexpr default_type padding_default = 0.0;
+constexpr avgspace_voxspacing_t spacing_default_value = avgspace_voxspacing_t::MEAN_PROJECTION;
 
 // clang-format off
 void usage() {
@@ -58,14 +57,14 @@ void usage() {
   OPTIONS
   + Option ("padding",
             "boundary box padding in voxels."
-            " Default: " + str(PADDING_DEFAULT))
+            " Default: " + str(padding_default))
     + Argument ("value").type_float(0.0)
   + Option ("spacing",
             "Method for determination of voxel spacings based on"
             " the set of input images and the average header axes"
             " (see Description)."
             " Valid options are: " + MR::Enum::join<avgspace_voxspacing_t>(",") + ";"
-            " default = " + SPACING_DEFAULT_STRING)
+            " default = " + MR::Enum::lowercase_name(spacing_default_value))
     + Argument("type").type_choice<avgspace_voxspacing_t>()
   + Option ("fill", "set the intensity in the first volume of the average space to 1")
   + DataType::options();
@@ -79,10 +78,10 @@ void run() {
 
   const size_t num_inputs = argument.size() - 1;
 
-  const default_type p = get_option_value("padding", PADDING_DEFAULT);
+  const default_type p = get_option_value("padding", padding_default);
   auto padding = Eigen::Matrix<default_type, 4, 1>(p, p, p, 1.0);
   INFO("padding in template voxels: " + str(padding.transpose().head<3>()));
-  const avgspace_voxspacing_t spacing = get_option_choice<avgspace_voxspacing_t>("spacing", SPACING_DEFAULT_VALUE);
+  const auto spacing = get_option_choice<avgspace_voxspacing_t>("spacing", spacing_default_value);
   const bool fill = !get_options("fill").empty();
 
   std::vector<Header> headers_in;

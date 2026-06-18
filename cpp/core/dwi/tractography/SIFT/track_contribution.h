@@ -30,24 +30,24 @@ public:
   Track_fixel_contribution(const uint32_t fixel_index, const float length) {
     const uint32_t length_as_int =
         std::min(uint32_t(255), static_cast<uint32_t>(std::round(scale_to_storage * length)));
-    data = (fixel_index & 0x00FFFFFFu) | (length_as_int << 24);
+    data = (fixel_index & 0x00FFFFFF) | (length_as_int << 24);
   }
 
   Track_fixel_contribution() : data(0) {}
 
-  [[nodiscard]] uint32_t get_fixel_index() const { return (data & 0x00FFFFFFu); }
+  [[nodiscard]] uint32_t get_fixel_index() const { return (data & 0x00FFFFFF); }
   [[nodiscard]] float get_length() const {
-    return (static_cast<uint32_t>((data & 0xFF000000u) >> 24) * scale_from_storage);
+    return (static_cast<uint32_t>((data & 0xFF000000) >> 24) * scale_from_storage);
   }
 
   bool add(const float length) {
     // Allow summing of multiple contributions to a fixel, UNLESS it would cause truncation, in which
     //   case keep them separate
     const uint32_t increment = std::round(scale_to_storage * length);
-    const uint32_t existing = (data & 0xFF000000u) >> 24;
+    const uint32_t existing = (data & 0xFF000000) >> 24;
     if (existing + increment > 255)
       return false;
-    data = (data & 0x00FFFFFFu) | ((existing + increment) << 24);
+    data = (data & 0x00FFFFFF) | ((existing + increment) << 24);
     return true;
   }
 

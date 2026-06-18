@@ -34,23 +34,19 @@ struct LinearInitialisationParams {
     bool unmasked1{false};
     bool unmasked2{false};
     struct rot_search {
-      std::vector<default_type> angles;
+      std::vector<default_type> angles{{2.0 / 180.0 * Math::pi,
+                                        5.0 / 180.0 * Math::pi,
+                                        10.0 / 180.0 * Math::pi,
+                                        15.0 / 180.0 * Math::pi,
+                                        20.0 / 180.0 * Math::pi}};
       default_type scale{0.15};
       size_t directions{250};
       bool run_global{false};
       double translation_extent{0.05};
       struct global_search {
         size_t iterations{10000};
-        global_search() = default;
       };
       global_search global;
-      rot_search() : angles(5) {
-        angles[0] = 2.0 / 180.0 * Math::pi;
-        angles[1] = 5.0 / 180.0 * Math::pi;
-        angles[2] = 10.0 / 180.0 * Math::pi;
-        angles[3] = 15.0 / 180.0 * Math::pi;
-        angles[4] = 20.0 / 180.0 * Math::pi;
-      }
     };
     rot_search search;
     RotationInit() = default; // TODO config parsing

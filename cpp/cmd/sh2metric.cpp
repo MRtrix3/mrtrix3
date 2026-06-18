@@ -240,9 +240,7 @@ void run_entropy() {
 
       class Normalisation {
       public:
-        Normalisation()
-            : lower(std::numeric_limits<default_type>::quiet_NaN()),
-              upper(std::numeric_limits<default_type>::quiet_NaN()) {}
+        Normalisation() = default;
         void initialise(const entropy_normalisation normalise_mode,
                         const size_t num_images,
                         const transform_type &transform) {
@@ -269,8 +267,8 @@ void run_entropy() {
 
       private:
         entropy_normalisation mode{entropy_normalisation::NONE};
-        default_type lower;
-        default_type upper;
+        default_type lower{std::numeric_limits<default_type>::quiet_NaN()};
+        default_type upper{std::numeric_limits<default_type>::quiet_NaN()};
       } normalisation;
     };
     std::shared_ptr<Shared> shared;

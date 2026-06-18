@@ -62,9 +62,9 @@ public:
         lock.unlock(idx);
     }
 
-    bool try_lock(const point_type &pos) { return lock.try_lock(pos, idx); }
+    [[nodiscard]] bool try_lock(const point_type &pos) { return lock.try_lock(pos, idx); }
 
-    bool operator!() const { return (idx == -1); }
+    [[nodiscard]] bool operator!() const { return (idx == -1); }
 
   private:
     SpatialLock &lock;
@@ -76,7 +76,7 @@ protected:
   std::vector<std::pair<point_type, bool>> lockcentres;
   value_type _tx, _ty, _tz;
 
-  bool try_lock(const point_type &pos, ssize_t &idx) {
+  [[nodiscard]] bool try_lock(const point_type &pos, ssize_t &idx) {
     const std::lock_guard<std::mutex> lock(mutex);
     idx = -1;
     ssize_t i = 0;

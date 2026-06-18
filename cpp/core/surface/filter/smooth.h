@@ -26,10 +26,9 @@ constexpr default_type default_smoothing_influence_factor = 10.0;
 
 class Smooth : public Base {
 public:
-  Smooth() : Base(), spatial(default_smoothing_spatial_factor), influence(default_smoothing_influence_factor) {}
+  Smooth() = default;
 
-  Smooth(std::string_view s)
-      : Base(s), spatial(default_smoothing_spatial_factor), influence(default_smoothing_influence_factor) {}
+  Smooth(std::string_view s) : Base(s) {}
 
   Smooth(const default_type spatial_factor, const default_type influence_factor)
       : Base(), spatial(spatial_factor), influence(influence_factor) {}
@@ -40,7 +39,8 @@ public:
   void operator()(const Mesh &, Mesh &) const override;
 
 private:
-  default_type spatial, influence;
+  default_type spatial{default_smoothing_spatial_factor};
+  default_type influence{default_smoothing_influence_factor};
 };
 
 } // namespace MR::Surface::Filter

@@ -111,8 +111,8 @@ public:
     // If one is empty and the other is not, one is 'less than' the other; but if both are empty, then '<' should return
     // false
     if (n == 0U)
-      return that.n;
-    if (!that.n)
+      return that.n > 0U;
+    if (that.n == 0U)
       return false;
     for (size_t i = 0; i != std::min(n, that.n); ++i) {
       if (d[i] < that.d[i])

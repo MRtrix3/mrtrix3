@@ -118,7 +118,7 @@ public:
       stream << "outside FoV";
     else
       stream << "value = " << V.value();
-    if (!V.data_pointer)
+    if (V.data_pointer == nullptr)
       stream << " (using indirect IO)";
     else
       stream << " (using direct IO, data at " << V.data_pointer << ")";

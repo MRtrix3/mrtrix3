@@ -33,7 +33,7 @@ public:
   }
 
   void load_image_buffer() override;
-  FixelValue &get_fixel_value(std::string_view key) const override;
+  [[nodiscard]] FixelValue &get_fixel_value(std::string_view key) const override;
 
 protected:
   void lazy_load_fixel_value_file(std::string_view key) const;

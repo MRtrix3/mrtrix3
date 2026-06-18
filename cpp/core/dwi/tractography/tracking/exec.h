@@ -229,7 +229,7 @@ private:
         if (!termination.has_value() || termination_info.at(termination.value()).add_term_to_tck)
           tck.push_back(method.pos);
         if (termination.has_value()) {
-          apply_priors(termination);
+          apply_priors(termination.value());
           if (track_excluded && termination.value() != term_t::ENTER_EXCLUDE) {
             if (tck.size() > max_size_at_backtrack) {
               max_size_at_backtrack = tck.size();
@@ -263,7 +263,7 @@ private:
       } while (!termination.has_value());
     }
 
-    apply_priors(termination);
+    apply_priors(termination.value());
 
     if (termination == term_t::EXIT_SGM) {
       truncate_exit_sgm(tck);
@@ -300,12 +300,10 @@ private:
 #endif
   }
 
-  void apply_priors(std::optional<term_t> &termination) {
-    assert(termination.has_value());
-
+  void apply_priors(term_t &termination) {
     if (S.is_act()) {
 
-      switch (termination.value()) {
+      switch (termination) {
 
       case term_t::ENTER_CGM:
       case term_t::EXIT_IMAGE:
@@ -333,13 +331,13 @@ private:
 
     } else {
 
-      switch (termination.value()) {
+      switch (termination) {
 
       case term_t::ENTER_CGM:
       case term_t::ENTER_CSF:
       case term_t::EXIT_SGM:
       case term_t::TERM_IN_SGM:
-        throw Exception("\nFIXME: Have received ACT-based termination for non-ACT tracking in apply_priors()\n");
+        throw Exception("FIXME: Have received ACT-based termination for non-ACT tracking in apply_priors()");
 
       case term_t::EXIT_IMAGE:
       case term_t::EXIT_MASK:

@@ -93,7 +93,7 @@ public:
 
   class Shader : public Displayable::Shader {
   public:
-    Shader() : geometry_type(Tractogram::default_tract_geom) {}
+    Shader() = default;
     std::string vertex_shader_source(const Displayable &) override;
     std::string fragment_shader_source(const Displayable &) override;
     std::string geometry_shader_source(const Displayable &) override;
@@ -104,7 +104,7 @@ public:
     bool do_crop_to_slab{false}, use_lighting{false};
     TrackColourType color_type{TrackColourType::Direction};
     TrackThresholdType threshold_type{TrackThresholdType::None};
-    TrackGeometryType geometry_type;
+    TrackGeometryType geometry_type{Tractogram::default_tract_geom};
 
   } track_shader;
 

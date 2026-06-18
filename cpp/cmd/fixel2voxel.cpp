@@ -374,7 +374,7 @@ public:
     }
     try {
       out.value() = static_cast<float>(MR::Math::Entropy::nats(values));
-    } catch (Exception &) {
+    } catch (Exception &) { // NOLINT(bugprone-empty-catch)
       out.value() = NaNF;
     }
   }

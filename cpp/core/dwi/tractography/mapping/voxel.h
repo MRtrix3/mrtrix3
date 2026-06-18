@@ -50,7 +50,7 @@ public:
   Voxel &operator=(const Voxel &V) = default;
   void operator+=(const default_type l) const { length += l; }
   void normalize() const { length = 1.0; }
-  default_type get_length() const { return length; }
+  [[nodiscard]] default_type get_length() const { return length; }
 
 private:
   mutable default_type length;
@@ -92,7 +92,7 @@ public:
     Voxel::operator+=(1.0);
     colour += vec2DEC(d);
   }
-  const Streamline<>::tangent_type &get_colour() const { return colour; }
+  [[nodiscard]] const Streamline<>::tangent_type &get_colour() const { return colour; }
 
 private:
   mutable Streamline<>::tangent_type colour;
@@ -134,7 +134,7 @@ public:
     Voxel::operator+=(1.0);
     dir += d * (dir.dot(d) < 0.0 ? -1.0 : 1.0);
   }
-  const Streamline<>::tangent_type &get_dir() const { return dir; }
+  [[nodiscard]] const Streamline<>::tangent_type &get_dir() const { return dir; }
 
 private:
   mutable Streamline<>::tangent_type dir;
@@ -156,8 +156,8 @@ public:
 
   void set_dir(const size_t b) { dir = b; }
 
-  bool valid() const { return (dir != invalid); }
-  dir_index_type get_dir() const { return dir; }
+  [[nodiscard]] bool valid() const { return (dir != invalid); }
+  [[nodiscard]] dir_index_type get_dir() const { return dir; }
 
   Dixel &operator=(const Dixel &V) = default;
   Dixel &operator=(const Eigen::Vector3i &V) {
@@ -218,7 +218,7 @@ public:
     sh_coefs += i;
     Voxel::operator+=(1.0);
   }
-  const vector_type &get_tod() const { return sh_coefs; }
+  [[nodiscard]] const vector_type &get_tod() const { return sh_coefs; }
 
 private:
   mutable vector_type sh_coefs;

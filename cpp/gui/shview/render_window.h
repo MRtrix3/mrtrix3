@@ -34,7 +34,7 @@ class Window : public QMainWindow {
       renderer.set_colour(c);
       update();
     }
-    QColor get_colour() const { return renderer.get_colour(); }
+    [[nodiscard]] QColor get_colour() const { return renderer.get_colour(); }
   };
 
 public:

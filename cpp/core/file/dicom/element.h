@@ -79,11 +79,11 @@ public:
     second = std::floor(i);
     fraction = i - second;
   }
-  Time() : hour(0), minute(0), second(0), fraction(0.0) {}
+  Time() = default;
   operator default_type() const { return (hour * 3600.0 + minute * 60 + second + fraction); }
   Time operator-(const Time &t) const { return Time(static_cast<default_type>(*this) - static_cast<default_type>(t)); }
-  uint32_t hour, minute, second;
-  default_type fraction;
+  uint32_t hour{0}, minute{0}, second{0};
+  default_type fraction{0.0};
   friend std::ostream &operator<<(std::ostream &stream, const Time &item);
 };
 

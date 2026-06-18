@@ -49,7 +49,7 @@ public:
 
   Renderer(QOpenGLWidget *);
 
-  bool ready() const { return shader != 0U; }
+  [[nodiscard]] bool ready() const { return shader != 0U; }
 
   void initGL() {
     sh.initGL();
@@ -72,7 +72,7 @@ public:
 
   void stop() const { shader.stop(); }
 
-  QColor get_colour() const {
+  [[nodiscard]] QColor get_colour() const {
     return QColor(object_color[0] * 255.0F, object_color[1] * 255.0F, object_color[2] * 255.0F);
   }
 
@@ -175,11 +175,11 @@ public:
     void initGL() override;
     void bind() override;
     void set_data(const vector_t &data, int buffer_ID = 0) const override;
-    GLuint num_indices() const override { return half_sphere.num_indices; }
+    [[nodiscard]] GLuint num_indices() const override { return half_sphere.num_indices; }
 
     void update_mesh(const size_t);
 
-    int get_LOD() const { return LOD; }
+    [[nodiscard]] int get_LOD() const { return LOD; }
 
   private:
     int LOD{0};

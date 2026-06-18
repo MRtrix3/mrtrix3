@@ -31,8 +31,8 @@
 #include "progressbar.h"
 #include "projection.h"
 
-const size_t MAX_BUFFER_SIZE = 2796200;                      // number of points to fill 32MB
-constexpr uint32_t PRIMITIVE_RESTART_SENTINEL = 0xFFFFFFFFu; // Primitive restart index for UNSIGNED_INT
+const size_t MAX_BUFFER_SIZE = 2796200;                     // number of points to fill 32MB
+constexpr uint32_t PRIMITIVE_RESTART_SENTINEL = 0xFFFFFFFF; // Primitive restart index for UNSIGNED_INT
 
 namespace MR::GUI::MRView::Tool {
 const int Tractogram::track_padding;

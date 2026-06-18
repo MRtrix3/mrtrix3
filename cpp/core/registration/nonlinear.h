@@ -47,18 +47,7 @@ extern const App::OptionGroup nonlinear_options;
 class NonLinear {
 
 public:
-  NonLinear()
-      : max_iter(1, 50),
-        scale_factor(3),
-
-        fod_lmax(3) {
-    scale_factor[0] = 0.25;
-    scale_factor[1] = 0.5;
-    scale_factor[2] = 1.0;
-    fod_lmax[0] = 0;
-    fod_lmax[1] = 2;
-    fod_lmax[2] = 4;
-  }
+  NonLinear() = default;
 
   template <class TransformType, class ImageType>
   void run(TransformType linear_trasform,
@@ -523,14 +512,14 @@ protected:
   }
 
   bool is_initialised{false};
-  std::vector<uint32_t> max_iter;
-  std::vector<default_type> scale_factor;
+  std::vector<uint32_t> max_iter{1, 50};
+  std::vector<default_type> scale_factor{{0.25, 0.50, 1.00}};
   default_type update_smoothing{2.0};
   default_type disp_smoothing{1.0};
   default_type gradient_step{0.5};
   Eigen::MatrixXd aPSF_directions;
   bool do_reorientation{false};
-  std::vector<uint32_t> fod_lmax;
+  std::vector<uint32_t> fod_lmax{{0, 2, 4}};
   bool use_cc{false};
   std::optional<std::filesystem::path> diagnostics_image_dir;
 

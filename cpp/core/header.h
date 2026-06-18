@@ -51,16 +51,13 @@ public:
   //! a class to hold attributes about each axis
   class Axis {
   public:
-    Axis() noexcept : spacing(std::numeric_limits<default_type>::quiet_NaN()) {}
+    Axis() noexcept = default;
     ssize_t size{1};
-    default_type spacing;
+    default_type spacing{std::numeric_limits<default_type>::quiet_NaN()};
     ssize_t stride{0};
   };
 
-  Header()
-      : transform_(Eigen::Matrix<default_type, 3, 4>::Constant(NaN)), //
-        offset_(0.0),                                                 //
-        scale_(1.0) {}                                                //
+  Header() = default;
 
   explicit Header(Header &&H) noexcept
       : axes_(std::move(H.axes_)),
@@ -234,7 +231,7 @@ public:
     //   transformation is in voxel count,
     //   therefore can store as integer
     using applied_transform_type = Eigen::Matrix<int, 3, 3>;
-    Realignment();
+    Realignment() = default;
     [[nodiscard]] State state() const { return state_; }
     [[nodiscard]] bool applied() const { return state_ == State::Applied; }
     [[nodiscard]] bool valid() const {
@@ -254,7 +251,7 @@ public:
     [[nodiscard]] const transform_type &orig_transform() const { return orig_transform_; }
     [[nodiscard]] const Stride::List &orig_strides() const { return orig_strides_; }
     [[nodiscard]] const applied_transform_type &applied_transform() const { return applied_transform_; }
-    KeyValues &orig_keyval() { return orig_keyval_; }
+    [[nodiscard]] KeyValues &orig_keyval() { return orig_keyval_; }
     [[nodiscard]] const KeyValues &orig_keyval() const { return orig_keyval_; }
 
     //! Human-readable per-output-axis enumeration of the shuffle.
@@ -264,9 +261,9 @@ public:
   private:
     State state_{State::Unknown};
     Axes::Shuffle shuffle_;
-    transform_type orig_transform_;
+    transform_type orig_transform_{Eigen::Matrix<default_type, 3, 4>::Constant(NaN)};
     Stride::List orig_strides_;
-    applied_transform_type applied_transform_;
+    applied_transform_type applied_transform_{applied_transform_type::Identity()};
     KeyValues orig_keyval_;
     friend class Header;
   };
@@ -474,7 +471,7 @@ public:
 
 protected:
   std::vector<Axis> axes_;
-  transform_type transform_;
+  transform_type transform_{Eigen::Matrix<default_type, 3, 4>::Constant(NaN)};
   std::string name_;
   std::filesystem::path path_;
   KeyValues keyval_;
@@ -485,7 +482,7 @@ protected:
   //! the type of the data as stored on file
   DataType datatype_;
   //! the values by which to scale the intensities
-  default_type offset_, scale_;
+  default_type offset_{0.0}, scale_{1.0};
 
   void acquire_io(Header &H) { io = std::move(H.io); }
   void check(const Header &H) const;

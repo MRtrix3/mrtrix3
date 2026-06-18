@@ -90,7 +90,7 @@ public:
     description.push_back(std::move(msg));
   }
 
-  const char *what() const noexcept override; // check_syntax off
+  [[nodiscard]] const char *what() const noexcept override; // check_syntax off
 
   void display(int log_level = 0) const { display_func(*this, log_level); }
 

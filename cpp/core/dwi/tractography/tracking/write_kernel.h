@@ -95,7 +95,7 @@ public:
 
   bool operator()(const GeneratedTrack &);
 
-  bool complete() const {
+  [[nodiscard]] bool complete() const {
     return (((S.max_num_tracks != 0U) && (selected >= S.max_num_tracks)) ||
             ((S.max_num_seeds != 0U) && (seeds >= S.max_num_seeds)));
   }

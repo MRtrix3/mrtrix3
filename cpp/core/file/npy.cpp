@@ -277,7 +277,7 @@ KeyValues parse_dict(std::string s) {
 ReadInfo read_header(const std::filesystem::path &path) {
   ReadInfo info;
   std::ifstream in(path, std::ios_base::in | std::ios_base::binary);
-  if (!in)
+  if (!in.is_open())
     throw Exception("Unable to load file \"" + path.string() + "\"");
 
   std::array<char, 6> magic;

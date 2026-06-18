@@ -122,9 +122,11 @@ namespace {
 
 std::string short_description(const Header &H) {
   std::vector<std::string> dims;
+  dims.reserve(H.ndim());
   for (size_t n = 0; n < H.ndim(); ++n)
     dims.push_back(str(H.size(n)));
   std::vector<std::string> vox;
+  vox.reserve(H.ndim());
   for (size_t n = 0; n < H.ndim(); ++n)
     vox.push_back(str(H.spacing(n)));
 
@@ -976,10 +978,6 @@ concatenate(const std::vector<Header> &headers, const size_t axis_to_concat, con
     break;
   }
   return result;
-}
-
-Header::Realignment::Realignment() : applied_transform_(applied_transform_type::Identity()) {
-  orig_transform_.matrix().fill(std::numeric_limits<default_type>::quiet_NaN());
 }
 
 std::vector<std::string> Header::Realignment::describe_axis_mapping() const {

@@ -171,13 +171,13 @@ public:
 
 class Product {
 public:
-  Product() : product(NaN) {}
+  Product() = default;
   void operator()(value_type val) {
     if (std::isfinite(val))
       product = std::isfinite(product) ? product * val : val;
   }
   [[nodiscard]] value_type result() const { return product; }
-  double product;
+  double product{NaN};
 };
 
 class RMS {

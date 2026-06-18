@@ -34,7 +34,7 @@ class ODF_Preview : public QWidget {
     void set_colour(const QColor &c) { renderer.set_colour(c); }
 
   protected:
-    Window &window() const { return *Window::main; }
+    [[nodiscard]] Window &window() const { return *Window::main; }
     virtual void wheelEvent(QWheelEvent *);
   };
 

@@ -21,7 +21,6 @@
 #include <cassert>
 #include <cstddef>
 #include <filesystem>
-#include <stddef.h>
 #include <sys/types.h>
 
 #include "command.h"

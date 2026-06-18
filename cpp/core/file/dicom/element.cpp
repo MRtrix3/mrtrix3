@@ -243,10 +243,10 @@ bool Element::read() {
 bool Element::ignore_when_parsing() const {
   for (const auto &seq : parents) {
     // ignore anything within IconImageSequence:
-    if (seq.is(0x0088u, 0x0200u))
+    if (seq.is(0x0088, 0x0200))
       return true;
     // allow Philips PrivatePerFrameSq:
-    if (seq.is(0x2005u, 0x140Fu))
+    if (seq.is(0x2005, 0x140F))
       continue;
     // ignore anything within sequences with unknown (private) group:
     if ((seq.group & 1U) != 0U)
@@ -260,7 +260,7 @@ bool Element::is_in_series_ref_sequence() const {
   // required to group together series exported using
   // Siemens XA10A in Interoperability mode
   for (const auto &seq : parents)
-    if (seq.is(0x0008U, 0x1250U))
+    if (seq.is(0x0008, 0x1250))
       return true;
   return false;
 }

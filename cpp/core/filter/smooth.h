@@ -45,17 +45,14 @@ namespace MR::Filter {
 class Smooth : public Base {
 
 public:
-  template <class HeaderType>
-  Smooth(const HeaderType &in)
-      : Base(in), extent(3, 0), stdev(3, 0.0), stride_order(Stride::order(in)), zero_boundary(false) {
+  template <class HeaderType> Smooth(const HeaderType &in) : Base(in), stride_order(Stride::order(in)) {
     for (int i = 0; i < 3; i++)
       stdev[i] = in.spacing(i);
     datatype() = DataType::Float32;
   }
 
   template <class HeaderType>
-  Smooth(const HeaderType &in, const std::vector<default_type> &stdev_in)
-      : Base(in), extent(3, 0), stdev(3, 0.0), stride_order(Stride::order(in)) {
+  Smooth(const HeaderType &in, const std::vector<default_type> &stdev_in) : Base(in), stride_order(Stride::order(in)) {
     set_stdev(stdev_in);
     datatype() = DataType::Float32;
   }
@@ -159,10 +156,10 @@ public:
   }
 
 protected:
-  std::vector<uint32_t> extent;
-  std::vector<default_type> stdev;
+  std::vector<uint32_t> extent{3, 0};
+  std::vector<default_type> stdev{3, 0.0};
   const std::vector<size_t> stride_order;
-  bool zero_boundary;
+  bool zero_boundary{false};
 
   template <class ImageType> class SmoothFunctor1D {
   public:

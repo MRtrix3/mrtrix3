@@ -974,9 +974,10 @@ public:
       storage.back().image = make_copyptr<Image<complex_type>>(*entry.image);
       storage.back().chunk.resize(chunk_size);
       return;
-    } else if (entry.rng || entry.coordinate) {
+    }
+    if (entry.rng || entry.coordinate)
       storage.back().chunk.resize(chunk_size);
-    } else
+    else
       storage.back().chunk.value = entry.value;
   }
 

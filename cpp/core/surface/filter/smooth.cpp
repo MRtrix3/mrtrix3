@@ -133,8 +133,7 @@ void Smooth::operator()(const Mesh &in, Mesh &out) const {
       default_type this_weight = areas[i];
       const default_type distance_sq = (centroids[i] - in.vertices[v]).squaredNorm();
       this_weight *= std::exp(distance_sq * spatial_mollification_power_multiplier);
-      const Vertex prediction = centroids[i];
-      new_pos += this_weight * prediction;
+      new_pos += this_weight * centroids[i];
       sum_weights += this_weight;
     }
 

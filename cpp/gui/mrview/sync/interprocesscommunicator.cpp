@@ -101,7 +101,7 @@ InterprocessCommunicator::InterprocessCommunicator() : QObject(0) {
 void InterprocessCommunicator::OnNewIncomingConnection() {
   // Parent the reader to this communicator so that Qt's object-ownership model
   // reclaims it when this object is destroyed, rather than leaking the allocation.
-  LocalSocketReader *lsr = new LocalSocketReader(receiver->nextPendingConnection(), this);
+  auto lsr = new LocalSocketReader(receiver->nextPendingConnection(), this);
   connect(lsr,
           SIGNAL(DataReceived(std::vector<std::shared_ptr<QByteArray>>)),
           this,

@@ -62,10 +62,10 @@ public:
   DWI::Tractography::Resampling::Downsampler downsampler;
 
   // Additional members for ACT
-  bool is_act() const { return bool(act_shared_additions); }
-  ACT::ACT_Shared_additions &act() const { return *act_shared_additions; }
+  [[nodiscard]] bool is_act() const { return bool(act_shared_additions); }
+  [[nodiscard]] ACT::ACT_Shared_additions &act() const { return *act_shared_additions; }
 
-  float vox() const {
+  [[nodiscard]] float vox() const {
     return std::pow(source_header.spacing(0) * source_header.spacing(1) * source_header.spacing(2), 1.0F / 3.0F);
   }
 
@@ -80,7 +80,7 @@ public:
   // This gets overloaded for iFOD2, as each sample is output rather than just each step, and there are
   //   multiple samples per step
   // (Only utilised for Exec::satisfy_wm_requirement())
-  virtual float internal_step_size() const { return step_size; }
+  [[nodiscard]] virtual float internal_step_size() const { return step_size; }
 
   void add_termination(const term_t i) const { terminations.add(i); }
   void add_rejection(const reject_t i) const { rejections.add(i); }
@@ -89,11 +89,11 @@ public:
   void add_termination(const term_t i, const Eigen::Vector3f &p) const;
 #endif
 
-  size_t termination_count(const term_t i) const { return terminations.get(i); }
-  size_t rejection_count(const reject_t i) const { return rejections.get(i); }
+  [[nodiscard]] size_t termination_count(const term_t i) const { return terminations.get(i); }
+  [[nodiscard]] size_t rejection_count(const reject_t i) const { return rejections.get(i); }
 
-  bool termination_relevant(const term_t i) const;
-  bool rejection_relevant(const reject_t i) const;
+  [[nodiscard]] bool termination_relevant(const term_t i) const;
+  [[nodiscard]] bool rejection_relevant(const reject_t i) const;
 
 private:
   Enum::AtomicCounters<term_t> terminations;

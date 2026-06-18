@@ -90,10 +90,10 @@ public:
 
   [[nodiscard]] size_t index_of_sequence(size_t number = 0) const { return (seq_index[number]); }
 
-  bool match(std::string_view file_name, std::vector<uint32_t> &indices) const;
+  [[nodiscard]] bool match(std::string_view file_name, std::vector<uint32_t> &indices) const;
   void calculate_padding(const std::vector<uint32_t> &maxvals);
-  std::filesystem::path name(const std::vector<uint32_t> &indices);
-  std::filesystem::path get_next_match(std::vector<uint32_t> &indices, bool return_seq_index = false);
+  [[nodiscard]] std::filesystem::path name(const std::vector<uint32_t> &indices);
+  [[nodiscard]] std::filesystem::path get_next_match(std::vector<uint32_t> &indices, bool return_seq_index = false);
 
   friend std::ostream &operator<<(std::ostream &stream, const NameParser &parser);
 

@@ -42,7 +42,7 @@ public:
   ~GZ() {
     try {
       close();
-    } catch (...) {
+    } catch (...) { // NOLINT(bugprone-empty-catch)
       FAIL("error closing GZ file \"" + filepath.string() + "\": " + error());
       App::exit_error_code = 1;
     }

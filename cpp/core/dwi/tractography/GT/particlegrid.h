@@ -52,10 +52,10 @@ public:
     using iterator = std::deque<Particle *>::iterator;
     using const_iterator = std::deque<Particle *>::const_iterator;
 
-    iterator begin() { return particles.begin(); }
-    iterator end() { return particles.end(); }
-    const_iterator begin() const { return particles.begin(); }
-    const_iterator end() const { return particles.end(); }
+    [[nodiscard]] iterator begin() { return particles.begin(); }
+    [[nodiscard]] iterator end() { return particles.end(); }
+    [[nodiscard]] const_iterator begin() const { return particles.begin(); }
+    [[nodiscard]] const_iterator end() const { return particles.end(); }
 
     mutable std::mutex mutex;
 
@@ -69,7 +69,7 @@ public:
 
   ~ParticleGrid() { clear(); }
 
-  inline unsigned int getTotalCount() const { return pool.size(); }
+  [[nodiscard]] inline unsigned int getTotalCount() const { return pool.size(); }
 
   void add(const Point_t &pos, const Point_t &dir);
 
@@ -79,9 +79,9 @@ public:
 
   void clear();
 
-  const ParticleContainer *at(const ssize_t x, const ssize_t y, const ssize_t z) const;
+  [[nodiscard]] const ParticleContainer *at(const ssize_t x, const ssize_t y, const ssize_t z) const;
 
-  inline Particle *getRandom() { return pool.random(); }
+  [[nodiscard]] inline Particle *getRandom() { return pool.random(); }
 
   void exportTracks(Tractography::Writer<float> &writer);
 
@@ -101,7 +101,7 @@ protected:
   }
 
 public:
-  inline bool isoutofbounds(const Point_t &pos) const {
+  [[nodiscard]] inline bool isoutofbounds(const Point_t &pos) const {
     const Point_t gpos = T_s2g.cast<float>() * pos;
     return (gpos[0] <= -0.5) || (gpos[1] <= -0.5) || (gpos[2] <= -0.5) ||                          //
            (gpos[0] >= dims[0] - 0.5) || (gpos[1] >= dims[1] - 0.5) || (gpos[2] >= dims[2] - 0.5); //
@@ -115,7 +115,7 @@ public:
     z = Math::round<size_t>(gpos[2]);
   }
 
-  inline default_type spacing() { return grid_spacing; }
+  [[nodiscard]] inline default_type spacing() { return grid_spacing; }
 
 protected:
   inline size_t xyz2idx(const size_t x, const size_t y, const size_t z) const {

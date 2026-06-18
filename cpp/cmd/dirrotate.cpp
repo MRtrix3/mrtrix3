@@ -77,11 +77,11 @@ public:
     return (*guard)(peak, rotation);
   }
 
-  default_type peak(const rotation_type &rotation) const {
+  [[nodiscard]] default_type peak(const rotation_type &rotation) const {
     return (rotation_transform_type(rotation).linear() * directions->transpose()).array().abs().maxCoeff();
   }
 
-  rotation_type get_best_rotation() {
+  [[nodiscard]] rotation_type get_best_rotation() {
     auto guard = protected_content.lock();
     return guard->best();
   }
@@ -112,7 +112,7 @@ private:
       ++progress;
       return count < total_num_rotations;
     }
-    rotation_type best() const { return best_rotation; }
+    [[nodiscard]] rotation_type best() const { return best_rotation; }
 
   private:
     const size_t total_num_rotations;

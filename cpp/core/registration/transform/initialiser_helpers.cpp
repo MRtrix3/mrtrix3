@@ -45,9 +45,9 @@ bool get_sorted_eigen_vecs_vals(const Eigen::Matrix<default_type, 3, 3> &mat,
 
   // sort eigenvectors by eigenvalue, largest first
   std::vector<std::pair<default_type, ssize_t>> eval_idx_vec;
-  for (ssize_t i = 0; i < eval.size(); ++i) {
+  eval_idx_vec.reserve(eval.size());
+  for (ssize_t i = 0; i < eval.size(); ++i)
     eval_idx_vec.emplace_back(eval[i], i);
-  }
   std::sort(std::begin(eval_idx_vec), std::end(eval_idx_vec), std::greater<std::pair<default_type, ssize_t>>());
 
   for (ssize_t i = 0; i < eval.size(); ++i) {

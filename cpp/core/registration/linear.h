@@ -63,7 +63,7 @@ enum class init_translation_t { mass, geometric, none };
 enum class init_rotation_t { search, moments, none };
 
 struct StageSetting {
-  StageSetting() : optimisers(1, OptimiserAlgoType::BBGD) {}
+  StageSetting() = default;
 
   std::string info(const bool &do_reorientation = true) {
     std::string st;
@@ -82,7 +82,7 @@ struct StageSetting {
   }
   size_t stage_iterations{1}, gd_max_iter{500};
   default_type scale_factor{1.0};
-  std::vector<OptimiserAlgoType> optimisers;
+  std::vector<OptimiserAlgoType> optimisers{1, OptimiserAlgoType::BBGD};
   OptimiserAlgoType optimiser_default{OptimiserAlgoType::BBGD}, optimiser_first{OptimiserAlgoType::BBGD},
       optimiser_last{OptimiserAlgoType::GD};
   default_type loop_density{1.0};
@@ -96,14 +96,11 @@ public:
   Transform::Init::LinearInitialisationParams init;
 
   Linear()
-      : stages(3),
-        kernel_extent(3, 1),
-
-        // CONF option: RegAnalyseDescent
-        // CONF default: 0 (false)
-        // CONF Linear registration: write comma separated gradient descent parameters and gradients
-        // CONF to stdout and verbose gradient descent output to stderr.
-        analyse_descent(File::Config::get_bool("RegAnalyseDescent", false)) {
+      // CONF option: RegAnalyseDescent
+      // CONF default: 0 (false)
+      // CONF Linear registration: write comma separated gradient descent parameters and gradients
+      // CONF to stdout and verbose gradient descent output to stderr.
+      : analyse_descent(File::Config::get_bool("RegAnalyseDescent", false)) {
     stages[0].scale_factor = 0.25;
     stages[0].fod_lmax = 0;
     stages[1].scale_factor = 0.5;
@@ -564,9 +561,9 @@ public:
   // }
 
 protected:
-  std::vector<StageSetting> stages;
+  std::vector<StageSetting> stages{3};
   std::vector<MultiContrastSetting> contrasts, stage_contrasts;
-  std::vector<size_t> kernel_extent;
+  std::vector<size_t> kernel_extent{3, 1};
   default_type grad_tolerance{1.0e-6};
   default_type step_tolerance{1.0e-10};
   std::streambuf *log_stream{nullptr};

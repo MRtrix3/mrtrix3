@@ -34,7 +34,7 @@ public:
       return NaNF;
     try {
       return to<float>(text().toStdString());
-    } catch (Exception) {
+    } catch (Exception &) { // NOLINT(bugprone-empty-catch)
       return NaNF;
     }
   }

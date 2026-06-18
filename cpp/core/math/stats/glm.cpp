@@ -610,7 +610,7 @@ TestFixedHomoscedastic::TestFixedHomoscedastic(
   shared = std::make_shared<const Shared>(measurements, design, hypotheses);
   for (const auto &hypothesis : hypotheses)
 #ifdef NDEBUG
-    betas.emplace_back(matrix_type(hypothesis.matrix().rows(), 1));
+    betas.emplace_back(hypothesis.matrix().rows(), 1);
 #else
     betas.emplace_back(
         matrix_type::Constant(hypothesis.matrix().rows(), 1, std::numeric_limits<default_type>::signaling_NaN()));
@@ -637,7 +637,7 @@ TestFixedHomoscedastic::TestFixedHomoscedastic(const TestFixedHomoscedastic &tha
 {
   for (index_type ih = 0; ih != num_hypotheses(); ++ih)
 #ifdef NDEBUG
-    betas.emplace_back(matrix_type(c[ih].matrix().rows(), 1));
+    betas.emplace_back(c[ih].matrix().rows(), 1);
 #else
     betas.emplace_back(
         matrix_type::Constant(c[ih].matrix().rows(), 1, std::numeric_limits<default_type>::signaling_NaN()));

@@ -17,10 +17,10 @@
 #pragma once
 
 #include <array>
-#include <assert.h>
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
 #include <initializer_list>
-#include <stddef.h>
-#include <stdint.h>
 
 #include "mrtrix.h"
 
@@ -51,7 +51,7 @@ public:
       indices[counter] = *i;
   }
 
-  Polygon() : indices({0, 0, 0}) {}
+  Polygon() = default;
 
   vertex_index_type &operator[](const size_t i) {
     assert(i < vertices);
@@ -67,7 +67,7 @@ public:
   [[nodiscard]] bool shares_edge(const Polygon &) const;
 
 private:
-  std::array<vertex_index_type, vertices> indices;
+  std::array<vertex_index_type, vertices> indices{};
 };
 
 template <> [[nodiscard]] bool Polygon<3>::shares_edge(const Polygon<3> &) const;

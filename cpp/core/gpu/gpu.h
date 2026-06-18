@@ -330,10 +330,11 @@ struct ComputeContext {
   [[nodiscard]] Sampler new_linear_sampler() const;
 
 private:
-  wgpu::Buffer inner_new_empty_buffer(size_t byteSize, BufferType bufferType = BufferType::StorageBuffer) const;
-  wgpu::Buffer inner_new_buffer_from_host_memory(const void *srcMemory,
-                                                 size_t srcByteSize,
-                                                 BufferType bufferType = BufferType::StorageBuffer) const;
+  [[nodiscard]] wgpu::Buffer inner_new_empty_buffer(size_t byteSize,
+                                                    BufferType bufferType = BufferType::StorageBuffer) const;
+  [[nodiscard]] wgpu::Buffer inner_new_buffer_from_host_memory(const void *srcMemory,
+                                                               size_t srcByteSize,
+                                                               BufferType bufferType = BufferType::StorageBuffer) const;
   void inner_download_buffer(const wgpu::Buffer &buffer, void *dstMemory, size_t dstByteSize) const;
   void inner_write_to_buffer(const wgpu::Buffer &buffer, const void *data, size_t srcByteSize, uint64_t offset) const;
   void inner_clear_buffer(const wgpu::Buffer &buffer) const;

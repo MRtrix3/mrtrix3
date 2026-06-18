@@ -158,12 +158,12 @@ public:
       max_magnitude = MR::abs(value_at_max);
 
       // Determine direction and frequency of harmonic
-      pos_type kspace_origin;
+      std::array<ssize_t, 3> kspace_origin;
       for (ssize_t axis = 0; axis != 3; ++axis)
-        kspace_origin[axis] = axis_mask[axis] ? static_cast<real_type>((kspace.size(axis) - 1) / 2) : real_type(0);
-      const pos_type kspace_offset({axis_mask[0] ? (pos[0] - kspace_origin[0]) : real_type(0),
-                                    axis_mask[1] ? (pos[1] - kspace_origin[1]) : real_type(0),
-                                    axis_mask[2] ? (pos[2] - kspace_origin[2]) : real_type(0)});
+        kspace_origin[axis] = axis_mask[axis] ? static_cast<real_type>((kspace.size(axis) - 1) / 2) : 0;
+      const pos_type kspace_offset({axis_mask[0] ? (pos[0] - static_cast<real_type>(kspace_origin[0])) : real_type(0),
+                                    axis_mask[1] ? (pos[1] - static_cast<real_type>(kspace_origin[1])) : real_type(0),
+                                    axis_mask[2] ? (pos[2] - static_cast<real_type>(kspace_origin[2])) : real_type(0)});
       const pos_type cycle_voxel({axis_mask[0] ? (phase.size(0) / kspace_offset[0]) : real_type(0),
                                   axis_mask[1] ? (phase.size(1) / kspace_offset[1]) : real_type(0),
                                   axis_mask[2] ? (phase.size(2) / kspace_offset[2]) : real_type(0)});

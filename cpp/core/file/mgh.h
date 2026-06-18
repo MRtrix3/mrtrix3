@@ -634,13 +634,13 @@ template <class Output> void write_other(const Header &H, Output &out) {
 
   class Tag {
   public:
-    Tag() : id(0), content() {}
+    Tag() = default;
     Tag(const int32_t i, std::string_view s) : id(i), content(s) {}
     void set(const int32_t i, std::string_view s) {
       id = i;
       content = s;
     }
-    int32_t id;
+    int32_t id{0};
     std::string content;
   };
 

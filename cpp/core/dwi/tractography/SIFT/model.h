@@ -212,7 +212,7 @@ template <class Fixel> void Model<Fixel>::remove_excluded_fixels() {
   Thread::run_queue(writer, TrackIndexRange(), Thread::multi(remapper));
 
   TD_sum = 0.0;
-  for (const auto i : fixels)
+  for (const auto &i : fixels)
     TD_sum += i.get_weight() * i.get_TD();
 
   INFO("After fixel exclusion, the proportionality coefficient is " + str(mu()));
@@ -329,21 +329,21 @@ template <class Fixel> bool Model<Fixel>::TrackMappingWorker::operator()(const T
 
 template <class Fixel> bool Model<Fixel>::FixelRemapper::operator()(const TrackIndexRange &in) {
   for (track_t track_index = in.first; track_index != in.second; ++track_index) {
-    if (master.contributions[track_index]) {
-      TrackContribution &this_cont(*master.contributions[track_index]);
-      std::vector<Track_fixel_contribution> new_cont;
-      double total_contribution = 0.0;
-      for (size_t i = 0; i != this_cont.dim(); ++i) {
-        const size_t new_index = remapper[this_cont[i].get_fixel_index()];
-        if (new_index != 0U) {
-          new_cont.emplace_back(new_index, this_cont[i].get_length());
-          total_contribution += this_cont[i].get_length() * master[new_index].get_weight();
-        }
+    if (master.contributions[track_index] == nullptr)
+      continue;
+    TrackContribution &this_cont(*master.contributions[track_index]);
+    std::vector<Track_fixel_contribution> new_cont;
+    double total_contribution = 0.0;
+    for (size_t i = 0; i != this_cont.dim(); ++i) {
+      const size_t new_index = remapper[this_cont[i].get_fixel_index()];
+      if (new_index != 0U) {
+        new_cont.emplace_back(new_index, this_cont[i].get_length());
+        total_contribution += this_cont[i].get_length() * master[new_index].get_weight();
       }
-      auto *new_contribution = new TrackContribution(new_cont, total_contribution, this_cont.get_total_length());
-      delete master.contributions[track_index];
-      master.contributions[track_index] = new_contribution;
     }
+    auto *new_contribution = new TrackContribution(new_cont, total_contribution, this_cont.get_total_length());
+    delete master.contributions[track_index];
+    master.contributions[track_index] = new_contribution;
   }
   return true;
 }

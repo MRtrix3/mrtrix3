@@ -40,7 +40,7 @@ private:
 
 class InitElementBase {
 public:
-  InitElementBase() : fixel_index(std::numeric_limits<fixel_index_type>::max()) {}
+  InitElementBase() = default;
   InitElementBase(const fixel_index_type fixel_index) : fixel_index(fixel_index) {}
   InitElementBase(const InitElementBase &) = default;
   FORCE_INLINE InitElementBase &operator=(const InitElementBase &that) = default;
@@ -48,7 +48,7 @@ public:
   FORCE_INLINE bool operator<(const InitElementBase &that) const { return fixel_index < that.fixel_index; }
 
 private:
-  fixel_index_type fixel_index;
+  fixel_index_type fixel_index{std::numeric_limits<fixel_index_type>::max()};
 };
 
 class InitElementUnweighted : private InitElementBase {
@@ -56,7 +56,7 @@ public:
   using BaseType = InitElementBase;
   using BaseType::operator<;
   using ValueType = count_type;
-  InitElementUnweighted() : track_count(0) {}
+  InitElementUnweighted() = default;
   InitElementUnweighted(const fixel_index_type fixel_index) : BaseType(fixel_index), track_count(1) {}
   InitElementUnweighted(const fixel_index_type fixel_index, const MappedTrack &all_data)
       : BaseType(fixel_index), track_count(1) {}
@@ -70,7 +70,7 @@ public:
   [[nodiscard]] FORCE_INLINE ValueType value() const { return track_count; }
 
 private:
-  ValueType track_count;
+  ValueType track_count{0};
 };
 
 class InitElementWeighted : private InitElementBase {
@@ -78,7 +78,7 @@ public:
   using BaseType = InitElementBase;
   using BaseType::operator<;
   using ValueType = connectivity_value_type;
-  InitElementWeighted() : sum_weights(ValueType(0)) {}
+  InitElementWeighted() = default;
   InitElementWeighted(const fixel_index_type fixel_index) = delete;
   InitElementWeighted(const fixel_index_type fixel_index, const MappedTrack &all_data)
       : BaseType(fixel_index), sum_weights(all_data.get_weight()) {}
@@ -92,7 +92,7 @@ public:
   [[nodiscard]] FORCE_INLINE ValueType value() const { return sum_weights; }
 
 private:
-  ValueType sum_weights;
+  ValueType sum_weights{ValueType(0)};
 };
 
 template <class ElementType> class InitFixelBase : public std::vector<ElementType> {
@@ -122,11 +122,11 @@ private:
 class InitFixelWeighted : public InitFixelBase<InitElementWeighted> {
 public:
   using BaseType = InitFixelBase<InitElementWeighted>;
-  InitFixelWeighted() : sum_weights(default_type(0)) {}
+  InitFixelWeighted() = default;
   [[nodiscard]] default_type norm_factor() const override { return 1.0 / sum_weights; }
 
 private:
-  default_type sum_weights;
+  default_type sum_weights{0.0};
   void increment(const MappedTrack &data) override { sum_weights += data.get_weight(); }
   void increment(InitElementWeighted &element, const MappedTrack &data) override { element += data.get_weight(); }
 };

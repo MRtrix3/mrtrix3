@@ -29,13 +29,13 @@ class Program;
 
 template <GLint TYPE> class Object {
 public:
-  Object() : index_(0) {}
-  Object(std::string_view source) : index_(0) {
+  Object() = default;
+  Object(std::string_view source) {
     if (!source.empty())
       compile(source);
   }
   Object(const Object &) = delete;
-  Object(Object &&other) noexcept : index_(other.index_) { other.index_ = 0; }
+  Object(Object &&other) noexcept : index_(other.index_) { other.index_ = 0U; }
   Object &operator=(const Object &) = delete;
   Object &operator=(Object &&other) noexcept {
     clear();
@@ -50,7 +50,7 @@ public:
       GL_DEBUG("deleting OpenGL shader ID " + str(index_));
       gl::DeleteShader(index_);
     }
-    index_ = 0;
+    index_ = 0U;
   }
 
   operator GLuint() const { return (index_); }
@@ -82,7 +82,7 @@ public:
   }
 
 protected:
-  GLuint index_;
+  GLuint index_{0U};
   friend class Program;
 };
 

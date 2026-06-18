@@ -189,8 +189,8 @@ const LabelValidation validate_label_image(Image<node_t> image) {
       ++progress;
       return true;
     }
-    const std::map<node_t, uint32_t> &count_per_label() const { return data; }
-    node_t disconnected_count() const {
+    [[nodiscard]] const std::map<node_t, uint32_t> &count_per_label() const { return data; }
+    [[nodiscard]] node_t disconnected_count() const {
       node_t result = 0;
       for (const auto &item : data) {
         if (item.second > 1)

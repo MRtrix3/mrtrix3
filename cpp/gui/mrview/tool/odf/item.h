@@ -40,7 +40,7 @@ public:
            const bool hide_negative,
            const bool color_by_direction);
 
-  bool valid() const;
+  [[nodiscard]] bool valid() const;
 
   MRView::Image image;
   odf_type_t odf_type;

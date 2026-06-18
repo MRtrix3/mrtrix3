@@ -26,7 +26,7 @@ class Connectome;
 
 class ShaderBase : public GL::Shader::Program {
 public:
-  ShaderBase() : GL::Shader::Program() {}
+  ShaderBase() = default;
   virtual ~ShaderBase() = default;
 
   [[nodiscard]] virtual bool need_update(const Connectome &) const = 0;

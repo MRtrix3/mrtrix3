@@ -449,7 +449,7 @@ public:
       FORCE_INLINE void recycle(T *item) const throw() { Q.recycle(item); }
       FORCE_INLINE T &operator*() const throw() { return *p; }
       FORCE_INLINE T *operator->() const throw() { return p; }
-      FORCE_INLINE bool operator!() const throw() { return !p; }
+      FORCE_INLINE bool operator!() const throw() { return p == nullptr; }
 
     private:
       Queue<T> &Q;

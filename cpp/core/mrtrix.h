@@ -294,7 +294,7 @@ std::vector<default_type> parse_floats(std::string_view spec);
 
 template <typename IntType>
 std::vector<IntType> parse_ints(std::string_view spec, const IntType last = std::numeric_limits<IntType>::max()) {
-  typedef typename std::make_signed<IntType>::type SignedIntType;
+  using SignedIntType = typename std::make_signed<IntType>::type;
   if (spec.empty())
     throw Exception("integer sequence specifier is empty");
 

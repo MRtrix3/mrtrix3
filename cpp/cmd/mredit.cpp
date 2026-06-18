@@ -289,7 +289,7 @@ void apply_plane(Image<float> &out, const ParsedOption &opt, const Space space, 
       for (ssize_t i1 = 0; i1 != out.size(plane_axes[1]); ++i1) {
         const default_type numerator = coord - offset - (gradient[plane_axes[0]] * static_cast<default_type>(i0)) -
                                        (gradient[plane_axes[1]] * static_cast<default_type>(i1));
-        const ssize_t free_index = static_cast<ssize_t>(std::round(numerator / gradient[free_axis]));
+        const auto free_index = static_cast<ssize_t>(std::round(numerator / gradient[free_axis]));
         if (free_index < 0 || free_index >= out.size(free_axis))
           continue;
         out.index(free_axis) = free_index;

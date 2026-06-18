@@ -28,7 +28,7 @@ namespace MR::DWI::Tractography {
 class DataIndex {
 public:
   static constexpr size_t invalid = std::numeric_limits<size_t>::max();
-  DataIndex() : index(invalid) {}
+  DataIndex() = default;
   DataIndex(const size_t i) : index(i) {}
   DataIndex(const DataIndex &i) = default;
   DataIndex(DataIndex &&i) noexcept : index(i.index) { i.index = invalid; }
@@ -44,7 +44,7 @@ public:
   bool operator<(const DataIndex &i) const { return index < i.index; }
 
 private:
-  size_t index;
+  size_t index{invalid};
 };
 
 // A class for track scalars
@@ -54,7 +54,9 @@ public:
   using std::vector<ValueType>::vector;
   TrackScalar() = default;
   TrackScalar(const TrackScalar &) = default;
-  TrackScalar(TrackScalar &&that) noexcept : std::vector<value_type>(std::move(that)), DataIndex(std::move(that)) {}
+  TrackScalar(TrackScalar &&that) noexcept
+      : std::vector<value_type>(std::move(static_cast<std::vector<ValueType> &&>(that))),
+        DataIndex(std::move(static_cast<DataIndex &&>(that))) {}
   TrackScalar &operator=(const TrackScalar &that) = default;
   void clear() {
     std::vector<ValueType>::clear();
@@ -69,11 +71,11 @@ public:
   using tangent_type = point_type;
   using value_type = ValueType;
 
-  Streamline() : weight(1.0F) {}
+  Streamline() = default;
 
-  Streamline(size_t size) : std::vector<point_type>(size), weight(value_type(1.0)) {}
+  Streamline(size_t size) : std::vector<point_type>(size) {}
 
-  Streamline(size_t size, const point_type &fill) : std::vector<point_type>(size, fill), weight(value_type(1.0)) {}
+  Streamline(size_t size, const point_type &fill) : std::vector<point_type>(size, fill) {}
 
   Streamline(const Streamline &) = default;
   Streamline &operator=(const Streamline &that) = default;
@@ -85,7 +87,7 @@ public:
     that.weight = std::numeric_limits<float>::quiet_NaN();
   }
 
-  Streamline(const std::vector<point_type> &tck) : std::vector<point_type>(tck), DataIndex(), weight(1.0) {}
+  Streamline(const std::vector<point_type> &tck) : std::vector<point_type>(tck) {}
 
   Streamline &operator=(Streamline &&that) noexcept {
     std::vector<point_type>::operator=(std::move(static_cast<std::vector<point_type> &&>(that)));
@@ -101,7 +103,7 @@ public:
     weight = 1.0;
   }
 
-  float weight;
+  float weight{1.0F};
 };
 
 template <typename PointType> typename PointType::Scalar length(const std::vector<PointType> &tck) {

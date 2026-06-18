@@ -586,7 +586,7 @@ void run() {
   }
 
   // Interpolator
-  const MR::Interp::interp_type interp = get_option_choice<MR::Interp::interp_type>("interp", default_interp);
+  const auto interp = get_option_choice<MR::Interp::interp_type>("interp", default_interp);
   if (!get_options("interp").empty() && !warp && !template_header)
     WARN("interpolator choice ignored since the input image will not be regridded");
 

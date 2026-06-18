@@ -56,7 +56,7 @@ public:
   }
 
   bool operator()(const Streamline<> &, Streamline<> &) const override;
-  bool valid() const override { return nsamples != 0U; }
+  [[nodiscard]] bool valid() const override { return nsamples != 0U; }
 
 private:
   const size_t nsamples;
@@ -68,7 +68,7 @@ private:
   void init_line();
   void init_arc();
 
-  state_t state(const point_type &) const;
+  [[nodiscard]] state_t state(const point_type &) const;
 };
 
 } // namespace MR::DWI::Tractography::Resampling

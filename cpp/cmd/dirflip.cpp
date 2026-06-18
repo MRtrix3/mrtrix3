@@ -87,7 +87,7 @@ public:
     return num_shuffles < target_num_shuffles;
   }
 
-  value_type eddy(size_t i, size_t j, const std::vector<int> &signs) const {
+  [[nodiscard]] value_type eddy(size_t i, size_t j, const std::vector<int> &signs) const {
     vector3_type a = {directions(i, 0), directions(i, 1), directions(i, 2)};
     vector3_type b = {directions(j, 0), directions(j, 1), directions(j, 2)};
     if (signs[i] < 0)
@@ -97,9 +97,9 @@ public:
     return 1.0 / (a - b).norm();
   }
 
-  std::vector<int> get_init_signs() const { return std::vector<int>(directions.rows(), 1); }
-  const std::vector<int> &get_best_signs() const { return best_signs; }
-  size_t get_preserve() const { return preserve; }
+  [[nodiscard]] std::vector<int> get_init_signs() const { return std::vector<int>(directions.rows(), 1); }
+  [[nodiscard]] const std::vector<int> &get_best_signs() const { return best_signs; }
+  [[nodiscard]] size_t get_preserve() const { return preserve; }
 
 protected:
   const Eigen::MatrixXd &directions;

@@ -310,13 +310,13 @@ void run() {
   add_line(header.keyval()["comments"], "track-weighted image");
   header.keyval()["tck_source"] = input_tracks_path.filename().string();
 
-  const contrast_t contrast = get_option_choice<contrast_t>("contrast", contrast_t::TDI);
+  const auto contrast = get_option_choice<contrast_t>("contrast", contrast_t::TDI);
 
-  vox_stat_t stat_vox = get_option_choice<vox_stat_t>("stat_vox", vox_stat_t::SUM);
+  auto stat_vox = get_option_choice<vox_stat_t>("stat_vox", vox_stat_t::SUM);
 
   // ENDS_CORR is excluded from tck_stat_t's magic_enum reflection (see twi_stats.h),
   // so get_option_choice() (via from_name) rejects it as an unsupported value.
-  tck_stat_t stat_tck = get_option_choice<tck_stat_t>("stat_tck", tck_stat_t::MEAN);
+  auto stat_tck = get_option_choice<tck_stat_t>("stat_tck", tck_stat_t::MEAN);
 
   float gaussian_fwhm_tck = 0.0;
   opt = get_options("fwhm_tck");

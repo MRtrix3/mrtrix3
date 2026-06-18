@@ -350,7 +350,7 @@ void run() {
     }
   }
 
-  const vox_stat_t stat_vox = get_option_choice<vox_stat_t>("stat_vox", vox_stat_t::MEAN);
+  const auto stat_vox = get_option_choice<vox_stat_t>("stat_vox", vox_stat_t::MEAN);
 
   Header H_3D(header);
   H_3D.ndim() = 3;

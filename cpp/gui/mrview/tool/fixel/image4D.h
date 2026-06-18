@@ -38,7 +38,7 @@ public:
 
   void update_image_buffers() override;
 
-  bool trackable() const {
+  [[nodiscard]] bool trackable() const {
     if (fixel_data->ndim() < 5)
       return false;
     if (fixel_data->size(4) <= 1)

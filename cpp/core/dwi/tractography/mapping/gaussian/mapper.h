@@ -109,7 +109,7 @@ protected:
 
   // Convenience function to convert from streamline position index to a linear-interpolated
   //   factor value (TrackMapperTWI member field factors[] only contains one entry per pre-upsampled point)
-  inline default_type tck_index_to_factor(const size_t) const;
+  [[nodiscard]] inline default_type tck_index_to_factor(const size_t) const;
 };
 
 template <class Cont> void TrackMapper::voxelise(const Streamline<> &tck, Cont &output) const {

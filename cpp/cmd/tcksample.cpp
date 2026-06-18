@@ -636,7 +636,7 @@ public:
       WARN("Track file reports " + str(expected) + " tracks, but contains " + str(received));
   }
 
-  bool ordered() const { return process_ordered; }
+  [[nodiscard]] bool ordered() const { return process_ordered; }
 
 protected:
   void operator++() {

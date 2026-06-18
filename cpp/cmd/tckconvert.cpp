@@ -471,23 +471,21 @@ public:
       auto isLast = idx == tck.size() - 2;
 
       // vtkTubeFilter.cxx:386
-      const Eigen::Vector3f p = tck[idx];
-      const Eigen::Vector3f pNext = tck[idx + 1];
+      const Eigen::Vector3f &p = tck[idx];
+      const Eigen::Vector3f &pNext = tck[idx + 1];
       const Eigen::Vector3f sPrev = sNext;
       sNext = pNext - p;
-      const Eigen::Vector3f n = normals[idx];
+      const Eigen::Vector3f &n = normals[idx];
 
       sNext.normalize();
-      if (sNext.norm() == 0.0) {
+      if (sNext.norm() == 0.0)
         continue;
-      }
 
       // Average vectors
       Eigen::Vector3f s = (sPrev + sNext) / 2.0;
       s.normalize();
-      if (s.norm() == 0.0) {
+      if (s.norm() == 0.0)
         s = sPrev.cross(n).normalized();
-      }
 
       auto T = s;
       auto N = T.cross(globalNormal).normalized();

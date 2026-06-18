@@ -35,10 +35,10 @@ public:
   Zstatistic &operator=(const Zstatistic &) = delete;
 
   // Convert a t-statistic to a z-statistic
-  default_type t2z(const default_type t, const size_t dof) const;
+  [[nodiscard]] default_type t2z(const default_type t, const size_t dof) const;
 
   // Convert an F-statistic to a z-statistic
-  default_type F2z(const default_type F, const size_t rank, const size_t dof) const;
+  [[nodiscard]] default_type F2z(const default_type F, const size_t rank, const size_t dof) const;
 
 protected:
   class LookupBase {
@@ -52,11 +52,11 @@ protected:
     //   the lookup table if the value lies within the pre-calculated
     //   range, or perform an explicit calculation if that is not
     //   the case
-    default_type interp(const default_type stat,
-                        const default_type offset,
-                        const default_type scale,
-                        const array_type &data,
-                        std::function<default_type(default_type)> func) const;
+    [[nodiscard]] default_type interp(const default_type stat,
+                                      const default_type offset,
+                                      const default_type scale,
+                                      const array_type &data,
+                                      std::function<default_type(default_type)> func) const;
   };
 
   class Lookup_t2z : public LookupBase {

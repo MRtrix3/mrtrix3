@@ -126,7 +126,8 @@ void run() {
     } catch (Exception &E) {
       try {
         transform_list.emplace_back(std::make_unique<Linear>(File::Matrix::load_transform(argument[i])));
-      } catch (Exception &E) {
+        // NOLINTNEXTLINE(bugprone-empty-catch)
+      } catch (Exception &) {
         throw Exception("error reading input file: " + argument[i].as_text() + ":" +       //
                         " does not appear to be a 4D warp image or 4x4 linear transform"); //
       }

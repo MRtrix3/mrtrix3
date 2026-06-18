@@ -112,15 +112,15 @@ public:
     update();
   }
 
-  int get_LOD() const { return lod_computed; }
-  int get_lmax() const { return lmax_computed; }
-  float get_scale() const { return scale; }
-  mode_t get_mode() const { return mode; }
-  bool get_show_axes() const { return show_axes; }
-  bool get_hide_neg_lobes() const { return hide_neg_values; }
-  bool get_color_by_dir() const { return color_by_dir; }
-  bool get_use_lighting() const { return use_lighting; }
-  bool get_normalise() const { return normalise; }
+  [[nodiscard]] int get_LOD() const { return lod_computed; }
+  [[nodiscard]] int get_lmax() const { return lmax_computed; }
+  [[nodiscard]] float get_scale() const { return scale; }
+  [[nodiscard]] mode_t get_mode() const { return mode; }
+  [[nodiscard]] bool get_show_axes() const { return show_axes; }
+  [[nodiscard]] bool get_hide_neg_lobes() const { return hide_neg_values; }
+  [[nodiscard]] bool get_color_by_dir() const { return color_by_dir; }
+  [[nodiscard]] bool get_use_lighting() const { return use_lighting; }
+  [[nodiscard]] bool get_normalise() const { return normalise; }
 
   void screenshot(int oversampling, const std::filesystem::path &image_path);
 

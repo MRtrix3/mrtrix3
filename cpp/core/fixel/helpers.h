@@ -37,11 +37,9 @@ public:
 };
 
 FORCE_INLINE bool is_index_filename(const std::filesystem::path &path) {
-  for (const auto &extension : supported_image_formats) {
-    if (path.filename().string() == "index" + extension)
-      return true;
-  }
-  return false;
+  return std::any_of(supported_image_formats.begin(),
+                     supported_image_formats.end(),
+                     [&path](std::string_view extension) { return path.filename().string() == "index" + extension; });
 }
 
 template <class HeaderType> FORCE_INLINE bool is_index_image(const HeaderType &in) {
@@ -59,11 +57,10 @@ template <class HeaderType> FORCE_INLINE bool is_data_file(const HeaderType &in)
 }
 
 FORCE_INLINE bool is_directions_filename(const std::filesystem::path &path) {
-  for (const auto &extension : supported_image_formats) {
-    if (path.filename().string() == "directions" + extension)
-      return true;
-  }
-  return false;
+  return std::any_of(
+      supported_image_formats.begin(), supported_image_formats.end(), [&path](std::string_view extension) {
+        return path.filename().string() == "directions" + extension;
+      });
 }
 
 template <class HeaderType> FORCE_INLINE bool is_directions_file(const HeaderType &in) {

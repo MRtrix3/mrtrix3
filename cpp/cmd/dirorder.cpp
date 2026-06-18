@@ -132,7 +132,7 @@ void run() {
     // clang-format off
     WARN("Very few directions in input (" + str(directions.rows()) + ";" +
          " selection of first direction cannot be optimised" +
-         (preserve ?
+         (preserve > 0 ?
               " (direction #" + str(preserve + 1) + " will be first direction in output "
               "as that is the first direction after those to be preserved)" :
               " (first direction in input will be first direction in output)"));

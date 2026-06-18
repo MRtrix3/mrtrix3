@@ -65,7 +65,7 @@ public:
 class LP {
 public:
   LP(const default_type p) : power(p) { assert(power >= 1.0 && power <= 2.0); }
-  LP() : power(1.2) {}
+  LP() = default;
 
   void operator()(const default_type &x, default_type &residual, default_type &slope) {
     residual = std::pow(std::fabs(x), power);
@@ -84,7 +84,7 @@ public:
   }
 
 private:
-  default_type power;
+  default_type power{1.2};
 };
 
 } // namespace MR::Registration::Metric

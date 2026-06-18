@@ -80,7 +80,7 @@ public:
     out.open(path, std::ofstream::out);
   }
 
-  bool next() {
+  [[nodiscard]] bool next() {
     const std::lock_guard<std::mutex> lock(mutex);
     ++n_iter;
     if (n_iter % iter_bigstep == 0) {
@@ -94,9 +94,9 @@ public:
 
   // getters and setters ----------------------------------------------
 
-  double getText() const { return Text; }
+  [[nodiscard]] double getText() const { return Text; }
 
-  double getTint() const {
+  [[nodiscard]] double getTint() const {
     const std::lock_guard<std::mutex> lock(mutex);
     return Tint;
   }
@@ -106,12 +106,12 @@ public:
     Tint = temp;
   }
 
-  double getEextTotal() const {
+  [[nodiscard]] double getEextTotal() const {
     const std::lock_guard<std::mutex> lock(mutex);
     return EextTot;
   }
 
-  double getEintTotal() const {
+  [[nodiscard]] double getEintTotal() const {
     const std::lock_guard<std::mutex> lock(mutex);
     return EintTot;
   }
@@ -126,7 +126,7 @@ public:
     EintTot += d;
   }
 
-  unsigned int getN(const char p) const {
+  [[nodiscard]] unsigned int getN(const char p) const {
     switch (p) {
     case 'b':
       return n_gen[0];
@@ -143,7 +143,7 @@ public:
     }
   }
 
-  unsigned int getNa(const char p) const {
+  [[nodiscard]] unsigned int getNa(const char p) const {
     switch (p) {
     case 'b':
       return n_acc[0];
@@ -207,7 +207,7 @@ public:
     }
   }
 
-  double getAcceptanceRate(const char p) const {
+  [[nodiscard]] double getAcceptanceRate(const char p) const {
     switch (p) {
     case 'b':
       return static_cast<double>(n_acc[0]) / static_cast<double>(n_gen[0]);

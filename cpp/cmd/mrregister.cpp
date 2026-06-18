@@ -433,8 +433,7 @@ void run() {
     rigid_registration.set_max_iter(parse_ints<uint32_t>(opt[0][0]));
   }
 
-  const Registration::LinearMetricType rigid_metric =
-      get_option_choice<Registration::LinearMetricType>("rigid_metric", Registration::Diff);
+  const auto rigid_metric = get_option_choice<Registration::LinearMetricType>("rigid_metric", Registration::Diff);
 
   if (rigid_metric == Registration::NCC)
     throw Exception("TODO: cross correlation metric not yet implemented");
@@ -537,8 +536,7 @@ void run() {
     affine_registration.set_loop_density(parse_floats(opt[0][0]));
   }
 
-  const Registration::LinearMetricType affine_metric =
-      get_option_choice<Registration::LinearMetricType>("affine_metric", Registration::Diff);
+  const auto affine_metric = get_option_choice<Registration::LinearMetricType>("affine_metric", Registration::Diff);
 
   if (affine_metric == Registration::NCC)
     throw Exception("TODO cross correlation metric not yet implemented");
@@ -585,14 +583,14 @@ void run() {
 
   // ****** LINEAR INITIALISATION AND STAGE OPTIONS *******
   if (!do_rigid and !do_affine) {
-    for (auto &s : Registration::adv_init_options) {
+    for (const auto &s : Registration::adv_init_options) {
       if (!get_options(s.id).empty()) {
         std::stringstream msg;
         msg << "cannot use option -" << s.id << " when no linear registration is requested";
         throw Exception(msg.str());
       }
     }
-    for (auto &s : Registration::lin_stage_options) {
+    for (const auto &s : Registration::lin_stage_options) {
       if (!get_options(s.id).empty()) {
         std::stringstream msg;
         msg << "cannot use option -" << s.id << " when no linear registration is requested";

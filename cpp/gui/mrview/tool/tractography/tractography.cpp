@@ -946,7 +946,7 @@ bool Tractography::process_commandline_option(const MR::App::ParsedOption &opt) 
 
   if (opt.opt->is("tractography.geometry")) {
     try {
-      const TrackGeometryType geom_type = MR::Enum::from_name<TrackGeometryType>(std::string(opt[0]));
+      const auto geom_type = MR::Enum::from_name<TrackGeometryType>(std::string(opt[0]));
       QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
       if (!indices.empty()) {
         for (auto index : indices)
