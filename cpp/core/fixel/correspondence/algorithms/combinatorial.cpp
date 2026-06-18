@@ -17,9 +17,13 @@
 #include "fixel/correspondence/algorithms/combinatorial.h"
 
 #include "app.h"
+#include "fixel/correspondence/algorithms/agreement.h"
 #include "fixel/correspondence/algorithms/ismrm2018.h"
 #include "fixel/correspondence/algorithms/pot.h"
 #include "fixel/correspondence/algorithms/rs2023.h"
+#include "fixel/correspondence/algorithms/transport.h"
+#include "fixel/correspondence/algorithms/transportdisp.h"
+#include "fixel/correspondence/algorithms/transportguard.h"
 
 namespace MR::Fixel::Correspondence::Algorithms {
 
@@ -348,6 +352,10 @@ template <class CostFunctor> uint64_t Combinatorial<CostFunctor>::max_computed_c
 template class Combinatorial<ISMRM2018>;
 template class Combinatorial<POT>;
 template class Combinatorial<RS2023>;
+template class Combinatorial<Transport>;
+template class Combinatorial<TransportDisp>;
+template class Combinatorial<Agreement>;
+template class Combinatorial<TransportGuard>;
 
 // clang-format off
 OptionGroup CombinatorialOptions = OptionGroup("Options applicable to all combinatorial-based algorithms")

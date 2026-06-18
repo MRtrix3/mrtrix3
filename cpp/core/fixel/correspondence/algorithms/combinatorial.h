@@ -40,6 +40,10 @@ extern App::OptionGroup CombinatorialOptions;
 class ISMRM2018;
 class POT;
 class RS2023;
+class Transport;
+class TransportDisp;
+class Agreement;
+class TransportGuard;
 
 // Base class to handle the combinatorial aspects of both
 //   what was presented at ISMRM2018 and new proposed expression
@@ -97,5 +101,9 @@ protected:
 extern template class Combinatorial<ISMRM2018>;
 extern template class Combinatorial<POT>;
 extern template class Combinatorial<RS2023>;
+extern template class Combinatorial<Transport>;
+extern template class Combinatorial<TransportDisp>;
+extern template class Combinatorial<Agreement>;
+extern template class Combinatorial<TransportGuard>;
 
 } // namespace MR::Fixel::Correspondence::Algorithms

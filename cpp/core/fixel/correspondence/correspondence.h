@@ -42,6 +42,15 @@ constexpr float default_in2023_beta = 0.1f;
 constexpr float default_pot_gamma = 0.5f;
 constexpr float default_nearest_maxangle = 45.0f;
 
+// Defaults for the proposed transport-family and agreement cost functions
+constexpr float default_transport_angle = 45.0f;          // theta* (degrees)
+constexpr float default_transport_complexity = 0.5f;      // gamma
+constexpr float default_transportdisp_dispersion = 1.0f;  // lambda
+constexpr float default_agreement_sigma = 1.0f;           // sigma (density units)
+constexpr float default_agreement_complexity = 0.1f;      // beta
+constexpr float default_transportguard_mu = 1.0f;         // over-explanation weight
+constexpr float default_transportguard_rho = 2.0f;        // over-explanation density ratio
+
 constexpr index_type default_max_origins_per_target = 3;
 constexpr index_type default_max_objectives_per_source = 3;
 

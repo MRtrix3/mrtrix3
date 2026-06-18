@@ -30,7 +30,7 @@ OptionGroup POTOptions =
     //        "exponent \"p\" controlling the angular sensitivity of the directional misalignment cost"
     //        " (default: " +
     //            str(default_pot_p) + ")") +
-    // Argument("value").type_float(1.0) +
+    // Argument("value").type_float(0.0) +
     Option("pot_complexity",
            "weight \"gamma\" applied to the linear penalty for merging multiple subject fixels into one template fixel"
            " or splitting one subject fixel across multiple template fixels"

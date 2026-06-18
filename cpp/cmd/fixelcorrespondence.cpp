@@ -22,12 +22,17 @@
 #include "fixel/helpers.h"
 #include "header.h"
 
+#include "fixel/correspondence/algorithms/agreement.h"
 #include "fixel/correspondence/algorithms/all2all.h"
 #include "fixel/correspondence/algorithms/base.h"
 #include "fixel/correspondence/algorithms/ismrm2018.h"
+#include "fixel/correspondence/algorithms/kernel.h"
 #include "fixel/correspondence/algorithms/legacy.h"
 #include "fixel/correspondence/algorithms/pot.h"
 #include "fixel/correspondence/algorithms/rs2023.h"
+#include "fixel/correspondence/algorithms/transport.h"
+#include "fixel/correspondence/algorithms/transportdisp.h"
+#include "fixel/correspondence/algorithms/transportguard.h"
 #include "fixel/correspondence/correspondence.h"
 #include "fixel/correspondence/matcher.h"
 
@@ -90,9 +95,21 @@ enum class algorithm_t {
   LEGACY,
   ISMRM2018,
   POT,
-  RS2023
+  RS2023,
+  TRANSPORT,
+  TRANSPORTDISP,
+  AGREEMENT,
+  TRANSPORTGUARD
 };
 constexpr algorithm_t default_algorithm = algorithm_t::POT;
+
+// Read the tan / tan2 angular kernel choice for a given option (default: tan2)
+Algorithms::AngularKernel get_angular_kernel(const std::string &option_name) {
+  auto opt = get_options(option_name);
+  if (opt.empty())
+    return Algorithms::AngularKernel::TAN2;
+  return static_cast<int>(opt[0][0]) == 0 ? Algorithms::AngularKernel::TAN : Algorithms::AngularKernel::TAN2;
+}
 
 // clang-format off
 void usage() {
@@ -138,7 +155,26 @@ void usage() {
     "Mapping topology (multiple subject fixels merged into one template fixel, "
     "or one subject fixel split across multiple template fixels) is penalised linearly "
     "with weight controlled by the \"gamma\" parameter, "
-    "and the angular sensitivity is controlled by exponent \"p\".";
+    "and the angular sensitivity is controlled by exponent \"p\"."
+
+  + "\"transport\": This is a combinatorial algorithm in which each subject fixel's fibre density is treated as "
+    "mass to be transported to the template fixel(s) it is assigned to, paying an angular cost; "
+    "subject mass that cannot be placed within a threshold angle is left unmatched. "
+    "Crucially, template fibre density enters the cost only through template orientation, never as a matching target, "
+    "so the optimal mapping does not shrink subject density toward the template and between-subject contrast is preserved."
+
+  + "\"transportdisp\": As for \"transport\", but each remapped fixel's assembled mass is scored by the alignment of its "
+    "mean direction together with an explicit penalty on the angular dispersion of the merged subject fixels. "
+    "This more strongly rewards merging fixels that straddle a template direction while penalising the conflation of "
+    "widely-separated populations."
+
+  + "\"agreement\": A combinatorial algorithm evolving the \"ismrm2018\" cost. Density disagreement between remapped and "
+    "template fixels is gated by angular misalignment (so it is ignored where the geometry is good) and saturates beyond "
+    "a contrast-protection scale \"sigma\", so that genuinely differing subject densities are not dragged toward the template."
+
+  + "\"transportguard\": As for \"transport\", but with an additional one-sided penalty that fires only when a remapped "
+    "fixel accumulates substantially more mass than the corresponding template fixel plausibly holds, "
+    "suppressing non-physical pile-ups from over-merging without otherwise affecting density contrast.";
 
   ARGUMENTS
   + Argument ("source_density", "the input source fixel data file corresponding to the FD or FDC metric").type_image_in()
@@ -159,7 +195,15 @@ void usage() {
 
   + Algorithms::POTOptions
 
-  + Algorithms::RS2023Options;
+  + Algorithms::RS2023Options
+
+  + Algorithms::TransportOptions
+
+  + Algorithms::TransportDispOptions
+
+  + Algorithms::AgreementOptions
+
+  + Algorithms::TransportGuardOptions;
 
   REFERENCES
   + "* If using -algorithm ismrm2018 or -algorithm rs2023: " // Internal
@@ -214,6 +258,50 @@ void run() {
       auto opt = get_options("rs2023_constants");
       if (opt.size())
         dynamic_cast<Algorithms::RS2023 *>(algorithm.get())->set_constants(opt[0][0], opt[0][1]);
+    }
+    break;
+  case algorithm_t::TRANSPORT:
+    algorithm.reset(new Algorithms::Transport(get_option_value("max_origins", default_max_origins_per_target),
+                                              get_option_value("max_objectives", default_max_objectives_per_source),
+                                              H_cost));
+    Algorithms::Transport::set_constants(get_angular_kernel("transport_kernel"),
+                                         get_option_value("transport_angle", default_transport_angle),
+                                         get_option_value("transport_complexity", default_transport_complexity));
+    break;
+  case algorithm_t::TRANSPORTDISP:
+    algorithm.reset(new Algorithms::TransportDisp(get_option_value("max_origins", default_max_origins_per_target),
+                                                  get_option_value("max_objectives", default_max_objectives_per_source),
+                                                  H_cost));
+    Algorithms::TransportDisp::set_constants(
+        get_angular_kernel("transport_kernel"),
+        get_option_value("transport_angle", default_transport_angle),
+        get_option_value("transport_complexity", default_transport_complexity),
+        get_option_value("transportdisp_dispersion", default_transportdisp_dispersion));
+    break;
+  case algorithm_t::AGREEMENT:
+    algorithm.reset(new Algorithms::Agreement(get_option_value("max_origins", default_max_origins_per_target),
+                                              get_option_value("max_objectives", default_max_objectives_per_source),
+                                              H_cost));
+    Algorithms::Agreement::set_constants(get_angular_kernel("agreement_kernel"),
+                                         get_option_value("agreement_sigma", default_agreement_sigma),
+                                         get_option_value("agreement_complexity", default_agreement_complexity));
+    break;
+  case algorithm_t::TRANSPORTGUARD:
+    algorithm.reset(new Algorithms::TransportGuard(get_option_value("max_origins", default_max_origins_per_target),
+                                                   get_option_value("max_objectives", default_max_objectives_per_source),
+                                                   H_cost));
+    {
+      float mu = default_transportguard_mu;
+      float rho = default_transportguard_rho;
+      auto opt = get_options("transportguard_overexplain");
+      if (opt.size()) {
+        mu = opt[0][0];
+        rho = opt[0][1];
+      }
+      Algorithms::TransportGuard::set_constants(get_angular_kernel("transport_kernel"),
+                                                get_option_value("transport_angle", default_transport_angle),
+                                                get_option_value("transport_complexity", default_transport_complexity),
+                                                mu, rho);
     }
     break;
   default:
