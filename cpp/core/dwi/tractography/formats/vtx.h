@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -153,6 +154,32 @@ inline constexpr Formats::NonFinite vtx_vertex_tolerance = Formats::NonFinite::N
 
 namespace Formats {
 
+//! \brief Location and on-disk layout of a binary ".vtx" file's POINTS / OFFSETS blocks.
+/*! Returned by VTX::binary_layout() to let a consumer (e.g. mrview's GPU
+ * fast-path loader) read the contiguous POINTS coordinate stream and the
+ * per-streamline END-vertex OFFSETS array directly, bypassing the streaming
+ * reader. Unlike ".vtk" LINES, OFFSETS carry no per-vertex connectivity: the
+ * streamlines are contiguous by construction (streamline j spans points
+ * offsetEnd[j-1]+1 .. offsetEnd[j], with offsetEnd[-1] = -1), so the consumer
+ * derives per-streamline vertex counts directly from consecutive offsets.
+ *
+ * Only the BINARY encoding is reported (ASCII has no contiguous on-disk block to
+ * map); the caller falls back to the streaming reader for the ASCII case
+ * (std::nullopt). The byte offsets are absolute within the file (the whole file
+ * is mapped). \a points_datatype is the on-disk POINTS element type with explicit
+ * byte order (".vtx" binary is big-endian by spec), so the consumer can decide
+ * whether a verbatim copy or a staging byte-swap is needed. \a offsets_int64
+ * selects the OFFSETS index width ("vtktypeint64" vs "int"). The contents of
+ * neither block are parsed here. */
+struct VTXBinaryLayout {
+  int64_t points_offset;    //!< byte offset of the first POINTS coordinate
+  size_t num_points;        //!< number of vertices in the POINTS block
+  DataType points_datatype; //!< on-disk POINTS element type + byte order (BE)
+  int64_t offsets_offset;   //!< byte offset of the first OFFSETS entry
+  size_t num_streamlines;   //!< number of streamlines (== number of OFFSETS entries)
+  bool offsets_int64;       //!< true if OFFSETS indices are 64-bit (vtktypeint64)
+};
+
 //! \brief Format handler for the experimental ".vtx" STREAMLINES tractography format.
 /*! The ".vtx" handler reads and writes the experimental VTK-derived
  * STREAMLINES format (POINTS = streamline vertices; OFFSETS = per-streamline
@@ -176,6 +203,17 @@ public:
               NonFinite::Forbidden}) {}
 
   bool handles(const std::filesystem::path &path) const override;
+
+  //! \brief Parse only the header / section markers to locate the binary blocks.
+  /*! Reads the preamble and the POINTS / OFFSETS keyword lines (advancing past,
+   * but never parsing, their payloads) to report the byte offset, element count,
+   * datatype and index width of each block. Returns std::nullopt when the file
+   * cannot be served by a raw-block consumer — specifically for the ASCII
+   * encoding, an absent POINTS / OFFSETS block, or any structural surprise — in
+   * which case the caller should fall back to the streaming reader rather than
+   * treat it as an error. The contents of the POINTS / OFFSETS blocks are NOT
+   * read here; the consumer maps and consumes them. */
+  std::optional<VTXBinaryLayout> binary_layout(const std::filesystem::path &path) const;
 
 protected:
   std::unique_ptr<ReaderInterface<float>> read_float(const std::filesystem::path &path,

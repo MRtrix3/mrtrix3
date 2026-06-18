@@ -19,6 +19,7 @@
 #include <filesystem>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -152,6 +153,21 @@ inline constexpr Formats::NonFinite tck_vertex_tolerance = Formats::NonFinite::F
 
 namespace Formats {
 
+//! \brief Location and on-disk type of a ".tck" file's binary vertex block.
+/*! Returned by TCK::binary_layout() to let a consumer (e.g. mrview's GPU
+ * fast-path loader) read the contiguous 3-vector stream directly, bypassing the
+ * per-streamline streaming reader. \a data_path is the file actually holding the
+ * binary block (the ".tck" itself unless the header's "file:" entry redirects
+ * elsewhere), \a data_offset its byte offset, and \a datatype the on-disk vertex
+ * element type and byte order verbatim from the header — including \c Float16,
+ * which the streaming reader (TCKReader) supports but which the generic header
+ * validator (ReaderBase::open) rejects. */
+struct TCKBinaryLayout {
+  std::filesystem::path data_path;
+  int64_t data_offset;
+  DataType datatype;
+};
+
 //! \brief Format handler for the in-house MRtrix3 ".tck" tractography format.
 /*! The ".tck" format is a plaintext header followed by a binary stream of
  * 3-vectors (NaN-delimited streamlines, Inf end-of-data barrier). It is the
@@ -176,6 +192,15 @@ public:
               NonFinite::Forbidden}) {}
 
   bool handles(const std::filesystem::path &path) const override;
+
+  //! \brief Parse only the header to locate the binary vertex block.
+  /*! Returns the data file, byte offset and on-disk vertex datatype without
+   * opening any vertex stream, enabling a raw-block consumer. Returns
+   * std::nullopt if the header lacks the information required to locate the
+   * block (e.g. no "datatype:" or "file:" entry), in which case the caller
+   * should fall back to the streaming reader rather than treat it as an error.
+   * Permits Float16 (unlike ReaderBase::open). */
+  std::optional<TCKBinaryLayout> binary_layout(const std::filesystem::path &path) const;
 
 protected:
   std::unique_ptr<ReaderInterface<float>> read_float(const std::filesystem::path &path,

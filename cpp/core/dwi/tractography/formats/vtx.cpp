@@ -20,6 +20,7 @@
 
 #include <array>
 #include <fstream>
+#include <optional>
 #include <sstream>
 #include <string>
 
@@ -103,6 +104,10 @@ VTXReader<ValueType>::VTXReader(const std::filesystem::path &path, Properties &p
         throw Exception("VTX file \"" + path.string() + "\" POINTS datatype \"" + datatype +
                         "\" is unsupported (expected float or double)");
       have_points = true;
+      // Expose the on-disk vertex datatype for downstream consumers (e.g.
+      //   mrview's GPU vertex-width selection); header-only, no vertex read.
+      properties.vertex_datatype =
+          DataType((point_type == PointDataType::Float32) ? DataType::Float32 : DataType::Float64);
       const size_t element_size = (point_type == PointDataType::Float32) ? sizeof(float) : sizeof(double);
 
       if (encoding == Encoding::Binary) {
@@ -338,6 +343,110 @@ template class VTXWriter<double>;
 namespace Formats {
 
 bool VTX::handles(const std::filesystem::path &path) const { return path.extension() == ".vtx"; }
+
+std::optional<VTXBinaryLayout> VTX::binary_layout(const std::filesystem::path &path) const {
+  // Header-only parse: locate the POINTS and OFFSETS blocks without reading
+  //   either payload. Any condition that a raw-block consumer cannot serve
+  //   (ASCII encoding, missing block, unsupported POINTS datatype) returns
+  //   std::nullopt so the caller falls back to the streaming reader. The POINTS /
+  //   OFFSETS payload contents are NOT validated here.
+  std::ifstream in(path, std::ios::binary);
+  if (!in)
+    return std::nullopt;
+
+  Properties scratch_properties;
+  Encoding encoding;
+  try {
+    encoding = VTKUtils::parse_preamble(in, path, scratch_properties);
+  } catch (Exception &) {
+    return std::nullopt;
+  }
+  // A raw-block consumer maps a contiguous on-disk array; ASCII has none.
+  if (encoding != Encoding::Binary)
+    return std::nullopt;
+
+  std::optional<int64_t> points_offset;
+  size_t num_points = 0;
+  PointDataType point_type = PointDataType::Float32;
+  std::optional<int64_t> offsets_offset;
+  size_t num_streamlines = 0;
+  bool offsets_int64 = false;
+
+  std::string line;
+  while (std::getline(in, line)) {
+    std::string keyword;
+    {
+      std::istringstream stream(line);
+      stream >> keyword;
+    }
+    if (keyword.empty())
+      continue;
+
+    if (keyword == "DATASET") {
+      std::istringstream stream(line);
+      std::string dummy;
+      std::string type;
+      stream >> dummy >> type;
+      if (type != "STREAMLINES")
+        return std::nullopt;
+      continue;
+    }
+
+    if (keyword == "POINTS") {
+      std::istringstream stream(line);
+      std::string dummy;
+      std::string datatype;
+      stream >> dummy >> num_points >> datatype;
+      if (datatype == "float")
+        point_type = PointDataType::Float32;
+      else if (datatype == "double")
+        point_type = PointDataType::Float64;
+      else
+        return std::nullopt;
+      const size_t element_size = (point_type == PointDataType::Float32) ? sizeof(float) : sizeof(double);
+      points_offset = static_cast<int64_t>(in.tellg());
+      // Advance past the POINTS payload to reach the next keyword.
+      in.seekg(*points_offset + static_cast<int64_t>(3 * num_points * element_size), std::ios::beg);
+      continue;
+    }
+
+    if (keyword == "OFFSETS") {
+      std::istringstream stream(line);
+      std::string dummy;
+      std::string datatype;
+      stream >> dummy >> num_streamlines >> datatype;
+      if (datatype == "vtktypeint64" || datatype == "long" || datatype == "vtkIdType")
+        offsets_int64 = true;
+      else if (datatype == "int" || datatype == "vtktypeint32")
+        offsets_int64 = false;
+      else
+        return std::nullopt;
+      offsets_offset = static_cast<int64_t>(in.tellg());
+      // OFFSETS is the last field of interest; stop scanning the header.
+      break;
+    }
+
+    // POINTS and OFFSETS are the only structures a raw-block consumer serves;
+    //   any other dataset field is not part of a STREAMLINES tractogram.
+    return std::nullopt;
+  }
+
+  if (!points_offset.has_value())
+    return std::nullopt;
+  // A file with no OFFSETS is a valid empty tractogram, but offers nothing for
+  //   the fast path to build; defer it to the streaming reader.
+  if (!offsets_offset.has_value())
+    return std::nullopt;
+
+  // ".vtx" binary is big-endian by spec; report the explicit byte order so the
+  //   consumer can choose a verbatim copy (big-endian host) or a staging
+  //   byte-swap (little-endian host).
+  const DataType points_datatype = (point_type == PointDataType::Float32)
+                                       ? DataType(DataType::Float32 | DataType::BigEndian)
+                                       : DataType(DataType::Float64 | DataType::BigEndian);
+
+  return VTXBinaryLayout{*points_offset, num_points, points_datatype, *offsets_offset, num_streamlines, offsets_int64};
+}
 
 std::unique_ptr<ReaderInterface<float>> VTX::read_float(const std::filesystem::path &path,
                                                         Properties &properties,

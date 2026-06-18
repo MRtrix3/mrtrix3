@@ -63,6 +63,10 @@ private slots:
   void threshold_upper_value_changed();
 
 protected:
+  //! Number of fixed threshold-combo entries preceding any embedded-field
+  //!   entries (None, Use colour scalar file, Separate scalar file).
+  static constexpr int num_fixed_threshold_modes = 3;
+
   Tractography *tool;
   Tractogram *tractogram;
   Tool::Base::VBoxLayout *main_box;

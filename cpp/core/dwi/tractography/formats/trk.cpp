@@ -158,6 +158,18 @@ TRKReader<ValueType>::TRKReader(const std::filesystem::path &path,
     voxel2scanner = vox_to_ras_transform(header);
   }
 
+  // Expose the on-disk vertex datatype for downstream consumers (e.g. mrview);
+  //   ".trk" vertices are always float32. byte_swapped flags that the file is
+  //   opposite-endian to this host, so derive the on-disk byte order from the
+  //   native order and the swap flag.
+  {
+    DataType native_f32(DataType::Float32);
+    native_f32.set_byte_order_native();
+    const bool native_is_little = native_f32.is_little_endian();
+    const bool disk_is_little = byte_swapped ? !native_is_little : native_is_little;
+    properties.vertex_datatype = DataType(disk_is_little ? DataType::Float32LE : DataType::Float32BE);
+  }
+
   // Preserve grid metadata into the Properties for a faithful round-trip.
   properties["trk_dim"] = str(header.dim[0]) + "," + str(header.dim[1]) + "," + str(header.dim[2]);
   properties["trk_voxel_size"] = str(voxel_size[0]) + "," + str(voxel_size[1]) + "," + str(voxel_size[2]);

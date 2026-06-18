@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -201,6 +202,29 @@ inline constexpr Formats::NonFinite vtk_vertex_tolerance = Formats::NonFinite::N
 
 namespace Formats {
 
+//! \brief Location and on-disk layout of a binary ".vtk" file's POINTS / LINES blocks.
+/*! Returned by VTK::binary_layout() to let a consumer (e.g. mrview's GPU
+ * fast-path loader) read the contiguous POINTS coordinate stream and the LINES
+ * connectivity list directly, bypassing the per-streamline streaming reader.
+ *
+ * Only the legacy-VTK BINARY encoding is reported (ASCII has no contiguous
+ * on-disk block to map); the caller falls back to the streaming reader for the
+ * ASCII case (std::nullopt). The byte offsets are absolute within the file (the
+ * whole file is mapped). \a points_datatype is the on-disk POINTS element type
+ * with explicit byte order (legacy VTK binary is big-endian by spec), so the
+ * consumer can decide whether a verbatim copy or a staging byte-swap is needed.
+ * \a lines_int64 selects the connectivity index width (the newer
+ * "vtktypeint64" qualifier). The contents of neither block are parsed here. */
+struct VTKBinaryLayout {
+  int64_t points_offset;    //!< byte offset of the first POINTS coordinate
+  size_t num_points;        //!< number of vertices in the POINTS block
+  DataType points_datatype; //!< on-disk POINTS element type + byte order (BE)
+  int64_t lines_offset;     //!< byte offset of the first LINES connectivity index
+  size_t num_lines;         //!< number of streamlines (LINES cells)
+  size_t lines_list_size;   //!< total integers in the LINES connectivity list
+  bool lines_int64;         //!< true if LINES indices are 64-bit (vtktypeint64)
+};
+
 //! \brief Format handler for the legacy VTK PolyData (".vtk") tractography format.
 /*! The ".vtk" handler reads and writes the legacy VTK simple PolyData format
  * restricted to POINTS (streamline vertices) and LINES (per-streamline vertex
@@ -227,6 +251,18 @@ public:
               SidecarData::Rewrite}) {}
 
   bool handles(const std::filesystem::path &path) const override;
+
+  //! \brief Parse only the header / section markers to locate the binary blocks.
+  /*! Reads the preamble and the POINTS / LINES keyword lines (advancing past,
+   * but never parsing, their payloads) to report the byte offset, element count,
+   * datatype and index width of each block. Returns std::nullopt when the file
+   * cannot be served by a raw-block consumer — specifically for the ASCII
+   * encoding, an absent POINTS / LINES block, or any structural surprise — in
+   * which case the caller should fall back to the streaming reader rather than
+   * treat it as an error. The contents of the POINTS / LINES blocks are NOT
+   * validated here (e.g. connectivity contiguity); that is the consumer's
+   * responsibility once it maps the blocks. */
+  std::optional<VTKBinaryLayout> binary_layout(const std::filesystem::path &path) const;
 
 protected:
   std::unique_ptr<ReaderInterface<float>> read_float(const std::filesystem::path &path,

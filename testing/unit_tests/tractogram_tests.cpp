@@ -39,6 +39,7 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <optional>
 #include <vector>
 
 using namespace MR::DWI::Tractography;
@@ -151,6 +152,50 @@ TEST_F(TractogramTest, TckRoundTripViaFramework) {
     for (size_t v = 0; v != input[s].size(); ++v)
       EXPECT_TRUE(output[s][v].isApprox(input[s][v]));
   }
+}
+
+// Stage 4: TCK::binary_layout() locates the binary vertex block from the header
+//   alone (data file, byte offset, on-disk datatype) for the mrview raw-block
+//   fast path. The offset it reports must seek exactly to the first vertex, and
+//   the datatype must match the (native) write datatype Float32.
+TEST_F(TractogramTest, TckBinaryLayoutLocatesVertexBlock) {
+  const std::vector<Streamline<float>> input = make_streamlines();
+  {
+    Properties properties;
+    Tractogram<float> writer = Tractogram<float>::create(tck_path, properties);
+    for (const auto &tck : input)
+      writer(TractogramItem<float>(tck));
+  }
+
+  Formats::TCK handler;
+  const std::optional<Formats::TCKBinaryLayout> layout = handler.binary_layout(tck_path);
+  ASSERT_TRUE(layout.has_value());
+  EXPECT_EQ(layout->data_path, tck_path);
+  EXPECT_EQ(layout->datatype() & MR::DataType::Type, MR::DataType::Float32);
+  EXPECT_GT(layout->data_offset, 0);
+
+  // The reported offset must seek exactly to the first streamline's first
+  //   vertex: read three floats there and compare to the synthetic input.
+  std::ifstream in(tck_path, std::ios::binary);
+  ASSERT_TRUE(in.good());
+  in.seekg(layout->data_offset);
+  std::array<float, 3> first{};
+  in.read(reinterpret_cast<char *>(first.data()), sizeof(first));
+  ASSERT_TRUE(in.good());
+  EXPECT_FLOAT_EQ(first[0], input[0][0][0]);
+  EXPECT_FLOAT_EQ(first[1], input[0][0][1]);
+  EXPECT_FLOAT_EQ(first[2], input[0][0][2]);
+}
+
+// Stage 4: binary_layout() returns nullopt (clean fall-back signal, not an
+//   error) for a file lacking the header information needed to locate the block.
+TEST_F(TractogramTest, TckBinaryLayoutNulloptForMalformedHeader) {
+  {
+    std::ofstream out(tck_path, std::ios::binary | std::ios::trunc);
+    out << "mrtrix tracks\nEND\n";
+  }
+  Formats::TCK handler;
+  EXPECT_FALSE(handler.binary_layout(tck_path).has_value());
 }
 
 // The inter-command pipe handler is selected on the "-" dash token (Step 1) and

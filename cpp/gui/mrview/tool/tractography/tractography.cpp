@@ -277,6 +277,17 @@ Tractography::Tractography(Dock *parent)
   // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
   geom_type_combobox->setCurrentIndex(*magic_enum::enum_index(Tractogram::default_tract_geom));
 
+  // CONF option: MRViewTractogramHalfPrecisionGPU
+  // CONF default: false (0)
+  // CONF Force mrview to upload tractogram vertex data to the GPU in IEEE
+  // CONF half-precision (16-bit float) regardless of the input file's on-disk
+  // CONF vertex datatype, halving the vertex buffer footprint at the cost of
+  // CONF positional precision (~0.06 mm near +/-100 mm). This is a rendering
+  // CONF representation only and never feeds quantitative paths. When unset,
+  // CONF mrview honours the on-disk datatype (Float16 -> half; Float32 -> float;
+  // CONF Float64 -> float).
+  Tractogram::force_half_precision_gpu = File::Config::get_bool("MRViewTractogramHalfPrecisionGPU", false);
+
   // In the instance where pseudotubes are _not_ the default, enable lighting by default
   if (Tractogram::default_tract_geom != TrackGeometryType::Pseudotubes) {
     use_lighting = true;
@@ -306,7 +317,7 @@ void Tractography::draw_colourbars() {
   for (int i = 0; i < tractogram_list_model->rowCount(); ++i) {
     Tractogram *tractogram = dynamic_cast<Tractogram *>(tractogram_list_model->items[i].get());
     if (tractogram->show && tractogram->get_color_type() == TrackColourType::ScalarFile &&
-        !tractogram->intensity_scalar_path.empty())
+        (!tractogram->intensity_scalar_path.empty() || tractogram->intensity_embedded_field.has_value()))
       tractogram->request_render_colourbar(*scalar_file_options);
   }
 }
@@ -318,7 +329,7 @@ size_t Tractography::visible_number_colourbars() {
     for (size_t i = 0, N = tractogram_list_model->rowCount(); i < N; ++i) {
       Tractogram *tractogram = dynamic_cast<Tractogram *>(tractogram_list_model->items[i].get());
       if (tractogram->show && tractogram->get_color_type() == TrackColourType::ScalarFile &&
-          !tractogram->intensity_scalar_path.empty())
+          (!tractogram->intensity_scalar_path.empty() || tractogram->intensity_embedded_field.has_value()))
         total_visible += 1;
     }
   }
@@ -561,7 +572,11 @@ void Tractography::colour_by_scalar_file_slot() {
         colour_combobox->setCurrentIndex(3);
         break;
       case TrackColourType::ScalarFile:
-        colour_combobox->setCurrentIndex(4);
+        if (tractogram->intensity_embedded_field.has_value())
+          colour_combobox->setCurrentIndex(num_fixed_colour_modes +
+                                           static_cast<int>(*tractogram->intensity_embedded_field));
+        else
+          colour_combobox->setCurrentIndex(4);
         break;
       }
       colour_combobox->clearError();
@@ -580,27 +595,80 @@ void Tractography::colour_by_scalar_file_slot() {
 }
 
 void Tractography::colour_mode_selection_slot(int) {
-  switch (colour_combobox->currentIndex()) {
+  const int index = colour_combobox->currentIndex();
+  switch (index) {
   case 0:
     colour_track_by_direction_slot();
-    break;
+    return;
   case 1:
     colour_track_by_ends_slot();
-    break;
+    return;
   case 2:
     randomise_track_colour_slot();
-    break;
+    return;
   case 3:
     set_track_colour_slot();
-    break;
+    return;
   case 4:
     colour_by_scalar_file_slot();
-    break;
-  case 5:
-    break;
+    return;
   default:
-    assert(0);
+    break;
   }
+  // Indices beyond the fixed modes are either an embedded-field entry (one per
+  //   column of each embedded dpv/dps field of the single selected tractogram)
+  //   or the trailing "(variable)" error entry; the former are dispatched, the
+  //   latter is a no-op.
+  QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
+  if (indices.size() == 1) {
+    const Tractogram *tractogram = tractogram_list_model->get_tractogram(indices[0]);
+    const size_t entry = static_cast<size_t>(index - num_fixed_colour_modes);
+    if (entry < tractogram->embedded_scalar_fields().size()) {
+      colour_by_embedded_field_slot(entry);
+      return;
+    }
+  }
+}
+
+void Tractography::colour_by_embedded_field_slot(const size_t entry) {
+  QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
+  if (indices.size() != 1)
+    return;
+  Tractogram *tractogram = tractogram_list_model->get_tractogram(indices[0]);
+  try {
+    tractogram->load_intensity_embedded_scalars(entry);
+    tractogram->set_color_type(TrackColourType::ScalarFile);
+  } catch (Exception &e) {
+    e.display();
+    return;
+  }
+  scalar_file_options->set_tractogram(tractogram);
+  colour_combobox->blockSignals(true);
+  colour_combobox->setCurrentIndex(num_fixed_colour_modes + static_cast<int>(entry));
+  colour_combobox->clearError();
+  colour_combobox->blockSignals(false);
+  colour_button->setEnabled(false);
+  update_scalar_options();
+  window().updateGL();
+}
+
+void Tractography::rebuild_embedded_colour_entries() {
+  // The embedded-field entries follow the fixed colour modes and precede any
+  //   trailing "(variable)" error entry. Clear any error first (so it does not
+  //   interleave), strip previous embedded entries, then append fresh ones for
+  //   the single selected tractogram.
+  colour_combobox->blockSignals(true);
+  colour_combobox->clearError();
+  while (colour_combobox->count() > num_fixed_colour_modes)
+    colour_combobox->removeItem(colour_combobox->count() - 1);
+
+  QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
+  if (indices.size() == 1) {
+    const Tractogram *tractogram = tractogram_list_model->get_tractogram(indices[0]);
+    for (const auto &field : tractogram->embedded_scalar_fields())
+      colour_combobox->addItem(qstr(field.label()));
+  }
+  colour_combobox->blockSignals(false);
 }
 
 void Tractography::colour_button_slot() {
@@ -640,6 +708,9 @@ void Tractography::geom_type_selection_slot(int selected_index) {
 void Tractography::selection_changed_slot(const QItemSelection &, const QItemSelection &) {
   update_scalar_options();
   update_geometry_type_gui();
+  // Refresh the embedded-field combo entries for the (possibly new) selection
+  //   before reading back the active colour mode.
+  rebuild_embedded_colour_entries();
 
   QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
   if (indices.empty()) {
@@ -681,7 +752,13 @@ void Tractography::selection_changed_slot(const QItemSelection &, const QItemSel
       colour_button->setColor(color);
       break;
     case TrackColourType::ScalarFile:
-      colour_combobox->setCurrentIndex(4);
+      // ScalarFile rendering is shared by external-file and embedded-field
+      //   colouring; pick the matching combo entry.
+      if (first_tractogram->intensity_embedded_field.has_value())
+        colour_combobox->setCurrentIndex(num_fixed_colour_modes +
+                                         static_cast<int>(*first_tractogram->intensity_embedded_field));
+      else
+        colour_combobox->setCurrentIndex(4);
       colour_button->setEnabled(false);
       break;
     }

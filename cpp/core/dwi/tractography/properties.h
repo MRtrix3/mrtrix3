@@ -17,11 +17,13 @@
 #pragma once
 
 #include "app.h"
+#include "datatype.h"
 #include "dwi/tractography/roi.h"
 #include "dwi/tractography/seeding/list.h"
 #include "timer.h"
 #include "types.h"
 #include <map>
+#include <optional>
 
 namespace MR::DWI::Tractography {
 
@@ -56,6 +58,14 @@ public:
   std::multimap<std::string, std::string> prior_rois;
 
   std::vector<std::string> comments;
+
+  //! \brief On-disk vertex coordinate datatype, when the format exposes one cheaply.
+  /*! Populated header-only (no vertex read) by readers of formats that store
+   * explicit floating-point vertices (.tck, TRX, .vtk, .vtx, .trk). Lossy /
+   * quantised geometries (.tt, .qfib, .zfib) leave it std::nullopt. Consumers
+   * (e.g. mrview's GPU vertex-width selection) should treat std::nullopt as
+   * "unknown" and fall back to Float32. */
+  std::optional<DataType> vertex_datatype;
 
   friend std::ostream &operator<<(std::ostream &stream, const Properties &P);
 };

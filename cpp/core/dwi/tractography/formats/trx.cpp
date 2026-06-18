@@ -714,6 +714,10 @@ TRXReader<ValueType>::TRXReader(const std::filesystem::path &path, Properties &p
   summary = source->summarise();
   summary_to_properties(summary, properties);
 
+  // Expose the on-disk positions datatype for downstream consumers (e.g.
+  //   mrview's GPU vertex-width selection); header-only, no vertex read.
+  properties.vertex_datatype = summary.positions_dtype;
+
   // Register each sidecar (dps/dpv) field; preserve native on-disk dtype (D7).
   for (const TRXUtils::SidecarSummary &sc : summary.sidecars) {
     FieldDescriptor descriptor;

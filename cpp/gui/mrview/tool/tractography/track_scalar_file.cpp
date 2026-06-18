@@ -144,18 +144,34 @@ void TrackScalarFileOptions::update_UI() {
     colourmap_button->set_scale_inverted(tractogram->scale_inverted());
     colourmap_button->set_show_colourbar(tractogram->show_colour_bar);
 
-    assert(!tractogram->intensity_scalar_path.empty());
-    intensity_file_button->setText(qstr(shorten(tractogram->intensity_scalar_path.filename().string(), 35, 0)));
-    intensity_file_button->setToolTip(qstr(tractogram->intensity_scalar_path.string()));
+    if (tractogram->intensity_embedded_field.has_value()) {
+      // Embedded source: label the button with the field (and column).
+      const auto &field = tractogram->embedded_scalar_fields()[*tractogram->intensity_embedded_field];
+      intensity_file_button->setText(qstr(shorten(field.label(), 35, 0)));
+      intensity_file_button->setToolTip(qstr("Embedded field: " + field.label()));
+    } else {
+      assert(!tractogram->intensity_scalar_path.empty());
+      intensity_file_button->setText(qstr(shorten(tractogram->intensity_scalar_path.filename().string(), 35, 0)));
+      intensity_file_button->setToolTip(qstr(tractogram->intensity_scalar_path.string()));
+    }
 
   } else {
     colour_groupbox->setVisible(false);
     intensity_file_button->setToolTip(tr("Open (track) scalar file for colouring streamlines"));
   }
 
-  threshold_file_combobox->removeItem(3);
+  // Rebuild the threshold combo around the three fixed modes: append one entry
+  //   per embedded dpv/dps field column, then (when a separate file is loaded)
+  //   the loaded-file label as the final entry.
   threshold_file_combobox->blockSignals(true);
   threshold_file_combobox->setToolTip(QString());
+  while (threshold_file_combobox->count() > num_fixed_threshold_modes)
+    threshold_file_combobox->removeItem(threshold_file_combobox->count() - 1);
+
+  const std::vector<EmbeddedScalarField> &fields = tractogram->embedded_scalar_fields();
+  for (const auto &field : fields)
+    threshold_file_combobox->addItem(qstr(field.label()));
+
   switch (tractogram->get_threshold_type()) {
   case TrackThresholdType::None:
     threshold_file_combobox->setCurrentIndex(0);
@@ -164,10 +180,18 @@ void TrackScalarFileOptions::update_UI() {
     threshold_file_combobox->setCurrentIndex(1);
     break;
   case TrackThresholdType::SeparateFile:
-    assert(!tractogram->threshold_scalar_path.empty());
-    threshold_file_combobox->addItem(qstr(shorten(tractogram->threshold_scalar_path.filename().string(), 35, 0)));
-    threshold_file_combobox->setToolTip(qstr(tractogram->threshold_scalar_path.string()));
-    threshold_file_combobox->setCurrentIndex(3);
+    if (tractogram->threshold_embedded_field.has_value()) {
+      const size_t entry = *tractogram->threshold_embedded_field;
+      const auto &field = fields[entry];
+      threshold_file_combobox->setToolTip(qstr("Embedded field: " + field.label()));
+      threshold_file_combobox->setCurrentIndex(num_fixed_threshold_modes + static_cast<int>(entry));
+    } else {
+      assert(!tractogram->threshold_scalar_path.empty());
+      const int file_index = num_fixed_threshold_modes + static_cast<int>(fields.size());
+      threshold_file_combobox->addItem(qstr(shorten(tractogram->threshold_scalar_path.filename().string(), 35, 0)));
+      threshold_file_combobox->setToolTip(qstr(tractogram->threshold_scalar_path.string()));
+      threshold_file_combobox->setCurrentIndex(file_index);
+    }
     break;
   }
   threshold_file_combobox->blockSignals(false);
@@ -272,8 +296,14 @@ void TrackScalarFileOptions::on_set_scaling_slot() {
 
 bool TrackScalarFileOptions::threshold_scalar_file_slot(int /*unused*/) {
 
-  std::filesystem::path file_path;
-  switch (threshold_file_combobox->currentIndex()) {
+  const int index = threshold_file_combobox->currentIndex();
+  const std::vector<EmbeddedScalarField> &fields = tractogram->embedded_scalar_fields();
+  const int embedded_count = static_cast<int>(fields.size());
+  // Combo layout: [None, UseColourFile, SeparateFile, embedded..., (loaded file)]
+  const int embedded_begin = num_fixed_threshold_modes;
+  const int embedded_end = embedded_begin + embedded_count;
+
+  switch (index) {
   case 0:
     tractogram->set_threshold_type(TrackThresholdType::None);
     tractogram->erase_threshold_scalar_data();
@@ -291,22 +321,13 @@ bool TrackScalarFileOptions::threshold_scalar_file_slot(int /*unused*/) {
           tr("Can only threshold based on scalar file used for streamline colouring if that colour mode is active"),
           QMessageBox::Ok,
           QMessageBox::Ok);
-      threshold_file_combobox->blockSignals(true);
-      switch (tractogram->get_threshold_type()) {
-      case TrackThresholdType::None:
-        threshold_file_combobox->setCurrentIndex(0);
-        break;
-      case TrackThresholdType::UseColourFile:
-        assert(0);
-      case TrackThresholdType::SeparateFile:
-        threshold_file_combobox->setCurrentIndex(3);
-        break;
-      }
-      threshold_file_combobox->blockSignals(false);
+      // Restore the combo to reflect the unchanged threshold state.
+      update_UI();
       return false;
     }
     break;
   case 2: {
+    std::filesystem::path file_path;
     auto load_paths = Dialog::File::input_filepath(
         this, "Select scalar text file or Track Scalar file (.tsf) to open", "", tool->current_folder);
     if (!load_paths.empty()) {
@@ -321,28 +342,27 @@ bool TrackScalarFileOptions::threshold_scalar_file_slot(int /*unused*/) {
       }
     }
     if (file_path.empty()) {
-      threshold_file_combobox->blockSignals(true);
-      switch (tractogram->get_threshold_type()) {
-      case TrackThresholdType::None:
-        threshold_file_combobox->setCurrentIndex(0);
-        break;
-      case TrackThresholdType::UseColourFile:
-        threshold_file_combobox->setCurrentIndex(1);
-        break;
-      case TrackThresholdType::SeparateFile:
-        // Should still be an entry in the combobox corresponding to the old file
-        threshold_file_combobox->setCurrentIndex(3);
-        break;
-      }
-      threshold_file_combobox->blockSignals(false);
+      // Cancelled or failed: restore the combo to the unchanged state.
+      update_UI();
       return false;
     }
   } break;
-  case 3: // Re-selected the same file as used previously; do nothing
-    assert(tractogram->get_threshold_type() == TrackThresholdType::SeparateFile);
-    break;
   default:
-    assert(0);
+    if (index >= embedded_begin && index < embedded_end) {
+      // An embedded dpv/dps field column was selected for thresholding.
+      try {
+        tractogram->load_threshold_embedded_scalars(static_cast<size_t>(index - embedded_begin));
+        tractogram->set_threshold_type(TrackThresholdType::SeparateFile);
+      } catch (Exception &E) {
+        E.display();
+        update_UI();
+        return false;
+      }
+    } else {
+      // The trailing loaded-file label: re-selected the active separate file.
+      assert(tractogram->get_threshold_type() == TrackThresholdType::SeparateFile);
+    }
+    break;
   }
   update_UI();
   window().updateGL();

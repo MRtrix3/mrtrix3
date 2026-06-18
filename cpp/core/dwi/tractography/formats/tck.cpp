@@ -21,13 +21,19 @@
 #include <array>
 #include <cerrno>
 #include <limits>
+#include <optional>
+#include <sstream>
+#include <string>
 
 #include "app.h"
+#include "datatype.h"
 #include "exception.h"
 #include "file/config.h"
+#include "file/key_value.h"
 #include "file/matrix.h"
 #include "file/ofstream.h"
 #include "half.h"
+#include "mrtrix.h"
 
 namespace MR::DWI::Tractography {
 
@@ -218,6 +224,43 @@ template class TCKWriter<double>;
 namespace Formats {
 
 bool TCK::handles(const std::filesystem::path &path) const { return path.extension() == ".tck"; }
+
+std::optional<TCKBinaryLayout> TCK::binary_layout(const std::filesystem::path &path) const {
+  // Header-only parse: mirror ReaderBase::open's "datatype:" / "file:" handling
+  //   but neither open the vertex stream nor reject Float16 (the streaming
+  //   reader supports it, and the raw-block consumer uploads it verbatim).
+  File::KeyValue::Reader kv(path, "mrtrix tracks");
+  DataType dtype = DataType::Undefined;
+  std::string data_file;
+  while (kv.next()) {
+    const std::string key = lowercase(kv.key());
+    if (key == "datatype")
+      dtype = DataType::parse(kv.value());
+    else if (key == "file")
+      data_file = kv.value();
+  }
+
+  if (dtype == DataType::Undefined || data_file.empty())
+    return std::nullopt;
+
+  std::istringstream files_stream(data_file);
+  std::string fname_str;
+  files_stream >> fname_str;
+  if (fname_str.empty())
+    return std::nullopt;
+  int64_t offset = 0;
+  files_stream >> offset;
+  if (files_stream.fail())
+    return std::nullopt;
+
+  std::filesystem::path data_path;
+  if (fname_str == ".")
+    data_path = path;
+  else
+    data_path = path.parent_path() / fname_str;
+
+  return TCKBinaryLayout{std::move(data_path), offset, dtype};
+}
 
 std::unique_ptr<ReaderInterface<float>> TCK::read_float(const std::filesystem::path &path,
                                                         Properties &properties,

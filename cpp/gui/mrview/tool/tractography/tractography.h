@@ -106,6 +106,15 @@ protected:
 
   QSlider *opacity_slider;
 
+  //! Number of fixed colour-combo entries preceding any embedded-field entries
+  //!   (Direction, Endpoints, Random, Manual, File).
+  static constexpr int num_fixed_colour_modes = 5;
+  //! Colour the single selected tractogram by an embedded scalar field column.
+  /*! \a entry indexes the selected tractogram's embedded_scalar_fields(). */
+  void colour_by_embedded_field_slot(size_t entry);
+  //! Rebuild the colour combo's embedded-field entries for the current selection.
+  void rebuild_embedded_colour_entries();
+
   void dropEvent(QDropEvent *event) override;
   void update_scalar_options();
   void add_tractogram(const std::vector<std::filesystem::path> &list);
