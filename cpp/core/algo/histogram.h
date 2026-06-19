@@ -125,7 +125,7 @@ protected:
 template <class ImageType> void calibrate(Calibrator &result, ImageType &image) {
   for (auto l = Loop(image)(image); l; ++l)
     result(image.value());
-  result.finalize(image.ndim() > 3 ? image.size(3) : 1, std::is_integral<typename ImageType::value_type>::value);
+  result.finalize(image.ndim() > 3 ? image.size(3) : 1, MR::is_integral<typename ImageType::value_type>::value);
 }
 
 template <class ImageType, class MaskType> void calibrate(Calibrator &result, ImageType &image, MaskType &mask) {
@@ -140,7 +140,7 @@ template <class ImageType, class MaskType> void calibrate(Calibrator &result, Im
     if (mask_replicate.value())
       result(image.value());
   }
-  result.finalize(image.ndim() > 3 ? image.size(3) : 1, std::is_integral<typename ImageType::value_type>::value);
+  result.finalize(image.ndim() > 3 ? image.size(3) : 1, MR::is_integral<typename ImageType::value_type>::value);
 }
 
 template <class ImageType> Data generate(ImageType &image, const size_t num_bins, const bool ignore_zero = false) {

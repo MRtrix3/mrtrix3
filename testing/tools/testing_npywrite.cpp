@@ -23,7 +23,6 @@
 
 #include "file/matrix.h"
 #include "file/npy.h"
-#include "half.h"
 #include "types.h"
 
 using namespace MR;
