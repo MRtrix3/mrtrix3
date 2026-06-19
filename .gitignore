@@ -11,6 +11,9 @@
 *.img
 *.hdr
 *.rste
+*.md
+!README.md
+!CONTRIBUTING.md
 /python/lib/mrtrix3/_version.py
 /scripts/mrtrix_bash_completion
 /dev/
