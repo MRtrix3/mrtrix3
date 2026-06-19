@@ -86,11 +86,21 @@ include(Dependencies)
 include(CompilerCache)
 use_compiler_cache()
 
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git AND NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git/hooks/pre-commit)
+execute_process(
+    COMMAND git rev-parse --git-common-dir
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    OUTPUT_VARIABLE GIT_DIR_PATH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+)
+
+if(GIT_DIR_PATH AND NOT EXISTS ${GIT_DIR_PATH}/hooks/pre-commit)
     message(WARNING
         "pre-commit git hook for clang-format not found!\n"
         "Please install pre-commit (e.g. using `apt install pre-commit` or `pip install pre-commit`) "
         "and then run `pre-commit install` from the ${CMAKE_CURRENT_SOURCE_DIR} directory.")
+else()
+    message (STATUS "pre-commit hook for clang-format already installed")
 endif()
 
 
