@@ -73,20 +73,25 @@ Matcher::Matcher(const std::filesystem::path &source_file,
                                                        MR::Fixel::get_number_of_fixels(target_index)));
 }
 
-void Matcher::operator()(Image<MR::Fixel::index_type> &voxel) {
+void Matcher::load_voxel(Image<MR::Fixel::index_type> &voxel,
+                         std::vector<Correspondence::Fixel> &source_fixels,
+                         std::vector<Correspondence::Fixel> &target_fixels,
+                         index_type &offset_source,
+                         index_type &offset_target) {
   assign_pos_of(voxel, 0, 3).to(source_index, target_index);
   source_index.index(3) = target_index.index(3) = 0;
   const index_type nfixels_source = source_index.value();
   const index_type nfixels_target = target_index.value();
   source_index.index(3) = target_index.index(3) = 1;
-  const index_type offset_source = source_index.value();
-  const index_type offset_target = target_index.value();
+  offset_source = source_index.value();
+  offset_target = target_index.value();
 
   // Perform an initial load of the fixel information; this can
   //   then be palmed off to the appropriate algorithm
   // By pre-loading into vectors, can have fixels in both spaces indexed from zero
   //   during the correspondence determination
-  std::vector<Correspondence::Fixel> source_fixels, target_fixels;
+  source_fixels.clear();
+  target_fixels.clear();
   for (index_type i = 0; i != nfixels_source; ++i) {
     source_directions.index(0) = source_data.index(0) = offset_source + i;
     source_fixels.push_back(Correspondence::Fixel(source_directions.row(1), source_data.value()));
@@ -95,6 +100,13 @@ void Matcher::operator()(Image<MR::Fixel::index_type> &voxel) {
     target_directions.index(0) = target_data.index(0) = offset_target + i;
     target_fixels.push_back(Correspondence::Fixel(target_directions.row(1), target_data.value()));
   }
+}
+
+void Matcher::operator()(Image<MR::Fixel::index_type> &voxel) {
+  std::vector<Correspondence::Fixel> source_fixels, target_fixels;
+  index_type offset_source, offset_target;
+  load_voxel(voxel, source_fixels, target_fixels, offset_source, offset_target);
+  const index_type nfixels_target = target_fixels.size();
 
   std::vector<std::vector<Mapping::Entry>> M;
   if (target_fixels.size()) {

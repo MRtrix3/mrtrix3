@@ -19,6 +19,7 @@
 #include "app.h"
 #include "fixel/correspondence/algorithms/agreement.h"
 #include "fixel/correspondence/algorithms/ismrm2018.h"
+#include "fixel/correspondence/algorithms/megacost.h"
 #include "fixel/correspondence/algorithms/pot.h"
 #include "fixel/correspondence/algorithms/rs2023.h"
 #include "fixel/correspondence/algorithms/transport.h"
@@ -356,6 +357,7 @@ template class Combinatorial<Transport>;
 template class Combinatorial<TransportDisp>;
 template class Combinatorial<Agreement>;
 template class Combinatorial<TransportGuard>;
+template class Combinatorial<MegaCost>;
 
 // clang-format off
 OptionGroup CombinatorialOptions = OptionGroup("Options applicable to all combinatorial-based algorithms")

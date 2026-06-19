@@ -44,6 +44,7 @@ class Transport;
 class TransportDisp;
 class Agreement;
 class TransportGuard;
+class MegaCost;
 
 // Base class to handle the combinatorial aspects of both
 //   what was presented at ISMRM2018 and new proposed expression
@@ -105,5 +106,6 @@ extern template class Combinatorial<Transport>;
 extern template class Combinatorial<TransportDisp>;
 extern template class Combinatorial<Agreement>;
 extern template class Combinatorial<TransportGuard>;
+extern template class Combinatorial<MegaCost>;
 
 } // namespace MR::Fixel::Correspondence::Algorithms

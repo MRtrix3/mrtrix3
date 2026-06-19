@@ -22,6 +22,7 @@
 #include "image.h"
 
 #include "fixel/correspondence/correspondence.h"
+#include "fixel/correspondence/fixel.h"
 #include "fixel/correspondence/mapping.h"
 
 namespace MR::Fixel::Correspondence::Algorithms {
@@ -41,6 +42,16 @@ public:
 
   // Input is just a dummy iterator that provides the location
   void operator()(Image<index_type> &voxel);
+
+  // Load the source and target fixels for a single voxel into the provided vectors,
+  //   along with the offsets to the first fixel of that voxel in each fixel dataset.
+  // Exposed so that alternative drivers (e.g. the cost-function evaluation command)
+  //   can reuse fixel loading without duplicating it.
+  void load_voxel(Image<index_type> &voxel,
+                  std::vector<Correspondence::Fixel> &source_fixels,
+                  std::vector<Correspondence::Fixel> &target_fixels,
+                  index_type &offset_source,
+                  index_type &offset_target);
 
   // Use this to get a template image in order to loop over voxels
   Image<index_type> get_template() const { return Image<index_type>(target_index); }
