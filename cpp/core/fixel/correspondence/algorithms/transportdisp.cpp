@@ -64,7 +64,7 @@ float TransportDisp::calculate(const std::vector<Correspondence::Fixel> &s,
     if (d_rs <= 0.0f)
       continue;
 
-    const float align = angular_cost(rs[t_index].absdot(t[t_index]), kernel);
+    const float align = angular_cost(std::min(1.0f, rs[t_index].absdot(t[t_index])), kernel);
 
     // Density-weighted mean resultant length R of the merged subject fixels,
     //   each sign-aligned to the template direction (as during remapping)

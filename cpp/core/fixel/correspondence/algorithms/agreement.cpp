@@ -63,7 +63,7 @@ float Agreement::calculate(const std::vector<Correspondence::Fixel> &s,
     if (d_rs > 0.0f) {
       // Angle-gated, saturating density disagreement
       const float dd = d_t - d_rs;
-      const float a = angular_cost(rs[t_index].absdot(t[t_index]), kernel);
+      const float a = angular_cost(std::min(1.0f, rs[t_index].absdot(t[t_index])), kernel);
       result += sigma2 * a * (1.0f - std::exp(-Math::pow2(dd) / sigma2));
     } else {
       // Unmatched template fixel

@@ -44,7 +44,7 @@ float RS2023::calculate(const std::vector<Correspondence::Fixel> &s,
   float result = 0.0f;
   for (index_type t_index = 0; t_index != rs.size(); ++t_index) {
 
-    result += t[t_index].density() * (rs[t_index].density() ? dp2cost(t[t_index].absdot(rs[t_index])) : 1.0f);
+    result += t[t_index].density() * (rs[t_index].density() ? dp2cost(std::min(1.0f, t[t_index].absdot(rs[t_index]))) : 1.0f);
 
     result += a * Math::pow2(t[t_index].density() - rs[t_index].density());
 

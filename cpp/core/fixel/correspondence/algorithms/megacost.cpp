@@ -55,7 +55,7 @@ float transport_core(const std::vector<Correspondence::Fixel> &s,
     } else {
       const float mass = d_s / static_cast<float>(n_objectives);
       for (const index_type t_index : inv_mapping[s_index])
-        result += mass * angular_cost(s[s_index].absdot(t[t_index]), kernel);
+        result += mass * angular_cost(std::min(1.0f, s[s_index].absdot(t[t_index])), kernel);
       if (n_objectives > 1)
         result += gamma * d_s * static_cast<float>(n_objectives - 1);
     }
@@ -84,7 +84,8 @@ float CostConfig::evaluate(const std::vector<Correspondence::Fixel> &s,
     float result = 0.0f;
     for (index_type index = 0; index != rs.size(); ++index) {
       if (rs[index].density())
-        result += Math::pow2(t[index].density() - rs[index].density()) * dp2cost(t[index].absdot(rs[index]));
+        result +=
+            Math::pow2(t[index].density() - rs[index].density()) * dp2cost(std::min(1.0f, t[index].absdot(rs[index])));
       else
         result += Math::pow2(t[index].density());
     }
@@ -127,7 +128,8 @@ float CostConfig::evaluate(const std::vector<Correspondence::Fixel> &s,
   case Family::RS2023: {
     float result = 0.0f;
     for (index_type t_index = 0; t_index != rs.size(); ++t_index) {
-      result += t[t_index].density() * (rs[t_index].density() ? dp2cost(t[t_index].absdot(rs[t_index])) : 1.0f);
+      result += t[t_index].density() *
+                (rs[t_index].density() ? dp2cost(std::min(1.0f, t[t_index].absdot(rs[t_index]))) : 1.0f);
       result += alpha * Math::pow2(t[t_index].density() - rs[t_index].density());
       result += beta * Math::pow2(static_cast<float>(static_cast<int>(origins_per_remapped_fixel[t_index]) - 1));
     }
@@ -155,7 +157,7 @@ float CostConfig::evaluate(const std::vector<Correspondence::Fixel> &s,
       const float d_rs = rs[t_index].density();
       if (d_rs <= 0.0f)
         continue;
-      const float align = angular_cost(rs[t_index].absdot(t[t_index]), kernel);
+      const float align = angular_cost(std::min(1.0f, rs[t_index].absdot(t[t_index])), kernel);
       dir_t resultant = dir_t::Zero();
       for (const index_type s_index : origins[t_index]) {
         const float mass = s[s_index].density() / static_cast<float>(inv_mapping[s_index].size());
@@ -186,7 +188,7 @@ float CostConfig::evaluate(const std::vector<Correspondence::Fixel> &s,
       const float d_rs = rs[t_index].density();
       if (d_rs > 0.0f) {
         const float dd = d_t - d_rs;
-        const float a = angular_cost(rs[t_index].absdot(t[t_index]), kernel);
+        const float a = angular_cost(std::min(1.0f, rs[t_index].absdot(t[t_index])), kernel);
         result += sigma2 * a * (1.0f - std::exp(-Math::pow2(dd) / sigma2));
       } else {
         result += Math::pow2(d_t);

@@ -31,7 +31,8 @@ float ISMRM2018::calculate(const std::vector<Correspondence::Fixel> &s,
       // Differences in fixel orientation contribute in such a way that
       //   angles of greater than 45 degrees are penalised more severely
       //   than would be leaving those fixels unmatched
-      result += Math::pow2(t[index].density() - rs[index].density()) * dp2cost(t[index].absdot(rs[index]));
+      result +=
+          Math::pow2(t[index].density() - rs[index].density()) * dp2cost(std::min(1.0f, t[index].absdot(rs[index])));
     } else {
       result += Math::pow2(t[index].density());
     }

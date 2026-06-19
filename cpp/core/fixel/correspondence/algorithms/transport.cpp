@@ -73,7 +73,7 @@ float Transport::transport_core(const std::vector<Correspondence::Fixel> &s,
       //   each portion is transported at its own angular cost
       const float mass = d_s / static_cast<float>(n_objectives);
       for (const index_type t_index : inv_mapping[s_index])
-        result += mass * angular_cost(s[s_index].absdot(t[t_index]), kernel);
+        result += mass * angular_cost(std::min(1.0f, s[s_index].absdot(t[t_index])), kernel);
       // Parsimony: splitting one subject fixel across multiple template fixels
       if (n_objectives > 1)
         result += complexity * d_s * static_cast<float>(n_objectives - 1);
