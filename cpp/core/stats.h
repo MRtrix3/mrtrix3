@@ -64,8 +64,8 @@ public:
         }
         throw Exception("Cannot output statistic of interest; no values read (empty mask?)");
       }
-      for (const auto &field : fields) {
-        switch (field) {
+      for (size_t i = 0; i != fields.size(); ++i) {
+        switch (fields[i]) {
         case field_t::MEAN:
           std::cout << str(mean);
           break;
@@ -91,9 +91,10 @@ public:
           std::cout << count;
           break;
         default:
-          throw Exception("stats type not supported: " + Enum::lowercase_name(field));
+          throw Exception("stats type not supported: " + Enum::lowercase_name(fields[i]));
         }
-        std::cout << " ";
+        if (i < fields.size() - 1)
+          std::cout << " ";
       }
       std::cout << "\n";
 

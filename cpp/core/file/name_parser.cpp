@@ -24,7 +24,8 @@ namespace MR::File {
 namespace {
 
 inline bool in_seq(const std::vector<uint32_t> &seq, uint32_t val) {
-  return std::find(seq.begin(), seq.end(), val) != seq.end();
+  // An empty sequence is a wildcard that matches any number
+  return seq.empty() || std::find(seq.begin(), seq.end(), val) != seq.end();
 }
 
 } // namespace

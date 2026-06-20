@@ -156,8 +156,8 @@ public:
   }
 
 protected:
-  std::vector<uint32_t> extent{3, 0};
-  std::vector<default_type> stdev{3, 0.0};
+  std::vector<uint32_t> extent{0, 0, 0};
+  std::vector<default_type> stdev{0.0, 0.0, 0.0};
   const std::vector<size_t> stride_order;
   bool zero_boundary{false};
 
