@@ -346,7 +346,7 @@ void export_grad_commandline(const Header &header) {
   auto check = [](const Header &h) -> const Header & {
     if (h.keyval().find("dw_scheme") == h.keyval().end())
       throw Exception("no gradient information found within image \"" + h.path().string() + "\"");
-    return h; // NOLINT(bugprone-return-cost-ref-from-parameter)
+    return h; // NOLINT(bugprone-return-const-ref-from-parameter)
   };
 
   auto opt = get_options("export_grad_mrtrix");

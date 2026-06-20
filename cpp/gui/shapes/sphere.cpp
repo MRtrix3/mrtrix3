@@ -127,9 +127,11 @@ void Sphere::LOD(const size_t level_of_detail) {
   const Eigen::Map<const Eigen::Matrix<float, 12, 3, Eigen::RowMajor>> initial_vertices(initial_vertices_data);
   const Eigen::Map<const Eigen::Array<uint32_t, 20, 3, Eigen::RowMajor>> initial_indices(initial_indices_data);
 
+  vertices.reserve(initial_vertices.rows());
   for (size_t n = 0; n < initial_vertices.rows(); n++)
     vertices.emplace_back(initial_vertices.row(n));
 
+  indices.reserve(initial_indices.rows());
   for (size_t n = 0; n < initial_indices.rows(); n++)
     indices.emplace_back(initial_indices.row(n));
 

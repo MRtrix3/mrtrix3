@@ -118,9 +118,7 @@ public:
       : transform_(original.transform()),
         name_(original.name()),
         keyval_(original.keyval()),
-        datatype_(DataType::from<typename HeaderType::value_type>()),
-        offset_(0.0),
-        scale_(1.0) {
+        datatype_(DataType::from<typename HeaderType::value_type>()) {
     axes_.resize(original.ndim());
     for (size_t n = 0; n < original.ndim(); ++n) {
       size(n) = original.size(n);

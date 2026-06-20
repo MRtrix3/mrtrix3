@@ -160,6 +160,8 @@ public:
       // Determine direction and frequency of harmonic
       std::array<ssize_t, 3> kspace_origin;
       for (ssize_t axis = 0; axis != 3; ++axis)
+        // Note: k-space centre positioning here tracks behaviour of MRtrix FFT::shift()
+        // NOLINTNEXTLINE(bugprone-integer-division)
         kspace_origin[axis] = axis_mask[axis] ? static_cast<real_type>((kspace.size(axis) - 1) / 2) : 0;
       const pos_type kspace_offset({axis_mask[0] ? (pos[0] - static_cast<real_type>(kspace_origin[0])) : real_type(0),
                                     axis_mask[1] ? (pos[1] - static_cast<real_type>(kspace_origin[1])) : real_type(0),

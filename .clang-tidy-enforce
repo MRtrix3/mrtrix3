@@ -1,7 +1,5 @@
 Checks: >
   -*,
-  -cpp/core/eigen_plugins/*,
-  -cpp/gui/opengl/gl_core_3_3.*,
   bugprone-*,
   clang-analyzer-*,
   concurrency-*,
@@ -38,4 +36,4 @@ Checks: >
   -clang-analyzer-core.uninitialized.Assign,
 WarningsAsErrors: '*'
 HeaderFilterRegex: '(cpp\/|testing\/(lib\/|tools\/|unit_tests\/)).*\.(h|hpp)'
-#ExcludeHeaderFilterRegex: '(_deps\/|cpp\/core\/eigen_plugins\/|cpp\/gui\/opengl\/gl_core_3_3).*'
+ExcludeHeaderFilterRegex: '(_deps\/|cpp\/core\/eigen_plugins\/|cpp\/gui\/opengl\/gl_core_3_3).*'
