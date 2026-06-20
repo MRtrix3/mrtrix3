@@ -77,7 +77,7 @@ Options for the linear registration
 
 - **-linear_no_pause** Do not pause the script if a linear registration seems implausible
 
-- **-linear_estimator** Specify estimator for intensity difference metric. Valid choices are: l1 (least absolute: \|x\|), l2 (ordinary least squares), lp (least powers: \|x\|^1.2), none (no robust estimator; ordinary least squares via mean squared difference, mathematically equivalent to l2). Default: none
+- **-linear_estimator** Specify "robust" estimator for intensity difference metric. Valid choices are: l1 (least absolute: \|x\|), l2 (ordinary least squares), lp (least powers: \|x\|^1.2).Default is to omit this option, resulting in no "robust" estimator but instead use of mean squared differences; this is mathematically and behaviourally equivalent to l2 as no "robust" features other than the change in difference exponent are currently implemented.
 
 - **-rigid_scale** Specify the multi-resolution pyramid used to build the rigid template, in the form of a list of scale factors (default: 0.3,0.4,0.6,0.8,1.0,1.0). This and affine_scale implicitly  define the number of template levels
 
