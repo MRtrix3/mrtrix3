@@ -278,7 +278,7 @@ void run ()
       if (!M.isApprox(R*S))
         WARN ("matrix decomposition might have failed");
 
-      Eigen::Vector3d euler_angles = R.eulerAngles(0, 1, 2);
+      Eigen::Vector3d euler_angles = R.canonicalEulerAngles(0, 1, 2);
       assert (R.isApprox((Eigen::AngleAxisd(euler_angles[0], Eigen::Vector3d::UnitX())
               * Eigen::AngleAxisd(euler_angles[1], Eigen::Vector3d::UnitY())
               * Eigen::AngleAxisd(euler_angles[2], Eigen::Vector3d::UnitZ())).matrix()));

@@ -24,6 +24,7 @@
 
 #include "misc/bitset.h"
 
+#include "math/rng.h"
 #include "math/stats/typedefs.h"
 
 
@@ -102,6 +103,9 @@ namespace MR
           vector<BitSet> signflips;
           size_t nshuffles, counter;
           std::unique_ptr<ProgressBar> progress;
+
+
+          Math::RNG rng;
 
 
           void initialise (const error_t error_types,

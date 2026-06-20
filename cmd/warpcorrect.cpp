@@ -13,6 +13,9 @@
  *
  * For more details, see http://www.mrtrix.org/.
  */
+
+#include <mutex>
+
 #include "command.h"
 #include "image.h"
 #include "algo/threaded_loop.h"
@@ -53,10 +56,11 @@ using value_type = float;
 class BoundsCheck { MEMALIGN(BoundsCheck)
   public:
     BoundsCheck (value_type tolerance, const Eigen::Matrix<value_type, 3, 1>& marker, size_t& total_count):
-     precision (tolerance),
-     vec (marker),
-     counter (total_count),
-     count (0) { }
+      precision (tolerance),
+      vec (marker),
+      counter (total_count),
+      count (0),
+      val (Eigen::Matrix<value_type, 3, 1>::Constant(0.0)) { }
     template <class ImageTypeIn, class ImageTypeOut>
       void operator() (ImageTypeIn& in, ImageTypeOut& out)
       {
@@ -71,6 +75,7 @@ class BoundsCheck { MEMALIGN(BoundsCheck)
         }
       }
     virtual ~BoundsCheck () {
+      std::lock_guard<std::mutex> lock(mutex);
       counter += count;
     }
   protected:
@@ -79,7 +84,10 @@ class BoundsCheck { MEMALIGN(BoundsCheck)
     size_t& counter;
     size_t count;
     Eigen::Matrix<value_type, 3, 1> val;
+
+    static std::mutex mutex;
 };
+std::mutex BoundsCheck::mutex;
 
 
 void run ()

@@ -183,10 +183,8 @@ namespace MR
             if (!is_double)
               vertices_float.reserve (num_vertices);
 
-            Vertex v;
-            Eigen::Matrix<float, 3, 1> v_float;
-
             if (is_ascii) {
+              Vertex v;
               for (int i = 0; i != num_vertices; ++i) {
                 MR::getline (in, line);
                 sscanf (line.c_str(), "%lf %lf %lf", &v[0], &v[1], &v[2]);

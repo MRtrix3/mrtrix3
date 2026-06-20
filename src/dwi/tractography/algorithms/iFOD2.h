@@ -238,8 +238,6 @@ end_init:
                 return CONTINUE;
               }
 
-              Eigen::Vector3f next_pos, next_dir;
-
               float max_val = 0.0;
               for (size_t i = 0; i < calibrate_list.size(); ++i) {
                 get_path (calib_positions, calib_tangents, rotate_direction (dir, calibrate_list[i]));
