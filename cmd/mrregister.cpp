@@ -439,13 +439,13 @@ void run () {
       throw Exception ("rigid_metric.diff.estimator set but cost function is not diff.");
     switch ((int)opt[0][0]) {
       case 0:
-        robust_rigid_estimator = std::make_unique<Registration::LinearRobustMetricEstimatorType>(Registration::L1);
+        robust_rigid_estimator.reset(new Registration::LinearRobustMetricEstimatorType(Registration::L1));
         break;
       case 1:
-        robust_rigid_estimator = std::make_unique<Registration::LinearRobustMetricEstimatorType>(Registration::L2);
+        robust_rigid_estimator.reset(new Registration::LinearRobustMetricEstimatorType(Registration::L2));
         break;
       case 2:
-        robust_rigid_estimator = std::make_unique<Registration::LinearRobustMetricEstimatorType>(Registration::LP);
+        robust_rigid_estimator.reset(new Registration::LinearRobustMetricEstimatorType(Registration::LP));
         break;
       default:
         break;
@@ -584,13 +584,13 @@ void run () {
       throw Exception ("affine_metric.diff.estimator set but cost function is not diff.");
     switch ((int)opt[0][0]) {
       case 0:
-        robust_affine_estimator = std::make_unique<Registration::LinearRobustMetricEstimatorType>(Registration::L1);
+        robust_affine_estimator.reset(new Registration::LinearRobustMetricEstimatorType(Registration::L1));
         break;
       case 1:
-        robust_affine_estimator = std::make_unique<Registration::LinearRobustMetricEstimatorType>(Registration::L2);
+        robust_affine_estimator.reset(new Registration::LinearRobustMetricEstimatorType(Registration::L2));
         break;
       case 2:
-        robust_affine_estimator = std::make_unique<Registration::LinearRobustMetricEstimatorType>(Registration::LP);
+        robust_affine_estimator.reset(new Registration::LinearRobustMetricEstimatorType(Registration::LP));
         break;
       default:
         break;

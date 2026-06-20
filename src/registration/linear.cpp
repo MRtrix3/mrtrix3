@@ -35,7 +35,7 @@ namespace MR
         "For rigid-body and affine registration, "
         "command-line options relating to \"robust\" estimators are available, with choices: "
         "\"l1\" (least absolute: |x|); "
-        "\"l2\" (ordinary least squares); "
+        "\"l2\" (ordinary least squares: x^2); "
         "\"lp\" (least powers: |x|^1.2). "
         "There are however no specific \"robust\" features of these similarity metrics "
         "beyond the choice of exponent parameter yet implemented. "
