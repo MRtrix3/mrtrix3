@@ -28,10 +28,10 @@ namespace MR::GUI::MRView {
 size_t ColourBars::max_n_rows = File::Config::get_int("MRViewMaxNumColourBarRows", 3);
 
 ColourBars::ColourBars()
-    : // CONF option: MRViewColourBarWidth
-      // CONF default: 20
-      // CONF The width of the colourbar in MRView, in pixels.
-      width(MR::File::Config::get_float("MRViewColourBarWidth", 20.0F)),
+    // CONF option: MRViewColourBarWidth
+    // CONF default: 20
+    // CONF The width of the colourbar in MRView, in pixels.
+    : width(MR::File::Config::get_float("MRViewColourBarWidth", 20.0F)),
       // CONF option: MRViewColourBarHeight
       // CONF default: 100
       // CONF The height of the colourbar in MRView, in pixels.
