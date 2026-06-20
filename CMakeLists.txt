@@ -96,11 +96,11 @@ execute_process(
 
 if(GIT_DIR_PATH AND NOT EXISTS ${GIT_DIR_PATH}/hooks/pre-commit)
     message(WARNING
-        "pre-commit git hook for clang-format not found!\n"
+        "pre-commit git hooks not found!\n"
         "Please install pre-commit (e.g. using `apt install pre-commit` or `pip install pre-commit`) "
         "and then run `pre-commit install` from the ${CMAKE_CURRENT_SOURCE_DIR} directory.")
 else()
-    message (STATUS "pre-commit hook for clang-format already installed")
+    message (STATUS "pre-commit hooks already installed")
 endif()
 
 
