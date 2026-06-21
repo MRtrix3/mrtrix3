@@ -9,17 +9,26 @@ dirs_to_unix(EXEC_DIRS "${EXEC_DIRS}")
 
 include(BashTests)
 function(add_bash_binary_test file_path)
-    # Extra arguments are labels, except for the NO_FILESYSTEM_LOCK opt-out keyword
-    # which is forwarded to add_bash_test for tests that never write to disk.
-    set(extra_labels "")
+    # The NO_FILESYSTEM_LOCK opt-out keyword (for tests that never write to disk) and
+    # an optional WORKING_DIRECTORY override are parsed out; any remaining arguments
+    # are treated as additional test labels.
+    set(options NO_FILESYSTEM_LOCK)
+    set(singleValueArgs WORKING_DIRECTORY)
+    cmake_parse_arguments(ARG "${options}" "${singleValueArgs}" "" ${ARGN})
+
+    set(extra_labels ${ARG_UNPARSED_ARGUMENTS})
     set(no_filesystem_lock "")
-    foreach(arg ${ARGN})
-        if(arg STREQUAL "NO_FILESYSTEM_LOCK")
-            set(no_filesystem_lock NO_FILESYSTEM_LOCK)
-        else()
-            list(APPEND extra_labels ${arg})
-        endif()
-    endforeach()
+    if(ARG_NO_FILESYSTEM_LOCK)
+        set(no_filesystem_lock NO_FILESYSTEM_LOCK)
+    endif()
+
+    # Tests default to the in-house binaries data, but may instead nominate the
+    # location of externally-sourced reference data (e.g. ${TRX_DATA_DIR}).
+    if(ARG_WORKING_DIRECTORY)
+        set(working_directory ${ARG_WORKING_DIRECTORY})
+    else()
+        set(working_directory ${BINARY_DATA_DIR})
+    endif()
 
     # Set folder name
     string(REPLACE "/" ";" folder_list ${file_path})
@@ -28,7 +37,7 @@ function(add_bash_binary_test file_path)
     add_bash_test(
         FILE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/tests/${file_path}"
         PREFIX "${folder_name}"
-        WORKING_DIRECTORY ${BINARY_DATA_DIR}
+        WORKING_DIRECTORY ${working_directory}
         EXEC_DIRECTORIES "${EXEC_DIRS}"
         LABELS "binary;${folder_name};${extra_labels}"
         ${no_filesystem_lock}
