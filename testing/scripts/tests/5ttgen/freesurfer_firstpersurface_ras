@@ -1,0 +1,11 @@
+#!/bin/bash
+# Verify default operation of "5ttgen freesurfer"
+#   when the -first option is used;
+#   and the FIRST output directory is provided as input,
+#   such that the delineated surfaces are used to produce partial volume maps;
+#   additionally FIRST was run on a NIfTI image conformed to NIfTI RAS coordinate system,
+#   in order to contrast against the FSL native LAS coordinate system
+# Outcome is compared to that generated using a prior software version
+5ttgen freesurfer freesurfer/sub-01/mri/aparc+aseg.mgz tmp.mif -force \
+    -first freesurfer/sub-01/first/RAS
+testing_diff_image tmp.mif 5ttgen/freesurfer/first_pvf.mif.gz

@@ -94,7 +94,9 @@ def execute(): #pylint: disable=unused-variable
     if first_path.is_file():
       if not image.match('input.mif', first_path):
         raise MRtrixError('Voxel grids of input index image and FIRST segmentation image do not match')
-      run.command(['mrconvert', first_path, 'first_seg.mif'],
+      # Must preserve on-disk orientation so that it can be picked up by the meshconvert command
+      run.command(['mrconvert', first_path, 'first_seg.mif',
+                   '-config', 'RealignTransform', 'false'],
                   preserve_pipes=True)
     elif first_path.is_dir():
 
@@ -111,7 +113,7 @@ def execute(): #pylint: disable=unused-variable
       if not all(vtk_file.stem.split('-')[:-1] == vtk_filelist[0].stem.split('-')[:-1] for vtk_file in vtk_filelist[1:]):
         raise MRtrixError(f'VTK files in FIRST directory "{first_path}" do not all possess same prefix')
       # Also need a template image in order to convert the VTKs
-      firstseg_image = list(first_path.glob('*_all_*_firstseg.nii*'))
+      firstseg_image = list(first_path.glob('*_all_*_origsegs.nii*'))
       if not firstseg_image:
         raise MRtrixError('Unable to find FIRST "firstseg" image (required as template for VTK conversion)')
       if len(firstseg_image) > 1:

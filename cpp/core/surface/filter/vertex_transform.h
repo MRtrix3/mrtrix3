@@ -17,7 +17,7 @@
 #pragma once
 
 #include "header.h"
-#include "transform.h"
+#include "types.h"
 
 #include "surface/filter/base.h"
 #include "surface/mesh.h"
@@ -27,17 +27,30 @@ namespace MR::Surface::Filter {
 
 class VertexTransform : public Base {
 public:
-  enum class transform_t { UNDEFINED, FIRST2REAL, REAL2FIRST, VOXEL2REAL, REAL2VOXEL, FS2REAL };
+  enum class mode_t { UNDEFINED, FIRST2REAL, REAL2FIRST, VOXEL2REAL, REAL2VOXEL, FS2REAL };
 
-  VertexTransform(const Header &H) : header(H), transform(H), mode(transform_t::UNDEFINED) {}
+  VertexTransform(const Header &H)
+      : header(H),
+        disk_voxel2scanner(H.realignment().orig_transform() *
+                           Eigen::DiagonalMatrix<default_type, 3>(H.spacing(0), H.spacing(1), H.spacing(2))),
+        disk_scanner2voxel(disk_voxel2scanner.inverse()),
+        fsl_image2scanner(make_fsl_image2scanner(H)),
+        fsl_scanner2image(fsl_image2scanner.inverse()),
+        mode(mode_t::UNDEFINED) {
 
-  void set_first2real() { mode = transform_t::FIRST2REAL; }
-  void set_real2first() { mode = transform_t::REAL2FIRST; }
-  void set_voxel2real() { mode = transform_t::VOXEL2REAL; }
-  void set_real2voxel() { mode = transform_t::REAL2VOXEL; }
-  void set_fs2real() { mode = transform_t::FS2REAL; }
+    VAR(disk_scanner2voxel.matrix());
+    VAR(disk_voxel2scanner.matrix());
+    VAR(fsl_scanner2image.matrix());
+    VAR(fsl_image2scanner.matrix());
+  }
 
-  transform_t get_mode() const { return mode; }
+  void set_first2real() { mode = mode_t::FIRST2REAL; }
+  void set_real2first() { mode = mode_t::REAL2FIRST; }
+  void set_voxel2real() { mode = mode_t::VOXEL2REAL; }
+  void set_real2voxel() { mode = mode_t::REAL2VOXEL; }
+  void set_fs2real() { mode = mode_t::FS2REAL; }
+
+  mode_t get_mode() const { return mode; }
 
   void operator()(const Mesh &, Mesh &) const override;
 
@@ -45,8 +58,13 @@ public:
 
 private:
   const Header &header;
-  Transform transform;
-  transform_t mode;
+  const transform_type disk_voxel2scanner;
+  const transform_type disk_scanner2voxel;
+  const transform_type fsl_image2scanner;
+  const transform_type fsl_scanner2image;
+  mode_t mode;
+
+  transform_type make_fsl_image2scanner(const Header &H) const;
 };
 
 } // namespace MR::Surface::Filter
