@@ -4,17 +4,17 @@
 #   "gs_fldr.trx/": header.json (parsed as JSON), and the binary "offsets" and
 #   "positions.3.float32" arrays.
 #
-# AUGMENTATION REQUIRED (artificial failure at end) — three gaps prevent a match:
+# AUGMENTATION REQUIRED (artificial failure at end) — two gaps prevent a match:
 #   1. Directory output: MRtrix's TRX writer emits a single ZIP_STORE archive, not
 #      an unpacked directory (worked around here by unzipping).
-#   2. Offsets dtype: MRtrix writes "offsets.uint64"; the gold standard uses
-#      "offsets.uint32", so the member name and width differ.
-#   3. Grid header: "gs.tck" carries no voxel grid, so header.json records
+#   2. Grid header: "gs.tck" carries no voxel grid, so header.json records
 #      DIMENSIONS [1,1,1] and an identity VOXEL_TO_RASMM, whereas the gold standard
 #      records the real [5,10,20] grid and its affine. (positions.3.float32 also
 #      differs at the float32-rounding level.)
-# Reaching byte/JSON equivalence needs a TRX writer that can target a directory,
-#   emit uint32 offsets, and stamp a supplied reference grid.
+# The offsets dtype now matches: the writer compacts the offsets array to
+#   "offsets.uint32" whenever the maximum offset fits within the 32-bit unsigned
+#   range, as the gold standard does. Reaching byte/JSON equivalence still needs a
+#   TRX writer that can target a directory and stamp a supplied reference grid.
 
 tckconvert gs.tck tmp_out.trx -force -quiet
 rm -rf tmp_unz && mkdir tmp_unz

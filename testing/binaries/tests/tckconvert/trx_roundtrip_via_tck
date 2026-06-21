@@ -7,10 +7,12 @@
 #   offsets and positions layout, ZIP_STORE archive packing via libzip).
 tckconvert tracks.tck tmp.trx -force -quiet
 # A ".trx" output is an uncompressed (ZIP_STORE) zip archive: confirm it is a zip
-#   and carries the three mandatory members.
+#   and carries the three mandatory members. The maximum offset (total vertex
+#   count) of this small dataset fits within the 32-bit unsigned range, so the
+#   writer compacts the offsets array to "offsets.uint32".
 unzip -l tmp.trx | grep -q "header.json"
 unzip -l tmp.trx | grep -q "positions.3.float32"
-unzip -l tmp.trx | grep -q "offsets.uint64"
+unzip -l tmp.trx | grep -q "offsets.uint32"
 
 tckconvert tmp.trx tmp_back.tck -force -quiet
 # float32 positions in world space with no grid transform: exact round-trip.

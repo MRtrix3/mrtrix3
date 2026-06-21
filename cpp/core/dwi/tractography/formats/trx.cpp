@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <cstring>
 #include <fstream>
+#include <limits>
 #include <nlohmann/json.hpp>
 #include <system_error>
 #include <type_traits>
@@ -1038,10 +1039,32 @@ template <class ValueType> void TRXWriter<ValueType>::finalise() {
   header[std::string(TRXUtils::key_nb_vertices)] = num_vertices;
   const std::string header_text = header.dump(4);
 
-  // Offsets array: uint64, NB_STREAMLINES+1 entries (final == NB_VERTICES).
-  std::vector<std::byte> offsets_bytes(offsets.size() * sizeof(uint64_t));
-  for (size_t i = 0; i != offsets.size(); ++i)
-    Raw::store_LE<uint64_t>(offsets[i], offsets_bytes.data() + i * sizeof(uint64_t));
+  // Offsets array: NB_STREAMLINES+1 entries (final == NB_VERTICES). Offsets are
+  //   accumulated in-memory as uint64 so that no plausible dataset can overflow
+  //   the accumulator; however, the maximum offset equals the total vertex count,
+  //   so whenever that count fits within the 32-bit unsigned range we down-cast
+  //   the on-disk representation to uint32, halving the offsets footprint. This
+  //   compaction is applied uniformly across the directory, uncompressed-archive,
+  //   and compressed-archive variants (all three consume the assembled member
+  //   list below). Where the vertex count meets or exceeds the uint32 range the
+  //   compaction is not possible and the uint64 representation is retained.
+  const bool offsets_fit_uint32 = num_vertices < std::numeric_limits<uint32_t>::max();
+  std::vector<std::byte> offsets_bytes;
+  std::string offsets_member_name;
+  if (offsets_fit_uint32) {
+    offsets_bytes.resize(offsets.size() * sizeof(uint32_t));
+    for (size_t i = 0; i != offsets.size(); ++i)
+      Raw::store_LE<uint32_t>(static_cast<uint32_t>(offsets[i]), offsets_bytes.data() + i * sizeof(uint32_t));
+    offsets_member_name = "offsets.uint32";
+  } else {
+    offsets_bytes.resize(offsets.size() * sizeof(uint64_t));
+    for (size_t i = 0; i != offsets.size(); ++i)
+      Raw::store_LE<uint64_t>(offsets[i], offsets_bytes.data() + i * sizeof(uint64_t));
+    offsets_member_name = "offsets.uint64";
+    INFO("TRX dataset \"" + path.string() + "\" contains " + str(num_vertices) +
+         " vertices, meeting or exceeding the 32-bit unsigned integer range;" //
+         " offsets retained as uint64 rather than compacted to uint32");
+  }
 
   const std::vector<std::byte> positions_bytes = slurp(positions_tempfile);
 
@@ -1052,7 +1075,7 @@ template <class ValueType> void TRXWriter<ValueType>::finalise() {
       std::vector<std::byte>(reinterpret_cast<const std::byte *>(header_text.data()),
                              reinterpret_cast<const std::byte *>(header_text.data()) + header_text.size()));
   members.emplace_back("positions.3.float32", positions_bytes);
-  members.emplace_back("offsets.uint64", std::move(offsets_bytes));
+  members.emplace_back(offsets_member_name, std::move(offsets_bytes));
   for (SidecarOutput &output : dps_fields)
     members.emplace_back(TRXUtils::sidecar_member_name(output.descriptor), slurp(output.tempfile));
   for (SidecarOutput &output : dpv_fields)
