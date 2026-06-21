@@ -82,10 +82,10 @@ private:
 //! \endcond
 
 namespace {
-template <typename T> typename std::enable_if<std::is_integral<T>::value, T>::type void_rangemax() {
+template <typename T> typename std::enable_if<MR::is_integral<T>::value, T>::type void_rangemax() {
   return std::numeric_limits<T>::max();
 }
-template <typename T> typename std::enable_if<std::is_floating_point<T>::value, T>::type void_rangemax() {
+template <typename T> typename std::enable_if<MR::is_floating_point<T>::value, T>::type void_rangemax() {
   return std::numeric_limits<T>::infinity();
 }
 } // namespace

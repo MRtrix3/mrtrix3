@@ -111,7 +111,7 @@ public:
       }
     }
     for (auto f : fixels) {
-      if constexpr (std::is_integral_v<ValueType>)
+      if constexpr (MR::is_integral<ValueType>::value)
         ++local_fixel_TDI[f.first];
       else
         local_fixel_TDI[f.first] += static_cast<ValueType>(in.weight) * (precise ? f.second : 1.0F);
@@ -166,7 +166,7 @@ void run(DWI::Tractography::Mapping::TrackLoader &loader,
          const bool precise,
          const float angular_threshold,
          const std::filesystem::path &output_path) {
-  if constexpr (std::is_integral_v<ValueType>) {
+  if constexpr (MR::is_integral<ValueType>::value) {
     assert(!precise);
   }
   auto fixel_TDI = std::make_shared<MutexProtected<Eigen::Array<ValueType, Eigen::Dynamic, 1>>>(

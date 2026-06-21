@@ -39,7 +39,7 @@ public:
         ignore_zero(ignorezero) {}
 
   template <typename value_type>
-  typename std::enable_if<std::is_arithmetic<value_type>::value, bool>::type operator()(const value_type val) {
+  typename std::enable_if<MR::is_arithmetic<value_type>::value, bool>::type operator()(const value_type val) {
     if (std::isfinite(val) && !(ignore_zero && val == 0.0)) {
       min = std::min(min, static_cast<default_type>(val));
       max = std::max(max, static_cast<default_type>(val));
@@ -50,7 +50,7 @@ public:
   }
 
   template <class T>
-  FORCE_INLINE typename std::enable_if<!std::is_arithmetic<T>::value, bool>::type operator()(const T &val) {
+  FORCE_INLINE typename std::enable_if<!MR::is_arithmetic<T>::value, bool>::type operator()(const T &val) {
     return (*this)(static_cast<typename T::value_type>(val));
   }
 
@@ -125,7 +125,7 @@ protected:
 template <class ImageType> void calibrate(Calibrator &result, ImageType &image) {
   for (auto l = Loop(image)(image); l; ++l)
     result(image.value());
-  result.finalize(image.ndim() > 3 ? image.size(3) : 1, std::is_integral<typename ImageType::value_type>::value);
+  result.finalize(image.ndim() > 3 ? image.size(3) : 1, MR::is_integral<typename ImageType::value_type>::value);
 }
 
 template <class ImageType, class MaskType> void calibrate(Calibrator &result, ImageType &image, MaskType &mask) {
@@ -140,7 +140,7 @@ template <class ImageType, class MaskType> void calibrate(Calibrator &result, Im
     if (mask_replicate.value())
       result(image.value());
   }
-  result.finalize(image.ndim() > 3 ? image.size(3) : 1, std::is_integral<typename ImageType::value_type>::value);
+  result.finalize(image.ndim() > 3 ? image.size(3) : 1, MR::is_integral<typename ImageType::value_type>::value);
 }
 
 template <class ImageType> Data generate(ImageType &image, const size_t num_bins, const bool ignore_zero = false) {
