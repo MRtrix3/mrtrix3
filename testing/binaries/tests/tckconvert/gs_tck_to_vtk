@@ -1,0 +1,16 @@
+#!/bin/bash
+# Reference-data interop (TRX_DATA_DIR, tee-ar-ex gold standard): write "gs.tck"
+#   out as binary VTK and compare to "gs.vtk".
+#
+# RUN-AND-FAIL (TODO): the reference "gs.vtk" is LPS (x/y sign-flipped vs RAS),
+#   whereas MRtrix writes the raw RAS coordinates, so the two files disagree by the
+#   LPS<->RAS reflection (and the bytes differ regardless). Bridged through the
+#   ".tck" domain the geometry is reflected, far beyond the 1e-4 mm budget. Emitting
+#   LPS (or honouring a requested output orientation) in the VTK writer resolves it.
+tckconvert gs.tck tmp_tck2vtk.vtk -force -quiet
+if cmp -s tmp_tck2vtk.vtk gs.vtk; then
+  exit 0
+fi
+tckconvert tmp_tck2vtk.vtk tmp_mine_dec.tck -force -quiet
+tckconvert gs.vtk tmp_ref_dec.tck -force -quiet
+testing_diff_tck tmp_mine_dec.tck tmp_ref_dec.tck -distance 1e-4

@@ -633,6 +633,45 @@ add_bash_binary_test(tckconvert/qfib_reject_nonconstant_stepsize)
 add_bash_binary_test(tckconvert/pipe_roundtrip)
 add_bash_binary_test(tckconvert/pipe_premature_close)
 
+# Reference-data tests validating tckconvert against externally-sourced exemplars
+#   (the BinariesTestData "tckconvert/" subdirectory and the VTK / TRK / TRX data
+#   ExternalProjects declared in testing/CMakeLists.txt). Conversions that expose a
+#   current interop gap (the ".trk" half-voxel corner-origin convention; LPS vs RAS
+#   in VTK; the VTK METADATA / vtx v3.0 OFFSETS reader limits; dps/dpv sidecar
+#   tooling) are registered as run-and-fail TODO markers and fail until the
+#   corresponding software is augmented.
+
+# Sections 1-2 (BINARY_DATA_DIR; reference files under the "tckconvert/" subdir).
+add_bash_binary_test(tckconvert/qfib_reference_reject_write)
+add_bash_binary_test(tckconvert/zfib_reference_decode)
+add_bash_binary_test(tckconvert/vtx_from_readme)
+
+# Section 3 (VTK_DATA_DIR; rordenlab TractographyFormat "example.*").
+add_bash_binary_test(tckconvert/example_trk_to_tck WORKING_DIRECTORY ${VTK_DATA_DIR})
+add_bash_binary_test(tckconvert/example_tck_to_trk WORKING_DIRECTORY ${VTK_DATA_DIR})
+add_bash_binary_test(tckconvert/example_vtk_to_tck WORKING_DIRECTORY ${VTK_DATA_DIR})
+add_bash_binary_test(tckconvert/example_tck_to_vtk WORKING_DIRECTORY ${VTK_DATA_DIR})
+add_bash_binary_test(tckconvert/example_vtx_to_tck WORKING_DIRECTORY ${VTK_DATA_DIR})
+add_bash_binary_test(tckconvert/example_tck_to_vtx WORKING_DIRECTORY ${VTK_DATA_DIR})
+
+# Section 4 (TRK_DATA_DIR; nibabel reference ".trk" / ".tck").
+add_bash_binary_test(tckconvert/trk_simple_roundtrip WORKING_DIRECTORY ${TRK_DATA_DIR})
+add_bash_binary_test(tckconvert/trk_simple_big_endian WORKING_DIRECTORY ${TRK_DATA_DIR})
+add_bash_binary_test(tckconvert/trk_standard_roundtrip WORKING_DIRECTORY ${TRK_DATA_DIR})
+add_bash_binary_test(tckconvert/trk_standard_lps WORKING_DIRECTORY ${TRK_DATA_DIR})
+
+# Section 5 (TRX_DATA_DIR; tee-ar-ex gold-standard dataset).
+add_bash_binary_test(tckconvert/gs_tck_rasmm WORKING_DIRECTORY ${TRX_DATA_DIR})
+add_bash_binary_test(tckconvert/gs_tck_image_space WORKING_DIRECTORY ${TRX_DATA_DIR})
+add_bash_binary_test(tckconvert/gs_tck_voxel_space WORKING_DIRECTORY ${TRX_DATA_DIR})
+add_bash_binary_test(tckconvert/gs_trx_to_tck WORKING_DIRECTORY ${TRX_DATA_DIR})
+add_bash_binary_test(tckconvert/gs_vtk_to_tck WORKING_DIRECTORY ${TRX_DATA_DIR})
+add_bash_binary_test(tckconvert/gs_tck_to_vtk WORKING_DIRECTORY ${TRX_DATA_DIR})
+add_bash_binary_test(tckconvert/gs_tck_to_trx_dir WORKING_DIRECTORY ${TRX_DATA_DIR})
+add_bash_binary_test(tckconvert/gs_sidecar_trx_dir WORKING_DIRECTORY ${TRX_DATA_DIR})
+add_bash_binary_test(tckconvert/gs_sidecar_trx_file WORKING_DIRECTORY ${TRX_DATA_DIR})
+add_bash_binary_test(tckconvert/gs_sidecar_trk WORKING_DIRECTORY ${TRX_DATA_DIR})
+
 add_bash_binary_test(tckedit/dps_threshold)
 add_bash_binary_test(tckedit/dpv_threshold)
 add_bash_binary_test(tckedit/include_exclude_inverse)

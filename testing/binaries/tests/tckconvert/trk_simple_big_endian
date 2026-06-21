@@ -1,0 +1,12 @@
+#!/bin/bash
+# Reference-data interop (TRK_DATA_DIR, nibabel): "simple_big_endian.tck" is the
+#   byte-swapped twin of "simple.tck". Reading it and re-emitting native ".tck"
+#   must recover "simple.tck" exactly — this validates the ".tck" reader's
+#   big-endian (Float32BE) path against an externally produced file. The
+#   coordinates are small integers, exact in float32, so the match is essentially
+#   exact (measured symmetric Hausdorff ~1e-6 mm).
+tckconvert simple_big_endian.tck tmp_be2tck.tck -force -quiet
+if cmp -s tmp_be2tck.tck simple.tck; then
+  exit 0
+fi
+testing_diff_tck tmp_be2tck.tck simple.tck -distance 1e-4

@@ -1,0 +1,18 @@
+#!/bin/bash
+# Reference-data interop (VTK_DATA_DIR, rordenlab TractographyFormat): read the
+#   binary "example.vtk" (3D Slicer POLYDATA) and compare to "example.tck".
+#
+# RUN-AND-FAIL (TODO): MRtrix's VTK reader admits only POINTS and LINES blocks and
+#   aborts on the "METADATA" dataset attribute that 3D Slicer embeds, so the read
+#   fails outright. Supporting (skipping) unrecognised VTK blocks would let this
+#   reference parse; the geometry is pure RASMM so it should then match
+#   "example.tck" within the 1e-4 mm budget.
+if ! tckconvert example.vtk tmp_vtk2tck.tck -force -quiet 2>tmp_vtk_err.txt; then
+  echo "TODO: example.vtk -> tck not yet supported:" >&2
+  cat tmp_vtk_err.txt >&2
+  exit 1
+fi
+if cmp -s tmp_vtk2tck.tck example.tck; then
+  exit 0
+fi
+testing_diff_tck tmp_vtk2tck.tck example.tck -distance 1e-4

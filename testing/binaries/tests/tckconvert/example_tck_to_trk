@@ -1,0 +1,24 @@
+#!/bin/bash
+# Reference-data interop (VTK_DATA_DIR, rordenlab TractographyFormat): write
+#   "example.tck" out as TrackVis ".trk" and compare to the canonical
+#   "example.trk".
+#
+# The ".tck" input carries no reference voxel grid, so the ".trk" writer must
+#   announce (INFO) that the voxel->realspace transform is left unrecorded
+#   (vox_to_ras[3][3] = 0). That assertion is checked first and PASSES.
+tckconvert example.tck tmp_tck2trk.trk -info -force 2>tmp_info.txt
+grep -q "the voxel-to-realspace transform will not be recorded (vox_to_ras\[3\]\[3\] = 0)" tmp_info.txt
+python3 -c "import struct,sys; b=open('tmp_tck2trk.trk','rb').read(); sys.exit(0 if struct.unpack('<f', b[500:504])[0]==0.0 else 1)"
+
+# RUN-AND-FAIL (TODO): the geometric comparison to "example.trk" then fails. The
+#   reference was written by nibabel with the half-voxel corner->centre shift the
+#   MRtrix ".trk" path omits, so the two ".trk" files disagree by ~0.5 voxel when
+#   bridged through the ".tck" domain (the bytes also differ: distinct header
+#   dims/affine/provenance). Capped at the 1e-4 mm budget, this cannot pass until
+#   the ".trk" corner-origin convention is reconciled with nibabel.
+if cmp -s tmp_tck2trk.trk example.trk; then
+  exit 0
+fi
+tckconvert tmp_tck2trk.trk tmp_mine_dec.tck -force -quiet
+tckconvert example.trk tmp_ref_dec.tck -force -quiet
+testing_diff_tck tmp_mine_dec.tck tmp_ref_dec.tck -distance 1e-4

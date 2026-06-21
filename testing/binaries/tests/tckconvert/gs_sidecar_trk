@@ -1,0 +1,30 @@
+#!/bin/bash
+# Reference-data sidecar tests (TRX_DATA_DIR, tee-ar-ex gold standard) for the
+#   TrackVis file "gs.trk", which carries the same dps ("random_coord") and dpv
+#   ("color_x/y/z") payload (3 scalars + 3 properties in its header) mirrored in
+#   "streamlines_data.txt" / "points_data.txt". The intended sub-tests are:
+#     1. Extract dps; concatenate to a matrix; compare to streamlines_data.txt
+#        (as a matrix) with testing_diff_matrix.
+#     2. Extract dpv; build three ".tsf" from points_data.txt; compare each pair
+#        with testing_diff_tsf.
+#     3. Augment "gs.tck" with the dps + dpv and write to ".trk", comparing to gs.trk.
+#     5. Convert "gs.trk" to ".tck", stripping dps/dpv, and compare to "gs.tck".
+#
+# All of these need software augmentation absent this session (dps/dpv add/remove
+#   in tckconvert and a dps/dpv testing_diff); additionally the ".trk" reader's
+#   missing half-voxel corner->centre shift means even the geometry-only sub-test 5
+#   does not match. The script artificially fails at the end as a TODO marker.
+
+# Sub-test 5 (geometry only): currently mismatches "gs.tck" by the ".trk" offset.
+tckconvert gs.trk tmp_strip.tck -force -quiet
+if testing_diff_tck tmp_strip.tck gs.tck -distance 1e-4 2>tmp_diff.txt; then
+  echo "note: gs.trk geometry matched gs.tck within 1e-4 mm"
+else
+  echo "TODO: gs.trk -> tck carries the ~half-voxel .trk offset vs gs.tck:" >&2
+  tail -1 tmp_diff.txt >&2
+fi
+
+echo "INCOMPLETE (TODO): dps/dpv extract+compare and sidecar augmentation require" \
+     "tckconvert dps/dpv add/remove tooling and a dps/dpv testing_diff not" \
+     "available this session." >&2
+exit 1

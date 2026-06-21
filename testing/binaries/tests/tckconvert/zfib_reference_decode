@@ -1,0 +1,27 @@
+#!/bin/bash
+# Reference-data interop (BINARY_DATA_DIR): the truncated "tracks.tck" was passed
+#   through the SCIL FiberCompression reference encoder to produce "tracks.zfib".
+#   Unlike QFib, ".zfib" both reads and writes here, so neither direction triggers
+#   a hard error; but the format is lossy and the reference was encoded with
+#   quantization parameters that differ from MRtrix's defaults, so it cannot be
+#   validated within the 1e-4 mm exactness budget that the other format tests use:
+#     - ".tck" -> ".zfib": the MRtrix writer's bytes differ from "tracks.zfib"
+#       (the reference precision/linearization params yield 763 vs 419 bytes;
+#       header diverges from offset 16, the quantization-parameter fields).
+#     - ".zfib" -> ".tck": the decode reproduces the reference's coarse, collinear-
+#       point-decimated geometry, ~3 mm from "tracks.tck" (symmetric Hausdorff).
+#
+# What the exemplar CAN prove is reader interop: MRtrix decodes the reference
+#   encoder's stream and recovers the correct streamline count. "tracks.zfib" is
+#   flagged for deletion by the user as it cannot serve as an exact exemplar
+#   (see NOTE below).
+
+tckconvert tckconvert/tracks.zfib tmp_z2t.tck -force -quiet
+count=$(tckinfo tckconvert/tracks.tck -count | sed -n 's/.*actual count:[[:space:]]*\([0-9][0-9]*\).*/\1/p' | head -1)
+decoded=$(tckinfo tmp_z2t.tck -count | sed -n 's/.*actual count:[[:space:]]*\([0-9][0-9]*\).*/\1/p' | head -1)
+[ "$decoded" = "$count" ] || { echo "zfib decode recovered $decoded streamlines, expected $count" >&2; exit 1; }
+
+echo "NOTE (user action): \"tracks.zfib\" cannot be validated as an exact exemplar" \
+     "(lossy; reference quantization params differ from MRtrix defaults, so the" \
+     "writer is not byte-identical and the decode is ~3 mm from \"tracks.tck\")" \
+     "and should be deleted from the test_data repository."

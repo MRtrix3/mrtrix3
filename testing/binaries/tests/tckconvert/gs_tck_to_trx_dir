@@ -1,0 +1,35 @@
+#!/bin/bash
+# Reference-data validation (TRX_DATA_DIR, tee-ar-ex gold standard): write "gs.tck"
+#   out as a TRX dataset and compare its members against the gold directory
+#   "gs_fldr.trx/": header.json (parsed as JSON), and the binary "offsets" and
+#   "positions.3.float32" arrays.
+#
+# AUGMENTATION REQUIRED (artificial failure at end) — three gaps prevent a match:
+#   1. Directory output: MRtrix's TRX writer emits a single ZIP_STORE archive, not
+#      an unpacked directory (worked around here by unzipping).
+#   2. Offsets dtype: MRtrix writes "offsets.uint64"; the gold standard uses
+#      "offsets.uint32", so the member name and width differ.
+#   3. Grid header: "gs.tck" carries no voxel grid, so header.json records
+#      DIMENSIONS [1,1,1] and an identity VOXEL_TO_RASMM, whereas the gold standard
+#      records the real [5,10,20] grid and its affine. (positions.3.float32 also
+#      differs at the float32-rounding level.)
+# Reaching byte/JSON equivalence needs a TRX writer that can target a directory,
+#   emit uint32 offsets, and stamp a supplied reference grid.
+
+tckconvert gs.tck tmp_out.trx -force -quiet
+rm -rf tmp_unz && mkdir tmp_unz
+( cd tmp_unz && unzip -q -o ../tmp_out.trx )
+
+# Achievable cross-check: streamline / vertex counts agree with the gold header.
+python3 - <<'PY'
+import json, sys
+mine = json.load(open('tmp_unz/header.json'))
+gold = json.load(open('gs_fldr.trx/header.json'))
+for k in ('NB_STREAMLINES', 'NB_VERTICES'):
+    assert mine[k] == gold[k], f"{k}: {mine[k]} vs {gold[k]}"
+PY
+
+echo "INCOMPLETE (TODO): TRX directory/uint32-offsets/grid-header output not yet" \
+     "implemented; header.json, offsets.uint32 and positions.3.float32 cannot be" \
+     "compared to gs_fldr.trx until the writer is augmented." >&2
+exit 1

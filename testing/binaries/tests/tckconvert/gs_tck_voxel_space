@@ -1,0 +1,13 @@
+#!/bin/bash
+# Reference-data validation (TRX_DATA_DIR, tee-ar-ex gold standard): transforming
+#   "gs.tck" from world (RASMM) space into voxel-index space, then dumping to ASCII
+#   and concatenating, must reproduce "gs_vox_space.txt".
+#
+# NOTE: voxel indices (unlike image-mm) depend on the voxel size, so this uses the
+#   NATIVE grid "gs.nii" (5x10x20, voxel 4x2x1) that "gs_vox_space.txt" was sampled
+#   on — not "gs_3mm.nii". (The 3 mm grid matches the image-mm reference but not the
+#   voxel-index reference; scanner2voxel(gs_3mm) yields -0.333... vs the expected
+#   -0.25.)
+tckconvert gs.tck 'tmp_vox-[].txt' -scanner2voxel gs.nii -force -quiet
+cat $(ls tmp_vox-*.txt | sort) > tmp_vox_all.txt
+testing_diff_matrix tmp_vox_all.txt gs_vox_space.txt -abs 1e-4

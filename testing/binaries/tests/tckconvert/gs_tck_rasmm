@@ -1,0 +1,8 @@
+#!/bin/bash
+# Reference-data validation (TRX_DATA_DIR, tee-ar-ex gold standard): "gs.tck" holds
+#   the gold-standard streamlines in world (RASMM) space. Dumping every vertex to
+#   ASCII (one file per streamline) and concatenating them in streamline order must
+#   reproduce "gs_rasmm_space.txt" — the canonical flat list of RASMM vertices.
+tckconvert gs.tck 'tmp_ras-[].txt' -force -quiet
+cat $(ls tmp_ras-*.txt | sort) > tmp_ras_all.txt
+testing_diff_matrix tmp_ras_all.txt gs_rasmm_space.txt -abs 1e-4

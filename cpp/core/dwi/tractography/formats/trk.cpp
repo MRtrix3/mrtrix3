@@ -158,6 +158,16 @@ TRKReader<ValueType>::TRKReader(const std::filesystem::path &path,
     voxel2scanner = vox_to_ras_transform(header);
   }
 
+  // Surface the file's recorded voxel→RAS affine at DEBUG verbosity so a caller can
+  //   confirm e.g. a non-identity grid; an unrecorded affine reads as all-zero.
+  {
+    std::string affine_str;
+    for (size_t row = 0; row != 4; ++row)
+      for (size_t col = 0; col != 4; ++col)
+        affine_str += (affine_str.empty() ? "" : " ") + str(header.vox_to_ras[row][col]);
+    DEBUG("\".trk\" file \"" + path.string() + "\" vox_to_ras affine: [" + affine_str + "]");
+  }
+
   // Expose the on-disk vertex datatype for downstream consumers (e.g. mrview);
   //   ".trk" vertices are always float32. byte_swapped flags that the file is
   //   opposite-endian to this host, so derive the on-disk byte order from the
@@ -321,8 +331,8 @@ TRKWriter<ValueType>::TRKWriter(const std::filesystem::path &path,
 
   App::check_overwrite(path);
 
-  // The voxel→RAS affine defaults to identity (axis-aligned, corner origin), so a
-  //   ".trk" written without a reference grid round-trips exactly with the reader.
+  // Default the voxel→RAS affine to identity; its bottom row (0,0,0,1) is retained
+  //   when a reference grid supplies the upper three rows.
   for (size_t row = 0; row != 4; ++row)
     for (size_t col = 0; col != 4; ++col)
       vox_to_ras[row][col] = (row == col) ? 1.0F : 0.0F;
@@ -342,6 +352,15 @@ TRKWriter<ValueType>::TRKWriter(const std::filesystem::path &path,
       for (size_t col = 0; col != 4; ++col)
         vox_to_ras[row][col] = static_cast<float>(v2s(row, col));
   } else {
+    // Without a reference grid the voxel→realspace mapping is unknown, so it is
+    //   left unrecorded: the entire affine (including vox_to_ras[3][3]) is zeroed,
+    //   which the reader recognises as "no transform" and falls back to an
+    //   identity, corner-origin grid — so the file still round-trips exactly.
+    for (size_t row = 0; row != 4; ++row)
+      for (size_t col = 0; col != 4; ++col)
+        vox_to_ras[row][col] = 0.0F;
+    INFO("no reference voxel grid for \".trk\" output;"
+         " the voxel-to-realspace transform will not be recorded (vox_to_ras[3][3] = 0)");
     // Recover spacing / dimensions from any "trk_*" properties left by a prior
     //   ".trk" read so a ".trk" → ".trk" conversion preserves the grid metadata.
     auto vs = properties.find("trk_voxel_size");

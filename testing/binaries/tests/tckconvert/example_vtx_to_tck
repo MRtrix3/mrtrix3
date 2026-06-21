@@ -1,0 +1,18 @@
+#!/bin/bash
+# Reference-data interop (VTK_DATA_DIR, rordenlab TractographyFormat): read the
+#   binary "example.vtx" (vtx v3.0 STREAMLINES) and compare to "example.tck".
+#
+# RUN-AND-FAIL (TODO): MRtrix's VTX reader rejects this file ("OFFSETS reference a
+#   vertex beyond the POINTS block") — the v3.0 OFFSETS convention here differs
+#   from the end-index convention the reader assumes. Reconciling the OFFSETS
+#   interpretation would let this reference parse; the geometry is pure RASMM so it
+#   should then match "example.tck" within the 1e-4 mm budget.
+if ! tckconvert example.vtx tmp_vtx2tck.tck -force -quiet 2>tmp_vtx_err.txt; then
+  echo "TODO: example.vtx -> tck not yet supported:" >&2
+  cat tmp_vtx_err.txt >&2
+  exit 1
+fi
+if cmp -s tmp_vtx2tck.tck example.tck; then
+  exit 0
+fi
+testing_diff_tck tmp_vtx2tck.tck example.tck -distance 1e-4

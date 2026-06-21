@@ -1,0 +1,27 @@
+#!/bin/bash
+# Reference-data sidecar tests (TRX_DATA_DIR, tee-ar-ex gold standard) for the
+#   single-file TRX archive "gs.trx". Same dps ("random_coord") / dpv
+#   ("color_x/y/z") payload as the directory dataset, mirrored in
+#   "streamlines_data.txt" / "points_data.txt". The intended sub-tests are:
+#     1. Extract dps; concatenate to a matrix; compare to streamlines_data.txt
+#        (as a matrix) with testing_diff_matrix.
+#     2. Extract dpv; build three ".tsf" from points_data.txt; compare each pair
+#        with testing_diff_tsf.
+#     3. Augment "gs.tck" with the dps + dpv and write to "gs.trx"'s format,
+#        comparing to gs.trx.
+#     5. Convert "gs.trx" to ".tck", stripping dps/dpv, and compare to "gs.tck".
+#   (Sub-test 4, the pipe variant, applies to the directory dataset only.)
+#
+# Sub-test 5 is achievable now and is verified below. Sub-tests 1-3 need software
+#   augmentation absent this session (dps/dpv add/remove in tckconvert, and a
+#   dps/dpv testing_diff), so this script artificially fails at the end.
+
+# Sub-test 5: archive -> ".tck" drops the (inline-incompatible) dps/dpv; geometry
+#   must equal "gs.tck".
+tckconvert gs.trx tmp_strip.tck -force -quiet
+testing_diff_tck tmp_strip.tck gs.tck -distance 1e-4
+
+echo "INCOMPLETE (TODO): dps/dpv extract+compare and sidecar augmentation require" \
+     "tckconvert dps/dpv add/remove tooling and a dps/dpv testing_diff not" \
+     "available this session." >&2
+exit 1

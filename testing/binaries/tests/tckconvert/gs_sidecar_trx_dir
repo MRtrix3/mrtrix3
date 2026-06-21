@@ -1,0 +1,30 @@
+#!/bin/bash
+# Reference-data sidecar tests (TRX_DATA_DIR, tee-ar-ex gold standard) for the TRX
+#   DIRECTORY dataset "gs_fldr.trx/". The gold standard carries a per-streamline
+#   field (dps "random_coord", 13x3) mirrored in "streamlines_data.txt" and three
+#   per-vertex fields (dpv "color_x/y/z", 13 streamlines x 8 vertices) mirrored in
+#   "points_data.txt". The intended sub-tests are:
+#     1. Extract dps to a directory; concatenate to a numeric matrix; convert
+#        "streamlines_data.txt" to a matrix; compare with testing_diff_matrix.
+#     2. Extract dpv to a directory; convert "points_data.txt" to three ".tsf"
+#        files; compare each pair with testing_diff_tsf.
+#     3. Augment "gs.tck" with the dps (from streamlines_data.txt) and dpv (from
+#        points_data.txt), write to a ".TRX" directory, and compare to gs_fldr.trx/.
+#     4. As (3) but driving the output through the pipe format handler instead of
+#        writing an explicit ".TRX" directory.
+#     5. Convert gs_fldr.trx/ to ".tck", stripping dps/dpv, and compare to "gs.tck".
+#
+# Sub-test 5 is achievable now and is verified below. Sub-tests 1-4 need software
+#   augmentation absent this session (a testing_diff for dps/dpv arrays, and
+#   tckconvert adding/removing dps/dpv content), so this script artificially fails
+#   at the end as a TODO marker.
+
+# Sub-test 5: ".tck" cannot carry inline dps/dpv, so the conversion drops them; the
+#   geometry must still equal "gs.tck".
+tckconvert gs_fldr.trx tmp_strip.tck -force -quiet
+testing_diff_tck tmp_strip.tck gs.tck -distance 1e-4
+
+echo "INCOMPLETE (TODO): dps/dpv extract+compare, sidecar augmentation, and the" \
+     "pipe-handler variant require tckconvert dps/dpv add/remove tooling and a" \
+     "dps/dpv testing_diff not available this session." >&2
+exit 1

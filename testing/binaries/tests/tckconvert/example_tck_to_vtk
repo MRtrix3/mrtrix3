@@ -1,0 +1,21 @@
+#!/bin/bash
+# Reference-data interop (VTK_DATA_DIR, rordenlab TractographyFormat): write
+#   "example.tck" out as binary VTK POLYDATA and compare to "example.vtk".
+#
+# RUN-AND-FAIL (TODO): the bytes differ from the 3D Slicer reference (distinct
+#   header comment / no METADATA block), so the comparison must bridge through the
+#   ".tck" domain — which requires reading "example.vtk", and MRtrix's VTK reader
+#   aborts on its "METADATA" attribute (only POINTS / LINES are accepted). Once the
+#   reader tolerates unrecognised VTK blocks the recovered geometry should match
+#   within the 1e-4 mm budget.
+tckconvert example.tck tmp_tck2vtk.vtk -force -quiet
+if cmp -s tmp_tck2vtk.vtk example.vtk; then
+  exit 0
+fi
+tckconvert tmp_tck2vtk.vtk tmp_mine_dec.tck -force -quiet
+if ! tckconvert example.vtk tmp_ref_dec.tck -force -quiet 2>tmp_vtk_err.txt; then
+  echo "TODO: cannot decode reference example.vtk for comparison:" >&2
+  cat tmp_vtk_err.txt >&2
+  exit 1
+fi
+testing_diff_tck tmp_mine_dec.tck tmp_ref_dec.tck -distance 1e-4

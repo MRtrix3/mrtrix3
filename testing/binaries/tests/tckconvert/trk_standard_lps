@@ -1,0 +1,23 @@
+#!/bin/bash
+# Reference-data interop (TRK_DATA_DIR, nibabel): "standard.LPS.trk" stores the
+#   same streamlines as "standard.trk" but with an LPS voxel order and a recorded
+#   (non-identity) vox_to_ras = diag(1,3,2).
+#
+# First, confirm via the reader's DEBUG output that the file's recorded
+#   voxel->RAS affine is parsed and is NOT the identity. This PASSES.
+tckconvert standard.LPS.trk tmp_lps2tck.tck -debug -force 2>tmp_lps_dbg.txt
+affine=$(sed -n 's/.*vox_to_ras affine: \[\(.*\)\].*/\1/p' tmp_lps_dbg.txt | head -1)
+[ -n "$affine" ] || { echo "no vox_to_ras DEBUG line emitted" >&2; exit 1; }
+[ "$affine" != "1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1" ] \
+  || { echo "vox_to_ras parsed as identity; expected non-identity" >&2; exit 1; }
+
+# RUN-AND-FAIL (TODO): the conversion to ".tck" must match "standard.tck", but two
+#   compounding gaps prevent it: the missing half-voxel corner->centre shift (as in
+#   the other ".trk" tests) and the unhandled LPS voxel order (the L/P axes are not
+#   sign-flipped relative to the RAS reference), giving a measured symmetric
+#   Hausdorff > 3 mm. Honouring voxel_order and the corner-origin convention
+#   resolves it.
+if cmp -s tmp_lps2tck.tck standard.tck; then
+  exit 0
+fi
+testing_diff_tck tmp_lps2tck.tck standard.tck -distance 1e-4

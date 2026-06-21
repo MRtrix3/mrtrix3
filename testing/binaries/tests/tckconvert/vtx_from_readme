@@ -1,0 +1,59 @@
+#!/bin/bash
+# Reference-data round-trip (BINARY_DATA_DIR): "from_readme.vtx" is the minimal
+#   ASCII ".vtx" exemplar from the format's README — six vertices, OFFSETS {3,5},
+#   i.e. streamline 0 = points {0,1,2,3} and streamline 1 = points {4,5}.
+#
+# The equivalent ".tck" is hand-authored here from first principles — i.e. from the
+#   ".tck" specification alone (the "mrtrix tracks" magic line; newline-delimited
+#   "key: value" header; a "file: . <offset>" entry whose <offset> is the byte
+#   position of the first vertex; an "END" terminator; then little-endian Float32
+#   xyz triplets, a NaN triplet after each streamline and an Infinity triplet at
+#   end-of-file) — WITHOUT invoking any MRtrix command or nibabel to build it. The
+#   conversion is then exercised in both directions and compared, in each case,
+#   against the pre-existing file in the format of the output.
+
+# Build the reference ".tck" purely from the format specification.
+python3 - <<'PY'
+import struct
+# Geometry of "from_readme.vtx": two streamlines over six shared vertices.
+streamlines = [[(0,0,0),(1,0,0),(1,1,0),(0,1,0)], [(0,0,1),(1,0,1)]]
+nan, inf = float('nan'), float('inf')
+body = b''
+for s in streamlines:
+    for p in s:
+        body += struct.pack('<3f', *p)
+    body += struct.pack('<3f', nan, nan, nan)   # streamline delimiter
+body += struct.pack('<3f', inf, inf, inf)        # end-of-file delimiter
+# The "file: . <offset>" value is the header's own byte length (the binary block
+#   begins immediately after "END\n"); solve the self-reference by iterating.
+def header(offset):
+    return ("mrtrix tracks\n"
+            f"count: {len(streamlines):010d}\n"
+            "datatype: Float32LE\n"
+            f"file: . {offset}\n"
+            "END\n").encode('ascii')
+offset = 80
+for _ in range(16):
+    h = header(offset)
+    if len(h) == offset:
+        break
+    offset = len(h)
+with open('tmp_from_readme_ref.tck', 'wb') as f:
+    f.write(header(offset) + body)
+PY
+
+# Direction 1: ".vtx" -> ".tck". Compare to the hand-authored reference ".tck".
+#   The on-disk bytes differ (the MRtrix writer stamps timestamp / command_history
+#   header entries the hand-authored file omits), so fall back to the geometric
+#   comparison; the integer coordinates are exact in float32.
+tckconvert tckconvert/from_readme.vtx tmp_v2t.tck -force -quiet
+testing_diff_tck tmp_v2t.tck tmp_from_readme_ref.tck -distance 1e-4
+
+# Direction 2: ".tck" -> ".vtx". Compare to the pre-existing "from_readme.vtx".
+#   The MRtrix ".vtx" writer defaults to binary whereas the exemplar is ASCII, so
+#   the bytes differ; bridge both ".vtx" files through the ".tck" domain (decode
+#   each with the same reader) and compare the recovered geometry.
+tckconvert tmp_from_readme_ref.tck tmp_t2v.vtx -force -quiet
+tckconvert tmp_t2v.vtx tmp_t2v_back.tck -force -quiet
+tckconvert tckconvert/from_readme.vtx tmp_fr_back.tck -force -quiet
+testing_diff_tck tmp_t2v_back.tck tmp_fr_back.tck -distance 1e-4

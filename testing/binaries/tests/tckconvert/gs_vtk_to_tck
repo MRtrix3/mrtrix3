@@ -1,0 +1,15 @@
+#!/bin/bash
+# Reference-data interop (TRX_DATA_DIR, tee-ar-ex gold standard): read "gs.vtk" and
+#   compare to the world-space "gs.tck".
+#
+# RUN-AND-FAIL (TODO): "gs.vtk" stores its vertices in LPS (the VTK / 3D Slicer
+#   convention) — its x and y are sign-flipped relative to "gs.tck"'s RAS (decoded
+#   point 0 is (-11.15, -21.58, 37.60) vs (11.15, 21.58, 37.60)). MRtrix's VTK
+#   reader ingests the raw coordinates without the LPS->RAS flip, so every vertex
+#   is reflected and the comparison fails by ~tens of mm. Honouring an LPS source
+#   orientation in the VTK reader would resolve it.
+tckconvert gs.vtk tmp_vtk2tck.tck -force -quiet
+if cmp -s tmp_vtk2tck.tck gs.tck; then
+  exit 0
+fi
+testing_diff_tck tmp_vtk2tck.tck gs.tck -distance 1e-4
