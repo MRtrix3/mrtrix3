@@ -96,23 +96,17 @@ public:
   bool handles(const std::filesystem::path &path) const override { return inner->handles(path); }
 
 protected:
-  std::unique_ptr<ReaderInterface<float>> read_float(const std::filesystem::path &path,
-                                                     Properties &properties,
-                                                     FieldRegistry &registry,
-                                                     const OptionalHeader &grid) const override;
-  std::unique_ptr<ReaderInterface<double>> read_double(const std::filesystem::path &path,
-                                                       Properties &properties,
-                                                       FieldRegistry &registry,
-                                                       const OptionalHeader &grid) const override;
+  std::unique_ptr<ReaderInterface<float>>
+  read_float(const std::filesystem::path &path, Properties &properties, FieldRegistry &registry) const override;
+  std::unique_ptr<ReaderInterface<double>>
+  read_double(const std::filesystem::path &path, Properties &properties, FieldRegistry &registry) const override;
   std::unique_ptr<WriterInterface<float>> create_float(const std::filesystem::path &path,
                                                        const Properties &properties,
                                                        const FieldRegistry &registry,
-                                                       const OptionalHeader &grid,
                                                        const WriteOptions &options) const override;
   std::unique_ptr<WriterInterface<double>> create_double(const std::filesystem::path &path,
                                                          const Properties &properties,
                                                          const FieldRegistry &registry,
-                                                         const OptionalHeader &grid,
                                                          const WriteOptions &options) const override;
 
 private:
@@ -175,9 +169,8 @@ public:
   RAMWriter(const Formats::Base *inner,
             std::filesystem::path path,
             const Properties &properties,
-            std::shared_ptr<RAMStore<ValueType>> store,
-            OptionalHeader grid)
-      : inner(inner), path(std::move(path)), properties(properties), store(std::move(store)), grid(grid) {}
+            std::shared_ptr<RAMStore<ValueType>> store)
+      : inner(inner), path(std::move(path)), properties(properties), store(std::move(store)) {}
 
   ~RAMWriter() override;
 
@@ -196,7 +189,6 @@ private:
   std::filesystem::path path;
   const Properties &properties;
   std::shared_ptr<RAMStore<ValueType>> store;
-  OptionalHeader grid;
 };
 
 } // namespace MR::DWI::Tractography

@@ -82,10 +82,8 @@ public:
    * reading, and populates \a properties from the dataset header. Throws a
    * user-interpretable Exception if no handler recognises the extension or the
    * recognised handler cannot read. */
-  static Tractogram open(const std::filesystem::path &path,
-                         Properties &properties,
-                         AccessRequest access = AccessRequest::Streaming,
-                         const OptionalHeader &grid = std::nullopt);
+  static Tractogram
+  open(const std::filesystem::path &path, Properties &properties, AccessRequest access = AccessRequest::Streaming);
 
   //! \brief create a new tractography dataset for streaming writes.
   /*! Selects the handler for \a path by extension and verifies it supports
@@ -99,7 +97,6 @@ public:
                            const Properties &properties,
                            const FieldRegistry &registry = FieldRegistry(),
                            AccessRequest access = AccessRequest::Streaming,
-                           const OptionalHeader &grid = std::nullopt,
                            const Formats::WriteOptions &options = {});
 
   //! \brief read the next item from the dataset (read mode only).
@@ -113,9 +110,15 @@ public:
       return false;
     }
     // Inject any registered standalone input-sidecar data into the per-streamline
-    //   payload prior to processing (§2.5; Stage 11, step 5).
-    for (auto &loader : input_sidecars)
-      (*loader)(item);
+    //   payload prior to processing (§2.5; Stage 11, step 5). A sidecar source
+    //   shorter than the tractogram truncates the stream here (mirroring an
+    //   external weights file), so no streamline is emitted with a missing field.
+    for (auto &loader : input_sidecars) {
+      if (!(*loader)(item)) {
+        finalise_weight_input();
+        return false;
+      }
+    }
     // Route the explicitly-designated streamline weight into the privileged
     //   Streamline::weight (its single source of truth). An external weight file
     //   shorter than the tractogram truncates the stream here, mirroring the
@@ -338,6 +341,20 @@ public:
       }
     }
     input_sidecars.push_back(make_sidecar_loader<ValueType>(reference, properties, *registry));
+  }
+
+  //! \brief register a standalone input sidecar under an explicit role and name.
+  /*! The named counterpart to register_input_sidecar(): loads \a path as a new
+   * \a role field registered under \a name (rather than the file basename),
+   * injecting one value per read into the streaming item. Used by tckconvert's
+   * "-insert" to embed external sidecar data; a collision with an existing field
+   * of the same name+role is rejected by the registry. */
+  void register_named_input_sidecar(const FieldRole role,
+                                    const std::string_view name,
+                                    const std::filesystem::path &path,
+                                    Properties &properties) {
+    assert(reader != nullptr);
+    input_sidecars.push_back(make_named_sidecar_loader<ValueType>(role, name, path, properties, *registry));
   }
 
   //! \brief register a standalone output-sidecar reference for export (step 6).

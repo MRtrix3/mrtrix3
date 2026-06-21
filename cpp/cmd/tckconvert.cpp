@@ -14,14 +14,24 @@
  * For more details, see http://www.mrtrix.org/.
  */
 
+#include <algorithm>
 #include <filesystem>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <vector>
 
 #include "command.h"
+#include "datatype.h"
+#include "dwi/tractography/field_registry.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/formats/list.h"
 #include "dwi/tractography/properties.h"
-#include "dwi/tractography/shared.h"
+#include "dwi/tractography/sidecar.h"
+#include "dwi/tractography/sidecar_value.h"
 #include "dwi/tractography/tractogram.h"
+#include "dwi/tractography/tractogram_item.h"
+#include "enum.h"
 #include "file/matrix.h"
 #include "file/name_parser.h"
 #include "file/ofstream.h"
@@ -29,6 +39,19 @@
 using namespace MR;
 using namespace App;
 using namespace MR::DWI::Tractography;
+
+//! \brief CLI selector disambiguating per-streamline (dps) from per-vertex (dpv) sidecar fields.
+/*! Every sidecar-manipulation option takes this as its first argument: a given
+ * name may identify both a dps and a dpv field (legal in every sidecar-capable
+ * format), so the role must be stated explicitly rather than inferred. */
+enum class SidecarType { dps, dpv };
+
+namespace {
+FieldRole to_field_role(const SidecarType type) { return type == SidecarType::dpv ? FieldRole::DPV : FieldRole::DPS; }
+std::string role_word(const FieldRole role) {
+  return role == FieldRole::DPV ? "per-vertex (dpv)" : "per-streamline (dps)";
+}
+} // namespace
 
 constexpr int default_ply_increment = 1;
 constexpr float default_ply_radius = 0.1F;
@@ -56,7 +79,20 @@ void usage() {
       " vertices plus a sequence of quantized unit tangents. It is lossy, requires"
       " the input to be of constant step size (resample beforehand with"
       " \"tckresample -step_size\" otherwise), and stores geometry only:"
-      " per-streamline weights and dps/dpv sidecar data are discarded.";
+      " per-streamline weights and dps/dpv sidecar data are discarded."
+
+    + "Some tractography file formats (the TrackVis \".trk\" format and the TRX"
+      " format) can embed per-streamline (dps) and per-vertex (dpv) sidecar data"
+      " within the tractogram dataset itself. The -extract, -insert, -rename,"
+      " -remove and -convert options manipulate this embedded data during"
+      " conversion. Each takes a leading \"dps\" or \"dpv\" argument to disambiguate"
+      " the two, since a per-streamline and a per-vertex field may legitimately"
+      " share the same name. Per-streamline data is exchanged with standalone"
+      " numerical files (text, \".csv\" or \".npy\"); per-vertex data with track"
+      " scalar (\".tsf\") files. When a \".tsf\" is produced from extracted"
+      " per-vertex data, a matching \"timestamp\" key-value is recorded on both it"
+      " and the output tractogram so the pair passes the track-scalar validation"
+      " checks. Fields are always referenced by string name, never by index.";
 
   EXAMPLES
     + Example("Writing multiple ASCII files, one per streamline",
@@ -139,10 +175,43 @@ void usage() {
     + Option ("qfib_max_angle",
               "the maximum streamline deviation angle in degrees for lossy .qfib output;"
               " defaults to the max_angle property of the input, else 90")
-      + Argument("angle").type_float(0.0, 90.0);
+      + Argument("angle").type_float(0.0, 90.0)
   // The "-qfib_bits" and "-qfib_max_angle" options are consumed by the framework's
   //   .qfib format handler backend (dwi/tractography/formats/qfib.cpp), which
   //   derives the octahedral bit depth and the cap-to-sphere ratio from them.
+
+    + OptionGroup ("Options for manipulating embedded sidecar data")
+
+    + Option ("extract",
+              "extract an embedded sidecar field, referenced by name, to a standalone file")
+      .allow_multiple()
+      + Argument ("type").type_choice<SidecarType>()
+      + Argument ("name").type_text()
+      + Argument ("file").type_file_out()
+
+    + Option ("insert",
+              "embed a new sidecar field, read from a standalone file, into the output")
+      .allow_multiple()
+      + Argument ("type").type_choice<SidecarType>()
+      + Argument ("name").type_text()
+      + Argument ("file").type_file_in()
+
+    + Option ("rename", "rename an embedded sidecar field")
+      .allow_multiple()
+      + Argument ("type").type_choice<SidecarType>()
+      + Argument ("old").type_text()
+      + Argument ("new").type_text()
+
+    + Option ("remove", "remove an embedded sidecar field")
+      .allow_multiple()
+      + Argument ("type").type_choice<SidecarType>()
+      + Argument ("name").type_text()
+
+    + Option ("convert", "change the on-disk datatype of an embedded sidecar field")
+      .allow_multiple()
+      + Argument ("type").type_choice<SidecarType>()
+      + Argument ("name").type_text()
+      + Argument ("datatype").type_text();
 
 }
 // clang-format on
@@ -585,40 +654,237 @@ transform_type get_transform() {
   return T;
 }
 
+namespace {
+
+//! \brief one parsed sidecar-manipulation operation (each role-qualified, by name).
+struct ExtractOp {
+  FieldRole role;
+  std::string name;
+  std::filesystem::path path;
+};
+struct InsertOp {
+  FieldRole role;
+  std::string name;
+  std::filesystem::path path;
+};
+struct RenameOp {
+  FieldRole role;
+  std::string old_name;
+  std::string new_name;
+};
+struct RemoveOp {
+  FieldRole role;
+  std::string name;
+};
+struct ConvertOp {
+  FieldRole role;
+  std::string name;
+  DataType dtype;
+};
+
+//! \brief the full set of sidecar-manipulation operations requested on the command line.
+struct SidecarPlan {
+  std::vector<ExtractOp> extracts;
+  std::vector<InsertOp> inserts;
+  std::vector<RenameOp> renames;
+  std::vector<RemoveOp> removes;
+  std::vector<ConvertOp> converts;
+  bool empty() const {
+    return extracts.empty() && inserts.empty() && renames.empty() && removes.empty() && converts.empty();
+  }
+};
+
+//! \brief functor that asserts a DataType is a representable sidecar element type.
+/*! dispatch_sidecar_datatype() throws for an unsupported datatype, so invoking it
+ * with this no-op probe validates a "-convert" target up front. */
+struct SidecarDataTypeProbe {
+  template <typename T> bool operator()() const { return true; }
+};
+
+//! \brief parse the role-qualified sidecar options into a SidecarPlan (§2.4).
+SidecarPlan parse_sidecar_plan() {
+  SidecarPlan plan;
+  // The "file" argument is a filesystem-path type, so it converts directly to
+  //   std::filesystem::path (never via std::string, which trips the pure-filesystem
+  //   argument assertion); "type"/"name" are non-filesystem and read as text.
+  for (const auto &opt : get_options("extract"))
+    plan.extracts.push_back(
+        {to_field_role(Enum::from_name<SidecarType>(opt[0])), std::string(opt[1]), std::filesystem::path(opt[2])});
+  for (const auto &opt : get_options("insert"))
+    plan.inserts.push_back(
+        {to_field_role(Enum::from_name<SidecarType>(opt[0])), std::string(opt[1]), std::filesystem::path(opt[2])});
+  for (const auto &opt : get_options("rename"))
+    plan.renames.push_back(
+        {to_field_role(Enum::from_name<SidecarType>(opt[0])), std::string(opt[1]), std::string(opt[2])});
+  for (const auto &opt : get_options("remove"))
+    plan.removes.push_back({to_field_role(Enum::from_name<SidecarType>(opt[0])), std::string(opt[1])});
+  for (const auto &opt : get_options("convert")) {
+    DataType dtype = DataType::parse(std::string(opt[2]));
+    dtype.set_byte_order_native();
+    dispatch_sidecar_datatype(dtype, SidecarDataTypeProbe{});
+    plan.converts.push_back({to_field_role(Enum::from_name<SidecarType>(opt[0])), std::string(opt[1]), dtype});
+  }
+  return plan;
+}
+
+//! \brief carry of one input field to its output slot, with an optional dtype recast.
+struct FieldCarry {
+  size_t in_ordinal;
+  size_t out_ordinal;
+  std::optional<DataType> convert;
+};
+
+//! \brief the output field registry plus per-role carry maps derived from a plan.
+struct SidecarTransform {
+  FieldRegistry output_registry;
+  std::vector<FieldCarry> dps_carry;
+  std::vector<FieldCarry> dpv_carry;
+};
+
+//! \brief derive the output field set and the per-item carry maps from \a input + \a plan.
+/*! Applies "-remove" (drops the field), "-rename" (changes its name) and
+ * "-convert" (changes its on-disk datatype, recast per item) to the input field
+ * registry, producing the output registry and, per role, the (input ordinal →
+ * output ordinal [, recast]) carry list. Inserted fields are already part of
+ * \a input (registered as input loaders), so they are carried like any other.
+ * Every referenced field is validated to exist (and renames not to collide) up
+ * front, so a bad option fails before any output is written. */
+SidecarTransform build_transform(const FieldRegistry &input, const SidecarPlan &plan) {
+  const auto exists = [&](const std::string_view name, const FieldRole role) {
+    return input.find(name, role) != nullptr;
+  };
+  for (const RemoveOp &op : plan.removes)
+    if (!exists(op.name, op.role))
+      throw Exception(std::string("cannot remove ") + role_word(op.role) + " sidecar field \"" + op.name +
+                      "\": no such field in the input tractogram");
+  for (const ConvertOp &op : plan.converts)
+    if (!exists(op.name, op.role))
+      throw Exception(std::string("cannot convert ") + role_word(op.role) + " sidecar field \"" + op.name +
+                      "\": no such field in the input tractogram");
+  for (const RenameOp &op : plan.renames) {
+    if (!exists(op.old_name, op.role))
+      throw Exception(std::string("cannot rename ") + role_word(op.role) + " sidecar field \"" + op.old_name +
+                      "\": no such field in the input tractogram");
+    if (op.new_name != op.old_name && exists(op.new_name, op.role))
+      throw Exception(std::string("cannot rename ") + role_word(op.role) + " sidecar field \"" + op.old_name +
+                      "\" to \"" + op.new_name + "\": a field of that name already exists");
+  }
+
+  SidecarTransform transform;
+  for (const FieldDescriptor &field : input) {
+    const bool removed = std::any_of(plan.removes.begin(), plan.removes.end(), [&](const RemoveOp &op) {
+      return op.role == field.role && op.name == field.name;
+    });
+    if (removed)
+      continue;
+    FieldDescriptor out = field;
+    out.source = FieldSource::Internal;
+    for (const RenameOp &op : plan.renames)
+      if (op.role == field.role && op.old_name == field.name)
+        out.name = op.new_name;
+    std::optional<DataType> convert;
+    for (const ConvertOp &op : plan.converts)
+      if (op.role == field.role && op.name == field.name) {
+        convert = op.dtype;
+        out.dtype = op.dtype;
+      }
+    const size_t out_ordinal = transform.output_registry.add(out);
+    const FieldCarry carry{field.ordinal, out_ordinal, convert};
+    if (field.role == FieldRole::DPV)
+      transform.dpv_carry.push_back(carry);
+    else if (field.role == FieldRole::DPS)
+      transform.dps_carry.push_back(carry);
+  }
+  return transform;
+}
+
+} // namespace
+
 //! \brief generic conversion through the Tractogram format-handler framework.
 /*! Used when both the input and output extensions are recognised by the
  * framework's handler list (Stage 1). Constructs an input and an output
  * Tractogram and copies the full composite TractogramItem single-threaded (pure
  * I/O; no thread queue), applying the point-position transform per vertex.
  *
- * The conversion is sidecar-aware (Stage 10): the output Tractogram is created
- * with the input's field registry, so every dps/dpv field the input handler
- * enumerates is declared on the output and carried across in its native dtype —
- * including pass-through fields the conversion does not touch. A const-shared
- * Shared object precomputes the (identity) pass-through map and applies it per
- * item; the empty-registry common case (.tck/.vtk/...) is a no-op fast path. */
-void run_generic(const std::filesystem::path &input_path, const std::filesystem::path &output_path) {
+ * The conversion is sidecar-aware (Stage 10): every dps/dpv field the input
+ * carries is declared on the output and copied across in its native dtype, except
+ * as redirected by \a plan — "-insert" adds a new field from a standalone file,
+ * "-remove"/"-rename"/"-convert" drop/rename/recast an existing field, and
+ * "-extract" taps an input field out to a standalone file (independent of whether
+ * it is also carried). With an empty \a plan this is a verbatim sidecar copy. */
+void run_generic(const std::filesystem::path &input_path,
+                 const std::filesystem::path &output_path,
+                 const SidecarPlan &plan) {
   Properties properties;
   auto input = Tractogram<float>::open(input_path, properties);
-  // Declare the output field set up-front from the input registry (§2.7), so a
-  //   sidecar-aware output handler (the pipe; later TRX) serialises it.
-  auto output = Tractogram<float>::create(output_path, properties, input.fields());
 
-  // Pass-through map: every input field is carried unchanged to the output.
-  const Shared shared(input.fields(), output.fields());
+  // "-insert": register each new field as a named input loader, so its values flow
+  //   into the streaming items and the field joins the input registry (carried to
+  //   the output like any internal field).
+  for (const InsertOp &op : plan.inserts)
+    input.register_named_input_sidecar(op.role, op.name, op.path, properties);
+
+  const SidecarTransform transform = build_transform(input.fields(), plan);
+
+  // Resolve "-extract" targets to input payload ordinals before any output is
+  //   created, so an unknown field name fails before writing anything.
+  struct ExtractTarget {
+    FieldRole role;
+    size_t ordinal;
+    std::filesystem::path path;
+  };
+  std::vector<ExtractTarget> extract_targets;
+  for (const ExtractOp &op : plan.extracts) {
+    const std::optional<size_t> ordinal = input.fields().ordinal(op.name, op.role);
+    if (!ordinal.has_value())
+      throw Exception(std::string("cannot extract ") + role_word(op.role) + " sidecar field \"" + op.name +
+                      "\": no such field in the input tractogram");
+    extract_targets.push_back({op.role, *ordinal, op.path});
+  }
+
+  // A ".tsf" extracted from per-vertex data must share a "timestamp" with the
+  //   output tractogram (track-scalar validation). Stamp a fresh shared value
+  //   before creating the output; formats that re-stamp on write (".tck", the
+  //   pipe) overwrite it, and the exporters created afterwards inherit whichever
+  //   value the output settled on, so the pair always matches.
+  const bool any_dpv_extract = std::any_of(
+      plan.extracts.begin(), plan.extracts.end(), [](const ExtractOp &op) { return op.role == FieldRole::DPV; });
+  if (any_dpv_extract)
+    properties.set_timestamp();
+
+  auto output = Tractogram<float>::create(output_path, properties, transform.output_registry);
+
+  // "-extract" exporters tap the INPUT item, independent of whether the field is
+  //   also carried to (or dropped from) the output.
+  std::vector<std::unique_ptr<SidecarExporter<float>>> extractors;
+  for (const ExtractTarget &target : extract_targets)
+    extractors.push_back(make_named_sidecar_exporter<float>(target.role, target.ordinal, target.path, properties));
 
   const transform_type T = get_transform();
 
   TractogramItem<float> in_item;
   TractogramItem<float> out_item;
   while (input.read(in_item)) {
+    for (auto &extractor : extractors)
+      (*extractor)(in_item);
     out_item.clear();
     out_item.streamline = in_item.streamline;
     for (auto &pos : out_item.streamline)
       pos = T.cast<float>() * pos;
-    shared.carry_passthrough(in_item, out_item);
+    out_item.dps.resize(transform.output_registry.dps_count());
+    out_item.dpv.resize(transform.output_registry.dpv_count());
+    for (const FieldCarry &carry : transform.dps_carry)
+      out_item.dps[carry.out_ordinal] = carry.convert.has_value()
+                                            ? convert_dps_value(in_item.dps[carry.in_ordinal], *carry.convert)
+                                            : in_item.dps[carry.in_ordinal];
+    for (const FieldCarry &carry : transform.dpv_carry)
+      out_item.dpv[carry.out_ordinal] = carry.convert.has_value()
+                                            ? convert_dpv_value(in_item.dpv[carry.in_ordinal], *carry.convert)
+                                            : in_item.dpv[carry.in_ordinal];
     output.write(out_item);
   }
+  for (auto &extractor : extractors)
+    extractor->finalise();
 }
 
 //! \brief bespoke conversion for esoteric / export-only formats.
@@ -672,15 +938,22 @@ void run() {
   std::filesystem::path input_path{argument[0]};
   std::filesystem::path output_path{argument[1]};
 
+  const SidecarPlan plan = parse_sidecar_plan();
+
   // First attempt the generic framework branch: it serves the conversion only
   // when both extensions are recognised by the format-handler framework
-  // (".tck" and ".vtk"). Otherwise fall back to the bespoke handlers, retained
-  // for the esoteric / export-only formats (".txt"/".ply"/".rib").
+  // (".tck"/".trk"/TRX/".vtk"/...). Otherwise fall back to the bespoke handlers,
+  // retained for the esoteric / export-only formats (".txt"/".ply"/".rib").
   const bool input_is_framework = MR::DWI::Tractography::Formats::get_handler(input_path) != nullptr;
   const bool output_is_framework = MR::DWI::Tractography::Formats::get_handler(output_path) != nullptr;
   if (input_is_framework && output_is_framework) {
-    run_generic(input_path, output_path);
+    run_generic(input_path, output_path, plan);
   } else {
+    if (!plan.empty())
+      throw Exception("embedded sidecar manipulation (-extract / -insert / -rename / -remove / -convert)"
+                      " is only available when converting between framework tractography formats"
+                      " (\".tck\", \".trk\", TRX, \".vtk\", \".vtx\", \".qfib\", \".zfib\");"
+                      " the \".txt\" / \".ply\" / \".rib\" paths do not carry sidecar data");
     run_bespoke(input_path, output_path);
   }
 }

@@ -66,6 +66,9 @@ VTXReader<ValueType>::VTXReader(const std::filesystem::path &path, Properties &p
   // Part 4: dataset structure; only STREAMLINES with POINTS and OFFSETS admitted.
   bool have_points = false;
   bool have_offsets = false;
+  // True when the OFFSETS element width is platform-ambiguous ("long" / "vtkIdType")
+  //   and must be reconciled against the block's content once the map is available.
+  bool ambiguous_offset_width = false;
   size_t num_points = 0;
   PointDataType point_type = PointDataType::Float32;
   int64_t points_offset = 0;
@@ -132,14 +135,20 @@ VTXReader<ValueType>::VTXReader(const std::filesystem::path &path, Properties &p
       std::string datatype;
       stream >> dummy >> num_streamlines >> datatype;
       // A "vtktypeint64" qualifier selects 64-bit indices; "int"/"vtktypeint32"
-      //   select 32-bit. The writer emits "vtktypeint64".
-      if (datatype == "vtktypeint64" || datatype == "long" || datatype == "vtkIdType")
+      //   select 32-bit (the writer emits "vtktypeint64"). The legacy VTK aliases
+      //   "long" / "vtkIdType" are platform-dependent in width, so they default to
+      //   64-bit but are reconciled against the OFFSETS content below.
+      if (datatype == "vtktypeint64") {
         offset_type = OffsetType::Int64;
-      else if (datatype == "int" || datatype == "vtktypeint32")
+      } else if (datatype == "int" || datatype == "vtktypeint32") {
         offset_type = OffsetType::Int32;
-      else
+      } else if (datatype == "long" || datatype == "vtkIdType") {
+        offset_type = OffsetType::Int64;
+        ambiguous_offset_width = true;
+      } else {
         throw Exception("VTX file \"" + path.string() + "\" OFFSETS datatype \"" + datatype +
                         "\" is unsupported (expected int or vtktypeint64)");
+      }
       have_offsets = true;
 
       if (encoding == Encoding::Binary) {
@@ -180,6 +189,17 @@ VTXReader<ValueType>::VTXReader(const std::filesystem::path &path, Properties &p
   //   or the RAM-resident ASCII coordinates.
   if (encoding == Encoding::Binary) {
     mmap = std::make_shared<File::MMap>(File::Entry(path), false, true);
+    // Reconcile an ambiguous ("long" / "vtkIdType") OFFSETS width against content:
+    //   OFFSETS is the file's trailing, end-inclusive block, so the final entry
+    //   equals num_points - 1 when the list is fully consumed. Prefer the narrower
+    //   32-bit width when that holds; otherwise retain the 64-bit default.
+    if (ambiguous_offset_width && num_streamlines > 0 && num_points > 0) {
+      const std::byte *const base = mmap->address();
+      const int64_t pos32 = offsets_offset + static_cast<int64_t>((num_streamlines - 1) * sizeof(int32_t));
+      if (pos32 + static_cast<int64_t>(sizeof(int32_t)) <= mmap->size() &&
+          static_cast<int64_t>(Raw::fetch_BE<int32_t>(base + pos32)) == static_cast<int64_t>(num_points) - 1)
+        offset_type = OffsetType::Int32;
+    }
     points = std::make_unique<VTKUtils::PointReader<ValueType>>(mmap, points_offset, point_type, num_points);
   } else {
     points = std::make_unique<VTKUtils::PointReader<ValueType>>(std::move(ascii_points), num_points);
@@ -448,24 +468,19 @@ std::optional<VTXBinaryLayout> VTX::binary_layout(const std::filesystem::path &p
   return VTXBinaryLayout{*points_offset, num_points, points_datatype, *offsets_offset, num_streamlines, offsets_int64};
 }
 
-std::unique_ptr<ReaderInterface<float>> VTX::read_float(const std::filesystem::path &path,
-                                                        Properties &properties,
-                                                        FieldRegistry &,
-                                                        const OptionalHeader &) const {
+std::unique_ptr<ReaderInterface<float>>
+VTX::read_float(const std::filesystem::path &path, Properties &properties, FieldRegistry &) const {
   return std::make_unique<VTXReader<float>>(path, properties);
 }
 
-std::unique_ptr<ReaderInterface<double>> VTX::read_double(const std::filesystem::path &path,
-                                                          Properties &properties,
-                                                          FieldRegistry &,
-                                                          const OptionalHeader &) const {
+std::unique_ptr<ReaderInterface<double>>
+VTX::read_double(const std::filesystem::path &path, Properties &properties, FieldRegistry &) const {
   return std::make_unique<VTXReader<double>>(path, properties);
 }
 
 std::unique_ptr<WriterInterface<float>> VTX::create_float(const std::filesystem::path &path,
                                                           const Properties &properties,
                                                           const FieldRegistry &,
-                                                          const OptionalHeader &,
                                                           const WriteOptions &options) const {
   return std::make_unique<VTXWriter<float>>(path, properties);
 }
@@ -473,7 +488,6 @@ std::unique_ptr<WriterInterface<float>> VTX::create_float(const std::filesystem:
 std::unique_ptr<WriterInterface<double>> VTX::create_double(const std::filesystem::path &path,
                                                             const Properties &properties,
                                                             const FieldRegistry &,
-                                                            const OptionalHeader &,
                                                             const WriteOptions &options) const {
   return std::make_unique<VTXWriter<double>>(path, properties);
 }

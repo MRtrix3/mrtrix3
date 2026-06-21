@@ -589,24 +589,19 @@ namespace Formats {
 
 bool Pipe::handles(const std::filesystem::path &path) const { return is_dash(path.string()); }
 
-std::unique_ptr<ReaderInterface<float>> Pipe::read_float(const std::filesystem::path &,
-                                                         Properties &properties,
-                                                         FieldRegistry &registry,
-                                                         const OptionalHeader &) const {
+std::unique_ptr<ReaderInterface<float>>
+Pipe::read_float(const std::filesystem::path &, Properties &properties, FieldRegistry &registry) const {
   return std::make_unique<PipeReader<float>>(properties, registry);
 }
 
-std::unique_ptr<ReaderInterface<double>> Pipe::read_double(const std::filesystem::path &,
-                                                           Properties &properties,
-                                                           FieldRegistry &registry,
-                                                           const OptionalHeader &) const {
+std::unique_ptr<ReaderInterface<double>>
+Pipe::read_double(const std::filesystem::path &, Properties &properties, FieldRegistry &registry) const {
   return std::make_unique<PipeReader<double>>(properties, registry);
 }
 
 std::unique_ptr<WriterInterface<float>> Pipe::create_float(const std::filesystem::path &,
                                                            const Properties &properties,
                                                            const FieldRegistry &registry,
-                                                           const OptionalHeader &,
                                                            const WriteOptions &options) const {
   return std::make_unique<PipeWriter<float>>(properties, registry);
 }
@@ -614,7 +609,6 @@ std::unique_ptr<WriterInterface<float>> Pipe::create_float(const std::filesystem
 std::unique_ptr<WriterInterface<double>> Pipe::create_double(const std::filesystem::path &,
                                                              const Properties &properties,
                                                              const FieldRegistry &registry,
-                                                             const OptionalHeader &,
                                                              const WriteOptions &options) const {
   return std::make_unique<PipeWriter<double>>(properties, registry);
 }

@@ -38,7 +38,12 @@ void usage() {
   + Option ("abs", "specify an absolute tolerance")
     + Argument ("tolerance").type_float(0.0)
   + Option ("frac", "specify a fractional tolerance")
-    + Argument ("tolerance").type_float(0.0);
+    + Argument ("tolerance").type_float(0.0)
+  + Option ("noproperties",
+            "compare the scalar values only,"
+            " skipping the header-property (timestamp / count) cross-check;"
+            " for comparing two track scalar files of different provenance"
+            " (e.g. a freshly extracted file against an independent reference)");
 
 }
 // clang-format on
@@ -50,7 +55,12 @@ void run() {
   DWI::Tractography::ScalarReader<value_type> reader1(argument[0], properties1);
   DWI::Tractography::ScalarReader<value_type> reader2(argument[1], properties2);
 
-  DWI::Tractography::validate_tsf_properties(properties1, properties2, "TSF pair");
+  // The header-property cross-check (matching "timestamp" and "count") confirms a
+  //   common originating tractogram; a pure value comparison across files of
+  //   different provenance opts out of it (the per-streamline count and length are
+  //   still verified in the value loop below).
+  if (get_options("noproperties").empty())
+    DWI::Tractography::validate_tsf_properties(properties1, properties2, "TSF pair");
 
   DWI::Tractography::TrackScalar<value_type> tck_scalar1;
   DWI::Tractography::TrackScalar<value_type> tck_scalar2;

@@ -41,18 +41,17 @@ namespace MR::DWI::Tractography {
  * Properties comments), and "track" (a flat, delta-encoded streamline buffer).
  *
  * On construction the whole file is gzip-inflated, the ".mat" container is
- * parsed (Formats::Mat), and the grid geometry is established: when an
- * OptionalHeader is supplied its voxel->scanner transform is used; otherwise a
- * default axis-aligned, voxel-centred grid is synthesised from the ".tt"
- * "dimension" / "voxel_size" members (geometry is then only correct up to the
- * unknown orientation/origin of the acquisition). The packed "track" buffer is
- * retained and decoded one streamline at a time on each operator() call.
+ * parsed (Formats::Mat), and the grid geometry is established: a default
+ * axis-aligned, voxel-centred grid is synthesised from the ".tt" "dimension" /
+ * "voxel_size" members (the format embeds no affine, so geometry is correct only
+ * up to the unknown orientation/origin of the acquisition). The packed "track"
+ * buffer is retained and decoded one streamline at a time on each operator() call.
  *
  * The implementation is explicitly instantiated for float and double in
  * formats/tt.cpp. */
 template <class ValueType = float> class TTReader : public ReaderInterface<ValueType> {
 public:
-  TTReader(const std::filesystem::path &path, Properties &properties, const OptionalHeader &grid);
+  TTReader(const std::filesystem::path &path, Properties &properties);
 
   bool operator()(Streamline<ValueType> &tck) override;
 
@@ -71,24 +70,23 @@ private:
 //! \brief Streaming writer backend for the DSI Studio TinyTrack (".tt") format.
 /*! This is the write backend for the ".tt" format handler (Formats::TT). Each
  * streamline is converted from MRtrix scanner-space to fractional voxel
- * coordinates (using the OptionalHeader transform, or a default grid derived
- * from the reference image / supplied Properties when none is given), quantised
- * to 1/32-voxel integer units, and delta-encoded into the packed "track" record
- * layout. The records are accumulated through the shared Formats::WriteBuffer
- * (Stage 2). On completion the assembled "track" buffer plus the grid members
- * are serialised into a Level-5 ".mat" container and gzip-compressed to the
- * output ".tt".
+ * coordinates (using an axis-aligned grid derived from any "tt_voxel_size"
+ * Property carried from a prior ".tt" read, else a 1 mm isotropic default),
+ * quantised to 1/32-voxel integer units, and delta-encoded into the packed
+ * "track" record layout. The records are accumulated through the shared
+ * Formats::WriteBuffer (Stage 2). On completion the assembled "track" buffer plus
+ * the grid members are serialised into a Level-5 ".mat" container and
+ * gzip-compressed to the output ".tt".
  *
  * Because ".tt" stores only grid size and spacing (no full affine), the
- * scanner->voxel transform must come from an external reference grid: the
- * OptionalHeader when supplied, else an axis-aligned default. The grid size is
- * computed from the data extent when no reference is available.
+ * scanner->voxel transform is axis-aligned; the grid size is computed from the
+ * data extent (seeded from any "tt_dimension" Property).
  *
  * The implementation is explicitly instantiated for float and double in
  * formats/tt.cpp. */
 template <class ValueType = float> class TTWriter : public WriterInterface<ValueType> {
 public:
-  TTWriter(const std::filesystem::path &path, const Properties &properties, const OptionalHeader &grid);
+  TTWriter(const std::filesystem::path &path, const Properties &properties);
   ~TTWriter() override;
 
   bool operator()(const Streamline<ValueType> &tck) override;
@@ -101,8 +99,6 @@ private:
   std::array<int32_t, 3> dimension;
   //! voxel spacing (mm) written into the "voxel_size" member
   std::array<float, 3> voxel_size;
-  //! true once a reference grid (Header) fixed the geometry; false for the default grid
-  bool grid_from_reference;
   //! opaque provenance strings recovered from the Properties (written verbatim)
   std::string parameter_id;
   std::string report;
@@ -131,10 +127,9 @@ namespace Formats {
  * absolute first vertex in 1/32-voxel integer units) followed by signed int8
  * per-axis deltas. Vertices are stored in the voxel space of a grid described
  * only by size ("dimension") and spacing ("voxel_size"); the orientation/origin
- * affine is not carried, so an external reference grid (the Stage 6
- * OptionalHeader) is required to place streamlines correctly in MRtrix
- * scanner-space. When none is supplied a default axis-aligned grid is used and
- * geometry is correct only up to that unknown affine.
+ * affine is not carried, so a default axis-aligned grid (built from the embedded
+ * "voxel_size") is used to place streamlines in MRtrix scanner-space, and geometry
+ * is correct only up to that unknown affine.
  *
  * Capabilities: read+write; sequential streaming access; rewrite-only (the
  * whole gzip ".mat" must be rewritten to alter any streamline). */
@@ -152,23 +147,17 @@ public:
   bool handles(const std::filesystem::path &path) const override;
 
 protected:
-  std::unique_ptr<ReaderInterface<float>> read_float(const std::filesystem::path &path,
-                                                     Properties &properties,
-                                                     FieldRegistry &registry,
-                                                     const OptionalHeader &grid) const override;
-  std::unique_ptr<ReaderInterface<double>> read_double(const std::filesystem::path &path,
-                                                       Properties &properties,
-                                                       FieldRegistry &registry,
-                                                       const OptionalHeader &grid) const override;
+  std::unique_ptr<ReaderInterface<float>>
+  read_float(const std::filesystem::path &path, Properties &properties, FieldRegistry &registry) const override;
+  std::unique_ptr<ReaderInterface<double>>
+  read_double(const std::filesystem::path &path, Properties &properties, FieldRegistry &registry) const override;
   std::unique_ptr<WriterInterface<float>> create_float(const std::filesystem::path &path,
                                                        const Properties &properties,
                                                        const FieldRegistry &registry,
-                                                       const OptionalHeader &grid,
                                                        const WriteOptions &options) const override;
   std::unique_ptr<WriterInterface<double>> create_double(const std::filesystem::path &path,
                                                          const Properties &properties,
                                                          const FieldRegistry &registry,
-                                                         const OptionalHeader &grid,
                                                          const WriteOptions &options) const override;
 };
 

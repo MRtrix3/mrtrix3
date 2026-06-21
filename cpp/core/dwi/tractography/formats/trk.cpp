@@ -105,10 +105,7 @@ transform_type vox_to_ras_transform(const TRKUtils::Header &header) {
 /* ************************************************************************ */
 
 template <class ValueType>
-TRKReader<ValueType>::TRKReader(const std::filesystem::path &path,
-                                Properties &properties,
-                                FieldRegistry &registry,
-                                const OptionalHeader &grid)
+TRKReader<ValueType>::TRKReader(const std::filesystem::path &path, Properties &properties, FieldRegistry &registry)
     : registry(registry),
       position(static_cast<int64_t>(TRKUtils::header_bytes)),
       end(0),
@@ -147,16 +144,15 @@ TRKReader<ValueType>::TRKReader(const std::filesystem::path &path,
     throw Exception("TrackVis \".trk\" file \"" + path.string() + "\" declares more than " +
                     str(TRKUtils::max_named_fields) + " scalars/properties");
 
-  // The grid orientation/origin: prefer the supplied reference Header's
-  //   voxel→scanner transform; otherwise fall back to the file's own vox_to_ras
-  //   so a ".trk" → ".trk" round-trip is exact.
-  if (grid.has_value()) {
-    voxel2scanner = Transform(grid->get()).voxel2scanner;
-    for (size_t axis = 0; axis != 3; ++axis)
-      voxel_size[axis] = grid->get().spacing(axis);
-  } else {
-    voxel2scanner = vox_to_ras_transform(header);
-  }
+  // The grid orientation/origin is recovered from the file's own vox_to_ras affine
+  //   (".trk" embeds it), so a ".trk" → ".trk" round-trip is exact.
+  voxel2scanner = vox_to_ras_transform(header);
+
+  // A voxel→RAS affine is in effect when the file records its own
+  //   (vox_to_ras[3][3] != 0). In that case the ".trk" coordinates are
+  //   corner-referenced and a half-voxel shift is applied on read; otherwise the
+  //   vertices are taken to be realspace already.
+  apply_corner_shift = std::fabs(header.vox_to_ras[3][3]) > 0.0F;
 
   // Surface the file's recorded voxel→RAS affine at DEBUG verbosity so a caller can
   //   confirm e.g. a non-identity grid; an unrecorded affine reads as all-zero.
@@ -183,11 +179,49 @@ TRKReader<ValueType>::TRKReader(const std::filesystem::path &path,
   // Preserve grid metadata into the Properties for a faithful round-trip.
   properties["trk_dim"] = str(header.dim[0]) + "," + str(header.dim[1]) + "," + str(header.dim[2]);
   properties["trk_voxel_size"] = str(voxel_size[0]) + "," + str(voxel_size[1]) + "," + str(voxel_size[2]);
+  for (size_t axis = 0; axis != 3; ++axis)
+    dim[axis] = header.dim[axis];
+
+  // The header's voxel_order names the anatomical direction of each storage axis.
+  //   MRtrix works in RAS, so an axis stored the opposite way (L vs R, P vs A, I vs S)
+  //   is mirrored about the grid extent on read; an axis already R/A/S, an absent
+  //   order, or an unrecognised (permuted) order leaves that axis untouched.
+  axis_flip = {false, false, false};
   {
     std::string voxel_order(header.voxel_order.begin(), header.voxel_order.end());
     voxel_order.erase(std::find(voxel_order.begin(), voxel_order.end(), '\0'), voxel_order.end());
     if (!voxel_order.empty())
       properties["trk_voxel_order"] = voxel_order;
+    constexpr std::array<char, 3> flipped_letter{'L', 'P', 'I'};
+    for (size_t axis = 0; axis != 3 && axis < voxel_order.size(); ++axis)
+      axis_flip[axis] = (voxel_order[axis] == flipped_letter[axis]);
+  }
+
+  // The only validated voxel_order reorientation is an axis flip composed with an
+  //   axis-aligned (diagonal, non-reflecting) affine: no reference data yet pairs a
+  //   non-RAS voxel_order with an affine that itself encodes an orientation (rotation
+  //   or reflection), so how those two orientation cues should compose is unknown.
+  //   Warn rather than silently risk a doubly-applied orientation.
+  if (std::fabs(header.vox_to_ras[3][3]) > 0.0F && (axis_flip[0] || axis_flip[1] || axis_flip[2])) {
+    bool axis_aligned = true;
+    for (size_t row = 0; row != 3 && axis_aligned; ++row) {
+      for (size_t col = 0; col != 3 && axis_aligned; ++col) {
+        const double value = static_cast<double>(header.vox_to_ras[row][col]);
+        if (row == col) {
+          if (value <= 0.0)
+            axis_aligned = false;
+        } else {
+          const double scale = std::fabs(static_cast<double>(header.vox_to_ras[col][col]));
+          if (std::fabs(value) > 1.0e-4 * std::max(scale, 1.0e-9))
+            axis_aligned = false;
+        }
+      }
+    }
+    if (!axis_aligned) {
+      WARN("TrackVis \".trk\" file \"" + path.string() + "\" combines a non-axis-aligned " +
+           "voxel-to-RAS affine with a non-RAS voxel_order; composing these two orientation " +
+           "cues has not been validated, so the resulting streamline geometry may be incorrect");
+    }
   }
 
   // Register each scalar as a dpv field and each property as a dps field; per the
@@ -263,9 +297,23 @@ bool TRKReader<ValueType>::read_record(Streamline<ValueType> &tck, TractogramIte
       point_mm[axis] = static_cast<double>(value);
       cursor += static_cast<int64_t>(trk_value_bytes);
     }
-    // mm (voxel space, corner-referenced) → fractional voxel index → scanner RAS.
-    const Eigen::Vector3d voxel(point_mm[0] / voxel_size[0], point_mm[1] / voxel_size[1], point_mm[2] / voxel_size[2]);
-    const Eigen::Vector3d scanner = voxel2scanner * voxel;
+    // With a recorded affine: mm (corner-referenced voxel space) → fractional voxel
+    //   index → (mirror any flipped axis about the grid extent to reach RAS order) →
+    //   half-voxel shift to the centre-referenced index → scanner RAS. With no affine
+    //   the vertices are already realspace and are taken verbatim.
+    Eigen::Vector3d scanner;
+    if (apply_corner_shift) {
+      Eigen::Vector3d voxel;
+      for (size_t axis = 0; axis != 3; ++axis) {
+        double index = point_mm[axis] / voxel_size[axis];
+        if (axis_flip[axis])
+          index = static_cast<double>(dim[axis]) - index;
+        voxel[axis] = index - 0.5;
+      }
+      scanner = voxel2scanner * voxel;
+    } else {
+      scanner = point_mm;
+    }
     tck.push_back(scanner.cast<ValueType>());
 
     for (size_t s = 0; s != n_scalars; ++s) {
@@ -316,12 +364,12 @@ template <class ValueType> bool TRKReader<ValueType>::operator()(TractogramItem<
 template <class ValueType>
 TRKWriter<ValueType>::TRKWriter(const std::filesystem::path &path,
                                 const Properties &properties,
-                                const FieldRegistry &registry,
-                                const OptionalHeader &grid)
+                                const FieldRegistry &registry)
     : path(path),
       registry(registry),
       voxel_size{1.0F, 1.0F, 1.0F},
       dim{1, 1, 1},
+      apply_corner_shift(false),
       n_scalars(0),
       n_properties(0),
       body_buffer(File::Config::get_int("TrackWriterBufferSize", 16777216), 1),
@@ -331,50 +379,31 @@ TRKWriter<ValueType>::TRKWriter(const std::filesystem::path &path,
 
   App::check_overwrite(path);
 
-  // Default the voxel→RAS affine to identity; its bottom row (0,0,0,1) is retained
-  //   when a reference grid supplies the upper three rows.
-  for (size_t row = 0; row != 4; ++row)
-    for (size_t col = 0; col != 4; ++col)
-      vox_to_ras[row][col] = (row == col) ? 1.0F : 0.0F;
   scanner2voxel.setIdentity();
 
-  if (grid.has_value()) {
-    // A reference grid fixes the full geometry: the header carries that grid's
-    //   spacing, dimensions and voxel→RAS affine, and scanner→voxel is its inverse.
-    const Header &header = grid->get();
-    scanner2voxel = Transform(header).scanner2voxel;
-    const transform_type v2s = Transform(header).voxel2scanner;
-    for (size_t axis = 0; axis != 3; ++axis) {
-      voxel_size[axis] = static_cast<float>(header.spacing(axis));
-      dim[axis] = static_cast<int16_t>(header.size(axis));
-    }
-    for (size_t row = 0; row != 3; ++row)
-      for (size_t col = 0; col != 4; ++col)
-        vox_to_ras[row][col] = static_cast<float>(v2s(row, col));
-  } else {
-    // Without a reference grid the voxel→realspace mapping is unknown, so it is
-    //   left unrecorded: the entire affine (including vox_to_ras[3][3]) is zeroed,
-    //   which the reader recognises as "no transform" and falls back to an
-    //   identity, corner-origin grid — so the file still round-trips exactly.
-    for (size_t row = 0; row != 4; ++row)
-      for (size_t col = 0; col != 4; ++col)
-        vox_to_ras[row][col] = 0.0F;
-    INFO("no reference voxel grid for \".trk\" output;"
-         " the voxel-to-realspace transform will not be recorded (vox_to_ras[3][3] = 0)");
-    // Recover spacing / dimensions from any "trk_*" properties left by a prior
-    //   ".trk" read so a ".trk" → ".trk" conversion preserves the grid metadata.
-    auto vs = properties.find("trk_voxel_size");
-    if (vs != properties.end()) {
-      const auto values = MR::parse_floats(vs->second);
-      for (size_t axis = 0; axis != 3 && axis != values.size(); ++axis)
-        voxel_size[axis] = static_cast<float>(values[axis]);
-    }
-    auto dm = properties.find("trk_dim");
-    if (dm != properties.end()) {
-      const auto values = MR::parse_ints<int64_t>(dm->second);
-      for (size_t axis = 0; axis != 3 && axis != values.size(); ++axis)
-        dim[axis] = static_cast<int16_t>(values[axis]);
-    }
+  // No external grid reference is consulted: the voxel→realspace mapping is left
+  //   unrecorded, so the entire affine (including vox_to_ras[3][3]) is zeroed. The
+  //   reader recognises this as "no transform" and falls back to an identity,
+  //   corner-origin grid, so the file round-trips exactly with vertices stored
+  //   verbatim in realspace (§ directive: vox_to_ras[3][3] = 0 when no transform).
+  for (size_t row = 0; row != 4; ++row)
+    for (size_t col = 0; col != 4; ++col)
+      vox_to_ras[row][col] = 0.0F;
+  INFO("no reference voxel grid for \".trk\" output;"
+       " the voxel-to-realspace transform will not be recorded (vox_to_ras[3][3] = 0)");
+  // Recover spacing / dimensions from any "trk_*" properties left by a prior
+  //   ".trk" read so a ".trk" → ".trk" conversion preserves the grid metadata.
+  auto vs = properties.find("trk_voxel_size");
+  if (vs != properties.end()) {
+    const auto values = MR::parse_floats(vs->second);
+    for (size_t axis = 0; axis != 3 && axis != values.size(); ++axis)
+      voxel_size[axis] = static_cast<float>(values[axis]);
+  }
+  auto dm = properties.find("trk_dim");
+  if (dm != properties.end()) {
+    const auto values = MR::parse_ints<int64_t>(dm->second);
+    for (size_t axis = 0; axis != 3 && axis != values.size(); ++axis)
+      dim[axis] = static_cast<int16_t>(values[axis]);
   }
 
   // Map the registered dpv fields to per-vertex scalars and the dps fields to
@@ -403,6 +432,26 @@ TRKWriter<ValueType>::TRKWriter(const std::filesystem::path &path,
     throw Exception("TrackVis \".trk\" supports at most " + str(TRKUtils::max_named_fields) +
                     " per-streamline property columns; output requires " + str(n_properties));
 
+  // The fixed-width ".trk" header names each scalar/property column in a field of
+  //   TRKUtils::name_length characters; a longer name cannot be recorded, so it is
+  //   rejected here rather than silently truncated (truncation would corrupt the
+  //   field name on read-back). An M>1 field's columns are suffixed "_c", so the
+  //   suffixed form is what must fit.
+  const auto validate_name_lengths = [](const std::vector<SidecarOutput> &fields, const std::string_view kind) {
+    for (const SidecarOutput &output : fields) {
+      for (size_t c = 0; c != output.descriptor.columns; ++c) {
+        const std::string column_name =
+            (output.descriptor.columns == 1) ? output.descriptor.name : output.descriptor.name + "_" + str(c);
+        if (column_name.length() > TRKUtils::name_length)
+          throw Exception("TrackVis \".trk\" " + std::string(kind) + " field name \"" + column_name + "\" (" +
+                          str(column_name.length()) + " characters)" + " exceeds the " + str(TRKUtils::name_length) +
+                          "-character fixed-width header limit");
+      }
+    }
+  };
+  validate_name_lengths(scalar_fields, "per-vertex scalar");
+  validate_name_lengths(property_fields, "per-streamline property");
+
   // Stream the body to a temporary file; the header is prepended on finalisation.
   body_tempfile = File::create_tempfile(0, ".trkbody");
   const std::filesystem::path body_path = body_tempfile;
@@ -410,6 +459,18 @@ TRKWriter<ValueType>::TRKWriter(const std::filesystem::path &path,
     File::OFStream out(body_path, std::ios::out | std::ios::binary | std::ios::app);
     out.write(reinterpret_cast<const char *>(data), size);
   });
+}
+
+template <class ValueType>
+Eigen::Vector3d TRKWriter<ValueType>::scanner_to_voxel_mm(const Eigen::Vector3d &scanner) const {
+  // No recorded affine: the vertices are written verbatim in realspace.
+  if (!apply_corner_shift)
+    return scanner;
+  // A recorded affine references voxel [0,0,0]'s corner: shift the centre-referenced
+  //   voxel index by half a voxel, then scale by the voxel spacing to millimetres.
+  const Eigen::Vector3d voxel = scanner2voxel * scanner;
+  return Eigen::Vector3d(
+      (voxel[0] + 0.5) * voxel_size[0], (voxel[1] + 0.5) * voxel_size[1], (voxel[2] + 0.5) * voxel_size[2]);
 }
 
 template <class ValueType> bool TRKWriter<ValueType>::operator()(const Streamline<ValueType> &tck) {
@@ -421,10 +482,9 @@ template <class ValueType> bool TRKWriter<ValueType>::operator()(const Streamlin
   Raw::store_LE<int32_t>(static_cast<int32_t>(npoints), record.data(), 0);
   size_t offset = sizeof(int32_t);
   for (const auto &pos : tck) {
-    const Eigen::Vector3d voxel = scanner2voxel * pos.template cast<double>();
+    const Eigen::Vector3d point_mm = scanner_to_voxel_mm(pos.template cast<double>());
     for (size_t axis = 0; axis != 3; ++axis) {
-      const float mm = static_cast<float>(voxel[axis] * voxel_size[axis]);
-      Raw::store_LE<float>(mm, record.data() + offset);
+      Raw::store_LE<float>(static_cast<float>(point_mm[axis]), record.data() + offset);
       offset += trk_value_bytes;
     }
   }
@@ -444,10 +504,9 @@ template <class ValueType> bool TRKWriter<ValueType>::operator()(const Tractogra
   size_t offset = sizeof(int32_t);
 
   for (size_t v = 0; v != npoints; ++v) {
-    const Eigen::Vector3d voxel = scanner2voxel * tck[v].template cast<double>();
+    const Eigen::Vector3d point_mm = scanner_to_voxel_mm(tck[v].template cast<double>());
     for (size_t axis = 0; axis != 3; ++axis) {
-      const float mm = static_cast<float>(voxel[axis] * voxel_size[axis]);
-      Raw::store_LE<float>(mm, record.data() + offset);
+      Raw::store_LE<float>(static_cast<float>(point_mm[axis]), record.data() + offset);
       offset += trk_value_bytes;
     }
     // Per-vertex scalars: each dpv field's M columns for vertex v, in field order.
@@ -518,7 +577,10 @@ template <class ValueType> void TRKWriter<ValueType>::finalise() {
     for (size_t col = 0; col != 4; ++col)
       header.vox_to_ras[row][col] = vox_to_ras[row][col];
 
-  std::memcpy(header.voxel_order.data(), "LPS", 3);
+  // MRtrix writes its vertices in RAS order (the vox_to_ras affine is applied without
+  //   any axis flip), so the voxel_order is recorded honestly as RAS; a reader that
+  //   honours voxel_order then reads the file back without mirroring any axis.
+  std::memcpy(header.voxel_order.data(), "RAS", 3);
   header.n_count = static_cast<int32_t>(num_streamlines);
   header.version = 2;
   header.hdr_size = TRKUtils::header_size_sentinel;
@@ -570,34 +632,28 @@ namespace Formats {
 
 bool TRK::handles(const std::filesystem::path &path) const { return path.extension() == ".trk"; }
 
-std::unique_ptr<ReaderInterface<float>> TRK::read_float(const std::filesystem::path &path,
-                                                        Properties &properties,
-                                                        FieldRegistry &registry,
-                                                        const OptionalHeader &grid) const {
-  return std::make_unique<TRKReader<float>>(path, properties, registry, grid);
+std::unique_ptr<ReaderInterface<float>>
+TRK::read_float(const std::filesystem::path &path, Properties &properties, FieldRegistry &registry) const {
+  return std::make_unique<TRKReader<float>>(path, properties, registry);
 }
 
-std::unique_ptr<ReaderInterface<double>> TRK::read_double(const std::filesystem::path &path,
-                                                          Properties &properties,
-                                                          FieldRegistry &registry,
-                                                          const OptionalHeader &grid) const {
-  return std::make_unique<TRKReader<double>>(path, properties, registry, grid);
+std::unique_ptr<ReaderInterface<double>>
+TRK::read_double(const std::filesystem::path &path, Properties &properties, FieldRegistry &registry) const {
+  return std::make_unique<TRKReader<double>>(path, properties, registry);
 }
 
 std::unique_ptr<WriterInterface<float>> TRK::create_float(const std::filesystem::path &path,
                                                           const Properties &properties,
                                                           const FieldRegistry &registry,
-                                                          const OptionalHeader &grid,
                                                           const WriteOptions &options) const {
-  return std::make_unique<TRKWriter<float>>(path, properties, registry, grid);
+  return std::make_unique<TRKWriter<float>>(path, properties, registry);
 }
 
 std::unique_ptr<WriterInterface<double>> TRK::create_double(const std::filesystem::path &path,
                                                             const Properties &properties,
                                                             const FieldRegistry &registry,
-                                                            const OptionalHeader &grid,
                                                             const WriteOptions &options) const {
-  return std::make_unique<TRKWriter<double>>(path, properties, registry, grid);
+  return std::make_unique<TRKWriter<double>>(path, properties, registry);
 }
 
 } // namespace Formats

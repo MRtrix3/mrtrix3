@@ -18,7 +18,6 @@
 
 #include <cstddef>
 #include <filesystem>
-#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -32,23 +31,7 @@
 #include "dwi/tractography/streamline.h"
 #include "dwi/tractography/tractogram_item.h"
 
-namespace MR {
-class Header;
-}
-
 namespace MR::DWI::Tractography {
-
-//! \brief An optional grid reference supplied to a format handler.
-/*! Some tractography formats encode vertex positions relative to an image grid
- * rather than in MRtrix scanner-space (e.g. the DSI Studio ".tt" format stores
- * 1/32-voxel integer coordinates; ".trk" and TRX likewise carry grid metadata).
- * Handlers for such formats require the voxel↔scanner transform of an
- * MR::Header to convert between the on-disk and the in-memory coordinate
- * systems. The reference is optional: the in-house ".tck"/".vtk"/".vtx"
- * handlers store scanner-space coordinates directly and require no grid, so
- * they leave it unset (std::nullopt). The reference wrapper keeps the Header
- * non-owned by the handler; the caller retains ownership for the I/O lifetime. */
-using OptionalHeader = std::optional<std::reference_wrapper<const Header>>;
 
 //! \brief The contract for streaming reads of tractography data.
 /*! A reader yields one item per invocation of operator(), returning false once
@@ -322,64 +305,54 @@ public:
    * field descriptors the format carries (§2.5): a vertices-only format leaves
    * it empty, while a sidecar-carrying format (the pipe; later TRX) registers a
    * descriptor per field so the per-item dps/dpv payloads can be addressed by
-   * ordinal. \a grid is the optional image-grid reference (§ OptionalHeader):
-   * handlers for grid-relative formats use its voxel↔scanner transform;
-   * scanner-space handlers ignore it. */
+   * ordinal. Every format reconstructs MRtrix scanner-space coordinates from its
+   * own embedded grid metadata (".trk"/TRX affine, ".tt" voxel spacing) or stores
+   * scanner-space directly, so no external grid reference is required. */
   template <class ValueType>
-  std::unique_ptr<ReaderInterface<ValueType>> read(const std::filesystem::path &path,
-                                                   Properties &properties,
-                                                   FieldRegistry &registry,
-                                                   const OptionalHeader &grid = std::nullopt) const {
+  std::unique_ptr<ReaderInterface<ValueType>>
+  read(const std::filesystem::path &path, Properties &properties, FieldRegistry &registry) const {
     static_assert(std::is_same<ValueType, float>::value || std::is_same<ValueType, double>::value,
                   "tractography I/O is supported in float or double precision only");
     if constexpr (std::is_same<ValueType, float>::value)
-      return read_float(path, properties, registry, grid);
+      return read_float(path, properties, registry);
     else
-      return read_double(path, properties, registry, grid);
+      return read_double(path, properties, registry);
   }
 
   //! \brief create \a path for streaming writes in the requested precision.
   /*! \a registry declares the sidecar field set the output is to carry (§2.5/
    * §2.7): a sidecar-aware format (the pipe; later TRX) serialises it so a
    * receiver can reconstruct the field ordinals, whereas a vertices-only format
-   * ignores it. \a grid is the optional image-grid reference (§ OptionalHeader);
-   * see read(). */
+   * ignores it. */
   template <class ValueType>
   std::unique_ptr<WriterInterface<ValueType>> create(const std::filesystem::path &path,
                                                      const Properties &properties,
                                                      const FieldRegistry &registry,
-                                                     const OptionalHeader &grid = std::nullopt,
                                                      const WriteOptions &options = {}) const {
     static_assert(std::is_same<ValueType, float>::value || std::is_same<ValueType, double>::value,
                   "tractography I/O is supported in float or double precision only");
     if constexpr (std::is_same<ValueType, float>::value)
-      return create_float(path, properties, registry, grid, options);
+      return create_float(path, properties, registry, options);
     else
-      return create_double(path, properties, registry, grid, options);
+      return create_double(path, properties, registry, options);
   }
 
 protected:
   //! \brief manufacture a single-precision streaming reader for \a path.
-  virtual std::unique_ptr<ReaderInterface<float>> read_float(const std::filesystem::path &path,
-                                                             Properties &properties,
-                                                             FieldRegistry &registry,
-                                                             const OptionalHeader &grid) const = 0;
+  virtual std::unique_ptr<ReaderInterface<float>>
+  read_float(const std::filesystem::path &path, Properties &properties, FieldRegistry &registry) const = 0;
   //! \brief manufacture a double-precision streaming reader for \a path.
-  virtual std::unique_ptr<ReaderInterface<double>> read_double(const std::filesystem::path &path,
-                                                               Properties &properties,
-                                                               FieldRegistry &registry,
-                                                               const OptionalHeader &grid) const = 0;
+  virtual std::unique_ptr<ReaderInterface<double>>
+  read_double(const std::filesystem::path &path, Properties &properties, FieldRegistry &registry) const = 0;
   //! \brief manufacture a single-precision streaming writer for \a path.
   virtual std::unique_ptr<WriterInterface<float>> create_float(const std::filesystem::path &path,
                                                                const Properties &properties,
                                                                const FieldRegistry &registry,
-                                                               const OptionalHeader &grid,
                                                                const WriteOptions &options) const = 0;
   //! \brief manufacture a double-precision streaming writer for \a path.
   virtual std::unique_ptr<WriterInterface<double>> create_double(const std::filesystem::path &path,
                                                                  const Properties &properties,
                                                                  const FieldRegistry &registry,
-                                                                 const OptionalHeader &grid,
                                                                  const WriteOptions &options) const = 0;
 };
 

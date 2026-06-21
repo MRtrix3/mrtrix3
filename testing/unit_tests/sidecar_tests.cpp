@@ -583,7 +583,10 @@ TEST_F(SidecarIO, QualifiedImportNotYetImplemented) {
 // ---------------------------------------------------------------------------
 
 // Step 6: export processed per-streamline data to a numerical text file; the
-//   exporter stores rows by index and writes on finalise.
+//   exporter stores values by index and writes on finalise. A scalar (M==1) field
+//   is written as a vector (its orientation following the file type, as save_vector
+//   does), matching the standalone per-streamline sidecar convention, so it is read
+//   back orientation-agnostically.
 TEST_F(SidecarIO, ExportCsvPerStreamline) {
   const std::filesystem::path path = dir / "out.csv";
   {
@@ -600,10 +603,10 @@ TEST_F(SidecarIO, ExportCsvPerStreamline) {
     }
     exporter->finalise();
   }
-  const Eigen::MatrixXf m = MR::File::Matrix::load_matrix<float>(path);
-  ASSERT_EQ(m.rows(), 3);
-  EXPECT_FLOAT_EQ(m(0, 0), 10.0F);
-  EXPECT_FLOAT_EQ(m(2, 0), 12.0F);
+  const Eigen::VectorXf v = MR::File::Matrix::load_vector<float>(path);
+  ASSERT_EQ(v.size(), 3);
+  EXPECT_FLOAT_EQ(v(0), 10.0F);
+  EXPECT_FLOAT_EQ(v(2), 12.0F);
 }
 
 // Step 6: export processed per-streamline data to a .npy file; round-trips.

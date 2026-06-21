@@ -142,7 +142,6 @@ Tractography::Tractogram<float> WriterExemplars::make_writer(const std::filesyst
                                                  properties,
                                                  embed ? embed_registry : Tractography::FieldRegistry(),
                                                  Tractography::AccessRequest::Streaming,
-                                                 std::nullopt,
                                                  Formats::WriteOptions{std::nullopt});
 }
 
@@ -239,7 +238,6 @@ Tractography::Tractogram<float> WriterExtraction::make_writer(const std::filesys
                                                  properties,
                                                  embed ? embed_registry : Tractography::FieldRegistry(),
                                                  Tractography::AccessRequest::Streaming,
-                                                 std::nullopt,
                                                  Formats::WriteOptions{size_t(0)});
 }
 

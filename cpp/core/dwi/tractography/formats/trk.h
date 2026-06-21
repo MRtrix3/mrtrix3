@@ -101,19 +101,15 @@ namespace MR::DWI::Tractography {
  * Coordinates are stored in millimetres measured in the voxel space of the grid
  * the header describes (corner-referenced). They are converted to MRtrix
  * scanner-space RAS by dividing out the voxel spacing to obtain a fractional
- * voxel index, then applying the voxel→scanner transform: the supplied
- * OptionalHeader's transform when a reference grid is available, else an
- * axis-aligned default derived from the ".trk" \c vox_to_ras / \c voxel_size so
- * that a ".trk" → ".trk" round-trip is exact.
+ * voxel index, then applying the voxel→scanner transform derived from the ".trk"
+ * \c vox_to_ras / \c voxel_size (the format embeds its own affine), so that a
+ * ".trk" → ".trk" round-trip is exact.
  *
  * The implementation is explicitly instantiated for float and double in
  * formats/trk.cpp. */
 template <class ValueType = float> class TRKReader : public ReaderInterface<ValueType> {
 public:
-  TRKReader(const std::filesystem::path &path,
-            Properties &properties,
-            FieldRegistry &registry,
-            const OptionalHeader &grid);
+  TRKReader(const std::filesystem::path &path, Properties &properties, FieldRegistry &registry);
   ~TRKReader() override;
 
   bool operator()(Streamline<ValueType> &tck) override;
@@ -144,6 +140,18 @@ private:
   std::array<double, 3> voxel_size;
   //! voxel→scanner transform (reference grid or ".trk"-derived default)
   transform_type voxel2scanner;
+  //! true when a voxel→RAS affine is in effect (reference grid, or the file's own
+  //!   recorded affine): the ".trk" coordinates reference voxel [0,0,0]'s corner, so
+  //!   a half-voxel shift is applied to reach the centre-referenced index that the
+  //!   transform maps. When false the vertices are already realspace (taken verbatim).
+  bool apply_corner_shift;
+  //! grid dimensions (in the file's storage voxel order); used to mirror a flipped
+  //!   axis when reorienting the stored data to RAS
+  std::array<int64_t, 3> dim;
+  //! per-axis flip implied by the header's \c voxel_order: a stored axis pointing the
+  //!   opposite way to RAS (L vs R, P vs A, I vs S) is mirrored about the grid extent
+  //!   so that, with the vox_to_ras affine, the streamlines resolve to RAS scanner space
+  std::array<bool, 3> axis_flip;
 
   size_t current_index;
 
@@ -176,10 +184,7 @@ private:
  * formats/trk.cpp. */
 template <class ValueType = float> class TRKWriter : public WriterInterface<ValueType> {
 public:
-  TRKWriter(const std::filesystem::path &path,
-            const Properties &properties,
-            const FieldRegistry &registry,
-            const OptionalHeader &grid);
+  TRKWriter(const std::filesystem::path &path, const Properties &properties, const FieldRegistry &registry);
   ~TRKWriter() override;
 
   bool operator()(const Streamline<ValueType> &tck) override;
@@ -203,6 +208,13 @@ private:
   std::array<std::array<float, 4>, 4> vox_to_ras;
   //! grid dimensions written into the header
   std::array<int16_t, 3> dim;
+  //! true when a reference grid was supplied: a voxel→RAS affine is recorded and the
+  //!   centre-referenced index is shifted by half a voxel to the corner-referenced
+  //!   ".trk" convention. When false the vertices are written verbatim (realspace).
+  bool apply_corner_shift;
+
+  //! map an MRtrix scanner-space position to ".trk" voxel-millimetre coordinates
+  Eigen::Vector3d scanner_to_voxel_mm(const Eigen::Vector3d &scanner) const;
 
   //! dpv fields, in registry order; their values become per-vertex scalars
   std::vector<SidecarOutput> scalar_fields;
@@ -236,12 +248,10 @@ namespace Formats {
 /*! The ".trk" format is a single binary file: a fixed 1000-byte header
  * (geometry, the voxel→RAS affine, and the names of any per-vertex scalars /
  * per-streamline properties) followed by variable-length streamline records.
- * Coordinates are stored in voxel-millimetres, so an external reference grid
- * (the Stage 6 OptionalHeader) is used to place streamlines in MRtrix
- * scanner-space; when none is supplied a default grid derived from the file's
- * own \c vox_to_ras / \c voxel_size is used so a ".trk" → ".trk" round-trip is
- * exact. Per-vertex scalars map to dpv and per-streamline properties to dps,
- * carried as native-float sidecar fields (D7).
+ * Coordinates are stored in voxel-millimetres; the grid derived from the file's
+ * own \c vox_to_ras / \c voxel_size places streamlines in MRtrix scanner-space, so
+ * a ".trk" → ".trk" round-trip is exact. Per-vertex scalars map to dpv and
+ * per-streamline properties to dps, carried as native-float sidecar fields (D7).
  *
  * Capabilities: read+write; sequential streaming access only — the streamline
  * records are variable-length, so the dataset cannot be randomly indexed without
@@ -263,23 +273,17 @@ public:
   bool handles(const std::filesystem::path &path) const override;
 
 protected:
-  std::unique_ptr<ReaderInterface<float>> read_float(const std::filesystem::path &path,
-                                                     Properties &properties,
-                                                     FieldRegistry &registry,
-                                                     const OptionalHeader &grid) const override;
-  std::unique_ptr<ReaderInterface<double>> read_double(const std::filesystem::path &path,
-                                                       Properties &properties,
-                                                       FieldRegistry &registry,
-                                                       const OptionalHeader &grid) const override;
+  std::unique_ptr<ReaderInterface<float>>
+  read_float(const std::filesystem::path &path, Properties &properties, FieldRegistry &registry) const override;
+  std::unique_ptr<ReaderInterface<double>>
+  read_double(const std::filesystem::path &path, Properties &properties, FieldRegistry &registry) const override;
   std::unique_ptr<WriterInterface<float>> create_float(const std::filesystem::path &path,
                                                        const Properties &properties,
                                                        const FieldRegistry &registry,
-                                                       const OptionalHeader &grid,
                                                        const WriteOptions &options) const override;
   std::unique_ptr<WriterInterface<double>> create_double(const std::filesystem::path &path,
                                                          const Properties &properties,
                                                          const FieldRegistry &registry,
-                                                         const OptionalHeader &grid,
                                                          const WriteOptions &options) const override;
 };
 

@@ -1255,24 +1255,19 @@ bool TRXCompressedArchive::handles(const std::filesystem::path &path) const {
   return false;
 }
 
-std::unique_ptr<ReaderInterface<float>> TRXBase::read_float(const std::filesystem::path &path,
-                                                            Properties &properties,
-                                                            FieldRegistry &registry,
-                                                            const OptionalHeader &) const {
+std::unique_ptr<ReaderInterface<float>>
+TRXBase::read_float(const std::filesystem::path &path, Properties &properties, FieldRegistry &registry) const {
   return std::make_unique<TRXReader<float>>(path, properties, registry);
 }
 
-std::unique_ptr<ReaderInterface<double>> TRXBase::read_double(const std::filesystem::path &path,
-                                                              Properties &properties,
-                                                              FieldRegistry &registry,
-                                                              const OptionalHeader &) const {
+std::unique_ptr<ReaderInterface<double>>
+TRXBase::read_double(const std::filesystem::path &path, Properties &properties, FieldRegistry &registry) const {
   return std::make_unique<TRXReader<double>>(path, properties, registry);
 }
 
 std::unique_ptr<WriterInterface<float>> TRXBase::create_float(const std::filesystem::path &path,
                                                               const Properties &properties,
                                                               const FieldRegistry &registry,
-                                                              const OptionalHeader &,
                                                               const WriteOptions &) const {
   return std::make_unique<TRXWriter<float>>(path, properties, registry, fresh_compression());
 }
@@ -1280,7 +1275,6 @@ std::unique_ptr<WriterInterface<float>> TRXBase::create_float(const std::filesys
 std::unique_ptr<WriterInterface<double>> TRXBase::create_double(const std::filesystem::path &path,
                                                                 const Properties &properties,
                                                                 const FieldRegistry &registry,
-                                                                const OptionalHeader &,
                                                                 const WriteOptions &) const {
   return std::make_unique<TRXWriter<double>>(path, properties, registry, fresh_compression());
 }

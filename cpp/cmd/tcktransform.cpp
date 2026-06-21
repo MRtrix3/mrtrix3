@@ -27,7 +27,6 @@
 
 #include <atomic>
 #include <filesystem>
-#include <functional>
 #include <limits>
 #include <memory>
 #include <optional>
@@ -221,11 +220,12 @@ void run() {
     input.register_input_sidecar(tsf_in->string(), properties);
 
   // Declare the output field set from the (possibly sidecar-augmented) input
-  //   registry, and reference the warp field's grid for grid-relative formats.
-  //   plan_weight_output resolves the streamline-weight destination.
+  //   registry. plan_weight_output resolves the streamline-weight destination.
+  //   The warped vertices are emitted in the warp-target realspace; an output
+  //   format that records a grid (".trk"/".tt") leaves it unrecorded
+  //   (vox_to_ras[3][3] = 0), as for any realspace-only conversion.
   const WeightOutput weight_output = plan_weight_output(input.fields(), weight_input, argument[2], properties);
-  auto output = Tractogram<value_type>::create(
-      argument[2], properties, weight_output.registry, AccessRequest::Streaming, OptionalHeader(std::cref(H_warp)));
+  auto output = Tractogram<value_type>::create(argument[2], properties, weight_output.registry);
   apply_weight_output(output, weight_output);
   if (tsf_out.has_value())
     output.register_output_sidecar(tsf_out->string(), properties);

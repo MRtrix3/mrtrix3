@@ -1,14 +1,9 @@
 #!/bin/bash
-# Reference-data interop (VTK_DATA_DIR, rordenlab TractographyFormat): the four
-#   "example.*" files are meant to be equivalent representations of one tractogram.
-#   This test reads the TrackVis "example.trk" and compares the recovered geometry
-#   to the canonical "example.tck".
-#
-# RUN-AND-FAIL (TODO): it currently fails. MRtrix's ".trk" reader maps voxel-mm to
-#   scanner space WITHOUT the half-voxel corner->centre shift that nibabel (which
-#   produced these files) applies, so every vertex is offset by ~0.5 voxel
-#   (measured symmetric Hausdorff ~0.5-1 mm here) — far above the 1e-4 mm budget.
-#   Resolving it requires the ".trk" reader to honour the corner-origin convention.
+# Reference-data interop (VTX_DATA_DIR, rordenlab TractographyFormat): the four
+#   "example.*" files are equivalent representations of one tractogram. Read the
+#   TrackVis "example.trk" and confirm the recovered geometry matches the canonical
+#   "example.tck". The ".trk" reader undoes the recorded vox_to_ras, applying the
+#   corner-origin (half-voxel) shift it implies, so the match is essentially exact.
 tckconvert example.trk tmp_trk2tck.tck -force -quiet
 if cmp -s tmp_trk2tck.tck example.tck; then
   exit 0

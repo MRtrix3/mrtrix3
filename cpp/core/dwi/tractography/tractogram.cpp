@@ -48,10 +48,8 @@ bool requires_ram_wrapper(const Formats::Base *handler, const AccessRequest acce
 } // namespace
 
 template <class ValueType>
-Tractogram<ValueType> Tractogram<ValueType>::open(const std::filesystem::path &path,
-                                                  Properties &properties,
-                                                  AccessRequest access,
-                                                  const OptionalHeader &grid) {
+Tractogram<ValueType>
+Tractogram<ValueType>::open(const std::filesystem::path &path, Properties &properties, AccessRequest access) {
   const Formats::Base *handler = select_handler(path);
   if (!handler->can_read())
     throw Exception("tractography format \"" + handler->description + "\" does not support reading (file \"" +
@@ -65,7 +63,7 @@ Tractogram<ValueType> Tractogram<ValueType>::open(const std::filesystem::path &p
     Tractogram tractogram(wrapper.get());
     tractogram.store = store;
     tractogram.ram_wrapper = wrapper;
-    tractogram.reader = wrapper->template read<ValueType>(path, properties, *tractogram.registry, grid);
+    tractogram.reader = wrapper->template read<ValueType>(path, properties, *tractogram.registry);
     tractogram.reader->read_grouping(tractogram.grouping_);
     return tractogram;
   }
@@ -74,7 +72,7 @@ Tractogram<ValueType> Tractogram<ValueType>::open(const std::filesystem::path &p
     Tractogram(handler).require_random_access("indexed access to the data");
 
   Tractogram tractogram(handler);
-  tractogram.reader = handler->template read<ValueType>(path, properties, *tractogram.registry, grid);
+  tractogram.reader = handler->template read<ValueType>(path, properties, *tractogram.registry);
   // Reconcile any dataset-level grouping at the Tractogram/Grouping boundary
   //   (§2.7): the format fills the Grouping once, here, not per item.
   tractogram.reader->read_grouping(tractogram.grouping_);
@@ -86,7 +84,6 @@ Tractogram<ValueType> Tractogram<ValueType>::create(const std::filesystem::path 
                                                     const Properties &properties,
                                                     const FieldRegistry &registry,
                                                     AccessRequest access,
-                                                    const OptionalHeader &grid,
                                                     const Formats::WriteOptions &options) {
   const Formats::Base *handler = select_handler(path);
   if (!handler->can_write())
@@ -102,7 +99,7 @@ Tractogram<ValueType> Tractogram<ValueType>::create(const std::filesystem::path 
     *tractogram.registry = registry;
     tractogram.store = store;
     tractogram.ram_wrapper = wrapper;
-    tractogram.writer = wrapper->template create<ValueType>(path, properties, *tractogram.registry, grid, options);
+    tractogram.writer = wrapper->template create<ValueType>(path, properties, *tractogram.registry, options);
     return tractogram;
   }
 
@@ -111,7 +108,7 @@ Tractogram<ValueType> Tractogram<ValueType>::create(const std::filesystem::path 
 
   Tractogram tractogram(handler);
   *tractogram.registry = registry;
-  tractogram.writer = handler->template create<ValueType>(path, properties, *tractogram.registry, grid, options);
+  tractogram.writer = handler->template create<ValueType>(path, properties, *tractogram.registry, options);
   return tractogram;
 }
 

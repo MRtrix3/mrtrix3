@@ -262,24 +262,19 @@ std::optional<TCKBinaryLayout> TCK::binary_layout(const std::filesystem::path &p
   return TCKBinaryLayout{std::move(data_path), offset, dtype};
 }
 
-std::unique_ptr<ReaderInterface<float>> TCK::read_float(const std::filesystem::path &path,
-                                                        Properties &properties,
-                                                        FieldRegistry &,
-                                                        const OptionalHeader &) const {
+std::unique_ptr<ReaderInterface<float>>
+TCK::read_float(const std::filesystem::path &path, Properties &properties, FieldRegistry &) const {
   return std::make_unique<TCKReader<float>>(path, properties);
 }
 
-std::unique_ptr<ReaderInterface<double>> TCK::read_double(const std::filesystem::path &path,
-                                                          Properties &properties,
-                                                          FieldRegistry &,
-                                                          const OptionalHeader &) const {
+std::unique_ptr<ReaderInterface<double>>
+TCK::read_double(const std::filesystem::path &path, Properties &properties, FieldRegistry &) const {
   return std::make_unique<TCKReader<double>>(path, properties);
 }
 
 std::unique_ptr<WriterInterface<float>> TCK::create_float(const std::filesystem::path &path,
                                                           const Properties &properties,
                                                           const FieldRegistry &,
-                                                          const OptionalHeader &,
                                                           const WriteOptions &options) const {
   return std::make_unique<TCKWriter<float>>(path, properties, options.buffer_capacity);
 }
@@ -287,7 +282,6 @@ std::unique_ptr<WriterInterface<float>> TCK::create_float(const std::filesystem:
 std::unique_ptr<WriterInterface<double>> TCK::create_double(const std::filesystem::path &path,
                                                             const Properties &properties,
                                                             const FieldRegistry &,
-                                                            const OptionalHeader &,
                                                             const WriteOptions &options) const {
   return std::make_unique<TCKWriter<double>>(path, properties, options.buffer_capacity);
 }

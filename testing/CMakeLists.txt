@@ -91,22 +91,22 @@ ExternalProject_Add(TRKReferenceData
     INSTALL_COMMAND ""
 )
 
-# .vtk / .vtx (and companion .tck / .trk) reference data from rordenlab; only the
+# .vtx / .vtk (and companion .tck / .trk) reference data from rordenlab; only the
 # subset of files relevant to MRtrix3's format tests is fetched.
-set(vtk_reference_base_url
+set(vtx_reference_base_url
     "https://raw.githubusercontent.com/rordenlab/TractographyFormat/master/DATA"
 )
-string(JOIN "|" vtk_reference_files
+string(JOIN "|" vtx_reference_files
     example.tck
     example.trk
     example.vtk
     example.vtx
 )
-ExternalProject_Add(VTKReferenceData
-    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/vtk_data
+ExternalProject_Add(VTXReferenceData
+    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/vtx_data
     DOWNLOAD_COMMAND ${CMAKE_COMMAND}
-        -D BASE_URL=${vtk_reference_base_url}
-        -D FILES=${vtk_reference_files}
+        -D BASE_URL=${vtx_reference_base_url}
+        -D FILES=${vtx_reference_files}
         -D DEST_DIR=<SOURCE_DIR>
         -P ${PROJECT_SOURCE_DIR}/cmake/DownloadFiles.cmake
     CONFIGURE_COMMAND ""
@@ -124,8 +124,8 @@ set(TRK_DATA_DIR
     ${CMAKE_CURRENT_BINARY_DIR}/trk_data/src/TRKReferenceData
 )
 
-set(VTK_DATA_DIR
-    ${CMAKE_CURRENT_BINARY_DIR}/vtk_data/src/VTKReferenceData
+set(VTX_DATA_DIR
+    ${CMAKE_CURRENT_BINARY_DIR}/vtx_data/src/VTXReferenceData
 )
 
 add_subdirectory(binaries)

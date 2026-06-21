@@ -1,22 +1,17 @@
 #!/bin/bash
 # Reference-data interop (TRK_DATA_DIR, nibabel): "standard.trk" / "standard.tck"
 #   are nibabel's matched exemplars on an anisotropic grid (voxel size 1x3x2,
-#   vox_to_ras = diag(1,3,2)). Both conversion directions are exercised.
-#
-# RUN-AND-FAIL (TODO): the half-voxel corner->centre convention nibabel applies on
-#   ".trk" <-> RASMM is absent from MRtrix's ".trk" path, so the offset is now
-#   scaled by the anisotropic voxel size (~0.5/1.5/1.0 mm; measured symmetric
-#   Hausdorff up to ~2 mm) — beyond the 1e-4 mm budget. The ".tck" -> ".trk" write
-#   also drops the grid (vox_to_ras zeroed, INFO emitted), so a faithful
-#   round-trip additionally needs the affine preserved via a property.
+#   vox_to_ras = diag(1,3,2)). Both conversion directions are exercised; the
+#   half-voxel corner shift is scaled per-axis by the anisotropic voxel size.
 
-# Direction 1: standard.trk -> tck, compare to standard.tck.
+# Direction 1: standard.trk -> tck (recorded affine undone with the half-voxel shift).
 tckconvert standard.trk tmp_trk2tck.tck -force -quiet
 if ! cmp -s tmp_trk2tck.tck standard.tck; then
   testing_diff_tck tmp_trk2tck.tck standard.tck -distance 1e-4
 fi
 
-# Direction 2: standard.tck -> trk, compare to standard.trk (bridged through ".tck").
+# Direction 2: standard.tck -> trk, compared to standard.trk (bridged through ".tck";
+#   the grid-less write records no affine, so the bytes differ but the geometry agrees).
 tckconvert standard.tck tmp_tck2trk.trk -force -quiet
 if ! cmp -s tmp_tck2trk.trk standard.trk; then
   tckconvert tmp_tck2trk.trk tmp_mine_dec.tck -force -quiet

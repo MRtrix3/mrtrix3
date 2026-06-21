@@ -25,6 +25,8 @@ The program currently supports MRtrix .tck files (input/output), ascii text file
 
 The QFib format (Mercier et al.) stores each streamline as its first two vertices plus a sequence of quantized unit tangents. It is lossy, requires the input to be of constant step size (resample beforehand with "tckresample -step_size" otherwise), and stores geometry only: per-streamline weights and dps/dpv sidecar data are discarded.
 
+Some tractography file formats (the TrackVis ".trk" format and the TRX format) can embed per-streamline (dps) and per-vertex (dpv) sidecar data within the tractogram dataset itself. The -extract, -insert, -rename, -remove and -convert options manipulate this embedded data during conversion. Each takes a leading "dps" or "dpv" argument to disambiguate the two, since a per-streamline and a per-vertex field may legitimately share the same name. Per-streamline data is exchanged with standalone numerical files (text, ".csv" or ".npy"); per-vertex data with track scalar (".tsf") files. When a ".tsf" is produced from extracted per-vertex data, a matching "timestamp" key-value is recorded on both it and the output tractogram so the pair passes the track-scalar validation checks. Fields are always referenced by string name, never by index.
+
 Example usages
 --------------
 
@@ -78,6 +80,19 @@ Options specific to the QFib writer
 -  **-qfib_bits depth** the per-direction quantization bit depth for lossy .qfib output, either 8 or 16 (default: 16)
 
 -  **-qfib_max_angle angle** the maximum streamline deviation angle in degrees for lossy .qfib output; defaults to the max_angle property of the input, else 90
+
+Options for manipulating embedded sidecar data
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+-  **-extract type name file** *(multiple uses permitted)* extract an embedded sidecar field, referenced by name, to a standalone file
+
+-  **-insert type name file** *(multiple uses permitted)* embed a new sidecar field, read from a standalone file, into the output
+
+-  **-rename type old new** *(multiple uses permitted)* rename an embedded sidecar field
+
+-  **-remove type name** *(multiple uses permitted)* remove an embedded sidecar field
+
+-  **-convert type name datatype** *(multiple uses permitted)* change the on-disk datatype of an embedded sidecar field
 
 Standard options
 ^^^^^^^^^^^^^^^^

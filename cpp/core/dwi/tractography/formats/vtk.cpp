@@ -299,6 +299,22 @@ VTKReader<ValueType>::VTKReader(const std::filesystem::path &path, Properties &p
                       "\"; only SCALARS / COLOR_SCALARS / FIELD are carried as sidecar data");
     }
 
+    // A METADATA block (VTK >= 4.2) annotates the preceding data array with
+    //   informational keys (e.g. "INFORMATION", "COMPONENT_NAMES"); it carries no
+    //   streamline geometry. Per the format it is terminated by a blank line, so
+    //   skip to that blank line and resume the dataset scan. Only this block is
+    //   tolerated; genuinely unsupported geometry still raises below.
+    if (keyword == "METADATA") {
+      std::string meta_line;
+      while (std::getline(in, meta_line)) {
+        std::string probe;
+        std::istringstream(meta_line) >> probe;
+        if (probe.empty())
+          break;
+      }
+      continue;
+    }
+
     // Any other dataset field (VERTICES / POLYGONS / TRIANGLE_STRIPS / etc.) is
     //   not part of a tractogram representation.
     throw Exception("VTK file \"" + path.string() + "\" contains unsupported dataset field \"" + keyword +
@@ -817,24 +833,19 @@ std::optional<VTKBinaryLayout> VTK::binary_layout(const std::filesystem::path &p
       *points_offset, num_points, points_datatype, *lines_offset, num_lines, lines_list_size, lines_int64};
 }
 
-std::unique_ptr<ReaderInterface<float>> VTK::read_float(const std::filesystem::path &path,
-                                                        Properties &properties,
-                                                        FieldRegistry &registry,
-                                                        const OptionalHeader &) const {
+std::unique_ptr<ReaderInterface<float>>
+VTK::read_float(const std::filesystem::path &path, Properties &properties, FieldRegistry &registry) const {
   return std::make_unique<VTKReader<float>>(path, properties, registry);
 }
 
-std::unique_ptr<ReaderInterface<double>> VTK::read_double(const std::filesystem::path &path,
-                                                          Properties &properties,
-                                                          FieldRegistry &registry,
-                                                          const OptionalHeader &) const {
+std::unique_ptr<ReaderInterface<double>>
+VTK::read_double(const std::filesystem::path &path, Properties &properties, FieldRegistry &registry) const {
   return std::make_unique<VTKReader<double>>(path, properties, registry);
 }
 
 std::unique_ptr<WriterInterface<float>> VTK::create_float(const std::filesystem::path &path,
                                                           const Properties &properties,
                                                           const FieldRegistry &registry,
-                                                          const OptionalHeader &,
                                                           const WriteOptions &options) const {
   return std::make_unique<VTKWriter<float>>(path, properties, registry);
 }
@@ -842,7 +853,6 @@ std::unique_ptr<WriterInterface<float>> VTK::create_float(const std::filesystem:
 std::unique_ptr<WriterInterface<double>> VTK::create_double(const std::filesystem::path &path,
                                                             const Properties &properties,
                                                             const FieldRegistry &registry,
-                                                            const OptionalHeader &,
                                                             const WriteOptions &options) const {
   return std::make_unique<VTKWriter<double>>(path, properties, registry);
 }

@@ -329,24 +329,19 @@ namespace Formats {
 
 bool ZFIB::handles(const std::filesystem::path &path) const { return path.extension() == ".zfib"; }
 
-std::unique_ptr<ReaderInterface<float>> ZFIB::read_float(const std::filesystem::path &path,
-                                                         Properties &properties,
-                                                         FieldRegistry &,
-                                                         const OptionalHeader &) const {
+std::unique_ptr<ReaderInterface<float>>
+ZFIB::read_float(const std::filesystem::path &path, Properties &properties, FieldRegistry &) const {
   return std::make_unique<ZFIBReader<float>>(path, properties);
 }
 
-std::unique_ptr<ReaderInterface<double>> ZFIB::read_double(const std::filesystem::path &path,
-                                                           Properties &properties,
-                                                           FieldRegistry &,
-                                                           const OptionalHeader &) const {
+std::unique_ptr<ReaderInterface<double>>
+ZFIB::read_double(const std::filesystem::path &path, Properties &properties, FieldRegistry &) const {
   return std::make_unique<ZFIBReader<double>>(path, properties);
 }
 
 std::unique_ptr<WriterInterface<float>> ZFIB::create_float(const std::filesystem::path &path,
                                                            const Properties &properties,
                                                            const FieldRegistry &,
-                                                           const OptionalHeader &,
                                                            const WriteOptions &options) const {
   return std::make_unique<ZFIBWriter<float>>(path, properties);
 }
@@ -354,7 +349,6 @@ std::unique_ptr<WriterInterface<float>> ZFIB::create_float(const std::filesystem
 std::unique_ptr<WriterInterface<double>> ZFIB::create_double(const std::filesystem::path &path,
                                                              const Properties &properties,
                                                              const FieldRegistry &,
-                                                             const OptionalHeader &,
                                                              const WriteOptions &options) const {
   return std::make_unique<ZFIBWriter<double>>(path, properties);
 }

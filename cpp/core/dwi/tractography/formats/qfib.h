@@ -44,8 +44,7 @@ namespace MR::DWI::Tractography {
  * which are read.
  *
  * Coordinates are absolute scanner-space mm (as in ".tck"), so no grid transform
- * is applied and the OptionalHeader is ignored. Explicitly instantiated for float
- * and double in formats/qfib.cpp. */
+ * is applied. Explicitly instantiated for float and double in formats/qfib.cpp. */
 template <class ValueType = float> class QFibReader : public ReaderInterface<ValueType> {
 public:
   QFibReader(const std::filesystem::path &path, Properties &properties);
@@ -131,23 +130,17 @@ public:
   bool handles(const std::filesystem::path &path) const override;
 
 protected:
-  std::unique_ptr<ReaderInterface<float>> read_float(const std::filesystem::path &path,
-                                                     Properties &properties,
-                                                     FieldRegistry &registry,
-                                                     const OptionalHeader &grid) const override;
-  std::unique_ptr<ReaderInterface<double>> read_double(const std::filesystem::path &path,
-                                                       Properties &properties,
-                                                       FieldRegistry &registry,
-                                                       const OptionalHeader &grid) const override;
+  std::unique_ptr<ReaderInterface<float>>
+  read_float(const std::filesystem::path &path, Properties &properties, FieldRegistry &registry) const override;
+  std::unique_ptr<ReaderInterface<double>>
+  read_double(const std::filesystem::path &path, Properties &properties, FieldRegistry &registry) const override;
   std::unique_ptr<WriterInterface<float>> create_float(const std::filesystem::path &path,
                                                        const Properties &properties,
                                                        const FieldRegistry &registry,
-                                                       const OptionalHeader &grid,
                                                        const WriteOptions &options) const override;
   std::unique_ptr<WriterInterface<double>> create_double(const std::filesystem::path &path,
                                                          const Properties &properties,
                                                          const FieldRegistry &registry,
-                                                         const OptionalHeader &grid,
                                                          const WriteOptions &options) const override;
 };
 

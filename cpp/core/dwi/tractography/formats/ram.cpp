@@ -34,10 +34,9 @@ std::unique_ptr<ReaderInterface<ValueType>> load_all(const Base *inner,
                                                      const std::filesystem::path &path,
                                                      Properties &properties,
                                                      FieldRegistry &registry,
-                                                     const OptionalHeader &grid,
                                                      const std::shared_ptr<RAMStore<ValueType>> &store) {
   std::unique_ptr<ReaderInterface<ValueType>> reader =
-      inner->template read<ValueType>(path, properties, store->registry, grid);
+      inner->template read<ValueType>(path, properties, store->registry);
   TractogramItem<ValueType> item;
   while ((*reader)(item))
     store->items.push_back(item);
@@ -51,10 +50,9 @@ std::unique_ptr<ReaderInterface<ValueType>> load_all(const Base *inner,
 template <class ValueType>
 std::unique_ptr<ReaderInterface<float>> RAMWrapper<ValueType>::read_float(const std::filesystem::path &path,
                                                                           Properties &properties,
-                                                                          FieldRegistry &registry,
-                                                                          const OptionalHeader &grid) const {
+                                                                          FieldRegistry &registry) const {
   if constexpr (std::is_same<ValueType, float>::value)
-    return load_all<float>(inner, path, properties, registry, grid, store);
+    return load_all<float>(inner, path, properties, registry, store);
   else
     throw Exception("RAM wrapper precision mismatch (float requested from a double-precision wrapper)");
 }
@@ -62,10 +60,9 @@ std::unique_ptr<ReaderInterface<float>> RAMWrapper<ValueType>::read_float(const 
 template <class ValueType>
 std::unique_ptr<ReaderInterface<double>> RAMWrapper<ValueType>::read_double(const std::filesystem::path &path,
                                                                             Properties &properties,
-                                                                            FieldRegistry &registry,
-                                                                            const OptionalHeader &grid) const {
+                                                                            FieldRegistry &registry) const {
   if constexpr (std::is_same<ValueType, double>::value)
-    return load_all<double>(inner, path, properties, registry, grid, store);
+    return load_all<double>(inner, path, properties, registry, store);
   else
     throw Exception("RAM wrapper precision mismatch (double requested from a single-precision wrapper)");
 }
@@ -74,11 +71,10 @@ template <class ValueType>
 std::unique_ptr<WriterInterface<float>> RAMWrapper<ValueType>::create_float(const std::filesystem::path &path,
                                                                             const Properties &properties,
                                                                             const FieldRegistry &registry,
-                                                                            const OptionalHeader &grid,
                                                                             const WriteOptions &options) const {
   if constexpr (std::is_same<ValueType, float>::value) {
     store->registry = registry;
-    return std::make_unique<RAMWriter<float>>(inner, path, properties, store, grid);
+    return std::make_unique<RAMWriter<float>>(inner, path, properties, store);
   } else {
     throw Exception("RAM wrapper precision mismatch (float requested from a double-precision wrapper)");
   }
@@ -88,11 +84,10 @@ template <class ValueType>
 std::unique_ptr<WriterInterface<double>> RAMWrapper<ValueType>::create_double(const std::filesystem::path &path,
                                                                               const Properties &properties,
                                                                               const FieldRegistry &registry,
-                                                                              const OptionalHeader &grid,
                                                                               const WriteOptions &options) const {
   if constexpr (std::is_same<ValueType, double>::value) {
     store->registry = registry;
-    return std::make_unique<RAMWriter<double>>(inner, path, properties, store, grid);
+    return std::make_unique<RAMWriter<double>>(inner, path, properties, store);
   } else {
     throw Exception("RAM wrapper precision mismatch (double requested from a single-precision wrapper)");
   }
@@ -112,7 +107,7 @@ template <class ValueType> RAMWriter<ValueType>::~RAMWriter() {
   //   resident item and is serialised by the inner writer per the field registry.
   try {
     std::unique_ptr<WriterInterface<ValueType>> writer =
-        inner->template create<ValueType>(path, properties, store->registry, grid);
+        inner->template create<ValueType>(path, properties, store->registry);
     for (const auto &item : store->items)
       (*writer)(item);
   } catch (Exception &e) {

@@ -18,6 +18,7 @@
 
 #include <cassert>
 #include <cstdint>
+#include <type_traits>
 #include <variant>
 
 #include "datatype.h"
@@ -203,6 +204,61 @@ template <class Functor> decltype(auto) dispatch_sidecar_datatype(const DataType
   default:
     throw Exception("unsupported sidecar element datatype \"" + dtype.specifier() + "\"");
   }
+}
+
+namespace detail {
+
+//! \brief cast one sidecar element to the destination type \c T (via double).
+/*! Routes every source element through \c default_type so any pair of supported
+ * element types is convertible; the half case is constructed from float since
+ * Eigen::half lacks a direct double constructor. */
+template <typename T> T cast_sidecar_element(const default_type value) {
+  if constexpr (std::is_same<T, Eigen::half>::value)
+    return Eigen::half(static_cast<float>(value));
+  else
+    return static_cast<T>(value);
+}
+
+//! \brief functor building a DPSValue of element type \c T by casting \a src (§2.2).
+struct ConvertDPSFunctor {
+  const DPSValue &src;
+  template <typename T> DPSValue operator()() const {
+    return MR::match_v(src, [](const auto &row) -> DPSValue {
+      ScalarOrVector<T> out(row.cols());
+      for (Eigen::Index c = 0; c != row.cols(); ++c)
+        out(0, c) = cast_sidecar_element<T>(static_cast<default_type>(row(0, c)));
+      return DPSValue(std::move(out));
+    });
+  }
+};
+
+//! \brief functor building a DPVValue of element type \c T by casting \a src (§2.2).
+struct ConvertDPVFunctor {
+  const DPVValue &src;
+  template <typename T> DPVValue operator()() const {
+    return MR::match_v(src, [](const auto &matrix) -> DPVValue {
+      VectorOrMatrix<T> out(matrix.rows(), matrix.cols());
+      for (Eigen::Index r = 0; r != matrix.rows(); ++r)
+        for (Eigen::Index c = 0; c != matrix.cols(); ++c)
+          out(r, c) = cast_sidecar_element<T>(static_cast<default_type>(matrix(r, c)));
+      return DPVValue(std::move(out));
+    });
+  }
+};
+
+} // namespace detail
+
+//! \brief A copy of \a value re-encoded to the sidecar element type of \a target (§2.2/D7).
+/*! The variant's element type is changed to match \a target (and every element
+ * cast accordingly), so the value's in-memory element type stays in lockstep with
+ * a field descriptor whose datatype was changed — the writers serialise the
+ * variant element type at the descriptor's byte width, so the two must agree. */
+inline DPSValue convert_dps_value(const DPSValue &value, const DataType target) {
+  return dispatch_sidecar_datatype(target, detail::ConvertDPSFunctor{value});
+}
+//! \brief A copy of \a value re-encoded to the sidecar element type of \a target (§2.2/D7).
+inline DPVValue convert_dpv_value(const DPVValue &value, const DataType target) {
+  return dispatch_sidecar_datatype(target, detail::ConvertDPVFunctor{value});
 }
 
 } // namespace MR::DWI::Tractography

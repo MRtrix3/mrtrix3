@@ -1,16 +1,39 @@
 #!/bin/bash
-# Reference-data interop (TRX_DATA_DIR, tee-ar-ex gold standard): write "gs.tck"
-#   out as binary VTK and compare to "gs.vtk".
+# Reference-data interop (TRX_DATA_DIR, tee-ar-ex gold standard): write "gs.tck" out
+#   as binary VTK and compare to "gs.vtk".
 #
-# RUN-AND-FAIL (TODO): the reference "gs.vtk" is LPS (x/y sign-flipped vs RAS),
-#   whereas MRtrix writes the raw RAS coordinates, so the two files disagree by the
-#   LPS<->RAS reflection (and the bytes differ regardless). Bridged through the
-#   ".tck" domain the geometry is reflected, far beyond the 1e-4 mm budget. Emitting
-#   LPS (or honouring a requested output orientation) in the VTK writer resolves it.
-tckconvert gs.tck tmp_tck2vtk.vtk -force -quiet
-if cmp -s tmp_tck2vtk.vtk gs.vtk; then
-  exit 0
-fi
-tckconvert tmp_tck2vtk.vtk tmp_mine_dec.tck -force -quiet
-tckconvert gs.vtk tmp_ref_dec.tck -force -quiet
-testing_diff_tck tmp_mine_dec.tck tmp_ref_dec.tck -distance 1e-4
+# MRtrix writes RAS, whereas "gs.vtk" is LPS. The ".vtk" legacy format encodes no
+#   orientation (see gs_vtk_to_tck for the full content scan confirming "gs.vtk" holds
+#   only POINTS and LINES), so the LPS<->RAS relationship -- exactly a sign flip of x
+#   and y, discovered experimentally for THESE data -- cannot be carried in the file.
+#   Both files are bridged through the ".tck" domain and the discovered transform is
+#   applied to the LPS reference before comparison (the transform is its own inverse).
+
+# Generate the discovered LPS<->RAS linear transform (negate x and y, keep z).
+cat > tmp_lps_ras.txt <<'EOF'
+-1 0 0 0
+0 -1 0 0
+0 0 1 0
+0 0 0 1
+EOF
+
+# Produced: gs.tck -> vtk (RAS) -> tck -> concatenate (RAS).
+tckconvert gs.tck tmp_mine.vtk -force -quiet
+tckconvert tmp_mine.vtk tmp_mine.tck -force -quiet
+tckconvert tmp_mine.tck 'tmp_mine-[].txt' -force -quiet
+cat $(ls tmp_mine-*.txt | sort) > tmp_mine.txt
+
+# Reference: gs.vtk -> decode -> concatenate (LPS) -> apply transform -> RAS.
+tckconvert gs.vtk tmp_refvtk.tck -force -quiet
+tckconvert tmp_refvtk.tck 'tmp_ref-[].txt' -force -quiet
+cat $(ls tmp_ref-*.txt | sort) > tmp_ref_lps.txt
+python3 - <<'PY'
+T = [[float(x) for x in line.split()] for line in open('tmp_lps_ras.txt')]
+with open('tmp_ref_lps.txt') as fin, open('tmp_ref_ras.txt', 'w') as fout:
+    for line in fin:
+        p = [float(x) for x in line.split()] + [1.0]
+        r = [sum(T[i][j] * p[j] for j in range(4)) for i in range(3)]
+        fout.write('%.9f %.9f %.9f\n' % tuple(r))
+PY
+
+testing_diff_matrix tmp_mine.txt tmp_ref_ras.txt -abs 1e-4

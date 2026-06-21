@@ -123,6 +123,32 @@ template <class ValueType>
 std::unique_ptr<SidecarExporter<ValueType>>
 make_sidecar_exporter(const SidecarReference &reference, const Properties &properties, bool is_random_access);
 
+//! \brief construct an input sidecar loader for an explicitly named field (tckconvert -insert).
+/*! Like make_sidecar_loader for a bare path, but the loaded field is registered
+ * under the caller-supplied \a name and \a role rather than being inferred from the
+ * file. The file kind must match the role: a per-vertex (DPV) field is loaded from
+ * a ".tsf"; a per-streamline (DPS) field from a numerical text/".csv"/".npy" file.
+ * A mismatch (e.g. DPV from a non-".tsf" file) throws. */
+template <class ValueType>
+std::unique_ptr<SidecarLoader<ValueType>> make_named_sidecar_loader(FieldRole role,
+                                                                    std::string_view name,
+                                                                    const std::filesystem::path &path,
+                                                                    Properties &properties,
+                                                                    FieldRegistry &registry);
+
+//! \brief construct a standalone sidecar exporter bound to a payload ordinal (tckconvert -extract).
+/*! Writes the field at \a ordinal (within the \a role payload vector) of each item
+ * to the standalone file \a path: a per-streamline numerical matrix when \a role is
+ * DPS, a per-vertex ".tsf" when \a role is DPV. \a path must carry the ".tsf" suffix
+ * iff \a role is DPV; a mismatch throws. \a properties seeds the exporter (the
+ * streamline count, and — for ".tsf" — the header written, including the shared
+ * "timestamp"). */
+template <class ValueType>
+std::unique_ptr<SidecarExporter<ValueType>> make_named_sidecar_exporter(FieldRole role,
+                                                                        size_t ordinal,
+                                                                        const std::filesystem::path &path,
+                                                                        const Properties &properties);
+
 // ---------------------------------------------------------------------------
 //  Streamline-weight I/O (the privileged Streamline::weight route)
 // ---------------------------------------------------------------------------

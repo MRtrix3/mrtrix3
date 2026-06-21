@@ -1,27 +1,66 @@
 #!/bin/bash
 # Reference-data sidecar tests (TRX_DATA_DIR, tee-ar-ex gold standard) for the
-#   single-file TRX archive "gs.trx". Same dps ("random_coord") / dpv
-#   ("color_x/y/z") payload as the directory dataset, mirrored in
-#   "streamlines_data.txt" / "points_data.txt". The intended sub-tests are:
-#     1. Extract dps; concatenate to a matrix; compare to streamlines_data.txt
-#        (as a matrix) with testing_diff_matrix.
-#     2. Extract dpv; build three ".tsf" from points_data.txt; compare each pair
-#        with testing_diff_tsf.
-#     3. Augment "gs.tck" with the dps + dpv and write to "gs.trx"'s format,
-#        comparing to gs.trx.
-#     5. Convert "gs.trx" to ".tck", stripping dps/dpv, and compare to "gs.tck".
-#   (Sub-test 4, the pipe variant, applies to the directory dataset only.)
-#
-# Sub-test 5 is achievable now and is verified below. Sub-tests 1-3 need software
-#   augmentation absent this session (dps/dpv add/remove in tckconvert, and a
-#   dps/dpv testing_diff), so this script artificially fails at the end.
+#   single-file TRX archive "gs.trx", exercising tckconvert's embedded-sidecar
+#   manipulation. gs.trx carries a per-streamline field (dps "random_coord", 13x3)
+#   mirrored in "streamlines_data.txt" and three per-vertex fields (dpv
+#   "color_x/y/z", 13 streamlines x 8 vertices) mirrored in "points_data.txt".
+#   Sub-tests:
+#     1. extract dps "random_coord" to a matrix; compare to streamlines_data.txt.
+#     2. extract dpv color_x/y/z to ".tsf"; compare each to points_data.txt.
+#     3. augment "gs.tck" with the (gold-equivalent) dps+dpv, write a ".trx", read
+#        it back and confirm the embedded sidecar reproduces the gold.
+#     5. strip dps/dpv (gs.trx -> ".tck"); geometry must equal "gs.tck".
+set -e
 
-# Sub-test 5: archive -> ".tck" drops the (inline-incompatible) dps/dpv; geometry
-#   must equal "gs.tck".
-tckconvert gs.trx tmp_strip.tck -force -quiet
+# Sub-tests 1 and 5: extract the dps and strip to ".tck" in a single pass.
+tckconvert gs.trx tmp_strip.tck -extract dps random_coord tmp_rc.csv -force -quiet
+python3 -c "import json; r=json.load(open('streamlines_data.txt'))['random_coord']; \
+open('tmp_rc_gold.txt','w').write('\n'.join(' '.join(repr(float(x)) for x in row) for row in r)+'\n')"
+testing_diff_matrix tmp_rc.csv tmp_rc_gold.txt -abs 1e-4
 testing_diff_tck tmp_strip.tck gs.tck -distance 1e-4
 
-echo "INCOMPLETE (TODO): dps/dpv extract+compare and sidecar augmentation require" \
-     "tckconvert dps/dpv add/remove tooling and a dps/dpv testing_diff not" \
-     "available this session." >&2
-exit 1
+# Sub-test 2: extract the three dpv fields and compare their per-vertex values to
+#   the gold "points_data.txt" (color_x/y/z are constant per streamline there).
+tckconvert gs.trx tmp_s.tck \
+  -extract dpv color_x tmp_cx.tsf -extract dpv color_y tmp_cy.tsf -extract dpv color_z tmp_cz.tsf -force -quiet
+python3 - tmp_cx.tsf tmp_cy.tsf tmp_cz.tsf <<'PY'
+import json, struct, math, sys
+def read_tsf(path):
+    data = open(path, 'rb').read()
+    header = data[:4096].decode('latin1', 'ignore')
+    offset = None
+    for line in header.splitlines():
+        if line.startswith('file:'):
+            offset = int(line.split('.')[1])
+        if line.startswith('datatype:'):
+            assert line.split(':', 1)[1].strip() == 'Float32LE', line
+    raw = data[offset:]
+    values = struct.unpack('<%df' % (len(raw) // 4), raw[:len(raw) // 4 * 4])
+    out, current = [], []
+    for v in values:
+        if math.isinf(v):
+            break
+        if math.isnan(v):
+            out.append(current); current = []
+        else:
+            current.append(v)
+    return out
+gold = json.load(open('points_data.txt'))
+for component, path in zip(('color_x', 'color_y', 'color_z'), sys.argv[1:4]):
+    got, want = read_tsf(path), gold[component]
+    assert len(got) == len(want), (component, len(got), len(want))
+    for s in range(len(want)):
+        assert len(got[s]) == len(want[s]), (component, s, len(got[s]), len(want[s]))
+        for v in range(len(want[s])):
+            assert abs(got[s][v] - float(want[s][v][0])) < 1e-4, (component, s, v, got[s][v], want[s][v])
+print("dpv per-vertex values match gold")
+PY
+
+# Sub-test 3: augment "gs.tck" with the extracted (gold-equivalent) dps+dpv into a
+#   ".trx", read the embedded fields back and confirm they reproduce the gold.
+tckconvert gs.tck tmp_aug.trx -insert dps random_coord tmp_rc.csv \
+  -insert dpv color_x tmp_cx.tsf -insert dpv color_y tmp_cy.tsf -insert dpv color_z tmp_cz.tsf -force -quiet
+tckconvert tmp_aug.trx tmp_s2.tck \
+  -extract dps random_coord tmp_rc2.csv -extract dpv color_x tmp_cx2.tsf -force -quiet
+testing_diff_matrix tmp_rc2.csv tmp_rc_gold.txt -abs 1e-4
+testing_diff_tsf tmp_cx2.tsf tmp_cx.tsf -abs 1e-4 -noproperties

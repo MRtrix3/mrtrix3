@@ -1,20 +1,14 @@
 #!/bin/bash
-# Reference-data interop (VTK_DATA_DIR, rordenlab TractographyFormat): write
+# Reference-data interop (VTX_DATA_DIR, rordenlab TractographyFormat): write
 #   "example.tck" out as binary ".vtx" and compare to "example.vtx".
 #
-# RUN-AND-FAIL (TODO): the bytes differ from the reference (header line / OFFSETS
-#   encoding), so the comparison must bridge through the ".tck" domain — which
-#   requires reading "example.vtx", and MRtrix's VTX reader aborts on its OFFSETS
-#   block ("reference a vertex beyond the POINTS block"). Once the v3.0 OFFSETS
-#   convention is reconciled the recovered geometry should match within 1e-4 mm.
+# The bytes differ from the reference (MRtrix emits 64-bit OFFSETS, the reference
+#   32-bit), so the comparison bridges both files through the ".tck" domain; the
+#   geometry matches essentially exactly.
 tckconvert example.tck tmp_tck2vtx.vtx -force -quiet
 if cmp -s tmp_tck2vtx.vtx example.vtx; then
   exit 0
 fi
 tckconvert tmp_tck2vtx.vtx tmp_mine_dec.tck -force -quiet
-if ! tckconvert example.vtx tmp_ref_dec.tck -force -quiet 2>tmp_vtx_err.txt; then
-  echo "TODO: cannot decode reference example.vtx for comparison:" >&2
-  cat tmp_vtx_err.txt >&2
-  exit 1
-fi
+tckconvert example.vtx tmp_ref_dec.tck -force -quiet
 testing_diff_tck tmp_mine_dec.tck tmp_ref_dec.tck -distance 1e-4

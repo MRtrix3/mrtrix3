@@ -77,9 +77,16 @@ bool is_npy(const std::filesystem::path &path) { return Path::has_suffix(path, {
 //!   row per streamline as a dps field (§2.5; step 5).
 template <class ValueType> class MatrixLoader : public SidecarLoader<ValueType> {
 public:
-  MatrixLoader(const std::filesystem::path &path, FieldRegistry &registry)
+  MatrixLoader(const std::filesystem::path &path, const std::string_view name, FieldRegistry &registry)
       : data(File::Matrix::load_matrix<ValueType>(path)), row(0) {
-    FieldDescriptor descriptor{field_name_for(path),
+    // Per-streamline SCALAR data is conventionally stored as a vector whose
+    //   orientation follows the file type (e.g. the comma-separated row a
+    //   ".csv" save_vector emits, as written by tcksample); interpret a single-row
+    //   file as one scalar per streamline (transpose to a column) so it yields one
+    //   row per streamline. A genuine multi-row matrix is one M-vector per streamline.
+    if (data.rows() == 1 && data.cols() > 1)
+      data.transposeInPlace();
+    FieldDescriptor descriptor{std::string(name),
                                FieldRole::DPS,
                                sidecar_datatype<ValueType>(),
                                static_cast<size_t>(data.cols()),
@@ -109,7 +116,7 @@ private:
 //!   streamline via an Eigen::Map over the native data region (§2.5; step 5).
 template <class ValueType> class NpyLoader : public SidecarLoader<ValueType> {
 public:
-  NpyLoader(const std::filesystem::path &path, FieldRegistry &registry)
+  NpyLoader(const std::filesystem::path &path, const std::string_view name, FieldRegistry &registry)
       : info(File::NPY::read_header(path)),
         mmap({path, info.data_offset}, false),
         fetch(MR::_set_fetch_function<ValueType>(info.data_type)),
@@ -117,7 +124,7 @@ public:
         cols(info.shape.size() == 2 ? info.shape[1] : 1),
         row(0) {
     FieldDescriptor descriptor{
-        field_name_for(path), FieldRole::DPS, info.data_type, static_cast<size_t>(cols), FieldSource::External, 0};
+        std::string(name), FieldRole::DPS, info.data_type, static_cast<size_t>(cols), FieldSource::External, 0};
     ordinal = registry.add(std::move(descriptor));
   }
 
@@ -152,10 +159,13 @@ private:
 //!   per read as a dpv field (§2.5; step 5).
 template <class ValueType> class TsfLoader : public SidecarLoader<ValueType> {
 public:
-  TsfLoader(const std::filesystem::path &path, Properties &properties, FieldRegistry &registry)
+  TsfLoader(const std::filesystem::path &path,
+            const std::string_view name,
+            Properties &properties,
+            FieldRegistry &registry)
       : reader(path, properties) {
     FieldDescriptor descriptor{
-        field_name_for(path), FieldRole::DPV, sidecar_datatype<ValueType>(), 1, FieldSource::External, 0};
+        std::string(name), FieldRole::DPV, sidecar_datatype<ValueType>(), 1, FieldSource::External, 0};
     ordinal = registry.add(std::move(descriptor));
   }
 
@@ -186,8 +196,9 @@ private:
 //!   file or .npy on finalise (§2.7; step 6).
 template <class ValueType> class MatrixExporter : public SidecarExporter<ValueType> {
 public:
-  MatrixExporter(const std::filesystem::path &path, const size_t initial_streamlines)
+  MatrixExporter(const std::filesystem::path &path, const size_t initial_streamlines, const size_t ordinal = 0)
       : path(path),
+        ordinal(ordinal),
         data(Eigen::Array<ValueType, Eigen::Dynamic, Eigen::Dynamic>::Zero(initial_streamlines, 1)),
         rows(0),
         cols(0),
@@ -202,13 +213,19 @@ public:
   }
 
   bool operator()(const TractogramItem<ValueType> &item) override {
-    if (item.dps.empty())
+    if (ordinal >= item.dps.size())
       throw Exception("tractogram-sidecar export \"" + path.string() + "\"" +
-                      " received a streamline with no per-streamline data to export");
-    const ScalarOrVector<ValueType> &value = std::get<ScalarOrVector<ValueType>>(item.dps.front());
+                      " received a streamline with no per-streamline data for the requested field");
     const size_t index = item.get_index();
-    grow_to(index + 1, static_cast<size_t>(value.cols()));
-    data.row(static_cast<Eigen::Index>(index)).head(value.cols()) = value.array();
+    // The field's native element type is its on-disk dtype (not necessarily the
+    //   processing precision), so read it generically and cast to ValueType.
+    const size_t ncols =
+        MR::match_v(item.dps[ordinal], [](const auto &row) { return static_cast<size_t>(row.cols()); });
+    grow_to(index + 1, ncols);
+    MR::match_v(item.dps[ordinal], [&](const auto &row) {
+      for (Eigen::Index c = 0; c != row.cols(); ++c)
+        data(static_cast<Eigen::Index>(index), c) = static_cast<ValueType>(row(0, c));
+    });
     if (index + 1 > rows)
       rows = index + 1;
     return true;
@@ -220,11 +237,18 @@ public:
     finalised = true;
     Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> out =
         data.topLeftCorner(static_cast<Eigen::Index>(rows), static_cast<Eigen::Index>(cols)).matrix();
-    File::Matrix::save_matrix(out, path);
+    // A per-streamline SCALAR field round-trips as a vector (orientation per file
+    //   type), matching the convention a per-streamline import expects; a
+    //   multi-column field is written as an N x M matrix.
+    if (cols == 1)
+      File::Matrix::save_vector(out.col(0).eval(), path);
+    else
+      File::Matrix::save_matrix(out, path);
   }
 
 private:
   std::filesystem::path path;
+  size_t ordinal; //!< the dps payload slot to extract (§2.1)
   Eigen::Array<ValueType, Eigen::Dynamic, Eigen::Dynamic> data;
   size_t rows;
   size_t cols;
@@ -249,17 +273,26 @@ private:
 //!   fed to the output tractogram (§2.7; step 6).
 template <class ValueType> class TsfExporter : public SidecarExporter<ValueType> {
 public:
-  TsfExporter(const std::filesystem::path &path, const Properties &properties) : writer(path, properties) {}
+  TsfExporter(const std::filesystem::path &path, const Properties &properties, const size_t ordinal = 0)
+      : path(path), ordinal(ordinal), writer(path, properties) {}
 
   bool operator()(const TractogramItem<ValueType> &item) override {
-    if (item.dpv.empty())
-      throw Exception("per-vertex tractogram-sidecar (.tsf) export received a streamline with no per-vertex data");
-    const VectorOrMatrix<ValueType> &value = std::get<VectorOrMatrix<ValueType>>(item.dpv.front());
+    if (ordinal >= item.dpv.size())
+      throw Exception("per-vertex tractogram-sidecar (.tsf) export \"" + path.string() + "\"" +
+                      " received a streamline with no per-vertex data for the requested field");
     TrackScalar<ValueType> scalars;
     scalars.set_index(item.get_index());
-    scalars.resize(static_cast<size_t>(value.rows()));
-    for (Eigen::Index v = 0; v != value.rows(); ++v)
-      scalars[static_cast<size_t>(v)] = value(v, 0);
+    // A ".tsf" carries one scalar per vertex; a multi-column (M>1) per-vertex field
+    //   has no single-scalar representation, so reject it rather than silently
+    //   dropping columns. The element type is the field's native dtype (cast here).
+    MR::match_v(item.dpv[ordinal], [&](const auto &matrix) {
+      if (matrix.cols() > 1)
+        throw Exception("cannot extract a multi-column (" + str(matrix.cols()) + ") per-vertex field" +
+                        " to a single-scalar track scalar (.tsf) file \"" + path.string() + "\"");
+      scalars.resize(static_cast<size_t>(matrix.rows()));
+      for (Eigen::Index v = 0; v != matrix.rows(); ++v)
+        scalars[static_cast<size_t>(v)] = static_cast<ValueType>(matrix(v, 0));
+    });
     writer(scalars);
     return true;
   }
@@ -267,6 +300,8 @@ public:
   void finalise() override {}
 
 private:
+  std::filesystem::path path;
+  size_t ordinal; //!< the dpv payload slot to extract (§2.1)
   ScalarWriter<ValueType> writer;
 };
 
@@ -278,11 +313,12 @@ make_sidecar_loader(const SidecarReference &reference, Properties &properties, F
   if (reference.is_qualified())
     throw Exception("import of a qualified \"DATASET::NAME\" tractogram-sidecar reference"
                     " is not yet implemented");
+  const std::string name = field_name_for(reference.dataset);
   if (is_tsf(reference.dataset))
-    return std::make_unique<TsfLoader<ValueType>>(reference.dataset, properties, registry);
+    return std::make_unique<TsfLoader<ValueType>>(reference.dataset, name, properties, registry);
   if (is_npy(reference.dataset))
-    return std::make_unique<NpyLoader<ValueType>>(reference.dataset, registry);
-  return std::make_unique<MatrixLoader<ValueType>>(reference.dataset, registry);
+    return std::make_unique<NpyLoader<ValueType>>(reference.dataset, name, registry);
+  return std::make_unique<MatrixLoader<ValueType>>(reference.dataset, name, registry);
 }
 
 template std::unique_ptr<SidecarLoader<float>>
@@ -315,6 +351,54 @@ template std::unique_ptr<SidecarExporter<float>>
 make_sidecar_exporter<float>(const SidecarReference &, const Properties &, bool);
 template std::unique_ptr<SidecarExporter<double>>
 make_sidecar_exporter<double>(const SidecarReference &, const Properties &, bool);
+
+template <class ValueType>
+std::unique_ptr<SidecarLoader<ValueType>> make_named_sidecar_loader(const FieldRole role,
+                                                                    const std::string_view name,
+                                                                    const std::filesystem::path &path,
+                                                                    Properties &properties,
+                                                                    FieldRegistry &registry) {
+  if (role == FieldRole::DPV) {
+    if (!is_tsf(path))
+      throw Exception("per-vertex (dpv) sidecar \"" + std::string(name) + "\"" +
+                      " must be inserted from a track scalar (.tsf) file (received \"" + path.string() + "\")");
+    return std::make_unique<TsfLoader<ValueType>>(path, name, properties, registry);
+  }
+  if (is_tsf(path))
+    throw Exception("per-streamline (dps) sidecar \"" + std::string(name) + "\" cannot be inserted from a .tsf file" +
+                    " (\"" + path.string() + "\"); a .tsf carries per-vertex data");
+  if (is_npy(path))
+    return std::make_unique<NpyLoader<ValueType>>(path, name, registry);
+  return std::make_unique<MatrixLoader<ValueType>>(path, name, registry);
+}
+
+template std::unique_ptr<SidecarLoader<float>> make_named_sidecar_loader<float>(
+    FieldRole, std::string_view, const std::filesystem::path &, Properties &, FieldRegistry &);
+template std::unique_ptr<SidecarLoader<double>> make_named_sidecar_loader<double>(
+    FieldRole, std::string_view, const std::filesystem::path &, Properties &, FieldRegistry &);
+
+template <class ValueType>
+std::unique_ptr<SidecarExporter<ValueType>> make_named_sidecar_exporter(const FieldRole role,
+                                                                        const size_t ordinal,
+                                                                        const std::filesystem::path &path,
+                                                                        const Properties &properties) {
+  if (role == FieldRole::DPV) {
+    if (!is_tsf(path))
+      throw Exception("per-vertex (dpv) sidecar must be extracted to a track scalar (.tsf) file" +
+                      std::string(" (received \"") + path.string() + "\")");
+    return std::make_unique<TsfExporter<ValueType>>(path, properties, ordinal);
+  }
+  if (is_tsf(path))
+    throw Exception("per-streamline (dps) sidecar cannot be extracted to a .tsf file" + std::string(" (\"") +
+                    path.string() + "\"); a .tsf carries per-vertex data");
+  const size_t initial = properties.find("count") != properties.end() ? to<size_t>(properties.at("count")) : size_t(0);
+  return std::make_unique<MatrixExporter<ValueType>>(path, initial, ordinal);
+}
+
+template std::unique_ptr<SidecarExporter<float>>
+make_named_sidecar_exporter<float>(FieldRole, size_t, const std::filesystem::path &, const Properties &);
+template std::unique_ptr<SidecarExporter<double>>
+make_named_sidecar_exporter<double>(FieldRole, size_t, const std::filesystem::path &, const Properties &);
 
 // ---------------------------------------------------------------------------
 //  Streamline-weight I/O (the privileged Streamline::weight route)

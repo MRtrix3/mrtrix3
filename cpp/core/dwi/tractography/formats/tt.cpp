@@ -68,10 +68,11 @@ std::vector<std::byte> gz_inflate(const std::filesystem::path &path) {
 }
 
 //! \brief construct the default axis-aligned voxel->scanner transform from spacing.
-/*! Used when no reference Header is available: an identity rotation with the
- * grid corner at the scanner-space origin, scaled by the voxel spacing. Geometry
- * is then correct only up to the unknown orientation/origin of the acquisition,
- * but a ".tt" -> ".tt" round-trip through this same convention is exact. */
+/*! ".tt" embeds no affine, so this is the only available mapping: an identity
+ * rotation with the grid corner at the scanner-space origin, scaled by the voxel
+ * spacing. Geometry is then correct only up to the unknown orientation/origin of
+ * the acquisition, but a ".tt" -> ".tt" round-trip through this same convention is
+ * exact. */
 transform_type default_voxel2scanner(const std::array<float, 3> &voxel_size) {
   transform_type T;
   T.setIdentity();
@@ -133,7 +134,7 @@ std::array<double, 3> read_triple(const Mat::Array &array, std::string_view name
 /* ************************************************************************ */
 
 template <class ValueType>
-TTReader<ValueType>::TTReader(const std::filesystem::path &path, Properties &properties, const OptionalHeader &grid)
+TTReader<ValueType>::TTReader(const std::filesystem::path &path, Properties &properties)
     : position(0), current_index(0) {
   const std::vector<std::byte> bytes = gz_inflate(path);
   const Mat::File mat = Mat::read(bytes.data(), bytes.size());
@@ -151,14 +152,10 @@ TTReader<ValueType>::TTReader(const std::filesystem::path &path, Properties &pro
       voxel_size[axis] = static_cast<float>(v[axis]);
   }
 
-  // The grid orientation/origin is not carried by ".tt"; use the supplied
-  //   reference Header's voxel->scanner transform when available, else a default
-  //   axis-aligned grid built from the file's own spacing.
-  if (grid.has_value()) {
-    voxel2scanner = Transform(grid->get()).voxel2scanner;
-  } else {
-    voxel2scanner = default_voxel2scanner(voxel_size);
-  }
+  // The grid orientation/origin is not carried by ".tt"; reconstruct an axis-aligned
+  //   voxel->scanner transform from the file's own spacing (the format embeds no
+  //   affine, so this is the only geometry information available).
+  voxel2scanner = default_voxel2scanner(voxel_size);
 
   // Preserve the grid metadata and opaque provenance into Properties.
   if (dimension != nullptr) {
@@ -223,13 +220,10 @@ template <class ValueType> bool TTReader<ValueType>::operator()(Streamline<Value
 /* ************************************************************************ */
 
 template <class ValueType>
-TTWriter<ValueType>::TTWriter(const std::filesystem::path &path,
-                              const Properties &properties,
-                              const OptionalHeader &grid)
+TTWriter<ValueType>::TTWriter(const std::filesystem::path &path, const Properties &properties)
     : path(path),
       dimension{0, 0, 0},
       voxel_size{1.0F, 1.0F, 1.0F},
-      grid_from_reference(false),
       track_buffer(File::Config::get_int("TrackWriterBufferSize", 16777216), 1),
       num_streamlines(0) {
   if (path.extension() != ".tt")
@@ -237,32 +231,23 @@ TTWriter<ValueType>::TTWriter(const std::filesystem::path &path,
 
   App::check_overwrite(path);
 
-  if (grid.has_value()) {
-    const Header &header = grid->get();
-    scanner2voxel = Transform(header).scanner2voxel;
-    for (size_t axis = 0; axis != 3; ++axis) {
-      dimension[axis] = static_cast<int32_t>(header.size(axis));
-      voxel_size[axis] = static_cast<float>(header.spacing(axis));
-    }
-    grid_from_reference = true;
-  } else {
-    // No reference grid: recover spacing from any "tt_voxel_size" property left by
-    //   a prior ".tt" read (loss-free ".tt" -> ".tt"), else default to 1 mm
-    //   isotropic. The default voxel->scanner is axis-aligned with a corner
-    //   origin, so its inverse maps scanner-space straight back to voxel space.
-    auto vs = properties.find("tt_voxel_size");
-    if (vs != properties.end()) {
-      const auto values = MR::parse_floats(vs->second);
-      for (size_t axis = 0; axis != 3 && axis != values.size(); ++axis)
-        voxel_size[axis] = static_cast<float>(values[axis]);
-    }
-    scanner2voxel = default_voxel2scanner(voxel_size).inverse();
-    auto dim = properties.find("tt_dimension");
-    if (dim != properties.end()) {
-      const auto values = MR::parse_ints<int64_t>(dim->second);
-      for (size_t axis = 0; axis != 3 && axis != values.size(); ++axis)
-        dimension[axis] = static_cast<int32_t>(values[axis]);
-    }
+  // ".tt" embeds no affine, so no external grid is consulted: recover spacing from
+  //   any "tt_voxel_size" property left by a prior ".tt" read (loss-free
+  //   ".tt" -> ".tt"), else default to 1 mm isotropic. The default voxel->scanner is
+  //   axis-aligned with a corner origin, so its inverse maps scanner-space straight
+  //   back to voxel space, and the grid extent ("dimension") grows from the data.
+  auto vs = properties.find("tt_voxel_size");
+  if (vs != properties.end()) {
+    const auto values = MR::parse_floats(vs->second);
+    for (size_t axis = 0; axis != 3 && axis != values.size(); ++axis)
+      voxel_size[axis] = static_cast<float>(values[axis]);
+  }
+  scanner2voxel = default_voxel2scanner(voxel_size).inverse();
+  auto dim = properties.find("tt_dimension");
+  if (dim != properties.end()) {
+    const auto values = MR::parse_ints<int64_t>(dim->second);
+    for (size_t axis = 0; axis != 3 && axis != values.size(); ++axis)
+      dimension[axis] = static_cast<int32_t>(values[axis]);
   }
 
   // Opaque provenance carried back out verbatim if it survived a prior ".tt" read.
@@ -305,14 +290,12 @@ template <class ValueType> bool TTWriter<ValueType>::operator()(const Streamline
   Raw::store_LE<int32_t>(prev[1], record.data() + 4, 1);
   Raw::store_LE<int32_t>(prev[2], record.data() + 4, 2);
 
-  // Expand grid extent from the data when no reference grid fixed it, so the
-  //   written "dimension" comfortably contains the streamlines.
-  if (!grid_from_reference) {
-    for (size_t axis = 0; axis != 3; ++axis) {
-      const int32_t voxel_index =
-          static_cast<int32_t>(std::ceil(static_cast<double>(prev[axis]) / tt_subvoxel_scale)) + 1;
-      dimension[axis] = std::max(dimension[axis], voxel_index);
-    }
+  // Expand the grid extent from the data so the written "dimension" comfortably
+  //   contains the streamlines (seeded from any recovered "tt_dimension" property).
+  for (size_t axis = 0; axis != 3; ++axis) {
+    const int32_t voxel_index =
+        static_cast<int32_t>(std::ceil(static_cast<double>(prev[axis]) / tt_subvoxel_scale)) + 1;
+    dimension[axis] = std::max(dimension[axis], voxel_index);
   }
 
   std::byte *delta_out = record.data() + tt_record_header_bytes;
@@ -433,34 +416,28 @@ namespace Formats {
 
 bool TT::handles(const std::filesystem::path &path) const { return path.extension() == ".tt"; }
 
-std::unique_ptr<ReaderInterface<float>> TT::read_float(const std::filesystem::path &path,
-                                                       Properties &properties,
-                                                       FieldRegistry &,
-                                                       const OptionalHeader &grid) const {
-  return std::make_unique<TTReader<float>>(path, properties, grid);
+std::unique_ptr<ReaderInterface<float>>
+TT::read_float(const std::filesystem::path &path, Properties &properties, FieldRegistry &) const {
+  return std::make_unique<TTReader<float>>(path, properties);
 }
 
-std::unique_ptr<ReaderInterface<double>> TT::read_double(const std::filesystem::path &path,
-                                                         Properties &properties,
-                                                         FieldRegistry &,
-                                                         const OptionalHeader &grid) const {
-  return std::make_unique<TTReader<double>>(path, properties, grid);
+std::unique_ptr<ReaderInterface<double>>
+TT::read_double(const std::filesystem::path &path, Properties &properties, FieldRegistry &) const {
+  return std::make_unique<TTReader<double>>(path, properties);
 }
 
 std::unique_ptr<WriterInterface<float>> TT::create_float(const std::filesystem::path &path,
                                                          const Properties &properties,
                                                          const FieldRegistry &,
-                                                         const OptionalHeader &grid,
                                                          const WriteOptions &options) const {
-  return std::make_unique<TTWriter<float>>(path, properties, grid);
+  return std::make_unique<TTWriter<float>>(path, properties);
 }
 
 std::unique_ptr<WriterInterface<double>> TT::create_double(const std::filesystem::path &path,
                                                            const Properties &properties,
                                                            const FieldRegistry &,
-                                                           const OptionalHeader &grid,
                                                            const WriteOptions &options) const {
-  return std::make_unique<TTWriter<double>>(path, properties, grid);
+  return std::make_unique<TTWriter<double>>(path, properties);
 }
 
 } // namespace Formats

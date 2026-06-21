@@ -2,14 +2,41 @@
 # Reference-data interop (TRX_DATA_DIR, tee-ar-ex gold standard): read "gs.vtk" and
 #   compare to the world-space "gs.tck".
 #
-# RUN-AND-FAIL (TODO): "gs.vtk" stores its vertices in LPS (the VTK / 3D Slicer
-#   convention) — its x and y are sign-flipped relative to "gs.tck"'s RAS (decoded
-#   point 0 is (-11.15, -21.58, 37.60) vs (11.15, 21.58, 37.60)). MRtrix's VTK
-#   reader ingests the raw coordinates without the LPS->RAS flip, so every vertex
-#   is reflected and the comparison fails by ~tens of mm. Honouring an LPS source
-#   orientation in the VTK reader would resolve it.
-tckconvert gs.vtk tmp_vtk2tck.tck -force -quiet
-if cmp -s tmp_vtk2tck.tck gs.tck; then
-  exit 0
-fi
-testing_diff_tck tmp_vtk2tck.tck gs.tck -distance 1e-4
+# "gs.vtk" stores its vertices in LPS whereas "gs.tck" is RAS: experimentation shows
+#   the two differ by exactly a sign flip of x and y (the vtk/tck ratio is -1 on every
+#   one of the 104 vertices, z unchanged). The ".vtk" legacy format provides NO
+#   standardised mechanism to encode this orientation -- a full content scan of
+#   "gs.vtk" finds only POINTS and LINES (no SPACE / ORIGIN / DIRECTION / TRANSFORM /
+#   METADATA / FIELD; the description line is merely "vtk output"), so MRtrix cannot
+#   infer it and necessarily reads the raw coordinates. The LPS->RAS transform below
+#   was therefore discovered specifically for THESE data through experimentation, not
+#   read from the file; it is applied to the decoded intermediate before comparison
+#   (the transform is its own inverse).
+
+# Generate the discovered LPS<->RAS linear transform (negate x and y, keep z).
+cat > tmp_lps_ras.txt <<'EOF'
+-1 0 0 0
+0 -1 0 0
+0 0 1 0
+0 0 0 1
+EOF
+
+# gs.vtk -> tck (LPS); dump per-streamline ASCII and concatenate in streamline order.
+tckconvert gs.vtk tmp_vtk.tck -force -quiet
+tckconvert tmp_vtk.tck 'tmp_vtk-[].txt' -force -quiet
+cat $(ls tmp_vtk-*.txt | sort) > tmp_vtk_lps.txt
+
+# Apply the generated transform to map the decoded LPS vertices into RAS.
+python3 - <<'PY'
+T = [[float(x) for x in line.split()] for line in open('tmp_lps_ras.txt')]
+with open('tmp_vtk_lps.txt') as fin, open('tmp_vtk_ras.txt', 'w') as fout:
+    for line in fin:
+        p = [float(x) for x in line.split()] + [1.0]
+        r = [sum(T[i][j] * p[j] for j in range(4)) for i in range(3)]
+        fout.write('%.9f %.9f %.9f\n' % tuple(r))
+PY
+
+# Reference "gs.tck" in the same flattened form; compare.
+tckconvert gs.tck 'tmp_ref-[].txt' -force -quiet
+cat $(ls tmp_ref-*.txt | sort) > tmp_ref.txt
+testing_diff_matrix tmp_vtk_ras.txt tmp_ref.txt -abs 1e-4

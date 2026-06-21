@@ -632,27 +632,30 @@ add_bash_binary_test(tckconvert/qfib_reject_nonconstant_stepsize)
 # add_bash_binary_test(tckconvert/qfib_read_reference)
 add_bash_binary_test(tckconvert/pipe_roundtrip)
 add_bash_binary_test(tckconvert/pipe_premature_close)
+add_bash_binary_test(tckconvert/sidecar_pipe_roundtrip)
 
 # Reference-data tests validating tckconvert against externally-sourced exemplars
-#   (the BinariesTestData "tckconvert/" subdirectory and the VTK / TRK / TRX data
-#   ExternalProjects declared in testing/CMakeLists.txt). Conversions that expose a
-#   current interop gap (the ".trk" half-voxel corner-origin convention; LPS vs RAS
-#   in VTK; the VTK METADATA / vtx v3.0 OFFSETS reader limits; dps/dpv sidecar
-#   tooling) are registered as run-and-fail TODO markers and fail until the
-#   corresponding software is augmented.
+#   (the BinariesTestData "tckconvert/" subdirectory and the VTX / TRK / TRX data
+#   ExternalProjects declared in testing/CMakeLists.txt). A handful expose interop
+#   gaps that cannot be reconciled from the file alone and are registered as
+#   run-and-fail TODO markers: LPS-vs-RAS data with no in-file space signal (the
+#   ".vtk" exemplars; the ".trk" LPS voxel order with placeholder dims), the TRX
+#   dps/dpv sidecar tooling, and a directory/uint32-offsets TRX writer. (The ".trk"
+#   corner-origin half-voxel convention, the VTK METADATA block, and the vtx v3.0
+#   32-bit OFFSETS width are handled by the format readers/writer.)
 
 # Sections 1-2 (BINARY_DATA_DIR; reference files under the "tckconvert/" subdir).
 add_bash_binary_test(tckconvert/qfib_reference_reject_write)
 add_bash_binary_test(tckconvert/zfib_reference_decode)
 add_bash_binary_test(tckconvert/vtx_from_readme)
 
-# Section 3 (VTK_DATA_DIR; rordenlab TractographyFormat "example.*").
-add_bash_binary_test(tckconvert/example_trk_to_tck WORKING_DIRECTORY ${VTK_DATA_DIR})
-add_bash_binary_test(tckconvert/example_tck_to_trk WORKING_DIRECTORY ${VTK_DATA_DIR})
-add_bash_binary_test(tckconvert/example_vtk_to_tck WORKING_DIRECTORY ${VTK_DATA_DIR})
-add_bash_binary_test(tckconvert/example_tck_to_vtk WORKING_DIRECTORY ${VTK_DATA_DIR})
-add_bash_binary_test(tckconvert/example_vtx_to_tck WORKING_DIRECTORY ${VTK_DATA_DIR})
-add_bash_binary_test(tckconvert/example_tck_to_vtx WORKING_DIRECTORY ${VTK_DATA_DIR})
+# Section 3 (VTX_DATA_DIR; rordenlab TractographyFormat "example.*").
+add_bash_binary_test(tckconvert/example_trk_to_tck WORKING_DIRECTORY ${VTX_DATA_DIR})
+add_bash_binary_test(tckconvert/example_tck_to_trk WORKING_DIRECTORY ${VTX_DATA_DIR})
+add_bash_binary_test(tckconvert/example_vtk_to_tck WORKING_DIRECTORY ${VTX_DATA_DIR})
+add_bash_binary_test(tckconvert/example_tck_to_vtk WORKING_DIRECTORY ${VTX_DATA_DIR})
+add_bash_binary_test(tckconvert/example_vtx_to_tck WORKING_DIRECTORY ${VTX_DATA_DIR})
+add_bash_binary_test(tckconvert/example_tck_to_vtx WORKING_DIRECTORY ${VTX_DATA_DIR})
 
 # Section 4 (TRK_DATA_DIR; nibabel reference ".trk" / ".tck").
 add_bash_binary_test(tckconvert/trk_simple_roundtrip WORKING_DIRECTORY ${TRK_DATA_DIR})
