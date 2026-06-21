@@ -32,24 +32,53 @@ namespace MR::DWI::Tractography::Formats::QFibCodec {
  * spent on each of the two octahedral coordinates. */
 enum class BitDepth : uint8_t { M8 = 8, M16 = 16 };
 
+//! \brief The per-direction quantization method, as recorded by the header's method byte.
+/*! ".qfib" stores each tangent as an 8- or 16-bit index; the method byte selects
+ * how that index maps to a unit direction. \c Octahedral (method 0) packs two
+ * signed two's-complement octahedral sub-fields (Meyer et al. 2010); \c Fibonacci
+ * (method 1, the reference encoder's default) is a single spherical-Fibonacci
+ * lattice index (Keinert et al. 2015). The cap mapping and constant-step
+ * reconstruction are identical for both; only the index-to-sphere mapping differs.
+ * The enumerator values are the on-disk method byte. */
+enum class Scheme : uint8_t { Octahedral = 0, Fibonacci = 1 };
+
 /* ************************************************************************ */
 /*                  Octahedral unit-vector quantization                   */
 /*                          (Meyer et al. 2010)                           */
 /* ************************************************************************ */
 
-//! \brief quantize a unit vector to a packed octahedral index (Eq. 2, encode).
+//! \brief quantize a unit vector to a packed octahedral index (encode).
 /*! The vector is projected onto the unit octahedron (L1 normalisation), the lower
  * hemisphere is unwrapped onto the [-1,1]^2 square, and each of the two resulting
- * coordinates is snapped to an unsigned integer of \c BitDepth/2 bits. The two
- * coordinates are packed into a single index that occupies an int8 (M8) or an
- * int16 (M16) on disk. The input need not be normalised; a zero vector yields
- * index 0. */
+ * coordinates is quantized to a \e signed integer of \c BitDepth/2 bits (range
+ * \f$[-(2^{half-1}-1), +(2^{half-1}-1)]\f$, denominator \f$2^{half-1}-1\f$) and
+ * stored as a two's-complement sub-field, the first occupying the high half of the
+ * word. This is the reference tool's packing and the exact inverse of
+ * octahedral_decode(). The input need not be normalised. */
 int32_t octahedral_encode(const Eigen::Vector3d &unit, BitDepth) noexcept;
 
-//! \brief recover a unit vector from a packed octahedral index (Eq. 2, decode).
-/*! The exact inverse of the packing performed by octahedral_encode(), up to the
- * angular resolution of the chosen bit depth; the returned vector is normalised. */
+//! \brief recover a unit vector from a packed octahedral index (decode).
+/*! The exact inverse of octahedral_encode(): two signed two's-complement
+ * sub-fields of \c BitDepth/2 bits each (high half = first coordinate),
+ * dequantized by \f$1/(2^{half-1}-1)\f$, up to the angular resolution of the chosen
+ * bit depth; the returned vector is normalised. */
 Eigen::Vector3d octahedral_decode(int32_t index, BitDepth) noexcept;
+
+//! \brief recover a unit vector from a spherical-Fibonacci lattice index (decode).
+/*! The reference encoder's method-1 codec (Keinert et al. 2015). The whole
+ * \c BitDepth-bit word is one unsigned lattice index \f$id \in [0, 2^{bits}-1]\f$
+ * mapped onto a golden-ratio spiral over the sphere; the returned vector is
+ * normalised. Decode-only: the inverse (inverseSF) is not required to read, and
+ * MRtrix writes ".qfib" only with the octahedral method. */
+Eigen::Vector3d fibonacci_decode(int32_t index, BitDepth) noexcept;
+
+//! \brief map a stored index word to a unit sphere direction under the given method.
+Eigen::Vector3d sphere_decode(int32_t index, Scheme, BitDepth) noexcept;
+
+//! \brief quantize a unit sphere direction to a stored index word under the given method.
+/*! Throws for \c Fibonacci, whose encoder (inverseSF) MRtrix does not implement;
+ * MRtrix writes ".qfib" only with the octahedral method. */
+int32_t sphere_encode(const Eigen::Vector3d &unit, Scheme, BitDepth);
 
 /* ************************************************************************ */
 /*               Rousseau-Boubekeur cap <-> sphere mapping                 */
@@ -107,10 +136,12 @@ template <class V> std::optional<double> constant_stepsize(const Streamline<V> &
 /*! Throws if the streamline has fewer than two vertices, or is not of constant
  * step size within \a step_tol (which the format cannot represent). Uses
  * error-propagation reduction: each direction is taken from the already-decoded
- * previous point, so re-compressing a decompressed streamline is idempotent. */
-template <class V> Compressed<V> compress(const Streamline<V> &, BitDepth, double ratio, double step_tol);
+ * previous point, so re-compressing a decompressed streamline is idempotent. The
+ * \a scheme selects the index packing; \c Fibonacci is rejected (MRtrix encodes
+ * only with the octahedral method). */
+template <class V> Compressed<V> compress(const Streamline<V> &, Scheme, BitDepth, double ratio, double step_tol);
 
 //! \brief decompress one streamline (Appendix A, decompress()).
-template <class V> Streamline<V> decompress(const Compressed<V> &, BitDepth, double ratio);
+template <class V> Streamline<V> decompress(const Compressed<V> &, Scheme, BitDepth, double ratio);
 
 } // namespace MR::DWI::Tractography::Formats::QFibCodec

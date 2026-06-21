@@ -17,7 +17,7 @@
 #include "dwi/tractography/formats/mat.h"
 
 #include <array>
-#include <cstring>
+#include <optional>
 
 #include "exception.h"
 #include "raw.h"
@@ -210,79 +210,140 @@ bool parse_matrix(const Element &matrix, std::string &name, Array &array) {
   return true;
 }
 
-//! \brief append a Level-5 element tag + payload (padded to 8 bytes) to a buffer.
-void append_element(std::vector<std::byte> &out, uint32_t type, const std::byte *data, size_t length) {
-  std::array<std::byte, 8> tag{};
-  Raw::store_LE<uint32_t>(type, tag.data(), 0);
-  Raw::store_LE<uint32_t>(static_cast<uint32_t>(length), tag.data(), 1);
-  out.insert(out.end(), tag.begin(), tag.end());
-  out.insert(out.end(), data, data + length);
-  const size_t padding = (8 - (length % 8)) % 8;
-  out.insert(out.end(), padding, std::byte{0});
-}
-
-//! \brief map a numeric Class to the MATLAB array-class byte for the flags subelement.
-uint8_t array_class_byte(Class cls) {
+//! \brief the Level-4 MOPT type word for a numeric / character Array class.
+/*! Little-endian (M=0), full matrix (T=0); the precision code P is the second
+ * digit. The Level-4 precision set is a subset of Class: 8-/16-/32-bit characters
+ * and signed 8-bit collapse onto the unsigned-8 precision, matching how DSI Studio
+ * stores text members and the int8 track-delta buffer. */
+uint32_t level4_mopt_for_class(Class cls) {
   switch (cls) {
-  case Class::Int8:
-    return mxINT8_CLASS;
-  case Class::UInt8:
-    return mxUINT8_CLASS;
-  case Class::Int16:
-    return mxINT16_CLASS;
-  case Class::UInt16:
-    return mxUINT16_CLASS;
-  case Class::Int32:
-    return mxINT32_CLASS;
-  case Class::UInt32:
-    return mxUINT32_CLASS;
-  case Class::Single:
-    return mxSINGLE_CLASS;
   case Class::Double:
-    return mxDOUBLE_CLASS;
-  case Class::Int64:
-    return mxINT64_CLASS;
-  case Class::UInt64:
-    return mxUINT64_CLASS;
+    return 0; // P=0, f64
+  case Class::Single:
+    return 10; // P=1, f32
+  case Class::Int32:
+  case Class::UInt32:
+    return 20; // P=2, i32
+  case Class::Int16:
+    return 30; // P=3, i16
+  case Class::UInt16:
+    return 40; // P=4, u16
+  case Class::Int8:
+  case Class::UInt8:
   case Class::Char:
-    return mxCHAR_CLASS;
+    return 50; // P=5, u8
   default:
-    return mxDOUBLE_CLASS;
+    return 0;
   }
 }
 
-//! \brief serialise one named Array as a complete miMATRIX element.
-void append_matrix(std::vector<std::byte> &out, std::string_view name, const Array &array) {
-  // Build the miMATRIX body (the four subelements) into a scratch buffer first,
-  //   so its total byte count can be written into the outer element tag.
-  std::vector<std::byte> body;
+//! \brief append \a value to \a out as a little-endian uint32.
+void append_u32(std::vector<std::byte> &out, uint32_t value) {
+  std::array<std::byte, sizeof(uint32_t)> bytes{};
+  Raw::store_LE<uint32_t>(value, bytes.data(), 0);
+  out.insert(out.end(), bytes.begin(), bytes.end());
+}
 
-  // Subelement 1: array flags (8 bytes of payload).
-  std::array<std::byte, 8> flags{};
-  flags[0] = static_cast<std::byte>(array_class_byte(array.cls));
-  append_element(body, static_cast<uint32_t>(Class::UInt8), flags.data(), flags.size());
+//! \brief serialise one named Array as a Level-4 matrix record.
+void append_level4_matrix(std::vector<std::byte> &out, std::string_view name, const Array &array) {
+  append_u32(out, level4_mopt_for_class(array.cls));
+  append_u32(out, static_cast<uint32_t>(array.rows));
+  append_u32(out, static_cast<uint32_t>(array.cols));
+  append_u32(out, 0U);                                     // imagf: real data only
+  append_u32(out, static_cast<uint32_t>(name.size() + 1)); // namelen includes the NUL terminator
+  out.insert(out.end(),
+             reinterpret_cast<const std::byte *>(name.data()),
+             reinterpret_cast<const std::byte *>(name.data()) + name.size());
+  out.push_back(std::byte{0});
+  out.insert(out.end(), array.data.begin(), array.data.end());
+}
 
-  // Subelement 2: dimensions (int32[2]).
-  std::array<std::byte, 8> dims{};
-  Raw::store_LE<int32_t>(static_cast<int32_t>(array.rows), dims.data(), 0);
-  Raw::store_LE<int32_t>(static_cast<int32_t>(array.cols), dims.data(), 1);
-  append_element(body, static_cast<uint32_t>(Class::Int32), dims.data(), dims.size());
+} // namespace
 
-  // Subelement 3: array name (int8 characters).
-  append_element(
-      body, static_cast<uint32_t>(Class::Int8), reinterpret_cast<const std::byte *>(name.data()), name.size());
+/* ************************************************************************ */
+/*                   MATLAB Level-4 ("v4") container                      */
+/* ************************************************************************ */
 
-  // Subelement 4: the numeric / character payload.
-  append_element(body, static_cast<uint32_t>(array.cls), array.data.data(), array.data.size());
+// DSI Studio writes ".tt" as a gzipped MATLAB Level-4 file, not Level-5. A Level-4
+//   file has no 128-byte header: it is a bare sequence of matrix records, each
+//     type:uint32 | mrows:uint32 | ncols:uint32 | imagf:uint32 | namelen:uint32
+//     | name[namelen] (NUL-terminated) | real data | [imaginary data]
+//   with column-major data. The "type" is an MOPT code = M*1000 + O*100 + P*10 + T:
+//   M (machine): 0 = IEEE little-endian (the only one supported here); O: always 0;
+//   P (precision): 0=f64 1=f32 2=i32 3=i16 4=u16 5=u8; T: 0=full 1=text 2=sparse.
+//   DSI Studio stores text members (report, parameter_id) as u8 full matrices.
 
-  // Outer miMATRIX tag wrapping the assembled body.
-  std::array<std::byte, 8> tag{};
-  Raw::store_LE<uint32_t>(miMATRIX, tag.data(), 0);
-  Raw::store_LE<uint32_t>(static_cast<uint32_t>(body.size()), tag.data(), 1);
-  out.insert(out.end(), tag.begin(), tag.end());
-  out.insert(out.end(), body.begin(), body.end());
-  // miMATRIX bodies are already a multiple of 8 bytes (every subelement is
-  //   padded), so no further outer padding is required.
+namespace {
+
+//! \brief decode a Level-4 MOPT word into an element class + width, or nullopt.
+/*! Returns nullopt for any word that is not a well-formed little-endian Level-4
+ * type — which is also how read() distinguishes a Level-4 file (first word is a
+ * valid MOPT) from a Level-5 file (first word is ASCII header text). */
+std::optional<std::pair<Class, size_t>> decode_level4_type(uint32_t mopt) {
+  const uint32_t machine = mopt / 1000;
+  const uint32_t order = (mopt / 100) % 10;
+  const uint32_t precision = (mopt / 10) % 10;
+  const uint32_t matrix_type = mopt % 10;
+  if (machine != 0 || order != 0 || matrix_type > 2)
+    return std::nullopt;
+  switch (precision) {
+  case 0:
+    return std::make_pair(Class::Double, size_t(8));
+  case 1:
+    return std::make_pair(Class::Single, size_t(4));
+  case 2:
+    return std::make_pair(Class::Int32, size_t(4));
+  case 3:
+    return std::make_pair(Class::Int16, size_t(2));
+  case 4:
+    return std::make_pair(Class::UInt16, size_t(2));
+  case 5:
+    return std::make_pair(Class::UInt8, size_t(1));
+  default:
+    return std::nullopt;
+  }
+}
+
+//! \brief parse a bare Level-4 record stream into the same File abstraction.
+File read_level4(const std::byte *bytes, size_t size) {
+  File file;
+  Cursor cursor(bytes, size);
+  // Each record needs five uint32 header fields; a shorter trailing remnant is
+  //   treated as end-of-file padding rather than an error.
+  while (cursor.remaining() >= 5 * sizeof(uint32_t)) {
+    const uint32_t mopt = cursor.read_scalar<uint32_t>();
+    const uint32_t mrows = cursor.read_scalar<uint32_t>();
+    const uint32_t ncols = cursor.read_scalar<uint32_t>();
+    const uint32_t imagf = cursor.read_scalar<uint32_t>();
+    const uint32_t namelen = cursor.read_scalar<uint32_t>();
+
+    const std::optional<std::pair<Class, size_t>> element = decode_level4_type(mopt);
+    if (!element.has_value())
+      throw Exception("unsupported MATLAB Level-4 matrix type " + str(mopt) + " at offset " +
+                      str(cursor.offset() - 5 * sizeof(uint32_t)));
+    if (namelen == 0)
+      throw Exception("malformed MATLAB Level-4 \".mat\": zero-length member name");
+
+    const std::byte *const name_bytes = cursor.read_block(namelen);
+    std::string name(reinterpret_cast<const char *>(name_bytes), namelen);
+    const size_t terminator = name.find('\0');
+    if (terminator != std::string::npos)
+      name.resize(terminator);
+
+    Array array;
+    array.cls = element->first;
+    array.rows = mrows;
+    array.cols = ncols;
+    const size_t data_bytes = static_cast<size_t>(mrows) * static_cast<size_t>(ncols) * element->second;
+    const std::byte *const data = cursor.read_block(data_bytes);
+    array.data.assign(data, data + data_bytes);
+    // ".tt" data is always real; skip any imaginary half rather than store it.
+    if (imagf != 0)
+      cursor.skip(data_bytes);
+
+    file.add(name, std::move(array));
+  }
+  return file;
 }
 
 } // namespace
@@ -338,7 +399,9 @@ const Array *File::find(std::string_view name) const {
   return nullptr;
 }
 
-File read(const std::byte *bytes, size_t size) {
+namespace {
+
+File read_level5(const std::byte *bytes, size_t size) {
   if (size < 128)
     throw Exception("MATLAB \".mat\" container too small to hold a Level-5 header");
 
@@ -374,22 +437,25 @@ File read(const std::byte *bytes, size_t size) {
   return file;
 }
 
+} // namespace
+
+File read(const std::byte *bytes, size_t size) {
+  // Distinguish the container generation. A Level-4 file (as DSI Studio writes for
+  //   ".tt") begins directly with a matrix record whose first word is a small MOPT
+  //   type code; a Level-5 file begins with a 128-byte ASCII "MATLAB 5.0 ..." header
+  //   whose first word is therefore never a valid MOPT.
+  if (size >= sizeof(uint32_t) && decode_level4_type(Raw::fetch_LE<uint32_t>(bytes)).has_value())
+    return read_level4(bytes, size);
+  return read_level5(bytes, size);
+}
+
 std::vector<std::byte> write(const File &file) {
+  // Emit the MATLAB Level-4 ("v4") layout that DSI Studio reads and writes for
+  //   ".tt": a bare, header-less sequence of little-endian matrix records. (MRtrix
+  //   previously wrote Level-5, which DSI Studio does not produce for ".tt".)
   std::vector<std::byte> out;
-
-  // 128-byte header: descriptive text, subsystem-offset zeros, version 0x0100,
-  //   little-endian indicator "IM".
-  const std::string description = "MATLAB 5.0 MAT-file, written by MRtrix3";
-  std::vector<std::byte> header(128, std::byte{0});
-  std::memcpy(header.data(), description.data(), std::min<size_t>(description.size(), 116));
-  Raw::store_LE<uint16_t>(0x0100, header.data() + 124, 0);
-  header[126] = static_cast<std::byte>('I');
-  header[127] = static_cast<std::byte>('M');
-  out.insert(out.end(), header.begin(), header.end());
-
   for (const auto &member : file.all())
-    append_matrix(out, member.first, member.second);
-
+    append_level4_matrix(out, member.first, member.second);
   return out;
 }
 

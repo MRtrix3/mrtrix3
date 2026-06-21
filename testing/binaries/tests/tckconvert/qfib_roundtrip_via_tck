@@ -8,11 +8,14 @@
 awk 'BEGIN{R=10;c=2;n=40;for(i=0;i<n;i++){a=i*0.1;printf "%.6f %.6f %.6f\n",R*cos(a),R*sin(a),c*a}}' > tmp_arc.txt
 tckconvert tmp_arc.txt tmp_arc.tck -force -quiet
 tckconvert tmp_arc.tck tmp.qfib -force -quiet
-# Header sanity: version byte (offset 0) = 2; quantization byte (offset 9) = 16
-#   (the default bit depth); nb_fibers (uint32 at offset 1) = streamline count.
+# Header sanity (reference format, version 1): version byte (offset 0) = 1; method
+#   byte (offset 9) = 0 (octahedral, the only method MRtrix writes); bit-depth byte
+#   (offset 10) = 16 (the default); nb_fibers (uint32 at offset 1) = streamline count.
 read v <<< "$(od -An -tu1 -j0 -N1 tmp.qfib)"
-[ "$v" = "2" ]
-read q <<< "$(od -An -tu1 -j9 -N1 tmp.qfib)"
+[ "$v" = "1" ]
+read m <<< "$(od -An -tu1 -j9 -N1 tmp.qfib)"
+[ "$m" = "0" ]
+read q <<< "$(od -An -tu1 -j10 -N1 tmp.qfib)"
 [ "$q" = "16" ]
 read nb <<< "$(od -An -tu4 -j1 -N4 tmp.qfib)"
 [ "$nb" = "1" ]

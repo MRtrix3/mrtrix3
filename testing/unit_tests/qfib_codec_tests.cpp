@@ -74,7 +74,7 @@ TEST(QFibOctahedral, RoundTrip16Bit) {
     const int32_t index = QFibCodec::octahedral_encode(u, BitDepth::M16);
     const Eigen::Vector3d decoded = QFibCodec::octahedral_decode(index, BitDepth::M16);
     EXPECT_NEAR(decoded.norm(), 1.0, 1e-9);
-    // 8 bits per coordinate (256 levels): sub-degree angular resolution.
+    // 8 signed bits per coordinate (+/-127): sub-degree angular resolution.
     EXPECT_LT(angle_between(u, decoded), 0.03);
   }
 }
@@ -84,7 +84,7 @@ TEST(QFibOctahedral, RoundTrip8Bit) {
     const int32_t index = QFibCodec::octahedral_encode(u, BitDepth::M8);
     const Eigen::Vector3d decoded = QFibCodec::octahedral_decode(index, BitDepth::M8);
     EXPECT_NEAR(decoded.norm(), 1.0, 1e-9);
-    // 4 bits per coordinate (16 levels): coarse but bounded resolution.
+    // 4 signed bits per coordinate (+/-7): coarse but bounded resolution.
     EXPECT_LT(angle_between(u, decoded), 0.5);
   }
 }
@@ -98,6 +98,31 @@ TEST(QFibOctahedral, IndexFitsWidth) {
     EXPECT_GE(i16, 0);
     EXPECT_LE(i16, 65535);
   }
+}
+
+/* ************************************************************************ */
+/*               Spherical-Fibonacci lattice (read-only)                  */
+/* ************************************************************************ */
+
+TEST(QFibFibonacci, DecodeIsUnitAndCoversSphere) {
+  // Every lattice index decodes to a unit vector; across the lattice the polar
+  //   cosine sweeps the full [-1, 1] range (the spiral covers the sphere).
+  double min_z = 1.0;
+  double max_z = -1.0;
+  for (int id = 0; id != 256; ++id) {
+    const Eigen::Vector3d v = QFibCodec::fibonacci_decode(id, BitDepth::M8);
+    EXPECT_NEAR(v.norm(), 1.0, 1e-9);
+    min_z = std::min(min_z, v.z());
+    max_z = std::max(max_z, v.z());
+  }
+  EXPECT_LT(min_z, -0.9);
+  EXPECT_GT(max_z, 0.9);
+}
+
+TEST(QFibFibonacci, EncodeIsRejected) {
+  // MRtrix implements the Fibonacci decoder for reading only; encoding throws.
+  EXPECT_THROW(QFibCodec::sphere_encode(Eigen::Vector3d(0, 0, 1), QFibCodec::Scheme::Fibonacci, BitDepth::M8),
+               MR::Exception);
 }
 
 /* ************************************************************************ */
@@ -174,10 +199,11 @@ TEST(QFibStepsize, FractionalTerminalReturnsNullopt) {
 TEST(QFibCompress, RoundTripWithinTolerance) {
   const Streamline<float> tck = make_helix(40, 5.0, 0.5, 0.08);
   const double ratio = QFibCodec::ratio_from_angle(MR::Math::pi / 2.0);
-  const QFibCodec::Compressed<float> c = QFibCodec::compress<float>(tck, BitDepth::M16, ratio, 1e-3);
+  const QFibCodec::Compressed<float> c =
+      QFibCodec::compress<float>(tck, QFibCodec::Scheme::Octahedral, BitDepth::M16, ratio, 1e-3);
   ASSERT_EQ(c.indices.size(), tck.size() - 2);
 
-  const Streamline<float> back = QFibCodec::decompress<float>(c, BitDepth::M16, ratio);
+  const Streamline<float> back = QFibCodec::decompress<float>(c, QFibCodec::Scheme::Octahedral, BitDepth::M16, ratio);
   ASSERT_EQ(back.size(), tck.size());
   // The two seed points are stored verbatim.
   EXPECT_LT((back[0] - tck[0]).norm(), 1e-5);
@@ -192,11 +218,13 @@ TEST(QFibCompress, RoundTripWithinTolerance) {
 TEST(QFibCompress, ReEncodingIsIdempotent) {
   const Streamline<float> tck = make_helix(40, 5.0, 0.5, 0.08);
   const double ratio = QFibCodec::ratio_from_angle(MR::Math::pi / 2.0);
-  const QFibCodec::Compressed<float> c1 = QFibCodec::compress<float>(tck, BitDepth::M16, ratio, 1e-3);
-  const Streamline<float> back = QFibCodec::decompress<float>(c1, BitDepth::M16, ratio);
+  const QFibCodec::Compressed<float> c1 =
+      QFibCodec::compress<float>(tck, QFibCodec::Scheme::Octahedral, BitDepth::M16, ratio, 1e-3);
+  const Streamline<float> back = QFibCodec::decompress<float>(c1, QFibCodec::Scheme::Octahedral, BitDepth::M16, ratio);
   // Re-compressing the decompressed streamline reproduces the same indices: the
   //   encoder measures each direction from the already-decoded previous point.
-  const QFibCodec::Compressed<float> c2 = QFibCodec::compress<float>(back, BitDepth::M16, ratio, 1e-3);
+  const QFibCodec::Compressed<float> c2 =
+      QFibCodec::compress<float>(back, QFibCodec::Scheme::Octahedral, BitDepth::M16, ratio, 1e-3);
   ASSERT_EQ(c1.indices.size(), c2.indices.size());
   EXPECT_EQ(c1.indices, c2.indices);
 }
@@ -205,12 +233,14 @@ TEST(QFibCompress, RejectsNonConstantStepsize) {
   Streamline<float> tck = make_helix(20, 5.0, 0.5, 0.1);
   tck[10] += Eigen::Vector3f(3.0F, 0.0F, 0.0F);
   const double ratio = QFibCodec::ratio_from_angle(MR::Math::pi / 2.0);
-  EXPECT_THROW(QFibCodec::compress<float>(tck, BitDepth::M16, ratio, 1e-3), MR::Exception);
+  EXPECT_THROW(QFibCodec::compress<float>(tck, QFibCodec::Scheme::Octahedral, BitDepth::M16, ratio, 1e-3),
+               MR::Exception);
 }
 
 TEST(QFibCompress, RejectsTooShort) {
   Streamline<float> tck;
   tck.push_back(Eigen::Vector3f(0, 0, 0));
   const double ratio = QFibCodec::ratio_from_angle(MR::Math::pi / 2.0);
-  EXPECT_THROW(QFibCodec::compress<float>(tck, BitDepth::M16, ratio, 1e-3), MR::Exception);
+  EXPECT_THROW(QFibCodec::compress<float>(tck, QFibCodec::Scheme::Octahedral, BitDepth::M16, ratio, 1e-3),
+               MR::Exception);
 }

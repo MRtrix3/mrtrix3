@@ -42,13 +42,18 @@ constexpr int32_t fiber_type_mrtrix = 5; //!< FIBERTYPE_MRTRIX: scanner-space co
 constexpr int32_t encoding_huffman = 0;  //!< HUFFMAN_ENCODING
 constexpr int32_t transform_none = 6;    //!< NO_TRANSFORMATION
 
-//! \brief Width of the size fields in the Huffman signal block.
-/*! The reference encoder writes xEncodedSize / yEncodedSize / zEncodedSize /
- * dictSize with std::ofstream::write(sizeof(...)); on its 64-bit build these are
- * size_t (8 bytes). Centralised here as a single tunable so the choice can be
- * flipped should byte-exact interop against a reference file demand it; the
- * MRtrix-internal round-trip is self-consistent regardless. */
-using EncodedSize = uint64_t;
+//! \brief Type of the size fields in the Huffman signal block.
+/*! The reference encoder (github.com/scilus/FiberCompression, Encoding.h
+ * writeHuffmanEncodedSignal) declares xEncodedSize / yEncodedSize / zEncodedSize
+ * / dictSize as plain \c int and writes them with std::ofstream::write(sizeof) —
+ * i.e. 32-bit little-endian, verified byte-exact against a reference ".zfib".
+ * The three signal sizes are bit lengths (the reference's encoded signal is a
+ * std::string with one character per code bit), packed eight-to-a-byte; dictSize
+ * is an entry count. */
+using EncodedSize = int32_t;
+
+//! \brief number of whole bytes occupied by \a bits LSB-first-packed code bits.
+constexpr size_t packed_bytes(const int32_t bits) noexcept { return (static_cast<size_t>(bits) + 7) / 8; }
 
 //! \brief A bounds-checked little-endian read cursor over an in-memory .zfib file.
 class ByteReader {
@@ -145,12 +150,14 @@ ZFIBReader<ValueType>::ZFIBReader(const std::filesystem::path &path, Properties 
     total_points += static_cast<uint64_t>(length);
   }
 
-  // Huffman signal block: the three encoded-stream sizes, the shared dictionary,
-  //   then the packed x, y and z streams in sequence.
-  const EncodedSize x_encoded_size = reader.fetch<EncodedSize>();
-  const EncodedSize y_encoded_size = reader.fetch<EncodedSize>();
-  const EncodedSize z_encoded_size = reader.fetch<EncodedSize>();
+  // Huffman signal block: the three encoded-stream bit lengths, the dictionary
+  //   entry count, the shared dictionary, then the packed x, y and z streams.
+  const EncodedSize x_encoded_bits = reader.fetch<EncodedSize>();
+  const EncodedSize y_encoded_bits = reader.fetch<EncodedSize>();
+  const EncodedSize z_encoded_bits = reader.fetch<EncodedSize>();
   const EncodedSize dict_size = reader.fetch<EncodedSize>();
+  if (x_encoded_bits < 0 || y_encoded_bits < 0 || z_encoded_bits < 0 || dict_size < 0)
+    throw Exception("malformed .zfib file: negative Huffman signal size");
 
   std::vector<Compression::Huffman::DictEntry> dictionary(static_cast<size_t>(dict_size));
   for (size_t i = 0; i != dictionary.size(); ++i) {
@@ -159,14 +166,16 @@ ZFIBReader<ValueType>::ZFIBReader(const std::filesystem::path &path, Properties 
   }
   const Compression::Huffman coder = Compression::Huffman::from_dictionary(std::move(dictionary));
 
-  const std::byte *const x_data = reader.take(static_cast<size_t>(x_encoded_size));
-  const std::byte *const y_data = reader.take(static_cast<size_t>(y_encoded_size));
-  const std::byte *const z_data = reader.take(static_cast<size_t>(z_encoded_size));
+  // Each signal size is a bit length; the packed stream occupies ceil(bits / 8)
+  //   bytes on disk, which is what bounds the decode and advances the cursor.
+  const std::byte *const x_data = reader.take(packed_bytes(x_encoded_bits));
+  const std::byte *const y_data = reader.take(packed_bytes(y_encoded_bits));
+  const std::byte *const z_data = reader.take(packed_bytes(z_encoded_bits));
 
   const size_t points = static_cast<size_t>(total_points);
-  xs = coder.decode(x_data, static_cast<size_t>(x_encoded_size), points);
-  ys = coder.decode(y_data, static_cast<size_t>(y_encoded_size), points);
-  zs = coder.decode(z_data, static_cast<size_t>(z_encoded_size), points);
+  xs = coder.decode(x_data, packed_bytes(x_encoded_bits), points);
+  ys = coder.decode(y_data, packed_bytes(y_encoded_bits), points);
+  zs = coder.decode(z_data, packed_bytes(z_encoded_bits), points);
 
   // Colour flag: a minimal writer emits 0 (no colour block). A non-zero flag
   //   indicates an appended colour block this reader does not decode; warn and
@@ -265,9 +274,9 @@ template <class ValueType> void ZFIBWriter<ValueType>::finalise() {
   const Compression::Huffman coder = Compression::Huffman::from_histogram(histogram);
   const std::vector<Compression::Huffman::DictEntry> &dictionary = coder.dictionary();
 
-  const std::vector<std::byte> x_encoded = coder.encode(xs);
-  const std::vector<std::byte> y_encoded = coder.encode(ys);
-  const std::vector<std::byte> z_encoded = coder.encode(zs);
+  const Compression::Huffman::Encoded x_encoded = coder.encode(xs);
+  const Compression::Huffman::Encoded y_encoded = coder.encode(ys);
+  const Compression::Huffman::Encoded z_encoded = coder.encode(zs);
 
   std::vector<std::byte> out;
   append_LE<int32_t>(out, fiber_type_mrtrix);
@@ -277,17 +286,19 @@ template <class ValueType> void ZFIBWriter<ValueType>::finalise() {
   for (const int32_t length : line_sizes)
     append_LE<int32_t>(out, length);
 
-  append_LE<EncodedSize>(out, static_cast<EncodedSize>(x_encoded.size()));
-  append_LE<EncodedSize>(out, static_cast<EncodedSize>(y_encoded.size()));
-  append_LE<EncodedSize>(out, static_cast<EncodedSize>(z_encoded.size()));
+  // The three signal sizes are bit lengths (matching the reference encoder); the
+  //   packed streams that follow occupy ceil(bits / 8) bytes each.
+  append_LE<EncodedSize>(out, static_cast<EncodedSize>(x_encoded.bit_count));
+  append_LE<EncodedSize>(out, static_cast<EncodedSize>(y_encoded.bit_count));
+  append_LE<EncodedSize>(out, static_cast<EncodedSize>(z_encoded.bit_count));
   append_LE<EncodedSize>(out, static_cast<EncodedSize>(dictionary.size()));
   for (const Compression::Huffman::DictEntry &entry : dictionary) {
     append_LE<float>(out, entry.symbol);
     append_LE<float>(out, entry.frequency);
   }
-  out.insert(out.end(), x_encoded.begin(), x_encoded.end());
-  out.insert(out.end(), y_encoded.begin(), y_encoded.end());
-  out.insert(out.end(), z_encoded.begin(), z_encoded.end());
+  out.insert(out.end(), x_encoded.bytes.begin(), x_encoded.bytes.end());
+  out.insert(out.end(), y_encoded.bytes.begin(), y_encoded.bytes.end());
+  out.insert(out.end(), z_encoded.bytes.begin(), z_encoded.bytes.end());
 
   // Colour flag: this writer emits geometry only, so no colour block follows.
   append_LE<uint8_t>(out, static_cast<uint8_t>(0));

@@ -33,11 +33,15 @@ namespace MR::DWI::Tractography {
 //! \brief Streaming reader backend for the lossy ".qfib" compression format.
 /*! A ".qfib" dataset (Mercier et al., "QFib: Fast and Efficient Brain Tractogram
  * Compression") stores each streamline as its first two points plus a sequence
- * of octahedrally-quantized unit tangents, exploiting a constant per-streamline
- * step size and a bounded maximum deviation angle. The 10-byte header carries the
- * format version, the streamline count, the cap-to-sphere area ratio and the
- * quantization bit depth; records are variable-length with no offset table, so
- * the format is read sequentially (one streamline per operator()).
+ * of quantized unit tangents, exploiting a constant per-streamline step size and a
+ * bounded maximum deviation angle. The 11-byte header carries the format version,
+ * the streamline count, the cap-to-sphere area ratio, the quantization method and
+ * the bit depth; records are variable-length with no offset table, so the format is
+ * read sequentially (one streamline per operator()).
+ *
+ * This is the reference format (Mercier et al., version 1); the header's method
+ * byte selects signed-octahedral or spherical-Fibonacci index packing, both of
+ * which are read.
  *
  * Coordinates are absolute scanner-space mm (as in ".tck"), so no grid transform
  * is applied and the OptionalHeader is ignored. Explicitly instantiated for float
@@ -51,6 +55,7 @@ public:
 private:
   const std::filesystem::path path;
   std::ifstream in;
+  Formats::QFibCodec::Scheme scheme;
   Formats::QFibCodec::BitDepth bitdepth;
   double ratio;
   uint32_t nb_fibers;
@@ -82,6 +87,7 @@ public:
 private:
   const std::filesystem::path path;
   File::OFStream out;
+  Formats::QFibCodec::Scheme scheme;
   Formats::QFibCodec::BitDepth bitdepth;
   double ratio;
   double step_tolerance;

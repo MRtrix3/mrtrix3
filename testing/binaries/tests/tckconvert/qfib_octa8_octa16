@@ -10,10 +10,11 @@ tckconvert tmp16.qfib tmp16_back.tck -force -quiet
 tckconvert tmp_arc.tck tmp8.qfib -force -quiet -qfib_bits 8
 tckconvert tmp8.qfib tmp8_back.tck -force -quiet
 
-# The 16-bit quantization byte is 16, the 8-bit one is 8.
-read q16 <<< "$(od -An -tu1 -j9 -N1 tmp16.qfib)"
+# The bit-depth byte (offset 10 in the version-1 header, after the method byte) is
+#   16 for the 16-bit file and 8 for the 8-bit file.
+read q16 <<< "$(od -An -tu1 -j10 -N1 tmp16.qfib)"
 [ "$q16" = "16" ]
-read q8 <<< "$(od -An -tu1 -j9 -N1 tmp8.qfib)"
+read q8 <<< "$(od -An -tu1 -j10 -N1 tmp8.qfib)"
 [ "$q8" = "8" ]
 
 # The 16-bit reconstruction satisfies a tight error bound that the 8-bit one

@@ -33,8 +33,16 @@ namespace MR::DWI::Tractography {
 
 namespace {
 
-//! \brief the ".qfib" format version this handler reads and writes.
-constexpr uint8_t qfib_version = 2;
+//! \brief the on-disk format version written by the reference encoder (Mercier et al.).
+/*! ".qfib" has only ever defined this single version. (MRtrix once also wrote a
+ * non-standard "version 2" with a different, manuscript-derived octahedral packing;
+ * as no such files exist outside MRtrix's own former output, that variant has been
+ * removed — MRtrix now reads and writes only the reference format.) */
+constexpr uint8_t qfib_version = 1;
+
+//! \brief the method byte values (offset 9): which per-direction quantization was used.
+constexpr uint8_t qfib_method_octahedral = 0;
+constexpr uint8_t qfib_method_fibonacci = 1;
 
 //! \brief default relative tolerance for the constant-stepsize requirement.
 constexpr double qfib_default_step_tolerance = 5.0e-2;
@@ -42,8 +50,8 @@ constexpr double qfib_default_step_tolerance = 5.0e-2;
 //! \brief default maximum deviation angle (degrees) when none is otherwise known.
 constexpr double qfib_default_max_angle = 90.0;
 
-//! \brief on-disk header size in bytes: version + count + ratio + quantization.
-constexpr size_t qfib_header_bytes = 10;
+//! \brief on-disk header size: version(1) + count(4) + ratio(4) + method(1) + bit depth(1).
+constexpr size_t qfib_header_bytes = 11;
 //! \brief on-disk per-fiber preamble: first + second point + nb_compressed.
 constexpr size_t qfib_record_preamble_bytes = 3 * sizeof(float) + 3 * sizeof(float) + sizeof(uint16_t);
 
@@ -74,7 +82,11 @@ constexpr size_t index_bytes(Formats::QFibCodec::BitDepth bitdepth) noexcept {
 
 template <class ValueType>
 QFibReader<ValueType>::QFibReader(const std::filesystem::path &path, Properties &properties)
-    : path(path), in(path, std::ios::binary), nb_fibers(0), current_index(0) {
+    : path(path),
+      in(path, std::ios::binary),
+      scheme(Formats::QFibCodec::Scheme::Octahedral),
+      nb_fibers(0),
+      current_index(0) {
   if (!in)
     throw Exception("failed to open .qfib file \"" + path.string() + "\"");
 
@@ -82,25 +94,43 @@ QFibReader<ValueType>::QFibReader(const std::filesystem::path &path, Properties 
   read_exact(header.data(), header.size());
 
   const uint8_t version = Raw::fetch_LE<uint8_t>(header.data());
-  nb_fibers = Raw::fetch_LE<uint32_t>(header.data() + 1);
-  const float header_ratio = Raw::fetch_LE<float>(header.data() + 5);
-  const uint8_t quantization = Raw::fetch_LE<uint8_t>(header.data() + 9);
-
   if (version != qfib_version)
     throw Exception(Exception("declares version " + str(static_cast<int>(version)) + ", but only version " +
                               str(static_cast<int>(qfib_version)) + " is supported"),
                     "cannot read \"" + path.string() + "\" as a .qfib tractography file");
-  bitdepth = bitdepth_from_byte(quantization, path);
+  nb_fibers = Raw::fetch_LE<uint32_t>(header.data() + 1);
+  const float header_ratio = Raw::fetch_LE<float>(header.data() + 5);
+  const uint8_t method = Raw::fetch_LE<uint8_t>(header.data() + 9);
+  const uint8_t bit_depth_byte = Raw::fetch_LE<uint8_t>(header.data() + 10);
+
+  std::string scheme_label;
+  switch (method) {
+  case qfib_method_octahedral:
+    scheme = Formats::QFibCodec::Scheme::Octahedral;
+    scheme_label = "octahedral";
+    break;
+  case qfib_method_fibonacci:
+    scheme = Formats::QFibCodec::Scheme::Fibonacci;
+    scheme_label = "spherical-Fibonacci";
+    break;
+  default:
+    throw Exception(Exception("declares quantization method " + str(static_cast<int>(method)) +
+                              ", but only octahedral (0) and spherical-Fibonacci (1) are supported"),
+                    "cannot read \"" + path.string() + "\" as a .qfib tractography file");
+  }
+
+  bitdepth = bitdepth_from_byte(bit_depth_byte, path);
   ratio = static_cast<double>(header_ratio);
   if (ratio <= 0.0)
     throw Exception("malformed .qfib file \"" + path.string() + "\": non-positive cap ratio");
 
   // Provenance: the deviation angle implied by the stored ratio (re-read by the
   //   writer as the default angle, so a .qfib -> .qfib copy preserves the ratio),
-  //   plus the quantization depth recorded as a comment.
+  //   plus the quantization method and depth recorded as a comment.
   const double psi_degrees = Formats::QFibCodec::angle_from_ratio(ratio) * 180.0 / Math::pi;
   properties["max_angle"] = str(psi_degrees);
-  properties.comments.push_back("QFib octahedral quantization: " + str(static_cast<int>(quantization)) + "-bit");
+  properties.comments.push_back("QFib " + scheme_label + " quantization: " + str(static_cast<int>(bit_depth_byte)) +
+                                "-bit");
 }
 
 template <class ValueType> void QFibReader<ValueType>::read_exact(std::byte *buffer, size_t count) {
@@ -136,7 +166,7 @@ template <class ValueType> bool QFibReader<ValueType>::operator()(Streamline<Val
       cfiber.indices[i] = static_cast<int32_t>(Raw::fetch_LE<uint16_t>(packed.data(), i));
   }
 
-  tck = Formats::QFibCodec::decompress<ValueType>(cfiber, bitdepth, ratio);
+  tck = Formats::QFibCodec::decompress<ValueType>(cfiber, scheme, bitdepth, ratio);
   tck.set_index(current_index);
   tck.weight = 1.0F;
   ++current_index;
@@ -149,9 +179,18 @@ template <class ValueType> bool QFibReader<ValueType>::operator()(Streamline<Val
 
 template <class ValueType>
 QFibWriter<ValueType>::QFibWriter(const std::filesystem::path &path, const Properties &properties)
-    : path(path), step_tolerance(qfib_default_step_tolerance), count_offset(0), nb_fibers(0), warned_short(false) {
+    : path(path),
+      scheme(Formats::QFibCodec::Scheme::Octahedral),
+      step_tolerance(qfib_default_step_tolerance),
+      count_offset(0),
+      nb_fibers(0),
+      warned_short(false) {
   if (path.extension() != ".qfib")
     throw Exception("output .qfib file must use the .qfib suffix");
+
+  // Output is always the reference format (version 1) with octahedral quantization:
+  //   MRtrix does not implement the spherical-Fibonacci encoder, and the reference
+  //   tool reads either method, so octahedral output is fully interoperable.
 
   // Bit depth: -qfib_bits is either 8 or 16, defaulting to 16.
   switch (App::get_option_value("qfib_bits", 16)) {
@@ -184,13 +223,14 @@ QFibWriter<ValueType>::QFibWriter(const std::filesystem::path &path, const Prope
 
   out.open(path, std::ios::out | std::ios::binary | std::ios::trunc);
 
-  // Write the header with a placeholder streamline count, recording the count
-  //   field offset for backfill at finalisation.
+  // Write the header with a placeholder streamline count (offset 1), recording
+  //   that offset for backfill at finalisation.
   std::array<std::byte, qfib_header_bytes> header{};
   Raw::store_LE<uint8_t>(qfib_version, header.data());
   Raw::store_LE<uint32_t>(0U, header.data() + 1);
   Raw::store_LE<float>(static_cast<float>(ratio), header.data() + 5);
-  Raw::store_LE<uint8_t>(static_cast<uint8_t>(bitdepth), header.data() + 9);
+  Raw::store_LE<uint8_t>(qfib_method_octahedral, header.data() + 9);
+  Raw::store_LE<uint8_t>(static_cast<uint8_t>(bitdepth), header.data() + 10);
   out.write(reinterpret_cast<const char *>(header.data()), header.size());
   count_offset = 1;
 }
@@ -208,7 +248,7 @@ template <class ValueType> bool QFibWriter<ValueType>::operator()(const Streamli
   enforce_vertices(tck, qfib_vertex_tolerance);
   Formats::QFibCodec::Compressed<ValueType> cfiber;
   try {
-    cfiber = Formats::QFibCodec::compress<ValueType>(tck, bitdepth, ratio, step_tolerance);
+    cfiber = Formats::QFibCodec::compress<ValueType>(tck, scheme, bitdepth, ratio, step_tolerance);
   } catch (Exception &e) {
     throw Exception(e, "cannot write streamline " + str(nb_fibers) + " to \"" + path.string() + "\"");
   }

@@ -89,16 +89,20 @@ private:
   std::vector<std::pair<std::string, Array>> members;
 };
 
-//! \brief parse a Level-5 ".mat" container from an in-memory byte buffer.
+//! \brief parse a MATLAB ".mat" container (Level-4 or Level-5) from an in-memory buffer.
 /*! \a bytes is the already-decompressed ".mat" content (the ".tt" handler
- * gzip-inflates the file first). Only the numeric/character members needed by
- * ".tt" are retained; cell/struct/sparse/complex members raise a clean error.
- * A hierarchical MR::Exception is thrown on any structural inconsistency. */
+ * gzip-inflates the file first). The container generation is detected
+ * automatically: DSI Studio writes ".tt" as a header-less Level-4 ("v4") record
+ * stream, while the legacy path is Level-5. Only the numeric/character members
+ * needed by ".tt" are retained; aggregate (cell/struct/sparse) members are
+ * skipped or raise a clean error. A hierarchical MR::Exception is thrown on any
+ * structural inconsistency. */
 File read(const std::byte *bytes, size_t size);
 
-//! \brief serialise a Level-5 ".mat" container to a byte buffer.
-/*! Produces the 128-byte header followed by one miMATRIX element per member.
- * The result is suitable for gzip-compression into a ".tt" file. */
+//! \brief serialise a MATLAB Level-4 ".mat" container to a byte buffer.
+/*! Produces the header-less Level-4 record stream that DSI Studio reads and
+ * writes for ".tt" (one matrix record per member). The result is suitable for
+ * gzip-compression into a ".tt" file. */
 std::vector<std::byte> write(const File &file);
 
 } // namespace MR::DWI::Tractography::Formats::Mat

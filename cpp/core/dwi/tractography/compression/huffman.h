@@ -36,10 +36,15 @@ namespace MR::DWI::Tractography::Compression {
  * byte-identical to the writer's, both sides must order nodes identically. The
  * tie-break replicates the reference encoder
  * (github.com/scilus/FiberCompression, Huffman.h \c NodeOrder): a min-heap on
- * frequency, then leaf-before-internal, then recursion on the children, then by
- * symbol value. Because that ordering is total over the leaf set, the tree
- * depends only on the \c (symbol, frequency) multiset and not on insertion
- * order, so from_histogram() and from_dictionary() produce the same tree.
+ * frequency, then leaf-before-internal, then recursion on the children, then —
+ * for two leaves of equal frequency — by their \e storage \e index, i.e. the
+ * order in which the entries appear in the dictionary block. The reference builds
+ * its tree over a std::map<int,float> keyed by that index and breaks ties with
+ * \c *(a->data) < *(b->data) on the index, \e not on the symbol value; so the
+ * dictionary's on-disk order must be preserved (from_dictionary() must not
+ * re-sort it). from_histogram() emits the dictionary in ascending-symbol order,
+ * for which storage-index order and symbol order coincide, so its tree is
+ * unchanged and a file it writes round-trips identically.
  *
  * \par Frequencies
  * Frequencies are stored as a normalised probability in \c float (count divided
@@ -61,6 +66,16 @@ public:
     float frequency;
   };
 
+  //! \brief An encoded signal: the LSB-first packed bytes and the exact bit length.
+  /*! \c bit_count is the number of significant code bits; the final byte of \c
+   * bytes may carry up to seven trailing pad bits beyond that. The .zfib on-disk
+   * format stores the bit length (not the byte length), so the reader can place
+   * the boundary between consecutive packed streams. */
+  struct Encoded {
+    std::vector<std::byte> bytes;
+    size_t bit_count;
+  };
+
   //! \brief Build a coder from a symbol→count histogram (writer side).
   static Huffman from_histogram(const std::map<float, uint64_t> &histogram);
 
@@ -70,8 +85,8 @@ public:
   //! \brief the dictionary entries, in ascending symbol order.
   const std::vector<DictEntry> &dictionary() const { return dict; }
 
-  //! \brief Encode \a symbols into a packed byte stream (LSB-first).
-  std::vector<std::byte> encode(const std::vector<float> &symbols) const;
+  //! \brief Encode \a symbols into a packed byte stream (LSB-first) plus its bit length.
+  Encoded encode(const std::vector<float> &symbols) const;
 
   //! \brief Decode \a symbol_count symbols from \a num_bytes packed bytes.
   std::vector<float> decode(const std::byte *data, size_t num_bytes, size_t symbol_count) const;
@@ -79,12 +94,15 @@ public:
 private:
   //! \brief A tree node held in an index-addressed arena (no naked pointers).
   /*! A node is a leaf when \c left is negative; an internal node stores its two
-   * child arena indices in \c left (bit 0) and \c right (bit 1). */
+   * child arena indices in \c left (bit 0) and \c right (bit 1). \c order is the
+   * leaf's storage index in the dictionary block (the reference tie-break key);
+   * it is unused for internal nodes. */
   struct Node {
     float frequency;
     int left;
     int right;
     float symbol;
+    int order;
   };
 
   std::vector<Node> nodes; //!< arena of leaves and internal nodes

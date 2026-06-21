@@ -20,6 +20,7 @@
 #include <cmath>
 
 #include "exception.h"
+#include "math/math.h"
 #include "mrtrix.h"
 
 namespace MR::DWI::Tractography::Formats::QFibCodec {
@@ -34,13 +35,33 @@ constexpr double pole_tolerance = 1.0e-12;
 //! \brief number of bits spent on each of the two octahedral coordinates.
 constexpr int half_bits(BitDepth bits) noexcept { return static_cast<int>(bits) / 2; }
 
+//! \brief total number of distinct directions a Fibonacci word can encode (2^bits).
+constexpr double fibonacci_lattice_size(BitDepth bits) noexcept {
+  return static_cast<double>(uint32_t(1) << static_cast<int>(bits));
+}
+
+//! \brief the golden ratio, the generator of the spherical-Fibonacci spiral.
+constexpr double golden_ratio = 1.6180339887498948482045868343656381;
+
 //! \brief sign of \a v, with zero mapped to +1 (octahedral unwrap convention).
 constexpr double sign_not_zero(double v) noexcept { return v >= 0.0 ? 1.0 : -1.0; }
+
+//! \brief the Meyer-2010 lower-hemisphere unwrap of an octahedral (u, v) pair.
+/*! Shared by the encode and decode of both octahedral schemes: when the implied z
+ * is negative the pair is reflected across the octahedron diagonal. The operation
+ * is its own structural inverse and identical in v1 and v2. */
+Eigen::Vector2d octahedral_fold(double u, double v) noexcept {
+  return {(1.0 - std::fabs(v)) * sign_not_zero(u), (1.0 - std::fabs(u)) * sign_not_zero(v)};
+}
+
+//! \brief the fractional part of \a x in [0, 1).
+double fract(double x) noexcept { return x - std::floor(x); }
 
 } // namespace
 
 /* ************************************************************************ */
 /*                  Octahedral unit-vector quantization                   */
+/*                          (Meyer et al. 2010)                           */
 /* ************************************************************************ */
 
 int32_t octahedral_encode(const Eigen::Vector3d &unit, BitDepth bits) noexcept {
@@ -52,46 +73,92 @@ int32_t octahedral_encode(const Eigen::Vector3d &unit, BitDepth bits) noexcept {
   double u = n.x();
   double v = n.y();
   if (n.z() < 0.0) {
-    const double folded_u = (1.0 - std::fabs(v)) * sign_not_zero(u);
-    const double folded_v = (1.0 - std::fabs(u)) * sign_not_zero(v);
-    u = folded_u;
-    v = folded_v;
+    const Eigen::Vector2d folded = octahedral_fold(u, v);
+    u = folded.x();
+    v = folded.y();
   }
 
-  // Snap each coordinate in [-1, 1] to an unsigned integer of half_bits width,
-  //   then pack the pair into one index (low coordinate in the least-significant
-  //   half) that fits an int8 (M8) or int16 (M16) on disk.
-  const int32_t span = (1 << half_bits(bits)) - 1;
-  const auto quantize = [span](double coordinate) noexcept -> int32_t {
+  // Quantize each coordinate to a *signed* integer of half_bits width: map [-1, 1]
+  //   onto [-(2^(half-1)-1), +(2^(half-1)-1)] and store the pair as two's-complement
+  //   sub-fields, the first in the high half of the word.
+  const int half = half_bits(bits);
+  const int32_t denom = (1 << (half - 1)) - 1;
+  const int32_t mask = (1 << half) - 1;
+  const auto quantize = [denom, mask](double coordinate) noexcept -> int32_t {
     const double clamped = std::min(1.0, std::max(-1.0, coordinate));
-    return static_cast<int32_t>(std::lround((clamped + 1.0) * 0.5 * span));
+    return static_cast<int32_t>(std::lround(clamped * denom)) & mask;
   };
-  const int32_t qu = quantize(u);
-  const int32_t qv = quantize(v);
-  return qu * (span + 1) + qv;
+  return (quantize(u) << half) | quantize(v);
 }
 
 Eigen::Vector3d octahedral_decode(int32_t index, BitDepth bits) noexcept {
-  const int32_t base = 1 << half_bits(bits);
-  const int32_t span = base - 1;
-  const int32_t qu = (index / base) % base;
-  const int32_t qv = index % base;
+  const int half = half_bits(bits);
+  const int32_t full = 1 << half;
+  const int32_t mask = full - 1;
+  const int32_t sign_bit = 1 << (half - 1);
+  const double denom = static_cast<double>((1 << (half - 1)) - 1);
 
-  const auto dequantize = [span](int32_t q) noexcept -> double {
-    return (static_cast<double>(q) / static_cast<double>(span)) * 2.0 - 1.0;
+  // Extract two signed two's-complement sub-fields (high half = first coordinate).
+  const auto sign_extend = [full, sign_bit](int32_t field) noexcept -> int32_t {
+    return (field >= sign_bit) ? field - full : field;
   };
-  double u = dequantize(qu);
-  double v = dequantize(qv);
+  const int32_t e0 = sign_extend((index >> half) & mask);
+  const int32_t e1 = sign_extend(index & mask);
+
+  const double u = std::min(1.0, std::max(-1.0, static_cast<double>(e0) / denom));
+  const double v = std::min(1.0, std::max(-1.0, static_cast<double>(e1) / denom));
 
   Eigen::Vector3d n(u, v, 1.0 - std::fabs(u) - std::fabs(v));
   if (n.z() < 0.0) {
-    const double folded_x = (1.0 - std::fabs(n.y())) * sign_not_zero(n.x());
-    const double folded_y = (1.0 - std::fabs(n.x())) * sign_not_zero(n.y());
-    n.x() = folded_x;
-    n.y() = folded_y;
+    const Eigen::Vector2d folded = octahedral_fold(n.x(), n.y());
+    n.x() = folded.x();
+    n.y() = folded.y();
   }
   n.normalize();
   return n;
+}
+
+/* ************************************************************************ */
+/*                  Spherical-Fibonacci lattice (decode)                  */
+/*                       (Keinert et al. 2015)                            */
+/* ************************************************************************ */
+
+Eigen::Vector3d fibonacci_decode(int32_t index, BitDepth bits) noexcept {
+  const double lattice_size = fibonacci_lattice_size(bits);
+  // The stored word is an unsigned lattice index over the whole 2^bits range.
+  const double id = static_cast<double>(static_cast<uint32_t>(index));
+  const double m = 1.0 - 1.0 / lattice_size;
+  const double phi = 2.0 * Math::pi * fract(id * golden_ratio);
+  const double cos_theta = m - 2.0 * id / lattice_size;
+  const double sin_theta = std::sqrt(std::max(0.0, 1.0 - cos_theta * cos_theta));
+  Eigen::Vector3d n(std::cos(phi) * sin_theta, std::sin(phi) * sin_theta, cos_theta);
+  n.normalize();
+  return n;
+}
+
+/* ************************************************************************ */
+/*                      Method-parameterised dispatch                     */
+/* ************************************************************************ */
+
+Eigen::Vector3d sphere_decode(int32_t index, Scheme scheme, BitDepth bits) noexcept {
+  switch (scheme) {
+  case Scheme::Fibonacci:
+    return fibonacci_decode(index, bits);
+  case Scheme::Octahedral:
+  default:
+    return octahedral_decode(index, bits);
+  }
+}
+
+int32_t sphere_encode(const Eigen::Vector3d &unit, Scheme scheme, BitDepth bits) {
+  switch (scheme) {
+  case Scheme::Fibonacci:
+    throw Exception("the spherical-Fibonacci .qfib method is supported for reading only,"
+                    " not for writing");
+  case Scheme::Octahedral:
+  default:
+    return octahedral_encode(unit, bits);
+  }
 }
 
 /* ************************************************************************ */
@@ -184,7 +251,8 @@ template <class V> std::optional<double> constant_stepsize(const Streamline<V> &
   return delta;
 }
 
-template <class V> Compressed<V> compress(const Streamline<V> &tck, BitDepth bits, double ratio, double step_tol) {
+template <class V>
+Compressed<V> compress(const Streamline<V> &tck, Scheme scheme, BitDepth bits, double ratio, double step_tol) {
   if (tck.size() < 2)
     throw Exception("cannot QFib-compress a streamline of fewer than two vertices");
 
@@ -209,15 +277,15 @@ template <class V> Compressed<V> compress(const Streamline<V> &tck, BitDepth bit
   //   encoder tracks exactly what the decoder will reconstruct.
   for (size_t i = 2; i != tck.size(); ++i) {
     const Eigen::Vector3d tangent = (tck[i].template cast<double>() - current).normalized();
-    const int32_t index = octahedral_encode(inverse_mapping(tangent, axis, ratio), bits);
+    const int32_t index = sphere_encode(inverse_mapping(tangent, axis, ratio), scheme, bits);
     out.indices.push_back(index);
-    axis = mapping(octahedral_decode(index, bits), axis, ratio);
+    axis = mapping(sphere_decode(index, scheme, bits), axis, ratio);
     current += stepsize * axis;
   }
   return out;
 }
 
-template <class V> Streamline<V> decompress(const Compressed<V> &cfiber, BitDepth bits, double ratio) {
+template <class V> Streamline<V> decompress(const Compressed<V> &cfiber, Scheme scheme, BitDepth bits, double ratio) {
   Streamline<V> tck;
   tck.reserve(cfiber.indices.size() + 2);
   tck.push_back(cfiber.first);
@@ -229,7 +297,7 @@ template <class V> Streamline<V> decompress(const Compressed<V> &cfiber, BitDept
   Eigen::Vector3d axis = (second - origin).normalized();
 
   for (const int32_t index : cfiber.indices) {
-    const Eigen::Vector3d tangent = mapping(octahedral_decode(index, bits), axis, ratio);
+    const Eigen::Vector3d tangent = mapping(sphere_decode(index, scheme, bits), axis, ratio);
     const Eigen::Vector3d next = tck.back().template cast<double>() + stepsize * tangent;
     tck.push_back(next.template cast<V>());
     axis = tangent;
@@ -243,9 +311,9 @@ template <class V> Streamline<V> decompress(const Compressed<V> &cfiber, BitDept
 
 template std::optional<double> constant_stepsize<float>(const Streamline<float> &, double);
 template std::optional<double> constant_stepsize<double>(const Streamline<double> &, double);
-template Compressed<float> compress<float>(const Streamline<float> &, BitDepth, double, double);
-template Compressed<double> compress<double>(const Streamline<double> &, BitDepth, double, double);
-template Streamline<float> decompress<float>(const Compressed<float> &, BitDepth, double);
-template Streamline<double> decompress<double>(const Compressed<double> &, BitDepth, double);
+template Compressed<float> compress<float>(const Streamline<float> &, Scheme, BitDepth, double, double);
+template Compressed<double> compress<double>(const Streamline<double> &, Scheme, BitDepth, double, double);
+template Streamline<float> decompress<float>(const Compressed<float> &, Scheme, BitDepth, double);
+template Streamline<double> decompress<double>(const Compressed<double> &, Scheme, BitDepth, double);
 
 } // namespace MR::DWI::Tractography::Formats::QFibCodec

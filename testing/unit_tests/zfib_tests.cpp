@@ -127,8 +127,8 @@ TEST(ZFIBHuffman, LosslessRoundTrip) {
   const std::map<float, uint64_t> histogram = {{1.0F, 5}, {2.0F, 3}, {3.0F, 1}, {4.0F, 1}};
   const Huffman coder = Huffman::from_histogram(histogram);
   const std::vector<float> message = {1, 2, 3, 4, 1, 1, 2, 1, 3, 2};
-  const std::vector<std::byte> encoded = coder.encode(message);
-  const std::vector<float> decoded = coder.decode(encoded.data(), encoded.size(), message.size());
+  const Huffman::Encoded encoded = coder.encode(message);
+  const std::vector<float> decoded = coder.decode(encoded.bytes.data(), encoded.bytes.size(), message.size());
   EXPECT_EQ(decoded, message);
 }
 
@@ -136,21 +136,22 @@ TEST(ZFIBHuffman, SingleSymbol) {
   const std::map<float, uint64_t> histogram = {{7.5F, 4}};
   const Huffman coder = Huffman::from_histogram(histogram);
   const std::vector<float> message = {7.5F, 7.5F, 7.5F};
-  const std::vector<std::byte> encoded = coder.encode(message);
+  const Huffman::Encoded encoded = coder.encode(message);
   // A single-symbol code word is empty, so no bits (and no bytes) are emitted.
-  EXPECT_TRUE(encoded.empty());
-  const std::vector<float> decoded = coder.decode(encoded.data(), encoded.size(), message.size());
+  EXPECT_TRUE(encoded.bytes.empty());
+  EXPECT_EQ(encoded.bit_count, size_t(0));
+  const std::vector<float> decoded = coder.decode(encoded.bytes.data(), encoded.bytes.size(), message.size());
   EXPECT_EQ(decoded, message);
 }
 
 TEST(ZFIBHuffman, FrequencyTieRoundTrips) {
-  // All symbols equally frequent: the symbol-value tie-break must still yield a
+  // All symbols equally frequent: the storage-order tie-break must still yield a
   //   valid, invertible code.
   const std::map<float, uint64_t> histogram = {{1.0F, 2}, {2.0F, 2}, {3.0F, 2}, {4.0F, 2}};
   const Huffman coder = Huffman::from_histogram(histogram);
   const std::vector<float> message = {4, 3, 2, 1, 1, 2, 3, 4};
-  const std::vector<std::byte> encoded = coder.encode(message);
-  const std::vector<float> decoded = coder.decode(encoded.data(), encoded.size(), message.size());
+  const Huffman::Encoded encoded = coder.encode(message);
+  const std::vector<float> decoded = coder.decode(encoded.bytes.data(), encoded.bytes.size(), message.size());
   EXPECT_EQ(decoded, message);
 }
 
@@ -162,10 +163,11 @@ TEST(ZFIBHuffman, HistogramDictionaryEquivalence) {
   const Huffman from_dict = Huffman::from_dictionary(from_hist.dictionary());
 
   const std::vector<float> message = {0, 0, -2, 12, 3.5F, 9, 0, 12, -2, 3.5F, 0, 12};
-  const std::vector<std::byte> encoded_a = from_hist.encode(message);
-  const std::vector<std::byte> encoded_b = from_dict.encode(message);
-  EXPECT_EQ(encoded_a, encoded_b);
+  const Huffman::Encoded encoded_a = from_hist.encode(message);
+  const Huffman::Encoded encoded_b = from_dict.encode(message);
+  EXPECT_EQ(encoded_a.bytes, encoded_b.bytes);
+  EXPECT_EQ(encoded_a.bit_count, encoded_b.bit_count);
 
-  const std::vector<float> decoded = from_dict.decode(encoded_a.data(), encoded_a.size(), message.size());
+  const std::vector<float> decoded = from_dict.decode(encoded_a.bytes.data(), encoded_a.bytes.size(), message.size());
   EXPECT_EQ(decoded, message);
 }

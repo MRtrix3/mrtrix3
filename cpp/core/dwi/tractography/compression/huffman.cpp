@@ -48,7 +48,9 @@ bool Huffman::node_less(const int a, const int b) const {
       return false;
     return node_less(na.right, nb.right);
   }
-  return na.symbol < nb.symbol;
+  // Two leaves of equal frequency: the reference compares the dictionary index
+  //   (*(a->data) < *(b->data)), i.e. the storage order, not the symbol value.
+  return na.order < nb.order;
 }
 
 void Huffman::build() {
@@ -58,10 +60,11 @@ void Huffman::build() {
   if (dict.empty())
     return;
 
-  // One leaf per dictionary entry.
+  // One leaf per dictionary entry; its arena index doubles as the storage-order
+  //   tie-break key, so it must mirror the on-disk dictionary order.
   nodes.reserve(2 * dict.size());
-  for (const DictEntry &entry : dict)
-    nodes.push_back(Node{entry.frequency, -1, -1, entry.symbol});
+  for (int i = 0; i != static_cast<int>(dict.size()); ++i)
+    nodes.push_back(Node{dict[i].frequency, -1, -1, dict[i].symbol, i});
 
   // The comparator dereferences live arena entries by index, so it remains valid
   //   across reallocation of the arena as internal nodes are appended.
@@ -80,7 +83,8 @@ void Huffman::build() {
     const int top2 = pqueue.top();
     pqueue.pop();
     // left = first-popped (smaller), right = second-popped; left→0, right→1.
-    nodes.push_back(Node{nodes[top].frequency + nodes[top2].frequency, top, top2, 0.0F});
+    //   An internal node's order key is unused (the tie-break recurses on children).
+    nodes.push_back(Node{nodes[top].frequency + nodes[top2].frequency, top, top2, 0.0F, -1});
     pqueue.push(static_cast<int>(nodes.size()) - 1);
   }
 
@@ -127,15 +131,17 @@ Huffman Huffman::from_histogram(const std::map<float, uint64_t> &histogram) {
 
 Huffman Huffman::from_dictionary(std::vector<DictEntry> dictionary) {
   Huffman out;
+  // Preserve the on-disk dictionary order: it is the reference encoder's leaf
+  //   storage index, which the equal-frequency tie-break depends upon. Re-sorting
+  //   here would desynchronise the rebuilt tree from the writer's.
   out.dict = std::move(dictionary);
-  std::sort(
-      out.dict.begin(), out.dict.end(), [](const DictEntry &a, const DictEntry &b) { return a.symbol < b.symbol; });
   out.build();
   return out;
 }
 
-std::vector<std::byte> Huffman::encode(const std::vector<float> &symbols) const {
-  std::vector<std::byte> out;
+Huffman::Encoded Huffman::encode(const std::vector<float> &symbols) const {
+  Encoded out;
+  out.bit_count = 0;
   uint8_t current = 0;
   int bit_index = 0;
   for (const float symbol : symbols) {
@@ -145,9 +151,10 @@ std::vector<std::byte> Huffman::encode(const std::vector<float> &symbols) const 
     for (const bool bit : it->second) {
       if (bit)
         current |= static_cast<uint8_t>(1U << bit_index);
+      ++out.bit_count;
       bit_index = (bit_index + 1) % 8;
       if (bit_index == 0) {
-        out.push_back(static_cast<std::byte>(current));
+        out.bytes.push_back(static_cast<std::byte>(current));
         current = 0;
       }
     }
@@ -155,7 +162,7 @@ std::vector<std::byte> Huffman::encode(const std::vector<float> &symbols) const 
   // Flush a trailing partial byte; its unused high bits are zero and are ignored
   //   on decode (decoding stops at the expected symbol count).
   if (bit_index != 0)
-    out.push_back(static_cast<std::byte>(current));
+    out.bytes.push_back(static_cast<std::byte>(current));
   return out;
 }
 
