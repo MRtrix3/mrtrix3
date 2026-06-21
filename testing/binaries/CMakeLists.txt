@@ -583,9 +583,11 @@ add_bash_binary_test(tck2fixel/phantom_precise)
 add_bash_binary_test(tck2fixel/phantom_unweighted)
 add_bash_binary_test(tck2fixel/phantom_weighted)
 
+add_bash_binary_test(tckconvert/input_image_roundtrip)
+add_bash_binary_test(tckconvert/output_voxel_reject)
+add_bash_binary_test(tckconvert/output_voxel_roundtrip)
 add_bash_binary_test(tckconvert/ply_write)
 add_bash_binary_test(tckconvert/rib_write)
-add_bash_binary_test(tckconvert/scanner2voxel)
 add_bash_binary_test(tckconvert/text_read_range)
 add_bash_binary_test(tckconvert/text_write)
 add_bash_binary_test(tckconvert/vtk_read_binary)
@@ -665,7 +667,6 @@ add_bash_binary_test(tckconvert/trk_standard_lps WORKING_DIRECTORY ${TRK_DATA_DI
 
 # Section 5 (TRX_DATA_DIR; tee-ar-ex gold-standard dataset).
 add_bash_binary_test(tckconvert/gs_tck_rasmm WORKING_DIRECTORY ${TRX_DATA_DIR})
-add_bash_binary_test(tckconvert/gs_tck_image_space WORKING_DIRECTORY ${TRX_DATA_DIR})
 add_bash_binary_test(tckconvert/gs_tck_voxel_space WORKING_DIRECTORY ${TRX_DATA_DIR})
 add_bash_binary_test(tckconvert/gs_trx_to_tck WORKING_DIRECTORY ${TRX_DATA_DIR})
 add_bash_binary_test(tckconvert/gs_vtk_to_tck WORKING_DIRECTORY ${TRX_DATA_DIR})

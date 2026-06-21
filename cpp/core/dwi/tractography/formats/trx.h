@@ -415,7 +415,8 @@ public:
                  StepSize::Arbitrary,
                  trx_vertex_tolerance,
                  NonFinite::Any,
-                 SidecarData::Append}) {}
+                 SidecarData::Append,
+                 GridTransform::Embedded}) {}
 
   bool handles(const std::filesystem::path &path) const override;
   void append_sidecar(const std::filesystem::path &path,
@@ -437,7 +438,8 @@ public:
                  StepSize::Arbitrary,
                  trx_vertex_tolerance,
                  NonFinite::Any,
-                 SidecarData::Append}) {}
+                 SidecarData::Append,
+                 GridTransform::Embedded}) {}
 
   bool handles(const std::filesystem::path &path) const override;
   void append_sidecar(const std::filesystem::path &path,
@@ -459,7 +461,8 @@ public:
                  StepSize::Arbitrary,
                  trx_vertex_tolerance,
                  NonFinite::Any,
-                 SidecarData::Rewrite}) {}
+                 SidecarData::Rewrite,
+                 GridTransform::Embedded}) {}
 
   bool handles(const std::filesystem::path &path) const override;
 

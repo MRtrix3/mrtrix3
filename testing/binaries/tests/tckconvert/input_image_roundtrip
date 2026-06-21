@@ -1,0 +1,13 @@
+#!/bin/bash
+# Validate the -input_image interpretation. Image (scanner-millimetre) coordinates
+#   are voxel indices scaled by the voxel size, so for a reference grid of unit
+#   (1 mm) voxels the image-mm coordinates coincide with the voxel indices. A 1 mm
+#   regridded copy of "dwi.mif" therefore lets -output_voxel synthesise image-space
+#   vertices: encoding "tracks.tck" into the voxel space of the 1 mm grid writes
+#   coordinates that are simultaneously its voxel indices and its image-mm values,
+#   so re-interpreting them with -input_image against the same grid must recover
+#   the original real-space streamlines.
+mrgrid dwi.mif regrid -voxel 1 tmp_ref1mm.mif -force -quiet
+tckconvert tracks.tck tmp_imgenc.trx -output_voxel tmp_ref1mm.mif -force -quiet
+tckconvert tmp_imgenc.trx tmp_img_back.tck -input_image tmp_ref1mm.mif -force -quiet
+testing_diff_tck tracks.tck tmp_img_back.tck -distance 0.01

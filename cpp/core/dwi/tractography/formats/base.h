@@ -184,6 +184,24 @@ enum class SidecarData {
   Append       //!< a new sidecar member can be added to an existing dataset in place
 };
 
+//! \brief Whether a format's writer can embed a voxel-to-realspace transform in its header.
+/*! MRtrix holds vertex coordinates in realspace (scanner mm) and, by default, a
+ * writer serialises them so that a reader recovers that realspace. A command may
+ * instead request that the output encode vertex positions in the voxel space of a
+ * reference grid (tckconvert -output_voxel); for the result to remain
+ * self-describing, the output format must record the corresponding
+ * voxel-to-realspace affine within its own header. A handler advertises Embedded
+ * only when its writer actually records an arbitrary voxel-to-realspace affine
+ * alongside the verbatim-stored vertex coordinates — currently the TRX backings,
+ * whose JSON header carries VOXEL_TO_RASMM. (The TrackVis ".trk" header reserves a
+ * vox_to_ras field, but the present ".trk" writer leaves it unrecorded, so ".trk"
+ * does not advertise Embedded.) A command consults this axis to reject an
+ * unsupported output up front rather than silently writing ambiguous coordinates. */
+enum class GridTransform {
+  Unsupported, //!< the writer cannot record a voxel-to-realspace transform; coordinates are realspace only
+  Embedded     //!< the writer records an arbitrary voxel-to-realspace affine in the dataset header
+};
+
 //! \brief Optional write-time controls passed to a handler's create factory (§2.6).
 /*! The single axis defaults to the historical behaviour, so an omitted WriteOptions
  * reproduces the previous single-buffered writer. Only the ".tck" handler currently
@@ -222,6 +240,9 @@ struct Capabilities {
   //! whether the format serialises named per-streamline / per-vertex (dps/dpv)
   //!   fields; defaults to Unsupported (the vertices-only common case)
   SidecarData sidecar_data = SidecarData::Unsupported;
+  //! whether the format's writer can embed a voxel-to-realspace transform in its
+  //!   header; defaults to Unsupported (the realspace-only common case)
+  GridTransform grid_transform = GridTransform::Unsupported;
 };
 
 //! \brief The interface for classes that support the various tractography formats.
@@ -264,6 +285,9 @@ public:
 
   //! \brief whether this format requires a constant per-streamline step size.
   bool requires_constant_stepsize() const { return capabilities.stepsize == StepSize::Constant; }
+
+  //! \brief whether this format's writer can embed a voxel-to-realspace transform in its header.
+  bool can_embed_grid_transform() const { return capabilities.grid_transform == GridTransform::Embedded; }
 
   //! \brief the non-finite tolerance advertised for streamline vertex positions.
   NonFinite vertex_nonfinite() const { return capabilities.vertices; }

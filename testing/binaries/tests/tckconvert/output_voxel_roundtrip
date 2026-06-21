@@ -1,0 +1,10 @@
+#!/bin/bash
+# The -output_voxel and -input_voxel options must be exact inverses about a common
+#   reference grid. Encoding "tracks.tck" (real / scanner space) into the voxel
+#   space of "dwi.mif" writes the streamline vertices as voxel indices into a TRX
+#   whose VOXEL_TO_RASMM header records the grid affine; re-interpreting those
+#   stored voxel coordinates with -input_voxel against the same grid must recover
+#   the original real-space streamlines.
+tckconvert tracks.tck tmp_vox.trx -output_voxel dwi.mif -force -quiet
+tckconvert tmp_vox.trx tmp_vox_back.tck -input_voxel dwi.mif -force -quiet
+testing_diff_tck tracks.tck tmp_vox_back.tck -distance 0.01

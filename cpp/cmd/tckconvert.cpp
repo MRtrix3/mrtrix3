@@ -92,7 +92,18 @@ void usage() {
       " scalar (\".tsf\") files. When a \".tsf\" is produced from extracted"
       " per-vertex data, a matching \"timestamp\" key-value is recorded on both it"
       " and the output tractogram so the pair passes the track-scalar validation"
-      " checks. Fields are always referenced by string name, never by index.";
+      " checks. Fields are always referenced by string name, never by index."
+
+    + "By default vertex positions are read and written in MRtrix3 real (scanner)"
+      " space. The -input_voxel and -input_image options instead interpret the"
+      " vertex positions of the input tractogram as voxel coordinates, or as image"
+      " coordinates (in mm), of the provided reference image, converting them to"
+      " real space for internal processing and output; the two are mutually"
+      " exclusive. The -output_voxel option encodes the vertex positions of the"
+      " output tractogram as voxel coordinates of the provided reference image"
+      " rather than in real space; this requires an output format able to embed the"
+      " corresponding voxel-to-real-space transform within its header (for example"
+      " the TRX format), and raises an error otherwise.";
 
   EXAMPLES
     + Example("Writing multiple ASCII files, one per streamline",
@@ -107,28 +118,18 @@ void usage() {
     + Argument ("output", "the output track file.").type_tracks_out().type_file_out();
 
   OPTIONS
-    + Option ("scanner2voxel",
-        "if specified,"
-        " the properties of this image will be used to convert track point positions"
-        " from real (scanner) coordinates into voxel coordinates.")
+    + OptionGroup ("Options to specify the coordinate space of the input and/or output vertex positions")
+
+    + Option ("input_voxel",
+        "interpret the input tractogram vertex positions as voxel coordinates of this reference image")
       + Argument ("reference").type_image_in()
 
-    + Option ("scanner2image",
-        "if specified,"
-        " the properties of this image will be used to convert track point positions"
-        " from real (scanner) coordinates into image coordinates (in mm).")
+    + Option ("input_image",
+        "interpret the input tractogram vertex positions as image coordinates (in mm) of this reference image")
       + Argument ("reference").type_image_in()
 
-    + Option ("voxel2scanner",
-        "if specified,"
-        " the properties of this image will be used to convert track point positions"
-        " from voxel coordinates into real (scanner) coordinates.")
-      + Argument ("reference").type_image_in()
-
-    + Option ("image2scanner",
-        "if specified,"
-        " the properties of this image will be used to convert track point positions"
-        " from image coordinates (in mm) into real (scanner) coordinates.")
+    + Option ("output_voxel",
+        "store the output tractogram vertex positions as voxel coordinates of this reference image")
       + Argument ("reference").type_image_in()
 
     + OptionGroup ("Options specific to PLY writer")
@@ -615,43 +616,80 @@ private:
   bool wroteHeader;
 };
 
-//! \brief resolve the (optional) point-position transform from the CLI options.
-/*! The four scanner/voxel/image transform options are mutually exclusive; the
- * identity transform is returned when none is given. Shared verbatim by both
- * conversion branches so the transform behaviour is independent of the I/O
- * path selected. */
-transform_type get_transform() {
+//! \brief resolve the (optional) input-interpretation transform from the CLI options.
+/*! By default the input vertex positions are taken to be MRtrix3 real (scanner)
+ * space and the identity transform is returned. The -input_voxel / -input_image
+ * options instead interpret them as voxel / image coordinates of a reference image
+ * and return the transform that maps them into real space (applied to the
+ * in-memory streamlines immediately after reading, so the internal representation
+ * is always realspace). The two are mutually exclusive: the input vertices occupy
+ * a single coordinate space. Shared by both conversion branches so the behaviour
+ * is independent of the I/O path selected. */
+transform_type get_input_transform() {
   transform_type T;
   T.setIdentity();
   size_t nopts = 0;
-  auto opt = get_options("scanner2voxel");
-  if (!opt.empty()) {
-    auto header = Header::open(opt[0][0]);
-    T = Transform(header).scanner2voxel;
-    nopts++;
-  }
-  opt = get_options("scanner2image");
-  if (!opt.empty()) {
-    auto header = Header::open(opt[0][0]);
-    T = Transform(header).scanner2image;
-    nopts++;
-  }
-  opt = get_options("voxel2scanner");
+  auto opt = get_options("input_voxel");
   if (!opt.empty()) {
     auto header = Header::open(opt[0][0]);
     T = Transform(header).voxel2scanner;
     nopts++;
   }
-  opt = get_options("image2scanner");
+  opt = get_options("input_image");
   if (!opt.empty()) {
     auto header = Header::open(opt[0][0]);
     T = Transform(header).image2scanner;
     nopts++;
   }
-  if (nopts > 1) {
-    throw Exception("Transform options are mutually exclusive.");
-  }
+  if (nopts > 1)
+    throw Exception("the -input_voxel and -input_image options are mutually exclusive"
+                    " (the input vertex positions occupy a single coordinate space)");
   return T;
+}
+
+//! \brief serialise a 4×4 voxel-to-realspace affine and grid dimensions into Properties.
+/*! Writes the keys the TRX writer consults ("trx_voxel_to_rasmm" as a row-major
+ * 4×4 of comma-separated values, "trx_dimensions" as the three grid sizes), so the
+ * output dataset embeds \a voxel_to_scanner as its header affine. */
+void embed_output_grid(Properties &properties, const transform_type &voxel_to_scanner, const Header &header) {
+  std::string affine;
+  for (size_t row = 0; row != 4; ++row)
+    for (size_t col = 0; col != 4; ++col) {
+      if (!affine.empty())
+        affine += ",";
+      // transform_type is a 3×4 AffineCompact matrix; the implicit fourth row is
+      //   [0 0 0 1].
+      const double value = (row == 3) ? ((col == 3) ? 1.0 : 0.0) : voxel_to_scanner(row, col);
+      affine += str(value);
+    }
+  properties["trx_voxel_to_rasmm"] = affine;
+  properties["trx_dimensions"] = str(header.size(0)) + "," + str(header.size(1)) + "," + str(header.size(2));
+}
+
+//! \brief resolve the (optional) output voxel-space encoding from the CLI options.
+/*! Returns std::nullopt when the default realspace output applies. When
+ * -output_voxel is given, validates that the output format can embed a
+ * voxel-to-realspace transform in its header (throwing otherwise), stamps that
+ * transform (and the grid dimensions) into \a properties so the writer records it,
+ * and returns the scanner→voxel transform to apply to each vertex before writing.
+ * \a properties is mutated, so this must be called before the output writer is
+ * created. */
+std::optional<transform_type> get_output_voxel_transform(const std::filesystem::path &output_path,
+                                                         Properties &properties) {
+  auto opt = get_options("output_voxel");
+  if (opt.empty())
+    return std::nullopt;
+  const MR::DWI::Tractography::Formats::Base *const handler = MR::DWI::Tractography::Formats::get_handler(output_path);
+  if (handler == nullptr || !handler->can_embed_grid_transform())
+    throw Exception(std::string("the output tractography format") +
+                    (handler != nullptr ? " \"" + handler->description + "\"" : std::string()) +
+                    " cannot embed a voxel-to-realspace transform within its header,"
+                    " so the -output_voxel option cannot be used with it;"
+                    " use a format that records the grid affine (e.g. TRX)");
+  auto header = Header::open(opt[0][0]);
+  const Transform transform(header);
+  embed_output_grid(properties, transform.voxel2scanner, header);
+  return transform.scanner2voxel;
 }
 
 namespace {
@@ -818,6 +856,14 @@ void run_generic(const std::filesystem::path &input_path,
   Properties properties;
   auto input = Tractogram<float>::open(input_path, properties);
 
+  // Interpret the input vertex positions (default: realspace) and, if requested,
+  //   the output voxel-space encoding. The output resolution mutates `properties`
+  //   to embed the grid affine, so it must precede output creation; both are
+  //   resolved up front so a bad reference image / unsupported output fails before
+  //   any output is written.
+  const transform_type input_transform = get_input_transform();
+  const std::optional<transform_type> output_transform = get_output_voxel_transform(output_path, properties);
+
   // "-insert": register each new field as a named input loader, so its values flow
   //   into the streaming items and the field joins the input registry (carried to
   //   the output like any internal field).
@@ -860,17 +906,27 @@ void run_generic(const std::filesystem::path &input_path,
   for (const ExtractTarget &target : extract_targets)
     extractors.push_back(make_named_sidecar_exporter<float>(target.role, target.ordinal, target.path, properties));
 
-  const transform_type T = get_transform();
+  const Eigen::Transform<float, 3, Eigen::AffineCompact> input_transform_f = input_transform.cast<float>();
+  const std::optional<Eigen::Transform<float, 3, Eigen::AffineCompact>> output_transform_f =
+      output_transform.has_value()
+          ? std::optional<Eigen::Transform<float, 3, Eigen::AffineCompact>>(output_transform->cast<float>())
+          : std::nullopt;
 
   TractogramItem<float> in_item;
   TractogramItem<float> out_item;
   while (input.read(in_item)) {
+    // Bring the input vertices into realspace, so extraction and sidecar carry
+    //   operate on the internal (realspace) representation.
+    for (auto &pos : in_item.streamline)
+      pos = input_transform_f * pos;
     for (auto &extractor : extractors)
       (*extractor)(in_item);
     out_item.clear();
     out_item.streamline = in_item.streamline;
-    for (auto &pos : out_item.streamline)
-      pos = T.cast<float>() * pos;
+    // Encode the output vertices in voxel space, if requested.
+    if (output_transform_f.has_value())
+      for (auto &pos : out_item.streamline)
+        pos = *output_transform_f * pos;
     out_item.dps.resize(transform.output_registry.dps_count());
     out_item.dpv.resize(transform.output_registry.dpv_count());
     for (const FieldCarry &carry : transform.dps_carry)
@@ -905,6 +961,13 @@ void run_bespoke(const std::filesystem::path &input_path, const std::filesystem:
     throw Exception("Unsupported input file type.");
   }
 
+  // Interpret the input vertex positions and, if requested, the output voxel-space
+  //   encoding. Resolve both before the writer is created so an unsupported output
+  //   format (none of the bespoke ".txt"/".ply"/".rib" exporters can embed a
+  //   transform) fails before any output is written.
+  const transform_type input_transform = get_input_transform();
+  const std::optional<transform_type> output_transform = get_output_voxel_transform(output_path, properties);
+
   // Writer
   std::unique_ptr<WriterInterface<float>> writer;
   if (output_path.extension() == ".tck") {
@@ -922,14 +985,20 @@ void run_bespoke(const std::filesystem::path &input_path, const std::filesystem:
     throw Exception("Unsupported output file type.");
   }
 
-  const transform_type T = get_transform();
+  const Eigen::Transform<float, 3, Eigen::AffineCompact> input_transform_f = input_transform.cast<float>();
+  const std::optional<Eigen::Transform<float, 3, Eigen::AffineCompact>> output_transform_f =
+      output_transform.has_value()
+          ? std::optional<Eigen::Transform<float, 3, Eigen::AffineCompact>>(output_transform->cast<float>())
+          : std::nullopt;
 
   // Copy
   Streamline<float> tck;
   while ((*reader)(tck)) {
-    for (auto &pos : tck) {
-      pos = T.cast<float>() * pos;
-    }
+    for (auto &pos : tck)
+      pos = input_transform_f * pos;
+    if (output_transform_f.has_value())
+      for (auto &pos : tck)
+        pos = *output_transform_f * pos;
     (*writer)(tck);
   }
 }
