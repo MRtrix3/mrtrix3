@@ -2,9 +2,7 @@
 # Reference-data sidecar tests (TRX_DATA_DIR, tee-ar-ex gold standard) for the
 #   TrackVis file "gs.trk", exercising tckconvert's embedded-sidecar manipulation.
 #   gs.trk carries three per-vertex scalars (dpv "color_x/y/z") and the
-#   per-streamline "random_coord" (13x3) as three property columns; TrackVis names
-#   only the first ("random_coord"), so the MRtrix reader exposes the other two as
-#   the positional defaults "property_1" / "property_2". Sub-tests:
+#   per-streamline "random_coord" (13x3) as three property columns. Sub-tests:
 #     1. extract the three dps columns; reassemble 13x3 and compare to
 #        streamlines_data.txt.
 #     2. extract dpv color_x/y/z to ".tsf"; compare each to points_data.txt.
@@ -13,11 +11,24 @@
 #     5. strip dps/dpv (gs.trk -> ".tck"); geometry must equal "gs.tck".
 set -e
 
-# Sub-tests 1 and 5: extract the three dps columns and strip to ".tck" in one pass.
-tckconvert gs.trk tmp_strip.tck \
-  -extract dps random_coord tmp_c0.txt -extract dps property_1 tmp_c1.txt -extract dps property_2 tmp_c2.txt \
-  -force -quiet
+# Oversight in the TRX sample data: gs.trk names only the FIRST of random_coord's
+#   three property columns ("random_coord"), leaving the other two unnamed (the
+#   MRtrix reader exposes them as the positional defaults "property_1"/"property_2").
+#   Normalise the three to "random_coordx/y/z" up front, writing an intermediate
+#   ".trk", so the sub-tests below reference meaningful field names.
+tckconvert gs.trk tmp_norm.trk \
+  -rename dps random_coord random_coordx \
+  -rename dps property_1 random_coordy \
+  -rename dps property_2 random_coordz -force -quiet
+
+# Sub-test 5: strip dps/dpv (-> ".tck"); geometry must equal "gs.tck".
+tckconvert tmp_norm.trk tmp_strip.tck -force -quiet
 testing_diff_tck tmp_strip.tck gs.tck -distance 1e-4
+
+# Sub-test 1: extract the three dps columns, reassemble 13x3 and compare to gold.
+tckconvert tmp_norm.trk tmp_s1.tck \
+  -extract dps random_coordx tmp_c0.txt -extract dps random_coordy tmp_c1.txt -extract dps random_coordz tmp_c2.txt \
+  -force -quiet
 python3 - tmp_c0.txt tmp_c1.txt tmp_c2.txt <<'PY'
 import json, sys
 def flat(path):
@@ -38,7 +49,7 @@ PY
 
 # Sub-test 2: extract the three dpv fields and compare their per-vertex values to
 #   the gold "points_data.txt".
-tckconvert gs.trk tmp_s.tck \
+tckconvert tmp_norm.trk tmp_s2.tck \
   -extract dpv color_x tmp_cx.tsf -extract dpv color_y tmp_cy.tsf -extract dpv color_z tmp_cz.tsf -force -quiet
 python3 - tmp_cx.tsf tmp_cy.tsf tmp_cz.tsf <<'PY'
 import json, struct, math, sys
@@ -76,10 +87,10 @@ PY
 # Sub-test 3: augment "gs.tck" with the extracted (gold-equivalent) dps+dpv into a
 #   ".trk", read the embedded fields back and confirm they reproduce the gold.
 tckconvert gs.tck tmp_aug.trk \
-  -insert dps random_coord tmp_c0.txt -insert dps property_1 tmp_c1.txt -insert dps property_2 tmp_c2.txt \
+  -insert dps random_coordx tmp_c0.txt -insert dps random_coordy tmp_c1.txt -insert dps random_coordz tmp_c2.txt \
   -insert dpv color_x tmp_cx.tsf -insert dpv color_y tmp_cy.tsf -insert dpv color_z tmp_cz.tsf -force -quiet
 tckconvert tmp_aug.trk tmp_s3.tck \
-  -extract dps random_coord tmp_b0.txt -extract dpv color_x tmp_bx.tsf -force -quiet
+  -extract dps random_coordx tmp_b0.txt -extract dpv color_x tmp_bx.tsf -force -quiet
 python3 - tmp_b0.txt tmp_c0.txt <<'PY'
 import sys
 def flat(path):
