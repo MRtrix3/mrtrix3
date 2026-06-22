@@ -30,6 +30,8 @@ If the input image is 4D, and the number of volumes corresponds to an antipodall
 
 The sampled values may instead be embedded into a tractography dataset as a named sidecar field, using the qualified "DATASET::NAME" form for the output argument. Per-vertex sampling is stored as a per-vertex (data-per-vertex) field, and a per-streamline statistic as a per-streamline (data-per-streamline) field (with one column per metric for a 4D image). If DATASET does not yet exist it is created as a copy of the input tractogram carrying the new field, generated within the same pass that performs the sampling. If DATASET already exists and its format supports adding a field in place (a TRX directory or uncompressed archive), the field is appended without rewriting the streamline data; the -force option is then required only if a field named NAME is already present. If DATASET already exists but cannot be augmented in place (e.g. ".trk", or a compressed TRX archive), the -force option is required and the dataset is rewritten with the field added.
 
+Where a command-line argument accepts tractogram sidecar data (such as streamline weights), it may be given as: "<path>" to read from / write to a standalone external file; "<path>::<field>" to access a named field of sidecar data embedded within the specified tractogram dataset; or "::<field>" to access a named field of sidecar data embedded within the command's own input or output tractogram (the only form able to reference embedded sidecar data of a piped tractogram, which has no command-line filesystem path).
+
 Options
 -------
 

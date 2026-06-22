@@ -30,6 +30,8 @@ In the per-edge / per-node directory modes the output tractogram files are writt
 
 The -tck_weights_out option behaves similarity to the third argument as described above. If option "-files single" is specified, then the user-specified input to the -tck_weights_out option will be interpreted as the path to a file to be created. Otherwise, that path will instead be interpreted as a directory to be created, which will then be populated with files of the same name as the tractogram files written as the primary command output.
 
+Where a command-line argument accepts tractogram sidecar data (such as streamline weights), it may be given as: "<path>" to read from / write to a standalone external file; "<path>::<field>" to access a named field of sidecar data embedded within the specified tractogram dataset; or "::<field>" to access a named field of sidecar data embedded within the command's own input or output tractogram (the only form able to reference embedded sidecar data of a piped tractogram, which has no command-line filesystem path).
+
 Example usages
 --------------
 

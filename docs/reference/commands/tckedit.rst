@@ -25,6 +25,8 @@ This command can be used to perform various types of manipulations on track data
 
 Streamlines can additionally be filtered based on arbitrary data fields carried by the input tractogram. The -dps_min / -dps_max options threshold a named per-streamline (data-per-streamline) field, discarding any whole streamline whose value lies outside the requested range. The -dpv_min / -dpv_max options instead threshold a named per-vertex (data-per-vertex) field, retaining only those vertices whose value lies within the range; as with the -mask option, removing interior vertices may fragment a single input streamline into several output streamlines. Each of these options may be specified multiple times, and the named field must be a single-column (scalar) field present in the input; field-based filtering requires a single input track file.
 
+Where a command-line argument accepts tractogram sidecar data (such as streamline weights), it may be given as: "<path>" to read from / write to a standalone external file; "<path>::<field>" to access a named field of sidecar data embedded within the specified tractogram dataset; or "::<field>" to access a named field of sidecar data embedded within the command's own input or output tractogram (the only form able to reference embedded sidecar data of a piped tractogram, which has no command-line filesystem path).
+
 Example usages
 --------------
 

@@ -948,11 +948,35 @@ void parse_standard_options() {
   }
 }
 
+namespace {
+//! \brief shared help paragraph documenting the tractogram-sidecar reference forms (§2.4).
+const std::string tractogram_sidecar_description =
+    "Where a command-line argument accepts tractogram sidecar data (such as streamline weights),"
+    " it may be given as: \"<path>\" to read from / write to a standalone external file;"
+    " \"<path>::<field>\" to access a named field of sidecar data embedded within the specified"
+    " tractogram dataset; or \"::<field>\" to access a named field of sidecar data embedded within"
+    " the command's own input or output tractogram (the only form able to reference embedded sidecar"
+    " data of a piped tractogram, which has no command-line filesystem path).";
+} // namespace
+
 void verify_usage() {
   if (AUTHOR.empty())
     throw Exception("No author specified for command " + std::string(NAME));
   if (SYNOPSIS.empty())
     throw Exception("No synopsis specified for command " + std::string(NAME));
+
+  // Auto-document the tractogram-sidecar reference syntax for any command exposing
+  //   at least one such argument (positional or option), so the accepted forms
+  //   appear in its help without each command restating them.
+  const auto is_sidecar = [](const Argument &arg) {
+    return arg.types[ArgTypeFlags::TractogramSidecarIn] || arg.types[ArgTypeFlags::TractogramSidecarOut];
+  };
+  bool has_sidecar_arg = std::any_of(ARGUMENTS.begin(), ARGUMENTS.end(), is_sidecar);
+  for (const OptionGroup &group : OPTIONS)
+    for (const Option &opt : group)
+      has_sidecar_arg = has_sidecar_arg || std::any_of(opt.begin(), opt.end(), is_sidecar);
+  if (has_sidecar_arg)
+    DESCRIPTION + tractogram_sidecar_description;
 }
 
 void parse_special_options() {

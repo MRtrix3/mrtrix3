@@ -27,6 +27,8 @@ Note that because the length of a streamline is calculated based on the sums of 
 
 Per-vertex (data-per-vertex) sidecar data, supplied as a track scalar file (.tsf) via the -tsf_in option, are updated to correspond to the output vertices. For the vertex-subset-preserving modes (-downsample, -endpoints), each scalar is sub-sampled to the retained vertices. For the interpolating modes (-upsample, -step_size, -num_points, -line, -arc), which invent new vertex positions, the per-vertex data cannot meaningfully be carried and are dropped (with a warning); in that circumstance the -tsf_out option has no effect. Per-streamline weights (-tck_weights_in/out) pass through unchanged in every mode.
 
+Where a command-line argument accepts tractogram sidecar data (such as streamline weights), it may be given as: "<path>" to read from / write to a standalone external file; "<path>::<field>" to access a named field of sidecar data embedded within the specified tractogram dataset; or "::<field>" to access a named field of sidecar data embedded within the command's own input or output tractogram (the only form able to reference embedded sidecar data of a piped tractogram, which has no command-line filesystem path).
+
 Options
 -------
 

@@ -27,6 +27,8 @@ This command will generate a directory containing three images, which encodes th
 Fixel data are stored utilising the fixel directory format described in the main documentation, which can be found at the following link:  |br|
 https://mrtrix.readthedocs.io/en/3.0.8/fixel_based_analysis/fixel_directory_format.html
 
+Where a command-line argument accepts tractogram sidecar data (such as streamline weights), it may be given as: "<path>" to read from / write to a standalone external file; "<path>::<field>" to access a named field of sidecar data embedded within the specified tractogram dataset; or "::<field>" to access a named field of sidecar data embedded within the command's own input or output tractogram (the only form able to reference embedded sidecar data of a piped tractogram, which has no command-line filesystem path).
+
 Options
 -------
 

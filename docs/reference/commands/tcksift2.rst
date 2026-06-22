@@ -26,6 +26,8 @@ The estimated per-streamline weights are written to the "out_weights" output, th
 
 The qualified "DATASET::NAME" syntax instead embeds the weights as a per-streamline field named NAME within the tractography dataset DATASET. If DATASET does not yet exist, it is created as a copy of the input tractogram carrying the new field. If DATASET already exists and its format supports adding a field to an existing dataset in place (a TRX directory or uncompressed archive), the field is written directly without rewriting the streamline data; in this case the -force option is required only if a field named NAME is already present. If DATASET already exists but its format cannot be augmented in place (e.g. ".trk", or a compressed TRX archive), the -force option is required, and the dataset is rewritten with the field added.
 
+Where a command-line argument accepts tractogram sidecar data (such as streamline weights), it may be given as: "<path>" to read from / write to a standalone external file; "<path>::<field>" to access a named field of sidecar data embedded within the specified tractogram dataset; or "::<field>" to access a named field of sidecar data embedded within the command's own input or output tractogram (the only form able to reference embedded sidecar data of a piped tractogram, which has no command-line filesystem path).
+
 Options
 -------
 
