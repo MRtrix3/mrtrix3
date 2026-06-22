@@ -80,7 +80,7 @@ void usage() {
                                  " one value (1) per streamline retained in the output,"
                                  " written as a standalone per-streamline sidecar file"
                                  " (plain-text or .npy by extension)")
-    + Argument ("path").type_tractogram_data_out()
+    + Argument ("path").type_tractogram_sidecar_out()
 
   + SIFTTermOption;
 

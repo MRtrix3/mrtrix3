@@ -32,7 +32,7 @@
 namespace MR::DWI::Tractography {
 
 //! \brief A parsed tractogram-sidecar CLI reference (§2.4; Stage 11, step 4).
-/*! A tractogram-sidecar argument (App::Argument::type_tractogram_data_in()/out())
+/*! A tractogram-sidecar argument (App::Argument::type_tractogram_sidecar_in()/out())
  * is one of:
  *   - a BARE PATH: \c name is std::nullopt and \c dataset is the standalone
  *     sidecar file (per-streamline text/.csv/.npy, or per-vertex .tsf); or

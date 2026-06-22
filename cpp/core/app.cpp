@@ -473,9 +473,9 @@ std::string Argument::usage() const {
     stream << " TRACKSIN";
   if (types[ArgTypeFlags::TracksOut])
     stream << " TRACKSOUT";
-  if (types[ArgTypeFlags::TractogramDataIn])
+  if (types[ArgTypeFlags::TractogramSidecarIn])
     stream << " TRACKSCALARIN";
-  if (types[ArgTypeFlags::TractogramDataOut])
+  if (types[ArgTypeFlags::TractogramSidecarOut])
     stream << " TRACKSCALAROUT";
   if (types[ArgTypeFlags::Choice]) {
     stream << " CHOICE";
@@ -906,8 +906,8 @@ bool sidecar_output_dataset_is_created(const std::filesystem::path &dataset) {
   return false;
 }
 
-void verify_sidecar_output(std::string_view arg, const TractogramDataOutMode mode) {
-  // A tractogram-sidecar output (type_tractogram_data_out(), §2.4) is either a
+void verify_sidecar_output(std::string_view arg, const TractogramSidecarOutMode mode) {
+  // A tractogram-sidecar output (type_tractogram_sidecar_out(), §2.4) is either a
   //   bare filesystem path to a standalone sidecar file to be created, or a
   //   qualified "DATASET::NAME" reference. For the bare path the pre-existence
   //   overwrite policy is identical to type_file_out(). For the qualified form
@@ -915,7 +915,7 @@ void verify_sidecar_output(std::string_view arg, const TractogramDataOutMode mod
   //   type_tracks_out() argument resolving to the same filesystem path must be
   //   present elsewhere on the command-line (the tractogram that the sidecar is
   //   to be embedded within is being created by the same invocation) — unless the
-  //   argument opts into TractogramDataOutMode::MayCreateDataset, whereby the
+  //   argument opts into TractogramSidecarOutMode::MayCreateDataset, whereby the
   //   command itself materialises a missing DATASET (e.g. from its own input).
   const std::string_view::size_type pos = arg.rfind("::");
   if (pos == std::string_view::npos) {
@@ -925,7 +925,7 @@ void verify_sidecar_output(std::string_view arg, const TractogramDataOutMode mod
   const std::filesystem::path dataset(std::string(arg.substr(0, pos)));
   if (std::filesystem::exists(dataset))
     return;
-  if (mode == TractogramDataOutMode::MayCreateDataset)
+  if (mode == TractogramSidecarOutMode::MayCreateDataset)
     return;
   if (!sidecar_output_dataset_is_created(dataset))
     throw Exception("output tractogram-sidecar reference \"" + std::string(arg) + "\"" +           //
@@ -995,7 +995,7 @@ namespace {
 bool is_nonfilesystem_value(std::string_view value, const ArgTypeFlags &types) {
   if (is_dash(value) && (types[ArgTypeFlags::TracksIn] || types[ArgTypeFlags::TracksOut]))
     return true;
-  if (types[ArgTypeFlags::TractogramDataIn] || types[ArgTypeFlags::TractogramDataOut]) {
+  if (types[ArgTypeFlags::TractogramSidecarIn] || types[ArgTypeFlags::TractogramSidecarOut]) {
     const std::string dataset = sidecar_dataset_path(value);
     if (dataset.empty() || is_dash(dataset))
       return true;
@@ -1134,7 +1134,7 @@ void parse() {
       ArgTypeFlags types_not_input_file(i.arg->types);
       types_not_input_file.reset(ArgTypeFlags::FileIn);
       types_not_input_file.reset(ArgTypeFlags::TracksIn);
-      types_not_input_file.reset(ArgTypeFlags::TractogramDataIn);
+      types_not_input_file.reset(ArgTypeFlags::TractogramSidecarIn);
       if (!types_not_input_file.any() && !skip_fs) {
         // A tractogram-sidecar input may be a qualified "DATASET::NAME" reference
         //   (§2.4); the path component (the DATASET, or the whole bare token) is
@@ -1163,7 +1163,7 @@ void parse() {
       ArgTypeFlags types_not_output_file(i.arg->types);
       types_not_output_file.reset(ArgTypeFlags::FileOut);
       types_not_output_file.reset(ArgTypeFlags::TracksOut);
-      types_not_output_file.reset(ArgTypeFlags::TractogramDataOut);
+      types_not_output_file.reset(ArgTypeFlags::TractogramSidecarOut);
       if (!types_not_output_file.any() && !skip_fs) {
         const std::string path = sidecar_dataset_path(i.as_text());
         if (path.find_last_of(PATH_SEPARATORS) == path.size() - 1)
@@ -1176,10 +1176,10 @@ void parse() {
       types_not_output_filesystem.reset(ArgTypeFlags::FileOut);
       types_not_output_filesystem.reset(ArgTypeFlags::DirectoryOut);
       types_not_output_filesystem.reset(ArgTypeFlags::TracksOut);
-      types_not_output_filesystem.reset(ArgTypeFlags::TractogramDataOut);
+      types_not_output_filesystem.reset(ArgTypeFlags::TractogramSidecarOut);
       if (!types_not_output_filesystem.any() && !skip_fs) {
-        if (i.arg->types[ArgTypeFlags::TractogramDataOut]) {
-          verify_sidecar_output(i.as_text(), i.arg->tractogram_data_out_mode);
+        if (i.arg->types[ArgTypeFlags::TractogramSidecarOut]) {
+          verify_sidecar_output(i.as_text(), i.arg->tractogram_sidecar_out_mode);
         } else if (i.arg->types[ArgTypeFlags::DirectoryOut] && !i.arg->types[ArgTypeFlags::FileOut] &&
                    !i.arg->types[ArgTypeFlags::TracksOut]) {
           switch (i.arg->dir_out_mode) {
@@ -1244,7 +1244,7 @@ void parse() {
         ArgTypeFlags types_not_input_file(arg.types);
         types_not_input_file.reset(ArgTypeFlags::FileIn);
         types_not_input_file.reset(ArgTypeFlags::TracksIn);
-        types_not_input_file.reset(ArgTypeFlags::TractogramDataIn);
+        types_not_input_file.reset(ArgTypeFlags::TractogramSidecarIn);
         if (!types_not_input_file.any() && !skip_fs) {
           // A tractogram-sidecar input may be a qualified "DATASET::NAME"
           //   reference (§2.4); the path component must exist (step 4).
@@ -1276,7 +1276,7 @@ void parse() {
         ArgTypeFlags types_not_output_file(arg.types);
         types_not_output_file.reset(ArgTypeFlags::FileOut);
         types_not_output_file.reset(ArgTypeFlags::TracksOut);
-        types_not_output_file.reset(ArgTypeFlags::TractogramDataOut);
+        types_not_output_file.reset(ArgTypeFlags::TractogramSidecarOut);
         if (!types_not_output_file.any() && !skip_fs) {
           const std::string path = sidecar_dataset_path(parg.as_text());
           const std::string filename = std::filesystem::path(path).filename().string();
@@ -1291,10 +1291,10 @@ void parse() {
         types_not_output_filesystem.reset(ArgTypeFlags::FileOut);
         types_not_output_filesystem.reset(ArgTypeFlags::DirectoryOut);
         types_not_output_filesystem.reset(ArgTypeFlags::TracksOut);
-        types_not_output_filesystem.reset(ArgTypeFlags::TractogramDataOut);
+        types_not_output_filesystem.reset(ArgTypeFlags::TractogramSidecarOut);
         if (!types_not_output_filesystem.any() && !skip_fs) {
-          if (arg.types[ArgTypeFlags::TractogramDataOut]) {
-            verify_sidecar_output(parg.as_text(), arg.tractogram_data_out_mode);
+          if (arg.types[ArgTypeFlags::TractogramSidecarOut]) {
+            verify_sidecar_output(parg.as_text(), arg.tractogram_sidecar_out_mode);
           } else if (arg.types[ArgTypeFlags::DirectoryOut] && !arg.types[ArgTypeFlags::FileOut] &&
                      !arg.types[ArgTypeFlags::TracksOut]) {
             switch (arg.dir_out_mode) {
@@ -1610,7 +1610,7 @@ bool ParsedArgument::includes_filesystem_arg_types() const noexcept {
           arg->types[ArgTypeFlags::DirectoryIn] || arg->types[ArgTypeFlags::DirectoryOut] ||
           arg->types[ArgTypeFlags::ImageIn] || arg->types[ArgTypeFlags::ImageOut] ||
           arg->types[ArgTypeFlags::TracksIn] || arg->types[ArgTypeFlags::TracksOut] ||
-          arg->types[ArgTypeFlags::TractogramDataIn] || arg->types[ArgTypeFlags::TractogramDataOut]);
+          arg->types[ArgTypeFlags::TractogramSidecarIn] || arg->types[ArgTypeFlags::TractogramSidecarOut]);
 }
 
 bool ParsedArgument::only_filesystem_arg_types() const noexcept {
@@ -1619,8 +1619,8 @@ bool ParsedArgument::only_filesystem_arg_types() const noexcept {
   ArgTypeFlags flags(arg->types);
   flags[ArgTypeFlags::FileIn] = flags[ArgTypeFlags::FileOut] = flags[ArgTypeFlags::DirectoryIn] =
       flags[ArgTypeFlags::DirectoryOut] = flags[ArgTypeFlags::ImageIn] = flags[ArgTypeFlags::ImageOut] =
-          flags[ArgTypeFlags::TracksIn] = flags[ArgTypeFlags::TracksOut] = flags[ArgTypeFlags::TractogramDataIn] =
-              flags[ArgTypeFlags::TractogramDataOut] = false;
+          flags[ArgTypeFlags::TracksIn] = flags[ArgTypeFlags::TracksOut] = flags[ArgTypeFlags::TractogramSidecarIn] =
+              flags[ArgTypeFlags::TractogramSidecarOut] = false;
   return !flags.any();
 }
 

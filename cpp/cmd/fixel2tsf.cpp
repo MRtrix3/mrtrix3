@@ -80,7 +80,7 @@ void usage() {
   + Argument ("fixel_in", "the input fixel data file (within the fixel directory)").type_image_in ()
   + Argument ("tracks",   "the input track file").type_tracks_in ()
   + Argument ("tsf",      "the output track scalar file, or a \"DATASET::NAME\" embedded sidecar field")
-    .type_tractogram_data_out (TractogramDataOutMode::MayCreateDataset);
+    .type_tractogram_sidecar_out (TractogramSidecarOutMode::MayCreateDataset);
 
 
   OPTIONS

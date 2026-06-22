@@ -96,7 +96,7 @@ void usage ()
   + Argument ("tracks", "the input track file").type_tracks_in()
   + Argument ("image",  "the image to be sampled").type_image_in()
   + Argument ("values", "the output sampled values")
-    .type_tractogram_data_out(TractogramDataOutMode::MayCreateDataset);
+    .type_tractogram_sidecar_out(TractogramSidecarOutMode::MayCreateDataset);
 
   OPTIONS
   + Option ("stat_tck", "compute some statistic from the values along each streamline;"

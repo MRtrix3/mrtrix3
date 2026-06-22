@@ -44,7 +44,7 @@ const Option TrackWeightsInOption =
            " or \"[<tractogram>]::<field>\" naming a per-streamline field of the input tractogram"
            " (an empty <tractogram>, i.e. \"::<field>\", refers to the command's own input tractogram,"
            " which is the only way to name a field of a piped input)")
-      + Argument("spec").type_tractogram_data_in();
+      + Argument("spec").type_tractogram_sidecar_in();
 
 const Option TrackWeightsOutOption =
     Option("tck_weights_out",
@@ -53,7 +53,7 @@ const Option TrackWeightsOutOption =
            " or \"[<tractogram>]::<field>\" naming a per-streamline field of the output tractogram"
            " (an empty <tractogram>, i.e. \"::<field>\", refers to the command's own output tractogram,"
            " which is the only way to name a field of a piped output)")
-      + Argument("spec").type_tractogram_data_out();
+      + Argument("spec").type_tractogram_sidecar_out();
 // clang-format on
 
 namespace {

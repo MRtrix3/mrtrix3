@@ -133,7 +133,7 @@ public:
 void check_overwrite(const std::filesystem::path &path);
 
 //! \brief the filesystem-dataset component of a tractogram-sidecar argument (§2.4; Stage 11).
-/*! A tractogram-sidecar argument (type_tractogram_data_in()/out()) is either a
+/*! A tractogram-sidecar argument (type_tractogram_sidecar_in()/out()) is either a
  * bare filesystem path or a qualified "DATASET::NAME" reference. This returns the
  * DATASET (filesystem) component: the substring preceding the LAST "::" when the
  * token is qualified, otherwise the whole token unchanged. Splitting on the last

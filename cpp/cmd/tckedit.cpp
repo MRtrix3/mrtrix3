@@ -131,7 +131,7 @@ void usage() {
                              " streamline and is assigned its own selection value;"
                              " any associated per-vertex (data-per-vertex) data would likewise be"
                              " sub-sampled per fragment.")
-    + Argument ("path").type_tractogram_data_out()
+    + Argument ("path").type_tractogram_sidecar_out()
 
   // TODO Input weights with multiple input files currently not supported
   + OptionGroup ("Options for handling streamline weights")
