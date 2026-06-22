@@ -1124,6 +1124,49 @@ void parse() {
   // CONF A boolean value to indicate whether colours should be used in the terminal.
   terminal_use_colour = File::Config::get_bool("TerminalColor", terminal_use_colour);
 
+  // A "::<field>" sidecar self-reference is meaningful only against a single input
+  //   / output tractogram; reject it up front when that tractogram is not unique.
+  //   The count is over the tractogram VALUES actually provided on the command line
+  //   (positional or option arguments typed TracksIn / TracksOut), not the
+  //   interface's declared argument slots, so a variadic tracks argument given
+  //   several datasets correctly counts as several.
+  {
+    size_t num_tracks_in = 0;
+    size_t num_tracks_out = 0;
+    for (const auto &i : argument) {
+      if (i.arg->types[ArgTypeFlags::TracksIn])
+        ++num_tracks_in;
+      if (i.arg->types[ArgTypeFlags::TracksOut])
+        ++num_tracks_out;
+    }
+    for (const auto &o : option)
+      for (size_t j = 0; j != o.opt->size(); ++j) {
+        const Argument &a = o.opt->operator[](j);
+        if (a.types[ArgTypeFlags::TracksIn])
+          ++num_tracks_in;
+        if (a.types[ArgTypeFlags::TracksOut])
+          ++num_tracks_out;
+      }
+    const auto check = [&](const ArgTypeFlags &types, std::string_view value) {
+      const bool in = types[ArgTypeFlags::TractogramSidecarIn];
+      const bool out = types[ArgTypeFlags::TractogramSidecarOut];
+      if ((!in && !out) || !sidecar_dataset_path(value).empty())
+        return;
+      const size_t count = in ? num_tracks_in : num_tracks_out;
+      const std::string role = in ? "input" : "output";
+      if (count != 1)
+        throw Exception("the \"::<field>\" sidecar reference names a field of the command's " + role +
+                        " tractogram, but " + str(count) + " " + role +
+                        " tractograms were provided on the command line;" +
+                        " name the dataset explicitly as \"<tractogram>::<field>\"");
+    };
+    for (const auto &i : argument)
+      check(i.arg->types, i.as_text());
+    for (const auto &o : option)
+      for (size_t j = 0; j != o.opt->size(); ++j)
+        check(o.opt->operator[](j).types, o[j].as_text());
+  }
+
   // check for the existence of all specified input files (including optional ones that have been provided)
   // if necessary, also check for pre-existence of any output files or directories with known paths
   // note that if an argument has multiple possible types, some checks can't be enforced
