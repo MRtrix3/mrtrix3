@@ -41,14 +41,18 @@ const Option TrackWeightsInOption =
     Option("tck_weights_in",
            "specify the streamline weights:"
            " either a standalone scalar file,"
-           " or \"<tractogram>::<field>\" naming a per-streamline field of the input tractogram")
+           " or \"[<tractogram>]::<field>\" naming a per-streamline field of the input tractogram"
+           " (an empty <tractogram>, i.e. \"::<field>\", refers to the command's own input tractogram,"
+           " which is the only way to name a field of a piped input)")
       + Argument("spec").type_tractogram_data_in();
 
 const Option TrackWeightsOutOption =
     Option("tck_weights_out",
            "specify where to write the output streamline weights:"
            " either a standalone scalar file,"
-           " or \"<tractogram>::<field>\" naming a per-streamline field of the output tractogram")
+           " or \"[<tractogram>]::<field>\" naming a per-streamline field of the output tractogram"
+           " (an empty <tractogram>, i.e. \"::<field>\", refers to the command's own output tractogram,"
+           " which is the only way to name a field of a piped output)")
       + Argument("spec").type_tractogram_data_out();
 // clang-format on
 
@@ -102,7 +106,11 @@ WeightInput register_weight_input(Tractogram<float> &input, const std::filesyste
     return result;
   const SidecarReference reference = parse_sidecar_reference(opt[0][0].as_text());
   if (reference.is_qualified()) {
-    if (!same_path(reference.dataset, input_path))
+    // An empty DATASET ("::<field>") is the self-reference to the command's own
+    //   input tractogram — the only way to name a field of a piped input, whose
+    //   path is the non-filesystem pipe sentinel "-".
+    const bool self_reference = reference.dataset.empty() || same_path(reference.dataset, input_path);
+    if (!self_reference)
       throw Exception("streamline-weight import \"" + reference.dataset.string() + "::" + *reference.name + "\"" +
                       " must name a field of the input tractogram \"" + input_path.string() + "\" itself" +
                       " (a cross-dataset weight import is not supported;" +
@@ -143,7 +151,10 @@ WeightOutput plan_weight_output(const FieldRegistry &input_fields,
   if (!opt.empty()) {
     const SidecarReference reference = parse_sidecar_reference(opt[0][0].as_text());
     if (reference.is_qualified()) {
-      if (!same_path(reference.dataset, output_path))
+      // An empty DATASET ("::<field>") is the self-reference to the command's own
+      //   output tractogram — the only way to name a field of a piped output.
+      const bool self_reference = reference.dataset.empty() || same_path(reference.dataset, output_path);
+      if (!self_reference)
         throw Exception("streamline-weight field \"" + reference.dataset.string() + "::" + *reference.name + "\"" +
                         " must name the output tractogram \"" + output_path.string() + "\" itself");
       if (!embeds)

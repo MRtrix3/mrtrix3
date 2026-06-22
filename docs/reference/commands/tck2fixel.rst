@@ -27,7 +27,7 @@ Options
 
 -  **-precise** utilise the precise length of streamline-voxel intersections rather than simply the number of streamlines / sum of streamline weights
 
--  **-tck_weights_in spec** specify the streamline weights: either a standalone scalar file, or "<tractogram>::<field>" naming a per-streamline field of the input tractogram
+-  **-tck_weights_in spec** specify the streamline weights: either a standalone scalar file, or "[<tractogram>]::<field>" naming a per-streamline field of the input tractogram (an empty <tractogram>, i.e. "::<field>", refers to the command's own input tractogram, which is the only way to name a field of a piped input)
 
 Standard options
 ^^^^^^^^^^^^^^^^

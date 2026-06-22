@@ -34,9 +34,9 @@ Options
 Options for handling sidecar data
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-tck_weights_in spec** specify the streamline weights: either a standalone scalar file, or "<tractogram>::<field>" naming a per-streamline field of the input tractogram
+-  **-tck_weights_in spec** specify the streamline weights: either a standalone scalar file, or "[<tractogram>]::<field>" naming a per-streamline field of the input tractogram (an empty <tractogram>, i.e. "::<field>", refers to the command's own input tractogram, which is the only way to name a field of a piped input)
 
--  **-tck_weights_out spec** specify where to write the output streamline weights: either a standalone scalar file, or "<tractogram>::<field>" naming a per-streamline field of the output tractogram
+-  **-tck_weights_out spec** specify where to write the output streamline weights: either a standalone scalar file, or "[<tractogram>]::<field>" naming a per-streamline field of the output tractogram (an empty <tractogram>, i.e. "::<field>", refers to the command's own output tractogram, which is the only way to name a field of a piped output)
 
 -  **-tsf_in path** an input track scalar file (.tsf) of per-vertex data, passed through unchanged to correspond to the transformed vertices
 

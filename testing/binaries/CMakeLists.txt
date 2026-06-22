@@ -717,6 +717,7 @@ add_bash_binary_test(tckmap/dec NO_FILESYSTEM_LOCK)
 add_bash_binary_test(tckmap/default_template NO_FILESYSTEM_LOCK)
 add_bash_binary_test(tckmap/default_vox NO_FILESYSTEM_LOCK)
 add_bash_binary_test(tckmap/length NO_FILESYSTEM_LOCK)
+add_bash_binary_test(tckmap/piped_weights)
 add_bash_binary_test(tckmap/scalar_map NO_FILESYSTEM_LOCK)
 add_bash_binary_test(tckmap/tod NO_FILESYSTEM_LOCK)
 

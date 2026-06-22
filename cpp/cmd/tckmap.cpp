@@ -217,7 +217,7 @@ void usage () {
     "NeuroImage, 2013, 67, 298-312 (Appendix 3)";
 
   ARGUMENTS
-  + Argument ("tracks", "the input track file.").type_file_in()
+  + Argument ("tracks", "the input track file.").type_tracks_in()
   + Argument ("output", "the output track-weighted image").type_image_out();
 
   OPTIONS

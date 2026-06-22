@@ -978,6 +978,32 @@ void parse_special_options() {
   }
 }
 
+namespace {
+//! \brief whether a command-line value is a legitimate non-filesystem entity that
+//!   the input/output existence checks must not reject.
+/*! Two cases (§2.4; inter-command pipe support):
+ *   - the pipe sentinel "-" as a tractogram input/output (TracksIn / TracksOut),
+ *     which denotes the inter-command stream rather than a file on disk;
+ *   - a tractogram-sidecar self-reference whose DATASET component is empty
+ *     ("::FIELD") or the pipe sentinel ("-::FIELD"), naming a field carried within
+ *     the command's own tractogram argument rather than a standalone sidecar file;
+ *     the referenced dataset is the command's (singular) TracksIn / TracksOut
+ *     argument, validated in its own right, so no separate filesystem entity exists.
+ * This honours the multi-type rule: a value need only be valid for one of an
+ * argument's advertised types to be accepted, so the exemption applies whenever the
+ * relevant tracks / sidecar type is among \a types. */
+bool is_nonfilesystem_value(std::string_view value, const ArgTypeFlags &types) {
+  if (is_dash(value) && (types[ArgTypeFlags::TracksIn] || types[ArgTypeFlags::TracksOut]))
+    return true;
+  if (types[ArgTypeFlags::TractogramDataIn] || types[ArgTypeFlags::TractogramDataOut]) {
+    const std::string dataset = sidecar_dataset_path(value);
+    if (dataset.empty() || is_dash(dataset))
+      return true;
+  }
+  return false;
+}
+} // namespace
+
 void parse() {
   argument.clear();
   option.clear();
@@ -1101,12 +1127,15 @@ void parse() {
   // note that if an argument has multiple possible types, some checks can't be enforced
   for (const auto &i : argument) {
     assert(i.arg->types.any());
+    // The pipe sentinel "-" (a tracks stream) and a sidecar self-reference
+    //   ("::FIELD") are not filesystem entities; exempt them from the checks below.
+    const bool skip_fs = is_nonfilesystem_value(i.as_text(), i.arg->types);
     {
       ArgTypeFlags types_not_input_file(i.arg->types);
       types_not_input_file.reset(ArgTypeFlags::FileIn);
       types_not_input_file.reset(ArgTypeFlags::TracksIn);
       types_not_input_file.reset(ArgTypeFlags::TractogramDataIn);
-      if (!types_not_input_file.any()) {
+      if (!types_not_input_file.any() && !skip_fs) {
         // A tractogram-sidecar input may be a qualified "DATASET::NAME" reference
         //   (§2.4); the path component (the DATASET, or the whole bare token) is
         //   the filesystem entity whose existence is required (Stage 11, step 4).
@@ -1135,7 +1164,7 @@ void parse() {
       types_not_output_file.reset(ArgTypeFlags::FileOut);
       types_not_output_file.reset(ArgTypeFlags::TracksOut);
       types_not_output_file.reset(ArgTypeFlags::TractogramDataOut);
-      if (!types_not_output_file.any()) {
+      if (!types_not_output_file.any() && !skip_fs) {
         const std::string path = sidecar_dataset_path(i.as_text());
         if (path.find_last_of(PATH_SEPARATORS) == path.size() - 1)
           throw Exception("output path \"" + path + "\" is not a valid file path" +
@@ -1148,7 +1177,7 @@ void parse() {
       types_not_output_filesystem.reset(ArgTypeFlags::DirectoryOut);
       types_not_output_filesystem.reset(ArgTypeFlags::TracksOut);
       types_not_output_filesystem.reset(ArgTypeFlags::TractogramDataOut);
-      if (!types_not_output_filesystem.any()) {
+      if (!types_not_output_filesystem.any() && !skip_fs) {
         if (i.arg->types[ArgTypeFlags::TractogramDataOut]) {
           verify_sidecar_output(i.as_text(), i.arg->tractogram_data_out_mode);
         } else if (i.arg->types[ArgTypeFlags::DirectoryOut] && !i.arg->types[ArgTypeFlags::FileOut] &&
@@ -1181,7 +1210,7 @@ void parse() {
     {
       ArgTypeFlags types_not_input_tractogram(i.arg->types);
       types_not_input_tractogram.reset(ArgTypeFlags::TracksIn);
-      if (!types_not_input_tractogram.any()) {
+      if (!types_not_input_tractogram.any() && !skip_fs) {
         // A tractogram path is valid iff it is a directory (a TRX dataset) or
         //   carries an extension recognised by a format handler.
         const std::filesystem::path path(i);
@@ -1194,7 +1223,7 @@ void parse() {
     {
       ArgTypeFlags types_not_output_tractogram(i.arg->types);
       types_not_output_tractogram.reset(ArgTypeFlags::TracksOut);
-      if (!types_not_output_tractogram.any()) {
+      if (!types_not_output_tractogram.any() && !skip_fs) {
         const std::filesystem::path path(i);
         if (!std::filesystem::is_directory(path) && !DWI::Tractography::Formats::is_supported_extension(path))
           throw Exception("output track file \"" + i.as_text() + "\" is not a recognised tractogram" +
@@ -1208,12 +1237,15 @@ void parse() {
       const ParsedArgument parg = i[j];
       const Argument &arg = i.opt->operator[](j);
       assert(arg.types.any());
+      // The pipe sentinel "-" (a tracks stream) and a sidecar self-reference
+      //   ("::FIELD") are not filesystem entities; exempt them from the checks below.
+      const bool skip_fs = is_nonfilesystem_value(parg.as_text(), arg.types);
       {
         ArgTypeFlags types_not_input_file(arg.types);
         types_not_input_file.reset(ArgTypeFlags::FileIn);
         types_not_input_file.reset(ArgTypeFlags::TracksIn);
         types_not_input_file.reset(ArgTypeFlags::TractogramDataIn);
-        if (!types_not_input_file.any()) {
+        if (!types_not_input_file.any() && !skip_fs) {
           // A tractogram-sidecar input may be a qualified "DATASET::NAME"
           //   reference (§2.4); the path component must exist (step 4).
           const std::string path = sidecar_dataset_path(parg.as_text());
@@ -1245,7 +1277,7 @@ void parse() {
         types_not_output_file.reset(ArgTypeFlags::FileOut);
         types_not_output_file.reset(ArgTypeFlags::TracksOut);
         types_not_output_file.reset(ArgTypeFlags::TractogramDataOut);
-        if (!types_not_output_file.any()) {
+        if (!types_not_output_file.any() && !skip_fs) {
           const std::string path = sidecar_dataset_path(parg.as_text());
           const std::string filename = std::filesystem::path(path).filename().string();
           if (filename.find_last_of(PATH_SEPARATORS) == filename.size() - 1)
@@ -1260,7 +1292,7 @@ void parse() {
         types_not_output_filesystem.reset(ArgTypeFlags::DirectoryOut);
         types_not_output_filesystem.reset(ArgTypeFlags::TracksOut);
         types_not_output_filesystem.reset(ArgTypeFlags::TractogramDataOut);
-        if (!types_not_output_filesystem.any()) {
+        if (!types_not_output_filesystem.any() && !skip_fs) {
           if (arg.types[ArgTypeFlags::TractogramDataOut]) {
             verify_sidecar_output(parg.as_text(), arg.tractogram_data_out_mode);
           } else if (arg.types[ArgTypeFlags::DirectoryOut] && !arg.types[ArgTypeFlags::FileOut] &&
@@ -1295,7 +1327,7 @@ void parse() {
       {
         ArgTypeFlags types_not_input_tractogram(arg.types);
         types_not_input_tractogram.reset(ArgTypeFlags::TracksIn);
-        if (!types_not_input_tractogram.any()) {
+        if (!types_not_input_tractogram.any() && !skip_fs) {
           // A tractogram path is valid iff it is a directory (a TRX dataset) or
           //   carries an extension recognised by a format handler.
           const std::filesystem::path path(parg);
@@ -1309,7 +1341,7 @@ void parse() {
       {
         ArgTypeFlags types_not_output_tractogram(arg.types);
         types_not_output_tractogram.reset(ArgTypeFlags::TracksOut);
-        if (!types_not_output_tractogram.any()) {
+        if (!types_not_output_tractogram.any() && !skip_fs) {
           const std::filesystem::path path(parg);
           if (!std::filesystem::is_directory(path) && !DWI::Tractography::Formats::is_supported_extension(path))
             throw Exception("output track file \"" + parg.as_text() + "\"" +    //
