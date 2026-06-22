@@ -27,7 +27,7 @@ The QFib format (Mercier et al.) stores each streamline as its first two vertice
 
 Some tractography file formats (the TrackVis ".trk" format and the TRX format) can embed per-streamline (dps) and per-vertex (dpv) sidecar data within the tractogram dataset itself. The -extract, -insert, -rename, -remove and -convert options manipulate this embedded data during conversion. Each takes a leading "dps" or "dpv" argument to disambiguate the two, since a per-streamline and a per-vertex field may legitimately share the same name. Per-streamline data is exchanged with standalone numerical files (text, ".csv" or ".npy"); per-vertex data with track scalar (".tsf") files. When a ".tsf" is produced from extracted per-vertex data, a matching "timestamp" key-value is recorded on both it and the output tractogram so the pair passes the track-scalar validation checks. Fields are always referenced by string name, never by index.
 
-By default vertex positions are read and written in MRtrix3 real (scanner) space. The -input_voxel and -input_image options instead interpret the vertex positions of the input tractogram as voxel coordinates, or as image coordinates (in mm), of the provided reference image, converting them to real space for internal processing and output; the two are mutually exclusive. The -output_voxel option encodes the vertex positions of the output tractogram as voxel coordinates of the provided reference image rather than in real space; this requires an output format able to embed the corresponding voxel-to-real-space transform within its header (for example the TRX format), and raises an error otherwise.
+By default vertex positions are read and written in MRtrix3 real (scanner) space. The -input_is_voxelspace and -input_is_imagespace options instead interpret the vertex positions of the input tractogram as voxel coordinates, or as image coordinates (in mm), of the provided reference image, converting them to real space for internal processing and output; the two are mutually exclusive. The -output_as_voxelspace option encodes the vertex positions of the output tractogram as voxel coordinates of the provided reference image rather than in real space; this requires an output format able to embed the corresponding voxel-to-real-space transform within its header (for example the TRX format), and raises an error otherwise.
 
 Example usages
 --------------
@@ -44,11 +44,11 @@ Options
 Options to specify the coordinate space of the input and/or output vertex positions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
--  **-input_voxel reference** interpret the input tractogram vertex positions as voxel coordinates of this reference image
+-  **-input_is_voxelspace reference** interpret the input tractogram vertex positions as voxel coordinates of this reference image
 
--  **-input_image reference** interpret the input tractogram vertex positions as image coordinates (in mm) of this reference image
+-  **-input_is_imagespace reference** interpret the input tractogram vertex positions as image coordinates (in mm) of this reference image
 
--  **-output_voxel reference** store the output tractogram vertex positions as voxel coordinates of this reference image
+-  **-output_as_voxelspace reference** store the output tractogram vertex positions as voxel coordinates of this reference image
 
 Options specific to PLY writer
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

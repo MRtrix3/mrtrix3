@@ -95,11 +95,11 @@ void usage() {
       " checks. Fields are always referenced by string name, never by index."
 
     + "By default vertex positions are read and written in MRtrix3 real (scanner)"
-      " space. The -input_voxel and -input_image options instead interpret the"
+      " space. The -input_is_voxelspace and -input_is_imagespace options instead interpret the"
       " vertex positions of the input tractogram as voxel coordinates, or as image"
       " coordinates (in mm), of the provided reference image, converting them to"
       " real space for internal processing and output; the two are mutually"
-      " exclusive. The -output_voxel option encodes the vertex positions of the"
+      " exclusive. The -output_as_voxelspace option encodes the vertex positions of the"
       " output tractogram as voxel coordinates of the provided reference image"
       " rather than in real space; this requires an output format able to embed the"
       " corresponding voxel-to-real-space transform within its header (for example"
@@ -120,15 +120,15 @@ void usage() {
   OPTIONS
     + OptionGroup ("Options to specify the coordinate space of the input and/or output vertex positions")
 
-    + Option ("input_voxel",
+    + Option ("input_is_voxelspace",
         "interpret the input tractogram vertex positions as voxel coordinates of this reference image")
       + Argument ("reference").type_image_in()
 
-    + Option ("input_image",
+    + Option ("input_is_imagespace",
         "interpret the input tractogram vertex positions as image coordinates (in mm) of this reference image")
       + Argument ("reference").type_image_in()
 
-    + Option ("output_voxel",
+    + Option ("output_as_voxelspace",
         "store the output tractogram vertex positions as voxel coordinates of this reference image")
       + Argument ("reference").type_image_in()
 
@@ -618,7 +618,7 @@ private:
 
 //! \brief resolve the (optional) input-interpretation transform from the CLI options.
 /*! By default the input vertex positions are taken to be MRtrix3 real (scanner)
- * space and the identity transform is returned. The -input_voxel / -input_image
+ * space and the identity transform is returned. The -input_is_voxelspace / -input_is_imagespace
  * options instead interpret them as voxel / image coordinates of a reference image
  * and return the transform that maps them into real space (applied to the
  * in-memory streamlines immediately after reading, so the internal representation
@@ -629,20 +629,20 @@ transform_type get_input_transform() {
   transform_type T;
   T.setIdentity();
   size_t nopts = 0;
-  auto opt = get_options("input_voxel");
+  auto opt = get_options("input_is_voxelspace");
   if (!opt.empty()) {
     auto header = Header::open(opt[0][0]);
     T = Transform(header).voxel2scanner;
     nopts++;
   }
-  opt = get_options("input_image");
+  opt = get_options("input_is_imagespace");
   if (!opt.empty()) {
     auto header = Header::open(opt[0][0]);
     T = Transform(header).image2scanner;
     nopts++;
   }
   if (nopts > 1)
-    throw Exception("the -input_voxel and -input_image options are mutually exclusive"
+    throw Exception("the -input_is_voxelspace and -input_is_imagespace options are mutually exclusive"
                     " (the input vertex positions occupy a single coordinate space)");
   return T;
 }
@@ -668,7 +668,7 @@ void embed_output_grid(Properties &properties, const transform_type &voxel_to_sc
 
 //! \brief resolve the (optional) output voxel-space encoding from the CLI options.
 /*! Returns std::nullopt when the default realspace output applies. When
- * -output_voxel is given, validates that the output format can embed a
+ * -output_as_voxelspace is given, validates that the output format can embed a
  * voxel-to-realspace transform in its header (throwing otherwise), stamps that
  * transform (and the grid dimensions) into \a properties so the writer records it,
  * and returns the scanner→voxel transform to apply to each vertex before writing.
@@ -676,7 +676,7 @@ void embed_output_grid(Properties &properties, const transform_type &voxel_to_sc
  * created. */
 std::optional<transform_type> get_output_voxel_transform(const std::filesystem::path &output_path,
                                                          Properties &properties) {
-  auto opt = get_options("output_voxel");
+  auto opt = get_options("output_as_voxelspace");
   if (opt.empty())
     return std::nullopt;
   const MR::DWI::Tractography::Formats::Base *const handler = MR::DWI::Tractography::Formats::get_handler(output_path);
@@ -684,7 +684,7 @@ std::optional<transform_type> get_output_voxel_transform(const std::filesystem::
     throw Exception(std::string("the output tractography format") +
                     (handler != nullptr ? " \"" + handler->description + "\"" : std::string()) +
                     " cannot embed a voxel-to-realspace transform within its header,"
-                    " so the -output_voxel option cannot be used with it;"
+                    " so the -output_as_voxelspace option cannot be used with it;"
                     " use a format that records the grid affine (e.g. TRX)");
   auto header = Header::open(opt[0][0]);
   const Transform transform(header);
