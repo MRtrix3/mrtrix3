@@ -103,7 +103,15 @@ void usage() {
       " output tractogram as voxel coordinates of the provided reference image"
       " rather than in real space; this requires an output format able to embed the"
       " corresponding voxel-to-real-space transform within its header (for example"
-      " the TRX format), and raises an error otherwise.";
+      " the TRX format), and raises an error otherwise."
+
+    + "The -reference_image option embeds the spatial grid (the dimensions and the"
+      " voxel-to-real-space transform) of the image from which the tractogram was"
+      " generated into the output tractogram header as provenance metadata; unlike"
+      " -output_as_voxelspace it does not alter the vertex positions, which remain in"
+      " real space. It likewise requires an output format able to record that"
+      " transform within its header (currently only the TRX format), and the two"
+      " options are mutually exclusive.";
 
   EXAMPLES
     + Example("Writing multiple ASCII files, one per streamline",
@@ -131,6 +139,13 @@ void usage() {
     + Option ("output_as_voxelspace",
         "store the output tractogram vertex positions as voxel coordinates of this reference image")
       + Argument ("reference").type_image_in()
+
+    + OptionGroup ("Options for embedding spatial metadata into the output tractogram header")
+
+    + Option ("reference_image",
+        "embed the spatial grid of this reference image"
+        " (the image from which the input tractogram was generated) into the output tractogram header")
+      + Argument ("image").type_image_in()
 
     + OptionGroup ("Options specific to PLY writer")
 
@@ -666,30 +681,48 @@ void embed_output_grid(Properties &properties, const transform_type &voxel_to_sc
   properties["trx_dimensions"] = str(header.size(0)) + "," + str(header.size(1)) + "," + str(header.size(2));
 }
 
-//! \brief resolve the (optional) output voxel-space encoding from the CLI options.
-/*! Returns std::nullopt when the default realspace output applies. When
- * -output_as_voxelspace is given, validates that the output format can embed a
- * voxel-to-realspace transform in its header (throwing otherwise), stamps that
- * transform (and the grid dimensions) into \a properties so the writer records it,
- * and returns the scanner→voxel transform to apply to each vertex before writing.
- * \a properties is mutated, so this must be called before the output writer is
- * created. */
-std::optional<transform_type> get_output_voxel_transform(const std::filesystem::path &output_path,
-                                                         Properties &properties) {
-  auto opt = get_options("output_as_voxelspace");
-  if (opt.empty())
+//! \brief resolve the (optional) output grid embedding / voxel-space encoding.
+/*! Two options embed a reference image's grid into the output header:
+ * -output_as_voxelspace additionally re-expresses the output vertices in that
+ * grid's voxel space, whereas -reference_image embeds the grid as provenance
+ * metadata only and leaves the vertices in realspace. They are mutually exclusive.
+ * Either way the output format must be able to embed a voxel-to-realspace
+ * transform within its header (currently only TRX); an unsupported output format
+ * is rejected up front. The reference grid (and dimensions) is stamped into
+ * \a properties so the writer records it, so this must be called before the output
+ * writer is created. \returns the scanner→voxel transform to apply to each vertex
+ * (only for -output_as_voxelspace), or std::nullopt when the output vertices stay
+ * in realspace (the default, or -reference_image). */
+std::optional<transform_type> get_output_grid_transform(const std::filesystem::path &output_path,
+                                                        Properties &properties) {
+  const auto voxel_opt = get_options("output_as_voxelspace");
+  const auto reference_opt = get_options("reference_image");
+  if (voxel_opt.empty() && reference_opt.empty())
     return std::nullopt;
+  if (!voxel_opt.empty() && !reference_opt.empty())
+    throw Exception("the -output_as_voxelspace and -reference_image options are mutually exclusive"
+                    " (both embed a reference image's grid in the output header,"
+                    " differing only in whether the output vertices are re-expressed in voxel space)");
+
+  const bool to_voxelspace = !voxel_opt.empty();
+  const std::string option_name = to_voxelspace ? "output_as_voxelspace" : "reference_image";
   const MR::DWI::Tractography::Formats::Base *const handler = MR::DWI::Tractography::Formats::get_handler(output_path);
   if (handler == nullptr || !handler->can_embed_grid_transform())
     throw Exception(std::string("the output tractography format") +
                     (handler != nullptr ? " \"" + handler->description + "\"" : std::string()) +
                     " cannot embed a voxel-to-realspace transform within its header,"
-                    " so the -output_as_voxelspace option cannot be used with it;"
+                    " so the -" +
+                    option_name +
+                    " option cannot be used with it;"
                     " use a format that records the grid affine (e.g. TRX)");
+
+  const auto &opt = to_voxelspace ? voxel_opt : reference_opt;
   auto header = Header::open(opt[0][0]);
   const Transform transform(header);
   embed_output_grid(properties, transform.voxel2scanner, header);
-  return transform.scanner2voxel;
+  // -output_as_voxelspace re-expresses the vertices in the grid's voxel space;
+  //   -reference_image embeds the grid as metadata only, leaving them in realspace.
+  return to_voxelspace ? std::optional<transform_type>(transform.scanner2voxel) : std::nullopt;
 }
 
 namespace {
@@ -857,12 +890,12 @@ void run_generic(const std::filesystem::path &input_path,
   auto input = Tractogram<float>::open(input_path, properties);
 
   // Interpret the input vertex positions (default: realspace) and, if requested,
-  //   the output voxel-space encoding. The output resolution mutates `properties`
-  //   to embed the grid affine, so it must precede output creation; both are
-  //   resolved up front so a bad reference image / unsupported output fails before
-  //   any output is written.
+  //   the output grid embedding / voxel-space encoding. The output resolution
+  //   mutates `properties` to embed the grid affine, so it must precede output
+  //   creation; both are resolved up front so a bad reference image / unsupported
+  //   output fails before any output is written.
   const transform_type input_transform = get_input_transform();
-  const std::optional<transform_type> output_transform = get_output_voxel_transform(output_path, properties);
+  const std::optional<transform_type> output_transform = get_output_grid_transform(output_path, properties);
 
   // "-insert": register each new field as a named input loader, so its values flow
   //   into the streaming items and the field joins the input registry (carried to
@@ -961,12 +994,12 @@ void run_bespoke(const std::filesystem::path &input_path, const std::filesystem:
     throw Exception("Unsupported input file type.");
   }
 
-  // Interpret the input vertex positions and, if requested, the output voxel-space
-  //   encoding. Resolve both before the writer is created so an unsupported output
-  //   format (none of the bespoke ".txt"/".ply"/".rib" exporters can embed a
-  //   transform) fails before any output is written.
+  // Interpret the input vertex positions and, if requested, the output grid
+  //   embedding / voxel-space encoding. Resolve both before the writer is created
+  //   so an unsupported output format (none of the bespoke ".txt"/".ply"/".rib"
+  //   exporters can embed a transform) fails before any output is written.
   const transform_type input_transform = get_input_transform();
-  const std::optional<transform_type> output_transform = get_output_voxel_transform(output_path, properties);
+  const std::optional<transform_type> output_transform = get_output_grid_transform(output_path, properties);
 
   // Writer
   std::unique_ptr<WriterInterface<float>> writer;

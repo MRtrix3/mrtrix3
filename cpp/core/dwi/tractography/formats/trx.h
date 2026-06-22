@@ -290,12 +290,17 @@ enum class TRXCompression {
 };
 
 //! \brief Streaming writer backend for the TRX tractography format.
-/*! Accumulates streamline vertices and sidecar (dps/dpv) values, then on
- * finalisation lays them out as the flat little-endian TRX arrays plus the JSON
- * header, emitting either a directory or a zip archive depending on the output
- * path. Positions are written float32 (lossless for the float/double processing
- * precision); offsets uint64; each sidecar field in its registry-declared native
- * dtype, with the `name[.M].dtype` filename grammar.
+/*! Accumulates streamline vertices and sidecar (dps/dpv) values and lays them out
+ * as the flat little-endian TRX arrays plus the JSON header, emitting either a
+ * filesystem directory or a zip archive. The output form is fixed at construction
+ * by \a archive_compression: std::nullopt writes a directory, streaming the
+ * positions/offsets/sidecar member files straight into the target directory with
+ * no temporary-file staging; a value writes a ".trx" archive with that zip
+ * compression, accumulating each array in a temporary file that is packed into the
+ * archive at finalisation. Positions are written float32 (lossless for the
+ * float/double processing precision); offsets uint32 where the vertex count fits,
+ * else uint64; each sidecar field in its registry-declared native dtype, with the
+ * `name[.M].dtype` filename grammar.
  *
  * The writer reuses TRXUtils for the filename grammar, dtype↔extension mapping
  * and the JSON header construction shared with the reader. Explicitly
@@ -305,7 +310,7 @@ public:
   TRXWriter(const std::filesystem::path &path,
             const Properties &properties,
             const FieldRegistry &registry,
-            TRXCompression compression = TRXCompression::Store);
+            std::optional<TRXCompression> archive_compression);
   ~TRXWriter() override;
 
   bool operator()(const Streamline<ValueType> &tck) override;
@@ -319,20 +324,23 @@ private:
   struct SidecarOutput {
     FieldDescriptor descriptor;
     size_t ordinal;                 //!< role-local ordinal into dps/dpv payload vectors
-    std::filesystem::path tempfile; //!< accumulating temp file for this field's bytes
+    std::filesystem::path datafile; //!< byte sink: a temp file (archive) or the final member file (directory)
     std::shared_ptr<Formats::WriteBuffer> buffer;
   };
 
   const std::filesystem::path path;
   const FieldRegistry &registry;
-  const TRXCompression compression; //!< archive compression method (ignored for a directory)
+  //! the output form: std::nullopt writes a directory (members streamed in place),
+  //!   a value writes a ".trx" archive with that zip compression
+  const std::optional<TRXCompression> archive_compression;
 
   //! grid geometry written into the JSON header
   transform_type voxel_to_rasmm;
   std::array<uint16_t, 3> dimensions;
 
-  //! accumulating temp files / buffers for positions and offsets
-  std::filesystem::path positions_tempfile;
+  //! the positions byte sink (a temp file for an archive, the final member file
+  //!   for a directory) and its write-back buffer; offsets accumulate in RAM
+  std::filesystem::path positions_datafile;
   std::shared_ptr<Formats::WriteBuffer> positions_buffer;
   std::vector<uint64_t> offsets;
 
@@ -374,8 +382,8 @@ namespace Formats {
  *
  * The reader auto-detects the backing form (directory / ZIP_STORE in place /
  * ZIP_DEFLATE via temp-dir extraction), so all three concrete handlers share one
- * read path. The writer manufactures a directory or an archive (compression
- * selected by fresh_compression()) from the same buffered arrays. The three
+ * read path. The writer manufactures a directory or an archive (the output form
+ * selected by fresh_archive_compression()) from the same buffered arrays. The three
  * concrete handlers differ only in which existing/new path they recognise
  * (handles()) and in the capability they broadcast: a directory or uncompressed
  * archive can take a new sidecar member in place (SidecarData::Append), whereas a
@@ -400,8 +408,12 @@ protected:
                                                          const FieldRegistry &registry,
                                                          const WriteOptions &options) const override;
 
-  //! \brief the zip compression a fresh ".trx" archive from this handler uses.
-  virtual TRXCompression fresh_compression() const = 0;
+  //! \brief the on-disk form a fresh dataset from this handler takes.
+  /*! std::nullopt selects a filesystem-directory dataset (the directory handler);
+   * a value selects a ".trx" zip archive written with that compression method (the
+   * archive handlers). The writer streams members straight into the target
+   * directory in the former case, and assembles a zip archive in the latter. */
+  virtual std::optional<TRXCompression> fresh_archive_compression() const = 0;
 };
 
 //! \brief TRX handler for a filesystem-directory dataset (append-capable).
@@ -424,7 +436,8 @@ public:
                       const std::vector<std::byte> &row_bytes) const override;
 
 protected:
-  TRXCompression fresh_compression() const override { return TRXCompression::Store; }
+  //! a directory-backed dataset; members are streamed straight into the directory.
+  std::optional<TRXCompression> fresh_archive_compression() const override { return std::nullopt; }
 };
 
 //! \brief TRX handler for an uncompressed (ZIP_STORE) archive (append-capable).
@@ -447,7 +460,7 @@ public:
                       const std::vector<std::byte> &row_bytes) const override;
 
 protected:
-  TRXCompression fresh_compression() const override { return TRXCompression::Store; }
+  std::optional<TRXCompression> fresh_archive_compression() const override { return TRXCompression::Store; }
 };
 
 //! \brief TRX handler for a compressed (ZIP_DEFLATE) archive (rewrite-only).
@@ -467,7 +480,7 @@ public:
   bool handles(const std::filesystem::path &path) const override;
 
 protected:
-  TRXCompression fresh_compression() const override { return TRXCompression::Deflate; }
+  std::optional<TRXCompression> fresh_archive_compression() const override { return TRXCompression::Deflate; }
 };
 
 } // namespace Formats

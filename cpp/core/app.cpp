@@ -1233,7 +1233,10 @@ void parse() {
       types_not_output_file.reset(ArgTypeFlags::FileOut);
       types_not_output_file.reset(ArgTypeFlags::TracksOut);
       types_not_output_file.reset(ArgTypeFlags::TractogramSidecarOut);
-      if (!types_not_output_file.any() && !skip_fs) {
+      // A trailing path separator denotes a directory; for a tracks output this is
+      //   the explicit request for a directory-backed (TRX) dataset, so it is not
+      //   rejected as it would be for a plain output file.
+      if (!types_not_output_file.any() && !skip_fs && !i.arg->types[ArgTypeFlags::TracksOut]) {
         const std::string path = sidecar_dataset_path(i.as_text());
         if (path.find_last_of(PATH_SEPARATORS) == path.size() - 1)
           throw Exception("output path \"" + path + "\" is not a valid file path" +
@@ -1271,6 +1274,21 @@ void parse() {
           case DirOutMode::MayExist:
             break;
           }
+        } else if (i.arg->types[ArgTypeFlags::TracksOut] &&
+                   DWI::Tractography::Formats::is_directory_dataset_output(i.as_path())) {
+          // A tracks output written as a directory-backed (TRX) dataset: the
+          //   directory must be empty or absent (mirroring DirOutMode::EmptyOrAbsent;
+          //   -force is not applied to directories).
+          const std::filesystem::path dir_path(i);
+          if (std::filesystem::exists(dir_path)) {
+            if (!std::filesystem::is_directory(dir_path))
+              throw Exception("output path \"" + i.as_text() + "\" already exists as a file");
+            if (std::filesystem::directory_iterator(dir_path) != std::filesystem::directory_iterator())
+              throw Exception("output tractogram directory \"" + i.as_text() + "\" is not empty" +
+                              (overwrite_files ? " (-force option cannot safely be applied on directories;"
+                                                 " please erase manually instead)"
+                                               : ""));
+          }
         } else {
           check_overwrite(i);
         }
@@ -1294,7 +1312,10 @@ void parse() {
       types_not_output_tractogram.reset(ArgTypeFlags::TracksOut);
       if (!types_not_output_tractogram.any() && !skip_fs) {
         const std::filesystem::path path(i);
-        if (!std::filesystem::is_directory(path) && !DWI::Tractography::Formats::is_supported_extension(path))
+        // Valid iff it is (or unambiguously designates) a directory-backed dataset,
+        //   or carries an extension recognised by a format handler.
+        if (!std::filesystem::is_directory(path) && !DWI::Tractography::Formats::is_directory_dataset_output(path) &&
+            !DWI::Tractography::Formats::is_supported_extension(path))
           throw Exception("output track file \"" + i.as_text() + "\" is not a recognised tractogram" +
                           " (expected a directory or one of: " + DWI::Tractography::Formats::supported_extensions() +
                           ")");
@@ -1346,7 +1367,10 @@ void parse() {
         types_not_output_file.reset(ArgTypeFlags::FileOut);
         types_not_output_file.reset(ArgTypeFlags::TracksOut);
         types_not_output_file.reset(ArgTypeFlags::TractogramSidecarOut);
-        if (!types_not_output_file.any() && !skip_fs) {
+        // A trailing path separator denotes a directory; for a tracks output this
+        //   is the explicit request for a directory-backed (TRX) dataset, so it is
+        //   not rejected as it would be for a plain output file.
+        if (!types_not_output_file.any() && !skip_fs && !arg.types[ArgTypeFlags::TracksOut]) {
           const std::string path = sidecar_dataset_path(parg.as_text());
           const std::string filename = std::filesystem::path(path).filename().string();
           if (filename.find_last_of(PATH_SEPARATORS) == filename.size() - 1)
@@ -1388,6 +1412,23 @@ void parse() {
             case DirOutMode::MayExist:
               break;
             }
+          } else if (arg.types[ArgTypeFlags::TracksOut] &&
+                     DWI::Tractography::Formats::is_directory_dataset_output(parg.as_path())) {
+            // A tracks output written as a directory-backed (TRX) dataset: the
+            //   directory must be empty or absent (mirroring DirOutMode::EmptyOrAbsent;
+            //   -force is not applied to directories).
+            const std::filesystem::path dir_path(parg);
+            if (std::filesystem::exists(dir_path)) {
+              if (!std::filesystem::is_directory(dir_path))
+                throw Exception("output path \"" + parg.as_text() + "\"" + " for option \"-" + std::string(i.opt->id) +
+                                "\" already exists as a file");
+              if (std::filesystem::directory_iterator(dir_path) != std::filesystem::directory_iterator())
+                throw Exception("output tractogram directory \"" + parg.as_text() + "\"" + " for option \"-" +
+                                std::string(i.opt->id) + "\" is not empty" +
+                                (overwrite_files ? " (-force option cannot safely be applied on directories;"
+                                                   " please erase manually instead)"
+                                                 : ""));
+            }
           } else {
             check_overwrite(parg);
           }
@@ -1412,7 +1453,10 @@ void parse() {
         types_not_output_tractogram.reset(ArgTypeFlags::TracksOut);
         if (!types_not_output_tractogram.any() && !skip_fs) {
           const std::filesystem::path path(parg);
-          if (!std::filesystem::is_directory(path) && !DWI::Tractography::Formats::is_supported_extension(path))
+          // Valid iff it is (or unambiguously designates) a directory-backed
+          //   dataset, or carries an extension recognised by a format handler.
+          if (!std::filesystem::is_directory(path) && !DWI::Tractography::Formats::is_directory_dataset_output(path) &&
+              !DWI::Tractography::Formats::is_supported_extension(path))
             throw Exception("output track file \"" + parg.as_text() + "\"" +    //
                             " for option \"-" + std::string(i.opt->id) + "\"" + //
                             " is not a recognised tractogram (expected a directory or one of: " +

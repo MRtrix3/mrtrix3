@@ -55,6 +55,17 @@ const Base *get_handler(const std::filesystem::path &path);
  * separately by the caller. */
 bool is_supported_extension(const std::filesystem::path &path);
 
+//! \brief whether \a path unambiguously designates a directory-backed tractogram
+//!   output dataset (currently only the TRX format is directory-backed).
+/*! A tractography output is written as a directory exactly when the directory
+ * intent is unambiguous: the path ends with a directory separator, or it already
+ * exists as an empty directory. A bare extensionless name is deliberately left
+ * ambiguous (it may equally name a regular file) and is NOT treated as a
+ * directory. Consulted both by the command-line parser, to apply directory-output
+ * validation to an ArgTypeTracksOut argument, and by the directory handler's path
+ * test. Touches the filesystem only to resolve the existing-empty-directory case. */
+bool is_directory_dataset_output(const std::filesystem::path &path);
+
 //! \brief the recognised extensions as a comma-separated string for messages.
 std::string supported_extensions();
 

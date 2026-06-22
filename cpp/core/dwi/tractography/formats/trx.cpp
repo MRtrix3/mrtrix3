@@ -16,6 +16,7 @@
 
 #include "dwi/tractography/formats/trx.h"
 
+#include "dwi/tractography/formats/list.h"
 #include "dwi/tractography/nonfinite.h"
 
 #include <algorithm>
@@ -884,38 +885,70 @@ std::shared_ptr<Formats::WriteBuffer> make_appender(const std::filesystem::path 
   return buffer;
 }
 
+//! \brief create (truncating any stale content) an empty file at \a path.
+/*! Used to seed a directory dataset's streamed member files so they exist even for
+ * an empty tractogram and so the subsequent appends start from a clean slate; the
+ * parent directory (e.g. "dps/"/"dpv/") is created as required. */
+void create_empty(const std::filesystem::path &path) {
+  std::filesystem::create_directories(path.parent_path());
+  File::OFStream out(path, std::ios::out | std::ios::binary | std::ios::trunc);
+}
+
 } // namespace
 
 template <class ValueType>
 TRXWriter<ValueType>::TRXWriter(const std::filesystem::path &path,
                                 const Properties &properties,
                                 const FieldRegistry &registry,
-                                const TRXCompression compression)
-    : path(path), registry(registry), compression(compression), num_streamlines(0), num_vertices(0) {
-  if (path.extension() != ".trx" && !path.has_extension())
-    throw Exception("output TRX dataset must use the .trx suffix");
+                                const std::optional<TRXCompression> archive_compression)
+    : path(path), registry(registry), archive_compression(archive_compression), num_streamlines(0), num_vertices(0) {
+  const bool to_directory = !archive_compression.has_value();
 
-  // -force interaction (step 11): a new TRX directory or archive is a fresh
-  //   write, so the standard overwrite check applies. (Appending a member to an
-  //   existing dataset is handled at the Tractogram level; see trx.h.)
-  App::check_overwrite(path);
+  if (to_directory) {
+    // Directory-backed dataset: the member files are streamed straight into the
+    //   target directory, with no temporary-file staging. The empty-or-absent
+    //   overwrite policy for a tracks-output directory is enforced at command-line
+    //   parse time; here we only ensure the destination is a directory we can
+    //   populate. (Appending a member to an existing dataset is handled at the
+    //   Tractogram level; see trx.h.)
+    std::error_code ec;
+    if (std::filesystem::exists(path, ec) && !std::filesystem::is_directory(path, ec))
+      throw Exception("output TRX dataset \"" + path.string() + "\" exists and is not a directory");
+    std::filesystem::create_directories(path);
+  } else {
+    // Archive (".trx" file): a fresh write, so the standard single-file overwrite
+    //   check applies.
+    if (!TRXUtils::path_is_trx(path))
+      throw Exception("output TRX archive \"" + path.string() + "\" must use the \".trx\" suffix");
+    App::check_overwrite(path);
+  }
 
   properties_to_geometry(properties, voxel_to_rasmm, dimensions);
 
   // Positions are written as float32 (lossless for the float/double processing
-  //   precision and the recommended interchange dtype).
-  positions_tempfile = File::create_tempfile(0, ".trxpos");
-  positions_buffer = make_appender(positions_tempfile, 3 * sizeof(float));
+  //   precision and the recommended interchange dtype). The byte sink is the final
+  //   "positions.3.float32" member (directory), seeded empty here, or a temporary
+  //   file packed into the archive at finalisation.
+  positions_datafile = to_directory ? (path / "positions.3.float32") : File::create_tempfile(0, ".trxpos");
+  if (to_directory)
+    create_empty(positions_datafile);
+  positions_buffer = make_appender(positions_datafile, 3 * sizeof(float));
 
-  // One accumulating temp file per registered dps/dpv field, in its native dtype.
+  // One accumulating byte sink per registered dps/dpv field, in its native dtype:
+  //   the final "dps/"|"dpv/" member file (directory) or a temporary file (archive).
   for (const FieldDescriptor &field : registry) {
     if (field.role != FieldRole::DPS && field.role != FieldRole::DPV)
       continue;
     SidecarOutput output;
     output.descriptor = field;
     output.ordinal = field.ordinal;
-    output.tempfile = File::create_tempfile(0, ".trxsc");
-    output.buffer = make_appender(output.tempfile, field.dtype.bytes());
+    if (to_directory) {
+      output.datafile = path / TRXUtils::sidecar_member_name(field);
+      create_empty(output.datafile);
+    } else {
+      output.datafile = File::create_tempfile(0, ".trxsc");
+    }
+    output.buffer = make_appender(output.datafile, field.dtype.bytes());
     if (field.role == FieldRole::DPS)
       dps_fields.push_back(std::move(output));
     else
@@ -1066,20 +1099,16 @@ template <class ValueType> void TRXWriter<ValueType>::finalise() {
          " offsets retained as uint64 rather than compacted to uint32");
   }
 
-  const std::vector<std::byte> positions_bytes = slurp(positions_tempfile);
-
-  // Assemble the list of (member-name, bytes) pairs.
+  // Assemble the member list. The positions array and the dps/dpv sidecar arrays
+  //   have already been streamed to their byte sinks (the final member files for a
+  //   directory, temporary files for an archive); the remaining members
+  //   (header.json, offsets, and any groups/dpg) are assembled here.
   std::vector<std::pair<std::string, std::vector<std::byte>>> members;
   members.emplace_back(
       "header.json",
       std::vector<std::byte>(reinterpret_cast<const std::byte *>(header_text.data()),
                              reinterpret_cast<const std::byte *>(header_text.data()) + header_text.size()));
-  members.emplace_back("positions.3.float32", positions_bytes);
   members.emplace_back(offsets_member_name, std::move(offsets_bytes));
-  for (SidecarOutput &output : dps_fields)
-    members.emplace_back(TRXUtils::sidecar_member_name(output.descriptor), slurp(output.tempfile));
-  for (SidecarOutput &output : dpv_fields)
-    members.emplace_back(TRXUtils::sidecar_member_name(output.descriptor), slurp(output.tempfile));
 
   // groups: one "groups/<name>.uint32" index table per group (Stage 17). Indices
   //   are written little-endian uint32 (the spec-recommended dtype), preserving
@@ -1115,12 +1144,20 @@ template <class ValueType> void TRXWriter<ValueType>::finalise() {
     }
   }
 
-  if (TRXUtils::path_is_trx(path) && !path.empty()) {
-    // Emit a ".trx" archive via libzip, ZIP_STORE (uncompressed; the default,
-    //   permitting later in-place sidecar augmentation) or ZIP_DEFLATE per the
-    //   selected compression. The overwrite permission was already resolved at
-    //   construction (App::check_overwrite).
-    const zip_int32_t method = (compression == TRXCompression::Deflate) ? ZIP_CM_DEFLATE : ZIP_CM_STORE;
+  if (archive_compression.has_value()) {
+    // Emit a ".trx" archive via libzip. The positions and dps/dpv arrays streamed
+    //   to temporary files are read back and packed alongside the members assembled
+    //   above; ZIP_STORE (uncompressed; the default, permitting later in-place
+    //   sidecar augmentation) or ZIP_DEFLATE per the selected compression. The
+    //   overwrite permission was already resolved at construction
+    //   (App::check_overwrite).
+    members.emplace_back("positions.3.float32", slurp(positions_datafile));
+    for (SidecarOutput &output : dps_fields)
+      members.emplace_back(TRXUtils::sidecar_member_name(output.descriptor), slurp(output.datafile));
+    for (SidecarOutput &output : dpv_fields)
+      members.emplace_back(TRXUtils::sidecar_member_name(output.descriptor), slurp(output.datafile));
+
+    const zip_int32_t method = (*archive_compression == TRXCompression::Deflate) ? ZIP_CM_DEFLATE : ZIP_CM_STORE;
     std::error_code ec;
     std::filesystem::remove(path, ec);
     int err = 0;
@@ -1145,20 +1182,21 @@ template <class ValueType> void TRXWriter<ValueType>::finalise() {
     }
     if (zip_close(za) != 0)
       throw Exception("failed to finalise TRX archive \"" + path.string() + "\"");
+
+    // Clean up the temporary accumulation files.
+    std::filesystem::remove(positions_datafile, ec);
+    for (SidecarOutput &output : dps_fields)
+      std::filesystem::remove(output.datafile, ec);
+    for (SidecarOutput &output : dpv_fields)
+      std::filesystem::remove(output.datafile, ec);
   } else {
-    // Emit a TRX directory.
-    std::filesystem::create_directories(path);
+    // Emit a TRX directory: the positions and dps/dpv member files were streamed
+    //   straight into the directory during writing, so only the remaining members
+    //   (header.json, offsets, groups, dpg) are written here. No temporary files
+    //   are involved.
     for (auto &member : members)
       write_member(path / member.first, member.second.data(), member.second.size());
   }
-
-  // Clean up temp files.
-  std::error_code ec;
-  std::filesystem::remove(positions_tempfile, ec);
-  for (SidecarOutput &output : dps_fields)
-    std::filesystem::remove(output.tempfile, ec);
-  for (SidecarOutput &output : dpv_fields)
-    std::filesystem::remove(output.tempfile, ec);
 }
 
 template <class ValueType> TRXWriter<ValueType>::~TRXWriter() {
@@ -1204,9 +1242,16 @@ std::string validate_append(const std::filesystem::path &path,
 } // namespace
 
 bool TRXDirectory::handles(const std::filesystem::path &path) const {
-  // An existing directory is a TRX dataset iff it carries the JSON header member.
+  // An existing directory carrying the JSON header member is a TRX dataset (to be
+  //   read, or overwritten in place).
   std::error_code ec;
-  return std::filesystem::is_directory(path, ec) && std::filesystem::exists(path / "header.json", ec);
+  if (std::filesystem::is_directory(path, ec) && std::filesystem::exists(path / "header.json", ec))
+    return true;
+  // A fresh directory-backed output target whose directory intent is unambiguous
+  //   (a trailing path separator, or an existing empty directory). A bare
+  //   extensionless name is ambiguous with a regular file and is left to the
+  //   archive/file handlers.
+  return is_directory_dataset_output(path);
 }
 
 void TRXDirectory::append_sidecar(const std::filesystem::path &path,
@@ -1292,14 +1337,14 @@ std::unique_ptr<WriterInterface<float>> TRXBase::create_float(const std::filesys
                                                               const Properties &properties,
                                                               const FieldRegistry &registry,
                                                               const WriteOptions &) const {
-  return std::make_unique<TRXWriter<float>>(path, properties, registry, fresh_compression());
+  return std::make_unique<TRXWriter<float>>(path, properties, registry, fresh_archive_compression());
 }
 
 std::unique_ptr<WriterInterface<double>> TRXBase::create_double(const std::filesystem::path &path,
                                                                 const Properties &properties,
                                                                 const FieldRegistry &registry,
                                                                 const WriteOptions &) const {
-  return std::make_unique<TRXWriter<double>>(path, properties, registry, fresh_compression());
+  return std::make_unique<TRXWriter<double>>(path, properties, registry, fresh_archive_compression());
 }
 
 } // namespace Formats

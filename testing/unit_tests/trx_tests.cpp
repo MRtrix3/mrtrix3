@@ -29,6 +29,7 @@
 
 #include <csignal>
 #include <filesystem>
+#include <optional>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -215,7 +216,8 @@ TEST(TRX, GroupingRoundTrip) {
   {
     Properties properties;
     FieldRegistry registry;
-    TRXWriter<float> writer(dataset, properties, registry);
+    // std::nullopt selects a directory-backed dataset (members written into `dir`).
+    TRXWriter<float> writer(dataset, properties, registry, std::nullopt);
     writer.write_grouping(out_grouping);
     for (size_t i = 0; i != num_streamlines; ++i)
       writer(make_streamline(i, 4));

@@ -18,6 +18,9 @@
 
 #include <string>
 #include <string_view>
+#include <system_error>
+
+#include "file/path.h"
 
 #include "dwi/tractography/formats/pipe.h"
 #include "dwi/tractography/formats/qfib.h"
@@ -76,6 +79,18 @@ bool is_supported_extension(const std::filesystem::path &path) {
       return true;
   }
   return false;
+}
+
+bool is_directory_dataset_output(const std::filesystem::path &path) {
+  // Trailing directory separator: an unambiguous directory target.
+  const std::string text = path.string();
+  if (!text.empty() && std::string_view(PATH_SEPARATORS).find(text.back()) != std::string_view::npos)
+    return true;
+  // Otherwise a directory target only if the path already exists as an empty
+  //   directory (a non-empty directory is left to the overwrite path; a regular
+  //   file or an absent extensionless name is not a directory target).
+  std::error_code ec;
+  return std::filesystem::is_directory(path, ec) && std::filesystem::is_empty(path, ec);
 }
 
 std::string supported_extensions() {

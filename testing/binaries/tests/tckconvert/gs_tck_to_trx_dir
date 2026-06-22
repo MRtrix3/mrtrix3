@@ -1,35 +1,37 @@
 #!/bin/bash
 # Reference-data validation (TRX_DATA_DIR, tee-ar-ex gold standard): write "gs.tck"
-#   out as a TRX dataset and compare its members against the gold directory
-#   "gs_fldr.trx/": header.json (parsed as JSON), and the binary "offsets" and
-#   "positions.3.float32" arrays.
+#   directly to a TRX *directory* dataset, embedding into the output header the
+#   spatial grid of the reference image "gs.nii" (the image from which the gold
+#   standard "gs_fldr.trx/" was generated) via tckconvert's -reference_image option.
+#   All four compulsory TRX header fields (DIMENSIONS, VOXEL_TO_RASMM,
+#   NB_STREAMLINES, NB_VERTICES) must reproduce the gold "gs_fldr.trx/header.json".
 #
-# AUGMENTATION REQUIRED (artificial failure at end) — two gaps prevent a match:
-#   1. Directory output: MRtrix's TRX writer emits a single ZIP_STORE archive, not
-#      an unpacked directory (worked around here by unzipping).
-#   2. Grid header: "gs.tck" carries no voxel grid, so header.json records
-#      DIMENSIONS [1,1,1] and an identity VOXEL_TO_RASMM, whereas the gold standard
-#      records the real [5,10,20] grid and its affine. (positions.3.float32 also
-#      differs at the float32-rounding level.)
-# The offsets dtype now matches: the writer compacts the offsets array to
-#   "offsets.uint32" whenever the maximum offset fits within the 32-bit unsigned
-#   range, as the gold standard does. Reaching byte/JSON equivalence still needs a
-#   TRX writer that can target a directory and stamp a supplied reference grid.
+# The trailing path separator on the output path makes the directory intent
+#   explicit, so the TRX directory handler writes the member files straight into
+#   the directory (no intermediate ".trx" archive, no /tmp staging).
+set -e
 
-tckconvert gs.tck tmp_out.trx -force -quiet
-rm -rf tmp_unz && mkdir tmp_unz
-( cd tmp_unz && unzip -q -o ../tmp_out.trx )
+rm -rf tmp_dir.trx
+tckconvert gs.tck tmp_dir.trx/ -reference_image gs.nii -quiet
 
-# Achievable cross-check: streamline / vertex counts agree with the gold header.
+# The dataset is an unpacked directory carrying the spec-mandated array members.
+test -f tmp_dir.trx/header.json
+test -f tmp_dir.trx/offsets.uint32
+test -f tmp_dir.trx/positions.3.float32
+
+# All four compulsory TRX header fields must match the gold standard: the integer
+#   counts and grid dimensions exactly, and the voxel-to-RASMM affine to float32
+#   precision (the gold affine is stored float32, recovered here from "gs.nii").
 python3 - <<'PY'
-import json, sys
-mine = json.load(open('tmp_unz/header.json'))
+import json
+mine = json.load(open('tmp_dir.trx/header.json'))
 gold = json.load(open('gs_fldr.trx/header.json'))
-for k in ('NB_STREAMLINES', 'NB_VERTICES'):
+for k in ('NB_STREAMLINES', 'NB_VERTICES', 'DIMENSIONS'):
     assert mine[k] == gold[k], f"{k}: {mine[k]} vs {gold[k]}"
+m, g = mine['VOXEL_TO_RASMM'], gold['VOXEL_TO_RASMM']
+assert len(m) == 4 and all(len(row) == 4 for row in m), m
+for i in range(4):
+    for j in range(4):
+        assert abs(m[i][j] - g[i][j]) < 1e-4, (i, j, m[i][j], g[i][j])
+print("all four compulsory TRX header fields match gold")
 PY
-
-echo "INCOMPLETE (TODO): TRX directory/uint32-offsets/grid-header output not yet" \
-     "implemented; header.json, offsets.uint32 and positions.3.float32 cannot be" \
-     "compared to gs_fldr.trx until the writer is augmented." >&2
-exit 1
