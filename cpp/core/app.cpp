@@ -985,10 +985,13 @@ namespace {
  *   - the pipe sentinel "-" as a tractogram input/output (TracksIn / TracksOut),
  *     which denotes the inter-command stream rather than a file on disk;
  *   - a tractogram-sidecar self-reference whose DATASET component is empty
- *     ("::FIELD") or the pipe sentinel ("-::FIELD"), naming a field carried within
- *     the command's own tractogram argument rather than a standalone sidecar file;
- *     the referenced dataset is the command's (singular) TracksIn / TracksOut
- *     argument, validated in its own right, so no separate filesystem entity exists.
+ *     ("::FIELD"), naming a field carried within the command's own tractogram
+ *     argument rather than a standalone sidecar file; the referenced dataset is the
+ *     command's (singular) TracksIn / TracksOut argument, validated in its own
+ *     right, so no separate filesystem entity exists. A non-empty DATASET that is
+ *     the pipe sentinel ("-::FIELD") is deliberately NOT a self-reference: only the
+ *     empty form refers to a piped tractogram, so "-::FIELD" falls through to the
+ *     ordinary existence check (which rejects it, as "-" is not a file).
  * This honours the multi-type rule: a value need only be valid for one of an
  * argument's advertised types to be accepted, so the exemption applies whenever the
  * relevant tracks / sidecar type is among \a types. */
@@ -996,8 +999,7 @@ bool is_nonfilesystem_value(std::string_view value, const ArgTypeFlags &types) {
   if (is_dash(value) && (types[ArgTypeFlags::TracksIn] || types[ArgTypeFlags::TracksOut]))
     return true;
   if (types[ArgTypeFlags::TractogramSidecarIn] || types[ArgTypeFlags::TractogramSidecarOut]) {
-    const std::string dataset = sidecar_dataset_path(value);
-    if (dataset.empty() || is_dash(dataset))
+    if (sidecar_dataset_path(value).empty())
       return true;
   }
   return false;
